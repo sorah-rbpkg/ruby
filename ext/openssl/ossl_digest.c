@@ -11,7 +11,7 @@
 #include "ossl.h"
 
 #define GetDigest(obj, ctx) do { \
-    Data_Get_Struct((obj), EVP_MD_CTX, (ctx)); \
+    TypedData_Get_Struct((obj), EVP_MD_CTX, &ossl_digest_type, (ctx)); \
     if (!(ctx)) { \
 	ossl_raise(rb_eRuntimeError, "Digest CTX wasn't initialized!"); \
     } \
@@ -29,6 +29,20 @@ VALUE eDigestError;
 
 static VALUE ossl_digest_alloc(VALUE klass);
 
+static void
+ossl_digest_free(void *ctx)
+{
+    EVP_MD_CTX_destroy(ctx);
+}
+
+static const rb_data_type_t ossl_digest_type = {
+    "OpenSSL/Digest",
+    {
+	0, ossl_digest_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 /*
  * Public
  */
@@ -38,7 +52,7 @@ GetDigestPtr(VALUE obj)
     const EVP_MD *md;
     ASN1_OBJECT *oid = NULL;
 
-    if (TYPE(obj) == T_STRING) {
+    if (RB_TYPE_P(obj, T_STRING)) {
     	const char *name = StringValueCStr(obj);
 
 	md = EVP_get_digestbyname(name);
@@ -87,7 +101,7 @@ ossl_digest_alloc(VALUE klass)
     ctx = EVP_MD_CTX_create();
     if (ctx == NULL)
 	ossl_raise(rb_eRuntimeError, "EVP_MD_CTX_create() failed");
-    obj = Data_Wrap_Struct(klass, 0, EVP_MD_CTX_destroy, ctx);
+    obj = TypedData_Wrap_Struct(klass, &ossl_digest_type, ctx);
 
     return obj;
 }
@@ -294,7 +308,7 @@ ossl_digest_block_length(VALUE self)
  * INIT
  */
 void
-Init_ossl_digest()
+Init_ossl_digest(void)
 {
     rb_require("digest");
 

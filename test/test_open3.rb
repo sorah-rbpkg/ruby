@@ -1,6 +1,5 @@
 require 'test/unit'
 require 'open3'
-require_relative 'ruby/envutil'
 
 class TestOpen3 < Test::Unit::TestCase
   RUBY = EnvUtil.rubybin
@@ -72,6 +71,13 @@ class TestOpen3 < Test::Unit::TestCase
       assert_equal(pid, t[:pid])
       assert_equal(pid, t.pid)
     }
+  end
+
+  def test_env
+    result = Open3.popen3({'A' => 'B', 'C' => 'D'}, RUBY, '-e' 'p ENV["A"]') do |i, out, err, thr|
+      output = out.read
+      assert_equal("\"B\"\n", output)
+    end
   end
 
   def with_pipe
@@ -146,6 +152,25 @@ class TestOpen3 < Test::Unit::TestCase
   def test_capture2e
     oe, s = Open3.capture2e(RUBY, '-e', 'i=STDIN.read; print i+"o"; STDOUT.flush; STDERR.print i+"e"', :stdin_data=>"i")
     assert_equal("ioie", oe)
+    assert(s.success?)
+  end
+
+  def test_capture3_stdin_data
+    o, e, s = Open3.capture3(RUBY, '-e', '', :stdin_data=>"z"*(1024*1024))
+    assert_equal("", o)
+    assert_equal("", e)
+    assert(s.success?)
+  end
+
+  def test_capture2_stdin_data
+    o, s = Open3.capture2(RUBY, '-e', '', :stdin_data=>"z"*(1024*1024))
+    assert_equal("", o)
+    assert(s.success?)
+  end
+
+  def test_capture2e_stdin_data
+    oe, s = Open3.capture2e(RUBY, '-e', '', :stdin_data=>"z"*(1024*1024))
+    assert_equal("", oe)
     assert(s.success?)
   end
 

@@ -71,7 +71,7 @@ module MakeMakefile
   # Extensions for files complied with a C++ compiler
 
   CXX_EXT = %w[cc mm cxx cpp]
-  if File::FNM_SYSCASE.zero?
+  unless File.exist?(File.join(*File.split(__FILE__).tap {|d, b| b.swapcase}))
     CXX_EXT.concat(%w[C])
   end
 
@@ -467,7 +467,7 @@ MSG
     end
   end
 
-  def link_command(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
+  def link_command(ldflags, opt="", libpath=$LIBPATH|$DEFLIBPATH)
     librubyarg = $extmk ? $LIBRUBYARG_STATIC : "$(LIBRUBYARG)"
     conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote,
                                   'src' => "#{CONFTEST_C}",
@@ -503,7 +503,7 @@ MSG
                      conf)
   end
 
-  def libpathflag(libpath=$DEFLIBPATH|$LIBPATH)
+  def libpathflag(libpath=$LIBPATH|$DEFLIBPATH)
     libpath.map{|x|
       case x
       when "$(topdir)", /\A\./
@@ -667,7 +667,6 @@ SRC
         return nil
       end
       upper = 1
-      lower = 0
       until try_static_assert("#{const} <= #{upper}", headers, opt)
         lower = upper
         upper <<= 1
@@ -1093,11 +1092,11 @@ SRC
     checking_for fw do
       src = cpp_include("#{fw}/#{header}") << "\n" "int main(void){return 0;}"
       opt = " -framework #{fw}"
-      if try_link(src, "-ObjC#{opt}", &b)
+      if try_link(src, opt, &b) or (objc = try_link(src, "-ObjC#{opt}", &b))
         $defs.push(format("-DHAVE_FRAMEWORK_%s", fw.tr_cpp))
         # TODO: non-worse way than this hack, to get rid of separating
         # option and its argument.
-        $LDFLAGS << " -ObjC" unless /(\A|\s)-ObjC(\s|\z)/ =~ $LDFLAGS
+        $LDFLAGS << " -ObjC" if objc and /(\A|\s)-ObjC(\s|\z)/ !~ $LDFLAGS
         $LIBS << opt
         true
       else
@@ -1677,13 +1676,28 @@ SRC
     $extconf_h = header
   end
 
-  # Sets a +target+ name that the user can then use to configure various
-  # "with" options with on the command line by using that name.  For example,
-  # if the target is set to "foo", then the user could use the
-  # <code>--with-foo-dir</code> command line option.
+  # call-seq:
+  #   dir_config(target)
+  #   dir_config(target, prefix)
+  #   dir_config(target, idefault, ldefault)
   #
-  # You may pass along additional "include" or "lib" defaults via the
-  # +idefault+ and +ldefault+ parameters, respectively.
+  # Sets a +target+ name that the user can then use to configure
+  # various "with" options with on the command line by using that
+  # name.  For example, if the target is set to "foo", then the user
+  # could use the <code>--with-foo-dir=prefix</code>,
+  # <code>--with-foo-include=dir</code> and
+  # <code>--with-foo-lib=dir</code> command line options to tell where
+  # to search for header/library files.
+  #
+  # You may pass along additional parameters to specify default
+  # values.  If one is given it is taken as default +prefix+, and if
+  # two are given they are taken as "include" and "lib" defaults in
+  # that order.
+  #
+  # In any case, the return value will be an array of determined
+  # "include" and "lib" directories, either of which can be nil if no
+  # corresponding command line option is given when no default value
+  # is specified.
   #
   # Note that dir_config only adds to the list of places to search for
   # libraries and include files.  It does not link the libraries into your
@@ -1745,22 +1759,37 @@ SRC
   def pkg_config(pkg, option=nil)
     if pkgconfig = with_config("#{pkg}-config") and find_executable0(pkgconfig)
       # iff package specific config command is given
-      get = proc {|opt| `#{pkgconfig} --#{opt}`.strip}
     elsif ($PKGCONFIG ||=
            (pkgconfig = with_config("pkg-config", ("pkg-config" unless CROSS_COMPILING))) &&
            find_executable0(pkgconfig) && pkgconfig) and
         system("#{$PKGCONFIG} --exists #{pkg}")
       # default to pkg-config command
-      get = proc {|opt| `#{$PKGCONFIG} --#{opt} #{pkg}`.strip}
+      pkgconfig = $PKGCONFIG
+      get = proc {|opt|
+        opt = IO.popen("#{$PKGCONFIG} --#{opt} #{pkg}", err:[:child, :out], &:read)
+        opt.strip if $?.success?
+      }
     elsif find_executable0(pkgconfig = "#{pkg}-config")
       # default to package specific config command, as a last resort.
-      get = proc {|opt| `#{pkgconfig} --#{opt}`.strip}
+    else
+      pkgconfig = nil
+    end
+    if pkgconfig
+      get ||= proc {|opt|
+        opt = IO.popen("#{pkgconfig} --#{opt}", err:[:child, :out], &:read)
+        opt.strip if $?.success?
+      }
     end
     orig_ldflags = $LDFLAGS
     if get and option
       get[option]
     elsif get and try_ldflags(ldflags = get['libs'])
-      cflags = get['cflags']
+      if incflags = get['cflags-only-I']
+        $INCFLAGS << " " << incflags
+        cflags = get['cflags-only-other']
+      else
+        cflags = get['cflags']
+      end
       libs = get['libs-only-l']
       ldflags = (Shellwords.shellwords(ldflags) - Shellwords.shellwords(libs)).quote.join(" ")
       $CFLAGS += " " << cflags
@@ -1834,6 +1863,7 @@ Q1 = $(V:1=)
 Q = $(Q1:0=@)
 ECHO1 = $(V:1=@#{CONFIG['NULLCMD']})
 ECHO = $(ECHO1:0=@echo)
+NULLCMD = #{CONFIG['NULLCMD']}
 
 #### Start of system configuration section. ####
 #{"top_srcdir = " + $top_srcdir.sub(%r"\A#{Regexp.quote($topdir)}/", "$(topdir)/") if $extmk}
@@ -2021,7 +2051,10 @@ RULES
         implicit = [[m[1], m[2]], [m.post_match]]
         next
       elsif RULE_SUBST and /\A(?!\s*\w+\s*=)[$\w][^#]*:/ =~ line
-        line.gsub!(%r"(\s)(?!\.)([^$(){}+=:\s\/\\,]+)(?=\s|\z)") {$1 + RULE_SUBST % $2}
+        line.sub!(/\s*\#.*$/, '')
+        comment = $&
+        line.gsub!(%r"(\s)(?!\.)([^$(){}+=:\s\\,]+)(?=\s|\z)") {$1 + RULE_SUBST % $2}
+        line = line.chomp + comment + "\n" if comment
       end
       depout << line
     end
@@ -2111,7 +2144,7 @@ RULES
   #
   def create_makefile(target, srcprefix = nil)
     $target = target
-    libpath = $DEFLIBPATH|$LIBPATH
+    libpath = $LIBPATH|$DEFLIBPATH
     message "creating Makefile\n"
     MakeMakefile.rm_f "#{CONFTEST}*"
     if CONFIG["DLEXT"] == $OBJEXT
@@ -2192,7 +2225,7 @@ RULES
     conf = yield(conf) if block_given?
     mfile.puts(conf)
     mfile.print "
-libpath = #{($DEFLIBPATH|$LIBPATH).join(" ")}
+libpath = #{($LIBPATH|$DEFLIBPATH).join(" ")}
 LIBPATH = #{libpath}
 DEFFILE = #{deffile}
 
@@ -2238,7 +2271,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
       fseprepl = proc {|s|
         s = s.gsub("/", fsep)
         s = s.gsub(/(\$\(\w+)(\))/) {$1+sep+$2}
-        s = s.gsub(/(\$\{\w+)(\})/) {$1+sep+$2}
+        s.gsub(/(\$\{\w+)(\})/) {$1+sep+$2}
       }
       rsep = ":#{fsep}=/"
     else
@@ -2285,7 +2318,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
           dest = "#{dir}/#{File.basename(f)}"
           mfile.print("install-rb#{sfx}: #{dest}\n")
           mfile.print("#{dest}: #{f} #{timestamp_file(dir, target_prefix)}\n")
-          mfile.print("\t$(Q) $(#{$extout ? 'COPY' : 'INSTALL_DATA'}) #{f} $(@D#{sep})\n")
+          mfile.print("\t$(Q) $(#{$extout ? 'COPY' : 'INSTALL_DATA'}) #{f} $(@D)\n")
           if defined?($installed_list) and !$extout
             mfile.print("\t@echo #{dest}>>$(INSTALLED_LIST)\n")
           end
@@ -2296,7 +2329,11 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
         end
       end
       mfile.print "pre-install-rb#{sfx}:\n"
-      mfile.print("\t$(ECHO) installing#{sfx.sub(/^-/, " ")} #{target} libraries\n")
+      if files.empty?
+        mfile.print("\t@$(NULLCMD)\n")
+      else
+        mfile.print("\t$(ECHO) installing#{sfx.sub(/^-/, " ")} #{target} libraries\n")
+      end
       if $extout
         dirs.uniq!
         unless dirs.empty?
@@ -2324,20 +2361,28 @@ site-install-rb: install-rb
     return unless target
 
     mfile.puts SRC_EXT.collect {|e| ".path.#{e} = $(VPATH)"} if $nmake == ?b
-    mfile.print ".SUFFIXES: .#{SRC_EXT.join(' .')} .#{$OBJEXT}\n"
+    mfile.print ".SUFFIXES: .#{(SRC_EXT + [$OBJEXT, $ASMEXT]).compact.join(' .')}\n"
     mfile.print "\n"
 
     compile_command = "\n\t$(ECHO) compiling $(<#{rsep})\n\t$(Q) %s\n\n"
+    command = compile_command % COMPILE_CXX
+    asm_command = compile_command.sub(/compiling/, 'translating') % ASSEMBLE_CXX
     CXX_EXT.each do |e|
       each_compile_rules do |rule|
         mfile.printf(rule, e, $OBJEXT)
-        mfile.printf(compile_command, COMPILE_CXX)
+        mfile.print(command)
+        mfile.printf(rule, e, $ASMEXT)
+        mfile.print(asm_command)
       end
     end
+    command = compile_command % COMPILE_C
+    asm_command = compile_command.sub(/compiling/, 'translating') % ASSEMBLE_C
     C_EXT.each do |e|
       each_compile_rules do |rule|
         mfile.printf(rule, e, $OBJEXT)
-        mfile.printf(compile_command, COMPILE_C)
+        mfile.print(command)
+        mfile.printf(rule, e, $ASMEXT)
+        mfile.print(asm_command)
       end
     end
 
@@ -2410,6 +2455,7 @@ site-install-rb: install-rb
     $LIBEXT = config['LIBEXT'].dup
     $OBJEXT = config["OBJEXT"].dup
     $EXEEXT = config["EXEEXT"].dup
+    $ASMEXT = config_string('ASMEXT', &:dup) || 'S'
     $LIBS = "#{config['LIBS']} #{config['DLDLIBS']}"
     $LIBRUBYARG = ""
     $LIBRUBYARG_STATIC = config['LIBRUBYARG_STATIC']
@@ -2556,6 +2602,16 @@ MESSAGE
   # Command which will compile C++ files in the generated Makefile
 
   COMPILE_CXX = config_string('COMPILE_CXX') || '$(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(COUTFLAG)$@ -c $<'
+
+  ##
+  # Command which will translate C files to assembler sources in the generated Makefile
+
+  ASSEMBLE_C = config_string('ASSEMBLE_C') || COMPILE_C.sub(/(?<=\s)-c(?=\s)/, '-S')
+
+  ##
+  # Command which will translate C++ files to assembler sources in the generated Makefile
+
+  ASSEMBLE_CXX = config_string('ASSEMBLE_CXX') || COMPILE_CXX.sub(/(?<=\s)-c(?=\s)/, '-S')
 
   ##
   # Command which will compile a program in order to test linking a library

@@ -78,7 +78,7 @@ static const rb_data_type_t strio_data_type = {
 	strio_free,
 	strio_memsize,
     },
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 #define check_strio(self) ((struct StringIO*)rb_check_typeddata((self), &strio_data_type))
@@ -186,12 +186,12 @@ strio_init(int argc, VALUE *argv, struct StringIO *ptr, VALUE self)
       case 2:
 	if (FIXNUM_P(mode)) {
 	    int flags = FIX2INT(mode);
-	    ptr->flags = rb_io_modenum_flags(flags);
+	    ptr->flags = rb_io_oflags_fmode(flags);
 	    trunc = flags & O_TRUNC;
 	}
 	else {
 	    const char *m = StringValueCStr(mode);
-	    ptr->flags = rb_io_mode_flags(m);
+	    ptr->flags = rb_io_modestr_fmode(m);
 	    trunc = *m == 'w';
 	}
 	StringValue(string);
@@ -1500,9 +1500,19 @@ strio_set_encoding(int argc, VALUE *argv, VALUE self)
 
 /*
  * Pseudo I/O on String object.
+ *
+ * Commonly used to simulate `$stdio` or `$stderr`
+ *
+ * === Examples
+ *
+ *   require 'stringio'
+ *
+ *   io = StringIO.new
+ *   io.puts "Hello World"
+ *   io.string #=> "Hello World"
  */
 void
-Init_stringio()
+Init_stringio(void)
 {
     VALUE StringIO = rb_define_class("StringIO", rb_cData);
 

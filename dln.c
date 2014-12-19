@@ -47,6 +47,7 @@ void *xcalloc();
 void *xrealloc();
 #endif
 
+#undef free
 #define free(x) xfree(x)
 
 #include <stdio.h>
@@ -1178,25 +1179,26 @@ dln_strerror(void)
 static void
 aix_loaderror(const char *pathname)
 {
-  char *message[1024], errbuf[1024];
-  int i;
-#define ERRBUF_APPEND(s) strncat(errbuf, (s), sizeof(errbuf)-strlen(errbuf)-1)
-  snprintf(errbuf, sizeof(errbuf), "load failed - %s. ", pathname);
+    char *message[1024], errbuf[1024];
+    int i;
+#define ERRBUF_APPEND(s) strlcat(errbuf, (s), sizeof(errbuf))
+    snprintf(errbuf, sizeof(errbuf), "load failed - %s. ", pathname);
 
-  if (loadquery(L_GETMESSAGES, &message[0], sizeof(message)) != -1) {
-    ERRBUF_APPEND("Please issue below command for detailed reasons:\n\t");
-    ERRBUF_APPEND("/usr/sbin/execerror ruby ");
-    for (i=0; message[i]; i++) {
-      ERRBUF_APPEND("\"");
-      ERRBUF_APPEND(message[i]);
-      ERRBUF_APPEND("\" ");
+    if (loadquery(L_GETMESSAGES, &message[0], sizeof(message)) != -1) {
+	ERRBUF_APPEND("Please issue below command for detailed reasons:\n\t");
+	ERRBUF_APPEND("/usr/sbin/execerror ruby ");
+	for (i=0; message[i]; i++) {
+	    ERRBUF_APPEND("\"");
+	    ERRBUF_APPEND(message[i]);
+	    ERRBUF_APPEND("\" ");
+	}
+	ERRBUF_APPEND("\n");
     }
-    ERRBUF_APPEND("\n");
-  } else {
-    ERRBUF_APPEND(strerror(errno));
-    ERRBUF_APPEND("[loadquery failed]");
-  }
-  dln_loaderror("%s", errbuf);
+    else {
+	ERRBUF_APPEND(strerror(errno));
+	ERRBUF_APPEND("[loadquery failed]");
+    }
+    dln_loaderror("%s", errbuf);
 }
 #endif
 
@@ -1323,33 +1325,13 @@ dln_load(const char *file)
 # define RTLD_GLOBAL 0
 #endif
 
-#ifdef __native_client__
-	char* p, *orig;
-        if (file[0] == '.' && file[1] == '/') file+=2;
-	orig = strdup(file);
-	for (p = file; *p; ++p) {
-	    if (*p == '/') *p = '_';
-	}
-#endif
 	/* Load file */
 	if ((handle = (void*)dlopen(file, RTLD_LAZY|RTLD_GLOBAL)) == NULL) {
-#ifdef __native_client__
-            free(orig);
-#endif
 	    error = dln_strerror();
 	    goto failed;
 	}
 
 	init_fct = (void(*)())(VALUE)dlsym(handle, buf);
-#ifdef __native_client__
-	strcpy(file, orig);
-	free(orig);
-#endif
-#if defined __SYMBIAN32__
-	if (init_fct == NULL) {
-	    init_fct = (void(*)())dlsym(handle, "1"); /* Some Symbian versions do not support symbol table in DLL, ordinal numbers only */
-	}
-#endif
 	if (init_fct == NULL) {
 	    error = DLN_ERROR();
 	    dlclose(handle);

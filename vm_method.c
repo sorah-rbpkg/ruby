@@ -2,15 +2,24 @@
  * This file is included by vm.c
  */
 
+#if OPT_GLOBAL_METHOD_CACHE
 #ifndef GLOBAL_METHOD_CACHE_SIZE
 #define GLOBAL_METHOD_CACHE_SIZE 0x800
 #endif
+#define LSB_ONLY(x) ((x) & ~((x) - 1))
+#define POWER_OF_2_P(x) ((x) == LSB_ONLY(x))
+#if !POWER_OF_2_P(GLOBAL_METHOD_CACHE_SIZE)
+# error GLOBAL_METHOD_CACHE_SIZE must be power of 2
+#endif
 #ifndef GLOBAL_METHOD_CACHE_MASK
-#define GLOBAL_METHOD_CACHE_MASK 0x7ff
+#define GLOBAL_METHOD_CACHE_MASK (GLOBAL_METHOD_CACHE_SIZE-1)
 #endif
 
-#define GLOBAL_METHOD_CACHE_KEY(c,m) ((((c)>>3)^(m))&GLOBAL_METHOD_CACHE_MASK)
-#define GLOBAL_METHOD_CACHE(c,m) (global_method_cache + GLOBAL_METHOD_CACHE_KEY(c,m))
+#define GLOBAL_METHOD_CACHE_KEY(c,m) ((((c)>>3)^(m))&(global_method_cache.mask))
+#define GLOBAL_METHOD_CACHE(c,m) (global_method_cache.entries + GLOBAL_METHOD_CACHE_KEY(c,m))
+#else
+#define GLOBAL_METHOD_CACHE(c,m) (rb_bug("global method cache disabled improperly"), NULL)
+#endif
 #include "method.h"
 
 #define NOEX_NOREDEF 0
@@ -37,7 +46,17 @@ struct cache_entry {
     VALUE defined_class;
 };
 
-static struct cache_entry global_method_cache[GLOBAL_METHOD_CACHE_SIZE];
+#if OPT_GLOBAL_METHOD_CACHE
+static struct {
+    unsigned int size;
+    unsigned int mask;
+    struct cache_entry *entries;
+} global_method_cache = {
+    GLOBAL_METHOD_CACHE_SIZE,
+    GLOBAL_METHOD_CACHE_MASK,
+};
+#endif
+
 #define ruby_running (GET_VM()->running)
 /* int ruby_running = 0; */
 
@@ -82,7 +101,7 @@ rb_clear_method_cache_by_class(VALUE klass)
 }
 
 VALUE
-rb_f_notimplement(int argc, VALUE *argv, VALUE obj)
+rb_f_notimplement(int argc, const VALUE *argv, VALUE obj)
 {
     rb_notimplement();
 
@@ -164,8 +183,7 @@ release_method_definition(rb_method_definition_t *def)
     if (def->alias_count == 0) {
 	if (def->type == VM_METHOD_TYPE_REFINED &&
 	    def->body.orig_me) {
-	    release_method_definition(def->body.orig_me->def);
-	    xfree(def->body.orig_me);
+	    rb_free_method_entry(def->body.orig_me);
 	}
 	xfree(def);
     }
@@ -250,14 +268,18 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
     }
     if (!FL_TEST(klass, FL_SINGLETON) &&
 	type != VM_METHOD_TYPE_NOTIMPLEMENTED &&
-	type != VM_METHOD_TYPE_ZSUPER &&
-	(mid == idInitialize || mid == idInitialize_copy ||
-	 mid == idInitialize_clone || mid == idInitialize_dup ||
-	 mid == idRespond_to_missing)) {
-	noex = NOEX_PRIVATE | noex;
+	type != VM_METHOD_TYPE_ZSUPER) {
+	switch (mid) {
+	  case idInitialize:
+	  case idInitialize_copy:
+	  case idInitialize_clone:
+	  case idInitialize_dup:
+	  case idRespond_to_missing:
+	    noex |= NOEX_PRIVATE;
+	}
     }
 
-    rb_check_frozen(klass);
+    rb_frozen_class_p(klass);
 #if NOEX_NOREDEF
     rklass = klass;
 #endif
@@ -300,7 +322,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	    old_def->type != VM_METHOD_TYPE_ZSUPER) {
 	    rb_iseq_t *iseq = 0;
 
-	    rb_warning("method redefined; discarding old %s", rb_id2name(mid));
+	    rb_warning("method redefined; discarding old %"PRIsVALUE, rb_id2str(mid));
 	    switch (old_def->type) {
 	      case VM_METHOD_TYPE_ISEQ:
 		iseq = old_def->body.iseq;
@@ -314,13 +336,15 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	    if (iseq && !NIL_P(iseq->location.path)) {
 		int line = iseq->line_info_table ? FIX2INT(rb_iseq_first_lineno(iseq->self)) : 0;
 		rb_compile_warning(RSTRING_PTR(iseq->location.path), line,
-				   "previous definition of %s was here",
-				   rb_id2name(old_def->original_id));
+				   "previous definition of %"PRIsVALUE" was here",
+				   rb_id2str(old_def->original_id));
 	    }
 	}
 
 	rb_unlink_method_entry(old_me);
     }
+
+    mid = SYM2ID(ID2SYM(mid));
 
     me = ALLOC(rb_method_entry_t);
 
@@ -456,7 +480,7 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 	break;
       case VM_METHOD_TYPE_ATTRSET:
       case VM_METHOD_TYPE_IVAR:
-	def->body.attr.id = (ID)opts;
+	def->body.attr.id = (ID)(VALUE)opts;
 	RB_OBJ_WRITE(klass, &def->body.attr.location, Qfalse);
 	th = GET_THREAD();
 	cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
@@ -578,19 +602,24 @@ rb_method_entry_get_without_cache(VALUE klass, ID id,
     }
 
     if (ruby_running) {
-	struct cache_entry *ent;
-	ent = GLOBAL_METHOD_CACHE(klass, id);
-	ent->class_serial = RCLASS_EXT(klass)->class_serial;
-	ent->method_state = GET_GLOBAL_METHOD_STATE();
-	ent->defined_class = defined_class;
-	ent->mid = id;
+	if (OPT_GLOBAL_METHOD_CACHE) {
+	    struct cache_entry *ent;
+	    ent = GLOBAL_METHOD_CACHE(klass, id);
+	    ent->class_serial = RCLASS_SERIAL(klass);
+	    ent->method_state = GET_GLOBAL_METHOD_STATE();
+	    ent->defined_class = defined_class;
+	    ent->mid = id;
 
-	if (UNDEFINED_METHOD_ENTRY_P(me)) {
-	    ent->me = 0;
-	    me = 0;
+	    if (UNDEFINED_METHOD_ENTRY_P(me)) {
+		ent->me = 0;
+		me = 0;
+	    }
+	    else {
+		ent->me = me;
+	    }
 	}
-	else {
-	    ent->me = me;
+	else if (UNDEFINED_METHOD_ENTRY_P(me)) {
+	    me = 0;
 	}
     }
 
@@ -620,7 +649,7 @@ rb_method_entry(VALUE klass, ID id, VALUE *defined_class_ptr)
     struct cache_entry *ent;
     ent = GLOBAL_METHOD_CACHE(klass, id);
     if (ent->method_state == GET_GLOBAL_METHOD_STATE() &&
-	ent->class_serial == RCLASS_EXT(klass)->class_serial &&
+	ent->class_serial == RCLASS_SERIAL(klass) &&
 	ent->mid == id) {
 	if (defined_class_ptr)
 	    *defined_class_ptr = ent->defined_class;
@@ -725,7 +754,7 @@ remove_method(VALUE klass, ID mid)
     VALUE self = klass;
 
     klass = RCLASS_ORIGIN(klass);
-    rb_check_frozen(klass);
+    rb_frozen_class_p(klass);
     if (mid == object_id || mid == id__send__ || mid == idInitialize) {
 	rb_warn("removing `%s' may cause serious problems", rb_id2name(mid));
     }
@@ -733,8 +762,8 @@ remove_method(VALUE klass, ID mid)
     if (!st_lookup(RCLASS_M_TBL(klass), mid, &data) ||
 	!(me = (rb_method_entry_t *)data) ||
 	(!me->def || me->def->type == VM_METHOD_TYPE_UNDEF)) {
-	rb_name_error(mid, "method `%s' not defined in %s",
-		      rb_id2name(mid), rb_class2name(klass));
+	rb_name_error(mid, "method `%"PRIsVALUE"' not defined in %"PRIsVALUE,
+		      rb_id2str(mid), rb_class_path(klass));
     }
     key = (st_data_t)mid;
     st_delete(RCLASS_M_TBL(klass), &key, &data);
@@ -777,27 +806,12 @@ rb_mod_remove_method(int argc, VALUE *argv, VALUE mod)
 	VALUE v = argv[i];
 	ID id = rb_check_id(&v);
 	if (!id) {
-	    rb_name_error_str(v, "method `%s' not defined in %s",
-			      RSTRING_PTR(v), rb_class2name(mod));
+	    rb_name_error_str(v, "method `%"PRIsVALUE"' not defined in %"PRIsVALUE,
+			      v, rb_obj_class(mod));
 	}
 	remove_method(mod, id);
     }
     return mod;
-}
-
-#undef rb_disable_super
-#undef rb_enable_super
-
-void
-rb_disable_super(VALUE klass, const char *name)
-{
-    /* obsolete - no use */
-}
-
-void
-rb_enable_super(VALUE klass, const char *name)
-{
-    rb_warning("rb_enable_super() is obsolete");
 }
 
 static void
@@ -859,7 +873,7 @@ extern ID rb_check_attr_id(ID id);
 void
 rb_attr(VALUE klass, ID id, int read, int write, int ex)
 {
-    ID attriv;
+    VALUE attriv;
     VALUE aname;
     rb_method_flag_t noex;
 
@@ -885,7 +899,7 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
     if (NIL_P(aname)) {
 	rb_raise(rb_eArgError, "argument needs to be symbol or string");
     }
-    attriv = rb_intern_str(rb_sprintf("@%"PRIsVALUE, aname));
+    attriv = (VALUE)rb_intern_str(rb_sprintf("@%"PRIsVALUE, aname));
     if (read) {
 	rb_add_method(klass, id, VM_METHOD_TYPE_IVAR, (void *)attriv, noex);
     }
@@ -1314,7 +1328,7 @@ rb_mod_alias_method(VALUE mod, VALUE newname, VALUE oldname)
 }
 
 static void
-set_method_visibility(VALUE self, int argc, VALUE *argv, rb_method_flag_t ex)
+set_method_visibility(VALUE self, int argc, const VALUE *argv, rb_method_flag_t ex)
 {
     int i;
 
@@ -1335,7 +1349,7 @@ set_method_visibility(VALUE self, int argc, VALUE *argv, rb_method_flag_t ex)
 }
 
 static VALUE
-set_visibility(int argc, VALUE *argv, VALUE module, rb_method_flag_t ex)
+set_visibility(int argc, const VALUE *argv, VALUE module, rb_method_flag_t ex)
 {
     if (argc == 0) {
 	SCOPE_SET(ex);
@@ -1602,7 +1616,7 @@ rb_obj_respond_to(VALUE obj, ID id, int priv)
     VALUE klass = CLASS_OF(obj);
 
     if (rb_method_basic_definition_p(klass, idRespond_to)) {
-	return basic_obj_respond_to(obj, id, !RTEST(priv));
+	return basic_obj_respond_to(obj, id, !priv);
     }
     else {
 	int argc = 1;
@@ -1672,7 +1686,7 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
     if (!(id = rb_check_id(&mid))) {
 	if (!rb_method_basic_definition_p(CLASS_OF(obj), idRespond_to_missing)) {
 	    VALUE args[2];
-	    args[0] = ID2SYM(rb_to_id(mid));
+	    args[0] = rb_to_symbol(mid);
 	    args[1] = priv;
 	    return rb_funcall2(obj, idRespond_to_missing, 2, args);
 	}
@@ -1702,6 +1716,31 @@ static VALUE
 obj_respond_to_missing(VALUE obj, VALUE mid, VALUE priv)
 {
     return Qfalse;
+}
+
+void
+Init_Method(void)
+{
+#if OPT_GLOBAL_METHOD_CACHE
+    char *ptr = getenv("RUBY_GLOBAL_METHOD_CACHE_SIZE");
+    int val;
+
+    if (ptr != NULL && (val = atoi(ptr)) > 0) {
+	if ((val & (val - 1)) == 0) { /* ensure val is a power of 2 */
+	    global_method_cache.size = val;
+	    global_method_cache.mask = val - 1;
+	}
+	else {
+	   fprintf(stderr, "RUBY_GLOBAL_METHOD_CACHE_SIZE was set to %d but ignored because the value is not a power of 2.\n", val);
+	}
+    }
+
+    global_method_cache.entries = (struct cache_entry *)calloc(global_method_cache.size, sizeof(struct cache_entry));
+    if (global_method_cache.entries == NULL) {
+	fprintf(stderr, "[FATAL] failed to allocate memory\n");
+	exit(EXIT_FAILURE);
+    }
+#endif
 }
 
 void

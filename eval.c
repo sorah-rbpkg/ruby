@@ -11,18 +11,15 @@
 
 **********************************************************************/
 
+#include "internal.h"
 #include "eval_intern.h"
 #include "iseq.h"
 #include "gc.h"
 #include "ruby/vm.h"
-#include "ruby/encoding.h"
-#include "internal.h"
 #include "vm_core.h"
 #include "probes_helper.h"
 
-NORETURN(void rb_raise_jump(VALUE));
-
-NODE *rb_vm_get_cref(const rb_iseq_t *, const VALUE *);
+NORETURN(void rb_raise_jump(VALUE, VALUE));
 
 VALUE rb_eLocalJumpError;
 VALUE rb_eSysStackError;
@@ -53,6 +50,8 @@ ruby_setup(void)
     ruby_init_stack((void *)&state);
     Init_BareVM();
     Init_heap();
+    Init_vm_objects();
+    Init_frozen_strings();
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
@@ -82,7 +81,7 @@ ruby_init(void)
 /*! Processes command line arguments and compiles the Ruby source to execute.
  *
  * This function does:
- * \li  Processes the given command line flags and arguments for ruby(1)
+ * \li Processes the given command line flags and arguments for ruby(1)
  * \li compiles the source code from the given argument, -e or stdin, and
  * \li returns the compiled source as an opaque pointer to an internal data structure
  *
@@ -412,8 +411,21 @@ rb_frozen_class_p(VALUE klass)
     if (OBJ_FROZEN(klass)) {
 	const char *desc;
 
-	if (FL_TEST(klass, FL_SINGLETON))
+	if (FL_TEST(klass, FL_SINGLETON)) {
 	    desc = "object";
+	    klass = rb_ivar_get(klass, id__attached__);
+	    if (!SPECIAL_CONST_P(klass)) {
+		switch (BUILTIN_TYPE(klass)) {
+		  case T_MODULE:
+		  case T_ICLASS:
+		    desc = "Module";
+		    break;
+		  case T_CLASS:
+		    desc = "Class";
+		    break;
+		}
+	    }
+	}
 	else {
 	    switch (BUILTIN_TYPE(klass)) {
 	      case T_MODULE:
@@ -431,7 +443,7 @@ rb_frozen_class_p(VALUE klass)
     }
 }
 
-NORETURN(static void rb_longjmp(int, volatile VALUE));
+NORETURN(static void rb_longjmp(int, volatile VALUE, VALUE));
 static VALUE get_errinfo(void);
 static VALUE get_thread_errinfo(rb_thread_t *th);
 
@@ -461,41 +473,55 @@ exc_setup_cause(VALUE exc, VALUE cause)
     return exc;
 }
 
-static void
-setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg)
+static inline int
+sysstack_error_p(VALUE exc)
 {
-    VALUE at;
+    return exc == sysstack_error || (!SPECIAL_CONST_P(exc) && RBASIC_CLASS(exc) == rb_eSysStackError);
+}
+
+static void
+setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
+{
     VALUE e;
-    const char *file;
+    const char *file = 0;
     volatile int line = 0;
+    int nocause = 0;
 
     if (NIL_P(mesg)) {
 	mesg = th->errinfo;
 	if (INTERNAL_EXCEPTION_P(mesg)) JUMP_TAG(TAG_FATAL);
+	nocause = 1;
     }
     if (NIL_P(mesg)) {
 	mesg = rb_exc_new(rb_eRuntimeError, 0, 0);
+	nocause = 0;
     }
-    exc_setup_cause(mesg, get_thread_errinfo(th));
+    if (cause == Qundef) {
+	cause = nocause ? Qnil : get_thread_errinfo(th);
+    }
+    exc_setup_cause(mesg, cause);
 
     file = rb_sourcefile();
     if (file) line = rb_sourceline();
     if (file && !NIL_P(mesg)) {
-	if (mesg == sysstack_error) {
-	    at = rb_enc_sprintf(rb_usascii_encoding(), "%s:%d", file, line);
-	    at = rb_ary_new3(1, at);
-	    rb_iv_set(mesg, "bt", at);
-	}
-	else {
-	    at = get_backtrace(mesg);
-	    if (NIL_P(at)) {
+	VALUE at;
+	if (sysstack_error_p(mesg)) {
+	    if (NIL_P(rb_attr_get(mesg, idBt))) {
 		at = rb_vm_backtrace_object();
-		if (OBJ_FROZEN(mesg)) {
-		    mesg = rb_obj_dup(mesg);
+		if (mesg == sysstack_error) {
+		    mesg = ruby_vm_sysstack_error_copy();
 		}
-		rb_iv_set(mesg, "bt_locations", at);
-		set_backtrace(mesg, at);
+		rb_ivar_set(mesg, idBt, at);
+		rb_ivar_set(mesg, idBt_locations, at);
 	    }
+	}
+	else if (NIL_P(get_backtrace(mesg))) {
+	    at = rb_vm_backtrace_object();
+	    if (OBJ_FROZEN(mesg)) {
+		mesg = rb_obj_dup(mesg);
+	    }
+	    rb_ivar_set(mesg, idBt_locations, at);
+	    set_backtrace(mesg, at);
 	}
     }
 
@@ -514,16 +540,16 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg)
 	    e = rb_obj_as_string(mesg);
 	    th->errinfo = mesg;
 	    if (file && line) {
-		warn_printf("Exception `%s' at %s:%d - %"PRIsVALUE"\n",
-			    rb_obj_classname(th->errinfo), file, line, e);
+		warn_printf("Exception `%"PRIsVALUE"' at %s:%d - %"PRIsVALUE"\n",
+			    rb_obj_class(mesg), file, line, e);
 	    }
 	    else if (file) {
-		warn_printf("Exception `%s' at %s - %"PRIsVALUE"\n",
-			    rb_obj_classname(th->errinfo), file, e);
+		warn_printf("Exception `%"PRIsVALUE"' at %s - %"PRIsVALUE"\n",
+			    rb_obj_class(mesg), file, e);
 	    }
 	    else {
-		warn_printf("Exception `%s' - %"PRIsVALUE"\n",
-			    rb_obj_classname(th->errinfo), e);
+		warn_printf("Exception `%"PRIsVALUE"' - %"PRIsVALUE"\n",
+			    rb_obj_class(mesg), e);
 	    }
 	}
 	POP_TAG();
@@ -553,15 +579,15 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg)
 }
 
 static void
-rb_longjmp(int tag, volatile VALUE mesg)
+rb_longjmp(int tag, volatile VALUE mesg, VALUE cause)
 {
     rb_thread_t *th = GET_THREAD();
-    setup_exception(th, tag, mesg);
+    setup_exception(th, tag, mesg, cause);
     rb_thread_raised_clear(th);
     JUMP_TAG(tag);
 }
 
-static VALUE make_exception(int argc, VALUE *argv, int isstr);
+static VALUE make_exception(int argc, const VALUE *argv, int isstr);
 
 void
 rb_exc_raise(VALUE mesg)
@@ -569,7 +595,7 @@ rb_exc_raise(VALUE mesg)
     if (!NIL_P(mesg)) {
 	mesg = make_exception(1, &mesg, FALSE);
     }
-    rb_longjmp(TAG_RAISE, mesg);
+    rb_longjmp(TAG_RAISE, mesg, Qundef);
 }
 
 void
@@ -578,13 +604,37 @@ rb_exc_fatal(VALUE mesg)
     if (!NIL_P(mesg)) {
 	mesg = make_exception(1, &mesg, FALSE);
     }
-    rb_longjmp(TAG_FATAL, mesg);
+    rb_longjmp(TAG_FATAL, mesg, Qnil);
 }
 
 void
 rb_interrupt(void)
 {
     rb_raise(rb_eInterrupt, "%s", "");
+}
+
+enum {raise_opt_cause, raise_max_opt};
+
+static int
+extract_raise_opts(int argc, VALUE *argv, VALUE *opts)
+{
+    int i;
+    if (argc > 0) {
+	VALUE opt = argv[argc-1];
+	if (RB_TYPE_P(opt, T_HASH)) {
+	    if (!RHASH_EMPTY_P(opt)) {
+		ID keywords[1];
+		CONST_ID(keywords[0], "cause");
+		rb_get_kwargs(opt, keywords, 0, -1-raise_max_opt, opts);
+		if (RHASH_EMPTY_P(opt)) --argc;
+		return argc;
+	    }
+	}
+    }
+    for (i = 0; i < raise_max_opt; ++i) {
+	opts[i] = Qundef;
+    }
+    return argc;
 }
 
 /*
@@ -615,23 +665,28 @@ static VALUE
 rb_f_raise(int argc, VALUE *argv)
 {
     VALUE err;
+    VALUE opts[raise_max_opt], *const cause = &opts[raise_opt_cause];
+
+    argc = extract_raise_opts(argc, argv, opts);
     if (argc == 0) {
+	if (*cause != Qundef) {
+	    rb_raise(rb_eArgError, "only cause is given with no arguments");
+	}
 	err = get_errinfo();
 	if (!NIL_P(err)) {
 	    argc = 1;
 	    argv = &err;
 	}
     }
-    rb_raise_jump(rb_make_exception(argc, argv));
+    rb_raise_jump(rb_make_exception(argc, argv), *cause);
 
     UNREACHABLE;
 }
 
 static VALUE
-make_exception(int argc, VALUE *argv, int isstr)
+make_exception(int argc, const VALUE *argv, int isstr)
 {
     VALUE mesg, exc;
-    ID exception;
     int n;
 
     mesg = Qnil;
@@ -657,9 +712,8 @@ make_exception(int argc, VALUE *argv, int isstr)
 	exc = argv[0];
 	n = 1;
       exception_call:
-	if (exc == sysstack_error) return exc;
-	CONST_ID(exception, "exception");
-	mesg = rb_check_funcall(exc, exception, n, argv+1);
+	if (sysstack_error_p(exc)) return exc;
+	mesg = rb_check_funcall(exc, idException, n, argv+1);
 	if (mesg == Qundef) {
 	    rb_raise(rb_eTypeError, "exception class/object expected");
 	}
@@ -679,13 +733,13 @@ make_exception(int argc, VALUE *argv, int isstr)
 }
 
 VALUE
-rb_make_exception(int argc, VALUE *argv)
+rb_make_exception(int argc, const VALUE *argv)
 {
     return make_exception(argc, argv, TRUE);
 }
 
 void
-rb_raise_jump(VALUE mesg)
+rb_raise_jump(VALUE mesg, VALUE cause)
 {
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
@@ -696,7 +750,7 @@ rb_raise_jump(VALUE mesg)
     th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, self, mid, klass, Qnil);
 
-    setup_exception(th, TAG_RAISE, mesg);
+    setup_exception(th, TAG_RAISE, mesg, cause);
 
     rb_thread_raised_clear(th);
     JUMP_TAG(TAG_RAISE);
@@ -853,8 +907,6 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
 	result = (*b_proc) (data1);
     }
     POP_TAG();
-    /* TODO: fix me */
-    /* retval = prot_tag ? prot_tag->retval : Qnil; */     /* save retval */
     errinfo = th->errinfo;
     th->ensure_list=ensure_list.next;
     (*ensure_list.entry.e_proc)(ensure_list.entry.data2);
@@ -978,6 +1030,19 @@ prev_frame_func(void)
     return frame_func_id(prev_cfp);
 }
 
+ID
+rb_frame_last_func(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = th->cfp;
+    ID mid;
+
+    while (!(mid = frame_func_id(cfp)) &&
+	   (cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp),
+	    !RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)));
+    return mid;
+}
+
 /*
  *  call-seq:
  *     append_features(mod)   -> mod
@@ -1074,7 +1139,7 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
 }
 
 static VALUE
-hidden_identity_hash_new()
+hidden_identity_hash_new(void)
 {
     VALUE hash = rb_hash_new();
 
@@ -1211,8 +1276,6 @@ add_activated_refinement(VALUE activated_refinements,
     rb_hash_aset(activated_refinements, klass, iclass);
 }
 
-VALUE rb_yield_refine_block(VALUE refinement, VALUE refinements);
-
 /*
  *  call-seq:
  *     refine(klass) { block }   -> module
@@ -1295,7 +1358,7 @@ mod_using(VALUE self, VALUE module)
 }
 
 void
-rb_obj_call_init(VALUE obj, int argc, VALUE *argv)
+rb_obj_call_init(VALUE obj, int argc, const VALUE *argv)
 {
     PASS_PASSED_BLOCK();
     rb_funcall2(obj, idInitialize, argc, argv);
@@ -1646,8 +1709,5 @@ Init_eval(void)
     rb_define_global_function("trace_var", rb_f_trace_var, -1);	/* in variable.c */
     rb_define_global_function("untrace_var", rb_f_untrace_var, -1);	/* in variable.c */
 
-    exception_error = rb_exc_new3(rb_eFatal,
-				  rb_obj_freeze(rb_str_new2("exception reentered")));
-    OBJ_TAINT(exception_error);
-    OBJ_FREEZE(exception_error);
+    rb_vm_register_special_exception(ruby_error_reenter, rb_eFatal, "exception reentered");
 }

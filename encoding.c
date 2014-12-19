@@ -9,8 +9,6 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
-#include "ruby/encoding.h"
 #include "internal.h"
 #include "regenc.h"
 #include <ctype.h>
@@ -19,6 +17,8 @@
 #undef rb_ascii8bit_encindex
 #undef rb_utf8_encindex
 #undef rb_usascii_encindex
+
+typedef OnigEncodingType rb_raw_encoding;
 
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility push(default)
@@ -50,6 +50,13 @@ static struct {
     st_table *names;
 } enc_table;
 
+#define ENC_DUMMY_FLAG (1<<24)
+#define ENC_INDEX_MASK (~(~0U<<24))
+
+#define ENC_TO_ENCINDEX(enc) (int)((enc)->ruby_encoding_index & ENC_INDEX_MASK)
+#define ENC_DUMMY_P(enc) ((enc)->ruby_encoding_index & ENC_DUMMY_FLAG)
+#define ENC_SET_DUMMY(enc) ((enc)->ruby_encoding_index |= ENC_DUMMY_FLAG)
+
 void rb_enc_init(void);
 
 #define ENCODING_COUNT ENCINDEX_BUILTIN_MAX
@@ -62,16 +69,10 @@ void rb_enc_init(void);
 
 static int load_encoding(const char *name);
 
-static size_t
-enc_memsize(const void *p)
-{
-    return 0;
-}
-
 static const rb_data_type_t encoding_data_type = {
     "encoding",
-    {0, 0, enc_memsize,},
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    {0, 0, 0,},
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 #define is_data_encoding(obj) (RTYPEDDATA_P(obj) && RTYPEDDATA_TYPE(obj) == &encoding_data_type)
@@ -80,7 +81,7 @@ static const rb_data_type_t encoding_data_type = {
 static VALUE
 enc_new(rb_encoding *encoding)
 {
-    return TypedData_Wrap_Struct(rb_cEncoding, &encoding_data_type, encoding);
+    return TypedData_Wrap_Struct(rb_cEncoding, &encoding_data_type, (void *)encoding);
 }
 
 static VALUE
@@ -105,6 +106,18 @@ rb_enc_from_encoding(rb_encoding *encoding)
     if (!encoding) return Qnil;
     idx = ENC_TO_ENCINDEX(encoding);
     return rb_enc_from_encoding_index(idx);
+}
+
+int
+rb_enc_to_index(rb_encoding *enc)
+{
+    return enc ? ENC_TO_ENCINDEX(enc) : 0;
+}
+
+int
+rb_enc_dummy_p(rb_encoding *enc)
+{
+    return ENC_DUMMY_P(enc) != 0;
 }
 
 static int enc_autoload(rb_encoding *);
@@ -254,9 +267,10 @@ enc_table_expand(int newsize)
 }
 
 static int
-enc_register_at(int index, const char *name, rb_encoding *encoding)
+enc_register_at(int index, const char *name, rb_encoding *base_encoding)
 {
     struct rb_encoding_entry *ent = &enc_table.list[index];
+    rb_raw_encoding *encoding;
     VALUE list;
 
     if (!valid_encoding_name_p(name)) return -1;
@@ -266,18 +280,19 @@ enc_register_at(int index, const char *name, rb_encoding *encoding)
     else if (STRCASECMP(name, ent->name)) {
 	return -1;
     }
-    if (!ent->enc) {
-	ent->enc = xmalloc(sizeof(rb_encoding));
+    encoding = (rb_raw_encoding *)ent->enc;
+    if (!encoding) {
+	encoding = xmalloc(sizeof(rb_encoding));
     }
-    if (encoding) {
-	*ent->enc = *encoding;
+    if (base_encoding) {
+	*encoding = *base_encoding;
     }
     else {
-	memset(ent->enc, 0, sizeof(*ent->enc));
+	memset(encoding, 0, sizeof(*ent->enc));
     }
-    encoding = ent->enc;
     encoding->name = name;
     encoding->ruby_encoding_index = index;
+    ent->enc = encoding;
     st_insert(enc_table.names, (st_data_t)name, (st_data_t)index);
     list = rb_encoding_list;
     if (list && NIL_P(rb_ary_entry(list, index))) {
@@ -348,7 +363,7 @@ set_base_encoding(int index, rb_encoding *base)
     rb_encoding *enc = enc_table.list[index].enc;
 
     enc_table.list[index].base = base;
-    if (rb_enc_dummy_p(base)) ENC_SET_DUMMY(enc);
+    if (ENC_DUMMY_P(base)) ENC_SET_DUMMY((rb_raw_encoding *)enc);
     return enc;
 }
 
@@ -372,7 +387,7 @@ rb_enc_set_dummy(int index)
 {
     rb_encoding *enc = enc_table.list[index].enc;
 
-    ENC_SET_DUMMY(enc);
+    ENC_SET_DUMMY((rb_raw_encoding *)enc);
     return index;
 }
 
@@ -439,7 +454,7 @@ rb_define_dummy_encoding(const char *name)
     int index = rb_enc_replicate(name, rb_ascii8bit_encoding());
     rb_encoding *enc = enc_table.list[index].enc;
 
-    ENC_SET_DUMMY(enc);
+    ENC_SET_DUMMY((rb_raw_encoding *)enc);
     return index;
 }
 
@@ -450,7 +465,7 @@ rb_encdb_dummy(const char *name)
 					 rb_enc_registered(name));
     rb_encoding *enc = enc_table.list[index].enc;
 
-    ENC_SET_DUMMY(enc);
+    ENC_SET_DUMMY((rb_raw_encoding *)enc);
     return index;
 }
 
@@ -553,11 +568,8 @@ rb_encdb_alias(const char *alias, const char *orig)
 void
 rb_encdb_set_unicode(int index)
 {
-    rb_enc_from_index(index)->flags |= ONIGENC_FLAG_UNICODE;
+    ((rb_raw_encoding *)rb_enc_from_index(index))->flags |= ONIGENC_FLAG_UNICODE;
 }
-
-extern rb_encoding OnigEncodingUTF_8;
-extern rb_encoding OnigEncodingUS_ASCII;
 
 void
 rb_enc_init(void)
@@ -617,13 +629,6 @@ rb_enc_registered(const char *name)
     return -1;
 }
 
-static VALUE
-require_enc(VALUE enclib)
-{
-    int safe = rb_safe_level();
-    return rb_require_safe(enclib, safe > 3 ? 3 : safe);
-}
-
 static int
 load_encoding(const char *name)
 {
@@ -631,8 +636,8 @@ load_encoding(const char *name)
     VALUE verbose = ruby_verbose;
     VALUE debug = ruby_debug;
     VALUE errinfo;
-    VALUE loaded;
     char *s = RSTRING_PTR(enclib) + 4, *e = RSTRING_END(enclib) - 3;
+    int loaded;
     int idx;
 
     while (s < e) {
@@ -645,11 +650,11 @@ load_encoding(const char *name)
     ruby_verbose = Qfalse;
     ruby_debug = Qfalse;
     errinfo = rb_errinfo();
-    loaded = rb_protect(require_enc, enclib, 0);
+    loaded = rb_require_internal(enclib, rb_safe_level());
     ruby_verbose = verbose;
     ruby_debug = debug;
     rb_set_errinfo(errinfo);
-    if (NIL_P(loaded)) return -1;
+    if (loaded < 0 || 1 < loaded) return -1;
     if ((idx = rb_enc_registered(name)) < 0) return -1;
     if (enc_autoload_p(enc_table.list[idx].enc)) return -1;
     return idx;
@@ -671,7 +676,7 @@ enc_autoload(rb_encoding *enc)
 	}
 	i = enc->ruby_encoding_index;
 	enc_register_at(i & ENC_INDEX_MASK, rb_enc_name(enc), base);
-	enc->ruby_encoding_index = i;
+	((rb_raw_encoding *)enc)->ruby_encoding_index = i;
     }
     else {
 	i = load_encoding(rb_enc_name(enc));
@@ -720,6 +725,7 @@ enc_capable(VALUE obj)
       case T_STRING:
       case T_REGEXP:
       case T_FILE:
+      case T_SYMBOL:
 	return TRUE;
       case T_DATA:
 	if (is_data_encoding(obj)) return TRUE;
@@ -743,7 +749,7 @@ rb_enc_get_index(VALUE obj)
 
     if (SPECIAL_CONST_P(obj)) {
 	if (!SYMBOL_P(obj)) return -1;
-	obj = rb_id2str(SYM2ID(obj));
+	obj = rb_sym2str(obj);
     }
     switch (BUILTIN_TYPE(obj)) {
       as_default:
@@ -1318,8 +1324,6 @@ struct default_encoding {
 
 static struct default_encoding default_external = {0};
 
-extern int Init_enc_set_filesystem_encoding(void);
-
 static int
 enc_set_default_encoding(struct default_encoding *def, VALUE encoding, const char *name)
 {
@@ -1467,7 +1471,6 @@ rb_enc_default_internal(void)
  * * Time#zone
  * * Values from ENV
  * * Values in ARGV including $PROGRAM_NAME
- * * __FILE__
  *
  * Additionally String#encode and String#encode! use the default internal
  * encoding if no encoding is given.
@@ -1537,9 +1540,6 @@ set_default_internal(VALUE klass, VALUE encoding)
  * Encoding.find("locale") can be used.
  *
  */
-VALUE
-rb_locale_charmap(VALUE klass);
-
 static void
 set_encoding_const(const char *name, rb_encoding *enc)
 {

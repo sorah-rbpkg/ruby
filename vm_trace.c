@@ -10,7 +10,7 @@
 **********************************************************************/
 
 /*
- * This file incldue two parts:
+ * This file include two parts:
  *
  * (1) set_trace_func internal mechanisms
  *     and C level API
@@ -21,11 +21,9 @@
  *
  */
 
-#include "ruby/ruby.h"
-#include "ruby/debug.h"
-#include "ruby/encoding.h"
-
 #include "internal.h"
+#include "ruby/debug.h"
+
 #include "vm_core.h"
 #include "eval_intern.h"
 
@@ -67,7 +65,7 @@ recalc_add_ruby_vm_event_flags(rb_event_flag_t events)
     ruby_vm_event_flags = 0;
 
     for (i=0; i<MAX_EVENT_NUM; i++) {
-	if (events & (1 << i)) {
+	if (events & ((rb_event_flag_t)1 << i)) {
 	    ruby_event_flag_count[i]++;
 	}
 	ruby_vm_event_flags |= ruby_event_flag_count[i] ? (1<<i) : 0;
@@ -212,19 +210,15 @@ rb_remove_event_hook_with_data(rb_event_hook_func_t func, VALUE data)
     return remove_event_hook(&GET_VM()->event_hooks, func, data);
 }
 
-static int
-clear_trace_func_i(st_data_t key, st_data_t val, st_data_t flag)
-{
-    rb_thread_t *th;
-    GetThreadPtr((VALUE)key, th);
-    rb_threadptr_remove_event_hook(th, 0, Qundef);
-    return ST_CONTINUE;
-}
-
 void
 rb_clear_trace_func(void)
 {
-    st_foreach(GET_VM()->living_threads, clear_trace_func_i, (st_data_t) 0);
+    rb_vm_t *vm = GET_VM();
+    rb_thread_t *th = 0;
+
+    list_for_each(&vm->living_threads, th, vmlt_node) {
+	rb_threadptr_remove_event_hook(th, 0, Qundef);
+    }
     rb_remove_event_hook(0);
 }
 
@@ -335,8 +329,10 @@ rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 	    trace_arg->self != rb_mRubyVMFrozenCore /* skip special methods. TODO: remove it. */) {
 	    const VALUE errinfo = th->errinfo;
 	    const int outer_state = th->state;
-	    const VALUE old_recursive = rb_threadptr_reset_recursive_data(th);
+	    const VALUE old_recursive = th->local_storage_recursive_hash;
 	    int state = 0;
+
+	    th->local_storage_recursive_hash = th->local_storage_recursive_hash_for_trace;
 	    th->state = 0;
 	    th->errinfo = Qnil;
 
@@ -356,7 +352,9 @@ rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 	  terminate:
 	    th->trace_arg = 0;
 	    th->vm->trace_running--;
-	    rb_threadptr_restore_recursive_data(th, old_recursive);
+
+	    th->local_storage_recursive_hash_for_trace = th->local_storage_recursive_hash;
+	    th->local_storage_recursive_hash = old_recursive;
 
 	    if (state) {
 		if (pop_p) {
@@ -644,11 +642,11 @@ static VALUE rb_cTracePoint;
 
 typedef struct rb_tp_struct {
     rb_event_flag_t events;
+    int tracing; /* bool */
     rb_thread_t *target_th;
     void (*func)(VALUE tpval, void *data);
     void *data;
     VALUE proc;
-    int tracing;
     VALUE self;
 } rb_tp_t;
 
@@ -671,7 +669,7 @@ tp_memsize(const void *ptr)
 static const rb_data_type_t tp_data_type = {
     "tracepoint",
     {tp_mark, RUBY_TYPED_NEVER_FREE, tp_memsize,},
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static VALUE
@@ -704,7 +702,7 @@ symbol2event_flag(VALUE v)
 #undef C
     CONST_ID(id, "a_call"); if (sym == ID2SYM(id)) return RUBY_EVENT_CALL | RUBY_EVENT_B_CALL | RUBY_EVENT_C_CALL;
     CONST_ID(id, "a_return"); if (sym == ID2SYM(id)) return RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN | RUBY_EVENT_C_RETURN;
-    rb_raise(rb_eArgError, "unknown event: %s", rb_id2name(SYM2ID(sym)));
+    rb_raise(rb_eArgError, "unknown event: %"PRIsVALUE, rb_sym2str(sym));
 }
 
 static rb_tp_t *
@@ -815,7 +813,7 @@ rb_tracearg_binding(rb_trace_arg_t *trace_arg)
     cfp = rb_vm_get_binding_creatable_next_cfp(trace_arg->th, trace_arg->cfp);
 
     if (cfp) {
-	return rb_binding_new_with_cfp(trace_arg->th, cfp);
+	return rb_vm_make_binding(trace_arg->th, cfp);
     }
     else {
 	return Qnil;
@@ -1318,6 +1316,48 @@ tracepoint_inspect(VALUE self)
     }
 }
 
+static void
+tracepoint_stat_event_hooks(VALUE hash, VALUE key, rb_event_hook_t *hook)
+{
+    int active = 0, deleted = 0;
+
+    while (hook) {
+	if (hook->hook_flags & RUBY_EVENT_HOOK_FLAG_DELETED) {
+	    deleted++;
+	}
+	else {
+	    active++;
+	}
+	hook = hook->next;
+    }
+
+    rb_hash_aset(hash, key, rb_ary_new3(2, INT2FIX(active), INT2FIX(deleted)));
+}
+
+/*
+ * call-seq:
+ *	TracePoint.stat -> obj
+ *
+ *  Returns internal information of TracePoint.
+ *
+ *  The contents of the returned value are implementation specific.
+ *  It may be changed in future.
+ *
+ *  This method is only for debugging TracePoint itself.
+ */
+
+static VALUE
+tracepoint_stat_s(VALUE self)
+{
+    rb_vm_t *vm = GET_VM();
+    VALUE stat = rb_hash_new();
+
+    tracepoint_stat_event_hooks(stat, vm->self, vm->event_hooks.hooks);
+    /* TODO: thread local hooks */
+
+    return stat;
+}
+
 static void Init_postponed_job(void);
 
 /* This function is called from inits.c */
@@ -1410,6 +1450,8 @@ Init_vm_trace(void)
     rb_define_method(rb_cTracePoint, "self", tracepoint_attr_self, 0);
     rb_define_method(rb_cTracePoint, "return_value", tracepoint_attr_return_value, 0);
     rb_define_method(rb_cTracePoint, "raised_exception", tracepoint_attr_raised_exception, 0);
+
+    rb_define_singleton_method(rb_cTracePoint, "stat", tracepoint_stat_s, 0);
 
     /* initialized for postponed job */
 
@@ -1512,12 +1554,13 @@ void
 rb_postponed_job_flush(rb_vm_t *vm)
 {
     rb_thread_t *th = GET_THREAD();
-    unsigned long saved_postponed_job_interrupt_mask = th->interrupt_mask & POSTPONED_JOB_INTERRUPT_MASK;
+    const unsigned long block_mask = POSTPONED_JOB_INTERRUPT_MASK|TRAP_INTERRUPT_MASK;
+    unsigned long saved_mask = th->interrupt_mask & block_mask;
     VALUE saved_errno = th->errinfo;
 
     th->errinfo = Qnil;
     /* mask POSTPONED_JOB dispatch */
-    th->interrupt_mask |= POSTPONED_JOB_INTERRUPT_MASK;
+    th->interrupt_mask |= block_mask;
     {
 	TH_PUSH_TAG(th);
 	EXEC_TAG();
@@ -1533,6 +1576,6 @@ rb_postponed_job_flush(rb_vm_t *vm)
 	TH_POP_TAG();
     }
     /* restore POSTPONED_JOB mask */
-    th->interrupt_mask &= ~(saved_postponed_job_interrupt_mask ^ POSTPONED_JOB_INTERRUPT_MASK);
+    th->interrupt_mask &= ~(saved_mask ^ block_mask);
     th->errinfo = saved_errno;
 }

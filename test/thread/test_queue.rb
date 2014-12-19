@@ -2,7 +2,6 @@ require 'test/unit'
 require 'thread'
 require 'tmpdir'
 require 'timeout'
-require_relative '../ruby/envutil'
 
 class TestQueue < Test::Unit::TestCase
   def test_queue_initialized
@@ -74,6 +73,8 @@ class TestQueue < Test::Unit::TestCase
     sleep 0.01 until t1.stop?
     q.max = q.max + 1
     assert_equal before + 1, q.max
+  ensure
+    t1.join if t1
   end
 
   def test_queue_pop_interrupt
@@ -84,6 +85,13 @@ class TestQueue < Test::Unit::TestCase
     assert_equal(0, q.num_waiting)
   end
 
+  def test_queue_pop_non_block
+    q = Queue.new
+    assert_raise_with_message(ThreadError, /empty/) do
+      q.pop(true)
+    end
+  end
+
   def test_sized_queue_pop_interrupt
     q = SizedQueue.new(1)
     t1 = Thread.new { q.pop }
@@ -92,7 +100,22 @@ class TestQueue < Test::Unit::TestCase
     assert_equal(0, q.num_waiting)
   end
 
+  def test_sized_queue_pop_non_block
+    q = SizedQueue.new(1)
+    assert_raise_with_message(ThreadError, /empty/) do
+      q.pop(true)
+    end
+  end
+
   def test_sized_queue_push_interrupt
+    q = SizedQueue.new(1)
+    q.push(1)
+    assert_raise_with_message(ThreadError, /full/) do
+      q.push(2, true)
+    end
+  end
+
+  def test_sized_queue_push_non_block
     q = SizedQueue.new(1)
     q.push(1)
     t1 = Thread.new { q.push(2) }
@@ -215,8 +238,23 @@ class TestQueue < Test::Unit::TestCase
     th1.raise
     sleep 0.1
     q << :s
-    assert_nothing_raised(TimeoutError) do
+    assert_nothing_raised(Timeout::Error) do
       timeout(1) { th2.join }
+    end
+  ensure
+    [th1, th2].each do |th|
+      if th and th.alive?
+        th.wakeup
+        th.join
+      end
+    end
+  end
+
+  def test_dup
+    bug9440 = '[ruby-core:59961] [Bug #9440]'
+    q = Queue.new
+    assert_raise(NoMethodError, bug9440) do
+      q.dup
     end
   end
 

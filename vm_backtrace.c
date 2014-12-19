@@ -9,11 +9,9 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
-#include "ruby/encoding.h"
+#include "internal.h"
 #include "ruby/debug.h"
 
-#include "internal.h"
 #include "vm_core.h"
 #include "eval_intern.h"
 #include "iseq.h"
@@ -21,7 +19,14 @@
 static VALUE rb_cBacktrace;
 static VALUE rb_cBacktraceLocation;
 
-extern VALUE ruby_engine_name;
+static VALUE
+id2str(ID id)
+{
+    VALUE str = rb_id2str(id);
+    if (!str) return Qnil;
+    return str;
+}
+#define rb_id2str(id) id2str(id)
 
 inline static int
 calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
@@ -72,10 +77,8 @@ struct valued_frame_info {
 static void
 location_mark(void *ptr)
 {
-    if (ptr) {
-	struct valued_frame_info *vfi = (struct valued_frame_info *)ptr;
-	rb_gc_mark(vfi->btobj);
-    }
+    struct valued_frame_info *vfi = (struct valued_frame_info *)ptr;
+    rb_gc_mark(vfi->btobj);
 }
 
 static void
@@ -93,15 +96,6 @@ location_mark_entry(rb_backtrace_location_t *fi)
     }
 }
 
-static void
-location_free(void *ptr)
-{
-    if (ptr) {
-	rb_backtrace_location_t *fi = (rb_backtrace_location_t *)ptr;
-	ruby_xfree(fi);
-    }
-}
-
 static size_t
 location_memsize(const void *ptr)
 {
@@ -111,8 +105,8 @@ location_memsize(const void *ptr)
 
 static const rb_data_type_t location_data_type = {
     "frame_info",
-    {location_mark, location_free, location_memsize,},
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    {location_mark, RUBY_TYPED_DEFAULT_FREE, location_memsize,},
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static inline rb_backtrace_location_t *
@@ -299,14 +293,18 @@ location_absolute_path_m(VALUE self)
 static VALUE
 location_format(VALUE file, int lineno, VALUE name)
 {
+    VALUE s = rb_enc_sprintf(rb_enc_compatible(file, name), "%s", RSTRING_PTR(file));
     if (lineno != 0) {
-	return rb_enc_sprintf(rb_enc_compatible(file, name), "%s:%d:in `%s'",
-			      RSTRING_PTR(file), lineno, RSTRING_PTR(name));
+	rb_str_catf(s, ":%d", lineno);
+    }
+    rb_str_cat_cstr(s, ":in ");
+    if (NIL_P(name)) {
+	rb_str_cat_cstr(s, "unknown method");
     }
     else {
-	return rb_enc_sprintf(rb_enc_compatible(file, name), "%s:in `%s'",
-			      RSTRING_PTR(file), RSTRING_PTR(name));
+	rb_str_catf(s, "`%s'", RSTRING_PTR(name));
     }
+    return s;
 }
 
 static VALUE
@@ -378,26 +376,22 @@ typedef struct rb_backtrace_struct {
 static void
 backtrace_mark(void *ptr)
 {
-    if (ptr) {
-	rb_backtrace_t *bt = (rb_backtrace_t *)ptr;
-	size_t i, s = bt->backtrace_size;
+    rb_backtrace_t *bt = (rb_backtrace_t *)ptr;
+    size_t i, s = bt->backtrace_size;
 
-	for (i=0; i<s; i++) {
-	    location_mark_entry(&bt->backtrace[i]);
-	}
-	rb_gc_mark(bt->strary);
-	rb_gc_mark(bt->locary);
+    for (i=0; i<s; i++) {
+	location_mark_entry(&bt->backtrace[i]);
     }
+    rb_gc_mark(bt->strary);
+    rb_gc_mark(bt->locary);
 }
 
 static void
 backtrace_free(void *ptr)
 {
-   if (ptr) {
-       rb_backtrace_t *bt = (rb_backtrace_t *)ptr;
-       if (bt->backtrace) ruby_xfree(bt->backtrace_base);
-       ruby_xfree(bt);
-   }
+   rb_backtrace_t *bt = (rb_backtrace_t *)ptr;
+   if (bt->backtrace) ruby_xfree(bt->backtrace_base);
+   ruby_xfree(bt);
 }
 
 static size_t
@@ -410,7 +404,7 @@ backtrace_memsize(const void *ptr)
 static const rb_data_type_t backtrace_data_type = {
     "backtrace",
     {backtrace_mark, backtrace_free, backtrace_memsize,},
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 int
@@ -766,7 +760,7 @@ void
 rb_backtrace_print_as_bugreport(void)
 {
     struct oldbt_arg arg;
-    int i;
+    int i = 0;
 
     arg.func = oldbt_bugreport;
     arg.data = (int *)&i;
@@ -820,7 +814,7 @@ rb_make_backtrace(void)
 }
 
 static VALUE
-vm_backtrace_to_ary(rb_thread_t *th, int argc, VALUE *argv, int lev_default, int lev_plus, int to_str)
+vm_backtrace_to_ary(rb_thread_t *th, int argc, const VALUE *argv, int lev_default, int lev_plus, int to_str)
 {
     VALUE level, vn;
     long lev, n;
@@ -891,7 +885,7 @@ vm_backtrace_to_ary(rb_thread_t *th, int argc, VALUE *argv, int lev_default, int
 }
 
 static VALUE
-thread_backtrace_to_ary(int argc, VALUE *argv, VALUE thval, int to_str)
+thread_backtrace_to_ary(int argc, const VALUE *argv, VALUE thval, int to_str)
 {
     rb_thread_t *th;
     GetThreadPtr(thval, th);
@@ -903,13 +897,13 @@ thread_backtrace_to_ary(int argc, VALUE *argv, VALUE thval, int to_str)
 }
 
 VALUE
-rb_vm_thread_backtrace(int argc, VALUE *argv, VALUE thval)
+rb_vm_thread_backtrace(int argc, const VALUE *argv, VALUE thval)
 {
     return thread_backtrace_to_ary(argc, argv, thval, 1);
 }
 
 VALUE
-rb_vm_thread_backtrace_locations(int argc, VALUE *argv, VALUE thval)
+rb_vm_thread_backtrace_locations(int argc, const VALUE *argv, VALUE thval)
 {
     return thread_backtrace_to_ary(argc, argv, thval, 0);
 }
@@ -1161,7 +1155,7 @@ collect_caller_bindings(rb_thread_t *th)
 
 	if (!NIL_P(cfp_val)) {
 	    rb_control_frame_t *cfp = GC_GUARDED_PTR_REF(cfp_val);
-	    rb_ary_store(entry, CALLER_BINDING_BINDING, rb_binding_new_with_cfp(th, cfp));
+	    rb_ary_store(entry, CALLER_BINDING_BINDING, rb_vm_make_binding(th, cfp));
 	}
     }
 

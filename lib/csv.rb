@@ -238,10 +238,10 @@ class CSV
       headers.each { |h| h.freeze if h.is_a? String }
 
       # handle extra headers or fields
-      @row = if headers.size > fields.size
+      @row = if headers.size >= fields.size
         headers.zip(fields)
       else
-        fields.zip(headers).map { |pair| pair.reverse }
+        fields.zip(headers).map { |pair| pair.reverse! }
       end
     end
 
@@ -992,8 +992,8 @@ class CSV
   HeaderConverters = {
     downcase: lambda { |h| h.encode(ConverterEncoding).downcase },
     symbol:   lambda { |h|
-      h.encode(ConverterEncoding).downcase.gsub(/\s+/, "_").
-                                           gsub(/\W+/, "").to_sym
+      h.encode(ConverterEncoding).downcase.strip.gsub(/\s+/, "_").
+                                                 gsub(/\W+/, "").to_sym
     }
   }
 
@@ -1260,7 +1260,12 @@ class CSV
       file_opts = {encoding: Encoding.default_external}.merge(file_opts)
       retry
     end
-    csv = new(f, options)
+    begin
+      csv = new(f, options)
+    rescue Exception
+      f.close
+      raise
+    end
 
     # handle blocks like Ruby's open(), not like the CSV library
     if block_given?
@@ -1396,7 +1401,7 @@ class CSV
   #                                       <tt>'</tt> as the quote character
   #                                       instead of the correct <tt>"</tt>.
   #                                       CSV will always consider a double
-  #                                       sequence this character to be an
+  #                                       sequence of this character to be an
   #                                       escaped quote. This String will be
   #                                       transcoded into the data's Encoding
   #                                       before parsing.
@@ -1465,7 +1470,15 @@ class CSV
   #                                       if the data cannot be transcoded,
   #                                       leaving the header unchanged.
   # <b><tt>:skip_blanks</tt></b>::        When set to a +true+ value, CSV will
-  #                                       skip over any rows with no content.
+  #                                       skip over any empty rows. Note that
+  #                                       this setting will not skip rows that
+  #                                       contain column separators, even if
+  #                                       the rows contain no actual data. If
+  #                                       you want to skip rows that contain
+  #                                       separators but no content, consider
+  #                                       using <tt>:skip_lines</tt>, or
+  #                                       inspecting fields.compact.empty? on
+  #                                       each row.
   # <b><tt>:force_quotes</tt></b>::       When set to a +true+ value, CSV will
   #                                       quote all CSV fields it creates.
   # <b><tt>:skip_lines</tt></b>::         When set to an object responding to
@@ -1484,6 +1497,10 @@ class CSV
   # so be sure to set what you want here.
   #
   def initialize(data, options = Hash.new)
+    if data.nil?
+      raise ArgumentError.new("Cannot parse nil as CSV")
+    end
+
     # build the options for this read/write
     options = DEFAULT_OPTIONS.merge(options)
 
@@ -2171,6 +2188,7 @@ class CSV
 
     fields.map.with_index do |field, index|
       converters.each do |converter|
+        break if field.nil?
         field = if converter.arity == 1  # straight field converter
           converter[field]
         else                             # FieldInfo converter

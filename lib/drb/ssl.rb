@@ -322,12 +322,13 @@ module DRb
     def accept # :nodoc:
       begin
       while true
-        soc = @socket.accept
+        soc = accept_or_shutdown
+        return nil unless soc
         break if (@acl ? @acl.allow_socket?(soc) : true)
         soc.close
       end
       begin
-	ssl = @config.accept(soc)
+        ssl = @config.accept(soc)
       rescue Exception
         soc.close
         raise

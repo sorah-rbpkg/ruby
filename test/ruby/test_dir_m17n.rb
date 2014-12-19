@@ -1,6 +1,5 @@
 require 'test/unit'
 require 'tmpdir'
-require_relative 'envutil'
 
 class TestDir_M17N < Test::Unit::TestCase
   def with_tmpdir
@@ -11,7 +10,7 @@ class TestDir_M17N < Test::Unit::TestCase
     }
   end
 
-  def create_and_check_raw_file_name(code, encoding)
+  def assert_raw_file_name(code, encoding)
     with_tmpdir { |dir|
       assert_separately(["-E#{encoding}"], <<-EOS, :chdir=>dir)
         filename = #{code}.chr('UTF-8').force_encoding("#{encoding}")
@@ -221,15 +220,15 @@ class TestDir_M17N < Test::Unit::TestCase
   end
 
   def test_filename_utf8_raw_jp_name
-    create_and_check_raw_file_name(0x3042, "UTF-8")
+    assert_raw_file_name(0x3042, "UTF-8")
   end
 
   def test_filename_utf8_raw_windows_1251_name
-    create_and_check_raw_file_name(0x0424, "UTF-8")
+    assert_raw_file_name(0x0424, "UTF-8")
   end
 
   def test_filename_utf8_raw_windows_1252_name
-    create_and_check_raw_file_name(0x00c6, "UTF-8")
+    assert_raw_file_name(0x00c6, "UTF-8")
   end
 
   def test_filename_ext_euc_jp_and_int_utf_8

@@ -29,7 +29,7 @@ class Integer
     Prime.prime_division(self, generator)
   end
 
-  # Returns true if +self+ is a prime number, false for a composite.
+  # Returns true if +self+ is a prime number, else returns false.
   def prime?
     Prime.prime?(self)
   end
@@ -150,14 +150,13 @@ class Prime
   end
 
 
-  # Returns true if +value+ is prime, false for a composite.
+  # Returns true if +value+ is a prime number, else returns false.
   #
   # == Parameters
   #
   # +value+:: an arbitrary integer to be checked.
   # +generator+:: optional. A pseudo-prime generator.
   def prime?(value, generator = Prime::Generator23.new)
-    value = -value if value < 0
     return false if value < 2
     for num in generator
       q,r = value.divmod num
@@ -181,7 +180,7 @@ class Prime
   #   Prime.int_from_prime_division([[2,2], [3,1]])  #=> 12
   def int_from_prime_division(pd)
     pd.inject(1){|value, (prime, index)|
-      value *= prime**index
+      value * prime**index
     }
   end
 
@@ -273,18 +272,18 @@ class Prime
     end
 
     # Iterates the given block for each prime number.
-    def each(&block)
-      return self.dup unless block
+    def each
+      return self.dup unless block_given?
       if @ubound
         last_value = nil
         loop do
           prime = succ
           break last_value if prime > @ubound
-          last_value = block.call(prime)
+          last_value = yield prime
         end
       else
         loop do
-          block.call(succ)
+          yield succ
         end
       end
     end
@@ -351,19 +350,17 @@ class Prime
     end
 
     def succ
-      loop do
-        if (@step)
-          @prime += @step
-          @step = 6 - @step
-        else
-          case @prime
-          when 1; @prime = 2
-          when 2; @prime = 3
-          when 3; @prime = 5; @step = 2
-          end
+      if (@step)
+        @prime += @step
+        @step = 6 - @step
+      else
+        case @prime
+        when 1; @prime = 2
+        when 2; @prime = 3
+        when 3; @prime = 5; @step = 2
         end
-        return @prime
       end
+      return @prime
     end
     alias next succ
     def rewind
@@ -480,7 +477,7 @@ class Prime
     #
     # Iterates the given block over all prime numbers. Note that enumeration
     # starts from the current position of internal pointer, not rewound.
-    def each(&block)
+    def each
       return @generator.dup unless block_given?
       loop do
         yield succ

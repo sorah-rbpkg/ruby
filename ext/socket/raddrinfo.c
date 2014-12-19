@@ -1,6 +1,6 @@
 /************************************************
 
-  ainfo.c -
+  raddrinfo.c -
 
   created at: Thu Mar 31 12:21:29 JST 1994
 
@@ -312,11 +312,11 @@ struct getnameinfo_arg
 {
     const struct sockaddr *sa;
     socklen_t salen;
+    int flags;
     char *host;
     size_t hostlen;
     char *serv;
     size_t servlen;
-    int flags;
 };
 
 static void *
@@ -716,10 +716,9 @@ get_addrinfo(VALUE self)
 
 
 static rb_addrinfo_t *
-alloc_addrinfo()
+alloc_addrinfo(void)
 {
-    rb_addrinfo_t *rai = ALLOC(rb_addrinfo_t);
-    memset(rai, 0, sizeof(rb_addrinfo_t));
+    rb_addrinfo_t *rai = ZALLOC(rb_addrinfo_t);
     rai->inspectname = Qnil;
     rai->canonname = Qnil;
     return rai;

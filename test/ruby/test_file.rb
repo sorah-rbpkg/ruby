@@ -1,7 +1,6 @@
 require 'test/unit'
 require 'tempfile'
 require "thread"
-require_relative 'envutil'
 require_relative 'ut_eof'
 
 class TestFile < Test::Unit::TestCase
@@ -124,7 +123,7 @@ class TestFile < Test::Unit::TestCase
       q1 = Queue.new
       q2 = Queue.new
 
-      Thread.new do
+      th = Thread.new do
         data = ''
         64.times do |i|
           data << i.to_s
@@ -142,6 +141,7 @@ class TestFile < Test::Unit::TestCase
         assert_equal size, f.size
         q2.push true
       end
+      th.join
     end
   end
 
@@ -311,6 +311,35 @@ class TestFile < Test::Unit::TestCase
     assert_equal(mod_time_contents, stats.mtime, bug6385)
   end
 
+  def test_stat
+    tb = Process.clock_gettime(Process::CLOCK_REALTIME)
+    Tempfile.create("stat") {|file|
+      tb = (tb + Process.clock_gettime(Process::CLOCK_REALTIME)) / 2
+      file.close
+      path = file.path
+
+      t0 = Process.clock_gettime(Process::CLOCK_REALTIME)
+      File.write(path, "foo")
+      sleep 2
+      File.write(path, "bar")
+      sleep 2
+      File.chmod(0644, path)
+      sleep 2
+      File.read(path)
+
+      delta = 1
+      stat = File.stat(path)
+      assert_in_delta tb,   stat.birthtime.to_f, delta
+      assert_in_delta t0+2, stat.mtime.to_f, delta
+      if stat.birthtime != stat.ctime
+        assert_in_delta t0+4, stat.ctime.to_f, delta
+      end
+      skip "Windows delays updating atime" if /mswin|mingw/ =~ RUBY_PLATFORM
+      assert_in_delta t0+6, stat.atime.to_f, delta
+    }
+  rescue NotImplementedError
+  end
+
   def test_chmod_m17n
     bug5671 = '[ruby-dev:44898]'
     Dir.mktmpdir('test-file-chmod-m17n-') do |tmpdir|
@@ -361,6 +390,12 @@ class TestFile < Test::Unit::TestCase
     (0..1).each do |level|
       assert_nothing_raised(SecurityError, bug5374) {in_safe[level]}
     end
+    def (s = Object.new).to_path; "".taint; end
+    m = "\u{691c 67fb}"
+    (c = Class.new(File)).singleton_class.class_eval {alias_method m, :stat}
+    assert_raise_with_message(SecurityError, /#{m}/) {
+      proc {$SAFE = 3; c.__send__(m, s)}.call
+    }
   end
 
   if /(bcc|ms|cyg)win|mingw|emx/ =~ RUBY_PLATFORM

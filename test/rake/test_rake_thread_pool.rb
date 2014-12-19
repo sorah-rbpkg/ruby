@@ -1,6 +1,5 @@
 require File.expand_path('../helper', __FILE__)
 require 'rake/thread_pool'
-require 'test/unit/assertions'
 
 class TestRakeTestThreadPool < Rake::TestCase
   include Rake
@@ -33,6 +32,8 @@ class TestRakeTestThreadPool < Rake::TestCase
     refute_equal threads[0], threads[1]
     refute_equal Thread.current, threads[0]
     refute_equal Thread.current, threads[1]
+  ensure
+    pool.join
   end
 
   def test_pool_creates_the_correct_number_of_threads
@@ -95,6 +96,8 @@ class TestRakeTestThreadPool < Rake::TestCase
     assert_raises(CustomError) do
       pool.future(2, &deep_exception_block).value
     end
+  ensure
+    pool.join
   end
 
   def test_pool_prevents_deadlock

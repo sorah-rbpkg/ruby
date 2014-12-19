@@ -1,6 +1,5 @@
 # coding: US-ASCII
 require 'test/unit'
-require_relative 'envutil'
 
 class TestArray < Test::Unit::TestCase
   def setup
@@ -798,15 +797,15 @@ class TestArray < Test::Unit::TestCase
     assert_nil(a5.flatten!(0), '[ruby-core:23382]')
     assert_equal(@cls[1, 2, 3, 4, 5, 6], a5)
 
-    assert_equal(@cls[], @cls[].flatten)
+    assert_nil(@cls[].flatten!)
     assert_equal(@cls[],
-                 @cls[@cls[@cls[@cls[],@cls[]],@cls[@cls[]],@cls[]],@cls[@cls[@cls[]]]].flatten)
+                 @cls[@cls[@cls[@cls[],@cls[]],@cls[@cls[]],@cls[]],@cls[@cls[@cls[]]]].flatten!)
 
     assert_nil(@cls[].flatten!(0), '[ruby-core:23382]')
   end
 
   def test_flatten_with_callcc
-    respond_to?(:callcc, true) or require 'continuation'
+    need_continuation
     o = Object.new
     def o.to_ary() callcc {|k| @cont = k; [1,2,3]} end
     begin
@@ -820,7 +819,7 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_permutation_with_callcc
-    respond_to?(:callcc, true) or require 'continuation'
+    need_continuation
     n = 1000
     cont = nil
     ary = [1,2,3]
@@ -837,7 +836,7 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_product_with_callcc
-    respond_to?(:callcc, true) or require 'continuation'
+    need_continuation
     n = 1000
     cont = nil
     ary = [1,2,3]
@@ -854,7 +853,7 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_combination_with_callcc
-    respond_to?(:callcc, true) or require 'continuation'
+    need_continuation
     n = 1000
     cont = nil
     ary = [1,2,3]
@@ -871,7 +870,7 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_repeated_permutation_with_callcc
-    respond_to?(:callcc, true) or require 'continuation'
+    need_continuation
     n = 1000
     cont = nil
     ary = [1,2,3]
@@ -888,7 +887,7 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_repeated_combination_with_callcc
-    respond_to?(:callcc, true) or require 'continuation'
+    need_continuation
     n = 1000
     cont = nil
     ary = [1,2,3]
@@ -1366,7 +1365,7 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_sort_with_callcc
-    respond_to?(:callcc, true) or require 'continuation'
+    need_continuation
     n = 1000
     cont = nil
     ary = (1..100).to_a
@@ -1748,6 +1747,13 @@ class TestArray < Test::Unit::TestCase
 
     bug3708 = '[ruby-dev:42067]'
     assert_equal(b, @cls[0, 1, 2, 3, 4][1, 4].permutation.to_a, bug3708)
+
+    bug9932 = '[ruby-core:63103] [Bug #9932]'
+    assert_separately([], <<-"end;") #    do
+      assert_nothing_raised(SystemStackError, "#{bug9932}") do
+        assert_equal(:ok, Array.new(100_000, nil).permutation {break :ok})
+      end
+    end;
   end
 
   def test_repeated_permutation
@@ -1773,6 +1779,12 @@ class TestArray < Test::Unit::TestCase
 
     a = @cls[0, 1, 2, 3, 4][1, 4].repeated_permutation(2)
     assert_empty(a.reject {|x| !x.include?(0)})
+
+    assert_separately([], <<-"end;") #    do
+      assert_nothing_raised(SystemStackError) do
+        assert_equal(:ok, Array.new(100_000, nil).repeated_permutation(500_000) {break :ok})
+      end
+    end;
   end
 
   def test_repeated_combination
@@ -1802,6 +1814,12 @@ class TestArray < Test::Unit::TestCase
 
     a = @cls[0, 1, 2, 3, 4][1, 4].repeated_combination(2)
     assert_empty(a.reject {|x| !x.include?(0)})
+
+    assert_separately([], <<-"end;") #    do
+      assert_nothing_raised(SystemStackError) do
+        assert_equal(:ok, Array.new(100_000, nil).repeated_combination(500_000) {break :ok})
+      end
+    end;
   end
 
   def test_take
@@ -2012,7 +2030,7 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_reject_with_callcc
-    respond_to?(:callcc, true) or require 'continuation'
+    need_continuation
     bug9727 = '[ruby-dev:48101] [Bug #9727]'
     cont = nil
     a = [*1..10].reject do |i|
@@ -2475,6 +2493,13 @@ class TestArray < Test::Unit::TestCase
     EOS
     rescue Timeout::Error => e
       skip e.message
+    end
+  end
+
+  private
+  def need_continuation
+    unless respond_to?(:callcc, true)
+      EnvUtil.suppress_warning {require 'continuation'}
     end
   end
 end

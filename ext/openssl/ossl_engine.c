@@ -16,10 +16,10 @@
     if (!(engine)) { \
 	ossl_raise(rb_eRuntimeError, "ENGINE wasn't initialized."); \
     } \
-    (obj) = Data_Wrap_Struct((klass), 0, ENGINE_free, (engine)); \
+    (obj) = TypedData_Wrap_Struct((klass), &ossl_engine_type, (engine)); \
 } while(0)
 #define GetEngine(obj, engine) do { \
-    Data_Get_Struct((obj), ENGINE, (engine)); \
+    TypedData_Get_Struct((obj), ENGINE, &ossl_engine_type, (engine)); \
     if (!(engine)) { \
         ossl_raise(rb_eRuntimeError, "ENGINE wasn't initialized."); \
     } \
@@ -56,6 +56,20 @@ do{\
     return Qtrue;\
   }\
 }while(0)
+
+static void
+ossl_engine_free(void *engine)
+{
+    ENGINE_free(engine);
+}
+
+static const rb_data_type_t ossl_engine_type = {
+    "OpenSSL/Engine",
+    {
+	0, ossl_engine_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 /* Document-method: OpenSSL::Engine.load
  *
@@ -523,24 +537,17 @@ ossl_engine_get_cmds(VALUE self)
 static VALUE
 ossl_engine_inspect(VALUE self)
 {
-    VALUE str;
-    const char *cname = rb_class2name(rb_obj_class(self));
+    ENGINE *e;
 
-    str = rb_str_new2("#<");
-    rb_str_cat2(str, cname);
-    rb_str_cat2(str, " id=\"");
-    rb_str_append(str, ossl_engine_get_id(self));
-    rb_str_cat2(str, "\" name=\"");
-    rb_str_append(str, ossl_engine_get_name(self));
-    rb_str_cat2(str, "\">");
-
-    return str;
+    GetEngine(self, e);
+    return rb_sprintf("#<%"PRIsVALUE" id=\"%s\" name=\"%s\">",
+		      rb_obj_class(self), ENGINE_get_id(e), ENGINE_get_name(e));
 }
 
 #define DefEngineConst(x) rb_define_const(cEngine, #x, INT2NUM(ENGINE_##x))
 
 void
-Init_ossl_engine()
+Init_ossl_engine(void)
 {
     cEngine = rb_define_class_under(mOSSL, "Engine", rb_cObject);
     eEngineError = rb_define_class_under(cEngine, "EngineError", eOSSLError);
@@ -585,7 +592,7 @@ Init_ossl_engine()
 }
 #else
 void
-Init_ossl_engine()
+Init_ossl_engine(void)
 {
 }
 #endif

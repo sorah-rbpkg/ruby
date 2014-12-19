@@ -130,6 +130,9 @@ class TestRDocMarkupAttributeManager < RDoc::TestCase
     assert_equal(["cat ", @tt_on, "and", @tt_off, " dog"],
                   @am.flow("cat +and+ dog"))
 
+    assert_equal(["cat ", @tt_on, "X::Y", @tt_off, " dog"],
+                  @am.flow("cat +X::Y+ dog"))
+
     assert_equal(["cat ", @bold_on, "a_b_c", @bold_off, " dog"],
                   @am.flow("cat *a_b_c* dog"))
 
@@ -138,6 +141,9 @@ class TestRDocMarkupAttributeManager < RDoc::TestCase
 
     assert_equal(["cat ", @em_on, "_", @em_off, " dog"],
                   @am.flow("cat ___ dog"))
+
+    assert_equal(["cat and ", @em_on, "5", @em_off, " dogs"],
+                  @am.flow("cat and _5_ dogs"))
   end
 
   def test_bold

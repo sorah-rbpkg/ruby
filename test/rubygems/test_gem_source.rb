@@ -1,5 +1,6 @@
 require 'rubygems/test_case'
 require 'rubygems/source'
+require 'rubygems/indexer'
 
 class TestGemSource < Gem::TestCase
 
@@ -18,6 +19,20 @@ class TestGemSource < Gem::TestCase
     end
 
     @source = Gem::Source.new(@gem_repo)
+  end
+
+  def test_initialize_invalid_uri
+    assert_raises URI::InvalidURIError do
+      Gem::Source.new 'git@example:a.git'
+    end
+  end
+
+  def test_initialize_git
+    repository = 'git@example:a.git'
+
+    source = Gem::Source::Git.new 'a', repository, 'master', false
+
+    assert_equal repository, source.uri
   end
 
   def test_api_uri
@@ -40,11 +55,26 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_dependency_resolver_set_bundler_api
-    @fetcher.data["#{@gem_repo}api/v1/dependencies"] = 'data'
+    response = Net::HTTPResponse.new '1.1', 200, 'OK'
+    response.uri = URI('http://example') if response.respond_to? :uri
+
+    @fetcher.data["#{@gem_repo}api/v1/dependencies"] = response
 
     set = @source.dependency_resolver_set
 
     assert_kind_of Gem::Resolver::APISet, set
+  end
+
+  def test_dependency_resolver_set_file_uri
+    skip 'install builder gem' unless defined? Builder::XChar
+
+    Gem::Indexer.new(@tempdir).generate_index
+
+    source = Gem::Source.new "file://#{@tempdir}/"
+
+    set = source.dependency_resolver_set
+
+    assert_kind_of Gem::Resolver::IndexSet, set
   end
 
   def test_dependency_resolver_set_marshal_api

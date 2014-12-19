@@ -1,5 +1,4 @@
 require 'test/unit'
-require_relative 'envutil'
 
 class TestSuper < Test::Unit::TestCase
   class Base
@@ -194,7 +193,7 @@ class TestSuper < Test::Unit::TestCase
         end
       end
       overlaid.call(str = "123")
-      overlaid.call(ary = [1,2,3])
+      overlaid.call([1,2,3])
       str.reverse
     end
 
@@ -318,7 +317,6 @@ class TestSuper < Test::Unit::TestCase
     }
     sub_class = EnvUtil.labeled_class("Sub\u{30af 30e9 30b9}", super_class) {
       def foo
-        x = Object.new
         lambda { super() }
       end
     }
@@ -508,5 +506,23 @@ class TestSuper < Test::Unit::TestCase
       end
     end
     assert_equal("A", b.new.foo, bug10263)
+  end
+
+  def test_super_with_block
+    a = Class.new do
+      def foo
+        yield
+      end
+    end
+
+    b = Class.new(a) do
+      def foo
+        super{
+          "b"
+        }
+      end
+    end
+
+    assert_equal "b", b.new.foo{"c"}
   end
 end

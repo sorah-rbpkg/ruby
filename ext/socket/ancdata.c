@@ -2,6 +2,8 @@
 
 #include <time.h>
 
+int rsock_cmsg_cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
+
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
 static VALUE rb_cAncillaryData;
 
@@ -1103,8 +1105,8 @@ ancillary_cmsg_is_p(VALUE self, VALUE vlevel, VALUE vtype)
 #if defined(HAVE_SENDMSG)
 struct sendmsg_args_struct {
     int fd;
-    const struct msghdr *msg;
     int flags;
+    const struct msghdr *msg;
 };
 
 static void *
@@ -1356,8 +1358,8 @@ rsock_bsock_sendmsg_nonblock(int argc, VALUE *argv, VALUE sock)
 #if defined(HAVE_RECVMSG)
 struct recvmsg_args_struct {
     int fd;
-    struct msghdr *msg;
     int flags;
+    struct msghdr *msg;
 };
 
 ssize_t
@@ -1415,7 +1417,7 @@ discard_cmsg(struct cmsghdr *cmh, char *msg_end, int msg_peek_p)
         int *end = (int *)((char *)cmh + cmh->cmsg_len);
         while ((char *)fdp + sizeof(int) <= (char *)end &&
                (char *)fdp + sizeof(int) <= msg_end) {
-            rb_fd_fix_cloexec(*fdp);
+            rb_update_max_fd(*fdp);
             close(*fdp);
             fdp++;
         }
@@ -1458,7 +1460,11 @@ make_io_for_unix_rights(VALUE ctl, struct cmsghdr *cmh, char *msg_end)
             VALUE io;
             if (fstat(fd, &stbuf) == -1)
                 rb_raise(rb_eSocket, "invalid fd in SCM_RIGHTS");
-            rb_fd_fix_cloexec(fd);
+            rb_update_max_fd(fd);
+            if (rsock_cmsg_cloexec_state < 0)
+                rsock_cmsg_cloexec_state = rsock_detect_cloexec(fd);
+            if (rsock_cmsg_cloexec_state == 0 || fd <= 2)
+                rb_maygvl_fd_fix_cloexec(fd);
             if (S_ISSOCK(stbuf.st_mode))
                 io = rsock_init_sock(rb_obj_alloc(rb_cSocket), fd);
             else

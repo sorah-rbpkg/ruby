@@ -1,8 +1,7 @@
 require 'test/unit'
 require 'fiber'
-require 'continuation'
+EnvUtil.suppress_warning {require 'continuation'}
 require 'tmpdir'
-require_relative './envutil'
 
 class TestFiber < Test::Unit::TestCase
   def test_normal
@@ -118,7 +117,7 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_throw
-    assert_raise(ArgumentError){
+    assert_raise(UncaughtThrowError){
       Fiber.new do
         throw :a
       end.resume
@@ -219,8 +218,8 @@ class TestFiber < Test::Unit::TestCase
 
   def test_no_valid_cfp
     bug5083 = '[ruby-dev:44208]'
-    assert_equal([], Fiber.new(&Module.method(:nesting)).resume)
-    assert_instance_of(Class, Fiber.new(&Class.new.method(:undef_method)).resume(:to_s))
+    assert_equal([], Fiber.new(&Module.method(:nesting)).resume, bug5083)
+    assert_instance_of(Class, Fiber.new(&Class.new.method(:undef_method)).resume(:to_s), bug5083)
   end
 
   def test_prohibit_resume_transfered_fiber
@@ -283,7 +282,7 @@ class TestFiber < Test::Unit::TestCase
     env = {}
     env['RUBY_FIBER_VM_STACK_SIZE'] = vm_stack_size.to_s if vm_stack_size
     env['RUBY_FIBER_MACHINE_STACK_SIZE'] = machine_stack_size.to_s if machine_stack_size
-    out, err = Dir.mktmpdir("test_fiber") {|tmpdir|
+    out, _ = Dir.mktmpdir("test_fiber") {|tmpdir|
       EnvUtil.invoke_ruby([env, '-e', script], '', true, true, chdir: tmpdir)
     }
     use_length ? out.length : out

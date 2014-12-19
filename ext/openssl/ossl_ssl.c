@@ -24,6 +24,10 @@
 #  define TO_SOCKET(s) (s)
 #endif
 
+#define GetSSLCTX(obj, ctx) do { \
+	TypedData_Get_Struct((obj), SSL_CTX, &ossl_sslctx_type, (ctx));	\
+} while (0)
+
 VALUE mSSL;
 VALUE eSSLError;
 VALUE cSSLContext;
@@ -108,7 +112,7 @@ static VALUE sym_exception;
 /*
  * SSLContext class
  */
-struct {
+static const struct {
     const char *name;
     SSL_METHOD *(*func)(void);
 } ossl_ssl_method_tab[] = {
@@ -150,12 +154,21 @@ int ossl_ssl_ex_client_cert_cb_idx;
 int ossl_ssl_ex_tmp_dh_callback_idx;
 
 static void
-ossl_sslctx_free(SSL_CTX *ctx)
+ossl_sslctx_free(void *ptr)
 {
+    SSL_CTX *ctx = ptr;
     if(ctx && SSL_CTX_get_ex_data(ctx, ossl_ssl_ex_store_p)== (void*)1)
 	ctx->cert_store = NULL;
     SSL_CTX_free(ctx);
 }
+
+static const rb_data_type_t ossl_sslctx_type = {
+    "OpenSSL/SSL/CTX",
+    {
+	0, ossl_sslctx_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 static VALUE
 ossl_sslctx_s_alloc(VALUE klass)
@@ -172,7 +185,7 @@ ossl_sslctx_s_alloc(VALUE klass)
         ossl_raise(eSSLError, "SSL_CTX_new");
     }
     SSL_CTX_set_mode(ctx, mode);
-    return Data_Wrap_Struct(klass, 0, ossl_sslctx_free, ctx);
+    return TypedData_Wrap_Struct(klass, &ossl_sslctx_type, ctx);
 }
 
 /*
@@ -190,7 +203,7 @@ ossl_sslctx_set_ssl_version(VALUE self, VALUE ssl_method)
     int i;
 
     SSL_CTX *ctx;
-    if(TYPE(ssl_method) == T_SYMBOL)
+    if (RB_TYPE_P(ssl_method, T_SYMBOL))
 	s = rb_id2name(SYM2ID(ssl_method));
     else
 	s =  StringValuePtr(ssl_method);
@@ -203,7 +216,7 @@ ossl_sslctx_set_ssl_version(VALUE self, VALUE ssl_method)
     if (!method) {
         ossl_raise(rb_eArgError, "unknown SSL method `%s'.", s);
     }
-    Data_Get_Struct(self, SSL_CTX, ctx);
+    GetSSLCTX(self, ctx);
     if (SSL_CTX_set_ssl_version(ctx, method) != 1) {
         ossl_raise(eSSLError, "SSL_CTX_set_ssl_version");
     }
@@ -244,7 +257,7 @@ ossl_call_client_cert_cb(VALUE obj)
     VALUE cb, ary, cert, key;
     SSL *ssl;
 
-    Data_Get_Struct(obj, SSL, ssl);
+    GetSSL(obj, ssl);
     cb = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_client_cert_cb_idx);
     if (NIL_P(cb)) return Qfalse;
     ary = rb_funcall(cb, rb_intern("call"), 1, obj);
@@ -280,7 +293,7 @@ ossl_call_tmp_dh_callback(VALUE *args)
     VALUE cb, dh;
     EVP_PKEY *pkey;
 
-    Data_Get_Struct(args[0], SSL, ssl);
+    GetSSL(args[0], ssl);
     cb = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_tmp_dh_callback_idx);
     if (NIL_P(cb)) return Qfalse;
     dh = rb_funcall(cb, rb_intern("call"), 3, args[0], args[1], args[2]);
@@ -482,7 +495,7 @@ ossl_sslctx_add_extra_chain_cert_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arg))
     X509 *x509;
     SSL_CTX *ctx;
 
-    Data_Get_Struct(arg, SSL_CTX, ctx);
+    GetSSLCTX(arg, ctx);
     x509 = DupX509CertPtr(i);
     if(!SSL_CTX_add_extra_chain_cert(ctx, x509)){
 	ossl_raise(eSSLError, NULL);
@@ -513,8 +526,8 @@ ossl_call_servername_cb(VALUE ary)
         SSL_CTX *ctx2;
 
         ossl_sslctx_setup(ret_obj);
-        Data_Get_Struct(ssl_obj, SSL, ssl);
-        Data_Get_Struct(ret_obj, SSL_CTX, ctx2);
+        GetSSL(ssl_obj, ssl);
+        GetSSLCTX(ret_obj, ctx2);
         SSL_set_SSL_CTX(ssl, ctx2);
     } else if (!NIL_P(ret_obj)) {
             ossl_raise(rb_eArgError, "servername_cb must return an OpenSSL::SSL::SSLContext object or nil");
@@ -665,7 +678,7 @@ ossl_sslctx_setup(VALUE self)
     VALUE val;
 
     if(OBJ_FROZEN(self)) return Qnil;
-    Data_Get_Struct(self, SSL_CTX, ctx);
+    GetSSLCTX(self, ctx);
 
 #if !defined(OPENSSL_NO_DH)
     if (RTEST(ossl_sslctx_get_tmp_dh_cb(self))){
@@ -716,7 +729,7 @@ ossl_sslctx_setup(VALUE self)
 
     val = ossl_sslctx_get_client_ca(self);
     if(!NIL_P(val)){
-	if(TYPE(val) == T_ARRAY){
+	if (RB_TYPE_P(val, T_ARRAY)) {
 	    for(i = 0; i < RARRAY_LEN(val); i++){
 		client_ca = GetX509CertPtr(RARRAY_PTR(val)[i]);
         	if (!SSL_CTX_add_client_CA(ctx, client_ca)){
@@ -841,7 +854,7 @@ ossl_sslctx_get_ciphers(VALUE self)
     VALUE ary;
     int i, num;
 
-    Data_Get_Struct(self, SSL_CTX, ctx);
+    GetSSLCTX(self, ctx);
     if(!ctx){
         rb_warning("SSL_CTX is not initialized.");
         return Qnil;
@@ -882,11 +895,11 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
     rb_check_frozen(self);
     if (NIL_P(v))
 	return v;
-    else if (TYPE(v) == T_ARRAY) {
+    else if (RB_TYPE_P(v, T_ARRAY)) {
         str = rb_str_new(0, 0);
         for (i = 0; i < RARRAY_LEN(v); i++) {
             elem = rb_ary_entry(v, i);
-            if (TYPE(elem) == T_ARRAY) elem = rb_ary_entry(elem, 0);
+            if (RB_TYPE_P(elem, T_ARRAY)) elem = rb_ary_entry(elem, 0);
             elem = rb_String(elem);
             rb_str_append(str, elem);
             if (i < RARRAY_LEN(v)-1) rb_str_cat2(str, ":");
@@ -896,7 +909,7 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
         StringValue(str);
     }
 
-    Data_Get_Struct(self, SSL_CTX, ctx);
+    GetSSLCTX(self, ctx);
     if(!ctx){
         ossl_raise(eSSLError, "SSL_CTX is not initialized.");
         return Qnil;
@@ -920,7 +933,7 @@ ossl_sslctx_session_add(VALUE self, VALUE arg)
     SSL_CTX *ctx;
     SSL_SESSION *sess;
 
-    Data_Get_Struct(self, SSL_CTX, ctx);
+    GetSSLCTX(self, ctx);
     SafeGetSSLSession(arg, sess);
 
     return SSL_CTX_add_session(ctx, sess) == 1 ? Qtrue : Qfalse;
@@ -938,7 +951,7 @@ ossl_sslctx_session_remove(VALUE self, VALUE arg)
     SSL_CTX *ctx;
     SSL_SESSION *sess;
 
-    Data_Get_Struct(self, SSL_CTX, ctx);
+    GetSSLCTX(self, ctx);
     SafeGetSSLSession(arg, sess);
 
     return SSL_CTX_remove_session(ctx, sess) == 1 ? Qtrue : Qfalse;
@@ -955,7 +968,7 @@ ossl_sslctx_get_session_cache_mode(VALUE self)
 {
     SSL_CTX *ctx;
 
-    Data_Get_Struct(self, SSL_CTX, ctx);
+    GetSSLCTX(self, ctx);
 
     return LONG2NUM(SSL_CTX_get_session_cache_mode(ctx));
 }
@@ -973,7 +986,7 @@ ossl_sslctx_set_session_cache_mode(VALUE self, VALUE arg)
 {
     SSL_CTX *ctx;
 
-    Data_Get_Struct(self, SSL_CTX, ctx);
+    GetSSLCTX(self, ctx);
 
     SSL_CTX_set_session_cache_mode(ctx, NUM2LONG(arg));
 
@@ -992,7 +1005,7 @@ ossl_sslctx_get_session_cache_size(VALUE self)
 {
     SSL_CTX *ctx;
 
-    Data_Get_Struct(self, SSL_CTX, ctx);
+    GetSSLCTX(self, ctx);
 
     return LONG2NUM(SSL_CTX_sess_get_cache_size(ctx));
 }
@@ -1009,7 +1022,7 @@ ossl_sslctx_set_session_cache_size(VALUE self, VALUE arg)
 {
     SSL_CTX *ctx;
 
-    Data_Get_Struct(self, SSL_CTX, ctx);
+    GetSSLCTX(self, ctx);
 
     SSL_CTX_sess_set_cache_size(ctx, NUM2LONG(arg));
 
@@ -1044,7 +1057,7 @@ ossl_sslctx_get_session_cache_stats(VALUE self)
     SSL_CTX *ctx;
     VALUE hash;
 
-    Data_Get_Struct(self, SSL_CTX, ctx);
+    GetSSLCTX(self, ctx);
 
     hash = rb_hash_new();
     rb_hash_aset(hash, ID2SYM(rb_intern("cache_num")), LONG2NUM(SSL_CTX_sess_number(ctx)));
@@ -1079,7 +1092,7 @@ ossl_sslctx_flush_sessions(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "01", &arg1);
 
-    Data_Get_Struct(self, SSL_CTX, ctx);
+    GetSSLCTX(self, ctx);
 
     if (NIL_P(arg1)) {
         tm = time(0);
@@ -1120,15 +1133,23 @@ ossl_ssl_shutdown(SSL *ssl)
 }
 
 static void
-ossl_ssl_free(SSL *ssl)
+ossl_ssl_free(void *ssl)
 {
     SSL_free(ssl);
 }
 
+const rb_data_type_t ossl_ssl_type = {
+    "OpenSSL/SSL",
+    {
+	0, ossl_ssl_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 static VALUE
 ossl_ssl_s_alloc(VALUE klass)
 {
-    return Data_Wrap_Struct(klass, 0, ossl_ssl_free, NULL);
+    return TypedData_Wrap_Struct(klass, &ossl_ssl_type, NULL);
 }
 
 /*
@@ -1177,14 +1198,14 @@ ossl_ssl_setup(VALUE self)
     SSL *ssl;
     rb_io_t *fptr;
 
-    Data_Get_Struct(self, SSL, ssl);
+    GetSSL(self, ssl);
     if(!ssl){
 #ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
 	VALUE hostname = rb_iv_get(self, "@hostname");
 #endif
 
         v_ctx = ossl_ssl_get_ctx(self);
-        Data_Get_Struct(v_ctx, SSL_CTX, ctx);
+        GetSSLCTX(v_ctx, ctx);
 
         ssl = SSL_new(ctx);
         if (!ssl) {
@@ -1224,7 +1245,7 @@ ossl_ssl_setup(VALUE self)
 
 #define ossl_ssl_data_get_struct(v, ssl)		\
 do {							\
-    Data_Get_Struct((v), SSL, (ssl));			\
+    GetSSL((v), (ssl)); 				\
     if (!(ssl)) {					\
         rb_warning("SSL session is not started yet.");  \
         return Qnil;					\
@@ -1394,7 +1415,7 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
     }
     if(ilen == 0) return str;
 
-    Data_Get_Struct(self, SSL, ssl);
+    GetSSL(self, ssl);
     GetOpenFile(ossl_ssl_get_io(self), fptr);
     if (ssl) {
 	if(!nonblock && SSL_pending(ssl) <= 0)
@@ -1431,7 +1452,11 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
     else {
         ID meth = nonblock ? rb_intern("read_nonblock") : rb_intern("sysread");
         rb_warning("SSL session is not started yet.");
-        return rb_funcall(ossl_ssl_get_io(self), meth, 2, len, str);
+        if (nonblock) {
+          return rb_funcall(ossl_ssl_get_io(self), meth, 3, len, str, opts);
+        } else {
+          return rb_funcall(ossl_ssl_get_io(self), meth, 2, len, str);
+        }
     }
 
   end:
@@ -1482,7 +1507,7 @@ ossl_ssl_write_internal(VALUE self, VALUE str, int nonblock, int no_exception)
     rb_io_t *fptr;
 
     StringValue(str);
-    Data_Get_Struct(self, SSL, ssl);
+    GetSSL(self, ssl);
     GetOpenFile(ossl_ssl_get_io(self), fptr);
 
     if (ssl) {
@@ -1562,18 +1587,22 @@ static VALUE
 ossl_ssl_close(VALUE self)
 {
     SSL *ssl;
+    VALUE io;
 
-    ossl_ssl_data_get_struct(self, ssl);
+    /* ossl_ssl_data_get_struct() is not usable here because it may return
+     * from this function; */
 
-    if (ssl) {
-	VALUE io = ossl_ssl_get_io(self);
-	if (!RTEST(rb_funcall(io, rb_intern("closed?"), 0))) {
-	    ossl_ssl_shutdown(ssl);
-	    SSL_free(ssl);
-	    DATA_PTR(self) = NULL;
-	    if (RTEST(ossl_ssl_get_sync_close(self)))
-		rb_funcall(io, rb_intern("close"), 0);
-	}
+    GetSSL(self, ssl);
+
+    io = ossl_ssl_get_io(self);
+    if (!RTEST(rb_funcall(io, rb_intern("closed?"), 0))) {
+        if (ssl) {
+            ossl_ssl_shutdown(ssl);
+            SSL_free(ssl);
+        }
+        DATA_PTR(self) = NULL;
+        if (RTEST(ossl_ssl_get_sync_close(self)))
+            rb_funcall(io, rb_intern("close"), 0);
     }
 
     return Qnil;
@@ -1850,7 +1879,7 @@ ossl_ssl_npn_protocol(VALUE self)
 #endif /* !defined(OPENSSL_NO_SOCK) */
 
 void
-Init_ossl_ssl()
+Init_ossl_ssl(void)
 {
     int i;
     VALUE ary;
@@ -2019,7 +2048,7 @@ Init_ossl_ssl()
     rb_attr(cSSLContext, rb_intern("session_get_cb"), 1, 1, Qfalse);
 
     /*
-     * A callback invoked when a new session was negotiatied.
+     * A callback invoked when a new session was negotiated.
      *
      * The callback is invoked with an SSLSocket.  If false is returned the
      * session will be removed from the internal cache.

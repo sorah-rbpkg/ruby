@@ -22,20 +22,20 @@ warn_printf(const char *fmt, ...)
 static void
 error_pos(void)
 {
-    const char *sourcefile = rb_sourcefile();
+    VALUE sourcefile = rb_sourcefilename();
     int sourceline = rb_sourceline();
 
     if (sourcefile) {
 	ID caller_name;
 	if (sourceline == 0) {
-	    warn_printf("%s", sourcefile);
+	    warn_printf("%"PRIsVALUE, sourcefile);
 	}
 	else if ((caller_name = rb_frame_callee()) != 0) {
-	    warn_printf("%s:%d:in `%s'", sourcefile, sourceline,
-			rb_id2name(caller_name));
+	    warn_printf("%"PRIsVALUE":%d:in `%"PRIsVALUE"'", sourcefile, sourceline,
+			rb_id2str(caller_name));
 	}
 	else {
-	    warn_printf("%s:%d", sourcefile, sourceline);
+	    warn_printf("%"PRIsVALUE":%d", sourcefile, sourceline);
 	}
     }
 }
@@ -162,16 +162,16 @@ error_print(void)
 		tail++;		/* skip newline */
 	    }
 	    warn_print(": ");
-	    warn_print2(einfo, len);
+	    warn_print_str(tail ? rb_str_subseq(e, 0, len) : e);
 	    if (epath) {
 		warn_print(" (");
 		warn_print_str(epath);
 		warn_print(")\n");
 	    }
 	    if (tail) {
-		warn_print2(tail, elen - len - 1);
-		if (einfo[elen-1] != '\n') warn_print2("\n", 1);
+		warn_print_str(rb_str_substr(e, tail - einfo, elen - len - 1));
 	    }
+	    if (tail ? einfo[elen-1] != '\n' : !epath) warn_print2("\n", 1);
 	}
     }
 
@@ -208,8 +208,8 @@ ruby_error_print(void)
     error_print();
 }
 
-void
-rb_print_undef(VALUE klass, ID id, int scope)
+static const char *
+method_scope_name(int scope)
 {
     const char *v;
 
@@ -219,7 +219,14 @@ rb_print_undef(VALUE klass, ID id, int scope)
       case NOEX_PRIVATE: v = " private"; break;
       case NOEX_PROTECTED: v = " protected"; break;
     }
-    rb_name_error(id, "undefined%s method `%"PRIsVALUE"' for %s `%"PRIsVALUE"'", v,
+    return v;
+}
+
+void
+rb_print_undef(VALUE klass, ID id, int scope)
+{
+    const char *v = method_scope_name(scope);
+    rb_name_error(id, "undefined%s method `%"PRIsVALUE"' for %s `% "PRIsVALUE"'", v,
 		  QUOTE_ID(id),
 		  (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
 		  rb_class_name(klass));
@@ -228,10 +235,21 @@ rb_print_undef(VALUE klass, ID id, int scope)
 void
 rb_print_undef_str(VALUE klass, VALUE name)
 {
-    rb_name_error_str(name, "undefined method `%"PRIsVALUE"' for %s `%"PRIsVALUE"'",
+    rb_name_error_str(name, "undefined method `%"PRIsVALUE"' for %s `% "PRIsVALUE"'",
 		      QUOTE(name),
 		      (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
 		      rb_class_name(klass));
+}
+
+void
+rb_print_inaccessible(VALUE klass, ID id, int scope)
+{
+    const char *v = method_scope_name(scope);
+    rb_name_error(id, "method `%"PRIsVALUE"' for %s `% "PRIsVALUE"' is %s",
+		  QUOTE_ID(id),
+		  (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
+		  rb_class_name(klass),
+		  v);
 }
 
 static int
@@ -284,7 +302,8 @@ error_handle(int ex)
 	if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
 	    status = sysexit_status(errinfo);
 	}
-	else if (rb_obj_is_instance_of(errinfo, rb_eSignal)) {
+	else if (rb_obj_is_instance_of(errinfo, rb_eSignal) &&
+		 rb_iv_get(errinfo, "signo") != INT2FIX(SIGSEGV)) {
 	    /* no message when exiting by signal */
 	}
 	else {

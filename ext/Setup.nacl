@@ -1,5 +1,5 @@
 # #option nodynamic
-# 
+#
 # #Win32API
 # bigdecimal
 # continuation
@@ -12,9 +12,6 @@
 # digest/rmd160
 # digest/sha1
 # digest/sha2
-# dl
-# dl/callback
-# #dl/win32
 # etc
 # fcntl
 # fiber

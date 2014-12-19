@@ -19,16 +19,9 @@ require 'optparse'
 require 'optparse/shellwords'
 require 'ostruct'
 require 'rubygems'
-require_relative 'vcs'
 
 STDOUT.sync = true
 File.umask(0)
-
-begin
-  $vcs = VCS.detect(File.expand_path('../..', __FILE__))
-rescue VCS::NotFoundError
-  $vcs = nil
-end
 
 def parse_args(argv = ARGV)
   $mantype = 'doc'
@@ -385,7 +378,7 @@ install?(:ext, :arch, :'ext-arch') do
   prepare "extension objects", sitearchlibdir
   prepare "extension objects", vendorarchlibdir
 end
-install?(:ext, :arch, :'ext-arch') do
+install?(:ext, :arch, :hdr, :'arch-hdr') do
   prepare "extension headers", archhdrdir
   install_recursive("#{$extout}/include/#{CONFIG['arch']}", archhdrdir, :glob => "*.h", :mode => $data_mode)
 end
@@ -395,7 +388,7 @@ install?(:ext, :comm, :'ext-comm') do
   prepare "extension scripts", sitelibdir
   prepare "extension scripts", vendorlibdir
 end
-install?(:ext, :comm, :'ext-comm') do
+install?(:ext, :comm, :hdr, :'comm-hdr') do
   hdrdir = rubyhdrdir + "/ruby"
   prepare "extension headers", hdrdir
   install_recursive("#{$extout}/include/ruby", hdrdir, :glob => "*.h", :mode => $data_mode)
@@ -515,7 +508,7 @@ install?(:local, :comm, :lib) do
   install_recursive(File.join(srcdir, "lib"), rubylibdir, :no_install => noinst, :mode => $data_mode)
 end
 
-install?(:local, :arch, :lib) do
+install?(:local, :comm, :hdr, :'comm-hdr') do
   prepare "common headers", rubyhdrdir
 
   noinst = []
@@ -552,56 +545,6 @@ install?(:local, :comm, :man) do
       end
       open(mdoc) {|r| Mdoc2Man.mdoc2man(r, w)}
       open_for_install(destfile, $data_mode) {w.join("")}
-    end
-  end
-end
-
-# :stopdoc:
-module Gem
-  if defined?(Specification)
-    remove_const(:Specification)
-  end
-
-  class Specification < OpenStruct
-    def initialize(*)
-      super
-      yield(self) if defined?(yield)
-      self.executables ||= []
-    end
-
-    def self.load(path)
-      src = File.open(path, "rb") {|f| f.read}
-      src.sub!(/\A#.*/, '')
-      spec = eval(src, nil, path)
-      spec.date ||= last_date(path) || RUBY_RELEASE_DATE
-      spec
-    end
-
-    def self.last_date(path)
-      return unless $vcs
-      time = $vcs.get_revisions(path)[2] rescue return
-      return unless time
-      time.strftime("%Y-%m-%d")
-    end
-
-    def to_ruby
-      <<-GEMSPEC
-Gem::Specification.new do |s|
-  s.name = #{name.dump}
-  s.version = #{version.dump}
-  s.date = #{date.dump}
-  s.summary = #{summary.dump}
-  s.description = #{description.dump}
-  s.homepage = #{homepage.dump}
-  s.authors = #{authors.inspect}
-  s.email = #{email.inspect}
-  s.files = #{files.inspect}
-end
-      GEMSPEC
-    end
-
-    def self.unresolved_deps
-      []
     end
   end
 end
@@ -764,6 +707,23 @@ install?(:ext, :comm, :gem) do
       install(execs, bin_dir, :mode => $prog_mode)
     end
   end
+end
+
+install?(:ext, :comm, :gem) do
+  require 'pathname'
+  gem_dir = Gem.default_dir
+  directories = Gem.ensure_gem_subdirectories(gem_dir, :mode => $dir_mode)
+  prepare "bundle gems", gem_dir, directories
+  Dir.glob(srcdir+'/gems/*.gem').each do |gem|
+    Gem.install gem, Gem::Requirement.default, :install_dir => with_destdir(Gem.dir), :domain => :local, :ignore_dependencies => true
+    gemname = Pathname(gem).basename
+    puts "#{" "*30}#{gemname}"
+  end
+  # fix directory permissions
+  # TODO: Gem.install should accept :dir_mode option or something
+  File.chmod($dir_mode, *Dir.glob(with_destdir(Gem.dir)+"/**/"))
+  # fix .gemspec permissions
+  File.chmod($data_mode, *Dir.glob(with_destdir(Gem.dir)+"/specifications/*.gemspec"))
 end
 
 parse_args()

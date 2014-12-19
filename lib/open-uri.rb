@@ -102,6 +102,7 @@ module OpenURI
     :content_length_proc => true,
     :http_basic_authentication => true,
     :read_timeout => true,
+    :open_timeout => true,
     :ssl_ca_cert => nil,
     :ssl_verify_mode => nil,
     :ftp_active_mode => false,
@@ -155,7 +156,7 @@ module OpenURI
         if io.respond_to? :close!
           io.close! # Tempfile
         else
-          io.close
+          io.close if !io.closed?
         end
       end
     else
@@ -256,8 +257,7 @@ module OpenURI
       raise "Non-HTTP proxy URI: #{proxy_uri}" if proxy_uri.class != URI::HTTP
     end
 
-    if target.userinfo && "1.9.0" <= RUBY_VERSION
-      # don't raise for 1.8 because compatibility.
+    if target.userinfo
       raise ArgumentError, "userinfo not supported.  [RFC3986]"
     end
 
@@ -307,6 +307,9 @@ module OpenURI
     end
     if options.include? :read_timeout
       http.read_timeout = options[:read_timeout]
+    end
+    if options.include? :open_timeout
+      http.open_timeout = options[:open_timeout]
     end
 
     resp = nil
@@ -667,6 +670,13 @@ module OpenURI
     #    :read_timeout=>10      (10 second)
     #
     #  :read_timeout option specifies a timeout of read for http connections.
+    #
+    # [:open_timeout]
+    #  Synopsis:
+    #    :open_timeout=>nil     (no timeout)
+    #    :open_timeout=>10      (10 second)
+    #
+    #  :open_timeout option specifies a timeout of open for http connections.
     #
     # [:ssl_ca_cert]
     #  Synopsis:

@@ -66,9 +66,6 @@ bsock_shutdown(int argc, VALUE *argv, VALUE sock)
     int how;
     rb_io_t *fptr;
 
-    if (rb_safe_level() >= 4 && !OBJ_TAINTED(sock)) {
-	rb_raise(rb_eSecurityError, "Insecure: can't shutdown socket");
-    }
     rb_scan_args(argc, argv, "01", &howto);
     if (howto == Qnil)
 	how = SHUT_RDWR;
@@ -100,9 +97,6 @@ bsock_close_read(VALUE sock)
 {
     rb_io_t *fptr;
 
-    if (rb_safe_level() >= 4 && !OBJ_TAINTED(sock)) {
-	rb_raise(rb_eSecurityError, "Insecure: can't close socket");
-    }
     GetOpenFile(sock, fptr);
     shutdown(fptr->fd, 0);
     if (!(fptr->mode & FMODE_WRITABLE)) {
@@ -133,9 +127,6 @@ bsock_close_write(VALUE sock)
 {
     rb_io_t *fptr;
 
-    if (rb_safe_level() >= 4 && !OBJ_TAINTED(sock)) {
-	rb_raise(rb_eSecurityError, "Insecure: can't close socket");
-    }
     GetOpenFile(sock, fptr);
     if (!(fptr->mode & FMODE_READABLE)) {
 	return rb_io_close(sock);
@@ -563,7 +554,7 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
     GetOpenFile(sock, fptr);
     arg.fd = fptr->fd;
     arg.flags = NUM2INT(flags);
-    while (rb_thread_fd_writable(arg.fd),
+    while (rsock_maybe_fd_writable(arg.fd),
 	   (n = (int)BLOCKING_REGION_FD(func, &arg)) < 0) {
 	if (rb_io_wait_writable(arg.fd)) {
 	    continue;

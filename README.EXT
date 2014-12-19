@@ -184,6 +184,10 @@ rb_str_new_cstr(const char *ptr) ::
   Creates a new Ruby string from a C string.  This is equivalent to
   rb_str_new(ptr, strlen(ptr)).
 
+rb_str_new_literal(const char *ptr) ::
+
+  Creates a new Ruby string from a C string literal.
+
 rb_tainted_str_new(const char *ptr, long len) ::
 
   Creates a new tainted Ruby string.  Strings from external data
@@ -199,15 +203,17 @@ rb_vsprintf(const char *format, va_list ap) ::
 
   Creates a new Ruby string with printf(3) format.
 
-  Note: In the format string, %i is used for Object#to_s (or Object#inspect if
-  '+' flag is set) output (and related argument must be a VALUE).  For integers
-  in format strings, use %d.
+  Note: In the format string, "%"PRIsVALUE can be used for Object#to_s
+  (or Object#inspect if '+' flag is set) output (and related argument
+  must be a VALUE).  Since it conflicts with "%i", for integers in
+  format strings, use "%d".
 
 rb_str_cat(VALUE str, const char *ptr, long len) ::
 
   Appends len bytes of data from ptr to the Ruby string.
 
 rb_str_cat2(VALUE str, const char* ptr) ::
+rb_str_cat_cstr(VALUE str, const char* ptr) ::
 
   Appends C string ptr to Ruby string str.  This function is
   equivalent to rb_str_cat(str, ptr, strlen(ptr)).
@@ -225,10 +231,30 @@ rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc) ::
 
   Creates a new Ruby string with the specified encoding.
 
+rb_enc_str_new_literal(const char *ptr) ::
+
+  Creates a new Ruby string from a C string literal with the specified
+  encoding.
+
 rb_usascii_str_new(const char *ptr, long len) ::
 rb_usascii_str_new_cstr(const char *ptr) ::
 
   Creates a new Ruby string with encoding US-ASCII.
+
+rb_usascii_str_new_literal(const char *ptr) ::
+
+  Creates a new Ruby string from a C string literal with encoding
+  US-ASCII.
+
+rb_utf8_str_new(const char *ptr, long len) ::
+rb_utf8_str_new_cstr(const char *ptr) ::
+
+  Creates a new Ruby string with encoding UTF-8.
+
+rb_utf8_str_new_literal(const char *ptr) ::
+
+  Creates a new Ruby string from a C string literal with encoding
+  UTF-8.
 
 rb_str_resize(VALUE str, long len) ::
 
@@ -411,6 +437,16 @@ func has to take the klass as the argument and return a newly
 allocated instance.  This instance should be as empty as possible,
 without any expensive (including external) resources.
 
+If you are overriding an existing method of any ancestor of your class,
+you may rely on:
+
+  VALUE rb_call_super(int argc, const VALUE *argv)
+
+To achieve the receiver of the current scope (if no other way is
+available), you can use:
+
+  VALUE rb_current_receiver(void)
+
 === Constant Definition
 
 We have 2 functions to define constants:
@@ -475,6 +511,16 @@ result into *name, and returns 0 if the string is not a known symbol.
 After this function returned a non-zero value, *name is always a
 Symbol or a String, otherwise it is a String if the result is 0.
 The third function takes NUL-terminated C string, not Ruby VALUE.
+
+You can retrieve Symbol from Ruby object (Symbol or String) given as
+an argument by using
+
+  rb_to_symbol(VALUE name)
+  rb_check_symbol(volatile VALUE *namep)
+  rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc)
+
+These functions are similar to above functions except that these
+return a Symbol instead of an ID.
 
 You can convert C ID to Ruby Symbol by using
 
@@ -649,7 +695,7 @@ Here's the example of an initializing function.
   Init_dbm(void)
   {
       /* define DBM class */
-      cDBM = rb_define_class("DBM", rb_cObject);
+      VALUE cDBM = rb_define_class("DBM", rb_cObject);
       /* DBM includes Enumerable module */
       rb_include_module(cDBM, rb_mEnumerable);
 
@@ -683,10 +729,10 @@ wrapping DBM* directly, because we want to cache size information.
 To retrieve the dbmdata structure from a Ruby object, we define the
 following macro:
 
-  #define GetDBM(obj, dbmp) {\
+  #define GetDBM(obj, dbmp) do {\
       Data_Get_Struct(obj, struct dbmdata, dbmp);\
       if (dbmp->di_dbm == 0) closed_dbm();\
-  }
+  } while (0)
 
 This sort of complicated macro does the retrieving and close checking for
 the DBM.
@@ -1080,6 +1126,15 @@ rb_float_new(f) ::
 
   double -> Float
 
+RSTRING_LEN(str) ::
+
+  String -> length of String data in bytes
+
+RSTRING_PTR(str) ::
+
+  String -> pointer to String data
+  Note that the result pointer may not be NUL-terminated
+
 StringValue(value) ::
 
   Object with #to_str -> String
@@ -1090,7 +1145,8 @@ StringValuePtr(value) ::
 
 StringValueCStr(value) ::
 
-  Object with #to_str -> pointer to String data without NULL bytes
+  Object with #to_str -> pointer to String data without NUL bytes
+  It is guaranteed that the result data is NUL-terminated
 
 rb_str_new2(s) ::
 
@@ -1249,6 +1305,26 @@ rb_scan_args(int argc, VALUE *argv, const char *fmt, ...) ::
   The number of given arguments, excluding an option hash or iterator
   block, is returned.
 
+int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *values)
+
+  Retrieves argument VALUEs bound to keywords, which directed by +table+
+  into +values+.  First +required+ number of IDs referred by +table+ are
+  mandatory, and succeeding +optional+ (- +optional+ - 1 if
+  +optional+ is negative) number of IDs are optional.  If a
+  mandatory key is not contained in +keyword_hash+, raises "missing
+  keyword" +ArgumentError+.  If an optional key is not present in
+  +keyword_hash+, the corresponding element in +values+ is not changed.
+  If +optional+ is negative, rest of +keyword_hash+ are stored in the
+  next to optional +values+ as a new Hash, otherwise raises "unknown
+  keyword" +ArgumentError+.
+
+VALUE rb_extract_keywords(VALUE *original_hash)
+
+  Extracts pairs whose key is a symbol into a new hash from a hash
+  object referred by +original_hash+.  If the original hash contains
+  non-symbol keys, then they are copied to another hash and the new hash
+  is stored through +original_hash+, else 0 is stored.
+
 == Invoking Ruby method
 
 VALUE rb_funcall(VALUE recv, ID mid, int narg, ...) ::
@@ -1393,9 +1469,10 @@ void rb_bug(const char *fmt, ...) ::
   called under the situation caused by the bug in the interpreter.  No
   exception handling nor ensure execution will be done.
 
-Note: In the format string, %i is used for Object#to_s (or Object#inspect if
-'+' flag is set) output (and related argument must be a VALUE).  For integers
-in format strings, use %d.
+Note: In the format string, "%"PRIsVALUE can be used for Object#to_s
+(or Object#inspect if '+' flag is set) output (and related argument
+must be a VALUE).  Since it conflicts with "%i", for integers in
+format strings, use "%d".
 
 == Initialize and Start the Interpreter
 
@@ -1405,13 +1482,18 @@ void ruby_init() ::
 
   Initializes the interpreter.
 
-void ruby_options(int argc, char **argv) ::
+void *ruby_options(int argc, char **argv) ::
 
   Process command line arguments for the interpreter.
+  And compiles the Ruby source to execute.
+  It returns an opaque pointer to the compiled source
+  or an internal special value.
 
-void ruby_run() ::
+int ruby_run_node(void *n) ::
 
-  Starts execution of the interpreter.
+  Runs the given compiled source and exits this process.
+  It returns EXIT_SUCCESS if successfully runs the source.
+  Otherwise, it returns other value.
 
 void ruby_script(char *name) ::
 
@@ -1590,6 +1672,56 @@ available in in include/ruby/ruby.h. An example is available in iseq.c.
 
 For a complete guide for RGenGC and write barriers, please refer to
 <https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/RGenGC>.
+
+= Appendix E. RB_GC_GUARD to protect from premature GC
+
+C Ruby currently uses conservative garbage collection, thus VALUE
+variables must remain visible on the stack or registers to ensure any
+associated data remains usable.  Optimizing C compilers are not designed
+with conservative garbage collection in mind, so they may optimize away
+the original VALUE even if the code depends on data associated with that
+VALUE.
+
+The following example illustrates the use of RB_GC_GUARD to ensure
+the contents of sptr remain valid while the second invocation of
+rb_str_new_cstr is running.
+
+  VALUE s, w;
+  const char *sptr;
+
+  s = rb_str_new_cstr("hello world!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+  sptr = RSTRING_PTR(s);
+  w = rb_str_new_cstr(sptr + 6); /* Possible GC invocation */
+
+  RB_GC_GUARD(s); /* ensure s (and thus sptr) do not get GC-ed */
+
+In the above example, RB_GC_GUARD must be placed _after_ the last use of
+sptr.  Placing RB_GC_GUARD before dereferencing sptr would be of no use.
+RB_GC_GUARD is only effective on the VALUE data type, not converted C
+data types.
+
+RB_GC_GUARD would not be necessary at all in the above example if
+non-inlined function calls are made on the `s' VALUE after sptr is
+dereferenced.  Thus, in the above example, calling any un-inlined
+function on `s' such as:
+
+  rb_str_modify(s);
+
+Will ensure `s' stays on the stack or register to prevent a
+GC invocation from prematurely freeing it.
+
+Using the RB_GC_GUARD macro is preferable to using the "volatile"
+keyword in C.  RB_GC_GUARD has the following advantages:
+
+1) the intent of the macro use is clear
+
+2) RB_GC_GUARD only affects its call site, "volatile" generates some
+   extra code every time the variable is used, hurting optimization.
+
+3) "volatile" implementations may be buggy/inconsistent in some
+   compilers and architectures. RB_GC_GUARD is customizable for broken
+   systems/compilers without those without negatively affecting other
+   systems.
 
 /*
  * Local variables:

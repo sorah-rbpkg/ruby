@@ -1,5 +1,4 @@
 require 'test/unit'
-require_relative 'envutil'
 
 # use of $= is deprecated after 1.7.1
 def pre_1_7_1
@@ -505,6 +504,14 @@ class TestString < Test::Unit::TestCase
   def test_crypt
     assert_equal(S('aaGUC/JkO9/Sc'), S("mypassword").crypt(S("aa")))
     assert_not_equal(S('aaGUC/JkO9/Sc'), S("mypassword").crypt(S("ab")))
+    assert_raise(ArgumentError) {S("mypassword").crypt(S(""))}
+    assert_raise(ArgumentError) {S("mypassword").crypt(S("\0a"))}
+    assert_raise(ArgumentError) {S("mypassword").crypt(S("a\0"))}
+    [Encoding::UTF_16BE, Encoding::UTF_16LE,
+     Encoding::UTF_32BE, Encoding::UTF_32LE].each do |enc|
+      assert_raise(ArgumentError) {S("mypassword").crypt(S("aa".encode(enc)))}
+      assert_raise(ArgumentError) {S("mypassword".encode(enc)).crypt(S("aa"))}
+    end
   end
 
   def test_delete
@@ -808,6 +815,7 @@ class TestString < Test::Unit::TestCase
                  S("hello").gsub(/./) { |s| s[0].to_s + S(' ')})
     assert_equal(S("HELL-o"),
                  S("hello").gsub(/(hell)(.)/) { |s| $1.upcase + S('-') + $2 })
+    assert_equal(S("<>h<>e<>l<>l<>o<>"), S("hello").gsub(S(''), S('<\0>')))
 
     a = S("hello")
     a.taint
@@ -831,6 +839,11 @@ class TestString < Test::Unit::TestCase
     c.force_encoding Encoding::US_ASCII
 
     assert_equal Encoding::UTF_8, a.gsub(/world/, c).encoding
+
+    assert_equal S("a\u{e9}apos&lt;"), S("a\u{e9}'&lt;").gsub("'", "apos")
+
+    bug9849 = '[ruby-core:62669] [Bug #9849]'
+    assert_equal S("\u{3042 3042 3042}!foo!"), S("\u{3042 3042 3042}/foo/").gsub("/", "!"), bug9849
   end
 
   def test_gsub!
@@ -1145,6 +1158,16 @@ class TestString < Test::Unit::TestCase
     res = []
     a.scan(/./) { |w| res << w }
     assert_predicate(res[0], :tainted?, '[ruby-core:33338] #4087')
+
+    /h/ =~ a
+    a.scan(/x/)
+    assert_nil($~)
+
+    /h/ =~ a
+    a.scan('x')
+    assert_nil($~)
+
+    assert_equal(3, S("hello hello hello").scan("hello".taint).count(&:tainted?))
   end
 
   def test_size
@@ -1410,6 +1433,7 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("HELL-o"),   S("hello").sub(/(hell)(.)/) {
                    |s| $1.upcase + S('-') + $2
                    })
+    assert_equal(S("h<e>llo"),  S("hello").sub('e', S('<\0>')))
 
     assert_equal(S("a\\aba"), S("ababa").sub(/b/, '\\'))
     assert_equal(S("ab\\aba"), S("ababa").sub(/(b)/, '\1\\'))
@@ -1459,6 +1483,12 @@ class TestString < Test::Unit::TestCase
     o = Object.new
     def o.to_s; self; end
     assert_match(/^foo#<Object:0x.*>baz$/, "foobarbaz".sub("bar") { o })
+
+    assert_equal(S("Abc"), S("abc").sub("a", "A"))
+    m = nil
+    assert_equal(S("Abc"), S("abc").sub("a") {m = $~; "A"})
+    assert_equal(S("a"), m[0])
+    assert_equal(/a/, m.regexp)
   end
 
   def test_sub!
@@ -1561,6 +1591,8 @@ class TestString < Test::Unit::TestCase
     assert_equal(16, n.sum(17))
     n[0] = 2.chr
     assert_not_equal(15, n.sum)
+    assert_equal(17, n.sum(0))
+    assert_equal(17, n.sum(-1))
   end
 
   def check_sum(str, bits=16)
@@ -1575,7 +1607,7 @@ class TestString < Test::Unit::TestCase
     assert_equal(294, "abc".sum)
     check_sum("abc")
     check_sum("\x80")
-    0.upto(70) {|bits|
+    -3.upto(70) {|bits|
       check_sum("xyz", bits)
     }
   end
@@ -2032,6 +2064,11 @@ class TestString < Test::Unit::TestCase
 
   def test_setter
     assert_raise(TypeError) { $/ = 1 }
+    name = "\u{5206 884c}"
+    assert_separately([], <<-"end;") #    do
+      alias $#{name} $/
+      assert_raise_with_message(TypeError, /\\$#{name}/) { $#{name} = 1 }
+    end;
   end
 
   def test_to_id
@@ -2225,6 +2262,19 @@ class TestString < Test::Unit::TestCase
     RUBY
   end
 
+  class Bug9581 < String
+    def =~ re; :foo end
+  end
+
+  def test_regexp_match_subclass
+    s = Bug9581.new("abc")
+    r = /abc/
+    assert_equal(:foo, s =~ r)
+    assert_equal(:foo, s.send(:=~, r))
+    assert_equal(:foo, s.send(:=~, /abc/))
+    assert_equal(:foo, s =~ /abc/, "should not use optimized instruction")
+  end
+
   def test_LSHIFT_neary_long_max
     return unless @cls == String
     assert_ruby_status([], <<-'end;', '[ruby-core:61886] [Bug #9709]', timeout: 20)
@@ -2234,7 +2284,8 @@ class TestString < Test::Unit::TestCase
       rescue NoMemoryError
       end
     end;
-  end
+  end if [0].pack("l!").bytesize < [nil].pack("p").bytesize
+  # enable only when string size range is smaller than memory space
 end
 
 class TestString2 < TestString
