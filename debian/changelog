@@ -1,6 +1,6 @@
-ruby2.2 (2.2.0-1) UNRELEASED; urgency=medium
+ruby2.2 (2.2.0~1-1) UNRELEASED; urgency=medium
 
-  * Ruby 2.2
+  * Ruby 2.2 RC1
 
  -- Antonio Terceiro <terceiro@debian.org>  Fri, 19 Dec 2014 14:46:35 -0200
 
