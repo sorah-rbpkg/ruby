@@ -4,10 +4,10 @@ require 'fileutils'
 
 include FileUtils::Verbose
 
-src_package = "lib#{ENV.fetch('SOURCE']}"
+src_package = "lib#{ENV.fetch('SOURCE')}"
 dst_package = "#{ENV.fetch('SOURCE')}-tcltk"
 
-api_version = ENV.fetch('RUBY_API_VERSION')
+ruby_api_version = ENV.fetch('RUBY_API_VERSION')
 
 # .so files
 tk_so_files = Dir.glob("debian/#{src_package}/usr/lib/*/ruby/**/{tcltklib,tkutil}.so")
