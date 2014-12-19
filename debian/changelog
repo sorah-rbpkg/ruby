@@ -1,3 +1,9 @@
+ruby2.2 (2.2.0-1) UNRELEASED; urgency=medium
+
+  * Ruby 2.2
+
+ -- Antonio Terceiro <terceiro@debian.org>  Fri, 19 Dec 2014 14:46:35 -0200
+
 ruby2.1 (2.1.5-1) unstable; urgency=medium
 
   * New upstream release
