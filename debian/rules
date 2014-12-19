@@ -12,8 +12,9 @@ export TESTOPTS
 
 DEB_HOST_MULTIARCH := $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
-RUBY_VERSION       := $(patsubst ruby%, %, $(SOURCE))
-RUBY_API_VERSION   := $(RUBY_SERIES).0
+SOURCE                    := $(shell dpkg-parsechangelog -SSource)
+export RUBY_VERSION       := $(patsubst ruby%,%,$(SOURCE))
+export RUBY_API_VERSION   := $(RUBY_VERSION).0
 
 # Bootstrap with Ruby 1.8 if proper Ruby is not available
 baseruby=$(shell test -x /usr/bin/ruby && echo /usr/bin/ruby || echo /usr/bin/ruby1.8)
