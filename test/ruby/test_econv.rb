@@ -1,5 +1,4 @@
 require 'test/unit'
-require_relative 'envutil'
 
 class TestEncodingConverter < Test::Unit::TestCase
   def check_ec(edst, esrc, eres, dst, src, ec, off, len, opts=nil)
@@ -908,6 +907,9 @@ class TestEncodingConverter < Test::Unit::TestCase
     ec1 = Encoding::Converter.new("", "", universal_newline: true)
     ec2 = Encoding::Converter.new("", "", newline: :universal)
     assert_equal(ec1, ec2)
+    assert_raise_with_message(ArgumentError, /\u{3042}/) {
+      Encoding::Converter.new("", "", newline: "\u{3042}".to_sym)
+    }
   end
 
   def test_default_external

@@ -2,7 +2,6 @@ require 'test/unit'
 require 'delegate'
 require 'timeout'
 require 'bigdecimal'
-require_relative 'envutil'
 
 class TestRange < Test::Unit::TestCase
   def test_range_string
@@ -60,6 +59,9 @@ class TestRange < Test::Unit::TestCase
 
     assert_equal(0, (0..0).min)
     assert_equal(nil, (0...0).min)
+
+    assert_equal([0,1,2], (0..10).min(3))
+    assert_equal([0,1], (0..1).min(3))
   end
 
   def test_max
@@ -77,6 +79,9 @@ class TestRange < Test::Unit::TestCase
 
     assert_equal(0, (0..0).max)
     assert_equal(nil, (0...0).max)
+
+    assert_equal([10,9,8], (0..10).max(3))
+    assert_equal([9,8,7], (0...10).max(3))
   end
 
   def test_initialize_twice
@@ -557,7 +562,7 @@ class TestRange < Test::Unit::TestCase
         x >= 42
       }
       assert_equal(42, answer, msg)
-    }
+    }, ignore_stderr: true
   end
 
   def test_each_no_blockarg

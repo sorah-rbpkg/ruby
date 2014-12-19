@@ -9,10 +9,8 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
-#include "ruby/st.h"
-#include "ruby/encoding.h"
 #include "internal.h"
+#include "ruby/st.h"
 #include "vm_core.h"
 
 #include <stdio.h>
@@ -292,41 +290,78 @@ rb_bug_reporter_add(void (*func)(FILE *, void *), void *data)
     return 1;
 }
 
-static void
-report_bug(const char *file, int line, const char *fmt, va_list args)
+/* SIGSEGV handler might have a very small stack. Thus we need to use it carefully. */
+#define REPORT_BUG_BUFSIZ 256
+static FILE *
+bug_report_file(const char *file, int line)
 {
-    /* SIGSEGV handler might have a very small stack. Thus we need to use it carefully. */
-    char buf[256];
+    char buf[REPORT_BUG_BUFSIZ];
     FILE *out = stderr;
-    int len = err_position_0(buf, 256, file, line);
+    int len = err_position_0(buf, sizeof(buf), file, line);
 
     if ((ssize_t)fwrite(buf, 1, len, out) == (ssize_t)len ||
 	(ssize_t)fwrite(buf, 1, len, (out = stdout)) == (ssize_t)len) {
-
-	fputs("[BUG] ", out);
-	vsnprintf(buf, 256, fmt, args);
-	fputs(buf, out);
-	snprintf(buf, 256, "\n%s\n\n", ruby_description);
-	fputs(buf, out);
-
-	rb_vm_bugreport();
-
-	/* call additional bug reporters */
-	{
-	    int i;
-	    for (i=0; i<bug_reporters_size; i++) {
-		struct bug_reporters *reporter = &bug_reporters[i];
-		(*reporter->func)(out, reporter->data);
-	    }
-	}
-	fprintf(out, REPORTBUG_MSG);
+	return out;
     }
+    return NULL;
+}
+
+static void
+bug_report_begin(FILE *out, const char *fmt, va_list args)
+{
+    char buf[REPORT_BUG_BUFSIZ];
+
+    fputs("[BUG] ", out);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    fputs(buf, out);
+    snprintf(buf, sizeof(buf), "\n%s\n\n", ruby_description);
+    fputs(buf, out);
+}
+
+#define bug_report_begin(out, fmt) do { \
+    va_list args; \
+    va_start(args, fmt); \
+    bug_report_begin(out, fmt, args); \
+    va_end(args); \
+} while (0)
+
+static void
+bug_report_end(FILE *out)
+{
+    /* call additional bug reporters */
+    {
+	int i;
+	for (i=0; i<bug_reporters_size; i++) {
+	    struct bug_reporters *reporter = &bug_reporters[i];
+	    (*reporter->func)(out, reporter->data);
+	}
+    }
+    fprintf(out, REPORTBUG_MSG);
+}
+
+#define report_bug(file, line, fmt, ctx) do { \
+    FILE *out = bug_report_file(file, line); \
+    if (out) { \
+	bug_report_begin(out, fmt); \
+	rb_vm_bugreport(ctx); \
+	bug_report_end(out); \
+    } \
+} while (0) \
+
+NORETURN(static void die(void));
+static void
+die(void)
+{
+#if defined(_WIN32) && defined(RUBY_MSVCRT_VERSION) && RUBY_MSVCRT_VERSION >= 80
+    _set_abort_behavior( 0, _CALL_REPORTFAULT);
+#endif
+
+    abort();
 }
 
 void
 rb_bug(const char *fmt, ...)
 {
-    va_list args;
     const char *file = NULL;
     int line = 0;
 
@@ -335,16 +370,27 @@ rb_bug(const char *fmt, ...)
 	line = rb_sourceline();
     }
 
-    va_start(args, fmt);
-    report_bug(file, line, fmt, args);
-    va_end(args);
+    report_bug(file, line, fmt, NULL);
 
-#if defined(_WIN32) && defined(RUBY_MSVCRT_VERSION) && RUBY_MSVCRT_VERSION >= 80
-    _set_abort_behavior( 0, _CALL_REPORTFAULT);
-#endif
-
-    abort();
+    die();
 }
+
+void
+rb_bug_context(const void *ctx, const char *fmt, ...)
+{
+    const char *file = NULL;
+    int line = 0;
+
+    if (GET_THREAD()) {
+	file = rb_sourcefile();
+	line = rb_sourceline();
+    }
+
+    report_bug(file, line, fmt, ctx);
+
+    die();
+}
+
 
 void
 rb_bug_errno(const char *mesg, int errno_arg)
@@ -394,11 +440,7 @@ rb_async_bug_errno(const char *mesg, int errno_arg)
 void
 rb_compile_bug(const char *file, int line, const char *fmt, ...)
 {
-    va_list args;
-
-    va_start(args, fmt);
-    report_bug(file, line, fmt, args);
-    va_end(args);
+    report_bug(file, line, fmt, NULL);
 
     abort();
 }
@@ -499,10 +541,8 @@ rb_check_type(VALUE x, int t)
 int
 rb_typeddata_inherited_p(const rb_data_type_t *child, const rb_data_type_t *parent)
 {
-    while (child) {
-	if (child == parent) return 1;
-	child = child->parent;
-    }
+    rb_warn("rb_typeddata_inherited_p() is deprecated");
+    if (child == parent) return 1;
     return 0;
 }
 
@@ -510,7 +550,7 @@ int
 rb_typeddata_is_kind_of(VALUE obj, const rb_data_type_t *data_type)
 {
     if (!RB_TYPE_P(obj, T_DATA) ||
-	!RTYPEDDATA_P(obj) || !rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), data_type)) {
+	!RTYPEDDATA_P(obj) || RTYPEDDATA_TYPE(obj) != data_type) {
 	return 0;
     }
     return 1;
@@ -530,7 +570,7 @@ rb_check_typeddata(VALUE obj, const rb_data_type_t *data_type)
 	etype = rb_obj_classname(obj);
 	rb_raise(rb_eTypeError, mesg, etype, data_type->wrap_struct_name);
     }
-    else if (!rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), data_type)) {
+    else if (RTYPEDDATA_TYPE(obj) != data_type) {
 	etype = RTYPEDDATA_TYPE(obj)->wrap_struct_name;
 	rb_raise(rb_eTypeError, mesg, etype, data_type->wrap_struct_name);
     }
@@ -809,6 +849,15 @@ rb_exc_set_backtrace(VALUE exc, VALUE bt)
     return exc_set_backtrace(exc, bt);
 }
 
+/*
+ * call-seq:
+ *   exception.cause   -> an_exception or nil
+ *
+ * Returns the previous exception ($!) at the time this exception was raised.
+ * This is useful for wrapping exceptions and retaining the original exception
+ * information.
+ */
+
 VALUE
 exc_cause(VALUE exc)
 {
@@ -820,9 +869,7 @@ exc_cause(VALUE exc)
 static VALUE
 try_convert_to_exception(VALUE obj)
 {
-    ID id_exception;
-    CONST_ID(id_exception, "exception");
-    return rb_check_funcall(obj, id_exception, 0, 0);
+    return rb_check_funcall(obj, idException, 0, 0);
 }
 
 /*
@@ -838,10 +885,9 @@ static VALUE
 exc_equal(VALUE exc, VALUE obj)
 {
     VALUE mesg, backtrace;
-    ID id_mesg;
+    const ID id_mesg = idMesg;
 
     if (exc == obj) return Qtrue;
-    CONST_ID(id_mesg, "mesg");
 
     if (rb_obj_class(exc) != rb_obj_class(obj)) {
 	int status = 0;
@@ -1070,7 +1116,7 @@ static const rb_data_type_t name_err_mesg_data_type = {
 	name_err_mesg_free,
 	name_err_mesg_memsize,
     },
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 /* :nodoc: */
@@ -1237,19 +1283,19 @@ set_syserr(int n, const char *name)
 
 	/* capture nonblock errnos for WaitReadable/WaitWritable subclasses */
 	switch (n) {
-	    case EAGAIN:
-	        rb_eEAGAIN = error;
+	  case EAGAIN:
+	    rb_eEAGAIN = error;
 
-#if EAGAIN != EWOULDBLOCK
-                break;
-	    case EWOULDBLOCK:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+	    break;
+	  case EWOULDBLOCK:
 #endif
 
-		rb_eEWOULDBLOCK = error;
-		break;
-	    case EINPROGRESS:
-		rb_eEINPROGRESS = error;
-		break;
+	    rb_eEWOULDBLOCK = error;
+	    break;
+	  case EINPROGRESS:
+	    rb_eEINPROGRESS = error;
+	    break;
 	}
 
 	rb_define_const(error, "Errno", INT2NUM(n));
@@ -1293,7 +1339,7 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
     char *strerror();
 #endif
     const char *err;
-    VALUE mesg, error, func;
+    VALUE mesg, error, func, errmsg;
     VALUE klass = rb_obj_class(self);
 
     if (klass == rb_eSystemCallError) {
@@ -1317,25 +1363,17 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
     }
     if (!NIL_P(error)) err = strerror(NUM2INT(error));
     else err = "unknown error";
-    if (!NIL_P(mesg)) {
-	rb_encoding *le = rb_locale_encoding();
-	VALUE str = StringValue(mesg);
-	rb_encoding *me = rb_enc_get(mesg);
 
-	if (NIL_P(func))
-	    mesg = rb_sprintf("%s - %"PRIsVALUE, err, mesg);
-	else
-	    mesg = rb_sprintf("%s @ %"PRIsVALUE" - %"PRIsVALUE, err, func, mesg);
-	if (le != me && rb_enc_asciicompat(me)) {
-	    le = me;
-	}/* else assume err is non ASCII string. */
-	OBJ_INFECT(mesg, str);
-	rb_enc_associate(mesg, le);
+    errmsg = rb_enc_str_new_cstr(err, rb_locale_encoding());
+    if (!NIL_P(mesg)) {
+	VALUE str = StringValue(mesg);
+
+	if (!NIL_P(func)) rb_str_catf(errmsg, " @ %"PRIsVALUE, func);
+	rb_str_catf(errmsg, " - %"PRIsVALUE, str);
+	OBJ_INFECT(errmsg, mesg);
     }
-    else {
-	mesg = rb_str_new2(err);
-	rb_enc_associate(mesg, rb_locale_encoding());
-    }
+    mesg = errmsg;
+
     rb_call_super(1, &mesg);
     rb_iv_set(self, "errno", error);
     return self;
@@ -1616,7 +1654,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *
  *  <em>raises the exception:</em>
  *
- *     RuntimeError: can't modify frozen array
+ *     RuntimeError: can't modify frozen Array
  *
  *  Kernel.raise will raise a RuntimeError if no Exception class is
  *  specified.
@@ -1745,6 +1783,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *    * Interrupt
  *  * StandardError -- default for +rescue+
  *    * ArgumentError
+ *      * UncaughtThrowError
  *    * EncodingError
  *    * FiberError
  *    * IOError
@@ -1806,7 +1845,7 @@ Init_Exception(void)
 
     rb_eLoadError   = rb_define_class("LoadError", rb_eScriptError);
     /* the path failed to load */
-    rb_attr(rb_eLoadError, rb_intern("path"), 1, 0, Qfalse);
+    rb_attr(rb_eLoadError, rb_intern_const("path"), 1, 0, Qfalse);
 
     rb_eNotImpError = rb_define_class("NotImplementedError", rb_eScriptError);
 
@@ -1903,8 +1942,8 @@ void
 rb_notimplement(void)
 {
     rb_raise(rb_eNotImpError,
-	     "%s() function is unimplemented on this machine",
-	     rb_id2name(rb_frame_this_func()));
+	     "%"PRIsVALUE"() function is unimplemented on this machine",
+	     rb_id2str(rb_frame_this_func()));
 }
 
 void
@@ -2077,6 +2116,13 @@ void
 rb_error_frozen(const char *what)
 {
     rb_raise(rb_eRuntimeError, "can't modify frozen %s", what);
+}
+
+void
+rb_error_frozen_object(VALUE frozen_obj)
+{
+    rb_raise(rb_eRuntimeError, "can't modify frozen %"PRIsVALUE,
+	     CLASS_OF(frozen_obj));
 }
 
 #undef rb_check_frozen

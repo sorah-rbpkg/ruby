@@ -24,7 +24,7 @@ static const rb_digest_metadata_t sha1 = {
  * Technology), described in FIPS PUB 180-1.
  */
 void
-Init_sha1()
+Init_sha1(void)
 {
     VALUE mDigest, cDigest_Base, cDigest_SHA1;
 
@@ -38,6 +38,8 @@ Init_sha1()
 
     cDigest_SHA1 = rb_define_class_under(mDigest, "SHA1", cDigest_Base);
 
+#undef RUBY_UNTYPED_DATA_WARNING
+#define RUBY_UNTYPED_DATA_WARNING 0
     rb_ivar_set(cDigest_SHA1, rb_intern("metadata"),
-      Data_Wrap_Struct(rb_cObject, 0, 0, (void *)&sha1));
+		Data_Wrap_Struct(0, 0, 0, (void *)&sha1));
 }

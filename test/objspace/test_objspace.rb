@@ -1,6 +1,5 @@
 require "test/unit"
 require "objspace"
-require_relative "../ruby/envutil"
 
 class TestObjSpace < Test::Unit::TestCase
   def test_memsize_of
@@ -29,7 +28,8 @@ class TestObjSpace < Test::Unit::TestCase
     b = a.dup
     c = nil
     ObjectSpace.each_object(String) {|x| break c = x if x == a and x.frozen?}
-    assert_equal([0, 0, 26], [a, b, c].map {|x| ObjectSpace.memsize_of(x)})
+    rv_size = GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
+    assert_equal([rv_size, rv_size, 26 + rv_size], [a, b, c].map {|x| ObjectSpace.memsize_of(x)})
   end
 
   def test_argf_memsize
@@ -196,7 +196,7 @@ class TestObjSpace < Test::Unit::TestCase
 
   def test_dump_flags
     info = ObjectSpace.dump("foo".freeze)
-    assert_match /"wb_protected":true, "old":true, "marked":true/, info
+    assert_match /"wb_protected":true, "old":true, "long_lived":true, "marked":true/, info
     assert_match /"fstring":true/, info
   end
 

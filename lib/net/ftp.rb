@@ -103,7 +103,7 @@ module Net
     # Number of seconds to wait for one block to be read (via one read(2)
     # call). Any number may be used, including Floats for fractional
     # seconds. If the FTP object cannot read data in this many seconds,
-    # it raises a TimeoutError exception. The default value is 60 seconds.
+    # it raises a Timeout::Error exception. The default value is 60 seconds.
     attr_reader :read_timeout
 
     # Setter for the read_timeout attribute.
@@ -446,12 +446,12 @@ module Net
     private :transfercmd
 
     #
-    # Logs in to the remote host. The session must have been previously
-    # connected.  If +user+ is the string "anonymous" and the +password+ is
-    # +nil+, a password of <tt>user@host</tt> is synthesized. If the +acct+
-    # parameter is not +nil+, an FTP ACCT command is sent following the
-    # successful login.  Raises an exception on error (typically
-    # <tt>Net::FTPPermError</tt>).
+    # Logs in to the remote host.  The session must have been
+    # previously connected.  If +user+ is the string "anonymous" and
+    # the +password+ is +nil+, "anonymous@" is used as a password.  If
+    # the +acct+ parameter is not +nil+, an FTP ACCT command is sent
+    # following the successful login.  Raises an exception on error
+    # (typically <tt>Net::FTPPermError</tt>).
     #
     def login(user = "anonymous", passwd = nil, acct = nil)
       if user == "anonymous" and passwd == nil

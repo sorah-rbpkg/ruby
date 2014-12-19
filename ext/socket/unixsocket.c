@@ -34,10 +34,6 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
     rb_io_t *fptr;
 
     SafeStringValue(path);
-    fd = rsock_socket(AF_UNIX, SOCK_STREAM, 0);
-    if (fd < 0) {
-	rsock_sys_fail_path("socket(2)", path);
-    }
 
     INIT_SOCKADDR_UN(&sockaddr, sizeof(struct sockaddr_un));
     if (sizeof(sockaddr.sun_path) < (size_t)RSTRING_LEN(path)) {
@@ -46,6 +42,11 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
     }
     memcpy(sockaddr.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));
     sockaddrlen = rsock_unix_sockaddr_len(path);
+
+    fd = rsock_socket(AF_UNIX, SOCK_STREAM, 0);
+    if (fd < 0) {
+	rsock_sys_fail_path("socket(2)", path);
+    }
 
     if (server) {
         status = bind(fd, (struct sockaddr*)&sockaddr, sockaddrlen);
@@ -277,6 +278,8 @@ recvmsg_blocking(void *data)
  * call-seq:
  *   unixsocket.recv_io([klass [, mode]]) => io
  *
+ * Example
+ *
  *   UNIXServer.open("/tmp/sock") {|serv|
  *     UNIXSocket.open("/tmp/sock") {|c|
  *       s = serv.accept
@@ -389,7 +392,13 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
 #if FD_PASSING_BY_MSG_CONTROL
     memcpy(&fd, CMSG_DATA(&cmsg.hdr), sizeof(int));
 #endif
-    rb_fd_fix_cloexec(fd);
+
+    rb_update_max_fd(fd);
+
+    if (rsock_cmsg_cloexec_state < 0)
+	rsock_cmsg_cloexec_state = rsock_detect_cloexec(fd);
+    if (rsock_cmsg_cloexec_state == 0 || fd <= 2)
+	rb_maygvl_fd_fix_cloexec(fd);
 
     if (klass == Qnil)
 	return INT2FIX(fd);
@@ -468,7 +477,7 @@ unix_peeraddr(VALUE sock)
  *   UNIXSocket.pair([type [, protocol]])       => [unixsocket1, unixsocket2]
  *   UNIXSocket.socketpair([type [, protocol]]) => [unixsocket1, unixsocket2]
  *
- * Creates a pair of sockets connected each other.
+ * Creates a pair of sockets connected to each other.
  *
  * _socktype_ should be a socket type such as: :STREAM, :DGRAM, :RAW, etc.
  *

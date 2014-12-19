@@ -1,7 +1,6 @@
 require 'test/unit'
 require 'tempfile'
 require 'timeout'
-require_relative 'envutil'
 
 class TestBeginEndBlock < Test::Unit::TestCase
   DIR = File.dirname(File.expand_path(__FILE__))
@@ -127,6 +126,7 @@ EOW
 
   def test_endblock_raise
     ruby = EnvUtil.rubybin
+    th = nil
     out = IO.popen(
       [ruby,
        '-e', 'class C; def write(x); puts x; STDOUT.flush; sleep 0.01; end; end',
@@ -134,11 +134,13 @@ EOW
        '-e', 'END {raise "e1"}; END {puts "e2"}',
        '-e', 'END {raise "e3"}; END {puts "e4"}',
        '-e', 'END {raise "e5"}; END {puts "e6"}']) {|f|
-      Thread.new {sleep 5; Process.kill :KILL, f.pid}
+      th = Thread.new {sleep 5; Process.kill :KILL, f.pid}
       f.read
     }
     assert_match(/e1/, out)
     assert_match(/e6/, out)
+  ensure
+    th.kill.join if th.alive?
   end
 
   def test_nested_at_exit

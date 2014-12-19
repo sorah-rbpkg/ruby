@@ -111,8 +111,8 @@ FIXNUMとNILに関してはより高速な判別マクロが用意されてい�
 換結果がintのサイズに収まらない場合には例外を発生します．
 それから，FIXNUMに限らずRubyのデータを整数に変換する
 「NUM2INT()」および「NUM2LONG()」というマクロがあります．こ
-れらのマクロはマクロはデータタイプのチェック無しで使えます
-(整数に変換できない場合には例外が発生する)．同様にチェック無
+れらのマクロはデータタイプのチェック無しで使えます
+(整数に変換できない場合には例外が発生する)．同様にチェック無し
 で使える変換マクロはdoubleを取り出す「NUM2DBL()」があります．
 
 char* を取り出す場合， StringValue() と StringValuePtr()
@@ -209,6 +209,10 @@ rb_str_new_cstr(const char *ptr)
   Cの文字列からRubyの文字列を生成する．この関数の機能は
   rb_str_new(ptr, strlen(ptr))と同等である．
 
+rb_str_new_literal(const char *ptr)
+
+  Cのリテラル文字列からRubyの文字列を生成する．
+
 rb_tainted_str_new(const char *ptr, long len)
 
   汚染マークが付加された新しいRubyの文字列を生成する．外部
@@ -226,14 +230,16 @@ rb_vsprintf(const char *format, va_list ap)
   Cの文字列formatと続く引数をprintf(3)のフォーマットにしたがって
   整形し，Rubyの文字列を生成する．
 
-  注意: %iはObject#to_s('+'フラグが指定されているときはObject#inspect)を
-  使ったVALUEの出力に使用されているため，整数には%dを使用すること．
+  注意: "%"PRIsVALUEがObject#to_s('+'フラグが指定されている
+  ときはObject#inspect)を使ったVALUEの出力に利用できる．これ
+  は"%i"と衝突するため，整数には"%d"を使用すること．
 
 rb_str_cat(VALUE str, const char *ptr, long len)
 
   Rubyの文字列strにlenバイトの文字列ptrを追加する．
 
 rb_str_cat2(VALUE str, const char* ptr)
+rb_str_cat_cstr(VALUE str, const char* ptr)
 
   Rubyの文字列strにCの文字列ptrを追加する．この関数の機能は
   rb_str_cat(str, ptr, strlen(ptr))と同等である．
@@ -251,10 +257,27 @@ rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc)
 
   指定されたエンコーディングでRubyの文字列を生成する.
 
+rb_enc_str_new_literal(const char *ptr)
+
+  Cのリテラル文字列から指定されたエンコーディングでRubyの文字列を生成する．
+
 rb_usascii_str_new(const char *ptr, long len)
 rb_usascii_str_new_cstr(const char *ptr)
 
   エンコーディングがUS-ASCIIのRubyの文字列を生成する.
+
+rb_usascii_str_new_literal(const char *ptr)
+
+  Cのリテラル文字列からエンコーディングがUS-ASCIIのRubyの文字列を生成する．
+
+rb_utf8_str_new(const char *ptr, long len)
+rb_utf8_str_new_cstr(const char *ptr)
+
+  エンコーディングがUTF-8のRubyの文字列を生成する.
+
+rb_usascii_str_new_literal(const char *ptr)
+
+  Cのリテラル文字列からエンコーディングがUTF-8のRubyの文字列を生成する．
 
 rb_str_resize(VALUE str, long len)
 
@@ -450,6 +473,17 @@ funcはクラスを引数として受け取って，新しく割り当てられ�
 ソースなどを含まない，できるだけ「空」のままにしておいたほう
 がよいでしょう．
 
+継承したクラスにある既存のメソッドをオーバーライドしているな
+ら，オーバーライドされたメソッドを呼び出すには以下の関数を使
+います．
+
+  VALUE rb_call_super(int argc, const VALUE *argv)
+
+現在のスコープのレシーバは(他に方法がなければ)，以下の関数で
+得ることができます．
+
+  VALUE rb_current_receiver(void)
+
 === 定数定義
 
 拡張ライブラリが必要な定数はあらかじめ定義しておいた方が良い
@@ -516,12 +550,22 @@ IDとは変数名，メソッド名を表す整数です．Rubyの中では
   rb_check_id(volatile VALUE *name)
   rb_check_id_cstr(const char *name, long len, rb_encoding *enc)
 
-もし引数がシンボルでも文字列でもなければ、to_strメソッドで文
+もし引数がシンボルでも文字列でもなければ，to_strメソッドで文
 字列に変換しようとします．第二の関数はその変換結果を*nameに保
 存し,その名前が既知のシンボルでない場合は0を返します．この関
-数が0以外を返した場合は*nameは常にシンボルか文字列であり、0を
+数が0以外を返した場合は*nameは常にシンボルか文字列であり，0を
 返した場合は常に文字列です．第三の関数はRubyの文字列ではなく
 NUL終端されたCの文字列を使います．
+
+Rubyから引数として与えられたシンボル(または文字列)をシンボル
+に変換するには以下の関数を使います．
+
+  rb_to_symbol(VALUE name)
+  rb_check_symbol(volatile VALUE *namep)
+  rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc)
+
+これらの関数は，IDの代わりにシンボルを返すことを除けば上記の
+関数と同じです．
 
 === CからRubyのメソッドを呼び出す
 
@@ -725,7 +769,7 @@ Rubyは拡張ライブラリをロードする時に「Init_ライブラリ名�
   Init_dbm(void)
   {
       /* DBMクラスを定義する */
-      cDBM = rb_define_class("DBM", rb_cObject);
+      VALUE cDBM = rb_define_class("DBM", rb_cObject);
       /* DBMはEnumerableモジュールをインクルードする */
       rb_include_module(cDBM, rb_mEnumerable);
 
@@ -763,10 +807,10 @@ dbm.cではData_Make_Structを以下のように使っています．
 Dataオブジェクトからdbmstruct構造体のポインタを取り出すため
 に以下のマクロを使っています．
 
-  #define GetDBM(obj, dbmp) {\
+  #define GetDBM(obj, dbmp) do {\
       Data_Get_Struct(obj, struct dbmdata, dbmp);\
       if (dbmp->di_dbm == 0) closed_dbm();\
-  }
+  } while (0)
 
 ちょっと複雑なマクロですが，要するにdbmdata構造体のポインタ
 の取り出しと，closeされているかどうかのチェックをまとめてい
@@ -1118,6 +1162,8 @@ Data_Get_Struct(data, type, sval) ::
   rb_integer_pack(value, words, numwords, wordsize, nails, flags), rb_integer_unpack(words, numwords, wordsize, nails, flags)
   NUM2DBL(value)
   rb_float_new(f)
+  RSTRING_LEN(str)
+  RSTRING_PTR(str)
   StringValue(value)
   StringValuePtr(value)
   StringValueCStr(value)
@@ -1260,6 +1306,25 @@ rb_scan_args(int argc, VALUE *argv, const char *fmt, ...) ::
 
   返り値は与えられた引数の数です．オプションハッシュおよびイ
   テレータブロックは数えません．
+
+int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *values)
+
+  キーワードで指定された値をtableにしたがって取り出します．
+  tableの最初のrequired個のIDは必須キーワードを表し，続く
+  optional (optionalが負の場合は-optional-1) 個のIDは省略可能
+  キーワードです．必須キーワードがkeyword_hash中にない場合，
+  "missing keyword"ArgumentErrorが発生します．省略可能キーワー
+  ドがない場合は，values中の対応する要素は変更されません．
+  keyword_hashに使用されない要素がある場合は，optionalが負なら
+  新しいHashとして省略可能引数の次に保存されますが，そうでなけ
+  れば"unknown keyword"ArgumentErrorが発生します．
+
+VALUE rb_extract_keywords(VALUE *original_hash)
+
+  original_hashで参照されるHashオブジェクトから，Symbolである
+  キーとその値を新しいHashに取り出します．original_hashの指す
+  先には，元のHashがSymbol以外のキーを含んでいた場合はそれらが
+  コピーされた別の新しいHash，そうでなければ0が保存されます．
 
 == Rubyメソッド呼び出し
 
@@ -1404,8 +1469,9 @@ void rb_bug(const char *fmt, ...) ::
   状況の時呼ぶ．インタープリタはコアダンプし直ちに終了する．
   例外処理は一切行なわれない．
 
-注意: %iはObject#to_s('+'フラグが指定されているときはObject#inspect)を
-使ったVALUEの出力に使用されているため，整数には%dを使用すること．
+注意: "%"PRIsVALUEがObject#to_s('+'フラグが指定されていると
+きはObject#inspect)を使ったVALUEの出力に利用できる．これは
+"%i"と衝突するため，整数には"%d"を使用すること．
 
 == Rubyの初期化・実行
 
@@ -1416,13 +1482,16 @@ void ruby_init() ::
 
   Rubyインタプリタの初期化を行なう．
 
-void ruby_options(int argc, char **argv) ::
+void *ruby_options(int argc, char **argv) ::
 
-  Rubyインタプリタのコマンドライン引数の処理を行なう．
+  Rubyインタプリタのコマンドライン引数の処理を行ない，
+  Rubyのソースコードをコンパイルする．
+  コンパイルされたソースへのポインタ，もしくは特殊値を返す.
 
-void ruby_run() ::
+int ruby_run_node(void *n) ::
 
-  Rubyインタプリタを実行する．
+  コンパイルされたコードを実行する．
+  実行に成功した場合はEXIT_SUCCESSを，エラーが起こったときはそれ以外を返す．
 
 void ruby_script(char *name) ::
 
@@ -1624,24 +1693,24 @@ pkg_config(pkg, option=nil) ::
   2. {pkg}-config {option}
   3. pkg-config {option} {pkg}
 
-  optionが指定された場合は、上記の配列の代わりにそのオプションを
+  optionが指定された場合は，上記の配列の代わりにそのオプションを
   指定して得られた出力をstripしたものを返す．
 
 = Appendix D. 世代別GC
 
-Ruby 2.1から世代別GCに対応しました。我々はこれをRGenGCと呼んでいます。
-RGenGCは、過去の拡張ライブラリに（ほぼ）互換性を保つように開発されている
-ため、拡張ライブラリ側の対応はほぼ不要です。
+Ruby 2.1から世代別GCに対応しました．我々はこれをRGenGCと呼んでいます．
+RGenGCは，過去の拡張ライブラリに（ほぼ）互換性を保つように開発されている
+ため，拡張ライブラリ側の対応はほぼ不要です．
 
-ただし、対応をすることで性能を向上することができる可能性があります。もし
-拡張ライブラリに高い性能が必要である場合は対応を検討して下さい。
+ただし，対応をすることで性能を向上することができる可能性があります．もし
+拡張ライブラリに高い性能が必要である場合は対応を検討して下さい．
 
 とくにRARRAY_PTR()/RHASH_TBL()のようなマクロを用いてポインタに直接アクセ
-スするようなコードは書かないようにして下さい。代わりに、rb_ary_aref(),
-rb_ary_store() などの、適切な API 関数を利用するようにして下さい。
+スするようなコードは書かないようにして下さい．代わりに，rb_ary_aref(),
+rb_ary_store() などの，適切な API 関数を利用するようにして下さい．
 
-そのほか、対応についての詳細は README.ext の「Appendix D. Generational
-GC」を参照して下さい。
+そのほか，対応についての詳細は README.EXT の「Appendix D. Generational
+GC」を参照して下さい．
 
 /*
  * Local variables:

@@ -214,11 +214,11 @@ module Open3
   #   stdout_str, stderr_str, status = Open3.capture3([env,] cmd... [, opts])
   #
   # The arguments env, cmd and opts are passed to Open3.popen3 except
-  # opts[:stdin_data] and opts[:binmode].  See Process.spawn.
+  # <code>opts[:stdin_data]</code> and <code>opts[:binmode]</code>.  See Process.spawn.
   #
-  # If opts[:stdin_data] is specified, it is sent to the command's standard input.
+  # If <code>opts[:stdin_data]</code> is specified, it is sent to the command's standard input.
   #
-  # If opts[:binmode] is true, internal pipes are set to binary mode.
+  # If <code>opts[:binmode]</code> is true, internal pipes are set to binary mode.
   #
   # Examples:
   #
@@ -257,7 +257,10 @@ module Open3
       end
       out_reader = Thread.new { o.read }
       err_reader = Thread.new { e.read }
-      i.write stdin_data
+      begin
+        i.write stdin_data
+      rescue Errno::EPIPE
+      end
       i.close
       [out_reader.value, err_reader.value, t.value]
     }
@@ -269,11 +272,11 @@ module Open3
   #   stdout_str, status = Open3.capture2([env,] cmd... [, opts])
   #
   # The arguments env, cmd and opts are passed to Open3.popen3 except
-  # opts[:stdin_data] and opts[:binmode].  See Process.spawn.
+  # <code>opts[:stdin_data]</code> and <code>opts[:binmode]</code>.  See Process.spawn.
   #
-  # If opts[:stdin_data] is specified, it is sent to the command's standard input.
+  # If <code>opts[:stdin_data]</code> is specified, it is sent to the command's standard input.
   #
-  # If opts[:binmode] is true, internal pipes are set to binary mode.
+  # If <code>opts[:binmode]</code> is true, internal pipes are set to binary mode.
   #
   # Example:
   #
@@ -293,14 +296,19 @@ module Open3
   #   End
   #   image, s = Open3.capture2("gnuplot", :stdin_data=>gnuplot_commands, :binmode=>true)
   #
-  def capture2(*cmd, stdin_data: '', binmode: false, **opts)
+  def capture2(*cmd, stdin_data: nil, binmode: false, **opts)
     popen2(*cmd, opts) {|i, o, t|
       if binmode
         i.binmode
         o.binmode
       end
       out_reader = Thread.new { o.read }
-      i.write stdin_data
+      if stdin_data
+        begin
+          i.write stdin_data
+        rescue Errno::EPIPE
+        end
+      end
       i.close
       [out_reader.value, t.value]
     }
@@ -312,25 +320,30 @@ module Open3
   #   stdout_and_stderr_str, status = Open3.capture2e([env,] cmd... [, opts])
   #
   # The arguments env, cmd and opts are passed to Open3.popen3 except
-  # opts[:stdin_data] and opts[:binmode].  See Process.spawn.
+  # <code>opts[:stdin_data]</code> and <code>opts[:binmode]</code>.  See Process.spawn.
   #
-  # If opts[:stdin_data] is specified, it is sent to the command's standard input.
+  # If <code>opts[:stdin_data]</code> is specified, it is sent to the command's standard input.
   #
-  # If opts[:binmode] is true, internal pipes are set to binary mode.
+  # If <code>opts[:binmode]</code> is true, internal pipes are set to binary mode.
   #
   # Example:
   #
   #   # capture make log
   #   make_log, s = Open3.capture2e("make")
   #
-  def capture2e(*cmd, stdin_data: '', binmode: false, **opts)
+  def capture2e(*cmd, stdin_data: nil, binmode: false, **opts)
     popen2e(*cmd, opts) {|i, oe, t|
       if binmode
         i.binmode
         oe.binmode
       end
       outerr_reader = Thread.new { oe.read }
-      i.write stdin_data
+      if stdin_data
+        begin
+          i.write stdin_data
+        rescue Errno::EPIPE
+        end
+      end
       i.close
       [outerr_reader.value, t.value]
     }
@@ -647,17 +660,4 @@ module Open3
     private :pipeline_run
   end
 
-end
-
-if $0 == __FILE__
-  a = Open3.popen3("nroff -man")
-  Thread.start do
-    while line = gets
-      a[0].print line
-    end
-    a[0].close
-  end
-  while line = a[1].gets
-    print ":", line
-  end
 end

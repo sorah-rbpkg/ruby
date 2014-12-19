@@ -2,7 +2,6 @@
 require 'test/unit'
 require 'tmpdir'
 require 'timeout'
-require_relative 'envutil'
 
 class TestIO_M17N < Test::Unit::TestCase
   ENCS = [
@@ -309,6 +308,17 @@ EOT
         assert_equal(Encoding::EUC_JP, f.external_encoding)
         assert_equal(Encoding::UTF_8, f.internal_encoding)
       }
+    }
+  end
+
+  def test_ignored_encoding_option
+    enc = "\u{30a8 30f3 30b3 30fc 30c7 30a3 30f3 30b0}"
+    pattern = /#{enc}/
+    assert_warning(pattern) {
+      open(IO::NULL, external_encoding: "us-ascii", encoding: enc) {}
+    }
+    assert_warning(pattern) {
+      open(IO::NULL, internal_encoding: "us-ascii", encoding: enc) {}
     }
   end
 
@@ -2142,32 +2152,34 @@ EOT
 
   def test_textmode_paragraph_nonasciicompat
     bug3534 = ['[ruby-dev:41803]', '[Bug #3534]']
-    r, w = IO.pipe
-    [Encoding::UTF_32BE, Encoding::UTF_32LE,
-     Encoding::UTF_16BE, Encoding::UTF_16LE,
-     Encoding::UTF_8].each do |e|
-      r.set_encoding(Encoding::US_ASCII, e)
-      wthr = Thread.new{ w.print(bug3534[0], "\n\n\n\n", bug3534[1], "\n") }
-      assert_equal((bug3534[0]+"\n\n").encode(e), r.gets(""), bug3534[0])
-      assert_equal((bug3534[1]+"\n").encode(e), r.gets(), bug3534[1])
-      wthr.join
-    end
+    IO.pipe {|r, w|
+      [Encoding::UTF_32BE, Encoding::UTF_32LE,
+       Encoding::UTF_16BE, Encoding::UTF_16LE,
+       Encoding::UTF_8].each do |e|
+        r.set_encoding(Encoding::US_ASCII, e)
+        wthr = Thread.new{ w.print(bug3534[0], "\n\n\n\n", bug3534[1], "\n") }
+        assert_equal((bug3534[0]+"\n\n").encode(e), r.gets(""), bug3534[0])
+        assert_equal((bug3534[1]+"\n").encode(e), r.gets(), bug3534[1])
+        wthr.join
+      end
+    }
   end
 
   def test_binmode_paragraph_nonasciicompat
     bug3534 = ['[ruby-dev:41803]', '[Bug #3534]']
-    r, w = IO.pipe
-    r.binmode
-    w.binmode
-    [Encoding::UTF_32BE, Encoding::UTF_32LE,
-     Encoding::UTF_16BE, Encoding::UTF_16LE,
-     Encoding::UTF_8].each do |e|
-      r.set_encoding(Encoding::US_ASCII, e)
-      wthr = Thread.new{ w.print(bug3534[0], "\n\n\n\n", bug3534[1], "\n") }
-      assert_equal((bug3534[0]+"\n\n").encode(e), r.gets(""), bug3534[0])
-      assert_equal((bug3534[1]+"\n").encode(e), r.gets(), bug3534[1])
-      wthr.join
-    end
+    IO.pipe {|r, w|
+      r.binmode
+      w.binmode
+      [Encoding::UTF_32BE, Encoding::UTF_32LE,
+       Encoding::UTF_16BE, Encoding::UTF_16LE,
+       Encoding::UTF_8].each do |e|
+        r.set_encoding(Encoding::US_ASCII, e)
+        wthr = Thread.new{ w.print(bug3534[0], "\n\n\n\n", bug3534[1], "\n") }
+        assert_equal((bug3534[0]+"\n\n").encode(e), r.gets(""), bug3534[0])
+        assert_equal((bug3534[1]+"\n").encode(e), r.gets(), bug3534[1])
+        wthr.join
+      end
+    }
   end
 
   def test_puts_widechar
@@ -2535,4 +2547,20 @@ EOT
       end
     }
   end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_read_with_buf_broken_ascii_only
+    a, b = IO.pipe
+    a.binmode
+    b.binmode
+    b.write("\xE2\x9C\x93")
+    b.close
+
+    buf = "".force_encoding("binary")
+    assert buf.ascii_only?, "should have been ascii_only?"
+    a.read(1, buf)
+    assert !buf.ascii_only?, "should not have been ascii_only?"
+  ensure
+    a.close rescue nil
+    b.close rescue nil
+  end
 end

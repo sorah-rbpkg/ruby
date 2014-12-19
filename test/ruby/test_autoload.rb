@@ -1,14 +1,13 @@
 require 'test/unit'
 require 'tempfile'
 require 'thread'
-require_relative 'envutil'
 
 class TestAutoload < Test::Unit::TestCase
   def test_autoload_so
-    # Continuation is always available, unless excluded intentionally.
+    # Date is always available, unless excluded intentionally.
     assert_in_out_err([], <<-INPUT, [], [])
-    autoload :Continuation, "continuation"
-    begin Continuation; rescue LoadError; end
+    autoload :Date, "date"
+    begin Date; rescue LoadError; end
     INPUT
   end
 
@@ -73,36 +72,42 @@ p Foo::Bar
   end
 
   def test_threaded_accessing_constant
-    Tempfile.create(['autoload', '.rb']) {|file|
-      file.puts 'sleep 0.5; class AutoloadTest; X = 1; end'
-      file.close
-      add_autoload(file.path)
-      begin
-        assert_nothing_raised do
-          t1 = Thread.new { ::AutoloadTest::X }
-          t2 = Thread.new { ::AutoloadTest::X }
-          [t1, t2].each(&:join)
+    # Suppress "warning: loading in progress, circular require considered harmful"
+    EnvUtil.default_warning {
+      Tempfile.create(['autoload', '.rb']) {|file|
+        file.puts 'sleep 0.5; class AutoloadTest; X = 1; end'
+        file.close
+        add_autoload(file.path)
+        begin
+          assert_nothing_raised do
+            t1 = Thread.new { ::AutoloadTest::X }
+            t2 = Thread.new { ::AutoloadTest::X }
+            [t1, t2].each(&:join)
+          end
+        ensure
+          remove_autoload_constant
         end
-      ensure
-        remove_autoload_constant
-      end
+      }
     }
   end
 
   def test_threaded_accessing_inner_constant
-    Tempfile.create(['autoload', '.rb']) {|file|
-      file.puts 'class AutoloadTest; sleep 0.5; X = 1; end'
-      file.close
-      add_autoload(file.path)
-      begin
-        assert_nothing_raised do
-          t1 = Thread.new { ::AutoloadTest::X }
-          t2 = Thread.new { ::AutoloadTest::X }
-          [t1, t2].each(&:join)
+    # Suppress "warning: loading in progress, circular require considered harmful"
+    EnvUtil.default_warning {
+      Tempfile.create(['autoload', '.rb']) {|file|
+        file.puts 'class AutoloadTest; sleep 0.5; X = 1; end'
+        file.close
+        add_autoload(file.path)
+        begin
+          assert_nothing_raised do
+            t1 = Thread.new { ::AutoloadTest::X }
+            t2 = Thread.new { ::AutoloadTest::X }
+            [t1, t2].each(&:join)
+          end
+        ensure
+          remove_autoload_constant
         end
-      ensure
-        remove_autoload_constant
-      end
+      }
     }
   end
 

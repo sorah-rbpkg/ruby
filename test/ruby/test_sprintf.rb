@@ -148,6 +148,31 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal(" Inf", sprintf("% e", inf), '[ruby-dev:34002]')
   end
 
+  def test_rational
+    assert_match(/\A0\.10+\z/, sprintf("%.60f", 0.1r))
+    assert_match(/\A0\.010+\z/, sprintf("%.60f", 0.01r))
+    assert_match(/\A0\.0010+\z/, sprintf("%.60f", 0.001r))
+    assert_match(/\A0\.3+\z/, sprintf("%.60f", 1/3r))
+    assert_match(/\A1\.20+\z/, sprintf("%.60f", 1.2r))
+
+    0.upto(9) do |len|
+      -1.upto(9) do |prec|
+        ['', '+', '-', ' ', '0', '+0', '-0', ' 0', '+ ', '- ', '+ 0', '- 0'].each do |flags|
+          fmt = "%#{flags}#{len > 0 ? len : ''}#{prec >= 0 ? ".#{prec}" : ''}f"
+          [0, 0.1, 0.01, 0.001, 1.001, 100.0, 100.001, 10000000000.0, 0.00000000001, 1/3r, 2/3r, 1.2r, 10r].each do |num|
+            assert_equal(sprintf(fmt, num.to_f), sprintf(fmt, num.to_r), "sprintf(#{fmt.inspect}, #{num.inspect}.to_r)")
+            assert_equal(sprintf(fmt, -num.to_f), sprintf(fmt, -num.to_r), "sprintf(#{fmt.inspect}, #{(-num).inspect}.to_r)") if num > 0
+          end
+        end
+      end
+    end
+  end
+
+  def test_hash
+    options = {:capture=>/\d+/}
+    assert_equal("with options {:capture=>/\\d+/}", sprintf("with options %p" % options))
+  end
+
   def test_invalid
     # Star precision before star width:
     assert_raise(ArgumentError, "[ruby-core:11569]") {sprintf("%.**d", 5, 10, 1)}
@@ -194,8 +219,9 @@ class TestSprintf < Test::Unit::TestCase
                  sprintf("%20.0f", 36893488147419107329.0))
     assert_equal(" Inf", sprintf("% 0e", 1.0/0.0), "moved from btest/knownbug")
     assert_equal("       -0.", sprintf("%#10.0f", -0.5), "[ruby-dev:42552]")
-    assert_equal("0x1p+2",   sprintf('%.0a', Float('0x1.fp+1')),   "[ruby-dev:42551]")
-    assert_equal("-0x1.0p+2", sprintf('%.1a', Float('-0x1.ffp+1')), "[ruby-dev:42551]")
+    # out of spec
+    #assert_equal("0x1p+2",   sprintf('%.0a', Float('0x1.fp+1')),   "[ruby-dev:42551]")
+    #assert_equal("-0x1.0p+2", sprintf('%.1a', Float('-0x1.ffp+1')), "[ruby-dev:42551]")
   end
 
   def test_float_hex
@@ -308,6 +334,12 @@ class TestSprintf < Test::Unit::TestCase
 
   def test_star
     assert_equal("-1 ", sprintf("%*d", -3, -1))
+    assert_raise_with_message(ArgumentError, /width too big/) {
+      sprintf("%*999999999999999999999999999999999999999999999999999999999999$d", 1)
+    }
+    assert_raise_with_message(ArgumentError, /prec too big/) {
+      sprintf("%.*999999999999999999999999999999999999999999999999999999999999$d", 1)
+    }
   end
 
   def test_escape

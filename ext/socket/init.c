@@ -135,7 +135,7 @@ rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
     rb_obj_hide(str);
 
     while (rb_io_check_closed(fptr),
-	   rb_thread_wait_fd(arg.fd),
+	   rsock_maybe_wait_fd(arg.fd),
 	   (slen = BLOCKING_REGION_FD(recvfrom_blocking, &arg)) < 0) {
         if (!rb_io_wait_readable(fptr->fd)) {
             rb_sys_fail("recvfrom(2)");
@@ -249,37 +249,78 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
     return rb_assoc_new(str, addr);
 }
 
+/* returns true if SOCK_CLOEXEC is supported */
+int rsock_detect_cloexec(int fd)
+{
+#ifdef SOCK_CLOEXEC
+    int flags = fcntl(fd, F_GETFD);
+
+    if (flags == -1)
+	rb_bug("rsock_detect_cloexec: fcntl(%d, F_GETFD) failed: %s", fd, strerror(errno));
+
+    if (flags & FD_CLOEXEC)
+	return 1;
+#endif
+    return 0;
+}
+
+#ifdef SOCK_CLOEXEC
 static int
 rsock_socket0(int domain, int type, int proto)
 {
     int ret;
+    static int cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
 
-#ifdef SOCK_CLOEXEC
-    static int try_sock_cloexec = 1;
-    if (try_sock_cloexec) {
+    if (cloexec_state > 0) { /* common path, if SOCK_CLOEXEC is defined */
         ret = socket(domain, type|SOCK_CLOEXEC, proto);
-        if (ret == -1 && errno == EINVAL) {
+        if (ret >= 0) {
+            if (ret <= 2)
+                goto fix_cloexec;
+            goto update_max_fd;
+        }
+    }
+    else if (cloexec_state < 0) { /* usually runs once only for detection */
+        ret = socket(domain, type|SOCK_CLOEXEC, proto);
+        if (ret >= 0) {
+            cloexec_state = rsock_detect_cloexec(ret);
+            if (cloexec_state == 0 || ret <= 2)
+                goto fix_cloexec;
+            goto update_max_fd;
+        }
+        else if (ret == -1 && errno == EINVAL) {
             /* SOCK_CLOEXEC is available since Linux 2.6.27.  Linux 2.6.18 fails with EINVAL */
             ret = socket(domain, type, proto);
             if (ret != -1) {
-                try_sock_cloexec = 0;
+                cloexec_state = 0;
+                /* fall through to fix_cloexec */
             }
         }
     }
-    else {
+    else { /* cloexec_state == 0 */
         ret = socket(domain, type, proto);
     }
-#else
-    ret = socket(domain, type, proto);
-#endif
     if (ret == -1)
         return -1;
+fix_cloexec:
+    rb_maygvl_fd_fix_cloexec(ret);
+update_max_fd:
+    rb_update_max_fd(ret);
 
+    return ret;
+}
+#else /* !SOCK_CLOEXEC */
+static int
+rsock_socket0(int domain, int type, int proto)
+{
+    int ret = socket(domain, type, proto);
+
+    if (ret == -1)
+        return -1;
     rb_fd_fix_cloexec(ret);
 
     return ret;
-
 }
+#endif /* !SOCK_CLOEXEC */
 
 int
 rsock_socket(int domain, int type, int proto)
@@ -298,72 +339,69 @@ rsock_socket(int domain, int type, int proto)
     return fd;
 }
 
+/* emulate blocking connect behavior on EINTR or non-blocking socket */
 static int
 wait_connectable(int fd)
 {
-    int sockerr;
+    int sockerr, revents;
     socklen_t sockerrlen;
-    int revents;
-    int ret;
 
-    for (;;) {
-	/*
-	 * Stevens book says, succuessful finish turn on RB_WAITFD_OUT and
-	 * failure finish turn on both RB_WAITFD_IN and RB_WAITFD_OUT.
-	 */
-	revents = rb_wait_for_single_fd(fd, RB_WAITFD_IN|RB_WAITFD_OUT, NULL);
+    /* only to clear pending error */
+    sockerrlen = (socklen_t)sizeof(sockerr);
+    if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&sockerr, &sockerrlen) < 0)
+        return -1;
 
-	if (revents & (RB_WAITFD_IN|RB_WAITFD_OUT)) {
-	    sockerrlen = (socklen_t)sizeof(sockerr);
-	    ret = getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&sockerr, &sockerrlen);
+    /*
+     * Stevens book says, successful finish turn on RB_WAITFD_OUT and
+     * failure finish turn on both RB_WAITFD_IN and RB_WAITFD_OUT.
+     * So it's enough to wait only RB_WAITFD_OUT and check the pending error
+     * by getsockopt().
+     *
+     * Note: rb_wait_for_single_fd already retries on EINTR/ERESTART
+     */
+    revents = rb_wait_for_single_fd(fd, RB_WAITFD_IN|RB_WAITFD_OUT, NULL);
 
-	    /*
-	     * Solaris getsockopt(SO_ERROR) return -1 and set errno
-	     * in getsockopt(). Let's return immediately.
-	     */
-	    if (ret < 0)
-		break;
-	    if (sockerr == 0) {
-		if (revents & RB_WAITFD_OUT)
-		    break;
-		else
-		    continue;	/* workaround for winsock */
-	    }
+    if (revents < 0)
+        return -1;
 
-	    /* BSD and Linux use sockerr. */
-	    errno = sockerr;
-	    ret = -1;
-	    break;
-	}
+    sockerrlen = (socklen_t)sizeof(sockerr);
+    if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&sockerr, &sockerrlen) < 0)
+        return -1;
 
-	if ((revents & (RB_WAITFD_IN|RB_WAITFD_OUT)) == RB_WAITFD_OUT) {
-	    ret = 0;
-	    break;
-	}
+    switch (sockerr) {
+      case 0:
+      /*
+       * be defensive in case some platforms set SO_ERROR on the original,
+       * interrupted connect()
+       */
+      case EINTR:
+#ifdef ERESTART
+      case ERESTART:
+#endif
+      case EAGAIN:
+#ifdef EINPROGRESS
+      case EINPROGRESS:
+#endif
+#ifdef EALREADY
+      case EALREADY:
+#endif
+#ifdef EISCONN
+      case EISCONN:
+#endif
+	return 0; /* success */
+      default:
+        /* likely (but not limited to): ECONNREFUSED, ETIMEDOUT, EHOSTUNREACH */
+        errno = sockerr;
+        return -1;
     }
 
-    return ret;
+    return 0;
 }
-
-#ifdef __CYGWIN__
-#define WAIT_IN_PROGRESS 10
-#endif
-#ifdef __APPLE__
-#define WAIT_IN_PROGRESS 10
-#endif
-#ifdef __linux__
-/* returns correct error */
-#define WAIT_IN_PROGRESS 0
-#endif
-#ifndef WAIT_IN_PROGRESS
-/* BSD origin code apparently has a problem */
-#define WAIT_IN_PROGRESS 1
-#endif
 
 struct connect_arg {
     int fd;
-    const struct sockaddr *sockaddr;
     socklen_t len;
+    const struct sockaddr *sockaddr;
 };
 
 static VALUE
@@ -388,11 +426,6 @@ rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks)
     int status;
     rb_blocking_function_t *func = connect_blocking;
     struct connect_arg arg;
-#if WAIT_IN_PROGRESS > 0
-    int wait_in_progress = -1;
-    int sockerr;
-    socklen_t sockerrlen;
-#endif
 
     arg.fd = fd;
     arg.sockaddr = sockaddr;
@@ -400,76 +433,22 @@ rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks)
 #if defined(SOCKS) && !defined(SOCKS5)
     if (socks) func = socks_connect_blocking;
 #endif
-    for (;;) {
-	status = (int)BLOCKING_REGION_FD(func, &arg);
-	if (status < 0) {
-	    switch (errno) {
-	      case EINTR:
-#if defined(ERESTART)
-	      case ERESTART:
-#endif
-		continue;
+    status = (int)BLOCKING_REGION_FD(func, &arg);
 
-	      case EAGAIN:
+    if (status < 0) {
+        switch (errno) {
+          case EINTR:
+#ifdef ERESTART
+          case ERESTART:
+#endif
+          case EAGAIN:
 #ifdef EINPROGRESS
-	      case EINPROGRESS:
+          case EINPROGRESS:
 #endif
-#if WAIT_IN_PROGRESS > 0
-		sockerrlen = (socklen_t)sizeof(sockerr);
-		status = getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&sockerr, &sockerrlen);
-		if (status) break;
-		if (sockerr) {
-		    status = -1;
-		    errno = sockerr;
-		    break;
-		}
-#endif
-#ifdef EALREADY
-	      case EALREADY:
-#endif
-#if WAIT_IN_PROGRESS > 0
-		wait_in_progress = WAIT_IN_PROGRESS;
-#endif
-		status = wait_connectable(fd);
-		if (status) {
-		    break;
-		}
-		errno = 0;
-		continue;
-
-#if WAIT_IN_PROGRESS > 0
-	      case EINVAL:
-		if (wait_in_progress-- > 0) {
-		    /*
-		     * connect() after EINPROGRESS returns EINVAL on
-		     * some platforms, need to check true error
-		     * status.
-		     */
-		    sockerrlen = (socklen_t)sizeof(sockerr);
-		    status = getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&sockerr, &sockerrlen);
-		    if (!status && !sockerr) {
-			struct timeval tv = {0, 100000};
-			rb_thread_wait_for(tv);
-			continue;
-		    }
-		    status = -1;
-		    errno = sockerr;
-		}
-		break;
-#endif
-
-#ifdef EISCONN
-	      case EISCONN:
-		status = 0;
-		errno = 0;
-		break;
-#endif
-	      default:
-		break;
-	    }
-	}
-	return status;
+            return wait_connectable(fd);
+        }
     }
+    return status;
 }
 
 static void
@@ -579,7 +558,7 @@ rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
     arg.sockaddr = sockaddr;
     arg.len = len;
   retry:
-    rb_thread_wait_fd(fd);
+    rsock_maybe_wait_fd(fd);
     fd2 = (int)BLOCKING_REGION_FD(accept_blocking, &arg);
     if (fd2 < 0) {
 	switch (errno) {
@@ -615,7 +594,7 @@ rsock_getfamily(int sockfd)
 }
 
 void
-rsock_init_socket_init()
+rsock_init_socket_init(void)
 {
     /*
      * SocketError is the error class for socket.

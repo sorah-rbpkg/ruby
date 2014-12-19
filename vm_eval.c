@@ -11,6 +11,10 @@
 
 **********************************************************************/
 
+struct local_var_list {
+    VALUE tbl;
+};
+
 static inline VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status);
 static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const NODE *cref);
 static inline VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
@@ -18,7 +22,11 @@ static inline VALUE vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *
 static NODE *vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr);
 static VALUE vm_exec(rb_thread_t *th);
 static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref, rb_block_t *base_block);
-static int vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary);
+static int vm_collect_local_variables_in_heap(rb_thread_t *th, const VALUE *dfp, const struct local_var_list *vars);
+
+static VALUE rb_eUncaughtThrow;
+static ID id_tag, id_value;
+#define id_mesg idMesg
 
 /* vm_backtrace.c */
 VALUE rb_vm_backtrace_str_ary(rb_thread_t *th, int lev, int n);
@@ -46,6 +54,7 @@ vm_call0(rb_thread_t* th, VALUE recv, ID id, int argc, const VALUE *argv,
     ci->defined_class = defined_class;
     ci->argc = argc;
     ci->me = me;
+    ci->kw_arg = NULL;
 
     return vm_call0_body(th, ci, argv);
 }
@@ -188,7 +197,8 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
       case VM_METHOD_TYPE_ZSUPER:
       case VM_METHOD_TYPE_REFINED:
 	{
-	    if (ci->me->def->type == VM_METHOD_TYPE_REFINED &&
+	    const rb_method_type_t type = ci->me->def->type;
+	    if (type == VM_METHOD_TYPE_REFINED &&
 		ci->me->def->body.orig_me) {
 		ci->me = ci->me->def->body.orig_me;
 		goto again;
@@ -197,7 +207,8 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 	    ci->defined_class = RCLASS_SUPER(ci->defined_class);
 
 	    if (!ci->defined_class || !(ci->me = rb_method_entry(ci->defined_class, ci->mid, &ci->defined_class))) {
-		ret = method_missing(ci->recv, ci->mid, ci->argc, argv, NOEX_SUPER);
+		int ex = type == VM_METHOD_TYPE_ZSUPER ? NOEX_SUPER : 0;
+		ret = method_missing(ci->recv, ci->mid, ci->argc, argv, ex);
 		goto success;
 	    }
 	    RUBY_VM_CHECK_INTS(th);
@@ -208,10 +219,12 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 	{
 	    VALUE new_args = rb_ary_new4(ci->argc, argv);
 
-	    RB_GC_GUARD(new_args);
 	    rb_ary_unshift(new_args, ID2SYM(ci->mid));
 	    th->passed_block = ci->blockptr;
-	    return rb_funcall2(ci->recv, idMethodMissing, ci->argc+1, RARRAY_PTR(new_args));
+	    ret = rb_funcall2(ci->recv, idMethodMissing, ci->argc+1,
+	                      RARRAY_CONST_PTR(new_args));
+	    RB_GC_GUARD(new_args);
+	    return ret;
 	}
       case VM_METHOD_TYPE_OPTIMIZED:
 	switch (ci->me->def->body.optimize_type) {
@@ -256,7 +269,7 @@ vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
     rb_method_entry_t *me;
     rb_control_frame_t *cfp = th->cfp;
 
-    if (cfp->iseq || NIL_P(cfp->klass)) {
+    if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq) || NIL_P(cfp->klass)) {
 	rb_bug("vm_call_super: should not be reached");
     }
 
@@ -275,6 +288,16 @@ rb_call_super(int argc, const VALUE *argv)
 {
     PASS_PASSED_BLOCK();
     return vm_call_super(GET_THREAD(), argc, argv);
+}
+
+VALUE
+rb_current_receiver(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp;
+    if (!th || !(cfp = th->cfp))
+	rb_raise(rb_eRuntimeError, "no self, no life");
+    return cfp->self;
 }
 
 static inline void
@@ -336,11 +359,13 @@ static VALUE
 check_funcall_exec(struct rescue_funcall_args *args)
 {
     VALUE new_args = rb_ary_new4(args->argc, args->argv);
+    VALUE ret;
 
-    RB_GC_GUARD(new_args);
     rb_ary_unshift(new_args, args->sym);
-    return rb_funcall2(args->recv, idMethodMissing,
-		       args->argc+1, RARRAY_PTR(new_args));
+    ret = rb_funcall2(args->recv, idMethodMissing,
+		       args->argc+1, RARRAY_CONST_PTR(new_args));
+    RB_GC_GUARD(new_args);
+    return ret;
 }
 
 static VALUE
@@ -487,38 +512,37 @@ rb_search_method_entry(VALUE recv, ID mid, VALUE *defined_class_ptr)
     VALUE klass = CLASS_OF(recv);
 
     if (!klass) {
-        VALUE flags, klass;
-        if (IMMEDIATE_P(recv)) {
+        VALUE flags;
+        if (SPECIAL_CONST_P(recv)) {
             rb_raise(rb_eNotImpError,
-                     "method `%s' called on unexpected immediate object (%p)",
-                     rb_id2name(mid), (void *)recv);
+                     "method `%"PRIsVALUE"' called on unexpected immediate object (%p)",
+                     rb_id2str(mid), (void *)recv);
         }
         flags = RBASIC(recv)->flags;
-        klass = RBASIC(recv)->klass;
         if (flags == 0) {
             rb_raise(rb_eNotImpError,
-                     "method `%s' called on terminated object"
-                     " (%p flags=0x%"PRIxVALUE" klass=0x%"PRIxVALUE")",
-                     rb_id2name(mid), (void *)recv, flags, klass);
+                     "method `%"PRIsVALUE"' called on terminated object"
+                     " (%p flags=0x%"PRIxVALUE")",
+                     rb_id2str(mid), (void *)recv, flags);
         }
         else {
             int type = BUILTIN_TYPE(recv);
             const char *typestr = rb_type_str(type);
             if (typestr && T_OBJECT <= type && type < T_NIL)
                 rb_raise(rb_eNotImpError,
-                         "method `%s' called on hidden %s object"
-                         " (%p flags=0x%"PRIxVALUE" klass=0x%"PRIxVALUE")",
-                         rb_id2name(mid), typestr, (void *)recv, flags, klass);
+                         "method `%"PRIsVALUE"' called on hidden %s object"
+                         " (%p flags=0x%"PRIxVALUE")",
+                         rb_id2str(mid), typestr, (void *)recv, flags);
             if (typestr)
                 rb_raise(rb_eNotImpError,
-                         "method `%s' called on unexpected %s object"
-                         " (%p flags=0x%"PRIxVALUE" klass=0x%"PRIxVALUE")",
-                         rb_id2name(mid), typestr, (void *)recv, flags, klass);
+                         "method `%"PRIsVALUE"' called on unexpected %s object"
+                         " (%p flags=0x%"PRIxVALUE")",
+                         rb_id2str(mid), typestr, (void *)recv, flags);
             else
                 rb_raise(rb_eNotImpError,
-                         "method `%s' called on broken T_???" "(0x%02x) object"
-                         " (%p flags=0x%"PRIxVALUE" klass=0x%"PRIxVALUE")",
-                         rb_id2name(mid), type, (void *)recv, flags, klass);
+                         "method `%"PRIsVALUE"' called on broken T_???" "(0x%02x) object"
+                         " (%p flags=0x%"PRIxVALUE")",
+                         rb_id2str(mid), type, (void *)recv, flags);
         }
     }
     return rb_method_entry(klass, mid, defined_class_ptr);
@@ -559,8 +583,8 @@ rb_method_call_status(rb_thread_t *th, const rb_method_entry_t *me, call_type sc
 	    }
 
 	    if (NOEX_SAFE(noex) > th->safe_level) {
-		rb_raise(rb_eSecurityError, "calling insecure method: %s",
-			 rb_id2name(me->called_id));
+		rb_raise(rb_eSecurityError, "calling insecure method: %"PRIsVALUE,
+			 rb_id2str(me->called_id));
 	    }
 	}
     }
@@ -695,7 +719,7 @@ raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv, VALUE obj,
 static inline VALUE
 method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status)
 {
-    VALUE *nargv, result, argv_ary = 0;
+    VALUE *nargv, result, work;
     rb_thread_t *th = GET_THREAD();
     const rb_block_t *blockptr = th->passed_block;
 
@@ -706,28 +730,21 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status)
 	raise_method_missing(th, argc, argv, obj, call_status | NOEX_MISSING);
     }
 
-    if (argc < 0x100) {
-	nargv = ALLOCA_N(VALUE, argc + 1);
-    }
-    else {
-	argv_ary = rb_ary_tmp_new(argc + 1);
-	nargv = RARRAY_PTR(argv_ary);
-    }
+    nargv = ALLOCV_N(VALUE, work, argc + 1);
     nargv[0] = ID2SYM(id);
     MEMCPY(nargv + 1, argv, VALUE, argc);
-    if (argv_ary) rb_ary_set_len(argv_ary, argc + 1);
 
     if (rb_method_basic_definition_p(CLASS_OF(obj) , idMethodMissing)) {
 	raise_method_missing(th, argc+1, nargv, obj, call_status | NOEX_MISSING);
     }
     th->passed_block = blockptr;
     result = rb_funcall2(obj, idMethodMissing, argc + 1, nargv);
-    if (argv_ary) rb_ary_clear(argv_ary);
+    if (work) ALLOCV_END(work);
     return result;
 }
 
 void
-rb_raise_method_missing(rb_thread_t *th, int argc, VALUE *argv,
+rb_raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv,
 			VALUE obj, int call_status)
 {
     th->passed_block = 0;
@@ -753,7 +770,7 @@ rb_apply(VALUE recv, ID mid, VALUE args)
 	args = rb_ary_subseq(args, 0, argc);
 	RBASIC_CLEAR_CLASS(args);
 	OBJ_FREEZE(args);
-	ret = rb_call(recv, mid, argc, RARRAY_PTR(args), CALL_FCALL);
+	ret = rb_call(recv, mid, argc, RARRAY_CONST_PTR(args), CALL_FCALL);
 	RB_GC_GUARD(args);
 	return ret;
     }
@@ -986,6 +1003,7 @@ rb_yield_splat(VALUE values)
         rb_raise(rb_eArgError, "not an array");
     }
     v = rb_yield_0(RARRAY_LENINT(tmp), RARRAY_CONST_PTR(tmp));
+    RB_GC_GUARD(tmp);
     return v;
 }
 
@@ -1062,6 +1080,8 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
     TH_PUSH_TAG(th);
     state = TH_EXEC_TAG();
     if (state == 0) {
+	VAR_INITIALIZED(th);
+	VAR_INITIALIZED(node);
       iter_retry:
 	{
 	    rb_block_t *blockptr;
@@ -1287,9 +1307,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *const cref_arg, 
 	    VALUE errinfo = th->errinfo;
 	    if (file == Qundef) {
 		VALUE mesg, errat, bt2;
-		ID id_mesg;
 
-		CONST_ID(id_mesg, "mesg");
 		errat = rb_get_backtrace(errinfo);
 		mesg = rb_attr_get(errinfo, id_mesg);
 		if (!NIL_P(errat) && RB_TYPE_P(errat, T_ARRAY) &&
@@ -1339,7 +1357,7 @@ eval_string(VALUE self, VALUE src, VALUE scope, VALUE file, int line)
  */
 
 VALUE
-rb_f_eval(int argc, VALUE *argv, VALUE self)
+rb_f_eval(int argc, const VALUE *argv, VALUE self)
 {
     VALUE src, scope, vfile, vline;
     VALUE file = Qundef;
@@ -1424,7 +1442,7 @@ rb_eval_string_protect(const char *str, int *state)
 
 /**
  * Evaluates the given string under a module binding in an isolated binding.
- * This is same as the binding for required libraries on "require('foo', true)".
+ * This is same as the binding for loaded libraries on "load('foo', true)".
  *
  * __FILE__ will be "(eval)", and __LINE__ starts from 1 in the evaluation.
  *
@@ -1475,8 +1493,8 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
 	PUSH_TAG();
 	rb_set_safe_level_force(level);
 	if ((state = EXEC_TAG()) == 0) {
-	    val = rb_funcall2(cmd, rb_intern("call"), RARRAY_LENINT(arg),
-			      RARRAY_PTR(arg));
+	    val = rb_funcall2(cmd, idCall, RARRAY_LENINT(arg),
+			      RARRAY_CONST_PTR(arg));
 	}
 	POP_TAG();
 
@@ -1557,7 +1575,7 @@ eval_under(VALUE under, VALUE self, VALUE src, VALUE file, int line)
 }
 
 static VALUE
-specific_eval(int argc, VALUE *argv, VALUE klass, VALUE self)
+specific_eval(int argc, const VALUE *argv, VALUE klass, VALUE self)
 {
     if (rb_block_given_p()) {
 	rb_check_arity(argc, 0, 0);
@@ -1566,44 +1584,56 @@ specific_eval(int argc, VALUE *argv, VALUE klass, VALUE self)
     else {
 	VALUE file = Qundef;
 	int line = 1;
+	VALUE code;
 
 	rb_check_arity(argc, 1, 3);
-	SafeStringValue(argv[0]);
+	code = argv[0];
+	SafeStringValue(code);
 	if (argc > 2)
 	    line = NUM2INT(argv[2]);
 	if (argc > 1) {
 	    file = argv[1];
 	    if (!NIL_P(file)) StringValue(file);
 	}
-	return eval_under(klass, self, argv[0], file, line);
+	return eval_under(klass, self, code, file, line);
     }
 }
 
 /*
  *  call-seq:
  *     obj.instance_eval(string [, filename [, lineno]] )   -> obj
- *     obj.instance_eval {| | block }                       -> obj
+ *     obj.instance_eval {|obj| block }                     -> obj
  *
  *  Evaluates a string containing Ruby source code, or the given block,
  *  within the context of the receiver (_obj_). In order to set the
  *  context, the variable +self+ is set to _obj_ while
  *  the code is executing, giving the code access to _obj_'s
- *  instance variables. In the version of <code>instance_eval</code>
- *  that takes a +String+, the optional second and third
- *  parameters supply a filename and starting line number that are used
- *  when reporting compilation errors.
+ *  instance variables and private methods.
+ *
+ *  When <code>instance_eval</code> is given a block, _obj_ is also
+ *  passed in as the block's only argument.
+ *
+ *  When <code>instance_eval</code> is given a +String+, the optional
+ *  second and third parameters supply a filename and starting line number
+ *  that are used when reporting compilation errors.
  *
  *     class KlassWithSecret
  *       def initialize
  *         @secret = 99
  *       end
+ *       private
+ *       def the_secret
+ *         "Ssssh! The secret is #{@secret}."
+ *       end
  *     end
  *     k = KlassWithSecret.new
- *     k.instance_eval { @secret }   #=> 99
+ *     k.instance_eval { @secret }          #=> 99
+ *     k.instance_eval { the_secret }       #=> "Ssssh! The secret is 99."
+ *     k.instance_eval {|obj| obj == self } #=> true
  */
 
 VALUE
-rb_obj_instance_eval(int argc, VALUE *argv, VALUE self)
+rb_obj_instance_eval(int argc, const VALUE *argv, VALUE self)
 {
     VALUE klass;
 
@@ -1635,7 +1665,7 @@ rb_obj_instance_eval(int argc, VALUE *argv, VALUE self)
  */
 
 VALUE
-rb_obj_instance_exec(int argc, VALUE *argv, VALUE self)
+rb_obj_instance_exec(int argc, const VALUE *argv, VALUE self)
 {
     VALUE klass;
 
@@ -1674,7 +1704,7 @@ rb_obj_instance_exec(int argc, VALUE *argv, VALUE self)
  */
 
 VALUE
-rb_mod_module_eval(int argc, VALUE *argv, VALUE mod)
+rb_mod_module_eval(int argc, const VALUE *argv, VALUE mod)
 {
     return specific_eval(argc, argv, mod, mod);
 }
@@ -1702,9 +1732,73 @@ rb_mod_module_eval(int argc, VALUE *argv, VALUE mod)
  */
 
 VALUE
-rb_mod_module_exec(int argc, VALUE *argv, VALUE mod)
+rb_mod_module_exec(int argc, const VALUE *argv, VALUE mod)
 {
     return yield_under(mod, mod, rb_ary_new4(argc, argv));
+}
+
+/*
+ *  Document-class: UncaughtThrowError
+ *
+ *  Raised when +throw+ is called with a _tag_ which does not have
+ *  corresponding +catch+ block.
+ *
+ *     throw "foo", "bar"
+ *
+ *  <em>raises the exception:</em>
+ *
+ *     UncaughtThrowError: uncaught throw "foo"
+ */
+
+static VALUE
+uncaught_throw_init(int argc, const VALUE *argv, VALUE exc)
+{
+    rb_check_arity(argc, 2, UNLIMITED_ARGUMENTS);
+    rb_call_super(argc - 2, argv + 2);
+    rb_ivar_set(exc, id_tag, argv[0]);
+    rb_ivar_set(exc, id_value, argv[1]);
+    return exc;
+}
+
+/*
+ * call-seq:
+ *   uncaught_throw.tag   -> obj
+ *
+ * Return the tag object which was called for.
+ */
+
+static VALUE
+uncaught_throw_tag(VALUE exc)
+{
+    return rb_ivar_get(exc, id_tag);
+}
+
+/*
+ * call-seq:
+ *   uncaught_throw.value   -> obj
+ *
+ * Return the return value which was called for.
+ */
+
+static VALUE
+uncaught_throw_value(VALUE exc)
+{
+    return rb_ivar_get(exc, id_value);
+}
+
+/*
+ * call-seq:
+ *   uncaught_throw.to_s   ->  string
+ *
+ * Returns formatted message with the inspected tag.
+ */
+
+static VALUE
+uncaught_throw_to_s(VALUE exc)
+{
+    VALUE mesg = rb_attr_get(exc, id_mesg);
+    VALUE tag = uncaught_throw_tag(exc);
+    return rb_str_format(1, &tag, mesg);
 }
 
 /*
@@ -1712,7 +1806,7 @@ rb_mod_module_exec(int argc, VALUE *argv, VALUE mod)
  *     throw(tag [, obj])
  *
  *  Transfers control to the end of the active +catch+ block
- *  waiting for _tag_. Raises +ArgumentError+ if there
+ *  waiting for _tag_. Raises +UncaughtThrowError+ if there
  *  is no +catch+ block for the _tag_. The optional second
  *  parameter supplies a return value for the +catch+ block,
  *  which otherwise defaults to +nil+. For examples, see
@@ -1743,8 +1837,11 @@ rb_throw_obj(VALUE tag, VALUE value)
 	tt = tt->prev;
     }
     if (!tt) {
-	VALUE desc = rb_inspect(tag);
-	rb_raise(rb_eArgError, "uncaught throw %"PRIsVALUE, desc);
+	VALUE desc[3];
+	desc[0] = tag;
+	desc[1] = value;
+	desc[2] = rb_str_new_cstr("uncaught throw %p");
+	rb_exc_raise(rb_class_new_instance(numberof(desc), desc, rb_eUncaughtThrow));
     }
     th->errinfo = NEW_THROW_OBJECT(tag, 0, TAG_THROW);
 
@@ -1765,39 +1862,53 @@ catch_i(VALUE tag, VALUE data)
 
 /*
  *  call-seq:
- *     catch([arg]) {|tag| block }  -> obj
+ *     catch([tag]) {|tag| block }  -> obj
  *
- *  +catch+ executes its block. If a +throw+ is
- *  executed, Ruby searches up its stack for a +catch+ block
- *  with a tag corresponding to the +throw+'s
- *  _tag_. If found, that block is terminated, and
- *  +catch+ returns the value given to +throw+. If
- *  +throw+ is not called, the block terminates normally, and
- *  the value of +catch+ is the value of the last expression
- *  evaluated. +catch+ expressions may be nested, and the
- *  +throw+ call need not be in lexical scope.
+ *  +catch+ executes its block. If +throw+ is not called, the block executes
+ *  normally, and +catch+ returns the value of the last expression evaluated.
  *
- *     def routine(n)
- *       puts n
- *       throw :done if n <= 0
- *       routine(n-1)
+ *     catch(1) { 123 }            # => 123
+ *
+ *  If +throw(tag2, val)+ is called, Ruby searches up its stack for a +catch+
+ *  block whose +tag+ has the same +object_id+ as _tag2_. When found, the block
+ *  stops executing and returns _val_ (or +nil+ if no second argument was given
+ *  to +throw+).
+ *
+ *     catch(1) { throw(1, 456) }  # => 456
+ *     catch(1) { throw(1) }       # => nil
+ *
+ *  When +tag+ is passed as the first argument, +catch+ yields it as the
+ *  parameter of the block.
+ *
+ *     catch(1) {|x| x + 2 }       # => 3
+ *
+ *  When no +tag+ is given, +catch+ yields a new unique object (as from
+ *  +Object.new+) as the block parameter. This object can then be used as the
+ *  argument to +throw+, and will match the correct +catch+ block.
+ *
+ *     catch do |obj_A|
+ *       catch do |obj_B|
+ *         throw(obj_B, 123)
+ *         puts "This puts is not reached"
+ *       end
+ *
+ *       puts "This puts is displayed"
+ *       456
  *     end
  *
+ *     # => 456
  *
- *     catch(:done) { routine(3) }
+ *     catch do |obj_A|
+ *       catch do |obj_B|
+ *         throw(obj_A, 123)
+ *         puts "This puts is still not reached"
+ *       end
  *
- *  <em>produces:</em>
+ *       puts "Now this puts is also not reached"
+ *       456
+ *     end
  *
- *     3
- *     2
- *     1
- *     0
- *
- *  when _arg_ is given, +catch+ yields it as is, or when no
- *  _arg_ is given, +catch+ assigns a new unique object to
- *  +throw+.  this is useful for nested +catch+.  _arg_ can
- *  be an arbitrary object, not only Symbol.
- *
+ *     # => 123
  */
 
 static VALUE
@@ -1861,6 +1972,43 @@ rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
     return val;
 }
 
+static void
+local_var_list_init(struct local_var_list *vars)
+{
+    vars->tbl = rb_hash_new();
+    RHASH(vars->tbl)->ntbl = st_init_numtable(); /* compare_by_identity */
+    RBASIC_CLEAR_CLASS(vars->tbl);
+}
+
+static VALUE
+local_var_list_finish(struct local_var_list *vars)
+{
+    /* TODO: not to depend on the order of st_table */
+    VALUE ary = rb_hash_keys(vars->tbl);
+    rb_hash_clear(vars->tbl);
+    vars->tbl = 0;
+    return ary;
+}
+
+static int
+local_var_list_update(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+{
+    if (existing) return ST_STOP;
+    *value = (st_data_t)Qtrue;	/* INT2FIX(arg) */
+    return ST_CONTINUE;
+}
+
+static void
+local_var_list_add(const struct local_var_list *vars, ID lid)
+{
+    if (lid && rb_id2str(lid)) {
+	/* should skip temporary variable */
+	st_table *tbl = RHASH_TBL_RAW(vars->tbl);
+	st_data_t idx = 0;	/* tbl->num_entries */
+	st_update(tbl, ID2SYM(lid), local_var_list_update, idx);
+    }
+}
+
 /*
  *  call-seq:
  *     local_variables    -> array
@@ -1877,30 +2025,24 @@ rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
 static VALUE
 rb_f_local_variables(void)
 {
-    VALUE ary = rb_ary_new();
+    struct local_var_list vars;
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp =
 	vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp));
     int i;
 
+    local_var_list_init(&vars);
     while (cfp) {
 	if (cfp->iseq) {
 	    for (i = 0; i < cfp->iseq->local_table_size; i++) {
-		ID lid = cfp->iseq->local_table[i];
-		if (lid) {
-		    const char *vname = rb_id2name(lid);
-		    /* should skip temporary variable */
-		    if (vname) {
-			rb_ary_push(ary, ID2SYM(lid));
-		    }
-		}
+		local_var_list_add(&vars, cfp->iseq->local_table[i]);
 	    }
 	}
 	if (!VM_EP_LEP_P(cfp->ep)) {
 	    /* block */
 	    VALUE *ep = VM_CF_PREV_EP(cfp);
 
-	    if (vm_collect_local_variables_in_heap(th, ep, ary)) {
+	    if (vm_collect_local_variables_in_heap(th, ep, &vars)) {
 		break;
 	    }
 	    else {
@@ -1913,7 +2055,7 @@ rb_f_local_variables(void)
 	    break;
 	}
     }
-    return ary;
+    return local_var_list_finish(&vars);
 }
 
 /*
@@ -1995,4 +2137,13 @@ Init_vm_eval(void)
     rb_define_method(rb_cModule, "class_exec", rb_mod_module_exec, -1);
     rb_define_method(rb_cModule, "module_eval", rb_mod_module_eval, -1);
     rb_define_method(rb_cModule, "class_eval", rb_mod_module_eval, -1);
+
+    rb_eUncaughtThrow = rb_define_class("UncaughtThrowError", rb_eArgError);
+    rb_define_method(rb_eUncaughtThrow, "initialize", uncaught_throw_init, -1);
+    rb_define_method(rb_eUncaughtThrow, "tag", uncaught_throw_tag, 0);
+    rb_define_method(rb_eUncaughtThrow, "value", uncaught_throw_value, 0);
+    rb_define_method(rb_eUncaughtThrow, "to_s", uncaught_throw_to_s, 0);
+
+    id_tag = rb_intern_const("tag");
+    id_value = rb_intern_const("value");
 }

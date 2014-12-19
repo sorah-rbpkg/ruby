@@ -4,7 +4,9 @@ require "etc"
 class TestEtc < Test::Unit::TestCase
   def test_getlogin
     s = Etc.getlogin
-    assert(s.is_a?(String) || s == nil, "getlogin must return a String or nil")
+    return if s == nil
+    assert(s.is_a?(String), "getlogin must return a String or nil")
+    assert_predicate(s, :valid_encoding?, "login name should be a valid string")
   end
 
   def test_passwd
@@ -112,4 +114,56 @@ class TestEtc < Test::Unit::TestCase
     Etc.endgrent
     assert_equal(a, b)
   end
+
+  def test_uname
+    begin
+      uname = Etc.uname
+    rescue NotImplementedError
+      return
+    end
+    assert_kind_of(Hash, uname)
+    [:sysname, :nodename, :release, :version, :machine].each {|sym|
+      assert_operator(uname, :has_key?, sym)
+      assert_kind_of(String, uname[sym])
+    }
+  end
+
+  def test_sysconf
+    begin
+      Etc.sysconf
+    rescue NotImplementedError
+      return
+    rescue ArgumentError
+    end
+    assert_kind_of(Integer, Etc.sysconf(Etc::SC_CLK_TCK))
+  end if defined?(Etc::SC_CLK_TCK)
+
+  def test_confstr
+    begin
+      Etc.confstr
+    rescue NotImplementedError
+      return
+    rescue ArgumentError
+    end
+    assert_kind_of(String, Etc.confstr(Etc::CS_PATH))
+  end if defined?(Etc::CS_PATH)
+
+  def test_pathconf
+    begin
+      Etc.confstr
+    rescue NotImplementedError
+      return
+    rescue ArgumentError
+    end
+    IO.pipe {|r, w|
+      val = w.pathconf(Etc::PC_PIPE_BUF)
+      assert(val.nil? || val.kind_of?(Integer))
+    }
+  end if defined?(Etc::PC_PIPE_BUF)
+
+  def test_nprocessors
+    n = Etc.nprocessors
+    assert_operator(1, :<=, n)
+  end
+
 end

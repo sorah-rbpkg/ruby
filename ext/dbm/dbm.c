@@ -45,25 +45,45 @@ closed_dbm(void)
     rb_raise(rb_eDBMError, "closed DBM file");
 }
 
-#define GetDBM(obj, dbmp) {\
-    Data_Get_Struct((obj), struct dbmdata, (dbmp));\
+#define GetDBM(obj, dbmp) do {\
+    TypedData_Get_Struct((obj), struct dbmdata, &dbm_type, (dbmp));\
     if ((dbmp) == 0) closed_dbm();\
     if ((dbmp)->di_dbm == 0) closed_dbm();\
-}
+} while (0)
 
-#define GetDBM2(obj, data, dbm) {\
-    GetDBM((obj), (data));\
-    (dbm) = dbmp->di_dbm;\
-}
+#define GetDBM2(obj, dbmp, dbm) do {\
+    GetDBM((obj), (dbmp));\
+    (dbm) = (dbmp)->di_dbm;\
+} while (0)
 
 static void
-free_dbm(struct dbmdata *dbmp)
+free_dbm(void *ptr)
 {
+    struct dbmdata *dbmp = ptr;
     if (dbmp) {
 	if (dbmp->di_dbm) dbm_close(dbmp->di_dbm);
 	xfree(dbmp);
     }
 }
+
+static size_t
+memsize_dbm(const void *ptr)
+{
+    size_t size = 0;
+    const struct dbmdata *dbmp = ptr;
+    if (dbmp) {
+	size += sizeof(*dbmp);
+	if (dbmp->di_dbm) size += DBM_SIZEOF_DBM;
+    }
+    return size;
+}
+
+static const rb_data_type_t dbm_type = {
+    "dbm",
+    {0, free_dbm, memsize_dbm,},
+    0, 0,
+    RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 /*
  * call-seq:
@@ -94,7 +114,7 @@ fdbm_closed(VALUE obj)
 {
     struct dbmdata *dbmp;
 
-    Data_Get_Struct(obj, struct dbmdata, dbmp);
+    TypedData_Get_Struct(obj, struct dbmdata, &dbm_type, dbmp);
     if (dbmp == 0)
 	return Qtrue;
     if (dbmp->di_dbm == 0)
@@ -106,7 +126,7 @@ fdbm_closed(VALUE obj)
 static VALUE
 fdbm_alloc(VALUE klass)
 {
-    return Data_Wrap_Struct(klass, 0, free_dbm, 0);
+    return TypedData_Wrap_Struct(klass, &dbm_type, 0);
 }
 
 /*
@@ -228,7 +248,7 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
 static VALUE
 fdbm_s_open(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE obj = Data_Wrap_Struct(klass, 0, free_dbm, 0);
+    VALUE obj = fdbm_alloc(klass);
 
     if (NIL_P(fdbm_initialize(argc, argv, obj))) {
 	return Qnil;
@@ -259,8 +279,11 @@ fdbm_fetch(VALUE obj, VALUE keystr, VALUE ifnone)
     value = dbm_fetch(dbm, key);
     if (value.dptr == 0) {
       not_found:
-	if (ifnone == Qnil && rb_block_given_p())
-	    return rb_yield(rb_tainted_str_new(key.dptr, key.dsize));
+	if (NIL_P(ifnone) && rb_block_given_p()) {
+	    keystr = rb_str_dup(keystr);
+	    OBJ_TAINT(keystr);
+	    return rb_yield(keystr);
+	}
 	return ifnone;
     }
     return rb_tainted_str_new(value.dptr, value.dsize);

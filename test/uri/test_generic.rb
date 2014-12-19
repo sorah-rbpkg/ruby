@@ -121,14 +121,14 @@ class URI::TestGeneric < Test::Unit::TestCase
 
     # 7
     # reported by Mr. Kubota <em6t-kbt@asahi-net.or.jp>
-    assert_raise(URI::InvalidURIError) { URI.parse('http://a_b:80/') }
-    assert_raise(URI::InvalidURIError) { URI.parse('http://a_b/') }
+    assert_nothing_raised(URI::InvalidURIError) { URI.parse('http://a_b:80/') }
+    assert_nothing_raised(URI::InvalidURIError) { URI.parse('http://a_b/') }
 
     # 8
     # reported by m_seki
-    uri = URI.parse('file:///foo/bar.txt')
+    url = URI.parse('file:///foo/bar.txt')
     assert_kind_of(URI::Generic, url)
-    uri = URI.parse('file:/foo/bar.txt')
+    url = URI.parse('file:/foo/bar.txt')
     assert_kind_of(URI::Generic, url)
 
     # 9
@@ -697,6 +697,14 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('http://foo:bar@baz', uri.to_s)
     assert_equal('zab', uri.host = 'zab')
     assert_equal('http://foo:bar@zab', uri.to_s)
+    uri.port = ""
+    assert_nil(uri.port)
+    uri.port = "80"
+    assert_equal(80, uri.port)
+    uri.port = "080"
+    assert_equal(80, uri.port)
+    uri.port = " 080 "
+    assert_equal(80, uri.port)
     assert_equal(8080, uri.port = 8080)
     assert_equal('http://foo:bar@zab:8080', uri.to_s)
     assert_equal('/', uri.path = '/')
@@ -705,12 +713,16 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('http://foo:bar@zab:8080/?a=1', uri.to_s)
     assert_equal('b123', uri.fragment = 'b123')
     assert_equal('http://foo:bar@zab:8080/?a=1#b123', uri.to_s)
+    assert_equal('a[]=1', uri.query = 'a[]=1')
+    assert_equal('http://foo:bar@zab:8080/?a%5B%5D=1#b123', uri.to_s)
+    uri = URI.parse('http://foo:bar@zab:8080/?a[]=1#b123')
+    assert_equal('http://foo:bar@zab:8080/?a%5B%5D=1#b123', uri.to_s)
 
     uri = URI.parse('http://example.com')
     assert_raise(URI::InvalidURIError) { uri.password = 'bar' }
-    assert_raise(URI::InvalidComponentError) { uri.query = "foo\nbar" }
+    assert_equal("foo\nbar", uri.query = "foo\nbar")
     uri.userinfo = 'foo:bar'
-    assert_equal('http://foo:bar@example.com', uri.to_s)
+    assert_equal('http://foo:bar@example.com?foobar', uri.to_s)
     assert_raise(URI::InvalidURIError) { uri.registry = 'bar' }
     assert_raise(URI::InvalidURIError) { uri.opaque = 'bar' }
 
@@ -722,6 +734,11 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_raise(URI::InvalidURIError) { uri.port = 'bar' }
     assert_raise(URI::InvalidURIError) { uri.path = 'bar' }
     assert_raise(URI::InvalidURIError) { uri.query = 'bar' }
+
+    uri = URI.parse('foo:bar')
+    assert_raise(URI::InvalidComponentError) { uri.opaque = '/baz' }
+    uri.opaque = 'xyzzy'
+    assert_equal('foo:xyzzy', uri.to_s)
   end
 
   def test_set_scheme
@@ -741,12 +758,26 @@ class URI::TestGeneric < Test::Unit::TestCase
   end
 
   def test_build
-    URI::Generic.build(['http', nil, 'example.com', 80, nil, '/foo', nil, nil, nil])
+    u = URI::Generic.build(['http', nil, 'example.com', 80, nil, '/foo', nil, nil, nil])
+    assert_equal('http://example.com:80/foo', u.to_s)
+
+    u = URI::Generic.build(:scheme => "http", :host => "::1", :path => "/bar/baz")
+    assert_equal("http://[::1]/bar/baz", u.to_s)
+    assert_equal("[::1]", u.host)
+    assert_equal("::1", u.hostname)
+
+    u = URI::Generic.build(:scheme => "http", :host => "[::1]", :path => "/bar/baz")
+    assert_equal("http://[::1]/bar/baz", u.to_s)
+    assert_equal("[::1]", u.host)
+    assert_equal("::1", u.hostname)
   end
 
   def test_build2
-    URI::Generic.build2(path: "/foo bar/baz")
-    URI::Generic.build2(['http', nil, 'example.com', 80, nil, '/foo bar' , nil, nil, nil])
+    u = URI::Generic.build2(path: "/foo bar/baz")
+    assert_equal('/foo%20bar/baz', u.to_s)
+
+    u = URI::Generic.build2(['http', nil, 'example.com', 80, nil, '/foo bar' , nil, nil, nil])
+    assert_equal('http://example.com:80/foo%20bar', u.to_s)
   end
 
   # 192.0.2.0/24 is TEST-NET.  [RFC3330]

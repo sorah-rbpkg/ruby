@@ -3,11 +3,12 @@
 SHELL = $(COMSPEC)
 ECHO1 = $(V:1=@:)
 RUNCMD = $(COMSPEC) /c
-MKFILES = Makefile
+MKFILES = Makefile verconf.mk
 NULL = nul
 CHDIR = cd
 PATH_SEPARATOR = ;
 TZ =				# skip timezone tests
+PWD = $(MAKEDIR)
 
 !ifndef MFLAGS
 MFLAGS=-l
@@ -75,7 +76,7 @@ IFCHANGE = $(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat
 RM = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat
 RMDIR = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
 RMDIRS = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
-RMALL = $(COMSPEC) /C $(srcdir:/=\)\win32\rmall.bat
+RMALL = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat -r
 MAKEDIRS = $(COMSPEC) /E:ON /C $(srcdir:/=\)\win32\makedirs.bat
 CP = copy > nul
 MV = move > nul
@@ -86,11 +87,10 @@ BASERUBY = ruby
 TEST_RUNNABLE = yes
 !endif
 
-!if !defined(PROCESSOR_ARCHITECTURE)
-PROCESSOR_ARCHITECTURE = x86
+!if !defined(MACHINE)
+MACHINE = x86
 !endif
-MACHINE = $(PROCESSOR_ARCHITECTURE)
-!if "$(PROCESSOR_ARCHITECTURE)" == "x86"
+!if "$(MACHINE)" == "x86"
 !if !defined(PROCESSOR_LEVEL)
 PROCESSOR_LEVEL = 5
 !endif
@@ -103,8 +103,8 @@ PROCESSOR_FLAG = -G$(PROCESSOR_LEVEL)
 CPU = i$(PROCESSOR_LEVEL)86
 ARCH = i386
 !else
-CPU = $(PROCESSOR_ARCHITECTURE)
-ARCH = $(PROCESSOR_ARCHITECTURE)
+CPU = $(MACHINE)
+ARCH = $(MACHINE)
 !endif
 !if !defined(DEBUGFLAGS)
 DEBUGFLAGS = -Zi
@@ -228,7 +228,7 @@ EXTLIBS =
 EXTSOLIBS =
 !endif
 !if !defined(LIBS)
-LIBS = oldnames.lib user32.lib advapi32.lib shell32.lib ws2_32.lib
+LIBS = user32.lib advapi32.lib shell32.lib ws2_32.lib
 !if $(MSC_VER) >= 1400
 LIBS = $(LIBS) iphlpapi.lib
 !endif
@@ -295,7 +295,6 @@ BTESTRUBY = $(MINIRUBY)
 !ifndef RUBY
 RUBY = ruby
 !endif
-DEFAULT_PRELUDES = $(GEM_PRELUDE)
 
 DTRACE_EXT = dmyh
 
@@ -336,8 +335,6 @@ ASMEXT = asm
 
 INSTALLED_LIST= .installed.list
 
-MKMAIN_CMD    = mkmain.bat
-
 SRC_FILE = $(<:\=/)
 OS_SRC_FILE = $(<:/=\)
 DEST_FILE = $(@:\=/)
@@ -362,9 +359,16 @@ COMMON_HEADERS = winsock2.h ws2tcpip.h windows.h
 !if "$(EXTSTATIC)" == "static"
 ENCOBJS = enc/encinit.$(OBJEXT) enc/libenc.lib enc/libtrans.lib
 EXTOBJS = ext/extinit.$(OBJEXT)
+! if !defined(ENCSTATIC)
+ENCSTATIC = static
+! endif
+!else
+ENCOBJS = dmyenc.$(OBJEXT)
+EXTOBJS = dmyext.$(OBJEXT)
 !endif
 
 arch_hdrdir = $(EXTOUT)/include/$(arch)
+top_srcdir = $(srcdir)
 hdrdir = $(srcdir)/include
 VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/enc;$(srcdir)/missing;$(win_srcdir)
 
@@ -404,9 +408,17 @@ MINIPRELUDE_C = $(srcdir)/miniprelude.c
 !else
 MINIPRELUDE_C = miniprelude.c
 !endif
+!if !exist(prelude.c) && exist($(srcdir)/prelude.c)
+PRELUDE_C = $(srcdir)/prelude.c
+!else
+PRELUDE_C = prelude.c
+!endif
 RBCONFIG      = ./.rbconfig.time
 
 !include $(srcdir)/common.mk
+!if exist(verconf.mk)
+! include verconf.mk
+!endif
 
 !ifdef SCRIPTPROGRAMS
 !else if [echo>scriptbin.mk SCRIPTPROGRAMS = \]
@@ -460,7 +472,10 @@ test-rubyspec-precheck:
 	@exit 1
 !endif
 
-$(MKFILES): $(win_srcdir)/Makefile.sub $(win_srcdir)/configure.bat $(win_srcdir)/setup.mak $(win_srcdir)/enc-setup.mak $(srcdir)/common.mk $(srcdir)/enc/Makefile.in
+$(MKFILES): $(srcdir)/common.mk $(srcdir)/version.h \
+	    $(win_srcdir)/Makefile.sub $(win_srcdir)/configure.bat \
+	    $(win_srcdir)/setup.mak $(win_srcdir)/enc-setup.mak \
+	    $(srcdir)/enc/Makefile.in
 	$(COMSPEC) /C $(win_srcdir:/=\)\configure.bat $(configure_args)
 	@fc Makefile Makefile.old > nul && echo Makefile unchanged || \
 	(echo $(MKFILES) was updated, re-run $(MAKE). & exit 1)
@@ -571,6 +586,14 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define FUNC_FASTCALL(x) __fastcall x
 !if $(MSC_VER) >= 1500
 #define RUBY_FUNCTION_NAME_STRING __FUNCTION__
+#define PACKED_STRUCT(x) __pragma(pack(push, 1)) x __pragma(pack(pop))
+!else
+#define PACKED_STRUCT(x) x
+!endif
+!if "$(ARCH)" == "x86" || "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
+#define PACKED_STRUCT_UNALIGNED(x) PACKED_STRUCT(x)
+!else
+#define PACKED_STRUCT_UNALIGNED(x) x
 !endif
 #define RUBY_EXTERN extern __declspec(dllimport)
 #define HAVE_DECL_SYS_NERR 1
@@ -649,6 +672,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_ERFC 1
 #define HAVE_ROUND 1
 #define HAVE_TGAMMA 1
+#define HAVE_NEXTAFTER 1
 !endif
 #define HAVE_ALLOCA 1
 #define HAVE_DUP2 1
@@ -806,7 +830,7 @@ s,@SET_MAKE@,MFLAGS = -$$(MAKEFLAGS),;t t
 s,@RM@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rm.bat,;t t
 s,@RMDIR@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rmdirs.bat,:t t
 s,@RMDIRS@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rmdirs.bat,;t t
-s,@RMALL@,$$(COMSPEC) /C rmdir /s /q,;t t
+s,@RMALL@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rm.bat -f -r,:t t
 s,@MAKEDIRS@,$$(COMSPEC) /E:ON /C $$(top_srcdir:/=\)\win32\makedirs.bat,;t t
 s,@LIBOBJS@,$(LIBOBJS),;t t
 s,@ALLOCA@,$(ALLOCA),;t t
@@ -814,6 +838,7 @@ s,@DEFAULT_KCODE@,$(DEFAULT_KCODE),;t t
 s,@EXEEXT@,.exe,;t t
 s,@EXECUTABLE_EXTS@,$(EXECUTABLE_EXTS),;t t
 s,@OBJEXT@,$(OBJEXT),;t t
+s,@ASMEXT@,$(ASMEXT),;t t
 s,@XCFLAGS@,$(XCFLAGS),;t t
 s,@XLDFLAGS@,$(XLDFLAGS),;t t
 s,@DLDFLAGS@,$(DLDFLAGS) $$(LIBPATH),;t t
@@ -865,6 +890,8 @@ s,@LINK_SO@,@if exist $$(@).manifest $$(RM) $$(@:/=\).manifest,;t t
 !endif
 s,@COMPILE_C@,$$(CC) $$(INCFLAGS) $$(CFLAGS) $$(CPPFLAGS) $$(COUTFLAG)$$(@) -c -Tc$$(<:\=/),;t t
 s,@COMPILE_CXX@,$$(CXX) $$(INCFLAGS) $$(CXXFLAGS) $$(CPPFLAGS) $$(COUTFLAG)$$(@) -c -Tp$$(<:\=/),;t t
+s,@ASSEMBLE_C@,$$(CC) $$(CFLAGS) $$(CPPFLAGS) -Fa$$(@) -c -Tc$$(<:\=/),;t t
+s,@ASSEMBLE_CXX@,$$(CXX) $$(CXXFLAGS) $$(CPPFLAGS) -Fa$$(@) -c -Tp$$(<:\=/),;t t
 s,@COMPILE_RULES@,{$$(*VPATH*)}.%s.%s: .%s.%s:,;t t
 s,@RULE_SUBST@,{.;$$(VPATH)}%s,;t t
 s,@TRY_LINK@,$$(CC) -Feconftest $$(INCFLAGS) -I$$(hdrdir) $$(CPPFLAGS) $$(CFLAGS) $$(src) $$(LOCAL_LIBS) $$(LIBS) -link $$(LDFLAGS) $$(LIBPATH) $$(XLDFLAGS),;t t
@@ -911,7 +938,7 @@ miniruby: miniruby$(EXEEXT)
 miniruby$(EXEEXT):
 		@echo $(LIBS)
 		$(ECHO) linking $(@:\=/)
-		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(LIBS) -Fe$@ -link $(LDFLAGS)
+		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(INITOBJS) $(LIBS) -Fe$@ -link $(LDFLAGS)
 		@$(RM) miniruby.lib miniruby.exp
 		$(Q) miniruby.exe -v
 		$(Q) $(LDSHARED_1)
@@ -951,9 +978,9 @@ $(STUBPROGRAM):	stub.$(OBJEXT) $(LIBRUBY) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 		$(Q) $(LDSHARED_2)
 !endif
 
-$(LIBRUBY_A):	$(OBJS) $(DMYEXT)
+$(LIBRUBY_A):	$(OBJS) $(INITOBJS)
 		$(ECHO) linking static-library $(@:\=/)
-		$(Q) $(AR) $(ARFLAGS)$@ $(OBJS) $(DMYEXT)
+		$(Q) $(AR) $(ARFLAGS)$@ $(OBJS) $(INITOBJS)
 
 $(LIBRUBY):	$(RUBYDEF)
 		$(ECHO) linking import-library $(@:\=/)
@@ -991,15 +1018,6 @@ distclean-local::
 		-$(Q)$(RM) $(INSTALLED_LIST:/=\) $(arch_hdrdir:/=\)\ruby\config.h verconf.h
 		-$(Q)$(RMDIRS) $(arch_hdrdir:/=\)\ruby
 
-clean-rdoc distclean-rdoc realclean-rdoc:
-		-$(Q)$(RMALL) $(RDOCOUT:/=\)
-clean-capi distclean-capi realclean-capi:
-		-$(Q)$(RMALL) $(CAPIOUT:/=\)
-
-clean-platform:
-		$(Q)$(RM) $(PLATFORM_D:/=\)
-		-$(Q)$(RMDIR) $(PLATFORM_DIR:/=\)
-
 clean-ext distclean-ext realclean-ext::
 !if "$(EXTS)" != ""
 		@for %I in ($(EXTS)) \
@@ -1018,9 +1036,6 @@ distclean-ext realclean-ext::
 		-$(Q)rmdir ext
 
 clean-extout:
-!if exist($(EXTOUT)/.)
-	-$(Q)$(RMDIRS) $(EXTOUT)
-!endif
 
 clean-enc distclean-enc realclean-enc:
 !if exist($(ENC_MK))
@@ -1045,7 +1060,7 @@ class Object
   remove_const :RUBY_DESCRIPTION if defined?(RUBY_DESCRIPTION)
   RUBY_PLATFORM = "$(arch)"
   RUBY_VERSION = $(RUBY_PROGRAM_VERSION)
-  RUBY_DESCRIPTION = "ruby #{RUBY_VERSION} (" + $(RUBY_PROGRAM_RELEASE_DATE) + ") [#{RUBY_PLATFORM}]"
+  RUBY_DESCRIPTION = "ruby #{RUBY_VERSION} (" $(RUBY_RELEASE_DATE) ") [#{RUBY_PLATFORM}]"
 end
 class File
   remove_const :ALT_SEPARATOR
@@ -1054,11 +1069,7 @@ end
 <<KEEP
 
 $(ruby_pc): $(RBCONFIG)
-	@$(MINIRUBY) -r./rbconfig -p \
-	-e 'STDOUT.binmode' \
-	-e '$$_.gsub!(/@([a-z_]\w*)@/i) {' \
-	-e '(RbConfig::MAKEFILE_CONFIG[$$1] or "").gsub(/\$$\((.+?)\)/, %Q[$${\\1}])' \
-	-e '}' \
+	@$(MINIRUBY) -r./rbconfig $(srcdir)/tool/expand-config.rb \
 	$(srcdir)/template/ruby.pc.in > $@
 
 {$(srcdir)/enc}.c.obj:
@@ -1115,6 +1126,11 @@ enc/unicode/name2ctype.h: {$(srcdir)}enc/unicode/name2ctype.h.blt
 	$(ECHO) copying $@
 	$(Q) copy $(?:/=\) $(@:/=\) > nul
 
+enc/jis/props.h: {$(srcdir)}enc/jis/props.h.blt
+	@if not exist $(@D:/=\) md $(@D:/=\)
+	$(ECHO) copying $@
+	$(Q) copy $(?:/=\) $(@:/=\) > nul
+
 $(OBJS): {$(hdrdir)/ruby}win32.h
 
 dir.$(OBJEXT) win32/win32.$(OBJEXT): {$(srcdir)}win32/dir.h
@@ -1149,6 +1165,8 @@ INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 ! if [del insns_rules.mk > nul]
 ! endif
 !endif
+
+verconf.h: verconf.mk
 
 loadpath: verconf.h
 	@$(CPP) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/loadpath.c | \

@@ -9,8 +9,6 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
-#include "ruby/encoding.h"
 #include "internal.h"
 #include "transcode_data.h"
 #include <ctype.h>
@@ -110,21 +108,21 @@ typedef struct {
 
 struct rb_econv_t {
     int flags;
+    int started; /* bool */
+
     const char *source_encoding_name;
     const char *destination_encoding_name;
-
-    int started;
 
     const unsigned char *replacement_str;
     size_t replacement_len;
     const char *replacement_enc;
-    int replacement_allocated;
 
     unsigned char *in_buf_start;
     unsigned char *in_data_start;
     unsigned char *in_data_end;
     unsigned char *in_buf_end;
     rb_econv_elem_t *elems;
+    int replacement_allocated; /* bool */
     int num_allocated;
     int num_trans;
     int num_finished;
@@ -2463,7 +2461,7 @@ econv_opts(VALUE opt, int ecflags)
             ecflags |= ECONV_XML_ATTR_CONTENT_DECORATOR|ECONV_XML_ATTR_QUOTE_DECORATOR|ECONV_UNDEF_HEX_CHARREF;
         }
         else if (RB_TYPE_P(v, T_SYMBOL)) {
-            rb_raise(rb_eArgError, "unexpected value for xml option: %s", rb_id2name(SYM2ID(v)));
+            rb_raise(rb_eArgError, "unexpected value for xml option: %"PRIsVALUE, rb_sym2str(v));
         }
         else {
             rb_raise(rb_eArgError, "unexpected value for xml option");
@@ -2487,8 +2485,8 @@ econv_opts(VALUE opt, int ecflags)
 	    /* ecflags |= ECONV_LF_NEWLINE_DECORATOR; */
 	}
 	else if (SYMBOL_P(v)) {
-	    rb_raise(rb_eArgError, "unexpected value for newline option: %s",
-		     rb_id2name(SYM2ID(v)));
+	    rb_raise(rb_eArgError, "unexpected value for newline option: %"PRIsVALUE,
+		     rb_sym2str(v));
 	}
 	else {
 	    rb_raise(rb_eArgError, "unexpected value for newline option");
@@ -2922,7 +2920,7 @@ econv_memsize(const void *ptr)
 static const rb_data_type_t econv_data_type = {
     "econv",
     {NULL, econv_free, econv_memsize,},
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static VALUE
@@ -4388,13 +4386,10 @@ ecerr_incomplete_input(VALUE self)
  *  correspond with a known converter.
  */
 
+#undef rb_intern
 void
 Init_transcode(void)
 {
-    rb_eUndefinedConversionError = rb_define_class_under(rb_cEncoding, "UndefinedConversionError", rb_eEncodingError);
-    rb_eInvalidByteSequenceError = rb_define_class_under(rb_cEncoding, "InvalidByteSequenceError", rb_eEncodingError);
-    rb_eConverterNotFoundError = rb_define_class_under(rb_cEncoding, "ConverterNotFoundError", rb_eEncodingError);
-
     transcoder_table = st_init_strcasetable();
 
     sym_invalid = ID2SYM(rb_intern("invalid"));
@@ -4425,6 +4420,16 @@ Init_transcode(void)
     sym_cr = ID2SYM(rb_intern("cr"));
     sym_lf = ID2SYM(rb_intern("lf"));
 #endif
+
+    InitVM(transcode);
+}
+
+void
+InitVM_transcode(void)
+{
+    rb_eUndefinedConversionError = rb_define_class_under(rb_cEncoding, "UndefinedConversionError", rb_eEncodingError);
+    rb_eInvalidByteSequenceError = rb_define_class_under(rb_cEncoding, "InvalidByteSequenceError", rb_eEncodingError);
+    rb_eConverterNotFoundError = rb_define_class_under(rb_cEncoding, "ConverterNotFoundError", rb_eEncodingError);
 
     rb_define_method(rb_cString, "encode", str_encode, -1);
     rb_define_method(rb_cString, "encode!", str_encode_bang, -1);

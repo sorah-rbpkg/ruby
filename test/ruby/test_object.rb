@@ -1,6 +1,5 @@
 # -*- coding: us-ascii -*-
 require 'test/unit'
-require_relative 'envutil'
 
 class TestObject < Test::Unit::TestCase
   def setup
@@ -10,6 +9,12 @@ class TestObject < Test::Unit::TestCase
 
   def teardown
     $VERBOSE = @verbose
+  end
+
+  def test_itself
+    feature6373 = '[ruby-core:44704] [Feature #6373]'
+    object = Object.new
+    assert_same(object, object.itself, feature6373)
   end
 
   def test_dup
@@ -29,8 +34,8 @@ class TestObject < Test::Unit::TestCase
     end
 
     obj = cls.new
-    assert_throws(:initialize_clone) {obj.clone}
-    assert_throws(:initialize_dup) {obj.dup}
+    assert_throw(:initialize_clone) {obj.clone}
+    assert_throw(:initialize_dup) {obj.dup}
   end
 
   def test_instance_of
@@ -57,6 +62,20 @@ class TestObject < Test::Unit::TestCase
     1.freeze
     assert_equal(true, 1.frozen?)
     assert_equal(true, 2.frozen?)
+    assert_equal(true, true.frozen?)
+    assert_equal(true, false.frozen?)
+    assert_equal(true, nil.frozen?)
+  end
+
+  def test_frozen_error_message
+    name = "C\u{30c6 30b9 30c8}"
+    klass = EnvUtil.labeled_class(name) {
+      attr_accessor :foo
+    }
+    obj = klass.new.freeze
+    assert_raise_with_message(RuntimeError, /#{name}/) {
+      obj.foo = 1
+    }
   end
 
   def test_nil_to_f
@@ -289,12 +308,12 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_redefine_method_which_may_case_serious_problem
-    assert_in_out_err([], <<-INPUT, [], /warning: redefining `object_id' may cause serious problems$/)
+    assert_in_out_err([], <<-INPUT, [], %r"warning: redefining `object_id' may cause serious problems$")
       $VERBOSE = false
       def (Object.new).object_id; end
     INPUT
 
-    assert_in_out_err([], <<-INPUT, [], /warning: redefining `__send__' may cause serious problems$/)
+    assert_in_out_err([], <<-INPUT, [], %r"warning: redefining `__send__' may cause serious problems$")
       $VERBOSE = false
       def (Object.new).__send__; end
     INPUT
@@ -337,7 +356,7 @@ class TestObject < Test::Unit::TestCase
     assert_raise(NoMethodError, bug2202) {o2.meth2}
 
     %w(object_id __send__ initialize).each do |m|
-      assert_in_out_err([], <<-INPUT, %w(:ok), /warning: removing `#{m}' may cause serious problems$/)
+      assert_in_out_err([], <<-INPUT, %w(:ok), %r"warning: removing `#{m}' may cause serious problems$")
         $VERBOSE = false
         begin
           Class.new.instance_eval { remove_method(:#{m}) }
@@ -345,6 +364,19 @@ class TestObject < Test::Unit::TestCase
           p :ok
         end
       INPUT
+    end
+
+    m = "\u{30e1 30bd 30c3 30c9}"
+    c = Class.new
+    assert_raise_with_message(NameError, /#{m}/) do
+      c.class_eval {remove_method m}
+    end
+    c = Class.new {
+      define_method(m) {}
+      remove_method(m)
+    }
+    assert_raise_with_message(NameError, /#{m}/) do
+      c.class_eval {remove_method m}
     end
   end
 
@@ -571,7 +603,7 @@ class TestObject < Test::Unit::TestCase
     end
     begin
       nil.public_send(o) { x = :ng }
-    rescue
+    rescue TypeError
     end
     assert_equal(:ok, x)
   end
@@ -739,10 +771,12 @@ class TestObject < Test::Unit::TestCase
         def initialize
           @\u{3044} = 42
         end
-        new.inspect
+        new
       end
     EOS
-    assert_match(/\bInspect\u{3042}:.* @\u{3044}=42\b/, x)
+    assert_match(/\bInspect\u{3042}:.* @\u{3044}=42\b/, x.inspect)
+    x.instance_variable_set("@\u{3046}".encode(Encoding::EUC_JP), 6)
+    assert_match(/@\u{3046}=6\b/, x.inspect)
   end
 
   def test_singleton_class
@@ -810,14 +844,14 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_type_error_message
-    issue = "Bug #7539"
+    _issue = "Bug #7539"
     assert_raise_with_message(TypeError, "can't convert Array into Integer") {Integer([42])}
     assert_raise_with_message(TypeError, 'no implicit conversion of Array into Integer') {[].first([42])}
   end
 
   def test_copied_ivar_memory_leak
     bug10191 = '[ruby-core:64700] [Bug #10191]'
-    assert_no_memory_leak([], <<-"end;", <<-"end;", bug10191, rss: true, timeout: 60, limit: 2.5)
+    assert_no_memory_leak([], <<-"end;", <<-"end;", bug10191, timeout: 60, limit: 1.8)
       def (a = Object.new).set; @v = nil; end
       num = 500_000
     end;

@@ -469,6 +469,7 @@ class TestReadline < Test::Unit::TestCase
           STDOUT.reopen(orig_stdout)
           orig_stdin.close
           orig_stdout.close
+          orig_stderr.close
         end
       }
     }
@@ -508,7 +509,6 @@ class TestReadline < Test::Unit::TestCase
   def assert_under_utf8
     return false if ENV['LC_ALL'] == 'UTF-8'
     loc = caller_locations(1, 1)[0].base_label.to_s
-    require_relative "../ruby/envutil"
     assert_separately([{"LC_ALL"=>"UTF-8"}, "-r", __FILE__], <<SRC)
 #skip "test \#{ENV['LC_ALL']}"
 #{self.class.name}.new(#{loc.dump}).run(Test::Unit::Runner.new)

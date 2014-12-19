@@ -6,7 +6,6 @@
 
 require 'delegate'
 require 'tmpdir'
-require 'thread'
 
 # A utility class for managing temporary files. When you create a Tempfile
 # object, it will create a temporary file with a unique filename. A Tempfile
@@ -79,8 +78,6 @@ require 'thread'
 # same Tempfile object from multiple threads then you should protect it with a
 # mutex.
 class Tempfile < DelegateClass(File)
-  include Dir::Tmpname
-
   # call-seq:
   #    new(basename, [tmpdir = Dir.tmpdir], [options])
   #
@@ -125,7 +122,7 @@ class Tempfile < DelegateClass(File)
   #
   # If Tempfile.new cannot find a unique filename within a limited
   # number of tries, then it will raise an exception.
-  def initialize(basename, *rest)
+  def initialize(basename, tmpdir=nil, mode: 0, **options)
     if block_given?
       warn "Tempfile.new doesn't call the given block."
     end
@@ -133,20 +130,13 @@ class Tempfile < DelegateClass(File)
     @clean_proc = Remover.new(@data)
     ObjectSpace.define_finalizer(self, @clean_proc)
 
-    ::Dir::Tmpname.create(basename, *rest) do |tmpname, n, opts|
-      mode = File::RDWR|File::CREAT|File::EXCL
-      perm = 0600
-      if opts
-        mode |= opts.delete(:mode) || 0
-        opts[:perm] = perm
-        perm = nil
-      else
-        opts = perm
-      end
+    ::Dir::Tmpname.create(basename, tmpdir, options) do |tmpname, n, opts|
+      mode |= File::RDWR|File::CREAT|File::EXCL
+      opts[:perm] = 0600
       @data[1] = @tmpfile = File.open(tmpname, mode, opts)
       @data[0] = @tmpname = tmpname
       @mode = mode & ~(File::CREAT|File::EXCL)
-      perm or opts.freeze
+      opts.freeze
       @opts = opts
     end
 
@@ -263,7 +253,11 @@ class Tempfile < DelegateClass(File)
 
   # :stopdoc:
   def inspect
-    "#<#{self.class}:#{path}>"
+    if closed?
+      "#<#{self.class}:#{path} (closed)>"
+    else
+      "#<#{self.class}:#{path}>"
+    end
   end
 
   class Remover
@@ -275,7 +269,7 @@ class Tempfile < DelegateClass(File)
     def call(*args)
       return if @pid != $$
 
-      path, tmpfile = *@data
+      path, tmpfile = @data
 
       STDERR.print "removing ", path, "..." if $DEBUG
 
@@ -291,9 +285,10 @@ class Tempfile < DelegateClass(File)
       STDERR.print "done\n" if $DEBUG
     end
   end
-  # :startdoc:
 
   class << self
+    # :startdoc:
+
     # Creates a new Tempfile.
     #
     # If no block is given, this is a synonym for Tempfile.new.
@@ -352,18 +347,11 @@ end
 #      ... do something with f ...
 #   end
 #
-def Tempfile.create(basename, *rest)
+def Tempfile.create(basename, tmpdir=nil, mode: 0, **options)
   tmpfile = nil
-  Dir::Tmpname.create(basename, *rest) do |tmpname, n, opts|
-    mode = File::RDWR|File::CREAT|File::EXCL
-    perm = 0600
-    if opts
-      mode |= opts.delete(:mode) || 0
-      opts[:perm] = perm
-      perm = nil
-    else
-      opts = perm
-    end
+  Dir::Tmpname.create(basename, tmpdir, options) do |tmpname, n, opts|
+    mode |= File::RDWR|File::CREAT|File::EXCL
+    opts[:perm] = 0600
     tmpfile = File.open(tmpname, mode, opts)
   end
   if block_given?
@@ -376,14 +364,4 @@ def Tempfile.create(basename, *rest)
   else
     tmpfile
   end
-end
-
-if __FILE__ == $0
-#  $DEBUG = true
-  f = Tempfile.new("foo")
-  f.print("foo\n")
-  f.close
-  f.open
-  p f.gets # => "foo\n"
-  f.close!
 end

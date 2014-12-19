@@ -1,6 +1,5 @@
 require 'minitest/autorun'
 require 'tmpdir'
-require_relative '../ruby/envutil'
 
 class RakeIntegration < MiniTest::Unit::TestCase
   include Test::Unit::Assertions
@@ -18,6 +17,7 @@ class RakeIntegration < MiniTest::Unit::TestCase
       filename = File.join dir, 'testing.rb'
       File.open(filename, 'wb') do |f|
         f.write <<-eotest
+$LOAD_PATH.unshift "#{File.dirname(__FILE__)}/../lib"
 require 'test/unit'
 raise 'loaded twice' if defined?(FooTest)
 class FooTest; end

@@ -18,11 +18,12 @@ int
 string2hex(const unsigned char *buf, int buf_len, char **hexbuf, int *hexbuf_len)
 {
     static const char hex[]="0123456789abcdef";
-    int i, len = 2 * buf_len;
+    int i, len;
 
-    if (buf_len < 0 || len < buf_len) { /* PARANOIA? */
+    if (buf_len < 0 || buf_len > INT_MAX / 2) { /* PARANOIA? */
 	return -1;
     }
+    len = 2 * buf_len;
     if (!hexbuf) { /* if no buf, return calculated len */
 	if (hexbuf_len) {
 	    *hexbuf_len = len;
@@ -360,7 +361,7 @@ ossl_exc_new(VALUE exc, const char *fmt, ...)
  * Any errors you see here are probably due to a bug in ruby's OpenSSL implementation.
  */
 VALUE
-ossl_get_errors()
+ossl_get_errors(void)
 {
     VALUE ary;
     long e;
@@ -466,7 +467,7 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
 /**
  * Stores locks needed for OpenSSL thread safety
  */
-#include "../../thread_native.h"
+#include "ruby/thread_native.h"
 static rb_nativethread_lock_t *ossl_locks;
 
 static void
@@ -747,27 +748,27 @@ static void Init_ossl_locks(void)
  *
  * First set up the cipher for encryption
  *
- *   encrypter = OpenSSL::Cipher.new 'AES-128-CBC'
- *   encrypter.encrypt
- *   encrypter.pkcs5_keyivgen pass_phrase, salt
+ *   encryptor = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   encryptor.encrypt
+ *   encryptor.pkcs5_keyivgen pass_phrase, salt
  *
  * Then pass the data you want to encrypt through
  *
- *   encrypted = encrypter.update 'top secret document'
- *   encrypted << encrypter.final
+ *   encrypted = encryptor.update 'top secret document'
+ *   encrypted << encryptor.final
  *
  * === Decryption
  *
  * Use a new Cipher instance set up for decryption
  *
- *   decrypter = OpenSSL::Cipher.new 'AES-128-CBC'
- *   decrypter.decrypt
- *   decrypter.pkcs5_keyivgen pass_phrase, salt
+ *   decryptor = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   decryptor.decrypt
+ *   decryptor.pkcs5_keyivgen pass_phrase, salt
  *
  * Then pass the data you want to decrypt through
  *
- *   plain = decrypter.update encrypted
- *   plain << decrypter.final
+ *   plain = decryptor.update encrypted
+ *   plain << decryptor.final
  *
  * == X509 Certificates
  *
@@ -1033,7 +1034,7 @@ static void Init_ossl_locks(void)
  *
  */
 void
-Init_openssl()
+Init_openssl(void)
 {
     /*
      * Init timezone info

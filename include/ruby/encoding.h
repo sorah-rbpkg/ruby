@@ -68,28 +68,30 @@ RUBY_SYMBOL_EXPORT_BEGIN
         ENC_CODERANGE_SET(rb_encoding_coderange_obj, (cr)); \
     } while (0)
 
-typedef OnigEncodingType rb_encoding;
+typedef const OnigEncodingType rb_encoding;
 
 int rb_char_to_option_kcode(int c, int *option, int *kcode);
 
 int rb_enc_replicate(const char *, rb_encoding *);
 int rb_define_dummy_encoding(const char *);
-#define rb_enc_to_index(enc) ((enc) ? ENC_TO_ENCINDEX(enc) : 0)
+int rb_enc_dummy_p(rb_encoding *enc);
+int rb_enc_to_index(rb_encoding *enc);
 int rb_enc_get_index(VALUE obj);
 void rb_enc_set_index(VALUE obj, int encindex);
 int rb_enc_find_index(const char *name);
 int rb_to_encoding_index(VALUE);
-rb_encoding* rb_to_encoding(VALUE);
-rb_encoding* rb_find_encoding(VALUE);
-rb_encoding* rb_enc_get(VALUE);
-rb_encoding* rb_enc_compatible(VALUE,VALUE);
-rb_encoding* rb_enc_check(VALUE,VALUE);
+rb_encoding *rb_to_encoding(VALUE);
+rb_encoding *rb_find_encoding(VALUE);
+rb_encoding *rb_enc_get(VALUE);
+rb_encoding *rb_enc_compatible(VALUE,VALUE);
+rb_encoding *rb_enc_check(VALUE,VALUE);
 VALUE rb_enc_associate_index(VALUE, int);
 VALUE rb_enc_associate(VALUE, rb_encoding*);
 void rb_enc_copy(VALUE dst, VALUE src);
 
 VALUE rb_enc_str_new(const char*, long, rb_encoding*);
 VALUE rb_enc_str_new_cstr(const char*, rb_encoding*);
+VALUE rb_enc_str_new_static(const char*, long, rb_encoding*);
 VALUE rb_enc_reg_new(const char*, long, rb_encoding*, int);
 PRINTF_ARGS(VALUE rb_enc_sprintf(rb_encoding *, const char*, ...), 2, 3);
 VALUE rb_enc_vsprintf(rb_encoding *, const char*, va_list);
@@ -105,10 +107,16 @@ VALUE rb_str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to);
 VALUE rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags, VALUE ecopts);
 
 #if defined(__GNUC__) && !defined(__PCC__)
+#define rb_enc_str_new(str, len, enc) __extension__ ( \
+{					       \
+    (__builtin_constant_p(str) && __builtin_constant_p(len)) ? \
+	rb_enc_str_new_static((str), (len), (enc)) : \
+	rb_enc_str_new((str), (len), (enc)); \
+})
 #define rb_enc_str_new_cstr(str, enc) __extension__ (	\
 {					       \
     (__builtin_constant_p(str)) ?	       \
-	rb_enc_str_new((str), (long)strlen(str), (enc)) : \
+	rb_enc_str_new_static((str), (long)strlen(str), (enc)) : \
 	rb_enc_str_new_cstr((str), (enc)); \
 })
 #endif
@@ -116,10 +124,10 @@ VALUE rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ec
 PRINTF_ARGS(NORETURN(void rb_enc_raise(rb_encoding *, VALUE, const char*, ...)), 3, 4);
 
 /* index -> rb_encoding */
-rb_encoding* rb_enc_from_index(int idx);
+rb_encoding *rb_enc_from_index(int idx);
 
 /* name -> rb_encoding */
-rb_encoding * rb_enc_find(const char *name);
+rb_encoding *rb_enc_find(const char *name);
 
 /* rb_encoding * -> name */
 #define rb_enc_name(enc) (enc)->name
@@ -231,21 +239,9 @@ char *rb_enc_path_end(const char *,const char *,rb_encoding*);
 const char *ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encoding *enc);
 const char *ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc);
 ID rb_check_id_cstr(const char *ptr, long len, rb_encoding *enc);
+VALUE rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc);
 
 RUBY_EXTERN VALUE rb_cEncoding;
-#define ENC_DUMMY_FLAG (1<<24)
-#define ENC_INDEX_MASK (~(~0U<<24))
-
-#define ENC_TO_ENCINDEX(enc) (int)((enc)->ruby_encoding_index & ENC_INDEX_MASK)
-
-#define ENC_DUMMY_P(enc) ((enc)->ruby_encoding_index & ENC_DUMMY_FLAG)
-#define ENC_SET_DUMMY(enc) ((enc)->ruby_encoding_index |= ENC_DUMMY_FLAG)
-
-static inline int
-rb_enc_dummy_p(rb_encoding *enc)
-{
-    return ENC_DUMMY_P(enc) != 0;
-}
 
 /* econv stuff */
 

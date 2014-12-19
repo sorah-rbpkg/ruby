@@ -90,8 +90,8 @@ rb_secure(int level)
     if (level <= rb_safe_level()) {
 	ID caller_name = rb_frame_callee();
 	if (caller_name) {
-	    rb_raise(rb_eSecurityError, "Insecure operation `%s' at level %d",
-		     rb_id2name(caller_name), rb_safe_level());
+	    rb_raise(rb_eSecurityError, "Insecure operation `%"PRIsVALUE"' at level %d",
+		     rb_id2str(caller_name), rb_safe_level());
 	}
 	else {
 	    rb_raise(rb_eSecurityError, "Insecure operation at level %d",
@@ -110,8 +110,8 @@ rb_insecure_operation(void)
 {
     ID caller_name = rb_frame_callee();
     if (caller_name) {
-	rb_raise(rb_eSecurityError, "Insecure operation - %s",
-		 rb_id2name(caller_name));
+	rb_raise(rb_eSecurityError, "Insecure operation - %"PRIsVALUE,
+		 rb_id2str(caller_name));
     }
     else {
 	rb_raise(rb_eSecurityError, "Insecure operation: -r");
@@ -123,16 +123,6 @@ rb_check_safe_obj(VALUE x)
 {
     if (rb_safe_level() > 0 && OBJ_TAINTED(x)) {
 	rb_insecure_operation();
-    }
-}
-
-void
-rb_check_safe_str(VALUE x)
-{
-    rb_check_safe_obj(x);
-    if (!RB_TYPE_P(x, T_STRING)) {
-	rb_raise(rb_eTypeError, "wrong argument type %s (expected String)",
-		 rb_obj_classname(x));
     }
 }
 
