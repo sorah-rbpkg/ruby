@@ -1,45 +1,17 @@
 #!/bin/sh
 
-failed=0
-passed=0
-
-fail() {
-  failed=$(($failed + 1))
-  echo "FAIL"
-}
-
-pass() {
-  passed=$(($passed + 1))
-  echo "PASS"
-}
-
-should_not_exist(){
-  for file in "$@"; do
-    printf "$file should not exist: "
-    test -e debian/tmp/"$file" && fail || pass
-  done
-}
-
-should_exist() {
-  for file in "$@"; do
-    printf "$file should exist: "
-    test -e debian/tmp/"$file" && pass || fail
-  done
-}
+set -eu
 
 # test multi-arch support
 arch=$(dpkg-architecture -qDEB_HOST_MULTIARCH)
 libdir=usr/lib
 archlibdir=usr/lib/${arch}
-should_not_exist  ${libdir}/libruby-2.1.so.2.1
-should_exist      ${archlibdir}/libruby-2.1.so.2.1
-should_not_exist  ${libdir}/pkgconfig/ruby-2.1.pc
-should_exist      ${archlibdir}/pkgconfig/ruby-2.1.pc
-should_exist      ${libdir}/ruby/gems/2.1.0/specifications/default/json-1.8.1.gemspec
 
+# files that should NOT exist
+test '!' -f  debian/tmp/${libdir}/libruby-${RUBY_VERSION}.so.${RUBY_VERSION}
+test '!' -f  debian/tmp/${libdir}/pkgconfig/ruby-${RUBY_VERSION}.pc
 
-echo
-echo "Passed ${passed} tests, failed ${failed} tests"
-if test "$failed" -ne 0; then
-  exit 1
-fi
+# files that should exist
+ls -1 debian/tmp/${archlibdir}/libruby-${RUBY_VERSION}.so.${RUBY_VERSION}
+ls -1 debian/tmp/${archlibdir}/pkgconfig/ruby-${RUBY_VERSION}.pc
+ls -1 debian/tmp/${libdir}/ruby/gems/${RUBY_API_VERSION}/specifications/default/json-*.gemspec

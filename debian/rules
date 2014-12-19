@@ -12,13 +12,16 @@ export TESTOPTS
 
 DEB_HOST_MULTIARCH := $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
+RUBY_VERSION       := $(patsubst ruby%, %, $(SOURCE))
+RUBY_API_VERSION   := $(RUBY_SERIES).0
+
 # Bootstrap with Ruby 1.8 if proper Ruby is not available
 baseruby=$(shell test -x /usr/bin/ruby && echo /usr/bin/ruby || echo /usr/bin/ruby1.8)
 
 configure_options += --enable-multiarch
 configure_options += --target=$(DEB_HOST_MULTIARCH)
-configure_options += --program-suffix=2.1
-configure_options += --with-soname=ruby-2.1
+configure_options += --program-suffix=$(RUBY_VERSION)
+configure_options += --with-soname=ruby-$(RUBY_VERSION)
 configure_options += --enable-shared
 configure_options += --disable-rpath
 configure_options += --with-baseruby=$(baseruby)
@@ -69,12 +72,12 @@ override_dh_auto_build-arch:
 override_dh_auto_install-arch:
 	$(MAKE) install-nodoc DESTDIR=$(CURDIR)/debian/tmp
 	# remove RPATH from tcltklib bindings
-	chrpath --delete $(CURDIR)/debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/ruby/2.1.0/tcltklib.so
+	chrpath --delete $(CURDIR)/debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/ruby/$(RUBY_API_VERSION)/tcltklib.so
 	# handle embedded copy of jquery
-	$(RM) $(CURDIR)/debian/tmp/usr/lib/ruby/2.1.0/rdoc/generator/template/darkfish/js/jquery.js
-	dh_link -plibruby2.1 /usr/share/javascript/jquery/jquery.min.js /usr/lib/ruby/2.1.0/rdoc/generator/template/darkfish/js/jquery.js
+	$(RM) $(CURDIR)/debian/tmp/usr/lib/ruby/$(RUBY_API_VERSION)/rdoc/generator/template/darkfish/js/jquery.js
+	dh_link -plibruby$(RUBY_VERSION) /usr/share/javascript/jquery/jquery.min.js /usr/lib/ruby/$(RUBY_API_VERSION)/rdoc/generator/template/darkfish/js/jquery.js
 	# remove embedded SSL certificates (replaced using ca-certificates via rubygems-integration)
-	$(RM) $(CURDIR)/debian/tmp/usr/lib/ruby/2.1.0/rubygems/ssl_certs/*
+	$(RM) $(CURDIR)/debian/tmp/usr/lib/ruby/$(RUBY_API_VERSION)/rubygems/ssl_certs/*
 	# sanity check
 	debian/sanity_check
 
@@ -82,12 +85,12 @@ override_dh_auto_build-indep:
 	$(MAKE) docs V=1
 
 override_dh_auto_install-indep:
-	$(MAKE) install-doc DESTDIR=$(CURDIR)/debian/ruby2.1-doc
+	$(MAKE) install-doc DESTDIR=$(CURDIR)/debian/ruby$(RUBY_VERSION)-doc
 
 override_dh_install-arch:
 	# install SystemTap tapfile
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/systemtap/tapset
-	sed 's|@LIBRARY_PATH@|/usr/lib/$(DEB_HOST_MULTIARCH)/libruby-2.1.so|g' $(CURDIR)/debian/libruby.stp > $(CURDIR)/debian/tmp/usr/share/systemtap/tapset/libruby2.1-$(DEB_HOST_MULTIARCH).stp
+	sed 's|@LIBRARY_PATH@|/usr/lib/$(DEB_HOST_MULTIARCH)/libruby-$(RUBY_VERSION).so|g' $(CURDIR)/debian/libruby.stp > $(CURDIR)/debian/tmp/usr/share/systemtap/tapset/libruby$(RUBY_VERSION)-$(DEB_HOST_MULTIARCH).stp
 	dh_install
 	# split Ruby/Tk files
 	$(baseruby) debian/split-tk-out.rb
