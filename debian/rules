@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 # -*- makefile -*-
 
-# export DH_VERBOSE=1
+export DH_VERBOSE=1
 
 export DEBIAN_DISABLE_RUBYGEMS_INTEGRATION = 1
 
