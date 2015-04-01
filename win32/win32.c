@@ -543,11 +543,15 @@ init_env(void)
 	if (!GetEnvironmentVariableW(L"USERNAME", env, numberof(env)) &&
 	    !GetUserNameW(env, (len = numberof(env), &len))) {
 	    NTLoginName = "<Unknown>";
-	    return;
 	}
-	set_env_val(L"USER");
+	else {
+	    set_env_val(L"USER");
+	    NTLoginName = rb_w32_wstr_to_mbstr(CP_UTF8, env, -1, NULL);
+	}
     }
-    NTLoginName = strdup(rb_w32_getenv("USER"));
+    else {
+	NTLoginName = rb_w32_wstr_to_mbstr(CP_UTF8, env, -1, NULL);
+    }
 
     if (!GetEnvironmentVariableW(TMPDIR, env, numberof(env)) &&
 	!GetEnvironmentVariableW(L"TMP", env, numberof(env)) &&
@@ -1316,9 +1320,9 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
     }
 
     if (!e && shell && !(wshell = mbstr_to_wstr(cp, shell, -1, NULL))) e = E2BIG;
-    if (v2) ALLOCV_END(v2);
     if (cmd_sep) *cmd_sep = sep;
     if (!e && cmd && !(wcmd = mbstr_to_wstr(cp, cmd, -1, NULL))) e = E2BIG;
+    if (v2) ALLOCV_END(v2);
     if (v) ALLOCV_END(v);
 
     if (!e) {
@@ -5920,7 +5924,7 @@ constat_reset(HANDLE h)
 {
     st_data_t data;
     struct constat *p;
-    if (!conlist) return;
+    if (!conlist || conlist == conlist_disabled) return;
     if (!st_lookup(conlist, (st_data_t)h, &data)) return;
     p = (struct constat *)data;
     p->vt100.state = constat_init;
