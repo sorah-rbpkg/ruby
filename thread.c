@@ -959,10 +959,14 @@ thread_join_m(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *     thr.value   -> obj
  *
- *  Waits for +thr+ to complete, using #join, and returns its value.
+ *  Waits for +thr+ to complete, using #join, and returns its value or raises
+ *  the exception which terminated the thread.
  *
  *     a = Thread.new { 2 + 2 }
  *     a.value   #=> 4
+ *
+ *     b = Thread.new { raise 'something went wrong' }
+ *     b.value   #=> RuntimeError: something went wrong
  */
 
 static VALUE
@@ -2080,11 +2084,12 @@ ruby_thread_stack_overflow(rb_thread_t *th)
 {
     th->raised_flag = 0;
 #ifdef USE_SIGALTSTACK
-    rb_exc_raise(sysstack_error);
-#else
+    if (!rb_during_gc()) {
+	rb_exc_raise(sysstack_error);
+    }
+#endif
     th->errinfo = sysstack_error;
     TH_JUMP_TAG(th, TAG_RAISE);
-#endif
 }
 
 int
@@ -2935,11 +2940,9 @@ static VALUE
 rb_thread_variable_get(VALUE thread, VALUE key)
 {
     VALUE locals;
-    ID id = rb_check_id(&key);
 
-    if (!id) return Qnil;
     locals = rb_ivar_get(thread, id_locals);
-    return rb_hash_aref(locals, ID2SYM(id));
+    return rb_hash_aref(locals, rb_to_symbol(key));
 }
 
 /*
@@ -4677,14 +4680,6 @@ rb_thread_shield_destroy(VALUE self)
 }
 
 static VALUE
-ident_hash_new(void)
-{
-    VALUE hash = rb_hash_new();
-    rb_hash_tbl_raw(hash)->type = &st_hashtype_num;
-    return hash;
-}
-
-static VALUE
 threadptr_recursive_hash(rb_thread_t *th)
 {
     return th->local_storage_recursive_hash;
@@ -4711,7 +4706,7 @@ recursive_list_access(VALUE sym)
     VALUE hash = threadptr_recursive_hash(th);
     VALUE list;
     if (NIL_P(hash) || !RB_TYPE_P(hash, T_HASH)) {
-	hash = ident_hash_new();
+	hash = rb_ident_hash_new();
 	threadptr_recursive_hash_set(th, hash);
 	list = Qnil;
     }
@@ -4719,7 +4714,7 @@ recursive_list_access(VALUE sym)
 	list = rb_hash_aref(hash, sym);
     }
     if (NIL_P(list) || !RB_TYPE_P(list, T_HASH)) {
-	list = ident_hash_new();
+	list = rb_ident_hash_new();
 	rb_hash_aset(hash, sym, list);
     }
     return list;
@@ -4805,13 +4800,13 @@ recursive_pop(VALUE list, VALUE obj, VALUE paired_obj)
 	    return 0;
 	}
 	if (RB_TYPE_P(pair_list, T_HASH)) {
-	    rb_hash_delete(pair_list, paired_obj);
+	    rb_hash_delete_entry(pair_list, paired_obj);
 	    if (!RHASH_EMPTY_P(pair_list)) {
 		return 1; /* keep hash until is empty */
 	    }
 	}
     }
-    rb_hash_delete(list, obj);
+    rb_hash_delete_entry(list, obj);
     return 1;
 }
 
