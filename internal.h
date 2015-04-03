@@ -627,6 +627,9 @@ VALUE rb_check_backtrace(VALUE);
 NORETURN(void rb_async_bug_errno(const char *,int));
 const char *rb_builtin_type_name(int t);
 const char *rb_builtin_class_name(VALUE x);
+PRINTF_ARGS(void rb_enc_warn(rb_encoding *enc, const char *fmt, ...), 2, 3);
+PRINTF_ARGS(void rb_enc_warning(rb_encoding *enc, const char *fmt, ...), 2, 3);
+PRINTF_ARGS(void rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...), 2, 3);
 
 /* eval.c */
 VALUE rb_refinement_module_get_refined_class(VALUE module);
@@ -701,6 +704,9 @@ struct st_table *rb_hash_tbl_raw(VALUE hash);
 VALUE rb_hash_has_key(VALUE hash, VALUE key);
 VALUE rb_hash_set_default_proc(VALUE hash, VALUE proc);
 long rb_objid_hash(st_index_t index);
+VALUE rb_ident_hash_new(void);
+st_table *rb_init_identtable(void);
+st_table *rb_init_identtable_with_size(st_index_t size);
 
 #define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h)
 VALUE rb_hash_keys(VALUE hash);
@@ -952,9 +958,6 @@ extern int ruby_enable_coredump;
 int rb_get_next_signal(void);
 int rb_sigaltstack_size(void);
 
-/* st.c */
-extern const struct st_hash_type st_hashtype_num;
-
 /* strftime.c */
 #ifdef RUBY_ENCODING_H
 size_t rb_strftime_timespec(char *s, size_t maxsize, const char *format, rb_encoding *enc,
@@ -1118,6 +1121,9 @@ int rb_bug_reporter_add(void (*func)(FILE *, void *), void *data);
 #ifdef __APPLE__
 VALUE rb_str_normalize_ospath(const char *ptr, long len);
 #endif
+
+/* hash.c (export) */
+VALUE rb_hash_delete_entry(VALUE hash, VALUE key);
 
 /* io.c (export) */
 void rb_maygvl_fd_fix_cloexec(int fd);

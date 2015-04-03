@@ -63,13 +63,13 @@ home_dir(void)
       http://msdn.microsoft.com/en-us/library/windows/desktop/ms683188(v=vs.85).aspx
     */
 
-    if (len = GetEnvironmentVariableW(L"HOME", NULL, 0)) {
+    if ((len = GetEnvironmentVariableW(L"HOME", NULL, 0)) != 0) {
 	buffer_len = len;
 	home_env = 1;
     }
-    else if (len = GetEnvironmentVariableW(L"HOMEDRIVE", NULL, 0)) {
+    else if ((len = GetEnvironmentVariableW(L"HOMEDRIVE", NULL, 0)) != 0) {
 	buffer_len = len;
-	if (len = GetEnvironmentVariableW(L"HOMEPATH", NULL, 0)) {
+	if ((len = GetEnvironmentVariableW(L"HOMEPATH", NULL, 0)) != 0) {
 	    buffer_len += len;
 	    home_env = 2;
 	}
@@ -77,7 +77,7 @@ home_dir(void)
 	    buffer_len = 0;
 	}
     }
-    else if (len = GetEnvironmentVariableW(L"USERPROFILE", NULL, 0)) {
+    else if ((len = GetEnvironmentVariableW(L"USERPROFILE", NULL, 0)) != 0) {
 	buffer_len = len;
 	home_env = 3;
     }
@@ -160,7 +160,7 @@ code_page_i(st_data_t name, st_data_t idx, st_data_t arg)
 	    USHORT *table = cp->table;
 	    if (count <= idx) {
 		unsigned int i = count;
-		cp->count = count = ((idx + 4) & ~31 | 28);
+		cp->count = count = (((idx + 4) & ~31) | 28);
 		cp->table = table = realloc(table, count * sizeof(*table));
 		while (i < count) table[i++] = INVALID_CODE_PAGE;
 	    }
@@ -398,6 +398,8 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	else {
 	    /* determine if we ignore dir or not later */
 	    path_drive = wpath_pos[0];
+	    wpath_pos += 2;
+	    wpath_len -= 2;
 	}
     }
     else if (abs_mode == 0 && wpath_len >= 2 && wpath_pos[0] == L'~') {
@@ -492,15 +494,11 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
     /* determine if we ignore dir or not */
     if (!ignore_dir && path_drive && dir_drive) {
-	if (towupper(path_drive) == towupper(dir_drive)) {
-	    /* exclude path drive letter to use dir */
-	    wpath_pos += 2;
-	    wpath_len -= 2;
-	}
-	else {
+	if (towupper(path_drive) != towupper(dir_drive)) {
 	    /* ignore dir since path drive is different from dir drive */
 	    ignore_dir = 1;
 	    wdir_len = 0;
+	    dir_drive = 0;
 	}
     }
 
@@ -530,6 +528,10 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     if (whome_len && wcsrchr(L"\\/:", buffer_pos[-1]) == NULL) {
 	buffer_pos[0] = L'\\';
 	buffer_pos++;
+    }
+    else if (!dir_drive && path_drive) {
+	*buffer_pos++ = path_drive;
+	*buffer_pos++ = L':';
     }
 
     if (wdir_len) {

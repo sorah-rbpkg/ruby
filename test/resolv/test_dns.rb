@@ -53,7 +53,7 @@ class TestResolvDNS < Test::Unit::TestCase
           }
         }
         server_thread = Thread.new {
-          msg, (_, client_port, _, client_address) = u.recvfrom(4096)
+          msg, (_, client_port, _, client_address) = timeout(5) {u.recvfrom(4096)}
           id, word2, qdcount, ancount, nscount, arcount = msg.unpack("nnnnnn")
           qr =     (word2 & 0x8000) >> 15
           opcode = (word2 & 0x7800) >> 11
@@ -160,9 +160,11 @@ class TestResolvDNS < Test::Unit::TestCase
     # A rase condition here.
     # Another program may use the port.
     # But no way to prevent it.
-    Resolv::DNS.open(:nameserver_port => [[host, port]]) {|dns|
-      assert_equal([], dns.getresources("test-no-server.example.org", Resolv::DNS::Resource::IN::A))
-    }
+    timeout(5) do
+      Resolv::DNS.open(:nameserver_port => [[host, port]]) {|dns|
+        assert_equal([], dns.getresources("test-no-server.example.org", Resolv::DNS::Resource::IN::A))
+      }
+    end
   end
 
   def test_invalid_byte_comment
@@ -174,5 +176,18 @@ class TestResolvDNS < Test::Unit::TestCase
         Resolv::DNS::Config.parse_resolv_conf(tmpfile.path)
       end
     end
+  end
+
+  def test_dots_diffences
+    name1 = Resolv::DNS::Name.create("example.org")
+    name2 = Resolv::DNS::Name.create("ex.ampl.eo.rg")
+    assert_not_equal(name1, name2, "different dots")
+  end
+
+  def test_case_insensitive_name
+    bug10550 = '[ruby-core:66498] [Bug #10550]'
+    lower = Resolv::DNS::Name.create("ruby-lang.org")
+    upper = Resolv::DNS::Name.create("Ruby-Lang.org")
+    assert_equal(lower, upper, bug10550)
   end
 end

@@ -137,7 +137,13 @@ rb_any_hash(VALUE a)
 
     if (SPECIAL_CONST_P(a)) {
 	if (a == Qundef) return 0;
-	if (STATIC_SYM_P(a)) a >>= (RUBY_SPECIAL_SHIFT + ID_SCOPE_SHIFT);
+	if (STATIC_SYM_P(a)) {
+	    a >>= (RUBY_SPECIAL_SHIFT + ID_SCOPE_SHIFT);
+	}
+	else if (FLONUM_P(a)) {
+	    /* prevent pathological behavior: [Bug #10761] */
+	    a = (st_index_t)rb_float_value(a);
+	}
 	hnum = rb_objid_hash((st_index_t)a);
     }
     else if (BUILTIN_TYPE(a) == T_STRING) {
@@ -171,7 +177,39 @@ static const struct st_hash_type objhash = {
     rb_any_hash,
 };
 
-#define identhash st_hashtype_num
+#define rb_ident_cmp st_numcmp
+
+static st_index_t
+rb_ident_hash(st_data_t n)
+{
+    /*
+     * This hash function is lightly-tuned for Ruby.  Further tuning
+     * should be possible.  Notes:
+     *
+     * - (n >> 3) alone is great for heap objects and OK for fixnum,
+     *   however symbols perform poorly.
+     * - (n >> (RUBY_SPECIAL_SHIFT+3)) was added to make symbols hash well,
+     *   n.b.: +3 to remove ID scope, +1 worked well initially, too
+     * - (n << 3) was finally added to avoid losing bits for fixnums
+     * - avoid expensive modulo instructions, it is currently only
+     *   shifts and bitmask operations.
+     * - flonum (on 64-bit) is pathologically bad, mix the actual
+     *   float value in, but do not use the float value as-is since
+     *   many integers get interpreted as 2.0 or -2.0 [Bug #10761]
+     */
+#ifdef USE_FLONUM /* RUBY */
+    if (FLONUM_P(n)) {
+	n ^= (st_data_t)rb_float_value(n);
+    }
+#endif
+
+    return (st_index_t)((n>>(RUBY_SPECIAL_SHIFT+3)|(n<<3)) ^ (n>>3));
+}
+
+static const struct st_hash_type identhash = {
+    rb_ident_cmp,
+    rb_ident_hash,
+};
 
 typedef int st_foreach_func(st_data_t, st_data_t, st_data_t);
 
@@ -969,22 +1007,48 @@ rb_hash_index(VALUE hash, VALUE value)
     return rb_hash_key(hash, value);
 }
 
+/*
+ * delete a specified entry a given key.
+ * if there is the corresponding entry, return a value of the entry.
+ * if there is no corresponding entry, return Qundef.
+ */
 VALUE
-rb_hash_delete(VALUE hash, VALUE key)
+rb_hash_delete_entry(VALUE hash, VALUE key)
 {
     st_data_t ktmp = (st_data_t)key, val;
 
-    if (!RHASH(hash)->ntbl)
-        return Qundef;
-    if (RHASH_ITER_LEV(hash) > 0) {
-	if (st_delete_safe(RHASH(hash)->ntbl, &ktmp, &val, (st_data_t)Qundef)) {
-	    FL_SET(hash, HASH_DELETED);
-	    return (VALUE)val;
-	}
+    if (!RHASH(hash)->ntbl) {
+	return Qundef;
     }
-    else if (st_delete(RHASH(hash)->ntbl, &ktmp, &val))
+    else if (RHASH_ITER_LEV(hash) > 0 &&
+	     (st_delete_safe(RHASH(hash)->ntbl, &ktmp, &val, (st_data_t)Qundef))) {
+	FL_SET(hash, HASH_DELETED);
 	return (VALUE)val;
-    return Qundef;
+    }
+    else if (st_delete(RHASH(hash)->ntbl, &ktmp, &val)) {
+	return (VALUE)val;
+    }
+    else {
+	return Qundef;
+    }
+}
+
+/*
+ * delete a specified entry by a given key.
+ * if there is the corresponding entry, return a value of the entry.
+ * if there is no corresponding entry, return Qnil.
+ */
+VALUE
+rb_hash_delete(VALUE hash, VALUE key)
+{
+    VALUE deleted_value = rb_hash_delete_entry(hash, key);
+
+    if (deleted_value != Qundef) { /* likely pass */
+	return deleted_value;
+    }
+    else {
+	return Qnil;
+    }
 }
 
 /*
@@ -1011,12 +1075,19 @@ rb_hash_delete_m(VALUE hash, VALUE key)
     VALUE val;
 
     rb_hash_modify_check(hash);
-    val = rb_hash_delete(hash, key);
-    if (val != Qundef) return val;
-    if (rb_block_given_p()) {
-	return rb_yield(key);
+    val = rb_hash_delete_entry(hash, key);
+
+    if (val != Qundef) {
+	return val;
     }
-    return Qnil;
+    else {
+	if (rb_block_given_p()) {
+	    return rb_yield(key);
+	}
+	else {
+	    return Qnil;
+	}
+    }
 }
 
 struct shift_var {
@@ -1063,7 +1134,7 @@ rb_hash_shift(VALUE hash)
 	else {
 	    rb_hash_foreach(hash, shift_i_safe, (VALUE)&var);
 	    if (var.key != Qundef) {
-		rb_hash_delete(hash, var.key);
+		rb_hash_delete_entry(hash, var.key);
 		return rb_assoc_new(var.key, var.val);
 	    }
 	}
@@ -1944,10 +2015,17 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
 	if (!rb_respond_to(hash2, idTo_hash)) {
 	    return Qfalse;
 	}
-	if (eql)
-	    return rb_eql(hash2, hash1);
-	else
+	if (eql) {
+	    if (rb_eql(hash2, hash1)) {
+		return Qtrue;
+	    }
+	    else {
+		return Qfalse;
+	    }
+	}
+	else {
 	    return rb_equal(hash2, hash1);
+	}
     }
     if (RHASH_SIZE(hash1) != RHASH_SIZE(hash2))
 	return Qfalse;
@@ -2459,6 +2537,26 @@ rb_hash_compare_by_id_p(VALUE hash)
 	return Qtrue;
     }
     return Qfalse;
+}
+
+VALUE
+rb_ident_hash_new(void)
+{
+    VALUE hash = rb_hash_new();
+    RHASH(hash)->ntbl = st_init_table(&identhash);
+    return hash;
+}
+
+st_table *
+rb_init_identtable(void)
+{
+    return st_init_table(&identhash);
+}
+
+st_table *
+rb_init_identtable_with_size(st_index_t size)
+{
+    return st_init_table_with_size(&identhash, size);
 }
 
 static int
