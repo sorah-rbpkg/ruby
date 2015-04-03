@@ -2,6 +2,7 @@ ruby2.1 (2.1.5-2) unstable; urgency=medium
 
   * Fix Segmentation fault after pack & ioctl & unpack (Closes: #781504)
     - apply r44804 from upstream svn
+  * debian/upstream-changes: simpler and more accurate implementation
 
  -- Antonio Terceiro <terceiro@debian.org>  Tue, 31 Mar 2015 21:50:39 -0300
 
