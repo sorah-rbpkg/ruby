@@ -9,6 +9,7 @@ ruby2.2 (2.2.1-1) unstable; urgency=medium
       - most under permissive "You can use, modify, distribute this table
         freely." terms
     - ext/nkf/ relicensed to zlib/libpng license
+  * debian/upstream-changes: simpler and more accurate implementation
 
  -- Antonio Terceiro <terceiro@debian.org>  Fri, 03 Apr 2015 21:30:14 -0300
 
