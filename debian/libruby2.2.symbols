@@ -734,7 +734,7 @@ libruby-2.2.so.2.2 libruby2.2 #MINVER#
  rb_hash_aset@Base 2.2.0~1
  rb_hash_clear@Base 2.2.0~1
  rb_hash_delete@Base 2.2.0~1
- rb_hash_delete_entry@Base 2.2.1-1
+ rb_hash_delete_entry@Base 2.2.1
  rb_hash_delete_if@Base 2.2.0~1
  rb_hash_dup@Base 2.2.0~1
  rb_hash_fetch@Base 2.2.0~1
