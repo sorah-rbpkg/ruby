@@ -14,17 +14,45 @@ Files:
  regint.h
  regparse.c
  regparse.h
+Copyright:
+ 2002-2009  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ 2011-2014  K.Takata  <kentkt AT csc DOT jp>
 License: BSD-2-clause
 
 Files:
  lib/rdoc/task.rb
  lib/rubygems/package_task.rb
+Copyright:
+ 2003, 2004 Jim Weirich
+ 2009 Eric Hodel
 License: Expat
 
-Files: enc/*
+Files: enc/*.c
+Copyright: 2002-2008 K.Kosako <sndgk393@ybb@ne@jp>
+License: BSD-2-clause
+
+Files: enc/ascii.c enc/euc_jp.c enc/shift_jis.c enc/windows_31j.c
+Copyright:
+ 2002-2009 K.Kosako <sndgk393@ybb@ne@jp>
+ 2011 K.Takata <kentkt@csc@jp>
+License: BSD-2-clause
+
+Files: enc/gb18030.c
+Copyright: 2005-2007 KUBO.Takehiro <kubo@jiubao@org>
+License: BSD-2-clause
+
+Files: env/encdb.c
+Copyright:2008 Yukihiro.Matsumoto
+License: BSD-2-clause
+
+Files: enc/windows_1251.c
+Copyright: 2006-2007 Byte <byte@mail@kna@ru>
 License: BSD-2-clause
 
 Files: misc/ruby-mode.el
+Copyright:
+ 1994, 1995, 1996 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006,
+ 2007, 2008 Free Software Foundation, Inc.
 License: GPL-3+
 
 Files: lib/minitest/*
