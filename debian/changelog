@@ -1,8 +1,16 @@
-ruby2.2 (2.2.1-1) UNRELEASED; urgency=medium
+ruby2.2 (2.2.1-1) unstable; urgency=medium
 
   * New upstream release
+  * debian/copyright: review
+    - enc/* relicensed to the same license as Ruby
+    - add license for ccan/* (CC0)
+    - add license for enc/trans/JIS/*
+      - some under the "Unicode" license
+      - most under permissive "You can use, modify, distribute this table
+        freely." terms
+    - ext/nkf/ relicensed to zlib/libpng license
 
- -- Antonio Terceiro <terceiro@debian.org>  Fri, 03 Apr 2015 19:53:53 -0300
+ -- Antonio Terceiro <terceiro@debian.org>  Fri, 03 Apr 2015 21:30:14 -0300
 
 ruby2.2 (2.2.0~1-1) UNRELEASED; urgency=medium
 

@@ -4,57 +4,28 @@ Source: http://ftp.ruby-lang.org/pub/ruby/
 
 Files: *
 Copyright: Yukihiro Matsumoto <matz@netlab.jp> and others
-License: 2C-BSD or Ruby
+License: BSD-2-clause or Ruby
 
 Files:
  include/ruby/oniguruma.h
  regcomp.c
- regenc.c regenc.h
  regerror.c
  regexec.c
  regint.h
- regparse.c regparse.h
- enc/ascii.c
- enc/big5.c
- enc/cp949.c
- enc/emacs_mule.c
- enc/encdb.c
- enc/euc_jp.c
- enc/euc_kr.c
- enc/euc_tw.c
- enc/gb18030.c
- enc/gb2312.c
- enc/gbk.c
- enc/iso_8859_1.c
- enc/iso_8859_10.c
- enc/iso_8859_11.c
- enc/iso_8859_13.c
- enc/iso_8859_14.c
- enc/iso_8859_15.c
- enc/iso_8859_16.c
- enc/iso_8859_2.c
- enc/iso_8859_3.c
- enc/iso_8859_4.c
- enc/iso_8859_5.c
- enc/iso_8859_6.c
- enc/iso_8859_7.c
- enc/iso_8859_8.c
- enc/iso_8859_9.c
- enc/koi8_r.c
- enc/koi8_u.c
- enc/shift_jis.c
- enc/unicode.c
- enc/us_ascii.c
- enc/utf_16be.c
- enc/utf_16le.c
- enc/utf_32be.c
- enc/utf_32le.c
- enc/utf_8.c
- enc/windows_1251.c
-Copyright: K.Kosako <sndgk393 AT ybb DOT ne DOT jp>
-License:
- When this software is partly used or it is distributed with Ruby,
- this of Ruby follows the license of Ruby.
+ regparse.c
+ regparse.h
+License: BSD-2-clause
+
+Files:
+ lib/rdoc/task.rb
+ lib/rubygems/package_task.rb
+License: Expat
+
+Files: enc/*
+License: BSD-2-clause
+
+Files: misc/ruby-mode.el
+License: GPL-3+
 
 Files: lib/minitest/*
 Copyright: Ryan Davis
@@ -69,7 +40,7 @@ License: Expat
 
 Files: lib/rdoc/generator/darkfish.rb lib/rdoc/generator/darkfish/template/*
 Copyright: 2007, 2008, Michael Granger and others
-License: 3C-BSD-GENERIC
+License: BSD-2-clause
 
 Files: lib/rdoc/generator/template/darkfish/fonts/SourceCodePro*
 Copyright:
@@ -114,11 +85,10 @@ License:
 
 Files: util.c (parts)
 Copyright: 2004-2008 David Schultz <das@FreeBSD.ORG> All rights reserved.
-License: 2C-BSD
 
 Files: random.c
 Copyright: 1997 - 2002, Makoto Matsumoto and Takuji Nishimura, All rights reserved.
-License: 3C-BSD-GENERIC
+License: BSD-2-clause
 
 Files: vsnprintf.c
 Copyright:
@@ -153,7 +123,7 @@ License: 3C-BSD
 Files: missing/strlcat.c missing/strlcpy.c
 Copyright:
  1998 Todd C. Miller. All rights reserved.
-License: 3C-BSD-GENERIC
+License: BSD-3-clause
 
 Files: missing/langinfo.c
 Copyright:
@@ -182,48 +152,24 @@ License:
 
 Files: ext/digest/md5/md5.c ext/digest/md5/md5.h
 Copyright: 1999, 2000 Aladdin Enterprises.  All rights reserved.
-License:
- This software is provided 'as-is', without any express or implied
- warranty.  In no event will the authors be held liable for any damages
- arising from the use of this software.
- .
- Permission is granted to anyone to use this software for any purpose,
- including commercial applications, and to alter it and redistribute it
- freely, subject to the following restrictions:
- .
- 1. The origin of this software must not be misrepresented; you must not
-    claim that you wrote the original software. If you use this software
-    in a product, an acknowledgment in the product documentation would be
-    appreciated but is not required.
- 2. Altered source versions must be plainly marked as such, and must not be
-    misrepresented as being the original software.
- 3. This notice may not be removed or altered from any source distribution.
- .
- L. Peter Deutsch
- ghost@aladdin.com
+License: zlib/libpng
 
 Files: ext/digest/rmd160/rmd160.c ext/digest/rmd160/rmd160.h
 Copyright: 1996 Katholieke Universiteit Leuven. All Rights Reserved.
-License: 3C-BSD-GENERIC
+License: BSD-3-clause
 
 Files: ext/digest/sha2/sha2.c ext/digest/sha2/sha2.h
 Copyright: 2000 Aaron D. Gifford.  All rights reserved.
-License: 3C-BSD-GENERIC
+License: BSD-3-clause
 
 Files: ext/nkf/nkf-utf8/config.h ext/nkf/nkf-utf8/nkf.c ext/nkf/nkf-utf8/utf8tbl.c
 Copyright: 1987, Fujitsu LTD. (Itaru ICHIKAWA)
-License:
- Everyone is permitted to do anything on this program
- including copying, modifying, improving,
- as long as you don't try to pretend that you wrote it.
- i.e., the above copyright notice has to appear in all copies.
- Binary distribution requires original version messages.
- You don't have to ask before copying, redistribution or publishing.
- THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE.
+ 1996-2013, The nkf Project.
+License: zlib/libpng
 
 Files: ext/socket/addrinfo.h ext/socket/getaddrinfo.c ext/socket/getnameinfo.c
 Copyright: 1995, 1996, 1997, 1998, and 1999 WIDE Project. All rights reserved.
-License: 3C-BSD-GENERIC
+License: BSD-3-clause
 
 Files: ext/win32ole/win32ole.c
 Copyright:
@@ -240,16 +186,115 @@ License: GPL-1+ or Artistic
  Public License can be found in `/usr/share/common-licenses/GPL-1' and
  the Artistic Licence in `/usr/share/common-licenses/Artistic'.
 
+Files: ccan/list/list.h
+License: Expat
+
+Files:
+ ccan/check_type/check_type.h
+ ccan/str/str.h
+ ccan/container_of/container_of.h
+ ccan/build_assert/build_assert.h
+License: CC0
+
+Files:
+ enc/trans/JIS/UCS%JISX0212.src
+ enc/trans/JIS/UCS%JISX0201-KANA.src
+ enc/trans/JIS/UCS%JISX0208@1990.src
+ enc/trans/JIS/JISX0208@1990%UCS.src
+ enc/trans/JIS/JISX0212%UCS.src
+Copyright: 1991-1994 Unicode, Inc.  All Rights reserved.
+License: Unicode
+
+Files: enc/trans/JIS/UCS%JISX0212.src
+Copyright: 1991-1994 Unicode, Inc.  All Rights reserved.
+License: Unicode
+
+Files: enc/trans/JIS/UCS%JISX0201-KANA.src
+Copyright: 1991-1994 Unicode, Inc.  All Rights reserved.
+License: Unicode
+
+Files: enc/trans/JIS/UCS@SIP%JISX0213-2.src
+Copyright:
+ 2001 earthian@tama.or.jp, All Rights Reserved.
+ 2001 I'O, All Rights Reserved.
+License: You can use, modify, distribute this table freely.
+
+Files: enc/trans/JIS/UCS@BMP%JISX0213-2.src
+Copyright:
+ 2001 earthian@tama.or.jp, All Rights Reserved.
+ 2001 I'O, All Rights Reserved.
+License: You can use, modify, distribute this table freely.
+
+Files: enc/trans/JIS/UCS@SIP%JISX0213-1.src
+Copyright:
+ 2001 earthian@tama.or.jp, All Rights Reserved.
+ 2001 I'O, All Rights Reserved.
+License: You can use, modify, distribute this table freely.
+
+Files: enc/trans/JIS/UCS@BMP%JISX0213-1.src
+Copyright:
+ 2001 earthian@tama.or.jp, All Rights Reserved.
+ 2001 I'O, All Rights Reserved.
+License: You can use, modify, distribute this table freely.
+
+Files: enc/trans/JIS/JISX0213-1%UCS@SIP.src
+Copyright:
+ 2001 earthian@tama.or.jp, All Rights Reserved.
+ 2001 I'O, All Rights Reserved.
+ 2006 Project X0213, All Rights Reserved.
+License: You can use, modify, distribute this table freely.
+
+Files: enc/trans/JIS/JISX0201-KANA%UCS.src
+Copyright: (c) 1991-1994 Unicode, Inc.  All Rights reserved.
+License: Unicode
+
+Files: enc/trans/JIS/JISX0213-1%UCS@BMP.src
+Copyright:
+ (C) 2001 earthian@tama.or.jp, All Rights Reserved.
+ (C) 2001 I'O, All Rights Reserved.
+ (C) 2006 Project X0213, All Rights Reserved.
+License: You can use, modify, distribute this table freely.
+
+Files: enc/trans/JIS/JISX0213-2%UCS@SIP.src
+Copyright:
+ (C) 2001 earthian@tama.or.jp, All Rights Reserved.
+ (C) 2001 I'O, All Rights Reserved.
+ (C) 2006 Project X0213, All Rights Reserved.
+License: You can use, modify, distribute this table freely.
+
+Files: enc/trans/JIS/JISX0213-2%UCS@BMP.src
+Copyright:
+ (C) 2001 earthian@tama.or.jp, All Rights Reserved.
+ (C) 2001 I'O, All Rights Reserved.
+ (C) 2006 Project X0213, All Rights Reserved.
+License: You can use, modify, distribute this table freely.
+
+Files: enc/trans/JIS/UCS%JISX0208@1990.src
+Copyright:
+ (c) 1991-1994 Unicode, Inc.  All Rights reserved.
+License: Unicode
+
+Files: enc/trans/JIS/JISX0208@1990%UCS.src
+Copyright:
+ (c) 1991-1994 Unicode, Inc.  All Rights reserved.
+License: Unicode
+
+Files: enc/trans/JIS/JISX0212%UCS.src
+Copyright:
+ (c) 1991-1994 Unicode, Inc.  All Rights reserved.
+License: Unicode
+
 Files: debian/*
-Copyright: 2013 Antonio Terceiro <terceiro@debian.org>
-License: 2C-BSD or Ruby
+Copyright: 2013-2015 Antonio Terceiro <terceiro@debian.org>
+ 2014 Christian Hofstaedtler <zeha@debian.org>
+License: BSD-2-clause or Ruby
  The Debian packaging is licensed under the same terms as the original package.
 
 License: Artistic
  On Debian systems, the full text of the Artistic License
  can be found in the file `/usr/share/common-licenses/Artistic'.
 
-License: 2C-BSD
+License: BSD-2-clause
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions
  are met:
@@ -296,7 +341,7 @@ License: 3C-BSD
  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  SUCH DAMAGE.
 
-License: 3C-BSD-GENERIC
+License: BSD-3-clause
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
  .
@@ -487,3 +532,153 @@ License: SIL-1.1
  DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
  OTHER DEALINGS IN THE FONT SOFTWARE.
+
+License: zlib/libpng
+ This software is provided 'as-is', without any express or implied
+ warranty.  In no event will the authors be held liable for any damages
+ arising from the use of this software.
+ .
+ Permission is granted to anyone to use this software for any purpose,
+ including commercial applications, and to alter it and redistribute it
+ freely, subject to the following restrictions:
+ .
+ 1. The origin of this software must not be misrepresented; you must not
+    claim that you wrote the original software. If you use this software
+    in a product, an acknowledgment in the product documentation would be
+    appreciated but is not required.
+ 2. Altered source versions must be plainly marked as such, and must not be
+    misrepresented as being the original software.
+ 3. This notice may not be removed or altered from any source distribution.
+ .
+ L. Peter Deutsch
+ ghost@aladdin.com
+
+License: CC0
+ Statement of Purpose
+ .
+ The laws of most jurisdictions throughout the world automatically confer
+ exclusive Copyright and Related Rights (defined below) upon the creator and
+ subsequent owner(s) (each and all, an "owner") of an original work of
+ authorship and/or a database (each, a "Work").
+ .
+ Certain owners wish to permanently relinquish those rights to a Work for the
+ purpose of contributing to a commons of creative, cultural and scientific
+ works ("Commons") that the public can reliably and without fear of later
+ claims of infringement build upon, modify, incorporate in other works, reuse
+ and redistribute as freely as possible in any form whatsoever and for any
+ purposes, including without limitation commercial purposes. These owners may
+ contribute to the Commons to promote the ideal of a free culture and the
+ further production of creative, cultural and scientific works, or to gain
+ reputation or greater distribution for their Work in part through the use and
+ efforts of others.
+ .
+ For these and/or other purposes and motivations, and without any expectation
+ of additional consideration or compensation, the person associating CC0 with a
+ Work (the "Affirmer"), to the extent that he or she is an owner of Copyright
+ and Related Rights in the Work, voluntarily elects to apply CC0 to the Work
+ and publicly distribute the Work under its terms, with knowledge of his or her
+ Copyright and Related Rights in the Work and the meaning and intended legal
+ effect of CC0 on those rights.
+ .
+ 1. Copyright and Related Rights. A Work made available under CC0 may be
+ protected by copyright and related or neighboring rights ("Copyright and
+ Related Rights"). Copyright and Related Rights include, but are not limited
+ to, the following:
+ .
+     the right to reproduce, adapt, distribute, perform, display, communicate,
+     and translate a Work;
+ .
+     moral rights retained by the original author(s) and/or performer(s);
+ .
+     publicity and privacy rights pertaining to a person's image or likeness
+     depicted in a Work;
+ .
+     rights protecting against unfair competition in regards to a Work, subject
+     to the limitations in paragraph 4(a), below;
+ .
+     rights protecting the extraction, dissemination, use and reuse of data in
+     a Work;
+ .
+     database rights (such as those arising under Directive 96/9/EC of the
+     European Parliament and of the Council of 11 March 1996 on the legal
+     protection of databases, and under any national implementation thereof,
+     including any amended or successor version of such directive); and
+ .
+     other similar, equivalent or corresponding rights throughout the world
+     based on applicable law or treaty, and any national implementations
+     thereof.
+ .
+ 2. Waiver. To the greatest extent permitted by, but not in contravention of,
+ applicable law, Affirmer hereby overtly, fully, permanently, irrevocably and
+ unconditionally waives, abandons, and surrenders all of Affirmer's Copyright
+ and Related Rights and associated claims and causes of action, whether now
+ known or unknown (including existing as well as future claims and causes of
+ action), in the Work (i) in all territories worldwide, (ii) for the maximum
+ duration provided by applicable law or treaty (including future time
+ extensions), (iii) in any current or future medium and for any number of
+ copies, and (iv) for any purpose whatsoever, including without limitation
+ commercial, advertising or promotional purposes (the "Waiver"). Affirmer makes
+ the Waiver for the benefit of each member of the public at large and to the
+ detriment of Affirmer's heirs and successors, fully intending that such Waiver
+ shall not be subject to revocation, rescission, cancellation, termination, or
+ any other legal or equitable action to disrupt the quiet enjoyment of the Work
+ by the public as contemplated by Affirmer's express Statement of Purpose.
+ .
+ 3. Public License Fallback. Should any part of the Waiver for any reason be
+ judged legally invalid or ineffective under applicable law, then the Waiver
+ shall be preserved to the maximum extent permitted taking into account
+ Affirmer's express Statement of Purpose. In addition, to the extent the Waiver
+ is so judged Affirmer hereby grants to each affected person a royalty-free,
+ non transferable, non sublicensable, non exclusive, irrevocable and
+ unconditional license to exercise Affirmer's Copyright and Related Rights in
+ the Work (i) in all territories worldwide, (ii) for the maximum duration
+ provided by applicable law or treaty (including future time extensions), (iii)
+ in any current or future medium and for any number of copies, and (iv) for any
+ purpose whatsoever, including without limitation commercial, advertising or
+ promotional purposes (the "License"). The License shall be deemed effective as
+ of the date CC0 was applied by Affirmer to the Work. Should any part of the
+ License for any reason be judged legally invalid or ineffective under
+ applicable law, such partial invalidity or ineffectiveness shall not
+ invalidate the remainder of the License, and in such case Affirmer hereby
+ affirms that he or she will not (i) exercise any of his or her remaining
+ Copyright and Related Rights in the Work or (ii) assert any associated claims
+ and causes of action with respect to the Work, in either case contrary to
+ Affirmer's express Statement of Purpose.
+ .
+ 4. Limitations and Disclaimers.
+ .
+     No trademark or patent rights held by Affirmer are waived, abandoned,
+     surrendered, licensed or otherwise affected by this document.
+ .
+     Affirmer offers the Work as-is and makes no representations or warranties
+     of any kind concerning the Work, express, implied, statutory or otherwise,
+     including without limitation warranties of title, merchantability, fitness
+     for a particular purpose, non infringement, or the absence of latent or
+      other defects, accuracy, or the present or absence of errors, whether or
+      not discoverable, all to the greatest extent permissible under applicable
+      law.
+ .
+     Affirmer disclaims responsibility for clearing rights of other persons
+     that may apply to the Work or any use thereof, including without
+     limitation any person's Copyright and Related Rights in the Work. Further,
+     Affirmer disclaims responsibility for obtaining any necessary consents,
+     permissions or other rights required for any use of the Work.
+ .
+     Affirmer understands and acknowledges that Creative Commons is not a party
+     to this document and has no duty or obligation with respect to this CC0 or
+     use of the Work.
+
+License: Unicode
+ This file is provided as-is by Unicode, Inc. (The Unicode Consortium).
+ No claims are made as to fitness for any particular purpose.  No
+ warranties of any kind are expressed or implied.  The recipient
+ agrees to determine applicability of information provided.  If this
+ file has been provided on magnetic media by Unicode, Inc., the sole
+ remedy for any claim will be exchange of defective media within 90
+ days of receipt.
+ .
+ Recipient is granted the right to make copies in any form for
+ internal distribution and to freely use the information supplied
+ in the creation of products supporting Unicode.  Unicode, Inc.
+ specifically excludes the right to re-distribute this file directly
+ to third parties or other organizations whether for profit or not.
