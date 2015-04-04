@@ -230,14 +230,12 @@ libruby-2.2.so.2.2 libruby2.2 #MINVER#
  rb_big2dbl@Base 2.2.0~1
  rb_big2ll@Base 2.2.0~1
  rb_big2long@Base 2.2.0~1
- rb_big2str0@Base 2.2.0
  rb_big2str@Base 2.2.0~1
  rb_big2str_generic@Base 2.2.0~1
  rb_big2str_gmp@Base 2.2.0~1
  rb_big2str_poweroftwo@Base 2.2.0~1
  rb_big2ull@Base 2.2.0~1
  rb_big2ulong@Base 2.2.0~1
- rb_big2ulong_pack@Base 2.2.0
  rb_big_2comp@Base 2.2.0~1
  rb_big_and@Base 2.2.0~1
  rb_big_clone@Base 2.2.0~1
@@ -332,7 +330,6 @@ libruby-2.2.so.2.2 libruby2.2 #MINVER#
  rb_check_id_cstr@Base 2.2.0~1
  rb_check_inheritable@Base 2.2.0~1
  rb_check_safe_obj@Base 2.2.0~1
- rb_check_safe_str@Base 2.2.0
  rb_check_string_type@Base 2.2.0~1
  rb_check_symbol@Base 2.2.0~1
  rb_check_symbol_cstr@Base 2.2.0~1
@@ -585,13 +582,8 @@ libruby-2.2.so.2.2 libruby2.2 #MINVER#
  rb_exc_new_cstr@Base 2.2.0~1
  rb_exc_new_str@Base 2.2.0~1
  rb_exc_raise@Base 2.2.0~1
- rb_exec@Base 2.2.0
- rb_exec_arg_addopt@Base 2.2.0
- rb_exec_arg_fixup@Base 2.2.0
- rb_exec_arg_init@Base 2.2.0
  rb_exec_async_signal_safe@Base 2.2.0~1
  rb_exec_end_proc@Base 2.2.0~1
- rb_exec_err@Base 2.2.0
  rb_exec_recursive@Base 2.2.0~1
  rb_exec_recursive_outer@Base 2.2.0~1
  rb_exec_recursive_paired@Base 2.2.0~1
@@ -665,9 +657,7 @@ libruby-2.2.so.2.2 libruby2.2 #MINVER#
  rb_float_value@Base 2.2.0~1
  rb_flt_rationalize@Base 2.2.0~1
  rb_flt_rationalize_with_prec@Base 2.2.0~1
- rb_fork@Base 2.2.0
  rb_fork_async_signal_safe@Base 2.2.0~1
- rb_fork_err@Base 2.2.0
  rb_frame_callee@Base 2.2.0~1
  rb_frame_method_id_and_class@Base 2.2.0~1
  rb_frame_pop@Base 2.2.0~1
@@ -700,15 +690,12 @@ libruby-2.2.so.2.2 libruby2.2 #MINVER#
  rb_gc_mark_values@Base 2.2.0~1
  rb_gc_register_address@Base 2.2.0~1
  rb_gc_register_mark_object@Base 2.2.0~1
- rb_gc_set_params@Base 2.2.0
  rb_gc_start@Base 2.2.0~1
  rb_gc_stat@Base 2.2.0~1
  rb_gc_unregister_address@Base 2.2.0~1
- rb_gc_writebarrier@Base 2.2.0
  rb_gc_writebarrier_generational@Base 2.2.0~1
  rb_gc_writebarrier_incremental@Base 2.2.0~1
  rb_gc_writebarrier_unprotect@Base 2.2.0~1
- rb_gc_writebarrier_unprotect_promoted@Base 2.2.0
  rb_gcd_gmp@Base 2.2.0~1
  rb_gcd_normal@Base 2.2.0~1
  rb_generic_ivar_memsize@Base 2.2.0~1
@@ -747,6 +734,7 @@ libruby-2.2.so.2.2 libruby2.2 #MINVER#
  rb_hash_aset@Base 2.2.0~1
  rb_hash_clear@Base 2.2.0~1
  rb_hash_delete@Base 2.2.0~1
+ rb_hash_delete_entry@Base 2.2.1-1
  rb_hash_delete_if@Base 2.2.0~1
  rb_hash_dup@Base 2.2.0~1
  rb_hash_fetch@Base 2.2.0~1
@@ -854,7 +842,6 @@ libruby-2.2.so.2.2 libruby2.2 #MINVER#
  rb_iseq_new@Base 2.2.0~1
  rb_iseq_new_main@Base 2.2.0~1
  rb_iseq_new_top@Base 2.2.0~1
- rb_iseq_new_with_bopt@Base 2.2.0
  rb_iseq_new_with_opt@Base 2.2.0~1
  rb_iseq_original_iseq@Base 2.2.0~1
  rb_iseq_parameters@Base 2.2.0~1
@@ -1064,7 +1051,6 @@ libruby-2.2.so.2.2 libruby2.2 #MINVER#
  rb_proc_call@Base 2.2.0~1
  rb_proc_call_with_block@Base 2.2.0~1
  rb_proc_exec@Base 2.2.0~1
- rb_proc_exec_n@Base 2.2.0
  rb_proc_get_iseq@Base 2.2.0~1
  rb_proc_lambda_p@Base 2.2.0~1
  rb_proc_new@Base 2.2.0~1
@@ -1083,8 +1069,6 @@ libruby-2.2.so.2.2 libruby2.2 #MINVER#
  rb_protect@Base 2.2.0~1
  rb_provide@Base 2.2.0~1
  rb_provided@Base 2.2.0~1
- rb_quad_pack@Base 2.2.0
- rb_quad_unpack@Base 2.2.0
  rb_raise@Base 2.2.0~1
  rb_random_bytes@Base 2.2.0~1
  rb_random_int32@Base 2.2.0~1
@@ -1097,7 +1081,6 @@ libruby-2.2.so.2.2 libruby2.2 #MINVER#
  rb_rational_new@Base 2.2.0~1
  rb_rational_num@Base 2.2.0~1
  rb_rational_raw@Base 2.2.0~1
- rb_read_check@Base 2.2.0
  rb_readwrite_sys_fail@Base 2.2.0~1
  rb_reg_adjust_startpos@Base 2.2.0~1
  rb_reg_alloc@Base 2.2.0~1
@@ -1137,8 +1120,6 @@ libruby-2.2.so.2.2 libruby2.2 #MINVER#
  rb_rs@Base 2.2.0~1
  rb_ruby_debug_ptr@Base 2.2.0~1
  rb_ruby_verbose_ptr@Base 2.2.0~1
- rb_run_exec_options@Base 2.2.0
- rb_run_exec_options_err@Base 2.2.0
  rb_safe_level@Base 2.2.0~1
  rb_scan_args@Base 2.2.0~1
  rb_secure@Base 2.2.0~1
@@ -1256,7 +1237,6 @@ libruby-2.2.so.2.2 libruby2.2 #MINVER#
  rb_struct_define_without_accessor_under@Base 2.2.0~1
  rb_struct_getmember@Base 2.2.0~1
  rb_struct_initialize@Base 2.2.0~1
- rb_struct_iv_get@Base 2.2.0
  rb_struct_members@Base 2.2.0~1
  rb_struct_new@Base 2.2.0~1
  rb_struct_s_members@Base 2.2.0~1
@@ -1282,7 +1262,6 @@ libruby-2.2.so.2.2 libruby2.2 #MINVER#
  rb_thread_alone@Base 2.2.0~1
  rb_thread_atfork@Base 2.2.0~1
  rb_thread_atfork_before_exec@Base 2.2.0~1
- rb_thread_blocking_region@Base 2.2.0
  rb_thread_call_with_gvl@Base 2.2.0~1
  rb_thread_call_without_gvl2@Base 2.2.0~1
  rb_thread_call_without_gvl@Base 2.2.0~1
@@ -1299,12 +1278,10 @@ libruby-2.2.so.2.2 libruby2.2 #MINVER#
  rb_thread_local_aref@Base 2.2.0~1
  rb_thread_local_aset@Base 2.2.0~1
  rb_thread_main@Base 2.2.0~1
- rb_thread_polling@Base 2.2.0
  rb_thread_remove_event_hook@Base 2.2.0~1
  rb_thread_remove_event_hook_with_data@Base 2.2.0~1
  rb_thread_run@Base 2.2.0~1
  rb_thread_schedule@Base 2.2.0~1
- rb_thread_select@Base 2.2.0
  rb_thread_sleep@Base 2.2.0~1
  rb_thread_sleep_deadly@Base 2.2.0~1
  rb_thread_sleep_forever@Base 2.2.0~1
@@ -1417,7 +1394,6 @@ libruby-2.2.so.2.2 libruby2.2 #MINVER#
  ruby_posix_signal@Base 2.2.0~1
  ruby_process_options@Base 2.2.0~1
  ruby_prog_init@Base 2.2.0~1
- ruby_qsort@Base 2.2.0
  ruby_release_date@Base 2.2.0~1
  ruby_run_node@Base 2.2.0~1
  ruby_safe_level_4_warning@Base 2.2.0~1

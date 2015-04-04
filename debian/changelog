@@ -10,6 +10,7 @@ ruby2.2 (2.2.1-1) unstable; urgency=medium
         freely." terms
     - ext/nkf/ relicensed to zlib/libpng license
   * debian/upstream-changes: simpler and more accurate implementation
+  * debian/libruby2.2.symbols: updated
 
  -- Antonio Terceiro <terceiro@debian.org>  Fri, 03 Apr 2015 21:30:14 -0300
 
