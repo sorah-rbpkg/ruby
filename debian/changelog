@@ -1,3 +1,11 @@
+ruby2.1 (2.1.5-3) unstable; urgency=high
+
+  * Fix vulnerabiity with overly permissive matching of hostnames in OpenSSL
+    extension [CVE-2015-1855]
+    - applied revision 50296 of upstream svn repository.
+
+ -- Antonio Terceiro <terceiro@debian.org>  Fri, 17 Apr 2015 09:26:57 -0300
+
 ruby2.1 (2.1.5-2) unstable; urgency=medium
 
   * Fix Segmentation fault after pack & ioctl & unpack (Closes: #781504)
