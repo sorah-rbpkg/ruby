@@ -1,4 +1,4 @@
-ruby2.1 (2.1.5-3) unstable; urgency=high
+ruby2.1 (2.1.5-2+deb8u1) jessie-security; urgency=high
 
   * Fix vulnerabiity with overly permissive matching of hostnames in OpenSSL
     extension [CVE-2015-1855]
