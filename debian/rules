@@ -97,3 +97,10 @@ override_dh_install-arch:
 	dh_install
 	# split Ruby/Tk files
 	$(baseruby) debian/split-tk-out.rb
+
+import-orig-source:
+	test -d .git
+	test -n "$$UPSTREAM_GIT"
+	test -n "$$UPSTREAM_VERSION"
+	cd $(UPSTREAM_GIT) && git archive --format=tar --prefix=ruby-$(UPSTREAM_VERSION)/ v$(shell echo $(UPSTREAM_VERSION) | tr . _) | xz -c > /tmp/ruby-$(UPSTREAM_VERSION).tar.xz
+	gbp import-orig /tmp/ruby-$(UPSTREAM_VERSION).tar.xz
