@@ -1,0 +1,19 @@
+#!/bin/sh
+
+failed=0
+
+tests="$@"
+
+if [ -z "$tests" ]; then
+  tests=$(find 'test/' -name 'test_*.rb')
+fi
+
+for t in $tests; do
+  echo "$t"
+  echo "$t" | sed -e 's/./-/g'
+  echo
+  ruby2.2 -I'test/lib' $t --verbose || failed=1
+  echo
+done
+
+exit $failed

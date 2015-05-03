@@ -3,6 +3,7 @@ ruby2.2 (2.2.2-1) UNRELEASED; urgency=medium
   * New upstream release
   * debian/rules: add import-orig-source to automate importing orig tarballs
     generated from the upstream git mirror.
+  * debian/tests: add a functional test that will run all tests under test/
 
  -- Antonio Terceiro <terceiro@debian.org>  Sun, 03 May 2015 09:52:58 -0300
 
