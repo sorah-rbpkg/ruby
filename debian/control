@@ -30,6 +30,7 @@ Standards-Version: 3.9.6
 Homepage: http://www.ruby-lang.org/
 Vcs-Git: git://anonscm.debian.org/collab-maint/ruby.git
 Vcs-Browser: http://anonscm.debian.org/gitweb/?p=collab-maint/ruby.git
+Testsuite: autopkgtest
 
 Package: ruby2.2
 Multi-Arch: allowed
