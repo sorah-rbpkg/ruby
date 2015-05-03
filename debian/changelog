@@ -1,6 +1,8 @@
 ruby2.2 (2.2.2-1) UNRELEASED; urgency=medium
 
   * New upstream release
+    - includes fix for vulnerability with overly permissive matching of
+      hostnames in OpenSSL extension [CVE-2015-1855]
   * debian/rules: add import-orig-source to automate importing orig tarballs
     generated from the upstream git mirror.
   * debian/tests: add a functional test that will run all tests under test/
