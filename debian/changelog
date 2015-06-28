@@ -1,7 +1,9 @@
 ruby2.2 (2.2.2-2) UNRELEASED; urgency=medium
 
   * Make Date in gemspec reproducible. Initial patch from Chris Lamb
-    <lamby@debian.org>. Closes: #779631
+    <lamby@debian.org>. (Closes: #779631)
+  * Replace embedded copies of Lato with symlinks to fonts-lato.
+    (Closes: #762348)
 
  -- Christian Hofstaedtler <zeha@debian.org>  Sun, 28 Jun 2015 03:28:03 +0200
 

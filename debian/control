@@ -38,7 +38,7 @@ Architecture: any
 Depends: rubygems-integration (>= 1.8),
          ${misc:Depends},
          ${shlibs:Depends}
-Recommends: libjs-jquery
+Recommends: libjs-jquery, fonts-lato
 Provides: ruby-interpreter
 Description: Interpreter of object-oriented scripting language Ruby
  Ruby is the interpreted scripting language for quick and easy
