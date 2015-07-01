@@ -113,3 +113,9 @@ import-orig-source:
 	test -n "$$UPSTREAM_VERSION"
 	cd $(UPSTREAM_GIT) && git archive --format=tar --prefix=ruby-$(UPSTREAM_VERSION)/ v$(shell echo $(UPSTREAM_VERSION) | tr . _) | xz -c > /tmp/ruby-$(UPSTREAM_VERSION).tar.xz
 	gbp import-orig /tmp/ruby-$(UPSTREAM_VERSION).tar.xz
+
+.PHONY: override_dh_strip
+override_dh_strip:
+	dh_strip --dbg-package=libruby$(RUBY_VERSION)-dbg
+	# Don't ship debug files for the rubyX.Y binary to avoid Multi-Arch: same issues.
+	rm $(CURDIR)/debian/libruby$(RUBY_VERSION)-dbg/usr/lib/debug/usr/bin/ruby$(RUBY_VERSION)

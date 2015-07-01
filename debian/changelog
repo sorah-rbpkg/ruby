@@ -5,6 +5,8 @@ ruby2.2 (2.2.2-2) UNRELEASED; urgency=medium
   * Replace embedded copies of Lato with symlinks to fonts-lato.
     (Closes: #762348)
   * debian/copyright: improve DEP-5 compliance.
+  * Provide debug symbols, in a new libruby2.2-dbg package. Patch from
+    Matt Palmer <mpalmer@debian.org>. (Closes: #785685)
 
  -- Christian Hofstaedtler <zeha@debian.org>  Sun, 28 Jun 2015 03:28:03 +0200
 
