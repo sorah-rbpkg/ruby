@@ -1,4 +1,4 @@
-ruby2.2 (2.2.2-2) UNRELEASED; urgency=medium
+ruby2.2 (2.2.2-2) unstable; urgency=medium
 
   * Make Date in gemspec reproducible. Initial patch from Chris Lamb
     <lamby@debian.org>. (Closes: #779631, #784225)
@@ -10,7 +10,7 @@ ruby2.2 (2.2.2-2) UNRELEASED; urgency=medium
   * Build libruby.so with dpkg-buildflags supplied LDFLAGS.
     (Closes: #762350)
 
- -- Christian Hofstaedtler <zeha@debian.org>  Sun, 28 Jun 2015 03:28:03 +0200
+ -- Christian Hofstaedtler <zeha@debian.org>  Wed, 01 Jul 2015 15:36:24 +0200
 
 ruby2.2 (2.2.2-1) unstable; urgency=medium
 
