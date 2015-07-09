@@ -1,3 +1,10 @@
+ruby2.2 (2.2.2-3) UNRELEASED; urgency=medium
+
+  * Have libruby2.2 depend on ruby-test-unit, as upstream bundles this
+    externally maintained package in their tarballs. (Closes: #791925)
+
+ -- Christian Hofstaedtler <zeha@debian.org>  Thu, 09 Jul 2015 17:26:46 +0200
+
 ruby2.2 (2.2.2-2) unstable; urgency=medium
 
   * Make Date in gemspec reproducible. Initial patch from Chris Lamb

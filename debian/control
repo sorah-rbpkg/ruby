@@ -54,7 +54,8 @@ Section: libs
 Multi-Arch: same
 Architecture: any
 Depends: ${misc:Depends},
-         ${shlibs:Depends}
+         ${shlibs:Depends},
+         ruby-test-unit (>= 3.0.8~)
 Description: Libraries necessary to run Ruby 2.2
  Ruby is the interpreted scripting language for quick and easy
  object-oriented programming.  It has many features to process text
