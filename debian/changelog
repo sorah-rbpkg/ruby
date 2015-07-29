@@ -1,3 +1,10 @@
+ruby2.1 (2.1.5-2+deb8u2) jessie-security; urgency=medium
+
+  * Apply upstream patches to fix Request hijacking vulnerability in Rubygems
+    [CVE-2015-3900] (Closes: #790119)
+
+ -- Antonio Terceiro <terceiro@debian.org>  Wed, 29 Jul 2015 09:27:24 -0300
+
 ruby2.1 (2.1.5-2+deb8u1) jessie-security; urgency=high
 
   * Fix vulnerabiity with overly permissive matching of hostnames in OpenSSL
