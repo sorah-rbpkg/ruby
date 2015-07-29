@@ -1,4 +1,4 @@
-ruby2.2 (2.2.2-3) UNRELEASED; urgency=medium
+ruby2.2 (2.2.2-3) unstable; urgency=medium
 
   [ Christian Hofstaedtler ]
   * Have libruby2.2 depend on ruby-test-unit, as upstream bundles this
@@ -8,7 +8,7 @@ ruby2.2 (2.2.2-3) UNRELEASED; urgency=medium
   * Apply upstream patches to fix Request hijacking vulnerability in Rubygems
     [CVE-2015-3900] (Closes: #790111)
 
- -- Christian Hofstaedtler <zeha@debian.org>  Thu, 09 Jul 2015 17:26:46 +0200
+ -- Antonio Terceiro <terceiro@debian.org>  Wed, 29 Jul 2015 09:50:08 -0300
 
 ruby2.2 (2.2.2-2) unstable; urgency=medium
 
