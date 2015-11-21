@@ -1,3 +1,10 @@
+ruby2.2 (2.2.3-3) UNRELEASED; urgency=medium
+
+  * autopkgtest: depend on all packages so we actually have header files
+    installed.
+
+ -- Christian Hofstaedtler <zeha@debian.org>  Sat, 21 Nov 2015 09:59:15 +0000
+
 ruby2.2 (2.2.3-2) unstable; urgency=medium
 
   * Add dependency on ruby-minitest to provide the same experience out of the
