@@ -1,11 +1,10 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #include "ossl.h"
@@ -555,6 +554,20 @@ static void Init_ossl_locks(void)
 /*
  * OpenSSL provides SSL, TLS and general purpose cryptography.  It wraps the
  * OpenSSL[http://www.openssl.org/] library.
+ *
+ * = Install
+ *
+ * OpenSSL comes bundled with the Standard Library of Ruby.
+ *
+ * This means the OpenSSL extension is compiled with Ruby and packaged on
+ * build. During compile time, Ruby will need to link against the OpenSSL
+ * library on your system. However, you cannot use openssl provided by Apple to
+ * build standard library openssl.
+ *
+ * If you use OSX, you should install another openssl and run ```./configure
+ * --with-openssl-dir=/path/to/another-openssl```. For Homebrew user, run `brew
+ * install openssl` and then ```./configure --with-openssl-dir=`brew --prefix
+ * openssl` ```.
  *
  * = Examples
  *
@@ -1165,4 +1178,3 @@ main(int argc, char *argv[])
     return 0;
 }
 #endif /* OSSL_DEBUG */
-

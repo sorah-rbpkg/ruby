@@ -22,8 +22,8 @@ warn_printf(const char *fmt, ...)
 static void
 error_pos(void)
 {
-    VALUE sourcefile = rb_sourcefilename();
-    int sourceline = rb_sourceline();
+    int sourceline;
+    VALUE sourcefile = rb_source_location(&sourceline);
 
     if (sourcefile) {
 	ID caller_name;
@@ -105,8 +105,8 @@ error_print(void)
 	goto no_message;
     }
     if (NIL_P(errat)) {
-	const char *file = rb_sourcefile();
-	int line = rb_sourceline();
+	int line;
+	const char *file = rb_source_loc(&line);
 	if (!file)
 	    warn_printf("%d", line);
 	else if (!line)
@@ -208,56 +208,64 @@ ruby_error_print(void)
     error_print();
 }
 
-static const char *
-method_scope_name(int scope)
-{
-    const char *v;
-
-    switch (scope) {
-      default:
-      case NOEX_PUBLIC: v = ""; break;
-      case NOEX_PRIVATE: v = " private"; break;
-      case NOEX_PROTECTED: v = " protected"; break;
-    }
-    return v;
-}
+#define undef_mesg_for(v, k) rb_fstring_cstr("undefined"v" method `%1$s' for "k" `%2$s'")
+#define undef_mesg(v) ( \
+	is_mod ? \
+	undef_mesg_for(v, "module") : \
+	undef_mesg_for(v, "class"))
 
 void
-rb_print_undef(VALUE klass, ID id, int scope)
+rb_print_undef(VALUE klass, ID id, int visi)
 {
-    const char *v = method_scope_name(scope);
-    rb_name_error(id, "undefined%s method `%"PRIsVALUE"' for %s `% "PRIsVALUE"'", v,
-		  QUOTE_ID(id),
-		  (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
-		  rb_class_name(klass));
+    const int is_mod = RB_TYPE_P(klass, T_MODULE);
+    VALUE mesg;
+    switch (visi & METHOD_VISI_MASK) {
+      case METHOD_VISI_UNDEF:
+      case METHOD_VISI_PUBLIC:    mesg = undef_mesg(""); break;
+      case METHOD_VISI_PRIVATE:   mesg = undef_mesg(" private"); break;
+      case METHOD_VISI_PROTECTED: mesg = undef_mesg(" protected"); break;
+      default: UNREACHABLE;
+    }
+    rb_name_err_raise_str(mesg, klass, ID2SYM(id));
 }
 
 void
 rb_print_undef_str(VALUE klass, VALUE name)
 {
-    rb_name_error_str(name, "undefined method `%"PRIsVALUE"' for %s `% "PRIsVALUE"'",
-		      QUOTE(name),
-		      (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
-		      rb_class_name(klass));
+    const int is_mod = RB_TYPE_P(klass, T_MODULE);
+    rb_name_err_raise_str(undef_mesg(""), klass, name);
 }
 
+#define inaccessible_mesg_for(v, k) rb_fstring_cstr("method `%1$s' for "k" `%2$s' is "v)
+#define inaccessible_mesg(v) ( \
+	is_mod ? \
+	inaccessible_mesg_for(v, "module") : \
+	inaccessible_mesg_for(v, "class"))
+
 void
-rb_print_inaccessible(VALUE klass, ID id, int scope)
+rb_print_inaccessible(VALUE klass, ID id, rb_method_visibility_t visi)
 {
-    const char *v = method_scope_name(scope);
-    rb_name_error(id, "method `%"PRIsVALUE"' for %s `% "PRIsVALUE"' is %s",
-		  QUOTE_ID(id),
-		  (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
-		  rb_class_name(klass),
-		  v);
+    const int is_mod = RB_TYPE_P(klass, T_MODULE);
+    VALUE mesg;
+    switch (visi & METHOD_VISI_MASK) {
+      case METHOD_VISI_UNDEF:
+      case METHOD_VISI_PUBLIC:    mesg = inaccessible_mesg(""); break;
+      case METHOD_VISI_PRIVATE:   mesg = inaccessible_mesg(" private"); break;
+      case METHOD_VISI_PROTECTED: mesg = inaccessible_mesg(" protected"); break;
+      default: UNREACHABLE;
+    }
+    rb_name_err_raise_str(mesg, klass, ID2SYM(id));
 }
 
 static int
 sysexit_status(VALUE err)
 {
-    VALUE st = rb_iv_get(err, "status");
+    VALUE st = rb_ivar_get(err, id_status);
     return NUM2INT(st);
 }
+
+#define unknown_longjmp_status(status) \
+    rb_bug("Unknown longjmp status %d", status)
 
 static int
 error_handle(int ex)
@@ -303,7 +311,7 @@ error_handle(int ex)
 	    status = sysexit_status(errinfo);
 	}
 	else if (rb_obj_is_instance_of(errinfo, rb_eSignal) &&
-		 rb_iv_get(errinfo, "signo") != INT2FIX(SIGSEGV)) {
+		 rb_ivar_get(errinfo, id_signo) != INT2FIX(SIGSEGV)) {
 	    /* no message when exiting by signal */
 	}
 	else {
@@ -315,7 +323,7 @@ error_handle(int ex)
 	error_print();
 	break;
       default:
-	rb_bug("Unknown longjmp status %d", ex);
+	unknown_longjmp_status(ex);
 	break;
     }
     rb_threadptr_reset_raised(th);

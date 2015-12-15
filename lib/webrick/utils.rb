@@ -9,7 +9,7 @@
 # $IPR: utils.rb,v 1.10 2003/02/16 22:22:54 gotoyuzo Exp $
 
 require 'socket'
-require 'fcntl'
+require 'io/nonblock'
 require 'etc'
 
 module WEBrick
@@ -17,20 +17,14 @@ module WEBrick
     ##
     # Sets IO operations on +io+ to be non-blocking
     def set_non_blocking(io)
-      flag = File::NONBLOCK
-      if defined?(Fcntl::F_GETFL)
-        flag |= io.fcntl(Fcntl::F_GETFL)
-      end
-      io.fcntl(Fcntl::F_SETFL, flag)
+      io.nonblock = true if io.respond_to?(:nonblock=)
     end
     module_function :set_non_blocking
 
     ##
     # Sets the close on exec flag for +io+
     def set_close_on_exec(io)
-      if defined?(Fcntl::FD_CLOEXEC)
-        io.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC)
-      end
+      io.close_on_exec = true if io.respond_to?(:close_on_exec=)
     end
     module_function :set_close_on_exec
 
@@ -63,7 +57,7 @@ module WEBrick
     # Creates TCP server sockets bound to +address+:+port+ and returns them.
     #
     # It will create IPV4 and IPV6 sockets on all interfaces.
-    def create_listeners(address, port, logger=nil)
+    def create_listeners(address, port)
       unless port
         raise ArgumentError, "must specify port"
       end
@@ -159,18 +153,26 @@ module WEBrick
       # instead of creating the timeout handler directly.
       def initialize
         @timeout_info = Hash.new
-        Thread.start{
+        @watcher = Thread.start{
           while true
             now = Time.now
-            @timeout_info.keys.each{|thread|
-              ary = @timeout_info[thread]
+            wakeup = nil
+            @timeout_info.each {|thread, ary|
               next unless ary
               ary.dup.each{|info|
                 time, exception = *info
-                interrupt(thread, info.object_id, exception) if time < now
+                if time < now
+                  interrupt(thread, info.object_id, exception)
+                elsif !wakeup || time < wakeup
+                  wakeup = time
+                end
               }
             }
-            sleep 0.5
+            if !wakeup
+              sleep
+            elsif (wakeup -= now) > 0
+              sleep(wakeup)
+            end
           end
         }
       end
@@ -192,8 +194,12 @@ module WEBrick
       # +exception+:: Exception to raise when timeout elapsed
       def register(thread, time, exception)
         @timeout_info[thread] ||= Array.new
-        @timeout_info[thread] << [time, exception]
-        return @timeout_info[thread].last.object_id
+        @timeout_info[thread] << (info = [time, exception])
+        begin
+          @watcher.wakeup
+        rescue ThreadError
+        end
+        return info.object_id
       end
 
       ##

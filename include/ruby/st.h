@@ -78,7 +78,7 @@ struct st_table {
      *   implementation-defined type. It is implementation-defined whether
      *   atomic types are permitted.
      * In short, long and long long bit-field are implementation-defined
-     * feature. Therefore we want to supress a warning explicitly.
+     * feature. Therefore we want to suppress a warning explicitly.
      */
     __extension__
 #endif
@@ -86,7 +86,7 @@ struct st_table {
     union {
 	struct {
 	    struct st_table_entry **bins;
-	    struct st_table_entry *head, *tail;
+	    void *private_list_head[2];
 	} big;
 	struct {
 	    struct st_packed_entry *entries;

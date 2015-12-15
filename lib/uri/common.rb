@@ -245,7 +245,7 @@ module URI
   #   require 'uri'
   #
   #   p URI.join("http://example.com/","main.rbx")
-  #   # => #<URI::HTTP:0x2022ac02 URL:http://localhost/main.rbx>
+  #   # => #<URI::HTTP:0x2022ac02 URL:http://example.com/main.rbx>
   #
   #   p URI.join('http://example.com', 'foo')
   #   # => #<URI::HTTP:0x01ab80a0 URL:http://example.com/foo>
@@ -346,8 +346,8 @@ module URI
   TBLDECWWWCOMP_['+'] = ' '
   TBLDECWWWCOMP_.freeze
 
-  HTML5ASCIIINCOMPAT = [Encoding::UTF_7, Encoding::UTF_16BE, Encoding::UTF_16LE,
-    Encoding::UTF_32BE, Encoding::UTF_32LE] # :nodoc:
+  HTML5ASCIIINCOMPAT = defined? Encoding::UTF_7 ? [Encoding::UTF_7, Encoding::UTF_16BE, Encoding::UTF_16LE,
+    Encoding::UTF_32BE, Encoding::UTF_32LE] : [] # :nodoc:
 
   # Encode given +str+ to URL-encoded form data.
   #

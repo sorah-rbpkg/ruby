@@ -228,7 +228,7 @@ class TestRequire < Test::Unit::TestCase
     assert_separately([], <<-INPUT)
       module Zlib; end
       class Zlib::Error; end
-      assert_raise(NameError) do
+      assert_raise(TypeError) do
         require 'zlib'
       end
     INPUT
@@ -403,7 +403,7 @@ class TestRequire < Test::Unit::TestCase
           File.symlink("../a/tst.rb", "b/tst.rb")
           result = IO.popen([EnvUtil.rubybin, "b/tst.rb"], &:read)
           assert_equal("a/lib.rb\n", result, "[ruby-dev:40040]")
-        rescue NotImplementedError
+        rescue NotImplementedError, Errno::EACCES
           skip "File.symlink is not implemented"
         end
       }
@@ -574,7 +574,7 @@ class TestRequire < Test::Unit::TestCase
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {
         open("foo.rb", "w") {}
-        assert_in_out_err(["RUBYOPT"=>nil], <<-INPUT, %w(:ok), [], bug7158)
+        assert_in_out_err([{"RUBYOPT"=>nil}, '--disable-gems'], <<-INPUT, %w(:ok), [], bug7158)
           $:.replace([IO::NULL])
           a = Object.new
           def a.to_path
@@ -584,7 +584,8 @@ class TestRequire < Test::Unit::TestCase
           begin
             require "foo"
             p [:ng, $LOAD_PATH, ENV['RUBYLIB']]
-          rescue LoadError
+          rescue LoadError => e
+            raise unless e.path == "foo"
           end
           def a.to_path
             "#{tmp}"
@@ -600,7 +601,7 @@ class TestRequire < Test::Unit::TestCase
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {
         open("foo.rb", "w") {}
-        assert_in_out_err(["RUBYOPT"=>nil], <<-INPUT, %w(:ok), [], bug7158)
+        assert_in_out_err([{"RUBYOPT"=>nil}, '--disable-gems'], <<-INPUT, %w(:ok), [], bug7158)
           $:.replace([IO::NULL])
           a = Object.new
           def a.to_str
@@ -610,7 +611,8 @@ class TestRequire < Test::Unit::TestCase
           begin
             require "foo"
             p [:ng, $LOAD_PATH, ENV['RUBYLIB']]
-          rescue LoadError
+          rescue LoadError => e
+            raise unless e.path == "foo"
           end
           def a.to_str
             "#{tmp}"
@@ -628,7 +630,7 @@ class TestRequire < Test::Unit::TestCase
         open("foo.rb", "w") {}
         Dir.mkdir("a")
         open(File.join("a", "bar.rb"), "w") {}
-        assert_in_out_err([], <<-INPUT, %w(:ok), [], bug7383)
+        assert_in_out_err(['--disable-gems'], <<-INPUT, %w(:ok), [], bug7383)
           $:.replace([IO::NULL])
           $:.#{add} "#{tmp}"
           $:.#{add} "#{tmp}/a"
@@ -637,8 +639,12 @@ class TestRequire < Test::Unit::TestCase
           # Expanded load path cache should be rebuilt.
           begin
             require "bar"
-          rescue LoadError
-            p :ok
+          rescue LoadError => e
+            if e.path == "bar"
+              p :ok
+            else
+              raise
+            end
           end
         INPUT
       }
@@ -688,17 +694,71 @@ class TestRequire < Test::Unit::TestCase
     }
   end
 
-  def test_loading_fifo_threading
+  def test_loading_fifo_threading_raise
     Tempfile.create(%w'fifo .rb') {|f|
       f.close
       File.unlink(f.path)
       File.mkfifo(f.path)
-      assert_separately(["-", f.path], <<-END, timeout: 3)
+      assert_ruby_status(["-", f.path], <<-END, timeout: 3)
       th = Thread.current
       Thread.start {begin sleep(0.001) end until th.stop?; th.raise(IOError)}
-      assert_raise(IOError) {load(ARGV[0])}
+      begin
+        load(ARGV[0])
+      rescue IOError
+      end
       END
     }
-  rescue Errno::ENOENT
-  end unless /mswin|mingw/ =~ RUBY_PLATFORM
+  end if File.respond_to?(:mkfifo)
+
+  def test_loading_fifo_threading_success
+    Tempfile.create(%w'fifo .rb') {|f|
+      f.close
+      File.unlink(f.path)
+      File.mkfifo(f.path)
+
+      assert_ruby_status(["-", f.path], <<-INPUT, timeout: 3)
+      path = ARGV[0]
+      th = Thread.current
+      Thread.start {
+        begin
+          sleep(0.001)
+        end until th.stop?
+        open(path, File::WRONLY | File::NONBLOCK) {|fifo_w|
+          fifo_w.print "__END__\n" # ensure finishing
+        }
+      }
+
+      load(path)
+    INPUT
+    }
+  end if File.respond_to?(:mkfifo)
+
+  def test_throw_while_loading
+    Tempfile.create(%w'bug-11404 .rb') do |f|
+      f.puts 'sleep'
+      f.close
+
+      assert_separately(["-", f.path], <<-'end;')
+        path = ARGV[0]
+        class Error < RuntimeError
+          def exception(*)
+            begin
+              throw :blah
+            rescue UncaughtThrowError
+            end
+            self
+          end
+        end
+
+        assert_throw(:blah) do
+          x = Thread.current
+          Thread.start {
+            sleep 0.00001
+            x.raise Error.new
+          }
+          load path
+        end
+      end;
+    end
+  end
 end

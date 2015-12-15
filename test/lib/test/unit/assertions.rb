@@ -95,6 +95,10 @@ module Test
         flunk(message(msg) {"#{mu_pp(exp)} expected but nothing was raised"})
       end
 
+      def assert_raises(*exp, &b)
+        raise NoMethodError, "use assert_raise", caller
+      end
+
       # :call-seq:
       #   assert_raise_with_message(exception, expected, msg = nil, &block)
       #
@@ -442,6 +446,38 @@ EOT
         assert(failed.empty?, message(m) {failed.pretty_inspect})
       end
 
+      class AllFailures
+        attr_reader :failures
+
+        def initialize
+          @failures = {}
+        end
+
+        def for(key)
+          yield
+        rescue Exception => e
+          @failures[key] = e
+        end
+
+        def message
+          i = 0
+          @failures.map {|k, v|
+            "\n#{i+=1}. Assertion for #{k.inspect}\n#{v.message.gsub(/^/, '   | ')}"
+          }.join("\n")
+        end
+
+        def pass?
+          @failures.empty?
+        end
+      end
+
+      def all_assertions(msg = nil)
+        all = AllFailures.new
+        yield all
+      ensure
+        assert(all.pass?, message(msg) {all.message})
+      end
+
       def build_message(head, template=nil, *arguments) #:nodoc:
         template &&= template.chomp
         template.gsub(/\G((?:[^\\]|\\.)*?)(\\)?\?/) { $1 + ($2 ? "?" : mu_pp(arguments.shift)) }
@@ -454,7 +490,11 @@ EOT
             if 1 < ary.length
               ary[0...-1] = ary[0...-1].map {|str| str.sub(/(?<!\.)\z/, '.') }
             end
-            ary.join("\n")
+            begin
+              ary.join("\n")
+            rescue Encoding::CompatibilityError
+              ary.map(&:b).join("\n")
+            end
           end
         else
           super

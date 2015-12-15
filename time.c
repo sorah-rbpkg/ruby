@@ -202,8 +202,8 @@ divmodv(VALUE n, VALUE d, VALUE *q, VALUE *r)
     tmp = rb_funcall(n, id_divmod, 1, d);
     ary = rb_check_array_type(tmp);
     if (NIL_P(ary)) {
-        rb_raise(rb_eTypeError, "unexpected divmod result: into %s",
-                 rb_obj_classname(tmp));
+	rb_raise(rb_eTypeError, "unexpected divmod result: into %"PRIsVALUE,
+		 rb_obj_class(tmp));
     }
     *q = rb_ary_entry(ary, 0);
     *r = rb_ary_entry(ary, 1);
@@ -560,8 +560,8 @@ wdivmod(wideval_t wn, wideval_t wd, wideval_t *wq, wideval_t *wr)
     tmp = rb_funcall(w2v(wn), id_divmod, 1, w2v(wd));
     ary = rb_check_array_type(tmp);
     if (NIL_P(ary)) {
-        rb_raise(rb_eTypeError, "unexpected divmod result: into %s",
-                 rb_obj_classname(tmp));
+	rb_raise(rb_eTypeError, "unexpected divmod result: into %"PRIsVALUE,
+		 rb_obj_class(tmp));
     }
     *wq = v2w(rb_ary_entry(ary, 0));
     *wr = v2w(rb_ary_entry(ary, 1));
@@ -641,8 +641,10 @@ num_exact(VALUE v)
 
       default:
       typeerror:
-        rb_raise(rb_eTypeError, "can't convert %s into an exact number",
-                                NIL_P(v) ? "nil" : rb_obj_classname(v));
+	if (NIL_P(v))
+	    rb_raise(rb_eTypeError, "can't convert nil into an exact number");
+	rb_raise(rb_eTypeError, "can't convert %"PRIsVALUE" into an exact number",
+		 rb_obj_class(v));
     }
     return v;
 }
@@ -1639,6 +1641,10 @@ localtime_with_gmtoff_zone(const time_t *t, struct tm *result, long *gmtoff, con
             else
                 *zone = zone_str("(NO-TIMEZONE-ABBREVIATION)");
 #elif defined(HAVE_TZNAME) && defined(HAVE_DAYLIGHT)
+# if RUBY_MSVCRT_VERSION >= 140
+#  define tzname _tzname
+#  define daylight _daylight
+# endif
             /* this needs tzset or localtime, instead of localtime_r */
             *zone = zone_str(tzname[daylight && tm.tm_isdst]);
 #else
@@ -1741,7 +1747,7 @@ localtimew(wideval_t timew, struct vtm *result)
 PACKED_STRUCT_UNALIGNED(struct time_object {
     wideval_t timew; /* time_t value * TIME_SCALE.  possibly Rational. */
     struct vtm vtm;
-    uint8_t gmt:3; /* 0:utc 1:localtime 2:fixoff 3:init */
+    uint8_t gmt:3; /* 0:localtime 1:utc 2:fixoff 3:init */
     uint8_t tm_got:1;
 });
 
@@ -1886,6 +1892,25 @@ timew2timespec_exact(wideval_t timew, struct timespec *ts)
     return ts;
 }
 
+void
+rb_timespec_now(struct timespec *ts)
+{
+#ifdef HAVE_CLOCK_GETTIME
+    if (clock_gettime(CLOCK_REALTIME, ts) == -1) {
+	rb_sys_fail("clock_gettime");
+    }
+#else
+    {
+        struct timeval tv;
+        if (gettimeofday(&tv, 0) < 0) {
+            rb_sys_fail("gettimeofday");
+        }
+        ts->tv_sec = tv.tv_sec;
+        ts->tv_nsec = tv.tv_usec * 1000;
+    }
+#endif
+}
+
 static VALUE
 time_init_0(VALUE time)
 {
@@ -1897,20 +1922,7 @@ time_init_0(VALUE time)
     tobj->gmt = 0;
     tobj->tm_got=0;
     tobj->timew = WINT2FIXWV(0);
-#ifdef HAVE_CLOCK_GETTIME
-    if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
-	rb_sys_fail("clock_gettime");
-    }
-#else
-    {
-        struct timeval tv;
-        if (gettimeofday(&tv, 0) < 0) {
-            rb_sys_fail("gettimeofday");
-        }
-        ts.tv_sec = tv.tv_sec;
-        ts.tv_nsec = tv.tv_usec * 1000;
-    }
-#endif
+    rb_timespec_now(&ts);
     tobj->timew = timespec2timew(&ts);
 
     return time;
@@ -2293,10 +2305,39 @@ rb_time_new(time_t sec, long usec)
     return time_new_timew(rb_cTime, timew);
 }
 
+/* returns localtime time object */
 VALUE
 rb_time_nano_new(time_t sec, long nsec)
 {
     return time_new_timew(rb_cTime, nsec2timew(sec, nsec));
+}
+
+/**
+ * Returns a time object with UTC/localtime/fixed offset
+ *
+ * offset is -86400 < fixoff < 86400 or INT_MAX (localtime) or INT_MAX-1 (utc)
+ */
+VALUE
+rb_time_timespec_new(const struct timespec *ts, int offset)
+{
+    struct time_object *tobj;
+    VALUE time = time_new_timew(rb_cTime, nsec2timew(ts->tv_sec, ts->tv_nsec));
+
+    if (-86400 < offset && offset <  86400) { /* fixoff */
+	GetTimeval(time, tobj);
+	TIME_SET_FIXOFF(tobj, INT2FIX(offset));
+    }
+    else if (offset == INT_MAX) { /* localtime */
+    }
+    else if (offset == INT_MAX-1) { /* UTC */
+	GetTimeval(time, tobj);
+	TIME_SET_UTC(tobj);
+    }
+    else {
+	rb_raise(rb_eArgError, "utc_offset out of range");
+    }
+
+    return time;
 }
 
 VALUE
@@ -2318,7 +2359,7 @@ static struct timespec
 time_timespec(VALUE num, int interval)
 {
     struct timespec t;
-    const char *tstr = interval ? "time interval" : "time";
+    const char *const tstr = interval ? "time interval" : "time";
     VALUE i, f, ary;
 
 #ifndef NEGATIVE_TIME_T
@@ -2378,8 +2419,8 @@ time_timespec(VALUE num, int interval)
             t.tv_nsec = NUM2LONG(f);
         }
         else {
-            rb_raise(rb_eTypeError, "can't convert %s into %s",
-                     rb_obj_classname(num), tstr);
+	    rb_raise(rb_eTypeError, "can't convert %"PRIsVALUE" into %s",
+		     rb_obj_class(num), tstr);
         }
 	break;
     }
@@ -3577,6 +3618,8 @@ time_fixoff(VALUE time)
  *  local time (using the local time zone in effect for this process).
  *
  *  If +utc_offset+ is given, it is used instead of the local time.
+ *  +utc_offset+ can be given as a human-readable string (eg. <code>"+09:00"</code>)
+ *  or as a number of seconds (eg. <code>32400</code>).
  *
  *     t = Time.utc(2000,1,1,20,15,1)  #=> 2000-01-01 20:15:01 UTC
  *     t.utc?                          #=> true
@@ -3588,6 +3631,10 @@ time_fixoff(VALUE time)
  *     j = t.getlocal("+09:00")        #=> 2000-01-02 05:15:01 +0900
  *     j.utc?                          #=> false
  *     t == j                          #=> true
+ *
+ *     k = t.getlocal(9*60*60)         #=> 2000-01-02 05:15:01 +0900
+ *     k.utc?                          #=> false
+ *     t == k                          #=> true
  */
 
 static VALUE
@@ -4731,16 +4778,13 @@ time_mload(VALUE time, VALUE str)
     long nsec;
     VALUE submicro, nano_num, nano_den, offset, zone;
     wideval_t timew;
-    st_data_t data;
 
     time_modify(time);
 
 #define get_attr(attr, iffound) \
-    attr = rb_attr_get(str, id_##attr); \
+    attr = rb_attr_delete(str, id_##attr); \
     if (!NIL_P(attr)) { \
-	data = id_##attr; \
 	iffound; \
-        st_delete(rb_generic_ivar_table(str), &data, 0); \
     }
 
     get_attr(nano_num, {});

@@ -66,8 +66,6 @@ strio_free(void *p)
 static size_t
 strio_memsize(const void *p)
 {
-    const struct StringIO *ptr = p;
-    if (!ptr) return 0;
     return sizeof(struct StringIO);
 }
 
@@ -138,8 +136,6 @@ writable(VALUE strio)
     struct StringIO *ptr = StringIO(strio);
     if (!WRITABLE(strio)) {
 	rb_raise(rb_eIOError, "not opened for writing");
-    }
-    if (!OBJ_TAINTED(ptr->string)) {
     }
     return ptr;
 }
@@ -346,9 +342,6 @@ static VALUE
 strio_close(VALUE self)
 {
     StringIO(self);
-    if (CLOSED(self)) {
-	rb_raise(rb_eIOError, "closed stream");
-    }
     RBASIC(self)->flags &= ~STRIO_READWRITE;
     return Qnil;
 }
@@ -363,8 +356,8 @@ strio_close(VALUE self)
 static VALUE
 strio_close_read(VALUE self)
 {
-    StringIO(self);
-    if (!READABLE(self)) {
+    struct StringIO *ptr = StringIO(self);
+    if (!(ptr->flags & FMODE_READABLE)) {
 	rb_raise(rb_eIOError, "closing non-duplex IO for reading");
     }
     RBASIC(self)->flags &= ~STRIO_READABLE;
@@ -381,8 +374,8 @@ strio_close_read(VALUE self)
 static VALUE
 strio_close_write(VALUE self)
 {
-    StringIO(self);
-    if (!WRITABLE(self)) {
+    struct StringIO *ptr = StringIO(self);
+    if (!(ptr->flags & FMODE_WRITABLE)) {
 	rb_raise(rb_eIOError, "closing non-duplex IO for writing");
     }
     RBASIC(self)->flags &= ~STRIO_WRITABLE;
@@ -1276,6 +1269,7 @@ strio_read(int argc, VALUE *argv, VALUE self)
     long len;
     int binary = 0;
 
+    rb_check_arity(argc, 0, 2);
     switch (argc) {
       case 2:
 	str = argv[1];
@@ -1312,8 +1306,6 @@ strio_read(int argc, VALUE *argv, VALUE self)
 	    len -= ptr->pos;
 	}
 	break;
-      default:
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
     }
     if (NIL_P(str)) {
 	str = strio_substr(ptr, ptr->pos, len);
@@ -1362,20 +1354,17 @@ static VALUE
 strio_read_nonblock(int argc, VALUE *argv, VALUE self)
 {
     VALUE opts = Qnil, val;
-    int no_exception = 0;
 
     rb_scan_args(argc, argv, "11:", NULL, NULL, &opts);
 
     if (!NIL_P(opts)) {
 	argc--;
-
-	if (Qfalse == rb_hash_aref(opts, sym_exception))
-	    no_exception = 1;
     }
 
     val = strio_read(argc, argv, self);
     if (NIL_P(val)) {
-	if (no_exception)
+	if (!NIL_P(opts) &&
+	      rb_hash_lookup2(opts, sym_exception, Qundef) == Qfalse)
 	    return Qnil;
 	else
 	    rb_eof_error();
@@ -1509,7 +1498,7 @@ strio_set_encoding(int argc, VALUE *argv, VALUE self)
  *
  *   io = StringIO.new
  *   io.puts "Hello World"
- *   io.string #=> "Hello World"
+ *   io.string #=> "Hello World\n"
  */
 void
 Init_stringio(void)

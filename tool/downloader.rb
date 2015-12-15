@@ -1,7 +1,10 @@
 require 'open-uri'
 begin
   require 'net/https'
-  $rubygems_schema = 'https'
+rescue LoadError
+  https = 'http'
+else
+  https = 'https'
 
   # open-uri of ruby 2.2.0 accept an array of PEMs as ssl_ca_cert, but old
   # versions are not.  so, patching OpenSSL::X509::Store#add_file instead.
@@ -25,24 +28,50 @@ begin
       files.is_a?(Array) ? false : orig_directory?(files)
     end
   end
-rescue LoadError
-  $rubygems_schema = 'http'
 end
 
 class Downloader
+  def self.https
+    if @@https != 'https'
+      warn "*** using http instead of https ***"
+    end
+    @@https
+  end
+
   class GNU < self
     def self.download(name, *rest)
-      super("http://gcc.gnu.org/git/?p=gcc.git;a=blob_plain;f=#{name};hb=master", name, *rest)
+      if https == 'https'
+        super("https://raw.githubusercontent.com/gcc-mirror/gcc/master/#{name}", name, *rest)
+      else
+        super("http://repo.or.cz/official-gcc.git/blob_plain/HEAD:/#{name}", name, *rest)
+      end
     end
   end
 
   class RubyGems < self
     def self.download(name, dir = nil, ims = true, options = {})
+      require 'rubygems'
+      require 'rubygems/package'
       options[:ssl_ca_cert] = Dir.glob(File.expand_path("../lib/rubygems/ssl_certs/*.pem", File.dirname(__FILE__)))
-      if $rubygems_schema != 'https'
-        warn "*** using http instead of https ***"
+      file = under(dir, name)
+      super("#{https}://rubygems.org/downloads/#{name}", file, nil, ims, options) or
+        return false
+      policy = Gem::Security::LowSecurity
+      (policy = policy.dup).ui = Gem::SilentUI.new if policy.respond_to?(:'ui=')
+      pkg = Gem::Package.new(file)
+      pkg.security_policy = policy
+      begin
+        pkg.verify
+      rescue Gem::Security::Exception => e
+        $stderr.puts e.message
+        File.unlink(file)
+        false
+      else
+        true
       end
-      super("#{$rubygems_schema}://rubygems.org/downloads/#{name}", name, dir, ims, options)
+    end
+
+    def self.verify(pkg)
     end
   end
 
@@ -71,6 +100,7 @@ class Downloader
         options['If-Modified-Since'] = since
       end
     end
+    options['Accept-Encoding'] = '*' # to disable Net::HTTP::GenericRequest#decode_content
     options
   end
 
@@ -86,7 +116,7 @@ class Downloader
   #   download 'http://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt',
   #            'UnicodeData.txt', 'enc/unicode/data'
   def self.download(url, name, dir = nil, ims = true, options = {})
-    file = dir ? File.join(dir, File.basename(name)) : name
+    file = under(dir, name)
     if ims.nil? and File.exist?(file)
       if $VERBOSE
         $stdout.puts "#{name} already exists"
@@ -141,7 +171,13 @@ class Downloader
   rescue => e
     raise "failed to download #{name}\n#{e.message}: #{url}"
   end
+
+  def self.under(dir, name)
+    dir ? File.join(dir, File.basename(name)) : name
+  end
 end
+
+Downloader.class_variable_set(:@@https, https.freeze)
 
 if $0 == __FILE__
   ims = true

@@ -1,7 +1,5 @@
 #--
 #
-# $RCSfile$
-#
 # = Ruby-space definitions that completes C-space funcs for BN
 #
 # = Info
@@ -10,12 +8,8 @@
 # All rights reserved.
 #
 # = Licence
-# This program is licenced under the same licence as Ruby.
+# This program is licensed under the same licence as Ruby.
 # (See the file 'LICENCE'.)
-#
-# = Version
-# $Id$
-#
 #++
 
 module OpenSSL
@@ -42,4 +36,3 @@ class Integer
     OpenSSL::BN::new(self)
   end
 end # Integer
-

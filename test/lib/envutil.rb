@@ -30,9 +30,13 @@ module EnvUtil
 
   LANG_ENVS = %w"LANG LC_ALL LC_CTYPE"
 
+  DEFAULT_SIGNALS = Signal.list
+  DEFAULT_SIGNALS.delete("TERM") if /mswin|mingw/ =~ RUBY_PLATFORM
+
   def invoke_ruby(args, stdin_data = "", capture_stdout = false, capture_stderr = false,
-                  encoding: nil, timeout: 10, reprieve: 1,
+                  encoding: nil, timeout: 10, reprieve: 1, timeout_error: Timeout::Error,
                   stdout_filter: nil, stderr_filter: nil,
+                  signal: :TERM,
                   rubybin: EnvUtil.rubybin,
                   **opt)
     in_c, in_p = IO.pipe
@@ -64,38 +68,51 @@ module EnvUtil
       in_p.write stdin_data.to_str unless stdin_data.empty?
       in_p.close
       if (!th_stdout || th_stdout.join(timeout)) && (!th_stderr || th_stderr.join(timeout))
-        stdout = th_stdout.value if capture_stdout
-        stderr = th_stderr.value if capture_stderr && capture_stderr != :merge_to_stdout
+        timeout_error = nil
       else
-        signal = /mswin|mingw/ =~ RUBY_PLATFORM ? :KILL : :TERM
+        signals = Array(signal).select do |sig|
+          DEFAULT_SIGNALS[sig.to_s] or
+            DEFAULT_SIGNALS[Signal.signame(sig)] rescue false
+        end
+        signals |= [:ABRT, :KILL]
         case pgroup = opt[:pgroup]
         when 0, true
           pgroup = -pid
         when nil, false
           pgroup = pid
         end
-        begin
-          Process.kill signal, pgroup
-          Timeout.timeout((reprieve unless signal == :KILL)) do
-            Process.wait(pid)
+        while signal = signals.shift
+          begin
+            Process.kill signal, pgroup
+          rescue Errno::EINVAL
+            next
+          rescue Errno::ESRCH
+            break
           end
-        rescue Errno::ESRCH
-          break
-        rescue Timeout::Error
-          raise if signal == :KILL
-          signal = :KILL
-        else
-          break
-        end while true
-        bt = caller_locations
-        raise Timeout::Error, "execution of #{bt.shift.label} expired", bt.map(&:to_s)
+          if signals.empty? or !reprieve
+            Process.wait(pid)
+          else
+            begin
+              Timeout.timeout(reprieve) {Process.wait(pid)}
+            rescue Timeout::Error
+            end
+          end
+        end
+        status = $?
       end
+      stdout = th_stdout.value if capture_stdout
+      stderr = th_stderr.value if capture_stderr && capture_stderr != :merge_to_stdout
       out_p.close if capture_stdout
       err_p.close if capture_stderr && capture_stderr != :merge_to_stdout
-      Process.wait pid
-      status = $?
+      status ||= Process.wait2(pid)[1]
       stdout = stdout_filter.call(stdout) if stdout_filter
       stderr = stderr_filter.call(stderr) if stderr_filter
+      if timeout_error
+        bt = caller_locations
+        msg = "execution of #{bt.shift.label} expired"
+        msg = Test::Unit::Assertions::FailDesc[status, msg, [stdout, stderr].join("\n")].()
+        raise timeout_error, msg, bt.map(&:to_s)
+      end
       return stdout, stderr, status
     end
   ensure
@@ -196,7 +213,7 @@ module EnvUtil
     DIAGNOSTIC_REPORTS_PATH = File.expand_path("~/Library/Logs/DiagnosticReports")
     DIAGNOSTIC_REPORTS_TIMEFORMAT = '%Y-%m-%d-%H%M%S'
     def self.diagnostic_reports(signame, cmd, pid, now)
-      return unless %w[ABRT QUIT SEGV ILL].include?(signame)
+      return unless %w[ABRT QUIT SEGV ILL TRAP].include?(signame)
       cmd = File.basename(cmd)
       path = DIAGNOSTIC_REPORTS_PATH
       timeformat = DIAGNOSTIC_REPORTS_TIMEFORMAT
@@ -218,6 +235,14 @@ module EnvUtil
   else
     def self.diagnostic_reports(signame, cmd, pid, now)
     end
+  end
+
+  def self.gc_stress_to_class?
+    unless defined?(@gc_stress_to_class)
+      _, _, status = invoke_ruby(["-e""exit GC.respond_to?(:add_stress_to_class)"])
+      @gc_stress_to_class = status.success?
+    end
+    @gc_stress_to_class
   end
 end
 
@@ -302,13 +327,15 @@ module Test
           if message and !message.empty?
             full_message << message << "\n"
           end
-          full_message << "pid #{pid} killed by #{sigdesc}"
+          full_message << "pid #{pid}"
+          full_message << " exit #{status.exitstatus}" if status.exited?
+          full_message << " killed by #{sigdesc}" if sigdesc
           if out and !out.empty?
-            full_message << "\n#{out.gsub(/^/, '| ')}"
+            full_message << "\n#{out.b.gsub(/^/, '| ')}"
             full_message << "\n" if /\n\z/ !~ full_message
           end
           if log
-            full_message << "\n#{log.gsub(/^/, '| ')}"
+            full_message << "\n#{log.b.gsub(/^/, '| ')}"
           end
           full_message
         end
@@ -318,7 +345,6 @@ module Test
       def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil, **opt)
         stdout, stderr, status = EnvUtil.invoke_ruby(args, test_stdin, true, true, **opt)
         if signo = status.termsig
-          sleep 0.1
           EnvUtil.diagnostic_reports(Signal.signame(signo), EnvUtil.rubybin, status.pid, Time.now)
         end
         if block_given?
@@ -326,32 +352,32 @@ module Test
           raise "test_stderr ignored, use block only or without block" if test_stderr != []
           yield(stdout.lines.map {|l| l.chomp }, stderr.lines.map {|l| l.chomp }, status)
         else
-          errs = []
-          [[test_stdout, stdout], [test_stderr, stderr]].each do |exp, act|
-            begin
-              if exp.is_a?(Regexp)
-                assert_match(exp, act, message)
-              else
-                assert_equal(exp, act.lines.map {|l| l.chomp }, message)
+          all_assertions(message) do |a|
+            [["stdout", test_stdout, stdout], ["stderr", test_stderr, stderr]].each do |key, exp, act|
+              a.for(key) do
+                if exp.is_a?(Regexp)
+                  assert_match(exp, act)
+                elsif exp.all? {|e| String === e}
+                  assert_equal(exp, act.lines.map {|l| l.chomp })
+                else
+                  assert_pattern_list(exp, act)
+                end
               end
-            rescue MiniTest::Assertion => e
-              errs << e.message
-              message = nil
             end
           end
-          raise MiniTest::Assertion, errs.join("\n---\n") unless errs.empty?
           status
         end
       end
 
       def assert_ruby_status(args, test_stdin="", message=nil, **opt)
         out, _, status = EnvUtil.invoke_ruby(args, test_stdin, true, :merge_to_stdout, **opt)
-        assert(!status.signaled?, FailDesc[status, message, out])
+        desc = FailDesc[status, message, out]
+        assert(!status.signaled?, desc)
         message ||= "ruby exit status is not success:"
-        assert(status.success?, "#{message} (#{status.inspect})")
+        assert(status.success?, desc)
       end
 
-      ABORT_SIGNALS = Signal.list.values_at(*%w"ILL ABRT BUS SEGV")
+      ABORT_SIGNALS = Signal.list.values_at(*%w"ILL ABRT BUS SEGV TERM")
 
       def assert_separately(args, file = nil, line = nil, src, ignore_stderr: nil, **opt)
         unless file and line
@@ -372,8 +398,8 @@ module Test
   end
 eom
         args = args.dup
-        args.insert((Hash === args.first ? 1 : 0), "--disable=gems", *$:.map {|l| "-I#{l}"})
-        stdout, stderr, status = EnvUtil.invoke_ruby(args, src, true, true, **opt)
+        args.insert((Hash === args.first ? 1 : 0), "-w", "--disable=gems", *$:.map {|l| "-I#{l}"})
+        stdout, stderr, status = EnvUtil.invoke_ruby(args, src, true, true, timeout_error: nil, **opt)
         abort = status.coredump? || (status.signaled? && ABORT_SIGNALS.include?(status.termsig))
         assert(!abort, FailDesc[status, nil, stderr])
         self._assertions += stdout[/^assertions=(\d+)/, 1].to_i
@@ -397,9 +423,9 @@ eom
         # really is it succeed?
         unless ignore_stderr
           # the body of assert_separately must not output anything to detect error
-          assert_equal("", stderr, "assert_separately failed with error message")
+          assert(stderr.empty?, FailDesc[status, "assert_separately failed with error message", stderr])
         end
-        assert_equal(0, status, "assert_separately failed: '#{stderr}'")
+        assert(status.success?, FailDesc[status, "assert_separately failed", stderr])
         raise marshal_error if marshal_error
       end
 
@@ -413,30 +439,7 @@ eom
         assert_warning(*args) {$VERBOSE = false; yield}
       end
 
-      case RUBY_PLATFORM
-      when /solaris2\.(?:9|[1-9][0-9])/i # Solaris 9, 10, 11,...
-        bits = [nil].pack('p').size == 8 ? 64 : 32
-        if ENV['LD_PRELOAD'].to_s.empty? &&
-            ENV["LD_PRELOAD_#{bits}"].to_s.empty? &&
-            (ENV['UMEM_OPTIONS'].to_s.empty? ||
-             ENV['UMEM_OPTIONS'] == 'backend=mmap') then
-          envs = {
-            'LD_PRELOAD' => 'libumem.so',
-            'UMEM_OPTIONS' => 'backend=mmap'
-          }
-          args = [
-            envs,
-            "--disable=gems",
-            "-v", "-",
-          ]
-          _, err, status = EnvUtil.invoke_ruby(args, "exit(0)", true, true)
-          if status.exitstatus == 0 && err.to_s.empty? then
-            NO_MEMORY_LEAK_ENVS = envs
-          end
-        end
-      end #case RUBY_PLATFORM
-
-      def assert_no_memory_leak(args, prepare, code, message=nil, limit: 1.5, rss: false, **opt)
+      def assert_no_memory_leak(args, prepare, code, message=nil, limit: 2.0, rss: false, **opt)
         require_relative 'memory_status'
         token = "\e[7;1m#{$$.to_s}:#{Time.now.strftime('%s.%L')}:#{rand(0x10000).to_s(16)}:\e[m"
         token_dump = token.dump
@@ -448,9 +451,9 @@ eom
           *args,
           "-v", "-",
         ]
-        if defined? NO_MEMORY_LEAK_ENVS then
+        if defined? Memory::NO_MEMORY_LEAK_ENVS then
           envs ||= {}
-          newenvs = envs.merge(NO_MEMORY_LEAK_ENVS) { |_, _, _| break }
+          newenvs = envs.merge(Memory::NO_MEMORY_LEAK_ENVS) { |_, _, _| break }
           envs = newenvs if newenvs
         end
         args.unshift(envs) if envs
@@ -465,7 +468,7 @@ eom
         _, err, status = EnvUtil.invoke_ruby(args, cmd, true, true, **opt)
         before = err.sub!(/^#{token_re}START=(\{.*\})\n/, '') && Memory::Status.parse($1)
         after = err.sub!(/^#{token_re}FINAL=(\{.*\})\n/, '') && Memory::Status.parse($1)
-        assert_equal([true, ""], [status.success?, err], message)
+        assert(status.success?, FailDesc[status, message, err])
         ([:size, (rss && :rss)] & after.members).each do |n|
           b = before[n]
           a = after[n]

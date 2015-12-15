@@ -12,10 +12,10 @@ class TestGc < Test::Unit::TestCase
     GC.stress = false
 
     assert_nothing_raised do
+      tmp = nil
       1.upto(10000) {
         tmp = [0,1,2,3,4,5,6,7,8,9]
       }
-      tmp = nil
     end
     l=nil
     100000.times {
@@ -147,7 +147,7 @@ class TestGc < Test::Unit::TestCase
 
     assert_not_empty info
     assert_equal info[:gc_by], GC.latest_gc_info(:gc_by)
-    assert_raises(ArgumentError){ GC.latest_gc_info(:invalid) }
+    assert_raise(ArgumentError){ GC.latest_gc_info(:invalid) }
     assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) {GC.latest_gc_info(:"\u{30eb 30d3 30fc}")}
   end
 
@@ -252,7 +252,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_profiler_clear
-    assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom'
+    assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom', timeout: 30
     GC::Profiler.enable
 
     GC.start
@@ -289,7 +289,7 @@ class TestGc < Test::Unit::TestCase
     base_length = GC.stat[:heap_eden_pages]
     (base_length * 500).times{ 'a' }
     GC.start
-    assert_in_delta base_length, (v = GC.stat[:heap_eden_pages]), 1,
+    assert_in_delta base_length, (v = GC.stat[:heap_eden_pages]), 2,
            "invalid heap expanding (base_length: #{base_length}, GC.stat[:heap_eden_pages]: #{v})"
 
     a = []
@@ -320,7 +320,7 @@ class TestGc < Test::Unit::TestCase
 
   def test_exception_in_finalizer
     bug9168 = '[ruby-core:58652] [Bug #9168]'
-    assert_normal_exit(<<-'end;', bug9168)
+    assert_normal_exit(<<-'end;', bug9168, encoding: Encoding::ASCII_8BIT)
       raise_proc = proc {raise}
       10000.times do
         ObjectSpace.define_finalizer(Object.new, raise_proc)
@@ -334,25 +334,34 @@ class TestGc < Test::Unit::TestCase
   def test_interrupt_in_finalizer
     bug10595 = '[ruby-core:66825] [Bug #10595]'
     src = <<-'end;'
+      Signal.trap(:INT, 'DEFAULT')
       pid = $$
       Thread.start do
         10.times {
           sleep 0.1
           Process.kill("INT", pid) rescue break
         }
-        sleep 5
-        Process.kill("SEGV", pid) rescue nil
-        Process.kill("KILL", pid) rescue nil
+        if RUBY_PLATFORM.include?('solaris')
+          $stderr.puts `/usr/bin/psig #{$$}`
+          $stderr.puts `/usr/bin/psig #{Process.ppid}`
+        elsif File.exist?('/proc/self/status')
+          $stderr.puts IO.read('/proc/self/status')
+          $stderr.puts IO.read("/proc/#{Process.ppid}/status")
+        end
       end
       f = proc {1000.times {}}
       loop do
         ObjectSpace.define_finalizer(Object.new, f)
       end
     end;
-    status = assert_in_out_err(["-e", src], "", [], /Interrupt/, bug10595)
-    unless /mswin|mingw/ =~ RUBY_PLATFORM
-      assert_equal("INT", Signal.signame(status.termsig))
+    out, err, status = assert_in_out_err(["-e", src], "", [], [], bug10595, signal: :SEGV) do |*result|
+      break result
     end
+    unless /mswin|mingw/ =~ RUBY_PLATFORM
+      assert_equal("INT", Signal.signame(status.termsig), bug10595)
+    end
+    assert_match(/Interrupt/, err.first, proc {err.join("\n")})
+    assert_empty(out)
   end
 
   def test_verify_internal_consistency
@@ -375,5 +384,16 @@ class TestGc < Test::Unit::TestCase
       GC.stress = true
       C.new
     end;
+  end
+
+  def test_gc_disabled_start
+    begin
+      disabled = GC.disable
+      c = GC.count
+      GC.start
+      assert_equal 1, GC.count - c
+    ensure
+      GC.enable unless disabled
+    end
   end
 end

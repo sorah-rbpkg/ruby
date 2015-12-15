@@ -13,6 +13,7 @@
 #include "ruby/re.h"
 #include "ruby/util.h"
 #include "regint.h"
+#include "encindex.h"
 #include <ctype.h>
 
 VALUE rb_eRegexpError;
@@ -227,7 +228,7 @@ rb_memsearch_wchar(const unsigned char *xs, long m, const unsigned char *ys, lon
     const unsigned char *x = xs, x0 = *xs, *y = ys;
     enum {char_size = 2};
 
-    for (n -= m; n > 0; n -= char_size, y += char_size) {
+    for (n -= m; n >= 0; n -= char_size, y += char_size) {
 	if (x0 == *y && memcmp(x+1, y+1, m-1) == 0)
 	    return y - ys;
     }
@@ -240,7 +241,7 @@ rb_memsearch_qchar(const unsigned char *xs, long m, const unsigned char *ys, lon
     const unsigned char *x = xs, x0 = *xs, *y = ys;
     enum {char_size = 4};
 
-    for (n -= m; n > 0; n -= char_size, y += char_size) {
+    for (n -= m; n >= 0; n -= char_size, y += char_size) {
 	if (x0 == *y && memcmp(x+1, y+1, m-1) == 0)
 	    return y - ys;
     }
@@ -372,8 +373,7 @@ rb_reg_expr_str(VALUE str, const char *s, long len,
 
     p = s; pend = p + len;
     rb_str_coderange_scan_restartable(p, pend, enc, &cr);
-    if (rb_enc_asciicompat(enc) &&
-	(cr == ENC_CODERANGE_VALID || cr == ENC_CODERANGE_7BIT)) {
+    if (rb_enc_asciicompat(enc) && ENC_CODERANGE_CLEAN_P(cr)) {
 	while (p < pend) {
 	    c = rb_enc_ascget(p, pend, &clen, enc);
 	    if (c == -1) {
@@ -835,24 +835,24 @@ rb_reg_named_captures(VALUE re)
 
 static int
 onig_new_with_source(regex_t** reg, const UChar* pattern, const UChar* pattern_end,
-	  OnigOptionType option, OnigEncoding enc, const OnigSyntaxType* syntax,
-	  OnigErrorInfo* einfo, const char *sourcefile, int sourceline)
+		     OnigOptionType option, OnigEncoding enc, const OnigSyntaxType* syntax,
+		     OnigErrorInfo* einfo, const char *sourcefile, int sourceline)
 {
-  int r;
+    int r;
 
-  *reg = (regex_t* )malloc(sizeof(regex_t));
-  if (IS_NULL(*reg)) return ONIGERR_MEMORY;
+    *reg = (regex_t* )malloc(sizeof(regex_t));
+    if (IS_NULL(*reg)) return ONIGERR_MEMORY;
 
-  r = onig_reg_init(*reg, option, ONIGENC_CASE_FOLD_DEFAULT, enc, syntax);
-  if (r) goto err;
+    r = onig_reg_init(*reg, option, ONIGENC_CASE_FOLD_DEFAULT, enc, syntax);
+    if (r) goto err;
 
-  r = onig_compile(*reg, pattern, pattern_end, einfo, sourcefile, sourceline);
-  if (r) {
-  err:
-    onig_free(*reg);
-    *reg = NULL;
-  }
-  return r;
+    r = onig_compile(*reg, pattern, pattern_end, einfo, sourcefile, sourceline);
+    if (r) {
+      err:
+	onig_free(*reg);
+	*reg = NULL;
+    }
+    return r;
 }
 
 static Regexp*
@@ -1521,10 +1521,7 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
 	if (err) rb_memerror();
     }
     else {
-	if (rb_safe_level() >= 3)
-	    OBJ_TAINT(match);
-	else
-	    FL_UNSET(match, FL_TAINT);
+	FL_UNSET(match, FL_TAINT);
     }
 
     if (set_backref_str) {
@@ -1723,10 +1720,6 @@ match_array(VALUE match, int start)
 }
 
 
-/* [MG]:FIXME: I put parens around the /.../.match() in the first line of the
-   second example to prevent the '*' followed by a '/' from ending the
-   comment. */
-
 /*
  *  call-seq:
  *     mtch.to_a   -> anArray
@@ -1742,7 +1735,7 @@ match_array(VALUE match, int start)
  *  accessing the fields directly (as an intermediate array is
  *  generated).
  *
- *     all,f1,f2,f3 = *(/(.)(.)(\d+)(\d)/.match("THX1138."))
+ *     all,f1,f2,f3 = * /(.)(.)(\d+)(\d)/.match("THX1138.")
  *     all   #=> "HX1138"
  *     f1    #=> "H"
  *     f2    #=> "X"
@@ -2785,7 +2778,7 @@ static VALUE
 reg_operand(VALUE s, int check)
 {
     if (SYMBOL_P(s)) {
-	return rb_sym_to_s(s);
+	return rb_sym2str(s);
     }
     else {
 	return (check ? rb_str_to_str : rb_check_string_type)(s);
@@ -2959,12 +2952,16 @@ rb_reg_match2(VALUE re)
  *  If a block is given, invoke the block with MatchData if match succeed, so
  *  that you can write
  *
- *     pat.match(str) {|m| ...}
+ *     /M(.*)/.match("Matz") do |m|
+ *       puts m[0]
+ *       puts m[1]
+ *     end
  *
  *  instead of
  *
- *     if m = pat.match(str)
- *       ...
+ *     if m = /M(.*)/.match("Matz")
+ *       puts m[0]
+ *       puts m[1]
  *     end
  *
  *  The return value is a value from block execution in this case.
@@ -2999,15 +2996,14 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 /*
  * Document-method: compile
  *
- * Synonym for <code>Regexp.new</code>
+ * Alias for <code>Regexp.new</code>
  */
-
 
 /*
  *  call-seq:
- *     Regexp.new(string, [options [, kcode]])        -> regexp
+ *     Regexp.new(string, [options [, kcode]])       -> regexp
  *     Regexp.new(regexp)                            -> regexp
- *     Regexp.compile(string, [options [, kcode]])    -> regexp
+ *     Regexp.compile(string, [options [, kcode]])   -> regexp
  *     Regexp.compile(regexp)                        -> regexp
  *
  *  Constructs a new regular expression from +pattern+, which can be either a

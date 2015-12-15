@@ -18,6 +18,10 @@ extern "C" {
 #endif
 #endif
 
+#ifndef __STDC_WANT_LIB_EXT1__
+#define __STDC_WANT_LIB_EXT1__ 1
+#endif
+
 #include "ruby/config.h"
 #include <stddef.h>
 #include <math.h> /* for INFINITY and NAN */
@@ -35,6 +39,13 @@ extern "C" {
 #if defined(HAVE_SYS_TIME_H)
 # include <sys/time.h>
 #endif
+#endif
+
+#ifndef M_PI
+# define M_PI 3.14159265358979323846
+#endif
+#ifndef M_PI_2
+# define M_PI_2 (M_PI/2)
 #endif
 
 #ifndef RUBY_SYMBOL_EXPORT_BEGIN
@@ -129,24 +140,20 @@ RUBY_EXTERN double lgamma_r(double, int *);
 RUBY_EXTERN double cbrt(double);
 #endif
 
-#if !defined(INFINITY) || !defined(NAN)
+#if !defined(HAVE_INFINITY) || !defined(HAVE_NAN)
 union bytesequence4_or_float {
   unsigned char bytesequence[4];
   float float_value;
 };
 #endif
 
-#ifdef INFINITY
-# define HAVE_INFINITY
-#else
+#ifndef INFINITY
 /** @internal */
 RUBY_EXTERN const union bytesequence4_or_float rb_infinity;
 # define INFINITY (rb_infinity.float_value)
 #endif
 
-#ifdef NAN
-# define HAVE_NAN
-#else
+#ifndef NAN
 /** @internal */
 RUBY_EXTERN const union bytesequence4_or_float rb_nan;
 # define NAN (rb_nan.float_value)
@@ -237,6 +244,21 @@ RUBY_EXTERN int ruby_close(int);
 
 #ifndef HAVE_SETPROCTITLE
 RUBY_EXTERN void setproctitle(const char *fmt, ...);
+#endif
+
+#ifndef HAVE_EXPLICIT_BZERO
+RUBY_EXTERN void explicit_bzero(void *b, size_t len);
+# ifdef HAVE_MEMSET_S
+# include <string.h>
+static inline void
+explicit_bzero_by_memset_s(void *b, size_t len)
+{
+    memset_s(b, len, 0, len);
+}
+#   define explicit_bzero(b, len) explicit_bzero_by_memset_s(b, len)
+# elif defined SecureZeroMemory
+#   define explicit_bzero(b, len) SecureZeroMemory(b, len)
+# endif
 #endif
 
 RUBY_SYMBOL_EXPORT_END

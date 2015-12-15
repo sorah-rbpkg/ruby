@@ -46,7 +46,7 @@ fiddle_handle_free(void *ptr)
 static size_t
 fiddle_handle_memsize(const void *ptr)
 {
-    return ptr ? sizeof(struct dl_handle) : 0;
+    return sizeof(struct dl_handle);
 }
 
 static const rb_data_type_t fiddle_handle_data_type = {
@@ -153,8 +153,6 @@ rb_fiddle_handle_initialize(int argc, VALUE argv[], VALUE self)
       default:
 	rb_bug("rb_fiddle_handle_new");
     }
-
-    rb_secure(2);
 
 #if defined(_WIN32)
     if( !clib ){
@@ -320,7 +318,6 @@ fiddle_handle_sym(void *handle, const char *name)
 #endif
     void (*func)();
 
-    rb_secure(2);
 #ifdef HAVE_DLERROR
     dlerror();
 #endif
