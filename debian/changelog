@@ -1,3 +1,9 @@
+ruby2.3 (2.3.0-1) UNRELEASED; urgency=medium
+
+  * Ruby 2.3
+
+ -- Antonio Terceiro <terceiro@debian.org>  Tue, 15 Dec 2015 16:11:47 -0200
+
 ruby2.2 (2.2.3-2) unstable; urgency=medium
 
   * Add dependency on ruby-minitest to provide the same experience out of the
