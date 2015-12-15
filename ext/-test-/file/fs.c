@@ -1,11 +1,17 @@
 #include "ruby/ruby.h"
 #include "ruby/io.h"
 
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
 #ifdef HAVE_SYS_MOUNT_H
 #include <sys/mount.h>
 #endif
 #ifdef HAVE_SYS_VFS_H
 #include <sys/vfs.h>
+#endif
+#ifdef HAVE_SYS_STATVFS_H
+#include <sys/statvfs.h>
 #endif
 
 #if defined HAVE_STRUCT_STATFS_F_FSTYPENAME

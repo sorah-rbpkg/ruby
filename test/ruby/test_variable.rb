@@ -118,4 +118,33 @@ class TestVariable < Test::Unit::TestCase
       }
     }
   end
+
+  def test_special_constant_ivars
+    [ true, false, :symbol, "dsym#{rand(9999)}".to_sym, 1, 1.0 ].each do |v|
+      assert_empty v.instance_variables
+      msg = "can't modify frozen #{v.class}"
+
+      assert_raise_with_message(RuntimeError, msg) do
+        v.instance_variable_set(:@foo, :bar)
+      end
+
+      assert_nil v.instance_variable_get(:@foo)
+      refute v.instance_variable_defined?(:@foo)
+
+      assert_raise_with_message(RuntimeError, msg) do
+        v.remove_instance_variable(:@foo)
+      end
+    end
+  end
+
+  def test_local_variables_with_kwarg
+    bug11674 = '[ruby-core:71437] [Bug #11674]'
+    v = with_kwargs_11(v1:1,v2:2,v3:3,v4:4,v5:5,v6:6,v7:7,v8:8,v9:9,v10:10,v11:11)
+    assert_equal(%i(v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11), v, bug11674)
+  end
+
+  private
+  def with_kwargs_11(v1:, v2:, v3:, v4:, v5:, v6:, v7:, v8:, v9:, v10:, v11:)
+    local_variables
+  end
 end

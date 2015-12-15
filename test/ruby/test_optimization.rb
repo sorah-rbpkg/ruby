@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'objspace'
 
 class TestRubyOptimization < Test::Unit::TestCase
 
@@ -120,6 +121,24 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal "foo", "foo".freeze
     assert_equal "foo".freeze.object_id, "foo".freeze.object_id
     assert_redefine_method('String', 'freeze', 'assert_nil "foo".freeze')
+  end
+
+  def test_string_freeze_saves_memory
+    n = 16384
+    data = '.'.freeze
+    r, w = IO.pipe
+    w.write data
+
+    s = r.readpartial(n, '')
+    assert_operator ObjectSpace.memsize_of(s), :>=, n,
+      'IO buffer NOT resized prematurely because will likely be reused'
+
+    s.freeze
+    assert_equal ObjectSpace.memsize_of(data), ObjectSpace.memsize_of(s),
+      'buffer resized on freeze since it cannot be written to again'
+  ensure
+    r.close if r
+    w.close if w
   end
 
   def test_string_eq_neq
@@ -288,5 +307,59 @@ class TestRubyOptimization < Test::Unit::TestCase
       assert_equal(true, "block".freeze {})
       assert_equal(false, "block".freeze)
     end;
+  end
+
+  def test_opt_case_dispatch
+    code = <<-EOF
+      case foo
+      when "foo" then :foo
+      when true then true
+      when false then false
+      when :sym then :sym
+      when 6 then :fix
+      when nil then nil
+      when 0.1 then :float
+      when 0xffffffffffffffff then :big
+      else
+        :nomatch
+      end
+    EOF
+    check = {
+      'foo' => :foo,
+      true => true,
+      false => false,
+      :sym => :sym,
+      6 => :fix,
+      nil => nil,
+      0.1 => :float,
+      0xffffffffffffffff => :big,
+    }
+    iseq = RubyVM::InstructionSequence.compile(code)
+    assert_match %r{\bopt_case_dispatch\b}, iseq.disasm
+    check.each do |foo, expect|
+      assert_equal expect, eval("foo = #{foo.inspect}\n#{code}")
+    end
+    assert_equal :nomatch, eval("foo = :blah\n#{code}")
+    check.each do |foo, _|
+      klass = foo.class.to_s
+      assert_separately([], <<-"end;") # do
+        class #{klass}
+          undef ===
+          def ===(*args)
+            false
+          end
+        end
+        foo = #{foo.inspect}
+        ret = #{code}
+        assert_equal :nomatch, ret, foo.inspect
+      end;
+    end
+  end
+
+  def test_eqq
+    [ nil, true, false, 0.1, :sym, 'str', 0xffffffffffffffff ].each do |v|
+      k = v.class.to_s
+      assert_redefine_method(k, '===', "assert_equal(#{v.inspect} === 0, 0)")
+    end
   end
 end

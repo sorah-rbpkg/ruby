@@ -362,20 +362,29 @@ class TestDir_M17N < Test::Unit::TestCase
     end
   end
 
+  def test_glob_encoding
+    with_tmpdir do
+      %W"file_one.ext file_two.ext".each {|f| open(f, "w") {}}
+      a = "file_one*".force_encoding Encoding::IBM437
+      b = "file_two*".force_encoding Encoding::EUC_JP
+      assert_equal([a, b].map(&:encoding), Dir[a, b].map(&:encoding))
+    end
+  end
+
+  PP = Object.new.extend(Test::Unit::Assertions)
+  def PP.mu_pp(ary) #:nodoc:
+    '[' << ary.map {|str| "#{str.dump}(#{str.encoding})"}.join(', ') << ']'
+  end
+
   def test_entries_compose
     bug7267 = '[ruby-core:48745] [Bug #7267]'
-
-    pp = Object.new.extend(Test::Unit::Assertions)
-    def pp.mu_pp(ary) #:nodoc:
-      '[' << ary.map {|str| "#{str.dump}(#{str.encoding})"}.join(', ') << ']'
-    end
 
     with_tmpdir {|d|
       orig = %W"d\u{e9}tente x\u{304c 304e 3050 3052 3054}"
       orig.each {|n| open(n, "w") {}}
       if /mswin|mingw/ =~ RUBY_PLATFORM
         opts = {:encoding => Encoding.default_external}
-        orig.map! {|o| o.encode(Encoding.find("filesystem")) rescue o.tr("^a-z", "?")}
+        orig.map! {|o| o.encode("filesystem") rescue o.tr("^a-z", "?")}
       else
         enc = Encoding.find("filesystem")
         enc = Encoding::ASCII_8BIT if enc == Encoding::US_ASCII
@@ -383,7 +392,28 @@ class TestDir_M17N < Test::Unit::TestCase
       end
       ents = Dir.entries(".", opts).reject {|n| /\A\./ =~ n}
       ents.sort!
-      pp.assert_equal(orig, ents, bug7267)
+      PP.assert_equal(orig, ents, bug7267)
     }
+  end
+
+  def test_pwd
+    orig = %W"d\u{e9}tente x\u{304c 304e 3050 3052 3054}"
+    expected = []
+    results = []
+    orig.each {|o|
+      if /mswin|mingw/ =~ RUBY_PLATFORM
+        n = (o.encode("filesystem") rescue next)
+      else
+        enc = Encoding.find("filesystem")
+        enc = Encoding::ASCII_8BIT if enc == Encoding::US_ASCII
+        n = o.dup.force_encoding(enc)
+      end
+      expected << n
+      with_tmpdir {
+        Dir.mkdir(o)
+        results << File.basename(Dir.chdir(o) {Dir.pwd})
+      }
+    }
+    PP.assert_equal(expected, results)
   end
 end

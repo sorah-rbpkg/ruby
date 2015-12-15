@@ -44,11 +44,11 @@ module Timeout
       self
     end
   end
-  ExitException = Error
 
   # :stopdoc:
   THIS_FILE = /\A#{Regexp.quote(__FILE__)}:/o
   CALLER_OFFSET = ((c = caller[0]) && THIS_FILE =~ c) ? 1 : 0
+  private_constant :THIS_FILE, :CALLER_OFFSET
   # :startdoc:
 
   # Perform an operation in a block, raising an error if it takes longer than
@@ -71,7 +71,7 @@ module Timeout
   # a module method, so you can call it directly as Timeout.timeout().
   def timeout(sec, klass = nil)   #:yield: +sec+
     return yield(sec) if sec == nil or sec.zero?
-    message = "execution expired"
+    message = "execution expired".freeze
     e = Error
     bl = proc do |exception|
       begin
@@ -102,9 +102,7 @@ module Timeout
     else
       bt = Error.catch(message, &bl)
     end
-    rej = /\A#{Regexp.quote(__FILE__)}:#{__LINE__-4}\z/o
-    bt.reject! {|m| rej =~ m}
-    level = -caller(CALLER_OFFSET).size
+    level = -caller(CALLER_OFFSET).size-2
     while THIS_FILE =~ bt[level]
       bt.delete_at(level)
     end
@@ -114,16 +112,14 @@ module Timeout
   module_function :timeout
 end
 
-# Identical to:
-#
-#   Timeout::timeout(n, e, &block).
-#
-# This method is deprecated and provided only for backwards compatibility.
-# You should use Timeout#timeout instead.
-def timeout(n, e = nil, &block)
-  Timeout::timeout(n, e, &block)
+def timeout(*args, &block)
+  warn "#{caller_locations(1, 1)[0]}: Object##{__method__} is deprecated, use Timeout.timeout instead."
+  Timeout.timeout(*args, &block)
 end
 
 # Another name for Timeout::Error, defined for backwards compatibility with
 # earlier versions of timeout.rb.
 TimeoutError = Timeout::Error
+class Object
+  deprecate_constant :TimeoutError
+end

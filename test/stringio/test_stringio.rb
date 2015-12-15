@@ -193,12 +193,12 @@ class TestStringIO < Test::Unit::TestCase
   def test_close
     f = StringIO.new("")
     f.close
-    assert_raise(IOError) { f.close }
+    assert_nil(f.close)
 
     f = StringIO.new("")
     f.close_read
     f.close_write
-    assert_raise(IOError) { f.close }
+    assert_nil(f.close)
   ensure
     f.close unless f.closed?
   end
@@ -207,7 +207,7 @@ class TestStringIO < Test::Unit::TestCase
     f = StringIO.new("")
     f.close_read
     assert_raise(IOError) { f.read }
-    assert_raise(IOError) { f.close_read }
+    assert_nothing_raised(IOError) {f.close_read}
     f.close
 
     f = StringIO.new("", "w")
@@ -221,7 +221,7 @@ class TestStringIO < Test::Unit::TestCase
     f = StringIO.new("")
     f.close_write
     assert_raise(IOError) { f.write("foo") }
-    assert_raise(IOError) { f.close_write }
+    assert_nothing_raised(IOError) {f.close_write}
     f.close
 
     f = StringIO.new("", "r")
@@ -470,6 +470,7 @@ class TestStringIO < Test::Unit::TestCase
     assert_raise(ArgumentError) { f.read(-1) }
     assert_raise(ArgumentError) { f.read(1, 2, 3) }
     assert_equal("\u3042\u3044", f.read)
+    assert_nil(f.read(1))
     f.rewind
     assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read(f.size))
 
@@ -523,6 +524,15 @@ class TestStringIO < Test::Unit::TestCase
     # not empty buffer
     s = '0123456789'
     assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read_nonblock(f.size, s))
+  end
+
+  def test_sysread
+    f = StringIO.new("sysread \u{30c6 30b9 30c8}")
+    assert_equal "sysread \u{30c6 30b9 30c8}", f.sysread
+    assert_equal "", f.sysread
+    assert_raise(EOFError) { f.sysread(1) }
+    f.rewind
+    assert_equal Encoding::ASCII_8BIT, f.sysread(3).encoding
   end
 
   def test_size

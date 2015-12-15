@@ -14,6 +14,13 @@ class URI::TestGeneric < Test::Unit::TestCase
     uri.class.component.collect {|c| uri.send(c)}
   end
 
+  def test_to_s
+    exp = 'http://example.com/'.freeze
+    str = URI(exp).to_s
+    assert_equal exp, str
+    assert_not_predicate str, :frozen?, '[ruby-core:71785] [Bug #11759]'
+  end
+
   def test_parse
     # 0
     assert_kind_of(URI::HTTP, @base_url)
@@ -760,6 +767,10 @@ class URI::TestGeneric < Test::Unit::TestCase
   def test_build
     u = URI::Generic.build(['http', nil, 'example.com', 80, nil, '/foo', nil, nil, nil])
     assert_equal('http://example.com:80/foo', u.to_s)
+
+    u = URI::Generic.build(:port => "5432")
+    assert_equal(":5432", u.to_s)
+    assert_equal(5432, u.port)
 
     u = URI::Generic.build(:scheme => "http", :host => "::1", :path => "/bar/baz")
     assert_equal("http://[::1]/bar/baz", u.to_s)

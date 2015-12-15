@@ -258,6 +258,26 @@ class TestFile < Test::Unit::TestCase
     }
   end
 
+  def test_realpath_encoding
+    fsenc = Encoding.find("filesystem")
+    nonascii = "\u{0391 0410 0531 10A0 05d0 2C00 3042}"
+    tst = "A"
+    nonascii.each_char {|c| tst << c.encode(fsenc) rescue nil}
+    Dir.mktmpdir('rubytest-realpath') {|tmpdir|
+      realdir = File.realpath(tmpdir)
+      open(File.join(tmpdir, tst), "w") {}
+      a = File.join(tmpdir, "x")
+      File.symlink(tst, a)
+      assert_equal(File.join(realdir, tst), File.realpath(a))
+      File.unlink(a)
+
+      tst = "A" + nonascii
+      open(File.join(tmpdir, tst), "w") {}
+      File.symlink(tst, a)
+      assert_equal(File.join(realdir, tst), File.realpath(a.encode("UTF-8")))
+    }
+  end
+
   def test_realdirpath
     Dir.mktmpdir('rubytest-realdirpath') {|tmpdir|
       realdir = File.realpath(tmpdir)
@@ -275,6 +295,16 @@ class TestFile < Test::Unit::TestCase
       end
     end
   end
+
+  def test_realdirpath_junction
+    Dir.mktmpdir('rubytest-realpath') {|tmpdir|
+      Dir.chdir(tmpdir) do
+        Dir.mkdir('foo')
+        skip "cannot run mklink" unless system('mklink /j bar foo > nul')
+        assert_equal(File.realpath('foo'), File.realpath('bar'))
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
 
   def test_utime_with_minus_time_segv
     bug5596 = '[ruby-dev:44838]'
@@ -342,6 +372,10 @@ class TestFile < Test::Unit::TestCase
   rescue NotImplementedError
   end
 
+  def test_stat_inode
+    assert_not_equal 0, File.stat(__FILE__).ino
+  end
+
   def test_chmod_m17n
     bug5671 = '[ruby-dev:44898]'
     Dir.mktmpdir('test-file-chmod-m17n-') do |tmpdir|
@@ -375,6 +409,19 @@ class TestFile < Test::Unit::TestCase
     }
   end
 
+  def test_file_share_delete
+    Dir.mktmpdir(__method__.to_s) do |tmpdir|
+      tmp = File.join(tmpdir, 'x')
+      File.open(tmp, mode: IO::WRONLY | IO::CREAT | IO::BINARY | IO::SHARE_DELETE) do |f|
+        assert_file.exist?(tmp)
+        assert_nothing_raised do
+          File.unlink(tmp)
+        end
+      end
+      assert_file.not_exist?(tmp)
+    end
+  end
+
   def test_conflicting_encodings
     Dir.mktmpdir(__method__.to_s) do |tmpdir|
       tmp = File.join(tmpdir, 'x')
@@ -392,12 +439,6 @@ class TestFile < Test::Unit::TestCase
     (0..1).each do |level|
       assert_nothing_raised(SecurityError, bug5374) {in_safe[level]}
     end
-    def (s = Object.new).to_path; "".taint; end
-    m = "\u{691c 67fb}"
-    (c = Class.new(File)).singleton_class.class_eval {alias_method m, :stat}
-    assert_raise_with_message(SecurityError, /#{m}/) {
-      proc {$SAFE = 3; c.__send__(m, s)}.call
-    }
   end
 
   if /(bcc|ms|cyg)win|mingw|emx/ =~ RUBY_PLATFORM
