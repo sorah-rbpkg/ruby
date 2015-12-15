@@ -1,1 +1,1 @@
-Tests: run-all
+Tests: run-all bundled-gems

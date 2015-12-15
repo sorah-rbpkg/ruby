@@ -1,6 +1,9 @@
 ruby2.3 (2.3.0~preview2-1) UNRELEASED; urgency=medium
 
   * Ruby 2.3
+  * debian/tests/bundled-gems: check if all libraries that are supposed to be
+    bundled are present, with a version greater than or equal to the one
+    specified in gems/bundled_gems
 
  -- Antonio Terceiro <terceiro@debian.org>  Tue, 15 Dec 2015 16:11:47 -0200
 
