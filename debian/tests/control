@@ -1,1 +1,2 @@
 Tests: run-all bundled-gems
+Depends: @

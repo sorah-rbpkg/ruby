@@ -1,5 +1,6 @@
 ruby2.3 (2.3.0~preview2-1) unstable; urgency=medium
 
+  [ Antonio Terceiro ]
   * Ruby 2.3
   * debian/tests/bundled-gems: check if all libraries that are supposed to be
     bundled are present, with a version greater than or equal to the one
@@ -7,6 +8,10 @@ ruby2.3 (2.3.0~preview2-1) unstable; urgency=medium
   * debian/tests/run-all: filter failures against list of known failures. Pass
     if only the tests listed in debian/tests/known-failures.txt fail, fail
     otherwise. This will help catch regressions.
+
+  [ Christian Hofstaedtler ]
+  * autopkgtest: depend on all packages so we actually have header files
+    installed.
 
  -- Antonio Terceiro <terceiro@debian.org>  Wed, 23 Dec 2015 07:49:54 -0300
 
