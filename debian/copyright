@@ -45,6 +45,11 @@ Files: enc/encdb.c
 Copyright:2008 Yukihiro.Matsumoto
 License: BSD-2-clause
 
+Files: enc/windows_1250.c enc/windows_1252.c
+Copyright: 2006-2007  Byte   <byte AT mail DOT kna DOT ru>
+  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+License: BSD-2-clause
+
 Files: enc/windows_1251.c
 Copyright: 2006-2007 Byte <byte@mail@kna@ru>
 License: BSD-2-clause

@@ -8,6 +8,7 @@ ruby2.3 (2.3.0-1) unstable; urgency=medium
   * debian/tests/run-all: filter failures against list of known failures. Pass
     if only the tests listed in debian/tests/known-failures.txt fail, fail
     otherwise. This will help catch regressions.
+  * debian/copyright: update wrt new files in the distribution
 
   [ Christian Hofstaedtler ]
   * autopkgtest: depend on all packages so we actually have header files
