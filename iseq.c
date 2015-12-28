@@ -479,11 +479,10 @@ rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE path, VALUE absolute_path,
 const rb_iseq_t *
 rb_iseq_load_iseq(VALUE fname)
 {
-    if (rb_respond_to(rb_cISeq, rb_intern("load_iseq"))) {
-	VALUE iseqv = rb_funcall(rb_cISeq, rb_intern("load_iseq"), 1, fname);
-	if (CLASS_OF(iseqv) == rb_cISeq) {
-	    return  iseqw_check(iseqv);
-	}
+    VALUE iseqv = rb_check_funcall(rb_cISeq, rb_intern("load_iseq"), 1, &fname);
+
+    if (!SPECIAL_CONST_P(iseqv) && RBASIC_CLASS(iseqv) == rb_cISeq) {
+	return  iseqw_check(iseqv);
     }
 
     return NULL;
@@ -604,46 +603,47 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE li
     rb_thread_t *th = GET_THREAD();
     rb_block_t *prev_base_block = th->base_block;
     rb_iseq_t *iseq = NULL;
+    const rb_iseq_t *parent = NULL;
+    rb_compile_option_t option;
+    VALUE label;
+    enum iseq_type type;
+    NODE *(*parse)(VALUE vparser, VALUE fname, VALUE file, int start);
+    int ln = NUM2INT(line);
+
+    StringValueCStr(file);
+    if (RB_TYPE_P(src, T_FILE)) {
+	parse = rb_parser_compile_file_path;
+    }
+    else {
+	StringValue(src);
+	parse = rb_parser_compile_string_path;
+    }
+
+    make_compile_option(&option, opt);
+
+    if (base_block && (parent = base_block->iseq) != NULL) {
+	label = parent->body->location.label;
+	type = ISEQ_TYPE_EVAL;
+    }
+    else {
+	label = rb_fstring_cstr("<compiled>");
+	type = ISEQ_TYPE_TOP;
+    }
 
     th->base_block = base_block;
-
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
-	VALUE parser;
-	int ln = NUM2INT(line);
-	NODE *node;
-	rb_compile_option_t option;
-
-	StringValueCStr(file);
-	make_compile_option(&option, opt);
-
-	parser = rb_parser_new();
-
-	if (RB_TYPE_P((src), T_FILE))
-	    node = rb_parser_compile_file_path(parser, file, src, ln);
-	else {
-	    StringValue(src);
-	    node = rb_parser_compile_string_path(parser, file, src, ln);
-
-	    if (!node) {
-		rb_exc_raise(th->errinfo);	/* TODO: check err */
-	    }
-	}
-
-	if (base_block && base_block->iseq) {
-	    iseq = rb_iseq_new_with_opt(node, base_block->iseq->body->location.label,
-					file, absolute_path, line, base_block->iseq,
-					ISEQ_TYPE_EVAL, &option);
-	}
-	else {
-	    iseq = rb_iseq_new_with_opt(node, rb_str_new2("<compiled>"), file, absolute_path, line,
-					NULL, ISEQ_TYPE_TOP, &option);
+	NODE *node = (*parse)(rb_parser_new(), file, src, ln);
+	if (node) { /* TODO: check err */
+	    iseq = rb_iseq_new_with_opt(node, label, file, absolute_path, line,
+					parent, type, &option);
 	}
     }
     TH_POP_TAG();
 
     th->base_block = prev_base_block;
 
+    if (!iseq) rb_exc_raise(th->errinfo);
     if (state) {
 	JUMP_TAG(state);
     }
@@ -2337,7 +2337,7 @@ rb_iseqw_local_variables(VALUE iseqval)
  *     iseq.to_binary(extra_data = nil) -> binary str
  *
  *  Returns serialized iseq binary format data as a String object.
- *  A correspnding iseq object is created by
+ *  A corresponding iseq object is created by
  *  RubyVM::InstructionSequence.load_from_binary() method.
  *
  *  String extra_data will be saved with binary data.

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'json'
 begin
   require 'zlib'
@@ -175,7 +176,7 @@ class RDoc::Generator::JsonIndex
 
     Zlib::GzipWriter.open(outfile) do |gz|
       gz.mtime = File.mtime(search_index_file)
-      gz.orig_name = search_index_file.to_s
+      gz.orig_name = search_index_file.basename.to_s
       gz.write search_index
       gz.close
     end
@@ -193,7 +194,7 @@ class RDoc::Generator::JsonIndex
 
         Zlib::GzipWriter.open(outfile) do |gz|
           gz.mtime = File.mtime(dest)
-          gz.orig_name = dest.to_s
+          gz.orig_name = dest.basename.to_s
           gz.write data
           gz.close
         end

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # The Version class processes string versions into comparable
 # values. A version string should normally be a series of numbers
@@ -107,7 +108,7 @@
 # Client A needs a stack with basic push/pop capability.  They write to the
 # original interface (no <tt>top</tt>), so their version constraint looks like:
 #
-#   gem 'stack', '~> 0.0'
+#   gem 'stack', '>= 0.0'
 #
 # Essentially, any version is OK with Client A.  An incompatible change to
 # the library will cause them grief, but they are willing to take the chance

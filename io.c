@@ -551,8 +551,9 @@ io_unread(rb_io_t *fptr)
 	}
 	read_size = _read(fptr->fd, buf, fptr->rbuf.len + newlines);
 	if (read_size < 0) {
+	    int e = errno;
 	    free(buf);
-	    rb_sys_fail_path(fptr->pathv);
+	    rb_syserr_fail_path(e, fptr->pathv);
 	}
 	if (read_size == fptr->rbuf.len) {
 	    lseek(fptr->fd, r, SEEK_SET);
@@ -1768,11 +1769,12 @@ io_fillbuf(rb_io_t *fptr)
             if (rb_io_wait_readable(fptr->fd))
                 goto retry;
 	    {
+		int e = errno;
 		VALUE path = rb_sprintf("fd:%d ", fptr->fd);
 		if (!NIL_P(fptr->pathv)) {
 		    rb_str_append(path, fptr->pathv);
 		}
-		rb_sys_fail_path(path);
+		rb_syserr_fail_path(e, path);
 	    }
         }
         fptr->rbuf.off = 0;
@@ -2472,9 +2474,6 @@ rb_io_set_nonblock(rb_io_t *fptr)
 #endif
 }
 
-void
-rb_readwrite_sys_fail(int writable, const char *mesg);
-
 struct read_internal_arg {
     int fd;
     char *str_ptr;
@@ -2537,15 +2536,17 @@ io_getpartial(int argc, VALUE *argv, VALUE io, VALUE opts, int nonblock)
 	rb_str_locktmp_ensure(str, read_internal_call, (VALUE)&arg);
 	n = arg.len;
         if (n < 0) {
+	    int e = errno;
             if (!nonblock && rb_io_wait_readable(fptr->fd))
                 goto again;
-            if (nonblock && (errno == EWOULDBLOCK || errno == EAGAIN)) {
+	    if (nonblock && (e == EWOULDBLOCK || e == EAGAIN)) {
                 if (no_exception_p(opts))
                     return sym_wait_readable;
                 else
-		    rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "read would block");
+		    rb_readwrite_syserr_fail(RB_IO_WAIT_READABLE,
+					     e, "read would block");
             }
-            rb_sys_fail_path(fptr->pathv);
+            rb_syserr_fail_path(e, fptr->pathv);
         }
     }
     io_set_read_length(str, n);
@@ -2665,11 +2666,13 @@ io_read_nonblock(VALUE io, VALUE length, VALUE str, VALUE ex)
 	rb_str_locktmp_ensure(str, read_internal_call, (VALUE)&arg);
 	n = arg.len;
         if (n < 0) {
-            if ((errno == EWOULDBLOCK || errno == EAGAIN)) {
+	    int e = errno;
+	    if ((e == EWOULDBLOCK || e == EAGAIN)) {
                 if (ex == Qfalse) return sym_wait_readable;
-                rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "read would block");
+		rb_readwrite_syserr_fail(RB_IO_WAIT_READABLE,
+					 e, "read would block");
             }
-            rb_sys_fail_path(fptr->pathv);
+            rb_syserr_fail_path(e, fptr->pathv);
         }
     }
     io_set_read_length(str, n);
@@ -2703,15 +2706,16 @@ io_write_nonblock(VALUE io, VALUE str, VALUE ex)
     n = write(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str));
 
     if (n == -1) {
-        if (errno == EWOULDBLOCK || errno == EAGAIN) {
+	int e = errno;
+	if (e == EWOULDBLOCK || e == EAGAIN) {
 	    if (ex == Qfalse) {
 		return sym_wait_writable;
 	    }
 	    else {
-		rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE, "write would block");
+		rb_readwrite_syserr_fail(RB_IO_WAIT_WRITABLE, e, "write would block");
 	    }
 	}
-        rb_sys_fail_path(fptr->pathv);
+	rb_syserr_fail_path(e, fptr->pathv);
     }
 
     return LONG2FIX(n);
@@ -3121,7 +3125,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	    newline = (unsigned char)rsptr[rslen - 1];
 	}
 
-	/* MS - Optimisation */
+	/* MS - Optimization */
 	while ((c = appendline(fptr, newline, &str, &limit)) != EOF) {
             const char *s, *p, *pp, *e;
 
@@ -3214,7 +3218,7 @@ rb_io_gets(VALUE io)
  *  If IO contains multibyte characters byte then <code>gets(1)</code>
  *  returns character entirely:
  *
- *     # russian characters take 2 bytes
+ *     # Russian characters take 2 bytes
  *     File.write("testfile", "\u{442 435 441 442}")
  *     File.open("testfile") {|f|f.gets(1)} #=> "\u0442"
  *     File.open("testfile") {|f|f.gets(2)} #=> "\u0442"
@@ -4244,8 +4248,7 @@ fptr_finalize(rb_io_t *fptr, int noraise)
         switch (TYPE(err)) {
           case T_FIXNUM:
           case T_BIGNUM:
-            errno = NUM2INT(err);
-            rb_sys_fail_path(fptr->pathv);
+	    rb_syserr_fail_path(NUM2INT(err), fptr->pathv);
 
           default:
             rb_exc_raise(err);
@@ -4852,11 +4855,14 @@ rb_io_fmode_modestr(int fmode)
     }
 }
 
+static const char bom_prefix[] = "bom|";
+static const char utf_prefix[] = "utf-";
+enum {bom_prefix_len = (int)sizeof(bom_prefix) - 1};
+enum {utf_prefix_len = (int)sizeof(utf_prefix) - 1};
+
 static int
 io_encname_bom_p(const char *name, long len)
 {
-    static const char bom_prefix[] = "bom|utf-";
-    enum {bom_prefix_len = (int)sizeof(bom_prefix) - 1};
     return len > bom_prefix_len && STRNCASECMP(name, bom_prefix, bom_prefix_len) == 0;
 }
 
@@ -5051,45 +5057,42 @@ rb_io_ext_int_to_encs(rb_encoding *ext, rb_encoding *intern, rb_encoding **enc, 
 }
 
 static void
-unsupported_encoding(const char *name)
+unsupported_encoding(const char *name, rb_encoding *enc)
 {
-    rb_warn("Unsupported encoding %s ignored", name);
+    rb_enc_warn(enc, "Unsupported encoding %s ignored", name);
 }
 
 static void
-parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int *fmode_p)
+parse_mode_enc(const char *estr, rb_encoding *estr_enc,
+	       rb_encoding **enc_p, rb_encoding **enc2_p, int *fmode_p)
 {
     const char *p;
     char encname[ENCODING_MAXNAMELEN+1];
     int idx, idx2;
     int fmode = fmode_p ? *fmode_p : 0;
     rb_encoding *ext_enc, *int_enc;
+    long len;
 
     /* parse estr as "enc" or "enc2:enc" or "enc:-" */
 
     p = strrchr(estr, ':');
-    if (p) {
-	long len = (p++) - estr;
-	if (len == 0 || len > ENCODING_MAXNAMELEN)
-	    idx = -1;
+    len = p ? (p++ - estr) : (long)strlen(estr);
+    if ((fmode & FMODE_SETENC_BY_BOM) || io_encname_bom_p(estr, len)) {
+	estr += bom_prefix_len;
+	len -= bom_prefix_len;
+	if (!STRNCASECMP(estr, utf_prefix, utf_prefix_len)) {
+	    fmode |= FMODE_SETENC_BY_BOM;
+	}
 	else {
-	    if (io_encname_bom_p(estr, len)) {
-		fmode |= FMODE_SETENC_BY_BOM;
-		estr += 4;
-                len -= 4;
-            }
-	    memcpy(encname, estr, len);
-	    encname[len] = '\0';
-	    estr = encname;
-	    idx = rb_enc_find_index(encname);
+	    rb_enc_warn(estr_enc, "BOM with non-UTF encoding %s is nonsense", estr);
+	    fmode &= ~FMODE_SETENC_BY_BOM;
 	}
     }
+    if (len == 0 || len > ENCODING_MAXNAMELEN) {
+	idx = -1;
+    }
     else {
-	long len = strlen(estr);
-	if (io_encname_bom_p(estr, len)) {
-	    fmode |= FMODE_SETENC_BY_BOM;
-	    estr += 4;
-            len -= 4;
+	if (p) {
 	    memcpy(encname, estr, len);
 	    encname[len] = '\0';
 	    estr = encname;
@@ -5102,7 +5105,7 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int 
 	ext_enc = rb_enc_from_index(idx);
     else {
 	if (idx != -2)
-	    unsupported_encoding(estr);
+	    unsupported_encoding(estr, estr_enc);
 	ext_enc = NULL;
     }
 
@@ -5115,7 +5118,7 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int 
 	else {
 	    idx2 = rb_enc_find_index(p);
 	    if (idx2 < 0)
-		unsupported_encoding(p);
+		unsupported_encoding(p, estr_enc);
 	    else if (!(fmode & FMODE_SETENC_BY_BOM) && (idx2 == idx)) {
 		int_enc = (rb_encoding *)Qnil;
 	    }
@@ -5182,7 +5185,8 @@ rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2
     if (!NIL_P(encoding)) {
 	extracted = 1;
 	if (!NIL_P(tmp = rb_check_string_type(encoding))) {
-	    parse_mode_enc(StringValueCStr(tmp), enc_p, enc2_p, fmode_p);
+	    parse_mode_enc(StringValueCStr(tmp), rb_enc_get(tmp),
+			   enc_p, enc2_p, fmode_p);
 	}
 	else {
 	    rb_io_ext_int_to_encs(rb_to_encoding(encoding), NULL, enc_p, enc2_p, 0);
@@ -5287,7 +5291,7 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
         p = strchr(p, ':');
         if (p) {
             has_enc = 1;
-            parse_mode_enc(p+1, &enc, &enc2, &fmode);
+            parse_mode_enc(p+1, rb_enc_get(vmode), &enc, &enc2, &fmode);
         }
 	else {
 	    rb_encoding *e;
@@ -5453,12 +5457,13 @@ rb_fdopen(int fd, const char *modestr)
 	    file = fdopen(fd, modestr);
 	}
 	if (!file) {
+	    int e = errno;
 #ifdef _WIN32
-	    if (errno == 0) errno = EINVAL;
+	    if (e == 0) e = EINVAL;
 #elif defined(__sun)
-	    if (errno == 0) errno = EMFILE;
+	    if (e == 0) e = EMFILE;
 #endif
-	    rb_sys_fail(0);
+	    rb_syserr_fail(e, 0);
 	}
     }
 
@@ -5593,7 +5598,8 @@ rb_file_open_internal(VALUE io, VALUE filename, const char *modestr)
     convconfig_t convconfig;
 
     if (p) {
-        parse_mode_enc(p+1, &convconfig.enc, &convconfig.enc2, &fmode);
+        parse_mode_enc(p+1, rb_usascii_encoding(),
+		       &convconfig.enc, &convconfig.enc2, &fmode);
     }
     else {
 	rb_encoding *e;
@@ -5886,8 +5892,8 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
 #if defined(HAVE_WORKING_FORK) || defined(HAVE_SPAWNV)
     int state;
     struct popen_arg arg;
-    int e = 0;
 #endif
+    int e = 0;
 #if defined(HAVE_SPAWNV)
 # if defined(HAVE_SPAWNVE)
 #   define DO_SPAWN(cmd, args, envp) ((args) ? \
@@ -5938,11 +5944,10 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
         if (rb_pipe(arg.write_pair) < 0)
             rb_sys_fail_str(prog);
         if (rb_pipe(arg.pair) < 0) {
-            int e = errno;
+            e = errno;
             close(arg.write_pair[0]);
             close(arg.write_pair[1]);
-            errno = e;
-            rb_sys_fail_str(prog);
+            rb_syserr_fail_str(e, prog);
         }
         if (eargp) {
             rb_execarg_addopt(execarg_obj, INT2FIX(0), INT2FIX(arg.write_pair[0]));
@@ -6025,12 +6030,11 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
             close(arg.write_pair[0]);
             close(arg.write_pair[1]);
         }
-	errno = e;
 # if defined(HAVE_WORKING_FORK)
         if (errmsg[0])
-            rb_sys_fail(errmsg);
+	    rb_syserr_fail(e, errmsg);
 # endif
-	rb_sys_fail_str(prog);
+	rb_syserr_fail_str(e, prog);
     }
     if ((fmode & FMODE_READABLE) && (fmode & FMODE_WRITABLE)) {
         close(arg.pair[1]);
@@ -6056,11 +6060,12 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
 	rb_execarg_run_options(eargp, sargp, NULL, 0);
     }
     fp = popen(cmd, modestr);
+    e = errno;
     if (eargp) {
         rb_execarg_parent_end(execarg_obj);
 	rb_execarg_run_options(sargp, NULL, NULL, 0);
     }
-    if (!fp) rb_sys_fail_path(prog);
+    if (!fp) rb_syserr_fail_path(e, prog);
     fd = fileno(fp);
 #endif
 
@@ -8586,7 +8591,7 @@ do_io_advise(rb_io_t *fptr, VALUE advice, off_t offset, off_t len)
     ias.len    = len;
 
     rv = (int)rb_thread_io_blocking_region(io_advise_internal, &ias, fptr->fd);
-    if (rv) {
+    if (rv && rv != ENOSYS) {
 	/* posix_fadvise(2) doesn't set errno. On success it returns 0; otherwise
 	   it returns the error code. */
 	VALUE message = rb_sprintf("%"PRIsVALUE" "
@@ -9430,7 +9435,7 @@ static rb_encoding *
 find_encoding(VALUE v)
 {
     rb_encoding *enc = rb_find_encoding(v);
-    if (!enc) unsupported_encoding(StringValueCStr(v));
+    if (!enc) rb_warn("Unsupported encoding %"PRIsVALUE" ignored", v);
     return enc;
 }
 
@@ -9476,8 +9481,8 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 	}
 	else {
 	    tmp = rb_check_string_type(v1);
-	    if (!NIL_P(tmp) && rb_enc_asciicompat(rb_enc_get(tmp))) {
-                parse_mode_enc(RSTRING_PTR(tmp), &enc, &enc2, NULL);
+	    if (!NIL_P(tmp) && rb_enc_asciicompat(enc = rb_enc_get(tmp))) {
+                parse_mode_enc(RSTRING_PTR(tmp), enc, &enc, &enc2, NULL);
 		SET_UNIVERSAL_NEWLINE_DECORATOR_IF_ENC2(enc2, ecflags);
                 ecflags = rb_econv_prepare_options(opt, &ecopts, ecflags);
 	    }
@@ -10686,8 +10691,7 @@ copy_stream_finalize(VALUE arg)
     }
     rb_fd_term(&stp->fds);
     if (stp->syserr) {
-        errno = stp->error_no;
-        rb_sys_fail(stp->syserr);
+        rb_syserr_fail(stp->error_no, stp->syserr);
     }
     if (stp->notimp) {
 	rb_raise(rb_eNotImpError, "%s() not implemented", stp->notimp);
@@ -11843,7 +11847,7 @@ opt_i_get(ID id, VALUE *var)
  *  call-seq:
  *     ARGF.inplace_mode = ext  -> ARGF
  *
- *  Sets the filename extension for inplace editing mode to the given String.
+ *  Sets the filename extension for in place editing mode to the given String.
  *  Each file being edited has this value appended to its filename. The
  *  modified file is saved under this new name.
  *
@@ -11959,10 +11963,15 @@ argf_write(VALUE argf, VALUE str)
 }
 
 void
-rb_readwrite_sys_fail(int writable, const char *mesg)
+rb_readwrite_sys_fail(enum rb_io_wait_readwrite writable, const char *mesg)
+{
+    rb_readwrite_syserr_fail(writable, errno, mesg);
+}
+
+void
+rb_readwrite_syserr_fail(enum rb_io_wait_readwrite writable, int n, const char *mesg)
 {
     VALUE arg;
-    int n = errno;
     arg = mesg ? rb_str_new2(mesg) : Qnil;
     if (writable == RB_IO_WAIT_WRITABLE) {
 	switch (n) {

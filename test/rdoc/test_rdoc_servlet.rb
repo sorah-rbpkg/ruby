@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rdoc/test_case'
 
 class TestRDocServlet < RDoc::TestCase
@@ -532,4 +533,3 @@ class TestRDocServlet < RDoc::TestCase
   end
 
 end
-

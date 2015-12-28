@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestSymbol < Test::Unit::TestCase
@@ -154,6 +155,25 @@ class TestSymbol < Test::Unit::TestCase
     # symbol which does not have a Proc
     ->(&blk) {}.call(&:test_to_proc_call_with_symbol_proc)
     assert_equal(1, first, bug11594)
+  end
+
+  def test_to_proc_for_hash_each
+    bug11830 = '[ruby-core:72205] [Bug #11830]'
+    assert_normal_exit(<<-'end;', bug11830) # do
+      {}.each(&:destroy)
+    end;
+  end
+
+  def test_to_proc_iseq
+    assert_separately([], <<~"end;", timeout: 1) # do
+      bug11845 = '[ruby-core:72381] [Bug #11845]'
+      assert_nil(:class.to_proc.source_location, bug11845)
+      assert_equal([[:rest]], :class.to_proc.parameters, bug11845)
+      c = Class.new {define_method(:klass, :class.to_proc)}
+      m = c.instance_method(:klass)
+      assert_nil(m.source_location, bug11845)
+      assert_equal([[:rest]], m.parameters, bug11845)
+    end;
   end
 
   def test_call

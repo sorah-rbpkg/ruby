@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # = net/http.rb
 #
@@ -701,7 +702,7 @@ module Net   #:nodoc:
     # Number of seconds to wait for the connection to open. Any number
     # may be used, including Floats for fractional seconds. If the HTTP
     # object cannot open a connection in this many seconds, it raises a
-    # Net::OpenTimeout exception. The default value is +nil+.
+    # Net::OpenTimeout exception. The default value is 60 seconds.
     attr_accessor :open_timeout
 
     # Number of seconds to wait for one block to be read (via one read(2)
@@ -928,7 +929,7 @@ module Net   #:nodoc:
             while true
               raise Net::OpenTimeout if timeout <= 0
               start = Process.clock_gettime Process::CLOCK_MONOTONIC
-              # to_io is requied because SSLSocket doesn't have wait_readable yet
+              # to_io is required because SSLSocket doesn't have wait_readable yet
               case s.connect_nonblock(exception: false)
               when :wait_readable; s.to_io.wait_readable(timeout)
               when :wait_writable; s.to_io.wait_writable(timeout)
@@ -1055,7 +1056,7 @@ module Net   #:nodoc:
     # The address of the proxy server, if one is configured.
     def proxy_address
       if @proxy_from_env then
-        proxy_uri && proxy_uri.hostname
+        proxy_uri&.hostname
       else
         @proxy_address
       end
@@ -1064,7 +1065,7 @@ module Net   #:nodoc:
     # The port of the proxy server, if one is configured.
     def proxy_port
       if @proxy_from_env then
-        proxy_uri && proxy_uri.port
+        proxy_uri&.port
       else
         @proxy_port
       end

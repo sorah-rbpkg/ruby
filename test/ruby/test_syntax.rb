@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestSyntax < Test::Unit::TestCase
@@ -333,6 +334,22 @@ WARN
     bug11456 = '[ruby-dev:49221] [Bug #11456]'
     assert_valid_syntax("{foo: (1 rescue 0)}", bug11456)
     assert_valid_syntax("{foo: /=/}", bug11456)
+  end
+
+  def test_percent_string_after_label
+    bug11812 = '[ruby-core:72084]'
+    assert_valid_syntax('{label:%w(*)}', bug11812)
+    assert_valid_syntax('{label: %w(*)}', bug11812)
+  end
+
+  def test_heredoc_after_label
+    bug11849 = '[ruby-core:72396] [Bug #11849]'
+    assert_valid_syntax("{label:<<DOC\n""DOC\n""}", bug11849)
+    assert_valid_syntax("{label:<<-DOC\n""DOC\n""}", bug11849)
+    assert_valid_syntax("{label:<<~DOC\n""DOC\n""}", bug11849)
+    assert_valid_syntax("{label: <<DOC\n""DOC\n""}", bug11849)
+    assert_valid_syntax("{label: <<-DOC\n""DOC\n""}", bug11849)
+    assert_valid_syntax("{label: <<~DOC\n""DOC\n""}", bug11849)
   end
 
   def test_duplicated_arg

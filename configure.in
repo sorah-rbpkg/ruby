@@ -43,7 +43,7 @@ AC_ARG_WITH(baseruby,
 		AS_CASE(["$withval"],[*ruby*],[BASERUBY=$withval],[AC_MSG_ERROR(need ruby)])
 	],
 	[
-		BASERUBY="ruby"
+		AC_PATH_PROG([BASERUBY], [ruby], [false])
 	])
 if test "`RUBYOPT=- $BASERUBY -e 'print 42' 2>/dev/null`" = 42; then
     if test "`RUBYOPT=- $BASERUBY --disable=gems -e 'print 42' 2>/dev/null`" = 42; then
@@ -2317,6 +2317,9 @@ AC_CHECK_FUNCS(utimes)
 AC_CHECK_FUNCS(wait4)
 AC_CHECK_FUNCS(waitpid)
 
+AS_IF([test "$ac_cv_func_memset_s" = yes],
+    [RUBY_DEFINE_IF([!defined __STDC_WANT_LIB_EXT1__], [__STDC_WANT_LIB_EXT1__], 1)])
+
 AS_IF([test "$ac_cv_func_getcwd" = yes], [
     AC_CACHE_CHECK(if getcwd allocates buffer if NULL is given, [rb_cv_getcwd_malloc],
 	[AC_TRY_RUN([
@@ -3552,9 +3555,6 @@ else
   RUNRUBY='$(RUNRUBY_COMMAND) --'
   XRUBY='$(RUNRUBY)'
   BOOTSTRAPRUBY='$(MINIRUBY)'
-  test x"${HAVE_BASERUBY}" = xyes &&
-  ${BASERUBY} -e 'exit module A;def foo;end;instance_methods;end.include?(:foo)' &&
-  BOOTSTRAPRUBY='$(BASERUBY)'
   TEST_RUNNABLE=yes
   CROSS_COMPILING=no
 fi

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # optparse.rb - command-line option analysis with the OptionParser class.
 #
@@ -119,7 +120,7 @@
 #      #     -n, --name=NAME                  Name to say hello to
 #      #     -h, --help                       Prints this help
 #
-# === Required Arugments
+# === Required Arguments
 #
 # For options that require an argument, option specification strings may include an
 # option name in all caps. If an option is used without the required argument,
@@ -174,7 +175,7 @@
 # As an example, the built-in +Time+ conversion is used. The other built-in
 # conversions behave in the same way.
 # OptionParser will attempt to parse the argument
-# as a +Time+. If it succeeeds, that time will be passed to the
+# as a +Time+. If it succeeds, that time will be passed to the
 # handler block. Otherwise, an exception will be raised.
 #
 #   require 'optparse'

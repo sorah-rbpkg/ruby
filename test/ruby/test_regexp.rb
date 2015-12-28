@@ -1,4 +1,5 @@
 # coding: US-ASCII
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestRegexp < Test::Unit::TestCase
@@ -118,13 +119,19 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(nil, Regexp.last_match(1))
     assert_equal(nil, Regexp.last_match(:foo))
 
+    bug11825_name = "\u{5b9d 77f3}"
+    bug11825_str = "\u{30eb 30d3 30fc}"
+    bug11825_re = /(?<#{bug11825_name}>)#{bug11825_str}/
+
     assert_equal(["foo", "bar"], /(?<foo>.)(?<bar>.)/.names)
     assert_equal(["foo"], /(?<foo>.)(?<foo>.)/.names)
     assert_equal([], /(.)(.)/.names)
+    assert_equal([bug11825_name], bug11825_re.names)
 
     assert_equal(["foo", "bar"], /(?<foo>.)(?<bar>.)/.match("ab").names)
     assert_equal(["foo"], /(?<foo>.)(?<foo>.)/.match("ab").names)
     assert_equal([], /(.)(.)/.match("ab").names)
+    assert_equal([bug11825_name], bug11825_re.match(bug11825_str).names)
 
     assert_equal({"foo"=>[1], "bar"=>[2]},
                  /(?<foo>.)(?<bar>.)/.named_captures)
@@ -535,6 +542,16 @@ class TestRegexp < Test::Unit::TestCase
     assert_nothing_raised { $KCODE = nil }
     assert_equal(false, $=)
     assert_nothing_raised { $= = nil }
+  end
+
+  def test_KCODE_warning
+    assert_warning(/variable \$KCODE is no longer effective; ignored/) { $KCODE = nil }
+    assert_warning(/variable \$KCODE is no longer effective/) { $KCODE = nil }
+  end
+
+  def test_ignorecase_warning
+    assert_warning(/variable \$= is no longer effective; ignored/) { $= = nil }
+    assert_warning(/variable \$= is no longer effective/) { $= }
   end
 
   def test_match_setter

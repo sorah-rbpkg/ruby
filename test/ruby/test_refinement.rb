@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestRefinement < Test::Unit::TestCase
@@ -1592,6 +1593,31 @@ class TestRefinement < Test::Unit::TestCase
 
     assert_equal([:R2_bar, :orig_foo], MixedUsing2.f1)
     assert_equal([:R2_baz, [:R1_foo, :orig_foo]], MixedUsing2.f2)
+  end
+
+  module MethodMissing
+    class Foo
+    end
+
+    module Bar
+      refine Foo  do
+        def method_missing(mid, *args)
+          "method_missing refined"
+        end
+      end
+    end
+
+    using Bar
+
+    def self.call_undefined_method
+      Foo.new.foo
+    end
+  end
+
+  def test_method_missing
+    assert_raise(NoMethodError) do
+      MethodMissing.call_undefined_method
+    end
   end
 
   private

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rdoc/test_case'
 
 class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
@@ -619,7 +620,6 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
       'def x() end',
       'def x; end',
       'class C; end',
-      'class C end',
       "module M end",
       'a # => blah',
       'x { |y| nil }',

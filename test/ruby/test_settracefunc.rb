@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestSetTraceFunc < Test::Unit::TestCase
@@ -464,7 +465,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     EOF
     self.class.class_eval{remove_const(:XYZZY)}
     ensure
-      trace.disable if trace && trace.enabled?
+      trace.disable if trace&.enabled?
     end
 
     answer_events = [
