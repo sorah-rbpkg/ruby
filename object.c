@@ -467,22 +467,23 @@ rb_any_to_s(VALUE obj)
 
 VALUE rb_str_escape(VALUE str);
 /*
- * If the default external encoding is ASCII compatible, the encoding of
- * the inspected result must be compatible with it.
- * If the default external encoding is ASCII incompatible,
+ * If the default internal or external encoding is ASCII compatible,
+ * the encoding of the inspected result must be compatible with it.
+ * If the default internal or external encoding is ASCII incompatible,
  * the result must be ASCII only.
  */
 VALUE
 rb_inspect(VALUE obj)
 {
     VALUE str = rb_obj_as_string(rb_funcallv(obj, id_inspect, 0, 0));
-    rb_encoding *ext = rb_default_external_encoding();
-    if (!rb_enc_asciicompat(ext)) {
+    rb_encoding *enc = rb_default_internal_encoding();
+    if (enc == NULL) enc = rb_default_external_encoding();
+    if (!rb_enc_asciicompat(enc)) {
 	if (!rb_enc_str_asciionly_p(str))
 	    return rb_str_escape(str);
 	return str;
     }
-    if (rb_enc_get(str) != ext && !rb_enc_str_asciionly_p(str))
+    if (rb_enc_get(str) != enc && !rb_enc_str_asciionly_p(str))
 	return rb_str_escape(str);
     return str;
 }
@@ -3169,12 +3170,22 @@ dig_basic_p(VALUE obj, struct dig_method *cache)
     return cache->basic;
 }
 
+static void
+no_dig_method(int found, VALUE recv, ID mid, int argc, const VALUE *argv, VALUE data)
+{
+    if (!found) {
+	rb_raise(rb_eTypeError, "%"PRIsVALUE" does not have #dig method",
+		 CLASS_OF(data));
+    }
+}
+
 VALUE
 rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
 {
     struct dig_method hash = {Qnil}, ary = {Qnil}, strt = {Qnil};
 
     for (; argc > 0; ++argv, --argc) {
+	if (NIL_P(obj)) return notfound;
 	if (!SPECIAL_CONST_P(obj)) {
 	    switch (BUILTIN_TYPE(obj)) {
 	      case T_HASH:
@@ -3197,7 +3208,8 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
 		break;
 	    }
 	}
-	return rb_check_funcall_default(obj, id_dig, argc, argv, notfound);
+	return rb_check_funcall_with_hook(obj, id_dig, argc, argv,
+					  no_dig_method, obj);
     }
     return obj;
 }

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'objspace'
 
@@ -361,5 +362,16 @@ class TestRubyOptimization < Test::Unit::TestCase
       k = v.class.to_s
       assert_redefine_method(k, '===', "assert_equal(#{v.inspect} === 0, 0)")
     end
+  end
+
+  def test_opt_case_dispatch_inf
+    inf = 1.0/0.0
+    result = case inf
+             when 1 then 1
+             when 0 then 0
+             else
+               inf.to_i rescue nil
+             end
+    assert_nil result, '[ruby-dev:49423] [Bug #11804]'
   end
 end

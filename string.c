@@ -4527,7 +4527,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *  additional backslash. However, within +replacement+ the special match
  *  variables, such as <code>&$</code>, will not refer to the current match.
  *  If +replacement+ is a String that looks like a pattern's capture group but
- *  is actaully not a pattern capture group e.g. <code>"\\'"</code>, then it
+ *  is actually not a pattern capture group e.g. <code>"\\'"</code>, then it
  *  will have to be preceded by two backslashes like so <code>"\\\\'"</code>.
  *
  *  If the second argument is a Hash, and the matched text is one of its keys,
@@ -6701,7 +6701,7 @@ static const char isspacetable[256] = {
 
 /*
  *  call-seq:
- *     str.split(pattern=$;, [limit])   -> anArray
+ *     str.split(pattern=nil, [limit])   -> anArray
  *
  *  Divides <i>str</i> into substrings based on a delimiter, returning an array
  *  of these substrings.
@@ -6716,8 +6716,8 @@ static const char isspacetable[256] = {
  *  <i>str</i> is split into individual characters. If <i>pattern</i> contains
  *  groups, the respective matches will be returned in the array as well.
  *
- *  If <i>pattern</i> is omitted, the value of <code>$;</code> is used.  If
- *  <code>$;</code> is <code>nil</code> (which is the default), <i>str</i> is
+ *  If <i>pattern</i> is <code>nil</code>, the value of <code>$;</code> is used.
+ *  If <code>$;</code> is <code>nil</code> (which is the default), <i>str</i> is
  *  split on whitespace as if ` ' were specified.
  *
  *  If the <i>limit</i> parameter is omitted, trailing null fields are
@@ -8033,6 +8033,9 @@ rb_str_hex(VALUE str)
  *     "-377".oct      #=> -255
  *     "bad".oct       #=> 0
  *     "0377bad".oct   #=> 255
+ *
+ *  If +str+ starts with <code>0</code>, radix indicators are hornored.
+ *  See Kernel#Integer.
  */
 
 static VALUE
@@ -8636,18 +8639,11 @@ str_compat_and_valid(VALUE str, rb_encoding *enc)
     if (cr == ENC_CODERANGE_BROKEN) {
 	rb_raise(rb_eArgError, "replacement must be valid byte sequence '%+"PRIsVALUE"'", str);
     }
-    else if (cr == ENC_CODERANGE_7BIT) {
+    else {
 	rb_encoding *e = STR_ENC_GET(str);
-	if (!rb_enc_asciicompat(enc)) {
+	if (cr == ENC_CODERANGE_7BIT ? rb_enc_mbminlen(enc) != 1 : enc != e) {
 	    rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
-		    rb_enc_name(enc), rb_enc_name(e));
-	}
-    }
-    else { /* ENC_CODERANGE_VALID */
-	rb_encoding *e = STR_ENC_GET(str);
-	if (enc != e) {
-	    rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
-		    rb_enc_name(enc), rb_enc_name(e));
+		     rb_enc_name(enc), rb_enc_name(e));
 	}
     }
     return str;
@@ -8664,6 +8660,10 @@ rb_str_scrub(VALUE str, VALUE repl)
     int cr = ENC_CODERANGE(str);
     rb_encoding *enc;
     int encidx;
+    VALUE buf = Qnil;
+    const char *rep;
+    long replen;
+    int tainted = 0;
 
     if (ENC_CODERANGE_CLEAN_P(cr))
 	return Qnil;
@@ -8671,6 +8671,7 @@ rb_str_scrub(VALUE str, VALUE repl)
     enc = STR_ENC_GET(str);
     if (!NIL_P(repl)) {
 	repl = str_compat_and_valid(repl, enc);
+	tainted = OBJ_TAINTED_RAW(repl);
     }
 
     if (rb_enc_dummy_p(enc)) {
@@ -8687,10 +8688,7 @@ rb_str_scrub(VALUE str, VALUE repl)
 	const char *p = RSTRING_PTR(str);
 	const char *e = RSTRING_END(str);
 	const char *p1 = p;
-	const char *rep;
-	long replen;
 	int rep7bit_p;
-	VALUE buf = Qnil;
 	if (rb_block_given_p()) {
 	    rep = NULL;
 	    replen = 0;
@@ -8756,6 +8754,7 @@ rb_str_scrub(VALUE str, VALUE repl)
 		else {
 		    repl = rb_yield(rb_enc_str_new(p, clen, enc));
 		    repl = str_compat_and_valid(repl, enc);
+		    tainted |= OBJ_TAINTED_RAW(repl);
 		    rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
 		    if (ENC_CODERANGE(repl) == ENC_CODERANGE_VALID)
 			cr = ENC_CODERANGE_VALID;
@@ -8790,22 +8789,18 @@ rb_str_scrub(VALUE str, VALUE repl)
 	    else {
 		repl = rb_yield(rb_enc_str_new(p, e-p, enc));
 		repl = str_compat_and_valid(repl, enc);
+		tainted |= OBJ_TAINTED_RAW(repl);
 		rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
 		if (ENC_CODERANGE(repl) == ENC_CODERANGE_VALID)
 		    cr = ENC_CODERANGE_VALID;
 	    }
 	}
-	ENCODING_CODERANGE_SET(buf, rb_enc_to_index(enc), cr);
-	return buf;
     }
     else {
 	/* ASCII incompatible */
 	const char *p = RSTRING_PTR(str);
 	const char *e = RSTRING_END(str);
 	const char *p1 = p;
-	VALUE buf = Qnil;
-	const char *rep;
-	long replen;
 	long mbminlen = rb_enc_mbminlen(enc);
 	if (!NIL_P(repl)) {
 	    rep = RSTRING_PTR(repl);
@@ -8860,6 +8855,7 @@ rb_str_scrub(VALUE str, VALUE repl)
 		else {
 		    repl = rb_yield(rb_enc_str_new(p, e-p, enc));
 		    repl = str_compat_and_valid(repl, enc);
+		    tainted |= OBJ_TAINTED_RAW(repl);
 		    rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
 		}
 		p += clen;
@@ -8886,12 +8882,15 @@ rb_str_scrub(VALUE str, VALUE repl)
 	    else {
 		repl = rb_yield(rb_enc_str_new(p, e-p, enc));
 		repl = str_compat_and_valid(repl, enc);
+		tainted |= OBJ_TAINTED_RAW(repl);
 		rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
 	    }
 	}
-	ENCODING_CODERANGE_SET(buf, rb_enc_to_index(enc), ENC_CODERANGE_VALID);
-	return buf;
+	cr = ENC_CODERANGE_VALID;
     }
+    FL_SET_RAW(buf, tainted|OBJ_TAINTED_RAW(str));
+    ENCODING_CODERANGE_SET(buf, rb_enc_to_index(enc), cr);
+    return buf;
 }
 
 /*

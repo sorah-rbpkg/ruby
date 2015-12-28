@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestObjectSpace < Test::Unit::TestCase
@@ -148,5 +149,12 @@ End
       }
       assert(exist, 'Bug #11360')
     End
+
+    klass = Class.new
+    instance = klass.new
+    sclass = instance.singleton_class
+    meta = klass.singleton_class
+    assert_kind_of(meta, sclass)
+    assert_include(ObjectSpace.each_object(meta).to_a, sclass)
   end
 end

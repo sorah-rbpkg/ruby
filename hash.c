@@ -191,11 +191,11 @@ rb_num_hash_start(st_index_t n)
      * - (n >> (RUBY_SPECIAL_SHIFT+3)) was added to make symbols hash well,
      *   n.b.: +3 to remove most ID scope, +1 worked well initially, too
      *   n.b.: +1 (instead of 3) worked well initially, too
-     * - (n << 3) was finally added to avoid losing bits for fixnums
+     * - (n << 16) was finally added to avoid losing bits for fixnums
      * - avoid expensive modulo instructions, it is currently only
      *   shifts and bitmask operations.
      */
-    return (n >> (RUBY_SPECIAL_SHIFT + 3) | (n << 3)) ^ (n >> 3);
+    return (n >> (RUBY_SPECIAL_SHIFT + 3) ^ (n << 16)) ^ (n >> 3);
 }
 
 long
@@ -734,7 +734,7 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
  *     h[a]       #=> 100
  */
 
-static VALUE
+VALUE
 rb_hash_rehash(VALUE hash)
 {
     VALUE tmp;
@@ -1491,8 +1491,8 @@ hash_aset_str(st_data_t *key, st_data_t *val, struct update_arg *arg, int existi
     return hash_aset(key, val, arg, existing);
 }
 
-NOINSERT_UPDATE_CALLBACK(hash_aset);
-NOINSERT_UPDATE_CALLBACK(hash_aset_str);
+NOINSERT_UPDATE_CALLBACK(hash_aset)
+NOINSERT_UPDATE_CALLBACK(hash_aset_str)
 
 /*
  *  call-seq:
@@ -2247,7 +2247,7 @@ rb_hash_update_callback(st_data_t *key, st_data_t *value, struct update_arg *arg
     return ST_CONTINUE;
 }
 
-NOINSERT_UPDATE_CALLBACK(rb_hash_update_callback);
+NOINSERT_UPDATE_CALLBACK(rb_hash_update_callback)
 
 static int
 rb_hash_update_i(VALUE key, VALUE value, VALUE hash)
@@ -2274,7 +2274,7 @@ rb_hash_update_block_callback(st_data_t *key, st_data_t *value, struct update_ar
     return ST_CONTINUE;
 }
 
-NOINSERT_UPDATE_CALLBACK(rb_hash_update_block_callback);
+NOINSERT_UPDATE_CALLBACK(rb_hash_update_block_callback)
 
 static int
 rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
@@ -2345,7 +2345,7 @@ rb_hash_update_func_callback(st_data_t *key, st_data_t *value, struct update_arg
     return ST_CONTINUE;
 }
 
-NOINSERT_UPDATE_CALLBACK(rb_hash_update_func_callback);
+NOINSERT_UPDATE_CALLBACK(rb_hash_update_func_callback)
 
 static int
 rb_hash_update_func_i(VALUE key, VALUE value, VALUE arg0)

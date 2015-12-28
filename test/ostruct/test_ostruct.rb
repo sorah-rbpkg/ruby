@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'ostruct'
 
@@ -116,7 +117,7 @@ class TC_OpenStruct < Test::Unit::TestCase
     os2.child = [42]
     assert_equal :bar, os1.dig("child", :foo)
     assert_nil os1.dig("parent", :foo)
-    assert_nil os1.dig("child", 0)
+    assert_raise(TypeError) { os1.dig("child", 0) }
   end
 
   def test_to_h

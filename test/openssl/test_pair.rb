@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require_relative 'utils'
 
 if defined?(OpenSSL::TestUtils)
@@ -49,7 +50,7 @@ module OpenSSL::SSLPairM
       return c, s
     end
   ensure
-    if th && th.alive?
+    if th&.alive?
       th.kill
       th.join
     end

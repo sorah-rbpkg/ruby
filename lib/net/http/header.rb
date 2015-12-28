@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # The HTTPHeader module defines methods for reading and writing
 # HTTP headers.
 #
@@ -377,7 +378,7 @@ module Net::HTTPHeader
   # +params+ is the form data set; it is an Array of Arrays or a Hash
   # +enctype is the type to encode the form data set.
   # It is application/x-www-form-urlencoded or multipart/form-data.
-  # +formpot+ is an optional hash to specify the detail.
+  # +formopt+ is an optional hash to specify the detail.
   #
   # boundary:: the boundary of the multipart message
   # charset::  the charset of the message. All names and the values of

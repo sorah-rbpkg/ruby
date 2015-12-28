@@ -211,7 +211,7 @@ static ruby_gc_params_t gc_params = {
  * 1: enable assertions (to debug RGenGC)
  * 2: enable internal consistency check at each GC (for debugging)
  * 3: enable internal consistency check at each GC steps (for debugging)
- * 4: enable livness check
+ * 4: enable liveness check
  * 5: show all references
  */
 #ifndef RGENGC_CHECK_MODE
@@ -1919,7 +1919,7 @@ rb_data_object_wrap(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FU
 #undef rb_data_object_alloc
 RUBY_ALIAS_FUNCTION(rb_data_object_alloc(VALUE klass, void *datap,
 					 RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree),
-		    rb_data_object_wrap, (klass, datap, dmark, dfree));
+		    rb_data_object_wrap, (klass, datap, dmark, dfree))
 
 
 VALUE
@@ -1940,7 +1940,7 @@ rb_data_typed_object_wrap(VALUE klass, void *datap, const rb_data_type_t *type)
 #undef rb_data_typed_object_alloc
 RUBY_ALIAS_FUNCTION(rb_data_typed_object_alloc(VALUE klass, void *datap,
 					       const rb_data_type_t *type),
-		    rb_data_typed_object_wrap, (klass, datap, type));
+		    rb_data_typed_object_wrap, (klass, datap, type))
 
 VALUE
 rb_data_typed_object_zalloc(VALUE klass, size_t size, const rb_data_type_t *type)
@@ -2400,6 +2400,12 @@ internal_object_p(VALUE obj)
 	  case T_NODE:
 	  case T_ZOMBIE:
 	    break;
+	  case T_CLASS:
+	    if (!p->as.basic.klass) break;
+	    if (FL_TEST(obj, FL_SINGLETON)) {
+		return rb_singleton_class_internal_p(obj);
+	    }
+	    return 0;
 	  default:
 	    if (!p->as.basic.klass) break;
 	    return 0;
@@ -5668,7 +5674,7 @@ gc_writebarrier_generational(VALUE a, VALUE b, rb_objspace_t *objspace)
     }
 
 #if 1
-    /* mark `a' and remember (default behaviour) */
+    /* mark `a' and remember (default behavior) */
     if (!rgengc_remembered(objspace, a)) {
 	rgengc_remember(objspace, a);
 	gc_report(1, objspace, "gc_writebarrier_generational: %s (remembered) -> %s\n", obj_info(a), obj_info(b));

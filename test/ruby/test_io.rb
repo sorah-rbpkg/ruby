@@ -1,4 +1,5 @@
 # coding: US-ASCII
+# frozen_string_literal: false
 require 'test/unit'
 require 'tmpdir'
 require "fcntl"
@@ -1093,7 +1094,10 @@ class TestIO < Test::Unit::TestCase
     args = ['-e', '$>.write($<.read)'] if args.empty?
     ruby = EnvUtil.rubybin
     opts = {}
-    opts[:rlimit_nproc] = 1024 if defined?(Process::RLIMIT_NPROC)
+    if defined?(Process::RLIMIT_NPROC)
+      lim = Process.getrlimit(Process::RLIMIT_NPROC)[1]
+      opts[:rlimit_nproc] = [lim, 1024].min
+    end
     f = IO.popen([ruby] + args, 'r+', opts)
     pid = f.pid
     yield(f)
@@ -2530,7 +2534,7 @@ End
 
     fs = nil
     if uname[:sysname] == 'Linux'
-      # [ruby-dev:45703] Old Linux's fadvice() doesn't work on tmpfs.
+      # [ruby-dev:45703] Old Linux's fadvise() doesn't work on tmpfs.
       mount = `mount`
       mountpoints = []
       mount.scan(/ on (\S+) type (\S+) /) {
@@ -3005,8 +3009,12 @@ End
     # we don't know if other platforms have a real posix_fadvise()
     with_pipe do |r,w|
       # Linux 2.6.15 and earlier returned EINVAL instead of ESPIPE
-      assert_raise(Errno::ESPIPE, Errno::EINVAL) { r.advise(:willneed) }
-      assert_raise(Errno::ESPIPE, Errno::EINVAL) { w.advise(:willneed) }
+      assert_raise(Errno::ESPIPE, Errno::EINVAL) {
+        r.advise(:willneed) or skip "fadvise(2) is not implemented"
+      }
+      assert_raise(Errno::ESPIPE, Errno::EINVAL) {
+        w.advise(:willneed) or skip "fadvise(2) is not implemented"
+      }
     end
   end if /linux/ =~ RUBY_PLATFORM
 

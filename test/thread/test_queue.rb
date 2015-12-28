@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'thread'
 require 'tmpdir'
@@ -307,10 +308,7 @@ class TestQueue < Test::Unit::TestCase
     # wait until queue empty
     (Thread.pass; sleep 0.01) until q.size == 0
 
-    # now there should be some waiting consumers
-    assert_equal num_threads - num_items, threads.count{|thr| thr.status}
-
-    # tell them all to go away
+    # close the queue so remaining threads will wake up
     q.close
 
     # wait for them to go away
@@ -427,7 +425,7 @@ class TestQueue < Test::Unit::TestCase
 
       # wait for all threads to be finished, because of exceptions
       # NOTE: thr.status will be nil (raised) or false (terminated)
-      sleep 0.01 until prod_threads && prod_threads.all?{|thr| !thr.status}
+      sleep 0.01 until prod_threads&.all?{|thr| !thr.status}
 
       # check that all threads failed to call push
       prod_threads.each do |thr|
