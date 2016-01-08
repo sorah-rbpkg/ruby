@@ -1051,6 +1051,7 @@ libruby-2.3.so.2.3 libruby2.3 #MINVER#
  rb_parser_get_yydebug@Base 2.3.0~preview2
  rb_parser_malloc@Base 2.3.0~preview2
  rb_parser_new@Base 2.3.0~preview2
+ rb_parser_printf@Base 2.3.0
  rb_parser_realloc@Base 2.3.0~preview2
  rb_parser_reg_compile@Base 2.3.0~preview2
  rb_parser_set_yydebug@Base 2.3.0~preview2
@@ -1099,6 +1100,7 @@ libruby-2.3.so.2.3 libruby2.3 #MINVER#
  rb_rational_raw@Base 2.3.0~preview2
  rb_readlink@Base 2.3.0~preview2
  rb_readwrite_sys_fail@Base 2.3.0~preview2
+ rb_readwrite_syserr_fail@Base 2.3.0
  rb_reg_adjust_startpos@Base 2.3.0~preview2
  rb_reg_alloc@Base 2.3.0~preview2
  rb_reg_backref_number@Base 2.3.0~preview2
