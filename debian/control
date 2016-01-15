@@ -57,6 +57,7 @@ Depends: ${misc:Depends},
          ${shlibs:Depends},
          ruby-test-unit (>= 3.0.8~),
          ruby-minitest (>= 5.4),
+         rake (>= 10.4.2),
 Description: Libraries necessary to run Ruby 2.3
  Ruby is the interpreted scripting language for quick and easy
  object-oriented programming.  It has many features to process text
