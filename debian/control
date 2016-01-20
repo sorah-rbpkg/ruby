@@ -38,7 +38,8 @@ Architecture: any
 Depends: rubygems-integration (>= 1.8),
          ${misc:Depends},
          ${shlibs:Depends}
-Recommends: libjs-jquery, fonts-lato
+Recommends: fonts-lato,
+            libjs-jquery
 Provides: ruby-interpreter
 Description: Interpreter of object-oriented scripting language Ruby
  Ruby is the interpreted scripting language for quick and easy
@@ -53,13 +54,13 @@ Package: libruby2.3
 Section: libs
 Multi-Arch: same
 Architecture: any
-Depends: ${misc:Depends},
-         ${shlibs:Depends},
+Depends: rake (>= 10.4.2),
          ruby-did-you-mean (>= 1.0),
-         ruby-test-unit (>= 3.0.8~),
          ruby-minitest (>= 5.4),
          ruby-net-telnet (>= 0.1.1),
-         rake (>= 10.4.2),
+         ruby-test-unit (>= 3.0.8~),
+         ${misc:Depends},
+         ${shlibs:Depends}
 Description: Libraries necessary to run Ruby 2.3
  Ruby is the interpreted scripting language for quick and easy
  object-oriented programming.  It has many features to process text
@@ -114,7 +115,8 @@ Description: Documentation for Ruby 2.3
 
 Package: ruby2.3-tcltk
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Depends: ${misc:Depends},
+         ${shlibs:Depends}
 Description: Ruby/Tk for Ruby 2.3
  Ruby is the interpreted scripting language for quick and easy
  object-oriented programming.  It has many features to process text
