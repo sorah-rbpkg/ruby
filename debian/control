@@ -58,6 +58,7 @@ Depends: ${misc:Depends},
          ruby-did-you-mean (>= 1.0),
          ruby-test-unit (>= 3.0.8~),
          ruby-minitest (>= 5.4),
+         ruby-net-telnet (>= 0.1.1),
          rake (>= 10.4.2),
 Description: Libraries necessary to run Ruby 2.3
  Ruby is the interpreted scripting language for quick and easy

@@ -2,7 +2,8 @@ ruby2.3 (2.3.0-2) UNRELEASED; urgency=medium
 
   * debian/libruby2.3.symbols: update with new symbols introduced right before
     the final 2.3.0 release.
-  * libruby2.3: add dependency on rake and ruby-did-you-mean
+  * libruby2.3: add dependencies on rake, ruby-did-you-mean and
+    ruby-net-telnet
 
  -- Antonio Terceiro <terceiro@debian.org>  Fri, 08 Jan 2016 11:56:01 -0200
 
