@@ -1,3 +1,10 @@
+ruby2.2 (2.2.4-1) unstable; urgency=medium
+
+  * d/control: Update branch name for 2.2 series
+  * New upstream release, fixing CVE-2015-7551 (Closes: #796551)
+
+ -- Christian Hofstaedtler <zeha@debian.org>  Mon, 25 Jan 2016 14:48:02 +0000
+
 ruby2.2 (2.2.3-2) unstable; urgency=medium
 
   * Add dependency on ruby-minitest to provide the same experience out of the
