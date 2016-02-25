@@ -1,3 +1,11 @@
+ruby2.3 (2.3.0-3) UNRELEASED; urgency=medium
+
+  * Explicitly set bundled gem dates. Otherwise these multi-arch same files
+    differ on different architectures depending on build date.
+    (Closes: #810321)
+
+ -- Christian Hofstaedtler <zeha@debian.org>  Thu, 25 Feb 2016 00:58:16 +0000
+
 ruby2.3 (2.3.0-2) unstable; urgency=medium
 
   * debian/libruby2.3.symbols: update with new symbols introduced right before
