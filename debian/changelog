@@ -7,6 +7,7 @@ ruby2.3 (2.3.0-3) UNRELEASED; urgency=medium
     builds that use g++.
   * Bump Standards-Version to 3.9.7 with no addtl. changes
   * d/copyright: Remove rake, no longer bundled.
+  * Switch Vcs-* URLs to https.
 
  -- Christian Hofstaedtler <zeha@debian.org>  Thu, 25 Feb 2016 00:58:16 +0000
 
