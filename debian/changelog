@@ -3,6 +3,8 @@ ruby2.3 (2.3.0-3) UNRELEASED; urgency=medium
   * Explicitly set bundled gem dates. Otherwise these multi-arch same files
     differ on different architectures depending on build date.
     (Closes: #810321)
+  * Apply patch from upstream (ruby-core:72736, trunk r53455) to fix extension
+    builds that use g++.
 
  -- Christian Hofstaedtler <zeha@debian.org>  Thu, 25 Feb 2016 00:58:16 +0000
 
