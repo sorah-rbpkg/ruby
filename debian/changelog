@@ -5,6 +5,7 @@ ruby2.3 (2.3.0-3) UNRELEASED; urgency=medium
     (Closes: #810321)
   * Apply patch from upstream (ruby-core:72736, trunk r53455) to fix extension
     builds that use g++.
+  * Bump Standards-Version to 3.9.7 with no addtl. changes
 
  -- Christian Hofstaedtler <zeha@debian.org>  Thu, 25 Feb 2016 00:58:16 +0000
 
