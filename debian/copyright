@@ -60,10 +60,6 @@ Copyright:
  2007, 2008 Free Software Foundation, Inc.
 License: GPL-3+
 
-Files: lib/rake.rb lib/rake/*
-Copyright: 2003-2013 Jim Weirich
-License: Expat
-
 Files: lib/rdoc/generator/darkfish.rb lib/rdoc/generator/template/darkfish/*
 Copyright: 2007, 2008, Michael Granger and others
 License: BSD-2-clause
