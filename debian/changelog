@@ -1,4 +1,4 @@
-ruby2.3 (2.3.0-3) UNRELEASED; urgency=medium
+ruby2.3 (2.3.0-3) unstable; urgency=medium
 
   * Explicitly set bundled gem dates. Otherwise these multi-arch same files
     differ on different architectures depending on build date.
@@ -9,7 +9,7 @@ ruby2.3 (2.3.0-3) UNRELEASED; urgency=medium
   * d/copyright: Remove rake, no longer bundled.
   * Switch Vcs-* URLs to https.
 
- -- Christian Hofstaedtler <zeha@debian.org>  Thu, 25 Feb 2016 00:58:16 +0000
+ -- Christian Hofstaedtler <zeha@debian.org>  Mon, 29 Feb 2016 21:45:51 +0100
 
 ruby2.3 (2.3.0-2) unstable; urgency=medium
 
