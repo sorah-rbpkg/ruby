@@ -1,3 +1,10 @@
+ruby2.3 (2.3.0-4) unstable; urgency=medium
+
+  * Apply patch from upstream to fix deserializing OpenStruct via Psych,
+    (ruby-core: 72501, trunk r53366). (Closes: #816358)
+
+ -- Christian Hofstaedtler <zeha@debian.org>  Tue, 01 Mar 2016 22:41:19 +0100
+
 ruby2.3 (2.3.0-3) unstable; urgency=medium
 
   * Explicitly set bundled gem dates. Otherwise these multi-arch same files
