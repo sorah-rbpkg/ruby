@@ -3,6 +3,7 @@ ruby2.3 (2.3.0-5) UNRELEASED; urgency=medium
   * Set gzip embedded mtime field to fixed value for rdoc-generated
     compressed javascript data. Helps with reproducibility of rdoc-using
     packages.
+  * Build tcltk extension for Tcl/Tk 8.6.
 
  -- Christian Hofstaedtler <zeha@debian.org>  Mon, 14 Mar 2016 12:58:45 +0000
 
