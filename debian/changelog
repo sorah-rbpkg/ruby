@@ -1,3 +1,10 @@
+ruby2.3 (2.3.0-6) UNRELEASED; urgency=medium
+
+  * Apply upstream patch fixing Unicode license issues.
+    (ruby-core:72379, trunk r54129, bug #11844)
+
+ -- Christian Hofstaedtler <zeha@debian.org>  Thu, 17 Mar 2016 00:48:00 +0000
+
 ruby2.3 (2.3.0-5) unstable; urgency=medium
 
   * Set gzip embedded mtime field to fixed value for rdoc-generated
