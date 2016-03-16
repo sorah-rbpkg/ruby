@@ -1,4 +1,4 @@
-ruby2.3 (2.3.0-5) UNRELEASED; urgency=medium
+ruby2.3 (2.3.0-5) unstable; urgency=medium
 
   * Set gzip embedded mtime field to fixed value for rdoc-generated
     compressed javascript data. Helps with reproducibility of rdoc-using
@@ -7,7 +7,7 @@ ruby2.3 (2.3.0-5) UNRELEASED; urgency=medium
   * Apply patch from upstream to fix crash in Proc binding.
     (ruby-core: 74100, trunk r54128, bug #12137). (Closes: #816161)
 
- -- Christian Hofstaedtler <zeha@debian.org>  Mon, 14 Mar 2016 12:58:45 +0000
+ -- Christian Hofstaedtler <zeha@debian.org>  Wed, 16 Mar 2016 23:36:12 +0000
 
 ruby2.3 (2.3.0-4) unstable; urgency=medium
 
