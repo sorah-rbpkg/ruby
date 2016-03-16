@@ -4,6 +4,8 @@ ruby2.3 (2.3.0-5) UNRELEASED; urgency=medium
     compressed javascript data. Helps with reproducibility of rdoc-using
     packages.
   * Build tcltk extension for Tcl/Tk 8.6.
+  * Apply patch from upstream to fix crash in Proc binding.
+    (ruby-core: 74100, trunk r54128, bug #12137). (Closes: #816161)
 
  -- Christian Hofstaedtler <zeha@debian.org>  Mon, 14 Mar 2016 12:58:45 +0000
 
