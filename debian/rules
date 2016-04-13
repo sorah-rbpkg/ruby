@@ -65,7 +65,7 @@ override_dh_auto_build-arch:
 	dh_auto_build -- main V=1
 
 override_dh_auto_install-arch:
-	$(MAKE) install-nodoc DESTDIR=$(CURDIR)/debian/tmp
+	$(MAKE) install-nodoc V=1 DESTDIR=$(CURDIR)/debian/tmp
 	# remove RPATH from tcltklib bindings
 	chrpath --delete $(CURDIR)/debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/ruby/$(RUBY_API_VERSION)/tcltklib.so
 	# handle embedded copy of jquery
@@ -91,7 +91,7 @@ override_dh_auto_build-indep:
 	$(MAKE) docs V=1
 
 override_dh_auto_install-indep:
-	$(MAKE) install-doc DESTDIR=$(CURDIR)/debian/ruby$(RUBY_VERSION)-doc
+	$(MAKE) install-doc V=1 DESTDIR=$(CURDIR)/debian/ruby$(RUBY_VERSION)-doc
 
 override_dh_install-arch:
 	# install SystemTap tapfile

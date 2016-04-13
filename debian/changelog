@@ -2,6 +2,8 @@ ruby2.3 (2.3.0-6) UNRELEASED; urgency=medium
 
   * Apply upstream patch fixing Unicode license issues.
     (ruby-core:72379, trunk r54129, bug #11844)
+  * Call make install-doc, install-nodoc with V=1, for diagnosing
+    build failures.
 
  -- Christian Hofstaedtler <zeha@debian.org>  Thu, 17 Mar 2016 00:48:00 +0000
 
