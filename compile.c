@@ -47,6 +47,13 @@ typedef struct iseq_link_anchor {
     LINK_ELEMENT *last;
 } LINK_ANCHOR;
 
+typedef enum {
+    LABEL_RESCUE_NONE,
+    LABEL_RESCUE_BEG,
+    LABEL_RESCUE_END,
+    LABEL_RESCUE_TYPE_MAX
+} LABEL_RESCUE_TYPE;
+
 typedef struct iseq_label_data {
     LINK_ELEMENT link;
     int label_no;
@@ -55,6 +62,7 @@ typedef struct iseq_label_data {
     int set;
     int sp;
     int refcnt;
+    unsigned int rescued: 2;
 } LABEL;
 
 typedef struct iseq_insn_data {
@@ -192,9 +200,18 @@ r_value(VALUE value)
 #define ADD_INSN(seq, line, insn) \
   ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (line), BIN(insn), 0))
 
+/* insert an instruction before prev */
+#define INSERT_BEFORE_INSN(prev, line, insn) \
+  INSERT_ELEM_PREV(&(prev)->link, (LINK_ELEMENT *) new_insn_body(iseq, (line), BIN(insn), 0))
+
 /* add an instruction with some operands (1, 2, 3, 5) */
 #define ADD_INSN1(seq, line, insn, op1) \
   ADD_ELEM((seq), (LINK_ELEMENT *) \
+           new_insn_body(iseq, (line), BIN(insn), 1, (VALUE)(op1)))
+
+/* insert an instruction with some operands (1, 2, 3, 5) before prev */
+#define INSERT_BEFORE_INSN1(prev, line, insn, op1) \
+  INSERT_ELEM_PREV(&(prev)->link, (LINK_ELEMENT *) \
            new_insn_body(iseq, (line), BIN(insn), 1, (VALUE)(op1)))
 
 #define LABEL_REF(label) ((label)->refcnt++)
@@ -552,6 +569,9 @@ rb_iseq_compile_node(rb_iseq_t *iseq, NODE *node)
 		LABEL *start = ISEQ_COMPILE_DATA(iseq)->start_label = NEW_LABEL(0);
 		LABEL *end = ISEQ_COMPILE_DATA(iseq)->end_label = NEW_LABEL(0);
 
+		start->rescued = LABEL_RESCUE_BEG;
+		end->rescued = LABEL_RESCUE_END;
+
 		ADD_TRACE(ret, FIX2INT(iseq->body->location.first_lineno), RUBY_EVENT_B_CALL);
 		ADD_LABEL(ret, start);
 		COMPILE(ret, "block body", node->nd_body);
@@ -832,6 +852,7 @@ INSERT_ELEM_PREV(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
     }
 }
 
+#if 0
 /*
  * elemX, elem1, elemY => elemX, elem2, elemY
  */
@@ -847,6 +868,7 @@ REPLACE_ELEM(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
 	elem1->next->prev = elem2;
     }
 }
+#endif
 
 static void
 REMOVE_ELEM(LINK_ELEMENT *elem)
@@ -978,6 +1000,8 @@ new_label_body(rb_iseq_t *iseq, long line)
     labelobj->sc_state = 0;
     labelobj->sp = -1;
     labelobj->refcnt = 0;
+    labelobj->set = 0;
+    labelobj->rescued = LABEL_RESCUE_NONE;
     return labelobj;
 }
 
@@ -2023,15 +2047,13 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	     * LABEL:
 	     *  leave
 	     */
-	    INSN *eiobj = new_insn_core(iseq, iobj->line_no, BIN(leave),
-					diobj->operand_size, diobj->operands);
 	    INSN *popiobj = new_insn_core(iseq, iobj->line_no,
 					  BIN(pop), 0, 0);
 	    /* replace */
 	    unref_destination(iobj);
-	    REPLACE_ELEM((LINK_ELEMENT *)iobj, (LINK_ELEMENT *)eiobj);
-	    INSERT_ELEM_NEXT((LINK_ELEMENT *)eiobj, (LINK_ELEMENT *)popiobj);
-	    iobj = eiobj;
+	    iobj->insn_id = BIN(leave);
+	    iobj->operand_size = 0;
+	    INSERT_ELEM_NEXT(&iobj->link, &popiobj->link);
 	    goto again;
 	}
 	/*
@@ -2228,8 +2250,12 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 
 	if (piobj) {
 	    struct rb_call_info *ci = (struct rb_call_info *)piobj->operands[0];
-	    rb_iseq_t *blockiseq = (rb_iseq_t *)piobj->operands[1];
-	    if (blockiseq == 0) {
+	    if (piobj->insn_id == BIN(send) || piobj->insn_id == BIN(invokesuper)) {
+		if (piobj->operands[2] == 0) { /* no blockiseq */
+		    ci->flag |= VM_CALL_TAILCALL;
+		}
+	    }
+	    else {
 		ci->flag |= VM_CALL_TAILCALL;
 	    }
 	}
@@ -2310,26 +2336,54 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
     return COMPILE_OK;
 }
 
+static inline int
+tailcallable_p(rb_iseq_t *iseq)
+{
+    switch (iseq->body->type) {
+      case ISEQ_TYPE_RESCUE:
+      case ISEQ_TYPE_ENSURE:
+	/* rescue block can't tail call because of errinfo */
+	return FALSE;
+      default:
+	return TRUE;
+    }
+}
+
 static int
 iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 {
     LINK_ELEMENT *list;
     const int do_peepholeopt = ISEQ_COMPILE_DATA(iseq)->option->peephole_optimization;
-    const int do_tailcallopt = ISEQ_COMPILE_DATA(iseq)->option->tailcall_optimization;
+    const int do_tailcallopt = tailcallable_p(iseq) &&
+	ISEQ_COMPILE_DATA(iseq)->option->tailcall_optimization;
     const int do_si = ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction;
     const int do_ou = ISEQ_COMPILE_DATA(iseq)->option->operands_unification;
+    int rescue_level = 0;
+    int tailcallopt = do_tailcallopt;
+
     list = FIRST_ELEMENT(anchor);
 
     while (list) {
 	if (list->type == ISEQ_ELEMENT_INSN) {
 	    if (do_peepholeopt) {
-		iseq_peephole_optimize(iseq, list, do_tailcallopt);
+		iseq_peephole_optimize(iseq, list, tailcallopt);
 	    }
 	    if (do_si) {
 		iseq_specialized_instruction(iseq, (INSN *)list);
 	    }
 	    if (do_ou) {
 		insn_operands_unification((INSN *)list);
+	    }
+	}
+	if (list->type == ISEQ_ELEMENT_LABEL) {
+	    switch (((LABEL *)list)->rescued) {
+	      case LABEL_RESCUE_BEG:
+		rescue_level++;
+		tailcallopt = FALSE;
+		break;
+	      case LABEL_RESCUE_END:
+		if (!--rescue_level) tailcallopt = do_tailcallopt;
+		break;
 	    }
 	}
 	list = list->next;
@@ -2979,9 +3033,10 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node)
 {
     switch (nd_type(node)) {
       case NODE_ATTRASGN: {
-	INSN *iobj, *topdup;
+	INSN *iobj;
 	struct rb_call_info *ci;
 	VALUE dupidx;
+	int line = nd_line(node);
 
 	COMPILE_POPED(ret, "masgn lhs (NODE_ATTRASGN)", node);
 
@@ -2990,9 +3045,13 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node)
 	ci->orig_argc += 1;
 	dupidx = INT2FIX(ci->orig_argc);
 
-	topdup = new_insn_body(iseq, nd_line(node), BIN(topn), 1, dupidx);
-	INSERT_ELEM_PREV(&iobj->link, &topdup->link);
-	ADD_INSN(ret, nd_line(node), pop);	/* result */
+	INSERT_BEFORE_INSN1(iobj, line, topn, dupidx);
+	if (ci->flag & VM_CALL_ARGS_SPLAT) {
+	    --ci->orig_argc;
+	    INSERT_BEFORE_INSN1(iobj, line, newarray, INT2FIX(1));
+	    INSERT_BEFORE_INSN(iobj, line, concatarray);
+	}
+	ADD_INSN(ret, line, pop);	/* result */
 	break;
       }
       case NODE_MASGN: {
@@ -3431,6 +3490,8 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 							       ("defined guard in "),
 							       iseq->body->location.label),
 						 ISEQ_TYPE_DEFINED_GUARD, 0);
+	lstart->rescued = LABEL_RESCUE_BEG;
+	lend->rescued = LABEL_RESCUE_END;
 	APPEND_LABEL(ret, lcur, lstart);
 	ADD_LABEL(ret, lend);
 	ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, rescue, lfinish[1]);
@@ -4228,6 +4289,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 						 rb_str_concat(rb_str_new2("rescue in "), iseq->body->location.label),
 						 ISEQ_TYPE_RESCUE, line);
 
+	lstart->rescued = LABEL_RESCUE_BEG;
+	lend->rescued = LABEL_RESCUE_END;
 	ADD_LABEL(ret, lstart);
 	COMPILE(ret, "rescue head", node->nd_head);
 	ADD_LABEL(ret, lend);
@@ -8223,7 +8286,7 @@ ibf_load_setup(struct ibf_load *load, VALUE loader_obj, VALUE str)
 	rb_raise(rb_eRuntimeError, "broken binary format");
     }
     if (strncmp(load->header->magic, "YARB", 4) != 0) {
-	rb_raise(rb_eRuntimeError, "unkown binary format");
+	rb_raise(rb_eRuntimeError, "unknown binary format");
     }
     if (load->header->major_version != ISEQ_MAJOR_VERSION ||
 	load->header->minor_version != ISEQ_MINOR_VERSION) {

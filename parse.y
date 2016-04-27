@@ -73,6 +73,7 @@ enum lex_state_bits {
     EXPR_CLASS_bit,		/* immediate after `class', no here document. */
     EXPR_LABEL_bit,		/* flag bit, label is allowed. */
     EXPR_LABELED_bit,		/* flag bit, just after a label. */
+    EXPR_FITEM_bit,		/* symbol literal as FNAME. */
     EXPR_MAX_STATE
 };
 /* examine combinations */
@@ -90,6 +91,7 @@ enum lex_state_e {
     DEF_EXPR(CLASS),
     DEF_EXPR(LABEL),
     DEF_EXPR(LABELED),
+    DEF_EXPR(FITEM),
     EXPR_VALUE = EXPR_BEG,
     EXPR_BEG_ANY  =  (EXPR_BEG | EXPR_MID | EXPR_CLASS),
     EXPR_ARG_ANY  =  (EXPR_ARG | EXPR_CMDARG),
@@ -1131,7 +1133,7 @@ stmt_or_begin	: stmt
 		    %*/
 		    }
 
-stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME);} fitem
+stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    {
 		    /*%%%*/
 			$$ = NEW_ALIAS($2, $4);
@@ -1967,7 +1969,7 @@ undef_list	: fitem
 			$$ = rb_ary_new3(1, $1);
 		    %*/
 		    }
-		| undef_list ',' {SET_LEX_STATE(EXPR_FNAME);} fitem
+		| undef_list ',' {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    {
 		    /*%%%*/
 			$$ = block_append($1, NEW_UNDEF($4));
@@ -3907,7 +3909,6 @@ strings		: string
 			else {
 			    node = evstr2dstr(node);
 			}
-			heredoc_indent = 0;
 			$$ = node;
 		    /*%
 			$$ = $1;
@@ -3930,6 +3931,7 @@ string		: tCHAR
 string1		: tSTRING_BEG string_contents tSTRING_END
 		    {
 			heredoc_dedent($2);
+			heredoc_indent = 0;
 		    /*%%%*/
 			$$ = $2;
 		    /*%
@@ -3945,6 +3947,7 @@ xstring		: tXSTRING_BEG xstring_contents tSTRING_END
 		    /*%
 		    %*/
 			heredoc_dedent($2);
+			heredoc_indent = 0;
 		    /*%%%*/
 			if (!node) {
 			    node = NEW_XSTR(STR_NEW0());
@@ -4037,7 +4040,7 @@ regexp		: tREGEXP_BEG regexp_contents tREGEXP_END
 			}
 			if (ripper_is_node_yylval(opt)) {
 			    $3 = RNODE(opt)->nd_rval;
-			    options = (int)RNODE(opt)->nd_state;
+			    options = (int)RNODE(opt)->nd_tag;
 			}
 			if (src && NIL_P(rb_parser_reg_compile(parser, src, options, &err))) {
 			    compile_error(PARSER_ARG "%"PRIsVALUE, err);
@@ -6210,6 +6213,32 @@ simple_re_meta(int c)
 }
 
 static int
+parser_update_heredoc_indent(struct parser_params *parser, int c)
+{
+    if (heredoc_line_indent == -1) {
+	if (c == '\n') heredoc_line_indent = 0;
+    }
+    else {
+	if (c == ' ') {
+	    heredoc_line_indent++;
+	    return TRUE;
+	}
+	else if (c == '\t') {
+	    int w = (heredoc_line_indent / TAB_WIDTH) + 1;
+	    heredoc_line_indent = w * TAB_WIDTH;
+	    return TRUE;
+	}
+	else if (c != '\n') {
+	    if (heredoc_indent > heredoc_line_indent) {
+		heredoc_indent = heredoc_line_indent;
+	    }
+	    heredoc_line_indent = -1;
+	}
+    }
+    return FALSE;
+}
+
+static int
 parser_tokadd_string(struct parser_params *parser,
 		     int func, int term, int paren, long *nest,
 		     rb_encoding **encp)
@@ -6239,24 +6268,7 @@ parser_tokadd_string(struct parser_params *parser,
 
     while ((c = nextc()) != -1) {
 	if (heredoc_indent > 0) {
-	    if (heredoc_line_indent == -1) {
-		if (c == '\n') heredoc_line_indent = 0;
-	    }
-	    else {
-		if (c == ' ') {
-		    heredoc_line_indent++;
-		}
-		else if (c == '\t') {
-		    int w = (heredoc_line_indent / TAB_WIDTH) + 1;
-		    heredoc_line_indent = w * TAB_WIDTH;
-		}
-		else if (c != '\n') {
-		    if (heredoc_indent > heredoc_line_indent) {
-			heredoc_indent = heredoc_line_indent;
-		    }
-		    heredoc_line_indent = -1;
-		}
-	    }
+	    parser_update_heredoc_indent(parser, c);
 	}
 
 	if (paren && c == paren) {
@@ -6876,6 +6888,14 @@ parser_here_document(struct parser_params *parser, NODE *here)
 		    --pend;
 		}
 	    }
+
+	    if (heredoc_indent > 0) {
+		long i = 0;
+		while (p + i < pend && parser_update_heredoc_indent(parser, p[i]))
+		    i++;
+		heredoc_line_indent = 0;
+	    }
+
 	    if (str)
 		rb_str_cat(str, p, pend - p);
 	    else
@@ -7772,7 +7792,7 @@ parse_percent(struct parser_params *parser, const int space_seen, const enum lex
 
 	  case 's':
 	    lex_strterm = NEW_STRTERM(str_ssym, term, paren);
-	    SET_LEX_STATE(EXPR_FNAME);
+	    SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);
 	    return tSYMBEG;
 
 	  default:
@@ -7785,7 +7805,7 @@ parse_percent(struct parser_params *parser, const int space_seen, const enum lex
 	SET_LEX_STATE(EXPR_BEG);
 	return tOP_ASGN;
     }
-    if (IS_SPCARG(c)) {
+    if (IS_SPCARG(c) || (IS_lex_state(EXPR_FITEM) && c == 's')) {
 	goto quotation;
     }
     SET_LEX_STATE(IS_AFTER_OPERATOR() ? EXPR_ARG : EXPR_BEG);
@@ -7805,16 +7825,14 @@ tokadd_ident(struct parser_params *parser, int c)
     return 0;
 }
 
-static void
+static ID
 tokenize_ident(struct parser_params *parser, const enum lex_state_e last_state)
 {
     ID ident = TOK_INTERN();
 
     set_yylval_name(ident);
-    if (!IS_lex_state_for(last_state, EXPR_DOT|EXPR_FNAME) &&
-	is_local_id(ident) && lvar_defined(ident)) {
-	SET_LEX_STATE(EXPR_END);
-    }
+
+    return ident;
 }
 
 static int
@@ -7824,7 +7842,7 @@ parse_numvar(struct parser_params *parser)
     int overflow;
     unsigned long n = ruby_scan_digits(tok()+1, toklen()-1, 10, &len, &overflow);
     const unsigned long nth_ref_max =
-	(FIXNUM_MAX / 2 < INT_MAX) ? FIXNUM_MAX / 2 : INT_MAX;
+	((FIXNUM_MAX < INT_MAX) ? FIXNUM_MAX : INT_MAX) >> 1;
     /* NTH_REF is left-shifted to be ORed with back-ref flag and
      * turned into a Fixnum, in compile.c */
 
@@ -7985,6 +8003,7 @@ parse_ident(struct parser_params *parser, int c, int cmd_state)
     int result = 0;
     int mb = ENC_CODERANGE_7BIT;
     const enum lex_state_e last_state = lex_state;
+    ID ident;
 
     do {
 	if (!ISASCII(c)) mb = ENC_CODERANGE_UNKNOWN;
@@ -8084,7 +8103,12 @@ parse_ident(struct parser_params *parser, int c, int cmd_state)
 	SET_LEX_STATE(EXPR_END);
     }
 
-    tokenize_ident(parser, last_state);
+    ident = tokenize_ident(parser, last_state);
+    if (!IS_lex_state_for(last_state, EXPR_DOT|EXPR_FNAME) &&
+	(result == tIDENTIFIER) && /* not EXPR_FNAME, not attrasgn */
+	lvar_defined(ident)) {
+	SET_LEX_STATE(EXPR_END|EXPR_LABEL);
+    }
     return result;
 }
 
@@ -9190,7 +9214,7 @@ id_is_var_gen(struct parser_params *parser, ID id)
 static const char lex_state_names[][13] = {
     "EXPR_BEG",    "EXPR_END",    "EXPR_ENDARG", "EXPR_ENDFN",  "EXPR_ARG",
     "EXPR_CMDARG", "EXPR_MID",    "EXPR_FNAME",  "EXPR_DOT",    "EXPR_CLASS",
-    "EXPR_LABEL",  "EXPR_LABELED",
+    "EXPR_LABEL",  "EXPR_LABELED","EXPR_FITEM",
 };
 
 static VALUE
@@ -10807,6 +10831,7 @@ parser_mark(void *ptr)
     rb_gc_mark(parser->result);
     rb_gc_mark(parser->parsing_thread);
 #endif
+    rb_gc_mark(parser->debug_buffer);
 #ifdef YYMALLOC
     rb_gc_mark((VALUE)parser->heap);
 #endif

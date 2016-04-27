@@ -619,7 +619,10 @@ get_stack(void **addr, size_t *size)
 				   &thinfo, sizeof(thinfo),
 				   &reg, &regsiz));
     *addr = thinfo.__pi_stackaddr;
-    *size = thinfo.__pi_stacksize;
+    /* Must not use thinfo.__pi_stacksize for size.
+       It is around 3KB smaller than the correct size
+       calculated by thinfo.__pi_stackend - thinfo.__pi_stackaddr. */
+    *size = thinfo.__pi_stackend - thinfo.__pi_stackaddr;
     STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
 #elif defined __HAIKU__
     thread_info info;
@@ -690,17 +693,31 @@ reserve_stack(volatile char *limit, size_t size)
 	const volatile char *end = buf + sizeof(buf);
 	limit += size;
 	if (limit > end) {
-	    size = limit - end;
-	    limit = alloca(size);
-	    limit[stack_check_margin+size-1] = 0;
+	    /* |<-bottom (=limit(a))                                     top->|
+	     * | .. |<-buf 256B |<-end                          | stack check |
+	     * |  256B  |              =size=                   | margin (4KB)|
+	     * |              =size=         limit(b)->|  256B  |             |
+	     * |                |       alloca(sz)     |        |             |
+	     * | .. |<-buf      |<-limit(c)    [sz-1]->0>       |             |
+	     */
+	    size_t sz = limit - end;
+	    limit = alloca(sz);
+	    limit[sz-1] = 0;
 	}
     }
     else {
 	limit -= size;
 	if (buf > limit) {
-	    limit = alloca(buf - limit);
-	    limit[0] = 0; /* ensure alloca is called */
-	    limit -= stack_check_margin;
+	    /* |<-top (=limit(a))                                     bottom->|
+	     * | .. | 256B buf->|                               | stack check |
+	     * |  256B  |              =size=                   | margin (4KB)|
+	     * |              =size=         limit(b)->|  256B  |             |
+	     * |                |       alloca(sz)     |        |             |
+	     * | .. |      buf->|           limit(c)-><0>       |             |
+	     */
+	    size_t sz = buf - limit;
+	    limit = alloca(sz);
+	    limit[0] = 0;
 	}
     }
 }
@@ -1406,8 +1423,6 @@ setup_communication_pipe(void)
 	return e;
     }
 
-    /* validate pipe on this process */
-    timer_thread_pipe.owner_process = getpid();
     return 0;
 }
 
@@ -1490,8 +1505,11 @@ native_set_thread_name(rb_thread_t *th)
 {
 #ifdef SET_CURRENT_THREAD_NAME
     if (!th->first_func && th->first_proc) {
-	VALUE loc = rb_proc_location(th->first_proc);
-	if (!NIL_P(loc)) {
+	VALUE loc;
+	if (!NIL_P(loc = th->name)) {
+	    SET_CURRENT_THREAD_NAME(RSTRING_PTR(loc));
+	}
+	else if (!NIL_P(loc = rb_proc_location(th->first_proc))) {
 	    const VALUE *ptr = RARRAY_CONST_PTR(loc); /* [ String, Fixnum ] */
 	    char *name, *p;
 	    char buf[16];
@@ -1615,6 +1633,9 @@ rb_thread_create_timer_thread(void)
 #endif
 	    return;
 	}
+
+	/* validate pipe on this process */
+	timer_thread_pipe.owner_process = getpid();
 	timer_thread.created = 1;
 #ifdef HAVE_PTHREAD_ATTR_INIT
 	pthread_attr_destroy(&attr);

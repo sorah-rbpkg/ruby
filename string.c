@@ -1087,6 +1087,13 @@ str_new_frozen(VALUE klass, VALUE orig)
 		return shared;
 	    }
 	}
+	else if (RSTRING_LEN(orig)+TERM_LEN(orig) <= RSTRING_EMBED_LEN_MAX+1) {
+	    str = str_alloc(klass);
+	    STR_SET_EMBED(str);
+	    memcpy(RSTRING_PTR(str), RSTRING_PTR(orig), RSTRING_LEN(orig));
+	    STR_SET_EMBED_LEN(str, RSTRING_LEN(orig));
+	    TERM_FILL(RSTRING_END(str), TERM_LEN(orig));
+	}
 	else {
 	    str = str_alloc(klass);
 	    STR_SET_NOEMBED(str);
@@ -3475,6 +3482,10 @@ enc_succ_alnum_char(char *p, long len, rb_encoding *enc, char *carry)
     int range;
     char save[ONIGENC_CODE_TO_MBC_MAXLEN];
 
+    /* skip 03A2, invalid char between GREEK CAPITAL LETTERS */
+    int try;
+    const int max_gaps = 1;
+
     c = rb_enc_mbc_to_codepoint(p, p+len, enc);
     if (rb_enc_isctype(c, ONIGENC_CTYPE_DIGIT, enc))
         ctype = ONIGENC_CTYPE_DIGIT;
@@ -3484,11 +3495,13 @@ enc_succ_alnum_char(char *p, long len, rb_encoding *enc, char *carry)
         return NEIGHBOR_NOT_CHAR;
 
     MEMCPY(save, p, char, len);
-    ret = enc_succ_char(p, len, enc);
-    if (ret == NEIGHBOR_FOUND) {
-        c = rb_enc_mbc_to_codepoint(p, p+len, enc);
-        if (rb_enc_isctype(c, ctype, enc))
-            return NEIGHBOR_FOUND;
+    for (try = 0; try <= max_gaps; ++try) {
+	ret = enc_succ_char(p, len, enc);
+	if (ret == NEIGHBOR_FOUND) {
+	    c = rb_enc_mbc_to_codepoint(p, p+len, enc);
+	    if (rb_enc_isctype(c, ctype, enc))
+		return NEIGHBOR_FOUND;
+	}
     }
     MEMCPY(p, save, char, len);
     range = 1;
