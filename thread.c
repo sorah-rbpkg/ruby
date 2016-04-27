@@ -711,6 +711,8 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     return thval;
 }
 
+#define threadptr_initialized(th) ((th)->first_args != 0)
+
 /*
  * call-seq:
  *  Thread.new { ... }			-> thread
@@ -742,7 +744,7 @@ thread_s_new(int argc, VALUE *argv, VALUE klass)
 
     rb_obj_call_init(thread, argc, argv);
     GetThreadPtr(thread, th);
-    if (!th->first_args) {
+    if (!threadptr_initialized(th)) {
 	rb_raise(rb_eThreadError, "uninitialized thread - check `%"PRIsVALUE"#initialize'",
 		 klass);
     }
@@ -2794,7 +2796,9 @@ rb_thread_setname(VALUE thread, VALUE name)
     }
     th->name = name;
 #if defined(SET_ANOTHER_THREAD_NAME)
-    SET_ANOTHER_THREAD_NAME(th->thread_id, s);
+    if (threadptr_initialized(th)) {
+	SET_ANOTHER_THREAD_NAME(th->thread_id, s);
+    }
 #endif
     return name;
 }
@@ -4764,7 +4768,7 @@ update_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
     if (coverage && RBASIC(coverage)->klass == 0) {
 	long line = rb_sourceline() - 1;
 	long count;
-	if (RARRAY_AREF(coverage, line) == Qnil) {
+	if (line >= RARRAY_LEN(coverage)) { /* no longer tracked */
 	    return;
 	}
 	count = FIX2LONG(RARRAY_AREF(coverage, line)) + 1;

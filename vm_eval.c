@@ -478,8 +478,10 @@ rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
     rb_thread_t *th = GET_THREAD();
     int respond = check_funcall_respond_to(th, klass, recv, mid);
 
-    if (!respond)
+    if (!respond) {
+	(*hook)(FALSE, recv, mid, argc, argv, arg);
 	return Qundef;
+    }
 
     me = rb_search_method_entry(recv, mid);
     if (!check_funcall_callable(th, me)) {
@@ -1923,10 +1925,10 @@ catch_i(VALUE tag, VALUE data)
  *
  *     catch(1) { 123 }            # => 123
  *
- *  If +throw(tag2, val)+ is called, Ruby searches up its stack for a +catch+
- *  block whose +tag+ has the same +object_id+ as _tag2_. When found, the block
- *  stops executing and returns _val_ (or +nil+ if no second argument was given
- *  to +throw+).
+ *  If <code>throw(tag2, val)</code> is called, Ruby searches up its stack for
+ *  a +catch+ block whose +tag+ has the same +object_id+ as _tag2_. When found,
+ *  the block stops executing and returns _val_ (or +nil+ if no second argument
+ *  was given to +throw+).
  *
  *     catch(1) { throw(1, 456) }  # => 456
  *     catch(1) { throw(1) }       # => nil
