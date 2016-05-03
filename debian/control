@@ -40,7 +40,6 @@ Depends: rubygems-integration (>= 1.8),
          ${shlibs:Depends}
 Recommends: fonts-lato,
             libjs-jquery
-Provides: ruby-interpreter
 Description: Interpreter of object-oriented scripting language Ruby
  Ruby is the interpreted scripting language for quick and easy
  object-oriented programming.  It has many features to process text
