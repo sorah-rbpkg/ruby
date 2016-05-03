@@ -1,6 +1,6 @@
 Source: ruby2.3
 Section: ruby
-Priority: extra
+Priority: optional
 Maintainer: Antonio Terceiro <terceiro@debian.org>
 Uploaders: Christian Hofstaedtler <zeha@debian.org>
 Build-Depends: autotools-dev,
