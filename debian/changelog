@@ -12,7 +12,7 @@ ruby2.3 (2.3.1-2) UNRELEASED; urgency=medium
   * Stop providing ruby-interpreter. Only packages providing
     /usr/bin/ruby can be a credible provider of ruby-interpreter.
     (Closes: #822072)
-  * Raise priority to "optional", now that ruby2.2 is gone, altough
+  * Raise priority to "optional", now that ruby2.2 is gone, although
     the value of this change is unclear. (Closes: #822911)
 
  -- Antonio Terceiro <terceiro@debian.org>  Thu, 28 Apr 2016 09:33:58 -0300
