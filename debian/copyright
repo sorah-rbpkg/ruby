@@ -215,92 +215,35 @@ Copyright: unspecified
 License: CC0
 
 Files:
- enc/trans/JIS/UCS%JISX0212.src
- enc/trans/JIS/UCS%JISX0201-KANA.src
- enc/trans/JIS/UCS%JISX0208@1990.src
+ enc/trans/JIS/JISX0201-KANA%UCS.src
  enc/trans/JIS/JISX0208@1990%UCS.src
  enc/trans/JIS/JISX0212%UCS.src
-Copyright: 1991-1994 Unicode, Inc.  All Rights reserved.
+ enc/trans/JIS/UCS%JISX0201-KANA.src
+ enc/trans/JIS/UCS%JISX0208@1990.src
+ enc/trans/JIS/UCS%JISX0212.src
+Copyright: 2015 Unicode®, Inc.  All Rights reserved.
 License: Unicode
 
-Files: enc/trans/JIS/UCS%JISX0212.src
-Copyright: 1991-1994 Unicode, Inc.  All Rights reserved.
-License: Unicode
-
-Files: enc/trans/JIS/UCS%JISX0201-KANA.src
-Copyright: 1991-1994 Unicode, Inc.  All Rights reserved.
-License: Unicode
-
-Files: enc/trans/JIS/UCS@SIP%JISX0213-2.src
+Files:
+ enc/trans/JIS/UCS@BMP%JISX0213-1.src
+ enc/trans/JIS/UCS@BMP%JISX0213-2.src
+ enc/trans/JIS/UCS@SIP%JISX0213-1.src
+ enc/trans/JIS/UCS@SIP%JISX0213-2.src
 Copyright:
  2001 earthian@tama.or.jp, All Rights Reserved.
  2001 I'O, All Rights Reserved.
 License: Permissive
 
-Files: enc/trans/JIS/UCS@BMP%JISX0213-2.src
-Copyright:
- 2001 earthian@tama.or.jp, All Rights Reserved.
- 2001 I'O, All Rights Reserved.
-License: Permissive
-
-Files: enc/trans/JIS/UCS@SIP%JISX0213-1.src
-Copyright:
- 2001 earthian@tama.or.jp, All Rights Reserved.
- 2001 I'O, All Rights Reserved.
-License: Permissive
-
-Files: enc/trans/JIS/UCS@BMP%JISX0213-1.src
-Copyright:
- 2001 earthian@tama.or.jp, All Rights Reserved.
- 2001 I'O, All Rights Reserved.
-License: Permissive
-
-Files: enc/trans/JIS/JISX0213-1%UCS@SIP.src
+Files:
+ enc/trans/JIS/JISX0213-1%UCS@BMP.src
+ enc/trans/JIS/JISX0213-1%UCS@SIP.src
+ enc/trans/JIS/JISX0213-2%UCS@BMP.src
+ enc/trans/JIS/JISX0213-2%UCS@SIP.src
 Copyright:
  2001 earthian@tama.or.jp, All Rights Reserved.
  2001 I'O, All Rights Reserved.
  2006 Project X0213, All Rights Reserved.
 License: Permissive
-
-Files: enc/trans/JIS/JISX0201-KANA%UCS.src
-Copyright: (c) 1991-1994 Unicode, Inc.  All Rights reserved.
-License: Unicode
-
-Files: enc/trans/JIS/JISX0213-1%UCS@BMP.src
-Copyright:
- (C) 2001 earthian@tama.or.jp, All Rights Reserved.
- (C) 2001 I'O, All Rights Reserved.
- (C) 2006 Project X0213, All Rights Reserved.
-License: Permissive
-
-Files: enc/trans/JIS/JISX0213-2%UCS@SIP.src
-Copyright:
- (C) 2001 earthian@tama.or.jp, All Rights Reserved.
- (C) 2001 I'O, All Rights Reserved.
- (C) 2006 Project X0213, All Rights Reserved.
-License: Permissive
-
-Files: enc/trans/JIS/JISX0213-2%UCS@BMP.src
-Copyright:
- (C) 2001 earthian@tama.or.jp, All Rights Reserved.
- (C) 2001 I'O, All Rights Reserved.
- (C) 2006 Project X0213, All Rights Reserved.
-License: Permissive
-
-Files: enc/trans/JIS/UCS%JISX0208@1990.src
-Copyright:
- (c) 1991-1994 Unicode, Inc.  All Rights reserved.
-License: Unicode
-
-Files: enc/trans/JIS/JISX0208@1990%UCS.src
-Copyright:
- (c) 1991-1994 Unicode, Inc.  All Rights reserved.
-License: Unicode
-
-Files: enc/trans/JIS/JISX0212%UCS.src
-Copyright:
- (c) 1991-1994 Unicode, Inc.  All Rights reserved.
-License: Unicode
 
 Files: debian/*
 Copyright: 2013-2015 Antonio Terceiro <terceiro@debian.org>
