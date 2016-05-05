@@ -4,8 +4,9 @@ ruby2.3 (2.3.1-2) UNRELEASED; urgency=medium
   * debian/tests/known-failures.txt: remove test that now passes
     (test/rinda/test_rinda.rb)
   * debian/rules: enable bindnow hardening option (Closes: #822288)
-   * debian/copyright: update and simplify copyright annotations for Unicode
-     files under enc/trans/JIS/
+  * debian/copyright: update and simplify copyright annotations for Unicode
+    files under enc/trans/JIS/
+  * Bump Standards-Version to 3.9.8 (no changes needed)
 
   [ Christian Hofstaedtler ]
   * Stop providing ruby-interpreter. Only packages providing

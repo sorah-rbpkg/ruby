@@ -26,7 +26,7 @@ Build-Depends: autotools-dev,
                tcl8.6-dev,
                tk8.6-dev,
                zlib1g-dev
-Standards-Version: 3.9.7
+Standards-Version: 3.9.8
 Homepage: http://www.ruby-lang.org/
 Vcs-Git: https://anonscm.debian.org/git/collab-maint/ruby.git
 Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/ruby.git
