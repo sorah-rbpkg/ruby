@@ -14,6 +14,8 @@ ruby2.3 (2.3.1-2) UNRELEASED; urgency=medium
     (Closes: #822072)
   * Raise priority to "optional", now that ruby2.2 is gone, although
     the value of this change is unclear. (Closes: #822911)
+  * Apply patch from Reiner Herrmann <reiner@reiner-h.de> to help with
+    reproducibility of mkmf.rb using packages. (Closes: #825569)
 
  -- Antonio Terceiro <terceiro@debian.org>  Thu, 28 Apr 2016 09:33:58 -0300
 
