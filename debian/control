@@ -69,20 +69,6 @@ Description: Libraries necessary to run Ruby 2.3
  This package includes the 'libruby-2.3' library, necessary to run Ruby 2.3.
  (API version 2.3.0)
 
-Package: libruby2.3-dbg
-Section: debug
-Multi-Arch: same
-Architecture: any
-Depends: libruby2.3 (= ${binary:Version}),
-         ${misc:Depends}
-Description: Debugging symbols for libruby2.3
- Ruby is the interpreted scripting language for quick and easy
- object-oriented programming.  It has many features to process text
- files and to do system management tasks (as in perl).  It is simple,
- straight-forward, and extensible.
- .
- This package includes the debugging symbols for the 'libruby-2.3' library.
-
 Package: ruby2.3-dev
 Multi-Arch: same
 Architecture: any
