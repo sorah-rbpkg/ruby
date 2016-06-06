@@ -37,6 +37,9 @@ configure_options += --with-dbm-type=gdbm_compat
 export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow
 configure_options += $(shell dpkg-buildflags --export=configure)
 
+# Always build with /bin/bash, to get consistent rbconfig.rb (which embeds SHELL).
+export SHELL := /bin/bash
+
 vtcltk=8.6
 configure_options += --with-tcltkversion=$(vtcltk)
 configure_options += --with-tclConfig-dir=/usr/lib/$(DEB_HOST_MULTIARCH)/tcl$(vtcltk)/tclConfig.sh
