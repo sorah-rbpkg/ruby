@@ -5,6 +5,8 @@
 #include <ruby.h>
 #include "dl.h"
 
+#define SafeStringValuePtr(v) (rb_string_value(&v), rb_check_safe_obj(v), RSTRING_PTR(v))
+
 VALUE rb_cDLHandle;
 
 #ifdef _WIN32
@@ -132,11 +134,11 @@ rb_dlhandle_initialize(int argc, VALUE argv[], VALUE self)
 	cflag = RTLD_LAZY | RTLD_GLOBAL;
 	break;
       case 1:
-	clib = NIL_P(lib) ? NULL : StringValuePtr(lib);
+	clib = NIL_P(lib) ? NULL : SafeStringValuePtr(lib);
 	cflag = RTLD_LAZY | RTLD_GLOBAL;
 	break;
       case 2:
-	clib = NIL_P(lib) ? NULL : StringValuePtr(lib);
+	clib = NIL_P(lib) ? NULL : SafeStringValuePtr(lib);
 	cflag = NUM2INT(flag);
 	break;
       default:
