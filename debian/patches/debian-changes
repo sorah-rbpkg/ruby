@@ -1,0 +1,555 @@
+This patch file represents the entire difference between the package as shipped
+by Debian and the official upstream sources. The goal is to maintain this file
+as small as possible, avoiding non-upstreamed patches at all costs.
+
+The Debian packaging is maintained in the following Git repository:
+
+  http://anonscm.debian.org/gitweb/?p=collab-maint/ruby.git
+
+To obtain a view of the individual commits that affect non-Debian-specific
+files, you can clone that repository, and from the master branch, run:
+
+  $ ./debian/upstream-changes
+
+--- ruby2.1-2.1.5.orig/ext/io/console/io-console.gemspec
++++ ruby2.1-2.1.5/ext/io/console/io-console.gemspec
+@@ -1,11 +1,10 @@
+ # -*- ruby -*-
+ _VERSION = "0.4.2"
+-date = %w$Date::                           $[1]
+ 
+ Gem::Specification.new do |s|
+   s.name = "io-console"
+   s.version = _VERSION
+-  s.date = date
++  s.date = RUBY_RELEASE_DATE
+   s.summary = "Console interface"
+   s.email = "nobu@ruby-lang.org"
+   s.description = "add console capabilities to IO instances."
+--- ruby2.1-2.1.5.orig/ext/openssl/lib/openssl/ssl.rb
++++ ruby2.1-2.1.5/ext/openssl/lib/openssl/ssl.rb
+@@ -143,8 +143,7 @@ module OpenSSL
+           case san.tag
+           when 2 # dNSName in GeneralName (RFC5280)
+             should_verify_common_name = false
+-            reg = Regexp.escape(san.value).gsub(/\\\*/, "[^.]+")
+-            return true if /\A#{reg}\z/i =~ hostname
++            return true if verify_hostname(hostname, san.value)
+           when 7 # iPAddress in GeneralName (RFC5280)
+             should_verify_common_name = false
+             # follows GENERAL_NAME_print() in x509v3/v3_alt.c
+@@ -159,8 +158,7 @@ module OpenSSL
+       if should_verify_common_name
+         cert.subject.to_a.each{|oid, value|
+           if oid == "CN"
+-            reg = Regexp.escape(value).gsub(/\\\*/, "[^.]+")
+-            return true if /\A#{reg}\z/i =~ hostname
++            return true if verify_hostname(hostname, value)
+           end
+         }
+       end
+@@ -168,11 +166,67 @@ module OpenSSL
+     end
+     module_function :verify_certificate_identity
+ 
++    def verify_hostname(hostname, san) # :nodoc:
++      # RFC 5280, IA5String is limited to the set of ASCII characters
++      return false unless san.ascii_only?
++      return false unless hostname.ascii_only?
++
++      # See RFC 6125, section 6.4.1
++      # Matching is case-insensitive.
++      san_parts = san.downcase.split(".")
++
++      # TODO: this behavior should probably be more strict
++      return san == hostname if san_parts.size < 2
++
++      # Matching is case-insensitive.
++      host_parts = hostname.downcase.split(".")
++
++      # RFC 6125, section 6.4.3, subitem 2.
++      # If the wildcard character is the only character of the left-most
++      # label in the presented identifier, the client SHOULD NOT compare
++      # against anything but the left-most label of the reference
++      # identifier (e.g., *.example.com would match foo.example.com but
++      # not bar.foo.example.com or example.com).
++      return false unless san_parts.size == host_parts.size
++
++      # RFC 6125, section 6.4.3, subitem 1.
++      # The client SHOULD NOT attempt to match a presented identifier in
++      # which the wildcard character comprises a label other than the
++      # left-most label (e.g., do not match bar.*.example.net).
++      return false unless verify_wildcard(host_parts.shift, san_parts.shift)
++
++      san_parts.join(".") == host_parts.join(".")
++    end
++    module_function :verify_hostname
++
++    def verify_wildcard(domain_component, san_component) # :nodoc:
++      parts = san_component.split("*", -1)
++
++      return false if parts.size > 2
++      return san_component == domain_component if parts.size == 1
++
++      # RFC 6125, section 6.4.3, subitem 3.
++      # The client SHOULD NOT attempt to match a presented identifier
++      # where the wildcard character is embedded within an A-label or
++      # U-label of an internationalized domain name.
++      return false if domain_component.start_with?("xn--") && san_component != "*"
++
++      parts[0].length + parts[1].length < domain_component.length &&
++      domain_component.start_with?(parts[0]) &&
++      domain_component.end_with?(parts[1])
++    end
++    module_function :verify_wildcard
++
+     class SSLSocket
+       include Buffering
+       include SocketForwarder
+       include Nonblock
+ 
++      ##
++      # Perform hostname verification after an SSL connection is established
++      #
++      # This method MUST be called after calling #connect to ensure that the
++      # hostname of a remote peer has been verified.
+       def post_connection_check(hostname)
+         unless OpenSSL::SSL.verify_certificate_identity(peer_cert, hostname)
+           raise SSLError, "hostname \"#{hostname}\" does not match the server certificate"
+--- ruby2.1-2.1.5.orig/include/ruby/intern.h
++++ ruby2.1-2.1.5/include/ruby/intern.h
+@@ -769,8 +769,8 @@ VALUE rb_str_replace(VALUE, VALUE);
+ VALUE rb_str_inspect(VALUE);
+ VALUE rb_str_dump(VALUE);
+ VALUE rb_str_split(VALUE, const char*);
+-void rb_str_associate(VALUE, VALUE);
+-VALUE rb_str_associated(VALUE);
++DEPRECATED(void rb_str_associate(VALUE, VALUE));
++DEPRECATED(VALUE rb_str_associated(VALUE));
+ void rb_str_setter(VALUE, ID, VALUE*);
+ VALUE rb_str_intern(VALUE);
+ VALUE rb_sym_to_s(VALUE);
+--- ruby2.1-2.1.5.orig/lib/rubygems/remote_fetcher.rb
++++ ruby2.1-2.1.5/lib/rubygems/remote_fetcher.rb
+@@ -90,7 +90,13 @@ class Gem::RemoteFetcher
+     rescue Resolv::ResolvError
+       uri
+     else
+-      URI.parse "#{uri.scheme}://#{res.target}#{uri.path}"
++      target = res.target.to_s.strip
++
++      if /\.#{Regexp.quote(host)}\z/ =~ target
++        return URI.parse "#{uri.scheme}://#{target}#{uri.path}"
++      end
++
++      uri
+     end
+   end
+ 
+--- ruby2.1-2.1.5.orig/lib/test/unit/test-unit.gemspec
++++ ruby2.1-2.1.5/lib/test/unit/test-unit.gemspec
+@@ -3,6 +3,7 @@
+ Gem::Specification.new do |s|
+   s.name = "test-unit"
+   s.version = "#{RUBY_VERSION}.0"
++  s.date = RUBY_RELEASE_DATE
+   s.homepage = "http://www.ruby-lang.org"
+   s.author = "Shota Fukumori"
+   s.email = "sorah@tubusu.net"
+--- ruby2.1-2.1.5.orig/pack.c
++++ ruby2.1-2.1.5/pack.c
+@@ -234,6 +234,45 @@ static void qpencode(VALUE,VALUE,long);
+ 
+ static unsigned long utf8_to_uv(const char*,long*);
+ 
++static ID id_associated;
++
++static void
++str_associate(VALUE str, VALUE add)
++{
++    VALUE assoc;
++
++    assoc = rb_attr_get(str, id_associated);
++    if (RB_TYPE_P(assoc, T_ARRAY)) {
++	/* already associated */
++	rb_ary_concat(assoc, add);
++    }
++    else {
++	rb_ivar_set(str, id_associated, add);
++    }
++}
++
++static VALUE
++str_associated(VALUE str)
++{
++    VALUE assoc = rb_attr_get(str, id_associated);
++    if (NIL_P(assoc)) assoc = Qfalse;
++    return assoc;
++}
++
++void
++rb_str_associate(VALUE str, VALUE add)
++{
++    rb_warn("rb_str_associate() is only for internal use and deprecated; do not use");
++    str_associate(str, add);
++}
++
++VALUE
++rb_str_associated(VALUE str)
++{
++    rb_warn("rb_str_associated() is only for internal use and deprecated; do not use");
++    return str_associated(str);
++}
++
+ /*
+  *  call-seq:
+  *     arr.pack ( aTemplateString ) -> aBinaryString
+@@ -921,7 +960,7 @@ pack_pack(VALUE ary, VALUE fmt)
+     }
+ 
+     if (associates) {
+-	rb_str_associate(res, associates);
++	str_associate(res, associates);
+     }
+     OBJ_INFECT(res, fmt);
+     switch (enc_info) {
+@@ -1803,7 +1842,7 @@ pack_unpack(VALUE str, VALUE fmt)
+ 		    VALUE a;
+ 		    const VALUE *p, *pend;
+ 
+-		    if (!(a = rb_str_associated(str))) {
++		    if (!(a = str_associated(str))) {
+ 			rb_raise(rb_eArgError, "no associated pointer");
+ 		    }
+ 		    p = RARRAY_CONST_PTR(a);
+@@ -1812,7 +1851,7 @@ pack_unpack(VALUE str, VALUE fmt)
+ 			if (RB_TYPE_P(*p, T_STRING) && RSTRING_PTR(*p) == t) {
+ 			    if (len < RSTRING_LEN(*p)) {
+ 				tmp = rb_tainted_str_new(t, len);
+-				rb_str_associate(tmp, a);
++				str_associate(tmp, a);
+ 			    }
+ 			    else {
+ 				tmp = *p;
+@@ -1846,7 +1885,7 @@ pack_unpack(VALUE str, VALUE fmt)
+ 			VALUE a;
+ 			const VALUE *p, *pend;
+ 
+-			if (!(a = rb_str_associated(str))) {
++			if (!(a = str_associated(str))) {
+ 			    rb_raise(rb_eArgError, "no associated pointer");
+ 			}
+ 			p = RARRAY_CONST_PTR(a);
+@@ -2008,4 +2047,6 @@ Init_pack(void)
+ {
+     rb_define_method(rb_cArray, "pack", pack_pack, 1);
+     rb_define_method(rb_cString, "unpack", pack_unpack, 1);
++
++    id_associated = rb_intern_const("__pack_associated__");
+ }
+--- ruby2.1-2.1.5.orig/string.c
++++ ruby2.1-2.1.5/string.c
+@@ -1536,47 +1536,6 @@ str_discard(VALUE str)
+ }
+ 
+ void
+-rb_str_associate(VALUE str, VALUE add)
+-{
+-    /* sanity check */
+-    rb_check_frozen(str);
+-    if (STR_ASSOC_P(str)) {
+-	/* already associated */
+-	rb_ary_concat(RSTRING(str)->as.heap.aux.shared, add);
+-    }
+-    else {
+-	if (STR_SHARED_P(str)) {
+-	    VALUE assoc = RSTRING(str)->as.heap.aux.shared;
+-	    str_make_independent(str);
+-	    if (STR_ASSOC_P(assoc)) {
+-		assoc = RSTRING(assoc)->as.heap.aux.shared;
+-		rb_ary_concat(assoc, add);
+-		add = assoc;
+-	    }
+-	}
+-	else if (STR_EMBED_P(str)) {
+-	    str_make_independent(str);
+-	}
+-	else if (RSTRING(str)->as.heap.aux.capa != RSTRING_LEN(str)) {
+-	    RESIZE_CAPA(str, RSTRING_LEN(str));
+-	}
+-	FL_SET(str, STR_ASSOC);
+-	RBASIC_CLEAR_CLASS(add);
+-	RB_OBJ_WRITE(str, &RSTRING(str)->as.heap.aux.shared, add);
+-    }
+-}
+-
+-VALUE
+-rb_str_associated(VALUE str)
+-{
+-    if (STR_SHARED_P(str)) str = RSTRING(str)->as.heap.aux.shared;
+-    if (STR_ASSOC_P(str)) {
+-	return RSTRING(str)->as.heap.aux.shared;
+-    }
+-    return Qfalse;
+-}
+-
+-void
+ rb_must_asciicompat(VALUE str)
+ {
+     rb_encoding *enc = rb_enc_get(str);
+--- ruby2.1-2.1.5.orig/test/openssl/test_ssl.rb
++++ ruby2.1-2.1.5/test/openssl/test_ssl.rb
+@@ -359,6 +359,156 @@ class OpenSSL::TestSSL < OpenSSL::SSLTes
+     end
+   end
+ 
++  def test_verify_hostname
++    assert_equal(true,  OpenSSL::SSL.verify_hostname("www.example.com", "*.example.com"))
++    assert_equal(false, OpenSSL::SSL.verify_hostname("www.subdomain.example.com", "*.example.com"))
++  end
++
++  def test_verify_wildcard
++    assert_equal(false, OpenSSL::SSL.verify_wildcard("foo", "x*"))
++    assert_equal(true,  OpenSSL::SSL.verify_wildcard("foo", "foo"))
++    assert_equal(true,  OpenSSL::SSL.verify_wildcard("foo", "f*"))
++    assert_equal(true,  OpenSSL::SSL.verify_wildcard("foo", "*"))
++    assert_equal(false, OpenSSL::SSL.verify_wildcard("abc*bcd", "abcd"))
++    assert_equal(false, OpenSSL::SSL.verify_wildcard("xn--qdk4b9b", "x*"))
++    assert_equal(false, OpenSSL::SSL.verify_wildcard("xn--qdk4b9b", "*--qdk4b9b"))
++    assert_equal(true,  OpenSSL::SSL.verify_wildcard("xn--qdk4b9b", "xn--qdk4b9b"))
++  end
++
++  # Comments in this test is excerpted from http://tools.ietf.org/html/rfc6125#page-27
++  def test_post_connection_check_wildcard_san
++    # case-insensitive ASCII comparison
++    # RFC 6125, section 6.4.1
++    #
++    # "..matching of the reference identifier against the presented identifier
++    # is performed by comparing the set of domain name labels using a
++    # case-insensitive ASCII comparison, as clarified by [DNS-CASE] (e.g.,
++    # "WWW.Example.Com" would be lower-cased to "www.example.com" for
++    # comparison purposes)
++    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_san('DNS:*.example.com'), 'www.example.com'))
++    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_san('DNS:*.Example.COM'), 'www.example.com'))
++    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_san('DNS:*.example.com'), 'WWW.Example.COM'))
++    # 1.  The client SHOULD NOT attempt to match a presented identifier in
++    #     which the wildcard character comprises a label other than the
++    #     left-most label (e.g., do not match bar.*.example.net).
++    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_san('DNS:www.*.com'), 'www.example.com'))
++    # 2.  If the wildcard character is the only character of the left-most
++    #     label in the presented identifier, the client SHOULD NOT compare
++    #     against anything but the left-most label of the reference
++    #     identifier (e.g., *.example.com would match foo.example.com but
++    #     not bar.foo.example.com or example.com).
++    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_san('DNS:*.example.com'), 'foo.example.com'))
++    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_san('DNS:*.example.com'), 'bar.foo.example.com'))
++    # 3.  The client MAY match a presented identifier in which the wildcard
++    #     character is not the only character of the label (e.g.,
++    #     baz*.example.net and *baz.example.net and b*z.example.net would
++    #     be taken to match baz1.example.net and foobaz.example.net and
++    #     buzz.example.net, respectively).  ...
++    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_san('DNS:baz*.example.com'), 'baz1.example.com'))
++    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_san('DNS:*baz.example.com'), 'foobaz.example.com'))
++    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_san('DNS:b*z.example.com'), 'buzz.example.com'))
++    # Section 6.4.3 of RFC6125 states that client should NOT match identifier
++    # where wildcard is other than left-most label.
++    #
++    # Also implicitly mentions the wildcard character only in singular form,
++    # and discourages matching against more than one wildcard.
++    #
++    # See RFC 6125, section 7.2, subitem 2.
++    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_san('DNS:*b*.example.com'), 'abc.example.com'))
++    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_san('DNS:*b*.example.com'), 'ab.example.com'))
++    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_san('DNS:*b*.example.com'), 'bc.example.com'))
++    #                                ...  However, the client SHOULD NOT
++    #   attempt to match a presented identifier where the wildcard
++    #   character is embedded within an A-label or U-label [IDNA-DEFS] of
++    #   an internationalized domain name [IDNA-PROTO].
++    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_san('DNS:xn*.example.com'), 'xn1ca.example.com'))
++    # part of A-label
++    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_san('DNS:xn--*.example.com'), 'xn--1ca.example.com'))
++    # part of U-label
++    # dNSName in RFC5280 is an IA5String so U-label should NOT be allowed
++    # regardless of wildcard.
++    #
++    # See Section 7.2 of RFC 5280:
++    #   IA5String is limited to the set of ASCII characters.
++    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_san('DNS:á*.example.com'), 'á1.example.com'))
++  end
++
++  def test_post_connection_check_wildcard_cn
++    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_name('*.example.com'), 'www.example.com'))
++    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_name('*.Example.COM'), 'www.example.com'))
++    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_name('*.example.com'), 'WWW.Example.COM'))
++    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_name('www.*.com'), 'www.example.com'))
++    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_name('*.example.com'), 'foo.example.com'))
++    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_name('*.example.com'), 'bar.foo.example.com'))
++    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_name('baz*.example.com'), 'baz1.example.com'))
++    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_name('*baz.example.com'), 'foobaz.example.com'))
++    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_name('b*z.example.com'), 'buzz.example.com'))
++    # Section 6.4.3 of RFC6125 states that client should NOT match identifier
++    # where wildcard is other than left-most label.
++    #
++    # Also implicitly mentions the wildcard character only in singular form,
++    # and discourages matching against more than one wildcard.
++    #
++    # See RFC 6125, section 7.2, subitem 2.
++    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_name('*b*.example.com'), 'abc.example.com'))
++    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_name('*b*.example.com'), 'ab.example.com'))
++    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_name('*b*.example.com'), 'bc.example.com'))
++    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_name('xn*.example.com'), 'xn1ca.example.com'))
++    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_name('xn--*.example.com'), 'xn--1ca.example.com'))
++    # part of U-label
++    # Subject in RFC5280 states case-insensitive ASCII comparison.
++    #
++    # See Section 7.2 of RFC 5280:
++    #   IA5String is limited to the set of ASCII characters.
++    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
++      create_cert_with_name('á*.example.com'), 'á1.example.com'))
++  end
++
++  def create_cert_with_san(san)
++    ef = OpenSSL::X509::ExtensionFactory.new
++    cert = OpenSSL::X509::Certificate.new
++    cert.subject = OpenSSL::X509::Name.parse("/DC=some/DC=site/CN=Some Site")
++    ext = ef.create_ext('subjectAltName', san)
++    cert.add_extension(ext)
++    cert
++  end
++
++  def create_cert_with_name(name)
++    cert = OpenSSL::X509::Certificate.new
++    cert.subject = OpenSSL::X509::Name.new([['DC', 'some'], ['DC', 'site'], ['CN', name]])
++    cert
++  end
++
++
+   # Create NULL byte SAN certificate
+   def create_null_byte_SAN_certificate(critical = false)
+     ef = OpenSSL::X509::ExtensionFactory.new
+--- ruby2.1-2.1.5.orig/test/ruby/test_pack.rb
++++ ruby2.1-2.1.5/test/ruby/test_pack.rb
+@@ -181,7 +181,7 @@ class TestPack < Test::Unit::TestCase
+     assert_equal a[0], a.pack("p").unpack("p")[0]
+     assert_equal a, a.pack("p").freeze.unpack("p*")
+     assert_raise(ArgumentError) { (a.pack("p") + "").unpack("p*") }
+-    assert_raise(ArgumentError) { (a.pack("p") << "d").unpack("p*") }
++    assert_equal a, (a.pack("p") << "d").unpack("p*")
+   end
+ 
+   def test_format_string_modified
+--- ruby2.1-2.1.5.orig/test/rubygems/test_gem_remote_fetcher.rb
++++ ruby2.1-2.1.5/test/rubygems/test_gem_remote_fetcher.rb
+@@ -163,6 +163,21 @@ gems:
+   end
+ 
+   def test_api_endpoint
++    uri = URI.parse "http://example.com/foo"
++    target = MiniTest::Mock.new
++    target.expect :target, "gems.example.com"
++
++    dns = MiniTest::Mock.new
++    dns.expect :getresource, target, [String, Object]
++
++    fetch = Gem::RemoteFetcher.new nil, dns
++    assert_equal URI.parse("http://gems.example.com/foo"), fetch.api_endpoint(uri)
++
++    target.verify
++    dns.verify
++  end
++
++  def test_api_endpoint_ignores_trans_domain_values
+     uri = URI.parse "http://gems.example.com/foo"
+     target = MiniTest::Mock.new
+     target.expect :target, "blah.com"
+@@ -171,7 +186,37 @@ gems:
+     dns.expect :getresource, target, [String, Object]
+ 
+     fetch = Gem::RemoteFetcher.new nil, dns
+-    assert_equal URI.parse("http://blah.com/foo"), fetch.api_endpoint(uri)
++    assert_equal URI.parse("http://gems.example.com/foo"), fetch.api_endpoint(uri)
++
++    target.verify
++    dns.verify
++  end
++
++  def test_api_endpoint_ignores_trans_domain_values_that_starts_with_original
++    uri = URI.parse "http://example.com/foo"
++    target = MiniTest::Mock.new
++    target.expect :target, "example.combadguy.com"
++
++    dns = MiniTest::Mock.new
++    dns.expect :getresource, target, [String, Object]
++
++    fetch = Gem::RemoteFetcher.new nil, dns
++    assert_equal URI.parse("http://example.com/foo"), fetch.api_endpoint(uri)
++
++    target.verify
++    dns.verify
++  end
++
++  def test_api_endpoint_ignores_trans_domain_values_that_end_with_original
++    uri = URI.parse "http://example.com/foo"
++    target = MiniTest::Mock.new
++    target.expect :target, "badexample.com"
++
++    dns = MiniTest::Mock.new
++    dns.expect :getresource, target, [String, Object]
++
++    fetch = Gem::RemoteFetcher.new nil, dns
++    assert_equal URI.parse("http://example.com/foo"), fetch.api_endpoint(uri)
+ 
+     target.verify
+     dns.verify
+--- ruby2.1-2.1.5.orig/tool/rbinstall.rb
++++ ruby2.1-2.1.5/tool/rbinstall.rb
+@@ -666,7 +666,8 @@ module RbInstall
+         @gemspec ||= begin
+           spec = Gem::Specification.load(src) || raise("invalid spec in #{src}")
+           file_collector = FileCollector.new(File.dirname(src))
+-          spec.files = file_collector.collect
++          spec.executables = spec.executables.sort
++          spec.files = file_collector.collect.sort
+           spec
+         end
+       end
+@@ -687,8 +688,8 @@ Gem::Specification.new do |s|
+   s.name = #{name.dump}
+   s.version = #{version.dump}
+   s.summary = "This #{name} is bundled with Ruby"
+-  s.executables = #{execs.inspect}
+-  s.files = #{files.inspect}
++  s.executables = #{execs.sort.inspect}
++  s.files = #{files.sort.inspect}
+ end
+         GEMSPEC
+       end
