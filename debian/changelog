@@ -1,3 +1,15 @@
+ruby2.1 (2.1.5-2+deb8u3) jessie; urgency=low
+
+  * Non-maintainer upload to fix security problem.
+  * Fix CVE-2009-5147: DL::dlopen should not open a library with
+    tainted library name in safe mode (Closes: #796344).  Based on
+    patch used in DLA-299-1, which was pulled from upstream.
+  * Fix CVE-2015-7551: Fiddle handles should not call functions with
+    tainted function names (Closes: #796344).  Patch pulled from
+    upstream.
+
+ -- Petter Reinholdtsen <pere@debian.org>  Tue, 07 Jun 2016 11:00:04 +0200
+
 ruby2.1 (2.1.5-2+deb8u2) jessie; urgency=high
 
   * Apply upstream patches to fix Request hijacking vulnerability in Rubygems
