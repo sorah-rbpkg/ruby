@@ -1,3 +1,10 @@
+ruby2.3 (2.3.1-4) UNRELEASED; urgency=medium
+
+  * Backport some test changes from Ruby trunk, to fix (some) build
+    failures on archs other than amd64, i386, ppc64el, s390x.
+
+ -- Christian Hofstaedtler <zeha@debian.org>  Wed, 15 Jun 2016 07:28:18 +0000
+
 ruby2.2 (2.2.4-1) unstable; urgency=medium
 
   * d/control: Update branch name for 2.2 series
