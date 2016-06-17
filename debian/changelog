@@ -3,6 +3,7 @@ ruby2.3 (2.3.1-5) UNRELEASED; urgency=medium
   * Disable test_process.rb test_aspawn_too_long_path, as it uses ~2GB
     of RAM and a lot of CPU time before finally failing on mips, mipsel.
     Forwarded to upstream as issue #12500.
+  * Increase timeout for test_gc.rb test_gc_parameter, for mips, mipsel.
 
  -- Christian Hofstaedtler <zeha@debian.org>  Fri, 17 Jun 2016 20:32:01 +0000
 
