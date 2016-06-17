@@ -3,6 +3,9 @@ ruby2.3 (2.3.1-5) UNRELEASED; urgency=medium
   * Increase timeout for test_array.rb test_permutation_stack_error,
     as Array#permutation is very slow on armel, mips, mipsel.
     Forwarded to upstream as issue #12502.
+  * Disable test_process.rb test_aspawn_too_long_path, as it uses ~2GB
+    of RAM and a lot of CPU time before finally failing on mips, mipsel.
+    Forwarded to upstream as issue #12500.
 
  -- Christian Hofstaedtler <zeha@debian.org>  Fri, 17 Jun 2016 20:32:01 +0000
 
