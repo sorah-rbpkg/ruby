@@ -1,4 +1,4 @@
-ruby2.3 (2.3.1-5) UNRELEASED; urgency=medium
+ruby2.3 (2.3.1-5) unstable; urgency=medium
 
   * Increase timeout for test_array.rb test_permutation_stack_error,
     as Array#permutation is very slow on armel, mips, mipsel.
@@ -8,7 +8,7 @@ ruby2.3 (2.3.1-5) UNRELEASED; urgency=medium
     Forwarded to upstream as issue #12500.
   * Increase timeout for test_gc.rb test_gc_parameter, for mips, mipsel.
 
- -- Christian Hofstaedtler <zeha@debian.org>  Fri, 17 Jun 2016 20:32:01 +0000
+ -- Christian Hofstaedtler <zeha@debian.org>  Fri, 17 Jun 2016 23:30:49 +0000
 
 ruby2.3 (2.3.1-4) unstable; urgency=medium
 
