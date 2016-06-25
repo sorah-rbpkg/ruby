@@ -32,18 +32,11 @@ configure_options += --with-dbm-type=gdbm_compat
 # hardening and other standard Debian build flags
 configure_options += $(shell dpkg-buildflags --export=configure)
 
-# when we support tcltk latest again, just point to /usr/lib/$(DEB_HOST_MULTIARCH)
-vtcltk=8.5
-configure_options += --with-tcltkversion=$(vtcltk)
-configure_options += --with-tclConfig-dir=/usr/lib/$(DEB_HOST_MULTIARCH)/tcl$(vtcltk)/tclConfig.sh
-configure_options += --with-tkConfig-dir=/usr/lib/$(DEB_HOST_MULTIARCH)/tk$(vtcltk)/tkConfig.sh
-configure_options += --with-tcllib=tcl$(vtcltk)
-configure_options += --with-tklib=tk$(vtcltk)
-configure_options += --with-tcl-include=/usr/include/tcl$(vtcltk)
-configure_options += --with-tk-include=/usr/include/tcl$(vtcltk)
-configure_options += --with-tcl-lib=/usr/lib/$(DEB_HOST_MULTIARCH)
-configure_options += --with-tk-lib=/usr/lib/$(DEB_HOST_MULTIARCH)
-export DEB_LDFLAGS_MAINT_APPEND = -L$(CURDIR)/debian/lib
+# Always build with /bin/bash, to get consistent rbconfig.rb (which embeds SHELL).
+export SHELL := /bin/bash
+
+configure_options += --with-out-ext=tcl
+configure_options += --with-out-ext=tk
 
 %:
 	dh $@ --parallel --with autotools-dev --with autoreconf
@@ -92,5 +85,16 @@ override_dh_install-arch:
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/systemtap/tapset
 	sed 's|@LIBRARY_PATH@|/usr/lib/$(DEB_HOST_MULTIARCH)/libruby-2.1.so|g' $(CURDIR)/debian/libruby.stp > $(CURDIR)/debian/tmp/usr/share/systemtap/tapset/libruby2.1-$(DEB_HOST_MULTIARCH).stp
 	dh_install
-	# split Ruby/Tk files
-	$(baseruby) debian/split-tk-out.rb
+
+import-orig-source:
+	test -d .git
+	test -n "$$UPSTREAM_GIT"
+	test -n "$$UPSTREAM_VERSION"
+	cd $(UPSTREAM_GIT) && git archive --format=tar --prefix=ruby-$(UPSTREAM_VERSION)/ v$(shell echo $(UPSTREAM_VERSION) | tr . _) | xz -c > /tmp/ruby-$(UPSTREAM_VERSION).tar.xz
+	gbp import-orig /tmp/ruby-$(UPSTREAM_VERSION).tar.xz
+
+.PHONY: override_dh_strip
+override_dh_strip:
+	dh_strip --dbg-package=libruby$(RUBY_VERSION)-dbg
+	# Don't ship debug files for the rubyX.Y binary to avoid Multi-Arch: same issues.
+	rm $(CURDIR)/debian/libruby$(RUBY_VERSION)-dbg/usr/lib/debug/usr/bin/ruby$(RUBY_VERSION)
