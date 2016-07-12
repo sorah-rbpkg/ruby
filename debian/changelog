@@ -1,3 +1,10 @@
+ruby2.3 (2.3.1-5nkmi2~trusty) trusty; urgency=medium
+
+  * Backported trunk tool/downloader.rb to build on trusty
+  * Revert automatic dbgsym
+
+ -- Sorah Fukumori <her@sorah.jp>  Tue, 12 Jul 2016 17:09:19 +0000
+
 ruby2.3 (2.3.1-5nkmi1~trusty) trusty; urgency=medium
 
   * init from sorah (nkmi)
