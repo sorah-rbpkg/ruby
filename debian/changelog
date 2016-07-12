@@ -1,3 +1,10 @@
+ruby2.3 (2.3.1-5nkmi3) UNRELEASED; urgency=medium
+
+  * remove rake dep
+  * fix typo (couldn't build on xenial)
+
+ -- Sorah Fukumori <her@sorah.jp>  Tue, 12 Jul 2016 12:41:45 +0000
+
 ruby2.3 (2.3.1-5nkmi2~trusty) trusty; urgency=medium
 
   * Backported trunk tool/downloader.rb to build on trusty
@@ -6,7 +13,6 @@ ruby2.3 (2.3.1-5nkmi2~trusty) trusty; urgency=medium
  -- Sorah Fukumori <her@sorah.jp>  Tue, 12 Jul 2016 17:09:19 +0000
 
 ruby2.3 (2.3.1-5nkmi1~trusty) trusty; urgency=medium
-
   * init from sorah (nkmi)
   * remove tcltk
   * ruby2.3-gems package for bundled gems

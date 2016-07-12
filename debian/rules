@@ -17,7 +17,7 @@ export RUBY_VERSION       := $(patsubst ruby%,%,$(SOURCE))
 export RUBY_API_VERSION   := $(RUBY_VERSION).0
 
 # Gem::Security is required, so use ruby 2.0 or later
-baseruby=$(shell test -x /usr/bin/ruby && ruby -rgem/security -e0 2>/dev/null && echo /usr/bin/ruby || echo /usr/bin/ruby2.0)
+baseruby=$(shell test -x /usr/bin/ruby && ruby -rrubygems/security -e0 2>/dev/null && echo /usr/bin/ruby || echo /usr/bin/ruby2.0)
 
 configure_options += --enable-multiarch
 configure_options += --target=$(DEB_HOST_MULTIARCH)
