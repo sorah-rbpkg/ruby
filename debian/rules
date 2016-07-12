@@ -42,6 +42,10 @@ export SHELL := /bin/bash
 configure_options += --with-out-ext=tcl
 configure_options += --with-out-ext=tk
 
+# for TestExtLibs
+configure_options += --with-out-ext=win32ole
+configure_options += --with-out-ext=win32api
+
 %:
 	dh $@ --parallel --with autotools-dev --with autoreconf
 
