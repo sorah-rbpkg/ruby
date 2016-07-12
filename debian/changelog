@@ -1,6 +1,7 @@
 ruby2.3 (2.3.1-5nkmi3) UNRELEASED; urgency=medium
 
   * remove rake dep
+  * fix typo (couldn't build on xenial)
 
  -- Sorah Fukumori <her@sorah.jp>  Tue, 12 Jul 2016 12:41:45 +0000
 
