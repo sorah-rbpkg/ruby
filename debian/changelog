@@ -1,3 +1,11 @@
+ruby2.3 (2.3.1-5nkmi1) UNRELEASED; urgency=medium
+
+  * init from sorah (nkmi)
+  * remove tcltk
+  * ruby2.3-gems package for bundled gems
+
+ -- Sorah Fukumori <her@sorah.jp>  Tue, 12 Jul 2016 12:41:45 +0000
+
 ruby2.3 (2.3.1-5) unstable; urgency=medium
 
   * Increase timeout for test_array.rb test_permutation_stack_error,
