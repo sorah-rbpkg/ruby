@@ -1,8 +1,7 @@
 Source: ruby2.3
 Section: ruby
 Priority: optional
-Maintainer: Antonio Terceiro <terceiro@debian.org>
-Uploaders: Christian Hofstaedtler <zeha@debian.org>
+Maintainer: Sorah Fukumori <her@sorah.jp>
 Build-Depends: autotools-dev,
                bison,
                chrpath,
@@ -21,7 +20,7 @@ Build-Depends: autotools-dev,
                netbase,
                openssl,
                procps,
-               ruby | ruby-interpreter | ruby1.8,
+               ruby2.0 | ruby | ruby-interpreter,
                rubygems-integration (>= 1.6),
                systemtap-sdt-dev [linux-any],
                zlib1g-dev
@@ -52,8 +51,7 @@ Package: libruby2.3
 Section: libs
 Multi-Arch: same
 Architecture: any
-Depends: rake (>= 10.4.2),
-         ruby2.3-gems (= ${binary:Version}),
+Depends: ruby2.3-gems (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
 Description: Libraries necessary to run Ruby 2.3
