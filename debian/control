@@ -53,10 +53,7 @@ Section: libs
 Multi-Arch: same
 Architecture: any
 Depends: rake (>= 10.4.2),
-         ruby-did-you-mean (>= 1.0),
-         ruby-minitest (>= 5.4),
-         ruby-net-telnet (>= 0.1.1),
-         ruby-test-unit (>= 3.0.8~),
+         ruby2.3-gems (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
 Description: Libraries necessary to run Ruby 2.3
@@ -67,6 +64,13 @@ Description: Libraries necessary to run Ruby 2.3
  .
  This package includes the 'libruby-2.3' library, necessary to run Ruby 2.3.
  (API version 2.3.0)
+
+Package: ruby2.3-gems
+Section: libs
+Multi-Arch: same
+Architecture: any
+Depends:  ${misc:Depends}, ${shlibs:Depends}
+Description: Bundled gems
 
 Package: ruby2.3-dev
 Multi-Arch: same
