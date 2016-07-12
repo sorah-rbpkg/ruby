@@ -1,3 +1,20 @@
+ruby2.2 (2.2.5-0nkmi1) UNRELEASED; urgency=medium
+
+  [ Sorah Fukumori ]
+  * bump
+  * init of my release, with backporting 2.3 changes:
+
+  [ Christian Hofstaedtler ]
+  * Increase timeout for test_array.rb test_permutation_stack_error,
+    as Array#permutation is very slow on armel, mips, mipsel.
+    Forwarded to upstream as issue #12502.
+  * Disable test_process.rb test_aspawn_too_long_path, as it uses ~2GB
+    of RAM and a lot of CPU time before finally failing on mips, mipsel.
+    Forwarded to upstream as issue #12500.
+  * Increase timeout for test_gc.rb test_gc_parameter, for mips, mipsel.
+
+ -- Sorah Fukumori <her@sorah.jp>  Fri, 17 Jun 2016 20:32:01 +0000
+
 ruby2.2 (2.2.4-1) unstable; urgency=medium
 
   * d/control: Update branch name for 2.2 series
