@@ -1,4 +1,4 @@
-ruby2.3 (2.3.1-5nkmi3) UNRELEASED; urgency=medium
+ruby2.3 (2.3.1-5nkmi3~trusty) trusty; urgency=medium
 
   * remove rake dep
   * fix typo (couldn't build on xenial)
