@@ -16,8 +16,8 @@ export SOURCE             := $(shell dpkg-parsechangelog -SSource)
 export RUBY_VERSION       := $(patsubst ruby%,%,$(SOURCE))
 export RUBY_API_VERSION   := $(RUBY_VERSION).0
 
-# Bootstrap with Ruby 1.8 if proper Ruby is not available
-baseruby=$(shell test -x /usr/bin/ruby && echo /usr/bin/ruby || echo /usr/bin/ruby1.8)
+# Gem::Security is required, so use ruby 2.0 or later
+baseruby=$(shell test -x /usr/bin/ruby && ruby -rgem/security -e0 2>/dev/null && echo /usr/bin/ruby || echo /usr/bin/ruby2.0)
 
 configure_options += --enable-multiarch
 configure_options += --target=$(DEB_HOST_MULTIARCH)
