@@ -1,4 +1,4 @@
-ruby2.3 (2.3.1-5nkmi1) UNRELEASED; urgency=medium
+ruby2.3 (2.3.1-5nkmi1~trusty) trusty; urgency=medium
 
   * init from sorah (nkmi)
   * remove tcltk
