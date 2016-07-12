@@ -1,4 +1,10 @@
-ruby2.3 (2.3.1-5nkmi1) UNRELEASED; urgency=medium
+ruby2.3 (2.3.1-5nkmi3) UNRELEASED; urgency=medium
+
+  * remove rake dep
+
+ -- Sorah Fukumori <her@sorah.jp>  Tue, 12 Jul 2016 12:41:45 +0000
+
+ruby2.3 (2.3.1-5nkmi1) unstable; urgency=medium
 
   * init from sorah (nkmi)
   * remove tcltk
