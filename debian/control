@@ -51,8 +51,7 @@ Package: libruby2.3
 Section: libs
 Multi-Arch: same
 Architecture: any
-Depends: rake (>= 10.4.2),
-         ruby2.3-gems (= ${binary:Version}),
+Depends: ruby2.3-gems (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
 Description: Libraries necessary to run Ruby 2.3
