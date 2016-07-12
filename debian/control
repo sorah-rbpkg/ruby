@@ -1,8 +1,7 @@
 Source: ruby2.3
 Section: ruby
 Priority: optional
-Maintainer: Antonio Terceiro <terceiro@debian.org>
-Uploaders: Christian Hofstaedtler <zeha@debian.org>
+Maintainer: Sorah Fukumori <her@sorah.jp>
 Build-Depends: autotools-dev,
                bison,
                chrpath,
