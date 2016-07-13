@@ -529,6 +529,7 @@ double ruby_float_mod(double x, double y);
 int rb_num_negative_p(VALUE);
 VALUE rb_int_succ(VALUE num);
 VALUE rb_int_pred(VALUE num);
+VALUE rb_dbl_hash(double d);
 
 #if USE_FLONUM
 #define RUBY_BIT_ROTL(v, n) (((v) << (n)) | ((v) >> ((sizeof(v) * 8) - n)))
@@ -598,6 +599,7 @@ rb_float_new_inline(double d)
 void rb_obj_copy_ivar(VALUE dest, VALUE obj);
 VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
 VALUE rb_class_search_ancestor(VALUE klass, VALUE super);
+NORETURN(void rb_undefined_alloc(VALUE klass));
 
 struct RBasicRaw {
     VALUE flags;
@@ -629,6 +631,7 @@ void rb_gc_mark_symbols(int full_mark);
 VALUE rb_proc_location(VALUE self);
 st_index_t rb_hash_proc(st_index_t hash, VALUE proc);
 int rb_block_arity(void);
+VALUE rb_block_clear_env_self(VALUE proc);
 
 /* process.c */
 #define RB_MAX_GROUPS (65536)
@@ -721,11 +724,11 @@ VALUE rb_external_str_with_enc(VALUE str, rb_encoding *eenc);
 #define STR_NOEMBED FL_USER1
 #define STR_SHARED  FL_USER2 /* = ELTS_SHARED */
 #define STR_ASSOC   FL_USER3
-#define STR_SHARED_P(s) FL_ALL((s), STR_NOEMBED|ELTS_SHARED)
-#define STR_ASSOC_P(s)  FL_ALL((s), STR_NOEMBED|STR_ASSOC)
+#define STR_SHARED_P(s) FL_ALL_RAW((s), STR_NOEMBED|ELTS_SHARED)
+#define STR_ASSOC_P(s)  FL_ALL_RAW((s), STR_NOEMBED|STR_ASSOC)
 #define STR_NOCAPA  (STR_NOEMBED|ELTS_SHARED|STR_ASSOC)
-#define STR_NOCAPA_P(s) (FL_TEST((s),STR_NOEMBED) && FL_ANY((s),ELTS_SHARED|STR_ASSOC))
-#define STR_EMBED_P(str) (!FL_TEST((str), STR_NOEMBED))
+#define STR_NOCAPA_P(s) (FL_TEST_RAW((s),STR_NOEMBED) && FL_ANY_RAW((s),ELTS_SHARED|STR_ASSOC))
+#define STR_EMBED_P(str) (!FL_TEST_RAW((str), STR_NOEMBED))
 #define is_ascii_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT)
 #define is_broken_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN)
 
@@ -866,6 +869,7 @@ VALUE rb_gcd_gmp(VALUE x, VALUE y);
 
 /* util.c */
 extern const signed char ruby_digit36_to_number_table[];
+extern unsigned long ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow);
 
 /* variable.c */
 void rb_gc_mark_global_tbl(void);

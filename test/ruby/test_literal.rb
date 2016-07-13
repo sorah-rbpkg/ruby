@@ -103,6 +103,15 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal('FooBar', b, 'r3842')
   end
 
+  def test_dstring_encoding
+    bug11519 = '[ruby-core:70703] [Bug #11519]'
+    ['"foo#{}"', '"#{}foo"', '"#{}"'].each do |code|
+      a = eval("#-*- coding: utf-8 -*-\n#{code}")
+      assert_equal(Encoding::UTF_8, a.encoding,
+                   proc{"#{bug11519}: #{code}.encoding"})
+    end
+  end
+
   def test_dsymbol
     assert_equal :a3c, :"a#{1+2}c"
   end
@@ -193,7 +202,9 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_normal_exit %q{GC.disable=true; x = nil; raise if eval("[#{(1..1_000_000).to_a.join(", ")}]").size != 1_000_000}, "", timeout: 300, child_env: %[--disable-gems]
     assert_normal_exit %q{GC.disable=true; x = nil; raise if eval("{#{(1..1_000_000).map{|n| "#{n} => x"}.join(', ')}}").size != 1_000_000}, "", timeout: 300, child_env: %[--disable-gems]
     assert_normal_exit %q{GC.disable=true; x = nil; raise if eval("{#{(1..1_000_000).map{|n| "#{n} => #{n}"}.join(', ')}}").size != 1_000_000}, "", timeout: 300, child_env: %[--disable-gems]
+  end
 
+  def test_big_hash_literal
     bug7466 = '[ruby-dev:46658]'
     h = {
       0xFE042 => 0xE5CD,
@@ -328,6 +339,19 @@ class TestRubyLiteral < Test::Unit::TestCase
     }
     k = h.keys
     assert_equal([129, 0xFE331], [k.size, k.last], bug7466)
+
+    code = [
+      "h = {",
+      (1..128).map {|i| "#{i} => 0,"},
+      (129..140).map {|i| "#{i} => [],"},
+      "}",
+    ].join
+    assert_separately([], <<-"end;")
+      GC.stress = true
+      #{code}
+      GC.stress = false
+      assert_equal(140, h.size)
+    end;
   end
 
   def test_range
@@ -434,4 +458,14 @@ class TestRubyLiteral < Test::Unit::TestCase
     }
   end
 
+  def test_symbol_list
+    assert_equal([:foo, :bar], %i[foo bar])
+    assert_equal([:"\"foo"], %i["foo])
+
+    x = 10
+    assert_equal([:foo, :b10], %I[foo b#{x}])
+    assert_equal([:"\"foo10"], %I["foo#{x}])
+
+    assert_ruby_status(["--disable-gems", "--dump=parsetree"], "%I[foo bar]")
+  end
 end

@@ -2332,6 +2332,9 @@ id2ref(VALUE obj, VALUE objid)
     if (!is_live_object(objspace, ptr)) {
 	rb_raise(rb_eRangeError, "%p is recycled object", p0);
     }
+    if (RBASIC(ptr)->klass == 0) {
+	rb_raise(rb_eRangeError, "%p is internal object", p0);
+    }
     return (VALUE)ptr;
 }
 
@@ -6413,7 +6416,7 @@ wmap_final_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 	return ST_DELETE;
     }
     if (j < i) {
-	ptr = ruby_sized_xrealloc2(ptr, j, sizeof(VALUE), i);
+	ptr = ruby_sized_xrealloc2(ptr, j + 1, sizeof(VALUE), i);
 	ptr[0] = j;
 	*value = (st_data_t)ptr;
     }

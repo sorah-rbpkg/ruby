@@ -461,7 +461,7 @@ rb_zlib_adler32_combine(VALUE klass, VALUE adler1, VALUE adler2, VALUE len2)
 /*
  * Document-method: Zlib.crc32
  *
- * call-seq: Zlib.crc32(string, adler)
+ * call-seq: Zlib.crc32(string, crc)
  *
  * Calculates CRC checksum for +string+, and returns updated value of +crc+. If
  * +string+ is omitted, it returns the CRC initial value. If +crc+ is omitted, it
@@ -1832,7 +1832,7 @@ rb_inflate_s_allocate(VALUE klass)
  *   Have inflate use the window size from the zlib header of the compressed
  *   stream.
  *
- * (8..15)
+ * (8..15)::
  *   Overrides the window size of the inflate header in the compressed stream.
  *   The window size must be greater than or equal to the window size of the
  *   compressed stream.

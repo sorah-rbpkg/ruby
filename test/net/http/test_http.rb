@@ -140,12 +140,12 @@ class TestNetHTTP < Test::Unit::TestCase
 
   def test_proxy_port
     clean_http_proxy_env do
-      http = Net::HTTP.new 'exmaple', nil, 'proxy.example'
+      http = Net::HTTP.new 'example', nil, 'proxy.example'
       assert_equal 'proxy.example', http.proxy_address
       assert_equal 80, http.proxy_port
-      http = Net::HTTP.new 'exmaple', nil, 'proxy.example', 8000
+      http = Net::HTTP.new 'example', nil, 'proxy.example', 8000
       assert_equal 8000, http.proxy_port
-      http = Net::HTTP.new 'exmaple', nil
+      http = Net::HTTP.new 'example', nil
       assert_equal nil, http.proxy_port
     end
   end
@@ -574,6 +574,7 @@ module TestNetHTTP_version_1_2_methods
   def test_send_request
     start {|http|
       _test_send_request__GET http
+      _test_send_request__HEAD http
       _test_send_request__POST http
     }
   end
@@ -586,6 +587,16 @@ module TestNetHTTP_version_1_2_methods
     end
     assert_kind_of String, res.body
     assert_equal $test_net_http_data, res.body
+  end
+
+  def _test_send_request__HEAD(http)
+    res = http.send_request('HEAD', '/')
+    assert_kind_of Net::HTTPResponse, res
+    unless self.is_a?(TestNetHTTP_v1_2_chunked)
+      assert_not_nil res['content-length']
+      assert_equal $test_net_http_data.size, res['content-length'].to_i
+    end
+    assert_nil res.body
   end
 
   def _test_send_request__POST(http)
@@ -805,6 +816,22 @@ class TestNetHTTPContinue < Test::Unit::TestCase
       http.continue_timeout = 0
       http.request_post('/continue', 'body=ERROR', uheader) {|res|
         assert_equal('ERROR', res.read_body)
+      }
+    }
+    assert_match(/Expect: 100-continue/, @debug.string)
+    assert_not_match(/HTTP\/1.1 100 continue/, @debug.string)
+  end
+
+  def test_expect_continue_error_before_body
+    @log_tester = nil
+    mount_proc {|req, res|
+      raise WEBrick::HTTPStatus::Forbidden
+    }
+    start {|http|
+      uheader = {'content-length' => '5', 'expect' => '100-continue'}
+      http.continue_timeout = 1 # allow the server to respond before sending
+      http.request_post('/continue', 'data', uheader) {|res|
+        assert_equal(res.code, '403')
       }
     }
     assert_match(/Expect: 100-continue/, @debug.string)

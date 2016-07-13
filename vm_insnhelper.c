@@ -200,16 +200,16 @@ lep_svar_set(rb_thread_t *th, VALUE *lep, rb_num_t key, VALUE val)
 
     switch (key) {
       case 0:
-	svar->u1.value = val;
+	RB_OBJ_WRITE(svar, &svar->u1.value, val);
 	return;
       case 1:
-	svar->u2.value = val;
+	RB_OBJ_WRITE(svar, &svar->u2.value, val);
 	return;
       default: {
 	VALUE ary = svar->u3.value;
 
 	if (NIL_P(ary)) {
-	    svar->u3.value = ary = rb_ary_new();
+	    RB_OBJ_WRITE(svar, &svar->u3.value, ary = rb_ary_new());
 	}
 	rb_ary_store(ary, key - DEFAULT_SPECIAL_VAR_COUNT, val);
       }
@@ -276,6 +276,27 @@ rb_vm_get_cref(const rb_iseq_t *iseq, const VALUE *ep)
 	rb_bug("rb_vm_get_cref: unreachable");
     }
     return cref;
+}
+
+void
+rb_vm_rewrite_cref_stack(NODE *node, VALUE old_klass, VALUE new_klass, NODE **new_cref_ptr)
+{
+    NODE *new_node;
+    while (node) {
+	if (node->nd_clss == old_klass) {
+	    new_node = NEW_CREF(new_klass);
+	    COPY_CREF_OMOD(new_node, node);
+	    RB_OBJ_WRITE(new_node, &new_node->nd_next, node->nd_next);
+	    *new_cref_ptr = new_node;
+	    return;
+	}
+	new_node = NEW_CREF(node->nd_clss);
+	COPY_CREF_OMOD(new_node, node);
+	node = node->nd_next;
+	*new_cref_ptr = new_node;
+	new_cref_ptr = &new_node->nd_next;
+    }
+    *new_cref_ptr = NULL;
 }
 
 static NODE *

@@ -2046,8 +2046,8 @@ arg		: lhs '=' arg
 			value_expr($1);
 			value_expr($3);
 			$$ = NEW_DOT2($1, $3);
-			if (nd_type($1) == NODE_LIT && FIXNUM_P($1->nd_lit) &&
-			    nd_type($3) == NODE_LIT && FIXNUM_P($3->nd_lit)) {
+			if ($1 && nd_type($1) == NODE_LIT && FIXNUM_P($1->nd_lit) &&
+			    $3 && nd_type($3) == NODE_LIT && FIXNUM_P($3->nd_lit)) {
 			    deferred_nodes = list_append(deferred_nodes, $$);
 			}
 		    /*%
@@ -2060,8 +2060,8 @@ arg		: lhs '=' arg
 			value_expr($1);
 			value_expr($3);
 			$$ = NEW_DOT3($1, $3);
-			if (nd_type($1) == NODE_LIT && FIXNUM_P($1->nd_lit) &&
-			    nd_type($3) == NODE_LIT && FIXNUM_P($3->nd_lit)) {
+			if ($1 && nd_type($1) == NODE_LIT && FIXNUM_P($1->nd_lit) &&
+			    $3 && nd_type($3) == NODE_LIT && FIXNUM_P($3->nd_lit)) {
 			    deferred_nodes = list_append(deferred_nodes, $$);
 			}
 		    /*%
@@ -3467,14 +3467,20 @@ lambda		:   {
 		    {
 			$<num>$ = ruby_sourceline;
 		    }
+		    {
+			$<val>$ = cmdarg_stack;
+			cmdarg_stack = 0;
+		    }
 		  lambda_body
 		    {
 			lpar_beg = $<num>2;
+			cmdarg_stack = $<val>5;
+			CMDARG_LEXPOP();
 		    /*%%%*/
-			$$ = NEW_LAMBDA($3, $5);
+			$$ = NEW_LAMBDA($3, $6);
 			nd_set_line($$, $<num>4);
 		    /*%
-			$$ = dispatch2(lambda, $3, $5);
+			$$ = dispatch2(lambda, $3, $6);
 		    %*/
 			dyna_pop($<vars>1);
 		    }
@@ -4033,7 +4039,13 @@ symbol_list	: /* none */
 		    {
 		    /*%%%*/
 			$2 = evstr2dstr($2);
-			nd_set_type($2, NODE_DSYM);
+			if (nd_type($2) == NODE_DSTR) {
+			    nd_set_type($2, NODE_DSYM);
+			}
+			else {
+			    nd_set_type($2, NODE_LIT);
+			    $2->nd_lit = rb_str_intern($2->nd_lit);
+			}
 			$$ = list_append($1, $2);
 		    /*%
 			$$ = dispatch2(symbols_add, $1, $2);
@@ -6947,6 +6959,27 @@ parser_prepare(struct parser_params *parser)
      (ambiguous_operator(op, syn), 0)))
 
 static int
+parse_numvar(struct parser_params *parser)
+{
+    size_t len;
+    int overflow;
+    unsigned long n = ruby_scan_digits(tok()+1, toklen()-1, 10, &len, &overflow);
+    const unsigned long nth_ref_max =
+	((FIXNUM_MAX < INT_MAX) ? FIXNUM_MAX : INT_MAX) >> 1;
+    /* NTH_REF is left-shifted to be ORed with back-ref flag and
+     * turned into a Fixnum, in compile.c */
+
+    if (overflow || n > nth_ref_max) {
+	/* compile_error()? */
+	rb_warnS("`%s' is too big for a number variable, always nil", tok());
+	return 0;		/* $0 is $PROGRAM_NAME, not NTH_REF */
+    }
+    else {
+	return (int)n;
+    }
+}
+
+static int
 parser_yylex(struct parser_params *parser)
 {
     register int c;
@@ -8042,7 +8075,7 @@ parser_yylex(struct parser_params *parser)
 	    pushback(c);
 	    if (IS_lex_state_for(last_state, EXPR_FNAME)) goto gvar;
 	    tokfix();
-	    set_yylval_node(NEW_NTH_REF(atoi(tok()+1)));
+	    set_yylval_node(NEW_NTH_REF(parse_numvar(parser)));
 	    return tNTH_REF;
 
 	  default:
@@ -8444,7 +8477,7 @@ literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail)
 
     htype = nd_type(head);
     if (htype == NODE_EVSTR) {
-	NODE *node = NEW_DSTR(Qnil);
+	NODE *node = NEW_DSTR(STR_NEW0());
 	head = list_append(node, head);
 	htype = NODE_DSTR;
     }
@@ -8517,7 +8550,7 @@ static NODE *
 evstr2dstr_gen(struct parser_params *parser, NODE *node)
 {
     if (nd_type(node) == NODE_EVSTR) {
-	node = list_append(NEW_DSTR(Qnil), node);
+	node = list_append(NEW_DSTR(STR_NEW0()), node);
     }
     return node;
 }

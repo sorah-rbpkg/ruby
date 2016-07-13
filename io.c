@@ -2419,7 +2419,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock, int no_exception)
     long n, len;
     struct read_internal_arg arg;
 
-    rb_scan_args(argc, argv, "11:", &length, &str, NULL);
+    rb_scan_args(argc, argv, "11", &length, &str);
 
     if ((len = NUM2LONG(length)) < 0) {
 	rb_raise(rb_eArgError, "negative length %ld given", len);
@@ -2598,8 +2598,10 @@ io_read_nonblock(int argc, VALUE *argv, VALUE io)
 
     rb_scan_args(argc, argv, "11:", NULL, NULL, &opts);
 
-    if (!NIL_P(opts) && Qfalse == rb_hash_aref(opts, sym_exception))
+    if (!NIL_P(opts) && Qfalse == rb_hash_aref(opts, sym_exception)) {
 	no_exception = 1;
+	argc--;
+    }
 
     ret = io_getpartial(argc, argv, io, 1, no_exception);
 
@@ -3630,6 +3632,7 @@ rb_io_each_codepoint(VALUE io)
     READ_CHECK(fptr);
     if (NEED_READCONV(fptr)) {
 	SET_BINARY_MODE(fptr);
+	r = 1;		/* no invalid char yet */
 	for (;;) {
 	    make_readconv(fptr, 0);
 	    for (;;) {
@@ -3648,13 +3651,16 @@ rb_io_each_codepoint(VALUE io)
 		}
 		if (more_char(fptr) == MORE_CHAR_FINISHED) {
                     clear_readconv(fptr);
-		    /* ignore an incomplete character before EOF */
+		    if (!MBCLEN_CHARFOUND_P(r)) {
+			enc = fptr->encs.enc;
+			goto invalid;
+		    }
 		    return io;
 		}
 	    }
 	    if (MBCLEN_INVALID_P(r)) {
-		rb_raise(rb_eArgError, "invalid byte sequence in %s",
-			 rb_enc_name(fptr->encs.enc));
+		enc = fptr->encs.enc;
+		goto invalid;
 	    }
 	    n = MBCLEN_CHARFOUND_LEN(r);
 	    if (fptr->encs.enc) {
@@ -3684,7 +3690,24 @@ rb_io_each_codepoint(VALUE io)
 	    rb_yield(UINT2NUM(c));
 	}
 	else if (MBCLEN_INVALID_P(r)) {
+	  invalid:
 	    rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(enc));
+	}
+	else if (MBCLEN_NEEDMORE_P(r)) {
+	    char cbuf[8], *p = cbuf;
+	    int more = MBCLEN_NEEDMORE_LEN(r);
+	    if (more > numberof(cbuf)) goto invalid;
+	    more += n = fptr->rbuf.len;
+	    if (more > numberof(cbuf)) goto invalid;
+	    while ((n = (int)read_buffered_data(p, more, fptr)) > 0 &&
+		   (p += n, (more -= n) > 0)) {
+		if (io_fillbuf(fptr) < 0) goto invalid;
+		if ((n = fptr->rbuf.len) > more) n = more;
+	    }
+	    r = rb_enc_precise_mbclen(cbuf, p, enc);
+	    if (!MBCLEN_CHARFOUND_P(r)) goto invalid;
+	    c = rb_enc_codepoint(cbuf, p, enc);
+	    rb_yield(UINT2NUM(c));
 	}
 	else {
 	    continue;
@@ -4958,6 +4981,9 @@ rb_io_oflags_modestr(int oflags)
       case O_WRONLY:
 	return MODE_BINARY("w", "wb");
       case O_RDWR:
+	if (oflags & O_TRUNC) {
+	    return MODE_BINARY("w+", "wb+");
+	}
 	return MODE_BINARY("r+", "rb+");
     }
 }
@@ -5035,9 +5061,11 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int 
 	    fmode |= FMODE_SETENC_BY_BOM;
 	    estr += 4;
             len -= 4;
-	    memcpy(encname, estr, len);
-	    encname[len] = '\0';
-	    estr = encname;
+	    if (len > 0 && len <= ENCODING_MAXNAMELEN) {
+		memcpy(encname, estr, len);
+		encname[len] = '\0';
+		estr = encname;
+	    }
 	}
 	idx = rb_enc_find_index(estr);
     }
@@ -10964,7 +10992,9 @@ argf_getpartial(int argc, VALUE *argv, VALUE argf, int nonblock)
     }
 
     if (!next_argv()) {
-        rb_str_resize(str, 0);
+	if (!NIL_P(str)) {
+	    rb_str_resize(str, 0);
+	}
         rb_eof_error();
     }
     if (ARGF_GENERIC_INPUT_P()) {

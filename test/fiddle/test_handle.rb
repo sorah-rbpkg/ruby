@@ -10,6 +10,23 @@ module Fiddle
 
     include Test::Unit::Assertions
 
+    def test_safe_handle_open
+      t = Thread.new do
+        $SAFE = 1
+        Fiddle::Handle.new(LIBC_SO.taint)
+      end
+      assert_raise(SecurityError) { t.value }
+    end
+
+    def test_safe_function_lookup
+      t = Thread.new do
+        h = Fiddle::Handle.new(LIBC_SO)
+        $SAFE = 1
+        h["qsort".taint]
+      end
+      assert_raise(SecurityError) { t.value }
+    end
+
     def test_to_i
       handle = Fiddle::Handle.new(LIBC_SO)
       assert_kind_of Integer, handle.to_i
@@ -30,18 +47,23 @@ module Fiddle
     end
 
     def test_static_sym
-      skip "Fiddle::Handle.sym is not supported" if /mswin|mingw/ =~ RUBY_PLATFORM
       begin
         # Linux / Darwin / FreeBSD
         refute_nil Fiddle::Handle.sym('dlopen')
         assert_equal Fiddle::Handle.sym('dlopen'), Fiddle::Handle['dlopen']
+        return
       rescue
-        # NetBSD
-        require 'objspace'
-        refute_nil Fiddle::Handle.sym('Init_objspace')
-        assert_equal Fiddle::Handle.sym('Init_objspace'), Fiddle::Handle['Init_objspace']
       end
-    end
+
+      begin
+        # NetBSD
+        require '-test-/dln/empty'
+        refute_nil Fiddle::Handle.sym('Init_empty')
+        assert_equal Fiddle::Handle.sym('Init_empty'), Fiddle::Handle['Init_empty']
+        return
+      rescue
+      end
+    end unless /mswin|mingw/ =~ RUBY_PLATFORM
 
     def test_sym_closed_handle
       handle = Fiddle::Handle.new(LIBC_SO)
@@ -152,7 +174,11 @@ module Fiddle
         # --- Ubuntu Linux 8.04 dlsym(3)
         handle = Handle::NEXT
         refute_nil handle['malloc']
+        return
       rescue
+      end
+
+      begin
         # BSD
         #
         # If dlsym() is called with the special handle RTLD_NEXT, then the search
@@ -166,14 +192,15 @@ module Fiddle
         # interface, below, should be used, since getpid() is a function and not a
         # data object.)
         # --- FreeBSD 8.0 dlsym(3)
-        require 'objspace'
+        require '-test-/dln/empty'
         handle = Handle::NEXT
-        refute_nil handle['Init_objspace']
+        refute_nil handle['Init_empty']
+        return
+      rescue
       end
     end unless /mswin|mingw/ =~ RUBY_PLATFORM
 
     def test_DEFAULT
-      skip "Handle::DEFAULT is not supported" if /mswin|mingw/ =~ RUBY_PLATFORM
       handle = Handle::DEFAULT
       refute_nil handle['malloc']
     end unless /mswin|mingw/ =~ RUBY_PLATFORM

@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'tempfile'
+require_relative 'envutil'
 require_relative 'marshaltestlib'
 
 class TestMarshal < Test::Unit::TestCase
@@ -244,6 +245,17 @@ class TestMarshal < Test::Unit::TestCase
     bug2548 = '[ruby-core:27375]'
     ary = [:$1, nil]
     assert_equal(ary, Marshal.load(Marshal.dump(ary)), bug2548)
+  end
+
+  def test_symlink_in_ivar
+    bug10991 = '[ruby-core:68587] [Bug #10991]'
+    sym = Marshal.load("\x04\x08" +
+                       "I" ":\x0bKernel" +
+                       ("\x06" +
+                        ("I" ":\x07@a" +
+                         ("\x06" ":\x07@b" "e;\x0""o:\x0bObject""\x0")) +
+                        "0"))
+    assert_equal(:Kernel, sym, bug10991)
   end
 
   ClassUTF8 = eval("class R\u{e9}sum\u{e9}; self; end")
@@ -594,5 +606,29 @@ class TestMarshal < Test::Unit::TestCase
     assert_nothing_raised(ArgumentError, '[Bug #7722]') do
       Marshal.dump(TestForRespondToFalse.new)
     end
+  end
+
+  def test_marshal_honor_post_proc_value_for_link
+    str = 'x' # for link
+    obj = [str, str]
+    assert_equal(['X', 'X'], Marshal.load(Marshal.dump(obj), ->(v) { v == str ? v.upcase : v }))
+  end
+
+  def test_marshal_load_extended_class_crash
+    crash = "\x04\be:\x0F\x00omparableo:\vObject\x00"
+
+    opt = %w[--disable=gems]
+    assert_ruby_status(opt, "Marshal.load(#{crash.dump})")
+  end
+
+  def test_marshal_load_r_prepare_reference_crash
+    crash = "\x04\bI/\x05\x00\x06:\x06E{\x06@\x05T"
+
+    opt = %w[--disable=gems]
+    assert_separately(opt, <<-RUBY)
+      assert_raise_with_message(ArgumentError, /bad link/) do
+        Marshal.load(#{crash.dump})
+      end
+    RUBY
   end
 end

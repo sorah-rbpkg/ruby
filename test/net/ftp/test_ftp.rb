@@ -23,6 +23,14 @@ class FTPTest < Test::Unit::TestCase
     end
   end
 
+  def test_closed_when_not_connected
+    ftp = Net::FTP.new
+    assert_equal(true, ftp.closed?)
+    assert_nothing_raised(Net::FTPConnectionError) do
+      ftp.close
+    end
+  end
+
   def test_connect_fail
     server = create_ftp_server { |sock|
       sock.print("421 Service not available, closing control connection.\r\n")
@@ -467,6 +475,46 @@ class FTPTest < Test::Unit::TestCase
         assert_equal("TYPE A\r\n", commands.shift)
         assert_match(/\APORT /, commands.shift)
         assert_equal("LIST\r\n", commands.shift)
+        assert_equal("TYPE I\r\n", commands.shift)
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
+  def test_open_data_port_fail_no_leak
+    commands = []
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp).\r\n")
+      commands.push(sock.gets)
+      sock.print("331 Please specify the password.\r\n")
+      commands.push(sock.gets)
+      sock.print("230 Login successful.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to Binary mode.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to ASCII mode.\r\n")
+      line = sock.gets
+      commands.push(line)
+      sock.print("421 Service not available, closing control connection.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to Binary mode.\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.read_timeout = 0.2
+        ftp.connect(SERVER_ADDR, server.port)
+        ftp.login
+        assert_match(/\AUSER /, commands.shift)
+        assert_match(/\APASS /, commands.shift)
+        assert_equal("TYPE I\r\n", commands.shift)
+        assert_raise(Net::FTPTempError){ ftp.list }
+        assert_equal("TYPE A\r\n", commands.shift)
+        assert_match(/\APORT /, commands.shift)
         assert_equal("TYPE I\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure

@@ -637,6 +637,17 @@ rb_block_lambda(void)
 }
 
 VALUE
+rb_block_clear_env_self(VALUE proc)
+{
+    rb_proc_t *po;
+    rb_env_t *env;
+    GetProcPtr(proc, po);
+    GetEnvPtr(po->envval, env);
+    env->env[0] = Qnil;
+    return proc;
+}
+
+VALUE
 rb_f_lambda(void)
 {
     rb_warn("rb_f_lambda() is deprecated; use rb_block_proc() instead");
@@ -2317,7 +2328,10 @@ static VALUE
 method_proc(VALUE method)
 {
     VALUE procval;
+    struct METHOD *meth;
     rb_proc_t *proc;
+    rb_env_t *env;
+
     /*
      * class Method
      *   def to_proc
@@ -2327,9 +2341,16 @@ method_proc(VALUE method)
      *   end
      * end
      */
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, meth);
     procval = rb_iterate(mlambda, 0, bmcall, method);
     GetProcPtr(procval, proc);
     proc->is_from_method = 1;
+    proc->block.self = meth->recv;
+    proc->block.klass = meth->defined_class;
+    GetEnvPtr(proc->envval, env);
+    env->block.self = meth->recv;
+    env->block.klass = meth->defined_class;
+    env->block.iseq = method_get_iseq(meth->me->def);
     return procval;
 }
 

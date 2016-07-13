@@ -413,6 +413,16 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_execopts_open_chdir_m17n_path
+    with_tmpchdir {|d|
+      Dir.mkdir "テスト"
+      system(*PWD, :chdir => "テスト", :out => "open_chdir_テスト")
+      assert_file.exist?("open_chdir_テスト")
+      assert_file.not_exist?("テスト/open_chdir_テスト")
+      assert_equal("#{d}/テスト", File.read("open_chdir_テスト").chomp.encode(__ENCODING__))
+    }
+  end if windows? || Encoding.find('locale') == Encoding::UTF_8
+
   UMASK = [RUBY, '-e', 'printf "%04o\n", File.umask']
 
   def test_execopts_umask
@@ -1263,6 +1273,29 @@ class TestProcess < Test::Unit::TestCase
     end
   end
 
+  def test_wait_exception
+    bug11340 = '[ruby-dev:49176] [Bug #11340]'
+    t0 = t1 = nil
+    IO.popen([RUBY, '-e', 'puts;STDOUT.flush;Thread.start{gets;exit};sleep(3)'], 'r+') do |f|
+      pid = f.pid
+      f.gets
+      t0 = Time.now
+      th = Thread.start(Thread.current) do |main|
+        Thread.pass until main.stop?
+        main.raise Interrupt
+      end
+      begin
+        assert_raise(Interrupt) {Process.wait(pid)}
+      ensure
+        th.kill.join
+      end
+      t1 = Time.now
+      f.puts
+    end
+    assert_operator(t1 - t0, :<, 3,
+                    ->{"#{bug11340}: #{t1-t0} seconds to interrupt Process.wait"})
+  end
+
   def test_abort
     with_tmpchdir do
       s = run_in_child("abort")
@@ -1425,7 +1458,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_aspawn_too_long_path
-    bug4315 = '[ruby-core:34833]'
+    bug4315 = '[ruby-core:34833] #7904 [ruby-core:52628] #11613'
     assert_fail_too_long_path(%w"echo |", bug4315)
   end
 
@@ -1435,11 +1468,13 @@ class TestProcess < Test::Unit::TestCase
     cmds = Array.new(min, cmd)
     exs = [Errno::ENOENT]
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
+    opts = {[STDOUT, STDERR]=>File::NULL}
+    opts[:rlimit_nproc] = 128 if defined?(Process::RLIMIT_NPROC)
     EnvUtil.suppress_warning do
       assert_raise(*exs, mesg) do
         begin
           loop do
-            Process.spawn(cmds.join(sep), [STDOUT, STDERR]=>File::NULL)
+            Process.spawn(cmds.join(sep), opts)
             min = [cmds.size, min].max
             cmds *= 100
           end
@@ -1609,7 +1644,15 @@ class TestProcess < Test::Unit::TestCase
       assert_nothing_raised(feature6975) do
         begin
           g = IO.popen([RUBY, "-e", "print Process.gid", gid: group], &:read)
-          assert_equal(gid, g, feature6975)
+          # AIX allows a non-root process to setgid to its supplementary group,
+          # while other UNIXes do not. (This might be AIX's violation of the POSIX standard.)
+          # However, Ruby does not allow a setgid'ed Ruby process to use the -e option.
+          # As a result, the Ruby process invoked by "IO.popen([RUBY, "-e", ..." above fails
+          # with a message like "no -e allowed while running setgid (SecurityError)" to stderr,
+          # the exis status is set to 1, and the variable "g" is set to an empty string.
+          # To conclude, on AIX, if the "gid" variable is a supplementary group,
+          # the assert_equal next can fail, so skip it.
+          assert_equal(gid, g, feature6975) unless $?.exitstatus == 1 && /aix/ =~ RUBY_PLATFORM && gid != Process.gid
         rescue Errno::EPERM, NotImplementedError
         end
       end
@@ -1646,9 +1689,9 @@ class TestProcess < Test::Unit::TestCase
   def test_setsid
     return unless Process.respond_to?(:setsid)
     return unless Process.respond_to?(:getsid)
-    # OpenBSD doesn't allow Process::getsid(pid) when pid is in
+    # OpenBSD and AIX don't allow Process::getsid(pid) when pid is in
     # different session.
-    return if /openbsd/ =~ RUBY_PLATFORM
+    return if /openbsd|aix/ =~ RUBY_PLATFORM
 
     IO.popen([RUBY, "-e", <<EOS]) do|io|
 	Marshal.dump(Process.getsid, STDOUT)

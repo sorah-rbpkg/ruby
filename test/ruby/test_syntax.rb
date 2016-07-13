@@ -266,6 +266,16 @@ WARN
     assert_valid_syntax("bar def foo; self.each do end end", bug9308)
   end
 
+  def test_do_block_in_lambda
+    bug11107 = '[ruby-core:69017] [Bug #11107]'
+    assert_valid_syntax('p ->() do a() do end end', bug11107)
+  end
+
+  def test_do_block_after_lambda
+    bug11380 = '[ruby-core:70067] [Bug #11380]'
+    assert_valid_syntax('p -> { :hello }, a: 1 do end', bug11380)
+  end
+
   def test_reserved_method_no_args
     bug6403 = '[ruby-dev:45626]'
     assert_valid_syntax("def self; :foo; end", __FILE__, bug6403)
@@ -406,6 +416,21 @@ eom
     bug10114 = '[ruby-core:64228] [Bug #10114]'
     code = "# -*- coding: utf-8 -*-\n" "def n \"\u{2208}\"; end"
     assert_syntax_error(code, /def n "\u{2208}"; end/, bug10114)
+  end
+
+  def test_null_range_cmdarg
+    bug10957 = '[ruby-core:68477] [Bug #10957]'
+    assert_ruby_status(['-c', '-e', 'p ()..0'], "", bug10957)
+    assert_ruby_status(['-c', '-e', 'p ()...0'], "", bug10957)
+    assert_syntax_error('0..%w.', /unterminated string/, bug10957)
+    assert_syntax_error('0...%w.', /unterminated string/, bug10957)
+  end
+
+  def test_too_big_nth_ref
+    bug11192 = '[ruby-core:69393] [Bug #11192]'
+    assert_warn(/too big/, bug11192) do
+      eval('$99999999999999999')
+    end
   end
 
   private

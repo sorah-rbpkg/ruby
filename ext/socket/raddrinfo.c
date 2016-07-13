@@ -617,7 +617,8 @@ make_hostent_internal(struct hostent_arg *arg)
     }
     rb_ary_push(ary, rb_str_new2(hostp));
 
-    if (addr->ai_canonname && (h = gethostbyname(addr->ai_canonname))) {
+    if (addr->ai_canonname && strlen(addr->ai_canonname) < NI_MAXHOST &&
+	(h = gethostbyname(addr->ai_canonname))) {
         names = rb_ary_new();
         if (h->h_aliases != NULL) {
             for (pch = h->h_aliases; *pch; pch++) {
@@ -1643,6 +1644,7 @@ addrinfo_mload(VALUE self, VALUE ary)
 
         len = res->ai->ai_addrlen;
         memcpy(&ss, res->ai->ai_addr, res->ai->ai_addrlen);
+        rb_freeaddrinfo(res);
         break;
       }
     }

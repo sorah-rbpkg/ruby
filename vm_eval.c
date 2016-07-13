@@ -260,7 +260,8 @@ vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
 	rb_bug("vm_call_super: should not be reached");
     }
 
-    klass = RCLASS_SUPER(cfp->klass);
+    klass = RCLASS_ORIGIN(cfp->klass);
+    klass = RCLASS_SUPER(klass);
     id = cfp->me->def->original_id;
     me = rb_method_entry(klass, id, &klass);
     if (!me) {
@@ -532,7 +533,12 @@ rb_method_call_status(rb_thread_t *th, const rb_method_entry_t *me, call_type sc
     int noex;
 
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
+      undefined:
 	return scope == CALL_VCALL ? NOEX_VCALL : 0;
+    }
+    if (me->def->type == VM_METHOD_TYPE_REFINED) {
+	me = rb_resolve_refined_method(Qnil, me, NULL);
+	if (UNDEFINED_METHOD_ENTRY_P(me)) goto undefined;
     }
     klass = me->klass;
     oid = me->def->original_id;
@@ -986,6 +992,7 @@ rb_yield_splat(VALUE values)
         rb_raise(rb_eArgError, "not an array");
     }
     v = rb_yield_0(RARRAY_LENINT(tmp), RARRAY_CONST_PTR(tmp));
+    RB_GC_GUARD(tmp);
     return v;
 }
 

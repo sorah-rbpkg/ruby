@@ -914,9 +914,12 @@ module Net   #:nodoc:
             @socket.write(buf)
             HTTPResponse.read_new(@socket).value
           end
-          s.session = @ssl_session if @ssl_session
           # Server Name Indication (SNI) RFC 3546
           s.hostname = @address if s.respond_to? :hostname=
+          if @ssl_session and
+             Time.now < @ssl_session.time + @ssl_session.timeout
+            s.session = @ssl_session if @ssl_session
+          end
           Timeout.timeout(@open_timeout, Net::OpenTimeout) { s.connect }
           if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
             s.post_connection_check(@address)
@@ -1026,7 +1029,9 @@ module Net   #:nodoc:
 
     # The proxy URI determined from the environment for this connection.
     def proxy_uri # :nodoc:
-      @proxy_uri ||= URI("http://#{address}:#{port}").find_proxy
+      @proxy_uri ||= URI::HTTP.new(
+        "http".freeze, nil, address, port, nil, nil, nil, nil, nil
+      ).find_proxy
     end
 
     # The address of the proxy server, if one is configured.
@@ -1345,7 +1350,8 @@ module Net   #:nodoc:
     #    puts response.body
     #
     def send_request(name, path, data = nil, header = nil)
-      r = HTTPGenericRequest.new(name,(data ? true : false),true,path,header)
+      has_response_body = name != 'HEAD'
+      r = HTTPGenericRequest.new(name,(data ? true : false),has_response_body,path,header)
       request r, data
     end
 
@@ -1411,10 +1417,10 @@ module Net   #:nodoc:
 
           res.uri = req.uri
 
-          res.reading_body(@socket, req.response_body_permitted?) {
-            yield res if block_given?
-          }
           res
+        }
+        res.reading_body(@socket, req.response_body_permitted?) {
+          yield res if block_given?
         }
       rescue Net::OpenTimeout
         raise

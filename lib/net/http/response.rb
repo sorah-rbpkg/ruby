@@ -37,7 +37,7 @@ class Net::HTTPResponse
 
     def read_status_line(sock)
       str = sock.readline
-      m = /\AHTTP(?:\/(\d+\.\d+))?\s+(\d\d\d)\s*(.*)\z/in.match(str) or
+      m = /\AHTTP(?:\/(\d+\.\d+))?\s+(\d\d\d)(?:\s+(.*))?\z/in.match(str) or
         raise Net::HTTPBadResponse, "wrong status line: #{str.dump}"
       m.captures
     end
@@ -250,7 +250,8 @@ class Net::HTTPResponse
     return yield @socket unless @decode_content
     return yield @socket if self['content-range']
 
-    case self['content-encoding']
+    v = self['content-encoding']
+    case v && v.downcase
     when 'deflate', 'gzip', 'x-gzip' then
       self.delete 'content-encoding'
 
@@ -259,7 +260,12 @@ class Net::HTTPResponse
       begin
         yield inflate_body_io
       ensure
-        inflate_body_io.finish
+        orig_err = $!
+        begin
+          inflate_body_io.finish
+        rescue => err
+          raise orig_err || err
+        end
       end
     when 'none', 'identity' then
       self.delete 'content-encoding'
@@ -354,6 +360,7 @@ class Net::HTTPResponse
     # Finishes the inflate stream.
 
     def finish
+      return if @inflate.total_in == 0
       @inflate.finish
     end
 
