@@ -497,7 +497,17 @@ strio_set_lineno(VALUE self, VALUE lineno)
     return lineno;
 }
 
-#define strio_binmode strio_self
+static VALUE
+strio_binmode(VALUE self)
+{
+    struct StringIO *ptr = StringIO(self);
+    rb_encoding *enc = rb_ascii8bit_encoding();
+
+    if (WRITABLE(self)) {
+	rb_enc_associate(ptr->string, enc);
+    }
+    return self;
+}
 
 #define strio_fcntl strio_unimpl
 
@@ -1169,13 +1179,13 @@ strio_write(VALUE self, VALUE str)
     struct StringIO *ptr = writable(self);
     long len, olen;
     rb_encoding *enc, *enc2;
+    rb_encoding *const ascii8bit = rb_ascii8bit_encoding();
 
-    RB_GC_GUARD(str);
     if (!RB_TYPE_P(str, T_STRING))
 	str = rb_obj_as_string(str);
     enc = rb_enc_get(ptr->string);
     enc2 = rb_enc_get(str);
-    if (enc != enc2 && enc != rb_ascii8bit_encoding()) {
+    if (enc != enc2 && enc != ascii8bit) {
 	str = rb_str_conv_enc(str, enc2, enc);
     }
     len = RSTRING_LEN(str);
@@ -1186,7 +1196,13 @@ strio_write(VALUE self, VALUE str)
 	ptr->pos = olen;
     }
     if (ptr->pos == olen) {
-	rb_enc_str_buf_cat(ptr->string, RSTRING_PTR(str), len, enc);
+	if (enc == ascii8bit || enc2 == ascii8bit) {
+	    rb_enc_str_buf_cat(ptr->string, RSTRING_PTR(str), len, enc);
+	    OBJ_INFECT(ptr->string, str);
+	}
+	else {
+	    rb_str_buf_append(ptr->string, str);
+	}
     }
     else {
 	strio_extend(ptr, ptr->pos, len);
@@ -1194,6 +1210,7 @@ strio_write(VALUE self, VALUE str)
 	OBJ_INFECT(ptr->string, str);
     }
     OBJ_INFECT(ptr->string, self);
+    RB_GC_GUARD(str);
     ptr->pos += len;
     return LONG2NUM(len);
 }
@@ -1233,17 +1250,17 @@ static VALUE
 strio_putc(VALUE self, VALUE ch)
 {
     struct StringIO *ptr = writable(self);
-    int c = NUM2CHR(ch);
-    long olen;
+    VALUE str;
 
     check_modifiable(ptr);
-    olen = RSTRING_LEN(ptr->string);
-    if (ptr->flags & FMODE_APPEND) {
-	ptr->pos = olen;
+    if (RB_TYPE_P(ch, T_STRING)) {
+	str = rb_str_substr(ch, 0, 1);
     }
-    strio_extend(ptr, ptr->pos, 1);
-    RSTRING_PTR(ptr->string)[ptr->pos++] = c;
-    OBJ_INFECT(ptr->string, self);
+    else {
+	char c = NUM2CHR(ch);
+	str = rb_str_new(&c, 1);
+    }
+    strio_write(self, str);
     return ch;
 }
 

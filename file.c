@@ -26,6 +26,7 @@
 #include "ruby/ruby.h"
 #include "ruby/io.h"
 #include "ruby/util.h"
+#include "ruby/thread.h"
 #include "dln.h"
 #include "internal.h"
 
@@ -3397,6 +3398,16 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
 #define EXPAND_PATH_BUFFER() rb_usascii_str_new(0, MAXPATHLEN + 2)
 
+static VALUE
+str_shrink(VALUE str)
+{
+    rb_str_resize(str, RSTRING_LEN(str));
+    return str;
+}
+
+#define expand_path(fname, dname, abs_mode, long_name, result) \
+    str_shrink(rb_file_expand_path_internal(fname, dname, abs_mode, long_name, result))
+
 #define check_expand_path_args(fname, dname) \
     (((fname) = rb_get_path(fname)), \
      (void)(NIL_P(dname) ? (dname) : ((dname) = rb_get_path(dname))))
@@ -3411,13 +3422,13 @@ VALUE
 rb_file_expand_path(VALUE fname, VALUE dname)
 {
     check_expand_path_args(fname, dname);
-    return rb_file_expand_path_internal(fname, dname, 0, 1, EXPAND_PATH_BUFFER());
+    return expand_path(fname, dname, 0, 1, EXPAND_PATH_BUFFER());
 }
 
 VALUE
 rb_file_expand_path_fast(VALUE fname, VALUE dname)
 {
-    return rb_file_expand_path_internal(fname, dname, 0, 0, EXPAND_PATH_BUFFER());
+    return expand_path(fname, dname, 0, 0, EXPAND_PATH_BUFFER());
 }
 
 /*
@@ -3465,7 +3476,7 @@ VALUE
 rb_file_absolute_path(VALUE fname, VALUE dname)
 {
     check_expand_path_args(fname, dname);
-    return rb_file_expand_path_internal(fname, dname, 1, 1, EXPAND_PATH_BUFFER());
+    return expand_path(fname, dname, 1, 1, EXPAND_PATH_BUFFER());
 }
 
 /*
@@ -5374,6 +5385,12 @@ rb_path_check(const char *path)
 }
 
 #ifndef _WIN32
+static void *
+loadopen_func(void *arg)
+{
+    return (void *)(VALUE)rb_cloexec_open((const char *)arg, O_RDONLY, 0);
+}
+
 #ifdef __native_client__
 __attribute__((noinline))
 #endif
@@ -5381,7 +5398,9 @@ int
 rb_file_load_ok(const char *path)
 {
     int ret = 1;
-    int fd = rb_cloexec_open(path, O_RDONLY, 0);
+    int fd;
+
+    fd = (int)(VALUE)rb_thread_call_without_gvl(loadopen_func, (void *)path, RUBY_UBF_IO, 0);
     if (fd == -1) return 0;
     rb_update_max_fd(fd);
 #if !defined DOSISH
@@ -5408,6 +5427,7 @@ is_explicit_relative(const char *path)
 static VALUE
 copy_path_class(VALUE path, VALUE orig)
 {
+    str_shrink(path);
     RBASIC_SET_CLASS(path, rb_obj_class(orig));
     OBJ_FREEZE(path);
     return path;

@@ -30,7 +30,9 @@ module EnvUtil
   LANG_ENVS = %w"LANG LC_ALL LC_CTYPE"
 
   def invoke_ruby(args, stdin_data = "", capture_stdout = false, capture_stderr = false,
-                  encoding: nil, timeout: 10, reprieve: 1, **opt)
+                  encoding: nil, timeout: 10, reprieve: 1,
+                  stdout_filter: nil, stderr_filter: nil,
+                  **opt)
     in_c, in_p = IO.pipe
     out_p, out_c = IO.pipe if capture_stdout
     err_p, err_c = IO.pipe if capture_stderr && capture_stderr != :merge_to_stdout
@@ -84,6 +86,8 @@ module EnvUtil
       err_p.close if capture_stderr && capture_stderr != :merge_to_stdout
       Process.wait pid
       status = $?
+      stdout = stdout_filter.call(stdout) if stdout_filter
+      stderr = stderr_filter.call(stderr) if stderr_filter
       return stdout, stderr, status
     end
   ensure
@@ -156,6 +160,22 @@ module EnvUtil
   end
   module_function :with_default_internal
 
+  def labeled_module(name, &block)
+    Module.new do
+      singleton_class.class_eval {define_method(:to_s) {name}; alias inspect to_s}
+      class_eval(&block) if block
+    end
+  end
+  module_function :labeled_module
+
+  def labeled_class(name, superclass = Object, &block)
+    Class.new(superclass) do
+      singleton_class.class_eval {define_method(:to_s) {name}; alias inspect to_s}
+      class_eval(&block) if block
+    end
+  end
+  module_function :labeled_class
+
   if /darwin/ =~ RUBY_PLATFORM
     DIAGNOSTIC_REPORTS_PATH = File.expand_path("~/Library/Logs/DiagnosticReports")
     DIAGNOSTIC_REPORTS_TIMEFORMAT = '%Y-%m-%d-%H%M%S'
@@ -172,7 +192,7 @@ module EnvUtil
           log = File.read(name) rescue next
           if /\AProcess:\s+#{cmd} \[#{pid}\]$/ =~ log
             File.unlink(name)
-            File.unlink("#{path}/.#{File.basename(name)}.plist")
+            File.unlink("#{path}/.#{File.basename(name)}.plist") rescue nil
             return log
           end
         end
@@ -251,9 +271,10 @@ module Test
         pid = status.pid
         now = Time.now
         faildesc = proc do
-          signo = status.termsig
-          signame = Signal.signame(signo)
-          sigdesc = "signal #{signo}"
+          if signo = status.termsig
+            signame = Signal.signame(signo)
+            sigdesc = "signal #{signo}"
+          end
           log = EnvUtil.diagnostic_reports(signame, EnvUtil.rubybin, pid, now)
           if signame
             sigdesc = "SIG#{signame} (#{sigdesc})"
@@ -337,7 +358,7 @@ eom
         args.insert((Hash === args.first ? 1 : 0), "--disable=gems", *$:.map {|l| "-I#{l}"})
         stdout, stderr, status = EnvUtil.invoke_ruby(args, src, true, true, **opt)
         abort = status.coredump? || (status.signaled? && ABORT_SIGNALS.include?(status.termsig))
-        assert(!abort, FailDesc[status, stderr])
+        assert(!abort, FailDesc[status, nil, stderr])
         self._assertions += stdout[/^assertions=(\d+)/, 1].to_i
         begin
           res = Marshal.load(stdout.unpack("m")[0])
@@ -411,6 +432,36 @@ eom
 
       def assert_file
         AssertFile
+      end
+
+      # threads should respond to shift method.
+      # Array and Queue can be used.
+      def assert_join_threads(threads, message = nil)
+        errs = []
+        values = []
+        while th = threads.shift
+          begin
+            values << th.value
+          rescue Exception
+            errs << $!
+          end
+        end
+        if !errs.empty?
+          msg = errs.map {|err|
+            err.backtrace.map.with_index {|line, i|
+              if i == 0
+                "#{line}: #{err.message} (#{err.class})"
+              else
+                "\tfrom #{line}"
+              end
+            }.join("\n")
+          }.join("\n---\n")
+          if message
+            msg = "#{message}\n#{msg}"
+          end
+          raise MiniTest::Assertion, msg
+        end
+        values
       end
 
       class << (AssertFile = Struct.new(:failure_message).new)

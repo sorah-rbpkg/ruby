@@ -52,6 +52,26 @@ class TestISeq < Test::Unit::TestCase
     assert_raise_with_message(TypeError, /:foobar/) {RubyVM::InstructionSequence.load(ary)}
   end if defined?(RubyVM::InstructionSequence.load)
 
+  def test_loaded_cdhash_mark
+    iseq = RubyVM::InstructionSequence.compile(<<-'end;', __FILE__, __FILE__, __LINE__+1)
+      def bug(kw)
+        case kw
+        when "false" then false
+        when "true"  then true
+        when "nil"   then nil
+        else raise("unhandled argument: #{kw.inspect}")
+        end
+      end
+    end;
+    assert_separately([], <<-"end;")
+      iseq = #{iseq.to_a.inspect}
+      RubyVM::InstructionSequence.load(iseq).eval
+      assert_equal(false, bug("false"))
+      GC.start
+      assert_equal(false, bug("false"))
+    end;
+  end if defined?(RubyVM::InstructionSequence.load)
+
   def test_disasm_encoding
     src = "\u{3042} = 1; \u{3042}"
     enc, Encoding.default_internal = Encoding.default_internal, src.encoding
@@ -123,5 +143,12 @@ class TestISeq < Test::Unit::TestCase
     a, b = eval("# encoding: us-ascii\n'foobar'.freeze"),
            ISeq.of(c.instance_method(:foobar)).label
     assert_same a, b
+  end
+
+  def test_invalid_source
+    bug11159 = '[ruby-core:69219] [Bug #11159]'
+    assert_raise(TypeError, bug11159) {ISeq.compile(nil)}
+    assert_raise(TypeError, bug11159) {ISeq.compile(:foo)}
+    assert_raise(TypeError, bug11159) {ISeq.compile(1)}
   end
 end

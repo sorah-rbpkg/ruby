@@ -179,6 +179,10 @@ class TestSprintf < Test::Unit::TestCase
     assert_raise(ArgumentError) { sprintf("%!", 1) }
     assert_raise(ArgumentError) { sprintf("%1$1$d", 1) }
     assert_raise(ArgumentError) { sprintf("%0%") }
+
+    assert_raise_with_message(ArgumentError, /unnumbered\(1\) mixed with numbered/) { sprintf("%1$*d", 3) }
+    assert_raise_with_message(ArgumentError, /unnumbered\(1\) mixed with numbered/) { sprintf("%1$.*d", 3) }
+
     verbose, $VERBOSE = $VERBOSE, nil
     assert_nothing_raised { sprintf("", 1) }
   ensure
@@ -190,8 +194,9 @@ class TestSprintf < Test::Unit::TestCase
                  sprintf("%20.0f", 36893488147419107329.0))
     assert_equal(" Inf", sprintf("% 0e", 1.0/0.0), "moved from btest/knownbug")
     assert_equal("       -0.", sprintf("%#10.0f", -0.5), "[ruby-dev:42552]")
-    assert_equal("0x1p+2",   sprintf('%.0a', Float('0x1.fp+1')),   "[ruby-dev:42551]")
-    assert_equal("-0x1.0p+2", sprintf('%.1a', Float('-0x1.ffp+1')), "[ruby-dev:42551]")
+    # out of spec
+    #assert_equal("0x1p+2",   sprintf('%.0a', Float('0x1.fp+1')),   "[ruby-dev:42551]")
+    #assert_equal("-0x1.0p+2", sprintf('%.1a', Float('-0x1.ffp+1')), "[ruby-dev:42551]")
   end
 
   def test_float_hex

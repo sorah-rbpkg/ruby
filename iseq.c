@@ -610,6 +610,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE li
 	if (RB_TYPE_P((src), T_FILE))
 	    node = rb_parser_compile_file_path(parser, file, src, ln);
 	else {
+	    StringValue(src);
 	    node = rb_parser_compile_string_path(parser, file, src, ln);
 
 	    if (!node) {
@@ -1943,7 +1944,7 @@ rb_iseq_clone(VALUE iseqval, VALUE newcbase)
 	if (iseq0->cref_stack->nd_next) {
 	    RB_OBJ_WRITE(iseq1->cref_stack, &iseq1->cref_stack->nd_next, iseq0->cref_stack->nd_next);
 	}
-	RB_OBJ_WRITE(iseq1, &iseq1->klass, newcbase);
+	RB_OBJ_WRITE(iseq1->self, &iseq1->klass, newcbase);
     }
 
     return newiseq;

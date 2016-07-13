@@ -1518,7 +1518,7 @@ const_missing(VALUE klass, ID id)
 VALUE
 rb_mod_const_missing(VALUE klass, VALUE name)
 {
-    rb_frame_pop(); /* pop frame for "const_missing" */
+    rb_vm_pop_cfunc_frame();
     uninitialized_constant(klass, rb_to_id(name));
 
     UNREACHABLE;
@@ -2058,6 +2058,9 @@ rb_const_list(void *data)
  *  modules (example at start of section), unless the <i>inherit</i>
  *  parameter is set to <code>false</code>.
  *
+ *  The implementation makes no guarantees about the order in which the
+ *  constants are yielded.
+ *
  *    IO.constants.include?(:SYNC)        #=> true
  *    IO.constants(false).include?(:SYNC) #=> false
  *
@@ -2203,6 +2206,8 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 		    rb_compile_warn(RSTRING_PTR(ce->file), ce->line,
 				    "previous definition of %"PRIsVALUE" was here", name);
 		}
+		st_delete(RCLASS_CONST_TBL(klass), &id, 0);
+		xfree(ce);
 	    }
 	}
     }

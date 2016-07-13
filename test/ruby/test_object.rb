@@ -298,6 +298,15 @@ class TestObject < Test::Unit::TestCase
       $VERBOSE = false
       def (Object.new).__send__; end
     INPUT
+
+    bug10421 = '[ruby-dev:48691] [Bug #10421]'
+    assert_in_out_err([], <<-INPUT, ["1"], [], bug10421)
+      $VERBOSE = false
+      class C < BasicObject
+        def object_id; 1; end
+      end
+      puts C.new.object_id
+    INPUT
   end
 
   def test_remove_method
@@ -804,5 +813,15 @@ class TestObject < Test::Unit::TestCase
     issue = "Bug #7539"
     assert_raise_with_message(TypeError, "can't convert Array into Integer") {Integer([42])}
     assert_raise_with_message(TypeError, 'no implicit conversion of Array into Integer') {[].first([42])}
+  end
+
+  def test_copied_ivar_memory_leak
+    bug10191 = '[ruby-core:64700] [Bug #10191]'
+    assert_no_memory_leak([], <<-"end;", <<-"end;", bug10191, rss: true, timeout: 60, limit: 2.5)
+      def (a = Object.new).set; @v = nil; end
+      num = 500_000
+    end;
+      num.times {a.clone.set}
+    end;
   end
 end

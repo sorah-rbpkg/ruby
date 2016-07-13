@@ -119,13 +119,19 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(nil, Regexp.last_match(1))
     assert_equal(nil, Regexp.last_match(:foo))
 
+    bug11825_name = "\u{5b9d 77f3}"
+    bug11825_str = "\u{30eb 30d3 30fc}"
+    bug11825_re = /(?<#{bug11825_name}>)#{bug11825_str}/
+
     assert_equal(["foo", "bar"], /(?<foo>.)(?<bar>.)/.names)
     assert_equal(["foo"], /(?<foo>.)(?<foo>.)/.names)
     assert_equal([], /(.)(.)/.names)
+    assert_equal([bug11825_name], bug11825_re.names)
 
     assert_equal(["foo", "bar"], /(?<foo>.)(?<bar>.)/.match("ab").names)
     assert_equal(["foo"], /(?<foo>.)(?<foo>.)/.match("ab").names)
     assert_equal([], /(.)(.)/.match("ab").names)
+    assert_equal([bug11825_name], bug11825_re.match(bug11825_str).names)
 
     assert_equal({"foo"=>[1], "bar"=>[2]},
                  /(?<foo>.)(?<bar>.)/.named_captures)
@@ -140,6 +146,31 @@ class TestRegexp < Test::Unit::TestCase
     s = "foo"
     s[/(?<bar>o)/, "bar"] = "baz"
     assert_equal("fbazo", s)
+  end
+
+  def test_named_capture_with_nul
+    bug9902 = '[ruby-dev:48275] [Bug #9902]'
+
+    m = /(?<a>.*)/.match("foo")
+    assert_raise(IndexError, bug9902) {m["a\0foo"]}
+    assert_raise(IndexError, bug9902) {m["a\0foo".to_sym]}
+
+    m = Regexp.new("(?<foo\0bar>.*)").match("xxx")
+    assert_raise(IndexError, bug9902) {m["foo"]}
+    assert_raise(IndexError, bug9902) {m["foo".to_sym]}
+    assert_nothing_raised(IndexError, bug9902) {
+      assert_equal("xxx", m["foo\0bar"], bug9902)
+      assert_equal("xxx", m["foo\0bar".to_sym], bug9902)
+    }
+  end
+
+  def test_named_capture_nonascii
+    bug9903 = '[ruby-dev:48278] [Bug #9903]'
+
+    key = "\xb1\xb2".force_encoding(Encoding::EUC_JP)
+    m = /(?<#{key}>.*)/.match("xxx")
+    assert_equal("xxx", m[key])
+    assert_raise(IndexError, bug9903) {m[key.dup.force_encoding(Encoding::Shift_JIS)]}
   end
 
   def test_assign_named_capture

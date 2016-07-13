@@ -5,6 +5,18 @@ require 'timeout'
 require_relative '../ruby/envutil'
 
 class TestQueue < Test::Unit::TestCase
+  def test_queue_initialized
+    assert_raise(TypeError) {
+      Queue.allocate.push(nil)
+    }
+  end
+
+  def test_sized_queue_initialized
+    assert_raise(TypeError) {
+      SizedQueue.allocate.push(nil)
+    }
+  end
+
   def test_queue
     grind(5, 1000, 15, Queue)
   end
@@ -205,6 +217,34 @@ class TestQueue < Test::Unit::TestCase
     q << :s
     assert_nothing_raised(TimeoutError) do
       timeout(1) { th2.join }
+    end
+  end
+
+  def test_dup
+    bug9440 = '[ruby-core:59961] [Bug #9440]'
+    q = Queue.new
+    assert_raise(NoMethodError, bug9440) do
+      q.dup
+    end
+  end
+
+  (DumpableQueue = Queue.dup).class_eval {remove_method :marshal_dump}
+
+  def test_dump
+    bug9674 = '[ruby-core:61677] [Bug #9674]'
+    q = Queue.new
+    assert_raise_with_message(TypeError, /#{Queue}/, bug9674) do
+      Marshal.dump(q)
+    end
+
+    sq = SizedQueue.new(1)
+    assert_raise_with_message(TypeError, /#{SizedQueue}/, bug9674) do
+      Marshal.dump(sq)
+    end
+
+    q = DumpableQueue.new
+    assert_raise_with_message(TypeError, /internal Array/, bug9674) do
+      Marshal.dump(q)
     end
   end
 end

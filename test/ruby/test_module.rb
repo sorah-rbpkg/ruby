@@ -375,6 +375,25 @@ class TestModule < Test::Unit::TestCase
     assert_equal(:ok, Object.new.extend(m).foo, bug9535)
   end
 
+  def test_initialize_copy_empty
+    bug9813 = '[ruby-dev:48182] [Bug #9813]'
+    m = Module.new do
+      def x
+      end
+      const_set(:X, 1)
+      @x = 2
+    end
+    assert_equal([:x], m.instance_methods)
+    assert_equal([:@x], m.instance_variables)
+    assert_equal([:X], m.constants)
+    m.module_eval do
+      initialize_copy(Module.new)
+    end
+    assert_empty(m.instance_methods, bug9813)
+    assert_empty(m.instance_variables, bug9813)
+    assert_empty(m.constants, bug9813)
+  end
+
   def test_dup
     bug6454 = '[ruby-core:45132]'
 
@@ -1559,17 +1578,11 @@ class TestModule < Test::Unit::TestCase
   end
 
   def labeled_module(name, &block)
-    Module.new do
-      singleton_class.class_eval {define_method(:to_s) {name}; alias inspect to_s}
-      class_eval(&block) if block
-    end
+    EnvUtil.labeled_module(name, &block)
   end
 
   def labeled_class(name, superclass = Object, &block)
-    Class.new(superclass) do
-      singleton_class.class_eval {define_method(:to_s) {name}; alias inspect to_s}
-      class_eval(&block) if block
-    end
+    EnvUtil.labeled_class(name, superclass, &block)
   end
 
   def test_prepend_instance_methods_false
@@ -1693,6 +1706,17 @@ class TestModule < Test::Unit::TestCase
     end
 
     assert_equal('hello!', foo.new.hello, bug9236)
+  end
+
+  def test_prepend_call_super
+    assert_separately([], <<-'end;') #do
+      bug10847 = '[ruby-core:68093] [Bug #10847]'
+      module M; end
+      Float.prepend M
+      assert_nothing_raised(SystemStackError, bug10847) do
+        0.3.numerator
+      end
+    end;
   end
 
   def test_class_variables
@@ -1942,6 +1966,30 @@ class TestModule < Test::Unit::TestCase
       end
       1_000_000.times{''} # cause GC
     }
+  end
+
+  def test_inspect_segfault
+    bug_10282 = '[ruby-core:65214] [Bug #10282]'
+    assert_separately [], <<-RUBY
+      module ShallowInspect
+        def shallow_inspect
+          "foo"
+        end
+      end
+
+      module InspectIsShallow
+        include ShallowInspect
+        alias_method :inspect, :shallow_inspect
+      end
+
+      class A
+      end
+
+      A.prepend InspectIsShallow
+
+      expect = "#<Method: A(Object)#inspect(shallow_inspect)>"
+      assert_equal expect, A.new.method(:inspect).inspect, "#{bug_10282}"
+    RUBY
   end
 
   private

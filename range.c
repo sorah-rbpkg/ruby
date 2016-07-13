@@ -31,13 +31,6 @@ static ID id_cmp, id_succ, id_beg, id_end, id_excl, id_integer_p, id_div;
 #define RBOOL(v) ((v) ? Qtrue : Qfalse)
 
 #define EXCL(r) RTEST(RANGE_EXCL(r))
-static inline VALUE
-SET_EXCL(VALUE r, VALUE v)
-{
-    v = RBOOL(RTEST(v));
-    RANGE_SET_EXCL(r, v);
-    return v;
-}
 
 static VALUE
 range_failed(void)
@@ -334,6 +327,21 @@ discrete_object_p(VALUE obj)
 {
     if (rb_obj_is_kind_of(obj, rb_cTime)) return FALSE; /* until Time#succ removed */
     return rb_respond_to(obj, id_succ);
+}
+
+static int
+linear_object_p(VALUE obj)
+{
+    if (FIXNUM_P(obj) || FLONUM_P(obj)) return TRUE;
+    if (SPECIAL_CONST_P(obj)) return FALSE;
+    switch (BUILTIN_TYPE(obj)) {
+      case T_FLOAT:
+      case T_BIGNUM:
+	return TRUE;
+    }
+    if (rb_obj_is_kind_of(obj, rb_cNumeric)) return TRUE;
+    if (rb_obj_is_kind_of(obj, rb_cTime)) return TRUE;
+    return FALSE;
 }
 
 static VALUE
@@ -1070,7 +1078,7 @@ range_to_s(VALUE range)
     str = rb_str_dup(str);
     rb_str_cat(str, "...", EXCL(range) ? 3 : 2);
     rb_str_append(str, str2);
-    OBJ_INFECT(str, str2);
+    OBJ_INFECT(str, range);
 
     return str;
 }
@@ -1088,7 +1096,7 @@ inspect_range(VALUE range, VALUE dummy, int recur)
     str = rb_str_dup(str);
     rb_str_cat(str, "...", EXCL(range) ? 3 : 2);
     rb_str_append(str, str2);
-    OBJ_INFECT(str, str2);
+    OBJ_INFECT(str, range);
 
     return str;
 }
@@ -1155,8 +1163,7 @@ range_include(VALUE range, VALUE val)
     VALUE beg = RANGE_BEG(range);
     VALUE end = RANGE_END(range);
     int nv = FIXNUM_P(beg) || FIXNUM_P(end) ||
-	     rb_obj_is_kind_of(beg, rb_cNumeric) ||
-	     rb_obj_is_kind_of(end, rb_cNumeric);
+	     linear_object_p(beg) || linear_object_p(end);
 
     if (nv ||
 	!NIL_P(rb_check_to_integer(beg, "to_int")) ||

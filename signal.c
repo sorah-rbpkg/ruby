@@ -343,6 +343,10 @@ ruby_default_signal(int sig)
     raise(sig);
 }
 
+static RETSIGTYPE sighandler(int sig);
+static int signal_ignored(int sig);
+static void signal_enque(int sig);
+
 /*
  *  call-seq:
  *     Process.kill(signal, pid, ...)    -> fixnum
@@ -429,6 +433,8 @@ rb_f_kill(int argc, VALUE *argv)
 	break;
     }
 
+    if (argc <= 1) return INT2FIX(0);
+
     if (sig < 0) {
 	sig = -sig;
 	for (i=1; i<argc; i++) {
@@ -437,8 +443,48 @@ rb_f_kill(int argc, VALUE *argv)
 	}
     }
     else {
+	const rb_pid_t self = (GET_THREAD() == GET_VM()->main_thread) ? getpid() : -1;
+	int wakeup = 0;
+
 	for (i=1; i<argc; i++) {
-	    ruby_kill(NUM2PIDT(argv[i]), sig);
+	    rb_pid_t pid = NUM2PIDT(argv[i]);
+
+	    if ((sig != 0) && (self != -1) && (pid == self)) {
+		int t;
+		/*
+		 * When target pid is self, many caller assume signal will be
+		 * delivered immediately and synchronously.
+		 */
+		switch (sig) {
+		  case SIGSEGV:
+#ifdef SIGBUS
+		  case SIGBUS:
+#endif
+#ifdef SIGKILL
+		  case SIGKILL:
+#endif
+#ifdef SIGSTOP
+		  case SIGSTOP:
+#endif
+		    ruby_kill(pid, sig);
+		    break;
+		  default:
+		    t = signal_ignored(sig);
+		    if (t) {
+			if (t < 0 && kill(pid, sig))
+			    rb_sys_fail(0);
+			break;
+		    }
+		    signal_enque(sig);
+		    wakeup = 1;
+		}
+	    }
+	    else if (kill(pid, sig) < 0) {
+		rb_sys_fail(0);
+	    }
+	}
+	if (wakeup) {
+	    rb_threadptr_check_signal(GET_VM()->main_thread);
 	}
     }
     rb_thread_execute_interrupts(rb_thread_current());
@@ -543,13 +589,27 @@ ruby_signal(int signum, sighandler_t handler)
 	    rb_bug_errno("sigaction", errno);
 	}
     }
-    return old.sa_handler;
+    if (old.sa_flags & SA_SIGINFO)
+	return (sighandler_t)old.sa_sigaction;
+    else
+	return old.sa_handler;
 }
 
 sighandler_t
 posix_signal(int signum, sighandler_t handler)
 {
     return ruby_signal(signum, handler);
+}
+
+#elif defined _WIN32
+static inline sighandler_t
+ruby_signal(int signum, sighandler_t handler)
+{
+    if (signum == SIGKILL) {
+	errno = EINVAL;
+	return SIG_ERR;
+    }
+    return signal(signum, handler);
 }
 
 #else /* !POSIX_SIGNAL */
@@ -567,11 +627,35 @@ ruby_nativethread_signal(int signum, sighandler_t handler)
 #endif
 #endif
 
-static RETSIGTYPE
-sighandler(int sig)
+static int
+signal_ignored(int sig)
+{
+    sighandler_t func;
+#ifdef POSIX_SIGNAL
+    struct sigaction old;
+    (void)VALGRIND_MAKE_MEM_DEFINED(&old, sizeof(old));
+    if (sigaction(sig, NULL, &old) < 0) return FALSE;
+    func = old.sa_handler;
+#else
+    sighandler_t old = signal(sig, SIG_DFL);
+    signal(sig, old);
+    func = old;
+#endif
+    if (func == SIG_IGN) return 1;
+    return func == sighandler ? 0 : -1;
+}
+
+static void
+signal_enque(int sig)
 {
     ATOMIC_INC(signal_buff.cnt[sig]);
     ATOMIC_INC(signal_buff.size);
+}
+
+static RETSIGTYPE
+sighandler(int sig)
+{
+    signal_enque(sig);
     rb_thread_wakeup_timer_thread();
 #if !defined(BSD_SIGNAL) && !defined(POSIX_SIGNAL)
     ruby_signal(sig, sighandler);
@@ -628,21 +712,56 @@ rb_get_next_signal(void)
 
 
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
+NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
+#if defined(HAVE_UCONTEXT_H) && defined __linux__ && (defined __i386__ || defined __x86_64__)
+# define USE_UCONTEXT_REG 1
+#endif
+#ifdef USE_UCONTEXT_REG
+static void
+check_stack_overflow(const uintptr_t addr, const ucontext_t *ctx)
+{
+# if defined REG_RSP
+    const greg_t sp = ctx->uc_mcontext.gregs[REG_RSP];
+# else
+    const greg_t sp = ctx->uc_mcontext.gregs[REG_ESP];
+# endif
+    enum {pagesize = 4096};
+    const uintptr_t sp_page = (uintptr_t)sp / pagesize;
+    const uintptr_t fault_page = addr / pagesize;
+
+    /* SP in ucontext is not decremented yet when `push` failed, so
+     * the fault page can be the next. */
+    if (sp_page == fault_page || sp_page == fault_page + 1) {
+	rb_thread_t *th = ruby_current_thread;
+	if ((uintptr_t)th->tag->buf / pagesize == sp_page) {
+	    /* drop the last tag if it is close to the fault,
+	     * otherwise it can cause stack overflow again at the same
+	     * place. */
+	    th->tag = th->tag->prev;
+	}
+	ruby_thread_stack_overflow(th);
+    }
+}
+#else
 static void
 check_stack_overflow(const void *addr)
 {
     int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
-    NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
-    rb_thread_t *th = GET_THREAD();
+    rb_thread_t *th = ruby_current_thread;
     if (ruby_stack_overflowed_p(th, addr)) {
 	ruby_thread_stack_overflow(th);
     }
 }
+#endif
 #ifdef _WIN32
 #define CHECK_STACK_OVERFLOW() check_stack_overflow(0)
 #else
 #define FAULT_ADDRESS info->si_addr
-#define CHECK_STACK_OVERFLOW() check_stack_overflow(FAULT_ADDRESS)
+# ifdef USE_UCONTEXT_REG
+# define CHECK_STACK_OVERFLOW() check_stack_overflow((uintptr_t)FAULT_ADDRESS, ctx)
+#else
+# define CHECK_STACK_OVERFLOW() check_stack_overflow(FAULT_ADDRESS)
+#endif
 #define MESSAGE_FAULT_ADDRESS " at %p", FAULT_ADDRESS
 #endif
 #else
@@ -661,7 +780,8 @@ sigbus(int sig SIGINFO_ARG)
  * and it's delivered as SIGBUS instead of SIGSEGV to userland. It's crazy
  * wrong IMHO. but anyway we have to care it. Sigh.
  */
-#if defined __APPLE__
+    /* Seems Linux also delivers SIGBUS. */
+#if defined __APPLE__ || defined __linux__
     CHECK_STACK_OVERFLOW();
 #endif
     rb_bug("Bus Error" MESSAGE_FAULT_ADDRESS);
@@ -711,6 +831,15 @@ signal_exec(VALUE cmd, int safe, int sig)
     rb_thread_t *cur_th = GET_THREAD();
     volatile unsigned long old_interrupt_mask = cur_th->interrupt_mask;
     int state;
+
+    /*
+     * workaround the following race:
+     * 1. signal_enque queues signal for execution
+     * 2. user calls trap(sig, "IGNORE"), setting SIG_IGN
+     * 3. rb_signal_exec runs on queued signal
+     */
+    if (IMMEDIATE_P(cmd))
+	return;
 
     cur_th->interrupt_mask |= TRAP_INTERRUPT_MASK;
     TH_PUSH_TAG(cur_th);
@@ -863,7 +992,7 @@ trap_handler(VALUE *cmd, int sig)
 		if (strncmp(RSTRING_PTR(command), "SIG_IGN", 7) == 0) {
 sig_ign:
                     func = SIG_IGN;
-                    *cmd = 0;
+                    *cmd = Qtrue;
 		}
 		else if (strncmp(RSTRING_PTR(command), "SIG_DFL", 7) == 0) {
 sig_dfl:
@@ -944,9 +1073,12 @@ trap(int sig, sighandler_t func, VALUE command)
     oldcmd = vm->trap_list[sig].cmd;
     switch (oldcmd) {
       case 0:
+      case Qtrue:
 	if (oldfunc == SIG_IGN) oldcmd = rb_str_new2("IGNORE");
 	else if (oldfunc == sighandler) oldcmd = rb_str_new2("DEFAULT");
 	else oldcmd = Qnil;
+	break;
+      case Qnil:
 	break;
       case Qundef:
 	oldcmd = rb_str_new2("EXIT");

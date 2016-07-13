@@ -610,9 +610,7 @@ MSG
   end
 
   def try_cppflags(flags)
-    with_cppflags(flags) do
-      try_header("int main() {return 0;}")
-    end
+    try_header(MAIN_DOES_NOTHING, flags)
   end
 
   def with_cflags(flags)
@@ -624,9 +622,7 @@ MSG
   end
 
   def try_cflags(flags)
-    with_cflags(flags) do
-      try_compile("int main() {return 0;}")
-    end
+    try_compile(MAIN_DOES_NOTHING, flags)
   end
 
   def with_ldflags(flags)
@@ -638,9 +634,7 @@ MSG
   end
 
   def try_ldflags(flags)
-    with_ldflags(flags) do
-      try_link("int main() {return 0;}")
-    end
+    try_link(MAIN_DOES_NOTHING, flags)
   end
 
   def try_static_assert(expr, headers = nil, opt = "", &b)
@@ -1762,10 +1756,18 @@ SRC
     elsif get and try_ldflags(ldflags = get['libs'])
       cflags = get['cflags']
       libs = get['libs-only-l']
-      ldflags = (Shellwords.shellwords(ldflags) - Shellwords.shellwords(libs)).quote.join(" ")
-      $CFLAGS += " " << cflags
-      $LDFLAGS = [orig_ldflags, ldflags].join(' ')
+      if cflags
+        $CFLAGS += " " << cflags
+        $CXXFLAGS += " " << cflags
+      end
+      if libs
+        ldflags = (Shellwords.shellwords(ldflags) - Shellwords.shellwords(libs)).quote.join(" ")
+      else
+        libs, ldflags = Shellwords.shellwords(ldflags).partition {|s| s =~ /-l([^ ]+)/ }.map {|l|l.quote.join(" ")}
+      end
       $libs += " " << libs
+
+      $LDFLAGS = [orig_ldflags, ldflags].join(' ')
       Logging::message "package configuration for %s\n", pkg
       Logging::message "cflags: %s\nldflags: %s\nlibs: %s\n\n",
                        cflags, ldflags, libs
@@ -1905,7 +1907,7 @@ CFLAGS   = $(CCDLFLAGS) #$CFLAGS $(ARCH_FLAG)
 INCFLAGS = -I. #$INCFLAGS
 DEFS     = #{CONFIG['DEFS']}
 CPPFLAGS = #{extconf_h}#{$CPPFLAGS}
-CXXFLAGS = $(CCDLFLAGS) #{CONFIG['CXXFLAGS']} $(ARCH_FLAG)
+CXXFLAGS = $(CCDLFLAGS) #$CXXFLAGS $(ARCH_FLAG)
 ldflags  = #{$LDFLAGS}
 dldflags = #{$DLDFLAGS} #{CONFIG['EXTDLDFLAGS']}
 ARCH_FLAG = #{$ARCH_FLAG}
@@ -2398,6 +2400,7 @@ site-install-rb: install-rb
       $warnflags = config['warnflags'] unless $extmk
     end
     $CFLAGS = with_config("cflags", arg_config("CFLAGS", config["CFLAGS"])).dup
+    $CXXFLAGS = (with_config("cxxflags", arg_config("CXXFLAGS", config["CXXFLAGS"]))||'').dup
     $ARCH_FLAG = with_config("arch_flag", arg_config("ARCH_FLAG", config["ARCH_FLAG"])).dup
     $CPPFLAGS = with_config("cppflags", arg_config("CPPFLAGS", config["CPPFLAGS"])).dup
     $LDFLAGS = with_config("ldflags", arg_config("LDFLAGS", config["LDFLAGS"])).dup

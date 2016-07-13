@@ -447,6 +447,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_equal(@file, File.expand_path(@file + "::$DATA"))
       assert_match(/\Ac:\//i, File.expand_path('c:'), '[ruby-core:31591]')
       assert_match(/\Ac:\//i, File.expand_path('c:foo', 'd:/bar'))
+      assert_match(/\Ae:\//i, File.expand_path('e:foo', 'd:/bar'))
       assert_match(%r'\Ac:/bar/foo\z'i, File.expand_path('c:foo', 'c:/bar'))
     end
     if DRIVE
@@ -456,6 +457,15 @@ class TestFileExhaustive < Test::Unit::TestCase
     else
       assert_equal("/foo", File.expand_path('/foo'))
     end
+  end
+
+  def test_expand_path_memsize
+    bug9934 = '[ruby-core:63114] [Bug #9934]'
+    require "objspace"
+    path = File.expand_path("/foo")
+    assert_operator(ObjectSpace.memsize_of(path), :<=, path.bytesize, bug9934)
+    path = File.expand_path("/a"*25)
+    assert_equal(path.bytesize+1, ObjectSpace.memsize_of(path), bug9934)
   end
 
   def test_expand_path_encoding
@@ -774,6 +784,12 @@ class TestFileExhaustive < Test::Unit::TestCase
     obj = klass.new
     assert_equal("#{Dir.pwd}/a/b/c", File.expand_path(obj))
   end
+
+  def test_expand_path_with_drive_letter
+    bug10858 = '[ruby-core:68130] [Bug #10858]'
+    assert_match(%r'/bar/foo\z'i, File.expand_path('z:foo', 'bar'), bug10858)
+    assert_equal('z:/bar/foo', File.expand_path('z:foo', '/bar'), bug10858)
+  end if DRIVE
 
   def test_basename
     assert_equal(File.basename(@file).sub(/\.test$/, ""), File.basename(@file, ".test"))

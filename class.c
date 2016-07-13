@@ -42,7 +42,7 @@ rb_class_subclass_add(VALUE super, VALUE klass)
     rb_subclass_entry_t *entry, *head;
 
     if (super && super != Qundef) {
-	entry = malloc(sizeof(*entry));
+	entry = xmalloc(sizeof(*entry));
 	entry->klass = klass;
 	entry->next = NULL;
 
@@ -62,7 +62,7 @@ rb_module_add_to_subclasses_list(VALUE module, VALUE iclass)
 {
     rb_subclass_entry_t *entry, *head;
 
-    entry = malloc(sizeof(*entry));
+    entry = xmalloc(sizeof(*entry));
     entry->klass = iclass;
     entry->next = NULL;
 
@@ -88,7 +88,7 @@ rb_class_remove_from_super_subclasses(VALUE klass)
 	if (entry->next) {
 	    RCLASS_EXT(entry->next->klass)->parent_subclasses = RCLASS_EXT(klass)->parent_subclasses;
 	}
-	free(entry);
+	xfree(entry);
     }
 
     RCLASS_EXT(klass)->parent_subclasses = NULL;
@@ -107,7 +107,7 @@ rb_class_remove_from_module_subclasses(VALUE klass)
 	    RCLASS_EXT(entry->next->klass)->module_subclasses = RCLASS_EXT(klass)->module_subclasses;
 	}
 
-	free(entry);
+	xfree(entry);
     }
 
     RCLASS_EXT(klass)->module_subclasses = NULL;
@@ -233,25 +233,6 @@ rb_class_new(VALUE super)
 }
 
 static void
-rewrite_cref_stack(NODE *node, VALUE old_klass, VALUE new_klass, NODE **new_cref_ptr)
-{
-    NODE *new_node;
-    while (node) {
-	if (node->nd_clss == old_klass) {
-	    new_node = NEW_CREF(new_klass);
-	    RB_OBJ_WRITE(new_node, &new_node->nd_next, node->nd_next);
-	    *new_cref_ptr = new_node;
-	    return;
-	}
-	new_node = NEW_CREF(node->nd_clss);
-	node = node->nd_next;
-	*new_cref_ptr = new_node;
-	new_cref_ptr = &new_node->nd_next;
-    }
-    *new_cref_ptr = NULL;
-}
-
-static void
 clone_method(VALUE klass, ID mid, const rb_method_entry_t *me)
 {
     VALUE newiseqval;
@@ -260,7 +241,7 @@ clone_method(VALUE klass, ID mid, const rb_method_entry_t *me)
 	NODE *new_cref;
 	newiseqval = rb_iseq_clone(me->def->body.iseq->self, klass);
 	GetISeqPtr(newiseqval, iseq);
-	rewrite_cref_stack(me->def->body.iseq->cref_stack, me->klass, klass, &new_cref);
+	rb_vm_rewrite_cref_stack(me->def->body.iseq->cref_stack, me->klass, klass, &new_cref);
 	RB_OBJ_WRITE(iseq->self, &iseq->cref_stack, new_cref);
 	rb_add_method(klass, mid, VM_METHOD_TYPE_ISEQ, iseq, me->flag);
 	RB_GC_GUARD(newiseqval);
@@ -328,12 +309,21 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     }
     RCLASS_SET_SUPER(clone, RCLASS_SUPER(orig));
     RCLASS_EXT(clone)->allocator = RCLASS_EXT(orig)->allocator;
+    if (RCLASS_IV_TBL(clone)) {
+	st_free_table(RCLASS_IV_TBL(clone));
+	RCLASS_IV_TBL(clone) = 0;
+    }
+    if (RCLASS_CONST_TBL(clone)) {
+	rb_free_const_table(RCLASS_CONST_TBL(clone));
+	RCLASS_CONST_TBL(clone) = 0;
+    }
+    if (RCLASS_M_TBL_WRAPPER(clone)) {
+	rb_free_m_tbl_wrapper(RCLASS_M_TBL_WRAPPER(clone));
+	RCLASS_M_TBL_WRAPPER(clone) = 0;
+    }
     if (RCLASS_IV_TBL(orig)) {
 	st_data_t id;
 
-	if (RCLASS_IV_TBL(clone)) {
-	    st_free_table(RCLASS_IV_TBL(clone));
-	}
 	RCLASS_IV_TBL(clone) = rb_st_copy(clone, RCLASS_IV_TBL(orig));
 	CONST_ID(id, "__tmp_classpath__");
 	st_delete(RCLASS_IV_TBL(clone), &id, 0);
@@ -344,18 +334,13 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     }
     if (RCLASS_CONST_TBL(orig)) {
 	struct clone_const_arg arg;
-	if (RCLASS_CONST_TBL(clone)) {
-	    rb_free_const_table(RCLASS_CONST_TBL(clone));
-	}
+
 	RCLASS_CONST_TBL(clone) = st_init_numtable();
 	arg.klass = clone;
 	arg.tbl = RCLASS_CONST_TBL(clone);
 	st_foreach(RCLASS_CONST_TBL(orig), clone_const_i, (st_data_t)&arg);
     }
     if (RCLASS_M_TBL(orig)) {
-	if (RCLASS_M_TBL_WRAPPER(clone)) {
-	    rb_free_m_tbl_wrapper(RCLASS_M_TBL_WRAPPER(clone));
-	}
 	RCLASS_M_TBL_INIT(clone);
 	st_foreach(RCLASS_M_TBL(orig), clone_method_i, (st_data_t)clone);
     }
@@ -951,7 +936,7 @@ rb_prepend_module(VALUE klass, VALUE module)
 	OBJ_WB_UNPROTECT(origin); /* TODO: conservertive shading. Need more survery. */
 	RCLASS_SET_SUPER(origin, RCLASS_SUPER(klass));
 	RCLASS_SET_SUPER(klass, origin);
-	RCLASS_ORIGIN(klass) = origin;
+	RB_OBJ_WRITE(klass, &RCLASS_ORIGIN(klass), origin);
 	RCLASS_M_TBL_WRAPPER(origin) = RCLASS_M_TBL_WRAPPER(klass);
 	RCLASS_M_TBL_INIT(klass);
 	st_foreach(RCLASS_M_TBL(origin), move_refined_method,
@@ -1112,25 +1097,32 @@ ins_methods_pub_i(st_data_t name, st_data_t type, st_data_t ary)
     return ins_methods_push((ID)name, (long)type, (VALUE)ary, NOEX_PUBLIC);
 }
 
+struct method_entry_arg {
+    st_table *list;
+    int recur;
+};
+
 static int
 method_entry_i(st_data_t key, st_data_t value, st_data_t data)
 {
     const rb_method_entry_t *me = (const rb_method_entry_t *)value;
-    st_table *list = (st_table *)data;
+    struct method_entry_arg *arg = (struct method_entry_arg *)data;
     long type;
 
     if (me && me->def->type == VM_METHOD_TYPE_REFINED) {
+	VALUE klass = me->klass;
 	me = rb_resolve_refined_method(Qnil, me, NULL);
 	if (!me) return ST_CONTINUE;
+	if (!arg->recur && me->klass != klass) return ST_CONTINUE;
     }
-    if (!st_lookup(list, key, 0)) {
+    if (!st_lookup(arg->list, key, 0)) {
 	if (UNDEFINED_METHOD_ENTRY_P(me)) {
 	    type = -1; /* none */
 	}
 	else {
 	    type = VISI(me->flag);
 	}
-	st_add_direct(list, key, type);
+	st_add_direct(arg->list, key, type);
     }
     return ST_CONTINUE;
 }
@@ -1140,7 +1132,7 @@ class_instance_method_list(int argc, VALUE *argv, VALUE mod, int obj, int (*func
 {
     VALUE ary;
     int recur, prepended = 0;
-    st_table *list;
+    struct method_entry_arg me_arg;
 
     if (argc == 0) {
 	recur = TRUE;
@@ -1156,16 +1148,17 @@ class_instance_method_list(int argc, VALUE *argv, VALUE mod, int obj, int (*func
 	prepended = 1;
     }
 
-    list = st_init_numtable();
+    me_arg.list = st_init_numtable();
+    me_arg.recur = recur;
     for (; mod; mod = RCLASS_SUPER(mod)) {
-	if (RCLASS_M_TBL(mod)) st_foreach(RCLASS_M_TBL(mod), method_entry_i, (st_data_t)list);
+	if (RCLASS_M_TBL(mod)) st_foreach(RCLASS_M_TBL(mod), method_entry_i, (st_data_t)&me_arg);
 	if (BUILTIN_TYPE(mod) == T_ICLASS && !prepended) continue;
 	if (obj && FL_TEST(mod, FL_SINGLETON)) continue;
 	if (!recur) break;
     }
     ary = rb_ary_new();
-    st_foreach(list, func, ary);
-    st_free_table(list);
+    st_foreach(me_arg.list, func, ary);
+    st_free_table(me_arg.list);
 
     return ary;
 }
@@ -1387,7 +1380,8 @@ VALUE
 rb_obj_singleton_methods(int argc, VALUE *argv, VALUE obj)
 {
     VALUE recur, ary, klass, origin;
-    st_table *list, *mtbl;
+    struct method_entry_arg me_arg;
+    st_table *mtbl;
 
     if (argc == 0) {
 	recur = Qtrue;
@@ -1397,22 +1391,23 @@ rb_obj_singleton_methods(int argc, VALUE *argv, VALUE obj)
     }
     klass = CLASS_OF(obj);
     origin = RCLASS_ORIGIN(klass);
-    list = st_init_numtable();
+    me_arg.list = st_init_numtable();
+    me_arg.recur = recur;
     if (klass && FL_TEST(klass, FL_SINGLETON)) {
 	if ((mtbl = RCLASS_M_TBL(origin)) != 0)
-	    st_foreach(mtbl, method_entry_i, (st_data_t)list);
+	    st_foreach(mtbl, method_entry_i, (st_data_t)&me_arg);
 	klass = RCLASS_SUPER(klass);
     }
     if (RTEST(recur)) {
 	while (klass && (FL_TEST(klass, FL_SINGLETON) || RB_TYPE_P(klass, T_ICLASS))) {
 	    if (klass != origin && (mtbl = RCLASS_M_TBL(klass)) != 0)
-		st_foreach(mtbl, method_entry_i, (st_data_t)list);
+		st_foreach(mtbl, method_entry_i, (st_data_t)&me_arg);
 	    klass = RCLASS_SUPER(klass);
 	}
     }
     ary = rb_ary_new();
-    st_foreach(list, ins_methods_i, ary);
-    st_free_table(list);
+    st_foreach(me_arg.list, ins_methods_i, ary);
+    st_free_table(me_arg.list);
 
     return ary;
 }
@@ -1872,10 +1867,12 @@ NORETURN(static void unknown_keyword_error(VALUE hash, const ID *table, int keyw
 static void
 unknown_keyword_error(VALUE hash, const ID *table, int keywords)
 {
+    st_table *tbl = rb_hash_tbl_raw(hash);
     VALUE keys;
     int i;
     for (i = 0; i < keywords; i++) {
-	rb_hash_delete(hash, ID2SYM(table[i]));
+	st_data_t key = ID2SYM(table[i]);
+	st_delete(tbl, &key, NULL);
     }
     keys = rb_funcall(hash, rb_intern("keys"), 0, 0);
     if (!RB_TYPE_P(keys, T_ARRAY)) rb_raise(rb_eArgError, "unknown keyword");

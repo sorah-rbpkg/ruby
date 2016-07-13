@@ -390,7 +390,8 @@ class TestFileUtils
 
     mkdir 'tmp/tmpdir'
     mkdir_p 'tmp/dest2/tmpdir'
-    assert_raise(Errno::EEXIST) {
+    assert_raise_with_message(Errno::EEXIST, %r' - tmp/dest2/tmpdir\z',
+                              '[ruby-core:68706] [Bug #11021]') {
       mv 'tmp/tmpdir', 'tmp/dest2'
     }
     mkdir 'tmp/dest2/tmpdir/junk'
@@ -420,6 +421,12 @@ class TestFileUtils
     assert_raise(Errno::ELOOP) {
       mv 'tmp/symlink', 'tmp/symlink'
     }
+    # unexist symlink
+    File.symlink 'xxx', 'tmp/src'
+    assert_nothing_raised {
+      mv 'tmp/src', 'tmp/dest'
+    }
+    assert_equal true, File.symlink?('tmp/dest')
   end if have_symlink?
 
   def test_mv_pathname

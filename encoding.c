@@ -1142,13 +1142,11 @@ enc_list(VALUE klass)
 /*
  * call-seq:
  *   Encoding.find(string) -> enc
- *   Encoding.find(symbol) -> enc
  *
  * Search the encoding with specified <i>name</i>.
- * <i>name</i> should be a string or symbol.
+ * <i>name</i> should be a string.
  *
  *   Encoding.find("US-ASCII")  #=> #<Encoding:US-ASCII>
- *   Encoding.find(:Shift_JIS)  #=> #<Encoding:Shift_JIS>
  *
  * Names which this method accept are encoding names and aliases
  * including following special aliases
@@ -1212,6 +1210,14 @@ enc_compatible_p(VALUE klass, VALUE str1, VALUE str2)
 
 /* :nodoc: */
 static VALUE
+enc_s_alloc(VALUE klass)
+{
+    rb_undefined_alloc(klass);
+    return Qnil;
+}
+
+/* :nodoc: */
+static VALUE
 enc_dump(int argc, VALUE *argv, VALUE self)
 {
     rb_scan_args(argc, argv, "01", 0);
@@ -1221,6 +1227,13 @@ enc_dump(int argc, VALUE *argv, VALUE self)
 /* :nodoc: */
 static VALUE
 enc_load(VALUE klass, VALUE str)
+{
+    return str;
+}
+
+/* :nodoc: */
+static VALUE
+enc_m_loader(VALUE klass, VALUE str)
 {
     return enc_find(klass, str);
 }
@@ -1881,7 +1894,7 @@ Init_Encoding(void)
     int i;
 
     rb_cEncoding = rb_define_class("Encoding", rb_cObject);
-    rb_undef_alloc_func(rb_cEncoding);
+    rb_define_alloc_func(rb_cEncoding, enc_s_alloc);
     rb_undef_method(CLASS_OF(rb_cEncoding), "new");
     rb_define_method(rb_cEncoding, "to_s", enc_name, 0);
     rb_define_method(rb_cEncoding, "inspect", enc_inspect, 0);
@@ -1913,6 +1926,8 @@ Init_Encoding(void)
     for (i = 0; i < enc_table.count; ++i) {
 	rb_ary_push(list, enc_new(enc_table.list[i].enc));
     }
+
+    rb_marshal_define_compat(rb_cEncoding, Qnil, NULL, enc_m_loader);
 }
 
 /* locale insensitive ctype functions */

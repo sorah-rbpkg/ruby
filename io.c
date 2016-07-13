@@ -590,6 +590,8 @@ is_socket(int fd, VALUE path)
 }
 #endif
 
+static const char closed_stream[] = "closed stream";
+
 void
 rb_eof_error(void)
 {
@@ -616,7 +618,7 @@ rb_io_check_closed(rb_io_t *fptr)
 {
     rb_io_check_initialized(fptr);
     if (fptr->fd < 0) {
-	rb_raise(rb_eIOError, "closed stream");
+	rb_raise(rb_eIOError, closed_stream);
     }
 }
 
@@ -1075,7 +1077,7 @@ int
 rb_io_wait_readable(int f)
 {
     if (f < 0) {
-	rb_raise(rb_eIOError, "closed stream");
+	rb_raise(rb_eIOError, closed_stream);
     }
     switch (errno) {
       case EINTR:
@@ -1101,7 +1103,7 @@ int
 rb_io_wait_writable(int f)
 {
     if (f < 0) {
-	rb_raise(rb_eIOError, "closed stream");
+	rb_raise(rb_eIOError, closed_stream);
     }
     switch (errno) {
       case EINTR:
@@ -1914,10 +1916,10 @@ rb_io_fdatasync(VALUE io)
 static VALUE
 rb_io_fileno(VALUE io)
 {
-    rb_io_t *fptr;
+    rb_io_t *fptr = RFILE(io)->fptr;
     int fd;
 
-    GetOpenFile(io, fptr);
+    rb_io_check_closed(fptr);
     fd = fptr->fd;
     return INT2FIX(fd);
 }
@@ -1969,7 +1971,7 @@ rb_io_inspect(VALUE obj)
     VALUE result;
     static const char closed[] = " (closed)";
 
-    fptr = RFILE(rb_io_taint_check(obj))->fptr;
+    fptr = RFILE(obj)->fptr;
     if (!fptr) return rb_any_to_s(obj);
     result = rb_str_new_cstr("#<");
     rb_str_append(result, rb_class_name(CLASS_OF(obj)));
@@ -2290,10 +2292,7 @@ io_setstrbuf(VALUE *str, long len)
 	VALUE s = StringValue(*str);
 	long clen = RSTRING_LEN(s);
 	if (clen >= len) {
-	    if (clen != len) {
-		rb_str_modify(s);
-		rb_str_set_len(s, len);
-	    }
+	    rb_str_modify(s);
 	    return;
 	}
 	len -= clen;
@@ -2320,23 +2319,27 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
     int cr;
 
     if (NEED_READCONV(fptr)) {
+	int first = !NIL_P(str);
 	SET_BINARY_MODE(fptr);
 	io_setstrbuf(&str,0);
         make_readconv(fptr, 0);
         while (1) {
             VALUE v;
             if (fptr->cbuf.len) {
+		if (first) rb_str_set_len(str, first = 0);
                 io_shift_cbuf(fptr, fptr->cbuf.len, &str);
             }
             v = fill_cbuf(fptr, 0);
             if (v != MORE_CHAR_SUSPENDED && v != MORE_CHAR_FINISHED) {
                 if (fptr->cbuf.len) {
+		    if (first) rb_str_set_len(str, first = 0);
                     io_shift_cbuf(fptr, fptr->cbuf.len, &str);
                 }
                 rb_exc_raise(v);
             }
             if (v == MORE_CHAR_FINISHED) {
                 clear_readconv(fptr);
+		if (first) rb_str_set_len(str, first = 0);
                 return io_enc_str(str, fptr);
             }
         }
@@ -2416,7 +2419,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock, int no_exception)
     long n, len;
     struct read_internal_arg arg;
 
-    rb_scan_args(argc, argv, "11:", &length, &str, NULL);
+    rb_scan_args(argc, argv, "11", &length, &str);
 
     if ((len = NUM2LONG(length)) < 0) {
 	rb_raise(rb_eArgError, "negative length %ld given", len);
@@ -2595,8 +2598,10 @@ io_read_nonblock(int argc, VALUE *argv, VALUE io)
 
     rb_scan_args(argc, argv, "11:", NULL, NULL, &opts);
 
-    if (!NIL_P(opts) && Qfalse == rb_hash_aref(opts, sym_exception))
+    if (!NIL_P(opts) && Qfalse == rb_hash_aref(opts, sym_exception)) {
 	no_exception = 1;
+	argc--;
+    }
 
     ret = io_getpartial(argc, argv, io, 1, no_exception);
 
@@ -2807,7 +2812,10 @@ io_read(int argc, VALUE *argv, VALUE io)
 
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
-    if (len == 0) return str;
+    if (len == 0) {
+	io_set_read_length(str, 0);
+	return str;
+    }
 
     READ_CHECK(fptr);
 #if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
@@ -3624,6 +3632,7 @@ rb_io_each_codepoint(VALUE io)
     READ_CHECK(fptr);
     if (NEED_READCONV(fptr)) {
 	SET_BINARY_MODE(fptr);
+	r = 1;		/* no invalid char yet */
 	for (;;) {
 	    make_readconv(fptr, 0);
 	    for (;;) {
@@ -3642,13 +3651,16 @@ rb_io_each_codepoint(VALUE io)
 		}
 		if (more_char(fptr) == MORE_CHAR_FINISHED) {
                     clear_readconv(fptr);
-		    /* ignore an incomplete character before EOF */
+		    if (!MBCLEN_CHARFOUND_P(r)) {
+			enc = fptr->encs.enc;
+			goto invalid;
+		    }
 		    return io;
 		}
 	    }
 	    if (MBCLEN_INVALID_P(r)) {
-		rb_raise(rb_eArgError, "invalid byte sequence in %s",
-			 rb_enc_name(fptr->encs.enc));
+		enc = fptr->encs.enc;
+		goto invalid;
 	    }
 	    n = MBCLEN_CHARFOUND_LEN(r);
 	    if (fptr->encs.enc) {
@@ -3678,7 +3690,24 @@ rb_io_each_codepoint(VALUE io)
 	    rb_yield(UINT2NUM(c));
 	}
 	else if (MBCLEN_INVALID_P(r)) {
+	  invalid:
 	    rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(enc));
+	}
+	else if (MBCLEN_NEEDMORE_P(r)) {
+	    char cbuf[8], *p = cbuf;
+	    int more = MBCLEN_NEEDMORE_LEN(r);
+	    if (more > numberof(cbuf)) goto invalid;
+	    more += n = fptr->rbuf.len;
+	    if (more > numberof(cbuf)) goto invalid;
+	    while ((n = (int)read_buffered_data(p, more, fptr)) > 0 &&
+		   (p += n, (more -= n) > 0)) {
+		if (io_fillbuf(fptr) < 0) goto invalid;
+		if ((n = fptr->rbuf.len) > more) n = more;
+	    }
+	    r = rb_enc_precise_mbclen(cbuf, p, enc);
+	    if (!MBCLEN_CHARFOUND_P(r)) goto invalid;
+	    c = rb_enc_codepoint(cbuf, p, enc);
+	    rb_yield(UINT2NUM(c));
 	}
 	else {
 	    continue;
@@ -4058,7 +4087,7 @@ finish_writeconv(rb_io_t *fptr, int noalloc)
                 }
                 if (rb_io_wait_writable(fptr->fd)) {
                     if (fptr->fd < 0)
-                        return noalloc ? Qtrue : rb_exc_new3(rb_eIOError, rb_str_new_cstr("closed stream"));
+                        return noalloc ? Qtrue : rb_exc_new3(rb_eIOError, rb_str_new_cstr(closed_stream));
                     goto retry;
                 }
                 return noalloc ? Qtrue : INT2NUM(errno);
@@ -4340,13 +4369,31 @@ rb_io_close_m(VALUE io)
 static VALUE
 io_call_close(VALUE io)
 {
-    return rb_funcall(io, rb_intern("close"), 0, 0);
+    rb_check_funcall(io, rb_intern("close"), 0, 0);
+    return io;
+}
+
+static VALUE
+ignore_closed_stream(VALUE io, VALUE exc)
+{
+    enum {mesg_len = sizeof(closed_stream)-1};
+    VALUE mesg = rb_attr_get(exc, rb_intern("mesg"));
+    if (!RB_TYPE_P(mesg, T_STRING) ||
+	RSTRING_LEN(mesg) != mesg_len ||
+	memcmp(RSTRING_PTR(mesg), closed_stream, mesg_len)) {
+	rb_exc_raise(exc);
+    }
+    return io;
 }
 
 static VALUE
 io_close(VALUE io)
 {
-    return rb_rescue(io_call_close, io, 0, 0);
+    VALUE closed = rb_check_funcall(io, rb_intern("closed?"), 0, 0);
+    if (closed != Qundef && RTEST(closed)) return io;
+    rb_rescue2(io_call_close, io, ignore_closed_stream, io,
+	       rb_eIOError, (VALUE)0);
+    return io;
 }
 
 /*
@@ -4934,6 +4981,9 @@ rb_io_oflags_modestr(int oflags)
       case O_WRONLY:
 	return MODE_BINARY("w", "wb");
       case O_RDWR:
+	if (oflags & O_TRUNC) {
+	    return MODE_BINARY("w+", "wb+");
+	}
 	return MODE_BINARY("r+", "rb+");
     }
 }
@@ -5011,9 +5061,11 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int 
 	    fmode |= FMODE_SETENC_BY_BOM;
 	    estr += 4;
             len -= 4;
-	    memcpy(encname, estr, len);
-	    encname[len] = '\0';
-	    estr = encname;
+	    if (len > 0 && len <= ENCODING_MAXNAMELEN) {
+		memcpy(encname, estr, len);
+		encname[len] = '\0';
+		estr = encname;
+	    }
 	}
 	idx = rb_enc_find_index(estr);
     }
@@ -7270,12 +7322,12 @@ rb_io_stdio_file(rb_io_t *fptr)
  *  	"w+" Read-write, truncates existing file to zero length
  *  	     or creates a new file for reading and writing.
  *
- *  	"a"  Write-only, starts at end of file if file exists,
- *  	     otherwise creates a new file for writing.
+ *  	"a"  Write-only, each write call appends data at end of file.
+ *  	     Creates a new file for writing if file does not exist.
  *
- *  	"a+" Read-write, starts at end of file if file exists,
- *	     otherwise creates a new file for reading and
- *  	     writing.
+ *  	"a+" Read-write, each write call appends data at end of file.
+ *	     Creates a new file for reading and writing if file does
+ *	     not exist.
  *
  *  The following modes must be used separately, and along with one or more of
  *  the modes seen above.
@@ -7515,8 +7567,8 @@ rb_io_s_for_fd(int argc, VALUE *argv, VALUE klass)
 static VALUE
 rb_io_autoclose_p(VALUE io)
 {
-    rb_io_t *fptr;
-    GetOpenFile(io, fptr);
+    rb_io_t *fptr = RFILE(io)->fptr;
+    rb_io_check_closed(fptr);
     return (fptr->mode & FMODE_PREP) ? Qfalse : Qtrue;
 }
 
@@ -10940,7 +10992,9 @@ argf_getpartial(int argc, VALUE *argv, VALUE argf, int nonblock)
     }
 
     if (!next_argv()) {
-        rb_str_resize(str, 0);
+	if (!NIL_P(str)) {
+	    rb_str_resize(str, 0);
+	}
         rb_eof_error();
     }
     if (ARGF_GENERIC_INPUT_P()) {

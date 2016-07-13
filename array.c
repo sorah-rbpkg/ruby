@@ -343,15 +343,24 @@ rb_ary_modify(VALUE ary)
             ARY_SET_CAPA(ary, len);
             ARY_SET_PTR(ary, ptr);
         }
+
+	/* TODO: age2 promotion, OBJ_PROMOTED() checks not infant. */
+	if (OBJ_PROMOTED(ary) && !OBJ_PROMOTED(shared)) {
+	    rb_gc_writebarrier_remember_promoted(ary);
+	}
     }
 }
 
 static void
 ary_ensure_room_for_push(VALUE ary, long add_len)
 {
-    long new_len = RARRAY_LEN(ary) + add_len;
+    long old_len = RARRAY_LEN(ary);
+    long new_len = old_len + add_len;
     long capa;
 
+    if (old_len > ARY_MAX_SIZE - add_len) {
+	rb_raise(rb_eIndexError, "index %ld too big", new_len);
+    }
     if (ARY_SHARED_P(ary)) {
 	if (new_len > RARRAY_EMBED_LEN_MAX) {
 	    VALUE shared = ARY_SHARED(ary);
@@ -898,19 +907,6 @@ rb_ary_push(VALUE ary, VALUE item)
     return ary;
 }
 
-static VALUE
-rb_ary_push_1(VALUE ary, VALUE item)
-{
-    long idx = RARRAY_LEN(ary);
-
-    if (idx >= ARY_CAPA(ary)) {
-	ary_double_capa(ary, idx);
-    }
-    RARRAY_ASET(ary, idx, item);
-    ARY_SET_LEN(ary, idx + 1);
-    return ary;
-}
-
 VALUE
 rb_ary_cat(VALUE ary, const VALUE *ptr, long len)
 {
@@ -1085,6 +1081,10 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
     long new_len = len + argc;
     long capa;
     const VALUE *head, *sharedp;
+
+    if (len > ARY_MAX_SIZE - argc) {
+	rb_raise(rb_eIndexError, "index %ld too big", new_len);
+    }
 
     if (ARY_SHARED_P(ary)) {
 	VALUE shared = ARY_SHARED(ary);
@@ -1577,6 +1577,9 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
     else {
 	long alen;
 
+	if (olen - len > ARY_MAX_SIZE - rlen) {
+	    rb_raise(rb_eIndexError, "index %ld too big", olen + rlen - len);
+	}
 	rb_ary_modify(ary);
 	alen = olen + rlen - len;
 	if (alen >= ARY_CAPA(ary)) {
@@ -1593,6 +1596,7 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	    MEMMOVE(RARRAY_PTR(ary) + beg, RARRAY_CONST_PTR(rpl), VALUE, rlen);
 	}
     }
+    RB_GC_GUARD(rpl);
 }
 
 void
@@ -3077,7 +3081,7 @@ ary_reject(VALUE orig, VALUE result)
     for (i = 0; i < RARRAY_LEN(orig); i++) {
 	VALUE v = RARRAY_AREF(orig, i);
 	if (!RTEST(rb_yield(v))) {
-	    rb_ary_push_1(result, v);
+	    rb_ary_push(result, v);
 	}
     }
     return result;
@@ -3956,6 +3960,7 @@ ary_recycle_hash(VALUE hash)
 	RHASH(hash)->ntbl = 0;
 	st_free_table(tbl);
     }
+    RB_GC_GUARD(hash);
 }
 
 /*
@@ -3979,7 +3984,7 @@ static VALUE
 rb_ary_diff(VALUE ary1, VALUE ary2)
 {
     VALUE ary3;
-    volatile VALUE hash;
+    VALUE hash;
     long i;
 
     hash = ary_make_hash(to_ary(ary2));
@@ -4691,6 +4696,25 @@ rb_ary_cycle(int argc, VALUE *argv, VALUE ary)
 #define tmpary_discard(a) (ary_discard(a), RBASIC_SET_CLASS_RAW(a, rb_cArray))
 
 /*
+ * Build a ruby array of the corresponding values and yield it to the
+ * associated block.
+ * Return the class of +values+ for reentry check.
+ */
+static int
+yield_indexed_values(const VALUE values, const long r, const long *const p)
+{
+    const VALUE result = rb_ary_new2(r);
+    VALUE *const result_array = RARRAY_PTR(result);
+    const VALUE *const values_array = RARRAY_CONST_PTR(values);
+    long i;
+
+    for (i = 0; i < r; i++) result_array[i] = values_array[p[i]];
+    ARY_SET_LEN(result, r);
+    rb_yield(result);
+    return !RBASIC(values)->klass;
+}
+
+/*
  * Recursively compute permutations of +r+ elements of the set
  * <code>[0..n-1]</code>.
  *
@@ -4707,7 +4731,7 @@ rb_ary_cycle(int argc, VALUE *argv, VALUE ary)
 static void
 permute0(long n, long r, long *p, long index, char *used, VALUE values)
 {
-    long i,j;
+    long i;
     for (i = 0; i < n; i++) {
 	if (used[i] == 0) {
 	    p[index] = i;
@@ -4718,17 +4742,7 @@ permute0(long n, long r, long *p, long index, char *used, VALUE values)
 		used[i] = 0;               /* index unused */
 	    }
 	    else {
-		/* We have a complete permutation of array indexes */
-		/* Build a ruby array of the corresponding values */
-		/* And yield it to the associated block */
-		VALUE result = rb_ary_new2(r);
-		VALUE *result_array = RARRAY_PTR(result);
-		const VALUE *values_array = RARRAY_PTR(values);
-
-		for (j = 0; j < r; j++) result_array[j] = values_array[p[j]];
-		ARY_SET_LEN(result, r);
-		rb_yield(result);
-		if (RBASIC(values)->klass) {
+		if (!yield_indexed_values(values, r, p)) {
 		    rb_raise(rb_eRuntimeError, "permute reentered");
 		}
 	    }
@@ -4826,7 +4840,7 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
 	}
     }
     else {             /* this is the general case */
-	volatile VALUE t0 = tmpbuf(n,sizeof(long));
+	volatile VALUE t0 = tmpbuf(r,sizeof(long));
 	long *p = (long*)RSTRING_PTR(t0);
 	volatile VALUE t1 = tmpbuf(n,sizeof(char));
 	char *used = (char*)RSTRING_PTR(t1);
@@ -4897,21 +4911,19 @@ rb_ary_combination(VALUE ary, VALUE num)
 	}
     }
     else {
-	volatile VALUE t0 = tmpbuf(n+1, sizeof(long));
-	long *stack = (long*)RSTRING_PTR(t0);
-	volatile VALUE cc = tmpary(n);
-	VALUE *chosen = RARRAY_PTR(cc);
+	VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
+	volatile VALUE t0;
+	long *stack = ALLOCV_N(long, t0, n+1);
 	long lev = 0;
 
-	MEMZERO(stack, long, n);
+	RBASIC_CLEAR_CLASS(ary0);
+	MEMZERO(stack+1, long, n);
 	stack[0] = -1;
 	for (;;) {
-	    chosen[lev] = RARRAY_AREF(ary, stack[lev+1]);
 	    for (lev++; lev < n; lev++) {
-		chosen[lev] = RARRAY_AREF(ary, stack[lev+1] = stack[lev]+1);
+		stack[lev+1] = stack[lev]+1;
 	    }
-	    rb_yield(rb_ary_new4(n, chosen));
-	    if (RBASIC(t0)->klass) {
+	    if (!yield_indexed_values(ary0, n, stack+1)) {
 		rb_raise(rb_eRuntimeError, "combination reentered");
 	    }
 	    do {
@@ -4920,8 +4932,8 @@ rb_ary_combination(VALUE ary, VALUE num)
 	    } while (stack[lev+1]+n == len+lev+1);
 	}
     done:
-	tmpbuf_discard(t0);
-	tmpary_discard(cc);
+	ALLOCV_END(t0);
+	RBASIC_SET_CLASS_RAW(ary0, rb_cArray);
     }
     return ary;
 }
@@ -4942,24 +4954,14 @@ rb_ary_combination(VALUE ary, VALUE num)
 static void
 rpermute0(long n, long r, long *p, long index, VALUE values)
 {
-    long i, j;
+    long i;
     for (i = 0; i < n; i++) {
 	p[index] = i;
 	if (index < r-1) {              /* if not done yet */
 	    rpermute0(n, r, p, index+1, values); /* recurse */
 	}
 	else {
-	    /* We have a complete permutation of array indexes */
-	    /* Build a ruby array of the corresponding values */
-	    /* And yield it to the associated block */
-	    VALUE result = rb_ary_new2(r);
-	    VALUE *result_array = RARRAY_PTR(result);
-	    const VALUE *values_array = RARRAY_PTR(values);
-
-	    for (j = 0; j < r; j++) result_array[j] = values_array[p[j]];
-	    ARY_SET_LEN(result, r);
-	    rb_yield(result);
-	    if (RBASIC(values)->klass) {
+	    if (!yield_indexed_values(values, r, p)) {
 		rb_raise(rb_eRuntimeError, "repeated permute reentered");
 	    }
 	}
@@ -5040,7 +5042,6 @@ rb_ary_repeated_permutation(VALUE ary, VALUE num)
 static void
 rcombinate0(long n, long r, long *p, long index, long rest, VALUE values)
 {
-    long j;
     if (rest > 0) {
 	for (; index < n; ++index) {
 	    p[r-rest] = index;
@@ -5048,14 +5049,7 @@ rcombinate0(long n, long r, long *p, long index, long rest, VALUE values)
 	}
     }
     else {
-	VALUE result = rb_ary_new2(r);
-	VALUE *result_array = RARRAY_PTR(result);
-	const VALUE *values_array = RARRAY_PTR(values);
-
-	for (j = 0; j < r; ++j) result_array[j] = values_array[p[j]];
-	ARY_SET_LEN(result, r);
-	rb_yield(result);
-	if (RBASIC(values)->klass) {
+	if (!yield_indexed_values(values, r, p)) {
 	    rb_raise(rb_eRuntimeError, "repeated combination reentered");
 	}
     }

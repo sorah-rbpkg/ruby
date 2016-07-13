@@ -109,6 +109,8 @@ mark_marshal_compat_t(void *tbl)
     st_foreach(tbl, mark_marshal_compat_i, 0);
 }
 
+static st_table *compat_allocator_table(void);
+
 void
 rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE), VALUE (*loader)(VALUE, VALUE))
 {
@@ -127,7 +129,7 @@ rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE),
     compat->dumper = dumper;
     compat->loader = loader;
 
-    st_insert(compat_allocator_tbl, (st_data_t)allocator, (st_data_t)compat);
+    st_insert(compat_allocator_table(), (st_data_t)allocator, (st_data_t)compat);
 }
 
 #define MARSHAL_INFECTION FL_TAINT
@@ -649,6 +651,11 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
     }
     else {
 	VALUE v;
+
+	if (!RBASIC_CLASS(obj)) {
+	    rb_raise(rb_eTypeError, "can't dump internal %s",
+		     rb_builtin_type_name(BUILTIN_TYPE(obj)));
+	}
 
 	arg->infection |= (int)FL_TEST(obj, MARSHAL_INFECTION);
 
@@ -1267,7 +1274,9 @@ r_symreal(struct load_arg *arg, int ivar)
     int idx = -1;
     st_index_t n = arg->symbols->num_entries;
 
-    st_insert(arg->symbols, (st_data_t)n, (st_data_t)0);
+    if (rb_enc_str_asciionly_p(s)) rb_enc_associate_index(s, ENCINDEX_US_ASCII);
+    id = rb_intern_str(s);
+    st_insert(arg->symbols, (st_data_t)n, (st_data_t)id);
     if (ivar) {
 	long num = r_long(arg);
 	while (num-- > 0) {
@@ -1277,7 +1286,6 @@ r_symreal(struct load_arg *arg, int ivar)
     }
     if (idx > 0) rb_enc_associate_index(s, idx);
     id = rb_intern_str(s);
-    st_insert(arg->symbols, (st_data_t)n, (st_data_t)id);
 
     return id;
 }
@@ -1491,7 +1499,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    rb_raise(rb_eArgError, "dump format error (unlinked)");
 	}
 	v = (VALUE)link;
-	r_post_proc(v, arg);
+	v = r_post_proc(v, arg);
 	break;
 
       case TYPE_IVAR:
@@ -1507,6 +1515,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	{
 	    VALUE path = r_unique(arg);
 	    VALUE m = rb_path_to_class(path);
+	    if (NIL_P(extmod)) extmod = rb_ary_tmp_new(0);
 
 	    if (RB_TYPE_P(m, T_CLASS)) { /* prepended */
 		VALUE c;
@@ -1526,7 +1535,6 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    }
 	    else {
 		must_be_module(m, path);
-		if (NIL_P(extmod)) extmod = rb_ary_tmp_new(0);
 		rb_ary_push(extmod, m);
 
 		v = r_object0(arg, 0, extmod);
@@ -1747,6 +1755,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
         {
 	    VALUE klass = path2class(r_unique(arg));
 	    VALUE data;
+	    st_data_t d;
 
 	    if (!rb_obj_respond_to(klass, s_load, TRUE)) {
 		rb_raise(rb_eTypeError, "class %s needs to have method `_load'",
@@ -1760,7 +1769,11 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    v = rb_funcall2(klass, s_load, 1, &data);
 	    check_load_arg(arg, s_load);
 	    v = r_entry(v, arg);
-            v = r_leave(v, arg);
+	    if (st_lookup(compat_allocator_tbl, (st_data_t)rb_get_alloc_func(klass), &d)) {
+		marshal_compat_t *compat = (marshal_compat_t*)d;
+		v = compat->loader(klass, v);
+	    }
+	    v = r_post_proc(v, arg);
 	}
         break;
 
@@ -1881,6 +1894,11 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	rb_raise(rb_eArgError, "dump format error(0x%x)", type);
 	break;
     }
+
+    if (v == Qundef) {
+	rb_raise(rb_eArgError, "dump format error (bad link)");
+    }
+
     return v;
 }
 
@@ -2122,11 +2140,17 @@ Init_marshal(void)
     rb_define_const(rb_mMarshal, "MAJOR_VERSION", INT2FIX(MARSHAL_MAJOR));
     /* minor version */
     rb_define_const(rb_mMarshal, "MINOR_VERSION", INT2FIX(MARSHAL_MINOR));
+}
 
+static st_table *
+compat_allocator_table(void)
+{
+    if (compat_allocator_tbl) return compat_allocator_tbl;
     compat_allocator_tbl = st_init_numtable();
     compat_allocator_tbl_wrapper =
 	Data_Wrap_Struct(rb_cData, mark_marshal_compat_t, 0, compat_allocator_tbl);
     rb_gc_register_mark_object(compat_allocator_tbl_wrapper);
+    return compat_allocator_tbl;
 }
 
 VALUE

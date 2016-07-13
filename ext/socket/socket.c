@@ -23,10 +23,8 @@ rsock_syserr_fail_host_port(int err, const char *mesg, VALUE host, VALUE port)
 {
     VALUE message;
 
-    port = rb_String(port);
-
-    message = rb_sprintf("%s for \"%s\" port %s",
-	    mesg, StringValueCStr(host), StringValueCStr(port));
+    message = rb_sprintf("%s for %+"PRIsVALUE" port % "PRIsVALUE"",
+			 mesg, host, port);
 
     rb_syserr_fail_str(err, message);
 }
@@ -43,15 +41,7 @@ rsock_syserr_fail_path(int err, const char *mesg, VALUE path)
     VALUE message;
 
     if (RB_TYPE_P(path, T_STRING)) {
-        if (memchr(RSTRING_PTR(path), '\0', RSTRING_LEN(path))) {
-            path = rb_str_inspect(path);
-            message = rb_sprintf("%s for %s", mesg,
-                    StringValueCStr(path));
-        }
-        else {
-            message = rb_sprintf("%s for \"%s\"", mesg,
-                    StringValueCStr(path));
-        }
+	message = rb_sprintf("%s for % "PRIsVALUE"", mesg, path);
 	rb_syserr_fail_str(err, message);
     }
     else {
@@ -87,7 +77,7 @@ rsock_syserr_fail_raddrinfo(int err, const char *mesg, VALUE rai)
     VALUE str, message;
 
     str = rsock_addrinfo_inspect_sockaddr(rai);
-    message = rb_sprintf("%s for %s", mesg, StringValueCStr(str));
+    message = rb_sprintf("%s for %"PRIsVALUE"", mesg, str);
 
     rb_syserr_fail_str(err, message);
 }
@@ -1010,14 +1000,28 @@ sock_gethostname(VALUE obj)
 #ifndef HOST_NAME_MAX
 #  define HOST_NAME_MAX 1024
 #endif
-    char buf[HOST_NAME_MAX+1];
+    long len = HOST_NAME_MAX;
+    VALUE name;
 
     rb_secure(3);
-    if (gethostname(buf, (int)sizeof buf - 1) < 0)
-	rb_sys_fail("gethostname(3)");
-
-    buf[sizeof buf - 1] = '\0';
-    return rb_str_new2(buf);
+    name = rb_str_new(0, len);
+    while (gethostname(RSTRING_PTR(name), len) < 0) {
+	int e = errno;
+	switch (e) {
+	  case ENAMETOOLONG:
+#ifdef __linux__
+	  case EINVAL:
+	    /* glibc before version 2.1 uses EINVAL instead of ENAMETOOLONG */
+#endif
+	    break;
+	  default:
+	    rb_syserr_fail(e, "gethostname(3)");
+	}
+	rb_str_modify_expand(name, len);
+	len += len;
+    }
+    rb_str_resize(name, strlen(RSTRING_PTR(name)));
+    return name;
 }
 #else
 #ifdef HAVE_UNAME
@@ -1039,7 +1043,7 @@ sock_gethostname(VALUE obj)
 #endif
 
 static VALUE
-make_addrinfo(struct addrinfo *res0, int norevlookup)
+make_addrinfo(struct rb_addrinfo *res0, int norevlookup)
 {
     VALUE base, ary;
     struct addrinfo *res;
@@ -1048,7 +1052,7 @@ make_addrinfo(struct addrinfo *res0, int norevlookup)
 	rb_raise(rb_eSocket, "host not found");
     }
     base = rb_ary_new();
-    for (res = res0; res; res = res->ai_next) {
+    for (res = res0->ai; res; res = res->ai_next) {
 	ary = rsock_ipaddr(res->ai_addr, res->ai_addrlen, norevlookup);
 	if (res->ai_canonname) {
 	    RARRAY_PTR(ary)[2] = rb_str_new2(res->ai_canonname);
@@ -1271,7 +1275,8 @@ static VALUE
 sock_s_getaddrinfo(int argc, VALUE *argv)
 {
     VALUE host, port, family, socktype, protocol, flags, ret, revlookup;
-    struct addrinfo hints, *res;
+    struct addrinfo hints;
+    struct rb_addrinfo *res;
     int norevlookup;
 
     rb_scan_args(argc, argv, "25", &host, &port, &family, &socktype, &protocol, &flags, &revlookup);
@@ -1294,7 +1299,7 @@ sock_s_getaddrinfo(int argc, VALUE *argv)
     res = rsock_getaddrinfo(host, port, &hints, 0);
 
     ret = make_addrinfo(res, norevlookup);
-    freeaddrinfo(res);
+    rb_freeaddrinfo(res);
     return ret;
 }
 
@@ -1327,8 +1332,9 @@ sock_s_getnameinfo(int argc, VALUE *argv)
     char *hptr, *pptr;
     char hbuf[1024], pbuf[1024];
     int fl;
-    struct addrinfo hints, *res = NULL, *r;
-    int error;
+    struct rb_addrinfo *res = NULL;
+    struct addrinfo hints, *r;
+    int error, saved_errno;
     union_sockaddr ss;
     struct sockaddr *sap;
     socklen_t salen;
@@ -1412,8 +1418,8 @@ sock_s_getnameinfo(int argc, VALUE *argv)
         hints.ai_family = NIL_P(af) ? PF_UNSPEC : rsock_family_arg(af);
 	error = rb_getaddrinfo(hptr, pptr, &hints, &res);
 	if (error) goto error_exit_addr;
-	sap = res->ai_addr;
-        salen = res->ai_addrlen;
+	sap = res->ai->ai_addr;
+        salen = res->ai->ai_addrlen;
     }
     else {
 	rb_raise(rb_eTypeError, "expecting String or Array");
@@ -1424,7 +1430,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 			   pbuf, sizeof(pbuf), fl);
     if (error) goto error_exit_name;
     if (res) {
-	for (r = res->ai_next; r; r = r->ai_next) {
+	for (r = res->ai->ai_next; r; r = r->ai_next) {
 	    char hbuf2[1024], pbuf2[1024];
 
 	    sap = r->ai_addr;
@@ -1433,20 +1439,24 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 				   pbuf2, sizeof(pbuf2), fl);
 	    if (error) goto error_exit_name;
 	    if (strcmp(hbuf, hbuf2) != 0|| strcmp(pbuf, pbuf2) != 0) {
-		freeaddrinfo(res);
+		rb_freeaddrinfo(res);
 		rb_raise(rb_eSocket, "sockaddr resolved to multiple nodename");
 	    }
 	}
-	freeaddrinfo(res);
+	rb_freeaddrinfo(res);
     }
     return rb_assoc_new(rb_str_new2(hbuf), rb_str_new2(pbuf));
 
   error_exit_addr:
-    if (res) freeaddrinfo(res);
+    saved_errno = errno;
+    if (res) rb_freeaddrinfo(res);
+    errno = saved_errno;
     rsock_raise_socket_error("getaddrinfo", error);
 
   error_exit_name:
-    if (res) freeaddrinfo(res);
+    saved_errno = errno;
+    if (res) rb_freeaddrinfo(res);
+    errno = saved_errno;
     rsock_raise_socket_error("getnameinfo", error);
 
     UNREACHABLE;
@@ -1469,10 +1479,10 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 static VALUE
 sock_s_pack_sockaddr_in(VALUE self, VALUE port, VALUE host)
 {
-    struct addrinfo *res = rsock_addrinfo(host, port, 0, 0);
-    VALUE addr = rb_str_new((char*)res->ai_addr, res->ai_addrlen);
+    struct rb_addrinfo *res = rsock_addrinfo(host, port, 0, 0);
+    VALUE addr = rb_str_new((char*)res->ai->ai_addr, res->ai->ai_addrlen);
 
-    freeaddrinfo(res);
+    rb_freeaddrinfo(res);
     OBJ_INFECT(addr, port);
     OBJ_INFECT(addr, host);
 

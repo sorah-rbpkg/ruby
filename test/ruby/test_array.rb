@@ -2011,6 +2011,22 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1, 3], [0, 1, 2, 3].reject {|x| x % 2 == 0 })
   end
 
+  def test_reject_with_callcc
+    respond_to?(:callcc, true) or require 'continuation'
+    bug9727 = '[ruby-dev:48101] [Bug #9727]'
+    cont = nil
+    a = [*1..10].reject do |i|
+      callcc {|c| cont = c} if !cont and i == 10
+      false
+    end
+    if a.size < 1000
+      a.unshift(:x)
+      cont.call
+    end
+    assert_equal(1000, a.size, bug9727)
+    assert_equal([:x, *1..10], a.uniq, bug9727)
+  end
+
   def test_zip
     assert_equal([[1, :a, "a"], [2, :b, "b"], [3, nil, "c"]],
       [1, 2, 3].zip([:a, :b], ["a", "b", "c", "d"]))
@@ -2275,6 +2291,15 @@ class TestArray < Test::Unit::TestCase
     assert_equal(:called, (0..100).to_a.combination(50) { break :called }, "[ruby-core:29240] ... must be yielded even if 100C50 > signed integer")
   end
 
+  def test_combination_clear
+    bug9939 = '[ruby-core:63149] [Bug #9939]'
+    assert_separately([], <<-'end;')
+      100_000.times {Array.new(1000)}
+      a = [*0..100]
+      a.combination(3) {|*,x| a.clear}
+    end;
+  end
+
   def test_product2
     a = (0..100).to_a
     assert_raise(RangeError) do
@@ -2389,7 +2414,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal([], a.rotate!(13))
     assert_equal([], a.rotate!(-13))
     a = [].freeze
-    assert_raise_with_message(RuntimeError, /can't modify frozen/) {a.rotate!}
+    assert_raise_with_message(RuntimeError, /can\'t modify frozen/) {a.rotate!}
     a = [1,2,3]
     assert_raise(ArgumentError) { a.rotate!(1, 1) }
   end
@@ -2427,5 +2452,57 @@ class TestArray < Test::Unit::TestCase
     assert_equal(nil, a.bsearch {|x| (-1) * (2**100) })
 
     assert_include([4, 7], a.bsearch {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
+  end
+
+  def test_shared_marking
+    reduce = proc do |s|
+      s.gsub(/(verify_internal_consistency_reachable_i:\sWB\smiss\s\S+\s\(T_ARRAY\)\s->\s)\S+\s\((proc|T_NONE)\)\n
+             \K(?:\1\S+\s\(\2\)\n)*/x) do
+        "...(snip #{$&.count("\n")} lines)...\n"
+      end
+    end
+    begin
+      assert_normal_exit(<<-EOS, '[Bug #9718]', timeout: 5, stdout_filter: reduce)
+      queue = []
+      50.times do
+        10_000.times do
+          queue << lambda{}
+        end
+        GC.start(full_mark: false, immediate_sweep: true)
+        GC.verify_internal_consistency
+        queue.shift.call
+      end
+    EOS
+    rescue Timeout::Error => e
+      skip e.message
+    end
+  end
+
+  sizeof_long = [0].pack("l!").size
+  sizeof_voidp = [""].pack("p").size
+  if sizeof_long < sizeof_voidp
+    ARY_MAX = (1<<(8*sizeof_long-1)) / sizeof_voidp - 1
+    Bug11235 = '[ruby-dev:49043] [Bug #11235]'
+
+    def test_push_over_ary_max
+      assert_separately(['-', ARY_MAX.to_s, Bug11235], <<-"end;")
+        a = Array.new(ARGV[0].to_i)
+        assert_raise(IndexError, ARGV[1]) {0x1000.times {a.push(1)}}
+      end;
+    end
+
+    def test_unshift_over_ary_max
+      assert_separately(['-', ARY_MAX.to_s, Bug11235], <<-"end;")
+        a = Array.new(ARGV[0].to_i)
+        assert_raise(IndexError, ARGV[1]) {0x1000.times {a.unshift(1)}}
+      end;
+    end
+
+    def test_splice_over_ary_max
+      assert_separately(['-', ARY_MAX.to_s, Bug11235], <<-"end;")
+        a = Array.new(ARGV[0].to_i)
+        assert_raise(IndexError, ARGV[1]) {a[0, 0] = Array.new(0x1000)}
+      end;
+    end
   end
 end

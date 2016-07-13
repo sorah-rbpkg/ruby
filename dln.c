@@ -107,10 +107,11 @@ dln_loaderror(const char *format, ...)
 
 #ifndef FUNCNAME_PATTERN
 # if defined(__hp9000s300) || ((defined(__NetBSD__) || defined(__FreeBSD__) || defined(__OpenBSD__)) && !defined(__ELF__)) || defined(__BORLANDC__) || defined(NeXT) || defined(__WATCOMC__) || defined(MACOSX_DYLD)
-#  define FUNCNAME_PREFIX "_Init_"
+#  define EXTERNAL_PREFIX "_"
 # else
-#  define FUNCNAME_PREFIX "Init_"
+#  define EXTERNAL_PREFIX ""
 # endif
+# define FUNCNAME_PREFIX EXTERNAL_PREFIX"Init_"
 #endif
 
 #if defined __CYGWIN__ || defined DOSISH
@@ -1255,20 +1256,25 @@ dln_load(const char *file)
 
 #if defined _WIN32 && !defined __CYGWIN__
     HINSTANCE handle;
-    char winfile[MAXPATHLEN];
+    WCHAR *winfile;
     char message[1024];
     void (*init_fct)();
     char *buf;
 
-    if (strlen(file) >= MAXPATHLEN) dln_loaderror("filename too long");
-
     /* Load the file as an object one */
     init_funcname(&buf, file);
 
-    strlcpy(winfile, file, sizeof(winfile));
+    /* Convert the file path to wide char */
+    winfile = rb_w32_mbstr_to_wstr(CP_UTF8, file, -1, NULL);
+    if (!winfile) {
+	dln_memerror();
+    }
 
     /* Load file */
-    if ((handle = LoadLibrary(winfile)) == NULL) {
+    handle = LoadLibraryW(winfile);
+    free(winfile);
+
+    if (!handle) {
 	error = dln_strerror();
 	goto failed;
     }
@@ -1334,6 +1340,24 @@ dln_load(const char *file)
 	    error = dln_strerror();
 	    goto failed;
 	}
+
+# if defined RUBY_EXPORT
+	{
+	    static const char incompatible[] = "incompatible library version";
+	    void *ex = dlsym(handle, EXTERNAL_PREFIX"ruby_xmalloc");
+	    if (ex && ex != ruby_xmalloc) {
+
+#   if defined __APPLE__
+		/* dlclose() segfaults */
+		rb_fatal("%s - %s", incompatible, file);
+#   else
+		dlclose(handle);
+		error = incompatible;
+		goto failed;
+#   endif
+	    }
+	}
+# endif
 
 	init_fct = (void(*)())(VALUE)dlsym(handle, buf);
 #ifdef __native_client__

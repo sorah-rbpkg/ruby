@@ -266,16 +266,34 @@ class TestRange < Test::Unit::TestCase
   def test_to_s
     assert_equal("0..1", (0..1).to_s)
     assert_equal("0...1", (0...1).to_s)
+
+    bug11767 = '[ruby-core:71811] [Bug #11767]'
+    assert_predicate(("0".taint.."1").to_s, :tainted?, bug11767)
+    assert_predicate(("0".."1".taint).to_s, :tainted?, bug11767)
+    assert_predicate(("0".."1").taint.to_s, :tainted?, bug11767)
   end
 
   def test_inspect
     assert_equal("0..1", (0..1).inspect)
     assert_equal("0...1", (0...1).inspect)
+
+    bug11767 = '[ruby-core:71811] [Bug #11767]'
+    assert_predicate(("0".taint.."1").inspect, :tainted?, bug11767)
+    assert_predicate(("0".."1".taint).inspect, :tainted?, bug11767)
+    assert_predicate(("0".."1").taint.inspect, :tainted?, bug11767)
   end
 
   def test_eqq
     assert_operator(0..10, :===, 5)
     assert_not_operator(0..10, :===, 11)
+  end
+
+  def test_eqq_time
+    bug11113 = '[ruby-core:69052] [Bug #11113]'
+    t = Time.now
+    assert_nothing_raised(TypeError, bug11113) {
+      assert_operator(t..(t+10), :===, t+5)
+    }
   end
 
   def test_include
