@@ -97,6 +97,6 @@ import-orig-source:
 
 .PHONY: override_dh_strip
 override_dh_strip:
-	dh_strip --dbg-package=libruby$(RUBY_VERSION)-dbg
+	dh_strip --dbg-package=libruby2.1-dbg
 	# Don't ship debug files for the rubyX.Y binary to avoid Multi-Arch: same issues.
-	rm $(CURDIR)/debian/libruby$(RUBY_VERSION)-dbg/usr/lib/debug/usr/bin/ruby$(RUBY_VERSION)
+	rm $(CURDIR)/debian/libruby2.1-dbg/usr/lib/debug/usr/bin/ruby2.1
