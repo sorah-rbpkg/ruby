@@ -1,4 +1,4 @@
-ruby2.2 (2.2.5-0nkmi2) unstable; urgency=medium
+ruby2.2 (2.2.5-0nkmi2~trusty) trusty; urgency=medium
 
   * remove deps of minitest
 
