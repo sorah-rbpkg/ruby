@@ -1,3 +1,9 @@
+ruby2.2 (2.2.5-0nkmi2) unstable; urgency=medium
+
+  * remove deps of minitest
+
+ -- Sorah Fukumori <her@sorah.jp>  Fri, 15 Jul 2016 05:29:56 +0000
+
 ruby2.2 (2.2.5-0nkmi1~trusty) trusty; urgency=medium
 
   [ Sorah Fukumori ]
