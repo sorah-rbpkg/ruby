@@ -1,3 +1,9 @@
+ruby2.3 (2.3.1-5nkmi4) UNRELEASED; urgency=medium
+
+  * Keep rdoc on libruby2.3 package to allow upgrade from stock package
+
+ -- Sorah Fukumori <her@sorah.jp>  Fri, 15 Jul 2016 08:04:14 +0000
+
 ruby2.3 (2.3.1-5nkmi3) UNRELEASED; urgency=medium
 
   * remove rake dep
