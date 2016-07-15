@@ -1,4 +1,4 @@
-ruby2.3 (2.3.1-5nkmi4) UNRELEASED; urgency=medium
+ruby2.3 (2.3.1-5nkmi4~xenial) xenial; urgency=medium
 
   * Keep rdoc on libruby2.3 package to allow upgrade from stock package
 
