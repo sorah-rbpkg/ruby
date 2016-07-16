@@ -1,8 +1,3 @@
-/usr/lib/ruby/gems/*.0/specifications/default/bigdecimal-*
-/usr/lib/ruby/gems/*.0/specifications/default/io-console-*
-/usr/lib/ruby/gems/*.0/specifications/default/json-*
-/usr/lib/ruby/gems/*.0/specifications/default/psych-*
-/usr/lib/ruby/gems/*.0/specifications/default/rdoc-*
 /usr/lib/ruby/gems/*.0/specifications/power_assert-*
 /usr/lib/ruby/gems/*.0/specifications/test-unit-*
 /usr/lib/ruby/gems/*.0/specifications/minitest-*
