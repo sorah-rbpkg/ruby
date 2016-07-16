@@ -1,4 +1,4 @@
-ruby2.3 (2.3.1-5nkmi5) UNRELEASED; urgency=medium
+ruby2.3 (2.3.1-5nkmi5~xenial) xenial; urgency=medium
 
   * stock libruby2.3 has all default gems
 
