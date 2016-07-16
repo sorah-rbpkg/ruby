@@ -1,11 +1,6 @@
-ruby2.3 (2.3.1-5nkmi5) UNRELEASED; urgency=medium
+ruby2.3 (2.3.1-5nkmi5~trusty) trusty; urgency=medium
 
   * stock libruby2.3 has all default gems
-
- -- Sorah Fukumori <her@sorah.jp>  Sat, 16 Jul 2016 11:37:15 +0000
-
-ruby2.3 (2.3.1-5nkmi4) unstable; urgency=medium
-
   * Keep rdoc on libruby2.3 package to allow upgrade from stock package
 
  -- Sorah Fukumori <her@sorah.jp>  Fri, 15 Jul 2016 08:04:14 +0000
