@@ -2,6 +2,8 @@ ruby2.3 (2.3.1-6) UNRELEASED; urgency=medium
 
   * debian/rules: honor 'nocheck' flag in DEB_BUILD_OPTIONS (Closes: #842768).
     Thanks to John Paul Adrian Glaubitz for the patch.
+  * Build-Depends on libssl1.0-dev. Ruby 2.3 is not likely to get OpenSSL 1.1
+    compatibility (see #828535)
 
  -- Antonio Terceiro <terceiro@debian.org>  Wed, 09 Nov 2016 08:58:38 -0200
 
