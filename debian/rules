@@ -69,7 +69,9 @@ override_dh_auto_build-arch:
 	dh_auto_build -- main V=1
 
 override_dh_auto_test-arch:
+ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
 	$(MAKE) check V=1
+endif
 
 override_dh_auto_install-arch:
 	$(MAKE) install-nodoc V=1 DESTDIR=$(CURDIR)/debian/tmp
