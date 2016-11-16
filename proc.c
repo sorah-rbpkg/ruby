@@ -727,6 +727,10 @@ rb_block_lambda(void)
 /* CHECKME: are the argument checking semantics correct? */
 
 /*
+ *  Document-method: call
+ *  Document-method: []
+ *  Document-method: yield
+ *
  *  call-seq:
  *     prc.call(params,...)   -> obj
  *     prc[params,...]        -> obj
@@ -805,6 +809,20 @@ check_argc(long argc)
 #define check_argc(argc) (argc)
 #endif
 
+static rb_block_t *
+passed_block(VALUE pass_procval)
+{
+    if (!NIL_P(pass_procval)) {
+	rb_proc_t *pass_proc;
+	if (SYMBOL_P(pass_procval)) {
+	    pass_procval = sym_proc_new(rb_cProc, pass_procval);
+	}
+	GetProcPtr(pass_procval, pass_proc);
+	return &pass_proc->block;
+    }
+    return 0;
+}
+
 VALUE
 rb_proc_call(VALUE self, VALUE args)
 {
@@ -825,12 +843,7 @@ rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE pass_proc
     rb_block_t *block = 0;
     GetProcPtr(self, proc);
 
-    if (!NIL_P(pass_procval)) {
-	rb_proc_t *pass_proc;
-	GetProcPtr(pass_procval, pass_proc);
-	block = &pass_proc->block;
-    }
-
+    block = passed_block(pass_procval);
     vret = rb_vm_invoke_proc(GET_THREAD(), proc, argc, argv, block);
     RB_GC_GUARD(self);
     RB_GC_GUARD(pass_procval);
@@ -1283,7 +1296,7 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass,
     }
     if (me->def->type == VM_METHOD_TYPE_ZSUPER) {
 	if (me->defined_class) {
-	    VALUE klass = RCLASS_SUPER(me->defined_class);
+	    VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(me->defined_class));
 	    id = me->def->original_id;
 	    me = (rb_method_entry_t *)rb_callable_method_entry_without_refinements(klass, id);
 	}
@@ -1977,15 +1990,8 @@ rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE pass_
     }
     if ((state = EXEC_TAG()) == 0) {
 	rb_thread_t *th = GET_THREAD();
-	rb_block_t *block = 0;
 
-	if (!NIL_P(pass_procval)) {
-	    rb_proc_t *pass_proc;
-	    GetProcPtr(pass_procval, pass_proc);
-	    block = &pass_proc->block;
-	}
-
-	th->passed_block = block;
+	th->passed_block = passed_block(pass_procval);
 	VAR_INITIALIZED(data);
 	result = rb_vm_call(th, data->recv, data->me->called_id, argc, argv, method_callable_method_entry(data));
     }
@@ -2897,6 +2903,13 @@ Init_Proc(void)
 		  (void *)OPTIMIZED_METHOD_TYPE_CALL, METHOD_VISI_PUBLIC);
     rb_add_method(rb_cProc, rb_intern("yield"), VM_METHOD_TYPE_OPTIMIZED,
 		  (void *)OPTIMIZED_METHOD_TYPE_CALL, METHOD_VISI_PUBLIC);
+
+#if 0 /* for RDoc */
+    rb_define_method(rb_cProc, "call", proc_call, -1);
+    rb_define_method(rb_cProc, "[]", proc_call, -1);
+    rb_define_method(rb_cProc, "===", proc_call, -1);
+    rb_define_method(rb_cProc, "yield", proc_call, -1);
+#endif
 
     rb_define_method(rb_cProc, "to_proc", proc_to_proc, 0);
     rb_define_method(rb_cProc, "arity", proc_arity, 0);

@@ -5495,7 +5495,7 @@ coverage(VALUE fname, int n)
 {
     VALUE coverages = rb_get_coverages();
     if (RTEST(coverages) && RBASIC(coverages)->klass == 0) {
-	VALUE lines = rb_ary_tmp_new_fill(n);
+	VALUE lines = n > 0 ? rb_ary_tmp_new_fill(n) : rb_ary_tmp_new(0);
 	rb_hash_aset(coverages, fname, lines);
 	return lines;
     }
@@ -9947,7 +9947,7 @@ new_if_gen(struct parser_params *parser, NODE *cc, NODE *left, NODE *right)
 {
     if (!cc) return right;
     cc = cond0(parser, cc);
-    return NEW_IF(cc, left, right);
+    return newline_node(NEW_IF(cc, left, right));
 }
 
 static NODE*
