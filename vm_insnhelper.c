@@ -660,6 +660,7 @@ vm_get_iclass(rb_control_frame_t *cfp, VALUE klass)
 static inline VALUE
 vm_get_ev_const(rb_thread_t *th, VALUE orig_klass, ID id, int is_defined)
 {
+    void rb_const_warn_if_deprecated(const rb_const_entry_t *ce, VALUE klass, ID id);
     VALUE val;
 
     if (orig_klass == Qnil) {
@@ -686,6 +687,7 @@ vm_get_ev_const(rb_thread_t *th, VALUE orig_klass, ID id, int is_defined)
 		rb_const_entry_t *ce;
 	      search_continue:
 		if ((ce = rb_const_lookup(klass, id))) {
+		    rb_const_warn_if_deprecated(ce, klass, id);
 		    val = ce->value;
 		    if (val == Qundef) {
 			if (am == klass) break;
@@ -994,7 +996,9 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 		target_lep = lep;
 	    }
 
-	    if (lep == target_lep && escape_cfp->iseq->body->type == ISEQ_TYPE_CLASS) {
+	    if (lep == target_lep &&
+		RUBY_VM_NORMAL_ISEQ_P(escape_cfp->iseq) &&
+		escape_cfp->iseq->body->type == ISEQ_TYPE_CLASS) {
 		in_class_frame = 1;
 		target_lep = 0;
 	    }

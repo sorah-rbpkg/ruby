@@ -587,6 +587,7 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq,
       case arg_setup_lambda:
 	if (given_argc == 1 &&
 	    given_argc != iseq->body->param.lead_num &&
+	    !iseq->body->param.flags.has_opt &&
 	    !iseq->body->param.flags.has_rest &&
 	    args_check_block_arg0(args, th)) {
 	    given_argc = RARRAY_LENINT(args->rest);
@@ -780,7 +781,8 @@ vm_caller_setup_arg_block(const rb_thread_t *th, rb_control_frame_t *reg_cfp,
 	if (NIL_P(proc)) {
 	    calling->blockptr = NULL;
 	}
-	else if (SYMBOL_P(proc) && rb_method_basic_definition_p(rb_cSymbol, idTo_proc)) {
+	else if (LIKELY(!(ci->flag & VM_CALL_TAILCALL)) && SYMBOL_P(proc) &&
+		 rb_method_basic_definition_p(rb_cSymbol, idTo_proc)) {
 	    calling->blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(reg_cfp);
 	    calling->blockptr->iseq = (rb_iseq_t *)proc;
 	    calling->blockptr->proc = proc;
