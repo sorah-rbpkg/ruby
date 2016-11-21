@@ -1,3 +1,9 @@
+ruby2.3 (2.3.3-1) unstable; urgency=medium
+
+  * New upstream version.
+
+ -- Christian Hofstaedtler <zeha@debian.org>  Tue, 22 Nov 2016 12:32:41 +0000
+
 ruby2.3 (2.3.2-1) unstable; urgency=medium
 
   * New upstream version.
