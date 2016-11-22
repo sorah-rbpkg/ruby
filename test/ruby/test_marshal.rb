@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'tempfile'
 require_relative 'marshaltestlib'
@@ -646,6 +647,70 @@ class TestMarshal < Test::Unit::TestCase
       Marshal.dump(c)
       c.cc.call
     end
+  end
+
+  def test_undumpable_message
+    c = Module.new {break module_eval("class IO\u{26a1} < IO;self;end")}
+    assert_raise_with_message(TypeError, /IO\u{26a1}/) {
+      Marshal.dump(c.new(0, autoclose: false))
+    }
+  end
+
+  def test_undumpable_data
+    c = Module.new {break module_eval("class T\u{23F0 23F3}<Time;undef _dump;self;end")}
+    assert_raise_with_message(TypeError, /T\u{23F0 23F3}/) {
+      Marshal.dump(c.new)
+    }
+  end
+
+  def test_unloadable_data
+    c = eval("class Unloadable\u{23F0 23F3}<Time;;self;end")
+    c.class_eval {
+      alias _dump_data _dump
+      undef _dump
+    }
+    d = Marshal.dump(c.new)
+    assert_raise_with_message(TypeError, /Unloadable\u{23F0 23F3}/) {
+      Marshal.load(d)
+    }
+  end
+
+  def test_unloadable_userdef
+    c = eval("class Userdef\u{23F0 23F3}<Time;self;end")
+    class << c
+      undef _load
+    end
+    d = Marshal.dump(c.new)
+    assert_raise_with_message(TypeError, /Userdef\u{23F0 23F3}/) {
+      Marshal.load(d)
+    }
+  end
+
+  def test_unloadable_usrmarshal
+    c = eval("class UsrMarshal\u{23F0 23F3}<Time;self;end")
+    c.class_eval {
+      alias marshal_dump _dump
+    }
+    d = Marshal.dump(c.new)
+    assert_raise_with_message(TypeError, /UsrMarshal\u{23F0 23F3}/) {
+      Marshal.load(d)
+    }
+  end
+
+  def test_no_internal_ids
+    opt = %w[--disable=gems]
+    args = [opt, 'Marshal.dump("",STDOUT)', true, true, encoding: Encoding::ASCII_8BIT]
+    out, err, status = EnvUtil.invoke_ruby(*args)
+    assert_empty(err)
+    assert_predicate(status, :success?)
+    expected = out
+
+    opt << "--enable=frozen-string-literal"
+    opt << "--debug=frozen-string-literal"
+    out, err, status = EnvUtil.invoke_ruby(*args)
+    assert_empty(err)
+    assert_predicate(status, :success?)
+    assert_equal(expected, out)
   end
 
   def test_marshal_honor_post_proc_value_for_link

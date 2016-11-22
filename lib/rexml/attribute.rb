@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "rexml/namespace"
 require 'rexml/text'
 
@@ -109,7 +110,7 @@ module REXML
     #  b.to_string     # -> "ns:x='y'"
     def to_string
       if @element and @element.context and @element.context[:attribute_quote] == :quote
-        %Q^#@expanded_name="#{to_s().gsub(/"/, '&quote;')}"^
+        %Q^#@expanded_name="#{to_s().gsub(/"/, '&quot;')}"^
       else
         "#@expanded_name='#{to_s().gsub(/'/, '&apos;')}'"
       end

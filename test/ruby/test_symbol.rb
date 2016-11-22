@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestSymbol < Test::Unit::TestCase
@@ -10,6 +11,19 @@ class TestSymbol < Test::Unit::TestCase
       assert_not_match(/\A:"/, n, bug5136)
     end
     assert_nothing_raised(SyntaxError) {assert_equal(sym, eval(n))}
+  end
+
+  def test_intern
+    assert_equal(':""', ''.intern.inspect)
+    assert_equal(':$foo', '$foo'.intern.inspect)
+    assert_equal(':"!foo"', '!foo'.intern.inspect)
+    assert_equal(':"foo=="', "foo==".intern.inspect)
+  end
+
+  def test_all_symbols
+    x = Symbol.all_symbols
+    assert_kind_of(Array, x)
+    assert_empty(x.reject {|s| s.is_a?(Symbol) })
   end
 
   def test_inspect_invalid
@@ -106,6 +120,80 @@ class TestSymbol < Test::Unit::TestCase
     end
   end
 
+  def test_to_proc_yield
+    assert_ruby_status([], <<-"end;", timeout: 5.0)
+      GC.stress = true
+      true.tap(&:itself)
+    end;
+  end
+
+  def test_to_proc_new_proc
+    assert_ruby_status([], <<-"end;", timeout: 5.0)
+      GC.stress = true
+      2.times {Proc.new(&:itself)}
+    end;
+  end
+
+  def test_to_proc_no_method
+    assert_separately([], <<-"end;", timeout: 5.0)
+      bug11566 = '[ruby-core:70980] [Bug #11566]'
+      assert_raise(NoMethodError, bug11566) {Proc.new(&:foo).(1)}
+      assert_raise(NoMethodError, bug11566) {:foo.to_proc.(1)}
+    end;
+  end
+
+  def test_to_proc_arg
+    assert_separately([], <<-"end;", timeout: 5.0)
+      def (obj = Object.new).proc(&b) b; end
+      assert_same(:itself.to_proc, obj.proc(&:itself))
+    end;
+  end
+
+  def test_to_proc_call_with_symbol_proc
+    first = 1
+    bug11594 = "[ruby-core:71088] [Bug #11594] corrupted the first local variable"
+    # symbol which does not have a Proc
+    ->(&blk) {}.call(&:test_to_proc_call_with_symbol_proc)
+    assert_equal(1, first, bug11594)
+  end
+
+  private def return_from_proc
+    Proc.new { return 1 }.tap(&:call)
+  end
+
+  def test_return_from_symbol_proc
+    bug12462 = '[ruby-core:75856] [Bug #12462]'
+    assert_equal(1, return_from_proc, bug12462)
+  end
+
+  def test_to_proc_for_hash_each
+    bug11830 = '[ruby-core:72205] [Bug #11830]'
+    assert_normal_exit(<<-'end;', bug11830) # do
+      {}.each(&:destroy)
+    end;
+  end
+
+  def test_to_proc_iseq
+    assert_separately([], <<~"end;", timeout: 1) # do
+      bug11845 = '[ruby-core:72381] [Bug #11845]'
+      assert_nil(:class.to_proc.source_location, bug11845)
+      assert_equal([[:rest]], :class.to_proc.parameters, bug11845)
+      c = Class.new {define_method(:klass, :class.to_proc)}
+      m = c.instance_method(:klass)
+      assert_nil(m.source_location, bug11845)
+      assert_equal([[:rest]], m.parameters, bug11845)
+    end;
+  end
+
+  def test_to_proc_binding
+    assert_separately([], <<~"end;", timeout: 1) # do
+      bug12137 = '[ruby-core:74100] [Bug #12137]'
+      assert_raise(ArgumentError, bug12137) {
+        :succ.to_proc.binding
+      }
+    end;
+  end
+
   def test_call
     o = Object.new
     def o.foo(x, y); x + y; end
@@ -139,6 +227,35 @@ class TestSymbol < Test::Unit::TestCase
     m2 = :m2_block_given?.to_proc
     assert_equal([true, false], m2.call(self, m2) {}, "#{bug8531} nested with block")
     assert_equal([false, false], m2.call(self, m2), "#{bug8531} nested without block")
+  end
+
+  def test_block_curry_proc
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+    b = proc { true }.curry
+    assert(b.call, "without block")
+    assert(b.call { |o| o.to_s }, "with block")
+    assert(b.call(&:to_s), "with sym block")
+    end;
+  end
+
+  def test_block_curry_lambda
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+    b = lambda { true }.curry
+    assert(b.call, "without block")
+    assert(b.call { |o| o.to_s }, "with block")
+    assert(b.call(&:to_s), "with sym block")
+    end;
+  end
+
+  def test_block_method_to_proc
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+    b = method(:tap).to_proc
+    assert(b.call { |o| o.to_s }, "with block")
+    assert(b.call(&:to_s), "with sym block")
+    end;
   end
 
   def test_succ
@@ -285,5 +402,13 @@ class TestSymbol < Test::Unit::TestCase
         h['bar'.to_sym] = 2
       }
     end;
+  end
+
+  def test_not_freeze
+    bug11721 = '[ruby-core:71611] [Bug #11721]'
+    str = "\u{1f363}".taint
+    assert_not_predicate(str, :frozen?)
+    assert_equal str, str.to_sym.to_s
+    assert_not_predicate(str, :frozen?, bug11721)
   end
 end

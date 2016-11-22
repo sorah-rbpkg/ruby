@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestLambdaParameters < Test::Unit::TestCase
@@ -71,6 +72,13 @@ class TestLambdaParameters < Test::Unit::TestCase
     assert_raise(ArgumentError, bug9605) {proc(&plus).call [1,2]}
   end
 
+  def test_instance_exec
+    bug12568 = '[ruby-core:76300] [Bug #12568]'
+    assert_nothing_raised(ArgumentError, bug12568) do
+      instance_exec([1,2,3], &->(a=[]){ a })
+    end
+  end
+
   def yield_1(arg)
     yield arg
   end
@@ -88,7 +96,7 @@ class TestLambdaParameters < Test::Unit::TestCase
       ["lambda", lambda {|a, b, c| [a, b, c]}],
     ] do
       |(vtype, val), (btype, block)|
-      define_method("test_yeild_relaxed(#{vtype},&#{btype})") do
+      define_method("test_yield_relaxed(#{vtype},&#{btype})") do
         result = assert_nothing_raised(ArgumentError, bug9605) {
           break yield_1(val, &block)
         }

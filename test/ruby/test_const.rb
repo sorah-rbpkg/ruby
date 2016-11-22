@@ -1,4 +1,5 @@
 # -*- coding: us-ascii -*-
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestConst < Test::Unit::TestCase
@@ -62,11 +63,8 @@ WARNING
 
   def test_redefinition_memory_leak
     code = <<-PRE
-olderr = $stderr.dup
-$stderr.reopen(File::NULL, "wb")
 350000.times { FOO = :BAR }
-$stderr.reopen(olderr)
 PRE
-    assert_no_memory_leak([], '', code, 'redefined constant', timeout: 30)
+    assert_no_memory_leak(%w[-W0 -], '', code, 'redefined constant', timeout: 30)
   end
 end

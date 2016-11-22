@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 $extmk = true
 
 require 'test/unit'
@@ -11,6 +12,9 @@ $INCFLAGS << " -I."
 $extout_prefix = "$(extout)$(target_prefix)/"
 
 class TestMkmf < Test::Unit::TestCase
+end
+
+module TestMkmf::Base
   MKMFLOG = proc {File.read("mkmf.log") rescue ""}
 
   class Capture
@@ -46,12 +50,14 @@ class TestMkmf < Test::Unit::TestCase
       @filter = block
     end
     def write(s)
-      @buffer << s if @out
+      if @out
+        @buffer << s
+      elsif @origin
+        @origin << s
+      end
     end
   end
-end
 
-module TestMkmf::Base
   attr_reader :stdout
 
   def mkmflog(msg)
@@ -86,7 +92,7 @@ module TestMkmf::Base
     @tmpdir = Dir.mktmpdir
     @curdir = Dir.pwd
     @mkmfobj = Object.new
-    @stdout = TestMkmf::Capture.new
+    @stdout = Capture.new
     Dir.chdir(@tmpdir)
     @quiet, Logging.quiet = Logging.quiet, true
     init_mkmf
@@ -134,6 +140,6 @@ class TestMkmf
   include TestMkmf::Base
 
   def assert_separately(args, src, *rest)
-    super(args + ["-r#{__FILE__}"], "extend TestMkmf::Base; setup\n#{src}", *rest)
+    super(args + ["-r#{__FILE__}"], "extend TestMkmf::Base; setup\nEND{teardown}\n#{src}", *rest)
   end
 end

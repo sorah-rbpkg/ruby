@@ -1,11 +1,10 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #include "ossl.h"
@@ -199,7 +198,8 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd)
 /*
  * Verify callback
  */
-int ossl_verify_cb_idx;
+int ossl_store_ctx_ex_verify_cb_idx;
+int ossl_store_ex_verify_cb_idx;
 
 VALUE
 ossl_call_verify_cb_proc(struct ossl_verify_cb_args *args)
@@ -215,10 +215,10 @@ ossl_verify_cb(int ok, X509_STORE_CTX *ctx)
     struct ossl_verify_cb_args args;
     int state = 0;
 
-    proc = (VALUE)X509_STORE_CTX_get_ex_data(ctx, ossl_verify_cb_idx);
-    if ((void*)proc == 0)
-	proc = (VALUE)X509_STORE_get_ex_data(ctx->ctx, ossl_verify_cb_idx);
-    if ((void*)proc == 0)
+    proc = (VALUE)X509_STORE_CTX_get_ex_data(ctx, ossl_store_ctx_ex_verify_cb_idx);
+    if (!proc)
+	proc = (VALUE)X509_STORE_get_ex_data(ctx->ctx, ossl_store_ex_verify_cb_idx);
+    if (!proc)
 	return ok;
     if (!NIL_P(proc)) {
 	ret = Qfalse;
@@ -555,6 +555,20 @@ static void Init_ossl_locks(void)
 /*
  * OpenSSL provides SSL, TLS and general purpose cryptography.  It wraps the
  * OpenSSL[http://www.openssl.org/] library.
+ *
+ * = Install
+ *
+ * OpenSSL comes bundled with the Standard Library of Ruby.
+ *
+ * This means the OpenSSL extension is compiled with Ruby and packaged on
+ * build. During compile time, Ruby will need to link against the OpenSSL
+ * library on your system. However, you cannot use openssl provided by Apple to
+ * build standard library openssl.
+ *
+ * If you use OSX, you should install another openssl and run ```./configure
+ * --with-openssl-dir=/path/to/another-openssl```. For Homebrew user, run `brew
+ * install openssl` and then ```./configure --with-openssl-dir=`brew --prefix
+ * openssl` ```.
  *
  * = Examples
  *
@@ -1114,8 +1128,10 @@ Init_openssl(void)
     /*
      * Verify callback Proc index for ext-data
      */
-    if ((ossl_verify_cb_idx = X509_STORE_CTX_get_ex_new_index(0, (void *)"ossl_verify_cb_idx", 0, 0, 0)) < 0)
+    if ((ossl_store_ctx_ex_verify_cb_idx = X509_STORE_CTX_get_ex_new_index(0, (void *)"ossl_store_ctx_ex_verify_cb_idx", 0, 0, 0)) < 0)
         ossl_raise(eOSSLError, "X509_STORE_CTX_get_ex_new_index");
+    if ((ossl_store_ex_verify_cb_idx = X509_STORE_get_ex_new_index(0, (void *)"ossl_store_ex_verify_cb_idx", 0, 0, 0)) < 0)
+        ossl_raise(eOSSLError, "X509_STORE_get_ex_new_index");
 
     /*
      * Init debug core
@@ -1165,4 +1181,3 @@ main(int argc, char *argv[])
     return 0;
 }
 #endif /* OSSL_DEBUG */
-

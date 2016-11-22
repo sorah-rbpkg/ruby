@@ -182,7 +182,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 
     carg.execarg_obj = rb_execarg_new(argc, argv, 1);
     carg.eargp = rb_execarg_get(carg.execarg_obj);
-    rb_execarg_fixup(carg.execarg_obj);
+    rb_execarg_parent_start(carg.execarg_obj);
 
     getDevice(&master, &slave, SlaveName, 0);
 
@@ -196,12 +196,14 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 	int e = errno;
 	close(master);
 	close(slave);
+        rb_execarg_parent_end(carg.execarg_obj);
 	errno = e;
 	if (status) rb_jump_tag(status);
 	rb_sys_fail(errbuf[0] ? errbuf : "fork failed");
     }
 
     close(slave);
+    rb_execarg_parent_end(carg.execarg_obj);
 
     info->child_pid = pid;
     info->fd = master;
@@ -503,6 +505,14 @@ pty_close_pty(VALUE assoc)
  * +slave_file+::   the slave of the pty, as a File.  The path to the
  *		    terminal device is available via +slave_file.path+
  *
+ * IO#raw! is usable to disable newline conversions:
+ *
+ *   require 'io/console'
+ *   PTY.open {|m, s|
+ *     s.raw!
+ *     ...
+ *   }
+ *
  */
 static VALUE
 pty_open(VALUE klass)
@@ -569,7 +579,7 @@ pty_detach_process(struct pty_info *info)
  *
  * In the block form these same values will be yielded to the block:
  *
- * +r+:: A readable IO that that contains the command's
+ * +r+:: A readable IO that contains the command's
  *       standard output and standard error
  * +w+:: A writable IO that is the command's standard input
  * +pid+:: The process identifier for the command.
@@ -723,7 +733,7 @@ static VALUE cPTY;
  *   # The result of read operation when pty slave is closed is platform
  *   # dependent.
  *   ret = begin
- *           m.gets          # FreeBSD returns nil.
+ *           master.gets     # FreeBSD returns nil.
  *         rescue Errno::EIO # GNU/Linux raises EIO.
  *           nil
  *         end

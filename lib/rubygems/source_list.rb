@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/source'
 
 ##
@@ -9,7 +10,7 @@ require 'rubygems/source'
 # Or by adding them:
 #
 #   sources = Gem::SourceList.new
-#   sources.add 'https://rubygems.example'
+#   sources << 'https://rubygems.example'
 #
 # The most common way to get a SourceList is Gem.sources.
 

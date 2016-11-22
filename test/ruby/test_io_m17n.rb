@@ -1,4 +1,5 @@
 # coding: US-ASCII
+# frozen_string_literal: false
 require 'test/unit'
 require 'tmpdir'
 require 'tempfile'
@@ -469,7 +470,7 @@ EOT
            w.close
          end,
          proc do |r|
-           timeout(1) {
+           Timeout.timeout(1) {
              assert_equal("before \xa2\xa2".encode("utf-8", "euc-jp"),
                           r.gets(rs))
            }
@@ -1224,7 +1225,6 @@ EOT
   end
 
   def test_stdin_external_encoding_with_reopen
-    skip "passing non-stdio fds is not supported" if /mswin|mingw/ =~ RUBY_PLATFORM
     with_tmpdir {
       open("tst", "w+") {|f|
         pid = spawn(EnvUtil.rubybin, '-e', <<-'End', 10=>f)
@@ -1240,7 +1240,7 @@ EOT
         assert_equal("\u3042".force_encoding("ascii-8bit"), result)
       }
     }
-  end
+  end unless /mswin|mingw/ =~ RUBY_PLATFORM # passing non-stdio fds is not supported
 
   def test_popen_r_enc
     IO.popen("#{EnvUtil.rubybin} -e 'putc 255'", "r:ascii-8bit") {|f|
@@ -1712,8 +1712,7 @@ EOT
         args.each {|arg| f.print arg }
       }
       content = File.read("t", :mode=>"rb:ascii-8bit")
-      assert_equal(expected.dup.force_encoding("ascii-8bit"),
-                   content.force_encoding("ascii-8bit"))
+      assert_equal(expected.b, content.b)
     }
   end
 
@@ -1893,7 +1892,7 @@ EOT
     with_tmpdir {
       src = "\u3042\r\n"
       generate_file("t.txt", src)
-      srcbin = src.dup.force_encoding("ascii-8bit")
+      srcbin = src.b
       open("t.txt", "rt:utf-8:euc-jp") {|f|
         f.binmode
         result = f.read
@@ -2094,6 +2093,28 @@ EOT
         open(IO::NULL, encoding: "bom|utf-" + "x" * 10000) {}
       }
     end;
+  end
+
+  def test_bom_non_utf
+    enc = nil
+
+    assert_warn(/BOM/) {
+      open(__FILE__, "r:bom|us-ascii") {|f| enc = f.external_encoding}
+    }
+    assert_equal(Encoding::US_ASCII, enc)
+
+    assert_warn(/BOM/) {
+      open(IO::NULL, "w:bom|us-ascii") {|f| enc = f.external_encoding}
+    }
+    assert_equal(Encoding::US_ASCII, enc)
+
+    tlhInganHol = "\u{f8e4 f8d9 f8d7 f8dc f8d0 f8db} \u{f8d6 f8dd f8d9}"
+    EnvUtil.with_default_external(Encoding::UTF_8) {
+      assert_warn(/#{tlhInganHol}/) {
+        open(IO::NULL, "w:bom|#{tlhInganHol}") {|f| enc = f.external_encoding}
+      }
+    }
+    assert_nil(enc)
   end
 
   def test_cbuf

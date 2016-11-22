@@ -3,8 +3,10 @@
 
 #include <ruby/ruby.h>
 #include "../digest.h"
-#if defined(HAVE_OPENSSL_MD5_H)
+#if defined(MD5_USE_OPENSSL)
 #include "md5ossl.h"
+#elif defined(MD5_USE_COMMONDIGEST)
+#include "md5cc.h"
 #else
 #include "md5.h"
 #endif
@@ -41,6 +43,6 @@ Init_md5(void)
 
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
-    rb_ivar_set(cDigest_MD5, rb_intern("metadata"),
-		Data_Wrap_Struct(0, 0, 0, (void *)&md5));
+    rb_iv_set(cDigest_MD5, "metadata",
+	      Data_Wrap_Struct(0, 0, 0, (void *)&md5));
 }

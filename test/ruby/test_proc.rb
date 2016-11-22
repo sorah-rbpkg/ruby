@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestProc < Test::Unit::TestCase
@@ -432,7 +433,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal(:noreason, exc.reason)
   end
 
-  def test_binding2
+  def test_curry_binding
     assert_raise(ArgumentError) { proc {}.curry.binding }
   end
 
@@ -579,7 +580,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, 3], pr.call([1,2,3,4,5,6])
   end
 
-  def test_proc_args_opt_signle
+  def test_proc_args_opt_single
     bug7621 = '[ruby-dev:46801]'
     pr = proc {|a=:a|
       a
@@ -1319,5 +1320,25 @@ class TestProc < Test::Unit::TestCase
     obj = Object.new
     def obj.b; binding; end
     assert_same(obj, obj.b.receiver, feature8779)
+  end
+
+  def test_proc_mark
+    assert_normal_exit(<<-'EOS')
+      def f
+        Enumerator.new{
+          100000.times {|i|
+            yield
+            s = "#{i}"
+          }
+        }
+      end
+
+      def g
+        x = proc{}
+        f(&x)
+      end
+      e = g
+      e.each {}
+    EOS
   end
 end

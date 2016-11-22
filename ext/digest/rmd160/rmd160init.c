@@ -3,7 +3,7 @@
 
 #include <ruby/ruby.h>
 #include "../digest.h"
-#if defined(HAVE_OPENSSL_RIPEMD_H)
+#if defined(RMD160_USE_OPENSSL)
 #include "rmd160ossl.h"
 #else
 #include "rmd160.h"
@@ -41,6 +41,6 @@ Init_rmd160(void)
 
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
-    rb_ivar_set(cDigest_RMD160, rb_intern("metadata"),
-		Data_Wrap_Struct(0, 0, 0, (void *)&rmd160));
+    rb_iv_set(cDigest_RMD160, "metadata",
+	      Data_Wrap_Struct(0, 0, 0, (void *)&rmd160));
 }

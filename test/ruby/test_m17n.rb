@@ -1,4 +1,5 @@
 # coding: US-ASCII
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestM17N < Test::Unit::TestCase
@@ -8,7 +9,7 @@ class TestM17N < Test::Unit::TestCase
 
   module AESU
     def ua(str) str.dup.force_encoding("US-ASCII") end
-    def a(str) str.dup.force_encoding("ASCII-8BIT") end
+    def a(str) str.b end
     def e(str) str.dup.force_encoding("EUC-JP") end
     def s(str) str.dup.force_encoding("Windows-31J") end
     def u(str) str.dup.force_encoding("UTF-8") end
@@ -278,7 +279,7 @@ class TestM17N < Test::Unit::TestCase
         o = Object.new
         [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE].each do |e|
           o.instance_eval "undef inspect;def inspect;'abc'.encode('#{e}');end"
-          assert_raise(Encoding::CompatibilityError) { [o].inspect }
+          assert_equal '[abc]', [o].inspect
         end
       ensure
         Encoding.default_internal = orig_int
@@ -302,13 +303,18 @@ class TestM17N < Test::Unit::TestCase
     def o.inspect
       "abc".encode(Encoding.default_external)
     end
-    assert_raise(Encoding::CompatibilityError) { [o].inspect }
+    assert_equal '[abc]', [o].inspect
 
     Encoding.default_external = Encoding::US_ASCII
     def o.inspect
       "\u3042"
     end
-    assert_raise(Encoding::CompatibilityError) { [o].inspect }
+    assert_equal '[\u3042]', [o].inspect
+
+    def o.inspect
+      "\x82\xa0".force_encoding(Encoding::Windows_31J)
+    end
+    assert_equal '[\x{82A0}]', [o].inspect
   ensure
     Encoding.default_internal = orig_int
     Encoding.default_external = orig_ext
@@ -1125,7 +1131,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_dup_scan
     s1 = e("\xa4\xa2")*100
-    s2 = s1.dup.force_encoding("ascii-8bit")
+    s2 = s1.b
     s2.scan(/\A./n) {|f|
       assert_equal(Encoding::ASCII_8BIT, f.encoding)
     }
@@ -1133,7 +1139,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_dup_aref
     s1 = e("\xa4\xa2")*100
-    s2 = s1.dup.force_encoding("ascii-8bit")
+    s2 = s1.b
     assert_equal(Encoding::ASCII_8BIT, s2[10..-1].encoding)
   end
 
@@ -1488,6 +1494,31 @@ class TestM17N < Test::Unit::TestCase
     s = u("\xE3\x81\x82\xE3\x81\x84")
     s.setbyte(-4, 0x84)
     assert_equal(u("\xE3\x81\x84\xE3\x81\x84"), s)
+
+    x = "x" * 100
+    t = nil
+    failure = proc {"#{i}: #{encdump(t)}"}
+
+    s = "\u{3042 3044}"
+    s.bytesize.times {|i|
+      t = s + x
+      t.setbyte(i, t.getbyte(i)+1)
+      assert_predicate(t, :valid_encoding?, failure)
+      assert_not_predicate(t, :ascii_only?, failure)
+      t = s + x
+      t.setbyte(i, 0x20)
+      assert_not_predicate(t, :valid_encoding?, failure)
+    }
+
+    s = "\u{41 42 43}"
+    s.bytesize.times {|i|
+      t = s + x
+      t.setbyte(i, 0x20)
+      assert_predicate(t, :valid_encoding?, failure)
+      assert_predicate(t, :ascii_only?, failure)
+      t.setbyte(i, 0xe3)
+      assert_not_predicate(t, :valid_encoding?, failure)
+    }
   end
 
   def test_compatible
@@ -1611,6 +1642,12 @@ class TestM17N < Test::Unit::TestCase
                  scrub)
   end
 
+  def test_scrub_dummy_encoding
+    s = "\u{3042}".encode("iso-2022-jp")
+    assert_equal(s, s.scrub)
+    assert_equal(s, s.force_encoding("iso-2022-jp").scrub("?"))
+  end
+
   def test_scrub_bang
     str = "\u3042\u3044"
     assert_same(str, str.scrub!)
@@ -1631,6 +1668,19 @@ class TestM17N < Test::Unit::TestCase
 
     assert_match(escape_plain, 0x5b.chr(::Encoding::UTF_8), bug10670)
     assert_match(escape_plain, 0x5b.chr, bug10670)
+  end
+
+  def test_inspect_with_default_internal
+    bug11787 = '[ruby-dev:49415] [Bug #11787]'
+
+    orig_int = Encoding.default_internal
+    Encoding.default_internal = ::Encoding::EUC_JP
+    s = begin
+          [e("\xB4\xC1\xBB\xFA")].inspect
+        ensure
+          Encoding.default_internal = orig_int
+        end
+    assert_equal(e("[\"\xB4\xC1\xBB\xFA\"]"), s, bug11787)
   end
 
   def test_greek_capital_gap

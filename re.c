@@ -13,6 +13,7 @@
 #include "ruby/re.h"
 #include "ruby/util.h"
 #include "regint.h"
+#include "encindex.h"
 #include <ctype.h>
 
 VALUE rb_eRegexpError;
@@ -372,8 +373,7 @@ rb_reg_expr_str(VALUE str, const char *s, long len,
 
     p = s; pend = p + len;
     rb_str_coderange_scan_restartable(p, pend, enc, &cr);
-    if (rb_enc_asciicompat(enc) &&
-	(cr == ENC_CODERANGE_VALID || cr == ENC_CODERANGE_7BIT)) {
+    if (rb_enc_asciicompat(enc) && ENC_CODERANGE_CLEAN_P(cr)) {
 	while (p < pend) {
 	    c = rb_enc_ascget(p, pend, &clen, enc);
 	    if (c == -1) {
@@ -835,24 +835,24 @@ rb_reg_named_captures(VALUE re)
 
 static int
 onig_new_with_source(regex_t** reg, const UChar* pattern, const UChar* pattern_end,
-	  OnigOptionType option, OnigEncoding enc, const OnigSyntaxType* syntax,
-	  OnigErrorInfo* einfo, const char *sourcefile, int sourceline)
+		     OnigOptionType option, OnigEncoding enc, const OnigSyntaxType* syntax,
+		     OnigErrorInfo* einfo, const char *sourcefile, int sourceline)
 {
-  int r;
+    int r;
 
-  *reg = (regex_t* )malloc(sizeof(regex_t));
-  if (IS_NULL(*reg)) return ONIGERR_MEMORY;
+    *reg = (regex_t* )malloc(sizeof(regex_t));
+    if (IS_NULL(*reg)) return ONIGERR_MEMORY;
 
-  r = onig_reg_init(*reg, option, ONIGENC_CASE_FOLD_DEFAULT, enc, syntax);
-  if (r) goto err;
+    r = onig_reg_init(*reg, option, ONIGENC_CASE_FOLD_DEFAULT, enc, syntax);
+    if (r) goto err;
 
-  r = onig_compile(*reg, pattern, pattern_end, einfo, sourcefile, sourceline);
-  if (r) {
-  err:
-    onig_free(*reg);
-    *reg = NULL;
-  }
-  return r;
+    r = onig_compile(*reg, pattern, pattern_end, einfo, sourcefile, sourceline);
+    if (r) {
+      err:
+	onig_free(*reg);
+	*reg = NULL;
+    }
+    return r;
 }
 
 static Regexp*
@@ -1521,10 +1521,7 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
 	if (err) rb_memerror();
     }
     else {
-	if (rb_safe_level() >= 3)
-	    OBJ_TAINT(match);
-	else
-	    FL_UNSET(match, FL_TAINT);
+	FL_UNSET(match, FL_TAINT);
     }
 
     if (set_backref_str) {
@@ -2309,8 +2306,8 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
               case '1': case '2': case '3':
               case '4': case '5': case '6': case '7': /* \O, \OO, \OOO or backref */
                 {
-                    size_t octlen;
-                    if (ruby_scan_oct(p-1, end-(p-1), &octlen) <= 0177) {
+                    size_t len = end-(p-1), octlen;
+                    if (ruby_scan_oct(p-1, len < 3 ? len : 3, &octlen) <= 0177) {
                         /* backref or 7bit octal.
                            no need to unescape anyway.
                            re-escaping may break backref */
@@ -2781,7 +2778,7 @@ static VALUE
 reg_operand(VALUE s, int check)
 {
     if (SYMBOL_P(s)) {
-	return rb_sym_to_s(s);
+	return rb_sym2str(s);
     }
     else {
 	return (check ? rb_str_to_str : rb_check_string_type)(s);

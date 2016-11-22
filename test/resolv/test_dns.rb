@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'resolv'
 require 'socket'
@@ -53,7 +54,7 @@ class TestResolvDNS < Test::Unit::TestCase
           }
         }
         server_thread = Thread.new {
-          msg, (_, client_port, _, client_address) = timeout(5) {u.recvfrom(4096)}
+          msg, (_, client_port, _, client_address) = Timeout.timeout(5) {u.recvfrom(4096)}
           id, word2, qdcount, ancount, nscount, arcount = msg.unpack("nnnnnn")
           qr =     (word2 & 0x8000) >> 15
           opcode = (word2 & 0x7800) >> 11
@@ -160,7 +161,7 @@ class TestResolvDNS < Test::Unit::TestCase
     # A rase condition here.
     # Another program may use the port.
     # But no way to prevent it.
-    timeout(5) do
+    Timeout.timeout(5) do
       Resolv::DNS.open(:nameserver_port => [[host, port]]) {|dns|
         assert_equal([], dns.getresources("test-no-server.example.org", Resolv::DNS::Resource::IN::A))
       }
@@ -196,5 +197,28 @@ class TestResolvDNS < Test::Unit::TestCase
     labels = addr.to_name.to_a
     expected = (['0'] * 32 + ['ip6', 'arpa']).map {|label| Resolv::DNS::Label::Str.new(label) }
     assert_equal(expected, labels)
+  end
+
+  def test_ipv6_create
+    ref = '[Bug #11910] [ruby-core:72559]'
+    assert_instance_of Resolv::IPv6, Resolv::IPv6.create('::1')
+    assert_instance_of Resolv::IPv6, Resolv::IPv6.create('::1:127.0.0.1')
+  end
+
+  def test_too_big_label_address
+    n = 2000
+    m = Resolv::DNS::Message::MessageEncoder.new {|msg|
+      2.times {
+        n.times {|i| msg.put_labels(["foo#{i}"]) }
+      }
+    }
+    Resolv::DNS::Message::MessageDecoder.new(m.to_s) {|msg|
+      2.times {
+        n.times {|i|
+          assert_equal(["foo#{i}"], msg.get_labels.map {|label| label.to_s })
+        }
+      }
+    }
+    assert_operator(2**14, :<, m.to_s.length)
   end
 end

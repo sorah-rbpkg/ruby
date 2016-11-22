@@ -1,4 +1,5 @@
 # -*- coding: us-ascii -*-
+# frozen_string_literal: false
 require 'test/unit'
 require 'erb'
 
@@ -89,14 +90,6 @@ class TestERBCore < Test::Unit::TestCase
     _test_core(nil)
     _test_core(0)
     _test_core(1)
-    _test_core(2)
-    orig = $VERBOSE
-    begin
-      $VERBOSE = false
-      _test_core(3)
-    ensure
-      $VERBOSE = orig
-    end
   end
 
   def _test_core(safe)

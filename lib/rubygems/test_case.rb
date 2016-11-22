@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # TODO: $SAFE = 1
 
 begin
@@ -36,9 +37,7 @@ require 'shellwords'
 require 'tmpdir'
 require 'uri'
 require 'zlib'
-
-Gem.load_yaml
-
+require 'benchmark' # stdlib
 require 'rubygems/mock_gem_ui'
 
 module Gem
@@ -221,6 +220,9 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     @orig_gem_home   = ENV['GEM_HOME']
     @orig_gem_path   = ENV['GEM_PATH']
     @orig_gem_vendor = ENV['GEM_VENDOR']
+    @orig_gem_spec_cache = ENV['GEM_SPEC_CACHE']
+    @orig_rubygems_gemdeps = ENV['RUBYGEMS_GEMDEPS']
+    @orig_rubygems_host = ENV['RUBYGEMS_HOST']
 
     ENV['GEM_VENDOR'] = nil
 
@@ -276,13 +278,16 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     Gem.ensure_gem_subdirectories @gemhome
 
     @orig_LOAD_PATH = $LOAD_PATH.dup
-    $LOAD_PATH.map! { |s| File.expand_path(s).untaint }
+    $LOAD_PATH.map! { |s|
+      (expand_path = File.expand_path(s)) == s ? s : expand_path.untaint
+    }
 
     Dir.chdir @tempdir
 
     @orig_ENV_HOME = ENV['HOME']
     ENV['HOME'] = @userhome
     Gem.instance_variable_set :@user_home, nil
+    Gem.instance_variable_set :@gemdeps, nil
     Gem.send :remove_instance_variable, :@ruby_version if
       Gem.instance_variables.include? :@ruby_version
 
@@ -337,6 +342,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     end
 
     @marshal_version = "#{Marshal::MAJOR_VERSION}.#{Marshal::MINOR_VERSION}"
+    @orig_LOADED_FEATURES = $LOADED_FEATURES.dup
   end
 
   ##
@@ -345,6 +351,18 @@ class Gem::TestCase < MiniTest::Unit::TestCase
 
   def teardown
     $LOAD_PATH.replace @orig_LOAD_PATH if @orig_LOAD_PATH
+    if @orig_LOADED_FEATURES
+      if @orig_LOAD_PATH
+        paths = @orig_LOAD_PATH.map {|path| File.join(File.expand_path(path), "/")}
+        ($LOADED_FEATURES - @orig_LOADED_FEATURES).each do |feat|
+          unless paths.any? {|path| feat.start_with?(path)}
+            $LOADED_FEATURES.delete(feat)
+          end
+        end
+      else
+        $LOADED_FEATURES.replace @orig_LOADED_FEATURES
+      end
+    end
 
     if @orig_BASERUBY
       RbConfig::CONFIG['BASERUBY'] = @orig_BASERUBY
@@ -364,6 +382,9 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     ENV['GEM_HOME']   = @orig_gem_home
     ENV['GEM_PATH']   = @orig_gem_path
     ENV['GEM_VENDOR'] = @orig_gem_vendor
+    ENV['GEM_SPEC_CACHE'] = @orig_gem_spec_cache
+    ENV['RUBYGEMS_GEMDEPS'] = @orig_rubygems_gemdeps
+    ENV['RUBYGEMS_HOST'] = @orig_rubygems_host
 
     Gem.ruby = @orig_ruby if @orig_ruby
 
@@ -378,6 +399,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     ENV['GEM_PRIVATE_KEY_PASSPHRASE'] = @orig_gem_private_key_passphrase
 
     Gem::Specification._clear_load_cache
+    Gem::Specification.unresolved_deps.clear
   end
 
   def common_installer_setup
@@ -493,7 +515,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
       gem = File.join(@tempdir, File.basename(spec.cache_file)).untaint
     end
 
-    Gem::Installer.new(gem, options.merge({:wrappers => true})).install
+    Gem::Installer.at(gem, options.merge({:wrappers => true})).install
   end
 
   ##
@@ -508,8 +530,11 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   def uninstall_gem spec
     require 'rubygems/uninstaller'
 
-    Gem::Uninstaller.new(spec.name,
-                         :executables => true, :user_install => true).uninstall
+    Class.new(Gem::Uninstaller) {
+      def ask_if_ok spec
+        true
+      end
+    }.new(spec.name, :executables => true, :user_install => true).uninstall
   end
 
   ##
@@ -528,7 +553,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   # Enables pretty-print for all tests
 
   def mu_pp(obj)
-    s = ''
+    s = String.new
     s = PP.pp obj, s
     s = s.force_encoding(Encoding.default_external) if defined? Encoding
     s.chomp
@@ -603,7 +628,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
 
     spec.loaded_from = spec.loaded_from = written_path
 
-    Gem::Specification.add_spec spec.for_cache
+    Gem::Specification.reset
 
     return spec
   end
@@ -659,7 +684,10 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   # Install the provided specs
 
   def install_specs(*specs)
-    Gem::Specification.add_specs(*specs)
+    specs.each do |spec|
+      Gem::Installer.for_spec(spec).install
+    end
+
     Gem.searcher = nil
   end
 
@@ -680,8 +708,9 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   # Install the provided default specs
 
   def install_default_specs(*specs)
-    install_specs(*specs)
     specs.each do |spec|
+      installer = Gem::Installer.for_spec(spec, :install_as_default => true)
+      installer.install
       Gem.register_default_spec(spec)
     end
   end
@@ -793,9 +822,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
       end
     end
 
-    spec.loaded_from = spec.spec_file
-
-    Gem::Specification.add_spec spec
+    Gem::Specification.reset
 
     return spec
   end
@@ -982,14 +1009,13 @@ Also, a list:
   # Best used with +@all_gems+ from #util_setup_fake_fetcher.
 
   def util_setup_spec_fetcher(*specs)
-    specs -= Gem::Specification._all
-    Gem::Specification.add_specs(*specs)
+    all_specs = Gem::Specification.to_a + specs
+    Gem::Specification._resort! all_specs
 
     spec_fetcher = Gem::SpecFetcher.fetcher
 
-    prerelease, all = Gem::Specification.partition { |spec|
-      spec.version.prerelease?
-    }
+    prerelease, all = all_specs.partition { |spec| spec.version.prerelease?  }
+    latest = Gem::Specification._latest_specs all_specs
 
     spec_fetcher.specs[@uri] = []
     all.each do |spec|
@@ -997,7 +1023,7 @@ Also, a list:
     end
 
     spec_fetcher.latest_specs[@uri] = []
-    Gem::Specification.latest_specs.each do |spec|
+    latest.each do |spec|
       spec_fetcher.latest_specs[@uri] << spec.name_tuple
     end
 
@@ -1013,7 +1039,7 @@ Also, a list:
       specs = all.map { |spec| spec.name_tuple }
       s_zip = util_gzip Marshal.dump Gem::NameTuple.to_basic specs
 
-      latest_specs = Gem::Specification.latest_specs.map do |spec|
+      latest_specs = latest.map do |spec|
         spec.name_tuple
       end
 
@@ -1028,7 +1054,7 @@ Also, a list:
 
       v = Gem.marshal_version
 
-      Gem::Specification.each do |spec|
+      all_specs.each do |spec|
         path = "#{@gem_repo}quick/Marshal.#{v}/#{spec.original_name}.gemspec.rz"
         data = Marshal.dump spec
         data_deflate = Zlib::Deflate.deflate data
@@ -1113,7 +1139,7 @@ Also, a list:
   # other platforms, including Cygwin, it will return 'make'.
 
   def self.make_command
-    ENV["make"] || (vc_windows? ? 'nmake' : 'make')
+    ENV["make"] || ENV["MAKE"] || (vc_windows? ? 'nmake' : 'make')
   end
 
   ##
@@ -1122,7 +1148,7 @@ Also, a list:
   # other platforms, including Cygwin, it will return 'make'.
 
   def make_command
-    ENV["make"] || (vc_windows? ? 'nmake' : 'make')
+    ENV["make"] || ENV["MAKE"] || (vc_windows? ? 'nmake' : 'make')
   end
 
   ##
@@ -1205,8 +1231,8 @@ Also, a list:
   end
 
   @@ruby = rubybin
-  @@good_rake = "#{rubybin} #{File.expand_path('../../../test/rubygems/good_rake.rb', __FILE__)}"
-  @@bad_rake = "#{rubybin} #{File.expand_path('../../../test/rubygems/bad_rake.rb', __FILE__)}"
+  @@good_rake = "#{rubybin} \"#{File.expand_path('../../../test/rubygems/good_rake.rb', __FILE__)}\""
+  @@bad_rake = "#{rubybin} \"#{File.expand_path('../../../test/rubygems/bad_rake.rb', __FILE__)}\""
 
   ##
   # Construct a new Gem::Dependency.
@@ -1292,11 +1318,21 @@ Also, a list:
   def vendor_gem name = 'a', version = 1
     directory = File.join 'vendor', name
 
+    FileUtils.mkdir_p directory
+
+    save_gemspec name, version, directory
+  end
+
+  ##
+  # create_gemspec creates gem specification in given +direcotry+ or '.'
+  # for the given +name+ and +version+.
+  #
+  # Yields the +specification+ to the block, if given
+
+  def save_gemspec name = 'a', version = 1, directory = '.'
     vendor_spec = Gem::Specification.new name, version do |specification|
       yield specification if block_given?
     end
-
-    FileUtils.mkdir_p directory
 
     open File.join(directory, "#{name}.gemspec"), 'w' do |io|
       io.write vendor_spec.to_ruby
@@ -1437,5 +1473,35 @@ Also, a list:
 
 end
 
+# require dependencies that are not discoverable once GEM_HOME and GEM_PATH
+# are wiped
+begin
+  gem 'rake'
+rescue Gem::LoadError
+end
+
+begin
+  require 'rake/packagetask'
+rescue LoadError
+end
+
+begin
+  gem 'rdoc'
+  require 'rdoc'
+rescue LoadError, Gem::LoadError
+end
+
+begin
+  gem 'builder'
+  require 'builder/xchar'
+rescue LoadError, Gem::LoadError
+end
+
 require 'rubygems/test_utilities'
+tmpdirs = []
+tmpdirs << (ENV['GEM_HOME'] = Dir.mktmpdir("home"))
+tmpdirs << (ENV['GEM_PATH'] = Dir.mktmpdir("path"))
+pid = $$
+END {tmpdirs.each {|dir| Dir.rmdir(dir)} if $$ == pid}
+Gem.clear_paths
 

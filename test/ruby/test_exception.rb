@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'tempfile'
 
@@ -180,6 +181,16 @@ class TestException < Test::Unit::TestCase
     }
   end
 
+  def test_throw_false
+    bug12743 = '[ruby-core:77229] [Bug #12743]'
+    e = assert_raise_with_message(UncaughtThrowError, /false/, bug12743) {
+      Thread.start {
+        throw false
+      }.join
+    }
+    assert_same(false, e.tag, bug12743)
+  end
+
   def test_else_no_exception
     begin
       assert(true)
@@ -301,6 +312,10 @@ class TestException < Test::Unit::TestCase
     c.class_eval {def to_a; self; end}
     assert_raise_with_message(TypeError, /C\u{4032}/) do
       [*o]
+    end
+    obj = eval("class C\u{1f5ff}; self; end").new
+    assert_raise_with_message(TypeError, /C\u{1f5ff}/) do
+      Class.new {include obj}
     end
   end
 
@@ -425,9 +440,11 @@ end.join
     bug3237 = '[ruby-core:29948]'
     str = "\u2600"
     id = :"\u2604"
-    msg = "undefined method `#{id}' for #{str.inspect}:String"
-    assert_raise_with_message(NoMethodError, msg, bug3237) do
-      str.__send__(id)
+    EnvUtil.with_default_external(Encoding::UTF_8) do
+      msg = "undefined method `#{id}' for #{str.inspect}:String"
+      assert_raise_with_message(NoMethodError, msg, bug3237) do
+        str.__send__(id)
+      end
     end
   end
 
@@ -713,19 +730,45 @@ end.join
 
   def test_name_error_info
     obj = BasicObject.new
+    class << obj
+      alias object_id __id__
+      def pretty_inspect; "`obj'"; end
+    end
     e = assert_raise(NameError) {
       obj.instance_eval("Object")
     }
     assert_equal(:Object, e.name)
     e = assert_raise(NameError) {
+      BasicObject::X
+    }
+    assert_same(BasicObject, e.receiver)
+    e = assert_raise(NameError) {
       obj.instance_eval {foo}
     }
     assert_equal(:foo, e.name)
+    assert_same(obj, e.receiver)
     e = assert_raise(NoMethodError) {
       obj.foo(1, 2)
     }
     assert_equal(:foo, e.name)
     assert_equal([1, 2], e.args)
+    assert_same(obj, e.receiver)
+    def obj.test(a, b=nil, *c, &d)
+      e = a
+      1.times {|f| g = foo}
+    end
+    e = assert_raise(NameError) {
+      obj.test(3)
+    }
+    assert_equal(:foo, e.name)
+    assert_same(obj, e.receiver)
+    assert_equal(%i[a b c d e f g], e.local_variables.sort)
+  end
+
+  def test_name_error_info_parent_iseq_mark
+    assert_separately(['-', File.join(__dir__, 'bug-11928.rb')], <<-'end;')
+      -> {require ARGV[0]}.call
+    end;
   end
 
   def test_output_string_encoding
@@ -758,5 +801,60 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     a = Class.new {def method_missing(*) super end}.new
     assert_raise(NameError) {a.instance_eval("foo")}
     assert_raise(NoMethodError, bug10969) {a.public_send("bar", true)}
+  end
+
+  def test_message_of_name_error
+    assert_raise_with_message(NameError, /\Aundefined method `foo' for module `#<Module:.*>'$/) do
+      Module.new do
+        module_function :foo
+      end
+    end
+  end
+
+  def test_undefined_backtrace
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      class Exception
+        undef backtrace
+      end
+
+      assert_raise(RuntimeError) {
+        raise RuntimeError, "hello"
+      }
+    end;
+  end
+
+  def test_redefined_backtrace
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      $exc = nil
+
+      class Exception
+        undef backtrace
+        def backtrace
+          $exc = self
+        end
+      end
+
+      e = assert_raise(RuntimeError) {
+        raise RuntimeError, "hello"
+      }
+      assert_same(e, $exc)
+    end;
+  end
+
+  def test_wrong_backtrace
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      class Exception
+        undef backtrace
+        def backtrace(a)
+        end
+      end
+
+      assert_raise(RuntimeError) {
+        raise RuntimeError, "hello"
+      }
+    end;
   end
 end

@@ -27,6 +27,12 @@ VALUE rb_cSockOpt;
 # define USE_INSPECT_BYTE 1
 #endif
 
+#define check_size(len, size) \
+    ((len) == (size) ? \
+     (void)0 : \
+     rb_raise(rb_eTypeError, "size differ.  expected as "#size"=%d but %ld", \
+	      (int)size, (long)(len)))
+
 static VALUE
 sockopt_pack_byte(VALUE value)
 {
@@ -211,12 +217,9 @@ sockopt_s_byte(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE v
 static VALUE
 sockopt_byte(VALUE self)
 {
-    unsigned char i;
     VALUE data = sockopt_data(self);
     StringValue(data);
-    if (RSTRING_LEN(data) != sizeof(i))
-        rb_raise(rb_eTypeError, "size differ.  expected as sizeof(int)=%d but %ld",
-                 (int)sizeof(i), (long)RSTRING_LEN(data));
+    check_size(RSTRING_LEN(data), sizeof(char));
     return CHR2FIX(*RSTRING_PTR(data));
 }
 
@@ -257,9 +260,7 @@ sockopt_int(VALUE self)
     int i;
     VALUE data = sockopt_data(self);
     StringValue(data);
-    if (RSTRING_LEN(data) != sizeof(int))
-        rb_raise(rb_eTypeError, "size differ.  expected as sizeof(int)=%d but %ld",
-                 (int)sizeof(int), (long)RSTRING_LEN(data));
+    check_size(RSTRING_LEN(data), sizeof(int));
     memcpy((char*)&i, RSTRING_PTR(data), sizeof(int));
     return INT2NUM(i);
 }
@@ -306,12 +307,10 @@ sockopt_bool(VALUE self)
     StringValue(data);
     len = RSTRING_LEN(data);
     if (len == 1) {
-        return *RSTRING_PTR(data) == 0 ? Qfalse : Qtrue;
+	return *RSTRING_PTR(data) == 0 ? Qfalse : Qtrue;
     }
-    if (len != sizeof(int))
-        rb_raise(rb_eTypeError, "size differ.  expected as sizeof(int)=%d but %ld",
-                 (int)sizeof(int), (long)len);
-    memcpy((char*)&i, RSTRING_PTR(data), sizeof(int));
+    check_size(len, sizeof(int));
+    memcpy((char*)&i, RSTRING_PTR(data), len);
     return i == 0 ? Qfalse : Qtrue;
 }
 
@@ -363,9 +362,7 @@ sockopt_linger(VALUE self)
 
     if (level != SOL_SOCKET || optname != SO_LINGER)
         rb_raise(rb_eTypeError, "linger socket option expected");
-    if (RSTRING_LEN(data) != sizeof(l))
-        rb_raise(rb_eTypeError, "size differ.  expected as sizeof(struct linger)=%d but %ld",
-                 (int)sizeof(struct linger), (long)RSTRING_LEN(data));
+    check_size(RSTRING_LEN(data), sizeof(struct linger));
     memcpy((char*)&l, RSTRING_PTR(data), sizeof(struct linger));
     switch (l.l_onoff) {
       case 0: vonoff = Qfalse; break;
@@ -648,7 +645,7 @@ inspect_timeval_as_interval(int level, int optname, VALUE data, VALUE ret)
  */
 
 #if !defined HAVE_INET_NTOP && ! defined _WIN32
-static const char *
+const char *
 inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 {
 #ifdef HAVE_INET_NTOA
@@ -663,10 +660,6 @@ inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 #endif
     return numaddr;
 }
-#elif defined __MINGW32__
-# define inet_ntop(f,a,n,l)      rb_w32_inet_ntop(f,a,n,l)
-#elif defined _MSC_VER && RUBY_MSVCRT_VERSION < 90
-const char *WSAAPI inet_ntop(int, const void *, char *, size_t);
 #endif
 
 /* Although the buffer size needed depends on the prefixes, "%u" may generate "4294967295".  */
@@ -1254,7 +1247,7 @@ sockopt_inspect(VALUE self)
 
 	v = optname_to_sym(level, optname);
 	if (SYMBOL_P(v))
-	    rb_str_catf(ret, " %s", rb_id2name(SYM2ID(v)));
+	    rb_str_catf(ret, " %"PRIsVALUE, rb_sym2str(v));
 	else
 	    rb_str_catf(ret, " optname:%d", optname);
     }

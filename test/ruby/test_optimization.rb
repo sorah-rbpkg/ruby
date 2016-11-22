@@ -1,4 +1,6 @@
+# frozen_string_literal: false
 require 'test/unit'
+require 'objspace'
 
 class TestRubyOptimization < Test::Unit::TestCase
 
@@ -122,6 +124,24 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_redefine_method('String', 'freeze', 'assert_nil "foo".freeze')
   end
 
+  def test_string_freeze_saves_memory
+    n = 16384
+    data = '.'.freeze
+    r, w = IO.pipe
+    w.write data
+
+    s = r.readpartial(n, '')
+    assert_operator ObjectSpace.memsize_of(s), :>=, n,
+      'IO buffer NOT resized prematurely because will likely be reused'
+
+    s.freeze
+    assert_equal ObjectSpace.memsize_of(data), ObjectSpace.memsize_of(s),
+      'buffer resized on freeze since it cannot be written to again'
+  ensure
+    r.close if r
+    w.close if w
+  end
+
   def test_string_eq_neq
     %w(== !=).each do |m|
       assert_redefine_method('String', m, <<-end)
@@ -210,7 +230,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal true, MyObj.new == nil
   end
 
-  def self.tailcall(klass, src, file = nil, path = nil, line = nil)
+  def self.tailcall(klass, src, file = nil, path = nil, line = nil, tailcall: true)
     unless file
       loc, = caller_locations(1, 1)
       file = loc.path
@@ -218,7 +238,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     end
     RubyVM::InstructionSequence.new("proc {|_|_.class_eval {#{src}}}",
                                     file, (path || file), line,
-                                    tailcall_optimization: true,
+                                    tailcall_optimization: tailcall,
                                     trace_instruction: false)
       .eval[klass]
   end
@@ -230,46 +250,49 @@ class TestRubyOptimization < Test::Unit::TestCase
   def test_tailcall
     bug4082 = '[ruby-core:33289]'
 
-    option = {
-      tailcall_optimization: true,
-      trace_instruction: false,
-    }
-    RubyVM::InstructionSequence.new(<<-EOF, "Bug#4082", bug4082, nil, option).eval
-      class #{self.class}::Tailcall
-        def fact_helper(n, res)
-          if n == 1
-            res
-          else
-            fact_helper(n - 1, n * res)
-          end
-        end
-        def fact(n)
-          fact_helper(n, 1)
+    tailcall(<<-EOF)
+      def fact_helper(n, res)
+        if n == 1
+          res
+        else
+          fact_helper(n - 1, n * res)
         end
       end
+      def fact(n)
+        fact_helper(n, 1)
+      end
     EOF
-    assert_equal(9131, Tailcall.new.fact(3000).to_s.size, bug4082)
+    assert_equal(9131, fact(3000).to_s.size, bug4082)
   end
 
   def test_tailcall_with_block
     bug6901 = '[ruby-dev:46065]'
 
-    option = {
-      tailcall_optimization: true,
-      trace_instruction: false,
-    }
-    RubyVM::InstructionSequence.new(<<-EOF, "Bug#6901", bug6901, nil, option).eval
-  def identity(val)
-    val
-  end
+    tailcall(<<-EOF)
+      def identity(val)
+        val
+      end
 
-  def delay
-    -> {
-      identity(yield)
-    }
-  end
+      def delay
+        -> {
+          identity(yield)
+        }
+      end
     EOF
     assert_equal(123, delay { 123 }.call, bug6901)
+  end
+
+  def just_yield
+    yield
+  end
+
+  def test_tailcall_inhibited_by_block
+    tailcall(<<-EOF)
+      def yield_result
+        just_yield {:ok}
+      end
+    EOF
+    assert_equal(:ok, yield_result)
   end
 
   def do_raise
@@ -294,6 +317,50 @@ class TestRubyOptimization < Test::Unit::TestCase
     result = to_be_rescued
     assert_instance_of(RuntimeError, result, bug12082)
     assert_equal("should be rescued", result.message, bug12082)
+  end
+
+  def test_tailcall_symbol_block_arg
+    bug12565 = '[ruby-core:46065]'
+    tailcall(<<-EOF)
+      def apply_one_and_two(&block)
+        yield(1, 2)
+      end
+
+      def add_one_and_two
+        apply_one_and_two(&:+)
+      end
+    EOF
+    assert_equal(3, add_one_and_two,
+                 message(bug12565) {disasm(:add_one_and_two)})
+  end
+
+  def test_tailcall_condition_block
+    bug = '[ruby-core:78015] [Bug #12905]'
+
+    src = "#{<<-"begin;"}\n#{<<-"end;"}"
+    begin;
+      def run(current, final)
+        if current < final
+          run(current+1, final)
+        else
+          nil
+        end
+      end
+    end;
+
+    obj = Object.new
+    self.class.tailcall(obj.singleton_class, src, tailcall: false)
+    e = assert_raise(SystemStackError) {
+      obj.run(1, Float::INFINITY)
+    }
+    level = e.backtrace_locations.size
+    obj = Object.new
+    self.class.tailcall(obj.singleton_class, src, tailcall: true)
+    level *= 2
+    mesg = message {"#{bug}: #{$!.backtrace_locations.size} / #{level} stack levels"}
+    assert_nothing_raised(SystemStackError, mesg) {
+      obj.run(1, level)
+    }
   end
 
   class Bug10557
@@ -335,8 +402,11 @@ class TestRubyOptimization < Test::Unit::TestCase
     code = <<-EOF
       case foo
       when "foo" then :foo
+      when true then true
+      when false then false
       when :sym then :sym
       when 6 then :fix
+      when nil then nil
       when 0.1 then :float
       when 0xffffffffffffffff then :big
       else
@@ -345,8 +415,11 @@ class TestRubyOptimization < Test::Unit::TestCase
     EOF
     check = {
       'foo' => :foo,
+      true => true,
+      false => false,
       :sym => :sym,
       6 => :fix,
+      nil => nil,
       0.1 => :float,
       0xffffffffffffffff => :big,
     }
@@ -372,6 +445,13 @@ class TestRubyOptimization < Test::Unit::TestCase
     end
   end
 
+  def test_eqq
+    [ nil, true, false, 0.1, :sym, 'str', 0xffffffffffffffff ].each do |v|
+      k = v.class.to_s
+      assert_redefine_method(k, '===', "assert_equal(#{v.inspect} === 0, 0)")
+    end
+  end
+
   def test_opt_case_dispatch_inf
     inf = 1.0/0.0
     result = case inf
@@ -381,5 +461,10 @@ class TestRubyOptimization < Test::Unit::TestCase
                inf.to_i rescue nil
              end
     assert_nil result, '[ruby-dev:49423] [Bug #11804]'
+  end
+
+  def test_nil_safe_conditional_assign
+    bug11816 = '[ruby-core:74993] [Bug #11816]'
+    assert_ruby_status([], 'nil&.foo &&= false', bug11816)
   end
 end

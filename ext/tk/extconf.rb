@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##############################################################
 # extconf.rb for tcltklib
 # release date: 2010-07-30
@@ -1646,7 +1647,7 @@ def pthread_check()
 
   if TclConfig_Info['config_file_path']
     if tcl_enable_thread == true
-      puts("Warning: definiton of tclConfig.sh is ignored, because --enable-tcl-thread option is given.")
+      puts("Warning: definition of tclConfig.sh is ignored, because --enable-tcl-thread option is given.")
     elsif tcl_enable_thread == false
       puts("Warning: definition of tclConfig.sh is ignored, because --disable-tcl-thread option is given.")
     else
@@ -1795,7 +1796,9 @@ print("check functions.")
 
 %w"ruby_native_thread_p rb_errinfo rb_safe_level rb_hash_lookup
  rb_proc_new rb_obj_untrust rb_obj_taint rb_set_safe_level_force
- rb_sourcefile rb_thread_alive_p rb_thread_check_trap_pending".each do |func|
+ rb_sourcefile rb_thread_alive_p rb_thread_check_trap_pending
+ ruby_enc_find_basename
+".each do |func|
   have_func(func, "ruby.h")
   print(".") # progress
 end

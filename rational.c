@@ -2327,9 +2327,8 @@ string_to_r_strict(VALUE self)
 	s = (char *)"";
 
     if (!parse_rat(s, 1, &num)) {
-	VALUE ins = f_inspect(self);
-	rb_raise(rb_eArgError, "invalid value for convert(): %s",
-		 StringValuePtr(ins));
+	rb_raise(rb_eArgError, "invalid value for convert(): %+"PRIsVALUE,
+		 self);
     }
 
     if (RB_TYPE_P(num, T_FLOAT))
@@ -2553,10 +2552,6 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "<=>", nurat_cmp, 1);
     rb_define_method(rb_cRational, "==", nurat_eqeq_p, 1);
     rb_define_method(rb_cRational, "coerce", nurat_coerce, 1);
-
-#if 0 /* NUBY */
-    rb_define_method(rb_cRational, "//", nurat_idiv, 1);
-#endif
 
 #if 0
     rb_define_method(rb_cRational, "quot", nurat_quot, 1);

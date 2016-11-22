@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require "-test-/symbol"
 
@@ -53,6 +54,14 @@ module Test_Symbol
       assert_not_interned_error(cl, :const_get, name.to_sym)
     end
 
+    def test_module_const_get_toplevel
+      bug12089 = '[ruby-dev:49498] [Bug #12089]'
+      name = noninterned_name("A")
+      e = assert_not_interned_error(Object, :const_get, name)
+      assert_equal(name, e.name)
+      assert_not_match(/Object::/, e.message, bug12089)
+    end
+
     def test_module_const_defined?
       cl = Class.new
       name = noninterned_name("A")
@@ -61,6 +70,28 @@ module Test_Symbol
 
       name = noninterned_name
       assert_not_interned_error(cl, :const_defined?, name.to_sym)
+    end
+
+    def test_module_define_method_type_error
+      cl = Class.new
+      name = noninterned_name
+
+      assert_raise(TypeError) {cl.class_eval {define_method(name, "")}}
+      assert_not_interned(name)
+
+      assert_raise(TypeError) {cl.class_eval {define_method(name.to_sym, "")}}
+      assert_not_pinneddown(name)
+    end
+
+    def test_module_define_method_argument_error
+      cl = Class.new
+      name = noninterned_name
+
+      assert_raise(ArgumentError) {cl.class_eval {define_method(name)}}
+      assert_not_interned(name)
+
+      assert_raise(ArgumentError) {cl.class_eval {define_method(name.to_sym)}}
+      assert_not_pinneddown(name)
     end
 
     def test_respond_to_missing
@@ -107,7 +138,7 @@ module Test_Symbol
     Feature5079 = '[ruby-core:38404]'
 
     def test_undefined_instance_variable
-      feature5079 = feature5079
+      feature5079 = Feature5079
       c = Class.new
       iv = noninterned_name("@")
 
@@ -116,7 +147,7 @@ module Test_Symbol
     end
 
     def test_undefined_class_variable
-      feature5079 = feature5079
+      feature5079 = Feature5079
       c = Class.new
       cv = noninterned_name("@@")
 
@@ -126,7 +157,7 @@ module Test_Symbol
 
 
     def test_undefined_const
-      feature5079 = feature5079
+      feature5079 = Feature5079
       c = Class.new
       s = noninterned_name("A")
 
@@ -134,7 +165,7 @@ module Test_Symbol
     end
 
     def test_undefined_method
-      feature5079 = feature5079
+      feature5079 = Feature5079
       c = Class.new
       s = noninterned_name
 
@@ -142,6 +173,7 @@ module Test_Symbol
       assert_not_interned_error(c, :public_method, s, feature5079)
       assert_not_interned_error(c, :instance_method, s, feature5079)
       assert_not_interned_error(c, :public_instance_method, s, feature5079)
+      assert_not_interned_error(c, :singleton_method, s, feature5079)
     end
 
     Feature5089 = '[ruby-core:38447]'

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 begin
   require "socket"
 rescue LoadError
@@ -470,7 +472,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
 
   def test_marshal_memory_leak
     bug11051 = '[ruby-dev:48923] [Bug #11051]'
-    assert_no_memory_leak(%w[-rsocket], <<-PREP, <<-CODE, bug11051, rss: true, limit: 2.0)
+    assert_no_memory_leak(%w[-rsocket], <<-PREP, <<-CODE, bug11051, rss: true)
     d = Marshal.dump(Addrinfo.tcp("127.0.0.1", 80))
     1000.times {Marshal.load(d)}
     PREP

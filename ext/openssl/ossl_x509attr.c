@@ -1,20 +1,21 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #include "ossl.h"
 
-#define WrapX509Attr(klass, obj, attr) do { \
+#define NewX509Attr(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_x509attr_type, 0)
+#define SetX509Attr(obj, attr) do { \
     if (!(attr)) { \
 	ossl_raise(rb_eRuntimeError, "ATTR wasn't initialized!"); \
     } \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509attr_type, (attr)); \
+    RTYPEDDATA_DATA(obj) = (attr); \
 } while (0)
 #define GetX509Attr(obj, attr) do { \
     TypedData_Get_Struct((obj), X509_ATTRIBUTE, &ossl_x509attr_type, (attr)); \
@@ -56,6 +57,7 @@ ossl_x509attr_new(X509_ATTRIBUTE *attr)
     X509_ATTRIBUTE *new;
     VALUE obj;
 
+    obj = NewX509Attr(cX509Attr);
     if (!attr) {
 	new = X509_ATTRIBUTE_new();
     } else {
@@ -64,22 +66,19 @@ ossl_x509attr_new(X509_ATTRIBUTE *attr)
     if (!new) {
 	ossl_raise(eX509AttrError, NULL);
     }
-    WrapX509Attr(cX509Attr, obj, new);
+    SetX509Attr(obj, new);
 
     return obj;
 }
 
 X509_ATTRIBUTE *
-DupX509AttrPtr(VALUE obj)
+GetX509AttrPtr(VALUE obj)
 {
-    X509_ATTRIBUTE *attr, *new;
+    X509_ATTRIBUTE *attr;
 
     SafeGetX509Attr(obj, attr);
-    if (!(new = X509_ATTRIBUTE_dup(attr))) {
-	ossl_raise(eX509AttrError, NULL);
-    }
 
-    return new;
+    return attr;
 }
 
 /*
@@ -91,9 +90,10 @@ ossl_x509attr_alloc(VALUE klass)
     X509_ATTRIBUTE *attr;
     VALUE obj;
 
+    obj = NewX509Attr(klass);
     if (!(attr = X509_ATTRIBUTE_new()))
 	ossl_raise(eX509AttrError, NULL);
-    WrapX509Attr(klass, obj, attr);
+    SetX509Attr(obj, attr);
 
     return obj;
 }
@@ -138,12 +138,15 @@ ossl_x509attr_set_oid(VALUE self, VALUE oid)
     ASN1_OBJECT *obj;
     char *s;
 
-    s = StringValuePtr(oid);
-    obj = OBJ_txt2obj(s, 0);
-    if(!obj) obj = OBJ_txt2obj(s, 1);
-    if(!obj) ossl_raise(eX509AttrError, NULL);
     GetX509Attr(self, attr);
-    X509_ATTRIBUTE_set1_object(attr, obj);
+    s = StringValueCStr(oid);
+    obj = OBJ_txt2obj(s, 0);
+    if(!obj) ossl_raise(eX509AttrError, NULL);
+    if (!X509_ATTRIBUTE_set1_object(attr, obj)) {
+	ASN1_OBJECT_free(obj);
+	ossl_raise(eX509AttrError, "X509_ATTRIBUTE_set1_object");
+    }
+    ASN1_OBJECT_free(obj);
 
     return oid;
 }

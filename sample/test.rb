@@ -33,9 +33,15 @@ class Progress
     end
     if @color
       # dircolors-like style
-      colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:]*)/)] : {}
-      @passed = "\e[#{colors["pass"] || "32"}m"
-      @failed = "\e[#{colors["fail"] || "31"}m"
+      colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:\n]*)/)] : {}
+      begin
+        File.read(File.join(__dir__, "../test/colors")).scan(/(\w+)=([^:\n]*)/) do |n, c|
+          colors[n] ||= c
+        end
+      rescue
+      end
+      @passed = "\e[;#{colors["pass"] || "32"}m"
+      @failed = "\e[;#{colors["fail"] || "31"}m"
       @reset = "\e[m"
     else
       @passed = @failed = @reset = ""

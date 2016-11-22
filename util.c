@@ -23,6 +23,9 @@
 
 #include "ruby/util.h"
 
+const char ruby_hexdigits[] = "0123456789abcdef0123456789ABCDEF";
+#define hexdigit ruby_hexdigits
+
 unsigned long
 ruby_scan_oct(const char *start, size_t len, size_t *retlen)
 {
@@ -40,7 +43,6 @@ ruby_scan_oct(const char *start, size_t len, size_t *retlen)
 unsigned long
 ruby_scan_hex(const char *start, size_t len, size_t *retlen)
 {
-    static const char hexdigit[] = "0123456789abcdef0123456789ABCDEF";
     register const char *s = start;
     register unsigned long retval = 0;
     const char *tmp;
@@ -92,6 +94,7 @@ ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *ov
     do {
 	int d = ruby_digit36_to_number_table[(unsigned char)*str++];
         if (d == -1 || base <= d) {
+	    --str;
 	    break;
         }
         if (mul_overflow < ret)
@@ -102,7 +105,7 @@ ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *ov
         if (ret < x)
             *overflow = 1;
     } while (len < 0 || --len);
-    *retlen = (str-1) - start;
+    *retlen = str - start;
     return ret;
 }
 
@@ -188,8 +191,30 @@ ruby_strtoul(const char *str, char **endptr, int base)
 #   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
 
+#if defined HAVE_BSD_QSORT_R
+typedef int (cmpfunc_t)(const void*, const void*, void*);
 
-#ifndef HAVE_GNU_QSORT_R
+struct bsd_qsort_r_args {
+    cmpfunc_t *cmp;
+    void *arg;
+};
+
+static int
+cmp_bsd_qsort(void *d, const void *a, const void *b)
+{
+    const struct bsd_qsort_r_args *args = d;
+    return (*args->cmp)(a, b, args->arg);
+}
+
+void
+ruby_qsort(void* base, const size_t nel, const size_t size, cmpfunc_t *cmp, void *d)
+{
+    struct bsd_qsort_r_args args;
+    args.cmp = cmp;
+    args.arg = d;
+    qsort_r(base, nel, size, &args, cmp_bsd_qsort);
+}
+#elif !defined HAVE_GNU_QSORT_R
 /* mm.c */
 
 #define mmtype long
@@ -482,9 +507,10 @@ ruby_getcwd(void)
     char *buf = xmalloc(size);
 
     while (!getcwd(buf, size)) {
-	if (errno != ERANGE) {
+	int e = errno;
+	if (e != ERANGE) {
 	    xfree(buf);
-	    rb_sys_fail("getcwd");
+	    rb_syserr_fail(e, "getcwd");
 	}
 	size *= 2;
 	buf = xrealloc(buf, size);
@@ -502,8 +528,9 @@ ruby_getcwd(void)
     char *buf = xmalloc(PATH_MAX+1);
 
     if (!getwd(buf)) {
+	int e = errno;
 	xfree(buf);
-	rb_sys_fail("getwd");
+	rb_syserr_fail(e, "getwd");
     }
 #endif
     return buf;
@@ -1997,7 +2024,6 @@ ruby_strtod(const char *s00, char **se)
 break2:
     if (*s == '0') {
 	if (s[1] == 'x' || s[1] == 'X') {
-	    static const char hexdigit[] = "0123456789abcdef0123456789ABCDEF";
 	    s0 = ++s;
 	    adj = 0;
 	    aadj = 1.0;

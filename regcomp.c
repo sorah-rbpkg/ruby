@@ -2,7 +2,7 @@
   regcomp.c -  Onigmo (Oniguruma-mod) (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2008  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2002-2013  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * Copyright (c) 2011-2014  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
@@ -1592,13 +1592,15 @@ compile_length_tree(Node* node, regex_t* reg)
 
   case NT_ALT:
     {
-      int n;
-
-      n = r = 0;
+      int n = 0;
+      len = 0;
       do {
-	r += compile_length_tree(NCAR(node), reg);
-	n++;
+        r = compile_length_tree(NCAR(node), reg);
+        if (r < 0) return r;
+        len += r;
+        n++;
       } while (IS_NOT_NULL(node = NCDR(node)));
+      r = len;
       r += (SIZE_OP_PUSH + SIZE_OP_JUMP) * (n - 1);
     }
     break;
@@ -1874,17 +1876,16 @@ noname_disable_map(Node** plink, GroupNumRemap* map, int* counter)
 	  (*counter)++;
 	  map[en->regnum].new_val = *counter;
 	  en->regnum = *counter;
-	  r = noname_disable_map(&(en->target), map, counter);
 	}
-	else {
+	else if (en->regnum != 0) {
 	  *plink = en->target;
 	  en->target = NULL_NODE;
 	  onig_node_free(node);
 	  r = noname_disable_map(plink, map, counter);
+	  break;
 	}
       }
-      else
-	r = noname_disable_map(&(en->target), map, counter);
+      r = noname_disable_map(&(en->target), map, counter);
     }
     break;
 
@@ -6023,10 +6024,43 @@ onig_init(void)
 }
 
 
+static OnigEndCallListItemType* EndCallTop;
+
+extern void onig_add_end_call(void (*func)(void))
+{
+  OnigEndCallListItemType* item;
+
+  item = (OnigEndCallListItemType* )xmalloc(sizeof(*item));
+  if (item == 0) return ;
+
+  item->next = EndCallTop;
+  item->func = func;
+
+  EndCallTop = item;
+}
+
+static void
+exec_end_call_list(void)
+{
+  OnigEndCallListItemType* prev;
+  void (*func)(void);
+
+  while (EndCallTop != 0) {
+    func = EndCallTop->func;
+    (*func)();
+
+    prev = EndCallTop;
+    EndCallTop = EndCallTop->next;
+    xfree(prev);
+  }
+}
+
 extern int
 onig_end(void)
 {
   THREAD_ATOMIC_START;
+
+  exec_end_call_list();
 
 #ifdef ONIG_DEBUG_STATISTICS
   if (!onig_is_prelude()) onig_print_statistics(stderr);

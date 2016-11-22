@@ -1,6 +1,15 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestSyntax < Test::Unit::TestCase
+  using Module.new {
+    refine(Object) do
+      def `(s) #`
+        s
+      end
+    end
+  }
+
   def assert_syntax_files(test)
     srcdir = File.expand_path("../../..", __FILE__)
     srcdir = File.join(srcdir, test)
@@ -102,24 +111,33 @@ class TestSyntax < Test::Unit::TestCase
     assert_nothing_raised(ArgumentError, bug7922) {o.bug7922(foo: 42)}
   end
 
+  class KW2
+    def kw(k1: 1, k2: 2) [k1, k2] end
+  end
+
   def test_keyword_splat
     assert_valid_syntax("foo(**h)", __FILE__)
-    o = Object.new
-    def o.kw(k1: 1, k2: 2) [k1, k2] end
+    o = KW2.new
     h = {k1: 11, k2: 12}
     assert_equal([11, 12], o.kw(**h))
     assert_equal([11, 12], o.kw(k2: 22, **h))
     assert_equal([11, 22], o.kw(**h, **{k2: 22}))
     assert_equal([11, 12], o.kw(**{k2: 22}, **h))
+  end
 
+  def test_keyword_duplicated_splat
     bug10315 = '[ruby-core:65368] [Bug #10315]'
+
+    o = KW2.new
     assert_equal([23, 2], o.kw(**{k1: 22}, **{k1: 23}), bug10315)
 
     h = {k3: 31}
     assert_raise(ArgumentError) {o.kw(**h)}
     h = {"k1"=>11, k2: 12}
     assert_raise(TypeError) {o.kw(**h)}
+  end
 
+  def test_keyword_duplicated
     bug10315 = '[ruby-core:65625] [Bug #10315]'
     a = []
     def a.add(x) push(x); x; end
@@ -336,8 +354,10 @@ WARN
     bug11849 = '[ruby-core:72396] [Bug #11849]'
     assert_valid_syntax("{label:<<DOC\n""DOC\n""}", bug11849)
     assert_valid_syntax("{label:<<-DOC\n""DOC\n""}", bug11849)
+    assert_valid_syntax("{label:<<~DOC\n""DOC\n""}", bug11849)
     assert_valid_syntax("{label: <<DOC\n""DOC\n""}", bug11849)
     assert_valid_syntax("{label: <<-DOC\n""DOC\n""}", bug11849)
+    assert_valid_syntax("{label: <<~DOC\n""DOC\n""}", bug11849)
   end
 
   def test_cmdarg_kwarg_lvar_clashing_method
@@ -487,6 +507,110 @@ e"
     assert_equal(expected, actual, "#{Bug7559}: ")
   end
 
+  def assert_dedented_heredoc(expect, result, mesg = "")
+    all_assertions(mesg) do |a|
+      %w[eos "eos" 'eos' `eos`].each do |eos|
+        a.for(eos) do
+          assert_equal(eval("<<-#{eos}\n#{expect}eos\n"),
+                       eval("<<~#{eos}\n#{result}eos\n"))
+        end
+      end
+    end
+  end
+
+  def test_dedented_heredoc_without_indentation
+    result = " y\n" \
+             "z\n"
+    expect = result
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_indentation
+    result = "     a\n" \
+             "    b\n"
+    expect = " a\n" \
+             "b\n"
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_blank_less_indented_line
+    # the blank line has two leading spaces
+    result = "    a\n" \
+             "  \n" \
+             "    b\n"
+    expect = "a\n" \
+             "\n" \
+             "b\n"
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_blank_less_indented_line_escaped
+    result = "    a\n" \
+             "\\ \\ \n" \
+             "    b\n"
+    expect = result
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_blank_more_indented_line
+    # the blank line has six leading spaces
+    result = "    a\n" \
+             "      \n" \
+             "    b\n"
+    expect = "a\n" \
+             "  \n" \
+             "b\n"
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_blank_more_indented_line_escaped
+    result = "    a\n" \
+             "\\ \\ \\ \\ \\ \\ \n" \
+             "    b\n"
+    expect = result
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_empty_line
+    result = "      This would contain specially formatted text.\n" \
+             "\n" \
+             "      That might span many lines\n"
+    expect = 'This would contain specially formatted text.'"\n" \
+             ''"\n" \
+             'That might span many lines'"\n"
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_interpolated_expression
+    result = '  #{1}a'"\n" \
+             " zy\n"
+    expect = ' #{1}a'"\n" \
+             "zy\n"
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_interpolated_string
+    w = ""
+    result = " \#{mesg} a\n" \
+             "  zy\n"
+    expect = '#{mesg} a'"\n" \
+             ' zy'"\n"
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_concatenation
+    bug11990 = '[ruby-core:72857] [Bug #11990] concatenated string should not be dedented'
+    %w[eos "eos" 'eos'].each do |eos|
+      assert_equal("x\n  y",
+                   eval("<<~#{eos} '  y'\n  x\neos\n"),
+                   "#{bug11990} with #{eos}")
+    end
+    %w[eos "eos" 'eos' `eos`].each do |eos|
+      _, expect = eval("[<<~#{eos}, '  x']\n""  y\n""eos\n")
+      assert_equal('  x', expect, bug11990)
+    end
+  end
+
   def test_lineno_after_heredoc
     bug7559 = '[ruby-dev:46737]'
     expected, _, actual = __LINE__, <<eom, __LINE__
@@ -631,6 +755,29 @@ eom
     bug11192 = '[ruby-core:69393] [Bug #11192]'
     assert_warn(/too big/, bug11192) do
       eval('$99999999999999999')
+    end
+  end
+
+  def test_invalid_symbol_space
+    assert_syntax_error(": foo", /unexpected ':'/)
+    assert_syntax_error(": #\n foo", /unexpected ':'/)
+    assert_syntax_error(":#\n foo", /unexpected ':'/)
+  end
+
+  def test_fluent_dot
+    assert_valid_syntax("a\n.foo")
+    assert_valid_syntax("a\n&.foo")
+  end
+
+  def test_no_warning_logop_literal
+    assert_warning("") do
+      eval("true||raise;nil")
+    end
+    assert_warning("") do
+      eval("false&&raise;nil")
+    end
+    assert_warning("") do
+      eval("''||raise;nil")
     end
   end
 

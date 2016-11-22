@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require_relative "utils"
 
 if defined?(OpenSSL::TestUtils)
@@ -44,7 +45,7 @@ tddwpBAEDjcwMzA5NTYzMTU1MzAwpQMCARM=
   end
 
   def test_session
-    timeout(5) do
+    Timeout.timeout(5) do
       start_server(OpenSSL::SSL::VERIFY_NONE, true) do |server, port|
         sock = TCPSocket.new("127.0.0.1", port)
         ctx = OpenSSL::SSL::SSLContext.new("TLSv1")
@@ -54,7 +55,6 @@ tddwpBAEDjcwMzA5NTYzMTU1MzAwpQMCARM=
         session = ssl.session
         assert(session == OpenSSL::SSL::Session.new(session.to_pem))
         assert(session == OpenSSL::SSL::Session.new(ssl))
-        assert_equal(300, session.timeout)
         session.timeout = 5
         assert_equal(5, session.timeout)
         assert_not_nil(session.time)
@@ -362,7 +362,7 @@ __EOS__
           ssl.connect
           last_client_session = ssl.session
           ssl.close
-          timeout(5) do
+          Timeout.timeout(5) do
             Thread.pass until called.key?(:new)
             assert(called.delete(:new))
             Thread.pass until called.key?(:remove)

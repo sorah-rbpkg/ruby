@@ -1,18 +1,14 @@
 # -*- coding: us-ascii -*-
+# frozen_string_literal: false
 =begin
-= $RCSfile$ -- Generator for Makefile
-
 = Info
   'OpenSSL for Ruby 2' project
   Copyright (C) 2002  Michal Rokos <m.rokos@sh.cvut.cz>
   All rights reserved.
 
 = Licence
-  This program is licenced under the same licence as Ruby.
+  This program is licensed under the same licence as Ruby.
   (See the file 'LICENCE'.)
-
-= Version
-  $Id$
 =end
 
 require "mkmf"
@@ -113,6 +109,7 @@ have_func("TLSv1_1_client_method")
 have_func("TLSv1_2_method")
 have_func("TLSv1_2_server_method")
 have_func("TLSv1_2_client_method")
+have_func("SSL_CTX_set_alpn_select_cb")
 have_func("SSL_CTX_set_next_proto_select_cb")
 unless have_func("SSL_set_tlsext_host_name", ['openssl/ssl.h'])
   have_macro("SSL_set_tlsext_host_name", ['openssl/ssl.h']) && $defs.push("-DHAVE_SSL_SET_TLSEXT_HOST_NAME")

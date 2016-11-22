@@ -98,7 +98,7 @@ Zachary Scott (zzak)
   * 1.8: _unmaintained_
   * 1.9: _deprecated_
 [lib/logger.rb]
-  Hiroshi Nakamura (nahi)
+  Naotoshi Seo (sonots)
 [lib/mathn.rb]
   Keiju ISHITSUKA (keiju)
 [lib/matrix.rb]
@@ -116,8 +116,6 @@ Zachary Scott (zzak)
   Shugo Maeda (shugo)
 [lib/net/imap.rb]
   Shugo Maeda (shugo)
-[lib/net/telnet.rb]
-  _unmaintained_
 [lib/net/http.rb, lib/net/https]
   NARUSE, Yui (naruse)
 [lib/net/pop.rb]

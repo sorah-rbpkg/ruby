@@ -5,6 +5,8 @@
 #include "../digest.h"
 #if defined(SHA2_USE_OPENSSL)
 #include "sha2ossl.h"
+#elif defined(SHA2_USE_COMMONDIGEST)
+#include "sha2cc.h"
 #else
 #include "sha2.h"
 #endif
@@ -42,7 +44,7 @@ Init_sha2(void)
 
     rb_require("digest");
 
-    id_metadata = rb_intern("metadata");
+    id_metadata = rb_intern_const("metadata");
 
     mDigest = rb_path2class("Digest");
     cDigest_Base = rb_path2class("Digest::Base");

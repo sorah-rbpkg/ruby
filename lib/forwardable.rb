@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   forwardable.rb -
 #       $Release Version: 1.1$
@@ -186,8 +187,8 @@ module Forwardable
       def #{ali}(*args, &block)
         begin
           #{accessor}.__send__(:#{method}, *args, &block)
-        rescue Exception
-          $@.delete_if{|s| Forwardable::FILE_REGEXP =~ s} unless Forwardable::debug
+        rescue ::Exception
+          $@.delete_if{|s| ::Forwardable::FILE_REGEXP =~ s} unless ::Forwardable::debug
           ::Kernel::raise
         end
       end
@@ -283,8 +284,8 @@ module SingleForwardable
       def #{ali}(*args, &block)
         begin
           #{accessor}.__send__(:#{method}, *args, &block)
-        rescue Exception
-          $@.delete_if{|s| Forwardable::FILE_REGEXP =~ s} unless Forwardable::debug
+        rescue ::Exception
+          $@.delete_if{|s| ::Forwardable::FILE_REGEXP =~ s} unless ::Forwardable::debug
           ::Kernel::raise
         end
       end

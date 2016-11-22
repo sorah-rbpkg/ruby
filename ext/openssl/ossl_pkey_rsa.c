@@ -1,11 +1,10 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #if !defined(OPENSSL_NO_RSA)
@@ -40,6 +39,7 @@ rsa_instance(VALUE klass, RSA *rsa)
     if (!rsa) {
 	return Qfalse;
     }
+    obj = NewPKey(klass);
     if (!(pkey = EVP_PKEY_new())) {
 	return Qfalse;
     }
@@ -47,7 +47,7 @@ rsa_instance(VALUE klass, RSA *rsa)
 	EVP_PKEY_free(pkey);
 	return Qfalse;
     }
-    WrapPKey(klass, obj, pkey);
+    SetPKey(obj, pkey);
 
     return obj;
 }
@@ -61,10 +61,11 @@ ossl_rsa_new(EVP_PKEY *pkey)
 	obj = rsa_instance(cRSA, RSA_new());
     }
     else {
+	obj = NewPKey(cRSA);
 	if (EVP_PKEY_type(pkey->type) != EVP_PKEY_RSA) {
 	    ossl_raise(rb_eTypeError, "Not a RSA key!");
 	}
-	WrapPKey(cRSA, obj, pkey);
+	SetPKey(obj, pkey);
     }
     if (obj == Qfalse) {
 	ossl_raise(eRSAError, NULL);
@@ -390,6 +391,8 @@ ossl_rsa_public_encrypt(int argc, VALUE *argv, VALUE self)
     VALUE str, buffer, padding;
 
     GetPKeyRSA(self, pkey);
+    if (!pkey->pkey.rsa->n)
+	ossl_raise(eRSAError, "incomplete RSA");
     rb_scan_args(argc, argv, "11", &buffer, &padding);
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
@@ -419,6 +422,8 @@ ossl_rsa_public_decrypt(int argc, VALUE *argv, VALUE self)
     VALUE str, buffer, padding;
 
     GetPKeyRSA(self, pkey);
+    if (!pkey->pkey.rsa->n)
+	ossl_raise(eRSAError, "incomplete RSA");
     rb_scan_args(argc, argv, "11", &buffer, &padding);
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
@@ -448,9 +453,10 @@ ossl_rsa_private_encrypt(int argc, VALUE *argv, VALUE self)
     VALUE str, buffer, padding;
 
     GetPKeyRSA(self, pkey);
-    if (!RSA_PRIVATE(self, pkey->pkey.rsa)) {
-	ossl_raise(eRSAError, "private key needed.");
-    }
+    if (!pkey->pkey.rsa->n)
+	ossl_raise(eRSAError, "incomplete RSA");
+    if (!RSA_PRIVATE(self, pkey->pkey.rsa))
+	ossl_raise(eRSAError, "private key needed");
     rb_scan_args(argc, argv, "11", &buffer, &padding);
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
@@ -480,9 +486,10 @@ ossl_rsa_private_decrypt(int argc, VALUE *argv, VALUE self)
     VALUE str, buffer, padding;
 
     GetPKeyRSA(self, pkey);
-    if (!RSA_PRIVATE(self, pkey->pkey.rsa)) {
-	ossl_raise(eRSAError, "private key needed.");
-    }
+    if (!pkey->pkey.rsa->n)
+	ossl_raise(eRSAError, "incomplete RSA");
+    if (!RSA_PRIVATE(self, pkey->pkey.rsa))
+	ossl_raise(eRSAError, "private key needed");
     rb_scan_args(argc, argv, "11", &buffer, &padding);
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
@@ -698,4 +705,3 @@ Init_ossl_rsa(void)
 {
 }
 #endif /* NO_RSA */
-

@@ -1,20 +1,21 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #include "ossl.h"
 
-#define WrapX509Store(klass, obj, st) do { \
+#define NewX509Store(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_x509store_type, 0)
+#define SetX509Store(obj, st) do { \
     if (!(st)) { \
 	ossl_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
     } \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509store_type, (st)); \
+    RTYPEDDATA_DATA(obj) = (st); \
 } while (0)
 #define GetX509Store(obj, st) do { \
     TypedData_Get_Struct((obj), X509_STORE, &ossl_x509store_type, (st)); \
@@ -27,11 +28,13 @@
     GetX509Store((obj), (st)); \
 } while (0)
 
-#define WrapX509StCtx(klass, obj, ctx) do { \
+#define NewX509StCtx(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_x509stctx_type, 0)
+#define SetX509StCtx(obj, ctx) do { \
     if (!(ctx)) { \
 	ossl_raise(rb_eRuntimeError, "STORE_CTX wasn't initialized!"); \
     } \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509stctx_type, (ctx)); \
+    RTYPEDDATA_DATA(obj) = (ctx); \
 } while (0)
 #define GetX509StCtx(obj, ctx) do { \
     TypedData_Get_Struct((obj), X509_STORE_CTX, &ossl_x509stctx_type, (ctx)); \
@@ -73,7 +76,8 @@ ossl_x509store_new(X509_STORE *store)
 {
     VALUE obj;
 
-    WrapX509Store(cX509Store, obj, store);
+    obj = NewX509Store(cX509Store);
+    SetX509Store(obj, store);
 
     return obj;
 }
@@ -108,10 +112,11 @@ ossl_x509store_alloc(VALUE klass)
     X509_STORE *store;
     VALUE obj;
 
+    obj = NewX509Store(klass);
     if((store = X509_STORE_new()) == NULL){
         ossl_raise(eX509StoreError, NULL);
     }
-    WrapX509Store(klass, obj, store);
+    SetX509Store(obj, store);
 
     return obj;
 }
@@ -125,7 +130,7 @@ ossl_x509store_set_vfy_cb(VALUE self, VALUE cb)
     X509_STORE *store;
 
     GetX509Store(self, store);
-    X509_STORE_set_ex_data(store, ossl_verify_cb_idx, (void*)cb);
+    X509_STORE_set_ex_data(store, ossl_store_ex_verify_cb_idx, (void *)cb);
     rb_iv_set(self, "@verify_callback", cb);
 
     return cb;
@@ -373,7 +378,8 @@ ossl_x509stctx_new(X509_STORE_CTX *ctx)
 {
     VALUE obj;
 
-    WrapX509StCtx(cX509StoreContext, obj, ctx);
+    obj = NewX509StCtx(cX509StoreContext);
+    SetX509StCtx(obj, ctx);
 
     return obj;
 }
@@ -407,10 +413,11 @@ ossl_x509stctx_alloc(VALUE klass)
     X509_STORE_CTX *ctx;
     VALUE obj;
 
+    obj = NewX509StCtx(klass);
     if((ctx = X509_STORE_CTX_new()) == NULL){
         ossl_raise(eX509StoreError, NULL);
     }
-    WrapX509StCtx(klass, obj, ctx);
+    SetX509StCtx(obj, ctx);
 
     return obj;
 }
@@ -460,7 +467,7 @@ ossl_x509stctx_verify(VALUE self)
     int result;
 
     GetX509StCtx(self, ctx);
-    X509_STORE_CTX_set_ex_data(ctx, ossl_verify_cb_idx,
+    X509_STORE_CTX_set_ex_data(ctx, ossl_store_ctx_ex_verify_cb_idx,
                                (void*)rb_iv_get(self, "@verify_callback"));
     result = X509_verify_cert(ctx);
 

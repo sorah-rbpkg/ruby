@@ -1,5 +1,4 @@
+# frozen_string_literal: false
 require 'mkmf'
-if try_cflags("-std=iso9899:1999")
-  $CFLAGS += " " << "-std=iso9899:1999"
-end
+config_string("strict_warnflags") {|w| $warnflags += " #{w}"}
 create_makefile('date_core')

@@ -1,4 +1,5 @@
 # coding: US-ASCII
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestRegexp < Test::Unit::TestCase
@@ -388,6 +389,9 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(arg_encoding_none, Regexp.new("", nil, "N").options)
 
     assert_raise(RegexpError) { Regexp.new(")(") }
+    assert_raise(RegexpError) { Regexp.new('[\\40000000000') }
+    assert_raise(RegexpError) { Regexp.new('[\\600000000000.') }
+    assert_raise(RegexpError) { Regexp.new("((?<v>))\\g<0>") }
   end
 
   def test_unescape
@@ -543,6 +547,16 @@ class TestRegexp < Test::Unit::TestCase
     assert_nothing_raised { $= = nil }
   end
 
+  def test_KCODE_warning
+    assert_warning(/variable \$KCODE is no longer effective; ignored/) { $KCODE = nil }
+    assert_warning(/variable \$KCODE is no longer effective/) { $KCODE = nil }
+  end
+
+  def test_ignorecase_warning
+    assert_warning(/variable \$= is no longer effective; ignored/) { $= = nil }
+    assert_warning(/variable \$= is no longer effective/) { $= }
+  end
+
   def test_match_setter
     /foo/ =~ "foo"
     m = $~
@@ -589,19 +603,6 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_rindex_regexp
     assert_equal(3, "foobarbaz\u3042".rindex(/b../n, 5))
-  end
-
-  def test_taint
-    m = Thread.new do
-      "foo"[/foo/]
-      $SAFE = 3
-      /foo/.match("foo")
-    end.value
-    assert_predicate(m, :tainted?)
-    assert_nothing_raised('[ruby-core:26137]') {
-      m = proc {$SAFE = 3; %r"#{ }"o}.call
-    }
-    assert_predicate(m, :tainted?)
   end
 
   def assert_regexp(re, ss, fs = [], msg = nil)
@@ -1005,6 +1006,9 @@ class TestRegexp < Test::Unit::TestCase
     conds = {"xy"=>true, "yx"=>true, "xx"=>false, "yy"=>false}
     assert_match_each(/\A((x)|(y))(?(2)y|x)\z/, conds, bug8583)
     assert_match_each(/\A((?<x>x)|(?<y>y))(?(<x>)y|x)\z/, conds, bug8583)
+
+    bug12418 = '[ruby-core:75694] [Bug #12418]'
+    assert_raise(RegexpError, bug12418){ Regexp.new('(0?0|(?(5)||)|(?(5)||))?') }
   end
 
   def test_options_in_look_behind

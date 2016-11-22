@@ -98,7 +98,6 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGIT % SIZEOF_LONG == 0);
     rb_absint_size(x, NULL))
 
 #define BIGDIVREM_EXTRA_WORDS 1
-#define roomof(n, m) ((long)(((n)+(m)-1) / (m)))
 #define bdigit_roomof(n) roomof(n, SIZEOF_BDIGIT)
 #define BARY_ARGS(ary) ary, numberof(ary)
 
@@ -173,7 +172,7 @@ static int nlz(BDIGIT x) { return nlz_int128((uint128_t)x) - (SIZEOF_INT128_T-SI
 #define U128(a,b,c,d) (((uint128_t)U64(a,b) << 64) | U64(c,d))
 #endif
 
-/* The following scirpt, maxpow.rb, generates the tables follows.
+/* The following script, maxpow.rb, generates the tables follows.
 
 def big(n, bits)
   ns = []
@@ -3940,6 +3939,22 @@ str2big_gmp(
 }
 #endif
 
+/*
+ * Parse +str+ as Ruby Integer, i.e., underscores, 0d and 0b prefixes.
+ *
+ * str:      pointer to the string to be parsed.
+ *	     should be NUL-terminated.
+ * base:     base of conversion, must be 2..36, or -36..0.
+ *           if +base+ > 0, the conversion is done according to the +base+
+ *           and unmatched prefix is parsed as a part of the result if
+ *           present.
+ *           if +base+ <= 0, the conversion is done according to the
+ *           prefix if present, in base <code>-base</code> if +base+ < -1,
+ *           or in base 10.
+ * badcheck: if non-zero, +ArgumentError+ is raised when +str+ is not
+ *           valid as an Integer.  if zero, Fixnum 0 is returned in
+ *           that case.
+ */
 VALUE
 rb_cstr_to_inum(const char *str, int base, int badcheck)
 {
@@ -4823,7 +4838,7 @@ rb_big2str_generic(VALUE x, int base)
 }
 
 #ifdef USE_GMP
-VALUE
+static VALUE
 big2str_gmp(VALUE x, int base)
 {
     const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGIT)*CHAR_BIT;
@@ -6248,7 +6263,7 @@ rb_big_fdiv(VALUE x, VALUE y)
  *
  *    123456789 ** 2      #=> 15241578750190521
  *    123456789 ** 1.2    #=> 5126464716.09932
- *    123456789 ** -2     #=> 6.5610001194102e-17
+ *    123456789 ** -2     #=> (1/15241578750190521)
  */
 
 VALUE
@@ -6789,7 +6804,7 @@ rb_big_aref(VALUE x, VALUE y)
  * See also Object#hash.
  */
 
-static VALUE
+VALUE
 rb_big_hash(VALUE x)
 {
     st_index_t hash;
@@ -6819,8 +6834,8 @@ rb_big_coerce(VALUE x, VALUE y)
 	y = rb_int2big(FIX2LONG(y));
     }
     else if (!RB_BIGNUM_TYPE_P(y)) {
-	rb_raise(rb_eTypeError, "can't coerce %s to Bignum",
-		 rb_obj_classname(y));
+	rb_raise(rb_eTypeError, "can't coerce %"PRIsVALUE" to Bignum",
+		 rb_obj_class(y));
     }
     return rb_assoc_new(y, x);
 }

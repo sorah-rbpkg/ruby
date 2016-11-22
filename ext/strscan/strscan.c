@@ -64,6 +64,7 @@ struct strscanner
                             Function Prototypes
    ======================================================================= */
 
+static inline long minl _((const long n, const long x));
 static VALUE infect _((VALUE str, struct strscanner *p));
 static VALUE extract_range _((struct strscanner *p, long beg_i, long end_i));
 static VALUE extract_beg_len _((struct strscanner *p, long beg_i, long len));
@@ -140,12 +141,17 @@ str_new(struct strscanner *p, const char *ptr, long len)
     return str;
 }
 
+static inline long
+minl(const long x, const long y)
+{
+    return (x < y) ? x : y;
+}
+
 static VALUE
 extract_range(struct strscanner *p, long beg_i, long end_i)
 {
     if (beg_i > S_LEN(p)) return Qnil;
-    if (end_i > S_LEN(p))
-        end_i = S_LEN(p);
+    end_i = minl(end_i, S_LEN(p));
     return infect(str_new(p, S_PBEG(p) + beg_i, end_i - beg_i), p);
 }
 
@@ -153,8 +159,7 @@ static VALUE
 extract_beg_len(struct strscanner *p, long beg_i, long len)
 {
     if (beg_i > S_LEN(p)) return Qnil;
-    if (beg_i + len > S_LEN(p))
-        len = S_LEN(p) - beg_i;
+    len = minl(len, S_LEN(p) - beg_i);
     return infect(str_new(p, S_PBEG(p) + beg_i, len), p);
 }
 
@@ -181,11 +186,7 @@ static size_t
 strscan_memsize(const void *ptr)
 {
     const struct strscanner *p = ptr;
-    size_t size = 0;
-    if (p) {
-	size = sizeof(*p) - sizeof(p->regs) + onig_region_memsize(&p->regs);
-    }
-    return size;
+    return sizeof(*p) - sizeof(p->regs) + onig_region_memsize(&p->regs);
 }
 
 static const rb_data_type_t strscanner_type = {
@@ -198,12 +199,12 @@ static VALUE
 strscan_s_allocate(VALUE klass)
 {
     struct strscanner *p;
+    VALUE obj = TypedData_Make_Struct(klass, struct strscanner, &strscanner_type, p);
 
-    p = ZALLOC(struct strscanner);
     CLEAR_MATCH_STATUS(p);
     onig_region_init(&(p->regs));
     p->str = Qnil;
-    return TypedData_Wrap_Struct(klass, &strscanner_type, p);
+    return obj;
 }
 
 /*
@@ -732,9 +733,7 @@ strscan_getch(VALUE self)
         return Qnil;
 
     len = rb_enc_mbclen(CURPTR(p), S_PEND(p), rb_enc_get(p->str));
-    if (p->curr + len > S_LEN(p)) {
-        len = S_LEN(p) - p->curr;
-    }
+    len = minl(len, S_RESTLEN(p));
     p->prev = p->curr;
     p->curr += len;
     MATCHED(p);
@@ -811,8 +810,7 @@ strscan_peek(VALUE self, VALUE vlen)
     if (EOS_P(p))
         return infect(str_new(p, "", 0), p);
 
-    if (p->curr + len > S_LEN(p))
-        len = S_LEN(p) - p->curr;
+    len = minl(len, S_RESTLEN(p));
     return extract_beg_len(p, p->curr, len);
 }
 
@@ -1120,7 +1118,7 @@ strscan_rest_size(VALUE self)
     if (EOS_P(p)) {
         return INT2FIX(0);
     }
-    i = S_LEN(p) - p->curr;
+    i = S_RESTLEN(p);
     return INT2FIX(i);
 }
 
@@ -1206,7 +1204,7 @@ inspect2(struct strscanner *p)
     long len;
 
     if (EOS_P(p)) return rb_str_new2("");
-    len = S_LEN(p) - p->curr;
+    len = S_RESTLEN(p);
     if (len > INSPECT_LENGTH) {
 	str = rb_str_new(CURPTR(p), INSPECT_LENGTH);
 	rb_str_cat2(str, "...");

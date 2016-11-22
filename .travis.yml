@@ -64,11 +64,10 @@ script:
 branches:
   only:
     - trunk
+    - ruby_2_0_0
     - ruby_2_1
     - ruby_2_2
     - ruby_2_3
-    - /^feature\//
-    - /^bug\//
 
 # We want to be notified when something happens.
 notifications:
@@ -87,6 +86,10 @@ notifications:
       - "https://rubies.travis-ci.org/rebuild/ruby-head"
     on_success: always
     on_failure: never
+
+  email:
+    - ko1c-failure@atdot.net
+    - shibata.hiroshi@gmail.com
 
 # Local Variables:
 # mode: YAML

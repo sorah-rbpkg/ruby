@@ -18,7 +18,11 @@
 #include <math.h>
 
 VALUE rb_cRange;
-static ID id_cmp, id_succ, id_beg, id_end, id_excl, id_integer_p, id_div;
+static ID id_beg, id_end, id_excl, id_integer_p, id_div;
+#define id_cmp idCmp
+#define id_succ idSucc
+
+static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 
 #define RANGE_BEG(r) (RSTRUCT(r)->as.ary[0])
 #define RANGE_END(r) (RSTRUCT(r)->as.ary[1])
@@ -78,7 +82,7 @@ range_modify(VALUE range)
 {
     /* Ranges are immutable, so that they should be initialized only once. */
     if (RANGE_EXCL(range) != Qnil) {
-	rb_name_error(idInitialize, "`initialize' called twice");
+	rb_name_err_raise("`initialize' called twice", range, ID2SYM(idInitialize));
     }
 }
 
@@ -167,34 +171,20 @@ range_eq(VALUE range, VALUE obj)
     return rb_exec_recursive_paired(recursive_equal, range, obj, obj);
 }
 
+/* compares _a_ and _b_ and returns:
+ * < 0: a < b
+ * = 0: a = b
+ * > 0: a > b or non-comparable
+ */
 static int
-r_lt(VALUE a, VALUE b)
+r_less(VALUE a, VALUE b)
 {
     VALUE r = rb_funcall(a, id_cmp, 1, b);
 
     if (NIL_P(r))
-	return (int)Qfalse;
-    if (rb_cmpint(r, a, b) < 0)
-	return (int)Qtrue;
-    return (int)Qfalse;
+	return INT_MAX;
+    return rb_cmpint(r, a, b);
 }
-
-static int
-r_le(VALUE a, VALUE b)
-{
-    int c;
-    VALUE r = rb_funcall(a, id_cmp, 1, b);
-
-    if (NIL_P(r))
-	return (int)Qfalse;
-    c = rb_cmpint(r, a, b);
-    if (c == 0)
-	return (int)INT2FIX(0);
-    if (c < 0)
-	return (int)Qtrue;
-    return (int)Qfalse;
-}
-
 
 static VALUE
 recursive_eql(VALUE range, VALUE obj, int recur)
@@ -271,17 +261,16 @@ range_each_func(VALUE range, rb_block_call_func *func, VALUE arg)
     VALUE v = b;
 
     if (EXCL(range)) {
-	while (r_lt(v, e)) {
+	while (r_less(v, e) < 0) {
 	    (*func) (v, arg, 0, 0, 0);
-	    v = rb_funcall(v, id_succ, 0, 0);
+	    v = rb_funcallv(v, id_succ, 0, 0);
 	}
     }
     else {
-	while ((c = r_le(v, e)) != Qfalse) {
+	while ((c = r_less(v, e)) <= 0) {
 	    (*func) (v, arg, 0, 0, 0);
-	    if (c == (int)INT2FIX(0))
-		break;
-	    v = rb_funcall(v, id_succ, 0, 0);
+	    if (!c) break;
+	    v = rb_funcallv(v, id_succ, 0, 0);
 	}
     }
 }
@@ -444,11 +433,11 @@ range_step(int argc, VALUE *argv, VALUE range)
     else if (SYMBOL_P(b) && SYMBOL_P(e)) { /* symbols are special */
 	VALUE args[2], iter[2];
 
-	args[0] = rb_sym_to_s(e);
+	args[0] = rb_sym2str(e);
 	args[1] = EXCL(range) ? Qtrue : Qfalse;
 	iter[0] = INT2FIX(1);
 	iter[1] = step;
-	rb_block_call(rb_sym_to_s(b), rb_intern("upto"), 2, args, sym_step_i, (VALUE)iter);
+	rb_block_call(rb_sym2str(b), rb_intern("upto"), 2, args, sym_step_i, (VALUE)iter);
     }
     else if (ruby_float_step(b, e, step, EXCL(range))) {
 	/* done */
@@ -585,8 +574,8 @@ is_integer_p(VALUE v)
 static VALUE
 range_bsearch(VALUE range)
 {
-    VALUE beg, end;
-    int smaller, satisfied = 0;
+    VALUE beg, end, satisfied = Qnil;
+    int smaller;
 
     /* Implementation notes:
      * Floats are handled by mapping them to 64 bits integers.
@@ -602,15 +591,16 @@ range_bsearch(VALUE range)
      * (-1...0.0).bsearch to yield -0.0.
      */
 
-#define BSEARCH_CHECK(val) \
+#define BSEARCH_CHECK(expr) \
     do { \
+	VALUE val = (expr); \
 	VALUE v = rb_yield(val); \
 	if (FIXNUM_P(v)) { \
-	    if (FIX2INT(v) == 0) return val; \
-	    smaller = FIX2INT(v) < 0; \
+	    if (v == INT2FIX(0)) return val; \
+	    smaller = (SIGNED_VALUE)v < 0; \
 	} \
 	else if (v == Qtrue) { \
-	    satisfied = 1; \
+	    satisfied = val; \
 	    smaller = 1; \
 	} \
 	else if (v == Qfalse || v == Qnil) { \
@@ -622,9 +612,9 @@ range_bsearch(VALUE range)
 	    smaller = cmp < 0; \
 	} \
 	else { \
-	    rb_raise(rb_eTypeError, "wrong argument type %s" \
-		" (must be numeric, true, false or nil)", \
-		rb_obj_classname(v)); \
+	    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE \
+		     " (must be numeric, true, false or nil)", \
+		     rb_obj_class(v)); \
 	} \
     } while (0)
 
@@ -648,8 +638,7 @@ range_bsearch(VALUE range)
 	    BSEARCH_CHECK(conv(low)); \
 	    if (!smaller) return Qnil; \
 	} \
-	if (!satisfied) return Qnil; \
-	return conv(low); \
+	return satisfied; \
     } while (0)
 
 
@@ -692,8 +681,7 @@ range_bsearch(VALUE range)
 	    BSEARCH_CHECK(low);
 	    if (!smaller) return Qnil;
 	}
-	if (!satisfied) return Qnil;
-	return low;
+	return satisfied;
     }
     else {
 	rb_raise(rb_eTypeError, "can't do binary search for %s", rb_obj_classname(beg));
@@ -787,9 +775,9 @@ range_each(VALUE range)
     else if (SYMBOL_P(beg) && SYMBOL_P(end)) { /* symbols are special */
 	VALUE args[2];
 
-	args[0] = rb_sym_to_s(end);
+	args[0] = rb_sym2str(end);
 	args[1] = EXCL(range) ? Qtrue : Qfalse;
-	rb_block_call(rb_sym_to_s(beg), rb_intern("upto"), 2, args, sym_each_i, 0);
+	rb_block_call(rb_sym2str(beg), rb_intern("upto"), 2, args, sym_each_i, 0);
     }
     else {
 	VALUE tmp = rb_check_string_type(beg);
@@ -1175,36 +1163,11 @@ range_include(VALUE range, VALUE val)
     if (nv ||
 	!NIL_P(rb_check_to_integer(beg, "to_int")) ||
 	!NIL_P(rb_check_to_integer(end, "to_int"))) {
-	if (r_le(beg, val)) {
-	    if (EXCL(range)) {
-		if (r_lt(val, end))
-		    return Qtrue;
-	    }
-	    else {
-		if (r_le(val, end))
-		    return Qtrue;
-	    }
-	}
-	return Qfalse;
+	return r_cover_p(range, beg, end, val);
     }
-    else if (RB_TYPE_P(beg, T_STRING) && RB_TYPE_P(end, T_STRING) &&
-	     RSTRING_LEN(beg) == 1 && RSTRING_LEN(end) == 1) {
-	if (NIL_P(val)) return Qfalse;
-	if (RB_TYPE_P(val, T_STRING)) {
-	    if (RSTRING_LEN(val) == 0 || RSTRING_LEN(val) > 1)
-		return Qfalse;
-	    else {
-		char b = RSTRING_PTR(beg)[0];
-		char e = RSTRING_PTR(end)[0];
-		char v = RSTRING_PTR(val)[0];
-
-		if (ISASCII(b) && ISASCII(e) && ISASCII(v)) {
-		    if (b <= v && v < e) return Qtrue;
-		    if (!EXCL(range) && v == e) return Qtrue;
-		    return Qfalse;
-		}
-	    }
-	}
+    else if (RB_TYPE_P(beg, T_STRING) && RB_TYPE_P(end, T_STRING)) {
+	VALUE rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive);
+	return rb_str_include_range_p(beg, end, val, RANGE_EXCL(range));
     }
     /* TODO: ruby_frame->this_func = rb_intern("include?"); */
     return rb_call_super(1, &val);
@@ -1233,15 +1196,16 @@ range_cover(VALUE range, VALUE val)
 
     beg = RANGE_BEG(range);
     end = RANGE_END(range);
-    if (r_le(beg, val)) {
-	if (EXCL(range)) {
-	    if (r_lt(val, end))
-		return Qtrue;
-	}
-	else {
-	    if (r_le(val, end))
-		return Qtrue;
-	}
+    return r_cover_p(range, beg, end, val);
+}
+
+static VALUE
+r_cover_p(VALUE range, VALUE beg, VALUE end, VALUE val)
+{
+    if (r_less(beg, val) <= 0) {
+	int excl = EXCL(range);
+	if (r_less(val, end) <= -excl)
+	    return Qtrue;
     }
     return Qfalse;
 }
@@ -1345,8 +1309,6 @@ Init_Range(void)
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
-    id_cmp = rb_intern("<=>");
-    id_succ = rb_intern("succ");
     id_beg = rb_intern("begin");
     id_end = rb_intern("end");
     id_excl = rb_intern("excl");

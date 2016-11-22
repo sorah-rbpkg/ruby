@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 module TestRipper; end
@@ -6,7 +7,7 @@ class TestRipper::Generic < Test::Unit::TestCase
     srcdir = File.expand_path("../../..", __FILE__)
     assert_separately(%W[--disable-gem -rripper - #{srcdir}],
                       __FILE__, __LINE__, <<-'eom', timeout: Float::INFINITY)
-      TEST_RATIO = (ENV["TEST_RIPPER_RATIO"].nil? ? 0.05 : ENV["TEST_RIPPER_RATIO"].to_f) # testing all files needs too long time...
+      TEST_RATIO = ENV["TEST_RIPPER_RATIO"]&.tap {|s|break s.to_f} || 0.05 # testing all files needs too long time...
       class Parser < Ripper
         PARSER_EVENTS.each {|n| eval "def on_#{n}(*args) r = [:#{n}, *args]; r.inspect; Object.new end" }
         SCANNER_EVENTS.each {|n| eval "def on_#{n}(*args) r = [:#{n}, *args]; r.inspect; Object.new end" }

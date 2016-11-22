@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'English'
 require 'rubygems/command'
 require 'rubygems/version_option'
@@ -61,7 +62,9 @@ class Gem::Commands::OpenCommand < Gem::Command
   end
 
   def open_editor path
-    system(*@editor.split(/\s+/) + [path])
+    Dir.chdir(path) do
+      system(*@editor.split(/\s+/) + [path])
+    end
   end
 
   def spec_for name

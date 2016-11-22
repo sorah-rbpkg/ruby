@@ -1,11 +1,10 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #include "ossl.h"
@@ -199,7 +198,7 @@ GetPrivPKeyPtr(VALUE obj)
 {
     EVP_PKEY *pkey;
 
-    if (rb_funcall(obj, id_private_q, 0, NULL) != Qtrue) {
+    if (rb_funcallv(obj, id_private_q, 0, NULL) != Qtrue) {
 	ossl_raise(rb_eArgError, "Private key is needed.");
     }
     SafeGetPKey(obj, pkey);
@@ -223,7 +222,7 @@ DupPrivPKeyPtr(VALUE obj)
 {
     EVP_PKEY *pkey;
 
-    if (rb_funcall(obj, id_private_q, 0, NULL) != Qtrue) {
+    if (rb_funcallv(obj, id_private_q, 0, NULL) != Qtrue) {
 	ossl_raise(rb_eArgError, "Private key is needed.");
     }
     SafeGetPKey(obj, pkey);
@@ -241,10 +240,11 @@ ossl_pkey_alloc(VALUE klass)
     EVP_PKEY *pkey;
     VALUE obj;
 
+    obj = NewPKey(klass);
     if (!(pkey = EVP_PKEY_new())) {
 	ossl_raise(ePKeyError, NULL);
     }
-    WrapPKey(klass, obj, pkey);
+    SetPKey(obj, pkey);
 
     return obj;
 }
@@ -291,7 +291,7 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
     VALUE str;
     int result;
 
-    if (rb_funcall(self, id_private_q, 0, NULL) != Qtrue) {
+    if (rb_funcallv(self, id_private_q, 0, NULL) != Qtrue) {
 	ossl_raise(rb_eArgError, "Private key is needed.");
     }
     GetPKey(self, pkey);
@@ -453,4 +453,3 @@ Init_ossl_pkey(void)
     Init_ossl_dh();
     Init_ossl_ec();
 }
-

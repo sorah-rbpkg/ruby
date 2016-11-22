@@ -23,11 +23,11 @@
  * This behavior is consistent with the document of pack/unpack.
  */
 #ifdef HAVE_TRUE_LONG_LONG
-static const char natstr[] = "sSiIlLqQ";
+static const char natstr[] = "sSiIlLqQjJ";
 #else
-static const char natstr[] = "sSiIlL";
+static const char natstr[] = "sSiIlLjJ";
 #endif
-static const char endstr[] = "sSiIlLqQ";
+static const char endstr[] = "sSiIlLqQjJ";
 
 #ifdef HAVE_TRUE_LONG_LONG
 /* It is intentional to use long long instead of LONG_LONG. */
@@ -68,59 +68,18 @@ static const char endstr[] = "sSiIlLqQ";
 # define NATINT_LEN(type,len) ((int)sizeof(type))
 #endif
 
-#define define_swapx(x, xtype)		\
-static xtype				\
-TOKEN_PASTE(swap,x)(xtype z)		\
-{					\
-    xtype r;				\
-    xtype *zp;				\
-    unsigned char *s, *t;		\
-    int i;				\
-					\
-    zp = xmalloc(sizeof(xtype));	\
-    *zp = z;				\
-    s = (unsigned char*)zp;		\
-    t = xmalloc(sizeof(xtype));		\
-    for (i=0; i<sizeof(xtype); i++) {	\
-	t[sizeof(xtype)-i-1] = s[i];	\
-    }					\
-    r = *(xtype *)t;			\
-    xfree(t);				\
-    xfree(zp);				\
-    return r;				\
-}
-
-#if SIZEOF_FLOAT == 4 && defined(HAVE_INT32_T)
-#   define swapf(x)	swap32(x)
-#   define FLOAT_SWAPPER	uint32_t
-#else
-    define_swapx(f,float)
-#endif
-
-#if SIZEOF_DOUBLE == 8 && defined(HAVE_INT64_T)
-#   define swapd(x)	swap64(x)
-#   define DOUBLE_SWAPPER	uint64_t
-#elif SIZEOF_DOUBLE == 8 && defined(HAVE_INT32_T)
-    static double
-    swapd(const double d)
-    {
-	double dtmp = d;
-	uint32_t utmp[2];
-	uint32_t utmp0;
-
-	utmp[0] = 0; utmp[1] = 0;
-	memcpy(utmp,&dtmp,sizeof(double));
-	utmp0 = utmp[0];
-	utmp[0] = swap32(utmp[1]);
-	utmp[1] = swap32(utmp0);
-	memcpy(&dtmp,utmp,sizeof(double));
-	return dtmp;
-    }
-#else
-    define_swapx(d, double)
-#endif
-
-#undef define_swapx
+typedef union {
+    float f;
+    uint32_t u;
+    char buf[4];
+} FLOAT_SWAPPER;
+typedef union {
+    double d;
+    uint64_t u;
+    char buf[8];
+} DOUBLE_SWAPPER;
+#define swapf(x) swap32(x)
+#define swapd(x) swap64(x)
 
 #define rb_ntohf(x) (BIGENDIAN_P()?(x):swapf(x))
 #define rb_ntohd(x) (BIGENDIAN_P()?(x):swapd(x))
@@ -131,57 +90,17 @@ TOKEN_PASTE(swap,x)(xtype z)		\
 #define rb_vtohf(x) (BIGENDIAN_P()?swapf(x):(x))
 #define rb_vtohd(x) (BIGENDIAN_P()?swapd(x):(x))
 
-#ifdef FLOAT_SWAPPER
-# define FLOAT_CONVWITH(y)	FLOAT_SWAPPER y;
-# define HTONF(x,y)	(memcpy(&(y),&(x),sizeof(float)),	\
-			 (y) = rb_htonf((FLOAT_SWAPPER)(y)),	\
-			 memcpy(&(x),&(y),sizeof(float)),	\
-			 (x))
-# define HTOVF(x,y)	(memcpy(&(y),&(x),sizeof(float)),	\
-			 (y) = rb_htovf((FLOAT_SWAPPER)(y)),	\
-			 memcpy(&(x),&(y),sizeof(float)),	\
-			 (x))
-# define NTOHF(x,y)	(memcpy(&(y),&(x),sizeof(float)),	\
-			 (y) = rb_ntohf((FLOAT_SWAPPER)(y)),	\
-			 memcpy(&(x),&(y),sizeof(float)),	\
-			 (x))
-# define VTOHF(x,y)	(memcpy(&(y),&(x),sizeof(float)),	\
-			 (y) = rb_vtohf((FLOAT_SWAPPER)(y)),	\
-			 memcpy(&(x),&(y),sizeof(float)),	\
-			 (x))
-#else
-# define FLOAT_CONVWITH(y)
-# define HTONF(x,y)	rb_htonf(x)
-# define HTOVF(x,y)	rb_htovf(x)
-# define NTOHF(x,y)	rb_ntohf(x)
-# define VTOHF(x,y)	rb_vtohf(x)
-#endif
+#define FLOAT_CONVWITH(x)	FLOAT_SWAPPER x;
+#define HTONF(x)	((x).u = rb_htonf((x).u))
+#define HTOVF(x)	((x).u = rb_htovf((x).u))
+#define NTOHF(x)	((x).u = rb_ntohf((x).u))
+#define VTOHF(x)	((x).u = rb_vtohf((x).u))
 
-#ifdef DOUBLE_SWAPPER
-# define DOUBLE_CONVWITH(y)	DOUBLE_SWAPPER y;
-# define HTOND(x,y)	(memcpy(&(y),&(x),sizeof(double)),	\
-			 (y) = rb_htond((DOUBLE_SWAPPER)(y)),	\
-			 memcpy(&(x),&(y),sizeof(double)),	\
-			 (x))
-# define HTOVD(x,y)	(memcpy(&(y),&(x),sizeof(double)),	\
-			 (y) = rb_htovd((DOUBLE_SWAPPER)(y)),	\
-			 memcpy(&(x),&(y),sizeof(double)),	\
-			 (x))
-# define NTOHD(x,y)	(memcpy(&(y),&(x),sizeof(double)),	\
-			 (y) = rb_ntohd((DOUBLE_SWAPPER)(y)),	\
-			 memcpy(&(x),&(y),sizeof(double)),	\
-			 (x))
-# define VTOHD(x,y)	(memcpy(&(y),&(x),sizeof(double)),	\
-			 (y) = rb_vtohd((DOUBLE_SWAPPER)(y)),	\
-			 memcpy(&(x),&(y),sizeof(double)),	\
-			 (x))
-#else
-# define DOUBLE_CONVWITH(y)
-# define HTOND(x,y)	rb_htond(x)
-# define HTOVD(x,y)	rb_htovd(x)
-# define NTOHD(x,y)	rb_ntohd(x)
-# define VTOHD(x,y)	rb_vtohd(x)
-#endif
+#define DOUBLE_CONVWITH(x)	DOUBLE_SWAPPER x;
+#define HTOND(x)	((x).u = rb_htond((x).u))
+#define HTOVD(x)	((x).u = rb_htovd((x).u))
+#define NTOHD(x)	((x).u = rb_ntohd((x).u))
+#define VTOHD(x)	((x).u = rb_vtohd((x).u))
 
 #define MAX_INTEGER_PACK_SIZE 8
 
@@ -264,11 +183,15 @@ rb_str_associated(VALUE str)
  *      S         | Integer | 16-bit unsigned, native endian (uint16_t)
  *      L         | Integer | 32-bit unsigned, native endian (uint32_t)
  *      Q         | Integer | 64-bit unsigned, native endian (uint64_t)
+ *      J         | Integer | pointer width unsigned, native endian (uintptr_t)
+ *                |         | (J is available since Ruby 2.3.)
  *                |         |
  *      c         | Integer | 8-bit signed (signed char)
  *      s         | Integer | 16-bit signed, native endian (int16_t)
  *      l         | Integer | 32-bit signed, native endian (int32_t)
  *      q         | Integer | 64-bit signed, native endian (int64_t)
+ *      j         | Integer | pointer width signed, native endian (intptr_t)
+ *                |         | (j is available since Ruby 2.3.)
  *                |         |
  *      S_, S!    | Integer | unsigned short, native endian
  *      I, I_, I! | Integer | unsigned int, native endian
@@ -276,6 +199,8 @@ rb_str_associated(VALUE str)
  *      Q_, Q!    | Integer | unsigned long long, native endian (ArgumentError
  *                |         | if the platform has no long long type.)
  *                |         | (Q_ and Q! is available since Ruby 2.1.)
+ *      J!        | Integer | uintptr_t, native endian (same with J)
+ *                |         | (J! is available since Ruby 2.3.)
  *                |         |
  *      s_, s!    | Integer | signed short, native endian
  *      i, i_, i! | Integer | signed int, native endian
@@ -283,20 +208,26 @@ rb_str_associated(VALUE str)
  *      q_, q!    | Integer | signed long long, native endian (ArgumentError
  *                |         | if the platform has no long long type.)
  *                |         | (q_ and q! is available since Ruby 2.1.)
+ *      j!        | Integer | intptr_t, native endian (same with j)
+ *                |         | (j! is available since Ruby 2.3.)
  *                |         |
  *      S> L> Q>  | Integer | same as the directives without ">" except
- *      s> l> q>  |         | big endian
- *      S!> I!>   |         | (available since Ruby 1.9.3)
- *      L!> Q!>   |         | "S>" is same as "n"
- *      s!> i!>   |         | "L>" is same as "N"
- *      l!> q!>   |         |
+ *      J> s> l>  |         | big endian
+ *      q> j>     |         | (available since Ruby 1.9.3)
+ *      S!> I!>   |         | "S>" is same as "n"
+ *      L!> Q!>   |         | "L>" is same as "N"
+ *      J!> s!>   |         |
+ *      i!> l!>   |         |
+ *      q!> j!>   |         |
  *                |         |
  *      S< L< Q<  | Integer | same as the directives without "<" except
- *      s< l< q<  |         | little endian
- *      S!< I!<   |         | (available since Ruby 1.9.3)
- *      L!< Q!<   |         | "S<" is same as "v"
- *      s!< i!<   |         | "L<" is same as "V"
- *      l!< q!<   |         |
+ *      J< s< l<  |         | little endian
+ *      q< j<     |         | (available since Ruby 1.9.3)
+ *      S!< I!<   |         | "S<" is same as "v"
+ *      L!< Q!<   |         | "L<" is same as "V"
+ *      J!< s!<   |         |
+ *      i!< l!<   |         |
+ *      q!< j!<   |         |
  *                |         |
  *      n         | Integer | 16-bit unsigned, network (big-endian) byte order
  *      N         | Integer | 32-bit unsigned, network (big-endian) byte order
@@ -349,7 +280,7 @@ pack_pack(VALUE ary, VALUE fmt)
     const char *p, *pend;
     VALUE res, from, associates = 0;
     char type;
-    long items, len, idx, plen;
+    long len, idx, plen;
     const char *ptr;
     int enc_info = 1;		/* 0 - BINARY, 1 - US-ASCII, 2 - UTF-8 */
 #ifdef NATINT_PACK
@@ -362,12 +293,12 @@ pack_pack(VALUE ary, VALUE fmt)
     pend = p + RSTRING_LEN(fmt);
     res = rb_str_buf_new(0);
 
-    items = RARRAY_LEN(ary);
     idx = 0;
 
 #define TOO_FEW (rb_raise(rb_eArgError, toofew), 0)
-#define THISFROM (items > 0 ? RARRAY_AREF(ary, idx) : TOO_FEW)
-#define NEXTFROM (items-- > 0 ? RARRAY_AREF(ary, idx++) : TOO_FEW)
+#define MORE_ITEM (idx < RARRAY_LEN(ary))
+#define THISFROM (MORE_ITEM ? RARRAY_AREF(ary, idx) : TOO_FEW)
+#define NEXTFROM (MORE_ITEM ? RARRAY_AREF(ary, idx++) : TOO_FEW)
 
     while (p < pend) {
 	int explicit_endian = 0;
@@ -419,7 +350,7 @@ pack_pack(VALUE ary, VALUE fmt)
 	if (*p == '*') {	/* set data length */
 	    len = strchr("@Xxu", type) ? 0
                 : strchr("PMm", type) ? 1
-                : items;
+                : RARRAY_LEN(ary) - idx;
 	    p++;
 	}
 	else if (ISDIGIT(*p)) {
@@ -658,6 +589,16 @@ pack_pack(VALUE ary, VALUE fmt)
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
+	  case 'j':		/* j for intptr_t */
+	    integer_size = sizeof(intptr_t);
+	    bigendian_p = BIGENDIAN_P();
+	    goto pack_integer;
+
+	  case 'J':		/* J for uintptr_t */
+	    integer_size = sizeof(uintptr_t);
+	    bigendian_p = BIGENDIAN_P();
+	    goto pack_integer;
+
 	  case 'n':		/* 16 bit (2 bytes) integer (network byte-order)  */
             integer_size = 2;
             bigendian_p = 1;
@@ -708,25 +649,22 @@ pack_pack(VALUE ary, VALUE fmt)
 
 	  case 'e':		/* single precision float in VAX byte-order */
 	    while (len-- > 0) {
-		float f;
-		FLOAT_CONVWITH(ftmp);
+		FLOAT_CONVWITH(tmp);
 
 		from = NEXTFROM;
-		f = (float)RFLOAT_VALUE(rb_to_float(from));
-		f = HTOVF(f,ftmp);
-		rb_str_buf_cat(res, (char*)&f, sizeof(float));
+		tmp.f = (float)RFLOAT_VALUE(rb_to_float(from));
+		HTOVF(tmp);
+		rb_str_buf_cat(res, tmp.buf, sizeof(float));
 	    }
 	    break;
 
 	  case 'E':		/* double precision float in VAX byte-order */
 	    while (len-- > 0) {
-		double d;
-		DOUBLE_CONVWITH(dtmp);
-
+		DOUBLE_CONVWITH(tmp);
 		from = NEXTFROM;
-		d = RFLOAT_VALUE(rb_to_float(from));
-		d = HTOVD(d,dtmp);
-		rb_str_buf_cat(res, (char*)&d, sizeof(double));
+		tmp.d = RFLOAT_VALUE(rb_to_float(from));
+		HTOVD(tmp);
+		rb_str_buf_cat(res, tmp.buf, sizeof(double));
 	    }
 	    break;
 
@@ -743,25 +681,22 @@ pack_pack(VALUE ary, VALUE fmt)
 
 	  case 'g':		/* single precision float in network byte-order */
 	    while (len-- > 0) {
-		float f;
-		FLOAT_CONVWITH(ftmp);
-
+		FLOAT_CONVWITH(tmp);
 		from = NEXTFROM;
-		f = (float)RFLOAT_VALUE(rb_to_float(from));
-		f = HTONF(f,ftmp);
-		rb_str_buf_cat(res, (char*)&f, sizeof(float));
+		tmp.f = (float)RFLOAT_VALUE(rb_to_float(from));
+		HTONF(tmp);
+		rb_str_buf_cat(res, tmp.buf, sizeof(float));
 	    }
 	    break;
 
 	  case 'G':		/* double precision float in network byte-order */
 	    while (len-- > 0) {
-		double d;
-		DOUBLE_CONVWITH(dtmp);
+		DOUBLE_CONVWITH(tmp);
 
 		from = NEXTFROM;
-		d = RFLOAT_VALUE(rb_to_float(from));
-		d = HTOND(d,dtmp);
-		rb_str_buf_cat(res, (char*)&d, sizeof(double));
+		tmp.d = RFLOAT_VALUE(rb_to_float(from));
+		HTOND(tmp);
+		rb_str_buf_cat(res, tmp.buf, sizeof(double));
 	    }
 	    break;
 
@@ -1078,6 +1013,15 @@ hex2num(char c)
 	rb_ary_store(ary, RARRAY_LEN(ary)+tmp_len-1, Qnil); \
 } while (0)
 
+/* Workaround for Oracle Solaris Studio 12.4 C compiler optimization bug
+ * with "-xO4" optimization option.
+ */
+#if defined(__SUNPRO_C) && __SUNPRO_C == 0x5130
+# define AVOID_CC_BUG volatile
+#else
+# define AVOID_CC_BUG
+#endif
+
 static VALUE
 infected_str_new(const char *ptr, long len, VALUE str)
 {
@@ -1204,12 +1148,13 @@ infected_str_new(const char *ptr, long len, VALUE str)
 static VALUE
 pack_unpack(VALUE str, VALUE fmt)
 {
-    static const char hexdigits[] = "0123456789abcdef";
+#define hexdigits ruby_hexdigits
     char *s, *send;
     char *p, *pend;
     VALUE ary;
     char type;
-    long len, tmp_len;
+    long len;
+    AVOID_CC_BUG long tmp_len;
     int star;
 #ifdef NATINT_PACK
     int natint;			/* native integer */
@@ -1480,6 +1425,18 @@ pack_unpack(VALUE str, VALUE fmt)
 	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 
+	  case 'j':
+	    signed_p = 1;
+	    integer_size = sizeof(intptr_t);
+	    bigendian_p = BIGENDIAN_P();
+	    goto unpack_integer;
+
+	  case 'J':
+	    signed_p = 0;
+	    integer_size = sizeof(uintptr_t);
+	    bigendian_p = BIGENDIAN_P();
+	    goto unpack_integer;
+
 	  case 'n':
 	    signed_p = 0;
 	    integer_size = 2;
@@ -1536,13 +1493,11 @@ pack_unpack(VALUE str, VALUE fmt)
 	  case 'e':
 	    PACK_LENGTH_ADJUST_SIZE(sizeof(float));
 	    while (len-- > 0) {
-	        float tmp;
-		FLOAT_CONVWITH(ftmp);
-
-		memcpy(&tmp, s, sizeof(float));
+		FLOAT_CONVWITH(tmp);
+		memcpy(tmp.buf, s, sizeof(float));
 		s += sizeof(float);
-		tmp = VTOHF(tmp,ftmp);
-		UNPACK_PUSH(DBL2NUM((double)tmp));
+		VTOHF(tmp);
+		UNPACK_PUSH(DBL2NUM(tmp.f));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1550,13 +1505,11 @@ pack_unpack(VALUE str, VALUE fmt)
 	  case 'E':
 	    PACK_LENGTH_ADJUST_SIZE(sizeof(double));
 	    while (len-- > 0) {
-		double tmp;
-		DOUBLE_CONVWITH(dtmp);
-
-		memcpy(&tmp, s, sizeof(double));
+		DOUBLE_CONVWITH(tmp);
+		memcpy(tmp.buf, s, sizeof(double));
 		s += sizeof(double);
-		tmp = VTOHD(tmp,dtmp);
-		UNPACK_PUSH(DBL2NUM(tmp));
+		VTOHD(tmp);
+		UNPACK_PUSH(DBL2NUM(tmp.d));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1576,13 +1529,11 @@ pack_unpack(VALUE str, VALUE fmt)
 	  case 'g':
 	    PACK_LENGTH_ADJUST_SIZE(sizeof(float));
 	    while (len-- > 0) {
-	        float tmp;
-		FLOAT_CONVWITH(ftmp);
-
-		memcpy(&tmp, s, sizeof(float));
+		FLOAT_CONVWITH(tmp);
+		memcpy(tmp.buf, s, sizeof(float));
 		s += sizeof(float);
-		tmp = NTOHF(tmp,ftmp);
-		UNPACK_PUSH(DBL2NUM((double)tmp));
+		NTOHF(tmp);
+		UNPACK_PUSH(DBL2NUM(tmp.f));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1590,13 +1541,11 @@ pack_unpack(VALUE str, VALUE fmt)
 	  case 'G':
 	    PACK_LENGTH_ADJUST_SIZE(sizeof(double));
 	    while (len-- > 0) {
-		double tmp;
-		DOUBLE_CONVWITH(dtmp);
-
-		memcpy(&tmp, s, sizeof(double));
+		DOUBLE_CONVWITH(tmp);
+		memcpy(tmp.buf, s, sizeof(double));
 		s += sizeof(double);
-		tmp = NTOHD(tmp,dtmp);
-		UNPACK_PUSH(DBL2NUM(tmp));
+		NTOHD(tmp);
+		UNPACK_PUSH(DBL2NUM(tmp.d));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;

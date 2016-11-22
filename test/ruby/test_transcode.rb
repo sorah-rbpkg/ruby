@@ -1,4 +1,5 @@
 # encoding: ASCII-8BIT   # make sure this runs in binary mode
+# frozen_string_literal: false
 # some of the comments are in UTF-8
 
 require 'test/unit'
@@ -1212,6 +1213,9 @@ class TestTranscode < Test::Unit::TestCase
   def test_invalid_replace_string
     assert_equal("a<x>A", "a\x80A".encode("us-ascii", "euc-jp", :invalid=>:replace, :replace=>"<x>"))
     assert_equal("a<x>A", "a\x80A".encode("us-ascii", "euc-jis-2004", :invalid=>:replace, :replace=>"<x>"))
+    s = "abcd\u{c1}"
+    r = s.b.encode("UTF-8", "UTF-8", invalid: :replace, replace: "\u{fffd}")
+    assert_equal(s, r)
   end
 
   def test_undef_replace
@@ -2017,6 +2021,13 @@ class TestTranscode < Test::Unit::TestCase
 
   def test_Big5_UAO
     check_both_ways("\u4e17", "\x81\x40", 'Big5-UAO') # 丗
+  end
+
+  def test_EBCDIC
+    check_both_ways("abcdeABCDE", "\x81\x82\x83\x84\x85\xC1\xC2\xC3\xC4\xC5", 'IBM037')
+    check_both_ways("aijrszAIJRSZ09", "\x81\x89\x91\x99\xA2\xA9\xC1\xC9\xD1\xD9\xE2\xE9\xF0\xF9", 'IBM037')
+    check_both_ways("Matz", "\xD4\x81\xA3\xA9", 'IBM037')
+    check_both_ways("D\u00FCrst", "\xC4\xDC\x99\xA2\xA3", 'IBM037') # Dürst
   end
 
   def test_nothing_changed

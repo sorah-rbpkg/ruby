@@ -608,9 +608,17 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		sym = rb_check_symbol_cstr(start + 1,
 					   len - 2 /* without parenthesis */,
 					   enc);
-		if (sym != Qnil) nextvalue = rb_hash_lookup2(hash, sym, Qundef);
+		if (!NIL_P(sym)) nextvalue = rb_hash_lookup2(hash, sym, Qundef);
 		if (nextvalue == Qundef) {
-		    rb_enc_raise(enc, rb_eKeyError, "key%.*s not found", len, start);
+		    if (NIL_P(sym)) {
+			sym = rb_sym_intern(start + 1,
+					    len - 2 /* without parenthesis */,
+					    enc);
+		    }
+		    nextvalue = rb_hash_default_value(hash, sym);
+		    if (NIL_P(nextvalue)) {
+			rb_enc_raise(enc, rb_eKeyError, "key%.*s not found", len, start);
+		    }
 		}
 		if (term == '}') goto format_s;
 		p++;
@@ -707,8 +715,12 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		VALUE arg = GETARG();
 		long len, slen;
 
-		if (*p == 'p') arg = rb_inspect(arg);
-		str = rb_obj_as_string(arg);
+		if (*p == 'p') {
+		    str = rb_inspect(arg);
+		}
+		else {
+		    str = rb_obj_as_string(arg);
+		}
 		if (OBJ_TAINTED(str)) tainted = 1;
 		len = RSTRING_LEN(str);
 		rb_str_set_len(result, blen);
@@ -1024,13 +1036,19 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		int sign = (flags&FPLUS) ? 1 : 0, zero = 0;
 		long len, done = 0;
 		int prefix = 0;
-		if (!RB_TYPE_P(val, T_RATIONAL)) {
+		if (FIXNUM_P(val) || RB_TYPE_P(val, T_BIGNUM)) {
+		    den = INT2FIX(1);
+		    num = val;
+		}
+		else if (RB_TYPE_P(val, T_RATIONAL)) {
+		    den = rb_rational_den(val);
+		    num = rb_rational_num(val);
+		}
+		else {
 		    nextvalue = val;
 		    goto float_value;
 		}
 		if (!(flags&FPREC)) prec = default_float_precision;
-		den = rb_rational_den(val);
-		num = rb_rational_num(val);
 		if (FIXNUM_P(num)) {
 		    if ((SIGNED_VALUE)num < 0) {
 			long n = -FIX2LONG(num);
@@ -1255,7 +1273,42 @@ fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 #ifdef RUBY_PRI_VALUE_MARK
 # define PRI_EXTRA_MARK RUBY_PRI_VALUE_MARK
 #endif
+#define lower_hexdigits (ruby_hexdigits+0)
+#define upper_hexdigits (ruby_hexdigits+16)
 #include "vsnprintf.c"
+
+int
+ruby_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
+{
+    int ret;
+    rb_printf_buffer f;
+
+    if ((int)n < 1)
+	return (EOF);
+    f._flags = __SWR | __SSTR;
+    f._bf._base = f._p = (unsigned char *)str;
+    f._bf._size = f._w = n - 1;
+    f.vwrite = BSD__sfvwrite;
+    f.vextra = 0;
+    ret = (int)BSD_vfprintf(&f, fmt, ap);
+    *f._p = 0;
+    return ret;
+}
+
+int
+ruby_snprintf(char *str, size_t n, char const *fmt, ...)
+{
+    int ret;
+    va_list ap;
+
+    if ((int)n < 1)
+	return (EOF);
+
+    va_start(ap, fmt);
+    ret = ruby_vsnprintf(str, n, fmt, ap);
+    va_end(ap);
+    return ret;
+}
 
 typedef struct {
     rb_printf_buffer base;
@@ -1289,7 +1342,7 @@ ruby__sfvwrite(register rb_printf_buffer *fp, register struct __suio *uio)
     return 0;
 }
 
-static char *
+static const char *
 ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int sign)
 {
     VALUE value, result = (VALUE)fp->_bf._base;
@@ -1302,6 +1355,26 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
 	rb_raise(rb_eRuntimeError, "rb_vsprintf reentered");
     }
     if (sign == '+') {
+	if (RB_TYPE_P(value, T_CLASS)) {
+# define LITERAL(str) (*sz = rb_strlen_lit(str), str)
+
+	    if (value == rb_cNilClass) {
+		return LITERAL("nil");
+	    }
+	    else if (value == rb_cFixnum) {
+		return LITERAL("Fixnum");
+	    }
+	    else if (value == rb_cSymbol) {
+		return LITERAL("Symbol");
+	    }
+	    else if (value == rb_cTrueClass) {
+		return LITERAL("true");
+	    }
+	    else if (value == rb_cFalseClass) {
+		return LITERAL("false");
+	    }
+# undef LITERAL
+	}
 	value = rb_inspect(value);
     }
     else {

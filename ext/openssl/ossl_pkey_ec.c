@@ -116,6 +116,7 @@ static VALUE ec_instance(VALUE klass, EC_KEY *ec)
     if (!ec) {
 	return Qfalse;
     }
+    obj = NewPKey(klass);
     if (!(pkey = EVP_PKEY_new())) {
 	return Qfalse;
     }
@@ -123,7 +124,7 @@ static VALUE ec_instance(VALUE klass, EC_KEY *ec)
 	EVP_PKEY_free(pkey);
 	return Qfalse;
     }
-    WrapPKey(klass, obj, pkey);
+    SetPKey(obj, pkey);
 
     return obj;
 }
@@ -135,10 +136,11 @@ VALUE ossl_ec_new(EVP_PKEY *pkey)
     if (!pkey) {
 	obj = ec_instance(cEC, EC_KEY_new());
     } else {
+	obj = NewPKey(cEC);
 	if (EVP_PKEY_type(pkey->type) != EVP_PKEY_EC) {
 	    ossl_raise(rb_eTypeError, "Not a EC key!");
 	}
-	WrapPKey(cEC, obj, pkey);
+	SetPKey(obj, pkey);
     }
     if (obj == Qfalse) {
 	ossl_raise(eECError, NULL);
@@ -473,6 +475,7 @@ static VALUE ossl_ec_key_to_string(VALUE self, VALUE ciph, VALUE pass, int forma
     int private = 0;
     char *password = NULL;
     VALUE str;
+    const EVP_CIPHER *cipher = NULL;
 
     Require_EC_KEY(self, ec);
 
@@ -485,25 +488,22 @@ static VALUE ossl_ec_key_to_string(VALUE self, VALUE ciph, VALUE pass, int forma
     if (EC_KEY_get0_private_key(ec))
         private = 1;
 
+    if (!NIL_P(ciph)) {
+	cipher = GetCipherPtr(ciph);
+	if (!NIL_P(pass)) {
+	    StringValue(pass);
+	    if (RSTRING_LENINT(pass) < OSSL_MIN_PWD_LEN)
+		ossl_raise(eOSSLError, "OpenSSL requires passwords to be at least four characters long");
+	    password = RSTRING_PTR(pass);
+	}
+    }
+
     if (!(out = BIO_new(BIO_s_mem())))
         ossl_raise(eECError, "BIO_new(BIO_s_mem())");
 
     switch(format) {
     case EXPORT_PEM:
     	if (private) {
-	    const EVP_CIPHER *cipher;
-	    if (!NIL_P(ciph)) {
-		cipher = GetCipherPtr(ciph);
-		if (!NIL_P(pass)) {
-		    StringValue(pass);
-		    if (RSTRING_LENINT(pass) < OSSL_MIN_PWD_LEN)
-			ossl_raise(eOSSLError, "OpenSSL requires passwords to be at least four characters long");
-		    password = RSTRING_PTR(pass);
-		}
-	    }
-	    else {
-		cipher = NULL;
-	    }
             i = PEM_write_bio_ECPrivateKey(out, ec, cipher, NULL, 0, NULL, password);
     	} else {
             i = PEM_write_bio_EC_PUBKEY(out, ec);

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 begin
   require 'io/console'
   require 'test/unit'
@@ -65,6 +66,14 @@ class TestIO_Console < Test::Unit::TestCase
       ensure
         th.join
       end
+    }
+  end
+
+  def test_raw!
+    helper {|m, s|
+      s.raw!
+      s.print "foo\n"
+      assert_equal("foo\n", m.gets)
     }
   end
 
@@ -172,6 +181,17 @@ class TestIO_Console < Test::Unit::TestCase
     }
   end
 
+  def test_getpass
+    skip unless IO.method_defined?("getpass")
+    run_pty("p IO.console.getpass('> ')") do |r, w|
+      assert_equal("> ", r.readpartial(10))
+      w.print "asdf\n"
+      sleep 1
+      assert_equal("\r\n", r.gets)
+      assert_equal("\"asdf\"", r.gets.chomp)
+    end
+  end
+
   def test_iflush
     helper {|m, s|
       m.print "a"
@@ -262,17 +282,17 @@ class TestIO_Console < Test::Unit::TestCase
   rescue RuntimeError
     skip $!
   else
-    result = []
-    n.times {result << r.gets.chomp}
-    Process.wait(pid)
     if block_given?
-      yield result
+      yield r, w, pid
     else
+      result = []
+      n.times {result << r.gets.chomp}
       result
     end
   ensure
     r.close if r
     w.close if w
+    Process.wait(pid) if pid
   end
 end if defined?(PTY) and defined?(IO::console)
 
@@ -289,9 +309,9 @@ class TestIO_Console < Test::Unit::TestCase
     require 'tempfile'
     NOCTTY = noctty
     def test_noctty
-      t = Tempfile.new("console")
+      t = Tempfile.new("noctty_out")
       t.close
-      t2 = Tempfile.new("console")
+      t2 = Tempfile.new("noctty_run")
       t2.close
       cmd = [*NOCTTY[1..-1],
         '-e', 'open(ARGV[0], "w") {|f|',

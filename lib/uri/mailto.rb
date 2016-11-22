@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # = uri/mailto.rb
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
@@ -134,6 +135,9 @@ module URI
 
       @to = nil
       @headers = []
+
+      # The RFC3986 parser does not normally populate opaque
+      @opaque = "?#{@query}" if @query && !@opaque
 
       unless @opaque
         raise InvalidComponentError,
