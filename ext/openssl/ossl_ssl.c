@@ -307,7 +307,7 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 
     ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
     cb = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_vcb_idx);
-    X509_STORE_CTX_set_ex_data(ctx, ossl_verify_cb_idx, (void*)cb);
+    X509_STORE_CTX_set_ex_data(ctx, ossl_store_ctx_ex_verify_cb_idx, (void *)cb);
     return ossl_verify_cb(preverify_ok, ctx);
 }
 
@@ -1533,7 +1533,13 @@ ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
 
     if (ssl) {
 	for (;;){
-	    nwrite = SSL_write(ssl, RSTRING_PTR(str), RSTRING_LENINT(str));
+	    int num = RSTRING_LENINT(str);
+
+	    /* SSL_write(3ssl) manpage states num == 0 is undefined */
+	    if (num == 0)
+		goto end;
+
+	    nwrite = SSL_write(ssl, RSTRING_PTR(str), num);
 	    switch(ssl_get_error(ssl, nwrite)){
 	    case SSL_ERROR_NONE:
 		goto end;
@@ -1597,23 +1603,17 @@ ossl_ssl_write_nonblock(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *    ssl.stop => nil
  *
- * Stops the SSL connection and prepares it for another connection.
+ * Sends "close notify" to the peer and tries to shut down the SSL connection
+ * gracefully.
  */
 static VALUE
 ossl_ssl_stop(VALUE self)
 {
     SSL *ssl;
 
-    /* ossl_ssl_data_get_struct() is not usable here because it may return
-     * from this function; */
+    ossl_ssl_data_get_struct(self, ssl);
 
-    GetSSL(self, ssl);
-
-    if (ssl) {
-	ossl_ssl_shutdown(ssl);
-	SSL_free(ssl);
-    }
-    DATA_PTR(self) = NULL;
+    ossl_ssl_shutdown(ssl);
 
     return Qnil;
 }

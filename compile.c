@@ -252,6 +252,7 @@ r_value(VALUE value)
 #define ADD_TRACE(seq, line, event) \
   do { \
       if ((event) == RUBY_EVENT_LINE && ISEQ_COVERAGE(iseq) && \
+	  (line) > 0 && \
 	  (line) != ISEQ_COMPILE_DATA(iseq)->last_coverable_line) { \
 	  RARRAY_ASET(ISEQ_COVERAGE(iseq), (line) - 1, INT2FIX(0)); \
 	  ISEQ_COMPILE_DATA(iseq)->last_coverable_line = (line); \
@@ -2238,6 +2239,13 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		  case BIN(nop):
 		  /*case BIN(trace):*/
 		    next = next->next;
+		    break;
+		  case BIN(jump):
+		    /* if cond
+		     *   return tailcall
+		     * end
+		     */
+		    next = get_destination_insn((INSN *)next);
 		    break;
 		  case BIN(leave):
 		    piobj = iobj;

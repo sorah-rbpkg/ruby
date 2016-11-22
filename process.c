@@ -1987,12 +1987,24 @@ rb_check_argv(int argc, VALUE *argv)
 }
 
 static VALUE
+check_hash(VALUE obj)
+{
+    if (RB_SPECIAL_CONST_P(obj)) return Qnil;
+    switch (RB_BUILTIN_TYPE(obj)) {
+      case T_STRING:
+      case T_ARRAY:
+	return Qnil;
+    }
+    return rb_check_hash_type(obj);
+}
+
+static VALUE
 rb_exec_getargs(int *argc_p, VALUE **argv_p, int accept_shell, VALUE *env_ret, VALUE *opthash_ret)
 {
     VALUE hash, prog;
 
     if (0 < *argc_p) {
-        hash = rb_check_hash_type((*argv_p)[*argc_p-1]);
+        hash = check_hash((*argv_p)[*argc_p-1]);
         if (!NIL_P(hash)) {
             *opthash_ret = hash;
             (*argc_p)--;
@@ -2000,7 +2012,7 @@ rb_exec_getargs(int *argc_p, VALUE **argv_p, int accept_shell, VALUE *env_ret, V
     }
 
     if (0 < *argc_p) {
-        hash = rb_check_hash_type((*argv_p)[0]);
+        hash = check_hash((*argv_p)[0]);
         if (!NIL_P(hash)) {
             *env_ret = hash;
             (*argc_p)--;
@@ -3889,6 +3901,29 @@ rb_syswait(rb_pid_t pid)
     rb_waitpid(pid, &status, 0);
 }
 
+#if !defined HAVE_WORKING_FORK && !defined HAVE_SPAWNV
+char *
+rb_execarg_commandline(const struct rb_execarg *eargp, VALUE *prog)
+{
+    VALUE cmd = *prog;
+    if (eargp && !eargp->use_shell) {
+	VALUE str = eargp->invoke.cmd.argv_str;
+	VALUE buf = eargp->invoke.cmd.argv_buf;
+	char *p, **argv = ARGVSTR2ARGV(str);
+	long i, argc = ARGVSTR2ARGC(str);
+	const char *start = RSTRING_PTR(buf);
+	cmd = rb_str_new(start, RSTRING_LEN(buf));
+	p = RSTRING_PTR(cmd);
+	for (i = 1; i < argc; ++i) {
+	    p[argv[i] - start - 1] = ' ';
+	}
+	*prog = cmd;
+	return p;
+    }
+    return StringValueCStr(*prog);
+}
+#endif
+
 static rb_pid_t
 rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
 {
@@ -3896,6 +3931,9 @@ rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
 #if !defined HAVE_WORKING_FORK || USE_SPAWNV
     VALUE prog;
     struct rb_execarg sarg;
+# if !defined HAVE_SPAWNV
+    int status;
+# endif
 #endif
 
 #if defined HAVE_WORKING_FORK && !USE_SPAWNV
@@ -3922,12 +3960,7 @@ rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
     if (pid == -1)
 	rb_last_status_set(0x7f << 8, 0);
 # else
-    if (!eargp->use_shell) {
-        char **argv = ARGVSTR2ARGV(eargp->invoke.cmd.argv_str);
-        int argc = ARGVSTR2ARGC(eargp->invoke.cmd.argv_str);
-        prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
-    }
-    status = system(StringValuePtr(prog));
+    status = system(rb_execarg_commandline(eargp, &prog));
     rb_last_status_set((status & 0xff) << 8, 0);
     pid = 1;			/* dummy */
 # endif
