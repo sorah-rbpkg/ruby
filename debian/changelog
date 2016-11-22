@@ -1,3 +1,16 @@
+ruby2.3 (2.3.3-0nkmi1) unstable; urgency=medium
+
+  * new upstream version
+
+ -- Sorah Fukumori <her@sorah.jp>  Tue, 22 Nov 2016 18:23:16 +0000
+
+ruby2.3 (2.3.1-5nkmi6) unstable; urgency=medium
+
+  * honor nocheck flag
+    (porting d7218fd9adb2279c9e4b4f626dfeebaa34830add from debian)
+
+ -- Sorah Fukumori <her@sorah.jp>  Mon, 21 Nov 2016 12:43:54 +0000
+
 ruby2.3 (2.3.1-5nkmi5~xenial) xenial; urgency=medium
 
   * stock libruby2.3 has all default gems
