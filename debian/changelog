@@ -1,3 +1,11 @@
+ruby2.2 (2.2.6-0nkmi1) unstable; urgency=medium
+
+  * new upstream version
+  * honor nocheck flag
+    (porting d7218fd9adb2279c9e4b4f626dfeebaa34830add from debian)
+
+ -- Sorah Fukumori <her@sorah.jp>  Tue, 22 Nov 2016 19:19:13 +0000
+
 ruby2.2 (2.2.5-0nkmi2~xenial) xenial; urgency=medium
 
   * remove deps of minitest
