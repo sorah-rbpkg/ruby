@@ -65,7 +65,9 @@ override_dh_auto_build-arch:
 	dh_auto_build -- main V=1
 
 override_dh_auto_test-arch:
+ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
 	$(MAKE) TESTS="-v -j 4" V=1 check
+endif
 
 override_dh_auto_install-arch:
 	$(MAKE) update-gems extract-gems

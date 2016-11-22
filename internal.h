@@ -407,7 +407,7 @@ struct RComplex {
 
 #ifdef RCOMPLEX_SET_REAL        /* shortcut macro for internal only */
 #undef RCOMPLEX_SET_REAL
-#undef RCOMPLEX_SET_REAL
+#undef RCOMPLEX_SET_IMAG
 #define RCOMPLEX_SET_REAL(cmp, r) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->real,(r))
 #define RCOMPLEX_SET_IMAG(cmp, i) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->imag,(i))
 #endif
@@ -1124,11 +1124,13 @@ VALUE rb_id_quote_unprintable(ID);
 #define QUOTE(str) rb_str_quote_unprintable(str)
 #define QUOTE_ID(id) rb_id_quote_unprintable(id)
 void rb_str_fill_terminator(VALUE str, const int termlen);
+void rb_str_change_terminator_length(VALUE str, const int oldtermlen, const int termlen);
 VALUE rb_str_locktmp_ensure(VALUE str, VALUE (*func)(VALUE), VALUE arg);
 #ifdef RUBY_ENCODING_H
 VALUE rb_external_str_with_enc(VALUE str, rb_encoding *eenc);
 VALUE rb_str_cat_conv_enc_opts(VALUE newstr, long ofs, const char *ptr, long len,
 			       rb_encoding *from, int ecflags, VALUE ecopts);
+VALUE rb_enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl);
 #endif
 #define STR_NOEMBED      FL_USER1
 #define STR_SHARED       FL_USER2 /* = ELTS_SHARED */

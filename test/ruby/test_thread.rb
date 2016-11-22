@@ -748,9 +748,24 @@ _eom
   end
 
   def test_uninitialized
-    c = Class.new(Thread)
-    c.class_eval { def initialize; end }
+    c = Class.new(Thread) {def initialize; end}
     assert_raise(ThreadError) { c.new.start }
+
+    bug11959 = '[ruby-core:72732] [Bug #11959]'
+
+    c = Class.new(Thread) {def initialize; exit; end}
+    assert_raise(ThreadError, bug11959) { c.new }
+
+    c = Class.new(Thread) {def initialize; raise; end}
+    assert_raise(ThreadError, bug11959) { c.new }
+
+    c = Class.new(Thread) {
+      def initialize
+        pending = pending_interrupt?
+        super {pending}
+      end
+    }
+    assert_equal(false, c.new.value, bug11959)
   end
 
   def test_backtrace
@@ -1052,6 +1067,7 @@ q.pop
 
   def test_thread_name
     t = Thread.start {sleep}
+    sleep 0.001 until t.stop?
     assert_nil t.name
     s = t.inspect
     t.name = 'foo'

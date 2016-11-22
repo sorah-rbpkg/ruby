@@ -58,25 +58,10 @@ class Downloader
       require 'rubygems'
       require 'rubygems/package'
       verify = options.delete(:verify) {Gem::VERSION >= "2.4."}
-      options[:ssl_ca_cert] = Dir.glob(File.expand_path("../lib/rubygems/ssl_certs/**/*.pem", File.dirname(__FILE__)))
+      options[:ssl_ca_cert] = Dir.glob(File.expand_path("../lib/rubygems/ssl_certs/*.pem", File.dirname(__FILE__)))
       file = under(dir, name)
       super("https://rubygems.org/downloads/#{name}", file, nil, since, options) or
         return false
-      return true unless verify
-      policy = Gem::Security::LowSecurity
-      (policy = policy.dup).ui = Gem::SilentUI.new if policy.respond_to?(:'ui=')
-      pkg = Gem::Package.new(file)
-      pkg.security_policy = policy
-      begin
-        $stdout.puts "verifying #{name}"
-        pkg.verify
-      rescue Gem::Security::Exception => e
-        $stderr.puts "#{name}: #{e.message}"
-        File.unlink(file)
-        false
-      else
-        true
-      end
     end
   end
 
