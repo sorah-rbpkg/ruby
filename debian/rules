@@ -40,17 +40,6 @@ configure_options += $(shell dpkg-buildflags --export=configure)
 # Always build with /bin/bash, to get consistent rbconfig.rb (which embeds SHELL).
 export SHELL := /bin/bash
 
-vtcltk=8.6
-configure_options += --with-tcltkversion=$(vtcltk)
-configure_options += --with-tclConfig-dir=/usr/lib/$(DEB_HOST_MULTIARCH)/tcl$(vtcltk)/tclConfig.sh
-configure_options += --with-tkConfig-dir=/usr/lib/$(DEB_HOST_MULTIARCH)/tk$(vtcltk)/tkConfig.sh
-configure_options += --with-tcllib=tcl$(vtcltk)
-configure_options += --with-tklib=tk$(vtcltk)
-configure_options += --with-tcl-include=/usr/include/tcl$(vtcltk)
-configure_options += --with-tk-include=/usr/include/tcl$(vtcltk)
-configure_options += --with-tcl-lib=/usr/lib/$(DEB_HOST_MULTIARCH)
-configure_options += --with-tk-lib=/usr/lib/$(DEB_HOST_MULTIARCH)
-
 %:
 	dh $@ --parallel --with autotools-dev --with autoreconf
 
@@ -75,8 +64,6 @@ endif
 
 override_dh_auto_install-arch:
 	$(MAKE) install-nodoc V=1 DESTDIR=$(CURDIR)/debian/tmp
-	# remove RPATH from tcltklib bindings
-	chrpath --delete $(CURDIR)/debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/ruby/$(RUBY_API_VERSION)/tcltklib.so
 	# handle embedded copy of jquery
 	$(RM) $(CURDIR)/debian/tmp/usr/lib/ruby/$(RUBY_API_VERSION)/rdoc/generator/template/darkfish/js/jquery.js
 	dh_link -plibruby$(RUBY_VERSION) /usr/share/javascript/jquery/jquery.min.js /usr/lib/ruby/$(RUBY_API_VERSION)/rdoc/generator/template/darkfish/js/jquery.js
@@ -107,8 +94,6 @@ override_dh_install-arch:
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/systemtap/tapset
 	sed 's|@LIBRARY_PATH@|/usr/lib/$(DEB_HOST_MULTIARCH)/libruby-$(RUBY_VERSION).so|g' $(CURDIR)/debian/libruby.stp > $(CURDIR)/debian/tmp/usr/share/systemtap/tapset/libruby$(RUBY_VERSION)-$(DEB_HOST_MULTIARCH).stp
 	dh_install
-	# split Ruby/Tk files
-	$(baseruby) debian/split-tk-out.rb
 
 import-orig-source:
 	test -d .git

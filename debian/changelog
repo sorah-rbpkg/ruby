@@ -1,6 +1,7 @@
 ruby2.4 (2.4.0-1) UNRELEASED; urgency=medium
 
   * Ruby 2.4
+    * tcltk extensions have been removed from Ruby core.
 
  -- Christian Hofstaedtler <zeha@debian.org>  Wed, 28 Dec 2016 11:05:13 +0000
 
