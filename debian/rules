@@ -109,7 +109,3 @@ import-orig-source:
 	test -n "$$UPSTREAM_VERSION"
 	cd $(UPSTREAM_GIT) && git archive --format=tar --prefix=ruby-$(UPSTREAM_VERSION)/ v$(shell echo $(UPSTREAM_VERSION) | tr . _) | xz -c > /tmp/ruby-$(UPSTREAM_VERSION).tar.xz
 	gbp import-orig /tmp/ruby-$(UPSTREAM_VERSION).tar.xz
-
-.PHONY: override_dh_strip
-override_dh_strip:
-	dh_strip --dbgsym-migration=libruby$(RUBY_VERSION)-dbg' (<< 2.3.1-3~)'
