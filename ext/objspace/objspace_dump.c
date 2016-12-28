@@ -33,6 +33,7 @@ struct dump_config {
     size_t cur_obj_references;
 };
 
+PRINTF_ARGS(static void dump_append(struct dump_config *, const char *, ...), 2, 3);
 static void
 dump_append(struct dump_config *dc, const char *format, ...)
 {
@@ -181,7 +182,7 @@ dump_append_string_content(struct dump_config *dc, VALUE obj)
 {
     dump_append(dc, ", \"bytesize\":%ld", RSTRING_LEN(obj));
     if (!STR_EMBED_P(obj) && !STR_SHARED_P(obj) && (long)rb_str_capacity(obj) != RSTRING_LEN(obj))
-	dump_append(dc, ", \"capacity\":%ld", rb_str_capacity(obj));
+	dump_append(dc, ", \"capacity\":%"PRIuSIZE, rb_str_capacity(obj));
 
     if (is_ascii_string(obj)) {
 	dump_append(dc, ", \"value\":");
@@ -243,7 +244,7 @@ dump_object(VALUE obj, struct dump_config *dc)
 	break;
 
       case T_HASH:
-	dump_append(dc, ", \"size\":%ld", RHASH_SIZE(obj));
+	dump_append(dc, ", \"size\":%"PRIuSIZE, (size_t)RHASH_SIZE(obj));
 	if (FL_TEST(obj, HASH_PROC_DEFAULT))
 	    dump_append(dc, ", \"default\":\"%p\"", (void *)RHASH_IFNONE(obj));
 	break;
@@ -272,7 +273,7 @@ dump_object(VALUE obj, struct dump_config *dc)
 	break;
 
       case T_OBJECT:
-	dump_append(dc, ", \"ivars\":%ld", ROBJECT_NUMIV(obj));
+	dump_append(dc, ", \"ivars\":%u", ROBJECT_NUMIV(obj));
 	break;
 
       case T_FILE:
@@ -381,7 +382,7 @@ static VALUE
 dump_result(struct dump_config *dc, VALUE output)
 {
     if (output == sym_string) {
-	return dc->string;
+	return rb_str_resurrect(dc->string);
     }
     else if (output == sym_file) {
 	rb_io_flush(dc->string);

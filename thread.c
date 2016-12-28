@@ -466,8 +466,8 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 void
 rb_thread_terminate_all(void)
 {
-    rb_thread_t *th = GET_THREAD(); /* main thread */
-    rb_vm_t *vm = th->vm;
+    rb_thread_t *volatile th = GET_THREAD(); /* main thread */
+    rb_vm_t *volatile vm = th->vm;
     volatile int sleeping = 0;
 
     if (vm->main_thread != th) {
@@ -541,6 +541,7 @@ thread_cleanup_func(void *th_ptr, int atfork)
 }
 
 static VALUE rb_threadptr_raise(rb_thread_t *, int, VALUE *);
+static VALUE rb_thread_inspect(VALUE thread);
 
 void
 ruby_thread_init_stack(rb_thread_t *th)
@@ -586,11 +587,13 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 		if (!th->first_func) {
 		    GetProcPtr(th->first_proc, proc);
 		    th->errinfo = Qnil;
-		    th->root_lep = rb_vm_ep_local_ep(proc->block.ep);
+		    th->root_lep = rb_vm_ep_local_ep(vm_proc_ep(th->first_proc));
 		    th->root_svar = Qfalse;
-		    EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, Qundef);
-		    th->value = rb_vm_invoke_proc(th, proc, (int)RARRAY_LEN(args), RARRAY_CONST_PTR(args), 0);
-		    EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_END, th->self, 0, 0, Qundef);
+		    EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
+		    th->value = rb_vm_invoke_proc(th, proc,
+						  (int)RARRAY_LEN(args), RARRAY_CONST_PTR(args),
+						  VM_BLOCK_HANDLER_NONE);
+		    EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
 		}
 		else {
 		    th->value = (*th->first_func)((void *)args);
@@ -608,6 +611,13 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    else if (th->vm->thread_abort_on_exception ||
 		     th->abort_on_exception || RTEST(ruby_debug)) {
 		/* exit on main_thread */
+	    }
+	    else if (th->report_on_exception) {
+		VALUE mesg = rb_thread_inspect(th->self);
+		rb_str_cat_cstr(mesg, " terminated with exception:\n");
+		rb_write_error_str(mesg);
+		rb_threadptr_error_print(th, errinfo);
+		errinfo = Qnil;
 	    }
 	    else {
 		errinfo = Qnil;
@@ -700,6 +710,7 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
 
     native_mutex_initialize(&th->interrupt_lock);
     native_cond_initialize(&th->interrupt_cond, RB_CONDATTR_CLOCK_MONOTONIC);
+    th->report_on_exception = th->vm->thread_report_on_exception;
 
     /* kick thread */
     err = native_thread_create(th);
@@ -777,19 +788,13 @@ thread_initialize(VALUE thread, VALUE args)
     }
     GetThreadPtr(thread, th);
     if (th->first_args) {
-	VALUE proc = th->first_proc, line, loc;
-	VALUE file;
+	VALUE proc = th->first_proc, loc;
         if (!proc || !RTEST(loc = rb_proc_location(proc))) {
             rb_raise(rb_eThreadError, "already initialized thread");
         }
-	file = RARRAY_AREF(loc, 0);
-	if (NIL_P(line = RARRAY_AREF(loc, 1))) {
-	    rb_raise(rb_eThreadError,
-		     "already initialized thread - %"PRIsVALUE, file);
-	}
         rb_raise(rb_eThreadError,
 		 "already initialized thread - %"PRIsVALUE":%"PRIsVALUE,
-                 file, line);
+                 RARRAY_AREF(loc, 0), RARRAY_AREF(loc, 1));
     }
     return thread_create_core(thread, args, 0);
 }
@@ -1076,7 +1081,7 @@ getclockofday(struct timeval *tp)
 
     if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
 	tp->tv_sec = ts.tv_sec;
-	tp->tv_usec = ts.tv_nsec / 1000;
+	tp->tv_usec = (int)(ts.tv_nsec / 1000);
     }
     else
 #endif
@@ -1422,7 +1427,7 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
     th->waiting_fd = -1;
 
     if (state) {
-	JUMP_TAG(state);
+	TH_JUMP_TAG(th, state);
     }
     /* TODO: check func() */
     RUBY_VM_CHECK_INTS_BLOCKING(th);
@@ -1853,7 +1858,7 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
     RUBY_VM_CHECK_INTS(th);
 
     if (state) {
-	JUMP_TAG(state);
+	TH_JUMP_TAG(th, state);
     }
 
     return r;
@@ -2052,7 +2057,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	    if (th->status == THREAD_RUNNABLE)
 		th->running_time_us += TIME_QUANTUM_USEC;
 
-	    EXEC_EVENT_HOOK(th, RUBY_INTERNAL_EVENT_SWITCH, th->cfp->self, 0, 0, Qundef);
+	    EXEC_EVENT_HOOK(th, RUBY_INTERNAL_EVENT_SWITCH, th->cfp->self, 0, 0, 0, Qundef);
 
 	    rb_thread_schedule_limits(limits_us);
 	}
@@ -2073,6 +2078,8 @@ rb_threadptr_ready(rb_thread_t *th)
     rb_threadptr_interrupt(th);
 }
 
+void rb_threadptr_setup_exception(rb_thread_t *th, VALUE mesg, VALUE cause);
+
 static VALUE
 rb_threadptr_raise(rb_thread_t *th, int argc, VALUE *argv)
 {
@@ -2088,6 +2095,7 @@ rb_threadptr_raise(rb_thread_t *th, int argc, VALUE *argv)
     else {
 	exc = rb_make_exception(argc, argv);
     }
+    rb_threadptr_setup_exception(GET_THREAD(), exc, Qundef);
     rb_threadptr_pending_interrupt_enque(th, exc);
     rb_threadptr_interrupt(th);
     return Qnil;
@@ -2117,6 +2125,7 @@ rb_threadptr_signal_exit(rb_thread_t *th)
 #define USE_SIGALTSTACK
 #endif
 
+NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
 void
 ruby_thread_stack_overflow(rb_thread_t *th)
 {
@@ -2486,8 +2495,8 @@ rb_thread_s_main(VALUE klass)
  *
  *  The default is +false+.
  *
- *  When set to +true+, all threads will abort (the process will
- *  <code>exit(0)</code>) if an exception is raised in any thread.
+ *  When set to +true+, if any thread is aborted by an exception, the
+ *  raised exception will be re-raised in the main thread.
  *
  *  Can also be specified by the global $DEBUG flag or command line option
  *  +-d+.
@@ -2509,7 +2518,8 @@ rb_thread_s_abort_exc(void)
  *  call-seq:
  *     Thread.abort_on_exception= boolean   -> true or false
  *
- *  When set to +true+, all threads will abort if an exception is raised.
+ *  When set to +true+, if any thread is aborted by an exception, the
+ *  raised exception will be re-raised in the main thread.
  *  Returns the new state.
  *
  *     Thread.abort_on_exception = true
@@ -2570,10 +2580,8 @@ rb_thread_abort_exc(VALUE thread)
  *  call-seq:
  *     thr.abort_on_exception= boolean   -> true or false
  *
- *  When set to +true+, all threads (including the main program) will abort if
- *  an exception is raised in this +thr+.
- *
- *  The process will effectively <code>exit(0)</code>.
+ *  When set to +true+, if this +thr+ is aborted by an exception, the
+ *  raised exception will be re-raised in the main thread.
  *
  *  See also #abort_on_exception.
  *
@@ -2588,6 +2596,116 @@ rb_thread_abort_exc_set(VALUE thread, VALUE val)
 
     GetThreadPtr(thread, th);
     th->abort_on_exception = RTEST(val);
+    return val;
+}
+
+
+/*
+ *  call-seq:
+ *     Thread.report_on_exception   -> true or false
+ *
+ *  Returns the status of the global ``report on exception'' condition.
+ *
+ *  The default is +false+.
+ *
+ *  When set to +true+, all threads will report the exception if an
+ *  exception is raised in any thread.
+ *
+ *  See also ::report_on_exception=.
+ *
+ *  There is also an instance level method to set this for a specific thread,
+ *  see #report_on_exception.
+ */
+
+static VALUE
+rb_thread_s_report_exc(void)
+{
+    return GET_THREAD()->vm->thread_report_on_exception ? Qtrue : Qfalse;
+}
+
+
+/*
+ *  call-seq:
+ *     Thread.report_on_exception= boolean   -> true or false
+ *
+ *  When set to +true+, all threads will report the exception if an
+ *  exception is raised.  Returns the new state.
+ *
+ *     Thread.report_on_exception = true
+ *     t1 = Thread.new do
+ *       puts  "In new thread"
+ *       raise "Exception from thread"
+ *     end
+ *     sleep(1)
+ *     puts "In the main thread"
+ *
+ *  This will produce:
+ *
+ *     In new thread
+ *     prog.rb:4: Exception from thread (RuntimeError)
+ *     	from prog.rb:2:in `initialize'
+ *     	from prog.rb:2:in `new'
+ *     	from prog.rb:2
+ *     In the main thread
+ *
+ *  See also ::report_on_exception.
+ *
+ *  There is also an instance level method to set this for a specific thread,
+ *  see #report_on_exception=.
+ */
+
+static VALUE
+rb_thread_s_report_exc_set(VALUE self, VALUE val)
+{
+    GET_THREAD()->vm->thread_report_on_exception = RTEST(val);
+    return val;
+}
+
+
+/*
+ *  call-seq:
+ *     thr.report_on_exception   -> true or false
+ *
+ *  Returns the status of the thread-local ``report on exception'' condition for
+ *  this +thr+.
+ *
+ *  The default is +false+.
+ *
+ *  See also #report_on_exception=.
+ *
+ *  There is also a class level method to set this for all threads, see
+ *  ::report_on_exception.
+ */
+
+static VALUE
+rb_thread_report_exc(VALUE thread)
+{
+    rb_thread_t *th;
+    GetThreadPtr(thread, th);
+    return th->report_on_exception ? Qtrue : Qfalse;
+}
+
+
+/*
+ *  call-seq:
+ *     thr.report_on_exception= boolean   -> true or false
+ *
+ *  When set to +true+, all threads (including the main program) will
+ *  report the exception if an exception is raised in this +thr+.
+ *
+ *  See also #report_on_exception.
+ *
+ *  There is also a class level method to set this for all threads, see
+ *  ::report_on_exception=.
+ */
+
+static VALUE
+rb_thread_report_exc_set(VALUE thread, VALUE val)
+{
+    rb_thread_t *th;
+
+    GetThreadPtr(thread, th);
+    th->report_on_exception = RTEST(val);
     return val;
 }
 
@@ -2617,7 +2735,7 @@ rb_thread_group(VALUE thread)
 }
 
 static const char *
-thread_status_name(rb_thread_t *th)
+thread_status_name(rb_thread_t *th, int detail)
 {
     switch (th->status) {
       case THREAD_RUNNABLE:
@@ -2625,8 +2743,9 @@ thread_status_name(rb_thread_t *th)
 	    return "aborting";
 	else
 	    return "run";
-      case THREAD_STOPPED:
       case THREAD_STOPPED_FOREVER:
+	if (detail) return "sleep_forever";
+      case THREAD_STOPPED:
 	return "sleep";
       case THREAD_KILLED:
 	return "dead";
@@ -2686,7 +2805,7 @@ rb_thread_status(VALUE thread)
 	}
 	return Qfalse;
     }
-    return rb_str_new2(thread_status_name(th));
+    return rb_str_new2(thread_status_name(th, FALSE));
 }
 
 
@@ -2832,7 +2951,7 @@ rb_thread_inspect(VALUE thread)
     VALUE str;
 
     GetThreadPtr(thread, th);
-    status = thread_status_name(th);
+    status = thread_status_name(th, TRUE);
     str = rb_sprintf("#<%"PRIsVALUE":%p", cname, (void *)thread);
     if (!NIL_P(th->name)) {
 	rb_str_catf(str, "@%"PRIsVALUE, th->name);
@@ -3534,11 +3653,11 @@ static int
 do_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds,
 	  rb_fdset_t *exceptfds, struct timeval *timeout)
 {
-    int UNINITIALIZED_VAR(result);
+    int MAYBE_UNUSED(result);
     int lerrno;
-    rb_fdset_t UNINITIALIZED_VAR(orig_read);
-    rb_fdset_t UNINITIALIZED_VAR(orig_write);
-    rb_fdset_t UNINITIALIZED_VAR(orig_except);
+    rb_fdset_t MAYBE_UNUSED(orig_read);
+    rb_fdset_t MAYBE_UNUSED(orig_write);
+    rb_fdset_t MAYBE_UNUSED(orig_except);
     double limit = 0;
     struct timeval wait_rest;
     rb_thread_t *th = GET_THREAD();
@@ -3917,6 +4036,7 @@ rb_thread_start_timer_thread(void)
     rb_thread_create_timer_thread();
 }
 
+#if defined(HAVE_WORKING_FORK)
 static int
 clear_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
 {
@@ -3941,9 +4061,8 @@ clear_coverage(void)
 }
 
 static void
-rb_thread_atfork_internal(void (*atfork)(rb_thread_t *, const rb_thread_t *))
+rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const rb_thread_t *))
 {
-    rb_thread_t *th = GET_THREAD();
     rb_thread_t *i = 0;
     rb_vm_t *vm = th->vm;
     vm->main_thread = th;
@@ -3972,8 +4091,9 @@ terminate_atfork_i(rb_thread_t *th, const rb_thread_t *current_th)
 void
 rb_thread_atfork(void)
 {
-    rb_thread_atfork_internal(terminate_atfork_i);
-    GET_THREAD()->join_list = NULL;
+    rb_thread_t *th = GET_THREAD();
+    rb_thread_atfork_internal(th, terminate_atfork_i);
+    th->join_list = NULL;
 
     /* We don't want reproduce CVE-2003-0900. */
     rb_reset_random_seed();
@@ -3990,8 +4110,20 @@ terminate_atfork_before_exec_i(rb_thread_t *th, const rb_thread_t *current_th)
 void
 rb_thread_atfork_before_exec(void)
 {
-    rb_thread_atfork_internal(terminate_atfork_before_exec_i);
+    rb_thread_t *th = GET_THREAD();
+    rb_thread_atfork_internal(th, terminate_atfork_before_exec_i);
 }
+#else
+void
+rb_thread_atfork(void)
+{
+}
+
+void
+rb_thread_atfork_before_exec(void)
+{
+}
+#endif
 
 struct thgroup {
     int enclosed;
@@ -4620,6 +4752,8 @@ Init_Thread(void)
     rb_define_singleton_method(rb_cThread, "list", rb_thread_list, 0);
     rb_define_singleton_method(rb_cThread, "abort_on_exception", rb_thread_s_abort_exc, 0);
     rb_define_singleton_method(rb_cThread, "abort_on_exception=", rb_thread_s_abort_exc_set, 1);
+    rb_define_singleton_method(rb_cThread, "report_on_exception", rb_thread_s_report_exc, 0);
+    rb_define_singleton_method(rb_cThread, "report_on_exception=", rb_thread_s_report_exc_set, 1);
 #if THREAD_DEBUG < 0
     rb_define_singleton_method(rb_cThread, "DEBUG", rb_thread_s_debug, 0);
     rb_define_singleton_method(rb_cThread, "DEBUG=", rb_thread_s_debug_set, 1);
@@ -4652,6 +4786,8 @@ Init_Thread(void)
     rb_define_method(rb_cThread, "stop?", rb_thread_stop_p, 0);
     rb_define_method(rb_cThread, "abort_on_exception", rb_thread_abort_exc, 0);
     rb_define_method(rb_cThread, "abort_on_exception=", rb_thread_abort_exc_set, 1);
+    rb_define_method(rb_cThread, "report_on_exception", rb_thread_report_exc, 0);
+    rb_define_method(rb_cThread, "report_on_exception=", rb_thread_report_exc_set, 1);
     rb_define_method(rb_cThread, "safe_level", rb_thread_safe_level, 0);
     rb_define_method(rb_cThread, "group", rb_thread_group, 0);
     rb_define_method(rb_cThread, "backtrace", rb_thread_backtrace_m, -1);
@@ -4714,27 +4850,42 @@ ruby_native_thread_p(void)
     return th != 0;
 }
 
+VALUE rb_vm_backtrace_str_ary(rb_thread_t *th, long lev, long n);
 static void
-debug_deadlock_check(rb_vm_t *vm)
+debug_deadlock_check(rb_vm_t *vm, VALUE msg)
 {
-#ifdef DEBUG_DEADLOCK_CHECK
     rb_thread_t *th = 0;
+    VALUE sep = rb_str_new_cstr("\n   ");
 
-    printf("%d %d %p %p\n", vm_living_thread_num(vm), vm->sleeper, GET_THREAD(), vm->main_thread);
+    rb_str_catf(msg, "\n%d threads, %d sleeps current:%p main thread:%p\n",
+	    vm_living_thread_num(vm), vm->sleeper, GET_THREAD(), vm->main_thread);
     list_for_each(&vm->living_threads, th, vmlt_node) {
-	printf("th:%p %d %d", th, th->status, th->interrupt_flag);
+	rb_str_catf(msg, "* %+"PRIsVALUE"\n   rb_thread_t:%p "
+		    "native:%"PRI_THREAD_ID" int:%u",
+		    th->self, th, thread_id_str(th), th->interrupt_flag);
 	if (th->locking_mutex) {
 	    rb_mutex_t *mutex;
+	    struct rb_thread_struct volatile *mth;
+	    int waiting;
 	    GetMutexPtr(th->locking_mutex, mutex);
 
 	    native_mutex_lock(&mutex->lock);
-	    printf(" %p %d\n", mutex->th, mutex->cond_waiting);
+	    mth = mutex->th;
+	    waiting = mutex->cond_waiting;
 	    native_mutex_unlock(&mutex->lock);
+	    rb_str_catf(msg, " mutex:%p cond:%d", mth, waiting);
 	}
-	else
-	    puts("");
+	{
+	    rb_thread_list_t *list = th->join_list;
+	    while (list) {
+		rb_str_catf(msg, "\n    depended by: tb_thread_id:%p", list->th);
+		list = list->next;
+	    }
+	}
+	rb_str_catf(msg, "\n   ");
+	rb_str_concat(msg, rb_ary_join(rb_vm_backtrace_str_ary(th, 0, 0), sep));
+	rb_str_catf(msg, "\n");
     }
-#endif
 }
 
 static void
@@ -4769,7 +4920,7 @@ rb_check_deadlock(rb_vm_t *vm)
 	VALUE argv[2];
 	argv[0] = rb_eFatal;
 	argv[1] = rb_str_new2("No live threads left. Deadlock?");
-	debug_deadlock_check(vm);
+	debug_deadlock_check(vm, argv[1]);
 	vm->sleeper--;
 	rb_threadptr_raise(vm->main_thread, 2, argv);
     }
@@ -4779,13 +4930,16 @@ static void
 update_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
 {
     VALUE coverage = rb_iseq_coverage(GET_THREAD()->cfp->iseq);
-    if (coverage && RBASIC(coverage)->klass == 0) {
+    if (RB_TYPE_P(coverage, T_ARRAY) && !RBASIC_CLASS(coverage)) {
 	long line = rb_sourceline() - 1;
 	long count;
+	VALUE num;
 	if (line >= RARRAY_LEN(coverage)) { /* no longer tracked */
 	    return;
 	}
-	count = FIX2LONG(RARRAY_AREF(coverage, line)) + 1;
+	num = RARRAY_AREF(coverage, line);
+	if (!FIXNUM_P(num)) return;
+	count = FIX2LONG(num) + 1;
 	if (POSFIXABLE(count)) {
 	    RARRAY_ASET(coverage, line, LONG2FIX(count));
 	}
@@ -4805,9 +4959,20 @@ rb_set_coverages(VALUE coverages)
     rb_add_event_hook(update_coverage, RUBY_EVENT_COVERAGE, Qnil);
 }
 
+/* Make coverage arrays empty so old covered files are no longer tracked. */
+static int
+reset_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
+{
+    VALUE coverage = (VALUE)val;
+    rb_ary_clear(coverage);
+    return ST_CONTINUE;
+}
+
 void
 rb_reset_coverages(void)
 {
+    VALUE coverages = rb_get_coverages();
+    st_foreach(rb_hash_tbl_raw(coverages), reset_coverage_i, 0);
     GET_VM()->coverages = Qfalse;
     rb_remove_event_hook(update_coverage);
 }

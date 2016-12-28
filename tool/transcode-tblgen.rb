@@ -731,7 +731,7 @@ def citrus_decode_mapsrc(ces, csid, mapsrcs)
       end
       f.each_line do |l|
         next if /^\s*(?:#|$)/ =~ l
-          break if /^END_MAP/ =~ l
+        break if /^END_MAP/ =~ l
         case mode
         when :from_ucs
           case l
@@ -740,14 +740,14 @@ def citrus_decode_mapsrc(ces, csid, mapsrcs)
           when /(0x\w+)\s*=\s*(0x\w+)/
             table.push << [plane | $1.hex, citrus_cstomb(ces, csid, $2.hex)]
           else
-            raise "unknown notation '%s'"% l
+            raise "unknown notation '%s'"% l.chomp
           end
         when :to_ucs
           case l
           when /(0x\w+)\s*=\s*(0x\w+)/
             table.push << [citrus_cstomb(ces, csid, $1.hex), plane | $2.hex]
           else
-            raise "unknown notation '%s'"% l
+            raise "unknown notation '%s'"% l.chomp
           end
         end
       end
@@ -1031,7 +1031,7 @@ if __FILE__ == $0
   VERBOSE_MODE = verbose_mode
 
   OUTPUT_FILENAME = output_filename
-  OUTPUT_PREFIX = output_filename ? File.basename(output_filename)[/\A[A-Za-z0-9_]*/] : ""
+  OUTPUT_PREFIX = output_filename ? File.basename(output_filename)[/\A[A-Za-z0-9_]*/] : "".dup
   OUTPUT_PREFIX.sub!(/\A_+/, '')
   OUTPUT_PREFIX.sub!(/_*\z/, '_')
 

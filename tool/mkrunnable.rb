@@ -1,6 +1,9 @@
 #!./miniruby
 # -*- coding: us-ascii -*-
 
+# Used by "make runnable" target, to make symbolic links from a build
+# directory.
+
 require './rbconfig'
 require 'fileutils'
 
@@ -29,15 +32,24 @@ module Mswin
   end
 end
 
+def clean_link(src, dest)
+  begin
+    link = File.readlink(dest)
+  rescue
+  else
+    return if link == src
+    File.unlink(dest)
+  end
+  yield src, dest
+end
+
 def ln_safe(src, dest)
-  link = File.readlink(dest) rescue nil
-  return if link == src
   ln_sf(src, dest)
 end
 
 alias ln_dir_safe ln_safe
 
-if /mingw|mswin/ =~ (CROSS_COMPILING || RUBY_PLATFORM)
+if !File.respond_to?(:symlink) && /mingw|mswin/ =~ (CROSS_COMPILING || RUBY_PLATFORM)
   extend Mswin
 end
 
@@ -68,14 +80,14 @@ def ln_relative(src, dest)
   return if File.identical?(src, dest)
   parent = File.dirname(dest)
   File.directory?(parent) or mkdir_p(parent)
-  ln_safe(relative_path_from(src, parent), dest)
+  clean_link(relative_path_from(src, parent), dest) {|s, d| ln_safe(s, d)}
 end
 
 def ln_dir_relative(src, dest)
   return if File.identical?(src, dest)
   parent = File.dirname(dest)
   File.directory?(parent) or mkdir_p(parent)
-  ln_dir_safe(relative_path_from(src, parent), dest)
+  clean_link(relative_path_from(src, parent), dest) {|s, d| ln_dir_safe(s, d)}
 end
 
 config = RbConfig::MAKEFILE_CONFIG.merge("prefix" => ".", "exec_prefix" => ".")

@@ -36,11 +36,9 @@
 
 /* Make alloca work the best possible way.  */
 #ifdef __GNUC__
-# ifndef atarist
-#  ifndef alloca
-#   define alloca __builtin_alloca
-#  endif
-# endif	/* atarist */
+# ifndef alloca
+#  define alloca __builtin_alloca
+# endif
 #else
 # ifdef HAVE_ALLOCA_H
 #  include <alloca.h>
@@ -227,7 +225,7 @@ fill_line(int num_traces, void **traces, uintptr_t addr, int file, int line,
     }
 }
 
-static void
+static int
 parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 		obj_info_t *obj, line_info_t *lines, int offset)
 {
@@ -289,9 +287,13 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 
     include_directories = p;
 
+    /* temporary measure for compress-debug-sections */
+    if (p >= cu_end) return -1;
+
     /* skip include directories */
     while (*p) {
-	while (*p) p++;
+	p = memchr(p, '\0', cu_end - p);
+	if (!p) return -1;
 	p++;
     }
     p++;
@@ -399,21 +401,24 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 	}
     }
     *debug_line = p;
+    return 0;
 }
 
-static void
+static int
 parse_debug_line(int num_traces, void **traces,
 		 char *debug_line, unsigned long size,
 		 obj_info_t *obj, line_info_t *lines, int offset)
 {
     char *debug_line_end = debug_line + size;
     while (debug_line < debug_line_end) {
-	parse_debug_line_cu(num_traces, traces, &debug_line, obj, lines, offset);
+	if (parse_debug_line_cu(num_traces, traces, &debug_line, obj, lines, offset))
+	    return -1;
     }
     if (debug_line != debug_line_end) {
 	kprintf("Unexpected size of .debug_line in %s\n",
 		binary_filename);
     }
+    return 0;
 }
 
 /* read file and fill lines */
@@ -622,10 +627,11 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	goto finish;
     }
 
-    parse_debug_line(num_traces, traces,
-		     file + debug_line_shdr->sh_offset,
-		     debug_line_shdr->sh_size,
-		     obj, lines, offset);
+    if (parse_debug_line(num_traces, traces,
+			 file + debug_line_shdr->sh_offset,
+			 debug_line_shdr->sh_size,
+			 obj, lines, offset))
+	goto fail;
 finish:
     return dladdr_fbase;
 fail:
@@ -721,7 +727,8 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces)
 	    obj->path = path;
 	    lines[i].path = path;
 	    strcpy(binary_filename, path);
-	    fill_lines(num_traces, traces, 1, &obj, lines, i);
+	    if (fill_lines(num_traces, traces, 1, &obj, lines, i) == (uintptr_t)-1)
+		break;
 	}
 next_line:
 	continue;
@@ -812,8 +819,7 @@ next_line:
 
 #include <stdarg.h>
 #define MAXNBUF (sizeof(intmax_t) * CHAR_BIT + 1)
-extern int rb_toupper(int c);
-#define    toupper(c)  rb_toupper(c)
+static inline int toupper(int c) { return ('A' <= c && c <= 'Z') ? (c&0x5f) : c; }
 #define    hex2ascii(hex)  (hex2ascii_data[hex])
 char const hex2ascii_data[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 static inline int imax(int a, int b) { return (a > b ? a : b); }
