@@ -31,7 +31,7 @@ fail_expected=0
 total=0
 
 for t in $tests; do
-  if ruby2.3 test/runner.rb $t >log 2>&1; then
+  if ruby2.4 test/runner.rb $t >log 2>&1; then
     echo "PASS $t"
     pass=$(($pass + 1))
   else
