@@ -2,7 +2,7 @@
 
   dbm.c -
 
-  $Author$
+  $Author: nobu $
   created at: Mon Jan 24 15:59:52 JST 1994
 
   Copyright (C) 1995-2001 Yukihiro Matsumoto
@@ -145,8 +145,7 @@ fdbm_alloc(VALUE klass)
 static VALUE
 fdbm_initialize(int argc, VALUE *argv, VALUE obj)
 {
-    volatile VALUE file;
-    VALUE vmode, vflags;
+    VALUE file, vmode, vflags;
     DBM *dbm;
     struct dbmdata *dbmp;
     int mode, flags = 0;

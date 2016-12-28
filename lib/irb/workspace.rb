@@ -2,7 +2,7 @@
 #
 #   irb/workspace-binding.rb -
 #   	$Release Version: 0.9.6$
-#   	$Revision$
+#   	$Revision: 56037 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -41,7 +41,7 @@ EOF
           unless defined? BINDING_QUEUE
             require "thread"
 
-            IRB.const_set(:BINDING_QUEUE, SizedQueue.new(1))
+            IRB.const_set(:BINDING_QUEUE, Thread::SizedQueue.new(1))
             Thread.abort_on_exception = true
             Thread.start do
               eval "require \"irb/ws-for-case-2\"", TOPLEVEL_BINDING, __FILE__, __LINE__

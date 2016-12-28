@@ -2,7 +2,7 @@
 #
 #   irb/context.rb - irb context
 #   	$Release Version: 0.9.6$
-#   	$Revision$
+#   	$Revision: 57071 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -11,6 +11,7 @@
 #
 require "irb/workspace"
 require "irb/inspector"
+require "irb/output-method"
 
 module IRB
   # A class that wraps the current state of the irb session, including the

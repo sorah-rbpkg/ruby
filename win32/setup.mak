@@ -121,21 +121,31 @@ int main(void) {return (EnumProcesses(NULL,0,NULL) ? 0 : 1);}
 -version-: nul verconf.mk
 	@$(APPEND)
 	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(MAKEFILE)" | findstr "=" >>$(MAKEFILE)
-#define RUBY_REVISION 0
-#include "version.h"
-MAJOR = RUBY_API_VERSION_MAJOR
-MINOR = RUBY_API_VERSION_MINOR
-TEENY = RUBY_API_VERSION_TEENY
-RUBY_PROGRAM_VERSION = RUBY_VERSION
 MSC_VER = _MSC_VER
 <<
 
 verconf.mk: nul
-	@echo RUBY_RELEASE_DATE \>$(@)
-	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(@)" | findstr "=" >>$(@)
+	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(@)" > $(*F).bat && cmd /c $(*F).bat > $(@)
+@echo off
 #define RUBY_REVISION 0
+#define STRINGIZE0(expr) #expr
+#define STRINGIZE(x) STRINGIZE0(x)
 #include "version.h"
- = RUBY_RELEASE_DATE
+for %%I in (RUBY_RELEASE_DATE) do set ruby_release_date=%%~I
+for %%I in (RUBY_VERSION) do set ruby_version=%%~I
+for /f "delims=. tokens=1-3" %%I in (RUBY_VERSION) do (
+    set major=%%I
+    set minor=%%J
+    set teeny=%%K
+)
+#undef RUBY_RELEASE_DATE
+#undef RUBY_PROGRAM_VERSION
+echo RUBY_RELEASE_DATE = %ruby_release_date:""=%
+echo RUBY_PROGRAM_VERSION = %ruby_version:""=%
+echo MAJOR = %major%
+echo MINOR = %minor%
+echo TEENY = %teeny%
+del %0 & exit
 <<
 
 -program-name-:
@@ -202,13 +212,14 @@ MACHINE = x86
 
 # RUBY_INSTALL_NAME = ruby
 # RUBY_SO_NAME = $$(RT)-$$(RUBY_INSTALL_NAME)$$(MAJOR)$$(MINOR)
-# CFLAGS = -nologo -MD $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG)
-# CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)/missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\"
+# CFLAGS = $$(RUNTIMEFLAG) $$(DEBUGFLAGS) $$(WARNFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG) $$(COMPILERFLAG)
+# CPPFLAGS =
 # STACK = 0x2000000
 # LDFLAGS = $$(CFLAGS) -Fm
 # XLDFLAGS =
 # RFLAGS = -r
 # EXTLIBS =
+CC = cl -nologo
 
 $(BANG)include $$(srcdir)/win32/Makefile.sub
 <<

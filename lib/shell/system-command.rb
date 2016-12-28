@@ -2,7 +2,7 @@
 #
 #   shell/system-command.rb -
 #       $Release Version: 0.7 $
-#       $Revision$
+#       $Revision: 56037 $
 #       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -22,7 +22,7 @@ class Shell
       @command = command
       @opts = opts
 
-      @input_queue = Queue.new
+      @input_queue = Thread::Queue.new
       @pid = nil
 
       sh.process_controller.add_schedule(self)

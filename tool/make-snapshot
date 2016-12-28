@@ -17,6 +17,7 @@ $patch_file ||= nil
 $packages ||= nil
 $digests ||= nil
 $tooldir = File.expand_path("..", __FILE__)
+$unicode_version = nil if ($unicode_version ||= nil) == ""
 
 def usage
   <<USAGE
@@ -43,8 +44,17 @@ PACKAGES = {
   "zip"  => %w".zip     zip -qr",
 }
 
+if system("7z", out: IO::NULL)
+  PACKAGES["gzip"] = %w".tar.gz 7z a dummy -tgzip -mx -so"
+  PACKAGES["zip"]  = %w".zip    7z a -tzip  -mx"
+end
+if gzip = ENV.delete("GZIP")
+  PACKAGES["gzip"].concat(gzip.shellsplit)
+end
+
 ENV["LC_ALL"] = ENV["LANG"] = "C"
 SVNURL = URI.parse("http://svn.ruby-lang.org/repos/ruby/")
+GITURL = URI.parse("git://github.com/ruby/ruby.git")
 RUBY_VERSION_PATTERN = /^\#define\s+RUBY_VERSION\s+"([\d.]+)"/
 
 ENV["VPATH"] ||= "include/ruby"
@@ -187,7 +197,7 @@ def package(vcs, rev, destdir, tmp = nil)
       return
     end
     if $srcdir
-      Dir.glob($srcdir + "/{tool/config.{guess,sub},gems/*.gem,.downloaded-cache/*}") do |file|
+      Dir.glob($srcdir + "/{tool/config.{guess,sub},gems/*.gem,.downloaded-cache/*,enc/unicode/data/**/*.txt}") do |file|
         puts "copying #{file}"
         dest = exported + file[$srcdir.size..-1]
         FileUtils.mkpath(File.dirname(dest))
@@ -204,9 +214,20 @@ def package(vcs, rev, destdir, tmp = nil)
 
   if !File.directory?(v)
     v = Dir.glob("ruby-*").select(&File.method(:directory?))
-    v.size == 1 or abort "not exported"
+    v.size == 1 or abort "#{File.basename $0}: not exported"
     v = v[0]
   end
+
+  # get last revision from previous ChangeLog archive
+  last_ChangeLog = Dir["#{v}/doc/ChangeLog-*"].grep(/-(\d+)\z/) {|n| [$1.to_i, n]}.max[1]
+  open(last_ChangeLog) do |f|
+    f.readline
+    unless /\Ar(\d+) / =~ f.readline
+      abort "#{File.basename $0}: Cannot find revision from '#{last_ChangeLog}'"
+    end
+    vcs.export_changelog($1.to_i, revision.to_i, "#{v}/ChangeLog")
+  end
+
   open("#{v}/revision.h", "wb") {|f| f.puts "#define RUBY_REVISION #{revision}"}
   version ||= (versionhdr = IO.read("#{v}/version.h"))[RUBY_VERSION_PATTERN, 1]
   version or return
@@ -257,6 +278,7 @@ def package(vcs, rev, destdir, tmp = nil)
       puts " done"
     end
     clean.add("autom4te.cache")
+    clean.add("enc/unicode/data")
     print "creating prerequisites..."
     if File.file?("common.mk") && /^prereq/ =~ commonmk = IO.read("common.mk")
       puts
@@ -307,18 +329,23 @@ def package(vcs, rev, destdir, tmp = nil)
         "BOOTSTRAPRUBY"=>baseruby,
         "PWD"=>Dir.pwd,
         "CONFIGURE"=>"configure",
+        "arch"=>"noarch",
       }
+      vars["UNICODE_VERSION"] = $unicode_version if $unicode_version
       args = vars.dup
       mk.gsub!(/@([A-Za-z_]\w*)@/) {args.delete($1); vars[$1] || ENV[$1]}
-      mk << commonmk.gsub(/(?<!#)\{[^{}]*\}/, "")
+      mk << commonmk.gsub(/\{\$([^(){}]*)[^{}]*\}/, "")
       mk << <<-'APPEND'
 
 prereq: clean-cache $(CLEAN_CACHE)
 clean-cache $(CLEAN_CACHE): after-update
+update-download:: update-gems
 after-update:: extract-gems
-extract-gems:
+extract-gems: update-gems
+update-gems:
       APPEND
       open(clean.add("Makefile"), "w") do |f|
+        f.puts "prereq: update-download"
         f.puts mk
       end
       system("make", "prereq", *args.map {|arg| arg.join("=")})
@@ -392,7 +419,18 @@ ensure
   FileUtils.rm_rf(v) if v and !$exported and !$keep_temp
 end
 
-vcs = (VCS.detect($srcdir) rescue nil if $srcdir) || VCS::SVN.new(SVNURL)
+if [$srcdir, ($svn||=nil), ($git||=nil)].compact.size > 1
+  abort "#{File.basename $0}: -srcdir, -svn, and -git are exclusive"
+end
+if $srcdir
+  vcs = VCS.detect($srcdir)
+elsif $svn
+  vcs = VCS::SVN.new($svn == true ? SVNURL : URI.parse($svn))
+elsif $git
+  vcs = VCS::GIT.new($git == true ? GITURL : URI.parse($git))
+else
+  vcs = VCS::SVN.new(SVNURL)
+end
 
 success = true
 revisions.collect {|rev| package(vcs, rev, destdir, tmp)}.flatten.each do |name|
