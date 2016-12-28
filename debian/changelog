@@ -1,3 +1,10 @@
+ruby2.4 (2.4.0-0nkmi1) unstable; urgency=medium
+
+  * Ruby 2.4!
+  * Removed --dbgsym-migration from dh_strip
+
+ -- Sorah Fukumori <her@sorah.jp>  Tue, 22 Nov 2016 18:23:16 +0000
+
 ruby2.3 (2.3.3-0nkmi1) unstable; urgency=medium
 
   * new upstream version
