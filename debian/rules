@@ -24,6 +24,7 @@ configure_options += --target=$(DEB_HOST_MULTIARCH)
 configure_options += --program-suffix=$(RUBY_VERSION)
 configure_options += --with-soname=ruby-$(RUBY_VERSION)
 configure_options += --enable-shared
+configure_options += --enable-install-static-library
 configure_options += --disable-rpath
 configure_options += --with-baseruby=$(baseruby)
 configure_options += --with-sitedir='/usr/local/lib/site_ruby'
