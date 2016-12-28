@@ -12,7 +12,7 @@
 # modify this program under the same terms as Ruby itself,
 # Ruby Distribute License or GNU General Public License.
 #
-# $Id$
+# $Id: protocol.rb 56779 2016-11-14 07:53:32Z nobu $
 #++
 #
 # WARNING: This file is going to remove.
@@ -33,6 +33,24 @@ module Net # :nodoc:
           #{val}
         end
       End
+    end
+
+    def ssl_socket_connect(s, timeout)
+      if timeout
+        while true
+          raise Net::OpenTimeout if timeout <= 0
+          start = Process.clock_gettime Process::CLOCK_MONOTONIC
+          # to_io is required because SSLSocket doesn't have wait_readable yet
+          case s.connect_nonblock(exception: false)
+          when :wait_readable; s.to_io.wait_readable(timeout)
+          when :wait_writable; s.to_io.wait_writable(timeout)
+          else; break
+          end
+          timeout -= Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
+        end
+      else
+        s.connect
+      end
     end
   end
 
@@ -61,11 +79,11 @@ module Net # :nodoc:
 
 
   class BufferedIO   #:nodoc: internal use only
-    def initialize(io)
+    def initialize(io, read_timeout: 60, continue_timeout: nil, debug_output: nil)
       @io = io
-      @read_timeout = 60
-      @continue_timeout = nil
-      @debug_output = nil
+      @read_timeout = read_timeout
+      @continue_timeout = continue_timeout
+      @debug_output = debug_output
       @rbuf = ''
     end
 
@@ -236,7 +254,7 @@ module Net # :nodoc:
 
 
   class InternetMessageIO < BufferedIO   #:nodoc: internal use only
-    def initialize(io)
+    def initialize(*)
       super
       @wbuf = nil
     end

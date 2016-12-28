@@ -6,6 +6,8 @@
  *   <code>WIN32OLE_EVENT</code> objects controls OLE event.
  */
 
+RUBY_EXTERN void rb_write_error_str(VALUE mesg);
+
 typedef struct {
     struct IEventSinkVtbl * lpVtbl;
 } IEventSink, *PEVENTSINK;
@@ -340,19 +342,19 @@ ole_val2ptr_variant(VALUE val, VARIANT *var)
     case T_FIXNUM:
         switch(V_VT(var)) {
         case (VT_UI1 | VT_BYREF) :
-            *V_UI1REF(var) = NUM2CHR(val);
+            *V_UI1REF(var) = RB_NUM2CHR(val);
             break;
         case (VT_I2 | VT_BYREF) :
-            *V_I2REF(var) = (short)NUM2INT(val);
+            *V_I2REF(var) = (short)RB_NUM2INT(val);
             break;
         case (VT_I4 | VT_BYREF) :
-            *V_I4REF(var) = NUM2INT(val);
+            *V_I4REF(var) = RB_NUM2INT(val);
             break;
         case (VT_R4 | VT_BYREF) :
-            *V_R4REF(var) = (float)NUM2INT(val);
+            *V_R4REF(var) = (float)RB_NUM2INT(val);
             break;
         case (VT_R8 | VT_BYREF) :
-            *V_R8REF(var) = NUM2INT(val);
+            *V_R8REF(var) = RB_NUM2INT(val);
             break;
         default:
             break;
@@ -361,10 +363,10 @@ ole_val2ptr_variant(VALUE val, VARIANT *var)
     case T_FLOAT:
         switch(V_VT(var)) {
         case (VT_I2 | VT_BYREF) :
-            *V_I2REF(var) = (short)NUM2INT(val);
+            *V_I2REF(var) = (short)RB_NUM2INT(val);
             break;
         case (VT_I4 | VT_BYREF) :
-            *V_I4REF(var) = NUM2INT(val);
+            *V_I4REF(var) = RB_NUM2INT(val);
             break;
         case (VT_R4 | VT_BYREF) :
             *V_R4REF(var) = (float)NUM2DBL(val);
@@ -415,7 +417,7 @@ hash2ptr_dispparams(VALUE hash, ITypeInfo *pTypeInfo, DISPID dispid, DISPPARAMS 
 
     for (i = 0; i < len - 1; i++) {
 	key = WC2VSTR(bstrs[i + 1]);
-        val = rb_hash_aref(hash, INT2FIX(i));
+        val = rb_hash_aref(hash, RB_UINT2NUM(i));
 	if (val == Qnil)
 	    val = rb_hash_aref(hash, key);
 	if (val == Qnil)
@@ -468,7 +470,7 @@ rescue_callback(VALUE arg)
     VALUE msg = rb_funcall(e, rb_intern("message"), 0);
     bt = rb_ary_entry(bt, 0);
     error = rb_sprintf("%"PRIsVALUE": %"PRIsVALUE" (%s)\n", bt, msg, rb_obj_classname(e));
-    rb_write_error(StringValuePtr(error));
+    rb_write_error_str(error);
     rb_backtrace();
     ruby_finalize();
     exit(-1);

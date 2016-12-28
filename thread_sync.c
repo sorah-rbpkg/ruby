@@ -1,7 +1,7 @@
 /* included by thread.c */
 
-VALUE rb_cMutex, rb_cQueue, rb_cSizedQueue, rb_cConditionVariable;
-VALUE rb_eClosedQueueError;
+static VALUE rb_cMutex, rb_cQueue, rb_cSizedQueue, rb_cConditionVariable;
+static VALUE rb_eClosedQueueError;
 
 /* Mutex */
 
@@ -14,9 +14,11 @@ typedef struct rb_mutex_struct {
     int allow_trap;
 } rb_mutex_t;
 
+#if defined(HAVE_WORKING_FORK)
 static void rb_mutex_abandon_all(rb_mutex_t *mutexes);
 static void rb_mutex_abandon_keeping_mutexes(rb_thread_t *th);
 static void rb_mutex_abandon_locking_mutex(rb_thread_t *th);
+#endif
 static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t volatile *th);
 
 /*
@@ -378,6 +380,7 @@ rb_mutex_unlock(VALUE self)
     return self;
 }
 
+#if defined(HAVE_WORKING_FORK)
 static void
 rb_mutex_abandon_keeping_mutexes(rb_thread_t *th)
 {
@@ -412,6 +415,7 @@ rb_mutex_abandon_all(rb_mutex_t *mutexes)
 	mutex->next_mutex = 0;
     }
 }
+#endif
 
 static VALUE
 rb_mutex_sleep_forever(VALUE time)
@@ -632,7 +636,13 @@ queue_do_close(VALUE self, int is_szq)
 /*
  *  Document-class: Queue
  *
- *  This class provides a way to synchronize communication between threads.
+ *  The Queue class implements multi-producer, multi-consumer queues.
+ *  It is especially useful in threaded programming when information
+ *  must be exchanged safely between multiple threads. The Queue class
+ *  implements all the required locking semantics.
+ *
+ *  The class implements FIFO type of queue. In a FIFO queue, the first
+ *  tasks added are the first retrieved.
  *
  *  Example:
  *
@@ -786,7 +796,7 @@ queue_do_pop(VALUE self, int should_block)
 	    assert(queue_closed_p(self) == 0);
 
 	    rb_ary_push(args.waiting, args.th);
-	    rb_ensure(queue_sleep, (VALUE)0, queue_delete_from_waiting, (VALUE)&args);
+	    rb_ensure(queue_sleep, Qfalse, queue_delete_from_waiting, (VALUE)&args);
 	}
     }
 
@@ -814,8 +824,8 @@ queue_pop_should_block(int argc, const VALUE *argv)
  * Retrieves data from the queue.
  *
  * If the queue is empty, the calling thread is suspended until data is pushed
- * onto the queue. If +non_block+ is true, the thread isn't suspended, and an
- * exception is raised.
+ * onto the queue. If +non_block+ is true, the thread isn't suspended, and
+ * +ThreadError+ is raised.
  */
 
 static VALUE
@@ -917,7 +927,7 @@ rb_szqueue_initialize(VALUE self, VALUE vmax)
 /*
  * Document-method: SizedQueue#close
  * call-seq:
- *   close(exception=false)
+ *   close
  *
  * Similar to Queue#close.
  *
@@ -992,7 +1002,7 @@ szqueue_push_should_block(int argc, const VALUE *argv)
  *
  * If there is no space left in the queue, waits until space becomes
  * available, unless +non_block+ is true.  If +non_block+ is true, the
- * thread isn't suspended, and an exception is raised.
+ * thread isn't suspended, and +ThreadError+ is raised.
  */
 
 static VALUE
@@ -1012,7 +1022,7 @@ rb_szqueue_push(int argc, VALUE *argv, VALUE self)
 	}
 	else {
 	    rb_ary_push(args.waiting, args.th);
-	    rb_ensure((VALUE (*)())rb_thread_sleep_deadly, (VALUE)0, queue_delete_from_waiting, (VALUE)&args);
+	    rb_ensure(queue_sleep, Qfalse, queue_delete_from_waiting, (VALUE)&args);
 	}
     }
 
@@ -1046,8 +1056,8 @@ szqueue_do_pop(VALUE self, int should_block)
  * Retrieves data from the queue.
  *
  * If the queue is empty, the calling thread is suspended until data is pushed
- * onto the queue. If +non_block+ is true, the thread isn't suspended, and an
- * exception is raised.
+ * onto the queue. If +non_block+ is true, the thread isn't suspended, and
+ * +ThreadError+ is raised.
  */
 
 static VALUE
@@ -1147,7 +1157,7 @@ static VALUE
 do_sleep(VALUE args)
 {
     struct sleep_call *p = (struct sleep_call *)args;
-    return rb_funcall2(p->mutex, id_sleep, 1, &p->timeout);
+    return rb_funcallv(p->mutex, id_sleep, 1, &p->timeout);
 }
 
 static VALUE
@@ -1218,6 +1228,12 @@ undumpable(VALUE obj)
 }
 
 static void
+alias_global_const(const char *name, VALUE klass)
+{
+    rb_define_const(rb_cObject, name, klass);
+}
+
+static void
 Init_thread_sync(void)
 {
 #if 0
@@ -1258,11 +1274,11 @@ Init_thread_sync(void)
     rb_define_method(rb_cQueue, "length", rb_queue_length, 0);
     rb_define_method(rb_cQueue, "num_waiting", rb_queue_num_waiting, 0);
 
-    rb_define_alias(rb_cQueue, "enq", "push");    /* Alias for #push. */
-    rb_define_alias(rb_cQueue, "<<", "push");     /* Alias for #push. */
-    rb_define_alias(rb_cQueue, "deq", "pop");     /* Alias for #pop. */
-    rb_define_alias(rb_cQueue, "shift", "pop");   /* Alias for #pop. */
-    rb_define_alias(rb_cQueue, "size", "length"); /* Alias for #length. */
+    rb_define_alias(rb_cQueue, "enq", "push");
+    rb_define_alias(rb_cQueue, "<<", "push");
+    rb_define_alias(rb_cQueue, "deq", "pop");
+    rb_define_alias(rb_cQueue, "shift", "pop");
+    rb_define_alias(rb_cQueue, "size", "length");
 
     rb_cSizedQueue = rb_struct_define_without_accessor_under(
 	rb_cThread,
@@ -1278,10 +1294,10 @@ Init_thread_sync(void)
     rb_define_method(rb_cSizedQueue, "clear", rb_szqueue_clear, 0);
     rb_define_method(rb_cSizedQueue, "num_waiting", rb_szqueue_num_waiting, 0);
 
-    rb_define_alias(rb_cSizedQueue, "enq", "push");  /* Alias for #push. */
-    rb_define_alias(rb_cSizedQueue, "<<", "push");   /* Alias for #push. */
-    rb_define_alias(rb_cSizedQueue, "deq", "pop");   /* Alias for #pop. */
-    rb_define_alias(rb_cSizedQueue, "shift", "pop"); /* Alias for #pop. */
+    rb_define_alias(rb_cSizedQueue, "enq", "push");
+    rb_define_alias(rb_cSizedQueue, "<<", "push");
+    rb_define_alias(rb_cSizedQueue, "deq", "pop");
+    rb_define_alias(rb_cSizedQueue, "shift", "pop");
 
     /* CVar */
     rb_cConditionVariable = rb_struct_define_without_accessor_under(
@@ -1298,12 +1314,8 @@ Init_thread_sync(void)
     rb_define_method(rb_cConditionVariable, "signal", rb_condvar_signal, 0);
     rb_define_method(rb_cConditionVariable, "broadcast", rb_condvar_broadcast, 0);
 
-#define ALIAS_GLOBAL_CONST(name) do {	              \
-	ID id = rb_intern_const(#name);	              \
-	if (!rb_const_defined_at(rb_cObject, id)) {   \
-	    rb_const_set(rb_cObject, id, rb_c##name); \
-	}                                             \
-    } while (0)
+#define ALIAS_GLOBAL_CONST(name) \
+    alias_global_const(#name, rb_c##name)
 
     ALIAS_GLOBAL_CONST(Mutex);
     ALIAS_GLOBAL_CONST(Queue);

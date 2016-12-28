@@ -14,9 +14,9 @@
 # Ruby Distribute License.
 #
 # NOTE: You can find Japanese version of this document at:
-# http://www.ruby-lang.org/ja/man/html/net_pop.html
+# http://docs.ruby-lang.org/ja/latest/library/net=2fpop.html
 #
-#   $Id$
+#   $Id: pop.rb 56865 2016-11-21 23:05:41Z normal $
 #
 # See Net::POP3 for documentation.
 #
@@ -196,7 +196,7 @@ module Net
   class POP3 < Protocol
 
     # svn revision of this library
-    Revision = %q$Revision$.split[1]
+    Revision = %q$Revision: 56865 $.split[1]
 
     #
     # Class Parameters
@@ -555,10 +555,10 @@ module Net
           s.post_connection_check(@address)
         end
       end
-      @socket = InternetMessageIO.new(s)
+      @socket = InternetMessageIO.new(s,
+                                      read_timeout: @read_timeout,
+                                      debug_output: @debug_output)
       logging "POP session started: #{@address}:#{@port} (#{@apop ? 'APOP' : 'POP'})"
-      @socket.read_timeout = @read_timeout
-      @socket.debug_output = @debug_output
       on_connect
       @command = POP3Command.new(@socket)
       if apop?
@@ -570,7 +570,7 @@ module Net
     ensure
       # Authentication failed, clean up connection.
       unless @started
-        s.close if s and not s.closed?
+        s.close if s
         @socket = nil
         @command = nil
       end
@@ -601,7 +601,7 @@ module Net
     ensure
       @started = false
       @command = nil
-      @socket.close if @socket and not @socket.closed?
+      @socket.close if @socket
       @socket = nil
     end
     private :do_finish

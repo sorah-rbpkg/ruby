@@ -2,7 +2,7 @@
 #
 #   sync.rb - 2 phase lock with counter
 #       $Release Version: 1.0$
-#       $Revision$
+#       $Revision: 56183 $
 #       by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #
 # --
@@ -68,7 +68,7 @@ module Sync_m
       Message = "Unknown lock mode(%s)"
       def LockModeFailer.Fail(mode)
         if mode.id2name
-          mode = id2name
+          mode = mode.id2name
         end
         super(mode)
       end
@@ -261,7 +261,7 @@ module Sync_m
     @sync_ex_locker = nil
     @sync_ex_count = 0
 
-    @sync_mutex = Mutex.new
+    @sync_mutex = Thread::Mutex.new
   end
 
   def initialize(*args)
@@ -304,7 +304,7 @@ module Sync_m
         ret = false
       end
     else
-      Err::LockModeFailer.Fail mode
+      Err::LockModeFailer.Fail m
     end
     return ret
   end

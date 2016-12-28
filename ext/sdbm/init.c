@@ -2,7 +2,7 @@
 
   sdbminit.c -
 
-  $Author$
+  $Author: nobu $
   created at: Fri May  7 08:34:24 JST 1999
 
   Copyright (C) 1995-2001 Yukihiro Matsumoto
@@ -179,8 +179,7 @@ fsdbm_alloc(VALUE klass)
 static VALUE
 fsdbm_initialize(int argc, VALUE *argv, VALUE obj)
 {
-    volatile VALUE file;
-    VALUE vmode;
+    VALUE file, vmode;
     DBM *dbm;
     struct dbmdata *dbmp;
     int mode;

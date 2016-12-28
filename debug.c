@@ -2,7 +2,7 @@
 
   debug.c -
 
-  $Author$
+  $Author: ko1 $
   created at: 04/08/25 02:31:54 JST
 
   Copyright (C) 2004-2007 Koichi Sasada
@@ -59,14 +59,16 @@ ruby_debug_printf(const char *format, ...)
     va_end(ap);
 }
 
+#include "gc.h"
+
 VALUE
 ruby_debug_print_value(int level, int debug_level, const char *header, VALUE obj)
 {
     if (level < debug_level) {
-	VALUE str;
-	str = rb_inspect(obj);
-	fprintf(stderr, "DBG> %s: %s\n", header,
-		obj == (VALUE)(SIGNED_VALUE)-1 ? "" : StringValueCStr(str));
+	char buff[0x100];
+	rb_raw_obj_info(buff, 0x100, obj);
+
+	fprintf(stderr, "DBG> %s: %s\n", header, buff);
 	fflush(stderr);
     }
     return obj;

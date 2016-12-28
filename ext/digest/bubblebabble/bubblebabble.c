@@ -2,12 +2,12 @@
 
   bubblebabble.c - BubbleBabble encoding support
 
-  $Author$
+  $Author: nobu $
   created at: Fri Oct 13 18:31:42 JST 2006
 
   Copyright (C) 2006 Akinori MUSHA
 
-  $Id$
+  $Id: bubblebabble.c 55773 2016-07-29 11:57:14Z nobu $
 
 ************************************************/
 
@@ -101,7 +101,7 @@ rb_digest_s_bubblebabble(VALUE klass, VALUE str)
 static VALUE
 rb_digest_class_s_bubblebabble(int argc, VALUE *argv, VALUE klass)
 {
-    return bubblebabble_str_new(rb_funcall2(klass, id_digest, argc, argv));
+    return bubblebabble_str_new(rb_funcallv(klass, id_digest, argc, argv));
 }
 
 /* Document-method: Digest::Instance#bubblebabble

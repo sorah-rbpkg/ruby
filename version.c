@@ -2,7 +2,7 @@
 
   version.c -
 
-  $Author$
+  $Author: nobu $
   created at: Thu Sep 30 20:08:01 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -96,12 +96,10 @@ ruby_show_version(void)
     fflush(stdout);
 }
 
-/*! Prints the copyright notice of the CRuby interpreter to stdout and \em exits
- *  this process successfully.
- */
+/*! Prints the copyright notice of the CRuby interpreter to stdout. */
 void
 ruby_show_copyright(void)
 {
     PRINT(copyright);
-    exit(EXIT_SUCCESS);
+    fflush(stdout);
 }

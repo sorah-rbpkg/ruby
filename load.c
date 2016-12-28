@@ -230,10 +230,10 @@ features_index_add(VALUE feature, VALUE offset)
     feature_end = feature_str + RSTRING_LEN(feature);
 
     for (ext = feature_end; ext > feature_str; ext--)
-      if (*ext == '.' || *ext == '/')
-	break;
+	if (*ext == '.' || *ext == '/')
+	    break;
     if (*ext != '.')
-      ext = NULL;
+	ext = NULL;
     /* Now `ext` points to the only string matching %r{^\.[^./]*$} that is
        at the end of `feature`, or is NULL if there is no such string. */
 
@@ -583,7 +583,6 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
     int state;
     volatile VALUE wrapper = th->top_wrapper;
     volatile VALUE self = th->top_self;
-    volatile int mild_compile_error;
 #if !defined __GNUC__
     rb_thread_t *volatile th0 = th;
 #endif
@@ -600,7 +599,6 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 	rb_extend_object(th->top_self, th->top_wrapper);
     }
 
-    mild_compile_error = th->mild_compile_error;
     TH_PUSH_TAG(th);
     state = EXEC_TAG();
     if (state == 0) {
@@ -611,10 +609,10 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 	    /* OK */
 	}
 	else {
-	    th->mild_compile_error++;
-	    node = (NODE *)rb_load_file_str(fname);
+	    VALUE parser = rb_parser_new();
+	    rb_parser_set_context(parser, NULL, FALSE);
+	    node = (NODE *)rb_parser_load_file(parser, fname);
 	    iseq = rb_iseq_new_top(node, rb_str_new2("<top (required)>"), fname, rb_realpath_internal(Qnil, fname, 1), NULL);
-	    th->mild_compile_error--;
 	}
 	rb_iseq_eval(iseq);
     }
@@ -624,7 +622,6 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
     th = th0;
     fname = RB_GC_GUARD(fname);
 #endif
-    th->mild_compile_error = mild_compile_error;
     th->top_self = self;
     th->top_wrapper = wrapper;
 
@@ -649,7 +646,7 @@ rb_load_internal(VALUE fname, int wrap)
     int state = rb_load_internal0(curr_th, fname, wrap);
     if (state) {
 	if (state == TAG_RAISE) rb_exc_raise(curr_th->errinfo);
-	JUMP_TAG(state);
+	TH_JUMP_TAG(curr_th, state);
     }
 }
 
@@ -706,7 +703,7 @@ rb_f_load(int argc, VALUE *argv)
 
     RUBY_DTRACE_HOOK(LOAD_ENTRY, StringValuePtr(fname));
 
-    orig_fname = FilePathValue(fname);
+    orig_fname = rb_get_path_check_to_string(fname, rb_safe_level());
     fname = rb_str_encode_ospath(orig_fname);
     path = rb_find_file(fname);
     if (!path) {
@@ -748,9 +745,6 @@ load_lock(const char *ftptr)
     }
     switch (rb_thread_shield_wait((VALUE)data)) {
       case Qfalse:
-	data = (st_data_t)ftptr;
-	st_insert(loading_tbl, data, (st_data_t)rb_thread_shield_new());
-	return 0;
       case Qnil:
 	return 0;
     }
@@ -762,7 +756,12 @@ release_thread_shield(st_data_t *key, st_data_t *value, st_data_t done, int exis
 {
     VALUE thread_shield = (VALUE)*value;
     if (!existing) return ST_STOP;
-    if (done ? rb_thread_shield_destroy(thread_shield) : rb_thread_shield_release(thread_shield)) {
+    if (done) {
+	rb_thread_shield_destroy(thread_shield);
+	/* Delete the entry even if there are waiting threads, because they
+	 * won't load the file and won't delete the entry. */
+    }
+    else if (rb_thread_shield_release(thread_shield)) {
 	/* still in-use */
 	return ST_CONTINUE;
     }
@@ -1000,7 +999,7 @@ rb_require_internal(VALUE fname, int safe)
 
 		  case 's':
 		    handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
-						    path, 0, path);
+						    path, VM_BLOCK_HANDLER_NONE, path);
 		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
 		    break;
 		}

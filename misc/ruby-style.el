@@ -4,9 +4,11 @@
 ;;;
 ;;; C/C++ mode style for Ruby.
 ;;;
-;;;  $Author$
+;;;  $Author: nobu $
 ;;;  created at: Thu Apr 26 13:54:01 JST 2007
 ;;;
+;;; Put this file under a directory contained in ``load-path'', and
+;;; then load it.
 ;;; To switch to the "ruby" style automatically if it looks like a
 ;;; source file of ruby, add ruby-style-c-mode to c-mode-hook:
 ;;;
@@ -17,7 +19,7 @@
 ;;; Customize the c-default-style variable to set the default style
 ;;; for each CC major mode.
 
-(defconst ruby-style-revision "$Revision$"
+(defconst ruby-style-revision "$Revision: 53967 $"
   "Ruby style revision string.")
 
 (defconst ruby-style-version

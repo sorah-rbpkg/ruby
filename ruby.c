@@ -2,7 +2,7 @@
 
   ruby.c -
 
-  $Author$
+  $Author: usa $
   created at: Tue Aug 10 12:47:31 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -63,34 +63,65 @@ char *getenv();
 #define DEFAULT_RUBYGEMS_ENABLED "enabled"
 #endif
 
+#define COMMA ,
 #define FEATURE_BIT(bit) (1U << feature_##bit)
+#define EACH_FEATURES(X, SEP) \
+    X(gems) \
+    SEP \
+    X(did_you_mean) \
+    SEP \
+    X(rubyopt) \
+    SEP \
+    X(frozen_string_literal) \
+    /* END OF FEATURES */
+#define EACH_DEBUG_FEATURES(X, SEP) \
+    X(frozen_string_literal) \
+    /* END OF DEBUG FEATURES */
+#define AMBIGUOUS_FEATURE_NAMES 0 /* no ambiguous feature names now */
+#define DEFINE_FEATURE(bit) feature_##bit
+#define DEFINE_DEBUG_FEATURE(bit) feature_debug_##bit
 enum feature_flag_bits {
-    feature_gems,
-    feature_did_you_mean,
-    feature_rubyopt,
-    feature_frozen_string_literal,
-    feature_debug_frozen_string_literal,
+    EACH_FEATURES(DEFINE_FEATURE, COMMA),
+    feature_debug_flag_first,
+    feature_debug_flag_begin = feature_debug_flag_first - 1,
+    EACH_DEBUG_FEATURES(DEFINE_DEBUG_FEATURE, COMMA),
     feature_flag_count
 };
 
 #define DEBUG_BIT(bit) (1U << feature_debug_##bit)
 
 #define DUMP_BIT(bit) (1U << dump_##bit)
+#define DEFINE_DUMP(bit) dump_##bit
+#define EACH_DUMPS(X, SEP) \
+    X(version) \
+    SEP \
+    X(copyright) \
+    SEP \
+    X(usage) \
+    SEP \
+    X(help) \
+    SEP \
+    X(yydebug) \
+    SEP \
+    X(syntax) \
+    SEP \
+    X(parsetree) \
+    SEP \
+    X(parsetree_with_comment) \
+    SEP \
+    X(insns) \
+    /* END OF DUMPS */
 enum dump_flag_bits {
-    dump_version,
     dump_version_v,
-    dump_copyright,
-    dump_usage,
-    dump_help,
-    dump_yydebug,
-    dump_syntax,
-    dump_parsetree,
-    dump_parsetree_with_comment,
-    dump_insns,
-    dump_flag_count
+    EACH_DUMPS(DEFINE_DUMP, COMMA),
+    dump_exit_bits = (DUMP_BIT(yydebug) | DUMP_BIT(syntax) |
+		      DUMP_BIT(parsetree) | DUMP_BIT(parsetree_with_comment) |
+		      DUMP_BIT(insns))
 };
 
-struct cmdline_options {
+typedef struct ruby_cmdline_options ruby_cmdline_options_t;
+
+struct ruby_cmdline_options {
     int sflag, xflag;
     int do_loop, do_print;
     int do_line, do_split;
@@ -110,9 +141,10 @@ struct cmdline_options {
 	} enc;
     } src, ext, intern;
     VALUE req_list;
+    unsigned int warning: 1;
 };
 
-static void init_ids(struct cmdline_options *);
+static void init_ids(ruby_cmdline_options_t *);
 
 #define src_encoding_index GET_VM()->src_encoding_index
 
@@ -123,17 +155,16 @@ enum {
 	| FEATURE_BIT(debug_frozen_string_literal)
 	),
     DEFAULT_FEATURES = (
-	~0U
+	(FEATURE_BIT(debug_flag_first)-1)
 #if DISABLE_RUBYGEMS
 	& ~FEATURE_BIT(gems)
 #endif
 	& ~FEATURE_BIT(frozen_string_literal)
-	& ~FEATURE_BIT(debug_frozen_string_literal)
 	)
 };
 
-static struct cmdline_options *
-cmdline_options_init(struct cmdline_options *opt)
+static ruby_cmdline_options_t *
+cmdline_options_init(ruby_cmdline_options_t *opt)
 {
     MEMZERO(opt, *opt, 1);
     init_ids(opt);
@@ -144,8 +175,8 @@ cmdline_options_init(struct cmdline_options *opt)
     return opt;
 }
 
-static NODE *load_file(VALUE, VALUE, int, struct cmdline_options *);
-static void forbid_setid(const char *, struct cmdline_options *);
+static NODE *load_file(VALUE, VALUE, int, ruby_cmdline_options_t *);
+static void forbid_setid(const char *, ruby_cmdline_options_t *);
 #define forbid_setid(s) forbid_setid((s), opt)
 
 static struct {
@@ -378,6 +409,11 @@ translit_char_bin(char *p, int from, int to)
 #ifndef UTF8_PATH
 # define UTF8_PATH 0
 #endif
+#if UTF8_PATH
+# define IF_UTF8_PATH(t, f) t
+#else
+# define IF_UTF8_PATH(t, f) f
+#endif
 
 #if UTF8_PATH
 static VALUE
@@ -446,9 +482,30 @@ ruby_init_loadpath_safe(int safe_level)
     char *p;
 
 #if defined _WIN32 || defined __CYGWIN__
-    sopath = rb_str_new(0, MAXPATHLEN);
-    libpath = RSTRING_PTR(sopath);
-    GetModuleFileName(libruby, libpath, MAXPATHLEN);
+    {
+	DWORD len = RSTRING_EMBED_LEN_MAX, ret, i;
+	VALUE wsopath = rb_str_new(0, len*sizeof(WCHAR));
+	WCHAR *wlibpath;
+	while (wlibpath = (WCHAR *)RSTRING_PTR(wsopath),
+	       ret = GetModuleFileNameW(libruby, wlibpath, len),
+	       (ret == len))
+	{
+	    rb_str_modify_expand(wsopath, len*sizeof(WCHAR));
+	    rb_str_set_len(wsopath, (len += len)*sizeof(WCHAR));
+	}
+	if (!ret || ret > len) rb_fatal("failed to get module file name");
+	for (len = ret, i = 0; i < len; ++i) {
+	    if (wlibpath[i] == L'\\') {
+		wlibpath[i] = L'/';
+		ret = i+1;	/* chop after the last separator */
+	    }
+	}
+	len = WideCharToMultiByte(CP_UTF8, 0, wlibpath, ret, NULL, 0, NULL, NULL);
+	sopath = rb_utf8_str_new(0, len);
+	libpath = RSTRING_PTR(sopath);
+	WideCharToMultiByte(CP_UTF8, 0, wlibpath, ret, libpath, len, NULL, NULL);
+	rb_str_resize(wsopath, 0);
+    }
 #elif defined(HAVE_DLADDR)
     sopath = dladdr_path((void *)(VALUE)expand_include_path);
     libpath = RSTRING_PTR(sopath);
@@ -457,7 +514,7 @@ ruby_init_loadpath_safe(int safe_level)
 #if !VARIABLE_LIBPATH
     libpath[sizeof(libpath) - 1] = '\0';
 #endif
-#if defined DOSISH
+#if defined DOSISH && !defined _WIN32
     translit_char(libpath, '\\', '/');
 #elif defined __CYGWIN__
     {
@@ -573,10 +630,7 @@ require_libraries(VALUE *req_list)
     VALUE list = *req_list;
     VALUE self = rb_vm_top_self();
     ID require;
-    rb_thread_t *th = GET_THREAD();
     rb_encoding *extenc = rb_default_external_encoding();
-    int prev_parse_in_eval = th->parse_in_eval;
-    th->parse_in_eval = 0;
 
     CONST_ID(require, "require");
     while (list && RARRAY_LEN(list) > 0) {
@@ -584,22 +638,15 @@ require_libraries(VALUE *req_list)
 	rb_enc_associate(feature, extenc);
 	RBASIC_SET_CLASS_RAW(feature, rb_cString);
 	OBJ_FREEZE(feature);
-	rb_funcall2(self, require, 1, &feature);
+	rb_funcallv(self, require, 1, &feature);
     }
     *req_list = 0;
-
-    th->parse_in_eval = prev_parse_in_eval;
 }
 
-static rb_env_t*
-toplevel_context(VALUE toplevel_binding)
+static const struct rb_block*
+toplevel_context(rb_binding_t *bind)
 {
-    rb_env_t *env;
-    rb_binding_t *bind;
-
-    GetBindingPtr(toplevel_binding, bind);
-    GetEnvPtr(bind->env, env);
-    return env;
+    return &bind->block;
 }
 
 static void
@@ -666,10 +713,10 @@ process_sflag(int *sflag)
     }
 }
 
-static long proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt);
+static long proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt);
 
 static void
-moreswitches(const char *s, struct cmdline_options *opt, int envopt)
+moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
 {
     long argc, i, len;
     char **argv, *p;
@@ -748,24 +795,47 @@ name_match_p(const char *name, const char *str, size_t len)
 	return;				\
     }
 
+#define LITERAL_NAME_ELEMENT(name) #name
+
 static void
 feature_option(const char *str, int len, void *arg, const unsigned int enable)
 {
+    static const char list[] = EACH_FEATURES(LITERAL_NAME_ELEMENT, ", ");
     unsigned int *argp = arg;
     unsigned int mask = ~0U;
+#if AMBIGUOUS_FEATURE_NAMES
+    unsigned int set = 0U;
+    int matched = 0;
+#define SET_FEATURE(bit) \
+    if (NAME_MATCH_P(#bit, str, len)) {set |= mask = FEATURE_BIT(bit); ++matched;}
+#else
 #define SET_FEATURE(bit) \
     if (NAME_MATCH_P(#bit, str, len)) {mask = FEATURE_BIT(bit); goto found;}
-    SET_FEATURE(gems);
-    SET_FEATURE(did_you_mean);
-    SET_FEATURE(rubyopt);
-    SET_FEATURE(frozen_string_literal);
+#endif
+    EACH_FEATURES(SET_FEATURE, ;);
     if (NAME_MATCH_P("all", str, len)) {
       found:
 	*argp = (*argp & ~mask) | (mask & enable);
 	return;
     }
+#if AMBIGUOUS_FEATURE_NAMES
+    if (matched == 1) goto found;
+    if (matched > 1) {
+	VALUE mesg = rb_sprintf("ambiguous feature: `%.*s' (", len, str);
+#define ADD_FEATURE_NAME(bit) \
+	if (FEATURE_BIT(bit) & set) { \
+	    rb_str_cat_cstr(mesg, #bit); \
+	    if (--matched) rb_str_cat_cstr(mesg, ", "); \
+	}
+	EACH_FEATURES(ADD_FEATURE_NAME, ;);
+	rb_str_cat_cstr(mesg, ")");
+	rb_exc_raise(rb_exc_new_str(rb_eRuntimeError, mesg));
+#undef ADD_FEATURE_NAME
+    }
+#endif
     rb_warn("unknown argument for --%s: `%.*s'",
 	    enable ? "enable" : "disable", len, str);
+    rb_warn("features are [%.*s].", (int)strlen(list), list);
 }
 
 static void
@@ -783,26 +853,21 @@ disable_option(const char *str, int len, void *arg)
 static void
 debug_option(const char *str, int len, void *arg)
 {
-#define SET_WHEN_DEBUG(t, bit) SET_WHEN(#bit, t##_BIT(bit), str, len)
-    SET_WHEN_DEBUG(DEBUG, frozen_string_literal);
+    static const char list[] = EACH_DEBUG_FEATURES(LITERAL_NAME_ELEMENT, ", ");
+#define SET_WHEN_DEBUG(bit) SET_WHEN(#bit, DEBUG_BIT(bit), str, len)
+    EACH_DEBUG_FEATURES(SET_WHEN_DEBUG, ;);
     rb_warn("unknown argument for --debug: `%.*s'", len, str);
+    rb_warn("debug features are [%.*s].", (int)strlen(list), list);
 }
 
 static void
 dump_option(const char *str, int len, void *arg)
 {
+    static const char list[] = EACH_DUMPS(LITERAL_NAME_ELEMENT, ", ");
 #define SET_WHEN_DUMP(bit) SET_WHEN(#bit, DUMP_BIT(bit), str, len)
-    SET_WHEN_DUMP(version);
-    SET_WHEN_DUMP(copyright);
-    SET_WHEN_DUMP(usage);
-    SET_WHEN_DUMP(help);
-    SET_WHEN_DUMP(yydebug);
-    SET_WHEN_DUMP(syntax);
-    SET_WHEN_DUMP(parsetree);
-    SET_WHEN_DUMP(parsetree_with_comment);
-    SET_WHEN_DUMP(insns);
+    EACH_DUMPS(SET_WHEN_DUMP, ;);
     rb_warn("don't know how to dump `%.*s',", len, str);
-    rb_warn("but only [version, copyright, usage, yydebug, syntax, parsetree, parsetree_with_comment, insns].");
+    rb_warn("but only [%.*s].", (int)strlen(list), list);
 }
 
 static void
@@ -829,10 +894,11 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen
     set_option_encoding_once("source", &(opt)->src.enc.name, (e), (elen))
 
 static long
-proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
+proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 {
     long n, argc0 = argc;
     const char *s;
+    int warning = opt->warning;
 
     if (argc == 0)
 	return 0;
@@ -881,7 +947,10 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 	    opt->dump |= DUMP_BIT(version_v);
 	    opt->verbose = 1;
 	  case 'w':
-	    ruby_verbose = Qtrue;
+	    if (!opt->warning) {
+		warning = 1;
+		ruby_verbose = Qtrue;
+	    }
 	    s++;
 	    goto reswitch;
 
@@ -896,17 +965,20 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 			v = 1;
 		    s += numlen;
 		}
-		switch (v) {
-		  case 0:
-		    ruby_verbose = Qnil;
-		    break;
-		  case 1:
-		    ruby_verbose = Qfalse;
-		    break;
-		  default:
-		    ruby_verbose = Qtrue;
-		    break;
+		if (!opt->warning) {
+		    switch (v) {
+		      case 0:
+			ruby_verbose = Qnil;
+			break;
+		      case 1:
+			ruby_verbose = Qfalse;
+			break;
+		      default:
+			ruby_verbose = Qtrue;
+			break;
+		    }
 		}
+		warning = 1;
 	    }
 	    goto reswitch;
 
@@ -1229,6 +1301,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
     }
 
   switch_end:
+    if (warning) opt->warning = warning;
     return argc0 - argc;
 }
 
@@ -1362,17 +1435,21 @@ rb_f_chomp(int argc, VALUE *argv)
 }
 
 static VALUE
-process_options(int argc, char **argv, struct cmdline_options *opt)
+process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
     NODE *tree = 0;
     VALUE parser;
     const rb_iseq_t *iseq;
     rb_encoding *enc, *lenc;
+#if UTF8_PATH
+    rb_encoding *uenc, *ienc = 0;
+#endif
     const char *s;
     char fbuf[MAXPATHLEN];
     int i = (int)proc_options(argc, argv, opt, 0);
-    rb_thread_t *th = GET_THREAD();
-    VALUE toplevel_binding = Qundef;
+    rb_binding_t *toplevel_binding;
+    const struct rb_block *base_block;
+    unsigned int dump = opt->dump & dump_exit_bits;
 
     argc -= i;
     argv += i;
@@ -1407,6 +1484,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     }
     if (opt->dump & DUMP_BIT(copyright)) {
 	ruby_show_copyright();
+	return Qtrue;
     }
 
     if (!opt->e_script) {
@@ -1478,17 +1556,26 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	enc = rb_enc_from_index(opt->intern.enc.index);
 	rb_enc_set_default_internal(rb_enc_from_encoding(enc));
 	opt->intern.enc.index = -1;
+#if UTF8_PATH
+	ienc = enc;
+#endif
     }
     rb_enc_associate(opt->script_name, lenc);
     rb_obj_freeze(opt->script_name);
-    {
+    if (IF_UTF8_PATH((uenc = rb_utf8_encoding()) != lenc, 1)) {
 	long i;
 	VALUE load_path = GET_VM()->load_path;
 	const ID id_initial_load_path_mark = INITIAL_LOAD_PATH_MARK;
 	for (i = 0; i < RARRAY_LEN(load_path); ++i) {
 	    VALUE path = RARRAY_AREF(load_path, i);
 	    int mark = rb_attr_get(path, id_initial_load_path_mark) == path;
+#if UTF8_PATH
+	    VALUE newpath = rb_str_conv_enc(path, uenc, lenc);
+	    if (newpath == path) continue;
+	    path = newpath;
+#else
 	    path = rb_enc_associate(rb_str_dup(path), lenc);
+#endif
 	    if (mark) rb_ivar_set(path, id_initial_load_path_mark, path);
 	    RARRAY_ASET(load_path, i, path);
 	}
@@ -1512,22 +1599,18 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 #undef SET_COMPILE_OPTION
     }
 #if UTF8_PATH
-    opt->script_name = str_conv_enc(opt->script_name, rb_utf8_encoding(), lenc);
-    opt->script = RSTRING_PTR(opt->script_name);
+    if (uenc != lenc) {
+	opt->script_name = str_conv_enc(opt->script_name, uenc, lenc);
+	opt->script = RSTRING_PTR(opt->script_name);
+    }
 #endif
     ruby_set_argv(argc, argv);
     process_sflag(&opt->sflag);
 
-    toplevel_binding = rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING"));
-
-#define PREPARE_PARSE_MAIN(expr) do { \
-    rb_env_t *env = toplevel_context(toplevel_binding); \
-    th->parse_in_eval--; \
-    th->base_block = &env->block; \
-    expr; \
-    th->parse_in_eval++; \
-    th->base_block = 0; \
-} while (0)
+    GetBindingPtr(rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING")),
+		  toplevel_binding);
+    /* need to acquire env from toplevel_binding each time, since it
+     * may update after eval() */
 
     if (opt->e_script) {
 	VALUE progname = rb_progname;
@@ -1537,7 +1620,15 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	}
 	else {
 	    eenc = lenc;
+#if UTF8_PATH
+	    if (ienc) eenc = ienc;
+#endif
 	}
+#if UTF8_PATH
+	if (eenc != uenc) {
+	    opt->e_script = str_conv_enc(opt->e_script, uenc, eenc);
+	}
+#endif
 	rb_enc_associate(opt->e_script, eenc);
 	if (!(opt->dump & ~DUMP_BIT(version_v))) {
 	    ruby_set_script_name(opt->script_name);
@@ -1545,21 +1636,24 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	}
         ruby_set_script_name(progname);
 
-	PREPARE_PARSE_MAIN({
-	    tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
-	});
+	base_block = toplevel_context(toplevel_binding);
+	rb_parser_set_context(parser, base_block, TRUE);
+	tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
     }
     else {
 	if (opt->script[0] == '-' && !opt->script[1]) {
 	    forbid_setid("program input from stdin");
 	}
 
-	PREPARE_PARSE_MAIN({
-	    tree = load_file(parser, opt->script_name, 1, opt);
-	});
+	base_block = toplevel_context(toplevel_binding);
+	rb_parser_set_context(parser, base_block, TRUE);
+	tree = load_file(parser, opt->script_name, 1, opt);
     }
     ruby_set_script_name(opt->script_name);
-    if (opt->dump & DUMP_BIT(yydebug)) return Qtrue;
+    if (dump & DUMP_BIT(yydebug)) {
+	dump &= ~DUMP_BIT(yydebug);
+	if (!dump) return Qtrue;
+    }
 
     if (opt->ext.enc.index >= 0) {
 	enc = rb_enc_from_index(opt->ext.enc.index);
@@ -1583,45 +1677,46 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     process_sflag(&opt->sflag);
     opt->xflag = 0;
 
-    if (opt->dump & DUMP_BIT(syntax)) {
+    if (dump & DUMP_BIT(syntax)) {
 	printf("Syntax OK\n");
-	return Qtrue;
+	dump &= ~DUMP_BIT(syntax);
+	if (!dump) return Qtrue;
     }
 
     if (opt->do_print) {
-	PREPARE_PARSE_MAIN({
-	    tree = rb_parser_append_print(parser, tree);
-	});
+	tree = rb_parser_append_print(parser, tree);
     }
     if (opt->do_loop) {
-	PREPARE_PARSE_MAIN({
-	    tree = rb_parser_while_loop(parser, tree, opt->do_line, opt->do_split);
-	});
+	tree = rb_parser_while_loop(parser, tree, opt->do_line, opt->do_split);
 	rb_define_global_function("sub", rb_f_sub, -1);
 	rb_define_global_function("gsub", rb_f_gsub, -1);
 	rb_define_global_function("chop", rb_f_chop, 0);
 	rb_define_global_function("chomp", rb_f_chomp, -1);
     }
 
-    if (opt->dump & DUMP_BIT(parsetree) || opt->dump & DUMP_BIT(parsetree_with_comment)) {
-	rb_io_write(rb_stdout, rb_parser_dump_tree(tree, opt->dump & DUMP_BIT(parsetree_with_comment)));
+    if (dump & (DUMP_BIT(parsetree)|DUMP_BIT(parsetree_with_comment))) {
+	rb_io_write(rb_stdout, rb_parser_dump_tree(tree, dump & DUMP_BIT(parsetree_with_comment)));
 	rb_io_flush(rb_stdout);
-	return Qtrue;
+	dump &= ~DUMP_BIT(parsetree)&~DUMP_BIT(parsetree_with_comment);
+	if (!dump) return Qtrue;
     }
 
-    PREPARE_PARSE_MAIN({
+    {
 	VALUE path = Qnil;
 	if (!opt->e_script && strcmp(opt->script, "-")) {
 	    path = rb_realpath_internal(Qnil, opt->script_name, 1);
 	}
-	iseq = rb_iseq_new_main(tree, opt->script_name, path);
-    });
+	base_block = toplevel_context(toplevel_binding);
+	iseq = rb_iseq_new_main(tree, opt->script_name, path, vm_block_iseq(base_block));
+    }
 
-    if (opt->dump & DUMP_BIT(insns)) {
+    if (dump & DUMP_BIT(insns)) {
 	rb_io_write(rb_stdout, rb_iseq_disasm((const rb_iseq_t *)iseq));
 	rb_io_flush(rb_stdout);
-	return Qtrue;
+	dump &= ~DUMP_BIT(insns);
+	if (!dump) return Qtrue;
     }
+    if (opt->dump & dump_exit_bits) return Qtrue;
 
     rb_define_readonly_boolean("$-p", opt->do_print);
     rb_define_readonly_boolean("$-l", opt->do_line);
@@ -1632,14 +1727,25 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     return (VALUE)iseq;
 }
 
+#ifndef DOSISH
+static void
+warn_cr_in_shebang(const char *str, long len)
+{
+    if (str[len-1] == '\n' && str[len-2] == '\r') {
+	rb_warn("shebang line ends with \\r may cause a problem");
+    }
+}
+#else
+#define warn_cr_in_shebang(str, len) (void)0
+#endif
+
 struct load_file_arg {
     VALUE parser;
     VALUE fname;
     int script;
     int xflag;
-    struct cmdline_options *opt;
+    ruby_cmdline_options_t *opt;
     VALUE f;
-    VALUE lineno;
 };
 
 static VALUE
@@ -1649,7 +1755,7 @@ load_file_internal(VALUE argp_v)
     VALUE parser = argp->parser;
     VALUE orig_fname = argp->fname;
     int script = argp->script;
-    struct cmdline_options *opt = argp->opt;
+    ruby_cmdline_options_t *opt = argp->opt;
     VALUE f = argp->f;
     int line_start = 1;
     NODE *tree = 0;
@@ -1662,7 +1768,8 @@ load_file_internal(VALUE argp_v)
     if (script) {
 	VALUE c = 1;		/* something not nil */
 	VALUE line;
-	char *p;
+	char *p, *str;
+	long len;
 	int no_src_enc = !opt->src.enc.name;
 	int no_ext_enc = !opt->ext.enc.name;
 	int no_int_enc = !opt->intern.enc.name;
@@ -1677,10 +1784,10 @@ load_file_internal(VALUE argp_v)
 	    opt->xflag = FALSE;
 	    while (!NIL_P(line = rb_io_gets(f))) {
 		line_start++;
-		if (RSTRING_LEN(line) > 2
-		    && RSTRING_PTR(line)[0] == '#'
-		    && RSTRING_PTR(line)[1] == '!') {
-		    if ((p = strstr(RSTRING_PTR(line), ruby_engine)) != 0) {
+		RSTRING_GETMEM(line, str, len);
+		if (len > 2 && str[0] == '#' && str[1] == '!') {
+		    if (line_start == 1) warn_cr_in_shebang(str, len);
+		    if ((p = strstr(str+2, ruby_engine)) != 0) {
 			goto start_read;
 		    }
 		}
@@ -1696,17 +1803,20 @@ load_file_internal(VALUE argp_v)
 		if (NIL_P(line))
 		    return 0;
 
-		if ((p = strstr(RSTRING_PTR(line), ruby_engine)) == 0) {
+		RSTRING_GETMEM(line, str, len);
+		warn_cr_in_shebang(str, len);
+		if ((p = strstr(str, ruby_engine)) == 0) {
 		    /* not ruby script, assume -x flag */
 		    goto search_shebang;
 		}
 
 	      start_read:
-		p += 4;
-		RSTRING_PTR(line)[RSTRING_LEN(line) - 1] = '\0';
-		if (RSTRING_PTR(line)[RSTRING_LEN(line) - 2] == '\r')
-		    RSTRING_PTR(line)[RSTRING_LEN(line) - 2] = '\0';
+		str += len - 1;
+		if (*str == '\n') *str-- = '\0';
+		if (*str == '\r') *str-- = '\0';
+		/* ruby_engine should not contain a space */
 		if ((p = strstr(p, " -")) != 0) {
+		    opt->warning = 0;
 		    moreswitches(p + 1, opt, 0);
 		}
 
@@ -1765,10 +1875,11 @@ static VALUE
 open_load_file(VALUE fname_v, int *xflag)
 {
     const char *fname = StringValueCStr(fname_v);
+    long flen = RSTRING_LEN(fname_v);
     VALUE f;
     int e;
 
-    if (RSTRING_LEN(fname_v) == 1 && fname[0] == '-') {
+    if (flen == 1 && fname[0] == '-') {
 	f = rb_stdin;
     }
     else {
@@ -1785,9 +1896,12 @@ open_load_file(VALUE fname_v, int *xflag)
 #endif
 	int mode = MODE_TO_LOAD;
 #if defined DOSISH || defined __CYGWIN__
+# define isdirsep(x) ((x) == '/' || (x) == '\\')
 	{
-	    const char *ext = strrchr(fname, '.');
-	    if (ext && STRCASECMP(ext, ".exe") == 0) {
+	    static const char exeext[] = ".exe";
+	    enum {extlen = sizeof(exeext)-1};
+	    if (flen > extlen && !isdirsep(fname[flen-extlen-1]) &&
+		STRNCASECMP(fname+flen-extlen, exeext, extlen) == 0) {
 		mode |= O_BINARY;
 		*xflag = 1;
 	    }
@@ -1795,7 +1909,13 @@ open_load_file(VALUE fname_v, int *xflag)
 #endif
 
 	if ((fd = rb_cloexec_open(fname, mode, 0)) < 0) {
-	    rb_load_fail(fname_v, strerror(errno));
+	    int e = errno;
+	    if (!rb_gc_for_fd(e)) {
+		rb_load_fail(fname_v, strerror(e));
+	    }
+	    if ((fd = rb_cloexec_open(fname, mode, 0)) < 0) {
+		rb_load_fail(fname_v, strerror(errno));
+	    }
 	}
 	rb_update_max_fd(fd);
 
@@ -1808,30 +1928,21 @@ open_load_file(VALUE fname_v, int *xflag)
 	}
 #endif
 
-#ifdef S_ISFIFO
-	{
-	    struct stat st;
-	    if (fstat(fd, &st) != 0) {
-		e = errno;
-		(void)close(fd);
-		rb_load_fail(fname_v, strerror(e));
-	    }
-	    if (S_ISFIFO(st.st_mode)) {
-		/*
-		  We need to wait if FIFO is empty. It's FIFO's semantics.
-		  rb_thread_wait_fd() release GVL. So, it's safe.
-		*/
-		rb_thread_wait_fd(fd);
-	    }
-	}
-#endif
-	if (!ruby_is_fd_loadable(fd)) {
+	e = ruby_is_fd_loadable(fd);
+	if (!e) {
 	    e = errno;
 	    (void)close(fd);
 	    rb_load_fail(fname_v, strerror(e));
 	}
 
 	f = rb_io_fdopen(fd, mode, fname);
+	if (e < 0) {
+	    /*
+	      We need to wait if FIFO is empty. It's FIFO's semantics.
+	      rb_thread_wait_fd() release GVL. So, it's safe.
+	    */
+	    rb_thread_wait_fd(fd);
+	}
     }
     return f;
 }
@@ -1841,7 +1952,6 @@ restore_load_file(VALUE arg)
 {
     struct load_file_arg *argp = (struct load_file_arg *)arg;
     VALUE f = argp->f;
-    VALUE lineno = argp->lineno;
 
     if (argp->script) {
 	/*
@@ -1861,11 +1971,11 @@ restore_load_file(VALUE arg)
     else if (f != rb_stdin) {
 	rb_io_close(f);
     }
-    return rb_gv_set("$.", lineno);
+    return Qnil;
 }
 
 static NODE *
-load_file(VALUE parser, VALUE fname, int script, struct cmdline_options *opt)
+load_file(VALUE parser, VALUE fname, int script, ruby_cmdline_options_t *opt)
 {
     struct load_file_arg arg;
     arg.parser = parser;
@@ -1873,7 +1983,6 @@ load_file(VALUE parser, VALUE fname, int script, struct cmdline_options *opt)
     arg.script = script;
     arg.opt = opt;
     arg.xflag = 0;
-    arg.lineno = rb_gv_get("$.");
     arg.f = open_load_file(rb_str_encode_ospath(fname), &arg.xflag);
     return (NODE *)rb_ensure(load_file_internal, (VALUE)&arg,
 			     restore_load_file, (VALUE)&arg);
@@ -1889,9 +1998,17 @@ rb_load_file(const char *fname)
 void *
 rb_load_file_str(VALUE fname_v)
 {
-    struct cmdline_options opt;
+    ruby_cmdline_options_t opt;
 
     return load_file(rb_parser_new(), fname_v, 0, cmdline_options_init(&opt));
+}
+
+void *
+rb_parser_load_file(VALUE parser, VALUE fname_v)
+{
+    ruby_cmdline_options_t opt;
+
+    return load_file(parser, fname_v, 0, cmdline_options_init(&opt));
 }
 
 /*
@@ -1984,7 +2101,7 @@ ruby_set_script_name(VALUE name)
 }
 
 static void
-init_ids(struct cmdline_options *opt)
+init_ids(ruby_cmdline_options_t *opt)
 {
     rb_uid_t uid = getuid();
     rb_uid_t euid = geteuid();
@@ -2000,7 +2117,7 @@ init_ids(struct cmdline_options *opt)
 
 #undef forbid_setid
 static void
-forbid_setid(const char *s, struct cmdline_options *opt)
+forbid_setid(const char *s, ruby_cmdline_options_t *opt)
 {
     if (opt->setids & 1)
         rb_raise(rb_eSecurityError, "no %s allowed while running setuid", s);
@@ -2083,7 +2200,7 @@ ruby_set_argv(int argc, char **argv)
 void *
 ruby_process_options(int argc, char **argv)
 {
-    struct cmdline_options opt;
+    ruby_cmdline_options_t opt;
     VALUE iseq;
     const char *script_name = (argc > 0 && argv[0]) ? argv[0] : ruby_engine;
 
@@ -2139,7 +2256,6 @@ void
 ruby_sysinit(int *argc, char ***argv)
 {
 #if defined(_WIN32)
-    void rb_w32_sysinit(int *argc, char ***argv);
     rb_w32_sysinit(argc, argv);
 #endif
     origarg.argc = *argc;

@@ -4,6 +4,7 @@
 
 #include "ruby.h"
 #include "ruby/encoding.h"
+#include "ruby/util.h"
 #include <math.h>
 #include <time.h>
 #if defined(HAVE_SYS_TIME_H)
@@ -1359,10 +1360,8 @@ encode_year(VALUE nth, int y, double style,
 static void
 decode_jd(VALUE jd, VALUE *nth, int *rjd)
 {
-    assert(FIXNUM_P(jd) || RB_TYPE_P(jd, T_BIGNUM));
     *nth = f_idiv(jd, INT2FIX(CM_PERIOD));
     if (f_zero_p(*nth)) {
-	assert(FIXNUM_P(jd));
 	*rjd = FIX2INT(jd);
 	return;
     }
@@ -3132,7 +3131,7 @@ wholenum_p(VALUE x)
 inline static VALUE
 to_integer(VALUE x)
 {
-    if (FIXNUM_P(x) || RB_TYPE_P(x, T_BIGNUM))
+    if (RB_INTEGER_TYPE_P(x))
 	return x;
     return f_to_i(x);
 }
@@ -4751,7 +4750,7 @@ d_lite_initialize(int argc, VALUE *argv, VALUE self)
 		rb_raise(rb_eArgError,
 			 "cannot load complex into simple");
 
-	    set_to_complex(&dat->c, nth, rjd, df, sf, of, sg,
+	    set_to_complex(self, &dat->c, nth, rjd, df, sf, of, sg,
 			   0, 0, 0, 0, 0, 0, HAVE_JD | HAVE_DF | COMPLEX_DAT);
 	}
     }
@@ -5255,7 +5254,7 @@ d_lite_zone(VALUE self)
  * call-seq:
  *    d.julian?  ->  bool
  *
- * Retruns true if the date is before the day of calendar reform.
+ * Returns true if the date is before the day of calendar reform.
  *
  *     Date.new(1582,10,15).julian?		#=> false
  *     (Date.new(1582,10,15) - 1).julian?	#=> true
@@ -5271,7 +5270,7 @@ d_lite_julian_p(VALUE self)
  * call-seq:
  *    d.gregorian?  ->  bool
  *
- * Retunrs true if the date is on or after the day of calendar reform.
+ * Returns true if the date is on or after the day of calendar reform.
  *
  *     Date.new(1582,10,15).gregorian?		#=> true
  *     (Date.new(1582,10,15) - 1).gregorian?	#=> false
@@ -6430,54 +6429,40 @@ d_lite_to_s(VALUE self)
 
 #ifndef NDEBUG
 static VALUE
-mk_inspect_flags(union DateData *x)
+mk_inspect_raw(union DateData *x, VALUE klass)
 {
-    return rb_enc_sprintf(rb_usascii_encoding(),
-			  "%c%c%c%c%c",
-			  (x->flags & COMPLEX_DAT) ? 'C' : 'S',
-			  (x->flags & HAVE_JD)     ? 'j' : '-',
-			  (x->flags & HAVE_DF)     ? 'd' : '-',
-			  (x->flags & HAVE_CIVIL)  ? 'c' : '-',
-			  (x->flags & HAVE_TIME)   ? 't' : '-');
-}
+    char flags[5];
 
-static VALUE
-mk_inspect_raw(union DateData *x, const char *klass)
-{
+    flags[0] = (x->flags & COMPLEX_DAT) ? 'C' : 'S';
+    flags[1] = (x->flags & HAVE_JD)     ? 'j' : '-';
+    flags[2] = (x->flags & HAVE_DF)     ? 'd' : '-';
+    flags[3] = (x->flags & HAVE_CIVIL)  ? 'c' : '-';
+    flags[4] = (x->flags & HAVE_TIME)   ? 't' : '-';
+    flags[5] = '\0';
+
     if (simple_dat_p(x)) {
-	VALUE nth, flags;
-
-	RB_GC_GUARD(nth) = f_inspect(x->s.nth);
-	RB_GC_GUARD(flags) = mk_inspect_flags(x);
-
 	return rb_enc_sprintf(rb_usascii_encoding(),
-			      "#<%s: "
-			      "(%sth,%dj),+0s,%.0fj; "
+			      "#<%"PRIsVALUE": "
+			      "(%+"PRIsVALUE"th,%dj),+0s,%.0fj; "
 			      "%dy%dm%dd; %s>",
-			      klass ? klass : "?",
-			      RSTRING_PTR(nth), x->s.jd, x->s.sg,
+			      klass,
+			      x->s.nth, x->s.jd, x->s.sg,
 #ifndef USE_PACK
 			      x->s.year, x->s.mon, x->s.mday,
 #else
 			      x->s.year,
 			      EX_MON(x->s.pc), EX_MDAY(x->s.pc),
 #endif
-			      RSTRING_PTR(flags));
+			      flags);
     }
     else {
-	VALUE nth, sf, flags;
-
-	RB_GC_GUARD(nth) = f_inspect(x->c.nth);
-	RB_GC_GUARD(sf) = f_inspect(x->c.sf);
-	RB_GC_GUARD(flags) = mk_inspect_flags(x);
-
 	return rb_enc_sprintf(rb_usascii_encoding(),
-			      "#<%s: "
-			      "(%sth,%dj,%ds,%sn),%+ds,%.0fj; "
+			      "#<%"PRIsVALUE": "
+			      "(%+"PRIsVALUE"th,%dj,%ds,%+"PRIsVALUE"n),"
+			      "%+ds,%.0fj; "
 			      "%dy%dm%dd %dh%dm%ds; %s>",
-			      klass ? klass : "?",
-			      RSTRING_PTR(nth), x->c.jd, x->c.df,
-			      RSTRING_PTR(sf),
+			      klass,
+			      x->c.nth, x->c.jd, x->c.df, x->c.sf,
 			      x->c.of, x->c.sg,
 #ifndef USE_PACK
 			      x->c.year, x->c.mon, x->c.mday,
@@ -6488,7 +6473,7 @@ mk_inspect_raw(union DateData *x, const char *klass)
 			      EX_HOUR(x->c.pc), EX_MIN(x->c.pc),
 			      EX_SEC(x->c.pc),
 #endif
-			      RSTRING_PTR(flags));
+			      flags);
     }
 }
 
@@ -6496,23 +6481,18 @@ static VALUE
 d_lite_inspect_raw(VALUE self)
 {
     get_d1(self);
-    return mk_inspect_raw(dat, rb_obj_classname(self));
+    return mk_inspect_raw(dat, rb_obj_class(self));
 }
 #endif
 
 static VALUE
-mk_inspect(union DateData *x, const char *klass, const char *to_s)
+mk_inspect(union DateData *x, VALUE klass, VALUE to_s)
 {
-    VALUE jd, sf;
-
-    RB_GC_GUARD(jd) = f_inspect(m_real_jd(x));
-    RB_GC_GUARD(sf) = f_inspect(m_sf(x));
-
     return rb_enc_sprintf(rb_usascii_encoding(),
-			  "#<%s: %s ((%sj,%ds,%sn),%+ds,%.0fj)>",
-			  klass ? klass : "?",
-			  to_s ? to_s : "?",
-			  RSTRING_PTR(jd), m_df(x), RSTRING_PTR(sf),
+			  "#<%"PRIsVALUE": %"PRIsVALUE" "
+			  "((%+"PRIsVALUE"j,%ds,%+"PRIsVALUE"n),%+ds,%.0fj)>",
+			  klass, to_s,
+			  m_real_jd(x), m_df(x), m_sf(x),
 			  m_of(x), m_sg(x));
 }
 
@@ -6531,12 +6511,7 @@ static VALUE
 d_lite_inspect(VALUE self)
 {
     get_d1(self);
-    {
-	VALUE to_s;
-
-	RB_GC_GUARD(to_s) = f_to_s(self);
-	return mk_inspect(dat, rb_obj_classname(self), RSTRING_PTR(to_s));
-    }
+    return mk_inspect(dat, rb_obj_class(self), self);
 }
 
 #include <errno.h>
@@ -6625,7 +6600,7 @@ tmx_m_zone(union DateData *x)
     return RSTRING_PTR(m_zone(x));
 }
 
-static struct tmx_funcs tmx_funcs = {
+static const struct tmx_funcs tmx_funcs = {
     (VALUE (*)(void *))m_real_year,
     (int (*)(void *))m_yday,
     (int (*)(void *))m_mon,
@@ -6714,32 +6689,32 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
  * call-seq:
  *    d.strftime([format='%F'])  ->  string
  *
- *  Formats date according to the directives in the given format
- *  string.
- *  The directives begins with a percent (%) character.
- *  Any text not listed as a directive will be passed through to the
- *  output string.
+ * Formats date according to the directives in the given format
+ * string.
+ * The directives begins with a percent (%) character.
+ * Any text not listed as a directive will be passed through to the
+ * output string.
  *
- *  The directive consists of a percent (%) character,
- *  zero or more flags, optional minimum field width,
- *  optional modifier and a conversion specifier
- *  as follows.
+ * The directive consists of a percent (%) character,
+ * zero or more flags, optional minimum field width,
+ * optional modifier and a conversion specifier
+ * as follows.
  *
  *    %<flags><width><modifier><conversion>
  *
- *  Flags:
+ * Flags:
  *    -  don't pad a numerical output.
  *    _  use spaces for padding.
  *    0  use zeros for padding.
  *    ^  upcase the result string.
  *    #  change case.
  *
- *  The minimum field width specifies the minimum width.
+ * The minimum field width specifies the minimum width.
  *
- *  The modifiers are "E", "O", ":", "::" and ":::".
- *  "E" and "O" are ignored.  No effect to result currently.
+ * The modifiers are "E", "O", ":", "::" and ":::".
+ * "E" and "O" are ignored.  No effect to result currently.
  *
- *  Format directives:
+ * Format directives:
  *
  *    Date (Year, Month, Day):
  *      %Y - Year with century (can be negative, 4 digits at least)
@@ -6832,23 +6807,23 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
  *      %T - 24-hour time (%H:%M:%S)
  *      %+ - date(1) (%a %b %e %H:%M:%S %Z %Y)
  *
- *  This method is similar to strftime() function defined in ISO C and POSIX.
- *  Several directives (%a, %A, %b, %B, %c, %p, %r, %x, %X, %E*, %O* and %Z)
- *  are locale dependent in the function.
- *  However this method is locale independent.
- *  So, the result may differ even if a same format string is used in other
- *  systems such as C.
- *  It is good practice to avoid %x and %X because there are corresponding
- *  locale independent representations, %D and %T.
+ * This method is similar to strftime() function defined in ISO C and POSIX.
+ * Several directives (%a, %A, %b, %B, %c, %p, %r, %x, %X, %E*, %O* and %Z)
+ * are locale dependent in the function.
+ * However this method is locale independent.
+ * So, the result may differ even if a same format string is used in other
+ * systems such as C.
+ * It is good practice to avoid %x and %X because there are corresponding
+ * locale independent representations, %D and %T.
  *
- *  Examples:
+ * Examples:
  *
  *    d = DateTime.new(2007,11,19,8,37,48,"-06:00")
  *				#=> #<DateTime: 2007-11-19T08:37:48-0600 ...>
  *    d.strftime("Printed on %m/%d/%Y")   #=> "Printed on 11/19/2007"
  *    d.strftime("at %I:%M%p")            #=> "at 08:37AM"
  *
- *  Various ISO 8601 formats:
+ * Various ISO 8601 formats:
  *    %Y%m%d           => 20071119                  Calendar date (basic)
  *    %F               => 2007-11-19                Calendar date (extended)
  *    %Y-%m            => 2007-11                   Calendar date, reduced accuracy, specific month
@@ -6904,6 +6879,7 @@ strftimev(const char *fmt, VALUE self,
 
     (*func)(self, &tmx);
     len = date_strftime_alloc(&buf, fmt, &tmx);
+    RB_GC_GUARD(self);
     str = rb_usascii_str_new(buf, len);
     if (buf != buffer) xfree(buf);
     return str;
@@ -6977,30 +6953,40 @@ d_lite_httpdate(VALUE self)
     return strftimev("%a, %d %b %Y %T GMT", dup, set_tmx);
 }
 
-static VALUE
-jisx0301_date(VALUE jd, VALUE y)
-{
-    VALUE a[2];
+enum {
+    DECIMAL_SIZE_OF_LONG = DECIMAL_SIZE_OF_BITS(CHAR_BIT*sizeof(long)),
+    JISX0301_DATE_SIZE = DECIMAL_SIZE_OF_LONG+8
+};
 
-    if (f_lt_p(jd, INT2FIX(2405160)))
-	return rb_usascii_str_new2("%Y-%m-%d");
-    if (f_lt_p(jd, INT2FIX(2419614))) {
-	a[0] = rb_usascii_str_new2("M%02d" ".%%m.%%d");
-	a[1] = f_sub(y, INT2FIX(1867));
+static const char *
+jisx0301_date_format(char *fmt, size_t size, VALUE jd, VALUE y)
+{
+    if (FIXNUM_P(jd)) {
+	long d = FIX2INT(jd);
+	long s;
+	char c;
+	if (d < 2405160)
+	    return "%Y-%m-%d";
+	if (d < 2419614) {
+	    c = 'M';
+	    s = 1867;
+	}
+	else if (d < 2424875) {
+	    c = 'T';
+	    s = 1911;
+	}
+	else if (d < 2447535) {
+	    c = 'S';
+	    s = 1925;
+	}
+	else {
+	    c = 'H';
+	    s = 1988;
+	}
+	snprintf(fmt, size, "%c%02ld" ".%%m.%%d", c, FIX2INT(y) - s);
+	return fmt;
     }
-    else if (f_lt_p(jd, INT2FIX(2424875))) {
-	a[0] = rb_usascii_str_new2("T%02d" ".%%m.%%d");
-	a[1] = f_sub(y, INT2FIX(1911));
-    }
-    else if (f_lt_p(jd, INT2FIX(2447535))) {
-	a[0] = rb_usascii_str_new2("S%02d" ".%%m.%%d");
-	a[1] = f_sub(y, INT2FIX(1925));
-    }
-    else {
-	a[0] = rb_usascii_str_new2("H%02d" ".%%m.%%d");
-	a[1] = f_sub(y, INT2FIX(1988));
-    }
-    return rb_f_sprintf(2, a);
+    return "%Y-%m-%d";
 }
 
 /*
@@ -7014,12 +7000,14 @@ jisx0301_date(VALUE jd, VALUE y)
 static VALUE
 d_lite_jisx0301(VALUE self)
 {
-    VALUE s;
+    char fmtbuf[JISX0301_DATE_SIZE];
+    const char *fmt;
 
     get_d1(self);
-    s = jisx0301_date(m_real_local_jd(dat),
-		      m_real_year(dat));
-    return strftimev(RSTRING_PTR(s), self, set_tmx);
+    fmt = jisx0301_date_format(fmtbuf, sizeof(fmtbuf),
+			       m_real_local_jd(dat),
+			       m_real_year(dat));
+    return strftimev(fmt, self, set_tmx);
 }
 
 #ifndef NDEBUG
@@ -8144,20 +8132,20 @@ dt_lite_to_s(VALUE self)
  * call-seq:
  *    dt.strftime([format='%FT%T%:z'])  ->  string
  *
- *  Formats date according to the directives in the given format
- *  string.
- *  The directives begins with a percent (%) character.
- *  Any text not listed as a directive will be passed through to the
- *  output string.
+ * Formats date according to the directives in the given format
+ * string.
+ * The directives begins with a percent (%) character.
+ * Any text not listed as a directive will be passed through to the
+ * output string.
  *
- *  The directive consists of a percent (%) character,
- *  zero or more flags, optional minimum field width,
- *  optional modifier and a conversion specifier
- *  as follows.
+ * The directive consists of a percent (%) character,
+ * zero or more flags, optional minimum field width,
+ * optional modifier and a conversion specifier
+ * as follows.
  *
  *    %<flags><width><modifier><conversion>
  *
- *  Flags:
+ * Flags:
  *    -  don't pad a numerical output.
  *    _  use spaces for padding.
  *    0  use zeros for padding.
@@ -8165,12 +8153,12 @@ dt_lite_to_s(VALUE self)
  *    #  change case.
  *    :  use colons for %z.
  *
- *  The minimum field width specifies the minimum width.
+ * The minimum field width specifies the minimum width.
  *
- *  The modifier is "E" and "O".
- *  They are ignored.
+ * The modifier is "E" and "O".
+ * They are ignored.
  *
- *  Format directives:
+ * Format directives:
  *
  *    Date (Year, Month, Day):
  *      %Y - Year with century (can be negative, 4 digits at least)
@@ -8263,23 +8251,23 @@ dt_lite_to_s(VALUE self)
  *      %T - 24-hour time (%H:%M:%S)
  *      %+ - date(1) (%a %b %e %H:%M:%S %Z %Y)
  *
- *  This method is similar to strftime() function defined in ISO C and POSIX.
- *  Several directives (%a, %A, %b, %B, %c, %p, %r, %x, %X, %E*, %O* and %Z)
- *  are locale dependent in the function.
- *  However this method is locale independent.
- *  So, the result may differ even if a same format string is used in other
- *  systems such as C.
- *  It is good practice to avoid %x and %X because there are corresponding
- *  locale independent representations, %D and %T.
+ * This method is similar to strftime() function defined in ISO C and POSIX.
+ * Several directives (%a, %A, %b, %B, %c, %p, %r, %x, %X, %E*, %O* and %Z)
+ * are locale dependent in the function.
+ * However this method is locale independent.
+ * So, the result may differ even if a same format string is used in other
+ * systems such as C.
+ * It is good practice to avoid %x and %X because there are corresponding
+ * locale independent representations, %D and %T.
  *
- *  Examples:
+ * Examples:
  *
  *    d = DateTime.new(2007,11,19,8,37,48,"-06:00")
  *				#=> #<DateTime: 2007-11-19T08:37:48-0600 ...>
  *    d.strftime("Printed on %m/%d/%Y")   #=> "Printed on 11/19/2007"
  *    d.strftime("at %I:%M%p")            #=> "at 08:37AM"
  *
- *  Various ISO 8601 formats:
+ * Various ISO 8601 formats:
  *    %Y%m%d           => 20071119                  Calendar date (basic)
  *    %F               => 2007-11-19                Calendar date (extended)
  *    %Y-%m            => 2007-11                   Calendar date, reduced accuracy, specific month
@@ -8325,26 +8313,19 @@ dt_lite_strftime(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-iso8601_timediv(VALUE self, VALUE n)
+iso8601_timediv(VALUE self, long n)
 {
-    VALUE fmt;
+    static const char timefmt[] = "T%H:%M:%S";
+    static const char zone[] = "%:z";
+    char fmt[sizeof(timefmt) + sizeof(zone) + rb_strlen_lit(".%N") +
+	     DECIMAL_SIZE_OF_LONG];
+    char *p = fmt;
 
-    n = to_integer(n);
-    fmt = rb_usascii_str_new2("T%H:%M:%S");
-    if (f_gt_p(n, INT2FIX(0))) {
-	VALUE argv[3];
-
-	get_d1(self);
-
-	argv[0] = rb_usascii_str_new2(".%0*d");
-	argv[1] = n;
-	argv[2] = f_round(f_quo(m_sf_in_sec(dat),
-				f_quo(INT2FIX(1),
-				      f_expt(INT2FIX(10), n))));
-	rb_str_append(fmt, rb_f_sprintf(3, argv));
-    }
-    rb_str_append(fmt, rb_usascii_str_new2("%:z"));
-    return strftimev(RSTRING_PTR(fmt), self, set_tmx);
+    memcpy(p, timefmt, sizeof(timefmt)-1);
+    p += sizeof(timefmt)-1;
+    if (n > 0) p += snprintf(p, fmt+sizeof(fmt)-p, ".%%%ldN", n);
+    memcpy(p, zone, sizeof(zone));
+    return strftimev(fmt, self, set_tmx);
 }
 
 /*
@@ -8361,15 +8342,14 @@ iso8601_timediv(VALUE self, VALUE n)
 static VALUE
 dt_lite_iso8601(int argc, VALUE *argv, VALUE self)
 {
-    VALUE n;
+    long n = 0;
 
-    rb_scan_args(argc, argv, "01", &n);
+    rb_check_arity(argc, 0, 1);
+    if (argc >= 1)
+	n = NUM2LONG(argv[0]);
 
-    if (argc < 1)
-	n = INT2FIX(0);
-
-    return f_add(strftimev("%Y-%m-%d", self, set_tmx),
-		 iso8601_timediv(self, n));
+    return rb_str_append(strftimev("%Y-%m-%d", self, set_tmx),
+			 iso8601_timediv(self, n));
 }
 
 /*
@@ -8401,41 +8381,32 @@ dt_lite_rfc3339(int argc, VALUE *argv, VALUE self)
 static VALUE
 dt_lite_jisx0301(int argc, VALUE *argv, VALUE self)
 {
-    VALUE n, s;
+    long n = 0;
 
-    rb_scan_args(argc, argv, "01", &n);
+    rb_check_arity(argc, 0, 1);
+    if (argc >= 1)
+	n = NUM2LONG(argv[0]);
 
-    if (argc < 1)
-	n = INT2FIX(0);
-
-    {
-	get_d1(self);
-	s = jisx0301_date(m_real_local_jd(dat),
-			  m_real_year(dat));
-	return rb_str_append(strftimev(RSTRING_PTR(s), self, set_tmx),
-			     iso8601_timediv(self, n));
-    }
+    return rb_str_append(d_lite_jisx0301(self),
+			 iso8601_timediv(self, n));
 }
 
 /* conversions */
 
-#define f_getlocal(x) rb_funcall(x, rb_intern("getlocal"), 0)
 #define f_subsec(x) rb_funcall(x, rb_intern("subsec"), 0)
 #define f_utc_offset(x) rb_funcall(x, rb_intern("utc_offset"), 0)
 #define f_local3(x,y,m,d) rb_funcall(x, rb_intern("local"), 3, y, m, d)
-#define f_utc6(x,y,m,d,h,min,s) rb_funcall(x, rb_intern("utc"), 6,\
-					   y, m, d, h, min, s)
 
 /*
  * call-seq:
  *    t.to_time  ->  time
  *
- * Returns a copy of self as local mode.
+ * Returns self.
  */
 static VALUE
 time_to_time(VALUE self)
 {
-    return f_getlocal(self);
+    return self;
 }
 
 /*
@@ -8530,7 +8501,7 @@ date_to_time(VALUE self)
  * call-seq:
  *    d.to_date  ->  self
  *
- * Returns self;
+ * Returns self.
  */
 static VALUE
 date_to_date(VALUE self)
@@ -8587,21 +8558,24 @@ date_to_datetime(VALUE self)
 static VALUE
 datetime_to_time(VALUE self)
 {
-    volatile VALUE dup = dup_obj_with_new_offset(self, 0);
+    volatile VALUE dup = dup_obj(self);
     {
 	VALUE t;
 
 	get_d1(dup);
 
-	t = f_utc6(rb_cTime,
+	t = rb_funcall(rb_cTime,
+		   rb_intern("new"),
+                   7,
 		   m_real_year(dat),
 		   INT2FIX(m_mon(dat)),
 		   INT2FIX(m_mday(dat)),
 		   INT2FIX(m_hour(dat)),
 		   INT2FIX(m_min(dat)),
 		   f_add(INT2FIX(m_sec(dat)),
-			 m_sf_in_sec(dat)));
-	return f_getlocal(t);
+			 m_sf_in_sec(dat)),
+		   INT2FIX(m_of(dat)));
+	return t;
     }
 }
 
