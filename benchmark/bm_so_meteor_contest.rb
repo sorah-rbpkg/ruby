@@ -155,7 +155,7 @@ class Rotation
 
   # given a set of directions places the piece (as defined by a set of directions) on the board at
   # a location that will not take it off the edge
-  def get_values ( directions )
+  def get_values( directions )
     start = start_adjust(directions)
     values = [ start ]
     directions.each do | direction |
@@ -260,7 +260,7 @@ end
 
 # support function that create three utility maps:
 #  $converter -- for each row an array that maps a five bit row (via array mapping)
-#                to the a a five bit representation of the bits below it
+#                to the a five bit representation of the bits below it
 #  $bit_count -- maps a five bit row (via array mapping) to the number of 1s in the row
 #  @@new_regions -- maps a five bit row (via array mapping) to an array of "region" arrays
 #                   a region array has three values the first is a mask of bits in the region,
@@ -561,4 +561,3 @@ create_collector_support
 @boards_found = 0
 
 find_all ######## DO IT!!!
-

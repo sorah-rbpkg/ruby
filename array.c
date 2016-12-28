@@ -20,7 +20,7 @@
 #ifndef ARRAY_DEBUG
 # define NDEBUG
 #endif
-#include <assert.h>
+#include "ruby_assert.h"
 
 VALUE rb_cArray;
 
@@ -935,7 +935,7 @@ rb_ary_cat(VALUE ary, const VALUE *argv, long len)
  *     a = [ "a", "b", "c" ]
  *     a.push("d", "e", "f")
  *             #=> ["a", "b", "c", "d", "e", "f"]
- *     [1, 2, 3,].push(4).push(5)
+ *     [1, 2, 3].push(4).push(5)
  *             #=> [1, 2, 3, 4, 5]
  */
 
@@ -1195,10 +1195,17 @@ rb_ary_elt(VALUE ary, long offset)
 VALUE
 rb_ary_entry(VALUE ary, long offset)
 {
+    long len = RARRAY_LEN(ary);
+    const VALUE *ptr = RARRAY_CONST_PTR(ary);
+    if (len == 0) return Qnil;
     if (offset < 0) {
-	offset += RARRAY_LEN(ary);
+        offset += len;
+        if (offset < 0) return Qnil;
     }
-    return rb_ary_elt(ary, offset);
+    else if (len <= offset) {
+        return Qnil;
+    }
+    return ptr[offset];
 }
 
 VALUE
@@ -1375,8 +1382,9 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary)
  *  +default+ value.
  *
  *  Alternatively, if a block is given it will only be executed when an
- *  invalid +index+ is referenced.  Negative values of +index+ count from the
- *  end of the array.
+ *  invalid +index+ is referenced.
+ *
+ *  Negative values of +index+ count from the end of the array.
  *
  *     a = [ 11, 22, 33, 44 ]
  *     a.fetch(1)               #=> 22
@@ -1553,10 +1561,10 @@ rb_ary_to_ary(VALUE obj)
 }
 
 static void
-rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
+rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
 {
-    long rlen;
     long olen;
+    long rofs;
 
     if (len < 0) rb_raise(rb_eIndexError, "negative length (%ld)", len);
     olen = RARRAY_LEN(ary);
@@ -1571,14 +1579,11 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	len = olen - beg;
     }
 
-    if (rpl == Qundef) {
-	rlen = 0;
+    {
+	const VALUE *optr = RARRAY_CONST_PTR(ary);
+	rofs = (rptr >= optr && rptr < optr + olen) ? rptr - optr : -1;
     }
-    else {
-	rpl = rb_ary_to_ary(rpl);
-	rlen = RARRAY_LEN(rpl);
-	olen = RARRAY_LEN(ary);	/* ary may be resized in rpl.to_ary too */
-    }
+
     if (beg >= olen) {
 	VALUE target_ary;
 	if (beg > ARY_MAX_SIZE - rlen) {
@@ -1588,7 +1593,8 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	len = beg + rlen;
 	ary_mem_clear(ary, olen, beg - olen);
 	if (rlen > 0) {
-	    ary_memcpy0(ary, beg, rlen, RARRAY_CONST_PTR(rpl), target_ary);
+	    if (rofs != -1) rptr = RARRAY_CONST_PTR(ary) + rofs;
+	    ary_memcpy0(ary, beg, rlen, rptr, target_ary);
 	}
 	ARY_SET_LEN(ary, len);
     }
@@ -1611,10 +1617,10 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	    ARY_SET_LEN(ary, alen);
 	}
 	if (rlen > 0) {
-	    MEMMOVE(RARRAY_PTR(ary) + beg, RARRAY_CONST_PTR(rpl), VALUE, rlen);
+	    if (rofs != -1) rptr = RARRAY_CONST_PTR(ary) + rofs;
+	    MEMMOVE(RARRAY_PTR(ary) + beg, rptr, VALUE, rlen);
 	}
     }
-    RB_GC_GUARD(rpl);
 }
 
 void
@@ -1717,13 +1723,13 @@ static VALUE
 rb_ary_aset(int argc, VALUE *argv, VALUE ary)
 {
     long offset, beg, len;
+    VALUE rpl;
 
     if (argc == 3) {
 	rb_ary_modify_check(ary);
 	beg = NUM2LONG(argv[0]);
 	len = NUM2LONG(argv[1]);
-	rb_ary_splice(ary, beg, len, argv[2]);
-	return argv[2];
+	goto range;
     }
     rb_check_arity(argc, 2, 2);
     rb_ary_modify_check(ary);
@@ -1733,8 +1739,11 @@ rb_ary_aset(int argc, VALUE *argv, VALUE ary)
     }
     if (rb_range_beg_len(argv[0], &beg, &len, RARRAY_LEN(ary), 1)) {
 	/* check if idx is Range */
-	rb_ary_splice(ary, beg, len, argv[1]);
-	return argv[1];
+      range:
+	rpl = rb_ary_to_ary(argv[argc-1]);
+	rb_ary_splice(ary, beg, len, RARRAY_CONST_PTR(rpl), RARRAY_LEN(rpl));
+	RB_GC_GUARD(rpl);
+	return argv[argc-1];
     }
 
     offset = NUM2LONG(argv[0]);
@@ -1774,7 +1783,7 @@ rb_ary_insert(int argc, VALUE *argv, VALUE ary)
     if (pos < 0) {
 	pos++;
     }
-    rb_ary_splice(ary, pos, 0, rb_ary_new4(argc - 1, argv + 1));
+    rb_ary_splice(ary, pos, 0, argv + 1, argc - 1);
     return ary;
 }
 
@@ -2364,25 +2373,8 @@ rb_ary_rotate_m(int argc, VALUE *argv, VALUE ary)
 
 struct ary_sort_data {
     VALUE ary;
-    int opt_methods;
-    int opt_inited;
+    struct cmp_opt_data cmp_opt;
 };
-
-enum {
-    sort_opt_Fixnum,
-    sort_opt_String,
-    sort_optimizable_count
-};
-
-#define STRING_P(s) (RB_TYPE_P((s), T_STRING) && CLASS_OF(s) == rb_cString)
-
-#define SORT_OPTIMIZABLE_BIT(type) (1U << TOKEN_PASTE(sort_opt_,type))
-#define SORT_OPTIMIZABLE(data, type) \
-    (((data)->opt_inited & SORT_OPTIMIZABLE_BIT(type)) ? \
-     ((data)->opt_methods & SORT_OPTIMIZABLE_BIT(type)) : \
-     (((data)->opt_inited |= SORT_OPTIMIZABLE_BIT(type)), \
-      rb_method_basic_definition_p(TOKEN_PASTE(rb_c,type), id_cmp) && \
-      ((data)->opt_methods |= SORT_OPTIMIZABLE_BIT(type))))
 
 static VALUE
 sort_reentered(VALUE ary)
@@ -2415,12 +2407,12 @@ sort_2(const void *ap, const void *bp, void *dummy)
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
     int n;
 
-    if (FIXNUM_P(a) && FIXNUM_P(b) && SORT_OPTIMIZABLE(data, Fixnum)) {
+    if (FIXNUM_P(a) && FIXNUM_P(b) && CMP_OPTIMIZABLE(data->cmp_opt, Fixnum)) {
 	if ((long)a > (long)b) return 1;
 	if ((long)a < (long)b) return -1;
 	return 0;
     }
-    if (STRING_P(a) && STRING_P(b) && SORT_OPTIMIZABLE(data, String)) {
+    if (STRING_P(a) && STRING_P(b) && CMP_OPTIMIZABLE(data->cmp_opt, String)) {
 	return rb_str_cmp(a, b);
     }
 
@@ -2445,6 +2437,9 @@ sort_2(const void *ap, const void *bp, void *dummy)
  *  an integer less than 0 when +b+ follows +a+, +0+ when +a+ and +b+
  *  are equivalent, or an integer greater than 0 when +a+ follows +b+.
  *
+ *  The result is not guaranteed as stable.  When comparison of two
+ *  elements returns +0+, the order of the elements is unpredictable.
+ *
  *  See also Enumerable#sort_by.
  *
  *     a = [ "d", "a", "e", "c", "b" ]
@@ -2464,8 +2459,8 @@ rb_ary_sort_bang(VALUE ary)
 
 	RBASIC_CLEAR_CLASS(tmp);
 	data.ary = tmp;
-	data.opt_methods = 0;
-	data.opt_inited = 0;
+	data.cmp_opt.opt_methods = 0;
+	data.cmp_opt.opt_inited = 0;
 	RARRAY_PTR_USE(tmp, ptr, {
 	    ruby_qsort(ptr, len, sizeof(VALUE),
 		       rb_block_given_p()?sort_1:sort_2, &data);
@@ -2526,6 +2521,8 @@ rb_ary_sort_bang(VALUE ary)
  *  an integer less than 0 when +b+ follows +a+, +0+ when +a+ and +b+
  *  are equivalent, or an integer greater than 0 when +a+ follows +b+.
  *
+ *  The result is not guaranteed as stable.  When comparison of two
+ *  elements returns +0+, the order of the elements is unpredictable.
  *
  *  See also Enumerable#sort_by.
  *
@@ -2682,6 +2679,9 @@ sort_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, dummy))
  *
  *  Sorts +self+ in place using a set of keys generated by mapping the
  *  values in +self+ through the given block.
+ *
+ *  The result is not guaranteed as stable.  When two keys are equal,
+ *  the order of the corresponding elements is unpredictable.
  *
  *  If no block is given, an Enumerator is returned instead.
  *
@@ -2886,13 +2886,15 @@ select_bang_ensure(VALUE a)
     long len = RARRAY_LEN(ary);
     long i1 = arg->len[0], i2 = arg->len[1];
 
-    if (i2 < i1) {
+    if (i2 < len && i2 < i1) {
+	long tail = 0;
 	if (i1 < len) {
+	    tail = len - i1;
 	    RARRAY_PTR_USE(ary, ptr, {
-		    MEMMOVE(ptr + i2, ptr + i1, VALUE, len - i1);
+		    MEMMOVE(ptr + i2, ptr + i1, VALUE, tail);
 		});
 	}
-	ARY_SET_LEN(ary, len - i1 + i2);
+	ARY_SET_LEN(ary, i2 + tail);
     }
     return ary;
 }
@@ -3126,7 +3128,7 @@ rb_ary_slice_bang(int argc, VALUE *argv, VALUE ary)
 	if (len == 0) return rb_ary_new2(0);
 	arg2 = rb_ary_new4(len, RARRAY_CONST_PTR(ary)+pos);
 	RBASIC_SET_CLASS(arg2, rb_obj_class(ary));
-	rb_ary_splice(ary, pos, len, Qundef);
+	rb_ary_splice(ary, pos, len, 0, 0);
 	return arg2;
     }
 
@@ -3530,12 +3532,10 @@ rb_ary_clear(VALUE ary)
 static VALUE
 rb_ary_fill(int argc, VALUE *argv, VALUE ary)
 {
-    VALUE item, arg1, arg2;
+    VALUE item = Qundef, arg1, arg2;
     long beg = 0, end = 0, len = 0;
-    int block_p = FALSE;
 
     if (rb_block_given_p()) {
-	block_p = TRUE;
 	rb_scan_args(argc, argv, "02", &arg1, &arg2);
 	argc += 1;		/* hackish */
     }
@@ -3577,7 +3577,7 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
 	ARY_SET_LEN(ary, end);
     }
 
-    if (block_p) {
+    if (item == Qundef) {
 	VALUE v;
 	long i;
 
@@ -3634,31 +3634,58 @@ rb_ary_plus(VALUE x, VALUE y)
     return z;
 }
 
-/*
- *  call-seq:
- *     ary.concat(other_ary)   -> ary
- *
- *  Appends the elements of +other_ary+ to +self+.
- *
- *     [ "a", "b" ].concat( ["c", "d"] ) #=> [ "a", "b", "c", "d" ]
- *     a = [ 1, 2, 3 ]
- *     a.concat( [ 4, 5 ] )
- *     a                                 #=> [ 1, 2, 3, 4, 5 ]
- *
- *  See also Array#+.
- */
-
-VALUE
-rb_ary_concat(VALUE x, VALUE y)
+static VALUE
+ary_append(VALUE x, VALUE y)
 {
-    rb_ary_modify_check(x);
-    y = to_ary(y);
-    if (RARRAY_LEN(y) > 0) {
-	rb_ary_splice(x, RARRAY_LEN(x), 0, y);
+    long n = RARRAY_LEN(y);
+    if (n > 0) {
+	rb_ary_splice(x, RARRAY_LEN(x), 0, RARRAY_CONST_PTR(y), n);
     }
     return x;
 }
 
+/*
+ *  call-seq:
+ *     ary.concat(other_ary1, other_ary2,...)   -> ary
+ *
+ *  Appends the elements of +other_ary+s to +self+.
+ *
+ *     [ "a", "b" ].concat( ["c", "d"] ) #=> [ "a", "b", "c", "d" ]
+ *     [ "a" ].concat( ["b"], ["c", "d"] ) #=> [ "a", "b", "c", "d" ]
+ *     [ "a" ].concat #=> [ "a" ]
+ *
+ *     a = [ 1, 2, 3 ]
+ *     a.concat( [ 4, 5 ] )
+ *     a                                 #=> [ 1, 2, 3, 4, 5 ]
+ *
+ *     a = [ 1, 2 ]
+ *     a.concat(a, a)                    #=> [1, 2, 1, 2, 1, 2]
+ *
+ *  See also Array#+.
+ */
+
+static VALUE
+rb_ary_concat_multi(int argc, VALUE *argv, VALUE ary)
+{
+    rb_ary_modify_check(ary);
+
+    if (argc > 0) {
+	int i;
+	VALUE args = rb_ary_tmp_new(argc);
+	for (i = 0; i < argc; i++) {
+	    rb_ary_concat(args, argv[i]);
+	}
+	ary_append(ary, args);
+    }
+
+    return ary;
+}
+
+VALUE
+rb_ary_concat(VALUE x, VALUE y)
+{
+    return ary_append(x, to_ary(y));
+}
 
 /*
  *  call-seq:
@@ -3887,7 +3914,7 @@ rb_ary_eql(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary.hash   -> fixnum
+ *     ary.hash   -> integer
  *
  *  Compute a hash-code for this array.
  *
@@ -3911,7 +3938,7 @@ rb_ary_hash(VALUE ary)
 	h = rb_hash_uint(h, NUM2LONG(n));
     }
     h = rb_hash_end(h);
-    return LONG2FIX(h);
+    return ST2FIX(h);
 }
 
 /*
@@ -4020,9 +4047,7 @@ ary_add_hash(VALUE hash, VALUE ary)
 
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	VALUE elt = RARRAY_AREF(ary, i);
-	if (rb_hash_lookup2(hash, elt, Qundef) == Qundef) {
-	    rb_hash_aset(hash, elt, elt);
-	}
+	rb_hash_add_new_element(hash, elt, elt);
     }
     return hash;
 }
@@ -4050,9 +4075,7 @@ ary_add_hash_by(VALUE hash, VALUE ary)
 
     for (i = 0; i < RARRAY_LEN(ary); ++i) {
 	VALUE v = rb_ary_elt(ary, i), k = rb_yield(v);
-	if (rb_hash_lookup2(hash, k, Qundef) == Qundef) {
-	    rb_hash_aset(hash, k, v);
-	}
+	rb_hash_add_new_element(hash, k, v);
     }
     return hash;
 }
@@ -4114,13 +4137,12 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *  call-seq:
  *     ary & other_ary      -> new_ary
  *
- *  Set Intersection --- Returns a new array containing elements common to the
- *  two arrays, excluding any duplicates. The order is preserved from the
- *  original array.
+ *  Set Intersection --- Returns a new array containing unique elements common to the
+ *  two arrays. The order is preserved from the original array.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
  *
- *     [ 1, 1, 3, 5 ] & [ 1, 2, 3 ]                 #=> [ 1, 3 ]
+ *     [ 1, 1, 3, 5 ] & [ 3, 2, 1 ]                 #=> [ 1, 3 ]
  *     [ 'a', 'b', 'b', 'z' ] & [ 'a', 'b', 'c' ]   #=> [ 'a', 'b' ]
  *
  *  See also Array#uniq.
@@ -4166,11 +4188,12 @@ ary_hash_orset(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
  *     ary | other_ary     -> new_ary
  *
  *  Set Union --- Returns a new array by joining +ary+ with +other_ary+,
- *  excluding any duplicates and preserving the order from the original array.
+ *  excluding any duplicates and preserving the order from the given arrays.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
  *
  *     [ "a", "b", "c" ] | [ "c", "d", "a" ]    #=> [ "a", "b", "c", "d" ]
+ *     [ "c", "d", "a" ] | [ "a", "b", "c" ]    #=> [ "c", "d", "a", "b" ]
  *
  *  See also Array#uniq.
  */
@@ -4193,6 +4216,116 @@ rb_ary_or(VALUE ary1, VALUE ary2)
     ary3 = rb_hash_values(hash);
     ary_recycle_hash(hash);
     return ary3;
+}
+
+/*
+ *  call-seq:
+ *     ary.max                     -> obj
+ *     ary.max { |a, b| block }    -> obj
+ *     ary.max(n)                  -> array
+ *     ary.max(n) { |a, b| block } -> array
+ *
+ *  Returns the object in _ary_ with the maximum value. The
+ *  first form assumes all objects implement <code>Comparable</code>;
+ *  the second uses the block to return <em>a <=> b</em>.
+ *
+ *     a = %w(albatross dog horse)
+ *     a.max                                   #=> "horse"
+ *     a.max { |a, b| a.length <=> b.length }  #=> "albatross"
+ *
+ *  If the +n+ argument is given, maximum +n+ elements are returned
+ *  as an array.
+ *
+ *     a = %w[albatross dog horse]
+ *     a.max(2)                                  #=> ["horse", "dog"]
+ *     a.max(2) {|a, b| a.length <=> b.length }  #=> ["albatross", "horse"]
+ */
+static VALUE
+rb_ary_max(int argc, VALUE *argv, VALUE ary)
+{
+    struct cmp_opt_data cmp_opt = { 0, 0 };
+    VALUE result = Qundef, v;
+    VALUE num;
+    long i;
+
+    rb_scan_args(argc, argv, "01", &num);
+
+    if (!NIL_P(num))
+       return rb_nmin_run(ary, num, 0, 1, 1);
+
+    if (rb_block_given_p()) {
+	for (i = 0; i < RARRAY_LEN(ary); i++) {
+	   v = RARRAY_AREF(ary, i);
+	   if (result == Qundef || rb_cmpint(rb_yield_values(2, v, result), v, result) > 0) {
+	       result = v;
+	   }
+	}
+    }
+    else {
+	for (i = 0; i < RARRAY_LEN(ary); i++) {
+	   v = RARRAY_AREF(ary, i);
+	   if (result == Qundef || OPTIMIZED_CMP(v, result, cmp_opt) > 0) {
+	       result = v;
+	   }
+	}
+    }
+    if (result == Qundef) return Qnil;
+    return result;
+}
+
+/*
+ *  call-seq:
+ *     ary.min                     -> obj
+ *     ary.min {| a,b | block }    -> obj
+ *     ary.min(n)                  -> array
+ *     ary.min(n) {| a,b | block } -> array
+ *
+ *  Returns the object in _ary_ with the minimum value. The
+ *  first form assumes all objects implement <code>Comparable</code>;
+ *  the second uses the block to return <em>a <=> b</em>.
+ *
+ *     a = %w(albatross dog horse)
+ *     a.min                                   #=> "albatross"
+ *     a.min { |a, b| a.length <=> b.length }  #=> "dog"
+ *
+ *  If the +n+ argument is given, minimum +n+ elements are returned
+ *  as an array.
+ *
+ *     a = %w[albatross dog horse]
+ *     a.min(2)                                  #=> ["albatross", "dog"]
+ *     a.min(2) {|a, b| a.length <=> b.length }  #=> ["dog", "horse"]
+ */
+static VALUE
+rb_ary_min(int argc, VALUE *argv, VALUE ary)
+{
+    struct cmp_opt_data cmp_opt = { 0, 0 };
+    VALUE result = Qundef, v;
+    VALUE num;
+    long i;
+
+    rb_scan_args(argc, argv, "01", &num);
+
+    if (!NIL_P(num))
+       return rb_nmin_run(ary, num, 0, 0, 1);
+
+    if (rb_block_given_p()) {
+	for (i = 0; i < RARRAY_LEN(ary); i++) {
+	   v = RARRAY_AREF(ary, i);
+	   if (result == Qundef || rb_cmpint(rb_yield_values(2, v, result), v, result) < 0) {
+	       result = v;
+	   }
+	}
+    }
+    else {
+	for (i = 0; i < RARRAY_LEN(ary); i++) {
+	   v = RARRAY_AREF(ary, i);
+	   if (result == Qundef || OPTIMIZED_CMP(v, result, cmp_opt) < 0) {
+	       result = v;
+	   }
+	}
+    }
+    if (result == Qundef) return Qnil;
+    return result;
 }
 
 static int
@@ -4844,8 +4977,8 @@ yield_indexed_values(const VALUE values, const long r, const long *const p)
 /*
  * Compute permutations of +r+ elements of the set <code>[0..n-1]</code>.
  *
- * When we have a complete permutation of array indexes, copy the values
- * at those indexes into a new array and yield that array.
+ * When we have a complete permutation of array indices, copy the values
+ * at those indices into a new array and yield that array.
  *
  * n: the size of the set
  * r: the number of elements in each permutation
@@ -5063,7 +5196,7 @@ rb_ary_combination(VALUE ary, VALUE num)
 	rb_yield(rb_ary_new2(0));
     }
     else if (n == 1) {
-	for (i = 0; i < len; i++) {
+	for (i = 0; i < RARRAY_LEN(ary); i++) {
 	    rb_yield(rb_ary_new3(1, RARRAY_AREF(ary, i)));
 	}
     }
@@ -5084,8 +5217,8 @@ rb_ary_combination(VALUE ary, VALUE num)
  * Compute repeated permutations of +r+ elements of the set
  * <code>[0..n-1]</code>.
  *
- * When we have a complete repeated permutation of array indexes, copy the
- * values at those indexes into a new array and yield that array.
+ * When we have a complete repeated permutation of array indices, copy the
+ * values at those indices into a new array and yield that array.
  *
  * n: the size of the set
  * r: the number of elements in each permutation
@@ -5262,7 +5395,7 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
 	rb_yield(rb_ary_new2(0));
     }
     else if (n == 1) {
-	for (i = 0; i < len; i++) {
+	for (i = 0; i < RARRAY_LEN(ary); i++) {
 	    rb_yield(rb_ary_new3(1, RARRAY_AREF(ary, i)));
 	}
     }
@@ -5543,7 +5676,7 @@ rb_ary_any_p(VALUE ary)
  *
  *   a.dig(0, 1, 1)                    #=> 3
  *   a.dig(1, 2, 3)                    #=> nil
- *   a.dig(0, 0, 0)                    #=> NoMethodError, undefined method `dig' for 1:Fixnum
+ *   a.dig(0, 0, 0)                    #=> TypeError: Integer does not have #dig method
  *   [42, {foo: :bar}].dig(1, :foo)    #=> :bar
  */
 
@@ -5555,6 +5688,165 @@ rb_ary_dig(int argc, VALUE *argv, VALUE self)
     if (!--argc) return self;
     ++argv;
     return rb_obj_dig(argc, argv, self, Qnil);
+}
+
+/*
+ * call-seq:
+ *   ary.sum(init=0)                    -> number
+ *   ary.sum(init=0) {|e| expr }        -> number
+ *
+ * Returns the sum of elements.
+ * For example, [e1, e2, e3].sum returns init + e1 + e2 + e3.
+ *
+ * If a block is given, the block is applied to each element
+ * before addition.
+ *
+ * If <i>ary</i> is empty, it returns <i>init</i>.
+ *
+ *   [].sum                             #=> 0
+ *   [].sum(0.0)                        #=> 0.0
+ *   [1, 2, 3].sum                      #=> 6
+ *   [3, 5.5].sum                       #=> 8.5
+ *   [2.5, 3.0].sum(0.0) {|e| e * e }   #=> 15.25
+ *   [Object.new].sum                   #=> TypeError
+ *
+ * The (arithmetic) mean value of an array can be obtained as follows.
+ *
+ *   mean = ary.sum(0.0) / ary.length
+ *
+ * This method can be used for non-numeric objects by
+ * explicit <i>init</i> argument.
+ *
+ *   ["a", "b", "c"].sum("")            #=> "abc"
+ *   [[1], [[2]], [3]].sum([])          #=> [1, [2], 3]
+ *
+ * However, Array#join and Array#flatten is faster than Array#sum for
+ * array of strings and array of arrays.
+ *
+ *   ["a", "b", "c"].join               #=> "abc"
+ *   [[1], [[2]], [3]].flatten(1)       #=> [1, [2], 3]
+ *
+ *
+ * Array#sum method may not respect method redefinition of "+" methods
+ * such as Integer#+.
+ *
+ */
+
+static VALUE
+rb_ary_sum(int argc, VALUE *argv, VALUE ary)
+{
+    VALUE e, v, r;
+    long i, n;
+    int block_given;
+
+    if (rb_scan_args(argc, argv, "01", &v) == 0)
+        v = LONG2FIX(0);
+
+    block_given = rb_block_given_p();
+
+    if (RARRAY_LEN(ary) == 0)
+        return v;
+
+    n = 0;
+    r = Qundef;
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
+        e = RARRAY_AREF(ary, i);
+        if (block_given)
+            e = rb_yield(e);
+        if (FIXNUM_P(e)) {
+            n += FIX2LONG(e); /* should not overflow long type */
+            if (!FIXABLE(n)) {
+                v = rb_big_plus(LONG2NUM(n), v);
+                n = 0;
+            }
+        }
+        else if (RB_TYPE_P(e, T_BIGNUM))
+            v = rb_big_plus(e, v);
+        else if (RB_TYPE_P(e, T_RATIONAL)) {
+            if (r == Qundef)
+                r = e;
+            else
+                r = rb_rational_plus(r, e);
+        }
+        else
+            goto not_exact;
+    }
+    if (n != 0)
+        v = rb_fix_plus(LONG2FIX(n), v);
+    if (r != Qundef) {
+        /* r can be an Integer when mathn is loaded */
+        if (FIXNUM_P(r))
+            v = rb_fix_plus(r, v);
+        else if (RB_TYPE_P(r, T_BIGNUM))
+            v = rb_big_plus(r, v);
+        else
+            v = rb_rational_plus(r, v);
+    }
+    return v;
+
+  not_exact:
+    if (n != 0)
+        v = rb_fix_plus(LONG2FIX(n), v);
+    if (r != Qundef) {
+        /* r can be an Integer when mathn is loaded */
+        if (FIXNUM_P(r))
+            v = rb_fix_plus(r, v);
+        else if (RB_TYPE_P(r, T_BIGNUM))
+            v = rb_big_plus(r, v);
+        else
+            v = rb_rational_plus(r, v);
+    }
+
+    if (RB_FLOAT_TYPE_P(e)) {
+        /*
+         * Kahan-Babuska balancing compensated summation algorithm
+         * See http://link.springer.com/article/10.1007/s00607-005-0139-x
+         */
+        double f, c;
+
+        f = NUM2DBL(v);
+        c = 0.0;
+        goto has_float_value;
+        for (; i < RARRAY_LEN(ary); i++) {
+            double x, t;
+            e = RARRAY_AREF(ary, i);
+            if (block_given)
+                e = rb_yield(e);
+            if (RB_FLOAT_TYPE_P(e))
+              has_float_value:
+                x = RFLOAT_VALUE(e);
+            else if (FIXNUM_P(e))
+                x = FIX2LONG(e);
+            else if (RB_TYPE_P(e, T_BIGNUM))
+                x = rb_big2dbl(e);
+            else if (RB_TYPE_P(e, T_RATIONAL))
+                x = rb_num2dbl(e);
+            else
+                goto not_float;
+
+            t = f + x;
+            if (fabs(f) >= fabs(x))
+                c += ((f - t) + x);
+            else
+                c += ((x - t) + f);
+            f = t;
+        }
+        f += c;
+        return DBL2NUM(f);
+
+      not_float:
+        v = DBL2NUM(f);
+    }
+
+    goto has_some_value;
+    for (; i < RARRAY_LEN(ary); i++) {
+        e = RARRAY_AREF(ary, i);
+        if (block_given)
+            e = rb_yield(e);
+      has_some_value:
+        v = rb_funcall(v, idPLUS, 1, e);
+    }
+    return v;
 }
 
 /*
@@ -5826,7 +6118,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "fetch", rb_ary_fetch, -1);
     rb_define_method(rb_cArray, "first", rb_ary_first, -1);
     rb_define_method(rb_cArray, "last", rb_ary_last, -1);
-    rb_define_method(rb_cArray, "concat", rb_ary_concat, 1);
+    rb_define_method(rb_cArray, "concat", rb_ary_concat_multi, -1);
     rb_define_method(rb_cArray, "<<", rb_ary_push, 1);
     rb_define_method(rb_cArray, "push", rb_ary_push_m, -1);
     rb_define_method(rb_cArray, "pop", rb_ary_pop_m, -1);
@@ -5884,6 +6176,9 @@ Init_Array(void)
     rb_define_method(rb_cArray, "&", rb_ary_and, 1);
     rb_define_method(rb_cArray, "|", rb_ary_or, 1);
 
+    rb_define_method(rb_cArray, "max", rb_ary_max, -1);
+    rb_define_method(rb_cArray, "min", rb_ary_min, -1);
+
     rb_define_method(rb_cArray, "uniq", rb_ary_uniq, 0);
     rb_define_method(rb_cArray, "uniq!", rb_ary_uniq_bang, 0);
     rb_define_method(rb_cArray, "compact", rb_ary_compact, 0);
@@ -5909,6 +6204,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "bsearch_index", rb_ary_bsearch_index, 0);
     rb_define_method(rb_cArray, "any?", rb_ary_any_p, 0);
     rb_define_method(rb_cArray, "dig", rb_ary_dig, -1);
+    rb_define_method(rb_cArray, "sum", rb_ary_sum, -1);
 
     id_cmp = rb_intern("<=>");
     id_random = rb_intern("random");

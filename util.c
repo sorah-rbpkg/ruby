@@ -191,6 +191,11 @@ ruby_strtoul(const char *str, char **endptr, int base)
 #   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
 
+#if !defined HAVE_BSD_QSORT_R && defined HAVE_QSORT_S
+# define qsort_r(base, nel, size, arg, cmp) qsort_s(base, nel, size, cmp, arg)
+# define cmp_bsd_qsort cmp_ms_qsort
+# define HAVE_BSD_QSORT_R 1
+#endif
 #if defined HAVE_BSD_QSORT_R
 typedef int (cmpfunc_t)(const void*, const void*, void*);
 
@@ -748,12 +753,12 @@ ruby_getcwd(void)
 #ifdef MALLOC
 extern void *MALLOC(size_t);
 #else
-#define MALLOC malloc
+#define MALLOC xmalloc
 #endif
 #ifdef FREE
 extern void FREE(void*);
 #else
-#define FREE free
+#define FREE xfree
 #endif
 
 #ifndef Omit_Private_Memory
@@ -2140,7 +2145,7 @@ break2:
         for (; c >= '0' && c <= '9'; c = *++s) {
 have_dig:
             nz++;
-            if (nf > DBL_DIG * 4) continue;
+            if (nd > DBL_DIG * 4) continue;
             if (c -= '0') {
                 nf += nz;
                 for (i = 1; i < nz; i++)
@@ -3160,7 +3165,7 @@ ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
 
     int bbits, b2, b5, be, dig, i, ieps, ilim, ilim0, ilim1,
         j, j1, k, k0, k_check, leftright, m2, m5, s2, s5,
-        spec_case, try_quick;
+        spec_case, try_quick, half = 0;
     Long L;
 #ifndef Sudden_Underflow
     int denorm;
@@ -3453,6 +3458,10 @@ ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
                         while (*--s == '0') ;
                         s++;
                         goto ret1;
+                    }
+                    half = 1;
+                    if ((*(s-1) - '0') & 1) {
+                        goto bump_up;
                     }
                     break;
                 }
@@ -3761,12 +3770,13 @@ keep_dig:
                 *s++ = '1';
                 goto ret;
             }
-        ++*s++;
+        if (!half || (*s - '0') & 1)
+            ++*s;
     }
     else {
         while (*--s == '0') ;
-        s++;
     }
+    s++;
 ret:
     Bfree(S);
     if (mhi) {

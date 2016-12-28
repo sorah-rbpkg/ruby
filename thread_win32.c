@@ -113,13 +113,6 @@ gvl_yield(rb_vm_t *vm, rb_thread_t *th)
   gvl_acquire(vm, th);
 }
 
-
-static void
-gvl_atfork(rb_vm_t *vm)
-{
-    rb_bug("gvl_atfork() is called on win32");
-}
-
 static void
 gvl_init(rb_vm_t *vm)
 {
@@ -621,7 +614,7 @@ native_thread_create(rb_thread_t *th)
 
     if (THREAD_DEBUG) {
 	Sleep(0);
-	thread_debug("create: (th: %p, thid: %p, intr: %p), stack size: %"PRIdSIZE"\n",
+	thread_debug("create: (th: %p, thid: %p, intr: %p), stack size: %"PRIuSIZE"\n",
 		     th, th->thread_id,
 		     th->native_thread_data.interrupt_event, stack_size);
     }

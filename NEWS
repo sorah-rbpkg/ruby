@@ -1,6 +1,6 @@
 # -*- rdoc -*-
 
-= NEWS for Ruby 2.3.0
+= NEWS for Ruby 2.4.0
 
 This document is a list of user visible feature changes made between
 releases except for bug fixes.
@@ -10,395 +10,388 @@ reference information is supplied with.  For a full list of changes
 with all sufficient information, see the ChangeLog file or Redmine
 (e.g. <tt>https://bugs.ruby-lang.org/issues/$FEATURE_OR_BUG_NUMBER</tt>)
 
-== Changes since the 2.2.0 release
+== Changes since the 2.3.0 release
 
 === Language changes
 
-* frozen-string-literal pragma:
+* Multiple assignment in conditional expression is now allowed.
+  [Feature #10617]
 
-  * new pragma, frozen-string-literal has been experimentally introduced.
-    [Feature #8976]
-  * besides, --enable/--disable=frozen-string-literal options also have
-    been introduced. [Feature #8976]
-  * command line options --debug or --debug=frozen-string-literal enable
-    additional debugging mode which shows created location with at frozen
-    object error (RuntimeError).
-    [Feature #11725]
+* Refinements is enabled at method by Symbol#to_proc.  [Feature #9451]
 
-* safe navigation operator:
+* Refinements is enabled with Kernel#send and BasicObject#__send__.
+  [Feature #11476]
 
-  * new method call syntax, `object&.foo', method #foo is called on
-    `object' if it is not nil.
-    this is similar to `try!' in Active Support, except:
-    * method name is syntactically required
-          obj.try! {} # valid
-          obj&. {}    # syntax error
-    * arguments are evaluated only if a call is made:
-          obj.try!(:foo, bar())  # bar() is always evaluated
-          obj&.foo(bar())        # bar() is conditionally evaluated
-    * attribute assignment is valid
-          obj&.attr += 1
-    [Feature #11537]
+* Rescue modifier now applicable to method arguments.
+  [Feature #12686]
 
-* the did_you_mean gem:
-
-  * When a NameError or NoMethodError occurs because of a typo in the name,
-    the did_you_mean gem automatically suggests other names similar to the
-    method name.
-
-      "Yuki".starts_with?("Y")
-      # => NoMethodError: undefined method `starts_with?' for "Yuki":String
-      #    Did you mean?  start_with?
-
-* indented here document:
-
-  * new string literal, here document starts with `<<~`.
-    refer doc/syntax/literals.rdoc for more details.
-    [Feature #9098]
+* Toplevel return is now allowed.  [Feature #4840]
 
 === Core classes updates (outstanding ones only)
 
-* ARGF
-
-  * ARGF.read_nonblock supports `exception: false' like IO#read_nonblock.
-    [Feature #11358]
-
 * Array
 
-  * Array#bsearch_index [Feature #10730]
-  * Array#dig [Feature #11643]
+  * Array#concat [Feature #12333]
+    Now takes multiple arguments.
+
+  * Array#max and Array#min.  [Feature #12172]
+    This may cause a tiny incompatibility: if you redefine
+    Enumerable#max and call max to an Array, your redefinition will be
+    now ignored.  You should also redefine Array#max.
+
+  * Array#pack [Feature #12754]
+    Now takes optional argument `buffer:' to reuse already allocated buffer.
+
+  * Array#sum  [Feature #12217]
+    This is different from Enumerable#sum in that Array#sum doesn't depend on
+    the definition of each method.
 
 * Comparable
 
-  * Comparable#== no longer rescues exceptions [Feature #7688]
+  * Comparable#clamp.  [Feature #10594]
 
-* Encoding
+* Dir
 
-  * new Encoding::IBM037 (alias ebcdic-cp-us; dummy)
+  * Dir.empty?.  [Feature #10121]
 
 * Enumerable
 
-  * Enumerable#grep_v is added as inverse version of Enumerable#grep.
-    [Feature #11049]
-  * Enumerable#chunk_while [Feature #10769]
+  * Enumerable#chunk called without a block now return an Enumerator
+    [Feature #2172]
+  * Enumerable#sum  [Feature #12217]
+  * Enumerable#uniq  [Feature #11090]
 
 * Enumerator::Lazy
 
-  * Enumerator::Lazy#grep_v [Feature #11773]
+  * Enumerator::Lazy#chunk_while  [GH-1186]
+  * Enumerator::Lazy#uniq  [Feature #11090]
 
 * File
 
-  * File.mkfifo [Feature #11536]
-  * Add File::TMPFILE corresponding to O_TMPFILE
+  * File.empty?.  [Feature #9969]
+
+* Float
+
+  * Float#ceil, Float#floor, and Float#truncate now take an optional
+    digits, as well as Float#round.  [Feature #12245]
+
+  * Float#round now takes an optional keyword argument, half option, and
+    the default behavior is round-up.  [Bug #12548] [Bug #12958]
+    half option can be one of :even, :up, and :down.  [Feature #12953]
 
 * Hash
 
-  * Hash#fetch_values [Feature #10017]
-  * Hash#dig [Feature #11643]
-  * Hash#<=, Hash#<, Hash#>=, Hash#> [Feature #10984]
-  * Hash#to_proc [Feature #11653]
+  * Hash#compact and Hash#compact!  [Feature #11818]
+  * Hash#transform_values and Hash#transform_values!  [Feature #12512]
+
+* Integer
+
+  * Fixnum and Bignum are unified into Integer  [Feature #12005]
+
+  * Integer#ceil, Integer#floor, and Integer#truncate now take an optional
+    digits, as well as Integer#round.  [Feature #12245]
+
+  * Integer#digits for extracting columns of place-value notation [Feature #12447]
+
+  * Integer#round now takes an optional keyword argument, half option, and the
+    default behavior is round-up now.  [Bug #12548] [Bug #12958]
+    half option can be one of :even, :up, and :down.  [Feature #12953]
 
 * IO
 
-  * new mode flag File::SHARE_DELETE is available.
-    this flag means to permit deleting opened file on Windows, but currently
-    this affect only files opened as binary.  [Feature #11218]
-
-  * new option parameter `flags' is added.
-    this parameter is bitwise-ORed to oflags generated by normal mode argument.
-    [Feature #11253]
-
-  * IO#advise no longer raises Errno::ENOSYS in cases where it was
-    detected at build time but not available at runtime.  [Feature #11806]
+  * IO#gets, IO#readline, IO#each_line, IO#readlines, IO.foreach now takes
+    an optional keyword argument, chomp flag.  [Feature #12553]
 
 * Kernel
 
-  * Kernel#loop, when stopped by a StopIteration exception, returns
-    what the enumerator has returned instead of nil. [Feature #11498]
+  * Kernel#clone now takes an optional keyword argument, freeze flag.
+    [Feature #12300]
+
+* MatchData
+
+  * MatchData#named_captures [Feature #11999]
+  * MatchData#values_at supports named captures [Feature #9179]
 
 * Module
-  * Module#deprecate_constant [Feature #11398]
 
-* NameError
-  * NameError#receiver is added to take the receiver object. [Feature #10881]
+  * Module#refine accepts a module as the argument now. [Feature #12534]
+  * Module.used_modules [Feature #7418]
 
 * Numeric
 
-  * Numeric#positive? and Numeric#negative? are added, which return
-    true when the receiver is positive and negative respectively.
-    [Feature #11151]
+  * Numeric#finite?, Numeric#infinite? [Feature #12039]
 
-* Proc
+* Process
 
-  * Proc#call (and also #[], #===, #yield) are optimized.
-    Backtrace doesn't show each method (show block lines directly).
-    TracePoint also ignores these calls. [Feature #11569]
+  * Support CLOCK_MONOTONIC_RAW_APPROX, CLOCK_UPTIME_RAW, and
+    CLOCK_UPTIME_RAW_APPROX which are introduced by macOS 10.12.
 
-* Queue (Thread::Queue)
+* Rational
 
-  * Queue#close is added to notice a termination. [Feature #10600]
+  * Rational#round now takes an optional keyword argument, half option, and
+    the default behavior is round-up now.  [Bug #12548] [Bug #12958]
+    half option can be one of :even, :up, and :down.  [Feature #12953]
 
-* Regexp/String: Updated Unicode version from 7.0.0 to 8.0.0
+* Regexp
 
-* RubyVM::InstructionSequence
-  * add the following methods as a primitive tool of iseq loader.
-    See sample/iseq_loader.rb for usage.
-    Note that loader does not have verifier so it is easy to cause
-    critical problem by loading modified/broken binary data.
-    See [Feature #11788] for more details. (experimental feature)
-    * RubyVM::InstructionSequence#to_binary(extra_data = nil)
-    * RubyVM::InstructionSequence.load_from_binary(binary)
-    * RubyVM::InstructionSequence.load_from_binary_extra_data(binary)
+  * meta character \X matches Unicode 9.0 characters with some workarounds
+    for UTR #51 Unicode Emoji, Version 4.0 emoji zwj sequences.
+
+  * Regexp#match? [Feature #8110]
+    This returns bool and doesn't save backref.
+
+  * Update Onigmo 6.0.0.
+
+* Regexp/String: Updated Unicode version from 8.0.0 to 9.0.0 [Feature #12513]
+
+* RubyVM::Env
+
+  * RubyVM::Env was removed.
 
 * String
 
-  * String#+@ and String#-@ are added to get mutable/frozen strings.
-    [Feature #11782]
+  * String#casecmp? [Feature #12786]
 
-  * String.new now accepts new option parameter `encoding'.
-    [Feature #11785]
+  * String#concat, String#prepend [Feature #12333]
+    Now takes multiple arguments.
 
-* Struct
-  * Struct#dig [Feature #11688]
+  * String#each_line, String#lines now takes an optional keyword argument,
+    chomp flag.  [Feature #12553]
+
+  * String#match? [Feature #12898]
+
+  * String#unpack1 [Feature #12752]
+
+  * String#upcase, String#downcase, String#capitalize, String#swapcase and
+    their bang variants work for all of Unicode, and are no longer limited
+    to ASCII. Supported encodings are UTF-8, UTF-16BE/LE, UTF-32BE/LE, and
+    ISO-8859-1~16. Variations are available with options. See the documentation
+    of String#downcase for details. [Feature #10085]
+
+  * String.new(capacity: size) [Feature #12024]
+
+* StringIO
+
+  * StringIO#gets, StringIO#readline, StringIO#each_line, StringIO#readlines now takes
+    an optional keyword argument, chomp flag.  [Feature #12553]
+
+* Symbol
+
+  * Symbol#casecmp? [Feature #12786]
+
+  * Symbol#match now returns MatchData.  [Bug #11991]
+
+  * Symbol#match? [Feature #12898]
+
+  * Symbol#upcase, Symbol#downcase, Symbol#capitalize, and Symbol#swapcase now
+    work for all of Unicode. See the documentation of String#downcase
+    for details. [Feature #10085]
 
 * Thread
-  * Thread#name, Thread#name= are added to handle thread names [Feature #11251]
 
-=== Core classes compatibility issues (excluding feature bug fixes)
+  * Thread#report_on_exception and Thread.report_on_exception
+    [Feature #6647]
 
-* Array
-  * Array#select!, Array#keep_if, Array#reject!, and Array#delete_if
-    no longer changes the receiver array instantly every time the
-    block is called.  [Feature #10714]
+* TracePoint
 
-  * Array#flatten and Array#flatten! no longer try to call #to_ary
-    method on elements beyond the given level.  [Bug #10748]
+  * TracePoint#callee_id [Feature #12747]
 
-  * Array#inspect doesn't raise error even if its content returns
-    a string which is not compatible with Encoding.default_external
-    as inspected result. [Feature #11801]
+* Warning
 
-* Enumerable
-  * Enumerable#chunk and Enumerable#slice_before no longer takes the
-    initial_state argument.  [Feature #10958]
-    Use a local variable instead to maintain a state.
-
-* File::Stat
-  * On Windows File::Stat#ino always returned 0, but now returns
-    BY_HANDLE_FILE_INFORMATION.nFileIndexHigh/Low.  [Feature #11216]
-
-* Hash
-  * Hash#inspect doesn't raise error even if its content returns
-    a string which is not compatible with Encoding.default_external
-    as inspected result. [Feature #11801]
-
-* IO
-  * IO#close doesn't raise when the IO object is closed.  [Feature #10718]
-  * IO#each_codepoint raises an exception at incomplete character
-    before EOF when conversion takes place.  [Bug #11444]
-
-* Module
-  * Module#define_method and Object.define_singleton_method now
-    require method body, Proc, Method, or a block, and raise
-    ArgumentError if no block is given directly.  [Bug #11283]
-
-* pack/unpack (Array/String)
-  * j and J directives for pointer width integer type.  [Feature #11215]
-
+  * New module named Warning is introduced.  By default it has only
+    one singleton method, named warn.  This makes it possible for
+    3rd-party libraries to control the way warnings are handled.
+    [Feature #12299]
 
 === Stdlib updates (outstanding ones only)
 
+* CGI
+
+  * Don't allow , as a separator [Bug #12791]
+
+* CSV
+
+  * Add a liberal_parsing option. [Feature #11839]
+
+* IPAddr
+
+  * IPAddr#== and IPAddr#<=> no longer raise an exception if coercion fails.
+    [Bug #12799]
+
+* IRB
+
+  * Binding#irb: Start a REPL session like `binding.pry` at r56624.
+
 * Logger
 
-  * Logger#level= now supports symbol and string levels such as :debug, :info,
-    :warn, :error, :fatal (case insensitive) [Feature #11695]
-  * Logger#reopen is added to reopen a log device. [Feature #11696]
+  * Allow specifying logger parameters in constructor such
+    as level, progname, datetime_format, formatter. [Feature #12224]
+  * Add shift_period_suffix option. [Feature #10772]
 
-* io/wait
-  * IO#wait_readable no longer checks FIONREAD, it may be used for
-    non-bytestream IO such as listen sockets.
+* Net::HTTP
+
+  * New method: Net::HTTP.post [Feature #12375]
 
 * Net::FTP
-  * Net::FTP#mlst is added.
-  * Net::FTP#mlsd is added.
 
-* nkf
-  * Merge nkf 2.1.4.
-
-* ObjectSpace (objspace)
-  * ObjectSpace.count_symbols is added.
-  * ObjectSpace.count_imemo_objects is added.
-  * ObjectSpace.internal_class_of is added.
-  * ObjectSpace.internal_super_of is added.
+  * Support TLS (RFC 4217).
+  * Support hash style options for Net::FTP.new.
+  * Add a new optional argument pathname to Net::FTP#status.
+    Contributed by soleboxy. [GH-1478] [Feature #12965]
 
 * OpenSSL
-  * OpenSSL::SSL::SSLSocket#accept_nonblock and
-    OpenSSL::SSL::SSLSocket#connect_nonblock supports `exception: false`.
-    [Feature #10532]
 
-* Pathname
-  * Pathname#descend and Pathname#ascend supported blockless form.
-    [Feature #11052]
+  * Includes Ruby/OpenSSL 2.0. OpenSSL has been extracted as a Gem and is
+    maintained at a separate repository now: https://github.com/ruby/openssl.
+    It still remains as a 'default gem'.  [Feature #9612]
+    Refer to ext/openssl/History.md for the full release note.
 
-* Socket
-  * Socket#connect_nonblock, Socket#accept_nonblock,
-    TCPServer#accept_nonblock, UNIXServer#accept_nonblock,
-    BasicSocket#recv_nonblock, BasicSocket#recvmsg_nonblock,
-    BasicSocket#sendmsg_nonblock all support `exception: false` to return
-    :wait_readable or :wait_writable symbols instead of raising
-    IO::WaitReadable or IO::WaitWritable exceptions
-    [Feature #10532] [Feature #11229]
-  * BasicSocket#recv and BasicSocket#recv_nonblock allow an output
-    String buffer argument like IO#read and IO#read_nonblock to reduce
-    GC overhead [Feature #11242]
+* optparse
 
-* StringIO
-  * In read-only mode, StringIO#set_encoding no longer sets the encoding
-    of its buffer string.  Setting the encoding of the string directly
-    without StringIO#set_encoding may cause unpredictable behavior now.
-    [Bug #11827]
+  * Add an into option. [Feature #11191]
 
-* timeout
-  * Object#timeout is now warned as deprecated when called.
+* pathname
+
+  * New method: Pathname#empty? [Feature #12596]
+
+* Readline
+
+  * Readline.quoting_detection_proc and Readline.quoting_detection_proc=
+    [Feature #12659]
+
+* REXML
+
+  * REXML::Element#[]: If String or Symbol is specified, attribute
+    value is returned. Otherwise, Nth child is returned. This is
+    backward compatible change.
+
+* set
+
+  * New methods: Set#compare_by_identity and Set#compare_by_identity?.
+    [Feature #12210]
+
+* WEBrick
+
+  * Don't allow , as a separator [Bug #12791]
+
+=== Compatibility issues (excluding feature bug fixes)
+
+* Array#sum and Enumerable#sum are implemented.  [Feature #12217]
+  Ruby itself has no compatibility problem because Ruby didn't have sum method
+  for arrays before Ruby 2.4.
+  However many third party gems, activesupport, facets, simple_stats, etc,
+  defines sum method.  These implementations are mostly compatible but
+  there are subtle differences.
+  Ruby's sum method should be mostly compatible but it is impossible to
+  be perfectly compatible with all of them.
+
+* Fixnum and Bignum are unified into Integer  [Feature #12005]
+  Fixnum class and Bignum class is removed.
+  Integer class is changed from abstract class to concrete class.
+  For example, 0 is an instance of Integer: 0.class returns Integer.
+  The constants Fixnum and Bignum is bound to Integer.
+  So obj.kind_of?(Fixnum) works as obj.kind_of?(Integer).
+  At C-level, Fixnum object and Bignum object should be distinguished by
+  FIXNUM_P(obj) and RB_TYPE_P(obj, T_BIGNUM).
+  RUBY_INTEGER_UNIFICATION can be used to detect this feature at C-level.
+  0.class == Integer can be used to detect this feature at Ruby-level.
+  The C-level constants, rb_cFixnum and rb_cBignum, are removed.
+  They can cause compilation failure.
+
+* String/Symbol#upcase/downcase/swapcase/capitalize(!) now work for all of
+  Unicode, not only for ASCII. [Feature #10085]
+  No change is needed if the data is in ASCII anyway or if the limitation
+  to ASCII was only tolerated while waiting for a more extensive implementation.
+  A change (using the :ascii option) is needed in cases where Unicode data
+  is processed, but the operation has to be limited to ASCII only.
+  A good example of this are internationalized domain names.
+
+* TRUE / FALSE / NIL
+  These constants are now obsoleted. [Feature #12574]
+  Use true / false / nil resp. instead.
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
-* ext/coverage/coverage.c
-  * Coverage.peek_result: new method to allow coverage to be captured without
-    stopping the coverage tool.  [Feature #10816]
+* DateTime
 
-* Fiddle
-  * Fiddle::Function#call releases the GVL.  [Feature #11607]
+  * DateTime#to_time now preserves timezone.  [Bug #12189]
 
-* io-console
-  * Update to io-console 0.4.5, and change the license to BSD 2-clause
-    "Simplified" License.
+* PSych
 
-* lib/base64.rb
-  * Base64.urlsafe_encode64: added a "padding" option to suppress
-    the padding character ("=").  [Feature #10740]
-  * Base64.urlsafe_decode64: now it accepts not only correctly-padded
-    input but also unpadded input.  [Feature #10740]
-
-* lib/drb/drb.rb
-  * removed unused argument. https://github.com/ruby/ruby/pull/515
-
-* lib/matrix.rb
-  * Add Vector#round. https://github.com/ruby/ruby/pull/802
-
-* lib/webrick/utils.rb
-  * removed unused argument. https://github.com/ruby/ruby/pull/356
-
-* Net::FTP
-  * Connections are in passive mode per default now.  The default mode can
-    be changed by Net::FTP.default_passive=.  [Feature #11612]
-
-* Net::HTTP
-  * default value of Net::HTTP#open_timeout is now 60 (was nil).
-
-* Net::Telnet
-  * Net::Telnet is extracted to net-telnet gem. It's unmaintain code.
-    [Feature #11083]
-
-* Psych
-  * Updated to Psych 2.0.17
-
-* Rake
-  * Rake is removed from stdlib.  [Feature #11025]
+  * Update Psych 2.2.2
 
 * RDoc
-  * Updated to RDoc 4.2.1.  For full release notes see:
 
-    https://github.com/rdoc/rdoc/blob/master/History.rdoc#421--2015-12-22
+  * Update RDoc 5.0.0
 
 * RubyGems
-  * Updated to RubyGems 2.5.1.  For full release notes see:
 
-    http://docs.seattlerb.org/rubygems/History_txt.html#label-2.5.0+-2F+2015-11-03
-    and
-    http://docs.seattlerb.org/rubygems/History_txt.html#label-2.5.1+-2F+2015-12-10
+  * Update RubyGems 2.6.8
 
-=== Built-in global variables compatibility issues
+* shellwords
 
-* $SAFE
-  * $SAFE=2 and $SAFE=3 are obsolete.  If $SAFE is set to 2 or larger,
-    an ArgumentError is raised.  [Feature #5455]
+  * Shellwords.shellwords (shellsplit) treats the backslash as escape
+    character only when followed by one of the following characters:
+    $ ` " \ <newline>
+    [Bug #10055]
+
+* Time
+
+  * Time#to_time now preserves timezone.  [Bug #12271]
+
+* thread
+
+  * the extension library is removed.  Till 2.0 it was a pure ruby script
+    "thread.rb", which has precedence over "thread.so", and has been provided
+    in $LOADED_FEATURES since 2.1.
+
+* Tk
+
+  * Tk is removed from stdlib.  [Feature #8539]
+    https://github.com/ruby/tk is the new upstream.
+
+* XMLRPC
+
+  * XMLRPC is removed from stdlib, and bundled as gem. [Feature #12160][ruby-core:74239]
+    https://github.com/ruby/xmlrpc is the new upstream.
+
+* Zlib
+
+  * Zlib.gzip and Zlib.gunzip [Feature #13020]
 
 === C API updates
 
-* rb_define_class_id_under() now raises a TypeError exception when the
-  class is already defined but its superclass does not match the given
-  superclass, as well as definitions in ruby level.
+* ruby_show_version() will no longer exits the process, if
+  RUBY_SHOW_COPYRIGHT_TO_DIE is set to 0.  This will be the default in
+  the future.
 
-* rb_timespec_now() is added to fetch current datetime as struct timespec.
-  [Feature #11558]
-
-* rb_time_timespec_new() is added to create a time object with epoch,
-  nanosecond, and UTC/localtime/time offset arguments.  [Feature #11558]
-
-* rb_autoload() deprecated, use rb_funcall() instead.  [Feature #11664]
-
-* rb_compile_error_with_enc(), rb_compile_error(), and rb_compile_bug()
-  deprecated.  these functions are exposed but only for internal use.
-  external libraries should not use them.
+* rb_gc_adjust_memory_usage() [Feature #12690]
 
 === Supported platform changes
 
-* OS/2 is no longer supported
-
-* BeOS is no longer supported
-
-* Borland-C is no longer supported
-
-* Haiku now stable and best effort
+* FreeBSD < 4 is no longer supported
 
 === Implementation improvements
 
-* Optimize Proc#call to eliminate method frame construction.
-  [Feature #11569]
+* In some condition, `[x, y].max` and `[x, y].min` are optimized
+  so that a temporal array is not created.  The concrete condition is
+  an implementation detail: currently, the array literal must have no
+  splat, must have at least one expression but literal, the length must
+  be <= 0x100, and Array#max and min must not be redefined.  It will work
+  in most casual and real-life use case where it is written with intent
+  to `Math.max(x, y)`.
 
-* Reconsidering method entry data structure.
-  [Bug #11278]
+* Thread deadlock detection now shows their backtrace and dependency. [Feature #8214]
 
-* Introducing new table data structure for ID keys tables used by
-  method table and so on. New table structure is simple and fast
-  than st_table. [Feature #11420]
+* st_table (st.c) internal data structure is improved. [Feature #12142]
 
-* Machine code level tuning for object allocation and method calling
-  code. r52099, r52254
+* Rational is extensively optimized. [Feature #12484]
 
-* RubyVM::InstructionSequence is extended for future improvement.
-  [Feature #11788]
+=== Miscellaneous changes
 
-* Case dispatch is now optimized for all special constant literals
-  including nil, true, and false.  Previously, only literal strings,
-  symbols, integers and floats compiled to optimized case dispatch.
-  [Feature #11769]
-
-* Instance variables on non-pure Ruby classes (T_DATA, T_FILE,
-  etc..) is less expensive to store than before. [Feature #11170]
-
-* All accesses to members of big Struct objects are performed in
-  constant-time.  Previously, Struct elements beyond the first 10
-  10 elements used a linear scan. [Feature #10585]
-
-* The Set class got several speed up.
-  [Misc #10754], [r52591]
-
-* Socket and I/O-related improvements
-
-  * Calling overhead of most of new keyword-using I/O methods in
-    [Feature #11229] is reduced by avoiding the inefficient C API
-    to parse keywords.  [Feature #11339]
-
-  * The standard library is updated to use the improved
-    exception-free non-blocking I/O from [Feature #11229].
-    This has the additional benefit of quieter $DEBUG output in
-    addition to reducing expensive exceptions. [Feature #11044]
-
-  * (Linux-only) waiting on a single FD anywhere in the stdlib no longer
-    uses select(2), making it immune to slowdowns with high-numbered FDs.
-    [Feature #11081] [Feature #11377]
-
-* CGI.escapeHTML is optimized with C extention.
-  https://github.com/ruby/ruby/pull/1164
+* ChangeLog is removed from the repository.
+  It is generated from commit messages in Subversion by `make dist`.
+  Also note that now people should follow Git style commit message.
+  The template is written at
+  [Short (50 chars or less) summary of changes](https://git-scm.com/book/ch5-2.html).
+  [Feature #12283]

@@ -1,5 +1,5 @@
 # -*- ruby -*-
-_VERSION = "0.4.5"
+_VERSION = "0.4.6"
 date = %w$Date::                           $[1]
 
 Gem::Specification.new do |s|
@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
   s.email = "nobu@ruby-lang.org"
   s.description = "add console capabilities to IO instances."
   s.required_ruby_version = ">= 2.0.0"
-  s.homepage = "http://www.ruby-lang.org"
+  s.homepage = "https://www.ruby-lang.org"
   s.authors = ["Nobu Nakada"]
   s.require_path = %[lib]
   s.files = %w[console.c depend extconf.rb lib/console/size.rb win32_vk.inc]

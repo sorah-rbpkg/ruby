@@ -181,12 +181,14 @@ gvl_destroy(rb_vm_t *vm)
     native_mutex_destroy(&vm->gvl.lock);
 }
 
+#if defined(HAVE_WORKING_FORK)
 static void
 gvl_atfork(rb_vm_t *vm)
 {
     gvl_init(vm);
     gvl_acquire(vm, GET_THREAD());
 }
+#endif
 
 #define NATIVE_MUTEX_LOCK_DEBUG 0
 
@@ -747,7 +749,7 @@ ruby_init_stack(volatile VALUE *addr
 	    native_main_thread.stack_maxsize = size;
 	    native_main_thread.stack_start = stackaddr;
 	    reserve_stack(stackaddr, size);
-	    return;
+	    goto bound_check;
 	}
     }
 #endif
@@ -795,6 +797,9 @@ ruby_init_stack(volatile VALUE *addr
 #endif
     }
 
+#if MAINSTACKADDR_AVAILABLE
+  bound_check:
+#endif
     /* If addr is out of range of main-thread stack range estimation,  */
     /* it should be on co-routine (alternative stack). [Feature #2294] */
     {
@@ -1510,7 +1515,7 @@ native_set_thread_name(rb_thread_t *th)
 	    SET_CURRENT_THREAD_NAME(RSTRING_PTR(loc));
 	}
 	else if (!NIL_P(loc = rb_proc_location(th->first_proc))) {
-	    const VALUE *ptr = RARRAY_CONST_PTR(loc); /* [ String, Fixnum ] */
+	    const VALUE *ptr = RARRAY_CONST_PTR(loc); /* [ String, Integer ] */
 	    char *name, *p;
 	    char buf[16];
 	    size_t len;
@@ -1619,6 +1624,7 @@ rb_thread_create_timer_thread(void)
 	}
 #ifdef HAVE_PTHREAD_ATTR_INIT
 	err = pthread_create(&timer_thread.id, &attr, thread_timer, &GET_VM()->gvl);
+	pthread_attr_destroy(&attr);
 #else
 	err = pthread_create(&timer_thread.id, NULL, thread_timer, &GET_VM()->gvl);
 #endif
@@ -1637,9 +1643,6 @@ rb_thread_create_timer_thread(void)
 	/* validate pipe on this process */
 	timer_thread_pipe.owner_process = getpid();
 	timer_thread.created = 1;
-#ifdef HAVE_PTHREAD_ATTR_INIT
-	pthread_attr_destroy(&attr);
-#endif
     }
 }
 

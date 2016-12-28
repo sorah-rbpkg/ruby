@@ -11,6 +11,7 @@
 
 #include "internal.h"
 #include "ruby/st.h"
+#include "ruby_assert.h"
 #include "vm_core.h"
 
 #include <stdio.h>
@@ -41,6 +42,9 @@ VALUE rb_iseqw_new(const rb_iseq_t *);
 VALUE rb_eEAGAIN;
 VALUE rb_eEWOULDBLOCK;
 VALUE rb_eEINPROGRESS;
+VALUE rb_mWarning;
+
+static ID id_warn;
 
 extern const char ruby_description[];
 
@@ -79,10 +83,9 @@ err_position_0(char *buf, long len, const char *file, int line)
 }
 
 static VALUE
-compile_snprintf(rb_encoding *enc, const char *pre, const char *file, int line, const char *fmt, va_list args)
+err_vcatf(VALUE str, const char *pre, const char *file, int line,
+	  const char *fmt, va_list args)
 {
-    VALUE str = rb_enc_str_new(0, 0, enc);
-
     if (file) {
 	rb_str_cat2(str, file);
 	if (line) rb_str_catf(str, ":%d", line);
@@ -93,142 +96,121 @@ compile_snprintf(rb_encoding *enc, const char *pre, const char *file, int line, 
     return str;
 }
 
-static void
-compile_err_append(VALUE mesg)
+VALUE
+rb_syntax_error_append(VALUE exc, VALUE file, int line, int column,
+		       rb_encoding *enc, const char *fmt, va_list args)
 {
-    rb_thread_t *th = GET_THREAD();
-    VALUE err = th->errinfo;
-    rb_block_t *prev_base_block = th->base_block;
-    th->base_block = 0;
-    /* base_block should be zero while normal Ruby execution */
-    /* after this line, any Ruby code *can* run */
-
-    if (th->mild_compile_error) {
-	if (RTEST(err)) {
-	    VALUE str = rb_obj_as_string(err);
-
-	    rb_str_cat2(str, "\n");
-	    rb_str_append(str, mesg);
-	    mesg = str;
-	}
-	err = rb_exc_new3(rb_eSyntaxError, mesg);
-	th->errinfo = err;
-    }
-    else {
-	if (!RTEST(err)) {
-	    err = rb_exc_new2(rb_eSyntaxError, "compile error");
-	    th->errinfo = err;
-	}
+    const char *fn = NIL_P(file) ? NULL : RSTRING_PTR(file);
+    if (!exc) {
+	VALUE mesg = rb_enc_str_new(0, 0, enc);
+	err_vcatf(mesg, NULL, fn, line, fmt, args);
 	rb_str_cat2(mesg, "\n");
 	rb_write_error_str(mesg);
     }
+    else {
+	VALUE mesg;
+	if (NIL_P(exc)) {
+	    mesg = rb_enc_str_new(0, 0, enc);
+	    exc = rb_class_new_instance(1, &mesg, rb_eSyntaxError);
+	}
+	else {
+	    mesg = rb_attr_get(exc, idMesg);
+	    if (RSTRING_LEN(mesg) > 0 && *(RSTRING_END(mesg)-1) != '\n')
+		rb_str_cat_cstr(mesg, "\n");
+	}
+	err_vcatf(mesg, NULL, fn, line, fmt, args);
+    }
 
-    /* returned to the parser world */
-    th->base_block = prev_base_block;
+    return exc;
 }
 
 void
 rb_compile_error_with_enc(const char *file, int line, void *enc, const char *fmt, ...)
 {
-    va_list args;
-    VALUE str;
-
-    va_start(args, fmt);
-    str = compile_snprintf(enc, NULL, file, line, fmt, args);
-    va_end(args);
-    compile_err_append(str);
+    ONLY_FOR_INTERNAL_USE("rb_compile_error_with_enc()");
 }
 
 void
 rb_compile_error(const char *file, int line, const char *fmt, ...)
 {
-    va_list args;
-    VALUE str;
-
-    va_start(args, fmt);
-    str = compile_snprintf(NULL, NULL, file, line, fmt, args);
-    va_end(args);
-    compile_err_append(str);
-}
-
-void
-rb_compile_error_str(VALUE file, int line, void *enc, const char *fmt, ...)
-{
-    va_list args;
-    VALUE str;
-
-    va_start(args, fmt);
-    str = compile_snprintf(enc, NULL,
-			   NIL_P(file) ? NULL : RSTRING_PTR(file), line,
-			   fmt, args);
-    va_end(args);
-    compile_err_append(str);
+    ONLY_FOR_INTERNAL_USE("rb_compile_error()");
 }
 
 void
 rb_compile_error_append(const char *fmt, ...)
 {
-    va_list args;
-    VALUE str;
+    ONLY_FOR_INTERNAL_USE("rb_compile_error_append()");
+}
 
-    va_start(args, fmt);
-    str = rb_vsprintf(fmt, args);
-    va_end(args);
-    compile_err_append(str);
+void
+ruby_only_for_internal_use(const char *func)
+{
+    rb_print_backtrace();
+    rb_fatal("%s is only for internal use and deprecated; do not use", func);
+}
+
+static VALUE
+rb_warning_s_warn(VALUE mod, VALUE str)
+{
+    Check_Type(str, T_STRING);
+    rb_must_asciicompat(str);
+    rb_write_error_str(str);
+    return Qnil;
 }
 
 static void
-compile_warn_print(const char *file, int line, const char *fmt, va_list args)
+rb_write_warning_str(VALUE str)
 {
-    VALUE str;
+    rb_funcall(rb_mWarning, id_warn, 1, str);
+}
 
-    str = compile_snprintf(NULL, "warning: ", file, line, fmt, args);
-    rb_str_cat2(str, "\n");
-    rb_write_error_str(str);
+static VALUE
+warn_vsprintf(rb_encoding *enc, const char *file, int line, const char *fmt, va_list args)
+{
+    VALUE str = rb_enc_str_new(0, 0, enc);
+
+    err_vcatf(str, "warning: ", file, line, fmt, args);
+    return rb_str_cat2(str, "\n");
 }
 
 void
 rb_compile_warn(const char *file, int line, const char *fmt, ...)
 {
+    VALUE str;
     va_list args;
 
     if (NIL_P(ruby_verbose)) return;
 
     va_start(args, fmt);
-    compile_warn_print(file, line, fmt, args);
+    str = warn_vsprintf(NULL, file, line, fmt, args);
     va_end(args);
+    rb_write_warning_str(str);
 }
 
 /* rb_compile_warning() reports only in verbose mode */
 void
 rb_compile_warning(const char *file, int line, const char *fmt, ...)
 {
+    VALUE str;
     va_list args;
 
     if (!RTEST(ruby_verbose)) return;
 
     va_start(args, fmt);
-    compile_warn_print(file, line, fmt, args);
+    str = warn_vsprintf(NULL, file, line, fmt, args);
     va_end(args);
+    rb_write_warning_str(str);
 }
 
 static VALUE
 warning_string(rb_encoding *enc, const char *fmt, va_list args)
 {
-    VALUE str = rb_enc_str_new(0, 0, enc);
     int line;
     VALUE file = rb_source_location(&line);
 
-    if (!NIL_P(file)) {
-	str = rb_str_append(str, file);
-	if (line) rb_str_catf(str, ":%d", line);
-	rb_str_cat2(str, ": ");
-    }
-
-    rb_str_cat2(str, "warning: ");
-    rb_str_vcatf(str, fmt, args);
-    rb_str_cat2(str, "\n");
-    return str;
+    return warn_vsprintf(enc,
+			 NIL_P(file) ? NULL : RSTRING_PTR(file), line,
+			 fmt, args);
 }
 
 void
@@ -242,7 +224,7 @@ rb_warn(const char *fmt, ...)
     va_start(args, fmt);
     mesg = warning_string(0, fmt, args);
     va_end(args);
-    rb_write_error_str(mesg);
+    rb_write_warning_str(mesg);
 }
 
 void
@@ -256,7 +238,7 @@ rb_enc_warn(rb_encoding *enc, const char *fmt, ...)
     va_start(args, fmt);
     mesg = warning_string(enc, fmt, args);
     va_end(args);
-    rb_write_error_str(mesg);
+    rb_write_warning_str(mesg);
 }
 
 /* rb_warning() reports only in verbose mode */
@@ -271,7 +253,7 @@ rb_warning(const char *fmt, ...)
     va_start(args, fmt);
     mesg = warning_string(0, fmt, args);
     va_end(args);
-    rb_write_error_str(mesg);
+    rb_write_warning_str(mesg);
 }
 
 #if 0
@@ -286,7 +268,7 @@ rb_enc_warning(rb_encoding *enc, const char *fmt, ...)
     va_start(args, fmt);
     mesg = warning_string(enc, fmt, args);
     va_end(args);
-    rb_write_error_str(mesg);
+    rb_write_warning_str(mesg);
 }
 #endif
 
@@ -355,7 +337,7 @@ bug_report_file(const char *file, int line)
 }
 
 static void
-bug_report_begin(FILE *out, const char *fmt, va_list args)
+bug_report_begin_valist(FILE *out, const char *fmt, va_list args)
 {
     char buf[REPORT_BUG_BUFSIZ];
 
@@ -369,7 +351,7 @@ bug_report_begin(FILE *out, const char *fmt, va_list args)
 #define bug_report_begin(out, fmt) do { \
     va_list args; \
     va_start(args, fmt); \
-    bug_report_begin(out, fmt, args); \
+    bug_report_begin_valist(out, fmt, args); \
     va_end(args); \
 } while (0)
 
@@ -391,6 +373,15 @@ bug_report_end(FILE *out)
     FILE *out = bug_report_file(file, line); \
     if (out) { \
 	bug_report_begin(out, fmt); \
+	rb_vm_bugreport(ctx); \
+	bug_report_end(out); \
+    } \
+} while (0) \
+
+#define report_bug_valist(file, line, fmt, ctx, args) do { \
+    FILE *out = bug_report_file(file, line); \
+    if (out) { \
+	bug_report_begin_valist(out, fmt, args); \
 	rb_vm_bugreport(ctx); \
 	bug_report_end(out); \
     } \
@@ -484,19 +475,21 @@ rb_async_bug_errno(const char *mesg, int errno_arg)
 }
 
 void
-rb_compile_bug(const char *file, int line, const char *fmt, ...)
+rb_report_bug_valist(VALUE file, int line, const char *fmt, va_list args)
 {
-    report_bug(file, line, fmt, NULL);
-
-    abort();
+    report_bug_valist(RSTRING_PTR(file), line, fmt, NULL, args);
 }
 
 void
-rb_compile_bug_str(VALUE file, int line, const char *fmt, ...)
+rb_assert_failure(const char *file, int line, const char *name, const char *expr)
 {
-    report_bug(RSTRING_PTR(file), line, fmt, NULL);
-
-    abort();
+    FILE *out = stderr;
+    fprintf(out, "Assertion Failed: %s:%d:", file, line);
+    if (name) fprintf(out, "%s:", name);
+    fprintf(out, "%s\n%s\n\n", expr, ruby_description);
+    rb_vm_bugreport(NULL);
+    bug_report_end(out);
+    die();
 }
 
 static const char builtin_types[][10] = {
@@ -550,7 +543,7 @@ builtin_class_name(VALUE x)
 	etype = "nil";
     }
     else if (FIXNUM_P(x)) {
-	etype = "Fixnum";
+	etype = "Integer";
     }
     else if (SYMBOL_P(x)) {
 	etype = "Symbol";
@@ -578,32 +571,58 @@ rb_builtin_class_name(VALUE x)
     return etype;
 }
 
+NORETURN(static void unexpected_type(VALUE, int, int));
+#define UNDEF_LEAKED "undef leaked to the Ruby space"
+
+static void
+unexpected_type(VALUE x, int xt, int t)
+{
+    const char *tname = rb_builtin_type_name(t);
+    VALUE mesg, exc = rb_eFatal;
+
+    if (tname) {
+	const char *cname = builtin_class_name(x);
+	if (cname)
+	    mesg = rb_sprintf("wrong argument type %s (expected %s)",
+			      cname, tname);
+	else
+	    mesg = rb_sprintf("wrong argument type %"PRIsVALUE" (expected %s)",
+			      rb_obj_class(x), tname);
+	exc = rb_eTypeError;
+    }
+    else if (xt > T_MASK && xt <= 0x3f) {
+	mesg = rb_sprintf("unknown type 0x%x (0x%x given, probably comes"
+			  " from extension library for ruby 1.8)", t, xt);
+    }
+    else {
+	mesg = rb_sprintf("unknown type 0x%x (0x%x given)", t, xt);
+    }
+    rb_exc_raise(rb_exc_new_str(exc, mesg));
+}
+
 void
 rb_check_type(VALUE x, int t)
 {
     int xt;
 
     if (x == Qundef) {
-	rb_bug("undef leaked to the Ruby space");
+	rb_bug(UNDEF_LEAKED);
     }
 
     xt = TYPE(x);
     if (xt != t || (xt == T_DATA && RTYPEDDATA_P(x))) {
-	const char *tname = rb_builtin_type_name(t);
-	if (tname) {
-	    const char *cname = builtin_class_name(x);
-	    if (cname)
-		rb_raise(rb_eTypeError, "wrong argument type %s (expected %s)",
-			 cname, tname);
-	    else
-		rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected %s)",
-			 rb_obj_class(x), tname);
-	}
-	if (xt > T_MASK && xt <= 0x3f) {
-	    rb_fatal("unknown type 0x%x (0x%x given, probably comes from extension library for ruby 1.8)", t, xt);
-	}
-	rb_bug("unknown type 0x%x (0x%x given)", t, xt);
+	unexpected_type(x, xt, t);
     }
+}
+
+void
+rb_unexpected_type(VALUE x, int t)
+{
+    if (x == Qundef) {
+	rb_bug(UNDEF_LEAKED);
+    }
+
+    unexpected_type(x, TYPE(x), t);
 }
 
 int
@@ -684,6 +703,7 @@ static VALUE rb_eNOERROR;
 static ID id_new, id_cause, id_message, id_backtrace;
 static ID id_name, id_args, id_Errno, id_errno, id_i_path;
 static ID id_receiver, id_iseq, id_local_variables;
+static ID id_private_call_p;
 extern ID ruby_static_id_status;
 #define id_bt idBt
 #define id_bt_locations idBt_locations
@@ -871,9 +891,9 @@ rb_get_backtrace(VALUE exc)
 	rb_thread_t *th = GET_THREAD();
 	if (NIL_P(exc))
 	    return Qnil;
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, exc, mid, klass, Qundef);
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, exc, mid, mid, klass, Qundef);
 	info = exc_backtrace(exc);
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, exc, mid, klass, info);
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, exc, mid, mid, klass, info);
 	if (NIL_P(info))
 	    return Qnil;
 	return rb_check_backtrace(info);
@@ -887,7 +907,7 @@ rb_get_backtrace(VALUE exc)
  *
  *  Returns any backtrace associated with the exception. This method is
  *  similar to Exception#backtrace, but the backtrace is an array of
- *   Thread::Backtrace::Location.
+ *  Thread::Backtrace::Location.
  *
  *  Now, this method is not affected by Exception#set_backtrace().
  */
@@ -1067,7 +1087,7 @@ exit_initialize(int argc, VALUE *argv, VALUE exc)
 
 /*
  * call-seq:
- *   system_exit.status   -> fixnum
+ *   system_exit.status   -> integer
  *
  * Return the status value associated with this system exit.
  */
@@ -1133,7 +1153,7 @@ rb_name_error_str(VALUE str, const char *fmt, ...)
 
 /*
  * call-seq:
- *   NameError.new(msg [, name])  -> name_error
+ *   NameError.new([msg, *, name])  -> name_error
  *
  * Construct a new NameError exception. If given the <i>name</i>
  * parameter may subsequently be examined using the <code>NameError.name</code>
@@ -1198,7 +1218,7 @@ name_err_local_variables(VALUE self)
 
 /*
  * call-seq:
- *   NoMethodError.new(msg, name [, args])  -> no_method_error
+ *   NoMethodError.new([msg, *, name [, args]])  -> no_method_error
  *
  * Construct a NoMethodError exception for a method of the given name
  * called with the given arguments. The name may be accessed using
@@ -1209,9 +1229,11 @@ name_err_local_variables(VALUE self)
 static VALUE
 nometh_err_initialize(int argc, VALUE *argv, VALUE self)
 {
+    VALUE priv = (argc > 3) && (--argc, RTEST(argv[argc])) ? Qtrue : Qfalse;
     VALUE args = (argc > 2) ? argv[--argc] : Qnil;
     name_err_initialize(argc, argv, self);
     rb_ivar_set(self, id_args, args);
+    rb_ivar_set(self, id_private_call_p, RTEST(priv) ? Qtrue : Qfalse);
     return self;
 }
 
@@ -1398,12 +1420,37 @@ nometh_err_args(VALUE self)
     return rb_attr_get(self, id_args);
 }
 
+static VALUE
+nometh_err_private_call_p(VALUE self)
+{
+    return rb_attr_get(self, id_private_call_p);
+}
+
 void
 rb_invalid_str(const char *str, const char *type)
 {
     VALUE s = rb_str_new2(str);
 
     rb_raise(rb_eArgError, "invalid value for %s: %+"PRIsVALUE, type, s);
+}
+
+/*
+ * call-seq:
+ *   SyntaxError.new([msg])  -> syntax_error
+ *
+ * Construct a SyntaxError exception.
+ */
+
+static VALUE
+syntax_error_initialize(int argc, VALUE *argv, VALUE self)
+{
+    VALUE mesg;
+    if (argc == 0) {
+	mesg = rb_fstring_cstr("compile error");
+	argc = 1;
+	argv = &mesg;
+    }
+    return rb_call_super(argc, argv);
 }
 
 /*
@@ -1547,7 +1594,7 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   system_call_error.errno   -> fixnum
+ *   system_call_error.errno   -> integer
  *
  * Return this SystemCallError's error number.
  */
@@ -1788,7 +1835,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *
  *  Since constant names must start with a capital:
  *
- *     Fixnum.const_set :answer, 42
+ *     Integer.const_set :answer, 42
  *
  *  <em>raises the exception:</em>
  *
@@ -2005,6 +2052,7 @@ Init_Exception(void)
 
     rb_eScriptError = rb_define_class("ScriptError", rb_eException);
     rb_eSyntaxError = rb_define_class("SyntaxError", rb_eScriptError);
+    rb_define_method(rb_eSyntaxError, "initialize", syntax_error_initialize, -1);
 
     rb_eLoadError   = rb_define_class("LoadError", rb_eScriptError);
     /* the path failed to load */
@@ -2025,6 +2073,7 @@ Init_Exception(void)
     rb_eNoMethodError = rb_define_class("NoMethodError", rb_eNameError);
     rb_define_method(rb_eNoMethodError, "initialize", nometh_err_initialize, -1);
     rb_define_method(rb_eNoMethodError, "args", nometh_err_args, 0);
+    rb_define_method(rb_eNoMethodError, "private_call?", nometh_err_private_call_p, 0);
 
     rb_eRuntimeError = rb_define_class("RuntimeError", rb_eStandardError);
     rb_eSecurityError = rb_define_class("SecurityError", rb_eException);
@@ -2040,6 +2089,10 @@ Init_Exception(void)
 
     rb_mErrno = rb_define_module("Errno");
 
+    rb_mWarning = rb_define_module("Warning");
+    rb_define_method(rb_mWarning, "warn", rb_warning_s_warn, 1);
+    rb_extend_object(rb_mWarning, rb_mWarning);
+
     rb_define_global_function("warn", rb_warn_m, -1);
 
     id_new = rb_intern_const("new");
@@ -2049,10 +2102,12 @@ Init_Exception(void)
     id_name = rb_intern_const("name");
     id_args = rb_intern_const("args");
     id_receiver = rb_intern_const("receiver");
+    id_private_call_p = rb_intern_const("private_call?");
     id_local_variables = rb_intern_const("local_variables");
     id_Errno = rb_intern_const("Errno");
     id_errno = rb_intern_const("errno");
     id_i_path = rb_intern_const("@path");
+    id_warn = rb_intern_const("warn");
     id_iseq = rb_make_internal_id();
 }
 
@@ -2276,7 +2331,7 @@ rb_sys_warning(const char *fmt, ...)
     va_end(args);
     rb_str_set_len(mesg, RSTRING_LEN(mesg)-1);
     rb_str_catf(mesg, ": %s\n", strerror(errno_save));
-    rb_write_error_str(mesg);
+    rb_write_warning_str(mesg);
     errno = errno_save;
 }
 
@@ -2296,7 +2351,7 @@ rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...)
     va_end(args);
     rb_str_set_len(mesg, RSTRING_LEN(mesg)-1);
     rb_str_catf(mesg, ": %s\n", strerror(errno_save));
-    rb_write_error_str(mesg);
+    rb_write_warning_str(mesg);
     errno = errno_save;
 }
 
