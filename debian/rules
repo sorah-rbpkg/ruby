@@ -94,10 +94,3 @@ override_dh_install-arch:
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/systemtap/tapset
 	sed 's|@LIBRARY_PATH@|/usr/lib/$(DEB_HOST_MULTIARCH)/libruby-$(RUBY_VERSION).so|g' $(CURDIR)/debian/libruby.stp > $(CURDIR)/debian/tmp/usr/share/systemtap/tapset/libruby$(RUBY_VERSION)-$(DEB_HOST_MULTIARCH).stp
 	dh_install
-
-import-orig-source:
-	test -d .git
-	test -n "$$UPSTREAM_GIT"
-	test -n "$$UPSTREAM_VERSION"
-	cd $(UPSTREAM_GIT) && git archive --format=tar --prefix=ruby-$(UPSTREAM_VERSION)/ v$(shell echo $(UPSTREAM_VERSION) | tr . _) | xz -c > /tmp/ruby-$(UPSTREAM_VERSION).tar.xz
-	gbp import-orig /tmp/ruby-$(UPSTREAM_VERSION).tar.xz
