@@ -24,6 +24,7 @@ configure_options += --target=$(DEB_HOST_MULTIARCH)
 configure_options += --program-suffix=$(RUBY_VERSION)
 configure_options += --with-soname=ruby-$(RUBY_VERSION)
 configure_options += --enable-shared
+configure_options += --enable-install-static-library
 configure_options += --disable-rpath
 configure_options += --with-baseruby=$(baseruby)
 configure_options += --with-sitedir='/usr/local/lib/site_ruby'
@@ -85,7 +86,7 @@ override_dh_auto_install-arch:
 	$(RM) $(CURDIR)/debian/tmp/usr/lib/ruby/$(RUBY_API_VERSION)/rdoc/generator/template/darkfish/fonts/Lato-LightItalic.ttf
 	dh_link -plibruby$(RUBY_VERSION) /usr/share/fonts/truetype/lato/Lato-LightItalic.ttf /usr/lib/ruby/$(RUBY_API_VERSION)/rdoc/generator/template/darkfish/fonts/Lato-LightItalic.ttf
 	# remove embedded SSL certificates (replaced using ca-certificates via rubygems-integration)
-	$(RM) $(CURDIR)/debian/tmp/usr/lib/ruby/$(RUBY_API_VERSION)/rubygems/ssl_certs/*
+	$(RM) -r $(CURDIR)/debian/tmp/usr/lib/ruby/$(RUBY_API_VERSION)/rubygems/ssl_certs/*
 	# ship rubygems system install directory
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/gems/$(RUBY_API_VERSION)
 	# sanity check
@@ -102,14 +103,3 @@ override_dh_install-arch:
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/systemtap/tapset
 	sed 's|@LIBRARY_PATH@|/usr/lib/$(DEB_HOST_MULTIARCH)/libruby-$(RUBY_VERSION).so|g' $(CURDIR)/debian/libruby.stp > $(CURDIR)/debian/tmp/usr/share/systemtap/tapset/libruby$(RUBY_VERSION)-$(DEB_HOST_MULTIARCH).stp
 	dh_install
-
-import-orig-source:
-	test -d .git
-	test -n "$$UPSTREAM_GIT"
-	test -n "$$UPSTREAM_VERSION"
-	cd $(UPSTREAM_GIT) && git archive --format=tar --prefix=ruby-$(UPSTREAM_VERSION)/ v$(shell echo $(UPSTREAM_VERSION) | tr . _) | xz -c > /tmp/ruby-$(UPSTREAM_VERSION).tar.xz
-	gbp import-orig /tmp/ruby-$(UPSTREAM_VERSION).tar.xz
-
-.PHONY: override_dh_strip
-override_dh_strip:
-	dh_strip --dbgsym-migration=libruby$(RUBY_VERSION)-dbg' (<< 2.3.1-3~)'

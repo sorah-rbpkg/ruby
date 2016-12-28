@@ -2,16 +2,16 @@
 
 = NAME
 
-testrb2.3 - Automatic runnter for Test::Unit of Ruby
+testrb.4 - Automatic runnter for Test::Unit of Ruby
 
 = SYNOPSIS
 
-testrb2.3 [options] [-- untouched arguments] test ...
+testrb.4 [options] [-- untouched arguments] test ...
 
 = DESCRIPTION
 
-testrb2.3 loads and runs unit-tests.  If test is directory name, testrb2.3
-testrb2.3 traverses the directory.
+testrb.4 loads and runs unit-tests.  If test is directory name, testrb.4
+testrb.4 traverses the directory.
 
 = OPTIONS
 
