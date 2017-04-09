@@ -1,3 +1,84 @@
+Wed Mar 29 23:47:31 2017  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* hash.c (any_hash): fix CI failure on L32LLP64 architecture.
+	  The patch was provided by usa. [ruby-core:80484] [Bug #13376]
+
+Wed Mar 29 06:22:27 2017  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* hash.c (any_hash): fix Symbol#hash to be nondeterministic.
+	  The patch was provided by Eric Wong. [ruby-core:80433] [Bug #13376]
+
+	* test/ruby/test_symbol.rb: add test for above.
+
+Tue Mar 28 00:38:39 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (poll_child_status): rb_w32_wait_events_blocking() sets
+	  errno internally, then should not set it here.
+
+Mon Mar 27 20:15:17 2017  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* eval.c, method.h, proc.c, vm.c, vm_eval.c, vm_insnhelper.c, vm_method.c:
+	  TracePoint#method_id should return method_id, not callee_id.
+	  [ruby-core:77241] [Feature #12747]
+
+	* test/ruby/test_settracefunc.rb: change accordingly.
+
+Mon Mar 27 20:12:23 2017  Anton Davydov  <mail@davydovanton.com>
+
+	* lib/uri/mailto.rb: Removed needless `return` and use `.`` instead of `::`
+	  with class method.
+	* test/uri/test_mailto.rb: Added tests for coverage.
+
+Mon Mar 20 06:35:08 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): convert -e script to the encoding
+	  given by a command line option on Windows.  assume it is the
+	  expected encoding.  [ruby-dev:49461] [Bug #11900]
+
+Mon Mar 20 05:47:49 2017  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_exception.rb: fix thread issues.
+	  * use Queue instead of a local variable for synchronization.
+	  * join created thread to soleve leaking threads warning.
+
+Mon Mar 20 05:47:49 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_threadptr_raise): set cause from the called thread,
+	  but not from the thread to be interrupted.
+	  [ruby-core:77222] [Bug #12741]
+
+Wed Feb  8 02:17:02 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/forwardable.rb (Forwardable._delegator_method): extract
+	  method generator and deal with non-module objects.
+	  [ruby-dev:49656] [Bug #12478]
+
+Wed Feb  8 02:17:02 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/forwardable.rb (def_instance_delegator): adjust backtrace of
+	  method body by tail call optimization.  adjusting the delegated
+	  target is still done by deleting backtrace.
+
+	* lib/forwardable.rb (def_single_delegator): ditto.
+
+Tue Jan 17 03:51:48 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (setup_args): duplicate splatting array if more
+	  arguments present to obey left-to-right execution order.
+	  [ruby-core:77701] [Bug# 12860]
+
+Thu Nov 24 05:47:18 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* test/fileutils/test_fileutils.rb (TestFileUtils#setup): Use primary
+	  group as well as supplementary groups.
+	  based on the patch by Vit Ondruch at [Bug #12910]
+
+Thu Nov 24 05:44:04 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* test/ruby/test_dir_m17n.rb: Don't encode to UTF-8 if it's unnecessary.
+	  If the file system encoding is ISO-8851-1 or if the encoding of the
+	  target string is invalid, don't encode to UTF-8. [Bug#12972]
+
 Mon Nov 21 16:55:15 2016  boshan  <boshan@subsplash.com>
 
 	* lib/tempfile.rb (Tempfile#initialize): [DOC] the first parameter

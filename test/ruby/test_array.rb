@@ -2126,6 +2126,11 @@ class TestArray < Test::Unit::TestCase
     }
     assert_equal(9, r)
     assert_equal(@cls[7, 8, 9, 10], a, bug10722)
+
+    bug13053 = '[ruby-core:78739] [Bug #13053] Array#select! can resize to negative size'
+    a = @cls[ 1, 2, 3, 4, 5 ]
+    a.select! {|i| a.clear if i == 5; false }
+    assert_equal(0, a.size, bug13053)
   end
 
   def test_delete2
@@ -2420,11 +2425,18 @@ class TestArray < Test::Unit::TestCase
 
   def test_combination_clear
     bug9939 = '[ruby-core:63149] [Bug #9939]'
-    assert_separately([], <<-'end;')
-      100_000.times {Array.new(1000)}
+    assert_nothing_raised(bug9939) {
       a = [*0..100]
       a.combination(3) {|*,x| a.clear}
-    end;
+    }
+
+    bug13052 = '[ruby-core:78738] [Bug #13052] Array#combination segfaults if the Array is modified during iteration'
+    assert_nothing_raised(bug13052) {
+      a = [*0..100]
+      a.combination(1) { a.clear }
+      a = [*0..100]
+      a.repeated_combination(1) { a.clear }
+    }
   end
 
   def test_product2
