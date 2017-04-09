@@ -1,4 +1,4 @@
-ruby2.3 (2.3.4-0nkmi1) unstable; urgency=medium
+ruby2.3 (2.3.4-0nkmi1~xenial) xenial; urgency=medium
 
   * new upstream version
   * Forward port r58141@ruby_2_2 to recover rb_thread_fd_close which
