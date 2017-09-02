@@ -21,6 +21,9 @@ ruby2.3 (2.3.3-1+deb9u1) stretch-security; urgency=high
   * Fix SMTP comment injection (Closes: #864860)
     Patch by Shugo Maeda <shugo@ruby-lang.org>
     [CVE-2015-9096]
+  * Fix IV Reuse in GCM Mode (Closes: #842432)
+    Patch by Kazuki Yamaguchi <k@rhe.jp>
+    [CVE-2016-7798]
 
  -- Antonio Terceiro <terceiro@debian.org>  Sat, 02 Sep 2017 15:11:07 -0300
 
