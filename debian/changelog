@@ -4,6 +4,20 @@ ruby2.3 (2.3.3-1+deb9u1) stretch-security; urgency=high
     [CVE-2017-14064]
     - Backported for Ruby 2.3 by Hiroshi SHIBATA <hsbt@ruby-lang.org>
       https://bugs.ruby-lang.org/issues/13853
+  * Fix multiple security vulnerabilities in Rubygems (Closes: #873802)
+    - Fix a DNS request hijacking vulnerability. Discovered by Jonathan
+      Claudius, fix by Samuel Giddins.
+      [CVE-2017-0902]
+    - Fix an ANSI escape sequence vulnerability. Discovered by Yusuke Endoh,
+      fix by Evan Phoenix.
+      [CVE-2017-0899]
+    - Fix a DOS vulernerability in the query command. Discovered by Yusuke
+      Endoh, fix by Samuel Giddins.
+      [CVE-2017-0900]
+    - Fix a vulnerability in the gem installer that allowed a malicious gem to
+      overwrite arbitrary files. Discovered by Yusuke Endoh, fix by Samuel
+      Giddins.
+      [CVE-2017-0901]
 
  -- Antonio Terceiro <terceiro@debian.org>  Sat, 02 Sep 2017 15:11:07 -0300
 
