@@ -453,8 +453,16 @@ WARN
     }
   end
 
+  def test_invalid_break
+    assert_syntax_error("def m; break; end", /Invalid break/)
+    assert_in_out_err([], '/#{break}/', [],  /Invalid break \(SyntaxError\)$/)
+    assert_in_out_err([], '/#{break}/o', [],  /Invalid break \(SyntaxError\)$/)
+  end
+
   def test_invalid_next
     assert_syntax_error("def m; next; end", /Invalid next/)
+    assert_in_out_err([], '/#{next}/', [],  /Invalid next \(SyntaxError\)$/)
+    assert_in_out_err([], '/#{next}/o', [],  /Invalid next \(SyntaxError\)$/)
   end
 
   def test_lambda_with_space
@@ -620,6 +628,10 @@ e"
     d
 eom
     assert_equal(expected, actual, bug7559)
+  end
+
+  def test_dedented_heredoc_invalid_identifer
+    assert_syntax_error('<<~ "#{}"', /unexpected <</)
   end
 
   def test_lineno_operation_brace_block
