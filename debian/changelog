@@ -1,5 +1,6 @@
-ruby2.3 (2.3.3-2) UNRELEASED; urgency=medium
+ruby2.3 (2.3.5~20170902-1) UNRELEASED; urgency=medium
 
+  * New upstream snapshot based on the 2.3 maintainance branch.
   * Convert packaging from using a plain git history to using gbp-pq, thus
     making debian individual patches explicitly presend in debian/patches
 
