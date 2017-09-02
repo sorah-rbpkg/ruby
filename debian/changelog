@@ -18,6 +18,9 @@ ruby2.3 (2.3.3-1+deb9u1) stretch-security; urgency=high
       overwrite arbitrary files. Discovered by Yusuke Endoh, fix by Samuel
       Giddins.
       [CVE-2017-0901]
+  * Fix SMTP comment injection (Closes: #864860)
+    Patch by Shugo Maeda <shugo@ruby-lang.org>
+    [CVE-2015-9096]
 
  -- Antonio Terceiro <terceiro@debian.org>  Sat, 02 Sep 2017 15:11:07 -0300
 
