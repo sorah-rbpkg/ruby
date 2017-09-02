@@ -1,0 +1,10 @@
+0001-Build-libruby.so-with-dpkg-buildflags-supplied-LDFLA.patch
+0002-Explicitly-set-bundled-gem-dates.patch
+0003-Disable-tests-that-fail-for-Debian-architectures.patch
+0004-lib-mkmf.rb-sort-list-of-object-files-in-generated-M.patch
+0005-Increase-timeout-for-test_gc.rb-test_gc_parameter-fo.patch
+0006-Increase-timeout-for-test_array.rb-test_permutation_.patch
+0007-Skip-test-that-does-not-work-under-sbuild-buildd.patch
+0008-rdoc-sort-input-filenames-in-a-consistent-way-for-re.patch
+0009-rdoc-set-gzip-timestamp-on-compressed-javascript-to-.patch
+0010-Make-Date-in-gemspec-reproducible.patch

@@ -1,0 +1,23 @@
+From: Christian Hofstaedtler <zeha@debian.org>
+Date: Sat, 2 Sep 2017 10:54:08 -0300
+Subject: Increase timeout for test_gc.rb test_gc_parameter, for mips, mipsel.
+
+Signed-off-by: Christian Hofstaedtler <zeha@debian.org>
+Signed-off-by: Antonio Terceiro <terceiro@debian.org>
+---
+ test/ruby/test_gc.rb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/ruby/test_gc.rb b/test/ruby/test_gc.rb
+index 51b17c6..9732e12 100644
+--- a/test/ruby/test_gc.rb
++++ b/test/ruby/test_gc.rb
+@@ -212,7 +212,7 @@ def test_gc_parameter
+     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR=0\.9/, "")
+ 
+     # always full GC when RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR < 1.0
+-    assert_in_out_err([env, "-e", "1000_000.times{Object.new}; p(GC.stat[:minor_gc_count] < GC.stat[:major_gc_count])"], "", ['true'], //, "") if use_rgengc?
++    assert_in_out_err([env, "-e", "1000_000.times{Object.new}; p(GC.stat[:minor_gc_count] < GC.stat[:major_gc_count])"], "", ['true'], //, "", timeout: 30) if use_rgengc?
+ 
+     # check obsolete
+     assert_in_out_err([{'RUBY_FREE_MIN' => '100'}, '-w', '-eexit'], '', [],

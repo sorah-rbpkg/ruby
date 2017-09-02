@@ -1,0 +1,38 @@
+From: Christian Hofstaedtler <zeha@debian.org>
+Date: Sat, 2 Sep 2017 09:49:27 -0300
+Subject: Disable tests that fail for Debian architectures
+
+- test_aspawn_too_long_path from test/ruby/test_process.rb uses ~2GB of
+  RAM and a lot of CPU time before finally failing on mips, mipsel.
+  - Forwarded to upstream as issue #12500.
+- test_prepend_after_refine_wb_miss from test/ruby/test_refinement.rb
+  takes too long, and fails on Debian arm* and powerpc buildds.
+
+Signed-off-by: Christian Hofstaedtler <zeha@debian.org>
+Signed-off-by: Antonio Terceiro <terceiro@debian.org>
+---
+ test/excludes/TestProcess.rb    | 5 +++++
+ test/excludes/TestRefinement.rb | 2 ++
+ 2 files changed, 7 insertions(+)
+ create mode 100644 test/excludes/TestProcess.rb
+ create mode 100644 test/excludes/TestRefinement.rb
+
+diff --git a/test/excludes/TestProcess.rb b/test/excludes/TestProcess.rb
+new file mode 100644
+index 0000000..24f71b4
+--- /dev/null
++++ b/test/excludes/TestProcess.rb
+@@ -0,0 +1,5 @@
++# Found on Debian mips* buildds, this test consumes ~2GB RAM and
++# a lot of CPU time before failing. Note that the test failure
++# may point to an issue in the Array implementation.
++# https://bugs.ruby-lang.org/issues/12500
++exclude :test_aspawn_too_long_path, "RAM and time consuming test"
+diff --git a/test/excludes/TestRefinement.rb b/test/excludes/TestRefinement.rb
+new file mode 100644
+index 0000000..8f148fd
+--- /dev/null
++++ b/test/excludes/TestRefinement.rb
+@@ -0,0 +1,2 @@
++# Found on Debian arm*, powerpc buildds
++exclude :test_prepend_after_refine_wb_miss, "time consuming test"

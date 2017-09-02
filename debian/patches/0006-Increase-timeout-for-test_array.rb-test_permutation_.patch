@@ -1,0 +1,28 @@
+From: Christian Hofstaedtler <zeha@debian.org>
+Date: Sat, 2 Sep 2017 10:55:51 -0300
+Subject: Increase timeout for test_array.rb test_permutation_stack_error
+
+Array#permutation is very slow on armel, mips, mipsel.
+
+Forwarded to upstream as issue #12502.
+
+Signed-off-by: Christian Hofstaedtler <zeha@debian.org>
+Signed-off-by: Antonio Terceiro <terceiro@debian.org>
+---
+ test/ruby/test_array.rb | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/test/ruby/test_array.rb b/test/ruby/test_array.rb
+index f27b8a5..bea1f37 100644
+--- a/test/ruby/test_array.rb
++++ b/test/ruby/test_array.rb
+@@ -1841,7 +1841,8 @@ def test_permutation
+ 
+   def test_permutation_stack_error
+     bug9932 = '[ruby-core:63103] [Bug #9932]'
+-    assert_separately([], <<-"end;") #    do
++    # On some platforms (armel, mips), permutation is very expensive/slow.
++    assert_separately([], <<-"end;", timeout: 60) #    do
+       assert_nothing_raised(SystemStackError, "#{bug9932}") do
+         assert_equal(:ok, Array.new(100_000, nil).permutation {break :ok})
+       end

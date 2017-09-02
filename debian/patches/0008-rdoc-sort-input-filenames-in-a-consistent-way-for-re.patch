@@ -1,0 +1,23 @@
+From: Christian Hofstaedtler <zeha@debian.org>
+Date: Sat, 2 Sep 2017 10:59:11 -0300
+Subject: rdoc: sort input filenames in a consistent way for reproducibility
+
+Signed-off-by: Christian Hofstaedtler <zeha@debian.org>
+Signed-off-by: Antonio Terceiro <terceiro@debian.org>
+---
+ lib/rdoc/rdoc.rb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/rdoc/rdoc.rb b/lib/rdoc/rdoc.rb
+index 7c5d34e..4b74646 100644
+--- a/lib/rdoc/rdoc.rb
++++ b/lib/rdoc/rdoc.rb
+@@ -321,7 +321,7 @@ def normalized_file_list(relative_files, force_doc = false,
+       end
+     end
+ 
+-    file_list.flatten
++    file_list.flatten.sort
+   end
+ 
+   ##

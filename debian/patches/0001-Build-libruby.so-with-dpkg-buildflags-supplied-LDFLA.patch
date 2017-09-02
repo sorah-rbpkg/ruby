@@ -1,0 +1,23 @@
+From: Christian Hofstaedtler <zeha@debian.org>
+Date: Sat, 2 Sep 2017 09:43:10 -0300
+Subject: Build libruby.so with dpkg-buildflags supplied LDFLAGS
+
+Signed-off-by: Christian Hofstaedtler <zeha@debian.org>
+Signed-off-by: Antonio Terceiro <terceiro@debian.org>
+---
+ configure.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/configure.in b/configure.in
+index 29b63c2..cc1001f 100644
+--- a/configure.in
++++ b/configure.in
+@@ -3686,7 +3686,7 @@ AS_CASE("$enable_shared", [yes], [
+ 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
+ 	],
+     [linux* | gnu* | k*bsd*-gnu | atheos* | kopensolaris*-gnu | haiku*], [
+-	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)'" $LDFLAGS_OPTDIR"
++	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)'" $LDFLAGS $LDFLAGS_OPTDIR"
+ 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
+ 	if test "$load_relative" = yes; then
+ 	    libprefix="'\$\${ORIGIN}/../${libdir_basename}'"

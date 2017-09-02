@@ -1,0 +1,23 @@
+From: Christian Hofstaedtler <zeha@debian.org>
+Date: Sat, 2 Sep 2017 10:57:32 -0300
+Subject: Skip test that does not work under sbuild/buildd
+
+Signed-off-by: Antonio Terceiro <terceiro@debian.org>
+Signed-off-by: Christian Hofstaedtler <zeha@debian.org>
+---
+ test/ruby/test_file_exhaustive.rb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/ruby/test_file_exhaustive.rb b/test/ruby/test_file_exhaustive.rb
+index be0a79f..a37c844 100644
+--- a/test/ruby/test_file_exhaustive.rb
++++ b/test/ruby/test_file_exhaustive.rb
+@@ -1017,7 +1017,7 @@ def test_expand_path_for_existent_username
+     user = ENV['USER']
+     skip "ENV['USER'] is not set" unless user
+     assert_equal(ENV['HOME'], File.expand_path("~#{user}"))
+-  end unless DRIVE
++  end if false  # does not work in sbuild/buildd environments
+ 
+   def test_expand_path_error_for_nonexistent_username
+     user = "\u{3086 3046 3066 3044}:\u{307F 3084 304A 3046}"

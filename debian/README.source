@@ -21,3 +21,9 @@ debian/missing-sources/jquery.js.
 When libruby* is installed, however,
 /usr/lib/ruby/*/rdoc/generator/template/darkfish/js/jquery.js is a symlink
 to jquery.js provided by the libjs-jquery package.
+
+Patches
+=======
+
+The maintainers handle patches in git using gbp-pq(1). Handling the
+source package directly from the Debian archive without git should be trivial.
