@@ -321,7 +321,7 @@ option)
       end
     end
 
-    file_list.flatten.sort
+    file_list.flatten
   end
 
   ##

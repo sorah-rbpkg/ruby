@@ -1841,8 +1841,7 @@ class TestArray < Test::Unit::TestCase
 
   def test_permutation_stack_error
     bug9932 = '[ruby-core:63103] [Bug #9932]'
-    # On some platforms (armel, mips), permutation is very expensive/slow.
-    assert_separately([], <<-"end;", timeout: 60) #    do
+    assert_separately([], <<-"end;") #    do
       assert_nothing_raised(SystemStackError, "#{bug9932}") do
         assert_equal(:ok, Array.new(100_000, nil).permutation {break :ok})
       end
