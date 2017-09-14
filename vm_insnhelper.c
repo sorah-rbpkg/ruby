@@ -25,17 +25,17 @@
 static rb_control_frame_t *vm_get_ruby_level_caller_cfp(const rb_thread_t *th, const rb_control_frame_t *cfp);
 
 VALUE
-ruby_vm_sysstack_error_copy(void)
+ruby_vm_special_exception_copy(VALUE exc)
 {
-    VALUE e = rb_obj_alloc(rb_eSysStackError);
-    rb_obj_copy_ivar(e, sysstack_error);
+    VALUE e = rb_obj_alloc(rb_class_real(RBASIC_CLASS(exc)));
+    rb_obj_copy_ivar(e, exc);
     return e;
 }
 
 static void
 vm_stackoverflow(void)
 {
-    rb_exc_raise(ruby_vm_sysstack_error_copy());
+    rb_exc_raise(ruby_vm_special_exception_copy(sysstack_error));
 }
 
 #if VM_CHECK_MODE > 0
@@ -946,13 +946,13 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 
 	    while (escape_cfp < eocfp) {
 		if (escape_cfp->ep == ep) {
-		    const VALUE epc = escape_cfp->pc - escape_cfp->iseq->body->iseq_encoded;
-		    const rb_iseq_t * const iseq = escape_cfp->iseq;
-		    const struct iseq_catch_table * const ct = iseq->body->catch_table;
-		    const int ct_size = ct->size;
-		    int i;
+		    const rb_iseq_t *const iseq = escape_cfp->iseq;
+		    const VALUE epc = escape_cfp->pc - iseq->body->iseq_encoded;
+		    const struct iseq_catch_table *const ct = iseq->body->catch_table;
+		    unsigned int i;
 
-		    for (i=0; i<ct_size; i++) {
+		    if (!ct) break;
+		    for (i=0; i < ct->size; i++) {
 			const struct iseq_catch_table_entry * const entry = &ct->entries[i];;
 
 			if (entry->type == CATCH_TYPE_BREAK && entry->start < epc && entry->end >= epc) {
