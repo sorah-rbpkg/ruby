@@ -2734,6 +2734,28 @@ End
     end;
   end
 
+  def test_single_exception_on_close
+    a = []
+    t = []
+    10.times do
+      r, w = IO.pipe
+      a << [r, w]
+      t << Thread.new do
+        while r.gets
+        end rescue IOError
+        Thread.current.pending_interrupt?
+      end
+    end
+    a.each do |r, w|
+      w.write -"\n"
+      w.close
+      r.close
+    end
+    t.each do |th|
+      assert_equal false, th.value, '[ruby-core:81581] [Bug #13632]'
+    end
+  end
+
   def test_open_mode
     feature4742 = "[ruby-core:36338]"
     bug6055 = '[ruby-dev:45268]'
@@ -3334,6 +3356,29 @@ End
         thread.join
       end
       assert_equal(true, closed, "#{bug13158}: stream should be closed")
+    end
+
+    def test_closed_stream_in_rescue
+      assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
+      begin;
+      10.times do
+        assert_nothing_raised(RuntimeError, /frozen IOError/) do
+          IO.pipe do |r, w|
+            th = Thread.start {r.close}
+            r.gets
+          rescue IOError
+            # swallow pending exceptions
+            begin
+              sleep 0.001
+            rescue IOError
+              retry
+            end
+          ensure
+            th.kill.join
+          end
+        end
+      end
+      end;
     end
   end
 end
