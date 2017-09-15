@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = "json"
-  s.version = "1.8.3"
+  s.version = "1.8.3.1"
   s.date = RUBY_RELEASE_DATE
   s.summary = "This json is bundled with Ruby"
   s.executables = []

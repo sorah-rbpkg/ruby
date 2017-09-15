@@ -6405,7 +6405,7 @@ d_lite_hash(VALUE self)
     h[2] = m_df(dat);
     h[3] = m_sf(dat);
     v = rb_memhash(h, sizeof(h));
-    return LONG2FIX(v);
+    return LONG2FIX((long)v);
 }
 
 #include "date_tmx.h"
@@ -6787,7 +6787,7 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
  *              %::z - hour, minute and second offset from UTC (e.g. +09:00:00)
  *              %:::z - hour, minute and second offset from UTC
  *                                                (e.g. +09, +09:30, +09:30:30)
- *      %Z - Time zone abbreviation name or something similar information.
+ *      %Z - Equivalent to %:z (e.g. +09:00)
  *
  *    Weekday:
  *      %A - The full weekday name (``Sunday'')
@@ -8218,7 +8218,7 @@ dt_lite_to_s(VALUE self)
  *              %::z - hour, minute and second offset from UTC (e.g. +09:00:00)
  *              %:::z - hour, minute and second offset from UTC
  *                                                (e.g. +09, +09:30, +09:30:30)
- *      %Z - Time zone abbreviation name or something similar information.
+ *      %Z - Equivalent to %:z (e.g. +09:00)
  *
  *    Weekday:
  *      %A - The full weekday name (``Sunday'')

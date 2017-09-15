@@ -7099,15 +7099,17 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
  *  call-seq:
  *     ios.puts(obj, ...)    -> nil
  *
- *  Writes the given object(s) to <em>ios</em> as with <code>IO#write</code>.
+ *  Writes the given object(s) to <em>ios</em>.
  *  Writes a newline after any that do not already end
- *  with a newline sequence.
+ *  with a newline sequence. Returns +nil+.
  *
+ *  The stream must be opened for writing.
  *  If called with an array argument, writes each element on a new line.
+ *  Each given object that isn't a string or array will be converted
+ *  by calling its +to_s+ method.
  *  If called without arguments, outputs a single newline.
- *  This doesn't affect $/. ($RS or INPUT_RECORD_SEPARATOR in English.rb)
  *
- *     $stdout.puts("this", "is", "a", "test")
+ *     $stdout.puts("this", "is", ["a", "test"])
  *
  *  <em>produces:</em>
  *
@@ -7115,6 +7117,9 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
  *     is
  *     a
  *     test
+ *
+ *  Note that +puts+ always uses newlines and is not affected
+ *  by the output record separator (<code>$\\</code>).
  */
 
 VALUE
@@ -10131,7 +10136,7 @@ nogvl_wait_for_single_fd(int fd, short events)
     fds.fd = fd;
     fds.events = events;
 
-    return poll(&fds, 1, 0);
+    return poll(&fds, 1, -1);
 }
 
 static int
