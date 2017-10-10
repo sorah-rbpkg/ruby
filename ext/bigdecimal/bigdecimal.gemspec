@@ -6,6 +6,7 @@ Gem::Specification.new do |s|
   s.name          = "bigdecimal"
   s.version       = bigdecimal_version
   s.authors       = ["Kenta Murata", "Zachary Scott", "Shigeo Kobayashi"]
+  s.date          = RUBY_RELEASE_DATE
   s.email         = ["mrkn@mrkn.jp"]
 
   s.summary       = "Arbitrary-precision decimal floating-point number library."
