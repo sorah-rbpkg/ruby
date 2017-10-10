@@ -8,6 +8,7 @@ end
 Gem::Specification.new do |spec|
   spec.name          = "fiddle"
   spec.version       = version_module::Fiddle::VERSION
+  spec.date          = RUBY_RELEASE_DATE
   spec.authors       = ["Aaron Patterson", "SHIBATA Hiroshi"]
   spec.email         = ["aaron@tenderlovemaking.com", "hsbt@ruby-lang.org"]
 
