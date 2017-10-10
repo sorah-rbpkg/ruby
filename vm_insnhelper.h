@@ -2,7 +2,7 @@
 
   insnhelper.h - helper macros to implement each instructions
 
-  $Author: ko1 $
+  $Author$
   created at: 04/01/01 15:50:34 JST
 
   Copyright (C) 2004-2007 Koichi Sasada
@@ -47,7 +47,7 @@ extern VALUE ruby_vm_const_missing_count;
 #define VM_REG_EP  (VM_REG_CFP->ep)
 
 #define RESTORE_REGS() do { \
-    VM_REG_CFP = th->cfp; \
+    VM_REG_CFP = th->ec.cfp; \
 } while (0)
 
 #define REG_A   reg_a
@@ -95,7 +95,7 @@ enum vm_regan_acttype {
 #define SET_SV(x)  (*GET_SP() = (x))
   /* set current stack value as x */
 
-#define GET_SP_COUNT() (VM_REG_SP - th->stack)
+#define GET_SP_COUNT() (VM_REG_SP - th->ec.vm_stack)
 
 /* instruction sequence C struct */
 #define GET_ISEQ() (GET_CFP()->iseq)
@@ -166,6 +166,8 @@ enum vm_regan_acttype {
 #else
 #define FLONUM_2_P(a, b) 0
 #endif
+#define FLOAT_HEAP_P(x) (!SPECIAL_CONST_P(x) && RBASIC_CLASS(x) == rb_cFloat)
+#define FLOAT_INSTANCE_P(x) (FLONUM_P(x) || FLOAT_HEAP_P(x))
 
 #ifndef USE_IC_FOR_SPECIALIZED_METHOD
 #define USE_IC_FOR_SPECIALIZED_METHOD 1
@@ -194,34 +196,55 @@ THROW_DATA_NEW(VALUE val, const rb_control_frame_t *cf, VALUE st)
     return (struct vm_throw_data *)rb_imemo_new(imemo_throw_data, val, (VALUE)cf, st, 0);
 }
 
-static inline void
-THROW_DATA_CATCH_FRAME_SET(struct vm_throw_data *obj, const rb_control_frame_t *cfp)
-{
-    obj->catch_frame = cfp;
-}
-
-static inline void
-THROW_DATA_STATE_SET(struct vm_throw_data *obj, int st)
-{
-    obj->throw_state = (VALUE)st;
-}
-
 static inline VALUE
 THROW_DATA_VAL(const struct vm_throw_data *obj)
 {
+    VM_ASSERT(THROW_DATA_P(obj));
     return obj->throw_obj;
 }
 
 static inline const rb_control_frame_t *
 THROW_DATA_CATCH_FRAME(const struct vm_throw_data *obj)
 {
+    VM_ASSERT(THROW_DATA_P(obj));
     return obj->catch_frame;
 }
 
-static int
+static inline int
 THROW_DATA_STATE(const struct vm_throw_data *obj)
 {
+    VM_ASSERT(THROW_DATA_P(obj));
     return (int)obj->throw_state;
+}
+
+static inline int
+THROW_DATA_CONSUMED_P(const struct vm_throw_data *obj)
+{
+    VM_ASSERT(THROW_DATA_P(obj));
+    return obj->flags & THROW_DATA_CONSUMED;
+}
+
+static inline void
+THROW_DATA_CATCH_FRAME_SET(struct vm_throw_data *obj, const rb_control_frame_t *cfp)
+{
+    VM_ASSERT(THROW_DATA_P(obj));
+    obj->catch_frame = cfp;
+}
+
+static inline void
+THROW_DATA_STATE_SET(struct vm_throw_data *obj, int st)
+{
+    VM_ASSERT(THROW_DATA_P(obj));
+    obj->throw_state = (VALUE)st;
+}
+
+static inline void
+THROW_DATA_CONSUMED_SET(struct vm_throw_data *obj)
+{
+    if (THROW_DATA_P(obj) &&
+	THROW_DATA_STATE(obj) == TAG_BREAK) {
+	obj->flags |= THROW_DATA_CONSUMED;
+    }
 }
 
 #endif /* RUBY_INSNHELPER_H */

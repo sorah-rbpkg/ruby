@@ -242,6 +242,22 @@ class TestProcess < Test::Unit::TestCase
       :rlimit_core=>n, :rlimit_cpu=>3600]) {|io|
       assert_equal("[#{n}, #{n}]\n[3600, 3600]", io.read.chomp)
     }
+
+    assert_raise(ArgumentError) do
+      system(RUBY, '-e', 'exit',  'rlimit_bogus'.to_sym => 123)
+    end
+    assert_separately([],<<-"end;") # [ruby-core:82033] [Bug #13744]
+      assert(system("#{RUBY}", "-e",
+                 "exit([3600,3600] == Process.getrlimit(:CPU))",
+             'rlimit_cpu'.to_sym => 3600))
+      assert_raise(ArgumentError) do
+        system("#{RUBY}", '-e', 'exit',  :rlimit_bogus => 123)
+      end
+    end;
+
+    assert_raise(ArgumentError, /rlimit_cpu/) {
+      system(RUBY, '-e', 'exit', "rlimit_cpu\0".to_sym => 3600)
+    }
   end
 
   MANDATORY_ENVS = %w[RUBYLIB]
@@ -443,10 +459,11 @@ class TestProcess < Test::Unit::TestCase
   def test_execopts_open_chdir_m17n_path
     with_tmpchdir {|d|
       Dir.mkdir "テスト"
-      system(*PWD, :chdir => "テスト", :out => "open_chdir_テスト")
+      (pwd = PWD.dup).insert(1, '-EUTF-8:UTF-8')
+      system(*pwd, :chdir => "テスト", :out => "open_chdir_テスト")
       assert_file.exist?("open_chdir_テスト")
       assert_file.not_exist?("テスト/open_chdir_テスト")
-      assert_equal("#{d}/テスト", File.read("open_chdir_テスト").chomp.encode(__ENCODING__))
+      assert_equal("#{d}/テスト", File.read("open_chdir_テスト", encoding: "UTF-8").chomp)
     }
   end if windows? || Encoding.find('locale') == Encoding::UTF_8
 
@@ -2311,5 +2328,15 @@ EOS
         end
       end
     end
+  end
+
+  def test_forked_child_handles_signal
+    skip "fork not supported" unless Process.respond_to?(:fork)
+    assert_normal_exit(<<-"end;", '[ruby-core:82883] [Bug #13916]')
+      require 'timeout'
+      pid = fork { sleep }
+      Process.kill(:TERM, pid)
+      assert_equal pid, Timeout.timeout(30) { Process.wait(pid) }
+    end;
   end
 end

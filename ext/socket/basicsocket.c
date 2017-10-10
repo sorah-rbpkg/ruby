@@ -530,8 +530,9 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
     struct rsock_send_arg arg;
     VALUE flags, to;
     rb_io_t *fptr;
-    int n;
+    ssize_t n;
     rb_blocking_function_t *func;
+    const char *funcname;
 
     rb_scan_args(argc, argv, "21", &arg.mesg, &flags, &to);
 
@@ -542,21 +543,23 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
 	arg.to = (struct sockaddr *)RSTRING_PTR(to);
 	arg.tolen = RSTRING_SOCKLEN(to);
 	func = rsock_sendto_blocking;
+	funcname = "sendto(2)";
     }
     else {
 	func = rsock_send_blocking;
+	funcname = "send(2)";
     }
     GetOpenFile(sock, fptr);
     arg.fd = fptr->fd;
     arg.flags = NUM2INT(flags);
     while (rsock_maybe_fd_writable(arg.fd),
-	   (n = (int)BLOCKING_REGION_FD(func, &arg)) < 0) {
+	   (n = (ssize_t)BLOCKING_REGION_FD(func, &arg)) < 0) {
 	if (rb_io_wait_writable(arg.fd)) {
 	    continue;
 	}
-	rb_sys_fail("send(2)");
+	rb_sys_fail(funcname);
     }
-    return INT2FIX(n);
+    return SSIZET2NUM(n);
 }
 
 /*

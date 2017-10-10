@@ -65,7 +65,7 @@ module RDoc
   ##
   # RDoc version you are using
 
-  VERSION = '5.0.0'
+  VERSION = '6.0.0.beta3'
 
   ##
   # Method visibilities
@@ -148,8 +148,7 @@ module RDoc
 
   autoload :KNOWN_CLASSES,  'rdoc/known_classes'
 
-  autoload :RubyLex,        'rdoc/ruby_lex'
-  autoload :RubyToken,      'rdoc/ruby_token'
+  autoload :RipperStateLex, 'rdoc/parser/ripper_state_lex'
   autoload :TokenStream,    'rdoc/token_stream'
 
   autoload :Comment,        'rdoc/comment'

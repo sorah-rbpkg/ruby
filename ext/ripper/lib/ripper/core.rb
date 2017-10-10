@@ -1,6 +1,6 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
-# $Id: core.rb 53143 2015-12-16 05:31:54Z naruse $
+# $Id$
 #
 # Copyright (c) 2003-2005 Minero Aoki
 #

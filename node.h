@@ -2,7 +2,7 @@
 
   node.h -
 
-  $Author: hsbt $
+  $Author$
   created at: Fri May 28 15:14:02 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -26,6 +26,8 @@ enum node_type {
 #define NODE_BLOCK       NODE_BLOCK
     NODE_IF,
 #define NODE_IF          NODE_IF
+    NODE_UNLESS,
+#define NODE_UNLESS      NODE_UNLESS
     NODE_CASE,
 #define NODE_CASE        NODE_CASE
     NODE_WHEN,
@@ -92,6 +94,8 @@ enum node_type {
 #define NODE_OP_CDECL    NODE_OP_CDECL
     NODE_CALL,
 #define NODE_CALL        NODE_CALL
+    NODE_OPCALL,
+#define NODE_OPCALL      NODE_OPCALL
     NODE_FCALL,
 #define NODE_FCALL       NODE_FCALL
     NODE_VCALL,
@@ -277,11 +281,9 @@ typedef struct RNode {
 
 #define NODE_LSHIFT (NODE_TYPESHIFT+7)
 #define NODE_LMASK  (((SIGNED_VALUE)1<<(sizeof(VALUE)*CHAR_BIT-NODE_LSHIFT))-1)
-#define nd_line(n) (int)(RNODE(n)->flags>>NODE_LSHIFT)
+#define nd_line(n) (int)(((SIGNED_VALUE)RNODE(n)->flags)>>NODE_LSHIFT)
 #define nd_set_line(n,l) \
     RNODE(n)->flags=((RNODE(n)->flags&~((VALUE)(-1)<<NODE_LSHIFT))|((VALUE)((l)&NODE_LMASK)<<NODE_LSHIFT))
-
-#define nd_refinements_  nd_reserved
 
 #define nd_head  u1.node
 #define nd_alen  u2.argc
@@ -360,7 +362,7 @@ typedef struct RNode {
 #define NEW_SCOPE(a,b) NEW_NODE(NODE_SCOPE,local_tbl(),b,a)
 #define NEW_BLOCK(a) NEW_NODE(NODE_BLOCK,a,0,0)
 #define NEW_IF(c,t,e) NEW_NODE(NODE_IF,c,t,e)
-#define NEW_UNLESS(c,t,e) NEW_IF(c,e,t)
+#define NEW_UNLESS(c,t,e) NEW_NODE(NODE_UNLESS,c,t,e)
 #define NEW_CASE(h,b) NEW_NODE(NODE_CASE,h,b,0)
 #define NEW_WHEN(c,t,e) NEW_NODE(NODE_WHEN,c,t,e)
 #define NEW_OPT_N(b) NEW_NODE(NODE_OPT_N,0,b,0)
@@ -418,6 +420,7 @@ typedef struct RNode {
 #define NEW_DSYM(s) NEW_NODE(NODE_DSYM,s,0,0)
 #define NEW_EVSTR(n) NEW_NODE(NODE_EVSTR,0,(n),0)
 #define NEW_CALL(r,m,a) NEW_NODE(NODE_CALL,r,m,a)
+#define NEW_OPCALL(r,m,a) NEW_NODE(NODE_OPCALL,r,m,a)
 #define NEW_FCALL(m,a) NEW_NODE(NODE_FCALL,0,m,a)
 #define NEW_VCALL(m) NEW_NODE(NODE_VCALL,0,m,0)
 #define NEW_SUPER(a) NEW_NODE(NODE_SUPER,0,0,a)

@@ -217,6 +217,17 @@ class TestFiber < Test::Unit::TestCase
     }, bug4612
   end
 
+  def test_mark_fiber
+    bug13875 = '[ruby-core:82681]'
+
+    assert_normal_exit %q{
+      GC.stress = true
+      up = 1.upto(10)
+      down = 10.downto(1)
+      up.zip(down) {|a, b| a + b == 11 or fail 'oops'}
+    }, bug13875
+  end
+
   def test_no_valid_cfp
     bug5083 = '[ruby-dev:44208]'
     assert_equal([], Fiber.new(&Module.method(:nesting)).resume, bug5083)
@@ -343,6 +354,27 @@ class TestFiber < Test::Unit::TestCase
     end.resume
     assert_equal("inner", s2)
     assert_equal(s1, $_, bug7678)
+  end
+
+  def test_new_symbol_proc
+    bug = '[ruby-core:80147] [Bug #13313]'
+    assert_ruby_status([], "#{<<-"begin;"}\n#{<<-'end;'}", bug)
+    begin;
+      exit("1" == Fiber.new(&:to_s).resume(1))
+    end;
+  end
+
+  def test_to_s
+    f = Fiber.new do
+      assert_match(/resumed/, f.to_s)
+      Fiber.yield
+    end
+    assert_match(/created/, f.to_s)
+    f.resume
+    assert_match(/suspended/, f.to_s)
+    f.resume
+    assert_match(/terminated/, f.to_s)
+    assert_match(/resumed/, Fiber.current.to_s)
   end
 end
 

@@ -1,7 +1,6 @@
 # -*- coding: us-ascii -*-
 # frozen_string_literal: false
 require 'test/unit'
-require 'thread'
 
 class TestThread < Test::Unit::TestCase
   class Thread < ::Thread
@@ -32,6 +31,19 @@ class TestThread < Test::Unit::TestCase
     assert_match(/::C\u{30b9 30ec 30c3 30c9}:/, th.inspect)
   ensure
     th.join
+  end
+
+  def test_inspect_with_fiber
+    inspect1 = inspect2 = nil
+
+    Thread.new{
+      inspect1 = Thread.current.inspect
+      Fiber.new{
+        inspect2 = Thread.current.inspect
+      }.resume
+    }.join
+
+    assert_equal inspect1, inspect2, '[Bug #13689]'
   end
 
   def test_main_thread_variable_in_enumerator
@@ -174,6 +186,14 @@ class TestThread < Test::Unit::TestCase
   ensure
     t1.kill if t1
     t2.kill if t2
+  end
+
+  def test_new_symbol_proc
+    bug = '[ruby-core:80147] [Bug #13313]'
+    assert_ruby_status([], "#{<<-"begin;"}\n#{<<-'end;'}", bug)
+    begin;
+      exit("1" == Thread.start(1, &:to_s).value)
+    end;
   end
 
   def test_join
@@ -345,7 +365,8 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_report_on_exception
-    assert_separately([], <<~"end;") #do
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
       q1 = Thread::Queue.new
       q2 = Thread::Queue.new
 
@@ -396,6 +417,19 @@ class TestThread < Test::Unit::TestCase
         }
         assert_equal(true, q1.pop)
         Thread.pass while th.alive?
+      }
+
+      assert_warn(/report 5/, "should defaults to the global flag at the start") {
+        th = Thread.start {
+          Thread.current.report_on_exception = true
+          Thread.current.abort_on_exception = true
+          q2.pop
+          raise "report 5"
+        }
+        assert_raise_with_message(RuntimeError, "report 5") {
+          q2.push(true)
+          Thread.pass while th.alive?
+        }
       }
     end;
   end
@@ -478,6 +512,36 @@ class TestThread < Test::Unit::TestCase
 
     assert_equal([:foo, :bar, :baz].sort, t.keys.sort)
 
+  ensure
+    t.kill if t
+  end
+
+  def test_thread_local_fetch
+    t = Thread.new { sleep }
+
+    assert_equal(false, t.key?(:foo))
+
+    t["foo"] = "foo"
+    t["bar"] = "bar"
+    t["baz"] = "baz"
+
+    x = nil
+    assert_equal("foo", t.fetch(:foo, 0))
+    assert_equal("foo", t.fetch(:foo) {x = true})
+    assert_nil(x)
+    assert_equal("foo", t.fetch("foo", 0))
+    assert_equal("foo", t.fetch("foo") {x = true})
+    assert_nil(x)
+
+    x = nil
+    assert_equal(0, t.fetch(:qux, 0))
+    assert_equal(1, t.fetch(:qux) {x = 1})
+    assert_equal(1, x)
+    assert_equal(2, t.fetch("qux", 2))
+    assert_equal(3, t.fetch("qux") {x = 3})
+    assert_equal(3, x)
+
+    assert_raise(KeyError) {t.fetch(:qux)}
   ensure
     t.kill if t
   end
@@ -610,14 +674,14 @@ class TestThread < Test::Unit::TestCase
 
   def make_handle_interrupt_test_thread1 flag
     r = []
-    ready_p = false
-    done = false
+    ready_q = Queue.new
+    done_q = Queue.new
     th = Thread.new{
       begin
         Thread.handle_interrupt(RuntimeError => flag){
           begin
-            ready_p = true
-            sleep 0.01 until done
+            ready_q << true
+            done_q.pop
           rescue
             r << :c1
           end
@@ -626,10 +690,10 @@ class TestThread < Test::Unit::TestCase
         r << :c2
       end
     }
-    Thread.pass until ready_p
+    ready_q.pop
     th.raise
     begin
-      done = true
+      done_q << true
       th.join
     rescue
       r << :c3
@@ -901,7 +965,6 @@ _eom
 
   def test_main_thread_status_at_exit
     assert_in_out_err([], <<-'INPUT', ["false false aborting"], [])
-require 'thread'
 q = Thread::Queue.new
 Thread.new(Thread.current) {|mth|
   begin
@@ -1097,9 +1160,9 @@ q.pop
       end
       Process.wait2(f.pid)
     end
-    unless th.join(3)
+    unless th.join(EnvUtil.apply_timeout_scale(30))
       Process.kill(:QUIT, f.pid)
-      Process.kill(:KILL, f.pid) unless th.join(1)
+      Process.kill(:KILL, f.pid) unless th.join(EnvUtil.apply_timeout_scale(1))
     end
     _, status = th.value
     output = f.read
@@ -1159,5 +1222,15 @@ q.pop
     bug12290 = '[ruby-core:74963] [Bug #12290]'
     c = Class.new(Thread) {def initialize() self.name = "foo"; super; end}
     assert_equal("foo", c.new {Thread.current.name}.value, bug12290)
+  end
+
+  def test_thread_interrupt_for_killed_thread
+    assert_normal_exit(<<-_end, '[Bug #8996]', timeout: 5, timeout_error: nil)
+      trap(:TERM){exit}
+      while true
+        t = Thread.new{sleep 0}
+        t.raise Interrupt
+      end
+    _end
   end
 end

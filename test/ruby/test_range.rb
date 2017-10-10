@@ -9,6 +9,14 @@ class TestRange < Test::Unit::TestCase
     assert_equal((0..2), Range.new(0, 2))
     assert_equal((0..2), Range.new(0, 2, false))
     assert_equal((0...2), Range.new(0, 2, true))
+
+    assert_raise(ArgumentError) { (1.."3") }
+
+    obj = Object.new
+    def obj.<=>(other)
+      raise RuntimeError, "cmp"
+    end
+    assert_raise_with_message(RuntimeError, "cmp") { (obj..3) }
   end
 
   def test_frozen_initialize
@@ -638,17 +646,6 @@ class TestRange < Test::Unit::TestCase
     assert_equal(nil, (bignum...bignum+ary.size).bsearch {|i| false })
 
     assert_raise(TypeError) { ("a".."z").bsearch {} }
-  end
-
-  def test_bsearch_with_mathn
-    assert_separately ['-r', 'mathn'], %q{
-      msg = '[ruby-core:25740]'
-      answer = (1..(1 << 100)).bsearch{|x|
-        assert_predicate(x, :integer?, msg)
-        x >= 42
-      }
-      assert_equal(42, answer, msg)
-    }, ignore_stderr: true
   end
 
   def test_each_no_blockarg

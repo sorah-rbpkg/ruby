@@ -622,7 +622,7 @@ class TestMarshal < Test::Unit::TestCase
 
   def test_untainted_numeric
     bug8945 = '[ruby-core:57346] [Bug #8945] Numerics never be tainted'
-    b = Integer::FIXNUM_MAX + 1
+    b = RbConfig::LIMITS['FIXNUM_MAX'] + 1
     tainted = [0, 1.0, 1.72723e-77, b].select do |x|
       Marshal.load(Marshal.dump(x).taint).tainted?
     end
@@ -644,6 +644,9 @@ class TestMarshal < Test::Unit::TestCase
     c = Bug9523.new
     assert_raise_with_message(RuntimeError, /Marshal\.dump reentered at marshal_dump/) do
       Marshal.dump(c)
+      GC.start
+      1000.times {"x"*1000}
+      GC.start
       c.cc.call
     end
   end

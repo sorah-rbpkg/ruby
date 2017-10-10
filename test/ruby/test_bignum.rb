@@ -6,8 +6,8 @@ rescue LoadError
 else
 
 class TestBignum < Test::Unit::TestCase
-  FIXNUM_MIN = Integer::FIXNUM_MIN
-  FIXNUM_MAX = Integer::FIXNUM_MAX
+  FIXNUM_MIN = RbConfig::LIMITS['FIXNUM_MIN']
+  FIXNUM_MAX = RbConfig::LIMITS['FIXNUM_MAX']
 
   BIGNUM_MIN = FIXNUM_MAX + 1
   b = BIGNUM_MIN
@@ -693,6 +693,10 @@ class TestBignum < Test::Unit::TestCase
     o = Object.new
     def o.coerce(x); [x, 2**100]; end
     assert_equal((2**200).to_f, (2**300).fdiv(o))
+    o = Object.new
+    def o.coerce(x); [self, x]; end
+    def o.fdiv(x); 1; end
+    assert_equal(1.0, (2**300).fdiv(o))
   end
 
   def test_singleton_method

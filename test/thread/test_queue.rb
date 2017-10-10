@@ -1,6 +1,5 @@
 # frozen_string_literal: false
 require 'test/unit'
-require 'thread'
 require 'tmpdir'
 require 'timeout'
 
@@ -136,7 +135,6 @@ class TestQueue < Test::Unit::TestCase
       total_count = 250
       begin
         assert_normal_exit(<<-"_eom", bug5343, {:timeout => timeout, :chdir=>d})
-          require "thread"
           #{total_count}.times do |i|
             open("test_thr_kill_count", "w") {|f| f.puts i }
             queue = Queue.new
@@ -278,7 +276,7 @@ class TestQueue < Test::Unit::TestCase
     end
 
     q = DumpableQueue.new
-    assert_raise_with_message(TypeError, /internal Array/, bug9674) do
+    assert_raise(TypeError, bug9674) do
       Marshal.dump(q)
     end
   end
@@ -546,5 +544,22 @@ class TestQueue < Test::Unit::TestCase
 
     # don't leak this thread
     assert_nothing_raised{counter.join}
+  end
+
+  def test_queue_with_trap
+    assert_in_out_err([], <<-INPUT, %w(INT INT exit), [])
+      q = Queue.new
+      trap(:INT){
+        q.push 'INT'
+      }
+      Thread.new{
+        loop{
+          Process.kill :INT, $$
+        }
+      }
+      puts q.pop
+      puts q.pop
+      puts 'exit'
+    INPUT
   end
 end

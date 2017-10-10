@@ -18,11 +18,23 @@ class TestObject < Test::Unit::TestCase
     assert_same(object, object.itself, feature6373)
   end
 
+  def test_yield_self
+    feature = '[ruby-core:46320] [Feature #6721]'
+    object = Object.new
+    assert_same(self, object.yield_self {self}, feature)
+    assert_same(object, object.yield_self {|x| break x}, feature)
+    enum = object.yield_self
+    assert_instance_of(Enumerator, enum)
+    assert_equal(1, enum.size)
+  end
+
   def test_dup
     assert_equal 1, 1.dup
     assert_equal true, true.dup
     assert_equal nil, nil.dup
     assert_equal false, false.dup
+    x = :x; assert_equal x, x.dup
+    x = "bug13145".intern; assert_equal x, x.dup
     x = 1 << 64; assert_equal x, x.dup
     x = 1.72723e-77; assert_equal x, x.dup
 
@@ -51,12 +63,18 @@ class TestObject < Test::Unit::TestCase
     assert_equal true, true.clone
     assert_equal nil, nil.clone
     assert_equal false, false.clone
+    x = :x; assert_equal x, x.dup
+    x = "bug13145".intern; assert_equal x, x.dup
     x = 1 << 64; assert_equal x, x.clone
     x = 1.72723e-77; assert_equal x, x.clone
     assert_raise(ArgumentError) {1.clone(freeze: false)}
     assert_raise(ArgumentError) {true.clone(freeze: false)}
     assert_raise(ArgumentError) {nil.clone(freeze: false)}
     assert_raise(ArgumentError) {false.clone(freeze: false)}
+    x = EnvUtil.labeled_class("\u{1f4a9}").new
+    assert_raise_with_message(ArgumentError, /\u{1f4a9}/) do
+      Object.new.clone(freeze: x)
+    end
   end
 
   def test_init_dupclone
@@ -905,6 +923,7 @@ class TestObject < Test::Unit::TestCase
     _issue = "Bug #7539"
     assert_raise_with_message(TypeError, "can't convert Array into Integer") {Integer([42])}
     assert_raise_with_message(TypeError, 'no implicit conversion of Array into Integer') {[].first([42])}
+    assert_raise_with_message(TypeError, "can't convert Array into Rational") {Rational([42])}
   end
 
   def test_copied_ivar_memory_leak
@@ -915,5 +934,15 @@ class TestObject < Test::Unit::TestCase
     end;
       num.times {a.clone.set}
     end;
+  end
+
+  def test_clone_object_should_not_be_old
+    assert_normal_exit <<-EOS, '[Bug #13775]'
+      b = proc { }
+      10.times do |i|
+        b.clone
+        GC.start
+      end
+    EOS
   end
 end

@@ -9,7 +9,6 @@
 #
 # $IPR: server.rb,v 1.62 2003/07/22 19:20:43 gotoyuzo Exp $
 
-require 'thread'
 require 'socket'
 require 'webrick/config'
 require 'webrick/log'
@@ -168,7 +167,7 @@ module WEBrick
           while @status == :Running
             begin
               sp = shutdown_pipe[0]
-              if svrs = IO.select([sp, *@listeners], nil, nil, 2.0)
+              if svrs = IO.select([sp, *@listeners])
                 if svrs[0].include? sp
                   # swallow shutdown pipe
                   buf = String.new
@@ -255,7 +254,6 @@ module WEBrick
       sock = nil
       begin
         sock = svr.accept
-        sock.sync = true
         Utils::set_non_blocking(sock)
       rescue Errno::ECONNRESET, Errno::ECONNABORTED,
              Errno::EPROTO, Errno::EINVAL

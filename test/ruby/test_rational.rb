@@ -675,100 +675,106 @@ class Rational_Test < Test::Unit::TestCase
     end
   end
 
+  def assert_valid_rational(n, d, r)
+    x = Rational(n, d)
+    assert_equal(x, r.to_r, "#{r.dump}.to_r")
+    assert_equal(x, Rational(r), "Rational(#{r.dump})")
+  end
+
+  def assert_invalid_rational(n, d, r)
+    x = Rational(n, d)
+    assert_equal(x, r.to_r, "#{r.dump}.to_r")
+    assert_raise(ArgumentError, "Rational(#{r.dump})") {Rational(r)}
+  end
+
   def test_parse
-    assert_equal(Rational(5), '5'.to_r)
-    assert_equal(Rational(-5), '-5'.to_r)
-    assert_equal(Rational(5,3), '5/3'.to_r)
-    assert_equal(Rational(-5,3), '-5/3'.to_r)
+    ok = method(:assert_valid_rational)
+    ng = method(:assert_invalid_rational)
 
-    assert_equal(Rational(5), '5.0'.to_r)
-    assert_equal(Rational(-5), '-5.0'.to_r)
-    assert_equal(Rational(5,3), '5.0/3'.to_r)
-    assert_equal(Rational(-5,3), '-5.0/3'.to_r)
+    ok[ 5, 1, '5']
+    ok[-5, 1, '-5']
+    ok[ 5, 3, '5/3']
+    ok[-5, 3, '-5/3']
+    ok[ 5, 3, '5_5/33']
+    ok[ 5,33, '5/3_3']
+    ng[ 5, 1, '5__5/33']
+    ng[ 5, 3, '5/3__3']
 
-    assert_equal(Rational(5), '5e0'.to_r)
-    assert_equal(Rational(-5), '-5e0'.to_r)
-    assert_equal(Rational(5,3), '5e0/3'.to_r)
-    assert_equal(Rational(-5,3), '-5e0/3'.to_r)
+    ok[ 5, 1, '5.0']
+    ok[-5, 1, '-5.0']
+    ok[ 5, 3, '5.0/3']
+    ok[-5, 3, '-5.0/3']
+    ok[ 501,100, '5.0_1']
+    ok[ 501,300, '5.0_1/3']
+    ok[ 5,33, '5.0/3_3']
+    ng[ 5, 1, '5.0__1/3']
+    ng[ 5, 3, '5.0/3__3']
 
-    assert_equal(Rational(5e1), '5e1'.to_r)
-    assert_equal(Rational(-5e2), '-5e2'.to_r)
-    assert_equal(Rational(5e3,3), '5e003/3'.to_r)
-    assert_equal(Rational(-5e4,3), '-5e004/3'.to_r)
+    ok[ 5, 1, '5e0']
+    ok[-5, 1, '-5e0']
+    ok[ 5, 3, '5e0/3']
+    ok[-5, 3, '-5e0/3']
+    ok[550, 1, '5_5e1']
+    ng[ 5, 1, '5_e1']
 
-    assert_equal(Rational(33,100), '.33'.to_r)
-    assert_equal(Rational(33,100), '0.33'.to_r)
-    assert_equal(Rational(-33,100), '-.33'.to_r)
-    assert_equal(Rational(-33,100), '-0.33'.to_r)
-    assert_equal(Rational(-33,100), '-0.3_3'.to_r)
+    ok[ 5e1, 1, '5e1']
+    ok[-5e2, 1, '-5e2']
+    ok[ 5e3, 3, '5e003/3']
+    ok[-5e4, 3, '-5e004/3']
+    ok[ 5e3, 1, '5e0_3']
+    ok[ 5e1,33, '5e1/3_3']
+    ng[ 5e0, 1, '5e0__3/3']
+    ng[ 5e1, 3, '5e1/3__3']
 
-    assert_equal(Rational(1,2), '5e-1'.to_r)
-    assert_equal(Rational(50), '5e+1'.to_r)
-    assert_equal(Rational(1,2), '5.0e-1'.to_r)
-    assert_equal(Rational(50), '5.0e+1'.to_r)
-    assert_equal(Rational(50), '5e1'.to_r)
-    assert_equal(Rational(50), '5E1'.to_r)
-    assert_equal(Rational(500), '5e2'.to_r)
-    assert_equal(Rational(5000), '5e3'.to_r)
-    assert_equal(Rational(500000000000), '5e1_1'.to_r)
+    ok[ 33, 100, '.33']
+    ok[ 33, 100, '0.33']
+    ok[-33, 100, '-.33']
+    ok[-33, 100, '-0.33']
+    ok[-33, 100, '-0.3_3']
+    ng[ -3,  10, '-0.3__3']
 
-    assert_equal(Rational(5), Rational('5'))
-    assert_equal(Rational(-5), Rational('-5'))
-    assert_equal(Rational(5,3), Rational('5/3'))
-    assert_equal(Rational(-5,3), Rational('-5/3'))
+    ok[ 1, 2, '5e-1']
+    ok[50, 1, '5e+1']
+    ok[ 1, 2, '5.0e-1']
+    ok[50, 1, '5.0e+1']
+    ok[50, 1, '5e1']
+    ok[50, 1, '5E1']
+    ok[500, 1, '5e2']
+    ok[5000, 1, '5e3']
+    ok[500000000000, 1, '5e1_1']
+    ng[ 5, 1, '5e']
+    ng[ 5, 1, '5e_']
+    ng[ 5, 1, '5e_1']
+    ng[50, 1, '5e1_']
 
-    assert_equal(Rational(5), Rational('5.0'))
-    assert_equal(Rational(-5), Rational('-5.0'))
-    assert_equal(Rational(5,3), Rational('5.0/3'))
-    assert_equal(Rational(-5,3), Rational('-5.0/3'))
+    ok[ 50, 33, '5/3.3']
+    ok[  5,  3, '5/3e0']
+    ok[  5, 30, '5/3e1']
+    ng[  5,  3, '5/3._3']
+    ng[ 50, 33, '5/3.3_']
+    ok[500,333, '5/3.3_3']
+    ng[  5,  3, '5/3e']
+    ng[  5,  3, '5/3_e']
+    ng[  5,  3, '5/3e_']
+    ng[  5,  3, '5/3e_1']
+    ng[  5, 30, '5/3e1_']
+    ok[  5, 300000000000, '5/3e1_1']
 
-    assert_equal(Rational(5), Rational('5e0'))
-    assert_equal(Rational(-5), Rational('-5e0'))
-    assert_equal(Rational(5,3), Rational('5e0/3'))
-    assert_equal(Rational(-5,3), Rational('-5e0/3'))
+    ng[0, 1, '']
+    ng[0, 1, ' ']
+    ng[5, 1, "\f\n\r\t\v5\0"]
+    ng[0, 1, '_']
+    ng[0, 1, '_5']
+    ng[5, 1, '5_']
+    ng[5, 1, '5x']
+    ng[5, 1, '5/_3']
+    ng[5, 3, '5/3_']
+    ng[5, 3, '5/3x']
+  end
 
-    assert_equal(Rational(5e1), Rational('5e1'))
-    assert_equal(Rational(-5e2), Rational('-5e2'))
-    assert_equal(Rational(5e3,3), Rational('5e003/3'))
-    assert_equal(Rational(-5e4,3), Rational('-5e004/3'))
-
-    assert_equal(Rational(33,100), Rational('.33'))
-    assert_equal(Rational(33,100), Rational('0.33'))
-    assert_equal(Rational(-33,100), Rational('-.33'))
-    assert_equal(Rational(-33,100), Rational('-0.33'))
-    assert_equal(Rational(-33,100), Rational('-0.3_3'))
-
-    assert_equal(Rational(1,2), Rational('5e-1'))
-    assert_equal(Rational(50), Rational('5e+1'))
-    assert_equal(Rational(1,2), Rational('5.0e-1'))
-    assert_equal(Rational(50), Rational('5.0e+1'))
-    assert_equal(Rational(50), Rational('5e1'))
-    assert_equal(Rational(50), Rational('5E1'))
-    assert_equal(Rational(500), Rational('5e2'))
-    assert_equal(Rational(5000), Rational('5e3'))
-    assert_equal(Rational(500000000000), Rational('5e1_1'))
-
-    assert_equal(Rational(0), ''.to_r)
-    assert_equal(Rational(0), ' '.to_r)
-    assert_equal(Rational(5), "\f\n\r\t\v5\0".to_r)
-    assert_equal(Rational(0), '_'.to_r)
-    assert_equal(Rational(0), '_5'.to_r)
-    assert_equal(Rational(5), '5_'.to_r)
-    assert_equal(Rational(5), '5x'.to_r)
-    assert_equal(Rational(5), '5/_3'.to_r)
-    assert_equal(Rational(5,3), '5/3_'.to_r)
-    assert_equal(Rational(5,3), '5/3.3'.to_r)
-    assert_equal(Rational(5,3), '5/3x'.to_r)
-    assert_raise(ArgumentError){ Rational('')}
-    assert_raise(ArgumentError){ Rational('_')}
-    assert_raise(ArgumentError){ Rational("\f\n\r\t\v5\0")}
-    assert_raise(ArgumentError){ Rational('_5')}
-    assert_raise(ArgumentError){ Rational('5_')}
-    assert_raise(ArgumentError){ Rational('5x')}
-    assert_raise(ArgumentError){ Rational('5/_3')}
-    assert_raise(ArgumentError){ Rational('5/3_')}
-    assert_raise(ArgumentError){ Rational('5/3.3')}
-    assert_raise(ArgumentError){ Rational('5/3x')}
+  def test_parse_zero_denominator
+    assert_raise(ZeroDivisionError) {"1/0".to_r}
+    assert_raise(ZeroDivisionError) {Rational("1/0")}
   end
 
   def test_to_i
@@ -880,6 +886,16 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(1152921470247108503, 1073741789.lcm(1073741827))
   end
 
+  def test_gcd_no_memory_leak
+    assert_no_memory_leak([], "#{<<-"begin;"}", "#{<<-"end;"}", limit: 1.2, rss: true)
+    x = (1<<121) + 1
+    y = (1<<99) + 1
+    1000.times{x.gcd(y)}
+    begin;
+      100.times {1000.times{x.gcd(y)}}
+    end;
+  end
+
   def test_supp
     assert_predicate(1, :real?)
     assert_predicate(1.1, :real?)
@@ -905,6 +921,13 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(5000000000.0, 10000000000.fdiv(2))
     assert_equal(0.5, 1.0.fdiv(2))
     assert_equal(0.25, Rational(1,2).fdiv(2))
+
+    a = 0xa42fcabf_c51ce400_00001000_00000000_00000000_00000000_00000000_00000000
+    b = 1<<1074
+    assert_equal(Rational(a, b).to_f, a.fdiv(b))
+    a = 3
+    b = 0x20_0000_0000_0001
+    assert_equal(Rational(a, b).to_f, a.fdiv(b))
   end
 
   def test_ruby19
@@ -936,6 +959,14 @@ class Rational_Test < Test::Unit::TestCase
     assert_eql zero, zero ** Rational(2, 3)
     assert_raise(ZeroDivisionError, bug5713) { Rational(0, 1) ** -big }
     assert_raise(ZeroDivisionError, bug5713) { Rational(0, 1) ** Rational(-2,3) }
+  end
+
+  def test_power_overflow
+    bug = '[ruby-core:79686] [Bug #13242]: Infinity due to overflow'
+    x = EnvUtil.suppress_warning {4r**40000000}
+    assert_predicate x, :infinite?, bug
+    x = EnvUtil.suppress_warning {(1/4r)**40000000}
+    assert_equal 0, x, bug
   end
 
   def test_positive_p

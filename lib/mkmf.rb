@@ -464,7 +464,6 @@ MSG
       xsystem(command, *opts)
     ensure
       log_src(src)
-      MakeMakefile.rm_rf "#{CONFTEST}.dSYM"
     end
   end
 
@@ -527,6 +526,7 @@ MSG
   end
 
   def try_link0(src, opt="", *opts, &b) # :nodoc:
+    exe = CONFTEST+$EXEEXT
     cmd = link_command("", opt)
     if $universal
       require 'tmpdir'
@@ -540,7 +540,10 @@ MSG
       end
     else
       try_do(src, cmd, *opts, &b)
-    end and File.executable?(CONFTEST+$EXEEXT)
+    end and File.executable?(exe) or return nil
+    exe
+  ensure
+    MakeMakefile.rm_rf(*Dir["#{CONFTEST}*"]-[exe])
   end
 
   # Returns whether or not the +src+ can be compiled as a C source and linked
@@ -554,9 +557,9 @@ MSG
   # [+src+] a String which contains a C source
   # [+opt+] a String which contains linker options
   def try_link(src, opt="", *opts, &b)
-    try_link0(src, opt, *opts, &b)
-  ensure
-    MakeMakefile.rm_f "#{CONFTEST}*", "c0x32*"
+    exe = try_link0(src, opt, *opts, &b) or return false
+    MakeMakefile.rm_f exe
+    true
   end
 
   # Returns whether or not the +src+ can be compiled as a C source.  +opt+ is
@@ -730,7 +733,7 @@ int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const
           end
         end
       ensure
-        MakeMakefile.rm_f "#{CONFTEST}*"
+        MakeMakefile.rm_f "#{CONFTEST}#{$EXEEXT}"
       end
     end
     nil
@@ -943,10 +946,10 @@ SRC
     a = r = nil
     Logging::postpone do
       r = yield
-      a = (fmt ? "#{fmt % r}" : r ? "yes" : "no") << "\n"
-      "#{f}#{m}-------------------- #{a}\n"
+      a = (fmt ? "#{fmt % r}" : r ? "yes" : "no")
+      "#{f}#{m}-------------------- #{a}\n\n"
     end
-    message(a)
+    message "%s\n", a
     Logging::message "--------------------\n\n"
     r
   end
@@ -2297,7 +2300,7 @@ TIMESTAMP_DIR = #{$extout && $extmk ? '$(extout)/.timestamp' : '.'}
     conf << "\
 TARGET_SO_DIR =#{$extout ? " $(RUBYARCHDIR)/" : ''}
 TARGET_SO     = $(TARGET_SO_DIR)$(DLLIB)
-CLEANLIBS     = $(TARGET_SO) #{config_string('cleanlibs') {|t| t.gsub(/\$\*/) {n}}}
+CLEANLIBS     = #{'$(TARGET_SO) ' if target}#{config_string('cleanlibs') {|t| t.gsub(/\$\*/) {n}}}
 CLEANOBJS     = *.#{$OBJEXT} #{config_string('cleanobjs') {|t| t.gsub(/\$\*/, "$(TARGET)#{deffile ? '-$(arch)': ''}")} if target} *.bak
 " #"
 
@@ -2306,7 +2309,7 @@ CLEANOBJS     = *.#{$OBJEXT} #{config_string('cleanobjs') {|t| t.gsub(/\$\*/, "$
     mfile.puts(conf)
     mfile.print "
 all:    #{$extout ? "install" : target ? "$(DLLIB)" : "Makefile"}
-static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{!$extmk ? " install-rb" : ""}"}
+static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{$extout ? " install-rb" : ""}"}
 .PHONY: all install static install-so install-rb
 .PHONY: clean clean-so clean-static clean-rb
 " #"

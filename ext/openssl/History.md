@@ -1,3 +1,114 @@
+Version 2.1.0.beta1
+===================
+
+Notable changes
+---------------
+
+* Support for OpenSSL versions before 1.0.1 is removed.
+  [[GitHub #86]](https://github.com/ruby/openssl/pull/86)
+* OpenSSL::BN#negative?, #+@, and #-@ are added.
+* OpenSSL::SSL::SSLSocket#connect raises a more informative exception when
+  certificate verification fails.
+  [[GitHub #99]](https://github.com/ruby/openssl/pull/99)
+* OpenSSL::KDF module is newly added. Support for scrypt is added.
+  [[GitHub #109]](https://github.com/ruby/openssl/pull/109)
+* OpenSSL.fips_mode is added. We have had the setter, but not the getter.
+  [[GitHub #125]](https://github.com/ruby/openssl/pull/125)
+* OpenSSL::OCSP::Request#signed? is added.
+* OpenSSL::ASN1 handles the indefinite length form better. OpenSSL::ASN1.decode
+  no longer wrongly treats the end-of-contents octets as part of the content.
+  OpenSSL::ASN1::ASN1Data#infinite_length is renamed to #indefinite_length.
+  [[GitHub #98]](https://github.com/ruby/openssl/pull/98)
+* OpenSSL::X509::Name#add_entry now accepts two additional keyword arguments
+  'loc' and 'set'.
+  [[GitHub #94]](https://github.com/ruby/openssl/issues/94)
+* OpenSSL::SSL::SSLContext#min_version= and #max_version= are added.
+  [[GitHub #142]](https://github.com/ruby/openssl/pull/142)
+* OpenSSL::X509::Name#to_utf8 is added.
+  [[GitHub #26]](https://github.com/ruby/openssl/issues/26)
+  [[GitHub #143]](https://github.com/ruby/openssl/pull/143)
+
+
+Version 2.0.6
+=============
+
+Bug fixes
+---------
+
+* The session_remove_cb set to an OpenSSL::SSL::SSLContext is no longer called
+  during GC.
+* A possible deadlock in OpenSSL::SSL::SSLSocket#sysread is fixed.
+  [[GitHub #139]](https://github.com/ruby/openssl/pull/139)
+* OpenSSL::BN#hash could return an unnormalized fixnum value on Windows.
+  [[Bug #13877]](https://bugs.ruby-lang.org/issues/13877)
+* OpenSSL::SSL::SSLSocket#sysread and #sysread_nonblock set the length of the
+  destination buffer String to 0 on error.
+  [[GitHub #153]](https://github.com/ruby/openssl/pull/153)
+* Possible deadlock is fixed. This happened only when built with older versions
+  of OpenSSL (before 1.1.0) or LibreSSL.
+  [[GitHub #155]](https://github.com/ruby/openssl/pull/155)
+
+
+Version 2.0.5
+=============
+
+Bug fixes
+---------
+
+* Reading a PEM/DER-encoded private key or certificate from an IO object did
+  not work properly on mswin platforms.
+  [[ruby/openssl#128]](https://github.com/ruby/openssl/issues/128)
+* Broken length check in the PEM passphrase callback is fixed.
+* It failed to compile when OpenSSL is configured without TLS 1.0 support.
+
+
+Version 2.0.4
+=============
+
+Bug fixes
+---------
+
+* It now compiles with LibreSSL without renaming on Windows (mswin).
+* A workaround for the error queue leak of X509_load_cert_crl_file() that
+  causes random errors is added.
+  [[Bug #11033]](https://bugs.ruby-lang.org/issues/11033)
+
+
+Version 2.0.3
+=============
+
+Bug fixes
+---------
+
+* OpenSSL::ASN1::Constructive#each which was broken by 2.0.0 is fixed.
+  [[ruby/openssl#96]](https://github.com/ruby/openssl/pull/96)
+* Fixed build with static OpenSSL libraries on Windows.
+  [[Bug #13080]](https://bugs.ruby-lang.org/issues/13080)
+* OpenSSL::X509::Name#eql? which was broken by 2.0.0 is fixed.
+
+
+Version 2.0.2
+=============
+
+Bug fixes
+---------
+
+* Fix build with early 0.9.8 series which did not have SSL_CTX_clear_options().
+  [ruby-core:78693]
+
+
+Version 2.0.1
+=============
+
+Bug fixes
+---------
+
+* A GC issue around OpenSSL::BN is fixed.
+  [[ruby/openssl#87]](https://github.com/ruby/openssl/issues/87)
+* OpenSSL::ASN1 now parses BER encoding of GeneralizedTime without seconds.
+  [[ruby/openssl#88]](https://github.com/ruby/openssl/pull/88)
+
+
 Version 2.0.0
 =============
 
@@ -23,7 +134,8 @@ Supported platforms
 Notable changes
 ---------------
 
-* Add support for OpenSSL 1.1.0. [[Feature #12324]](https://bugs.ruby-lang.org/issues/12324)
+* Add support for OpenSSL 1.1.0.
+  [[Feature #12324]](https://bugs.ruby-lang.org/issues/12324)
 * Add support for LibreSSL
 
 * OpenSSL::Cipher

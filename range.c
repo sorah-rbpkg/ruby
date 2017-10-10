@@ -2,7 +2,7 @@
 
   range.c -
 
-  $Author: nobu $
+  $Author$
   created at: Thu Aug 19 17:46:47 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -34,33 +34,15 @@ static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 
 #define EXCL(r) RTEST(RANGE_EXCL(r))
 
-static VALUE
-range_failed(void)
-{
-    rb_raise(rb_eArgError, "bad value for range");
-    return Qnil;		/* dummy */
-}
-
-static VALUE
-range_check(VALUE *args)
-{
-    return rb_funcall(args[0], id_cmp, 1, args[1]);
-}
-
 static void
 range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
 {
-    VALUE args[2];
-
-    args[0] = beg;
-    args[1] = end;
-
     if (!FIXNUM_P(beg) || !FIXNUM_P(end)) {
 	VALUE v;
 
-	v = rb_rescue(range_check, (VALUE)args, range_failed, 0);
+	v = rb_funcall(beg, id_cmp, 1, end);
 	if (NIL_P(v))
-	    range_failed();
+	    rb_raise(rb_eArgError, "bad value for range");
     }
 
     RANGE_SET_EXCL(range, exclude_end);
@@ -932,9 +914,10 @@ range_min(int argc, VALUE *argv, VALUE range)
 	return range_first(argc, argv, range);
     }
     else {
+	struct cmp_opt_data cmp_opt = { 0, 0 };
 	VALUE b = RANGE_BEG(range);
 	VALUE e = RANGE_END(range);
-	int c = rb_cmpint(rb_funcall(b, id_cmp, 1, e), b, e);
+	int c = OPTIMIZED_CMP(b, e, cmp_opt);
 
 	if (c > 0 || (c == 0 && EXCL(range)))
 	    return Qnil;
@@ -969,8 +952,9 @@ range_max(int argc, VALUE *argv, VALUE range)
 	return rb_call_super(argc, argv);
     }
     else {
+	struct cmp_opt_data cmp_opt = { 0, 0 };
 	VALUE b = RANGE_BEG(range);
-	int c = rb_cmpint(rb_funcall(b, id_cmp, 1, e), b, e);
+	int c = OPTIMIZED_CMP(b, e, cmp_opt);
 
 	if (c > 0)
 	    return Qnil;

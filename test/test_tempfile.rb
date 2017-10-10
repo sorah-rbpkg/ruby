@@ -1,7 +1,6 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'test/unit'
 require 'tempfile'
-require 'thread'
 
 class TestTempfile < Test::Unit::TestCase
   def initialize(*)
@@ -18,6 +17,10 @@ class TestTempfile < Test::Unit::TestCase
     if @tempfile
       @tempfile.close!
     end
+  end
+
+  def test_leackchecker
+    assert_instance_of(Tempfile, Tempfile.allocate)
   end
 
   def test_basic
@@ -243,6 +246,13 @@ puts Tempfile.new('foo').path
     assert_equal 5, t.size
   end
 
+  def test_size_on_empty_file
+    t = tempfile("foo")
+    t.write("")
+    t.close
+    assert_equal 0, t.size
+  end
+
   def test_concurrency
     threads = []
     tempfiles = []
@@ -330,6 +340,13 @@ puts Tempfile.new('foo').path
     Tempfile.create("tempfile-create") {|f|
       path = f.path
       assert_file.exist?(path)
+    }
+    assert_file.not_exist?(path)
+
+    Tempfile.create("tempfile-create") {|f|
+      path = f.path
+      f.close
+      File.unlink(f.path)
     }
     assert_file.not_exist?(path)
   end
