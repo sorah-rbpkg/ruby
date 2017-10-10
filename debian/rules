@@ -87,6 +87,7 @@ override_dh_auto_install-arch:
 	dh_link -plibruby$(RUBY_VERSION) /usr/share/fonts/truetype/lato/Lato-LightItalic.ttf /usr/lib/ruby/$(RUBY_API_VERSION)/rdoc/generator/template/darkfish/fonts/Lato-LightItalic.ttf
 	# remove embedded SSL certificates (replaced using ca-certificates via rubygems-integration)
 	$(RM) -r $(CURDIR)/debian/tmp/usr/lib/ruby/$(RUBY_API_VERSION)/rubygems/ssl_certs/*
+	$(RM) -r $(CURDIR)/debian/tmp/usr/lib/ruby/$(RUBY_API_VERSION)/bundler/ssl_certs/*
 	# ship rubygems system install directory
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/gems/$(RUBY_API_VERSION)
 	# sanity check
