@@ -315,7 +315,7 @@ option)
       end
     end
 
-    file_list.flatten
+    file_list.flatten.sort
   end
 
   ##
