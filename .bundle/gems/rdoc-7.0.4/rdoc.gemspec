@@ -7,6 +7,7 @@ end
 
 Gem::Specification.new do |s|
   s.name = "rdoc"
+  s.date = RUBY_RELEASE_DATE
   s.version = RDoc::VERSION
 
   s.authors = [

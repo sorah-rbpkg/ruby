@@ -18,6 +18,7 @@ end
 Gem::Specification.new do |spec|
   spec.name          = "ipaddr"
   spec.version       = version
+  spec.date          = RUBY_RELEASE_DATE
   spec.authors       = ["Akinori MUSHA", "Hajimu UMEMOTO"]
   spec.email         = ["knu@idaemons.org", "ume@mahoroba.org"]
 
