@@ -2,7 +2,7 @@
 
   re.c -
 
-  $Author: rhe $
+  $Author$
   created at: Mon Aug  9 18:24:49 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -86,14 +86,6 @@ rb_memcicmp(const void *x, const void *y, long len)
 	    return tmp;
     }
     return 0;
-}
-
-#undef rb_memcmp
-
-int
-rb_memcmp(const void *p1, const void *p2, long len)
-{
-    return memcmp(p1, p2, len);
 }
 
 #ifdef HAVE_MEMMEM
@@ -606,7 +598,7 @@ rb_reg_to_s(VALUE re)
 
 	    ++ptr;
 	    len -= 2;
-            err = onig_new(&rp, ptr, ptr + len, ONIG_OPTION_DEFAULT,
+            err = onig_new(&rp, ptr, ptr + len, options,
 			   enc, OnigDefaultSyntax, NULL);
 	    onig_free(rp);
 	    ruby_verbose = verbose;
@@ -828,9 +820,9 @@ reg_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
 static VALUE
 rb_reg_named_captures(VALUE re)
 {
-    VALUE hash = rb_hash_new();
-    rb_reg_check(re);
-    onig_foreach_name(RREGEXP_PTR(re), reg_named_captures_iter, (void*)hash);
+    regex_t *reg = (rb_reg_check(re), RREGEXP_PTR(re));
+    VALUE hash = rb_hash_new_with_size(onig_number_of_names(reg));
+    onig_foreach_name(reg, reg_named_captures_iter, (void*)hash);
     return hash;
 }
 
@@ -1410,7 +1402,7 @@ rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
     else if (warn && (RBASIC(re)->flags & REG_ENCODING_NONE) &&
 	enc != rb_ascii8bit_encoding() &&
 	cr != ENC_CODERANGE_7BIT) {
-	rb_warn("regexp match /.../n against to %s string",
+	rb_warn("historical binary regexp match /.../n against %s string",
 		rb_enc_name(enc));
     }
     return enc;

@@ -465,6 +465,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
     ThreadGroup.new.add(Thread.current)
     @ts_base = Rinda::TupleSpace.new(1)
     @ts = Rinda::TupleSpaceProxy.new(@ts_base)
+    @server = DRb.start_service("druby://localhost:0")
   end
   def teardown
     # implementation-dependent
@@ -474,6 +475,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
         th.join
       end
     }
+    @server.stop_service
   end
 
   def test_remote_array_and_hash
@@ -531,8 +533,6 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
     Process.wait(write) if write && status.nil?
     Process.wait(take)  if take
   end
-
-  @server = DRb.primary_server || DRb.start_service("druby://localhost:0")
 end
 
 module RingIPv6
@@ -643,7 +643,11 @@ class TestRingServer < Test::Unit::TestCase
   end
 
   def test_make_socket_ipv4_multicast
-    v4mc = @rs.make_socket('239.0.0.1')
+    begin
+      v4mc = @rs.make_socket('239.0.0.1')
+    rescue Errno::ENOBUFS => e
+      skip "Missing multicast support in OS: #{e.message}"
+    end
 
     begin
       if Socket.const_defined?(:SO_REUSEPORT) then
@@ -670,6 +674,8 @@ class TestRingServer < Test::Unit::TestCase
       v6mc = @rs.make_socket('ff02::1')
     rescue Errno::EADDRNOTAVAIL
       return # IPv6 address for multicast not available
+    rescue Errno::ENOBUFS => e
+      skip "Missing multicast support in OS: #{e.message}"
     end
 
     if Socket.const_defined?(:SO_REUSEPORT) then
@@ -684,7 +690,12 @@ class TestRingServer < Test::Unit::TestCase
 
   def test_ring_server_ipv4_multicast
     @rs.shutdown
-    @rs = Rinda::RingServer.new(@ts, [['239.0.0.1', '0.0.0.0']], @port)
+    begin
+      @rs = Rinda::RingServer.new(@ts, [['239.0.0.1', '0.0.0.0']], @port)
+    rescue Errno::ENOBUFS => e
+      skip "Missing multicast support in OS: #{e.message}"
+    end
+
     v4mc = @rs.instance_variable_get('@sockets').first
 
     begin

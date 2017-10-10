@@ -839,6 +839,31 @@ class URI::TestGeneric < Test::Unit::TestCase
     with_proxy_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'192.0.2.2') {|env|
       assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy(env))
       assert_nil(URI("http://192.0.2.2/").find_proxy(env))
+
+      getaddress = IPSocket.method(:getaddress)
+      begin
+        class << IPSocket
+          undef getaddress
+          def getaddress(host)
+            host == "example.org" or raise
+            "192.0.2.1"
+          end
+        end
+        assert_equal(URI('http://127.0.0.1:8080'), URI.parse("http://example.org").find_proxy(env))
+        class << IPSocket
+          undef getaddress
+          def getaddress(host)
+            host == "example.org" or raise
+            "192.0.2.2"
+          end
+        end
+        assert_nil(URI.parse("http://example.org").find_proxy(env))
+      ensure
+        IPSocket.singleton_class.class_eval do
+          undef getaddress
+          define_method(:getaddress, getaddress)
+        end
+      end
     }
     with_proxy_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'example.org') {|env|
       assert_nil(URI("http://example.org/").find_proxy(env))
@@ -879,6 +904,23 @@ class URI::TestGeneric < Test::Unit::TestCase
     with_proxy_env_case_sensitive('http_proxy'=>'http://127.0.0.1:8080', 'HTTP_PROXY'=>'http://127.0.0.1:8081', 'REQUEST_METHOD'=>'GET') {|env|
       assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy(env))
     }
+  end
+
+  def test_use_proxy_p
+    [
+      ['example.com', nil, 80, '', true],
+      ['example.com', nil, 80, 'example.com:80', false],
+      ['example.com', nil, 80, 'example.org,example.com:80,example.net', false],
+      ['foo.example.com', nil, 80, 'example.com', false],
+      ['foo.example.com', nil, 80, 'example.com:80', false],
+      ['foo.example.com', nil, 80, 'example.com:443', true],
+      ['127.0.0.1', '127.0.0.1', 80, '10.224.0.0/22', true],
+      ['10.224.1.1', '10.224.1.1', 80, '10.224.1.1', false],
+      ['10.224.1.1', '10.224.1.1', 80, '10.224.0.0/22', false],
+    ].each do |hostname, addr, port, no_proxy, expected|
+      assert_equal expected, URI::Generic.use_proxy?(hostname, addr, port, no_proxy),
+        "use_proxy?('#{hostname}', '#{addr}', #{port}, '#{no_proxy}')"
+    end
   end
 
   class CaseInsensitiveEnv

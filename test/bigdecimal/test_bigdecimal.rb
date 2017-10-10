@@ -2,8 +2,6 @@
 require_relative "testbase"
 require 'bigdecimal/math'
 
-require 'thread'
-
 class TestBigDecimal < Test::Unit::TestCase
   include TestBigDecimalBase
 
@@ -549,6 +547,7 @@ class TestBigDecimal < Test::Unit::TestCase
     a.each_with_index do |x, i|
       assert_equal(i, h[x])
     end
+    assert_instance_of(String, b.hash.to_s)
   end
 
   def test_marshal
@@ -1763,12 +1762,6 @@ class TestBigDecimal < Test::Unit::TestCase
     y = x.dup
     assert_equal(1, y)
     assert_kind_of(c, y)
-  end
-
-  def test_to_d
-    bug6093 = '[ruby-core:42969]'
-    code = "exit(BigDecimal.new('10.0') == 10.0.to_d)"
-    assert_ruby_status(%w[-rbigdecimal -rbigdecimal/util -rmathn -], code, bug6093)
   end
 
   def test_bug6406

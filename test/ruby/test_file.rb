@@ -1,7 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'tempfile'
-require "thread"
 require "-test-/file"
 require_relative 'ut_eof'
 
@@ -468,4 +467,22 @@ class TestFile < Test::Unit::TestCase
       assert_file.not_exist?(path)
     end
   end
+
+  def test_open_tempfile_path
+    Dir.mktmpdir(__method__.to_s) do |tmpdir|
+      begin
+        io = File.open(tmpdir, File::RDWR | File::TMPFILE)
+      rescue Errno::EINVAL
+        skip 'O_TMPFILE not supported (EINVAL)'
+      end
+
+      io.write "foo"
+      io.flush
+      assert_equal 3, io.size
+      assert_raise(IOError) { io.path }
+    ensure
+      io&.close
+    end
+  end if File::Constants.const_defined?(:TMPFILE)
+
 end

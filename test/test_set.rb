@@ -200,6 +200,23 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(false, set.include?(true))
   end
 
+  def test_eqq
+    set = Set[1,2,3]
+
+    assert_equal(true, set === 1)
+    assert_equal(true, set === 2)
+    assert_equal(true, set === 3)
+    assert_equal(false, set === 0)
+    assert_equal(false, set === nil)
+
+    set = Set["1",nil,"2",nil,"0","1",false]
+    assert_equal(true, set === nil)
+    assert_equal(true, set === false)
+    assert_equal(true, set === "1")
+    assert_equal(false, set === 0)
+    assert_equal(false, set === true)
+  end
+
   def test_superset?
     set = Set[1,2,3]
 
@@ -705,15 +722,25 @@ class TC_Set < Test::Unit::TestCase
   end
 
   def test_inspect
-    set1 = Set[1]
-
-    assert_equal('#<Set: {1}>', set1.inspect)
+    set1 = Set[1, 2]
+    assert_equal('#<Set: {1, 2}>', set1.inspect)
 
     set2 = Set[Set[0], 1, 2, set1]
-    assert_equal(false, set2.inspect.include?('#<Set: {...}>'))
+    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2}>}>', set2.inspect)
 
     set1.add(set2)
-    assert_equal(true, set1.inspect.include?('#<Set: {...}>'))
+    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2, #<Set: {...}>}>}>', set2.inspect)
+  end
+
+  def test_to_s
+    set1 = Set[1, 2]
+    assert_equal('#<Set: {1, 2}>', set1.to_s)
+
+    set2 = Set[Set[0], 1, 2, set1]
+    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2}>}>', set2.to_s)
+
+    set1.add(set2)
+    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2, #<Set: {...}>}>}>', set2.to_s)
   end
 
   def test_compare_by_identity

@@ -1037,7 +1037,7 @@ Init_Foo(void) {
                  other_function.comment.text
     assert_equal '()', other_function.params
 
-    code = other_function.token_stream.first.text
+    code = other_function.token_stream.first[:text]
 
     assert_equal "VALUE\nother_function() {\n}", code
   end
@@ -1107,7 +1107,7 @@ Init_Foo(void) {
                  other_function.comment.text
     assert_equal '()', other_function.params
 
-    code = other_function.token_stream.first.text
+    code = other_function.token_stream.first[:text]
 
     assert_equal "VALUE\nother_function() {\n}", code
   end
@@ -1139,10 +1139,9 @@ Init_Foo(void) {
     assert_equal 'my_method', other_function.name
     assert_equal 'a comment for rb_other_function', other_function.comment.text
     assert_equal '()', other_function.params
-    assert_equal 118, other_function.offset
     assert_equal 8, other_function.line
 
-    code = other_function.token_stream.first.text
+    code = other_function.token_stream.first[:text]
 
     assert_equal "VALUE\nrb_other_function() {\n}", code
   end
@@ -1173,10 +1172,9 @@ Init_Foo(void) {
     assert_equal 'my_method', other_function.name
     assert_equal 'a comment for other_function', other_function.comment.text
     assert_equal '()', other_function.params
-    assert_equal 39, other_function.offset
     assert_equal 4, other_function.line
 
-    code = other_function.token_stream.first.text
+    code = other_function.token_stream.first[:text]
 
     assert_equal "#define other_function rb_other_function", code
   end
@@ -1316,7 +1314,7 @@ Init_Foo(void) {
                  other_function.comment.text
     assert_equal '()', other_function.params
 
-    code = other_function.token_stream.first.text
+    code = other_function.token_stream.first[:text]
 
     assert_equal "DLL_LOCAL VALUE\nother_function() {\n}", code
   end
@@ -1402,7 +1400,6 @@ rb_m(int argc, VALUE *argv, VALUE obj) {
 
     assert_equal 'm', m.name
     assert_equal @top_level, m.file
-    assert_equal 115, m.offset
     assert_equal 7, m.line
 
     assert_equal '(p1)', m.params

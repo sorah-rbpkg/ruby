@@ -454,6 +454,9 @@ class TestMethod < Test::Unit::TestCase
     c3.class_eval { alias bar foo }
     m3 = c3.new.method(:bar)
     assert_equal("#<Method: #{c3.inspect}(#{c.inspect})#bar(foo)>", m3.inspect, bug7806)
+
+    m.taint
+    assert_predicate(m.inspect, :tainted?, "inspect result should be infected")
   end
 
   def test_callee_top_level
@@ -873,6 +876,16 @@ class TestMethod < Test::Unit::TestCase
     m = m.super_method
     assert_equal(c1, m.owner, Feature9781)
     assert_same(o, m.receiver, Feature9781)
+
+    c1 = Class.new {def foo; end}
+    c2 = Class.new(c1) {include m1; include m2}
+    m = c2.instance_method(:foo)
+    assert_equal(m2, m.owner)
+    m = m.super_method
+    assert_equal(m1, m.owner)
+    m = m.super_method
+    assert_equal(c1, m.owner)
+    assert_nil(m.super_method)
   end
 
   def test_super_method_removed
@@ -899,6 +912,18 @@ class TestMethod < Test::Unit::TestCase
     m = obj.method(:foo)
     assert_equal(mods, mods.map {m.owner.tap {m = m.super_method}})
     assert_nil(m)
+  end
+
+  def test_super_method_with_prepended_module
+    bug = '[ruby-core:81666] [Bug #13656] should be the method of the parent'
+    c1 = EnvUtil.labeled_class("C1") {def m; end}
+    c2 = EnvUtil.labeled_class("C2", c1) {def m; end}
+    c2.prepend(EnvUtil.labeled_module("M"))
+    m1 = c1.instance_method(:m)
+    m2 = c2.instance_method(:m).super_method
+    assert_equal(m1, m2, bug)
+    assert_equal(c1, m2.owner, bug)
+    assert_equal(m1.source_location, m2.source_location, bug)
   end
 
   def rest_parameter(*rest)

@@ -73,9 +73,9 @@ in the mail body (not subject) to the address
 This is what you need to do to compile and install Ruby:
 
 1.  If you want to use Microsoft Visual C++ to compile ruby, read
-    win32/README.win32 instead of this document.
+    [win32/README.win32](win32/README.win32) instead of this document.
 
-2.  If `./configure` does not exist or is older than configure.in, run
+2.  If `./configure` does not exist or is older than `configure.ac`, run
     `autoconf` to (re)generate configure.
 
 3.  Run `./configure`, which will generate `config.h` and `Makefile`.
@@ -97,11 +97,19 @@ This is what you need to do to compile and install Ruby:
 
 6.  Run `make`.
 
+    * On Mac, set RUBY\_CODESIGN environment variable with a signing identity.
+      It uses the identity to sign `ruby` binary. See also codesign(1).
+
 7.  Optionally, run '`make check`' to check whether the compiled Ruby
     interpreter works well. If you see the message "`check succeeded`", your
     ruby works as it should (hopefully).
 
-8.  Run '`make install`'
+8.  Optionally, Run `make update-gems` and `make extract-gems`
+
+    If you want to install bundled gems, run `make update-gems` and
+    `extract-gems` before run `make install`.
+
+9.  Run '`make install`'
 
     This command will create the following directories and install files into
     them.
@@ -154,7 +162,7 @@ Bug reports should be filed at https://bugs.ruby-lang.org. Read [HowToReport] fo
 
 [HowToReport]: https://bugs.ruby-lang.org/projects/ruby/wiki/HowToReport
 
-##Contributing
+## Contributing
 
 See the file [CONTRIBUTING.md](CONTRIBUTING.md)
 

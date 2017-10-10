@@ -2,7 +2,7 @@
 
   dln.c -
 
-  $Author: nobu $
+  $Author$
   created at: Tue Jan 18 17:05:06 JST 1994
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -1250,7 +1250,6 @@ dln_load(const char *file)
 #endif
 #if !defined(_AIX) && !defined(NeXT)
     const char *error = 0;
-#define DLN_ERROR() (error = dln_strerror(), strcpy(ALLOCA_N(char, strlen(error) + 1), error))
 #endif
 
 #if defined _WIN32
@@ -1349,7 +1348,8 @@ dln_load(const char *file)
 
 	init_fct = (void(*)())(VALUE)dlsym(handle, buf);
 	if (init_fct == NULL) {
-	    error = DLN_ERROR();
+	    const size_t errlen = strlen(error = dln_strerror()) + 1;
+	    error = memcpy(ALLOCA_N(char, errlen), error, errlen);
 	    dlclose(handle);
 	    goto failed;
 	}

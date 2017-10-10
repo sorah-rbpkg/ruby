@@ -169,9 +169,15 @@ class TestSyntax < Test::Unit::TestCase
   end
 
   def test_keyword_empty_splat
-    assert_separately([], <<-'end;')
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
       bug10719 = '[ruby-core:67446] [Bug #10719]'
       assert_valid_syntax("foo(a: 1, **{})", bug10719)
+    end;
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      bug13756 = '[ruby-core:82113] [Bug #13756]'
+      assert_valid_syntax("defined? foo(**{})", bug13756)
     end;
   end
 
@@ -478,8 +484,16 @@ WARN
     }
   end
 
+  def test_invalid_break
+    assert_syntax_error("def m; break; end", /Invalid break/)
+    assert_syntax_error('/#{break}/', /Invalid break/)
+    assert_syntax_error('/#{break}/o', /Invalid break/)
+  end
+
   def test_invalid_next
     assert_syntax_error("def m; next; end", /Invalid next/)
+    assert_syntax_error('/#{next}/', /Invalid next/)
+    assert_syntax_error('/#{next}/o', /Invalid next/)
   end
 
   def test_lambda_with_space
@@ -654,6 +668,10 @@ e"
     d
 eom
     assert_equal(expected, actual, bug7559)
+  end
+
+  def test_dedented_heredoc_invalid_identifer
+    assert_syntax_error('<<~ "#{}"', /unexpected <</)
   end
 
   def test_lineno_operation_brace_block
@@ -894,6 +912,10 @@ eom
     assert_valid_syntax %q{a b(c d), 1 do end}, bug11873
     assert_valid_syntax %q{a b{c(d)}, 1 do end}, bug11873
     assert_valid_syntax %q{a b(c(d)), 1 do end}, bug11873
+    assert_valid_syntax %q{a b{c d}, "x" do end}, bug11873
+    assert_valid_syntax %q{a b(c d), "x" do end}, bug11873
+    assert_valid_syntax %q{a b{c(d)}, "x" do end}, bug11873
+    assert_valid_syntax %q{a b(c(d)), "x" do end}, bug11873
   end
 
   def test_block_after_cmdarg_in_paren
@@ -917,6 +939,15 @@ eom
     end
   end
 
+  def test_do_block_in_hash_brace
+    bug13073 = '[ruby-core:78837] [Bug #13073]'
+    assert_valid_syntax 'p :foo, {a: proc do end, b: proc do end}', bug13073
+    assert_valid_syntax 'p :foo, {:a => proc do end, b: proc do end}', bug13073
+    assert_valid_syntax 'p :foo, {"a": proc do end, b: proc do end}', bug13073
+    assert_valid_syntax 'p :foo, {** proc do end, b: proc do end}', bug13073
+    assert_valid_syntax 'p :foo, {proc do end => proc do end, b: proc do end}', bug13073
+  end
+
   def test_do_after_local_variable
     obj = Object.new
     def obj.m; yield; end
@@ -926,27 +957,140 @@ eom
     assert_equal(:ok, result)
   end
 
+  def test_brace_after_local_variable
+    obj = Object.new
+    def obj.m; yield; end
+    result = assert_nothing_raised(SyntaxError) do
+      obj.instance_eval("m = 1; m {:ok}")
+    end
+    assert_equal(:ok, result)
+  end
+
+  def test_brace_after_literal_argument
+    bug = '[ruby-core:81037] [Bug #13547]'
+    error = /unexpected '{'/
+    assert_syntax_error('m "x" {}', error)
+    assert_syntax_error('m 1 {}', error, bug)
+    assert_syntax_error('m 1.0 {}', error, bug)
+    assert_syntax_error('m :m {}', error, bug)
+    assert_syntax_error('m :"#{m}" {}', error, bug)
+    assert_syntax_error('m ?x {}', error, bug)
+    assert_syntax_error('m %[] {}', error, bug)
+    assert_syntax_error('m 0..1 {}', error, bug)
+    assert_syntax_error('m [] {}', error, bug)
+  end
+
   def test_return_toplevel
     feature4840 = '[ruby-core:36785] [Feature #4840]'
-    code = "#{<<~"begin;"}\n#{<<~"end;"}"
+    code = "#{<<~"begin;"}\n#{<<~'end;'}"
     begin;
       return; raise
       begin return; rescue SystemExit; exit false; end
-      begin return; ensure exit false; end
+      begin return; ensure puts "ensured"; end #=> ensured
       begin ensure return; end
       begin raise; ensure; return; end
       begin raise; rescue; return; end
       return false; raise
       return 1; raise
+      "#{return}"
+      raise((return; "should not raise"))
+      begin raise; ensure return; end; self
+      begin raise; ensure return; end and self
+      nil&defined?0--begin e=no_method_error(); return; 0;end
     end;
-    all_assertions(feature4840) do |a|
-      code.each_line do |s|
-        s.chomp!
-        a.for(s) do
-          assert_ruby_status([], s, proc {RubyVM::InstructionSequence.compile(s).disasm})
-        end
-      end
+    all_assertions_foreach(feature4840, *code.split(/\n/)) do |s|
+      assert_in_out_err(%[-W0], s, [*s[/#=> (.*)/, 1]], [],
+                        proc {RubyVM::InstructionSequence.compile(s).disasm},
+                        success: true)
     end
+  end
+
+  def test_syntax_error_in_rescue
+    bug12613 = '[ruby-core:76531] [Bug #12613]'
+    assert_syntax_error("#{<<-"begin;"}\n#{<<-"end;"}", /Invalid retry/, bug12613)
+    begin;
+      while true
+        begin
+          p
+        rescue
+          retry
+        else
+          retry
+        end
+        break
+      end
+    end;
+  end
+
+  def test_invalid_jump
+    assert_in_out_err(%w[-e redo], "", [], /^-e:1: /)
+  end
+
+  def test_rescue_do_end_raised
+    result = []
+    assert_raise(RuntimeError) do
+      eval("#{<<-"begin;"}\n#{<<-"end;"}")
+      begin;
+        tap do
+          result << :begin
+          raise "An exception occured!"
+        ensure
+          result << :ensure
+        end
+      end;
+    end
+    assert_equal([:begin, :ensure], result)
+  end
+
+  def test_rescue_do_end_rescued
+    result = []
+    assert_nothing_raised(RuntimeError) do
+      eval("#{<<-"begin;"}\n#{<<-"end;"}")
+      begin;
+        tap do
+          result << :begin
+          raise "An exception occured!"
+        rescue
+          result << :rescue
+        else
+          result << :else
+        ensure
+          result << :ensure
+        end
+      end;
+    end
+    assert_equal([:begin, :rescue, :ensure], result)
+  end
+
+  def test_rescue_do_end_no_raise
+    result = []
+    assert_nothing_raised(RuntimeError) do
+      eval("#{<<-"begin;"}\n#{<<-"end;"}")
+      begin;
+        tap do
+          result << :begin
+        rescue
+          result << :rescue
+        else
+          result << :else
+        ensure
+          result << :ensure
+        end
+      end;
+    end
+    assert_equal([:begin, :else, :ensure], result)
+  end
+
+  def test_rescue_do_end_ensure_result
+    result = eval("#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      proc do
+        :begin
+      ensure
+        :ensure
+      end.call
+    end;
+    assert_equal(:begin, result)
   end
 
   private

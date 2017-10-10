@@ -2,7 +2,7 @@
 
   eval.c -
 
-  $Author: nobu $
+  $Author$
   created at: Thu Jun 10 14:22:17 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -38,14 +38,15 @@ static ID id_cause;
     (!SPECIAL_CONST_P(obj) && \
      (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE))
 
-/* Initializes the Ruby VM and builtin libraries.
+/*!
+ * Initializes the Ruby VM and builtin libraries.
  * @retval 0 if succeeded.
  * @retval non-zero an error occurred.
  */
 int
 ruby_setup(void)
 {
-    int state;
+    enum ruby_tag_type state;
 
     if (GET_VM())
 	return 0;
@@ -56,7 +57,7 @@ ruby_setup(void)
     Init_vm_objects();
 
     PUSH_TAG();
-    if ((state = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
 	rb_call_inits();
 	ruby_prog_init();
 	GET_VM()->running = 1;
@@ -66,7 +67,8 @@ ruby_setup(void)
     return state;
 }
 
-/* Calls ruby_setup() and check error.
+/*!
+ * Calls ruby_setup() and check error.
  *
  * Prints errors and calls exit(3) if an error occurred.
  */
@@ -94,12 +96,12 @@ ruby_init(void)
 void *
 ruby_options(int argc, char **argv)
 {
-    int state;
+    enum ruby_tag_type state;
     void *volatile iseq = 0;
 
     ruby_init_stack((void *)&iseq);
     PUSH_TAG();
-    if ((state = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
 	SAVE_ROOT_JMPBUF(GET_THREAD(), iseq = ruby_process_options(argc, argv));
     }
     else {
@@ -115,7 +117,7 @@ static void
 ruby_finalize_0(void)
 {
     PUSH_TAG();
-    if (EXEC_TAG() == 0) {
+    if (EXEC_TAG() == TAG_NONE) {
 	rb_trap_exit();
     }
     POP_TAG();
@@ -127,7 +129,7 @@ static void
 ruby_finalize_1(void)
 {
     ruby_sig_finalize();
-    GET_THREAD()->errinfo = Qnil;
+    GET_THREAD()->ec.errinfo = Qnil;
     rb_gc_call_finalizer_at_exit();
 }
 
@@ -168,12 +170,12 @@ ruby_cleanup(volatile int ex)
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
     TH_PUSH_TAG(th);
-    if ((state = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
 	SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(th); });
 
       step_0: step++;
-	errs[1] = th->errinfo;
-	th->safe_level = 0;
+	errs[1] = th->ec.errinfo;
+	th->ec.safe_level = 0;
 	ruby_init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
 
 	SAVE_ROOT_JMPBUF(th, ruby_finalize_0());
@@ -182,7 +184,7 @@ ruby_cleanup(volatile int ex)
 	/* protect from Thread#raise */
 	th->status = THREAD_KILLED;
 
-	errs[0] = th->errinfo;
+	errs[0] = th->ec.errinfo;
 	SAVE_ROOT_JMPBUF(th, rb_thread_terminate_all());
     }
     else {
@@ -192,7 +194,7 @@ ruby_cleanup(volatile int ex)
 	}
 	if (ex == 0) ex = state;
     }
-    th->errinfo = errs[1];
+    th->ec.errinfo = errs[1];
     sysex = error_handle(ex);
 
     state = 0;
@@ -201,7 +203,7 @@ ruby_cleanup(volatile int ex)
 
 	if (!RTEST(err)) continue;
 
-	/* th->errinfo contains a NODE while break'ing */
+	/* th->ec.errinfo contains a NODE while break'ing */
 	if (THROW_DATA_P(err)) continue;
 
 	if (rb_obj_is_kind_of(err, rb_eSystemExit)) {
@@ -240,7 +242,7 @@ ruby_exec_internal(void *n)
     if (!n) return 0;
 
     TH_PUSH_TAG(th);
-    if ((state = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
 	SAVE_ROOT_JMPBUF(th, {
 	    rb_iseq_eval_main(iseq);
 	});
@@ -392,6 +394,12 @@ rb_mod_s_constants(int argc, VALUE *argv, VALUE mod)
     return rb_const_list(data);
 }
 
+/*!
+ * Asserts that \a klass is not a frozen class.
+ * \param[in] klass a \c Module object
+ * \exception RuntimeError if \a klass is not a class or frozen.
+ * \ingroup class
+ */
 void
 rb_frozen_class_p(VALUE klass)
 {
@@ -434,7 +442,7 @@ rb_frozen_class_p(VALUE klass)
     }
 }
 
-NORETURN(static void rb_longjmp(int, volatile VALUE, VALUE));
+NORETURN(static void rb_longjmp(rb_thread_t *, int, volatile VALUE, VALUE));
 static VALUE get_errinfo(void);
 static VALUE get_thread_errinfo(rb_thread_t *th);
 
@@ -464,10 +472,29 @@ exc_setup_cause(VALUE exc, VALUE cause)
     return exc;
 }
 
-static inline int
-sysstack_error_p(VALUE exc)
+static inline VALUE
+exc_setup_message(rb_thread_t *th, VALUE mesg, VALUE *cause)
 {
-    return exc == sysstack_error || (!SPECIAL_CONST_P(exc) && RBASIC_CLASS(exc) == rb_eSysStackError);
+    int nocause = 0;
+
+    if (NIL_P(mesg)) {
+	mesg = th->ec.errinfo;
+	if (INTERNAL_EXCEPTION_P(mesg)) TH_JUMP_TAG(th, TAG_FATAL);
+	nocause = 1;
+    }
+    if (NIL_P(mesg)) {
+	mesg = rb_exc_new(rb_eRuntimeError, 0, 0);
+	nocause = 0;
+    }
+    if (*cause == Qundef) {
+	if (nocause) {
+	    *cause = Qnil;
+	}
+	else if (!rb_ivar_defined(mesg, id_cause)) {
+	    *cause = get_thread_errinfo(th);
+	}
+    }
+    return mesg;
 }
 
 static void
@@ -476,76 +503,47 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
     VALUE e;
     const char *file = 0;
     int line;
-    int nocause = 0;
-
-    if (NIL_P(mesg)) {
-	mesg = th->errinfo;
-	if (INTERNAL_EXCEPTION_P(mesg)) TH_JUMP_TAG(th, TAG_FATAL);
-	nocause = 1;
-    }
-    if (NIL_P(mesg)) {
-	mesg = rb_exc_new(rb_eRuntimeError, 0, 0);
-	nocause = 0;
-    }
-    if (cause != Qundef) {
-	exc_setup_cause(mesg, cause);
-    }
-    else if (nocause) {
-	exc_setup_cause(mesg, Qnil);
-    }
-    else if (!rb_ivar_defined(mesg, id_cause)) {
-	exc_setup_cause(mesg, get_thread_errinfo(th));
-    }
 
     file = rb_source_loc(&line);
-    if (file && !NIL_P(mesg)) {
-	VALUE at;
-	if (sysstack_error_p(mesg)) {
-	    if (NIL_P(rb_attr_get(mesg, idBt))) {
-		at = rb_vm_backtrace_object();
-		if (mesg == sysstack_error) {
-		    mesg = ruby_vm_sysstack_error_copy();
-		}
-		rb_ivar_set(mesg, idBt, at);
-		rb_ivar_set(mesg, idBt_locations, at);
-	    }
-	}
-	else {
-	    int status;
+    if ((file && !NIL_P(mesg)) || (cause != Qundef))  {
+	volatile int state = 0;
 
-	    TH_PUSH_TAG(th);
-	    if ((status = EXEC_TAG()) == 0) {
-		VALUE bt;
-		if (rb_threadptr_set_raised(th)) goto fatal;
-		bt = rb_get_backtrace(mesg);
-		if (NIL_P(bt)) {
-		    at = rb_vm_backtrace_object();
-		    if (OBJ_FROZEN(mesg)) {
-			mesg = rb_obj_dup(mesg);
-		    }
-		    rb_ivar_set(mesg, idBt_locations, at);
-		    set_backtrace(mesg, at);
+	TH_PUSH_TAG(th);
+	if (EXEC_TAG() == TAG_NONE && !(state = rb_threadptr_set_raised(th))) {
+	    VALUE bt = rb_get_backtrace(mesg);
+	    if (!NIL_P(bt) || cause == Qundef) {
+		if (OBJ_FROZEN(mesg)) {
+		    mesg = rb_obj_dup(mesg);
 		}
-		rb_threadptr_reset_raised(th);
 	    }
-	    TH_POP_TAG();
+	    if (cause != Qundef) {
+		exc_setup_cause(mesg, cause);
+	    }
+	    if (NIL_P(bt)) {
+		VALUE at = rb_threadptr_backtrace_object(th);
+		rb_ivar_set(mesg, idBt_locations, at);
+		set_backtrace(mesg, at);
+	    }
+	    rb_threadptr_reset_raised(th);
 	}
+	TH_POP_TAG();
+	if (state) goto fatal;
     }
 
     if (!NIL_P(mesg)) {
-	th->errinfo = mesg;
+	th->ec.errinfo = mesg;
     }
 
-    if (RTEST(ruby_debug) && !NIL_P(e = th->errinfo) &&
+    if (RTEST(ruby_debug) && !NIL_P(e = th->ec.errinfo) &&
 	!rb_obj_is_kind_of(e, rb_eSystemExit)) {
-	int status;
+	enum ruby_tag_type state;
 
 	mesg = e;
 	TH_PUSH_TAG(th);
-	if ((status = EXEC_TAG()) == 0) {
-	    th->errinfo = Qnil;
+	if ((state = EXEC_TAG()) == TAG_NONE) {
+	    th->ec.errinfo = Qnil;
 	    e = rb_obj_as_string(mesg);
-	    th->errinfo = mesg;
+	    th->ec.errinfo = mesg;
 	    if (file && line) {
 		e = rb_sprintf("Exception `%"PRIsVALUE"' at %s:%d - %"PRIsVALUE"\n",
 			       rb_obj_class(mesg), file, line, e);
@@ -561,28 +559,29 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	    warn_print_str(e);
 	}
 	TH_POP_TAG();
-	if (status == TAG_FATAL && th->errinfo == exception_error) {
-	    th->errinfo = mesg;
+	if (state == TAG_FATAL && th->ec.errinfo == exception_error) {
+	    th->ec.errinfo = mesg;
 	}
-	else if (status) {
+	else if (state) {
 	    rb_threadptr_reset_raised(th);
-	    TH_JUMP_TAG(th, status);
+	    TH_JUMP_TAG(th, state);
 	}
     }
 
     if (rb_threadptr_set_raised(th)) {
       fatal:
-	th->errinfo = exception_error;
+	th->ec.errinfo = exception_error;
 	rb_threadptr_reset_raised(th);
 	TH_JUMP_TAG(th, TAG_FATAL);
     }
 
     if (tag != TAG_FATAL) {
-	RUBY_DTRACE_HOOK(RAISE, rb_obj_classname(th->errinfo));
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_RAISE, th->cfp->self, 0, 0, 0, mesg);
+	RUBY_DTRACE_HOOK(RAISE, rb_obj_classname(th->ec.errinfo));
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_RAISE, th->ec.cfp->self, 0, 0, 0, mesg);
     }
 }
 
+/*! \private */
 void
 rb_threadptr_setup_exception(rb_thread_t *th, VALUE mesg, VALUE cause)
 {
@@ -595,9 +594,9 @@ rb_threadptr_setup_exception(rb_thread_t *th, VALUE mesg, VALUE cause)
 }
 
 static void
-rb_longjmp(int tag, volatile VALUE mesg, VALUE cause)
+rb_longjmp(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 {
-    rb_thread_t *th = GET_THREAD();
+    mesg = exc_setup_message(th, mesg, &cause);
     setup_exception(th, tag, mesg, cause);
     rb_thread_raised_clear(th);
     TH_JUMP_TAG(th, tag);
@@ -605,31 +604,49 @@ rb_longjmp(int tag, volatile VALUE mesg, VALUE cause)
 
 static VALUE make_exception(int argc, const VALUE *argv, int isstr);
 
+/*!
+ * Raises an exception in the current thread.
+ * \param[in] mesg an Exception class or an \c Exception object.
+ * \exception always raises an instance of the given exception class or
+ *   the given \c Exception object.
+ * \ingroup exception
+ */
 void
 rb_exc_raise(VALUE mesg)
 {
     if (!NIL_P(mesg)) {
 	mesg = make_exception(1, &mesg, FALSE);
     }
-    rb_longjmp(TAG_RAISE, mesg, Qundef);
+    rb_longjmp(GET_THREAD(), TAG_RAISE, mesg, Qundef);
 }
 
+/*!
+ * Raises a fatal error in the current thread.
+ *
+ * Same as rb_exc_raise() but raises a fatal error, which Ruby codes
+ * cannot rescue.
+ * \ingroup exception
+ */
 void
 rb_exc_fatal(VALUE mesg)
 {
     if (!NIL_P(mesg)) {
 	mesg = make_exception(1, &mesg, FALSE);
     }
-    rb_longjmp(TAG_FATAL, mesg, Qnil);
+    rb_longjmp(GET_THREAD(), TAG_FATAL, mesg, Qnil);
 }
 
+/*!
+ * Raises an \c Interrupt exception.
+ * \ingroup exception
+ */
 void
 rb_interrupt(void)
 {
     rb_raise(rb_eInterrupt, "%s", "");
 }
 
-enum {raise_opt_cause, raise_max_opt};
+enum {raise_opt_cause, raise_max_opt}; /*< \private */
 
 static int
 extract_raise_opts(int argc, const VALUE *argv, VALUE *opts)
@@ -728,7 +745,6 @@ make_exception(int argc, const VALUE *argv, int isstr)
 	exc = argv[0];
 	n = 1;
       exception_call:
-	if (sysstack_error_p(exc)) return exc;
 	mesg = rb_check_funcall(exc, idException, n, argv+1);
 	if (mesg == Qundef) {
 	    rb_raise(rb_eTypeError, "exception class/object expected");
@@ -748,17 +764,40 @@ make_exception(int argc, const VALUE *argv, int isstr)
     return mesg;
 }
 
+/*!
+ * Make an \c Exception object from the list of arguments in a manner
+ * similar to \c Kernel\#raise.
+ *
+ * \param[in] argc the number of arguments
+ * \param[in] argv a pointer to the array of arguments.
+ *
+ * The first form of this function takes a \c String argument. Then
+ * it returns a \c RuntimeError whose error message is the given value.
+ *
+ * The second from of this function takes an \c Exception object. Then
+ * it just returns the given value.
+ *
+ * The last form takes an exception class, an optional error message and
+ * an optional array of backtrace. Then it passes the optional arguments
+ * to \c #exception method of the exception class.
+ *
+ * \return the exception object, or \c Qnil if \c argc is 0.
+ * \ingroup exception
+ */
 VALUE
 rb_make_exception(int argc, const VALUE *argv)
 {
     return make_exception(argc, argv, TRUE);
 }
 
+/*! \private
+ * \todo can be static?
+ */
 void
 rb_raise_jump(VALUE mesg, VALUE cause)
 {
     rb_thread_t *th = GET_THREAD();
-    const rb_control_frame_t *cfp = th->cfp;
+    const rb_control_frame_t *cfp = th->ec.cfp;
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
     VALUE klass = me->owner;
     VALUE self = cfp->self;
@@ -767,12 +806,17 @@ rb_raise_jump(VALUE mesg, VALUE cause)
     rb_vm_pop_frame(th);
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, self, me->def->original_id, mid, klass, Qnil);
 
-    setup_exception(th, TAG_RAISE, mesg, cause);
-
-    rb_thread_raised_clear(th);
-    TH_JUMP_TAG(th, TAG_RAISE);
+    rb_longjmp(th, TAG_RAISE, mesg, cause);
 }
 
+/*!
+ * Continues the exception caught by rb_protect() and rb_eval_string_protect().
+ *
+ * This function never return to the caller.
+ * \param[in] the value of \c *state which the protect function has set to the
+ *   their last parameter.
+ * \ingroup exception
+ */
 void
 rb_jump_tag(int tag)
 {
@@ -782,11 +826,16 @@ rb_jump_tag(int tag)
     JUMP_TAG(tag);
 }
 
+/*! Determines if the current method is given a block.
+ * \retval zero if not given
+ * \retval non-zero if given
+ * \ingroup defmethod
+ */
 int
 rb_block_given_p(void)
 {
     rb_thread_t *th = GET_THREAD();
-    if (rb_vm_frame_block_handler(th->cfp) == VM_BLOCK_HANDLER_NONE) {
+    if (rb_vm_frame_block_handler(th->ec.cfp) == VM_BLOCK_HANDLER_NONE) {
 	return FALSE;
     }
     else {
@@ -794,6 +843,11 @@ rb_block_given_p(void)
     }
 }
 
+/*!  Determines if the current method is an interator.
+ *
+ * An alias of rb_block_given_p().
+ * \ingroup defmethod
+ */
 int
 rb_iterator_p(void)
 {
@@ -802,6 +856,11 @@ rb_iterator_p(void)
 
 VALUE rb_eThreadError;
 
+/*! Declares that the current method needs a block.
+ *
+ * Raises a \c LocalJumpError if not given a block.
+ * \ingroup defmethod
+ */
 void
 rb_need_block(void)
 {
@@ -810,19 +869,41 @@ rb_need_block(void)
     }
 }
 
+/*! An equivalent of \c rescue clause.
+ *
+ * Equivalent to <code>begin .. rescue err_type .. end</code>
+ *
+ * \param[in] b_proc a function which potentially raises an exception.
+ * \param[in] data1 the argument of \a b_proc
+ * \param[in] r_proc a function which rescues an exception in \a b_proc.
+ * \param[in] data2 the first argument of \a r_proc
+ * \param[in] ... 1 or more exception classes. Must be terminated by \c (VALUE)0.
+ *
+ * First it calls the function \a b_proc, with \a data1 as the argument.
+ * When \a b_proc raises an exception, it calls \a r_proc with \a data2 and
+ * the exception object if the exception is a kind of one of the given
+ * exception classes.
+ *
+ * \return the return value of \a b_proc if no exception occurs,
+ *   or the return value of \a r_proc if otherwise.
+ * \sa rb_rescue
+ * \sa rb_ensure
+ * \sa rb_protect
+ * \ingroup exception
+ */
 VALUE
 rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 	   VALUE (* r_proc) (ANYARGS), VALUE data2, ...)
 {
-    int state;
+    enum ruby_tag_type state;
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *volatile cfp = th->cfp;
+    rb_control_frame_t *volatile cfp = th->ec.cfp;
     volatile VALUE result = Qfalse;
-    volatile VALUE e_info = th->errinfo;
+    volatile VALUE e_info = th->ec.errinfo;
     va_list args;
 
     TH_PUSH_TAG(th);
-    if ((state = TH_EXEC_TAG()) == 0) {
+    if ((state = TH_EXEC_TAG()) == TAG_NONE) {
       retry_entry:
 	result = (*b_proc) (data1);
     }
@@ -830,7 +911,7 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 	/* escape from r_proc */
 	if (state == TAG_RETRY) {
 	    state = 0;
-	    th->errinfo = Qnil;
+	    th->ec.errinfo = Qnil;
 	    result = Qfalse;
 	    goto retry_entry;
 	}
@@ -844,7 +925,7 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 
 	    va_init_list(args, data2);
 	    while ((eclass = va_arg(args, VALUE)) != 0) {
-		if (rb_obj_is_kind_of(th->errinfo, eclass)) {
+		if (rb_obj_is_kind_of(th->ec.errinfo, eclass)) {
 		    handle = TRUE;
 		    break;
 		}
@@ -855,9 +936,9 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 		result = Qnil;
 		state = 0;
 		if (r_proc) {
-		    result = (*r_proc) (data2, th->errinfo);
+		    result = (*r_proc) (data2, th->ec.errinfo);
 		}
-		th->errinfo = e_info;
+		th->ec.errinfo = e_info;
 	    }
 	}
     }
@@ -868,6 +949,20 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
     return result;
 }
 
+/*! An equivalent of \c rescue clause.
+ *
+ * Equivalent to <code>begin .. rescue .. end</code>.
+ *
+ * It is same as
+ * \code{cpp}
+ * rb_rescue2(b_proc, data1, r_proc, data2, rb_eStandardError, (VALUE)0);
+ * \endcode
+ *
+ * \sa rb_rescue2
+ * \sa rb_ensure
+ * \sa rb_protect
+ * \ingroup exception
+ */
 VALUE
 rb_rescue(VALUE (* b_proc)(ANYARGS), VALUE data1,
 	  VALUE (* r_proc)(ANYARGS), VALUE data2)
@@ -876,60 +971,91 @@ rb_rescue(VALUE (* b_proc)(ANYARGS), VALUE data1,
 		      (VALUE)0);
 }
 
+/*! Protects a function call from potential global escapes from the function.
+ *
+ * Such global escapes include exceptions, \c Kernel\#throw, \c break in
+ * an iterator, for example.
+ * It first calls the function func with arg as the argument.
+ * If no exception occurred during func, it returns the result of func and
+ * *state is zero.
+ * Otherwise, it returns Qnil and sets *state to nonzero.
+ * If state is NULL, it is not set in both cases.
+ *
+ * You have to clear the error info with rb_set_errinfo(Qnil) when
+ * ignoring the caught exception.
+ * \ingroup exception
+ * \sa rb_rescue
+ * \sa rb_rescue2
+ * \sa rb_ensure
+ */
 VALUE
-rb_protect(VALUE (* proc) (VALUE), VALUE data, int * state)
+rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
 {
     volatile VALUE result = Qnil;
-    volatile int status;
+    volatile enum ruby_tag_type state;
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *volatile cfp = th->cfp;
+    rb_control_frame_t *volatile cfp = th->ec.cfp;
     struct rb_vm_protect_tag protect_tag;
     rb_jmpbuf_t org_jmpbuf;
 
-    protect_tag.prev = th->protect_tag;
+    protect_tag.prev = th->ec.protect_tag;
 
     TH_PUSH_TAG(th);
-    th->protect_tag = &protect_tag;
+    th->ec.protect_tag = &protect_tag;
     MEMCPY(&org_jmpbuf, &(th)->root_jmpbuf, rb_jmpbuf_t, 1);
-    if ((status = TH_EXEC_TAG()) == 0) {
+    if ((state = TH_EXEC_TAG()) == TAG_NONE) {
 	SAVE_ROOT_JMPBUF(th, result = (*proc) (data));
     }
     else {
 	rb_vm_rewind_cfp(th, cfp);
     }
     MEMCPY(&(th)->root_jmpbuf, &org_jmpbuf, rb_jmpbuf_t, 1);
-    th->protect_tag = protect_tag.prev;
+    th->ec.protect_tag = protect_tag.prev;
     TH_POP_TAG();
 
-    if (state) {
-	*state = status;
-    }
-
+    if (pstate != NULL) *pstate = state;
     return result;
 }
 
+/*!
+ * An equivalent to \c ensure clause.
+ *
+ * Equivalent to <code>begin .. ensure .. end</code>.
+ *
+ * Calls the function \a b_proc with \a data1 as the argument,
+ * then calls \a e_proc with \a data2 when execution terminated.
+ * \return The return value of \a b_proc if no exception occurred,
+ *   or \c Qnil if otherwise.
+ * \sa rb_rescue
+ * \sa rb_rescue2
+ * \sa rb_protect
+ * \ingroup exception
+ */
 VALUE
 rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE data2)
 {
     int state;
     volatile VALUE result = Qnil;
-    volatile VALUE errinfo;
+    VALUE errinfo;
     rb_thread_t *const th = GET_THREAD();
     rb_ensure_list_t ensure_list;
     ensure_list.entry.marker = 0;
     ensure_list.entry.e_proc = e_proc;
     ensure_list.entry.data2 = data2;
-    ensure_list.next = th->ensure_list;
-    th->ensure_list = &ensure_list;
+    ensure_list.next = th->ec.ensure_list;
+    th->ec.ensure_list = &ensure_list;
     TH_PUSH_TAG(th);
-    if ((state = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
 	result = (*b_proc) (data1);
     }
     TH_POP_TAG();
-    errinfo = th->errinfo;
-    th->ensure_list=ensure_list.next;
+    errinfo = th->ec.errinfo;
+    if (!NIL_P(errinfo) && !RB_TYPE_P(errinfo, T_OBJECT)) {
+	th->ec.errinfo = Qnil;
+    }
+    th->ec.ensure_list=ensure_list.next;
     (*ensure_list.entry.e_proc)(ensure_list.entry.data2);
-    th->errinfo = errinfo;
+    th->ec.errinfo = errinfo;
     if (state)
 	TH_JUMP_TAG(th, state);
     return result;
@@ -961,24 +1087,47 @@ frame_called_id(rb_control_frame_t *cfp)
     }
 }
 
+/*!
+ * The original name of the current method.
+ *
+ * The function returns the original name of the method even if
+ * an alias of the method is called.
+ * The function can also return 0 if it is not in a method. This
+ * case can happen in a toplevel of a source file, for example.
+ *
+ * \returns the ID of the name or 0
+ * \sa rb_frame_callee
+ * \ingroup defmethod
+ */
 ID
 rb_frame_this_func(void)
 {
-    return frame_func_id(GET_THREAD()->cfp);
+    return frame_func_id(GET_THREAD()->ec.cfp);
 }
 
+/*!
+ * The name of the current method.
+ *
+ * The function returns the alias if an alias of the method is called.
+ * The function can also return 0 if it is not in a method. This
+ * case can happen in a toplevel of a source file, for example.
+ *
+ * \returns the ID of the name or 0.
+ * \sa rb_frame_this_func
+ * \ingroup defmethod
+ */
 ID
 rb_frame_callee(void)
 {
-    return frame_called_id(GET_THREAD()->cfp);
+    return frame_called_id(GET_THREAD()->ec.cfp);
 }
 
 static rb_control_frame_t *
 previous_frame(rb_thread_t *th)
 {
-    rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
+    rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->ec.cfp);
     /* check if prev_cfp can be accessible */
-    if ((void *)(th->stack + th->stack_size) == (void *)(prev_cfp)) {
+    if ((void *)(th->ec.vm_stack + th->ec.vm_stack_size) == (void *)(prev_cfp)) {
         return 0;
     }
     return prev_cfp;
@@ -1000,11 +1149,17 @@ prev_frame_func(void)
     return frame_func_id(prev_cfp);
 }
 
+/*!
+ * \private
+ * Returns the ID of the last method in the call stack.
+ * \sa rb_frame_this_func
+ * \ingroup defmethod
+ */
 ID
 rb_frame_last_func(void)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->cfp;
+    rb_control_frame_t *cfp = th->ec.cfp;
     ID mid;
 
     while (!(mid = frame_func_id(cfp)) &&
@@ -1130,6 +1285,10 @@ hidden_identity_hash_new(void)
     return hash;
 }
 
+/*!
+ * \private
+ * \todo can be static?
+ */
 void
 rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
 {
@@ -1212,6 +1371,10 @@ using_module_recursive(const rb_cref_t *cref, VALUE klass)
     rb_hash_foreach(refinements, using_refinement, (VALUE) cref);
 }
 
+/*!
+ * \private
+ * \todo can be static?
+ */
 void
 rb_using_module(const rb_cref_t *cref, VALUE module)
 {
@@ -1220,6 +1383,7 @@ rb_using_module(const rb_cref_t *cref, VALUE module)
     rb_clear_method_cache_by_class(rb_cObject);
 }
 
+/*! \private */
 VALUE
 rb_refinement_module_get_refined_class(VALUE module)
 {
@@ -1275,7 +1439,7 @@ rb_mod_refine(VALUE module, VALUE klass)
        id_refined_class, id_defined_at;
     VALUE refinements, activated_refinements;
     rb_thread_t *th = GET_THREAD();
-    VALUE block_handler = rb_vm_frame_block_handler(th->cfp);
+    VALUE block_handler = rb_vm_frame_block_handler(th->ec.cfp);
 
     if (block_handler == VM_BLOCK_HANDLER_NONE) {
 	rb_raise(rb_eArgError, "no block given");
@@ -1318,6 +1482,7 @@ static void
 ignored_block(VALUE module, const char *klass)
 {
     const char *anon = "";
+    Check_Type(module, T_MODULE);
     if (!RTEST(rb_search_class_path(module))) {
 	anon = ", maybe for Module.new";
     }
@@ -1404,6 +1569,16 @@ rb_mod_s_used_modules(void)
     return rb_funcall(ary, rb_intern("uniq"), 0);
 }
 
+/*!
+ * Calls \c #initialize method of \a obj with the given arguments.
+ *
+ * It also forwards the given block to \c #initialize if given.
+ *
+ * \param[in] obj the receiver object
+ * \param[in] argc the number of arguments
+ * \param[in] argv a pointer to the array of arguments
+ * \ingroup object
+ */
 void
 rb_obj_call_init(VALUE obj, int argc, const VALUE *argv)
 {
@@ -1411,6 +1586,12 @@ rb_obj_call_init(VALUE obj, int argc, const VALUE *argv)
     rb_funcallv(obj, idInitialize, argc, argv);
 }
 
+/*!
+ * Extend the object with the module.
+ *
+ * Same as \c Module\#extend_object.
+ * \ingroup class
+ */
 void
 rb_extend_object(VALUE obj, VALUE module)
 {
@@ -1543,7 +1724,7 @@ top_using(VALUE self, VALUE module)
 static const VALUE *
 errinfo_place(rb_thread_t *th)
 {
-    rb_control_frame_t *cfp = th->cfp;
+    rb_control_frame_t *cfp = th->ec.cfp;
     rb_control_frame_t *end_cfp = RUBY_VM_END_CONTROL_FRAME(th);
 
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
@@ -1570,7 +1751,7 @@ get_thread_errinfo(rb_thread_t *th)
 	return *ptr;
     }
     else {
-	return th->errinfo;
+	return th->ec.errinfo;
     }
 }
 
@@ -1586,45 +1767,34 @@ errinfo_getter(ID id)
     return get_errinfo();
 }
 
-#if 0
-static void
-errinfo_setter(VALUE val, ID id, VALUE *var)
-{
-    if (!NIL_P(val) && !rb_obj_is_kind_of(val, rb_eException)) {
-	rb_raise(rb_eTypeError, "assigning non-exception to $!");
-    }
-    else {
-	const VALUE *ptr = errinfo_place(GET_THREAD());
-	if (ptr) {
-	    *ptr = val;
-	}
-	else {
-	    rb_raise(rb_eRuntimeError, "errinfo_setter: not in rescue clause.");
-	}
-    }
-}
-#endif
-
+/*! The current exception in the current thread.
+ *
+ * Same as \c $! in Ruby.
+ * \return the current exception or \c Qnil
+ * \ingroup exception
+ */
 VALUE
 rb_errinfo(void)
 {
     rb_thread_t *th = GET_THREAD();
-    return th->errinfo;
+    return th->ec.errinfo;
 }
 
+/*! Sets the current exception (\c $!) to the given value
+ *
+ * \param[in] err an \c Exception object or \c Qnil.
+ * \exception TypeError if \a err is neither an exception nor \c nil.
+ * \note this function does not raise the exception.
+ *   Use \c rb_raise() when you want to raise.
+ * \ingroup exception
+ */
 void
 rb_set_errinfo(VALUE err)
 {
     if (!NIL_P(err) && !rb_obj_is_kind_of(err, rb_eException)) {
 	rb_raise(rb_eTypeError, "assigning non-exception to $!");
     }
-    GET_THREAD()->errinfo = err;
-}
-
-VALUE
-rb_rubylevel_errinfo(void)
-{
-    return get_errinfo();
+    GET_THREAD()->ec.errinfo = err;
 }
 
 static VALUE
@@ -1761,6 +1931,7 @@ Init_eval(void)
     rb_define_global_function("untrace_var", rb_f_untrace_var, -1);	/* in variable.c */
 
     rb_vm_register_special_exception(ruby_error_reenter, rb_eFatal, "exception reentered");
+    rb_vm_register_special_exception(ruby_error_stackfatal, rb_eFatal, "machine stack overflow in critical region");
 
     id_signo = rb_intern_const("signo");
     id_status = rb_intern_const("status");

@@ -79,6 +79,8 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("def\n", stringio.gets(""))
     assert_raise(TypeError){StringIO.new("").gets(1, 1)}
     assert_nothing_raised {StringIO.new("").gets(nil, nil)}
+
+    assert_string("", Encoding::UTF_8, StringIO.new("foo").gets(0))
   end
 
   def test_gets_chomp
@@ -94,6 +96,8 @@ class TestStringIO < Test::Unit::TestCase
     stringio = StringIO.new("abc\n\ndef\n")
     assert_equal("abc\n", stringio.gets("", chomp: true))
     assert_equal("def", stringio.gets("", chomp: true))
+
+    assert_string("", Encoding::UTF_8, StringIO.new("\n").gets(chomp: true))
   end
 
   def test_gets_chomp_eol
@@ -453,6 +457,9 @@ class TestStringIO < Test::Unit::TestCase
     f.ungetc("y".ord)
     assert_equal("y", f.getc)
     assert_equal("2", f.getc)
+
+    assert_raise(RangeError) {f.ungetc(0x1ffffff)}
+    assert_raise(RangeError) {f.ungetc(0xffffffffffffff)}
   ensure
     f.close unless f.closed?
   end
@@ -567,13 +574,20 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("\u3042\u3044", f.read(nil, nil), bug5207)
     f.rewind
     s = ""
-    f.read(nil, s)
+    assert_same(s, f.read(nil, s))
     assert_equal("\u3042\u3044", s, bug5207)
     f.rewind
     # not empty buffer
     s = "0123456789"
-    f.read(nil, s)
+    assert_same(s, f.read(nil, s))
     assert_equal("\u3042\u3044", s)
+
+    bug13806 = '[ruby-core:82349] [Bug #13806]'
+    assert_string("", Encoding::UTF_8, f.read, bug13806)
+    assert_string("", Encoding::UTF_8, f.read(nil, nil), bug13806)
+    s.force_encoding(Encoding::US_ASCII)
+    assert_same(s, f.read(nil, s))
+    assert_string("", Encoding::UTF_8, s, bug13806)
   end
 
   def test_readpartial
@@ -752,5 +766,9 @@ class TestStringIO < Test::Unit::TestCase
       s.gets("xxx", limit)
       assert_equal(0x100000, s.pos)
     end;
+  end
+
+  def assert_string(content, encoding, str, mesg = nil)
+    assert_equal([content, encoding], [str, str.encoding], mesg)
   end
 end

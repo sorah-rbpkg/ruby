@@ -1,8 +1,8 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # tempfile - manipulates temporary files
 #
-# $Id: tempfile.rb 56865 2016-11-21 23:05:41Z normal $
+# $Id$
 #
 
 require 'delegate'
@@ -227,7 +227,7 @@ class Tempfile < DelegateClass(File)
     if !@tmpfile.closed?
       @tmpfile.size # File#size calls rb_io_flush_raw()
     else
-      File.size?(@tmpfile.path)
+      File.size(@tmpfile.path)
     end
   end
   alias length size
@@ -334,8 +334,18 @@ def Tempfile.create(basename="", tmpdir=nil, mode: 0, **options)
     begin
       yield tmpfile
     ensure
-      tmpfile.close
-      File.unlink tmpfile
+      unless tmpfile.closed?
+        if File.identical?(tmpfile, tmpfile.path)
+          unlinked = File.unlink tmpfile.path rescue nil
+        end
+        tmpfile.close
+      end
+      unless unlinked
+        begin
+          File.unlink tmpfile.path
+        rescue Errno::ENOENT
+        end
+      end
     end
   else
     tmpfile

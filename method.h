@@ -2,7 +2,7 @@
 
   method.h -
 
-  $Author: ktsj $
+  $Author$
   created at: Wed Jul 15 20:02:33 2009
 
   Copyright (C) 2009 Koichi Sasada
@@ -144,10 +144,16 @@ typedef struct rb_method_refined_struct {
     const VALUE owner;
 } rb_method_refined_t;
 
-typedef struct rb_method_definition_struct {
-    rb_method_type_t type :  8; /* method type */
-    int alias_count       : 28;
-    int complemented_count: 28;
+enum method_optimized_type {
+    OPTIMIZED_METHOD_TYPE_SEND,
+    OPTIMIZED_METHOD_TYPE_CALL,
+    OPTIMIZED_METHOD_TYPE__MAX
+};
+
+PACKED_STRUCT_UNALIGNED(struct rb_method_definition_struct {
+    unsigned int type :  4; /* method type */
+    int alias_count : 28;
+    int complemented_count : 28;
 
     union {
 	rb_method_iseq_t iseq;
@@ -157,16 +163,13 @@ typedef struct rb_method_definition_struct {
 	rb_method_refined_t refined;
 
 	const VALUE proc;                 /* should be marked */
-	enum method_optimized_type {
-	    OPTIMIZED_METHOD_TYPE_SEND,
-	    OPTIMIZED_METHOD_TYPE_CALL,
-
-	    OPTIMIZED_METHOD_TYPE__MAX
-	} optimize_type;
+	enum method_optimized_type optimize_type;
     } body;
 
     ID original_id;
-} rb_method_definition_t;
+});
+
+typedef struct rb_method_definition_struct rb_method_definition_t;
 
 #define UNDEFINED_METHOD_ENTRY_P(me) (!(me) || !(me)->def || (me)->def->type == VM_METHOD_TYPE_UNDEF)
 #define UNDEFINED_REFINED_METHOD_P(def) \
@@ -184,13 +187,13 @@ rb_method_entry_t *rb_method_entry_create(ID called_id, VALUE klass, rb_method_v
 const rb_method_entry_t *rb_method_entry_at(VALUE obj, ID id);
 
 const rb_method_entry_t *rb_method_entry(VALUE klass, ID id);
-const rb_method_entry_t *rb_method_entry_with_refinements(VALUE klass, ID id);
-const rb_method_entry_t *rb_method_entry_without_refinements(VALUE klass, ID id);
+const rb_method_entry_t *rb_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class);
+const rb_method_entry_t *rb_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_class);
 const rb_method_entry_t *rb_resolve_refined_method(VALUE refinements, const rb_method_entry_t *me);
 
 const rb_callable_method_entry_t *rb_callable_method_entry(VALUE klass, ID id);
-const rb_callable_method_entry_t *rb_callable_method_entry_with_refinements(VALUE klass, ID id);
-const rb_callable_method_entry_t *rb_callable_method_entry_without_refinements(VALUE klass, ID id);
+const rb_callable_method_entry_t *rb_callable_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class);
+const rb_callable_method_entry_t *rb_callable_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_class);
 const rb_callable_method_entry_t *rb_resolve_refined_method_callable(VALUE refinements, const rb_callable_method_entry_t *me);
 
 int rb_method_entry_arity(const rb_method_entry_t *me);

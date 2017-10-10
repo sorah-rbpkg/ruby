@@ -2,7 +2,7 @@
 
   file.c -
 
-  $Author: nobu $
+  $Author$
   created at: Mon Nov 15 12:24:34 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -23,9 +23,11 @@
 #include <CoreFoundation/CFString.h>
 #endif
 
+#include "id.h"
 #include "internal.h"
 #include "ruby/io.h"
 #include "ruby/util.h"
+#include "ruby/thread.h"
 #include "dln.h"
 #include "encindex.h"
 
@@ -126,6 +128,14 @@ int flock(int, int);
 #define STAT(p, s)	stat((p), (s))
 #endif
 
+#if defined _WIN32 || defined __APPLE__
+# define USE_OSPATH 1
+# define TO_OSPATH(str) rb_str_encode_ospath(str)
+#else
+# define USE_OSPATH 0
+# define TO_OSPATH(str) (str)
+#endif
+
 VALUE rb_cFile;
 VALUE rb_mFileTest;
 VALUE rb_cStat;
@@ -178,10 +188,7 @@ rb_get_path_check_to_string(VALUE obj, int level)
 	return obj;
     }
     CONST_ID(to_path, "to_path");
-    tmp = rb_check_funcall(obj, to_path, 0, 0);
-    if (tmp == Qundef) {
-	tmp = obj;
-    }
+    tmp = rb_check_funcall_default(obj, to_path, 0, 0, obj);
     StringValue(tmp);
     return tmp;
 }
@@ -195,12 +202,14 @@ rb_get_path_check_convert(VALUE obj, VALUE tmp, int level)
     }
 
     check_path_encoding(tmp);
-    StringValueCStr(tmp);
+    if (!rb_str_to_cstr(tmp)) {
+	rb_raise(rb_eArgError, "path name contains null byte");
+    }
 
     return rb_str_new4(tmp);
 }
 
-static VALUE
+VALUE
 rb_get_path_check(VALUE obj, int level)
 {
     VALUE tmp = rb_get_path_check_to_string(obj, level);
@@ -222,7 +231,7 @@ rb_get_path(VALUE obj)
 VALUE
 rb_str_encode_ospath(VALUE path)
 {
-#if defined _WIN32 || defined __APPLE__
+#if USE_OSPATH
     int encidx = ENCODING_GET(path);
 #ifdef _WIN32
     if (encidx == ENCINDEX_ASCII) {
@@ -349,7 +358,7 @@ static VALUE
 apply2files(void (*func)(const char *, VALUE, void *), int argc, VALUE *argv, void *arg)
 {
     long i;
-    volatile VALUE path;
+    VALUE path;
 
     for (i=0; i<argc; i++) {
 	const char *s;
@@ -370,6 +379,12 @@ apply2files(void (*func)(const char *, VALUE, void *), int argc, VALUE *argv, vo
  *  Returns the pathname used to create <i>file</i> as a string. Does
  *  not normalize the name.
  *
+ *  The pathname may not point the file corresponding to <i>file</i>.
+ *  For instance, pathname becomes inaccurate when file has been moved or deleted.
+ *
+ *  This method raises <code>IOError</code> for a <i>file</i> created using
+ *  <code>File::Constants::TMPFILE</code> because they don't have a pathname.
+ *
  *     File.new("testfile").path               #=> "testfile"
  *     File.new("/tmp/../tmp/xxx", "w").path   #=> "/tmp/../tmp/xxx"
  *
@@ -382,7 +397,11 @@ rb_file_path(VALUE obj)
 
     fptr = RFILE(rb_io_taint_check(obj))->fptr;
     rb_io_check_initialized(fptr);
-    if (NIL_P(fptr->pathv)) return Qnil;
+
+    if (NIL_P(fptr->pathv)) {
+        rb_raise(rb_eIOError, "File is unnamed (TMPFILE?)");
+    }
+
     return rb_obj_taint(rb_str_dup(fptr->pathv));
 }
 
@@ -1004,21 +1023,50 @@ rb_stat_inspect(VALUE self)
     return str;
 }
 
+typedef struct no_gvl_stat_data {
+    struct stat *st;
+    union {
+	const char *path;
+	int fd;
+    } file;
+} no_gvl_stat_data;
+
+static VALUE
+no_gvl_fstat(void *data)
+{
+    no_gvl_stat_data *arg = data;
+    return (VALUE)fstat(arg->file.fd, arg->st);
+}
+
+static void *
+no_gvl_stat(void * data)
+{
+    no_gvl_stat_data *arg = data;
+    return (void *)(VALUE)STAT(arg->file.path, arg->st);
+}
+
 static int
 rb_stat(VALUE file, struct stat *st)
 {
     VALUE tmp;
+    VALUE result;
+    no_gvl_stat_data data;
 
-    tmp = rb_check_convert_type(file, T_FILE, "IO", "to_io");
+    data.st = st;
+    tmp = rb_check_convert_type_with_id(file, T_FILE, "IO", idTo_io);
     if (!NIL_P(tmp)) {
 	rb_io_t *fptr;
 
 	GetOpenFile(tmp, fptr);
-	return fstat(fptr->fd, st);
+	data.file.fd = fptr->fd;
+	result = rb_thread_io_blocking_region(no_gvl_fstat, &data, fptr->fd);
+	return (int)result;
     }
     FilePathValue(file);
     file = rb_str_encode_ospath(file);
-    return STAT(StringValueCStr(file), st);
+    data.file.path = StringValueCStr(file);
+    result = (VALUE)rb_thread_call_without_gvl(no_gvl_stat, &data, RUBY_UBF_IO, NULL);
+    return (int)result;
 }
 
 #ifdef _WIN32
@@ -1028,7 +1076,7 @@ w32_io_info(VALUE *file, BY_HANDLE_FILE_INFORMATION *st)
     VALUE tmp;
     HANDLE f, ret = 0;
 
-    tmp = rb_check_convert_type(*file, T_FILE, "IO", "to_io");
+    tmp = rb_check_convert_type_with_id(*file, T_FILE, "IO", idTo_io);
     if (!NIL_P(tmp)) {
 	rb_io_t *fptr;
 
@@ -1133,6 +1181,27 @@ rb_io_stat(VALUE obj)
     return rb_stat_new(&st);
 }
 
+#ifdef HAVE_LSTAT
+static void *
+no_gvl_lstat(void *ptr)
+{
+    no_gvl_stat_data *arg = ptr;
+    return (void *)(VALUE)lstat(arg->file.path, arg->st);
+}
+
+static int
+lstat_without_gvl(const char *path, struct stat *st)
+{
+    no_gvl_stat_data data;
+
+    data.file.path = path;
+    data.st = st;
+
+    return (int)(VALUE)rb_thread_call_without_gvl(no_gvl_lstat, &data,
+						    RUBY_UBF_IO, NULL);
+}
+#endif /* HAVE_LSTAT */
+
 /*
  *  call-seq:
  *     File.lstat(file_name)   -> stat
@@ -1155,7 +1224,7 @@ rb_file_s_lstat(VALUE klass, VALUE fname)
 
     FilePathValue(fname);
     fname = rb_str_encode_ospath(fname);
-    if (lstat(StringValueCStr(fname), &st) == -1) {
+    if (lstat_without_gvl(StringValueCStr(fname), &st) == -1) {
 	rb_sys_fail_path(fname);
     }
     return rb_stat_new(&st);
@@ -1189,7 +1258,7 @@ rb_file_lstat(VALUE obj)
     GetOpenFile(obj, fptr);
     if (NIL_P(fptr->pathv)) return Qnil;
     path = rb_str_encode_ospath(fptr->pathv);
-    if (lstat(RSTRING_PTR(path), &st) == -1) {
+    if (lstat_without_gvl(RSTRING_PTR(path), &st) == -1) {
 	rb_sys_fail_path(fptr->pathv);
     }
     return rb_stat_new(&st);
@@ -1401,7 +1470,7 @@ rb_file_symlink_p(VALUE obj, VALUE fname)
 
     FilePathValue(fname);
     fname = rb_str_encode_ospath(fname);
-    if (lstat(StringValueCStr(fname), &st) < 0) return Qfalse;
+    if (lstat_without_gvl(StringValueCStr(fname), &st) < 0) return Qfalse;
     if (S_ISLNK(st.st_mode)) return Qtrue;
 #endif
 
@@ -1835,9 +1904,7 @@ check3rdbyte(VALUE fname, int mode)
 {
     struct stat st;
 
-    FilePathValue(fname);
-    fname = rb_str_encode_ospath(fname);
-    if (STAT(StringValueCStr(fname), &st) < 0) return Qfalse;
+    if (rb_stat(fname, &st) < 0) return Qfalse;
     if (st.st_mode & mode) return Qtrue;
     return Qfalse;
 }
@@ -2035,7 +2102,7 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
 
     FilePathValue(fname);
     fname = rb_str_encode_ospath(fname);
-    if (lstat(StringValueCStr(fname), &st) == -1) {
+    if (lstat_without_gvl(StringValueCStr(fname), &st) == -1) {
 	rb_sys_fail_path(fname);
     }
 
@@ -2825,6 +2892,19 @@ rb_file_s_unlink(int argc, VALUE *argv, VALUE klass)
     return apply2files(unlink_internal, argc, argv, 0);
 }
 
+struct rename_args {
+    const char *src;
+    const char *dst;
+};
+
+static void *
+no_gvl_rename(void *ptr)
+{
+    struct rename_args *ra = ptr;
+
+    return (void *)(VALUE)rename(ra->src, ra->dst);
+}
+
 /*
  *  call-seq:
  *     File.rename(old_name, new_name)   -> 0
@@ -2838,26 +2918,27 @@ rb_file_s_unlink(int argc, VALUE *argv, VALUE klass)
 static VALUE
 rb_file_s_rename(VALUE klass, VALUE from, VALUE to)
 {
-    const char *src, *dst;
+    struct rename_args ra;
     VALUE f, t;
 
     FilePathValue(from);
     FilePathValue(to);
     f = rb_str_encode_ospath(from);
     t = rb_str_encode_ospath(to);
-    src = StringValueCStr(f);
-    dst = StringValueCStr(t);
+    ra.src = StringValueCStr(f);
+    ra.dst = StringValueCStr(t);
 #if defined __CYGWIN__
     errno = 0;
 #endif
-    if (rename(src, dst) < 0) {
+    if ((int)(VALUE)rb_thread_call_without_gvl(no_gvl_rename, &ra,
+					 RUBY_UBF_IO, 0) < 0) {
 	int e = errno;
 #if defined DOSISH
 	switch (e) {
 	  case EEXIST:
-	    if (chmod(dst, 0666) == 0 &&
-		unlink(dst) == 0 &&
-		rename(src, dst) == 0)
+	    if (chmod(ra.dst, 0666) == 0 &&
+		unlink(ra.dst) == 0 &&
+		rename(ra.src, ra.dst) == 0)
 		return INT2FIX(0);
 	}
 #endif
@@ -3568,7 +3649,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	struct stat st;
 	p = (char *)s;
 	len = strlen(p);
-	if (lstat(buf, &st) == 0 && S_ISLNK(st.st_mode)) {
+	if (lstat_without_gvl(buf, &st) == 0 && S_ISLNK(st.st_mode)) {
 	    is_symlink = 1;
 	    if (len > 4 && STRCASECMP(p + len - 4, ".lnk") != 0) {
 		lnk_added = 1;
@@ -3757,8 +3838,29 @@ rb_file_s_absolute_path(int argc, const VALUE *argv)
     return rb_file_absolute_path(argv[0], argc > 1 ? argv[1] : Qnil);
 }
 
-static void
-realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE loopcheck, int strict, int last)
+#ifdef __native_client__
+VALUE
+rb_realpath_internal(VALUE basedir, VALUE path, int strict)
+{
+    return path;
+}
+
+VALUE
+rb_check_realpath(VALUE basedir, VALUE path)
+{
+    return path;
+}
+#else
+enum rb_realpath_mode {
+    RB_REALPATH_CHECK,
+    RB_REALPATH_DIR,
+    RB_REALPATH_STRICT,
+    RB_REALPATH_MODE_MAX
+};
+
+static int
+realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved,
+	     VALUE loopcheck, enum rb_realpath_mode mode, int last)
 {
     const char *pend = unresolved + strlen(unresolved);
     rb_encoding *enc = rb_enc_get(*resolvedp);
@@ -3799,6 +3901,10 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE l
             checkval = rb_hash_aref(loopcheck, testpath);
             if (!NIL_P(checkval)) {
                 if (checkval == ID2SYM(resolving)) {
+		    if (mode == RB_REALPATH_CHECK) {
+			errno = ELOOP;
+			return -1;
+		    }
                     rb_syserr_fail_path(ELOOP, testpath);
                 }
                 else {
@@ -3808,16 +3914,16 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE l
             else {
                 struct stat sbuf;
                 int ret;
-                VALUE testpath2 = rb_str_encode_ospath(testpath);
 #ifdef __native_client__
-                ret = stat(RSTRING_PTR(testpath2), &sbuf);
+                ret = stat(RSTRING_PTR(testpath), &sbuf);
 #else
-                ret = lstat(RSTRING_PTR(testpath2), &sbuf);
+                ret = lstat_without_gvl(RSTRING_PTR(testpath), &sbuf);
 #endif
                 if (ret == -1) {
 		    int e = errno;
+		    if (mode == RB_REALPATH_CHECK) return -1;
 		    if (e == ENOENT) {
-                        if (strict || !last || *unresolved_firstsep)
+			if (mode == RB_REALPATH_STRICT || !last || *unresolved_firstsep)
 			    rb_syserr_fail_path(e, testpath);
                         *resolvedp = testpath;
                         break;
@@ -3829,7 +3935,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE l
 #ifdef HAVE_READLINK
                 if (S_ISLNK(sbuf.st_mode)) {
 		    VALUE link;
-		    volatile VALUE link_orig = Qnil;
+		    VALUE link_orig = Qnil;
 		    const char *link_prefix, *link_names;
                     long link_prefixlen;
                     rb_hash_aset(loopcheck, testpath, ID2SYM(resolving));
@@ -3846,7 +3952,9 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE l
 			*resolvedp = link;
 			*prefixlenp = link_prefixlen;
 		    }
-		    realpath_rec(prefixlenp, resolvedp, link_names, loopcheck, strict, *unresolved_firstsep == '\0');
+		    if (realpath_rec(prefixlenp, resolvedp, link_names,
+				     loopcheck, mode, !*unresolved_firstsep))
+			return -1;
 		    RB_GC_GUARD(link_orig);
 		    rb_hash_aset(loopcheck, testpath, rb_str_dup_frozen(*resolvedp));
                 }
@@ -3860,23 +3968,17 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE l
             }
         }
     }
+    return 0;
 }
 
-#ifdef __native_client__
-VALUE
-rb_realpath_internal(VALUE basedir, VALUE path, int strict)
-{
-    return path;
-}
-#else
-VALUE
-rb_realpath_internal(VALUE basedir, VALUE path, int strict)
+static VALUE
+rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
 {
     long prefixlen;
     VALUE resolved;
-    volatile VALUE unresolved_path;
+    VALUE unresolved_path;
     VALUE loopcheck;
-    volatile VALUE curdir = Qnil;
+    VALUE curdir = Qnil;
 
     rb_encoding *enc, *origenc;
     char *path_names = NULL, *basedir_names = NULL, *curdir_names = NULL;
@@ -3887,9 +3989,12 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
 
     if (!NIL_P(basedir)) {
         FilePathValue(basedir);
-        basedir = rb_str_dup_frozen(basedir);
+        basedir = TO_OSPATH(rb_str_dup_frozen(basedir));
     }
 
+    enc = rb_enc_get(unresolved_path);
+    origenc = enc;
+    unresolved_path = TO_OSPATH(unresolved_path);
     RSTRING_GETMEM(unresolved_path, ptr, len);
     path_names = skipprefixroot(ptr, ptr + len, rb_enc_get(unresolved_path));
     if (ptr != path_names) {
@@ -3906,7 +4011,7 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
         }
     }
 
-    curdir = rb_dir_getwd();
+    curdir = rb_dir_getwd_ospath();
     RSTRING_GETMEM(curdir, ptr, len);
     curdir_names = skipprefixroot(ptr, ptr + len, rb_enc_get(curdir));
     resolved = rb_str_subseq(curdir, 0, curdir_names - ptr);
@@ -3914,7 +4019,6 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
   root_found:
     RSTRING_GETMEM(resolved, prefixptr, prefixlen);
     pend = prefixptr + prefixlen;
-    enc = rb_enc_get(resolved);
     ptr = chompdirsep(prefixptr, pend, enc);
     if (ptr < pend) {
         prefixlen = ++ptr - prefixptr;
@@ -3929,7 +4033,6 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
     }
 #endif
 
-    origenc = enc;
     switch (rb_enc_to_index(enc)) {
       case ENCINDEX_ASCII:
       case ENCINDEX_US_ASCII:
@@ -3937,17 +4040,44 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
     }
 
     loopcheck = rb_hash_new();
-    if (curdir_names)
-        realpath_rec(&prefixlen, &resolved, curdir_names, loopcheck, 1, 0);
-    if (basedir_names)
-        realpath_rec(&prefixlen, &resolved, basedir_names, loopcheck, 1, 0);
-    realpath_rec(&prefixlen, &resolved, path_names, loopcheck, strict, 1);
+    if (curdir_names) {
+	if (realpath_rec(&prefixlen, &resolved, curdir_names, loopcheck, mode, 0))
+	    return Qnil;
+    }
+    if (basedir_names) {
+	if (realpath_rec(&prefixlen, &resolved, basedir_names, loopcheck, mode, 0))
+	    return Qnil;
+    }
+    if (realpath_rec(&prefixlen, &resolved, path_names, loopcheck, mode, 1))
+	return Qnil;
 
-    if (origenc != enc && rb_enc_str_asciionly_p(resolved))
-	rb_enc_associate(resolved, origenc);
+    if (origenc != rb_enc_get(resolved)) {
+	if (rb_enc_str_asciionly_p(resolved)) {
+	    rb_enc_associate(resolved, origenc);
+	}
+	else {
+	    resolved = rb_str_conv_enc(resolved, NULL, origenc);
+	}
+    }
 
     OBJ_TAINT(resolved);
+    RB_GC_GUARD(unresolved_path);
+    RB_GC_GUARD(curdir);
     return resolved;
+}
+
+VALUE
+rb_realpath_internal(VALUE basedir, VALUE path, int strict)
+{
+    const enum rb_realpath_mode mode =
+	strict ? RB_REALPATH_STRICT : RB_REALPATH_DIR;
+    return rb_check_realpath_internal(basedir, path, mode);
+}
+
+VALUE
+rb_check_realpath(VALUE basedir, VALUE path)
+{
+    return rb_check_realpath_internal(basedir, path, RB_REALPATH_CHECK);
 }
 #endif
 
@@ -4097,7 +4227,8 @@ ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encodin
  *  call-seq:
  *     File.basename(file_name [, suffix] )  ->  base_name
  *
- *  Returns the last component of the filename given in <i>file_name</i>,
+ *  Returns the last component of the filename given in
+ *  <i>file_name</i> (after first stripping trailing separators),
  *  which can be formed using both <code>File::SEPARATOR</code> and
  *  <code>File::ALT_SEPARATOR</code> as the separator when
  *  <code>File::ALT_SEPARATOR</code> is not <code>nil</code>. If
@@ -4160,9 +4291,10 @@ rb_file_s_basename(int argc, VALUE *argv)
  *     File.dirname(file_name)  ->  dir_name
  *
  *  Returns all components of the filename given in <i>file_name</i>
- *  except the last one. The filename can be formed using both
- *  <code>File::SEPARATOR</code> and <code>File::ALT_SEPARATOR</code> as the
- *  separator when <code>File::ALT_SEPARATOR</code> is not <code>nil</code>.
+ *  except the last one (after first stripping trailing separators).
+ *  The filename can be formed using both <code>File::SEPARATOR</code>
+ *  and <code>File::ALT_SEPARATOR</code> as the separator when
+ *  <code>File::ALT_SEPARATOR</code> is not <code>nil</code>.
  *
  *     File.dirname("/home/gumby/work/ruby.rb")   #=> "/home/gumby/work"
  */
@@ -4357,20 +4489,17 @@ rb_file_s_split(VALUE klass, VALUE path)
     return rb_assoc_new(rb_file_dirname(path), rb_file_s_basename(1,&path));
 }
 
-static VALUE separator;
-
-static VALUE rb_file_join(VALUE ary, VALUE sep);
+static VALUE rb_file_join(VALUE ary);
 
 static VALUE
-file_inspect_join(VALUE ary, VALUE argp, int recur)
+file_inspect_join(VALUE ary, VALUE arg, int recur)
 {
-    VALUE *arg = (VALUE *)argp;
-    if (recur || ary == arg[0]) rb_raise(rb_eArgError, "recursive array");
-    return rb_file_join(arg[0], arg[1]);
+    if (recur || ary == arg) rb_raise(rb_eArgError, "recursive array");
+    return rb_file_join(arg);
 }
 
 static VALUE
-rb_file_join(VALUE ary, VALUE sep)
+rb_file_join(VALUE ary)
 {
     long len, i;
     VALUE result, tmp;
@@ -4391,10 +4520,7 @@ rb_file_join(VALUE ary, VALUE sep)
 	    len += 10;
 	}
     }
-    if (!NIL_P(sep)) {
-	StringValue(sep);
-	len += RSTRING_LEN(sep) * (RARRAY_LEN(ary) - 1);
-    }
+    len += RARRAY_LEN(ary) - 1;
     result = rb_str_buf_new(len);
     RBASIC_CLEAR_CLASS(result);
     OBJ_INFECT(result, ary);
@@ -4410,11 +4536,7 @@ rb_file_join(VALUE ary, VALUE sep)
 		rb_raise(rb_eArgError, "recursive array");
 	    }
 	    else {
-		VALUE args[2];
-
-		args[0] = tmp;
-		args[1] = sep;
-		tmp = rb_exec_recursive(file_inspect_join, ary, (VALUE)args);
+		tmp = rb_exec_recursive(file_inspect_join, ary, tmp);
 	    }
 	    break;
 	  default:
@@ -4425,15 +4547,13 @@ rb_file_join(VALUE ary, VALUE sep)
 	if (i == 0) {
 	    rb_enc_copy(result, tmp);
 	}
-	else if (!NIL_P(sep)) {
+	else {
 	    tail = chompdirsep(name, name + len, rb_enc_get(result));
 	    if (RSTRING_PTR(tmp) && isdirsep(RSTRING_PTR(tmp)[0])) {
 		rb_str_set_len(result, tail - name);
 	    }
 	    else if (!*tail) {
-		enc = rb_enc_check(result, sep);
-		rb_str_buf_append(result, sep);
-		rb_enc_associate(result, enc);
+		rb_str_cat(result, "/", 1);
 	    }
 	}
 	enc = rb_enc_check(result, tmp);
@@ -4450,7 +4570,7 @@ rb_file_join(VALUE ary, VALUE sep)
  *     File.join(string, ...)  ->  string
  *
  *  Returns a new string formed by joining the strings using
- *  <code>File::SEPARATOR</code>.
+ *  <code>"/"</code>.
  *
  *     File.join("usr", "mail", "gumby")   #=> "usr/mail/gumby"
  *
@@ -4459,7 +4579,7 @@ rb_file_join(VALUE ary, VALUE sep)
 static VALUE
 rb_file_s_join(VALUE klass, VALUE args)
 {
-    return rb_file_join(args, separator);
+    return rb_file_join(args);
 }
 
 #if defined(HAVE_TRUNCATE) || defined(HAVE_CHSIZE)
@@ -5546,6 +5666,7 @@ rb_stat_sticky(VALUE obj)
 #define HAVE_MKFIFO
 #endif
 
+#ifdef HAVE_MKFIFO
 /*
  *  call-seq:
  *     File.mkfifo(file_name, mode=0666)  => 0
@@ -5556,7 +5677,6 @@ rb_stat_sticky(VALUE obj)
  *  (mode & ~umask).
  */
 
-#ifdef HAVE_MKFIFO
 static VALUE
 rb_file_s_mkfifo(int argc, VALUE *argv)
 {
@@ -5643,9 +5763,9 @@ path_check_0(VALUE path, int execpath)
 	    && !(p && execpath && (st.st_mode & S_ISVTX))
 #endif
 	    && !access(p0, W_OK)) {
-	    rb_warn("Insecure world writable dir %s in %sPATH, mode 0%"
-		    PRI_MODET_PREFIX"o",
-		    p0, (execpath ? "" : "LOAD_"), st.st_mode);
+	    rb_enc_warn(enc, "Insecure world writable dir %s in %sPATH, mode 0%"
+			PRI_MODET_PREFIX"o",
+			p0, (execpath ? "" : "LOAD_"), st.st_mode);
 	    if (p) *p = '/';
 	    RB_GC_GUARD(path);
 	    return 0;
@@ -5849,7 +5969,7 @@ rb_find_file_safe(VALUE path, int safe_level)
     if (f[0] == '~') {
 	tmp = file_expand_path_1(path);
 	if (safe_level >= 1 && OBJ_TAINTED(tmp)) {
-	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
+	    rb_raise(rb_eSecurityError, "loading from unsafe file %"PRIsVALUE, tmp);
 	}
 	path = copy_path_class(tmp, path);
 	f = RSTRING_PTR(path);
@@ -5858,7 +5978,7 @@ rb_find_file_safe(VALUE path, int safe_level)
 
     if (expanded || rb_is_absolute_path(f) || is_explicit_relative(f)) {
 	if (safe_level >= 1 && !fpath_check(path)) {
-	    rb_raise(rb_eSecurityError, "loading from unsafe path %s", f);
+	    rb_raise(rb_eSecurityError, "loading from unsafe path %"PRIsVALUE, path);
 	}
 	if (!rb_file_load_ok(f)) return 0;
 	if (!expanded)
@@ -5890,7 +6010,7 @@ rb_find_file_safe(VALUE path, int safe_level)
 
   found:
     if (safe_level >= 1 && !fpath_check(tmp)) {
-	rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
+	rb_raise(rb_eSecurityError, "loading from unsafe file %"PRIsVALUE, tmp);
     }
 
     return copy_path_class(tmp, path);
@@ -5952,6 +6072,8 @@ static const char null_device[] =
 void
 Init_File(void)
 {
+    VALUE separator;
+
     rb_mFileTest = rb_define_module("FileTest");
     rb_cFile = rb_define_class("File", rb_cIO);
 
@@ -6021,7 +6143,7 @@ Init_File(void)
     rb_define_singleton_method(rb_cFile, "extname", rb_file_s_extname, 1);
     rb_define_singleton_method(rb_cFile, "path", rb_file_s_path, 1);
 
-    separator = rb_obj_freeze(rb_usascii_str_new2("/"));
+    separator = rb_fstring_cstr("/");
     /* separates directory parts in path */
     rb_define_const(rb_cFile, "Separator", separator);
     rb_define_const(rb_cFile, "SEPARATOR", separator);
@@ -6035,7 +6157,7 @@ Init_File(void)
     rb_define_const(rb_cFile, "ALT_SEPARATOR", Qnil);
 #endif
     /* path list separator */
-    rb_define_const(rb_cFile, "PATH_SEPARATOR", rb_obj_freeze(rb_str_new2(PATH_SEP)));
+    rb_define_const(rb_cFile, "PATH_SEPARATOR", rb_fstring_cstr(PATH_SEP));
 
     rb_define_method(rb_cIO, "stat",  rb_io_stat, 0); /* this is IO's method */
     rb_define_method(rb_cFile, "lstat",  rb_file_lstat, 0);
@@ -6142,7 +6264,7 @@ Init_File(void)
     rb_define_const(rb_mFConst, "LOCK_NB", INT2FIX(LOCK_NB));
 
     /* Name of the null device */
-    rb_define_const(rb_mFConst, "NULL", rb_obj_freeze(rb_usascii_str_new2(null_device)));
+    rb_define_const(rb_mFConst, "NULL", rb_fstring_cstr(null_device));
 
     rb_define_method(rb_cFile, "path",  rb_file_path, 0);
     rb_define_method(rb_cFile, "to_path",  rb_file_path, 0);

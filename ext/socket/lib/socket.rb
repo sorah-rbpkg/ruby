@@ -313,9 +313,9 @@ class BasicSocket < IO
   # but the non-blocking flag is set before the system call
   # and it doesn't retry the system call.
   #
-  # By specifying `exception: false`, the _opts_ hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that sendmsg_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol :wait_writable instead.
+  # return the symbol +:wait_writable+ instead.
   def sendmsg_nonblock(mesg, flags = 0, dest_sockaddr = nil, *controls,
                        exception: true)
     __sendmsg_nonblock(mesg, flags, dest_sockaddr, controls, exception)
@@ -361,9 +361,9 @@ class BasicSocket < IO
   # it is extended by IO::WaitReadable.
   # So IO::WaitReadable can be used to rescue the exceptions for retrying recv_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
-  # that recv_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol :wait_writable instead.
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
+  # that recv_nonblock should not raise an IO::WaitReadable exception, but
+  # return the symbol +:wait_readable+ instead.
   #
   # === See
   # * Socket#recvfrom
@@ -435,12 +435,30 @@ class BasicSocket < IO
   # but non-blocking flag is set before the system call
   # and it doesn't retry the system call.
   #
-  # By specifying `exception: false`, the _opts_ hash allows you to indicate
-  # that recvmsg_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol :wait_writable instead.
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
+  # that recvmsg_nonblock should not raise an IO::WaitReadable exception, but
+  # return the symbol +:wait_readable+ instead.
   def recvmsg_nonblock(dlen = nil, flags = 0, clen = nil,
                        scm_rights: false, exception: true)
     __recvmsg_nonblock(dlen, flags, clen, scm_rights, exception)
+  end
+
+  # Linux-specific optimizations to avoid fcntl for IO#read_nonblock
+  # and IO#write_nonblock using MSG_DONTWAIT
+  # Do other platforms suport MSG_DONTWAIT reliably?
+  if RUBY_PLATFORM =~ /linux/ && Socket.const_defined?(:MSG_DONTWAIT)
+    def read_nonblock(len, str = nil, exception: true) # :nodoc:
+      case rv = __recv_nonblock(len, 0, str, exception)
+      when '' # recv_nonblock returns empty string on EOF
+        exception ? raise(EOFError, 'end of file reached') : nil
+      else
+        rv
+      end
+    end
+
+    def write_nonblock(buf, exception: true) # :nodoc:
+      __sendmsg_nonblock(buf, 0, nil, nil, exception)
+    end
   end
 end
 
@@ -512,9 +530,9 @@ class Socket < BasicSocket
   # So IO::WaitReadable can be used to rescue the exceptions for retrying
   # recvfrom_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
-  # that accept_nonblock should not raise an IO::WaitReadable exception, but
-  # return the symbol :wait_readable instead.
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
+  # that recvfrom_nonblock should not raise an IO::WaitReadable exception, but
+  # return the symbol +:wait_readable+ instead.
   #
   # === See
   # * Socket#recvfrom
@@ -569,9 +587,9 @@ class Socket < BasicSocket
   # it is extended by IO::WaitReadable.
   # So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that accept_nonblock should not raise an IO::WaitReadable exception, but
-  # return the symbol :wait_readable instead.
+  # return the symbol +:wait_readable+ instead.
   #
   # === See
   # * Socket#accept
@@ -897,6 +915,7 @@ class Socket < BasicSocket
         ip_list << ai
       end
     }
+    ip_list.uniq!(&:to_sockaddr)
 
     if port == 0
       sockets = ip_sockets_port0(ip_list, false)
@@ -1188,9 +1207,9 @@ class Socket < BasicSocket
   # it is extended by IO::WaitWritable.
   # So IO::WaitWritable can be used to rescue the exceptions for retrying connect_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that connect_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol :wait_writable instead.
+  # return the symbol +:wait_writable+ instead.
   #
   # === See
   #  # Socket#connect
@@ -1246,9 +1265,9 @@ class UDPSocket < IPSocket
   # it is extended by IO::WaitReadable.
   # So IO::WaitReadable can be used to rescue the exceptions for retrying recvfrom_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
-  # that recvmsg_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol :wait_writable instead.
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
+  # that recvfrom_nonblock should not raise an IO::WaitReadable exception, but
+  # return the symbol +:wait_readable+ instead.
   #
   # === See
   # * Socket#recvfrom
@@ -1287,9 +1306,9 @@ class TCPServer < TCPSocket
   # it is extended by IO::WaitReadable.
   # So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that accept_nonblock should not raise an IO::WaitReadable exception, but
-  # return the symbol :wait_readable instead.
+  # return the symbol +:wait_readable+ instead.
   #
   # === See
   # * TCPServer#accept
@@ -1328,9 +1347,9 @@ class UNIXServer < UNIXSocket
   # it is extended by IO::WaitReadable.
   # So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that accept_nonblock should not raise an IO::WaitReadable exception, but
-  # return the symbol :wait_readable instead.
+  # return the symbol +:wait_readable+ instead.
   #
   # === See
   # * UNIXServer#accept

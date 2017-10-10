@@ -81,12 +81,6 @@ rb_class_clear_method_cache(VALUE klass, VALUE arg)
 }
 
 void
-rb_clear_cache(void)
-{
-    ONLY_FOR_INTERNAL_USE("rb_clear_cache()");
-}
-
-void
 rb_clear_constant_cache(void)
 {
     INC_GLOBAL_CONSTANT_STATE();
@@ -258,7 +252,7 @@ method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, 
 	  case VM_METHOD_TYPE_CFUNC:
 	    {
 		rb_method_cfunc_t *cfunc = (rb_method_cfunc_t *)opts;
-		setup_method_cfunc_struct(&def->body.cfunc, cfunc->func, cfunc->argc);
+		setup_method_cfunc_struct(UNALIGNED_MEMBER_PTR(def, body.cfunc), cfunc->func, cfunc->argc);
 		return;
 	    }
 	  case VM_METHOD_TYPE_ATTRSET:
@@ -270,10 +264,10 @@ method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, 
 
 		def->body.attr.id = (ID)(VALUE)opts;
 
-		cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
+		cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec.cfp);
 
 		if (cfp && (line = rb_vm_get_sourceline(cfp))) {
-		    VALUE location = rb_ary_new3(2, cfp->iseq->body->location.path, INT2FIX(line));
+		    VALUE location = rb_ary_new3(2, rb_iseq_path(cfp->iseq), INT2FIX(line));
 		    RB_OBJ_WRITE(me, &def->body.attr.location, rb_ary_freeze(location));
 		}
 		else {
@@ -285,7 +279,7 @@ method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, 
 	    RB_OBJ_WRITE(me, &def->body.proc, (VALUE)opts);
 	    return;
 	  case VM_METHOD_TYPE_NOTIMPLEMENTED:
-	    setup_method_cfunc_struct(&def->body.cfunc, rb_f_notimplement, -1);
+	    setup_method_cfunc_struct(UNALIGNED_MEMBER_PTR(def, body.cfunc), rb_f_notimplement, -1);
 	    return;
 	  case VM_METHOD_TYPE_OPTIMIZED:
 	    def->body.optimize_type = (enum method_optimized_type)opts;
@@ -547,6 +541,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 	if (RTEST(ruby_verbose) &&
 	    type != VM_METHOD_TYPE_UNDEF &&
 	    (old_def->alias_count == 0) &&
+	    !make_refined &&
 	    old_def->type != VM_METHOD_TYPE_UNDEF &&
 	    old_def->type != VM_METHOD_TYPE_ZSUPER &&
 	    old_def->type != VM_METHOD_TYPE_ALIAS) {
@@ -564,7 +559,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 		break;
 	    }
 	    if (iseq) {
-		rb_compile_warning(RSTRING_PTR(iseq->body->location.path),
+		rb_compile_warning(RSTRING_PTR(rb_iseq_path(iseq)),
 				   FIX2INT(iseq->body->location.first_lineno),
 				   "previous definition of %"PRIsVALUE" was here",
 				   rb_id2str(old_def->original_id));
@@ -701,6 +696,7 @@ search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
     rb_method_entry_t *me;
 
     for (me = 0; klass; klass = RCLASS_SUPER(klass)) {
+	RB_DEBUG_COUNTER_INC(mc_search_super);
 	if ((me = lookup_method_table(klass, id)) != 0) break;
     }
 
@@ -784,10 +780,12 @@ method_entry_get(VALUE klass, ID id, VALUE *defined_class_ptr)
 	verify_method_cache(klass, id, ent->defined_class, ent->me);
 #endif
 	if (defined_class_ptr) *defined_class_ptr = ent->defined_class;
+	RB_DEBUG_COUNTER_INC(mc_global_hit);
 	return ent->me;
     }
 #endif
 
+    RB_DEBUG_COUNTER_INC(mc_global_miss);
     return method_entry_get_without_cache(klass, id, defined_class_ptr);
 }
 
@@ -804,6 +802,7 @@ prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_
     const rb_callable_method_entry_t *cme;
 
     if (me && me->defined_class == 0) {
+	RB_DEBUG_COUNTER_INC(mc_cme_complement);
 	VM_ASSERT(RB_TYPE_P(defined_class, T_ICLASS) || RB_TYPE_P(defined_class, T_MODULE));
 	VM_ASSERT(me->defined_class == 0);
 
@@ -812,6 +811,7 @@ prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_
 	}
 
 	if (rb_id_table_lookup(mtbl, id, (VALUE *)&me)) {
+	    RB_DEBUG_COUNTER_INC(mc_cme_complement_hit);
 	    cme = (rb_callable_method_entry_t *)me;
 	    VM_ASSERT(callable_method_entry_p(cme));
 	}
@@ -863,31 +863,31 @@ method_entry_resolve_refinement(VALUE klass, ID id, int with_refinement, VALUE *
 }
 
 const rb_method_entry_t *
-rb_method_entry_with_refinements(VALUE klass, ID id)
+rb_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
-    return method_entry_resolve_refinement(klass, id, TRUE, NULL);
+    return method_entry_resolve_refinement(klass, id, TRUE, defined_class_ptr);
 }
 
 const rb_callable_method_entry_t *
-rb_callable_method_entry_with_refinements(VALUE klass, ID id)
+rb_callable_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
-    VALUE defined_class;
-    const rb_method_entry_t *me = method_entry_resolve_refinement(klass, id, TRUE, &defined_class);
-    return prepare_callable_method_entry(defined_class, id, me);
+    VALUE defined_class, *dcp = defined_class_ptr ? defined_class_ptr : &defined_class;
+    const rb_method_entry_t *me = method_entry_resolve_refinement(klass, id, TRUE, dcp);
+    return prepare_callable_method_entry(*dcp, id, me);
 }
 
 const rb_method_entry_t *
-rb_method_entry_without_refinements(VALUE klass, ID id)
+rb_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
-    return method_entry_resolve_refinement(klass, id, FALSE, NULL);
+    return method_entry_resolve_refinement(klass, id, FALSE, defined_class_ptr);
 }
 
 const rb_callable_method_entry_t *
-rb_callable_method_entry_without_refinements(VALUE klass, ID id)
+rb_callable_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
-    VALUE defined_class;
-    const rb_method_entry_t *me = method_entry_resolve_refinement(klass, id, FALSE, &defined_class);
-    return prepare_callable_method_entry(defined_class, id, me);
+    VALUE defined_class, *dcp = defined_class_ptr ? defined_class_ptr : &defined_class;
+    const rb_method_entry_t *me = method_entry_resolve_refinement(klass, id, FALSE, dcp);
+    return prepare_callable_method_entry(*dcp, id, me);
 }
 
 static const rb_method_entry_t *
@@ -1067,7 +1067,7 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
 int
 rb_method_boundp(VALUE klass, ID id, int ex)
 {
-    const rb_method_entry_t *me = rb_method_entry_without_refinements(klass, id);
+    const rb_method_entry_t *me = rb_method_entry_without_refinements(klass, id, NULL);
 
     if (me != 0) {
 	if ((ex & ~BOUND_RESPONDS) &&
@@ -1089,7 +1089,7 @@ static rb_method_visibility_t
 rb_scope_visibility_get(void)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
+    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec.cfp);
 
     if (!vm_env_cref_by_cref(cfp->ep)) {
 	return METHOD_VISI_PUBLIC;
@@ -1103,7 +1103,7 @@ static int
 rb_scope_module_func_check(void)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
+    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec.cfp);
 
     if (!vm_env_cref_by_cref(cfp->ep)) {
 	return FALSE;
@@ -1171,7 +1171,7 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
 void
 rb_undef(VALUE klass, ID id)
 {
-    rb_method_entry_t *me;
+    const rb_method_entry_t *me;
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class to undef method");
@@ -1182,6 +1182,9 @@ rb_undef(VALUE klass, ID id)
     }
 
     me = search_method(klass, id, 0);
+    if (me && me->def->type == VM_METHOD_TYPE_REFINED) {
+	me = rb_resolve_refined_method(Qnil, me);
+    }
 
     if (UNDEFINED_METHOD_ENTRY_P(me) ||
 	UNDEFINED_REFINED_METHOD_P(me->def)) {
@@ -1304,7 +1307,7 @@ check_definition(VALUE mod, VALUE mid, rb_method_visibility_t visi)
     const rb_method_entry_t *me;
     ID id = rb_check_id(&mid);
     if (!id) return Qfalse;
-    me = rb_method_entry_without_refinements(mod, id);
+    me = rb_method_entry_without_refinements(mod, id, NULL);
     if (me) {
 	if (METHOD_ENTRY_VISI(me) == visi) return Qtrue;
     }
@@ -1666,6 +1669,15 @@ rb_mod_public(int argc, VALUE *argv, VALUE module)
  *  defined methods to protected. With arguments, sets the named methods
  *  to have protected visibility.
  *  String arguments are converted to symbols.
+ *
+ *  If a method has protected visibility, it is callable only where
+ *  <code>self</code> of the context is the same as the method.
+ *  (method definition or instance_eval). This behavior is different from
+ *  Java's protected method. Usually <code>private</code> should be used.
+ *
+ *  Note that a protected method is slow because it can't use inline cache.
+ *
+ *  To show a private method on RDoc, use <code>:doc:</code> instead of this.
  */
 
 static VALUE
@@ -1693,6 +1705,8 @@ rb_mod_protected(int argc, VALUE *argv, VALUE module)
  *       private :a
  *     end
  *     Mod.private_instance_methods   #=> [:a, :c]
+ *
+ *  Note that to show a private method on RDoc, use <code>:doc:</code>.
  */
 
 static VALUE

@@ -10,7 +10,7 @@
 # All rights reserved.  You can redistribute and/or modify it under the same
 # terms as Ruby.
 #
-#   $Id: set.rb 56589 2016-11-05 09:23:14Z knu $
+#   $Id$
 #
 # == Overview
 #
@@ -475,6 +475,23 @@ class Set
     @hash.eql?(o.instance_variable_get(:@hash))
   end
 
+  # Returns true if obj is a member of the set, and false otherwise.
+  #
+  # Used in case statements:
+  #
+  #   case :apple
+  #   when Set[:potato, :carrot] then 'vegetable'
+  #   when Set[:apple, :banana]  then 'fruit'
+  #   end
+  #   #=> "fruit"
+  #
+  # Or by itself:
+  #
+  #   Set[1, 2, 3] === 2 #=> true
+  #   Set[1, 2, 3] === 4 #=> false
+  #
+  alias === include?
+
   # Classifies the set by the return value of the given block and
   # returns a hash of {value => set of elements} pairs.  The block is
   # called once for each element of the set, passing the element as
@@ -568,6 +585,8 @@ class Set
       ids.pop
     end
   end
+
+  alias to_s inspect
 
   def pretty_print(pp)  # :nodoc:
     pp.text sprintf('#<%s: {', self.class.name)
