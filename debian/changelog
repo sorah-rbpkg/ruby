@@ -5,6 +5,8 @@ ruby2.5 (2.5.0~preview1-1) UNRELEASED; urgency=medium
 
   [ Antonio Terceiro ]
   * Ruby 2.5
+  * debian/patches: import all of our remainin changes wrt upstream. All the
+    changes to tests were transformed into exclude files under test/excludes/
 
  -- Antonio Terceiro <terceiro@debian.org>  Tue, 10 Oct 2017 14:38:10 -0300
 

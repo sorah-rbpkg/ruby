@@ -1,0 +1,109 @@
+From: Christian Hofstaedtler <zeha@debian.org>
+Date: Tue, 10 Oct 2017 15:54:24 -0300
+Subject: Exclude tests that fail on Debian builds
+
+Some of these tests fail because of the sbuild environment, others fail
+on some Debian architectures, and others fail for some yet-unknown
+reason.
+
+Signed-off-by: Antonio Terceiro <terceiro@debian.org>
+Signed-off-by: Christian Hofstaedtler <zeha@debian.org>
+---
+ test/excludes/TestArray.rb            | 1 +
+ test/excludes/TestBeginEndBlock.rb    | 1 +
+ test/excludes/TestDir.rb              | 1 +
+ test/excludes/TestFile.rb             | 1 +
+ test/excludes/TestFileExhaustive.rb   | 1 +
+ test/excludes/TestGc.rb               | 1 +
+ test/excludes/TestMkmf/TestConfig.rb  | 1 +
+ test/excludes/TestProcess.rb          | 6 ++++++
+ test/excludes/TestRefinement.rb       | 2 ++
+ test/excludes/TestRubyOptimization.rb | 1 +
+ 10 files changed, 16 insertions(+)
+ create mode 100644 test/excludes/TestArray.rb
+ create mode 100644 test/excludes/TestBeginEndBlock.rb
+ create mode 100644 test/excludes/TestDir.rb
+ create mode 100644 test/excludes/TestFile.rb
+ create mode 100644 test/excludes/TestFileExhaustive.rb
+ create mode 100644 test/excludes/TestGc.rb
+ create mode 100644 test/excludes/TestMkmf/TestConfig.rb
+ create mode 100644 test/excludes/TestProcess.rb
+ create mode 100644 test/excludes/TestRefinement.rb
+ create mode 100644 test/excludes/TestRubyOptimization.rb
+
+diff --git a/test/excludes/TestArray.rb b/test/excludes/TestArray.rb
+new file mode 100644
+index 0000000..6625436
+--- /dev/null
++++ b/test/excludes/TestArray.rb
+@@ -0,0 +1 @@
++exclude :test_permutation_stack_error, "too expensive, will timeout on some Debian architectures"
+diff --git a/test/excludes/TestBeginEndBlock.rb b/test/excludes/TestBeginEndBlock.rb
+new file mode 100644
+index 0000000..cf72f0b
+--- /dev/null
++++ b/test/excludes/TestBeginEndBlock.rb
+@@ -0,0 +1 @@
++exclude :test_propagate_signaled, "FIXME: investigate failure"
+diff --git a/test/excludes/TestDir.rb b/test/excludes/TestDir.rb
+new file mode 100644
+index 0000000..ad5d650
+--- /dev/null
++++ b/test/excludes/TestDir.rb
+@@ -0,0 +1 @@
++exclude :test_home, "fails under sbuild"
+diff --git a/test/excludes/TestFile.rb b/test/excludes/TestFile.rb
+new file mode 100644
+index 0000000..460780c
+--- /dev/null
++++ b/test/excludes/TestFile.rb
+@@ -0,0 +1 @@
++exclude :test_open_tempfile_path, "fails under sbuild"
+diff --git a/test/excludes/TestFileExhaustive.rb b/test/excludes/TestFileExhaustive.rb
+new file mode 100644
+index 0000000..075fb40
+--- /dev/null
++++ b/test/excludes/TestFileExhaustive.rb
+@@ -0,0 +1 @@
++exclude :test_expand_path_for_existent_username, "fails under sbuild"
+diff --git a/test/excludes/TestGc.rb b/test/excludes/TestGc.rb
+new file mode 100644
+index 0000000..c381dbe
+--- /dev/null
++++ b/test/excludes/TestGc.rb
+@@ -0,0 +1 @@
++exclude :test_gc_parameter, "too expensive, timesout on some Debian architectures"
+diff --git a/test/excludes/TestMkmf/TestConfig.rb b/test/excludes/TestMkmf/TestConfig.rb
+new file mode 100644
+index 0000000..2e25548
+--- /dev/null
++++ b/test/excludes/TestMkmf/TestConfig.rb
+@@ -0,0 +1 @@
++exclude :test_dir_config, "fails for some reason"
+diff --git a/test/excludes/TestProcess.rb b/test/excludes/TestProcess.rb
+new file mode 100644
+index 0000000..5c10bb2
+--- /dev/null
++++ b/test/excludes/TestProcess.rb
+@@ -0,0 +1,6 @@
++exclude :test_exec_wordsplit, "fails under sbuild"
++exclude :test_popen_wordsplit, "fails under sbuild"
++exclude :test_popen_wordsplit_beginning_and_trailing_spaces, "fails under sbuild"
++exclude :test_spawn_wordsplit, "fails under sbuild"
++exclude :test_status_quit, "fails under sbuild"
++exclude :test_system_wordsplit, "fails under sbuild"
+diff --git a/test/excludes/TestRefinement.rb b/test/excludes/TestRefinement.rb
+new file mode 100644
+index 0000000..8f148fd
+--- /dev/null
++++ b/test/excludes/TestRefinement.rb
+@@ -0,0 +1,2 @@
++# Found on Debian arm*, powerpc buildds
++exclude :test_prepend_after_refine_wb_miss, "time consuming test"
+diff --git a/test/excludes/TestRubyOptimization.rb b/test/excludes/TestRubyOptimization.rb
+new file mode 100644
+index 0000000..6f1a4ba
+--- /dev/null
++++ b/test/excludes/TestRubyOptimization.rb
+@@ -0,0 +1 @@
++exclude :test_tailcall_interrupted_by_sigint, "hangs under sbuild"
