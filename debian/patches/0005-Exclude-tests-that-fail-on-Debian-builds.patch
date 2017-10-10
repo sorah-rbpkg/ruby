@@ -15,17 +15,19 @@ Signed-off-by: Christian Hofstaedtler <zeha@debian.org>
  test/excludes/TestFile.rb             | 1 +
  test/excludes/TestFileExhaustive.rb   | 1 +
  test/excludes/TestGc.rb               | 1 +
+ test/excludes/TestIO.rb               | 1 +
  test/excludes/TestMkmf/TestConfig.rb  | 1 +
  test/excludes/TestProcess.rb          | 6 ++++++
  test/excludes/TestRefinement.rb       | 2 ++
  test/excludes/TestRubyOptimization.rb | 1 +
- 10 files changed, 16 insertions(+)
+ 11 files changed, 17 insertions(+)
  create mode 100644 test/excludes/TestArray.rb
  create mode 100644 test/excludes/TestBeginEndBlock.rb
  create mode 100644 test/excludes/TestDir.rb
  create mode 100644 test/excludes/TestFile.rb
  create mode 100644 test/excludes/TestFileExhaustive.rb
  create mode 100644 test/excludes/TestGc.rb
+ create mode 100644 test/excludes/TestIO.rb
  create mode 100644 test/excludes/TestMkmf/TestConfig.rb
  create mode 100644 test/excludes/TestProcess.rb
  create mode 100644 test/excludes/TestRefinement.rb
@@ -73,6 +75,13 @@ index 0000000..c381dbe
 +++ b/test/excludes/TestGc.rb
 @@ -0,0 +1 @@
 +exclude :test_gc_parameter, "too expensive, timesout on some Debian architectures"
+diff --git a/test/excludes/TestIO.rb b/test/excludes/TestIO.rb
+new file mode 100644
+index 0000000..b7aed3d
+--- /dev/null
++++ b/test/excludes/TestIO.rb
+@@ -0,0 +1 @@
++exclude :test_pid, "fails under sbuild"
 diff --git a/test/excludes/TestMkmf/TestConfig.rb b/test/excludes/TestMkmf/TestConfig.rb
 new file mode 100644
 index 0000000..2e25548
