@@ -1,14 +1,25 @@
-ruby2.5 (2.5.0~preview1-1) UNRELEASED; urgency=medium
-
-  [ Christian Hofstaedtler ]
-  * tcltk extensions have been removed from Ruby core upstream in Ruby 2.4.
+ruby2.5 (2.5.0~preview1-1) unstable; urgency=medium
 
   [ Antonio Terceiro ]
-  * Ruby 2.5
-  * debian/patches: import all of our remainin changes wrt upstream. All the
+  * New upstream version 2.5.0~preview1
+  * debian/patches: import all of our remaining changes wrt upstream. All the
     changes to tests were transformed into exclude files under test/excludes/
+  * ruby2.5-dev: don't install *.a files anymore; they are not installed by
+    the upstream build system anymore.
+  * debian/rules: adapt removal of embedded certificate store in Rubygems
+  * debian/rules: also remove embedded certificate store from bundler
 
- -- Antonio Terceiro <terceiro@debian.org>  Tue, 10 Oct 2017 14:38:10 -0300
+  [ Christian Hofstaedtler ]
+  * Remove packaging for tcltk extension; it has been removed from Ruby core
+    upstream.
+  * Drop migration from old -dbg package
+  * Disable test for homedir expansion which fails in sbuild
+  * Upstream tarballs no longer come from git
+  * Update jquery in missing-sources
+  * d/copyright: Add info for darkfish icon set
+  * Build with default OpenSSL once again
+
+ -- Antonio Terceiro <terceiro@debian.org>  Tue, 10 Oct 2017 21:12:54 -0300
 
 ruby2.3 (2.3.3-1) unstable; urgency=medium
 
