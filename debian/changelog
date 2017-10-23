@@ -1,8 +1,23 @@
 ruby2.3 (2.3.3-1+deb9u2) stretch-security; urgency=high
 
-  * WIP
+  * asn1: fix out-of-bounds read in decoding constructed objects
+    [CVE-2017-14033] (Closes: #875928)
+    Original patch by Kazuki Yamaguchi; backported from the standalone openssl package
+  * lib/webrick/log.rb: sanitize any type of logs
+    [CVE-2017-10784] (Closes: #875931)
+    Original patch by Yusuke Endoh; backported to Ruby 2.3 by Usaku NAKAMURA
+  * fix Buffer underrun vulnerability in Kernel.sprintf
+    [CVE-2017-0898] (Closes: #875936)
+    Backported to Ruby 2.3 by Usaku NAKAMURA
+  * Whitelist classes and symbols that are in Gem spec YAML
+    [CVE-2017-0903] (Closes: #879231)
+    Original patch by Aaron Patterson; backported from the standalone Rubygems
+    package
+  * thread_pthread.c: do not wakeup inside child processes
+    Avoid child Ruby processed being stuck in a busy loop (Closes: #876377)
+    Original patch by Eric Wong
 
- -- Antonio Terceiro <terceiro@debian.org>  Sun, 22 Oct 2017 10:40:36 -0200
+ -- Antonio Terceiro <terceiro@debian.org>  Sun, 22 Oct 2017 12:45:48 -0200
 
 ruby2.3 (2.3.3-1+deb9u1) stretch-security; urgency=high
 
