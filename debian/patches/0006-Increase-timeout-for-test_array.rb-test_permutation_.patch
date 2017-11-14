@@ -13,7 +13,7 @@ Signed-off-by: Antonio Terceiro <terceiro@debian.org>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/test/ruby/test_array.rb b/test/ruby/test_array.rb
-index f27b8a5..bea1f37 100644
+index 26bf942..b87e8c4 100644
 --- a/test/ruby/test_array.rb
 +++ b/test/ruby/test_array.rb
 @@ -1841,7 +1841,8 @@ def test_permutation

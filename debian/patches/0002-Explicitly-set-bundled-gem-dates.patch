@@ -51,13 +51,13 @@ index 2c5ce6b..6251477 100644
    s.email = "nobu@ruby-lang.org"
    s.description = "add console capabilities to IO instances."
 diff --git a/ext/json/json.gemspec b/ext/json/json.gemspec
-index 9fb6fa1..f52da67 100644
+index e3c897a..96bfc4f 100644
 --- a/ext/json/json.gemspec
 +++ b/ext/json/json.gemspec
 @@ -1,6 +1,7 @@
  Gem::Specification.new do |s|
    s.name = "json"
-   s.version = "1.8.3"
+   s.version = "1.8.3.1"
 +  s.date = RUBY_RELEASE_DATE
    s.summary = "This json is bundled with Ruby"
    s.executables = []

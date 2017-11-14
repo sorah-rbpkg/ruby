@@ -14,7 +14,7 @@ Signed-off-by: Antonio Terceiro <terceiro@debian.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/lib/mkmf.rb b/lib/mkmf.rb
-index 3181b05..2502476 100644
+index 68f0b39..b8d65fd 100644
 --- a/lib/mkmf.rb
 +++ b/lib/mkmf.rb
 @@ -2275,7 +2275,7 @@ def create_makefile(target, srcprefix = nil)
