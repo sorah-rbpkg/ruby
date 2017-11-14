@@ -1,3 +1,84 @@
+Thu Sep 14 20:25:55 2017  Yusuke Endoh  <mame@ruby-lang.org>
+
+	lib/webrick/log.rb: sanitize any type of logs
+
+	It had failed to sanitize some type of exception messages.  Reported and
+	patched by Yusuke Endoh (mame) at https://hackerone.com/reports/223363
+
+Thu Sep 14 13:32:39 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	parse.y: empty hash in defined
+
+	* parse.y (command): NODE_ARRAY with NULL is invalid.  traversal
+	  in defined_expr0 is simplified than iseq_compile_each0.
+	  [ruby-core:82113] [Bug #13756]
+
+Thu Sep 14 13:26:31 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	string.c: fix false coderange
+
+	* string.c (rb_enc_str_scrub): enc can differ from the actual encoding
+	  of the string, the cached coderange is useless then. [Bug #13874]
+
+Thu Sep 14 13:24:51 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	parse.y: primary should not be 0
+
+	* parse.y (primary): should not be 0, since it can be a receiver.
+	  [ruby-core:82447] [Bug #13836]
+
+Thu Sep 14 13:19:30 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	vm_method.c: alias warning at refined method
+
+	* vm_method.c (rb_method_entry_make): suppress a warning at
+	  refined method which will not be redefined.
+	  [ruby-core:82385] [Bug #13817]
+
+Thu Sep 14 13:14:19 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_hash): st_index_t may not be
+	  fixable on 64bit mswin/mingw.
+
+	* ext/date/date_core.c (d_lite_hash): ditto.
+	  [Backport #13877]
+
+	* ext/openssl/ossl_bn.c (ossl_bn_hash): ditto.
+
+Sat Sep  9 23:05:31 2017  Kazuki Yamaguchi <k@rhe.jp>
+
+	asn1: fix out-of-bounds read in decoding constructed objects
+
+	* OpenSSL::ASN1.{decode,decode_all,traverse}: have a bug of
+	  out-of-bounds read. int_ossl_asn1_decode0_cons() does not give the
+	  correct available length to ossl_asn1_decode() when decoding the
+	  inner components of a constructed object. This can cause
+	  out-of-bounds read if a crafted input given.
+
+	Reference: https://hackerone.com/reports/170316
+	https://github.com/ruby/openssl/commit/1648afef33c1d97fb203c82291b8a61269e85d3b
+
+Sat Sep  9 22:57:24 2017  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/json: bump to version 1.8.3.1. [Backport #13853]
+
+Sat Sep  9 22:50:10 2017  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	A HTTP Header value must not contain CR or LF.
+	to_str -> to_s
+
+	* lib/net/http/header.rb (set_field): `val` can not have `to_str`.
+
+Sat Sep  9 22:42:22 2017  Kouhei Sutou  <kou@cozmixng.org>
+
+	* REXML: Fix a bug that unexpected methods can be called as a XPath
+	  function. [HackerOne:249295] Reported by Andrea Jegher. Thanks!!!
+
+Sat Sep  9 22:16:01 2017  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems: fix several vulnerabilities in RubyGems; bump to version
+	  2.5.2.1. [Backport #13842]
+
 Wed Aug  9 22:27:23 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_syntax.rb (test_invalid_{break,next}): use
