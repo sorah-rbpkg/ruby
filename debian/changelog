@@ -1,9 +1,9 @@
-ruby2.3 (2.3.5~20170902-1) UNRELEASED; urgency=medium
+ruby2.3 (2.3.5-1) UNRELEASED; urgency=medium
 
-  * New upstream snapshot based on the 2.3 maintenance branch.
+  * New upstream release.
     - Includes fix for building with GCC 7 (Closes: #853648)
   * Convert packaging from using a plain git history to using gbp-pq, thus
-    making debian individual patches explicitly presend in debian/patches
+    making debian individual patches explicitly present in debian/patches
   * Refresh debian/libruby2.3.symbols. There are some removed symbols, but
     they are never exposed in a header file so there should be no packages
     using them.
