@@ -1,14 +1,46 @@
-ruby2.3 (2.3.5-1) UNRELEASED; urgency=medium
+ruby2.3 (2.3.5-1) unstable; urgency=medium
 
   * New upstream release.
     - Includes fix for building with GCC 7 (Closes: #853648)
+    - Included security fixes
+      - Buffer underrun vulnerability in OpenSSL ASN1 decode
+        [CVE-2017-14033] (Closes: #875928)
+      - Escape sequence injection vulnerability in the Basic authentication of
+        WEBrick
+        [CVE-2017-10784] (Closes: #875931)
+      - Buffer underrun vulnerability in Kernel.sprintf
+        [CVE-2017-0898] (Closes: #875936)
+      - Multiple security vulnerabilities in Rubygems (Closes: #873802)
+        - DNS request hijacking vulnerability. Discovered by Jonathan
+          Claudius, fix by Samuel Giddins.
+          [CVE-2017-0902]
+        - ANSI escape sequence vulnerability. Discovered by Yusuke Endoh,
+          fix by Evan Phoenix.
+          [CVE-2017-0899]
+        - DOS vulernerability in the query command. Discovered by Yusuke
+          Endoh, fix by Samuel Giddins.
+          [CVE-2017-0900]
+        - Vulnerability in the gem installer that allowed a malicious gem to
+          overwrite arbitrary files. Discovered by Yusuke Endoh, fix by Samuel
+          Giddins.
+          [CVE-2017-0901]
+        - Arbitrary heap exposure problem in the JSON library
+          [CVE-2017-14064] (Closes: #873906)
+        - SMTP comment injection
+          [CVE-2015-9096] (Closes: #864860)
+        - IV Reuse in GCM Mode in the OpenSSL bindings
+          [CVE-2016-7798] (Closes: #842432)
+  * Whitelist classes and symbols that are in Gem spec YAML
+    [CVE-2017-0903] (Closes: #879231)
+    Original patch by Aaron Patterson; backported from the standalone Rubygems
+    package
   * Convert packaging from using a plain git history to using gbp-pq, thus
     making debian individual patches explicitly present in debian/patches
   * Refresh debian/libruby2.3.symbols. There are some removed symbols, but
     they are never exposed in a header file so there should be no packages
     using them.
 
- -- Antonio Terceiro <terceiro@debian.org>  Sat, 02 Sep 2017 11:03:40 -0300
+ -- Antonio Terceiro <terceiro@debian.org>  Tue, 14 Nov 2017 11:06:39 -0200
 
 ruby2.3 (2.3.3-1) unstable; urgency=medium
 
