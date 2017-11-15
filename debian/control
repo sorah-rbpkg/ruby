@@ -77,6 +77,7 @@ Depends: libgmp-dev,
          libruby2.5 (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
+Recommends: ruby2.5-doc
 Description: Header files for compiling extension modules for the Ruby 2.5
  Ruby is the interpreted scripting language for quick and easy
  object-oriented programming.  It has many features to process text
