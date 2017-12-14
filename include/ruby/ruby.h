@@ -478,7 +478,7 @@ enum ruby_value_type {
     RUBY_T_FIXNUM = 0x15,
     RUBY_T_UNDEF  = 0x16,
 
-    RUBY_T_IMEMO  = 0x1a,
+    RUBY_T_IMEMO  = 0x1a, /*!< @see imemo_type */
     RUBY_T_NODE   = 0x1b,
     RUBY_T_ICLASS = 0x1c,
     RUBY_T_ZOMBIE = 0x1d,
@@ -879,7 +879,7 @@ VALUE rb_obj_reveal(VALUE obj, VALUE klass); /* do not use this API to change kl
 
 #define ROBJECT_EMBED_LEN_MAX ROBJECT_EMBED_LEN_MAX
 #define ROBJECT_EMBED ROBJECT_EMBED
-enum {
+enum ruby_robject_flags {
     ROBJECT_EMBED_LEN_MAX = 3,
     ROBJECT_EMBED = RUBY_FL_USER1,
 
@@ -910,13 +910,6 @@ struct RObject {
      RCLASS_IV_INDEX_TBL(rb_obj_class(o)) : \
      ROBJECT(o)->as.heap.iv_index_tbl)
 
-#define RClass RClassDeprecated
-#ifndef __cplusplus
-DEPRECATED_TYPE(("RClass is internal use only"),
-struct RClass {
-    struct RBasic basic;
-});
-#endif
 #define RCLASS_SUPER(c) rb_class_get_superclass(c)
 #define RMODULE_IV_TBL(m) RCLASS_IV_TBL(m)
 #define RMODULE_CONST_TBL(m) RCLASS_CONST_TBL(m)
@@ -925,7 +918,7 @@ struct RClass {
 #define RMODULE_IS_OVERLAID RMODULE_IS_OVERLAID
 #define RMODULE_IS_REFINEMENT RMODULE_IS_REFINEMENT
 #define RMODULE_INCLUDED_INTO_REFINEMENT RMODULE_INCLUDED_INTO_REFINEMENT
-enum {
+enum ruby_rmodule_flags {
     RMODULE_IS_OVERLAID = RUBY_FL_USER2,
     RMODULE_IS_REFINEMENT = RUBY_FL_USER3,
     RMODULE_INCLUDED_INTO_REFINEMENT = RUBY_FL_USER4,
@@ -948,7 +941,7 @@ VALUE rb_float_new_in_heap(double);
 #define RSTRING_EMBED_LEN_SHIFT RSTRING_EMBED_LEN_SHIFT
 #define RSTRING_EMBED_LEN_MAX RSTRING_EMBED_LEN_MAX
 #define RSTRING_FSTR RSTRING_FSTR
-enum {
+enum ruby_rstring_flags {
     RSTRING_NOEMBED = RUBY_FL_USER1,
     RSTRING_EMBED_LEN_MASK = (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|
 			      RUBY_FL_USER5|RUBY_FL_USER6),
@@ -993,7 +986,7 @@ struct RString {
      ((ptrvar) = RSTRING(str)->as.ary, (lenvar) = RSTRING_EMBED_LEN(str)) : \
      ((ptrvar) = RSTRING(str)->as.heap.ptr, (lenvar) = RSTRING(str)->as.heap.len))
 
-enum {
+enum ruby_rarray_flags {
     RARRAY_EMBED_LEN_MAX = 3,
     RARRAY_EMBED_FLAG = RUBY_FL_USER1,
     /* RUBY_FL_USER2 is for ELTS_SHARED */
@@ -1279,6 +1272,11 @@ int rb_big_sign(VALUE);
 #define RB_OBJ_FREEZE_RAW(x) (void)(RBASIC(x)->flags |= RUBY_FL_FREEZE)
 #define RB_OBJ_FREEZE(x) rb_obj_freeze_inline((VALUE)x)
 
+/*!
+ * \defgroup deprecated_macros deprecated macro APIs
+ * \{
+ * \par These macros are deprecated. Prefer their `RB_`-prefixed versions.
+ */
 #define FL_ABLE(x) RB_FL_ABLE(x)
 #define FL_TEST_RAW(x,f) RB_FL_TEST_RAW(x,f)
 #define FL_TEST(x,f) RB_FL_TEST(x,f)
@@ -1306,6 +1304,8 @@ int rb_big_sign(VALUE);
 #define OBJ_FROZEN(x) RB_OBJ_FROZEN(x)
 #define OBJ_FREEZE_RAW(x) RB_OBJ_FREEZE_RAW(x)
 #define OBJ_FREEZE(x) RB_OBJ_FREEZE(x)
+
+/* \} */
 
 void rb_freeze_singleton_class(VALUE klass);
 
@@ -1662,7 +1662,7 @@ rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
 #define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(size_t)(n))
 #define MEMCMP(p1,p2,type,n) memcmp((p1), (p2), sizeof(type)*(size_t)(n))
 
-void rb_obj_infect(VALUE,VALUE);
+void rb_obj_infect(VALUE victim, VALUE carrier);
 
 typedef int ruby_glob_func(const char*,VALUE, void*);
 void rb_glob(const char*,void(*)(const char*,VALUE,void*),VALUE);
@@ -1752,6 +1752,27 @@ VALUE rb_check_symbol(volatile VALUE *namep);
     (__builtin_constant_p(str) ? \
      __extension__ (rb_intern2((str), (long)strlen(str))) : \
      (rb_intern)(str))
+
+# define rb_varargs_argc_check_runtime(argc, vargc) \
+    (((argc) <= (vargc)) ? (argc) : \
+     (rb_fatal("argc(%d) exceeds actual arguments(%d)", \
+	       argc, vargc), 0))
+# if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
+#   if HAVE_ATTRIBUTE_ERRORFUNC
+ERRORFUNC((" argument length doesn't match"), int rb_varargs_bad_length(int,int));
+#   else
+#     define rb_varargs_bad_length(argc, vargc) ((argc)/((argc) == (vargc)))
+#   endif
+#   define rb_varargs_argc_check(argc, vargc) \
+    __builtin_choose_expr(__builtin_constant_p(argc), \
+	(((argc) == (vargc)) ? (argc) : \
+	 rb_varargs_bad_length(argc, vargc)), \
+	rb_varargs_argc_check_runtime(argc, vargc))
+# else
+#   define rb_varargs_argc_check(argc, vargc) \
+	rb_varargs_argc_check_runtime(argc, vargc)
+# endif
+
 #else
 #define rb_intern_const(str) rb_intern2((str), (long)strlen(str))
 #endif
@@ -1925,6 +1946,7 @@ RUBY_EXTERN VALUE rb_eKeyError;
 RUBY_EXTERN VALUE rb_eRangeError;
 RUBY_EXTERN VALUE rb_eIOError;
 RUBY_EXTERN VALUE rb_eRuntimeError;
+RUBY_EXTERN VALUE rb_eFrozenError;
 RUBY_EXTERN VALUE rb_eSecurityError;
 RUBY_EXTERN VALUE rb_eSystemCallError;
 RUBY_EXTERN VALUE rb_eThreadError;
@@ -2075,8 +2097,7 @@ int ruby_native_thread_p(void);
 #define RUBY_EVENT_TRACEPOINT_ALL    0xffff
 
 /* special events */
-#define RUBY_EVENT_SPECIFIED_LINE         0x010000
-#define RUBY_EVENT_COVERAGE               0x020000
+#define RUBY_EVENT_RESERVED_FOR_INTERNAL_USE 0x030000
 
 /* internal events */
 #define RUBY_INTERNAL_EVENT_SWITCH          0x040000
@@ -2419,6 +2440,30 @@ rb_scan_args_set(int argc, const VALUE *argv,
 
     return argc;
 }
+#endif
+
+#if defined(__GNUC__) && defined(__OPTIMIZE__)
+# define rb_yield_values(argc, ...) \
+__extension__({ \
+	const int rb_yield_values_argc = (argc); \
+	const VALUE rb_yield_values_args[] = {__VA_ARGS__}; \
+	const int rb_yield_values_nargs = \
+	    (int)(sizeof(rb_yield_values_args) / sizeof(VALUE)); \
+	rb_yield_values2( \
+	    rb_varargs_argc_check(rb_yield_values_argc, rb_yield_values_nargs), \
+	    rb_yield_values_nargs ? rb_yield_values_args : NULL); \
+    })
+
+# define rb_funcall(recv, mid, argc, ...) \
+__extension__({ \
+	const int rb_funcall_argc = (argc); \
+	const VALUE rb_funcall_args[] = {__VA_ARGS__}; \
+	const int rb_funcall_nargs = \
+	    (int)(sizeof(rb_funcall_args) / sizeof(VALUE)); \
+	rb_funcallv(recv, mid, \
+	    rb_varargs_argc_check(rb_funcall_argc, rb_funcall_nargs), \
+	    rb_funcall_nargs ? rb_funcall_args : NULL); \
+    })
 #endif
 
 #ifndef RUBY_DONT_SUBST

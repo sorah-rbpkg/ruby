@@ -459,10 +459,11 @@ class TestProcess < Test::Unit::TestCase
   def test_execopts_open_chdir_m17n_path
     with_tmpchdir {|d|
       Dir.mkdir "テスト"
-      system(*PWD, :chdir => "テスト", :out => "open_chdir_テスト")
+      (pwd = PWD.dup).insert(1, '-EUTF-8:UTF-8')
+      system(*pwd, :chdir => "テスト", :out => "open_chdir_テスト")
       assert_file.exist?("open_chdir_テスト")
       assert_file.not_exist?("テスト/open_chdir_テスト")
-      assert_equal("#{d}/テスト", File.read("open_chdir_テスト").chomp.encode(__ENCODING__))
+      assert_equal("#{d}/テスト", File.read("open_chdir_テスト", encoding: "UTF-8").chomp)
     }
   end if windows? || Encoding.find('locale') == Encoding::UTF_8
 
@@ -1511,8 +1512,14 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_maxgroups
-    assert_kind_of(Integer, Process.maxgroups)
+    max = Process.maxgroups
   rescue NotImplementedError
+  else
+    assert_kind_of(Integer, max)
+    gs = Process.groups
+    assert_operator(gs.size, :<=, max)
+    gs[0] ||= 0
+    assert_raise(ArgumentError) {Process.groups = gs * (max / gs.size + 1)}
   end
 
   def test_geteuid
@@ -1574,7 +1581,10 @@ class TestProcess < Test::Unit::TestCase
     pid = nil
     IO.pipe do |r, w|
       pid = fork { r.read(1); exit }
-      Thread.start { raise }
+      Thread.start {
+        Thread.current.report_on_exception = false
+        raise
+      }
       w.puts
     end
     Process.wait pid
@@ -2327,5 +2337,28 @@ EOS
         end
       end
     end
+  end
+
+  def test_forked_child_handles_signal
+    skip "fork not supported" unless Process.respond_to?(:fork)
+    assert_normal_exit(<<-"end;", '[ruby-core:82883] [Bug #13916]')
+      require 'timeout'
+      pid = fork { sleep }
+      Process.kill(:TERM, pid)
+      assert_equal pid, Timeout.timeout(30) { Process.wait(pid) }
+    end;
+  end
+
+  if Process.respond_to?(:initgroups)
+    def test_initgroups
+      assert_raise(ArgumentError) do
+        Process.initgroups("\0", 0)
+      end
+    end
+  end
+
+  def test_last_status
+    Process.wait spawn(RUBY, "-e", "exit 13")
+    assert_same(Process.last_status, $?)
   end
 end

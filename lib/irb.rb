@@ -48,7 +48,6 @@ require "irb/locale"
 #
 #   Usage:  irb.rb [options] [programfile] [arguments]
 #     -f                Suppress read of ~/.irbrc
-#     -m                Bc mode (load mathn, fraction or matrix are available)
 #     -d                Set $DEBUG to true (same as `ruby -d')
 #     -r load-module    Same as `ruby -r'
 #     -I path           Specify $LOAD_PATH directory
@@ -90,7 +89,6 @@ require "irb/locale"
 # as follows in an +irb+ session:
 #
 #     IRB.conf[:IRB_NAME]="irb"
-#     IRB.conf[:MATH_MODE]=false
 #     IRB.conf[:INSPECT_MODE]=nil
 #     IRB.conf[:IRB_RC] = nil
 #     IRB.conf[:BACK_TRACE_LIMIT]=16
@@ -533,9 +531,6 @@ module IRB
             end
             print "Maybe IRB bug!\n" if irb_bug
           end
-          if $SAFE > 2
-            abort "Error: irb does not work for $SAFE level higher than 2"
-          end
         end
       end
     end
@@ -709,7 +704,9 @@ end
 class Binding
   # :nodoc:
   def irb
-    IRB.setup(eval("__FILE__"))
-    IRB::Irb.new(IRB::WorkSpace.new(self)).run(IRB.conf)
+    IRB.setup(eval("__FILE__"), argv: [])
+    workspace = IRB::WorkSpace.new(self)
+    STDOUT.print(workspace.code_around_binding)
+    IRB::Irb.new(workspace).run(IRB.conf)
   end
 end
