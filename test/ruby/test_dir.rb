@@ -329,7 +329,7 @@ class TestDir < Test::Unit::TestCase
     end
   end
 
-  def xtest_home
+  def test_home
     env_home = ENV["HOME"]
     env_logdir = ENV["LOGDIR"]
     ENV.delete("HOME")
