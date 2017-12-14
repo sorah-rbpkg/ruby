@@ -1786,9 +1786,7 @@ class Gem::Specification < Gem::BasicSpecification
                 raise(Gem::InvalidSpecificationException,
                       "invalid date format in specification: #{date.inspect}")
               end
-            when Time then
-              Time.utc(date.utc.year, date.utc.month, date.utc.day)
-            when DateLike then
+            when Time, DateLike then
               Time.utc(date.year, date.month, date.day)
             else
               TODAY
