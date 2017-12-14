@@ -1,10 +1,11 @@
 # coding: utf-8
-_VERSION = '1.3.0'
+
+bigdecimal_version = '1.3.3'
 
 Gem::Specification.new do |s|
   s.name          = "bigdecimal"
-  s.version       = _VERSION
-  s.date = RUBY_RELEASE_DATE
+  s.version       = bigdecimal_version
+  s.date          = RUBY_RELEASE_DATE
   s.authors       = ["Kenta Murata", "Zachary Scott", "Shigeo Kobayashi"]
   s.email         = ["mrkn@mrkn.jp"]
 
@@ -32,6 +33,8 @@ Gem::Specification.new do |s|
   ]
 
   s.add_development_dependency "rake", "~> 10.0"
-  s.add_development_dependency "rake-compiler", "~> 0.9"
+  s.add_development_dependency "rake-compiler", ">= 0.9"
+  s.add_development_dependency "rake-compiler-dock", ">= 0.6.1"
   s.add_development_dependency "minitest", "~> 4.7.5"
+  s.add_development_dependency "pry"
 end

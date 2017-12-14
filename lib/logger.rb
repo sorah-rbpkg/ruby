@@ -268,17 +268,17 @@ class Logger
       @level = severity
     else
       case severity.to_s.downcase
-      when 'debug'.freeze
+      when 'debug'
         @level = DEBUG
-      when 'info'.freeze
+      when 'info'
         @level = INFO
-      when 'warn'.freeze
+      when 'warn'
         @level = WARN
-      when 'error'.freeze
+      when 'error'
         @level = ERROR
-      when 'fatal'.freeze
+      when 'fatal'
         @level = FATAL
-      when 'unknown'.freeze
+      when 'unknown'
         @level = UNKNOWN
       else
         raise ArgumentError, "invalid log level: #{severity}"
@@ -457,7 +457,9 @@ class Logger
     if @logdev.nil? or severity < @level
       return true
     end
-    progname ||= @progname
+    if progname.nil?
+      progname = @progname
+    end
     if message.nil?
       if block_given?
         message = yield
