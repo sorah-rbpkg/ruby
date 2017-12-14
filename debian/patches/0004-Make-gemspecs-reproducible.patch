@@ -11,12 +11,12 @@ unreproducible
  3 files changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/ext/bigdecimal/bigdecimal.gemspec b/ext/bigdecimal/bigdecimal.gemspec
-index 4efe438..c0d19e7 100644
+index c1f7da4..30bad7e 100644
 --- a/ext/bigdecimal/bigdecimal.gemspec
 +++ b/ext/bigdecimal/bigdecimal.gemspec
-@@ -5,6 +5,7 @@
+@@ -6,6 +6,7 @@
    s.name          = "bigdecimal"
-   s.version       = _VERSION
+   s.version       = bigdecimal_version
    s.authors       = ["Kenta Murata", "Zachary Scott", "Shigeo Kobayashi"]
 +  s.date          = RUBY_RELEASE_DATE
    s.email         = ["mrkn@mrkn.jp"]
@@ -36,7 +36,7 @@ index 1256162..99e18bd 100644
    s.email = "nobu@ruby-lang.org"
    s.description = "add console capabilities to IO instances."
 diff --git a/lib/rdoc/rdoc.gemspec b/lib/rdoc/rdoc.gemspec
-index 2787f07..578c023 100644
+index 57a6698..5a8a96c 100644
 --- a/lib/rdoc/rdoc.gemspec
 +++ b/lib/rdoc/rdoc.gemspec
 @@ -7,6 +7,7 @@
@@ -45,5 +45,5 @@ index 2787f07..578c023 100644
    s.name = "rdoc"
 +  s.date = RUBY_RELEASE_DATE
    s.version = RDoc::VERSION
-   s.date = "2017-10-10"
+   s.date = "2017-12-05"
  
