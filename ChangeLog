@@ -1,3 +1,114 @@
+Thu Dec 14 23:53:41 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/net/ftp/test_ftp.rb (process_port_or_eprt): merge a part of
+	  r56973 to pass the test introduced at previous commit.
+
+Thu Dec 14 22:55:05 2017  Shugo Maeda  <shugo@ruby-lang.org>
+
+	Fix a command injection vulnerability in Net::FTP.
+
+Thu Dec 14 22:35:19 2017  Eric Wong  <normalperson@yhbt.net>
+
+	webrick: compile RE correctly for beginning and end match
+
+	Using ^ and $ in regexps means we can accidentally get fooled
+	by "%0a" in HTTP request paths being decoded to newline
+	characters.  Use \A and \z to match beginning and end-of-string
+	respectively, instead.
+
+	Thanks to mame and hsbt for reporting.
+
+	* lib/webrick/httpserver.rb (MountTable#compile):
+	  use \A and \z instead of ^ and $
+	* lib/webrick/httpserver.rb (MountTable#normalize): use \z instead of $
+	* test/webrick/test_httpserver.rb (test_cntrl_in_path): new test
+
+Thu Dec 14 22:29:04 2017  Eric Wong  <normalperson@yhbt.net>
+
+	webrick: do not hang acceptor on slow TLS connections
+
+	OpenSSL::SSL::SSLSocket#accept may block indefinitely on clients
+	which negotiate the TCP connection, but fail (or are slow) to
+	negotiate the subsequent TLS handshake.  This prevents the
+	multi-threaded WEBrick server from accepting other connections.
+
+	Since the TLS handshake (via OpenSSL::SSL::SSLSocket#accept)
+	consists of normal read/write traffic over TCP, handle it in the
+	per-client thread, instead.
+
+	Furthermore, using non-blocking accept() is useful for non-TLS
+	sockets anyways because spurious wakeups are possible from
+	select(2).
+
+	* lib/webrick/server.rb (accept_client): use TCPServer#accept_nonblock
+	  and remove OpenSSL::SSL::SSLSocket#accept call
+	* lib/webrick/server.rb (start_thread): call OpenSSL::SSL::SSLSocket#acc
+ept
+	* test/webrick/test_ssl_server.rb (test_slow_connect): new test
+	  [ruby-core:83221] [Bug #14005]
+
+	webrick: fix up r60172
+
+	By making the socket non-blocking in r60172, TLS/SSL negotiation
+	via the SSL_accept function must handle non-blocking sockets
+	properly and retry on SSL_ERROR_WANT_READ/SSL_ERROR_WANT_WRITE.
+	OpenSSL::SSL::SSLSocket#accept cannot do that properly with a
+	non-blocking socket, so it must use non-blocking logic of
+	OpenSSL::SSL::SSLSocket#accept_nonblock.
+
+	Thanks to MSP-Greg (Greg L) for finding this.
+
+	* lib/webrick/server.rb (start_thread): use SSL_accept properly
+	  with non-blocking socket.
+	  [Bug #14013] [Bug #14005]
+
+	webrick: fix up r60172 and revert r60189
+
+	Thanks to MSP-Greg (Greg L) for helping with this.
+
+	* lib/webrick/server.rb (start_thread): ignore ECONNRESET, ECONNABORTED,
+	  EPROTO, and EINVAL on TLS negotiation errors the same way they
+	  were ignored before r60172 in the accept_client method of the
+	  main acceptor thread.
+	  [Bug #14013] [Bug #14005]
+
+	webrick: fix up r60172 and r60208
+
+	Thanks to MSP-Greg (Greg L) for helping with this.
+
+	* lib/webrick/server.rb (start_thread): fix non-local return
+	  introduced in r60208
+
+	webrick: fix up r60172 and r60210
+
+	Thanks to MSP-Greg (Greg L) for helping with this.
+
+	* lib/webrick/server.rb (start_thread): properly fix non-local return
+	  introduced in r60208 and r60210
+
+Thu Nov 30 23:37:08 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	parse.y: fix line in rescue
+
+	* parse.y (set_line_body, primary): fix line number of bodystmt as the
+	  beginning of the block. [Bug #13181]
+
+Thu Nov 30 23:29:00 2017  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	Merge rubygems-2.6.14 changes.
+
+	It fixed http://blog.rubygems.org/2017/10/09/unsafe-object-deserialization-vulnerability.html
+
+Fri Sep 15 05:40:40 2017  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	fix --with-gmp (broken by r57490)
+
+	Looking at the generated shell script (also the autoconf manual), it
+	seems AC_SEARCH_LIBS() m4 macro does not define HAVE_LIBsomething C
+	preprocessor macros, unlike AC_CHECK_LIB() which does define them.
+	This previous change effectively killed building with GMP because
+	building that mode depends on existence of HAVE_LIBGMP. [Bug #13402]
+
 Thu Sep 14 20:25:55 2017  Yusuke Endoh  <mame@ruby-lang.org>
 
 	lib/webrick/log.rb: sanitize any type of logs
