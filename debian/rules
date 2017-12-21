@@ -11,6 +11,11 @@ TESTOPTS += -v
 export TESTOPTS
 
 DEB_HOST_MULTIARCH := $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
+
+ifneq (,$(filter $(DEB_HOST_ARCH), i386))
+    export DEB_CFLAGS_MAINT_APPEND=-ffloat-store
+endif
 
 export SOURCE             := $(shell dpkg-parsechangelog -SSource)
 export RUBY_VERSION       := $(patsubst ruby%,%,$(SOURCE))
