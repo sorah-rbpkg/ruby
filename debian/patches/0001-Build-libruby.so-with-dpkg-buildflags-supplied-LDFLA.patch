@@ -9,10 +9,10 @@ Signed-off-by: Antonio Terceiro <terceiro@debian.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/configure.in b/configure.in
-index c69cb40..0b80e11 100644
+index 2cd0f27..cc7b04a 100644
 --- a/configure.in
 +++ b/configure.in
-@@ -3720,7 +3720,7 @@ AS_CASE("$enable_shared", [yes], [
+@@ -3722,7 +3722,7 @@ AS_CASE("$enable_shared", [yes], [
  	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
  	],
      [linux* | gnu* | k*bsd*-gnu | atheos* | kopensolaris*-gnu | haiku*], [

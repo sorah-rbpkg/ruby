@@ -13,7 +13,7 @@ Signed-off-by: Antonio Terceiro <terceiro@debian.org>
  1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/lib/rubygems/specification.rb b/lib/rubygems/specification.rb
-index dd4fde1..2519b96 100644
+index de324d7..748b336 100644
 --- a/lib/rubygems/specification.rb
 +++ b/lib/rubygems/specification.rb
 @@ -1756,7 +1756,9 @@ def date= date
