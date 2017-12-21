@@ -8,3 +8,4 @@
 0008-rdoc-sort-input-filenames-in-a-consistent-way-for-re.patch
 0009-rdoc-set-gzip-timestamp-on-compressed-javascript-to-.patch
 0010-Make-Date-in-gemspec-reproducible.patch
+0011-Increase-timeout-to-avoid-build-failures-on-mips.patch
