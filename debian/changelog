@@ -1,8 +1,21 @@
 ruby2.3 (2.3.6-1) UNRELEASED; urgency=medium
 
+  [ Antonio Terceiro ]
   * New upstream version 2.3.6
+  * Refresh patches.
+    0011-Whitelist-classes-and-symbols-that-are-in-Gem-spec-Y.patch:
+    dropped, applied upstream
 
- -- Antonio Terceiro <terceiro@debian.org>  Thu, 21 Dec 2017 11:02:45 -0200
+  [ Adrian Bunk ]
+  * Force exact precision on i386 (Closes: #881804)
+
+  [ James Cowgill ]
+  * Increase timeout to avoid build failures on mips* (Closes: #882404)
+
+  [ Matthias Klose ]
+  * Update symbols file (Closes: #881848)
+
+ -- Antonio Terceiro <terceiro@debian.org>  Thu, 21 Dec 2017 11:17:30 -0200
 
 ruby2.3 (2.3.5-1) unstable; urgency=medium
 
