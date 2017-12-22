@@ -4,13 +4,22 @@ Subject: Increase timeout to avoid build failures on mips*
 
 Signed-off-by: Antonio Terceiro <terceiro@debian.org>
 ---
- test/net/smtp/test_smtp.rb | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ test/net/smtp/test_smtp.rb | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/test/net/smtp/test_smtp.rb b/test/net/smtp/test_smtp.rb
-index da85331..a749b07 100644
+index da85331..62956c9 100644
 --- a/test/net/smtp/test_smtp.rb
 +++ b/test/net/smtp/test_smtp.rb
+@@ -128,7 +128,7 @@ def test_tls_connect
+         end
+         smtp = Net::SMTP.new("localhost", servers[0].local_address.ip_port)
+         smtp.enable_tls
+-        smtp.open_timeout = 0.1
++        smtp.open_timeout = 1
+         smtp.start do
+         end
+       ensure
 @@ -146,7 +146,7 @@ def test_tls_connect_timeout
          end
          smtp = Net::SMTP.new("localhost", servers[0].local_address.ip_port)

@@ -1,3 +1,11 @@
+ruby2.3 (2.3.6-2) unstable; urgency=medium
+
+  * debian/patches/0011-Increase-timeout-to-avoid-build-failures-on-mips.patch:
+    increase timeout in both tests that have one
+    (now hopefully really Closes: #882404)
+
+ -- Antonio Terceiro <terceiro@debian.org>  Fri, 22 Dec 2017 15:45:29 -0200
+
 ruby2.3 (2.3.6-1) unstable; urgency=medium
 
   [ Antonio Terceiro ]
