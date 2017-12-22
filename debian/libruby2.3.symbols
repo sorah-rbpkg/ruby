@@ -23,7 +23,6 @@ libruby-2.3.so.2.3 libruby2.3 #MINVER#
  dln_find_exe_r@Base 2.3.0~preview2
  dln_find_file_r@Base 2.3.0~preview2
  dln_load@Base 2.3.0~preview2
- (optional)explicit_bzero@Base 2.3.0~preview2
  nucomp_canonicalization@Base 2.3.0~preview2
  nurat_canonicalization@Base 2.3.0~preview2
  onig_add_end_call@Base 2.3.0~preview2
@@ -234,6 +233,7 @@ libruby-2.3.so.2.3 libruby2.3 #MINVER#
  rb_big2long@Base 2.3.0~preview2
  rb_big2str@Base 2.3.0~preview2
  rb_big2str_generic@Base 2.3.0~preview2
+ rb_big2str_gmp@Base 2.3.6
  rb_big2str_poweroftwo@Base 2.3.0~preview2
  rb_big2ull@Base 2.3.0~preview2
  rb_big2ulong@Base 2.3.0~preview2
@@ -243,6 +243,7 @@ libruby-2.3.so.2.3 libruby2.3 #MINVER#
  rb_big_cmp@Base 2.3.0~preview2
  rb_big_div@Base 2.3.0~preview2
  rb_big_divmod@Base 2.3.0~preview2
+ rb_big_divrem_gmp@Base 2.3.6
  rb_big_divrem_normal@Base 2.3.0~preview2
  rb_big_eq@Base 2.3.0~preview2
  rb_big_eql@Base 2.3.0~preview2
@@ -253,6 +254,7 @@ libruby-2.3.so.2.3 libruby2.3 #MINVER#
  rb_big_modulo@Base 2.3.0~preview2
  rb_big_mul@Base 2.3.0~preview2
  rb_big_mul_balance@Base 2.3.0~preview2
+ rb_big_mul_gmp@Base 2.3.6
  rb_big_mul_karatsuba@Base 2.3.0~preview2
  rb_big_mul_normal@Base 2.3.0~preview2
  rb_big_mul_toom3@Base 2.3.0~preview2
@@ -702,6 +704,7 @@ libruby-2.3.so.2.3 libruby2.3 #MINVER#
  rb_gc_verify_internal_consistency@Base 2.3.0~preview2
  rb_gc_writebarrier@Base 2.3.0~preview2
  rb_gc_writebarrier_unprotect@Base 2.3.0~preview2
+ rb_gcd_gmp@Base 2.3.6
  rb_gcd_normal@Base 2.3.0~preview2
  rb_generic_ivar_memsize@Base 2.3.0~preview2
  rb_generic_ivar_table@Base 2.3.0~preview2
@@ -1161,6 +1164,7 @@ libruby-2.3.so.2.3 libruby2.3 #MINVER#
  rb_stderr@Base 2.3.0~preview2
  rb_stdin@Base 2.3.0~preview2
  rb_stdout@Base 2.3.0~preview2
+ rb_str2big_gmp@Base 2.3.6
  rb_str2big_karatsuba@Base 2.3.0~preview2
  rb_str2big_normal@Base 2.3.0~preview2
  rb_str2big_poweroftwo@Base 2.3.0~preview2
