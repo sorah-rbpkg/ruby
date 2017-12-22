@@ -1,0 +1,37 @@
+From: Matthias Klose <doko@debian.org>
+Date: Fri, 22 Dec 2017 11:17:12 -0200
+Subject: Skip tests that fail on Launchpad builders
+
+Signed-off-by: Antonio Terceiro <terceiro@debian.org>
+---
+ test/excludes/TestFileUtils.rb  | 1 +
+ test/excludes/TestIO_Console.rb | 1 +
+ test/excludes/TestProcess.rb    | 2 ++
+ 3 files changed, 4 insertions(+)
+ create mode 100644 test/excludes/TestFileUtils.rb
+
+diff --git a/test/excludes/TestFileUtils.rb b/test/excludes/TestFileUtils.rb
+new file mode 100644
+index 0000000..ee8b15c
+--- /dev/null
++++ b/test/excludes/TestFileUtils.rb
+@@ -0,0 +1 @@
++exclude :test_chown, "fails on Launchpad builders"
+diff --git a/test/excludes/TestIO_Console.rb b/test/excludes/TestIO_Console.rb
+index caf1935..1c817ab 100644
+--- a/test/excludes/TestIO_Console.rb
++++ b/test/excludes/TestIO_Console.rb
+@@ -1,2 +1,3 @@
+ # frozen_string_literal: false
+ exclude(:test_getpass, 'not portable')
++exclude :test_ioflush2, "fails on Launchpad builders (i386)"
+diff --git a/test/excludes/TestProcess.rb b/test/excludes/TestProcess.rb
+index 24f71b4..f5bf169 100644
+--- a/test/excludes/TestProcess.rb
++++ b/test/excludes/TestProcess.rb
+@@ -3,3 +3,5 @@
+ # may point to an issue in the Array implementation.
+ # https://bugs.ruby-lang.org/issues/12500
+ exclude :test_aspawn_too_long_path, "RAM and time consuming test"
++# Ubuntu buildds
++exclude :test_execopts_gid, "fails on Launchpad builders"

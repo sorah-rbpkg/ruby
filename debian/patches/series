@@ -9,3 +9,4 @@
 0009-rdoc-set-gzip-timestamp-on-compressed-javascript-to-.patch
 0010-Make-Date-in-gemspec-reproducible.patch
 0011-Increase-timeout-to-avoid-build-failures-on-mips.patch
+0012-Skip-tests-that-fail-on-Launchpad-builders.patch
