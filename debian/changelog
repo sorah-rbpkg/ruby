@@ -1,4 +1,4 @@
-ruby2.3 (2.3.6-1) UNRELEASED; urgency=medium
+ruby2.3 (2.3.6-1) unstable; urgency=medium
 
   [ Antonio Terceiro ]
   * New upstream version 2.3.6
@@ -16,7 +16,7 @@ ruby2.3 (2.3.6-1) UNRELEASED; urgency=medium
   * Update symbols file (Closes: #881848)
   * Skip tests that fail on Launchpad builders
 
- -- Antonio Terceiro <terceiro@debian.org>  Thu, 21 Dec 2017 11:17:30 -0200
+ -- Antonio Terceiro <terceiro@debian.org>  Fri, 22 Dec 2017 11:19:41 -0200
 
 ruby2.3 (2.3.5-1) unstable; urgency=medium
 
