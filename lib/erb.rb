@@ -1,5 +1,5 @@
 # -*- coding: us-ascii -*-
-# frozen_string_literal: false
+# frozen_string_literal: true
 # = ERB -- Ruby Templating
 #
 # Author:: Masatoshi SEKI
@@ -259,7 +259,7 @@ require "cgi/util"
 # Rails, the web application framework, uses ERB to create views.
 #
 class ERB
-  Revision = '$Date::                           $' # :nodoc: #'
+  Revision = '$Date:: 2017-10-22 00:02:46 +0900#$' # :nodoc: #'
 
   # Returns revision information for the erb.rb module.
   def self.version
@@ -547,7 +547,7 @@ class ERB
       def initialize(compiler, enc=nil, frozen=nil)
         @compiler = compiler
         @line = []
-        @script = ''
+        @script = +''
         @script << "#coding:#{enc}\n" if enc
         @script << "#frozen-string-literal:#{frozen}\n" unless frozen.nil?
         @compiler.pre_cmd.each do |x|
@@ -602,7 +602,7 @@ class ERB
       magic_comment = detect_magic_comment(s, enc)
       out = Buffer.new(self, *magic_comment)
 
-      self.content = ''
+      self.content = +''
       scanner = make_scanner(s)
       scanner.scan do |token|
         next if token.nil?
@@ -622,7 +622,7 @@ class ERB
       case stag
       when PercentLine
         add_put_cmd(out, content) if content.size > 0
-        self.content = ''
+        self.content = +''
         out.push(stag.to_s)
         out.cr
       when :cr
@@ -630,11 +630,11 @@ class ERB
       when '<%', '<%=', '<%#'
         scanner.stag = stag
         add_put_cmd(out, content) if content.size > 0
-        self.content = ''
+        self.content = +''
       when "\n"
         content << "\n"
         add_put_cmd(out, content)
-        self.content = ''
+        self.content = +''
       when '<%%'
         content << '<%'
       else
@@ -647,7 +647,7 @@ class ERB
       when '%>'
         compile_content(scanner.stag, out)
         scanner.stag = nil
-        self.content = ''
+        self.content = +''
       when '%%>'
         content << '%>'
       else

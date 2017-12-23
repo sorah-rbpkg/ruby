@@ -3,7 +3,7 @@
 
   thread_pthread.c -
 
-  $Author$
+  $Author: ko1 $
 
   Copyright (C) 2004-2007 Koichi Sasada
 
@@ -26,9 +26,6 @@
 #endif
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
-#endif
-#if defined(__native_client__) && defined(NACL_NEWLIB)
-# include "nacl/select.h"
 #endif
 #if defined(HAVE_SYS_TIME_H)
 #include <sys/time.h>
@@ -64,7 +61,7 @@ static struct {
 #define USE_MONOTONIC_COND 0
 #endif
 
-#if defined(HAVE_POLL) && defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL) && defined(O_NONBLOCK) && !defined(__native_client__)
+#if defined(HAVE_POLL) && defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL) && defined(O_NONBLOCK)
 /* The timer thread sleeps while only one Ruby thread is running. */
 # define USE_SLEEPY_TIMER_THREAD 1
 #else
@@ -449,10 +446,8 @@ ruby_thread_set_native(rb_thread_t *th)
 static void native_thread_init(rb_thread_t *th);
 
 void
-Init_native_thread(void)
+Init_native_thread(rb_thread_t *th)
 {
-    rb_thread_t *th = GET_THREAD();
-
     pthread_key_create(&ruby_native_thread_key, NULL);
     th->thread_id = pthread_self();
     fill_thread_id_str(th);
@@ -460,9 +455,7 @@ Init_native_thread(void)
 #ifdef USE_UBF_LIST
     native_mutex_initialize(&ubf_list_lock);
 #endif
-#ifndef __native_client__
     posix_signal(SIGVTALRM, null_func);
-#endif
 }
 
 static void
@@ -832,8 +825,8 @@ native_thread_init_stack(rb_thread_t *th)
     rb_nativethread_id_t curr = pthread_self();
 
     if (pthread_equal(curr, native_main_thread.id)) {
-	th->ec.machine.stack_start = native_main_thread.stack_start;
-	th->ec.machine.stack_maxsize = native_main_thread.stack_maxsize;
+	th->ec->machine.stack_start = native_main_thread.stack_start;
+	th->ec->machine.stack_maxsize = native_main_thread.stack_maxsize;
     }
     else {
 #ifdef STACKADDR_AVAILABLE
@@ -841,11 +834,12 @@ native_thread_init_stack(rb_thread_t *th)
 	size_t size;
 
 	if (get_stack(&start, &size) == 0) {
-	    th->ec.machine.stack_start = start;
-	    th->ec.machine.stack_maxsize = size;
+	    uintptr_t diff = (uintptr_t)start - (uintptr_t)&curr;
+	    th->ec->machine.stack_start = (VALUE *)&curr;
+	    th->ec->machine.stack_maxsize = size - diff;
 	}
 #elif defined get_stack_of
-	if (!th->ec.machine.stack_maxsize) {
+	if (!th->ec->machine.stack_maxsize) {
 	    native_mutex_lock(&th->interrupt_lock);
 	    native_mutex_unlock(&th->interrupt_lock);
 	}
@@ -854,9 +848,9 @@ native_thread_init_stack(rb_thread_t *th)
 #endif
     }
 #ifdef __ia64
-    th->ec.machine.register_stack_start = native_main_thread.register_stack_start;
-    th->ec.machine.stack_maxsize /= 2;
-    th->ec.machine.register_stack_maxsize = th->ec.machine.stack_maxsize;
+    th->ec->machine.register_stack_start = native_main_thread.register_stack_start;
+    th->ec->machine.stack_maxsize /= 2;
+    th->ec->machine.register_stack_maxsize = th->ec->machine.stack_maxsize;
 #endif
     return 0;
 }
@@ -884,7 +878,7 @@ thread_start_func_1(void *th_ptr)
 	native_thread_init(th);
 	/* run */
 #if defined USE_NATIVE_THREAD_INIT
-	thread_start_func_2(th, th->ec.machine.stack_start, rb_ia64_bsp());
+	thread_start_func_2(th, th->ec->machine.stack_start, rb_ia64_bsp());
 #else
 	thread_start_func_2(th, &stack_start, rb_ia64_bsp());
 #endif
@@ -1006,10 +1000,10 @@ native_thread_create(rb_thread_t *th)
 	const size_t stack_size = th->vm->default_params.thread_machine_stack_size;
 	const size_t space = space_size(stack_size);
 
-        th->ec.machine.stack_maxsize = stack_size - space;
+        th->ec->machine.stack_maxsize = stack_size - space;
 #ifdef __ia64
-        th->ec.machine.stack_maxsize /= 2;
-        th->ec.machine.register_stack_maxsize = th->ec.machine.stack_maxsize;
+        th->ec->machine.stack_maxsize /= 2;
+        th->ec->machine.register_stack_maxsize = th->ec->machine.stack_maxsize;
 #endif
 
 #ifdef HAVE_PTHREAD_ATTR_INIT
@@ -1032,8 +1026,8 @@ native_thread_create(rb_thread_t *th)
 #ifdef get_stack_of
 	if (!err) {
 	    get_stack_of(th->thread_id,
-			 &th->ec.machine.stack_start,
-			 &th->ec.machine.stack_maxsize);
+			 &th->ec->machine.stack_start,
+			 &th->ec->machine.stack_maxsize);
 	}
 	native_mutex_unlock(&th->interrupt_lock);
 #endif
@@ -1138,7 +1132,7 @@ native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
 	th->unblock.func = ubf_pthread_cond_signal;
 	th->unblock.arg = th;
 
-	if (RUBY_VM_INTERRUPTED(th)) {
+	if (RUBY_VM_INTERRUPTED(th->ec)) {
 	    /* interrupted.  return immediate */
 	    thread_debug("native_sleep: interrupted before sleep\n");
 	}
@@ -1749,8 +1743,8 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
     else
 #endif
     if (th) {
-	size = th->ec.machine.stack_maxsize;
-	base = (char *)th->ec.machine.stack_start - STACK_DIR_UPPER(0, size);
+	size = th->ec->machine.stack_maxsize;
+	base = (char *)th->ec->machine.stack_start - STACK_DIR_UPPER(0, size);
     }
     else {
 	return 0;

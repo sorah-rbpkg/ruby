@@ -2,7 +2,7 @@
 
   array.c -
 
-  $Author$
+  $Author: marcandre $
   created at: Fri Aug  6 09:46:12 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -641,11 +641,12 @@ rb_assoc_new(VALUE car, VALUE cdr)
     return rb_ary_new3(2, car, cdr);
 }
 
-static VALUE
-to_ary(VALUE ary)
+VALUE
+rb_to_array_type(VALUE ary)
 {
     return rb_convert_type_with_id(ary, T_ARRAY, "Array", idTo_ary);
 }
+#define to_ary rb_to_array_type
 
 VALUE
 rb_check_array_type(VALUE ary)
@@ -1284,21 +1285,29 @@ rb_ary_subseq(VALUE ary, long beg, long len)
 VALUE
 rb_ary_aref(int argc, const VALUE *argv, VALUE ary)
 {
-    VALUE arg;
+    rb_check_arity(argc, 1, 2);
+    if (argc == 2) {
+	return rb_ary_aref2(ary, argv[0], argv[1]);
+    }
+    return rb_ary_aref1(ary, argv[0]);
+}
+
+VALUE
+rb_ary_aref2(VALUE ary, VALUE b, VALUE e)
+{
+    long beg = NUM2LONG(b);
+    long len = NUM2LONG(e);
+    if (beg < 0) {
+	beg += RARRAY_LEN(ary);
+    }
+    return rb_ary_subseq(ary, beg, len);
+}
+
+VALUE
+rb_ary_aref1(VALUE ary, VALUE arg)
+{
     long beg, len;
 
-    if (argc == 2) {
-	beg = NUM2LONG(argv[0]);
-	len = NUM2LONG(argv[1]);
-	if (beg < 0) {
-	    beg += RARRAY_LEN(ary);
-	}
-	return rb_ary_subseq(ary, beg, len);
-    }
-    if (argc != 1) {
-	rb_scan_args(argc, argv, "11", NULL, NULL);
-    }
-    arg = argv[0];
     /* special case - speeding up */
     if (FIXNUM_P(arg)) {
 	return rb_ary_entry(ary, FIX2LONG(arg));
@@ -4293,16 +4302,16 @@ rb_ary_or(VALUE ary1, VALUE ary2)
  *  first form assumes all objects implement <code>Comparable</code>;
  *  the second uses the block to return <em>a <=> b</em>.
  *
- *     a = %w(albatross dog horse)
- *     a.max                                   #=> "horse"
- *     a.max { |a, b| a.length <=> b.length }  #=> "albatross"
+ *     ary = %w(albatross dog horse)
+ *     ary.max                                   #=> "horse"
+ *     ary.max { |a, b| a.length <=> b.length }  #=> "albatross"
  *
  *  If the +n+ argument is given, maximum +n+ elements are returned
  *  as an array.
  *
- *     a = %w[albatross dog horse]
- *     a.max(2)                                  #=> ["horse", "dog"]
- *     a.max(2) {|a, b| a.length <=> b.length }  #=> ["albatross", "horse"]
+ *     ary = %w[albatross dog horse]
+ *     ary.max(2)                                  #=> ["horse", "dog"]
+ *     ary.max(2) {|a, b| a.length <=> b.length }  #=> ["albatross", "horse"]
  */
 static VALUE
 rb_ary_max(int argc, VALUE *argv, VALUE ary)
@@ -4348,16 +4357,16 @@ rb_ary_max(int argc, VALUE *argv, VALUE ary)
  *  first form assumes all objects implement <code>Comparable</code>;
  *  the second uses the block to return <em>a <=> b</em>.
  *
- *     a = %w(albatross dog horse)
- *     a.min                                   #=> "albatross"
- *     a.min { |a, b| a.length <=> b.length }  #=> "dog"
+ *     ary = %w(albatross dog horse)
+ *     ary.min                                   #=> "albatross"
+ *     ary.min { |a, b| a.length <=> b.length }  #=> "dog"
  *
  *  If the +n+ argument is given, minimum +n+ elements are returned
  *  as an array.
  *
- *     a = %w[albatross dog horse]
- *     a.min(2)                                  #=> ["albatross", "dog"]
- *     a.min(2) {|a, b| a.length <=> b.length }  #=> ["dog", "horse"]
+ *     ary = %w[albatross dog horse]
+ *     ary.min(2)                                  #=> ["albatross", "dog"]
+ *     ary.min(2) {|a, b| a.length <=> b.length }  #=> ["dog", "horse"]
  */
 static VALUE
 rb_ary_min(int argc, VALUE *argv, VALUE ary)
@@ -5762,13 +5771,19 @@ rb_ary_drop_while(VALUE ary)
  */
 
 static VALUE
-rb_ary_any_p(VALUE ary)
+rb_ary_any_p(int argc, VALUE *argv, VALUE ary)
 {
     long i, len = RARRAY_LEN(ary);
     const VALUE *ptr = RARRAY_CONST_PTR(ary);
 
+    rb_check_arity(argc, 0, 1);
     if (!len) return Qfalse;
-    if (!rb_block_given_p()) {
+    if (argc) {
+	for (i = 0; i < RARRAY_LEN(ary); ++i) {
+	    if (RTEST(rb_funcall(argv[0], idEqq, 1, RARRAY_AREF(ary, i)))) return Qtrue;
+	}
+    }
+    else if (!rb_block_given_p()) {
 	for (i = 0; i < len; ++i) if (RTEST(ptr[i])) return Qtrue;
     }
     else {
@@ -6320,7 +6335,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "drop_while", rb_ary_drop_while, 0);
     rb_define_method(rb_cArray, "bsearch", rb_ary_bsearch, 0);
     rb_define_method(rb_cArray, "bsearch_index", rb_ary_bsearch_index, 0);
-    rb_define_method(rb_cArray, "any?", rb_ary_any_p, 0);
+    rb_define_method(rb_cArray, "any?", rb_ary_any_p, -1);
     rb_define_method(rb_cArray, "dig", rb_ary_dig, -1);
     rb_define_method(rb_cArray, "sum", rb_ary_sum, -1);
 

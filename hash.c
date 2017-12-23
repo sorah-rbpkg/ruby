@@ -2,7 +2,7 @@
 
   hash.c -
 
-  $Author$
+  $Author: marcandre $
   created at: Mon Nov 22 18:51:18 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -427,6 +427,14 @@ rb_hash_new(void)
 }
 
 VALUE
+rb_hash_new_compare_by_id(void)
+{
+    VALUE hash = rb_hash_new();
+    RHASH(hash)->ntbl = rb_init_identtable();
+    return hash;
+}
+
+VALUE
 rb_hash_new_with_size(st_index_t size)
 {
     VALUE ret = rb_hash_new();
@@ -712,11 +720,12 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
     return hash;
 }
 
-static VALUE
-to_hash(VALUE hash)
+VALUE
+rb_to_hash_type(VALUE hash)
 {
     return rb_convert_type_with_id(hash, T_HASH, "Hash", idTo_hash);
 }
+#define to_hash rb_to_hash_type
 
 VALUE
 rb_check_hash_type(VALUE hash)
@@ -1321,6 +1330,38 @@ rb_hash_reject(VALUE hash)
     if (!RHASH_EMPTY_P(hash)) {
 	rb_hash_foreach(hash, reject_i, result);
     }
+    return result;
+}
+
+/*
+ *  call-seq:
+ *     hsh.slice(*keys) -> a_hash
+ *
+ *  Returns a hash containing only the given keys and their values.
+ *
+ *     h = { a: 100, b: 200, c: 300 }
+ *     h.slice(:a)           #=> {:a=>100}
+ *     h.slice(:b, :c, :d)   #=> {:b=>200, :c=>300}
+ */
+
+static VALUE
+rb_hash_slice(int argc, VALUE *argv, VALUE hash)
+{
+    int i;
+    VALUE key, value, result;
+
+    if (argc == 0 || RHASH_EMPTY_P(hash)) {
+	return rb_hash_new();
+    }
+    result = rb_hash_new_with_size(argc);
+
+    for (i = 0; i < argc; i++) {
+	key = argv[i];
+	value = rb_hash_lookup2(hash, key, Qundef);
+	if (value != Qundef)
+	    rb_hash_aset(result, key, value);
+    }
+
     return result;
 }
 
@@ -2498,11 +2539,13 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *     h1 = { "a" => 100, "b" => 200 }
  *     h2 = { "b" => 254, "c" => 300 }
  *     h1.merge!(h2)   #=> {"a"=>100, "b"=>254, "c"=>300}
+ *     h1              #=> {"a"=>100, "b"=>254, "c"=>300}
  *
  *     h1 = { "a" => 100, "b" => 200 }
  *     h2 = { "b" => 254, "c" => 300 }
  *     h1.merge!(h2) { |key, v1, v2| v1 }
  *                     #=> {"a"=>100, "b"=>200, "c"=>300}
+ *     h1              #=> {"a"=>100, "b"=>200, "c"=>300}
  */
 
 static VALUE
@@ -2753,17 +2796,23 @@ rb_hash_flatten(int argc, VALUE *argv, VALUE hash)
 {
     VALUE ary;
 
+    rb_check_arity(argc, 0, 1);
+
     if (argc) {
-	int level = NUM2INT(*argv);
+	int level = NUM2INT(argv[0]);
+
 	if (level == 0) return rb_hash_to_a(hash);
 
 	ary = rb_ary_new_capa(RHASH_SIZE(hash) * 2);
 	rb_hash_foreach(hash, flatten_i, ary);
-	if (level - 1 > 0) {
-	    *argv = INT2FIX(level - 1);
-	    rb_funcallv(ary, id_flatten_bang, argc, argv);
+	level--;
+
+	if (level > 0) {
+	    VALUE ary_flatten_level = INT2FIX(level);
+	    rb_funcallv(ary, id_flatten_bang, 1, &ary_flatten_level);
 	}
 	else if (level < 0) {
+	    /* flatten recursively */
 	    rb_funcallv(ary, id_flatten_bang, 0, 0);
 	}
     }
@@ -2859,10 +2908,16 @@ rb_hash_compact_bang(VALUE hash)
 static VALUE
 rb_hash_compare_by_id(VALUE hash)
 {
+    st_table *identtable;
     if (rb_hash_compare_by_id_p(hash)) return hash;
-    rb_hash_modify(hash);
-    RHASH(hash)->ntbl->type = &identhash;
-    rb_hash_rehash(hash);
+    rb_hash_modify_check(hash);
+
+    identtable = rb_init_identtable_with_size(RHASH_SIZE(hash));
+    rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)identtable);
+    if (RHASH(hash)->ntbl)
+	st_free_table(RHASH(hash)->ntbl);
+    RHASH(hash)->ntbl = identtable;
+
     return hash;
 }
 
@@ -2928,6 +2983,17 @@ any_p_i_fast(VALUE key, VALUE value, VALUE arg)
     return ST_CONTINUE;
 }
 
+static int
+any_p_i_pattern(VALUE key, VALUE value, VALUE arg)
+{
+    VALUE ret = rb_funcall(((VALUE *)arg)[1], idEqq, 1, rb_assoc_new(key, value));
+    if (RTEST(ret)) {
+	*(VALUE *)arg = Qtrue;
+	return ST_STOP;
+    }
+    return ST_CONTINUE;
+}
+
 /*
  *  call-seq:
  *     hsh.any? [{ |(key, value)| block }]   -> true or false
@@ -2936,20 +3002,29 @@ any_p_i_fast(VALUE key, VALUE value, VALUE arg)
  */
 
 static VALUE
-rb_hash_any_p(VALUE hash)
+rb_hash_any_p(int argc, VALUE *argv, VALUE hash)
 {
-    VALUE ret = Qfalse;
+    VALUE args[2];
+    args[0] = Qfalse;
 
+    rb_check_arity(argc, 0, 1);
     if (RHASH_EMPTY_P(hash)) return Qfalse;
-    if (!rb_block_given_p()) {
-	/* yields pairs, never false */
-	return Qtrue;
+    if (argc) {
+	args[1] = argv[0];
+
+	rb_hash_foreach(hash, any_p_i_pattern, (VALUE)args);
     }
-    if (rb_block_arity() > 1)
-	rb_hash_foreach(hash, any_p_i_fast, (VALUE)&ret);
-    else
-	rb_hash_foreach(hash, any_p_i, (VALUE)&ret);
-    return ret;
+    else {
+	if (!rb_block_given_p()) {
+	    /* yields pairs, never false */
+	    return Qtrue;
+	}
+	if (rb_block_arity() > 1)
+	    rb_hash_foreach(hash, any_p_i_fast, (VALUE)args);
+	else
+	    rb_hash_foreach(hash, any_p_i, (VALUE)args);
+    }
+    return args[0];
 }
 
 /*
@@ -4585,6 +4660,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "select!", rb_hash_select_bang, 0);
     rb_define_method(rb_cHash, "reject", rb_hash_reject, 0);
     rb_define_method(rb_cHash, "reject!", rb_hash_reject_bang, 0);
+    rb_define_method(rb_cHash, "slice", rb_hash_slice, -1);
     rb_define_method(rb_cHash, "clear", rb_hash_clear, 0);
     rb_define_method(rb_cHash, "invert", rb_hash_invert, 0);
     rb_define_method(rb_cHash, "update", rb_hash_update, 1);
@@ -4607,7 +4683,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "compare_by_identity", rb_hash_compare_by_id, 0);
     rb_define_method(rb_cHash, "compare_by_identity?", rb_hash_compare_by_id_p, 0);
 
-    rb_define_method(rb_cHash, "any?", rb_hash_any_p, 0);
+    rb_define_method(rb_cHash, "any?", rb_hash_any_p, -1);
     rb_define_method(rb_cHash, "dig", rb_hash_dig, -1);
 
     rb_define_method(rb_cHash, "<=", rb_hash_le, 1);

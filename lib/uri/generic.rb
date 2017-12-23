@@ -4,7 +4,7 @@
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
 # License:: You can redistribute it and/or modify it under the same term as Ruby.
-# Revision:: $Id$
+# Revision:: $Id: generic.rb 61225 2017-12-14 06:30:22Z naruse $
 #
 # See URI for general documentation
 #
@@ -979,7 +979,7 @@ module URI
     # returns an Array of the path split on '/'
     #
     def split_path(path)
-      path.split(%r{/+}, -1)
+      path.split("/", -1)
     end
     private :split_path
 
@@ -1154,8 +1154,8 @@ module URI
         return dst.dup
       end
 
-      src_path = src.scan(%r{(?:\A|[^/]+)/})
-      dst_path = dst.scan(%r{(?:\A|[^/]+)/?})
+      src_path = src.scan(%r{[^/]*/})
+      dst_path = dst.scan(%r{[^/]*/?})
 
       # discard same parts
       while !dst_path.empty? && dst_path.first == src_path.first
@@ -1341,7 +1341,7 @@ module URI
       if @opaque
         str << @opaque
       else
-        if @host
+        if @host || %w[file postgres].include?(@scheme)
           str << '//'
         end
         if self.userinfo
@@ -1517,7 +1517,7 @@ module URI
       elsif name == 'http_proxy'
         unless proxy_uri = env[name]
           if proxy_uri = env[name.upcase]
-            warn 'The environment variable HTTP_PROXY is discouraged.  Use http_proxy.'
+            warn 'The environment variable HTTP_PROXY is discouraged.  Use http_proxy.', uplevel: 1
           end
         end
       else

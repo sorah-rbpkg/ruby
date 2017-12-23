@@ -298,6 +298,7 @@ nucomp_s_new_internal(VALUE klass, VALUE real, VALUE imag)
 
     RCOMPLEX_SET_REAL(obj, real);
     RCOMPLEX_SET_IMAG(obj, imag);
+    OBJ_FREEZE_RAW(obj);
 
     return (VALUE)obj;
 }
@@ -1352,8 +1353,8 @@ nucomp_inspect(VALUE self)
  * call-seq:
  *    cmp.finite?  ->  true or false
  *
- * Returns +true+ if +cmp+'s magnitude is finite number,
- * oterwise returns +false+.
+ * Returns +true+ if +cmp+'s magnitude is a finite number,
+ * otherwise returns +false+.
  */
 static VALUE
 rb_complex_finite_p(VALUE self)
@@ -1406,6 +1407,7 @@ nucomp_loader(VALUE self, VALUE a)
 
     RCOMPLEX_SET_REAL(dat, rb_ivar_get(a, id_i_real));
     RCOMPLEX_SET_IMAG(dat, rb_ivar_get(a, id_i_imag));
+    OBJ_FREEZE_RAW(self);
 
     return self;
 }

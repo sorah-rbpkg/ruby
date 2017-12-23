@@ -42,8 +42,18 @@ module EnvUtil
   DEFAULT_SIGNALS = Signal.list
   DEFAULT_SIGNALS.delete("TERM") if /mswin|mingw/ =~ RUBY_PLATFORM
 
+  RUBYLIB = ENV["RUBYLIB"]
+
   class << self
     attr_accessor :subprocess_timeout_scale
+    attr_reader :original_internal_encoding, :original_external_encoding,
+                :original_verbose
+
+    def capture_global_values
+      @original_internal_encoding = Encoding.default_internal
+      @original_external_encoding = Encoding.default_external
+      @original_verbose = $VERBOSE
+    end
   end
 
   def apply_timeout_scale(t)
@@ -59,7 +69,7 @@ module EnvUtil
                   encoding: nil, timeout: 10, reprieve: 1, timeout_error: Timeout::Error,
                   stdout_filter: nil, stderr_filter: nil,
                   signal: :TERM,
-                  rubybin: EnvUtil.rubybin,
+                  rubybin: EnvUtil.rubybin, precommand: nil,
                   **opt)
     timeout = apply_timeout_scale(timeout)
     reprieve = apply_timeout_scale(reprieve) if reprieve
@@ -80,8 +90,11 @@ module EnvUtil
     if Array === args and Hash === args.first
       child_env.update(args.shift)
     end
+    if RUBYLIB and lib = child_env["RUBYLIB"]
+      child_env["RUBYLIB"] = [lib, RUBYLIB].join(File::PATH_SEPARATOR)
+    end
     args = [args] if args.kind_of?(String)
-    pid = spawn(child_env, rubybin, *args, **opt)
+    pid = spawn(child_env, *precommand, rubybin, *args, **opt)
     in_c.close
     out_c.close if capture_stdout
     err_c.close if capture_stderr && capture_stderr != :merge_to_stdout
@@ -160,29 +173,31 @@ module EnvUtil
 
   def verbose_warning
     class << (stderr = "".dup)
-      alias write <<
+      alias write concat
     end
-    stderr, $stderr, verbose, $VERBOSE = $stderr, stderr, $VERBOSE, true
+    stderr, $stderr = $stderr, stderr
+    $VERBOSE = true
     yield stderr
     return $stderr
   ensure
-    stderr, $stderr, $VERBOSE = $stderr, stderr, verbose
+    stderr, $stderr = $stderr, stderr
+    $VERBOSE = EnvUtil.original_verbose
   end
   module_function :verbose_warning
 
   def default_warning
-    verbose, $VERBOSE = $VERBOSE, false
+    $VERBOSE = false
     yield
   ensure
-    $VERBOSE = verbose
+    $VERBOSE = EnvUtil.original_verbose
   end
   module_function :default_warning
 
   def suppress_warning
-    verbose, $VERBOSE = $VERBOSE, nil
+    $VERBOSE = nil
     yield
   ensure
-    $VERBOSE = verbose
+    $VERBOSE = EnvUtil.original_verbose
   end
   module_function :suppress_warning
 
@@ -195,26 +210,18 @@ module EnvUtil
   module_function :under_gc_stress
 
   def with_default_external(enc)
-    verbose, $VERBOSE = $VERBOSE, nil
-    origenc, Encoding.default_external = Encoding.default_external, enc
-    $VERBOSE = verbose
+    suppress_warning { Encoding.default_external = enc }
     yield
   ensure
-    verbose, $VERBOSE = $VERBOSE, nil
-    Encoding.default_external = origenc
-    $VERBOSE = verbose
+    suppress_warning { Encoding.default_external = EnvUtil.original_external_encoding }
   end
   module_function :with_default_external
 
   def with_default_internal(enc)
-    verbose, $VERBOSE = $VERBOSE, nil
-    origenc, Encoding.default_internal = Encoding.default_internal, enc
-    $VERBOSE = verbose
+    suppress_warning { Encoding.default_internal = enc }
     yield
   ensure
-    verbose, $VERBOSE = $VERBOSE, nil
-    Encoding.default_internal = origenc
-    $VERBOSE = verbose
+    suppress_warning { Encoding.default_internal = EnvUtil.original_internal_encoding }
   end
   module_function :with_default_internal
 
@@ -286,3 +293,5 @@ if defined?(RbConfig)
     Gem::ConfigMap[:bindir] = dir if defined?(Gem::ConfigMap)
   end
 end
+
+EnvUtil.capture_global_values

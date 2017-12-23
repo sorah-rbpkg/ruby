@@ -39,6 +39,12 @@ extern "C" {
 # endif
 #endif
 
+/* The most significant bit of the lower part of half-long integer.
+ * If sizeof(long) == 4, this is 0x8000.
+ * If sizeof(long) == 8, this is 0x80000000.
+ */
+#define HALF_LONG_MSB ((SIGNED_VALUE)1<<((SIZEOF_LONG*CHAR_BIT-1)/2))
+
 #define LIKELY(x) RB_LIKELY(x)
 #define UNLIKELY(x) RB_UNLIKELY(x)
 
@@ -836,21 +842,24 @@ struct RIMemo {
 };
 
 enum imemo_type {
-    imemo_env        = 0,
-    imemo_cref       = 1,
-    imemo_svar       = 2,
-    imemo_throw_data = 3,
-    imemo_ifunc      = 4,
-    imemo_memo       = 5,
-    imemo_ment       = 6,
-    imemo_iseq       = 7,
-    imemo_mask       = 0x07
+    imemo_env            =  0,
+    imemo_cref           =  1, /*!< class reference */
+    imemo_svar           =  2, /*!< special variable */
+    imemo_throw_data     =  3,
+    imemo_ifunc          =  4, /*!< iterator function */
+    imemo_memo           =  5,
+    imemo_ment           =  6,
+    imemo_iseq           =  7,
+    imemo_alloc          =  8,
+    imemo_ast            =  9,
+    imemo_parser_strterm = 10
 };
+#define IMEMO_MASK   0x0f
 
 static inline enum imemo_type
 imemo_type(VALUE imemo)
 {
-    return (RBASIC(imemo)->flags >> FL_USHIFT) & imemo_mask;
+    return (RBASIC(imemo)->flags >> FL_USHIFT) & IMEMO_MASK;
 }
 
 static inline int
@@ -858,7 +867,7 @@ imemo_type_p(VALUE imemo, enum imemo_type imemo_type)
 {
     if (LIKELY(!RB_SPECIAL_CONST_P(imemo))) {
 	/* fixed at compile time if imemo_type is given. */
-	const VALUE mask = (imemo_mask << FL_USHIFT) | RUBY_T_MASK;
+	const VALUE mask = (IMEMO_MASK << FL_USHIFT) | RUBY_T_MASK;
 	const VALUE expected_type = (imemo_type << FL_USHIFT) | T_IMEMO;
 	/* fixed at runtime. */
 	return expected_type == (RBASIC(imemo)->flags & mask);
@@ -868,30 +877,29 @@ imemo_type_p(VALUE imemo, enum imemo_type imemo_type)
     }
 }
 
-/* FL_USER0 to FL_USER2 is for type */
-#define IMEMO_FL_USHIFT (FL_USHIFT + 3)
-#define IMEMO_FL_USER0 FL_USER3
-#define IMEMO_FL_USER1 FL_USER4
-#define IMEMO_FL_USER2 FL_USER5
-#define IMEMO_FL_USER3 FL_USER6
-#define IMEMO_FL_USER4 FL_USER7
+/* FL_USER0 to FL_USER3 is for type */
+#define IMEMO_FL_USHIFT (FL_USHIFT + 4)
+#define IMEMO_FL_USER0 FL_USER4
+#define IMEMO_FL_USER1 FL_USER5
+#define IMEMO_FL_USER2 FL_USER6
+#define IMEMO_FL_USER3 FL_USER7
+#define IMEMO_FL_USER4 FL_USER8
 
-/* CREF in method.h */
+/* CREF (Class REFerence) is defined in method.h */
 
-/* SVAR */
-
+/*! SVAR (Special VARiable) */
 struct vm_svar {
     VALUE flags;
-    const VALUE cref_or_me;
+    const VALUE cref_or_me; /*!< class reference or rb_method_entry_t */
     const VALUE lastline;
     const VALUE backref;
     const VALUE others;
 };
 
-/* THROW_DATA */
 
 #define THROW_DATA_CONSUMED IMEMO_FL_USER0
 
+/*! THROW_DATA */
 struct vm_throw_data {
     VALUE flags;
     VALUE reserved;
@@ -902,7 +910,7 @@ struct vm_throw_data {
 
 #define THROW_DATA_P(err) RB_TYPE_P((VALUE)(err), T_IMEMO)
 
-/* IFUNC */
+/* IFUNC (Internal FUNCtion) */
 
 struct vm_ifunc_argc {
 #if SIZEOF_INT * 2 > SIZEOF_VALUE
@@ -913,6 +921,7 @@ struct vm_ifunc_argc {
 #endif
 };
 
+/*! IFUNC (Internal FUNCtion) */
 struct vm_ifunc {
     VALUE flags;
     VALUE reserved;
@@ -929,8 +938,22 @@ rb_vm_ifunc_proc_new(VALUE (*func)(ANYARGS), const void *data)
     return rb_vm_ifunc_new(func, data, 0, UNLIMITED_ARGUMENTS);
 }
 
-/* MEMO */
+typedef struct rb_imemo_alloc_struct {
+    VALUE flags;
+    VALUE reserved;
+    VALUE *ptr; /* malloc'ed buffer */
+    struct rb_imemo_alloc_struct *next; /* next imemo */
+    size_t cnt; /* buffer size in VALUE */
+} rb_imemo_alloc_t;
 
+rb_imemo_alloc_t *rb_imemo_alloc_new(VALUE, VALUE, VALUE, VALUE);
+
+void rb_strterm_mark(VALUE obj);
+
+/*! MEMO
+ *
+ * @see imemo_type
+ * */
 struct MEMO {
     VALUE flags;
     VALUE reserved;
@@ -1021,7 +1044,10 @@ void rb_ary_set_len(VALUE, long);
 void rb_ary_delete_same(VALUE, VALUE);
 VALUE rb_ary_tmp_new_fill(long capa);
 VALUE rb_ary_at(VALUE, VALUE);
+VALUE rb_ary_aref1(VALUE ary, VALUE i);
+VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
 size_t rb_ary_memsize(VALUE);
+VALUE rb_to_array_type(VALUE obj);
 #ifdef __GNUC__
 #define rb_ary_new_from_args(n, ...) \
     __extension__ ({ \
@@ -1054,6 +1080,7 @@ VALUE rb_big_gt(VALUE x, VALUE y);
 VALUE rb_big_ge(VALUE x, VALUE y);
 VALUE rb_big_lt(VALUE x, VALUE y);
 VALUE rb_big_le(VALUE x, VALUE y);
+VALUE rb_int_powm(int const argc, VALUE * const argv, VALUE const num);
 
 /* class.c */
 VALUE rb_class_boot(VALUE);
@@ -1245,6 +1272,9 @@ void ruby_sized_xfree(void *x, size_t size);
 /* hash.c */
 struct st_table *rb_hash_tbl_raw(VALUE hash);
 VALUE rb_hash_new_with_size(st_index_t size);
+RUBY_SYMBOL_EXPORT_BEGIN
+VALUE rb_hash_new_compare_by_id(void);
+RUBY_SYMBOL_EXPORT_END
 VALUE rb_hash_has_key(VALUE hash, VALUE key);
 VALUE rb_hash_default_value(VALUE hash, VALUE key);
 VALUE rb_hash_set_default_proc(VALUE hash, VALUE proc);
@@ -1253,6 +1283,7 @@ long rb_dbl_long_hash(double d);
 st_table *rb_init_identtable(void);
 st_table *rb_init_identtable_with_size(st_index_t size);
 VALUE rb_hash_compare_by_id_p(VALUE hash);
+VALUE rb_to_hash_type(VALUE obj);
 
 #define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h)
 VALUE rb_hash_keys(VALUE hash);
@@ -1359,6 +1390,53 @@ VALUE rb_int_and(VALUE x, VALUE y);
 VALUE rb_int_lshift(VALUE x, VALUE y);
 VALUE rb_int_div(VALUE x, VALUE y);
 VALUE rb_int_abs(VALUE num);
+VALUE rb_int_odd_p(VALUE num);
+
+static inline VALUE
+rb_num_compare_with_zero(VALUE num, ID mid)
+{
+    VALUE zero = INT2FIX(0);
+    VALUE r = rb_check_funcall(num, mid, 1, &zero);
+    if (r == Qundef) {
+	rb_cmperr(num, zero);
+    }
+    return r;
+}
+
+static inline int
+rb_num_positive_int_p(VALUE num)
+{
+    const ID mid = '>';
+
+    if (FIXNUM_P(num)) {
+	if (rb_method_basic_definition_p(rb_cInteger, mid))
+	    return FIXNUM_POSITIVE_P(num);
+    }
+    else if (RB_TYPE_P(num, T_BIGNUM)) {
+	if (rb_method_basic_definition_p(rb_cInteger, mid))
+	    return BIGNUM_POSITIVE_P(num);
+    }
+    return RTEST(rb_num_compare_with_zero(num, mid));
+}
+
+
+static inline int
+rb_num_negative_int_p(VALUE num)
+{
+    const ID mid = '<';
+
+    if (FIXNUM_P(num)) {
+	if (rb_method_basic_definition_p(rb_cInteger, mid))
+	    return FIXNUM_NEGATIVE_P(num);
+    }
+    else if (RB_TYPE_P(num, T_BIGNUM)) {
+	if (rb_method_basic_definition_p(rb_cInteger, mid))
+	    return BIGNUM_NEGATIVE_P(num);
+    }
+    return RTEST(rb_num_compare_with_zero(num, mid));
+}
+
+
 VALUE rb_float_abs(VALUE flt);
 VALUE rb_float_equal(VALUE x, VALUE y);
 VALUE rb_float_eql(VALUE x, VALUE y);
@@ -1570,6 +1648,7 @@ VALUE rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourcel
 VALUE rb_reg_check_preprocess(VALUE);
 long rb_reg_search0(VALUE, VALUE, long, int, int);
 VALUE rb_reg_match_p(VALUE re, VALUE str, long pos);
+bool rb_reg_start_with_p(VALUE re, VALUE str);
 void rb_backref_set_string(VALUE string, long pos, long len);
 int rb_match_count(VALUE match);
 int rb_match_nth_defined(int nth, VALUE match);
@@ -1670,6 +1749,7 @@ VALUE rb_sym_intern_ascii_cstr(const char *ptr);
 	rb_sym_intern_ascii_cstr(ptr); \
 })
 #endif
+VALUE rb_to_symbol_type(VALUE obj);
 
 /* struct.c */
 VALUE rb_struct_init_copy(VALUE copy, VALUE s);
@@ -1681,7 +1761,6 @@ struct timeval rb_time_timeval(VALUE);
 /* thread.c */
 #define COVERAGE_INDEX_LINES    0
 #define COVERAGE_INDEX_BRANCHES 1
-#define COVERAGE_INDEX_METHODS  2
 #define COVERAGE_TARGET_LINES    1
 #define COVERAGE_TARGET_BRANCHES 2
 #define COVERAGE_TARGET_METHODS  4
@@ -1702,7 +1781,6 @@ VALUE rb_uninterruptible(VALUE (*b_proc)(ANYARGS), VALUE data);
 VALUE rb_mutex_owned_p(VALUE self);
 
 /* thread_pthread.c, thread_win32.c */
-void Init_native_thread(void);
 int rb_divert_reserved_fd(int fd);
 
 /* transcode.c */
@@ -1744,9 +1822,8 @@ void rb_thread_recycle_stack_release(VALUE *);
 void rb_vm_change_state(void);
 void rb_vm_inc_const_missing_count(void);
 const void **rb_vm_get_insns_address_table(void);
-VALUE rb_sourcefilename(void);
 VALUE rb_source_location(int *pline);
-const char *rb_source_loc(int *pline);
+const char *rb_source_location_cstr(int *pline);
 void rb_vm_pop_cfunc_frame(void);
 int rb_vm_add_root_module(ID id, VALUE module);
 void rb_vm_check_redefinition_by_prepend(VALUE klass);
@@ -1765,6 +1842,7 @@ VALUE rb_check_block_call(VALUE, ID, int, const VALUE *, rb_block_call_func_t, V
 typedef void rb_check_funcall_hook(int, VALUE, ID, int, const VALUE *, VALUE);
 VALUE rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
 				 rb_check_funcall_hook *hook, VALUE arg);
+const char *rb_type_str(enum ruby_value_type type);
 VALUE rb_check_funcall_default(VALUE, ID, int, const VALUE *, VALUE);
 VALUE rb_yield_1(VALUE val);
 VALUE rb_yield_force_blockarg(VALUE values);
@@ -1923,7 +2001,7 @@ RUBY_SYMBOL_EXPORT_END
 do { \
     if (UNLIKELY(RUBY_DTRACE_##name##_ENABLED())) { \
 	int dtrace_line; \
-	const char *dtrace_file = rb_source_loc(&dtrace_line); \
+	const char *dtrace_file = rb_source_location_cstr(&dtrace_line); \
 	if (!dtrace_file) dtrace_file = ""; \
 	RUBY_DTRACE_##name(arg, dtrace_file, dtrace_line); \
     } \

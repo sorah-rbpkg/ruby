@@ -128,6 +128,7 @@ RUBY_PROGRAM_VERSION = @RUBY_PROGRAM_VERSION@
 
 LIBRUBY_A     = @LIBRUBY_A@
 LIBRUBY_SO    = @LIBRUBY_SO@
+LIBRUBY_SONAME= @LIBRUBY_SONAME@
 LIBRUBY_ALIASES= @LIBRUBY_ALIASES@
 LIBRUBY	      = @LIBRUBY@
 LIBRUBYARG    = @LIBRUBYARG@
@@ -187,6 +188,7 @@ DTRACE_GLOMMED_OBJ = $(DTRACE_REBUILD:yes=ruby-glommed.$(OBJEXT))
 
 OBJEXT        = @OBJEXT@
 ASMEXT        = S
+SOEXT         = @SOEXT@
 DLEXT         = @DLEXT@
 MANTYPE	      = @MANTYPE@
 SYMBOL_PREFIX = @SYMBOL_PREFIX@
@@ -253,7 +255,7 @@ $(LIBRUBY_SO):
 		$(ECHO) linking shared-library $@
 		$(Q) $(LDSHARED) $(DLDFLAGS) $(OBJS) $(DLDOBJS) $(SOLIBS) $(EXTSOLIBS) $(OUTFLAG)$@
 		-$(Q) $(OBJCOPY) -w -L '$(SYMBOL_PREFIX)Init_*' -L '$(SYMBOL_PREFIX)ruby_static_id_*' \
-			-L '$(SYMBOL_PREFIX)*_threadptr_*' $@
+			-L '$(SYMBOL_PREFIX)*_threadptr_*' -L '$(SYMBOL_PREFIX)*_ec_*' $@
 		$(Q) $(POSTLINK)
 		@-$(MINIRUBY) -e 'ARGV.each{|link| File.delete link rescue nil; \
 						  File.symlink "$(LIBRUBY_SO)", link}' \
@@ -343,7 +345,7 @@ lex.c: defs/keywords
 	else \
 	  [ $(Q) ] && echo generating $@ || set -x; \
 	  gperf -C -P -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? \
-	  | sed 's/(long)&((\(struct stringpool_t\) *\*)0)->\(stringpool_[a-z0-9]*\)/offsetof(\1, \2)/g' \
+	  | sed -f $(srcdir)/tool/gperf.sed \
 	  > $@.tmp && \
 	  $(MV) $@.tmp $@ && \
 	  $(CP) $? $(srcdir)/defs/lex.c.src && \
@@ -361,7 +363,7 @@ $(srcdir)/enc/jis/props.h: enc/jis/props.kwd
 	else \
 	  set -x; \
 	  gperf $(JIS_PROPS_OPTIONS) $? | \
-	  sed 's/(int)(long)&((\([a-zA-Z_0-9 ]*[a-zA-Z_0-9]\) *\*)0)->\([a-zA-Z0-9_]*\),/(char)offsetof(\1, \2),/g' > $@ && \
+	  sed -f $(srcdir)/tool/gperf.sed > $@ && \
 	  $(CP) $? $(?:.kwd=.src) && \
 	  $(CP) $@ $(?:.kwd=.h.blt); \
 	fi
@@ -472,20 +474,11 @@ ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 
 enc/encinit.$(OBJEXT): enc/encinit.c $(SETUP)
 
-test-bundler-precheck: $(arch)-fake.rb programs
-
-yes-test-bundler-prepare: test-bundler-precheck
-	$(XRUBY) -C "$(srcdir)" bin/gem install --no-ri --no-rdoc \
-		--install-dir spec/rspec --conservative 'rspec:~> 3.5'
-
-RSPECOPTS = --format progress
-BUNDLER_SPECS =
-test-bundler: $(TEST_RUNNABLE)-test-bundler
-yes-test-bundler: yes-test-bundler-prepare
-	$(gnumake_recursive)$(Q) \
-	$(XRUBY) -C $(srcdir) -Ispec/bundler spec/rspec/bin/rspec \
-		$(RSPECOPTS) spec/bundler/$(BUNDLER_SPECS)
-no-test-bundler:
+test-bundled-gems-run:
+	$(Q) set -e; while read gem _; do \
+	  echo testing $$gem gem && \
+	  $(XRUBY) -C $(srcdir)/gems/src/$$gem -Ilib ../../../.bundle/bin/rake; \
+	done < $(srcdir)/gems/bundled_gems
 
 update-src::
 	@$(CHDIR) "$(srcdir)" && LC_TIME=C exec $(VCSUP)

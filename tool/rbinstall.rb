@@ -28,6 +28,7 @@ rescue LoadError
   $" << "zlib.rb"
 end
 
+INDENT = " "*36
 STDOUT.sync = true
 File.umask(0222)
 
@@ -301,7 +302,7 @@ def prepare(mesg, basedir, subdirs=nil)
   else
     dirs = [basedir, *subdirs.collect {|dir| File.join(basedir, dir)}]
   end
-  printf("installing %-18s %s%s\n", "#{mesg}:", basedir,
+  printf("%-*s%s%s\n", INDENT.size, "installing #{mesg}:", basedir,
          (subdirs ? " (#{subdirs.join(', ')})" : ""))
   makedirs(dirs)
 end
@@ -426,25 +427,36 @@ install?(:doc, :capi) do
   install_recursive "doc/capi", docdir+"/capi", :mode => $data_mode
 end
 
-if load_relative or /\s/ =~ bindir
-  PROLOG_SCRIPT = <<EOS
-#!/bin/sh\n# -*- ruby -*-
+prolog_script = <<EOS
 bindir="#{load_relative ? '${0%/*}' : bindir.gsub(/\"/, '\\\\"')}"
 EOS
-  if CONFIG["LIBRUBY_RELATIVE"] != 'yes' and libpathenv = CONFIG["LIBPATHENV"]
-    pathsep = File::PATH_SEPARATOR
-    PROLOG_SCRIPT << <<EOS
-libdir="#{load_relative ? '${bindir%/bin}/lib' : libdir.gsub(/\"/, '\\\\"')}"
+if CONFIG["LIBRUBY_RELATIVE"] != 'yes' and libpathenv = CONFIG["LIBPATHENV"]
+  pathsep = File::PATH_SEPARATOR
+  prolog_script << <<EOS
+libdir="#{load_relative ? '$\{bindir%/bin\}/lib' : libdir.gsub(/\"/, '\\\\"')}"
 export #{libpathenv}="$libdir${#{libpathenv}:+#{pathsep}$#{libpathenv}}"
 EOS
-  end
-  PROLOG_SCRIPT << %Q[exec "$bindir/#{ruby_install_name}" -x "$0" "$@"\n]
-else
-  PROLOG_SCRIPT = nil
 end
+prolog_script << %Q[exec "$bindir/#{ruby_install_name}" "-x" "$0" "$@"\n]
+PROLOG_SCRIPT = {}
+PROLOG_SCRIPT["exe"] = "#!#{bindir}/#{ruby_install_name}"
+PROLOG_SCRIPT["cmd"] = <<EOS
+:""||{ ""=> %q<-*- ruby -*-
+@"%~dp0#{ruby_install_name}" -x "%~f0" %*
+@exit /b %ERRORLEVEL%
+};{#\n#{prolog_script.gsub(/(?=\n)/, ' #')}>,\n}
+EOS
+PROLOG_SCRIPT.default = (load_relative || /\s/ =~ bindir) ?
+                          <<EOS : PROLOG_SCRIPT["exe"]
+#!/bin/sh
+# -*- ruby -*-
+_=_\\
+=begin
+#{prolog_script}=end
+EOS
 
 $script_installer = Struct.new(:ruby_shebang, :ruby_bin, :ruby_install_name,
-                               :stub, :trans, :prebatch, :postbatch) do
+                               :stub, :trans) do
   ruby_shebang = File.join(bindir, ruby_install_name)
   if File::ALT_SEPARATOR
     ruby_bin = ruby_shebang.tr(File::SEPARATOR, File::ALT_SEPARATOR)
@@ -476,18 +488,17 @@ $script_installer = Struct.new(:ruby_shebang, :ruby_bin, :ruby_install_name,
   else
     trans = proc {|base| base}
   end
-  prebatch = ':""||{ ""=> %q<-*- ruby -*-'"\n"
-  postbatch = PROLOG_SCRIPT ? "};{\n#{PROLOG_SCRIPT.sub(/\A(?:#.*\n)*/, '')}" : ''
-  postbatch << ">,\n}\n"
-  postbatch.gsub!(/(?=\n)/, ' #')
 
   def prolog(shebang)
-    if PROLOG_SCRIPT and !$cmdtype
-      shebang.sub!(/\A(\#!.*?ruby\b)?/) {PROLOG_SCRIPT + ($1 || "#!ruby\n")}
-    else
-      shebang.sub!(/\A(\#!.*?ruby\b)?/) {"#!" + ruby_shebang + ($1 ? "" : "\n")}
-    end
     shebang.sub!(/\r$/, '')
+    script = PROLOG_SCRIPT[$cmdtype]
+    shebang.sub!(/\A(\#!.*?ruby\b)?/) do
+      if script.end_with?("\n")
+        script + ($1 || "#!ruby\n")
+      else
+        $1 ? script : "#{script}\n"
+      end
+    end
     shebang
   end
 
@@ -506,18 +517,13 @@ $script_installer = Struct.new(:ruby_shebang, :ruby_bin, :ruby_install_name,
       case $cmdtype
       when "exe"
         stub + shebang + body
-      when "cmd"
-        prebatch + <<"/EOH" << postbatch << shebang << body
-@"%~dp0#{ruby_install_name}" -x "%~f0" %*
-@exit /b %ERRORLEVEL%
-/EOH
       else
         shebang + body
       end
     end
   end
 
-  break new(ruby_shebang, ruby_bin, ruby_install_name, stub, trans, prebatch, postbatch)
+  break new(ruby_shebang, ruby_bin, ruby_install_name, stub, trans)
 end
 
 install?(:local, :comm, :bin, :'bin-comm') do
@@ -727,7 +733,7 @@ end
 def install_default_gem(dir, srcdir)
   gem_dir = Gem.default_dir
   directories = Gem.ensure_gem_subdirectories(gem_dir, :mode => $dir_mode)
-  prepare "default gems", gem_dir, directories
+  prepare "default gems from #{dir}", gem_dir, directories
 
   spec_dir = File.join(gem_dir, directories.grep(/^spec/)[0])
   default_spec_dir = "#{spec_dir}/default"
@@ -740,7 +746,7 @@ def install_default_gem(dir, srcdir)
   gems.compact.sort_by(&:name).each do |gemspec|
     full_name = "#{gemspec.name}-#{gemspec.version}"
 
-    puts "#{" "*30}#{gemspec.name} #{gemspec.version}"
+    puts "#{INDENT}#{gemspec.name} #{gemspec.version}"
     gemspec_path = File.join(default_spec_dir, "#{full_name}.gemspec")
     open_for_install(gemspec_path, $data_mode) do
       gemspec.to_ruby
@@ -786,7 +792,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
       spec.extensions[0] ||= "-"
     end
     ins = RbInstall::UnpackedInstaller.new(spec, options)
-    puts "#{" "*30}#{spec.name} #{spec.version}"
+    puts "#{INDENT}#{spec.name} #{spec.version}"
     ins.install
     File.chmod($data_mode, File.join(install_dir, "specifications", "#{spec.full_name}.gemspec"))
     unless spec.extensions.empty?
@@ -811,7 +817,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
         next
       end
       gemname = File.basename(gem)
-      puts "#{" "*30}#{gemname}"
+      puts "#{INDENT}#{gemname}"
     end
     # fix directory permissions
     # TODO: Gem.install should accept :dir_mode option or something

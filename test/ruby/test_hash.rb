@@ -1006,6 +1006,14 @@ class TestHash < Test::Unit::TestCase
     assert_equal(nil, h.select!{true})
   end
 
+  def test_slice
+    h = @cls[1=>2,3=>4,5=>6]
+    assert_equal({1=>2, 3=>4}, h.slice(1, 3))
+    assert_equal({}, h.slice(7))
+    assert_equal({}, h.slice)
+    assert_equal({}, {}.slice)
+  end
+
   def test_clear2
     assert_equal({}, @cls[1=>2,3=>4,5=>6].clear)
     h = @cls[1=>2,3=>4,5=>6]
@@ -1023,8 +1031,8 @@ class TestHash < Test::Unit::TestCase
     assert_raise(TypeError) { h2.replace(1) }
     h2.freeze
     assert_raise(ArgumentError) { h2.replace() }
-    assert_raise(RuntimeError) { h2.replace(h1) }
-    assert_raise(RuntimeError) { h2.replace(42) }
+    assert_raise(FrozenError) { h2.replace(h1) }
+    assert_raise(FrozenError) { h2.replace(42) }
   end
 
   def test_size2
@@ -1110,7 +1118,12 @@ class TestHash < Test::Unit::TestCase
     assert_equal([1, "one", 2, 2, "two", 3, 3, ["three"]], a.flatten(2))
     assert_equal([1, "one", 2, 2, "two", 3, 3, "three"], a.flatten(3))
     assert_equal([1, "one", 2, 2, "two", 3, 3, "three"], a.flatten(-1))
-    assert_raise(TypeError){ a.flatten(Object) }
+    assert_raise(TypeError){ a.flatten(nil) }
+  end
+
+  def test_flatten_arity
+    a =  @cls[1=> "one", 2 => [2,"two"], 3 => [3, ["three"]]]
+    assert_raise(ArgumentError){ a.flatten(1, 2) }
   end
 
   def test_callcc

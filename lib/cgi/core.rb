@@ -23,7 +23,7 @@ class CGI
   # Standard internet newline sequence
   EOL = CR + LF
 
-  REVISION = '$Id$' #:nodoc:
+  REVISION = '$Id: core.rb 61174 2017-12-12 15:01:04Z kazu $' #:nodoc:
 
   # Whether processing will be required in binary vs text
   NEEDS_BINMODE = File::BINARY != 0
@@ -267,7 +267,7 @@ class CGI
   def _header_for_modruby(buf)  #:nodoc:
     request = Apache::request
     buf.scan(/([^:]+): (.+)#{EOL}/o) do |name, value|
-      warn sprintf("name:%s value:%s\n", name, value) if $DEBUG
+      $stderr.printf("name:%s value:%s\n", name, value) if $DEBUG
       case name
       when 'Set-Cookie'
         request.headers_out.add(name, value)

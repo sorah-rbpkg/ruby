@@ -245,7 +245,7 @@ define rp
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_IMEMO
     printf "%sT_IMEMO%s(", $color_type, $color_end
-    output (enum imemo_type)(($flags>>RUBY_FL_USHIFT)&imemo_mask)
+    output (enum imemo_type)(($flags>>RUBY_FL_USHIFT)&RUBY_IMEMO_MASK)
     printf "): "
     rp_imemo $arg0
   else
@@ -546,7 +546,7 @@ document rp_class
 end
 
 define rp_imemo
-  set $flags = (enum imemo_type)((((struct RBasic *)($arg0))->flags >> RUBY_FL_USHIFT) & imemo_mask)
+  set $flags = (enum imemo_type)((((struct RBasic *)($arg0))->flags >> RUBY_FL_USHIFT) & RUBY_IMEMO_MASK)
   if $flags == imemo_cref
     printf "(rb_cref_t *) %p\n", (void*)$arg0
     print *(rb_cref_t *)$arg0
@@ -989,7 +989,7 @@ define iseq
 end
 
 define rb_ps
-  rb_ps_vm ruby_current_vm
+  rb_ps_vm ruby_current_vm_ptr
 end
 document rb_ps
 Dump all threads and their callstacks
@@ -1022,8 +1022,8 @@ define print_lineno
   end
 
   set $i = 0
-  set $size = $iseq->body->line_info_size
-  set $table = $iseq->body->line_info_table
+  set $size = $iseq->body->insns_info_size
+  set $table = $iseq->body->insns_info
   #printf "size: %d\n", $size
   if $size == 0
   else
@@ -1110,7 +1110,7 @@ define print_pathobj
     else
       set $str = ((struct RArray*)($arg0))->as.heap.ptr[0]
     end
-      printf "%s", $str
+    print_string $str
   end
 end
 
@@ -1119,11 +1119,11 @@ define rb_ps_thread
   set $ps_thread_th = (rb_thread_t*)$ps_thread->data
   printf "* #<Thread:%p rb_thread_t:%p native_thread:%p>\n", \
     $ps_thread, $ps_thread_th, $ps_thread_th->thread_id
-  set $cfp = $ps_thread_th->ec.cfp
-  set $cfpend = (rb_control_frame_t *)($ps_thread_th->ec.vm_stack + $ps_thread_th->ec.vm_stack_size)-1
+  set $cfp = $ps_thread_th->ec->cfp
+  set $cfpend = (rb_control_frame_t *)($ps_thread_th->ec->vm_stack + $ps_thread_th->ec->vm_stack_size)-1
   while $cfp < $cfpend
     if $cfp->iseq
-      if !((VALUE)$cfp->iseq & RUBY_IMMEDIATE_MASK) && (((imemo_ifunc << RUBY_FL_USHIFT) | RUBY_T_IMEMO)==$cfp->iseq->flags & ((imemo_mask << RUBY_FL_USHIFT) | RUBY_T_MASK))
+      if !((VALUE)$cfp->iseq & RUBY_IMMEDIATE_MASK) && (((imemo_ifunc << RUBY_FL_USHIFT) | RUBY_T_IMEMO)==$cfp->iseq->flags & ((RUBY_IMEMO_MASK << RUBY_FL_USHIFT) | RUBY_T_MASK))
         printf "%d:ifunc ", $cfpend-$cfp
         set print symbol-filename on
         output/a $cfp->iseq.body
@@ -1181,7 +1181,7 @@ define rb_ps_thread
 end
 
 define rb_count_objects
-  set $objspace = ruby_current_vm->objspace
+  set $objspace = ruby_current_vm_ptr->objspace
   set $counts_00 = 0
   set $counts_01 = 0
   set $counts_02 = 0

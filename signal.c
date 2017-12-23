@@ -2,7 +2,7 @@
 
   signal.c -
 
-  $Author$
+  $Author: ko1 $
   created at: Tue Dec 20 10:13:44 JST 1994
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -39,10 +39,6 @@
 #else
 # define VALGRIND_MAKE_MEM_DEFINED(p, n) 0
 # define VALGRIND_MAKE_MEM_UNDEFINED(p, n) 0
-#endif
-
-#if defined(__native_client__) && defined(NACL_NEWLIB)
-# include "nacl/signal.h"
 #endif
 
 extern ID ruby_static_id_signo;
@@ -763,7 +759,7 @@ static const char *received_signal;
 #endif
 
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
-NORETURN(void rb_threadptr_stack_overflow(rb_thread_t *th, int crit));
+NORETURN(void rb_ec_stack_overflow(rb_execution_context_t *ec, int crit));
 # if defined __HAIKU__
 #   define USE_UCONTEXT_REG 1
 # elif !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__ || defined __amd64__))
@@ -842,17 +838,17 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
      * the fault page can be the next. */
     if (sp_page == fault_page || sp_page == fault_page + 1 ||
 	sp_page <= fault_page && fault_page <= bp_page) {
-	rb_thread_t *th = ruby_current_thread;
+	rb_execution_context_t *ec = GET_EC();
 	int crit = FALSE;
-	if ((uintptr_t)th->ec.tag->buf / pagesize <= fault_page + 1) {
+	if ((uintptr_t)ec->tag->buf / pagesize <= fault_page + 1) {
 	    /* drop the last tag if it is close to the fault,
 	     * otherwise it can cause stack overflow again at the same
 	     * place. */
-	    th->ec.tag = th->ec.tag->prev;
+	    ec->tag = ec->tag->prev;
 	    crit = TRUE;
 	}
 	reset_sigmask(sig);
-	rb_threadptr_stack_overflow(th, crit);
+	rb_ec_stack_overflow(ec, crit);
     }
 }
 # else
@@ -860,10 +856,10 @@ static void
 check_stack_overflow(int sig, const void *addr)
 {
     int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
-    rb_thread_t *th = ruby_current_thread;
+    rb_thread_t *th = GET_THREAD();
     if (ruby_stack_overflowed_p(th, addr)) {
 	reset_sigmask(sig);
-	rb_threadptr_stack_overflow(th, FALSE);
+	rb_ec_stack_overflow(th->ec, FALSE);
     }
 }
 # endif
@@ -991,8 +987,8 @@ sig_do_nothing(int sig)
 static void
 signal_exec(VALUE cmd, int safe, int sig)
 {
-    rb_thread_t *cur_th = GET_THREAD();
-    volatile unsigned long old_interrupt_mask = cur_th->interrupt_mask;
+    rb_execution_context_t *ec = GET_EC();
+    volatile unsigned long old_interrupt_mask = ec->interrupt_mask;
     enum ruby_tag_type state;
 
     /*
@@ -1004,19 +1000,19 @@ signal_exec(VALUE cmd, int safe, int sig)
     if (IMMEDIATE_P(cmd))
 	return;
 
-    cur_th->interrupt_mask |= TRAP_INTERRUPT_MASK;
-    TH_PUSH_TAG(cur_th);
-    if ((state = EXEC_TAG()) == TAG_NONE) {
+    ec->interrupt_mask |= TRAP_INTERRUPT_MASK;
+    EC_PUSH_TAG(ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	VALUE signum = INT2NUM(sig);
 	rb_eval_cmd(cmd, rb_ary_new3(1, signum), safe);
     }
-    TH_POP_TAG();
-    cur_th = GET_THREAD();
-    cur_th->interrupt_mask = old_interrupt_mask;
+    EC_POP_TAG();
+    ec = GET_EC();
+    ec->interrupt_mask = old_interrupt_mask;
 
     if (state) {
 	/* XXX: should be replaced with rb_threadptr_pending_interrupt_enque() */
-	TH_JUMP_TAG(cur_th, state);
+	EC_JUMP_TAG(ec, state);
     }
 }
 
@@ -1407,10 +1403,9 @@ install_sighandler(int signum, sighandler_t handler)
     }
     return 0;
 }
-#ifndef __native_client__
+
 #  define install_sighandler(signum, handler) \
     INSTALL_SIGHANDLER(install_sighandler(signum, handler), #signum, signum)
-#endif
 
 #if defined(SIGCLD) || defined(SIGCHLD)
 static int
@@ -1428,10 +1423,9 @@ init_sigchld(int sig)
     }
     return 0;
 }
-#  ifndef __native_client__
+
 #    define init_sigchld(signum) \
     INSTALL_SIGHANDLER(init_sigchld(signum), #signum, signum)
-#  endif
 #endif
 
 void

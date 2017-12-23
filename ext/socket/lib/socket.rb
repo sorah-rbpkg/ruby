@@ -336,6 +336,7 @@ class BasicSocket < IO
   # === Parameters
   # * +maxlen+ - the number of bytes to receive from the socket
   # * +flags+ - zero or more of the +MSG_+ options
+  # * +buf+ - destination String buffer
   # * +options+ - keyword hash, supporting `exception: false`
   #
   # === Example
@@ -445,19 +446,14 @@ class BasicSocket < IO
 
   # Linux-specific optimizations to avoid fcntl for IO#read_nonblock
   # and IO#write_nonblock using MSG_DONTWAIT
-  # Do other platforms suport MSG_DONTWAIT reliably?
+  # Do other platforms support MSG_DONTWAIT reliably?
   if RUBY_PLATFORM =~ /linux/ && Socket.const_defined?(:MSG_DONTWAIT)
     def read_nonblock(len, str = nil, exception: true) # :nodoc:
-      case rv = __recv_nonblock(len, 0, str, exception)
-      when '' # recv_nonblock returns empty string on EOF
-        exception ? raise(EOFError, 'end of file reached') : nil
-      else
-        rv
-      end
+      __read_nonblock(len, str, exception)
     end
 
     def write_nonblock(buf, exception: true) # :nodoc:
-      __sendmsg_nonblock(buf, 0, nil, nil, exception)
+      __write_nonblock(buf, exception)
     end
   end
 end

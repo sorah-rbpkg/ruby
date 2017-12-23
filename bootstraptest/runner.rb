@@ -1,6 +1,6 @@
 "exec" "${RUBY-ruby}" "-x" "$0" "$@" || true # -*- mode: ruby; coding: utf-8 -*-
 #!./ruby
-# $Id$
+# $Id: runner.rb 60671 2017-11-06 07:35:37Z ko1 $
 
 # NOTE:
 # Never use optparse in this file.
@@ -254,17 +254,12 @@ def show_progress(message = '')
     end
   end
 rescue Interrupt
+  $stderr.puts "\##{@count} #{@location}"
   raise Interrupt
 rescue Exception => err
   $stderr.print 'E'
   $stderr.puts if @verbose
   error err.message, message
-end
-
-# NativeClient is special.  The binary is cross-compiled.  But runs on the build environment.
-# So RUBY_PLATFORM in this process is not useful to detect it.
-def nacl?
-  @ruby and File.basename(@ruby.split(/\s/).first)['sel_ldr']
 end
 
 def assert_check(testsrc, message = '', opt = '', **argh)

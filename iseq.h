@@ -2,7 +2,7 @@
 
   iseq.h -
 
-  $Author$
+  $Author: mame $
   created at: 04/01/01 23:36:57 JST
 
   Copyright (C) 2004-2008 Koichi Sasada
@@ -12,8 +12,10 @@
 #ifndef RUBY_ISEQ_H
 #define RUBY_ISEQ_H 1
 
-#define ISEQ_MAJOR_VERSION 2
-#define ISEQ_MINOR_VERSION 3
+#include "ruby/version.h"
+
+#define ISEQ_MAJOR_VERSION RUBY_API_VERSION_MAJOR
+#define ISEQ_MINOR_VERSION RUBY_API_VERSION_MINOR
 
 #ifndef rb_iseq_t
 typedef struct rb_iseq_struct rb_iseq_t;
@@ -49,7 +51,6 @@ iseq_mark_ary_create(int flip_cnt)
 #define ISEQ_COVERAGE_SET(iseq, cov)  RARRAY_ASET(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_COVERAGE, cov)
 #define ISEQ_LINE_COVERAGE(iseq)      RARRAY_AREF(ISEQ_COVERAGE(iseq), COVERAGE_INDEX_LINES)
 #define ISEQ_BRANCH_COVERAGE(iseq)    RARRAY_AREF(ISEQ_COVERAGE(iseq), COVERAGE_INDEX_BRANCHES)
-#define ISEQ_METHOD_COVERAGE(iseq)    RARRAY_AREF(ISEQ_COVERAGE(iseq), COVERAGE_INDEX_METHODS)
 
 #define ISEQ_FLIP_CNT(iseq) FIX2INT(RARRAY_AREF(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_FLIP_CNT))
 
@@ -69,6 +70,12 @@ ISEQ_ORIGINAL_ISEQ(const rb_iseq_t *iseq)
     return NULL;
 }
 
+static inline void
+ISEQ_ORIGINAL_ISEQ_CLEAR(const rb_iseq_t *iseq)
+{
+    RARRAY_ASET(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_ORIGINAL_ISEQ, Qnil);
+}
+
 static inline VALUE *
 ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 {
@@ -77,15 +84,77 @@ ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
     return (VALUE *)RSTRING_PTR(str);
 }
 
-#define ISEQ_COMPILE_DATA(iseq)       (iseq)->aux.compile_data
+#define ISEQ_TRACE_EVENTS (RUBY_EVENT_LINE  | \
+			   RUBY_EVENT_CLASS | \
+			   RUBY_EVENT_END   | \
+			   RUBY_EVENT_CALL  | \
+			   RUBY_EVENT_RETURN| \
+			   RUBY_EVENT_B_CALL| \
+			   RUBY_EVENT_B_RETURN)
+
+#define ISEQ_NOT_LOADED_YET   IMEMO_FL_USER1
+#define ISEQ_USE_COMPILE_DATA IMEMO_FL_USER2
+
+struct iseq_compile_data {
+    /* GC is needed */
+    const VALUE err_info;
+    VALUE mark_ary;
+    const VALUE catch_table_ary;	/* Array */
+
+    /* GC is not needed */
+    struct iseq_label_data *start_label;
+    struct iseq_label_data *end_label;
+    struct iseq_label_data *redo_label;
+    const rb_iseq_t *current_block;
+    VALUE ensure_node;
+    VALUE for_iseq;
+    struct iseq_compile_data_ensure_node_stack *ensure_node_stack;
+    int loopval_popped;	/* used by NODE_BREAK */
+    int cached_const;
+    struct iseq_compile_data_storage *storage_head;
+    struct iseq_compile_data_storage *storage_current;
+    int last_line;
+    int label_no;
+    int node_level;
+    unsigned int ci_index;
+    unsigned int ci_kw_index;
+    const rb_compile_option_t *option;
+    struct rb_id_table *ivar_cache_table;
+#if SUPPORT_JOKE
+    st_table *labels_table;
+#endif
+};
+
+static inline struct iseq_compile_data *
+ISEQ_COMPILE_DATA(const rb_iseq_t *iseq)
+{
+    if (iseq->flags & ISEQ_USE_COMPILE_DATA) {
+	return iseq->aux.compile_data;
+    }
+    else {
+	return NULL;
+    }
+}
+
+static inline void
+ISEQ_COMPILE_DATA_ALLOC(rb_iseq_t *iseq)
+{
+    iseq->flags |= ISEQ_USE_COMPILE_DATA;
+    iseq->aux.compile_data = ZALLOC(struct iseq_compile_data);
+}
+
+static inline void
+ISEQ_COMPILE_DATA_CLEAR(rb_iseq_t *iseq)
+{
+    iseq->flags &= ~ISEQ_USE_COMPILE_DATA;
+    iseq->aux.compile_data = NULL;
+}
 
 static inline rb_iseq_t *
 iseq_imemo_alloc(void)
 {
     return (rb_iseq_t *)rb_imemo_new(imemo_iseq, 0, 0, 0, 0);
 }
-
-#define ISEQ_NOT_LOADED_YET   IMEMO_FL_USER1
 
 VALUE iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt);
 void ibf_load_iseq_complete(rb_iseq_t *iseq);
@@ -95,7 +164,7 @@ VALUE iseq_ibf_load_extra_data(VALUE str);
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /* compile.c */
-VALUE rb_iseq_compile_node(rb_iseq_t *iseq, NODE *node);
+VALUE rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node);
 int rb_iseq_translate_threaded_code(rb_iseq_t *iseq);
 VALUE *rb_iseq_original_iseq(const rb_iseq_t *iseq);
 void rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc,
@@ -108,10 +177,10 @@ VALUE rb_iseq_load(VALUE data, VALUE parent, VALUE opt);
 VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
 struct st_table *ruby_insn_make_insn_table(void);
 unsigned int rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos);
+void rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events);
+void rb_iseq_trace_set_all(rb_event_flag_t turnon_events);
+void rb_iseq_trace_on_all(void);
 
-int rb_iseqw_line_trace_each(VALUE iseqval, int (*func)(int line, rb_event_flag_t *events_ptr, void *d), void *data);
-VALUE rb_iseqw_line_trace_all(VALUE iseqval);
-VALUE rb_iseqw_line_trace_specify(VALUE iseqval, VALUE pos, VALUE set);
 VALUE rb_iseqw_new(const rb_iseq_t *iseq);
 const rb_iseq_t *rb_iseqw_to_iseq(VALUE iseqw);
 
@@ -140,9 +209,10 @@ struct rb_compile_option_struct {
     int debug_level;
 };
 
-struct iseq_line_info_entry {
+struct iseq_insn_info_entry {
     unsigned int position;
-    unsigned int line_no;
+    int line_no;
+    rb_event_flag_t events;
 };
 
 struct iseq_catch_table_entry {
@@ -203,37 +273,6 @@ struct iseq_compile_data_storage {
 /* account for flexible array */
 #define SIZEOF_ISEQ_COMPILE_DATA_STORAGE \
     (sizeof(struct iseq_compile_data_storage) - 1)
-
-struct iseq_compile_data {
-    /* GC is needed */
-    const VALUE err_info;
-    VALUE mark_ary;
-    const VALUE catch_table_ary;	/* Array */
-
-    /* GC is not needed */
-    struct iseq_label_data *start_label;
-    struct iseq_label_data *end_label;
-    struct iseq_label_data *redo_label;
-    const rb_iseq_t *current_block;
-    VALUE ensure_node;
-    VALUE for_iseq;
-    struct iseq_compile_data_ensure_node_stack *ensure_node_stack;
-    int loopval_popped;	/* used by NODE_BREAK */
-    int cached_const;
-    struct iseq_compile_data_storage *storage_head;
-    struct iseq_compile_data_storage *storage_current;
-    int last_line;
-    int last_coverable_line;
-    int label_no;
-    int node_level;
-    unsigned int ci_index;
-    unsigned int ci_kw_index;
-    const rb_compile_option_t *option;
-    struct rb_id_table *ivar_cache_table;
-#if SUPPORT_JOKE
-    st_table *labels_table;
-#endif
-};
 
 /* defined? */
 
