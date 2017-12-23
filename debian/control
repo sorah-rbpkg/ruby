@@ -20,7 +20,6 @@ Build-Depends: autotools-dev,
                netbase,
                openssl,
                procps,
-               ruby2.0 | ruby | ruby-interpreter,
                rubygems-integration (>= 1.6),
                systemtap-sdt-dev [linux-any],
                zlib1g-dev
