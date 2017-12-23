@@ -182,4 +182,22 @@ class TestPsych < Psych::TestCase
       ["tag:example.com,2002:foo", "bar"]
     ], types
   end
+
+  def test_symbolize_names
+    yaml = <<-eoyml
+foo:
+  bar: baz
+hoge:
+  - fuga: piyo
+    eoyml
+
+    result = Psych.load(yaml)
+    assert_equal result, { "foo" => { "bar" => "baz"}, "hoge" => [{ "fuga" => "piyo" }] }
+
+    result = Psych.load(yaml, symbolize_names: true)
+    assert_equal result, { foo: { bar: "baz" }, hoge: [{ fuga: "piyo" }] }
+
+    result = Psych.safe_load(yaml, symbolize_names: true)
+    assert_equal result, { foo: { bar: "baz" }, hoge: [{ fuga: "piyo" }] }
+  end
 end

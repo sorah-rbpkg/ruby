@@ -2,7 +2,7 @@
 
   string.c -
 
-  $Author$
+  $Author: tadd $
   created at: Mon Aug  9 17:12:58 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -19,6 +19,7 @@
 #include "ruby_assert.h"
 #include "id.h"
 #include "debug_counter.h"
+#include "ruby/util.h"
 
 #define BEG(no) (regs->beg[(no)])
 #define END(no) (regs->end[(no)])
@@ -1010,6 +1011,10 @@ rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *eenc)
     rb_encoding *ienc;
     VALUE str;
     const int eidx = rb_enc_to_index(eenc);
+
+    if (!ptr) {
+	return rb_tainted_str_new_with_enc(ptr, len, eenc);
+    }
 
     /* ASCII-8BIT case, no conversion */
     if ((eidx == rb_ascii8bit_encindex()) ||
@@ -2903,15 +2908,30 @@ rb_str_append(VALUE str, VALUE str2)
     return rb_str_buf_append(str, str2);
 }
 
+#define MIN_PRE_ALLOC_SIZE 48
+
 VALUE
 rb_str_concat_literals(size_t num, const VALUE *strary)
 {
     VALUE str;
-    size_t i;
+    size_t i, s;
+    long len = 1;
 
-    if (!num) return rb_str_new(0, 0);
-    str = rb_str_resurrect(strary[0]);
-    for (i = 1; i < num; ++i) {
+    if (UNLIKELY(!num)) return rb_str_new(0, 0);
+    if (UNLIKELY(num == 1)) return rb_str_resurrect(strary[0]);
+
+    for (i = 0; i < num; ++i) { len += RSTRING_LEN(strary[i]); }
+    if (LIKELY(len < MIN_PRE_ALLOC_SIZE)) {
+	str = rb_str_resurrect(strary[0]);
+	s = 1;
+    }
+    else {
+	str = rb_str_buf_new(len);
+	rb_enc_copy(str, strary[0]);
+	s = 0;
+    }
+
+    for (i = s; i < num; ++i) {
 	const VALUE v = strary[i];
 	int encidx = ENCODING_GET(v);
 
@@ -2927,29 +2947,25 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
 }
 
 /*
- *  Document-method: String#<<
- *  Document-method: String#concat
- *
  *  call-seq:
- *     str << integer                      -> str
- *     str.concat(integer1, integer2,...)  -> str
- *     str << obj                          -> str
  *     str.concat(obj1, obj2,...)          -> str
  *
- *  Append---Concatenates the given object to <i>str</i>. If the object is an
- *  <code>Integer</code>, it is considered as a codepoint, and is converted
- *  to a character before concatenation. Concat can take multiple arguments.
- *  All the arguments are concatenated in order.
+ *  Concatenates the given object(s) to <i>str</i>. If an object is an
+ *  <code>Integer</code>, it is considered a codepoint and converted
+ *  to a character before concatenation.
+ *
+ *  +concat+ can take multiple arguments, and all the arguments are
+ *  concatenated in order.
  *
  *     a = "hello "
- *     a << "world"   #=> "hello world"
- *     a.concat(33)   #=> "hello world!"
- *     a              #=> "hello world!"
+ *     a.concat("world", 33)      #=> "hello world!"
+ *     a                          #=> "hello world!"
  *
  *     b = "sn"
- *     b.concat(b, b)    #=> "snsnsn"
+ *     b.concat("_", b, "_", b)   #=> "sn_sn_sn"
+ *
+ *  See also String#<<, which takes a single argument.
  */
-
 static VALUE
 rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
 {
@@ -2971,6 +2987,21 @@ rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
     return str;
 }
 
+/*
+ *  call-seq:
+ *     str << obj      -> str
+ *     str << integer  -> str
+ *
+ *  Appends the given object to <i>str</i>. If the object is an
+ *  <code>Integer</code>, it is considered a codepoint and converted
+ *  to a character before being appended.
+ *
+ *     a = "hello "
+ *     a << "world"   #=> "hello world"
+ *     a << 33        #=> "hello world!"
+ *
+ *  See also String#concat, which takes multiple arguments.
+ */
 VALUE
 rb_str_concat(VALUE str1, VALUE str2)
 {
@@ -3053,7 +3084,10 @@ rb_str_prepend_multi(int argc, VALUE *argv, VALUE str)
 {
     str_modifiable(str);
 
-    if (argc > 0) {
+    if (argc == 1) {
+	rb_str_update(str, 0L, 0L, argv[0]);
+    }
+    else if (argc > 1) {
 	int i;
 	VALUE arg_str = rb_str_tmp_new(0);
 	rb_enc_copy(arg_str, str);
@@ -3389,13 +3423,34 @@ str_casecmp_p(VALUE str1, VALUE str2)
     return rb_str_eql(folded_str1, folded_str2);
 }
 
+static long
+strseq_core(const char *str_ptr, const char *str_ptr_end, long str_len,
+	    const char *sub_ptr, long sub_len, long offset, rb_encoding *enc)
+{
+    const char *search_start = str_ptr;
+    long pos, search_len = str_len - offset;
+
+    for (;;) {
+	const char *t;
+	pos = rb_memsearch(sub_ptr, sub_len, search_start, search_len, enc);
+	if (pos < 0) return pos;
+	t = rb_enc_right_char_head(search_start, search_start+pos, str_ptr_end, enc);
+	if (t == search_start + pos) break;
+	search_len -= t - search_start;
+	if (search_len <= 0) return -1;
+	offset += t - search_start;
+	search_start = t;
+    }
+    return pos + offset;
+}
+
 #define rb_str_index(str, sub, offset) rb_strseq_index(str, sub, offset, 0)
 
 static long
 rb_strseq_index(VALUE str, VALUE sub, long offset, int in_byte)
 {
-    const char *str_ptr, *str_ptr_end, *sub_ptr, *search_start;
-    long pos, str_len, sub_len, search_len;
+    const char *str_ptr, *str_ptr_end, *sub_ptr;
+    long str_len, sub_len;
     int single_byte = single_byte_optimizable(str);
     rb_encoding *enc;
 
@@ -3425,21 +3480,7 @@ rb_strseq_index(VALUE str, VALUE sub, long offset, int in_byte)
     if (sub_len == 0) return offset;
 
     /* need proceed one character at a time */
-
-    search_start = str_ptr;
-    search_len = RSTRING_LEN(str) - offset;
-    for (;;) {
-	const char *t;
-	pos = rb_memsearch(sub_ptr, sub_len, search_start, search_len, enc);
-	if (pos < 0) return pos;
-	t = rb_enc_right_char_head(search_start, search_start+pos, str_ptr_end, enc);
-	if (t == search_start + pos) break;
-	search_len -= t - search_start;
-	if (search_len <= 0) return -1;
-	offset += t - search_start;
-	search_start = t;
-    }
-    return pos + offset;
+    return strseq_core(str_ptr, str_ptr_end, str_len, sub_ptr, sub_len, offset, enc);
 }
 
 
@@ -5164,7 +5205,7 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *     str.gsub(pattern) {|match| block }   -> new_str
  *     str.gsub(pattern)                    -> enumerator
  *
- *  Returns a copy of <i>str</i> with the <em>all</em> occurrences of
+ *  Returns a copy of <i>str</i> with <em>all</em> occurrences of
  *  <i>pattern</i> substituted for the second argument. The <i>pattern</i> is
  *  typically a <code>Regexp</code>; if given as a <code>String</code>, any
  *  regular expression metacharacters it contains will be interpreted
@@ -6040,6 +6081,264 @@ rb_str_dump(VALUE str)
     return result;
 }
 
+enum undump_source_format {
+    UNDUMP_SOURCE_SIMPLE, /* "..." */
+    UNDUMP_SOURCE_FORCE_ENCODING, /* "...".force_encoding("...") */
+    UNDUMP_SOURCE_INVALID
+};
+
+static enum undump_source_format
+check_undump_source_format(const char *s, const char *s_end, long len, rb_encoding *enc,
+			   VALUE *forced_enc_str, long *forced_enc_str_len)
+{
+    unsigned int cbeg, cend;
+    const char *prev;
+    static const long force_encoding_minimum_len = rb_strlen_lit("\"\".force_encoding(\"\")");
+    static const char force_encoding_middle_part[] = "\".force_encoding(\"";
+    static const long force_encoding_middle_part_len = rb_strlen_lit("\".force_encoding(\"");
+    static const char force_encoding_end_part[] = "\")";
+    static const long force_encoding_end_part_len = rb_strlen_lit("\")");
+    long pos_before_middle_part, pos_before_end_part, pos_after_middle_part;
+
+    if (len < 2) return UNDUMP_SOURCE_INVALID;
+
+    cbeg = rb_enc_mbc_to_codepoint(s, s_end, enc);
+    if (cbeg != '"') return UNDUMP_SOURCE_INVALID;
+
+    prev = rb_enc_prev_char(s, s_end, s_end, enc);
+    cend = rb_enc_mbc_to_codepoint(prev, s_end, enc);
+    if (cend == '"') return UNDUMP_SOURCE_SIMPLE;
+
+    if (cend != ')' || len < force_encoding_minimum_len) {
+	return UNDUMP_SOURCE_INVALID;
+    }
+
+    /* find '".force_encoding("' */
+    pos_before_middle_part = strseq_core(s, s_end, len,
+					 force_encoding_middle_part, force_encoding_middle_part_len,
+					 0, enc);
+    if (pos_before_middle_part <= 0) {
+	return UNDUMP_SOURCE_INVALID;
+    }
+
+    pos_after_middle_part = pos_before_middle_part + force_encoding_middle_part_len;
+    /* find '")' */
+    pos_before_end_part = strseq_core(s + pos_after_middle_part, s_end, len - pos_after_middle_part,
+				      force_encoding_end_part, force_encoding_end_part_len,
+				      0, enc);
+    if (pos_before_end_part < 0 || pos_after_middle_part + pos_before_end_part + 2 != len) {
+	return UNDUMP_SOURCE_INVALID;
+    }
+
+    *forced_enc_str_len = pos_before_end_part;
+    *forced_enc_str = rb_str_new(s + pos_after_middle_part, *forced_enc_str_len);
+    return UNDUMP_SOURCE_FORCE_ENCODING;
+}
+
+static int
+unescape_ascii(unsigned int c)
+{
+    switch (c) {
+      case 'n':
+	return '\n';
+      case 'r':
+	return '\r';
+      case 't':
+	return '\t';
+      case 'f':
+	return '\f';
+      case 'v':
+	return '\13';
+      case 'b':
+	return '\010';
+      case 'a':
+	return '\007';
+      case 'e':
+	return 033;
+      default:
+	UNREACHABLE;
+    }
+}
+
+static int
+undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_encoding **penc)
+{
+    unsigned int c, c2;
+    int n, codelen;
+    size_t hexlen;
+    char buf[6];
+    static rb_encoding *enc_utf8 = NULL;
+
+    c = rb_enc_codepoint_len(s, s_end, &n, *penc);
+    switch (c) {
+      case '\\':
+      case '"':
+      case '#':
+	rb_str_cat(undumped, s, n); /* cat itself */
+	n++;
+	break;
+      case 'n':
+      case 'r':
+      case 't':
+      case 'f':
+      case 'v':
+      case 'b':
+      case 'a':
+      case 'e':
+	*buf = (char)unescape_ascii(c);
+	rb_str_cat(undumped, buf, n);
+	n++;
+	break;
+      case 'u':
+	if (s+1 >= s_end) {
+	    rb_raise(rb_eRuntimeError, "invalid Unicode escape");
+	}
+	if (enc_utf8 == NULL) enc_utf8 = rb_utf8_encoding();
+	if (*penc != enc_utf8) {
+	    *penc = enc_utf8;
+	    rb_enc_associate(undumped, enc_utf8);
+	    ENC_CODERANGE_CLEAR(undumped);
+	}
+	c2 = rb_enc_codepoint_len(s+1, s_end, NULL, *penc);
+	if (c2 == '{') { /* handle \u{...} form */
+	    const char *hexstr = s + 2;
+	    int hex;
+	    static const char* const close_brace = "}";
+	    long pos;
+
+	    if (hexstr >= s_end) {
+		rb_raise(rb_eRuntimeError, "unterminated Unicode escape");
+	    }
+	    /* find close brace */
+	    pos = strseq_core(hexstr, s_end, s_end - hexstr, close_brace, 1, 0, *penc);
+	    if (pos < 0) {
+		rb_raise(rb_eRuntimeError, "unterminated Unicode escape");
+	    }
+	    hex = scan_hex(hexstr, pos, &hexlen);
+	    if (hexlen == 0 || hexlen > 6) {
+		rb_raise(rb_eRuntimeError, "invalid Unicode escape");
+	    }
+	    if (hex > 0x10ffff) {
+		rb_raise(rb_eRuntimeError, "invalid Unicode codepoint (too large)");
+	    }
+	    if ((hex & 0xfffff800) == 0xd800) {
+		rb_raise(rb_eRuntimeError, "invalid Unicode codepoint");
+	    }
+	    codelen = rb_enc_codelen(hex, *penc);
+	    rb_enc_mbcput(hex, buf, *penc);
+	    rb_str_cat(undumped, buf, codelen);
+	    n += rb_strlen_lit("u{}") + hexlen;
+	}
+	else { /* handle \uXXXX form */
+	    int hex = scan_hex(s+1, 4, &hexlen);
+	    if (hexlen != 4) {
+		rb_raise(rb_eRuntimeError, "invalid Unicode escape");
+	    }
+	    codelen = rb_enc_codelen(hex, *penc);
+	    rb_enc_mbcput(hex, buf, *penc);
+	    rb_str_cat(undumped, buf, codelen);
+	    n += rb_strlen_lit("uXXXX");
+	}
+	break;
+      case 'x':
+	if (s+1 >= s_end) {
+	    rb_raise(rb_eRuntimeError, "invalid hex escape");
+	}
+	c2 = scan_hex(s+1, 2, &hexlen);
+	if (hexlen != 2) {
+	    rb_raise(rb_eRuntimeError, "invalid hex escape");
+	}
+	*buf = (char)c2;
+	rb_str_cat(undumped, buf, 1L);
+	n += rb_strlen_lit("xXX");
+	break;
+      default:
+	rb_str_cat(undumped, "\\", 1L); /* keep backslash */
+    }
+
+    return n;
+}
+
+static VALUE rb_str_is_ascii_only_p(VALUE str);
+
+/*
+ *  call-seq:
+ *     str.undump   -> new_str
+ *
+ *  Produces unescaped version of +str+.
+ *  See also String#dump because String#undump does inverse of String#dump.
+ *
+ *    "\"hello \\n ''\"".undump #=> "hello \n ''"
+ */
+
+static VALUE
+str_undump(VALUE str)
+{
+    const char *s = RSTRING_PTR(str);
+    const char *s_end = RSTRING_END(str);
+    long len = RSTRING_LEN(str);
+    rb_encoding *enc = rb_enc_get(str), *forced_enc;
+    int n;
+    unsigned int c;
+    enum undump_source_format source_format;
+    VALUE undumped = rb_enc_str_new(s, 0L, enc);
+    VALUE forced_enc_str;
+    long forced_enc_str_len;
+    int w;
+
+    rb_must_asciicompat(str);
+    if (rb_str_is_ascii_only_p(str) == Qfalse) {
+	rb_raise(rb_eRuntimeError, "non-ASCII character detected");
+    }
+    if (!str_null_check(str, &w)) {
+	rb_raise(rb_eRuntimeError, "string contains null byte");
+    }
+
+    source_format = check_undump_source_format(s, s_end, len, enc,
+					       &forced_enc_str, &forced_enc_str_len);
+    if (source_format == UNDUMP_SOURCE_INVALID) {
+	rb_raise(rb_eRuntimeError, "not wrapped with '\"' nor '\"...\".force_encoding(\"...\")' form");
+    }
+    if (source_format == UNDUMP_SOURCE_FORCE_ENCODING) {
+	forced_enc = rb_find_encoding(forced_enc_str);
+	if (forced_enc == NULL) {
+	    rb_raise(rb_eRuntimeError, "unknown encoding name - %"PRIsVALUE, forced_enc_str);
+	}
+    }
+
+    /* strip '"' at the start */
+    s++;
+    if (source_format == UNDUMP_SOURCE_SIMPLE) {
+	/* strip '"' at the end */
+	s_end--;
+    } else { /* source_format == UNDUMP_SOURCE_FORCE_ENCODING */
+	/* strip '".force_encoding("...")' */
+	s_end -= rb_strlen_lit("\".force_encoding(\"\")") + forced_enc_str_len;
+    }
+
+    for (; s < s_end; s += n) {
+	c = rb_enc_codepoint_len(s, s_end, &n, enc);
+	if (c == '\\') {
+	    if (s+1 >= s_end) {
+		rb_raise(rb_eRuntimeError, "invalid escape");
+	    }
+	    n = undump_after_backslash(undumped, s+1, s_end, &enc);
+	}
+	else if (c == '"') {
+	    rb_raise(rb_eRuntimeError, "non-escaped double quote detected");
+	}
+	else {
+	    rb_str_cat(undumped, s, n);
+	}
+    }
+
+    if (source_format == UNDUMP_SOURCE_FORCE_ENCODING) {
+	rb_enc_associate(undumped, forced_enc);
+	ENC_CODERANGE_CLEAR(undumped);
+    }
+    OBJ_INFECT(undumped, str);
+    return undumped;
+}
 
 static void
 rb_str_check_dummy_enc(rb_encoding *enc)
@@ -7760,14 +8059,16 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
 
 /*
  *  call-seq:
- *     str.each_line(separator=$/) {|substr| block }   -> str
- *     str.each_line(separator=$/)                     -> an_enumerator
+ *     str.each_line(separator=$/ [, getline_args]) {|substr| block } -> str
+ *     str.each_line(separator=$/ [, getline_args])                   -> an_enumerator
  *
  *  Splits <i>str</i> using the supplied parameter as the record
  *  separator (<code>$/</code> by default), passing each substring in
  *  turn to the supplied block.  If a zero-length record separator is
  *  supplied, the string is split into paragraphs delimited by
  *  multiple successive newlines.
+ *
+ *  See IO.readlines for details about getline_args.
  *
  *  If no block is given, an enumerator is returned instead.
  *
@@ -8293,6 +8594,11 @@ chompped_length(VALUE str, VALUE rs)
     return len;
 }
 
+/*!
+ * Returns the separator for arguments of rb_str_chomp.
+ *
+ * @return returns rb_ps ($/) as default, the default value of rb_ps ($/) is "\n".
+ */
 static VALUE
 chomp_rs(int argc, const VALUE *argv)
 {
@@ -8803,16 +9109,13 @@ rb_str_oct(VALUE str)
 static VALUE
 rb_str_crypt(VALUE str, VALUE salt)
 {
-#undef LARGE_CRYPT_DATA
 #ifdef HAVE_CRYPT_R
-# if defined SIZEOF_CRYPT_DATA && SIZEOF_CRYPT_DATA <= 256
-    struct crypt_data cdata, *const data = &cdata;
-# else
-#   define LARGE_CRYPT_DATA
-    struct crypt_data *data = ALLOC(struct crypt_data);
-# endif
+    VALUE databuf;
+    struct crypt_data *data;
+#   define CRYPT_END() ALLOCV_END(databuf)
 #else
     extern char *crypt(const char *, const char *);
+#   define CRYPT_END() (void)0
 #endif
     VALUE result;
     const char *s, *saltp;
@@ -8841,6 +9144,7 @@ rb_str_crypt(VALUE str, VALUE salt)
     }
 #endif
 #ifdef HAVE_CRYPT_R
+    data = ALLOCV(databuf, sizeof(struct crypt_data));
 # ifdef HAVE_STRUCT_CRYPT_DATA_INITIALIZED
     data->initialized = 0;
 # endif
@@ -8849,17 +9153,12 @@ rb_str_crypt(VALUE str, VALUE salt)
     res = crypt(s, saltp);
 #endif
     if (!res) {
-#ifdef LARGE_CRYPT_DATA
 	int err = errno;
-	xfree(data);
-	errno = err;
-#endif
-	rb_sys_fail("crypt");
+	CRYPT_END();
+	rb_syserr_fail(err, "crypt");
     }
     result = rb_str_new_cstr(res);
-#ifdef LARGE_CRYPT_DATA
-    xfree(data);
-#endif
+    CRYPT_END();
     FL_SET_RAW(result, OBJ_TAINTED_RAW(str) | OBJ_TAINTED_RAW(salt));
     return result;
 }
@@ -9219,11 +9518,20 @@ rb_str_start_with(int argc, VALUE *argv, VALUE str)
 
     for (i=0; i<argc; i++) {
 	VALUE tmp = argv[i];
-	StringValue(tmp);
-	rb_enc_check(str, tmp);
-	if (RSTRING_LEN(str) < RSTRING_LEN(tmp)) continue;
-	if (memcmp(RSTRING_PTR(str), RSTRING_PTR(tmp), RSTRING_LEN(tmp)) == 0)
-	    return Qtrue;
+	switch (TYPE(tmp)) {
+	  case T_REGEXP:
+	    {
+		bool r = rb_reg_start_with_p(tmp, str);
+		if (r) return Qtrue;
+	    }
+	    break;
+	  default:
+	    StringValue(tmp);
+	    rb_enc_check(str, tmp);
+	    if (RSTRING_LEN(str) < RSTRING_LEN(tmp)) continue;
+	    if (memcmp(RSTRING_PTR(str), RSTRING_PTR(tmp), RSTRING_LEN(tmp)) == 0)
+		return Qtrue;
+	}
     }
     return Qfalse;
 }
@@ -9264,6 +9572,15 @@ rb_str_end_with(int argc, VALUE *argv, VALUE str)
     return Qfalse;
 }
 
+/*!
+ * Returns the length of the <i>prefix</i> to be deleted in the given <i>str</i>,
+ * returning 0 if <i>str</i> does not start with the <i>prefix</i>.
+ *
+ * @param str the target
+ * @param prefix the prefix
+ * @retval 0 if the given <i>str</i> does not start with the given <i>prefix</i>
+ * @retval Positive-Integer otherwise
+ */
 static long
 deleted_prefix_length(VALUE str, VALUE prefix)
 {
@@ -9330,6 +9647,15 @@ rb_str_delete_prefix(VALUE str, VALUE prefix)
     return rb_str_subseq(str, prefixlen, RSTRING_LEN(str) - prefixlen);
 }
 
+/*!
+ * Returns the length of the <i>suffix</i> to be deleted in the given <i>str</i>,
+ * returning 0 if <i>str</i> does not end with the <i>suffix</i>.
+ *
+ * @param str the target
+ * @param suffix the suffix
+ * @retval 0 if the given <i>str</i> does not end with the given <i>suffix</i>
+ * @retval Positive-Integer otherwise
+ */
 static long
 deleted_suffix_length(VALUE str, VALUE suffix)
 {
@@ -10526,6 +10852,7 @@ Init_String(void)
     rb_define_method(rb_cString, "to_str", rb_str_to_s, 0);
     rb_define_method(rb_cString, "inspect", rb_str_inspect, 0);
     rb_define_method(rb_cString, "dump", rb_str_dump, 0);
+    rb_define_method(rb_cString, "undump", str_undump, 0);
 
     sym_ascii      = ID2SYM(rb_intern("ascii"));
     sym_turkic     = ID2SYM(rb_intern("turkic"));

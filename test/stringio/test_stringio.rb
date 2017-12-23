@@ -206,6 +206,16 @@ class TestStringIO < Test::Unit::TestCase
     }
   end
 
+  def test_write_with_multiple_arguments
+    s = ""
+    f = StringIO.new(s, "w")
+    f.write("foo", "bar")
+    f.close
+    assert_equal("foobar", s)
+  ensure
+    f.close unless f.closed?
+  end
+
   def test_set_encoding
     bug10285 = '[ruby-core:65240] [Bug #10285]'
     f = StringIO.new()
@@ -712,9 +722,9 @@ class TestStringIO < Test::Unit::TestCase
     s = StringIO.new
     s.freeze
     bug = '[ruby-core:33648]'
-    assert_raise(RuntimeError, bug) {s.puts("foo")}
-    assert_raise(RuntimeError, bug) {s.string = "foo"}
-    assert_raise(RuntimeError, bug) {s.reopen("")}
+    assert_raise(FrozenError, bug) {s.puts("foo")}
+    assert_raise(FrozenError, bug) {s.string = "foo"}
+    assert_raise(FrozenError, bug) {s.reopen("")}
   end
 
   def test_frozen_string

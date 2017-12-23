@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 #
-# $Id$
+# $Id: sexp.rb 59246 2017-07-01 02:01:05Z nobu $
 #
 # Copyright (c) 2004,2005 Minero Aoki
 #

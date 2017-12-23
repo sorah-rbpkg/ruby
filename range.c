@@ -2,7 +2,7 @@
 
   range.c -
 
-  $Author$
+  $Author: nobu $
   created at: Thu Aug 19 17:46:47 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -987,11 +987,14 @@ rb_range_values(VALUE range, VALUE *begp, VALUE *endp, int *exclp)
 	excl = EXCL(range);
     }
     else {
-	if (!rb_respond_to(range, id_beg)) return (int)Qfalse;
-	if (!rb_respond_to(range, id_end)) return (int)Qfalse;
-	b = rb_funcall(range, id_beg, 0);
-	e = rb_funcall(range, id_end, 0);
-	excl = RTEST(rb_funcall(range, rb_intern("exclude_end?"), 0));
+	VALUE x;
+	b = rb_check_funcall(range, id_beg, 0, 0);
+	if (b == Qundef) return (int)Qfalse;
+	e = rb_check_funcall(range, id_end, 0, 0);
+	if (e == Qundef) return (int)Qfalse;
+	x = rb_check_funcall(range, rb_intern("exclude_end?"), 0, 0);
+	if (x == Qundef) return (int)Qfalse;
+	excl = RTEST(x);
     }
     *begp = b;
     *endp = e;

@@ -2,7 +2,7 @@
 
   ruby/ruby.h -
 
-  $Author$
+  $Author: shyouhei $
   created at: Thu Jun 10 14:26:32 JST 1993
 
   Copyright (C) 1993-2008 Yukihiro Matsumoto
@@ -478,7 +478,7 @@ enum ruby_value_type {
     RUBY_T_FIXNUM = 0x15,
     RUBY_T_UNDEF  = 0x16,
 
-    RUBY_T_IMEMO  = 0x1a,
+    RUBY_T_IMEMO  = 0x1a, /*!< @see imemo_type */
     RUBY_T_NODE   = 0x1b,
     RUBY_T_ICLASS = 0x1c,
     RUBY_T_ZOMBIE = 0x1d,
@@ -1946,6 +1946,7 @@ RUBY_EXTERN VALUE rb_eKeyError;
 RUBY_EXTERN VALUE rb_eRangeError;
 RUBY_EXTERN VALUE rb_eIOError;
 RUBY_EXTERN VALUE rb_eRuntimeError;
+RUBY_EXTERN VALUE rb_eFrozenError;
 RUBY_EXTERN VALUE rb_eSecurityError;
 RUBY_EXTERN VALUE rb_eSystemCallError;
 RUBY_EXTERN VALUE rb_eThreadError;
@@ -2096,8 +2097,7 @@ int ruby_native_thread_p(void);
 #define RUBY_EVENT_TRACEPOINT_ALL    0xffff
 
 /* special events */
-#define RUBY_EVENT_SPECIFIED_LINE         0x010000
-#define RUBY_EVENT_COVERAGE               0x020000
+#define RUBY_EVENT_RESERVED_FOR_INTERNAL_USE 0x030000
 
 /* internal events */
 #define RUBY_INTERNAL_EVENT_SWITCH          0x040000

@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundler/inline#gemfile" do
   def script(code, options = {})
@@ -44,17 +43,14 @@ RSpec.describe "bundler/inline#gemfile" do
     build_lib "eight", "1.0.0" do |s|
       s.write "lib/eight.rb", "puts 'eight'"
     end
-
-    build_lib "four", "1.0.0" do |s|
-      s.write "lib/four.rb", "puts 'four'"
-    end
   end
 
   it "requires the gems" do
     script <<-RUBY
       gemfile do
-        path "#{lib_path}"
-        gem "two"
+        path "#{lib_path}" do
+          gem "two"
+        end
       end
     RUBY
 
@@ -63,8 +59,9 @@ RSpec.describe "bundler/inline#gemfile" do
 
     script <<-RUBY
       gemfile do
-        path "#{lib_path}"
-        gem "eleven"
+        path "#{lib_path}" do
+          gem "eleven"
+        end
       end
 
       puts "success"
@@ -133,8 +130,9 @@ RSpec.describe "bundler/inline#gemfile" do
       require 'bundler'
       options = { :ui => Bundler::UI::Shell.new }
       gemfile(false, options) do
-        path "#{lib_path}"
-        gem "two"
+        path "#{lib_path}" do
+          gem "two"
+        end
       end
       puts "OKAY" if options.key?(:ui)
     RUBY
@@ -262,7 +260,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
       puts RACK
     RUBY
-    expect(exitstatus).to eq(0) if exitstatus
-    expect(out).to eq "1.0.0"
+    expect(last_command).to be_success
+    expect(last_command.stdout).to eq "1.0.0"
   end
 end

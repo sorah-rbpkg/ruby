@@ -143,6 +143,14 @@ end
     assert_match(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/, uuid)
   end
 
+  def test_alphanumeric
+    65.times do |n|
+      an = @it.alphanumeric(n)
+      assert_match(/\A[0-9a-zA-Z]*\z/, an)
+      assert_equal(n, an.length)
+    end
+  end
+
   def protect
     begin
       yield

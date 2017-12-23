@@ -22,7 +22,7 @@ class TestRange < Test::Unit::TestCase
   def test_frozen_initialize
     r = Range.allocate
     r.freeze
-    assert_raise(RuntimeError){r.__send__(:initialize, 1, 2)}
+    assert_raise(FrozenError){r.__send__(:initialize, 1, 2)}
   end
 
   def test_range_string
@@ -387,12 +387,15 @@ class TestRange < Test::Unit::TestCase
     assert_raise(TypeError) { [][o] }
     class << o; attr_accessor :end end
     o.end = 0
-    assert_raise(NoMethodError) { [][o] }
+    assert_raise(TypeError) { [][o] }
     def o.exclude_end=(v) @exclude_end = v end
     def o.exclude_end?() @exclude_end end
     o.exclude_end = false
     assert_nil([0][o])
     assert_raise(RangeError) { [0][o] = 1 }
+    class << o
+      private :begin, :end
+    end
     o.begin = 10
     o.end = 10
     assert_nil([0][o])

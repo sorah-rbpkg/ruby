@@ -2,7 +2,7 @@
 #
 # tempfile - manipulates temporary files
 #
-# $Id$
+# $Id: tempfile.rb 61155 2017-12-12 11:56:25Z shyouhei $
 #
 
 require 'delegate'
@@ -124,7 +124,7 @@ class Tempfile < DelegateClass(File)
   # If Tempfile.new cannot find a unique filename within a limited
   # number of tries, then it will raise an exception.
   def initialize(basename="", tmpdir=nil, mode: 0, **options)
-    warn "Tempfile.new doesn't call the given block." if block_given?
+    warn "Tempfile.new doesn't call the given block.", uplevel: 1 if block_given?
 
     @unlinked = false
     @mode = mode|File::RDWR|File::CREAT|File::EXCL
@@ -250,7 +250,7 @@ class Tempfile < DelegateClass(File)
     def call(*args)
       return if @pid != Process.pid
 
-      warn "removing #{@tmpfile.path}..." if $DEBUG
+      $stderr.puts "removing #{@tmpfile.path}..." if $DEBUG
 
       @tmpfile.close
       begin
@@ -258,7 +258,7 @@ class Tempfile < DelegateClass(File)
       rescue Errno::ENOENT
       end
 
-      warn "done" if $DEBUG
+      $stderr.puts "done" if $DEBUG
     end
   end
 
@@ -274,7 +274,7 @@ class Tempfile < DelegateClass(File)
     # object will be automatically closed after the block terminates.
     # The call returns the value of the block.
     #
-    # In any case, all arguments (+*args+) will be passed to Tempfile.new.
+    # In any case, all arguments (<code>*args</code>) will be passed to Tempfile.new.
     #
     #   Tempfile.open('foo', '/home/temp') do |f|
     #      ... do something with f ...
@@ -317,7 +317,8 @@ end
 # the temporary file is removed after the block terminates.
 # The call returns the value of the block.
 #
-# In any case, all arguments (+*args+) will be treated as Tempfile.new.
+# In any case, all arguments (+basename+, +tmpdir+, +mode+, and
+# <code>**options</code>) will be treated as Tempfile.new.
 #
 #   Tempfile.create('foo', '/home/temp') do |f|
 #      ... do something with f ...

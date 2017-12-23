@@ -62,12 +62,12 @@ class TestString < Test::Unit::TestCase
   def test_initialize
     str = S("").freeze
     assert_equal("", str.__send__(:initialize))
-    assert_raise(RuntimeError){ str.__send__(:initialize, 'abc') }
-    assert_raise(RuntimeError){ str.__send__(:initialize, capacity: 1000) }
-    assert_raise(RuntimeError){ str.__send__(:initialize, 'abc', capacity: 1000) }
-    assert_raise(RuntimeError){ str.__send__(:initialize, encoding: 'euc-jp') }
-    assert_raise(RuntimeError){ str.__send__(:initialize, 'abc', encoding: 'euc-jp') }
-    assert_raise(RuntimeError){ str.__send__(:initialize, 'abc', capacity: 1000, encoding: 'euc-jp') }
+    assert_raise(FrozenError){ str.__send__(:initialize, 'abc') }
+    assert_raise(FrozenError){ str.__send__(:initialize, capacity: 1000) }
+    assert_raise(FrozenError){ str.__send__(:initialize, 'abc', capacity: 1000) }
+    assert_raise(FrozenError){ str.__send__(:initialize, encoding: 'euc-jp') }
+    assert_raise(FrozenError){ str.__send__(:initialize, 'abc', encoding: 'euc-jp') }
+    assert_raise(FrozenError){ str.__send__(:initialize, 'abc', capacity: 1000, encoding: 'euc-jp') }
   end
 
   def test_initialize_nonstring
@@ -491,7 +491,7 @@ CODE
     assert_equal(S("a").hash, S("a\u0101").chomp!(S("\u0101")).hash, '[ruby-core:22414]')
 
     s = S("").freeze
-    assert_raise_with_message(RuntimeError, /frozen/) {s.chomp!}
+    assert_raise_with_message(FrozenError, /frozen/) {s.chomp!}
 
     s = S("ax")
     o = Struct.new(:s).new(s)
@@ -499,7 +499,7 @@ CODE
       s.freeze
       "x"
     end
-    assert_raise_with_message(RuntimeError, /frozen/) {s.chomp!(o)}
+    assert_raise_with_message(FrozenError, /frozen/) {s.chomp!(o)}
 
     s = S("hello")
     assert_equal("hel", s.chomp!('lo'))
@@ -617,7 +617,12 @@ CODE
     expected = S("\u0300".encode(Encoding::UTF_16LE))
     assert_equal(expected, result, bug7090)
     assert_raise(TypeError) { 'foo' << :foo }
-    assert_raise(RuntimeError) { 'foo'.freeze.concat('bar') }
+    assert_raise(FrozenError) { 'foo'.freeze.concat('bar') }
+  end
+
+  def test_concat_literals
+    s="." * 50
+    assert_equal(Encoding::UTF_8, "#{s}x".encoding)
   end
 
   def test_count
@@ -668,7 +673,7 @@ CODE
     assert_equal("a".hash, "a\u0101".delete("\u0101").hash, '[ruby-talk:329267]')
     assert_equal(true, "a\u0101".delete("\u0101").ascii_only?)
     assert_equal(true, "a\u3041".delete("\u3041").ascii_only?)
-    assert_equal(false, "a\u3041\u3042".tr("\u3041", "a").ascii_only?)
+    assert_equal(false, "a\u3041\u3042".delete("\u3041").ascii_only?)
 
     assert_equal("a", "abc\u{3042 3044 3046}".delete("^a"))
     assert_equal("bc\u{3042 3044 3046}", "abc\u{3042 3044 3046}".delete("a"))
@@ -746,6 +751,41 @@ CODE
     assert_equal(S('"\\u{ABCDE}"'), b.dump)
     b= S("\u{10ABCD}")
     assert_equal(S('"\\u{10ABCD}"'), b.dump)
+  end
+
+  def test_undump
+    a = S("Test") << 1 << 2 << 3 << 9 << 13 << 10
+    assert_equal(a, S('"Test\\x01\\x02\\x03\\t\\r\\n"').undump)
+    assert_equal(S("\u{7F}"), S('"\\x7F"').undump)
+    assert_equal(S("\u{AB}"), S('"\\u00AB"').undump)
+    assert_equal(S("\u{ABC}"), S('"\\u0ABC"').undump)
+    assert_equal(S("\uABCD"), S('"\\uABCD"').undump)
+    assert_equal(S("\u{ABCDE}"), S('"\\u{ABCDE}"').undump)
+    assert_equal(S("\u{10ABCD}"), S('"\\u{10ABCD}"').undump)
+
+    assert_equal(S("äöü"), S('"\u00E4\u00F6\u00FC"').undump)
+    assert_equal(S("äöü"), S('"\xC3\xA4\xC3\xB6\xC3\xBC"').undump)
+
+    assert_equal(Encoding::UTF_8, S('"\\u3042"').encode(Encoding::EUC_JP).undump.encoding)
+
+    assert_equal("abc".encode(Encoding::UTF_16LE),
+                 '"a\x00b\x00c\x00".force_encoding("UTF-16LE")'.undump)
+
+    assert_equal('\#', '"\\\\#"'.undump)
+    assert_equal('\#{', '"\\\\\#{"'.undump)
+
+    assert_raise(RuntimeError) { S('\u3042').undump }
+    assert_raise(RuntimeError) { S('"".force_encoding()').undump }
+    assert_raise(RuntimeError) { S('"".force_encoding("UNKNOWN")').undump }
+    assert_raise(RuntimeError) { S(%("\u00E4")).undump }
+    assert_raise(RuntimeError) { S('""""').undump }
+
+    assert_raise(RuntimeError) { S('"\u"').undump }
+    assert_raise(RuntimeError) { S('"\u{"').undump }
+    assert_raise(RuntimeError) { S('"\u{3042"').undump }
+    assert_raise(RuntimeError) { S('"\x"').undump }
+    assert_raise(RuntimeError) { S('"\\"').undump }
+    assert_raise(RuntimeError) { S(%("\0")).undump }
   end
 
   def test_dup
@@ -1362,10 +1402,10 @@ CODE
     assert_equal(s2, s)
 
     fs = "".freeze
-    assert_raise(RuntimeError) { fs.replace("a") }
-    assert_raise(RuntimeError) { fs.replace(fs) }
+    assert_raise(FrozenError) { fs.replace("a") }
+    assert_raise(FrozenError) { fs.replace(fs) }
     assert_raise(ArgumentError) { fs.replace() }
-    assert_raise(RuntimeError) { fs.replace(42) }
+    assert_raise(FrozenError) { fs.replace(42) }
   end
 
   def test_reverse
@@ -1723,6 +1763,11 @@ CODE
 
     bug5536 = '[ruby-core:40623]'
     assert_raise(TypeError, bug5536) {S("str").start_with? :not_convertible_to_string}
+
+    assert_equal(true, "hello".start_with?(/hel/))
+    assert_equal("hel", $&)
+    assert_equal(false, "hello".start_with?(/el/))
+    assert_nil($&)
   end
 
   def test_strip
@@ -2262,7 +2307,7 @@ CODE
   end
 
   def test_frozen_check
-    assert_raise(RuntimeError) {
+    assert_raise(FrozenError) {
       s = ""
       s.sub!(/\A/) { s.freeze; "zzz" }
     }
@@ -2700,7 +2745,7 @@ CODE
     assert_equal("bba", s)
 
     s = S("ax").freeze
-    assert_raise_with_message(RuntimeError, /frozen/) {s.delete_prefix!("a")}
+    assert_raise_with_message(FrozenError, /frozen/) {s.delete_prefix!("a")}
 
     s = S("ax")
     o = Struct.new(:s).new(s)
@@ -2708,7 +2753,7 @@ CODE
       s.freeze
       "a"
     end
-    assert_raise_with_message(RuntimeError, /frozen/) {s.delete_prefix!(o)}
+    assert_raise_with_message(FrozenError, /frozen/) {s.delete_prefix!(o)}
   end
 
   def test_delete_suffix
@@ -2768,7 +2813,7 @@ CODE
     assert_raise(TypeError) { 'hello'.delete_suffix!(/hel/) }
 
     s = S("hello").freeze
-    assert_raise_with_message(RuntimeError, /frozen/) {s.delete_suffix!('lo')}
+    assert_raise_with_message(FrozenError, /frozen/) {s.delete_suffix!('lo')}
 
     s = S("ax")
     o = Struct.new(:s).new(s)
@@ -2776,7 +2821,7 @@ CODE
       s.freeze
       "x"
     end
-    assert_raise_with_message(RuntimeError, /frozen/) {s.delete_suffix!(o)}
+    assert_raise_with_message(FrozenError, /frozen/) {s.delete_suffix!(o)}
 
     s = S("hello")
     assert_equal("hel", s.delete_suffix!('lo'))

@@ -2,7 +2,7 @@
 
   util.c -
 
-  $Author$
+  $Author: hsbt $
   created at: Fri Mar 10 17:22:34 JST 1995
 
   Copyright (C) 1993-2008 Yukihiro Matsumoto
@@ -507,10 +507,7 @@ ruby_strdup(const char *str)
 char *
 ruby_getcwd(void)
 {
-#if defined __native_client__
-    char *buf = xmalloc(2);
-    strcpy(buf, ".");
-#elif defined HAVE_GETCWD
+#if defined HAVE_GETCWD
 # undef RUBY_UNTYPED_DATA_WARNING
 # define RUBY_UNTYPED_DATA_WARNING 0
 # if defined NO_GETCWD_MALLOC

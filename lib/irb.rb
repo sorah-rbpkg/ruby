@@ -2,7 +2,7 @@
 #
 #   irb.rb - irb main module
 #       $Release Version: 0.9.6 $
-#       $Revision$
+#       $Revision: 61149 $
 #       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -531,9 +531,6 @@ module IRB
             end
             print "Maybe IRB bug!\n" if irb_bug
           end
-          if $SAFE > 2
-            abort "Error: irb does not work for $SAFE level higher than 2"
-          end
         end
       end
     end
@@ -706,9 +703,10 @@ end
 
 class Binding
   # :nodoc:
-  undef irb if method_defined?(:irb)
   def irb
-    IRB.setup(eval("__FILE__"))
-    IRB::Irb.new(IRB::WorkSpace.new(self)).run(IRB.conf)
+    IRB.setup(eval("__FILE__"), argv: [])
+    workspace = IRB::WorkSpace.new(self)
+    STDOUT.print(workspace.code_around_binding)
+    IRB::Irb.new(workspace).run(IRB.conf)
   end
 end

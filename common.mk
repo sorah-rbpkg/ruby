@@ -16,12 +16,14 @@ gnumake_recursive =
 enable_shared = $(ENABLE_SHARED:no=)
 
 UNICODE_VERSION = 10.0.0
+UNICODE_EMOJI_VERSION = 5.0
 
 ### set the following environment variable or uncomment the line if
 ### the Unicode data files should be updated completely on every update ('make up',...).
 # ALWAYS_UPDATE_UNICODE = yes
-UNICODE_DATA_DIR = enc/unicode/data/$(UNICODE_VERSION)
+UNICODE_DATA_DIR = enc/unicode/data/$(UNICODE_VERSION)/ucd
 UNICODE_SRC_DATA_DIR = $(srcdir)/$(UNICODE_DATA_DIR)
+UNICODE_SRC_EMOJI_DATA_DIR = $(srcdir)/enc/unicode/data/emoji/$(UNICODE_EMOJI_VERSION)
 UNICODE_HDR_DIR = $(srcdir)/enc/unicode/$(UNICODE_VERSION)
 UNICODE_DATA_HEADERS = \
 	$(UNICODE_HDR_DIR)/casefold.h \
@@ -263,7 +265,7 @@ $(CAPIOUT)/.timestamp: Doxyfile $(PREP)
 	$(Q) $(MAKEDIRS) "$(@D)"
 	$(ECHO) generating capi
 	-$(Q) $(DOXYGEN) -b
-	$(Q) $(MINIRUBY) -e 'File.open(ARGV[0], "w"){|f| f.puts(Time.now)}' "$@"
+	$(Q) $(MINIRUBY) -e 'File.open(ARGV[0], "w"){'"|f|"' f.puts(Time.now)}' "$@"
 
 Doxyfile: $(srcdir)/template/Doxyfile.tmpl $(PREP) $(srcdir)/tool/generic_erb.rb $(RBCONFIG)
 	$(ECHO) generating $@
@@ -289,7 +291,7 @@ $(STATIC_RUBY)$(EXEEXT): $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A)
 
 ruby.imp: $(COMMONOBJS)
 	$(Q)$(NM) -Pgp $(COMMONOBJS) | \
-	awk 'BEGIN{print "#!"}; $$2~/^[BDT]$$/&&$$1!~/^(Init_|ruby_static_id_|.*_threadptr_|\.)/{print $$1}' | \
+	awk 'BEGIN{print "#!"}; $$2~/^[BDT]$$/&&$$1!~/^(Init_|ruby_static_id_|.*_threadptr_|rb_ec_\.)/{print $$1}' | \
 	sort -u -o $@
 
 install: install-$(INSTALLDOC)
@@ -844,7 +846,8 @@ compile.$(OBJEXT): {$(VPATH)}opt_sc.inc {$(VPATH)}optunifs.inc
 
 win32/win32.$(OBJEXT): {$(VPATH)}win32/win32.c {$(VPATH)}win32/file.h \
   {$(VPATH)}dln.h {$(VPATH)}dln_find.c {$(VPATH)}encindex.h \
-  {$(VPATH)}internal.h {$(VPATH)}util.h $(RUBY_H_INCLUDES) $(PLATFORM_D)
+  {$(VPATH)}internal.h {$(VPATH)}util.h $(RUBY_H_INCLUDES) \
+  {$(VPATH)}vm.h $(PLATFORM_D)
 win32/file.$(OBJEXT): {$(VPATH)}win32/file.c {$(VPATH)}win32/file.h \
   $(RUBY_H_INCLUDES) $(PLATFORM_D)
 
@@ -986,7 +989,7 @@ $(srcdir)/revision.h:
 	@exit > $@
 
 $(REVISION_H): $(srcdir)/version.h $(srcdir)/tool/file2lastrev.rb $(REVISION_FORCE)
-	-$(Q) $(BASERUBY) $(srcdir)/tool/file2lastrev.rb --revision.h "$(srcdir)" > revision.tmp
+	$(Q) $(BASERUBY) $(srcdir)/tool/file2lastrev.rb -q --revision.h "$(srcdir)" > revision.tmp
 	$(Q)$(IFCHANGE) "--timestamp=$@" "$(srcdir)/revision.h" revision.tmp
 
 $(srcdir)/ext/ripper/ripper.c: $(srcdir)/parse.y id.h
@@ -1131,10 +1134,12 @@ update-gems: PHONY
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -I./tool -rdownloader -answ \
 	    -e 'gem, ver = *$$F' \
-	    -e 'old = Dir.glob("#{gem}-*.gem")' \
+	    -e 'old = Dir.glob("gems/#{gem}-*.gem")' \
 	    -e 'gem = "#{gem}-#{ver}.gem"' \
 	    -e 'Downloader::RubyGems.download(gem, "gems", nil) and' \
-	    -e 'File.unlink(*(old-[gem]))' \
+	    -e '(old.delete("gems/#{gem}"); !old.empty?) and' \
+	    -e 'File.unlink(*old) and' \
+	    -e 'FileUtils.rm_rf(old.map{'"|n|"'n.chomp(".gem")})' \
 	    gems/bundled_gems
 
 extract-gems: PHONY
@@ -1148,11 +1153,43 @@ extract-gems: PHONY
 update-bundled_gems: PHONY
 	$(Q) $(RUNRUBY) -rrubygems \
 	    -pla \
-	    -e '$$_=Gem::SpecFetcher.fetcher.detect(:latest) {|s|' \
-	    -e   'break "#{s.name} #{s.version}" if s.platform=="ruby"&&s.name==$$F[0]' \
+	    -e '$$_=Gem::SpecFetcher.fetcher.detect(:latest) {'"|s|" \
+	    -e   'if s.platform=="ruby"&&s.name==$$F[0]' \
+	    -e     'break [s.name, s.version, *$$F[2..-1]].join(" ")' \
+	    -e   'end' \
 	    -e '}' \
 	     "$(srcdir)/gems/bundled_gems" | \
 	"$(IFCHANGE)" "$(srcdir)/gems/bundled_gems" -
+
+test-bundled-gems-precheck: $(arch)-fake.rb programs
+
+test-bundled-gems-fetch: $(PREP)
+	$(Q) $(BASERUBY) -C $(srcdir)/gems ../tool/fetch-bundled_gems.rb src bundled_gems
+
+test-bundled-gems-prepare: test-bundled-gems-precheck test-bundled-gems-fetch
+	$(XRUBY) -C "$(srcdir)" bin/gem install --no-ri --no-rdoc \
+		--install-dir .bundle --conservative "minitest:~> 5" 'test-unit' 'rake' 'hoe' 'yard' 'pry' 'packnga'
+
+PREPARE_BUNDLED_GEMS = test-bundled-gems-prepare
+test-bundled-gems: $(TEST_RUNNABLE)-test-bundled-gems
+yes-test-bundled-gems: test-bundled-gems-run
+no-test-bundled-gems:
+test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
+
+test-bundler-precheck: $(arch)-fake.rb programs
+
+yes-test-bundler-prepare: test-bundler-precheck
+	$(XRUBY) -C "$(srcdir)" bin/gem install --no-ri --no-rdoc \
+		--install-dir .bundle --conservative "rspec:~> 3.5"
+
+RSPECOPTS = --format progress
+BUNDLER_SPECS =
+test-bundler: $(TEST_RUNNABLE)-test-bundler
+yes-test-bundler: yes-test-bundler-prepare
+	$(gnumake_recursive)$(Q) \
+	$(XRUBY) -C $(srcdir) -Ispec/bundler .bundle/bin/rspec \
+		--require spec_helper $(RSPECOPTS) spec/bundler/$(BUNDLER_SPECS)
+no-test-bundler:
 
 UNICODE_FILES = $(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_SRC_DATA_DIR)/CompositionExclusions.txt \
@@ -1172,14 +1209,24 @@ UNICODE_PROPERTY_FILES =  \
 		$(UNICODE_SRC_DATA_DIR)/auxiliary/GraphemeBreakProperty.txt \
 		$(empty)
 
+UNICODE_EMOJI_FILES = \
+		$(UNICODE_SRC_EMOJI_DATA_DIR)/emoji-data.txt \
+		$(empty)
+
 update-unicode: $(UNICODE_FILES)
 
 CACHE_DIR = $(srcdir)/.downloaded-cache
 UNICODE_DOWNLOAD = \
 	$(BASERUBY) $(srcdir)/tool/downloader.rb \
 	    --cache-dir=$(CACHE_DIR) \
-	    -d $(srcdir)/$(UNICODE_DATA_DIR) \
+	    -d $(UNICODE_SRC_DATA_DIR) \
 	    -p $(UNICODE_VERSION)/ucd \
+	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode
+UNICODE_EMOJI_DOWNLOAD = \
+	$(BASERUBY) $(srcdir)/tool/downloader.rb \
+	    --cache-dir=$(CACHE_DIR) \
+	    -d $(UNICODE_SRC_EMOJI_DATA_DIR) \
+	    -p emoji/$(UNICODE_EMOJI_VERSION) \
 	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode
 
 $(UNICODE_PROPERTY_FILES): update-unicode-property-files
@@ -1187,6 +1234,9 @@ update-unicode-property-files:
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) property files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)/auxiliary"
 	$(Q) $(UNICODE_DOWNLOAD) $(UNICODE_PROPERTY_FILES)
+	$(ECHO) Downloading Unicode emoji $(UNICODE_EMOJI_VERSION) files...
+	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_EMOJI_DATA_DIR)"
+	$(Q) $(UNICODE_EMOJI_DOWNLOAD) $(UNICODE_EMOJI_FILES)
 
 $(UNICODE_FILES): update-unicode-files
 update-unicode-files:
@@ -1224,7 +1274,9 @@ $(UNICODE_HDR_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=name2ctype.h): \
 
 $(UNICODE_HDR_DIR)/name2ctype.h:
 	$(MAKEDIRS) $(@D)
-	$(BOOTSTRAPRUBY) $(srcdir)/tool/enc-unicode.rb --header $(UNICODE_SRC_DATA_DIR) > $@
+	$(BOOTSTRAPRUBY) $(srcdir)/tool/enc-unicode.rb --header \
+		$(UNICODE_SRC_DATA_DIR) $(UNICODE_SRC_EMOJI_DATA_DIR) > $@.new
+	$(MV) $@.new $@
 
 # the next non-comment line was:
 # $(UNICODE_HDR_DIR)/casefold.h: $(srcdir)/enc/unicode/case-folding.rb \
@@ -1293,33 +1345,36 @@ help: PHONY
 	"                Makefile of Ruby" \
 	"" \
 	"targets:" \
-	"  all (default):   builds all of below" \
-	"  miniruby:        builds only miniruby" \
-	"  encs:            builds encodings" \
-	"  exts:            builds extensions" \
-	"  main:            builds encodings, extensions and ruby" \
-	"  docs:            builds documents" \
-	"  run:             runs test.rb by miniruby" \
-	"  runruby:         runs test.rb by ruby you just built" \
-	"  gdb:             runs test.rb by miniruby under gdb" \
-	"  gdb-ruby:        runs test.rb by ruby under gdb" \
-	"  check:           equals make test test-all" \
-	"  exam:            equals make check test-spec" \
-	"  test:            ruby core tests" \
-	"  test-all:        all ruby tests [TESTOPTS=-j4 TESTS=<test files>]" \
-	"  test-spec:       run the Ruby spec suite" \
-	"  test-rubyspec:   same as test-spec" \
-	"  up:              update local copy and autogenerated files" \
-	"  benchmark:       benchmark this ruby and COMPARE_RUBY." \
-	"  gcbench:         gc benchmark [GCBENCH_ITEM=<item_name>]" \
-	"  gcbench-rdoc:    gc benchmark with GCBENCH_ITEM=rdoc" \
-	"  install:         install all ruby distributions" \
-	"  install-nodoc:   install without rdoc" \
-	"  install-cross:   install cross compiling stuff" \
-	"  clean:           clean for tarball" \
-	"  distclean:       clean for repository" \
-	"  change:          make change log template" \
-	"  golf:            for golfers" \
+	"  all (default):       builds all of below" \
+	"  miniruby:            builds only miniruby" \
+	"  encs:                builds encodings" \
+	"  exts:                builds extensions" \
+	"  main:                builds encodings, extensions and ruby" \
+	"  docs:                builds documents" \
+	"  install-capi:        builds C API documents" \
+	"  run:                 runs test.rb by miniruby" \
+	"  runruby:             runs test.rb by ruby you just built" \
+	"  gdb:                 runs test.rb by miniruby under gdb" \
+	"  gdb-ruby:            runs test.rb by ruby under gdb" \
+	"  check:               equals make test test-all" \
+	"  exam:                equals make check test-spec" \
+	"  test:                ruby core tests" \
+	"  test-all:            all ruby tests [TESTOPTS=-j4 TESTS=<test files>]" \
+	"  test-spec:           run the Ruby spec suite" \
+	"  test-rubyspec:       same as test-spec" \
+	"  test-bundler:        run the Bundler spec" \
+	"  test-bundled-gems:   run the test suite of bundled gems" \
+	"  up:                  update local copy and autogenerated files" \
+	"  benchmark:           benchmark this ruby and COMPARE_RUBY." \
+	"  gcbench:             gc benchmark [GCBENCH_ITEM=<item_name>]" \
+	"  gcbench-rdoc:        gc benchmark with GCBENCH_ITEM=rdoc" \
+	"  install:             install all ruby distributions" \
+	"  install-nodoc:       install without rdoc" \
+	"  install-cross:       install cross compiling stuff" \
+	"  clean:               clean for tarball" \
+	"  distclean:           clean for repository" \
+	"  change:              make change log template" \
+	"  golf:                for golfers" \
 	"" \
 	"see DeveloperHowto for more detail: " \
 	"  https://bugs.ruby-lang.org/projects/ruby/wiki/DeveloperHowto" \
@@ -1412,6 +1467,7 @@ compile.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 compile.$(OBJEXT): $(CCAN_DIR)/list/list.h
 compile.$(OBJEXT): $(CCAN_DIR)/str/str.h
 compile.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+compile.$(OBJEXT): $(hdrdir)/ruby/version.h
 compile.$(OBJEXT): $(top_srcdir)/include/ruby.h
 compile.$(OBJEXT): {$(VPATH)}compile.c
 compile.$(OBJEXT): {$(VPATH)}config.h
@@ -1516,6 +1572,7 @@ debug.$(OBJEXT): {$(VPATH)}ruby_assert.h
 debug.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 debug.$(OBJEXT): {$(VPATH)}st.h
 debug.$(OBJEXT): {$(VPATH)}subst.h
+debug.$(OBJEXT): {$(VPATH)}symbol.h
 debug.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 debug.$(OBJEXT): {$(VPATH)}thread_native.h
 debug.$(OBJEXT): {$(VPATH)}util.h
@@ -1707,6 +1764,7 @@ eval.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 eval.$(OBJEXT): $(CCAN_DIR)/list/list.h
 eval.$(OBJEXT): $(CCAN_DIR)/str/str.h
 eval.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+eval.$(OBJEXT): $(hdrdir)/ruby/version.h
 eval.$(OBJEXT): $(top_srcdir)/include/ruby.h
 eval.$(OBJEXT): {$(VPATH)}config.h
 eval.$(OBJEXT): {$(VPATH)}defines.h
@@ -1808,6 +1866,7 @@ golf_prelude.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 golf_prelude.$(OBJEXT): $(CCAN_DIR)/list/list.h
 golf_prelude.$(OBJEXT): $(CCAN_DIR)/str/str.h
 golf_prelude.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+golf_prelude.$(OBJEXT): $(hdrdir)/ruby/version.h
 golf_prelude.$(OBJEXT): $(top_srcdir)/include/ruby.h
 golf_prelude.$(OBJEXT): {$(VPATH)}config.h
 golf_prelude.$(OBJEXT): {$(VPATH)}defines.h
@@ -1903,6 +1962,7 @@ iseq.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 iseq.$(OBJEXT): $(CCAN_DIR)/list/list.h
 iseq.$(OBJEXT): $(CCAN_DIR)/str/str.h
 iseq.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+iseq.$(OBJEXT): $(hdrdir)/ruby/version.h
 iseq.$(OBJEXT): $(top_srcdir)/include/ruby.h
 iseq.$(OBJEXT): {$(VPATH)}config.h
 iseq.$(OBJEXT): {$(VPATH)}defines.h
@@ -2047,6 +2107,7 @@ miniinit.$(OBJEXT): {$(VPATH)}onigmo.h
 miniinit.$(OBJEXT): {$(VPATH)}oniguruma.h
 miniinit.$(OBJEXT): {$(VPATH)}st.h
 miniinit.$(OBJEXT): {$(VPATH)}subst.h
+miniprelude.$(OBJEXT): $(hdrdir)/ruby/version.h
 miniprelude.$(OBJEXT): {$(VPATH)}iseq.h
 miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c
 node.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
@@ -2157,6 +2218,7 @@ prelude.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 prelude.$(OBJEXT): $(CCAN_DIR)/list/list.h
 prelude.$(OBJEXT): $(CCAN_DIR)/str/str.h
 prelude.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+prelude.$(OBJEXT): $(hdrdir)/ruby/version.h
 prelude.$(OBJEXT): $(top_srcdir)/include/ruby.h
 prelude.$(OBJEXT): {$(VPATH)}config.h
 prelude.$(OBJEXT): {$(VPATH)}defines.h
@@ -2186,6 +2248,7 @@ proc.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 proc.$(OBJEXT): $(CCAN_DIR)/list/list.h
 proc.$(OBJEXT): $(CCAN_DIR)/str/str.h
 proc.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+proc.$(OBJEXT): $(hdrdir)/ruby/version.h
 proc.$(OBJEXT): $(top_srcdir)/include/ruby.h
 proc.$(OBJEXT): {$(VPATH)}config.h
 proc.$(OBJEXT): {$(VPATH)}defines.h
@@ -2737,6 +2800,7 @@ vm.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 vm.$(OBJEXT): $(CCAN_DIR)/list/list.h
 vm.$(OBJEXT): $(CCAN_DIR)/str/str.h
 vm.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+vm.$(OBJEXT): $(hdrdir)/ruby/version.h
 vm.$(OBJEXT): $(top_srcdir)/include/ruby.h
 vm.$(OBJEXT): {$(VPATH)}config.h
 vm.$(OBJEXT): {$(VPATH)}constant.h
@@ -2787,6 +2851,7 @@ vm_backtrace.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 vm_backtrace.$(OBJEXT): $(CCAN_DIR)/list/list.h
 vm_backtrace.$(OBJEXT): $(CCAN_DIR)/str/str.h
 vm_backtrace.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+vm_backtrace.$(OBJEXT): $(hdrdir)/ruby/version.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/include/ruby.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}config.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}debug.h
@@ -2818,6 +2883,7 @@ vm_dump.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 vm_dump.$(OBJEXT): $(CCAN_DIR)/list/list.h
 vm_dump.$(OBJEXT): $(CCAN_DIR)/str/str.h
 vm_dump.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+vm_dump.$(OBJEXT): $(hdrdir)/ruby/version.h
 vm_dump.$(OBJEXT): $(top_srcdir)/include/ruby.h
 vm_dump.$(OBJEXT): {$(VPATH)}addr2line.h
 vm_dump.$(OBJEXT): {$(VPATH)}config.h
@@ -2858,6 +2924,7 @@ vm_trace.$(OBJEXT): {$(VPATH)}id.h
 vm_trace.$(OBJEXT): {$(VPATH)}intern.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal.h
 vm_trace.$(OBJEXT): {$(VPATH)}io.h
+vm_trace.$(OBJEXT): {$(VPATH)}iseq.h
 vm_trace.$(OBJEXT): {$(VPATH)}method.h
 vm_trace.$(OBJEXT): {$(VPATH)}missing.h
 vm_trace.$(OBJEXT): {$(VPATH)}node.h

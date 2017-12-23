@@ -26,6 +26,7 @@
 .*.list
 .*.time
 .DS_Store
+.bundle
 .ccmalloc
 .ext
 .pc
@@ -130,8 +131,6 @@ lcov*.info
 /benchmark/fasta.output.*
 /benchmark/wc.input
 
-/bin/ruby
-
 /enc/*.def
 /enc/*.exp
 /enc/*.lib
@@ -145,12 +144,17 @@ lcov*.info
 /enc/trans/*.lib
 /enc/trans/.time
 
+# /exe/
+/exe/ruby
+/exe/.time
+
 # /ext/
 /ext/extinit.c
 /ext/configure-ext.mk
 /ext/*/exts.mk
 
 # /ext/-test-/win32/dln/
+/ext/-test-/win32/dln/dlntest.dll
 /ext/-test-/win32/dln/dlntest.exp
 /ext/-test-/win32/dln/dlntest.lib
 
@@ -178,11 +182,11 @@ lcov*.info
 
 # /gems
 /gems/*.gem
+/gems/src
 /gems/*-*
 
 # /spec/bundler
 /.rspec_status
-/spec/rspec
 
 # /tool/
 /tool/config.guess

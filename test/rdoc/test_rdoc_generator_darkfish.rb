@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rdoc/test_case'
 
 class TestRDocGeneratorDarkfish < RDoc::TestCase
@@ -215,6 +215,7 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     method_name_index = internal_file.index('<span class="method-name">method_with_html_tag_yield</span>')
     last_of_method_name_index = method_name_index + internal_file[method_name_index..-1].index('<div class="method-description">') - 1
     method_name = internal_file[method_name_index..last_of_method_name_index]
+    f.close
 
     assert_includes method_name, '{ |%&lt;&lt;script&gt;alert(&quot;atui&quot;)&lt;/script&gt;&gt;, yield_arg| ... }'
   end

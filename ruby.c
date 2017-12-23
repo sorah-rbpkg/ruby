@@ -2,7 +2,7 @@
 
   ruby.c -
 
-  $Author$
+  $Author: ko1 $
   created at: Tue Aug 10 12:47:31 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -177,7 +177,7 @@ cmdline_options_init(ruby_cmdline_options_t *opt)
     return opt;
 }
 
-static NODE *load_file(VALUE parser, VALUE fname, VALUE f, int script,
+static rb_ast_t *load_file(VALUE parser, VALUE fname, VALUE f, int script,
 		       ruby_cmdline_options_t *opt);
 static VALUE open_load_file(VALUE fname_v, int *xflag);
 static void forbid_setid(const char *, const ruby_cmdline_options_t *);
@@ -1461,7 +1461,7 @@ rb_f_chomp(int argc, VALUE *argv)
 static VALUE
 process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
-    NODE *tree = 0;
+    rb_ast_t *ast = 0;
     VALUE parser;
     VALUE script_name;
     const rb_iseq_t *iseq;
@@ -1646,6 +1646,9 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     /* need to acquire env from toplevel_binding each time, since it
      * may update after eval() */
 
+    base_block = toplevel_context(toplevel_binding);
+    rb_parser_set_context(parser, base_block, TRUE);
+
     if (opt->e_script) {
 	VALUE progname = rb_progname;
 	rb_encoding *eenc;
@@ -1669,17 +1672,14 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	    require_libraries(&opt->req_list);
 	}
         ruby_set_script_name(progname);
-
-	base_block = toplevel_context(toplevel_binding);
-	rb_parser_set_context(parser, base_block, TRUE);
-	tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
+	rb_parser_set_options(parser, opt->do_print, opt->do_loop,
+			      opt->do_line, opt->do_split);
+	ast = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
     }
     else {
 	VALUE f;
-	base_block = toplevel_context(toplevel_binding);
-	rb_parser_set_context(parser, base_block, TRUE);
 	f = open_load_file(script_name, &opt->xflag);
-	tree = load_file(parser, opt->script_name, f, 1, opt);
+	ast = load_file(parser, opt->script_name, f, 1, opt);
     }
     ruby_set_script_name(opt->script_name);
     if (dump & DUMP_BIT(yydebug)) {
@@ -1704,7 +1704,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	rb_enc_set_default_internal(Qnil);
     rb_stdio_set_default_encoding();
 
-    if (!tree) return Qfalse;
+    if (!ast->root) {
+	rb_ast_dispose(ast);
+	return Qfalse;
+    }
 
     process_sflag(&opt->sflag);
     opt->xflag = 0;
@@ -1715,11 +1718,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	if (!dump) return Qtrue;
     }
 
-    if (opt->do_print) {
-	tree = rb_parser_append_print(parser, tree);
-    }
     if (opt->do_loop) {
-	tree = rb_parser_while_loop(parser, tree, opt->do_line, opt->do_split);
 	rb_define_global_function("sub", rb_f_sub, -1);
 	rb_define_global_function("gsub", rb_f_gsub, -1);
 	rb_define_global_function("chop", rb_f_chop, 0);
@@ -1727,19 +1726,28 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     }
 
     if (dump & (DUMP_BIT(parsetree)|DUMP_BIT(parsetree_with_comment))) {
-	rb_io_write(rb_stdout, rb_parser_dump_tree(tree, dump & DUMP_BIT(parsetree_with_comment)));
+	rb_io_write(rb_stdout, rb_parser_dump_tree(ast->root, dump & DUMP_BIT(parsetree_with_comment)));
 	rb_io_flush(rb_stdout);
 	dump &= ~DUMP_BIT(parsetree)&~DUMP_BIT(parsetree_with_comment);
-	if (!dump) return Qtrue;
+	if (!dump) {
+	    rb_ast_dispose(ast);
+	    return Qtrue;
+	}
     }
 
     {
 	VALUE path = Qnil;
 	if (!opt->e_script && strcmp(opt->script, "-")) {
 	    path = rb_realpath_internal(Qnil, script_name, 1);
+#if UTF8_PATH
+	    if (uenc != lenc) {
+		path = str_conv_enc(path, uenc, lenc);
+	    }
+#endif
 	}
 	base_block = toplevel_context(toplevel_binding);
-	iseq = rb_iseq_new_main(tree, opt->script_name, path, vm_block_iseq(base_block));
+	iseq = rb_iseq_new_main(ast->root, opt->script_name, path, vm_block_iseq(base_block));
+	rb_ast_dispose(ast);
     }
 
     if (dump & DUMP_BIT(insns)) {
@@ -1789,7 +1797,7 @@ load_file_internal(VALUE argp_v)
     ruby_cmdline_options_t *opt = argp->opt;
     VALUE f = argp->f;
     int line_start = 1;
-    NODE *tree = 0;
+    rb_ast_t *ast = 0;
     rb_encoding *enc;
     ID set_encoding;
 
@@ -1885,13 +1893,15 @@ load_file_internal(VALUE argp_v)
     else {
 	enc = rb_utf8_encoding();
     }
+    rb_parser_set_options(parser, opt->do_print, opt->do_loop,
+			  opt->do_line, opt->do_split);
     if (NIL_P(f)) {
 	f = rb_str_new(0, 0);
 	rb_enc_associate(f, enc);
 	return (VALUE)rb_parser_compile_string_path(parser, orig_fname, f, line_start);
     }
     rb_funcall(f, set_encoding, 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
-    tree = rb_parser_compile_file_path(parser, orig_fname, f, line_start);
+    ast = rb_parser_compile_file_path(parser, orig_fname, f, line_start);
     rb_funcall(f, set_encoding, 1, rb_parser_encoding(parser));
     if (script && rb_parser_end_seen_p(parser)) {
 	/*
@@ -1909,7 +1919,7 @@ load_file_internal(VALUE argp_v)
 	rb_define_global_const("DATA", f);
 	argp->f = Qnil;
     }
-    return (VALUE)tree;
+    return (VALUE)ast;
 }
 
 static VALUE
@@ -2001,7 +2011,7 @@ restore_load_file(VALUE arg)
     return Qnil;
 }
 
-static NODE *
+static rb_ast_t *
 load_file(VALUE parser, VALUE fname, VALUE f, int script, ruby_cmdline_options_t *opt)
 {
     struct load_file_arg arg;
@@ -2010,8 +2020,8 @@ load_file(VALUE parser, VALUE fname, VALUE f, int script, ruby_cmdline_options_t
     arg.script = script;
     arg.opt = opt;
     arg.f = f;
-    return (NODE *)rb_ensure(load_file_internal, (VALUE)&arg,
-			     restore_load_file, (VALUE)&arg);
+    return (rb_ast_t *)rb_ensure(load_file_internal, (VALUE)&arg,
+			      restore_load_file, (VALUE)&arg);
 }
 
 void *
@@ -2052,6 +2062,8 @@ proc_argv0(VALUE process)
     return rb_orig_progname;
 }
 
+static VALUE ruby_setproctitle(VALUE title);
+
 /*
  *  call-seq:
  *     Process.setproctitle(string)  -> string
@@ -2072,10 +2084,14 @@ proc_argv0(VALUE process)
 static VALUE
 proc_setproctitle(VALUE process, VALUE title)
 {
-    StringValue(title);
+    return ruby_setproctitle(title);
+}
 
-    setproctitle("%.*s", RSTRING_LENINT(title), RSTRING_PTR(title));
-
+static VALUE
+ruby_setproctitle(VALUE title)
+{
+    const char *ptr = StringValueCStr(title);
+    setproctitle("%.*s", RSTRING_LENINT(title), ptr);
     return title;
 }
 
@@ -2085,7 +2101,7 @@ set_arg0(VALUE val, ID id)
     if (origarg.argv == 0)
 	rb_raise(rb_eRuntimeError, "$0 not initialized");
 
-    rb_progname = rb_str_new_frozen(proc_setproctitle(rb_mProcess, val));
+    rb_progname = rb_str_new_frozen(ruby_setproctitle(val));
 }
 
 static inline VALUE

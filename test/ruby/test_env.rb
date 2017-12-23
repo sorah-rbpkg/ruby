@@ -129,7 +129,9 @@ class TestEnv < Test::Unit::TestCase
     assert_equal("test", e.key)
     assert_equal("foo", ENV.fetch("test", "foo"))
     assert_equal("bar", ENV.fetch("test") { "bar" })
-    assert_equal("bar", ENV.fetch("test", "foo") { "bar" })
+    EnvUtil.suppress_warning do
+      assert_equal("bar", ENV.fetch("test", "foo") { "bar" })
+    end
     assert_invalid_env {|v| ENV.fetch(v)}
     assert_nothing_raised { ENV.fetch(PATH_ENV, "foo") }
     ENV[PATH_ENV] = ""
@@ -429,7 +431,7 @@ class TestEnv < Test::Unit::TestCase
   if /mswin|mingw/ =~ RUBY_PLATFORM
     def test_win32_blocksize
       keys = []
-      len = 32767 - ENV.to_a.flatten.inject(0) {|r,e| r + e.bytesize + 1}
+      len = 32767 - ENV.to_a.flatten.inject(1) {|r,e| r + e.bytesize + 1}
       val = "bar" * 1000
       key = nil
       while (len -= val.size + (key="foo#{len}").size + 2) > 0

@@ -1,3 +1,4 @@
+#!/usr/bin/env ruby
 #
 # Ruby Benchmark driver
 #
@@ -380,6 +381,11 @@ if __FILE__ == $0
        e.split(/;/).each{|path|
          opt[:execs] << path
        }
+    }
+    o.on('--rbenv [VERSIONS]', 'Specify benchmark targets with rbenv version (vX.X.X;vX.X.X;...)'){|v|
+      v.split(/;/).each{|version|
+        opt[:execs] << "#{version}::#{`RBENV_VERSION='#{version}' rbenv which ruby`.rstrip}"
+      }
     }
     o.on('-d', '--directory [DIRECTORY]', "Benchmark suites directory"){|d|
       opt[:dir] = d

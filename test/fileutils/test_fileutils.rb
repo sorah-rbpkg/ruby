@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-# $Id$
+# $Id: test_fileutils.rb 61188 2017-12-12 18:44:49Z eregon $
 
 require 'fileutils'
 require 'etc'
@@ -12,7 +12,7 @@ class TestFileUtils < Test::Unit::TestCase
   include Test::Unit::FileAssertions
 
   def assert_output_lines(expected, fu = self, message=nil)
-    old = fu.instance_variable_get(:@fileutils_output)
+    old = fu.instance_variables.include?(:@fileutils_output) && fu.instance_variable_get(:@fileutils_output)
     IO.pipe {|read, write|
       fu.instance_variable_set(:@fileutils_output, write)
       th = Thread.new { read.read }
@@ -235,6 +235,7 @@ class TestFileUtils < Test::Unit::TestCase
     assert_raise(MiniTest::Assertion) {
       Timeout.timeout(0.1) {
         assert_output_lines([]) {
+          Thread.current.report_on_exception = false
           raise "ok"
         }
       }
@@ -308,7 +309,8 @@ class TestFileUtils < Test::Unit::TestCase
     touch 'tmp/cptmp'
     chmod 0755, 'tmp/cptmp'
     cp 'tmp/cptmp', 'tmp/cptmp2'
-    assert_equal_filemode('tmp/cptmp', 'tmp/cptmp2', bug4507)
+
+    assert_equal_filemode('tmp/cptmp', 'tmp/cptmp2', bug4507, mask: ~File.umask)
   end
 
   def test_cp_preserve_permissions_dir
@@ -437,6 +439,15 @@ class TestFileUtils < Test::Unit::TestCase
       cp_r Pathname.new('tmp/cprtmp'), Pathname.new('tmp/tmpdest')
     }
   end
+
+  def test_cp_r_symlink_remove_destination
+    Dir.mkdir 'tmp/src'
+    Dir.mkdir 'tmp/dest'
+    Dir.mkdir 'tmp/src/dir'
+    File.symlink 'tmp/src/dir', 'tmp/src/a'
+    cp_r 'tmp/src', 'tmp/dest/', remove_destination: true
+    cp_r 'tmp/src', 'tmp/dest/', remove_destination: true
+  end if have_symlink?
 
   def test_mv
     check_singleton :mv
@@ -1401,7 +1412,7 @@ class TestFileUtils < Test::Unit::TestCase
 
       def test_chown_R_without_permission
         touch 'tmp/a'
-        exception = assert_raise(Errno::EPERM) {
+        assert_raise(Errno::EPERM) {
           chown_R UID_1, nil, 'tmp/a'
           chown_R UID_2, nil, 'tmp/a'
         }
@@ -1436,6 +1447,14 @@ class TestFileUtils < Test::Unit::TestCase
     assert_not_symlink 'tmp/dirdest'
     assert_symlink 'tmp/dirdest/sym'
     assert_equal 'somewhere', File.readlink('tmp/dirdest/sym')
+  end if have_symlink?
+
+  def test_copy_entry_symlink_remove_destination
+    Dir.mkdir 'tmp/dir'
+    File.symlink 'tmp/dir', 'tmp/dest'
+    touch 'tmp/src'
+    copy_entry 'tmp/src', 'tmp/dest', false, false, true
+    assert_file_exist 'tmp/dest'
   end if have_symlink?
 
   def test_copy_file

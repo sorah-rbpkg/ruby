@@ -2,7 +2,7 @@
 
   insnhelper.h - helper macros to implement each instructions
 
-  $Author$
+  $Author: ko1 $
   created at: 04/01/01 15:50:34 JST
 
   Copyright (C) 2004-2007 Koichi Sasada
@@ -12,7 +12,14 @@
 #ifndef RUBY_INSNHELPER_H
 #define RUBY_INSNHELPER_H
 
+RUBY_SYMBOL_EXPORT_BEGIN
+
 extern VALUE ruby_vm_const_missing_count;
+extern rb_serial_t ruby_vm_global_method_state;
+extern rb_serial_t ruby_vm_global_constant_state;
+extern rb_serial_t ruby_vm_class_serial;
+
+RUBY_SYMBOL_EXPORT_END
 
 #if VM_COLLECT_USAGE_DETAILS
 #define COLLECT_USAGE_INSN(insn)           vm_collect_usage_insn(insn)
@@ -47,7 +54,7 @@ extern VALUE ruby_vm_const_missing_count;
 #define VM_REG_EP  (VM_REG_CFP->ep)
 
 #define RESTORE_REGS() do { \
-    VM_REG_CFP = th->ec.cfp; \
+    VM_REG_CFP = ec->cfp; \
 } while (0)
 
 #define REG_A   reg_a
@@ -79,7 +86,7 @@ enum vm_regan_acttype {
 #define GET_CURRENT_INSN() (*GET_PC())
 #define GET_OPERAND(n)     (GET_PC()[(n)])
 #define ADD_PC(n)          (SET_PC(VM_REG_PC + (n)))
-#define JUMP(dst)          (VM_REG_PC += (dst))
+#define JUMP(dst)          (SET_PC(VM_REG_PC + (dst)))
 
 /* frame pointer, environment pointer */
 #define GET_CFP()  (COLLECT_USAGE_REGISTER_HELPER(CFP, GET, VM_REG_CFP))
@@ -94,8 +101,6 @@ enum vm_regan_acttype {
 #define DEC_SP(x)  (VM_REG_SP -= (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
 #define SET_SV(x)  (*GET_SP() = (x))
   /* set current stack value as x */
-
-#define GET_SP_COUNT() (VM_REG_SP - th->ec.vm_stack)
 
 /* instruction sequence C struct */
 #define GET_ISEQ() (GET_CFP()->iseq)
@@ -122,7 +127,7 @@ enum vm_regan_acttype {
 /**********************************************************/
 
 #define CALL_METHOD(calling, ci, cc) do { \
-    VALUE v = (*(cc)->call)(th, GET_CFP(), (calling), (ci), (cc)); \
+    VALUE v = (*(cc)->call)(ec, GET_CFP(), (calling), (ci), (cc)); \
     if (v == Qundef) { \
 	RESTORE_REGS(); \
 	NEXT_INSN(); \

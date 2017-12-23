@@ -139,6 +139,8 @@ class VCS
           STDERR.reopen NullDevice, 'w'
         end
         self.class.get_revisions(path, @srcdir)
+      rescue Errno::ENOENT => e
+        raise VCS::NotFoundError, e.message
       ensure
         if save_stderr
           STDERR.reopen save_stderr
@@ -345,17 +347,21 @@ class VCS
 
     def self.get_revisions(path, srcdir = nil)
       gitcmd = [COMMAND]
+      desc = cmd_read_at(srcdir, [gitcmd + %w[describe --tags --match REV_*]])
+      if /\AREV_(\d+)(?:-(\d+)-g\h+)?\Z/ =~ desc
+        last = ($1.to_i + $2.to_i).to_s
+      end
       logcmd = gitcmd + %W[log -n1 --date=iso]
-      logcmd << "--grep=^ *git-svn-id: .*@[0-9][0-9]*"
+      logcmd << "--grep=^ *git-svn-id: .*@[0-9][0-9]*" unless last
       idpat = /git-svn-id: .*?@(\d+) \S+\Z/
       log = cmd_read_at(srcdir, [logcmd])
       commit = log[/\Acommit (\w+)/, 1]
-      last = log[idpat, 1]
+      last ||= log[idpat, 1]
       if path
         cmd = logcmd
         cmd += [path] unless path == '.'
         log = cmd_read_at(srcdir, [cmd])
-        changed = log[idpat, 1]
+        changed = log[idpat, 1] || last
       else
         changed = last
       end
@@ -439,7 +445,7 @@ class VCS
         rev unless rev.empty?
       end.join('..')
       cmd_pipe({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
-               %W"#{COMMAND} log --date=iso-local --topo-order #{range}") do |r|
+               %W"#{COMMAND} log --date=iso-local --topo-order #{range}", "rb") do |r|
         open(path, 'w') do |w|
           sep = "-"*72
           w.puts sep

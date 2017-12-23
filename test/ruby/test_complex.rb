@@ -75,7 +75,6 @@ class Complex_Test < Test::Unit::TestCase
 
   def test_freeze
     c = Complex(1)
-    c.freeze
     assert_predicate(c, :frozen?)
     assert_instance_of(String, c.to_s)
   end
@@ -534,12 +533,10 @@ class Complex_Test < Test::Unit::TestCase
 
   def test_marshal
     c = Complex(1,2)
-    c.instance_eval{@ivar = 9}
 
     s = Marshal.dump(c)
     c2 = Marshal.load(s)
     assert_equal(c, c2)
-    assert_equal(9, c2.instance_variable_get(:@ivar))
     assert_instance_of(Complex, c2)
 
     c = Complex(Rational(1,2),Rational(2,3))
@@ -551,7 +548,6 @@ class Complex_Test < Test::Unit::TestCase
 
     bug3656 = '[ruby-core:31622]'
     c = Complex(1,2)
-    c.freeze
     assert_predicate(c, :frozen?)
     result = c.marshal_load([2,3]) rescue :fail
     assert_equal(:fail, result, bug3656)
@@ -835,6 +831,9 @@ class Complex_Test < Test::Unit::TestCase
     assert_predicate(Complex(Float::MAX, 0.0), :finite?)
     assert_predicate(Complex(0.0, Float::MAX), :finite?)
     assert_predicate(Complex(Float::MAX, Float::MAX), :finite?)
+    assert_not_predicate(Complex(Float::NAN, 0), :finite?)
+    assert_not_predicate(Complex(0, Float::NAN), :finite?)
+    assert_not_predicate(Complex(Float::NAN, Float::NAN), :finite?)
   end
 
   def test_infinite_p
@@ -853,6 +852,9 @@ class Complex_Test < Test::Unit::TestCase
     assert_nil(Complex(Float::MAX, 0.0).infinite?)
     assert_nil(Complex(0.0, Float::MAX).infinite?)
     assert_nil(Complex(Float::MAX, Float::MAX).infinite?)
+    assert_nil(Complex(Float::NAN, 0).infinite?)
+    assert_nil(Complex(0, Float::NAN).infinite?)
+    assert_nil(Complex(Float::NAN, Float::NAN).infinite?)
   end
 
   def test_supp

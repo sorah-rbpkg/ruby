@@ -2,7 +2,7 @@
 
   dbm.c -
 
-  $Author$
+  $Author: rhe $
   created at: Mon Jan 24 15:59:52 JST 1994
 
   Copyright (C) 1995-2001 Yukihiro Matsumoto
@@ -47,7 +47,6 @@ closed_dbm(void)
 
 #define GetDBM(obj, dbmp) do {\
     TypedData_Get_Struct((obj), struct dbmdata, &dbm_type, (dbmp));\
-    if ((dbmp) == 0) closed_dbm();\
     if ((dbmp)->di_dbm == 0) closed_dbm();\
 } while (0)
 
@@ -60,21 +59,18 @@ static void
 free_dbm(void *ptr)
 {
     struct dbmdata *dbmp = ptr;
-    if (dbmp) {
-	if (dbmp->di_dbm) dbm_close(dbmp->di_dbm);
-	xfree(dbmp);
-    }
+    if (dbmp->di_dbm)
+	dbm_close(dbmp->di_dbm);
+    xfree(dbmp);
 }
 
 static size_t
 memsize_dbm(const void *ptr)
 {
-    size_t size = 0;
     const struct dbmdata *dbmp = ptr;
-    if (dbmp) {
-	size += sizeof(*dbmp);
-	if (dbmp->di_dbm) size += DBM_SIZEOF_DBM;
-    }
+    size_t size = sizeof(*dbmp);
+    if (dbmp->di_dbm)
+	size += DBM_SIZEOF_DBM;
     return size;
 }
 
@@ -115,8 +111,6 @@ fdbm_closed(VALUE obj)
     struct dbmdata *dbmp;
 
     TypedData_Get_Struct(obj, struct dbmdata, &dbm_type, dbmp);
-    if (dbmp == 0)
-	return Qtrue;
     if (dbmp->di_dbm == 0)
 	return Qtrue;
 
@@ -126,7 +120,9 @@ fdbm_closed(VALUE obj)
 static VALUE
 fdbm_alloc(VALUE klass)
 {
-    return TypedData_Wrap_Struct(klass, &dbm_type, 0);
+    struct dbmdata *dbmp;
+
+    return TypedData_Make_Struct(klass, struct dbmdata, &dbm_type, dbmp);
 }
 
 /*
@@ -150,6 +146,7 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
     struct dbmdata *dbmp;
     int mode, flags = 0;
 
+    TypedData_Get_Struct(obj, struct dbmdata, &dbm_type, dbmp);
     if (rb_scan_args(argc, argv, "12", &file, &vmode, &vflags) == 1) {
 	mode = 0666;		/* default value */
     }
@@ -228,8 +225,8 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
 	rb_sys_fail_str(file);
     }
 
-    dbmp = ALLOC(struct dbmdata);
-    DATA_PTR(obj) = dbmp;
+    if (dbmp->di_dbm)
+	dbm_close(dbmp->di_dbm);
     dbmp->di_dbm = dbm;
     dbmp->di_size = -1;
 

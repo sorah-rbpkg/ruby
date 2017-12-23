@@ -1512,8 +1512,14 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_maxgroups
-    assert_kind_of(Integer, Process.maxgroups)
+    max = Process.maxgroups
   rescue NotImplementedError
+  else
+    assert_kind_of(Integer, max)
+    gs = Process.groups
+    assert_operator(gs.size, :<=, max)
+    gs[0] ||= 0
+    assert_raise(ArgumentError) {Process.groups = gs * (max / gs.size + 1)}
   end
 
   def test_geteuid
@@ -1575,7 +1581,10 @@ class TestProcess < Test::Unit::TestCase
     pid = nil
     IO.pipe do |r, w|
       pid = fork { r.read(1); exit }
-      Thread.start { raise }
+      Thread.start {
+        Thread.current.report_on_exception = false
+        raise
+      }
       w.puts
     end
     Process.wait pid
@@ -2338,5 +2347,18 @@ EOS
       Process.kill(:TERM, pid)
       assert_equal pid, Timeout.timeout(30) { Process.wait(pid) }
     end;
+  end
+
+  if Process.respond_to?(:initgroups)
+    def test_initgroups
+      assert_raise(ArgumentError) do
+        Process.initgroups("\0", 0)
+      end
+    end
+  end
+
+  def test_last_status
+    Process.wait spawn(RUBY, "-e", "exit 13")
+    assert_same(Process.last_status, $?)
   end
 end

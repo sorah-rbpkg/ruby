@@ -2,7 +2,7 @@
 
   util.h -
 
-  $Author$
+  $Author: nobu $
   created at: Thu Mar  9 11:55:53 JST 1995
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -70,7 +70,6 @@ char *ruby_strdup(const char *);
 #define strdup(s) ruby_strdup(s)
 
 char *ruby_getcwd(void);
-#define my_getcwd() ruby_getcwd()
 
 double ruby_strtod(const char *, char **);
 #undef strtod

@@ -45,6 +45,26 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_redefine_method('Integer', '%', 'assert_equal 7, 8 % 7')
   end
 
+  def test_fixnum_lt
+    assert_equal true, 1 < 2
+    assert_redefine_method('Integer', '<', 'assert_equal 2, 1 < 2')
+  end
+
+  def test_fixnum_le
+    assert_equal true, 1 <= 2
+    assert_redefine_method('Integer', '<=', 'assert_equal 2, 1 <= 2')
+  end
+
+  def test_fixnum_gt
+    assert_equal false, 1 > 2
+    assert_redefine_method('Integer', '>', 'assert_equal 2, 1 > 2')
+  end
+
+  def test_fixnum_ge
+    assert_equal false, 1 >= 2
+    assert_redefine_method('Integer', '>=', 'assert_equal 2, 1 >= 2')
+  end
+
   def test_float_plus
     assert_equal 4.0, 2.0 + 2.0
     assert_redefine_method('Float', '+', 'assert_equal 2.0, 2.0 + 2.0')
@@ -63,6 +83,26 @@ class TestRubyOptimization < Test::Unit::TestCase
   def test_float_div
     assert_in_delta 0.63063063063063063, 4.2 / 6.66
     assert_redefine_method('Float', '/', 'assert_equal 6.66, 4.2 / 6.66', "[Bug #9238]")
+  end
+
+  def test_float_lt
+    assert_equal true, 1.1 < 2.2
+    assert_redefine_method('Float', '<', 'assert_equal 2.2, 1.1 < 2.2')
+  end
+
+  def test_float_le
+    assert_equal true, 1.1 <= 2.2
+    assert_redefine_method('Float', '<=', 'assert_equal 2.2, 1.1 <= 2.2')
+  end
+
+  def test_float_gt
+    assert_equal false, 1.1 > 2.2
+    assert_redefine_method('Float', '>', 'assert_equal 2.2, 1.1 > 2.2')
+  end
+
+  def test_float_ge
+    assert_equal false, 1.1 >= 2.2
+    assert_redefine_method('Float', '>=', 'assert_equal 2.2, 1.1 >= 2.2')
   end
 
   def test_string_length
@@ -574,5 +614,92 @@ class TestRubyOptimization < Test::Unit::TestCase
     begin;
       def t; if false; case 42; when s {}; end; end; end
     end;
+  end
+
+  def bptest_yield &b
+    yield
+  end
+
+  def bptest_yield_pass &b
+    bptest_yield(&b)
+  end
+
+  def bptest_bp_value &b
+    b
+  end
+
+  def bptest_bp_pass_bp_value &b
+    bptest_bp_value(&b)
+  end
+
+  def bptest_binding &b
+    binding
+  end
+
+  def bptest_set &b
+    b = Proc.new{2}
+  end
+
+  def test_block_parameter
+    assert_equal(1, bptest_yield{1})
+    assert_equal(1, bptest_yield_pass{1})
+    assert_equal(1, send(:bptest_yield){1})
+
+    assert_equal(Proc, bptest_bp_value{}.class)
+    assert_equal nil, bptest_bp_value
+    assert_equal(Proc, bptest_bp_pass_bp_value{}.class)
+    assert_equal nil, bptest_bp_pass_bp_value
+
+    assert_equal Proc, bptest_binding{}.local_variable_get(:b).class
+
+    assert_equal 2, bptest_set{1}.call
+  end
+
+  def test_block_parameter_should_not_create_objects
+    assert_separately [], <<-END
+      #
+      def foo &b
+      end
+      h1 = {}; h2 = {}
+      ObjectSpace.count_objects(h1) # reharsal
+      ObjectSpace.count_objects(h1)
+      foo{}
+      ObjectSpace.count_objects(h2)
+
+      assert_equal 0, h2[:TOTAL] - h1[:TOTAL]
+    END
+  end
+
+  def test_block_parameter_should_restore_safe_level
+    assert_separately [], <<-END
+      #
+      def foo &b
+        $SAFE = 1
+        b.call
+      end
+      assert_equal 0, foo{$SAFE}
+    END
+  end
+
+  def test_peephole_optimization_without_trace
+    assert_separately [], <<-END
+      RubyVM::InstructionSequence.compile_option = {trace_instruction: false}
+      eval "def foo; 1.times{|(a), &b| nil && a}; end"
+    END
+  end
+
+  def test_clear_unreachable_keyword_args
+    assert_separately [], <<-END
+      script =  <<-EOS
+        if true
+        else
+          foo(k1:1)
+        end
+      EOS
+      GC.stress = true
+      30.times{
+        RubyVM::InstructionSequence.compile(script)
+      }
+    END
   end
 end
