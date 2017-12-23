@@ -67,7 +67,7 @@ override_dh_auto_build-arch:
 
 override_dh_auto_test-arch:
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
-	$(MAKE) TESTS="-v -j 4" V=1 check
+	$(MAKE) TESTS="-v -j 4" RUBY_TESTOPTS=-v V=1 check
 endif
 
 override_dh_auto_install-arch:

@@ -2,6 +2,7 @@ ruby2.5 (2.5.0~preview1-2) UNRELEASED; urgency=medium
 
   * Refresh patches
   * ruby2.5-dev: Recommends: ruby2.5-doc
+  * debian/rules: run tests in verbose mode during build
 
  -- Antonio Terceiro <terceiro@debian.org>  Wed, 15 Nov 2017 14:02:41 -0200
 
