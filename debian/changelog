@@ -4,6 +4,7 @@ ruby2.3 (2.3.6-2) unstable; urgency=medium
     increase timeout in both tests that have one
     (now hopefully really Closes: #882404)
   * debian/rules: run tests in verbose mode during build
+  * autopkgtest: make use of the text exclusion rules under test/excludes/
 
  -- Antonio Terceiro <terceiro@debian.org>  Fri, 22 Dec 2017 15:45:29 -0200
 
