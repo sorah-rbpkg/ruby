@@ -16,6 +16,7 @@ export SOURCE             := $(shell dpkg-parsechangelog -SSource)
 export RUBY_VERSION       := $(patsubst ruby%,%,$(SOURCE))
 export RUBY_API_VERSION   := $(RUBY_VERSION).0
 
+configure_options += --prefix=/usr
 configure_options += --enable-multiarch
 configure_options += --target=$(DEB_HOST_MULTIARCH)
 configure_options += --program-suffix=$(RUBY_VERSION)
@@ -42,7 +43,7 @@ export SHELL := /bin/bash
 override_dh_auto_configure:
 	cp /usr/share/misc/config.guess tool
 	cp /usr/share/misc/config.sub tool
-	dh_auto_configure -- $(configure_options)
+	./configure $(configure_options)
 
 override_dh_auto_clean:
 	dh_auto_clean
