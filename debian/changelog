@@ -4,6 +4,7 @@ ruby2.5 (2.5.0~rc1-1) UNRELEASED; urgency=medium
     - Fix stack size on powerpc64 (Closes: #881772)
     - CVE-2017-17405: Command injection vulnerability in Net::FTP
       (Closes: #884437)
+  * Refresh patches
   * ruby2.5-dev: Recommends: ruby2.5-doc
   * debian/watch: download release tarballs.
     Using release tarballs makes it possible to build ruby without having an
