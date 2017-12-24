@@ -3,7 +3,7 @@
 set -e
 
 rc=0
-while read gem version; do
+while read gem version repository; do
   if ruby2.5 -e "gem '${gem}', '>= ${version}'"; then
     echo "${gem} (>= ${version}) OK"
   else
