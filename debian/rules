@@ -10,10 +10,11 @@ export DH_OPTIONS
 TESTOPTS += -v
 export TESTOPTS
 
-DEB_HOST_MULTIARCH := $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
-export SOURCE             := $(shell dpkg-parsechangelog -SSource)
-export RUBY_VERSION       := $(patsubst ruby%,%,$(SOURCE))
+include /usr/share/dpkg/pkg-info.mk
+
+export RUBY_VERSION       := $(patsubst ruby%,%,$(DEB_SOURCE))
 export RUBY_API_VERSION   := $(RUBY_VERSION).0
 
 configure_options += --prefix=/usr
