@@ -16,6 +16,8 @@ ruby2.5 (2.5.0~rc1-1) UNRELEASED; urgency=medium
     - drop explicit usage of autotools-dev
     - drop usage of autoreconf debhelper sequence, it's not needed anymore
       since we are now using a complete upstream release tarball
+    - drop passing --baseruby to configure, since do not require an existing
+      ruby anymore
   * autopkgtest: make use of the text exclusion rules under test/excludes/
   * Declare compatibility with Debian Policy 4.1.2; no changes needed
   * debian/libruby2.5.symbols: update with symbols added/removed since the

@@ -16,16 +16,12 @@ export SOURCE             := $(shell dpkg-parsechangelog -SSource)
 export RUBY_VERSION       := $(patsubst ruby%,%,$(SOURCE))
 export RUBY_API_VERSION   := $(RUBY_VERSION).0
 
-# Bootstrap with Ruby 1.8 if proper Ruby is not available
-baseruby=$(shell test -x /usr/bin/ruby && echo /usr/bin/ruby || echo /usr/bin/ruby1.8)
-
 configure_options += --enable-multiarch
 configure_options += --target=$(DEB_HOST_MULTIARCH)
 configure_options += --program-suffix=$(RUBY_VERSION)
 configure_options += --with-soname=ruby-$(RUBY_VERSION)
 configure_options += --enable-shared
 configure_options += --disable-rpath
-configure_options += --with-baseruby=$(baseruby)
 configure_options += --with-sitedir='/usr/local/lib/site_ruby'
 configure_options += --with-sitearchdir="/usr/local/lib/$(DEB_HOST_MULTIARCH)/site_ruby"
 
