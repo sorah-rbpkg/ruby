@@ -41,7 +41,7 @@ configure_options += $(shell dpkg-buildflags --export=configure)
 export SHELL := /bin/bash
 
 %:
-	dh $@ --parallel --with autotools-dev --with autoreconf
+	dh $@ --parallel
 
 override_dh_auto_configure:
 	cp /usr/share/misc/config.guess tool

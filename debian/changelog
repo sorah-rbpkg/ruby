@@ -11,7 +11,11 @@ ruby2.5 (2.5.0~rc1-1) UNRELEASED; urgency=medium
     existing ruby. This should help bootstrapping ruby on new
     architectures. (Closes: #832022)
   * debian/copyright: exclude embedded copies of bundled gems and libffi
-  * debian/rules: run tests in verbose mode during build
+  * debian/rules:
+    - run tests in verbose mode during build
+    - drop explicit usage of autotools-dev
+    - drop usage of autoreconf debhelper sequence, it's not needed anymore
+      since we are now using a complete upstream release tarball
   * autopkgtest: make use of the text exclusion rules under test/excludes/
   * Declare compatibility with Debian Policy 4.1.2; no changes needed
   * debian/libruby2.5.symbols: update with symbols added/removed since the
