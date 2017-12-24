@@ -12,6 +12,7 @@ ruby2.5 (2.5.0~rc1-1) UNRELEASED; urgency=medium
     architectures. (Closes: #832022)
   * debian/copyright: exclude embedded copies of bundled gems and libffi
   * debian/rules: run tests in verbose mode during build
+  * autopkgtest: make use of the text exclusion rules under test/excludes/
 
  -- Antonio Terceiro <terceiro@debian.org>  Sat, 23 Dec 2017 21:59:33 -0200
 
