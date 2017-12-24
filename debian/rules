@@ -49,7 +49,7 @@ configure_options += --with-out-ext=win32ole
 configure_options += --with-out-ext=win32api
 
 %:
-	dh $@ --parallel --with autotools-dev --with autoreconf
+	dh $@ --parallel
 
 override_dh_auto_configure:
 	cp /usr/share/misc/config.guess tool

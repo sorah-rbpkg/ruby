@@ -2,12 +2,12 @@ Source: ruby2.5
 Section: ruby
 Priority: optional
 Maintainer: Sorah Fukumori <her@sorah.jp>
-Build-Depends: autotools-dev,
-               bison,
+Maintainer: Antonio Terceiro <terceiro@debian.org>
+Uploaders: Christian Hofstaedtler <zeha@debian.org>
+Build-Depends: bison,
                chrpath,
                coreutils (>= 7.5),
                debhelper (>= 8.0.0),
-               dh-autoreconf,
                file,
                libffi-dev,
                libgdbm-dev,
