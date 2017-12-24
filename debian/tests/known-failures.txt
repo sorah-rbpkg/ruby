@@ -11,8 +11,11 @@ test/mkmf/test_have_macro.rb
 test/mkmf/test_libs.rb
 test/mkmf/test_signedness.rb
 test/mkmf/test_sizeof.rb
+test/ripper/test_files.rb
+test/rubygems/test_gem_commands_build_command.rb
 test/rubygems/test_gem_commands_cert_command.rb
 test/rubygems/test_gem_commands_environment_command.rb
+test/rubygems/test_gem_commands_setup_command.rb
 test/rubygems/test_gem_commands_uninstall_command.rb
 test/rubygems/test_gem_commands_update_command.rb
 test/rubygems/test_gem_ext_rake_builder.rb
