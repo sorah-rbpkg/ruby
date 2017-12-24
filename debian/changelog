@@ -1,7 +1,7 @@
 ruby2.5 (2.5.0~preview1-2) UNRELEASED; urgency=medium
 
   * Refresh patches
-  * ruby2.5-dev: Recommends: ruby2.5-doc
+  * debian/control:
   * debian/rules:
     - run tests in verbose mode during build
     - drop explicit usage of autotools-dev
@@ -18,6 +18,8 @@ ruby2.5 (2.5.0~preview1-2) UNRELEASED; urgency=medium
   * Bump debhelper compatibility level to 10
     - change debian/rules to call ./configure directly, to use upstream's
       built-in multiarch support as before debhelper compatibility level 9
+    preview1 release
+  * debian/tests/bundled-gems: handle extra field in gems/bundled_gems
 
  -- Antonio Terceiro <terceiro@debian.org>  Wed, 15 Nov 2017 14:02:41 -0200
 

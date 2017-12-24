@@ -27,7 +27,6 @@ Standards-Version: 4.1.2
 Homepage: http://www.ruby-lang.org/
 Vcs-Git: https://anonscm.debian.org/git/collab-maint/ruby.git
 Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/ruby.git
-Testsuite: autopkgtest
 
 Package: ruby2.5
 Multi-Arch: allowed
