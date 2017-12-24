@@ -5,7 +5,13 @@ ruby2.5 (2.5.0~rc1-1) UNRELEASED; urgency=medium
     - CVE-2017-17405: Command injection vulnerability in Net::FTP
       (Closes: #884437)
   * Refresh patches
-  * ruby2.5-dev: Recommends: ruby2.5-doc
+  * debian/control:
+    - Remove explicit Testsuite: header
+    - ruby2.5-dev: Recommends: ruby2.5-doc
+    - Declare compatibility with Debian Policy 4.1.2; no changes needed
+    - Bump debhelper compatibility level to 10
+      - change debian/rules to call ./configure directly, to use upstream's
+        built-in multiarch support as before debhelper compatibility level 9
   * debian/watch: download release tarballs.
     Using release tarballs makes it possible to build ruby without having an
     existing ruby. This should help bootstrapping ruby on new
@@ -22,13 +28,9 @@ ruby2.5 (2.5.0~rc1-1) UNRELEASED; urgency=medium
     - replace manual call to dpkg-parsechangelog with including
       /usr/share/dpkg/pkg-info.mk and using variables from there.
   * autopkgtest: make use of the text exclusion rules under test/excludes/
-  * Declare compatibility with Debian Policy 4.1.2; no changes needed
   * debian/libruby2.5.symbols: update with symbols added/removed since the
     preview1 release
   * debian/tests/bundled-gems: handle extra field in gems/bundled_gems
-  * Bump debhelper compatibility level to 10
-    - change debian/rules to call ./configure directly, to use upstream's
-      built-in multiarch support as before debhelper compatibility level 9
 
  -- Antonio Terceiro <terceiro@debian.org>  Sat, 23 Dec 2017 21:59:33 -0200
 
