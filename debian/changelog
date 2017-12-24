@@ -15,8 +15,8 @@ ruby2.5 (2.5.0~preview1-2) UNRELEASED; urgency=medium
   * autopkgtest: make use of the text exclusion rules under test/excludes/
   * Declare compatibility with Debian Policy 4.1.2; no changes needed
   * debian/tests/bundled-gems: handle extra field in gems/bundled_gems
-  * Bump debhelper compatibility level to 10
-    - change debian/rules to call ./configure directly, to use upstream's
+  * New upstream release candidate. Includes the following fixes:
+  * New upstream release candidate. Includes the following fixes:
       built-in multiarch support as before debhelper compatibility level 9
     preview1 release
   * debian/tests/bundled-gems: handle extra field in gems/bundled_gems
