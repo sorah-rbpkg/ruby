@@ -230,14 +230,14 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_ascii8bit_encindex@Base 2.5.0~preview1
  rb_ascii8bit_encoding@Base 2.5.0~preview1
  rb_assoc_new@Base 2.5.0~preview1
- rb_ast_add_mark_object@Base 2.5.0~rc1-1
- rb_ast_delete_mark_object@Base 2.5.0~rc1-1
- rb_ast_delete_node@Base 2.5.0~rc1-1
- rb_ast_dispose@Base 2.5.0~rc1-1
- rb_ast_free@Base 2.5.0~rc1-1
- rb_ast_mark@Base 2.5.0~rc1-1
- rb_ast_new@Base 2.5.0~rc1-1
- rb_ast_newnode@Base 2.5.0~rc1-1
+ rb_ast_add_mark_object@Base 2.5.0~rc1
+ rb_ast_delete_mark_object@Base 2.5.0~rc1
+ rb_ast_delete_node@Base 2.5.0~rc1
+ rb_ast_dispose@Base 2.5.0~rc1
+ rb_ast_free@Base 2.5.0~rc1
+ rb_ast_mark@Base 2.5.0~rc1
+ rb_ast_new@Base 2.5.0~rc1
+ rb_ast_newnode@Base 2.5.0~rc1
  rb_attr@Base 2.5.0~preview1
  rb_attr_get@Base 2.5.0~preview1
  rb_autoload@Base 2.5.0
@@ -474,7 +474,7 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_eException@Base 2.5.0~preview1
  rb_eFatal@Base 2.5.0~preview1
  rb_eFloatDomainError@Base 2.5.0~preview1
- rb_eFrozenError@Base 2.5.0~rc1-1
+ rb_eFrozenError@Base 2.5.0~rc1
  rb_eIOError@Base 2.5.0~preview1
  rb_eIndexError@Base 2.5.0~preview1
  rb_eInterrupt@Base 2.5.0~preview1
@@ -767,7 +767,7 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_hash_lookup2@Base 2.5.0~preview1
  rb_hash_lookup@Base 2.5.0~preview1
  rb_hash_new@Base 2.5.0~preview1
- rb_hash_new_compare_by_id@Base 2.5.0~rc1-1
+ rb_hash_new_compare_by_id@Base 2.5.0~rc1
  rb_hash_set_ifnone@Base 2.5.0~preview1
  rb_hash_size@Base 2.5.0~preview1
  rb_hash_start@Base 2.5.0~preview1
@@ -878,9 +878,9 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_iseq_parameters@Base 2.5.0~preview1
  rb_iseq_path@Base 2.5.0~preview1
  rb_iseq_realpath@Base 2.5.0~preview1
- rb_iseq_trace_on_all@Base 2.5.0~rc1-1
- rb_iseq_trace_set@Base 2.5.0~rc1-1
- rb_iseq_trace_set_all@Base 2.5.0~rc1-1
+ rb_iseq_trace_on_all@Base 2.5.0~rc1
+ rb_iseq_trace_set@Base 2.5.0~rc1
+ rb_iseq_trace_set_all@Base 2.5.0~rc1
  rb_iseq_translate_threaded_code@Base 2.5.0~preview1
  rb_iseqw_new@Base 2.5.0~preview1
  rb_iseqw_to_iseq@Base 2.5.0~preview1
@@ -990,7 +990,7 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_need_block@Base 2.5.0~preview1
  rb_newobj@Base 2.5.0~preview1
  rb_newobj_of@Base 2.5.0~preview1
- rb_node_init@Base 2.5.0~rc1-1
+ rb_node_init@Base 2.5.0~rc1
  rb_notimplement@Base 2.5.0~preview1
  rb_num2dbl@Base 2.5.0~preview1
  rb_num2fix@Base 2.5.0~preview1
@@ -1075,10 +1075,10 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_parser_printf@Base 2.5.0~preview1
  rb_parser_realloc@Base 2.5.0~preview1
  rb_parser_reg_compile@Base 2.5.0~preview1
- rb_parser_set_location@Base 2.5.0~rc1-1
- rb_parser_set_location_from_strterm_heredoc@Base 2.5.0~rc1-1
- rb_parser_set_location_of_none@Base 2.5.0~rc1-1
- rb_parser_set_options@Base 2.5.0~rc1-1
+ rb_parser_set_location@Base 2.5.0~rc1
+ rb_parser_set_location_from_strterm_heredoc@Base 2.5.0~rc1
+ rb_parser_set_location_of_none@Base 2.5.0~rc1
+ rb_parser_set_options@Base 2.5.0~rc1
  rb_parser_set_yydebug@Base 2.5.0~preview1
  rb_parser_show_bitstack@Base 2.5.0~preview1
  rb_parser_trace_lex_state@Base 2.5.0~preview1
@@ -1162,7 +1162,7 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_reserved_word@Base 2.5.0~preview1
  rb_reset_coverages@Base 2.5.0~preview1
  rb_reset_random_seed@Base 2.5.0~preview1
- rb_resolve_me_location@Base 2.5.0~rc1-1
+ rb_resolve_me_location@Base 2.5.0~rc1
  rb_respond_to@Base 2.5.0~preview1
  rb_rs@Base 2.5.0~preview1
  rb_ruby_debug_ptr@Base 2.5.0~preview1
@@ -1349,7 +1349,7 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_time_timespec@Base 2.5.0~preview1
  rb_time_timespec_new@Base 2.5.0~preview1
  rb_time_timeval@Base 2.5.0~preview1
- rb_time_utc_offset@Base 2.5.0~rc1-1
+ rb_time_utc_offset@Base 2.5.0~rc1
  rb_timespec_now@Base 2.5.0~preview1
  rb_to_encoding@Base 2.5.0~preview1
  rb_to_encoding_index@Base 2.5.0~preview1
@@ -1360,7 +1360,7 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_tolower@Base 2.5.0
  rb_toupper@Base 2.5.0
  rb_tracearg_binding@Base 2.5.0~preview1
- rb_tracearg_callee_id@Base 2.5.0~rc1-1
+ rb_tracearg_callee_id@Base 2.5.0~rc1
  rb_tracearg_defined_class@Base 2.5.0~preview1
  rb_tracearg_event@Base 2.5.0~preview1
  rb_tracearg_event_flag@Base 2.5.0~preview1
@@ -1420,8 +1420,8 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  ruby_brace_glob@Base 2.5.0~preview1
  ruby_cleanup@Base 2.5.0~preview1
  ruby_copyright@Base 2.5.0~preview1
- ruby_current_execution_context_ptr@Base 2.5.0~rc1-1
- ruby_current_vm_ptr@Base 2.5.0~rc1-1
+ ruby_current_execution_context_ptr@Base 2.5.0~rc1
+ ruby_current_vm_ptr@Base 2.5.0~rc1
  ruby_debug_breakpoint@Base 2.5.0~preview1
  ruby_debug_print_id@Base 2.5.0~preview1
  ruby_debug_print_indent@Base 2.5.0~preview1
@@ -1484,13 +1484,13 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  ruby_unsetenv@Base 2.5.0~preview1
  ruby_version@Base 2.5.0~preview1
  ruby_vm_at_exit@Base 2.5.0~preview1
- ruby_vm_class_serial@Base 2.5.0~rc1-1
- ruby_vm_const_missing_count@Base 2.5.0~rc1-1
+ ruby_vm_class_serial@Base 2.5.0~rc1
+ ruby_vm_const_missing_count@Base 2.5.0~rc1
  ruby_vm_destruct@Base 2.5.0~preview1
- ruby_vm_event_enabled_flags@Base 2.5.0~rc1-1
- ruby_vm_event_flags@Base 2.5.0~rc1-1
- ruby_vm_global_constant_state@Base 2.5.0~rc1-1
- ruby_vm_global_method_state@Base 2.5.0~rc1-1
+ ruby_vm_event_enabled_flags@Base 2.5.0~rc1
+ ruby_vm_event_flags@Base 2.5.0~rc1
+ ruby_vm_global_constant_state@Base 2.5.0~rc1
+ ruby_vm_global_method_state@Base 2.5.0~rc1
  ruby_vsnprintf@Base 2.5.0~preview1
  ruby_xcalloc@Base 2.5.0~preview1
  ruby_xfree@Base 2.5.0~preview1
