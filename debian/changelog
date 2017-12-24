@@ -23,7 +23,7 @@ ruby2.5 (2.5.0~rc1-1) UNRELEASED; urgency=medium
   * debian/libruby2.5.symbols: update with symbols added/removed since the
     preview1 release
   * debian/tests/bundled-gems: handle extra field in gems/bundled_gems
-  * Bump debhelper compatibilty level to 10
+  * Bump debhelper compatibility level to 10
     - change debian/rules to call ./configure directly, to use upstream's
       built-in multiarch support as before debhelper compatibility level 9
 
