@@ -1,4 +1,4 @@
-ruby2.5 (2.5.0~rc1-1) UNRELEASED; urgency=medium
+ruby2.5 (2.5.0~rc1-1) unstable; urgency=medium
 
   * New upstream release candidate. Includes the following fixes:
     - Fix stack size on powerpc64 (Closes: #881772)
@@ -31,10 +31,10 @@ ruby2.5 (2.5.0~rc1-1) UNRELEASED; urgency=medium
   * debian/libruby2.5.symbols: update with symbols added/removed since the
     preview1 release
   * debian/tests/bundled-gems: handle extra field in gems/bundled_gems
-  * debian/libruby2.5.lintian-overrides: remove unused overrride
+  * debian/libruby2.5.lintian-overrides: remove unused override
     (possible-gpl-code-linked-with-openssl)
 
- -- Antonio Terceiro <terceiro@debian.org>  Sat, 23 Dec 2017 21:59:33 -0200
+ -- Antonio Terceiro <terceiro@debian.org>  Sun, 24 Dec 2017 12:29:25 -0200
 
 ruby2.5 (2.5.0~preview1-1) unstable; urgency=medium
 
