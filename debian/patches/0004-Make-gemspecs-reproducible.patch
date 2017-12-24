@@ -23,7 +23,7 @@ index c1f7da4..30bad7e 100644
  
    s.summary       = "Arbitrary-precision decimal floating-point number library."
 diff --git a/ext/io/console/io-console.gemspec b/ext/io/console/io-console.gemspec
-index 1256162..99e18bd 100644
+index 822d3eb..18d2887 100644
 --- a/ext/io/console/io-console.gemspec
 +++ b/ext/io/console/io-console.gemspec
 @@ -5,7 +5,7 @@
