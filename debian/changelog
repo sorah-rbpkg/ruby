@@ -1,3 +1,28 @@
+ruby2.5 (2.5.0-0nkmi1) unstable; urgency=medium
+
+  * Ruby 2.5.0
+  * Import Debian changes:
+
+    * Refresh patches
+    * debian/control:
+    * debian/rules:
+      - run tests in verbose mode during build
+      - drop explicit usage of autotools-dev
+      - drop usage of autoreconf debhelper sequence, it's not needed anymore
+        since we are now using a complete upstream release tarball
+      - drop passing --baseruby to configure, since do not require an existing
+        ruby anymore
+      - skip setting DEB_HOST_MULTIARCH if already set
+      - replace manual call to dpkg-parsechangelog with including
+        /usr/share/dpkg/pkg-info.mk and using variables from there.
+    * autopkgtest: make use of the text exclusion rules under test/excludes/
+    * Declare compatibility with Debian Policy 4.1.2; no changes needed
+    * debian/libruby2.5.symbols: update with symbols added/removed since the
+      preview1 release
+    * debian/tests/bundled-gems: handle extra field in gems/bundled_gems
+
+ -- Sorah Fukumori <her@sorah.jp>  Mon, 25 Dec 2017 15:05:33 +0000
+
 ruby2.5 (2.5.0~rc1-0nkmi1~trusty) trusty; urgency=medium
 
   * Ruby 2.5

@@ -2,12 +2,10 @@ Source: ruby2.5
 Section: ruby
 Priority: optional
 Maintainer: Sorah Fukumori <her@sorah.jp>
-Build-Depends: autotools-dev,
-               bison,
+Build-Depends: bison,
                chrpath,
                coreutils (>= 7.5),
-               debhelper (>= 8.0.0),
-               dh-autoreconf,
+               debhelper (>= 9),
                file,
                libffi-dev,
                libgdbm-dev,
@@ -20,15 +18,13 @@ Build-Depends: autotools-dev,
                netbase,
                openssl,
                procps,
-               ruby2.0 | ruby | ruby-interpreter,
                rubygems-integration (>= 1.6),
                systemtap-sdt-dev [linux-any],
                zlib1g-dev
-Standards-Version: 3.9.8
+Standards-Version: 4.1.2
 Homepage: http://www.ruby-lang.org/
-Vcs-Git: https://anonscm.debian.org/git/collab-maint/ruby.git
-Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/ruby.git
-Testsuite: autopkgtest
+Vcs-Git: https://github.com/sorah-rbpkg/ruby
+Vcs-Browser: https://github.com/sorah-rbpkg/ruby
 
 Package: ruby2.5
 Multi-Arch: allowed
@@ -77,6 +73,7 @@ Depends: libgmp-dev,
          libruby2.5 (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
+Recommends: ruby2.5-doc
 Description: Header files for compiling extension modules for the Ruby 2.5
  Ruby is the interpreted scripting language for quick and easy
  object-oriented programming.  It has many features to process text

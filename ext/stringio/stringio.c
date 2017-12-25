@@ -2,7 +2,7 @@
 
   stringio.c -
 
-  $Author$
+  $Author: kazu $
   $RoughId: stringio.c,v 1.13 2002/03/14 03:24:18 nobu Exp $
   created at: Tue Feb 19 04:10:38 JST 2002
 
@@ -1248,8 +1248,8 @@ strio_readlines(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   strio.write(string)    -> integer
- *   strio.syswrite(string) -> integer
+ *   strio.write(string, ...) -> integer
+ *   strio.syswrite(string)   -> integer
  *
  * Appends the given string to the underlying buffer string of *strio*.
  * The stream must be opened for writing.  If the argument is not a

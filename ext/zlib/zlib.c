@@ -3,7 +3,7 @@
  *
  *   Copyright (C) UENO Katsuhiro 2000-2003
  *
- * $Id$
+ * $Id: zlib.c 60379 2017-10-23 07:06:12Z nobu $
  */
 
 #include <ruby.h>

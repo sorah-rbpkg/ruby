@@ -2,7 +2,7 @@
 #
 #   irb/context.rb - irb context
 #   	$Release Version: 0.9.6$
-#   	$Revision$
+#   	$Revision: 58415 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
