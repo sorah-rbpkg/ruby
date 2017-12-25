@@ -69,7 +69,7 @@ ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
 endif
 
 override_dh_auto_install-arch:
-	$(MAKE) update-gems extract-gems
+	$(MAKE) extract-gems
 	$(MAKE) install-nodoc V=1 DESTDIR=$(CURDIR)/debian/tmp
 	# handle embedded copy of jquery
 	$(RM) $(CURDIR)/debian/tmp/usr/lib/ruby/$(RUBY_API_VERSION)/rdoc/generator/template/darkfish/js/jquery.js
