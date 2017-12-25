@@ -20,11 +20,6 @@ ruby2.5 (2.5.0-0nkmi1) unstable; urgency=medium
     * debian/libruby2.5.symbols: update with symbols added/removed since the
       preview1 release
     * debian/tests/bundled-gems: handle extra field in gems/bundled_gems
-    * New upstream release candidate. Includes the following fixes:
-    * New upstream release candidate. Includes the following fixes:
-        built-in multiarch support as before debhelper compatibility level 9
-      preview1 release
-    * debian/tests/bundled-gems: handle extra field in gems/bundled_gems
 
  -- Sorah Fukumori <her@sorah.jp>  Mon, 25 Dec 2017 15:05:33 +0000
 
