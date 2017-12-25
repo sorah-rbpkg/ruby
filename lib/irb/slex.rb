@@ -2,7 +2,7 @@
 #
 #   irb/slex.rb - simple lex analyzer
 #   	$Release Version: 0.9.6$
-#   	$Revision$
+#   	$Revision: 57291 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --

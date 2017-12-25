@@ -4,7 +4,7 @@
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
 # License:: You can redistribute it and/or modify it under the same term as Ruby.
-# Revision:: $Id$
+# Revision:: $Id: generic.rb 61225 2017-12-14 06:30:22Z naruse $
 #
 # See URI for general documentation
 #

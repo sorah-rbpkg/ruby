@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-# $Id$
+# $Id: preproc.rb 59896 2017-09-14 10:53:47Z nobu $
 
 require 'optparse'
 

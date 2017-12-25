@@ -2,7 +2,7 @@
 
   thread.c -
 
-  $Author$
+  $Author: mame $
 
   Copyright (C) 2004-2007 Koichi Sasada
 
@@ -91,13 +91,13 @@ static VALUE sym_never;
 static ID id_locals;
 
 static void sleep_timeval(rb_thread_t *th, struct timeval time, int spurious_check);
-static void sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec, int spurious_check);
 static void sleep_forever(rb_thread_t *th, int nodeadlock, int spurious_check);
 static void rb_thread_sleep_deadly_allow_spurious_wakeup(void);
 static double timeofday(void);
 static int rb_threadptr_dead(rb_thread_t *th);
 static void rb_check_deadlock(rb_vm_t *vm);
 static int rb_threadptr_pending_interrupt_empty_p(const rb_thread_t *th);
+static const char *thread_status_name(rb_thread_t *th, int detail);
 
 #define eKillSignal INT2FIX(0)
 #define eTerminateSignal INT2FIX(1)
@@ -450,12 +450,15 @@ terminate_all(rb_vm_t *vm, const rb_thread_t *main_thread)
 
     list_for_each(&vm->living_threads, th, vmlt_node) {
 	if (th != main_thread) {
-	    thread_debug("terminate_i: %p\n", (void *)th);
+	    thread_debug("terminate_all: begin (thid: %"PRI_THREAD_ID", status: %s)\n",
+			 thread_id_str(th), thread_status_name(th, TRUE));
 	    rb_threadptr_pending_interrupt_enque(th, eTerminateSignal);
 	    rb_threadptr_interrupt(th);
+	    thread_debug("terminate_all: end (thid: %"PRI_THREAD_ID", status: %s)\n",
+			 thread_id_str(th), thread_status_name(th, TRUE));
 	}
 	else {
-	    thread_debug("terminate_i: main thread (%p)\n", (void *)th);
+	    thread_debug("terminate_all: main thread (%p)\n", (void *)th);
 	}
     }
 }
@@ -879,19 +882,29 @@ thread_join_sleep(VALUE arg)
 
     while (target_th->status != THREAD_KILLED) {
 	if (forever) {
-	    sleep_forever(th, TRUE, FALSE);
+	    th->status = THREAD_STOPPED_FOREVER;
+	    th->vm->sleeper++;
+	    rb_check_deadlock(th->vm);
+	    native_sleep(th, 0);
+	    th->vm->sleeper--;
 	}
 	else {
 	    double now = timeofday();
+	    struct timeval tv;
+
 	    if (now > limit) {
 		thread_debug("thread_join: timeout (thid: %"PRI_THREAD_ID")\n",
 			     thread_id_str(target_th));
 		return Qfalse;
 	    }
-	    sleep_wait_for_interrupt(th, limit - now, 0);
+	    tv = double2timeval(limit - now);
+	    th->status = THREAD_STOPPED;
+	    native_sleep(th, &tv);
 	}
-	thread_debug("thread_join: interrupted (thid: %"PRI_THREAD_ID")\n",
-		     thread_id_str(target_th));
+	RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
+	th->status = THREAD_RUNNABLE;
+	thread_debug("thread_join: interrupted (thid: %"PRI_THREAD_ID", status: %s)\n",
+		     thread_id_str(target_th), thread_status_name(target_th, TRUE));
     }
     return Qtrue;
 }
@@ -913,7 +926,8 @@ thread_join(rb_thread_t *target_th, double delay)
     arg.waiting = th;
     arg.delay = delay;
 
-    thread_debug("thread_join (thid: %"PRI_THREAD_ID")\n", thread_id_str(target_th));
+    thread_debug("thread_join (thid: %"PRI_THREAD_ID", status: %s)\n",
+		 thread_id_str(target_th), thread_status_name(target_th, TRUE));
 
     if (target_th->status != THREAD_KILLED) {
 	rb_thread_list_t list;
@@ -926,8 +940,8 @@ thread_join(rb_thread_t *target_th, double delay)
 	}
     }
 
-    thread_debug("thread_join: success (thid: %"PRI_THREAD_ID")\n",
-		 thread_id_str(target_th));
+    thread_debug("thread_join: success (thid: %"PRI_THREAD_ID", status: %s)\n",
+		 thread_id_str(target_th), thread_status_name(target_th, TRUE));
 
     if (target_th->ec->errinfo != Qnil) {
 	VALUE err = target_th->ec->errinfo;
@@ -935,6 +949,9 @@ thread_join(rb_thread_t *target_th, double delay)
 	if (FIXNUM_P(err)) {
 	    switch (err) {
 	      case INT2FIX(TAG_FATAL):
+		thread_debug("thread_join: terminated (thid: %"PRI_THREAD_ID", status: %s)\n",
+			     thread_id_str(target_th), thread_status_name(target_th, TRUE));
+
 		/* OK. killed. */
 		break;
 	      default:
@@ -1121,41 +1138,58 @@ getclockofday(struct timeval *tp)
 }
 
 static void
+timeval_add(struct timeval *dst, const struct timeval *tv)
+{
+    if (TIMEVAL_SEC_MAX - tv->tv_sec < dst->tv_sec)
+        dst->tv_sec = TIMEVAL_SEC_MAX;
+    else
+        dst->tv_sec += tv->tv_sec;
+    if ((dst->tv_usec += tv->tv_usec) >= 1000000) {
+	if (dst->tv_sec == TIMEVAL_SEC_MAX) {
+            dst->tv_usec = 999999;
+	}
+	else {
+            dst->tv_sec++;
+            dst->tv_usec -= 1000000;
+	}
+    }
+}
+
+static int
+timeval_update_expire(struct timeval *tv, const struct timeval *to)
+{
+    struct timeval tvn;
+
+    getclockofday(&tvn);
+    if (to->tv_sec < tvn.tv_sec) return 1;
+    if (to->tv_sec == tvn.tv_sec && to->tv_usec <= tvn.tv_usec) return 1;
+    thread_debug("timeval_update_expire: "
+		 "%"PRI_TIMET_PREFIX"d.%.6ld > %"PRI_TIMET_PREFIX"d.%.6ld\n",
+		 (time_t)to->tv_sec, (long)to->tv_usec,
+		 (time_t)tvn.tv_sec, (long)tvn.tv_usec);
+    tv->tv_sec = to->tv_sec - tvn.tv_sec;
+    if ((tv->tv_usec = to->tv_usec - tvn.tv_usec) < 0) {
+	--tv->tv_sec;
+	tv->tv_usec += 1000000;
+    }
+    return 0;
+}
+
+static void
 sleep_timeval(rb_thread_t *th, struct timeval tv, int spurious_check)
 {
-    struct timeval to, tvn;
+    struct timeval to;
     enum rb_thread_status prev_status = th->status;
 
     getclockofday(&to);
-    if (TIMEVAL_SEC_MAX - tv.tv_sec < to.tv_sec)
-        to.tv_sec = TIMEVAL_SEC_MAX;
-    else
-        to.tv_sec += tv.tv_sec;
-    if ((to.tv_usec += tv.tv_usec) >= 1000000) {
-        if (to.tv_sec == TIMEVAL_SEC_MAX)
-            to.tv_usec = 999999;
-        else {
-            to.tv_sec++;
-            to.tv_usec -= 1000000;
-        }
-    }
-
+    timeval_add(&to, &tv);
     th->status = THREAD_STOPPED;
     RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
     while (th->status == THREAD_STOPPED) {
 	native_sleep(th, &tv);
 	RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
-	getclockofday(&tvn);
-	if (to.tv_sec < tvn.tv_sec) break;
-	if (to.tv_sec == tvn.tv_sec && to.tv_usec <= tvn.tv_usec) break;
-	thread_debug("sleep_timeval: %"PRI_TIMET_PREFIX"d.%.6ld > %"PRI_TIMET_PREFIX"d.%.6ld\n",
-		     (time_t)to.tv_sec, (long)to.tv_usec,
-		     (time_t)tvn.tv_sec, (long)tvn.tv_usec);
-	tv.tv_sec = to.tv_sec - tvn.tv_sec;
-	if ((tv.tv_usec = to.tv_usec - tvn.tv_usec) < 0) {
-	    --tv.tv_sec;
-	    tv.tv_usec += 1000000;
-	}
+	if (timeval_update_expire(&tv, &to))
+	    break;
 	if (!spurious_check)
 	    break;
     }
@@ -1199,12 +1233,6 @@ timeofday(void)
         gettimeofday(&tv, NULL);
         return (double)tv.tv_sec + (double)tv.tv_usec * 1e-6;
     }
-}
-
-static void
-sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec, int spurious_check)
-{
-    sleep_timeval(th, double2timeval(sleepsec), spurious_check);
 }
 
 void
@@ -5007,7 +5035,7 @@ update_line_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
     if (RB_TYPE_P(coverage, T_ARRAY) && !RBASIC_CLASS(coverage)) {
 	VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
 	if (lines) {
-	    long line = rb_sourceline() - 1;
+	    long line = FIX2INT(trace_arg->data) - 1;
 	    long count;
 	    VALUE num;
 	    if (line >= RARRAY_LEN(lines)) { /* no longer tracked */
@@ -5129,7 +5157,7 @@ rb_set_coverages(VALUE coverages, int mode, VALUE me2counter)
 {
     GET_VM()->coverages = coverages;
     GET_VM()->coverage_mode = mode;
-    rb_add_event_hook2((rb_event_hook_func_t) update_line_coverage, RUBY_EVENT_LINE, Qnil, RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
+    rb_add_event_hook2((rb_event_hook_func_t) update_line_coverage, RUBY_EVENT_COVERAGE_LINE, Qnil, RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
     if (mode & COVERAGE_TARGET_BRANCHES) {
 	rb_add_event_hook2((rb_event_hook_func_t) update_branch_coverage, RUBY_EVENT_COVERAGE_BRANCH, Qnil, RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
     }

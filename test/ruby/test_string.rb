@@ -756,12 +756,21 @@ CODE
   def test_undump
     a = S("Test") << 1 << 2 << 3 << 9 << 13 << 10
     assert_equal(a, S('"Test\\x01\\x02\\x03\\t\\r\\n"').undump)
+    assert_equal(S("\\ca"), S('"\\ca"').undump)
     assert_equal(S("\u{7F}"), S('"\\x7F"').undump)
+    assert_equal(S("\u{7F}A"), S('"\\x7FA"').undump)
     assert_equal(S("\u{AB}"), S('"\\u00AB"').undump)
     assert_equal(S("\u{ABC}"), S('"\\u0ABC"').undump)
     assert_equal(S("\uABCD"), S('"\\uABCD"').undump)
+    assert_equal(S("\uABCD"), S('"\\uABCD"').undump)
     assert_equal(S("\u{ABCDE}"), S('"\\u{ABCDE}"').undump)
     assert_equal(S("\u{10ABCD}"), S('"\\u{10ABCD}"').undump)
+    assert_equal(S("\u{ABCDE 10ABCD}"), S('"\\u{ABCDE 10ABCD}"').undump)
+    assert_equal(S(""), S('"\\u{}"').undump)
+    assert_equal(S(""), S('"\\u{  }"').undump)
+
+    assert_equal(S("\u3042".encode("sjis")), S('"\x82\xA0"'.force_encoding("sjis")).undump)
+    assert_equal(S("\u8868".encode("sjis")), S("\"\\x95\\\\\"".force_encoding("sjis")).undump)
 
     assert_equal(S("äöü"), S('"\u00E4\u00F6\u00FC"').undump)
     assert_equal(S("äöü"), S('"\xC3\xA4\xC3\xB6\xC3\xBC"').undump)
@@ -775,15 +784,32 @@ CODE
     assert_equal('\#{', '"\\\\\#{"'.undump)
 
     assert_raise(RuntimeError) { S('\u3042').undump }
+    assert_raise(RuntimeError) { S('"\x82\xA0\u3042"'.force_encoding("SJIS")).undump }
+    assert_raise(RuntimeError) { S('"\u3042\x82\xA0"'.force_encoding("SJIS")).undump }
     assert_raise(RuntimeError) { S('"".force_encoding()').undump }
+    assert_raise(RuntimeError) { S('"".force_encoding("').undump }
     assert_raise(RuntimeError) { S('"".force_encoding("UNKNOWN")').undump }
+    assert_raise(RuntimeError) { S('"\u3042".force_encoding("UTF-16LE")').undump }
+    assert_raise(RuntimeError) { S('"\x00\x00".force_encoding("UTF-16LE")"').undump }
+    assert_raise(RuntimeError) { S('"\x00\x00".force_encoding("'+("a"*9999999)+'")"').undump }
     assert_raise(RuntimeError) { S(%("\u00E4")).undump }
+    assert_raise(RuntimeError) { S('"').undump }
+    assert_raise(RuntimeError) { S('"""').undump }
     assert_raise(RuntimeError) { S('""""').undump }
 
+    assert_raise(RuntimeError) { S('"a').undump }
     assert_raise(RuntimeError) { S('"\u"').undump }
     assert_raise(RuntimeError) { S('"\u{"').undump }
+    assert_raise(RuntimeError) { S('"\u304"').undump }
+    assert_raise(RuntimeError) { S('"\u304Z"').undump }
+    assert_raise(RuntimeError) { S('"\udfff"').undump }
+    assert_raise(RuntimeError) { S('"\u{dfff}"').undump }
     assert_raise(RuntimeError) { S('"\u{3042"').undump }
+    assert_raise(RuntimeError) { S('"\u{3042 "').undump }
+    assert_raise(RuntimeError) { S('"\u{110000}"').undump }
+    assert_raise(RuntimeError) { S('"\u{1234567}"').undump }
     assert_raise(RuntimeError) { S('"\x"').undump }
+    assert_raise(RuntimeError) { S('"\xA"').undump }
     assert_raise(RuntimeError) { S('"\\"').undump }
     assert_raise(RuntimeError) { S(%("\0")).undump }
   end
