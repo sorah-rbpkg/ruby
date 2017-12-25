@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 #
-# $Id$
+# $Id: core.rb 57538 2017-02-05 07:54:32Z kazu $
 #
 # Copyright (c) 2003-2005 Minero Aoki
 #

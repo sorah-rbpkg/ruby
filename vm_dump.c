@@ -2,7 +2,7 @@
 
   vm_dump.c -
 
-  $Author$
+  $Author: stomar $
 
   Copyright (C) 2004-2007 Koichi Sasada
 

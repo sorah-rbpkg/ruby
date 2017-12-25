@@ -1641,6 +1641,9 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_aspawn_too_long_path
+    if /solaris/i =~ RUBY_PLATFORM && !defined?(Process::RLIMIT_NPROC)
+      skip "Too exhaustive test on platforms without Process::RLIMIT_NPROC such as Solaris 10"
+    end
     bug4315 = '[ruby-core:34833] #7904 [ruby-core:52628] #11613'
     assert_fail_too_long_path(%w"echo |", bug4315)
   end
@@ -2278,7 +2281,7 @@ EOS
   def test_threading_works_after_exec_fail
     r, w = IO.pipe
     pid = status = nil
-    Timeout.timeout(30) do
+    Timeout.timeout(90) do
       pid = fork do
         r.close
         begin
@@ -2286,11 +2289,12 @@ EOS
         rescue SystemCallError
           w.syswrite("exec failed\n")
         end
+        q = Queue.new
         run = true
-        th1 = Thread.new { i = 0; i += 1 while run; i }
-        th2 = Thread.new { j = 0; j += 1 while run && Thread.pass.nil?; j }
+        th1 = Thread.new { i = 0; i += 1 while q.empty?; i }
+        th2 = Thread.new { j = 0; j += 1 while q.empty? && Thread.pass.nil?; j }
         sleep 0.5
-        run = false
+        q << true
         w.syswrite "#{th1.value} #{th2.value}\n"
       end
       w.close

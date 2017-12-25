@@ -2,7 +2,7 @@
 
   intern.h -
 
-  $Author$
+  $Author: naruse $
   created at: Thu Jun 10 14:22:17 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -249,9 +249,9 @@ PRINTF_ARGS(NORETURN(void rb_name_error_str(VALUE, const char*, ...)), 2, 3);
 NORETURN(void rb_invalid_str(const char*, const char*));
 NORETURN(void rb_error_frozen(const char*));
 NORETURN(void rb_error_frozen_object(VALUE));
-CONSTFUNC(void rb_error_untrusted(VALUE));
+void rb_error_untrusted(VALUE);
 void rb_check_frozen(VALUE);
-CONSTFUNC(void rb_check_trusted(VALUE));
+void rb_check_trusted(VALUE);
 #define rb_check_frozen_internal(obj) do { \
 	VALUE frozen_obj = (obj); \
 	if (OBJ_FROZEN(frozen_obj)) { \
