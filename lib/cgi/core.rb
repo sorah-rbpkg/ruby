@@ -23,7 +23,7 @@ class CGI
   # Standard internet newline sequence
   EOL = CR + LF
 
-  REVISION = '$Id$' #:nodoc:
+  REVISION = '$Id: core.rb 61174 2017-12-12 15:01:04Z kazu $' #:nodoc:
 
   # Whether processing will be required in binary vs text
   NEEDS_BINMODE = File::BINARY != 0

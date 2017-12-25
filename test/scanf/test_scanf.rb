@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-# $Id$
+# $Id: test_scanf.rb 60261 2017-10-21 12:34:13Z nobu $
 #
 # scanf for Ruby
 #
