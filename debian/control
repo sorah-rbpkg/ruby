@@ -2,8 +2,6 @@ Source: ruby2.5
 Section: ruby
 Priority: optional
 Maintainer: Sorah Fukumori <her@sorah.jp>
-Maintainer: Antonio Terceiro <terceiro@debian.org>
-Uploaders: Christian Hofstaedtler <zeha@debian.org>
 Build-Depends: bison,
                chrpath,
                coreutils (>= 7.5),
@@ -25,8 +23,8 @@ Build-Depends: bison,
                zlib1g-dev
 Standards-Version: 4.1.2
 Homepage: http://www.ruby-lang.org/
-Vcs-Git: https://anonscm.debian.org/git/collab-maint/ruby.git
-Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/ruby.git
+Vcs-Git: https://github.com/sorah-rbpkg/ruby
+Vcs-Browser: https://github.com/sorah-rbpkg/ruby
 
 Package: ruby2.5
 Multi-Arch: allowed
