@@ -2,7 +2,7 @@
 
   iseq.h -
 
-  $Author: mame $
+  $Author: ko1 $
   created at: 04/01/01 23:36:57 JST
 
   Copyright (C) 2004-2008 Koichi Sasada
@@ -189,6 +189,7 @@ VALUE rb_iseq_label(const rb_iseq_t *iseq);
 VALUE rb_iseq_base_label(const rb_iseq_t *iseq);
 VALUE rb_iseq_first_lineno(const rb_iseq_t *iseq);
 VALUE rb_iseq_method_name(const rb_iseq_t *iseq);
+void rb_iseq_code_range(const rb_iseq_t *iseq, int *first_lineno, int *first_column, int *last_lineno, int *last_column);
 
 /* proc.c */
 const rb_iseq_t *rb_method_iseq(VALUE body);
@@ -202,7 +203,6 @@ struct rb_compile_option_struct {
     unsigned int operands_unification: 1;
     unsigned int instructions_unification: 1;
     unsigned int stack_caching: 1;
-    unsigned int trace_instruction: 1;
     unsigned int frozen_string_literal: 1;
     unsigned int debug_frozen_string_literal: 1;
     unsigned int coverage_enabled: 1;

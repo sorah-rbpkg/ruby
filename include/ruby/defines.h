@@ -2,7 +2,7 @@
 
   defines.h -
 
-  $Author: nobu $
+  $Author: naruse $
   created at: Wed May 18 00:21:44 JST 1994
 
 ************************************************/
@@ -70,6 +70,17 @@ extern "C" {
         (__GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ >= (patchlevel))))))
 # else
 #  define GCC_VERSION_SINCE(major, minor, patchlevel) 0
+# endif
+#endif
+#ifndef GCC_VERSION_BEFORE
+# if defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined(__clang__)
+#  define GCC_VERSION_BEFORE(major, minor, patchlevel) \
+    ((__GNUC__ < (major)) ||  \
+     ((__GNUC__ == (major) && \
+       ((__GNUC_MINOR__ < (minor)) || \
+        (__GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ <= (patchlevel))))))
+# else
+#  define GCC_VERSION_BEFORE(major, minor, patchlevel) 0
 # endif
 #endif
 

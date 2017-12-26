@@ -2,7 +2,7 @@
 
   string.c -
 
-  $Author: tadd $
+  $Author: nobu $
   created at: Mon Aug  9 17:12:58 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -6081,60 +6081,6 @@ rb_str_dump(VALUE str)
     return result;
 }
 
-enum undump_source_format {
-    UNDUMP_SOURCE_SIMPLE, /* "..." */
-    UNDUMP_SOURCE_FORCE_ENCODING, /* "...".force_encoding("...") */
-    UNDUMP_SOURCE_INVALID
-};
-
-static enum undump_source_format
-check_undump_source_format(const char *s, const char *s_end, long len, rb_encoding *enc,
-			   VALUE *forced_enc_str, long *forced_enc_str_len)
-{
-    unsigned int cbeg, cend;
-    const char *prev;
-    static const long force_encoding_minimum_len = rb_strlen_lit("\"\".force_encoding(\"\")");
-    static const char force_encoding_middle_part[] = "\".force_encoding(\"";
-    static const long force_encoding_middle_part_len = rb_strlen_lit("\".force_encoding(\"");
-    static const char force_encoding_end_part[] = "\")";
-    static const long force_encoding_end_part_len = rb_strlen_lit("\")");
-    long pos_before_middle_part, pos_before_end_part, pos_after_middle_part;
-
-    if (len < 2) return UNDUMP_SOURCE_INVALID;
-
-    cbeg = rb_enc_mbc_to_codepoint(s, s_end, enc);
-    if (cbeg != '"') return UNDUMP_SOURCE_INVALID;
-
-    prev = rb_enc_prev_char(s, s_end, s_end, enc);
-    cend = rb_enc_mbc_to_codepoint(prev, s_end, enc);
-    if (cend == '"') return UNDUMP_SOURCE_SIMPLE;
-
-    if (cend != ')' || len < force_encoding_minimum_len) {
-	return UNDUMP_SOURCE_INVALID;
-    }
-
-    /* find '".force_encoding("' */
-    pos_before_middle_part = strseq_core(s, s_end, len,
-					 force_encoding_middle_part, force_encoding_middle_part_len,
-					 0, enc);
-    if (pos_before_middle_part <= 0) {
-	return UNDUMP_SOURCE_INVALID;
-    }
-
-    pos_after_middle_part = pos_before_middle_part + force_encoding_middle_part_len;
-    /* find '")' */
-    pos_before_end_part = strseq_core(s + pos_after_middle_part, s_end, len - pos_after_middle_part,
-				      force_encoding_end_part, force_encoding_end_part_len,
-				      0, enc);
-    if (pos_before_end_part < 0 || pos_after_middle_part + pos_before_end_part + 2 != len) {
-	return UNDUMP_SOURCE_INVALID;
-    }
-
-    *forced_enc_str_len = pos_before_end_part;
-    *forced_enc_str = rb_str_new(s + pos_after_middle_part, *forced_enc_str_len);
-    return UNDUMP_SOURCE_FORCE_ENCODING;
-}
-
 static int
 unescape_ascii(unsigned int c)
 {
@@ -6160,22 +6106,22 @@ unescape_ascii(unsigned int c)
     }
 }
 
-static int
-undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_encoding **penc)
+static void
+undump_after_backslash(VALUE undumped, const char **ss, const char *s_end, rb_encoding **penc, bool *utf8, bool *binary)
 {
-    unsigned int c, c2;
-    int n, codelen;
+    const char *s = *ss;
+    unsigned int c;
+    int codelen;
     size_t hexlen;
     char buf[6];
     static rb_encoding *enc_utf8 = NULL;
 
-    c = rb_enc_codepoint_len(s, s_end, &n, *penc);
-    switch (c) {
+    switch (*s) {
       case '\\':
       case '"':
       case '#':
-	rb_str_cat(undumped, s, n); /* cat itself */
-	n++;
+	rb_str_cat(undumped, s, 1); /* cat itself */
+	s++;
 	break;
       case 'n':
       case 'r':
@@ -6185,78 +6131,86 @@ undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_enco
       case 'b':
       case 'a':
       case 'e':
-	*buf = (char)unescape_ascii(c);
-	rb_str_cat(undumped, buf, n);
-	n++;
+	*buf = (char)unescape_ascii(*s);
+	rb_str_cat(undumped, buf, 1);
+	s++;
 	break;
       case 'u':
-	if (s+1 >= s_end) {
+	if (*binary) {
+	    rb_raise(rb_eRuntimeError, "hex escape and Unicode escape are mixed");
+	}
+	*utf8 = true;
+	if (++s >= s_end) {
 	    rb_raise(rb_eRuntimeError, "invalid Unicode escape");
 	}
 	if (enc_utf8 == NULL) enc_utf8 = rb_utf8_encoding();
 	if (*penc != enc_utf8) {
 	    *penc = enc_utf8;
 	    rb_enc_associate(undumped, enc_utf8);
-	    ENC_CODERANGE_CLEAR(undumped);
 	}
-	c2 = rb_enc_codepoint_len(s+1, s_end, NULL, *penc);
-	if (c2 == '{') { /* handle \u{...} form */
-	    const char *hexstr = s + 2;
-	    int hex;
-	    static const char* const close_brace = "}";
-	    long pos;
-
-	    if (hexstr >= s_end) {
-		rb_raise(rb_eRuntimeError, "unterminated Unicode escape");
+	if (*s == '{') { /* handle \u{...} form */
+	    s++;
+	    for (;;) {
+		if (s >= s_end) {
+		    rb_raise(rb_eRuntimeError, "unterminated Unicode escape");
+		}
+		if (*s == '}') {
+		    s++;
+		    break;
+		}
+		if (ISSPACE(*s)) {
+		    s++;
+		    continue;
+		}
+		c = scan_hex(s, s_end-s, &hexlen);
+		if (hexlen == 0 || hexlen > 6) {
+		    rb_raise(rb_eRuntimeError, "invalid Unicode escape");
+		}
+		if (c > 0x10ffff) {
+		    rb_raise(rb_eRuntimeError, "invalid Unicode codepoint (too large)");
+		}
+		if (0xd800 <= c && c <= 0xdfff) {
+		    rb_raise(rb_eRuntimeError, "invalid Unicode codepoint");
+		}
+		codelen = rb_enc_mbcput(c, buf, *penc);
+		rb_str_cat(undumped, buf, codelen);
+		s += hexlen;
 	    }
-	    /* find close brace */
-	    pos = strseq_core(hexstr, s_end, s_end - hexstr, close_brace, 1, 0, *penc);
-	    if (pos < 0) {
-		rb_raise(rb_eRuntimeError, "unterminated Unicode escape");
-	    }
-	    hex = scan_hex(hexstr, pos, &hexlen);
-	    if (hexlen == 0 || hexlen > 6) {
-		rb_raise(rb_eRuntimeError, "invalid Unicode escape");
-	    }
-	    if (hex > 0x10ffff) {
-		rb_raise(rb_eRuntimeError, "invalid Unicode codepoint (too large)");
-	    }
-	    if ((hex & 0xfffff800) == 0xd800) {
-		rb_raise(rb_eRuntimeError, "invalid Unicode codepoint");
-	    }
-	    codelen = rb_enc_codelen(hex, *penc);
-	    rb_enc_mbcput(hex, buf, *penc);
-	    rb_str_cat(undumped, buf, codelen);
-	    n += rb_strlen_lit("u{}") + hexlen;
 	}
 	else { /* handle \uXXXX form */
-	    int hex = scan_hex(s+1, 4, &hexlen);
+	    c = scan_hex(s, 4, &hexlen);
 	    if (hexlen != 4) {
 		rb_raise(rb_eRuntimeError, "invalid Unicode escape");
 	    }
-	    codelen = rb_enc_codelen(hex, *penc);
-	    rb_enc_mbcput(hex, buf, *penc);
+	    if (0xd800 <= c && c <= 0xdfff) {
+		rb_raise(rb_eRuntimeError, "invalid Unicode codepoint");
+	    }
+	    codelen = rb_enc_mbcput(c, buf, *penc);
 	    rb_str_cat(undumped, buf, codelen);
-	    n += rb_strlen_lit("uXXXX");
+	    s += hexlen;
 	}
 	break;
       case 'x':
-	if (s+1 >= s_end) {
+	if (*utf8) {
+	    rb_raise(rb_eRuntimeError, "hex escape and Unicode escape are mixed");
+	}
+	*binary = true;
+	if (++s >= s_end) {
 	    rb_raise(rb_eRuntimeError, "invalid hex escape");
 	}
-	c2 = scan_hex(s+1, 2, &hexlen);
+	*buf = scan_hex(s, 2, &hexlen);
 	if (hexlen != 2) {
 	    rb_raise(rb_eRuntimeError, "invalid hex escape");
 	}
-	*buf = (char)c2;
-	rb_str_cat(undumped, buf, 1L);
-	n += rb_strlen_lit("xXX");
+	rb_str_cat(undumped, buf, 1);
+	s += hexlen;
 	break;
       default:
-	rb_str_cat(undumped, "\\", 1L); /* keep backslash */
+	rb_str_cat(undumped, s-1, 2);
+	s++;
     }
 
-    return n;
+    *ss = s;
 }
 
 static VALUE rb_str_is_ascii_only_p(VALUE str);
@@ -6276,14 +6230,10 @@ str_undump(VALUE str)
 {
     const char *s = RSTRING_PTR(str);
     const char *s_end = RSTRING_END(str);
-    long len = RSTRING_LEN(str);
-    rb_encoding *enc = rb_enc_get(str), *forced_enc;
-    int n;
-    unsigned int c;
-    enum undump_source_format source_format;
+    rb_encoding *enc = rb_enc_get(str);
     VALUE undumped = rb_enc_str_new(s, 0L, enc);
-    VALUE forced_enc_str;
-    long forced_enc_str_len;
+    bool utf8 = false;
+    bool binary = false;
     int w;
 
     rb_must_asciicompat(str);
@@ -6291,53 +6241,72 @@ str_undump(VALUE str)
 	rb_raise(rb_eRuntimeError, "non-ASCII character detected");
     }
     if (!str_null_check(str, &w)) {
-	rb_raise(rb_eRuntimeError, "string contains null byte");
+       rb_raise(rb_eRuntimeError, "string contains null byte");
     }
-
-    source_format = check_undump_source_format(s, s_end, len, enc,
-					       &forced_enc_str, &forced_enc_str_len);
-    if (source_format == UNDUMP_SOURCE_INVALID) {
-	rb_raise(rb_eRuntimeError, "not wrapped with '\"' nor '\"...\".force_encoding(\"...\")' form");
-    }
-    if (source_format == UNDUMP_SOURCE_FORCE_ENCODING) {
-	forced_enc = rb_find_encoding(forced_enc_str);
-	if (forced_enc == NULL) {
-	    rb_raise(rb_eRuntimeError, "unknown encoding name - %"PRIsVALUE, forced_enc_str);
-	}
-    }
+    if (RSTRING_LEN(str) < 2) goto invalid_format;
+    if (*s != '"') goto invalid_format;
 
     /* strip '"' at the start */
     s++;
-    if (source_format == UNDUMP_SOURCE_SIMPLE) {
-	/* strip '"' at the end */
-	s_end--;
-    } else { /* source_format == UNDUMP_SOURCE_FORCE_ENCODING */
-	/* strip '".force_encoding("...")' */
-	s_end -= rb_strlen_lit("\".force_encoding(\"\")") + forced_enc_str_len;
-    }
 
-    for (; s < s_end; s += n) {
-	c = rb_enc_codepoint_len(s, s_end, &n, enc);
-	if (c == '\\') {
-	    if (s+1 >= s_end) {
+    for (;;) {
+	if (s >= s_end) {
+	    rb_raise(rb_eRuntimeError, "unterminated dumped string");
+	}
+
+	if (*s == '"') {
+	    /* epilogue */
+	    s++;
+	    if (s == s_end) {
+		/* ascii compatible dumped string */
+		break;
+	    }
+	    else {
+		const char *encname;
+		int encidx;
+		ptrdiff_t size;
+
+		if (utf8) {
+		    rb_raise(rb_eRuntimeError, "dumped string contained Unicode escape but used force_encoding");
+		}
+
+		size = rb_strlen_lit(".force_encoding(\"");
+		if (s_end - s <= size) goto invalid_format;
+		if (memcmp(s, ".force_encoding(\"", size) != 0) goto invalid_format;
+		s += size;
+
+		encname = s;
+		s = memchr(s, '"', s_end-s);
+		size = s - encname;
+		if (!s) goto invalid_format;
+		if (s_end - s != 2) goto invalid_format;
+		if (s[0] != '"' || s[1] != ')') goto invalid_format;
+
+		encidx = rb_enc_find_index2(encname, (long)size);
+		if (encidx < 0) {
+		    rb_raise(rb_eRuntimeError, "dumped string has unknown encoding name");
+		}
+		rb_enc_associate_index(undumped, encidx);
+	    }
+	    break;
+	}
+
+	if (*s == '\\') {
+	    s++;
+	    if (s >= s_end) {
 		rb_raise(rb_eRuntimeError, "invalid escape");
 	    }
-	    n = undump_after_backslash(undumped, s+1, s_end, &enc);
-	}
-	else if (c == '"') {
-	    rb_raise(rb_eRuntimeError, "non-escaped double quote detected");
+	    undump_after_backslash(undumped, &s, s_end, &enc, &utf8, &binary);
 	}
 	else {
-	    rb_str_cat(undumped, s, n);
+	    rb_str_cat(undumped, s++, 1);
 	}
     }
 
-    if (source_format == UNDUMP_SOURCE_FORCE_ENCODING) {
-	rb_enc_associate(undumped, forced_enc);
-	ENC_CODERANGE_CLEAR(undumped);
-    }
     OBJ_INFECT(undumped, str);
     return undumped;
+invalid_format:
+    rb_raise(rb_eRuntimeError, "invalid dumped string; not wrapped with '\"' nor '\"...\".force_encoding(\"...\")' form");
 }
 
 static void

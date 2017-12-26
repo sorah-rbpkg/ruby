@@ -1214,7 +1214,7 @@ INSN_ENTRY(checkmatch){START_OF_ORIGINAL_INSN(checkmatch);
 INSN_ENTRY(checkkeyword){START_OF_ORIGINAL_INSN(checkkeyword);
 {
   VALUE ret;
-  rb_num_t keyword_index = (rb_num_t)GET_OPERAND(2);
+  lindex_t keyword_index = (lindex_t)GET_OPERAND(2);
   lindex_t kw_bits_index = (lindex_t)GET_OPERAND(1);
 
   DEBUG_ENTER_INSN("checkkeyword");
@@ -1239,21 +1239,21 @@ INSN_ENTRY(checkkeyword){START_OF_ORIGINAL_INSN(checkkeyword);
 #undef INSN_LABEL
 #undef LABEL_IS_SC
   END_INSN(checkkeyword);}}}
-INSN_ENTRY(tracebranch){START_OF_ORIGINAL_INSN(tracebranch);
+INSN_ENTRY(tracecoverage){START_OF_ORIGINAL_INSN(tracecoverage);
 {
   VALUE data = (VALUE)GET_OPERAND(2);
   rb_num_t nf = (rb_num_t)GET_OPERAND(1);
 
-  DEBUG_ENTER_INSN("tracebranch");
+  DEBUG_ENTER_INSN("tracecoverage");
   ADD_PC(1+2);
   PREFETCH(GET_PC());
-  #define CURRENT_INSN_tracebranch 1
+  #define CURRENT_INSN_tracecoverage 1
   #define INSN_IS_SC()     0
-  #define INSN_LABEL(lab)  LABEL_tracebranch_##lab
+  #define INSN_LABEL(lab)  LABEL_tracecoverage_##lab
   #define LABEL_IS_SC(lab) LABEL_##lab##_##t
-  COLLECT_USAGE_INSN(BIN(tracebranch));
-  COLLECT_USAGE_OPERAND(BIN(tracebranch), 0, nf);
-  COLLECT_USAGE_OPERAND(BIN(tracebranch), 1, data);
+  COLLECT_USAGE_INSN(BIN(tracecoverage));
+  COLLECT_USAGE_OPERAND(BIN(tracecoverage), 0, nf);
+  COLLECT_USAGE_OPERAND(BIN(tracecoverage), 1, data);
 {
 #line 790 "insns.def"
     rb_event_flag_t flag = (rb_event_flag_t)nf;
@@ -1262,11 +1262,11 @@ INSN_ENTRY(tracebranch){START_OF_ORIGINAL_INSN(tracebranch);
     EXEC_EVENT_HOOK(ec, flag, GET_SELF(), 0, 0, 0 /* id and klass are resolved at callee */, data);
 
 #line 1265 "vm.inc"
-#undef CURRENT_INSN_tracebranch
+#undef CURRENT_INSN_tracecoverage
 #undef INSN_IS_SC
 #undef INSN_LABEL
 #undef LABEL_IS_SC
-  END_INSN(tracebranch);}}}
+  END_INSN(tracecoverage);}}}
 INSN_ENTRY(defineclass){START_OF_ORIGINAL_INSN(defineclass);
 {
   VALUE val;
@@ -3294,13 +3294,13 @@ INSN_ENTRY(trace_checkkeyword){
         DISPATCH_ORIGINAL_INSN(checkkeyword);
 
   END_INSN(trace_checkkeyword);}}}
-INSN_ENTRY(trace_tracebranch){
+INSN_ENTRY(trace_tracecoverage){
 {
 {
         vm_trace(ec, GET_CFP(), GET_PC());
-        DISPATCH_ORIGINAL_INSN(tracebranch);
+        DISPATCH_ORIGINAL_INSN(tracecoverage);
 
-  END_INSN(trace_tracebranch);}}}
+  END_INSN(trace_tracecoverage);}}}
 INSN_ENTRY(trace_defineclass){
 {
 {

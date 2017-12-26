@@ -9,10 +9,12 @@
 #include "iseq.h"
 
 
-static const char prelude_name0[] = "<internal:prelude>";
 static const struct {
-    char L0[498]; /* 1..132 */
-    char L132[258]; /* 133..158 */
+  char L0[18];
+} prelude_name0 = {"<internal:prelude>"};
+static const struct {
+    char L0[495]; /* 1..130 */
+    char L130[258]; /* 131..156 */
 } prelude_code0 = {
 #line 1 "prelude.rb"
 "class Thread\n"
@@ -25,11 +27,9 @@ static const struct {
 "\n"/* Wraps the block in a single, VM-global Mutex.synchronize, returning the */
 "\n"/* value of the block. A thread executing inside the exclusive section will */
 "\n"/* only block other threads which also use the Thread.exclusive mechanism. */
-"  def self.exclusive\n"
+"  def self.exclusive(&block)\n"
 "    warn \"Thread.exclusive is deprecated, use Thread::Mutex\", caller\n"
-"    MUTEX_FOR_THREAD_EXCLUSIVE.synchronize{\n"
-"      yield\n"
-"    }\n"
+"    MUTEX_FOR_THREAD_EXCLUSIVE.synchronize(&block)\n"
 "  end\n"
 "end\n"
 "\n"
@@ -148,7 +148,7 @@ static const struct {
 "\n"/* that write_nonblock should not raise an IO::WaitWritable exception, but */
 "\n"/* return the symbol +:wait_writable+ instead. */
 ,
-#line 133 "prelude.rb"
+#line 131 "prelude.rb"
 "  def write_nonblock(buf, exception: true)\n"
 "    __write_nonblock(buf, exception)\n"
 "  end\n"
@@ -177,7 +177,9 @@ static const struct {
 #line 178 "prelude.c"
 };
 
-static const char prelude_name1[] = "<internal:gem_prelude>";
+static const struct {
+  char L0[22];
+} prelude_name1 = {"<internal:gem_prelude>"};
 static const struct {
     char L0[168]; /* 1..9 */
 } prelude_code1 = {
@@ -190,13 +192,18 @@ static const struct {
 "  rescue Gem::LoadError, LoadError\n"
 "  end if defined?(DidYouMean)\n"
 "end\n"
-#line 194 "prelude.c"
+#line 196 "prelude.c"
 };
 
 
+#define PRELUDE_STR(n) rb_usascii_str_new_static(prelude_##n.L0, sizeof(prelude_##n))
 static void
 prelude_eval(VALUE code, VALUE name, int line)
 {
+#ifdef __GNUC__
+# pragma GCC diagnostic push
+# pragma GCC diagnostic error "-Wmissing-field-initializers"
+#endif
     static const rb_compile_option_t optimization = {
 	TRUE, /* int inline_const_cache; */
 	TRUE, /* int peephole_optimization; */
@@ -205,10 +212,14 @@ prelude_eval(VALUE code, VALUE name, int line)
 	TRUE, /* int operands_unification; */
 	TRUE, /* int instructions_unification; */
 	TRUE, /* int stack_caching; */
-	FALSE, /* int trace_instruction; */
 	TRUE, /* int frozen_string_literal; */
 	FALSE, /* int debug_frozen_string_literal; */
+	FALSE, /* unsigned int coverage_enabled; */
+	0, /* int debug_level; */
     };
+#ifdef __GNUC__
+# pragma GCC diagnostic pop
+#endif
 
     rb_ast_t *ast = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
     if (!ast->root) {
@@ -223,14 +234,8 @@ prelude_eval(VALUE code, VALUE name, int line)
 void
 Init_prelude(void)
 {
-    prelude_eval(
-      rb_usascii_str_new(prelude_code0.L0, sizeof(prelude_code0)),
-      rb_usascii_str_new(prelude_name0, sizeof(prelude_name0) - 1),
-      1);
-    prelude_eval(
-      rb_usascii_str_new(prelude_code1.L0, sizeof(prelude_code1)),
-      rb_usascii_str_new(prelude_name1, sizeof(prelude_name1) - 1),
-      1);
+    prelude_eval(PRELUDE_STR(code0), PRELUDE_STR(name0), 1);
+    prelude_eval(PRELUDE_STR(code1), PRELUDE_STR(name1), 1);
 
 #if 0
     printf("%.*s", (int)sizeof(prelude_code0), prelude_code0.L0);

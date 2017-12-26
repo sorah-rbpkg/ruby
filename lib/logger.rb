@@ -6,7 +6,7 @@
 # License::
 #   You can redistribute it and/or modify it under the same terms of Ruby's
 #   license; either the dual license version in 2003, or any later version.
-# Revision:: $Id: logger.rb 59380 2017-07-20 16:47:26Z sonots $
+# Revision:: $Id: logger.rb 61378 2017-12-21 05:07:43Z sonots $
 #
 # A simple system for logging messages.  See Logger for more documentation.
 
@@ -225,7 +225,7 @@ require 'monitor'
 #
 class Logger
   VERSION = "1.2.7"
-  _, name, rev = %w$Id: logger.rb 59380 2017-07-20 16:47:26Z sonots $
+  _, name, rev = %w$Id: logger.rb 61378 2017-12-21 05:07:43Z sonots $
   if name
     name = name.chomp(",v")
   else
@@ -743,7 +743,7 @@ private
 
     def open_logfile(filename)
       begin
-        open(filename, (File::WRONLY | File::APPEND))
+        File.open(filename, (File::WRONLY | File::APPEND))
       rescue Errno::ENOENT
         create_logfile(filename)
       end
@@ -751,7 +751,7 @@ private
 
     def create_logfile(filename)
       begin
-        logdev = open(filename, (File::WRONLY | File::APPEND | File::CREAT | File::EXCL))
+        logdev = File.open(filename, (File::WRONLY | File::APPEND | File::CREAT | File::EXCL))
         logdev.flock(File::LOCK_EX)
         logdev.sync = true
         add_log_header(logdev)

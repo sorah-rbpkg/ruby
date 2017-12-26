@@ -46,6 +46,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Dir.glob provides new optional keyword argument, :base.
     [Feature #13056]
+  * Dir.chdir (without block arg), Dir.open, Dir.new, Dir.mkdir, Dir.rmdir,
+    Dir.empty? releases GVL
 
   * New methods:
 
@@ -66,8 +68,12 @@ with all sufficient information, see the ChangeLog file or Redmine
   * File.rename releases GVL [Feature #13951]
   * File::Stat#{atime,mtime,ctime} support fractional second timestamps on
     Windows 8 and later  [Feature #13726]
-  * File::Stat.ino and File.indentical? support ReFS 128bit ino on Windows 8.1
+  * File::Stat#ino and File.indentical? support ReFS 128bit ino on Windows 8.1
     and later  [Feature #13731]
+  * File.readable?, File.readable_real?, File.writable?, File.writable_real?,
+    File.executable?, File.executable_real?, File.mkfifo, File.readlink,
+    File.truncate, File#truncate, File.chmod, File.lchmod, File.chown,
+    File.lchown, File.unlink, File.utime, File.lstat release GVL
 
   * New method:
 
@@ -83,11 +89,12 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * IO
 
+  * IO#copy_stream tries copy offload with copy_file_range(2) [Feature #13867]
+
   * New methods:
 
     * IO#pread  [Feature #4532]
     * IO#pwrite  [Feature #4532]
-    * IO#copy_stream tries copy offload with copy_file_range(2) [Feature #13867]
     * IO#write accepts multiple arguments  [Feature #9323]
 
 * IOError
@@ -153,9 +160,16 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Update to Onigmo 6.1.3-669ac9997619954c298da971fcfacccf36909d05.
 
-    * Support absent operator https://github.com/k-takata/Onigmo/issues/82
+    * Support absence operator https://github.com/k-takata/Onigmo/issues/82
 
   * Support new 5 emoji-related Unicode character properties
+
+* RubyVM::InstructionSequence
+
+  * New method:
+
+    * RubyVM::InstructionSequence#each_child
+    * RubyVM::InstructionSequence#trace_points
 
 * String
 
@@ -189,6 +203,10 @@ with all sufficient information, see the ChangeLog file or Redmine
   * New method:
     * Thread#fetch  [Feature #13009]
 
+  * The default of Thread.report_on_exception is now true,
+    showing unhandled exceptions terminating threads on $stderr.
+    [Feature #14143]
+
 * Time
 
   * Time#at receives 3rd argument which specifies the unit of 2nd argument.
@@ -209,7 +227,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * BigDecimal
 
-  * Update to BigDecimal 1.3.3
+  * Update to BigDecimal 1.3.4
 
   * The following features are added:
 
@@ -222,17 +240,76 @@ with all sufficient information, see the ChangeLog file or Redmine
 
     * BigDecimal.ver
 
-    * BigDecimal#clone
-
-    * BigDecimal#dup
-
-* Bundler
-
-  * Add Bundler to Standard Library. [Feature #12733]
+  * BigDecimal#clone and #dup now do not make a new instance,
+    but returns the receiver itself.
 
 * Coverage
 
-  * Support branch coverage and method coverage [Feature #13901]
+  * Support branch coverage and method coverage measurement. [Feature #13901]
+    Branch coverage tells you which branches are executed, and which not.
+    Method coverage tells you which methods are invoked, and which not.
+    By running a test suite with this new feature, you can know which branches
+    and methods are executed by a test, and evaluate total coverage of a test
+    suite more strictly.
+
+    You can specify the measuring target by an option to `Coverage.start`:
+
+        Coverage.start(lines: true, branches: true, methods: true)
+
+    After some Ruby files are loaded, you can use `Coverage.result` to get
+    the coverage result:
+
+        Coverage.result
+        #=> { "/path/to/file.rb"=>
+        #     { :lines => [1, 2, 0, nil, ...],
+        #       :branches =>
+        #         { [:if, 0, 2, 1, 6, 4] =>
+        #             { [:then, 1, 3, 2, 3, 8] => 0,
+        #               [:else, 2, 5, 2, 5, 8] => 2
+        #             }
+        #         },
+        #       :methods => {
+        #          [Object, :foo, 1, 0, 7, 3] => 2
+        #       }
+        #     }
+        #   }
+
+    The result type of line coverage is not changed; it is just an array that
+    contains numbers, which means the count that each line was executed,
+    or `nil`s, which means that the line is not relevant.
+
+    The result type of branch coverage is:
+
+        { (jump base) => { (jump target) => (counter) } }
+
+    where jump base and targets have the format
+
+        [type, unique-id, start lineno, start column, end lineno, end column]
+
+    For example, `[:if, 0, 2, 1, 6, 4]` reads an `if` statement that ranges from
+    line 2 and column 1, to line 6 and column 4.  `[:then, 1, 3, 2, 3, 8]` reads
+    a `then` clause that ranges from line 3 and column 2, to line 3 and column 8.
+    Note that lineno starts from 1, and that columnno starts from 0.  So, the
+    above example shows a branch from the `if` to the `then` was never executed,
+    and a branch from the `if` to the `else` was executed twice.
+
+    The result type of method coverage is:
+
+        { (method key) => (counter) }
+
+    where method key has the format
+
+        [class, method-name, start lineno, start column, end lineno, end column]
+
+    For example, `[Object, :foo, 1, 0, 7, 3]` reads `Object#foo` that ranges from
+    line 1 and column 0, to line 7 and column 3.  The above example shows this
+    `Object#foo` was invoked twice.
+
+    Note: To keep compatibility, passing no option to `Coverage.start` will measure
+    only line coverage, and `Coverage.result` will return the old format:
+
+        Coverage.result
+        #=> { "/path/to/file.rb"=> [1, 2, 0, nil, ...] }
 
 * DRb
 
@@ -242,6 +319,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Add ERB#result_with_hash to render a template with local variables passed
     with a Hash object. [Feature #8631]
+
   * Default template file encoding is changed from ASCII-8BIT to UTF-8 in erb
     command. [Bug #14095]
 
@@ -263,6 +341,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * IRB
 
+  * Print backtrace and error message in reverse order [Feature #8661] [experimental]
   * `binding.irb` automatically requires irb and runs [Bug #13099] [experimental]
   * `binding.irb` on its start shows source around the line where it was called
     [Feature #14124]
@@ -283,6 +362,10 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Net::HTTP#{proxy_user,proxy_pass} reflect http_proxy environment variable
     if the system's environment variable is multiuser safe. [Bug #12921]
 
+* open-uri
+  * URI.open method defined as an alias to open-uri's Kernel.open.
+    open-uri's Kernel.open will be deprecated in future.
+
 * OpenSSL
 
   * Updated Ruby/OpenSSL from version 2.0 to 2.1. Changes are noted in
@@ -296,8 +379,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Psych
 
-  * Update to Psych 3.0.0.
+  * Update to Psych 3.0.2.
 
+    * Convert fallback option to a keyword argument
+      https://github.com/ruby/psych/pull/342
     * Add :symbolize_names option to Psych.load, Psych.safe_load like JSON.parse
       https://github.com/ruby/psych/pull/333, https://github.com/ruby/psych/pull/337
     * Add Psych::Handler#event_location
@@ -324,16 +409,26 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * RDoc
 
-  * Update to RDoc 6.0.0.beta3.
-    * Replaced IRB based lexer with Ripper. It much improves the speed of generating document.
-    * https://github.com/ruby/rdoc/pull/512
+  * Update to RDoc 6.0.1.
+
+    * Replace IRB based lexer with Ripper.
+      * https://github.com/ruby/rdoc/pull/512
+      * This much improves the speed of generating documents.
+      * It also facilitates supporting new syntax in the future.
+    * Support many new syntaxes of Ruby from the past few years.
+    * Use "frozen_string_literal: true".
+      This reduces document generation time by 5%.
+    * Support did_you_mean.
 
 * Rubygems
 
-  * Update to Rubygems 2.7.0.
+  * Update to Rubygems 2.7.3.
+    * http://blog.rubygems.org/2017/11/28/2.7.3-released.html
+    * http://blog.rubygems.org/2017/11/08/2.7.2-released.html
+    * http://blog.rubygems.org/2017/11/03/2.7.1-released.html
     * http://blog.rubygems.org/2017/11/01/2.7.0-released.html
+    * http://blog.rubygems.org/2017/10/09/2.6.14-released.html
     * http://blog.rubygems.org/2017/08/27/2.6.13-released.html
-    * http://blog.rubygems.org/2017/10/09/unsafe-object-deserialization-vulnerability.html
 
 * SecureRandom
 
@@ -366,6 +461,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 * WEBrick
 
   * Add Server Name Indication (SNI) support [Feature #13729]
+  * support Proc objects as body responses [Feature #855]
+  * released as a RubyGem [Feature #13173]
+  * avoid unintended behavior from Kernel#open [Misc #14216]
 
 * Zlib
 
@@ -392,6 +490,33 @@ with all sufficient information, see the ChangeLog file or Redmine
   They no longer subclass Struct. [Feature #13552]
 
 === Stdlib compatibility issues (excluding feature bug fixes)
+
+* Gemification
+
+  * Promote following standard libraries to default gems.
+    * cmath
+    * csv
+    * date
+    * dbm
+    * etc
+    * fcntl
+    * fiddle
+    * fileutils
+    * gdbm
+    * ipaddr
+    * scanf
+    * sdbm
+    * stringio
+    * strscan
+    * webrick
+    * zlib
+
+* Logger
+
+  * Logger.new("| command") had been working to open a command
+    unintentionally. It was prohibited, and now Logger#initialize
+    treats a String argument only as a filename, as its specification.
+    [Bug #14212]
 
 * Net::HTTP
 
@@ -428,6 +553,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Dynamic instrumentation for TracePoint hooks instead of using "trace"
   instruction to avoid overhead [Feature #14104]
+
+* ERB now generates code from a template which runs 2 times faster than Ruby 2.4
 
 === Miscellaneous changes
 

@@ -2,7 +2,7 @@
 
   compile.c - ruby node tree -> VM instruction sequence
 
-  $Author: mame $
+  $Author: ko1 $
   created at: 04/01/01 03:42:15 JST
 
   Copyright (C) 2004-2007 Koichi Sasada
@@ -250,15 +250,17 @@ struct iseq_compile_data_ensure_node_stack {
 
 #define ADD_TRACE(seq, event) \
   ADD_ELEM((seq), (LINK_ELEMENT *)new_trace_body(iseq, (event)))
-
-#define SETUP_LINE_COVERAGE(seq, line) \
+#define ADD_TRACE_LINE_COVERAGE(seq, line) \
   do { \
       if (ISEQ_COVERAGE(iseq) && \
 	  ISEQ_LINE_COVERAGE(iseq) && \
 	  (line) > 0) { \
 	  RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), (line) - 1, INT2FIX(0)); \
+	  ADD_INSN2((seq), (line), tracecoverage, INT2FIX(RUBY_EVENT_COVERAGE_LINE), INT2FIX(line)); \
       } \
   } while (0)
+
+
 #define DECL_BRANCH_BASE(branches, first_line, first_column, last_line, last_column, type) \
   do { \
       if (ISEQ_COVERAGE(iseq) && \
@@ -288,7 +290,7 @@ struct iseq_compile_data_ensure_node_stack {
 	  rb_ary_push(branches, INT2FIX(last_line)); \
 	  rb_ary_push(branches, INT2FIX(last_column)); \
 	  rb_ary_push(branches, INT2FIX(counter_idx)); \
-	  ADD_INSN2((seq), (first_line), tracebranch, INT2FIX(RUBY_EVENT_COVERAGE_BRANCH), INT2FIX(counter_idx)); \
+	  ADD_INSN2((seq), (first_line), tracecoverage, INT2FIX(RUBY_EVENT_COVERAGE_BRANCH), INT2FIX(counter_idx)); \
       } \
   } while (0)
 
@@ -644,6 +646,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 		CHECK(COMPILE(ret, "block body", node->nd_body));
 		ADD_LABEL(ret, end);
 		ADD_TRACE(ret, RUBY_EVENT_B_RETURN);
+		ISEQ_COMPILE_DATA(iseq)->last_line = iseq->body->location.code_range.last_loc.lineno;
 
 		/* wide range catch handler must put at last */
 		ADD_CATCH_ENTRY(CATCH_TYPE_REDO, start, end, NULL, start);
@@ -655,6 +658,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 		ADD_TRACE(ret, RUBY_EVENT_CLASS);
 		CHECK(COMPILE(ret, "scoped node", node->nd_body));
 		ADD_TRACE(ret, RUBY_EVENT_END);
+		ISEQ_COMPILE_DATA(iseq)->last_line = nd_line(node);
 		break;
 	    }
 	  case ISEQ_TYPE_METHOD:
@@ -662,6 +666,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 		ADD_TRACE(ret, RUBY_EVENT_CALL);
 		CHECK(COMPILE(ret, "scoped node", node->nd_body));
 		ADD_TRACE(ret, RUBY_EVENT_RETURN);
+		ISEQ_COMPILE_DATA(iseq)->last_line = nd_line(node);
 		break;
 	    }
 	  default: {
@@ -3627,7 +3632,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 		}
 	    }
 	    else {
-		if (!popped) {
+		if (!popped || kw) {
 		    switch (type) {
 		      case COMPILE_ARRAY_TYPE_ARRAY:
 			ADD_INSN1(anchor, line, newarray, INT2FIX(i));
@@ -3656,11 +3661,18 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 			}
 			if (kw) {
 			    VALUE nhash = (i > 0 || !first) ? INT2FIX(2) : INT2FIX(1);
-			    ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-			    if (i > 0 || !first) ADD_INSN(ret, line, swap);
+			    if (!popped) {
+				ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+				if (i > 0 || !first) ADD_INSN(ret, line, swap);
+			    }
 			    COMPILE(ret, "keyword splat", kw);
-			    ADD_SEND(ret, line, id_core_hash_merge_kwd, nhash);
-			    if (nhash == INT2FIX(1)) ADD_SEND(ret, line, rb_intern("dup"), INT2FIX(0));
+			    if (popped) {
+				ADD_INSN(ret, line, pop);
+			    }
+			    else {
+				ADD_SEND(ret, line, id_core_hash_merge_kwd, nhash);
+				if (nhash == INT2FIX(1)) ADD_SEND(ret, line, rb_intern("dup"), INT2FIX(0));
+			    }
 			}
 			first = 0;
 			break;
@@ -5355,7 +5367,6 @@ compile_return(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
 		/* plain top-level, leave directly */
 		type = ISEQ_TYPE_METHOD;
 	    }
-	    retval = 0;
 	    break;
 	  default:
 	    break;
@@ -5402,8 +5413,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *node, int poppe
 {
     if (node == 0) {
 	if (!popped) {
+	    int lineno = ISEQ_COMPILE_DATA(iseq)->last_line;
+	    if (lineno == 0) lineno = FIX2INT(rb_iseq_first_lineno(iseq));
 	    debugs("node: NODE_NIL(implicit)\n");
-	    ADD_INSN(ret, ISEQ_COMPILE_DATA(iseq)->last_line, putnil);
+	    ADD_INSN(ret, lineno, putnil);
 	}
 	return COMPILE_OK;
     }
@@ -5422,7 +5435,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
     else {
 	if (node->flags & NODE_FL_NEWLINE) {
 	    ISEQ_COMPILE_DATA(iseq)->last_line = line;
-	    SETUP_LINE_COVERAGE(ret, line);
+	    ADD_TRACE_LINE_COVERAGE(ret, line);
 	    ADD_TRACE(ret, RUBY_EVENT_LINE);
 	}
     }
@@ -6277,7 +6290,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       }
       case NODE_HASH:{
 	DECL_ANCHOR(list);
-	int type = node->nd_head ? nd_type(node->nd_head) : NODE_ZARRAY;
+	enum node_type type = node->nd_head ? nd_type(node->nd_head) : NODE_ZARRAY;
 
 	INIT_ANCHOR(list);
 	switch (type) {
@@ -7040,7 +7053,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       }
       case NODE_PRELUDE:{
 	const rb_compile_option_t *orig_opt = ISEQ_COMPILE_DATA(iseq)->option;
-	VALUE orig_cov = ISEQ_COVERAGE(iseq);
 	rb_compile_option_t new_opt = *orig_opt;
 	if (node->nd_compile_option) {
 	    rb_iseq_make_compile_option(&new_opt, node->nd_compile_option);
@@ -7050,7 +7062,13 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	CHECK(COMPILE_POPPED(ret, "prelude", node->nd_head));
 	CHECK(COMPILE_(ret, "body", node->nd_body, popped));
 	ISEQ_COMPILE_DATA(iseq)->option = orig_opt;
-	ISEQ_COVERAGE_SET(iseq, orig_cov);
+	/* Do NOT restore ISEQ_COVERAGE!
+	 * If ISEQ_COVERAGE is not false, finish_iseq_build function in iseq.c
+	 * will initialize the counter array of line coverage.
+	 * We keep ISEQ_COVERAGE as nil to disable this initialization.
+	 * This is not harmful assuming that NODE_PRELUDE pragma does not occur
+	 * in NODE tree except the root.
+	 */
 	break;
       }
       case NODE_LAMBDA:{

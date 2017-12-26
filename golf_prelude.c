@@ -9,7 +9,9 @@
 #include "iseq.h"
 
 
-static const char prelude_name0[] = "<internal:golf_prelude>";
+static const struct {
+  char L0[23];
+} prelude_name0 = {"<internal:golf_prelude>"};
 static const struct {
     char L0[494]; /* 1..18 */
     char L18[460]; /* 19..33 */
@@ -152,13 +154,18 @@ static const struct {
 "    end\n"
 "  end\n"
 "end\n"
-#line 156 "golf.c"
+#line 158 "golf.c"
 };
 
 
+#define PRELUDE_STR(n) rb_usascii_str_new_static(prelude_##n.L0, sizeof(prelude_##n))
 static void
 prelude_eval(VALUE code, VALUE name, int line)
 {
+#ifdef __GNUC__
+# pragma GCC diagnostic push
+# pragma GCC diagnostic error "-Wmissing-field-initializers"
+#endif
     static const rb_compile_option_t optimization = {
 	TRUE, /* int inline_const_cache; */
 	TRUE, /* int peephole_optimization; */
@@ -167,10 +174,14 @@ prelude_eval(VALUE code, VALUE name, int line)
 	TRUE, /* int operands_unification; */
 	TRUE, /* int instructions_unification; */
 	TRUE, /* int stack_caching; */
-	FALSE, /* int trace_instruction; */
 	TRUE, /* int frozen_string_literal; */
 	FALSE, /* int debug_frozen_string_literal; */
+	FALSE, /* unsigned int coverage_enabled; */
+	0, /* int debug_level; */
     };
+#ifdef __GNUC__
+# pragma GCC diagnostic pop
+#endif
 
     rb_ast_t *ast = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
     if (!ast->root) {
@@ -185,10 +196,7 @@ prelude_eval(VALUE code, VALUE name, int line)
 void
 Init_golf(void)
 {
-    prelude_eval(
-      rb_usascii_str_new(prelude_code0.L0, sizeof(prelude_code0)),
-      rb_usascii_str_new(prelude_name0, sizeof(prelude_name0) - 1),
-      1);
+    prelude_eval(PRELUDE_STR(code0), PRELUDE_STR(name0), 1);
 
 #if 0
     printf("%.*s", (int)sizeof(prelude_code0), prelude_code0.L0);
