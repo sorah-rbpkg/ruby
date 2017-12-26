@@ -2184,6 +2184,22 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_read_command
+    assert_equal("foo\n", IO.read("|echo foo"))
+    assert_warn(/invoke external command/) do
+      File.read("|#{EnvUtil.rubybin} -e puts")
+    end
+    assert_warn(/invoke external command/) do
+      File.binread("|#{EnvUtil.rubybin} -e puts")
+    end
+    assert_raise(Errno::ENOENT, Errno::EINVAL) do
+      Class.new(IO).read("|#{EnvUtil.rubybin} -e puts")
+    end
+    assert_raise(Errno::ENOENT, Errno::EINVAL) do
+      Class.new(IO).binread("|#{EnvUtil.rubybin} -e puts")
+    end
+  end
+
   def test_reopen
     make_tempfile {|t|
       open(__FILE__) do |f|
@@ -2356,6 +2372,10 @@ End
     a = []
     IO.foreach("|" + EnvUtil.rubybin + " -e 'puts :foo; puts :bar; puts :baz'") {|x| a << x }
     assert_equal(["foo\n", "bar\n", "baz\n"], a)
+
+    a = []
+    IO.foreach("|" + EnvUtil.rubybin + " -e 'puts :zot'", :open_args => ["r"]) {|x| a << x }
+    assert_equal(["zot\n"], a)
 
     make_tempfile {|t|
       a = []

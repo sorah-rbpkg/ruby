@@ -2,7 +2,7 @@
 
   file.c -
 
-  $Author: usa $
+  $Author: kazu $
   created at: Mon Nov 15 12:24:34 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -2102,7 +2102,7 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
  *  call-seq:
  *     File.atime(file_name)  ->  time
  *
- *  Returns the last access time for the named file as a Time object).
+ *  Returns the last access time for the named file as a Time object.
  *
  *  _file_name_ can be an IO object.
  *
@@ -2128,7 +2128,7 @@ rb_file_s_atime(VALUE klass, VALUE fname)
  *     file.atime    -> time
  *
  *  Returns the last access time (a <code>Time</code> object)
- *   for <i>file</i>, or epoch if <i>file</i> has not been accessed.
+ *  for <i>file</i>, or epoch if <i>file</i> has not been accessed.
  *
  *     File.new("testfile").atime   #=> Wed Dec 31 18:00:00 CST 1969
  *

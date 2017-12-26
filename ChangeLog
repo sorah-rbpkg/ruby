@@ -1,7 +1,1372 @@
 ------------------------------------------------------------------------
-r61243 | naruse | 2017-12-14 22:42:40 +0900 (Thu, 14 Dec 2017) | 1 line
+r61468 | naruse | 2017-12-25 15:57:02 +0900 (Mon, 25 Dec 2017) | 1 line
 
-add tag v2_5_0_rc1
+add tag v2_5_0
+------------------------------------------------------------------------
+r61467 | naruse | 2017-12-25 15:56:44 +0900 (Mon, 25 Dec 2017) | 2 lines
+
+v2.5.0p0
+
+------------------------------------------------------------------------
+r61466 | naruse | 2017-12-25 15:51:11 +0900 (Mon, 25 Dec 2017) | 1 line
+
+Release branch of Ruby 2.5
+------------------------------------------------------------------------
+r61465 | nobu | 2017-12-25 14:54:27 +0900 (Mon, 25 Dec 2017) | 4 lines
+
+fix leaked fds
+
+* lib/rubygems/command.rb (Gem::Command#invoke_with_build_args):
+  restore UI and close the created SilentUI.
+------------------------------------------------------------------------
+r61464 | mame | 2017-12-25 14:16:05 +0900 (Mon, 25 Dec 2017) | 4 lines
+
+doc/contributing.rdoc: Update platform maintainers
+
+* mswin32 and Symbian OS are no longer supported
+* Mac OS X was renamed
+------------------------------------------------------------------------
+r61463 | ko1 | 2017-12-25 13:40:42 +0900 (Mon, 25 Dec 2017) | 5 lines
+
+Disasm output contains code range.
+
+* iseq.c (iseq_inspect): show also code range information.
+  Note that `iseq_inspect` is used only for header of disasm.
+
+------------------------------------------------------------------------
+r61462 | nobu | 2017-12-25 12:25:45 +0900 (Mon, 25 Dec 2017) | 4 lines
+
+prelude.rb: block passing
+
+* prelude.rb (Thread.exclusive): pass the block as a block
+  argument.
+------------------------------------------------------------------------
+r61461 | kazu | 2017-12-25 12:01:07 +0900 (Mon, 25 Dec 2017) | 1 line
+
+NEWS: Fix typos [ci skip]
+------------------------------------------------------------------------
+r61460 | nobu | 2017-12-25 11:42:13 +0900 (Mon, 25 Dec 2017) | 4 lines
+
+prelude.c.tmpl: static literals
+
+* template/prelude.c.tmpl (PRELUDE_STR): make string objects with
+  static literals not to copy them.
+------------------------------------------------------------------------
+r61459 | nobu | 2017-12-25 11:09:14 +0900 (Mon, 25 Dec 2017) | 5 lines
+
+prelude.c.tmpl: fix optimization options
+
+* template/prelude.c.tmpl (prelude_eval): fix optimization
+  options.  trace_instruction member has been removed.  filled
+  coverage_enabled and debug_level members instead.
+------------------------------------------------------------------------
+r61458 | hsbt | 2017-12-25 09:33:19 +0900 (Mon, 25 Dec 2017) | 1 line
+
+Added gemification entry to NEWS file.
+------------------------------------------------------------------------
+r61457 | ko1 | 2017-12-25 09:27:17 +0900 (Mon, 25 Dec 2017) | 10 lines
+
+Set first line numbers for empty iseqs.
+
+* compile.c (iseq_compile_each): for empty method, block and so on,
+  `last_line` is not set so that line number of `putnil` instruction
+  will be zero. This patch set `first_lineno` for such `putnil`.
+
+  Problem is reported by deivid-rodriguez via Yuichiro Kaneko.
+
+* test/ruby/test_iseq.rb: add a test for this spec.
+
+------------------------------------------------------------------------
+r61452 | sorah | 2017-12-25 02:55:01 +0900 (Mon, 25 Dec 2017) | 3 lines
+
+NEWS: use of copy_file_range(2) isn't a new method
+
+[ci skip]
+------------------------------------------------------------------------
+r61451 | k0kubun | 2017-12-25 02:20:04 +0900 (Mon, 25 Dec 2017) | 7 lines
+
+NEWS: move the section to note ERB performance
+
+I heard that notable performance improvements should be written to
+"Implementation Improvements". So I put the sentence here.
+
+Also, the sentence itself is fixed to be the same as Ruby 2.5 release
+note draft's one.
+------------------------------------------------------------------------
+r61450 | ko1 | 2017-12-25 02:07:53 +0900 (Mon, 25 Dec 2017) | 6 lines
+
+Remove "trace_instruction" compile option.
+
+* iseq.h (rb_compile_option_struct): trace instruction is removed so that
+  remove the trace_instruction compile option.
+  Don't show warning (just ignore) for Ruby 2.5.
+
+------------------------------------------------------------------------
+r61449 | svn | 2017-12-25 01:43:17 +0900 (Mon, 25 Dec 2017) | 1 line
+
+* 2017-12-25
+------------------------------------------------------------------------
+r61448 | k0kubun | 2017-12-25 01:43:17 +0900 (Mon, 25 Dec 2017) | 8 lines
+
+NEWS: note about ERB's rendering performance
+
+improvement.
+
+There is no specific ticket for it, but improving the ERB's performance
+was my largest passion that made me a Ruby committer.
+
+See r58735, r58842, r58904, r58905, r58916.
+------------------------------------------------------------------------
+r61447 | mame | 2017-12-24 23:52:23 +0900 (Sun, 24 Dec 2017) | 1 line
+
+NEWS: Add a brief explanation for branch and method coverage
+------------------------------------------------------------------------
+r61446 | nobu | 2017-12-24 19:12:21 +0900 (Sun, 24 Dec 2017) | 1 line
+
+fix grammatical mistake [ci skip]
+------------------------------------------------------------------------
+r61445 | normal | 2017-12-24 17:45:21 +0900 (Sun, 24 Dec 2017) | 1 line
+
+NEWS: updates for WEBrick [ci skip]
+------------------------------------------------------------------------
+r61444 | normal | 2017-12-24 17:40:11 +0900 (Sun, 24 Dec 2017) | 1 line
+
+NEWS: fix typo [ci skip]
+------------------------------------------------------------------------
+r61443 | normal | 2017-12-24 17:38:43 +0900 (Sun, 24 Dec 2017) | 13 lines
+
+webrick 1.4.2
+
+This release removes uses of Kernel#open to avoid unintended
+behaviors and make future auditing easier. [Misc #14216]
+
+6 changes since 1.4.1:
+
+      webrick: httpauth requires regular files
+      webrick/httpservlet/cgi_runner.rb: remove unnecessary open
+      webrick: WEBrick::Log requires path arg when given string
+      webrick/httpservlet/*handler: use File.open
+      webrick/httputils: note Kernel#open behavior
+      webrick/httpservelet/cgi_runner: avoid IO#reopen on pathname
+------------------------------------------------------------------------
+r61442 | mrkn | 2017-12-24 15:24:57 +0900 (Sun, 24 Dec 2017) | 1 line
+
+NEWS: update for bigdecimal 1.3.4
+------------------------------------------------------------------------
+r61441 | mrkn | 2017-12-24 15:22:41 +0900 (Sun, 24 Dec 2017) | 5 lines
+
+bigdecimal: version 1.3.4
+
+Import bigdecimal version 1.3.4.  The full commit log is here:
+
+  https://github.com/ruby/bigdecimal/compare/v1.3.3...v1.3.4
+------------------------------------------------------------------------
+r61438 | kazu | 2017-12-24 11:41:00 +0900 (Sun, 24 Dec 2017) | 1 line
+
+[DOC] Improve example of IO#pread [ci skip]
+------------------------------------------------------------------------
+r61437 | nobu | 2017-12-24 11:38:27 +0900 (Sun, 24 Dec 2017) | 4 lines
+
+compile.c: toplevel return arguments
+
+* compile.c (compile_return): evaluate arguments to top-level
+  return but ignore the results.
+------------------------------------------------------------------------
+r61435 | nobu | 2017-12-24 11:26:22 +0900 (Sun, 24 Dec 2017) | 1 line
+
+lib/irb.rb: highlight exceptions
+------------------------------------------------------------------------
+r61434 | nobu | 2017-12-24 10:52:21 +0900 (Sun, 24 Dec 2017) | 1 line
+
+lib/irb.rb: simplified backtrace filtering
+------------------------------------------------------------------------
+r61433 | kazu | 2017-12-24 10:26:46 +0900 (Sun, 24 Dec 2017) | 1 line
+
+[DOC] Use File.open with block instead of File.new without close [ci skip]
+------------------------------------------------------------------------
+r61432 | hsbt | 2017-12-24 08:33:09 +0900 (Sun, 24 Dec 2017) | 5 lines
+
+Merge rdoc-6.0.1.
+
+  It fixes an installation error of activerecord.
+
+  https://github.com/ruby/rdoc/issues/571
+------------------------------------------------------------------------
+r61431 | sorah | 2017-12-24 03:17:39 +0900 (Sun, 24 Dec 2017) | 3 lines
+
+Print backtrace in reverse order on IRB too
+
+[Feature #8861]
+------------------------------------------------------------------------
+r61430 | svn | 2017-12-24 01:17:57 +0900 (Sun, 24 Dec 2017) | 1 line
+
+* 2017-12-24
+------------------------------------------------------------------------
+r61429 | naruse | 2017-12-24 01:17:57 +0900 (Sun, 24 Dec 2017) | 10 lines
+
+undef HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P on GCC 4.8
+
+GCC 4.8 with optimization causes error if it compiles following code.
+[Bug #14221]
+
+```c
+__builtin_choose_expr(__builtin_constant_p(b),0,1)
+```
+
+https://github.com/ruby/ruby/pull/1778
+------------------------------------------------------------------------
+r61428 | ko1 | 2017-12-23 23:48:28 +0900 (Sat, 23 Dec 2017) | 1 line
+
+fix last commit
+------------------------------------------------------------------------
+r61427 | ko1 | 2017-12-23 23:46:59 +0900 (Sat, 23 Dec 2017) | 7 lines
+
+RubyVM::InstructionSequence#trace_points.
+
+* iseq.c (iseqw_trace_points): add `RubyVM::InstructionSequence#trace_points`
+  method for tools which want to manipulate ISeq (and traces).
+
+* test/ruby/test_iseq.rb: add a test for this method.
+
+------------------------------------------------------------------------
+r61426 | nobu | 2017-12-23 23:31:56 +0900 (Sat, 23 Dec 2017) | 6 lines
+
+test_io_console.rb: get rid of sporadic failures
+
+* test/io/console/test_io_console.rb (test_getpass): try to get
+  rid of timing issues.
+
+* test/io/console/test_io_console.rb (test_ioflush2): ditto.
+------------------------------------------------------------------------
+r61425 | ko1 | 2017-12-23 21:48:24 +0900 (Sat, 23 Dec 2017) | 7 lines
+
+RubyVM::InstructionSequence#each_child.
+
+* iseq.c (iseqw_each_child): add RubyVM::InstructionSequence#each_child
+  method for tools which want to manipulate ISeq.
+
+* test/ruby/test_iseq.rb: add a test for this method.
+
+------------------------------------------------------------------------
+r61424 | ko1 | 2017-12-23 20:00:48 +0900 (Sat, 23 Dec 2017) | 15 lines
+
+revert line number spec of *return events.
+
+* compile.c (rb_iseq_compile_node): line number spec of :return, :b_return
+  and :end events of 'TracePoint` is changed for [Feature #14104].
+
+  Quoted from [Feature #14104]:
+  > Line numbers on :return/:b_return events show the last executed lines,
+  > instead of end lines (without return statement).
+  Note that :end event also affected.
+
+  However, "buybug", a well-known ruby debugger depends on previous behavior
+  so that I reverted this specification.
+
+* test/ruby/test_settracefunc.rb: catch up this fix.
+
+------------------------------------------------------------------------
+r61423 | k0kubun | 2017-12-23 18:10:34 +0900 (Sat, 23 Dec 2017) | 7 lines
+
+iseq.c: show first_lineno on iseq inspect
+
+My motivation was to improve the output of `ruby --dump=insns xxx.rb`.
+When one file has many iseqs, it's hard to find the one I want to read.
+
+So I wanted `iseq_disasm` to show first_lineno. I unified the behavior
+of `iseqw_disasm` for consistency.
+------------------------------------------------------------------------
+r61422 | kazu | 2017-12-23 10:53:48 +0900 (Sat, 23 Dec 2017) | 1 line
+
+iseq.c: Remove unused macro in r61395
+------------------------------------------------------------------------
+r61421 | nobu | 2017-12-23 09:55:29 +0900 (Sat, 23 Dec 2017) | 5 lines
+
+iseq.c: local variable names
+
+* iseq.c (rb_insn_operand_intern): simplified the condition for
+  local variable names, assume TS_LINDEX and TS_NUM combinations
+  are only for local variables.
+------------------------------------------------------------------------
+r61420 | nobu | 2017-12-23 09:51:36 +0900 (Sat, 23 Dec 2017) | 4 lines
+
+insns.def: adjust type
+
+* insns.def (checkkeyword): adjust argument type to
+  vm_check_keyword as lindex_t.
+------------------------------------------------------------------------
+r61419 | hsbt | 2017-12-23 09:38:52 +0900 (Sat, 23 Dec 2017) | 1 line
+
+Avoid to warnings about gemspec loadings in rubygems tests.
+------------------------------------------------------------------------
+r61418 | svn | 2017-12-23 09:30:36 +0900 (Sat, 23 Dec 2017) | 1 line
+
+* 2017-12-23
+------------------------------------------------------------------------
+r61417 | nobu | 2017-12-23 09:30:33 +0900 (Sat, 23 Dec 2017) | 4 lines
+
+fix unicode data directory
+
+* test/ruby/enc/test_regex_casefold.rb: fix searching unicode data
+  directory, like as test_case_comprehensive.rb.
+------------------------------------------------------------------------
+r61416 | hsbt | 2017-12-23 08:08:05 +0900 (Sat, 23 Dec 2017) | 4 lines
+
+Postponing the Bundler merge.
+
+  I faced a big issue about Bundler with ruby core.
+  I have no time to resolve it issue before 2.5 final release.
+------------------------------------------------------------------------
+r61415 | nobu | 2017-12-22 21:39:32 +0900 (Fri, 22 Dec 2017) | 6 lines
+
+update unicode data files directory
+
+* test/ruby/enc/test_case_comprehensive.rb: search ucd directory
+  first if exists.
+
+* test/ruby/enc/test_regex_casefold.rb: ditto.
+------------------------------------------------------------------------
+r61413 | usa | 2017-12-22 17:52:11 +0900 (Fri, 22 Dec 2017) | 7 lines
+
+force hash values fixable
+
+* include/ruby/ruby.h (RB_ST2FIX): force fixable on LLP64 environment.
+
+* hash.c (any_hash): ditto.
+  [ruby-core:84395] [Bug #14218]
+
+------------------------------------------------------------------------
+r61412 | glass | 2017-12-22 17:47:39 +0900 (Fri, 22 Dec 2017) | 6 lines
+
+io.c: ignore EPERM
+
+* io.c (nogvl_copy_file_range): ignore EPERM and fallback to
+  sendfile(2) or read/write. copy_file_range(2) may not exist
+  even if __NR_copy_file_range is defined in the build environment.
+  [Bug #14207]
+------------------------------------------------------------------------
+r61411 | nobu | 2017-12-22 17:08:31 +0900 (Fri, 22 Dec 2017) | 5 lines
+
+erb.rb: shadow by keys
+
+* lib/erb.rb (ERB#new_toplevel): shadow already defined local
+  variables by block local variabes, not to overwrite them.
+  [ruby-core:84390] [Bug #14215]
+------------------------------------------------------------------------
+r61410 | hsbt | 2017-12-22 17:00:10 +0900 (Fri, 22 Dec 2017) | 3 lines
+
+Bump up fileutils-1.0.2
+
+  Added `FileUtils::VERSION` const variable.
+------------------------------------------------------------------------
+r61409 | normal | 2017-12-22 14:59:11 +0900 (Fri, 22 Dec 2017) | 8 lines
+
+webrick/httpservelet/cgi_runner: avoid IO#reopen on pathname
+
+IO#reopen seems to behave strangely on Win32 based on the logs
+posted by Greg for [Bug #14420].  Lets try to fix the issue by
+using File.open explicitly (but not Kernel#open).
+
+* lib/webrick/httpservelet/cgi_runner: use File.open explicitly
+  [Bug #14220]
+------------------------------------------------------------------------
+r61408 | ko1 | 2017-12-22 14:15:45 +0900 (Fri, 22 Dec 2017) | 6 lines
+
+fix a test for debugging.
+
+* test/rdoc/test_rdoc_markup_pre_process.rb: show
+  `RDoc::Markup::PreProcess.post_processors` as a failure message
+  for debugging.
+
+------------------------------------------------------------------------
+r61407 | kazu | 2017-12-22 12:35:54 +0900 (Fri, 22 Dec 2017) | 1 line
+
+[DOC] StringIO#write accepts multiple arguments since r60377 [ci skip]
+------------------------------------------------------------------------
+r61406 | kazu | 2017-12-22 12:35:52 +0900 (Fri, 22 Dec 2017) | 1 line
+
+[DOC] Fix indent [ci skip]
+------------------------------------------------------------------------
+r61405 | kazu | 2017-12-22 12:35:46 +0900 (Fri, 22 Dec 2017) | 1 line
+
+[DOC] Remove unmatched parenthesis [ci skip]
+------------------------------------------------------------------------
+r61404 | nobu | 2017-12-22 10:49:00 +0900 (Fri, 22 Dec 2017) | 4 lines
+
+ifaddr.c: get_ifaddrs
+
+* ext/socket/ifaddr.c (get_ifaddrs): extract ifaddrs from
+  Socket::Ifaddr.
+------------------------------------------------------------------------
+r61403 | nobu | 2017-12-22 10:12:02 +0900 (Fri, 22 Dec 2017) | 1 line
+
+iseq.c (rb_insn_operand_intern): needs parenthesies
+------------------------------------------------------------------------
+r61402 | normal | 2017-12-22 10:08:05 +0900 (Fri, 22 Dec 2017) | 11 lines
+
+webrick/httputils: note Kernel#open behavior
+
+I don't know who uses the load_mime_types method; but it is
+conceivable that a user would want to read the results of a
+command instead of reading a regular file to load MIME types.
+
+None of the WEBrick-related code in Ruby or default/bundled gems
+seems to rely on this method; but it is likely 3rd-party code does.
+
+* lib/webrick/httputils.rb (load_mime_types): note Kernel#open behavior
+  [Misc #14216]
+------------------------------------------------------------------------
+r61401 | normal | 2017-12-22 10:08:00 +0900 (Fri, 22 Dec 2017) | 10 lines
+
+webrick/httpservlet/*handler: use File.open
+
+This makes future code audits easier.  None of these changes
+fix realistic remote code execution vulnerabilities because
+we stat(2) before attempting Kernel#open.
+
+* lib/webrick/httpservlet/erbhandler.rb (do_GET): use File.open
+* lib/webrick/httpservlet/filehandler.rb (do_GET): use File.open
+  (make_partial_content): ditto
+  [Misc #14216]
+------------------------------------------------------------------------
+r61400 | normal | 2017-12-22 10:07:55 +0900 (Fri, 22 Dec 2017) | 7 lines
+
+webrick: WEBrick::Log requires path arg when given string
+
+Allowing a user to specify "| command" via Kernel#open is
+nonsensical since we never read from the resultant IO.
+
+* lib/webrick/log.rb (initialize): replace Kernel#open with File.open
+  [Misc #14216]
+------------------------------------------------------------------------
+r61399 | normal | 2017-12-22 10:07:50 +0900 (Fri, 22 Dec 2017) | 7 lines
+
+webrick: add test for WEBrick::HTTPServlet::ERBHandler
+
+This previously had no coverage.
+
+* test/webrick/test_filehandler.rb (test_erbhandler): new test
+* test/webrick/webrick.rhtml: new file for test
+  [Misc #14216]
+------------------------------------------------------------------------
+r61398 | normal | 2017-12-22 10:07:45 +0900 (Fri, 22 Dec 2017) | 11 lines
+
+webrick/httpservlet/cgi_runner.rb: remove unnecessary open
+
+IO#reopen already takes string path names as well as IO objects
+(but not "| command" strings)
+
+This makes further auditing for inadvertant code execution
+easier.  There's no actual bugfix or behavior change here,
+as no external data is passed to cgi_runner.rb.
+
+* lib/webrick/httpservlet/cgi_runner.rb: remove Kernel#open call
+  [Misc #14216]
+------------------------------------------------------------------------
+r61397 | normal | 2017-12-22 10:07:39 +0900 (Fri, 22 Dec 2017) | 9 lines
+
+webrick: httpauth requires regular files
+
+Be sure we do not try to open a pipe to read from, since we care
+about mtime in all cases.
+
+* lib/webrick/httpauth/htdigest.rb: use File.open
+* lib/webrick/httpauth/htgroup.rb: ditto
+* lib/webrick/httpauth/htpasswd.rb: ditto
+  [Misc #14216]
+------------------------------------------------------------------------
+r61396 | nobu | 2017-12-22 10:03:17 +0900 (Fri, 22 Dec 2017) | 4 lines
+
+encoding.c: rb_enc_find_index2
+
+* string.c (str_undump): use rb_enc_find_index2 to find encoding
+  by unterminated string.  check the format before encoding name.
+------------------------------------------------------------------------
+r61395 | nobu | 2017-12-22 09:29:38 +0900 (Fri, 22 Dec 2017) | 4 lines
+
+iseq.c: defined insn operand
+
+* iseq.c (rb_insn_operand_intern): improve operands of defined
+  instruction.
+------------------------------------------------------------------------
+r61394 | svn | 2017-12-22 08:28:16 +0900 (Fri, 22 Dec 2017) | 1 line
+
+* 2017-12-22
+------------------------------------------------------------------------
+r61393 | shugo | 2017-12-22 08:28:15 +0900 (Fri, 22 Dec 2017) | 3 lines
+
+Extend timeout for CI.
+
+http://ci.rvm.jp/results/trunk-asserts-nopara@ruby-sky1/266962
+------------------------------------------------------------------------
+r61392 | akr | 2017-12-21 23:15:04 +0900 (Thu, 21 Dec 2017) | 5 lines
+
+open-uri defines URI.open defined as an alias.
+
+open-uri's Kernel.open will be deprecated in future.
+
+
+------------------------------------------------------------------------
+r61391 | nobu | 2017-12-21 20:59:31 +0900 (Thu, 21 Dec 2017) | 1 line
+
+test for [Bug #14214]
+------------------------------------------------------------------------
+r61390 | hsbt | 2017-12-21 18:29:47 +0900 (Thu, 21 Dec 2017) | 1 line
+
+Added detailed version of Bundler on NEWS.
+------------------------------------------------------------------------
+r61389 | eregon | 2017-12-21 18:29:18 +0900 (Thu, 21 Dec 2017) | 1 line
+
+Simplify Thread#[]= spec
+------------------------------------------------------------------------
+r61388 | hsbt | 2017-12-21 18:22:15 +0900 (Thu, 21 Dec 2017) | 1 line
+
+Merge release version of bundler-1.16.1 from upstream.
+------------------------------------------------------------------------
+r61387 | ko1 | 2017-12-21 17:29:56 +0900 (Thu, 21 Dec 2017) | 4 lines
+
+revert r61371 for [Bug #14214]
+
+Reverted patch doesn't check overwritten value.
+
+------------------------------------------------------------------------
+r61386 | nobu | 2017-12-21 16:59:00 +0900 (Thu, 21 Dec 2017) | 1 line
+
+string.c: fix memory leak
+------------------------------------------------------------------------
+r61385 | nobu | 2017-12-21 16:50:46 +0900 (Thu, 21 Dec 2017) | 1 line
+
+common.mk: revert r58542 [Bug #14213]
+------------------------------------------------------------------------
+r61384 | yui-knk | 2017-12-21 16:09:03 +0900 (Thu, 21 Dec 2017) | 1 line
+
+iseq.c (rb_iseq_code_range): Remove needless `;`
+------------------------------------------------------------------------
+r61383 | mame | 2017-12-21 15:52:15 +0900 (Thu, 21 Dec 2017) | 7 lines
+
+parse.y: change NODE_SCOPE's nd_loc to one of the parent NODE
+
+This change (ad-hocly) adjusts the code range of NODE_SCOPE in
+class/module definition because the same adjust is already done in
+method definition.  I intend to just remove inconsistency between
+class/module definition and method definition, but this kind of adjust
+is dirty, so it should be fixed later (maybe in 2.6).
+------------------------------------------------------------------------
+r61382 | ko1 | 2017-12-21 15:40:28 +0900 (Thu, 21 Dec 2017) | 4 lines
+
+add experimental API.
+
+* iseq.c (rb_iseq_code_range): added to access iseq's code range.
+
+------------------------------------------------------------------------
+r61381 | naruse | 2017-12-21 14:09:17 +0900 (Thu, 21 Dec 2017) | 1 line
+
+Don't allow mixed escape
+------------------------------------------------------------------------
+r61380 | naruse | 2017-12-21 14:09:16 +0900 (Thu, 21 Dec 2017) | 1 line
+
+move dump format validation into parsing epilogue
+------------------------------------------------------------------------
+r61379 | naruse | 2017-12-21 14:08:57 +0900 (Thu, 21 Dec 2017) | 1 line
+
+fix escapes in undump
+------------------------------------------------------------------------
+r61378 | sonots | 2017-12-21 14:07:43 +0900 (Thu, 21 Dec 2017) | 2 lines
+
+* lib/logger.rb (Logger::LogDevice#open_logfile, #create_logfile):
+  Logger should be able to open only files [Bug #14212]
+------------------------------------------------------------------------
+r61377 | tenderlove | 2017-12-21 09:40:54 +0900 (Thu, 21 Dec 2017) | 4 lines
+
+Fix `imemo_name` to dump new imemo types
+
+New IMEMO types were introduced, this just fixes the function that
+converts the type to support the new types.
+------------------------------------------------------------------------
+r61376 | normal | 2017-12-21 09:26:24 +0900 (Thu, 21 Dec 2017) | 8 lines
+
+io.c: IO#pwrite uses tmp buffer to avoid parallel modification
+
+Since we release GVL, we must freeze and duplicate the string buffer
+to prevent other threads from modifying our buffer while we are
+waiting on pwrite(2).
+
+* io.c (rb_io_pwrite): use_rb_str_tmp_frozen_{acquire/release}
+  [Bug #14195]
+------------------------------------------------------------------------
+r61375 | ko1 | 2017-12-21 08:49:30 +0900 (Thu, 21 Dec 2017) | 5 lines
+
+fix threading bug.
+
+* spec/ruby/core/thread/element_set_spec.rb: `t` can be uninitialized.
+  Use `Thread.current` explicitly.
+
+------------------------------------------------------------------------
+r61374 | usa | 2017-12-21 01:04:41 +0900 (Thu, 21 Dec 2017) | 10 lines
+
+fix test errors on Windows
+
+	* test/resolv/test_addr.rb (test_hosts_by_command): on Windows, `|` is
+	  invalid charactor for path and raises `Errno::EINVAL` if trying to
+	  open.
+
+	* test/resolv/test_dns.rb (test_resolv_conf_by_command): ditto.
+
+	cf. [Bug #14205]
+
+------------------------------------------------------------------------
+r61372 | svn | 2017-12-21 00:45:02 +0900 (Thu, 21 Dec 2017) | 1 line
+
+* 2017-12-21
+------------------------------------------------------------------------
+r61371 | nobu | 2017-12-21 00:45:01 +0900 (Thu, 21 Dec 2017) | 5 lines
+
+compile.c: branch on block param
+
+* compile.c (compile_branch_condition): replace block param value
+  in branch conditions with `defined(yield)`, to get rid of
+  creating proc value.
+------------------------------------------------------------------------
+r61360 | nobu | 2017-12-20 23:10:06 +0900 (Wed, 20 Dec 2017) | 4 lines
+
+iseq.c: block param name
+
+* iseq.c (rb_insn_operand_intern): show local variable name at
+  getblockparam/setblockparam too.
+------------------------------------------------------------------------
+r61359 | naruse | 2017-12-20 21:06:59 +0900 (Wed, 20 Dec 2017) | 3 lines
+
+raise error if value contains CR/LF in iniheader of initialize_http_header
+
+like r59693, initialize_http_header also should raise error. [Bug #14208]
+------------------------------------------------------------------------
+r61357 | stomar | 2017-12-20 18:51:29 +0900 (Wed, 20 Dec 2017) | 1 line
+
+NEWS: update news for Psych
+------------------------------------------------------------------------
+r61356 | stomar | 2017-12-20 18:31:58 +0900 (Wed, 20 Dec 2017) | 1 line
+
+NEWS: "absent operator" is now called "absence operator"
+------------------------------------------------------------------------
+r61355 | stomar | 2017-12-20 18:31:22 +0900 (Wed, 20 Dec 2017) | 1 line
+
+NEWS: grammar fixes
+------------------------------------------------------------------------
+r61354 | hsbt | 2017-12-20 17:50:26 +0900 (Wed, 20 Dec 2017) | 1 line
+
+Update rdoc-6.0.0 entry on NEWS file
+------------------------------------------------------------------------
+r61353 | mame | 2017-12-20 16:38:24 +0900 (Wed, 20 Dec 2017) | 6 lines
+
+iseq.c (get_insn_info): use binary search instead of linear search
+
+This change introduces get_insn_info_binary_search, which is (should be)
+equivalent to the old get_insn_info.
+The old get_insn_info is renamed to get_insn_info_linear_search.  When
+VM_CHECK_MODE > 0, the equivalence is validated at finish_iseq_build.
+------------------------------------------------------------------------
+r61352 | mame | 2017-12-20 13:45:05 +0900 (Wed, 20 Dec 2017) | 3 lines
+
+test/coverage/test_coverage.rb: make the expected value the same as 2.4
+
+A follow up of r61350
+------------------------------------------------------------------------
+r61351 | nobu | 2017-12-20 13:25:01 +0900 (Wed, 20 Dec 2017) | 5 lines
+
+Fixed command Injection
+
+* lib/resolv.rb (Resolv::Config.parse_resolv_conf): fixed
+  potential command injection by use of Kernel#open.
+  [ruby-core:84347] [Bug #14205]
+------------------------------------------------------------------------
+r61350 | mame | 2017-12-20 13:24:14 +0900 (Wed, 20 Dec 2017) | 16 lines
+
+compile.c: add a RUBY_EVENT_COVERAGE_LINE event for line coverage
+
+2.5's line coverage measurement was about two times slower than 2.4
+because of two reasons; (1) vm_trace uses rb_iseq_event_flags (which
+takes O(n) currently where n is the length of iseq) to get an event
+type, and (2) RUBY_EVENT_LINE uses setjmp to call an event hook.
+
+This change adds a special event for line coverage,
+RUBY_EVENT_COVERAGE_LINE, and adds `tracecoverage` instructions where
+the event occurs in iseq.
+`tracecoverage` instruction calls an event hook without vm_trace.
+And, RUBY_EVENT_COVERAGE_LINE is an internal event which does not
+use setjmp.
+
+This change also cancells lineno change due to the deletion of trace
+instructions [Feature #14104].  So fixes [Bug #14191].
+------------------------------------------------------------------------
+r61349 | nobu | 2017-12-20 13:18:31 +0900 (Wed, 20 Dec 2017) | 7 lines
+
+Fixed command Injection
+
+* resolv.rb (Resolv::Hosts#lazy_initialize): fixed potential
+  command Injection in Hosts::new() by use of Kernel#open.
+  [Fix GH-1777] [ruby-core:84347] [Bug #14205]
+
+From: Drigg3r <drigg3r@yandex.com>
+------------------------------------------------------------------------
+r61348 | mame | 2017-12-20 10:51:50 +0900 (Wed, 20 Dec 2017) | 3 lines
+
+vm_insnhelper.c (vm_trace): fix a typo
+
+Typical code clone bug.
+------------------------------------------------------------------------
+r61347 | ko1 | 2017-12-20 09:24:19 +0900 (Wed, 20 Dec 2017) | 9 lines
+
+extend timeout limit.
+
+* test/ruby/test_process.rb (test_threading_works_after_exec_fail):
+  extend timeout limit from 30 to 90 because some test nodes fails
+  with timeout error.
+
+  Also use a Queue instead of a local variable to communicate with
+  threads.
+
+------------------------------------------------------------------------
+r61346 | nobu | 2017-12-20 09:09:51 +0900 (Wed, 20 Dec 2017) | 4 lines
+
+parse.y: end of script at newline
+
+* parse.y (parser_yylex): deal with end of script chars just after
+  ignored newline as other places.  [ruby-core:84349] [Bug #14206]
+------------------------------------------------------------------------
+r61345 | ngoto | 2017-12-20 02:09:13 +0900 (Wed, 20 Dec 2017) | 7 lines
+
+skip test_aspawn_too_long_path on Solaris 10 or earlier
+
+* test/ruby/test_process.rb (TestProcess#test_aspawn_too_long_path):
+  skip test_aspawn_too_long_path on Solaris 10 or earlier versions
+  because they lack Process::RLIMIT_NPROC and the test creates
+  extraordinary number of processes that makes the system unstable.
+
+------------------------------------------------------------------------
+r61344 | ngoto | 2017-12-20 01:55:08 +0900 (Wed, 20 Dec 2017) | 7 lines
+
+Workaround for optimization bug of Oracle Developer Studio 12.4-12.6
+
+* pack.c (pack_unpack, AVOID_CC_BUG): Very ugly workaround for
+  optimization bug of Oracle Developer Studio (Oracle Solaris Studio)
+  12.4, 12.5, and 12.6 on Solaris 10 with -xO4 optimization option.
+  [Bug #11684] [ruby-core:84351]
+
+------------------------------------------------------------------------
+r61343 | svn | 2017-12-20 00:40:14 +0900 (Wed, 20 Dec 2017) | 1 line
+
+* 2017-12-20
+------------------------------------------------------------------------
+r61342 | eregon | 2017-12-20 00:40:13 +0900 (Wed, 20 Dec 2017) | 4 lines
+
+Break out of the loop after shutdown in DRbServer
+
+* Patch by @seki:
+  https://gist.github.com/seki/ae8bef20238c37c94a91b5461c4bfbdd
+------------------------------------------------------------------------
+r61341 | watson1978 | 2017-12-19 23:26:30 +0900 (Tue, 19 Dec 2017) | 6 lines
+
+Revert "Improve performance of creating Hash object"
+
+This reverts commit r61309
+Because it was unstable on mswin CI.
+
+[ruby-dev:50370][Bug #14203]
+------------------------------------------------------------------------
+r61340 | hsbt | 2017-12-19 21:28:18 +0900 (Tue, 19 Dec 2017) | 3 lines
+
+Update version number of Psych
+
+From: SHIBATA Hiroshi <hsbt@ruby-lang.org>
+------------------------------------------------------------------------
+r61339 | hsbt | 2017-12-19 21:23:21 +0900 (Tue, 19 Dec 2017) | 3 lines
+
+Update RubyGems entry on NEWS file.
+
+From: SHIBATA Hiroshi <hsbt@ruby-lang.org>
+------------------------------------------------------------------------
+r61338 | nobu | 2017-12-19 21:20:21 +0900 (Tue, 19 Dec 2017) | 9 lines
+
+st.c: fix up
+
+* st.c (_st_table_list, _st_table_pool): symbols beginning with an
+  underscore and a lower letter are preserved by the standard.
+
+* st.c (get_st_table): protoized.
+
+* st.c (st_insert_generic): adjust local variable type to an
+  argument argc.
+------------------------------------------------------------------------
+r61337 | nobu | 2017-12-19 19:46:51 +0900 (Tue, 19 Dec 2017) | 6 lines
+
+thread_sync.c: fix rdoc
+
+* thread_sync.c (define_thread_class): hide rb_define_class_under
+  from rdoc, so that fake code to teach rdoc takes effect.
+
+* thread_sync.c (Init_thread_sync): teach rdoc Mutex.
+------------------------------------------------------------------------
+r61336 | hsbt | 2017-12-19 18:44:33 +0900 (Tue, 19 Dec 2017) | 8 lines
+
+Merge psych-3.0.2 from ruby/psych.
+
+  It version changed fallback option to keywoad argument
+  on `Yaml.load` method. It break backword compatiblity.
+
+  see detailed discuttion: https://github.com/ruby/psych/issues/340
+
+From: SHIBATA Hiroshi <hsbt@ruby-lang.org>
+------------------------------------------------------------------------
+r61335 | nobu | 2017-12-19 13:57:20 +0900 (Tue, 19 Dec 2017) | 4 lines
+
+error.c: KeyError docs [ci skip]
+
+* error.c (key_err_receiver, key_err_key): [DOC] documents of
+  KeyError methods.
+------------------------------------------------------------------------
+r61334 | nobu | 2017-12-19 12:17:37 +0900 (Tue, 19 Dec 2017) | 4 lines
+
+vcs: --add-author-from
+
+* tool/vcs.rb (VCS::GIT#commit): no --add-author-from option if
+  author equals committer.
+------------------------------------------------------------------------
+r61333 | hsbt | 2017-12-19 12:12:22 +0900 (Tue, 19 Dec 2017) | 10 lines
+
+Update version of strscan to 1.0.0.
+
+  But we couldn't ship strscan (and stringio) gem. Because rubygems.org
+  still masked them.
+
+  https://github.com/rubygems/rubygems.org/pull/1696
+
+  I'm going to ship them after it deployed.
+
+From: SHIBATA Hiroshi <hsbt@ruby-lang.org>
+------------------------------------------------------------------------
+r61332 | hsbt | 2017-12-19 11:43:09 +0900 (Tue, 19 Dec 2017) | 6 lines
+
+Remove digest.gemspec for default gems.
+
+  It needs to support header file installation and uninstallation.
+  But current RubyGems didn't support it feature yet.
+
+From: SHIBATA Hiroshi <hsbt@ruby-lang.org>
+------------------------------------------------------------------------
+r61331 | nobu | 2017-12-19 11:41:37 +0900 (Tue, 19 Dec 2017) | 7 lines
+
+compile.c: pop splat result
+
+* compile.c (compile_array): pop splat result without creating a
+  new hash if the whole hash is popped.
+  [ruby-core:84340] [Bug #14201]
+
+From: Nobuyoshi Nakada <nobu@ruby-lang.org>
+------------------------------------------------------------------------
+r61330 | nobu | 2017-12-19 10:08:52 +0900 (Tue, 19 Dec 2017) | 6 lines
+
+Improve Array#- efficiency [Fixes GH-1756]
+
+When doing the difference of a small array with a big one it is not
+efficient in both time and memory to convert the second one to a hash.
+
+From: Ana Mar?a Mart?nez G?mez <ammartinez@suse.de>
+------------------------------------------------------------------------
+r61329 | nobu | 2017-12-19 09:45:55 +0900 (Tue, 19 Dec 2017) | 7 lines
+
+compile.c: side effect in splat
+
+* compile.c (compile_array): splat which may have side effects
+  should be compiled even if the result will be popped.
+  [ruby-core:84340] [Bug #14201]
+
+From: Nobuyoshi Nakada <nobu@ruby-lang.org>
+------------------------------------------------------------------------
+r61327 | eregon | 2017-12-19 01:41:48 +0900 (Tue, 19 Dec 2017) | 1 line
+
+Use syswrite to avoid potential buffering in IO#select spec
+------------------------------------------------------------------------
+r61326 | ngoto | 2017-12-19 01:17:17 +0900 (Tue, 19 Dec 2017) | 10 lines
+
+Support C89 if possible
+
+* addr2line.c: Because stdbool.h is a C99 feature, compile error
+  occurs with some old compilers without specifying C99 options.
+  Fix compile error with Oracle Solaris Studio 12.4 on Solaris 10.
+  [Bug #14200] [ruby-dev:50366]
+
+* missing/stdbool.h: Alternative of stdbool.h for C89 compilers.
+
+
+------------------------------------------------------------------------
+r61325 | svn | 2017-12-19 00:46:57 +0900 (Tue, 19 Dec 2017) | 1 line
+
+* 2017-12-19
+------------------------------------------------------------------------
+r61324 | ngoto | 2017-12-19 00:46:56 +0900 (Tue, 19 Dec 2017) | 6 lines
+
+eval_error.c: Fix compile error on Solaris 10
+
+* eval_error.c (write_warn, write_warn2, write_warn_str): Fix compile
+  error "operands have incompatible types" with Oracle Solaris Studio
+  12.4 on Solaris 10.
+
+------------------------------------------------------------------------
+r61323 | naruse | 2017-12-18 18:03:59 +0900 (Mon, 18 Dec 2017) | 1 line
+
+suppress warning: 'const' attribute on function returning 'void'
+------------------------------------------------------------------------
+r61322 | normal | 2017-12-18 17:54:30 +0900 (Mon, 18 Dec 2017) | 5 lines
+
+webrick 1.4.1 release
+
+* lib/webrick/version.rb: bump version
+* lib/webrick/webrick.gemspec: support Ruby 2.3+
+  [Bug #14189]
+------------------------------------------------------------------------
+r61321 | nobu | 2017-12-18 16:39:05 +0900 (Mon, 18 Dec 2017) | 6 lines
+
+test_io.rb: EINVAL on Windows
+
+* test/ruby/test_io.rb (test_read_command): unusable character
+  causes Errno::EINVAL on Windows.
+
+From: Nobuyoshi Nakada <nobu@ruby-lang.org>
+------------------------------------------------------------------------
+r61320 | nobu | 2017-12-18 16:15:07 +0900 (Mon, 18 Dec 2017) | 7 lines
+
+io.c: opening external command
+
+* io.c (rb_io_open_generic): try to open the named file as usual,
+  if klass is not IO nor File, so that Errno::ENOENT will be
+  raised probably.  calling on File will be same in the future.
+
+From: Nobuyoshi Nakada <nobu@ruby-lang.org>
+------------------------------------------------------------------------
+r61319 | nobu | 2017-12-18 16:10:15 +0900 (Mon, 18 Dec 2017) | 5 lines
+
+io.c: open generic in binread
+
+* io.c (rb_io_s_binread): fix r61317, unintentional change.
+
+From: Nobuyoshi Nakada <nobu@ruby-lang.org>
+------------------------------------------------------------------------
+r61318 | ko1 | 2017-12-18 13:42:53 +0900 (Mon, 18 Dec 2017) | 5 lines
+
+check EOPNOTSUPP.
+
+* test/ruby/test_file.rb (test_open_tempfile_path): skip EOPNOTSUPP
+  (observed on Ubuntu 16 on Docker).
+
+------------------------------------------------------------------------
+r61317 | nobu | 2017-12-18 13:32:54 +0900 (Mon, 18 Dec 2017) | 7 lines
+
+io.c: opening external command
+
+* io.c (rb_io_open_generic): when external command will be invoked
+  as other than IO singleton method, probably unintentionally,
+  warn if it is File or raise ArgumentError.
+
+From: Nobuyoshi Nakada <nobu@ruby-lang.org>
+------------------------------------------------------------------------
+r61316 | nobu | 2017-12-18 13:23:16 +0900 (Mon, 18 Dec 2017) | 6 lines
+
+envutil.rb: define flush method
+
+* test/lib/envutil.rb (verbose_warning): flush is called on STDOUT
+  and STDERR sometimes.
+
+From: Nobuyoshi Nakada <nobu@ruby-lang.org>
+------------------------------------------------------------------------
+r61315 | nobu | 2017-12-18 13:12:06 +0900 (Mon, 18 Dec 2017) | 3 lines
+
+test/ruby/test_io.rb: test for r61314
+
+From: Nobuyoshi Nakada <nobu@ruby-lang.org>
+------------------------------------------------------------------------
+r61314 | nobu | 2017-12-18 12:38:20 +0900 (Mon, 18 Dec 2017) | 6 lines
+
+io.c: open_key_args by rb_io_open
+
+* io.c (open_key_args): open by rb_io_open always also when
+  open_args: option is given.
+
+From: Nobuyoshi Nakada <nobu@ruby-lang.org>
+------------------------------------------------------------------------
+r61313 | mame | 2017-12-18 11:44:36 +0900 (Mon, 18 Dec 2017) | 7 lines
+
+iseq.c (finish_iseq_build): fix coverage leakage [Bug #14191]
+
+Before this change, coverage.so had failed to measure some multiple-line
+code fragments.  This is because removing trace instructions (#14104)
+changed TracePoint's lineno (new lineno), and coverage counter array was
+based on old lineno.
+This change initializes coverage counter array based on new lineno.
+------------------------------------------------------------------------
+r61312 | nobu | 2017-12-18 10:55:55 +0900 (Mon, 18 Dec 2017) | 3 lines
+
+vcs.rb: --add-author-from option
+
+From: Nobuyoshi Nakada <nobu@ruby-lang.org>
+------------------------------------------------------------------------
+r61311 | nobu | 2017-12-18 10:54:19 +0900 (Mon, 18 Dec 2017) | 1 line
+
+st.c: no C99 comment
+------------------------------------------------------------------------
+r61310 | nobu | 2017-12-18 10:51:53 +0900 (Mon, 18 Dec 2017) | 5 lines
+
+Requiring pp is not required now [ci skip]
+
+- Followup of https://bugs.ruby-lang.org/issues/14123
+
+From: Prathamesh Sonpatki <csonpatki@gmail.com>
+------------------------------------------------------------------------
+r61309 | watson1978 | 2017-12-18 10:49:33 +0900 (Mon, 18 Dec 2017) | 50 lines
+
+Improve performance of creating Hash object
+
+When generate Hash object, the heap area of st_table will be always allocated in internally
+and seems it take a time.
+
+To improve performance of creating Hash object,
+this patch will reduce count of allocating heap areas for st_table by reuse them.
+
+	Performance of creating Hash literal -> 1.53 times faster.
+
+[Fix GH-1766] [ruby-core:84008] [Feature #14146]
+
+### Environment
+
+* OS : macOS 10.13.1
+* CPU : 1.4 GHz Intel Core i7
+* Compiler : Apple LLVM version 9.0.0 (clang-900.0.39)
+
+### Before
+
+$ ./miniruby -v -I. -I../benchmark-ips/lib ~/tmp/bench/literal.rb
+ruby 2.5.0dev (2017-11-28 hash 60926) [x86_64-darwin17]
+Warming up --------------------------------------
+        Hash literal    51.544k i/100ms
+Calculating -------------------------------------
+        Hash literal    869.132k (? 1.1%) i/s -      4.381M in   5.041574s
+
+### After
+
+$ ./miniruby -v -I. -I../benchmark-ips/lib ~/tmp/bench/literal.rb
+ruby 2.5.0dev (2017-11-28 hash 60926) [x86_64-darwin17]
+Warming up --------------------------------------
+        Hash literal    63.068k i/100ms
+Calculating -------------------------------------
+        Hash literal      1.328M (? 2.3%) i/s -      6.685M in   5.037861s
+
+### Test code
+
+require 'benchmark/ips'
+
+Benchmark.ips do |x|
+  x.report "Hash literal" do |loop|
+    count = 0
+    while count < loop
+      hash = {foo: 12, bar: 34, baz: 56}
+
+      count += 1
+    end
+  end
+end
+------------------------------------------------------------------------
+r61308 | usa | 2017-12-18 03:43:49 +0900 (Mon, 18 Dec 2017) | 5 lines
+
+`BASERUBY` may be not available when building from tarball
+
+* common.mk ($(REVISION_H)): revert a part of r61055 because this obstructs
+  building ruby from tarball in clean (no ruby) environment.
+
+------------------------------------------------------------------------
+r61307 | svn | 2017-12-18 03:19:42 +0900 (Mon, 18 Dec 2017) | 1 line
+
+* properties.
+------------------------------------------------------------------------
+r61306 | svn | 2017-12-18 03:19:42 +0900 (Mon, 18 Dec 2017) | 1 line
+
+* 2017-12-18
+------------------------------------------------------------------------
+r61305 | marcandre | 2017-12-18 03:19:41 +0900 (Mon, 18 Dec 2017) | 1 line
+
+Integer#{any|all|no}_bits: Fix coercion. Add specs [#12753]
+------------------------------------------------------------------------
+r61304 | nobu | 2017-12-17 20:13:23 +0900 (Sun, 17 Dec 2017) | 4 lines
+
+common.mk: exts-note [ci skip]
+
+* common.mk (exts-note): show notes of non-configured extension
+  libraries.
+------------------------------------------------------------------------
+r61303 | nobu | 2017-12-17 18:40:19 +0900 (Sun, 17 Dec 2017) | 4 lines
+
+thread.c: adjusted [ci skip]
+
+* thread.c (timeval_add): adjusted indent and parenthesized in
+  braces.
+------------------------------------------------------------------------
+r61302 | normal | 2017-12-17 17:26:17 +0900 (Sun, 17 Dec 2017) | 7 lines
+
+thread.c: fix overly long Thread#join w/ timeout
+
+* test/ruby/test_thread.rb (test_signal_at_join): test with timeout
+* thread.c (sleep_wait_for_interrupt): remove
+  (thread_join_sleep): use native_sleep directly to avoid extra
+  missing thread status change
+  [Bug #14181]
+------------------------------------------------------------------------
+r61301 | normal | 2017-12-17 17:26:12 +0900 (Sun, 17 Dec 2017) | 8 lines
+
+thread.c: hoist out timeval arithmetic functions
+
+timeval arithmetic may be reused in other places and this
+makes sleep_timeval easier-to-read.
+
+* thread.c (timeval_add): hoist out of sleep_timeval
+  (timeval_update_expire): ditto
+  (sleep_timeval): use new functions
+------------------------------------------------------------------------
+r61300 | svn | 2017-12-17 14:35:28 +0900 (Sun, 17 Dec 2017) | 1 line
+
+* 2017-12-17
+------------------------------------------------------------------------
+r61299 | nobu | 2017-12-17 14:35:28 +0900 (Sun, 17 Dec 2017) | 4 lines
+
+vm_method.c: empty table
+
+* vm_method.c (prepare_callable_method_entry): empty method table
+  has no entries.
+------------------------------------------------------------------------
+r61298 | nobu | 2017-12-17 14:35:27 +0900 (Sun, 17 Dec 2017) | 4 lines
+
+vm_method.c: debug message
+
+* vm_method.c (method_definition_addref_complement): fix debug
+  message, show complemented_count instead of alias_count.
+------------------------------------------------------------------------
+r61297 | nobu | 2017-12-16 22:25:11 +0900 (Sat, 16 Dec 2017) | 9 lines
+
+ruby.c: script __dir__ encoding
+
+* ruby.c (process_options): fallback to the encoding of the script
+  name since rb_realpath_internal() cannot convert the encoding
+  when it is ASCII-8BIT.
+
+* test/ruby/test_rubyoptions.rb (test___dir__encoding): explicitly
+  pass environment variables for locale as they are overriden by
+  invoke_ruby.
+------------------------------------------------------------------------
+r61296 | k0kubun | 2017-12-16 22:02:25 +0900 (Sat, 16 Dec 2017) | 10 lines
+
+vm.c: always export rb_frame_method_id_and_class
+
+Functions declared in include/ruby/backward.h is exported only when
+the condition `!defined RUBY_EXPORT && !defined RUBY_NO_OLD_COMPATIBILITY`
+is met (i.e. included by include/ruby/ruby.h).
+
+So if it is not the case when ruby is built, this will not be exported.
+This was not intentional at r60994.
+
+[Bug #14192]
+------------------------------------------------------------------------
+r61295 | usa | 2017-12-16 15:05:16 +0900 (Sat, 16 Dec 2017) | 5 lines
+
+should install after test
+
+* common.mk (love): should install after test (but this change does not gurantee
+  the order).
+
+------------------------------------------------------------------------
+r61294 | usa | 2017-12-16 10:56:14 +0900 (Sat, 16 Dec 2017) | 4 lines
+
+aliases
+
+* tool/merger.rb: aliases for removetag command.
+
+------------------------------------------------------------------------
+r61292 | mame | 2017-12-16 09:39:34 +0900 (Sat, 16 Dec 2017) | 5 lines
+
+random.c: make sure that Random.urandom returns required-length buffer
+
+getrandom(2) and read(2) (from /dev/urandom) may return a random buffer
+whose length is shorter than required.  This change makes sure that they
+get enough buffer by using a loop.
+------------------------------------------------------------------------
+r61291 | nobu | 2017-12-16 09:36:31 +0900 (Sat, 16 Dec 2017) | 4 lines
+
+test_vm_dump.rb: skip if gcc
+
+* test/ruby/test_vm_dump.rb (assert_darwin_vm_dump_works): gcc seems
+  not to chain some frames like Apple's clang.
+------------------------------------------------------------------------
+r61290 | nobu | 2017-12-16 09:30:52 +0900 (Sat, 16 Dec 2017) | 4 lines
+
+string.c: multiple codepoints
+
+* string.c (undump_after_backslash): fix multiple codepoints in
+  braces.
+------------------------------------------------------------------------
+r61289 | nobu | 2017-12-16 09:03:51 +0900 (Sat, 16 Dec 2017) | 4 lines
+
+string.c: suppress warning
+
+* string.c (str_undump): suppress maybe-uninitialized warning by
+  gcc 7 and later.
+------------------------------------------------------------------------
+r61288 | normal | 2017-12-16 06:55:50 +0900 (Sat, 16 Dec 2017) | 3 lines
+
+NEWS: update for WEBrick Proc body responses
+
+Better late than never :x [Feature #855]
+------------------------------------------------------------------------
+r61287 | normal | 2017-12-16 06:49:21 +0900 (Sat, 16 Dec 2017) | 4 lines
+
+NEWS: updates about trivial GVL release changes
+
+No tickets, but all pretty trivial changes which avoids
+stalls on slow/non-responsive filesytems.
+------------------------------------------------------------------------
+r61286 | marcandre | 2017-12-16 05:15:54 +0900 (Sat, 16 Dec 2017) | 1 line
+
+lib/erb: Update doc [ci-skip] [doc]
+------------------------------------------------------------------------
+r61285 | eregon | 2017-12-16 02:44:37 +0900 (Sat, 16 Dec 2017) | 1 line
+
+Update to ruby/spec@595645f
+------------------------------------------------------------------------
+r61284 | svn | 2017-12-16 02:44:16 +0900 (Sat, 16 Dec 2017) | 1 line
+
+* 2017-12-16
+------------------------------------------------------------------------
+r61283 | eregon | 2017-12-16 02:44:15 +0900 (Sat, 16 Dec 2017) | 1 line
+
+Update to ruby/mspec@19d929e
+------------------------------------------------------------------------
+r61282 | nobu | 2017-12-15 23:42:43 +0900 (Fri, 15 Dec 2017) | 4 lines
+
+gperf.sed: static declarations
+
+* tool/gperf.sed: comment out arguments part only, to keep the
+  following declarations static.  [Feature #13883]
+------------------------------------------------------------------------
+r61281 | kazu | 2017-12-15 20:52:41 +0900 (Fri, 15 Dec 2017) | 4 lines
+
+[DOC] `IO.new` accepts `external_encoding`
+
+Revert part of r61278 [Bug #13655]
+[ci skip]
+------------------------------------------------------------------------
+r61280 | kazu | 2017-12-15 20:52:40 +0900 (Fri, 15 Dec 2017) | 1 line
+
+Fix typo [ci skip]
+------------------------------------------------------------------------
+r61279 | naruse | 2017-12-15 18:43:40 +0900 (Fri, 15 Dec 2017) | 1 line
+
+initialize should be outside
+------------------------------------------------------------------------
+r61278 | naruse | 2017-12-15 17:26:33 +0900 (Fri, 15 Dec 2017) | 1 line
+
+IO.new doesn't recive "-" as external_encoding [Bug #13655]
+------------------------------------------------------------------------
+r61277 | rhe | 2017-12-15 17:19:32 +0900 (Fri, 15 Dec 2017) | 5 lines
+
+openssl: suppress report_on_exception warning
+
+Import a commit from upstream:
+
+	33a67ac96492 test/utils: disable Thread's report_on_exception in start_server
+------------------------------------------------------------------------
+r61276 | naruse | 2017-12-15 16:58:02 +0900 (Fri, 15 Dec 2017) | 1 line
+
+check icc version inside condition
+------------------------------------------------------------------------
+r61275 | naruse | 2017-12-15 16:58:00 +0900 (Fri, 15 Dec 2017) | 4 lines
+
+suppress icc warnings
+
+* subscript out of range
+* enumerated type mixed with another type
+------------------------------------------------------------------------
+r61274 | nobu | 2017-12-15 16:27:04 +0900 (Fri, 15 Dec 2017) | 6 lines
+
+thread.c: fix deadlock
+
+* thread.c (thread_join_sleep): the target thread may exit during
+  `RUBY_VM_CHECK_INTS_BLOCKING`, but `sleep_forever` does not
+  consider the condition change to wait.
+  [ruby-core:84248] [Bug #14181]
+------------------------------------------------------------------------
+r61273 | mame | 2017-12-15 14:55:11 +0900 (Fri, 15 Dec 2017) | 1 line
+
+node.c: show variable type for NODE_*ASGN
+------------------------------------------------------------------------
+r61272 | mame | 2017-12-15 14:55:10 +0900 (Fri, 15 Dec 2017) | 1 line
+
+node.c (NODE_HASH): remove wrong default case
+------------------------------------------------------------------------
+r61271 | mame | 2017-12-15 14:55:09 +0900 (Fri, 15 Dec 2017) | 1 line
+
+node.c: add more comment to NODE_CASE2
+------------------------------------------------------------------------
+r61270 | mame | 2017-12-15 14:55:08 +0900 (Fri, 15 Dec 2017) | 1 line
+
+node.c: fix typos
+------------------------------------------------------------------------
+r61269 | usa | 2017-12-15 12:22:51 +0900 (Fri, 15 Dec 2017) | 4 lines
+
+add `removetag` command
+
+* tool/merger.rb (remove_tag): add `removetag` command.
+
+------------------------------------------------------------------------
+r61268 | nobu | 2017-12-15 12:07:10 +0900 (Fri, 15 Dec 2017) | 6 lines
+
+thread.c: debug messages
+
+* thread.c (terminate_all): fix funtion name in debug messages.
+
+* thread.c (terminate_all, thread_join_sleep, thread_join): show
+  the status of the target thread in debug messages.
+------------------------------------------------------------------------
+r61267 | usa | 2017-12-15 12:04:56 +0900 (Fri, 15 Dec 2017) | 5 lines
+
+check the existence of specified tag
+
+* tool/merger.rb (tag): check the existence of specified tag before tagging to
+  get rid of careless mistakes.
+
+------------------------------------------------------------------------
+r61266 | normal | 2017-12-15 05:02:15 +0900 (Fri, 15 Dec 2017) | 6 lines
+
+webrick 1.4.0 release
+
+* lib/webrick/version.rb: change VERSION to 1.4.0
+* lib/webrick/webrick.gemspec: require_relative for version,
+  update date and contact info
+  [Feature #13173]
+------------------------------------------------------------------------
+r61265 | eregon | 2017-12-15 04:26:04 +0900 (Fri, 15 Dec 2017) | 1 line
+
+Add [Feature #14143] to NEWS
+------------------------------------------------------------------------
+r61263 | naruse | 2017-12-15 03:33:33 +0900 (Fri, 15 Dec 2017) | 3 lines
+
+particular_werror_flags=no on ICC
+
+fix r61261
+------------------------------------------------------------------------
+r61262 | svn | 2017-12-15 01:47:29 +0900 (Fri, 15 Dec 2017) | 1 line
+
+* 2017-12-15
+------------------------------------------------------------------------
+r61261 | naruse | 2017-12-15 01:47:28 +0900 (Fri, 15 Dec 2017) | 3 lines
+
+ICC doesn't support -Werror= but ignore
+
+It cause warnings when ruby remove error= on compiling ext/*.
 ------------------------------------------------------------------------
 r61242 | nagachika | 2017-12-14 22:41:30 +0900 (Thu, 14 Dec 2017) | 1 line
 

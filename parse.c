@@ -8182,7 +8182,7 @@ yyreduce:
     {
 		    /*%%%*/
 			(yyval.node) = NEW_CLASS((yyvsp[-4].node), (yyvsp[-1].node), (yyvsp[-3].node));
-			(yyval.node)->nd_body->nd_loc = (yylsp[-1]);
+			(yyval.node)->nd_body->nd_loc = (yyloc);
 			set_line_body((yyvsp[-1].node), (yyvsp[-2].num));
 			nd_set_line((yyval.node), (yyvsp[-2].num));
 			(yyval.node)->nd_loc = (yyloc);
@@ -8211,7 +8211,7 @@ yyreduce:
     {
 		    /*%%%*/
 			(yyval.node) = NEW_SCLASS((yyvsp[-4].node), (yyvsp[-1].node));
-			(yyval.node)->nd_body->nd_loc = (yylsp[-1]);
+			(yyval.node)->nd_body->nd_loc = (yyloc);
 			set_line_body((yyvsp[-1].node), nd_line((yyvsp[-4].node)));
 			fixpos((yyval.node), (yyvsp[-4].node));
 			(yyval.node)->nd_loc = (yyloc);
@@ -8246,7 +8246,7 @@ yyreduce:
     {
 		    /*%%%*/
 			(yyval.node) = NEW_MODULE((yyvsp[-3].node), (yyvsp[-1].node));
-			(yyval.node)->nd_body->nd_loc = (yylsp[-1]);
+			(yyval.node)->nd_body->nd_loc = (yyloc);
 			set_line_body((yyvsp[-1].node), (yyvsp[-2].num));
 			nd_set_line((yyval.node), (yyvsp[-2].num));
 			(yyval.node)->nd_loc = (yyloc);
@@ -14418,8 +14418,8 @@ parser_yylex(struct parser_params *parser)
 	    }
 	    goto retry;
 	}
-	while ((c = nextc())) {
-	    switch (c) {
+	while (1) {
+	    switch (c = nextc()) {
 	      case ' ': case '\t': case '\f': case '\r':
 	      case '\13': /* '\v' */
 		space_seen = 1;

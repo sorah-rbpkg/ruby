@@ -8187,7 +8187,7 @@ yyreduce:
     {
 #if 0
 			(yyval.val) = NEW_CLASS((yyvsp[-4].val), (yyvsp[-1].val), (yyvsp[-3].val));
-			(yyval.val)->nd_body->nd_loc = (yylsp[-1]);
+			(yyval.val)->nd_body->nd_loc = (yyloc);
 			set_line_body((yyvsp[-1].val), (yyvsp[-2].num));
 			nd_set_line((yyval.val), (yyvsp[-2].num));
 			(yyval.val)->nd_loc = (yyloc);
@@ -8216,7 +8216,7 @@ yyreduce:
     {
 #if 0
 			(yyval.val) = NEW_SCLASS((yyvsp[-4].val), (yyvsp[-1].val));
-			(yyval.val)->nd_body->nd_loc = (yylsp[-1]);
+			(yyval.val)->nd_body->nd_loc = (yyloc);
 			set_line_body((yyvsp[-1].val), nd_line((yyvsp[-4].val)));
 			fixpos((yyval.val), (yyvsp[-4].val));
 			(yyval.val)->nd_loc = (yyloc);
@@ -8251,7 +8251,7 @@ yyreduce:
     {
 #if 0
 			(yyval.val) = NEW_MODULE((yyvsp[-3].val), (yyvsp[-1].val));
-			(yyval.val)->nd_body->nd_loc = (yylsp[-1]);
+			(yyval.val)->nd_body->nd_loc = (yyloc);
 			set_line_body((yyvsp[-1].val), (yyvsp[-2].num));
 			nd_set_line((yyval.val), (yyvsp[-2].num));
 			(yyval.val)->nd_loc = (yyloc);
@@ -14482,8 +14482,8 @@ parser_yylex(struct parser_params *parser)
 	    }
 	    goto retry;
 	}
-	while ((c = nextc())) {
-	    switch (c) {
+	while (1) {
+	    switch (c = nextc()) {
 	      case ' ': case '\t': case '\f': case '\r':
 	      case '\13': /* '\v' */
 		space_seen = 1;
