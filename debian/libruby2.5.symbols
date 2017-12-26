@@ -27,8 +27,6 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  nurat_canonicalization@Base 2.5.0~preview1
  onig_add_end_call@Base 2.5.0~preview1
  onig_bbuf_init@Base 2.5.0~preview1
- onig_chain_link_add@Base 2.5.0
- onig_chain_reduce@Base 2.5.0
  onig_compile@Base 2.5.0~preview1
  onig_compile_ruby@Base 2.5.0~preview1
  onig_copy_encoding@Base 2.5.0~preview1
@@ -39,8 +37,6 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  onig_foreach_name@Base 2.5.0~preview1
  onig_free@Base 2.5.0~preview1
  onig_free_body@Base 2.5.0~preview1
- onig_free_node_list@Base 2.5.0
- onig_free_shared_cclass_table@Base 2.5.0
  onig_get_case_fold_flag@Base 2.5.0~preview1
  onig_get_default_case_fold_flag@Base 2.5.0~preview1
  onig_get_encoding@Base 2.5.0~preview1
@@ -64,7 +60,6 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  onig_names_free@Base 2.5.0~preview1
  onig_new@Base 2.5.0~preview1
  onig_new_without_alloc@Base 2.5.0~preview1
- onig_node_conv_to_str_node@Base 2.5.0
  onig_node_free@Base 2.5.0~preview1
  onig_node_list_add@Base 2.5.0~preview1
  onig_node_new_alt@Base 2.5.0~preview1
@@ -108,13 +103,10 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  onig_set_syntax_options@Base 2.5.0~preview1
  onig_set_verb_warn_func@Base 2.5.0~preview1
  onig_set_warn_func@Base 2.5.0~preview1
- onig_snprintf_with_pattern@Base 2.5.0
  onig_st_init_strend_table_with_size@Base 2.5.0~preview1
  onig_st_insert_strend@Base 2.5.0~preview1
  onig_st_lookup_strend@Base 2.5.0~preview1
  onig_strcpy@Base 2.5.0~preview1
- onig_strncmp@Base 2.5.0
- onig_transfer@Base 2.5.0
  onig_vsnprintf_with_pattern@Base 2.5.0~preview1
  onigenc_always_false_is_allowed_reverse_match@Base 2.5.0~preview1
  onigenc_always_true_is_allowed_reverse_match@Base 2.5.0~preview1
@@ -143,9 +135,6 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  onigenc_mbn_mbc_to_code@Base 2.5.0~preview1
  onigenc_minimum_property_name_to_ctype@Base 2.5.0~preview1
  onigenc_not_support_get_ctype_code_range@Base 2.5.0~preview1
- onigenc_property_list_add_property@Base 2.5.0
- onigenc_property_list_init@Base 2.5.0
- onigenc_set_default_caseconv_table@Base 2.5.0
  onigenc_set_default_encoding@Base 2.5.0~preview1
  onigenc_single_byte_ascii_only_case_map@Base 2.5.0~preview1
  onigenc_single_byte_code_to_mbc@Base 2.5.0~preview1
@@ -240,7 +229,6 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_ast_newnode@Base 2.5.0~rc1
  rb_attr@Base 2.5.0~preview1
  rb_attr_get@Base 2.5.0~preview1
- rb_autoload@Base 2.5.0
  rb_autoload_load@Base 2.5.0~preview1
  rb_autoload_p@Base 2.5.0~preview1
  rb_backref_get@Base 2.5.0~preview1
@@ -298,7 +286,6 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_bug_reporter_add@Base 2.5.0~preview1
  rb_cArray@Base 2.5.0~preview1
  rb_cBasicObject@Base 2.5.0~preview1
- rb_cBignum@Base 2.5.0
  rb_cBinding@Base 2.5.0~preview1
  rb_cClass@Base 2.5.0~preview1
  rb_cComplex@Base 2.5.0~preview1
@@ -306,10 +293,8 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_cDir@Base 2.5.0~preview1
  rb_cEncoding@Base 2.5.0~preview1
  rb_cEnumerator@Base 2.5.0~preview1
- rb_cEnv@Base 2.5.0
  rb_cFalseClass@Base 2.5.0~preview1
  rb_cFile@Base 2.5.0~preview1
- rb_cFixnum@Base 2.5.0
  rb_cFloat@Base 2.5.0~preview1
  rb_cHash@Base 2.5.0~preview1
  rb_cIO@Base 2.5.0~preview1
@@ -360,9 +345,7 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_check_type@Base 2.5.0~preview1
  rb_check_typeddata@Base 2.5.0~preview1
  rb_class2name@Base 2.5.0~preview1
- rb_class_boot@Base 2.5.0
  rb_class_get_superclass@Base 2.5.0~preview1
- rb_class_inherited@Base 2.5.0
  rb_class_inherited_p@Base 2.5.0~preview1
  rb_class_instance_methods@Base 2.5.0~preview1
  rb_class_ivar_set@Base 2.5.0~preview1
@@ -376,7 +359,6 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_class_public_instance_methods@Base 2.5.0~preview1
  rb_class_real@Base 2.5.0~preview1
  rb_class_superclass@Base 2.5.0~preview1
- rb_clear_cache@Base 2.5.0
  rb_clear_constant_cache@Base 2.5.0~preview1
  rb_clear_method_cache_by_class@Base 2.5.0~preview1
  rb_cloexec_dup2@Base 2.5.0~preview1
@@ -388,9 +370,6 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_cmperr@Base 2.5.0~preview1
  rb_cmpint@Base 2.5.0~preview1
  rb_compile_cstr@Base 2.5.0~preview1
- rb_compile_error@Base 2.5.0
- rb_compile_error_append@Base 2.5.0
- rb_compile_error_with_enc@Base 2.5.0
  rb_compile_file@Base 2.5.0~preview1
  rb_compile_string@Base 2.5.0~preview1
  rb_compile_warn@Base 2.5.0~preview1
@@ -398,8 +377,6 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_complex_new@Base 2.5.0~preview1
  rb_complex_polar@Base 2.5.0~preview1
  rb_complex_raw@Base 2.5.0~preview1
- rb_complex_set_imag@Base 2.5.0
- rb_complex_set_real@Base 2.5.0
  rb_const_defined@Base 2.5.0~preview1
  rb_const_defined_at@Base 2.5.0~preview1
  rb_const_defined_from@Base 2.5.0~preview1
@@ -684,7 +661,7 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_flt_rationalize_with_prec@Base 2.5.0~preview1
  rb_fork_async_signal_safe@Base 2.5.0~preview1
  rb_frame_callee@Base 2.5.0~preview1
- rb_frame_pop@Base 2.5.0
+ rb_frame_method_id_and_class@Base 2.5.0
  rb_frame_this_func@Base 2.5.0~preview1
  rb_free_generic_ivar@Base 2.5.0~preview1
  rb_free_tmp_buffer@Base 2.5.0~preview1
@@ -709,7 +686,6 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_gc_force_recycle@Base 2.5.0~preview1
  rb_gc_latest_gc_info@Base 2.5.0~preview1
  rb_gc_mark@Base 2.5.0~preview1
- rb_gc_mark_global_tbl@Base 2.5.0
  rb_gc_mark_locations@Base 2.5.0~preview1
  rb_gc_mark_maybe@Base 2.5.0~preview1
  rb_gc_mark_values@Base 2.5.0~preview1
@@ -725,7 +701,6 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_gcd_gmp@Base 2.5.0~preview1
  rb_gcd_normal@Base 2.5.0~preview1
  rb_generic_ivar_memsize@Base 2.5.0~preview1
- rb_generic_ivar_table@Base 2.5.0
  rb_genrand_int32@Base 2.5.0~preview1
  rb_genrand_real@Base 2.5.0~preview1
  rb_genrand_ulong_limited@Base 2.5.0~preview1
@@ -762,8 +737,6 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_hash_fetch@Base 2.5.0~preview1
  rb_hash_foreach@Base 2.5.0~preview1
  rb_hash_freeze@Base 2.5.0~preview1
- rb_hash_ifnone@Base 2.5.0
- rb_hash_iter_lev@Base 2.5.0
  rb_hash_lookup2@Base 2.5.0~preview1
  rb_hash_lookup@Base 2.5.0~preview1
  rb_hash_new@Base 2.5.0~preview1
@@ -779,7 +752,6 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_id_attrset@Base 2.5.0~preview1
  rb_ident_hash_new@Base 2.5.0~preview1
  rb_imemo_new@Base 2.5.0~preview1
- rb_include_class_new@Base 2.5.0
  rb_include_module@Base 2.5.0~preview1
  rb_insecure_operation@Base 2.5.0~preview1
  rb_inspect@Base 2.5.0~preview1
@@ -844,15 +816,11 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_is_instance_id@Base 2.5.0~preview1
  rb_is_junk_id@Base 2.5.0~preview1
  rb_is_local_id@Base 2.5.0~preview1
- rb_isalnum@Base 2.5.0
- rb_isalpha@Base 2.5.0
- rb_isblank@Base 2.5.0
- rb_iscntrl@Base 2.5.0
- rb_isdigit@Base 2.5.0
  rb_iseq_absolute_path@Base 2.5.0~preview1
  rb_iseq_add_mark_object@Base 2.5.0~preview1
  rb_iseq_base_label@Base 2.5.0~preview1
  rb_iseq_build_from_ary@Base 2.5.0~preview1
+ rb_iseq_code_range@Base 2.5.0
  rb_iseq_compile@Base 2.5.0~preview1
  rb_iseq_compile_node@Base 2.5.0~preview1
  rb_iseq_compile_on_base@Base 2.5.0~preview1
@@ -884,13 +852,6 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_iseq_translate_threaded_code@Base 2.5.0~preview1
  rb_iseqw_new@Base 2.5.0~preview1
  rb_iseqw_to_iseq@Base 2.5.0~preview1
- rb_isgraph@Base 2.5.0
- rb_islower@Base 2.5.0
- rb_isprint@Base 2.5.0
- rb_ispunct@Base 2.5.0
- rb_isspace@Base 2.5.0
- rb_isupper@Base 2.5.0
- rb_isxdigit@Base 2.5.0
  rb_iter_break@Base 2.5.0~preview1
  rb_iter_break_value@Base 2.5.0~preview1
  rb_iterate@Base 2.5.0~preview1
@@ -931,7 +892,6 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_mWaitWritable@Base 2.5.0~preview1
  rb_make_backtrace@Base 2.5.0~preview1
  rb_make_exception@Base 2.5.0~preview1
- rb_make_metaclass@Base 2.5.0
  rb_mark_generic_ivar@Base 2.5.0~preview1
  rb_mark_hash@Base 2.5.0~preview1
  rb_mark_set@Base 2.5.0~preview1
@@ -1198,8 +1158,6 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_str2big_poweroftwo@Base 2.5.0~preview1
  rb_str2inum@Base 2.5.0~preview1
  rb_str_append@Base 2.5.0~preview1
- rb_str_associate@Base 2.5.0
- rb_str_associated@Base 2.5.0
  rb_str_buf_append@Base 2.5.0~preview1
  rb_str_buf_cat2@Base 2.5.0~preview1
  rb_str_buf_cat@Base 2.5.0~preview1
@@ -1357,8 +1315,6 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_to_id@Base 2.5.0~preview1
  rb_to_int@Base 2.5.0~preview1
  rb_to_symbol@Base 2.5.0~preview1
- rb_tolower@Base 2.5.0
- rb_toupper@Base 2.5.0
  rb_tracearg_binding@Base 2.5.0~preview1
  rb_tracearg_callee_id@Base 2.5.0~rc1
  rb_tracearg_defined_class@Base 2.5.0~preview1

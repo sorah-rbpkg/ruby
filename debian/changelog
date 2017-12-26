@@ -2,6 +2,7 @@ ruby2.5 (2.5.0-1) unstable; urgency=medium
 
   * New upstream version 2.5.0
   * Refresh patches
+  * debian/libruby2.5.symbols: update
   * debian/tests/known-failures.txt: add another 3 test files that assume the
     tests are being run against a built source tree
 
