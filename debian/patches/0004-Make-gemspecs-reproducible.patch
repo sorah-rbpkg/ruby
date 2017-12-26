@@ -11,7 +11,7 @@ unreproducible
  3 files changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/ext/bigdecimal/bigdecimal.gemspec b/ext/bigdecimal/bigdecimal.gemspec
-index c1f7da4..30bad7e 100644
+index c8c9087..9cf22f7 100644
 --- a/ext/bigdecimal/bigdecimal.gemspec
 +++ b/ext/bigdecimal/bigdecimal.gemspec
 @@ -6,6 +6,7 @@
@@ -36,7 +36,7 @@ index 822d3eb..18d2887 100644
    s.email = "nobu@ruby-lang.org"
    s.description = "add console capabilities to IO instances."
 diff --git a/lib/rdoc/rdoc.gemspec b/lib/rdoc/rdoc.gemspec
-index 57a6698..5a8a96c 100644
+index 8c92908..0e6c0c7 100644
 --- a/lib/rdoc/rdoc.gemspec
 +++ b/lib/rdoc/rdoc.gemspec
 @@ -7,6 +7,7 @@
@@ -45,5 +45,5 @@ index 57a6698..5a8a96c 100644
    s.name = "rdoc"
 +  s.date = RUBY_RELEASE_DATE
    s.version = RDoc::VERSION
-   s.date = "2017-12-05"
+   s.date = "2017-12-24"
  
