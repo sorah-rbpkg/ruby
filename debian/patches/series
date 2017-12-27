@@ -2,4 +2,3 @@
 0002-lib-mkmf.rb-sort-list-of-object-files-in-generated-M.patch
 0003-Mark-Gemspec-reproducible-change-fixing-784225-too.patch
 0004-Make-gemspecs-reproducible.patch
-0005-Exclude-tests-that-fail-on-Debian-builds.patch

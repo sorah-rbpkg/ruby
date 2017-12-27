@@ -1,3 +1,11 @@
+ruby2.5 (2.5.0-2) UNRELEASED; urgency=medium
+
+  * Move test exclusions from a patch to debian/tests/excludes/
+    - debian/rules, debian/tests/run-all: pass the appropriate exclusion flags
+      to the test runner
+
+ -- Antonio Terceiro <terceiro@debian.org>  Wed, 27 Dec 2017 18:18:01 -0200
+
 ruby2.5 (2.5.0-1) unstable; urgency=medium
 
   * New upstream version 2.5.0
