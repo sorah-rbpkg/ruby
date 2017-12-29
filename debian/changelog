@@ -1,3 +1,11 @@
+ruby2.5 (2.5.0-3) UNRELEASED; urgency=medium
+
+  * arm64: skip TestRubyOptimization#test_clear_unreachable_keyword_args. It
+    works just fine on a porter box, but consistently hangs on the arm64
+    buildd.
+
+ -- Antonio Terceiro <terceiro@debian.org>  Fri, 29 Dec 2017 20:28:31 -0300
+
 ruby2.5 (2.5.0-2) unstable; urgency=medium
 
   * Move test exclusions from a patch to debian/tests/excludes/
