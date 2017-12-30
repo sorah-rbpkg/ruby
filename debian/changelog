@@ -3,6 +3,8 @@ ruby2.5 (2.5.0-3) UNRELEASED; urgency=medium
   * arm64: skip TestRubyOptimization#test_clear_unreachable_keyword_args. It
     works just fine on a porter box, but consistently hangs on the arm64
     buildd.
+  * mipsel: skip some tests from TestNum2int; they fail on the buildd, but not
+    on the porterbox.
 
  -- Antonio Terceiro <terceiro@debian.org>  Fri, 29 Dec 2017 20:28:31 -0300
 
