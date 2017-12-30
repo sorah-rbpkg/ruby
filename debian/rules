@@ -50,7 +50,6 @@ override_dh_auto_configure:
 override_dh_auto_clean:
 	dh_auto_clean
 	rm -f tool/config.guess tool/config.sub
-	find test/excludes -type l -delete
 	$(RM) test/excludes/$(DEB_HOST_ARCH)
 	$(RM) -r .ext
 	$(RM) -r doc/capi
@@ -58,11 +57,12 @@ override_dh_auto_clean:
 override_dh_auto_build-arch:
 	dh_auto_build -- main V=1
 
+excludes =
+excludes += --excludes-dir=debian/tests/excludes/any/
+excludes += --excludes-dir=debian/tests/excludes/$(DEB_HOST_ARCH)/
 override_dh_auto_test-arch:
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
-	ln -sr debian/tests/excludes/any/*              test/excludes/
-	ln -sr debian/tests/excludes/$(DEB_HOST_ARCH)/* test/excludes/
-	$(MAKE) check V=1 RUBY_TESTOPTS=-v
+	$(MAKE) check V=1 RUBY_TESTOPTS=-v TESTS="$(excludes)"
 endif
 
 override_dh_auto_install-arch:

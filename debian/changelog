@@ -1,3 +1,9 @@
+ruby2.5 (2.5.0-4) unstable; urgency=medium
+
+  * debian/rules: pass --excludes-dir options to `make check` via $TESTS
+
+ -- Antonio Terceiro <terceiro@debian.org>  Sat, 30 Dec 2017 10:50:04 -0300
+
 ruby2.5 (2.5.0-3) unstable; urgency=medium
 
   * arm64: skip TestRubyOptimization#test_clear_unreachable_keyword_args. It
