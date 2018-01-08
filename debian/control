@@ -24,8 +24,8 @@ Build-Depends: bison,
                zlib1g-dev
 Standards-Version: 4.1.2
 Homepage: http://www.ruby-lang.org/
-Vcs-Git: https://anonscm.debian.org/git/collab-maint/ruby.git
-Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/ruby.git
+Vcs-Git: https://salsa.debian.org/ruby-team/ruby.git
+Vcs-Browser: https://salsa.debian.org/ruby-team/ruby
 
 Package: ruby2.5
 Multi-Arch: allowed
