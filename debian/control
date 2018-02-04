@@ -1,8 +1,9 @@
 Source: ruby2.5
 Section: ruby
 Priority: optional
-Maintainer: Antonio Terceiro <terceiro@debian.org>
-Uploaders: Christian Hofstaedtler <zeha@debian.org>
+Maintainer: Debian Ruby Team <pkg-ruby-extras-maintainers@lists.alioth.debian.org>
+Uploaders: Antonio Terceiro <terceiro@debian.org>,
+           Christian Hofstaedtler <zeha@debian.org>
 Build-Depends: bison,
                chrpath,
                coreutils (>= 7.5),
