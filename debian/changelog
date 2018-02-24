@@ -1,4 +1,4 @@
-ruby2.5 (2.5.0-5) UNRELEASED; urgency=medium
+ruby2.5 (2.5.0-5) unstable; urgency=medium
 
   * Change Maintainer: to Debian Ruby Team
   * debian/patches/0005-Fix-tests-to-cope-with-updates-in-tzdata.patch: fix
@@ -6,7 +6,7 @@ ruby2.5 (2.5.0-5) UNRELEASED; urgency=medium
   * debian/patches/0006-Rubygems-apply-upstream-patch-to-fix-multiple-vulner.patch:
     upgrade to Rubygems 2.7.6 to fix multiple vulnerabilities
 
- -- Antonio Terceiro <terceiro@debian.org>  Sun, 04 Feb 2018 09:12:59 -0200
+ -- Antonio Terceiro <terceiro@debian.org>  Sat, 24 Feb 2018 12:20:04 -0300
 
 ruby2.5 (2.5.0-4) unstable; urgency=medium
 
