@@ -3,6 +3,8 @@ ruby2.5 (2.5.0-5) UNRELEASED; urgency=medium
   * Change Maintainer: to Debian Ruby Team
   * debian/patches/0005-Fix-tests-to-cope-with-updates-in-tzdata.patch: fix
     test failures after updates in the Japan timezone data (Closes: #889046)
+  * debian/patches/0006-Rubygems-apply-upstream-patch-to-fix-multiple-vulner.patch:
+    upgrade to Rubygems 2.7.6 to fix multiple vulnerabilities
 
  -- Antonio Terceiro <terceiro@debian.org>  Sun, 04 Feb 2018 09:12:59 -0200
 

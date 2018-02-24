@@ -1,0 +1,2416 @@
+From: Antonio Terceiro <terceiro@debian.org>
+Date: Sat, 24 Feb 2018 12:15:36 -0300
+Subject: Rubygems: apply upstream patch to fix multiple vulnerabilities
+
+https://www.ruby-lang.org/en/news/2018/02/17/multiple-vulnerabilities-in-rubygems/
+https://blog.rubygems.org/2018/02/15/2.7.6-released.html
+---
+ lib/rubygems.rb                                    |  12 +-
+ lib/rubygems/commands/generate_index_command.rb    |   2 +-
+ lib/rubygems/commands/owner_command.rb             |   2 +-
+ lib/rubygems/commands/setup_command.rb             |  29 +++-
+ lib/rubygems/commands/unpack_command.rb            |   4 +-
+ lib/rubygems/config_file.rb                        |   2 +-
+ lib/rubygems/ext/builder.rb                        |   2 +-
+ lib/rubygems/indexer.rb                            |   9 +-
+ lib/rubygems/installer.rb                          |  13 +-
+ lib/rubygems/package.rb                            |  41 ++++-
+ lib/rubygems/package/file_source.rb                |   4 +-
+ lib/rubygems/package/old.rb                        |   2 +-
+ lib/rubygems/package/tar_header.rb                 |  23 +--
+ lib/rubygems/package/tar_writer.rb                 |   2 +
+ lib/rubygems/request_set/lockfile.rb               |   2 +-
+ lib/rubygems/security.rb                           |   2 +-
+ lib/rubygems/security/trust_dir.rb                 |   2 +-
+ lib/rubygems/server.rb                             |  14 +-
+ lib/rubygems/source.rb                             |   2 +-
+ lib/rubygems/specification.rb                      |  15 +-
+ lib/rubygems/stub_specification.rb                 |   2 +
+ lib/rubygems/test_case.rb                          |  10 +-
+ lib/rubygems/test_utilities.rb                     |   2 +-
+ lib/rubygems/util.rb                               |   3 +-
+ lib/rubygems/validator.rb                          |   6 +-
+ test/rubygems/test_gem.rb                          |  18 +--
+ test/rubygems/test_gem_commands_cleanup_command.rb |   2 +-
+ test/rubygems/test_gem_commands_install_command.rb |   1 +
+ test/rubygems/test_gem_commands_owner_command.rb   |  25 +++
+ test/rubygems/test_gem_commands_push_command.rb    |  10 +-
+ test/rubygems/test_gem_commands_setup_command.rb   |  64 +++++---
+ .../test_gem_commands_uninstall_command.rb         |   4 +-
+ test/rubygems/test_gem_dependency_installer.rb     |   2 +-
+ test/rubygems/test_gem_doctor.rb                   |   4 +-
+ test/rubygems/test_gem_ext_builder.rb              |  12 +-
+ test/rubygems/test_gem_gem_runner.rb               |  34 +---
+ test/rubygems/test_gem_gemcutter_utilities.rb      |   8 +-
+ test/rubygems/test_gem_indexer.rb                  |   3 +-
+ test/rubygems/test_gem_install_update_options.rb   |   2 +
+ test/rubygems/test_gem_installer.rb                |   6 +-
+ test/rubygems/test_gem_package.rb                  | 104 +++++++++++--
+ test/rubygems/test_gem_package_old.rb              |   2 +-
+ test/rubygems/test_gem_package_tar_header.rb       |  21 +++
+ test/rubygems/test_gem_rdoc.rb                     |   2 +
+ test/rubygems/test_gem_remote_fetcher.rb           |   2 +-
+ test/rubygems/test_gem_request_set.rb              |  14 +-
+ test/rubygems/test_gem_request_set_lockfile.rb     |   8 +-
+ .../test_gem_request_set_lockfile_parser.rb        |   2 +-
+ .../test_gem_request_set_lockfile_tokenizer.rb     |   2 +-
+ .../test_gem_resolver_git_specification.rb         |   2 +-
+ test/rubygems/test_gem_server.rb                   | 173 ++++++++++++++++++++-
+ test/rubygems/test_gem_source.rb                   |   6 +-
+ test/rubygems/test_gem_source_git.rb               |   2 +-
+ test/rubygems/test_gem_specification.rb            |  55 ++++---
+ test/rubygems/test_gem_stub_specification.rb       |  14 +-
+ test/rubygems/test_gem_util.rb                     |  25 +++
+ test/rubygems/test_gem_version.rb                  |  11 ++
+ test/rubygems/test_require.rb                      |  36 ++---
+ 58 files changed, 647 insertions(+), 236 deletions(-)
+
+diff --git a/lib/rubygems.rb b/lib/rubygems.rb
+index 0475ced..2762bfc 100644
+--- a/lib/rubygems.rb
++++ b/lib/rubygems.rb
+@@ -10,7 +10,7 @@
+ require 'thread'
+ 
+ module Gem
+-  VERSION = "2.7.3"
++  VERSION = "2.7.6"
+ end
+ 
+ # Must be first since it unloads the prelude from 1.9.2
+@@ -161,7 +161,7 @@ module Gem
+   # these are defined in Ruby 1.8.7, hence the need for this convoluted setup.
+ 
+   READ_BINARY_ERRORS = begin
+-    read_binary_errors = [Errno::EACCES, Errno::EROFS]
++    read_binary_errors = [Errno::EACCES, Errno::EROFS, Errno::ENOSYS]
+     read_binary_errors << Errno::ENOTSUP if Errno.const_defined?(:ENOTSUP)
+     read_binary_errors
+   end.freeze
+@@ -171,7 +171,7 @@ module Gem
+   # these are defined in Ruby 1.8.7.
+ 
+   WRITE_BINARY_ERRORS = begin
+-    write_binary_errors = []
++    write_binary_errors = [Errno::ENOSYS]
+     write_binary_errors << Errno::ENOTSUP if Errno.const_defined?(:ENOTSUP)
+     write_binary_errors
+   end.freeze
+@@ -871,19 +871,19 @@ def self.refresh
+   # Safely read a file in binary mode on all platforms.
+ 
+   def self.read_binary(path)
+-    open path, 'rb+' do |f|
++    File.open path, 'rb+' do |f|
+       f.flock(File::LOCK_EX)
+       f.read
+     end
+   rescue *READ_BINARY_ERRORS
+-    open path, 'rb' do |f|
++    File.open path, 'rb' do |f|
+       f.read
+     end
+   rescue Errno::ENOLCK # NFS
+     if Thread.main != Thread.current
+       raise
+     else
+-      open path, 'rb' do |f|
++      File.open path, 'rb' do |f|
+         f.read
+       end
+     end
+diff --git a/lib/rubygems/commands/generate_index_command.rb b/lib/rubygems/commands/generate_index_command.rb
+index 01f1f88..0b677b7 100644
+--- a/lib/rubygems/commands/generate_index_command.rb
++++ b/lib/rubygems/commands/generate_index_command.rb
+@@ -68,7 +68,7 @@ def execute
+ 
+     if not File.exist?(options[:directory]) or
+        not File.directory?(options[:directory]) then
+-      alert_error "unknown directory name #{directory}."
++      alert_error "unknown directory name #{options[:directory]}."
+       terminate_interaction 1
+     else
+       indexer = Gem::Indexer.new options.delete(:directory), options
+diff --git a/lib/rubygems/commands/owner_command.rb b/lib/rubygems/commands/owner_command.rb
+index 8e22716..637b5bd 100644
+--- a/lib/rubygems/commands/owner_command.rb
++++ b/lib/rubygems/commands/owner_command.rb
+@@ -64,7 +64,7 @@ def show_owners name
+     end
+ 
+     with_response response do |resp|
+-      owners = YAML.load resp.body
++      owners = Gem::SafeYAML.load resp.body
+ 
+       say "Owners for gem: #{name}"
+       owners.each do |owner|
+diff --git a/lib/rubygems/commands/setup_command.rb b/lib/rubygems/commands/setup_command.rb
+index 5d1414d..6966cde 100644
+--- a/lib/rubygems/commands/setup_command.rb
++++ b/lib/rubygems/commands/setup_command.rb
+@@ -350,7 +350,9 @@ def fake_spec.full_gem_path
+   def install_default_bundler_gem
+     return unless Gem::USE_BUNDLER_FOR_GEMDEPS
+ 
+-    mkdir_p Gem::Specification.default_specifications_dir
++    specs_dir = Gem::Specification.default_specifications_dir
++    File.join(options[:destdir], specs_dir) unless Gem.win_platform?
++    mkdir_p specs_dir
+ 
+     # Workaround for non-git environment.
+     gemspec = File.open('bundler/bundler.gemspec', 'rb'){|f| f.read.gsub(/`git ls-files -z`/, "''") }
+@@ -359,23 +361,36 @@ def install_default_bundler_gem
+     bundler_spec = Gem::Specification.load("bundler/bundler.gemspec")
+     bundler_spec.files = Dir.chdir("bundler") { Dir["{*.md,{lib,exe,man}/**/*}"] }
+     bundler_spec.executables -= %w[bundler bundle_ruby]
+-    Dir.entries(Gem::Specification.default_specifications_dir).
++
++    # Remove bundler-*.gemspec in default specification directory.
++    Dir.entries(specs_dir).
+       select {|gs| gs.start_with?("bundler-") }.
+-      each {|gs| File.delete(File.join(Gem::Specification.default_specifications_dir, gs)) }
++      each {|gs| File.delete(File.join(specs_dir, gs)) }
+ 
+-    default_spec_path = File.join(Gem::Specification.default_specifications_dir, "#{bundler_spec.full_name}.gemspec")
++    default_spec_path = File.join(specs_dir, "#{bundler_spec.full_name}.gemspec")
+     Gem.write_binary(default_spec_path, bundler_spec.to_ruby)
+ 
+     bundler_spec = Gem::Specification.load(default_spec_path)
+ 
++    # Remove gemspec that was same version of vendored bundler.
++    normal_gemspec = File.join(Gem.default_dir, "specifications", "bundler-#{bundler_spec.version}.gemspec")
++    if File.file? normal_gemspec
++      File.delete normal_gemspec
++    end
++
++    # Remove gem files that were same version of vendored bundler.
+     if File.directory? bundler_spec.gems_dir
+       Dir.entries(bundler_spec.gems_dir).
+-        select {|default_gem| File.basename(default_gem).match(/^bundler-#{Gem::Version::VERSION_PATTERN}$/) }.
++        select {|default_gem| File.basename(default_gem) == "bundler-#{bundler_spec.version}" }.
+         each {|default_gem| rm_r File.join(bundler_spec.gems_dir, default_gem) }
+     end
+ 
+-    mkdir_p bundler_spec.bin_dir
+-    bundler_spec.executables.each {|e| cp File.join("bundler", bundler_spec.bindir, e), File.join(bundler_spec.bin_dir, e) }
++    bundler_bin_dir = File.join(Gem.default_dir, 'gems', bundler_spec.full_name, bundler_spec.bindir)
++    File.join(options[:destdir], bundler_bin_dir) unless Gem.win_platform?
++    mkdir_p bundler_bin_dir
++    bundler_spec.executables.each do |e|
++      cp File.join("bundler", bundler_spec.bindir, e), File.join(bundler_bin_dir, e)
++    end
+ 
+     if Gem.win_platform?
+       require 'rubygems/installer'
+diff --git a/lib/rubygems/commands/unpack_command.rb b/lib/rubygems/commands/unpack_command.rb
+index eb7f550..b873f20 100644
+--- a/lib/rubygems/commands/unpack_command.rb
++++ b/lib/rubygems/commands/unpack_command.rb
+@@ -94,7 +94,7 @@ def execute
+ 
+         spec_file = File.basename spec.spec_file
+ 
+-        open spec_file, 'w' do |io|
++        File.open spec_file, 'w' do |io|
+           io.write metadata
+         end
+       else
+@@ -176,7 +176,7 @@ def get_metadata path, security_policy = nil
+ 
+     metadata = nil
+ 
+-    open path, Gem.binary_mode do |io|
++    File.open path, Gem.binary_mode do |io|
+       tar = Gem::Package::TarReader.new io
+       tar.each_entry do |entry|
+         case entry.full_name
+diff --git a/lib/rubygems/config_file.rb b/lib/rubygems/config_file.rb
+index a4efed0..c0d19db 100644
+--- a/lib/rubygems/config_file.rb
++++ b/lib/rubygems/config_file.rb
+@@ -458,7 +458,7 @@ def to_yaml # :nodoc:
+ 
+   # Writes out this config file, replacing its source.
+   def write
+-    open config_file_name, 'w' do |io|
++    File.open config_file_name, 'w' do |io|
+       io.write to_yaml
+     end
+   end
+diff --git a/lib/rubygems/ext/builder.rb b/lib/rubygems/ext/builder.rb
+index a1619c9..eb9db19 100644
+--- a/lib/rubygems/ext/builder.rb
++++ b/lib/rubygems/ext/builder.rb
+@@ -212,7 +212,7 @@ def write_gem_make_out output # :nodoc:
+ 
+     FileUtils.mkdir_p @spec.extension_dir
+ 
+-    open destination, 'wb' do |io| io.puts output end
++    File.open destination, 'wb' do |io| io.puts output end
+ 
+     destination
+   end
+diff --git a/lib/rubygems/indexer.rb b/lib/rubygems/indexer.rb
+index 871cc09..3ea9944 100644
+--- a/lib/rubygems/indexer.rb
++++ b/lib/rubygems/indexer.rb
+@@ -2,6 +2,7 @@
+ require 'rubygems'
+ require 'rubygems/package'
+ require 'time'
++require 'tmpdir'
+ 
+ begin
+   gem 'builder'
+@@ -64,7 +65,7 @@ def initialize(directory, options = {})
+     @build_modern = options[:build_modern]
+ 
+     @dest_directory = directory
+-    @directory = File.join(Dir.tmpdir, "gem_generate_index_#{$$}")
++    @directory = Dir.mktmpdir 'gem_generate_index'
+ 
+     marshal_name = "Marshal.#{Gem.marshal_version}"
+ 
+@@ -123,7 +124,7 @@ def build_marshal_gemspecs specs
+         marshal_name = File.join @quick_marshal_dir, spec_file_name
+ 
+         marshal_zipped = Gem.deflate Marshal.dump(spec)
+-        open marshal_name, 'wb' do |io| io.write marshal_zipped end
++        File.open marshal_name, 'wb' do |io| io.write marshal_zipped end
+ 
+         files << marshal_name
+ 
+@@ -261,7 +262,7 @@ def compress(filename, extension)
+ 
+     zipped = Gem.deflate data
+ 
+-    open "#{filename}.#{extension}", 'wb' do |io|
++    File.open "#{filename}.#{extension}", 'wb' do |io|
+       io.write zipped
+     end
+   end
+@@ -427,7 +428,7 @@ def update_specs_index(index, source, dest)
+ 
+     specs_index = compact_specs specs_index.uniq.sort
+ 
+-    open dest, 'wb' do |io|
++    File.open dest, 'wb' do |io|
+       Marshal.dump specs_index, io
+     end
+   end
+diff --git a/lib/rubygems/installer.rb b/lib/rubygems/installer.rb
+index 0cbca07..ee5fede 100644
+--- a/lib/rubygems/installer.rb
++++ b/lib/rubygems/installer.rb
+@@ -206,7 +206,7 @@ def check_executable_overwrite filename # :nodoc:
+     ruby_executable = false
+     existing = nil
+ 
+-    open generated_bin, 'rb' do |io|
++    File.open generated_bin, 'rb' do |io|
+       next unless io.gets =~ /^#!/ # shebang
+       io.gets # blankline
+ 
+@@ -427,7 +427,7 @@ def default_spec_file
+   # specifications directory.
+ 
+   def write_spec
+-    open spec_file, 'w' do |file|
++    File.open spec_file, 'w' do |file|
+       spec.installed_by_version = Gem.rubygems_version
+ 
+       file.puts spec.to_ruby_for_cache
+@@ -464,7 +464,12 @@ def generate_windows_script(filename, bindir)
+   def generate_bin # :nodoc:
+     return if spec.executables.nil? or spec.executables.empty?
+ 
+-    Dir.mkdir @bin_dir unless File.exist? @bin_dir
++    begin
++      Dir.mkdir @bin_dir
++    rescue SystemCallError
++      raise unless File.directory? @bin_dir
++    end
++
+     raise Gem::FilePermissionError.new(@bin_dir) unless File.writable? @bin_dir
+ 
+     spec.executables.each do |filename|
+@@ -863,7 +868,7 @@ def write_build_info_file
+ 
+     build_info_file = File.join build_info_dir, "#{spec.full_name}.info"
+ 
+-    open build_info_file, 'w' do |io|
++    File.open build_info_file, 'w' do |io|
+       @build_args.each do |arg|
+         io.puts arg
+       end
+diff --git a/lib/rubygems/package.rb b/lib/rubygems/package.rb
+index 77811ed..b924122 100644
+--- a/lib/rubygems/package.rb
++++ b/lib/rubygems/package.rb
+@@ -219,7 +219,7 @@ def add_files tar # :nodoc:
+       next unless stat.file?
+ 
+       tar.add_file_simple file, stat.mode, stat.size do |dst_io|
+-        open file, 'rb' do |src_io|
++        File.open file, 'rb' do |src_io|
+           dst_io.write src_io.read 16384 until src_io.eof?
+         end
+       end
+@@ -378,9 +378,9 @@ def extract_tar_gz io, destination_dir, pattern = "*" # :nodoc:
+             File.dirname destination
+           end
+ 
+-        FileUtils.mkdir_p mkdir, mkdir_options
++        mkdir_p_safe mkdir, mkdir_options, destination_dir, entry.full_name
+ 
+-        open destination, 'wb' do |out|
++        File.open destination, 'wb' do |out|
+           out.write entry.read
+           FileUtils.chmod entry.header.mode, destination
+         end if entry.file?
+@@ -416,20 +416,35 @@ def install_location filename, destination_dir # :nodoc:
+     raise Gem::Package::PathError.new(filename, destination_dir) if
+       filename.start_with? '/'
+ 
+-    destination_dir = File.realpath destination_dir if
+-      File.respond_to? :realpath
++    destination_dir = realpath destination_dir
+     destination_dir = File.expand_path destination_dir
+ 
+     destination = File.join destination_dir, filename
+     destination = File.expand_path destination
+ 
+     raise Gem::Package::PathError.new(destination, destination_dir) unless
+-      destination.start_with? destination_dir
++      destination.start_with? destination_dir + '/'
+ 
+     destination.untaint
+     destination
+   end
+ 
++  def mkdir_p_safe mkdir, mkdir_options, destination_dir, file_name
++    destination_dir = realpath File.expand_path(destination_dir)
++    parts = mkdir.split(File::SEPARATOR)
++    parts.reduce do |path, basename|
++      path = realpath path  unless path == ""
++      path = File.expand_path(path + File::SEPARATOR + basename)
++      lstat = File.lstat path rescue nil
++      if !lstat || !lstat.directory?
++        unless path.start_with? destination_dir and (FileUtils.mkdir path, mkdir_options rescue false)
++          raise Gem::Package::PathError.new(file_name, destination_dir)
++        end
++      end
++      path
++    end
++  end
++
+   ##
+   # Loads a Gem::Specification from the TarEntry +entry+
+ 
+@@ -603,6 +618,10 @@ def verify_files gem
+       raise Gem::Package::FormatError.new \
+               'package content (data.tar.gz) is missing', @gem
+     end
++
++    if duplicates = @files.group_by {|f| f }.select {|k,v| v.size > 1 }.map(&:first) and duplicates.any?
++      raise Gem::Security::Exception, "duplicate files in the package: (#{duplicates.map(&:inspect).join(', ')})"
++    end
+   end
+ 
+   ##
+@@ -616,6 +635,16 @@ def verify_gz entry # :nodoc:
+     raise Gem::Package::FormatError.new(e.message, entry.full_name)
+   end
+ 
++  if File.respond_to? :realpath
++    def realpath file
++      File.realpath file
++    end
++  else
++    def realpath file
++      file
++    end
++  end
++
+ end
+ 
+ require 'rubygems/package/digest_io'
+diff --git a/lib/rubygems/package/file_source.rb b/lib/rubygems/package/file_source.rb
+index 1a4dc4c..ecc3a68 100644
+--- a/lib/rubygems/package/file_source.rb
++++ b/lib/rubygems/package/file_source.rb
+@@ -23,11 +23,11 @@ def present?
+   end
+ 
+   def with_write_io &block
+-    open path, 'wb', &block
++    File.open path, 'wb', &block
+   end
+ 
+   def with_read_io &block
+-    open path, 'rb', &block
++    File.open path, 'rb', &block
+   end
+ 
+ end
+diff --git a/lib/rubygems/package/old.rb b/lib/rubygems/package/old.rb
+index f6e6e67..322d682 100644
+--- a/lib/rubygems/package/old.rb
++++ b/lib/rubygems/package/old.rb
+@@ -80,7 +80,7 @@ def extract_files destination_dir
+ 
+         FileUtils.mkdir_p File.dirname destination
+ 
+-        open destination, 'wb', entry['mode'] do |out|
++        File.open destination, 'wb', entry['mode'] do |out|
+           out.write file_data
+         end
+ 
+diff --git a/lib/rubygems/package/tar_header.rb b/lib/rubygems/package/tar_header.rb
+index c54bd14..d557357 100644
+--- a/lib/rubygems/package/tar_header.rb
++++ b/lib/rubygems/package/tar_header.rb
+@@ -104,25 +104,30 @@ def self.from(stream)
+     fields = header.unpack UNPACK_FORMAT
+ 
+     new :name     => fields.shift,
+-        :mode     => fields.shift.oct,
+-        :uid      => fields.shift.oct,
+-        :gid      => fields.shift.oct,
+-        :size     => fields.shift.oct,
+-        :mtime    => fields.shift.oct,
+-        :checksum => fields.shift.oct,
++        :mode     => strict_oct(fields.shift),
++        :uid      => strict_oct(fields.shift),
++        :gid      => strict_oct(fields.shift),
++        :size     => strict_oct(fields.shift),
++        :mtime    => strict_oct(fields.shift),
++        :checksum => strict_oct(fields.shift),
+         :typeflag => fields.shift,
+         :linkname => fields.shift,
+         :magic    => fields.shift,
+-        :version  => fields.shift.oct,
++        :version  => strict_oct(fields.shift),
+         :uname    => fields.shift,
+         :gname    => fields.shift,
+-        :devmajor => fields.shift.oct,
+-        :devminor => fields.shift.oct,
++        :devmajor => strict_oct(fields.shift),
++        :devminor => strict_oct(fields.shift),
+         :prefix   => fields.shift,
+ 
+         :empty => empty
+   end
+ 
++  def self.strict_oct(str)
++    return str.oct if str =~ /\A[0-7]*\z/
++    raise ArgumentError, "#{str.inspect} is not an octal string"
++  end
++
+   ##
+   # Creates a new TarHeader using +vals+
+ 
+diff --git a/lib/rubygems/package/tar_writer.rb b/lib/rubygems/package/tar_writer.rb
+index f68b8d4..390f785 100644
+--- a/lib/rubygems/package/tar_writer.rb
++++ b/lib/rubygems/package/tar_writer.rb
+@@ -196,6 +196,8 @@ def add_file_signed name, mode, signer
+       digest_name == signer.digest_name
+     end
+ 
++    raise "no #{signer.digest_name} in #{digests.values.compact}" unless signature_digest
++
+     if signer.key then
+       signature = signer.sign signature_digest.digest
+ 
+diff --git a/lib/rubygems/request_set/lockfile.rb b/lib/rubygems/request_set/lockfile.rb
+index 7f6eadb..76ad17d 100644
+--- a/lib/rubygems/request_set/lockfile.rb
++++ b/lib/rubygems/request_set/lockfile.rb
+@@ -223,7 +223,7 @@ def to_s
+   def write
+     content = to_s
+ 
+-    open "#{@gem_deps_file}.lock", 'w' do |io|
++    File.open "#{@gem_deps_file}.lock", 'w' do |io|
+       io.write content
+     end
+   end
+diff --git a/lib/rubygems/security.rb b/lib/rubygems/security.rb
+index 4690dd9..236577c 100644
+--- a/lib/rubygems/security.rb
++++ b/lib/rubygems/security.rb
+@@ -578,7 +578,7 @@ def self.trusted_certificates &block
+   def self.write pemmable, path, permissions = 0600, passphrase = nil, cipher = KEY_CIPHER
+     path = File.expand_path path
+ 
+-    open path, 'wb', permissions do |io|
++    File.open path, 'wb', permissions do |io|
+       if passphrase and cipher
+         io.write pemmable.to_pem cipher, passphrase
+       else
+diff --git a/lib/rubygems/security/trust_dir.rb b/lib/rubygems/security/trust_dir.rb
+index bf44975..849cf3c 100644
+--- a/lib/rubygems/security/trust_dir.rb
++++ b/lib/rubygems/security/trust_dir.rb
+@@ -93,7 +93,7 @@ def trust_cert certificate
+ 
+     destination = cert_path certificate
+ 
+-    open destination, 'wb', @permissions[:trusted_cert] do |io|
++    File.open destination, 'wb', @permissions[:trusted_cert] do |io|
+       io.write certificate.to_pem
+     end
+   end
+diff --git a/lib/rubygems/server.rb b/lib/rubygems/server.rb
+index 93b3af3..62c3dfe 100644
+--- a/lib/rubygems/server.rb
++++ b/lib/rubygems/server.rb
+@@ -623,6 +623,18 @@ def root(req, res)
+       executables = nil if executables.empty?
+       executables.last["is_last"] = true if executables
+ 
++      # Pre-process spec homepage for safety reasons
++      begin
++        homepage_uri = URI.parse(spec.homepage)
++        if [URI::HTTP, URI::HTTPS].member? homepage_uri.class
++          homepage_uri = spec.homepage
++        else
++          homepage_uri = "."
++        end
++      rescue URI::InvalidURIError
++        homepage_uri = "."
++      end
++
+       specs << {
+         "authors"             => spec.authors.sort.join(", "),
+         "date"                => spec.date.to_s,
+@@ -632,7 +644,7 @@ def root(req, res)
+         "only_one_executable" => (executables && executables.size == 1),
+         "full_name"           => spec.full_name,
+         "has_deps"            => !deps.empty?,
+-        "homepage"            => spec.homepage,
++        "homepage"            => homepage_uri,
+         "name"                => spec.name,
+         "rdoc_installed"      => Gem::RDoc.new(spec).rdoc_installed?,
+         "ri_installed"        => Gem::RDoc.new(spec).ri_installed?,
+diff --git a/lib/rubygems/source.rb b/lib/rubygems/source.rb
+index bd84c21..b28b850 100644
+--- a/lib/rubygems/source.rb
++++ b/lib/rubygems/source.rb
+@@ -160,7 +160,7 @@ def fetch_spec name_tuple
+     if update_cache? then
+       FileUtils.mkdir_p cache_dir
+ 
+-      open local_spec, 'wb' do |io|
++      File.open local_spec, 'wb' do |io|
+         io.write spec
+       end
+     end
+diff --git a/lib/rubygems/specification.rb b/lib/rubygems/specification.rb
+index 890c7c5..07fdd30 100644
+--- a/lib/rubygems/specification.rb
++++ b/lib/rubygems/specification.rb
+@@ -15,6 +15,7 @@
+ require 'rubygems/stub_specification'
+ require 'rubygems/util/list'
+ require 'stringio'
++require 'uri'
+ 
+ ##
+ # The Specification class contains the information for a Gem.  Typically
+@@ -2824,10 +2825,16 @@ def validate packaging = true
+       raise Gem::InvalidSpecificationException, "#{lazy} is not a summary"
+     end
+ 
+-    if homepage and not homepage.empty? and
+-       homepage !~ /\A[a-z][a-z\d+.-]*:/i then
+-      raise Gem::InvalidSpecificationException,
+-            "\"#{homepage}\" is not a URI"
++    # Make sure a homepage is valid HTTP/HTTPS URI
++    if homepage and not homepage.empty?
++      begin
++        homepage_uri = URI.parse(homepage)
++        unless [URI::HTTP, URI::HTTPS].member? homepage_uri.class
++          raise Gem::InvalidSpecificationException, "\"#{homepage}\" is not a valid HTTP URI"
++        end
++      rescue URI::InvalidURIError
++        raise Gem::InvalidSpecificationException, "\"#{homepage}\" is not a valid HTTP URI"
++      end
+     end
+ 
+     # Warnings
+diff --git a/lib/rubygems/stub_specification.rb b/lib/rubygems/stub_specification.rb
+index 8337375..ae2effb 100644
+--- a/lib/rubygems/stub_specification.rb
++++ b/lib/rubygems/stub_specification.rb
+@@ -113,6 +113,8 @@ def data
+     unless @data
+       begin
+         saved_lineno = $.
++
++        # TODO It should be use `File.open`, but bundler-1.16.1 example expects Kernel#open.
+         open loaded_from, OPEN_MODE do |file|
+           begin
+             file.readline # discard encoding line
+diff --git a/lib/rubygems/test_case.rb b/lib/rubygems/test_case.rb
+index f7f216e..39aa4fc 100644
+--- a/lib/rubygems/test_case.rb
++++ b/lib/rubygems/test_case.rb
+@@ -488,7 +488,7 @@ def git_gem name = 'a', version = 1
+ 
+     gemspec = "#{name}.gemspec"
+ 
+-    open File.join(directory, gemspec), 'w' do |io|
++    File.open File.join(directory, gemspec), 'w' do |io|
+       io.write git_spec.to_ruby
+     end
+ 
+@@ -592,7 +592,7 @@ def mu_pp(obj)
+   # Reads a Marshal file at +path+
+ 
+   def read_cache(path)
+-    open path.dup.untaint, 'rb' do |io|
++    File.open path.dup.untaint, 'rb' do |io|
+       Marshal.load io.read
+     end
+   end
+@@ -612,7 +612,7 @@ def write_file(path)
+     dir = File.dirname path
+     FileUtils.mkdir_p dir unless File.directory? dir
+ 
+-    open path, 'wb' do |io|
++    File.open path, 'wb' do |io|
+       yield io if block_given?
+     end
+ 
+@@ -727,7 +727,7 @@ def install_default_gems(*specs)
+     install_default_specs(*specs)
+ 
+     specs.each do |spec|
+-      open spec.loaded_from, 'w' do |io|
++      File.open spec.loaded_from, 'w' do |io|
+         io.write spec.to_ruby_for_cache
+       end
+     end
+@@ -1363,7 +1363,7 @@ def save_gemspec name = 'a', version = 1, directory = '.'
+       yield specification if block_given?
+     end
+ 
+-    open File.join(directory, "#{name}.gemspec"), 'w' do |io|
++    File.open File.join(directory, "#{name}.gemspec"), 'w' do |io|
+       io.write vendor_spec.to_ruby
+     end
+ 
+diff --git a/lib/rubygems/test_utilities.rb b/lib/rubygems/test_utilities.rb
+index 686916e..83c9d2d 100644
+--- a/lib/rubygems/test_utilities.rb
++++ b/lib/rubygems/test_utilities.rb
+@@ -346,7 +346,7 @@ def spec name, version, dependencies = nil, &block
+   end
+ 
+   def write_spec spec # :nodoc:
+-    open spec.spec_file, 'w' do |io|
++    File.open spec.spec_file, 'w' do |io|
+       io.write spec.to_ruby_for_cache
+     end
+   end
+diff --git a/lib/rubygems/util.rb b/lib/rubygems/util.rb
+index 2de45c9..6c75910 100644
+--- a/lib/rubygems/util.rb
++++ b/lib/rubygems/util.rb
+@@ -114,7 +114,8 @@ def self.traverse_parents directory, &block
+ 
+     here = File.expand_path directory
+     loop do
+-      Dir.chdir here, &block
++      Dir.chdir here, &block rescue Errno::EACCES
++
+       new_here = File.expand_path('..', here)
+       return if new_here == here # toplevel
+       here = new_here
+diff --git a/lib/rubygems/validator.rb b/lib/rubygems/validator.rb
+index 8344822..6842e4f 100644
+--- a/lib/rubygems/validator.rb
++++ b/lib/rubygems/validator.rb
+@@ -34,7 +34,7 @@ def verify_gem(gem_data)
+   # gem_path:: [String] Path to gem file
+ 
+   def verify_gem_file(gem_path)
+-    open gem_path, Gem.binary_mode do |file|
++    File.open gem_path, Gem.binary_mode do |file|
+       gem_data = file.read
+       verify_gem gem_data
+     end
+@@ -109,7 +109,7 @@ def alien(gems=[])
+ 
+         good, gone, unreadable = nil, nil, nil, nil
+ 
+-        open gem_path, Gem.binary_mode do |file|
++        File.open gem_path, Gem.binary_mode do |file|
+           package = Gem::Package.new gem_path
+ 
+           good, gone = package.contents.partition { |file_name|
+@@ -134,7 +134,7 @@ def alien(gems=[])
+ 
+               source = File.join gem_directory, entry['path']
+ 
+-              open source, Gem.binary_mode do |f|
++              File.open source, Gem.binary_mode do |f|
+                 unless f.read == data then
+                   errors[gem_name][entry['path']] = "Modified from original"
+                 end
+diff --git a/test/rubygems/test_gem.rb b/test/rubygems/test_gem.rb
+index 8a11cc2..183771f 100644
+--- a/test/rubygems/test_gem.rb
++++ b/test/rubygems/test_gem.rb
+@@ -7,7 +7,7 @@
+ require 'tmpdir'
+ 
+ # TODO: push this up to test_case.rb once battle tested
+-$SAFE=1
++
+ $LOAD_PATH.map! do |path|
+   path.dup.untaint
+ end
+@@ -463,7 +463,7 @@ def test_self_ensure_gem_directories_missing_parents
+     assert File.directory?(util_cache_dir)
+   end
+ 
+-  unless win_platform? then # only for FS that support write protection
++  unless win_platform? || Process.uid.zero? then # only for FS that support write protection
+     def test_self_ensure_gem_directories_write_protected
+       gemdir = File.join @tempdir, "egd"
+       FileUtils.rm_r gemdir rescue nil
+@@ -775,7 +775,7 @@ def test_self_prefix_sitelibdir
+   end
+ 
+   def test_self_read_binary
+-    open 'test', 'w' do |io|
++    File.open 'test', 'w' do |io|
+       io.write "\xCF\x80"
+     end
+ 
+@@ -1642,7 +1642,7 @@ def test_use_gemdeps
+     spec = Gem::Specification.find { |s| s == spec }
+     refute spec.activated?
+ 
+-    open gem_deps_file, 'w' do |io|
++    File.open gem_deps_file, 'w' do |io|
+       io.write 'gem "a"'
+     end
+ 
+@@ -1661,7 +1661,7 @@ def test_use_gemdeps_ENV
+ 
+     refute spec.activated?
+ 
+-    open 'gem.deps.rb', 'w' do |io|
++    File.open 'gem.deps.rb', 'w' do |io|
+       io.write 'gem "a"'
+     end
+ 
+@@ -1705,7 +1705,7 @@ def test_use_gemdeps_automatic
+ 
+     refute spec.activated?
+ 
+-    open 'Gemfile', 'w' do |io|
++    File.open 'Gemfile', 'w' do |io|
+       io.write 'gem "a"'
+     end
+ 
+@@ -1734,7 +1734,7 @@ def test_use_gemdeps_disabled
+ 
+     refute spec.activated?
+ 
+-    open 'gem.deps.rb', 'w' do |io|
++    File.open 'gem.deps.rb', 'w' do |io|
+       io.write 'gem "a"'
+     end
+ 
+@@ -1749,7 +1749,7 @@ def test_use_gemdeps_missing_gem
+     skip 'Insecure operation - read' if RUBY_VERSION <= "1.8.7"
+     rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], 'x'
+ 
+-    open 'x', 'w' do |io|
++    File.open 'x', 'w' do |io|
+       io.write 'gem "a"'
+     end
+ 
+@@ -1790,7 +1790,7 @@ def test_use_gemdeps_specific
+     spec = Gem::Specification.find { |s| s == spec }
+     refute spec.activated?
+ 
+-    open 'x', 'w' do |io|
++    File.open 'x', 'w' do |io|
+       io.write 'gem "a"'
+     end
+ 
+diff --git a/test/rubygems/test_gem_commands_cleanup_command.rb b/test/rubygems/test_gem_commands_cleanup_command.rb
+index c55e195..60d208f 100644
+--- a/test/rubygems/test_gem_commands_cleanup_command.rb
++++ b/test/rubygems/test_gem_commands_cleanup_command.rb
+@@ -158,7 +158,7 @@ def test_execute_all_user_no_sudo
+     assert_path_exists @a_1_1.gem_dir
+   ensure
+     FileUtils.chmod 0755, @gemhome
+-  end unless win_platform?
++  end unless win_platform? || Process.uid.zero?
+ 
+   def test_execute_dry_run
+     @cmd.options[:args] = %w[a]
+diff --git a/test/rubygems/test_gem_commands_install_command.rb b/test/rubygems/test_gem_commands_install_command.rb
+index dd86a85..822d40e 100644
+--- a/test/rubygems/test_gem_commands_install_command.rb
++++ b/test/rubygems/test_gem_commands_install_command.rb
+@@ -131,6 +131,7 @@ def test_execute_local_transitive_prerelease
+ 
+   def test_execute_no_user_install
+     skip 'skipped on MS Windows (chmod has no effect)' if win_platform?
++    skip 'skipped in root privilege' if Process.uid.zero?
+ 
+     specs = spec_fetcher do |fetcher|
+       fetcher.gem 'a', 2
+diff --git a/test/rubygems/test_gem_commands_owner_command.rb b/test/rubygems/test_gem_commands_owner_command.rb
+index 44652c1..53cac4c 100644
+--- a/test/rubygems/test_gem_commands_owner_command.rb
++++ b/test/rubygems/test_gem_commands_owner_command.rb
+@@ -43,6 +43,31 @@ def test_show_owners
+     assert_match %r{- 4}, @ui.output
+   end
+ 
++  def test_show_owners_dont_load_objects
++    skip "testing a psych-only API" unless defined?(::Psych::DisallowedClass)
++
++    response = <<EOF
++---
++- email: !ruby/object:Object {}
++  id: 1
++  handle: user1
++- email: user2@example.com
++- id: 3
++  handle: user3
++- id: 4
++EOF
++
++    @fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners.yaml"] = [response, 200, 'OK']
++
++    assert_raises Psych::DisallowedClass do
++      use_ui @ui do
++        @cmd.show_owners("freewill")
++      end
++    end
++
++  end
++
++
+   def test_show_owners_setting_up_host_through_env_var
+     response = "- email: user1@example.com\n"
+     host = "http://rubygems.example"
+diff --git a/test/rubygems/test_gem_commands_push_command.rb b/test/rubygems/test_gem_commands_push_command.rb
+index b888a74..1c5dbfe 100644
+--- a/test/rubygems/test_gem_commands_push_command.rb
++++ b/test/rubygems/test_gem_commands_push_command.rb
+@@ -132,7 +132,7 @@ def test_sending_gem_to_metadata_host
+     }
+ 
+     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
+-    open Gem.configuration.credentials_path, 'w' do |f|
++    File.open Gem.configuration.credentials_path, 'w' do |f|
+       f.write keys.to_yaml
+     end
+     Gem.configuration.load_api_keys
+@@ -166,7 +166,7 @@ def test_sending_gem_to_allowed_push_host
+     }
+ 
+     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
+-    open Gem.configuration.credentials_path, 'w' do |f|
++    File.open Gem.configuration.credentials_path, 'w' do |f|
+       f.write keys.to_yaml
+     end
+     Gem.configuration.load_api_keys
+@@ -193,7 +193,7 @@ def test_sending_gem_to_allowed_push_host_with_basic_credentials
+     }
+ 
+     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
+-    open Gem.configuration.credentials_path, 'w' do |f|
++    File.open Gem.configuration.credentials_path, 'w' do |f|
+       f.write keys.to_yaml
+     end
+     Gem.configuration.load_api_keys
+@@ -235,7 +235,7 @@ def test_sending_gem_to_disallowed_push_host
+     }
+ 
+     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
+-    open Gem.configuration.credentials_path, 'w' do |f|
++    File.open Gem.configuration.credentials_path, 'w' do |f|
+       f.write keys.to_yaml
+     end
+     Gem.configuration.load_api_keys
+@@ -266,7 +266,7 @@ def test_sending_gem_defaulting_to_allowed_push_host
+     }
+ 
+     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
+-    open Gem.configuration.credentials_path, 'w' do |f|
++    File.open Gem.configuration.credentials_path, 'w' do |f|
+       f.write keys.to_yaml
+     end
+     Gem.configuration.load_api_keys
+diff --git a/test/rubygems/test_gem_commands_setup_command.rb b/test/rubygems/test_gem_commands_setup_command.rb
+index 2136edb..f2541a2 100644
+--- a/test/rubygems/test_gem_commands_setup_command.rb
++++ b/test/rubygems/test_gem_commands_setup_command.rb
+@@ -6,6 +6,13 @@
+ 
+ class TestGemCommandsSetupCommand < Gem::TestCase
+ 
++  bundler_gemspec = File.expand_path("../../../bundler/lib/bundler/version.rb", __FILE__)
++  if File.exist?(bundler_gemspec)
++    BUNDLER_VERS = File.read(bundler_gemspec).match(/VERSION = "(#{Gem::Version::VERSION_PATTERN})"/)[1]
++  else
++    BUNDLER_VERS = "1.16.1"
++  end
++
+   def setup
+     super
+ 
+@@ -16,27 +23,27 @@ def setup
+     FileUtils.mkdir_p 'bin'
+     FileUtils.mkdir_p 'lib/rubygems/ssl_certs/rubygems.org'
+ 
+-    open 'bin/gem',                   'w' do |io| io.puts '# gem'          end
+-    open 'lib/rubygems.rb',           'w' do |io| io.puts '# rubygems.rb'  end
+-    open 'lib/rubygems/test_case.rb', 'w' do |io| io.puts '# test_case.rb' end
+-    open 'lib/rubygems/ssl_certs/rubygems.org/foo.pem', 'w' do |io| io.puts 'PEM'       end
++    File.open 'bin/gem',                   'w' do |io| io.puts '# gem'          end
++    File.open 'lib/rubygems.rb',           'w' do |io| io.puts '# rubygems.rb'  end
++    File.open 'lib/rubygems/test_case.rb', 'w' do |io| io.puts '# test_case.rb' end
++    File.open 'lib/rubygems/ssl_certs/rubygems.org/foo.pem', 'w' do |io| io.puts 'PEM'       end
+ 
+     FileUtils.mkdir_p 'bundler/exe'
+     FileUtils.mkdir_p 'bundler/lib/bundler'
+ 
+-    open 'bundler/exe/bundle',        'w' do |io| io.puts '# bundle'       end
+-    open 'bundler/lib/bundler.rb',    'w' do |io| io.puts '# bundler.rb'   end
+-    open 'bundler/lib/bundler/b.rb',  'w' do |io| io.puts '# b.rb'         end
++    File.open 'bundler/exe/bundle',        'w' do |io| io.puts '# bundle'       end
++    File.open 'bundler/lib/bundler.rb',    'w' do |io| io.puts '# bundler.rb'   end
++    File.open 'bundler/lib/bundler/b.rb',  'w' do |io| io.puts '# b.rb'         end
+ 
+     FileUtils.mkdir_p 'default/gems'
+ 
+     gemspec = Gem::Specification.new
+     gemspec.name = "bundler"
+-    gemspec.version = "1.16.0"
++    gemspec.version = BUNDLER_VERS
+     gemspec.bindir = "exe"
+     gemspec.executables = ["bundle"]
+ 
+-    open 'bundler/bundler.gemspec',   'w' do |io|
++    File.open 'bundler/bundler.gemspec',   'w' do |io|
+       io.puts gemspec.to_ruby
+     end
+ 
+@@ -46,6 +53,11 @@ def setup
+     end
+ 
+     FileUtils.mkdir_p File.join(Gem.default_dir, "specifications")
++
++    open(File.join(Gem.default_dir, "specifications", "bundler-#{BUNDLER_VERS}.gemspec"), 'w') do |io|
++      io.puts "# bundler-#{BUNDLER_VERS}"
++    end
++
+     open(File.join(Gem.default_dir, "specifications", "bundler-audit-1.0.0.gemspec"), 'w') do |io|
+       io.puts '# bundler-audit'
+     end
+@@ -134,13 +146,25 @@ def test_install_default_bundler_gem
+ 
+     default_dir = Gem::Specification.default_specifications_dir
+ 
++    # expect to remove other versions of bundler gemspecs on default specification directory.
+     refute_path_exists File.join(default_dir, "bundler-1.15.4.gemspec")
+-    refute_path_exists 'default/gems/bundler-1.15.4'
+-
+-    assert_path_exists File.join(default_dir, "bundler-1.16.0.gemspec")
+-    assert_path_exists 'default/gems/bundler-1.16.0'
++    assert_path_exists File.join(default_dir, "bundler-#{BUNDLER_VERS}.gemspec")
+ 
++    # expect to not remove bundler-* gemspecs.
+     assert_path_exists File.join(Gem.default_dir, "specifications", "bundler-audit-1.0.0.gemspec")
++
++    # expect to remove normal gem that was same version. because it's promoted default gems.
++    refute_path_exists File.join(Gem.default_dir, "specifications", "bundler-#{BUNDLER_VERS}.gemspec")
++
++    # expect to install default gems. It location was `site_ruby` directory on real world.
++    assert_path_exists "default/gems/bundler-#{BUNDLER_VERS}"
++
++    # expect to not remove other versions of bundler on `site_ruby`
++    assert_path_exists 'default/gems/bundler-1.15.4'
++
++    # TODO: We need to assert to remove same version of bundler on gem_dir directory(It's not site_ruby dir)
++
++    # expect to not remove bundler-* direcotyr.
+     assert_path_exists 'default/gems/bundler-audit-1.0.0'
+   end if Gem::USE_BUNDLER_FOR_GEMDEPS
+ 
+@@ -162,14 +186,14 @@ def test_remove_old_lib_files
+     FileUtils.mkdir_p lib_rubygems_defaults
+     FileUtils.mkdir_p lib_bundler
+ 
+-    open securerandom_rb,    'w' do |io| io.puts '# securerandom.rb'     end
++    File.open securerandom_rb,    'w' do |io| io.puts '# securerandom.rb'     end
+ 
+-    open old_builder_rb,     'w' do |io| io.puts '# builder.rb'          end
+-    open old_format_rb,      'w' do |io| io.puts '# format.rb'           end
+-    open old_bundler_c_rb,   'w' do |io| io.puts '# c.rb'                end
++    File.open old_builder_rb,     'w' do |io| io.puts '# builder.rb'          end
++    File.open old_format_rb,      'w' do |io| io.puts '# format.rb'           end
++    File.open old_bundler_c_rb,   'w' do |io| io.puts '# c.rb'                end
+ 
+-    open engine_defaults_rb, 'w' do |io| io.puts '# jruby.rb'            end
+-    open os_defaults_rb,     'w' do |io| io.puts '# operating_system.rb' end
++    File.open engine_defaults_rb, 'w' do |io| io.puts '# jruby.rb'            end
++    File.open os_defaults_rb,     'w' do |io| io.puts '# operating_system.rb' end
+ 
+     @cmd.remove_old_lib_files lib
+ 
+@@ -191,7 +215,7 @@ def test_show_release_notes
+ 
+     @cmd.options[:previous_version] = Gem::Version.new '2.0.2'
+ 
+-    open 'History.txt', 'w' do |io|
++    File.open 'History.txt', 'w' do |io|
+       io.puts <<-History_txt
+ # coding: UTF-8
+ 
+diff --git a/test/rubygems/test_gem_commands_uninstall_command.rb b/test/rubygems/test_gem_commands_uninstall_command.rb
+index 2097ca7..2fdff70 100644
+--- a/test/rubygems/test_gem_commands_uninstall_command.rb
++++ b/test/rubygems/test_gem_commands_uninstall_command.rb
+@@ -92,7 +92,7 @@ def test_execute_removes_executable
+     # Evil hack to prevent false removal success
+     FileUtils.rm_f @executable
+ 
+-    open @executable, "wb+" do |f| f.puts "binary" end
++    File.open @executable, "wb+" do |f| f.puts "binary" end
+ 
+     @cmd.options[:executables] = true
+     @cmd.options[:args] = [@spec.name]
+@@ -204,7 +204,7 @@ def test_execute_with_force_ignores_dependencies
+     end
+ 
+     assert Gem::Specification.find_all_by_name('dep_x').length > 0
+-    assert Gem::Specification.find_all_by_name('x').length == 0
++    assert Gem::Specification.find_all_by_name('x').length.zero?
+   end
+ 
+   def test_execute_all
+diff --git a/test/rubygems/test_gem_dependency_installer.rb b/test/rubygems/test_gem_dependency_installer.rb
+index e55cc75..3d76291 100644
+--- a/test/rubygems/test_gem_dependency_installer.rb
++++ b/test/rubygems/test_gem_dependency_installer.rb
+@@ -424,7 +424,7 @@ def test_install_dependency_existing_extension
+     extconf_rb = File.join @gemhome, 'gems', 'e-1', 'extconf.rb'
+     FileUtils.mkdir_p File.dirname extconf_rb
+ 
+-    open extconf_rb, 'w' do |io|
++    File.open extconf_rb, 'w' do |io|
+       io.write <<-EXTCONF_RB
+         require 'mkmf'
+         create_makefile 'e'
+diff --git a/test/rubygems/test_gem_doctor.rb b/test/rubygems/test_gem_doctor.rb
+index 39b8a11..8db65d7 100644
+--- a/test/rubygems/test_gem_doctor.rb
++++ b/test/rubygems/test_gem_doctor.rb
+@@ -24,7 +24,7 @@ def test_doctor
+ 
+     FileUtils.rm b.spec_file
+ 
+-    open c.spec_file, 'w' do |io|
++    File.open c.spec_file, 'w' do |io|
+       io.write 'this will raise an exception when evaluated.'
+     end
+ 
+@@ -77,7 +77,7 @@ def test_doctor_dry_run
+ 
+     FileUtils.rm b.spec_file
+ 
+-    open c.spec_file, 'w' do |io|
++    File.open c.spec_file, 'w' do |io|
+       io.write 'this will raise an exception when evaluated.'
+     end
+ 
+diff --git a/test/rubygems/test_gem_ext_builder.rb b/test/rubygems/test_gem_ext_builder.rb
+index d142ef2..3dabd3e 100644
+--- a/test/rubygems/test_gem_ext_builder.rb
++++ b/test/rubygems/test_gem_ext_builder.rb
+@@ -32,7 +32,7 @@ def test_class_make
+     results = []
+ 
+     Dir.chdir @ext do
+-      open 'Makefile', 'w' do |io|
++      File.open 'Makefile', 'w' do |io|
+         io.puts <<-MAKEFILE
+ all:
+ \t@#{Gem.ruby} -e "puts %Q{all: \#{ENV['DESTDIR']}}"
+@@ -72,7 +72,7 @@ def test_class_make_no_clean
+     results = []
+ 
+     Dir.chdir @ext do
+-      open 'Makefile', 'w' do |io|
++      File.open 'Makefile', 'w' do |io|
+         io.puts <<-MAKEFILE
+ all:
+ \t@#{Gem.ruby} -e "puts %Q{all: \#{ENV['DESTDIR']}}"
+@@ -107,7 +107,7 @@ def test_build_extensions
+ 
+     extconf_rb = File.join ext_dir, 'extconf.rb'
+ 
+-    open extconf_rb, 'w' do |f|
++    File.open extconf_rb, 'w' do |f|
+       f.write <<-'RUBY'
+         require 'mkmf'
+ 
+@@ -168,7 +168,7 @@ def Gem.install_extension_in_lib
+ 
+     extconf_rb = File.join ext_dir, 'extconf.rb'
+ 
+-    open extconf_rb, 'w' do |f|
++    File.open extconf_rb, 'w' do |f|
+       f.write <<-'RUBY'
+         require 'mkmf'
+ 
+@@ -290,7 +290,7 @@ def test_build_extensions_with_build_args
+ 
+     FileUtils.mkdir_p @spec.gem_dir
+ 
+-    open File.join(@spec.gem_dir, "extconf.rb"), "w" do |f|
++    File.open File.join(@spec.gem_dir, "extconf.rb"), "w" do |f|
+       f.write <<-'RUBY'
+         puts "IN EXTCONF"
+         extconf_args = File.join File.dirname(__FILE__), 'extconf_args'
+@@ -323,7 +323,7 @@ def test_initialize
+ 
+     build_info_file = File.join build_info_dir, "#{@spec.full_name}.info"
+ 
+-    open build_info_file, 'w' do |io|
++    File.open build_info_file, 'w' do |io|
+       io.puts '--with-foo-dir=/nonexistent'
+     end
+ 
+diff --git a/test/rubygems/test_gem_gem_runner.rb b/test/rubygems/test_gem_gem_runner.rb
+index 0a1faa4..d68ac4d 100644
+--- a/test/rubygems/test_gem_gem_runner.rb
++++ b/test/rubygems/test_gem_gem_runner.rb
+@@ -1,38 +1,6 @@
+ # frozen_string_literal: true
+ require 'rubygems/test_case'
+-begin
+-  gem_home_files = lambda{
+-    if Dir.exist?(ENV["GEM_HOME"])
+-      require "find"
+-      ary = Find.find(ENV["GEM_HOME"]).to_a
+-    else
+-      []
+-    end
+-  }
+-  prev_gem_home = ENV["GEM_HOME"]
+-  prev_gem_home_files = gem_home_files.call
+-  prev_threads = Thread.list.map{|e| e.inspect}
+-
+-  require 'rubygems/gem_runner'
+-ensure
+-  if $!
+-    msg = <<eom
+-***************
+-PREV
+-  GEM_HOME: #{prev_gem_home}
+-  Files in GEM_HOME: #{prev_gem_home_files.inspect}
+-  Threads: #{prev_threads.inspect}
+-Current:
+-  GEM_HOME: #{ENV["GEM_HOME"]}
+-  Files in GEM_HOME: #{gem_home_files.call}
+-  Threads: #{Thread.list.map{|e| e.inspect}.inspect}
+-Exception: #{$!.message}
+-eom
+-    p $!.class
+-    p $!.message.frozen?
+-    raise $!.class, msg, $!.backtrace
+-  end
+-end
++require 'rubygems/gem_runner'
+ 
+ class TestGemGemRunner < Gem::TestCase
+ 
+diff --git a/test/rubygems/test_gem_gemcutter_utilities.rb b/test/rubygems/test_gem_gemcutter_utilities.rb
+index c3f9a7e..286d59a 100644
+--- a/test/rubygems/test_gem_gemcutter_utilities.rb
++++ b/test/rubygems/test_gem_gemcutter_utilities.rb
+@@ -31,7 +31,7 @@ def test_alternate_key_alternate_host
+ 
+     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
+ 
+-    open Gem.configuration.credentials_path, 'w' do |f|
++    File.open Gem.configuration.credentials_path, 'w' do |f|
+       f.write keys.to_yaml
+     end
+ 
+@@ -46,7 +46,7 @@ def test_api_key
+     keys = { :rubygems_api_key => 'KEY' }
+     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
+ 
+-    open Gem.configuration.credentials_path, 'w' do |f|
++    File.open Gem.configuration.credentials_path, 'w' do |f|
+       f.write keys.to_yaml
+     end
+ 
+@@ -59,7 +59,7 @@ def test_api_key_override
+     keys = { :rubygems_api_key => 'KEY', :other => 'OTHER' }
+     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
+ 
+-    open Gem.configuration.credentials_path, 'w' do |f|
++    File.open Gem.configuration.credentials_path, 'w' do |f|
+       f.write keys.to_yaml
+     end
+ 
+@@ -163,7 +163,7 @@ def test_sign_in_with_other_credentials_doesnt_overwrite_other_keys
+     other_api_key = 'f46dbb18bb6a9c97cdc61b5b85c186a17403cdcbf'
+ 
+     FileUtils.mkdir_p File.dirname(Gem.configuration.credentials_path)
+-    open Gem.configuration.credentials_path, 'w' do |f|
++    File.open Gem.configuration.credentials_path, 'w' do |f|
+       f.write Hash[:other_api_key, other_api_key].to_yaml
+     end
+     util_sign_in [api_key, 200, 'OK']
+diff --git a/test/rubygems/test_gem_indexer.rb b/test/rubygems/test_gem_indexer.rb
+index a4a966e..5a9075e 100644
+--- a/test/rubygems/test_gem_indexer.rb
++++ b/test/rubygems/test_gem_indexer.rb
+@@ -39,8 +39,7 @@ def setup
+ 
+   def test_initialize
+     assert_equal @tempdir, @indexer.dest_directory
+-    assert_equal File.join(Dir.tmpdir, "gem_generate_index_#{$$}"),
+-                 @indexer.directory
++    assert_match %r{#{Dir.mktmpdir('gem_generate_index').match(/.*-/)}}, @indexer.directory
+ 
+     indexer = Gem::Indexer.new @tempdir
+     assert indexer.build_modern
+diff --git a/test/rubygems/test_gem_install_update_options.rb b/test/rubygems/test_gem_install_update_options.rb
+index e2d5463..371e408 100644
+--- a/test/rubygems/test_gem_install_update_options.rb
++++ b/test/rubygems/test_gem_install_update_options.rb
+@@ -141,6 +141,8 @@ def test_user_install_enabled
+   def test_user_install_disabled_read_only
+     if win_platform?
+       skip('test_user_install_disabled_read_only test skipped on MS Windows')
++    elsif Process.uid.zero?
++      skip('test_user_install_disabled_read_only test skipped in root privilege')
+     else
+       @cmd.handle_options %w[--no-user-install]
+ 
+diff --git a/test/rubygems/test_gem_installer.rb b/test/rubygems/test_gem_installer.rb
+index 39095c7..93b0482 100644
+--- a/test/rubygems/test_gem_installer.rb
++++ b/test/rubygems/test_gem_installer.rb
+@@ -140,7 +140,7 @@ def test_check_executable_overwrite_format_executable
+       s.require_path = 'lib'
+     end
+ 
+-    open File.join(util_inst_bindir, 'executable'), 'w' do |io|
++    File.open File.join(util_inst_bindir, 'executable'), 'w' do |io|
+      io.write <<-EXEC
+ #!/usr/local/bin/ruby
+ #
+@@ -437,6 +437,8 @@ def test_generate_bin_script_no_perms
+ 
+     if win_platform?
+       skip('test_generate_bin_script_no_perms skipped on MS Windows')
++    elsif Process.uid.zero?
++      skip('test_generate_bin_script_no_perms skipped in root privilege')
+     else
+       FileUtils.chmod 0000, util_inst_bindir
+ 
+@@ -529,6 +531,8 @@ def test_generate_bin_symlink_no_perms
+ 
+     if win_platform?
+       skip('test_generate_bin_symlink_no_perms skipped on MS Windows')
++    elsif Process.uid.zero?
++      skip('test_user_install_disabled_read_only test skipped in root privilege')
+     else
+       FileUtils.chmod 0000, util_inst_bindir
+ 
+diff --git a/test/rubygems/test_gem_package.rb b/test/rubygems/test_gem_package.rb
+index cec1981..d1664cf 100644
+--- a/test/rubygems/test_gem_package.rb
++++ b/test/rubygems/test_gem_package.rb
+@@ -24,7 +24,7 @@ def setup
+   end
+ 
+   def test_class_new_old_format
+-    open 'old_format.gem', 'wb' do |io|
++    File.open 'old_format.gem', 'wb' do |io|
+       io.write SIMPLE_GEM
+     end
+ 
+@@ -45,7 +45,7 @@ def test_add_checksums
+ 
+     FileUtils.mkdir 'lib'
+ 
+-    open 'lib/code.rb', 'w' do |io|
++    File.open 'lib/code.rb', 'w' do |io|
+       io.write '# lib/code.rb'
+     end
+ 
+@@ -110,8 +110,8 @@ def test_add_files
+ 
+     FileUtils.mkdir_p 'lib/empty'
+ 
+-    open 'lib/code.rb',  'w' do |io| io.write '# lib/code.rb'  end
+-    open 'lib/extra.rb', 'w' do |io| io.write '# lib/extra.rb' end
++    File.open 'lib/code.rb',  'w' do |io| io.write '# lib/code.rb'  end
++    File.open 'lib/extra.rb', 'w' do |io| io.write '# lib/extra.rb' end
+ 
+     package = Gem::Package.new 'bogus.gem'
+     package.spec = spec
+@@ -140,7 +140,7 @@ def test_add_files_symlink
+     spec.files = %w[lib/code.rb lib/code_sym.rb]
+ 
+     FileUtils.mkdir_p 'lib'
+-    open 'lib/code.rb',  'w' do |io| io.write '# lib/code.rb'  end
++    File.open 'lib/code.rb',  'w' do |io| io.write '# lib/code.rb'  end
+ 
+     # NOTE: 'code.rb' is correct, because it's relative to lib/code_sym.rb
+     File.symlink('code.rb', 'lib/code_sym.rb')
+@@ -179,7 +179,7 @@ def test_build
+ 
+     FileUtils.mkdir 'lib'
+ 
+-    open 'lib/code.rb', 'w' do |io|
++    File.open 'lib/code.rb', 'w' do |io|
+       io.write '# lib/code.rb'
+     end
+ 
+@@ -218,7 +218,7 @@ def test_build_auto_signed
+ 
+     FileUtils.mkdir 'lib'
+ 
+-    open 'lib/code.rb', 'w' do |io|
++    File.open 'lib/code.rb', 'w' do |io|
+       io.write '# lib/code.rb'
+     end
+ 
+@@ -261,7 +261,7 @@ def test_build_auto_signed_encrypted_key
+ 
+     FileUtils.mkdir 'lib'
+ 
+-    open 'lib/code.rb', 'w' do |io|
++    File.open 'lib/code.rb', 'w' do |io|
+       io.write '# lib/code.rb'
+     end
+ 
+@@ -311,7 +311,7 @@ def test_build_signed
+ 
+     FileUtils.mkdir 'lib'
+ 
+-    open 'lib/code.rb', 'w' do |io|
++    File.open 'lib/code.rb', 'w' do |io|
+       io.write '# lib/code.rb'
+     end
+ 
+@@ -348,7 +348,7 @@ def test_build_signed_encrypted_key
+ 
+     FileUtils.mkdir 'lib'
+ 
+-    open 'lib/code.rb', 'w' do |io|
++    File.open 'lib/code.rb', 'w' do |io|
+       io.write '# lib/code.rb'
+     end
+ 
+@@ -408,7 +408,7 @@ def test_extract_files_empty
+       end
+     end
+ 
+-    open 'empty.gem', 'wb' do |io|
++    File.open 'empty.gem', 'wb' do |io|
+       io.write gem.string
+     end
+ 
+@@ -455,6 +455,31 @@ def test_extract_tar_gz_symlink_relative_path
+                  File.read(extracted)
+   end
+ 
++  def test_extract_symlink_parent
++   skip 'symlink not supported' if Gem.win_platform?
++
++   package = Gem::Package.new @gem
++
++   tgz_io = util_tar_gz do |tar|
++     tar.mkdir       'lib',               0755
++     tar.add_symlink 'lib/link', '../..', 0644
++     tar.add_file    'lib/link/outside.txt', 0644 do |io| io.write 'hi' end
++   end
++
++   # Extract into a subdirectory of @destination; if this test fails it writes
++   # a file outside destination_subdir, but we want the file to remain inside
++   # @destination so it will be cleaned up.
++   destination_subdir = File.join @destination, 'subdir'
++   FileUtils.mkdir_p destination_subdir
++
++   e = assert_raises Gem::Package::PathError do
++     package.extract_tar_gz tgz_io, destination_subdir
++   end
++
++   assert_equal("installing into parent path lib/link/outside.txt of " +
++                 "#{destination_subdir} is not allowed", e.message)
++  end
++
+   def test_extract_tar_gz_directory
+     package = Gem::Package.new @gem
+ 
+@@ -566,6 +591,21 @@ def test_install_location_relative
+                  "#{@destination} is not allowed", e.message)
+   end
+ 
++  def test_install_location_suffix
++    package = Gem::Package.new @gem
++
++    filename = "../#{File.basename(@destination)}suffix.rb"
++
++    e = assert_raises Gem::Package::PathError do
++      package.install_location filename, @destination
++    end
++
++    parent = File.expand_path File.join @destination, filename
++
++    assert_equal("installing into parent path #{parent} of " +
++                 "#{@destination} is not allowed", e.message)
++  end
++
+   def test_load_spec
+     entry = StringIO.new Gem.gzip @spec.to_yaml
+     def entry.full_name() 'metadata.gz' end
+@@ -620,7 +660,7 @@ def test_verify_checksum_bad
+       end
+     end
+ 
+-    open 'mismatch.gem', 'wb' do |io|
++    File.open 'mismatch.gem', 'wb' do |io|
+       io.write gem.string
+     end
+ 
+@@ -670,7 +710,7 @@ def test_verify_checksum_missing
+       end
+     end
+ 
+-    open 'data_checksum_missing.gem', 'wb' do |io|
++    File.open 'data_checksum_missing.gem', 'wb' do |io|
+       io.write gem.string
+     end
+ 
+@@ -723,6 +763,32 @@ def test_verify_nonexistent
+     assert_match %r%nonexistent.gem$%,           e.message
+   end
+ 
++  def test_verify_duplicate_file
++    FileUtils.mkdir_p 'lib'
++    FileUtils.touch 'lib/code.rb'
++
++    build = Gem::Package.new @gem
++    build.spec = @spec
++    build.setup_signer
++    open @gem, 'wb' do |gem_io|
++      Gem::Package::TarWriter.new gem_io do |gem|
++        build.add_metadata gem
++        build.add_contents gem
++
++        gem.add_file_simple 'a.sig', 0444, 0
++        gem.add_file_simple 'a.sig', 0444, 0
++      end
++    end
++
++    package = Gem::Package.new @gem
++
++    e = assert_raises Gem::Security::Exception do
++      package.verify
++    end
++
++    assert_equal 'duplicate files in the package: ("a.sig")', e.message
++  end
++
+   def test_verify_security_policy
+     skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+ 
+@@ -773,14 +839,20 @@ def test_verify_security_policy_checksum_missing
+     FileUtils.mkdir 'lib'
+     FileUtils.touch 'lib/code.rb'
+ 
+-    open @gem, 'wb' do |gem_io|
++    File.open @gem, 'wb' do |gem_io|
+       Gem::Package::TarWriter.new gem_io do |gem|
+         build.add_metadata gem
+         build.add_contents gem
+ 
+         # write bogus data.tar.gz to foil signature
+         bogus_data = Gem.gzip 'hello'
+-        gem.add_file_simple 'data.tar.gz', 0444, bogus_data.length do |io|
++        fake_signer = Class.new do
++          def digest_name; 'SHA512'; end
++          def digest_algorithm; Digest(:SHA512); end
++          def key; 'key'; end
++          def sign(*); 'fake_sig'; end
++        end
++        gem.add_file_signed 'data2.tar.gz', 0444, fake_signer.new do |io|
+           io.write bogus_data
+         end
+ 
+@@ -804,7 +876,7 @@ def test_verify_security_policy_checksum_missing
+   end
+ 
+   def test_verify_truncate
+-    open 'bad.gem', 'wb' do |io|
++    File.open 'bad.gem', 'wb' do |io|
+       io.write File.read(@gem, 1024) # don't care about newlines
+     end
+ 
+diff --git a/test/rubygems/test_gem_package_old.rb b/test/rubygems/test_gem_package_old.rb
+index c15475b..604981b 100644
+--- a/test/rubygems/test_gem_package_old.rb
++++ b/test/rubygems/test_gem_package_old.rb
+@@ -7,7 +7,7 @@ class TestGemPackageOld < Gem::TestCase
+   def setup
+     super
+ 
+-    open 'old_format.gem', 'wb' do |io|
++    File.open 'old_format.gem', 'wb' do |io|
+       io.write SIMPLE_GEM
+     end
+ 
+diff --git a/test/rubygems/test_gem_package_tar_header.rb b/test/rubygems/test_gem_package_tar_header.rb
+index d338770..43f508d 100644
+--- a/test/rubygems/test_gem_package_tar_header.rb
++++ b/test/rubygems/test_gem_package_tar_header.rb
+@@ -143,5 +143,26 @@ def test_update_checksum
+     assert_equal '012467', @tar_header.checksum
+   end
+ 
++  def test_from_bad_octal
++    test_cases = [
++      "00000006,44\000", # bogus character
++      "00000006789\000", # non-octal digit
++      "+0000001234\000", # positive sign
++      "-0000001000\000", # negative sign
++      "0x000123abc\000", # radix prefix
++    ]
++
++    test_cases.each do |val|
++      header_s = @tar_header.to_s
++      # overwrite the size field
++      header_s[124, 12] = val
++      io = TempIO.new header_s
++      assert_raises ArgumentError do
++        new_header = Gem::Package::TarHeader.from io
++      end
++      io.close! if io.respond_to? :close!
++    end
++  end
++
+ end
+ 
+diff --git a/test/rubygems/test_gem_rdoc.rb b/test/rubygems/test_gem_rdoc.rb
+index 76ca8c4..0355883 100644
+--- a/test/rubygems/test_gem_rdoc.rb
++++ b/test/rubygems/test_gem_rdoc.rb
+@@ -223,6 +223,7 @@ def test_remove
+ 
+   def test_remove_unwritable
+     skip 'chmod not supported' if Gem.win_platform?
++    skip 'skipped in root privilege' if Process.uid.zero?
+     FileUtils.mkdir_p @a.base_dir
+     FileUtils.chmod 0, @a.base_dir
+ 
+@@ -251,6 +252,7 @@ def test_setup
+ 
+   def test_setup_unwritable
+     skip 'chmod not supported' if Gem.win_platform?
++    skip 'skipped in root privilege' if Process.uid.zero?
+     FileUtils.mkdir_p @a.doc_dir
+     FileUtils.chmod 0, @a.doc_dir
+ 
+diff --git a/test/rubygems/test_gem_remote_fetcher.rb b/test/rubygems/test_gem_remote_fetcher.rb
+index ee5ac77..20e34e8 100644
+--- a/test/rubygems/test_gem_remote_fetcher.rb
++++ b/test/rubygems/test_gem_remote_fetcher.rb
+@@ -431,7 +431,7 @@ def test_download_install_dir
+     assert File.exist?(a1_cache_gem)
+   end
+ 
+-  unless win_platform? # File.chmod doesn't work
++  unless win_platform? || Process.uid.zero? # File.chmod doesn't work
+     def test_download_local_read_only
+       FileUtils.mv @a1_gem, @tempdir
+       local_path = File.join @tempdir, @a1.file_name
+diff --git a/test/rubygems/test_gem_request_set.rb b/test/rubygems/test_gem_request_set.rb
+index 3a48827..5dc6c15 100644
+--- a/test/rubygems/test_gem_request_set.rb
++++ b/test/rubygems/test_gem_request_set.rb
+@@ -52,7 +52,7 @@ def test_install_from_gemdeps
+     rs = Gem::RequestSet.new
+     installed = []
+ 
+-    open 'gem.deps.rb', 'w' do |io|
++    File.open 'gem.deps.rb', 'w' do |io|
+       io.puts 'gem "a"'
+       io.flush
+ 
+@@ -78,7 +78,7 @@ def test_install_from_gemdeps_explain
+ 
+     rs = Gem::RequestSet.new
+ 
+-    open 'gem.deps.rb', 'w' do |io|
++    File.open 'gem.deps.rb', 'w' do |io|
+       io.puts 'gem "a"'
+       io.flush
+ 
+@@ -104,7 +104,7 @@ def test_install_from_gemdeps_install_dir
+     rs = Gem::RequestSet.new
+     installed = []
+ 
+-    open 'gem.deps.rb', 'w' do |io|
++    File.open 'gem.deps.rb', 'w' do |io|
+       io.puts 'gem "a"'
+     end
+ 
+@@ -128,7 +128,7 @@ def test_install_from_gemdeps_local
+ 
+     rs = Gem::RequestSet.new
+ 
+-    open 'gem.deps.rb', 'w' do |io|
++    File.open 'gem.deps.rb', 'w' do |io|
+       io.puts 'gem "a"'
+       io.flush
+ 
+@@ -150,7 +150,7 @@ def test_install_from_gemdeps_lockfile
+     rs = Gem::RequestSet.new
+     installed = []
+ 
+-    open 'gem.deps.rb.lock', 'w' do |io|
++    File.open 'gem.deps.rb.lock', 'w' do |io|
+       io.puts <<-LOCKFILE
+ GEM
+   remote: #{@gem_repo}
+@@ -167,7 +167,7 @@ def test_install_from_gemdeps_lockfile
+       LOCKFILE
+     end
+ 
+-    open 'gem.deps.rb', 'w' do |io|
++    File.open 'gem.deps.rb', 'w' do |io|
+       io.puts 'gem "b"'
+     end
+ 
+@@ -190,7 +190,7 @@ def test_install_from_gemdeps_version_mismatch
+     rs = Gem::RequestSet.new
+     installed = []
+ 
+-    open 'gem.deps.rb', 'w' do |io|
++    File.open 'gem.deps.rb', 'w' do |io|
+       io.puts <<-GEM_DEPS
+ gem "a"
+ ruby "0"
+diff --git a/test/rubygems/test_gem_request_set_lockfile.rb b/test/rubygems/test_gem_request_set_lockfile.rb
+index 908f973..7460b7e 100644
+--- a/test/rubygems/test_gem_request_set_lockfile.rb
++++ b/test/rubygems/test_gem_request_set_lockfile.rb
+@@ -31,7 +31,7 @@ def lockfile
+   def write_lockfile lockfile
+     @lock_file = File.expand_path "#{@gem_deps_file}.lock"
+ 
+-    open @lock_file, 'w' do |io|
++    File.open @lock_file, 'w' do |io|
+       io.write lockfile
+     end
+   end
+@@ -387,7 +387,7 @@ def test_to_s_git
+           s.add_dependency 'c', '~> 1.0'
+         end
+ 
+-        open 'b.gemspec', 'w' do |io|
++        File.open 'b.gemspec', 'w' do |io|
+           io.write b.to_ruby
+         end
+ 
+@@ -400,7 +400,7 @@ def test_to_s_git
+       Dir.chdir 'c' do
+         c = Gem::Specification.new 'c', 1
+ 
+-        open 'c.gemspec', 'w' do |io|
++        File.open 'c.gemspec', 'w' do |io|
+           io.write c.to_ruby
+         end
+ 
+@@ -455,7 +455,7 @@ def test_write_error
+ 
+     gem_deps_lock_file = "#{@gem_deps_file}.lock"
+ 
+-    open gem_deps_lock_file, 'w' do |io|
++    File.open gem_deps_lock_file, 'w' do |io|
+       io.write 'hello'
+     end
+ 
+diff --git a/test/rubygems/test_gem_request_set_lockfile_parser.rb b/test/rubygems/test_gem_request_set_lockfile_parser.rb
+index 9946c52..f3517da 100644
+--- a/test/rubygems/test_gem_request_set_lockfile_parser.rb
++++ b/test/rubygems/test_gem_request_set_lockfile_parser.rb
+@@ -536,7 +536,7 @@ def test_parse_missing
+   end
+ 
+   def write_lockfile lockfile
+-    open @lock_file, 'w' do |io|
++    File.open @lock_file, 'w' do |io|
+       io.write lockfile
+     end
+   end
+diff --git a/test/rubygems/test_gem_request_set_lockfile_tokenizer.rb b/test/rubygems/test_gem_request_set_lockfile_tokenizer.rb
+index ab506a1..f4aba6d 100644
+--- a/test/rubygems/test_gem_request_set_lockfile_tokenizer.rb
++++ b/test/rubygems/test_gem_request_set_lockfile_tokenizer.rb
+@@ -295,7 +295,7 @@ def test_unget
+   end
+ 
+   def write_lockfile lockfile
+-    open @lock_file, 'w' do |io|
++    File.open @lock_file, 'w' do |io|
+       io.write lockfile
+     end
+   end
+diff --git a/test/rubygems/test_gem_resolver_git_specification.rb b/test/rubygems/test_gem_resolver_git_specification.rb
+index 9e8e2c5..211757e 100644
+--- a/test/rubygems/test_gem_resolver_git_specification.rb
++++ b/test/rubygems/test_gem_resolver_git_specification.rb
+@@ -70,7 +70,7 @@ def test_install_extension
+     Dir.chdir 'git/a' do
+       FileUtils.mkdir_p 'ext/lib'
+ 
+-      open 'ext/extconf.rb', 'w' do |io|
++      File.open 'ext/extconf.rb', 'w' do |io|
+         io.puts 'require "mkmf"'
+         io.puts 'create_makefile "a"'
+       end
+diff --git a/test/rubygems/test_gem_server.rb b/test/rubygems/test_gem_server.rb
+index 6fe02e4..a018e65 100644
+--- a/test/rubygems/test_gem_server.rb
++++ b/test/rubygems/test_gem_server.rb
+@@ -100,7 +100,7 @@ def test_latest_specs_gemdirs
+     specs_dir = File.join dir, 'specifications'
+     FileUtils.mkdir_p specs_dir
+ 
+-    open File.join(specs_dir, spec.spec_name), 'w' do |io|
++    File.open File.join(specs_dir, spec.spec_name), 'w' do |io|
+       io.write spec.to_ruby
+     end
+ 
+@@ -198,7 +198,7 @@ def test_quick_gemdirs
+ 
+     FileUtils.mkdir_p specs_dir
+ 
+-    open File.join(specs_dir, spec.spec_name), 'w' do |io|
++    File.open File.join(specs_dir, spec.spec_name), 'w' do |io|
+       io.write spec.to_ruby
+     end
+ 
+@@ -339,7 +339,7 @@ def test_root_gemdirs
+     specs_dir = File.join dir, 'specifications'
+     FileUtils.mkdir_p specs_dir
+ 
+-    open File.join(specs_dir, spec.spec_name), 'w' do |io|
++    File.open File.join(specs_dir, spec.spec_name), 'w' do |io|
+       io.write spec.to_ruby
+     end
+ 
+@@ -353,6 +353,171 @@ def test_root_gemdirs
+     assert_match 'z 9', @res.body
+   end
+ 
++
++  def test_xss_homepage_fix_289313
++    data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
++    dir = "#{@gemhome}2"
++
++    spec = util_spec 'xsshomepagegem', 1
++    spec.homepage = "javascript:confirm(document.domain)"
++
++    specs_dir = File.join dir, 'specifications'
++    FileUtils.mkdir_p specs_dir
++
++    open File.join(specs_dir, spec.spec_name), 'w' do |io|
++      io.write spec.to_ruby
++    end
++
++    server = Gem::Server.new dir, process_based_port, false
++
++    @req.parse data
++
++    server.root @req, @res
++
++    assert_equal 200, @res.status
++    assert_match 'xsshomepagegem 1', @res.body
++
++    # This verifies that the homepage for this spec is not displayed and is set to ".", because it's not a 
++    # valid HTTP/HTTPS URL and could be unsafe in an HTML context.  We would prefer to throw an exception here,
++    # but spec.homepage is currently free form and not currently required to be a URL, this behavior may be 
++    # validated in future versions of Gem::Specification.
++    #
++    # There are two variant we're checking here, one where rdoc is not present, and one where rdoc is present in the same regex:
++    #
++    # Variant #1 - rdoc not installed
++    #
++    #   <b>xsshomepagegem 1</b>
++    #
++    #
++    #  <span title="rdoc not installed">[rdoc]</span>
++    #
++    #
++    #
++    #  <a href="." title=".">[www]</a>
++    #
++    # Variant #2 - rdoc installed
++    #
++    #   <b>xsshomepagegem 1</b>
++    #
++    #
++    #  <a href="\/doc_root\/xsshomepagegem-1\/">\[rdoc\]<\/a>
++    #
++    #
++    #
++    #  <a href="." title=".">[www]</a>
++    regex_match = /xsshomepagegem 1<\/b>[\n\s]+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/xsshomepagegem-1\/">\[rdoc\]<\/a>)[\n\s]+<a href="\." title="\.">\[www\]<\/a>/
++    assert_match regex_match, @res.body
++  end
++
++  def test_invalid_homepage
++    data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
++    dir = "#{@gemhome}2"
++
++    spec = util_spec 'invalidhomepagegem', 1
++    spec.homepage = "notavalidhomepageurl"
++
++    specs_dir = File.join dir, 'specifications'
++    FileUtils.mkdir_p specs_dir
++
++    open File.join(specs_dir, spec.spec_name), 'w' do |io|
++      io.write spec.to_ruby
++    end
++
++    server = Gem::Server.new dir, process_based_port, false
++
++    @req.parse data
++
++    server.root @req, @res
++
++    assert_equal 200, @res.status
++    assert_match 'invalidhomepagegem 1', @res.body
++
++    # This verifies that the homepage for this spec is not displayed and is set to ".", because it's not a 
++    # valid HTTP/HTTPS URL and could be unsafe in an HTML context.  We would prefer to throw an exception here,
++    # but spec.homepage is currently free form and not currently required to be a URL, this behavior may be 
++    # validated in future versions of Gem::Specification.
++    #
++    # There are two variant we're checking here, one where rdoc is not present, and one where rdoc is present in the same regex:
++    #
++    # Variant #1 - rdoc not installed
++    #
++    #   <b>invalidhomepagegem 1</b>
++    #
++    #
++    #  <span title="rdoc not installed">[rdoc]</span>
++    #
++    #
++    #
++    #  <a href="." title=".">[www]</a>
++    #
++    # Variant #2 - rdoc installed
++    #
++    #   <b>invalidhomepagegem 1</b>
++    #
++    #
++    #  <a href="\/doc_root\/invalidhomepagegem-1\/">\[rdoc\]<\/a>
++    #
++    #
++    #
++    #  <a href="." title=".">[www]</a>
++    regex_match = /invalidhomepagegem 1<\/b>[\n\s]+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/invalidhomepagegem-1\/">\[rdoc\]<\/a>)[\n\s]+<a href="\." title="\.">\[www\]<\/a>/
++    assert_match regex_match, @res.body
++  end
++
++  def test_valid_homepage_http
++    data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
++    dir = "#{@gemhome}2"
++
++    spec = util_spec 'validhomepagegemhttp', 1
++    spec.homepage = "http://rubygems.org"
++
++    specs_dir = File.join dir, 'specifications'
++    FileUtils.mkdir_p specs_dir
++
++    open File.join(specs_dir, spec.spec_name), 'w' do |io|
++      io.write spec.to_ruby
++    end
++
++    server = Gem::Server.new dir, process_based_port, false
++
++    @req.parse data
++
++    server.root @req, @res
++
++    assert_equal 200, @res.status
++    assert_match 'validhomepagegemhttp 1', @res.body
++
++    regex_match = /validhomepagegemhttp 1<\/b>[\n\s]+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/validhomepagegemhttp-1\/">\[rdoc\]<\/a>)[\n\s]+<a href="http:\/\/rubygems\.org" title="http:\/\/rubygems\.org">\[www\]<\/a>/
++    assert_match regex_match, @res.body
++  end
++
++  def test_valid_homepage_https
++    data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
++    dir = "#{@gemhome}2"
++
++    spec = util_spec 'validhomepagegemhttps', 1
++    spec.homepage = "https://rubygems.org"
++
++    specs_dir = File.join dir, 'specifications'
++    FileUtils.mkdir_p specs_dir
++
++    open File.join(specs_dir, spec.spec_name), 'w' do |io|
++      io.write spec.to_ruby
++    end
++
++    server = Gem::Server.new dir, process_based_port, false
++
++    @req.parse data
++
++    server.root @req, @res
++
++    assert_equal 200, @res.status
++    assert_match 'validhomepagegemhttps 1', @res.body
++
++    regex_match = /validhomepagegemhttps 1<\/b>[\n\s]+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/validhomepagegemhttps-1\/">\[rdoc\]<\/a>)[\n\s]+<a href="https:\/\/rubygems\.org" title="https:\/\/rubygems\.org">\[www\]<\/a>/
++    assert_match regex_match, @res.body
++  end
++
+   def test_specs
+     data = StringIO.new "GET /specs.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
+     @req.parse data
+@@ -378,7 +543,7 @@ def test_specs_gemdirs
+     specs_dir = File.join dir, 'specifications'
+     FileUtils.mkdir_p specs_dir
+ 
+-    open File.join(specs_dir, spec.spec_name), 'w' do |io|
++    File.open File.join(specs_dir, spec.spec_name), 'w' do |io|
+       io.write spec.to_ruby
+     end
+ 
+diff --git a/test/rubygems/test_gem_source.rb b/test/rubygems/test_gem_source.rb
+index 4a93e22..8805a9b 100644
+--- a/test/rubygems/test_gem_source.rb
++++ b/test/rubygems/test_gem_source.rb
+@@ -110,7 +110,7 @@ def test_fetch_spec_cached
+ 
+     cache_file = File.join cache_dir, a1.spec_name
+ 
+-    open cache_file, 'wb' do |io|
++    File.open cache_file, 'wb' do |io|
+       Marshal.dump a1, io
+     end
+ 
+@@ -163,7 +163,7 @@ def test_load_specs_cached
+ 
+     cache_file = File.join cache_dir, "latest_specs.#{Gem.marshal_version}"
+ 
+-    open cache_file, 'wb' do |io|
++    File.open cache_file, 'wb' do |io|
+       Marshal.dump latest_specs, io
+     end
+ 
+@@ -187,7 +187,7 @@ def test_load_specs_cached_empty
+ 
+     cache_file = File.join cache_dir, "latest_specs.#{Gem.marshal_version}"
+ 
+-    open cache_file, 'wb' do |io|
++    File.open cache_file, 'wb' do |io|
+       # Setup invalid data in the cache:
+       io.write Marshal.dump(latest_specs)[0, 10]
+     end
+diff --git a/test/rubygems/test_gem_source_git.rb b/test/rubygems/test_gem_source_git.rb
+index 0e13a11..8f5d3ee 100644
+--- a/test/rubygems/test_gem_source_git.rb
++++ b/test/rubygems/test_gem_source_git.rb
+@@ -229,7 +229,7 @@ def test_specs
+       Dir.chdir 'b' do
+         b = Gem::Specification.new 'b', 1
+ 
+-        open 'b.gemspec', 'w' do |io|
++        File.open 'b.gemspec', 'w' do |io|
+           io.write b.to_ruby
+         end
+ 
+diff --git a/test/rubygems/test_gem_specification.rb b/test/rubygems/test_gem_specification.rb
+index bb6acbc..badb297 100644
+--- a/test/rubygems/test_gem_specification.rb
++++ b/test/rubygems/test_gem_specification.rb
+@@ -922,7 +922,7 @@ def test_self_load
+   end
+ 
+   def test_self_load_relative
+-    open 'a-2.gemspec', 'w' do |io|
++    File.open 'a-2.gemspec', 'w' do |io|
+       io.write @a2.to_ruby_for_cache
+     end
+ 
+@@ -948,6 +948,9 @@ def test_self_load_tainted
+     @a2.files.clear
+ 
+     assert_equal @a2, spec
++
++  ensure
++    $SAFE = 0
+   end
+ 
+   def test_self_load_escape_curly
+@@ -1111,7 +1114,7 @@ def test_self_remove_spec
+   end
+ 
+   def test_self_remove_spec_removed
+-    open @a1.spec_file, 'w' do |io|
++    File.open @a1.spec_file, 'w' do |io|
+       io.write @a1.to_ruby
+     end
+ 
+@@ -1363,13 +1366,13 @@ def test_build_args
+ 
+     assert_empty @ext.build_args
+ 
+-    open @ext.build_info_file, 'w' do |io|
++    File.open @ext.build_info_file, 'w' do |io|
+       io.puts
+     end
+ 
+     assert_empty @ext.build_args
+ 
+-    open @ext.build_info_file, 'w' do |io|
++    File.open @ext.build_info_file, 'w' do |io|
+       io.puts '--with-foo-dir=wherever'
+     end
+ 
+@@ -1385,9 +1388,9 @@ def test_build_extensions
+     extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
+     FileUtils.mkdir_p File.dirname extconf_rb
+ 
+-    open extconf_rb, 'w' do |f|
++    File.open extconf_rb, 'w' do |f|
+       f.write <<-'RUBY'
+-        open 'Makefile', 'w' do |f|
++        File.open 'Makefile', 'w' do |f|
+           f.puts "clean:\n\techo clean"
+           f.puts "default:\n\techo built"
+           f.puts "install:\n\techo installed"
+@@ -1435,9 +1438,9 @@ def test_build_extensions_default_gem
+     extconf_rb = File.join spec.gem_dir, spec.extensions.first
+     FileUtils.mkdir_p File.dirname extconf_rb
+ 
+-    open extconf_rb, 'w' do |f|
++    File.open extconf_rb, 'w' do |f|
+       f.write <<-'RUBY'
+-        open 'Makefile', 'w' do |f|
++        File.open 'Makefile', 'w' do |f|
+           f.puts "default:\n\techo built"
+           f.puts "install:\n\techo installed"
+         end
+@@ -1461,6 +1464,7 @@ def test_build_extensions_error
+ 
+   def test_build_extensions_extensions_dir_unwritable
+     skip 'chmod not supported' if Gem.win_platform?
++    skip 'skipped in root privilege' if Process.uid.zero?
+ 
+     ext_spec
+ 
+@@ -1469,9 +1473,9 @@ def test_build_extensions_extensions_dir_unwritable
+     extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
+     FileUtils.mkdir_p File.dirname extconf_rb
+ 
+-    open extconf_rb, 'w' do |f|
++    File.open extconf_rb, 'w' do |f|
+       f.write <<-'RUBY'
+-        open 'Makefile', 'w' do |f|
++        File.open 'Makefile', 'w' do |f|
+           f.puts "clean:\n\techo clean"
+           f.puts "default:\n\techo built"
+           f.puts "install:\n\techo installed"
+@@ -1486,7 +1490,7 @@ def test_build_extensions_extensions_dir_unwritable
+     @ext.build_extensions
+     refute_path_exists @ext.extension_dir
+   ensure
+-    unless ($DEBUG or win_platform?) then
++    unless ($DEBUG or win_platform? or Process.uid.zero?) then
+       FileUtils.chmod 0755, File.join(@ext.base_dir, 'extensions')
+       FileUtils.chmod 0755, @ext.base_dir
+     end
+@@ -1502,9 +1506,9 @@ def test_build_extensions_no_extensions_dir_unwritable
+     extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
+     FileUtils.mkdir_p File.dirname extconf_rb
+ 
+-    open extconf_rb, 'w' do |f|
++    File.open extconf_rb, 'w' do |f|
+       f.write <<-'RUBY'
+-        open 'Makefile', 'w' do |f|
++        File.open 'Makefile', 'w' do |f|
+           f.puts "clean:\n\techo clean"
+           f.puts "default:\n\techo built"
+           f.puts "install:\n\techo installed"
+@@ -1551,9 +1555,9 @@ def test_build_extensions_preview
+     extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
+     FileUtils.mkdir_p File.dirname extconf_rb
+ 
+-    open extconf_rb, 'w' do |f|
++    File.open extconf_rb, 'w' do |f|
+       f.write <<-'RUBY'
+-        open 'Makefile', 'w' do |f|
++        File.open 'Makefile', 'w' do |f|
+           f.puts "clean:\n\techo clean"
+           f.puts "default:\n\techo built"
+           f.puts "install:\n\techo installed"
+@@ -2882,7 +2886,22 @@ def test_validate_homepage
+         @a1.validate
+       end
+ 
+-      assert_equal '"over at my cool site" is not a URI', e.message
++      assert_equal '"over at my cool site" is not a valid HTTP URI', e.message
++
++      @a1.homepage = 'ftp://rubygems.org'
++
++      e = assert_raises Gem::InvalidSpecificationException do
++        @a1.validate
++      end
++
++      assert_equal '"ftp://rubygems.org" is not a valid HTTP URI', e.message
++
++      @a1.homepage = 'http://rubygems.org'
++      assert_equal true, @a1.validate
++
++      @a1.homepage = 'https://rubygems.org'
++      assert_equal true, @a1.validate
++
+     end
+   end
+ 
+@@ -3418,9 +3437,9 @@ def test_missing_extensions_eh
+     extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
+     FileUtils.mkdir_p File.dirname extconf_rb
+ 
+-    open extconf_rb, 'w' do |f|
++    File.open extconf_rb, 'w' do |f|
+       f.write <<-'RUBY'
+-        open 'Makefile', 'w' do |f|
++        File.open 'Makefile', 'w' do |f|
+           f.puts "clean:\n\techo clean"
+           f.puts "default:\n\techo built"
+           f.puts "install:\n\techo installed"
+diff --git a/test/rubygems/test_gem_stub_specification.rb b/test/rubygems/test_gem_stub_specification.rb
+index 4368026..f9a3a23 100644
+--- a/test/rubygems/test_gem_stub_specification.rb
++++ b/test/rubygems/test_gem_stub_specification.rb
+@@ -127,9 +127,9 @@ def test_missing_extensions_eh
+       extconf_rb = File.join s.gem_dir, s.extensions.first
+       FileUtils.mkdir_p File.dirname extconf_rb
+ 
+-      open extconf_rb, 'w' do |f|
++      File.open extconf_rb, 'w' do |f|
+         f.write <<-'RUBY'
+-        open 'Makefile', 'w' do |f|
++        File.open 'Makefile', 'w' do |f|
+           f.puts "clean:\n\techo clean"
+           f.puts "default:\n\techo built"
+           f.puts "install:\n\techo installed"
+@@ -149,7 +149,7 @@ def test_missing_extensions_eh_default_gem
+     spec = new_default_spec 'default', 1
+     spec.extensions << 'extconf.rb'
+ 
+-    open spec.loaded_from, 'w' do |io|
++    File.open spec.loaded_from, 'w' do |io|
+       io.write spec.to_ruby_for_cache
+     end
+ 
+@@ -198,7 +198,7 @@ def test_to_spec_missing_extensions
+ 
+   def stub_with_version
+     spec = File.join @gemhome, 'specifications', 'stub_e-2.gemspec'
+-    open spec, 'w' do |io|
++    File.open spec, 'w' do |io|
+       io.write <<-STUB
+ # -*- encoding: utf-8 -*-
+ # stub: stub_v 2 ruby lib
+@@ -221,7 +221,7 @@ def stub_with_version
+ 
+   def stub_without_version
+     spec = File.join @gemhome, 'specifications', 'stub-2.gemspec'
+-    open spec, 'w' do |io|
++    File.open spec, 'w' do |io|
+       io.write <<-STUB
+ # -*- encoding: utf-8 -*-
+ # stub: stub_v ruby lib
+@@ -245,7 +245,7 @@ def stub_without_version
+ 
+   def stub_with_extension
+     spec = File.join @gemhome, 'specifications', 'stub_e-2.gemspec'
+-    open spec, 'w' do |io|
++    File.open spec, 'w' do |io|
+       io.write <<-STUB
+ # -*- encoding: utf-8 -*-
+ # stub: stub_e 2 ruby lib
+@@ -271,7 +271,7 @@ def stub_with_extension
+ 
+   def stub_without_extension
+     spec = File.join @gemhome, 'specifications', 'stub-2.gemspec'
+-    open spec, 'w' do |io|
++    File.open spec, 'w' do |io|
+       io.write <<-STUB
+ # -*- encoding: utf-8 -*-
+ # stub: stub 2 ruby lib
+diff --git a/test/rubygems/test_gem_util.rb b/test/rubygems/test_gem_util.rb
+index b85db44..3b7887d 100644
+--- a/test/rubygems/test_gem_util.rb
++++ b/test/rubygems/test_gem_util.rb
+@@ -5,6 +5,7 @@
+ class TestGemUtil < Gem::TestCase
+ 
+   def test_class_popen
++    skip "MJIT executes process and it's caught by Process.wait(-1)" if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+     assert_equal "0\n", Gem::Util.popen(Gem.ruby, '-e', 'p 0')
+ 
+     assert_raises Errno::ECHILD do
+@@ -29,6 +30,30 @@ def test_traverse_parents
+     loop { break if enum.next.nil? } # exhaust the enumerator
+   end
+ 
++  def test_traverse_parents_does_not_crash_on_permissions_error
++    skip 'skipped on MS Windows (chmod has no effect)' if win_platform?
++
++    FileUtils.mkdir_p 'd/e/f'
++    # remove 'execute' permission from "e" directory and make it
++    # impossible to cd into it and its children
++    FileUtils.chmod(0666, 'd/e')
++
++    paths = Gem::Util.traverse_parents('d/e/f').to_a
++
++    assert_equal File.join(@tempdir, 'd'), paths[0]
++    assert_equal @tempdir, paths[1]
++    if File.respond_to?(:realpath)
++      assert_equal File.realpath(Dir.tmpdir), paths[2]
++      assert_equal File.realpath("..", Dir.tmpdir), paths[3]
++    elsif RUBY_PLATFORM !~ /darwin/
++      assert_equal Dir.tmpdir, paths[2]
++      assert_equal '/', paths[3]
++    end
++  ensure
++    # restore default permissions, allow the directory to be removed
++    FileUtils.chmod(0775, 'd/e') unless win_platform?
++  end
++
+   def test_linked_list_find
+     list = [1,2,3,4,5].inject(Gem::List.new(0)) { |m,o|
+       Gem::List.new o, m
+diff --git a/test/rubygems/test_gem_version.rb b/test/rubygems/test_gem_version.rb
+index 56c8186..792ad5f 100644
+--- a/test/rubygems/test_gem_version.rb
++++ b/test/rubygems/test_gem_version.rb
+@@ -2,6 +2,8 @@
+ require 'rubygems/test_case'
+ require "rubygems/version"
+ 
++require "minitest/benchmark"
++
+ class TestGemVersion < Gem::TestCase
+ 
+   class V < ::Gem::Version
+@@ -102,6 +104,15 @@ def test_initialize_invalid
+     end
+   end
+ 
++  def bench_anchored_version_pattern
++    assert_performance_linear 0.5 do |count|
++      version_string = count.times.map {|i| "0" * i.succ }.join(".") << "."
++      version_string =~ Gem::Version::ANCHORED_VERSION_PATTERN
++    end
++  rescue RegexpError
++    skip "It fails to allocate the memory for regex pattern of Gem::Version::ANCHORED_VERSION_PATTERN"
++  end
++
+   def test_empty_version
+     ["", "   ", " "].each do |empty|
+       assert_equal "0", Gem::Version.new(empty).version
+diff --git a/test/rubygems/test_require.rb b/test/rubygems/test_require.rb
+index a846f46..e292ce2 100644
+--- a/test/rubygems/test_require.rb
++++ b/test/rubygems/test_require.rb
+@@ -38,18 +38,6 @@ def assert_require(path)
+     assert require(path), "'#{path}' was already required"
+   end
+ 
+-  def append_latch spec
+-    dir = spec.gem_dir
+-    Dir.chdir dir do
+-      spec.files.each do |file|
+-        File.open file, 'a' do |fp|
+-          fp.puts "FILE_ENTERED_LATCH.release"
+-          fp.puts "FILE_EXIT_LATCH.await"
+-        end
+-      end
+-    end
+-  end
+-
+   # Providing -I on the commandline should always beat gems
+   def test_dash_i_beats_gems
+     a1 = new_spec "a", "1", {"b" => "= 1"}, "lib/test_gem_require_a.rb"
+@@ -80,6 +68,17 @@ def test_dash_i_beats_gems
+     Object.send :remove_const, :HELLO if Object.const_defined? :HELLO
+   end
+ 
++  def create_sync_thread
++    Thread.new do
++      begin
++        yield
++      ensure
++        FILE_ENTERED_LATCH.release
++        FILE_EXIT_LATCH.await
++      end
++    end
++  end
++
+   def test_concurrent_require
+     skip 'deadlock' if /^1\.8\./ =~ RUBY_VERSION
+ 
+@@ -91,11 +90,8 @@ def test_concurrent_require
+ 
+     install_specs a1, b1
+ 
+-    append_latch a1
+-    append_latch b1
+-
+-    t1 = Thread.new { assert_require 'a' }
+-    t2 = Thread.new { assert_require 'b' }
++    t1 = create_sync_thread{ assert_require 'a' }
++    t2 = create_sync_thread{ assert_require 'b' }
+ 
+     # wait until both files are waiting on the exit latch
+     FILE_ENTERED_LATCH.await
+@@ -106,10 +102,8 @@ def test_concurrent_require
+     assert t1.join, "thread 1 should exit"
+     assert t2.join, "thread 2 should exit"
+   ensure
+-    return if $! # skipping
+-
+-    Object.send :remove_const, :FILE_ENTERED_LATCH
+-    Object.send :remove_const, :FILE_EXIT_LATCH
++    Object.send :remove_const, :FILE_ENTERED_LATCH if Object.const_defined? :FILE_ENTERED_LATCH
++    Object.send :remove_const, :FILE_EXIT_LATCH if Object.const_defined? :FILE_EXIT_LATCH
+   end
+ 
+   def test_require_is_not_lazy_with_exact_req
