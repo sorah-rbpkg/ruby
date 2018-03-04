@@ -1,3 +1,10 @@
+ruby2.5 (2.5.0-6) unstable; urgency=medium
+
+  * debian/rules: explicitly pass --runstatedir, --localstatedir, and
+    --sysconfdir to ./configure
+
+ -- Antonio Terceiro <terceiro@debian.org>  Sun, 04 Mar 2018 13:30:49 -0300
+
 ruby2.5 (2.5.0-5) unstable; urgency=medium
 
   * Change Maintainer: to Debian Ruby Team

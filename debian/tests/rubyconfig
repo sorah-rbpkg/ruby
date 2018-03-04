@@ -1,0 +1,56 @@
+#!/bin/sh
+
+set -eu
+
+ruby="${1:-ruby2.5}"
+apiversion="${ruby##ruby}.0"
+arch=$(dpkg-architecture -qDEB_HOST_MULTIARCH)
+
+failed=0
+
+checkdir() {
+    key="$1"
+    expected_value="$2"
+    value="$($ruby -e "puts RbConfig::CONFIG['$key']")"
+    if [ "$value" = "$expected_value" ]; then
+        echo "OK: $key = $value"
+    else
+        echo "NOT OK: $key = $value (expected: $expected_value)"
+        failed=$((failed+1))
+    fi
+}
+
+checkdir vendorarchhdrdir   /usr/include/$arch/ruby-$apiversion/vendor_ruby
+checkdir sitearchhdrdir     /usr/include/$arch/ruby-$apiversion/site_ruby
+checkdir rubyarchhdrdir     /usr/include/$arch/ruby-$apiversion
+checkdir vendorhdrdir       /usr/include/ruby-$apiversion/vendor_ruby
+checkdir sitehdrdir         /usr/include/ruby-$apiversion/site_ruby
+checkdir rubyhdrdir         /usr/include/ruby-$apiversion
+checkdir vendorarchdir      /usr/lib/$arch/ruby/vendor_ruby/$apiversion
+checkdir vendorlibdir       /usr/lib/ruby/vendor_ruby/$apiversion
+checkdir vendordir          /usr/lib/ruby/vendor_ruby
+checkdir sitearchdir        /usr/local/lib/$arch/site_ruby
+checkdir sitelibdir         /usr/local/lib/site_ruby/$apiversion
+checkdir sitedir            /usr/local/lib/site_ruby
+checkdir rubyarchdir        /usr/lib/$arch/ruby/$apiversion
+checkdir rubylibdir         /usr/lib/ruby/$apiversion
+checkdir sitearchincludedir /usr/include/$arch
+checkdir archincludedir     /usr/include/$arch
+checkdir sitearchlibdir     /usr/lib/$arch
+checkdir archlibdir         /usr/lib/$arch
+checkdir ridir              /usr/share/ri
+checkdir mandir             /usr/share/man
+checkdir localedir          /usr/share/locale
+checkdir libdir             /usr/lib
+checkdir includedir         /usr/include
+checkdir runstatedir        /var/run
+checkdir localstatedir      /var
+checkdir sysconfdir         /etc
+checkdir datadir            /usr/share
+checkdir datarootdir        /usr/share
+checkdir sbindir            /usr/sbin
+checkdir bindir             /usr/bin
+checkdir archdir            /usr/lib/$arch/ruby/$apiversion
+checkdir topdir             /usr/lib/$arch/ruby/$apiversion
+
+[ "$failed" -eq 0 ]
