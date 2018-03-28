@@ -556,11 +556,23 @@ AS_CASE(["$target_cpu-$target_os"], [[i[3-6]86*]], [
 		 CFLAGS="$save_CFLAGS"
 	 fi])
 
+AS_CASE(["$target_os"], [darwin*], [
+if libtool 2>&1 | grep no_warning_for_no_symbols > /dev/null; then
+  ac_cv_prog_ac_ct_RANLIB=:
+  ac_cv_prog_ac_ct_AR='libtool -static'
+  rb_cv_arflags='-no_warning_for_no_symbols -o'
+fi
+])
 AC_CHECK_TOOL(RANLIB, ranlib, :)
 AC_CHECK_TOOL(AR, ar)
 if test -z "$AR"; then
   AC_CHECK_PROGS(AR, aal, ar)
 fi
+AC_CACHE_CHECK([for $AR flags], [rb_cv_arflags], [
+    AS_IF([$AR rcD conftest.a > /dev/null 2>&1 && rm conftest.a],
+	[rb_cv_arflags=rcD], [rb_cv_arflags=rcu])
+])
+AC_SUBST(ARFLAGS, ["$rb_cv_arflags "])
 
 AC_CHECK_TOOL(AS, as)
 ASFLAGS=$ASFLAGS
@@ -2493,7 +2505,7 @@ main(int argc, char **argv)
 AS_IF([test "x$rb_cv_atan2_inf_c99" = xyes], [AC_DEFINE(ATAN2_INF_C99)])
 
 AS_IF([test "x$ac_cv_func_lgamma_r" = xyes], [
-    AC_CACHE_CHECK(whether lgamma_r handles -0.0, rb_cv_lgamma_r_m0, [
+    AC_CACHE_CHECK(whether lgamma_r handles +0.0 and -0.0, rb_cv_lgamma_r_pm0, [
 	AC_TRY_RUN([
 @%:@include <math.h>
 @%:@ifdef HAVE_UNISTD_H
@@ -2509,22 +2521,28 @@ AS_IF([test "x$ac_cv_func_lgamma_r" = xyes], [
 int
 main(int argc, char **argv)
 {
-    int sign;
+    int sign = 0;
     double x = lgamma_r(-0.0, &sign);
 
     /* should be [+inf, -1] */
     if (x <= 0) return EXIT_FAILURE;
     if (!isinf(x)) return EXIT_FAILURE;
     if (sign != -1) return EXIT_FAILURE;
+
+    /* should be [+inf, 1] */
+    x = lgamma_r(+0.0, &sign);
+    if (x <= 0) return EXIT_FAILURE;
+    if (!isinf(x)) return EXIT_FAILURE;
+    if (sign != 1) return EXIT_FAILURE;
     return EXIT_SUCCESS;
 }
 ],
-	[rb_cv_lgamma_r_m0=yes],
-	[rb_cv_lgamma_r_m0=no],
-	[rb_cv_lgamma_r_m0=yes]
+	[rb_cv_lgamma_r_pm0=yes],
+	[rb_cv_lgamma_r_pm0=no],
+	[rb_cv_lgamma_r_pm0=yes]
 	)
     ])
-    AS_IF([test "x$rb_cv_lgamma_r_m0" = xno], [AC_DEFINE(LGAMMA_R_M0_FIX)])
+    AS_IF([test "x$rb_cv_lgamma_r_pm0" = xno], [AC_DEFINE(LGAMMA_R_PM0_FIX)])
 ])
 
 # Some platform need -lrt for clock_gettime, but the other don't.
@@ -3981,8 +3999,8 @@ AS_CASE(["$target_os"],
 	],
     [darwin*], [
 	RUBY_APPEND_OPTION(CFLAGS, -pipe)
-	RUBY_APPEND_OPTION(XLDFLAGS, [-framework CoreFoundation])
-	RUBY_APPEND_OPTION(LIBRUBYARG_STATIC, [-framework CoreFoundation])
+	RUBY_APPEND_OPTION(XLDFLAGS, [-framework Foundation])
+	RUBY_APPEND_OPTION(LIBRUBYARG_STATIC, [-framework Foundation])
 	],
     [osf*], [
 	if test "$GCC" != "yes" ; then
