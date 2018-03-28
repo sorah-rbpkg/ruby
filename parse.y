@@ -2,7 +2,7 @@
 
   parse.y -
 
-  $Author: mame $
+  $Author: naruse $
   created at: Fri May 28 18:02:42 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -1983,18 +1983,10 @@ mlhs_node	: user_variable
 lhs		: user_variable
 		    {
 			$$ = assignable(var_field($1), 0, &@$);
-		    /*%%%*/
-			if (!$$) $$ = new_begin(0, &@$);
-		    /*%
-		    %*/
 		    }
 		| keyword_variable
 		    {
 			$$ = assignable(var_field($1), 0, &@$);
-		    /*%%%*/
-			if (!$$) $$ = new_begin(0, &@$);
-		    /*%
-		    %*/
 		    }
 		| primary_value '[' opt_call_args rbracket
 		    {
@@ -6825,7 +6817,6 @@ static NODE *
 parser_heredoc_dedent(struct parser_params *parser, NODE *root)
 {
     NODE *node, *str_node;
-    int bol = TRUE;
     int indent = heredoc_indent;
 
     if (indent <= 0) return root;
@@ -6837,15 +6828,15 @@ parser_heredoc_dedent(struct parser_params *parser, NODE *root)
 
     while (str_node) {
 	VALUE lit = str_node->nd_lit;
-	if (bol) dedent_string(lit, indent);
-	bol = TRUE;
+	if (str_node->flags & NODE_FL_NEWLINE) {
+	    dedent_string(lit, indent);
+	}
 
 	str_node = 0;
 	while ((node = node->nd_next) != 0 && nd_type(node) == NODE_ARRAY) {
 	    if ((str_node = node->nd_head) != 0) {
 		enum node_type type = nd_type(str_node);
 		if (type == NODE_STR || type == NODE_DSTR) break;
-		bol = FALSE;
 		str_node = 0;
 	    }
 	}
@@ -6988,6 +6979,7 @@ parser_here_document(struct parser_params *parser, rb_strterm_heredoc_t *here)
     long len;
     VALUE str = 0;
     rb_encoding *enc = current_enc;
+    int bol;
 
     eos = RSTRING_PTR(here->term);
     len = RSTRING_LEN(here->term) - 2; /* here->term includes term_len and func */
@@ -7026,7 +7018,8 @@ parser_here_document(struct parser_params *parser, rb_strterm_heredoc_t *here)
 	lex_strterm = 0;
 	return 0;
     }
-    if (was_bol() && whole_match_p(eos, len, indent)) {
+    bol = was_bol();
+    if (bol && whole_match_p(eos, len, indent)) {
 	dispatch_heredoc_end();
 	heredoc_restore(&lex_strterm->u.heredoc);
 	lex_strterm = 0;
@@ -7064,10 +7057,7 @@ parser_here_document(struct parser_params *parser, rb_strterm_heredoc_t *here)
 	    if (pend < lex_pend) rb_str_cat(str, "\n", 1);
 	    lex_goto_eol(parser);
 	    if (heredoc_indent > 0) {
-		set_yylval_str(str);
-		add_mark_object(str);
-		flush_string_content(enc);
-		return tSTRING_CONTENT;
+		goto flush_str;
 	    }
 	    if (nextc() == -1) {
 		if (str) {
@@ -7100,10 +7090,14 @@ parser_here_document(struct parser_params *parser, rb_strterm_heredoc_t *here)
 		goto restore;
 	    }
 	    if (c != '\n') {
-		VALUE lit;
 	      flush:
-		add_mark_object(lit = STR_NEW3(tok(), toklen(), enc, func));
-		set_yylval_str(lit);
+		str = STR_NEW3(tok(), toklen(), enc, func);
+	      flush_str:
+		set_yylval_str(str);
+		add_mark_object(str);
+#ifndef RIPPER
+		if (bol) yylval.node->flags |= NODE_FL_NEWLINE;
+#endif
 		flush_string_content(enc);
 		return tSTRING_CONTENT;
 	    }
@@ -7126,6 +7120,9 @@ parser_here_document(struct parser_params *parser, rb_strterm_heredoc_t *here)
     lex_strterm = NEW_STRTERM(func | STR_FUNC_TERM, 0, 0);
     set_yylval_str(str);
     add_mark_object(str);
+#ifndef RIPPER
+    if (bol) yylval.node->flags |= NODE_FL_NEWLINE;
+#endif
     return tSTRING_CONTENT;
 }
 
@@ -9493,8 +9490,7 @@ new_regexp_gen(struct parser_params *parser, NODE *node, int options, const YYLT
 		if (reg_fragment_check(tail, options) && prev && !NIL_P(prev->nd_lit)) {
 		    VALUE lit = prev == node ? prev->nd_lit : prev->nd_head->nd_lit;
 		    if (!literal_concat0(parser, lit, tail)) {
-			node = 0;
-			break;
+			return NEW_NIL(); /* dummy node on error */
 		    }
 		    rb_str_resize(tail, 0);
 		    prev->nd_next = list->nd_next;
@@ -9957,11 +9953,13 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val, const YYLTYPE *lo
 #ifdef RIPPER
     ID id = get_id(lhs);
 # define assignable_result(x) (lhs)
+# define assignable_error() (lhs)
 # define parser_yyerror(parser, x) (lhs = assign_error_gen(parser, lhs))
 #else
 # define assignable_result(x) assignable_result0(x, location)
+# define assignable_error() new_begin(0, location)
 #endif
-    if (!id) return assignable_result(0);
+    if (!id) return assignable_error();
     switch (id) {
       case keyword_self:
 	yyerror0("Can't change the value of self");
@@ -10024,7 +10022,7 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val, const YYLTYPE *lo
 	compile_error(PARSER_ARG "identifier %"PRIsVALUE" is not valid to set", rb_id2str(id));
     }
   error:
-    return assignable_result(0);
+    return assignable_error();
 #undef assignable_result
 #undef parser_yyerror
 }
