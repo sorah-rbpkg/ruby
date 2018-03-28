@@ -689,7 +689,7 @@ class TestRubyOptimization < Test::Unit::TestCase
   end
 
   def test_clear_unreachable_keyword_args
-    assert_separately [], <<-END
+    assert_separately [], <<-END, timeout: 15
       script =  <<-EOS
         if true
         else
@@ -707,6 +707,11 @@ class TestRubyOptimization < Test::Unit::TestCase
     bug = '[ruby-core:84340] [Bug #14201]'
     eval("{**(bug = nil; {})};42")
     assert_nil(bug)
+
+    bug = '[ruby-core:85486] [Bug #14459]'
+    h = {}
+    assert_equal(bug, eval('{ok: 42, **h}; bug'))
+    assert_equal(:ok, eval('{ok: bug = :ok, **h}; bug'))
   end
 
   def test_overwritten_blockparam
