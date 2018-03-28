@@ -2,7 +2,7 @@
 
   thread.c -
 
-  $Author: mame $
+  $Author: naruse $
 
   Copyright (C) 2004-2007 Koichi Sasada
 
@@ -392,7 +392,7 @@ unblock_function_set(rb_thread_t *th, rb_unblock_function_t *func, void *arg, in
 	}
 
 	native_mutex_lock(&th->interrupt_lock);
-    } while (RUBY_VM_INTERRUPTED_ANY(th->ec) &&
+    } while (!th->ec->raised_flag && RUBY_VM_INTERRUPTED_ANY(th->ec) &&
 	     (native_mutex_unlock(&th->interrupt_lock), TRUE));
 
     VM_ASSERT(th->unblock.func == NULL);
@@ -3168,7 +3168,7 @@ rb_thread_fetch(int argc, VALUE *argv, VALUE self)
 	return rb_yield(key);
     }
     else if (argc == 1) {
-	rb_raise(rb_eKeyError, "key not found: %"PRIsVALUE, key);
+	rb_key_err_raise(rb_sprintf("key not found: %+"PRIsVALUE, key), self, key);
     }
     else {
 	return argv[1];
@@ -4208,6 +4208,7 @@ rb_thread_atfork(void)
     rb_thread_t *th = GET_THREAD();
     rb_thread_atfork_internal(th, terminate_atfork_i);
     th->join_list = NULL;
+    rb_mutex_cleanup_keeping_mutexes(th);
 
     /* We don't want reproduce CVE-2003-0900. */
     rb_reset_random_seed();

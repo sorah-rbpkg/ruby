@@ -2,7 +2,7 @@
 
   proc.c - Proc, Binding, Env
 
-  $Author: a_matsuda $
+  $Author: naruse $
   created at: Wed Jan 17 12:13:14 2007
 
   Copyright (C) 2004-2007 Koichi Sasada
@@ -2720,6 +2720,7 @@ method_super_method(VALUE method)
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     iclass = data->iclass;
+    if (!iclass) return Qnil;
     super_class = RCLASS_SUPER(RCLASS_ORIGIN(iclass));
     mid = data->me->called_id;
     if (!super_class) return Qnil;

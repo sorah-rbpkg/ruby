@@ -2,7 +2,7 @@
 
   compile.c - ruby node tree -> VM instruction sequence
 
-  $Author: ko1 $
+  $Author: naruse $
   created at: 04/01/01 03:42:15 JST
 
   Copyright (C) 2004-2007 Koichi Sasada
@@ -320,8 +320,8 @@ static void iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line,
 			   (VALUE)(ls) | 1, (VALUE)(le) | 1,			\
 			   (VALUE)(iseqv), (VALUE)(lc) | 1);			\
     LABEL_UNREMOVABLE(ls);							\
-    LABEL_UNREMOVABLE(le);							\
-    LABEL_UNREMOVABLE(lc);							\
+    LABEL_REF(le);								\
+    LABEL_REF(lc);								\
     rb_ary_push(ISEQ_COMPILE_DATA(iseq)->catch_table_ary, freeze_hide_obj(_e));	\
 } while (0)
 
@@ -2295,33 +2295,58 @@ replace_destination(INSN *dobj, INSN *nobj)
     if (!dl->refcnt) ELEM_REMOVE(&dl->link);
 }
 
+static LABEL*
+find_destination(INSN *i)
+{
+    int pos, len = insn_len(i->insn_id);
+    for (pos = 0; pos < len; ++pos) {
+	if (insn_op_types(i->insn_id)[pos] == TS_OFFSET) {
+	    return (LABEL *)OPERAND_AT(i, pos);
+	}
+    }
+    return 0;
+}
+
 static int
 remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 {
     LINK_ELEMENT *first = i, *end;
+    int *unref_counts = 0, nlabels = ISEQ_COMPILE_DATA(iseq)->label_no;
 
     if (!i) return 0;
-    while (i) {
+    unref_counts = ALLOCA_N(int, nlabels);
+    MEMZERO(unref_counts, int, nlabels);
+    end = i;
+    do {
+	LABEL *lab;
 	if (IS_INSN(i)) {
-	    if (IS_INSN_ID(i, jump) || IS_INSN_ID(i, leave)) {
+	    if (IS_INSN_ID(i, leave)) {
+		end = i;
 		break;
+	    }
+	    else if ((lab = find_destination((INSN *)i)) != 0) {
+		if (lab->unremovable) break;
+		unref_counts[lab->label_no]++;
 	    }
 	}
 	else if (IS_LABEL(i)) {
-	    if (((LABEL *)i)->unremovable) return 0;
-	    if (((LABEL *)i)->refcnt > 0) {
+	    lab = (LABEL *)i;
+	    if (lab->unremovable) return 0;
+	    if (lab->refcnt > unref_counts[lab->label_no]) {
 		if (i == first) return 0;
-		i = i->prev;
 		break;
 	    }
+	    continue;
 	}
 	else if (IS_TRACE(i)) {
 	    /* do nothing */
 	}
-	else return 0;
-	i = i->next;
-    }
-    end = i;
+	else if (IS_ADJUST(i)) {
+	    LABEL *dest = ((ADJUST *)i)->label;
+	    if (dest && dest->unremovable) return 0;
+	}
+	end = i;
+    } while ((i = i->next) != 0);
     i = first;
     do {
 	if (IS_INSN(i)) {
@@ -2416,6 +2441,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    goto again;
 	}
 	else if (IS_INSN_ID(diobj, leave)) {
+	    INSN *pop;
 	    /*
 	     *  jump LABEL
 	     *  ...
@@ -2423,6 +2449,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	     *  leave
 	     * =>
 	     *  leave
+	     *  pop
 	     *  ...
 	     * LABEL:
 	     *  leave
@@ -2432,6 +2459,9 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    iobj->insn_id = BIN(leave);
 	    iobj->operand_size = 0;
 	    iobj->insn_info = diobj->insn_info;
+	    /* adjust stack depth */
+	    pop = new_insn_body(iseq, diobj->insn_info.line_no, BIN(pop), 0);
+	    ELEM_INSERT_NEXT(&iobj->link, &pop->link);
 	    goto again;
 	}
 	else if ((piobj = (INSN *)get_prev_insn(iobj)) != 0 &&
@@ -3649,14 +3679,20 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 		      case COMPILE_ARRAY_TYPE_HASH:
 			if (i > 0) {
 			    if (first) {
-				ADD_INSN1(anchor, line, newhash, INT2FIX(i));
+				if (!popped) {
+				    ADD_INSN1(anchor, line, newhash, INT2FIX(i));
+				}
 				APPEND_LIST(ret, anchor);
 			    }
 			    else {
-				ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-				ADD_INSN(ret, line, swap);
+				if (!popped) {
+				    ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+				    ADD_INSN(ret, line, swap);
+				}
 				APPEND_LIST(ret, anchor);
-				ADD_SEND(ret, line, id_core_hash_merge_ptr, INT2FIX(i + 1));
+				if (!popped) {
+				    ADD_SEND(ret, line, id_core_hash_merge_ptr, INT2FIX(i + 1));
+				}
 			    }
 			}
 			if (kw) {
@@ -5058,6 +5094,7 @@ compile_next(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 	add_ensure_iseq(ret, iseq, 0);
 	ADD_INSNL(ret, line, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
 	ADD_ADJUST_RESTORE(ret, splabel);
+	splabel->unremovable = FALSE;
 
 	if (!popped) {
 	    ADD_INSN(ret, line, putnil);
@@ -6181,7 +6218,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    if (liseq->body->param.flags.has_rest) {
 		/* rest argument */
 		int idx = liseq->body->local_table_size - liseq->body->param.rest_start;
+
 		ADD_GETLOCAL(args, line, idx, lvar_level);
+		ADD_INSN1(args, line, splatarray, Qfalse);
 
 		argc = liseq->body->param.rest_start + 1;
 		flag |= VM_CALL_ARGS_SPLAT;
@@ -7089,6 +7128,18 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       ng:
 	debug_node_end();
 	return COMPILE_NG;
+    }
+
+    /* remove tracecoverage instruction if there is no relevant instruction */
+    if (IS_TRACE(ret->last) && ((TRACE*) ret->last)->event == RUBY_EVENT_LINE) {
+	LINK_ELEMENT *insn = ret->last->prev;
+	if (IS_INSN(insn) &&
+	    IS_INSN_ID(insn, tracecoverage) &&
+	    FIX2LONG(OPERAND_AT(insn, 0)) == RUBY_EVENT_COVERAGE_LINE
+	) {
+	    ELEM_REMOVE(insn); /* remove tracecovearge */
+	    RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), line - 1, Qnil);
+	}
     }
 
     debug_node_end();
