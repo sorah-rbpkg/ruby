@@ -1,3 +1,864 @@
+Wed Mar 28 23:08:46 2018  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	get rid of test error/failure on Windows introduced at r62955
+
+	* lib/webrick/httpresponse.rb (send_body_io): use seek if
+	  NotImplementedError is raised in IO.copy_stream with offset.
+
+	* lib/webrick/httpservlet/filehandler.rb (multipart_body): ditto.
+
+Wed Mar 28 23:08:46 2018  Eric Wong  <normalperson@yhbt.net>
+
+	webrick: support Proc objects as body responses
+
+	* lib/webrick/httpresponse.rb (send_body): call send_body_proc
+	  (send_body_proc): new method
+	  (class ChunkedWrapper): new class
+
+	* test/webrick/test_httpresponse.rb (test_send_body_proc): new test
+	  (test_send_body_proc_chunked): ditto
+	  [Feature #855]
+
+	webrick: favor .write over << method
+
+	This will make the next change to use IO.copy_stream
+	easier-to-read.  When we can drop Ruby 2.4 support in a few
+	years, this will allow us to use writev(2) with multiple
+	arguments for headers and chunked responses.
+
+	* lib/webrick/cgi.rb (write): new wrapper method
+	  lib/webrick/httpresponse.rb: (send_header): use socket.write
+	  (send_body_io): ditto
+	  (send_body_string): ditto
+	  (send_body_proc): ditto
+	  (_write_data): ditto
+	  (ChunkedWrapper#write): ditto
+	  (_send_file): ditto
+
+	webrick/httpresponse: IO.copy_stream for regular files
+
+	Remove the redundant _send_file method since its functionality
+	is unnecessary with IO.copy_stream.  IO.copy_stream also allows
+	the use of sendfile under some OSes to speed up copies to
+	non-TLS sockets.
+
+	Testing with "curl >/dev/null" and "ruby -run -e httpd" to
+	read a 1G file over Linux loopback reveals a reduction from
+	around ~0.770 to ~0.490 seconds on the client side.
+
+	* lib/webrick/httpresponse.rb (send_body_io): use IO.copy_stream
+	  (_send_file): remove
+	  [Feature #14237]
+
+	webrick: use IO.copy_stream for single range response
+
+	This is also compatible with range responses generated
+	by Rack::File (tested with rack 2.0.3).
+
+	* lib/webrick/httpresponse.rb (send_body_io): use Content-Range
+	* lib/webrick/httpservlet/filehandler.rb (make_partial_content):
+	  use File object for the single range case
+	* test/webrick/test_filehandler.rb (get_res_body): use send_body
+	  to test result
+
+	test/webrick/test_filehandler.rb: stricter multipart range test
+
+	We need to ensure we generate compatibile output in
+	the face of future changes
+
+	* test/webrick/test_filehandler.rb (test_make_partial_content):
+	  check response body
+
+	webrick: quiet warning for multi-part ranges
+
+	Content-Length is ignored by WEBrick::HTTPResponse even if we
+	calculate it, so instead we chunk responses to HTTP/1.1 clients
+	and terminate HTTP/1.0 connections.
+
+	* lib/webrick/httpservlet/filehandler.rb (make_partial_content):
+	  quiet warning
+
+	webrick/httpresponse: make ChunkedWrapper copy_stream-compatible
+
+	The .write method needs to return the number of bytes written
+	to avoid confusing IO.copy_stream.
+
+	* lib/webrick/httpresponse.rb (ChunkedWrapper#write): return bytes written
+	  (ChunkedWrapper#<<): return self
+
+	webrick: use IO.copy_stream for multipart response
+
+	Use the new Proc response body feature to generate a multipart
+	range response dynamically.  We use a flat array to minimize
+	object overhead as much as possible; as many ranges may fit
+	into an HTTP request header.
+
+	* lib/webrick/httpservlet/filehandler.rb (multipart_body): new method
+	  (make_partial_content): use multipart_body
+
+Wed Mar 28 21:24:24 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	unixsocket.c: abstract namespace
+
+	* ext/socket/unixsocket.c (unixsock_path_value): fix r62991 for
+	  Linux abstract namespace.
+
+Wed Mar 28 19:36:24 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	pack.c: fix underflow
+
+	* pack.c (pack_unpack_internal): get rid of underflow.
+	  https://hackerone.com/reports/298246
+
+Wed Mar 28 19:30:54 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	unixsocket.c: check NUL bytes
+
+	* ext/socket/unixsocket.c (rsock_init_unixsock): check NUL bytes.
+	  https://hackerone.com/reports/302997
+
+Wed Mar 28 19:29:03 2018  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	Ignore file separator from tmpfile/tmpdir name.
+
+Wed Mar 28 19:24:20 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	dir.c: check NUL bytes
+
+	* dir.c (GlobPathValue): should be used in rb_push_glob only.
+	  other methods should use FilePathValue.
+	  https://hackerone.com/reports/302338
+
+	* dir.c (rb_push_glob): expand GlobPathValue
+
+Wed Mar 28 18:04:37 2018  Eric Wong  <normalperson@yhbt.net>
+
+	webrick: prevent response splitting and header injection
+
+	Original patch by tenderlove (with minor style adjustments).
+
+	* lib/webrick/httpresponse.rb (send_header): call check_header
+	  (check_header): raise on embedded CRLF in header value
+	* test/webrick/test_httpresponse.rb
+	  (test_prevent_response_splitting_headers): new test
+	* (test_prevent_response_splitting_cookie_headers): ditto
+
+Wed Mar 28 18:04:37 2018  Eric Wong  <normalperson@yhbt.net>
+
+	webrick: use IO.copy_stream for multipart response
+
+	Use the new Proc response body feature to generate a multipart
+	range response dynamically.  We use a flat array to minimize
+	object overhead as much as possible; as many ranges may fit
+	into an HTTP request header.
+
+	* lib/webrick/httpservlet/filehandler.rb (multipart_body): new method
+	  (make_partial_content): use multipart_body
+
+	webrick/httprequest: limit request headers size
+
+	We use the same 112 KB limit started (AFAIK) by Mongrel, Thin,
+	and Puma to prevent malicious users from using up all the memory
+	with a single request.  This also limits the damage done by
+	excessive ranges in multipart Range: requests.
+
+	Due to the way we rely on IO#gets and the desire to keep
+	the code simple, the actual maximum header may be 4093 bytes
+	larger than 112 KB, but we're splitting hairs at that point.
+
+	* lib/webrick/httprequest.rb: define MAX_HEADER_LENGTH
+	  (read_header): raise when headers exceed max length
+
+	webrick/httpservlet/cgihandler: reduce memory use
+
+	WEBrick::HTTPRequest#body can be passed a block to process the
+	body in chunks.  Use this feature to avoid building a giant
+	string in memory.
+
+	* lib/webrick/httpservlet/cgihandler.rb (do_GET):
+	  avoid reading entire request body into memory
+	  (do_POST is aliased to do_GET, so it handles bodies)
+
+	webrick/httprequest: raise correct exception
+
+	"BadRequest" alone does not resolve correctly, it is in the
+	HTTPStatus namespace.
+
+	* lib/webrick/httprequest.rb (read_chunked): use correct exception
+	* test/webrick/test_httpserver.rb (test_eof_in_chunk): new test
+
+	webrick/httprequest: use InputBufferSize for chunked requests
+
+	While WEBrick::HTTPRequest#body provides a Proc interface
+	for streaming large request bodies, clients must not force
+	the server to use an excessively large chunk size.
+
+	* lib/webrick/httprequest.rb (read_chunk_size): limit each
+	  read and block.call to :InputBufferSize in config.
+	* test/webrick/test_httpserver.rb (test_big_chunks): new test
+
+	webrick: add test for Digest auth-int
+
+	No changes to the actual code, this is a new test for
+	a feature for which no tests existed.  I don't understand
+	the Digest authentication code well at all, but this is
+	necessary for the subsequent change.
+
+	* test/webrick/test_httpauth.rb (test_digest_auth_int): new test
+	  (credentials_for_request): support bodies with POST
+
+	webrick/httpauth/digestauth: stream req.body
+
+	WARNING! WARNING! WARNING!  LIKELY BROKEN CHANGE
+
+	Pass a proc to WEBrick::HTTPRequest#body to avoid reading a
+	potentially large request body into memory during
+	authentication.
+
+	WARNING! this will break apps completely which want to do
+	something with the body besides calculating the MD5 digest
+	of it.
+
+	Also, keep in mind that probably nobody uses "auth-int".
+	Servers such as Apache, lighttpd, nginx don't seem to
+	support it; nor does curl when using POST/PUT bodies;
+	and we didn't have tests for it until now...
+
+	* lib/webrick/httpauth/digestauth.rb (_authenticate): stream req.body
+
+Wed Mar 28 15:48:30 2018  Kazuki Yamaguchi <k@rhe.jp>
+
+	backport some changes from openssl gem v2.0.6 and v2.0.7.
+	[Backport #13935]
+
+Wed Mar 28 15:24:15 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	Fix setting method visibility on method wrapped with prepend
+
+	Ignore prepended modules when looking for already defined methods on a
+	class to set the visibility on.
+	[Fix GH-1834]
+
+	From: Dylan Thacker-Smith Dylan.Smith@shopify.com
+
+Wed Mar 28 15:02:43 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	resolv.rb: close socket
+
+	* lib/resolv.rb (UnconnectedUDP#lazy_initialize): store new
+	  sockets before binding, so the sockets get closed when the
+	  requester is closing.
+
+	* lib/resolv.rb (ConnectedUDP#lazy_initialize): ditto.
+
+	* lib/resolv.rb (UnconnectedUDP#close): synchronize to get rid of
+	  race condition.
+
+	* lib/resolv.rb (ConnectedUDP#close): ditto.
+
+	[Bug #14571]
+
+	From: quixoten (Devin Christensen) quixoten@gmail.com
+
+Wed Mar 28 14:59:27 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	socket.c: null byte at Socket.getnameinfo
+
+	* ext/socket/socket.c (sock_s_getnameinfo): check null byte. patched by
+	  tommy (Masahiro Tomita) in . [Bug #13994]
+
+Wed Mar 28 14:53:57 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	date_core.c: defensive code
+
+	* ext/date/date_core.c (f_cmp): check comparison failure.
+
+	* ext/date/date_core.c (d_lite_step): deal with the comparison
+	  result more defensively. [Bug #14549]
+
+Wed Mar 28 14:50:52 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	string.c: clear substring code range
+
+	* string.c (str_substr): substring of broken code range string may be
+	  valid or broken. patch by tommy (Masahiro Tomita) at [Bug #14388].
+
+Wed Mar 28 14:48:13 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	win32.c: memcpy instead of strlcpy
+
+	* win32/win32.c (cmdglob): memcpy the exact size instead of
+	  strlcpy with +1.
+
+	* win32/win32.c (w32_cmdvector): ditto, with NUL-terminating.
+
+Wed Mar 28 14:45:02 2018  Koichi Sasada  <ko1@atdot.net>
+
+	check array for zsuper. [Bug #14279]
+
+	* compile.c (iseq_compile_each0): for zsuper (NODE_ZSUPER), we need to
+	  check given argument is Array or not.
+
+	* test/ruby/test_super.rb: add a test for this bug.
+
+Wed Mar 28 14:40:25 2018  Eric Wong  <normalperson@yhbt.net>
+
+	net/ftp: fix FrozenError in BufferedSocket
+
+	I noticed this bug while working on something else with
+	RUBYOPT=-d on, existing test cases all passed with it.
+
+	Note: I use String.new because it is the local style, here,
+	I prefer +'' (or ''.b, for a future commit)
+
+	* lib/net/ftp.rb (BufferedSocket#read): use String.new
+	* test/net/ftp/test_buffered_socket.rb (test_read_nil): new test
+	  [Bug #14323]
+
+Wed Mar 28 14:29:26 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	clean autogenerated files
+
+	* enc/depend (clean, clean-srcs): fix path of name2ctype.h, and
+	  remove casefold.h too.
+
+	* enc/jis/props.h: autogenerated file.
+	  [Bug #13493]
+
+	Update sources and include files after update
+
+	Ignore enc/jis/props.h
+
+Wed Mar 28 14:14:25 2018  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	fix SEGV touching uninitialized memory
+	This function can be called from boot_defclass().
+	No assumption can be made about object internals.
+
+	fix SEGV touching uninitialized memory
+	This function can be called from InitVM_Object().
+	No assumption can be made about object internals.
+
+	fix SEGV touching uninitialized local variable
+	This imemo_name is used uninitialized because the switch
+	above does not cover all possible imemo types.
+
+	fix SEGV inspecting already freed objects
+	obj_info() assumes the given object is alive. Passing freed
+	objects to it results in SEGV.
+
+	fix SEGV inspecting uninitialized objects
+	obj_info() assumes the given object is alive. OTOH
+	gc_writebarrier_incremental is called before or in middle of
+	object initialization. Can casue SEGV.
+
+Wed Mar 28 13:56:17 2018  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	raise error if value contains CR/LF in iniheader of
+	initialize_http_header
+
+	like r59693, initialize_http_header also should raise error.
+	[Bug #14208]
+
+Wed Mar 28 13:48:35 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	parse.y: end of script at newline
+
+	* parse.y (parser_yylex): deal with end of script chars just after
+	  ignored newline as other places. [Bug #14206]
+
+Wed Mar 28 13:42:55 2018  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	[DOC] IO.new accepts external_encoding
+
+	Revert part of r61278 [Bug #13655]
+	[ci skip]
+
+Wed Mar 28 13:42:55 2018  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	IO.new doesn't receive "-" as external_encoding [Bug #13655]
+
+Thu Mar 22 15:38:43 2018  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	Removed the obstacle to running test-all with VC14.
+
+	* test/fiddle/test_import.rb (LIBC.fprintf): VC14's `fprintf` is very distinct
+	  name, then, just ignore this test.
+
+Thu Mar 22 12:28:23 2018  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	merge https://github.com/ruby/openssl/commit/3af2635f117f8da563d180bc1c58702aecb16e0c
+	patched by Kazuki Yamaguchi <k@rhe.jp>
+
+	bio: prevent possible GC issue in ossl_obj2bio()
+
+	Prevent the new object created by StringValue() from being GCed.
+	Luckily, as none of the callers of ossl_obj2bio() reads from the
+	returned BIO after possible triggering GC, this has not been a real
+	problem.
+
+	As a bonus, ossl_protect_obj2bio() function which is no longer used
+	anywhere is removed.
+
+	merge https://github.com/ruby/openssl/commit/f842b0d5c5e37527c11954a4b7a98c8d9cc57865
+	patched by Kazuki Yamaguchi <k@rhe.jp>
+
+	bio: do not use the FILE BIO method in ossl_obj2bio()
+
+	Read everything from an IO object into a String first and use the
+	memory buffer BIO method just as we do for String inputs.
+
+	For MSVC builds, the FILE BIO method uses the "UPLINK" interface that
+	requires the application to provide OPENSSL_Applink() function. For us,
+	the "application" means ruby.exe, in which we can't do anything. As a
+	workaround, avoid using the FILE BIO method at all.
+
+	Usually private keys or X.509 certificates aren't that large and the
+	temporarily increased memory usage hopefully won't be an issue.
+
+	ext/openssl/ossl_version.h (OpenSSL::VERSION): bump to 1.1.1.
+
+Thu Mar 22 11:24:43 2018  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (set_pioinfo_extra): use more reliable way to search
+	  the position of pioinfo of VC14, and also support debug library of it.
+	  patched by davispuh AT gmail.com
+	  [ruby-core:76644] [Bug #12644]
+	  this fixes also [Bug #12631]
+
+Thu Mar 22 11:24:43 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	win32.c: suppress warnings
+
+	* win32/win32.c (set_pioinfo_extra): remove "/*" within comment.
+
+Thu Mar 22 11:24:43 2018  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	Support MSVC14 and 15 [Bug #11118]
+
+	Search _pioinfo which is not exported after MSVC14.
+	[Bug #12014] [GH-884]
+
+Mon Mar 19 00:34:38 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	win32.c: unknown reparse tags
+
+	* win32/win32.c (rb_w32_read_reparse_point): skip unknown reparse tags.
+	  [Bug #14047]
+
+Mon Mar 19 00:32:31 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_lazy_enumerator.rb: test for [Bug #14082]
+
+	enum.c: check argument first
+
+	* enum.c (enum_cycle_size): check an argument before the size of the
+	  receiver, if it is given.
+
+Mon Mar 19 00:32:31 2018  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	Fix size on Enumerable#cycle when the size is 0 [Bug #14082].
+
+	Patch by Kenichi Kamiya
+
+Mon Mar 19 00:28:28 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_here_document): an escaped newline is not an
+	  actual newline, and the rest part should not be dedented.
+	  [ruby-core:72855] [Bug #11989]
+
+Mon Mar 19 00:27:06 2018  Koichi Sasada  <ko1@atdot.net>
+
+	thread_pthread: do not corrupt stack
+
+	This fixes stuck test/ruby/test_io.rb with FIBER_USE_NATIVE=0 on
+	GNU/Linux because linked-list pointers used by glibc get
+	corrupted when fiber stacks are copied.
+
+	Thanks to wanabe for finding the bug and original patch.
+
+	* thread_pthread (native_thread_init_stack): fix stack corruption
+	  [Bug #13387]
+
+Mon Mar 19 00:22:52 2018  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	TracePoint#enable, #disable: Don't yield any argument. [Bug #14057]
+
+Mon Mar 19 00:21:00 2018  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	Clarify the behavior of IO.write without offset in write mode.
+
+	https://github.com/ruby/ruby/pull/1571
+
+	Patch by takanabe (Takayuki Watanabe) [fix GH-1571]
+	[Bug #11638]
+
+Mon Mar 19 00:16:28 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	parse.y: token info with BOM
+
+	* parse.y (parser_prepare): set token_info_enabled flag first, before
+	  returning at BOM. [Bug #13998]
+
+Mon Mar 19 00:06:43 2018  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	io.c: fix segfault with closing socket on Windows
+
+	* io.c (fptr_finalize_flush): add an argument to keep GVL.
+
+	* io.c (fptr_finalize): adjust for above change.
+
+	* io.c (io_close_fptr): closing without GVL causes another exception
+	  while raising exception in another thread. This causes segfault on
+	  Windows. Keep GVL while closing when another thread raises.
+	  [Bug #13856]
+
+Mon Mar 19 00:04:08 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/forwardable.rb (_delegator_method): leave the backtrace
+	  untouched during accessor.  forwardable.rb does not appear in
+	  the backtrace during delegated method because of tail-call
+	  optimization.
+
+Sun Mar 18 23:59:32 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	dup String#partition return value
+
+	* string.c (rb_str_partition): return duplicated receiver, when no
+	  splits. [Bug#13925]
+
+	Author: Seiei Miyagi hanachin@gmail.com
+
+	dup String#rpartition return value
+
+	* string.c (rb_str_rpartition): return duplicated receiver, when no
+	  splits. [Bug#13925]
+
+	Author: Seiei Miyagi hanachin@gmail.com
+
+	dup String#split return value
+
+	* string.c (rb_str_split): return duplicated receiver, when no splits.
+	  patched by tompng (tomoya ishida) in , and the test case by Seiei
+	  Miyagi hanachin@gmail.com. [Bug#13925] [Fix GH-1705]
+
+Sun Mar 18 23:57:32 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	ruby.c: paragraph mode by -00
+
+	* ruby.c (proc_options): set to paragraph mode, if -00 is given, as
+	  well as perl and -R0 option in 0.49. [Bug #13736]
+
+Sun Mar 18 23:55:23 2018  Eric Wong  <normalperson@yhbt.net>
+
+	process: block/unblock signals around fork
+
+	As with forking for execve(2) in spawn', we must block signals
+	to ensure they are handled correctly in a freshlyfork'-ed child.
+
+	* process.c (retry_fork_ruby): block/unblock signals around fork
+	  (rb_fork_ruby): re-enable signals in forked child
+
+	* test/ruby/test_process.rb (test_forked_child_signal): new test
+	  [Bug #13916]
+
+	Thanks to Russell Davis for the bug report and test case.
+
+Sun Mar 18 23:52:37 2018  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	vm.c: fix `cfp consistency error' which occurs when raising exception
+	in bmethod call event
+
+	* vm.c (invoke_bmethod): set FINISH flag just before calling vm_exec.
+	  [Bug #13705]
+
+Sun Mar 18 23:36:24 2018  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	added workaround for APFS file format.
+
+	* TestFileExhaustive#test_atime: It fails with nano-sec precise. I
+	  changed to use unixtime for this assertion for APFS.
+
+	* TestFileExhaustive#test_expand_path: skip assertion when given
+	  invalid charactor on APFS.
+
+	[Bug #13816]
+
+Sun Mar 18 23:36:04 2018  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	High Sierra's APFS cannot use invalid filenames [Bug #13816]
+
+Sun Mar 18 23:31:44 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	test_framework.rb: for case-sensitive filesystem
+
+	* test/mkmf/test_framework.rb (test_single_framework): fix header
+	  file name for case-sensitive filesystem. it may not be same as
+	  the framework name, but should be the actual file name.
+	  [Bug #13489]
+
+	* test/mkmf/test_framework.rb (test_multi_frameworks): ditto.
+
+	test_file_exhaustive.rb: check case-sensitive fs
+
+	* test/ruby/test_file_exhaustive.rb (test_expand_path): dump expanded
+	  file name, not only appended char, for case-sensitive filesystem.
+	  [Bug #13489]
+
+Sun Mar 18 23:29:14 2018  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_word.rb: word quit without confirmation dialog to
+	  save files. [Bug #13894] Thanks to h.shirosaki.
+
+Sun Mar 18 23:26:20 2018  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	fix the case High Sierra's mincore(2) may return -128 [Bug #13895]
+
+Sun Mar 18 23:23:48 2018  Koichi Sasada  <ko1@atdot.net>
+
+	skip unless PLATFORM is darwin.
+
+Sun Mar 18 23:23:48 2018  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	Treat NULL reference case [Bug #13566]
+
+	Fix C level backtrace on Darwin
+	SEGV caused by invalid instruction call.
+
+Sun Mar 18 23:11:29 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ARFLAGS): check if deterministic mode flag is
+	  effective, which is on by default on Ubuntu.
+
+	* configure.in: use libtool on macOS to suppress a warning against
+	  debug_counter.o, which has no symbols unless USE_DEBUG_COUNTER is
+	  set to non-zero.
+
+	* configure.in: use newer libtool only
+
+Sat Feb 17 01:21:00 2018  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	Merge RubyGems 2.7.6 from upstream.
+
+	It fixed some security vulnerabilities.
+
+	http://blog.rubygems.org/2018/02/15/2.7.6-released.html
+
+	fix regexp literal warning.
+
+	* test/rubygems/test_gem_server.rb: eliminate duplicated character class warning.
+	  [Bug #14481]
+
+Thu Feb  1 04:00:53 2018  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	Remove debug print introduced in r52386
+
+Wed Jan 31 22:57:42 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	configure.in: link Foundation framework
+
+	* configure.in (XLDFLAGS): link against Foundation framework and
+	  let __NSPlaceholderDictionary initialize, to get rid of crash
+	  after fork on macOS High Sierra.  [ruby-core:83239] [Bug #14009]
+
+Wed Jan 31 22:51:59 2018  Pete Higgins  <pete@peterhiggins.org>
+
+	* thread_sync.c (Init_thread_sync): Remove confusing doc comments,
+	  which are picked up by rdoc unexpectedly, from Queue and
+	  SizedQueue.  [Fix GH-1450]
+
+Wed Jan 31 22:48:41 2018  Eric Wong  <normalperson@yhbt.net>
+
+	thread_pthread.c: do not wakeup inside child processes
+
+	* thread_pthread.c (rb_thread_wakeup_timer_thread): check
+	  ownership before incrementing
+	  (rb_thread_wakeup_timer_thread_low): ditto
+	  [Bug #13794] [ruby-core:83064]
+
+Wed Jan 31 22:46:36 2018  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* configure.in (rb_cv_lgamma_r_pm0): check if lgamma_r(+0.0)
+	  returns positive infinity, in addition to lgamma_r(-0.0).
+	  AIX returns an incorrect result of negative infinity.
+
+	* math.c (ruby_lgamma_r): handle +0.0, in addition to -0.0.
+
+Wed Jan 31 22:32:08 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	ext: check if null byte is contained
+
+	[ruby-dev:50267] [Bug #13953]
+
+Wed Jan 31 22:29:57 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	string.c: fix ASCII-only on succ
+
+	* string.c (str_succ): clear coderange cache when no alpha-numeric
+	  character case, carried part may become ASCII-only.
+	  [ruby-core:83062] [Bug #13952]
+
+Wed Jan 31 22:28:20 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	pack.c: unpack "M" may be ASCII only
+
+	* pack.c (pack_unpack_internal): set ASCII only properly on "M",
+	  may be ASCII only.  [ruby-core:83055] [Bug #13949]
+
+Wed Jan 31 22:26:13 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	string.c: ASCII-incompatible is not ASCII only
+
+	* string.c (tr_trans): ASCII-incompatible encoding strings cannot
+	  be ASCII-only even if valid.  [ruby-core:83056] [Bug #13950]
+
+Wed Jan 31 22:24:05 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	vm.c: fetch retval iff necessary
+
+	* vm.c (rb_vm_make_jump_tag_but_local_jump): get rid of fetching
+	  retval when it is not used.  it is necessary for local jump
+	  state only.
+
+Wed Jan 31 22:16:00 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	compile.c: fix stack consitency error
+
+	* compile.c (iseq_compile_each0): fix stack consitency error on
+	  attr-assign with safe navigation operator when the receiver is
+	  nil, should pop it too.  [ruby-core:83078] [Bug #13964]
+
+	test_call.rb: refine test_safe_call
+
+	* test/ruby/test_call.rb (test_safe_call): rhs should not be
+	  evaluated when the receiver is nil.  simplified the assertion
+	  for  [Bug #13964].
+
+Wed Jan 31 22:12:48 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	adjust indent
+
+	* vm_insnhelper.c (vm_call_method_each_type): adjust indent of a
+	  block in switch.
+
+	visibility of inherited method
+
+	* vm_insnhelper.c (vm_call_method_each_type): honor the original
+	  visibility of inherited methods when a refinement is defined but
+	  not activated.  [ruby-core:82209] [Bug #13776]
+
+	Author:    Mon_Ouie (Mon ouie) <mon.ouie@gmail.com>
+
+Wed Jan 31 20:47:07 2018  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	HTTPHeader#add_field should allow binary [Bug #13926]
+
+Wed Jan 31 20:42:11 2018  Marcus Stollsteimer  <sto.mar@web.de>
+
+	ri.1: rewrite ri man page
+
+	* man/ri.1: update the (very outdated) ri man page:
+	  * update document date
+	  * fix document title formatting and volume name
+	  * update descriptions and options to current ri --help text
+	  * fix some mdoc formatting errors (missing escaping of `\',
+	    wrong macro for bullet list items)
+	  * various rewordings and other improvements
+
+	improve man pages
+
+	* man/ruby.1, man/erb.1, man/goruby.1, man/irb.1:
+	  fix document title formatting and volume name,
+	  improve "REPORTING BUGS" section: fix mdoc formatting error
+	  (wrong macro for bullet list items), small rewordings.
+
+Wed Jan 31 20:25:09 2018  Shugo Maeda  <shugo@ruby-lang.org>
+
+	lib/net/imap.rb: Ignore trailing space for Microsoft Exchange Server
+
+	Based on the patch by keysen (Jeremy Carlier).
+	[ruby-core:81641] [Bug #13649]
+
+Wed Jan 31 20:23:49 2018  sorah (Shota Fukumori)  <her@sorah.jp>
+
+	Add documents on Process::CLOCK_* constants
+
+	* process.c: Add documents on Process::CLOCK_* constants.
+	  Patch by Sunao Komuro <sunao-komuro@cookpad.com>.
+	  Closes [GH-1567] [Bug #13386]
+
+Wed Jan 31 20:11:20 2018  Marcus Stollsteimer  <sto.mar@web.de>
+
+	ri.1: fix errors in ri man page
+
+	* man/ri.1: fix some errors in ri man page (add missing options,
+	  remove options that do not exist, fix formatter list).
+
+	  Reported by Josh Cheek.  [ruby-core:68065] [Bug #10838]
+
+Wed Jan 31 20:09:50 2018  Marcus Stollsteimer  <sto.mar@web.de>
+
+	date_core.c: fix error in DateTime docs
+
+	* ext/date/date_core.c: [DOC] fix format string for DateTime#rfc3339.
+	  Reported by Andreas Rayo Kniep.  [ruby-core:68418] [Bug #10936]
+
+	* ext/date/date_core.c: [DOC] ditto for DateTime#iso8601 and
+	  DateTime#xmlschema; other small improvements.
+
+Wed Jan 31 20:04:47 2018  Marcus Stollsteimer  <sto.mar@web.de>
+
+	lib/ostruct.rb: [DOC] revise docs for OpenStruct
+
+	* update paragraph on implementation:
+	  define_singleton_method is used, not define_method
+	* add call-seq with return values for each_pair
+	* adopt description of dig from Array and Hash
+	* fix description of the hash method
+	* :nodoc: initialize_copy, respond_to_missing?
+	* other small improvements, e.g. use the term `attribute' in the docs
+	  (instead of `member'), which is clearer for users of the class
+	* improve code examples: e.g. use more consistent style (always use
+	  double quotes, drop `p' and `puts', ...), update inspect output,
+	  use example data that is not prone to change (like population)
+	* add more code examples
+	* fix some small errors and grammar
+
+	[ruby-core:79265] [Bug #13159]
+
+Wed Jan 31 20:02:29 2018  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	rational.c: fix rdoc
+
+	* rational.c: [DOC] fix wrong indentations and comment out some lines
+	  in code examples to make them valid Ruby code and syntax highlighted
+	  on the rendered page.
+
+	[ci skip] [Bug #13233]
+	Author: Marcus Stollsteimer sto.mar@web.de
+
+Wed Jan 31 19:57:09 2018  Eric Wong  <normalperson@yhbt.net>
+
+	doc: Add example for Symbol#to_s
+
+	* string.c: add example for Symbol#to_s.
+
+	The docs for Symbol#to_s only include an example for
+	Symbol#id2name, but not for #to_s which is an alias;
+	the docs should include examples for both methods.
+
+	From: Marcus Stollsteimer <sto.mar@web.de>
+
+Wed Jan 31 19:49:44 2018  Reiner Herrmann  <reiner@reiner-h.de>
+
+	* lib/mkmf.rb (create_makefile): sort lists of source and object
+	  files in generated Makefile, unless given by extconf.rb.
+	  [Fix GH-1367]
+
+Fri Dec 15 03:48:55 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* version.h: Bump version to 2.3.7
+
 Thu Dec 14 23:53:41 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/net/ftp/test_ftp.rb (process_port_or_eprt): merge a part of
