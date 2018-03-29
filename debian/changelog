@@ -1,3 +1,9 @@
+ruby2.2 (2.2.10-0nkmi1) unstable; urgency=medium
+
+  * Ruby 2.2.10
+
+ -- Sorah Fukumori <her@sorah.jp>  Thu, 29 Mar 2018 00:10:42 +0000
+
 ruby2.2 (2.2.9-0nkmi1~xenial) xenial; urgency=medium
 
   * new upstream version
