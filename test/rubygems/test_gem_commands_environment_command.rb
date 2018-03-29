@@ -10,6 +10,7 @@ class TestGemCommandsEnvironmentCommand < Gem::TestCase
   end
 
   def test_execute
+    skip "wrong assumption of RUBY_VERSION (teeny could be over 10)"
     orig_sources = Gem.sources.dup
     orig_path, ENV['PATH'] = ENV['PATH'], %w[/usr/local/bin /usr/bin /bin].join(File::PATH_SEPARATOR)
     Gem.sources.replace %w[http://gems.example.com]
@@ -47,8 +48,10 @@ class TestGemCommandsEnvironmentCommand < Gem::TestCase
     assert_empty @ui.error
 
   ensure
+    if orig_sources
     Gem.sources.replace orig_sources
     ENV['PATH'] = orig_path
+    end
   end
 
   def test_execute_gemdir
