@@ -2,3 +2,4 @@
 0002-lib-mkmf.rb-sort-list-of-object-files-in-generated-M.patch
 0003-Mark-Gemspec-reproducible-change-fixing-784225-too.patch
 0004-Make-gemspecs-reproducible.patch
+0005-ia64-update-ia64-specific-code-to-use-execution-cont.patch
