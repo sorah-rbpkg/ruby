@@ -1,2 +1,3 @@
 Tests: run-all bundled-gems builtin-extensions rubyconfig
 Depends: @
+Restrictions: allow-stderr
