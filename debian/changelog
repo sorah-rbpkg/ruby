@@ -1,3 +1,33 @@
+ruby2.5 (2.5.1-1) UNRELEASED; urgency=medium
+
+  * New upstream version 2.5.1.
+
+    According to the release announcement, includes fixes for the following
+    security issues:
+
+    - CVE-2017-17742: HTTP response splitting in WEBrick
+    - CVE-2018-6914: Unintentional file and directory creation with directory
+      traversal in tempfile and tmpdir
+    - CVE-2018-8777: DoS by large request in WEBrick
+    - CVE-2018-8778: Buffer under-read in String#unpack
+    - CVE-2018-8779: Unintentional socket creation by poisoned NUL byte in
+      UNIXServer and UNIXSocket
+    - CVE-2018-8780: Unintentional directory traversal by poisoned NUL byte in
+      Dir
+    - Multiple vulnerabilities in RubyGems
+  * Refresh patches.
+
+    Patches dropped for being already applied upstream:
+
+    - 0005-Fix-tests-to-cope-with-updates-in-tzdata.patch
+    - 0006-Rubygems-apply-upstream-patch-to-fix-multiple-vulner.patch
+  * Add patch to fix FTBFS on ia64 (Closes: #889848)
+  * Add simple autopkgtest to check for builtin extensions that are build
+    against external dependencies (ssl, yaml, *dbm etc)
+  * Add build-dependency on libgdbm-compat-dev (Closes: #892099)
+
+ -- Antonio Terceiro <terceiro@debian.org>  Sat, 31 Mar 2018 12:25:15 -0300
+
 ruby2.5 (2.5.0-6) unstable; urgency=medium
 
   * debian/rules: explicitly pass --runstatedir, --localstatedir, and
