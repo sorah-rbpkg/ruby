@@ -1,7 +1,1473 @@
 ------------------------------------------------------------------------
-r61468 | naruse | 2017-12-25 15:57:02 +0900 (Mon, 25 Dec 2017) | 1 line
+r63029 | naruse | 2018-03-29 01:46:25 +0900 (Thu, 29 Mar 2018) | 1 line
 
-add tag v2_5_0
+add tag v2_5_1
+------------------------------------------------------------------------
+r63027 | naruse | 2018-03-29 01:45:58 +0900 (Thu, 29 Mar 2018) | 2 lines
+
+p57
+
+------------------------------------------------------------------------
+r63026 | svn | 2018-03-29 01:44:34 +0900 (Thu, 29 Mar 2018) | 1 line
+
+* 2018-03-29
+------------------------------------------------------------------------
+r63025 | naruse | 2018-03-29 01:44:33 +0900 (Thu, 29 Mar 2018) | 4 lines
+
+revert r62985 (r62966 in trunk)
+
+It breaks test-all
+
+------------------------------------------------------------------------
+r63011 | naruse | 2018-03-28 22:46:14 +0900 (Wed, 28 Mar 2018) | 9 lines
+
+merge revision(s) 63008:
+
+	get rid of test error/failure on Windows introduced at r62955
+
+	* lib/webrick/httpresponse.rb (send_body_io): use seek if NotImplementedError
+	  is raised in IO.copy_stream with offset.
+
+	* lib/webrick/httpservlet/filehandler.rb (multipart_body): ditto.
+
+------------------------------------------------------------------------
+r63010 | naruse | 2018-03-28 22:45:50 +0900 (Wed, 28 Mar 2018) | 2 lines
+
+Revert wrong commit r62976-r62978
+
+------------------------------------------------------------------------
+r63009 | naruse | 2018-03-28 22:43:23 +0900 (Wed, 28 Mar 2018) | 6 lines
+
+merge revision(s) 63000:
+
+	unixsocket.c: abstract namespace
+
+	* ext/socket/unixsocket.c (unixsock_path_value): fix r62991 for
+	  Linux abstract namespace.
+------------------------------------------------------------------------
+r63007 | naruse | 2018-03-28 21:54:26 +0900 (Wed, 28 Mar 2018) | 2 lines
+
+fix r62970 as r62990
+
+------------------------------------------------------------------------
+r63006 | naruse | 2018-03-28 21:50:56 +0900 (Wed, 28 Mar 2018) | 98 lines
+
+merge revision(s) 62953-62959:
+
+	win32/file.c: relative path with drive letter
+
+	* win32/file.c (IS_ABSOLUTE_PATH_P): home directory should not be
+	  a relative path regardless a drive letter.   PathIsRelativeW
+	  returns FALSE on such path.  [ruby-core:86356] [Bug #14638]
+	------------------------------------------------------------------------
+	r62953 | normal | 2018-03-28 17:05:46 +0900 (Wed, 28 Mar 2018) | 15 lines
+
+	webrick: favor .write over << method
+
+	This will make the next change to use IO.copy_stream
+	easier-to-read.  When we can drop Ruby 2.4 support in a few
+	years, this will allow us to use writev(2) with multiple
+	arguments for headers and chunked responses.
+
+	* lib/webrick/cgi.rb (write): new wrapper method
+	  lib/webrick/httpresponse.rb: (send_header): use socket.write
+	  (send_body_io): ditto
+	  (send_body_string): ditto
+	  (send_body_proc): ditto
+	  (_write_data): ditto
+	  (ChunkedWrapper#write): ditto
+	  (_send_file): ditto
+	------------------------------------------------------------------------
+	r62954 | normal | 2018-03-28 17:05:52 +0900 (Wed, 28 Mar 2018) | 14 lines
+
+	webrick/httpresponse: IO.copy_stream for regular files
+
+	Remove the redundant _send_file method since its functionality
+	is unnecessary with IO.copy_stream.  IO.copy_stream also allows
+	the use of sendfile under some OSes to speed up copies to
+	non-TLS sockets.
+
+	Testing with "curl >/dev/null" and "ruby -run -e httpd" to
+	read a 1G file over Linux loopback reveals a reduction from
+	around ~0.770 to ~0.490 seconds on the client side.
+
+	* lib/webrick/httpresponse.rb (send_body_io): use IO.copy_stream
+	  (_send_file): remove
+	  [Feature #14237]
+	------------------------------------------------------------------------
+	r62955 | normal | 2018-03-28 17:05:57 +0900 (Wed, 28 Mar 2018) | 10 lines
+
+	webrick: use IO.copy_stream for single range response
+
+	This is also compatible with range responses generated
+	by Rack::File (tested with rack 2.0.3).
+
+	* lib/webrick/httpresponse.rb (send_body_io): use Content-Range
+	* lib/webrick/httpservlet/filehandler.rb (make_partial_content):
+	  use File object for the single range case
+	* test/webrick/test_filehandler.rb (get_res_body): use send_body
+	  to test result
+	------------------------------------------------------------------------
+	r62956 | normal | 2018-03-28 17:06:02 +0900 (Wed, 28 Mar 2018) | 7 lines
+
+	test/webrick/test_filehandler.rb: stricter multipart range test
+
+	We need to ensure we generate compatibile output in
+	the face of future changes
+
+	* test/webrick/test_filehandler.rb (test_make_partial_content):
+	  check response body
+	------------------------------------------------------------------------
+	r62957 | normal | 2018-03-28 17:06:08 +0900 (Wed, 28 Mar 2018) | 8 lines
+
+	webrick: quiet warning for multi-part ranges
+
+	Content-Length is ignored by WEBrick::HTTPResponse even if we
+	calculate it, so instead we chunk responses to HTTP/1.1 clients
+	and terminate HTTP/1.0 connections.
+
+	* lib/webrick/httpservlet/filehandler.rb (make_partial_content):
+	  quiet warning
+	------------------------------------------------------------------------
+	r62958 | normal | 2018-03-28 17:06:13 +0900 (Wed, 28 Mar 2018) | 7 lines
+
+	webrick/httpresponse: make ChunkedWrapper copy_stream-compatible
+
+	The .write method needs to return the number of bytes written
+	to avoid confusing IO.copy_stream.
+
+	* lib/webrick/httpresponse.rb (ChunkedWrapper#write): return bytes written
+	  (ChunkedWrapper#<<): return self
+	------------------------------------------------------------------------
+	r62959 | normal | 2018-03-28 17:06:18 +0900 (Wed, 28 Mar 2018) | 9 lines
+
+	webrick: use IO.copy_stream for multipart response
+
+	Use the new Proc response body feature to generate a multipart
+	range response dynamically.  We use a flat array to minimize
+	object overhead as much as possible; as many ranges may fit
+	into an HTTP request header.
+
+	* lib/webrick/httpservlet/filehandler.rb (multipart_body): new method
+	  (make_partial_content): use multipart_body
+------------------------------------------------------------------------
+r62986 | naruse | 2018-03-28 18:26:17 +0900 (Wed, 28 Mar 2018) | 9 lines
+
+webrick: prevent response splitting and header injection
+
+Original patch by tenderlove (with minor style adjustments).
+
+* lib/webrick/httpresponse.rb (send_header): call check_header
+  (check_header): raise on embedded CRLF in header value
+* test/webrick/test_httpresponse.rb
+  (test_prevent_response_splitting_headers): new test
+* (test_prevent_response_splitting_cookie_headers): ditto
+------------------------------------------------------------------------
+r62985 | naruse | 2018-03-28 18:26:16 +0900 (Wed, 28 Mar 2018) | 23 lines
+
+webrick/httpproxy: stream request and response bodies
+
+Reading entire request or response bodies into memory can lead
+to trivial denial-of-service attacks.  Introduce Fibers in both
+cases to allow streaming.
+
+WEBrick::HTTPRequest gains a new body_reader method to prepare
+itself as a source for IO.copy_stream.  This allows the
+WEBrick::HTTPRequest object to be used as the
+Net::HTTPGenericRequest#body_stream= arg for Net::HTTP.
+
+For HTTP proxy response bodies, we also use a Fiber to
+to make the HTTP request and read the response body.
+
+* lib/webrick/httprequest.rb (body_reader): new method
+  (readpartial): ditto
+* lib/webrick/httpproxy.rb (perform_proxy_request): use Fiber
+  to stream response body
+  (do_GET, do_HEAD): adjust call
+  (do_POST): adjust call and supply body_reader
+* test/webrick/test_httprequest.rb (test_chunked): test
+  for IO.copy_stream compatibility
+* test/webrick/test_httpproxy.rb (test_big_bodies): new test
+------------------------------------------------------------------------
+r62984 | naruse | 2018-03-28 18:26:14 +0900 (Wed, 28 Mar 2018) | 18 lines
+
+webrick/httpauth/digestauth: stream req.body
+
+WARNING! WARNING! WARNING!  LIKELY BROKEN CHANGE
+
+Pass a proc to WEBrick::HTTPRequest#body to avoid reading a
+potentially large request body into memory during
+authentication.
+
+WARNING! this will break apps completely which want to do
+something with the body besides calculating the MD5 digest
+of it.
+
+Also, keep in mind that probably nobody uses "auth-int".
+Servers such as Apache, lighttpd, nginx don't seem to
+support it; nor does curl when using POST/PUT bodies;
+and we didn't have tests for it until now...
+
+* lib/webrick/httpauth/digestauth.rb (_authenticate): stream req.body
+------------------------------------------------------------------------
+r62983 | naruse | 2018-03-28 18:26:13 +0900 (Wed, 28 Mar 2018) | 9 lines
+
+webrick: add test for Digest auth-int
+
+No changes to the actual code, this is a new test for
+a feature for which no tests existed.  I don't understand
+the Digest authentication code well at all, but this is
+necessary for the subsequent change.
+
+* test/webrick/test_httpauth.rb (test_digest_auth_int): new test
+  (credentials_for_request): support bodies with POST
+------------------------------------------------------------------------
+r62982 | naruse | 2018-03-28 18:26:12 +0900 (Wed, 28 Mar 2018) | 9 lines
+
+webrick/httprequest: use InputBufferSize for chunked requests
+
+While WEBrick::HTTPRequest#body provides a Proc interface
+for streaming large request bodies, clients must not force
+the server to use an excessively large chunk size.
+
+* lib/webrick/httprequest.rb (read_chunk_size): limit each
+  read and block.call to :InputBufferSize in config.
+* test/webrick/test_httpserver.rb (test_big_chunks): new test
+------------------------------------------------------------------------
+r62981 | naruse | 2018-03-28 18:26:12 +0900 (Wed, 28 Mar 2018) | 7 lines
+
+webrick/httprequest: raise correct exception
+
+"BadRequest" alone does not resolve correctly, it is in the
+HTTPStatus namespace.
+
+* lib/webrick/httprequest.rb (read_chunked): use correct exception
+* test/webrick/test_httpserver.rb (test_eof_in_chunk): new test
+------------------------------------------------------------------------
+r62980 | naruse | 2018-03-28 18:26:11 +0900 (Wed, 28 Mar 2018) | 9 lines
+
+webrick/httpservlet/cgihandler: reduce memory use
+
+WEBrick::HTTPRequest#body can be passed a block to process the
+body in chunks.  Use this feature to avoid building a giant
+string in memory.
+
+* lib/webrick/httpservlet/cgihandler.rb (do_GET):
+  avoid reading entire request body into memory
+  (do_POST is aliased to do_GET, so it handles bodies)
+------------------------------------------------------------------------
+r62979 | naruse | 2018-03-28 18:26:10 +0900 (Wed, 28 Mar 2018) | 13 lines
+
+webrick/httprequest: limit request headers size
+
+We use the same 112 KB limit started (AFAIK) by Mongrel, Thin,
+and Puma to prevent malicious users from using up all the memory
+with a single request.  This also limits the damage done by
+excessive ranges in multipart Range: requests.
+
+Due to the way we rely on IO#gets and the desire to keep
+the code simple, the actual maximum header may be 4093 bytes
+larger than 112 KB, but we're splitting hairs at that point.
+
+* lib/webrick/httprequest.rb: define MAX_HEADER_LENGTH
+  (read_header): raise when headers exceed max length
+------------------------------------------------------------------------
+r62978 | naruse | 2018-03-28 18:26:09 +0900 (Wed, 28 Mar 2018) | 1 line
+
+sdbm: constified
+------------------------------------------------------------------------
+r62977 | naruse | 2018-03-28 18:26:08 +0900 (Wed, 28 Mar 2018) | 4 lines
+
+sdbm: check offset
+
+* ext/sdbm/_sdbm.c (splpage): check offset range.
+  https://hackerone.com/reports/271291
+------------------------------------------------------------------------
+r62976 | naruse | 2018-03-28 18:26:07 +0900 (Wed, 28 Mar 2018) | 6 lines
+
+sdbm: check offset
+
+* ext/sdbm/_sdbm.c (getpair, getnkey): check offset range.
+  https://hackerone.com/reports/271096
+
+* ext/sdbm/init.c (fsdbm_each_pair): raise if fetch failed.
+------------------------------------------------------------------------
+r62975 | naruse | 2018-03-28 18:26:06 +0900 (Wed, 28 Mar 2018) | 4 lines
+
+pack.c: fix underflow
+
+* pack.c (pack_unpack_internal): get rid of underflow.
+  https://hackerone.com/reports/298246
+------------------------------------------------------------------------
+r62974 | naruse | 2018-03-28 18:26:04 +0900 (Wed, 28 Mar 2018) | 9 lines
+
+dir.c: check NUL bytes
+
+* dir.c (GlobPathValue): should be used in rb_push_glob only.
+  other methods should use FilePathValue.
+  https://hackerone.com/reports/302338
+
+* dir.c (rb_push_glob): expand GlobPathValue
+
+From: Nobuyoshi Nakada <nobu@ruby-lang.org>
+------------------------------------------------------------------------
+r62973 | naruse | 2018-03-28 18:26:01 +0900 (Wed, 28 Mar 2018) | 4 lines
+
+unixsocket.c: check NUL bytes
+
+* ext/socket/unixsocket.c (rsock_init_unixsock): check NUL bytes.
+  https://hackerone.com/reports/302997
+------------------------------------------------------------------------
+r62972 | svn | 2018-03-28 18:26:01 +0900 (Wed, 28 Mar 2018) | 1 line
+
+* 2018-03-28
+------------------------------------------------------------------------
+r62971 | naruse | 2018-03-28 18:26:00 +0900 (Wed, 28 Mar 2018) | 1 line
+
+Remove directory separators
+------------------------------------------------------------------------
+r62911 | naruse | 2018-03-25 01:00:27 +0900 (Sun, 25 Mar 2018) | 18 lines
+
+merge revision(s) 61587,61617,61618: [Backport #14273]
+
+	compile.c: next label
+
+	* compile.c (compile_next): label for jump to the end of block is
+	  removable.
+
+	compile.c: remove more unreachable chunk
+
+	* compile.c (remove_unreachable_chunk): remove beyond labels to be
+	  removed.
+
+	compile.c: fix stack consistency error
+
+	* compile.c (iseq_peephole_optimize): fix stack consistency error
+	  from return in loop, by adding extra `pop` when replacing `jump`
+	  with `leave`, which is never reached but needed to adjust sp
+	  calculation.  [ruby-core:84589] [Bug #14273]
+------------------------------------------------------------------------
+r62909 | naruse | 2018-03-24 20:43:50 +0900 (Sat, 24 Mar 2018) | 13 lines
+
+merge revision(s) 62723,62724: [Backport #14584]
+
+        parse.y: reduce duplicate code
+
+        parse.y: fix interpolated string literal dedent
+
+        * parse.y (heredoc_dedent): fix interpolated string literal dedent,
+          remove indentations from only nodes with the newline flag.
+          [ruby-core:85983] [Bug #14584]
+
+        * parse.y (here_document): set the newline flag on literal string
+          nodes starting at the beginning of line.
+
+------------------------------------------------------------------------
+r62905 | naruse | 2018-03-24 19:57:34 +0900 (Sat, 24 Mar 2018) | 11 lines
+
+merge revision(s) 62548,62894: [Backport #14324]
+
+	eval_error.c: rb_error_write flags
+
+	* eval_error.c (rb_error_write): add highlight and reverse mode
+	  flags.  defaulted to rb_stderr_tty_p() if Qnil.
+
+	error.c: full_message options
+
+	* error.c (exc_full_message): add highlight: and reverse: keyword
+	  options.  [Bug #14324]
+------------------------------------------------------------------------
+r62896 | naruse | 2018-03-22 20:18:00 +0900 (Thu, 22 Mar 2018) | 7 lines
+
+merge revision(s) 62892,62893: [Backport #14363]
+
+	fix each_grapheme_cluster's size [Bug #14363]
+
+	From: Hugo Peixoto <hugo.peixoto@gmail.com>
+
+	Factor out get_reg_grapheme_cluster
+------------------------------------------------------------------------
+r62895 | naruse | 2018-03-22 19:02:54 +0900 (Thu, 22 Mar 2018) | 2 lines
+
+teenyup
+
+------------------------------------------------------------------------
+r62890 | svn | 2018-03-22 16:00:18 +0900 (Thu, 22 Mar 2018) | 1 line
+
+* 2018-03-22
+------------------------------------------------------------------------
+r62889 | naruse | 2018-03-22 16:00:17 +0900 (Thu, 22 Mar 2018) | 14 lines
+
+merge revision(s) 62042,62044: [Backport #14380]
+
+	hash.c: support key swapping in Hash#transform_keys!
+
+	* hash.c (rb_hash_transform_keys_bang): support key swapping in
+	  Hash#transform_keys!
+	  [Bug #14380] [ruby-core:84951]
+
+	* test/ruby/test_hash.rb (test_transform_keys_bang):
+	  add assertions for this change
+
+	Fix rubyspec against the change in Hash#transform_keys!
+
+	[Bug #14380] [ruby-core:84951]
+------------------------------------------------------------------------
+r62860 | naruse | 2018-03-20 18:52:52 +0900 (Tue, 20 Mar 2018) | 9 lines
+
+merge revision(s) 62725: [Backport #14604]
+
+	Fix setting method visibility on method wrapped with prepend
+
+	Ignore prepended modules when looking for already defined methods on a
+	class to set the visibility on.
+	[Fix GH-1834]
+
+	From: Dylan Thacker-Smith <Dylan.Smith@shopify.com>
+------------------------------------------------------------------------
+r62859 | naruse | 2018-03-20 18:39:52 +0900 (Tue, 20 Mar 2018) | 7 lines
+
+merge revision(s) 62734: [Backport #14613]
+
+	Add missing class FrozenError to Exception subclasses list documentation
+
+	[Fix GH-1818]
+
+	From: Miguel Landaeta <miguel@miguel.cc>
+------------------------------------------------------------------------
+r62858 | naruse | 2018-03-20 18:37:39 +0900 (Tue, 20 Mar 2018) | 37 lines
+
+merge revision(s) 62396: [Backport #14357]
+
+	st.c: retry operations if rebuilt
+
+	Calling the .eql? and .hash methods during a Hash operation can
+	result in a thread switch or a signal handler to run: allowing
+	one execution context to rebuild the hash table while another is
+	still reading or writing the table.  This results in a
+	use-after-free bug affecting the thread_safe-0.3.6 test suite
+	and likely other bugs.
+
+	This bug did not affect users of commonly keys (String, Symbol,
+	Fixnum) as those are optimized to avoid method dispatch
+	for .eql? and .hash methods.
+
+	A separate version of this change needs to be ported to Ruby 2.3.x
+	which had a different implementation of st.c but was affected
+	by the same bug.
+
+	* st.c: Add comment about table rebuilding during comparison.
+	  (DO_PTR_EQUAL_CHECK): New macro.
+	  (REBUILT_TABLE_ENTRY_IND, REBUILT_TABLE_BIN_IND): New macros.
+	  (find_entry, find_table_entry_ind, find_table_bin_ind): Use new
+	  macros.  Return the rebuild flag.
+	  (find_table_bin_ptr_and_reserve): Ditto.
+	  (st_lookup, st_get_key, st_insert, st_insert2): Retry the
+	  operation if the table was rebuilt.
+	  (st_general_delete, st_shift, st_update, st_general_foreach):
+	  Ditto.
+	  (st_rehash_linear, st_rehash_indexed): Use DO_PTR_EQUAL_CHECK.
+	  Return the rebuild flag.
+	  (st_rehash): Retry the operation if the table was rebuilt.
+	  [ruby-core:85510] [Ruby trunk Bug#14357]
+
+	Thanks to Vit Ondruch for reporting the bug.
+
+	From: Vladimir Makarov <vmakarov@redhat.com>
+------------------------------------------------------------------------
+r62854 | naruse | 2018-03-20 11:09:21 +0900 (Tue, 20 Mar 2018) | 7 lines
+
+merge revision(s) 62673: [Backport #14577]
+
+	thread.c: deadlock in backtrace
+
+	* thread.c (unblock_function_set): check interrupts just once
+	  during raising exceptions, as they are deferred since r16651.
+	  [ruby-core:85939] [Bug #14577]
+------------------------------------------------------------------------
+r62853 | svn | 2018-03-20 11:08:28 +0900 (Tue, 20 Mar 2018) | 1 line
+
+* 2018-03-20
+------------------------------------------------------------------------
+r62852 | naruse | 2018-03-20 11:08:27 +0900 (Tue, 20 Mar 2018) | 13 lines
+
+merge revision(s) 62668: [Backport #14578]
+
+	thread.c: reset waitq of keeping mutexes in child
+
+	We must not maintain references to threads in the parent process
+	in any mutexes held by the child process.
+
+	* thread_sync.c (rb_mutex_cleanup_keeping_mutexes): new function
+	* thread.c (rb_thread_atfork): cleanup keeping mutexes
+	  [ruby-core:85940] [Bug #14578]
+
+	Fixes: r58604 (commit 3586c9e0876e784767a1c1adba9ebc2499fa0ec2)
+	       ("reduce rb_mutex_t size from 160 to 80 bytes on 64-bit")
+------------------------------------------------------------------------
+r62837 | naruse | 2018-03-19 17:27:04 +0900 (Mon, 19 Mar 2018) | 34 lines
+
+merge revision(s) 62244,62246,62301,62302,62303,62422,62436,62452: [Backport #14481]
+
+	Merge RubyGems-2.7.5 from upstream.
+
+	  Please see its details: http://blog.rubygems.org/2018/02/06/2.7.5-released.html
+
+	test_gem_util.rb: fix broken test
+
+	* test/rubygems/test_gem_util.rb: no guarantee that tmpdir is
+	  always underneath the root directory at all.
+
+	test_gem_commands_setup_command.rb: BUNDLER_VERS
+
+	* test/rubygems/test_gem_commands_setup_command.rb: run bundled
+	  gem command, instead of installed one.
+
+	no need to set bundled bundler unless Gem::USE_BUNDLER_FOR_GEMDEPS
+
+
+	revert r62302 and force to define the version constant
+
+
+	Merge RubyGems 2.7.6 from upstream.
+
+	  It fixed some security vulnerabilities.
+
+	  http://blog.rubygems.org/2018/02/15/2.7.6-released.html
+
+	fix regexp literal warning.
+
+	test/rubygems/test_gem_server.rb: eliminate duplicated character class warning.
+	[Bug #14481]
+
+	Remove unnecessary `[]`s
+------------------------------------------------------------------------
+r62835 | naruse | 2018-03-19 17:15:50 +0900 (Mon, 19 Mar 2018) | 2 lines
+
+Merge r62197 to ease next merge
+
+------------------------------------------------------------------------
+r62834 | naruse | 2018-03-19 17:15:16 +0900 (Mon, 19 Mar 2018) | 20 lines
+
+merge revision(s) 61501,61758: [Backport #14481]
+
+	fix concurrent test.
+
+	* test/rubygems/test_require.rb (test_concurrent_require):
+	  Synchronizations should be in ensure clause. Sometimes
+	  `require` fails (not sure why) and latch is not released.
+	  Such case introduces unlimited awaiting.
+	  This patch soleve this problem.
+
+
+	skip some tests so that no failure occurs in root privilege
+
+	Some tests had failed on `sudo make test-all`, mainly because root can
+	access any files regardless of permission.  This change adds `skip`
+	guards into such tests.
+
+	Note that almost all tests in which `skip` guards is added, already have
+	"windows" guard.  This is because there is no support to avoid read
+	access by owner on Windows.
+------------------------------------------------------------------------
+r62761 | naruse | 2018-03-15 16:35:54 +0900 (Thu, 15 Mar 2018) | 15 lines
+
+merge revision(s) 62394,62395: [Backport #14469]
+
+	vm_insnhelper.c: rb_autoloading_value flag
+
+	* vm_insnhelper.c (vm_get_ev_const): add flag argument of
+	  `rb_autoloading_value`.
+
+	* constant.h (rb_autoloading_value): moved the declaration from
+	  vm_core.h for `rb_const_flag_t`.  [ruby-core:85516] [Bug #14469]
+
+	variable.c: flags at autoloading
+
+	* variable.c (const_tbl_update): flags by deprecate_constant /
+	  private_constant set during autoloading should be preserved
+	  after required.  [ruby-core:85516] [Bug #14469]
+------------------------------------------------------------------------
+r62632 | naruse | 2018-03-02 17:25:51 +0900 (Fri, 02 Mar 2018) | 13 lines
+
+merge revision(s) 62606,62607: [Backport #14557]
+
+	file.c: get rid of useless conversion
+
+	* file.c (rb_file_s_stat): File.stat does not accept an IO
+	  object as trying conversion to path name string first.  skip
+	  conversion to IO and try stat(2) only.
+
+	file.c: realpath on special symlink
+
+	* file.c (realpath_rec): fallback to symlink path when it is
+	  accessible but the link target is not actual entry on file
+	  systems.  [ruby-dev:50487] [Bug #14557]
+------------------------------------------------------------------------
+r62610 | naruse | 2018-02-28 18:52:40 +0900 (Wed, 28 Feb 2018) | 8 lines
+
+merge revision(s) 62572: [Backport #14549]
+
+	date_core.c: defensive code
+
+	* ext/date/date_core.c (f_cmp): check comparison failure.
+
+	* ext/date/date_core.c (d_lite_step): deal with the comparison
+	  result more defensively.  [ruby-core:85796] [Bug #14549]
+------------------------------------------------------------------------
+r62609 | naruse | 2018-02-28 18:49:29 +0900 (Wed, 28 Feb 2018) | 12 lines
+
+merge revision(s) 62506,62508: [Backport #14438]
+
+	test_time_tz.rb: past Japanese DST tzdata fix
+
+	* test/ruby/test_time_tz.rb (TestTimeTZ#test_asia_tokyo): follow
+	  the tzdata 2018 fix of Japanese DST transitions (1948-1951).
+	  [ruby-core:85373] [Bug #14438]
+
+	test_time_tz.rb: past Japanese DST tzdata fix
+
+	* test/ruby/test_time_tz.rb (TestTimeTZ#test_asia_tokyo): fix
+	  the expected data at the end of DST.  [Bug #14438]
+------------------------------------------------------------------------
+r62587 | svn | 2018-02-26 17:43:45 +0900 (Mon, 26 Feb 2018) | 1 line
+
+* 2018-02-26
+------------------------------------------------------------------------
+r62586 | naruse | 2018-02-26 17:43:44 +0900 (Mon, 26 Feb 2018) | 5 lines
+
+merge revision(s) 62094,62584: [Backport #14407]
+
+        Merge ruby/spec@fd56cd4
+
+
+------------------------------------------------------------------------
+r62569 | svn | 2018-02-25 09:36:44 +0900 (Sun, 25 Feb 2018) | 1 line
+
+* 2018-02-25
+------------------------------------------------------------------------
+r62568 | naruse | 2018-02-25 09:36:43 +0900 (Sun, 25 Feb 2018) | 9 lines
+
+merge revision(s) 62071: [Backport #14407]
+
+	defined? returns nil for toplevel constant lookup
+
+	* variable.c (rb_const_defined_0): toplevel constant lookup has
+	  been removed, should return nil too.
+	  [ruby-core:85142] [Bug #14407] [Fix GH-1800]
+
+	From: Gonzalo <grzuy0@gmail.com>
+------------------------------------------------------------------------
+r62562 | naruse | 2018-02-24 16:19:48 +0900 (Sat, 24 Feb 2018) | 8 lines
+
+merge revision(s) 62555: [Backport #14547]
+
+	rational.c: segfault on Rational exponent
+
+	* rational.c (read_num): fix segfault on Rational() with positive
+	  but less than the length of fractional part exponent.  should be
+	  negated to convert to divisor which is a reciprocal.
+	  [ruby-core:85783] [Bug #14547]
+------------------------------------------------------------------------
+r62561 | naruse | 2018-02-24 16:19:06 +0900 (Sat, 24 Feb 2018) | 10 lines
+
+merge revision(s) 62513: [Backport #12762]
+
+	Update url with 404 status on LEGAL file.
+
+	  * Update redirected and upstream url.
+	  * Added the Wayback Machine url for missing link.
+
+	  [Bug #12762][ruby-dev:49802]
+
+	From: SHIBATA Hiroshi <hsbt@ruby-lang.org>
+------------------------------------------------------------------------
+r62539 | naruse | 2018-02-23 07:04:35 +0900 (Fri, 23 Feb 2018) | 6 lines
+
+merge revision(s) 61862: [Backport #14368]
+
+	parse.y (new_regexp): Fix SEGV of `/#{"\u3042"}#{'?'}/` in non UTF-8
+
+	Mixing other encoding string literals in one Regexp caused SEGV.
+	This bug was found by CoverityScan.
+------------------------------------------------------------------------
+r62538 | naruse | 2018-02-23 06:41:46 +0900 (Fri, 23 Feb 2018) | 8 lines
+
+merge revision(s) 62107: [Backport #14420]
+
+	force fixable
+
+	* complex.c (nucomp_hash): force hash values fixable.
+	  [ruby-core:85224] [Bug #14420]
+
+	* rational.c (nurat_hash): ditto.
+------------------------------------------------------------------------
+r62537 | naruse | 2018-02-23 06:29:36 +0900 (Fri, 23 Feb 2018) | 12 lines
+
+merge revision(s) 61605,62359,62361: [Backport #14356]
+
+	Try to fix Travis CI configuration.
+
+	.travis.yml: send notification to #alerts
+
+	instead of #commits.
+
+	.travis.yml: resurrect notification to #commits
+
+	I heard at least Shibata-san sees the channel for the notification.
+	But I want #alets to have all CI failure notifications too.
+------------------------------------------------------------------------
+r62527 | naruse | 2018-02-22 20:01:13 +0900 (Thu, 22 Feb 2018) | 6 lines
+
+merge revision(s) 62333: [Backport #14459]
+
+	compile.c: popped hash
+
+	* compile.c (compile_array): skip creating new hash if preceeding
+	  elements are popped all.  [ruby-core:85486] [Bug #14459]
+------------------------------------------------------------------------
+r62511 | naruse | 2018-02-21 15:16:32 +0900 (Wed, 21 Feb 2018) | 8 lines
+
+merge revision(s) 61484: [Backport #14232]
+
+	vm_method.c: fix super in refined module
+
+	* vm_method.c (rb_method_entry_complement_defined_class): clone
+	  the original method entry of refined module instance method with
+	  the active ICLASS, to track super method chain.
+	  [ruby-dev:50390] [Bug #14232]
+------------------------------------------------------------------------
+r62510 | naruse | 2018-02-21 15:00:51 +0900 (Wed, 21 Feb 2018) | 6 lines
+
+merge revision(s) 61469: [Backport #14427]
+
+	irb.rb: fix highlight
+
+	* lib/irb.rb (IRB::Irb#eval_input): fix highlight for multiple
+	  lines exception messages.
+------------------------------------------------------------------------
+r62509 | naruse | 2018-02-21 14:42:42 +0900 (Wed, 21 Feb 2018) | 6 lines
+
+merge revision(s) 61523: [Backport #14261]
+
+	parse.y: assignable_error
+
+	* parse.y (assignable_gen): should return valid NODE always even
+	  on errors.  [ruby-core:84565] [Bug #14261]
+------------------------------------------------------------------------
+r62507 | naruse | 2018-02-21 13:36:00 +0900 (Wed, 21 Feb 2018) | 8 lines
+
+merge revision(s) 62115: [Backport #14421]
+
+	proc: fix super_method segfault after bind
+
+	* proc.c: handle undefined iclass
+	  [ruby-core:85231] [Bug #14421]
+
+	From: Eric Wong <e@80x24.org>
+------------------------------------------------------------------------
+r62501 | naruse | 2018-02-21 05:11:47 +0900 (Wed, 21 Feb 2018) | 21 lines
+
+merge revision(s) 62116,62151: [Backport #14425]
+
+	ruby.h: relax rb_funcall check on extra args for clang
+
+	clang 5.+ (tested clang 7.0.0) seems to be attempting division-by-zero
+	and giving a very large number for static args to rb_funcall.
+
+	* include/ruby/ruby.h (rb_varargs_bad_length): relax check for clang
+	* ext/-test-/funcall/funcall.c: renamed from passing_block.c
+	  define extra_args_name function
+	* test/-ext-/funcall/test_funcall.rb: new test
+	  [ruby-core:85266] [Bug #14425]
+
+	From: Eric Wong <e@80x24.org>
+
+	ruby.h: relax rb_funcall(obj, id, 0, 0) case only
+
+	* include/ruby/ruby.h (rb_varargs_argc_valid_p): relax rb_funcall
+	  check on extra args only if argc == 0, for the compatibility
+	  with wrong code which is probably confused with rb_funcallv.
+	  [Bug #14425]
+------------------------------------------------------------------------
+r62483 | naruse | 2018-02-19 15:51:53 +0900 (Mon, 19 Feb 2018) | 7 lines
+
+merge revision(s) 62040: [Backport #14388]
+
+	string.c: clear substring code range
+
+	* string.c (str_substr): substring of broken code range string may
+	  be valid or broken.  patch by tommy (Masahiro Tomita) at
+	  [ruby-dev:50430] [Bug #14388].
+------------------------------------------------------------------------
+r62482 | naruse | 2018-02-19 15:36:03 +0900 (Mon, 19 Feb 2018) | 5 lines
+
+merge revision(s) 61645: [Backport #14333]
+
+	Added bundler for `test-bundled-gems` dependency.
+
+	  rake, did_you_mean, test-unit depends on bundler.
+------------------------------------------------------------------------
+r62481 | naruse | 2018-02-19 15:33:01 +0900 (Mon, 19 Feb 2018) | 14 lines
+
+merge revision(s) 61711:
+
+	compile.c (iseq_compile_each0): remove irrelevant tracecoverage
+
+	This change removes tracecoverage instructions on a line that has any
+	NODE but is non-significant, such as, just one literal.
+
+	This fixes the following failure that occurs only when coverage is
+	enabled:
+
+	  1) Failure:
+	TestISeq#test_to_a_lines [.../ruby/test/ruby/test_iseq.rb:56]:
+	<[3, 4, 7, 9]> expected but was
+	<[3, 4, 5, 6, 7, 8, 9]>.
+------------------------------------------------------------------------
+r62472 | naruse | 2018-02-18 23:25:43 +0900 (Sun, 18 Feb 2018) | 3 lines
+
+merge revision(s) 61591: [Backport #14312]
+
+	iseq.c (rb_iseq_new_with_opt): handle the case where node is imemo_func
+------------------------------------------------------------------------
+r62471 | svn | 2018-02-18 20:53:15 +0900 (Sun, 18 Feb 2018) | 1 line
+
+* 2018-02-18
+------------------------------------------------------------------------
+r62470 | naruse | 2018-02-18 20:53:14 +0900 (Sun, 18 Feb 2018) | 4 lines
+
+Revert r62426
+
+it cause test failure
+
+------------------------------------------------------------------------
+r62428 | naruse | 2018-02-16 17:34:45 +0900 (Fri, 16 Feb 2018) | 11 lines
+
+merge revision(s) 61616: [Backport #14314]
+
+	marshal.c: allow marshalling keyword_init struct
+
+	struct.c: define rb_struct_s_keyword_init to shared with marshal.c
+
+	internal.h: add the declaration to be used by marshal.c
+
+	test/ruby/test_marshal.rb: add test for Bug#14314
+
+	[Feature #14314] [ruby-core:84629]
+------------------------------------------------------------------------
+r62427 | naruse | 2018-02-16 17:31:35 +0900 (Fri, 16 Feb 2018) | 10 lines
+
+merge revision(s) 61754: [Backport #14346]
+
+	dir.c: pass flags to openat(2) correctly
+
+	Flags are 3rd argument of openat(2) while the 4th argument
+	(mode_t) is unnecessary for our uses.  This bug exists since
+	Ruby 2.5 from r58860 and was discoverd by strace.
+
+	* dir.c (nogvl_opendir_at): use openat correctly
+	  [Feature #13056] [Feature #14346]
+------------------------------------------------------------------------
+r62426 | naruse | 2018-02-16 17:28:48 +0900 (Fri, 16 Feb 2018) | 13 lines
+
+merge revision(s) 61617,61618: [Backport #14273]
+
+	compile.c: remove more unreachable chunk
+
+	* compile.c (remove_unreachable_chunk): remove beyond labels to be
+	  removed.
+
+	compile.c: fix stack consistency error
+
+	* compile.c (iseq_peephole_optimize): fix stack consistency error
+	  from return in loop, by adding extra `pop` when replacing `jump`
+	  with `leave`, which is never reached but needed to adjust sp
+	  calculation.  [ruby-core:84589] [Bug #14273]
+------------------------------------------------------------------------
+r62425 | naruse | 2018-02-16 17:17:36 +0900 (Fri, 16 Feb 2018) | 13 lines
+
+merge revision(s) 61639: [Backport #14323]
+
+	net/ftp: fix FrozenError in BufferedSocket
+
+	I noticed this bug while working on something else with
+	RUBYOPT=-d on, existing test cases all passed with it.
+
+	Note: I use String.new because it is the local style, here,
+	I prefer +'' (or ''.b, for a future commit)
+
+	* lib/net/ftp.rb (BufferedSocket#read): use String.new
+	* test/net/ftp/test_buffered_socket.rb (test_read_nil): new test
+	  [ruby-core:84675] [Bug #14323]
+------------------------------------------------------------------------
+r62421 | naruse | 2018-02-16 16:36:21 +0900 (Fri, 16 Feb 2018) | 6 lines
+
+merge revision(s) 61636: [Backport #14257]
+
+	string.c: out-of-bounds access
+
+	* string.c (rb_str_enumerate_lines): fix out-of-bounds access when
+	  record separator is longer than the last element.  [Bug #14257]
+------------------------------------------------------------------------
+r62420 | naruse | 2018-02-16 16:32:11 +0900 (Fri, 16 Feb 2018) | 9 lines
+
+merge revision(s) 61603: [Backport #14279]
+
+	check array for zsuper. [Bug #14279]
+
+	* compile.c (iseq_compile_each0): for zsuper (NODE_ZSUPER), we need to check
+	  given argument is Array or not.
+
+	* test/ruby/test_super.rb: add a test for this bug.
+
+------------------------------------------------------------------------
+r62096 | svn | 2018-01-30 02:00:37 +0900 (Tue, 30 Jan 2018) | 1 line
+
+* 2018-01-30
+------------------------------------------------------------------------
+r62095 | naruse | 2018-01-30 02:00:36 +0900 (Tue, 30 Jan 2018) | 108 lines
+
+merge revision(s) 61564,61565,61571: [Backport #14270]
+
+	fix SEGV touching uninitialized memory
+
+	This function can be called from Init_VM().
+	No assumption can be made about object internals.
+
+	(lldb) run
+	Process 15734 launched: './miniruby' (x86_64)
+	Process 15734 stopped
+	* thread #1: tid = 0x1441d4, 0x00000001000bdfcb miniruby`rb_raw_iseq_info(buff="0x0000000100f61f48 [0    ] T_IMEMO iseq", buff_size=256, iseq=0x0000000100f61f48) + 27 at gc.c:9273, queue = 'com.apple.main-thread', stop reason = EXC_BAD_ACCESS (code=1, address=0x50)
+	    frame #0: 0x00000001000bdfcb miniruby`rb_raw_iseq_info(buff="0x0000000100f61f48 [0    ] T_IMEMO iseq", buff_size=256, iseq=0x0000000100f61f48) + 27 at gc.c:9273
+	   9270 static void
+	   9271 rb_raw_iseq_info(char *buff, const int buff_size, const rb_iseq_t *iseq)
+	   9272 {
+	-> 9273     if (iseq->body->location.label) {
+	   9274         VALUE path = rb_iseq_path(iseq);
+	   9275         snprintf(buff, buff_size, "%s %s@%s:%d", buff,
+	   9276                  RSTRING_PTR(iseq->body->location.label),
+	(lldb) p *iseq
+	(rb_iseq_t) $0 = {
+	  flags = 28698
+	  reserved1 = 0
+	  body = 0x0000000000000000
+	  aux = {
+	    compile_data = 0x0000000000000000
+	    loader = (obj = 0, index = 0)
+	    trace_events = 0
+	  }
+	}
+	(lldb) bt
+	* thread #1: tid = 0x1441d4, 0x00000001000bdfcb miniruby`rb_raw_iseq_info(buff="0x0000000100f61f48 [0    ] T_IMEMO iseq", buff_size=256, iseq=0x0000000100f61f48) + 27 at gc.c:9273, queue = 'com.apple.main-thread', stop reason = EXC_BAD_ACCESS (code=1, address=0x50)
+	  * frame #0: 0x00000001000bdfcb miniruby`rb_raw_iseq_info(buff="0x0000000100f61f48 [0    ] T_IMEMO iseq", buff_size=256, iseq=0x0000000100f61f48) + 27 at gc.c:9273
+	    frame #1: 0x00000001000bde72 miniruby`rb_raw_obj_info(buff="0x0000000100f61f48 [0    ] T_IMEMO iseq", buff_size=256, obj=4311097160) + 2786 at gc.c:9396
+	    frame #2: 0x00000001000b7c5f miniruby`obj_info(obj=4311097160) + 95 at gc.c:9428
+	    frame #3: 0x00000001000c16a8 miniruby`newobj_init(klass=0, flags=28698, v1=0, v2=0, v3=0, wb_protected=1, objspace=0x00000001007ee280, obj=4311097160) + 424 at gc.c:1887
+	    frame #4: 0x00000001000b44c9 miniruby`newobj_of(klass=0, flags=28698, v1=0, v2=0, v3=0, wb_protected=1) + 217 at gc.c:1970
+	    frame #5: 0x00000001000b464b miniruby`rb_imemo_new(type=imemo_iseq, v1=0, v2=0, v3=0, v0=0) + 75 at gc.c:2017
+	    frame #6: 0x00000001000fd914 miniruby`iseq_imemo_alloc + 36 at iseq.h:156
+	    frame #7: 0x00000001000f6e1d miniruby`iseq_alloc + 13 at iseq.c:211
+	    frame #8: 0x00000001000f6bf8 miniruby`rb_iseq_new_with_opt(node=0x0000000000000000, name=4311097200, path=4311097200, realpath=8, first_lineno=1, parent=0x0000000000000000, type=ISEQ_TYPE_TOP, option=0x0000000100335c30) + 56 at iseq.c:519
+	    frame #9: 0x00000001000f6bb6 miniruby`rb_iseq_new(node=0x0000000000000000, name=4311097200, path=4311097200, realpath=8, parent=0x0000000000000000, type=ISEQ_TYPE_TOP) + 86 at iseq.c:480
+	    frame #10: 0x0000000100284bb0 miniruby`Init_VM + 1040 at vm.c:3022
+	    frame #11: 0x00000001000d4f7d miniruby`rb_call_inits + 189 at inits.c:55
+	    frame #12: 0x000000010009fe06 miniruby`ruby_setup + 198 at eval.c:61
+	    frame #13: 0x000000010009fe5d miniruby`ruby_init + 13 at eval.c:78
+	    frame #14: 0x00000001000009ed miniruby`main(argc=2, argv=0x00007fff5fbfdbf0) + 93 at main.c:41
+	    frame #15: 0x00007fff88eda5ad libdyld.dylib`start + 1
+	(lldb)
+
+	fix SEGV touching uninitialized memory
+
+	This function can be called from rb_data_typed_object_zalloc().
+	No assumption can be made about object internals.
+
+	(lldb) run
+	Process 22135 launched: './miniruby' (x86_64)
+	Process 22135 stopped
+	* thread #1: tid = 0x14a3af, 0x000000010008ac8a miniruby`vm_block_type(block=0x0000000000000000) + 12 at vm_core.h:1364, queue = 'com.apple.main-thread', stop reason = EXC_BAD_ACCESS (code=1, address=0x18)
+	    frame #0: 0x000000010008ac8a miniruby`vm_block_type(block=0x0000000000000000) + 12 at vm_core.h:1364
+	   1361         break;
+	   1362     }
+	   1363 #endif
+	-> 1364     return block->type;
+	   1365 }
+	   1366
+	   1367 static inline void
+	(lldb) bt
+	* thread #1: tid = 0x14a3af, 0x000000010008ac8a miniruby`vm_block_type(block=0x0000000000000000) + 12 at vm_core.h:1364, queue = 'com.apple.main-thread', stop reason = EXC_BAD_ACCESS (code=1, address=0x18)
+	  * frame #0: 0x000000010008ac8a miniruby`vm_block_type(block=0x0000000000000000) + 12 at vm_core.h:1364
+	    frame #1: 0x000000010008acdb miniruby`vm_block_iseq(block=0x0000000000000000) + 24 at vm_core.h:1399
+	    frame #2: 0x000000010008acc1 miniruby`vm_proc_iseq(procval=4310866360) + 32 at vm_core.h:1387
+	    frame #3: 0x000000010009cbed miniruby`rb_raw_obj_info(buff="0x0000000100f299b8 [0    ] proc (Proc)", buff_size=256, obj=4310866360) + 1513 at gc.c:9349
+	    frame #4: 0x000000010009cf01 miniruby`obj_info(obj=4310866360) + 98 at gc.c:9428
+	    frame #5: 0x000000010008ca1b miniruby`newobj_init(klass=4311027960, flags=12, v1=4298186080, v2=1, v3=0, wb_protected=32, objspace=0x00000001007cf280, obj=4310866360) + 338 at gc.c:1887
+	    frame #6: 0x000000010008cce5 miniruby`newobj_of(klass=4311027960, flags=12, v1=4298186080, v2=1, v3=0, wb_protected=32) + 171 at gc.c:1970
+	    frame #7: 0x000000010008d01d miniruby`rb_data_typed_object_wrap(klass=4311027960, datap=0x0000000000000000, type=0x0000000100311d60) + 133 at gc.c:2062
+	    frame #8: 0x000000010008d04e miniruby`rb_data_typed_object_zalloc(klass=4311027960, size=40, type=0x0000000100311d60) + 42 at gc.c:2073
+	    frame #9: 0x000000010011b459 miniruby`rb_proc_alloc(klass=4311027960) + 36 at proc.c:113
+	    frame #10: 0x0000000100204d8e miniruby`vm_proc_create_from_captured(klass=4311027960, captured=0x00000001025003f8, block_type=block_type_iseq, is_from_method='\0', is_lambda='\x01') + 44 at vm.c:814
+	    frame #11: 0x00000001002050d8 miniruby`rb_vm_make_proc_lambda(ec=0x00000001007cf548, captured=0x00000001025003f8, klass=4311027960, is_lambda='\x01') + 134 at vm.c:892
+	    frame #12: 0x000000010011c0d2 miniruby`proc_new(klass=4311027960, is_lambda='\x01') + 445 at proc.c:752
+	    frame #13: 0x000000010011c154 miniruby`rb_block_lambda + 27 at proc.c:808
+	    frame #14: 0x00000001001ee7e3 miniruby`call_cfunc_0(func=(miniruby`rb_block_lambda at proc.c:807), recv=4310991600, argc=0, argv=0x0000000102400480) + 41 at vm_insnhelper.c:1729
+	    frame #15: 0x00000001001ef2c3 miniruby`vm_call_cfunc_with_frame(ec=0x00000001007cf548, reg_cfp=0x00000001025003e0, calling=0x00007fff5fbfd4d0, ci=0x0000000102537be0, cc=0x000000010253e0f0) + 386 at vm_insnhelper.c:1918
+	    frame #16: 0x00000001001ef412 miniruby`vm_call_cfunc(ec=0x00000001007cf548, reg_cfp=0x00000001025003e0, calling=0x00007fff5fbfd4d0, ci=0x0000000102537be0, cc=0x000000010253e0f0) + 149 at vm_insnhelper.c:1934
+	    frame #17: 0x00000001001f0655 miniruby`vm_call_method_each_type(ec=0x00000001007cf548, cfp=0x00000001025003e0, calling=0x00007fff5fbfd4d0, ci=0x0000000102537be0, cc=0x000000010253e0f0) + 239 at vm_insnhelper.c:2232
+	    frame #18: 0x00000001001f0ce0 miniruby`vm_call_method(ec=0x00000001007cf548, cfp=0x00000001025003e0, calling=0x00007fff5fbfd4d0, ci=0x0000000102537be0, cc=0x000000010253e0f0) + 117 at vm_insnhelper.c:2355
+	    frame #19: 0x00000001001f0eb6 miniruby`vm_call_general(ec=0x00000001007cf548, reg_cfp=0x00000001025003e0, calling=0x00007fff5fbfd4d0, ci=0x0000000102537be0, cc=0x000000010253e0f0) + 59 at vm_insnhelper.c:2398
+	    frame #20: 0x00000001001f6e61 miniruby`vm_exec_core(ec=0x00000001007cf548, initial=0) + 7480 at insns.def:850
+	    frame #21: 0x0000000100207995 miniruby`vm_exec(ec=0x00000001007cf548) + 230 at vm.c:1771
+	    frame #22: 0x0000000100208647 miniruby`rb_iseq_eval_main(iseq=0x0000000100f29fd0) + 52 at vm.c:2019
+	    frame #23: 0x000000010007b750 miniruby`ruby_exec_internal(n=0x0000000100f29fd0) + 297 at eval.c:246
+	    frame #24: 0x000000010007b876 miniruby`ruby_exec_node(n=0x0000000100f29fd0) + 36 at eval.c:310
+	    frame #25: 0x000000010007b849 miniruby`ruby_run_node(n=0x0000000100f29fd0) + 62 at eval.c:302
+	    frame #26: 0x0000000100000c05 miniruby`main(argc=2, argv=0x00007fff5fbfdbf0) + 113 at main.c:42
+	    frame #27: 0x00007fff88eda5ad libdyld.dylib`start + 1
+	(lldb)
+
+	check an existence of block.
+
+	* gc.c (rb_raw_obj_info): check block before using it.
+
+	* vm_core.h (vm_block_iseq): r61565 introduced NULL check but this
+	  check is only needed by `rb_raw_obj_info()` and it is called at GC
+	  debug mode. Above fix for `rb_raw_obj_info()` solves this problem and
+	  NULL check should not be needed any more.
+
+------------------------------------------------------------------------
+r62023 | naruse | 2018-01-24 17:11:16 +0900 (Wed, 24 Jan 2018) | 292 lines
+
+merge revision(s) 61562,61563,61566,61568,61569: [Backport #14269]
+
+	fix SEGV touching uninitialized memory
+
+	This function can be called from boot_defclass().
+	No assumption can be made about object internals.
+
+	(lldb) run
+	Process 2386 launched: './miniruby' (x86_64)
+	Process 2386 stopped
+	* thread #1: tid = 0x13f3b6, 0x00000001001e0b26 miniruby`rb_class_path_cached(klass=4311373720) + 20 at variable.c:321, queue = 'com.apple.main-thread', stop reason = EXC_BAD_ACCESS (code=1, address=0x8)
+	    frame #0: 0x00000001001e0b26 miniruby`rb_class_path_cached(klass=4311373720) + 20 at variable.c:321
+	   318  VALUE
+	   319  rb_class_path_cached(VALUE klass)
+	   320  {
+	-> 321      st_table *ivtbl = RCLASS_IV_TBL(klass);
+	   322      st_data_t n;
+	   323
+	   324      if (!ivtbl) return Qnil;
+	(lldb) bt
+	* thread #1: tid = 0x13f3b6, 0x00000001001e0b26 miniruby`rb_class_path_cached(klass=4311373720) + 20 at variable.c:321, queue = 'com.apple.main-thread', stop reason = EXC_BAD_ACCESS (code=1, address=0x8)
+	  * frame #0: 0x00000001001e0b26 miniruby`rb_class_path_cached(klass=4311373720) + 20 at variable.c:321
+	    frame #1: 0x000000010009cbd0 miniruby`rb_raw_obj_info(buff="0x0000000100fa5798 [2    ] T_CLASS", buff_size=256, obj=4311373720) + 1393 at gc.c:9341
+	    frame #2: 0x000000010009cf16 miniruby`obj_info(obj=4311373720) + 98 at gc.c:9423
+	    frame #3: 0x000000010008ca87 miniruby`newobj_init(klass=0, flags=66, v1=0, v2=0, v3=0, wb_protected=1, objspace=0x00000001007cf280, obj=4311373720) + 338 at gc.c:1887
+	    frame #4: 0x000000010008cd51 miniruby`newobj_of(klass=0, flags=66, v1=0, v2=0, v3=0, wb_protected=1) + 171 at gc.c:1970
+	    frame #5: 0x000000010008ce1b miniruby`rb_wb_protected_newobj_of(klass=0, flags=66) + 54 at gc.c:1990
+	    frame #6: 0x0000000100027563 miniruby`class_alloc(flags=2, klass=0) + 46 at class.c:165
+	    frame #7: 0x000000010002761a miniruby`rb_class_boot(super=0) + 35 at class.c:203
+	    frame #8: 0x0000000100028612 miniruby`boot_defclass(name="BasicObject", super=0) + 28 at class.c:537
+	    frame #9: 0x000000010002868b miniruby`Init_class_hierarchy + 26 at class.c:548
+	    frame #10: 0x00000001000efe69 miniruby`InitVM_Object + 9 at object.c:3892
+	    frame #11: 0x00000001000f138e miniruby`Init_Object + 57 at object.c:4122
+	    frame #12: 0x00000001000a59bd miniruby`rb_call_inits + 29 at inits.c:23
+	    frame #13: 0x000000010007af30 miniruby`ruby_setup + 229 at eval.c:61
+	    frame #14: 0x000000010007af7e miniruby`ruby_init + 13 at eval.c:78
+	    frame #15: 0x0000000100000c58 miniruby`main(argc=2, argv=0x00007fff5fbfdbf0) + 88 at main.c:41
+	    frame #16: 0x00007fff88eda5ad libdyld.dylib`start + 1
+	(lldb)
+
+	fix SEGV touching uninitialized memory
+
+	This function can be called from InitVM_Object().
+	No assumption can be made about object internals.
+
+	(lldb) run
+	Process 10675 launched: './miniruby' (x86_64)
+	Process 10675 stopped
+	* thread #1: tid = 0x14252c, 0x00000001000bdda9 miniruby`rb_raw_obj_info(buff="0x0000000100fc1588 [0    ] T_IMEMO ment", buff_size=256, obj=4311487880) + 2489 at gc.c:9383, queue = 'com.apple.main-thread', stop reason = EXC_BAD_ACCESS (code=1, address=0x0)
+	    frame #0: 0x00000001000bdda9 miniruby`rb_raw_obj_info(buff="0x0000000100fc1588 [0    ] T_IMEMO ment", buff_size=256, obj=4311487880) + 2489 at gc.c:9383
+	   9380                 const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
+	   9381                 snprintf(buff, buff_size, "%s (called_id: %s, type: %s, alias: %d, owner: %s, defined_class: %s)", buff,
+	   9382                          rb_id2name(me->called_id),
+	-> 9383                          method_type_name(me->def->type),
+	   9384                          me->def->alias_count,
+	   9385                          obj_info(me->owner),
+	   9386                          obj_info(me->defined_class));
+	(lldb) p *me
+	(rb_method_entry_t) $0 = {
+	  flags = 24602
+	  defined_class = 4311488400
+	  def = 0x0000000000000000
+	  called_id = 3057
+	  owner = 4311488400
+	}
+	(lldb) bt
+	* thread #1: tid = 0x14252c, 0x00000001000bdda9 miniruby`rb_raw_obj_info(buff="0x0000000100fc1588 [0    ] T_IMEMO ment", buff_size=256, obj=4311487880) + 2489 at gc.c:9383, queue = 'com.apple.main-thread', stop reason = EXC_BAD_ACCESS (code=1, address=0x0)
+	  * frame #0: 0x00000001000bdda9 miniruby`rb_raw_obj_info(buff="0x0000000100fc1588 [0    ] T_IMEMO ment", buff_size=256, obj=4311487880) + 2489 at gc.c:9383
+	    frame #1: 0x00000001000b7cbf miniruby`obj_info(obj=4311487880) + 95 at gc.c:9423
+	    frame #2: 0x00000001000c16a8 miniruby`newobj_init(klass=4311488400, flags=24602, v1=0, v2=3057, v3=4311488400, wb_protected=1, objspace=0x00000001007ee280, obj=4311487880) + 424 at gc.c:1887
+	    frame #3: 0x00000001000b4529 miniruby`newobj_of(klass=4311488400, flags=24602, v1=0, v2=3057, v3=4311488400, wb_protected=1) + 217 at gc.c:1970
+	    frame #4: 0x00000001000b46ab miniruby`rb_imemo_new(type=imemo_ment, v1=0, v2=3057, v3=4311488400, v0=4311488400) + 75 at gc.c:2017
+	    frame #5: 0x00000001002773b4 miniruby`rb_method_entry_alloc(called_id=3057, owner=4311488400, defined_class=4311488400, def=0x0000000000000000) + 52 at vm_method.c:368
+	    frame #6: 0x0000000100277307 miniruby`rb_method_entry_create(called_id=3057, klass=4311488400, visi=METHOD_VISI_PRIVATE, def=0x0000000000000000) + 71 at vm_method.c:389
+	    frame #7: 0x00000001002784c7 miniruby`rb_method_entry_make(klass=4311488400, mid=3057, defined_class=4311488400, visi=METHOD_VISI_PRIVATE, type=VM_METHOD_TYPE_CFUNC, def=0x0000000000000000, original_id=3057, opts=0x00007fff5fbfd9e8) + 1207 at vm_method.c:594
+	    frame #8: 0x00000001002770f9 miniruby`rb_add_method(klass=4311488400, mid=3057, type=VM_METHOD_TYPE_CFUNC, opts=0x00007fff5fbfd9e8, visi=METHOD_VISI_PRIVATE) + 73 at vm_method.c:650
+	    frame #9: 0x000000010027708a miniruby`rb_add_method_cfunc(klass=4311488400, mid=3057, func=(miniruby`rb_obj_dummy at object.c:1125), argc=0, visi=METHOD_VISI_PRIVATE) + 138 at vm_method.c:137
+	    frame #10: 0x00000001000391e4 miniruby`rb_define_private_method(klass=4311488400, name="initialize", func=(miniruby`rb_obj_dummy at object.c:1125), argc=0) + 68 at class.c:1529
+	    frame #11: 0x000000010013f5bf miniruby`InitVM_Object + 47 at object.c:3905
+	    frame #12: 0x0000000100142ffd miniruby`Init_Object + 61 at object.c:4122
+	    frame #13: 0x00000001000d4edd miniruby`rb_call_inits + 29 at inits.c:23
+	    frame #14: 0x000000010009fe66 miniruby`ruby_setup + 198 at eval.c:61
+	    frame #15: 0x000000010009febd miniruby`ruby_init + 13 at eval.c:78
+	    frame #16: 0x0000000100000a4d miniruby`main(argc=2, argv=0x00007fff5fbfdbf0) + 93 at main.c:41
+	    frame #17: 0x00007fff88eda5ad libdyld.dylib`start + 1
+	(lldb)
+
+	fix SEGV touching uninitialized local variable
+
+	This imemo_name is used uninitialized because the switch
+	above does not cover all possible imemo types.
+
+	(lldb) run
+	Process 26068 launched: './miniruby' (x86_64)
+	Process 26068 stopped
+	* thread #1: tid = 0x14ba96, 0x00007fff8a402132 libsystem_c.dylib`strlen + 18, queue = 'com.apple.main-thread', stop reason = EXC_BAD_ACCESS (code=1, address=0xfffffffffffffff0)
+	    frame #0: 0x00007fff8a402132 libsystem_c.dylib`strlen + 18
+	libsystem_c.dylib`strlen:
+	->  0x7fff8a402132 <+18>: pcmpeqb (%rdi), %xmm0
+	    0x7fff8a402136 <+22>: pmovmskb %xmm0, %esi
+	    0x7fff8a40213a <+26>: andq   $0xf, %rcx
+	    0x7fff8a40213e <+30>: orq    $-0x1, %rax
+	(lldb) bt
+	* thread #1: tid = 0x14ba96, 0x00007fff8a402132 libsystem_c.dylib`strlen + 18, queue = 'com.apple.main-thread', stop reason = EXC_BAD_ACCESS (code=1, address=0xfffffffffffffff0)
+	  * frame #0: 0x00007fff8a402132 libsystem_c.dylib`strlen + 18
+	    frame #1: 0x00000001001f1531 miniruby`BSD_vfprintf(fp=0x00007fff5fbfc9e0, fmt0="%s %s", ap=0x00007fff5fbfcbf0) + 5873 at vsnprintf.c:1026
+	    frame #2: 0x00000001001ef213 miniruby`ruby_do_vsnprintf(str="0x0000000100f46450 [0    ] T_IMEMO", n=256, fmt="%s %s", ap=0x00007fff5fbfcbf0) + 131 at sprintf.c:1285
+	    frame #3: 0x00000001001ef3ea miniruby`ruby_snprintf(str="0x0000000100f46450 [0    ] T_IMEMO", n=256, fmt="%s %s") + 426 at sprintf.c:1300
+	    frame #4: 0x00000001000bdc61 miniruby`rb_raw_obj_info(buff="0x0000000100f46450 [0    ] T_IMEMO", buff_size=256, obj=4310983760) + 2353 at gc.c:9376
+	    frame #5: 0x00000001000b7bff miniruby`obj_info(obj=4310983760) + 95 at gc.c:9428
+	    frame #6: 0x00000001000c1658 miniruby`newobj_init(klass=0, flags=36890, v1=0, v2=4303040512, v3=4310983800, wb_protected=1, objspace=0x00000001007ee280, obj=4310983760) + 424 at gc.c:1887
+	    frame #7: 0x00000001000b4469 miniruby`newobj_of(klass=0, flags=36890, v1=0, v2=4303040512, v3=4310983800, wb_protected=1) + 217 at gc.c:1970
+	    frame #8: 0x00000001000b45eb miniruby`rb_imemo_new(type=imemo_ast, v1=0, v2=4303040512, v3=4310983800, v0=0) + 75 at gc.c:2017
+	    frame #9: 0x000000010011daed miniruby`rb_ast_new + 61 at node.c:1146
+	    frame #10: 0x0000000100160e15 miniruby`rb_parser_compile_file_path(vparser=4310984400, fname=4310984960, file=4310984080, start=1) + 53 at parse.y:5776
+	    frame #11: 0x00000001001e18ea miniruby`load_file_internal(argp_v=140734799795024) + 1834 at ruby.c:1907
+	    frame #12: 0x00000001000a1bb5 miniruby`rb_ensure(b_proc=(miniruby`load_file_internal at ruby.c:1795), data1=140734799795024, e_proc=(miniruby`restore_load_file at ruby.c:2007), data2=140734799795024) + 245 at eval.c:1037
+	    frame #13: 0x00000001001df4a4 miniruby`load_file(parser=4310984400, fname=4310984960, f=4310984080, script=1, opt=0x00007fff5fbfda28) + 100 at ruby.c:2026
+	    frame #14: 0x00000001001e084e miniruby`process_options(argc=0, argv=0x00007fff5fbfdc00, opt=0x00007fff5fbfda28) + 3454 at ruby.c:1682
+	    frame #15: 0x00000001001dfaae miniruby`ruby_process_options(argc=2, argv=0x00007fff5fbfdbf0) + 238 at ruby.c:2257
+	    frame #16: 0x000000010009ff43 miniruby`ruby_options(argc=2, argv=0x00007fff5fbfdbf0) + 211 at eval.c:105
+	    frame #17: 0x0000000100000989 miniruby`main(argc=2, argv=0x00007fff5fbfdbf0) + 105 at main.c:42
+	    frame #18: 0x00007fff88eda5ad libdyld.dylib`start + 1
+	(lldb) up 4
+	frame #4: 0x00000001000bdc61 miniruby`rb_raw_obj_info(buff="0x0000000100f46450 [0    ] T_IMEMO", buff_size=256, obj=4310983760) + 2353 at gc.c:9376
+	   9373 #undef IMEMO_NAME
+	   9374               default: UNREACHABLE;
+	   9375             }
+	-> 9376             snprintf(buff, buff_size, "%s %s", buff, imemo_name);
+	   9377
+	   9378             switch (imemo_type(obj)) {
+	   9379               case imemo_ment: {
+	(lldb) p imemo_name
+	(const char *) $0 = 0xffffffffffffffff
+	(lldb) p imemo_type(obj)
+	(imemo_type) $1 = imemo_ast
+	(lldb)
+
+	fix SEGV inspecting already freed objects
+
+	obj_info() assumes the given object is alive.  Passing freed
+	objects to it results in SEGV.
+
+	(lldb) run
+	Process 29718 launched: './miniruby' (x86_64)
+	Process 29718 stopped
+	* thread #1: tid = 0x3082c5, 0x00000001000bfaab miniruby`pathobj_path(pathobj=4478683640) + 70 at vm_core.h:269, queue = 'com.apple.main-thread', stop reason = EXC_BAD_ACCESS (code=1, address=0x0)
+	    frame #0: 0x00000001000bfaab miniruby`pathobj_path(pathobj=4478683640) + 70 at vm_core.h:269
+	   266      }
+	   267      else {
+	   268          VM_ASSERT(RB_TYPE_P(pathobj, T_ARRAY));
+	-> 269          return RARRAY_AREF(pathobj, PATHOBJ_PATH);
+	   270      }
+	   271  }
+	   272
+	(lldb) bt
+	* thread #1: tid = 0x3082c5, 0x00000001000bfaab miniruby`pathobj_path(pathobj=4478683640) + 70 at vm_core.h:269, queue = 'com.apple.main-thread', stop reason = EXC_BAD_ACCESS (code=1, address=0x0)
+	  * frame #0: 0x00000001000bfaab miniruby`pathobj_path(pathobj=4478683640) + 70 at vm_core.h:269
+	    frame #1: 0x00000001000c25ff miniruby`rb_iseq_path(iseq=0x000000010af34a20) + 32 at iseq.c:723
+	    frame #2: 0x000000010009db09 miniruby`rb_raw_iseq_info(buff="0x000000010af34a20 [1    ] T_IMEMO iseq", buff_size=256, iseq=0x000000010af34a20) + 69 at gc.c:9274
+	    frame #3: 0x000000010009e45a miniruby`rb_raw_obj_info(buff="0x000000010af34a20 [1    ] T_IMEMO iseq", buff_size=256, obj=4478683680) + 2191 at gc.c:9397
+	    frame #4: 0x000000010009e4d5 miniruby`obj_info(obj=4478683680) + 98 at gc.c:9429
+	    frame #5: 0x0000000100091ae3 miniruby`gc_page_sweep(objspace=0x00000001007d3280, heap=0x00000001007d32a0, sweep_page=0x000000010ae07bc0) + 622 at gc.c:3529
+	    frame #6: 0x000000010009206a miniruby`gc_sweep_step(objspace=0x00000001007d3280, heap=0x00000001007d32a0) + 188 at gc.c:3705
+	    frame #7: 0x0000000100092254 miniruby`gc_sweep_continue(objspace=0x00000001007d3280, heap=0x00000001007d32a0) + 133 at gc.c:3772
+	    frame #8: 0x000000010008d7f9 miniruby`heap_prepare(objspace=0x00000001007d3280, heap=0x00000001007d32a0) + 48 at gc.c:1746
+	    frame #9: 0x000000010008d8a1 miniruby`heap_get_freeobj_from_next_freepage(objspace=0x00000001007d3280, heap=0x00000001007d32a0) + 37 at gc.c:1769
+	    frame #10: 0x000000010008d98d miniruby`heap_get_freeobj(objspace=0x00000001007d3280, heap=0x00000001007d32a0) + 83 at gc.c:1803
+	    frame #11: 0x000000010008dcb0 miniruby`newobj_slowpath(klass=4334386280, flags=5, v1=0, v2=0, v3=0, objspace=0x00000001007d3280, wb_protected=1) + 220 at gc.c:1930
+	    frame #12: 0x000000010008dd6c miniruby`newobj_slowpath_wb_protected(klass=4334386280, flags=5, v1=0, v2=0, v3=0, objspace=0x00000001007d3280) + 76 at gc.c:1942
+	    frame #13: 0x000000010008dea1 miniruby`newobj_of(klass=4334386280, flags=5, v1=0, v2=0, v3=0, wb_protected=1) + 221 at gc.c:1974
+	    frame #14: 0x000000010008df39 miniruby`rb_wb_protected_newobj_of(klass=4334386280, flags=5) + 54 at gc.c:1990
+	    frame #15: 0x0000000100195f7c miniruby`str_alloc(klass=4334386280) + 29 at string.c:692
+	    frame #16: 0x0000000100195fe9 miniruby`str_new0(klass=4334386280, ptr="gitm", len=4, termlen=1) + 73 at string.c:714
+	    frame #17: 0x000000010019633e miniruby`rb_enc_str_new(ptr="gitm", len=4, enc=0x00000001025d50a0) + 81 at string.c:766
+	    frame #18: 0x000000010010a80a miniruby`parser_str_new(p="gitm", n=4, enc=0x00000001025d50a0, func=66, enc0=0x00000001025d50a0) + 50 at parse.y:5817
+	    frame #19: 0x000000010010ce1a miniruby`parser_parse_string(parser=0x00000001042ac5c0, quote=0x000000010460c028) + 795 at parse.y:6675
+	    frame #20: 0x00000001001120bd miniruby`parser_yylex(parser=0x00000001042ac5c0) + 159 at parse.y:8281
+	    frame #21: 0x0000000100115068 miniruby`yylex(lval=0x00007fff5fbf9948, yylloc=0x00007fff5fbf9ab0, parser=0x00000001042ac5c0) + 55 at parse.y:8931
+	    frame #22: 0x00000001000fc79f miniruby`ruby_yyparse(parser=0x00000001042ac5c0) + 1198 at parse.c:5798
+	    frame #23: 0x0000000100109f5a miniruby`yycompile0(arg=4364879296) + 317 at parse.y:5595
+	    frame #24: 0x0000000100214ef0 miniruby`rb_suppress_tracing(func=(miniruby`yycompile0 at parse.y:5565), arg=4364879296) + 349 at vm_trace.c:397
+	    frame #25: 0x000000010010a1df miniruby`yycompile(parser=0x00000001042ac5c0, fname=4443743440, line=1) + 126 at parse.y:5637
+	    frame #26: 0x000000010010a4c1 miniruby`parser_compile_string(vparser=4443743480, fname=4443743440, s=4443743520, line=1) + 191 at parse.y:5706
+	    frame #27: 0x000000010010a5b7 miniruby`rb_parser_compile_string_path(vparser=4443743480, f=4443743440, s=4443743520, line=1) + 58 at parse.y:5730
+	    frame #28: 0x0000000100206025 miniruby`eval_make_iseq(src=4443743520, fname=4443743440, line=1, bind=0x0000000000000000, base_block=0x00007fff5fbfb370) + 266 at vm_eval.c:1274
+	    frame #29: 0x0000000100206153 miniruby`eval_string_with_cref(self=4334412520, src=4443743520, cref=0x0000000000000000, file=52, line=1) + 197 at vm_eval.c:1307
+	    frame #30: 0x0000000100206389 miniruby`rb_f_eval(argc=1, argv=0x0000000102400eb8, self=4334412520) + 219 at vm_eval.c:1382
+	    frame #31: 0x00000001001f247c miniruby`call_cfunc_m1(func=(miniruby`rb_f_eval at vm_eval.c:1364), recv=4334412520, argc=1, argv=0x0000000102400eb8) + 47 at vm_insnhelper.c:1723
+	    frame #32: 0x00000001001f2f87 miniruby`vm_call_cfunc_with_frame(ec=0x00000001007d3548, reg_cfp=0x0000000102500d80, calling=0x00007fff5fbfbf50, ci=0x000000010263f240, cc=0x0000000100749b50) + 386 at vm_insnhelper.c:1918
+	    frame #33: 0x00000001001f30d6 miniruby`vm_call_cfunc(ec=0x00000001007d3548, reg_cfp=0x0000000102500d80, calling=0x00007fff5fbfbf50, ci=0x000000010263f240, cc=0x0000000100749b50) + 149 at vm_insnhelper.c:1934
+	    frame #34: 0x00000001001faf0e miniruby`vm_exec_core(ec=0x00000001007d3548, initial=0) + 8471 at insns.def:915
+	    frame #35: 0x000000010020b75d miniruby`vm_exec(ec=0x00000001007d3548) + 230 at vm.c:1771
+	    frame #36: 0x00000001002093f8 miniruby`invoke_block(ec=0x00000001007d3548, iseq=0x000000010252d7f0, self=4334412520, captured=0x0000000102500df8, cref=0x0000000000000000, type=572653569, opt_pc=0) + 224 at vm.c:988
+	    frame #37: 0x0000000100209766 miniruby`invoke_iseq_block_from_c(ec=0x00000001007d3548, captured=0x0000000102500df8, self=4334412520, argc=0, argv=0x0000000000000000, passed_block_handler=0, cref=0x0000000000000000, is_lambda=0) + 389 at vm.c:1040
+	    frame #38: 0x0000000100209824 miniruby`invoke_block_from_c_bh(ec=0x00000001007d3548, block_handler=4333768185, argc=0, argv=0x0000000000000000, passed_block_handler=0, cref=0x0000000000000000, is_lambda=0, force_blockarg=0) + 138 at vm.c:1058
+	    frame #39: 0x00000001002099d0 miniruby`vm_yield(ec=0x00000001007d3548, argc=0, argv=0x0000000000000000) + 69 at vm.c:1103
+	    frame #40: 0x0000000100205623 miniruby`rb_yield_0(argc=0, argv=0x0000000000000000) + 40 at vm_eval.c:970
+	    frame #41: 0x0000000100205964 miniruby`loop_i + 19 at vm_eval.c:1049
+	    frame #42: 0x000000010007db07 miniruby`rb_rescue2(b_proc=(miniruby`loop_i at vm_eval.c:1047), data1=0, r_proc=(miniruby`loop_stop at vm_eval.c:1056), data2=0) + 369 at eval.c:896
+	    frame #43: 0x0000000100205a2e miniruby`rb_f_loop(self=4334412520) + 121 at vm_eval.c:1100
+	    frame #44: 0x00000001001f24a7 miniruby`call_cfunc_0(func=(miniruby`rb_f_loop at vm_eval.c:1098), recv=4334412520, argc=0, argv=0x0000000102400e80) + 41 at vm_insnhelper.c:1729
+	    frame #45: 0x00000001001f2f87 miniruby`vm_call_cfunc_with_frame(ec=0x00000001007d3548, reg_cfp=0x0000000102500de0, calling=0x00007fff5fbfd4d0, ci=0x000000010263bbf0, cc=0x0000000102642118) + 386 at vm_insnhelper.c:1918
+	    frame #46: 0x00000001001f30d6 miniruby`vm_call_cfunc(ec=0x00000001007d3548, reg_cfp=0x0000000102500de0, calling=0x00007fff5fbfd4d0, ci=0x000000010263bbf0, cc=0x0000000102642118) + 149 at vm_insnhelper.c:1934
+	    frame #47: 0x00000001001f4319 miniruby`vm_call_method_each_type(ec=0x00000001007d3548, cfp=0x0000000102500de0, calling=0x00007fff5fbfd4d0, ci=0x000000010263bbf0, cc=0x0000000102642118) + 239 at vm_insnhelper.c:2232
+	    frame #48: 0x00000001001f4a2c miniruby`vm_call_method(ec=0x00000001007d3548, cfp=0x0000000102500de0, calling=0x00007fff5fbfd4d0, ci=0x000000010263bbf0, cc=0x0000000102642118) + 253 at vm_insnhelper.c:2366
+	    frame #49: 0x00000001001f4b7a miniruby`vm_call_general(ec=0x00000001007d3548, reg_cfp=0x0000000102500de0, calling=0x00007fff5fbfd4d0, ci=0x000000010263bbf0, cc=0x0000000102642118) + 59 at vm_insnhelper.c:2398
+	    frame #50: 0x00000001001fab2f miniruby`vm_exec_core(ec=0x00000001007d3548, initial=0) + 7480 at insns.def:850
+	    frame #51: 0x000000010020b75d miniruby`vm_exec(ec=0x00000001007d3548) + 230 at vm.c:1771
+	    frame #52: 0x000000010020c40f miniruby`rb_iseq_eval_main(iseq=0x000000010252dd90) + 52 at vm.c:2019
+	    frame #53: 0x000000010007c768 miniruby`ruby_exec_internal(n=0x000000010252dd90) + 297 at eval.c:246
+	    frame #54: 0x000000010007c88e miniruby`ruby_exec_node(n=0x000000010252dd90) + 36 at eval.c:310
+	    frame #55: 0x000000010007c861 miniruby`ruby_run_node(n=0x000000010252dd90) + 62 at eval.c:302
+	    frame #56: 0x000000010000138d miniruby`main(argc=2, argv=0x00007fff5fbfdbf0) + 113 at main.c:42
+	    frame #57: 0x00007fff88eda5ad libdyld.dylib`start + 1
+	(lldb) p ((struct RVALUE*)pathobj)->as.basic
+	(RBasic) $0 = (flags = 0, klass = 4478683600)
+	(lldb)
+
+	fix SEGV inspecting uninitialized objects
+
+	obj_info() assumes the given object is alive.  OTOH
+	gc_writebarrier_incremental is called before or in middle of
+	object initialization.  Can casue SEGV.
+
+	(lldb) run
+	Process 48188 launched: './miniruby' (x86_64)
+	Process 48188 stopped
+	* thread #1: tid = 0x30fd53, 0x00000001000bf7a9 miniruby`rb_array_const_ptr(a=5251291222225483145) + 12 at ruby.h:2072, queue = 'com.apple.main-thread', stop reason = EXC_BAD_ACCESS (code=EXC_I386_GPFLT)
+	    frame #0: 0x00000001000bf7a9 miniruby`rb_array_const_ptr(a=5251291222225483145) + 12 at ruby.h:2072
+	   2069 static inline const VALUE *
+	   2070 rb_array_const_ptr(VALUE a)
+	   2071 {
+	-> 2072     return FIX_CONST_VALUE_PTR((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ?
+	   2073         RARRAY(a)->as.ary : RARRAY(a)->as.heap.ptr);
+	   2074 }
+	   2075
+	(lldb) bt
+	* thread #1: tid = 0x30fd53, 0x00000001000bf7a9 miniruby`rb_array_const_ptr(a=5251291222225483145) + 12 at ruby.h:2072, queue = 'com.apple.main-thread', stop reason = EXC_BAD_ACCESS (code=EXC_I386_GPFLT)
+	  * frame #0: 0x00000001000bf7a9 miniruby`rb_array_const_ptr(a=5251291222225483145) + 12 at ruby.h:2072
+	    frame #1: 0x00000001000bfaab miniruby`pathobj_path(pathobj=5251291222225483145) + 70 at vm_core.h:269
+	    frame #2: 0x00000001000c25ff miniruby`rb_iseq_path(iseq=0x00000001025b71a8) + 32 at iseq.c:723
+	    frame #3: 0x000000010009db09 miniruby`rb_raw_iseq_info(buff="0x00000001025b7158 [0    ] proc (Proc)", buff_size=256, iseq=0x00000001025b71a8) + 69 at gc.c:9274
+	    frame #4: 0x000000010009e1d5 miniruby`rb_raw_obj_info(buff="0x00000001025b7158 [0    ] proc (Proc)", buff_size=256, obj=4334514520) + 1546 at gc.c:9351
+	    frame #5: 0x000000010009e4d5 miniruby`obj_info(obj=4334514520) + 98 at gc.c:9429
+	    frame #6: 0x0000000100096658 miniruby`gc_writebarrier_incremental(a=4334514520, b=4334514600, objspace=0x00000001007d3280) + 61 at gc.c:5963
+	    frame #7: 0x00000001000968ca miniruby`rb_gc_writebarrier(a=4334514520, b=4334514600) + 127 at gc.c:6009
+	    frame #8: 0x00000001001eabe0 miniruby`rb_obj_written(a=4334514520, oldv=52, b=4334514600, filename="/Users/urabe.shyouhei/data/src/pedantic/vm.c", line=821) + 72 at ruby.h:1472
+	    frame #9: 0x00000001001eac2c miniruby`rb_obj_write(a=4334514520, slot=0x000000010259ff10, b=4334514600, filename="/Users/urabe.shyouhei/data/src/pedantic/vm.c", line=821) + 70 at ruby.h:1489
+	    frame #10: 0x0000000100208b6f miniruby`vm_proc_create_from_captured(klass=4311027960, captured=0x0000000102500338, block_type=block_type_ifunc, is_from_method='\0', is_lambda='\x01') + 137 at vm.c:821
+	    frame #11: 0x0000000100208e5c miniruby`rb_vm_make_proc_lambda(ec=0x00000001007d3548, captured=0x0000000102500338, klass=4311027960, is_lambda='\x01') + 134 at vm.c:892
+	    frame #12: 0x000000010011f08e miniruby`proc_new(klass=4311027960, is_lambda='\x01') + 445 at proc.c:752
+	    frame #13: 0x000000010011f110 miniruby`rb_block_lambda + 27 at proc.c:808
+	    frame #14: 0x00000001001f24a7 miniruby`call_cfunc_0(func=(miniruby`rb_block_lambda at proc.c:807), recv=4310991600, argc=0, argv=0x0000000000000000) + 41 at vm_insnhelper.c:1729
+	    frame #15: 0x00000001002033de miniruby`vm_call0_cfunc_with_frame(ec=0x00000001007d3548, calling=0x00007fff5fbfb080, ci=0x00007fff5fbfb070, cc=0x00007fff5fbfb0a0, argv=0x0000000000000000) + 370 at vm_eval.c:85
+	    frame #16: 0x00000001002034d9 miniruby`vm_call0_cfunc(ec=0x00000001007d3548, calling=0x00007fff5fbfb080, ci=0x00007fff5fbfb070, cc=0x00007fff5fbfb0a0, argv=0x0000000000000000) + 59 at vm_eval.c:100
+	    frame #17: 0x000000010020368f miniruby`vm_call0_body(ec=0x00000001007d3548, calling=0x00007fff5fbfb080, ci=0x00007fff5fbfb070, cc=0x00007fff5fbfb0a0, argv=0x0000000000000000) + 436 at vm_eval.c:131
+	    frame #18: 0x000000010020326a miniruby`vm_call0(ec=0x00000001007d3548, recv=4310991600, id=2993, argc=0, argv=0x0000000000000000, me=0x0000000100f48110) + 142 at vm_eval.c:58
+	    frame #19: 0x0000000100203c60 miniruby`rb_call0(ec=0x00000001007d3548, recv=4310991600, mid=2993, argc=0, argv=0x0000000000000000, scope=CALL_FCALL, self=4334514640) + 166 at vm_eval.c:296
+	    frame #20: 0x0000000100204827 miniruby`rb_call(recv=4310991600, mid=2993, argc=0, argv=0x0000000000000000, scope=CALL_FCALL) + 84 at vm_eval.c:589
+	    frame #21: 0x000000010020518b miniruby`rb_funcallv(recv=4310991600, mid=2993, argc=0, argv=0x0000000000000000) + 52 at vm_eval.c:815
+	    frame #22: 0x000000010012242e miniruby`mlambda(method=0) + 45 at proc.c:2661
+	    frame #23: 0x0000000100205bac miniruby`rb_iterate0(it_proc=(miniruby`mlambda at proc.c:2660), data1=0, ifunc=0x00000001025b71a8, ec=0x00000001007d3548) + 380 at vm_eval.c:1134
+	    frame #24: 0x0000000100205d16 miniruby`rb_iterate(it_proc=(miniruby`mlambda at proc.c:2660), data1=0, bl_proc=(miniruby`bmcall at proc.c:2666), data2=4334514640) + 88 at vm_eval.c:1166
+	    frame #25: 0x00000001001224c7 miniruby`method_to_proc(method=4334514640) + 43 at proc.c:2701
+	    frame #26: 0x00000001001f24a7 miniruby`call_cfunc_0(func=(miniruby`method_to_proc at proc.c:2688), recv=4334514640, argc=0, argv=0x0000000102400568) + 41 at vm_insnhelper.c:1729
+	    frame #27: 0x00000001001f2f87 miniruby`vm_call_cfunc_with_frame(ec=0x00000001007d3548, reg_cfp=0x0000000102500350, calling=0x00007fff5fbfc030, ci=0x0000000100f2ec70, cc=0x0000000102735718) + 386 at vm_insnhelper.c:1918
+	    frame #28: 0x00000001001f30d6 miniruby`vm_call_cfunc(ec=0x00000001007d3548, reg_cfp=0x0000000102500350, calling=0x00007fff5fbfc030, ci=0x0000000100f2ec70, cc=0x0000000102735718) + 149 at vm_insnhelper.c:1934
+	    frame #29: 0x00000001001f4319 miniruby`vm_call_method_each_type(ec=0x00000001007d3548, cfp=0x0000000102500350, calling=0x00007fff5fbfc030, ci=0x0000000100f2ec70, cc=0x0000000102735718) + 239 at vm_insnhelper.c:2232
+	    frame #30: 0x00000001001f49a4 miniruby`vm_call_method(ec=0x00000001007d3548, cfp=0x0000000102500350, calling=0x00007fff5fbfc030, ci=0x0000000100f2ec70, cc=0x0000000102735718) + 117 at vm_insnhelper.c:2355
+	    frame #31: 0x00000001001f4b7a miniruby`vm_call_general(ec=0x00000001007d3548, reg_cfp=0x0000000102500350, calling=0x00007fff5fbfc030, ci=0x0000000100f2ec70, cc=0x0000000102735718) + 59 at vm_insnhelper.c:2398
+	    frame #32: 0x00000001001faf0e miniruby`vm_exec_core(ec=0x00000001007d3548, initial=0) + 8471 at insns.def:915
+	    frame #33: 0x000000010020b75d miniruby`vm_exec(ec=0x00000001007d3548) + 230 at vm.c:1771
+	    frame #34: 0x000000010020c3d1 miniruby`rb_iseq_eval(iseq=0x00000001007f8270) + 52 at vm.c:2008
+	    frame #35: 0x00000001000caa4a miniruby`rb_load_internal0(ec=0x00000001007d3548, fname=4310799960, wrap=0) + 631 at load.c:611
+	    frame #36: 0x00000001000cab36 miniruby`rb_load_internal(fname=4310799960, wrap=0) + 46 at load.c:642
+	    frame #37: 0x00000001000cae1d miniruby`rb_f_load(argc=1, argv=0x00000001024004b8) + 217 at load.c:710
+	    frame #38: 0x00000001001f247c miniruby`call_cfunc_m1(func=(miniruby`rb_f_load at load.c:695), recv=4311327440, argc=1, argv=0x00000001024004b8) + 47 at vm_insnhelper.c:1723
+	    frame #39: 0x00000001001f2f87 miniruby`vm_call_cfunc_with_frame(ec=0x00000001007d3548, reg_cfp=0x00000001025003e0, calling=0x00007fff5fbfd3e0, ci=0x0000000102541070, cc=0x0000000100f9e918) + 386 at vm_insnhelper.c:1918
+	    frame #40: 0x00000001001f30d6 miniruby`vm_call_cfunc(ec=0x00000001007d3548, reg_cfp=0x00000001025003e0, calling=0x00007fff5fbfd3e0, ci=0x0000000102541070, cc=0x0000000100f9e918) + 149 at vm_insnhelper.c:1934
+	    frame #41: 0x00000001001f4319 miniruby`vm_call_method_each_type(ec=0x00000001007d3548, cfp=0x00000001025003e0, calling=0x00007fff5fbfd3e0, ci=0x0000000102541070, cc=0x0000000100f9e918) + 239 at vm_insnhelper.c:2232
+	    frame #42: 0x00000001001f4a2c miniruby`vm_call_method(ec=0x00000001007d3548, cfp=0x00000001025003e0, calling=0x00007fff5fbfd3e0, ci=0x0000000102541070, cc=0x0000000100f9e918) + 253 at vm_insnhelper.c:2366
+	    frame #43: 0x00000001001f4b7a miniruby`vm_call_general(ec=0x00000001007d3548, reg_cfp=0x00000001025003e0, calling=0x00007fff5fbfd3e0, ci=0x0000000102541070, cc=0x0000000100f9e918) + 59 at vm_insnhelper.c:2398
+	    frame #44: 0x00000001001faf0e miniruby`vm_exec_core(ec=0x00000001007d3548, initial=0) + 8471 at insns.def:915
+	    frame #45: 0x000000010020b75d miniruby`vm_exec(ec=0x00000001007d3548) + 230 at vm.c:1771
+	    frame #46: 0x000000010020c40f miniruby`rb_iseq_eval_main(iseq=0x0000000100f21240) + 52 at vm.c:2019
+	    frame #47: 0x000000010007c774 miniruby`ruby_exec_internal(n=0x0000000100f21240) + 297 at eval.c:246
+	    frame #48: 0x000000010007c89a miniruby`ruby_exec_node(n=0x0000000100f21240) + 36 at eval.c:310
+	    frame #49: 0x000000010007c86d miniruby`ruby_run_node(n=0x0000000100f21240) + 62 at eval.c:302
+	    frame #50: 0x0000000100001399 miniruby`main(argc=9, argv=0x00007fff5fbfdae0) + 113 at main.c:42
+	    frame #51: 0x00007fff88eda5ad libdyld.dylib`start + 1
+	(lldb)
+------------------------------------------------------------------------
+r61661 | naruse | 2018-01-08 07:26:45 +0900 (Mon, 08 Jan 2018) | 7 lines
+
+merge revision(s) 61561: [Backport #14272]
+
+	fix memory leak (FOUND BY A COMPILER WARNING)
+
+	Confusion of argument order ignores this st_free_table.
+	Results in garbaged table not GCed.
+	Easily noticable when you read the compiper warnings.
+------------------------------------------------------------------------
+r61660 | naruse | 2018-01-08 07:25:29 +0900 (Mon, 08 Jan 2018) | 10 lines
+
+merge revision(s) 61518: [Backport #14260]
+
+	bit fields treating negative values should be declared as signed int
+
+	* internal.h (struct vm_ifunc_argc): Bit fields are unsigned by default.
+	  For storing nagative values to bit fields, they must be declated as
+	  signed int. Fix multiple test failure observed by 32-bit binaries
+	  compiled with Oracle Developer Studio (Solaris Studio) 12.x on
+	  Solaris 10 on sparc architecture. [Bug #14260]
+
+------------------------------------------------------------------------
+r61630 | naruse | 2018-01-06 05:40:54 +0900 (Sat, 06 Jan 2018) | 9 lines
+
+merge revision(s) 61625,61626,61627:
+
+	extend timeout to 15 seconds for ARMv8 environment
+
+	Show how many seconds it timeouts
+
+	By this we can easily extend timeout.
+
+	Extend timeout of test_clear_unreachable_keyword_args
+------------------------------------------------------------------------
+r61629 | naruse | 2018-01-06 05:40:12 +0900 (Sat, 06 Jan 2018) | 8 lines
+
+merge revision(s) 61517: [Backport #14259]
+
+	numeric.c: Fix Integer#pow with a large Fixnum modulo
+
+	* numeric.c: Fix Integer#pow with a large Fixnum modulo
+	  [Bug #14259] [ruby-core:84562]
+
+	* test/ruby/test_numeric.rb: add assertions for reproducing this bug.
+------------------------------------------------------------------------
+r61628 | naruse | 2018-01-06 05:39:03 +0900 (Sat, 06 Jan 2018) | 8 lines
+
+merge revision(s) 61513: [Backport #14257]
+
+	string.c: chomp rs at the end
+
+	* string.c (rb_str_enumerate_lines): should chomp record separator
+	  only, but not a newline, at the end of the receiver as well as
+	  middle, if the separator is given.
+	  [ruby-core:84552] [Bug #14257]
+------------------------------------------------------------------------
+r61583 | naruse | 2018-01-04 03:14:56 +0900 (Thu, 04 Jan 2018) | 5 lines
+
+merge revision(s) 61507: [Backport #14247]
+
+	Fix KeyError#{key,receiver} of Thread#fetch
+
+	[ruby-core:84508] [Bug #14247]
+------------------------------------------------------------------------
+r61582 | naruse | 2018-01-04 03:12:16 +0900 (Thu, 04 Jan 2018) | 8 lines
+
+merge revision(s) 61500: [Backport #14248]
+
+	fix fd mask detection on os x
+
+	This was broken in r59440 (3215b27a9abd8de793cf517f32d8901fd421eb1c)
+	[Bug #14248]
+
+	From: Stefan Kaes <skaes@railsexpress.de>
+------------------------------------------------------------------------
+r61581 | naruse | 2018-01-04 03:11:47 +0900 (Thu, 04 Jan 2018) | 14 lines
+
+merge revision(s) 61497: [Backport #14243]
+
+	erb.rb: preserve the behavior for invalid syntax
+
+	comment. Fix regression at r58948.
+
+	I even don't want to deprecate it because deprecation needs to lex all
+	embedded Ruby script using Ripper and it would be slow.  So Let me just
+	keep this behavior of Ruby 2.4. No change is the best compatibility.
+
+	This commit stopped using String#-@ because it's harmful for "ambiguous
+	first argument" warning if we really want to maintain this behavior.
+
+	[Bug #14243]
+------------------------------------------------------------------------
+r61580 | naruse | 2018-01-04 03:03:49 +0900 (Thu, 04 Jan 2018) | 6 lines
+
+merge revision(s) 61479: [Backport #14236]
+
+	variable.c: public rb_autoload
+
+	* variable.c (rb_autoload): restore the visibility for backward
+	  compatibility.  [ruby-core:84454] [Bug #14236]
+------------------------------------------------------------------------
+r61579 | naruse | 2018-01-04 03:02:17 +0900 (Thu, 04 Jan 2018) | 23 lines
+
+merge revision(s) 61471,61472: [Backport #14231]
+
+	Use UINT128_T support flag from configure
+
+	Current check for __uint128_t in hash.c is not valid, since it ignores
+	compilers other than gcc. We hit this on lcc on e2k platform.
+
+	Configure script properly checks from 128-bit data types support and
+	sets HAVE_UINT128_T accordingly. This approach is already used within
+	ruby at bignum.c, random.c, etc.
+
+	Probably hash.c is an overlooked remnant of old days. This patch fixes
+	this.
+
+	[ruby-core:84438] [Bug #14231] [Fix GH-1781]
+	From: Andrew Savchenko <bircoph@altlinux.org>
+
+	hash.c: use uint128_t
+
+	* hash.c (mult_and_mix): use uint128_t instead of __uint128_t.
+	  [ruby-core:84438] [Bug #14231]
+
+	From: Nobuyoshi Nakada <nobu@ruby-lang.org>
+------------------------------------------------------------------------
+r61496 | naruse | 2017-12-27 19:25:32 +0900 (Wed, 27 Dec 2017) | 6 lines
+
+merge revision(s) 61478: [Backport #14234]
+
+	prelude.c.tmpl: get rid of errors with old gcc
+
+	* template/prelude.c.tmpl: moved diagnostic pragmas outside
+	  prelude_eval() for very old gcc.  [ruby-core:84449] [Bug #14234]
 ------------------------------------------------------------------------
 r61467 | naruse | 2017-12-25 15:56:44 +0900 (Mon, 25 Dec 2017) | 2 lines
 
