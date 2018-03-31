@@ -2,5 +2,3 @@
 0002-lib-mkmf.rb-sort-list-of-object-files-in-generated-M.patch
 0003-Mark-Gemspec-reproducible-change-fixing-784225-too.patch
 0004-Make-gemspecs-reproducible.patch
-0005-Fix-tests-to-cope-with-updates-in-tzdata.patch
-0006-Rubygems-apply-upstream-patch-to-fix-multiple-vulner.patch
