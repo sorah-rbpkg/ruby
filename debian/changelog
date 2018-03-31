@@ -1,6 +1,8 @@
 ruby2.5 (2.5.1-2) UNRELEASED; urgency=medium
 
   * debian/tests/control: ignore output on stderr
+  * debian/tests/bundled-gems: only fail on missing gems. Only warn if version
+    found is not new enough
 
  -- Antonio Terceiro <terceiro@debian.org>  Sat, 31 Mar 2018 14:08:49 -0300
 
