@@ -229,6 +229,7 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_ast_newnode@Base 2.5.0~rc1
  rb_attr@Base 2.5.0~preview1
  rb_attr_get@Base 2.5.0~preview1
+ rb_autoload@Base 2.5.1
  rb_autoload_load@Base 2.5.0~preview1
  rb_autoload_p@Base 2.5.0~preview1
  rb_backref_get@Base 2.5.0~preview1

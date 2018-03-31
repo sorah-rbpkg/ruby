@@ -28,6 +28,7 @@ ruby2.5 (2.5.1-1) UNRELEASED; urgency=medium
   * debian/tests/excludes/any/TestTimeTZ.rb: ignore tests failing due to
     assumptions that don't hold on newer tzdata update. Upstream bug:
     https://bugs.ruby-lang.org/issues/14655
+  * debian/libruby2.5.symbols: update with new symbol added in this release
 
  -- Antonio Terceiro <terceiro@debian.org>  Sat, 31 Mar 2018 12:25:15 -0300
 
