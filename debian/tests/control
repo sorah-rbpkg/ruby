@@ -1,2 +1,2 @@
-Tests: run-all bundled-gems rubyconfig
+Tests: run-all bundled-gems builtin-extensions rubyconfig
 Depends: @
