@@ -2,7 +2,7 @@
 
   dir.c -
 
-  $Author: usa $
+  $Author: naruse $
   created at: Wed Jan  5 09:51:01 JST 1994
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -470,15 +470,6 @@ static const rb_data_type_t dir_data_type = {
 
 static VALUE dir_close(VALUE);
 
-#define GlobPathValue(str, safe) \
-    /* can contain null bytes as separators */	\
-    (!RB_TYPE_P((str), T_STRING) ?		\
-     (void)FilePathValue(str) :			\
-     (void)(check_safe_glob((str), (safe)),		\
-      check_glob_encoding(str), (str)))
-#define check_safe_glob(str, safe) ((safe) ? rb_check_safe_obj(str) : (void)0)
-#define check_glob_encoding(str) rb_enc_check((str), rb_enc_from_encoding(rb_usascii_encoding()))
-
 static VALUE
 dir_s_alloc(VALUE klass)
 {
@@ -549,7 +540,7 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
 	}
     }
 
-    GlobPathValue(dirname, FALSE);
+    FilePathValue(dirname);
     orig = rb_str_dup_frozen(dirname);
     dirname = rb_str_encode_ospath(dirname);
     dirname = rb_str_dup_frozen(dirname);
@@ -1446,7 +1437,7 @@ nogvl_opendir_at(void *ptr)
 			       O_DIRECTORY|
 #  endif /* O_DIRECTORY */
 			       0);
-    int fd = openat(oaa->basefd, oaa->path, 0, opendir_flags);
+    int fd = openat(oaa->basefd, oaa->path, opendir_flags);
 
     dirp = fd >= 0 ? fdopendir(fd) : 0;
     if (!dirp) {
@@ -1454,7 +1445,7 @@ nogvl_opendir_at(void *ptr)
 
 	switch (gc_for_fd_with_gvl(e)) {
 	  default:
-	    if (fd < 0) fd = openat(oaa->basefd, oaa->path, 0, opendir_flags);
+	    if (fd < 0) fd = openat(oaa->basefd, oaa->path, opendir_flags);
 	    if (fd >= 0) dirp = fdopendir(fd);
 	    if (dirp) return dirp;
 
@@ -2541,7 +2532,14 @@ rb_push_glob(VALUE str, VALUE base, int flags) /* '\0' is delimiter */
     long offset = 0;
     VALUE ary;
 
-    GlobPathValue(str, TRUE);
+    /* can contain null bytes as separators */
+    if (!RB_TYPE_P((str), T_STRING)) {
+	FilePathValue(str);
+    }
+    else {
+	rb_check_safe_obj(str);
+	rb_enc_check(str, rb_enc_from_encoding(rb_usascii_encoding()));
+    }
     ary = rb_ary_new();
 
     while (offset < RSTRING_LEN(str)) {
@@ -2571,7 +2569,7 @@ dir_globs(long argc, const VALUE *argv, VALUE base, int flags)
     for (i = 0; i < argc; ++i) {
 	int status;
 	VALUE str = argv[i];
-	GlobPathValue(str, TRUE);
+	FilePathValue(str);
 	status = push_glob(ary, str, base, flags);
 	if (status) GLOB_JUMP_TAG(status);
     }
@@ -2596,7 +2594,7 @@ dir_glob_options(VALUE opt, VALUE *base, int *flags)
     }
 #endif
     else {
-	GlobPathValue(args[0], TRUE);
+	FilePathValue(args[0]);
 	if (!RSTRING_LEN(args[0])) args[0] = Qnil;
 	*base = args[0];
     }
@@ -3143,7 +3141,7 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
     const char *path;
     enum {false_on_notdir = 1};
 
-    GlobPathValue(dirname, FALSE);
+    FilePathValue(dirname);
     orig = rb_str_dup_frozen(dirname);
     dirname = rb_str_encode_ospath(dirname);
     dirname = rb_str_dup_frozen(dirname);
