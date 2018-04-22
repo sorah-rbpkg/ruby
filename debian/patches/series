@@ -6,3 +6,4 @@ CVE-2015-7551.patch
 0006-PATCH-02-12-cipher-don-t-set-dummy-encryption-key-in.patch
 0007-CVE-2017-0898_CVE-2017-10748_CVE-2017-14033_CVE-2017.patch
 0008-CVE-2017-0902_CVE-2017-0899_CVE-2017-0900_CVE-2017-0.patch
+0009-CVE-2017-17405-merge-revision-s-61242-Backport-14185.patch
