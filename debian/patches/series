@@ -8,3 +8,4 @@ CVE-2015-7551.patch
 0008-CVE-2017-0902_CVE-2017-0899_CVE-2017-0900_CVE-2017-0.patch
 0009-CVE-2017-17405-merge-revision-s-61242-Backport-14185.patch
 0010-CVE-2017-17405-required-changes-in-test.patch
+0011-CVE-2017-17790-Fixed-command-Injection.patch
