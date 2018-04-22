@@ -1,3 +1,7 @@
+From: Antonio Terceiro <terceiro@debian.org>
+Date: Sun, 22 Apr 2018 21:44:23 +0200
+Subject: debian-changes
+
 This patch file represents the entire difference between the package as shipped
 by Debian and the official upstream sources. The goal is to maintain this file
 as small as possible, avoiding non-upstreamed patches at all costs.
@@ -10,9 +14,24 @@ To obtain a view of the individual commits that affect non-Debian-specific
 files, you can clone that repository, and from the master branch, run:
 
   $ ./debian/upstream-changes
+---
+ ext/io/console/io-console.gemspec        |   3 +-
+ ext/openssl/lib/openssl/ssl.rb           |  62 ++++++++++++-
+ include/ruby/intern.h                    |   4 +-
+ lib/rubygems/remote_fetcher.rb           |   8 +-
+ lib/test/unit/test-unit.gemspec          |   1 +
+ pack.c                                   |  49 +++++++++-
+ string.c                                 |  41 ---------
+ test/openssl/test_ssl.rb                 | 150 +++++++++++++++++++++++++++++++
+ test/ruby/test_pack.rb                   |   2 +-
+ test/rubygems/test_gem_remote_fetcher.rb |  47 +++++++++-
+ tool/rbinstall.rb                        |   7 +-
+ 11 files changed, 315 insertions(+), 59 deletions(-)
 
---- ruby2.1-2.1.5.orig/ext/io/console/io-console.gemspec
-+++ ruby2.1-2.1.5/ext/io/console/io-console.gemspec
+diff --git a/ext/io/console/io-console.gemspec b/ext/io/console/io-console.gemspec
+index f71e1b9..a97ef48 100644
+--- a/ext/io/console/io-console.gemspec
++++ b/ext/io/console/io-console.gemspec
 @@ -1,11 +1,10 @@
  # -*- ruby -*-
  _VERSION = "0.4.2"
@@ -26,8 +45,10 @@ files, you can clone that repository, and from the master branch, run:
    s.summary = "Console interface"
    s.email = "nobu@ruby-lang.org"
    s.description = "add console capabilities to IO instances."
---- ruby2.1-2.1.5.orig/ext/openssl/lib/openssl/ssl.rb
-+++ ruby2.1-2.1.5/ext/openssl/lib/openssl/ssl.rb
+diff --git a/ext/openssl/lib/openssl/ssl.rb b/ext/openssl/lib/openssl/ssl.rb
+index 43025e7..b91dce3 100644
+--- a/ext/openssl/lib/openssl/ssl.rb
++++ b/ext/openssl/lib/openssl/ssl.rb
 @@ -143,8 +143,7 @@ module OpenSSL
            case san.tag
            when 2 # dNSName in GeneralName (RFC5280)
@@ -116,8 +137,10 @@ files, you can clone that repository, and from the master branch, run:
        def post_connection_check(hostname)
          unless OpenSSL::SSL.verify_certificate_identity(peer_cert, hostname)
            raise SSLError, "hostname \"#{hostname}\" does not match the server certificate"
---- ruby2.1-2.1.5.orig/include/ruby/intern.h
-+++ ruby2.1-2.1.5/include/ruby/intern.h
+diff --git a/include/ruby/intern.h b/include/ruby/intern.h
+index 46af270..710fa26 100644
+--- a/include/ruby/intern.h
++++ b/include/ruby/intern.h
 @@ -769,8 +769,8 @@ VALUE rb_str_replace(VALUE, VALUE);
  VALUE rb_str_inspect(VALUE);
  VALUE rb_str_dump(VALUE);
@@ -129,8 +152,10 @@ files, you can clone that repository, and from the master branch, run:
  void rb_str_setter(VALUE, ID, VALUE*);
  VALUE rb_str_intern(VALUE);
  VALUE rb_sym_to_s(VALUE);
---- ruby2.1-2.1.5.orig/lib/rubygems/remote_fetcher.rb
-+++ ruby2.1-2.1.5/lib/rubygems/remote_fetcher.rb
+diff --git a/lib/rubygems/remote_fetcher.rb b/lib/rubygems/remote_fetcher.rb
+index 58991ca..ed2e171 100644
+--- a/lib/rubygems/remote_fetcher.rb
++++ b/lib/rubygems/remote_fetcher.rb
 @@ -90,7 +90,13 @@ class Gem::RemoteFetcher
      rescue Resolv::ResolvError
        uri
@@ -146,8 +171,10 @@ files, you can clone that repository, and from the master branch, run:
      end
    end
  
---- ruby2.1-2.1.5.orig/lib/test/unit/test-unit.gemspec
-+++ ruby2.1-2.1.5/lib/test/unit/test-unit.gemspec
+diff --git a/lib/test/unit/test-unit.gemspec b/lib/test/unit/test-unit.gemspec
+index 6c7d223..ff9d2af 100644
+--- a/lib/test/unit/test-unit.gemspec
++++ b/lib/test/unit/test-unit.gemspec
 @@ -3,6 +3,7 @@
  Gem::Specification.new do |s|
    s.name = "test-unit"
@@ -156,8 +183,10 @@ files, you can clone that repository, and from the master branch, run:
    s.homepage = "http://www.ruby-lang.org"
    s.author = "Shota Fukumori"
    s.email = "sorah@tubusu.net"
---- ruby2.1-2.1.5.orig/pack.c
-+++ ruby2.1-2.1.5/pack.c
+diff --git a/pack.c b/pack.c
+index 400e85c..1956500 100644
+--- a/pack.c
++++ b/pack.c
 @@ -234,6 +234,45 @@ static void qpencode(VALUE,VALUE,long);
  
  static unsigned long utf8_to_uv(const char*,long*);
@@ -247,12 +276,15 @@ files, you can clone that repository, and from the master branch, run:
 +
 +    id_associated = rb_intern_const("__pack_associated__");
  }
---- ruby2.1-2.1.5.orig/string.c
-+++ ruby2.1-2.1.5/string.c
-@@ -1536,47 +1536,6 @@ str_discard(VALUE str)
+diff --git a/string.c b/string.c
+index e6f72bc..4d8e913 100644
+--- a/string.c
++++ b/string.c
+@@ -1535,47 +1535,6 @@ str_discard(VALUE str)
+     }
  }
  
- void
+-void
 -rb_str_associate(VALUE str, VALUE add)
 -{
 -    /* sanity check */
@@ -293,13 +325,14 @@ files, you can clone that repository, and from the master branch, run:
 -    return Qfalse;
 -}
 -
--void
+ void
  rb_must_asciicompat(VALUE str)
  {
-     rb_encoding *enc = rb_enc_get(str);
---- ruby2.1-2.1.5.orig/test/openssl/test_ssl.rb
-+++ ruby2.1-2.1.5/test/openssl/test_ssl.rb
-@@ -359,6 +359,156 @@ class OpenSSL::TestSSL < OpenSSL::SSLTes
+diff --git a/test/openssl/test_ssl.rb b/test/openssl/test_ssl.rb
+index b743819..68a2543 100644
+--- a/test/openssl/test_ssl.rb
++++ b/test/openssl/test_ssl.rb
+@@ -359,6 +359,156 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
      end
    end
  
@@ -456,8 +489,10 @@ files, you can clone that repository, and from the master branch, run:
    # Create NULL byte SAN certificate
    def create_null_byte_SAN_certificate(critical = false)
      ef = OpenSSL::X509::ExtensionFactory.new
---- ruby2.1-2.1.5.orig/test/ruby/test_pack.rb
-+++ ruby2.1-2.1.5/test/ruby/test_pack.rb
+diff --git a/test/ruby/test_pack.rb b/test/ruby/test_pack.rb
+index 4b089f7..64d1e68 100644
+--- a/test/ruby/test_pack.rb
++++ b/test/ruby/test_pack.rb
 @@ -181,7 +181,7 @@ class TestPack < Test::Unit::TestCase
      assert_equal a[0], a.pack("p").unpack("p")[0]
      assert_equal a, a.pack("p").freeze.unpack("p*")
@@ -467,8 +502,10 @@ files, you can clone that repository, and from the master branch, run:
    end
  
    def test_format_string_modified
---- ruby2.1-2.1.5.orig/test/rubygems/test_gem_remote_fetcher.rb
-+++ ruby2.1-2.1.5/test/rubygems/test_gem_remote_fetcher.rb
+diff --git a/test/rubygems/test_gem_remote_fetcher.rb b/test/rubygems/test_gem_remote_fetcher.rb
+index 79f3a58..626797f 100644
+--- a/test/rubygems/test_gem_remote_fetcher.rb
++++ b/test/rubygems/test_gem_remote_fetcher.rb
 @@ -163,6 +163,21 @@ gems:
    end
  
@@ -530,8 +567,10 @@ files, you can clone that repository, and from the master branch, run:
  
      target.verify
      dns.verify
---- ruby2.1-2.1.5.orig/tool/rbinstall.rb
-+++ ruby2.1-2.1.5/tool/rbinstall.rb
+diff --git a/tool/rbinstall.rb b/tool/rbinstall.rb
+index b3dad0e..2c7bdb8 100755
+--- a/tool/rbinstall.rb
++++ b/tool/rbinstall.rb
 @@ -666,7 +666,8 @@ module RbInstall
          @gemspec ||= begin
            spec = Gem::Specification.load(src) || raise("invalid spec in #{src}")
