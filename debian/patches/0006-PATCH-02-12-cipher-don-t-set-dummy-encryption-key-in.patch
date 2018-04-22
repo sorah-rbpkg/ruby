@@ -1,0 +1,98 @@
+From: Kazuki Yamaguchi <k@rhe.jp>
+Date: Tue, 20 Sep 2016 21:27:28 +0900
+Subject: [PATCH 02/12] cipher: don't set dummy encryption key in
+ Cipher#initialize
+
+Remove the encryption key initialization from Cipher#initialize. This
+is effectively a revert of r32723 ("Avoid possible SEGV from AES
+encryption/decryption", 2011-07-28).
+
+r32723, which added the key initialization, was a workaround for
+Ruby Bug #2768. For some certain ciphers, calling EVP_CipherUpdate()
+before setting an encryption key caused segfault. It was not a problem
+until OpenSSL implemented GCM mode - the encryption key could be
+overridden by repeated calls of EVP_CipherInit_ex(). But, it is not the
+case for AES-GCM ciphers. Setting a key, an IV, a key, in this order
+causes the IV to be reset to an all-zero IV.
+
+The problem of Bug #2768 persists on the current versions of OpenSSL.
+So, make Cipher#update raise an exception if a key is not yet set by the
+user. Since encrypting or decrypting without key does not make any
+sense, this should not break existing applications.
+
+Users can still call Cipher#key= and Cipher#iv= multiple times with
+their own responsibility.
+
+Reference: https://bugs.ruby-lang.org/issues/2768
+Reference: https://bugs.ruby-lang.org/issues/8221
+Reference: https://github.com/ruby/openssl/issues/49
+---
+ ext/openssl/ossl_cipher.c | 20 ++++++++++++--------
+ 1 file changed, 12 insertions(+), 8 deletions(-)
+
+diff --git a/ext/openssl/ossl_cipher.c b/ext/openssl/ossl_cipher.c
+index df6fd10..973db0c 100644
+--- a/ext/openssl/ossl_cipher.c
++++ b/ext/openssl/ossl_cipher.c
+@@ -35,6 +35,7 @@
+  */
+ VALUE cCipher;
+ VALUE eCipherError;
++static ID id_key_set;
+ 
+ static VALUE ossl_cipher_alloc(VALUE klass);
+ 
+@@ -114,14 +115,7 @@ ossl_cipher_initialize(VALUE self, VALUE str)
+     if (!(cipher = EVP_get_cipherbyname(name))) {
+ 	ossl_raise(rb_eRuntimeError, "unsupported cipher algorithm (%s)", name);
+     }
+-    /*
+-     * The EVP which has EVP_CIPH_RAND_KEY flag (such as DES3) allows
+-     * uninitialized key, but other EVPs (such as AES) does not allow it.
+-     * Calling EVP_CipherUpdate() without initializing key causes SEGV so we
+-     * set the data filled with "\0" as the key by default.
+-     */
+-    memset(key, 0, EVP_MAX_KEY_LENGTH);
+-    if (EVP_CipherInit_ex(ctx, cipher, NULL, key, NULL, -1) != 1)
++    if (EVP_CipherInit_ex(ctx, cipher, NULL, NULL, NULL, -1) != 1)
+ 	ossl_raise(eCipherError, NULL);
+ 
+     return self;
+@@ -240,6 +234,9 @@ ossl_cipher_init(int argc, VALUE *argv, VALUE self, int mode)
+ 	ossl_raise(eCipherError, NULL);
+     }
+ 
++    if (p_key)
++	rb_ivar_set(self, id_key_set, Qtrue);
++
+     return self;
+ }
+ 
+@@ -326,6 +323,8 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
+     OPENSSL_cleanse(key, sizeof key);
+     OPENSSL_cleanse(iv, sizeof iv);
+ 
++    rb_ivar_set(self, id_key_set, Qtrue);
++
+     return Qnil;
+ }
+ 
+@@ -352,6 +351,9 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
+ 
+     rb_scan_args(argc, argv, "11", &data, &str);
+ 
++    if (!RTEST(rb_attr_get(self, id_key_set)))
++	ossl_raise(eCipherError, "key not set");
++
+     StringValue(data);
+     in = (unsigned char *)RSTRING_PTR(data);
+     if ((in_len = RSTRING_LENINT(data)) == 0)
+@@ -447,6 +449,8 @@ ossl_cipher_set_key(VALUE self, VALUE key)
+     if (EVP_CipherInit_ex(ctx, NULL, NULL, (unsigned char *)RSTRING_PTR(key), NULL, -1) != 1)
+         ossl_raise(eCipherError, NULL);
+ 
++    rb_ivar_set(self, id_key_set, Qtrue);
++
+     return key;
+ }
+ 
