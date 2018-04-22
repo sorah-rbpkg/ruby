@@ -1,4 +1,5 @@
 debian-changes
 CVE-2009-5147.patch
 CVE-2015-7551.patch
-0004-CVE-2015-9096-SMTP-command-injection-via-CRLF-sequen.patch
+CVE-2015-9096-SMTP-command-injection-via-CRLF-sequen.patch
+CVE-2016-2339-Exploitable-heap-overflow-.patch
