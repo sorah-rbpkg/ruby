@@ -1,3 +1,41 @@
+ruby2.3 (2.3.3-1+deb9u3) UNRELEASED; urgency=medium
+
+  [ Santiago R.R ]
+  * Fix Command injection vulnerability in Net::FTP.
+    [CVE-2017-17405]
+  * webrick: use IO.copy_stream for multipart response. Required changes in
+    WEBrick to fix CVE-2017-17742 and CVE-2018-8777
+  * Fix HTTP response splitting in WEBrick.
+    [CVE-2017-17742]
+  * Fix Command Injection in Hosts::new() by use of Kernel#open.
+    [CVE-2017-17790]
+  * Fix Unintentional directory traversal by poisoned NUL byte in Dir
+    [CVE-2018-8780]
+  * Fix multiple vulnerabilities in RubyGems.
+    CVE-2018-1000073: Prevent Path Traversal issue during gem installation.
+    CVE-2018-1000074: Fix possible Unsafe Object Deserialization
+    Vulnerability in gem owner.
+    CVE-2018-1000075: Strictly interpret octal fields in tar headers.
+    CVE-2018-1000076: Raise a security error when there are duplicate files
+    in a package.
+    CVE-2018-1000077: Enforce URL validation on spec homepage attribute.
+    CVE-2018-1000078: Mitigate XSS vulnerability in homepage attribute when
+    displayed via gem server.
+    CVE-2018-1000079: Prevent path traversal when writing to a symlinked
+    basedir outside of the root.
+  * Fix directory traversal vulnerability in the Dir.mktmpdir method in the
+    tmpdir library
+    [CVE-2018-6914]
+  * Fix Unintentional socket creation by poisoned NUL byte in UNIXServer and
+    UNIXSocket
+    [CVE-2018-8779]
+  * Fix Buffer under-read in String#unpack
+    [CVE-2018-8778]
+  [ Santiago R.R ]
+  * Fix tests to cope with updates in tzdata (Closes: #889117)
+
+ -- Antonio Terceiro <terceiro@debian.org>  Wed, 25 Apr 2018 16:44:14 -0300
+
 ruby2.3 (2.3.3-1+deb9u2) stretch-security; urgency=high
 
   * asn1: fix out-of-bounds read in decoding constructed objects
