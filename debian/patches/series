@@ -11,3 +11,4 @@ CVE-2015-7551.patch
 0011-CVE-2017-17790-Fixed-command-Injection.patch
 0012-CVE-2018-1000075_CVE-2018-1000076_CVE-2018-1000077_C.patch
 0013-CVE-2018-8778-Buffer-under-read-in-String-unpack.patch
+0014-CVE-2018-8780-Unintentional-directory-traversal-by-p.patch
