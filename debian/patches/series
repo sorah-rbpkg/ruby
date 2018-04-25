@@ -15,3 +15,4 @@ CVE-2015-7551.patch
 0015-CVE-2018-6914-Unintentional-file-and-directory-creat.patch
 0016-CVE-2018-8779-Unintentional-socket-creation-by-poiso.patch
 0017-merge-revision-s-60584-62954-62959-63008.patch
+0018-CVE-2018-8777-DoS-by-large-request-in-WEBrick.patch
