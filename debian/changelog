@@ -1,3 +1,51 @@
+ruby2.1 (2.1.5-2+deb8u4~1.gbp779084) UNRELEASED-jessie-security; urgency=medium
+
+  ** SNAPSHOT build @779084a45c2d06cfbc02f762a7752b6e38bf2ada **
+
+  * Fix multiple security issues:
+  * CVE-2015-9096: SMTP command injection via CRLF sequences
+  * CVE-2016-2339: Exploitable heap overflow in Fiddle::Function.new
+    (Closes: #851161)
+  * CVE-2016-7798: Fix IV Reuse in GCM Mode.
+    Patch by Kazuki Yamaguchi <k@rhe.jp>
+  * CVE-2017-0898: Buffer underrun vulnerability in Kernel.sprintf
+  * CVE-2017-10784: lib/webrick/log.rb: sanitize any type of logs
+  * CVE-2017-14033: asn1: fix out-of-bounds read in decoding
+    constructed objects
+  * CVE-2017-14064: Heap exposure vulnerability in generating JSON
+  * CVE-2017-0903: Whitelist classes and symbols that are in Gem spec
+    YAML
+  * Fix multiple vulnerabilities in rubygems:
+    - a DNS request hijacking vulnerability. (CVE-2017-0902)
+    - an ANSI escape sequence vulnerability. (CVE-2017-0899)
+    - a DoS vulnerability in the query command. (CVE-2017-0900)
+    - a vulnerability in the gem installer that allowed a malicious gem to
+      overwrite arbitrary files. (CVE-2017-0901)
+  * CVE-2017-17405: Command injection in Net::FTP
+  * CVE-2017-17790: Command injection in Hosts:new() by use of
+    Kernel#open
+  * CVE-2018-1000075: Strictly interpret octal fields in tar headers to
+    avoid infinite loop
+  * CVE-2018-1000076: Raise a security error when there are duplicate
+    files in a package
+  * CVE-2018-1000077: Enforce URL validation on spec homepage attribute.
+  * CVE-2018-1000078: Mitigate XSS vulnerability in homepage attribute
+    when displayed via gem server.
+  * CVE-2018-1000079: Directory Traversal vulnerability in gem
+    installation that can result in the gem could write to arbitrary
+    filesystem locations.
+  * CVE-2018-8778: Buffer under-read in String#unpack
+  * CVE-2018-8780: Unintentional directory traversal by poisoned NUL byte
+    in Dir
+  * CVE-2018-6914: Unintentional file and directory creation with
+    directory traversal in tempfile and tmpdir
+  * CVE-2018-8779: Unintentional socket creation by poisoned NUL byte in
+    UNIXServer and UNIXSocket
+  * CVE-2018-8777: DoS by large request in WEBrick
+  * CVE-2017-17742: HTTP response splitting in WEBrick
+
+ -- Santiago Ruano Rincón <santiagorr@riseup.net>  Wed, 25 Apr 2018 14:08:03 +0200
+
 ruby2.1 (2.1.5-2+deb8u3) jessie; urgency=low
 
   * Non-maintainer upload to fix security problem.
