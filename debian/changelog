@@ -31,8 +31,9 @@ ruby2.3 (2.3.3-1+deb9u3) UNRELEASED; urgency=medium
     [CVE-2018-8779]
   * Fix Buffer under-read in String#unpack
     [CVE-2018-8778]
-  [ Santiago R.R ]
   * Fix tests to cope with updates in tzdata (Closes: #889117)
+  * Exclude Rinda TestRingFinger and TestRingServer test units requiring
+    network access (Closes: #898694)
 
  -- Antonio Terceiro <terceiro@debian.org>  Wed, 25 Apr 2018 16:44:14 -0300
 
