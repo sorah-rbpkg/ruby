@@ -4,3 +4,4 @@
 0004-Make-gemspecs-reproducible.patch
 0005-ia64-update-ia64-specific-code-to-use-execution-cont.patch
 0006-exclude-several-tests-unstable-in-Docker.patch
+0006-Fix-FTBFS-on-hurd.patch
