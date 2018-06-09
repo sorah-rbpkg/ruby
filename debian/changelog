@@ -1,4 +1,4 @@
-ruby2.5 (2.5.1-2) UNRELEASED; urgency=medium
+ruby2.5 (2.5.1-2) unstable; urgency=medium
 
   [ Antonio Terceiro ]
   * debian/tests/control: ignore output on stderr
@@ -9,7 +9,17 @@ ruby2.5 (2.5.1-2) UNRELEASED; urgency=medium
   [ Samuel Thibault ]
   * Fix FTBFS on hurd (Closes: #896509)
 
- -- Antonio Terceiro <terceiro@debian.org>  Sat, 31 Mar 2018 14:08:49 -0300
+  [ Svante Signell ]
+  * Exclude tests that fail on kfreebsd (Closes: #899267)
+
+  [ Antonio Terceiro ]
+  * Update symbols file for 64-bit architectures
+
+  [ Santiago R.R ]
+  * Exclude Rinda TestRingFinger and TestRingServer test units requiring network access
+    (Closes: #898917)
+
+ -- Antonio Terceiro <terceiro@debian.org>  Sat, 09 Jun 2018 11:50:20 -0300
 
 ruby2.5 (2.5.1-1) unstable; urgency=medium
 
