@@ -10,6 +10,7 @@ VALUE rb_cSockOpt;
 #if defined(__linux__) || \
     defined(__GNU__) /* GNU/Hurd */ || \
     defined(__FreeBSD__) || \
+    defined(__FreeBSD_kernel__) || \
     defined(__DragonFly__) || \
     defined(__APPLE__) || \
     defined(_WIN32) || \

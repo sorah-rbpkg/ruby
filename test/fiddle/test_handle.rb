@@ -173,6 +173,7 @@ module Fiddle
     end unless /mswin|mingw/ =~ RUBY_PLATFORM
 
     def test_dlerror
+      return if /kfreebsd/ =~ RUBY_PLATFORM
       # FreeBSD (at least 7.2 to 7.2) calls nsdispatch(3) when it calls
       # getaddrinfo(3). And nsdispatch(3) doesn't call dlerror(3) even if
       # it calls _nss_cache_cycle_prevention_function with dlsym(3).
@@ -181,7 +182,7 @@ module Fiddle
       require 'socket'
       Socket.gethostbyname("localhost")
       Fiddle.dlopen("/lib/libc.so.7").sym('strcpy')
-    end if /freebsd/=~ RUBY_PLATFORM
+    end if /freebsd/ =~ RUBY_PLATFORM
 
     def test_no_memory_leak
       assert_no_memory_leak(%w[-W0 -rfiddle.so], '', '100_000.times {Fiddle::Handle.allocate}; GC.start', rss: true)

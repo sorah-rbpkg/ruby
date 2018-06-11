@@ -521,7 +521,7 @@ class TestSocket < Test::Unit::TestCase
   end
 
   def test_bintime
-    return if /freebsd/ !~ RUBY_PLATFORM
+    return if /freebsd/ !~ RUBY_PLATFORM || /kfreebsd/ =~ RUBY_PLATFORM
     t1 = Time.now.strftime("%Y-%m-%d")
     stamp = nil
     Addrinfo.udp("127.0.0.1", 0).bind {|s1|
