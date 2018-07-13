@@ -1,7 +1,6 @@
-ruby2.1 (2.1.5-2+deb8u4~1.gbp779084) UNRELEASED-jessie-security; urgency=medium
+ruby2.1 (2.1.5-2+deb8u4) jessie-security; urgency=medium
 
-  ** SNAPSHOT build @779084a45c2d06cfbc02f762a7752b6e38bf2ada **
-
+  * Non-maintainer upload by the LTS Team.
   * Fix multiple security issues:
   * CVE-2015-9096: SMTP command injection via CRLF sequences
   * CVE-2016-2339: Exploitable heap overflow in Fiddle::Function.new
@@ -44,7 +43,7 @@ ruby2.1 (2.1.5-2+deb8u4~1.gbp779084) UNRELEASED-jessie-security; urgency=medium
   * CVE-2018-8777: DoS by large request in WEBrick
   * CVE-2017-17742: HTTP response splitting in WEBrick
 
- -- Santiago Ruano Rincón <santiagorr@riseup.net>  Wed, 25 Apr 2018 14:08:03 +0200
+ -- Santiago Ruano Rincón <santiagorr@riseup.net>  Fri, 13 Jul 2018 15:55:10 +0200
 
 ruby2.1 (2.1.5-2+deb8u3) jessie; urgency=low
 
