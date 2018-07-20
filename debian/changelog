@@ -1,6 +1,6 @@
-ruby2.3 (2.3.3-1+deb9u3) UNRELEASED; urgency=medium
+ruby2.3 (2.3.3-1+deb9u3) stretch-security; urgency=medium
 
-  [ Santiago R.R ]
+  [ Santiago R.R. ]
   * Fix Command injection vulnerability in Net::FTP.
     [CVE-2017-17405]
   * webrick: use IO.copy_stream for multipart response. Required changes in
@@ -35,7 +35,12 @@ ruby2.3 (2.3.3-1+deb9u3) UNRELEASED; urgency=medium
   * Exclude Rinda TestRingFinger and TestRingServer test units requiring
     network access (Closes: #898694)
 
- -- Antonio Terceiro <terceiro@debian.org>  Wed, 25 Apr 2018 16:44:14 -0300
+  [ Antonio Terceiro ]
+  * debian/tests/excludes/any/TestTimeTZ.rb: ignore tests failing due to
+    assumptions that don't hold on newer tzdata update. Upstream bug:
+    https://bugs.ruby-lang.org/issues/14655
+
+ -- Santiago R.R. <santiagorr@riseup.net>  Thu, 19 Jul 2018 13:28:10 +0200
 
 ruby2.3 (2.3.3-1+deb9u2) stretch-security; urgency=high
 
