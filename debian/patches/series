@@ -5,3 +5,4 @@
 0005-ia64-update-ia64-specific-code-to-use-execution-cont.patch
 0006-Fix-FTBFS-on-hurd.patch
 0007-Port-to-kfreebsd-amd64.patch
+0008-Exclude-tests-that-fail-on-Ubuntu-builds.patch
