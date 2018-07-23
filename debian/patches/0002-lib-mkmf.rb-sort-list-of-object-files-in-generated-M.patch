@@ -2,7 +2,7 @@ From: Reiner Herrmann <reiner@reiner-h.de>
 Date: Tue, 10 Oct 2017 15:06:13 -0300
 Subject: lib/mkmf.rb: sort list of object files in generated Makefile
 
-Without sorting the list explicitely, its order is indeterministic,
+Without sorting the list explicitly, its order is indeterministic,
 because readdir() is also not deterministic.
 When the list of object files varies between builds, they are linked
 in a different order, which results in an unreproducible build.
