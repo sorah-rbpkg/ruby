@@ -1,3 +1,14 @@
+ruby2.5 (2.5.1-5) unstable; urgency=medium
+
+  * Fix spelling error in patch description
+  * Remove always-on dh --parallel
+  * Pass --host to configure when cross-building.
+    We cannot just use dh_auto_configure because some of the added options
+    then make configure need a baseruby, which we want to avoid when
+    building for the native arch. (Closes: #893501)
+
+ -- Chris Hofstaedtler <zeha@debian.org>  Tue, 24 Jul 2018 08:56:14 +0000
+
 ruby2.5 (2.5.1-4) unstable; urgency=medium
 
   * Disable tests failing on Ubuntu builders (Closes: #886515)
