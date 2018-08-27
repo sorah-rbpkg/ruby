@@ -18,3 +18,6 @@ CVE-2015-7551.patch
 0018-CVE-2018-8777-DoS-by-large-request-in-WEBrick.patch
 0019-CVE-2017-17742-HTTP-response-splitting-in-WEBrick.patch
 0020-Whitelist-classes-and-symbols-that-are-in-Gem-spec-Y.patch
+CVE-2018-1000074.patch
+CVE-2018-1000073.patch
+CVE-2016-2337.patch

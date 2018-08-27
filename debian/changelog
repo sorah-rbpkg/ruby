@@ -1,3 +1,14 @@
+ruby2.1 (2.1.5-2+deb8u5) jessie-security; urgency=medium
+
+  * Non-maintainer upload by the LTS Security Team.
+  * CVE-2018-1000074.patch: fix Deserialization of Untrusted Data
+    vulnerability in owner command that can result in code execution
+    through specially crafted YAML files. (Closes: #895778)
+  * CVE-2018-1000073.patch: fix directory traversal vulnerability
+  * CVE-2016-2337.patch: fix arbitrary code execution in Tcl/Tk API
+
+ -- Antoine Beaupré <anarcat@debian.org>  Mon, 27 Aug 2018 15:08:54 -0400
+
 ruby2.1 (2.1.5-2+deb8u4) jessie-security; urgency=medium
 
   * Non-maintainer upload by the LTS Team.
