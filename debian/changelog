@@ -1,3 +1,21 @@
+ruby2.5 (2.5.1-6) unstable; urgency=medium
+
+  * Fix build with openssl 1.1.1 (Closes: #907790)
+    - Apply Ruby upstream patch to update openssl extension to v2.1.1. This
+      includes some, but not all, changes needed to make the tests pass
+      against openssl 1.1.1
+    - Apply ruby-openssl upstream patches to fix tests against openssl 1.1.1
+    - Exclude tests that still fail with openssl 1.1.1
+    - debian/rules: set OPENSSL_CONF to /dev/null when running tests to use
+      the default openssl settings. Unfortunately there are too many tests for
+      several parts of the Ruby standard library that use openssl and that take
+      very long to complete under the Debian settings, and I don't have the
+      cycles to go fix each one.
+    - debian/tests/run-all: also run autopkgtest against the default openssl
+      settings and not teh Debian-specific ones.
+
+ -- Antonio Terceiro <terceiro@debian.org>  Sat, 06 Oct 2018 14:15:02 -0300
+
 ruby2.5 (2.5.1-5) unstable; urgency=medium
 
   * Fix spelling error in patch description

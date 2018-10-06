@@ -4,6 +4,9 @@ exec 2>&1
 set -e
 #set -x
 
+# test against the default OpenSSL settings and not the Debian-specific ones
+export OPENSSL_CONF=/dev/null
+
 KNOW_FAILURES=$(dirname $(readlink -f $0))/known-failures.txt
 
 tests="$@"
