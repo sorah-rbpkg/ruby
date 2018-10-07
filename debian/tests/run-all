@@ -16,6 +16,7 @@ if [ -z "$ADTTMP" ]; then
   trap cleanup INT TERM EXIT
 fi
 
+excludedir=$(readlink -f $(dirname $0))/excludes
 cp -r 'test/' $ADTTMP
 cd $ADTTMP
 
@@ -31,8 +32,8 @@ fail_expected=0
 total=0
 
 excludes="--excludes-dir=test/excludes/"
-excludes="$excludes --excludes-dir=debian/tests/excludes/any/"
-excludes="$excludes --excludes-dir=debian/tests/excludes/$(dpkg-architecture -qDEB_HOST_ARCH)/"
+excludes="$excludes --excludes-dir=${excludedir}/any/"
+excludes="$excludes --excludes-dir=${excludedir}/$(dpkg-architecture -qDEB_HOST_ARCH)/"
 
 for t in $tests; do
   if ruby2.5 test/runner.rb -v $excludes --name='!/memory_leak/' $t >log 2>&1; then
