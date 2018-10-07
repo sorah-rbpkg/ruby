@@ -13,6 +13,7 @@ ruby2.5 (2.5.1-6) unstable; urgency=medium
       cycles to go fix each one.
     - debian/tests/run-all: also run autopkgtest against the default openssl
       settings and not teh Debian-specific ones.
+  * debian/tests/run-all: fix reference to excludes dir
 
  -- Antonio Terceiro <terceiro@debian.org>  Sat, 06 Oct 2018 14:15:02 -0300
 
