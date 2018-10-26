@@ -1,0 +1,32 @@
+From: Sorah Fukumori <sorah@cookpad.com>
+Date: Fri, 26 Oct 2018 21:57:31 +0900
+Subject: exclude several tests unstable in Docker
+
+---
+ test/dtrace/helper.rb       | 1 +
+ test/excludes/TestTimeTZ.rb | 4 ++++
+ 2 files changed, 5 insertions(+)
+ create mode 100644 test/excludes/TestTimeTZ.rb
+
+diff --git a/test/dtrace/helper.rb b/test/dtrace/helper.rb
+index 5828bcd..f38f052 100644
+--- a/test/dtrace/helper.rb
++++ b/test/dtrace/helper.rb
+@@ -21,6 +21,7 @@
+   end
+ end
+ ok &= (`dtrace -V` rescue false)
++ok = false # Doesn't work properly inside Docker build
+ module DTrace
+   class TestCase < Test::Unit::TestCase
+     INCLUDE = File.expand_path('..', File.dirname(__FILE__))
+diff --git a/test/excludes/TestTimeTZ.rb b/test/excludes/TestTimeTZ.rb
+new file mode 100644
+index 0000000..c924655
+--- /dev/null
++++ b/test/excludes/TestTimeTZ.rb
+@@ -0,0 +1,4 @@
++exclude :test_gen_Pacific_Kiritimati_71, "unstable for the new tzdata"
++exclude :test_gen_Pacific_Kiritimati_89, "unstable for the new tzdata"
++exclude :test_gen_lisbon_99, "unstable for the new tzdata"
++exclude :test_pacific_kiritimati, "unstable for the new tzdata"

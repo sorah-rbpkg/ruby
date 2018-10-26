@@ -3,3 +3,4 @@
 0003-Mark-Gemspec-reproducible-change-fixing-784225-too.patch
 0004-Make-gemspecs-reproducible.patch
 0005-Exclude-tests-that-fail-on-Debian-builds.patch
+0006-exclude-several-tests-unstable-in-Docker.patch
