@@ -1,3 +1,14 @@
+ruby2.1 (2.1.5-2+deb8u6) jessie-security; urgency=medium
+
+  * Non-maintainer upload by the LTS Team. 
+  * CVE-2018-16395
+    Fix for OpenSSL::X509::Name equality check.
+  * CVE-2018-16396
+    Tainted flags are not propagated in Array#pack and String#unpack 
+    with some directives.
+
+ -- Thorsten Alteholz <debian@alteholz.de>  Fri, 26 Oct 2018 19:03:02 +0200
+
 ruby2.1 (2.1.5-2+deb8u5) jessie-security; urgency=medium
 
   * Non-maintainer upload by the LTS Security Team.
