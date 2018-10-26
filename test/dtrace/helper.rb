@@ -34,6 +34,10 @@ if ok
   end
 end
 
+
+ok = false # doesn't work properly inside Docker build
+
+
 # use miniruby to reduce the amount of trace data we don't care about
 rubybin = "miniruby#{RbConfig::CONFIG["EXEEXT"]}"
 rubybin = File.join(File.dirname(EnvUtil.rubybin), rubybin)
