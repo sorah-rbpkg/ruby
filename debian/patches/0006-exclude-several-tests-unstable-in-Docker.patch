@@ -3,10 +3,8 @@ Date: Fri, 26 Oct 2018 21:57:31 +0900
 Subject: exclude several tests unstable in Docker
 
 ---
- test/dtrace/helper.rb       | 1 +
- test/excludes/TestTimeTZ.rb | 4 ++++
- 2 files changed, 5 insertions(+)
- create mode 100644 test/excludes/TestTimeTZ.rb
+ test/dtrace/helper.rb | 1 +
+ 1 file changed, 1 insertion(+)
 
 diff --git a/test/dtrace/helper.rb b/test/dtrace/helper.rb
 index 5828bcd..f38f052 100644
