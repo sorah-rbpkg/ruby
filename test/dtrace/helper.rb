@@ -53,6 +53,7 @@ else
   cmd = false
 end
 ok &= system(*cmd, err: IO::NULL, out: IO::NULL) if cmd
+ok = false # Doesn't work properly inside Docker build
 
 module DTrace
   class TestCase < Test::Unit::TestCase
