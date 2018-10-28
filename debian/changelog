@@ -1,3 +1,13 @@
+ruby2.3 (2.3.3-1+deb9u4) UNRELEASED; urgency=medium
+
+  * OpenSSL::X509::Name equality check does not work correctly
+    (CVE-2018-16395)
+  * pack.c: avoid returning uninitialized String
+  * Tainted flags are not propagated in Array#pack and String#unpack with some
+    directives (CVE-2018-16396)
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Sun, 28 Oct 2018 21:49:57 +0100
+
 ruby2.3 (2.3.3-1+deb9u3) stretch-security; urgency=medium
 
   [ Santiago R.R. ]
