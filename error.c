@@ -2,7 +2,7 @@
 
   error.c -
 
-  $Author: naruse $
+  $Author: nagachika $
   created at: Mon Aug  9 16:11:34 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -327,11 +327,11 @@ warning_write(int argc, VALUE *argv, VALUE buf)
 static VALUE
 rb_warn_m(int argc, VALUE *argv, VALUE exc)
 {
-    VALUE opts, uplevel = Qnil;
+    VALUE opts, location = Qnil;
 
     if (!NIL_P(ruby_verbose) && argc > 0 &&
 	    (argc = rb_scan_args(argc, argv, "*:", NULL, &opts)) > 0) {
-	VALUE str = argv[0];
+	VALUE str = argv[0], uplevel = Qnil;
 	if (!NIL_P(opts)) {
 	    static ID kwds[1];
 	    if (!kwds[0]) {
@@ -342,23 +342,32 @@ rb_warn_m(int argc, VALUE *argv, VALUE exc)
 		uplevel = Qnil;
 	    }
 	    else if (!NIL_P(uplevel)) {
-		uplevel = LONG2NUM((long)NUM2ULONG(uplevel) + 1);
-		uplevel = rb_vm_thread_backtrace_locations(1, &uplevel, GET_THREAD()->self);
-		if (!NIL_P(uplevel)) {
-		    uplevel = rb_ary_entry(uplevel, 0);
+		VALUE args[2];
+		long lev = NUM2LONG(uplevel);
+		if (lev < 0) {
+		    rb_raise(rb_eArgError, "negative level (%ld)", lev);
+		}
+		args[0] = LONG2NUM(lev + 1);
+		args[1] = INT2FIX(1);
+		location = rb_vm_thread_backtrace_locations(2, args, GET_THREAD()->self);
+		if (!NIL_P(location)) {
+		    location = rb_ary_entry(location, 0);
 		}
 	    }
 	}
 	if (argc > 1 || !NIL_P(uplevel) || !end_with_asciichar(str, '\n')) {
+	    VALUE path;
 	    if (NIL_P(uplevel)) {
 		str = rb_str_tmp_new(0);
 	    }
+	    else if (NIL_P(location) ||
+		     NIL_P(path = rb_funcall(location, rb_intern("path"), 0))) {
+		str = rb_str_new_cstr("warning: ");
+	    }
 	    else {
-		VALUE path;
-		path = rb_funcall(uplevel, rb_intern("path"), 0);
-		str = rb_sprintf("%s:%li: warning: ",
+		str = rb_sprintf("%s:%ld: warning: ",
 		    rb_string_value_ptr(&path),
-		    NUM2LONG(rb_funcall(uplevel, rb_intern("lineno"), 0)));
+		    NUM2LONG(rb_funcall(location, rb_intern("lineno"), 0)));
 	    }
 	    RBASIC_SET_CLASS(str, rb_cWarningBuffer);
 	    rb_io_puts(argc, argv, str);
@@ -951,7 +960,16 @@ exc_to_s(VALUE exc)
 }
 
 /* FIXME: Include eval_error.c */
-void rb_error_write(VALUE errinfo, VALUE errat, VALUE str, VALUE highlight, VALUE reverse);
+void rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlight, VALUE reverse);
+
+VALUE
+rb_get_message(VALUE exc)
+{
+    VALUE e = rb_check_funcall(exc, id_message, 0, 0);
+    if (e == Qundef) return Qnil;
+    if (!RB_TYPE_P(e, T_STRING)) e = rb_check_string_type(e);
+    return e;
+}
 
 /*
  * call-seq:
@@ -986,7 +1004,7 @@ exc_s_to_tty_p(VALUE self)
 static VALUE
 exc_full_message(int argc, VALUE *argv, VALUE exc)
 {
-    VALUE opt, str, errat;
+    VALUE opt, str, emesg, errat;
     enum {kw_highlight, kw_order, kw_max_};
     static ID kw[kw_max_];
     VALUE args[kw_max_] = {Qnil, Qnil};
@@ -1022,8 +1040,9 @@ exc_full_message(int argc, VALUE *argv, VALUE exc)
     }
     str = rb_str_new2("");
     errat = rb_get_backtrace(exc);
+    emesg = rb_get_message(exc);
 
-    rb_error_write(exc, errat, str, args[kw_highlight], args[kw_order]);
+    rb_error_write(exc, emesg, errat, str, args[kw_highlight], args[kw_order]);
     return str;
 }
 
@@ -1117,19 +1136,21 @@ VALUE
 rb_get_backtrace(VALUE exc)
 {
     ID mid = id_backtrace;
+    VALUE info;
     if (rb_method_basic_definition_p(CLASS_OF(exc), id_backtrace)) {
-	VALUE info, klass = rb_eException;
+	VALUE klass = rb_eException;
 	rb_execution_context_t *ec = GET_EC();
 	if (NIL_P(exc))
 	    return Qnil;
 	EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, exc, mid, mid, klass, Qundef);
 	info = exc_backtrace(exc);
 	EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, exc, mid, mid, klass, info);
-	if (NIL_P(info))
-	    return Qnil;
-	return rb_check_backtrace(info);
     }
-    return rb_funcallv(exc, mid, 0, 0);
+    else {
+	info = rb_funcallv(exc, mid, 0, 0);
+    }
+    if (NIL_P(info)) return Qnil;
+    return rb_check_backtrace(info);
 }
 
 /*
