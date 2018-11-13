@@ -25,10 +25,10 @@ git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/trunk@62106 b2dd03c8-39d4-4d8f-98ff-
  2 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/cont.c b/cont.c
-index 1ef99d5..c30f47e 100644
+index 758bbee..4c82a8e 100644
 --- a/cont.c
 +++ b/cont.c
-@@ -475,7 +475,7 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
+@@ -485,7 +485,7 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
  
      SET_MACHINE_STACK_END(&th->ec->machine.stack_end);
  #ifdef __ia64
@@ -37,7 +37,7 @@ index 1ef99d5..c30f47e 100644
  #endif
  
      if (th->ec->machine.stack_start > th->ec->machine.stack_end) {
-@@ -499,8 +499,8 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
+@@ -509,8 +509,8 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
  
  #ifdef __ia64
      rb_ia64_flushrs();
@@ -49,7 +49,7 @@ index 1ef99d5..c30f47e 100644
  	REALLOC_N(cont->machine.register_stack, VALUE, size);
      }
 diff --git a/thread.c b/thread.c
-index a1948b3..1201dca 100644
+index 0afe98d..517d866 100644
 --- a/thread.c
 +++ b/thread.c
 @@ -132,7 +132,7 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio

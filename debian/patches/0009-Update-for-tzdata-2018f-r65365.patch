@@ -7,7 +7,7 @@ Subject: Update for tzdata-2018f (r65365)
  1 file changed, 9 insertions(+), 3 deletions(-)
 
 diff --git a/test/ruby/test_time_tz.rb b/test/ruby/test_time_tz.rb
-index 39b830d..52d8bf8 100644
+index b32caff..51fc968 100644
 --- a/test/ruby/test_time_tz.rb
 +++ b/test/ruby/test_time_tz.rb
 @@ -86,7 +86,9 @@ def group_by(e, &block)
@@ -20,8 +20,8 @@ index 39b830d..52d8bf8 100644
 +      end
      end
    }
- 
-@@ -336,12 +338,16 @@ def self.gen_zdump_test(data)
+   CORRECT_KIRITIMATI_SKIP_1994 = with_tz("Pacific/Kiritimati") {
+@@ -347,12 +349,16 @@ def self.gen_zdump_test(data)
  Asia/Singapore  Thu Dec 31 16:29:59 1981 UTC = Thu Dec 31 23:59:59 1981 SGT isdst=0 gmtoff=27000
  Asia/Singapore  Thu Dec 31 16:30:00 1981 UTC = Fri Jan  1 00:30:00 1982 SGT isdst=0 gmtoff=28800
  End
