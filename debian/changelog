@@ -1,4 +1,4 @@
-ruby2.5 (2.5.1-0nkmi2) unstable; urgency=medium
+ruby2.5 (2.5.1-0nkmi2~_dist_) unstable; urgency=medium
 
   * Port many things from debian upstream
 
