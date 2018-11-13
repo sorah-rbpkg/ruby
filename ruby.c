@@ -2,7 +2,7 @@
 
   ruby.c -
 
-  $Author: nobu $
+  $Author: nagachika $
   created at: Tue Aug 10 12:47:31 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -1836,11 +1836,7 @@ load_file_internal(VALUE argp_v)
 	c = rb_io_getbyte(f);
 	if (c == INT2FIX('#')) {
 	    c = rb_io_getbyte(f);
-	    if (c == INT2FIX('!')) {
-		line = rb_io_gets(f);
-		if (NIL_P(line))
-		    return 0;
-
+            if (c == INT2FIX('!') && !NIL_P(line = rb_io_gets(f))) {
 		RSTRING_GETMEM(line, str, len);
 		warn_cr_in_shebang(str, len);
 		if ((p = strstr(str, ruby_engine)) == 0) {
@@ -2112,7 +2108,9 @@ external_str_new_cstr(const char *p)
 {
 #if UTF8_PATH
     VALUE str = rb_utf8_str_new_cstr(p);
-    return str_conv_enc(str, NULL, rb_default_external_encoding());
+    str = str_conv_enc(str, NULL, rb_default_external_encoding());
+    OBJ_TAINT_RAW(str);
+    return str;
 #else
     return rb_external_str_new_cstr(p);
 #endif

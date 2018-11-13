@@ -2,7 +2,7 @@
 
   hash.c -
 
-  $Author: naruse $
+  $Author: nagachika $
   created at: Mon Nov 22 18:51:18 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -3262,7 +3262,7 @@ env_enc_str_new(const char *ptr, long len, rb_encoding *enc)
     rb_encoding *utf8 = rb_utf8_encoding();
     VALUE str = rb_enc_str_new(NULL, 0, (internal ? internal : enc));
     if (NIL_P(rb_str_cat_conv_enc_opts(str, 0, ptr, len, utf8, ecflags, Qnil))) {
-	rb_str_initialize(str, ptr, len, utf8);
+        rb_str_initialize(str, ptr, len, NULL);
     }
 #else
     VALUE str = rb_external_str_new_with_enc(ptr, len, enc);
@@ -3293,6 +3293,9 @@ env_str_new2(const char *ptr)
 }
 
 static int env_path_tainted(const char *);
+
+static const char TZ_ENV[] = "TZ";
+extern int ruby_tz_update;
 
 static rb_encoding *
 env_encoding_for(const char *name, const char *ptr)
@@ -3374,6 +3377,9 @@ env_delete(VALUE obj, VALUE name)
 	if (ENVMATCH(nam, PATH_ENV)) {
 	    RB_GC_GUARD(name);
 	    path_tainted = 0;
+	}
+	else if (ENVMATCH(nam, TZ_ENV)) {
+	    ruby_tz_update = 0;
 	}
 	return value;
     }
@@ -3733,6 +3739,9 @@ env_aset(VALUE obj, VALUE nm, VALUE val)
 	else {
 	    path_tainted_p(value);
 	}
+    }
+    else if (ENVMATCH(name, TZ_ENV)) {
+	ruby_tz_update = 0;
     }
     return val;
 }

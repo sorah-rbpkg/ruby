@@ -18,10 +18,11 @@ Build-Depends: bison,
                netbase,
                openssl,
                procps,
+               ruby:native <cross>,
                rubygems-integration (>= 1.6),
                systemtap-sdt-dev [linux-any],
                zlib1g-dev
-Standards-Version: 4.1.2
+Standards-Version: 4.1.5
 Homepage: http://www.ruby-lang.org/
 Vcs-Git: https://github.com/sorah-rbpkg/ruby
 Vcs-Browser: https://github.com/sorah-rbpkg/ruby

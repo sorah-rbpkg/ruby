@@ -1007,6 +1007,8 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
   def test_kernel_warn_uplevel
     warning = capture_warning_warn {warn("test warning", uplevel: 0)}
     assert_equal("#{__FILE__}:#{__LINE__-1}: warning: test warning\n", warning[0])
+    assert_raise(ArgumentError) {warn("test warning", uplevel: -1)}
+    assert_in_out_err(["-e", "warn 'ok', uplevel: 1"], '', [], /warning:/)
   end
 
   def test_warning_warn_invalid_argument
@@ -1121,6 +1123,16 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
         raise RuntimeError, "hello"
       }
     end;
+
+    error_class = Class.new(StandardError) do
+      def backtrace; :backtrace; end
+    end
+    begin
+      raise error_class
+    rescue error_class => e
+      assert_raise(TypeError) {$@}
+      assert_raise(TypeError) {e.full_message}
+    end
   end
 
   def test_full_message
@@ -1154,5 +1166,16 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
 
     message = e.full_message(highlight: true)
     assert_match(/\e/, message)
+  end
+
+  def test_exception_in_message
+    code = "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
+      class Bug14566 < StandardError
+        def message; raise self.class; end
+      end
+      raise Bug14566
+    end;
+    assert_in_out_err([], code, [], /Bug14566/, success: false, timeout: 1)
   end
 end
