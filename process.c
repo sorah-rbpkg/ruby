@@ -2,7 +2,7 @@
 
   process.c -
 
-  $Author: stomar $
+  $Author: nagachika $
   created at: Tue Aug 10 14:30:50 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -3651,8 +3651,8 @@ rb_fork_ruby(int *status)
 
     while (1) {
 	prefork();
-	before_fork_ruby();
 	disable_child_handler_before_fork(&old);
+	before_fork_ruby();
 	pid = fork();
 	err = errno;
 	after_fork_ruby();

@@ -10,6 +10,9 @@ export DH_OPTIONS
 TESTOPTS += -v
 export TESTOPTS
 
+DEB_BUILD_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
+DEB_HOST_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 include /usr/share/dpkg/pkg-info.mk
@@ -27,6 +30,17 @@ configure_options += --enable-install-static-library
 configure_options += --disable-rpath
 configure_options += --with-sitedir='/usr/local/lib/site_ruby'
 configure_options += --with-sitearchdir="/usr/local/lib/$(DEB_HOST_MULTIARCH)/site_ruby"
+
+ifneq ($(DEB_BUILD_GNU_TYPE), $(DEB_HOST_GNU_TYPE))
+# Cross-building. This is the same logic that debhelper's
+# lib/Debian/Debhelper/Buildsystem/autoconf.pm uses.
+# note that you also need --with-baseruby, so use the "cross" build-profile.
+configure_options += --build=$(DEB_BUILD_GNU_TYPE)
+configure_options += --host=$(DEB_HOST_GNU_TYPE)
+endif
+ifneq ($(filter cross,$(DEB_BUILD_PROFILES)),)
+configure_options += --with-baseruby=/usr/bin/ruby
+endif
 
 # the following are ignored by ./configure, but used by some extconf.rb scripts
 configure_options += --enable-ipv6
@@ -57,15 +71,19 @@ override_dh_auto_configure:
 override_dh_auto_clean:
 	dh_auto_clean
 	rm -f tool/config.guess tool/config.sub
+	$(RM) test/excludes/$(DEB_HOST_ARCH)
 	$(RM) -r .ext
 	$(RM) -r doc/capi
 
 override_dh_auto_build-arch:
 	dh_auto_build -- main V=1
 
+excludes =
+excludes += --excludes-dir=debian/tests/excludes/any/
+excludes += --excludes-dir=debian/tests/excludes/$(DEB_HOST_ARCH)/
 override_dh_auto_test-arch:
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
-	$(MAKE) TESTS="-v -j 4" RUBY_TESTOPTS=-v V=1 check
+	$(MAKE) TESTS="-v -j 4 $(excludes)" RUBY_TESTOPTS=-v V=1 check
 endif
 
 override_dh_auto_install-arch:

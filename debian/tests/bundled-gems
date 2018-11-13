@@ -4,10 +4,16 @@ set -e
 
 rc=0
 while read gem version repository; do
-  if ruby2.5 -e "gem '${gem}', '>= ${version}'"; then
-    echo "${gem} (>= ${version}) OK"
+  if ruby2.5 -e "gem '${gem}'" 2>/dev/null; then
+    if ruby2.5 -e "gem '${gem}', '>= ${version}'" 2>/dev/null; then
+      echo "I: ${gem} (>= ${version}) OK"
+    else
+      found=$(ruby2.5 -S gem list --exact "${gem}" | grep "^${gem}\s")
+      echo "W: ${found} found, but not new enough (expected >= ${version})."
+    fi
   else
-    rc=$(($rc + 1))
+    echo "E: ${gem} not found"
+    rc=1
   fi
 done < gems/bundled_gems
 
