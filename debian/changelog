@@ -1,3 +1,9 @@
+ruby2.5 (2.5.3-0nkmi1~dist) unstable; urgency=medium
+
+  * Ruby 2.5.3
+
+ -- Sorah Fukumori <sorah@cookpad.com>  Tue, 13 Nov 2018 19:02:22 +0000
+
 ruby2.5 (2.5.1-0nkmi2~_dist_) unstable; urgency=medium
 
   * Port many things from debian upstream
