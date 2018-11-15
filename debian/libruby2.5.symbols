@@ -23,7 +23,6 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  dln_find_exe_r@Base 2.5.0-0nkmi1
  dln_find_file_r@Base 2.5.0-0nkmi1
  dln_load@Base 2.5.0-0nkmi1
- explicit_bzero@Base 2.5.0-0nkmi1
  nucomp_canonicalization@Base 2.5.0-0nkmi1
  nurat_canonicalization@Base 2.5.0-0nkmi1
  onig_add_end_call@Base 2.5.0-0nkmi1
@@ -230,6 +229,7 @@ libruby-2.5.so.2.5 libruby2.5 #MINVER#
  rb_ast_newnode@Base 2.5.0-0nkmi1
  rb_attr@Base 2.5.0-0nkmi1
  rb_attr_get@Base 2.5.0-0nkmi1
+ rb_autoload@Base 2.5.3-0nkmi1~bionic
  rb_autoload_load@Base 2.5.0-0nkmi1
  rb_autoload_p@Base 2.5.0-0nkmi1
  rb_backref_get@Base 2.5.0-0nkmi1
