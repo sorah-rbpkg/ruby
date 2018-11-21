@@ -23,7 +23,6 @@ libruby-2.3.so.2.3 libruby2.3 #MINVER#
  dln_find_exe_r@Base 2.3.0~preview2
  dln_find_file_r@Base 2.3.0~preview2
  dln_load@Base 2.3.0~preview2
- explicit_bzero@Base 2.3.0~preview2
  nucomp_canonicalization@Base 2.3.0~preview2
  nurat_canonicalization@Base 2.3.0~preview2
  onig_add_end_call@Base 2.3.0~preview2
@@ -248,6 +247,7 @@ libruby-2.3.so.2.3 libruby2.3 #MINVER#
  rb_big_divrem_normal@Base 2.3.0~preview2
  rb_big_eq@Base 2.3.0~preview2
  rb_big_eql@Base 2.3.0~preview2
+ rb_big_hash@Base 2.3.8-0nkmi1~bionic
  rb_big_idiv@Base 2.3.0~preview2
  rb_big_lshift@Base 2.3.0~preview2
  rb_big_minus@Base 2.3.0~preview2
