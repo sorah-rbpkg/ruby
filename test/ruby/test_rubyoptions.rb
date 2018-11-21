@@ -337,6 +337,9 @@ class TestRubyOptions < Test::Unit::TestCase
                       %w[4], [], bug4118)
     assert_in_out_err(%w[-x], "#!/bin/sh\n""#!shebang\n""#!ruby\n""puts __LINE__\n",
                       %w[4], [], bug4118)
+
+    assert_ruby_status(%w[], "#!")
+    assert_in_out_err(%w[-c], "#!", ["Syntax OK"])
   end
 
   def test_sflag
@@ -919,5 +922,12 @@ class TestRubyOptions < Test::Unit::TestCase
         assert_in_out_err(opt, '"foo#{123}bar" << "bar"', [], err)
       end
     end
+  end
+
+  def test_argv_tainted
+    assert_separately(%w[- arg], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_predicate(ARGV[0], :tainted?, '[ruby-dev:50596] [Bug #14941]')
+    end;
   end
 end

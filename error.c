@@ -2,7 +2,7 @@
 
   error.c -
 
-  $Author$
+  $Author: usa $
   created at: Mon Aug  9 16:11:34 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -969,19 +969,21 @@ VALUE
 rb_get_backtrace(VALUE exc)
 {
     ID mid = id_backtrace;
+    VALUE info;
     if (rb_method_basic_definition_p(CLASS_OF(exc), id_backtrace)) {
-	VALUE info, klass = rb_eException;
+	VALUE klass = rb_eException;
 	rb_thread_t *th = GET_THREAD();
 	if (NIL_P(exc))
 	    return Qnil;
 	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, exc, mid, mid, klass, Qundef);
 	info = exc_backtrace(exc);
 	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, exc, mid, mid, klass, info);
-	if (NIL_P(info))
-	    return Qnil;
-	return rb_check_backtrace(info);
     }
-    return rb_funcall(exc, mid, 0, 0);
+    else {
+	info = rb_funcallv(exc, mid, 0, 0);
+    }
+    if (NIL_P(info)) return Qnil;
+    return rb_check_backtrace(info);
 }
 
 /*
