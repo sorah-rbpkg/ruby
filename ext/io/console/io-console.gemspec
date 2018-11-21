@@ -1,6 +1,6 @@
 # -*- ruby -*-
 _VERSION = "0.4.5"
-date = %w$Date::                           $[1]
+date = %w$Date:: 2015-12-24 00:26:08 +0900#$[1]
 
 Gem::Specification.new do |s|
   s.name = "io-console"
