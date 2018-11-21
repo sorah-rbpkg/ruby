@@ -2,7 +2,7 @@
 #
 # Copyright (C) 2001, 2002, 2003 by Michael Neumann (mneumann@ntecs.de)
 #
-# $Id$
+# $Id: utils.rb 53141 2015-12-16 05:07:31Z naruse $
 #
 module XMLRPC # :nodoc:
 

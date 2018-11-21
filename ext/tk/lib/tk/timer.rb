@@ -2,7 +2,7 @@
 #
 #   tk/timer.rb : methods for Tcl/Tk after command
 #
-#   $Id$
+#   $Id: timer.rb 53143 2015-12-16 05:31:54Z naruse $
 #
 require 'tk'
 

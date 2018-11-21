@@ -39,7 +39,7 @@
 ###  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 ###  SUCH DAMAGE.
 ###
-### $Id$
+### $Id: mdoc2man.rb 52411 2015-10-31 06:22:46Z nobu $
 ###
 
 class Mdoc2Man
