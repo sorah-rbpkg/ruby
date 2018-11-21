@@ -4,7 +4,7 @@
 #                       Date: 2000/11/27 09:23:36
 #                       by Yukihiro Matsumoto <matz@caelum.co.jp>
 #
-#                       $Id$
+#                       $Id: tkclass.rb 53143 2015-12-16 05:31:54Z naruse $
 
 require "tk"
 

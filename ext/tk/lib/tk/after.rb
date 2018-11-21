@@ -2,6 +2,6 @@
 #
 #   tk/after.rb : methods for Tcl/Tk after command
 #
-#   $Id$
+#   $Id: after.rb 53143 2015-12-16 05:31:54Z naruse $
 #
 require 'tk/timer'

@@ -2,13 +2,13 @@
 
   readline.c - GNU Readline module
 
-  $Author$
+  $Author: usa $
   created at: Wed Jan 20 13:59:32 JST 1999
 
   Copyright (C) 1997-2008  Shugo Maeda
   Copyright (C) 2008-2013  Kouji Takao
 
-  $Id$
+  $Id: readline.c 62140 2018-01-31 13:38:59Z usa $
 
   Contact:
    - Kouji Takao <kouji dot takao at gmail dot com> (current maintainer)

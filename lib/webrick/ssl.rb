@@ -4,7 +4,7 @@
 #
 # Copyright (c) 2003 GOTOU Yuuzou All rights reserved.
 #
-# $Id$
+# $Id: ssl.rb 53141 2015-12-16 05:07:31Z naruse $
 
 require 'webrick'
 require 'openssl'

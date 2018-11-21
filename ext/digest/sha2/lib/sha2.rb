@@ -8,7 +8,7 @@
 # All rights reserved.  You can redistribute and/or modify it under the same
 # terms as Ruby.
 #
-#   $Id$
+#   $Id: sha2.rb 53143 2015-12-16 05:31:54Z naruse $
 
 require 'digest'
 require 'digest/sha2.so'

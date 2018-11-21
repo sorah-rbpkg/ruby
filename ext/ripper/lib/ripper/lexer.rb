@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 #
-# $Id$
+# $Id: lexer.rb 59214 2017-06-30 10:30:56Z usa $
 #
 # Copyright (c) 2004,2005 Minero Aoki
 #
