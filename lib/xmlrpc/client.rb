@@ -5,7 +5,7 @@
 # Released under the same term of license as Ruby.
 #
 # History
-#   $Id$
+#   $Id: client.rb 54359 2016-03-29 05:43:04Z naruse $
 #
 require "xmlrpc/parser"
 require "xmlrpc/create"

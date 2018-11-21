@@ -3,7 +3,7 @@
 
   thread_pthread.c -
 
-  $Author$
+  $Author: usa $
 
   Copyright (C) 2004-2007 Koichi Sasada
 
