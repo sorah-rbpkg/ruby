@@ -2,7 +2,7 @@
 
   process.c -
 
-  $Author$
+  $Author: usa $
   created at: Tue Aug 10 14:30:50 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -3640,8 +3640,8 @@ retry_fork_ruby(int *status, struct child_handler_disabler_state *old)
 
     while (1) {
         prefork();
-        before_fork_ruby();
         disable_child_handler_before_fork(old);
+        before_fork_ruby();
         pid = fork();
         if (pid == 0) /* fork succeed, child process */
             return pid;
