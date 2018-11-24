@@ -9,6 +9,8 @@ ruby2.5 (2.5.3-1) UNRELEASED; urgency=medium
   * Add tzdata to Build-Depends (Closes: #911717)
   * Cherry-pick upstream commmit with update to tests due to changes in tzdata
     2018f (Closes: #913181)
+  * Update gemspec reproducibility patch to also make new default gems fiddle
+    and ipaddr reproducible.
 
  -- Antonio Terceiro <terceiro@debian.org>  Sat, 24 Nov 2018 10:11:47 -0200
 
