@@ -7,6 +7,8 @@ ruby2.5 (2.5.3-1) UNRELEASED; urgency=medium
     - Dropped 0009-merge-changes-in-ruby-openssl-v2.1.1.patch, already applied
       upstream.
   * Add tzdata to Build-Depends (Closes: #911717)
+  * Cherry-pick upstream commmit with update to tests due to changes in tzdata
+    2018f (Closes: #913181)
 
  -- Antonio Terceiro <terceiro@debian.org>  Sat, 24 Nov 2018 10:11:47 -0200
 
