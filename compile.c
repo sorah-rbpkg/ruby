@@ -2,7 +2,7 @@
 
   compile.c - ruby node tree -> VM instruction sequence
 
-  $Author: naruse $
+  $Author: nagachika $
   created at: 04/01/01 03:42:15 JST
 
   Copyright (C) 2004-2007 Koichi Sasada
@@ -2469,6 +2469,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		  IS_INSN_ID(piobj, branchunless))) {
 	    INSN *pdiobj = (INSN *)get_destination_insn(piobj);
 	    if (niobj == pdiobj) {
+		int refcnt = IS_LABEL(piobj->link.next) ?
+		    ((LABEL *)piobj->link.next)->refcnt : 0;
 		/*
 		 * useless jump elimination (if/unless destination):
 		 *   if   L1
@@ -2486,7 +2488,12 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		piobj->insn_id = (IS_INSN_ID(piobj, branchif))
 		  ? BIN(branchunless) : BIN(branchif);
 		replace_destination(piobj, iobj);
-		ELEM_REMOVE(&iobj->link);
+		if (refcnt <= 1) {
+		    ELEM_REMOVE(&iobj->link);
+		}
+		else {
+		    /* TODO: replace other branch destinations too */
+		}
 		return COMPILE_OK;
 	    }
 	    else if (diobj == pdiobj) {
@@ -2647,6 +2654,10 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		    ELEM_INSERT_NEXT(&iobj->link, &pobj->link);
 		}
 		if (cond) {
+		    if (prev_dup) {
+			pobj = new_insn_core(iseq, pobj->insn_info.line_no, BIN(putnil), 0, NULL);
+			ELEM_INSERT_NEXT(&iobj->link, &pobj->link);
+		    }
 		    iobj->insn_id = BIN(jump);
 		    goto again;
 		}
@@ -6025,6 +6036,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    nd_type(node->nd_args) == NODE_ARRAY && node->nd_args->nd_alen == 1 &&
 	    nd_type(node->nd_args->nd_head) == NODE_STR &&
 	    ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
+            !ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&
 	    ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
 	    VALUE str = freeze_literal(iseq, node->nd_args->nd_head->nd_lit);
 	    CHECK(COMPILE(ret, "recv", node->nd_recv));
@@ -7022,6 +7034,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    nd_type(node->nd_args) == NODE_ARRAY && node->nd_args->nd_alen == 2 &&
 	    nd_type(node->nd_args->nd_head) == NODE_STR &&
 	    ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
+            !ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&
 	    ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction)
 	{
 	    VALUE str = freeze_literal(iseq, node->nd_args->nd_head->nd_lit);
@@ -9499,6 +9512,8 @@ iseq_ibf_load(VALUE str)
 
     ibf_load_setup(load, loader_obj, str);
     iseq = ibf_load_iseq(load, 0);
+
+    iseq_init_trace(iseq);
 
     RB_GC_GUARD(loader_obj);
     return iseq;

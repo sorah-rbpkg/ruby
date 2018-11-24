@@ -2,7 +2,7 @@
 
   iseq.c -
 
-  $Author: naruse $
+  $Author: nagachika $
   created at: 2006-07-11(Tue) 09:00:03 +0900
 
   Copyright (C) 2006 Koichi Sasada
@@ -349,6 +349,15 @@ prepare_iseq_build(rb_iseq_t *iseq,
 static void validate_get_insn_info(rb_iseq_t *iseq);
 #endif
 
+void
+iseq_init_trace(rb_iseq_t *iseq)
+{
+    iseq->aux.trace_events = 0;
+    if (ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS) {
+        rb_iseq_trace_set(iseq, ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS);
+    }
+}
+
 static VALUE
 finish_iseq_build(rb_iseq_t *iseq)
 {
@@ -368,10 +377,7 @@ finish_iseq_build(rb_iseq_t *iseq)
 	rb_exc_raise(err);
     }
 
-    iseq->aux.trace_events = 0;
-    if (ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS) {
-	rb_iseq_trace_set(iseq, ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS);
-    }
+    iseq_init_trace(iseq);
     return Qtrue;
 }
 
@@ -861,8 +867,13 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
       case 3: path = argv[--i];
       case 2: file = argv[--i];
     }
+
     if (NIL_P(file)) file = rb_fstring_cstr("<compiled>");
+    if (NIL_P(path)) path = file;
     if (NIL_P(line)) line = INT2FIX(1);
+
+    Check_Type(path, T_STRING);
+    Check_Type(file, T_STRING);
 
     return iseqw_new(rb_iseq_compile_with_option(src, file, path, line, 0, opt));
 }

@@ -1,7 +1,670 @@
 ------------------------------------------------------------------------
-r63029 | naruse | 2018-03-29 01:46:25 +0900 (Thu, 29 Mar 2018) | 1 line
+r65156 | nagachika | 2018-10-18 19:45:38 +0900 (Thu, 18 Oct 2018) | 1 line
 
-add tag v2_5_1
+add tag v2_5_3
+------------------------------------------------------------------------
+r65155 | nagachika | 2018-10-18 19:45:08 +0900 (Thu, 18 Oct 2018) | 1 line
+
+bump up teeny version to 2.5.3.
+------------------------------------------------------------------------
+r65132 | nagachika | 2018-10-18 00:26:54 +0900 (Thu, 18 Oct 2018) | 28 lines
+
+Import Ruby/OpenSSL 2.1.2.
+
+Original patches are written by rhe.
+
+Changes since v2.1.1 can be found at the upstream GitHub repository:
+
+	https://github.com/ruby/openssl/compare/v2.1.1..v2.1.2
+
+Kazuki Yamaguchi (9):
+      pkey: resume key generation after interrupt
+      tool/ruby-openssl-docker: update to latest versions
+      test/test_ssl: fix test failure with TLS 1.3
+      test/test_x509name: change script encoding to ASCII-8BIT
+      x509name: refactor OpenSSL::X509::Name#to_s
+      x509name: fix handling of X509_NAME_{oneline,print_ex}() return value
+      x509name: fix OpenSSL::X509::Name#{cmp,<=>}
+      Ruby/OpenSSL 2.0.9
+      Ruby/OpenSSL 2.1.2
+
+nobu (6):
+      no ID cache in Init functions
+      search winsock libraries explicitly
+      openssl: search winsock
+      openssl_missing.h: constified
+      reduce LibreSSL warnings
+      needs openssl/opensslv.h
+
+
+------------------------------------------------------------------------
+r65128 | nagachika | 2018-10-18 00:06:18 +0900 (Thu, 18 Oct 2018) | 8 lines
+
+merge revision(s) 65125:
+
+	infect taint flag on Array#pack and String#unpack
+	with the directives "B", "b", "H" and "h".
+
+		* pack.c (pack_pack, pack_unpack_internal): infect taint flag.
+
+		* test/ruby/test_pack.rb: add test for above.
+------------------------------------------------------------------------
+r65100 | nagachika | 2018-10-17 08:23:05 +0900 (Wed, 17 Oct 2018) | 6 lines
+
+merge revision(s) 64913: [Backport #15223]
+
+	Support ubasecrt.dll 10.0.17763.1 included in Windows 10 October 2018 Update
+
+
+
+------------------------------------------------------------------------
+r65002 | nagachika | 2018-10-12 00:12:06 +0900 (Fri, 12 Oct 2018) | 11 lines
+
+merge revision(s) 64745: [Backport #15118]
+
+	Use opt_{aref,aset} over opt_{aref,aset}_with
+
+	* compile.c (iseq_compile_each0): Use `opt_aref`/`opt_aset` over
+	  `opt_aref_with`/`opt_aset_with` when frozen_string_literal: true,
+	  not to resurrect the index string on non-Hash receiver.
+
+	[Fix GH-1957]
+
+	From: chopraanmol1 <chopraanmol1@gmail.com>
+------------------------------------------------------------------------
+r64999 | nagachika | 2018-10-11 23:58:30 +0900 (Thu, 11 Oct 2018) | 20 lines
+
+merge revision(s) 64062: [Backport #14939]
+
+	cont.c (ec_switch): prevent delayed/missed trap interrupt race
+
+	timer-thread may set trap interrupt with rb_threadptr_check_signal
+	at any time independent of GVL.  This means timer-thread may set
+	the trap interrupt flag on the previous execution context; causing
+	the flag to be unnoticed until a future ec switch (or lost
+	completely if the ec is done).
+
+	Note: I avoid relying on th->interrupt_lock here and use
+	atomics because we won't be able to rely on it for proposed lazy
+	timer-thread [Misc #14937].
+
+	This regression affects Ruby 2.5 as it was introduced by moving
+	interrupt_flag to `ec' which is an unstable pointer.  Ruby <= 2.4
+	was unaffected because vm->main_thread->interrupt_flag never
+	changed.
+
+	[ruby-core:88119] [Bug #14939]
+------------------------------------------------------------------------
+r64998 | nagachika | 2018-10-11 23:40:04 +0900 (Thu, 11 Oct 2018) | 22 lines
+
+merge revision(s) 63711,64398: [Backport #14841]
+
+	thread_sync.c (rb_mutex_lock): fix deadlock
+
+	* thread_sync.c (rb_mutex_lock): fix deadlock
+	  [ruby-core:87467] [Bug #14841]
+
+	thread_sync.c (rb_mutex_lock): acquire lock before being killed
+
+	We (the thread acquiring the mutex) need to acquire the mutex
+	before being killed to work with ConditionVariable#wait.
+
+	Thus we reinstate the acquire-immediately-after-sleeping logic
+	from pre-r63711 while still retaining the
+	acquire-after-checking-for-interrupts logic from r63711.
+
+	This regression was introduced in
+	commit 501069b8a4013f2e3fdde35c50e9527ef0061963 (r63711)
+	("thread_sync.c (rb_mutex_lock): fix deadlock") for
+	[Bug #14841]
+
+	[ruby-core:88503] [Bug #14999] [Bug #14841]
+------------------------------------------------------------------------
+r64997 | nagachika | 2018-10-11 23:20:25 +0900 (Thu, 11 Oct 2018) | 11 lines
+
+merge revision(s) 64514: [Backport #14702]
+
+	check trace flags at loading [Bug #14702]
+
+	* iseq.c (iseq_init_trace): at ISeq loading time, we need to check
+	  `ruby_vm_event_enabled_flags` to turn on trace instructions.
+	  Seprate this checking code from `finish_iseq_build()` and make
+	  new function. `iseq_ibf_load()` calls this funcation after loading.
+
+	* test/ruby/test_iseq.rb: add a test for this fix.
+
+------------------------------------------------------------------------
+r64996 | nagachika | 2018-10-11 22:51:19 +0900 (Thu, 11 Oct 2018) | 7 lines
+
+merge revision(s) 63030: [Backport #14639]
+
+	array.c: yield blockarg in collect
+
+	* array.c (rb_ary_collect): yield in block argument semantics
+	  always to splat array elements to lambda, for the backward
+	  compatibility.  [ruby-core:86362] [Bug #14639]
+------------------------------------------------------------------------
+r64982 | nagachika | 2018-10-09 23:43:06 +0900 (Tue, 09 Oct 2018) | 10 lines
+
+merge revision(s) 64860,64861: [Backport #15164]
+
+	fallback env encoding to ASCII-8BIT
+
+	* hash.c (env_enc_str_new): as no locale/filesystem encoding is
+	  available in miniruby on Windows, fallback the encoding to
+	  ASCII-8BIT so it is valid encoding when the conversion failed.
+	  [ruby-core:89177] [Bug #15164]
+
+	* properties.
+------------------------------------------------------------------------
+r64981 | nagachika | 2018-10-09 23:39:16 +0900 (Tue, 09 Oct 2018) | 14 lines
+
+merge revision(s) 63067,63068: [Backport #14658]
+
+	Fix Kernel#singleton_method with Module#Prepend
+
+	* proc.c (rb_obj_singleton_method): search the method entry from
+	  the origin class, for fix prepended modules.  [Bug #14658]
+
+	From: Vasiliy Ermolovich <younash@gmail.com>
+
+	proc.c: fix segfault when no singleton class
+
+	* proc.c (rb_obj_singleton_method): bail out if the receiver does
+	  not have the singleton class without accessing the origin class
+	  not to segfault.  [Bug #14658]
+------------------------------------------------------------------------
+r64980 | nagachika | 2018-10-09 23:25:37 +0900 (Tue, 09 Oct 2018) | 5 lines
+
+merge revision(s) 64900: [Backport #15190]
+
+	Just a shebang is valid code
+
+	[ruby-core:89240] [Bug #15190]
+------------------------------------------------------------------------
+r64979 | nagachika | 2018-10-09 23:09:35 +0900 (Tue, 09 Oct 2018) | 12 lines
+
+merge revision(s) 62007,62024: [Backport #13069]
+
+	mkmf.rb: ignore linker warnings
+
+	* lib/mkmf.rb (try_ldflags): ignore linker warnings.  they cause
+	  unexpected failures on OpenBSD.  [ruby-core:78827] [Bug #13069]
+
+	mkmf.rb: werror on mswin
+
+	* lib/mkmf.rb (MakeMakefile#try_ldflags): enable warning checking
+	  on mswin, link.exe warns -l options but does not fail.
+	  [Bug #13069]
+------------------------------------------------------------------------
+r64978 | nagachika | 2018-10-09 22:59:53 +0900 (Tue, 09 Oct 2018) | 7 lines
+
+merge revision(s) 64915: [Backport #15205]
+
+	check argument type.
+
+	* iseq.c (iseqw_s_compile): check argument type (T_STRING) to
+	  avoid SEGV.
+
+------------------------------------------------------------------------
+r64893 | nagachika | 2018-10-01 21:02:17 +0900 (Mon, 01 Oct 2018) | 33 lines
+
+merge revision(s) 63868,63870: [Backport #14897]
+
+	Fix a bug of peephole optimization
+
+	```
+	  if   L1
+	L0:
+	  jump L2
+	L1:
+	  ...
+	L2:
+	```
+
+	was wrongly optimized to:
+
+	```
+	  unless L2
+	L0:
+	L1:
+	  ...
+	L2:
+	```
+
+	To make it conservative, this optimization is now disabled when there is
+	any label between `if` and `jump` instructions.
+	Fixes [Bug #14897].
+
+	compile.c: remove unreachable jump only
+
+	* compile.c (iseq_peephole_optimize): remove unreachable jump
+	  instruction only.  if it is labeled and referred from other
+	  instructions, it is reachable and must not be removed.
+	  [ruby-core:87830] [Bug #14897]
+------------------------------------------------------------------------
+r64621 | nagachika | 2018-09-03 20:04:55 +0900 (Mon, 03 Sep 2018) | 1 line
+
+test/test_tmpdir.rb(TRAVERSAL_PATH): re-apply r62990 partially. [Backport #14966]
+------------------------------------------------------------------------
+r64617 | nagachika | 2018-09-02 20:23:06 +0900 (Sun, 02 Sep 2018) | 7 lines
+
+merge revision(s) 64092: [Backport #14942]
+
+	win32.c: limit write size on console
+
+	* win32/win32.c (constat_parse): split long buffer and limit write
+	  size on a console, as well as rb_w32_write.
+	  [ruby-dev:50597] [Bug #14942]
+------------------------------------------------------------------------
+r64616 | nagachika | 2018-09-02 20:20:33 +0900 (Sun, 02 Sep 2018) | 6 lines
+
+merge revision(s) 64071: [Backport #14941]
+
+	ruby.c: taint ARGV on Windows
+
+	* ruby.c (external_str_new_cstr): strings come from the external
+	  should be tainted.  [ruby-dev:50596] [Bug #14941]
+------------------------------------------------------------------------
+r64613 | nagachika | 2018-09-02 12:43:25 +0900 (Sun, 02 Sep 2018) | 1 line
+
+test/ruby/test_io.rb (test_select_leak): extend timeout for Arch Linux[Backport 14929]
+------------------------------------------------------------------------
+r64612 | nagachika | 2018-09-01 19:50:39 +0900 (Sat, 01 Sep 2018) | 1 line
+
+bump up patchlevel for r64611
+------------------------------------------------------------------------
+r64611 | nagachika | 2018-09-01 19:49:09 +0900 (Sat, 01 Sep 2018) | 1 line
+
+test/ruby/test_io.rb (test_select_leak): extend timeout [Bug 14929]
+------------------------------------------------------------------------
+r64605 | nagachika | 2018-09-01 14:40:02 +0900 (Sat, 01 Sep 2018) | 21 lines
+
+merge revision(s) 64007,64019,64020: [Backport #14929]
+
+	thread.c (do_select): fix leak on exception
+
+	When do_select is interrupted and raise happens from
+	RUBY_VM_CHECK_INTS_BLOCKING, the original FD sets we copied
+	do not get freed, leading to a memory leak.  Wrap up all the
+	FD sets into a Ruby object to ensure the GC can release an
+	allocations made for rb_fdset_t.
+
+	This leak existed since Ruby 2.0.0 (r36430)
+
+	[Bug #14929]
+
+	increase timeout seconds.
+	* test/ruby/test_io.rb (test_select_leak): increase timeout seconds
+	  to pass this test on a high-load machine.
+
+
+	60 sec is not enough at all
+
+------------------------------------------------------------------------
+r64603 | nagachika | 2018-09-01 11:31:27 +0900 (Sat, 01 Sep 2018) | 8 lines
+
+merge revision(s) 64014: [Backport #14926]
+
+	fix sum on infinity
+
+	* array.c (rb_ary_sum): consider non-finite floats.
+	  [ruby-core:88024] [Bug #14926]
+
+	* enum.c (sum_iter): ditto.
+------------------------------------------------------------------------
+r64602 | nagachika | 2018-09-01 11:03:24 +0900 (Sat, 01 Sep 2018) | 6 lines
+
+merge revision(s) 63994: [Backport #14920]
+
+	reduce tzset
+
+	* time.c (rb_localtime_r): call tzset() only after TZ environment
+	  variable is changed.
+------------------------------------------------------------------------
+r64443 | nagachika | 2018-08-18 17:35:42 +0900 (Sat, 18 Aug 2018) | 9 lines
+
+merge revision(s) 62099: [Backport #14416]
+
+	net/pop: make modified strings mutable
+
+	Thanks to Michael Zimmerman for the bug report
+
+	* lib/net/pop.rb: make modified strings mutable
+	  [ruby-core:85210] [Bug #14416]
+	* test/net/pop/test_pop.rb: new test
+------------------------------------------------------------------------
+r64439 | nagachika | 2018-08-18 14:20:55 +0900 (Sat, 18 Aug 2018) | 9 lines
+
+merge revision(s) 63741: [Backport #14868]
+
+	process.c (ruby_fork_ruby): fix race in signal handling
+
+	We must block signals before stopping timer-thread, otherwise
+	signal handing may be delayed until (and if) another signal
+	is received after timer-thread is restarted.
+
+	[ruby-core:87622] [Bug #14868] [Bug #13916]
+------------------------------------------------------------------------
+r64438 | nagachika | 2018-08-18 14:04:31 +0900 (Sat, 18 Aug 2018) | 8 lines
+
+merge revision(s) 63727: [Backport #14865]
+
+	vm.c: fix infinite loop
+
+	* vm.c: use EXEC_EVENT_HOOK_AND_POP_FRAME. While exception handling, if an exception
+	  is raised in hooks, need to pop current frame and raise this raised exception by hook.
+
+	[ruby-dev:50582] [Bug #14865]
+------------------------------------------------------------------------
+r64437 | nagachika | 2018-08-18 13:40:01 +0900 (Sat, 18 Aug 2018) | 15 lines
+
+merge revision(s) 63698: [Backport #14856]
+
+	lib/drb/extservm.rb (service): do not return `false'
+
+	invoke_service_command may set entries in @servers to `false',
+	making it incompatible with the intended use of the
+	safe navigation operator.
+
+	This caused occasional DRb test failures, but they were hidden
+	with automatic retry.
+
+	[ruby-core:87524] [Bug #14856]
+
+	Fixes: r53111 ("use safe navigation operator")
+		commit 059c9c1cf371e049c7481c78b76e9620da52757f [GH-1142]
+------------------------------------------------------------------------
+r64435 | nagachika | 2018-08-18 13:19:42 +0900 (Sat, 18 Aug 2018) | 9 lines
+
+merge revision(s) 63112: [Backport #14818]
+
+	Remove outdated example from Numeric documentation
+
+	Since 2.5, Numeric instances can be cloned and duplicated.
+
+	[Fix GH-1850]
+
+	From: Miguel Landaeta <miguel@miguel.cc>
+------------------------------------------------------------------------
+r64434 | nagachika | 2018-08-18 13:18:32 +0900 (Sat, 18 Aug 2018) | 24 lines
+
+merge revision(s) 63571,63572: [Backport #14816]
+
+	`int isnan(double)` is a POSIXism
+
+	- `isnan` is something relatively new.  We need to provide one for
+	  those systems without it.  However:
+	- X/Open defines `int isnan(double)`. Note the `int`.
+	- C99 defines `isnan(x)` to be a macro.
+	- C++11 nukes them all, undefines all the "masking macro"s, and
+	  defines its own `bool isnan(double)`.  Note the `bool`.
+	- In C++, `int isnan(double)` and `bool isnan(double)` are
+	  incompatible.
+	- So the mess.
+
+	[Bug #14816][ruby-core:87364]
+	further reading: https://developers.redhat.com/blog/2016/02/29/why-cstdlib-is-more-complicated-than-you-might-think/
+
+
+	include/ruby/missing.h: defined(__cplusplus) before using __cplusplus
+
+	* include/ruby/missing.h (isinf, isnan): For non-C++ programs,
+	  defined(__cplusplus) may be needed before using __cplusplus.
+	  [Bug #14816]
+
+------------------------------------------------------------------------
+r64432 | nagachika | 2018-08-18 12:37:56 +0900 (Sat, 18 Aug 2018) | 21 lines
+
+merge revision(s) 63549,63551,63554: [Backport #14805]
+
+	memo->u3.cnt is long not int [Bug #14805]
+
+	enum.c: mitigate overflows
+
+	* enum.c (enum_count): convert counters to Integer as unsigned
+	  long, instead of long, to mitigate overflows.
+	  [ruby-core:87348] [Bug #14805]
+
+	* enum.c (ary_inject_op): ditto.
+
+	* enum.c (each_with_index_i): ditto, instead of int.
+
+	* enum.c (find_index_i, find_index_iter_i): ditto, instead of
+	  unsigned int.
+
+	enum.c: bignum counter
+
+	* enum.c (imemo_count_up, imemo_count_value): promote the counter
+	  value to a bignum on overflow.  [Bug #14805]
+------------------------------------------------------------------------
+r64431 | nagachika | 2018-08-18 12:07:15 +0900 (Sat, 18 Aug 2018) | 12 lines
+
+merge revision(s) 63512,63514: [Backport #14790]
+
+	time.rb: fix parsing time zone in iso8601
+
+	* lib/time.rb (Time.xmlschema): a colon in time zone designator
+	  can be omitted.  [ruby-core:87277] [Bug #14790]
+
+	time.rb: fix parsing time zone in iso8601
+
+	* lib/time.rb (Time.xmlschema): the minute in time zone designator
+	  can be omitted together with the preceding colon.
+	  [ruby-core:87277] [Bug #14790]
+------------------------------------------------------------------------
+r64430 | nagachika | 2018-08-18 11:56:32 +0900 (Sat, 18 Aug 2018) | 6 lines
+
+merge revision(s) 63417: [Backport #14756]
+
+	error.c: check redefined backtrace result
+
+	* error.c (rb_get_backtrace): check the result of `backtrace` even
+	  if the method is redefined.  [ruby-core:87013] [Bug #14756]
+------------------------------------------------------------------------
+r64428 | nagachika | 2018-08-18 11:39:09 +0900 (Sat, 18 Aug 2018) | 17 lines
+
+merge revision(s) 63406: [Backport #14754]
+
+	openssl: merge changes in v2.1.1
+
+	Commits in upstream repository since v2.1.0 can be found at:
+
+		https://github.com/ruby/openssl/compare/v2.1.0...v2.1.1
+
+	----------------------------------------------------------------
+	Kazuki Yamaguchi (7):
+	      test/utils: disable Thread's report_on_exception in start_server
+	      cipher: validate iterations argument for Cipher#pkcs5_keyivgen
+	      extconf.rb: fix build with LibreSSL 2.7.0
+	      test/test_pkey_rsa: fix test failure with OpenSSL 1.1.1
+	      test/test_ssl_session: set client protocol version explicitly
+	      Ruby/OpenSSL 2.0.8
+	      Ruby/OpenSSL 2.1.1
+------------------------------------------------------------------------
+r64421 | nagachika | 2018-08-18 01:27:13 +0900 (Sat, 18 Aug 2018) | 7 lines
+
+merge revision(s) 62952: [Backport #14638]
+
+	win32/file.c: relative path with drive letter
+
+	* win32/file.c (IS_ABSOLUTE_PATH_P): home directory should not be
+	  a relative path regardless a drive letter.   PathIsRelativeW
+	  returns FALSE on such path.  [ruby-core:86356] [Bug #14638]
+------------------------------------------------------------------------
+r64420 | nagachika | 2018-08-18 01:20:53 +0900 (Sat, 18 Aug 2018) | 6 lines
+
+merge revision(s) 63396: [Backport #14750]
+
+	net/imap: Fix ArgumentError in send_string_data
+
+	Thanks to ShockwaveNN (Pavel Lobashov) for reporting the bug.
+	[ruby-core:86990] [Bug #14750]
+------------------------------------------------------------------------
+r64419 | nagachika | 2018-08-18 00:48:46 +0900 (Sat, 18 Aug 2018) | 7 lines
+
+merge revision(s) 63255: [Backport #14708]
+
+	compile.c: fix unconditional branch optimization
+
+	* compile.c (iseq_peephole_optimize): add dummy `putnil` after a
+	  `jump` replacing an unconditional branch, to adjust removed
+	  `dup`.  [ruby-core:86666] [Bug #14708]
+------------------------------------------------------------------------
+r64418 | nagachika | 2018-08-18 00:33:57 +0900 (Sat, 18 Aug 2018) | 5 lines
+
+merge revision(s) 61567: [Backport #14693]
+
+	fix uninitialized variable
+
+	Likewise this can easily be noticed if you read the warnings.
+------------------------------------------------------------------------
+r64320 | nagachika | 2018-08-12 20:51:02 +0900 (Sun, 12 Aug 2018) | 7 lines
+
+merge revision(s) 63252: [Backport #14707]
+
+	string.c: fix scanned substring with `\K`
+
+	* string.c (scan_once): fix the matched substring with `\K`, the
+	  beginning of that string may differ from the matched position.
+	  [ruby-core:86663] [Bug #14707]
+------------------------------------------------------------------------
+r64319 | nagachika | 2018-08-12 19:37:03 +0900 (Sun, 12 Aug 2018) | 8 lines
+
+merge revision(s) 63133: [Backport #14566]
+
+	eval_error.c: fix loop on exception in message
+
+	* error.c (rb_get_message): accessor to the message.
+
+	* eval_error.c (rb_ec_error_print): handle exceptions on fetching
+	  the message.  [Bug #14566]
+------------------------------------------------------------------------
+r64195 | nagachika | 2018-08-05 19:59:57 +0900 (Sun, 05 Aug 2018) | 7 lines
+
+merge revision(s) 61766: [Backport #14350]
+
+	vm_insnhelper.c: search in the indexing order
+
+	* vm_insnhelper.c (vm_opt_newarray_max, vm_opt_newarray_min):
+	  search in the indexing order, as well as usual methods.
+	  [ruby-core:84821] [Bug #14350]
+------------------------------------------------------------------------
+r63826 | nagachika | 2018-07-02 18:15:33 +0900 (Mon, 02 Jul 2018) | 9 lines
+
+merge revision(s) 63304: [Backport #14713]
+
+	io.c: workaround for EPROTOTYPE
+
+	* io.c (internal_write_func, internal_writev_func): retry at
+	  unexpected EPROTOTYPE on macOS, to get rid of a kernel bug.
+	  [ruby-core:86690] [Bug #14713]
+
+	* ext/socket/init.c (rsock_{sendto,send,write}_blocking): ditto.
+------------------------------------------------------------------------
+r63825 | nagachika | 2018-07-02 17:53:52 +0900 (Mon, 02 Jul 2018) | 7 lines
+
+merge revision(s) 63696: [Backport #14853]
+
+	variable.c: fix receiver on private constant
+
+	* variable.c (rb_const_search): fix NameError :receiver attribute
+	  on private constant, should raise with the included module, not
+	  the ICLASS.
+------------------------------------------------------------------------
+r63824 | nagachika | 2018-07-02 17:30:36 +0900 (Mon, 02 Jul 2018) | 27 lines
+
+merge revision(s) 62731,62735: [Backport #14495]
+
+	Bug Fix Enumerator::Lazy#uniq state for multiple call
+
+	* enumerator.c (lazy_uniq_i): create new hash for each calls.
+	  [Fix GH-1820]
+
+	Currently
+
+		2.5.0-preview1 :001 > arr = (0..100).lazy.uniq{|i| i % 10}
+		 => #<Enumerator::Lazy: #<Enumerator::Lazy: 0..100>:uniq>
+		2.5.0-preview1 :002 > arr.to_a
+		 => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+		2.5.0-preview1 :003 > arr.to_a
+		 => []
+
+	Expected
+
+	arr.to_a to always return same output
+
+	From: Anmol Chopra <anmolchopra@rocketbox.in>
+
+	test_enumerator.rb: duplicate assertions
+
+	* test/ruby/test_enumerator.rb (test_uniq): remove assertions
+	  which ared duplicate of lazy enumerator tests in
+	  test_lazy_enumerator.rb.
+------------------------------------------------------------------------
+r63819 | nagachika | 2018-07-02 09:31:27 +0900 (Mon, 02 Jul 2018) | 23 lines
+
+merge revision(s) 61525,61527,63062,63650: [Backport #14846]
+
+	error.c: negative uplevel
+
+	* error.c (rb_warn_m): negative uplevel is not allowed.
+	  [ruby-core:84568] [Bug #14262]
+
+	error.c: limit depth
+
+	* error.c (rb_warn_m): limit backtrace depth to reduce objects to
+	  be created but not used.
+
+	error.c: prepend "warning: " always
+
+	* error.c (rb_warn_m): prepend the string "warning: " if uplevel
+	  keyword is given, even if caller file and line information are
+	  not available.
+
+	Fix condition in Kernel#warn when using uplevel
+
+	* It causes SEGV on `warn("foo", uplevel: 100)`.
+	* Found in a ruby/spec added by @andrykonchin in
+	  https://github.com/ruby/spec/pull/605
+------------------------------------------------------------------------
+r63818 | nagachika | 2018-07-02 09:17:38 +0900 (Mon, 02 Jul 2018) | 1 line
+
+bump up teeny version to 2.5.2.
+------------------------------------------------------------------------
+r63817 | nagachika | 2018-07-02 09:14:53 +0900 (Mon, 02 Jul 2018) | 19 lines
+
+merge revision(s) 63054,63055,63056: [Backport #14655]
+
+	test_time_tz.rb: Kiritimati tzdata fix
+
+	* test/ruby/test_time_tz.rb (TestTimeTZ#test_pacific_kiritimati):
+	  fix the expected data at the skip of New Year's Eve 1994.
+	  [Bug #14655]
+
+	test_time_tz.rb: Kiritimati tzdata fix
+
+	* test/ruby/test_time_tz.rb (gen_zdump_test): fix the expected
+	  data at the Kiritimati's skip of New Year's Eve 1994.
+	  [Bug #14655]
+
+	test_time_tz.rb: Lisbon tzdata fix
+
+	* test/ruby/test_time_tz.rb (gen_variational_zdump_test): Update
+	  Lisbon zdump data, which fixed the 1912-01-01 transition for
+	  Portugual and its colonies.  [Bug #14655]
+------------------------------------------------------------------------
+r63049 | naruse | 2018-03-31 22:50:56 +0900 (Sat, 31 Mar 2018) | 3 lines
+
+merge revision(s) 63048: [Backport #14654]
+
+	Resurvey performance of RDoc by frozen_string_literal: true [Bug #14654]
+------------------------------------------------------------------------
+r63035 | naruse | 2018-03-29 19:05:57 +0900 (Thu, 29 Mar 2018) | 3 lines
+
+merge revision(s) 61470:
+
+	Add ruby_2_5 branch to .travis.yml
 ------------------------------------------------------------------------
 r63027 | naruse | 2018-03-29 01:45:58 +0900 (Thu, 29 Mar 2018) | 2 lines
 
@@ -2336,7 +2999,7 @@ Improve Array#- efficiency [Fixes GH-1756]
 When doing the difference of a small array with a big one it is not
 efficient in both time and memory to convert the second one to a hash.
 
-From: Ana Mar?a Mart?nez G?mez <ammartinez@suse.de>
+From: Ana Mar?\195?\173a Mart?\195?\173nez G?\195?\179mez <ammartinez@suse.de>
 ------------------------------------------------------------------------
 r61329 | nobu | 2017-12-19 09:45:55 +0900 (Tue, 19 Dec 2017) | 7 lines
 
@@ -2514,7 +3177,7 @@ ruby 2.5.0dev (2017-11-28 hash 60926) [x86_64-darwin17]
 Warming up --------------------------------------
         Hash literal    51.544k i/100ms
 Calculating -------------------------------------
-        Hash literal    869.132k (? 1.1%) i/s -      4.381M in   5.041574s
+        Hash literal    869.132k (?\194?\177 1.1%) i/s -      4.381M in   5.041574s
 
 ### After
 
@@ -2523,7 +3186,7 @@ ruby 2.5.0dev (2017-11-28 hash 60926) [x86_64-darwin17]
 Warming up --------------------------------------
         Hash literal    63.068k i/100ms
 Calculating -------------------------------------
-        Hash literal      1.328M (? 2.3%) i/s -      6.685M in   5.037861s
+        Hash literal      1.328M (?\194?\177 2.3%) i/s -      6.685M in   5.037861s
 
 ### Test code
 
@@ -5325,7 +5988,7 @@ r60970 | naruse | 2017-12-02 00:09:41 +0900 (Sat, 02 Dec 2017) | 6 lines
 Append "//" if empty host for file or postgres URI
 
 https://url.spec.whatwg.org/#url-serializing
-> Otherwise, if url?s host is null and url?s scheme is "file", append "//" to output.
+> Otherwise, if url?\226?\128?\153s host is null and url?\226?\128?\153s scheme is "file", append "//" to output.
 
 URL spec doesn't says anything about postgres, but assume the same thing.
 ------------------------------------------------------------------------
@@ -9451,10 +10114,10 @@ string.c: Improve String#prepend performance if only one argument is given
     [Fix GH-1670] [ruby-core:82195] [Bug #13773]
 
 * Before
-      String#prepend      1.517M (? 1.8%) i/s -      7.614M in   5.019819s
+      String#prepend      1.517M (?\194?\177 1.8%) i/s -      7.614M in   5.019819s
 
 * After
-      String#prepend      2.236M (? 3.4%) i/s -     11.234M in   5.029716s
+      String#prepend      2.236M (?\194?\177 3.4%) i/s -     11.234M in   5.029716s
 
 * Test code
 require 'benchmark/ips'
@@ -10781,18 +11444,18 @@ String interpolation will be faster around 72% when large string is created.
   ```
   Calculating -------------------------------------
   Large string interpolation
-                            1.276M (? 5.9%) i/s -      6.358M in   5.002022s
+                            1.276M (?\194?\177 5.9%) i/s -      6.358M in   5.002022s
   Small string interpolation
-                            5.156M (? 5.5%) i/s -     25.728M in   5.005731s
+                            5.156M (?\194?\177 5.5%) i/s -     25.728M in   5.005731s
   ```
 
 * After
   ```
   Calculating -------------------------------------
   Large string interpolation
-                            2.201M (? 5.8%) i/s -     11.063M in   5.043724s
+                            2.201M (?\194?\177 5.8%) i/s -     11.063M in   5.043724s
   Small string interpolation
-                            5.192M (? 5.7%) i/s -     25.971M in   5.020516s
+                            5.192M (?\194?\177 5.7%) i/s -     25.971M in   5.020516s
   ```
 
 * Test code
@@ -11201,23 +11864,23 @@ Rename spec/rspec to .bundle.
 ------------------------------------------------------------------------
 r60268 | kosaki | 2017-10-21 22:15:23 +0900 (Sat, 21 Oct 2017) | 8 lines
 
-kill "discards ?const? qualifier" warning
+kill "discards ?\226?\128?\152const?\226?\128?\153 qualifier" warning
 
 Kill following warning.
 
-../../../ext/psych/yaml/emitter.c: In function ?yaml_emitter_write_block_scalar_hints?:
-../../../ext/psych/yaml/emitter.c:2196:20: warning: assignment discards ?const? qualifier from pointer target type [enabled by default]
+../../../ext/psych/yaml/emitter.c: In function ?\226?\128?\152yaml_emitter_write_block_scalar_hints?\226?\128?\153:
+../../../ext/psych/yaml/emitter.c:2196:20: warning: assignment discards ?\226?\128?\152const?\226?\128?\153 qualifier from pointer target type [enabled by default]
          chomp_hint = "-";
                     ^
 ------------------------------------------------------------------------
 r60267 | kosaki | 2017-10-21 22:15:11 +0900 (Sat, 21 Oct 2017) | 8 lines
 
-kill "discards ?const? qualifier" warning
+kill "discards ?\226?\128?\152const?\226?\128?\153 qualifier" warning
 
 Kill following warning.
 
-../../../ext/psych/yaml/emitter.c: In function ?yaml_emitter_write_folded_scalar?:
-../../../ext/psych/yaml/emitter.c:2283:5: warning: passing argument 2 of ?yaml_emitter_write_indicator? discards ?const? qualifier from pointer target type [enabled by default]
+../../../ext/psych/yaml/emitter.c: In function ?\226?\128?\152yaml_emitter_write_folded_scalar?\226?\128?\153:
+../../../ext/psych/yaml/emitter.c:2283:5: warning: passing argument 2 of ?\226?\128?\152yaml_emitter_write_indicator?\226?\128?\153 discards ?\226?\128?\152const?\226?\128?\153 qualifier from pointer target type [enabled by default]
      if (!yaml_emitter_write_indicator(emitter, ">", 1, 0, 0))
      ^
 ------------------------------------------------------------------------
@@ -11283,7 +11946,7 @@ kill "value computed is not used" warning
 
 Currently, gcc claims your coding style is not good. Shut it up.
 
-../../../ext/psych/yaml/emitter.c: In function ?yaml_emitter_write_plain_scalar?:
+../../../ext/psych/yaml/emitter.c: In function ?\226?\128?\152yaml_emitter_write_plain_scalar?\226?\128?\153:
 ../../../ext/psych/yaml/emitter.c:28:6: warning: value computed is not used [-Wunused-value]
       && ((emitter->line_break == YAML_CR_BREAK ?                                \
       ^
@@ -11294,8 +11957,8 @@ kill variable set but not used warning
 
 Currently, dummy_mark variable makes following warnings. Let's fix it.
 
-../../../ext/psych/yaml/parser.c: In function ?yaml_parser_parse_block_sequence_entry?:
-../../../ext/psych/yaml/parser.c:762:21: warning: variable ?dummy_mark? set but not used [-Wunused-but-set-variable]
+../../../ext/psych/yaml/parser.c: In function ?\226?\128?\152yaml_parser_parse_block_sequence_entry?\226?\128?\153:
+../../../ext/psych/yaml/parser.c:762:21: warning: variable ?\226?\128?\152dummy_mark?\226?\128?\153 set but not used [-Wunused-but-set-variable]
          yaml_mark_t dummy_mark;     /* Used to eliminate a compiler warning. */
                      ^
 ------------------------------------------------------------------------
@@ -11305,8 +11968,8 @@ kill "variable set but not used" warning
 
 Currently, scanner.c makes following warning. Fix it.
 
-../../../ext/psych/yaml/scanner.c: In function ?yaml_parser_decrease_flow_level?:
-../../../ext/psych/yaml/scanner.c:1189:23: warning: variable ?dummy_key? set but not used [-Wunused-but-set-variable]
+../../../ext/psych/yaml/scanner.c: In function ?\226?\128?\152yaml_parser_decrease_flow_level?\226?\128?\153:
+../../../ext/psych/yaml/scanner.c:1189:23: warning: variable ?\226?\128?\152dummy_key?\226?\128?\153 set but not used [-Wunused-but-set-variable]
      yaml_simple_key_t dummy_key;    /* Used to eliminate a compiler warning. */
 ------------------------------------------------------------------------
 r60261 | nobu | 2017-10-21 21:34:13 +0900 (Sat, 21 Oct 2017) | 7 lines
@@ -16479,7 +17142,7 @@ visibility of inherited method
   visibility of inherited methods when a refinement is defined but
   not activated.  [ruby-core:82209] [Bug #13776]
 
-Author:    Mon_Ouie (Mon ou?e) <mon.ouie@gmail.com>
+Author:    Mon_Ouie (Mon ou?\195?\175e) <mon.ouie@gmail.com>
 ------------------------------------------------------------------------
 r59444 | nobu | 2017-07-29 21:42:41 +0900 (Sat, 29 Jul 2017) | 4 lines
 
@@ -16859,13 +17522,13 @@ r59373 | shugo | 2017-07-20 08:38:31 +0900 (Thu, 20 Jul 2017) | 3 lines
 
 lib/net/pop.rb: support timeout for TLS handshake
 
-Patch by ahorek (Pavel Rosick?).  [ruby-core:80490] [Feature #13389]
+Patch by ahorek (Pavel Rosick?\195?\189).  [ruby-core:80490] [Feature #13389]
 ------------------------------------------------------------------------
 r59372 | shugo | 2017-07-20 08:08:34 +0900 (Thu, 20 Jul 2017) | 4 lines
 
 lib/net/imap.rb: Ignore trailing space for Microsoft Exchange Server
 
-Based on the patch by keysen (J?r?my Carlier).
+Based on the patch by keysen (J?\195?\169r?\195?\169my Carlier).
 [ruby-core:81641] [Bug #13649]
 ------------------------------------------------------------------------
 r59371 | svn | 2017-07-20 00:01:01 +0900 (Thu, 20 Jul 2017) | 1 line
@@ -19341,12 +20004,12 @@ Array#+       ->  3 % up
 [ruby-dev:50024] [Bug #13341] [Fix GH-1537]
 
 ### Before
-       Array#flatten    104.119k (? 1.1%) i/s -    525.690k in   5.049517s
-             Array#+      1.993M (? 1.8%) i/s -     10.010M in   5.024258s
+       Array#flatten    104.119k (?\194?\177 1.1%) i/s -    525.690k in   5.049517s
+             Array#+      1.993M (?\194?\177 1.8%) i/s -     10.010M in   5.024258s
 
 ### After
-       Array#flatten    124.005k (? 1.0%) i/s -    624.240k in   5.034477s
-             Array#+      2.058M (? 4.8%) i/s -     10.302M in   5.019328s
+       Array#flatten    124.005k (?\194?\177 1.0%) i/s -    624.240k in   5.034477s
+             Array#+      2.058M (?\194?\177 4.8%) i/s -     10.302M in   5.019328s
 
 ### Test Code
 require 'benchmark/ips'
@@ -19464,20 +20127,20 @@ enum.c (minmax_by_i): ditto.
     [ruby-core:80689] [Bug #13437] [Fix GH-1584]
 
 ### Before
-  Enumerable#sort_by      5.692k (? 2.2%) i/s -     28.611k in   5.028861s
-Enumerable#min_by(n)      8.496k (? 0.5%) i/s -     43.146k in   5.078394s
-   Enumerable#min_by      8.678k (? 0.5%) i/s -     43.911k in   5.060128s
-Enumerable#max_by(n)      3.306k (? 3.0%) i/s -     16.562k in   5.014727s
-   Enumerable#max_by      8.322k (? 2.8%) i/s -     42.400k in   5.099400s
-Enumerable#minmax_by      6.769k (? 2.6%) i/s -     34.100k in   5.041354s
+  Enumerable#sort_by      5.692k (?\194?\177 2.2%) i/s -     28.611k in   5.028861s
+Enumerable#min_by(n)      8.496k (?\194?\177 0.5%) i/s -     43.146k in   5.078394s
+   Enumerable#min_by      8.678k (?\194?\177 0.5%) i/s -     43.911k in   5.060128s
+Enumerable#max_by(n)      3.306k (?\194?\177 3.0%) i/s -     16.562k in   5.014727s
+   Enumerable#max_by      8.322k (?\194?\177 2.8%) i/s -     42.400k in   5.099400s
+Enumerable#minmax_by      6.769k (?\194?\177 2.6%) i/s -     34.100k in   5.041354s
 
 ### After
-  Enumerable#sort_by      8.591k (? 3.0%) i/s -     43.316k in   5.046836s
-Enumerable#min_by(n)     11.489k (? 1.2%) i/s -     57.732k in   5.025504s
-   Enumerable#min_by     11.835k (? 2.7%) i/s -     60.150k in   5.086450s
-Enumerable#max_by(n)      5.322k (? 1.1%) i/s -     26.650k in   5.008289s
-   Enumerable#max_by     11.705k (? 0.6%) i/s -     59.262k in   5.062997s
-Enumerable#minmax_by     11.323k (? 1.3%) i/s -     57.018k in   5.036565s
+  Enumerable#sort_by      8.591k (?\194?\177 3.0%) i/s -     43.316k in   5.046836s
+Enumerable#min_by(n)     11.489k (?\194?\177 1.2%) i/s -     57.732k in   5.025504s
+   Enumerable#min_by     11.835k (?\194?\177 2.7%) i/s -     60.150k in   5.086450s
+Enumerable#max_by(n)      5.322k (?\194?\177 1.1%) i/s -     26.650k in   5.008289s
+   Enumerable#max_by     11.705k (?\194?\177 0.6%) i/s -     59.262k in   5.062997s
+Enumerable#minmax_by     11.323k (?\194?\177 1.3%) i/s -     57.018k in   5.036565s
 
 ### Test code
 require 'benchmark/ips'
@@ -19546,12 +20209,12 @@ range.c (range_max): ditto.
     [ruby-core:80713] [Bug #13443] [Fix GH-1585]
 
 ### Before
-           Range#min      8.428M (? 1.3%) i/s -     42.141M in   5.000952s
-           Range#max      8.157M (? 1.3%) i/s -     40.852M in   5.009297s
+           Range#min      8.428M (?\194?\177 1.3%) i/s -     42.141M in   5.000952s
+           Range#max      8.157M (?\194?\177 1.3%) i/s -     40.852M in   5.009297s
 
 ### After
-           Range#min     11.269M (? 1.2%) i/s -     56.388M in   5.004611s
-           Range#max     11.764M (? 1.3%) i/s -     58.856M in   5.003820s
+           Range#min     11.269M (?\194?\177 1.2%) i/s -     56.388M in   5.004611s
+           Range#max     11.764M (?\194?\177 1.3%) i/s -     58.856M in   5.003820s
 
 ### Test code
 require 'benchmark/ips'
@@ -19893,17 +20556,17 @@ rational.c (i_gcd): replace GCD algorithm from Euclidean algorithm to Stein
     [ruby-core:80843] [Bug #13503] [Fix GH-1596]
 
 ### Before
-         Time#subsec      2.142M (? 9.8%) i/s -     10.659M in   5.022659s
-           Time#to_r      2.003M (? 9.1%) i/s -      9.959M in   5.012445s
-          Rational#+      3.843M (? 0.9%) i/s -     19.274M in   5.016254s
-          Rational#-      3.820M (? 1.3%) i/s -     19.149M in   5.014137s
-          Rational#*      5.198M (? 1.4%) i/s -     26.016M in   5.005664s
+         Time#subsec      2.142M (?\194?\177 9.8%) i/s -     10.659M in   5.022659s
+           Time#to_r      2.003M (?\194?\177 9.1%) i/s -      9.959M in   5.012445s
+          Rational#+      3.843M (?\194?\177 0.9%) i/s -     19.274M in   5.016254s
+          Rational#-      3.820M (?\194?\177 1.3%) i/s -     19.149M in   5.014137s
+          Rational#*      5.198M (?\194?\177 1.4%) i/s -     26.016M in   5.005664s
 * After
-         Time#subsec      2.902M (? 2.9%) i/s -     14.505M in   5.001815s
-           Time#to_r      2.503M (? 4.8%) i/s -     12.512M in   5.011454s
-          Rational#+      4.390M (? 1.2%) i/s -     22.001M in   5.012413s
-          Rational#-      4.391M (? 1.2%) i/s -     22.013M in   5.014584s
-          Rational#*      5.872M (? 2.2%) i/s -     29.369M in   5.003666s
+         Time#subsec      2.902M (?\194?\177 2.9%) i/s -     14.505M in   5.001815s
+           Time#to_r      2.503M (?\194?\177 4.8%) i/s -     12.512M in   5.011454s
+          Rational#+      4.390M (?\194?\177 1.2%) i/s -     22.001M in   5.012413s
+          Rational#-      4.391M (?\194?\177 1.2%) i/s -     22.013M in   5.014584s
+          Rational#*      5.872M (?\194?\177 2.2%) i/s -     29.369M in   5.003666s
 
 * Test code
 require 'benchmark/ips'
@@ -19955,16 +20618,16 @@ time.c (quov): optimize by invoking rb_numeric_quo() to retrieve a value of
     [ruby-core:80915] [Bug #13519] [Fix GH-1601]
 
 ### Before
-         Time#subsec      2.024M (? 8.7%) i/s -     10.062M in   5.009762s
-              Time#-      5.049M (? 4.7%) i/s -     25.186M in   5.002379s
-           Time#to_f      5.625M (? 4.2%) i/s -     28.066M in   5.000749s
-           Time#to_r      1.880M (? 9.7%) i/s -      9.361M in   5.027527s
+         Time#subsec      2.024M (?\194?\177 8.7%) i/s -     10.062M in   5.009762s
+              Time#-      5.049M (?\194?\177 4.7%) i/s -     25.186M in   5.002379s
+           Time#to_f      5.625M (?\194?\177 4.2%) i/s -     28.066M in   5.000749s
+           Time#to_r      1.880M (?\194?\177 9.7%) i/s -      9.361M in   5.027527s
 
 ### After
-         Time#subsec      2.155M (? 9.7%) i/s -     10.724M in   5.022579s
-              Time#-      6.362M (? 2.0%) i/s -     31.824M in   5.004625s
-           Time#to_f      7.287M (? 4.8%) i/s -     36.402M in   5.010983s
-           Time#to_r      2.020M (? 9.4%) i/s -     10.059M in   5.021852s
+         Time#subsec      2.155M (?\194?\177 9.7%) i/s -     10.724M in   5.022579s
+              Time#-      6.362M (?\194?\177 2.0%) i/s -     31.824M in   5.004625s
+           Time#to_f      7.287M (?\194?\177 4.8%) i/s -     36.402M in   5.010983s
+           Time#to_r      2.020M (?\194?\177 9.4%) i/s -     10.059M in   5.021852s
 
 ### Test code
 require 'benchmark/ips'
@@ -20084,10 +20747,10 @@ Improve Array#concat performance if only one argument is given
     [Fix GH-1634]
 
 ### Before
-        Array#concat      2.187M (? 3.5%) i/s -     10.926M in   5.002829s
+        Array#concat      2.187M (?\194?\177 3.5%) i/s -     10.926M in   5.002829s
 
 ### After
-        Array#concat      2.598M (? 1.8%) i/s -     13.008M in   5.008201s
+        Array#concat      2.598M (?\194?\177 1.8%) i/s -     13.008M in   5.008201s
 
 ### Test code
 require 'benchmark/ips'
@@ -20383,19 +21046,19 @@ end
 * Ruby 2.3
 
 Calculating -------------------------------------
-   String#concat (1)      6.003M (? 5.2%) i/s -     30.122M in   5.031646s
+   String#concat (1)      6.003M (?\194?\177 5.2%) i/s -     30.122M in   5.031646s
 
 * Ruby 2.4 (Before this patch)
 
 Calculating -------------------------------------
-   String#concat (1)      4.458M (? 8.9%) i/s -     22.298M in   5.058084s
-   String#concat (2)      3.660M (? 5.6%) i/s -     18.314M in   5.020527s
+   String#concat (1)      4.458M (?\194?\177 8.9%) i/s -     22.298M in   5.058084s
+   String#concat (2)      3.660M (?\194?\177 5.6%) i/s -     18.314M in   5.020527s
 
 * Ruby 2.4 (After this patch)
 
 Calculating -------------------------------------
-   String#concat (1)      6.448M (? 5.2%) i/s -     32.215M in   5.010833s
-   String#concat (2)      3.633M (? 9.0%) i/s -     18.056M in   5.022603s
+   String#concat (1)      6.448M (?\194?\177 5.2%) i/s -     32.215M in   5.010833s
+   String#concat (2)      3.633M (?\194?\177 9.0%) i/s -     18.056M in   5.022603s
 
 [fix GH-1631]
 ------------------------------------------------------------------------
@@ -20488,16 +21151,16 @@ Improve performance of rb_equal()
     [ruby-core:80360] [Bug #13365] [Fix GH-#1552]
 
 ### Before
-Time#eql? with other      7.309M (? 1.4%) i/s -     36.647M in   5.014964s
-    Array#index(val)      1.433M (? 1.2%) i/s -      7.207M in   5.030942s
-   Array#rindex(val)      1.418M (? 1.6%) i/s -      7.103M in   5.009164s
- Array#include?(val)      1.451M (? 0.9%) i/s -      7.295M in   5.026392s
+Time#eql? with other      7.309M (?\194?\177 1.4%) i/s -     36.647M in   5.014964s
+    Array#index(val)      1.433M (?\194?\177 1.2%) i/s -      7.207M in   5.030942s
+   Array#rindex(val)      1.418M (?\194?\177 1.6%) i/s -      7.103M in   5.009164s
+ Array#include?(val)      1.451M (?\194?\177 0.9%) i/s -      7.295M in   5.026392s
 
 ### After
-Time#eql? with other     10.321M (? 1.9%) i/s -     51.684M in   5.009203s
-    Array#index(val)      1.474M (? 0.9%) i/s -      7.433M in   5.044384s
-   Array#rindex(val)      1.449M (? 1.7%) i/s -      7.292M in   5.034436s
- Array#include?(val)      1.466M (? 1.7%) i/s -      7.373M in   5.030047s
+Time#eql? with other     10.321M (?\194?\177 1.9%) i/s -     51.684M in   5.009203s
+    Array#index(val)      1.474M (?\194?\177 0.9%) i/s -      7.433M in   5.044384s
+   Array#rindex(val)      1.449M (?\194?\177 1.7%) i/s -      7.292M in   5.034436s
+ Array#include?(val)      1.466M (?\194?\177 1.7%) i/s -      7.373M in   5.030047s
 
 ### Test code
 require 'benchmark/ips'
@@ -20636,14 +21299,14 @@ Improve performance in where push the element into non shared Array object
 
 ## Clang 802.0.42
 ### Before
-            Array#<<      9.353M (? 1.7%) i/s -     46.787M in   5.004123s
-          Array#push      7.702M (? 1.1%) i/s -     38.577M in   5.009338s
-     Array#values_at      6.133M (? 1.9%) i/s -     30.699M in   5.007772s
+            Array#<<      9.353M (?\194?\177 1.7%) i/s -     46.787M in   5.004123s
+          Array#push      7.702M (?\194?\177 1.1%) i/s -     38.577M in   5.009338s
+     Array#values_at      6.133M (?\194?\177 1.9%) i/s -     30.699M in   5.007772s
 
 ### After
-            Array#<<      9.458M (? 2.0%) i/s -     47.357M in   5.009069s
-          Array#push      7.921M (? 1.8%) i/s -     39.665M in   5.009151s
-     Array#values_at      6.377M (? 2.3%) i/s -     31.881M in   5.001888s
+            Array#<<      9.458M (?\194?\177 2.0%) i/s -     47.357M in   5.009069s
+          Array#push      7.921M (?\194?\177 1.8%) i/s -     39.665M in   5.009151s
+     Array#values_at      6.377M (?\194?\177 2.3%) i/s -     31.881M in   5.001888s
 
 ### Result
 Array#<<        -> 1.2% faster
@@ -20652,14 +21315,14 @@ Array#values_at -> 3.9% faster
 
 ## GCC 7.1.0
 ### Before
-            Array#<<     10.497M (? 1.1%) i/s -     52.665M in   5.017601s
-          Array#push      8.527M (? 1.6%) i/s -     42.777M in   5.018003s
-     Array#values_at      7.621M (? 1.7%) i/s -     38.152M in   5.007910s
+            Array#<<     10.497M (?\194?\177 1.1%) i/s -     52.665M in   5.017601s
+          Array#push      8.527M (?\194?\177 1.6%) i/s -     42.777M in   5.018003s
+     Array#values_at      7.621M (?\194?\177 1.7%) i/s -     38.152M in   5.007910s
 
 ### After
-            Array#<<     11.403M (? 1.3%) i/s -     57.028M in   5.001849s
-          Array#push      8.924M (? 1.3%) i/s -     44.609M in   4.999940s
-     Array#values_at      8.291M (? 1.4%) i/s -     41.487M in   5.004727s
+            Array#<<     11.403M (?\194?\177 1.3%) i/s -     57.028M in   5.001849s
+          Array#push      8.924M (?\194?\177 1.3%) i/s -     44.609M in   4.999940s
+     Array#values_at      8.291M (?\194?\177 1.4%) i/s -     41.487M in   5.004727s
 
 ### Result
 Array#<<        -> 8.3% faster
@@ -21516,12 +22179,12 @@ Improve CSV parsing performance.
   Warming up --------------------------------------
                          4.000  i/100ms
   Calculating -------------------------------------
-                         39.661  (?10.1%) i/s -      2.352k in 60.034781s
+                         39.661  (?\194?\17710.1%) i/s -      2.352k in 60.034781s
   with-patch:
   Warming up --------------------------------------
                          5.000  i/100ms
   Calculating -------------------------------------
-                         60.521  (? 9.9%) i/s -      3.595k in 60.047157s
+                         60.521  (?\194?\177 9.9%) i/s -      3.595k in 60.047157s
   ```
 
   #### memory_profiler resuts
@@ -21612,8 +22275,8 @@ Optimize CSV#shift.
            csv_shift     1.000  i/100ms
        new_csv_shift     1.000  i/100ms
 Calculating -------------------------------------
-           csv_shift      1.192  (? 0.0%) i/s -      6.000  in 5.034250s
-       new_csv_shift      1.527  (? 0.0%) i/s -      8.000  in 5.243446s
+           csv_shift      1.192  (?\194?\177 0.0%) i/s -      6.000  in 5.034250s
+       new_csv_shift      1.527  (?\194?\177 0.0%) i/s -      8.000  in 5.243446s
 
 Comparison:
        new_csv_shift:        1.5 i/s
@@ -23043,7 +23706,7 @@ r58549 | shugo | 2017-05-03 20:32:22 +0900 (Wed, 03 May 2017) | 3 lines
 
 net/imap: handle timeouts
 
-Patch by Pavel Rosick?.  [Feature #13379] [ruby-core:80440]
+Patch by Pavel Rosick?\195?\189.  [Feature #13379] [ruby-core:80440]
 ------------------------------------------------------------------------
 r58548 | kazu | 2017-05-03 11:02:50 +0900 (Wed, 03 May 2017) | 3 lines
 
@@ -24737,14 +25400,14 @@ Install only files explicitly referenced by bundled gems.
 
 [Bug #13417]
 [Fix GH-1580]
-Author:    V?t Ondruch <vondruch@redhat.com>
+Author:    V?\195?\173t Ondruch <vondruch@redhat.com>
 ------------------------------------------------------------------------
 r58317 | nobu | 2017-04-11 21:20:18 +0900 (Tue, 11 Apr 2017) | 4 lines
 
 Spec#files are not used anymore.
 
 [Fix GH-1579]
-Author:    V?t Ondruch <vondruch@redhat.com>
+Author:    V?\195?\173t Ondruch <vondruch@redhat.com>
 ------------------------------------------------------------------------
 r58316 | hsbt | 2017-04-11 21:19:05 +0900 (Tue, 11 Apr 2017) | 3 lines
 
@@ -24861,7 +25524,7 @@ https://github.com/rubygems/rubygems/commit/a1a5ab55cb1501cbfeee29131a56cfa2e763
 
 [ci skip]
 [Fix GH-1578]
-Author:    V?t Ondruch <vondruch@redhat.com>
+Author:    V?\195?\173t Ondruch <vondruch@redhat.com>
 ------------------------------------------------------------------------
 r58303 | nobu | 2017-04-11 00:26:48 +0900 (Tue, 11 Apr 2017) | 7 lines
 
@@ -31838,11 +32501,11 @@ Add volatile to a suppress warning.
 Without the fix, the following warning is shown:
 
     compiling cont.c
-    cont.c: In function ?rb_callcc?:
-    cont.c:949:39: warning: passing argument 1 of ?cont_capture? discards ?volatile? qualifier from pointer target type [-Wdiscarded-qualifiers]
+    cont.c: In function ?\226?\128?\152rb_callcc?\226?\128?\153:
+    cont.c:949:39: warning: passing argument 1 of ?\226?\128?\152cont_capture?\226?\128?\153 discards ?\226?\128?\152volatile?\226?\128?\153 qualifier from pointer target type [-Wdiscarded-qualifiers]
 	 volatile VALUE val = cont_capture(&called);
 					   ^
-    cont.c:473:1: note: expected ?int * volatile? but argument is of type ?volatile int *?
+    cont.c:473:1: note: expected ?\226?\128?\152int * volatile?\226?\128?\153 but argument is of type ?\226?\128?\152volatile int *?\226?\128?\153
      cont_capture(int *volatile stat)
      ^
 ------------------------------------------------------------------------
@@ -31970,7 +32633,7 @@ Make `trace_running` an integer flag again
 * vm_core.h (rb_vm_struct): trace_running should be a counter but
   not a bit flag.  [ruby-core:78514] [Bug #13011]
 
-Author: David Rodr?guez <deivid.rodriguez@gmail.com>
+Author: David Rodr?\195?\173guez <deivid.rodriguez@gmail.com>
 ------------------------------------------------------------------------
 r57001 | mrkn | 2016-12-06 22:40:31 +0900 (Tue, 06 Dec 2016) | 9 lines
 
@@ -32843,7 +33506,7 @@ test_fileutils.rb: Use primary group too
 
 * test/fileutils/test_fileutils.rb (TestFileUtils#setup): Use
   primary group as well as supplementary groups.  based on the
-  patch by V?t Ondruch at [ruby-core:78053].  [Bug #12910]
+  patch by V?\195?\173t Ondruch at [ruby-core:78053].  [Bug #12910]
 
 It might happen in certain environments (systemd-nspawn) that
 process has no supplementary groups, but primary groups should be
@@ -34155,7 +34818,7 @@ Insure has a different meaning than ensure and we mean the latter in
 this case.
 
 *Ensure* is to do or have what is necessary for success.
-Example: These blankets ensure that you?ll be warm enough.
+Example: These blankets ensure that you?\226?\128?\153ll be warm enough.
 
 *Insure* is to cover with an insurance policy.
 Example: I will insure my home with additional fire and flood policies.
