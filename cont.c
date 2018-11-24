@@ -2,7 +2,7 @@
 
   cont.c -
 
-  $Author: normal $
+  $Author: nagachika $
   created at: Thu May 23 09:03:43 2007
 
   Copyright (C) 2007 Koichi Sasada
@@ -240,7 +240,17 @@ static inline void
 ec_switch(rb_thread_t *th, rb_fiber_t *fib)
 {
     rb_execution_context_t *ec = &fib->cont.saved_ec;
+
     ruby_current_execution_context_ptr = th->ec = ec;
+
+    /*
+     * timer-thread may set trap interrupt on previous th->ec at any time;
+     * ensure we do not delay (or lose) the trap interrupt handling.
+     */
+    if (th->vm->main_thread == th && rb_signal_buff_size() > 0) {
+        RUBY_VM_SET_TRAP_INTERRUPT(ec);
+    }
+
     VM_ASSERT(ec->fiber_ptr->cont.self == 0 || ec->vm_stack != NULL);
 }
 
