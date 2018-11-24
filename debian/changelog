@@ -11,6 +11,12 @@ ruby2.5 (2.5.3-1) UNRELEASED; urgency=medium
     2018f (Closes: #913181)
   * Update gemspec reproducibility patch to also make new default gems fiddle
     and ipaddr reproducible.
+  * debian/rules: don't install created.rid file produced by rdoc to make
+    build reproducible. This file is used by rdoc to decide when to update
+    documentation when in use in interactive settings, and containing a
+    timestamp is one of its functions. Is is not necessary for a binary
+    package, though, because the included documentation will never need to be
+    updated in-place.
 
  -- Antonio Terceiro <terceiro@debian.org>  Sat, 24 Nov 2018 10:11:47 -0200
 
