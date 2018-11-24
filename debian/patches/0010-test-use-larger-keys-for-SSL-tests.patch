@@ -295,10 +295,10 @@ index 77cdb0a..8c8fbae 100644
      dh.generate_key!
      dh2.generate_key!
 diff --git a/test/openssl/test_ssl.rb b/test/openssl/test_ssl.rb
-index 3b063d2..a801d4d 100644
+index 060c1f1..46570b8 100644
 --- a/test/openssl/test_ssl.rb
 +++ b/test/openssl/test_ssl.rb
-@@ -698,7 +698,7 @@ def socketpair
+@@ -708,7 +708,7 @@ def socketpair
  
    def test_tlsext_hostname
      fooctx = OpenSSL::SSL::SSLContext.new
@@ -307,7 +307,7 @@ index 3b063d2..a801d4d 100644
      fooctx.cert = @cli_cert
      fooctx.key = @cli_key
  
-@@ -746,7 +746,7 @@ def test_servername_cb_raises_an_exception_on_unknown_objects
+@@ -760,7 +760,7 @@ def test_servername_cb_raises_an_exception_on_unknown_objects
      ctx2 = OpenSSL::SSL::SSLContext.new
      ctx2.cert = @svr_cert
      ctx2.key = @svr_key
@@ -316,7 +316,7 @@ index 3b063d2..a801d4d 100644
      ctx2.servername_cb = lambda { |args| Object.new }
  
      sock1, sock2 = socketpair
-@@ -1114,7 +1114,7 @@ def test_alpn_protocol_selection_cancel
+@@ -1140,7 +1140,7 @@ def test_alpn_protocol_selection_cancel
      ctx1 = OpenSSL::SSL::SSLContext.new
      ctx1.cert = @svr_cert
      ctx1.key = @svr_key
@@ -325,7 +325,7 @@ index 3b063d2..a801d4d 100644
      ctx1.alpn_select_cb = -> (protocols) { nil }
      ssl1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
  
-@@ -1358,20 +1358,21 @@ def test_fallback_scsv
+@@ -1382,20 +1382,21 @@ def test_fallback_scsv
    def test_dh_callback
      pend "TLS 1.2 is not supported" unless tls12_supported?
  
