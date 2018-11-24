@@ -1,6 +1,8 @@
 ruby2.5 (2.5.3-1) UNRELEASED; urgency=medium
 
   * New upstream version 2.5.3
+    - Includes fix for CVE-2018-16396, "Tainted flags are not propagated in
+      Array#pack and String#unpack with some directives" (Closes: #911920)
   * Refresh patches:
     - Dropped 0009-merge-changes-in-ruby-openssl-v2.1.1.patch, already applied
       upstream.
