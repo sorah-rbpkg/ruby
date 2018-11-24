@@ -1,4 +1,4 @@
-ruby2.5 (2.5.3-1) UNRELEASED; urgency=medium
+ruby2.5 (2.5.3-1) unstable; urgency=medium
 
   * New upstream version 2.5.3
     - Includes fix for CVE-2018-16396, "Tainted flags are not propagated in
@@ -18,7 +18,7 @@ ruby2.5 (2.5.3-1) UNRELEASED; urgency=medium
     package, though, because the included documentation will never need to be
     updated in-place.
 
- -- Antonio Terceiro <terceiro@debian.org>  Sat, 24 Nov 2018 10:11:47 -0200
+ -- Antonio Terceiro <terceiro@debian.org>  Sat, 24 Nov 2018 12:38:59 -0200
 
 ruby2.5 (2.5.1-6) unstable; urgency=medium
 
