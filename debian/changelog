@@ -1,3 +1,10 @@
+ruby2.5 (2.5.3-3) UNRELEASED; urgency=medium
+
+  * arm64: also skip TestBugReporter#test_bug_reporter_add, which also fails~
+    4% of the time
+
+ -- Antonio Terceiro <terceiro@debian.org>  Mon, 26 Nov 2018 16:35:39 -0200
+
 ruby2.5 (2.5.3-2) unstable; urgency=medium
 
   * arm64: skip TestRubyOptions#test_segv_loaded_features, fails ~3% of the
