@@ -6,6 +6,7 @@ ruby2.5 (2.5.3-3) UNRELEASED; urgency=medium
     OpenSSL/TestSSL.rb.
   * Remove skiplist for OpenSSL::TestSSL on all architectures. It was in the
     wrong place to begin with.
+  * Fix location of skiplist for Rinda-related tests
 
  -- Antonio Terceiro <terceiro@debian.org>  Mon, 26 Nov 2018 16:35:39 -0200
 
