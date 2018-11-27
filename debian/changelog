@@ -1,14 +1,14 @@
-ruby2.5 (2.5.3-3) UNRELEASED; urgency=medium
+ruby2.5 (2.5.3-3) unstable; urgency=medium
 
   * arm64: also skip TestBugReporter#test_bug_reporter_add, which also fails~
-    4% of the time
+    4% of the time.
   * mipsel: fix location of skiplist for OpenSSL::TestSSL, from TestSSL.rb to
     OpenSSL/TestSSL.rb.
   * Remove skiplist for OpenSSL::TestSSL on all architectures. It was in the
     wrong place to begin with.
-  * Fix location of skiplist for Rinda-related tests
+  * Fix location of skiplist for Rinda-related tests.
 
- -- Antonio Terceiro <terceiro@debian.org>  Mon, 26 Nov 2018 16:35:39 -0200
+ -- Antonio Terceiro <terceiro@debian.org>  Tue, 27 Nov 2018 09:58:02 -0200
 
 ruby2.5 (2.5.3-2) unstable; urgency=medium
 
