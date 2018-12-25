@@ -2,8 +2,5 @@
 0002-lib-mkmf.rb-sort-list-of-object-files-in-generated-M.patch
 0003-Mark-Gemspec-reproducible-change-fixing-784225-too.patch
 0004-Make-gemspecs-reproducible.patch
-0005-ia64-update-ia64-specific-code-to-use-execution-cont.patch
-0006-exclude-several-tests-unstable-in-Docker.patch
-0006-Fix-FTBFS-on-hurd.patch
-0007-Port-to-kfreebsd-amd64.patch
-0009-Update-for-tzdata-2018f-r65365.patch
+0005-exclude-several-tests-unstable-in-Docker.patch
+0006-Port-to-kfreebsd-amd64.patch

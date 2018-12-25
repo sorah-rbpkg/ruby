@@ -7,14 +7,14 @@ Subject: exclude several tests unstable in Docker
  1 file changed, 1 insertion(+)
 
 diff --git a/test/dtrace/helper.rb b/test/dtrace/helper.rb
-index 5828bcd..f38f052 100644
+index 023d116..500da5d 100644
 --- a/test/dtrace/helper.rb
 +++ b/test/dtrace/helper.rb
-@@ -21,6 +21,7 @@
-   end
+@@ -53,6 +53,7 @@
+   cmd = false
  end
- ok &= (`dtrace -V` rescue false)
+ ok &= system(*cmd, err: IO::NULL, out: IO::NULL) if cmd
 +ok = false # Doesn't work properly inside Docker build
+ 
  module DTrace
    class TestCase < Test::Unit::TestCase
-     INCLUDE = File.expand_path('..', File.dirname(__FILE__))
