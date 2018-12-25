@@ -20,6 +20,8 @@
 	return "NODE_ITER";
       case NODE_FOR:
 	return "NODE_FOR";
+      case NODE_FOR_MASGN:
+	return "NODE_FOR_MASGN";
       case NODE_BREAK:
 	return "NODE_BREAK";
       case NODE_NEXT:
@@ -128,6 +130,8 @@
 	return "NODE_EVSTR";
       case NODE_DREGX:
 	return "NODE_DREGX";
+      case NODE_ONCE:
+	return "NODE_ONCE";
       case NODE_ARGS:
 	return "NODE_ARGS";
       case NODE_ARGS_AUX:
@@ -192,7 +196,5 @@
 	return "NODE_DSYM";
       case NODE_ATTRASGN:
 	return "NODE_ATTRASGN";
-      case NODE_PRELUDE:
-	return "NODE_PRELUDE";
       case NODE_LAMBDA:
 	return "NODE_LAMBDA";

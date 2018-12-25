@@ -104,6 +104,7 @@ Init_id(void)
     REGISTER_SYMID(idTo_a, "to_a");
     REGISTER_SYMID(idTo_s, "to_s");
     REGISTER_SYMID(idTo_i, "to_i");
+    REGISTER_SYMID(idTo_f, "to_f");
     REGISTER_SYMID(idTo_r, "to_r");
     REGISTER_SYMID(idBt, "bt");
     REGISTER_SYMID(idBt_locations, "bt_locations");
@@ -127,8 +128,6 @@ Init_id(void)
     REGISTER_SYMID(id_core_define_method, "core#define_method");
     REGISTER_SYMID(id_core_define_singleton_method, "core#define_singleton_method");
     REGISTER_SYMID(id_core_set_postexe, "core#set_postexe");
-    REGISTER_SYMID(id_core_hash_from_ary, "core#hash_from_ary");
-    REGISTER_SYMID(id_core_hash_merge_ary, "core#hash_merge_ary");
     REGISTER_SYMID(id_core_hash_merge_ptr, "core#hash_merge_ptr");
     REGISTER_SYMID(id_core_hash_merge_kwd, "core#hash_merge_kwd");
     REGISTER_SYMID(idLASTLINE, "$_");

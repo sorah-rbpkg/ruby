@@ -9,27 +9,24 @@
 #include "iseq.h"
 
 
+static const char prelude_name0[] = "<internal:prelude>";
 static const struct {
-  char L0[18];
-} prelude_name0 = {"<internal:prelude>"};
-static const struct {
-    char L0[495]; /* 1..130 */
-    char L130[258]; /* 131..156 */
+    char L0[491]; /* 1..130 */
+    char L130[351]; /* 131..163 */
 } prelude_code0 = {
 #line 1 "prelude.rb"
-"class Thread\n"
-"  MUTEX_FOR_THREAD_EXCLUSIVE = Thread::Mutex.new\n"/* :nodoc: */
-"  private_constant :MUTEX_FOR_THREAD_EXCLUSIVE\n"
-"\n"
+"class << Thread\n"
 "\n"/* call-seq: */
 "\n"/*    Thread.exclusive { block }   => obj */
 "\n"/*  */
 "\n"/* Wraps the block in a single, VM-global Mutex.synchronize, returning the */
 "\n"/* value of the block. A thread executing inside the exclusive section will */
 "\n"/* only block other threads which also use the Thread.exclusive mechanism. */
-"  def self.exclusive(&block)\n"
+"  def exclusive(&block) end if false\n"
+"  mutex = Mutex.new\n"/* :nodoc: */
+"  define_method(:exclusive) do |&block|\n"
 "    warn \"Thread.exclusive is deprecated, use Thread::Mutex\", caller\n"
-"    MUTEX_FOR_THREAD_EXCLUSIVE.synchronize(&block)\n"
+"    mutex.synchronize(&block)\n"
 "  end\n"
 "end\n"
 "\n"
@@ -147,15 +144,21 @@ static const struct {
 "\n"/* By specifying a keyword argument _exception_ to +false+, you can indicate */
 "\n"/* that write_nonblock should not raise an IO::WaitWritable exception, but */
 "\n"/* return the symbol +:wait_writable+ instead. */
+"  def write_nonblock(buf, exception: true)\n"
 ,
 #line 131 "prelude.rb"
-"  def write_nonblock(buf, exception: true)\n"
 "    __write_nonblock(buf, exception)\n"
 "  end\n"
 "end\n"
 "\n"
-"\n"/* :stopdoc: */
+"class TracePoint\n"
+"  def enable target: nil, target_line: nil, &blk\n"
+"    self.__enable target, target_line, &blk\n"
+"  end\n"
+"end\n"
+"\n"
 "class Binding\n"
+"\n"/* :nodoc: */
 "  def irb\n"
 "    require 'irb'\n"
 "    irb\n"
@@ -173,13 +176,13 @@ static const struct {
 "\n"
 "\n"/* suppress redefinition warning */
 "  alias pp pp\n"/* :nodoc: */
+"\n"
+"  private :pp\n"
 "end\n"
-#line 178 "prelude.c"
+#line 183 "prelude.c"
 };
 
-static const struct {
-  char L0[22];
-} prelude_name1 = {"<internal:gem_prelude>"};
+static const char prelude_name1[] = "<internal:gem_prelude>";
 static const struct {
     char L0[168]; /* 1..9 */
 } prelude_code1 = {
@@ -192,14 +195,15 @@ static const struct {
 "  rescue Gem::LoadError, LoadError\n"
 "  end if defined?(DidYouMean)\n"
 "end\n"
-#line 196 "prelude.c"
+#line 199 "prelude.c"
 };
 
 
-#define PRELUDE_STR(n) rb_usascii_str_new_static(prelude_##n.L0, sizeof(prelude_##n))
-#ifdef __GNUC__
-# pragma GCC diagnostic push
-# pragma GCC diagnostic error "-Wmissing-field-initializers"
+#define PRELUDE_NAME(n) rb_usascii_str_new_static(prelude_name##n, sizeof(prelude_name##n)-1)
+#define PRELUDE_CODE(n) rb_usascii_str_new_static(prelude_code##n.L0, sizeof(prelude_code##n))
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(4, 2, 0)
+COMPILER_WARNING_ERROR(-Wmissing-field-initializers)
 #endif
 static void
 prelude_eval(VALUE code, VALUE name, int line)
@@ -207,7 +211,7 @@ prelude_eval(VALUE code, VALUE name, int line)
     static const rb_compile_option_t optimization = {
 	TRUE, /* int inline_const_cache; */
 	TRUE, /* int peephole_optimization; */
-	TRUE, /* int tailcall_optimization; */
+	FALSE,/* int tailcall_optimization; */
 	TRUE, /* int specialized_instruction; */
 	TRUE, /* int operands_unification; */
 	TRUE, /* int instructions_unification; */
@@ -219,23 +223,21 @@ prelude_eval(VALUE code, VALUE name, int line)
     };
 
     rb_ast_t *ast = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
-    if (!ast->root) {
+    if (!ast->body.root) {
 	rb_ast_dispose(ast);
 	rb_exc_raise(rb_errinfo());
     }
-    rb_iseq_eval(rb_iseq_new_with_opt(ast->root, name, name, Qnil, INT2FIX(line),
+    rb_iseq_eval(rb_iseq_new_with_opt(&ast->body, name, name, Qnil, INT2FIX(line),
 				      NULL, ISEQ_TYPE_TOP, &optimization));
     rb_ast_dispose(ast);
 }
-#ifdef __GNUC__
-# pragma GCC diagnostic pop
-#endif
+COMPILER_WARNING_POP
 
 void
 Init_prelude(void)
 {
-    prelude_eval(PRELUDE_STR(code0), PRELUDE_STR(name0), 1);
-    prelude_eval(PRELUDE_STR(code1), PRELUDE_STR(name1), 1);
+    prelude_eval(PRELUDE_CODE(0), PRELUDE_NAME(0), 1);
+    prelude_eval(PRELUDE_CODE(1), PRELUDE_NAME(1), 1);
 
 #if 0
     printf("%.*s", (int)sizeof(prelude_code0), prelude_code0.L0);
