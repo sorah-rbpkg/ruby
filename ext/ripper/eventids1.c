@@ -454,7 +454,7 @@ ripper_init_eventids1_table(VALUE self)
     rb_hash_aset(h, intern_sym("else"), INT2FIX(1));
     rb_hash_aset(h, intern_sym("elsif"), INT2FIX(3));
     rb_hash_aset(h, intern_sym("ensure"), INT2FIX(1));
-    rb_hash_aset(h, intern_sym("excessed_comma"), INT2FIX(1));
+    rb_hash_aset(h, intern_sym("excessed_comma"), INT2FIX(0));
     rb_hash_aset(h, intern_sym("fcall"), INT2FIX(1));
     rb_hash_aset(h, intern_sym("field"), INT2FIX(3));
     rb_hash_aset(h, intern_sym("for"), INT2FIX(3));

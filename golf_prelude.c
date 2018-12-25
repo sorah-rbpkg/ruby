@@ -9,16 +9,14 @@
 #include "iseq.h"
 
 
-static const struct {
-  char L0[23];
-} prelude_name0 = {"<internal:golf_prelude>"};
+static const char prelude_name0[] = "<internal:golf_prelude>";
 static const struct {
     char L0[494]; /* 1..18 */
     char L18[460]; /* 19..33 */
-    char L33[499]; /* 34..65 */
-    char L65[490]; /* 66..94 */
-    char L94[498]; /* 95..118 */
-    char L118[78]; /* 119..124 */
+    char L33[499]; /* 34..63 */
+    char L63[475]; /* 64..96 */
+    char L96[494]; /* 97..117 */
+    char L117[175]; /* 118..129 */
 } prelude_code0 = {
 #line 1 "golf_prelude.rb"
 "class Object\n"
@@ -77,12 +75,19 @@ static const struct {
 "    puts \"#{a}ello, #{b}orld#{c}\"\n"
 "  end\n"
 "\n"
+"  def f(m = 100)\n"
+"    1.upto(m){|n|puts'FizzBuzz\n"
+"'[i=n**4%-15,i+13]||n}\n"
+"  end\n"
+"\n"
 "  alias say puts\n"
 "\n"
 "  def do_while\n"
 "    0 while yield\n"
 "  end\n"
 "\n"
+,
+#line 64 "golf_prelude.rb"
 "  def do_until\n"
 "    0 until yield\n"
 "  end\n"
@@ -90,8 +95,6 @@ static const struct {
 "\n"
 "class Array\n"
 "  alias old_to_s to_s\n"
-,
-#line 66 "golf_prelude.rb"
 "  alias to_s join\n"
 "end\n"
 "\n"
@@ -118,11 +121,11 @@ static const struct {
 "    eval \"\n"
 "    def #{meth}(*args, &block)\n"
 "      a = to_a\n"
+,
+#line 97 "golf_prelude.rb"
 "      result = a.#{meth}(*args, &block)\n"
 "      replace(a.join)\n"
 "      if result.class == Array\n"
-,
-#line 95 "golf_prelude.rb"
 "        Integer === result[0] ? result.pack('c*') : result.join\n"
 "      elsif result.class == Enumerator\n"
 "        result.map(&:join).to_enum\n"
@@ -141,27 +144,28 @@ static const struct {
 "      to_a.#{meth}(*args, &block)\n"
 "    end\"\n"
 "  }\n"
+,
+#line 118 "golf_prelude.rb"
 "  alias old_inspect inspect\n"
 "  alias inspect old_to_s\n"
 "end\n"
 "\n"
 "class Symbol\n"
 "  def call(*args, &block)\n"
-,
-#line 119 "golf_prelude.rb"
 "    proc do |recv|\n"
 "      recv.__send__(self, *args, &block)\n"
 "    end\n"
 "  end\n"
 "end\n"
-#line 158 "golf.c"
+#line 161 "golf.c"
 };
 
 
-#define PRELUDE_STR(n) rb_usascii_str_new_static(prelude_##n.L0, sizeof(prelude_##n))
-#ifdef __GNUC__
-# pragma GCC diagnostic push
-# pragma GCC diagnostic error "-Wmissing-field-initializers"
+#define PRELUDE_NAME(n) rb_usascii_str_new_static(prelude_name##n, sizeof(prelude_name##n)-1)
+#define PRELUDE_CODE(n) rb_usascii_str_new_static(prelude_code##n.L0, sizeof(prelude_code##n))
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(4, 2, 0)
+COMPILER_WARNING_ERROR(-Wmissing-field-initializers)
 #endif
 static void
 prelude_eval(VALUE code, VALUE name, int line)
@@ -169,7 +173,7 @@ prelude_eval(VALUE code, VALUE name, int line)
     static const rb_compile_option_t optimization = {
 	TRUE, /* int inline_const_cache; */
 	TRUE, /* int peephole_optimization; */
-	TRUE, /* int tailcall_optimization; */
+	FALSE,/* int tailcall_optimization; */
 	TRUE, /* int specialized_instruction; */
 	TRUE, /* int operands_unification; */
 	TRUE, /* int instructions_unification; */
@@ -181,22 +185,20 @@ prelude_eval(VALUE code, VALUE name, int line)
     };
 
     rb_ast_t *ast = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
-    if (!ast->root) {
+    if (!ast->body.root) {
 	rb_ast_dispose(ast);
 	rb_exc_raise(rb_errinfo());
     }
-    rb_iseq_eval(rb_iseq_new_with_opt(ast->root, name, name, Qnil, INT2FIX(line),
+    rb_iseq_eval(rb_iseq_new_with_opt(&ast->body, name, name, Qnil, INT2FIX(line),
 				      NULL, ISEQ_TYPE_TOP, &optimization));
     rb_ast_dispose(ast);
 }
-#ifdef __GNUC__
-# pragma GCC diagnostic pop
-#endif
+COMPILER_WARNING_POP
 
 void
 Init_golf(void)
 {
-    prelude_eval(PRELUDE_STR(code0), PRELUDE_STR(name0), 1);
+    prelude_eval(PRELUDE_CODE(0), PRELUDE_NAME(0), 1);
 
 #if 0
     printf("%.*s", (int)sizeof(prelude_code0), prelude_code0.L0);

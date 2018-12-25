@@ -7,8 +7,9 @@ require 'rbconfig'
 require 'fileutils'
 require 'shellwords'
 
-# :stopdoc:
 class String
+  # :stopdoc:
+
   # Wraps a string in escaped quotes if it contains whitespace.
   def quote
     /\s/ =~ self ? "\"#{self}\"" : "#{self}"
@@ -31,15 +32,20 @@ class String
   def sans_arguments
     self[/\A[^()]+/]
   end
+
+  # :startdoc:
 end
 
 class Array
+  # :stopdoc:
+
   # Wraps all strings in escaped quotes if they contain whitespace.
   def quote
     map {|s| s.quote}
   end
+
+  # :startdoc:
 end
-# :startdoc:
 
 ##
 # mkmf.rb is used by Ruby C extensions to generate a Makefile which will
@@ -241,7 +247,12 @@ module MakeMakefile
     $topdir ||= RbConfig::CONFIG["topdir"]
     $arch_hdrdir = "$(extout)/include/$(arch)"
   else
-    abort "mkmf.rb can't find header files for ruby at #{$hdrdir}/ruby.h"
+    abort <<MESSAGE
+mkmf.rb can't find header files for ruby at #{$hdrdir}/ruby.h
+
+You might have to install separate package for the ruby development
+environment, ruby-dev or ruby-devel for example.
+MESSAGE
   end
 
   CONFTEST = "conftest".freeze
@@ -1960,6 +1971,7 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
     headers << '$(RUBY_EXTCONF_H)' if $extconf_h
     mk << %{
 
+CC_WRAPPER = #{CONFIG['CC_WRAPPER']}
 CC = #{CONFIG['CC']}
 CXX = #{CONFIG['CXX']}
 LIBRUBY = #{CONFIG['LIBRUBY']}
@@ -1977,6 +1989,7 @@ cxxflags = #{CONFIG['cxxflags']}
 optflags = #{CONFIG['optflags']}
 debugflags = #{CONFIG['debugflags']}
 warnflags = #{$warnflags}
+cppflags = #{CONFIG['cppflags']}
 CCDLFLAGS = #{$static ? '' : CONFIG['CCDLFLAGS']}
 CFLAGS   = $(CCDLFLAGS) #$CFLAGS $(ARCH_FLAG)
 INCFLAGS = -I. #$INCFLAGS
@@ -2251,7 +2264,7 @@ RULES
     origdef ||= ''
 
     if $extout and $INSTALLFILES
-      $cleanfiles.concat($INSTALLFILES.collect {|files, dir|File.join(dir, files.sub(/\A\.\//, ''))})
+      $cleanfiles.concat($INSTALLFILES.collect {|files, dir|File.join(dir, files.delete_prefix('./'))})
       $distcleandirs.concat($INSTALLFILES.collect {|files, dir| dir})
     end
 
@@ -2507,6 +2520,9 @@ site-install-rb: install-rb
       end
       $warnflags = config['warnflags'] unless $extmk
     end
+    if (w = rbconfig['CC_WRAPPER']) and !w.empty? and !File.executable?(w)
+      rbconfig['CC_WRAPPER'] = config['CC_WRAPPER'] = ''
+    end
     $CFLAGS = with_config("cflags", arg_config("CFLAGS", config["CFLAGS"])).dup
     $CXXFLAGS = (with_config("cxxflags", arg_config("CXXFLAGS", config["CXXFLAGS"]))||'').dup
     $ARCH_FLAG = with_config("arch_flag", arg_config("ARCH_FLAG", config["ARCH_FLAG"])).dup
@@ -2585,7 +2601,8 @@ MESSAGE
       src = src.sub(/\{/) do
         $& +
           "\n  if (argc > 1000000) {\n" +
-          refs.map {|n|"    printf(\"%p\", &#{n});\n"}.join("") +
+          refs.map {|n|"    int (* volatile #{n}p)(void)=(int (*)(void))&#{n};\n"}.join("") +
+          refs.map {|n|"    printf(\"%d\", (*#{n}p)());\n"}.join("") +
           "  }\n"
       end
     end

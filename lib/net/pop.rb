@@ -16,12 +16,12 @@
 # NOTE: You can find Japanese version of this document at:
 # http://docs.ruby-lang.org/ja/latest/library/net=2fpop.html
 #
-#   $Id: pop.rb 64443 2018-08-18 08:35:42Z nagachika $
+#   $Id: pop.rb 65505 2018-11-02 17:52:33Z marcandre $
 #
 # See Net::POP3 for documentation.
 #
 
-require 'net/protocol'
+require_relative 'protocol'
 require 'digest/md5'
 require 'timeout'
 
@@ -196,7 +196,7 @@ module Net
   class POP3 < Protocol
 
     # svn revision of this library
-    Revision = %q$Revision: 64443 $.split[1]
+    Revision = %q$Revision: 65505 $.split[1]
 
     #
     # Class Parameters
