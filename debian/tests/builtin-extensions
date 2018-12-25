@@ -14,7 +14,7 @@ zlib
 
 rc=0
 for ext in $extensions; do
-  if ! ruby2.5 -r"$ext" -e "puts 'Extension $ext: OK'"; then
+  if ! ruby2.6 -r"$ext" -e "puts 'Extension $ext: OK'"; then
     rc=1
   fi
 done
