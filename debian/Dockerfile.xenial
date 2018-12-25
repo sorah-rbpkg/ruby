@@ -10,5 +10,5 @@ RUN mkdir -p /build \
 RUN mkdir -p -m700 /root/.gnupg
 
 ADD control /control
-RUN mk-build-deps -i --t 'apt-get -y -o Debug::pkgProblemResolver=yes --no-install-recommends' /control
+RUN apt-get update && mk-build-deps -i --t 'apt-get -y -o Debug::pkgProblemResolver=yes --no-install-recommends' /control
 RUN apt-get install -y tzdata
