@@ -3,5 +3,7 @@
 /usr/lib/ruby/*.0
 /usr/lib/ruby/vendor_ruby
 /usr/lib/ruby/gems/*.0/gems/rdoc-*
+/usr/lib/ruby/gems/*.0/gems/irb-*
+/usr/lib/ruby/gems/*.0/gems/bundler-*
 /usr/lib/ruby/gems/*.0/specifications/default
 /usr/share/systemtap/tapset/libruby*.stp
