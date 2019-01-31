@@ -71,10 +71,27 @@ f_##n(VALUE x, VALUE y)\
 inline static VALUE
 f_add(VALUE x, VALUE y)
 {
-    if (FIXNUM_ZERO_P(y))
-	return x;
-    if (FIXNUM_ZERO_P(x))
-	return y;
+    if (RB_INTEGER_TYPE_P(x) &&
+        LIKELY(rb_method_basic_definition_p(rb_cInteger, idPLUS))) {
+        if (FIXNUM_ZERO_P(x))
+            return y;
+        if (FIXNUM_ZERO_P(y))
+            return x;
+        return rb_int_plus(x, y);
+    }
+    else if (RB_FLOAT_TYPE_P(x) &&
+             LIKELY(rb_method_basic_definition_p(rb_cFloat, idPLUS))) {
+        if (FIXNUM_ZERO_P(y))
+            return x;
+        return rb_float_plus(x, y);
+    }
+    else if (RB_TYPE_P(x, T_RATIONAL) &&
+             LIKELY(rb_method_basic_definition_p(rb_cRational, idPLUS))) {
+        if (FIXNUM_ZERO_P(y))
+            return x;
+        return rb_rational_plus(x, y);
+    }
+
     return rb_funcall(x, '+', 1, y);
 }
 
@@ -106,20 +123,39 @@ f_gt_p(VALUE x, VALUE y)
 inline static VALUE
 f_mul(VALUE x, VALUE y)
 {
-    if (FIXNUM_ZERO_P(y) && RB_INTEGER_TYPE_P(x))
-	return ZERO;
-    if (FIXNUM_ZERO_P(x) && RB_INTEGER_TYPE_P(y))
-	return ZERO;
-    if (y == ONE) return x;
-    if (x == ONE) return y;
+    if (RB_INTEGER_TYPE_P(x) &&
+        LIKELY(rb_method_basic_definition_p(rb_cInteger, idMULT))) {
+        if (FIXNUM_ZERO_P(y))
+            return ZERO;
+        if (FIXNUM_ZERO_P(x) && RB_INTEGER_TYPE_P(y))
+            return ZERO;
+        if (x == ONE) return y;
+        if (y == ONE) return x;
+        return rb_int_mul(x, y);
+    }
+    else if (RB_FLOAT_TYPE_P(x) &&
+             LIKELY(rb_method_basic_definition_p(rb_cFloat, idMULT))) {
+        if (y == ONE) return x;
+        return rb_float_mul(x, y);
+    }
+    else if (RB_TYPE_P(x, T_RATIONAL) &&
+             LIKELY(rb_method_basic_definition_p(rb_cRational, idMULT))) {
+        if (y == ONE) return x;
+        return rb_rational_mul(x, y);
+    }
+    else if (LIKELY(rb_method_basic_definition_p(CLASS_OF(x), idMULT))) {
+        if (y == ONE) return x;
+    }
     return rb_funcall(x, '*', 1, y);
 }
 
 inline static VALUE
 f_sub(VALUE x, VALUE y)
 {
-    if (FIXNUM_ZERO_P(y))
+    if (FIXNUM_ZERO_P(y) &&
+        LIKELY(rb_method_basic_definition_p(CLASS_OF(x), idMINUS))) {
 	return x;
+    }
     return rb_funcall(x, '-', 1, y);
 }
 
@@ -1903,8 +1939,10 @@ to_complex(VALUE val)
 static VALUE
 nucomp_convert(VALUE klass, VALUE a1, VALUE a2, int raise)
 {
-    if (NIL_P(a1) || NIL_P(a2))
+    if (NIL_P(a1) || NIL_P(a2)) {
+        if (!raise) return Qnil;
 	rb_raise(rb_eTypeError, "can't convert nil into Complex");
+    }
 
     if (RB_TYPE_P(a1, T_STRING)) {
 	a1 = string_to_c_strict(a1, raise);

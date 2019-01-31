@@ -1026,6 +1026,7 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = (VALUE *)reg_cfp->bp + %d;\n", b->stack_size + 1);
         }
         fprintf(f, "    {\n");
+        fprintf(f, "        RUBY_DTRACE_CREATE_HOOK(ARRAY, RARRAY_LEN(ary));\n");
         fprintf(f, "        val = rb_ary_resurrect(ary);\n");
         fprintf(f, "    }\n");
         fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_duparray(ary) - 1);
@@ -1056,6 +1057,7 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = (VALUE *)reg_cfp->bp + %d;\n", b->stack_size + 1);
         }
         fprintf(f, "    {\n");
+        fprintf(f, "        RUBY_DTRACE_CREATE_HOOK(HASH, RHASH_SIZE(hash) << 1);\n");
         fprintf(f, "        val = rb_hash_resurrect(hash);\n");
         fprintf(f, "    }\n");
         fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_duphash(hash) - 1);

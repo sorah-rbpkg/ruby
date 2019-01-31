@@ -2,7 +2,7 @@
 
   random.c -
 
-  $Author: shyouhei $
+  $Author: naruse $
   created at: Fri Dec 24 16:39:21 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -88,6 +88,11 @@ The original copyright notice follows.
 #include <wincrypt.h>
 #endif
 #include "ruby_atomic.h"
+
+#ifdef __OpenBSD__
+/* to define OpenBSD for version check */
+#include <sys/param.h>
+#endif
 
 typedef int int_must_be_32bit_at_least[sizeof(int) * CHAR_BIT < 32 ? -1 : 1];
 
