@@ -134,6 +134,14 @@ class TestAst < Test::Unit::TestCase
     assert_raise(TypeError) {RubyVM::AbstractSyntaxTree::Node.allocate}
   end
 
+  def test_parse_argument_error
+    assert_raise(TypeError) {RubyVM::AbstractSyntaxTree.parse(0)}
+    assert_raise(TypeError) {RubyVM::AbstractSyntaxTree.parse(nil)}
+    assert_raise(TypeError) {RubyVM::AbstractSyntaxTree.parse(false)}
+    assert_raise(TypeError) {RubyVM::AbstractSyntaxTree.parse(true)}
+    assert_raise(TypeError) {RubyVM::AbstractSyntaxTree.parse(:foo)}
+  end
+
   def test_column_with_long_heredoc_identifier
     term = "A"*257
     ast = RubyVM::AbstractSyntaxTree.parse("<<-#{term}\n""ddddddd\n#{term}\n")
@@ -248,5 +256,17 @@ class TestAst < Test::Unit::TestCase
     assert_equal(:VCALL, recv.type)
     assert_equal(:b, mid)
     assert_equal(:SCOPE, defn.type)
+  end
+
+  def test_dstr
+    node = RubyVM::AbstractSyntaxTree.parse('"foo#{1}bar"')
+    _, _, body = *node.children
+    assert_equal(:DSTR, body.type)
+    head, body = body.children
+    assert_equal("foo", head)
+    assert_equal(:EVSTR, body.type)
+    body, = body.children
+    assert_equal(:LIT, body.type)
+    assert_equal([1], body.children)
   end
 end

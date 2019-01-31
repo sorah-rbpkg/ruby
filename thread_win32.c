@@ -3,7 +3,7 @@
 
   thread_win32.c -
 
-  $Author: ko1 $
+  $Author: naruse $
 
   Copyright (C) 2004-2007 Koichi Sasada
 
@@ -706,6 +706,12 @@ void
 rb_thread_wakeup_timer_thread(int sig)
 {
     /* do nothing */
+}
+
+static VALUE
+rb_thread_start_unblock_thread(void)
+{
+    return Qfalse; /* no-op */
 }
 
 static void

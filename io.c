@@ -2,7 +2,7 @@
 
   io.c -
 
-  $Author: normal $
+  $Author: naruse $
   created at: Fri Oct 15 18:08:59 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -4258,23 +4258,17 @@ rb_io_ungetbyte(VALUE io, VALUE b)
 
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
-    if (NIL_P(b)) return Qnil;
-    if (FIXNUM_P(b)) {
-        int i = FIX2INT(b);
-        if (0 <= i && i <= UCHAR_MAX) {
-            unsigned char cc = i & 0xFF;
-            b = rb_str_new((const char *)&cc, 1);
-        }
-        else {
-            rb_raise(rb_eRangeError,
-                "integer %d too big to convert into `unsigned char'", i);
-        }
-    }
-    else if (RB_TYPE_P(b, T_BIGNUM)) {
-        rb_raise(rb_eRangeError, "bignum too big to convert into `unsigned char'");
-    }
-    else {
-	SafeStringValue(b);
+    switch (TYPE(b)) {
+      case T_NIL:
+        return Qnil;
+      case T_FIXNUM:
+      case T_BIGNUM: ;
+        VALUE v = rb_int_modulo(b, INT2FIX(256));
+        unsigned char c = NUM2INT(v) & 0xFF;
+        b = rb_str_new((const char *)&c, 1);
+        break;
+      default:
+        SafeStringValue(b);
     }
     io_ungetbyte(b, fptr);
     return Qnil;

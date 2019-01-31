@@ -96,7 +96,7 @@ rb_ast_parse_str(VALUE str)
 {
     rb_ast_t *ast = 0;
 
-    str = rb_check_string_type(str);
+    StringValue(str);
     ast = rb_parser_compile_string_path(ast_parse_new(), Qnil, str, 1);
     return ast_parse_done(ast);
 }
@@ -525,7 +525,9 @@ node_children(rb_ast_t *ast, NODE *node)
         goto dlit;
       case NODE_DSYM:
       dlit:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_next->nd_head, node->nd_next->nd_next);
+        return rb_ary_new_from_args(3, node->nd_lit,
+                                    NEW_CHILD(ast, node->nd_next->nd_head),
+                                    NEW_CHILD(ast, node->nd_next->nd_next));
       case NODE_EVSTR:
         return rb_ary_new_from_node_args(ast, 1, node->nd_body);
       case NODE_ARGSCAT:
