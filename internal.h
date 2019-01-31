@@ -1669,6 +1669,7 @@ enum ruby_num_rounding_mode {
 
 int rb_num_to_uint(VALUE val, unsigned int *ret);
 VALUE ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl);
+double ruby_float_step_size(double beg, double end, double unit, int excl);
 int ruby_float_step(VALUE from, VALUE to, VALUE step, int excl, int allow_endless);
 double ruby_float_mod(double x, double y);
 int rb_num_negative_p(VALUE);
@@ -1677,8 +1678,10 @@ VALUE rb_int_pred(VALUE num);
 VALUE rb_int_uminus(VALUE num);
 VALUE rb_float_uminus(VALUE num);
 VALUE rb_int_plus(VALUE x, VALUE y);
+VALUE rb_float_plus(VALUE x, VALUE y);
 VALUE rb_int_minus(VALUE x, VALUE y);
 VALUE rb_int_mul(VALUE x, VALUE y);
+VALUE rb_float_mul(VALUE x, VALUE y);
 VALUE rb_int_idiv(VALUE x, VALUE y);
 VALUE rb_int_modulo(VALUE x, VALUE y);
 VALUE rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode);
@@ -1970,6 +1973,7 @@ void rb_last_status_clear(void);
 VALUE rb_rational_canonicalize(VALUE x);
 VALUE rb_rational_uminus(VALUE self);
 VALUE rb_rational_plus(VALUE self, VALUE other);
+VALUE rb_rational_mul(VALUE self, VALUE other);
 VALUE rb_lcm(VALUE x, VALUE y);
 VALUE rb_rational_reciprocal(VALUE x);
 VALUE rb_cstr_to_rat(const char *, int);

@@ -2,7 +2,7 @@
 
   object.c -
 
-  $Author: stomar $
+  $Author: naruse $
   created at: Thu Jul 15 12:01:24 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -2688,7 +2688,6 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 		return Qfalse;
 	    mod = rb_const_get_at(mod, id);
 	}
-	recur = Qfalse;
 
 	if (p < pend && !RB_TYPE_P(mod, T_MODULE) && !RB_TYPE_P(mod, T_CLASS)) {
 	    rb_raise(rb_eTypeError, "%"PRIsVALUE" does not refer to class/module",
@@ -3159,6 +3158,7 @@ rb_convert_to_integer(VALUE val, int base, int raise_exception)
         double f;
         if (base != 0) goto arg_error;
         f = RFLOAT_VALUE(val);
+        if (!raise_exception && !isfinite(f)) return Qnil;
         if (FIXABLE(f)) return LONG2FIX((long)f);
         return rb_dbl2big(f);
     }

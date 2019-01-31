@@ -2,7 +2,7 @@
 
   ruby.c -
 
-  $Author: k0kubun $
+  $Author: naruse $
   created at: Tue Aug 10 12:47:31 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -1863,6 +1863,18 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 
     rb_set_safe_level(opt->safe_level);
 
+    {
+        rb_execution_context_t *ec = GET_EC();
+
+        if (opt->e_script) {
+            /* -e */
+            rb_exec_event_hook_script_compiled(ec, iseq, opt->e_script);
+        }
+        else {
+            /* file */
+            rb_exec_event_hook_script_compiled(ec, iseq, Qnil);
+        }
+    }
     return (VALUE)iseq;
 }
 
