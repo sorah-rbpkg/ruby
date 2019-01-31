@@ -2,7 +2,7 @@
 
   array.c -
 
-  $Author: ko1 $
+  $Author: naruse $
   created at: Fri Aug  6 09:46:12 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -3540,6 +3540,7 @@ static VALUE
 rb_ary_reject_bang(VALUE ary)
 {
     RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
+    rb_ary_modify(ary);
     return ary_reject_bang(ary);
 }
 

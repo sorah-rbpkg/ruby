@@ -1,7 +1,541 @@
 ------------------------------------------------------------------------
-r66547 | naruse | 2018-12-25 15:20:00 +0900 (Tue, 25 Dec 2018) | 1 line
+r66950 | naruse | 2019-01-30 19:35:50 +0900 (Wed, 30 Jan 2019) | 1 line
 
-add tag v2_6_0
+add tag v2_6_1
+------------------------------------------------------------------------
+r66949 | naruse | 2019-01-30 15:20:10 +0900 (Wed, 30 Jan 2019) | 13 lines
+
+merge revision(s) 66947: [Backport #15518]
+
+	enumerator.c: fix arith_seq_first for Infinity
+
+	* enumerator.c (arith_seq_first): fix for Float::INFINITY.
+
+	* test/ruby/test_arithmetic_sequence.rb: add tests.
+
+	* numeric.c (ruby_float_step_size): export for internal use.
+
+	* internal.h: add prototype declaration of ruby_float_step_size.
+
+	[ruby-core:90937][Bug #15518]
+------------------------------------------------------------------------
+r66941 | naruse | 2019-01-29 18:19:52 +0900 (Tue, 29 Jan 2019) | 9 lines
+
+merge revision(s) 66909: [Backport #15555]
+
+	tmpdir.rb: permission of user given directory
+
+	* lib/tmpdir.rb (Dir.mktmpdir): check if the permission of the
+	  parent directory only when using the default temporary
+	  directory, and no check against user given directory.  the
+	  security is the user's responsibility in that case.
+	  [ruby-core:91216] [Bug #15555]
+------------------------------------------------------------------------
+r66940 | naruse | 2019-01-29 14:31:00 +0900 (Tue, 29 Jan 2019) | 10 lines
+
+merge revision(s) 66708: [Backport #15499]
+
+	thread.c (call_without_gvl): spawn thread for UBF iff single-threaded
+
+	We need another native thread to call some unblocking functions
+	which aren't RUBY_UBF_IO or RUBY_UBF_PROCESS.  Instead of a
+	permanent thread in <= 2.5, we can now rely on the thread cache
+	feature to perform interrupts.
+
+	[ruby-core:90865] [Bug #15499]
+------------------------------------------------------------------------
+r66939 | naruse | 2019-01-29 13:39:32 +0900 (Tue, 29 Jan 2019) | 7 lines
+
+merge revision(s) 66938: [Backport #15488]
+
+	Fix `Module#const_defined?` on inherited constants
+
+	[Fix GH-2061]
+
+	From: manga_osyo <manga.osyo@gmail.com>
+------------------------------------------------------------------------
+r66926 | naruse | 2019-01-26 17:02:47 +0900 (Sat, 26 Jan 2019) | 4 lines
+
+merge revision(s) 66922: [Backport #15521]
+
+	Upgrade CSV to 3.0.4
+
+------------------------------------------------------------------------
+r66925 | naruse | 2019-01-26 16:59:54 +0900 (Sat, 26 Jan 2019) | 7 lines
+
+merge revision(s) 66658: [Backport #15489]
+
+	vm_args.c: search symbol proc in super classes
+
+	* vm_args.c (refine_sym_proc_call): traverse ancestors to search
+	  inherited methods for symbol proc.
+	  [ruby-dev:50741] [Bug #15489]
+------------------------------------------------------------------------
+r66924 | naruse | 2019-01-26 16:59:11 +0900 (Sat, 26 Jan 2019) | 16 lines
+
+merge revision(s) 66823,66869: [Backport #15548]
+
+	Revert "mjit_worker.c: try passing -nostdlib to AIX"
+
+	This reverts commit b32fb23083912c37a2601c66531ed786a7c9f3e5.
+
+	This didn't work on AIX.
+
+	mjit_worker.c: do not use GCC_NOSTDLIB_FLAGS for OpenBSD
+
+	OpenBSD's GCC compiler has local extensions that break when
+	`-nostartfiles -nodefaultlibs -nostdlib` is used.
+
+	From: Jeremy Evans <merch-redmine@jeremyevans.net>
+
+	[Bug #15548]
+------------------------------------------------------------------------
+r66913 | naruse | 2019-01-24 10:00:07 +0900 (Thu, 24 Jan 2019) | 13 lines
+
+merge revision(s) 66867: [Backport #15500]
+
+	Revert r58345 and r58371.
+
+	  These changes break the behavior of default gems. Bug #13428 says
+	  r58345 is reasonable because gemspec file is installed by `to_ruby_for_cache`
+	  method. But I revert `to_ruby_for_cache` in rbinstall.rb at r58403.
+	  There is no reason that we apply r58345 now.
+
+	  But I'm not sure about gemspec of default gems affects standalone gems.
+	  I'm going to investigate it on rubygems/rubygems.
+
+	  [Bug #15500][ruby-core:90867]
+------------------------------------------------------------------------
+r66862 | naruse | 2019-01-18 13:19:32 +0900 (Fri, 18 Jan 2019) | 9 lines
+
+merge revision(s) 66796,66797: [Backport #15525]
+
+	No TypeError at nil if exception: false
+
+	[ruby-core:91021] [Bug #15525]
+
+	No FloatDomainError at non-finitive number if exception: false
+
+	[ruby-core:91021] [Bug #15525]
+------------------------------------------------------------------------
+r66855 | naruse | 2019-01-18 08:09:52 +0900 (Fri, 18 Jan 2019) | 2 lines
+
+bump up teeny version to 2.6.1
+
+------------------------------------------------------------------------
+r66854 | naruse | 2019-01-18 08:08:10 +0900 (Fri, 18 Jan 2019) | 117 lines
+
+merge revision(s) 66681,66682,66684,66688,66697,66751,66693,66694: [Backport #15491]
+
+	complex.c: Optimize Complex#+ for some conditions
+
+	Optimize f_add defined in complex.c for some specific conditions.
+	It makes Complex#+ about 1.4x faster than r66678.
+
+	Compared to r66678:
+
+	```
+	mrkn-mbp15-late2016:complex-optim-o3 mrkn$ make benchmark ITEM=complex_float_ COMPARE_RUBY=/Users/mrkn/.rbenv/versions/trunk-o3/bin/ruby
+	/Users/mrkn/src/github.com/ruby/ruby/revision.h unchanged
+	/Users/mrkn/.rbenv/shims/ruby --disable=gems -rrubygems -I/Users/mrkn/src/github.com/ruby/ruby/benchmark/lib /Users/mrkn/src/github.com/ruby/ruby/benchmark/benchmark-driver/exe/benchmark-driver \
+	                    --executables="compare-ruby::/Users/mrkn/.rbenv/versions/trunk-o3/bin/ruby -I.ext/common --disable-gem" \
+	                    --executables="built-ruby::./miniruby -I/Users/mrkn/src/github.com/ruby/ruby/lib -I. -I.ext/common  -r/Users/mrkn/src/github.com/ruby/ruby/prelude --disable-gem" \
+	                    $(find /Users/mrkn/src/github.com/ruby/ruby/benchmark -maxdepth 1 -name '*complex_float_*.yml' -o -name '*complex_float_*.rb' | sort)
+	Calculating -------------------------------------
+	                     compare-ruby  built-ruby
+	   complex_float_add       9.132M     12.864M i/s -      1.000M times in 0.109511s 0.077734s
+	   complex_float_div     600.723k    627.878k i/s -      1.000M times in 1.664662s 1.592666s
+	   complex_float_mul       2.320M      2.347M i/s -      1.000M times in 0.431039s 0.426113s
+	   complex_float_new       1.473M      1.489M i/s -      1.000M times in 0.678791s 0.671750s
+	 complex_float_power       1.690M      1.722M i/s -      1.000M times in 0.591863s 0.580775s
+	   complex_float_sub       8.870M      9.516M i/s -      1.000M times in 0.112740s 0.105091s
+
+	Comparison:
+	                complex_float_add
+	          built-ruby:  12864383.7 i/s
+	        compare-ruby:   9131502.8 i/s - 1.41x  slower
+
+	                complex_float_div
+	          built-ruby:    627878.0 i/s
+	        compare-ruby:    600722.5 i/s - 1.05x  slower
+
+	                complex_float_mul
+	          built-ruby:   2346795.3 i/s
+	        compare-ruby:   2319975.7 i/s - 1.01x  slower
+
+	                complex_float_new
+	          built-ruby:   1488649.1 i/s
+	        compare-ruby:   1473207.5 i/s - 1.01x  slower
+
+	              complex_float_power
+	          built-ruby:   1721837.2 i/s
+	        compare-ruby:   1689580.2 i/s - 1.02x  slower
+
+	                complex_float_sub
+	          built-ruby:   9515562.7 i/s
+	        compare-ruby:   8869966.3 i/s - 1.07x  slower
+	```
+
+	suppress warning: method redefined; discarding old + introduced at r66681
+
+	complex.c: fix indentation
+
+	complex.c: fix against redefining component methods
+
+	This fixes the incompatibility (maybe unintentionally) introduced by
+	removal of `#ifndef PRESERVE_SIGNEDZERO` guards in f_add, f_mul, and
+	f_sub functions in r62701.  [Bug #15491] [ruby-core:90843]
+
+	complex.c: Optimize Complex#* and Complex#**
+
+	Optimize f_mul for the core numeric class components.
+	This change improves the computation time of Complex#* and Complex#**.
+
+	```
+	$ make benchmark ITEM=complex_float_ COMPARE_RUBY=/Users/mrkn/.rbenv/versions/2.6.0/bin/ruby
+	generating known_errors.inc
+	known_errors.inc unchanged
+	/Users/mrkn/src/github.com/ruby/ruby/revision.h unchanged
+	/Users/mrkn/.rbenv/shims/ruby --disable=gems -rrubygems -I/Users/mrkn/src/github.com/ruby/ruby/benchmark/lib /Users/mrkn/src/github.com/ruby/ruby/benchmark/benchmark-driver/exe/benchmark-driver \
+	                    --executables="compare-ruby::/Users/mrkn/.rbenv/versions/2.6.0/bin/ruby -I.ext/common --disable-gem" \
+	                    --executables="built-ruby::./miniruby -I/Users/mrkn/src/github.com/ruby/ruby/lib -I. -I.ext/common  -r/Users/mrkn/src/github.com/ruby/ruby/prelude --disable-gem" \
+	                    $(find /Users/mrkn/src/github.com/ruby/ruby/benchmark -maxdepth 1 -name '*complex_float_*.yml' -o -name '*complex_float_*.rb' | sort)
+	Calculating -------------------------------------
+	                     compare-ruby  built-ruby
+	   complex_float_add       6.558M     13.012M i/s -      1.000M times in 0.152480s 0.076850s
+	   complex_float_div     576.821k    567.969k i/s -      1.000M times in 1.733640s 1.760660s
+	   complex_float_mul       1.690M      2.628M i/s -      1.000M times in 0.591786s 0.380579s
+	   complex_float_new       1.350M      1.268M i/s -      1.000M times in 0.740669s 0.788762s
+	 complex_float_power       1.571M      1.835M i/s -      1.000M times in 0.636507s 0.544909s
+	   complex_float_sub       8.635M      8.779M i/s -      1.000M times in 0.115814s 0.113906s
+
+	Comparison:
+	                complex_float_add
+	          built-ruby:  13012361.7 i/s
+	        compare-ruby:   6558237.1 i/s - 1.98x  slower
+
+	                complex_float_div
+	        compare-ruby:    576821.0 i/s
+	          built-ruby:    567968.8 i/s - 1.02x  slower
+
+	                complex_float_mul
+	          built-ruby:   2627575.4 i/s
+	        compare-ruby:   1689800.0 i/s - 1.55x  slower
+
+	                complex_float_new
+	        compare-ruby:   1350130.8 i/s
+	          built-ruby:   1267809.6 i/s - 1.06x  slower
+
+	              complex_float_power
+	          built-ruby:   1835168.8 i/s
+	        compare-ruby:   1571074.6 i/s - 1.17x  slower
+
+	                complex_float_sub
+	          built-ruby:   8779168.8 i/s
+	        compare-ruby:   8634534.7 i/s - 1.02x  slower
+	```
+
+	complex.c: replace misused UNLIKELY with LIKELY
+
+	test_complex.rb: fix tests for RUBYOPT="-w"
+
+	test_complex.rb: use the same approach to fix failures
+
+	as r66682.
+------------------------------------------------------------------------
+r66853 | naruse | 2019-01-18 07:08:56 +0900 (Fri, 18 Jan 2019) | 13 lines
+
+merge revision(s) 66832: [Backport #15536]
+
+	st.c (rb_hash_bulk_insert_into_st_table): avoid out-of-bounds write
+
+	"hash_bulk_insert" first expands the table, but the target size was
+	wrong: it was calculated by "num_entries + (size to buld insert)", but
+	it was wrong when "num_entries < entries_bound", i.e., it has a deleted
+	entry.  "hash_bulk_insert" adds the given entries from entries_bound,
+	which led to out-of-bounds write access.  [Bug #15536]
+
+	As a simple fix, this commit changes the calculation to "entries_bound +
+	size".  I'm afraid if this might be inefficient, but I think it is safe
+	anyway.
+------------------------------------------------------------------------
+r66852 | naruse | 2019-01-18 07:07:55 +0900 (Fri, 18 Jan 2019) | 7 lines
+
+merge revision(s) 66779: [Backport #15520]
+
+	configure: refuse to build with jemalloc when header is missing
+
+	[ruby-core:90964] [Bug #15520]
+
+	Freom: Misty De Meo <mistydemeo@github.com>
+------------------------------------------------------------------------
+r66851 | naruse | 2019-01-18 07:03:14 +0900 (Fri, 18 Jan 2019) | 3 lines
+
+merge revision(s) 66819: [Backport #15532]
+
+	ast.c: fix missing head part in dynamic literal
+------------------------------------------------------------------------
+r66850 | naruse | 2019-01-18 06:55:11 +0900 (Fri, 18 Jan 2019) | 5 lines
+
+merge revision(s) 66817: [Backport #15513]
+
+	mjit_worker.c: pass -nostdlib when making pch as well
+
+	[Bug #15513]
+------------------------------------------------------------------------
+r66849 | naruse | 2019-01-18 06:54:24 +0900 (Fri, 18 Jan 2019) | 36 lines
+
+merge revision(s) 66811,66812,66816: [Backport #15522]
+
+	mjit_worker.c: untangle CC_LIBS nesting
+
+	This should have no impact.
+	The CC_LIBS was too hard to read for human.
+
+	I don't remember whether the order of -lmsvcrt and -lgcc matters or not,
+	but I kept that for the best safety.
+
+	mjit_worker.c: pass -lgcc to GCC platforms
+
+	using `-nodefaultlibs -nostdlib`.
+
+	I assume libgcc is needed when we use -nostdlib, and it's linked on some
+	platforms but not linked on some platforms (like aarch64, and possibly
+	AIX as well) as said in https://wiki.osdev.org/Libgcc :
+
+	> You can link with libgcc by passing -lgcc when linking your kernel
+	with your compiler. You don't need to do this unless you pass the
+	-nodefaultlibs option (implied by -nostdlib)
+
+	Also note that -nostdlib is not strictly needed (rather implied
+	-nodefaultlibs is problematic for Gentoo like Bug#15513, which will be
+	approached later) but helpful for performance. So I want to keep it for
+	now.
+
+	[Bug #15522]
+
+	I'm not trying to add `-nodefaultlibs -nostdlib` for AIX in this commit
+	because AIX RubyCI is dead right now, but I'll try to add them again
+	once RubyCI is fixed.
+
+	mjit_worker.c: try passing -nostdlib to AIX
+
+	r66812 might have allowed this. Testing.
+------------------------------------------------------------------------
+r66848 | naruse | 2019-01-18 06:46:40 +0900 (Fri, 18 Jan 2019) | 10 lines
+
+merge revision(s) 66838: [Backport #15540]
+
+	dir.c: fix Dir.glob with braces and matching dir
+
+	* dir.c (join_path_from_pattern): add the last slash for directory
+	  matching.
+
+	* test/ruby/test_dir.rb (test_glob_recursive_directory): add a test
+	  for above.
+	  [ruby-core:91110] [Bug #15540]
+------------------------------------------------------------------------
+r66847 | naruse | 2019-01-18 06:39:14 +0900 (Fri, 18 Jan 2019) | 10 lines
+
+merge revision(s) 66756: [Backport #15479]
+
+	Mark array as "going to be modified" in `Array#reject!`
+
+	Before this patch, if `reject!` is called on a shared array it can
+	mutate the shared array rather than a copy.  This patch marks the array
+	as "going to be modified" so that the shared source array isn't
+	mutated.
+
+	[Bug #15479] [ruby-core:90781]
+------------------------------------------------------------------------
+r66846 | svn | 2019-01-18 06:36:20 +0900 (Fri, 18 Jan 2019) | 1 line
+
+* 2019-01-18
+------------------------------------------------------------------------
+r66845 | naruse | 2019-01-18 06:36:17 +0900 (Fri, 18 Jan 2019) | 17 lines
+
+merge revision(s) 66760,66761,66824: [Backport #15460]
+
+	Follow behaviour of IO#ungetbyte
+
+	see r65802 and [Bug #14359]
+
+	* expand tabs.
+
+	setbyte / ungetbyte allow out-of-range integers
+
+	* string.c: String#setbyte to accept arbitrary integers [Bug #15460]
+
+	* io.c: ditto for IO#ungetbyte
+
+	* ext/strringio/stringio.c: ditto for StringIO#ungetbyte
+
+
+------------------------------------------------------------------------
+r66829 | naruse | 2019-01-15 18:06:51 +0900 (Tue, 15 Jan 2019) | 8 lines
+
+merge revision(s) 66767: [Backport #15399]
+
+	insns.def (duparray, duphash): add dtrace hooks
+
+	They are considered Array and Hash creation events, so
+	allow dtrace (and systemtap) to track those creations.
+
+	Co-Authored-By: Eric Wong <e@80x24.org>
+------------------------------------------------------------------------
+r66828 | naruse | 2019-01-15 18:00:14 +0900 (Tue, 15 Jan 2019) | 5 lines
+
+merge revision(s) 66788: [Backport #15498]
+
+	Update refinements docs
+
+	Co-Authored-By: Vladimir Dementyev <dementiev.vm@gmail.com>
+------------------------------------------------------------------------
+r66827 | naruse | 2019-01-15 17:55:56 +0900 (Tue, 15 Jan 2019) | 5 lines
+
+merge revision(s) 66736: [Backport #15511]
+
+	ast.c: argument must be a string
+
+	[ruby-core:90904] [Bug #15511]
+------------------------------------------------------------------------
+r66826 | naruse | 2019-01-15 17:55:11 +0900 (Tue, 15 Jan 2019) | 5 lines
+
+merge revision(s) 66745: [Backport #15512]
+
+	Bump version to date-2.0.0.
+
+	  I forgot to change it when Ruby 2.6.0 was released.
+------------------------------------------------------------------------
+r66825 | naruse | 2019-01-15 17:53:40 +0900 (Tue, 15 Jan 2019) | 5 lines
+
+merge revision(s) 66735: [Backport #15506]
+
+	Fix mday overflow
+
+	[ruby-core:90897] [Bug #15506]
+------------------------------------------------------------------------
+r66815 | naruse | 2019-01-14 15:38:34 +0900 (Mon, 14 Jan 2019) | 13 lines
+
+merge revision(s) 66595: [Backport #15471]
+
+	fix missed script_compiled events. [Bug #15471]
+
+	* ruby.c (process_options): script_compiled events are missed on
+	  command line -e or specified file. this commit fix it.
+	  [Bug #15471]
+
+	  This patch should be backport to Ruby 2.6 branch.
+
+	* vm_core.h (rb_exec_event_hook_script_compiled): introduce utility
+	  function to invoke a script_compiled event.
+
+------------------------------------------------------------------------
+r66814 | svn | 2019-01-14 15:34:03 +0900 (Mon, 14 Jan 2019) | 1 line
+
+* 2019-01-14
+------------------------------------------------------------------------
+r66813 | naruse | 2019-01-14 15:34:02 +0900 (Mon, 14 Jan 2019) | 13 lines
+
+merge revision(s) 66670,66676: [Backport #15476]
+
+	compile.c: support branch coverage for `a&.foo = 1`
+
+	[Bug #15476]
+
+	compile.c (iseq_set_sequence): fix branch coverage table
+
+	Not only TRACE_ELEMENT but also INSN_ELEMENT may have events.
+	The old pc2branchindex was created using only events of TRACE_ELEMENTs.
+	This change uses events of INSN_ELEMENTs too for pc2branchindex table.
+
+	[Bug #15476]
+------------------------------------------------------------------------
+r66800 | naruse | 2019-01-13 06:04:31 +0900 (Sun, 13 Jan 2019) | 3 lines
+
+merge revision(s) 66768: [Backport #15519]
+
+	Get rid of C99 feature for now [ruby-core:90949] [Bug #15519]
+------------------------------------------------------------------------
+r66799 | naruse | 2019-01-13 06:02:26 +0900 (Sun, 13 Jan 2019) | 37 lines
+
+merge revision(s) 66582: [Backport #15468][Backport #15472]
+
+	Fix Net::Protocol::BufferedIO#write when sending large multi-byte string
+
+	This commit should fix Net::Protocol::BufferedIO#write when sending
+	large multi-byte string like following example.
+
+	```
+	$ ruby -rnet/http -rjson -v -e "Net::HTTP.post(URI('http://httpbin.org/post'), { text: '?'*100_000 }.to_json, 'Content-Type' => 'application/json')"
+	ruby 2.6.0p0 (2018-12-25 revision 66547) [x86_64-linux]
+	Traceback (most recent call last):
+	        19: from -e:1:in `<main>'
+	        18: from lib/ruby/2.6.0/net/http.rb:500:in `post'
+	        17: from lib/ruby/2.6.0/net/http.rb:605:in `start'
+	        16: from lib/ruby/2.6.0/net/http.rb:920:in `start'
+	        15: from lib/ruby/2.6.0/net/http.rb:502:in `block in post'
+	        14: from lib/ruby/2.6.0/net/http.rb:1281:in `post'
+	        13: from lib/ruby/2.6.0/net/http.rb:1493:in `send_entity'
+	        12: from lib/ruby/2.6.0/net/http.rb:1479:in `request'
+	        11: from lib/ruby/2.6.0/net/http.rb:1506:in `transport_request'
+	        10: from lib/ruby/2.6.0/net/http.rb:1506:in `catch'
+	         9: from lib/ruby/2.6.0/net/http.rb:1507:in `block in transport_request'
+	         8: from lib/ruby/2.6.0/net/http/generic_request.rb:123:in `exec'
+	         7: from lib/ruby/2.6.0/net/http/generic_request.rb:189:in `send_request_with_body'
+	         6: from lib/ruby/2.6.0/net/protocol.rb:247:in `write'
+	         5: from lib/ruby/2.6.0/net/protocol.rb:265:in `writing'
+	         4: from lib/ruby/2.6.0/net/protocol.rb:248:in `block in write'
+	         3: from lib/ruby/2.6.0/net/protocol.rb:275:in `write0'
+	         2: from lib/ruby/2.6.0/net/protocol.rb:275:in `each_with_index'
+	         1: from lib/ruby/2.6.0/net/protocol.rb:275:in `each'
+	lib/ruby/2.6.0/net/protocol.rb:280:in `block in write0': undefined method `bytesize' for nil:NilClass (NoMethodError)
+	```
+
+	[Fix GH-2058]
+
+	From: Eito Katagiri <eitoball@gmail.com>
+
+------------------------------------------------------------------------
+r66729 | naruse | 2019-01-06 06:33:26 +0900 (Sun, 06 Jan 2019) | 7 lines
+
+merge revision(s) 66699: [Backport #15494]
+
+	Fix Random.urandom in a chroot on OpenBSD
+
+	[ruby-core:90850] [Bug #15494]
+
+	From: jeremyevans0 (Jeremy Evans) <merch-redmine@jeremyevans.net>
+------------------------------------------------------------------------
+r66728 | naruse | 2019-01-06 06:25:49 +0900 (Sun, 06 Jan 2019) | 5 lines
+
+merge revision(s) 66685,66686: [Backport #15502]
+
+	Try to update cert
+
+	Try to update cert (2nd try)
+------------------------------------------------------------------------
+r66563 | naruse | 2018-12-26 02:05:20 +0900 (Wed, 26 Dec 2018) | 3 lines
+
+merge revision(s) 66533:
+
+	Add ruby_2_6 branch to .travis.yml
+------------------------------------------------------------------------
+r66562 | naruse | 2018-12-26 02:03:10 +0900 (Wed, 26 Dec 2018) | 3 lines
+
+merge revision(s) 66553:
+
+	Set typeflag [Bug #15461]
+------------------------------------------------------------------------
+r66549 | naruse | 2018-12-25 17:50:27 +0900 (Tue, 25 Dec 2018) | 7 lines
+
+merge revision(s) 66548:
+
+	fix a test by restoring value checking.
+
+	* test/ruby/test_literal.rb (test_hash_literal_frozen): restore value
+	  checking code which is removed accidentaly at r66466.
+
 ------------------------------------------------------------------------
 r66546 | naruse | 2018-12-25 15:17:00 +0900 (Tue, 25 Dec 2018) | 2 lines
 

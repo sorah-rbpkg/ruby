@@ -2,7 +2,7 @@
 
   dir.c -
 
-  $Author: nobu $
+  $Author: naruse $
   created at: Wed Jan  5 09:51:01 JST 1994
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -2051,6 +2051,10 @@ join_path_from_pattern(struct glob_pattern **beg)
 	switch (p->type) {
 	  case RECURSIVE:
 	    str = "**";
+	    break;
+	  case MATCH_DIR:
+	    /* append last slash */
+	    str = "";
 	    break;
 	  default:
 	    str = p->str;
