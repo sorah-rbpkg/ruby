@@ -1,3 +1,9 @@
+ruby2.3 (2.3.3-1+deb9u5) stretch; urgency=medium
+
+  * imap: update test certificate (Closes: #919999)
+
+ -- Antonio Terceiro <terceiro@debian.org>  Sat, 23 Feb 2019 18:31:45 -0300
+
 ruby2.3 (2.3.3-1+deb9u4) stretch-security; urgency=high
 
   * Non-maintainer upload by the Security Team.
