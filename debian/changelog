@@ -1,3 +1,10 @@
+ruby2.5 (2.5.3-4) unstable; urgency=medium
+
+  * 0012-test-update-test-certificate.patch: update test certificate so
+    SSL-related tests pass (Closes: 919516)
+
+ -- Antonio Terceiro <terceiro@debian.org>  Sat, 23 Feb 2019 17:51:21 -0300
+
 ruby2.5 (2.5.3-3) unstable; urgency=medium
 
   * arm64: also skip TestBugReporter#test_bug_reporter_add, which also fails~
