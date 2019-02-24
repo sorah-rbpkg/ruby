@@ -1,6 +1,9 @@
 ruby2.3 (2.3.3-1+deb9u5) stretch; urgency=medium
 
-  * imap: update test certificate (Closes: #919999)
+  * Backport upstream patches to fix FTBFS due to expired SSL certificate and
+    timezone changes (Closes: #919999)
+    - imap: update test certificate
+    - timezone changes for Japan and Kiritimati
 
  -- Antonio Terceiro <terceiro@debian.org>  Sat, 23 Feb 2019 18:31:45 -0300
 
