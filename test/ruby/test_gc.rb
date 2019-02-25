@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 
-class TestGc < Test::Unit::TestCase
+class TestGc
   class S
     def initialize(a)
       @a = a
