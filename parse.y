@@ -2,7 +2,7 @@
 
   parse.y -
 
-  $Author: naruse $
+  $Author: nagachika $
   created at: Fri May 28 18:02:42 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -1673,7 +1673,7 @@ command		: fcall command_args       %prec tLOWEST
 		    /*%%%*/
 			$$ = $1;
 			$$->nd_args = $2;
-			nd_set_last_loc($1, nd_last_loc($2));
+			nd_set_last_loc($1, @2.last_loc);
 		    /*%
 			$$ = dispatch2(command, $1, $2);
 		    %*/
@@ -1686,7 +1686,7 @@ command		: fcall command_args       %prec tLOWEST
 			fixpos($$, $1);
 		    /*%%%*/
 			$$->nd_loc = @$;
-			nd_set_last_loc($1, nd_last_loc($2));
+			nd_set_last_loc($1, @2.last_loc);
 		    /*%
 		    %*/
 		    }
@@ -6394,7 +6394,14 @@ parser_tokadd_string(struct parser_params *parser,
 	    switch (c) {
 	      case '\n':
 		if (func & STR_FUNC_QWORDS) break;
-		if (func & STR_FUNC_EXPAND) continue;
+		if (func & STR_FUNC_EXPAND) {
+		    if (!(func & STR_FUNC_INDENT) || (heredoc_indent < 0))
+			continue;
+		    if (c == term) {
+			c = '\\';
+			goto terminate;
+		    }
+		}
 		tokadd('\\');
 		break;
 
@@ -6475,6 +6482,7 @@ parser_tokadd_string(struct parser_params *parser,
         }
 	tokadd(c);
     }
+  terminate:
     if (enc) *encp = enc;
     return c;
 }
@@ -7019,7 +7027,13 @@ parser_here_document(struct parser_params *parser, rb_strterm_heredoc_t *here)
 	return 0;
     }
     bol = was_bol();
-    if (bol && whole_match_p(eos, len, indent)) {
+    /* `heredoc_line_indent == -1` means
+     * - "after an interpolation in the same line", or
+     * - "in a continuing line"
+     */
+    if (bol &&
+        (heredoc_line_indent != -1 || (heredoc_line_indent = 0)) &&
+	whole_match_p(eos, len, indent)) {
 	dispatch_heredoc_end();
 	heredoc_restore(&lex_strterm->u.heredoc);
 	lex_strterm = 0;
@@ -7090,6 +7104,7 @@ parser_here_document(struct parser_params *parser, rb_strterm_heredoc_t *here)
 		goto restore;
 	    }
 	    if (c != '\n') {
+		if (c == '\\') heredoc_line_indent = -1;
 	      flush:
 		str = STR_NEW3(tok(), toklen(), enc, func);
 	      flush_str:
@@ -10789,6 +10804,7 @@ static NODE *
 arg_blk_pass(NODE *node1, NODE *node2)
 {
     if (node2) {
+        if (!node1) return node2;
 	node2->nd_head = node1;
 	nd_set_first_lineno(node2, nd_first_lineno(node1));
 	nd_set_first_column(node2, nd_first_column(node1));
