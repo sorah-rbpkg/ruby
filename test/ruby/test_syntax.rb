@@ -179,6 +179,11 @@ class TestSyntax < Test::Unit::TestCase
       bug13756 = '[ruby-core:82113] [Bug #13756]'
       assert_valid_syntax("defined? foo(**{})", bug13756)
     end;
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      bug15271 = '[ruby-core:89648] [Bug #15271]'
+      assert_valid_syntax("a **{}", bug15271)
+    end;
   end
 
   def test_keyword_self_reference
@@ -671,6 +676,24 @@ e"
     result = '  one#{"  two  "}'"\n"
     expected = 'one#{"  two  "}'"\n"
     assert_dedented_heredoc(expected, result)
+  end
+
+  def test_dedented_heredoc_continued_line
+    result = "  1\\\n" "  2\n"
+    expected = "1\\\n" "2\n"
+    assert_dedented_heredoc(expected, result)
+    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /can't find string "TEXT"/)
+    begin;
+      <<-TEXT
+      \
+      TEXT
+    end;
+    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /can't find string "TEXT"/)
+    begin;
+      <<~TEXT
+      \
+      TEXT
+    end;
   end
 
   def test_lineno_after_heredoc

@@ -2,7 +2,7 @@
 
   vm_core.h -
 
-  $Author: naruse $
+  $Author: nagachika $
   created at: 04/01/01 19:41:38 JST
 
   Copyright (C) 2004-2007 Koichi Sasada
@@ -507,6 +507,7 @@ typedef struct rb_vm_struct {
     struct rb_thread_struct *main_thread;
     struct rb_thread_struct *running_thread;
 
+    rb_serial_t fork_gen;
     struct list_head waiting_fds; /* <=> struct waiting_fd */
     struct list_head living_threads;
     size_t living_thread_num;
