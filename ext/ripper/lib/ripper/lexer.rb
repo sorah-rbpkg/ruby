@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 #
-# $Id: lexer.rb 61205 2017-12-13 10:26:09Z nobu $
+# $Id: lexer.rb 67242 2019-03-13 00:32:12Z nagachika $
 #
 # Copyright (c) 2004,2005 Minero Aoki
 #
@@ -82,6 +82,12 @@ class Ripper
     end
 
     private
+
+    unless SCANNER_EVENT_TABLE.key?(:ignored_sp)
+      SCANNER_EVENT_TABLE[:ignored_sp] = 1
+      SCANNER_EVENTS << :ignored_sp
+      EVENTS << :ignored_sp
+    end
 
     def on_heredoc_dedent(v, w)
       ignored_sp = []

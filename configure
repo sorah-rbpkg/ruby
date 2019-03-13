@@ -10652,6 +10652,8 @@ if test "x$ac_cv_header_jemalloc_jemalloc_h" = xyes; then :
     $as_echo "#define RUBY_ALTERNATIVE_MALLOC_HEADER <jemalloc/jemalloc.h>" >>confdefs.h
 
 
+else
+  test x$with_jemalloc = xyes && with_jemalloc=no
 fi
 
 
