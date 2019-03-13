@@ -1,7 +1,652 @@
 ------------------------------------------------------------------------
-r65156 | nagachika | 2018-10-18 19:45:38 +0900 (Thu, 18 Oct 2018) | 1 line
+r67245 | nagachika | 2019-03-13 18:38:32 +0900 (Wed, 13 Mar 2019) | 1 line
 
-add tag v2_5_3
+add tag v2_5_4
+------------------------------------------------------------------------
+r67242 | nagachika | 2019-03-13 09:32:12 +0900 (Wed, 13 Mar 2019) | 7 lines
+
+merge revision(s) 67200: [Backport #15648]
+
+	Add ignored_sp event
+
+	* ext/ripper/lib/ripper/lexer.rb (Ripper::Lexer): add ignored_sp
+	  event which will be fired from Ripper::Lexer#on_heredoc_dedent
+	  method.  [ruby-core:91727] [Bug #15648]
+------------------------------------------------------------------------
+r67241 | nagachika | 2019-03-13 09:21:46 +0900 (Wed, 13 Mar 2019) | 9 lines
+
+merge revision(s) 66909: [Backport #15555]
+
+	tmpdir.rb: permission of user given directory
+
+	* lib/tmpdir.rb (Dir.mktmpdir): check if the permission of the
+	  parent directory only when using the default temporary
+	  directory, and no check against user given directory.  the
+	  security is the user's responsibility in that case.
+	  [ruby-core:91216] [Bug #15555]
+------------------------------------------------------------------------
+r67240 | nagachika | 2019-03-13 09:06:19 +0900 (Wed, 13 Mar 2019) | 7 lines
+
+merge revision(s) 66779: [Backport #15520]
+
+	configure: refuse to build with jemalloc when header is missing
+
+	[ruby-core:90964] [Bug #15520]
+
+	Freom: Misty De Meo <mistydemeo@github.com>
+------------------------------------------------------------------------
+r67239 | nagachika | 2019-03-13 08:36:51 +0900 (Wed, 13 Mar 2019) | 7 lines
+
+merge revision(s) 66618: [Backport #15660]
+
+	test_io.rb: increase timeout for RubyCI
+
+	to stabilize AIX powerpc CI
+
+	https://rubyci.org/logs/rubyci.s3.amazonaws.com/aix71_ppc/ruby-trunk/log/20181227T113302Z.fail.html.gz
+------------------------------------------------------------------------
+r67238 | nagachika | 2019-03-13 08:35:29 +0900 (Wed, 13 Mar 2019) | 8 lines
+
+merge revision(s) 66436: [Backport #15427]
+
+	should use defined_class.
+
+	* vm_insnhelper.c (vm_call_method_each_type): we should use me->defined_class
+	  instead of me->owner because me->owner doesn't has correct ancestors list.
+	  [Bug #15427]
+
+------------------------------------------------------------------------
+r67237 | nagachika | 2019-03-13 08:23:17 +0900 (Wed, 13 Mar 2019) | 26 lines
+
+merge revision(s) 64234,64252: [Backport #15219]
+
+	net/http, net/ftp: fix session resumption with TLS 1.3
+
+	When TLS 1.3 is in use, the session ticket may not have been sent yet
+	even though a handshake has finished. Also, the ticket could change if
+	multiple session ticket messages are sent by the server. Use
+	SSLContext#session_new_cb instead of calling SSLSocket#session
+	immediately after a handshake. This way also works with earlier protocol
+	versions.
+
+	net/http, net/ftp: skip SSL/TLS session resumption tests
+
+	Due to a bug in OpenSSL 1.1.0h[1] (it's only in this specific version;
+	it was introduced just before the release and is already fixed in their
+	stable branch), the callback set by SSLContext#session_new_cb= does not
+	get called for clients, making net/http and net/ftp not attempt session
+	resumption.
+
+	Let's disable the affected test cases for now. Another option would be
+	to fallback to using SSLSocket#session as we did before r64234. But
+	since only a single version is affected and hopefully a new stable
+	version containing the fix will be released in near future, I chose not
+	to add such workaround code to lib/.
+
+	[1] https://github.com/openssl/openssl/pull/5967
+------------------------------------------------------------------------
+r67236 | nagachika | 2019-03-13 07:01:32 +0900 (Wed, 13 Mar 2019) | 13 lines
+
+merge revision(s) 66832: [Backport #15536]
+
+	st.c (rb_hash_bulk_insert_into_st_table): avoid out-of-bounds write
+
+	"hash_bulk_insert" first expands the table, but the target size was
+	wrong: it was calculated by "num_entries + (size to buld insert)", but
+	it was wrong when "num_entries < entries_bound", i.e., it has a deleted
+	entry.  "hash_bulk_insert" adds the given entries from entries_bound,
+	which led to out-of-bounds write access.  [Bug #15536]
+
+	As a simple fix, this commit changes the calculation to "entries_bound +
+	size".  I'm afraid if this might be inefficient, but I think it is safe
+	anyway.
+------------------------------------------------------------------------
+r67235 | nagachika | 2019-03-13 06:44:56 +0900 (Wed, 13 Mar 2019) | 1 line
+
+Merge RubyGems 2.7.6.2 patch [Bug #15643]
+------------------------------------------------------------------------
+r67234 | nagachika | 2019-03-13 06:32:03 +0900 (Wed, 13 Mar 2019) | 1 line
+
+Merge RubyGems 2.7.6.1 patch [Bug #15637]
+------------------------------------------------------------------------
+r67233 | nagachika | 2019-03-13 06:05:56 +0900 (Wed, 13 Mar 2019) | 6 lines
+
+merge revision(s) 67201: [Backport #15650]
+
+	eval.c: clear internal errinfo
+
+	* eval.c (ruby_cleanup): clear internal error info when invoking
+	  end procs.  [ruby-core:91731] [Bug #15650]
+------------------------------------------------------------------------
+r67228 | nagachika | 2019-03-12 21:59:25 +0900 (Tue, 12 Mar 2019) | 8 lines
+
+merge revision(s) 64636,64637: [Backport #15659]
+
+	AIX doesn't set OptionLength for boolean options
+
+	https://rubyci.org/logs/rubyci.s3.amazonaws.com/aix71_ppc/ruby-trunk/log/20180904T103302Z.fail.html.gz
+	https://www.ibm.com/support/knowledgecenter/ja/ssw_aix_72/com.ibm.aix.commtrf2/getsockopt.htm
+
+	fix typo
+------------------------------------------------------------------------
+r67219 | nagachika | 2019-03-11 21:51:59 +0900 (Mon, 11 Mar 2019) | 7 lines
+
+merge revision(s) 67203: [Backport #15651]
+
+	numeric.c: fix infinite loop
+
+	* numeric.c (int_pow): fix infinite loop in the case of y equal 1
+	  and power of x does not overflow.
+	  [ruby-core:91734] [Bug #15651]
+------------------------------------------------------------------------
+r67192 | nagachika | 2019-03-08 00:31:42 +0900 (Fri, 08 Mar 2019) | 7 lines
+
+merge revision(s) 67167: [Backport #15635]
+
+	string.c: respect the actual encoding
+
+	* string.c (rb_enc_str_coderange): respect the actual encoding of
+	  if a BOM presents, and scan for the actual code range.
+	  [ruby-core:91662] [Bug #15635]
+------------------------------------------------------------------------
+r67191 | nagachika | 2019-03-08 00:19:34 +0900 (Fri, 08 Mar 2019) | 6 lines
+
+merge revision(s) 67188: [Backport #15642]
+
+	io.c: chomp CR at the end of read buffer
+
+	* io.c (rb_io_getline_fast): chomp CR followed by LF but separated
+	  by the read buffer boundary.  [ruby-core:91707] [Bug #15642]
+------------------------------------------------------------------------
+r67186 | nagachika | 2019-03-06 20:32:02 +0900 (Wed, 06 Mar 2019) | 5 lines
+
+merge revision(s) 67183: [Backport #15607]
+
+	Fix PTY.open on OpenBSD [Bug #15607]
+
+	From: Jeremy Evans <code@jeremyevans.net>
+------------------------------------------------------------------------
+r67050 | nagachika | 2019-02-11 20:04:41 +0900 (Mon, 11 Feb 2019) | 12 lines
+
+merge revision(s) 62872,62873: [Backport #14621]
+
+	parse.y: unindent continued line
+
+	* parse.y (tokadd_string): stop at continued line in dedented here
+	  documents, to dedent for each lines before removing escaped
+	  newlines.  [ruby-core:86236] [Bug #14621]
+
+	parse.y: terminator at continued line
+
+	* parse.y (here_document): a continuing line is not the
+	  terminator.  [ruby-core:86283] [Bug #14621]
+------------------------------------------------------------------------
+r67013 | nagachika | 2019-02-05 21:15:47 +0900 (Tue, 05 Feb 2019) | 13 lines
+
+merge revision(s) 66867: [Backport #15500]
+
+	Revert r58345 and r58371.
+
+	  These changes break the behavior of default gems. Bug #13428 says
+	  r58345 is reasonable because gemspec file is installed by `to_ruby_for_cache`
+	  method. But I revert `to_ruby_for_cache` in rbinstall.rb at r58403.
+	  There is no reason that we apply r58345 now.
+
+	  But I'm not sure about gemspec of default gems affects standalone gems.
+	  I'm going to investigate it on rubygems/rubygems.
+
+	  [Bug #15500][ruby-core:90867]
+------------------------------------------------------------------------
+r66912 | nagachika | 2019-01-23 23:14:25 +0900 (Wed, 23 Jan 2019) | 70 lines
+
+merge revision(s) 62934,63210,63215,63309: [Backport #14634]
+
+	thread_sync.c: avoid reaching across stacks of dead threads
+
+	rb_ensure is insufficient cleanup for fork and we must
+	reinitialize all waitqueues in the child process.
+
+	Unfortunately this increases the footprint of ConditionVariable,
+	Queue and SizedQueue by 8 bytes on 32-bit (16 bytes on 64-bit).
+
+	[ruby-core:86316] [Bug #14634]
+
+	variable.c: fix thread + fork errors in autoload
+
+	This is fairly non-intrusive bugfix to prevent children
+	from trying to reach into thread stacks of the parent.
+	I will probably reuse this idea and redo r62934, too
+	(same bug).
+
+	* vm_core.h (typedef struct rb_vm_struct): add fork_gen counter
+	* thread.c (rb_thread_atfork_internal): increment fork_gen
+	* variable.c (struct autoload_data_i): store fork_gen
+	* variable.c (check_autoload_data): remove (replaced with get_...)
+	* variable.c (get_autoload_data): check fork_gen when retrieving
+	* variable.c (check_autoload_required): use get_autoload_data
+	* variable.c (rb_autoloading_value): ditto
+	* variable.c (rb_autoload_p): ditto
+	* variable.c (current_autoload_data): ditto
+	* variable.c (autoload_reset): reset fork_gen, adjust indent
+	* variable.c (rb_autoload_load): set fork_gen when setting state
+	* test/ruby/test_autoload.rb (test_autoload_fork): new test
+	  [ruby-core:86410] [Bug #14634]
+
+	thread_sync: redo r62934 to use fork_gen
+
+	Instead of maintaining linked-lists to store all
+	rb_queue/rb_szqueue/rb_condvar structs; store only a fork_gen
+	serial number to simplify management of these items.
+
+	This reduces initialization costs and avoids the up-front cost
+	of resetting all Queue/SizedQueue/ConditionVariable objects at
+	fork while saving 8 bytes per-structure on 64-bit.  There are no
+	savings on 32-bit.
+
+	* thread.c (rb_thread_atfork_internal): remove rb_thread_sync_reset_all call
+	* thread_sync.c (rb_thread_sync_reset_all): remove
+	* thread_sync.c (queue_live): remove
+	* thread_sync.c (queue_free): remove
+	* thread_sync.c (struct rb_queue): s/live/fork_gen/
+	* thread_sync.c (queue_data_type): use default free
+	* thread_sync.c (queue_alloc): remove list_add
+	* thread_sync.c (queue_fork_check): new function
+	* thread_sync.c (queue_ptr): call queue_fork_check
+	* thread_sync.c (szqueue_free): remove
+	* thread_sync.c (szqueue_data_type): use default free
+	* thread_sync.c (szqueue_alloc): remove list_add
+	* thread_sync.c (szqueue_ptr):  check fork_gen via queue_fork_check
+	* thread_sync.c (struct rb_condvar): s/live/fork_gen/
+	* thread_sync.c (condvar_free): remove
+	* thread_sync.c (cv_data_type): use default free
+	* thread_sync.c (condvar_ptr): check fork_gen
+	* thread_sync.c (condvar_alloc): remove list_add
+	  [ruby-core:86316] [Bug #14634]
+
+	thread_sync.c (condvar_ptr): reset fork_gen after forking
+
+	Otherwise the condition variable waiter list will always
+	be empty, which is wrong :x
+
+	[Bug #14725] [Bug #14634]
+------------------------------------------------------------------------
+r66881 | nagachika | 2019-01-20 19:48:26 +0900 (Sun, 20 Jan 2019) | 7 lines
+
+merge revision(s) 64879: [Backport #15162]
+
+	transcode.c: add GC guard on raise
+
+	* transcode.c (econv_s_search_convpath): add GC guard to fix SEGV
+	  on raise.
+	  [Bug #15162] [ruby-core:89172]
+------------------------------------------------------------------------
+r66880 | nagachika | 2019-01-20 18:17:59 +0900 (Sun, 20 Jan 2019) | 7 lines
+
+merge revision(s) 63334: [Backport #14729]
+
+	object.c: raise on long invalid float string
+
+	* object.c (rb_cstr_to_dbl_raise): check long invalid float
+	  string more precisely when truncating insignificant part.
+	  [ruby-core:86800] [Bug #14729]
+------------------------------------------------------------------------
+r66879 | nagachika | 2019-01-20 14:13:27 +0900 (Sun, 20 Jan 2019) | 7 lines
+
+merge revision(s) 63322: [Backport #14731]
+
+	object.c: fix exponent with underscore
+
+	* object.c (rb_cstr_to_dbl_raise): do not ignore exponent part
+	  when the input string longer than internal buffer contains
+	  underscore(s).  [ruby-core:86836] [Bug #14731]
+------------------------------------------------------------------------
+r66878 | nagachika | 2019-01-20 13:51:41 +0900 (Sun, 20 Jan 2019) | 9 lines
+
+merge revision(s) 63720: [Backport #14864]
+
+	dir.c: define O_CLOEXEC for older systems
+
+	SuSE 10 has openat(), but not O_CLOEXEC
+
+	Reported-by: wangpeiwen
+
+	[ruby-core:87591] [Bug #14864]
+------------------------------------------------------------------------
+r66877 | nagachika | 2019-01-20 13:49:40 +0900 (Sun, 20 Jan 2019) | 6 lines
+
+merge revision(s) 66401: [Backport #15412]
+
+	Move autoload to toplevel
+
+	So that classes which uses Net::HTTP with https can use OpenSSL
+	namespace for example exception classes like OpenSSL::SSL::SSLError.
+------------------------------------------------------------------------
+r66876 | nagachika | 2019-01-20 13:47:51 +0900 (Sun, 20 Jan 2019) | 7 lines
+
+merge revision(s) 66242: [Backport #15387]
+
+	io.c (io_write_nonblock): add RB_GC_GUARD, io_fflush may switch threads
+
+	Since io_fflush may block on mutex or rb_io_wait_readable and
+	switch threads, we need to ensure the `str' VALUE returned by
+	`rb_obj_as_string` is visible to GC.
+------------------------------------------------------------------------
+r66839 | nagachika | 2019-01-17 00:32:54 +0900 (Thu, 17 Jan 2019) | 6 lines
+
+merge revision(s) 65974: [Backport #15340]
+
+	Normalize month-mday before finding epoch
+
+	Especially over the year 2038, 30 Feb and so on may cause odd behavior
+	on validating found epoch with given year-month-day [Bug #15340]
+------------------------------------------------------------------------
+r66837 | nagachika | 2019-01-16 21:04:57 +0900 (Wed, 16 Jan 2019) | 15 lines
+
+merge revision(s) 64476: [Backport #15084]
+
+	thread_sync.c (rb_mutex_sleep): disable interrupt checking in ensure
+
+	This is needed to reliably fix ConditionVariable#wait on Thread#kill
+	[Bug #14999] because there is still a chance an interrupt could fire
+	and prevent lock acquisition after an ensure statement.
+
+	Arguably, rb_mutex_lock itself should be uninterruptible, but that
+	already prevents bootstraptest/test_thread.rb from completing and
+	probably breaks existing use cases.
+
+	For reference, POSIX expressly forbids EINTR from pthread_mutex_lock.
+
+	[ruby-core:88556] [Bug #14999]
+------------------------------------------------------------------------
+r66818 | nagachika | 2019-01-14 18:23:45 +0900 (Mon, 14 Jan 2019) | 17 lines
+
+merge revision(s) 64589,64593: [Backport #15041]
+
+	cont.c: set th->root_fiber to current fiber at fork
+
+	Otherwise, th->root_fiber can point to an invalid Fiber,
+	because Fibers do not live across fork.  So consider
+	whatever Fiber is running the root fiber.
+
+	[ruby-core:88723] [Bug #15041]
+
+	cont.c (rb_fiber_atfork): th->root_fiber may not exist
+
+	Otherwise, bootstraptest/test_fork.rb fails with -DVM_CHECK_MODE=2
+
+	[Bug #15041]
+
+	Fixes: r64589 "cont.c: set th->root_fiber to current fiber at fork"
+------------------------------------------------------------------------
+r66785 | svn | 2019-01-11 00:02:22 +0900 (Fri, 11 Jan 2019) | 1 line
+
+* 2019-01-11
+------------------------------------------------------------------------
+r66784 | nagachika | 2019-01-11 00:02:21 +0900 (Fri, 11 Jan 2019) | 10 lines
+
+merge revision(s) 66756: [Backport #15479]
+
+	Mark array as "going to be modified" in `Array#reject!`
+
+	Before this patch, if `reject!` is called on a shared array it can
+	mutate the shared array rather than a copy.  This patch marks the array
+	as "going to be modified" so that the shared source array isn't
+	mutated.
+
+	[Bug #15479] [ruby-core:90781]
+------------------------------------------------------------------------
+r66780 | nagachika | 2019-01-10 23:46:41 +0900 (Thu, 10 Jan 2019) | 11 lines
+
+merge revision(s) 63823,63839: [Backport #14890]
+
+	time.c: [DOC] Time#localtime
+
+	* time.c: state that Time#localtime does nothing when nothing
+	  changes.  [ruby-core:87675] [Bug #14880]
+
+	skip test_localtime_zone if force_tz_test is false
+
+	For example Solaris
+	https://rubyci.org/logs/rubyci.s3.amazonaws.com/unstable10x/ruby-trunk/log/20180703T091803Z.fail.html.gz
+------------------------------------------------------------------------
+r66777 | nagachika | 2019-01-10 23:18:09 +0900 (Thu, 10 Jan 2019) | 6 lines
+
+merge revision(s) 66111: [Backport #14561]
+
+	Avoid GCing dead stack after switching away from a fiber
+
+	Fixes <https://bugs.ruby-lang.org/issues/14561> and discussed
+	<https://bugs.ruby-lang.org/issues/15362>.
+------------------------------------------------------------------------
+r66748 | nagachika | 2019-01-07 21:05:16 +0900 (Mon, 07 Jan 2019) | 18 lines
+
+merge revision(s) 62671: [Backport #14571]
+
+	resolv.rb: close socket
+
+	* lib/resolv.rb (UnconnectedUDP#lazy_initialize): store new
+	  sockets before binding, so the sockets get closed when the
+	  requester is closing.
+
+	* lib/resolv.rb (ConnectedUDP#lazy_initialize): ditto.
+
+	* lib/resolv.rb (UnconnectedUDP#close): synchronize to get rid of
+	  race condition.
+
+	* lib/resolv.rb (ConnectedUDP#close): ditto.
+
+	[ruby-core:85901] [Bug #14571]
+
+	From: quixoten (Devin Christensen) <quixoten@gmail.com>
+------------------------------------------------------------------------
+r66689 | nagachika | 2019-01-02 15:44:14 +0900 (Wed, 02 Jan 2019) | 5 lines
+
+merge revision(s) 66685,66686: [Backport #15495]
+
+	Try to update cert
+
+	Try to update cert (2nd try)
+------------------------------------------------------------------------
+r66309 | nagachika | 2018-12-10 21:31:18 +0900 (Mon, 10 Dec 2018) | 7 lines
+
+merge revision(s) 62621: [Backport #15396]
+
+	compile.c: do not truncate VALUE to long
+
+	* compile.c (ibf_dump_object_regexp): do not truncate VALUE to
+	  long.  it makes invalid VALUE on IL32LLP64 platforms where long
+	  is shorter than VALUE.
+------------------------------------------------------------------------
+r66298 | nagachika | 2018-12-09 15:46:44 +0900 (Sun, 09 Dec 2018) | 5 lines
+
+conceptually partial backport from r63103, r65567.
+All ISeq#to_binary should rescue to skip when running with coverage.
+current trunk (2.6-) has assert_iseq_to_binary.
+
+
+------------------------------------------------------------------------
+r66297 | nagachika | 2018-12-09 14:38:38 +0900 (Sun, 09 Dec 2018) | 5 lines
+
+merge revision(s) 61535:
+
+	iseq.c: fix build error when VM_CHECK_MODE is enabled
+
+	Follow up of r61534.  Sorry.
+------------------------------------------------------------------------
+r66285 | nagachika | 2018-12-08 17:00:22 +0900 (Sat, 08 Dec 2018) | 3 lines
+
+merge revision(s) 65667: [Backport #15284]
+
+	Fix for bison 3.2 [Bug #15284]
+------------------------------------------------------------------------
+r66225 | nagachika | 2018-12-05 23:35:07 +0900 (Wed, 05 Dec 2018) | 26 lines
+
+merge revision(s) 64736,65567: [Backport #15270]
+
+	iseq.c: prefix rb_ to non-static iseq functions
+
+	I assume we always prefix rb_ to non-static functions to avoid conflict.
+	These functions are not exported and safe to be renamed.
+
+	iseq.h: ditto
+	compile.c: ditto
+
+	Fix TracePoint for nested iseq loaded from binary [Bug#14702]
+
+	When loading iseq from binary while a TracePoint is on, we need to
+	recompile instructions to their "trace_" variant. Before this commit
+	we only recompiled instructions in the top level iseq, which meant
+	that TracePoint was malfunctioning for code inside module/class/method
+	definitions.
+
+	* compile.c: Move rb_iseq_init_trace to rb_ibf_load_iseq_complete.
+	  It is called on all iseqs during loading.
+
+	* test_iseq.rb: Test that tracepoints fire within children iseq when
+	  using load_from_binary.
+
+	This patch is from: Alan Wu <XrXr@users.noreply.github.com>
+
+------------------------------------------------------------------------
+r66131 | nagachika | 2018-12-02 16:37:49 +0900 (Sun, 02 Dec 2018) | 6 lines
+
+merge revision(s) 62776: [Backport #15365]
+
+	test_iseq.rb: skip iseq with coverage
+
+	* test/ruby/test_iseq.rb (test_to_binary_with_objects): #to_binary
+	  does not support iseq compiled with coverage, just skip.
+------------------------------------------------------------------------
+r66130 | nagachika | 2018-12-02 16:13:22 +0900 (Sun, 02 Dec 2018) | 7 lines
+
+merge revision(s) 63040: [Backport #14553]
+
+	compile.c: do not dump unused callinfos
+
+	* compile.c (compile_if): rewind callinfo indexes used in
+	  unreachable paths, to get rid of dumping unused callinfos.
+	  [ruby-core:86399] [Bug #14553]
+------------------------------------------------------------------------
+r66112 | nagachika | 2018-12-01 13:19:25 +0900 (Sat, 01 Dec 2018) | 3 lines
+
+merge revision(s) 65365:
+
+	Update for tzdata-2018f
+------------------------------------------------------------------------
+r66105 | nagachika | 2018-11-30 20:59:43 +0900 (Fri, 30 Nov 2018) | 3 lines
+
+merge revision(s) 65956:
+
+	fix r65954; Keep tainty
+------------------------------------------------------------------------
+r66074 | nagachika | 2018-11-28 22:55:17 +0900 (Wed, 28 Nov 2018) | 25 lines
+
+merge revision(s) 64799,64800,64801: [Backport #15105]
+
+	fix typo.
+
+	* vm_exec.h (DEBUG_END_INSN()): use `ec` instead of `th`.
+	  This macro is used when `VMDEBUG > 0`.
+
+
+	escape all env properly.
+
+	* vm_backtrace.c (rb_debug_inspector_open): escape all env using
+	  `rb_vm_stack_to_heap()` before making bindings.
+	  [Bug #15105]
+
+	  There is a complicated story of this issue:
+	  Without this patch, IFUNC frame does not escaped. A IFUNC frame
+	  points to CFUNC ep as previous ep. However, CFUNC ep can be escaped
+	  because of making bindings of Ruby level frames.
+	  IFUNC's ep can points to invalidated ep and `rb_iter_break()` will
+	  fail. This is why `any?` fails.
+
+	* test/-ext-/debug/test_debug.rb: add a test.
+
+
+	* remove trailing spaces.
+------------------------------------------------------------------------
+r66073 | nagachika | 2018-11-28 22:36:08 +0900 (Wed, 28 Nov 2018) | 17 lines
+
+merge revision(s) 65954,65955,65958: [Backport #15337]
+
+	Don't use single byte optimization on grapheme clusters
+
+	Unicode Text Segmentation considers CRLF as a character. [Bug #15337]
+
+	add tests using Unicode test data for grapheme clusters
+
+	Add file test/ruby/enc/test_grapheme_breaks.rb to test String#each_grapheme_cluster
+	and \X extended grapheme cluster matcher in regular expressions against test data
+	provided by Unicode (ucd/auxiliary/GraphemeBreakTest.txt).
+
+	Some lines in the data file are ignored, as follows:
+	- Lines with a surrogate, because Ruby doesn't handle these
+	- The case of "\r\n", because there is a bug (#15337) in the implementation
+
+	remove guard against bug #15337, because it is fixed
+------------------------------------------------------------------------
+r65728 | nagachika | 2018-11-15 00:21:50 +0900 (Thu, 15 Nov 2018) | 8 lines
+
+merge revision(s) 62772: [Backport #14738]
+
+	compile.c: fix load_from_binary
+
+	* compile.c (ibf_load_iseq_each): realpath may be nil.  follow up
+	  r59709.  [fix https://github.com/Shopify/bootsnap/issues/132]
+
+	From: nobu <nobu@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
+------------------------------------------------------------------------
+r65582 | nagachika | 2018-11-07 00:52:16 +0900 (Wed, 07 Nov 2018) | 3 lines
+
+merge revision(s) 65554: [Backport #15282]
+
+	Don't set throw data as cause [Bug #15282]
+------------------------------------------------------------------------
+r65581 | nagachika | 2018-11-07 00:31:15 +0900 (Wed, 07 Nov 2018) | 7 lines
+
+merge revision(s) 65460: [Backport #15271]
+
+	parse.y: last location from bison
+
+	* parse.y (command): set the last location from the location
+	  managed by bison, so that other nodes are not needed.
+	  [ruby-core:89648] [Bug #15271]
+------------------------------------------------------------------------
+r65580 | nagachika | 2018-11-07 00:13:01 +0900 (Wed, 07 Nov 2018) | 7 lines
+
+merge revision(s) 65350: [Backport #15245]
+
+	compile.c: fix peephole optimization
+
+	* compile.c (iseq_peephole_optimize): should `pop` before jump
+	  instruction which succeeds to `newarray` of a literal object,
+	  not after.  [ruby-core:89536] [Bug #15245]
+------------------------------------------------------------------------
+r65579 | nagachika | 2018-11-06 23:49:59 +0900 (Tue, 06 Nov 2018) | 7 lines
+
+merge revision(s) 64786: [Backport #15087]
+
+	parse.y: fix block passing with empty kwargs
+
+	* parse.y (arg_blk_pass): preceeding arguments node may be NULL when
+	  an empty keyword argument hash splat is optimized away.
+	  [ruby-core:88890] [Bug #15087]
+------------------------------------------------------------------------
+r65274 | nagachika | 2018-10-21 20:19:59 +0900 (Sun, 21 Oct 2018) | 7 lines
+
+merge revision(s) 64515:
+
+	remove `const` warning.
+
+	* compile.c (iseq_ibf_load): remove `const` to pass iseq as no `const`
+	  parameter.
+
+------------------------------------------------------------------------
+r65273 | nagachika | 2018-10-21 20:16:49 +0900 (Sun, 21 Oct 2018) | 1 line
+
+bump up teeny version to 2.5.4.
 ------------------------------------------------------------------------
 r65155 | nagachika | 2018-10-18 19:45:08 +0900 (Thu, 18 Oct 2018) | 1 line
 

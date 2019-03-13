@@ -2,7 +2,7 @@
 
   eval.c -
 
-  $Author: ko1 $
+  $Author: nagachika $
   created at: Thu Jun 10 14:22:17 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -175,6 +175,7 @@ ruby_cleanup(volatile int ex)
 
       step_0: step++;
 	errs[1] = th->ec->errinfo;
+        if (THROW_DATA_P(th->ec->errinfo)) th->ec->errinfo = Qnil;
 	th->ec->safe_level = 0;
 	ruby_init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
 
@@ -516,7 +517,7 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
 		    mesg = rb_obj_dup(mesg);
 		}
 	    }
-	    if (cause != Qundef) {
+	    if (cause != Qundef && !THROW_DATA_P(cause)) {
 		exc_setup_cause(mesg, cause);
 	    }
 	    if (NIL_P(bt)) {

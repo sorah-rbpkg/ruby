@@ -2651,7 +2651,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		}
 		else if (!iseq_pop_newarray(iseq, pobj)) {
 		    pobj = new_insn_core(iseq, pobj->insn_info.line_no, BIN(pop), 0, NULL);
-		    ELEM_INSERT_NEXT(&iobj->link, &pobj->link);
+                    ELEM_INSERT_PREV(&iobj->link, &pobj->link);
 		}
 		if (cond) {
 		    if (prev_dup) {
@@ -4580,6 +4580,7 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
     DECL_ANCHOR(else_seq);
     LABEL *then_label, *else_label, *end_label;
     VALUE branches = 0;
+    int ci_size, ci_kw_size;
 
     INIT_ANCHOR(cond_seq);
     INIT_ANCHOR(then_seq);
@@ -4590,8 +4591,22 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
 
     compile_branch_condition(iseq, cond_seq, node->nd_cond,
 			     then_label, else_label);
+
+    ci_size = iseq->body->ci_size;
+    ci_kw_size = iseq->body->ci_kw_size;
     CHECK(COMPILE_(then_seq, "then", node_body, popped));
+    if (!then_label->refcnt) {
+        iseq->body->ci_size = ci_size;
+        iseq->body->ci_kw_size = ci_kw_size;
+    }
+
+    ci_size = iseq->body->ci_size;
+    ci_kw_size = iseq->body->ci_kw_size;
     CHECK(COMPILE_(else_seq, "else", node_else, popped));
+    if (!else_label->refcnt) {
+        iseq->body->ci_size = ci_size;
+        iseq->body->ci_kw_size = ci_kw_size;
+    }
 
     ADD_SEQ(ret, cond_seq);
 
@@ -8635,7 +8650,15 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
 		rb_raise(rb_eRuntimeError, "path object size mismatch");
 	    }
 	    path = rb_fstring(RARRAY_AREF(pathobj, 0));
-	    realpath = rb_fstring(RARRAY_AREF(pathobj, 1));
+	    realpath = RARRAY_AREF(pathobj, 1);
+	    if (!NIL_P(realpath)) {
+		if (!RB_TYPE_P(realpath, T_STRING)) {
+		    rb_raise(rb_eArgError, "unexpected realpath %"PRIxVALUE
+			     "(%x), path=%+"PRIsVALUE,
+			     realpath, TYPE(realpath), path);
+		}
+		realpath = rb_fstring(realpath);
+	    }
 	}
 	else {
 	    rb_raise(rb_eRuntimeError, "unexpected path object");
@@ -8899,9 +8922,9 @@ static void
 ibf_dump_object_regexp(struct ibf_dump *dump, VALUE obj)
 {
     struct ibf_object_regexp regexp;
-    regexp.srcstr = RREGEXP_SRC(obj);
+    VALUE srcstr = RREGEXP_SRC(obj);
     regexp.option = (char)rb_reg_options(obj);
-    regexp.srcstr = (long)ibf_dump_object(dump, regexp.srcstr);
+    regexp.srcstr = (long)ibf_dump_object(dump, srcstr);
     IBF_WV(regexp);
 }
 
@@ -9328,7 +9351,7 @@ ibf_dump_setup(struct ibf_dump *dump, VALUE dumper_obj)
 }
 
 VALUE
-iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
+rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
 {
     struct ibf_dump *dump;
     struct ibf_header header = {{0}};
@@ -9387,7 +9410,7 @@ ibf_iseq_list(const struct ibf_load *load)
 }
 
 void
-ibf_load_iseq_complete(rb_iseq_t *iseq)
+rb_ibf_load_iseq_complete(rb_iseq_t *iseq)
 {
     struct ibf_load *load = RTYPEDDATA_DATA(iseq->aux.loader.obj);
     rb_iseq_t *prev_src_iseq = load->iseq;
@@ -9402,7 +9425,7 @@ ibf_load_iseq_complete(rb_iseq_t *iseq)
 const rb_iseq_t *
 rb_iseq_complete(const rb_iseq_t *iseq)
 {
-    ibf_load_iseq_complete((rb_iseq_t *)iseq);
+    rb_ibf_load_iseq_complete((rb_iseq_t *)iseq);
     return iseq;
 }
 #endif
@@ -9429,7 +9452,7 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
 	    rb_ary_store(load->iseq_list, iseq_index, (VALUE)iseq);
 
 #if !USE_LAZY_LOAD
-	    ibf_load_iseq_complete(iseq);
+	    rb_ibf_load_iseq_complete(iseq);
 #endif /* !USE_LAZY_LOAD */
 
 	    if (load->iseq) {
@@ -9504,23 +9527,23 @@ static const rb_data_type_t ibf_load_type = {
 };
 
 const rb_iseq_t *
-iseq_ibf_load(VALUE str)
+rb_iseq_ibf_load(VALUE str)
 {
     struct ibf_load *load;
-    const rb_iseq_t *iseq;
+    rb_iseq_t *iseq;
     VALUE loader_obj = TypedData_Make_Struct(0, struct ibf_load, &ibf_load_type, load);
 
     ibf_load_setup(load, loader_obj, str);
     iseq = ibf_load_iseq(load, 0);
 
-    iseq_init_trace(iseq);
+    rb_iseq_init_trace(iseq);
 
     RB_GC_GUARD(loader_obj);
     return iseq;
 }
 
 VALUE
-iseq_ibf_load_extra_data(VALUE str)
+rb_iseq_ibf_load_extra_data(VALUE str)
 {
     struct ibf_load *load;
     VALUE loader_obj = TypedData_Make_Struct(0, struct ibf_load, &ibf_load_type, load);
