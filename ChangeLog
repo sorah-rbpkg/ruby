@@ -1,7 +1,186 @@
 ------------------------------------------------------------------------
-r66950 | naruse | 2019-01-30 19:35:50 +0900 (Wed, 30 Jan 2019) | 1 line
+r67232 | naruse | 2019-03-13 05:23:16 +0900 (Wed, 13 Mar 2019) | 1 line
 
-add tag v2_6_1
+add tag v2_6_2
+------------------------------------------------------------------------
+r67231 | naruse | 2019-03-13 05:22:33 +0900 (Wed, 13 Mar 2019) | 2 lines
+
+bump up teeny version to 2.6.2
+
+------------------------------------------------------------------------
+r67223 | naruse | 2019-03-11 23:33:45 +0900 (Mon, 11 Mar 2019) | 5 lines
+
+fix merge conflict
+
+Reported by Krzysztof Rybka
+https://github.com/ruby/ruby/commit/dca69588f4a46e1ecc94eeb9e01efc8cd7cb82e4#r32684541
+
+------------------------------------------------------------------------
+r67222 | naruse | 2019-03-11 22:49:09 +0900 (Mon, 11 Mar 2019) | 7 lines
+
+merge revision(s) 67203: [Backport #15651]
+
+	numeric.c: fix infinite loop
+
+	* numeric.c (int_pow): fix infinite loop in the case of y equal 1
+	  and power of x does not overflow.
+	  [ruby-core:91734] [Bug #15651]
+------------------------------------------------------------------------
+r67220 | naruse | 2019-03-11 21:57:34 +0900 (Mon, 11 Mar 2019) | 5 lines
+
+merge revision(s) 67217: [Backport #15658]
+
+	The combination of non-Symbol keys and Symbol keys is now allowed again
+
+	Revert r64358.  [Bug #15658]
+------------------------------------------------------------------------
+r67210 | naruse | 2019-03-11 16:18:45 +0900 (Mon, 11 Mar 2019) | 3 lines
+
+merge revision(s) 66973: [Backport #15577]
+
+	Run r66972 assertion only when a sticky-bit makes sense
+------------------------------------------------------------------------
+r67209 | naruse | 2019-03-11 16:01:19 +0900 (Mon, 11 Mar 2019) | 6 lines
+
+merge revision(s) 67201: [Backport #15650]
+
+	eval.c: clear internal errinfo
+
+	* eval.c (ruby_cleanup): clear internal error info when invoking
+	  end procs.  [ruby-core:91731] [Bug #15650]
+------------------------------------------------------------------------
+r67208 | naruse | 2019-03-11 15:52:01 +0900 (Mon, 11 Mar 2019) | 7 lines
+
+merge revision(s) 67200: [Backport #15648]
+
+	Add ignored_sp event
+
+	* ext/ripper/lib/ripper/lexer.rb (Ripper::Lexer): add ignored_sp
+	  event which will be fired from Ripper::Lexer#on_heredoc_dedent
+	  method.  [ruby-core:91727] [Bug #15648]
+------------------------------------------------------------------------
+r67207 | naruse | 2019-03-11 15:45:29 +0900 (Mon, 11 Mar 2019) | 6 lines
+
+merge revision(s) 67188: [Backport #15642]
+
+	io.c: chomp CR at the end of read buffer
+
+	* io.c (rb_io_getline_fast): chomp CR followed by LF but separated
+	  by the read buffer boundary.  [ruby-core:91707] [Bug #15642]
+------------------------------------------------------------------------
+r67184 | naruse | 2019-03-06 18:49:16 +0900 (Wed, 06 Mar 2019) | 5 lines
+
+merge revision(s) 67183: [Backport #15607]
+
+	Fix PTY.open on OpenBSD [Bug #15607]
+
+	From: Jeremy Evans <code@jeremyevans.net>
+------------------------------------------------------------------------
+r67182 | naruse | 2019-03-06 18:01:48 +0900 (Wed, 06 Mar 2019) | 12 lines
+
+Backport RubyGems 3.0.3: [Backport #15637]
+
+	* Fixed following vulnerabilities:
+	  * CVE-2019-8320: Delete directory using symlink when decompressing tar
+	  * CVE-2019-8321: Escape sequence injection vulnerability in verbose
+	  * CVE-2019-8322: Escape sequence injection vulnerability in gem owner
+	  * CVE-2019-8323: Escape sequence injection vulnerability in API response handling
+	  * CVE-2019-8324: Installing a malicious gem may lead to arbitrary code execution
+	  * CVE-2019-8325: Escape sequence injection vulnerability in errors
+
+	* see also https://blog.rubygems.org/2019/03/05/3.0.3-released.html
+
+------------------------------------------------------------------------
+r67181 | naruse | 2019-03-06 17:53:51 +0900 (Wed, 06 Mar 2019) | 7 lines
+
+merge revision(s) 67167: [Backport #15635]
+
+	string.c: respect the actual encoding
+
+	* string.c (rb_enc_str_coderange): respect the actual encoding of
+	  if a BOM presents, and scan for the actual code range.
+	  [ruby-core:91662] [Bug #15635]
+------------------------------------------------------------------------
+r67180 | naruse | 2019-03-06 17:48:50 +0900 (Wed, 06 Mar 2019) | 10 lines
+
+merge revision(s) 66984: [Backport #15582]
+
+	Fixed gemspec location of bundler.
+
+	  FileCollector of rbinstall.rb requires location of gemspec under
+	  the sub-direcotry with the same name as default gems.
+
+	  I forgot to fix it with r66867.
+
+	  [Bug #15582][ruby-core:91374]
+------------------------------------------------------------------------
+r67179 | naruse | 2019-03-06 16:47:53 +0900 (Wed, 06 Mar 2019) | 5 lines
+
+merge revision(s) 67006: [Backport #15469]
+
+	Ignore to add bundler lib direcotry if it is same as rubylibdir.
+
+	  [Bug #15469][ruby-core:90742]
+------------------------------------------------------------------------
+r67178 | naruse | 2019-03-06 16:31:29 +0900 (Wed, 06 Mar 2019) | 6 lines
+
+merge revision(s) 67172:
+
+	Remove deprecated `sudo: false` in .travis.yml
+
+	- https://blog.travis-ci.com/2018-11-19-required-linux-infrastructure-migration
+	- https://docs.travis-ci.com/user/reference/overview/#deprecated-virtualization-environments
+------------------------------------------------------------------------
+r67177 | naruse | 2019-03-06 16:14:13 +0900 (Wed, 06 Mar 2019) | 8 lines
+
+merge revision(s) 66972: [Backport #15577]
+
+	Fix exception namespace
+
+	* lib/fileutils.rb (remove_entry_secure): EISDIR is under the
+	  Errno namespace.  [ruby-core:91362] [Bug #15577]
+
+	From: Tietew (Toru Iwase) <tietew@tietew.net>
+------------------------------------------------------------------------
+r67176 | naruse | 2019-03-06 15:58:04 +0900 (Wed, 06 Mar 2019) | 2 lines
+
+Drop pedantic matrix from .travis.yml
+
+------------------------------------------------------------------------
+r67175 | naruse | 2019-03-06 15:36:32 +0900 (Wed, 06 Mar 2019) | 18 lines
+
+merge revision(s) 67169,67173,67174: [Backport #15641]
+
+	update Unicode version (and Emoji version) to 12.0.0
+
+	- common.mk: set UNICODE_VERSION and UNICODE_EMOJI_VERSION to 12.0.0
+
+	- lib/unicode_normalize/tables.rb: update table data to Unicode version 12.0.0
+
+	- enc/unicode/12.0.0/casefold.h, enc/unicode/12.0.0/name2ctype.h: add generated
+	  files for Unicode version 12.0.0
+
+	This is the main commit for #15321.
+
+	add news about Unicode version update (issue #15321) to NEWS [ci skip]
+
+	delete directory and files related to Unicode version 11.0.0
+
+	this completes and closes feature #15321
+------------------------------------------------------------------------
+r66953 | naruse | 2019-01-30 23:41:42 +0900 (Wed, 30 Jan 2019) | 2 lines
+
+Ruby 2.6 is still C90
+
+------------------------------------------------------------------------
+r66952 | naruse | 2019-01-30 22:09:26 +0900 (Wed, 30 Jan 2019) | 6 lines
+
+merge revision(s) 66888: [Backport #15460]
+
+* Fix rubyspec to follow IO#ungetbyte's fix
+  Merge CRuby r66824
+  With fixing actual spec and the version the change applied.
+
 ------------------------------------------------------------------------
 r66949 | naruse | 2019-01-30 15:20:10 +0900 (Wed, 30 Jan 2019) | 13 lines
 
