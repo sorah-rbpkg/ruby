@@ -8,7 +8,7 @@
 
   $Idaemons: /home/cvs/rb/enumerator/enumerator.c,v 1.1.1.1 2001/07/15 10:12:48 knu Exp $
   $RoughId: enumerator.c,v 1.6 2003/07/27 11:03:24 nobu Exp $
-  $Id: enumerator.c 66949 2019-01-30 06:20:10Z naruse $
+  $Id: enumerator.c 66953 2019-01-30 14:41:42Z naruse $
 
 ************************************************/
 
@@ -2832,7 +2832,7 @@ arith_seq_first(int argc, VALUE *argv, VALUE self)
         return b;
     }
 
-    // TODO: the following code should be extracted as arith_seq_take
+    /* TODO: the following code should be extracted as arith_seq_take */
 
     n = NUM2LONG(argv[0]);
     if (n < 0) {
@@ -2849,7 +2849,7 @@ arith_seq_first(int argc, VALUE *argv, VALUE self)
         ary = rb_ary_new_capa(n);
         while (n > 0 && FIXABLE(i)) {
             rb_ary_push(ary, LONG2FIX(i));
-            i += unit;  // FIXABLE + FIXABLE never overflow;
+            i += unit;  /* FIXABLE + FIXABLE never overflow; */
             --n;
         }
         if (n > 0) {

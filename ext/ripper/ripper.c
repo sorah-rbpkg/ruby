@@ -1,8 +1,9 @@
-/* A Bison parser, made by GNU Bison 3.2.2.  */
+/* A Bison parser, made by GNU Bison 3.3.2.  */
 
 /* Bison implementation for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015, 2018 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2019 Free Software Foundation,
+   Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -47,7 +48,7 @@
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "3.2.2"
+#define YYBISON_VERSION "3.3.2"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -65,7 +66,7 @@
 
 
 /* First part of user prologue.  */
-#line 12 "ripper.y" /* yacc.c:338  */
+#line 12 "ripper.y" /* yacc.c:337  */
 
 
 #if !YYPURE
@@ -814,7 +815,7 @@ static void token_info_push(struct parser_params*, const char *token, const rb_c
 static void token_info_pop(struct parser_params*, const char *token, const rb_code_location_t *loc);
 static void token_info_warn(struct parser_params *p, const char *token, token_info *ptinfo_beg, int same, const rb_code_location_t *loc);
 
-#line 818 "ripper.c" /* yacc.c:338  */
+#line 819 "ripper.c" /* yacc.c:337  */
 # ifndef YY_NULLPTR
 #  if defined __cplusplus
 #   if 201103L <= __cplusplus
@@ -977,7 +978,7 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 769 "ripper.y" /* yacc.c:353  */
+#line 769 "ripper.y" /* yacc.c:352  */
 
     VALUE val;
     NODE *node;
@@ -986,7 +987,7 @@ union YYSTYPE
     const struct vtable *vars;
     struct rb_strterm_struct *strterm;
 
-#line 988 "ripper.c" /* yacc.c:353  */
+#line 989 "ripper.c" /* yacc.c:352  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -1260,16 +1261,16 @@ union yyalloc
 /* YYNSTATES -- Number of states.  */
 #define YYNSTATES  1076
 
-/* YYTRANSLATE[YYX] -- Symbol number corresponding to YYX as returned
-   by yylex, with out-of-bounds checking.  */
 #define YYUNDEFTOK  2
 #define YYMAXUTOK   353
 
+/* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
+   as returned by yylex, with out-of-bounds checking.  */
 #define YYTRANSLATE(YYX)                                                \
   ((unsigned) (YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
 
 /* YYTRANSLATE[TOKEN-NUM] -- Symbol number corresponding to TOKEN-NUM
-   as returned by yylex, without out-of-bounds checking.  */
+   as returned by yylex.  */
 static const yytype_uint8 yytranslate[] =
 {
        0,     2,     2,     2,     2,     2,     2,     2,     2,    71,
@@ -4567,22 +4568,22 @@ static const yytype_uint8 yyr2[] =
 
 #define YYRECOVERING()  (!!yyerrstatus)
 
-#define YYBACKUP(Token, Value)                                  \
-do                                                              \
-  if (yychar == YYEMPTY)                                        \
-    {                                                           \
-      yychar = (Token);                                         \
-      yylval = (Value);                                         \
-      YYPOPSTACK (yylen);                                       \
-      yystate = *yyssp;                                         \
-      goto yybackup;                                            \
-    }                                                           \
-  else                                                          \
-    {                                                           \
-      yyerror (&yylloc, p, YY_("syntax error: cannot back up")); \
-      YYERROR;                                                  \
-    }                                                           \
-while (0)
+#define YYBACKUP(Token, Value)                                    \
+  do                                                              \
+    if (yychar == YYEMPTY)                                        \
+      {                                                           \
+        yychar = (Token);                                         \
+        yylval = (Value);                                         \
+        YYPOPSTACK (yylen);                                       \
+        yystate = *yyssp;                                         \
+        goto yybackup;                                            \
+      }                                                           \
+    else                                                          \
+      {                                                           \
+        yyerror (&yylloc, p, YY_("syntax error: cannot back up")); \
+        YYERROR;                                                  \
+      }                                                           \
+  while (0)
 
 /* Error token number */
 #define YYTERROR        1
@@ -4767,7 +4768,7 @@ yy_reduce_print (yytype_int16 *yyssp, YYSTYPE *yyvsp, YYLTYPE *yylsp, int yyrule
       YYFPRINTF (p, "   $%d = ", yyi + 1);
       yy_symbol_print (stderr,
                        yystos[yyssp[yyi + 1 - yynrhs]],
-                       &(yyvsp[(yyi + 1) - (yynrhs)])
+                       &yyvsp[(yyi + 1) - (yynrhs)]
                        , &(yylsp[(yyi + 1) - (yynrhs)])                       , p);
       YYFPRINTF (p, "\n");
     }
@@ -4873,7 +4874,10 @@ yytnamerr (char *yyres, const char *yystr)
           case '\\':
             if (*++yyp != '\\')
               goto do_not_strip_quotes;
-            /* Fall through.  */
+            else
+              goto append;
+
+          append:
           default:
             if (yyres)
               yyres[yyn] = *yyp;
@@ -4969,10 +4973,10 @@ yysyntax_error (YYSIZE_T *yymsg_alloc, char **yymsg,
                 yyarg[yycount++] = yytname[yyx];
                 {
                   YYSIZE_T yysize1 = yysize + yytnamerr (YY_NULLPTR, yytname[yyx]);
-                  if (! (yysize <= yysize1
-                         && yysize1 <= YYSTACK_ALLOC_MAXIMUM))
+                  if (yysize <= yysize1 && yysize1 <= YYSTACK_ALLOC_MAXIMUM)
+                    yysize = yysize1;
+                  else
                     return 2;
-                  yysize = yysize1;
                 }
               }
         }
@@ -4996,9 +5000,10 @@ yysyntax_error (YYSIZE_T *yymsg_alloc, char **yymsg,
 
   {
     YYSIZE_T yysize1 = yysize + yystrlen (yyformat);
-    if (! (yysize <= yysize1 && yysize1 <= YYSTACK_ALLOC_MAXIMUM))
+    if (yysize <= yysize1 && yysize1 <= YYSTACK_ALLOC_MAXIMUM)
+      yysize = yysize1;
+    else
       return 2;
-    yysize = yysize1;
   }
 
   if (*yymsg_alloc < yysize)
@@ -5149,32 +5154,40 @@ YYLTYPE yylloc = yyloc_default;
   yychar = YYEMPTY; /* Cause a token to be read.  */
 
 /* User initialization code.  */
-#line 765 "ripper.y" /* yacc.c:1429  */
+#line 765 "ripper.y" /* yacc.c:1431  */
 {
     RUBY_SET_YYLLOC_OF_NONE(yylloc);
 }
 
-#line 5153 "ripper.c" /* yacc.c:1429  */
+#line 5158 "ripper.c" /* yacc.c:1431  */
   yylsp[0] = yylloc;
   goto yysetstate;
 
+
 /*------------------------------------------------------------.
-| yynewstate -- Push a new state, which is found in yystate.  |
+| yynewstate -- push a new state, which is found in yystate.  |
 `------------------------------------------------------------*/
- yynewstate:
+yynewstate:
   /* In all cases, when you get here, the value and location stacks
      have just been pushed.  So pushing a state here evens the stacks.  */
   yyssp++;
 
- yysetstate:
+
+/*--------------------------------------------------------------------.
+| yynewstate -- set current state (the top of the stack) to yystate.  |
+`--------------------------------------------------------------------*/
+yysetstate:
   *yyssp = (yytype_int16) yystate;
 
   if (yyss + yystacksize - 1 <= yyssp)
+#if !defined yyoverflow && !defined YYSTACK_RELOCATE
+    goto yyexhaustedlab;
+#else
     {
       /* Get the current used size of the three stacks, in elements.  */
       YYSIZE_T yysize = (YYSIZE_T) (yyssp - yyss + 1);
 
-#ifdef yyoverflow
+# if defined yyoverflow
       {
         /* Give user a chance to reallocate the stack.  Use copies of
            these so that the &'s don't force the real ones into
@@ -5196,10 +5209,7 @@ YYLTYPE yylloc = yyloc_default;
         yyvs = yyvs1;
         yyls = yyls1;
       }
-#else /* no yyoverflow */
-# ifndef YYSTACK_RELOCATE
-      goto yyexhaustedlab;
-# else
+# else /* defined YYSTACK_RELOCATE */
       /* Extend the stack our own way.  */
       if (YYMAXDEPTH <= yystacksize)
         goto yyexhaustedlab;
@@ -5216,12 +5226,11 @@ YYLTYPE yylloc = yyloc_default;
         YYSTACK_RELOCATE (yyss_alloc, yyss);
         YYSTACK_RELOCATE (yyvs_alloc, yyvs);
         YYSTACK_RELOCATE (yyls_alloc, yyls);
-#  undef YYSTACK_RELOCATE
+# undef YYSTACK_RELOCATE
         if (yyss1 != yyssa)
           YYSTACK_FREE (yyss1);
       }
 # endif
-#endif /* no yyoverflow */
 
       yyssp = yyss + yysize - 1;
       yyvsp = yyvs + yysize - 1;
@@ -5233,6 +5242,7 @@ YYLTYPE yylloc = yyloc_default;
       if (yyss + yystacksize - 1 <= yyssp)
         YYABORT;
     }
+#endif /* !defined yyoverflow && !defined YYSTACK_RELOCATE */
 
   YYDPRINTF ((p, "Entering state %d\n", yystate));
 
@@ -5241,11 +5251,11 @@ YYLTYPE yylloc = yyloc_default;
 
   goto yybackup;
 
+
 /*-----------.
 | yybackup.  |
 `-----------*/
 yybackup:
-
   /* Do appropriate processing given the current state.  Read a
      lookahead token if we need one and don't already have one.  */
 
@@ -5318,7 +5328,7 @@ yydefault:
 
 
 /*-----------------------------.
-| yyreduce -- Do a reduction.  |
+| yyreduce -- do a reduction.  |
 `-----------------------------*/
 yyreduce:
   /* yyn is the number of a rule to reduce with.  */
@@ -5341,16 +5351,16 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 936 "ripper.y" /* yacc.c:1645  */
+#line 936 "ripper.y" /* yacc.c:1652  */
     {
 			SET_LEX_STATE(EXPR_BEG);
 			local_push(p, ifndef_ripper(1)+0);
 		    }
-#line 5345 "ripper.c" /* yacc.c:1645  */
+#line 5355 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 3:
-#line 941 "ripper.y" /* yacc.c:1645  */
+#line 941 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			if ((yyvsp[0].val) && !compile_for_eval) {
@@ -5370,68 +5380,68 @@ yyreduce:
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(program,v1);p->result=v2;}
 			local_pop(p);
 		    }
-#line 5369 "ripper.c" /* yacc.c:1645  */
+#line 5379 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 4:
-#line 963 "ripper.y" /* yacc.c:1645  */
+#line 963 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = void_stmts(p, (yyvsp[-1].val));
 		    }
-#line 5377 "ripper.c" /* yacc.c:1645  */
+#line 5387 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 5:
-#line 969 "ripper.y" /* yacc.c:1645  */
+#line 969 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_BEGIN(0, &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5;v1=dispatch0(stmts_new);v2=dispatch0(void_stmt);v3=v1;v4=v2;v5=dispatch2(stmts_add,v3,v4);(yyval.val)=v5;}
 		    }
-#line 5388 "ripper.c" /* yacc.c:1645  */
+#line 5398 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 6:
-#line 976 "ripper.y" /* yacc.c:1645  */
+#line 976 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = newline_node((yyvsp[0].val));
 #endif
 			{VALUE v1,v2,v3,v4;v1=dispatch0(stmts_new);v2=v1;v3=(yyvsp[0].val);v4=dispatch2(stmts_add,v2,v3);(yyval.val)=v4;}
 		    }
-#line 5399 "ripper.c" /* yacc.c:1645  */
+#line 5409 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 7:
-#line 983 "ripper.y" /* yacc.c:1645  */
+#line 983 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = block_append(p, (yyvsp[-2].val), newline_node((yyvsp[0].val)));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(stmts_add,v1,v2);(yyval.val)=v3;}
 		    }
-#line 5410 "ripper.c" /* yacc.c:1645  */
+#line 5420 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 8:
-#line 990 "ripper.y" /* yacc.c:1645  */
+#line 990 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = remove_begin((yyvsp[0].val));
 		    }
-#line 5418 "ripper.c" /* yacc.c:1645  */
+#line 5428 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 10:
-#line 997 "ripper.y" /* yacc.c:1645  */
+#line 997 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 5426 "ripper.c" /* yacc.c:1645  */
+#line 5436 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 11:
-#line 1003 "ripper.y" /* yacc.c:1645  */
+#line 1003 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			p->eval_tree_begin = block_append(p, p->eval_tree_begin,
@@ -5440,140 +5450,140 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=(yyvsp[-1].val);v2=dispatch1(BEGIN,v1);(yyval.val)=v2;}
 		    }
-#line 5439 "ripper.c" /* yacc.c:1645  */
+#line 5449 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 12:
-#line 1015 "ripper.y" /* yacc.c:1645  */
+#line 1015 "ripper.y" /* yacc.c:1652  */
     {if (!(yyvsp[-1].val)) {yyerror1(&(yylsp[0]), "else without rescue is useless");}}
-#line 5445 "ripper.c" /* yacc.c:1645  */
+#line 5455 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 13:
-#line 1018 "ripper.y" /* yacc.c:1645  */
+#line 1018 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_bodystmt(p, (yyvsp[-5].val), (yyvsp[-4].val), (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5;v1=escape_Qundef((yyvsp[-5].val));v2=escape_Qundef((yyvsp[-4].val));v3=escape_Qundef((yyvsp[-1].val));v4=escape_Qundef((yyvsp[0].val));v5=dispatch4(bodystmt,v1,v2,v3,v4);(yyval.val)=v5;}
 		    }
-#line 5456 "ripper.c" /* yacc.c:1645  */
+#line 5466 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 14:
-#line 1027 "ripper.y" /* yacc.c:1645  */
+#line 1027 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_bodystmt(p, (yyvsp[-2].val), (yyvsp[-1].val), 0, (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5;v1=escape_Qundef((yyvsp[-2].val));v2=escape_Qundef((yyvsp[-1].val));v3=Qnil;v4=escape_Qundef((yyvsp[0].val));v5=dispatch4(bodystmt,v1,v2,v3,v4);(yyval.val)=v5;}
 		    }
-#line 5467 "ripper.c" /* yacc.c:1645  */
+#line 5477 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 15:
-#line 1036 "ripper.y" /* yacc.c:1645  */
+#line 1036 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = void_stmts(p, (yyvsp[-1].val));
 		    }
-#line 5475 "ripper.c" /* yacc.c:1645  */
+#line 5485 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 16:
-#line 1042 "ripper.y" /* yacc.c:1645  */
+#line 1042 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_BEGIN(0, &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5;v1=dispatch0(stmts_new);v2=dispatch0(void_stmt);v3=v1;v4=v2;v5=dispatch2(stmts_add,v3,v4);(yyval.val)=v5;}
 		    }
-#line 5486 "ripper.c" /* yacc.c:1645  */
+#line 5496 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 17:
-#line 1049 "ripper.y" /* yacc.c:1645  */
+#line 1049 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = newline_node((yyvsp[0].val));
 #endif
 			{VALUE v1,v2,v3,v4;v1=dispatch0(stmts_new);v2=v1;v3=(yyvsp[0].val);v4=dispatch2(stmts_add,v2,v3);(yyval.val)=v4;}
 		    }
-#line 5497 "ripper.c" /* yacc.c:1645  */
+#line 5507 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 18:
-#line 1056 "ripper.y" /* yacc.c:1645  */
+#line 1056 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = block_append(p, (yyvsp[-2].val), newline_node((yyvsp[0].val)));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(stmts_add,v1,v2);(yyval.val)=v3;}
 		    }
-#line 5508 "ripper.c" /* yacc.c:1645  */
+#line 5518 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 19:
-#line 1063 "ripper.y" /* yacc.c:1645  */
+#line 1063 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = remove_begin((yyvsp[0].val));
 		    }
-#line 5516 "ripper.c" /* yacc.c:1645  */
+#line 5526 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 20:
-#line 1069 "ripper.y" /* yacc.c:1645  */
+#line 1069 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 5524 "ripper.c" /* yacc.c:1645  */
+#line 5534 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 21:
-#line 1073 "ripper.y" /* yacc.c:1645  */
+#line 1073 "ripper.y" /* yacc.c:1652  */
     {
 			yyerror1(&(yylsp[0]), "BEGIN is permitted only at toplevel");
 		    }
-#line 5532 "ripper.c" /* yacc.c:1645  */
+#line 5542 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 22:
-#line 1077 "ripper.y" /* yacc.c:1645  */
+#line 1077 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 5540 "ripper.c" /* yacc.c:1645  */
+#line 5550 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 23:
-#line 1081 "ripper.y" /* yacc.c:1645  */
+#line 1081 "ripper.y" /* yacc.c:1652  */
     {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);}
-#line 5546 "ripper.c" /* yacc.c:1645  */
+#line 5556 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 24:
-#line 1082 "ripper.y" /* yacc.c:1645  */
+#line 1082 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_ALIAS((yyvsp[-2].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(alias,v1,v2);(yyval.val)=v3;}
 		    }
-#line 5557 "ripper.c" /* yacc.c:1645  */
+#line 5567 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 25:
-#line 1089 "ripper.y" /* yacc.c:1645  */
+#line 1089 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_VALIAS((yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-1].val);v2=(yyvsp[0].val);v3=dispatch2(var_alias,v1,v2);(yyval.val)=v3;}
 		    }
-#line 5568 "ripper.c" /* yacc.c:1645  */
+#line 5578 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 26:
-#line 1096 "ripper.y" /* yacc.c:1645  */
+#line 1096 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			char buf[2];
@@ -5583,11 +5593,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-1].val);v2=(yyvsp[0].val);v3=dispatch2(var_alias,v1,v2);(yyval.val)=v3;}
 		    }
-#line 5582 "ripper.c" /* yacc.c:1645  */
+#line 5592 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 27:
-#line 1106 "ripper.y" /* yacc.c:1645  */
+#line 1106 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			yyerror1(&(yylsp[0]), "can't make alias for the number variables");
@@ -5595,22 +5605,22 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5;v1=(yyvsp[-1].val);v2=(yyvsp[0].val);v3=dispatch2(var_alias,v1,v2);v4=v3;v5=dispatch1(alias_error,v4);(yyval.val)=v5;}ripper_error(p);
 		    }
-#line 5594 "ripper.c" /* yacc.c:1645  */
+#line 5604 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 28:
-#line 1114 "ripper.y" /* yacc.c:1645  */
+#line 1114 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[0].val);
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(undef,v1);(yyval.val)=v2;}
 		    }
-#line 5605 "ripper.c" /* yacc.c:1645  */
+#line 5615 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 29:
-#line 1121 "ripper.y" /* yacc.c:1645  */
+#line 1121 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_if(p, (yyvsp[0].val), remove_begin((yyvsp[-2].val)), 0, &(yyloc));
@@ -5618,11 +5628,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[0].val);v2=(yyvsp[-2].val);v3=dispatch2(if_mod,v1,v2);(yyval.val)=v3;}
 		    }
-#line 5617 "ripper.c" /* yacc.c:1645  */
+#line 5627 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 30:
-#line 1129 "ripper.y" /* yacc.c:1645  */
+#line 1129 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_unless(p, (yyvsp[0].val), remove_begin((yyvsp[-2].val)), 0, &(yyloc));
@@ -5630,11 +5640,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[0].val);v2=(yyvsp[-2].val);v3=dispatch2(unless_mod,v1,v2);(yyval.val)=v3;}
 		    }
-#line 5629 "ripper.c" /* yacc.c:1645  */
+#line 5639 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 31:
-#line 1137 "ripper.y" /* yacc.c:1645  */
+#line 1137 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			if ((yyvsp[-2].val) && nd_type((yyvsp[-2].val)) == NODE_BEGIN) {
@@ -5646,11 +5656,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[0].val);v2=(yyvsp[-2].val);v3=dispatch2(while_mod,v1,v2);(yyval.val)=v3;}
 		    }
-#line 5645 "ripper.c" /* yacc.c:1645  */
+#line 5655 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 32:
-#line 1149 "ripper.y" /* yacc.c:1645  */
+#line 1149 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			if ((yyvsp[-2].val) && nd_type((yyvsp[-2].val)) == NODE_BEGIN) {
@@ -5662,11 +5672,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[0].val);v2=(yyvsp[-2].val);v3=dispatch2(until_mod,v1,v2);(yyval.val)=v3;}
 		    }
-#line 5661 "ripper.c" /* yacc.c:1645  */
+#line 5671 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 33:
-#line 1161 "ripper.y" /* yacc.c:1645  */
+#line 1161 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			NODE *resq;
@@ -5676,11 +5686,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(rescue_mod,v1,v2);(yyval.val)=v3;}
 		    }
-#line 5675 "ripper.c" /* yacc.c:1645  */
+#line 5685 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 34:
-#line 1171 "ripper.y" /* yacc.c:1645  */
+#line 1171 "ripper.y" /* yacc.c:1652  */
     {
 			if (p->in_def) {
 			    rb_warn0("END in method; use at_exit");
@@ -5694,11 +5704,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=(yyvsp[-1].val);v2=dispatch1(END,v1);(yyval.val)=v2;}
 		    }
-#line 5693 "ripper.c" /* yacc.c:1645  */
+#line 5703 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 36:
-#line 1186 "ripper.y" /* yacc.c:1645  */
+#line 1186 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			value_expr((yyvsp[0].val));
@@ -5706,11 +5716,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(massign,v1,v2);(yyval.val)=v3;}
 		    }
-#line 5705 "ripper.c" /* yacc.c:1645  */
+#line 5715 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 37:
-#line 1194 "ripper.y" /* yacc.c:1645  */
+#line 1194 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			value_expr((yyvsp[0].val));
@@ -5718,22 +5728,22 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(assign,v1,v2);(yyval.val)=v3;}
 		    }
-#line 5717 "ripper.c" /* yacc.c:1645  */
+#line 5727 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 38:
-#line 1202 "ripper.y" /* yacc.c:1645  */
+#line 1202 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = node_assign(p, (yyvsp[-2].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(massign,v1,v2);(yyval.val)=v3;}
 		    }
-#line 5728 "ripper.c" /* yacc.c:1645  */
+#line 5738 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 40:
-#line 1212 "ripper.y" /* yacc.c:1645  */
+#line 1212 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			value_expr((yyvsp[0].val));
@@ -5741,11 +5751,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(assign,v1,v2);(yyval.val)=v3;}
 		    }
-#line 5740 "ripper.c" /* yacc.c:1645  */
+#line 5750 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 41:
-#line 1220 "ripper.y" /* yacc.c:1645  */
+#line 1220 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			value_expr((yyvsp[0].val));
@@ -5753,11 +5763,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4;v1=(yyvsp[-2].val);v2=(yyvsp[-1].val);v3=(yyvsp[0].val);v4=dispatch3(opassign,v1,v2,v3);(yyval.val)=v4;}
 		    }
-#line 5752 "ripper.c" /* yacc.c:1645  */
+#line 5762 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 42:
-#line 1228 "ripper.y" /* yacc.c:1645  */
+#line 1228 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			value_expr((yyvsp[0].val));
@@ -5766,11 +5776,11 @@ yyreduce:
 			{VALUE v1,v2,v3,v4,v5,v6,v7;v1=(yyvsp[-5].val);v2=escape_Qundef((yyvsp[-3].val));v3=dispatch2(aref_field,v1,v2);v4=v3;v5=(yyvsp[-1].val);v6=(yyvsp[0].val);v7=dispatch3(opassign,v4,v5,v6);(yyval.val)=v7;}
 
 		    }
-#line 5765 "ripper.c" /* yacc.c:1645  */
+#line 5775 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 43:
-#line 1237 "ripper.y" /* yacc.c:1645  */
+#line 1237 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			value_expr((yyvsp[0].val));
@@ -5778,11 +5788,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=(yyvsp[-4].val);v2=(yyvsp[-3].val);v3=(yyvsp[-2].val);v4=dispatch3(field,v1,v2,v3);v5=v4;v6=(yyvsp[-1].val);v7=(yyvsp[0].val);v8=dispatch3(opassign,v5,v6,v7);(yyval.val)=v8;}
 		    }
-#line 5777 "ripper.c" /* yacc.c:1645  */
+#line 5787 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 44:
-#line 1245 "ripper.y" /* yacc.c:1645  */
+#line 1245 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			value_expr((yyvsp[0].val));
@@ -5790,11 +5800,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=(yyvsp[-4].val);v2=(yyvsp[-3].val);v3=(yyvsp[-2].val);v4=dispatch3(field,v1,v2,v3);v5=v4;v6=(yyvsp[-1].val);v7=(yyvsp[0].val);v8=dispatch3(opassign,v5,v6,v7);(yyval.val)=v8;}
 		    }
-#line 5789 "ripper.c" /* yacc.c:1645  */
+#line 5799 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 45:
-#line 1253 "ripper.y" /* yacc.c:1645  */
+#line 1253 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			YYLTYPE loc = code_loc_gen(&(yylsp[-4]), &(yylsp[-2]));
@@ -5802,11 +5812,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7;v1=(yyvsp[-4].val);v2=(yyvsp[-2].val);v3=dispatch2(const_path_field,v1,v2);v4=v3;v5=(yyvsp[-1].val);v6=(yyvsp[0].val);v7=dispatch3(opassign,v4,v5,v6);(yyval.val)=v7;}
 		    }
-#line 5801 "ripper.c" /* yacc.c:1645  */
+#line 5811 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 46:
-#line 1261 "ripper.y" /* yacc.c:1645  */
+#line 1261 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			value_expr((yyvsp[0].val));
@@ -5814,11 +5824,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=(yyvsp[-4].val);v2=ID2VAL(idCOLON2);v3=(yyvsp[-2].val);v4=dispatch3(field,v1,v2,v3);v5=v4;v6=(yyvsp[-1].val);v7=(yyvsp[0].val);v8=dispatch3(opassign,v5,v6,v7);(yyval.val)=v8;}
 		    }
-#line 5813 "ripper.c" /* yacc.c:1645  */
+#line 5823 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 47:
-#line 1269 "ripper.y" /* yacc.c:1645  */
+#line 1269 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			rb_backref_error(p, (yyvsp[-2].val));
@@ -5826,20 +5836,20 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5;v1=var_field(p, (yyvsp[-2].val));v2=(yyvsp[0].val);v3=dispatch2(assign,v1,v2);v4=v3;v5=dispatch1(assign_error,v4);(yyval.val)=v5;}ripper_error(p);
 		    }
-#line 5825 "ripper.c" /* yacc.c:1645  */
+#line 5835 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 48:
-#line 1279 "ripper.y" /* yacc.c:1645  */
+#line 1279 "ripper.y" /* yacc.c:1652  */
     {
 			value_expr((yyvsp[0].val));
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 5834 "ripper.c" /* yacc.c:1645  */
+#line 5844 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 49:
-#line 1284 "ripper.y" /* yacc.c:1645  */
+#line 1284 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			YYLTYPE loc = code_loc_gen(&(yylsp[-1]), &(yylsp[0]));
@@ -5848,83 +5858,83 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(rescue_mod,v1,v2);(yyval.val)=v3;}
 		    }
-#line 5847 "ripper.c" /* yacc.c:1645  */
+#line 5857 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 52:
-#line 1297 "ripper.y" /* yacc.c:1645  */
+#line 1297 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = logop(p, idAND, (yyvsp[-2].val), (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 5855 "ripper.c" /* yacc.c:1645  */
+#line 5865 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 53:
-#line 1301 "ripper.y" /* yacc.c:1645  */
+#line 1301 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = logop(p, idOR, (yyvsp[-2].val), (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 5863 "ripper.c" /* yacc.c:1645  */
+#line 5873 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 54:
-#line 1305 "ripper.y" /* yacc.c:1645  */
+#line 1305 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_uni_op(p, method_cond(p, (yyvsp[0].val), &(yylsp[0])), METHOD_NOT, &(yylsp[-2]), &(yyloc));
 		    }
-#line 5871 "ripper.c" /* yacc.c:1645  */
+#line 5881 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 55:
-#line 1309 "ripper.y" /* yacc.c:1645  */
+#line 1309 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_uni_op(p, method_cond(p, (yyvsp[0].val), &(yylsp[0])), '!', &(yylsp[-1]), &(yyloc));
 		    }
-#line 5879 "ripper.c" /* yacc.c:1645  */
+#line 5889 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 57:
-#line 1316 "ripper.y" /* yacc.c:1645  */
+#line 1316 "ripper.y" /* yacc.c:1652  */
     {
 			value_expr((yyvsp[0].val));
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 5888 "ripper.c" /* yacc.c:1645  */
+#line 5898 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 58:
-#line 1322 "ripper.y" /* yacc.c:1645  */
+#line 1322 "ripper.y" /* yacc.c:1652  */
     {COND_PUSH(1);}
-#line 5894 "ripper.c" /* yacc.c:1645  */
+#line 5904 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 59:
-#line 1322 "ripper.y" /* yacc.c:1645  */
+#line 1322 "ripper.y" /* yacc.c:1652  */
     {COND_POP();}
-#line 5900 "ripper.c" /* yacc.c:1645  */
+#line 5910 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 60:
-#line 1323 "ripper.y" /* yacc.c:1645  */
+#line 1323 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = (yyvsp[-2].val);
 		    }
-#line 5908 "ripper.c" /* yacc.c:1645  */
+#line 5918 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 64:
-#line 1334 "ripper.y" /* yacc.c:1645  */
+#line 1334 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_qcall(p, (yyvsp[-2].val), (yyvsp[-3].val), (yyvsp[-1].val), (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7;v1=(yyvsp[-3].val);v2=(yyvsp[-2].val);v3=(yyvsp[-1].val);v4=dispatch3(call,v1,v2,v3);v5=v4;v6=(yyvsp[0].val);v7=dispatch2(method_add_arg,v5,v6);(yyval.val)=v7;}
 		    }
-#line 5919 "ripper.c" /* yacc.c:1645  */
+#line 5929 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 65:
-#line 1343 "ripper.y" /* yacc.c:1645  */
+#line 1343 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = (yyvsp[-1].val);
 #if 0
@@ -5932,11 +5942,11 @@ yyreduce:
 			nd_set_line((yyval.val), (yylsp[-2]).end_pos.lineno);
 #endif
 		    }
-#line 5931 "ripper.c" /* yacc.c:1645  */
+#line 5941 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 66:
-#line 1353 "ripper.y" /* yacc.c:1645  */
+#line 1353 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_FCALL((yyvsp[0].val), 0, &(yyloc));
@@ -5944,11 +5954,11 @@ yyreduce:
 #endif
 			(yyval.val)=(yyvsp[0].val);
 		    }
-#line 5943 "ripper.c" /* yacc.c:1645  */
+#line 5953 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 67:
-#line 1363 "ripper.y" /* yacc.c:1645  */
+#line 1363 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyvsp[-1].val)->nd_args = (yyvsp[0].val);
@@ -5957,11 +5967,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-1].val);v2=(yyvsp[0].val);v3=dispatch2(command,v1,v2);(yyval.val)=v3;}
 		    }
-#line 5956 "ripper.c" /* yacc.c:1645  */
+#line 5966 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 68:
-#line 1372 "ripper.y" /* yacc.c:1645  */
+#line 1372 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			block_dup_check(p, (yyvsp[-1].val), (yyvsp[0].val));
@@ -5972,55 +5982,55 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6;v1=(yyvsp[-2].val);v2=(yyvsp[-1].val);v3=dispatch2(command,v1,v2);v4=v3;v5=(yyvsp[0].val);v6=dispatch2(method_add_block,v4,v5);(yyval.val)=v6;}
 		    }
-#line 5971 "ripper.c" /* yacc.c:1645  */
+#line 5981 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 69:
-#line 1383 "ripper.y" /* yacc.c:1645  */
+#line 1383 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_command_qcall(p, (yyvsp[-2].val), (yyvsp[-3].val), (yyvsp[-1].val), (yyvsp[0].val), Qnull, &(yylsp[-1]), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5;v1=(yyvsp[-3].val);v2=(yyvsp[-2].val);v3=(yyvsp[-1].val);v4=(yyvsp[0].val);v5=dispatch4(command_call,v1,v2,v3,v4);(yyval.val)=v5;}
 		    }
-#line 5982 "ripper.c" /* yacc.c:1645  */
+#line 5992 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 70:
-#line 1390 "ripper.y" /* yacc.c:1645  */
+#line 1390 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_command_qcall(p, (yyvsp[-3].val), (yyvsp[-4].val), (yyvsp[-2].val), (yyvsp[-1].val), (yyvsp[0].val), &(yylsp[-2]), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=(yyvsp[-4].val);v2=(yyvsp[-3].val);v3=(yyvsp[-2].val);v4=(yyvsp[-1].val);v5=dispatch4(command_call,v1,v2,v3,v4);v6=v5;v7=(yyvsp[0].val);v8=dispatch2(method_add_block,v6,v7);(yyval.val)=v8;}
 		    }
-#line 5993 "ripper.c" /* yacc.c:1645  */
+#line 6003 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 71:
-#line 1397 "ripper.y" /* yacc.c:1645  */
+#line 1397 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_command_qcall(p, ID2VAL(idCOLON2), (yyvsp[-3].val), (yyvsp[-1].val), (yyvsp[0].val), Qnull, &(yylsp[-1]), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5;v1=(yyvsp[-3].val);v2=ID2VAL(idCOLON2);v3=(yyvsp[-1].val);v4=(yyvsp[0].val);v5=dispatch4(command_call,v1,v2,v3,v4);(yyval.val)=v5;}
 		    }
-#line 6004 "ripper.c" /* yacc.c:1645  */
+#line 6014 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 72:
-#line 1404 "ripper.y" /* yacc.c:1645  */
+#line 1404 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_command_qcall(p, ID2VAL(idCOLON2), (yyvsp[-4].val), (yyvsp[-2].val), (yyvsp[-1].val), (yyvsp[0].val), &(yylsp[-2]), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=(yyvsp[-4].val);v2=ID2VAL(idCOLON2);v3=(yyvsp[-2].val);v4=(yyvsp[-1].val);v5=dispatch4(command_call,v1,v2,v3,v4);v6=v5;v7=(yyvsp[0].val);v8=dispatch2(method_add_block,v6,v7);(yyval.val)=v8;}
 		   }
-#line 6015 "ripper.c" /* yacc.c:1645  */
+#line 6025 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 73:
-#line 1411 "ripper.y" /* yacc.c:1645  */
+#line 1411 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_SUPER((yyvsp[0].val), &(yyloc));
@@ -6028,11 +6038,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(super,v1);(yyval.val)=v2;}
 		    }
-#line 6027 "ripper.c" /* yacc.c:1645  */
+#line 6037 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 74:
-#line 1419 "ripper.y" /* yacc.c:1645  */
+#line 1419 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_yield(p, (yyvsp[0].val), &(yyloc));
@@ -6040,319 +6050,319 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(yield,v1);(yyval.val)=v2;}
 		    }
-#line 6039 "ripper.c" /* yacc.c:1645  */
+#line 6049 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 75:
-#line 1427 "ripper.y" /* yacc.c:1645  */
+#line 1427 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_RETURN(ret_args(p, (yyvsp[0].val)), &(yyloc));
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(return,v1);(yyval.val)=v2;}
 		    }
-#line 6050 "ripper.c" /* yacc.c:1645  */
+#line 6060 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 76:
-#line 1434 "ripper.y" /* yacc.c:1645  */
+#line 1434 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_BREAK(ret_args(p, (yyvsp[0].val)), &(yyloc));
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(break,v1);(yyval.val)=v2;}
 		    }
-#line 6061 "ripper.c" /* yacc.c:1645  */
+#line 6071 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 77:
-#line 1441 "ripper.y" /* yacc.c:1645  */
+#line 1441 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_NEXT(ret_args(p, (yyvsp[0].val)), &(yyloc));
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(next,v1);(yyval.val)=v2;}
 		    }
-#line 6072 "ripper.c" /* yacc.c:1645  */
+#line 6082 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 79:
-#line 1451 "ripper.y" /* yacc.c:1645  */
+#line 1451 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[-1].val);
 #endif
 			{VALUE v1,v2;v1=(yyvsp[-1].val);v2=dispatch1(mlhs_paren,v1);(yyval.val)=v2;}
 		    }
-#line 6083 "ripper.c" /* yacc.c:1645  */
+#line 6093 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 81:
-#line 1461 "ripper.y" /* yacc.c:1645  */
+#line 1461 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_MASGN(NEW_LIST((yyvsp[-1].val), &(yyloc)), 0, &(yyloc));
 #endif
 			{VALUE v1,v2;v1=(yyvsp[-1].val);v2=dispatch1(mlhs_paren,v1);(yyval.val)=v2;}
 		    }
-#line 6094 "ripper.c" /* yacc.c:1645  */
+#line 6104 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 82:
-#line 1470 "ripper.y" /* yacc.c:1645  */
+#line 1470 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_MASGN((yyvsp[0].val), 0, &(yyloc));
 #endif
 			(yyval.val)=(yyvsp[0].val);
 		    }
-#line 6105 "ripper.c" /* yacc.c:1645  */
+#line 6115 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 83:
-#line 1477 "ripper.y" /* yacc.c:1645  */
+#line 1477 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_MASGN(list_append(p, (yyvsp[-1].val),(yyvsp[0].val)), 0, &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-1].val);v2=(yyvsp[0].val);v3=dispatch2(mlhs_add,v1,v2);(yyval.val)=v3;}
 		    }
-#line 6116 "ripper.c" /* yacc.c:1645  */
+#line 6126 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 84:
-#line 1484 "ripper.y" /* yacc.c:1645  */
+#line 1484 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_MASGN((yyvsp[-2].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(mlhs_add_star,v1,v2);(yyval.val)=v3;}
 		    }
-#line 6127 "ripper.c" /* yacc.c:1645  */
+#line 6137 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 85:
-#line 1491 "ripper.y" /* yacc.c:1645  */
+#line 1491 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_MASGN((yyvsp[-4].val), NEW_POSTARG((yyvsp[-2].val),(yyvsp[0].val),&(yyloc)), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6;v1=(yyvsp[-4].val);v2=(yyvsp[-2].val);v3=dispatch2(mlhs_add_star,v1,v2);v4=v3;v5=(yyvsp[0].val);v6=dispatch2(mlhs_add_post,v4,v5);(yyval.val)=v6;}
 		    }
-#line 6138 "ripper.c" /* yacc.c:1645  */
+#line 6148 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 86:
-#line 1498 "ripper.y" /* yacc.c:1645  */
+#line 1498 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_MASGN((yyvsp[-1].val), NODE_SPECIAL_NO_NAME_REST, &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-1].val);v2=Qnil;v3=dispatch2(mlhs_add_star,v1,v2);(yyval.val)=v3;}
 		    }
-#line 6149 "ripper.c" /* yacc.c:1645  */
+#line 6159 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 87:
-#line 1505 "ripper.y" /* yacc.c:1645  */
+#line 1505 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_MASGN((yyvsp[-3].val), NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, (yyvsp[0].val), &(yyloc)), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6;v1=(yyvsp[-3].val);v2=Qnil;v3=dispatch2(mlhs_add_star,v1,v2);v4=v3;v5=(yyvsp[0].val);v6=dispatch2(mlhs_add_post,v4,v5);(yyval.val)=v6;}
 		    }
-#line 6160 "ripper.c" /* yacc.c:1645  */
+#line 6170 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 88:
-#line 1512 "ripper.y" /* yacc.c:1645  */
+#line 1512 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_MASGN(0, (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4;v1=dispatch0(mlhs_new);v2=v1;v3=(yyvsp[0].val);v4=dispatch2(mlhs_add_star,v2,v3);(yyval.val)=v4;}
 		    }
-#line 6171 "ripper.c" /* yacc.c:1645  */
+#line 6181 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 89:
-#line 1519 "ripper.y" /* yacc.c:1645  */
+#line 1519 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_MASGN(0, NEW_POSTARG((yyvsp[-2].val),(yyvsp[0].val),&(yyloc)), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7;v1=dispatch0(mlhs_new);v2=v1;v3=(yyvsp[-2].val);v4=dispatch2(mlhs_add_star,v2,v3);v5=v4;v6=(yyvsp[0].val);v7=dispatch2(mlhs_add_post,v5,v6);(yyval.val)=v7;}
 		    }
-#line 6182 "ripper.c" /* yacc.c:1645  */
+#line 6192 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 90:
-#line 1526 "ripper.y" /* yacc.c:1645  */
+#line 1526 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_MASGN(0, NODE_SPECIAL_NO_NAME_REST, &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4;v1=dispatch0(mlhs_new);v2=v1;v3=Qnil;v4=dispatch2(mlhs_add_star,v2,v3);(yyval.val)=v4;}
 		    }
-#line 6193 "ripper.c" /* yacc.c:1645  */
+#line 6203 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 91:
-#line 1533 "ripper.y" /* yacc.c:1645  */
+#line 1533 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_MASGN(0, NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, (yyvsp[0].val), &(yyloc)), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7;v1=dispatch0(mlhs_new);v2=v1;v3=Qnil;v4=dispatch2(mlhs_add_star,v2,v3);v5=v4;v6=(yyvsp[0].val);v7=dispatch2(mlhs_add_post,v5,v6);(yyval.val)=v7;}
 		    }
-#line 6204 "ripper.c" /* yacc.c:1645  */
+#line 6214 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 93:
-#line 1543 "ripper.y" /* yacc.c:1645  */
+#line 1543 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[-1].val);
 #endif
 			{VALUE v1,v2;v1=(yyvsp[-1].val);v2=dispatch1(mlhs_paren,v1);(yyval.val)=v2;}
 		    }
-#line 6215 "ripper.c" /* yacc.c:1645  */
+#line 6225 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 94:
-#line 1552 "ripper.y" /* yacc.c:1645  */
+#line 1552 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_LIST((yyvsp[-1].val), &(yylsp[-1]));
 #endif
 			{VALUE v1,v2,v3,v4;v1=dispatch0(mlhs_new);v2=v1;v3=(yyvsp[-1].val);v4=dispatch2(mlhs_add,v2,v3);(yyval.val)=v4;}
 		    }
-#line 6226 "ripper.c" /* yacc.c:1645  */
+#line 6236 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 95:
-#line 1559 "ripper.y" /* yacc.c:1645  */
+#line 1559 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = list_append(p, (yyvsp[-2].val), (yyvsp[-1].val));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[-1].val);v3=dispatch2(mlhs_add,v1,v2);(yyval.val)=v3;}
 		    }
-#line 6237 "ripper.c" /* yacc.c:1645  */
+#line 6247 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 96:
-#line 1568 "ripper.y" /* yacc.c:1645  */
+#line 1568 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_LIST((yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4;v1=dispatch0(mlhs_new);v2=v1;v3=(yyvsp[0].val);v4=dispatch2(mlhs_add,v2,v3);(yyval.val)=v4;}
 		    }
-#line 6248 "ripper.c" /* yacc.c:1645  */
+#line 6258 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 97:
-#line 1575 "ripper.y" /* yacc.c:1645  */
+#line 1575 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = list_append(p, (yyvsp[-2].val), (yyvsp[0].val));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(mlhs_add,v1,v2);(yyval.val)=v3;}
 		    }
-#line 6259 "ripper.c" /* yacc.c:1645  */
+#line 6269 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 98:
-#line 1584 "ripper.y" /* yacc.c:1645  */
+#line 1584 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = assignable(p, (yyvsp[0].val), 0, &(yyloc));
 #endif
 			(yyval.val)=assignable(p, var_field(p, (yyvsp[0].val)));
 		    }
-#line 6270 "ripper.c" /* yacc.c:1645  */
+#line 6280 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 99:
-#line 1591 "ripper.y" /* yacc.c:1645  */
+#line 1591 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = assignable(p, (yyvsp[0].val), 0, &(yyloc));
 #endif
 			(yyval.val)=assignable(p, var_field(p, (yyvsp[0].val)));
 		    }
-#line 6281 "ripper.c" /* yacc.c:1645  */
+#line 6291 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 100:
-#line 1598 "ripper.y" /* yacc.c:1645  */
+#line 1598 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = aryset(p, (yyvsp[-3].val), (yyvsp[-1].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-3].val);v2=escape_Qundef((yyvsp[-1].val));v3=dispatch2(aref_field,v1,v2);(yyval.val)=v3;}
 		    }
-#line 6292 "ripper.c" /* yacc.c:1645  */
+#line 6302 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 101:
-#line 1605 "ripper.y" /* yacc.c:1645  */
+#line 1605 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = attrset(p, (yyvsp[-2].val), (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4;v1=(yyvsp[-2].val);v2=(yyvsp[-1].val);v3=(yyvsp[0].val);v4=dispatch3(field,v1,v2,v3);(yyval.val)=v4;}
 		    }
-#line 6303 "ripper.c" /* yacc.c:1645  */
+#line 6313 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 102:
-#line 1612 "ripper.y" /* yacc.c:1645  */
+#line 1612 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = attrset(p, (yyvsp[-2].val), idCOLON2, (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(const_path_field,v1,v2);(yyval.val)=v3;}
 		    }
-#line 6314 "ripper.c" /* yacc.c:1645  */
+#line 6324 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 103:
-#line 1619 "ripper.y" /* yacc.c:1645  */
+#line 1619 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = attrset(p, (yyvsp[-2].val), (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4;v1=(yyvsp[-2].val);v2=(yyvsp[-1].val);v3=(yyvsp[0].val);v4=dispatch3(field,v1,v2,v3);(yyval.val)=v4;}
 		    }
-#line 6325 "ripper.c" /* yacc.c:1645  */
+#line 6335 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 104:
-#line 1626 "ripper.y" /* yacc.c:1645  */
+#line 1626 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = const_decl(p, NEW_COLON2((yyvsp[-2].val), (yyvsp[0].val), &(yyloc)), &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(const_path_field,v1,v2);(yyval.val)=const_decl(p, v3);}
 		    }
-#line 6336 "ripper.c" /* yacc.c:1645  */
+#line 6346 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 105:
-#line 1633 "ripper.y" /* yacc.c:1645  */
+#line 1633 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = const_decl(p, NEW_COLON3((yyvsp[0].val), &(yyloc)), &(yyloc));
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(top_const_field,v1);(yyval.val)=const_decl(p, v2);}
 		    }
-#line 6347 "ripper.c" /* yacc.c:1645  */
+#line 6357 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 106:
-#line 1640 "ripper.y" /* yacc.c:1645  */
+#line 1640 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			rb_backref_error(p, (yyvsp[0].val));
@@ -6360,99 +6370,99 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=var_field(p, (yyvsp[0].val));v2=dispatch1(assign_error,v1);(yyval.val)=v2;}ripper_error(p);
 		    }
-#line 6359 "ripper.c" /* yacc.c:1645  */
+#line 6369 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 107:
-#line 1650 "ripper.y" /* yacc.c:1645  */
+#line 1650 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = assignable(p, (yyvsp[0].val), 0, &(yyloc));
 #endif
 			(yyval.val)=assignable(p, var_field(p, (yyvsp[0].val)));
 		    }
-#line 6370 "ripper.c" /* yacc.c:1645  */
+#line 6380 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 108:
-#line 1657 "ripper.y" /* yacc.c:1645  */
+#line 1657 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = assignable(p, (yyvsp[0].val), 0, &(yyloc));
 #endif
 			(yyval.val)=assignable(p, var_field(p, (yyvsp[0].val)));
 		    }
-#line 6381 "ripper.c" /* yacc.c:1645  */
+#line 6391 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 109:
-#line 1664 "ripper.y" /* yacc.c:1645  */
+#line 1664 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = aryset(p, (yyvsp[-3].val), (yyvsp[-1].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-3].val);v2=escape_Qundef((yyvsp[-1].val));v3=dispatch2(aref_field,v1,v2);(yyval.val)=v3;}
 		    }
-#line 6392 "ripper.c" /* yacc.c:1645  */
+#line 6402 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 110:
-#line 1671 "ripper.y" /* yacc.c:1645  */
+#line 1671 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = attrset(p, (yyvsp[-2].val), (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4;v1=(yyvsp[-2].val);v2=(yyvsp[-1].val);v3=(yyvsp[0].val);v4=dispatch3(field,v1,v2,v3);(yyval.val)=v4;}
 		    }
-#line 6403 "ripper.c" /* yacc.c:1645  */
+#line 6413 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 111:
-#line 1678 "ripper.y" /* yacc.c:1645  */
+#line 1678 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = attrset(p, (yyvsp[-2].val), idCOLON2, (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4;v1=(yyvsp[-2].val);v2=ID2VAL(idCOLON2);v3=(yyvsp[0].val);v4=dispatch3(field,v1,v2,v3);(yyval.val)=v4;}
 		    }
-#line 6414 "ripper.c" /* yacc.c:1645  */
+#line 6424 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 112:
-#line 1685 "ripper.y" /* yacc.c:1645  */
+#line 1685 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = attrset(p, (yyvsp[-2].val), (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4;v1=(yyvsp[-2].val);v2=(yyvsp[-1].val);v3=(yyvsp[0].val);v4=dispatch3(field,v1,v2,v3);(yyval.val)=v4;}
 		    }
-#line 6425 "ripper.c" /* yacc.c:1645  */
+#line 6435 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 113:
-#line 1692 "ripper.y" /* yacc.c:1645  */
+#line 1692 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = const_decl(p, NEW_COLON2((yyvsp[-2].val), (yyvsp[0].val), &(yyloc)), &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(const_path_field,v1,v2);(yyval.val)=const_decl(p, v3);}
 		    }
-#line 6436 "ripper.c" /* yacc.c:1645  */
+#line 6446 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 114:
-#line 1699 "ripper.y" /* yacc.c:1645  */
+#line 1699 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = const_decl(p, NEW_COLON3((yyvsp[0].val), &(yyloc)), &(yyloc));
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(top_const_field,v1);(yyval.val)=const_decl(p, v2);}
 		    }
-#line 6447 "ripper.c" /* yacc.c:1645  */
+#line 6457 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 115:
-#line 1706 "ripper.y" /* yacc.c:1645  */
+#line 1706 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			rb_backref_error(p, (yyvsp[0].val));
@@ -6460,101 +6470,101 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=var_field(p, (yyvsp[0].val));v2=dispatch1(assign_error,v1);(yyval.val)=v2;}ripper_error(p);
 		    }
-#line 6459 "ripper.c" /* yacc.c:1645  */
+#line 6469 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 116:
-#line 1716 "ripper.y" /* yacc.c:1645  */
+#line 1716 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			yyerror1(&(yylsp[0]), "class/module name must be CONSTANT");
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(class_name_error,v1);(yyval.val)=v2;}ripper_error(p);
 		    }
-#line 6470 "ripper.c" /* yacc.c:1645  */
+#line 6480 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 118:
-#line 1726 "ripper.y" /* yacc.c:1645  */
+#line 1726 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_COLON3((yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(top_const_ref,v1);(yyval.val)=v2;}
 		    }
-#line 6481 "ripper.c" /* yacc.c:1645  */
+#line 6491 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 119:
-#line 1733 "ripper.y" /* yacc.c:1645  */
+#line 1733 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_COLON2(0, (yyval.val), &(yyloc));
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(const_ref,v1);(yyval.val)=v2;}
 		    }
-#line 6492 "ripper.c" /* yacc.c:1645  */
+#line 6502 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 120:
-#line 1740 "ripper.y" /* yacc.c:1645  */
+#line 1740 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_COLON2((yyvsp[-2].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(const_path_ref,v1,v2);(yyval.val)=v3;}
 		    }
-#line 6503 "ripper.c" /* yacc.c:1645  */
+#line 6513 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 124:
-#line 1752 "ripper.y" /* yacc.c:1645  */
+#line 1752 "ripper.y" /* yacc.c:1652  */
     {
 			SET_LEX_STATE(EXPR_ENDFN);
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 6512 "ripper.c" /* yacc.c:1645  */
+#line 6522 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 125:
-#line 1757 "ripper.y" /* yacc.c:1645  */
+#line 1757 "ripper.y" /* yacc.c:1652  */
     {
 			SET_LEX_STATE(EXPR_ENDFN);
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 6521 "ripper.c" /* yacc.c:1645  */
+#line 6531 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 128:
-#line 1768 "ripper.y" /* yacc.c:1645  */
+#line 1768 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_LIT(ID2SYM((yyvsp[0].val)), &(yyloc));
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(symbol_literal,v1);(yyval.val)=v2;}
 		    }
-#line 6532 "ripper.c" /* yacc.c:1645  */
+#line 6542 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 130:
-#line 1778 "ripper.y" /* yacc.c:1645  */
+#line 1778 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_UNDEF((yyvsp[0].val), &(yyloc));
 #endif
 			(yyval.val)=rb_ary_new3(1, get_value((yyvsp[0].val)));
 		    }
-#line 6543 "ripper.c" /* yacc.c:1645  */
+#line 6553 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 131:
-#line 1784 "ripper.y" /* yacc.c:1645  */
+#line 1784 "ripper.y" /* yacc.c:1652  */
     {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);}
-#line 6549 "ripper.c" /* yacc.c:1645  */
+#line 6559 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 132:
-#line 1785 "ripper.y" /* yacc.c:1645  */
+#line 1785 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			NODE *undef = NEW_UNDEF((yyvsp[0].val), &(yylsp[0]));
@@ -6562,213 +6572,213 @@ yyreduce:
 #endif
 			(yyval.val)=rb_ary_push((yyvsp[-3].val), get_value((yyvsp[0].val)));
 		    }
-#line 6561 "ripper.c" /* yacc.c:1645  */
+#line 6571 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 133:
-#line 1794 "ripper.y" /* yacc.c:1645  */
+#line 1794 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = '|'); }
-#line 6567 "ripper.c" /* yacc.c:1645  */
+#line 6577 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 134:
-#line 1795 "ripper.y" /* yacc.c:1645  */
+#line 1795 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = '^'); }
-#line 6573 "ripper.c" /* yacc.c:1645  */
+#line 6583 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 135:
-#line 1796 "ripper.y" /* yacc.c:1645  */
+#line 1796 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = '&'); }
-#line 6579 "ripper.c" /* yacc.c:1645  */
+#line 6589 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 136:
-#line 1797 "ripper.y" /* yacc.c:1645  */
+#line 1797 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = tCMP); }
-#line 6585 "ripper.c" /* yacc.c:1645  */
+#line 6595 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 137:
-#line 1798 "ripper.y" /* yacc.c:1645  */
+#line 1798 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = tEQ); }
-#line 6591 "ripper.c" /* yacc.c:1645  */
+#line 6601 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 138:
-#line 1799 "ripper.y" /* yacc.c:1645  */
+#line 1799 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = tEQQ); }
-#line 6597 "ripper.c" /* yacc.c:1645  */
+#line 6607 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 139:
-#line 1800 "ripper.y" /* yacc.c:1645  */
+#line 1800 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = tMATCH); }
-#line 6603 "ripper.c" /* yacc.c:1645  */
+#line 6613 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 140:
-#line 1801 "ripper.y" /* yacc.c:1645  */
+#line 1801 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = tNMATCH); }
-#line 6609 "ripper.c" /* yacc.c:1645  */
+#line 6619 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 141:
-#line 1802 "ripper.y" /* yacc.c:1645  */
+#line 1802 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = '>'); }
-#line 6615 "ripper.c" /* yacc.c:1645  */
+#line 6625 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 142:
-#line 1803 "ripper.y" /* yacc.c:1645  */
+#line 1803 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = tGEQ); }
-#line 6621 "ripper.c" /* yacc.c:1645  */
+#line 6631 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 143:
-#line 1804 "ripper.y" /* yacc.c:1645  */
+#line 1804 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = '<'); }
-#line 6627 "ripper.c" /* yacc.c:1645  */
+#line 6637 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 144:
-#line 1805 "ripper.y" /* yacc.c:1645  */
+#line 1805 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = tLEQ); }
-#line 6633 "ripper.c" /* yacc.c:1645  */
+#line 6643 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 145:
-#line 1806 "ripper.y" /* yacc.c:1645  */
+#line 1806 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = tNEQ); }
-#line 6639 "ripper.c" /* yacc.c:1645  */
+#line 6649 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 146:
-#line 1807 "ripper.y" /* yacc.c:1645  */
+#line 1807 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = tLSHFT); }
-#line 6645 "ripper.c" /* yacc.c:1645  */
+#line 6655 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 147:
-#line 1808 "ripper.y" /* yacc.c:1645  */
+#line 1808 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = tRSHFT); }
-#line 6651 "ripper.c" /* yacc.c:1645  */
+#line 6661 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 148:
-#line 1809 "ripper.y" /* yacc.c:1645  */
+#line 1809 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = '+'); }
-#line 6657 "ripper.c" /* yacc.c:1645  */
+#line 6667 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 149:
-#line 1810 "ripper.y" /* yacc.c:1645  */
+#line 1810 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = '-'); }
-#line 6663 "ripper.c" /* yacc.c:1645  */
+#line 6673 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 150:
-#line 1811 "ripper.y" /* yacc.c:1645  */
+#line 1811 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = '*'); }
-#line 6669 "ripper.c" /* yacc.c:1645  */
+#line 6679 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 151:
-#line 1812 "ripper.y" /* yacc.c:1645  */
+#line 1812 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = '*'); }
-#line 6675 "ripper.c" /* yacc.c:1645  */
+#line 6685 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 152:
-#line 1813 "ripper.y" /* yacc.c:1645  */
+#line 1813 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = '/'); }
-#line 6681 "ripper.c" /* yacc.c:1645  */
+#line 6691 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 153:
-#line 1814 "ripper.y" /* yacc.c:1645  */
+#line 1814 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = '%'); }
-#line 6687 "ripper.c" /* yacc.c:1645  */
+#line 6697 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 154:
-#line 1815 "ripper.y" /* yacc.c:1645  */
+#line 1815 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = tPOW); }
-#line 6693 "ripper.c" /* yacc.c:1645  */
+#line 6703 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 155:
-#line 1816 "ripper.y" /* yacc.c:1645  */
+#line 1816 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = tDSTAR); }
-#line 6699 "ripper.c" /* yacc.c:1645  */
+#line 6709 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 156:
-#line 1817 "ripper.y" /* yacc.c:1645  */
+#line 1817 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = '!'); }
-#line 6705 "ripper.c" /* yacc.c:1645  */
+#line 6715 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 157:
-#line 1818 "ripper.y" /* yacc.c:1645  */
+#line 1818 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = '~'); }
-#line 6711 "ripper.c" /* yacc.c:1645  */
+#line 6721 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 158:
-#line 1819 "ripper.y" /* yacc.c:1645  */
+#line 1819 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = tUPLUS); }
-#line 6717 "ripper.c" /* yacc.c:1645  */
+#line 6727 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 159:
-#line 1820 "ripper.y" /* yacc.c:1645  */
+#line 1820 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = tUMINUS); }
-#line 6723 "ripper.c" /* yacc.c:1645  */
+#line 6733 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 160:
-#line 1821 "ripper.y" /* yacc.c:1645  */
+#line 1821 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = tAREF); }
-#line 6729 "ripper.c" /* yacc.c:1645  */
+#line 6739 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 161:
-#line 1822 "ripper.y" /* yacc.c:1645  */
+#line 1822 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = tASET); }
-#line 6735 "ripper.c" /* yacc.c:1645  */
+#line 6745 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 162:
-#line 1823 "ripper.y" /* yacc.c:1645  */
+#line 1823 "ripper.y" /* yacc.c:1652  */
     { ifndef_ripper((yyval.val) = '`'); }
-#line 6741 "ripper.c" /* yacc.c:1645  */
+#line 6751 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 204:
-#line 1841 "ripper.y" /* yacc.c:1645  */
+#line 1841 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = node_assign(p, (yyvsp[-2].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(assign,v1,v2);(yyval.val)=v3;}
 		    }
-#line 6752 "ripper.c" /* yacc.c:1645  */
+#line 6762 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 205:
-#line 1848 "ripper.y" /* yacc.c:1645  */
+#line 1848 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_op_assign(p, (yyvsp[-2].val), (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4;v1=(yyvsp[-2].val);v2=(yyvsp[-1].val);v3=(yyvsp[0].val);v4=dispatch3(opassign,v1,v2,v3);(yyval.val)=v4;}
 		    }
-#line 6763 "ripper.c" /* yacc.c:1645  */
+#line 6773 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 206:
-#line 1855 "ripper.y" /* yacc.c:1645  */
+#line 1855 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			value_expr((yyvsp[0].val));
@@ -6776,11 +6786,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7;v1=(yyvsp[-5].val);v2=escape_Qundef((yyvsp[-3].val));v3=dispatch2(aref_field,v1,v2);v4=v3;v5=(yyvsp[-1].val);v6=(yyvsp[0].val);v7=dispatch3(opassign,v4,v5,v6);(yyval.val)=v7;}
 		    }
-#line 6775 "ripper.c" /* yacc.c:1645  */
+#line 6785 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 207:
-#line 1863 "ripper.y" /* yacc.c:1645  */
+#line 1863 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			value_expr((yyvsp[0].val));
@@ -6788,11 +6798,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=(yyvsp[-4].val);v2=(yyvsp[-3].val);v3=(yyvsp[-2].val);v4=dispatch3(field,v1,v2,v3);v5=v4;v6=(yyvsp[-1].val);v7=(yyvsp[0].val);v8=dispatch3(opassign,v5,v6,v7);(yyval.val)=v8;}
 		    }
-#line 6787 "ripper.c" /* yacc.c:1645  */
+#line 6797 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 208:
-#line 1871 "ripper.y" /* yacc.c:1645  */
+#line 1871 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			value_expr((yyvsp[0].val));
@@ -6800,11 +6810,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=(yyvsp[-4].val);v2=(yyvsp[-3].val);v3=(yyvsp[-2].val);v4=dispatch3(field,v1,v2,v3);v5=v4;v6=(yyvsp[-1].val);v7=(yyvsp[0].val);v8=dispatch3(opassign,v5,v6,v7);(yyval.val)=v8;}
 		    }
-#line 6799 "ripper.c" /* yacc.c:1645  */
+#line 6809 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 209:
-#line 1879 "ripper.y" /* yacc.c:1645  */
+#line 1879 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			value_expr((yyvsp[0].val));
@@ -6812,11 +6822,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=(yyvsp[-4].val);v2=ID2VAL(idCOLON2);v3=(yyvsp[-2].val);v4=dispatch3(field,v1,v2,v3);v5=v4;v6=(yyvsp[-1].val);v7=(yyvsp[0].val);v8=dispatch3(opassign,v5,v6,v7);(yyval.val)=v8;}
 		    }
-#line 6811 "ripper.c" /* yacc.c:1645  */
+#line 6821 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 210:
-#line 1887 "ripper.y" /* yacc.c:1645  */
+#line 1887 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			YYLTYPE loc = code_loc_gen(&(yylsp[-4]), &(yylsp[-2]));
@@ -6824,22 +6834,22 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7;v1=(yyvsp[-4].val);v2=(yyvsp[-2].val);v3=dispatch2(const_path_field,v1,v2);v4=v3;v5=(yyvsp[-1].val);v6=(yyvsp[0].val);v7=dispatch3(opassign,v4,v5,v6);(yyval.val)=v7;}
 		    }
-#line 6823 "ripper.c" /* yacc.c:1645  */
+#line 6833 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 211:
-#line 1895 "ripper.y" /* yacc.c:1645  */
+#line 1895 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_const_op_assign(p, NEW_COLON3((yyvsp[-2].val), &(yyloc)), (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6;v1=(yyvsp[-2].val);v2=dispatch1(top_const_field,v1);v3=v2;v4=(yyvsp[-1].val);v5=(yyvsp[0].val);v6=dispatch3(opassign,v3,v4,v5);(yyval.val)=v6;}
 		    }
-#line 6834 "ripper.c" /* yacc.c:1645  */
+#line 6844 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 212:
-#line 1902 "ripper.y" /* yacc.c:1645  */
+#line 1902 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			rb_backref_error(p, (yyvsp[-2].val));
@@ -6847,11 +6857,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6;v1=var_field(p, (yyvsp[-2].val));v2=(yyvsp[-1].val);v3=(yyvsp[0].val);v4=dispatch3(opassign,v1,v2,v3);v5=v4;v6=dispatch1(assign_error,v5);(yyval.val)=v6;}ripper_error(p);
 		    }
-#line 6846 "ripper.c" /* yacc.c:1645  */
+#line 6856 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 213:
-#line 1910 "ripper.y" /* yacc.c:1645  */
+#line 1910 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			value_expr((yyvsp[-2].val));
@@ -6860,11 +6870,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(dot2,v1,v2);(yyval.val)=v3;}
 		    }
-#line 6859 "ripper.c" /* yacc.c:1645  */
+#line 6869 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 214:
-#line 1919 "ripper.y" /* yacc.c:1645  */
+#line 1919 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			value_expr((yyvsp[-2].val));
@@ -6873,11 +6883,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(dot3,v1,v2);(yyval.val)=v3;}
 		    }
-#line 6872 "ripper.c" /* yacc.c:1645  */
+#line 6882 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 215:
-#line 1928 "ripper.y" /* yacc.c:1645  */
+#line 1928 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
                         YYLTYPE loc;
@@ -6889,11 +6899,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-1].val);v2=Qnil;v3=dispatch2(dot2,v1,v2);(yyval.val)=v3;}
 		    }
-#line 6888 "ripper.c" /* yacc.c:1645  */
+#line 6898 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 216:
-#line 1940 "ripper.y" /* yacc.c:1645  */
+#line 1940 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
                         YYLTYPE loc;
@@ -6905,218 +6915,218 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-1].val);v2=Qnil;v3=dispatch2(dot3,v1,v2);(yyval.val)=v3;}
 		    }
-#line 6904 "ripper.c" /* yacc.c:1645  */
+#line 6914 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 217:
-#line 1952 "ripper.y" /* yacc.c:1645  */
+#line 1952 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_bin_op(p, (yyvsp[-2].val), '+', (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 6912 "ripper.c" /* yacc.c:1645  */
+#line 6922 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 218:
-#line 1956 "ripper.y" /* yacc.c:1645  */
+#line 1956 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_bin_op(p, (yyvsp[-2].val), '-', (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 6920 "ripper.c" /* yacc.c:1645  */
+#line 6930 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 219:
-#line 1960 "ripper.y" /* yacc.c:1645  */
+#line 1960 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_bin_op(p, (yyvsp[-2].val), '*', (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 6928 "ripper.c" /* yacc.c:1645  */
+#line 6938 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 220:
-#line 1964 "ripper.y" /* yacc.c:1645  */
+#line 1964 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_bin_op(p, (yyvsp[-2].val), '/', (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 6936 "ripper.c" /* yacc.c:1645  */
+#line 6946 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 221:
-#line 1968 "ripper.y" /* yacc.c:1645  */
+#line 1968 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_bin_op(p, (yyvsp[-2].val), '%', (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 6944 "ripper.c" /* yacc.c:1645  */
+#line 6954 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 222:
-#line 1972 "ripper.y" /* yacc.c:1645  */
+#line 1972 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_bin_op(p, (yyvsp[-2].val), idPow, (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 6952 "ripper.c" /* yacc.c:1645  */
+#line 6962 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 223:
-#line 1976 "ripper.y" /* yacc.c:1645  */
+#line 1976 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_uni_op(p, call_bin_op(p, (yyvsp[-2].val), idPow, (yyvsp[0].val), &(yylsp[-2]), &(yyloc)), idUMinus, &(yylsp[-3]), &(yyloc));
 		    }
-#line 6960 "ripper.c" /* yacc.c:1645  */
+#line 6970 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 224:
-#line 1980 "ripper.y" /* yacc.c:1645  */
+#line 1980 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_uni_op(p, (yyvsp[0].val), idUPlus, &(yylsp[-1]), &(yyloc));
 		    }
-#line 6968 "ripper.c" /* yacc.c:1645  */
+#line 6978 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 225:
-#line 1984 "ripper.y" /* yacc.c:1645  */
+#line 1984 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_uni_op(p, (yyvsp[0].val), idUMinus, &(yylsp[-1]), &(yyloc));
 		    }
-#line 6976 "ripper.c" /* yacc.c:1645  */
+#line 6986 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 226:
-#line 1988 "ripper.y" /* yacc.c:1645  */
+#line 1988 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_bin_op(p, (yyvsp[-2].val), '|', (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 6984 "ripper.c" /* yacc.c:1645  */
+#line 6994 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 227:
-#line 1992 "ripper.y" /* yacc.c:1645  */
+#line 1992 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_bin_op(p, (yyvsp[-2].val), '^', (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 6992 "ripper.c" /* yacc.c:1645  */
+#line 7002 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 228:
-#line 1996 "ripper.y" /* yacc.c:1645  */
+#line 1996 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_bin_op(p, (yyvsp[-2].val), '&', (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 7000 "ripper.c" /* yacc.c:1645  */
+#line 7010 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 229:
-#line 2000 "ripper.y" /* yacc.c:1645  */
+#line 2000 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_bin_op(p, (yyvsp[-2].val), idCmp, (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 7008 "ripper.c" /* yacc.c:1645  */
+#line 7018 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 231:
-#line 2005 "ripper.y" /* yacc.c:1645  */
+#line 2005 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_bin_op(p, (yyvsp[-2].val), idEq, (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 7016 "ripper.c" /* yacc.c:1645  */
+#line 7026 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 232:
-#line 2009 "ripper.y" /* yacc.c:1645  */
+#line 2009 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_bin_op(p, (yyvsp[-2].val), idEqq, (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 7024 "ripper.c" /* yacc.c:1645  */
+#line 7034 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 233:
-#line 2013 "ripper.y" /* yacc.c:1645  */
+#line 2013 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_bin_op(p, (yyvsp[-2].val), idNeq, (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 7032 "ripper.c" /* yacc.c:1645  */
+#line 7042 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 234:
-#line 2017 "ripper.y" /* yacc.c:1645  */
+#line 2017 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = match_op(p, (yyvsp[-2].val), (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 7040 "ripper.c" /* yacc.c:1645  */
+#line 7050 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 235:
-#line 2021 "ripper.y" /* yacc.c:1645  */
+#line 2021 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_bin_op(p, (yyvsp[-2].val), idNeqTilde, (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 7048 "ripper.c" /* yacc.c:1645  */
+#line 7058 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 236:
-#line 2025 "ripper.y" /* yacc.c:1645  */
+#line 2025 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_uni_op(p, method_cond(p, (yyvsp[0].val), &(yylsp[0])), '!', &(yylsp[-1]), &(yyloc));
 		    }
-#line 7056 "ripper.c" /* yacc.c:1645  */
+#line 7066 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 237:
-#line 2029 "ripper.y" /* yacc.c:1645  */
+#line 2029 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_uni_op(p, (yyvsp[0].val), '~', &(yylsp[-1]), &(yyloc));
 		    }
-#line 7064 "ripper.c" /* yacc.c:1645  */
+#line 7074 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 238:
-#line 2033 "ripper.y" /* yacc.c:1645  */
+#line 2033 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_bin_op(p, (yyvsp[-2].val), idLTLT, (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 7072 "ripper.c" /* yacc.c:1645  */
+#line 7082 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 239:
-#line 2037 "ripper.y" /* yacc.c:1645  */
+#line 2037 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_bin_op(p, (yyvsp[-2].val), idGTGT, (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 7080 "ripper.c" /* yacc.c:1645  */
+#line 7090 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 240:
-#line 2041 "ripper.y" /* yacc.c:1645  */
+#line 2041 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = logop(p, idANDOP, (yyvsp[-2].val), (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 7088 "ripper.c" /* yacc.c:1645  */
+#line 7098 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 241:
-#line 2045 "ripper.y" /* yacc.c:1645  */
+#line 2045 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = logop(p, idOROP, (yyvsp[-2].val), (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 7096 "ripper.c" /* yacc.c:1645  */
+#line 7106 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 242:
-#line 2048 "ripper.y" /* yacc.c:1645  */
+#line 2048 "ripper.y" /* yacc.c:1652  */
     {p->in_defined = 1;}
-#line 7102 "ripper.c" /* yacc.c:1645  */
+#line 7112 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 243:
-#line 2049 "ripper.y" /* yacc.c:1645  */
+#line 2049 "ripper.y" /* yacc.c:1652  */
     {
 			p->in_defined = 0;
 			(yyval.val) = new_defined(p, (yyvsp[0].val), &(yyloc));
 		    }
-#line 7111 "ripper.c" /* yacc.c:1645  */
+#line 7121 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 244:
-#line 2054 "ripper.y" /* yacc.c:1645  */
+#line 2054 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			value_expr((yyvsp[-5].val));
@@ -7125,108 +7135,108 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4;v1=(yyvsp[-5].val);v2=(yyvsp[-3].val);v3=(yyvsp[0].val);v4=dispatch3(ifop,v1,v2,v3);(yyval.val)=v4;}
 		    }
-#line 7124 "ripper.c" /* yacc.c:1645  */
+#line 7134 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 245:
-#line 2063 "ripper.y" /* yacc.c:1645  */
+#line 2063 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 7132 "ripper.c" /* yacc.c:1645  */
+#line 7142 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 246:
-#line 2068 "ripper.y" /* yacc.c:1645  */
+#line 2068 "ripper.y" /* yacc.c:1652  */
     {(yyval.val) = '>';}
-#line 7138 "ripper.c" /* yacc.c:1645  */
+#line 7148 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 247:
-#line 2069 "ripper.y" /* yacc.c:1645  */
+#line 2069 "ripper.y" /* yacc.c:1652  */
     {(yyval.val) = '<';}
-#line 7144 "ripper.c" /* yacc.c:1645  */
+#line 7154 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 248:
-#line 2070 "ripper.y" /* yacc.c:1645  */
+#line 2070 "ripper.y" /* yacc.c:1652  */
     {(yyval.val) = idGE;}
-#line 7150 "ripper.c" /* yacc.c:1645  */
+#line 7160 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 249:
-#line 2071 "ripper.y" /* yacc.c:1645  */
+#line 2071 "ripper.y" /* yacc.c:1652  */
     {(yyval.val) = idLE;}
-#line 7156 "ripper.c" /* yacc.c:1645  */
+#line 7166 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 250:
-#line 2075 "ripper.y" /* yacc.c:1645  */
+#line 2075 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_bin_op(p, (yyvsp[-2].val), (yyvsp[-1].val), (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 7164 "ripper.c" /* yacc.c:1645  */
+#line 7174 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 251:
-#line 2079 "ripper.y" /* yacc.c:1645  */
+#line 2079 "ripper.y" /* yacc.c:1652  */
     {
 			rb_warning1("comparison '%s' after comparison", WARN_ID((yyvsp[-1].val)));
 			(yyval.val) = call_bin_op(p, (yyvsp[-2].val), (yyvsp[-1].val), (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 		    }
-#line 7173 "ripper.c" /* yacc.c:1645  */
+#line 7183 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 252:
-#line 2086 "ripper.y" /* yacc.c:1645  */
+#line 2086 "ripper.y" /* yacc.c:1652  */
     {
 			value_expr((yyvsp[0].val));
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 7182 "ripper.c" /* yacc.c:1645  */
+#line 7192 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 254:
-#line 2094 "ripper.y" /* yacc.c:1645  */
+#line 2094 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = (yyvsp[-1].val);
 		    }
-#line 7190 "ripper.c" /* yacc.c:1645  */
+#line 7200 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 255:
-#line 2098 "ripper.y" /* yacc.c:1645  */
+#line 2098 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[-1].val) ? arg_append(p, (yyvsp[-3].val), new_hash(p, (yyvsp[-1].val), &(yylsp[-1])), &(yyloc)) : (yyvsp[-3].val);
 #endif
 			{VALUE v1,v2,v3,v4,v5;v1=(yyvsp[-1].val);v2=dispatch1(bare_assoc_hash,v1);v3=(yyvsp[-3].val);v4=v2;v5=dispatch2(args_add,v3,v4);(yyval.val)=v5;}
 		    }
-#line 7201 "ripper.c" /* yacc.c:1645  */
+#line 7211 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 256:
-#line 2105 "ripper.y" /* yacc.c:1645  */
+#line 2105 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[-1].val) ? NEW_LIST(new_hash(p, (yyvsp[-1].val), &(yylsp[-1])), &(yyloc)) : 0;
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6;v1=dispatch0(args_new);v2=(yyvsp[-1].val);v3=dispatch1(bare_assoc_hash,v2);v4=v1;v5=v3;v6=dispatch2(args_add,v4,v5);(yyval.val)=v6;}
 		    }
-#line 7212 "ripper.c" /* yacc.c:1645  */
+#line 7222 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 257:
-#line 2114 "ripper.y" /* yacc.c:1645  */
+#line 2114 "ripper.y" /* yacc.c:1652  */
     {
 			value_expr((yyvsp[0].val));
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 7221 "ripper.c" /* yacc.c:1645  */
+#line 7231 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 258:
-#line 2119 "ripper.y" /* yacc.c:1645  */
+#line 2119 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			YYLTYPE loc = code_loc_gen(&(yylsp[-1]), &(yylsp[0]));
@@ -7235,52 +7245,52 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(rescue_mod,v1,v2);(yyval.val)=v3;}
 		    }
-#line 7234 "ripper.c" /* yacc.c:1645  */
+#line 7244 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 259:
-#line 2130 "ripper.y" /* yacc.c:1645  */
+#line 2130 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[-1].val);
 #endif
 			{VALUE v1,v2;v1=escape_Qundef((yyvsp[-1].val));v2=dispatch1(arg_paren,v1);(yyval.val)=v2;}
 		    }
-#line 7245 "ripper.c" /* yacc.c:1645  */
+#line 7255 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 264:
-#line 2145 "ripper.y" /* yacc.c:1645  */
+#line 2145 "ripper.y" /* yacc.c:1652  */
     {
 		      (yyval.val) = (yyvsp[-1].val);
 		    }
-#line 7253 "ripper.c" /* yacc.c:1645  */
+#line 7263 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 265:
-#line 2149 "ripper.y" /* yacc.c:1645  */
+#line 2149 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[-1].val) ? arg_append(p, (yyvsp[-3].val), new_hash(p, (yyvsp[-1].val), &(yylsp[-1])), &(yyloc)) : (yyvsp[-3].val);
 #endif
 			{VALUE v1,v2,v3,v4,v5;v1=(yyvsp[-1].val);v2=dispatch1(bare_assoc_hash,v1);v3=(yyvsp[-3].val);v4=v2;v5=dispatch2(args_add,v3,v4);(yyval.val)=v5;}
 		    }
-#line 7264 "ripper.c" /* yacc.c:1645  */
+#line 7274 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 266:
-#line 2156 "ripper.y" /* yacc.c:1645  */
+#line 2156 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[-1].val) ? NEW_LIST(new_hash(p, (yyvsp[-1].val), &(yylsp[-1])), &(yylsp[-1])) : 0;
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6;v1=dispatch0(args_new);v2=(yyvsp[-1].val);v3=dispatch1(bare_assoc_hash,v2);v4=v1;v5=v3;v6=dispatch2(args_add,v4,v5);(yyval.val)=v6;}
 		    }
-#line 7275 "ripper.c" /* yacc.c:1645  */
+#line 7285 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 267:
-#line 2165 "ripper.y" /* yacc.c:1645  */
+#line 2165 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			value_expr((yyvsp[0].val));
@@ -7288,22 +7298,22 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4;v1=dispatch0(args_new);v2=v1;v3=(yyvsp[0].val);v4=dispatch2(args_add,v2,v3);(yyval.val)=v4;}
 		    }
-#line 7287 "ripper.c" /* yacc.c:1645  */
+#line 7297 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 268:
-#line 2173 "ripper.y" /* yacc.c:1645  */
+#line 2173 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = arg_blk_pass((yyvsp[-1].val), (yyvsp[0].val));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-1].val);v2=(yyvsp[0].val);v3=dispatch2(args_add_block,v1,v2);(yyval.val)=v3;}
 		    }
-#line 7298 "ripper.c" /* yacc.c:1645  */
+#line 7308 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 269:
-#line 2180 "ripper.y" /* yacc.c:1645  */
+#line 2180 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[-1].val) ? NEW_LIST(new_hash(p, (yyvsp[-1].val), &(yylsp[-1])), &(yylsp[-1])) : 0;
@@ -7311,11 +7321,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7,v8,v9;v1=dispatch0(args_new);v2=(yyvsp[-1].val);v3=dispatch1(bare_assoc_hash,v2);v4=v1;v5=v3;v6=dispatch2(args_add,v4,v5);v7=v6;v8=(yyvsp[0].val);v9=dispatch2(args_add_block,v7,v8);(yyval.val)=v9;}
 		    }
-#line 7310 "ripper.c" /* yacc.c:1645  */
+#line 7320 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 270:
-#line 2188 "ripper.y" /* yacc.c:1645  */
+#line 2188 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[-1].val) ? arg_append(p, (yyvsp[-3].val), new_hash(p, (yyvsp[-1].val), &(yylsp[-1])), &(yyloc)) : (yyvsp[-3].val);
@@ -7323,17 +7333,17 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=(yyvsp[-1].val);v2=dispatch1(bare_assoc_hash,v1);v3=(yyvsp[-3].val);v4=v2;v5=dispatch2(args_add,v3,v4);v6=v5;v7=(yyvsp[0].val);v8=dispatch2(args_add_block,v6,v7);(yyval.val)=v8;}
 		    }
-#line 7322 "ripper.c" /* yacc.c:1645  */
+#line 7332 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 271:
-#line 2196 "ripper.y" /* yacc.c:1645  */
+#line 2196 "ripper.y" /* yacc.c:1652  */
     {{VALUE v1,v2,v3,v4;v1=dispatch0(args_new);v2=v1;v3=(yyvsp[0].val);v4=dispatch2(args_add_block,v2,v3);(yyval.val)=v4;}}
-#line 7328 "ripper.c" /* yacc.c:1645  */
+#line 7338 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 272:
-#line 2199 "ripper.y" /* yacc.c:1645  */
+#line 2199 "ripper.y" /* yacc.c:1652  */
     {
 			/* If call_args starts with a open paren '(' or '[',
 			 * look-ahead reading of the letters calls CMDARG_PUSH(0),
@@ -7351,11 +7361,11 @@ yyreduce:
 			CMDARG_PUSH(1);
 			if (lookahead) CMDARG_PUSH(0);
 		    }
-#line 7350 "ripper.c" /* yacc.c:1645  */
+#line 7360 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 273:
-#line 2217 "ripper.y" /* yacc.c:1645  */
+#line 2217 "ripper.y" /* yacc.c:1652  */
     {
 			/* call_args can be followed by tLBRACE_ARG (that does CMDARG_PUSH(0) in the lexer)
 			 * but the push must be done after CMDARG_POP() in the parser.
@@ -7373,134 +7383,134 @@ yyreduce:
 			if (lookahead) CMDARG_PUSH(0);
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 7372 "ripper.c" /* yacc.c:1645  */
+#line 7382 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 274:
-#line 2237 "ripper.y" /* yacc.c:1645  */
+#line 2237 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_BLOCK_PASS((yyvsp[0].val), &(yyloc));
 #endif
 			(yyval.val)=(yyvsp[0].val);
 		    }
-#line 7383 "ripper.c" /* yacc.c:1645  */
+#line 7393 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 275:
-#line 2246 "ripper.y" /* yacc.c:1645  */
+#line 2246 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 7391 "ripper.c" /* yacc.c:1645  */
+#line 7401 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 276:
-#line 2250 "ripper.y" /* yacc.c:1645  */
+#line 2250 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = 0;
 		    }
-#line 7399 "ripper.c" /* yacc.c:1645  */
+#line 7409 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 277:
-#line 2256 "ripper.y" /* yacc.c:1645  */
+#line 2256 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_LIST((yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4;v1=dispatch0(args_new);v2=v1;v3=(yyvsp[0].val);v4=dispatch2(args_add,v2,v3);(yyval.val)=v4;}
 		    }
-#line 7410 "ripper.c" /* yacc.c:1645  */
+#line 7420 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 278:
-#line 2263 "ripper.y" /* yacc.c:1645  */
+#line 2263 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_SPLAT((yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4;v1=dispatch0(args_new);v2=v1;v3=(yyvsp[0].val);v4=dispatch2(args_add_star,v2,v3);(yyval.val)=v4;}
 		    }
-#line 7421 "ripper.c" /* yacc.c:1645  */
+#line 7431 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 279:
-#line 2270 "ripper.y" /* yacc.c:1645  */
+#line 2270 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = last_arg_append(p, (yyvsp[-2].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(args_add,v1,v2);(yyval.val)=v3;}
 		    }
-#line 7432 "ripper.c" /* yacc.c:1645  */
+#line 7442 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 280:
-#line 2277 "ripper.y" /* yacc.c:1645  */
+#line 2277 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = rest_arg_append(p, (yyvsp[-3].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-3].val);v2=(yyvsp[0].val);v3=dispatch2(args_add_star,v1,v2);(yyval.val)=v3;}
 		    }
-#line 7443 "ripper.c" /* yacc.c:1645  */
+#line 7453 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 283:
-#line 2290 "ripper.y" /* yacc.c:1645  */
+#line 2290 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = last_arg_append(p, (yyvsp[-2].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5;v1=(yyvsp[-2].val);v2=dispatch1(mrhs_new_from_args,v1);v3=v2;v4=(yyvsp[0].val);v5=dispatch2(mrhs_add,v3,v4);(yyval.val)=v5;}
 		    }
-#line 7454 "ripper.c" /* yacc.c:1645  */
+#line 7464 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 284:
-#line 2297 "ripper.y" /* yacc.c:1645  */
+#line 2297 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = rest_arg_append(p, (yyvsp[-3].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5;v1=(yyvsp[-3].val);v2=dispatch1(mrhs_new_from_args,v1);v3=v2;v4=(yyvsp[0].val);v5=dispatch2(mrhs_add_star,v3,v4);(yyval.val)=v5;}
 		    }
-#line 7465 "ripper.c" /* yacc.c:1645  */
+#line 7475 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 285:
-#line 2304 "ripper.y" /* yacc.c:1645  */
+#line 2304 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_SPLAT((yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4;v1=dispatch0(mrhs_new);v2=v1;v3=(yyvsp[0].val);v4=dispatch2(mrhs_add_star,v2,v3);(yyval.val)=v4;}
 		    }
-#line 7476 "ripper.c" /* yacc.c:1645  */
+#line 7486 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 296:
-#line 2323 "ripper.y" /* yacc.c:1645  */
+#line 2323 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_FCALL((yyvsp[0].val), 0, &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6;v1=(yyvsp[0].val);v2=dispatch1(fcall,v1);v3=dispatch0(args_new);v4=v2;v5=v3;v6=dispatch2(method_add_arg,v4,v5);(yyval.val)=v6;}
 		    }
-#line 7487 "ripper.c" /* yacc.c:1645  */
+#line 7497 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 297:
-#line 2330 "ripper.y" /* yacc.c:1645  */
+#line 2330 "ripper.y" /* yacc.c:1652  */
     {
 			CMDARG_PUSH(0);
 		    }
-#line 7495 "ripper.c" /* yacc.c:1645  */
+#line 7505 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 298:
-#line 2335 "ripper.y" /* yacc.c:1645  */
+#line 2335 "ripper.y" /* yacc.c:1652  */
     {
 			CMDARG_POP();
 #if 0
@@ -7510,89 +7520,89 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=(yyvsp[-1].val);v2=dispatch1(begin,v1);(yyval.val)=v2;}
 		    }
-#line 7509 "ripper.c" /* yacc.c:1645  */
+#line 7519 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 299:
-#line 2344 "ripper.y" /* yacc.c:1645  */
+#line 2344 "ripper.y" /* yacc.c:1652  */
     {SET_LEX_STATE(EXPR_ENDARG);}
-#line 7515 "ripper.c" /* yacc.c:1645  */
+#line 7525 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 300:
-#line 2345 "ripper.y" /* yacc.c:1645  */
+#line 2345 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_BEGIN(0, &(yyloc));
 #endif
 			{VALUE v1,v2;v1=0;v2=dispatch1(paren,v1);(yyval.val)=v2;}
 		    }
-#line 7526 "ripper.c" /* yacc.c:1645  */
+#line 7536 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 301:
-#line 2351 "ripper.y" /* yacc.c:1645  */
+#line 2351 "ripper.y" /* yacc.c:1652  */
     {SET_LEX_STATE(EXPR_ENDARG);}
-#line 7532 "ripper.c" /* yacc.c:1645  */
+#line 7542 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 302:
-#line 2352 "ripper.y" /* yacc.c:1645  */
+#line 2352 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[-2].val);
 #endif
 			{VALUE v1,v2;v1=(yyvsp[-2].val);v2=dispatch1(paren,v1);(yyval.val)=v2;}
 		    }
-#line 7543 "ripper.c" /* yacc.c:1645  */
+#line 7553 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 303:
-#line 2359 "ripper.y" /* yacc.c:1645  */
+#line 2359 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[-1].val);
 #endif
 			{VALUE v1,v2;v1=(yyvsp[-1].val);v2=dispatch1(paren,v1);(yyval.val)=v2;}
 		    }
-#line 7554 "ripper.c" /* yacc.c:1645  */
+#line 7564 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 304:
-#line 2366 "ripper.y" /* yacc.c:1645  */
+#line 2366 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_COLON2((yyvsp[-2].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(const_path_ref,v1,v2);(yyval.val)=v3;}
 		    }
-#line 7565 "ripper.c" /* yacc.c:1645  */
+#line 7575 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 305:
-#line 2373 "ripper.y" /* yacc.c:1645  */
+#line 2373 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_COLON3((yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(top_const_ref,v1);(yyval.val)=v2;}
 		    }
-#line 7576 "ripper.c" /* yacc.c:1645  */
+#line 7586 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 306:
-#line 2380 "ripper.y" /* yacc.c:1645  */
+#line 2380 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = make_array((yyvsp[-1].val), &(yyloc));
 #endif
 			{VALUE v1,v2;v1=escape_Qundef((yyvsp[-1].val));v2=dispatch1(array,v1);(yyval.val)=v2;}
 		    }
-#line 7587 "ripper.c" /* yacc.c:1645  */
+#line 7597 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 307:
-#line 2387 "ripper.y" /* yacc.c:1645  */
+#line 2387 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_hash(p, (yyvsp[-1].val), &(yyloc));
@@ -7600,97 +7610,97 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=escape_Qundef((yyvsp[-1].val));v2=dispatch1(hash,v1);(yyval.val)=v2;}
 		    }
-#line 7599 "ripper.c" /* yacc.c:1645  */
+#line 7609 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 308:
-#line 2395 "ripper.y" /* yacc.c:1645  */
+#line 2395 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_RETURN(0, &(yyloc));
 #endif
 			{VALUE v1;v1=dispatch0(return0);(yyval.val)=v1;}
 		    }
-#line 7610 "ripper.c" /* yacc.c:1645  */
+#line 7620 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 309:
-#line 2402 "ripper.y" /* yacc.c:1645  */
+#line 2402 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_yield(p, (yyvsp[-1].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4;v1=(yyvsp[-1].val);v2=dispatch1(paren,v1);v3=v2;v4=dispatch1(yield,v3);(yyval.val)=v4;}
 		    }
-#line 7621 "ripper.c" /* yacc.c:1645  */
+#line 7631 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 310:
-#line 2409 "ripper.y" /* yacc.c:1645  */
+#line 2409 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_YIELD(0, &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5;v1=dispatch0(args_new);v2=v1;v3=dispatch1(paren,v2);v4=v3;v5=dispatch1(yield,v4);(yyval.val)=v5;}
 		    }
-#line 7632 "ripper.c" /* yacc.c:1645  */
+#line 7642 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 311:
-#line 2416 "ripper.y" /* yacc.c:1645  */
+#line 2416 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_YIELD(0, &(yyloc));
 #endif
 			{VALUE v1;v1=dispatch0(yield0);(yyval.val)=v1;}
 		    }
-#line 7643 "ripper.c" /* yacc.c:1645  */
+#line 7653 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 312:
-#line 2422 "ripper.y" /* yacc.c:1645  */
+#line 2422 "ripper.y" /* yacc.c:1652  */
     {p->in_defined = 1;}
-#line 7649 "ripper.c" /* yacc.c:1645  */
+#line 7659 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 313:
-#line 2423 "ripper.y" /* yacc.c:1645  */
+#line 2423 "ripper.y" /* yacc.c:1652  */
     {
 			p->in_defined = 0;
 			(yyval.val) = new_defined(p, (yyvsp[-1].val), &(yyloc));
 		    }
-#line 7658 "ripper.c" /* yacc.c:1645  */
+#line 7668 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 314:
-#line 2428 "ripper.y" /* yacc.c:1645  */
+#line 2428 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_uni_op(p, method_cond(p, (yyvsp[-1].val), &(yylsp[-1])), METHOD_NOT, &(yylsp[-3]), &(yyloc));
 		    }
-#line 7666 "ripper.c" /* yacc.c:1645  */
+#line 7676 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 315:
-#line 2432 "ripper.y" /* yacc.c:1645  */
+#line 2432 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = call_uni_op(p, method_cond(p, new_nil(&(yylsp[-1])), &(yylsp[-1])), METHOD_NOT, &(yylsp[-2]), &(yyloc));
 		    }
-#line 7674 "ripper.c" /* yacc.c:1645  */
+#line 7684 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 316:
-#line 2436 "ripper.y" /* yacc.c:1645  */
+#line 2436 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = method_add_block(p, (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7,v8,v9;v1=(yyvsp[-1].val);v2=dispatch1(fcall,v1);v3=dispatch0(args_new);v4=v2;v5=v3;v6=dispatch2(method_add_arg,v4,v5);v7=v6;v8=(yyvsp[0].val);v9=dispatch2(method_add_block,v7,v8);(yyval.val)=v9;}
 		    }
-#line 7685 "ripper.c" /* yacc.c:1645  */
+#line 7695 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 318:
-#line 2444 "ripper.y" /* yacc.c:1645  */
+#line 2444 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			block_dup_check(p, (yyvsp[-1].val)->nd_args, (yyvsp[0].val));
@@ -7698,30 +7708,30 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-1].val);v2=(yyvsp[0].val);v3=dispatch2(method_add_block,v1,v2);(yyval.val)=v3;}
 		    }
-#line 7697 "ripper.c" /* yacc.c:1645  */
+#line 7707 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 319:
-#line 2452 "ripper.y" /* yacc.c:1645  */
+#line 2452 "ripper.y" /* yacc.c:1652  */
     {
 			token_info_push(p, "->", &(yylsp[0]));
 		    }
-#line 7705 "ripper.c" /* yacc.c:1645  */
+#line 7715 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 320:
-#line 2456 "ripper.y" /* yacc.c:1645  */
+#line 2456 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = (yyvsp[0].val);
 #if 0
                         nd_set_first_loc((yyval.val), (yylsp[-2]).beg_pos);
 #endif
 		    }
-#line 7716 "ripper.c" /* yacc.c:1645  */
+#line 7726 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 321:
-#line 2466 "ripper.y" /* yacc.c:1645  */
+#line 2466 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_if(p, (yyvsp[-4].val), (yyvsp[-2].val), (yyvsp[-1].val), &(yyloc));
@@ -7729,11 +7739,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4;v1=(yyvsp[-4].val);v2=(yyvsp[-2].val);v3=escape_Qundef((yyvsp[-1].val));v4=dispatch3(if,v1,v2,v3);(yyval.val)=v4;}
 		    }
-#line 7728 "ripper.c" /* yacc.c:1645  */
+#line 7738 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 322:
-#line 2477 "ripper.y" /* yacc.c:1645  */
+#line 2477 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_unless(p, (yyvsp[-4].val), (yyvsp[-2].val), (yyvsp[-1].val), &(yyloc));
@@ -7741,11 +7751,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4;v1=(yyvsp[-4].val);v2=(yyvsp[-2].val);v3=escape_Qundef((yyvsp[-1].val));v4=dispatch3(unless,v1,v2,v3);(yyval.val)=v4;}
 		    }
-#line 7740 "ripper.c" /* yacc.c:1645  */
+#line 7750 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 323:
-#line 2487 "ripper.y" /* yacc.c:1645  */
+#line 2487 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_WHILE(cond(p, (yyvsp[-2].val), &(yylsp[-2])), (yyvsp[-1].val), 1, &(yyloc));
@@ -7753,11 +7763,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[-1].val);v3=dispatch2(while,v1,v2);(yyval.val)=v3;}
 		    }
-#line 7752 "ripper.c" /* yacc.c:1645  */
+#line 7762 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 324:
-#line 2497 "ripper.y" /* yacc.c:1645  */
+#line 2497 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_UNTIL(cond(p, (yyvsp[-2].val), &(yylsp[-2])), (yyvsp[-1].val), 1, &(yyloc));
@@ -7765,11 +7775,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[-1].val);v3=dispatch2(until,v1,v2);(yyval.val)=v3;}
 		    }
-#line 7764 "ripper.c" /* yacc.c:1645  */
+#line 7774 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 325:
-#line 2507 "ripper.y" /* yacc.c:1645  */
+#line 2507 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_CASE((yyvsp[-3].val), (yyvsp[-1].val), &(yyloc));
@@ -7777,22 +7787,22 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-3].val);v2=(yyvsp[-1].val);v3=dispatch2(case,v1,v2);(yyval.val)=v3;}
 		    }
-#line 7776 "ripper.c" /* yacc.c:1645  */
+#line 7786 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 326:
-#line 2515 "ripper.y" /* yacc.c:1645  */
+#line 2515 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_CASE2((yyvsp[-1].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=Qnil;v2=(yyvsp[-1].val);v3=dispatch2(case,v1,v2);(yyval.val)=v3;}
 		    }
-#line 7787 "ripper.c" /* yacc.c:1645  */
+#line 7797 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 327:
-#line 2524 "ripper.y" /* yacc.c:1645  */
+#line 2524 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			/*
@@ -7835,11 +7845,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4;v1=(yyvsp[-4].val);v2=(yyvsp[-2].val);v3=(yyvsp[-1].val);v4=dispatch3(for,v1,v2,v3);(yyval.val)=v4;}
 		    }
-#line 7834 "ripper.c" /* yacc.c:1645  */
+#line 7844 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 328:
-#line 2567 "ripper.y" /* yacc.c:1645  */
+#line 2567 "ripper.y" /* yacc.c:1652  */
     {
 			if (p->in_def) {
 			    YYLTYPE loc = code_loc_gen(&(yylsp[-2]), &(yylsp[-1]));
@@ -7849,11 +7859,11 @@ yyreduce:
 			p->in_class = 1;
 			local_push(p, 0);
 		    }
-#line 7848 "ripper.c" /* yacc.c:1645  */
+#line 7858 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 329:
-#line 2578 "ripper.y" /* yacc.c:1645  */
+#line 2578 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_CLASS((yyvsp[-4].val), (yyvsp[-1].val), (yyvsp[-3].val), &(yyloc));
@@ -7865,22 +7875,22 @@ yyreduce:
 			local_pop(p);
 			p->in_class = (yyvsp[-5].num) & 1;
 		    }
-#line 7864 "ripper.c" /* yacc.c:1645  */
+#line 7874 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 330:
-#line 2590 "ripper.y" /* yacc.c:1645  */
+#line 2590 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.num) = (p->in_class << 1) | p->in_def;
 			p->in_def = 0;
 			p->in_class = 0;
 			local_push(p, 0);
 		    }
-#line 7875 "ripper.c" /* yacc.c:1645  */
+#line 7885 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 331:
-#line 2599 "ripper.y" /* yacc.c:1645  */
+#line 2599 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_SCLASS((yyvsp[-4].val), (yyvsp[-1].val), &(yyloc));
@@ -7893,11 +7903,11 @@ yyreduce:
 			p->in_def = (yyvsp[-3].num) & 1;
 			p->in_class = ((yyvsp[-3].num) >> 1) & 1;
 		    }
-#line 7892 "ripper.c" /* yacc.c:1645  */
+#line 7902 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 332:
-#line 2612 "ripper.y" /* yacc.c:1645  */
+#line 2612 "ripper.y" /* yacc.c:1652  */
     {
 			if (p->in_def) {
 			    YYLTYPE loc = code_loc_gen(&(yylsp[-1]), &(yylsp[0]));
@@ -7907,11 +7917,11 @@ yyreduce:
 			p->in_class = 1;
 			local_push(p, 0);
 		    }
-#line 7906 "ripper.c" /* yacc.c:1645  */
+#line 7916 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 333:
-#line 2623 "ripper.y" /* yacc.c:1645  */
+#line 2623 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_MODULE((yyvsp[-3].val), (yyvsp[-1].val), &(yyloc));
@@ -7923,30 +7933,30 @@ yyreduce:
 			local_pop(p);
 			p->in_class = (yyvsp[-4].num) & 1;
 		    }
-#line 7922 "ripper.c" /* yacc.c:1645  */
+#line 7932 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 334:
-#line 2635 "ripper.y" /* yacc.c:1645  */
+#line 2635 "ripper.y" /* yacc.c:1652  */
     {
 			local_push(p, 0);
 			(yyval.id) = p->cur_arg;
 			p->cur_arg = 0;
 		    }
-#line 7932 "ripper.c" /* yacc.c:1645  */
+#line 7942 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 335:
-#line 2640 "ripper.y" /* yacc.c:1645  */
+#line 2640 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.num) = p->in_def;
 			p->in_def = 1;
 		    }
-#line 7941 "ripper.c" /* yacc.c:1645  */
+#line 7951 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 336:
-#line 2647 "ripper.y" /* yacc.c:1645  */
+#line 2647 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			NODE *body = remove_begin((yyvsp[-1].val));
@@ -7960,17 +7970,17 @@ yyreduce:
 			p->in_def = (yyvsp[-3].num) & 1;
 			p->cur_arg = (yyvsp[-4].id);
 		    }
-#line 7959 "ripper.c" /* yacc.c:1645  */
+#line 7969 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 337:
-#line 2660 "ripper.y" /* yacc.c:1645  */
+#line 2660 "ripper.y" /* yacc.c:1652  */
     {SET_LEX_STATE(EXPR_FNAME);}
-#line 7965 "ripper.c" /* yacc.c:1645  */
+#line 7975 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 338:
-#line 2661 "ripper.y" /* yacc.c:1645  */
+#line 2661 "ripper.y" /* yacc.c:1652  */
     {
 			(yyvsp[-1].num) = p->in_def;
 			p->in_def = 1;
@@ -7979,11 +7989,11 @@ yyreduce:
 			(yyval.id) = p->cur_arg;
 			p->cur_arg = 0;
 		    }
-#line 7978 "ripper.c" /* yacc.c:1645  */
+#line 7988 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 339:
-#line 2672 "ripper.y" /* yacc.c:1645  */
+#line 2672 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			NODE *body = remove_begin((yyvsp[-1].val));
@@ -7997,219 +8007,219 @@ yyreduce:
 			p->in_def = (yyvsp[-5].num) & 1;
 			p->cur_arg = (yyvsp[-3].id);
 		    }
-#line 7996 "ripper.c" /* yacc.c:1645  */
+#line 8006 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 340:
-#line 2686 "ripper.y" /* yacc.c:1645  */
+#line 2686 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_BREAK(0, &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=dispatch0(args_new);v2=v1;v3=dispatch1(break,v2);(yyval.val)=v3;}
 		    }
-#line 8007 "ripper.c" /* yacc.c:1645  */
+#line 8017 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 341:
-#line 2693 "ripper.y" /* yacc.c:1645  */
+#line 2693 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_NEXT(0, &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=dispatch0(args_new);v2=v1;v3=dispatch1(next,v2);(yyval.val)=v3;}
 		    }
-#line 8018 "ripper.c" /* yacc.c:1645  */
+#line 8028 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 342:
-#line 2700 "ripper.y" /* yacc.c:1645  */
+#line 2700 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_REDO(&(yyloc));
 #endif
 			{VALUE v1;v1=dispatch0(redo);(yyval.val)=v1;}
 		    }
-#line 8029 "ripper.c" /* yacc.c:1645  */
+#line 8039 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 343:
-#line 2707 "ripper.y" /* yacc.c:1645  */
+#line 2707 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_RETRY(&(yyloc));
 #endif
 			{VALUE v1;v1=dispatch0(retry);(yyval.val)=v1;}
 		    }
-#line 8040 "ripper.c" /* yacc.c:1645  */
+#line 8050 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 344:
-#line 2716 "ripper.y" /* yacc.c:1645  */
+#line 2716 "ripper.y" /* yacc.c:1652  */
     {
 			value_expr((yyvsp[0].val));
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 8049 "ripper.c" /* yacc.c:1645  */
+#line 8059 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 345:
-#line 2723 "ripper.y" /* yacc.c:1645  */
+#line 2723 "ripper.y" /* yacc.c:1652  */
     {
 			token_info_push(p, "begin", &(yyloc));
 		    }
-#line 8057 "ripper.c" /* yacc.c:1645  */
+#line 8067 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 346:
-#line 2729 "ripper.y" /* yacc.c:1645  */
+#line 2729 "ripper.y" /* yacc.c:1652  */
     {
 			token_info_push(p, "if", &(yyloc));
 		    }
-#line 8065 "ripper.c" /* yacc.c:1645  */
+#line 8075 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 347:
-#line 2735 "ripper.y" /* yacc.c:1645  */
+#line 2735 "ripper.y" /* yacc.c:1652  */
     {
 			token_info_push(p, "unless", &(yyloc));
 		    }
-#line 8073 "ripper.c" /* yacc.c:1645  */
+#line 8083 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 348:
-#line 2741 "ripper.y" /* yacc.c:1645  */
+#line 2741 "ripper.y" /* yacc.c:1652  */
     {
 			token_info_push(p, "while", &(yyloc));
 		    }
-#line 8081 "ripper.c" /* yacc.c:1645  */
+#line 8091 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 349:
-#line 2747 "ripper.y" /* yacc.c:1645  */
+#line 2747 "ripper.y" /* yacc.c:1652  */
     {
 			token_info_push(p, "until", &(yyloc));
 		    }
-#line 8089 "ripper.c" /* yacc.c:1645  */
+#line 8099 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 350:
-#line 2753 "ripper.y" /* yacc.c:1645  */
+#line 2753 "ripper.y" /* yacc.c:1652  */
     {
 			token_info_push(p, "case", &(yyloc));
 		    }
-#line 8097 "ripper.c" /* yacc.c:1645  */
+#line 8107 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 351:
-#line 2759 "ripper.y" /* yacc.c:1645  */
+#line 2759 "ripper.y" /* yacc.c:1652  */
     {
 			token_info_push(p, "for", &(yyloc));
 		    }
-#line 8105 "ripper.c" /* yacc.c:1645  */
+#line 8115 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 352:
-#line 2765 "ripper.y" /* yacc.c:1645  */
+#line 2765 "ripper.y" /* yacc.c:1652  */
     {
 			token_info_push(p, "class", &(yyloc));
 		    }
-#line 8113 "ripper.c" /* yacc.c:1645  */
+#line 8123 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 353:
-#line 2771 "ripper.y" /* yacc.c:1645  */
+#line 2771 "ripper.y" /* yacc.c:1652  */
     {
 			token_info_push(p, "module", &(yyloc));
 		    }
-#line 8121 "ripper.c" /* yacc.c:1645  */
+#line 8131 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 354:
-#line 2777 "ripper.y" /* yacc.c:1645  */
+#line 2777 "ripper.y" /* yacc.c:1652  */
     {
 			token_info_push(p, "def", &(yyloc));
 		    }
-#line 8129 "ripper.c" /* yacc.c:1645  */
+#line 8139 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 355:
-#line 2783 "ripper.y" /* yacc.c:1645  */
+#line 2783 "ripper.y" /* yacc.c:1652  */
     {
 			token_info_push(p, "do", &(yyloc));
 		    }
-#line 8137 "ripper.c" /* yacc.c:1645  */
+#line 8147 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 356:
-#line 2789 "ripper.y" /* yacc.c:1645  */
+#line 2789 "ripper.y" /* yacc.c:1652  */
     {
 			token_info_push(p, "do", &(yyloc));
 		    }
-#line 8145 "ripper.c" /* yacc.c:1645  */
+#line 8155 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 357:
-#line 2795 "ripper.y" /* yacc.c:1645  */
+#line 2795 "ripper.y" /* yacc.c:1652  */
     {
 			token_info_warn(p, "rescue", p->token_info, 1, &(yyloc));
 		    }
-#line 8153 "ripper.c" /* yacc.c:1645  */
+#line 8163 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 358:
-#line 2801 "ripper.y" /* yacc.c:1645  */
+#line 2801 "ripper.y" /* yacc.c:1652  */
     {
 			token_info_warn(p, "ensure", p->token_info, 1, &(yyloc));
 		    }
-#line 8161 "ripper.c" /* yacc.c:1645  */
+#line 8171 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 359:
-#line 2807 "ripper.y" /* yacc.c:1645  */
+#line 2807 "ripper.y" /* yacc.c:1652  */
     {
 			token_info_warn(p, "when", p->token_info, 0, &(yyloc));
 		    }
-#line 8169 "ripper.c" /* yacc.c:1645  */
+#line 8179 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 360:
-#line 2813 "ripper.y" /* yacc.c:1645  */
+#line 2813 "ripper.y" /* yacc.c:1652  */
     {
 			token_info *ptinfo_beg = p->token_info;
 			int same = ptinfo_beg && strcmp(ptinfo_beg->token, "case") != 0;
 			token_info_warn(p, "else", p->token_info, same, &(yyloc));
 		    }
-#line 8179 "ripper.c" /* yacc.c:1645  */
+#line 8189 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 361:
-#line 2821 "ripper.y" /* yacc.c:1645  */
+#line 2821 "ripper.y" /* yacc.c:1652  */
     {
 			token_info_warn(p, "elsif", p->token_info, 1, &(yyloc));
 		    }
-#line 8187 "ripper.c" /* yacc.c:1645  */
+#line 8197 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 362:
-#line 2827 "ripper.y" /* yacc.c:1645  */
+#line 2827 "ripper.y" /* yacc.c:1652  */
     {
 			token_info_pop(p, "end", &(yyloc));
 		    }
-#line 8195 "ripper.c" /* yacc.c:1645  */
+#line 8205 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 363:
-#line 2833 "ripper.y" /* yacc.c:1645  */
+#line 2833 "ripper.y" /* yacc.c:1652  */
     {
 			if (p->in_class && !p->in_def && !dyna_in_block(p))
 			    yyerror1(&(yylsp[0]), "Invalid return in class/module body");
 		    }
-#line 8204 "ripper.c" /* yacc.c:1645  */
+#line 8214 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 370:
-#line 2852 "ripper.y" /* yacc.c:1645  */
+#line 2852 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_if(p, (yyvsp[-3].val), (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
@@ -8217,253 +8227,253 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4;v1=(yyvsp[-3].val);v2=(yyvsp[-1].val);v3=escape_Qundef((yyvsp[0].val));v4=dispatch3(elsif,v1,v2,v3);(yyval.val)=v4;}
 		    }
-#line 8216 "ripper.c" /* yacc.c:1645  */
+#line 8226 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 372:
-#line 2863 "ripper.y" /* yacc.c:1645  */
+#line 2863 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[0].val);
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(else,v1);(yyval.val)=v2;}
 		    }
-#line 8227 "ripper.c" /* yacc.c:1645  */
+#line 8237 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 375:
-#line 2876 "ripper.y" /* yacc.c:1645  */
+#line 2876 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = assignable(p, (yyvsp[0].val), 0, &(yyloc));
 #endif
 			(yyval.val)=assignable(p, (yyvsp[0].val));
 		    }
-#line 8238 "ripper.c" /* yacc.c:1645  */
+#line 8248 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 376:
-#line 2883 "ripper.y" /* yacc.c:1645  */
+#line 2883 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[-1].val);
 #endif
 			{VALUE v1,v2;v1=(yyvsp[-1].val);v2=dispatch1(mlhs_paren,v1);(yyval.val)=v2;}
 		    }
-#line 8249 "ripper.c" /* yacc.c:1645  */
+#line 8259 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 377:
-#line 2892 "ripper.y" /* yacc.c:1645  */
+#line 2892 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_LIST((yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4;v1=dispatch0(mlhs_new);v2=v1;v3=(yyvsp[0].val);v4=dispatch2(mlhs_add,v2,v3);(yyval.val)=v4;}
 		    }
-#line 8260 "ripper.c" /* yacc.c:1645  */
+#line 8270 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 378:
-#line 2899 "ripper.y" /* yacc.c:1645  */
+#line 2899 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = list_append(p, (yyvsp[-2].val), (yyvsp[0].val));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(mlhs_add,v1,v2);(yyval.val)=v3;}
 		    }
-#line 8271 "ripper.c" /* yacc.c:1645  */
+#line 8281 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 379:
-#line 2908 "ripper.y" /* yacc.c:1645  */
+#line 2908 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_MASGN((yyvsp[0].val), 0, &(yyloc));
 #endif
 			(yyval.val)=(yyvsp[0].val);
 		    }
-#line 8282 "ripper.c" /* yacc.c:1645  */
+#line 8292 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 380:
-#line 2915 "ripper.y" /* yacc.c:1645  */
+#line 2915 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_MASGN((yyvsp[-3].val), assignable(p, (yyvsp[0].val), 0, &(yyloc)), &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-3].val);v2=assignable(p, (yyvsp[0].val));v3=dispatch2(mlhs_add_star,v1,v2);(yyval.val)=v3;}
 		    }
-#line 8293 "ripper.c" /* yacc.c:1645  */
+#line 8303 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 381:
-#line 2922 "ripper.y" /* yacc.c:1645  */
+#line 2922 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_MASGN((yyvsp[-5].val), NEW_POSTARG(assignable(p, (yyvsp[-2].val), 0, &(yyloc)), (yyvsp[0].val), &(yyloc)), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6;v1=(yyvsp[-5].val);v2=assignable(p, (yyvsp[-2].val));v3=dispatch2(mlhs_add_star,v1,v2);v4=v3;v5=(yyvsp[0].val);v6=dispatch2(mlhs_add_post,v4,v5);(yyval.val)=v6;}
 		    }
-#line 8304 "ripper.c" /* yacc.c:1645  */
+#line 8314 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 382:
-#line 2929 "ripper.y" /* yacc.c:1645  */
+#line 2929 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_MASGN((yyvsp[-2].val), NODE_SPECIAL_NO_NAME_REST, &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=Qnil;v3=dispatch2(mlhs_add_star,v1,v2);(yyval.val)=v3;}
 		    }
-#line 8315 "ripper.c" /* yacc.c:1645  */
+#line 8325 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 383:
-#line 2936 "ripper.y" /* yacc.c:1645  */
+#line 2936 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_MASGN((yyvsp[-4].val), NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, (yyvsp[0].val), &(yyloc)), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6;v1=(yyvsp[-4].val);v2=Qnil;v3=dispatch2(mlhs_add_star,v1,v2);v4=v3;v5=(yyvsp[0].val);v6=dispatch2(mlhs_add_post,v4,v5);(yyval.val)=v6;}
 		    }
-#line 8326 "ripper.c" /* yacc.c:1645  */
+#line 8336 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 384:
-#line 2943 "ripper.y" /* yacc.c:1645  */
+#line 2943 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_MASGN(0, assignable(p, (yyvsp[0].val), 0, &(yyloc)), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4;v1=dispatch0(mlhs_new);v2=v1;v3=assignable(p, (yyvsp[0].val));v4=dispatch2(mlhs_add_star,v2,v3);(yyval.val)=v4;}
 		    }
-#line 8337 "ripper.c" /* yacc.c:1645  */
+#line 8347 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 385:
-#line 2950 "ripper.y" /* yacc.c:1645  */
+#line 2950 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_MASGN(0, NEW_POSTARG(assignable(p, (yyvsp[-2].val), 0, &(yyloc)), (yyvsp[0].val), &(yyloc)), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7;v1=dispatch0(mlhs_new);v2=v1;v3=assignable(p, (yyvsp[-2].val));v4=dispatch2(mlhs_add_star,v2,v3);v5=v4;v6=(yyvsp[0].val);v7=dispatch2(mlhs_add_post,v5,v6);(yyval.val)=v7;}
 		    }
-#line 8348 "ripper.c" /* yacc.c:1645  */
+#line 8358 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 386:
-#line 2957 "ripper.y" /* yacc.c:1645  */
+#line 2957 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_MASGN(0, NODE_SPECIAL_NO_NAME_REST, &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4;v1=dispatch0(mlhs_new);v2=v1;v3=Qnil;v4=dispatch2(mlhs_add_star,v2,v3);(yyval.val)=v4;}
 		    }
-#line 8359 "ripper.c" /* yacc.c:1645  */
+#line 8369 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 387:
-#line 2964 "ripper.y" /* yacc.c:1645  */
+#line 2964 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_MASGN(0, NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, (yyvsp[0].val), &(yyloc)), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7;v1=dispatch0(mlhs_new);v2=v1;v3=Qnil;v4=dispatch2(mlhs_add_star,v2,v3);v5=v4;v6=(yyvsp[0].val);v7=dispatch2(mlhs_add_post,v5,v6);(yyval.val)=v7;}
 		    }
-#line 8370 "ripper.c" /* yacc.c:1645  */
+#line 8380 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 388:
-#line 2974 "ripper.y" /* yacc.c:1645  */
+#line 2974 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args_tail(p, (yyvsp[-3].val), (yyvsp[-1].val), (yyvsp[0].val), &(yylsp[-1]));
 		    }
-#line 8378 "ripper.c" /* yacc.c:1645  */
+#line 8388 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 389:
-#line 2978 "ripper.y" /* yacc.c:1645  */
+#line 2978 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args_tail(p, (yyvsp[-1].val), Qnone, (yyvsp[0].val), &(yylsp[-1]));
 		    }
-#line 8386 "ripper.c" /* yacc.c:1645  */
+#line 8396 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 390:
-#line 2982 "ripper.y" /* yacc.c:1645  */
+#line 2982 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args_tail(p, Qnone, (yyvsp[-1].val), (yyvsp[0].val), &(yylsp[-1]));
 		    }
-#line 8394 "ripper.c" /* yacc.c:1645  */
+#line 8404 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 391:
-#line 2986 "ripper.y" /* yacc.c:1645  */
+#line 2986 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args_tail(p, Qnone, Qnone, (yyvsp[0].val), &(yylsp[0]));
 		    }
-#line 8402 "ripper.c" /* yacc.c:1645  */
+#line 8412 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 392:
-#line 2992 "ripper.y" /* yacc.c:1645  */
+#line 2992 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 8410 "ripper.c" /* yacc.c:1645  */
+#line 8420 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 393:
-#line 2996 "ripper.y" /* yacc.c:1645  */
+#line 2996 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args_tail(p, Qnone, Qnone, Qnone, &(yylsp[0]));
 		    }
-#line 8418 "ripper.c" /* yacc.c:1645  */
+#line 8428 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 394:
-#line 3002 "ripper.y" /* yacc.c:1645  */
+#line 3002 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, (yyvsp[-5].val), (yyvsp[-3].val), (yyvsp[-1].val), Qnone, (yyvsp[0].val), &(yyloc));
 		    }
-#line 8426 "ripper.c" /* yacc.c:1645  */
+#line 8436 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 395:
-#line 3006 "ripper.y" /* yacc.c:1645  */
+#line 3006 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, (yyvsp[-7].val), (yyvsp[-5].val), (yyvsp[-3].val), (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 		    }
-#line 8434 "ripper.c" /* yacc.c:1645  */
+#line 8444 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 396:
-#line 3010 "ripper.y" /* yacc.c:1645  */
+#line 3010 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, (yyvsp[-3].val), (yyvsp[-1].val), Qnone, Qnone, (yyvsp[0].val), &(yyloc));
 		    }
-#line 8442 "ripper.c" /* yacc.c:1645  */
+#line 8452 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 397:
-#line 3014 "ripper.y" /* yacc.c:1645  */
+#line 3014 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, (yyvsp[-5].val), (yyvsp[-3].val), Qnone, (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 		    }
-#line 8450 "ripper.c" /* yacc.c:1645  */
+#line 8460 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 398:
-#line 3018 "ripper.y" /* yacc.c:1645  */
+#line 3018 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, (yyvsp[-3].val), Qnone, (yyvsp[-1].val), Qnone, (yyvsp[0].val), &(yyloc));
 		    }
-#line 8458 "ripper.c" /* yacc.c:1645  */
+#line 8468 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 399:
-#line 3022 "ripper.y" /* yacc.c:1645  */
+#line 3022 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			/* magic number for rest_id in iseq_set_arguments() */
@@ -8472,91 +8482,91 @@ yyreduce:
 #endif
 			{VALUE v1;v1=dispatch0(excessed_comma);(yyval.val)=new_args(p, (yyvsp[-1].val), Qnone, v1, Qnone, new_args_tail(p, Qnone, Qnone, Qnone, NULL), NULL);}
 		    }
-#line 8471 "ripper.c" /* yacc.c:1645  */
+#line 8481 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 400:
-#line 3031 "ripper.y" /* yacc.c:1645  */
+#line 3031 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, (yyvsp[-5].val), Qnone, (yyvsp[-3].val), (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 		    }
-#line 8479 "ripper.c" /* yacc.c:1645  */
+#line 8489 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 401:
-#line 3035 "ripper.y" /* yacc.c:1645  */
+#line 3035 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, (yyvsp[-1].val), Qnone, Qnone, Qnone, (yyvsp[0].val), &(yyloc));
 		    }
-#line 8487 "ripper.c" /* yacc.c:1645  */
+#line 8497 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 402:
-#line 3039 "ripper.y" /* yacc.c:1645  */
+#line 3039 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, Qnone, (yyvsp[-3].val), (yyvsp[-1].val), Qnone, (yyvsp[0].val), &(yyloc));
 		    }
-#line 8495 "ripper.c" /* yacc.c:1645  */
+#line 8505 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 403:
-#line 3043 "ripper.y" /* yacc.c:1645  */
+#line 3043 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, Qnone, (yyvsp[-5].val), (yyvsp[-3].val), (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 		    }
-#line 8503 "ripper.c" /* yacc.c:1645  */
+#line 8513 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 404:
-#line 3047 "ripper.y" /* yacc.c:1645  */
+#line 3047 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, Qnone, (yyvsp[-1].val), Qnone, Qnone, (yyvsp[0].val), &(yyloc));
 		    }
-#line 8511 "ripper.c" /* yacc.c:1645  */
+#line 8521 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 405:
-#line 3051 "ripper.y" /* yacc.c:1645  */
+#line 3051 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, Qnone, (yyvsp[-3].val), Qnone, (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 		    }
-#line 8519 "ripper.c" /* yacc.c:1645  */
+#line 8529 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 406:
-#line 3055 "ripper.y" /* yacc.c:1645  */
+#line 3055 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, Qnone, Qnone, (yyvsp[-1].val), Qnone, (yyvsp[0].val), &(yyloc));
 		    }
-#line 8527 "ripper.c" /* yacc.c:1645  */
+#line 8537 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 407:
-#line 3059 "ripper.y" /* yacc.c:1645  */
+#line 3059 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, Qnone, Qnone, (yyvsp[-3].val), (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 		    }
-#line 8535 "ripper.c" /* yacc.c:1645  */
+#line 8545 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 408:
-#line 3063 "ripper.y" /* yacc.c:1645  */
+#line 3063 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, Qnone, Qnone, Qnone, Qnone, (yyvsp[0].val), &(yyloc));
 		    }
-#line 8543 "ripper.c" /* yacc.c:1645  */
+#line 8553 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 410:
-#line 3070 "ripper.y" /* yacc.c:1645  */
+#line 3070 "ripper.y" /* yacc.c:1652  */
     {
 			p->command_start = TRUE;
 		    }
-#line 8551 "ripper.c" /* yacc.c:1645  */
+#line 8561 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 411:
-#line 3076 "ripper.y" /* yacc.c:1645  */
+#line 3076 "ripper.y" /* yacc.c:1652  */
     {
 			p->cur_arg = 0;
 #if 0
@@ -8564,22 +8574,22 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=params_new(Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, Qnil);v2=escape_Qundef((yyvsp[-1].val));v3=dispatch2(block_var,v1,v2);(yyval.val)=v3;}
 		    }
-#line 8563 "ripper.c" /* yacc.c:1645  */
+#line 8573 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 412:
-#line 3084 "ripper.y" /* yacc.c:1645  */
+#line 3084 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = 0;
 #endif
 			{VALUE v1,v2,v3;v1=params_new(Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, Qnil);v2=Qnil;v3=dispatch2(block_var,v1,v2);(yyval.val)=v3;}
 		    }
-#line 8574 "ripper.c" /* yacc.c:1645  */
+#line 8584 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 413:
-#line 3091 "ripper.y" /* yacc.c:1645  */
+#line 3091 "ripper.y" /* yacc.c:1652  */
     {
 			p->cur_arg = 0;
 #if 0
@@ -8587,84 +8597,84 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=escape_Qundef((yyvsp[-2].val));v2=escape_Qundef((yyvsp[-1].val));v3=dispatch2(block_var,v1,v2);(yyval.val)=v3;}
 		    }
-#line 8586 "ripper.c" /* yacc.c:1645  */
+#line 8596 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 414:
-#line 3102 "ripper.y" /* yacc.c:1645  */
+#line 3102 "ripper.y" /* yacc.c:1652  */
     {
 		      (yyval.val) = 0;
 		    }
-#line 8594 "ripper.c" /* yacc.c:1645  */
+#line 8604 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 415:
-#line 3106 "ripper.y" /* yacc.c:1645  */
+#line 3106 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = 0;
 #endif
 			(yyval.val)=(yyvsp[-1].val);
 		    }
-#line 8605 "ripper.c" /* yacc.c:1645  */
+#line 8615 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 416:
-#line 3115 "ripper.y" /* yacc.c:1645  */
+#line 3115 "ripper.y" /* yacc.c:1652  */
     {(yyval.val)=rb_ary_new3(1, get_value((yyvsp[0].val)));}
-#line 8611 "ripper.c" /* yacc.c:1645  */
+#line 8621 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 417:
-#line 3117 "ripper.y" /* yacc.c:1645  */
+#line 3117 "ripper.y" /* yacc.c:1652  */
     {(yyval.val)=rb_ary_push((yyvsp[-2].val), get_value((yyvsp[0].val)));}
-#line 8617 "ripper.c" /* yacc.c:1645  */
+#line 8627 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 418:
-#line 3121 "ripper.y" /* yacc.c:1645  */
+#line 3121 "ripper.y" /* yacc.c:1652  */
     {
 			new_bv(p, get_id((yyvsp[0].val)));
 			(yyval.val)=get_value((yyvsp[0].val));
 		    }
-#line 8626 "ripper.c" /* yacc.c:1645  */
+#line 8636 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 419:
-#line 3126 "ripper.y" /* yacc.c:1645  */
+#line 3126 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = 0;
 		    }
-#line 8634 "ripper.c" /* yacc.c:1645  */
+#line 8644 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 420:
-#line 3131 "ripper.y" /* yacc.c:1645  */
+#line 3131 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.vars) = dyna_push(p);
 		    }
-#line 8642 "ripper.c" /* yacc.c:1645  */
+#line 8652 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 421:
-#line 3134 "ripper.y" /* yacc.c:1645  */
+#line 3134 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.num) = p->lex.lpar_beg;
 			p->lex.lpar_beg = p->lex.paren_nest;
 		    }
-#line 8651 "ripper.c" /* yacc.c:1645  */
+#line 8661 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 422:
-#line 3139 "ripper.y" /* yacc.c:1645  */
+#line 3139 "ripper.y" /* yacc.c:1652  */
     {
 			CMDARG_PUSH(0);
 		    }
-#line 8659 "ripper.c" /* yacc.c:1645  */
+#line 8669 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 423:
-#line 3143 "ripper.y" /* yacc.c:1645  */
+#line 3143 "ripper.y" /* yacc.c:1652  */
     {
 			p->lex.lpar_beg = (yyvsp[-3].num);
 			CMDARG_POP();
@@ -8679,47 +8689,47 @@ yyreduce:
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(lambda,v1,v2);(yyval.val)=v3;}
 			dyna_pop(p, (yyvsp[-4].vars));
 		    }
-#line 8678 "ripper.c" /* yacc.c:1645  */
+#line 8688 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 424:
-#line 3160 "ripper.y" /* yacc.c:1645  */
+#line 3160 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[-2].val);
 #endif
 			{VALUE v1,v2;v1=(yyvsp[-2].val);v2=dispatch1(paren,v1);(yyval.val)=v2;}
 		    }
-#line 8689 "ripper.c" /* yacc.c:1645  */
+#line 8699 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 425:
-#line 3167 "ripper.y" /* yacc.c:1645  */
+#line 3167 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 8697 "ripper.c" /* yacc.c:1645  */
+#line 8707 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 426:
-#line 3173 "ripper.y" /* yacc.c:1645  */
+#line 3173 "ripper.y" /* yacc.c:1652  */
     {
 			token_info_pop(p, "}", &(yylsp[0]));
 			(yyval.val) = (yyvsp[-1].val);
 		    }
-#line 8706 "ripper.c" /* yacc.c:1645  */
+#line 8716 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 427:
-#line 3178 "ripper.y" /* yacc.c:1645  */
+#line 3178 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = (yyvsp[-1].val);
 		    }
-#line 8714 "ripper.c" /* yacc.c:1645  */
+#line 8724 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 428:
-#line 3184 "ripper.y" /* yacc.c:1645  */
+#line 3184 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = (yyvsp[-1].val);
 #if 0
@@ -8727,11 +8737,11 @@ yyreduce:
 			nd_set_line((yyval.val), (yylsp[-2]).end_pos.lineno);
 #endif
 		    }
-#line 8726 "ripper.c" /* yacc.c:1645  */
+#line 8736 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 429:
-#line 3194 "ripper.y" /* yacc.c:1645  */
+#line 3194 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			if (nd_type((yyvsp[-1].val)) == NODE_YIELD) {
@@ -8745,44 +8755,44 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-1].val);v2=(yyvsp[0].val);v3=dispatch2(method_add_block,v1,v2);(yyval.val)=v3;}
 		    }
-#line 8744 "ripper.c" /* yacc.c:1645  */
+#line 8754 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 430:
-#line 3208 "ripper.y" /* yacc.c:1645  */
+#line 3208 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_qcall(p, (yyvsp[-2].val), (yyvsp[-3].val), (yyvsp[-1].val), (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7;v1=(yyvsp[-3].val);v2=(yyvsp[-2].val);v3=(yyvsp[-1].val);v4=dispatch3(call,v1,v2,v3);v5=v4;v6=(yyvsp[0].val);v7=v6==Qundef ? v5 : dispatch2(method_add_arg,v5,v6);(yyval.val)=v7;}
 		    }
-#line 8755 "ripper.c" /* yacc.c:1645  */
+#line 8765 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 431:
-#line 3215 "ripper.y" /* yacc.c:1645  */
+#line 3215 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_command_qcall(p, (yyvsp[-3].val), (yyvsp[-4].val), (yyvsp[-2].val), (yyvsp[-1].val), (yyvsp[0].val), &(yylsp[-2]), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=(yyvsp[-4].val);v2=(yyvsp[-3].val);v3=(yyvsp[-2].val);v4=(yyvsp[-1].val);v5=dispatch4(command_call,v1,v2,v3,v4);v6=v5;v7=(yyvsp[0].val);v8=v7==Qundef ? v6 : dispatch2(method_add_block,v6,v7);(yyval.val)=v8;}
 		    }
-#line 8766 "ripper.c" /* yacc.c:1645  */
+#line 8776 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 432:
-#line 3222 "ripper.y" /* yacc.c:1645  */
+#line 3222 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_command_qcall(p, (yyvsp[-3].val), (yyvsp[-4].val), (yyvsp[-2].val), (yyvsp[-1].val), (yyvsp[0].val), &(yylsp[-2]), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=(yyvsp[-4].val);v2=(yyvsp[-3].val);v3=(yyvsp[-2].val);v4=(yyvsp[-1].val);v5=dispatch4(command_call,v1,v2,v3,v4);v6=v5;v7=(yyvsp[0].val);v8=dispatch2(method_add_block,v6,v7);(yyval.val)=v8;}
 		    }
-#line 8777 "ripper.c" /* yacc.c:1645  */
+#line 8787 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 433:
-#line 3231 "ripper.y" /* yacc.c:1645  */
+#line 3231 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[-1].val);
@@ -8791,11 +8801,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5;v1=(yyvsp[-1].val);v2=dispatch1(fcall,v1);v3=v2;v4=(yyvsp[0].val);v5=dispatch2(method_add_arg,v3,v4);(yyval.val)=v5;}
 		    }
-#line 8790 "ripper.c" /* yacc.c:1645  */
+#line 8800 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 434:
-#line 3240 "ripper.y" /* yacc.c:1645  */
+#line 3240 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_qcall(p, (yyvsp[-2].val), (yyvsp[-3].val), (yyvsp[-1].val), (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
@@ -8803,11 +8813,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7;v1=(yyvsp[-3].val);v2=(yyvsp[-2].val);v3=(yyvsp[-1].val);v4=dispatch3(call,v1,v2,v3);v5=v4;v6=(yyvsp[0].val);v7=v6==Qundef ? v5 : dispatch2(method_add_arg,v5,v6);(yyval.val)=v7;}
 		    }
-#line 8802 "ripper.c" /* yacc.c:1645  */
+#line 8812 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 435:
-#line 3248 "ripper.y" /* yacc.c:1645  */
+#line 3248 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_qcall(p, ID2VAL(idCOLON2), (yyvsp[-3].val), (yyvsp[-1].val), (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
@@ -8815,22 +8825,22 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7;v1=(yyvsp[-3].val);v2=ID2VAL(idCOLON2);v3=(yyvsp[-1].val);v4=dispatch3(call,v1,v2,v3);v5=v4;v6=(yyvsp[0].val);v7=dispatch2(method_add_arg,v5,v6);(yyval.val)=v7;}
 		    }
-#line 8814 "ripper.c" /* yacc.c:1645  */
+#line 8824 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 436:
-#line 3256 "ripper.y" /* yacc.c:1645  */
+#line 3256 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_qcall(p, ID2VAL(idCOLON2), (yyvsp[-2].val), (yyvsp[0].val), Qnull, &(yylsp[0]), &(yyloc));
 #endif
 			{VALUE v1,v2,v3,v4;v1=(yyvsp[-2].val);v2=ID2VAL(idCOLON2);v3=(yyvsp[0].val);v4=dispatch3(call,v1,v2,v3);(yyval.val)=v4;}
 		    }
-#line 8825 "ripper.c" /* yacc.c:1645  */
+#line 8835 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 437:
-#line 3263 "ripper.y" /* yacc.c:1645  */
+#line 3263 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_qcall(p, (yyvsp[-1].val), (yyvsp[-2].val), ID2VAL(idCall), (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
@@ -8838,11 +8848,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7;v1=(yyvsp[-2].val);v2=(yyvsp[-1].val);v3=ID2VAL(idCall);v4=dispatch3(call,v1,v2,v3);v5=v4;v6=(yyvsp[0].val);v7=dispatch2(method_add_arg,v5,v6);(yyval.val)=v7;}
 		    }
-#line 8837 "ripper.c" /* yacc.c:1645  */
+#line 8847 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 438:
-#line 3271 "ripper.y" /* yacc.c:1645  */
+#line 3271 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_qcall(p, ID2VAL(idCOLON2), (yyvsp[-2].val), ID2VAL(idCall), (yyvsp[0].val), &(yylsp[-1]), &(yyloc));
@@ -8850,33 +8860,33 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7;v1=(yyvsp[-2].val);v2=ID2VAL(idCOLON2);v3=ID2VAL(idCall);v4=dispatch3(call,v1,v2,v3);v5=v4;v6=(yyvsp[0].val);v7=dispatch2(method_add_arg,v5,v6);(yyval.val)=v7;}
 		    }
-#line 8849 "ripper.c" /* yacc.c:1645  */
+#line 8859 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 439:
-#line 3279 "ripper.y" /* yacc.c:1645  */
+#line 3279 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_SUPER((yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(super,v1);(yyval.val)=v2;}
 		    }
-#line 8860 "ripper.c" /* yacc.c:1645  */
+#line 8870 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 440:
-#line 3286 "ripper.y" /* yacc.c:1645  */
+#line 3286 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_ZSUPER(&(yyloc));
 #endif
 			{VALUE v1;v1=dispatch0(zsuper);(yyval.val)=v1;}
 		    }
-#line 8871 "ripper.c" /* yacc.c:1645  */
+#line 8881 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 441:
-#line 3293 "ripper.y" /* yacc.c:1645  */
+#line 3293 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			if ((yyvsp[-3].val) && nd_type((yyvsp[-3].val)) == NODE_SELF)
@@ -8887,11 +8897,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-3].val);v2=escape_Qundef((yyvsp[-1].val));v3=dispatch2(aref,v1,v2);(yyval.val)=v3;}
 		    }
-#line 8886 "ripper.c" /* yacc.c:1645  */
+#line 8896 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 442:
-#line 3306 "ripper.y" /* yacc.c:1645  */
+#line 3306 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = (yyvsp[-1].val);
 #if 0
@@ -8899,11 +8909,11 @@ yyreduce:
 			nd_set_line((yyval.val), (yylsp[-2]).end_pos.lineno);
 #endif
 		    }
-#line 8898 "ripper.c" /* yacc.c:1645  */
+#line 8908 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 443:
-#line 3314 "ripper.y" /* yacc.c:1645  */
+#line 3314 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = (yyvsp[-1].val);
 #if 0
@@ -8911,17 +8921,17 @@ yyreduce:
 			nd_set_line((yyval.val), (yylsp[-2]).end_pos.lineno);
 #endif
 		    }
-#line 8910 "ripper.c" /* yacc.c:1645  */
+#line 8920 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 444:
-#line 3323 "ripper.y" /* yacc.c:1645  */
+#line 3323 "ripper.y" /* yacc.c:1652  */
     {(yyval.vars) = dyna_push(p);}
-#line 8916 "ripper.c" /* yacc.c:1645  */
+#line 8926 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 445:
-#line 3325 "ripper.y" /* yacc.c:1645  */
+#line 3325 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_ITER((yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
@@ -8929,23 +8939,23 @@ yyreduce:
 			{VALUE v1,v2,v3;v1=escape_Qundef((yyvsp[-1].val));v2=(yyvsp[0].val);v3=dispatch2(brace_block,v1,v2);(yyval.val)=v3;}
 			dyna_pop(p, (yyvsp[-2].vars));
 		    }
-#line 8928 "ripper.c" /* yacc.c:1645  */
+#line 8938 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 446:
-#line 3334 "ripper.y" /* yacc.c:1645  */
+#line 3334 "ripper.y" /* yacc.c:1652  */
     {(yyval.vars) = dyna_push(p);}
-#line 8934 "ripper.c" /* yacc.c:1645  */
+#line 8944 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 447:
-#line 3335 "ripper.y" /* yacc.c:1645  */
+#line 3335 "ripper.y" /* yacc.c:1652  */
     {CMDARG_PUSH(0);}
-#line 8940 "ripper.c" /* yacc.c:1645  */
+#line 8950 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 448:
-#line 3337 "ripper.y" /* yacc.c:1645  */
+#line 3337 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_ITER((yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
@@ -8954,11 +8964,11 @@ yyreduce:
 			CMDARG_POP();
 			dyna_pop(p, (yyvsp[-3].vars));
 		    }
-#line 8953 "ripper.c" /* yacc.c:1645  */
+#line 8963 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 449:
-#line 3350 "ripper.y" /* yacc.c:1645  */
+#line 3350 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_WHEN((yyvsp[-3].val), (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
@@ -8966,11 +8976,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4;v1=(yyvsp[-3].val);v2=(yyvsp[-1].val);v3=escape_Qundef((yyvsp[0].val));v4=dispatch3(when,v1,v2,v3);(yyval.val)=v4;}
 		    }
-#line 8965 "ripper.c" /* yacc.c:1645  */
+#line 8975 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 452:
-#line 3366 "ripper.y" /* yacc.c:1645  */
+#line 3366 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_RESBODY((yyvsp[-4].val),
@@ -8980,63 +8990,63 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5;v1=escape_Qundef((yyvsp[-4].val));v2=escape_Qundef((yyvsp[-3].val));v3=escape_Qundef((yyvsp[-1].val));v4=escape_Qundef((yyvsp[0].val));v5=dispatch4(rescue,v1,v2,v3,v4);(yyval.val)=v5;}
 		    }
-#line 8979 "ripper.c" /* yacc.c:1645  */
+#line 8989 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 454:
-#line 3379 "ripper.y" /* yacc.c:1645  */
+#line 3379 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_LIST((yyvsp[0].val), &(yyloc));
 #endif
 			(yyval.val)=rb_ary_new3(1, get_value((yyvsp[0].val)));
 		    }
-#line 8990 "ripper.c" /* yacc.c:1645  */
+#line 9000 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 455:
-#line 3386 "ripper.y" /* yacc.c:1645  */
+#line 3386 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			if (!((yyval.val) = splat_array((yyvsp[0].val)))) (yyval.val) = (yyvsp[0].val);
 #endif
 			(yyval.val)=(yyvsp[0].val);
 		    }
-#line 9001 "ripper.c" /* yacc.c:1645  */
+#line 9011 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 457:
-#line 3396 "ripper.y" /* yacc.c:1645  */
+#line 3396 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 9009 "ripper.c" /* yacc.c:1645  */
+#line 9019 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 459:
-#line 3403 "ripper.y" /* yacc.c:1645  */
+#line 3403 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[0].val);
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(ensure,v1);(yyval.val)=v2;}
 		    }
-#line 9020 "ripper.c" /* yacc.c:1645  */
+#line 9030 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 462:
-#line 3414 "ripper.y" /* yacc.c:1645  */
+#line 3414 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_LIT(ID2SYM((yyvsp[0].val)), &(yyloc));
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(symbol_literal,v1);(yyval.val)=v2;}
 		    }
-#line 9031 "ripper.c" /* yacc.c:1645  */
+#line 9041 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 464:
-#line 3424 "ripper.y" /* yacc.c:1645  */
+#line 3424 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			NODE *node = (yyvsp[0].val);
@@ -9050,22 +9060,22 @@ yyreduce:
 #endif
 			(yyval.val)=(yyvsp[0].val);
 		    }
-#line 9049 "ripper.c" /* yacc.c:1645  */
+#line 9059 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 467:
-#line 3442 "ripper.y" /* yacc.c:1645  */
+#line 3442 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = literal_concat(p, (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-1].val);v2=(yyvsp[0].val);v3=dispatch2(string_concat,v1,v2);(yyval.val)=v3;}
 		    }
-#line 9060 "ripper.c" /* yacc.c:1645  */
+#line 9070 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 468:
-#line 3451 "ripper.y" /* yacc.c:1645  */
+#line 3451 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = heredoc_dedent(p, (yyvsp[-1].val));
@@ -9073,223 +9083,223 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=heredoc_dedent(p, (yyvsp[-1].val));v2=dispatch1(string_literal,v1);(yyval.val)=v2;}
 		    }
-#line 9072 "ripper.c" /* yacc.c:1645  */
+#line 9082 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 469:
-#line 3461 "ripper.y" /* yacc.c:1645  */
+#line 3461 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_xstring(p, heredoc_dedent(p, (yyvsp[-1].val)), &(yyloc));
 #endif
 			{VALUE v1,v2;v1=heredoc_dedent(p, (yyvsp[-1].val));v2=dispatch1(xstring_literal,v1);(yyval.val)=v2;}
 		    }
-#line 9083 "ripper.c" /* yacc.c:1645  */
+#line 9093 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 470:
-#line 3470 "ripper.y" /* yacc.c:1645  */
+#line 3470 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_regexp(p, (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 		    }
-#line 9091 "ripper.c" /* yacc.c:1645  */
+#line 9101 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 471:
-#line 3476 "ripper.y" /* yacc.c:1645  */
+#line 3476 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = make_array((yyvsp[-1].val), &(yyloc));
 #endif
 			{VALUE v1,v2;v1=(yyvsp[-1].val);v2=dispatch1(array,v1);(yyval.val)=v2;}
 		    }
-#line 9102 "ripper.c" /* yacc.c:1645  */
+#line 9112 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 472:
-#line 3485 "ripper.y" /* yacc.c:1645  */
+#line 3485 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = 0;
 #endif
 			{VALUE v1;v1=dispatch0(words_new);(yyval.val)=v1;}
 		    }
-#line 9113 "ripper.c" /* yacc.c:1645  */
+#line 9123 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 473:
-#line 3492 "ripper.y" /* yacc.c:1645  */
+#line 3492 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = list_append(p, (yyvsp[-2].val), evstr2dstr(p, (yyvsp[-1].val)));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[-1].val);v3=dispatch2(words_add,v1,v2);(yyval.val)=v3;}
 		    }
-#line 9124 "ripper.c" /* yacc.c:1645  */
+#line 9134 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 474:
-#line 3501 "ripper.y" /* yacc.c:1645  */
+#line 3501 "ripper.y" /* yacc.c:1652  */
     {{VALUE v1,v2,v3,v4;v1=dispatch0(word_new);v2=v1;v3=(yyvsp[0].val);v4=dispatch2(word_add,v2,v3);(yyval.val)=v4;}}
-#line 9130 "ripper.c" /* yacc.c:1645  */
+#line 9140 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 475:
-#line 3503 "ripper.y" /* yacc.c:1645  */
+#line 3503 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = literal_concat(p, (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-1].val);v2=(yyvsp[0].val);v3=dispatch2(word_add,v1,v2);(yyval.val)=v3;}
 		    }
-#line 9141 "ripper.c" /* yacc.c:1645  */
+#line 9151 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 476:
-#line 3512 "ripper.y" /* yacc.c:1645  */
+#line 3512 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = make_array((yyvsp[-1].val), &(yyloc));
 #endif
 			{VALUE v1,v2;v1=(yyvsp[-1].val);v2=dispatch1(array,v1);(yyval.val)=v2;}
 		    }
-#line 9152 "ripper.c" /* yacc.c:1645  */
+#line 9162 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 477:
-#line 3521 "ripper.y" /* yacc.c:1645  */
+#line 3521 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = 0;
 #endif
 			{VALUE v1;v1=dispatch0(symbols_new);(yyval.val)=v1;}
 		    }
-#line 9163 "ripper.c" /* yacc.c:1645  */
+#line 9173 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 478:
-#line 3528 "ripper.y" /* yacc.c:1645  */
+#line 3528 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = symbol_append(p, (yyvsp[-2].val), evstr2dstr(p, (yyvsp[-1].val)));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[-1].val);v3=dispatch2(symbols_add,v1,v2);(yyval.val)=v3;}
 		    }
-#line 9174 "ripper.c" /* yacc.c:1645  */
+#line 9184 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 479:
-#line 3537 "ripper.y" /* yacc.c:1645  */
+#line 3537 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = make_array((yyvsp[-1].val), &(yyloc));
 #endif
 			{VALUE v1,v2;v1=(yyvsp[-1].val);v2=dispatch1(array,v1);(yyval.val)=v2;}
 		    }
-#line 9185 "ripper.c" /* yacc.c:1645  */
+#line 9195 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 480:
-#line 3546 "ripper.y" /* yacc.c:1645  */
+#line 3546 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = make_array((yyvsp[-1].val), &(yyloc));
 #endif
 			{VALUE v1,v2;v1=(yyvsp[-1].val);v2=dispatch1(array,v1);(yyval.val)=v2;}
 		    }
-#line 9196 "ripper.c" /* yacc.c:1645  */
+#line 9206 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 481:
-#line 3555 "ripper.y" /* yacc.c:1645  */
+#line 3555 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = 0;
 #endif
 			{VALUE v1;v1=dispatch0(qwords_new);(yyval.val)=v1;}
 		    }
-#line 9207 "ripper.c" /* yacc.c:1645  */
+#line 9217 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 482:
-#line 3562 "ripper.y" /* yacc.c:1645  */
+#line 3562 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = list_append(p, (yyvsp[-2].val), (yyvsp[-1].val));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[-1].val);v3=dispatch2(qwords_add,v1,v2);(yyval.val)=v3;}
 		    }
-#line 9218 "ripper.c" /* yacc.c:1645  */
+#line 9228 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 483:
-#line 3571 "ripper.y" /* yacc.c:1645  */
+#line 3571 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = 0;
 #endif
 			{VALUE v1;v1=dispatch0(qsymbols_new);(yyval.val)=v1;}
 		    }
-#line 9229 "ripper.c" /* yacc.c:1645  */
+#line 9239 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 484:
-#line 3578 "ripper.y" /* yacc.c:1645  */
+#line 3578 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = symbol_append(p, (yyvsp[-2].val), (yyvsp[-1].val));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[-1].val);v3=dispatch2(qsymbols_add,v1,v2);(yyval.val)=v3;}
 		    }
-#line 9240 "ripper.c" /* yacc.c:1645  */
+#line 9250 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 485:
-#line 3587 "ripper.y" /* yacc.c:1645  */
+#line 3587 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = 0;
 #endif
 			{VALUE v1;v1=dispatch0(string_content);(yyval.val)=v1;}
 		    }
-#line 9251 "ripper.c" /* yacc.c:1645  */
+#line 9261 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 486:
-#line 3594 "ripper.y" /* yacc.c:1645  */
+#line 3594 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = literal_concat(p, (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-1].val);v2=(yyvsp[0].val);v3=dispatch2(string_add,v1,v2);(yyval.val)=v3;}
 		    }
-#line 9262 "ripper.c" /* yacc.c:1645  */
+#line 9272 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 487:
-#line 3603 "ripper.y" /* yacc.c:1645  */
+#line 3603 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = 0;
 #endif
 			{VALUE v1;v1=dispatch0(xstring_new);(yyval.val)=v1;}
 		    }
-#line 9273 "ripper.c" /* yacc.c:1645  */
+#line 9283 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 488:
-#line 3610 "ripper.y" /* yacc.c:1645  */
+#line 3610 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = literal_concat(p, (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-1].val);v2=(yyvsp[0].val);v3=dispatch2(xstring_add,v1,v2);(yyval.val)=v3;}
 		    }
-#line 9284 "ripper.c" /* yacc.c:1645  */
+#line 9294 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 489:
-#line 3619 "ripper.y" /* yacc.c:1645  */
+#line 3619 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = 0;
@@ -9300,11 +9310,11 @@ yyreduce:
 			(yyval.val) = ripper_new_yylval(p, 0, (yyval.val), 0);
 
 		    }
-#line 9299 "ripper.c" /* yacc.c:1645  */
+#line 9309 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 490:
-#line 3630 "ripper.y" /* yacc.c:1645  */
+#line 3630 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			NODE *head = (yyvsp[-1].val), *tail = (yyvsp[0].val);
@@ -9343,22 +9353,22 @@ yyreduce:
 			}
 
 		    }
-#line 9342 "ripper.c" /* yacc.c:1645  */
+#line 9352 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 492:
-#line 3672 "ripper.y" /* yacc.c:1645  */
+#line 3672 "ripper.y" /* yacc.c:1652  */
     {
 			/* need to backup p->lex.strterm so that a string literal `%&foo,#$&,bar&` can be parsed */
 			(yyval.strterm) = p->lex.strterm;
 			p->lex.strterm = 0;
 			SET_LEX_STATE(EXPR_BEG);
 		    }
-#line 9353 "ripper.c" /* yacc.c:1645  */
+#line 9363 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 493:
-#line 3679 "ripper.y" /* yacc.c:1645  */
+#line 3679 "ripper.y" /* yacc.c:1652  */
     {
 			p->lex.strterm = (yyvsp[-1].strterm);
 #if 0
@@ -9367,57 +9377,57 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(string_dvar,v1);(yyval.val)=v2;}
 		    }
-#line 9366 "ripper.c" /* yacc.c:1645  */
+#line 9376 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 494:
-#line 3688 "ripper.y" /* yacc.c:1645  */
+#line 3688 "ripper.y" /* yacc.c:1652  */
     {
 			CMDARG_PUSH(0);
 			COND_PUSH(0);
 		    }
-#line 9375 "ripper.c" /* yacc.c:1645  */
+#line 9385 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 495:
-#line 3692 "ripper.y" /* yacc.c:1645  */
+#line 3692 "ripper.y" /* yacc.c:1652  */
     {
 			/* need to backup p->lex.strterm so that a string literal `%!foo,#{ !0 },bar!` can be parsed */
 			(yyval.strterm) = p->lex.strterm;
 			p->lex.strterm = 0;
 		    }
-#line 9385 "ripper.c" /* yacc.c:1645  */
+#line 9395 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 496:
-#line 3697 "ripper.y" /* yacc.c:1645  */
+#line 3697 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.num) = p->lex.state;
 			SET_LEX_STATE(EXPR_BEG);
 		    }
-#line 9394 "ripper.c" /* yacc.c:1645  */
+#line 9404 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 497:
-#line 3701 "ripper.y" /* yacc.c:1645  */
+#line 3701 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.num) = p->lex.brace_nest;
 			p->lex.brace_nest = 0;
 		    }
-#line 9403 "ripper.c" /* yacc.c:1645  */
+#line 9413 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 498:
-#line 3705 "ripper.y" /* yacc.c:1645  */
+#line 3705 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.num) = p->heredoc_indent;
 			p->heredoc_indent = 0;
 		    }
-#line 9412 "ripper.c" /* yacc.c:1645  */
+#line 9422 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 499:
-#line 3710 "ripper.y" /* yacc.c:1645  */
+#line 3710 "ripper.y" /* yacc.c:1652  */
     {
 			COND_POP();
 			CMDARG_POP();
@@ -9432,44 +9442,44 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=(yyvsp[-1].val);v2=dispatch1(string_embexpr,v1);(yyval.val)=v2;}
 		    }
-#line 9431 "ripper.c" /* yacc.c:1645  */
+#line 9441 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 500:
-#line 3727 "ripper.y" /* yacc.c:1645  */
+#line 3727 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_GVAR((yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(var_ref,v1);(yyval.val)=v2;}
 		    }
-#line 9442 "ripper.c" /* yacc.c:1645  */
+#line 9452 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 501:
-#line 3734 "ripper.y" /* yacc.c:1645  */
+#line 3734 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_IVAR((yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(var_ref,v1);(yyval.val)=v2;}
 		    }
-#line 9453 "ripper.c" /* yacc.c:1645  */
+#line 9463 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 502:
-#line 3741 "ripper.y" /* yacc.c:1645  */
+#line 3741 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = NEW_CVAR((yyvsp[0].val), &(yyloc));
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(var_ref,v1);(yyval.val)=v2;}
 		    }
-#line 9464 "ripper.c" /* yacc.c:1645  */
+#line 9474 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 504:
-#line 3751 "ripper.y" /* yacc.c:1645  */
+#line 3751 "ripper.y" /* yacc.c:1652  */
     {
 			SET_LEX_STATE(EXPR_END);
 #if 0
@@ -9477,11 +9487,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(symbol,v1);(yyval.val)=v2;}
 		    }
-#line 9476 "ripper.c" /* yacc.c:1645  */
+#line 9486 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 509:
-#line 3767 "ripper.y" /* yacc.c:1645  */
+#line 3767 "ripper.y" /* yacc.c:1652  */
     {
 			SET_LEX_STATE(EXPR_END);
 #if 0
@@ -9489,11 +9499,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=(yyvsp[-1].val);v2=dispatch1(dyna_symbol,v1);(yyval.val)=v2;}
 		    }
-#line 9488 "ripper.c" /* yacc.c:1645  */
+#line 9498 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 511:
-#line 3778 "ripper.y" /* yacc.c:1645  */
+#line 3778 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[0].val);
@@ -9501,53 +9511,53 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=ID2VAL(idUMinus);v2=(yyvsp[0].val);v3=dispatch2(unary,v1,v2);(yyval.val)=v3;}
 		    }
-#line 9500 "ripper.c" /* yacc.c:1645  */
+#line 9510 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 521:
-#line 3800 "ripper.y" /* yacc.c:1645  */
+#line 3800 "ripper.y" /* yacc.c:1652  */
     {(yyval.val) = KWD2EID(nil, (yyvsp[0].val));}
-#line 9506 "ripper.c" /* yacc.c:1645  */
+#line 9516 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 522:
-#line 3801 "ripper.y" /* yacc.c:1645  */
+#line 3801 "ripper.y" /* yacc.c:1652  */
     {(yyval.val) = KWD2EID(self, (yyvsp[0].val));}
-#line 9512 "ripper.c" /* yacc.c:1645  */
+#line 9522 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 523:
-#line 3802 "ripper.y" /* yacc.c:1645  */
+#line 3802 "ripper.y" /* yacc.c:1652  */
     {(yyval.val) = KWD2EID(true, (yyvsp[0].val));}
-#line 9518 "ripper.c" /* yacc.c:1645  */
+#line 9528 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 524:
-#line 3803 "ripper.y" /* yacc.c:1645  */
+#line 3803 "ripper.y" /* yacc.c:1652  */
     {(yyval.val) = KWD2EID(false, (yyvsp[0].val));}
-#line 9524 "ripper.c" /* yacc.c:1645  */
+#line 9534 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 525:
-#line 3804 "ripper.y" /* yacc.c:1645  */
+#line 3804 "ripper.y" /* yacc.c:1652  */
     {(yyval.val) = KWD2EID(_FILE__, (yyvsp[0].val));}
-#line 9530 "ripper.c" /* yacc.c:1645  */
+#line 9540 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 526:
-#line 3805 "ripper.y" /* yacc.c:1645  */
+#line 3805 "ripper.y" /* yacc.c:1652  */
     {(yyval.val) = KWD2EID(_LINE__, (yyvsp[0].val));}
-#line 9536 "ripper.c" /* yacc.c:1645  */
+#line 9546 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 527:
-#line 3806 "ripper.y" /* yacc.c:1645  */
+#line 3806 "ripper.y" /* yacc.c:1652  */
     {(yyval.val) = KWD2EID(_ENCODING__, (yyvsp[0].val));}
-#line 9542 "ripper.c" /* yacc.c:1645  */
+#line 9552 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 528:
-#line 3810 "ripper.y" /* yacc.c:1645  */
+#line 3810 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			if (!((yyval.val) = gettable(p, (yyvsp[0].val), &(yyloc)))) (yyval.val) = NEW_BEGIN(0, &(yyloc));
@@ -9560,72 +9570,72 @@ yyreduce:
 			}
 
 		    }
-#line 9559 "ripper.c" /* yacc.c:1645  */
+#line 9569 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 529:
-#line 3823 "ripper.y" /* yacc.c:1645  */
+#line 3823 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			if (!((yyval.val) = gettable(p, (yyvsp[0].val), &(yyloc)))) (yyval.val) = NEW_BEGIN(0, &(yyloc));
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(var_ref,v1);(yyval.val)=v2;}
 		    }
-#line 9570 "ripper.c" /* yacc.c:1645  */
+#line 9580 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 530:
-#line 3832 "ripper.y" /* yacc.c:1645  */
+#line 3832 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = assignable(p, (yyvsp[0].val), 0, &(yyloc));
 #endif
 			(yyval.val)=assignable(p, var_field(p, (yyvsp[0].val)));
 		    }
-#line 9581 "ripper.c" /* yacc.c:1645  */
+#line 9591 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 531:
-#line 3839 "ripper.y" /* yacc.c:1645  */
+#line 3839 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = assignable(p, (yyvsp[0].val), 0, &(yyloc));
 #endif
 			(yyval.val)=assignable(p, var_field(p, (yyvsp[0].val)));
 		    }
-#line 9592 "ripper.c" /* yacc.c:1645  */
+#line 9602 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 534:
-#line 3852 "ripper.y" /* yacc.c:1645  */
+#line 3852 "ripper.y" /* yacc.c:1652  */
     {
 			SET_LEX_STATE(EXPR_BEG);
 			p->command_start = TRUE;
 		    }
-#line 9601 "ripper.c" /* yacc.c:1645  */
+#line 9611 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 535:
-#line 3857 "ripper.y" /* yacc.c:1645  */
+#line 3857 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = (yyvsp[-1].val);
 		    }
-#line 9609 "ripper.c" /* yacc.c:1645  */
+#line 9619 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 536:
-#line 3861 "ripper.y" /* yacc.c:1645  */
+#line 3861 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = 0;
 #endif
 			(yyval.val)=Qnil;
 		    }
-#line 9620 "ripper.c" /* yacc.c:1645  */
+#line 9630 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 537:
-#line 3870 "ripper.y" /* yacc.c:1645  */
+#line 3870 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[-1].val);
@@ -9634,201 +9644,201 @@ yyreduce:
 			SET_LEX_STATE(EXPR_BEG);
 			p->command_start = TRUE;
 		    }
-#line 9633 "ripper.c" /* yacc.c:1645  */
+#line 9643 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 538:
-#line 3878 "ripper.y" /* yacc.c:1645  */
+#line 3878 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.num) = p->in_kwarg;
 			p->in_kwarg = 1;
 			SET_LEX_STATE(p->lex.state|EXPR_LABEL); /* force for args */
 		    }
-#line 9643 "ripper.c" /* yacc.c:1645  */
+#line 9653 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 539:
-#line 3884 "ripper.y" /* yacc.c:1645  */
+#line 3884 "ripper.y" /* yacc.c:1652  */
     {
 			p->in_kwarg = !!(yyvsp[-2].num);
 			(yyval.val) = (yyvsp[-1].val);
 			SET_LEX_STATE(EXPR_BEG);
 			p->command_start = TRUE;
 		    }
-#line 9654 "ripper.c" /* yacc.c:1645  */
+#line 9664 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 540:
-#line 3893 "ripper.y" /* yacc.c:1645  */
+#line 3893 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args_tail(p, (yyvsp[-3].val), (yyvsp[-1].val), (yyvsp[0].val), &(yylsp[-1]));
 		    }
-#line 9662 "ripper.c" /* yacc.c:1645  */
+#line 9672 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 541:
-#line 3897 "ripper.y" /* yacc.c:1645  */
+#line 3897 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args_tail(p, (yyvsp[-1].val), Qnone, (yyvsp[0].val), &(yylsp[-1]));
 		    }
-#line 9670 "ripper.c" /* yacc.c:1645  */
+#line 9680 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 542:
-#line 3901 "ripper.y" /* yacc.c:1645  */
+#line 3901 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args_tail(p, Qnone, (yyvsp[-1].val), (yyvsp[0].val), &(yylsp[-1]));
 		    }
-#line 9678 "ripper.c" /* yacc.c:1645  */
+#line 9688 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 543:
-#line 3905 "ripper.y" /* yacc.c:1645  */
+#line 3905 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args_tail(p, Qnone, Qnone, (yyvsp[0].val), &(yylsp[0]));
 		    }
-#line 9686 "ripper.c" /* yacc.c:1645  */
+#line 9696 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 544:
-#line 3911 "ripper.y" /* yacc.c:1645  */
+#line 3911 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 9694 "ripper.c" /* yacc.c:1645  */
+#line 9704 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 545:
-#line 3915 "ripper.y" /* yacc.c:1645  */
+#line 3915 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args_tail(p, Qnone, Qnone, Qnone, &(yylsp[0]));
 		    }
-#line 9702 "ripper.c" /* yacc.c:1645  */
+#line 9712 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 546:
-#line 3921 "ripper.y" /* yacc.c:1645  */
+#line 3921 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, (yyvsp[-5].val), (yyvsp[-3].val), (yyvsp[-1].val), Qnone, (yyvsp[0].val), &(yyloc));
 		    }
-#line 9710 "ripper.c" /* yacc.c:1645  */
+#line 9720 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 547:
-#line 3925 "ripper.y" /* yacc.c:1645  */
+#line 3925 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, (yyvsp[-7].val), (yyvsp[-5].val), (yyvsp[-3].val), (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 		    }
-#line 9718 "ripper.c" /* yacc.c:1645  */
+#line 9728 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 548:
-#line 3929 "ripper.y" /* yacc.c:1645  */
+#line 3929 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, (yyvsp[-3].val), (yyvsp[-1].val), Qnone, Qnone, (yyvsp[0].val), &(yyloc));
 		    }
-#line 9726 "ripper.c" /* yacc.c:1645  */
+#line 9736 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 549:
-#line 3933 "ripper.y" /* yacc.c:1645  */
+#line 3933 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, (yyvsp[-5].val), (yyvsp[-3].val), Qnone, (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 		    }
-#line 9734 "ripper.c" /* yacc.c:1645  */
+#line 9744 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 550:
-#line 3937 "ripper.y" /* yacc.c:1645  */
+#line 3937 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, (yyvsp[-3].val), Qnone, (yyvsp[-1].val), Qnone, (yyvsp[0].val), &(yyloc));
 		    }
-#line 9742 "ripper.c" /* yacc.c:1645  */
+#line 9752 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 551:
-#line 3941 "ripper.y" /* yacc.c:1645  */
+#line 3941 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, (yyvsp[-5].val), Qnone, (yyvsp[-3].val), (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 		    }
-#line 9750 "ripper.c" /* yacc.c:1645  */
+#line 9760 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 552:
-#line 3945 "ripper.y" /* yacc.c:1645  */
+#line 3945 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, (yyvsp[-1].val), Qnone, Qnone, Qnone, (yyvsp[0].val), &(yyloc));
 		    }
-#line 9758 "ripper.c" /* yacc.c:1645  */
+#line 9768 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 553:
-#line 3949 "ripper.y" /* yacc.c:1645  */
+#line 3949 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, Qnone, (yyvsp[-3].val), (yyvsp[-1].val), Qnone, (yyvsp[0].val), &(yyloc));
 		    }
-#line 9766 "ripper.c" /* yacc.c:1645  */
+#line 9776 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 554:
-#line 3953 "ripper.y" /* yacc.c:1645  */
+#line 3953 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, Qnone, (yyvsp[-5].val), (yyvsp[-3].val), (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 		    }
-#line 9774 "ripper.c" /* yacc.c:1645  */
+#line 9784 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 555:
-#line 3957 "ripper.y" /* yacc.c:1645  */
+#line 3957 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, Qnone, (yyvsp[-1].val), Qnone, Qnone, (yyvsp[0].val), &(yyloc));
 		    }
-#line 9782 "ripper.c" /* yacc.c:1645  */
+#line 9792 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 556:
-#line 3961 "ripper.y" /* yacc.c:1645  */
+#line 3961 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, Qnone, (yyvsp[-3].val), Qnone, (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 		    }
-#line 9790 "ripper.c" /* yacc.c:1645  */
+#line 9800 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 557:
-#line 3965 "ripper.y" /* yacc.c:1645  */
+#line 3965 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, Qnone, Qnone, (yyvsp[-1].val), Qnone, (yyvsp[0].val), &(yyloc));
 		    }
-#line 9798 "ripper.c" /* yacc.c:1645  */
+#line 9808 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 558:
-#line 3969 "ripper.y" /* yacc.c:1645  */
+#line 3969 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, Qnone, Qnone, (yyvsp[-3].val), (yyvsp[-1].val), (yyvsp[0].val), &(yyloc));
 		    }
-#line 9806 "ripper.c" /* yacc.c:1645  */
+#line 9816 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 559:
-#line 3973 "ripper.y" /* yacc.c:1645  */
+#line 3973 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args(p, Qnone, Qnone, Qnone, Qnone, (yyvsp[0].val), &(yyloc));
 		    }
-#line 9814 "ripper.c" /* yacc.c:1645  */
+#line 9824 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 560:
-#line 3977 "ripper.y" /* yacc.c:1645  */
+#line 3977 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = new_args_tail(p, Qnone, Qnone, Qnone, &(yylsp[0]));
 			(yyval.val) = new_args(p, Qnone, Qnone, Qnone, Qnone, (yyval.val), &(yylsp[0]));
 		    }
-#line 9823 "ripper.c" /* yacc.c:1645  */
+#line 9833 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 561:
-#line 3984 "ripper.y" /* yacc.c:1645  */
+#line 3984 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			yyerror1(&(yylsp[0]), "formal argument cannot be a constant");
@@ -9836,11 +9846,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(param_error,v1);(yyval.val)=v2;}ripper_error(p);
 		    }
-#line 9835 "ripper.c" /* yacc.c:1645  */
+#line 9845 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 562:
-#line 3992 "ripper.y" /* yacc.c:1645  */
+#line 3992 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			yyerror1(&(yylsp[0]), "formal argument cannot be an instance variable");
@@ -9848,11 +9858,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(param_error,v1);(yyval.val)=v2;}ripper_error(p);
 		    }
-#line 9847 "ripper.c" /* yacc.c:1645  */
+#line 9857 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 563:
-#line 4000 "ripper.y" /* yacc.c:1645  */
+#line 4000 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			yyerror1(&(yylsp[0]), "formal argument cannot be a global variable");
@@ -9860,11 +9870,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(param_error,v1);(yyval.val)=v2;}ripper_error(p);
 		    }
-#line 9859 "ripper.c" /* yacc.c:1645  */
+#line 9869 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 564:
-#line 4008 "ripper.y" /* yacc.c:1645  */
+#line 4008 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			yyerror1(&(yylsp[0]), "formal argument cannot be a class variable");
@@ -9872,31 +9882,31 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(param_error,v1);(yyval.val)=v2;}ripper_error(p);
 		    }
-#line 9871 "ripper.c" /* yacc.c:1645  */
+#line 9881 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 566:
-#line 4019 "ripper.y" /* yacc.c:1645  */
+#line 4019 "ripper.y" /* yacc.c:1652  */
     {
 			formal_argument(p, get_id((yyvsp[0].val)));
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 9880 "ripper.c" /* yacc.c:1645  */
+#line 9890 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 567:
-#line 4026 "ripper.y" /* yacc.c:1645  */
+#line 4026 "ripper.y" /* yacc.c:1652  */
     {
 			ID id = get_id((yyvsp[0].val));
 			arg_var(p, id);
 			p->cur_arg = id;
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 9891 "ripper.c" /* yacc.c:1645  */
+#line 9901 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 568:
-#line 4035 "ripper.y" /* yacc.c:1645  */
+#line 4035 "ripper.y" /* yacc.c:1652  */
     {
 			p->cur_arg = 0;
 #if 0
@@ -9904,11 +9914,11 @@ yyreduce:
 #endif
 			(yyval.val)=get_value((yyvsp[0].val));
 		    }
-#line 9903 "ripper.c" /* yacc.c:1645  */
+#line 9913 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 569:
-#line 4043 "ripper.y" /* yacc.c:1645  */
+#line 4043 "ripper.y" /* yacc.c:1652  */
     {
 			ID tid = internal_id(p);
 #if 0
@@ -9929,17 +9939,17 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=(yyvsp[-1].val);v2=dispatch1(mlhs_paren,v1);(yyval.val)=v2;}
 		    }
-#line 9928 "ripper.c" /* yacc.c:1645  */
+#line 9938 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 570:
-#line 4066 "ripper.y" /* yacc.c:1645  */
+#line 4066 "ripper.y" /* yacc.c:1652  */
     {(yyval.val)=rb_ary_new3(1, get_value((yyvsp[0].val)));}
-#line 9934 "ripper.c" /* yacc.c:1645  */
+#line 9944 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 571:
-#line 4068 "ripper.y" /* yacc.c:1645  */
+#line 4068 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[-2].val);
@@ -9949,22 +9959,22 @@ yyreduce:
 #endif
 			(yyval.val)=rb_ary_push((yyvsp[-2].val), get_value((yyvsp[0].val)));
 		    }
-#line 9948 "ripper.c" /* yacc.c:1645  */
+#line 9958 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 572:
-#line 4081 "ripper.y" /* yacc.c:1645  */
+#line 4081 "ripper.y" /* yacc.c:1652  */
     {
 			ID id = get_id((yyvsp[0].val));
 			arg_var(p, formal_argument(p, id));
 			p->cur_arg = id;
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 9959 "ripper.c" /* yacc.c:1645  */
+#line 9969 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 573:
-#line 4090 "ripper.y" /* yacc.c:1645  */
+#line 4090 "ripper.y" /* yacc.c:1652  */
     {
 			p->cur_arg = 0;
 #if 0
@@ -9972,11 +9982,11 @@ yyreduce:
 #endif
 			(yyval.val)=rb_assoc_new(get_value(assignable(p, (yyvsp[-1].val))), get_value((yyvsp[0].val)));
 		    }
-#line 9971 "ripper.c" /* yacc.c:1645  */
+#line 9981 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 574:
-#line 4098 "ripper.y" /* yacc.c:1645  */
+#line 4098 "ripper.y" /* yacc.c:1652  */
     {
 			p->cur_arg = 0;
 #if 0
@@ -9984,77 +9994,77 @@ yyreduce:
 #endif
 			(yyval.val)=rb_assoc_new(get_value(assignable(p, (yyvsp[0].val))), 0);
 		    }
-#line 9983 "ripper.c" /* yacc.c:1645  */
+#line 9993 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 575:
-#line 4108 "ripper.y" /* yacc.c:1645  */
+#line 4108 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_kw_arg(p, assignable(p, (yyvsp[-1].val), (yyvsp[0].val), &(yyloc)), &(yyloc));
 #endif
 			(yyval.val)=rb_assoc_new(get_value(assignable(p, (yyvsp[-1].val))), get_value((yyvsp[0].val)));
 		    }
-#line 9994 "ripper.c" /* yacc.c:1645  */
+#line 10004 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 576:
-#line 4115 "ripper.y" /* yacc.c:1645  */
+#line 4115 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = new_kw_arg(p, assignable(p, (yyvsp[0].val), NODE_SPECIAL_REQUIRED_KEYWORD, &(yyloc)), &(yyloc));
 #endif
 			(yyval.val)=rb_assoc_new(get_value(assignable(p, (yyvsp[0].val))), 0);
 		    }
-#line 10005 "ripper.c" /* yacc.c:1645  */
+#line 10015 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 577:
-#line 4124 "ripper.y" /* yacc.c:1645  */
+#line 4124 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[0].val);
 #endif
 			(yyval.val)=rb_ary_new3(1, get_value((yyvsp[0].val)));
 		    }
-#line 10016 "ripper.c" /* yacc.c:1645  */
+#line 10026 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 578:
-#line 4131 "ripper.y" /* yacc.c:1645  */
+#line 4131 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = kwd_append((yyvsp[-2].val), (yyvsp[0].val));
 #endif
 			(yyval.val)=rb_ary_push((yyvsp[-2].val), get_value((yyvsp[0].val)));
 		    }
-#line 10027 "ripper.c" /* yacc.c:1645  */
+#line 10037 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 579:
-#line 4141 "ripper.y" /* yacc.c:1645  */
+#line 4141 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[0].val);
 #endif
 			(yyval.val)=rb_ary_new3(1, get_value((yyvsp[0].val)));
 		    }
-#line 10038 "ripper.c" /* yacc.c:1645  */
+#line 10048 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 580:
-#line 4148 "ripper.y" /* yacc.c:1645  */
+#line 4148 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = kwd_append((yyvsp[-2].val), (yyvsp[0].val));
 #endif
 			(yyval.val)=rb_ary_push((yyvsp[-2].val), get_value((yyvsp[0].val)));
 		    }
-#line 10049 "ripper.c" /* yacc.c:1645  */
+#line 10059 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 583:
-#line 4161 "ripper.y" /* yacc.c:1645  */
+#line 4161 "ripper.y" /* yacc.c:1652  */
     {
 			arg_var(p, shadowing_lvar(p, get_id((yyvsp[0].val))));
 #if 0
@@ -10062,11 +10072,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(kwrest_param,v1);(yyval.val)=v2;}
 		    }
-#line 10061 "ripper.c" /* yacc.c:1645  */
+#line 10071 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 584:
-#line 4169 "ripper.y" /* yacc.c:1645  */
+#line 4169 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = internal_id(p);
@@ -10074,11 +10084,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=Qnil;v2=dispatch1(kwrest_param,v1);(yyval.val)=v2;}
 		    }
-#line 10073 "ripper.c" /* yacc.c:1645  */
+#line 10083 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 585:
-#line 4179 "ripper.y" /* yacc.c:1645  */
+#line 4179 "ripper.y" /* yacc.c:1652  */
     {
 			p->cur_arg = 0;
 #if 0
@@ -10086,11 +10096,11 @@ yyreduce:
 #endif
 			(yyval.val)=rb_assoc_new(get_value(assignable(p, (yyvsp[-2].val))), get_value((yyvsp[0].val)));
 		    }
-#line 10085 "ripper.c" /* yacc.c:1645  */
+#line 10095 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 586:
-#line 4189 "ripper.y" /* yacc.c:1645  */
+#line 4189 "ripper.y" /* yacc.c:1652  */
     {
 			p->cur_arg = 0;
 #if 0
@@ -10098,55 +10108,55 @@ yyreduce:
 #endif
 			(yyval.val)=rb_assoc_new(get_value(assignable(p, (yyvsp[-2].val))), get_value((yyvsp[0].val)));
 		    }
-#line 10097 "ripper.c" /* yacc.c:1645  */
+#line 10107 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 587:
-#line 4199 "ripper.y" /* yacc.c:1645  */
+#line 4199 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[0].val);
 #endif
 			(yyval.val)=rb_ary_new3(1, get_value((yyvsp[0].val)));
 		    }
-#line 10108 "ripper.c" /* yacc.c:1645  */
+#line 10118 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 588:
-#line 4206 "ripper.y" /* yacc.c:1645  */
+#line 4206 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = opt_arg_append((yyvsp[-2].val), (yyvsp[0].val));
 #endif
 			(yyval.val)=rb_ary_push((yyvsp[-2].val), get_value((yyvsp[0].val)));
 		    }
-#line 10119 "ripper.c" /* yacc.c:1645  */
+#line 10129 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 589:
-#line 4215 "ripper.y" /* yacc.c:1645  */
+#line 4215 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[0].val);
 #endif
 			(yyval.val)=rb_ary_new3(1, get_value((yyvsp[0].val)));
 		    }
-#line 10130 "ripper.c" /* yacc.c:1645  */
+#line 10140 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 590:
-#line 4222 "ripper.y" /* yacc.c:1645  */
+#line 4222 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = opt_arg_append((yyvsp[-2].val), (yyvsp[0].val));
 #endif
 			(yyval.val)=rb_ary_push((yyvsp[-2].val), get_value((yyvsp[0].val)));
 		    }
-#line 10141 "ripper.c" /* yacc.c:1645  */
+#line 10151 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 593:
-#line 4235 "ripper.y" /* yacc.c:1645  */
+#line 4235 "ripper.y" /* yacc.c:1652  */
     {
 			arg_var(p, shadowing_lvar(p, get_id((yyvsp[0].val))));
 #if 0
@@ -10154,11 +10164,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(rest_param,v1);(yyval.val)=v2;}
 		    }
-#line 10153 "ripper.c" /* yacc.c:1645  */
+#line 10163 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 594:
-#line 4243 "ripper.y" /* yacc.c:1645  */
+#line 4243 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = internal_id(p);
@@ -10166,11 +10176,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=Qnil;v2=dispatch1(rest_param,v1);(yyval.val)=v2;}
 		    }
-#line 10165 "ripper.c" /* yacc.c:1645  */
+#line 10175 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 597:
-#line 4257 "ripper.y" /* yacc.c:1645  */
+#line 4257 "ripper.y" /* yacc.c:1652  */
     {
 			arg_var(p, shadowing_lvar(p, get_id((yyvsp[0].val))));
 #if 0
@@ -10178,45 +10188,45 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(blockarg,v1);(yyval.val)=v2;}
 		    }
-#line 10177 "ripper.c" /* yacc.c:1645  */
+#line 10187 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 598:
-#line 4267 "ripper.y" /* yacc.c:1645  */
+#line 4267 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 10185 "ripper.c" /* yacc.c:1645  */
+#line 10195 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 599:
-#line 4271 "ripper.y" /* yacc.c:1645  */
+#line 4271 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = 0;
 #endif
 			(yyval.val)=Qundef;
 		    }
-#line 10196 "ripper.c" /* yacc.c:1645  */
+#line 10206 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 600:
-#line 4280 "ripper.y" /* yacc.c:1645  */
+#line 4280 "ripper.y" /* yacc.c:1652  */
     {
 			value_expr((yyvsp[0].val));
 			(yyval.val) = (yyvsp[0].val);
 		    }
-#line 10205 "ripper.c" /* yacc.c:1645  */
+#line 10215 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 601:
-#line 4284 "ripper.y" /* yacc.c:1645  */
+#line 4284 "ripper.y" /* yacc.c:1652  */
     {SET_LEX_STATE(EXPR_BEG);}
-#line 10211 "ripper.c" /* yacc.c:1645  */
+#line 10221 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 602:
-#line 4285 "ripper.y" /* yacc.c:1645  */
+#line 4285 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			switch (nd_type((yyvsp[-1].val))) {
@@ -10238,28 +10248,28 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=(yyvsp[-1].val);v2=dispatch1(paren,v1);(yyval.val)=v2;}
 		    }
-#line 10237 "ripper.c" /* yacc.c:1645  */
+#line 10247 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 604:
-#line 4310 "ripper.y" /* yacc.c:1645  */
+#line 4310 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = (yyvsp[-1].val);
 #endif
 			{VALUE v1,v2;v1=(yyvsp[-1].val);v2=dispatch1(assoclist_from_args,v1);(yyval.val)=v2;}
 		    }
-#line 10248 "ripper.c" /* yacc.c:1645  */
+#line 10258 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 605:
-#line 4319 "ripper.y" /* yacc.c:1645  */
+#line 4319 "ripper.y" /* yacc.c:1652  */
     {(yyval.val)=rb_ary_new3(1, get_value((yyvsp[0].val)));}
-#line 10254 "ripper.c" /* yacc.c:1645  */
+#line 10264 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 606:
-#line 4321 "ripper.y" /* yacc.c:1645  */
+#line 4321 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			NODE *assocs = (yyvsp[-2].val);
@@ -10280,11 +10290,11 @@ yyreduce:
 #endif
 			(yyval.val)=rb_ary_push((yyvsp[-2].val), get_value((yyvsp[0].val)));
 		    }
-#line 10279 "ripper.c" /* yacc.c:1645  */
+#line 10289 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 607:
-#line 4344 "ripper.y" /* yacc.c:1645  */
+#line 4344 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			if (nd_type((yyvsp[-2].val)) == NODE_STR) {
@@ -10295,22 +10305,22 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(assoc_new,v1,v2);(yyval.val)=v3;}
 		    }
-#line 10294 "ripper.c" /* yacc.c:1645  */
+#line 10304 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 608:
-#line 4355 "ripper.y" /* yacc.c:1645  */
+#line 4355 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			(yyval.val) = list_append(p, NEW_LIST(NEW_LIT(ID2SYM((yyvsp[-1].val)), &(yylsp[-1])), &(yyloc)), (yyvsp[0].val));
 #endif
 			{VALUE v1,v2,v3;v1=(yyvsp[-1].val);v2=(yyvsp[0].val);v3=dispatch2(assoc_new,v1,v2);(yyval.val)=v3;}
 		    }
-#line 10305 "ripper.c" /* yacc.c:1645  */
+#line 10315 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 609:
-#line 4362 "ripper.y" /* yacc.c:1645  */
+#line 4362 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			YYLTYPE loc = code_loc_gen(&(yylsp[-3]), &(yylsp[-1]));
@@ -10318,11 +10328,11 @@ yyreduce:
 #endif
 			{VALUE v1,v2,v3,v4,v5;v1=(yyvsp[-2].val);v2=dispatch1(dyna_symbol,v1);v3=v2;v4=(yyvsp[0].val);v5=dispatch2(assoc_new,v3,v4);(yyval.val)=v5;}
 		    }
-#line 10317 "ripper.c" /* yacc.c:1645  */
+#line 10327 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 610:
-#line 4370 "ripper.y" /* yacc.c:1645  */
+#line 4370 "ripper.y" /* yacc.c:1652  */
     {
 #if 0
 			if (nd_type((yyvsp[0].val)) == NODE_HASH &&
@@ -10333,37 +10343,37 @@ yyreduce:
 #endif
 			{VALUE v1,v2;v1=(yyvsp[0].val);v2=dispatch1(assoc_splat,v1);(yyval.val)=v2;}
 		    }
-#line 10332 "ripper.c" /* yacc.c:1645  */
+#line 10342 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 636:
-#line 4429 "ripper.y" /* yacc.c:1645  */
+#line 4429 "ripper.y" /* yacc.c:1652  */
     {yyerrok;token_flush(p);}
-#line 10338 "ripper.c" /* yacc.c:1645  */
+#line 10348 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 637:
-#line 4430 "ripper.y" /* yacc.c:1645  */
+#line 4430 "ripper.y" /* yacc.c:1652  */
     {token_flush(p);}
-#line 10344 "ripper.c" /* yacc.c:1645  */
+#line 10354 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 639:
-#line 4434 "ripper.y" /* yacc.c:1645  */
+#line 4434 "ripper.y" /* yacc.c:1652  */
     {yyerrok;}
-#line 10350 "ripper.c" /* yacc.c:1645  */
+#line 10360 "ripper.c" /* yacc.c:1652  */
     break;
 
   case 640:
-#line 4438 "ripper.y" /* yacc.c:1645  */
+#line 4438 "ripper.y" /* yacc.c:1652  */
     {
 			(yyval.val) = Qnull;
 		    }
-#line 10358 "ripper.c" /* yacc.c:1645  */
+#line 10368 "ripper.c" /* yacc.c:1652  */
     break;
 
 
-#line 10362 "ripper.c" /* yacc.c:1645  */
+#line 10372 "ripper.c" /* yacc.c:1652  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -10478,12 +10488,10 @@ yyerrlab:
 | yyerrorlab -- error raised explicitly by YYERROR.  |
 `---------------------------------------------------*/
 yyerrorlab:
-
-  /* Pacify compilers like GCC when the user code never invokes
-     YYERROR and the label yyerrorlab therefore never appears in user
-     code.  */
-  if (/*CONSTCOND*/ 0)
-     goto yyerrorlab;
+  /* Pacify compilers when the user code never invokes YYERROR and the
+     label yyerrorlab therefore never appears in user code.  */
+  if (0)
+    YYERROR;
 
   /* Do not reclaim the symbols of the rule whose action triggered
      this YYERROR.  */
@@ -10550,12 +10558,14 @@ yyacceptlab:
   yyresult = 0;
   goto yyreturn;
 
+
 /*-----------------------------------.
 | yyabortlab -- YYABORT comes here.  |
 `-----------------------------------*/
 yyabortlab:
   yyresult = 1;
   goto yyreturn;
+
 
 #if !defined yyoverflow || YYERROR_VERBOSE
 /*-------------------------------------------------.
@@ -10567,6 +10577,10 @@ yyexhaustedlab:
   /* Fall through.  */
 #endif
 
+
+/*-----------------------------------------------------.
+| yyreturn -- parsing is finished, return the result.  |
+`-----------------------------------------------------*/
 yyreturn:
   if (yychar != YYEMPTY)
     {
@@ -10596,7 +10610,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 4442 "ripper.y" /* yacc.c:1903  */
+#line 4442 "ripper.y" /* yacc.c:1918  */
 
 # undef p
 # undef yylex

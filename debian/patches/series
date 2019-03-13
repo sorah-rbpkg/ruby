@@ -4,6 +4,3 @@
 0004-Make-gemspecs-reproducible.patch
 0005-exclude-several-tests-unstable-in-Docker.patch
 0006-Port-to-kfreebsd-amd64.patch
-0007-Fix-tests-when-ruby-program-suffix-is-used-without-r.patch
-0008-Unset-SOURCE_DATE_EPOCH-on-Rubygems-test-cases.patch
-0009-merge-revision-s-66888-Backport-15460.patch
