@@ -2,7 +2,7 @@
 
   dir.c -
 
-  $Author: naruse $
+  $Author: nagachika $
   created at: Wed Jan  5 09:51:01 JST 1994
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -20,6 +20,10 @@
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
+#ifndef O_CLOEXEC
+#  define O_CLOEXEC 0
 #endif
 
 #ifndef USE_OPENDIR_AT
