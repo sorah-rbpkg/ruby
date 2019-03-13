@@ -35,8 +35,6 @@ sufficient information, see the ChangeLog file or Redmine
     (1...).each {|index| block }          # infinite loop from index 1
     ary.zip(1..) {|elem, index| block }   # ary.each.with_index(1) { }
 
-* Non-Symbol keys in a keyword arguments hash cause an exception.
-
 * The "shadowing outer local variable" warning is removed.  [Feature #12490]
 
   You can now write the following without warning:
@@ -47,6 +45,9 @@ sufficient information, see the ChangeLog file or Redmine
   its backtraces and error message. [Feature #8257]
 
 * The flip-flop syntax is deprecated. [Feature #5400]
+
+* Non-Symbol keys in a keyword arguments hash was prohibited at 2.6.0, but
+  now allowed again.  [Bug #15658]
 
 === Core classes updates (outstanding ones only)
 
@@ -270,6 +271,9 @@ sufficient information, see the ChangeLog file or Redmine
       class rather than one of the Enumerator class.
 
 [Regexp/String]
+
+    * Update Unicode version and Emoji version from 11.0.0 to 12.0.0.
+      [Feature #15321]
 
     * Update Unicode version from 10.0.0 to 11.0.0. [Feature #14802]
 
