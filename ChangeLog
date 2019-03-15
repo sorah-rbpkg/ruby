@@ -1,7 +1,22 @@
 ------------------------------------------------------------------------
-r67245 | nagachika | 2019-03-13 18:38:32 +0900 (Wed, 13 Mar 2019) | 1 line
+r67260 | nagachika | 2019-03-15 07:24:22 +0900 (Fri, 15 Mar 2019) | 1 line
 
-add tag v2_5_4
+add tag v2_5_5
+------------------------------------------------------------------------
+r67259 | nagachika | 2019-03-15 07:21:30 +0900 (Fri, 15 Mar 2019) | 8 lines
+
+merge revision(s) 63309:
+
+	thread_sync.c (condvar_ptr): reset fork_gen after forking
+
+	Otherwise the condition variable waiter list will always
+	be empty, which is wrong :x
+
+	[Bug #14725] [Bug #14634]
+------------------------------------------------------------------------
+r67258 | nagachika | 2019-03-15 07:16:48 +0900 (Fri, 15 Mar 2019) | 1 line
+
+bump up teeny version to 2.5.5
 ------------------------------------------------------------------------
 r67242 | nagachika | 2019-03-13 09:32:12 +0900 (Wed, 13 Mar 2019) | 7 lines
 
