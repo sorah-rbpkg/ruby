@@ -8,5 +8,3 @@
 0008-Disable-tests-failing-on-Ubuntu-builders.patch
 0009-test-test_pair-fix-deadlock-in-test_connect_accept_n.patch
 0010-test-use-larger-keys-for-SSL-tests.patch
-0011-Update-for-tzdata-2018f.patch
-0012-test-update-test-certificate.patch
