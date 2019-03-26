@@ -1,3 +1,9 @@
+ruby2.5 (2.5.5-1) UNRELEASED; urgency=medium
+
+  * New upstream version 2.5.5
+
+ -- Antonio Terceiro <terceiro@debian.org>  Tue, 26 Mar 2019 17:12:34 -0300
+
 ruby2.5 (2.5.3-4) unstable; urgency=medium
 
   * 0012-test-update-test-certificate.patch: update test certificate so
