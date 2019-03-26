@@ -1,6 +1,15 @@
-ruby2.5 (2.5.5-1) UNRELEASED; urgency=medium
+ruby2.5 (2.5.5-1) unstable; urgency=medium
 
-  * New upstream version 2.5.5
+  * New upstream version 2.5.5. Includes a series of bug fixes, most notably
+    for 6 security bugs discovered in Rubygems:
+    - CVE-2019-8320: Delete directory using symlink when decompressing tar
+    - CVE-2019-8321: Escape sequence injection vulnerability in verbose
+    - CVE-2019-8322: Escape sequence injection vulnerability in gem owner
+    - CVE-2019-8323: Escape sequence injection vulnerability in API response
+      handling
+    - CVE-2019-8324: Installing a malicious gem may lead to arbitrary code
+      execution
+    - CVE-2019-8325: Escape sequence injection vulnerability in errors
 
  -- Antonio Terceiro <terceiro@debian.org>  Tue, 26 Mar 2019 17:12:34 -0300
 
