@@ -1,3 +1,11 @@
+ruby2.1 (2.1.5-2+deb8u7) jessie-security; urgency=medium
+
+  * Non-maintainer upload by the Debian LTS Team.
+  * Fix CVE-2019-8320, CVE-2019-8322, CVE-2019-8323, CVE-2019-8324,
+    CVE-2019-8325
+
+ -- Abhijith PA <abhijith@debian.org>  Fri, 29 Mar 2019 11:56:38 +0530
+
 ruby2.1 (2.1.5-2+deb8u6) jessie-security; urgency=medium
 
   * Non-maintainer upload by the LTS Team. 
