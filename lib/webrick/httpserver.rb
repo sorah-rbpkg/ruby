@@ -267,12 +267,12 @@ module WEBrick
         k.sort!
         k.reverse!
         k.collect!{|path| Regexp.escape(path) }
-        @scanner = Regexp.new("\\A(" + k.join("|") +")(?=/|\\z)")
+        @scanner = Regexp.new("^(" + k.join("|") +")(?=/|$)")
       end
 
       def normalize(dir)
         ret = dir ? dir.dup : ""
-        ret.sub!(%r|/+\z|, "")
+        ret.sub!(%r|/+$|, "")
         ret
       end
     end

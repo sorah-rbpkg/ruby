@@ -751,7 +751,6 @@ pack_pack(VALUE ary, VALUE fmt)
 	    StringValue(from);
 	    ptr = RSTRING_PTR(from);
 	    plen = RSTRING_LEN(from);
-	    OBJ_INFECT(res, from);
 
 	    if (len == 0 && type == 'm') {
 		encodes(res, ptr, plen, type, 0);
@@ -779,7 +778,6 @@ pack_pack(VALUE ary, VALUE fmt)
 
 	  case 'M':		/* quoted-printable encoded string */
 	    from = rb_obj_as_string(NEXTFROM);
-	    OBJ_INFECT(res, from);
 	    if (len <= 1)
 		len = 72;
 	    qpencode(res, from, len);
@@ -805,7 +803,6 @@ pack_pack(VALUE ary, VALUE fmt)
 		}
 		else {
 		    t = StringValuePtr(from);
-		    OBJ_INFECT(res, from);
 		    rb_obj_taint(from);
 		}
 		if (!associates) {
@@ -1238,7 +1235,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	else if (ISDIGIT(*p)) {
 	    errno = 0;
 	    len = STRTOUL(p, (char**)&p, 10);
-	    if (len < 0 || errno) {
+	    if (errno) {
 		rb_raise(rb_eRangeError, "pack length too big");
 	    }
 	}
@@ -1294,15 +1291,13 @@ pack_unpack(VALUE str, VALUE fmt)
 		if (p[-1] == '*' || len > (send - s) * 8)
 		    len = (send - s) * 8;
 		bits = 0;
-		bitstr = rb_usascii_str_new(0, len);
-		OBJ_INFECT(bitstr, str);
+		UNPACK_PUSH(bitstr = rb_usascii_str_new(0, len));
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 7) bits >>= 1;
 		    else bits = (unsigned char)*s++;
 		    *t++ = (bits & 1) ? '1' : '0';
 		}
-		UNPACK_PUSH(bitstr);
 	    }
 	    break;
 
@@ -1316,15 +1311,13 @@ pack_unpack(VALUE str, VALUE fmt)
 		if (p[-1] == '*' || len > (send - s) * 8)
 		    len = (send - s) * 8;
 		bits = 0;
-		bitstr = rb_usascii_str_new(0, len);
-		OBJ_INFECT(bitstr, str);
+		UNPACK_PUSH(bitstr = rb_usascii_str_new(0, len));
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 7) bits <<= 1;
 		    else bits = (unsigned char)*s++;
 		    *t++ = (bits & 128) ? '1' : '0';
 		}
-		UNPACK_PUSH(bitstr);
 	    }
 	    break;
 
@@ -1338,8 +1331,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		if (p[-1] == '*' || len > (send - s) * 2)
 		    len = (send - s) * 2;
 		bits = 0;
-		bitstr = rb_usascii_str_new(0, len);
-		OBJ_INFECT(bitstr, str);
+		UNPACK_PUSH(bitstr = rb_usascii_str_new(0, len));
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 1)
@@ -1348,7 +1340,6 @@ pack_unpack(VALUE str, VALUE fmt)
 			bits = (unsigned char)*s++;
 		    *t++ = hexdigits[bits & 15];
 		}
-		UNPACK_PUSH(bitstr);
 	    }
 	    break;
 
@@ -1362,8 +1353,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		if (p[-1] == '*' || len > (send - s) * 2)
 		    len = (send - s) * 2;
 		bits = 0;
-		bitstr = rb_usascii_str_new(0, len);
-		OBJ_INFECT(bitstr, str);
+		UNPACK_PUSH(bitstr = rb_usascii_str_new(0, len));
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 1)
@@ -1372,7 +1362,6 @@ pack_unpack(VALUE str, VALUE fmt)
 			bits = (unsigned char)*s++;
 		    *t++ = hexdigits[(bits >> 4) & 15];
 		}
-		UNPACK_PUSH(bitstr);
 	    }
 	    break;
 

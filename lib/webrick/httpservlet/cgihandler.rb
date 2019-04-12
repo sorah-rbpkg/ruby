@@ -65,7 +65,9 @@ module WEBrick
           cgi_in.write("%8d" % dump.bytesize)
           cgi_in.write(dump)
 
-          req.body { |chunk| cgi_in.write(chunk) }
+          if req.body and req.body.bytesize > 0
+            cgi_in.write(req.body)
+          end
         ensure
           cgi_in.close
           status = $?.exitstatus

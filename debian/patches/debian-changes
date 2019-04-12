@@ -1,0 +1,3539 @@
+This patch file represents the entire difference between the package as shipped
+by Debian and the official upstream sources. The goal is to maintain this file
+as small as possible, avoiding non-upstreamed patches at all costs.
+
+The Debian packaging is maintained in the following Git repository:
+
+  http://anonscm.debian.org/gitweb/?p=collab-maint/ruby.git
+
+To obtain a view of the individual commits that affect non-Debian-specific
+files, you can clone that repository, and from the master branch, run:
+
+  $ ./debian/upstream-changes
+
+--- ruby2.3-2.3.3.orig/configure.in
++++ ruby2.3-2.3.3/configure.in
+@@ -3686,7 +3686,7 @@ AS_CASE("$enable_shared", [yes], [
+ 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
+ 	],
+     [linux* | gnu* | k*bsd*-gnu | atheos* | kopensolaris*-gnu | haiku*], [
+-	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)'" $LDFLAGS_OPTDIR"
++	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)'" $LDFLAGS $LDFLAGS_OPTDIR"
+ 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
+ 	if test "$load_relative" = yes; then
+ 	    libprefix="'\$\${ORIGIN}/../${libdir_basename}'"
+--- ruby2.3-2.3.3.orig/dir.c
++++ ruby2.3-2.3.3/dir.c
+@@ -449,15 +449,6 @@ static const rb_data_type_t dir_data_typ
+ 
+ static VALUE dir_close(VALUE);
+ 
+-#define GlobPathValue(str, safe) \
+-    /* can contain null bytes as separators */	\
+-    (!RB_TYPE_P((str), T_STRING) ?		\
+-     (void)FilePathValue(str) :			\
+-     (void)(check_safe_glob((str), (safe)),		\
+-      check_glob_encoding(str), (str)))
+-#define check_safe_glob(str, safe) ((safe) ? rb_check_safe_obj(str) : (void)0)
+-#define check_glob_encoding(str) rb_enc_check((str), rb_enc_from_encoding(rb_usascii_encoding()))
+-
+ static VALUE
+ dir_s_alloc(VALUE klass)
+ {
+@@ -506,7 +497,7 @@ dir_initialize(int argc, VALUE *argv, VA
+ 	}
+     }
+ 
+-    GlobPathValue(dirname, FALSE);
++    FilePathValue(dirname);
+     orig = rb_str_dup_frozen(dirname);
+     dirname = rb_str_encode_ospath(dirname);
+     dirname = rb_str_dup_frozen(dirname);
+@@ -2175,7 +2166,14 @@ rb_push_glob(VALUE str, int flags) /* '\
+     long offset = 0;
+     VALUE ary;
+ 
+-    GlobPathValue(str, TRUE);
++    /* can contain null bytes as separators */
++    if (!RB_TYPE_P((str), T_STRING)) {
++	FilePathValue(str);
++    }
++    else {
++	rb_check_safe_obj(str);
++	rb_enc_check(str, rb_enc_from_encoding(rb_usascii_encoding()));
++    }
+     ary = rb_ary_new();
+ 
+     while (offset < RSTRING_LEN(str)) {
+@@ -2205,7 +2203,7 @@ dir_globs(long argc, const VALUE *argv,
+     for (i = 0; i < argc; ++i) {
+ 	int status;
+ 	VALUE str = argv[i];
+-	GlobPathValue(str, TRUE);
++	FilePathValue(str);
+ 	status = push_glob(ary, str, flags);
+ 	if (status) GLOB_JUMP_TAG(status);
+     }
+--- ruby2.3-2.3.3.orig/ext/bigdecimal/bigdecimal.gemspec
++++ ruby2.3-2.3.3/ext/bigdecimal/bigdecimal.gemspec
+@@ -1,11 +1,10 @@
+ # -*- ruby -*-
+ _VERSION = "1.2.8"
+-date = %w$Date::                           $[1]
+ 
+ Gem::Specification.new do |s|
+   s.name = "bigdecimal"
+   s.version = _VERSION
+-  s.date = date
++  s.date = RUBY_RELEASE_DATE
+   s.license = 'ruby'
+   s.summary = "Arbitrary-precision decimal floating-point number library."
+   s.homepage = "http://www.ruby-lang.org"
+--- ruby2.3-2.3.3.orig/ext/io/console/io-console.gemspec
++++ ruby2.3-2.3.3/ext/io/console/io-console.gemspec
+@@ -1,11 +1,10 @@
+ # -*- ruby -*-
+ _VERSION = "0.4.5"
+-date = %w$Date::                           $[1]
+ 
+ Gem::Specification.new do |s|
+   s.name = "io-console"
+   s.version = _VERSION
+-  s.date = date
++  s.date = RUBY_RELEASE_DATE
+   s.summary = "Console interface"
+   s.email = "nobu@ruby-lang.org"
+   s.description = "add console capabilities to IO instances."
+--- ruby2.3-2.3.3.orig/ext/json/generator/generator.c
++++ ruby2.3-2.3.3/ext/json/generator/generator.c
+@@ -301,7 +301,7 @@ static char *fstrndup(const char *ptr, u
+   char *result;
+   if (len <= 0) return NULL;
+   result = ALLOC_N(char, len);
+-  memccpy(result, ptr, 0, len);
++  memcpy(result, ptr, len);
+   return result;
+ }
+ 
+@@ -1055,7 +1055,7 @@ static VALUE cState_indent_set(VALUE sel
+         }
+     } else {
+         if (state->indent) ruby_xfree(state->indent);
+-        state->indent = strdup(RSTRING_PTR(indent));
++        state->indent = fstrndup(RSTRING_PTR(indent), len);
+         state->indent_len = len;
+     }
+     return Qnil;
+@@ -1093,7 +1093,7 @@ static VALUE cState_space_set(VALUE self
+         }
+     } else {
+         if (state->space) ruby_xfree(state->space);
+-        state->space = strdup(RSTRING_PTR(space));
++        state->space = fstrndup(RSTRING_PTR(space), len);
+         state->space_len = len;
+     }
+     return Qnil;
+@@ -1129,7 +1129,7 @@ static VALUE cState_space_before_set(VAL
+         }
+     } else {
+         if (state->space_before) ruby_xfree(state->space_before);
+-        state->space_before = strdup(RSTRING_PTR(space_before));
++        state->space_before = fstrndup(RSTRING_PTR(space_before), len);
+         state->space_before_len = len;
+     }
+     return Qnil;
+@@ -1166,7 +1166,7 @@ static VALUE cState_object_nl_set(VALUE
+         }
+     } else {
+         if (state->object_nl) ruby_xfree(state->object_nl);
+-        state->object_nl = strdup(RSTRING_PTR(object_nl));
++        state->object_nl = fstrndup(RSTRING_PTR(object_nl), len);
+         state->object_nl_len = len;
+     }
+     return Qnil;
+@@ -1201,7 +1201,7 @@ static VALUE cState_array_nl_set(VALUE s
+         }
+     } else {
+         if (state->array_nl) ruby_xfree(state->array_nl);
+-        state->array_nl = strdup(RSTRING_PTR(array_nl));
++        state->array_nl = fstrndup(RSTRING_PTR(array_nl), len);
+         state->array_nl_len = len;
+     }
+     return Qnil;
+--- ruby2.3-2.3.3.orig/ext/json/generator/generator.h
++++ ruby2.3-2.3.3/ext/json/generator/generator.h
+@@ -1,7 +1,6 @@
+ #ifndef _GENERATOR_H_
+ #define _GENERATOR_H_
+ 
+-#include <string.h>
+ #include <math.h>
+ #include <ctype.h>
+ 
+--- ruby2.3-2.3.3.orig/ext/json/json.gemspec
++++ ruby2.3-2.3.3/ext/json/json.gemspec
+@@ -1,6 +1,7 @@
+ Gem::Specification.new do |s|
+   s.name = "json"
+   s.version = "1.8.3"
++  s.date = RUBY_RELEASE_DATE
+   s.summary = "This json is bundled with Ruby"
+   s.executables = []
+   s.files = ["json.rb", "json/add/bigdecimal.rb", "json/add/complex.rb", "json/add/core.rb", "json/add/date.rb", "json/add/date_time.rb", "json/add/exception.rb", "json/add/ostruct.rb", "json/add/range.rb", "json/add/rational.rb", "json/add/regexp.rb", "json/add/struct.rb", "json/add/symbol.rb", "json/add/time.rb", "json/common.rb", "json/ext.rb", "json/ext/generator.bundle", "json/ext/parser.bundle", "json/generic_object.rb", "json/version.rb"]
+--- ruby2.3-2.3.3.orig/ext/json/lib/json/version.rb
++++ ruby2.3-2.3.3/ext/json/lib/json/version.rb
+@@ -1,7 +1,7 @@
+ # frozen_string_literal: false
+ module JSON
+   # JSON version
+-  VERSION         = '1.8.3'
++  VERSION         = '1.8.3.1'
+   VERSION_ARRAY   = VERSION.split(/\./).map { |x| x.to_i } # :nodoc:
+   VERSION_MAJOR   = VERSION_ARRAY[0] # :nodoc:
+   VERSION_MINOR   = VERSION_ARRAY[1] # :nodoc:
+--- ruby2.3-2.3.3.orig/ext/openssl/ossl_asn1.c
++++ ruby2.3-2.3.3/ext/openssl/ossl_asn1.c
+@@ -870,19 +870,18 @@ int_ossl_asn1_decode0_cons(unsigned char
+ {
+     VALUE value, asn1data, ary;
+     int infinite;
+-    long off = *offset;
++    long available_len, off = *offset;
+ 
+     infinite = (j == 0x21);
+     ary = rb_ary_new();
+ 
+-    while (length > 0 || infinite) {
++    available_len = infinite ? max_len : length;
++    while (available_len > 0) {
+ 	long inner_read = 0;
+-	value = ossl_asn1_decode0(pp, max_len, &off, depth + 1, yield, &inner_read);
++	value = ossl_asn1_decode0(pp, available_len, &off, depth + 1, yield, &inner_read);
+ 	*num_read += inner_read;
+-	max_len -= inner_read;
++	available_len -= inner_read;
+ 	rb_ary_push(ary, value);
+-	if (length > 0)
+-	    length -= inner_read;
+ 
+ 	if (infinite &&
+ 	    NUM2INT(ossl_asn1_get_tag(value)) == V_ASN1_EOC &&
+@@ -973,7 +972,7 @@ ossl_asn1_decode0(unsigned char **pp, lo
+     if(j & V_ASN1_CONSTRUCTED) {
+ 	*pp += hlen;
+ 	off += hlen;
+-	asn1data = int_ossl_asn1_decode0_cons(pp, length, len, &off, depth, yield, j, tag, tag_class, &inner_read);
++	asn1data = int_ossl_asn1_decode0_cons(pp, length - hlen, len, &off, depth, yield, j, tag, tag_class, &inner_read);
+ 	inner_read += hlen;
+     }
+     else {
+--- ruby2.3-2.3.3.orig/ext/openssl/ossl_cipher.c
++++ ruby2.3-2.3.3/ext/openssl/ossl_cipher.c
+@@ -34,6 +34,7 @@
+  */
+ VALUE cCipher;
+ VALUE eCipherError;
++static ID id_key_set;
+ 
+ static VALUE ossl_cipher_alloc(VALUE klass);
+ static void ossl_cipher_free(void *ptr);
+@@ -114,7 +115,6 @@ ossl_cipher_initialize(VALUE self, VALUE
+     EVP_CIPHER_CTX *ctx;
+     const EVP_CIPHER *cipher;
+     char *name;
+-    unsigned char key[EVP_MAX_KEY_LENGTH];
+ 
+     name = StringValuePtr(str);
+     GetCipherInit(self, ctx);
+@@ -126,14 +126,7 @@ ossl_cipher_initialize(VALUE self, VALUE
+     if (!(cipher = EVP_get_cipherbyname(name))) {
+ 	ossl_raise(rb_eRuntimeError, "unsupported cipher algorithm (%s)", name);
+     }
+-    /*
+-     * The EVP which has EVP_CIPH_RAND_KEY flag (such as DES3) allows
+-     * uninitialized key, but other EVPs (such as AES) does not allow it.
+-     * Calling EVP_CipherUpdate() without initializing key causes SEGV so we
+-     * set the data filled with "\0" as the key by default.
+-     */
+-    memset(key, 0, EVP_MAX_KEY_LENGTH);
+-    if (EVP_CipherInit_ex(ctx, cipher, NULL, key, NULL, -1) != 1)
++    if (EVP_CipherInit_ex(ctx, cipher, NULL, NULL, NULL, -1) != 1)
+ 	ossl_raise(eCipherError, NULL);
+ 
+     return self;
+@@ -252,6 +245,9 @@ ossl_cipher_init(int argc, VALUE *argv,
+ 	ossl_raise(eCipherError, NULL);
+     }
+ 
++    if (p_key)
++        rb_ivar_set(self, id_key_set, Qtrue);
++
+     return self;
+ }
+ 
+@@ -338,6 +334,8 @@ ossl_cipher_pkcs5_keyivgen(int argc, VAL
+     OPENSSL_cleanse(key, sizeof key);
+     OPENSSL_cleanse(iv, sizeof iv);
+ 
++    rb_ivar_set(self, id_key_set, Qtrue);
++
+     return Qnil;
+ }
+ 
+@@ -390,6 +388,8 @@ ossl_cipher_update(int argc, VALUE *argv
+     VALUE data, str;
+ 
+     rb_scan_args(argc, argv, "11", &data, &str);
++    if (!RTEST(rb_attr_get(self, id_key_set)))
++        ossl_raise(eCipherError, "key not set");
+ 
+     StringValue(data);
+     in = (unsigned char *)RSTRING_PTR(data);
+@@ -490,6 +490,8 @@ ossl_cipher_set_key(VALUE self, VALUE ke
+     if (EVP_CipherInit_ex(ctx, NULL, NULL, (unsigned char *)RSTRING_PTR(key), NULL, -1) != 1)
+         ossl_raise(eCipherError, NULL);
+ 
++    rb_ivar_set(self, id_key_set, Qtrue);
++
+     return key;
+ }
+ 
+@@ -1008,4 +1010,6 @@ Init_ossl_cipher(void)
+     rb_define_method(cCipher, "iv_len", ossl_cipher_iv_length, 0);
+     rb_define_method(cCipher, "block_size", ossl_cipher_block_size, 0);
+     rb_define_method(cCipher, "padding=", ossl_cipher_set_padding, 1);
++
++    id_key_set = rb_intern_const("key_set");
+ }
+--- ruby2.3-2.3.3.orig/ext/openssl/ossl_x509name.c
++++ ruby2.3-2.3.3/ext/openssl/ossl_x509name.c
+@@ -339,7 +339,7 @@ ossl_x509name_cmp(VALUE self, VALUE othe
+ 
+     result = ossl_x509name_cmp0(self, other);
+     if (result < 0) return INT2FIX(-1);
+-    if (result > 1) return INT2FIX(1);
++    if (result > 0) return INT2FIX(1);
+ 
+     return INT2FIX(0);
+ }
+--- ruby2.3-2.3.3.orig/ext/socket/unixsocket.c
++++ ruby2.3-2.3.3/ext/socket/unixsocket.c
+@@ -25,6 +25,28 @@ unixsock_connect_internal(VALUE a)
+ 			        arg->sockaddrlen, 0);
+ }
+ 
++static VALUE
++unixsock_path_value(VALUE path)
++{
++#ifdef __linux__
++#define TO_STR_FOR_LINUX_ABSTRACT_NAMESPACE 0
++
++    VALUE name = path;
++#if TO_STR_FOR_LINUX_ABSTRACT_NAMESPACE
++    const int isstr = !NIL_P(name = rb_check_string_type(name));
++#else
++    const int isstr = RB_TYPE_P(name, T_STRING);
++#endif
++    if (isstr) {
++        if (RSTRING_LEN(name) == 0 || RSTRING_PTR(name)[0] == '\0') {
++            rb_check_safe_obj(name);
++            return name;             /* ignore encoding */
++        }
++    }
++#endif
++    return rb_get_path(path);
++}
++
+ VALUE
+ rsock_init_unixsock(VALUE sock, VALUE path, int server)
+ {
+@@ -33,7 +55,7 @@ rsock_init_unixsock(VALUE sock, VALUE pa
+     int fd, status;
+     rb_io_t *fptr;
+ 
+-    SafeStringValue(path);
++    path = unixsock_path_value(path);
+ 
+     INIT_SOCKADDR_UN(&sockaddr, sizeof(struct sockaddr_un));
+     if (sizeof(sockaddr.sun_path) < (size_t)RSTRING_LEN(path)) {
+--- ruby2.3-2.3.3.orig/lib/mkmf.rb
++++ ruby2.3-2.3.3/lib/mkmf.rb
+@@ -2275,7 +2275,7 @@ LOCAL_LIBS = #{$LOCAL_LIBS}
+ LIBS = #{$LIBRUBYARG} #{$libs} #{$LIBS}
+ ORIG_SRCS = #{orig_srcs.collect(&File.method(:basename)).join(' ')}
+ SRCS = $(ORIG_SRCS) #{(srcs - orig_srcs).collect(&File.method(:basename)).join(' ')}
+-OBJS = #{$objs.join(" ")}
++OBJS = #{$objs.sort.join(" ")}
+ HDRS = #{hdrs.map{|h| '$(srcdir)/' + File.basename(h)}.join(' ')}
+ TARGET = #{target}
+ TARGET_NAME = #{target && target[/\A\w+/]}
+--- ruby2.3-2.3.3.orig/lib/net/ftp.rb
++++ ruby2.3-2.3.3/lib/net/ftp.rb
+@@ -622,10 +622,10 @@ module Net
+       if localfile
+         if @resume
+           rest_offset = File.size?(localfile)
+-          f = open(localfile, "a")
++          f = File.open(localfile, "a")
+         else
+           rest_offset = nil
+-          f = open(localfile, "w")
++          f = File.open(localfile, "w")
+         end
+       elsif !block_given?
+         result = String.new
+@@ -655,7 +655,7 @@ module Net
+       f = nil
+       result = nil
+       if localfile
+-        f = open(localfile, "w")
++        f = File.open(localfile, "w")
+       elsif !block_given?
+         result = String.new
+       end
+@@ -701,7 +701,7 @@ module Net
+       else
+         rest_offset = nil
+       end
+-      f = open(localfile)
++      f = File.open(localfile)
+       begin
+         f.binmode
+         if rest_offset
+@@ -720,7 +720,7 @@ module Net
+     # passing in the transmitted data one line at a time.
+     #
+     def puttextfile(localfile, remotefile = File.basename(localfile), &block) # :yield: line
+-      f = open(localfile)
++      f = File.open(localfile)
+       begin
+         storlines("STOR #{remotefile}", f, &block)
+       ensure
+--- ruby2.3-2.3.3.orig/lib/net/smtp.rb
++++ ruby2.3-2.3.3/lib/net/smtp.rb
+@@ -926,7 +926,15 @@ module Net
+ 
+     private
+ 
++    def validate_line(line)
++      # A bare CR or LF is not allowed in RFC5321.
++      if /[\r\n]/ =~ line
++        raise ArgumentError, "A line must not contain CR or LF"
++      end
++    end
++
+     def getok(reqline)
++      validate_line reqline
+       res = critical {
+         @socket.writeline reqline
+         recv_response()
+@@ -936,6 +944,7 @@ module Net
+     end
+ 
+     def get_response(reqline)
++      validate_line reqline
+       @socket.writeline reqline
+       recv_response()
+     end
+--- ruby2.3-2.3.3.orig/lib/rdoc/generator/json_index.rb
++++ ruby2.3-2.3.3/lib/rdoc/generator/json_index.rb
+@@ -175,7 +175,7 @@ class RDoc::Generator::JsonIndex
+     debug_msg "Writing gzipped search index to %s" % outfile
+ 
+     Zlib::GzipWriter.open(outfile) do |gz|
+-      gz.mtime = File.mtime(search_index_file)
++      gz.mtime = -1
+       gz.orig_name = search_index_file.basename.to_s
+       gz.write search_index
+       gz.close
+@@ -193,7 +193,7 @@ class RDoc::Generator::JsonIndex
+         debug_msg "Writing gzipped file to %s" % outfile
+ 
+         Zlib::GzipWriter.open(outfile) do |gz|
+-          gz.mtime = File.mtime(dest)
++          gz.mtime = -1
+           gz.orig_name = dest.basename.to_s
+           gz.write data
+           gz.close
+--- ruby2.3-2.3.3.orig/lib/rdoc/rdoc.gemspec
++++ ruby2.3-2.3.3/lib/rdoc/rdoc.gemspec
+@@ -1,6 +1,7 @@
+ Gem::Specification.new do |s|
+   s.name = "rdoc"
+   s.version = "4.2.1"
++  s.date = RUBY_RELEASE_DATE
+   s.summary = "This rdoc is bundled with Ruby"
+   s.executables = ["rdoc", "ri"]
+   s.files = ["rdoc.rb", "rdoc/alias.rb", "rdoc/anon_class.rb", "rdoc/any_method.rb", "rdoc/attr.rb", "rdoc/class_module.rb", "rdoc/code_object.rb", "rdoc/code_objects.rb", "rdoc/comment.rb", "rdoc/constant.rb", "rdoc/context.rb", "rdoc/context/section.rb", "rdoc/cross_reference.rb", "rdoc/encoding.rb", "rdoc/erb_partial.rb", "rdoc/erbio.rb", "rdoc/extend.rb", "rdoc/generator.rb", "rdoc/generator/darkfish.rb", "rdoc/generator/json_index.rb", "rdoc/generator/markup.rb", "rdoc/generator/pot.rb", "rdoc/generator/pot/message_extractor.rb", "rdoc/generator/pot/po.rb", "rdoc/generator/pot/po_entry.rb", "rdoc/generator/ri.rb", "rdoc/ghost_method.rb", "rdoc/i18n.rb", "rdoc/i18n/locale.rb", "rdoc/i18n/text.rb", "rdoc/include.rb", "rdoc/known_classes.rb", "rdoc/markdown.rb", "rdoc/markdown/entities.rb", "rdoc/markdown/literals_1_9.rb", "rdoc/markup.rb", "rdoc/markup/attr_changer.rb", "rdoc/markup/attr_span.rb", "rdoc/markup/attribute_manager.rb", "rdoc/markup/attributes.rb", "rdoc/markup/blank_line.rb", "rdoc/markup/block_quote.rb", "rdoc/markup/document.rb", "rdoc/markup/formatter.rb", "rdoc/markup/formatter_test_case.rb", "rdoc/markup/hard_break.rb", "rdoc/markup/heading.rb", "rdoc/markup/include.rb", "rdoc/markup/indented_paragraph.rb", "rdoc/markup/inline.rb", "rdoc/markup/list.rb", "rdoc/markup/list_item.rb", "rdoc/markup/paragraph.rb", "rdoc/markup/parser.rb", "rdoc/markup/pre_process.rb", "rdoc/markup/raw.rb", "rdoc/markup/rule.rb", "rdoc/markup/special.rb", "rdoc/markup/text_formatter_test_case.rb", "rdoc/markup/to_ansi.rb", "rdoc/markup/to_bs.rb", "rdoc/markup/to_html.rb", "rdoc/markup/to_html_crossref.rb", "rdoc/markup/to_html_snippet.rb", "rdoc/markup/to_joined_paragraph.rb", "rdoc/markup/to_label.rb", "rdoc/markup/to_markdown.rb", "rdoc/markup/to_rdoc.rb", "rdoc/markup/to_table_of_contents.rb", "rdoc/markup/to_test.rb", "rdoc/markup/to_tt_only.rb", "rdoc/markup/verbatim.rb", "rdoc/meta_method.rb", "rdoc/method_attr.rb", "rdoc/mixin.rb", "rdoc/normal_class.rb", "rdoc/normal_module.rb", "rdoc/options.rb", "rdoc/parser.rb", "rdoc/parser/c.rb", "rdoc/parser/changelog.rb", "rdoc/parser/markdown.rb", "rdoc/parser/rd.rb", "rdoc/parser/ruby.rb", "rdoc/parser/ruby_tools.rb", "rdoc/parser/simple.rb", "rdoc/parser/text.rb", "rdoc/rd.rb", "rdoc/rd/block_parser.rb", "rdoc/rd/inline.rb", "rdoc/rd/inline_parser.rb", "rdoc/rdoc.rb", "rdoc/require.rb", "rdoc/ri.rb", "rdoc/ri/driver.rb", "rdoc/ri/formatter.rb", "rdoc/ri/paths.rb", "rdoc/ri/store.rb", "rdoc/ri/task.rb", "rdoc/ruby_lex.rb", "rdoc/ruby_token.rb", "rdoc/rubygems_hook.rb", "rdoc/servlet.rb", "rdoc/single_class.rb", "rdoc/stats.rb", "rdoc/stats/normal.rb", "rdoc/stats/quiet.rb", "rdoc/stats/verbose.rb", "rdoc/store.rb", "rdoc/task.rb", "rdoc/test_case.rb", "rdoc/text.rb", "rdoc/token_stream.rb", "rdoc/tom_doc.rb", "rdoc/top_level.rb"]
+--- ruby2.3-2.3.3.orig/lib/rdoc/rdoc.rb
++++ ruby2.3-2.3.3/lib/rdoc/rdoc.rb
+@@ -321,7 +321,7 @@ option)
+       end
+     end
+ 
+-    file_list.flatten
++    file_list.flatten.sort
+   end
+ 
+   ##
+--- ruby2.3-2.3.3.orig/lib/resolv.rb
++++ ruby2.3-2.3.3/lib/resolv.rb
+@@ -189,7 +189,7 @@ class Resolv
+         unless @initialized
+           @name2addr = {}
+           @addr2name = {}
+-          open(@filename, 'rb') {|f|
++          File.open(@filename, 'rb') {|f|
+             f.each {|line|
+               line.sub!(/#.*/, '')
+               addr, hostname, *aliases = line.split(/\s+/)
+--- ruby2.3-2.3.3.orig/lib/rubygems.rb
++++ ruby2.3-2.3.3/lib/rubygems.rb
+@@ -10,7 +10,7 @@ require 'rbconfig'
+ require 'thread'
+ 
+ module Gem
+-  VERSION = '2.5.2'
++  VERSION = '2.5.2.1'
+ end
+ 
+ # Must be first since it unloads the prelude from 1.9.2
+@@ -602,7 +602,7 @@ module Gem
+ 
+     unless test_syck
+       begin
+-        gem 'psych', '>= 1.2.1'
++        gem 'psych', '>= 2.0.0'
+       rescue Gem::LoadError
+         # It's OK if the user does not have the psych gem installed.  We will
+         # attempt to require the stdlib version
+@@ -626,6 +626,7 @@ module Gem
+     end
+ 
+     require 'yaml'
++    require 'rubygems/safe_yaml'
+ 
+     # If we're supposed to be using syck, then we may have to force
+     # activate it via the YAML::ENGINE API.
+--- ruby2.3-2.3.3.orig/lib/rubygems/commands/owner_command.rb
++++ ruby2.3-2.3.3/lib/rubygems/commands/owner_command.rb
+@@ -62,7 +62,7 @@ permission to.
+     end
+ 
+     with_response response do |resp|
+-      owners = YAML.load resp.body
++      owners = Gem::SafeYAML.load resp.body
+ 
+       say "Owners for gem: #{name}"
+       owners.each do |owner|
+--- ruby2.3-2.3.3.orig/lib/rubygems/commands/query_command.rb
++++ ruby2.3-2.3.3/lib/rubygems/commands/query_command.rb
+@@ -226,7 +226,7 @@ is too hard to use.
+         end
+       end
+ 
+-      output << make_entry(matching_tuples, platforms)
++      output << clean_text(make_entry(matching_tuples, platforms))
+     end
+   end
+ 
+@@ -344,7 +344,8 @@ is too hard to use.
+   end
+ 
+   def spec_summary entry, spec
+-    entry << "\n\n" << format_text(spec.summary, 68, 4)
++    summary = truncate_text(spec.summary, "the summary for #{spec.full_name}")
++    entry << "\n\n" << format_text(summary, 68, 4)
+   end
+ 
+ end
+--- ruby2.3-2.3.3.orig/lib/rubygems/config_file.rb
++++ ruby2.3-2.3.3/lib/rubygems/config_file.rb
+@@ -332,7 +332,7 @@ if you believe they were disclosed to a
+     return {} unless filename and File.exist? filename
+ 
+     begin
+-      content = YAML.load(File.read(filename))
++      content = Gem::SafeYAML.load(File.read(filename))
+       unless content.kind_of? Hash
+         warn "Failed to load #{filename} because it doesn't contain valid YAML hash"
+         return {}
+--- ruby2.3-2.3.3.orig/lib/rubygems/installer.rb
++++ ruby2.3-2.3.3/lib/rubygems/installer.rb
+@@ -693,6 +693,11 @@ class Gem::Installer
+       unpack or File.writable?(gem_home)
+   end
+ 
++  def verify_spec_name
++    return if spec.name =~ Gem::Specification::VALID_NAME_PATTERN
++    raise Gem::InstallError, "#{spec} has an invalid name"
++  end
++
+   ##
+   # Return the text for an application file.
+ 
+@@ -812,6 +817,8 @@ TEXT
+ 
+     ensure_loadable_spec
+ 
++    verify_spec_name
++
+     if options[:install_as_default]
+       Gem.ensure_default_gem_subdirectories gem_home
+     else
+--- ruby2.3-2.3.3.orig/lib/rubygems/package.rb
++++ ruby2.3-2.3.3/lib/rubygems/package.rb
+@@ -376,7 +376,7 @@ EOM
+             File.dirname destination
+           end
+ 
+-        FileUtils.mkdir_p mkdir, mkdir_options
++        mkdir_p_safe mkdir, mkdir_options, destination_dir, entry.full_name
+ 
+         open destination, 'wb' do |out|
+           out.write entry.read
+@@ -414,20 +414,35 @@ EOM
+     raise Gem::Package::PathError.new(filename, destination_dir) if
+       filename.start_with? '/'
+ 
+-    destination_dir = File.realpath destination_dir if
+-      File.respond_to? :realpath
++    destination_dir = realpath destination_dir
+     destination_dir = File.expand_path destination_dir
+ 
+     destination = File.join destination_dir, filename
+     destination = File.expand_path destination
+ 
+     raise Gem::Package::PathError.new(destination, destination_dir) unless
+-      destination.start_with? destination_dir
++      destination.start_with? destination_dir + '/'
+ 
+     destination.untaint
+     destination
+   end
+ 
++  def mkdir_p_safe mkdir, mkdir_options, destination_dir, file_name
++    destination_dir = realpath File.expand_path(destination_dir)
++    parts = mkdir.split(File::SEPARATOR)
++    parts.reduce do |path, basename|
++      path = realpath path  unless path == ""
++      path = File.expand_path(path + File::SEPARATOR + basename)
++      lstat = File.lstat path rescue nil
++      if !lstat || !lstat.directory?
++        unless path.start_with? destination_dir and (FileUtils.mkdir path, mkdir_options rescue false)
++          raise Gem::Package::PathError.new(file_name, destination_dir)
++        end
++      end
++      path
++    end
++  end
++
+   ##
+   # Loads a Gem::Specification from the TarEntry +entry+
+ 
+@@ -466,7 +481,7 @@ EOM
+ 
+     @checksums = gem.seek 'checksums.yaml.gz' do |entry|
+       Zlib::GzipReader.wrap entry do |gz_io|
+-        YAML.load gz_io.read
++        Gem::SafeYAML.safe_load gz_io.read
+       end
+     end
+   end
+@@ -601,6 +616,10 @@ EOM
+       raise Gem::Package::FormatError.new \
+               'package content (data.tar.gz) is missing', @gem
+     end
++
++    if duplicates = @files.group_by {|f| f }.select {|k,v| v.size > 1 }.map(&:first) and duplicates.any?
++      raise Gem::Security::Exception, "duplicate files in the package: (#{duplicates.map(&:inspect).join(', ')})"
++    end
+   end
+ 
+   ##
+@@ -614,6 +633,16 @@ EOM
+     raise Gem::Package::FormatError.new(e.message, entry.full_name)
+   end
+ 
++  if File.respond_to? :realpath
++    def realpath file
++      File.realpath file
++    end
++  else
++    def realpath file
++      file
++    end
++  end
++
+ end
+ 
+ require 'rubygems/package/digest_io'
+--- ruby2.3-2.3.3.orig/lib/rubygems/package/old.rb
++++ ruby2.3-2.3.3/lib/rubygems/package/old.rb
+@@ -101,7 +101,7 @@ class Gem::Package::Old < Gem::Package
+       header << line
+     end
+ 
+-    YAML.load header
++    Gem::SafeYAML.safe_load header
+   end
+ 
+   ##
+--- ruby2.3-2.3.3.orig/lib/rubygems/package/tar_header.rb
++++ ruby2.3-2.3.3/lib/rubygems/package/tar_header.rb
+@@ -104,25 +104,30 @@ class Gem::Package::TarHeader
+     fields = header.unpack UNPACK_FORMAT
+ 
+     new :name     => fields.shift,
+-        :mode     => fields.shift.oct,
+-        :uid      => fields.shift.oct,
+-        :gid      => fields.shift.oct,
+-        :size     => fields.shift.oct,
+-        :mtime    => fields.shift.oct,
+-        :checksum => fields.shift.oct,
++        :mode     => strict_oct(fields.shift),
++        :uid      => strict_oct(fields.shift),
++        :gid      => strict_oct(fields.shift),
++        :size     => strict_oct(fields.shift),
++        :mtime    => strict_oct(fields.shift),
++        :checksum => strict_oct(fields.shift),
+         :typeflag => fields.shift,
+         :linkname => fields.shift,
+         :magic    => fields.shift,
+-        :version  => fields.shift.oct,
++        :version  => strict_oct(fields.shift),
+         :uname    => fields.shift,
+         :gname    => fields.shift,
+-        :devmajor => fields.shift.oct,
+-        :devminor => fields.shift.oct,
++        :devmajor => strict_oct(fields.shift),
++        :devminor => strict_oct(fields.shift),
+         :prefix   => fields.shift,
+ 
+         :empty => empty
+   end
+ 
++  def self.strict_oct(str)
++    return str.oct if str =~ /\A[0-7]*\z/
++    raise ArgumentError, "#{str.inspect} is not an octal string"
++  end
++
+   ##
+   # Creates a new TarHeader using +vals+
+ 
+--- ruby2.3-2.3.3.orig/lib/rubygems/package/tar_writer.rb
++++ ruby2.3-2.3.3/lib/rubygems/package/tar_writer.rb
+@@ -196,6 +196,8 @@ class Gem::Package::TarWriter
+       digest_name == signer.digest_name
+     end
+ 
++    raise "no #{signer.digest_name} in #{digests.values.compact}" unless signature_digest
++
+     if signer.key then
+       signature = signer.sign signature_digest.digest
+ 
+--- ruby2.3-2.3.3.orig/lib/rubygems/remote_fetcher.rb
++++ ruby2.3-2.3.3/lib/rubygems/remote_fetcher.rb
+@@ -104,7 +104,7 @@ class Gem::RemoteFetcher
+     else
+       target = res.target.to_s.strip
+ 
+-      if /\.#{Regexp.quote(host)}\z/ =~ target
++      if URI("http://" + target).host.end_with?(".#{host}")
+         return URI.parse "#{uri.scheme}://#{target}#{uri.path}"
+       end
+ 
+--- /dev/null
++++ ruby2.3-2.3.3/lib/rubygems/safe_yaml.rb
+@@ -0,0 +1,48 @@
++module Gem
++
++  ###
++  # This module is used for safely loading YAML specs from a gem.  The
++  # `safe_load` method defined on this module is specifically designed for
++  # loading Gem specifications.  For loading other YAML safely, please see
++  # Psych.safe_load
++
++  module SafeYAML
++    WHITELISTED_CLASSES = %w(
++      Symbol
++      Time
++      Date
++      Gem::Dependency
++      Gem::Platform
++      Gem::Requirement
++      Gem::Specification
++      Gem::Version
++      Gem::Version::Requirement
++      YAML::Syck::DefaultKey
++      Syck::DefaultKey
++    )
++
++    WHITELISTED_SYMBOLS = %w(
++      development
++      runtime
++    )
++
++    if ::YAML.respond_to? :safe_load
++      def self.safe_load input
++        ::YAML.safe_load(input, WHITELISTED_CLASSES, WHITELISTED_SYMBOLS, true)
++      end
++
++      def self.load input
++        ::YAML.safe_load(input, [::Symbol])
++      end
++    else
++      warn "YAML safe loading is not available. Please upgrade psych to a version that supports safe loading (>= 2.0)."
++      def self.safe_load input, *args
++        ::YAML.load input
++      end
++
++      def self.load input
++        ::YAML.load input
++      end
++    end
++  end
++end
+--- ruby2.3-2.3.3.orig/lib/rubygems/server.rb
++++ ruby2.3-2.3.3/lib/rubygems/server.rb
+@@ -626,6 +626,18 @@ div.method-source-code pre { color: #ffd
+       executables = nil if executables.empty?
+       executables.last["is_last"] = true if executables
+ 
++      # Pre-process spec homepage for safety reasons
++      begin
++        homepage_uri = URI.parse(spec.homepage)
++        if [URI::HTTP, URI::HTTPS].member? homepage_uri.class
++          homepage_uri = spec.homepage
++        else
++          homepage_uri = "."
++        end
++      rescue URI::InvalidURIError
++        homepage_uri = "."
++      end
++
+       specs << {
+         "authors"             => spec.authors.sort.join(", "),
+         "date"                => spec.date.to_s,
+@@ -635,7 +647,7 @@ div.method-source-code pre { color: #ffd
+         "only_one_executable" => (executables && executables.size == 1),
+         "full_name"           => spec.full_name,
+         "has_deps"            => !deps.empty?,
+-        "homepage"            => spec.homepage,
++        "homepage"            => homepage_uri,
+         "name"                => spec.name,
+         "rdoc_installed"      => Gem::RDoc.new(spec).rdoc_installed?,
+         "ri_installed"        => Gem::RDoc.new(spec).ri_installed?,
+--- ruby2.3-2.3.3.orig/lib/rubygems/specification.rb
++++ ruby2.3-2.3.3/lib/rubygems/specification.rb
+@@ -15,6 +15,7 @@ require 'rubygems/basic_specification'
+ require 'rubygems/stub_specification'
+ require 'rubygems/util/list'
+ require 'stringio'
++require 'uri'
+ 
+ ##
+ # The Specification class contains the information for a Gem.  Typically
+@@ -108,6 +109,8 @@ class Gem::Specification < Gem::BasicSpe
+ 
+   private_constant :LOAD_CACHE if defined? private_constant
+ 
++  VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/ # :nodoc:
++
+   # :startdoc:
+ 
+   ##
+@@ -1099,7 +1102,7 @@ class Gem::Specification < Gem::BasicSpe
+     Gem.load_yaml
+ 
+     input = normalize_yaml_input input
+-    spec = YAML.load input
++    spec = Gem::SafeYAML.safe_load input
+ 
+     if spec && spec.class == FalseClass then
+       raise Gem::EndOfYAMLException
+@@ -1754,7 +1757,9 @@ class Gem::Specification < Gem::BasicSpe
+                 raise(Gem::InvalidSpecificationException,
+                       "invalid date format in specification: #{date.inspect}")
+               end
+-            when Time, DateLike then
++            when Time then
++              Time.utc(date.utc.year, date.utc.month, date.utc.day)
++            when DateLike then
+               Time.utc(date.year, date.month, date.day)
+             else
+               TODAY
+@@ -2665,9 +2670,15 @@ class Gem::Specification < Gem::BasicSpe
+       end
+     end
+ 
+-    unless String === name then
++    if !name.is_a?(String) then
++      raise Gem::InvalidSpecificationException,
++            "invalid value for attribute name: \"#{name.inspect}\" must be a string"
++    elsif name !~ /[a-zA-Z]/ then
+       raise Gem::InvalidSpecificationException,
+-            "invalid value for attribute name: \"#{name.inspect}\""
++            "invalid value for attribute name: #{name.dump} must include at least one letter"
++    elsif name !~ VALID_NAME_PATTERN then
++      raise Gem::InvalidSpecificationException,
++            "invalid value for attribute name: #{name.dump} can only include letters, numbers, dashes, and underscores"
+     end
+ 
+     if raw_require_paths.empty? then
+@@ -2799,10 +2810,16 @@ http://spdx.org/licenses or '#{Gem::Lice
+       raise Gem::InvalidSpecificationException, "#{lazy} is not a summary"
+     end
+ 
+-    if homepage and not homepage.empty? and
+-       homepage !~ /\A[a-z][a-z\d+.-]*:/i then
+-      raise Gem::InvalidSpecificationException,
+-            "\"#{homepage}\" is not a URI"
++    # Make sure a homepage is valid HTTP/HTTPS URI
++    if homepage and not homepage.empty?
++      begin
++        homepage_uri = URI.parse(homepage)
++        unless [URI::HTTP, URI::HTTPS].member? homepage_uri.class
++          raise Gem::InvalidSpecificationException, "\"#{homepage}\" is not a valid HTTP URI"
++        end
++      rescue URI::InvalidURIError
++        raise Gem::InvalidSpecificationException, "\"#{homepage}\" is not a valid HTTP URI"
++      end
+     end
+ 
+     # Warnings
+--- ruby2.3-2.3.3.orig/lib/rubygems/text.rb
++++ ruby2.3-2.3.3/lib/rubygems/text.rb
+@@ -7,12 +7,25 @@ require 'rubygems'
+ module Gem::Text
+ 
+   ##
++  # Remove any non-printable characters and make the text suitable for
++  # printing.
++  def clean_text(text)
++    text.gsub(/[\000-\b\v-\f\016-\037\177]/, ".".freeze)
++  end
++
++  def truncate_text(text, description, max_length = 100_000)
++    raise ArgumentError, "max_length must be positive" unless max_length > 0
++    return text if text.size <= max_length
++    "Truncating #{description} to #{max_length.to_s.reverse.gsub(/...(?=.)/,'\&,').reverse} characters:\n" + text[0, max_length]
++  end
++
++  ##
+   # Wraps +text+ to +wrap+ characters and optionally indents by +indent+
+   # characters
+ 
+   def format_text(text, wrap, indent=0)
+     result = []
+-    work = text.dup
++    work = clean_text(text)
+ 
+     while work.length > wrap do
+       if work =~ /^(.{0,#{wrap}})[ \n]/ then
+--- ruby2.3-2.3.3.orig/lib/tmpdir.rb
++++ ruby2.3-2.3.3/lib/tmpdir.rb
+@@ -109,8 +109,10 @@ class Dir
+     def make_tmpname((prefix, suffix), n)
+       prefix = (String.try_convert(prefix) or
+                 raise ArgumentError, "unexpected prefix: #{prefix.inspect}")
++      prefix = prefix.delete("#{File::SEPARATOR}#{File::ALT_SEPARATOR}")
+       suffix &&= (String.try_convert(suffix) or
+                   raise ArgumentError, "unexpected suffix: #{suffix.inspect}")
++      suffix &&= suffix.delete("#{File::SEPARATOR}#{File::ALT_SEPARATOR}")
+       t = Time.now.strftime("%Y%m%d")
+       path = "#{prefix}#{t}-#{$$}-#{rand(0x100000000).to_s(36)}".dup
+       path << "-#{n}" if n
+--- ruby2.3-2.3.3.orig/lib/webrick/httpauth/digestauth.rb
++++ ruby2.3-2.3.3/lib/webrick/httpauth/digestauth.rb
+@@ -235,9 +235,11 @@ module WEBrick
+           ha2 = hexdigest(req.request_method, auth_req['uri'])
+           ha2_res = hexdigest("", auth_req['uri'])
+         elsif auth_req['qop'] == "auth-int"
+-          ha2 = hexdigest(req.request_method, auth_req['uri'],
+-                          hexdigest(req.body))
+-          ha2_res = hexdigest("", auth_req['uri'], hexdigest(res.body))
++          body_digest = @h.new
++          req.body { |chunk| body_digest.update(chunk) }
++          body_digest = body_digest.hexdigest
++          ha2 = hexdigest(req.request_method, auth_req['uri'], body_digest)
++          ha2_res = hexdigest("", auth_req['uri'], body_digest)
+         end
+ 
+         if auth_req['qop'] == "auth" || auth_req['qop'] == "auth-int"
+--- ruby2.3-2.3.3.orig/lib/webrick/httprequest.rb
++++ ruby2.3-2.3.3/lib/webrick/httprequest.rb
+@@ -414,9 +414,13 @@ module WEBrick
+ 
+     MAX_URI_LENGTH = 2083 # :nodoc:
+ 
++    # same as Mongrel, Thin and Puma
++    MAX_HEADER_LENGTH = (112 * 1024) # :nodoc:
++
+     def read_request_line(socket)
+       @request_line = read_line(socket, MAX_URI_LENGTH) if socket
+-      if @request_line.bytesize >= MAX_URI_LENGTH and @request_line[-1, 1] != LF
++      @request_bytes = @request_line.bytesize
++      if @request_bytes >= MAX_URI_LENGTH and @request_line[-1, 1] != LF
+         raise HTTPStatus::RequestURITooLarge
+       end
+       @request_time = Time.now
+@@ -435,6 +439,9 @@ module WEBrick
+       if socket
+         while line = read_line(socket)
+           break if /\A(#{CRLF}|#{LF})\z/om =~ line
++          if (@request_bytes += line.bytesize) > MAX_HEADER_LENGTH
++            raise HTTPStatus::RequestEntityTooLarge, 'headers too large'
++          end
+           @raw_header << line
+         end
+       end
+@@ -502,12 +509,16 @@ module WEBrick
+     def read_chunked(socket, block)
+       chunk_size, = read_chunk_size(socket)
+       while chunk_size > 0
+-        data = read_data(socket, chunk_size) # read chunk-data
+-        if data.nil? || data.bytesize != chunk_size
+-          raise BadRequest, "bad chunk data size."
+-        end
++        begin
++          sz = [ chunk_size, @buffer_size ].min
++          data = read_data(socket, sz) # read chunk-data
++          if data.nil? || data.bytesize != sz
++            raise HTTPStatus::BadRequest, "bad chunk data size."
++          end
++          block.call(data)
++        end while (chunk_size -= sz) > 0
++
+         read_line(socket)                    # skip CRLF
+-        block.call(data)
+         chunk_size, = read_chunk_size(socket)
+       end
+       read_header(socket)                    # trailer + CRLF
+--- ruby2.3-2.3.3.orig/lib/webrick/httpresponse.rb
++++ ruby2.3-2.3.3/lib/webrick/httpresponse.rb
+@@ -21,6 +21,8 @@ module WEBrick
+   # WEBrick HTTP Servlet.
+ 
+   class HTTPResponse
++    class InvalidHeader < StandardError
++    end
+ 
+     ##
+     # HTTP Response version
+@@ -287,14 +289,19 @@ module WEBrick
+         data = status_line()
+         @header.each{|key, value|
+           tmp = key.gsub(/\bwww|^te$|\b\w/){ $&.upcase }
+-          data << "#{tmp}: #{value}" << CRLF
++          data << "#{tmp}: #{check_header(value)}" << CRLF
+         }
+         @cookies.each{|cookie|
+-          data << "Set-Cookie: " << cookie.to_s << CRLF
++          data << "Set-Cookie: " << check_header(cookie.to_s) << CRLF
+         }
+         data << CRLF
+         _write_data(socket, data)
+       end
++    rescue InvalidHeader => e
++      @header.clear
++      @cookies.clear
++      set_error e
++      retry
+     end
+ 
+     ##
+@@ -303,6 +310,8 @@ module WEBrick
+     def send_body(socket) # :nodoc:
+       if @body.respond_to? :readpartial then
+         send_body_io(socket)
++      elsif @body.respond_to?(:call) then
++        send_body_proc(socket)
+       else
+         send_body_string(socket)
+       end
+@@ -352,6 +361,22 @@ module WEBrick
+         host, port = @config[:ServerName], @config[:Port]
+       end
+ 
++      error_body(backtrace, ex, host, port)
++    end
++
++    private
++
++    def check_header(header_value)
++      if header_value =~ /\r\n/
++        raise InvalidHeader
++      else
++        header_value
++      end
++    end
++
++    # :stopdoc:
++
++    def error_body(backtrace, ex, host, port)
+       @body = ''
+       @body << <<-_end_of_html_
+ <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN">
+@@ -405,9 +430,20 @@ module WEBrick
+           end
+           _write_data(socket, "0#{CRLF}#{CRLF}")
+         else
+-          size = @header['content-length'].to_i
+-          _send_file(socket, @body, 0, size)
+-          @sent_size = size
++          if %r{\Abytes (\d+)-(\d+)/\d+\z} =~ @header['content-range']
++            offset = $1.to_i
++            size = $2.to_i - offset + 1
++          else
++            offset = nil
++            size = @header['content-length']
++            size = size.to_i if size
++          end
++          begin
++            @sent_size = IO.copy_stream(@body, socket, size, offset)
++          rescue NotImplementedError
++            @body.seek(offset, IO::SEEK_SET)
++            @sent_size = IO.copy_stream(@body, socket, size)
++          end
+         end
+       ensure
+         @body.close
+@@ -436,24 +472,41 @@ module WEBrick
+       end
+     end
+ 
+-    def _send_file(output, input, offset, size)
+-      while offset > 0
+-        sz = @buffer_size < size ? @buffer_size : size
+-        buf = input.read(sz)
+-        offset -= buf.bytesize
++    def send_body_proc(socket)
++      if @request_method == "HEAD"
++        # do nothing
++      elsif chunked?
++        @body.call(ChunkedWrapper.new(socket, self))
++        _write_data(socket, "0#{CRLF}#{CRLF}")
++      else
++        size = @header['content-length'].to_i
++        @body.call(socket)
++        @sent_size = size
+       end
++    end
+ 
+-      if size == 0
+-        while buf = input.read(@buffer_size)
+-          _write_data(output, buf)
+-        end
+-      else
+-        while size > 0
+-          sz = @buffer_size < size ? @buffer_size : size
+-          buf = input.read(sz)
+-          _write_data(output, buf)
+-          size -= buf.bytesize
+-        end
++    class ChunkedWrapper
++      def initialize(socket, resp)
++        @socket = socket
++        @resp = resp
++      end
++
++      def write(buf)
++        return 0 if buf.empty?
++        socket = @socket
++        @resp.instance_eval {
++          size = buf.bytesize
++          data = "#{size.to_s(16)}#{CRLF}#{buf}#{CRLF}"
++          _write_data(socket, data)
++          data.clear
++          @sent_size += size
++          size
++        }
++      end
++
++      def <<(*buf)
++        write(buf)
++        self
+       end
+     end
+ 
+--- ruby2.3-2.3.3.orig/lib/webrick/httpserver.rb
++++ ruby2.3-2.3.3/lib/webrick/httpserver.rb
+@@ -267,12 +267,12 @@ module WEBrick
+         k.sort!
+         k.reverse!
+         k.collect!{|path| Regexp.escape(path) }
+-        @scanner = Regexp.new("^(" + k.join("|") +")(?=/|$)")
++        @scanner = Regexp.new("\\A(" + k.join("|") +")(?=/|\\z)")
+       end
+ 
+       def normalize(dir)
+         ret = dir ? dir.dup : ""
+-        ret.sub!(%r|/+$|, "")
++        ret.sub!(%r|/+\z|, "")
+         ret
+       end
+     end
+--- ruby2.3-2.3.3.orig/lib/webrick/httpservlet/cgihandler.rb
++++ ruby2.3-2.3.3/lib/webrick/httpservlet/cgihandler.rb
+@@ -65,9 +65,7 @@ module WEBrick
+           cgi_in.write("%8d" % dump.bytesize)
+           cgi_in.write(dump)
+ 
+-          if req.body and req.body.bytesize > 0
+-            cgi_in.write(req.body)
+-          end
++          req.body { |chunk| cgi_in.write(chunk) }
+         ensure
+           cgi_in.close
+           status = $?.exitstatus
+--- ruby2.3-2.3.3.orig/lib/webrick/httpservlet/filehandler.rb
++++ ruby2.3-2.3.3/lib/webrick/httpservlet/filehandler.rb
+@@ -87,6 +87,35 @@ module WEBrick
+         return false
+       end
+ 
++      # returns a lambda for webrick/httpresponse.rb send_body_proc
++      def multipart_body(body, parts, boundary, mtype, filesize)
++        lambda do |socket|
++          begin
++            begin
++              first = parts.shift
++              last = parts.shift
++              socket.write(
++                "--#{boundary}#{CRLF}" \
++                "Content-Type: #{mtype}#{CRLF}" \
++                "Content-Range: bytes #{first}-#{last}/#{filesize}#{CRLF}" \
++                "#{CRLF}"
++              )
++
++              begin
++                IO.copy_stream(body, socket, last - first + 1, first)
++              rescue NotImplementedError
++                body.seek(first, IO::SEEK_SET)
++                IO.copy_stream(body, socket, last - first + 1)
++              end
++              socket.write(CRLF)
++            end while parts[0]
++            socket.write("--#{boundary}--#{CRLF}")
++          ensure
++            body.close
++          end
++        end
++      end
++
+       def make_partial_content(req, res, filename, filesize)
+         mtype = HTTPUtils::mime_type(filename, @config[:MimeTypes])
+         unless ranges = HTTPUtils::parse_range_header(req['range'])
+@@ -97,37 +126,27 @@ module WEBrick
+           if ranges.size > 1
+             time = Time.now
+             boundary = "#{time.sec}_#{time.usec}_#{Process::pid}"
+-            body = ''
+-            ranges.each{|range|
+-              first, last = prepare_range(range, filesize)
+-              next if first < 0
+-              io.pos = first
+-              content = io.read(last-first+1)
+-              body << "--" << boundary << CRLF
+-              body << "Content-Type: #{mtype}" << CRLF
+-              body << "Content-Range: bytes #{first}-#{last}/#{filesize}" << CRLF
+-              body << CRLF
+-              body << content
+-              body << CRLF
++            parts = []
++            ranges.each {|range|
++              prange = prepare_range(range, filesize)
++              next if prange[0] < 0
++              parts.concat(prange)
+             }
+-            raise HTTPStatus::RequestRangeNotSatisfiable if body.empty?
+-            body << "--" << boundary << "--" << CRLF
++            raise HTTPStatus::RequestRangeNotSatisfiable if parts.empty?
+             res["content-type"] = "multipart/byteranges; boundary=#{boundary}"
+-            res.body = body
++            if req.http_version < '1.1'
++              res['connection'] = 'close'
++            else
++              res.chunked = true
++            end
++            res.body = multipart_body(io.dup, parts, boundary, mtype, filesize)
+           elsif range = ranges[0]
+             first, last = prepare_range(range, filesize)
+             raise HTTPStatus::RequestRangeNotSatisfiable if first < 0
+-            if last == filesize - 1
+-              content = io.dup
+-              content.pos = first
+-            else
+-              io.pos = first
+-              content = io.read(last-first+1)
+-            end
+             res['content-type'] = mtype
+             res['content-range'] = "bytes #{first}-#{last}/#{filesize}"
+             res['content-length'] = last - first + 1
+-            res.body = content
++            res.body = io.dup
+           else
+             raise HTTPStatus::BadRequest
+           end
+--- ruby2.3-2.3.3.orig/lib/webrick/httpstatus.rb
++++ ruby2.3-2.3.3/lib/webrick/httpstatus.rb
+@@ -23,10 +23,6 @@ module WEBrick
+     ##
+     # Root of the HTTP status class hierarchy
+     class Status < StandardError
+-      def initialize(*args) # :nodoc:
+-        args[0] = AccessLog.escape(args[0]) unless args.empty?
+-        super(*args)
+-      end
+       class << self
+         attr_reader :code, :reason_phrase # :nodoc:
+       end
+--- ruby2.3-2.3.3.orig/lib/webrick/log.rb
++++ ruby2.3-2.3.3/lib/webrick/log.rb
+@@ -118,10 +118,10 @@ module WEBrick
+     # * Otherwise it will return +arg+.inspect.
+     def format(arg)
+       if arg.is_a?(Exception)
+-        "#{arg.class}: #{arg.message}\n\t" <<
++        "#{arg.class}: #{AccessLog.escape(arg.message)}\n\t" <<
+         arg.backtrace.join("\n\t") << "\n"
+       elsif arg.respond_to?(:to_str)
+-        arg.to_str
++        AccessLog.escape(arg.to_str)
+       else
+         arg.inspect
+       end
+--- ruby2.3-2.3.3.orig/pack.c
++++ ruby2.3-2.3.3/pack.c
+@@ -751,6 +751,7 @@ pack_pack(VALUE ary, VALUE fmt)
+ 	    StringValue(from);
+ 	    ptr = RSTRING_PTR(from);
+ 	    plen = RSTRING_LEN(from);
++	    OBJ_INFECT(res, from);
+ 
+ 	    if (len == 0 && type == 'm') {
+ 		encodes(res, ptr, plen, type, 0);
+@@ -778,6 +779,7 @@ pack_pack(VALUE ary, VALUE fmt)
+ 
+ 	  case 'M':		/* quoted-printable encoded string */
+ 	    from = rb_obj_as_string(NEXTFROM);
++	    OBJ_INFECT(res, from);
+ 	    if (len <= 1)
+ 		len = 72;
+ 	    qpencode(res, from, len);
+@@ -803,6 +805,7 @@ pack_pack(VALUE ary, VALUE fmt)
+ 		}
+ 		else {
+ 		    t = StringValuePtr(from);
++		    OBJ_INFECT(res, from);
+ 		    rb_obj_taint(from);
+ 		}
+ 		if (!associates) {
+@@ -1235,7 +1238,7 @@ pack_unpack(VALUE str, VALUE fmt)
+ 	else if (ISDIGIT(*p)) {
+ 	    errno = 0;
+ 	    len = STRTOUL(p, (char**)&p, 10);
+-	    if (errno) {
++	    if (len < 0 || errno) {
+ 		rb_raise(rb_eRangeError, "pack length too big");
+ 	    }
+ 	}
+@@ -1291,13 +1294,15 @@ pack_unpack(VALUE str, VALUE fmt)
+ 		if (p[-1] == '*' || len > (send - s) * 8)
+ 		    len = (send - s) * 8;
+ 		bits = 0;
+-		UNPACK_PUSH(bitstr = rb_usascii_str_new(0, len));
++		bitstr = rb_usascii_str_new(0, len);
++		OBJ_INFECT(bitstr, str);
+ 		t = RSTRING_PTR(bitstr);
+ 		for (i=0; i<len; i++) {
+ 		    if (i & 7) bits >>= 1;
+ 		    else bits = (unsigned char)*s++;
+ 		    *t++ = (bits & 1) ? '1' : '0';
+ 		}
++		UNPACK_PUSH(bitstr);
+ 	    }
+ 	    break;
+ 
+@@ -1311,13 +1316,15 @@ pack_unpack(VALUE str, VALUE fmt)
+ 		if (p[-1] == '*' || len > (send - s) * 8)
+ 		    len = (send - s) * 8;
+ 		bits = 0;
+-		UNPACK_PUSH(bitstr = rb_usascii_str_new(0, len));
++		bitstr = rb_usascii_str_new(0, len);
++		OBJ_INFECT(bitstr, str);
+ 		t = RSTRING_PTR(bitstr);
+ 		for (i=0; i<len; i++) {
+ 		    if (i & 7) bits <<= 1;
+ 		    else bits = (unsigned char)*s++;
+ 		    *t++ = (bits & 128) ? '1' : '0';
+ 		}
++		UNPACK_PUSH(bitstr);
+ 	    }
+ 	    break;
+ 
+@@ -1331,7 +1338,8 @@ pack_unpack(VALUE str, VALUE fmt)
+ 		if (p[-1] == '*' || len > (send - s) * 2)
+ 		    len = (send - s) * 2;
+ 		bits = 0;
+-		UNPACK_PUSH(bitstr = rb_usascii_str_new(0, len));
++		bitstr = rb_usascii_str_new(0, len);
++		OBJ_INFECT(bitstr, str);
+ 		t = RSTRING_PTR(bitstr);
+ 		for (i=0; i<len; i++) {
+ 		    if (i & 1)
+@@ -1340,6 +1348,7 @@ pack_unpack(VALUE str, VALUE fmt)
+ 			bits = (unsigned char)*s++;
+ 		    *t++ = hexdigits[bits & 15];
+ 		}
++		UNPACK_PUSH(bitstr);
+ 	    }
+ 	    break;
+ 
+@@ -1353,7 +1362,8 @@ pack_unpack(VALUE str, VALUE fmt)
+ 		if (p[-1] == '*' || len > (send - s) * 2)
+ 		    len = (send - s) * 2;
+ 		bits = 0;
+-		UNPACK_PUSH(bitstr = rb_usascii_str_new(0, len));
++		bitstr = rb_usascii_str_new(0, len);
++		OBJ_INFECT(bitstr, str);
+ 		t = RSTRING_PTR(bitstr);
+ 		for (i=0; i<len; i++) {
+ 		    if (i & 1)
+@@ -1362,6 +1372,7 @@ pack_unpack(VALUE str, VALUE fmt)
+ 			bits = (unsigned char)*s++;
+ 		    *t++ = hexdigits[(bits >> 4) & 15];
+ 		}
++		UNPACK_PUSH(bitstr);
+ 	    }
+ 	    break;
+ 
+--- ruby2.3-2.3.3.orig/sprintf.c
++++ ruby2.3-2.3.3/sprintf.c
+@@ -1147,6 +1147,8 @@ rb_str_format(int argc, const VALUE *arg
+ 		fval = RFLOAT_VALUE(rb_Float(val));
+ 		if (isnan(fval) || isinf(fval)) {
+ 		    const char *expr;
++		    int elen;
++		    char sign = '\0';
+ 
+ 		    if (isnan(fval)) {
+ 			expr = "NaN";
+@@ -1155,33 +1157,28 @@ rb_str_format(int argc, const VALUE *arg
+ 			expr = "Inf";
+ 		    }
+ 		    need = (int)strlen(expr);
+-		    if ((!isnan(fval) && fval < 0.0) || (flags & FPLUS))
+-			need++;
++		    elen = need;
++		    i = 0;
++		    if (!isnan(fval) && fval < 0.0)
++			sign = '-';
++		    else if (flags & (FPLUS|FSPACE))
++			sign = (flags & FPLUS) ? '+' : ' ';
++		    if (sign)
++			++need;
+ 		    if ((flags & FWIDTH) && need < width)
+ 			need = width;
+ 
+-		    CHECK(need + 1);
+-		    snprintf(&buf[blen], need + 1, "%*s", need, "");
++		    FILL(' ', need);
+ 		    if (flags & FMINUS) {
+-			if (!isnan(fval) && fval < 0.0)
+-			    buf[blen++] = '-';
+-			else if (flags & FPLUS)
+-			    buf[blen++] = '+';
+-			else if (flags & FSPACE)
+-			    blen++;
+-			memcpy(&buf[blen], expr, strlen(expr));
++			if (sign)
++			    buf[blen - need--] = sign;
++			memcpy(&buf[blen - need], expr, elen);
+ 		    }
+ 		    else {
+-			if (!isnan(fval) && fval < 0.0)
+-			    buf[blen + need - strlen(expr) - 1] = '-';
+-			else if (flags & FPLUS)
+-			    buf[blen + need - strlen(expr) - 1] = '+';
+-			else if ((flags & FSPACE) && need > width)
+-			    blen++;
+-			memcpy(&buf[blen + need - strlen(expr)], expr,
+-			       strlen(expr));
++			if (sign)
++			    buf[blen - elen - 1] = sign;
++			memcpy(&buf[blen - elen], expr, elen);
+ 		    }
+-		    blen += strlen(&buf[blen]);
+ 		    break;
+ 		}
+ 
+--- /dev/null
++++ ruby2.3-2.3.3/test/excludes/Rinda/TestRingFinger.rb
+@@ -0,0 +1,3 @@
++reason = "Network access not allowed during build in Debian"
++exclude :test_make_socket_ipv4_multicast, reason
++exclude :test_make_socket_ipv4_multicast_hops, reason
+--- /dev/null
++++ ruby2.3-2.3.3/test/excludes/Rinda/TestRingServer.rb
+@@ -0,0 +1,3 @@
++reason = "Network access not allowed during build in Debian"
++exclude :test_make_socket_ipv4_multicast, reason
++exclude :test_ring_server_ipv4_multicast, reason
+--- /dev/null
++++ ruby2.3-2.3.3/test/excludes/TestProcess.rb
+@@ -0,0 +1,5 @@
++# Found on Debian mips* buildds, this test consumes ~2GB RAM and
++# a lot of CPU time before failing. Note that the test failure
++# may point to an issue in the Array implementation.
++# https://bugs.ruby-lang.org/issues/12500
++exclude :test_aspawn_too_long_path, "RAM and time consuming test"
+--- /dev/null
++++ ruby2.3-2.3.3/test/excludes/TestRefinement.rb
+@@ -0,0 +1,2 @@
++# Found on Debian arm*, powerpc buildds
++exclude :test_prepend_after_refine_wb_miss, "time consuming test"
+--- /dev/null
++++ ruby2.3-2.3.3/test/excludes/TestTimeTZ.rb
+@@ -0,0 +1,4 @@
++exclude :test_gen_Pacific_Kiritimati_71, "https://bugs.ruby-lang.org/issues/14655"
++exclude :test_gen_Pacific_Kiritimati_89, "https://bugs.ruby-lang.org/issues/14655"
++exclude :test_gen_lisbon_99, "https://bugs.ruby-lang.org/issues/14655"
++exclude :test_pacific_kiritimati, "https://bugs.ruby-lang.org/issues/14655"
+--- ruby2.3-2.3.3.orig/test/net/ftp/test_ftp.rb
++++ ruby2.3-2.3.3/test/net/ftp/test_ftp.rb
+@@ -5,6 +5,7 @@ require "test/unit"
+ require "ostruct"
+ require "stringio"
+ require "tempfile"
++require "tmpdir"
+ 
+ class FTPTest < Test::Unit::TestCase
+   SERVER_ADDR = "127.0.0.1"
+@@ -1643,6 +1644,227 @@ EOF
+     end
+   end
+ 
++  def test_getbinaryfile_command_injection
++    skip "| is not allowed in filename on Windows" if windows?
++    [false, true].each do |resume|
++      commands = []
++      binary_data = (0..0xff).map {|i| i.chr}.join * 4 * 3
++      server = create_ftp_server { |sock|
++        sock.print("220 (test_ftp).\r\n")
++        commands.push(sock.gets)
++        sock.print("331 Please specify the password.\r\n")
++        commands.push(sock.gets)
++        sock.print("230 Login successful.\r\n")
++        commands.push(sock.gets)
++        sock.print("200 Switching to Binary mode.\r\n")
++        line = sock.gets
++        commands.push(line)
++        host, port = process_port_or_eprt(sock, line)
++        commands.push(sock.gets)
++        sock.print("150 Opening BINARY mode data connection for |echo hello (#{binary_data.size} bytes)\r\n")
++        conn = TCPSocket.new(host, port)
++        binary_data.scan(/.{1,1024}/nm) do |s|
++          conn.print(s)
++        end
++        conn.shutdown(Socket::SHUT_WR)
++        conn.read
++        conn.close
++        sock.print("226 Transfer complete.\r\n")
++      }
++      begin
++        chdir_to_tmpdir do
++          begin
++            ftp = Net::FTP.new
++            ftp.resume = resume
++            ftp.read_timeout = 0.2
++            ftp.connect(SERVER_ADDR, server.port)
++            ftp.login
++            assert_match(/\AUSER /, commands.shift)
++            assert_match(/\APASS /, commands.shift)
++            assert_equal("TYPE I\r\n", commands.shift)
++            ftp.getbinaryfile("|echo hello")
++            assert_equal(binary_data, File.binread("./|echo hello"))
++            assert_match(/\A(PORT|EPRT) /, commands.shift)
++            assert_equal("RETR |echo hello\r\n", commands.shift)
++            assert_equal(nil, commands.shift)
++          ensure
++            ftp.close if ftp
++          end
++        end
++      ensure
++        server.close
++      end
++    end
++  end
++
++  def test_gettextfile_command_injection
++    skip "| is not allowed in filename on Windows" if windows?
++    commands = []
++    text_data = <<EOF.gsub(/\n/, "\r\n")
++foo
++bar
++baz
++EOF
++    server = create_ftp_server { |sock|
++      sock.print("220 (test_ftp).\r\n")
++      commands.push(sock.gets)
++      sock.print("331 Please specify the password.\r\n")
++      commands.push(sock.gets)
++      sock.print("230 Login successful.\r\n")
++      commands.push(sock.gets)
++      sock.print("200 Switching to Binary mode.\r\n")
++      commands.push(sock.gets)
++      sock.print("200 Switching to ASCII mode.\r\n")
++      line = sock.gets
++      commands.push(line)
++      host, port = process_port_or_eprt(sock, line)
++      commands.push(sock.gets)
++      sock.print("150 Opening TEXT mode data connection for |echo hello (#{text_data.size} bytes)\r\n")
++      conn = TCPSocket.new(host, port)
++      text_data.each_line do |l|
++        conn.print(l)
++      end
++      conn.shutdown(Socket::SHUT_WR)
++      conn.read
++      conn.close
++      sock.print("226 Transfer complete.\r\n")
++      commands.push(sock.gets)
++      sock.print("200 Switching to Binary mode.\r\n")
++    }
++    begin
++      chdir_to_tmpdir do
++        begin
++          ftp = Net::FTP.new
++          ftp.connect(SERVER_ADDR, server.port)
++          ftp.login
++          assert_match(/\AUSER /, commands.shift)
++          assert_match(/\APASS /, commands.shift)
++          assert_equal("TYPE I\r\n", commands.shift)
++          ftp.gettextfile("|echo hello")
++          assert_equal(text_data.gsub(/\r\n/, "\n"),
++                       File.binread("./|echo hello"))
++          assert_equal("TYPE A\r\n", commands.shift)
++          assert_match(/\A(PORT|EPRT) /, commands.shift)
++          assert_equal("RETR |echo hello\r\n", commands.shift)
++          assert_equal("TYPE I\r\n", commands.shift)
++          assert_equal(nil, commands.shift)
++        ensure
++          ftp.close if ftp
++        end
++      end
++    ensure
++      server.close
++    end
++  end
++
++  def test_putbinaryfile_command_injection
++    skip "| is not allowed in filename on Windows" if windows?
++    commands = []
++    binary_data = (0..0xff).map {|i| i.chr}.join * 4 * 3
++    received_data = nil
++    server = create_ftp_server { |sock|
++      sock.print("220 (test_ftp).\r\n")
++      commands.push(sock.gets)
++      sock.print("331 Please specify the password.\r\n")
++      commands.push(sock.gets)
++      sock.print("230 Login successful.\r\n")
++      commands.push(sock.gets)
++      sock.print("200 Switching to Binary mode.\r\n")
++      line = sock.gets
++      commands.push(line)
++      host, port = process_port_or_eprt(sock, line)
++      commands.push(sock.gets)
++      sock.print("150 Opening BINARY mode data connection for |echo hello (#{binary_data.size} bytes)\r\n")
++      conn = TCPSocket.new(host, port)
++      received_data = conn.read
++      conn.close
++      sock.print("226 Transfer complete.\r\n")
++    }
++    begin
++      chdir_to_tmpdir do
++        File.binwrite("./|echo hello", binary_data)
++        begin
++          ftp = Net::FTP.new
++          ftp.read_timeout = 0.2
++          ftp.connect(SERVER_ADDR, server.port)
++          ftp.login
++          assert_match(/\AUSER /, commands.shift)
++          assert_match(/\APASS /, commands.shift)
++          assert_equal("TYPE I\r\n", commands.shift)
++          ftp.putbinaryfile("|echo hello")
++          assert_equal(binary_data, received_data)
++          assert_match(/\A(PORT|EPRT) /, commands.shift)
++          assert_equal("STOR |echo hello\r\n", commands.shift)
++          assert_equal(nil, commands.shift)
++        ensure
++          ftp.close if ftp
++        end
++      end
++    ensure
++      server.close
++    end
++  end
++
++  def test_puttextfile_command_injection
++    skip "| is not allowed in filename on Windows" if windows?
++    commands = []
++    received_data = nil
++    server = create_ftp_server { |sock|
++      sock.print("220 (test_ftp).\r\n")
++      commands.push(sock.gets)
++      sock.print("331 Please specify the password.\r\n")
++      commands.push(sock.gets)
++      sock.print("230 Login successful.\r\n")
++      commands.push(sock.gets)
++      sock.print("200 Switching to Binary mode.\r\n")
++      commands.push(sock.gets)
++      sock.print("200 Switching to ASCII mode.\r\n")
++      line = sock.gets
++      commands.push(line)
++      host, port = process_port_or_eprt(sock, line)
++      commands.push(sock.gets)
++      sock.print("150 Opening TEXT mode data connection for |echo hello\r\n")
++      conn = TCPSocket.new(host, port)
++      received_data = conn.read
++      conn.close
++      sock.print("226 Transfer complete.\r\n")
++      commands.push(sock.gets)
++      sock.print("200 Switching to Binary mode.\r\n")
++    }
++    begin
++      chdir_to_tmpdir do
++        File.open("|echo hello", "w") do |f|
++          f.puts("foo")
++          f.puts("bar")
++          f.puts("baz")
++        end
++        begin
++          ftp = Net::FTP.new
++          ftp.connect(SERVER_ADDR, server.port)
++          ftp.login
++          assert_match(/\AUSER /, commands.shift)
++          assert_match(/\APASS /, commands.shift)
++          assert_equal("TYPE I\r\n", commands.shift)
++          ftp.puttextfile("|echo hello")
++          assert_equal(<<EOF.gsub(/\n/, "\r\n"), received_data)
++foo
++bar
++baz
++EOF
++          assert_equal("TYPE A\r\n", commands.shift)
++          assert_match(/\A(PORT|EPRT) /, commands.shift)
++          assert_equal("STOR |echo hello\r\n", commands.shift)
++          assert_equal("TYPE I\r\n", commands.shift)
++          assert_equal(nil, commands.shift)
++        ensure
++          ftp.close if ftp
++        end
++      end
++    ensure
++      server.close
++    end
++  end
++
+   private
+ 
+   def create_ftp_server(sleep_time = nil)
+@@ -1666,4 +1888,34 @@ EOF
+     end
+     return server
+   end
++
++  def chdir_to_tmpdir
++    Dir.mktmpdir do |dir|
++      pwd = Dir.pwd
++      Dir.chdir(dir)
++      begin
++        yield
++      ensure
++        Dir.chdir(pwd)
++      end
++    end
++  end
++
++  def process_port_or_eprt(sock, line)
++    case line
++    when /\APORT (.*)/
++      port_args = $1.split(/,/)
++      host = port_args[0, 4].join(".")
++      port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
++      sock.print("200 PORT command successful.\r\n")
++      return host, port
++    when /\AEPRT \|2\|(.*?)\|(.*?)\|/
++      host = $1
++      port = $2.to_i
++      sock.print("200 EPRT command successful.\r\n")
++      return host, port
++    else
++      flunk "PORT or EPRT expected"
++    end
++  end
+ end
+--- ruby2.3-2.3.3.orig/test/net/imap/cacert.pem
++++ ruby2.3-2.3.3/test/net/imap/cacert.pem
+@@ -1,66 +1,24 @@
+-Certificate:
+-    Data:
+-        Version: 3 (0x2)
+-        Serial Number:
+-            b9:90:a2:bf:62:69:17:9c
+-        Signature Algorithm: sha1WithRSAEncryption
+-        Issuer: C=JP, ST=Shimane, L=Matz-e city, O=Ruby Core Team, CN=Ruby Test CA/emailAddress=security@ruby-lang.org
+-        Validity
+-            Not Before: Jan  3 01:34:17 2014 GMT
+-            Not After : Jan  2 01:34:17 2019 GMT
+-        Subject: C=JP, ST=Shimane, L=Matz-e city, O=Ruby Core Team, CN=Ruby Test CA/emailAddress=security@ruby-lang.org
+-        Subject Public Key Info:
+-            Public Key Algorithm: rsaEncryption
+-            RSA Public Key: (1024 bit)
+-                Modulus (1024 bit):
+-                    00:db:75:d0:45:de:b1:df:bf:71:a0:0e:b0:a5:e6:
+-                    bc:f4:1c:9d:e5:25:67:64:c5:7b:cb:f1:af:c6:be:
+-                    9a:aa:ea:7e:0f:cc:05:af:ef:40:69:06:b2:c9:13:
+-                    9d:7e:eb:a2:06:e2:ea:7d:07:c7:c7:99:c7:fb:d5:
+-                    b8:eb:63:77:62:2b:18:12:c3:53:58:d0:f5:c7:40:
+-                    0c:01:d1:26:82:34:16:09:e3:dc:65:f4:dc:bb:5d:
+-                    a5:41:60:e7:a9:74:ba:d7:4c:b6:a3:9c:c5:8c:89:
+-                    af:cb:e8:9f:05:fe:ea:fe:64:24:bf:e7:ed:e3:f6:
+-                    d0:fc:d6:eb:fc:06:82:10:fb
+-                Exponent: 65537 (0x10001)
+-        X509v3 extensions:
+-            X509v3 Subject Key Identifier: 
+-                E8:7E:58:AC:13:7B:03:22:8D:9E:AF:32:0B:84:89:80:80:0C:1E:C2
+-            X509v3 Authority Key Identifier: 
+-                keyid:E8:7E:58:AC:13:7B:03:22:8D:9E:AF:32:0B:84:89:80:80:0C:1E:C2
+-                DirName:/C=JP/ST=Shimane/L=Matz-e city/O=Ruby Core Team/CN=Ruby Test CA/emailAddress=security@ruby-lang.org
+-                serial:B9:90:A2:BF:62:69:17:9C
+-
+-            X509v3 Basic Constraints: 
+-                CA:TRUE
+-    Signature Algorithm: sha1WithRSAEncryption
+-        8f:77:06:4e:31:72:12:ee:68:09:70:27:d4:31:85:ef:10:95:
+-        f9:0f:2b:66:63:08:37:88:6e:b7:9b:40:3e:18:77:33:86:e8:
+-        61:6a:b7:3c:cb:c7:a6:d6:d5:92:6a:1f:56:d0:9f:5c:32:56:
+-        d3:37:52:fe:0e:20:c2:7a:0d:fe:2d:3c:81:da:b8:7f:4d:6a:
+-        08:01:d9:be:7a:a2:15:be:a6:ce:49:64:90:8c:9a:ca:6e:2e:
+-        84:48:1d:94:19:56:94:46:aa:25:9b:68:c2:80:60:bf:cb:2e:
+-        35:03:ea:0a:65:5a:33:38:c6:cc:81:46:c0:bc:36:86:96:39:
+-        10:7d
+ -----BEGIN CERTIFICATE-----
+-MIIDjTCCAvagAwIBAgIJALmQor9iaRecMA0GCSqGSIb3DQEBBQUAMIGMMQswCQYD
+-VQQGEwJKUDEQMA4GA1UECBMHU2hpbWFuZTEUMBIGA1UEBxMLTWF0ei1lIGNpdHkx
+-FzAVBgNVBAoTDlJ1YnkgQ29yZSBUZWFtMRUwEwYDVQQDEwxSdWJ5IFRlc3QgQ0Ex
+-JTAjBgkqhkiG9w0BCQEWFnNlY3VyaXR5QHJ1YnktbGFuZy5vcmcwHhcNMTQwMTAz
+-MDEzNDE3WhcNMTkwMTAyMDEzNDE3WjCBjDELMAkGA1UEBhMCSlAxEDAOBgNVBAgT
+-B1NoaW1hbmUxFDASBgNVBAcTC01hdHotZSBjaXR5MRcwFQYDVQQKEw5SdWJ5IENv
+-cmUgVGVhbTEVMBMGA1UEAxMMUnVieSBUZXN0IENBMSUwIwYJKoZIhvcNAQkBFhZz
+-ZWN1cml0eUBydWJ5LWxhbmcub3JnMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKB
+-gQDbddBF3rHfv3GgDrCl5rz0HJ3lJWdkxXvL8a/Gvpqq6n4PzAWv70BpBrLJE51+
+-66IG4up9B8fHmcf71bjrY3diKxgSw1NY0PXHQAwB0SaCNBYJ49xl9Ny7XaVBYOep
+-dLrXTLajnMWMia/L6J8F/ur+ZCS/5+3j9tD81uv8BoIQ+wIDAQABo4H0MIHxMB0G
+-A1UdDgQWBBToflisE3sDIo2erzILhImAgAwewjCBwQYDVR0jBIG5MIG2gBToflis
+-E3sDIo2erzILhImAgAwewqGBkqSBjzCBjDELMAkGA1UEBhMCSlAxEDAOBgNVBAgT
+-B1NoaW1hbmUxFDASBgNVBAcTC01hdHotZSBjaXR5MRcwFQYDVQQKEw5SdWJ5IENv
+-cmUgVGVhbTEVMBMGA1UEAxMMUnVieSBUZXN0IENBMSUwIwYJKoZIhvcNAQkBFhZz
+-ZWN1cml0eUBydWJ5LWxhbmcub3JnggkAuZCiv2JpF5wwDAYDVR0TBAUwAwEB/zAN
+-BgkqhkiG9w0BAQUFAAOBgQCPdwZOMXIS7mgJcCfUMYXvEJX5DytmYwg3iG63m0A+
+-GHczhuhharc8y8em1tWSah9W0J9cMlbTN1L+DiDCeg3+LTyB2rh/TWoIAdm+eqIV
+-vqbOSWSQjJrKbi6ESB2UGVaURqolm2jCgGC/yy41A+oKZVozOMbMgUbAvDaGljkQ
+-fQ==
++MIID7TCCAtWgAwIBAgIJAIltvxrFAuSnMA0GCSqGSIb3DQEBCwUAMIGMMQswCQYD
++VQQGEwJKUDEQMA4GA1UECAwHU2hpbWFuZTEUMBIGA1UEBwwLTWF0ei1lIGNpdHkx
++FzAVBgNVBAoMDlJ1YnkgQ29yZSBUZWFtMRUwEwYDVQQDDAxSdWJ5IFRlc3QgQ0Ex
++JTAjBgkqhkiG9w0BCQEWFnNlY3VyaXR5QHJ1YnktbGFuZy5vcmcwHhcNMTkwMTAy
++MDI1ODI4WhcNMjQwMTAxMDI1ODI4WjCBjDELMAkGA1UEBhMCSlAxEDAOBgNVBAgM
++B1NoaW1hbmUxFDASBgNVBAcMC01hdHotZSBjaXR5MRcwFQYDVQQKDA5SdWJ5IENv
++cmUgVGVhbTEVMBMGA1UEAwwMUnVieSBUZXN0IENBMSUwIwYJKoZIhvcNAQkBFhZz
++ZWN1cml0eUBydWJ5LWxhbmcub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
++CgKCAQEAznlbjRVhz1NlutHVrhcGnK8W0qug2ujKXv1njSC4U6nJF6py7I9EeehV
++SaKePyv+I9z3K1LnfUHOtUbdwdKC77yN66A6q2aqzu5q09/NSykcZGOIF0GuItYI
++3nvW3IqBddff2ffsyR+9pBjfb5AIPP08WowF9q4s1eGULwZc4w2B8PFhtxYANd7d
++BvGLXFlcufv9tDtzyRi4t7eqxCRJkZQIZNZ6DHHIJrNxejOILfHLarI12yk8VK6L
++2LG4WgGqyeePiRyd1o1MbuiAFYqAwpXNUbRKg5NaZGwBHZk8UZ+uFKt1QMBURO5R
++WFy1c349jbWszTqFyL4Lnbg9HhAowQIDAQABo1AwTjAdBgNVHQ4EFgQU9tEiKdU9
++I9derQyc5nWPnc34nVMwHwYDVR0jBBgwFoAU9tEiKdU9I9derQyc5nWPnc34nVMw
++DAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAxj7F/u3C3fgq24N7hGRA
++of7ClFQxGmo/IGT0AISzW3HiVYiFaikKhbO1NwD9aBpD8Zwe62sCqMh8jGV/b0+q
++aOORnWYNy2R6r9FkASAglmdF6xn3bhgGD5ls4pCvcG9FynGnGc24g6MrjFNrBYUS
++2iIZsg36i0IJswo/Dy6HLphCms2BMCD3DeWtfjePUiTmQHJo6HsQIKP/u4N4Fvee
++uMBInei2M4VU74fLXbmKl1F9AEX7JDP3BKSZG19Ch5pnUo4uXM1uNTGsi07P4Y0s
++K44+SKBC0bYEFbDK0eQWMrX3kIhkPxyIWhxdq9/NqPYjShuSEAhA6CSpmRg0pqc+
++mA==
+ -----END CERTIFICATE-----
+--- ruby2.3-2.3.3.orig/test/net/imap/server.crt
++++ ruby2.3-2.3.3/test/net/imap/server.crt
+@@ -1,48 +1,82 @@
+ Certificate:
+     Data:
+-        Version: 1 (0x0)
+-        Serial Number: 0 (0x0)
+-        Signature Algorithm: sha1WithRSAEncryption
++        Version: 3 (0x2)
++        Serial Number: 2 (0x2)
++    Signature Algorithm: sha256WithRSAEncryption
+         Issuer: C=JP, ST=Shimane, L=Matz-e city, O=Ruby Core Team, CN=Ruby Test CA/emailAddress=security@ruby-lang.org
+         Validity
+-            Not Before: Jan  3 01:34:17 2014 GMT
+-            Not After : Jan  2 01:34:17 2019 GMT
++            Not Before: Jan  2 03:27:13 2019 GMT
++            Not After : Jan  1 03:27:13 2024 GMT
+         Subject: C=JP, ST=Shimane, O=Ruby Core Team, OU=Ruby Test, CN=localhost
+         Subject Public Key Info:
+             Public Key Algorithm: rsaEncryption
+-            RSA Public Key: (1024 bit)
+-                Modulus (1024 bit):
+-                    00:db:75:d0:45:de:b1:df:bf:71:a0:0e:b0:a5:e6:
+-                    bc:f4:1c:9d:e5:25:67:64:c5:7b:cb:f1:af:c6:be:
+-                    9a:aa:ea:7e:0f:cc:05:af:ef:40:69:06:b2:c9:13:
+-                    9d:7e:eb:a2:06:e2:ea:7d:07:c7:c7:99:c7:fb:d5:
+-                    b8:eb:63:77:62:2b:18:12:c3:53:58:d0:f5:c7:40:
+-                    0c:01:d1:26:82:34:16:09:e3:dc:65:f4:dc:bb:5d:
+-                    a5:41:60:e7:a9:74:ba:d7:4c:b6:a3:9c:c5:8c:89:
+-                    af:cb:e8:9f:05:fe:ea:fe:64:24:bf:e7:ed:e3:f6:
+-                    d0:fc:d6:eb:fc:06:82:10:fb
++                Public-Key: (2048 bit)
++                Modulus:
++                    00:e8:da:9c:01:2e:2b:10:ec:49:cd:5e:07:13:07:
++                    9c:70:9e:c6:74:bc:13:c2:e1:6f:c6:82:fd:e3:48:
++                    e0:2c:a5:68:c7:9e:42:de:60:54:65:e6:6a:14:57:
++                    7a:30:d0:cc:b5:b6:d9:c3:d2:df:c9:25:97:54:67:
++                    cf:f6:be:5e:cb:8b:ee:03:c5:e1:e2:f9:e7:f7:d1:
++                    0c:47:f0:b8:da:33:5a:ad:41:ad:e7:b5:a2:7b:b7:
++                    bf:30:da:60:f8:e3:54:a2:bc:3a:fd:1b:74:d9:dc:
++                    74:42:e9:29:be:df:ac:b4:4f:eb:32:f4:06:f1:e1:
++                    8c:4b:a8:8b:fb:29:e7:b1:bf:1d:01:ee:73:0f:f9:
++                    40:dc:d5:15:79:d9:c6:73:d0:c0:dd:cb:e4:da:19:
++                    47:80:c6:14:04:72:fd:9a:7c:8f:11:82:76:49:04:
++                    79:cc:f2:5c:31:22:95:13:3e:5d:40:a6:4d:e0:a3:
++                    02:26:7d:52:3b:bb:ed:65:a1:0f:ed:6b:b0:3c:d4:
++                    de:61:15:5e:d3:dd:68:09:9f:4a:57:a5:c2:a9:6d:
++                    86:92:c5:f4:a4:d4:b7:13:3b:52:63:24:05:e2:cc:
++                    e3:8a:3c:d4:35:34:2b:10:bb:58:72:e7:e1:8d:1d:
++                    74:8c:61:16:20:3d:d0:1c:4e:8f:6e:fd:fe:64:10:
++                    4f:41
+                 Exponent: 65537 (0x10001)
+-    Signature Algorithm: sha1WithRSAEncryption
+-        85:f5:d3:05:8b:8c:f4:43:1c:88:f2:8f:b2:f2:93:77:b7:3d:
+-        95:c6:a0:34:bc:33:6a:d8:85:5f:3e:86:08:10:c5:5c:c1:76:
+-        a3:53:3c:dc:38:98:23:97:e7:da:21:ac:e8:4d:3c:96:70:29:
+-        ff:ff:1e:4a:9a:17:2b:db:04:62:b9:ef:ab:ea:a7:a5:e8:7c:
+-        b1:d5:ed:30:a8:6c:78:de:51:7e:e3:8a:c2:a4:64:a8:63:a2:
+-        bc:fd:43:9c:f3:55:7d:54:c9:6a:d8:53:1c:4b:6b:03:aa:b6:
+-        19:e6:a4:4f:47:00:96:c5:42:59:85:4e:c3:4e:cd:41:82:53:
+-        10:f8
++        X509v3 extensions:
++            X509v3 Basic Constraints: 
++                CA:FALSE
++            Netscape Comment: 
++                OpenSSL Generated Certificate
++            X509v3 Subject Key Identifier: 
++                ED:28:C2:7E:AB:4B:C8:E8:FE:55:6D:66:95:31:1C:2D:60:F9:02:36
++            X509v3 Authority Key Identifier: 
++                keyid:F6:D1:22:29:D5:3D:23:D7:5E:AD:0C:9C:E6:75:8F:9D:CD:F8:9D:53
++
++    Signature Algorithm: sha256WithRSAEncryption
++         1d:b8:c5:8b:72:41:20:65:ad:27:6f:15:63:06:26:12:8d:9c:
++         ad:ca:f4:db:97:b4:90:cb:ff:35:94:bb:2a:a7:a1:ab:1e:35:
++         2d:a5:3f:c9:24:b0:1a:58:89:75:3e:81:0a:2c:4f:98:f9:51:
++         fb:c0:a3:09:d0:0a:9b:e7:a2:b7:c3:60:40:c8:f4:6d:b2:6a:
++         56:12:17:4c:00:24:31:df:9c:60:ae:b1:68:54:a9:e6:b5:4a:
++         04:e6:92:05:86:d9:5a:dc:96:30:a5:58:de:14:99:0f:e5:15:
++         89:3e:9b:eb:80:e3:bd:83:c3:ea:33:35:4b:3e:2f:d3:0d:64:
++         93:67:7f:8d:f5:3f:0c:27:bc:37:5a:cc:d6:47:16:af:5a:62:
++         d2:da:51:f8:74:06:6b:24:ad:28:68:08:98:37:7d:ed:0e:ab:
++         1e:82:61:05:d0:ba:75:a0:ab:21:b0:9a:fd:2b:54:86:1d:0d:
++         1f:c2:d4:77:1f:72:26:5e:ad:8a:9f:09:36:6d:44:be:74:c2:
++         5a:3e:ff:5c:9d:75:d6:38:7b:c5:39:f9:44:6e:a1:d1:8e:ff:
++         63:db:c4:bb:c6:91:92:ca:5c:60:9b:1d:eb:0a:de:08:ee:bf:
++         da:76:03:65:62:29:8b:f8:7f:c7:86:73:1e:f6:1f:2d:89:69:
++         fd:be:bd:6e
+ -----BEGIN CERTIFICATE-----
+-MIICXDCCAcUCAQAwDQYJKoZIhvcNAQEFBQAwgYwxCzAJBgNVBAYTAkpQMRAwDgYD
+-VQQIEwdTaGltYW5lMRQwEgYDVQQHEwtNYXR6LWUgY2l0eTEXMBUGA1UEChMOUnVi
+-eSBDb3JlIFRlYW0xFTATBgNVBAMTDFJ1YnkgVGVzdCBDQTElMCMGCSqGSIb3DQEJ
+-ARYWc2VjdXJpdHlAcnVieS1sYW5nLm9yZzAeFw0xNDAxMDMwMTM0MTdaFw0xOTAx
+-MDIwMTM0MTdaMGAxCzAJBgNVBAYTAkpQMRAwDgYDVQQIEwdTaGltYW5lMRcwFQYD
+-VQQKEw5SdWJ5IENvcmUgVGVhbTESMBAGA1UECxMJUnVieSBUZXN0MRIwEAYDVQQD
+-Ewlsb2NhbGhvc3QwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBANt10EXesd+/
+-caAOsKXmvPQcneUlZ2TFe8vxr8a+mqrqfg/MBa/vQGkGsskTnX7rogbi6n0Hx8eZ
+-x/vVuOtjd2IrGBLDU1jQ9cdADAHRJoI0Fgnj3GX03LtdpUFg56l0utdMtqOcxYyJ
+-r8vonwX+6v5kJL/n7eP20PzW6/wGghD7AgMBAAEwDQYJKoZIhvcNAQEFBQADgYEA
+-hfXTBYuM9EMciPKPsvKTd7c9lcagNLwzatiFXz6GCBDFXMF2o1M83DiYI5fn2iGs
+-6E08lnAp//8eSpoXK9sEYrnvq+qnpeh8sdXtMKhseN5RfuOKwqRkqGOivP1DnPNV
+-fVTJathTHEtrA6q2GeakT0cAlsVCWYVOw07NQYJTEPg=
++MIID4zCCAsugAwIBAgIBAjANBgkqhkiG9w0BAQsFADCBjDELMAkGA1UEBhMCSlAx
++EDAOBgNVBAgMB1NoaW1hbmUxFDASBgNVBAcMC01hdHotZSBjaXR5MRcwFQYDVQQK
++DA5SdWJ5IENvcmUgVGVhbTEVMBMGA1UEAwwMUnVieSBUZXN0IENBMSUwIwYJKoZI
++hvcNAQkBFhZzZWN1cml0eUBydWJ5LWxhbmcub3JnMB4XDTE5MDEwMjAzMjcxM1oX
++DTI0MDEwMTAzMjcxM1owYDELMAkGA1UEBhMCSlAxEDAOBgNVBAgMB1NoaW1hbmUx
++FzAVBgNVBAoMDlJ1YnkgQ29yZSBUZWFtMRIwEAYDVQQLDAlSdWJ5IFRlc3QxEjAQ
++BgNVBAMMCWxvY2FsaG9zdDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
++AOjanAEuKxDsSc1eBxMHnHCexnS8E8Lhb8aC/eNI4CylaMeeQt5gVGXmahRXejDQ
++zLW22cPS38kll1Rnz/a+XsuL7gPF4eL55/fRDEfwuNozWq1Bree1onu3vzDaYPjj
++VKK8Ov0bdNncdELpKb7frLRP6zL0BvHhjEuoi/sp57G/HQHucw/5QNzVFXnZxnPQ
++wN3L5NoZR4DGFARy/Zp8jxGCdkkEeczyXDEilRM+XUCmTeCjAiZ9Uju77WWhD+1r
++sDzU3mEVXtPdaAmfSlelwqlthpLF9KTUtxM7UmMkBeLM44o81DU0KxC7WHLn4Y0d
++dIxhFiA90BxOj279/mQQT0ECAwEAAaN7MHkwCQYDVR0TBAIwADAsBglghkgBhvhC
++AQ0EHxYdT3BlblNTTCBHZW5lcmF0ZWQgQ2VydGlmaWNhdGUwHQYDVR0OBBYEFO0o
++wn6rS8jo/lVtZpUxHC1g+QI2MB8GA1UdIwQYMBaAFPbRIinVPSPXXq0MnOZ1j53N
+++J1TMA0GCSqGSIb3DQEBCwUAA4IBAQAduMWLckEgZa0nbxVjBiYSjZytyvTbl7SQ
++y/81lLsqp6GrHjUtpT/JJLAaWIl1PoEKLE+Y+VH7wKMJ0Aqb56K3w2BAyPRtsmpW
++EhdMACQx35xgrrFoVKnmtUoE5pIFhtla3JYwpVjeFJkP5RWJPpvrgOO9g8PqMzVL
++Pi/TDWSTZ3+N9T8MJ7w3WszWRxavWmLS2lH4dAZrJK0oaAiYN33tDqsegmEF0Lp1
++oKshsJr9K1SGHQ0fwtR3H3ImXq2Knwk2bUS+dMJaPv9cnXXWOHvFOflEbqHRjv9j
++28S7xpGSylxgmx3rCt4I7r/adgNlYimL+H/HhnMe9h8tiWn9vr1u
+ -----END CERTIFICATE-----
+--- ruby2.3-2.3.3.orig/test/net/imap/server.key
++++ ruby2.3-2.3.3/test/net/imap/server.key
+@@ -1,15 +1,28 @@
+------BEGIN RSA PRIVATE KEY-----
+-MIICXQIBAAKBgQDbddBF3rHfv3GgDrCl5rz0HJ3lJWdkxXvL8a/Gvpqq6n4PzAWv
+-70BpBrLJE51+66IG4up9B8fHmcf71bjrY3diKxgSw1NY0PXHQAwB0SaCNBYJ49xl
+-9Ny7XaVBYOepdLrXTLajnMWMia/L6J8F/ur+ZCS/5+3j9tD81uv8BoIQ+wIDAQAB
+-AoGAGtYHR+P5gFDaxiXFuCPFC1zMeg7e29XCU6gURIteQnQ2QhxCvcbV64HkLu51
+-HeYWhB0Pa4aeCWxmpgb2e+JH4MEoIjeJSGyZQeqwkQLgWJDdvkgWx5am58QzA60I
+-ipkZ9QHcPffSs5RiGx4yfr58KqAmwFphGCY8W7v4LqaENdECQQD9H5VTW9g4gj1c
+-j3uNYvSI/D7a9P7gfI+ziczuwMm5xsBx3D/t5TAr3SJKNne3sl1E6ZERCUbzxf+C
+-k58EiHx1AkEA3fRLGqDOq7EcQhbjTcA/v/t5MwlGEUsS9+XrqOWn50YuoIwRZJ3v
+-qHRQzfQfFNklGtfBvwQ4md3irXjMeGVprwJBAMEAuwiDiHuV+xm/ofKtmE13IKot
+-ksYy1BOOp/8IawhHXueyi+BmF/PqOkIiA+jCjNGF0oIN89beizPSQbbgJx0CQG/K
+-qL1bu1ys0y/SeWBi8XkP/0aeaCUzq/UiYCTsrzoEll2UzvnftqMhGsXxLGqCyHaR
+-r2s3hA6zvIVlL4+AfM8CQQClq+WDrC5VKciLYakZNWJjV1m+H2Ut/0fXdUjKHajE
+-FWLcsrOhADf6bkTb71GwPxnKRkkRmud5upP0ZYYTqM4X
+------END RSA PRIVATE KEY-----
++-----BEGIN PRIVATE KEY-----
++MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDo2pwBLisQ7EnN
++XgcTB5xwnsZ0vBPC4W/Ggv3jSOAspWjHnkLeYFRl5moUV3ow0My1ttnD0t/JJZdU
++Z8/2vl7Li+4DxeHi+ef30QxH8LjaM1qtQa3ntaJ7t78w2mD441SivDr9G3TZ3HRC
++6Sm+36y0T+sy9Abx4YxLqIv7Keexvx0B7nMP+UDc1RV52cZz0MDdy+TaGUeAxhQE
++cv2afI8RgnZJBHnM8lwxIpUTPl1Apk3gowImfVI7u+1loQ/ta7A81N5hFV7T3WgJ
++n0pXpcKpbYaSxfSk1LcTO1JjJAXizOOKPNQ1NCsQu1hy5+GNHXSMYRYgPdAcTo9u
++/f5kEE9BAgMBAAECggEBAOHkwhc7DLh8IhTDNSW26oMu5OP2WU1jmiYAigDmf+OQ
++DBgrZj+JQBci8qINQxL8XLukSZn5hvQCLc7Kbyu1/wyEEUFDxSGGwwzclodr9kho
++LX2LDASPZrOSzD2+fPi2wTKmXKuS6Uc44OjQfZkYMNkz9r4Vkm8xGgOD3VipjIYX
++QXlhhdqkXZcNABsihCV52GKkDFSVm8jv95YJc5xhoYCy/3a4/qPdF0aT2R7oYUej
++hKrxVDskyooe8Zg/JTydZNV5GQEDmW01/K3r6XGT26oPi1AqMU1gtv/jkW56CRQQ
++1got8smnqM+AV7Slf9R6DauIPdQJ2S8wsr/o8ISBsOECgYEA9YrqEP2gAYSGFXRt
++liw0WI2Ant8BqXS6yvq1jLo/qWhLw/ph4Di73OQ2mpycVTpgfGr2wFPQR1XJ+0Fd
++U+Ir/C3Q7FK4VIGHK7B0zNvZr5tEjlFfeRezo2JMVw5YWeSagIFcSwK+KqCTH9qc
++pw/Eb8nB/4XNcpTZu7Fg0Wc+ooUCgYEA8sVaicn1Wxkpb45a4qfrA6wOr5xdJ4cC
++A5qs7vjX2OdPIQOmoQhdI7bCWFXZzF33wA4YCws6j5wRaySLIJqdms8Gl9QnODy1
++ZlA5gwKToBC/jqPmWAXSKb8EH7cHilaxU9OKnQ7CfwlGLHqjMtjrhR7KHlt3CVRs
++oRmvsjZVXI0CgYAmPedslAO6mMhFSSfULrhMXmV82OCqYrrA6EEkVNGbcdnzAOkD
++gfKIWabDd8bFY10po4Mguy0CHzNhBXIioWQWV5BlbhC1YKMLw+S9DzSdLAKGY9gJ
++xQ4+UQ3wtRQ/k+IYR413RUsW2oFvgZ3KSyNeAb9MK6uuv84VdG/OzVSs/QKBgQDn
++kap//l2EbObiWyaERunckdVcW0lcN+KK75J/TGwPoOwQsLvTpPe65kxRGGrtDsEQ
++uCDk/+v3KkZPLgdrrTAih9FhJ+PVN8tMcb+6IM4SA4fFFr/UPJEwct0LJ3oQ0grJ
++y+HPWFHb/Uurh7t99/4H98uR02sjQh1wOeEmm78mzQKBgQDm+LzGH0se6CXQ6cdZ
++g1JRZeXkDEsrW3hfAsW62xJQmXcWxBoblP9OamMY+A06rM5og3JbDk5Zm6JsOaA8
++wS2gw4ilp46jors4eQey8ux7kB9LzdBoDBBElnsbjLO8oBNZlVcYXg+6BOl/CUi7
++2whRF0FEjKA8ehrNhAq+VFfFNw==
++-----END PRIVATE KEY-----
+--- ruby2.3-2.3.3.orig/test/net/smtp/test_smtp.rb
++++ ruby2.3-2.3.3/test/net/smtp/test_smtp.rb
+@@ -6,6 +6,8 @@ require 'test/unit'
+ module Net
+   class TestSMTP < Test::Unit::TestCase
+     class FakeSocket
++      attr_reader :write_io
++
+       def initialize out = "250 OK\n"
+         @write_io = StringIO.new
+         @read_io  = StringIO.new out
+@@ -51,5 +53,50 @@ module Net
+ 
+       assert smtp.rset
+     end
++
++    def test_mailfrom
++      sock = FakeSocket.new
++      smtp = Net::SMTP.new 'localhost', 25
++      smtp.instance_variable_set :@socket, sock
++      assert smtp.mailfrom("foo@example.com").success?
++      assert_equal "MAIL FROM:<foo@example.com>\r\n", sock.write_io.string
++    end
++
++    def test_rcptto
++      sock = FakeSocket.new
++      smtp = Net::SMTP.new 'localhost', 25
++      smtp.instance_variable_set :@socket, sock
++      assert smtp.rcptto("foo@example.com").success?
++      assert_equal "RCPT TO:<foo@example.com>\r\n", sock.write_io.string
++    end
++
++    def test_auth_plain
++      sock = FakeSocket.new
++      smtp = Net::SMTP.new 'localhost', 25
++      smtp.instance_variable_set :@socket, sock
++      assert smtp.auth_plain("foo", "bar").success?
++      assert_equal "AUTH PLAIN AGZvbwBiYXI=\r\n", sock.write_io.string
++    end
++
++    def test_crlf_injection
++      smtp = Net::SMTP.new 'localhost', 25
++      smtp.instance_variable_set :@socket, FakeSocket.new
++
++      assert_raise(ArgumentError) do
++        smtp.mailfrom("foo\r\nbar")
++      end
++
++      assert_raise(ArgumentError) do
++        smtp.mailfrom("foo\rbar")
++      end
++
++      assert_raise(ArgumentError) do
++        smtp.mailfrom("foo\nbar")
++      end
++
++      assert_raise(ArgumentError) do
++        smtp.rcptto("foo\r\nbar")
++      end
++    end
+   end
+ end
+--- ruby2.3-2.3.3.orig/test/openssl/test_asn1.rb
++++ ruby2.3-2.3.3/test/openssl/test_asn1.rb
+@@ -596,6 +596,29 @@ rEzBQ0F9dUyqQ9gyRg8KHhDfv9HzT1d/rnUZMkoo
+     assert_equal(false, asn1.value[3].infinite_length)
+   end
+ 
++  def test_decode_constructed_overread
++    test = %w{ 31 06 31 02 30 02 05 00 }
++    #                          ^ <- invalid
++    raw = [test.join].pack("H*")
++    ret = []
++    assert_raise(OpenSSL::ASN1::ASN1Error) {
++      OpenSSL::ASN1.traverse(raw) { |x| ret << x }
++    }
++    assert_equal 2, ret.size
++    assert_equal 17, ret[0][6]
++    assert_equal 17, ret[1][6]
++
++    test = %w{ 31 80 30 03 00 00 }
++    #                    ^ <- invalid
++    raw = [test.join].pack("H*")
++    ret = []
++    assert_raise(OpenSSL::ASN1::ASN1Error) {
++      OpenSSL::ASN1.traverse(raw) { |x| ret << x }
++    }
++    assert_equal 1, ret.size
++    assert_equal 17, ret[0][6]
++  end
++
+   private
+ 
+   def assert_universal(tag, asn1)
+--- ruby2.3-2.3.3.orig/test/openssl/test_cipher.rb
++++ ruby2.3-2.3.3/test/openssl/test_cipher.rb
+@@ -81,6 +81,7 @@ class OpenSSL::TestCipher < Test::Unit::
+ 
+   def test_empty_data
+     @c1.encrypt
++    @c1.random_key
+     assert_raise(ArgumentError){ @c1.update("") }
+   end
+ 
+@@ -129,12 +130,10 @@ class OpenSSL::TestCipher < Test::Unit::
+       }
+     end
+ 
+-    def test_AES_crush
+-      500.times do
+-        assert_nothing_raised("[Bug #2768]") do
+-          # it caused OpenSSL SEGV by uninitialized key
+-          OpenSSL::Cipher::AES128.new("ECB").update "." * 17
+-        end
++    def test_update_raise_if_key_not_set
++      assert_raise(OpenSSL::Cipher::CipherError) do
++        # it caused OpenSSL SEGV by uninitialized key
++        OpenSSL::Cipher::AES128.new("ECB").update "." * 17
+       end
+     end
+   end
+@@ -238,6 +237,24 @@ class OpenSSL::TestCipher < Test::Unit::
+ 
+   end
+ 
++  def test_aes_gcm_key_iv_order_issue
++    pt = "[ruby/openssl#49]"
++    cipher = OpenSSL::Cipher.new("aes-128-gcm").encrypt
++    cipher.key = "x" * 16
++    cipher.iv = "a" * 12
++    ct1 = cipher.update(pt) << cipher.final
++    tag1 = cipher.auth_tag
++
++    cipher = OpenSSL::Cipher.new("aes-128-gcm").encrypt
++    cipher.iv = "a" * 12
++    cipher.key = "x" * 16
++    ct2 = cipher.update(pt) << cipher.final
++    tag2 = cipher.auth_tag
++
++    assert_equal ct1, ct2
++    assert_equal tag1, tag2
++  end if has_cipher?("aes-128-gcm")
++
+   private
+ 
+   def new_encryptor(algo)
+--- ruby2.3-2.3.3.orig/test/openssl/test_x509name.rb
++++ ruby2.3-2.3.3/test/openssl/test_x509name.rb
+@@ -338,10 +338,16 @@ class OpenSSL::TestX509Name < Test::Unit
+   end
+ 
+   def test_spaceship
+-    n1 = OpenSSL::X509::Name.parse 'CN=a'
+-    n2 = OpenSSL::X509::Name.parse 'CN=b'
++    n1 = OpenSSL::X509::Name.new([["CN", "a"]])
++    n2 = OpenSSL::X509::Name.new([["CN", "a"]])
++    n3 = OpenSSL::X509::Name.new([["CN", "ab"]])
+ 
+-    assert_equal(-1, n1 <=> n2)
++    assert_equal 0, n1 <=> n2
++    assert_equal -1, n1 <=> n3
++    assert_equal 0, n2 <=> n1
++    assert_equal -1, n2 <=> n3
++    assert_equal 1, n3 <=> n1
++    assert_equal 1, n3 <=> n2
+   end
+ 
+   def name_hash(name)
+--- ruby2.3-2.3.3.orig/test/ruby/test_array.rb
++++ ruby2.3-2.3.3/test/ruby/test_array.rb
+@@ -1841,7 +1841,8 @@ class TestArray < Test::Unit::TestCase
+ 
+   def test_permutation_stack_error
+     bug9932 = '[ruby-core:63103] [Bug #9932]'
+-    assert_separately([], <<-"end;") #    do
++    # On some platforms (armel, mips), permutation is very expensive/slow.
++    assert_separately([], <<-"end;", timeout: 60) #    do
+       assert_nothing_raised(SystemStackError, "#{bug9932}") do
+         assert_equal(:ok, Array.new(100_000, nil).permutation {break :ok})
+       end
+--- ruby2.3-2.3.3.orig/test/ruby/test_dir.rb
++++ ruby2.3-2.3.3/test/ruby/test_dir.rb
+@@ -156,6 +156,9 @@ class TestDir < Test::Unit::TestCase
+     open(File.join(@root, "}}a"), "wb") {}
+     assert_equal(%w(}}{} }}a).map {|f| File.join(@root, f)}, Dir.glob(File.join(@root, '}}{\{\},a}')))
+     assert_equal(%w(}}{} }}a b c).map {|f| File.join(@root, f)}, Dir.glob(File.join(@root, '{\}\}{\{\},a},b,c}')))
++    assert_raise(ArgumentError) {
++      Dir.glob([[@root, File.join(@root, "*")].join("\0")])
++    }
+   end
+ 
+   def test_glob_recursive
+@@ -191,10 +194,12 @@ class TestDir < Test::Unit::TestCase
+ 
+   def test_entries
+     assert_entries(Dir.open(@root) {|dir| dir.entries})
++    assert_raise(ArgumentError) {Dir.entries(@root+"\0")}
+   end
+ 
+   def test_foreach
+     assert_entries(Dir.foreach(@root).to_a)
++    assert_raise(ArgumentError) {Dir.foreach(@root+"\0").to_a}
+   end
+ 
+   def test_dir_enc
+--- ruby2.3-2.3.3.orig/test/ruby/test_file_exhaustive.rb
++++ ruby2.3-2.3.3/test/ruby/test_file_exhaustive.rb
+@@ -1017,7 +1017,7 @@ class TestFileExhaustive < Test::Unit::T
+     user = ENV['USER']
+     skip "ENV['USER'] is not set" unless user
+     assert_equal(ENV['HOME'], File.expand_path("~#{user}"))
+-  end unless DRIVE
++  end if false  # does not work in sbuild/buildd environments
+ 
+   def test_expand_path_error_for_nonexistent_username
+     user = "\u{3086 3046 3066 3044}:\u{307F 3084 304A 3046}"
+--- ruby2.3-2.3.3.orig/test/ruby/test_gc.rb
++++ ruby2.3-2.3.3/test/ruby/test_gc.rb
+@@ -1,7 +1,7 @@
+ # frozen_string_literal: false
+ require 'test/unit'
+ 
+-class TestGc < Test::Unit::TestCase
++class TestGc
+   class S
+     def initialize(a)
+       @a = a
+@@ -212,7 +212,7 @@ class TestGc < Test::Unit::TestCase
+     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR=0\.9/, "")
+ 
+     # always full GC when RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR < 1.0
+-    assert_in_out_err([env, "-e", "1000_000.times{Object.new}; p(GC.stat[:minor_gc_count] < GC.stat[:major_gc_count])"], "", ['true'], //, "") if use_rgengc?
++    assert_in_out_err([env, "-e", "1000_000.times{Object.new}; p(GC.stat[:minor_gc_count] < GC.stat[:major_gc_count])"], "", ['true'], //, "", timeout: 30) if use_rgengc?
+ 
+     # check obsolete
+     assert_in_out_err([{'RUBY_FREE_MIN' => '100'}, '-w', '-eexit'], '', [],
+--- ruby2.3-2.3.3.orig/test/ruby/test_pack.rb
++++ ruby2.3-2.3.3/test/ruby/test_pack.rb
+@@ -548,6 +548,9 @@ class TestPack < Test::Unit::TestCase
+     assert_equal([1, 2], "\x01\x00\x00\x02".unpack("C@3C"))
+     assert_equal([nil], "\x00".unpack("@1C")) # is it OK?
+     assert_raise(ArgumentError) { "\x00".unpack("@2C") }
++
++    pos = (1 << [nil].pack("p").bytesize * 8) - 100 # -100
++    assert_raise(RangeError) {"0123456789".unpack("@#{pos}C10")}
+   end
+ 
+   def test_pack_unpack_percent
+@@ -814,4 +817,27 @@ EXPECTED
+       assert_raise_with_message(ArgumentError, /too few/) {ary.pack("AA")}
+     end;
+   end
++
++  def test_unpack_with_block
++    ret = []; "ABCD".unpack("CCCC") {|v| ret << v }
++    assert_equal [65, 66, 67, 68], ret
++    ret = []; "A".unpack("B*") {|v| ret << v }
++    assert_equal ["01000001"], ret
++  end
++
++  def test_pack_infection
++    tainted_array_string = ["123456"]
++    tainted_array_string.first.taint
++    ['a', 'A', 'Z', 'B', 'b', 'H', 'h', 'u', 'M', 'm', 'P', 'p'].each do |f|
++      assert_predicate(tainted_array_string.pack(f), :tainted?)
++    end
++  end
++
++  def test_unpack_infection
++    tainted_string = "123456"
++    tainted_string.taint
++    ['a', 'A', 'Z', 'B', 'b', 'H', 'h', 'u', 'M', 'm'].each do |f|
++      assert_predicate(tainted_string.unpack(f).first, :tainted?)
++    end
++  end
+ end
+--- ruby2.3-2.3.3.orig/test/ruby/test_sprintf.rb
++++ ruby2.3-2.3.3/test/ruby/test_sprintf.rb
+@@ -84,6 +84,18 @@ class TestSprintf < Test::Unit::TestCase
+     assert_equal("NaN", sprintf("%-f", nan))
+     assert_equal("+NaN", sprintf("%+f", nan))
+ 
++    assert_equal("NaN", sprintf("%3f", nan))
++    assert_equal("NaN", sprintf("%-3f", nan))
++    assert_equal("+NaN", sprintf("%+3f", nan))
++
++    assert_equal(" NaN", sprintf("% 3f", nan))
++    assert_equal(" NaN", sprintf("%- 3f", nan))
++    assert_equal("+NaN", sprintf("%+ 3f", nan))
++
++    assert_equal(" NaN", sprintf("% 03f", nan))
++    assert_equal(" NaN", sprintf("%- 03f", nan))
++    assert_equal("+NaN", sprintf("%+ 03f", nan))
++
+     assert_equal("     NaN", sprintf("%8f", nan))
+     assert_equal("NaN     ", sprintf("%-8f", nan))
+     assert_equal("    +NaN", sprintf("%+8f", nan))
+@@ -107,6 +119,26 @@ class TestSprintf < Test::Unit::TestCase
+     assert_equal("Inf", sprintf("%-f", inf))
+     assert_equal("+Inf", sprintf("%+f", inf))
+ 
++    assert_equal(" Inf", sprintf("% f", inf))
++    assert_equal(" Inf", sprintf("%- f", inf))
++    assert_equal("+Inf", sprintf("%+ f", inf))
++
++    assert_equal(" Inf", sprintf("% 0f", inf))
++    assert_equal(" Inf", sprintf("%- 0f", inf))
++    assert_equal("+Inf", sprintf("%+ 0f", inf))
++
++    assert_equal("Inf", sprintf("%3f", inf))
++    assert_equal("Inf", sprintf("%-3f", inf))
++    assert_equal("+Inf", sprintf("%+3f", inf))
++
++    assert_equal(" Inf", sprintf("% 3f", inf))
++    assert_equal(" Inf", sprintf("%- 3f", inf))
++    assert_equal("+Inf", sprintf("%+ 3f", inf))
++
++    assert_equal(" Inf", sprintf("% 03f", inf))
++    assert_equal(" Inf", sprintf("%- 03f", inf))
++    assert_equal("+Inf", sprintf("%+ 03f", inf))
++
+     assert_equal("     Inf", sprintf("%8f", inf))
+     assert_equal("Inf     ", sprintf("%-8f", inf))
+     assert_equal("    +Inf", sprintf("%+8f", inf))
+@@ -127,6 +159,26 @@ class TestSprintf < Test::Unit::TestCase
+     assert_equal("-Inf", sprintf("%-f", -inf))
+     assert_equal("-Inf", sprintf("%+f", -inf))
+ 
++    assert_equal("-Inf", sprintf("% f", -inf))
++    assert_equal("-Inf", sprintf("%- f", -inf))
++    assert_equal("-Inf", sprintf("%+ f", -inf))
++
++    assert_equal("-Inf", sprintf("% 0f", -inf))
++    assert_equal("-Inf", sprintf("%- 0f", -inf))
++    assert_equal("-Inf", sprintf("%+ 0f", -inf))
++
++    assert_equal("-Inf", sprintf("%4f", -inf))
++    assert_equal("-Inf", sprintf("%-4f", -inf))
++    assert_equal("-Inf", sprintf("%+4f", -inf))
++
++    assert_equal("-Inf", sprintf("% 4f", -inf))
++    assert_equal("-Inf", sprintf("%- 4f", -inf))
++    assert_equal("-Inf", sprintf("%+ 4f", -inf))
++
++    assert_equal("-Inf", sprintf("% 04f", -inf))
++    assert_equal("-Inf", sprintf("%- 04f", -inf))
++    assert_equal("-Inf", sprintf("%+ 04f", -inf))
++
+     assert_equal("    -Inf", sprintf("%8f", -inf))
+     assert_equal("-Inf    ", sprintf("%-8f", -inf))
+     assert_equal("    -Inf", sprintf("%+8f", -inf))
+--- ruby2.3-2.3.3.orig/test/ruby/test_time_tz.rb
++++ ruby2.3-2.3.3/test/ruby/test_time_tz.rb
+@@ -84,6 +84,16 @@ class TestTimeTZ < Test::Unit::TestCase
+ 
+   has_right_tz &&= have_tz_offset?("right/America/Los_Angeles")
+   has_lisbon_tz &&= have_tz_offset?("Europe/Lisbon")
++  CORRECT_TOKYO_DST_1951 = with_tz("Asia/Tokyo") {
++    if Time.local(1951, 5, 6, 12, 0, 0).dst? # noon, DST
++      if Time.local(1951, 5, 6, 1, 0, 0).dst? # DST with fixed tzdata
++        Time.local(1951, 9, 8, 23, 0, 0).dst? ? "2018f" : "2018e"
++      end
++    end
++  }
++  CORRECT_KIRITIMATI_SKIP_1994 = with_tz("Pacific/Kiritimati") {
++    Time.local(1994, 12, 31, 0, 0, 0).year == 1995
++  }
+ 
+   def time_to_s(t)
+     t.to_s
+@@ -126,8 +136,9 @@ class TestTimeTZ < Test::Unit::TestCase
+ 
+   def test_asia_tokyo
+     with_tz(tz="Asia/Tokyo") {
+-      assert_time_constructor(tz, "1951-05-06 03:00:00 +1000", :local, [1951,5,6,2,0,0])
+-      assert_time_constructor(tz, "1951-05-06 03:59:59 +1000", :local, [1951,5,6,2,59,59])
++      h = CORRECT_TOKYO_DST_1951 ? 0 : 2
++      assert_time_constructor(tz, "1951-05-06 0#{h+1}:00:00 +1000", :local, [1951,5,6,h,0,0])
++      assert_time_constructor(tz, "1951-05-06 0#{h+1}:59:59 +1000", :local, [1951,5,6,h,59,59])
+       assert_time_constructor(tz, "2010-06-10 06:13:28 +0900", :local, [2010,6,10,6,13,28])
+     }
+   end
+@@ -172,9 +183,17 @@ class TestTimeTZ < Test::Unit::TestCase
+ 
+   def test_pacific_kiritimati
+     with_tz(tz="Pacific/Kiritimati") {
+-      assert_time_constructor(tz, "1994-12-31 23:59:59 -1000", :local, [1994,12,31,23,59,59])
+-      assert_time_constructor(tz, "1995-01-02 00:00:00 +1400", :local, [1995,1,1,0,0,0])
+-      assert_time_constructor(tz, "1995-01-02 23:59:59 +1400", :local, [1995,1,1,23,59,59])
++      assert_time_constructor(tz, "1994-12-30 00:00:00 -1000", :local, [1994,12,30,0,0,0])
++      assert_time_constructor(tz, "1994-12-30 23:59:59 -1000", :local, [1994,12,30,23,59,59])
++      if CORRECT_KIRITIMATI_SKIP_1994
++        assert_time_constructor(tz, "1995-01-01 00:00:00 +1400", :local, [1994,12,31,0,0,0])
++        assert_time_constructor(tz, "1995-01-01 23:59:59 +1400", :local, [1994,12,31,23,59,59])
++        assert_time_constructor(tz, "1995-01-01 00:00:00 +1400", :local, [1995,1,1,0,0,0])
++      else
++        assert_time_constructor(tz, "1994-12-31 23:59:59 -1000", :local, [1994,12,31,23,59,59])
++        assert_time_constructor(tz, "1995-01-02 00:00:00 +1400", :local, [1995,1,1,0,0,0])
++        assert_time_constructor(tz, "1995-01-02 23:59:59 +1400", :local, [1995,1,1,23,59,59])
++      end
+       assert_time_constructor(tz, "1995-01-02 00:00:00 +1400", :local, [1995,1,2,0,0,0])
+     }
+   end
+@@ -329,10 +348,23 @@ America/Managua  Wed Jan  1 05:00:00 199
+ Asia/Singapore  Sun Aug  8 16:30:00 1965 UTC = Mon Aug  9 00:00:00 1965 SGT isdst=0 gmtoff=27000
+ Asia/Singapore  Thu Dec 31 16:29:59 1981 UTC = Thu Dec 31 23:59:59 1981 SGT isdst=0 gmtoff=27000
+ Asia/Singapore  Thu Dec 31 16:30:00 1981 UTC = Fri Jan  1 00:30:00 1982 SGT isdst=0 gmtoff=28800
++End
++  gen_zdump_test CORRECT_TOKYO_DST_1951 ? <<'End' + (CORRECT_TOKYO_DST_1951 < "2018f" ? <<'2018e' : <<'2018f') : <<'End'
++Asia/Tokyo  Sat May  5 14:59:59 1951 UTC = Sat May  5 23:59:59 1951 JST isdst=0 gmtoff=32400
++Asia/Tokyo  Sat May  5 15:00:00 1951 UTC = Sun May  6 01:00:00 1951 JDT isdst=1 gmtoff=36000
++End
++Asia/Tokyo  Sat Sep  8 13:59:59 1951 UTC = Sat Sep  8 23:59:59 1951 JDT isdst=1 gmtoff=36000
++Asia/Tokyo  Sat Sep  8 14:00:00 1951 UTC = Sat Sep  8 23:00:00 1951 JST isdst=0 gmtoff=32400
++2018e
++Asia/Tokyo  Sat Sep  8 14:59:59 1951 UTC = Sun Sep  9 00:59:59 1951 JDT isdst=1 gmtoff=36000
++Asia/Tokyo  Sat Sep  8 15:00:00 1951 UTC = Sun Sep  9 00:00:00 1951 JST isdst=0 gmtoff=32400
++2018f
+ Asia/Tokyo  Sat May  5 16:59:59 1951 UTC = Sun May  6 01:59:59 1951 JST isdst=0 gmtoff=32400
+ Asia/Tokyo  Sat May  5 17:00:00 1951 UTC = Sun May  6 03:00:00 1951 JDT isdst=1 gmtoff=36000
+ Asia/Tokyo  Fri Sep  7 15:59:59 1951 UTC = Sat Sep  8 01:59:59 1951 JDT isdst=1 gmtoff=36000
+ Asia/Tokyo  Fri Sep  7 16:00:00 1951 UTC = Sat Sep  8 01:00:00 1951 JST isdst=0 gmtoff=32400
++End
++  gen_zdump_test <<'End'
+ America/St_Johns  Sun Mar 11 03:30:59 2007 UTC = Sun Mar 11 00:00:59 2007 NST isdst=0 gmtoff=-12600
+ America/St_Johns  Sun Mar 11 03:31:00 2007 UTC = Sun Mar 11 01:01:00 2007 NDT isdst=1 gmtoff=-9000
+ America/St_Johns  Sun Nov  4 02:30:59 2007 UTC = Sun Nov  4 00:00:59 2007 NDT isdst=1 gmtoff=-9000
+@@ -349,9 +381,18 @@ Europe/London  Sun Aug 10 00:59:59 1947
+ Europe/London  Sun Aug 10 01:00:00 1947 UTC = Sun Aug 10 02:00:00 1947 BST isdst=1 gmtoff=3600
+ Europe/London  Sun Nov  2 01:59:59 1947 UTC = Sun Nov  2 02:59:59 1947 BST isdst=1 gmtoff=3600
+ Europe/London  Sun Nov  2 02:00:00 1947 UTC = Sun Nov  2 02:00:00 1947 GMT isdst=0 gmtoff=0
++End
++  if CORRECT_KIRITIMATI_SKIP_1994
++    gen_zdump_test <<'End'
++Pacific/Kiritimati  Sat Dec 31 09:59:59 1994 UTC = Fri Dec 30 23:59:59 1994 LINT isdst=0 gmtoff=-36000
++Pacific/Kiritimati  Sat Dec 31 10:00:00 1994 UTC = Sun Jan  1 00:00:00 1995 LINT isdst=0 gmtoff=50400
++End
++  else
++    gen_zdump_test <<'End'
+ Pacific/Kiritimati  Sun Jan  1 09:59:59 1995 UTC = Sat Dec 31 23:59:59 1994 LINT isdst=0 gmtoff=-36000
+ Pacific/Kiritimati  Sun Jan  1 10:00:00 1995 UTC = Mon Jan  2 00:00:00 1995 LINT isdst=0 gmtoff=50400
+ End
++  end
+   gen_zdump_test <<'End' if has_right_tz
+ right/America/Los_Angeles  Fri Jun 30 23:59:60 1972 UTC = Fri Jun 30 16:59:60 1972 PDT isdst=1 gmtoff=-25200
+ right/America/Los_Angeles  Wed Dec 31 23:59:60 2008 UTC = Wed Dec 31 15:59:60 2008 PST isdst=0 gmtoff=-28800
+--- ruby2.3-2.3.3.orig/test/rubygems/test_gem_commands_owner_command.rb
++++ ruby2.3-2.3.3/test/rubygems/test_gem_commands_owner_command.rb
+@@ -36,6 +36,31 @@ EOF
+     assert_match %r{- user2@example.com}, @ui.output
+   end
+ 
++  def test_show_owners_dont_load_objects
++    skip "testing a psych-only API" unless defined?(::Psych::DisallowedClass)
++
++    response = <<EOF
++---
++- email: !ruby/object:Object {}
++  id: 1
++  handle: user1
++- email: user2@example.com
++- id: 3
++  handle: user3
++- id: 4
++EOF
++
++    @fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners.yaml"] = [response, 200, 'OK']
++
++    assert_raises Psych::DisallowedClass do
++      use_ui @ui do
++        @cmd.show_owners("freewill")
++      end
++    end
++
++  end
++
++
+   def test_show_owners_setting_up_host_through_env_var
+     response = "- email: user1@example.com\n"
+     host = "http://rubygems.example"
+--- ruby2.3-2.3.3.orig/test/rubygems/test_gem_commands_query_command.rb
++++ ruby2.3-2.3.3/test/rubygems/test_gem_commands_query_command.rb
+@@ -128,6 +128,86 @@ pl (1)
+     assert_equal '', @ui.error
+   end
+ 
++  def test_execute_details_cleans_text
++    spec_fetcher do |fetcher|
++      fetcher.spec 'a', 2 do |s|
++        s.summary = 'This is a lot of text. ' * 4
++        s.authors = ["Abraham Lincoln \x01", "\x02 Hirohito"]
++        s.homepage = "http://a.example.com/\x03"
++      end
++
++      fetcher.legacy_platform
++    end
++
++    @cmd.handle_options %w[-r -d]
++
++    use_ui @ui do
++      @cmd.execute
++    end
++
++    expected = <<-EOF
++
++*** REMOTE GEMS ***
++
++a (2)
++    Authors: Abraham Lincoln ., . Hirohito
++    Homepage: http://a.example.com/.
++
++    This is a lot of text. This is a lot of text. This is a lot of text.
++    This is a lot of text.
++
++pl (1)
++    Platform: i386-linux
++    Author: A User
++    Homepage: http://example.com
++
++    this is a summary
++    EOF
++
++    assert_equal expected, @ui.output
++    assert_equal '', @ui.error
++  end
++
++  def test_execute_details_truncates_summary
++    spec_fetcher do |fetcher|
++      fetcher.spec 'a', 2 do |s|
++        s.summary = 'This is a lot of text. ' * 10_000
++        s.authors = ["Abraham Lincoln \x01", "\x02 Hirohito"]
++        s.homepage = "http://a.example.com/\x03"
++      end
++
++      fetcher.legacy_platform
++    end
++
++    @cmd.handle_options %w[-r -d]
++
++    use_ui @ui do
++      @cmd.execute
++    end
++
++    expected = <<-EOF
++
++*** REMOTE GEMS ***
++
++a (2)
++    Authors: Abraham Lincoln ., . Hirohito
++    Homepage: http://a.example.com/.
++
++    Truncating the summary for a-2 to 100,000 characters:
++#{"    This is a lot of text. This is a lot of text. This is a lot of text.\n" * 1449}    This is a lot of te
++
++pl (1)
++    Platform: i386-linux
++    Author: A User
++    Homepage: http://example.com
++
++    this is a summary
++    EOF
++
++    assert_equal expected, @ui.output
++    assert_equal '', @ui.error
++  end
++
+   def test_execute_installed
+     @cmd.handle_options %w[-n a --installed]
+ 
+--- ruby2.3-2.3.3.orig/test/rubygems/test_gem_installer.rb
++++ ruby2.3-2.3.3/test/rubygems/test_gem_installer.rb
+@@ -1227,6 +1227,26 @@ gem 'other', version
+     end
+   end
+ 
++  def test_pre_install_checks_malicious_name
++    spec = util_spec '../malicious', '1'
++    def spec.full_name # so the spec is buildable
++      "malicious-1"
++    end
++    def spec.validate; end
++
++    util_build_gem spec
++
++    gem = File.join(@gemhome, 'cache', spec.file_name)
++
++    use_ui @ui do
++      @installer = Gem::Installer.at gem
++      e = assert_raises Gem::InstallError do
++        @installer.pre_install_checks
++      end
++      assert_equal '#<Gem::Specification name=../malicious version=1> has an invalid name', e.message
++    end
++  end
++
+   def test_shebang
+     util_make_exec @spec, "#!/usr/bin/ruby"
+ 
+--- ruby2.3-2.3.3.orig/test/rubygems/test_gem_package.rb
++++ ruby2.3-2.3.3/test/rubygems/test_gem_package.rb
+@@ -449,6 +449,31 @@ class TestGemPackage < Gem::Package::Tar
+                  File.read(extracted)
+   end
+ 
++  def test_extract_symlink_parent
++   skip 'symlink not supported' if Gem.win_platform?
++
++   package = Gem::Package.new @gem
++
++   tgz_io = util_tar_gz do |tar|
++     tar.mkdir       'lib',               0755
++     tar.add_symlink 'lib/link', '../..', 0644
++     tar.add_file    'lib/link/outside.txt', 0644 do |io| io.write 'hi' end
++   end
++
++   # Extract into a subdirectory of @destination; if this test fails it writes
++   # a file outside destination_subdir, but we want the file to remain inside
++   # @destination so it will be cleaned up.
++   destination_subdir = File.join @destination, 'subdir'
++   FileUtils.mkdir_p destination_subdir
++
++   e = assert_raises Gem::Package::PathError do
++     package.extract_tar_gz tgz_io, destination_subdir
++   end
++
++   assert_equal("installing into parent path lib/link/outside.txt of " +
++                 "#{destination_subdir} is not allowed", e.message)
++  end
++
+   def test_extract_tar_gz_directory
+     package = Gem::Package.new @gem
+ 
+@@ -560,6 +585,21 @@ class TestGemPackage < Gem::Package::Tar
+                  "#{@destination} is not allowed", e.message)
+   end
+ 
++  def test_install_location_suffix
++    package = Gem::Package.new @gem
++
++    filename = "../#{File.basename(@destination)}suffix.rb"
++
++    e = assert_raises Gem::Package::PathError do
++      package.install_location filename, @destination
++    end
++
++    parent = File.expand_path File.join @destination, filename
++
++    assert_equal("installing into parent path #{parent} of " +
++                 "#{@destination} is not allowed", e.message)
++  end
++
+   def test_load_spec
+     entry = StringIO.new Gem.gzip @spec.to_yaml
+     def entry.full_name() 'metadata.gz' end
+@@ -717,6 +757,32 @@ class TestGemPackage < Gem::Package::Tar
+     assert_match %r%nonexistent.gem$%,           e.message
+   end
+ 
++  def test_verify_duplicate_file
++    FileUtils.mkdir_p 'lib'
++    FileUtils.touch 'lib/code.rb'
++
++    build = Gem::Package.new @gem
++    build.spec = @spec
++    build.setup_signer
++    open @gem, 'wb' do |gem_io|
++      Gem::Package::TarWriter.new gem_io do |gem|
++        build.add_metadata gem
++        build.add_contents gem
++
++        gem.add_file_simple 'a.sig', 0444, 0
++        gem.add_file_simple 'a.sig', 0444, 0
++      end
++    end
++
++    package = Gem::Package.new @gem
++
++    e = assert_raises Gem::Security::Exception do
++      package.verify
++    end
++
++    assert_equal 'duplicate files in the package: ("a.sig")', e.message
++  end
++
+   def test_verify_security_policy
+     skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+ 
+@@ -774,7 +840,13 @@ class TestGemPackage < Gem::Package::Tar
+ 
+         # write bogus data.tar.gz to foil signature
+         bogus_data = Gem.gzip 'hello'
+-        gem.add_file_simple 'data.tar.gz', 0444, bogus_data.length do |io|
++        fake_signer = Class.new do
++          def digest_name; 'SHA512'; end
++          def digest_algorithm; Digest(:SHA512); end
++          def key; 'key'; end
++          def sign(*); 'fake_sig'; end
++        end
++        gem.add_file_signed 'data2.tar.gz', 0444, fake_signer.new do |io|
+           io.write bogus_data
+         end
+ 
+--- ruby2.3-2.3.3.orig/test/rubygems/test_gem_package_tar_header.rb
++++ ruby2.3-2.3.3/test/rubygems/test_gem_package_tar_header.rb
+@@ -143,5 +143,26 @@ group\000\000\000\000\000\000\000\000\00
+     assert_equal '012467', @tar_header.checksum
+   end
+ 
++  def test_from_bad_octal
++    test_cases = [
++      "00000006,44\000", # bogus character
++      "00000006789\000", # non-octal digit
++      "+0000001234\000", # positive sign
++      "-0000001000\000", # negative sign
++      "0x000123abc\000", # radix prefix
++    ]
++
++    test_cases.each do |val|
++      header_s = @tar_header.to_s
++      # overwrite the size field
++      header_s[124, 12] = val
++      io = TempIO.new header_s
++      assert_raises ArgumentError do
++        new_header = Gem::Package::TarHeader.from io
++      end
++      io.close! if io.respond_to? :close!
++    end
++  end
++
+ end
+ 
+--- ruby2.3-2.3.3.orig/test/rubygems/test_gem_remote_fetcher.rb
++++ ruby2.3-2.3.3/test/rubygems/test_gem_remote_fetcher.rb
+@@ -253,6 +253,21 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
+     dns.verify
+   end
+ 
++  def test_api_endpoint_ignores_trans_domain_values_that_end_with_original_in_path
++    uri = URI.parse "http://example.com/foo"
++    target = MiniTest::Mock.new
++    target.expect :target, "evil.com/a.example.com"
++
++    dns = MiniTest::Mock.new
++    dns.expect :getresource, target, [String, Object]
++
++    fetch = Gem::RemoteFetcher.new nil, dns
++    assert_equal URI.parse("http://example.com/foo"), fetch.api_endpoint(uri)
++
++    target.verify
++    dns.verify
++  end
++
+   def test_api_endpoint_timeout_warning
+     uri = URI.parse "http://gems.example.com/foo"
+ 
+--- ruby2.3-2.3.3.orig/test/rubygems/test_gem_server.rb
++++ ruby2.3-2.3.3/test/rubygems/test_gem_server.rb
+@@ -336,6 +336,171 @@ class TestGemServer < Gem::TestCase
+     assert_match 'z 9', @res.body
+   end
+ 
++
++  def test_xss_homepage_fix_289313
++    data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
++    dir = "#{@gemhome}2"
++
++    spec = util_spec 'xsshomepagegem', 1
++    spec.homepage = "javascript:confirm(document.domain)"
++
++    specs_dir = File.join dir, 'specifications'
++    FileUtils.mkdir_p specs_dir
++
++    open File.join(specs_dir, spec.spec_name), 'w' do |io|
++      io.write spec.to_ruby
++    end
++
++    server = Gem::Server.new dir, process_based_port, false
++
++    @req.parse data
++
++    server.root @req, @res
++
++    assert_equal 200, @res.status
++    assert_match 'xsshomepagegem 1', @res.body
++
++    # This verifies that the homepage for this spec is not displayed and is set to ".", because it's not a 
++    # valid HTTP/HTTPS URL and could be unsafe in an HTML context.  We would prefer to throw an exception here,
++    # but spec.homepage is currently free form and not currently required to be a URL, this behavior may be 
++    # validated in future versions of Gem::Specification.
++    #
++    # There are two variant we're checking here, one where rdoc is not present, and one where rdoc is present in the same regex:
++    #
++    # Variant #1 - rdoc not installed
++    #
++    #   <b>xsshomepagegem 1</b>
++    #
++    #
++    #  <span title="rdoc not installed">[rdoc]</span>
++    #
++    #
++    #
++    #  <a href="." title=".">[www]</a>
++    #
++    # Variant #2 - rdoc installed
++    #
++    #   <b>xsshomepagegem 1</b>
++    #
++    #
++    #  <a href="\/doc_root\/xsshomepagegem-1\/">\[rdoc\]<\/a>
++    #
++    #
++    #
++    #  <a href="." title=".">[www]</a>
++    regex_match = /xsshomepagegem 1<\/b>[\n\s]+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/xsshomepagegem-1\/">\[rdoc\]<\/a>)[\n\s]+<a href="\." title="\.">\[www\]<\/a>/
++    assert_match regex_match, @res.body
++  end
++
++  def test_invalid_homepage
++    data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
++    dir = "#{@gemhome}2"
++
++    spec = util_spec 'invalidhomepagegem', 1
++    spec.homepage = "notavalidhomepageurl"
++
++    specs_dir = File.join dir, 'specifications'
++    FileUtils.mkdir_p specs_dir
++
++    open File.join(specs_dir, spec.spec_name), 'w' do |io|
++      io.write spec.to_ruby
++    end
++
++    server = Gem::Server.new dir, process_based_port, false
++
++    @req.parse data
++
++    server.root @req, @res
++
++    assert_equal 200, @res.status
++    assert_match 'invalidhomepagegem 1', @res.body
++
++    # This verifies that the homepage for this spec is not displayed and is set to ".", because it's not a 
++    # valid HTTP/HTTPS URL and could be unsafe in an HTML context.  We would prefer to throw an exception here,
++    # but spec.homepage is currently free form and not currently required to be a URL, this behavior may be 
++    # validated in future versions of Gem::Specification.
++    #
++    # There are two variant we're checking here, one where rdoc is not present, and one where rdoc is present in the same regex:
++    #
++    # Variant #1 - rdoc not installed
++    #
++    #   <b>invalidhomepagegem 1</b>
++    #
++    #
++    #  <span title="rdoc not installed">[rdoc]</span>
++    #
++    #
++    #
++    #  <a href="." title=".">[www]</a>
++    #
++    # Variant #2 - rdoc installed
++    #
++    #   <b>invalidhomepagegem 1</b>
++    #
++    #
++    #  <a href="\/doc_root\/invalidhomepagegem-1\/">\[rdoc\]<\/a>
++    #
++    #
++    #
++    #  <a href="." title=".">[www]</a>
++    regex_match = /invalidhomepagegem 1<\/b>[\n\s]+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/invalidhomepagegem-1\/">\[rdoc\]<\/a>)[\n\s]+<a href="\." title="\.">\[www\]<\/a>/
++    assert_match regex_match, @res.body
++  end
++
++  def test_valid_homepage_http
++    data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
++    dir = "#{@gemhome}2"
++
++    spec = util_spec 'validhomepagegemhttp', 1
++    spec.homepage = "http://rubygems.org"
++
++    specs_dir = File.join dir, 'specifications'
++    FileUtils.mkdir_p specs_dir
++
++    open File.join(specs_dir, spec.spec_name), 'w' do |io|
++      io.write spec.to_ruby
++    end
++
++    server = Gem::Server.new dir, process_based_port, false
++
++    @req.parse data
++
++    server.root @req, @res
++
++    assert_equal 200, @res.status
++    assert_match 'validhomepagegemhttp 1', @res.body
++
++    regex_match = /validhomepagegemhttp 1<\/b>[\n\s]+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/validhomepagegemhttp-1\/">\[rdoc\]<\/a>)[\n\s]+<a href="http:\/\/rubygems\.org" title="http:\/\/rubygems\.org">\[www\]<\/a>/
++    assert_match regex_match, @res.body
++  end
++
++  def test_valid_homepage_https
++    data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
++    dir = "#{@gemhome}2"
++
++    spec = util_spec 'validhomepagegemhttps', 1
++    spec.homepage = "https://rubygems.org"
++
++    specs_dir = File.join dir, 'specifications'
++    FileUtils.mkdir_p specs_dir
++
++    open File.join(specs_dir, spec.spec_name), 'w' do |io|
++      io.write spec.to_ruby
++    end
++
++    server = Gem::Server.new dir, process_based_port, false
++
++    @req.parse data
++
++    server.root @req, @res
++
++    assert_equal 200, @res.status
++    assert_match 'validhomepagegemhttps 1', @res.body
++
++    regex_match = /validhomepagegemhttps 1<\/b>[\n\s]+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/validhomepagegemhttps-1\/">\[rdoc\]<\/a>)[\n\s]+<a href="https:\/\/rubygems\.org" title="https:\/\/rubygems\.org">\[www\]<\/a>/
++    assert_match regex_match, @res.body
++  end
++
+   def test_specs
+     data = StringIO.new "GET /specs.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
+     @req.parse data
+--- ruby2.3-2.3.3.orig/test/rubygems/test_gem_specification.rb
++++ ruby2.3-2.3.3/test/rubygems/test_gem_specification.rb
+@@ -2879,7 +2879,22 @@ duplicate dependency on c (>= 1.2.3, dev
+         @a1.validate
+       end
+ 
+-      assert_equal '"over at my cool site" is not a URI', e.message
++      assert_equal '"over at my cool site" is not a valid HTTP URI', e.message
++
++      @a1.homepage = 'ftp://rubygems.org'
++
++      e = assert_raises Gem::InvalidSpecificationException do
++        @a1.validate
++      end
++
++      assert_equal '"ftp://rubygems.org" is not a valid HTTP URI', e.message
++
++      @a1.homepage = 'http://rubygems.org'
++      assert_equal true, @a1.validate
++
++      @a1.homepage = 'https://rubygems.org'
++      assert_equal true, @a1.validate
++
+     end
+   end
+ 
+@@ -2974,7 +2989,37 @@ Did you mean 'Ruby'?
+       @a1.validate
+     end
+ 
+-    assert_equal 'invalid value for attribute name: ":json"', e.message
++    assert_equal 'invalid value for attribute name: ":json" must be a string', e.message
++
++    @a1.name = []
++    e = assert_raises Gem::InvalidSpecificationException do
++      @a1.validate
++    end
++    assert_equal "invalid value for attribute name: \"[]\" must be a string", e.message
++
++    @a1.name = ""
++    e = assert_raises Gem::InvalidSpecificationException do
++      @a1.validate
++    end
++    assert_equal "invalid value for attribute name: \"\" must include at least one letter", e.message
++
++    @a1.name = "12345"
++    e = assert_raises Gem::InvalidSpecificationException do
++      @a1.validate
++    end
++    assert_equal "invalid value for attribute name: \"12345\" must include at least one letter", e.message
++
++    @a1.name = "../malicious"
++    e = assert_raises Gem::InvalidSpecificationException do
++      @a1.validate
++    end
++    assert_equal "invalid value for attribute name: \"../malicious\" can only include letters, numbers, dashes, and underscores", e.message
++
++    @a1.name = "\ba\t"
++    e = assert_raises Gem::InvalidSpecificationException do
++      @a1.validate
++    end
++    assert_equal "invalid value for attribute name: \"\\ba\\t\" can only include letters, numbers, dashes, and underscores", e.message
+   end
+ 
+   def test_validate_non_nil
+--- ruby2.3-2.3.3.orig/test/rubygems/test_gem_text.rb
++++ ruby2.3-2.3.3/test/rubygems/test_gem_text.rb
+@@ -36,6 +36,10 @@ Without the wrapping, the text might not
+     assert_equal expected, format_text(text, 78)
+   end
+ 
++  def test_format_removes_nonprintable_characters
++    assert_equal "text with weird .. stuff .", format_text("text with weird \x1b\x02 stuff \x7f", 40)
++  end
++
+   def test_min3
+     assert_equal 1, min3(1, 1, 1)
+     assert_equal 1, min3(1, 1, 2)
+@@ -74,4 +78,11 @@ Without the wrapping, the text might not
+     assert_equal 7, levenshtein_distance("xxxxxxx", "ZenTest")
+     assert_equal 7, levenshtein_distance("zentest", "xxxxxxx")
+   end
++
++  def test_truncate_text
++    assert_equal "abc", truncate_text("abc", "desc")
++    assert_equal "Truncating desc to 2 characters:\nab", truncate_text("abc", "desc", 2)
++    s = "ab" * 500_001
++    assert_equal "Truncating desc to 1,000,000 characters:\n#{s[0, 1_000_000]}", truncate_text(s, "desc", 1_000_000)
++  end
+ end
+--- ruby2.3-2.3.3.orig/test/socket/test_unix.rb
++++ ruby2.3-2.3.3/test/socket/test_unix.rb
+@@ -285,6 +285,16 @@ class TestSocket_UNIXSocket < Test::Unit
+     File.unlink path if path && File.socket?(path)
+   end
+ 
++  def test_open_nul_byte
++    tmpfile = Tempfile.new("s")
++    path = tmpfile.path
++    tmpfile.close(true)
++    assert_raise(ArgumentError) {UNIXServer.open(path+"\0")}
++    assert_raise(ArgumentError) {UNIXSocket.open(path+"\0")}
++  ensure
++    File.unlink path if path && File.socket?(path)
++  end
++
+   def test_addr
+     bound_unix_socket(UNIXServer) {|serv, path|
+       UNIXSocket.open(path) {|c|
+--- ruby2.3-2.3.3.orig/test/test_tempfile.rb
++++ ruby2.3-2.3.3/test/test_tempfile.rb
+@@ -345,5 +345,31 @@ puts Tempfile.new('foo').path
+     f.close if f && !f.closed?
+     File.unlink path if path
+   end
+-end
+ 
++  TRAVERSAL_PATH = Array.new(Dir.pwd.split('/').count, '..').join('/') + Dir.pwd + '/'
++
++  def test_open_traversal_dir
++    expect = Dir.glob(TRAVERSAL_PATH + '*').count
++    t = Tempfile.open([TRAVERSAL_PATH, 'foo'])
++    actual = Dir.glob(TRAVERSAL_PATH + '*').count
++    assert_equal expect, actual
++  ensure
++    t.close!
++  end
++
++  def test_new_traversal_dir
++    expect = Dir.glob(TRAVERSAL_PATH + '*').count
++    t = Tempfile.new(TRAVERSAL_PATH + 'foo')
++    actual = Dir.glob(TRAVERSAL_PATH + '*').count
++    assert_equal expect, actual
++  ensure
++    t.close!
++  end
++
++  def test_create_traversal_dir
++    expect = Dir.glob(TRAVERSAL_PATH + '*').count
++    Tempfile.create(TRAVERSAL_PATH + 'foo')
++    actual = Dir.glob(TRAVERSAL_PATH + '*').count
++    assert_equal expect, actual
++  end
++end
+--- ruby2.3-2.3.3.orig/test/test_tmpdir.rb
++++ ruby2.3-2.3.3/test/test_tmpdir.rb
+@@ -56,4 +56,21 @@ class TestTmpdir < Test::Unit::TestCase
+       assert_kind_of(String, d)
+     }
+   end
++
++  TRAVERSAL_PATH = Array.new(Dir.pwd.split('/').count, '..').join('/') + Dir.pwd + '/'
++  TRAVERSAL_PATH.delete!(':') if /mswin|mingw/ =~ RUBY_PLATFORM
++
++  def test_mktmpdir_traversal
++    expect = Dir.glob(TRAVERSAL_PATH + '*').count
++    Dir.mktmpdir(TRAVERSAL_PATH + 'foo')
++    actual = Dir.glob(TRAVERSAL_PATH + '*').count
++    assert_equal expect, actual
++  end
++
++  def test_mktmpdir_traversal_array
++    expect = Dir.glob(TRAVERSAL_PATH + '*').count
++    Dir.mktmpdir([TRAVERSAL_PATH, 'foo'])
++    actual = Dir.glob(TRAVERSAL_PATH + '*').count
++    assert_equal expect, actual
++  end
+ end
+--- ruby2.3-2.3.3.orig/test/webrick/test_filehandler.rb
++++ ruby2.3-2.3.3/test/webrick/test_filehandler.rb
+@@ -15,16 +15,10 @@ class WEBrick::TestFileHandler < Test::U
+   end
+ 
+   def get_res_body(res)
+-    body = res.body
+-    if defined? body.read
+-      begin
+-        body.read
+-      ensure
+-        body.close
+-      end
+-    else
+-      body
+-    end
++    sio = StringIO.new
++    sio.binmode
++    res.send_body(sio)
++    sio.string
+   end
+ 
+   def make_range_request(range_spec)
+@@ -76,6 +70,23 @@ class WEBrick::TestFileHandler < Test::U
+ 
+     res = make_range_response(filename, "bytes=0-0, -2")
+     assert_match(%r{^multipart/byteranges}, res["content-type"])
++    body = get_res_body(res)
++    boundary = /; boundary=(.+)/.match(res['content-type'])[1]
++    off = filesize - 2
++    last = filesize - 1
++
++    exp = "--#{boundary}\r\n" \
++          "Content-Type: text/plain\r\n" \
++          "Content-Range: bytes 0-0/#{filesize}\r\n" \
++          "\r\n" \
++          "#{IO.read(__FILE__, 1)}\r\n" \
++          "--#{boundary}\r\n" \
++          "Content-Type: text/plain\r\n" \
++          "Content-Range: bytes #{off}-#{last}/#{filesize}\r\n" \
++          "\r\n" \
++          "#{IO.read(__FILE__, 2, off)}\r\n" \
++          "--#{boundary}--\r\n"
++    assert_equal exp, body
+   end
+ 
+   def test_filehandler
+--- ruby2.3-2.3.3.orig/test/webrick/test_httpauth.rb
++++ ruby2.3-2.3.3/test/webrick/test_httpauth.rb
+@@ -4,6 +4,7 @@ require "net/http"
+ require "tempfile"
+ require "webrick"
+ require "webrick/httpauth/basicauth"
++require "stringio"
+ require_relative "utils"
+ 
+ class TestWEBrickHTTPAuth < Test::Unit::TestCase
+@@ -98,6 +99,42 @@ class TestWEBrickHTTPAuth < Test::Unit::
+     }
+   end
+ 
++  def test_bad_username_with_control_characters
++    log_tester = lambda {|log, access_log|
++      assert_equal(2, log.length)
++      assert_match(/ERROR Basic WEBrick's realm: foo\\ebar: the user is not allowed./, log[0])
++      assert_match(/ERROR WEBrick::HTTPStatus::Unauthorized/, log[1])
++    }
++    TestWEBrick.start_httpserver({}, log_tester) {|server, addr, port, log|
++      realm = "WEBrick's realm"
++      path = "/basic_auth"
++
++      Tempfile.create("test_webrick_auth") {|tmpfile|
++        tmpfile.close
++        tmp_pass = WEBrick::HTTPAuth::Htpasswd.new(tmpfile.path)
++        tmp_pass.set_passwd(realm, "webrick", "supersecretpassword")
++        tmp_pass.set_passwd(realm, "foo", "supersecretpassword")
++        tmp_pass.flush
++
++        htpasswd = WEBrick::HTTPAuth::Htpasswd.new(tmpfile.path)
++        users = []
++        htpasswd.each{|user, pass| users << user }
++        server.mount_proc(path){|req, res|
++          auth = WEBrick::HTTPAuth::BasicAuth.new(
++            :Realm => realm, :UserDB => htpasswd,
++            :Logger => server.logger
++          )
++          auth.authenticate(req, res)
++          res.body = "hoge"
++        }
++        http = Net::HTTP.new(addr, port)
++        g = Net::HTTP::Get.new(path)
++        g.basic_auth("foo\ebar", "passwd")
++        http.request(g){|res| assert_not_equal("hoge", res.body, log.call) }
++      }
++    }
++  end
++
+   DIGESTRES_ = /
+     ([a-zA-Z\-]+)
+       [ \t]*(?:\r\n[ \t]*)*
+@@ -175,12 +212,97 @@ class TestWEBrickHTTPAuth < Test::Unit::
+     }
+   end
+ 
++  def test_digest_auth_int
++    log_tester = lambda {|log, access_log|
++      log.reject! {|line| /\A\s*\z/ =~ line }
++      pats = [
++        /ERROR Digest wb auth-int realm: no credentials in the request\./,
++        /ERROR WEBrick::HTTPStatus::Unauthorized/,
++        /ERROR Digest wb auth-int realm: foo: digest unmatch\./
++      ]
++      pats.each {|pat|
++        assert(!log.grep(pat).empty?, "webrick log doesn't have expected error: #{pat.inspect}")
++        log.reject! {|line| pat =~ line }
++      }
++      assert_equal([], log)
++   }
++    TestWEBrick.start_httpserver({}, log_tester) {|server, addr, port, log|
++      realm = "wb auth-int realm"
++      path = "/digest_auth_int"
++
++      Tempfile.create("test_webrick_auth_int") {|tmpfile|
++        tmpfile.close
++        tmp_pass = WEBrick::HTTPAuth::Htdigest.new(tmpfile.path)
++        tmp_pass.set_passwd(realm, "foo", "Hunter2")
++        tmp_pass.flush
++
++        htdigest = WEBrick::HTTPAuth::Htdigest.new(tmpfile.path)
++        users = []
++        htdigest.each{|user, pass| users << user }
++        assert_equal %w(foo), users
++
++        auth = WEBrick::HTTPAuth::DigestAuth.new(
++          :Realm => realm, :UserDB => htdigest,
++          :Algorithm => 'MD5',
++          :Logger => server.logger,
++          :Qop => %w(auth-int),
++        )
++        server.mount_proc(path){|req, res|
++          auth.authenticate(req, res)
++          res.body = "bbb"
++        }
++        Net::HTTP.start(addr, port) do |http|
++          post = Net::HTTP::Post.new(path)
++          params = {}
++          data = 'hello=world'
++          body = StringIO.new(data)
++          post.content_length = data.bytesize
++          post['Content-Type'] = 'application/x-www-form-urlencoded'
++          post.body_stream = body
++
++          http.request(post) do |res|
++            assert_equal('401', res.code, log.call)
++            res["www-authenticate"].scan(DIGESTRES_) do |key, quoted, token|
++              params[key.downcase] = token || quoted.delete('\\')
++            end
++             params['uri'] = "http://#{addr}:#{port}#{path}"
++          end
++
++          body.rewind
++          cred = credentials_for_request('foo', 'Hunter3', params, body)
++          post['Authorization'] = cred
++          post.body_stream = body
++          http.request(post){|res|
++            assert_equal('401', res.code, log.call)
++            assert_not_equal("bbb", res.body, log.call)
++          }
++
++          body.rewind
++          cred = credentials_for_request('foo', 'Hunter2', params, body)
++          post['Authorization'] = cred
++          post.body_stream = body
++          http.request(post){|res| assert_equal("bbb", res.body, log.call)}
++        end
++      }
++    }
++  end
++
+   private
+-  def credentials_for_request(user, password, params)
++  def credentials_for_request(user, password, params, body = nil)
+     cnonce = "hoge"
+     nonce_count = 1
+     ha1 = "#{user}:#{params['realm']}:#{password}"
+-    ha2 = "GET:#{params['uri']}"
++    if body
++      dig = Digest::MD5.new
++      while buf = body.read(16384)
++        dig.update(buf)
++      end
++      body.rewind
++      ha2 = "POST:#{params['uri']}:#{dig.hexdigest}"
++    else
++      ha2 = "GET:#{params['uri']}"
++    end
++
+     request_digest =
+       "#{Digest::MD5.hexdigest(ha1)}:" \
+       "#{params['nonce']}:#{'%08x' % nonce_count}:#{cnonce}:#{params['qop']}:" \
+--- ruby2.3-2.3.3.orig/test/webrick/test_httpresponse.rb
++++ ruby2.3-2.3.3/test/webrick/test_httpresponse.rb
+@@ -2,6 +2,7 @@
+ require "webrick"
+ require "minitest/autorun"
+ require "stringio"
++require "net/http"
+ 
+ module WEBrick
+   class TestHTTPResponse < MiniTest::Unit::TestCase
+@@ -28,6 +29,27 @@ module WEBrick
+       @res.keep_alive  = true
+     end
+ 
++    def test_prevent_response_splitting_headers
++      res['X-header'] = "malicious\r\nCookie: hack"
++      io = StringIO.new
++      res.send_response io
++      io.rewind
++      res = Net::HTTPResponse.read_new(Net::BufferedIO.new(io))
++      assert_equal '500', res.code
++      refute_match 'hack', io.string
++    end
++
++    def test_prevent_response_splitting_cookie_headers
++      user_input = "malicious\r\nCookie: hack"
++      res.cookies << WEBrick::Cookie.new('author', user_input)
++      io = StringIO.new
++      res.send_response io
++      io.rewind
++      res = Net::HTTPResponse.read_new(Net::BufferedIO.new(io))
++      assert_equal '500', res.code
++      refute_match 'hack', io.string
++    end
++
+     def test_304_does_not_log_warning
+       res.status      = 304
+       res.setup_header
+@@ -146,5 +168,38 @@ module WEBrick
+       }
+       assert_equal 0, logger.messages.length
+     end
++
++    def test_send_body_proc
++      @res.body = Proc.new { |out| out.write('hello') }
++      IO.pipe do |r, w|
++        @res.send_body(w)
++        w.close
++        r.binmode
++        assert_equal 'hello', r.read
++      end
++      assert_equal 0, logger.messages.length
++    end
++
++    def test_send_body_proc_chunked
++      @res.body = Proc.new { |out| out.write('hello') }
++      @res.chunked = true
++      IO.pipe do |r, w|
++        @res.send_body(w)
++        w.close
++        r.binmode
++        assert_equal "5\r\nhello\r\n0\r\n\r\n", r.read
++      end
++      assert_equal 0, logger.messages.length
++    end
++
++    def test_set_error
++      status = 400
++      message = 'missing attribute'
++      @res.status = status
++      error = WEBrick::HTTPStatus[status].new(message)
++      body = @res.set_error(error)
++      assert_match(/#{@res.reason_phrase}/, body)
++      assert_match(/#{message}/, body)
++    end
+   end
+ end
+--- ruby2.3-2.3.3.orig/test/webrick/test_httpserver.rb
++++ ruby2.3-2.3.3/test/webrick/test_httpserver.rb
+@@ -410,4 +410,96 @@ class TestWEBrickHTTPServer < Test::Unit
+     }
+     assert_equal(0, requested, "Server responded to #{requested} requests after shutdown")
+   end
++
++  def test_cntrl_in_path
++    log_ary = []
++    access_log_ary = []
++    config = {
++      :Port => 0,
++      :BindAddress => '127.0.0.1',
++      :Logger => WEBrick::Log.new(log_ary, WEBrick::BasicLog::WARN),
++      :AccessLog => [[access_log_ary, '']],
++    }
++    s = WEBrick::HTTPServer.new(config)
++    s.mount('/foo', WEBrick::HTTPServlet::FileHandler, __FILE__)
++    th = Thread.new { s.start }
++    addr = s.listeners[0].addr
++
++    http = Net::HTTP.new(addr[3], addr[1])
++    req = Net::HTTP::Get.new('/notexist%0a/foo')
++    http.request(req) { |res| assert_equal('404', res.code) }
++    exp = %Q(ERROR `/notexist\\n/foo' not found.\n)
++    assert_equal 1, log_ary.size
++    assert log_ary[0].include?(exp)
++  ensure
++    s&.shutdown
++    th&.join
++  end
++
++  def test_gigantic_request_header
++    log_tester = lambda {|log, access_log|
++      assert_equal 1, log.size
++      assert log[0].include?('ERROR headers too large')
++    }
++    TestWEBrick.start_httpserver({}, log_tester){|server, addr, port, log|
++      server.mount('/', WEBrick::HTTPServlet::FileHandler, __FILE__)
++      TCPSocket.open(addr, port) do |c|
++        c.write("GET / HTTP/1.0\r\n")
++        junk = -"X-Junk: #{' ' * 1024}\r\n"
++        assert_raise(Errno::ECONNRESET, Errno::EPIPE) do
++          loop { c.write(junk) }
++        end
++      end
++    }
++  end
++
++  def test_eof_in_chunk
++    log_tester = lambda do |log, access_log|
++      assert_equal 1, log.size
++      assert log[0].include?('ERROR bad chunk data size')
++    end
++    TestWEBrick.start_httpserver({}, log_tester){|server, addr, port, log|
++      server.mount_proc('/', ->(req, res) { res.body = req.body })
++      TCPSocket.open(addr, port) do |c|
++        c.write("POST / HTTP/1.1\r\nHost: example.com\r\n" \
++                "Transfer-Encoding: chunked\r\n\r\n5\r\na")
++        c.shutdown(Socket::SHUT_WR) # trigger EOF in server
++        res = c.read
++        assert_match %r{\AHTTP/1\.1 400 }, res
++      end
++    }
++  end
++
++  def test_big_chunks
++    nr_out = 3
++    buf = 'big' # 3 bytes is bigger than 2!
++    config = { :InputBufferSize => 2 }.freeze
++    total = 0
++    all = ''
++    TestWEBrick.start_httpserver(config){|server, addr, port, log|
++      server.mount_proc('/', ->(req, res) {
++        err = []
++        ret = req.body do |chunk|
++          n = chunk.bytesize
++          n > config[:InputBufferSize] and err << "#{n} > :InputBufferSize"
++          total += n
++          all << chunk
++        end
++        ret.nil? or err << 'req.body should return nil'
++        (buf * nr_out) == all or err << 'input body does not match expected'
++        res.header['connection'] = 'close'
++        res.body = err.join("\n")
++      })
++      TCPSocket.open(addr, port) do |c|
++        c.write("POST / HTTP/1.1\r\nHost: example.com\r\n" \
++                "Transfer-Encoding: chunked\r\n\r\n")
++        chunk = "#{buf.bytesize.to_s(16)}\r\n#{buf}\r\n"
++        nr_out.times { c.write(chunk) }
++        c.write("0\r\n\r\n")
++        head, body = c.read.split("\r\n\r\n")
++        assert_match %r{\AHTTP/1\.1 200 OK}, head
++        assert_nil body
++      end
++    }
++  end
+ end
+--- ruby2.3-2.3.3.orig/thread_pthread.c
++++ ruby2.3-2.3.3/thread_pthread.c
+@@ -1313,17 +1313,21 @@ void
+ rb_thread_wakeup_timer_thread(void)
+ {
+     /* must be safe inside sighandler, so no mutex */
+-    ATOMIC_INC(timer_thread_pipe.writing);
+-    rb_thread_wakeup_timer_thread_fd(&timer_thread_pipe.normal[1]);
+-    ATOMIC_DEC(timer_thread_pipe.writing);
++    if (timer_thread_pipe.owner_process == getpid()) {
++	ATOMIC_INC(timer_thread_pipe.writing);
++	rb_thread_wakeup_timer_thread_fd(&timer_thread_pipe.normal[1]);
++	ATOMIC_DEC(timer_thread_pipe.writing);
++    }
+ }
+ 
+ static void
+ rb_thread_wakeup_timer_thread_low(void)
+ {
+-    ATOMIC_INC(timer_thread_pipe.writing);
+-    rb_thread_wakeup_timer_thread_fd(&timer_thread_pipe.low[1]);
+-    ATOMIC_DEC(timer_thread_pipe.writing);
++    if (timer_thread_pipe.owner_process == getpid()) {
++	ATOMIC_INC(timer_thread_pipe.writing);
++	rb_thread_wakeup_timer_thread_fd(&timer_thread_pipe.low[1]);
++	ATOMIC_DEC(timer_thread_pipe.writing);
++    }
+ }
+ 
+ /* VM-dependent API is not available for this function */

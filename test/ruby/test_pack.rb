@@ -548,9 +548,6 @@ class TestPack < Test::Unit::TestCase
     assert_equal([1, 2], "\x01\x00\x00\x02".unpack("C@3C"))
     assert_equal([nil], "\x00".unpack("@1C")) # is it OK?
     assert_raise(ArgumentError) { "\x00".unpack("@2C") }
-
-    pos = (1 << [nil].pack("p").bytesize * 8) - 100 # -100
-    assert_raise(RangeError) {"0123456789".unpack("@#{pos}C10")}
   end
 
   def test_pack_unpack_percent
@@ -816,28 +813,5 @@ EXPECTED
 
       assert_raise_with_message(ArgumentError, /too few/) {ary.pack("AA")}
     end;
-  end
-
-  def test_unpack_with_block
-    ret = []; "ABCD".unpack("CCCC") {|v| ret << v }
-    assert_equal [65, 66, 67, 68], ret
-    ret = []; "A".unpack("B*") {|v| ret << v }
-    assert_equal ["01000001"], ret
-  end
-
-  def test_pack_infection
-    tainted_array_string = ["123456"]
-    tainted_array_string.first.taint
-    ['a', 'A', 'Z', 'B', 'b', 'H', 'h', 'u', 'M', 'm', 'P', 'p'].each do |f|
-      assert_predicate(tainted_array_string.pack(f), :tainted?)
-    end
-  end
-
-  def test_unpack_infection
-    tainted_string = "123456"
-    tainted_string.taint
-    ['a', 'A', 'Z', 'B', 'b', 'H', 'h', 'u', 'M', 'm'].each do |f|
-      assert_predicate(tainted_string.unpack(f).first, :tainted?)
-    end
   end
 end

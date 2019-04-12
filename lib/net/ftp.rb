@@ -622,10 +622,10 @@ module Net
       if localfile
         if @resume
           rest_offset = File.size?(localfile)
-          f = File.open(localfile, "a")
+          f = open(localfile, "a")
         else
           rest_offset = nil
-          f = File.open(localfile, "w")
+          f = open(localfile, "w")
         end
       elsif !block_given?
         result = String.new
@@ -655,7 +655,7 @@ module Net
       f = nil
       result = nil
       if localfile
-        f = File.open(localfile, "w")
+        f = open(localfile, "w")
       elsif !block_given?
         result = String.new
       end
@@ -701,7 +701,7 @@ module Net
       else
         rest_offset = nil
       end
-      f = File.open(localfile)
+      f = open(localfile)
       begin
         f.binmode
         if rest_offset
@@ -720,7 +720,7 @@ module Net
     # passing in the transmitted data one line at a time.
     #
     def puttextfile(localfile, remotefile = File.basename(localfile), &block) # :yield: line
-      f = File.open(localfile)
+      f = open(localfile)
       begin
         storlines("STOR #{remotefile}", f, &block)
       ensure

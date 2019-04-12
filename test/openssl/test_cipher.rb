@@ -81,7 +81,6 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
 
   def test_empty_data
     @c1.encrypt
-    @c1.random_key
     assert_raise(ArgumentError){ @c1.update("") }
   end
 
@@ -130,10 +129,12 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
       }
     end
 
-    def test_update_raise_if_key_not_set
-      assert_raise(OpenSSL::Cipher::CipherError) do
-        # it caused OpenSSL SEGV by uninitialized key
-        OpenSSL::Cipher::AES128.new("ECB").update "." * 17
+    def test_AES_crush
+      500.times do
+        assert_nothing_raised("[Bug #2768]") do
+          # it caused OpenSSL SEGV by uninitialized key
+          OpenSSL::Cipher::AES128.new("ECB").update "." * 17
+        end
       end
     end
   end
@@ -236,24 +237,6 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
     end
 
   end
-
-  def test_aes_gcm_key_iv_order_issue
-    pt = "[ruby/openssl#49]"
-    cipher = OpenSSL::Cipher.new("aes-128-gcm").encrypt
-    cipher.key = "x" * 16
-    cipher.iv = "a" * 12
-    ct1 = cipher.update(pt) << cipher.final
-    tag1 = cipher.auth_tag
-
-    cipher = OpenSSL::Cipher.new("aes-128-gcm").encrypt
-    cipher.iv = "a" * 12
-    cipher.key = "x" * 16
-    ct2 = cipher.update(pt) << cipher.final
-    tag2 = cipher.auth_tag
-
-    assert_equal ct1, ct2
-    assert_equal tag1, tag2
-  end if has_cipher?("aes-128-gcm")
 
   private
 
