@@ -1,3 +1,11 @@
+ruby2.5 (2.5.5-2) unstable; urgency=medium
+
+  * debian/tests/excludes/: fix exclusion of Rinda tests that depend on
+    network availability, by moving the existing excludes files to the correct
+    location. (Closes: #927122)
+
+ -- Antonio Terceiro <terceiro@debian.org>  Mon, 13 May 2019 10:55:06 -0300
+
 ruby2.5 (2.5.5-1) unstable; urgency=medium
 
   * New upstream version 2.5.5. Includes a series of bug fixes, most notably
