@@ -4,11 +4,11 @@ set -e
 
 rc=0
 while read gem version repository; do
-  if ruby2.6 -e "gem '${gem}'" 2>/dev/null; then
-    if ruby2.6 -e "gem '${gem}', '>= ${version}'" 2>/dev/null; then
+  if ruby2.7 -e "gem '${gem}'" 2>/dev/null; then
+    if ruby2.7 -e "gem '${gem}', '>= ${version}'" 2>/dev/null; then
       echo "I: ${gem} (>= ${version}) OK"
     else
-      found=$(ruby2.6 -S gem list --exact "${gem}" | grep "^${gem}\s")
+      found=$(ruby2.7 -S gem list --exact "${gem}" | grep "^${gem}\s")
       echo "W: ${found} found, but not new enough (expected >= ${version})."
     fi
   else
