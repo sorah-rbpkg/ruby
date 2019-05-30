@@ -4,3 +4,4 @@
 0004-Make-gemspecs-reproducible.patch
 0005-exclude-several-tests-unstable-in-Docker.patch
 0006-Port-to-kfreebsd-amd64.patch
+0007-install_default_bundler-didn-t-respect-format_execut.patch

@@ -13,10 +13,10 @@ build unreproducible
  5 files changed, 5 insertions(+), 1 deletion(-)
 
 diff --git a/ext/bigdecimal/bigdecimal.gemspec b/ext/bigdecimal/bigdecimal.gemspec
-index 68d8f3c..c73fefe 100644
+index c7a27fe..5fd22c9 100644
 --- a/ext/bigdecimal/bigdecimal.gemspec
 +++ b/ext/bigdecimal/bigdecimal.gemspec
-@@ -6,6 +6,7 @@
+@@ -6,6 +6,7 @@ Gem::Specification.new do |s|
    s.name          = "bigdecimal"
    s.version       = bigdecimal_version
    s.authors       = ["Kenta Murata", "Zachary Scott", "Shigeo Kobayashi"]
@@ -37,10 +37,10 @@ index b29f4ec..36ed213 100644
    spec.email         = ["aaron@tenderlovemaking.com", "hsbt@ruby-lang.org"]
  
 diff --git a/ext/io/console/io-console.gemspec b/ext/io/console/io-console.gemspec
-index 02da13f..353b559 100644
+index 60aeabd..712d2c8 100644
 --- a/ext/io/console/io-console.gemspec
 +++ b/ext/io/console/io-console.gemspec
-@@ -5,7 +5,7 @@
+@@ -5,7 +5,7 @@ date = %w$Date::                           $[1]
  Gem::Specification.new do |s|
    s.name = "io-console"
    s.version = _VERSION
@@ -53,7 +53,7 @@ diff --git a/lib/ipaddr.gemspec b/lib/ipaddr.gemspec
 index 2de9ef4..9c27ab8 100644
 --- a/lib/ipaddr.gemspec
 +++ b/lib/ipaddr.gemspec
-@@ -6,6 +6,7 @@
+@@ -6,6 +6,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
  Gem::Specification.new do |spec|
    spec.name          = "ipaddr"
    spec.version       = "1.2.2"
@@ -65,7 +65,7 @@ diff --git a/lib/rdoc/rdoc.gemspec b/lib/rdoc/rdoc.gemspec
 index 9c6fbe1..de748ed 100644
 --- a/lib/rdoc/rdoc.gemspec
 +++ b/lib/rdoc/rdoc.gemspec
-@@ -7,6 +7,7 @@
+@@ -7,6 +7,7 @@ end
  
  Gem::Specification.new do |s|
    s.name = "rdoc"

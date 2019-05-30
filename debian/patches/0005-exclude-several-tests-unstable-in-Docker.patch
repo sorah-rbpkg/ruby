@@ -10,7 +10,7 @@ diff --git a/test/dtrace/helper.rb b/test/dtrace/helper.rb
 index 023d116..500da5d 100644
 --- a/test/dtrace/helper.rb
 +++ b/test/dtrace/helper.rb
-@@ -53,6 +53,7 @@
+@@ -53,6 +53,7 @@ else
    cmd = false
  end
  ok &= system(*cmd, err: IO::NULL, out: IO::NULL) if cmd

@@ -26,7 +26,7 @@ index 5ad44cd..87ddbc9 100644
      defined(__APPLE__) || \
      defined(_WIN32) || \
 diff --git a/ext/socket/raddrinfo.c b/ext/socket/raddrinfo.c
-index 4c6a9b5..a432553 100644
+index a6abad6..03fb923 100644
 --- a/ext/socket/raddrinfo.c
 +++ b/ext/socket/raddrinfo.c
 @@ -1670,10 +1670,21 @@ addrinfo_mload(VALUE self, VALUE ary)
@@ -77,7 +77,7 @@ diff --git a/test/fiddle/test_handle.rb b/test/fiddle/test_handle.rb
 index c0fac39..3187800 100644
 --- a/test/fiddle/test_handle.rb
 +++ b/test/fiddle/test_handle.rb
-@@ -173,6 +173,7 @@ def test_DEFAULT
+@@ -173,6 +173,7 @@ module Fiddle
      end unless /mswin|mingw/ =~ RUBY_PLATFORM
  
      def test_dlerror
@@ -85,7 +85,7 @@ index c0fac39..3187800 100644
        # FreeBSD (at least 7.2 to 7.2) calls nsdispatch(3) when it calls
        # getaddrinfo(3). And nsdispatch(3) doesn't call dlerror(3) even if
        # it calls _nss_cache_cycle_prevention_function with dlsym(3).
-@@ -181,7 +182,7 @@ def test_dlerror
+@@ -181,7 +182,7 @@ module Fiddle
        require 'socket'
        Socket.gethostbyname("localhost")
        Fiddle.dlopen("/lib/libc.so.7").sym('strcpy')
@@ -98,7 +98,7 @@ diff --git a/test/socket/test_socket.rb b/test/socket/test_socket.rb
 index e07c1d6..88614cb 100644
 --- a/test/socket/test_socket.rb
 +++ b/test/socket/test_socket.rb
-@@ -521,7 +521,7 @@ def test_timestampns
+@@ -521,7 +521,7 @@ class TestSocket < Test::Unit::TestCase
    end
  
    def test_bintime

@@ -1,0 +1,49 @@
+From: Sorah Fukumori <sorah@cookpad.com>
+Date: Fri, 31 May 2019 02:36:41 +0900
+Subject: install_default_bundler didn't respect format_executable
+
+---
+ lib/rubygems/commands/setup_command.rb           | 9 +++++++--
+ test/rubygems/test_gem_commands_setup_command.rb | 2 +-
+ 2 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/lib/rubygems/commands/setup_command.rb b/lib/rubygems/commands/setup_command.rb
+index f5e5236..5f36289 100644
+--- a/lib/rubygems/commands/setup_command.rb
++++ b/lib/rubygems/commands/setup_command.rb
+@@ -421,7 +421,12 @@ By default, this RubyGems will install gem as:
+     bundler_bin_dir = File.join(options[:destdir], bundler_bin_dir) unless Gem.win_platform?
+     mkdir_p bundler_bin_dir, :mode => 0755
+     bundler_spec.executables.each do |e|
+-      cp File.join("bundler", bundler_spec.bindir, e), File.join(bundler_bin_dir, e)
++    executable_formatted = if options[:format_executable]
++                             Gem.default_exec_format % e
++                           else
++                             e
++                           end
++      cp File.join("bundler", bundler_spec.bindir, e), File.join(bundler_bin_dir, executable_formatted)
+     end
+ 
+     require 'rubygems/installer'
+@@ -429,7 +434,7 @@ By default, this RubyGems will install gem as:
+     Dir.chdir("bundler") do
+       built_gem = Gem::Package.build(bundler_spec)
+       begin
+-        installer = Gem::Installer.at(built_gem, env_shebang: options[:env_shebang], install_as_default: true, bin_dir: bin_dir, wrappers: true)
++        installer = Gem::Installer.at(built_gem, env_shebang: options[:env_shebang], format_executable: options[:format_executable], install_as_default: true, bin_dir: bin_dir, wrappers: true)
+         installer.install
+       ensure
+         FileUtils.rm_f built_gem
+diff --git a/test/rubygems/test_gem_commands_setup_command.rb b/test/rubygems/test_gem_commands_setup_command.rb
+index 3f9887e..4b16fc5 100644
+--- a/test/rubygems/test_gem_commands_setup_command.rb
++++ b/test/rubygems/test_gem_commands_setup_command.rb
+@@ -189,7 +189,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
+         assert_path_exists File.join(bin_dir, "#{e}.bat")
+       end
+ 
+-      assert_path_exists File.join bin_dir, e
++      assert_path_exists File.join bin_dir, Gem.default_exec_format % e
+     end
+ 
+     default_dir = Gem::Specification.default_specifications_dir
