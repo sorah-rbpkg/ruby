@@ -12,12 +12,12 @@
 static const char prelude_name0[] = "<internal:prelude>";
 static const struct {
     char L0[491]; /* 1..130 */
-    char L130[351]; /* 131..163 */
+    char L130[442]; /* 131..219 */
 } prelude_code0 = {
 #line 1 "prelude.rb"
 "class << Thread\n"
 "\n"/* call-seq: */
-"\n"/*    Thread.exclusive { block }   => obj */
+"\n"/*    Thread.exclusive { block }   -> obj */
 "\n"/*  */
 "\n"/* Wraps the block in a single, VM-global Mutex.synchronize, returning the */
 "\n"/* value of the block. A thread executing inside the exclusive section will */
@@ -152,8 +152,64 @@ static const struct {
 "end\n"
 "\n"
 "class TracePoint\n"
-"  def enable target: nil, target_line: nil, &blk\n"
-"    self.__enable target, target_line, &blk\n"
+"\n"/* call-seq: */
+"\n"/*    trace.enable(target: nil, target_line: nil)    -> true or false */
+"\n"/*    trace.enable(target: nil, target_line: nil) { block }  -> obj */
+"\n"/*  */
+"\n"/* Activates the trace. */
+"\n"/*  */
+"\n"/* Returns +true+ if trace was enabled. */
+"\n"/* Returns +false+ if trace was disabled. */
+"\n"/*  */
+"\n"/*   trace.enabled?  #=> false */
+"\n"/*   trace.enable    #=> false (previous state) */
+"\n"/*                   #   trace is enabled */
+"\n"/*   trace.enabled?  #=> true */
+"\n"/*   trace.enable    #=> true (previous state) */
+"\n"/*                   #   trace is still enabled */
+"\n"/*  */
+"\n"/* If a block is given, the trace will only be enabled within the scope of the */
+"\n"/* block. */
+"\n"/*  */
+"\n"/*    trace.enabled? */
+"\n"/*    #=> false */
+"\n"/*  */
+"\n"/*    trace.enable do */
+"\n"/*      trace.enabled? */
+"\n"/*      # only enabled for this block */
+"\n"/*    end */
+"\n"/*  */
+"\n"/*    trace.enabled? */
+"\n"/*    #=> false */
+"\n"/*  */
+"\n"/* <i>target</i> and <i>target_line</i> parameters are used to limit tracing */
+"\n"/* only to specified code objects. <i>target</i> should be a code object for */
+"\n"/* which RubyVM::InstructionSequence.of will return an instruction sequence. */
+"\n"/*  */
+"\n"/*    t = TracePoint.new(:line) { |tp| p tp } */
+"\n"/*  */
+"\n"/*    def m1 */
+"\n"/*      p 1 */
+"\n"/*    end */
+"\n"/*  */
+"\n"/*    def m2 */
+"\n"/*      p 2 */
+"\n"/*    end */
+"\n"/*  */
+"\n"/*    t.enable(target: method(:m1)) */
+"\n"/*  */
+"\n"/*    m1 */
+"\n"/*    # prints #<TracePoint:line@test.rb:5 in `m1'> */
+"\n"/*    m2 */
+"\n"/*    # prints nothing */
+"\n"/*  */
+"\n"/* Note: You cannot access event hooks within the +enable+ block. */
+"\n"/*  */
+"\n"/*    trace.enable { p tp.lineno } */
+"\n"/*    #=> RuntimeError: access from outside */
+"\n"/*  */
+"  def enable target: nil, target_line: nil, target_thread: nil, &blk\n"
+"    self.__enable target, target_line, target_thread, &blk\n"
 "  end\n"
 "end\n"
 "\n"
@@ -179,7 +235,7 @@ static const struct {
 "\n"
 "  private :pp\n"
 "end\n"
-#line 183 "prelude.c"
+#line 239 "prelude.c"
 };
 
 static const char prelude_name1[] = "<internal:gem_prelude>";
@@ -195,12 +251,12 @@ static const struct {
 "  rescue Gem::LoadError, LoadError\n"
 "  end if defined?(DidYouMean)\n"
 "end\n"
-#line 199 "prelude.c"
+#line 255 "prelude.c"
 };
 
 
 #define PRELUDE_NAME(n) rb_usascii_str_new_static(prelude_name##n, sizeof(prelude_name##n)-1)
-#define PRELUDE_CODE(n) rb_usascii_str_new_static(prelude_code##n.L0, sizeof(prelude_code##n))
+#define PRELUDE_CODE(n) rb_utf8_str_new_static(prelude_code##n.L0, sizeof(prelude_code##n))
 COMPILER_WARNING_PUSH
 #if GCC_VERSION_SINCE(4, 2, 0)
 COMPILER_WARNING_ERROR(-Wmissing-field-initializers)

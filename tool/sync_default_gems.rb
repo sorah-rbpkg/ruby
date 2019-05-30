@@ -3,6 +3,7 @@
 # * https://github.com/rubygems/rubygems
 # * https://github.com/bundler/bundler
 # * https://github.com/ruby/rdoc
+# * https://github.com/ruby/reline
 # * https://github.com/flori/json
 # * https://github.com/ruby/psych
 # * https://github.com/ruby/fileutils
@@ -42,6 +43,7 @@ $repositories = {
   rubygems: 'rubygems/rubygems',
   bundler: 'bundler/bundler',
   rdoc: 'ruby/rdoc',
+  reline: 'ruby/reline',
   json: 'flori/json',
   psych: 'ruby/psych',
   fileutils: 'ruby/fileutils',
@@ -86,10 +88,10 @@ def sync_default_gems(gem)
     `cp -r ../../rubygems/rubygems/lib/rubygems* ./lib`
     `cp -r ../../rubygems/rubygems/test/rubygems ./test`
   when "bundler"
-    `rm -rf lib/bundler* libexec/bundler libexec/bundle libexec/bundle_ruby spec/bundler man/bundle* man/gemfile*`
+    `rm -rf lib/bundler* libexec/bundler libexec/bundle spec/bundler man/bundle* man/gemfile*`
     `cp -r ../../bundler/bundler/lib/bundler* ./lib`
     `cp -r ../../bundler/bundler/exe/bundle* ./libexec`
-    `cp ../../bundler/bundler/bundler.gemspec ./lib`
+    `cp ../../bundler/bundler/bundler.gemspec ./lib/bundler`
     `cp -r ../../bundler/bundler/spec spec/bundler`
     `cp -r ../../bundler/bundler/man/*.{1,5,1\.txt,5\.txt,ronn} ./man`
     `rm -rf spec/bundler/support/artifice/vcr_cassettes`
@@ -102,6 +104,11 @@ def sync_default_gems(gem)
     `cp -rf ../rdoc/exe/ri ./libexec`
     `rm -f lib/rdoc/markdown.kpeg lib/rdoc/markdown/literals.kpeg lib/rdoc/rd/block_parser.ry lib/rdoc/rd/inline_parser.ry`
     `git checkout lib/rdoc/.document`
+  when "reline"
+    `rm -rf lib/reline* test/reline`
+    `cp -rf ../reline/lib/reline* ./lib`
+    `cp -rf ../reline/test test/reline`
+    `cp ../reline/reline.gemspec ./lib/reline`
   when "json"
     `rm -rf ext/json test/json`
     `cp -rf ../../flori/json/ext/json/ext ext/json`
@@ -208,6 +215,9 @@ def sync_default_gems(gem)
 end
 
 def sync_lib(repo)
+  unless File.directory?("../#{repo}")
+    abort "Expected '../#{repo}' (#{File.expand_path("../#{repo}")}) to be a directory, but it wasn't."
+  end
   `rm -rf lib/#{repo}.rb lib/#{repo}/* test/test_#{repo}.rb`
   `cp -rf ../#{repo}/lib/* lib`
   tests = if File.directory?("test/#{repo}")

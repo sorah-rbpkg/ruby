@@ -124,7 +124,8 @@ class VCS
     @@dirs << [dir, self, pred]
   end
 
-  def self.detect(path, uplevel_limit: 0)
+  def self.detect(path, options = {})
+    uplevel_limit = options.fetch(:uplevel_limit, 0)
     curr = path
     begin
       @@dirs.each do |dir, klass, pred|
@@ -220,9 +221,25 @@ class VCS
   def after_export(dir)
   end
 
+  def revision_name(rev)
+    self.class.revision_name(rev)
+  end
+
+  def short_revision(rev)
+    self.class.short_revision(rev)
+  end
+
   class SVN < self
     register(".svn")
     COMMAND = ENV['SVN'] || 'svn'
+
+    def self.revision_name(rev)
+      "r#{rev}"
+    end
+
+    def self.short_revision(rev)
+      rev
+    end
 
     def self.get_revisions(path, srcdir = nil)
       if srcdir and local_path?(path)
@@ -270,6 +287,7 @@ class VCS
     end
 
     def branch(name)
+      return trunk if name == "trunk"
       url + "branches/#{name}"
     end
 
@@ -337,8 +355,17 @@ class VCS
       FileUtils.rm_rf(dir+"/.svn")
     end
 
+    def branch_beginning(url)
+      # `--limit` of svn-log is useless in this case, because it is
+      # applied before `--search`.
+      rev = IO.pread(%W[ #{COMMAND} log --xml
+                         --search=matz --search-and=has\ started
+                         -- #{url}/version.h])[/<logentry\s+revision="(\d+)"/m, 1]
+      rev.to_i if rev
+    end
+
     def export_changelog(url, from, to, path)
-      range = [to, (from+1 if from)].compact.join(':')
+      range = [to || 'HEAD', (from ? from+1 : branch_beginning(url))].compact.join(':')
       IO.popen({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
                %W"#{COMMAND} log -r#{range} #{url}") do |r|
         open(path, 'w') do |w|
@@ -373,30 +400,32 @@ class VCS
     end
 
     def self.get_revisions(path, srcdir = nil)
-      gitcmd = [COMMAND]
-      desc = cmd_read_at(srcdir, [gitcmd + %w[describe --tags --match REV_*]])
-      if /\AREV_(\d+)(?:-(\d+)-g\h+)?\Z/ =~ desc
-        last = ($1.to_i + $2.to_i).to_s
-      end
-      logcmd = gitcmd + %W[log -n1 --date=iso]
-      logcmd << "--grep=^ *git-svn-id: .*@[0-9][0-9]*" unless last
-      idpat = /git-svn-id: .*?@(\d+) \S+\Z/
-      log = cmd_read_at(srcdir, [logcmd])
-      commit = log[/\Acommit (\w+)/, 1]
-      last ||= log[idpat, 1]
-      if path
-        cmd = logcmd
-        cmd += [path] unless path == '.'
-        log = cmd_read_at(srcdir, [cmd])
-        changed = log[idpat, 1] || last
-      else
-        changed = last
-      end
+      gitcmd = [COMMAND, '-C', srcdir || '.']
+      last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', 'HEAD']]).rstrip
+      log = cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--date=iso', *path]])
+      changed = log[/\Acommit (\h+)/, 1]
       modified = log[/^Date:\s+(.*)/, 1]
-      branch = cmd_read_at(srcdir, [gitcmd + %W[symbolic-ref HEAD]])[%r'\A(?:refs/heads/)?(.+)', 1]
-      title = cmd_read_at(srcdir, [gitcmd + %W[log --format=%s -n1 #{commit}..HEAD]])
+      branch = cmd_read_at(srcdir, [gitcmd + %W[symbolic-ref --short HEAD]])
+      if branch.empty?
+        branch_list = cmd_read_at(srcdir, [gitcmd + %W[branch --list --contains HEAD]]).lines.to_a
+        branch_list.delete_if {|b| /detached at/ =~ b}
+        (branch = branch_list[0]).strip! unless branch_list.empty?
+      end
+      branch.chomp!
+      branch = ":detached:" if branch.empty?
+      upstream = cmd_read_at(srcdir, [gitcmd + %W[branch --list --format=%(upstream:short) #{branch}]])
+      upstream.chomp!
+      title = cmd_read_at(srcdir, [gitcmd + %W[log --format=%s -n1 #{upstream}..HEAD]])
       title = nil if title.empty?
       [last, changed, modified, branch, title]
+    end
+
+    def self.revision_name(rev)
+      short_revision(rev)
+    end
+
+    def self.short_revision(rev)
+      rev[0, 10]
     end
 
     def initialize(*)
@@ -415,6 +444,10 @@ class VCS
       self.class.cmd_read_at(@srcdir, cmds)
     end
 
+    def gitcmd
+      [COMMAND, '-C', @srcidr||"."]
+    end
+
     Branch = Struct.new(:to_str)
 
     def branch(name)
@@ -428,12 +461,12 @@ class VCS
     end
 
     def stable
-      cmd = %W"#{COMMAND} for-each-ref --format=\%(refname:short) refs/heads/ruby_[0-9]*"
+      cmd = gitcmd + %W"for-each-ref --format=\%(refname:short) refs/heads/ruby_[0-9]*"
       branch(cmd_read(cmd)[/.*^(ruby_\d+_\d+)$/m, 1])
     end
 
     def branch_list(pat)
-      cmd = %W"#{COMMAND} for-each-ref --format=\%(refname:short) refs/heads/#{pat}"
+      cmd = gitcmd + %W"for-each-ref --format=\%(refname:short) refs/heads/#{pat}"
       cmd_pipe(cmd) {|f|
         f.each {|line|
           line.chomp!
@@ -443,7 +476,7 @@ class VCS
     end
 
     def grep(pat, tag, *files, &block)
-      cmd = %W[#{COMMAND} grep -h --perl-regexp #{tag} --]
+      cmd = gitcmd + %W[grep -h --perl-regexp #{tag} --]
       set = block.binding.eval("proc {|match| $~ = match}")
       cmd_pipe(cmd+files) do |f|
         f.grep(pat) do |s|
@@ -454,7 +487,7 @@ class VCS
     end
 
     def export(revision, url, dir, keep_temp = false)
-      ret = system(COMMAND, "clone", "-s", (@srcdir || '.').to_s, "-b", url, dir)
+      ret = system(*gitcmd, "clone", "-s", (@srcdir || '.').to_s, "-b", url, dir)
       ret
     end
 
@@ -462,36 +495,84 @@ class VCS
       FileUtils.rm_rf(Dir.glob("#{dir}/.git*"))
     end
 
+    def branch_beginning(url)
+      cmd_read(gitcmd + %W[log -n1 --format=format:%H
+                   --author=matz --committer=matz --grep=has\ started
+                   -- version.h include/ruby/version.h])
+    end
+
     def export_changelog(url, from, to, path)
-      range = [from, to].map do |rev|
+      from, to = [from, to].map do |rev|
         rev or next
-        rev = cmd_read({'LANG' => 'C', 'LC_ALL' => 'C'},
-                       %W"#{COMMAND} log -n1 --format=format:%H" <<
-                       "--grep=^ *git-svn-id: .*@#{rev} ")
+        if Integer === rev
+          rev = cmd_read({'LANG' => 'C', 'LC_ALL' => 'C'},
+                         gitcmd << %W"log -n1 --format=format:%H" <<
+                         "--grep=^ *git-svn-id: .*@#{rev} ")
+        end
         rev unless rev.empty?
-      end.join('..')
+      end
+      unless /./.match(from ||= branch_beginning(url))
+        raise "cannot find the beginning revision of the branch"
+      end
+      range = [from, (to || 'HEAD')].join('^..')
       cmd_pipe({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
-               %W"#{COMMAND} log --no-notes --date=iso-local --topo-order #{range}", "rb") do |r|
-        open(path, 'w') do |w|
-          sep = "-"*72
-          w.puts sep
-          while s = r.gets('')
-            author = s[/^Author:\s*(\S+)/, 1]
-            time = s[/^Date:\s*(.+)/, 1]
-            s = r.gets('')
-            s.gsub!(/^ {4}/, '')
-            s.sub!(/^git-svn-id: .*@(\d+) .*\n+\z/, '')
-            rev = $1
-            s.gsub!(/^ {8}/, '') if /^(?! {8}|$)/ !~ s
-            s.sub!(/\n\n\z/, "\n")
-            if /\A(\d+)-(\d+)-(\d+)/ =~ time
-              date = Time.new($1.to_i, $2.to_i, $3.to_i).strftime("%a, %d %b %Y")
-            end
-            lines = s.count("\n")
-            lines = "#{lines} line#{lines == 1 ? '' : 's'}"
-            w.puts "r#{rev} | #{author} | #{time} (#{date}) | #{lines}\n\n"
-            w.puts s, sep
+               gitcmd + %W"log --format=medium --no-notes --date=iso-local --topo-order #{range}", "rb") do |r|
+        format_changelog(r, path)
+      end
+    end
+
+    def format_changelog(r, path)
+      IO.copy_stream(r, path)
+    end
+
+    def commit(opts = {})
+      dryrun = opts.fetch(:dryrun) {$DEBUG} if opts
+      args = [*gitcmd, "push"]
+      args << "-n" if dryrun
+      (branch = cmd_read(gitcmd + %W"symbolic-ref --short HEAD")).chomp!
+      (upstream = cmd_read(gitcmd + %W"branch --list --format=%(upstream) #{branch}")).chomp!
+      while ref = upstream[%r"\Arefs/heads/(.*)", 1]
+        upstream = cmd_read(gitcmd + %W"branch --list --format=%(upstream) #{ref}")
+      end
+      unless %r"\Arefs/remotes/([^/]+)/(.*)" =~ upstream
+        raise "Upstream not found"
+      end
+      args << $1 << "HEAD:#$2"
+      STDERR.puts(args.inspect) if dryrun
+      system(*args) or return false
+      true
+    end
+  end
+
+  class GITSVN < GIT
+    def self.revision_name(rev)
+      SVN.revision_name(rev)
+    end
+
+    def self.short_revision(rev)
+      SVN.short_revision(rev)
+    end
+
+    def format_changelog(r, path)
+      open(path, 'w') do |w|
+        sep = "-"*72
+        w.puts sep
+        while s = r.gets('')
+          author = s[/^Author:\s*(\S+)/, 1]
+          time = s[/^Date:\s*(.+)/, 1]
+          s = r.gets('')
+          s.gsub!(/^ {4}/, '')
+          s.sub!(/^git-svn-id: .*@(\d+) .*\n+\z/, '')
+          rev = $1
+          s.gsub!(/^ {8}/, '') if /^(?! {8}|$)/ !~ s
+          s.sub!(/\n\n\z/, "\n")
+          if /\A(\d+)-(\d+)-(\d+)/ =~ time
+            date = Time.new($1.to_i, $2.to_i, $3.to_i).strftime("%a, %d %b %Y")
           end
+          lines = s.count("\n")
+          lines = "#{lines} line#{lines == 1 ? '' : 's'}"
+          w.puts "r#{rev} | #{author} | #{time} (#{date}) | #{lines}\n\n"
+          w.puts s, sep
         end
       end
     end

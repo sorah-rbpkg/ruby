@@ -294,8 +294,11 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_nested_get
-    assert_equal Other, Object.const_get([self.class, Other].join('::'))
+    assert_equal Other, Object.const_get([self.class, 'Other'].join('::'))
     assert_equal User::USER, self.class.const_get([User, 'USER'].join('::'))
+    assert_raise(NameError) {
+      Object.const_get([self.class.name, 'String'].join('::'))
+    }
   end
 
   def test_nested_get_symbol
@@ -328,6 +331,7 @@ class TestModule < Test::Unit::TestCase
     assert_send([Object, :const_defined?, [self.class.name, 'Other'].join('::')])
     assert_send([self.class, :const_defined?, 'User::USER'])
     assert_not_send([self.class, :const_defined?, 'User::Foo'])
+    assert_not_send([Object, :const_defined?, [self.class.name, 'String'].join('::')])
   end
 
   def test_nested_defined_symbol
@@ -756,10 +760,6 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) { c1.const_get(:foo) }
     bug5084 = '[ruby-dev:44200]'
     assert_raise(TypeError, bug5084) { c1.const_get(1) }
-    bug7574 = '[ruby-dev:46749]'
-    assert_raise_with_message(NameError, "wrong constant name \"String\\u0000\"", bug7574) {
-      Object.const_get("String\0")
-    }
   end
 
   def test_const_defined_invalid_name
@@ -767,10 +767,6 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) { c1.const_defined?(:foo) }
     bug5084 = '[ruby-dev:44200]'
     assert_raise(TypeError, bug5084) { c1.const_defined?(1) }
-    bug7574 = '[ruby-dev:46749]'
-    assert_raise_with_message(NameError, "wrong constant name \"String\\u0000\"", bug7574) {
-      Object.const_defined?("String\0")
-    }
   end
 
   def test_const_get_no_inherited
@@ -2080,15 +2076,11 @@ class TestModule < Test::Unit::TestCase
       $foo
       \u3042$
     ].each do |name|
-      assert_raise_with_message(NameError, /#{Regexp.quote(quote(name))}/) do
+      e = assert_raise(NameError) do
         Module.new { attr_accessor name.to_sym }
       end
+      assert_equal(name, e.name.to_s)
     end
-  end
-
-  private def quote(name)
-    encoding = Encoding.default_internal || Encoding.default_external
-    (name.encoding == encoding || name.ascii_only?) ? name : name.inspect
   end
 
   class AttrTest

@@ -53,6 +53,7 @@ class Gem::Package
   class Error < Gem::Exception; end
 
   class FormatError < Error
+
     attr_reader :path
 
     def initialize(message, source = nil)
@@ -68,10 +69,12 @@ class Gem::Package
   end
 
   class PathError < Error
+
     def initialize(destination, destination_dir)
       super "installing into parent path %s of %s is not allowed" %
               [destination, destination_dir]
     end
+
   end
 
   class NonSeekableIO < Error; end
@@ -82,7 +85,6 @@ class Gem::Package
   # Raised when a tar file is corrupt
 
   class TarInvalidError < Error; end
-
 
   attr_accessor :build_time # :nodoc:
 
@@ -263,7 +265,6 @@ class Gem::Package
     raise ArgumentError, "skip_validation = true and strict_validation = true are incompatible" if skip_validation && strict_validation
 
     Gem.load_yaml
-    require 'rubygems/security'
 
     @spec.mark_version
     @spec.validate true, strict_validation unless skip_validation

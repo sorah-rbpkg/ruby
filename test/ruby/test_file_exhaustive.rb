@@ -623,6 +623,22 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_raise(Errno::ENOENT) { File.ctime(nofile) }
   end
 
+  def test_birthtime
+    [regular_file, utf8_file].each do |file|
+      t1 = File.birthtime(file)
+      t2 = File.open(file) {|f| f.birthtime}
+      assert_kind_of(Time, t1)
+      assert_kind_of(Time, t2)
+      assert_equal(t1, t2)
+    rescue Errno::ENOSYS
+      # ignore unsupporting filesystems
+    rescue Errno::EPERM
+      # Docker prohibits statx syscall by the default.
+      skip("statx(2) is prohibited by seccomp")
+    end
+    assert_raise(Errno::ENOENT) { File.birthtime(nofile) }
+  end if File.respond_to?(:birthtime)
+
   def test_chmod
     [regular_file, utf8_file].each do |file|
       assert_equal(1, File.chmod(0444, file))

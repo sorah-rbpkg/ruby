@@ -3,7 +3,7 @@
 
   vm_opts.h - VM optimize option
 
-  $Author: k0kubun $
+  $Author$
 
   Copyright (C) 2004-2007 Koichi Sasada
 

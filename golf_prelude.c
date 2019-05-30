@@ -162,7 +162,7 @@ static const struct {
 
 
 #define PRELUDE_NAME(n) rb_usascii_str_new_static(prelude_name##n, sizeof(prelude_name##n)-1)
-#define PRELUDE_CODE(n) rb_usascii_str_new_static(prelude_code##n.L0, sizeof(prelude_code##n))
+#define PRELUDE_CODE(n) rb_utf8_str_new_static(prelude_code##n.L0, sizeof(prelude_code##n))
 COMPILER_WARNING_PUSH
 #if GCC_VERSION_SINCE(4, 2, 0)
 COMPILER_WARNING_ERROR(-Wmissing-field-initializers)

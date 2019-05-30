@@ -3,9 +3,9 @@
 #
 #--
 # $Release Version: 1.1.2 $
-# $Revision: 61658 $
-# $Id: scanf.rb 61658 2018-01-07 17:49:46Z stomar $
-# $Author: stomar $
+# $Revision$
+# $Id$
+# $Author$
 #++
 #
 # == Description

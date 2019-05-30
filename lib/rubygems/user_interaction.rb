@@ -230,7 +230,7 @@ class Gem::StreamUI
     @outs.puts question
 
     list.each_with_index do |item, index|
-      @outs.puts " #{index+1}. #{item}"
+      @outs.puts " #{index + 1}. #{item}"
     end
 
     @outs.print "> "
@@ -421,6 +421,7 @@ class Gem::StreamUI
 
     def done
     end
+
   end
 
   ##
@@ -509,6 +510,7 @@ class Gem::StreamUI
     def done
       @out.puts @terminal_message
     end
+
   end
 
   ##
@@ -552,6 +554,7 @@ class Gem::StreamUI
 
     def done
     end
+
   end
 
   ##
@@ -606,7 +609,9 @@ class Gem::StreamUI
         @out.puts message
       end
     end
+
   end
+
 end
 
 ##
@@ -622,6 +627,7 @@ class Gem::ConsoleUI < Gem::StreamUI
   def initialize
     super STDIN, STDOUT, STDERR, true
   end
+
 end
 
 ##
@@ -654,4 +660,5 @@ class Gem::SilentUI < Gem::StreamUI
   def progress_reporter(*args) # :nodoc:
     SilentProgressReporter.new(@outs, *args)
   end
+
 end

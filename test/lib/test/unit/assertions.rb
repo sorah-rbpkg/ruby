@@ -500,7 +500,9 @@ EOT
         end
       end
 
-      def prepare_syntax_check(code, fname = caller_locations(2, 1)[0], mesg = fname.to_s, verbose: nil)
+      def prepare_syntax_check(code, fname = nil, mesg = nil, verbose: nil)
+        fname ||= caller_locations(2, 1)[0]
+        mesg ||= fname.to_s
         verbose, $VERBOSE = $VERBOSE, verbose
         case
         when Array === fname
@@ -510,7 +512,13 @@ EOT
         else
           line = 1
         end
-        yield(code, fname, line, mesg)
+        yield(code, fname, line, message(mesg) {
+                if code.end_with?("\n")
+                  "```\n#{code}```\n"
+                else
+                  "```\n#{code}\n```\n""no-newline"
+                end
+              })
       ensure
         $VERBOSE = verbose
       end
@@ -761,7 +769,7 @@ eom
         # [ruby-core:81540]
         min_hz = windows? ? 67 : 100
         min_measurable = 1.0 / min_hz
-        min_measurable *= 1.10 # add a little (10%) to account for misc. overheads
+        min_measurable *= 1.30 # add a little (30%) to account for misc. overheads
         if max < min_measurable
           max = min_measurable
         end

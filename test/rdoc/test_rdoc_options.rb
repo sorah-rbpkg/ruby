@@ -18,6 +18,7 @@ class TestRDocOptions < RDoc::TestCase
 
   def test_check_files
     skip "assumes UNIX permission model" if /mswin|mingw/ =~ RUBY_PLATFORM
+    skip "assumes that euid is not root" if Process.euid == 0
 
     out, err = capture_io do
       temp_dir do
@@ -65,7 +66,7 @@ class TestRDocOptions < RDoc::TestCase
     expected = {
       'charset'              => 'UTF-8',
       'encoding'             => encoding,
-      'exclude'              => [],
+      'exclude'              => %w[~\z \.orig\z \.rej\z \.bak\z \.gemspec\z],
       'hyperlink_all'        => false,
       'line_numbers'         => false,
       'locale'               => nil,

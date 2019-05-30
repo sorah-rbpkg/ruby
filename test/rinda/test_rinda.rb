@@ -525,6 +525,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   end
 
   def test_take_bug_8215
+    skip "this test randomly fails on mswin" if /mswin/ =~ RUBY_PLATFORM
     service = DRb.start_service("druby://localhost:0", @ts_base)
 
     uri = service.uri
@@ -619,6 +620,7 @@ class TestRingServer < Test::Unit::TestCase
 
     @ts = Rinda::TupleSpace.new
     @rs = Rinda::RingServer.new(@ts, [], @port)
+    @server = DRb.start_service("druby://localhost:0")
   end
   def teardown
     # implementation-dependent
@@ -629,6 +631,7 @@ class TestRingServer < Test::Unit::TestCase
       end
     }
     @rs.shutdown
+    @server.stop_service
   end
 
   def test_do_reply
@@ -654,6 +657,7 @@ class TestRingServer < Test::Unit::TestCase
   end
 
   def test_do_reply_local
+    skip 'timeout-based test becomes unstable with --jit-wait' if RubyVM::MJIT.enabled?
     with_timeout(10) {_test_do_reply_local}
   end
 
@@ -795,7 +799,10 @@ class TestRingServer < Test::Unit::TestCase
       mth.raise(Timeout::Error)
     end
     tl0 << th
+    yield
   rescue Timeout::Error => e
+    $stderr.puts "TestRingServer#with_timeout: timeout in #{n}s:"
+    $stderr.puts caller
     if tl
       bt = e.backtrace
       tl.each do |t|

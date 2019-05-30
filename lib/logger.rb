@@ -6,7 +6,7 @@
 # License::
 #   You can redistribute it and/or modify it under the same terms of Ruby's
 #   license; either the dual license version in 2003, or any later version.
-# Revision:: $Id: logger.rb 66358 2018-12-12 09:40:06Z hsbt $
+# Revision:: $Id$
 #
 # A simple system for logging messages.  See Logger for more documentation.
 
@@ -225,7 +225,7 @@ require 'monitor'
 #
 class Logger
   VERSION = "1.3.0"
-  _, name, rev = %w$Id: logger.rb 66358 2018-12-12 09:40:06Z hsbt $
+  _, name, rev = %w$Id$
   if name
     name = name.chomp(",v")
   else

@@ -253,7 +253,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_autosplit
-    assert_in_out_err(%w(-an -F: -e) + ["p $F"], "foo:bar:baz\nqux:quux:quuux\n",
+    assert_in_out_err(%w(-W0 -an -F: -e) + ["p $F"], "foo:bar:baz\nqux:quux:quuux\n",
                       ['["foo", "bar", "baz\n"]', '["qux", "quux", "quuux\n"]'], [])
   end
 
@@ -310,7 +310,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
     assert_in_out_err(%W(-\r -e) + [""], "", [], [])
 
-    assert_in_out_err(%W(-\rx), "", [], /invalid option -\\x0D  \(-h will show valid options\) \(RuntimeError\)/)
+    assert_in_out_err(%W(-\rx), "", [], /invalid option -\\r  \(-h will show valid options\) \(RuntimeError\)/)
 
     assert_in_out_err(%W(-\x01), "", [], /invalid option -\\x01  \(-h will show valid options\) \(RuntimeError\)/)
 
@@ -633,7 +633,7 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_match(/hello world/, ps)
       assert_operator now, :<, stop
       Process.kill :KILL, pid
-      Timeout.timeout(5) { Process.wait(pid) }
+      EnvUtil.timeout(5) { Process.wait(pid) }
     end
   end
 
@@ -669,11 +669,8 @@ class TestRubyOptions < Test::Unit::TestCase
 
   module SEGVTest
     opts = {}
-    if /mswin|mingw/ =~ RUBY_PLATFORM
-      additional = /[\s\w\.\']*/
-    else
+    unless /mswin|mingw/ =~ RUBY_PLATFORM
       opts[:rlimit_core] = 0
-      additional = nil
     end
     ExecOptions = opts.freeze
 
@@ -688,36 +685,31 @@ class TestRubyOptions < Test::Unit::TestCase
         (?:--\s(?:.+\n)*\n)?
         --\sControl\sframe\sinformation\s-+\n
         (?:c:.*\n)*
+        \n
       )x,
       %r(
         (?:
         --\sRuby\slevel\sbacktrace\sinformation\s----------------------------------------\n
-        -e:1:in\s\`<main>\'\n
+        (?:-e:1:in\s\`(?:block\sin\s)?<main>\'\n)*
         -e:1:in\s\`kill\'\n
+        \n
         )?
+      )x,
+      %r(
+        (?:--\sMachine(?:.+\n)*\n)?
       )x,
       %r(
         (?:
           --\sC\slevel\sbacktrace\sinformation\s-------------------------------------------\n
-          (?:(?:.*\s)?\[0x\h+\]\n)*\n
+          (?:(?:.*\s)?\[0x\h+\].*\n|.*:\d+\n)*\n
         )?
       )x,
-      :*,
       %r(
-        \[NOTE\]\n
-        You\smay\shave\sencountered\sa\sbug\sin\sthe\sRuby\sinterpreter\sor\sextension\slibraries.\n
-        Bug\sreports\sare\swelcome.\n
-        (?:.*\n)?
-        For\sdetails:\shttps:\/\/.*\.ruby-lang\.org/.*\n
-        \n
-        (?:
-          \[IMPORTANT\]\n
-          (?:.+\n)+
-          \n
+        (?:--\sOther\sruntime\sinformation\s-+\n
+          (?:.*\n)*
         )?
       )x,
     ]
-    ExpectedStderrList << additional if additional
   end
 
   def assert_segv(args, message=nil)
@@ -799,7 +791,7 @@ class TestRubyOptions < Test::Unit::TestCase
           pid = spawn(EnvUtil.rubybin, :in => s, :out => w)
           w.close
           assert_nothing_raised('[ruby-dev:37798]') do
-            result = Timeout.timeout(3) {r.read}
+            result = EnvUtil.timeout(3) {r.read}
           end
           Process.wait pid
         }
@@ -976,8 +968,10 @@ class TestRubyOptions < Test::Unit::TestCase
       [["disable", "false"], ["enable", "true"]].each do |opt, exp|
         %W[frozen_string_literal frozen-string-literal].each do |arg|
           key = "#{opt}=#{arg}"
+          negopt = exp == "true" ? "disable" : "enable"
+          env = {"RUBYOPT"=>"--#{negopt}=#{arg}"}
           a.for(key) do
-            assert_in_out_err(["--disable=gems", "--#{key}"], 'p("foo".frozen?)', [exp])
+            assert_in_out_err([env, "--disable=gems", "--#{key}"], 'p("foo".frozen?)', [exp])
           end
         end
       end

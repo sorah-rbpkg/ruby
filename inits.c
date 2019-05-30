@@ -2,7 +2,7 @@
 
   inits.c -
 
-  $Author: ko1 $
+  $Author$
   created at: Tue Dec 28 16:01:58 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -67,5 +67,6 @@ rb_call_inits(void)
     CALL(vm_trace);
     CALL(vm_stack_canary);
     CALL(ast);
+    CALL(gc_stress);
 }
 #undef CALL

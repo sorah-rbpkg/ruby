@@ -2,7 +2,7 @@
 #
 #   shell/command-controller.rb -
 #       $Release Version: 0.7 $
-#       $Revision: 65506 $
+#       $Revision$
 #       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -343,7 +343,7 @@ class Shell
     # %pwd, %cwd -> @pwd
     def notify(*opts)
       Shell.notify(*opts) {|mes|
-        yield mes if iterator?
+        yield mes if block_given?
 
         mes.gsub!("%pwd", "#{@cwd}")
         mes.gsub!("%cwd", "#{@cwd}")
@@ -437,7 +437,7 @@ class Shell
       ali = ali.id2name if ali.kind_of?(Symbol)
       command = command.id2name if command.kind_of?(Symbol)
       begin
-        if iterator?
+        if block_given?
           @alias_map[ali.intern] = proc
 
           eval((d = %Q[def #{ali}(*opts)

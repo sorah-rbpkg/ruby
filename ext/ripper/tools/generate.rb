@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-# $Id: generate.rb 61952 2018-01-19 10:48:08Z mame $
+# $Id$
 
 require 'optparse'
 

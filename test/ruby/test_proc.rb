@@ -424,14 +424,14 @@ class TestProc < Test::Unit::TestCase
       1.times { b = lambda }
       b
     end
-    assert_equal(:foo, o.foo { :foo }.call)
+    assert_raise(ArgumentError) {o.foo { :foo }.call}
 
     def o.foo(&b)
       b = nil
       1.times { b = lambda }
       b
     end
-    assert_equal(:foo, o.foo { :foo }.call)
+    assert_raise(ArgumentError) {o.foo { :foo }.call}
   end
 
   def test_arity2
@@ -1137,6 +1137,9 @@ class TestProc < Test::Unit::TestCase
 
     assert_equal([[:req]], method(:putc).parameters)
     assert_equal([[:rest]], method(:p).parameters)
+
+    pr = eval("proc{|"+"(_),"*30+"|}")
+    assert_empty(pr.parameters.map{|_,n|n}.compact)
   end
 
   def pm0() end
@@ -1474,10 +1477,10 @@ class TestProc < Test::Unit::TestCase
   def test_compose_with_noncallable
     f = proc {|x| x * 2}
 
-    assert_raise(NoMethodError) {
+    assert_raise(TypeError) {
       (f << 5).call(2)
     }
-    assert_raise(NoMethodError) {
+    assert_raise(TypeError) {
       (f >> 5).call(2)
     }
   end

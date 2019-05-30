@@ -9,10 +9,8 @@
 **********************************************************************/
 
 #if defined(__clang__)
-#pragma clang diagnostic ignored "-Wpedantic"
+#pragma clang diagnostic ignored "-Wgnu-empty-initializer"
 #pragma clang diagnostic ignored "-Wgcc-compat"
-#elif defined(__GNUC__)
-#pragma GCC diagnostic ignored "-Wpedantic"
 #endif
 
 #include "ruby/config.h"
@@ -66,8 +64,8 @@ void *alloca();
 #endif
 
 #ifdef HAVE_MACH_O_LOADER_H
+# include <crt_externs.h>
 # include <mach-o/fat.h>
-# include <mach-o/ldsyms.h>
 # include <mach-o/loader.h>
 # include <mach-o/nlist.h>
 # include <mach-o/stab.h>
@@ -788,7 +786,7 @@ typedef struct {
     char *pend;
     char *q0;
     char *q;
-    int format; /* 4 or 8 */;
+    int format; // 4 or 8
     uint8_t address_size;
     int level;
     char *abbrev_table[ABBREV_TABLE_SIZE];
@@ -1193,7 +1191,6 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
 static char *
 di_find_abbrev(DebugInfoReader *reader, uint64_t abbrev_number)
 {
-    uint64_t n;
     char *p;
     if (abbrev_number < ABBREV_TABLE_SIZE) {
         return reader->abbrev_table[abbrev_number];
@@ -1208,7 +1205,7 @@ di_find_abbrev(DebugInfoReader *reader, uint64_t abbrev_number)
         uint64_t form = uleb128(&p);
         if (!at && !form) break;
     }
-    for (n = uleb128(&p); abbrev_number != n; n = uleb128(&p)) {
+    for (uint64_t n = uleb128(&p); abbrev_number != n; n = uleb128(&p)) {
         if (n == 0) {
             fprintf(stderr,"%d: Abbrev Number %"PRId64" not found\n",__LINE__, abbrev_number);
             exit(1);
@@ -1507,9 +1504,7 @@ read_abstract_origin(DebugInfoReader *reader, uint64_t abstract_origin, line_inf
 
 static void
 debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
-         line_info_t *lines, int offset)
-{
-    int i;
+         line_info_t *lines, int offset) {
     while (reader->p < reader->cu_end) {
         DIE die;
         ranges_t ranges = {};
@@ -1558,7 +1553,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
         }
         /* ranges_inspect(reader, &ranges); */
         /* fprintf(stderr,"%d:%tx: %x ",__LINE__,diepos,die.tag); */
-        for (i=offset; i < num_traces; i++) {
+        for (int i=offset; i < num_traces; i++) {
             uintptr_t addr = (uintptr_t)traces[i];
             uintptr_t offset = addr - reader->obj->base_addr + reader->obj->vmaddr;
             uintptr_t saddr = ranges_include(reader, &ranges, offset);
@@ -1900,6 +1895,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
         p = file;
     }
     else if (header->magic == FAT_CIGAM) {
+        struct LP(mach_header) *mhp = _NSGetMachExecuteHeader();
         struct fat_header *fat = (struct fat_header *)file;
         char *q = file + sizeof(*fat);
         uint32_t nfat_arch = __builtin_bswap32(fat->nfat_arch);
@@ -1909,9 +1905,9 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
             cpu_type_t cputype = __builtin_bswap32(arch->cputype);
             cpu_subtype_t cpusubtype = __builtin_bswap32(arch->cpusubtype);
             uint32_t offset = __builtin_bswap32(arch->offset);
-            /* fprintf(stderr,"%d: fat %d %x/%x %x/%x\n",__LINE__, i, _mh_execute_header.cputype,_mh_execute_header.cpusubtype, cputype,cpusubtype); */
-            if (_mh_execute_header.cputype == cputype &&
-                    (_mh_execute_header.cpusubtype & ~CPU_SUBTYPE_MASK) == cpusubtype) {
+            /* fprintf(stderr,"%d: fat %d %x/%x %x/%x\n",__LINE__, i, mhp->cputype,mhp->cpusubtype, cputype,cpusubtype); */
+            if (mhp->cputype == cputype &&
+                    (mhp->cpusubtype & ~CPU_SUBTYPE_MASK) == cpusubtype) {
                 p = file + offset;
                 file = p;
                 header = (struct LP(mach_header) *)p;

@@ -2,7 +2,7 @@
 
   hash.c -
 
-  $Author: ko1 $
+  $Author$
   created at: Mon Nov 22 18:51:18 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -147,6 +147,14 @@ rb_hash(VALUE obj)
 
 long rb_objid_hash(st_index_t index);
 
+static st_index_t
+dbl_to_index(double d)
+{
+    union {double d; st_index_t i;} u;
+    u.d = d;
+    return u.i;
+}
+
 long
 rb_dbl_long_hash(double d)
 {
@@ -155,12 +163,7 @@ rb_dbl_long_hash(double d)
 #if SIZEOF_INT == SIZEOF_VOIDP
     return rb_memhash(&d, sizeof(d));
 #else
-    {
-	union {double d; uint64_t i;} u;
-
-	u.d = d;
-	return rb_objid_hash(rb_hash_start(u.i));
-    }
+    return rb_objid_hash(dbl_to_index(d));
 #endif
 }
 
@@ -257,16 +260,23 @@ key64_hash(uint64_t key, uint32_t seed)
     return mult_and_mix(key + seed, prime1);
 }
 
+/* Should cast down the result for each purpose */
+#define st_index_hash(index) key64_hash(rb_hash_start(index), prime2)
+
 long
 rb_objid_hash(st_index_t index)
 {
-    return (long)key64_hash(rb_hash_start(index), prime2);
+    return (long)st_index_hash(index);
 }
 
 static st_index_t
 objid_hash(VALUE obj)
 {
-    return rb_objid_hash((st_index_t)obj);
+#if SIZEOF_LONG == SIZEOF_VOIDP
+    return (st_index_t)st_index_hash((st_index_t)NUM2LONG(rb_obj_id(obj)));
+#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
+    return (st_index_t)st_index_hash((st_index_t)NUM2LL(rb_obj_id(obj)));
+#endif
 }
 
 VALUE
@@ -293,13 +303,11 @@ rb_ident_hash(st_data_t n)
      *   many integers get interpreted as 2.0 or -2.0 [Bug #10761]
      */
     if (FLONUM_P(n)) {
-        union { double d; st_data_t i; } u;
-        u.d = rb_float_value(n);
-        n ^= u.i;
+        n ^= dbl_to_index(rb_float_value(n));
     }
 #endif
 
-    return (st_index_t)key64_hash(rb_hash_start((st_index_t)n), prime2);
+    return (st_index_t)st_index_hash((st_index_t)n);
 }
 
 static const struct st_hash_type identhash = {
@@ -307,46 +315,67 @@ static const struct st_hash_type identhash = {
     rb_ident_hash,
 };
 
-#define EQUAL(x,y) ((x) == (y) || (*objhash.compare)((x),(y)) == 0)
-#define PTR_EQUAL(ptr, hash_val, key_) \
-    ((ptr)->hash == (hash_val) && EQUAL((key_), (ptr)->key))
-
 #define RESERVED_HASH_VAL (~(st_hash_t) 0)
 #define RESERVED_HASH_SUBSTITUTION_VAL ((st_hash_t) 0)
 
-#define SET_KEY(entry, _key) (entry)->key = (_key)
-#define SET_HASH(entry, _hash) (entry)->hash = (_hash)
-#define SET_RECORD(entry, _value) (entry)->record = (_value)
-
-typedef st_data_t st_hash_t;
+typedef st_index_t st_hash_t;
 extern const st_hash_t st_reserved_hash_val;
 extern const st_hash_t st_reserved_hash_substitution_val;
 
-static inline st_hash_t
-do_hash(st_data_t key)
+/*
+ * RHASH_AR_TABLE_P(h):
+ * * as.ar == NULL or
+ *   as.ar points ar_table.
+ * * as.ar is allocated by transient heap or xmalloc.
+ *
+ * !RHASH_AR_TABLE_P(h):
+ * * as.st points st_table.
+ */
+
+#define RHASH_AR_TABLE_MAX_SIZE      8
+#define RHASH_AR_TABLE_MAX_BOUND     RHASH_AR_TABLE_MAX_SIZE
+
+typedef struct ar_table_entry {
+    st_hash_t hash;
+    VALUE key;
+    VALUE record;
+} ar_table_entry;
+
+typedef struct ar_table_struct {
+    ar_table_entry entries[RHASH_AR_TABLE_MAX_SIZE];
+} ar_table;
+
+size_t
+rb_hash_ar_table_size(void)
 {
-    st_hash_t hash = (st_hash_t)(*objhash.hash)(key);
+    return sizeof(ar_table);
+}
+
+static inline st_hash_t
+ar_do_hash(st_data_t key)
+{
+    st_hash_t hash = (st_hash_t)rb_any_hash(key);
     return (RESERVED_HASH_VAL == hash) ? RESERVED_HASH_SUBSTITUTION_VAL : hash;
 }
 
 static inline void
-set_entry(ar_table_entry *entry, st_data_t key, st_data_t val, st_hash_t hash)
+ar_set_entry(ar_table_entry *entry, st_data_t key, st_data_t val, st_hash_t hash)
 {
-    SET_HASH(entry, hash);
-    SET_KEY(entry, key);
-    SET_RECORD(entry, val);
+    entry->hash = hash;
+    entry->key = key;
+    entry->record = val;
 }
 
 static inline void
-clear_entry(ar_table_entry* entry)
+ar_clear_entry(ar_table_entry* entry)
 {
-    SET_KEY(entry, Qundef);
-    SET_RECORD(entry, Qundef);
-    SET_HASH(entry, RESERVED_HASH_VAL);
+    entry->key = Qundef;
+    entry->record = Qundef;
+    entry->hash = RESERVED_HASH_VAL;
 }
 
 static inline int
-empty_entry(ar_table_entry *entry)
+ar_empty_entry(ar_table_entry *entry)
 {
     return entry->hash == RESERVED_HASH_VAL;
 }
@@ -384,7 +413,7 @@ rb_hash_dump(VALUE hash)
             ar_table_entry *cur_entry = RHASH_AR_TABLE_REF(hash, i);
             st_data_t k, v;
 
-            if (!empty_entry(cur_entry)) {
+            if (!ar_empty_entry(cur_entry)) {
                 char b1[0x100], b2[0x100];
                 /* h = cur_entry->hash; */
                 k = cur_entry->key;
@@ -412,7 +441,7 @@ hash_verify_(VALUE hash, const char *file, int line)
         for (i=0; i<bound; i++) {
             ar_table_entry *cur_entry = RHASH_AR_TABLE_REF(hash, i);
             st_data_t h, k, v;
-            if (!empty_entry(cur_entry)) {
+            if (!ar_empty_entry(cur_entry)) {
                 h = cur_entry->hash;
                 k = cur_entry->key;
                 v = cur_entry->record;
@@ -533,11 +562,21 @@ hash_ar_table_set(VALUE hash, ar_table *ar)
 } while (0)
 
 #define RHASH_AR_TABLE_SIZE_INC(h) HASH_AR_TABLE_SIZE_ADD(h, 1)
-#define RHASH_AR_TABLE_SIZE_DEC(h) do  { \
-    HASH_ASSERT(RHASH_AR_TABLE_P(h)); \
-    RHASH_AR_TABLE_SIZE_SET((h), RHASH_AR_TABLE_SIZE(h) - 1); \
-    hash_verify(h); \
-} while (0)
+
+static inline void
+RHASH_AR_TABLE_SIZE_DEC(VALUE h) {
+    HASH_ASSERT(RHASH_AR_TABLE_P(h));
+    int new_size = RHASH_AR_TABLE_SIZE(h) - 1;
+
+    if (new_size != 0) {
+        RHASH_AR_TABLE_SIZE_SET(h, new_size);
+    }
+    else {
+        RHASH_AR_TABLE_SIZE_SET(h, 0);
+        RHASH_AR_TABLE_BOUND_SET(h, 0);
+    }
+    hash_verify(h);
+}
 
 #define RHASH_AR_TABLE_CLEAR(h) do { \
     RBASIC(h)->flags &= ~RHASH_AR_TABLE_SIZE_MASK; \
@@ -566,15 +605,27 @@ ar_alloc_table(VALUE hash)
     return tab;
 }
 
+static inline int
+ar_equal(VALUE x, VALUE y)
+{
+    return x == y || rb_any_cmp(x, y) == 0;
+}
+
+static inline int
+ar_ptr_equal(ar_table_entry *entry, st_hash_t hash_val, VALUE key)
+{
+    return entry->hash == hash_val && ar_equal(key, entry->key);
+}
+
 static unsigned
-find_entry(VALUE hash, st_hash_t hash_value, st_data_t key)
+ar_find_entry(VALUE hash, st_hash_t hash_value, st_data_t key)
 {
     unsigned i, bound = RHASH_AR_TABLE_BOUND(hash);
 
     /* if table is NULL, then bound also should be 0 */
 
     for (i = 0; i < bound; i++) {
-        if (PTR_EQUAL(RHASH_AR_TABLE_REF(hash, i), hash_value, key)) {
+        if (ar_ptr_equal(RHASH_AR_TABLE_REF(hash, i), hash_value, key)) {
             return i;
         }
     }
@@ -650,7 +701,7 @@ ar_force_convert_table(VALUE hash, const char *file, int line)
 
         for (i = 0; i < bound; i++) {
             entry = RHASH_AR_TABLE_REF(hash, i);
-            if (empty_entry(entry)) continue;
+            if (ar_empty_entry(entry)) continue;
 
             st_add_direct_with_hash(new_tab, entry->key, entry->record, entry->hash);
         }
@@ -687,12 +738,12 @@ ar_compact_table(VALUE hash)
         ar_table_entry *entries = RHASH_AR_TABLE_REF(hash, 0);
 
         for (i=0; i<bound; i++) {
-            if (empty_entry(&entries[i])) {
+            if (ar_empty_entry(&entries[i])) {
                 if (j <= i) j = i+1;
                 for (; j<bound; j++) {
-                    if (!empty_entry(&entries[j])) {
+                    if (!ar_empty_entry(&entries[j])) {
                         entries[i] = entries[j];
-                        clear_entry(&entries[j]);
+                        ar_clear_entry(&entries[j]);
                         j++;
                         goto found;
                     }
@@ -715,8 +766,6 @@ static int
 ar_add_direct_with_hash(VALUE hash, st_data_t key, st_data_t val, st_hash_t hash_value)
 {
     unsigned bin = RHASH_AR_TABLE_BOUND(hash);
-    ar_table *tab = RHASH_AR_TABLE(hash);
-    ar_table_entry *entry;
 
     if (RHASH_AR_TABLE_SIZE(hash) >= RHASH_AR_TABLE_MAX_SIZE) {
         return 1;
@@ -728,8 +777,7 @@ ar_add_direct_with_hash(VALUE hash, st_data_t key, st_data_t val, st_hash_t hash
         }
         HASH_ASSERT(bin < RHASH_AR_TABLE_MAX_BOUND);
 
-        entry = &tab->entries[bin];
-        set_entry(entry, key, val, hash_value);
+        ar_set_entry(RHASH_AR_TABLE_REF(hash, bin), key, val, hash_value);
         RHASH_AR_TABLE_BOUND_SET(hash, bin+1);
         RHASH_AR_TABLE_SIZE_INC(hash);
         return 0;
@@ -737,7 +785,7 @@ ar_add_direct_with_hash(VALUE hash, st_data_t key, st_data_t val, st_hash_t hash
 }
 
 static int
-ar_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg)
+ar_general_foreach(VALUE hash, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg)
 {
     if (RHASH_AR_TABLE_SIZE(hash) > 0) {
         unsigned i, bound = RHASH_AR_TABLE_BOUND(hash);
@@ -745,7 +793,7 @@ ar_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg)
         for (i = 0; i < bound; i++) {
             enum st_retval retval;
             ar_table_entry *cur_entry = RHASH_AR_TABLE_REF(hash, i);
-            if (empty_entry(cur_entry)) continue;
+            if (ar_empty_entry(cur_entry)) continue;
             retval = (*func)(cur_entry->key, cur_entry->record, arg, 0);
             /* cur_entry is not valid after that */
 
@@ -755,14 +803,40 @@ ar_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg)
               case ST_CHECK:
               case ST_STOP:
                 return 0;
+              case ST_REPLACE:
+                if (replace) {
+                    VALUE key;
+                    VALUE value;
+
+                    key = cur_entry->key;
+                    value = cur_entry->record;
+                    retval = (*replace)(&key, &value, arg, TRUE);
+
+                    ar_table_entry *entry = RHASH_AR_TABLE_REF(hash, i);
+                    entry->key = key;
+                    entry->record = value;
+                }
+                break;
               case ST_DELETE:
-                clear_entry(RHASH_AR_TABLE_REF(hash, i));
+                ar_clear_entry(RHASH_AR_TABLE_REF(hash, i));
                 RHASH_AR_TABLE_SIZE_DEC(hash);
                 break;
             }
         }
     }
     return 0;
+}
+
+static int
+ar_foreach_with_replace(VALUE hash, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg)
+{
+    return ar_general_foreach(hash, func, replace, arg);
+}
+
+static int
+ar_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg)
+{
+    return ar_general_foreach(hash, func, NULL, arg);
 }
 
 static int
@@ -778,7 +852,7 @@ ar_foreach_check(VALUE hash, int (*func)(ANYARGS), st_data_t arg,
 
         for (i = 0; i < bound; i++) {
             cur_entry = RHASH_AR_TABLE_REF(hash, i);
-            if (empty_entry(cur_entry))
+            if (ar_empty_entry(cur_entry))
               continue;
             key = cur_entry->key;
             hash_value = cur_entry->hash;
@@ -792,7 +866,7 @@ ar_foreach_check(VALUE hash, int (*func)(ANYARGS), st_data_t arg,
               case ST_CHECK: {
                   if (cur_entry->key == never && cur_entry->hash == RESERVED_HASH_VAL)
                       break;
-                  ret = find_entry(hash, hash_value, key);
+                  ret = ar_find_entry(hash, hash_value, key);
                   if (ret == RHASH_AR_TABLE_MAX_BOUND) {
                       retval = (*func)(0, 0, arg, 1);
                       return 2;
@@ -801,10 +875,11 @@ ar_foreach_check(VALUE hash, int (*func)(ANYARGS), st_data_t arg,
               case ST_CONTINUE:
                 break;
               case ST_STOP:
+              case ST_REPLACE:
                 return 0;
               case ST_DELETE: {
-                  if (!empty_entry(cur_entry)) {
-                      clear_entry(cur_entry);
+                  if (!ar_empty_entry(cur_entry)) {
+                      ar_clear_entry(cur_entry);
                       RHASH_AR_TABLE_SIZE_DEC(hash);
                   }
                   break;
@@ -822,10 +897,10 @@ ar_update(VALUE hash, st_data_t key,
     int retval, existing;
     unsigned bin = RHASH_AR_TABLE_MAX_BOUND;
     st_data_t value = 0, old_key;
-    st_hash_t hash_value = do_hash(key);
+    st_hash_t hash_value = ar_do_hash(key);
 
     if (RHASH_AR_TABLE_SIZE(hash) > 0) {
-        bin = find_entry(hash, hash_value, key);
+        bin = ar_find_entry(hash, hash_value, key);
         existing = (bin != RHASH_AR_TABLE_MAX_BOUND) ? TRUE : FALSE;
     }
     else {
@@ -858,7 +933,7 @@ ar_update(VALUE hash, st_data_t key,
         break;
       case ST_DELETE:
         if (existing) {
-            clear_entry(RHASH_AR_TABLE_REF(hash, bin));
+            ar_clear_entry(RHASH_AR_TABLE_REF(hash, bin));
             RHASH_AR_TABLE_SIZE_DEC(hash);
         }
         break;
@@ -870,11 +945,11 @@ static int
 ar_insert(VALUE hash, st_data_t key, st_data_t value)
 {
     unsigned bin = RHASH_AR_TABLE_BOUND(hash);
-    st_hash_t hash_value = do_hash(key);
+    st_hash_t hash_value = ar_do_hash(key);
 
     hash_ar_table(hash); /* prepare ltbl */
 
-    bin = find_entry(hash, hash_value, key);
+    bin = ar_find_entry(hash, hash_value, key);
     if (bin == RHASH_AR_TABLE_MAX_BOUND) {
         if (RHASH_AR_TABLE_SIZE(hash) >= RHASH_AR_TABLE_MAX_SIZE) {
             return -1;
@@ -885,7 +960,7 @@ ar_insert(VALUE hash, st_data_t key, st_data_t value)
         }
         HASH_ASSERT(bin < RHASH_AR_TABLE_MAX_BOUND);
 
-        set_entry(RHASH_AR_TABLE_REF(hash, bin), key, value, hash_value);
+        ar_set_entry(RHASH_AR_TABLE_REF(hash, bin), key, value, hash_value);
         RHASH_AR_TABLE_BOUND_SET(hash, bin+1);
         RHASH_AR_TABLE_SIZE_INC(hash);
         return 0;
@@ -899,18 +974,23 @@ ar_insert(VALUE hash, st_data_t key, st_data_t value)
 static int
 ar_lookup(VALUE hash, st_data_t key, st_data_t *value)
 {
-    st_hash_t hash_value = do_hash(key);
-    unsigned bin = find_entry(hash, hash_value, key);
-
-    if (bin == RHASH_AR_TABLE_MAX_BOUND) {
+    if (RHASH_AR_TABLE_SIZE(hash) == 0) {
         return 0;
     }
     else {
-        HASH_ASSERT(bin < RHASH_AR_TABLE_MAX_BOUND);
-        if (value != NULL) {
-            *value = RHASH_AR_TABLE_REF(hash, bin)->record;
+        st_hash_t hash_value = ar_do_hash(key);
+        unsigned bin = ar_find_entry(hash, hash_value, key);
+
+        if (bin == RHASH_AR_TABLE_MAX_BOUND) {
+            return 0;
         }
-        return 1;
+        else {
+            HASH_ASSERT(bin < RHASH_AR_TABLE_MAX_BOUND);
+            if (value != NULL) {
+                *value = RHASH_AR_TABLE_REF(hash, bin)->record;
+            }
+            return 1;
+        }
     }
 }
 
@@ -918,10 +998,10 @@ static int
 ar_delete(VALUE hash, st_data_t *key, st_data_t *value)
 {
     unsigned bin;
-    st_hash_t hash_value = do_hash(*key);
+    st_hash_t hash_value = ar_do_hash(*key);
 
 
-    bin = find_entry(hash, hash_value, *key);
+    bin = ar_find_entry(hash, hash_value, *key);
 
     if (bin == RHASH_AR_TABLE_MAX_BOUND) {
         if (value != 0) *value = 0;
@@ -930,7 +1010,7 @@ ar_delete(VALUE hash, st_data_t *key, st_data_t *value)
     else {
         ar_table_entry *entry = RHASH_AR_TABLE_REF(hash, bin);
         if (value != 0) *value = entry->record;
-        clear_entry(entry);
+        ar_clear_entry(entry);
         RHASH_AR_TABLE_SIZE_DEC(hash);
         return 1;
     }
@@ -945,10 +1025,10 @@ ar_shift(VALUE hash, st_data_t *key, st_data_t *value)
 
         for (i = 0; i < bound; i++) {
             entry = &entries[i];
-            if (!empty_entry(entry)) {
+            if (!ar_empty_entry(entry)) {
                 if (value != 0) *value = entry->record;
                 *key = entry->key;
-                clear_entry(entry);
+                ar_clear_entry(entry);
                 RHASH_AR_TABLE_SIZE_DEC(hash);
                 return 1;
             }
@@ -970,7 +1050,7 @@ ar_keys(VALUE hash, st_data_t *keys, st_index_t size)
         }
         else {
             ar_table_entry *cur_entry = RHASH_AR_TABLE_REF(hash, i);
-            if (!empty_entry(cur_entry))
+            if (!ar_empty_entry(cur_entry))
               *keys++ = cur_entry->key;
         }
     }
@@ -990,7 +1070,7 @@ ar_values(VALUE hash, st_data_t *values, st_index_t size)
         }
         else {
             ar_table_entry *cur_entry = RHASH_AR_TABLE_REF(hash, i);
-            if (!empty_entry(cur_entry))
+            if (!ar_empty_entry(cur_entry))
               *values++ = cur_entry->record;
         }
     }
@@ -1171,17 +1251,29 @@ hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
     return ST_CHECK;
 }
 
+static void
+hash_iter_lev_inc(VALUE hash)
+{
+    *((int *)&RHASH(hash)->iter_lev) = RHASH_ITER_LEV(hash) + 1;
+}
+
+static void
+hash_iter_lev_dec(VALUE hash)
+{
+    *((int *)&RHASH(hash)->iter_lev) = RHASH_ITER_LEV(hash) - 1;
+}
+
 static VALUE
 hash_foreach_ensure_rollback(VALUE hash)
 {
-    RHASH_ITER_LEV(hash)++;
+    hash_iter_lev_inc(hash);
     return 0;
 }
 
 static VALUE
 hash_foreach_ensure(VALUE hash)
 {
-    RHASH_ITER_LEV(hash)--;
+    hash_iter_lev_dec(hash);
     return 0;
 }
 
@@ -1193,6 +1285,17 @@ rb_hash_stlike_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg)
     }
     else {
         return st_foreach(RHASH_ST_TABLE(hash), func, arg);
+    }
+}
+
+int
+rb_hash_stlike_foreach_with_replace(VALUE hash, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg)
+{
+    if (RHASH_AR_TABLE_P(hash)) {
+        return ar_foreach_with_replace(hash, func, replace, arg);
+    }
+    else {
+        return st_foreach_with_replace(RHASH_ST_TABLE(hash), func, replace, arg);
     }
 }
 
@@ -1222,7 +1325,7 @@ rb_hash_foreach(VALUE hash, int (*func)(ANYARGS), VALUE farg)
 
     if (RHASH_TABLE_EMPTY_P(hash))
         return;
-    RHASH_ITER_LEV(hash)++;
+    hash_iter_lev_inc(hash);
     arg.hash = hash;
     arg.func = (rb_foreach_func *)func;
     arg.arg  = farg;
@@ -1553,17 +1656,8 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
 		VALUE key, val = Qnil;
 
 		if (NIL_P(v)) {
-#if 0 /* refix in the next release */
 		    rb_raise(rb_eArgError, "wrong element type %s at %ld (expected array)",
 			     rb_builtin_class_name(e), i);
-
-#else
-		    rb_warn("wrong element type %s at %ld (expected array)",
-			    rb_builtin_class_name(e), i);
-		    rb_warn("ignoring wrong elements is deprecated, remove them explicitly");
-		    rb_warn("this causes ArgumentError in the next release");
-		    continue;
-#endif
 		}
 		switch (RARRAY_LEN(v)) {
 		  default:
@@ -1642,9 +1736,9 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
  *
  *  Rebuilds the hash based on the current hash values for each key. If
  *  values of key objects have changed since they were inserted, this
- *  method will reindex <i>hsh</i>. If <code>Hash#rehash</code> is
+ *  method will reindex <i>hsh</i>. If Hash#rehash is
  *  called while an iterator is traversing the hash, a
- *  <code>RuntimeError</code> will be raised in the iterator.
+ *  RuntimeError will be raised in the iterator.
  *
  *     a = [ "a", "b" ]
  *     c = [ "c", "d" ]
@@ -1702,13 +1796,32 @@ rb_hash_default_value(VALUE hash, VALUE key)
     }
 }
 
+static inline int
+hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
+{
+    hash_verify(hash);
+
+    if (RHASH_AR_TABLE_P(hash)) {
+        return ar_lookup(hash, key, pval);
+    }
+    else {
+        return st_lookup(RHASH_ST_TABLE(hash), key, pval);
+    }
+}
+
+MJIT_FUNC_EXPORTED int
+rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
+{
+    return hash_stlike_lookup(hash, key, pval);
+}
+
 /*
  *  call-seq:
  *     hsh[key]    ->  value
  *
  *  Element Reference---Retrieves the <i>value</i> object corresponding
  *  to the <i>key</i> object. If not found, returns the default value (see
- *  <code>Hash::new</code> for details).
+ *  Hash::new for details).
  *
  *     h = { "a" => 100, "b" => 200 }
  *     h["a"]   #=> 100
@@ -1721,26 +1834,11 @@ rb_hash_aref(VALUE hash, VALUE key)
 {
     st_data_t val;
 
-    if (RHASH_AR_TABLE_P(hash) && ar_lookup(hash, key, &val)) {
+    if (hash_stlike_lookup(hash, key, &val)) {
         return (VALUE)val;
-    }
-    else if (RHASH_ST_TABLE_P(hash) && st_lookup(RHASH_ST_TABLE(hash), key, &val)) {
-        return (VALUE)val;
-    }
-    hash_verify(hash);
-    return rb_hash_default_value(hash, key);
-}
-
-MJIT_FUNC_EXPORTED int
-rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
-{
-    hash_verify(hash);
-
-    if (RHASH_AR_TABLE_P(hash)) {
-        return ar_lookup(hash, key, pval);
     }
     else {
-        return st_lookup(RHASH_ST_TABLE(hash), key, pval);
+        return rb_hash_default_value(hash, key);
     }
 }
 
@@ -1770,7 +1868,7 @@ rb_hash_lookup(VALUE hash, VALUE key)
  *
  *  Returns a value from the hash for the given key. If the key can't be
  *  found, there are several options: With no other arguments, it will
- *  raise a <code>KeyError</code> exception; if <i>default</i> is given,
+ *  raise a KeyError exception; if <i>default</i> is given,
  *  then that will be returned; if the optional code block is specified,
  *  then that will be run and its result returned.
  *
@@ -1806,23 +1904,26 @@ rb_hash_fetch_m(int argc, VALUE *argv, VALUE hash)
     if (block_given && argc == 2) {
 	rb_warn("block supersedes default value argument");
     }
-    if (RHASH_AR_TABLE_P(hash) && ar_lookup(hash, key, &val)) {
+
+    if (hash_stlike_lookup(hash, key, &val)) {
         return (VALUE)val;
     }
-    else if (RHASH_ST_TABLE_P(hash) && st_lookup(RHASH_ST_TABLE(hash), key, &val)) {
-        return (VALUE)val;
+    else {
+        if (block_given) {
+            return rb_yield(key);
+        }
+        else if (argc == 1) {
+            VALUE desc = rb_protect(rb_inspect, key, 0);
+            if (NIL_P(desc)) {
+                desc = rb_any_to_s(key);
+            }
+            desc = rb_str_ellipsize(desc, 65);
+            rb_key_err_raise(rb_sprintf("key not found: %"PRIsVALUE, desc), hash, key);
+        }
+        else {
+            return argv[1];
+        }
     }
-    if (block_given) return rb_yield(key);
-    if (argc == 1) {
-        VALUE desc = rb_protect(rb_inspect, key, 0);
-        if (NIL_P(desc)) {
-            desc = rb_any_to_s(key);
-	}
-        desc = rb_str_ellipsize(desc, 65);
-        rb_key_err_raise(rb_sprintf("key not found: %"PRIsVALUE, desc), hash, key);
-    }
-    hash_verify(hash);
-    return argv[1];
 }
 
 VALUE
@@ -1837,7 +1938,7 @@ rb_hash_fetch(VALUE hash, VALUE key)
  *
  *  Returns the default value, the value that would be returned by
  *  <i>hsh</i>[<i>key</i>] if <i>key</i> did not exist in <i>hsh</i>.
- *  See also <code>Hash::new</code> and <code>Hash#default=</code>.
+ *  See also Hash::new and Hash#default=.
  *
  *     h = Hash.new                            #=> {}
  *     h.default                               #=> nil
@@ -1874,7 +1975,7 @@ rb_hash_default(int argc, VALUE *argv, VALUE hash)
  *
  *  Sets the default value, the value returned for a key that does not
  *  exist in the hash. It is not possible to set the default to a
- *  <code>Proc</code> that will be executed on each key lookup.
+ *  Proc that will be executed on each key lookup.
  *
  *     h = { "a" => 100, "b" => 200 }
  *     h.default = "Go fish"
@@ -1900,7 +2001,7 @@ rb_hash_set_default(VALUE hash, VALUE ifnone)
  *  call-seq:
  *     hsh.default_proc -> anObject
  *
- *  If <code>Hash::new</code> was invoked with a block, return that
+ *  If Hash::new was invoked with a block, return that
  *  block, otherwise return <code>nil</code>.
  *
  *     h = Hash.new {|h,k| h[k] = k*k }   #=> {}
@@ -2200,7 +2301,7 @@ rb_hash_delete_if(VALUE hash)
  *     hsh.reject! {| key, value | block }  -> hsh or nil
  *     hsh.reject!                          -> an_enumerator
  *
- *  Equivalent to <code>Hash#delete_if</code>, but returns
+ *  Equivalent to Hash#delete_if, but returns
  *  <code>nil</code> if no changes were made.
  */
 
@@ -2297,7 +2398,7 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
  *   hsh.values_at(key, ...)   -> array
  *
  * Return an array containing the values associated with the given keys.
- * Also see <code>Hash.select</code>.
+ * Also see Hash.select.
  *
  *   h = { "cat" => "feline", "dog" => "canine", "cow" => "bovine" }
  *   h.values_at("cow", "cat")  #=> ["bovine", "feline"]
@@ -2321,8 +2422,8 @@ rb_hash_values_at(int argc, VALUE *argv, VALUE hash)
  *   hsh.fetch_values(key, ...) { |key| block } -> array
  *
  * Returns an array containing the values associated with the given keys
- * but also raises <code>KeyError</code> when one of keys can't be found.
- * Also see <code>Hash#values_at</code> and <code>Hash#fetch</code>.
+ * but also raises KeyError when one of keys can't be found.
+ * Also see Hash#values_at and Hash#fetch.
  *
  *   h = { "cat" => "feline", "dog" => "canine", "cow" => "bovine" }
  *
@@ -3120,7 +3221,7 @@ keys_i(VALUE key, VALUE value, VALUE ary)
  *     hsh.keys    -> array
  *
  *  Returns a new array populated with the keys from this hash. See also
- *  <code>Hash#values</code>.
+ *  Hash#values.
  *
  *     h = { "a" => 100, "b" => 200, "c" => 300, "d" => 400 }
  *     h.keys   #=> ["a", "b", "c", "d"]
@@ -3167,7 +3268,7 @@ values_i(VALUE key, VALUE value, VALUE ary)
  *     hsh.values    -> array
  *
  *  Returns a new array populated with the values from <i>hsh</i>. See
- *  also <code>Hash#keys</code>.
+ *  also Hash#keys.
  *
  *     h = { "a" => 100, "b" => 200, "c" => 300 }
  *     h.values   #=> [100, 200, 300]
@@ -3219,7 +3320,7 @@ rb_hash_values(VALUE hash)
  *     h.has_key?("a")   #=> true
  *     h.has_key?("z")   #=> false
  *
- *  Note that <code>include?</code> and <code>member?</code> do not test member
+ *  Note that #include? and #member? do not test member
  *  equality using <code>==</code> as do other Enumerables.
  *
  *  See also Enumerable#include?
@@ -3228,13 +3329,12 @@ rb_hash_values(VALUE hash)
 MJIT_FUNC_EXPORTED VALUE
 rb_hash_has_key(VALUE hash, VALUE key)
 {
-    if (RHASH_AR_TABLE_P(hash) && ar_lookup(hash, key, 0)) {
+    if (hash_stlike_lookup(hash, key, NULL)) {
         return Qtrue;
     }
-    else if (RHASH_ST_TABLE_P(hash) && st_lookup(RHASH_ST_TABLE(hash), key, 0)) {
-	return Qtrue;
+    else {
+        return Qfalse;
     }
-    return Qfalse;
 }
 
 static int
@@ -3285,20 +3385,17 @@ eql_i(VALUE key, VALUE val1, VALUE arg)
     struct equal_data *data = (struct equal_data *)arg;
     st_data_t val2;
 
-    if (RHASH_AR_TABLE_P(data->hash) && !ar_lookup(data->hash, key, &val2)) {
-	data->result = Qfalse;
-	return ST_STOP;
-    }
-    else if (RHASH_ST_TABLE_P(data->hash) && !st_lookup(RHASH_ST_TABLE(data->hash), key, &val2)) {
+    if (!hash_stlike_lookup(data->hash, key, &val2)) {
         data->result = Qfalse;
         return ST_STOP;
     }
-
-    if (!(data->eql ? rb_eql(val1, (VALUE)val2) : (int)rb_equal(val1, (VALUE)val2))) {
-	data->result = Qfalse;
-	return ST_STOP;
+    else {
+        if (!(data->eql ? rb_eql(val1, (VALUE)val2) : (int)rb_equal(val1, (VALUE)val2))) {
+            data->result = Qfalse;
+            return ST_STOP;
+        }
+        return ST_CONTINUE;
     }
-    return ST_CONTINUE;
 }
 
 static VALUE
@@ -3363,8 +3460,7 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
  *
  *  Equality---Two hashes are equal if they each contain the same number
  *  of keys and if each key-value pair is equal to (according to
- *  <code>Object#==</code>) the corresponding elements in the other
- *  hash.
+ *  Object#==) the corresponding elements in the other hash.
  *
  *     h1 = { "a" => 1, "c" => 2 }
  *     h2 = { 7 => 35, "c" => 2, "a" => 1 }
@@ -3732,7 +3828,7 @@ assoc_i(VALUE key, VALUE val, VALUE arg)
  *
  *  Searches through the hash comparing _obj_ with the key using <code>==</code>.
  *  Returns the key-value pair (two elements array) or +nil+
- *  if no match is found.  See <code>Array#assoc</code>.
+ *  if no match is found.  See Array#assoc.
  *
  *     h = {"colors"  => ["red", "blue", "green"],
  *          "letters" => ["a", "b", "c" ]}
@@ -3794,7 +3890,7 @@ rassoc_i(VALUE key, VALUE val, VALUE arg)
  *
  *  Searches through the hash comparing _obj_ with the value using <code>==</code>.
  *  Returns the first key-value pair (two-element array) that matches. See
- *  also <code>Array#rassoc</code>.
+ *  also Array#rassoc.
  *
  *     a = {1=> "one", 2 => "two", 3 => "three", "ii" => "two"}
  *     a.rassoc("two")    #=> [2, "two"]
@@ -3984,7 +4080,7 @@ rb_hash_compare_by_id(VALUE hash)
  *     hsh.compare_by_identity? -> true or false
  *
  *  Returns <code>true</code> if <i>hsh</i> will compare its keys by
- *  their identity.  Also see <code>Hash#compare_by_identity</code>.
+ *  their identity.  Also see Hash#compare_by_identity.
  *
  */
 
@@ -4248,6 +4344,12 @@ rb_hash_to_proc(VALUE hash)
     return rb_func_proc_new(hash_proc_call, hash);
 }
 
+static VALUE
+rb_hash_deconstruct_keys(VALUE hash, VALUE keys)
+{
+    return hash;
+}
+
 static int
 add_new_i(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
 {
@@ -4305,7 +4407,7 @@ ar_bulk_insert(VALUE hash, long argc, const VALUE *argv)
     }
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
 {
     HASH_ASSERT(argc % 2 == 0);
@@ -4485,8 +4587,10 @@ env_name(volatile VALUE *s)
 
 #define env_name(s) env_name(&(s))
 
+static VALUE env_aset(VALUE nm, VALUE val);
+
 static VALUE
-env_delete(VALUE obj, VALUE name)
+env_delete(VALUE name)
 {
     const char *nam, *val;
 
@@ -4522,7 +4626,7 @@ env_delete_m(VALUE obj, VALUE name)
 {
     VALUE val;
 
-    val = env_delete(obj, name);
+    val = env_delete(name);
     if (NIL_P(val) && rb_block_given_p()) rb_yield(name);
     return val;
 }
@@ -4853,12 +4957,18 @@ ruby_unsetenv(const char *name)
  *
  */
 static VALUE
-env_aset(VALUE obj, VALUE nm, VALUE val)
+env_aset_m(VALUE obj, VALUE nm, VALUE val)
+{
+    return env_aset(nm, val);
+}
+
+static VALUE
+env_aset(VALUE nm, VALUE val)
 {
     char *name, *value;
 
     if (NIL_P(val)) {
-	env_delete(obj, nm);
+        env_delete(nm);
 	return Qnil;
     }
     SafeStringValue(nm);
@@ -5067,7 +5177,7 @@ env_reject_bang(VALUE ehash)
 	if (!NIL_P(val)) {
 	    if (RTEST(rb_yield_values(2, RARRAY_AREF(keys, i), val))) {
 		FL_UNSET(RARRAY_AREF(keys, i), FL_TAINT);
-		env_delete(Qnil, RARRAY_AREF(keys, i));
+                env_delete(RARRAY_AREF(keys, i));
 		del++;
 	    }
 	}
@@ -5177,7 +5287,7 @@ env_select_bang(VALUE ehash)
 	if (!NIL_P(val)) {
 	    if (!RTEST(rb_yield_values(2, RARRAY_AREF(keys, i), val))) {
 		FL_UNSET(RARRAY_AREF(keys, i), FL_TAINT);
-		env_delete(Qnil, RARRAY_AREF(keys, i));
+                env_delete(RARRAY_AREF(keys, i));
 		del++;
 	    }
 	}
@@ -5249,7 +5359,7 @@ rb_env_clear(void)
     for (i=0; i<RARRAY_LEN(keys); i++) {
 	VALUE val = rb_f_getenv(Qnil, RARRAY_AREF(keys, i));
 	if (!NIL_P(val)) {
-	    env_delete(Qnil, RARRAY_AREF(keys, i));
+            env_delete(RARRAY_AREF(keys, i));
 	}
     }
     RB_GC_GUARD(keys);
@@ -5608,7 +5718,7 @@ env_shift(void)
 	if (s) {
 	    VALUE key = env_str_new(*env, s-*env);
 	    VALUE val = env_str_new2(getenv(RSTRING_PTR(key)));
-	    env_delete(Qnil, key);
+            env_delete(key);
 	    result = rb_assoc_new(key, val);
 	}
     }
@@ -5632,7 +5742,7 @@ env_invert(void)
 static int
 env_replace_i(VALUE key, VALUE val, VALUE keys)
 {
-    env_aset(Qnil, key, val);
+    env_aset(key, val);
     if (rb_ary_includes(keys, key)) {
 	rb_ary_delete(keys, key);
     }
@@ -5658,7 +5768,7 @@ env_replace(VALUE env, VALUE hash)
     rb_hash_foreach(hash, env_replace_i, keys);
 
     for (i=0; i<RARRAY_LEN(keys); i++) {
-	env_delete(env, RARRAY_AREF(keys, i));
+        env_delete(RARRAY_AREF(keys, i));
     }
     RB_GC_GUARD(keys);
     return env;
@@ -5670,7 +5780,7 @@ env_update_i(VALUE key, VALUE val)
     if (rb_block_given_p()) {
 	val = rb_yield_values(3, key, rb_f_getenv(Qnil, key), val);
     }
-    env_aset(Qnil, key, val);
+    env_aset(key, val);
     return ST_CONTINUE;
 }
 
@@ -5911,6 +6021,8 @@ Init_Hash(void)
     rb_define_method(rb_cHash, ">=", rb_hash_ge, 1);
     rb_define_method(rb_cHash, ">", rb_hash_gt, 1);
 
+    rb_define_method(rb_cHash, "deconstruct_keys", rb_hash_deconstruct_keys, 1);
+
     /* Document-class: ENV
      *
      * ENV is a hash-like accessor for environment variables.
@@ -5926,8 +6038,8 @@ Init_Hash(void)
 
     rb_define_singleton_method(envtbl, "[]", rb_f_getenv, 1);
     rb_define_singleton_method(envtbl, "fetch", env_fetch, -1);
-    rb_define_singleton_method(envtbl, "[]=", env_aset, 2);
-    rb_define_singleton_method(envtbl, "store", env_aset, 2);
+    rb_define_singleton_method(envtbl, "[]=", env_aset_m, 2);
+    rb_define_singleton_method(envtbl, "store", env_aset_m, 2);
     rb_define_singleton_method(envtbl, "each", env_each_pair, 0);
     rb_define_singleton_method(envtbl, "each_pair", env_each_pair, 0);
     rb_define_singleton_method(envtbl, "each_key", env_each_key, 0);

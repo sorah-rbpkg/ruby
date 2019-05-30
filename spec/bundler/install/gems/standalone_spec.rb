@@ -75,7 +75,7 @@ RSpec.shared_examples "bundle install --standalone" do
       G
     end
 
-    it "generates a bundle/bundler/setup.rb with the proper paths", :rubygems => "2.4" do
+    it "generates a bundle/bundler/setup.rb with the proper paths" do
       expected_path = bundled_app("bundle/bundler/setup.rb")
       extension_line = File.read(expected_path).each_line.find {|line| line.include? "/extensions/" }.strip
       expect(extension_line).to start_with '$:.unshift "#{path}/../#{ruby_engine}/#{ruby_version}/extensions/'
@@ -108,8 +108,8 @@ RSpec.shared_examples "bundle install --standalone" do
     end
 
     it "outputs a helpful error message" do
-      expect(out).to include("You have one or more invalid gemspecs that need to be fixed.")
-      expect(out).to include("bar 1.0 has an invalid gemspec")
+      expect(err).to include("You have one or more invalid gemspecs that need to be fixed.")
+      expect(err).to include("bar 1.0 has an invalid gemspec")
     end
   end
 
@@ -197,7 +197,7 @@ RSpec.shared_examples "bundle install --standalone" do
       expect(last_command.stderr).to eq("ZOMG LOAD ERROR")
     end
 
-    it "allows --path to change the location of the standalone bundle", :bundler => "< 2" do
+    it "allows --path to change the location of the standalone bundle", :bundler => "< 3" do
       bundle! "install", forgotten_command_line_options(:path => "path/to/bundle").merge(:standalone => true)
 
       Dir.chdir(bundled_app) do
@@ -213,7 +213,7 @@ RSpec.shared_examples "bundle install --standalone" do
       expect(last_command.stdout).to eq("2.3.2")
     end
 
-    it "allows --path to change the location of the standalone bundle", :bundler => "2" do
+    it "allows --path to change the location of the standalone bundle", :bundler => "3" do
       bundle! "install", forgotten_command_line_options(:path => "path/to/bundle").merge(:standalone => true)
       path = File.expand_path("path/to/bundle")
 
@@ -273,7 +273,7 @@ RSpec.shared_examples "bundle install --standalone" do
     end
   end
 
-  describe "with --binstubs", :bundler => "< 2" do
+  describe "with --binstubs", :bundler => "< 3" do
     before do
       gemfile <<-G
         source "file://#{gem_repo1}"

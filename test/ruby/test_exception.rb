@@ -853,6 +853,33 @@ end.join
       alias inspect pretty_inspect
     end
 
+  def test_frozen_error_receiver
+    obj = Object.new.freeze
+    (obj.foo = 1) rescue (e = $!)
+    assert_same(obj, e.receiver)
+    obj.singleton_class.const_set(:A, 2) rescue (e = $!)
+    assert_same(obj.singleton_class, e.receiver)
+  end
+
+  def test_frozen_error_initialize
+    obj = Object.new
+    exc = FrozenError.new("bar", obj)
+    assert_equal("bar", exc.message)
+    assert_same(obj, exc.receiver)
+
+    exc = FrozenError.new("bar")
+    assert_equal("bar", exc.message)
+    assert_raise_with_message(ArgumentError, "no receiver is available") {
+      exc.receiver
+    }
+
+    exc = FrozenError.new
+    assert_equal("FrozenError", exc.message)
+    assert_raise_with_message(ArgumentError, "no receiver is available") {
+      exc.receiver
+    }
+  end
+
   def test_name_error_new_default
     error = NameError.new
     assert_equal("NameError", error.message)
@@ -1069,6 +1096,43 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       end
       raise E
     end;
+  end
+
+  def assert_null_char(src, *args, **opts)
+    begin
+      eval(src)
+    rescue => e
+    end
+    assert_not_nil(e)
+    assert_include(e.message, "\0")
+    assert_in_out_err([], src, [], [], *args, **opts) do |_, err,|
+      err.each do |e|
+        assert_not_include(e, "\0")
+      end
+    end
+    e
+  end
+
+  def test_control_in_message
+    bug7574 = '[ruby-dev:46749]'
+    assert_null_char("#{<<~"begin;"}\n#{<<~'end;'}", bug7574)
+    begin;
+      Object.const_defined?("String\0")
+    end;
+    assert_null_char("#{<<~"begin;"}\n#{<<~'end;'}", bug7574)
+    begin;
+      Object.const_get("String\0")
+    end;
+  end
+
+  def test_encoding_in_message
+    name = "\u{e9}t\u{e9}"
+    e = EnvUtil.with_default_external("US-ASCII") do
+      assert_raise(NameError) do
+        Object.const_get(name)
+      end
+    end
+    assert_include(e.message, name)
   end
 
   def test_method_missing_reason_clear

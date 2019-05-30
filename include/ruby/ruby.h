@@ -2,7 +2,7 @@
 
   ruby/ruby.h -
 
-  $Author: naruse $
+  $Author$
   created at: Thu Jun 10 14:26:32 JST 1993
 
   Copyright (C) 1993-2008 Yukihiro Matsumoto
@@ -512,6 +512,7 @@ enum ruby_value_type {
     RUBY_T_NODE   = 0x1b,
     RUBY_T_ICLASS = 0x1c,
     RUBY_T_ZOMBIE = 0x1d,
+    RUBY_T_MOVED  = 0x1e,
 
     RUBY_T_MASK   = 0x1f
 };
@@ -542,6 +543,7 @@ enum ruby_value_type {
 #define T_UNDEF  RUBY_T_UNDEF
 #define T_NODE   RUBY_T_NODE
 #define T_ZOMBIE RUBY_T_ZOMBIE
+#define T_MOVED RUBY_T_MOVED
 #define T_MASK   RUBY_T_MASK
 
 #define RB_BUILTIN_TYPE(x) (int)(((struct RBasic*)(x))->flags & RUBY_T_MASK)
@@ -845,6 +847,7 @@ enum ruby_fl_type {
     RUBY_FL_FINALIZE  = (1<<7),
     RUBY_FL_TAINT     = (1<<8),
     RUBY_FL_UNTRUSTED = RUBY_FL_TAINT,
+    RUBY_FL_SEEN_OBJ_ID = (1<<9),
     RUBY_FL_EXIVAR    = (1<<10),
     RUBY_FL_FREEZE    = (1<<11),
 
@@ -883,7 +886,7 @@ enum ruby_fl_type {
 
 struct RUBY_ALIGNAS(SIZEOF_VALUE) RBasic {
     VALUE flags;
-    const VALUE klass;
+    VALUE klass;
 };
 
 VALUE rb_obj_hide(VALUE obj);
@@ -903,10 +906,15 @@ VALUE rb_obj_reveal(VALUE obj, VALUE klass); /* do not use this API to change kl
 
 #define RBASIC_CLASS(obj) (RBASIC(obj)->klass)
 
+#define RVALUE_EMBED_LEN_MAX RVALUE_EMBED_LEN_MAX
+enum ruby_rvalue_flags {
+    RVALUE_EMBED_LEN_MAX = 3,
+};
+
 #define ROBJECT_EMBED_LEN_MAX ROBJECT_EMBED_LEN_MAX
 #define ROBJECT_EMBED ROBJECT_EMBED
 enum ruby_robject_flags {
-    ROBJECT_EMBED_LEN_MAX = 3,
+    ROBJECT_EMBED_LEN_MAX = RVALUE_EMBED_LEN_MAX,
     ROBJECT_EMBED = RUBY_FL_USER1,
 
     ROBJECT_ENUM_END
@@ -972,7 +980,7 @@ enum ruby_rstring_flags {
     RSTRING_EMBED_LEN_MASK = (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|
 			      RUBY_FL_USER5|RUBY_FL_USER6),
     RSTRING_EMBED_LEN_SHIFT = (RUBY_FL_USHIFT+2),
-    RSTRING_EMBED_LEN_MAX = (int)((sizeof(VALUE)*3)/sizeof(char)-1),
+    RSTRING_EMBED_LEN_MAX = (int)((sizeof(VALUE)*RVALUE_EMBED_LEN_MAX)/sizeof(char)-1),
     RSTRING_FSTR = RUBY_FL_USER17,
 
     RSTRING_ENUM_END
@@ -1018,7 +1026,7 @@ struct RString {
 #endif
 
 enum ruby_rarray_flags {
-    RARRAY_EMBED_LEN_MAX = 3,
+    RARRAY_EMBED_LEN_MAX = RVALUE_EMBED_LEN_MAX,
     RARRAY_EMBED_FLAG = RUBY_FL_USER1,
     /* RUBY_FL_USER2 is for ELTS_SHARED */
     RARRAY_EMBED_LEN_MASK = (RUBY_FL_USER4|RUBY_FL_USER3),
@@ -1100,7 +1108,7 @@ struct RArray {
 struct RRegexp {
     struct RBasic basic;
     struct re_pattern_buffer *ptr;
-    const VALUE src;
+    VALUE src;
     unsigned long usecnt;
 };
 #define RREGEXP_PTR(r) (RREGEXP(r)->ptr)
@@ -1139,7 +1147,8 @@ struct rb_data_type_struct {
 	void (*dmark)(void*);
 	void (*dfree)(void*);
 	size_t (*dsize)(const void *);
-	void *reserved[2]; /* For future extension.
+        void (*dcompact)(void*);
+        void *reserved[1]; /* For future extension.
 			      This array *must* be filled with ZERO. */
     } function;
     const rb_data_type_t *parent;
@@ -1250,6 +1259,7 @@ int rb_big_sign(VALUE);
 #define RBIGNUM_NEGATIVE_P(b) (RBIGNUM_SIGN(b)==0)
 
 #define R_CAST(st)   (struct st*)
+#define RMOVED(obj)  (R_CAST(RMoved)(obj))
 #define RBASIC(obj)  (R_CAST(RBasic)(obj))
 #define ROBJECT(obj) (R_CAST(RObject)(obj))
 #define RCLASS(obj)  (R_CAST(RClass)(obj))
@@ -1268,6 +1278,7 @@ int rb_big_sign(VALUE);
 #define FL_FINALIZE     ((VALUE)RUBY_FL_FINALIZE)
 #define FL_TAINT        ((VALUE)RUBY_FL_TAINT)
 #define FL_UNTRUSTED    ((VALUE)RUBY_FL_UNTRUSTED)
+#define FL_SEEN_OBJ_ID  ((VALUE)RUBY_FL_SEEN_OBJ_ID)
 #define FL_EXIVAR       ((VALUE)RUBY_FL_EXIVAR)
 #define FL_FREEZE       ((VALUE)RUBY_FL_FREEZE)
 
@@ -1738,6 +1749,15 @@ rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
 #define MEMCPY(p1,p2,type,n) memcpy((p1), (p2), sizeof(type)*(size_t)(n))
 #define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(size_t)(n))
 #define MEMCMP(p1,p2,type,n) memcmp((p1), (p2), sizeof(type)*(size_t)(n))
+#ifdef __GLIBC__
+static inline void *
+ruby_nonempty_memcpy(void *dest, const void *src, size_t n)
+{
+    /* if nothing to be copied, src may be NULL */
+    return (n ? memcpy(dest, src, n) : dest);
+}
+#define memcpy(p1,p2,n) ruby_nonempty_memcpy(p1, p2, n)
+#endif
 
 void rb_obj_infect(VALUE victim, VALUE carrier);
 
@@ -2042,6 +2062,7 @@ RUBY_EXTERN VALUE rb_eSysStackError;
 RUBY_EXTERN VALUE rb_eRegexpError;
 RUBY_EXTERN VALUE rb_eEncodingError;
 RUBY_EXTERN VALUE rb_eEncCompatError;
+RUBY_EXTERN VALUE rb_eNoMatchingPatternError;
 
 RUBY_EXTERN VALUE rb_eScriptError;
 RUBY_EXTERN VALUE rb_eNameError;
@@ -2177,6 +2198,7 @@ rb_array_ptr_use_start(VALUE a, int allow_transient)
         }
     }
 #endif
+    (void)allow_transient;
 
     return rb_ary_ptr_use_start(a);
 }
@@ -2187,6 +2209,7 @@ rb_array_ptr_use_end(VALUE a, int allow_transient)
 {
     void rb_ary_ptr_use_end(VALUE a);
     rb_ary_ptr_use_end(a);
+    (void)allow_transient;
 }
 
 #if defined(EXTLIB) && defined(USE_DLN_A_OUT)
@@ -2272,6 +2295,9 @@ static inline int rb_toupper(int c) { return rb_islower(c) ? (c&0x5f) : c; }
 #define ISALPHA(c) rb_isalpha(c)
 #define ISDIGIT(c) rb_isdigit(c)
 #define ISXDIGIT(c) rb_isxdigit(c)
+#define ISBLANK(c) rb_isblank(c)
+#define ISCNTRL(c) rb_iscntrl(c)
+#define ISPUNCT(c) rb_ispunct(c)
 #endif
 #define TOUPPER(c) rb_toupper(c)
 #define TOLOWER(c) rb_tolower(c)

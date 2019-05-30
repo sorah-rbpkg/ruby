@@ -40,6 +40,7 @@ def parse_args(argv = ARGV)
   $mflags = []
   $install = []
   $installed_list = nil
+  $exclude = []
   $dryrun = false
   $rdocdir = nil
   $htmldir = nil
@@ -66,6 +67,9 @@ def parse_args(argv = ARGV)
   end
   opt.on('-i', '--install=TYPE', $install_procs.keys) do |ins|
     $install << ins
+  end
+  opt.on('-x', '--exclude=TYPE', $install_procs.keys) do |exc|
+    $exclude << exc
   end
   opt.on('--data-mode=OCTAL-MODE', OptionParser::OctalInteger) do |mode|
     $data_mode = mode
@@ -823,6 +827,11 @@ def install_default_gem(dir, srcdir)
     spec
   }
   gems.compact.sort_by(&:name).each do |gemspec|
+    old_gemspecs = Dir[File.join(default_spec_dir, "#{gemspec.name}-*.gemspec")]
+    if old_gemspecs.size > 0
+      old_gemspecs.each {|spec| FileUtils.rm spec }
+    end
+
     full_name = "#{gemspec.name}-#{gemspec.version}"
 
     puts "#{INDENT}#{gemspec.name} #{gemspec.version}"
@@ -916,8 +925,7 @@ include FileUtils::NoWrite if $dryrun
 @fileutils_output = STDOUT
 @fileutils_label = ''
 
-all = $install.delete(:all)
-$install << :local << :ext if $install.empty?
+$install << :all if $install.empty?
 installs = $install.map do |inst|
   if !(procs = $install_procs[inst]) || procs.empty?
     next warn("unknown install target - #{inst}")
@@ -925,8 +933,7 @@ installs = $install.map do |inst|
   procs
 end
 installs.flatten!
-installs.uniq!
-installs |= $install_procs[:all] if all
+installs -= $exclude.map {|exc| $install_procs[exc]}.flatten
 installs.each do |block|
   dir = Dir.pwd
   begin

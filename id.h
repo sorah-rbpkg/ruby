@@ -3,7 +3,7 @@
 
   id.h -
 
-  $Author: nobu $
+  $Author$
   created at: Sun Oct 19 21:12:51 2008
 
   Copyright (C) 2007 Koichi Sasada
@@ -44,25 +44,28 @@ enum ruby_id_types {
 
 #define RUBY_TOKEN_DOT2 128
 #define RUBY_TOKEN_DOT3 129
-#define RUBY_TOKEN_UPLUS 130
-#define RUBY_TOKEN_UMINUS 131
-#define RUBY_TOKEN_POW 132
-#define RUBY_TOKEN_CMP 133
-#define RUBY_TOKEN_LSHFT 134
-#define RUBY_TOKEN_RSHFT 135
-#define RUBY_TOKEN_LEQ 136
-#define RUBY_TOKEN_GEQ 137
-#define RUBY_TOKEN_EQ 138
-#define RUBY_TOKEN_EQQ 139
-#define RUBY_TOKEN_NEQ 140
-#define RUBY_TOKEN_MATCH 141
-#define RUBY_TOKEN_NMATCH 142
-#define RUBY_TOKEN_AREF 143
-#define RUBY_TOKEN_ASET 144
-#define RUBY_TOKEN_COLON2 145
-#define RUBY_TOKEN_ANDOP 146
-#define RUBY_TOKEN_OROP 147
-#define RUBY_TOKEN_ANDDOT 148
+#define RUBY_TOKEN_BDOT2 130
+#define RUBY_TOKEN_BDOT3 131
+#define RUBY_TOKEN_UPLUS 132
+#define RUBY_TOKEN_UMINUS 133
+#define RUBY_TOKEN_POW 134
+#define RUBY_TOKEN_CMP 135
+#define RUBY_TOKEN_LSHFT 136
+#define RUBY_TOKEN_RSHFT 137
+#define RUBY_TOKEN_LEQ 138
+#define RUBY_TOKEN_GEQ 139
+#define RUBY_TOKEN_EQ 140
+#define RUBY_TOKEN_EQQ 141
+#define RUBY_TOKEN_NEQ 142
+#define RUBY_TOKEN_MATCH 143
+#define RUBY_TOKEN_NMATCH 144
+#define RUBY_TOKEN_AREF 145
+#define RUBY_TOKEN_ASET 146
+#define RUBY_TOKEN_COLON2 147
+#define RUBY_TOKEN_ANDOP 148
+#define RUBY_TOKEN_OROP 149
+#define RUBY_TOKEN_ANDDOT 150
+#define RUBY_TOKEN_METHREF 151
 #define RUBY_TOKEN(t) RUBY_TOKEN_##t
 
 #define RUBY_TOKEN2ID_TYPE(tok, type) ((tok<<RUBY_ID_SCOPE_SHIFT)|type|RUBY_ID_STATIC_SYM)
@@ -106,7 +109,8 @@ enum ruby_method_ids {
     idANDOP = RUBY_TOKEN(ANDOP),
     idOROP = RUBY_TOKEN(OROP),
     idANDDOT = RUBY_TOKEN(ANDDOT),
-    tPRESERVED_ID_BEGIN = 148,
+    idMETHREF = RUBY_TOKEN(METHREF),
+    tPRESERVED_ID_BEGIN = 151,
     idNULL,
     idEmptyP,
     idEqlP,
@@ -122,6 +126,7 @@ enum ruby_method_ids {
     id_core_set_postexe,
     id_core_hash_merge_ptr,
     id_core_hash_merge_kwd,
+    id_core_raise,
     id_debug_created_info,
     tPRESERVED_ID_END,
     tTOKEN_LOCAL_BEGIN = tPRESERVED_ID_END-1,
@@ -180,6 +185,7 @@ enum ruby_method_ids {
     tTOKEN_GLOBAL_BEGIN = tTOKEN_INSTANCE_END-1,
     tLASTLINE,
     tBACKREF,
+    tERROR_INFO,
     tTOKEN_GLOBAL_END,
     tTOKEN_CONST_BEGIN = tTOKEN_GLOBAL_END-1,
     tTOKEN_CONST_END,
@@ -242,6 +248,7 @@ enum ruby_method_ids {
 #define DEFINE_GLOBALID_FROM_TOKEN(n) id##n = TOKEN2GLOBALID(t##n)
     DEFINE_GLOBALID_FROM_TOKEN(LASTLINE),
     DEFINE_GLOBALID_FROM_TOKEN(BACKREF),
+    DEFINE_GLOBALID_FROM_TOKEN(ERROR_INFO),
 #define DEFINE_CONSTID_FROM_TOKEN(n) id##n = TOKEN2CONSTID(t##n)
 #define DEFINE_CLASSID_FROM_TOKEN(n) id##n = TOKEN2CLASSID(t##n)
 #define DEFINE_ATTRSETID_FROM_TOKEN(n) id##n = TOKEN2ATTRSETID(t##n)

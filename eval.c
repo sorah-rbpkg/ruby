@@ -2,7 +2,7 @@
 
   eval.c -
 
-  $Author: naruse $
+  $Author$
   created at: Thu Jun 10 14:22:17 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -234,7 +234,7 @@ ruby_cleanup(volatile int ex)
 	}
     }
 
-    mjit_finish(TRUE); /* We still need ISeqs here. */
+    mjit_finish(true); // We still need ISeqs here.
 
     ruby_finalize_1();
 
@@ -454,7 +454,7 @@ rb_class_modify_check(VALUE klass)
 		goto noclass;
 	    }
 	}
-	rb_error_frozen(desc);
+        rb_frozen_error_raise(klass, "can't modify frozen %s", desc);
     }
 }
 
@@ -714,7 +714,7 @@ extract_raise_opts(int argc, const VALUE *argv, VALUE *opts)
  *     fail(exception [, string [, array]], cause: $!)
  *
  *  With no arguments, raises the exception in <code>$!</code> or raises
- *  a <code>RuntimeError</code> if <code>$!</code> is +nil+.
+ *  a RuntimeError if <code>$!</code> is +nil+.
  *  With a single +String+ argument, raises a
  *  +RuntimeError+ with the string as a message. Otherwise,
  *  the first parameter should be the name of an +Exception+
@@ -733,7 +733,7 @@ extract_raise_opts(int argc, const VALUE *argv, VALUE *opts)
  *  the +:cause+ argument.
  */
 
-static VALUE
+VALUE
 rb_f_raise(int argc, VALUE *argv)
 {
     VALUE err;
@@ -1200,11 +1200,11 @@ rb_frame_last_func(void)
  *     append_features(mod)   -> mod
  *
  *  When this module is included in another, Ruby calls
- *  <code>append_features</code> in this module, passing it the
- *  receiving module in _mod_. Ruby's default implementation is
- *  to add the constants, methods, and module variables of this module
- *  to _mod_ if this module has not already been added to
- *  _mod_ or one of its ancestors. See also <code>Module#include</code>.
+ *  #append_features in this module, passing it the receiving module
+ *  in _mod_. Ruby's default implementation is to add the constants,
+ *  methods, and module variables of this module to _mod_ if this
+ *  module has not already been added to _mod_ or one of its
+ *  ancestors. See also Module#include.
  */
 
 static VALUE
@@ -1222,7 +1222,7 @@ rb_mod_append_features(VALUE module, VALUE include)
  *  call-seq:
  *     include(module, ...)    -> self
  *
- *  Invokes <code>Module.append_features</code> on each parameter in reverse order.
+ *  Invokes Module.append_features on each parameter in reverse order.
  */
 
 static VALUE
@@ -1249,11 +1249,11 @@ rb_mod_include(int argc, VALUE *argv, VALUE module)
  *     prepend_features(mod)   -> mod
  *
  *  When this module is prepended in another, Ruby calls
- *  <code>prepend_features</code> in this module, passing it the
- *  receiving module in _mod_. Ruby's default implementation is
- *  to overlay the constants, methods, and module variables of this module
- *  to _mod_ if this module has not already been added to
- *  _mod_ or one of its ancestors. See also <code>Module#prepend</code>.
+ *  #prepend_features in this module, passing it the receiving module
+ *  in _mod_. Ruby's default implementation is to overlay the
+ *  constants, methods, and module variables of this module to _mod_
+ *  if this module has not already been added to _mod_ or one of its
+ *  ancestors. See also Module#prepend.
  */
 
 static VALUE
@@ -1271,7 +1271,7 @@ rb_mod_prepend_features(VALUE module, VALUE prepend)
  *  call-seq:
  *     prepend(module, ...)    -> self
  *
- *  Invokes <code>Module.prepend_features</code> on each parameter in reverse order.
+ *  Invokes Module.prepend_features on each parameter in reverse order.
  */
 
 static VALUE
@@ -1646,7 +1646,7 @@ rb_extend_object(VALUE obj, VALUE module)
  *
  *  Extends the specified object by adding this module's constants and
  *  methods (which are added as singleton methods). This is the callback
- *  method used by <code>Object#extend</code>.
+ *  method used by Object#extend.
  *
  *     module Picky
  *       def Picky.extend_object(o)
@@ -1722,9 +1722,9 @@ rb_obj_extend(int argc, VALUE *argv, VALUE obj)
  *  call-seq:
  *     include(module, ...)   -> self
  *
- *  Invokes <code>Module.append_features</code>
- *  on each parameter in turn. Effectively adds the methods and constants
- *  in each module to the receiver.
+ *  Invokes Module.append_features on each parameter in turn.
+ *  Effectively adds the methods and constants in each module to the
+ *  receiver.
  */
 
 static VALUE
@@ -1744,7 +1744,7 @@ top_include(int argc, VALUE *argv, VALUE self)
  *     using(module)    -> self
  *
  *  Import class refinements from <i>module</i> into the scope where
- *  <code>using</code> is called.
+ *  #using is called.
  */
 
 static VALUE

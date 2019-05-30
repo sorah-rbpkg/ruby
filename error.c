@@ -2,7 +2,7 @@
 
   error.c -
 
-  $Author: nobu $
+  $Author$
   created at: Mon Aug  9 16:11:34 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -59,15 +59,6 @@ static VALUE rb_cWarningBuffer;
 static ID id_warn;
 
 extern const char ruby_description[];
-
-static const char REPORTBUG_MSG[] =
-	"[NOTE]\n" \
-	"You may have encountered a bug in the Ruby interpreter" \
-	" or extension libraries.\n" \
-	"Bug reports are welcome.\n" \
-	""
-	"For details: https://www.ruby-lang.org/bugreport.html\n\n" \
-    ;
 
 static const char *
 rb_strerrno(int err)
@@ -164,7 +155,7 @@ rb_warning_s_warn(VALUE mod, VALUE str)
  *  Document-module: Warning
  *
  *  The Warning module contains a single method named #warn, and the
- *  module extends itself, making <code>Warning.warn</code> available.
+ *  module extends itself, making Warning.warn available.
  *  Warning.warn is called for all warnings issued by Ruby.
  *  By default, warnings are printed to $stderr.
  *
@@ -315,7 +306,7 @@ warning_write(int argc, VALUE *argv, VALUE buf)
  * <code>-W0</code> flag), does nothing.  Otherwise,
  * converts each of the messages to strings, appends a newline
  * character to the string if the string does not end in a newline,
- * and calls <code>Warning.warn</code> with the string.
+ * and calls Warning.warn with the string.
  *
  *    warn("warning 1", "warning 2")
  *
@@ -548,7 +539,6 @@ bug_report_end(FILE *out)
 	    (*reporter->func)(out, reporter->data);
 	}
     }
-    fputs(REPORTBUG_MSG, out);
     postscript_dump(out);
 }
 
@@ -652,8 +642,6 @@ rb_async_bug_errno(const char *mesg, int errno_arg)
     }
     WRITE_CONST(2, "\n\n");
     write_or_abort(2, ruby_description, strlen(ruby_description));
-    WRITE_CONST(2, "\n\n");
-    WRITE_CONST(2, REPORTBUG_MSG);
     abort();
 }
 
@@ -883,6 +871,7 @@ VALUE rb_eSecurityError;
 VALUE rb_eNotImpError;
 VALUE rb_eNoMemError;
 VALUE rb_cNameErrorMesg;
+VALUE rb_eNoMatchingPatternError;
 
 VALUE rb_eScriptError;
 VALUE rb_eSyntaxError;
@@ -1278,7 +1267,7 @@ try_convert_to_exception(VALUE obj)
  *  call-seq:
  *     exc == obj   -> true or false
  *
- *  Equality---If <i>obj</i> is not an <code>Exception</code>, returns
+ *  Equality---If <i>obj</i> is not an Exception, returns
  *  <code>false</code>. Otherwise, returns <code>true</code> if <i>exc</i> and
  *  <i>obj</i> share same class, messages, and backtrace.
  */
@@ -1407,6 +1396,32 @@ exit_success_p(VALUE exc)
     return Qfalse;
 }
 
+/*
+ * call-seq:
+ *   FrozenError.new(msg=nil, receiver=nil)  -> name_error
+ *
+ * Construct a new FrozenError exception. If given the <i>receiver</i>
+ * parameter may subsequently be examined using the FrozenError#receiver
+ * method.
+ *
+ *    a = [].freeze
+ *    raise FrozenError.new("can't modify frozen array", a)
+ */
+
+static VALUE
+frozen_err_initialize(int argc, VALUE *argv, VALUE self)
+{
+    VALUE mesg, recv;
+
+    argc = rb_scan_args(argc, argv, "02", &mesg, &recv);
+    if (argc > 1) {
+        argc--;
+        rb_ivar_set(self, id_recv, recv);
+    }
+    rb_call_super(argc, argv);
+    return self;
+}
+
 void
 rb_name_error(ID id, const char *fmt, ...)
 {
@@ -1451,12 +1466,15 @@ name_err_init_attr(VALUE exc, VALUE recv, VALUE method)
 
 /*
  * call-seq:
- *   NameError.new(msg [, name])  -> name_error
- *   NameError.new(msg [, name], receiver:)  -> name_error
+ *   NameError.new(msg=nil, name=nil, receiver: nil)  -> name_error
  *
  * Construct a new NameError exception. If given the <i>name</i>
- * parameter may subsequently be examined using the <code>NameError#name</code>
- * method.
+ * parameter may subsequently be examined using the NameError#name
+ * method. <i>receiver</i> parameter allows to pass object in
+ * context of which the error happened. Example:
+ *
+ *    [1, 2, 3].method(:rject) # NameError with name "rject" and receiver: Array
+ *    [1, 2, 3].singleton_method(:rject) # NameError with name "rject" and receiver: [1, 2, 3]
  */
 
 static VALUE
@@ -1535,12 +1553,18 @@ nometh_err_init_attr(VALUE exc, VALUE args, int priv)
 
 /*
  * call-seq:
- *   NoMethodError.new([msg, *, name [, args [, priv]]])  -> no_method_error
+ *   NoMethodError.new(msg=nil, name=nil, args=nil, private=false, receiver: nil)  -> no_method_error
  *
  * Construct a NoMethodError exception for a method of the given name
  * called with the given arguments. The name may be accessed using
  * the <code>#name</code> method on the resulting object, and the
  * arguments using the <code>#args</code> method.
+ *
+ * If <i>private</i> argument were passed, it designates method was
+ * attempted to call in private context, and can be accessed with
+ * <code>#private_call?</code> method.
+ *
+ * <i>receiver</i> argument stores an object whose method was called.
  */
 
 static VALUE
@@ -1666,7 +1690,6 @@ name_err_mesg_to_str(VALUE obj)
 		d = rb_any_to_s(obj);
 	    }
 	    singleton = (RSTRING_LEN(d) > 0 && RSTRING_PTR(d)[0] == '#');
-	    d = QUOTE(d);
 	    break;
 	}
 	if (!singleton) {
@@ -1676,7 +1699,7 @@ name_err_mesg_to_str(VALUE obj)
 	else {
 	    c = s = FAKE_CSTR(&s_str, "");
 	}
-	args[0] = QUOTE(rb_obj_as_string(ptr[NAME_ERR_MESG__NAME]));
+        args[0] = rb_obj_as_string(ptr[NAME_ERR_MESG__NAME]);
 	args[1] = d;
 	args[2] = s;
 	args[3] = c;
@@ -1856,19 +1879,18 @@ syntax_error_initialize(int argc, VALUE *argv, VALUE self)
 /*
  *  Document-module: Errno
  *
- *  Ruby exception objects are subclasses of <code>Exception</code>.
- *  However, operating systems typically report errors using plain
- *  integers. Module <code>Errno</code> is created dynamically to map
- *  these operating system errors to Ruby classes, with each error
- *  number generating its own subclass of <code>SystemCallError</code>.
- *  As the subclass is created in module <code>Errno</code>, its name
- *  will start <code>Errno::</code>.
+ *  Ruby exception objects are subclasses of Exception.  However,
+ *  operating systems typically report errors using plain
+ *  integers. Module Errno is created dynamically to map these
+ *  operating system errors to Ruby classes, with each error number
+ *  generating its own subclass of SystemCallError.  As the subclass
+ *  is created in module Errno, its name will start
+ *  <code>Errno::</code>.
  *
- *  The names of the <code>Errno::</code> classes depend on
- *  the environment in which Ruby runs. On a typical Unix or Windows
- *  platform, there are <code>Errno</code> classes such as
- *  <code>Errno::EACCES</code>, <code>Errno::EAGAIN</code>,
- *  <code>Errno::EINTR</code>, and so on.
+ *  The names of the <code>Errno::</code> classes depend on the
+ *  environment in which Ruby runs. On a typical Unix or Windows
+ *  platform, there are Errno classes such as Errno::EACCES,
+ *  Errno::EAGAIN, Errno::EINTR, and so on.
  *
  *  The integer operating system error number corresponding to a
  *  particular error is available as the class constant
@@ -1879,7 +1901,7 @@ syntax_error_initialize(int argc, VALUE *argv, VALUE self)
  *     Errno::EINTR::Errno    #=> 4
  *
  *  The full list of operating system errors on your particular platform
- *  are available as the constants of <code>Errno</code>.
+ *  are available as the constants of Errno.
  *
  *     Errno.constants   #=> :E2BIG, :EACCES, :EADDRINUSE, :EADDRNOTAVAIL, ...
  */
@@ -1938,11 +1960,10 @@ get_syserr(int n)
  * call-seq:
  *   SystemCallError.new(msg, errno)  -> system_call_error_subclass
  *
- * If _errno_ corresponds to a known system error code, constructs
- * the appropriate <code>Errno</code> class for that error, otherwise
- * constructs a generic <code>SystemCallError</code> object. The
- * error number is subsequently available via the <code>errno</code>
- * method.
+ * If _errno_ corresponds to a known system error code, constructs the
+ * appropriate Errno class for that error, otherwise constructs a
+ * generic SystemCallError object. The error number is subsequently
+ * available via the #errno method.
  */
 
 static VALUE
@@ -2488,10 +2509,13 @@ Init_Exception(void)
 
     rb_eRuntimeError = rb_define_class("RuntimeError", rb_eStandardError);
     rb_eFrozenError = rb_define_class("FrozenError", rb_eRuntimeError);
+    rb_define_method(rb_eFrozenError, "initialize", frozen_err_initialize, -1);
+    rb_define_method(rb_eFrozenError, "receiver", name_err_receiver, 0);
     rb_eSecurityError = rb_define_class("SecurityError", rb_eException);
     rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
     rb_eEncodingError = rb_define_class("EncodingError", rb_eStandardError);
     rb_eEncCompatError = rb_define_class_under(rb_cEncoding, "CompatibilityError", rb_eEncodingError);
+    rb_eNoMatchingPatternError = rb_define_class("NoMatchingPatternError", rb_eRuntimeError);
 
     syserr_tbl = st_init_numtable();
     rb_eSystemCallError = rb_define_class("SystemCallError", rb_eStandardError);
@@ -2850,6 +2874,20 @@ rb_error_frozen(const char *what)
 }
 
 void
+rb_frozen_error_raise(VALUE frozen_obj, const char *fmt, ...)
+{
+    va_list args;
+    VALUE exc, mesg;
+
+    va_start(args, fmt);
+    mesg = rb_vsprintf(fmt, args);
+    va_end(args);
+    exc = rb_exc_new3(rb_eFrozenError, mesg);
+    rb_ivar_set(exc, id_recv, frozen_obj);
+    rb_exc_raise(exc);
+}
+
+void
 rb_error_frozen_object(VALUE frozen_obj)
 {
     VALUE debug_info;
@@ -2859,12 +2897,13 @@ rb_error_frozen_object(VALUE frozen_obj)
 	VALUE path = rb_ary_entry(debug_info, 0);
 	VALUE line = rb_ary_entry(debug_info, 1);
 
-	rb_raise(rb_eFrozenError, "can't modify frozen %"PRIsVALUE", created at %"PRIsVALUE":%"PRIsVALUE,
-		 CLASS_OF(frozen_obj), path, line);
+        rb_frozen_error_raise(frozen_obj,
+            "can't modify frozen %"PRIsVALUE", created at %"PRIsVALUE":%"PRIsVALUE,
+            CLASS_OF(frozen_obj), path, line);
     }
     else {
-	rb_raise(rb_eFrozenError, "can't modify frozen %"PRIsVALUE,
-		 CLASS_OF(frozen_obj));
+        rb_frozen_error_raise(frozen_obj, "can't modify frozen %"PRIsVALUE,
+            CLASS_OF(frozen_obj));
     }
 }
 

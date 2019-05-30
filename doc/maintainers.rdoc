@@ -88,10 +88,6 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
 [lib/prettyprint.rb]
   Tanaka Akira (akr)
-[lib/profile.rb]
-  _unmaintained_
-[lib/profiler.rb]
-  _unmaintained_
 [lib/pstore.rb]
   _unmaintained_
 [lib/racc/*]
@@ -102,7 +98,7 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
 [lib/rinda/*]
   Masatoshi SEKI (seki)
-[lib/rubygems.rb, lib/ubygems.rb, lib/rubygems/*]
+[lib/rubygems.rb, lib/rubygems/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/rubygems/rubygems
 [lib/set.rb]
@@ -272,7 +268,7 @@ Zachary Scott (zzak)
   Nobuyuki Nakada (nobu)
   https://github.com/ruby/stringio
 [ext/strscan]
-  _unmaintained_
+  Kouhei Sutou (kou)
   https://github.com/ruby/strscan
 [ext/zlib]
   NARUSE, Yui (naruse)

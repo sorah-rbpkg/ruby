@@ -2,7 +2,7 @@
 #
 #   forwardable.rb -
 #       $Release Version: 1.1$
-#       $Revision: 66349 $
+#       $Revision$
 #       by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #       original definition by delegator.rb
 #       Revised by Daniel J. Berger with suggestions from Florian Gross.
@@ -57,10 +57,9 @@
 #
 # == Another example
 #
-# We want to rely on what has come before obviously, but with delegation we can
-# take just the methods we need and even rename them as appropriate.  In many
-# cases this is preferable to inheritance, which gives us the entire old
-# interface, even if much of it isn't needed.
+# You could use Forwardable as an alternative to inheritance, when you don't want
+# to inherit all methods from the superclass. For instance, here is how you might
+# add a range of +Array+ instance methods to a new class +Queue+:
 #
 #   class Queue
 #     extend Forwardable

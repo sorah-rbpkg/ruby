@@ -2,7 +2,7 @@
 #
 #   load.rb -
 #   	$Release Version: 0.9.6$
-#   	$Revision: 65506 $
+#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --

@@ -6,7 +6,7 @@
 # Copyright (c) 2003 Internet Programming with Ruby writers. All rights
 # reserved.
 #
-# $Id: cgi.rb 65505 2018-11-02 17:52:33Z marcandre $
+# $Id$
 
 require_relative "httprequest"
 require_relative "httpresponse"

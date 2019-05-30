@@ -351,6 +351,7 @@ class TestParse < Test::Unit::TestCase
 
   def test_words
     assert_equal([], %W( ))
+    assert_syntax_error('%w[abc', /unterminated list/)
   end
 
   def test_dstr
@@ -362,7 +363,7 @@ class TestParse < Test::Unit::TestCase
 
   def test_dstr_disallowed_variable
     bug8375 = '[ruby-core:54885] [Bug #8375]'
-    %w[@ @1 @. @@ @@1 @@. $ $%].each do |src|
+    %w[@ @. @@ @@1 @@. $ $%].each do |src|
       src = '#'+src+' '
       str = assert_nothing_raised(SyntaxError, "#{bug8375} #{src.dump}") do
         break eval('"'+src+'"')
@@ -375,23 +376,25 @@ class TestParse < Test::Unit::TestCase
     assert_nothing_raised { eval(':""') }
   end
 
-  def assert_disallowed_variable(type, noname, *invalid)
-    assert_syntax_error(noname, "`#{noname}' without identifiers is not allowed as #{type} variable name")
+  def assert_disallowed_variable(type, noname, invalid)
+    noname.each do |name|
+      assert_syntax_error("proc{a = #{name} }", "`#{noname[0]}' without identifiers is not allowed as #{type} variable name")
+    end
     invalid.each do |name|
-      assert_syntax_error(name, "`#{name}' is not allowed as #{type} variable name")
+      assert_syntax_error("proc {a = #{name} }", "`#{name}' is not allowed as #{type} variable name")
     end
   end
 
   def test_disallowed_instance_variable
-    assert_disallowed_variable("an instance", *%w[@ @1 @.])
+    assert_disallowed_variable("an instance", %w[@ @.], %w[])
   end
 
   def test_disallowed_class_variable
-    assert_disallowed_variable("a class", *%w[@@ @@1 @@.])
+    assert_disallowed_variable("a class", %w[@@ @@.], %w[@@1])
   end
 
   def test_disallowed_gloal_variable
-    assert_disallowed_variable("a global", *%w[$ $%])
+    assert_disallowed_variable("a global", %w[$], %w[$%])
   end
 
   def test_arg2
@@ -545,6 +548,19 @@ class TestParse < Test::Unit::TestCase
 
     assert_equal("\x81", eval('"\C-\M-a"'))
     assert_equal("\177", eval('"\c?"'))
+
+    assert_warning(/use \\C-\\s/) {assert_equal("\x00", eval('"\C- "'))}
+    assert_warning(/use \\M-\\s/) {assert_equal("\xa0", eval('"\M- "'))}
+    assert_warning(/use \\M-\\C-\\s/) {assert_equal("\x80", eval('"\M-\C- "'))}
+    assert_warning(/use \\C-\\M-\\s/) {assert_equal("\x80", eval('"\C-\M- "'))}
+    assert_warning(/use \\t/) {assert_equal("\x09", eval("\"\\C-\t\""))}
+    assert_warning(/use \\M-\\t/) {assert_equal("\x89", eval("\"\\M-\t\""))}
+    assert_warning(/use \\M-\\t/) {assert_equal("\x89", eval("\"\\M-\\C-\t\""))}
+    assert_warning(/use \\M-\\t/) {assert_equal("\x89", eval("\"\\C-\\M-\t\""))}
+    assert_syntax_error("\"\\C-\x01\"", 'Invalid escape character syntax')
+    assert_syntax_error("\"\\M-\x01\"", 'Invalid escape character syntax')
+    assert_syntax_error("\"\\M-\\C-\x01\"", 'Invalid escape character syntax')
+    assert_syntax_error("\"\\C-\\M-\x01\"", 'Invalid escape character syntax')
   end
 
   def test_question
@@ -559,6 +575,22 @@ class TestParse < Test::Unit::TestCase
     assert_raise(SyntaxError) { eval(" ?a\x8a".force_encoding("utf-8")) }
     assert_equal("\u{1234}", eval("?\u{1234}"))
     assert_equal("\u{1234}", eval('?\u{1234}'))
+    assert_equal("\u{1234}", eval('?\u1234'))
+    e = assert_syntax_error('"#{?\u123}"', 'invalid Unicode escape')
+    assert_not_match(/end-of-input/, e.message)
+
+    assert_warning(/use ?\\C-\\s/) {assert_equal("\x00", eval('?\C- '))}
+    assert_warning(/use ?\\M-\\s/) {assert_equal("\xa0", eval('?\M- '))}
+    assert_warning(/use ?\\M-\\C-\\s/) {assert_equal("\x80", eval('?\M-\C- '))}
+    assert_warning(/use ?\\C-\\M-\\s/) {assert_equal("\x80", eval('?\C-\M- '))}
+    assert_warning(/use ?\\t/) {assert_equal("\x09", eval("?\\C-\t"))}
+    assert_warning(/use ?\\M-\\t/) {assert_equal("\x89", eval("?\\M-\t"))}
+    assert_warning(/use ?\\M-\\t/) {assert_equal("\x89", eval("?\\M-\\C-\t"))}
+    assert_warning(/use ?\\M-\\t/) {assert_equal("\x89", eval("?\\C-\\M-\t"))}
+    assert_syntax_error("?\\C-\x01", 'Invalid escape character syntax')
+    assert_syntax_error("?\\M-\x01", 'Invalid escape character syntax')
+    assert_syntax_error("?\\M-\\C-\x01", 'Invalid escape character syntax')
+    assert_syntax_error("?\\C-\\M-\x01", 'Invalid escape character syntax')
   end
 
   def test_percent
@@ -584,6 +616,11 @@ class TestParse < Test::Unit::TestCase
       assert_equal(:foobar, eval(':"foo\u{}bar"'))
       assert_equal(:foobar, eval(':"foo\u{ }bar"'))
     end
+
+    assert_syntax_error(':@@', /is not allowed/)
+    assert_syntax_error(':@@1', /is not allowed/)
+    assert_syntax_error(':@', /is not allowed/)
+    assert_syntax_error(':@1', /is not allowed/)
   end
 
   def test_parse_string
@@ -711,17 +748,21 @@ x = __ENCODING__
     $test_parse_foobarbazqux = nil
     assert_equal(nil, $&)
     assert_equal(nil, eval('alias $& $preserve_last_match'))
-    assert_raise(SyntaxError) { eval('$#') }
+    assert_raise_with_message(SyntaxError, /as a global variable name\na = \$\#\n    \^~$/) do
+      eval('a = $#')
+    end
   end
 
   def test_invalid_instance_variable
-    assert_raise(SyntaxError) { eval('@#') }
-    assert_raise(SyntaxError) { eval('@') }
+    pattern = /without identifiers is not allowed as an instance variable name/
+    assert_raise_with_message(SyntaxError, pattern) { eval('@%') }
+    assert_raise_with_message(SyntaxError, pattern) { eval('@') }
   end
 
   def test_invalid_class_variable
-    assert_raise(SyntaxError) { eval('@@1') }
-    assert_raise(SyntaxError) { eval('@@') }
+    pattern = /without identifiers is not allowed as a class variable name/
+    assert_raise_with_message(SyntaxError, pattern) { eval('@@%') }
+    assert_raise_with_message(SyntaxError, pattern) { eval('@@') }
   end
 
   def test_invalid_char
@@ -1076,10 +1117,13 @@ x = __ENCODING__
     assert_raise_with_message(SyntaxError, /^    \^~~\z/) do
       eval('1.2i1.1')
     end
+    assert_raise_with_message(SyntaxError, /^   \^~\z/) do
+      eval('1.2.3')
+    end
   end
 
   def test_truncated_source_line
-    e = assert_raise_with_message(SyntaxError, /unexpected tIDENTIFIER/) do
+    e = assert_raise_with_message(SyntaxError, /unexpected local variable or method/) do
       eval("'0123456789012345678901234567890123456789' abcdefghijklmnopqrstuvwxyz0123456789 0123456789012345678901234567890123456789")
     end
     line = e.message.lines[1]

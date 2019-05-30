@@ -195,6 +195,14 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	LAST_NODE;
 	F_NODE(nd_body, "when clauses");
 	return;
+      case NODE_CASE3:
+        ANN("case statement (pattern matching)");
+        ANN("format: case [nd_head]; [nd_body]; end");
+        ANN("example: case x; in 1; foo; in 2; bar; else baz; end");
+        F_NODE(nd_head, "case expr");
+        LAST_NODE;
+        F_NODE(nd_body, "in clauses");
+        return;
 
       case NODE_WHEN:
 	ANN("when clause");
@@ -205,6 +213,16 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	LAST_NODE;
 	F_NODE(nd_next, "next when clause");
 	return;
+
+      case NODE_IN:
+        ANN("in clause");
+        ANN("format: in [nd_head]; [nd_body]; (in or else) [nd_next]");
+        ANN("example: case x; in 1; foo; in 2; bar; else baz; end");
+        F_NODE(nd_head, "in pattern");
+        F_NODE(nd_body, "in body");
+        LAST_NODE;
+        F_NODE(nd_next, "next in clause");
+        return;
 
       case NODE_WHILE:
 	ANN("while statement");
@@ -557,7 +575,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	return;
 
       case NODE_HASH:
-	if (!node->nd_alen) {
+        if (!node->nd_brace) {
 	    ANN("keyword arguments");
 	    ANN("format: nd_head");
 	    ANN("example: a: 1, b: 2");
@@ -567,8 +585,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	    ANN("format: { [nd_head] }");
 	    ANN("example: { 1 => 2, 3 => 4 }");
 	}
-	F_CUSTOM1(nd_alen, "keyword arguments or hash literal") {
-	    switch (node->nd_alen) {
+        F_CUSTOM1(nd_brace, "keyword arguments or hash literal") {
+            switch (node->nd_brace) {
 	      case 0: A("0 (keyword argument)"); break;
 	      case 1: A("1 (hash literal)"); break;
 	    }
@@ -934,6 +952,15 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	F_NODE(nd_args, "arguments");
 	return;
 
+      case NODE_METHREF:
+        ANN("method reference");
+        ANN("format: [nd_recv].:[nd_mid]");
+        ANN("example: foo.:method");
+        F_NODE(nd_recv, "receiver");
+        LAST_NODE;
+        F_ID(nd_mid, "method name");
+        return;
+
       case NODE_LAMBDA:
 	ANN("lambda expression");
 	ANN("format: -> [nd_body]");
@@ -1007,6 +1034,30 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	LAST_NODE;
 	F_NODE(nd_body, "body");
 	return;
+
+      case NODE_ARYPTN:
+        ANN("array pattern");
+        ANN("format: [nd_pconst]([pre_args], ..., *[rest_arg], [post_args], ...)");
+        F_NODE(nd_pconst, "constant");
+        F_NODE(nd_apinfo->pre_args, "pre arguments");
+        if (NODE_NAMED_REST_P(node->nd_apinfo->rest_arg)) {
+            F_NODE(nd_apinfo->rest_arg, "rest argument");
+        }
+        else {
+            F_MSG(nd_apinfo->rest_arg, "rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
+        }
+        LAST_NODE;
+        F_NODE(nd_apinfo->post_args, "post arguments");
+        return;
+
+      case NODE_HSHPTN:
+        ANN("hash pattern");
+        ANN("format: [nd_pconst]([nd_pkwargs], ..., **[nd_pkwrestarg])");
+        F_NODE(nd_pconst, "constant");
+        F_NODE(nd_pkwargs, "keyword arguments");
+        LAST_NODE;
+        F_NODE(nd_pkwrestarg, "keyword rest argument");
+        return;
 
       case NODE_ARGS_AUX:
       case NODE_LAST:

@@ -23,18 +23,8 @@ extern "C" {
 
 #ifdef HAVE_STDBOOL_H
 # include <stdbool.h>
-#endif
-
-#ifndef __bool_true_false_are_defined
-# ifndef __cplusplus
-#  undef bool
-#  undef false
-#  undef true
-#  define bool signed char
-#  define false 0
-#  define true 1
-#  define __bool_true_false_are_defined 1
-# endif
+#else
+# include "missing/stdbool.h"
 #endif
 
 /* The most significant bit of the lower part of half-long integer.
@@ -54,7 +44,18 @@ extern "C" {
 # define WARN_UNUSED_RESULT(x) x
 #endif
 
+#ifndef __has_feature
+# define __has_feature(x) 0
+#endif
+
+#ifndef __has_extension
+# define __has_extension __has_feature
+#endif
+
 #if 0
+#elif defined(NO_SANITIZE) && __has_feature(memory_sanitizer)
+# define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
+    NO_SANITIZE("memory", NO_SANITIZE("address", NOINLINE(x)))
 #elif defined(NO_SANITIZE)
 # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
     NO_SANITIZE("address", NOINLINE(x))
@@ -97,14 +98,6 @@ extern "C" {
 
 #define numberof(array) ((int)(sizeof(array) / sizeof((array)[0])))
 
-#ifndef __has_feature
-# define __has_feature(x) 0
-#endif
-
-#ifndef __has_extension
-# define __has_extension __has_feature
-#endif
-
 #ifndef MJIT_HEADER
 
 #ifdef HAVE_SANITIZER_ASAN_INTERFACE_H
@@ -118,32 +111,89 @@ extern "C" {
 #endif
 
 #ifdef HAVE_SANITIZER_MSAN_INTERFACE_H
-# include <sanitizer/msan_interface.h>
+# if __has_feature(memory_sanitizer)
+#  include <sanitizer/msan_interface.h>
+# endif
 #endif
 
 #if !__has_feature(memory_sanitizer)
-# define __msan_allocated_memory(x, y)
-# define __msan_poison(x, y)
-# define __msan_unpoison(x, y)
-# define __msan_unpoison_string(x)
+# define __msan_allocated_memory(x, y) ((void)(x), (void)(y))
+# define __msan_poison(x, y) ((void)(x), (void)(y))
+# define __msan_unpoison(x, y) ((void)(x), (void)(y))
+# define __msan_unpoison_string(x) ((void)(x))
 #endif
 
+/*!
+ * This function asserts that a (continuous) memory region from ptr to size
+ * being "poisoned".  Both read / write access to such memory region are
+ * prohibited until properly unpoisoned.  The region must be previously
+ * allocated (do not pass a freed pointer here), but not necessarily be an
+ * entire object that the malloc returns.  You can punch hole a part of a
+ * gigantic heap arena.  This is handy when you do not free an allocated memory
+ * region to reuse later: poison when you keep it unused, and unpoison when you
+ * reuse.
+ *
+ * \param[in]  ptr   pointer to the beginning of the memory region to poison.
+ * \param[in]  size  the length of the memory region to poison.
+ */
 static inline void
-poison_memory_region(const volatile void *ptr, size_t size)
+asan_poison_memory_region(const volatile void *ptr, size_t size)
 {
     __msan_poison(ptr, size);
     __asan_poison_memory_region(ptr, size);
 }
 
+/*!
+ * This is a variant of asan_poison_memory_region that takes a VALUE.
+ *
+ * \param[in]  obj   target object.
+ */
 static inline void
-poison_object(VALUE obj)
+asan_poison_object(VALUE obj)
 {
-    struct RVALUE *ptr = (void *)obj;
-    poison_memory_region(ptr, SIZEOF_VALUE);
+    MAYBE_UNUSED(struct RVALUE *) ptr = (void *)obj;
+    asan_poison_memory_region(ptr, SIZEOF_VALUE);
 }
 
+#if !__has_feature(address_sanitizer)
+#define asan_poison_object_if(ptr, obj) ((void)(ptr), (void)(obj))
+#else
+#define asan_poison_object_if(ptr, obj) do { \
+        if (ptr) asan_poison_object(obj); \
+    } while (0)
+#endif
+
+/*!
+ * This function predicates if the given object is fully addressable or not.
+ *
+ * \param[in]  obj        target object.
+ * \retval     0          the given object is fully addressable.
+ * \retval     otherwise  pointer to first such byte who is poisoned.
+ */
+static inline void *
+asan_poisoned_object_p(VALUE obj)
+{
+    MAYBE_UNUSED(struct RVALUE *) ptr = (void *)obj;
+    return __asan_region_is_poisoned(ptr, SIZEOF_VALUE);
+}
+
+/*!
+ * This function asserts that a (formally poisoned) memory region from ptr to
+ * size is now addressable.  Write access to such memory region gets allowed.
+ * However read access might or might not be possible depending on situations,
+ * because the region can have contents of previous usages.  That information
+ * should be passed by the malloc_p flag.  If that is true, the contents of the
+ * region is _not_ fully defined (like the return value of malloc behaves).
+ * Reading from there is NG; write something first.  If malloc_p is false on
+ * the other hand, that memory region is fully defined and can be read
+ * immediately.
+ *
+ * \param[in]  ptr       pointer to the beginning of the memory region to unpoison.
+ * \param[in]  size      the length of the memory region.
+ * \param[in]  malloc_p  if the memory region is like a malloc's return value or not.
+ */
 static inline void
-unpoison_memory_region(const volatile void *ptr, size_t size, bool malloc_p)
+asan_unpoison_memory_region(const volatile void *ptr, size_t size, bool malloc_p)
 {
     __asan_unpoison_memory_region(ptr, size);
     if (malloc_p) {
@@ -154,11 +204,17 @@ unpoison_memory_region(const volatile void *ptr, size_t size, bool malloc_p)
     }
 }
 
+/*!
+ * This is a variant of asan_unpoison_memory_region that takes a VALUE.
+ *
+ * \param[in]  obj       target object.
+ * \param[in]  malloc_p  if the memory region is like a malloc's return value or not.
+ */
 static inline void
-unpoison_object(VALUE obj, bool newobj_p)
+asan_unpoison_object(VALUE obj, bool newobj_p)
 {
-    struct RVALUE *ptr = (void *)obj;
-    unpoison_memory_region(ptr, SIZEOF_VALUE, newobj_p);
+    MAYBE_UNUSED(struct RVALUE *) ptr = (void *)obj;
+    asan_unpoison_memory_region(ptr, SIZEOF_VALUE, newobj_p);
 }
 
 #endif
@@ -683,8 +739,8 @@ rb_fix_mod_fix(VALUE x, VALUE y)
 
 #define BIGNUM_EMBED_LEN_NUMBITS 3
 #ifndef BIGNUM_EMBED_LEN_MAX
-# if (SIZEOF_VALUE*3/SIZEOF_ACTUAL_BDIGIT) < (1 << BIGNUM_EMBED_LEN_NUMBITS)-1
-#   define BIGNUM_EMBED_LEN_MAX (SIZEOF_VALUE*3/SIZEOF_ACTUAL_BDIGIT)
+# if (SIZEOF_VALUE*RVALUE_EMBED_LEN_MAX/SIZEOF_ACTUAL_BDIGIT) < (1 << BIGNUM_EMBED_LEN_NUMBITS)-1
+#   define BIGNUM_EMBED_LEN_MAX (SIZEOF_VALUE*RVALUE_EMBED_LEN_MAX/SIZEOF_ACTUAL_BDIGIT)
 # else
 #   define BIGNUM_EMBED_LEN_MAX ((1 << BIGNUM_EMBED_LEN_NUMBITS)-1)
 # endif
@@ -731,8 +787,8 @@ struct RBignum {
 
 struct RRational {
     struct RBasic basic;
-    const VALUE num;
-    const VALUE den;
+    VALUE num;
+    VALUE den;
 };
 
 #define RRATIONAL(obj) (R_CAST(RRational)(obj))
@@ -748,8 +804,8 @@ struct RFloat {
 
 struct RComplex {
     struct RBasic basic;
-    const VALUE real;
-    const VALUE imag;
+    VALUE real;
+    VALUE imag;
 };
 
 #define RCOMPLEX(obj) (R_CAST(RComplex)(obj))
@@ -810,36 +866,14 @@ void rb_hash_st_table_set(VALUE hash, st_table *st);
 #define RHASH_UNSET_TRANSIENT_FLAG(h) ((void)0)
 #endif
 
-#define RHASH_AR_TABLE_MAX_SIZE      8
-#define RHASH_AR_TABLE_MAX_BOUND     RHASH_AR_TABLE_MAX_SIZE
-
-typedef struct ar_table_entry {
-    VALUE hash;
-    VALUE key;
-    VALUE record;
-} ar_table_entry;
-
-typedef struct ar_table_struct {
-    ar_table_entry entries[RHASH_AR_TABLE_MAX_SIZE];
-} ar_table;
-
-/*
- * RHASH_AR_TABLE_P(h):
- * * as.ar == NULL or
- *   as.ar points ar_table.
- * * as.ar is allocated by transient heap or xmalloc.
- *
- * !RHASH_AR_TABLE_P(h):
- * * as.st points st_table.
- */
 struct RHash {
     struct RBasic basic;
     union {
         st_table *st;
-        ar_table *ar; /* possibly 0 */
+        struct ar_table_struct *ar; /* possibly 0 */
     } as;
     int iter_lev;
-    const VALUE ifnone;
+    VALUE ifnone;
 };
 
 #ifdef RHASH_ITER_LEV
@@ -852,6 +886,12 @@ struct RHash {
 #  define RHASH_SIZE(h)      (RHASH_AR_TABLE_P(h) ? RHASH_AR_TABLE_SIZE_RAW(h) : RHASH_ST_SIZE(h))
 #endif /* #ifdef RHASH_ITER_LEV */
 
+struct RMoved {
+    VALUE flags;
+    VALUE destination;
+    VALUE next;
+};
+
 /* missing/setproctitle.c */
 #ifndef HAVE_SETPROCTITLE
 extern void ruby_init_setproctitle(int argc, char *argv[]);
@@ -862,7 +902,7 @@ extern void ruby_init_setproctitle(int argc, char *argv[]);
 #define RSTRUCT_EMBED_LEN_SHIFT RSTRUCT_EMBED_LEN_SHIFT
 
 enum {
-    RSTRUCT_EMBED_LEN_MAX = 3,
+    RSTRUCT_EMBED_LEN_MAX = RVALUE_EMBED_LEN_MAX,
     RSTRUCT_EMBED_LEN_MASK = (RUBY_FL_USER2|RUBY_FL_USER1),
     RSTRUCT_EMBED_LEN_SHIFT = (RUBY_FL_USHIFT+1),
     RSTRUCT_TRANSIENT_FLAG = FL_USER3,
@@ -969,7 +1009,7 @@ struct rb_classext_struct {
      */
     rb_subclass_entry_t **module_subclasses;
     rb_serial_t class_serial;
-    const VALUE origin_;
+    VALUE origin_;
     VALUE refined_class;
     rb_alloc_func_t allocator;
 };
@@ -1087,10 +1127,10 @@ imemo_type_p(VALUE imemo, enum imemo_type imemo_type)
 /*! SVAR (Special VARiable) */
 struct vm_svar {
     VALUE flags;
-    const VALUE cref_or_me; /*!< class reference or rb_method_entry_t */
-    const VALUE lastline;
-    const VALUE backref;
-    const VALUE others;
+    VALUE cref_or_me; /*!< class reference or rb_method_entry_t */
+    VALUE lastline;
+    VALUE backref;
+    VALUE others;
 };
 
 
@@ -1100,7 +1140,7 @@ struct vm_svar {
 struct vm_throw_data {
     VALUE flags;
     VALUE reserved;
-    const VALUE throw_obj;
+    VALUE throw_obj;
     const struct rb_control_frame_struct *catch_frame;
     VALUE throw_state;
 };
@@ -1123,7 +1163,7 @@ struct vm_ifunc {
     VALUE flags;
     VALUE reserved;
     VALUE (*func)(ANYARGS);
-    const void *data;
+    void *data;
     struct vm_ifunc_argc argc;
 };
 
@@ -1154,15 +1194,21 @@ static inline VALUE
 rb_imemo_tmpbuf_auto_free_pointer_new_from_an_RString(VALUE str)
 {
     const void *src;
+    VALUE imemo;
+    rb_imemo_tmpbuf_t *tmpbuf;
     void *dst;
     size_t len;
 
     SafeStringValue(str);
+    /* create tmpbuf to keep the pointer before xmalloc */
+    imemo = rb_imemo_tmpbuf_auto_free_pointer(NULL);
+    tmpbuf = (rb_imemo_tmpbuf_t *)imemo;
     len = RSTRING_LEN(str);
     src = RSTRING_PTR(str);
     dst = ruby_xmalloc(len);
     memcpy(dst, src, len);
-    return rb_imemo_tmpbuf_auto_free_pointer(dst);
+    tmpbuf->ptr = dst;
+    return imemo;
 }
 
 void rb_strterm_mark(VALUE obj);
@@ -1174,12 +1220,12 @@ void rb_strterm_mark(VALUE obj);
 struct MEMO {
     VALUE flags;
     VALUE reserved;
-    const VALUE v1;
-    const VALUE v2;
+    VALUE v1;
+    VALUE v2;
     union {
 	long cnt;
 	long state;
-	const VALUE value;
+        VALUE value;
 	VALUE (*func)(ANYARGS);
     } u3;
 };
@@ -1467,6 +1513,7 @@ extern ID ruby_static_id_signo, ruby_static_id_status;
 void rb_class_modify_check(VALUE);
 #define id_signo ruby_static_id_signo
 #define id_status ruby_static_id_status
+NORETURN(VALUE rb_f_raise(int argc, VALUE *argv));
 
 /* eval_error.c */
 VALUE rb_get_backtrace(VALUE info);
@@ -1577,11 +1624,11 @@ VALUE rb_hash_rehash(VALUE hash);
 VALUE rb_hash_resurrect(VALUE hash);
 int rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val);
 VALUE rb_hash_set_pair(VALUE hash, VALUE pair);
-void rb_hash_bulk_insert(long, const VALUE *, VALUE);
 
 int rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval);
 int rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval);
 int rb_hash_stlike_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg);
+int rb_hash_stlike_foreach_with_replace(VALUE hash, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg);
 int rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func func, st_data_t arg);
 
 /* inits.c */
@@ -1627,15 +1674,15 @@ VALUE rb_math_sqrt(VALUE);
 /* mjit.c */
 
 #if USE_MJIT
-extern int mjit_enabled;
-VALUE mjit_pause(int wait_p);
+extern bool mjit_enabled;
+VALUE mjit_pause(bool wait_p);
 VALUE mjit_resume(void);
-void mjit_finish(int close_handle_p);
+void mjit_finish(bool close_handle_p);
 #else
 #define mjit_enabled 0
-static inline VALUE mjit_pause(int wait_p){ return Qnil; } /* unreachable */
-static inline VALUE mjit_resume(void){ return Qnil; } /* unreachable */
-static inline void mjit_finish(int close_handle_p){}
+static inline VALUE mjit_pause(bool wait_p){ return Qnil; } // unreachable
+static inline VALUE mjit_resume(void){ return Qnil; } // unreachable
+static inline void mjit_finish(bool close_handle_p){}
 #endif
 
 /* newline.c */
@@ -1648,6 +1695,8 @@ void Init_newline(void);
 #define FIXNUM_ZERO_P(num) ((num) == INT2FIX(0))
 
 #define INT_NEGATIVE_P(x) (FIXNUM_P(x) ? FIXNUM_NEGATIVE_P(x) : BIGNUM_NEGATIVE_P(x))
+
+#define FLOAT_ZERO_P(x) (RFLOAT_VALUE(x) == 0.0)
 
 #ifndef ROUND_DEFAULT
 # define ROUND_DEFAULT RUBY_NUM_ROUND_HALF_UP
@@ -2054,6 +2103,7 @@ VALUE rb_sym_to_proc(VALUE sym);
 char *rb_str_to_cstr(VALUE str);
 VALUE rb_str_eql(VALUE str1, VALUE str2);
 VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
+const char *ruby_escaped_char(int c);
 
 /* symbol.c */
 #ifdef RUBY_ENCODING_H
@@ -2343,6 +2393,7 @@ extern unsigned long ruby_scan_digits(const char *str, ssize_t len, int base, si
 
 /* variable.c (export) */
 void rb_mark_generic_ivar(VALUE);
+void rb_mv_generic_ivar(VALUE src, VALUE dst);
 VALUE rb_const_missing(VALUE klass, VALUE name);
 int rb_class_ivar_set(VALUE klass, ID vid, VALUE value);
 st_table *rb_st_copy(VALUE obj, struct st_table *orig_tbl);
@@ -2354,9 +2405,10 @@ VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE);
 size_t rb_obj_memsize_of(VALUE);
 void rb_gc_verify_internal_consistency(void);
 
-#define RB_OBJ_GC_FLAGS_MAX 5
+#define RB_OBJ_GC_FLAGS_MAX 6
 size_t rb_obj_gc_flags(VALUE, ID[], size_t);
 void rb_gc_mark_values(long n, const VALUE *values);
+void rb_gc_mark_vm_stack_values(long n, const VALUE *values);
 
 #if IMEMO_DEBUG
 VALUE rb_imemo_new_debug(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0, const char *file, int line);

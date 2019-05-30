@@ -1,1 +1,1 @@
-#define RUBY_REVISION 67232
+#define RUBY_REVISION "c55db6aa271df4a689dc8eb0039c929bf6ed43ff"

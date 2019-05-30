@@ -2,7 +2,7 @@
 
   vm_core.h -
 
-  $Author: naruse $
+  $Author$
   created at: 04/01/01 19:41:38 JST
 
   Copyright (C) 2004-2007 Koichi Sasada
@@ -346,7 +346,7 @@ struct rb_iseq_constant_body {
     } type;              /* instruction sequence type */
 
     unsigned int iseq_size;
-    const VALUE *iseq_encoded; /* encoded iseq (insn addr and operands) */
+    VALUE *iseq_encoded; /* encoded iseq (insn addr and operands) */
 
     /**
      * parameter information
@@ -414,7 +414,7 @@ struct rb_iseq_constant_body {
 	    int bits_start;
 	    int rest_start;
 	    const ID *table;
-	    const VALUE *default_values;
+            VALUE *default_values;
 	} *keyword;
     } param;
 
@@ -433,7 +433,7 @@ struct rb_iseq_constant_body {
     const ID *local_table;		/* must free */
 
     /* catch table */
-    const struct iseq_catch_table *catch_table;
+    struct iseq_catch_table *catch_table;
 
     /* for child iseq */
     const struct rb_iseq_struct *parent_iseq;
@@ -460,6 +460,8 @@ struct rb_iseq_constant_body {
     unsigned int ci_kw_size;
     unsigned int stack_max; /* for stack overflow check */
 
+    char catch_except_p; /* If a frame of this ISeq may catch exception, set TRUE */
+
 #if USE_MJIT
     /* The following fields are MJIT related info.  */
     VALUE (*jit_func)(struct rb_execution_context_struct *,
@@ -467,7 +469,6 @@ struct rb_iseq_constant_body {
     long unsigned total_calls; /* number of total calls with `mjit_exec()` */
     struct rb_mjit_unit *jit_unit;
 #endif
-    char catch_except_p; /* If a frame of this ISeq may catch exception, set TRUE */
 };
 
 /* T_IMEMO/iseq */
@@ -608,6 +609,9 @@ typedef struct rb_vm_struct {
     VALUE thgroup_default;
     int living_thread_num;
 
+    /* set in single-threaded processes only: */
+    volatile int ubf_async_safe;
+
     unsigned int running: 1;
     unsigned int thread_abort_on_exception: 1;
     unsigned int thread_report_on_exception: 1;
@@ -656,7 +660,7 @@ typedef struct rb_vm_struct {
     VALUE coverages;
     int coverage_mode;
 
-    VALUE defined_module_hash;
+    st_table * defined_module_hash;
 
     struct rb_objspace *objspace;
 
@@ -692,6 +696,18 @@ typedef struct rb_vm_struct {
 #define RUBY_VM_FIBER_MACHINE_STACK_SIZE_MIN  (  32 * 1024 * sizeof(VALUE)) /*   128 KB or  256 KB */
 #else
 #define RUBY_VM_FIBER_MACHINE_STACK_SIZE_MIN  (  16 * 1024 * sizeof(VALUE)) /*   64 KB or  128 KB */
+#endif
+
+#if __has_feature(memory_sanitizer) || __has_feature(address_sanitizer)
+/* It seems sanitizers consume A LOT of machine stacks */
+#undef  RUBY_VM_THREAD_MACHINE_STACK_SIZE
+#define RUBY_VM_THREAD_MACHINE_STACK_SIZE     (1024 * 1024 * sizeof(VALUE))
+#undef  RUBY_VM_THREAD_MACHINE_STACK_SIZE_MIN
+#define RUBY_VM_THREAD_MACHINE_STACK_SIZE_MIN ( 512 * 1024 * sizeof(VALUE))
+#undef  RUBY_VM_FIBER_MACHINE_STACK_SIZE
+#define RUBY_VM_FIBER_MACHINE_STACK_SIZE      ( 256 * 1024 * sizeof(VALUE))
+#undef  RUBY_VM_FIBER_MACHINE_STACK_SIZE_MIN
+#define RUBY_VM_FIBER_MACHINE_STACK_SIZE_MIN  ( 128 * 1024 * sizeof(VALUE))
 #endif
 
 /* optimize insn */
@@ -759,7 +775,7 @@ typedef struct rb_control_frame_struct {
     VALUE self;			/* cfp[3] / block[0] */
     const VALUE *ep;		/* cfp[4] / block[1] */
     const void *block_code;     /* cfp[5] / block[2] */ /* iseq or ifunc */
-    const VALUE *bp;		/* cfp[6] */
+    VALUE *__bp__;              /* cfp[6] */ /* outside vm_push_frame, use vm_base_ptr instead. */
 
 #if VM_DEBUG_BP_CHECK
     VALUE *bp_check;		/* cfp[7] */
@@ -1025,7 +1041,7 @@ typedef struct {
 
 typedef struct {
     VALUE flags; /* imemo header */
-    const rb_iseq_t *iseq;
+    rb_iseq_t *iseq;
     const VALUE *ep;
     const VALUE *env;
     unsigned int env_size;
@@ -1886,7 +1902,7 @@ static inline void
 rb_exec_event_hook_script_compiled(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE eval_script)
 {
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_SCRIPT_COMPILED, ec->cfp->self, 0, 0, 0,
-                    NIL_P(eval_script) ? (VALUE)iseq : 
+                    NIL_P(eval_script) ? (VALUE)iseq :
                     rb_ary_new_from_args(2, eval_script, (VALUE)iseq));
 }
 

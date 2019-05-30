@@ -2,13 +2,13 @@
 
   readline.c - GNU Readline module
 
-  $Author: stomar $
+  $Author$
   created at: Wed Jan 20 13:59:32 JST 1999
 
   Copyright (C) 1997-2008  Shugo Maeda
   Copyright (C) 2008-2013  Kouji Takao
 
-  $Id: readline.c 65040 2018-10-12 20:37:30Z stomar $
+  $Id$
 
   Contact:
    - Kouji Takao <kouji dot takao at gmail dot com> (current maintainer)
@@ -823,7 +823,7 @@ readline_s_redisplay(VALUE self)
  *
  * When working with auto-complete there are some strategies that work well.
  * To get some ideas you can take a look at the
- * completion.rb[https://svn.ruby-lang.org/repos/ruby/trunk/lib/irb/completion.rb]
+ * completion.rb[https://git.ruby-lang.org/ruby.git/tree/lib/irb/completion.rb]
  * file for irb.
  *
  * The common strategy is to take a list of possible completions and filter it

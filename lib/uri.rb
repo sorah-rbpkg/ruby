@@ -86,7 +86,7 @@
 # License::
 #  Copyright (c) 2001 akira yamada <akira@ruby-lang.org>
 #  You can redistribute it and/or modify it under the same term as Ruby.
-# Revision:: $Id: uri.rb 63228 2018-04-21 20:04:05Z stomar $
+# Revision:: $Id$
 #
 
 module URI

@@ -1,8 +1,6 @@
 require 'test/unit'
 require 'tempfile'
 
-return
-
 class TestISeq < Test::Unit::TestCase
   ISeq = RubyVM::InstructionSequence
 
@@ -248,9 +246,12 @@ class TestISeq < Test::Unit::TestCase
       end
     end
     assert_equal([m1, e1.message], [m2, e2.message], feature11951)
-    e1, e2 = e1.message.lines
-    assert_send([e1, :start_with?, __FILE__])
-    assert_send([e2, :start_with?, __FILE__])
+    message = e1.message.each_line
+    message.with_index(1) do |line, i|
+      next if /^ / =~ line
+      assert_send([line, :start_with?, __FILE__],
+                  proc {message.map {|l, j| (i == j ? ">" : " ") + l}.join("")})
+    end
   end
 
   def test_compile_file_error
@@ -258,7 +259,7 @@ class TestISeq < Test::Unit::TestCase
       f.puts "end"
       f.close
       path = f.path
-      assert_in_out_err(%W[- #{path}], "#{<<-"begin;"}\n#{<<-"end;"}", /unexpected end/, [], success: true)
+      assert_in_out_err(%W[- #{path}], "#{<<-"begin;"}\n#{<<-"end;"}", /unexpected `end'/, [], success: true)
       begin;
         path = ARGV[0]
         begin

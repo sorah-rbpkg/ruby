@@ -1,26 +1,26 @@
-/* -*- mode:c; style:ruby; coding: utf-8; indent-tabs-mode: nil -*- */
+/* -*- C -*- */
 
 /* This is  an auto-generated file  and is a  part of the  programming language
- * Ruby.  The  person who  created  a  program  to  generate this  file  (``I''
+ * Ruby.   The person  who  created  a program  to  generate  this file  (``I''
  * hereafter) would like  to refrain from defining licensing  of this generated
  * source code.
  *
- * This file consist of many small  parts of codes copyrighted by each authors,
+ * This file consists of many small  parts of codes copyrighted by each author,
  * not  only  the  ``I''  person.   Those  original  authors  agree  with  some
  * open-source license.  I  believe that the license we agree  is the condition
  * mentioned in  the file COPYING.  It  states "4.  You may  modify and include
  * the part of the software into any  other software ...".  But the problem is,
  * the license never makes it clear if  such modified parts still remain in the
  * same  license, or  not.   The fact  that  we agree  with  the source  code's
- * licensing terms do not automatically define that of generated ones.  This is
- * the reason  why this file  is under unclear situation.   All that I  know is
- * that above provision guarantees this file to exist.
+ * licensing terms does not automatically  define that of generated ones.  This
+ * is the reason why this file is  under an unclear situation.  All what I know
+ * is that above provision guarantees this file to exist.
  *
- * Please let me  hesitate to declare something about this  nuanced contract. I
+ * Please let me hesitate to declare  something about this nuanced contract.  I
  * am not in the position to take  over other authors' license to merge into my
- * one.  Changing them to (say) GPLv3  is not doable by myself. Perhaps someday
- * it might turn out to be okay to say this file is under a license. I wish the
- * situation would become more clear in the future. */
+ * one.  Changing them to (say) GPLv3 is not doable by myself.  Perhaps someday
+ * it might turn  out to be okay to  say this file is under a  license.  I wish
+ * the situation would become more clear in the future. */
 
 /*******************************************************************/
 /*******************************************************************/
@@ -50,377 +50,349 @@ enum ruby_insn_type_chars {
     TS_VALUE = 'V',
     TS_LINDEX = 'L',
     TS_FUNCPTR = 'F',
-    TS_NUM = 'N'
+    TS_NUM = 'N',
 };
 
 CONSTFUNC(MAYBE_UNUSED(static const char *insn_name(VALUE insn)));
-extern const char *rb_vm_insn_name_info;
-MJIT_SYMBOL_EXPORT_BEGIN
-extern const unsigned short rb_vm_insn_name_offset[];
-MJIT_SYMBOL_EXPORT_END
 
 #ifdef RUBY_VM_INSNS_INFO
-const unsigned short rb_vm_insn_name_offset[] = {
-       0,    4,   13,   22,   36,   50,   69,   80,   91,  111,  131,  148,
-     165,  177,  189,  199,  209,  216,  224,  234,  251,  259,  269,  283,
-     292,  305,  314,  321,  330,  339,  347,  359,  371,  382,  390,  399,
-     403,  407,  412,  417,  425,  431,  436,  441,  453,  461,  472,  485,
-     495,  507,  512,  535,  550,  565,  582,  599,  611,  623,  629,  635,
-     640,  649,  662,  672,  691,  710,  715,  733,  742,  752,  761,  769,
-     777,  784,  792,  799,  806,  813,  820,  829,  837,  844,  853,  862,
-     876,  890,  901,  910,  922,  931,  939,  956,  973,  993, 1000, 1007,
-    1021, 1035, 1049, 1063, 1084, 1105, 1115, 1130, 1145, 1165, 1185, 1210,
-    1227, 1244, 1270, 1296, 1319, 1342, 1360, 1378, 1394, 1410, 1423, 1437,
-    1453, 1476, 1490, 1506, 1526, 1541, 1560, 1575, 1588, 1603, 1618, 1632,
-    1650, 1668, 1685, 1699, 1714, 1724, 1734, 1745, 1756, 1770, 1782, 1793,
-    1804, 1822, 1836, 1853, 1872, 1888, 1906, 1917, 1946, 1967, 1988, 2011,
-    2034, 2052, 2070, 2082, 2094, 2105, 2120, 2139, 2155, 2180, 2205, 2216,
-    2240, 2255, 2271, 2286, 2300, 2314, 2327, 2341, 2354, 2367, 2380, 2393,
-    2408, 2422, 2435, 2450, 2465, 2485, 2505, 2522, 2537, 2555, 2570, 2584,
-    2607, 2630, 2656, 2669, 2682, 2702, 2722, 2742, 2762, 2789,
-};
 const int rb_vm_max_insn_name_size = 28;
-ASSERT_VM_INSTRUCTION_SIZE(rb_vm_insn_name_offset);
-
-PACKED_STRUCT(struct rb_vm_insn_name_info_tag {
-    const char L000[ 4]; const char L001[ 9]; const char L002[ 9];
-    const char L003[14]; const char L004[14]; const char L005[19];
-    const char L006[11]; const char L007[11]; const char L008[20];
-    const char L009[20]; const char L010[17]; const char L011[17];
-    const char L012[12]; const char L013[12]; const char L014[10];
-    const char L015[10]; const char L016[ 7]; const char L017[ 8];
-    const char L018[10]; const char L019[17]; const char L020[ 8];
-    const char L021[10]; const char L022[14]; const char L023[ 9];
-    const char L024[13]; const char L025[ 9]; const char L026[ 7];
-    const char L027[ 9]; const char L028[ 9]; const char L029[ 8];
-    const char L030[12]; const char L031[12]; const char L032[11];
-    const char L033[ 8]; const char L034[ 9]; const char L035[ 4];
-    const char L036[ 4]; const char L037[ 5]; const char L038[ 5];
-    const char L039[ 8]; const char L040[ 6]; const char L041[ 5];
-    const char L042[ 5]; const char L043[12]; const char L044[ 8];
-    const char L045[11]; const char L046[13]; const char L047[10];
-    const char L048[12]; const char L049[ 5]; const char L050[23];
-    const char L051[15]; const char L052[15]; const char L053[17];
-    const char L054[17]; const char L055[12]; const char L056[12];
-    const char L057[ 6]; const char L058[ 6]; const char L059[ 5];
-    const char L060[ 9]; const char L061[13]; const char L062[10];
-    const char L063[19]; const char L064[19]; const char L065[ 5];
-    const char L066[18]; const char L067[ 9]; const char L068[10];
-    const char L069[ 9]; const char L070[ 8]; const char L071[ 8];
-    const char L072[ 7]; const char L073[ 8]; const char L074[ 7];
-    const char L075[ 7]; const char L076[ 7]; const char L077[ 7];
-    const char L078[ 9]; const char L079[ 8]; const char L080[ 7];
-    const char L081[ 9]; const char L082[ 9]; const char L083[14];
-    const char L084[14]; const char L085[11]; const char L086[ 9];
-    const char L087[12]; const char L088[ 9]; const char L089[ 8];
-    const char L090[17]; const char L091[17]; const char L092[20];
-    const char L093[ 7]; const char L094[ 7]; const char L095[14];
-    const char L096[14]; const char L097[14]; const char L098[14];
-    const char L099[21]; const char L100[21]; const char L101[10];
-    const char L102[15]; const char L103[15]; const char L104[20];
-    const char L105[20]; const char L106[25]; const char L107[17];
-    const char L108[17]; const char L109[26]; const char L110[26];
-    const char L111[23]; const char L112[23]; const char L113[18];
-    const char L114[18]; const char L115[16]; const char L116[16];
-    const char L117[13]; const char L118[14]; const char L119[16];
-    const char L120[23]; const char L121[14]; const char L122[16];
-    const char L123[20]; const char L124[15]; const char L125[19];
-    const char L126[15]; const char L127[13]; const char L128[15];
-    const char L129[15]; const char L130[14]; const char L131[18];
-    const char L132[18]; const char L133[17]; const char L134[14];
-    const char L135[15]; const char L136[10]; const char L137[10];
-    const char L138[11]; const char L139[11]; const char L140[14];
-    const char L141[12]; const char L142[11]; const char L143[11];
-    const char L144[18]; const char L145[14]; const char L146[17];
-    const char L147[19]; const char L148[16]; const char L149[18];
-    const char L150[11]; const char L151[29]; const char L152[21];
-    const char L153[21]; const char L154[23]; const char L155[23];
-    const char L156[18]; const char L157[18]; const char L158[12];
-    const char L159[12]; const char L160[11]; const char L161[15];
-    const char L162[19]; const char L163[16]; const char L164[25];
-    const char L165[25]; const char L166[11]; const char L167[24];
-    const char L168[15]; const char L169[16]; const char L170[15];
-    const char L171[14]; const char L172[14]; const char L173[13];
-    const char L174[14]; const char L175[13]; const char L176[13];
-    const char L177[13]; const char L178[13]; const char L179[15];
-    const char L180[14]; const char L181[13]; const char L182[15];
-    const char L183[15]; const char L184[20]; const char L185[20];
-    const char L186[17]; const char L187[15]; const char L188[18];
-    const char L189[15]; const char L190[14]; const char L191[23];
-    const char L192[23]; const char L193[26]; const char L194[13];
-    const char L195[13]; const char L196[20]; const char L197[20];
-    const char L198[20]; const char L199[20]; const char L200[27];
-    const char L201[27];
-});
-
-static const struct rb_vm_insn_name_info_tag rb_vm_insn_name_base = {
-    "nop"                         , "getlocal"                    ,
-    "setlocal"                    , "getblockparam"               ,
-    "setblockparam"               , "getblockparamproxy"          ,
-    "getspecial"                  , "setspecial"                  ,
-    "getinstancevariable"         , "setinstancevariable"         ,
-    "getclassvariable"            , "setclassvariable"            ,
-    "getconstant"                 , "setconstant"                 ,
-    "getglobal"                   , "setglobal"                   ,
-    "putnil"                      , "putself"                     ,
-    "putobject"                   , "putspecialobject"            ,
-    "putiseq"                     , "putstring"                   ,
-    "concatstrings"               , "tostring"                    ,
-    "freezestring"                , "toregexp"                    ,
-    "intern"                      , "newarray"                    ,
-    "duparray"                    , "duphash"                     ,
-    "expandarray"                 , "concatarray"                 ,
-    "splatarray"                  , "newhash"                     ,
-    "newrange"                    , "pop"                         ,
-    "dup"                         , "dupn"                        ,
-    "swap"                        , "reverse"                     ,
-    "reput"                       , "topn"                        ,
-    "setn"                        , "adjuststack"                 ,
-    "defined"                     , "checkmatch"                  ,
-    "checkkeyword"                , "checktype"                   ,
-    "defineclass"                 , "send"                        ,
-    "opt_send_without_block"      , "opt_str_freeze"              ,
-    "opt_str_uminus"              , "opt_newarray_max"            ,
-    "opt_newarray_min"            , "invokesuper"                 ,
-    "invokeblock"                 , "leave"                       ,
-    "throw"                       , "jump"                        ,
-    "branchif"                    , "branchunless"                ,
-    "branchnil"                   , "opt_getinlinecache"          ,
-    "opt_setinlinecache"          , "once"                        ,
-    "opt_case_dispatch"           , "opt_plus"                    ,
-    "opt_minus"                   , "opt_mult"                    ,
-    "opt_div"                     , "opt_mod"                     ,
-    "opt_eq"                      , "opt_neq"                     ,
-    "opt_lt"                      , "opt_le"                      ,
-    "opt_gt"                      , "opt_ge"                      ,
-    "opt_ltlt"                    , "opt_and"                     ,
-    "opt_or"                      , "opt_aref"                    ,
-    "opt_aset"                    , "opt_aset_with"               ,
-    "opt_aref_with"               , "opt_length"                  ,
-    "opt_size"                    , "opt_empty_p"                 ,
-    "opt_succ"                    , "opt_not"                     ,
-    "opt_regexpmatch1"            , "opt_regexpmatch2"            ,
-    "opt_call_c_function"         , "bitblt"                      ,
-    "answer"                      , "getlocal_WC_0"               ,
-    "getlocal_WC_1"               , "setlocal_WC_0"               ,
-    "setlocal_WC_1"               , "putobject_INT2FIX_0_"        ,
-    "putobject_INT2FIX_1_"        , "trace_nop"                   ,
-    "trace_getlocal"              , "trace_setlocal"              ,
-    "trace_getblockparam"         , "trace_setblockparam"         ,
-    "trace_getblockparamproxy"    , "trace_getspecial"            ,
-    "trace_setspecial"            , "trace_getinstancevariable"   ,
-    "trace_setinstancevariable"   , "trace_getclassvariable"      ,
-    "trace_setclassvariable"      , "trace_getconstant"           ,
-    "trace_setconstant"           , "trace_getglobal"             ,
-    "trace_setglobal"             , "trace_putnil"                ,
-    "trace_putself"               , "trace_putobject"             ,
-    "trace_putspecialobject"      , "trace_putiseq"               ,
-    "trace_putstring"             , "trace_concatstrings"         ,
-    "trace_tostring"              , "trace_freezestring"          ,
-    "trace_toregexp"              , "trace_intern"                ,
-    "trace_newarray"              , "trace_duparray"              ,
-    "trace_duphash"               , "trace_expandarray"           ,
-    "trace_concatarray"           , "trace_splatarray"            ,
-    "trace_newhash"               , "trace_newrange"              ,
-    "trace_pop"                   , "trace_dup"                   ,
-    "trace_dupn"                  , "trace_swap"                  ,
-    "trace_reverse"               , "trace_reput"                 ,
-    "trace_topn"                  , "trace_setn"                  ,
-    "trace_adjuststack"           , "trace_defined"               ,
-    "trace_checkmatch"            , "trace_checkkeyword"          ,
-    "trace_checktype"             , "trace_defineclass"           ,
-    "trace_send"                  , "trace_opt_send_without_block",
-    "trace_opt_str_freeze"        , "trace_opt_str_uminus"        ,
-    "trace_opt_newarray_max"      , "trace_opt_newarray_min"      ,
-    "trace_invokesuper"           , "trace_invokeblock"           ,
-    "trace_leave"                 , "trace_throw"                 ,
-    "trace_jump"                  , "trace_branchif"              ,
-    "trace_branchunless"          , "trace_branchnil"             ,
-    "trace_opt_getinlinecache"    , "trace_opt_setinlinecache"    ,
-    "trace_once"                  , "trace_opt_case_dispatch"     ,
-    "trace_opt_plus"              , "trace_opt_minus"             ,
-    "trace_opt_mult"              , "trace_opt_div"               ,
-    "trace_opt_mod"               , "trace_opt_eq"                ,
-    "trace_opt_neq"               , "trace_opt_lt"                ,
-    "trace_opt_le"                , "trace_opt_gt"                ,
-    "trace_opt_ge"                , "trace_opt_ltlt"              ,
-    "trace_opt_and"               , "trace_opt_or"                ,
-    "trace_opt_aref"              , "trace_opt_aset"              ,
-    "trace_opt_aset_with"         , "trace_opt_aref_with"         ,
-    "trace_opt_length"            , "trace_opt_size"              ,
-    "trace_opt_empty_p"           , "trace_opt_succ"              ,
-    "trace_opt_not"               , "trace_opt_regexpmatch1"      ,
-    "trace_opt_regexpmatch2"      , "trace_opt_call_c_function"   ,
-    "trace_bitblt"                , "trace_answer"                ,
-    "trace_getlocal_WC_0"         , "trace_getlocal_WC_1"         ,
-    "trace_setlocal_WC_0"         , "trace_setlocal_WC_1"         ,
-    "trace_putobject_INT2FIX_0_"  , "trace_putobject_INT2FIX_1_"  ,
-};
-
-const char *rb_vm_insn_name_info = (const char *)&rb_vm_insn_name_base;
 #endif
 
 const char *
 insn_name(VALUE i)
 {
-    return &rb_vm_insn_name_info[rb_vm_insn_name_offset[i]];
+    static const char x[] =
+        "nop" "\0"
+        "getlocal" "\0"
+        "setlocal" "\0"
+        "getblockparam" "\0"
+        "setblockparam" "\0"
+        "getblockparamproxy" "\0"
+        "getspecial" "\0"
+        "setspecial" "\0"
+        "getinstancevariable" "\0"
+        "setinstancevariable" "\0"
+        "getclassvariable" "\0"
+        "setclassvariable" "\0"
+        "getconstant" "\0"
+        "setconstant" "\0"
+        "getglobal" "\0"
+        "setglobal" "\0"
+        "putnil" "\0"
+        "putself" "\0"
+        "putobject" "\0"
+        "putspecialobject" "\0"
+        "putstring" "\0"
+        "concatstrings" "\0"
+        "tostring" "\0"
+        "freezestring" "\0"
+        "toregexp" "\0"
+        "intern" "\0"
+        "newarray" "\0"
+        "duparray" "\0"
+        "duphash" "\0"
+        "expandarray" "\0"
+        "concatarray" "\0"
+        "splatarray" "\0"
+        "newhash" "\0"
+        "newrange" "\0"
+        "pop" "\0"
+        "dup" "\0"
+        "dupn" "\0"
+        "swap" "\0"
+        "reverse" "\0"
+        "reput" "\0"
+        "topn" "\0"
+        "setn" "\0"
+        "adjuststack" "\0"
+        "defined" "\0"
+        "checkmatch" "\0"
+        "checkkeyword" "\0"
+        "checktype" "\0"
+        "methodref" "\0"
+        "defineclass" "\0"
+        "definemethod" "\0"
+        "definesmethod" "\0"
+        "send" "\0"
+        "opt_send_without_block" "\0"
+        "opt_str_freeze" "\0"
+        "opt_str_uminus" "\0"
+        "opt_newarray_max" "\0"
+        "opt_newarray_min" "\0"
+        "invokesuper" "\0"
+        "invokeblock" "\0"
+        "leave" "\0"
+        "throw" "\0"
+        "jump" "\0"
+        "branchif" "\0"
+        "branchunless" "\0"
+        "branchnil" "\0"
+        "opt_getinlinecache" "\0"
+        "opt_setinlinecache" "\0"
+        "once" "\0"
+        "opt_case_dispatch" "\0"
+        "opt_plus" "\0"
+        "opt_minus" "\0"
+        "opt_mult" "\0"
+        "opt_div" "\0"
+        "opt_mod" "\0"
+        "opt_eq" "\0"
+        "opt_neq" "\0"
+        "opt_lt" "\0"
+        "opt_le" "\0"
+        "opt_gt" "\0"
+        "opt_ge" "\0"
+        "opt_ltlt" "\0"
+        "opt_and" "\0"
+        "opt_or" "\0"
+        "opt_aref" "\0"
+        "opt_aset" "\0"
+        "opt_aset_with" "\0"
+        "opt_aref_with" "\0"
+        "opt_length" "\0"
+        "opt_size" "\0"
+        "opt_empty_p" "\0"
+        "opt_succ" "\0"
+        "opt_not" "\0"
+        "opt_regexpmatch1" "\0"
+        "opt_regexpmatch2" "\0"
+        "opt_call_c_function" "\0"
+        "bitblt" "\0"
+        "answer" "\0"
+        "getlocal_WC_0" "\0"
+        "getlocal_WC_1" "\0"
+        "setlocal_WC_0" "\0"
+        "setlocal_WC_1" "\0"
+        "putobject_INT2FIX_0_" "\0"
+        "putobject_INT2FIX_1_" "\0"
+        "trace_nop" "\0"
+        "trace_getlocal" "\0"
+        "trace_setlocal" "\0"
+        "trace_getblockparam" "\0"
+        "trace_setblockparam" "\0"
+        "trace_getblockparamproxy" "\0"
+        "trace_getspecial" "\0"
+        "trace_setspecial" "\0"
+        "trace_getinstancevariable" "\0"
+        "trace_setinstancevariable" "\0"
+        "trace_getclassvariable" "\0"
+        "trace_setclassvariable" "\0"
+        "trace_getconstant" "\0"
+        "trace_setconstant" "\0"
+        "trace_getglobal" "\0"
+        "trace_setglobal" "\0"
+        "trace_putnil" "\0"
+        "trace_putself" "\0"
+        "trace_putobject" "\0"
+        "trace_putspecialobject" "\0"
+        "trace_putstring" "\0"
+        "trace_concatstrings" "\0"
+        "trace_tostring" "\0"
+        "trace_freezestring" "\0"
+        "trace_toregexp" "\0"
+        "trace_intern" "\0"
+        "trace_newarray" "\0"
+        "trace_duparray" "\0"
+        "trace_duphash" "\0"
+        "trace_expandarray" "\0"
+        "trace_concatarray" "\0"
+        "trace_splatarray" "\0"
+        "trace_newhash" "\0"
+        "trace_newrange" "\0"
+        "trace_pop" "\0"
+        "trace_dup" "\0"
+        "trace_dupn" "\0"
+        "trace_swap" "\0"
+        "trace_reverse" "\0"
+        "trace_reput" "\0"
+        "trace_topn" "\0"
+        "trace_setn" "\0"
+        "trace_adjuststack" "\0"
+        "trace_defined" "\0"
+        "trace_checkmatch" "\0"
+        "trace_checkkeyword" "\0"
+        "trace_checktype" "\0"
+        "trace_methodref" "\0"
+        "trace_defineclass" "\0"
+        "trace_definemethod" "\0"
+        "trace_definesmethod" "\0"
+        "trace_send" "\0"
+        "trace_opt_send_without_block" "\0"
+        "trace_opt_str_freeze" "\0"
+        "trace_opt_str_uminus" "\0"
+        "trace_opt_newarray_max" "\0"
+        "trace_opt_newarray_min" "\0"
+        "trace_invokesuper" "\0"
+        "trace_invokeblock" "\0"
+        "trace_leave" "\0"
+        "trace_throw" "\0"
+        "trace_jump" "\0"
+        "trace_branchif" "\0"
+        "trace_branchunless" "\0"
+        "trace_branchnil" "\0"
+        "trace_opt_getinlinecache" "\0"
+        "trace_opt_setinlinecache" "\0"
+        "trace_once" "\0"
+        "trace_opt_case_dispatch" "\0"
+        "trace_opt_plus" "\0"
+        "trace_opt_minus" "\0"
+        "trace_opt_mult" "\0"
+        "trace_opt_div" "\0"
+        "trace_opt_mod" "\0"
+        "trace_opt_eq" "\0"
+        "trace_opt_neq" "\0"
+        "trace_opt_lt" "\0"
+        "trace_opt_le" "\0"
+        "trace_opt_gt" "\0"
+        "trace_opt_ge" "\0"
+        "trace_opt_ltlt" "\0"
+        "trace_opt_and" "\0"
+        "trace_opt_or" "\0"
+        "trace_opt_aref" "\0"
+        "trace_opt_aset" "\0"
+        "trace_opt_aset_with" "\0"
+        "trace_opt_aref_with" "\0"
+        "trace_opt_length" "\0"
+        "trace_opt_size" "\0"
+        "trace_opt_empty_p" "\0"
+        "trace_opt_succ" "\0"
+        "trace_opt_not" "\0"
+        "trace_opt_regexpmatch1" "\0"
+        "trace_opt_regexpmatch2" "\0"
+        "trace_opt_call_c_function" "\0"
+        "trace_bitblt" "\0"
+        "trace_answer" "\0"
+        "trace_getlocal_WC_0" "\0"
+        "trace_getlocal_WC_1" "\0"
+        "trace_setlocal_WC_0" "\0"
+        "trace_setlocal_WC_1" "\0"
+        "trace_putobject_INT2FIX_0_" "\0"
+        "trace_putobject_INT2FIX_1_" "\0"
+        ;
+
+    static const unsigned short y[] = {
+           0,    4,   13,   22,   36,   50,   69,   80,   91,  111,  131,  148,
+         165,  177,  189,  199,  209,  216,  224,  234,  251,  261,  275,  284,
+         297,  306,  313,  322,  331,  339,  351,  363,  374,  382,  391,  395,
+         399,  404,  409,  417,  423,  428,  433,  445,  453,  464,  477,  487,
+         497,  509,  522,  536,  541,  564,  579,  594,  611,  628,  640,  652,
+         658,  664,  669,  678,  691,  701,  720,  739,  744,  762,  771,  781,
+         790,  798,  806,  813,  821,  828,  835,  842,  849,  858,  866,  873,
+         882,  891,  905,  919,  930,  939,  951,  960,  968,  985, 1002, 1022,
+        1029, 1036, 1050, 1064, 1078, 1092, 1113, 1134, 1144, 1159, 1174, 1194,
+        1214, 1239, 1256, 1273, 1299, 1325, 1348, 1371, 1389, 1407, 1423, 1439,
+        1452, 1466, 1482, 1505, 1521, 1541, 1556, 1575, 1590, 1603, 1618, 1633,
+        1647, 1665, 1683, 1700, 1714, 1729, 1739, 1749, 1760, 1771, 1785, 1797,
+        1808, 1819, 1837, 1851, 1868, 1887, 1903, 1919, 1937, 1956, 1976, 1987,
+        2016, 2037, 2058, 2081, 2104, 2122, 2140, 2152, 2164, 2175, 2190, 2209,
+        2225, 2250, 2275, 2286, 2310, 2325, 2341, 2356, 2370, 2384, 2397, 2411,
+        2424, 2437, 2450, 2463, 2478, 2492, 2505, 2520, 2535, 2555, 2575, 2592,
+        2607, 2625, 2640, 2654, 2677, 2700, 2726, 2739, 2752, 2772, 2792, 2812,
+        2832, 2859,
+    };
+
+    ASSERT_VM_INSTRUCTION_SIZE(y);
+
+    return &x[y[i]];
 }
 
 CONSTFUNC(MAYBE_UNUSED(static int insn_len(VALUE insn)));
-extern const char rb_vm_insn_len_info[];
-
-#ifdef RUBY_VM_INSNS_INFO
-const char rb_vm_insn_len_info[] = {
-    1, 3, 3, 3, 3, 3, 3, 2, 3, 3, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 1, 2,
-    3, 1, 2, 2, 2, 3, 1, 2, 2, 2, 1, 1, 2, 1, 2, 1, 2, 2, 2, 4, 2, 3, 2, 4, 4,
-    3, 4, 4, 2, 2, 4, 2, 1, 2, 2, 2, 2, 2, 3, 2, 3, 3, 3, 3, 3, 3, 3, 3, 5, 3,
-    3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 3, 3, 3, 3, 3, 2, 3, 2, 1, 1, 2, 2, 2, 2, 1,
-    1, 1, 3, 3, 3, 3, 3, 3, 2, 3, 3, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 1,
-    2, 3, 1, 2, 2, 2, 3, 1, 2, 2, 2, 1, 1, 2, 1, 2, 1, 2, 2, 2, 4, 2, 3, 2, 4,
-    4, 3, 4, 4, 2, 2, 4, 2, 1, 2, 2, 2, 2, 2, 3, 2, 3, 3, 3, 3, 3, 3, 3, 3, 5,
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 3, 3, 3, 3, 3, 2, 3, 2, 1, 1, 2, 2, 2, 2,
-    1, 1,
-};
-#endif
 
 int
 insn_len(VALUE i)
 {
-    return rb_vm_insn_len_info[i];
+    static const char t[] = {
+        1, 3, 3, 3, 3, 3, 3, 2, 3, 3, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1,
+        2, 3, 1, 2, 2, 2, 3, 1, 2, 2, 2, 1, 1, 2, 1, 2, 1, 2, 2, 2, 4, 2, 3,
+        2, 2, 4, 3, 3, 4, 3, 4, 4, 2, 2, 4, 2, 1, 2, 2, 2, 2, 2, 3, 2, 3, 3,
+        3, 3, 3, 3, 3, 3, 5, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 3, 3, 3, 3, 3,
+        2, 3, 2, 1, 1, 2, 2, 2, 2, 1, 1, 1, 3, 3, 3, 3, 3, 3, 2, 3, 3, 2, 2,
+        2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 2, 3, 1, 2, 2, 2, 3, 1, 2, 2, 2, 1,
+        1, 2, 1, 2, 1, 2, 2, 2, 4, 2, 3, 2, 2, 4, 3, 3, 4, 3, 4, 4, 2, 2, 4,
+        2, 1, 2, 2, 2, 2, 2, 3, 2, 3, 3, 3, 3, 3, 3, 3, 3, 5, 3, 3, 3, 3, 3,
+        3, 3, 3, 3, 4, 4, 3, 3, 3, 3, 3, 2, 3, 2, 1, 1, 2, 2, 2, 2, 1, 1,
+    };
+
+    ASSERT_VM_INSTRUCTION_SIZE(t);
+    return t[i];
 }
 
 CONSTFUNC(MAYBE_UNUSED(static const char *insn_op_types(VALUE insn)));
 CONSTFUNC(MAYBE_UNUSED(static int insn_op_type(VALUE insn, long pos)));
-extern const char *rb_vm_insn_op_info;
-extern const unsigned short rb_vm_insn_op_offset[];
-
-#ifdef RUBY_VM_INSNS_INFO
-const unsigned short rb_vm_insn_op_offset[] = {
-      0,   1,   4,   7,  10,  13,  16,  19,  21,  24,  27,  29,  31,  33,
-     35,  37,  39,  40,  41,  43,  45,  47,  49,  51,  52,  54,  57,  58,
-     60,  62,  64,  67,  68,  70,  72,  74,  75,  76,  78,  79,  81,  82,
-     84,  86,  88,  92,  94,  97,  99, 103, 107, 110, 114, 118, 120, 122,
-    126, 128, 129, 131, 133, 135, 137, 139, 142, 144, 147, 150, 153, 156,
-    159, 162, 165, 168, 173, 176, 179, 182, 185, 188, 191, 194, 197, 200,
-    204, 208, 211, 214, 217, 220, 223, 225, 228, 230, 231, 232, 234, 236,
-    238, 240, 241, 242, 243, 246, 249, 252, 255, 258, 261, 263, 266, 269,
-    271, 273, 275, 277, 279, 281, 282, 283, 285, 287, 289, 291, 293, 294,
-    296, 299, 300, 302, 304, 306, 309, 310, 312, 314, 316, 317, 318, 320,
-    321, 323, 324, 326, 328, 330, 334, 336, 339, 341, 345, 349, 352, 356,
-    360, 362, 364, 368, 370, 371, 373, 375, 377, 379, 381, 384, 386, 389,
-    392, 395, 398, 401, 404, 407, 410, 415, 418, 421, 424, 427, 430, 433,
-    436, 439, 442, 446, 450, 453, 456, 459, 462, 465, 467, 470, 472, 473,
-    474, 476, 478, 480, 482, 483,
-};
-ASSERT_VM_INSTRUCTION_SIZE(rb_vm_insn_op_offset);
-
-PACKED_STRUCT(struct rb_vm_insn_op_info_tag {
-    const char L000[ 1]; const char L001[ 3]; const char L002[ 3];
-    const char L003[ 3]; const char L004[ 3]; const char L005[ 3];
-    const char L006[ 3]; const char L007[ 2]; const char L008[ 3];
-    const char L009[ 3]; const char L010[ 2]; const char L011[ 2];
-    const char L012[ 2]; const char L013[ 2]; const char L014[ 2];
-    const char L015[ 2]; const char L016[ 1]; const char L017[ 1];
-    const char L018[ 2]; const char L019[ 2]; const char L020[ 2];
-    const char L021[ 2]; const char L022[ 2]; const char L023[ 1];
-    const char L024[ 2]; const char L025[ 3]; const char L026[ 1];
-    const char L027[ 2]; const char L028[ 2]; const char L029[ 2];
-    const char L030[ 3]; const char L031[ 1]; const char L032[ 2];
-    const char L033[ 2]; const char L034[ 2]; const char L035[ 1];
-    const char L036[ 1]; const char L037[ 2]; const char L038[ 1];
-    const char L039[ 2]; const char L040[ 1]; const char L041[ 2];
-    const char L042[ 2]; const char L043[ 2]; const char L044[ 4];
-    const char L045[ 2]; const char L046[ 3]; const char L047[ 2];
-    const char L048[ 4]; const char L049[ 4]; const char L050[ 3];
-    const char L051[ 4]; const char L052[ 4]; const char L053[ 2];
-    const char L054[ 2]; const char L055[ 4]; const char L056[ 2];
-    const char L057[ 1]; const char L058[ 2]; const char L059[ 2];
-    const char L060[ 2]; const char L061[ 2]; const char L062[ 2];
-    const char L063[ 3]; const char L064[ 2]; const char L065[ 3];
-    const char L066[ 3]; const char L067[ 3]; const char L068[ 3];
-    const char L069[ 3]; const char L070[ 3]; const char L071[ 3];
-    const char L072[ 3]; const char L073[ 5]; const char L074[ 3];
-    const char L075[ 3]; const char L076[ 3]; const char L077[ 3];
-    const char L078[ 3]; const char L079[ 3]; const char L080[ 3];
-    const char L081[ 3]; const char L082[ 3]; const char L083[ 4];
-    const char L084[ 4]; const char L085[ 3]; const char L086[ 3];
-    const char L087[ 3]; const char L088[ 3]; const char L089[ 3];
-    const char L090[ 2]; const char L091[ 3]; const char L092[ 2];
-    const char L093[ 1]; const char L094[ 1]; const char L095[ 2];
-    const char L096[ 2]; const char L097[ 2]; const char L098[ 2];
-    const char L099[ 1]; const char L100[ 1]; const char L101[ 1];
-    const char L102[ 3]; const char L103[ 3]; const char L104[ 3];
-    const char L105[ 3]; const char L106[ 3]; const char L107[ 3];
-    const char L108[ 2]; const char L109[ 3]; const char L110[ 3];
-    const char L111[ 2]; const char L112[ 2]; const char L113[ 2];
-    const char L114[ 2]; const char L115[ 2]; const char L116[ 2];
-    const char L117[ 1]; const char L118[ 1]; const char L119[ 2];
-    const char L120[ 2]; const char L121[ 2]; const char L122[ 2];
-    const char L123[ 2]; const char L124[ 1]; const char L125[ 2];
-    const char L126[ 3]; const char L127[ 1]; const char L128[ 2];
-    const char L129[ 2]; const char L130[ 2]; const char L131[ 3];
-    const char L132[ 1]; const char L133[ 2]; const char L134[ 2];
-    const char L135[ 2]; const char L136[ 1]; const char L137[ 1];
-    const char L138[ 2]; const char L139[ 1]; const char L140[ 2];
-    const char L141[ 1]; const char L142[ 2]; const char L143[ 2];
-    const char L144[ 2]; const char L145[ 4]; const char L146[ 2];
-    const char L147[ 3]; const char L148[ 2]; const char L149[ 4];
-    const char L150[ 4]; const char L151[ 3]; const char L152[ 4];
-    const char L153[ 4]; const char L154[ 2]; const char L155[ 2];
-    const char L156[ 4]; const char L157[ 2]; const char L158[ 1];
-    const char L159[ 2]; const char L160[ 2]; const char L161[ 2];
-    const char L162[ 2]; const char L163[ 2]; const char L164[ 3];
-    const char L165[ 2]; const char L166[ 3]; const char L167[ 3];
-    const char L168[ 3]; const char L169[ 3]; const char L170[ 3];
-    const char L171[ 3]; const char L172[ 3]; const char L173[ 3];
-    const char L174[ 5]; const char L175[ 3]; const char L176[ 3];
-    const char L177[ 3]; const char L178[ 3]; const char L179[ 3];
-    const char L180[ 3]; const char L181[ 3]; const char L182[ 3];
-    const char L183[ 3]; const char L184[ 4]; const char L185[ 4];
-    const char L186[ 3]; const char L187[ 3]; const char L188[ 3];
-    const char L189[ 3]; const char L190[ 3]; const char L191[ 2];
-    const char L192[ 3]; const char L193[ 2]; const char L194[ 1];
-    const char L195[ 1]; const char L196[ 2]; const char L197[ 2];
-    const char L198[ 2]; const char L199[ 2]; const char L200[ 1];
-    const char L201[ 1];
-});
-
-static const struct rb_vm_insn_op_info_tag rb_vm_insn_op_base = {
-    ""    , "LN"  , "LN"  , "LN"  , "LN"  , "LN"  , "NN"  , "N"   ,
-    "IK"  , "IK"  , "I"   , "I"   , "I"   , "I"   , "G"   , "G"   ,
-    ""    , ""    , "V"   , "N"   , "S"   , "V"   , "N"   , ""    ,
-    "V"   , "NN"  , ""    , "N"   , "V"   , "V"   , "NN"  , ""    ,
-    "V"   , "N"   , "N"   , ""    , ""    , "N"   , ""    , "N"   ,
-    ""    , "N"   , "N"   , "N"   , "NVV" , "N"   , "LL"  , "N"   ,
-    "ISN" , "CES" , "CE"  , "VCE" , "VCE" , "N"   , "N"   , "CES" ,
-    "C"   , ""    , "N"   , "O"   , "O"   , "O"   , "O"   , "OK"  ,
-    "K"   , "ST"  , "HO"  , "CE"  , "CE"  , "CE"  , "CE"  , "CE"  ,
-    "CE"  , "CECE", "CE"  , "CE"  , "CE"  , "CE"  , "CE"  , "CE"  ,
-    "CE"  , "CE"  , "CE"  , "VCE" , "VCE" , "CE"  , "CE"  , "CE"  ,
-    "CE"  , "CE"  , "V"   , "CE"  , "F"   , ""    , ""    , "L"   ,
-    "L"   , "L"   , "L"   , ""    , ""    , ""    , "LN"  , "LN"  ,
-    "LN"  , "LN"  , "LN"  , "NN"  , "N"   , "IK"  , "IK"  , "I"   ,
-    "I"   , "I"   , "I"   , "G"   , "G"   , ""    , ""    , "V"   ,
-    "N"   , "S"   , "V"   , "N"   , ""    , "V"   , "NN"  , ""    ,
-    "N"   , "V"   , "V"   , "NN"  , ""    , "V"   , "N"   , "N"   ,
-    ""    , ""    , "N"   , ""    , "N"   , ""    , "N"   , "N"   ,
-    "N"   , "NVV" , "N"   , "LL"  , "N"   , "ISN" , "CES" , "CE"  ,
-    "VCE" , "VCE" , "N"   , "N"   , "CES" , "C"   , ""    , "N"   ,
-    "O"   , "O"   , "O"   , "O"   , "OK"  , "K"   , "ST"  , "HO"  ,
-    "CE"  , "CE"  , "CE"  , "CE"  , "CE"  , "CE"  , "CECE", "CE"  ,
-    "CE"  , "CE"  , "CE"  , "CE"  , "CE"  , "CE"  , "CE"  , "CE"  ,
-    "VCE" , "VCE" , "CE"  , "CE"  , "CE"  , "CE"  , "CE"  , "V"   ,
-    "CE"  , "F"   , ""    , ""    , "L"   , "L"   , "L"   , "L"   ,
-    ""    , ""    ,
-};
-
-const char *rb_vm_insn_op_info = (const char *)&rb_vm_insn_op_base;
-#endif
 
 const char *
 insn_op_types(VALUE i)
 {
-    return &rb_vm_insn_op_info[rb_vm_insn_op_offset[i]];
+    static const char x[] =
+        ""     "\0" "LN"   "\0" "LN"   "\0" "LN"   "\0" "LN"   "\0"
+        "LN"   "\0" "NN"   "\0" "N"    "\0" "IK"   "\0" "IK"   "\0"
+        "I"    "\0" "I"    "\0" "I"    "\0" "I"    "\0" "G"    "\0"
+        "G"    "\0" ""     "\0" ""     "\0" "V"    "\0" "N"    "\0"
+        "V"    "\0" "N"    "\0" ""     "\0" "V"    "\0" "NN"   "\0"
+        ""     "\0" "N"    "\0" "V"    "\0" "V"    "\0" "NN"   "\0"
+        ""     "\0" "V"    "\0" "N"    "\0" "N"    "\0" ""     "\0"
+        ""     "\0" "N"    "\0" ""     "\0" "N"    "\0" ""     "\0"
+        "N"    "\0" "N"    "\0" "N"    "\0" "NVV"  "\0" "N"    "\0"
+        "LL"   "\0" "N"    "\0" "I"    "\0" "ISN"  "\0" "IS"   "\0"
+        "IS"   "\0" "CES"  "\0" "CE"   "\0" "VCE"  "\0" "VCE"  "\0"
+        "N"    "\0" "N"    "\0" "CES"  "\0" "C"    "\0" ""     "\0"
+        "N"    "\0" "O"    "\0" "O"    "\0" "O"    "\0" "O"    "\0"
+        "OK"   "\0" "K"    "\0" "ST"   "\0" "HO"   "\0" "CE"   "\0"
+        "CE"   "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0"
+        "CECE" "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0"
+        "CE"   "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0"
+        "VCE"  "\0" "VCE"  "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0"
+        "CE"   "\0" "CE"   "\0" "V"    "\0" "CE"   "\0" "F"    "\0"
+        ""     "\0" ""     "\0" "L"    "\0" "L"    "\0" "L"    "\0"
+        "L"    "\0" ""     "\0" ""     "\0" ""     "\0" "LN"   "\0"
+        "LN"   "\0" "LN"   "\0" "LN"   "\0" "LN"   "\0" "NN"   "\0"
+        "N"    "\0" "IK"   "\0" "IK"   "\0" "I"    "\0" "I"    "\0"
+        "I"    "\0" "I"    "\0" "G"    "\0" "G"    "\0" ""     "\0"
+        ""     "\0" "V"    "\0" "N"    "\0" "V"    "\0" "N"    "\0"
+        ""     "\0" "V"    "\0" "NN"   "\0" ""     "\0" "N"    "\0"
+        "V"    "\0" "V"    "\0" "NN"   "\0" ""     "\0" "V"    "\0"
+        "N"    "\0" "N"    "\0" ""     "\0" ""     "\0" "N"    "\0"
+        ""     "\0" "N"    "\0" ""     "\0" "N"    "\0" "N"    "\0"
+        "N"    "\0" "NVV"  "\0" "N"    "\0" "LL"   "\0" "N"    "\0"
+        "I"    "\0" "ISN"  "\0" "IS"   "\0" "IS"   "\0" "CES"  "\0"
+        "CE"   "\0" "VCE"  "\0" "VCE"  "\0" "N"    "\0" "N"    "\0"
+        "CES"  "\0" "C"    "\0" ""     "\0" "N"    "\0" "O"    "\0"
+        "O"    "\0" "O"    "\0" "O"    "\0" "OK"   "\0" "K"    "\0"
+        "ST"   "\0" "HO"   "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0"
+        "CE"   "\0" "CE"   "\0" "CE"   "\0" "CECE" "\0" "CE"   "\0"
+        "CE"   "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0"
+        "CE"   "\0" "CE"   "\0" "CE"   "\0" "VCE"  "\0" "VCE"  "\0"
+        "CE"   "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0"
+        "V"    "\0" "CE"   "\0" "F"    "\0" ""     "\0" ""     "\0"
+        "L"    "\0" "L"    "\0" "L"    "\0" "L"    "\0" ""     "\0"
+        ""     "\0"
+        ;
+
+    static const unsigned short y[] = {
+          0,   1,   4,   7,  10,  13,  16,  19,  21,  24,  27,  29,
+         31,  33,  35,  37,  39,  40,  41,  43,  45,  47,  49,  50,
+         52,  55,  56,  58,  60,  62,  65,  66,  68,  70,  72,  73,
+         74,  76,  77,  79,  80,  82,  84,  86,  90,  92,  95,  97,
+         99, 103, 106, 109, 113, 116, 120, 124, 126, 128, 132, 134,
+        135, 137, 139, 141, 143, 145, 148, 150, 153, 156, 159, 162,
+        165, 168, 171, 174, 179, 182, 185, 188, 191, 194, 197, 200,
+        203, 206, 210, 214, 217, 220, 223, 226, 229, 231, 234, 236,
+        237, 238, 240, 242, 244, 246, 247, 248, 249, 252, 255, 258,
+        261, 264, 267, 269, 272, 275, 277, 279, 281, 283, 285, 287,
+        288, 289, 291, 293, 295, 297, 298, 300, 303, 304, 306, 308,
+        310, 313, 314, 316, 318, 320, 321, 322, 324, 325, 327, 328,
+        330, 332, 334, 338, 340, 343, 345, 347, 351, 354, 357, 361,
+        364, 368, 372, 374, 376, 380, 382, 383, 385, 387, 389, 391,
+        393, 396, 398, 401, 404, 407, 410, 413, 416, 419, 422, 427,
+        430, 433, 436, 439, 442, 445, 448, 451, 454, 458, 462, 465,
+        468, 471, 474, 477, 479, 482, 484, 485, 486, 488, 490, 492,
+        494, 495,
+    };
+
+    ASSERT_VM_INSTRUCTION_SIZE(y);
+
+    return &x[y[i]];
 }
 
 int
@@ -434,6 +406,7 @@ insn_op_type(VALUE i, long j)
     }
 }
 
+#line 10 "tool/ruby_vm/views/_leaf_helpers.erb"
 
 static bool
 leafness_of_getglobal(VALUE gentry)
@@ -449,7 +422,7 @@ leafness_of_getglobal(VALUE gentry)
         static rb_gvar_getter_t *const allowlist[] = {
             rb_gvar_val_getter,
             rb_gvar_var_getter,
-            rb_gvar_undef_getter,
+            /* rb_gvar_undef_getter issues rb_warning() */
         };
         rb_gvar_getter_t *f = rb_gvar_getter_function_of(e);
         int i;
@@ -476,7 +449,7 @@ leafness_of_setglobal(VALUE gentry)
          * case label cannot be a function pointer. */
         static rb_gvar_setter_t *const allowlist[] = {
             rb_gvar_val_setter,
-            rb_gvar_readonly_setter,
+            /* rb_gvar_readonly_setter issues rb_name_error() */
             rb_gvar_var_setter,
             rb_gvar_undef_setter,
         };
@@ -531,6 +504,37 @@ leafness_of_checkmatch(rb_num_t flag)
         return false;
     }
 }
+#line 508 "insns_info.inc"
+
+#line 10 "tool/ruby_vm/views/_sp_inc_helpers.erb"
+
+static rb_snum_t
+sp_inc_of_sendish(const struct rb_call_info *ci)
+{
+    /* Send-ish instructions will:
+     *
+     * 1. Pop block argument, if any.
+     * 2. Pop ordinal arguments.
+     * 3. Pop receiver.
+     * 4. Push return value.
+     */
+    const int argb = (ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0;
+    const int argc = ci->orig_argc;
+    const int recv = 1;
+    const int retn = 1;
+
+    /*         1.     2.     3.     4. */
+    return 0 - argb - argc - recv + retn;
+}
+
+static rb_snum_t
+sp_inc_of_invokeblock(const struct rb_call_info *ci)
+{
+    /* sp_inc of invokeblock is almost identical to that of sendish
+     * instructions, except that it does not pop receiver. */
+    return sp_inc_of_sendish(ci) + 1;
+}
+#line 538 "insns_info.inc"
 
 #ifndef RUBY_VM_EXEC_H
 /* can't #include "vm_exec.h" here... */
@@ -720,15 +724,6 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_putspecialobject(rb_num_t value_
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_putspecialobject(rb_num_t value_type)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_putspecialobject(rb_num_t value_type)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_putspecialobject(rb_num_t value_type)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_putiseq(ISEQ iseq)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_putiseq(ISEQ iseq)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_putiseq(ISEQ iseq)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_putiseq(ISEQ iseq)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_putiseq(ISEQ iseq)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_putiseq(ISEQ iseq)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_putiseq(ISEQ iseq)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_putiseq(ISEQ iseq)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_putiseq(ISEQ iseq)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_putstring(VALUE str)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_putstring(VALUE str)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_putstring(VALUE str)));
@@ -972,6 +967,15 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_checktype(rb_num_t type)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_checktype(rb_num_t type)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_checktype(rb_num_t type)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_checktype(rb_num_t type)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_methodref(ID id)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_methodref(ID id)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_methodref(ID id)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_methodref(ID id)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_methodref(ID id)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_methodref(ID id)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_methodref(ID id)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_methodref(ID id)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_methodref(ID id)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_defineclass(ID id, ISEQ class_iseq, rb_num_t flags)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_defineclass(ID id, ISEQ class_iseq, rb_num_t flags)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_defineclass(ID id, ISEQ class_iseq, rb_num_t flags)));
@@ -981,6 +985,24 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_defineclass(ID id, ISEQ class_is
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_defineclass(ID id, ISEQ class_iseq, rb_num_t flags)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_defineclass(ID id, ISEQ class_iseq, rb_num_t flags)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_defineclass(ID id, ISEQ class_iseq, rb_num_t flags)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_definemethod(ID id, ISEQ iseq)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_definemethod(ID id, ISEQ iseq)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_definemethod(ID id, ISEQ iseq)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_definemethod(ID id, ISEQ iseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_definemethod(ID id, ISEQ iseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_definemethod(ID id, ISEQ iseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_definemethod(ID id, ISEQ iseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_definemethod(ID id, ISEQ iseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_definemethod(ID id, ISEQ iseq)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_definesmethod(ID id, ISEQ iseq)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_definesmethod(ID id, ISEQ iseq)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_definesmethod(ID id, ISEQ iseq)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_definesmethod(ID id, ISEQ iseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_definesmethod(ID id, ISEQ iseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_definesmethod(ID id, ISEQ iseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_definesmethod(ID id, ISEQ iseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_definesmethod(ID id, ISEQ iseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_definesmethod(ID id, ISEQ iseq)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_send(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_send(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_send(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)));
@@ -1990,7 +2012,10 @@ attr_leaf_getspecial(
     MAYBE_UNUSED(rb_num_t type)
 )
 {
-    return true;
+    return
+#line 192 "insns.def"
+(type == 0) ? true : false;
+#line 2019 "insns_info.inc"
 }
 
 /* attr const char* name @ getspecial(key, type)()(val) */
@@ -2144,9 +2169,9 @@ attr_leaf_getinstancevariable(
 )
 {
     return
-#line 212 "insns.def"
+#line 214 "insns.def"
 false;
-#line 2150 "insns_info.inc"
+#line 2175 "insns_info.inc"
 }
 
 /* attr const char* name @ getinstancevariable(id, ic)()(val) */
@@ -2236,7 +2261,10 @@ attr_leaf_setinstancevariable(
     MAYBE_UNUSED(IC ic)
 )
 {
-    return true;
+    return
+#line 225 "insns.def"
+false;
+#line 2268 "insns_info.inc"
 }
 
 /* attr const char* name @ setinstancevariable(id, ic)(val)() */
@@ -2318,9 +2346,9 @@ bool
 attr_leaf_getclassvariable(MAYBE_UNUSED(ID id))
 {
     return
-#line 234 "insns.def"
+#line 237 "insns.def"
 false;
-#line 2324 "insns_info.inc"
+#line 2352 "insns_info.inc"
 }
 
 /* attr const char* name @ getclassvariable(id)()(val) */
@@ -2384,9 +2412,9 @@ bool
 attr_leaf_setclassvariable(MAYBE_UNUSED(ID id))
 {
     return
-#line 246 "insns.def"
+#line 249 "insns.def"
 false;
-#line 2390 "insns_info.inc"
+#line 2418 "insns_info.inc"
 }
 
 /* attr const char* name @ setclassvariable(id)(val)() */
@@ -2450,9 +2478,9 @@ bool
 attr_leaf_getconstant(MAYBE_UNUSED(ID id))
 {
     return
-#line 262 "insns.def"
+#line 265 "insns.def"
 false;
-#line 2456 "insns_info.inc"
+#line 2484 "insns_info.inc"
 }
 
 /* attr const char* name @ getconstant(id)(klass)(val) */
@@ -2516,9 +2544,9 @@ bool
 attr_leaf_setconstant(MAYBE_UNUSED(ID id))
 {
     return
-#line 278 "insns.def"
+#line 281 "insns.def"
 false;
-#line 2522 "insns_info.inc"
+#line 2550 "insns_info.inc"
 }
 
 /* attr const char* name @ setconstant(id)(val, cbase)() */
@@ -2582,9 +2610,9 @@ bool
 attr_leaf_getglobal(MAYBE_UNUSED(GENTRY entry))
 {
     return
-#line 291 "insns.def"
+#line 294 "insns.def"
 leafness_of_getglobal(entry);
-#line 2588 "insns_info.inc"
+#line 2616 "insns_info.inc"
 }
 
 /* attr const char* name @ getglobal(entry)()(val) */
@@ -2648,9 +2676,9 @@ bool
 attr_leaf_setglobal(MAYBE_UNUSED(GENTRY entry))
 {
     return
-#line 302 "insns.def"
+#line 306 "insns.def"
 leafness_of_setglobal(entry);
-#line 2654 "insns_info.inc"
+#line 2682 "insns_info.inc"
 }
 
 /* attr const char* name @ setglobal(entry)(val)() */
@@ -2947,72 +2975,6 @@ attr_width_putspecialobject(MAYBE_UNUSED(rb_num_t value_type))
     return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ putiseq(iseq)()(ret) */
-enum ruby_vminsn_type
-attr_bin_putiseq(MAYBE_UNUSED(ISEQ iseq))
-{
-    return BIN(putiseq);
-}
-
-/* attr bool handles_sp @ putiseq(iseq)()(ret) */
-bool
-attr_handles_sp_putiseq(MAYBE_UNUSED(ISEQ iseq))
-{
-    return
-#line 362 "insns.def"
-false;
-#line 2965 "insns_info.inc"
-}
-
-/* attr bool leaf @ putiseq(iseq)()(ret) */
-bool
-attr_leaf_putiseq(MAYBE_UNUSED(ISEQ iseq))
-{
-    return true;
-}
-
-/* attr const char* name @ putiseq(iseq)()(ret) */
-const char*
-attr_name_putiseq(MAYBE_UNUSED(ISEQ iseq))
-{
-    return insn_name(BIN(putiseq));
-}
-
-/* attr rb_num_t open @ putiseq(iseq)()(ret) */
-rb_num_t
-attr_open_putiseq(MAYBE_UNUSED(ISEQ iseq))
-{
-    return 1;
-}
-
-/* attr rb_num_t popn @ putiseq(iseq)()(ret) */
-rb_num_t
-attr_popn_putiseq(MAYBE_UNUSED(ISEQ iseq))
-{
-    return 0;
-}
-
-/* attr rb_num_t retn @ putiseq(iseq)()(ret) */
-rb_num_t
-attr_retn_putiseq(MAYBE_UNUSED(ISEQ iseq))
-{
-    return 1;
-}
-
-/* attr rb_snum_t sp_inc @ putiseq(iseq)()(ret) */
-rb_snum_t
-attr_sp_inc_putiseq(MAYBE_UNUSED(ISEQ iseq))
-{
-    return 1;
-}
-
-/* attr rb_num_t width @ putiseq(iseq)()(ret) */
-rb_num_t
-attr_width_putiseq(MAYBE_UNUSED(ISEQ iseq))
-{
-    return 2;
-}
-
 /* attr enum ruby_vminsn_type bin @ putstring(str)()(val) */
 enum ruby_vminsn_type
 attr_bin_putstring(MAYBE_UNUSED(VALUE str))
@@ -3094,7 +3056,10 @@ attr_handles_sp_concatstrings(MAYBE_UNUSED(rb_num_t num))
 bool
 attr_leaf_concatstrings(MAYBE_UNUSED(rb_num_t num))
 {
-    return true;
+    return
+#line 379 "insns.def"
+false;
+#line 3063 "insns_info.inc"
 }
 
 /* attr const char* name @ concatstrings(num)(...)(val) */
@@ -3130,9 +3095,9 @@ rb_snum_t
 attr_sp_inc_concatstrings(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 383 "insns.def"
+#line 380 "insns.def"
 1 - (rb_snum_t)num;
-#line 3136 "insns_info.inc"
+#line 3101 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ concatstrings(num)(...)(val) */
@@ -3296,9 +3261,9 @@ attr_leaf_toregexp(
 )
 {
     return
-#line 418 "insns.def"
-true;
-#line 3302 "insns_info.inc"
+#line 415 "insns.def"
+false;
+#line 3267 "insns_info.inc"
 }
 
 /* attr const char* name @ toregexp(opt, cnt)(...)(val) */
@@ -3349,9 +3314,9 @@ attr_sp_inc_toregexp(
 )
 {
     return
-#line 419 "insns.def"
+#line 416 "insns.def"
 1 - (rb_snum_t)cnt;
-#line 3355 "insns_info.inc"
+#line 3320 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ toregexp(opt, cnt)(...)(val) */
@@ -3481,9 +3446,9 @@ rb_snum_t
 attr_sp_inc_newarray(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 442 "insns.def"
+#line 439 "insns.def"
 1 - (rb_snum_t)num;
-#line 3487 "insns_info.inc"
+#line 3452 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ newarray(num)(...)(val) */
@@ -3647,9 +3612,9 @@ attr_leaf_expandarray(
 )
 {
     return
-#line 483 "insns.def"
+#line 480 "insns.def"
 false;
-#line 3653 "insns_info.inc"
+#line 3618 "insns_info.inc"
 }
 
 /* attr const char* name @ expandarray(num, flag)(..., ary)(...) */
@@ -3700,9 +3665,9 @@ attr_sp_inc_expandarray(
 )
 {
     return
-#line 484 "insns.def"
+#line 481 "insns.def"
 (rb_snum_t)num - 1 + (flag & 1 ? 1 : 0);
-#line 3706 "insns_info.inc"
+#line 3671 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ expandarray(num, flag)(..., ary)(...) */
@@ -3734,9 +3699,9 @@ bool
 attr_leaf_concatarray(void)
 {
     return
-#line 495 "insns.def"
+#line 492 "insns.def"
 false;
-#line 3740 "insns_info.inc"
+#line 3705 "insns_info.inc"
 }
 
 /* attr const char* name @ concatarray()(ary1, ary2)(ary) */
@@ -3800,9 +3765,9 @@ bool
 attr_leaf_splatarray(MAYBE_UNUSED(VALUE flag))
 {
     return
-#line 506 "insns.def"
+#line 503 "insns.def"
 false;
-#line 3806 "insns_info.inc"
+#line 3771 "insns_info.inc"
 }
 
 /* attr const char* name @ splatarray(flag)(ary)(obj) */
@@ -3866,9 +3831,9 @@ bool
 attr_leaf_newhash(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 517 "insns.def"
+#line 514 "insns.def"
 false;
-#line 3872 "insns_info.inc"
+#line 3837 "insns_info.inc"
 }
 
 /* attr const char* name @ newhash(num)(...)(val) */
@@ -3904,9 +3869,9 @@ rb_snum_t
 attr_sp_inc_newhash(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 518 "insns.def"
+#line 515 "insns.def"
 1 - (rb_snum_t)num;
-#line 3910 "insns_info.inc"
+#line 3875 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ newhash(num)(...)(val) */
@@ -3935,9 +3900,9 @@ bool
 attr_leaf_newrange(MAYBE_UNUSED(rb_num_t flag))
 {
     return
-#line 536 "insns.def"
+#line 533 "insns.def"
 false;
-#line 3941 "insns_info.inc"
+#line 3906 "insns_info.inc"
 }
 
 /* attr const char* name @ newrange(flag)(low, high)(val) */
@@ -4162,9 +4127,9 @@ rb_snum_t
 attr_sp_inc_dupn(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 572 "insns.def"
+#line 569 "insns.def"
 n;
-#line 4168 "insns_info.inc"
+#line 4133 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ dupn(n)(...)(...) */
@@ -4291,9 +4256,9 @@ rb_snum_t
 attr_sp_inc_reverse(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 596 "insns.def"
+#line 593 "insns.def"
 0;
-#line 4297 "insns_info.inc"
+#line 4262 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ reverse(n)(...)(...) */
@@ -4357,9 +4322,9 @@ rb_snum_t
 attr_sp_inc_reput(void)
 {
     return
-#line 615 "insns.def"
+#line 612 "insns.def"
 0;
-#line 4363 "insns_info.inc"
+#line 4328 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ reput()(..., val)(val) */
@@ -4423,9 +4388,9 @@ rb_snum_t
 attr_sp_inc_topn(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 626 "insns.def"
+#line 623 "insns.def"
 1;
-#line 4429 "insns_info.inc"
+#line 4394 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ topn(n)(...)(val) */
@@ -4489,9 +4454,9 @@ rb_snum_t
 attr_sp_inc_setn(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 637 "insns.def"
+#line 634 "insns.def"
 0;
-#line 4495 "insns_info.inc"
+#line 4460 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ setn(n)(..., val)(val) */
@@ -4555,9 +4520,9 @@ rb_snum_t
 attr_sp_inc_adjuststack(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 648 "insns.def"
+#line 645 "insns.def"
 -(rb_snum_t)n;
-#line 4561 "insns_info.inc"
+#line 4526 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ adjuststack(n)(...)(...) */
@@ -4598,9 +4563,9 @@ attr_leaf_defined(
 )
 {
     return
-#line 663 "insns.def"
+#line 660 "insns.def"
 leafness_of_defined(op_type);
-#line 4604 "insns_info.inc"
+#line 4569 "insns_info.inc"
 }
 
 /* attr const char* name @ defined(op_type, obj, needstr)(v)(val) */
@@ -4688,9 +4653,9 @@ bool
 attr_leaf_checkmatch(MAYBE_UNUSED(rb_num_t flag))
 {
     return
-#line 680 "insns.def"
+#line 677 "insns.def"
 leafness_of_checkmatch(flag);
-#line 4694 "insns_info.inc"
+#line 4659 "insns_info.inc"
 }
 
 /* attr const char* name @ checkmatch(flag)(target, pattern)(result) */
@@ -4888,6 +4853,69 @@ attr_width_checktype(MAYBE_UNUSED(rb_num_t type))
     return 2;
 }
 
+/* attr enum ruby_vminsn_type bin @ methodref(id)(val)(ret) */
+enum ruby_vminsn_type
+attr_bin_methodref(MAYBE_UNUSED(ID id))
+{
+    return BIN(methodref);
+}
+
+/* attr bool handles_sp @ methodref(id)(val)(ret) */
+bool
+attr_handles_sp_methodref(MAYBE_UNUSED(ID id))
+{
+    return false;
+}
+
+/* attr bool leaf @ methodref(id)(val)(ret) */
+bool
+attr_leaf_methodref(MAYBE_UNUSED(ID id))
+{
+    return true;
+}
+
+/* attr const char* name @ methodref(id)(val)(ret) */
+const char*
+attr_name_methodref(MAYBE_UNUSED(ID id))
+{
+    return insn_name(BIN(methodref));
+}
+
+/* attr rb_num_t open @ methodref(id)(val)(ret) */
+rb_num_t
+attr_open_methodref(MAYBE_UNUSED(ID id))
+{
+    return 1;
+}
+
+/* attr rb_num_t popn @ methodref(id)(val)(ret) */
+rb_num_t
+attr_popn_methodref(MAYBE_UNUSED(ID id))
+{
+    return 1;
+}
+
+/* attr rb_num_t retn @ methodref(id)(val)(ret) */
+rb_num_t
+attr_retn_methodref(MAYBE_UNUSED(ID id))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ methodref(id)(val)(ret) */
+rb_snum_t
+attr_sp_inc_methodref(MAYBE_UNUSED(ID id))
+{
+    return 0;
+}
+
+/* attr rb_num_t width @ methodref(id)(val)(ret) */
+rb_num_t
+attr_width_methodref(MAYBE_UNUSED(ID id))
+{
+    return 2;
+}
+
 /* attr enum ruby_vminsn_type bin @ defineclass(id, class_iseq, flags)(cbase, super)(val) */
 enum ruby_vminsn_type
 attr_bin_defineclass(
@@ -4987,6 +5015,186 @@ attr_width_defineclass(
     return 4;
 }
 
+/* attr enum ruby_vminsn_type bin @ definemethod(id, iseq)()() */
+enum ruby_vminsn_type
+attr_bin_definemethod(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ISEQ iseq)
+)
+{
+    return BIN(definemethod);
+}
+
+/* attr bool handles_sp @ definemethod(id, iseq)()() */
+bool
+attr_handles_sp_definemethod(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ISEQ iseq)
+)
+{
+    return true;
+}
+
+/* attr bool leaf @ definemethod(id, iseq)()() */
+bool
+attr_leaf_definemethod(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ISEQ iseq)
+)
+{
+    return false;
+}
+
+/* attr const char* name @ definemethod(id, iseq)()() */
+const char*
+attr_name_definemethod(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ISEQ iseq)
+)
+{
+    return insn_name(BIN(definemethod));
+}
+
+/* attr rb_num_t open @ definemethod(id, iseq)()() */
+rb_num_t
+attr_open_definemethod(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ISEQ iseq)
+)
+{
+    return 2;
+}
+
+/* attr rb_num_t popn @ definemethod(id, iseq)()() */
+rb_num_t
+attr_popn_definemethod(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ISEQ iseq)
+)
+{
+    return 0;
+}
+
+/* attr rb_num_t retn @ definemethod(id, iseq)()() */
+rb_num_t
+attr_retn_definemethod(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ISEQ iseq)
+)
+{
+    return 0;
+}
+
+/* attr rb_snum_t sp_inc @ definemethod(id, iseq)()() */
+rb_snum_t
+attr_sp_inc_definemethod(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ISEQ iseq)
+)
+{
+    return 0;
+}
+
+/* attr rb_num_t width @ definemethod(id, iseq)()() */
+rb_num_t
+attr_width_definemethod(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ISEQ iseq)
+)
+{
+    return 3;
+}
+
+/* attr enum ruby_vminsn_type bin @ definesmethod(id, iseq)(obj)() */
+enum ruby_vminsn_type
+attr_bin_definesmethod(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ISEQ iseq)
+)
+{
+    return BIN(definesmethod);
+}
+
+/* attr bool handles_sp @ definesmethod(id, iseq)(obj)() */
+bool
+attr_handles_sp_definesmethod(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ISEQ iseq)
+)
+{
+    return true;
+}
+
+/* attr bool leaf @ definesmethod(id, iseq)(obj)() */
+bool
+attr_leaf_definesmethod(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ISEQ iseq)
+)
+{
+    return false;
+}
+
+/* attr const char* name @ definesmethod(id, iseq)(obj)() */
+const char*
+attr_name_definesmethod(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ISEQ iseq)
+)
+{
+    return insn_name(BIN(definesmethod));
+}
+
+/* attr rb_num_t open @ definesmethod(id, iseq)(obj)() */
+rb_num_t
+attr_open_definesmethod(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ISEQ iseq)
+)
+{
+    return 2;
+}
+
+/* attr rb_num_t popn @ definesmethod(id, iseq)(obj)() */
+rb_num_t
+attr_popn_definesmethod(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ISEQ iseq)
+)
+{
+    return 1;
+}
+
+/* attr rb_num_t retn @ definesmethod(id, iseq)(obj)() */
+rb_num_t
+attr_retn_definesmethod(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ISEQ iseq)
+)
+{
+    return 0;
+}
+
+/* attr rb_snum_t sp_inc @ definesmethod(id, iseq)(obj)() */
+rb_snum_t
+attr_sp_inc_definesmethod(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ISEQ iseq)
+)
+{
+    return -1;
+}
+
+/* attr rb_num_t width @ definesmethod(id, iseq)(obj)() */
+rb_num_t
+attr_width_definesmethod(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ISEQ iseq)
+)
+{
+    return 3;
+}
+
 /* attr enum ruby_vminsn_type bin @ send(ci, cc, blockiseq)(...)(val) */
 enum ruby_vminsn_type
 attr_bin_send(
@@ -5073,9 +5281,9 @@ attr_sp_inc_send(
 )
 {
     return
-#line 743 "insns.def"
-- (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
-#line 5079 "insns_info.inc"
+#line 768 "insns.def"
+sp_inc_of_sendish(ci);
+#line 5287 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ send(ci, cc, blockiseq)(...)(val) */
@@ -5107,9 +5315,9 @@ attr_handles_sp_opt_send_without_block(
 )
 {
     return
-#line 759 "insns.def"
+#line 785 "insns.def"
 true;
-#line 5113 "insns_info.inc"
+#line 5321 "insns_info.inc"
 }
 
 /* attr bool leaf @ opt_send_without_block(ci, cc)(...)(val) */
@@ -5170,9 +5378,9 @@ attr_sp_inc_opt_send_without_block(
 )
 {
     return
-#line 760 "insns.def"
--ci->orig_argc;
-#line 5176 "insns_info.inc"
+#line 786 "insns.def"
+sp_inc_of_sendish(ci);
+#line 5384 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_send_without_block(ci, cc)(...)(val) */
@@ -5402,9 +5610,9 @@ bool
 attr_leaf_opt_newarray_max(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 805 "insns.def"
+#line 834 "insns.def"
 false;
-#line 5408 "insns_info.inc"
+#line 5616 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_newarray_max(num)(...)(val) */
@@ -5440,9 +5648,9 @@ rb_snum_t
 attr_sp_inc_opt_newarray_max(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 806 "insns.def"
+#line 835 "insns.def"
 1 - (rb_snum_t)num;
-#line 5446 "insns_info.inc"
+#line 5654 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_newarray_max(num)(...)(val) */
@@ -5471,9 +5679,9 @@ bool
 attr_leaf_opt_newarray_min(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 817 "insns.def"
+#line 846 "insns.def"
 false;
-#line 5477 "insns_info.inc"
+#line 5685 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_newarray_min(num)(...)(val) */
@@ -5509,9 +5717,9 @@ rb_snum_t
 attr_sp_inc_opt_newarray_min(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 818 "insns.def"
+#line 847 "insns.def"
 1 - (rb_snum_t)num;
-#line 5515 "insns_info.inc"
+#line 5723 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_newarray_min(num)(...)(val) */
@@ -5607,9 +5815,9 @@ attr_sp_inc_invokesuper(
 )
 {
     return
-#line 829 "insns.def"
-- (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
-#line 5613 "insns_info.inc"
+#line 858 "insns.def"
+sp_inc_of_sendish(ci);
+#line 5821 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ invokesuper(ci, cc, blockiseq)(...)(val) */
@@ -5635,9 +5843,9 @@ bool
 attr_handles_sp_invokeblock(MAYBE_UNUSED(CALL_INFO ci))
 {
     return
-#line 845 "insns.def"
+#line 875 "insns.def"
 true;
-#line 5641 "insns_info.inc"
+#line 5849 "insns_info.inc"
 }
 
 /* attr bool leaf @ invokeblock(ci)(...)(val) */
@@ -5680,9 +5888,9 @@ rb_snum_t
 attr_sp_inc_invokeblock(MAYBE_UNUSED(CALL_INFO ci))
 {
     return
-#line 846 "insns.def"
-1 - ci->orig_argc;
-#line 5686 "insns_info.inc"
+#line 876 "insns.def"
+sp_inc_of_invokeblock(ci);
+#line 5894 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ invokeblock(ci)(...)(val) */
@@ -5704,9 +5912,9 @@ bool
 attr_handles_sp_leave(void)
 {
     return
-#line 876 "insns.def"
+#line 901 "insns.def"
 true;
-#line 5710 "insns_info.inc"
+#line 5918 "insns_info.inc"
 }
 
 /* attr bool leaf @ leave()(val)(val) */
@@ -5714,9 +5922,9 @@ bool
 attr_leaf_leave(void)
 {
     return
-#line 875 "insns.def"
+#line 900 "insns.def"
 false;
-#line 5720 "insns_info.inc"
+#line 5928 "insns_info.inc"
 }
 
 /* attr const char* name @ leave()(val)(val) */
@@ -5780,9 +5988,9 @@ bool
 attr_leaf_throw(MAYBE_UNUSED(rb_num_t throw_state))
 {
     return
-#line 911 "insns.def"
+#line 936 "insns.def"
 false;
-#line 5786 "insns_info.inc"
+#line 5994 "insns_info.inc"
 }
 
 /* attr const char* name @ throw(throw_state)(throwobj)(val) */
@@ -5846,9 +6054,9 @@ bool
 attr_leaf_jump(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 930 "insns.def"
+#line 955 "insns.def"
 false;
-#line 5852 "insns_info.inc"
+#line 6060 "insns_info.inc"
 }
 
 /* attr const char* name @ jump(dst)()() */
@@ -5912,9 +6120,9 @@ bool
 attr_leaf_branchif(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 943 "insns.def"
+#line 968 "insns.def"
 false;
-#line 5918 "insns_info.inc"
+#line 6126 "insns_info.inc"
 }
 
 /* attr const char* name @ branchif(dst)(val)() */
@@ -5978,9 +6186,9 @@ bool
 attr_leaf_branchunless(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 958 "insns.def"
+#line 983 "insns.def"
 false;
-#line 5984 "insns_info.inc"
+#line 6192 "insns_info.inc"
 }
 
 /* attr const char* name @ branchunless(dst)(val)() */
@@ -6044,9 +6252,9 @@ bool
 attr_leaf_branchnil(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 973 "insns.def"
+#line 998 "insns.def"
 false;
-#line 6050 "insns_info.inc"
+#line 6258 "insns_info.inc"
 }
 
 /* attr const char* name @ branchnil(dst)(val)() */
@@ -6412,9 +6620,9 @@ attr_sp_inc_opt_case_dispatch(
 )
 {
     return
-#line 1027 "insns.def"
+#line 1052 "insns.def"
 -1;
-#line 6418 "insns_info.inc"
+#line 6626 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_case_dispatch(hash, else_offset)(..., key)() */
@@ -6455,9 +6663,9 @@ attr_leaf_opt_plus(
 )
 {
     return
-#line 1046 "insns.def"
+#line 1071 "insns.def"
 false;
-#line 6461 "insns_info.inc"
+#line 6669 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_plus(ci, cc)(recv, obj)(val) */
@@ -6727,7 +6935,10 @@ attr_leaf_opt_div(
     MAYBE_UNUSED(CALL_CACHE cc)
 )
 {
-    return true;
+    return
+#line 1116 "insns.def"
+false;
+#line 6942 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_div(ci, cc)(recv, obj)(val) */
@@ -6817,7 +7028,10 @@ attr_leaf_opt_mod(
     MAYBE_UNUSED(CALL_CACHE cc)
 )
 {
-    return true;
+    return
+#line 1132 "insns.def"
+false;
+#line 7035 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_mod(ci, cc)(recv, obj)(val) */
@@ -6908,9 +7122,9 @@ attr_leaf_opt_eq(
 )
 {
     return
-#line 1120 "insns.def"
+#line 1150 "insns.def"
 false;
-#line 6914 "insns_info.inc"
+#line 7128 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_eq(ci, cc)(recv, obj)(val) */
@@ -7007,9 +7221,9 @@ attr_leaf_opt_neq(
 )
 {
     return
-#line 1136 "insns.def"
+#line 1166 "insns.def"
 false;
-#line 7013 "insns_info.inc"
+#line 7227 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_neq(ci_eq, cc_eq, ci, cc)(recv, obj)(val) */
@@ -7471,7 +7685,10 @@ attr_leaf_opt_ltlt(
     MAYBE_UNUSED(CALL_CACHE cc)
 )
 {
-    return true;
+    return
+#line 1240 "insns.def"
+false;
+#line 7692 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_ltlt(ci, cc)(recv, obj)(val) */
@@ -7742,9 +7959,9 @@ attr_leaf_opt_aref(
 )
 {
     return
-#line 1253 "insns.def"
+#line 1287 "insns.def"
 false;
-#line 7748 "insns_info.inc"
+#line 7965 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_aref(ci, cc)(recv, obj)(val) */
@@ -7835,9 +8052,9 @@ attr_leaf_opt_aset(
 )
 {
     return
-#line 1270 "insns.def"
+#line 1304 "insns.def"
 false;
-#line 7841 "insns_info.inc"
+#line 8058 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_aset(ci, cc)(recv, obj, set)(val) */
@@ -7931,9 +8148,9 @@ attr_leaf_opt_aset_with(
 )
 {
     return
-#line 1286 "insns.def"
+#line 1320 "insns.def"
 false;
-#line 7937 "insns_info.inc"
+#line 8154 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_aset_with(key, ci, cc)(recv, val)(val) */
@@ -8033,9 +8250,9 @@ attr_leaf_opt_aref_with(
 )
 {
     return
-#line 1309 "insns.def"
+#line 1343 "insns.def"
 false;
-#line 8039 "insns_info.inc"
+#line 8256 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_aref_with(key, ci, cc)(recv)(val) */
@@ -8573,9 +8790,9 @@ bool
 attr_leaf_opt_regexpmatch1(MAYBE_UNUSED(VALUE recv))
 {
     return
-#line 1397 "insns.def"
-BASIC_OP_UNREDEFINED_P(BOP_MATCH, REGEXP_REDEFINED_OP_FLAG);
-#line 8579 "insns_info.inc"
+#line 1431 "insns.def"
+false;
+#line 8796 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_regexpmatch1(recv)(obj)(val) */
@@ -8647,7 +8864,10 @@ attr_leaf_opt_regexpmatch2(
     MAYBE_UNUSED(CALL_CACHE cc)
 )
 {
-    return true;
+    return
+#line 1442 "insns.def"
+false;
+#line 8871 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_regexpmatch2(ci, cc)(obj2, obj1)(val) */
@@ -8722,9 +8942,9 @@ bool
 attr_handles_sp_opt_call_c_function(MAYBE_UNUSED(rb_insn_func_t funcptr))
 {
     return
-#line 1423 "insns.def"
+#line 1458 "insns.def"
 true;
-#line 8728 "insns_info.inc"
+#line 8948 "insns_info.inc"
 }
 
 /* attr bool leaf @ opt_call_c_function(funcptr)()() */
@@ -8732,9 +8952,9 @@ bool
 attr_leaf_opt_call_c_function(MAYBE_UNUSED(rb_insn_func_t funcptr))
 {
     return
-#line 1422 "insns.def"
+#line 1457 "insns.def"
 false;
-#line 8738 "insns_info.inc"
+#line 8958 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_call_c_function(funcptr)()() */
@@ -9292,17 +9512,17 @@ insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *opes)
     static const signed char t[] = {
            0,    1,   -1,    1,   -1,    1,    1,   -1,
            1,   -1,    1,   -1,    0,   -2,    1,   -1,
-           1,    1,    1,    1,    1,    1, -127,   -1,
-           0, -127,    0, -127,    1,    1, -127,   -1,
-           0, -127,   -1,   -1,    1, -127,    0, -127,
-        -127, -127, -127, -127,    0,   -1,    1,    0,
-          -1, -127, -127,    1,    1, -127, -127, -127,
-        -127,    0,    0,    0,   -1,   -1,   -1,    1,
-           0,    1, -127,   -1,   -1,   -1,   -1,   -1,
+           1,    1,    1,    1,    1, -127,   -1,    0,
+        -127,    0, -127,    1,    1, -127,   -1,    0,
+        -127,   -1,   -1,    1, -127,    0, -127, -127,
+        -127, -127, -127,    0,   -1,    1,    0,    0,
+          -1,    0,   -1, -127, -127,    1,    1, -127,
+        -127, -127, -127,    0,    0,    0,   -1,   -1,
+          -1,    1,    0,    1, -127,   -1,   -1,   -1,
           -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-          -1,   -1,   -2,   -1,    0,    0,    0,    0,
-           0,    0,    0,   -1,    0,    1,    1,    1,
-           1,   -1,   -1,    1,    1,    0,    0,    0,
+          -1,   -1,   -1,   -1,   -2,   -1,    0,    0,
+           0,    0,    0,    0,    0,   -1,    0,    1,
+           1,    1,    1,   -1,   -1,    1,    1,    0,
            0,    0,    0,    0,    0,    0,    0,    0,
            0,    0,    0,    0,    0,    0,    0,    0,
            0,    0,    0,    0,    0,    0,    0,    0,
@@ -9315,7 +9535,7 @@ insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *opes)
            0,    0,    0,    0,    0,    0,    0,    0,
            0,    0,    0,    0,    0,    0,    0,    0,
            0,    0,    0,    0,    0,    0,    0,    0,
-           0,    0,
+           0,    0,    0,    0,    0,    0,
     };
     signed char c = t[insn];
 
@@ -9370,5 +9590,167 @@ insn_stack_increase(int depth, int insn, const VALUE *opes)
 {
     enum ruby_vminsn_type itype = (enum ruby_vminsn_type)insn;
     return depth + (int)insn_stack_increase_dispatch(itype, opes);
+}
+
+PUREFUNC(MAYBE_UNUSED(static bool insn_may_depend_on_sp_or_pc(int insn, const VALUE *opes)));
+
+static bool
+insn_may_depend_on_sp_or_pc(int insn, const VALUE *opes)
+{
+    switch (insn) {
+      case BIN(getspecial):
+      case BIN(getinstancevariable):
+      case BIN(setinstancevariable):
+      case BIN(getclassvariable):
+      case BIN(setclassvariable):
+      case BIN(getconstant):
+      case BIN(setconstant):
+      case BIN(getglobal):
+      case BIN(setglobal):
+      case BIN(concatstrings):
+      case BIN(toregexp):
+      case BIN(expandarray):
+      case BIN(concatarray):
+      case BIN(splatarray):
+      case BIN(newhash):
+      case BIN(newrange):
+      case BIN(defined):
+      case BIN(checkmatch):
+      case BIN(defineclass):
+      case BIN(definemethod):
+      case BIN(definesmethod):
+      case BIN(send):
+      case BIN(opt_send_without_block):
+      case BIN(opt_newarray_max):
+      case BIN(opt_newarray_min):
+      case BIN(invokesuper):
+      case BIN(invokeblock):
+      case BIN(leave):
+      case BIN(throw):
+      case BIN(jump):
+      case BIN(branchif):
+      case BIN(branchunless):
+      case BIN(branchnil):
+      case BIN(once):
+      case BIN(opt_plus):
+      case BIN(opt_div):
+      case BIN(opt_mod):
+      case BIN(opt_eq):
+      case BIN(opt_neq):
+      case BIN(opt_ltlt):
+      case BIN(opt_aref):
+      case BIN(opt_aset):
+      case BIN(opt_aset_with):
+      case BIN(opt_aref_with):
+      case BIN(opt_regexpmatch1):
+      case BIN(opt_regexpmatch2):
+      case BIN(opt_call_c_function):
+      case BIN(trace_nop):
+      case BIN(trace_getlocal):
+      case BIN(trace_setlocal):
+      case BIN(trace_getblockparam):
+      case BIN(trace_setblockparam):
+      case BIN(trace_getblockparamproxy):
+      case BIN(trace_getspecial):
+      case BIN(trace_setspecial):
+      case BIN(trace_getinstancevariable):
+      case BIN(trace_setinstancevariable):
+      case BIN(trace_getclassvariable):
+      case BIN(trace_setclassvariable):
+      case BIN(trace_getconstant):
+      case BIN(trace_setconstant):
+      case BIN(trace_getglobal):
+      case BIN(trace_setglobal):
+      case BIN(trace_putnil):
+      case BIN(trace_putself):
+      case BIN(trace_putobject):
+      case BIN(trace_putspecialobject):
+      case BIN(trace_putstring):
+      case BIN(trace_concatstrings):
+      case BIN(trace_tostring):
+      case BIN(trace_freezestring):
+      case BIN(trace_toregexp):
+      case BIN(trace_intern):
+      case BIN(trace_newarray):
+      case BIN(trace_duparray):
+      case BIN(trace_duphash):
+      case BIN(trace_expandarray):
+      case BIN(trace_concatarray):
+      case BIN(trace_splatarray):
+      case BIN(trace_newhash):
+      case BIN(trace_newrange):
+      case BIN(trace_pop):
+      case BIN(trace_dup):
+      case BIN(trace_dupn):
+      case BIN(trace_swap):
+      case BIN(trace_reverse):
+      case BIN(trace_reput):
+      case BIN(trace_topn):
+      case BIN(trace_setn):
+      case BIN(trace_adjuststack):
+      case BIN(trace_defined):
+      case BIN(trace_checkmatch):
+      case BIN(trace_checkkeyword):
+      case BIN(trace_checktype):
+      case BIN(trace_methodref):
+      case BIN(trace_defineclass):
+      case BIN(trace_definemethod):
+      case BIN(trace_definesmethod):
+      case BIN(trace_send):
+      case BIN(trace_opt_send_without_block):
+      case BIN(trace_opt_str_freeze):
+      case BIN(trace_opt_str_uminus):
+      case BIN(trace_opt_newarray_max):
+      case BIN(trace_opt_newarray_min):
+      case BIN(trace_invokesuper):
+      case BIN(trace_invokeblock):
+      case BIN(trace_leave):
+      case BIN(trace_throw):
+      case BIN(trace_jump):
+      case BIN(trace_branchif):
+      case BIN(trace_branchunless):
+      case BIN(trace_branchnil):
+      case BIN(trace_opt_getinlinecache):
+      case BIN(trace_opt_setinlinecache):
+      case BIN(trace_once):
+      case BIN(trace_opt_case_dispatch):
+      case BIN(trace_opt_plus):
+      case BIN(trace_opt_minus):
+      case BIN(trace_opt_mult):
+      case BIN(trace_opt_div):
+      case BIN(trace_opt_mod):
+      case BIN(trace_opt_eq):
+      case BIN(trace_opt_neq):
+      case BIN(trace_opt_lt):
+      case BIN(trace_opt_le):
+      case BIN(trace_opt_gt):
+      case BIN(trace_opt_ge):
+      case BIN(trace_opt_ltlt):
+      case BIN(trace_opt_and):
+      case BIN(trace_opt_or):
+      case BIN(trace_opt_aref):
+      case BIN(trace_opt_aset):
+      case BIN(trace_opt_aset_with):
+      case BIN(trace_opt_aref_with):
+      case BIN(trace_opt_length):
+      case BIN(trace_opt_size):
+      case BIN(trace_opt_empty_p):
+      case BIN(trace_opt_succ):
+      case BIN(trace_opt_not):
+      case BIN(trace_opt_regexpmatch1):
+      case BIN(trace_opt_regexpmatch2):
+      case BIN(trace_opt_call_c_function):
+      case BIN(trace_bitblt):
+      case BIN(trace_answer):
+      case BIN(trace_getlocal_WC_0):
+      case BIN(trace_getlocal_WC_1):
+      case BIN(trace_setlocal_WC_0):
+      case BIN(trace_setlocal_WC_1):
+      case BIN(trace_putobject_INT2FIX_0_):
+      case BIN(trace_putobject_INT2FIX_1_):
+        return true;
+      default:
+        return false;
+    }
 }
 
