@@ -1067,7 +1067,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     }.enable{
       3.times{
         next
-      } # 3 times b_retun
+      } # 3 times b_return
     }   # 1 time b_return
 
     assert_equal 4, n
@@ -1984,43 +1984,43 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
     ## error
 
-    # targetted TP and targetted TP
+    # targeted TP and targeted TP
     ex = assert_raise(ArgumentError) do
       tp = TracePoint.new(:line){}
       tp.enable(target: code1){
         tp.enable(target: code2){}
       }
     end
-    assert_equal "can't nest-enable a targetting TracePoint", ex.message
+    assert_equal "can't nest-enable a targeting TracePoint", ex.message
 
-    # global TP and targetted TP
+    # global TP and targeted TP
     ex = assert_raise(ArgumentError) do
       tp = TracePoint.new(:line){}
       tp.enable{
         tp.enable(target: code2){}
       }
     end
-    assert_equal "can't nest-enable a targetting TracePoint", ex.message
+    assert_equal "can't nest-enable a targeting TracePoint", ex.message
 
-    # targetted TP and global TP
+    # targeted TP and global TP
     ex = assert_raise(ArgumentError) do
       tp = TracePoint.new(:line){}
       tp.enable(target: code1){
         tp.enable{}
       }
     end
-    assert_equal "can't nest-enable a targetting TracePoint", ex.message
+    assert_equal "can't nest-enable a targeting TracePoint", ex.message
 
-    # targetted TP and disable
+    # targeted TP and disable
     ex = assert_raise(ArgumentError) do
       tp = TracePoint.new(:line){}
       tp.enable(target: code1){
         tp.disable{}
       }
     end
-    assert_equal "can't disable a targetting TracePoint in a block", ex.message
+    assert_equal "can't disable a targeting TracePoint in a block", ex.message
 
-    ## success with two nesting targetting tracepoints
+    ## success with two nesting targeting tracepoints
     events = []
     tp1 = TracePoint.new(:line){|tp| events << :tp1}
     tp2 = TracePoint.new(:line){|tp| events << :tp2}
@@ -2032,7 +2032,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     end
     assert_equal [:tp2, :tp1, :___], events
 
-    # succss with two tracepoints (global/targetting)
+    # success with two tracepoints (global/targeting)
     events = []
     tp1 = TracePoint.new(:line){|tp| events << :tp1}
     tp2 = TracePoint.new(:line){|tp| events << :tp2}
@@ -2044,7 +2044,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     end
     assert_equal [:tp1, :tp1, :tp1, :tp1, :tp2, :tp1, :___], events
 
-    # succss with two tracepoints (targetting/global)
+    # success with two tracepoints (targeting/global)
     events = []
     tp1 = TracePoint.new(:line){|tp| events << :tp1}
     tp2 = TracePoint.new(:line){|tp| events << :tp2}
@@ -2114,5 +2114,55 @@ class TestSetTraceFunc < Test::Unit::TestCase
       load ''
     }
     assert_equal [], events
+  end
+
+  def test_enable_target_thread
+    events = []
+    TracePoint.new(:line) do |tp|
+      events << Thread.current
+    end.enable(target_thread: Thread.current) do
+      a = 1
+      Thread.new{
+        b = 2
+        c = 3
+      }.join
+      d = 4
+    end
+    assert_equal Array.new(3){Thread.current}, events
+
+    events = []
+    tp = TracePoint.new(:line) do |tp|
+      events << Thread.current
+    end
+
+    q1 = Queue.new
+    q2 = Queue.new
+
+    th = Thread.new{
+      q1 << :ok; q2.pop
+      t1 = 1
+      t2 = 2
+    }
+    q1.pop
+    tp.enable(target_thread: th) do
+      q2 << 1
+      a = 1
+      b = 2
+      th.join
+    end
+
+    assert_equal Array.new(2){th}, events
+  end
+
+  def test_return_event_with_rescue
+    obj = Object.new
+    def obj.example
+      1 if 1 == 1
+    rescue
+    end
+    ok = false
+    tp = TracePoint.new(:return) {ok = true}
+    tp.enable {obj.example}
+    assert ok, "return event should be emitted"
   end
 end

@@ -3,7 +3,7 @@
 
   id.c -
 
-  $Author: nobu $
+  $Author$
   created at: Wed Dec  5 02:36:10 2012
 
   Copyright (C) 2004-2007 Koichi Sasada
@@ -31,6 +31,7 @@
 #define tANDOP RUBY_TOKEN(ANDOP)
 #define tOROP RUBY_TOKEN(OROP)
 #define tANDDOT RUBY_TOKEN(ANDDOT)
+#define tMETHREF RUBY_TOKEN(METHREF)
 
 static const struct {
     unsigned short token;
@@ -57,6 +58,7 @@ static const struct {
     {tANDOP, "&&"},
     {tOROP, "||"},
     {tANDDOT, "&."},
+    {tMETHREF, ".:"},
 };
 
 static void
@@ -130,6 +132,8 @@ Init_id(void)
     REGISTER_SYMID(id_core_set_postexe, "core#set_postexe");
     REGISTER_SYMID(id_core_hash_merge_ptr, "core#hash_merge_ptr");
     REGISTER_SYMID(id_core_hash_merge_kwd, "core#hash_merge_kwd");
+    REGISTER_SYMID(id_core_raise, "core#raise");
     REGISTER_SYMID(idLASTLINE, "$_");
     REGISTER_SYMID(idBACKREF, "$~");
+    REGISTER_SYMID(idERROR_INFO, "$!");
 }

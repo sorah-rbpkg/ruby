@@ -79,14 +79,25 @@ class TestGemRequest < Gem::TestCase
     assert_equal URI(@proxy_uri), proxy
   end
 
+  def test_proxy_ENV
+    ENV['http_proxy'] = "http://proxy"
+    ENV['https_proxy'] = ""
+
+    request = make_request URI('https://example'), nil, nil, nil
+
+    proxy = request.proxy_uri
+
+    assert_nil proxy
+  end
+
   def test_configure_connection_for_https
     connection = Net::HTTP.new 'localhost', 443
 
-    request = Class.new(Gem::Request) {
+    request = Class.new(Gem::Request) do
       def self.get_cert_files
         [TestGemRequest::PUBLIC_CERT_FILE]
       end
-    }.create_with_proxy URI('https://example'), nil, nil, nil
+    end.create_with_proxy URI('https://example'), nil, nil, nil
 
     Gem::Request.configure_connection_for_https connection, request.cert_files
 
@@ -101,11 +112,11 @@ class TestGemRequest < Gem::TestCase
 
     connection = Net::HTTP.new 'localhost', 443
 
-    request = Class.new(Gem::Request) {
+    request = Class.new(Gem::Request) do
       def self.get_cert_files
         [TestGemRequest::PUBLIC_CERT_FILE]
       end
-    }.create_with_proxy URI('https://example'), nil, nil, nil
+    end.create_with_proxy URI('https://example'), nil, nil, nil
 
     Gem::Request.configure_connection_for_https connection, request.cert_files
 
@@ -475,6 +486,7 @@ ERROR:  Certificate  is an invalid CA certificate
   end
 
   class Conn
+
     attr_accessor :payload
 
     def new(*args); self; end
@@ -493,6 +505,7 @@ ERROR:  Certificate  is an invalid CA certificate
       self.payload = req
       @response
     end
+
   end
 
 end if defined?(OpenSSL::SSL)

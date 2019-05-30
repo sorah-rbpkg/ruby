@@ -108,6 +108,7 @@ class Gem::Installer
   end
 
   class FakePackage
+
     attr_accessor :spec
 
     attr_accessor :dir_mode
@@ -125,12 +126,15 @@ class Gem::Installer
         file = File.join destination_dir, file
         next if File.exist? file
         FileUtils.mkdir_p File.dirname(file)
-        File.open file, 'w' do |fp| fp.puts "# #{file}" end
+        File.open file, 'w' do |fp|
+          fp.puts "# #{file}"
+        end
       end
     end
 
     def copy_to(path)
     end
+
   end
 
   ##
@@ -189,7 +193,7 @@ class Gem::Installer
 
     @bin_dir = options[:bin_dir] if options[:bin_dir]
 
-    if options[:user_install] and not options[:unpack]
+    if options[:user_install]
       @gem_home = Gem.user_dir
       @bin_dir = Gem.bindir gem_home unless options[:bin_dir]
       check_that_user_bin_dir_is_in_path
@@ -320,8 +324,11 @@ class Gem::Installer
       build_extensions
       write_build_info_file
       run_post_build_hooks
+    end
 
-      generate_bin
+    generate_bin
+
+    unless @options[:install_as_default]
       write_spec
       write_cache_file
     end
@@ -421,6 +428,7 @@ class Gem::Installer
     @gem_dir = directory
     extract_files
   end
+  deprecate :unpack, :none, 2020, 04
 
   ##
   # The location of the spec file that is installed.
@@ -467,7 +475,7 @@ class Gem::Installer
 
   def generate_windows_script(filename, bindir)
     if Gem.win_platform?
-      script_name = filename + ".bat"
+      script_name = formatted_program_filename(filename) + ".bat"
       script_path = File.join bindir, File.basename(script_name)
       File.open script_path, 'w' do |file|
         file.puts windows_stub_script(bindir, filename)
@@ -719,10 +727,9 @@ class Gem::Installer
     end
   end
 
-  def verify_gem_home(unpack = false) # :nodoc:
+  def verify_gem_home # :nodoc:
     FileUtils.mkdir_p gem_home, :mode => options[:dir_mode] && 0755
-    raise Gem::FilePermissionError, gem_home unless
-      unpack or File.writable?(gem_home)
+    raise Gem::FilePermissionError, gem_home unless File.writable?(gem_home)
   end
 
   def verify_spec
@@ -857,7 +864,7 @@ TEXT
   # without the full gem installed.
 
   def extract_bin
-    @package.extract_files gem_dir, "bin/*"
+    @package.extract_files gem_dir, "#{spec.bindir}/*"
   end
 
   ##
@@ -891,7 +898,7 @@ TEXT
   # The dependent check will be skipped if the install is ignoring dependencies.
 
   def pre_install_checks
-    verify_gem_home options[:unpack]
+    verify_gem_home
 
     # The name and require_paths must be verified first, since it could contain
     # ruby code that would be eval'ed in #ensure_loadable_spec

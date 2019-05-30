@@ -2,7 +2,7 @@
 
   vm.c -
 
-  $Author: ko1 $
+  $Author$
 
   Copyright (C) 2004-2007 Koichi Sasada
 
@@ -27,6 +27,17 @@
 #include "probes_helper.h"
 
 VALUE rb_str_concat_literals(size_t, const VALUE*);
+
+/* :FIXME: This #ifdef is because we build pch in case of mswin and
+ * not in case of other situations.  That distinction might change in
+ * a future.  We would better make it detectable in something better
+ * than just _MSC_VER. */
+#ifdef _MSC_VER
+RUBY_FUNC_EXPORTED
+#else
+MJIT_FUNC_EXPORTED
+#endif
+VALUE vm_exec(rb_execution_context_t *, int);
 
 PUREFUNC(static inline const VALUE *VM_EP_LEP(const VALUE *));
 static inline const VALUE *
@@ -363,8 +374,6 @@ rb_vm_inc_const_missing_count(void)
     ruby_vm_const_missing_count +=1;
 }
 
-VALUE rb_class_path_no_cache(VALUE _klass);
-
 MJIT_FUNC_EXPORTED int
 rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
 		struct ruby_dtrace_method_hook_args *args)
@@ -384,7 +393,7 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
     }
     type = BUILTIN_TYPE(klass);
     if (type == T_CLASS || type == T_ICLASS || type == T_MODULE) {
-	VALUE name = rb_class_path_no_cache(klass);
+	VALUE name = rb_class_path(klass);
 	const char *classname, *filename;
 	const char *methodname = rb_id2name(id);
 	if (methodname && (filename = rb_source_location_cstr(&args->line_no)) != 0) {
@@ -1079,6 +1088,7 @@ invoke_iseq_block_from_c(rb_execution_context_t *ec, const struct rb_captured_bl
     stack_check(ec);
 
     CHECK_VM_STACK_OVERFLOW(cfp, argc);
+    vm_check_canary(ec, sp);
     cfp->sp = sp + argc;
     for (i=0; i<argc; i++) {
 	sp[i] = argv[i];
@@ -1356,12 +1366,7 @@ rb_cref_t *
 rb_vm_cref(void)
 {
     const rb_execution_context_t *ec = GET_EC();
-    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
-
-    if (cfp == NULL) {
-	return NULL;
-    }
-    return rb_vm_get_cref(cfp->ep);
+    return vm_ec_cref(ec);
 }
 
 rb_cref_t *
@@ -1381,7 +1386,7 @@ rb_vm_cref_in_context(VALUE self, VALUE cbase)
     const rb_cref_t *cref;
     if (cfp->self != self) return NULL;
     if (!vm_env_cref_by_cref(cfp->ep)) return NULL;
-    cref = rb_vm_get_cref(cfp->ep);
+    cref = vm_get_cref(cfp->ep);
     if (CREF_CLASS(cref) != cbase) return NULL;
     return cref;
 }
@@ -1870,7 +1875,7 @@ static inline VALUE
 vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
                          VALUE errinfo, VALUE *initial);
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
 {
     enum ruby_tag_type state;
@@ -2196,6 +2201,15 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
 /* vm */
 
 void
+rb_vm_update_references(void *ptr)
+{
+    if (ptr) {
+        rb_vm_t *vm = ptr;
+        rb_update_st_references(vm->frozen_strings);
+    }
+}
+
+void
 rb_vm_mark(void *ptr)
 {
     RUBY_MARK_ENTER("vm");
@@ -2203,12 +2217,30 @@ rb_vm_mark(void *ptr)
     if (ptr) {
 	rb_vm_t *vm = ptr;
 	rb_thread_t *th = 0;
+        long i, len;
+        const VALUE *obj_ary;
 
 	list_for_each(&vm->living_threads, th, vmlt_node) {
 	    rb_gc_mark(th->self);
 	}
 	rb_gc_mark(vm->thgroup_default);
 	rb_gc_mark(vm->mark_object_ary);
+
+        len = RARRAY_LEN(vm->mark_object_ary);
+        obj_ary = RARRAY_CONST_PTR(vm->mark_object_ary);
+        for (i=0; i < len; i++) {
+            const VALUE *ptr;
+            long j, jlen;
+
+            rb_gc_mark(*obj_ary);
+            jlen = RARRAY_LEN(*obj_ary);
+            ptr = RARRAY_CONST_PTR(*obj_ary);
+            for (j=0; j < jlen; j++) {
+                rb_gc_mark(*ptr++);
+            }
+            obj_ary++;
+        }
+
 	rb_gc_mark(vm->load_path);
 	rb_gc_mark(vm->load_path_snapshot);
 	RUBY_MARK_UNLESS_NULL(vm->load_path_check_cache);
@@ -2217,7 +2249,8 @@ rb_vm_mark(void *ptr)
 	rb_gc_mark(vm->loaded_features_snapshot);
 	rb_gc_mark(vm->top_self);
 	RUBY_MARK_UNLESS_NULL(vm->coverages);
-	rb_gc_mark(vm->defined_module_hash);
+        /* Prevent classes from moving */
+        rb_mark_tbl(vm->defined_module_hash);
 
 	if (vm->loading_table) {
 	    rb_mark_tbl(vm->loading_table);
@@ -2250,7 +2283,7 @@ rb_vm_add_root_module(ID id, VALUE module)
 {
     rb_vm_t *vm = GET_VM();
 
-    rb_hash_aset(vm->defined_module_hash, ID2SYM(id), module);
+    st_insert(vm->defined_module_hash, (st_data_t)module, (st_data_t)module);
 
     return TRUE;
 }
@@ -2456,7 +2489,7 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 	rb_control_frame_t *cfp = ec->cfp;
 	rb_control_frame_t *limit_cfp = (void *)(ec->vm_stack + ec->vm_stack_size);
 
-	rb_gc_mark_values((long)(sp - p), p);
+        rb_gc_mark_vm_stack_values((long)(sp - p), p);
 
 	while (cfp != limit_cfp) {
 	    const VALUE *ep = cfp->ep;
@@ -2525,6 +2558,9 @@ thread_mark(void *ptr)
     RUBY_MARK_UNLESS_NULL(th->top_self);
     RUBY_MARK_UNLESS_NULL(th->top_wrapper);
     if (th->root_fiber) rb_fiber_mark_self(th->root_fiber);
+
+    /* Ensure EC stack objects are pinned */
+    rb_execution_context_mark(th->ec);
     RUBY_MARK_UNLESS_NULL(th->stat_insn_usage);
     RUBY_MARK_UNLESS_NULL(th->last_status);
     RUBY_MARK_UNLESS_NULL(th->locking_mutex);
@@ -2666,34 +2702,6 @@ rb_thread_alloc(VALUE klass)
     return self;
 }
 
-static void
-vm_define_method(VALUE obj, ID id, VALUE iseqval, int is_singleton)
-{
-    VALUE klass;
-    rb_method_visibility_t visi;
-    rb_cref_t *cref = rb_vm_cref();
-
-    if (!is_singleton) {
-	klass = CREF_CLASS(cref);
-	visi = rb_scope_visibility_get();
-    }
-    else { /* singleton */
-	klass = rb_singleton_class(obj); /* class and frozen checked in this API */
-	visi = METHOD_VISI_PUBLIC;
-    }
-
-    if (NIL_P(klass)) {
-	rb_raise(rb_eTypeError, "no class/module to add method");
-    }
-
-    rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, visi);
-
-    if (!is_singleton && rb_scope_module_func_check()) {
-	klass = rb_singleton_class(klass);
-	rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, METHOD_VISI_PUBLIC);
-    }
-}
-
 #define REWIND_CFP(expr) do { \
     rb_execution_context_t *ec__ = GET_EC(); \
     VALUE *const curr_sp = (ec__->cfp++)->sp; \
@@ -2702,24 +2710,6 @@ vm_define_method(VALUE obj, ID id, VALUE iseqval, int is_singleton)
     expr; \
     (ec__->cfp--)->sp = saved_sp; \
 } while (0)
-
-static VALUE
-m_core_define_method(VALUE self, VALUE sym, VALUE iseqval)
-{
-    REWIND_CFP({
-	vm_define_method(Qnil, SYM2ID(sym), iseqval, FALSE);
-    });
-    return sym;
-}
-
-static VALUE
-m_core_define_singleton_method(VALUE self, VALUE cbase, VALUE sym, VALUE iseqval)
-{
-    REWIND_CFP({
-	vm_define_method(cbase, SYM2ID(sym), iseqval, TRUE);
-    });
-    return sym;
-}
 
 static VALUE
 m_core_set_method_alias(VALUE self, VALUE cbase, VALUE sym1, VALUE sym2)
@@ -2878,6 +2868,18 @@ static VALUE usage_analysis_operand_stop(VALUE self);
 static VALUE usage_analysis_register_stop(VALUE self);
 #endif
 
+/*
+ * Document-method: RubyVM::resolve_feature_path
+ * call-seq:
+ *   RubyVM.resolve_feature_path(feature) -> [:rb or :so, path]
+ *
+ * Identifies the file that will be loaded by "require(feature)".
+ * This API is experimental and just for internal use.
+ *
+ *    RubyVM.resolve_feature_path("set")
+ *      #=> [:rb, "/path/to/set.rb"]
+ */
+
 VALUE rb_resolve_feature_path(VALUE klass, VALUE fname);
 
 void
@@ -2899,6 +2901,9 @@ Init_VM(void)
     rb_undef_alloc_func(rb_cRubyVM);
     rb_undef_method(CLASS_OF(rb_cRubyVM), "new");
     rb_define_singleton_method(rb_cRubyVM, "stat", vm_stat, -1);
+#if USE_DEBUG_COUNTER
+    rb_define_singleton_method(rb_cRubyVM, "reset_debug_counters", rb_debug_counter_reset, 0);
+#endif
 
     /* FrozenCore (hidden) */
     fcore = rb_class_new(rb_cBasicObject);
@@ -2907,11 +2912,10 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_set_method_alias, m_core_set_method_alias, 3);
     rb_define_method_id(klass, id_core_set_variable_alias, m_core_set_variable_alias, 2);
     rb_define_method_id(klass, id_core_undef_method, m_core_undef_method, 2);
-    rb_define_method_id(klass, id_core_define_method, m_core_define_method, 2);
-    rb_define_method_id(klass, id_core_define_singleton_method, m_core_define_singleton_method, 3);
     rb_define_method_id(klass, id_core_set_postexe, m_core_set_postexe, 0);
     rb_define_method_id(klass, id_core_hash_merge_ptr, m_core_hash_merge_ptr, -1);
     rb_define_method_id(klass, id_core_hash_merge_kwd, m_core_hash_merge_kwd, 2);
+    rb_define_method_id(klass, id_core_raise, rb_f_raise, -1);
     rb_define_method_id(klass, idProc, rb_block_proc, 0);
     rb_define_method_id(klass, idLambda, rb_block_lambda, 0);
     rb_obj_freeze(fcore);
@@ -3226,7 +3230,7 @@ Init_vm_objects(void)
 {
     rb_vm_t *vm = GET_VM();
 
-    vm->defined_module_hash = rb_hash_new();
+    vm->defined_module_hash = st_init_numtable();
 
     /* initialize mark object array, hash */
     vm->mark_object_ary = rb_ary_tmp_new(128);

@@ -3,7 +3,9 @@ require 'rubygems/test_case'
 require 'rubygems'
 
 class TestGemRequire < Gem::TestCase
+
   class Latch
+
     def initialize(count = 1)
       @count = count
       @lock  = Monitor.new
@@ -22,6 +24,7 @@ class TestGemRequire < Gem::TestCase
         @cv.wait_while { @count > 0 }
       end
     end
+
   end
 
   def setup
@@ -320,6 +323,19 @@ class TestGemRequire < Gem::TestCase
     assert_equal %w(default-3.0), loaded_spec_names
   end
 
+  def test_default_gem_prerelease
+    default_gem_spec = new_default_spec("default", "2.0.0",
+                                        nil, "default/gem.rb")
+    install_default_specs(default_gem_spec)
+
+    normal_gem_higher_prerelease_spec = util_spec("default", "3.0.0.rc2", nil,
+                                                  "lib/default/gem.rb")
+    install_default_specs(normal_gem_higher_prerelease_spec)
+
+    assert_require "default/gem"
+    assert_equal %w(default-3.0.0.rc2), loaded_spec_names
+  end
+
   def loaded_spec_names
     Gem.loaded_specs.values.map(&:full_name).sort
   end
@@ -331,8 +347,10 @@ class TestGemRequire < Gem::TestCase
   def test_try_activate_error_unlocks_require_monitor
     silence_warnings do
       class << ::Gem
+
         alias old_try_activate try_activate
         def try_activate(*); raise 'raised from try_activate'; end
+
       end
     end
 
@@ -343,7 +361,9 @@ class TestGemRequire < Gem::TestCase
   ensure
     silence_warnings do
       class << ::Gem
+
         alias try_activate old_try_activate
+
       end
     end
     Kernel::RUBYGEMS_ACTIVATION_MONITOR.exit
@@ -373,7 +393,6 @@ class TestGemRequire < Gem::TestCase
     assert c.send(:require, "a")
     assert_equal %w(a-1), loaded_spec_names
   end
-
 
   def test_require_bundler
     b1 = util_spec('bundler', '1', nil, "lib/bundler/setup.rb")
@@ -436,4 +455,5 @@ class TestGemRequire < Gem::TestCase
   ensure
     $VERBOSE = old_verbose
   end
+
 end

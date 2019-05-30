@@ -54,12 +54,12 @@ class Gem::Resolver::ActivationRequest
 
     if @spec.respond_to? :sources
       exception = nil
-      path = @spec.sources.find{ |source|
+      path = @spec.sources.find do |source|
         begin
           source.download full_spec, path
         rescue exception
         end
-      }
+      end
       return path      if path
       raise  exception if exception
 
@@ -77,7 +77,7 @@ class Gem::Resolver::ActivationRequest
   # The full name of the specification to be activated.
 
   def full_name
-    @spec.full_name
+    name_tuple.full_name
   end
 
   alias_method :to_s, :full_name
@@ -181,6 +181,19 @@ class Gem::Resolver::ActivationRequest
 
   def version
     @spec.version
+  end
+
+  ##
+  # The platform of this activation request's specification
+
+  def platform
+    @spec.platform
+  end
+
+  private
+
+  def name_tuple
+    @name_tuple ||= Gem::NameTuple.new(name, version, platform)
   end
 
 end

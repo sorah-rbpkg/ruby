@@ -9,7 +9,7 @@ module Spec
     end
 
     def gemspec
-      @gemspec ||= root.join(ruby_core? ? "lib/bundler.gemspec" : "bundler.gemspec")
+      @gemspec ||= root.join(ruby_core? ? "lib/bundler/bundler.gemspec" : "bundler.gemspec")
     end
 
     def bindir
@@ -29,7 +29,7 @@ module Spec
     end
 
     def default_bundle_path(*path)
-      if Bundler::VERSION.split(".").first.to_i < 2
+      if Bundler::VERSION.split(".").first.to_i < 3
         system_gem_path(*path)
       else
         bundled_app(*[".bundle", ENV.fetch("BUNDLER_SPEC_RUBY_ENGINE", Gem.ruby_engine), Gem::ConfigMap[:ruby_version], *path].compact)
@@ -90,12 +90,16 @@ module Spec
       tmp("gems/system", *path)
     end
 
+    def system_bundle_bin_path
+      system_gem_path("bin/bundle")
+    end
+
     def lib_path(*args)
       tmp("libs", *args)
     end
 
     def bundler_path
-      Pathname.new(File.expand_path(root.join("lib"), __FILE__))
+      root.join("lib")
     end
 
     def global_plugin_gem(*args)

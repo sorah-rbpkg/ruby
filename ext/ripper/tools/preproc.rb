@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-# $Id: preproc.rb 63669 2018-06-15 08:53:17Z mame $
+# $Id$
 
 require 'optparse'
 

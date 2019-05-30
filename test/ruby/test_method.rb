@@ -197,6 +197,7 @@ class TestMethod < Test::Unit::TestCase
     def o.foo; end
     assert_kind_of(Integer, o.method(:foo).hash)
     assert_equal(Array.instance_method(:map).hash, Array.instance_method(:collect).hash)
+    assert_kind_of(String, o.method(:foo).hash.to_s)
   end
 
   def test_owner
@@ -494,6 +495,22 @@ class TestMethod < Test::Unit::TestCase
     assert_include mmethods, :meth, 'normal methods are public by default'
   end
 
+  def test_respond_to_missing_argument
+    obj = Struct.new(:mid).new
+    def obj.respond_to_missing?(id, *)
+      self.mid = id
+      true
+    end
+    assert_kind_of(Method, obj.method("bug15640"))
+    assert_kind_of(Symbol, obj.mid)
+    assert_equal("bug15640", obj.mid.to_s)
+
+    arg = Struct.new(:to_str).new("bug15640_2")
+    assert_kind_of(Method, obj.method(arg))
+    assert_kind_of(Symbol, obj.mid)
+    assert_equal("bug15640_2", obj.mid.to_s)
+  end
+
   define_method(:pm0) {||}
   define_method(:pm1) {|a|}
   define_method(:pm2) {|a, b|}
@@ -596,6 +613,11 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], self.class.instance_method(:pmk5).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], self.class.instance_method(:pmk6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:pmk7).parameters)
+  end
+
+  def test_hidden_parameters
+    instance_eval("def m((_)"+",(_)"*256+");end")
+    assert_empty(method(:m).parameters.map{|_,n|n}.compact)
   end
 
   def test_public_method_with_zsuper_method
@@ -949,6 +971,10 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_splat_long_array
+    if File.exist?('/etc/os-release') && File.read('/etc/os-release').include?('openSUSE Leap')
+      # For RubyCI's openSUSE machine http://rubyci.s3.amazonaws.com/opensuseleap/ruby-trunk/recent.html, which tends to die with NoMemoryError here.
+      skip 'do not exhaust memory on RubyCI openSUSE Leap machine'
+    end
     n = 10_000_000
     assert_equal n  , rest_parameter(*(1..n)).size, '[Feature #10440]'
   end
@@ -1084,11 +1110,30 @@ class TestMethod < Test::Unit::TestCase
     }
     f = c.new.method(:f)
 
-    assert_raise(NoMethodError) {
-      (f << 5).call(2)
+    assert_raise(TypeError) {
+      f << 5
     }
-    assert_raise(NoMethodError) {
-      (f >> 5).call(2)
+    assert_raise(TypeError) {
+      f >> 5
     }
+  end
+
+  def test_method_reference_operator
+    m = 1.:succ
+    assert_equal(1.method(:succ), m)
+    assert_equal(2, m.())
+    m = 1.:+
+    assert_equal(1.method(:+), m)
+    assert_equal(42, m.(41))
+    m = 1.:-@
+    assert_equal(1.method(:-@), m)
+    assert_equal(-1, m.())
+    o = Object.new
+    def o.foo; 42; end
+    m = o.method(:foo)
+    assert_equal(m, o.:foo)
+    def o.method(m); nil; end
+    assert_equal(m, o.:foo)
+    assert_nil(o.method(:foo))
   end
 end

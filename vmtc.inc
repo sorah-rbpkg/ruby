@@ -1,26 +1,26 @@
-/* -*- mode:c; style:ruby; coding: utf-8; indent-tabs-mode: nil -*- */
+/* -*- C -*- */
 
 /* This is  an auto-generated file  and is a  part of the  programming language
- * Ruby.  The  person who  created  a  program  to  generate this  file  (``I''
+ * Ruby.   The person  who  created  a program  to  generate  this file  (``I''
  * hereafter) would like  to refrain from defining licensing  of this generated
  * source code.
  *
- * This file consist of many small  parts of codes copyrighted by each authors,
+ * This file consists of many small  parts of codes copyrighted by each author,
  * not  only  the  ``I''  person.   Those  original  authors  agree  with  some
  * open-source license.  I  believe that the license we agree  is the condition
  * mentioned in  the file COPYING.  It  states "4.  You may  modify and include
  * the part of the software into any  other software ...".  But the problem is,
  * the license never makes it clear if  such modified parts still remain in the
  * same  license, or  not.   The fact  that  we agree  with  the source  code's
- * licensing terms do not automatically define that of generated ones.  This is
- * the reason  why this file  is under unclear situation.   All that I  know is
- * that above provision guarantees this file to exist.
+ * licensing terms does not automatically  define that of generated ones.  This
+ * is the reason why this file is  under an unclear situation.  All what I know
+ * is that above provision guarantees this file to exist.
  *
- * Please let me  hesitate to declare something about this  nuanced contract. I
+ * Please let me hesitate to declare  something about this nuanced contract.  I
  * am not in the position to take  over other authors' license to merge into my
- * one.  Changing them to (say) GPLv3  is not doable by myself. Perhaps someday
- * it might turn out to be okay to say this file is under a license. I wish the
- * situation would become more clear in the future. */
+ * one.  Changing them to (say) GPLv3 is not doable by myself.  Perhaps someday
+ * it might turn  out to be okay to  say this file is under a  license.  I wish
+ * the situation would become more clear in the future. */
 /*******************************************************************/
 /*******************************************************************/
 /*******************************************************************/
@@ -56,7 +56,6 @@ static const void *const insns_address_table[] = {
     LABEL_PTR(putself),
     LABEL_PTR(putobject),
     LABEL_PTR(putspecialobject),
-    LABEL_PTR(putiseq),
     LABEL_PTR(putstring),
     LABEL_PTR(concatstrings),
     LABEL_PTR(tostring),
@@ -84,7 +83,10 @@ static const void *const insns_address_table[] = {
     LABEL_PTR(checkmatch),
     LABEL_PTR(checkkeyword),
     LABEL_PTR(checktype),
+    LABEL_PTR(methodref),
     LABEL_PTR(defineclass),
+    LABEL_PTR(definemethod),
+    LABEL_PTR(definesmethod),
     LABEL_PTR(send),
     LABEL_PTR(opt_send_without_block),
     LABEL_PTR(opt_str_freeze),
@@ -157,7 +159,6 @@ static const void *const insns_address_table[] = {
     LABEL_PTR(trace_putself),
     LABEL_PTR(trace_putobject),
     LABEL_PTR(trace_putspecialobject),
-    LABEL_PTR(trace_putiseq),
     LABEL_PTR(trace_putstring),
     LABEL_PTR(trace_concatstrings),
     LABEL_PTR(trace_tostring),
@@ -185,7 +186,10 @@ static const void *const insns_address_table[] = {
     LABEL_PTR(trace_checkmatch),
     LABEL_PTR(trace_checkkeyword),
     LABEL_PTR(trace_checktype),
+    LABEL_PTR(trace_methodref),
     LABEL_PTR(trace_defineclass),
+    LABEL_PTR(trace_definemethod),
+    LABEL_PTR(trace_definesmethod),
     LABEL_PTR(trace_send),
     LABEL_PTR(trace_opt_send_without_block),
     LABEL_PTR(trace_opt_str_freeze),

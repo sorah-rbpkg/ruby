@@ -2,7 +2,7 @@
 
   node.h -
 
-  $Author: nobu $
+  $Author$
   created at: Fri May 28 15:14:02 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -26,7 +26,9 @@ enum node_type {
     NODE_UNLESS,
     NODE_CASE,
     NODE_CASE2,
+    NODE_CASE3,
     NODE_WHEN,
+    NODE_IN,
     NODE_WHILE,
     NODE_UNTIL,
     NODE_ITER,
@@ -120,6 +122,9 @@ enum node_type {
     NODE_DSYM,
     NODE_ATTRASGN,
     NODE_LAMBDA,
+    NODE_METHREF,
+    NODE_ARYPTN,
+    NODE_HSHPTN,
     NODE_LAST
 };
 
@@ -161,6 +166,7 @@ typedef struct RNode {
 	long state;
 	struct rb_global_entry *entry;
 	struct rb_args_info *args;
+        struct rb_ary_pattern_info *apinfo;
 	VALUE value;
     } u3;
     rb_code_location_t nd_loc;
@@ -265,6 +271,14 @@ typedef struct RNode {
 #define nd_orig   u2.id
 #define nd_undef  u2.node
 
+#define nd_brace u2.argc
+
+#define nd_pconst     u1.node
+#define nd_pkwargs    u2.node
+#define nd_pkwrestarg u3.node
+
+#define nd_apinfo u3.apinfo
+
 #define NEW_NODE(t,a0,a1,a2,loc) rb_node_newnode((t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2),loc)
 
 #define NEW_DEFN(i,a,d,loc) NEW_NODE(NODE_DEFN,0,i,NEW_SCOPE(a,d,loc),loc)
@@ -275,7 +289,9 @@ typedef struct RNode {
 #define NEW_UNLESS(c,t,e,loc) NEW_NODE(NODE_UNLESS,c,t,e,loc)
 #define NEW_CASE(h,b,loc) NEW_NODE(NODE_CASE,h,b,0,loc)
 #define NEW_CASE2(b,loc) NEW_NODE(NODE_CASE2,0,b,0,loc)
+#define NEW_CASE3(h,b,loc) NEW_NODE(NODE_CASE3,h,b,0,loc)
 #define NEW_WHEN(c,t,e,loc) NEW_NODE(NODE_WHEN,c,t,e,loc)
+#define NEW_IN(c,t,e,loc) NEW_NODE(NODE_IN,c,t,e,loc)
 #define NEW_WHILE(c,b,n,loc) NEW_NODE(NODE_WHILE,c,b,n,loc)
 #define NEW_UNTIL(c,b,n,loc) NEW_NODE(NODE_UNTIL,c,b,n,loc)
 #define NEW_FOR(i,b,loc) NEW_NODE(NODE_FOR,0,b,i,loc)
@@ -361,11 +377,14 @@ typedef struct RNode {
 #define NEW_PREEXE(b,loc) NEW_SCOPE(b,loc)
 #define NEW_POSTEXE(b,loc) NEW_NODE(NODE_POSTEXE,0,b,0,loc)
 #define NEW_ATTRASGN(r,m,a,loc) NEW_NODE(NODE_ATTRASGN,r,m,a,loc)
+#define NEW_METHREF(r,m,loc) NEW_NODE(NODE_METHREF,r,m,0,loc)
 
 #define NODE_SPECIAL_REQUIRED_KEYWORD ((NODE *)-1)
 #define NODE_REQUIRED_KEYWORD_P(node) ((node)->nd_value == NODE_SPECIAL_REQUIRED_KEYWORD)
 #define NODE_SPECIAL_NO_NAME_REST     ((NODE *)-1)
 #define NODE_NAMED_REST_P(node) ((node) != NODE_SPECIAL_NO_NAME_REST)
+
+VALUE rb_node_case_when_optimizable_literal(const NODE *const node);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
@@ -428,6 +447,12 @@ struct rb_args_info {
     NODE *kw_rest_arg;
 
     NODE *opt_args;
+};
+
+struct rb_ary_pattern_info {
+    NODE *pre_args;
+    NODE *rest_arg;
+    NODE *post_args;
 };
 
 struct parser_params;

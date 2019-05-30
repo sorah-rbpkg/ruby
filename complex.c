@@ -232,7 +232,10 @@ f_negative_p(VALUE x)
 inline static int
 f_zero_p(VALUE x)
 {
-    if (RB_INTEGER_TYPE_P(x)) {
+    if (RB_FLOAT_TYPE_P(x)) {
+        return FLOAT_ZERO_P(x);
+    }
+    else if (RB_INTEGER_TYPE_P(x)) {
         return FIXNUM_ZERO_P(x);
     }
     else if (RB_TYPE_P(x, T_RATIONAL)) {
@@ -430,7 +433,7 @@ static VALUE nucomp_s_convert(int argc, VALUE *argv, VALUE klass);
 
 /*
  * call-seq:
- *    Complex(x[, y], exception: false)  ->  numeric
+ *    Complex(x[, y], exception: true)  ->  numeric or nil
  *
  * Returns x+i*y;
  *
@@ -842,11 +845,11 @@ f_divide(VALUE self, VALUE other,
         return f_complex_new2(CLASS_OF(self), x, y);
     }
     if (k_numeric_p(other) && f_real_p(other)) {
+        VALUE x, y;
 	get_dat1(self);
-
-	return f_complex_new2(CLASS_OF(self),
-			      (*func)(dat->real, other),
-			      (*func)(dat->imag, other));
+        x = rb_rational_canonicalize((*func)(dat->real, other));
+        y = rb_rational_canonicalize((*func)(dat->imag, other));
+        return f_complex_new2(CLASS_OF(self), x, y);
     }
     return rb_num_coerce_bin(self, other, id);
 }
@@ -2333,9 +2336,3 @@ Init_Complex(void)
 
     rb_provide("complex.so");	/* for backward compatibility */
 }
-
-/*
-Local variables:
-c-file-style: "ruby"
-End:
-*/

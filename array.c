@@ -2,7 +2,7 @@
 
   array.c -
 
-  $Author: naruse $
+  $Author$
   created at: Fri Aug  6 09:46:12 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -140,7 +140,15 @@ VALUE rb_cArray;
     FL_SET((ary), RARRAY_SHARED_ROOT_FLAG); \
 } while (0)
 
-#define ARY_SET(a, i, v) RARRAY_ASET((assert(!ARY_SHARED_P(a)), (a)), (i), (v))
+static inline void
+ARY_SET(VALUE a, long i, VALUE v)
+{
+    assert(!ARY_SHARED_P(a));
+    assert(!OBJ_FROZEN(a));
+
+    RARRAY_ASET(a, i, v);
+}
+#undef RARRAY_ASET
 
 
 #if ARRAY_DEBUG
@@ -188,7 +196,8 @@ ary_verify_(VALUE ary, const char *file, int line)
 }
 
 void
-rb_ary_verify(VALUE ary){
+rb_ary_verify(VALUE ary)
+{
     ary_verify(ary);
 }
 #else
@@ -878,8 +887,8 @@ rb_check_to_array(VALUE ary)
  *  call-seq:
  *     Array.try_convert(obj) -> array or nil
  *
- *  Tries to convert +obj+ into an array, using +to_ary+ method.  Returns the
- *  converted array or +nil+ if +obj+ cannot be converted for any reason.
+ *  Tries to convert +obj+ into an array, using the +to_ary+ method.  Returns
+ *  the converted array or +nil+ if +obj+ cannot be converted.
  *  This method can be used to check if an argument is an array.
  *
  *     Array.try_convert([1])   #=> [1]
@@ -1113,7 +1122,7 @@ ary_take_first_or_last(int argc, const VALUE *argv, VALUE ary, enum ary_take_pos
     long offset = 0;
 
     argc = rb_check_arity(argc, 0, 1);
-    /* the case optional argument is ommited should be handled in
+    /* the case optional argument is omitted should be handled in
      * callers of this function.  if another arity case is added,
      * this arity check needs to rewrite. */
     RUBY_ASSERT_WHEN(TRUE, argc == 1);
@@ -1325,7 +1334,7 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
 MJIT_FUNC_EXPORTED VALUE
 rb_ary_behead(VALUE ary, long n)
 {
-    if(n<=0) return ary;
+    if (n<=0) return ary;
 
     rb_ary_modify_check(ary);
     if (ARY_SHARED_P(ary)) {
@@ -2357,11 +2366,11 @@ rb_ary_join_m(int argc, VALUE *argv, VALUE ary)
 {
     VALUE sep;
 
-    if (rb_check_arity(argc, 0, 1) == 0) {
+    if (rb_check_arity(argc, 0, 1) == 0 || NIL_P(sep = argv[0])) {
         sep = rb_output_fs;
-    }
-    else if (NIL_P(sep = argv[0])) {
-        sep = rb_output_fs;
+        if (!NIL_P(sep)) {
+            rb_warn("$, is set to non-nil value");
+        }
     }
 
     return rb_ary_join(ary, sep);
@@ -4451,13 +4460,17 @@ ary_recycle_hash(VALUE hash)
  *
  *  Array Difference
  *
- *  Returns a new array that is a copy of the original array, removing any
- *  items that also appear in +other_ary+. The order is preserved from the
- *  original array.
+ *  Returns a new array that is a copy of the original array, removing all
+ *  instances of any item that also appear in +other_ary+. The order is preserved
+ *  from the original array.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
  *
  *     [ 1, 1, 2, 2, 3, 3, 4, 5 ] - [ 1, 2, 4 ]  #=>  [ 3, 3, 5 ]
+ *
+ *  Note that while 1 and 2 were only present once in the array argument, and
+ *  were present twice in the receiver array, all instances of each Integer are
+ *  removed in the returned array.
  *
  *  If you need set-like behavior, see the library class Set.
  *
@@ -4498,13 +4511,22 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *
  *  Array Difference
  *
- *  Returns a new array that is a copy of the receiver, removing any items
- *  that also appear in any of the arrays given as arguments.
- *  The order is preserved from the original array.
+ *  Returns a new array that is a copy of the original array, removing all
+ *  instances of any item that also appear in +other_ary+. The order is
+ *  preserved from the original array.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
  *
  *     [ 1, 1, 2, 2, 3, 3, 4, 5 ].difference([ 1, 2, 4 ])     #=> [ 3, 3, 5 ]
+ *
+ *  Note that while 1 and 2 were only present once in the array argument, and
+ *  were present twice in the receiver array, all instances of each Integer are
+ *  removed in the returned array.
+ *
+ *  Multiple array arguments can be supplied and all instances of any element
+ *  in those supplied arrays that match the receiver will be removed from the
+ *  returned array.
+ *
  *     [ 1, 'c', :s, 'yep' ].difference([ 1 ], [ 'a', 'c' ])  #=> [ :s, "yep" ]
  *
  *  If you need set-like behavior, see the library class Set.
@@ -4531,7 +4553,7 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
     for (i = 0; i < RARRAY_LEN(ary); i++) {
         int j;
         VALUE elt = rb_ary_elt(ary, i);
-        for (j = 0; j < argc; j++){
+        for (j = 0; j < argc; j++) {
             if (is_hash[j]) {
                 if (rb_hash_stlike_lookup(argv[j], RARRAY_AREF(ary, i), NULL))
                     break;
@@ -4669,7 +4691,7 @@ rb_ary_or(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary.union(other_ary1, other_ary2, ...)   -> ary
+ *     ary.union(other_ary1, other_ary2, ...)   -> new_ary
  *
  *  Set Union --- Returns a new array by joining <code>other_ary</code>s with +self+,
  *  excluding any duplicates and preserving the order from the given arrays.
@@ -4691,7 +4713,7 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
     VALUE hash, ary_union;
 
     sum = RARRAY_LEN(ary);
-    for (i = 0; i < argc; i++){
+    for (i = 0; i < argc; i++) {
         argv[i] = to_ary(argv[i]);
         sum += RARRAY_LEN(argv[i]);
     }
@@ -4721,7 +4743,7 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
  *     ary.max(n) {|a, b| block}   -> array
  *
  *  Returns the object in _ary_ with the maximum value. The
- *  first form assumes all objects implement <code>Comparable</code>;
+ *  first form assumes all objects implement Comparable;
  *  the second uses the block to return <em>a <=> b</em>.
  *
  *     ary = %w(albatross dog horse)
@@ -4774,7 +4796,7 @@ rb_ary_max(int argc, VALUE *argv, VALUE ary)
  *     ary.min(n) {| a,b | block } -> array
  *
  *  Returns the object in _ary_ with the minimum value. The
- *  first form assumes all objects implement <code>Comparable</code>;
+ *  first form assumes all objects implement Comparable;
  *  the second uses the block to return <em>a <=> b</em>.
  *
  *     ary = %w(albatross dog horse)
@@ -5495,7 +5517,7 @@ yield_indexed_values(const VALUE values, const long r, const long *const p)
     const VALUE result = rb_ary_new2(r);
     long i;
 
-    for (i = 0; i < r; i++) RARRAY_ASET(result, i, RARRAY_AREF(values, p[i]));
+    for (i = 0; i < r; i++) ARY_SET(result, i, RARRAY_AREF(values, p[i]));
     ARY_SET_LEN(result, r);
     rb_yield(result);
     return !RBASIC(values)->klass;
@@ -6530,6 +6552,12 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
     return v;
 }
 
+static VALUE
+rb_ary_deconstruct(VALUE ary)
+{
+    return ary;
+}
+
 /*
  *  Arrays are ordered, integer-indexed collections of any object.
  *
@@ -6895,6 +6923,8 @@ Init_Array(void)
     rb_define_method(rb_cArray, "one?", rb_ary_one_p, -1);
     rb_define_method(rb_cArray, "dig", rb_ary_dig, -1);
     rb_define_method(rb_cArray, "sum", rb_ary_sum, -1);
+
+    rb_define_method(rb_cArray, "deconstruct", rb_ary_deconstruct, 0);
 
     id_random = rb_intern("random");
 }

@@ -388,7 +388,7 @@ module Net   #:nodoc:
   class HTTP < Protocol
 
     # :stopdoc:
-    Revision = %q$Revision: 66401 $.split[1]
+    Revision = %q$Revision$.split[1]
     HTTPVersion = '1.1'
     begin
       require 'zlib'
@@ -1520,7 +1520,7 @@ module Net   #:nodoc:
       rescue Net::OpenTimeout
         raise
       rescue Net::ReadTimeout, IOError, EOFError,
-             Errno::ECONNRESET, Errno::ECONNABORTED, Errno::EPIPE,
+             Errno::ECONNRESET, Errno::ECONNABORTED, Errno::EPIPE, Errno::ETIMEDOUT,
              # avoid a dependency on OpenSSL
              defined?(OpenSSL::SSL) ? OpenSSL::SSL::SSLError : IOError,
              Timeout::Error => exception

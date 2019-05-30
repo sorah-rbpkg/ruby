@@ -2,7 +2,7 @@
 
   iseq.h -
 
-  $Author: ko1 $
+  $Author$
   created at: 04/01/01 23:36:57 JST
 
   Copyright (C) 2004-2008 Koichi Sasada
@@ -20,6 +20,8 @@ RUBY_EXTERN const int ruby_api_version[];
 typedef struct rb_iseq_struct rb_iseq_t;
 #define rb_iseq_t rb_iseq_t
 #endif
+
+extern const ID rb_iseq_shared_exc_local_tbl[];
 
 static inline size_t
 rb_call_info_kw_arg_bytes(int keyword_len)
@@ -96,8 +98,6 @@ struct iseq_compile_data {
     struct iseq_label_data *end_label;
     struct iseq_label_data *redo_label;
     const rb_iseq_t *current_block;
-    VALUE ensure_node;
-    VALUE for_iseq;
     struct iseq_compile_data_ensure_node_stack *ensure_node_stack;
     struct iseq_compile_data_storage *storage_head;
     struct iseq_compile_data_storage *storage_current;
@@ -236,7 +236,7 @@ struct iseq_catch_table_entry {
      *   CATCH_TYPE_REDO, CATCH_TYPE_NEXT:
      *     NULL.
      */
-    const rb_iseq_t *iseq;
+    rb_iseq_t *iseq;
 
     unsigned int start;
     unsigned int end;

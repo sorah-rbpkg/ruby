@@ -3,7 +3,7 @@
 
   vm_exec.c -
 
-  $Author: nobu $
+  $Author$
 
   Copyright (C) 2004-2007 Koichi Sasada
 

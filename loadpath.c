@@ -2,7 +2,7 @@
 
   loadpath.c -
 
-  $Author: shyouhei $
+  $Author$
   created at: Wed May 15 14:19:50 JST 2013
 
   Copyright (C) 2013 Yukihiro Matsumoto

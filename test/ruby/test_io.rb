@@ -1513,6 +1513,7 @@ class TestIO < Test::Unit::TestCase
   end if have_nonblock?
 
   def test_read_nonblock_no_exceptions
+    skip '[ruby-core:90895] MJIT worker may leave fd open in a forked child' if RubyVM::MJIT.enabled? # TODO: consider acquiring GVL from MJIT worker.
     with_pipe {|r, w|
       assert_equal :wait_readable, r.read_nonblock(4096, exception: false)
       w.puts "HI!"
@@ -2479,7 +2480,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_print_separators
-    $, = ':'
+    EnvUtil.suppress_warning {$, = ':'}
     $\ = "\n"
     pipe(proc do |w|
       w.print('a')
@@ -3374,7 +3375,7 @@ __END__
       }
 
       IO.select(tempfiles)
-    }, bug8080, timeout: 50
+    }, bug8080, timeout: 100
   end if defined?(Process::RLIMIT_NOFILE)
 
   def test_read_32bit_boundary

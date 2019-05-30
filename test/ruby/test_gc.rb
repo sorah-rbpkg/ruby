@@ -253,6 +253,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_profiler_clear
+    skip "for now"
     assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom', timeout: 30
     GC::Profiler.enable
 
@@ -311,7 +312,7 @@ class TestGc < Test::Unit::TestCase
   def test_sweep_in_finalizer
     bug9205 = '[ruby-core:58833] [Bug #9205]'
     2.times do
-      assert_ruby_status([], <<-'end;', bug9205, timeout: 60)
+      assert_ruby_status([], <<-'end;', bug9205, timeout: 120)
         raise_proc = proc do |id|
           GC.start
         end
@@ -381,6 +382,10 @@ class TestGc < Test::Unit::TestCase
       GC.stress = true
       C.new
     end;
+  end
+
+  def test_gc_stress_at_startup
+    assert_in_out_err([{"RUBY_DEBUG"=>"gc_stress"}], '', [], [], '[Bug #15784]', success: true, timeout: 60)
   end
 
   def test_gc_disabled_start

@@ -493,6 +493,21 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([1, 2, 3], y.yield(2, 3))
 
     assert_raise(LocalJumpError) { Enumerator::Yielder.new }
+
+    # to_proc (explicit)
+    a = []
+    y = Enumerator::Yielder.new {|x| a << x }
+    b = y.to_proc
+    assert_kind_of(Proc, b)
+    assert_equal([1], b.call(1))
+    assert_equal([1], a)
+
+    # to_proc (implicit)
+    e = Enumerator.new { |y|
+      assert_kind_of(Enumerator::Yielder, y)
+      [1, 2, 3].each(&y)
+    }
+    assert_equal([1, 2, 3], e.to_a)
   end
 
   def test_size
@@ -527,7 +542,7 @@ class TestEnumerator < Test::Unit::TestCase
 
   def test_size_for_enum_created_from_enumerable
     %i[find_all reject map flat_map partition group_by sort_by min_by max_by
-      minmax_by each_with_index reverse_each each_entry].each do |method|
+      minmax_by each_with_index reverse_each each_entry filter_map].each do |method|
       assert_equal nil, @obj.send(method).size
       assert_equal 42, @sized.send(method).size
     end

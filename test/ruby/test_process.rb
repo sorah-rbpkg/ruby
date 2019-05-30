@@ -1724,7 +1724,7 @@ class TestProcess < Test::Unit::TestCase
 
     with_tmpchdir do
       assert_nothing_raised('[ruby-dev:12261]') do
-        Timeout.timeout(3) do
+        EnvUtil.timeout(3) do
           pid = spawn('yes | ls')
           Process.waitpid pid
         end
@@ -1796,7 +1796,7 @@ class TestProcess < Test::Unit::TestCase
       end
     else # darwin
       def test_daemon_no_threads
-        data = Timeout.timeout(3) do
+        data = EnvUtil.timeout(3) do
           IO.popen("-") do |f|
             break f.readlines.map(&:chomp) if f
             th = Thread.start {sleep 3}
@@ -1871,16 +1871,16 @@ class TestProcess < Test::Unit::TestCase
       if user
         assert_nothing_raised(feature6975) do
           begin
-            system(*TRUECOMMAND, uid: user)
-          rescue Errno::EPERM, NotImplementedError
+            system(*TRUECOMMAND, uid: user, exception: true)
+          rescue Errno::EPERM, Errno::EACCES, NotImplementedError
           end
         end
       end
 
       assert_nothing_raised(feature6975) do
         begin
-          system(*TRUECOMMAND, uid: uid)
-        rescue Errno::EPERM, NotImplementedError
+          system(*TRUECOMMAND, uid: uid, exception: true)
+        rescue Errno::EPERM, Errno::EACCES, NotImplementedError
         end
       end
 
@@ -1888,7 +1888,7 @@ class TestProcess < Test::Unit::TestCase
         begin
           u = IO.popen([RUBY, "-e", "print Process.uid", uid: user||uid], &:read)
           assert_equal(uid.to_s, u, feature6975)
-        rescue Errno::EPERM, NotImplementedError
+        rescue Errno::EPERM, Errno::EACCES, NotImplementedError
         end
       end
     end
@@ -2311,7 +2311,7 @@ EOS
   def test_signals_work_after_exec_fail
     r, w = IO.pipe
     pid = status = nil
-    Timeout.timeout(30) do
+    EnvUtil.timeout(30) do
       pid = fork do
         r.close
         begin
@@ -2345,7 +2345,7 @@ EOS
   def test_threading_works_after_exec_fail
     r, w = IO.pipe
     pid = status = nil
-    Timeout.timeout(90) do
+    EnvUtil.timeout(90) do
       pid = fork do
         r.close
         begin

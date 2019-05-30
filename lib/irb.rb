@@ -2,7 +2,7 @@
 #
 #   irb.rb - irb main module
 #       $Release Version: 0.9.6 $
-#       $Revision: 66356 $
+#       $Revision$
 #       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -18,6 +18,7 @@ require "irb/extend-command"
 require "irb/ruby-lex"
 require "irb/input-method"
 require "irb/locale"
+require "irb/color"
 
 require "irb/version"
 
@@ -59,21 +60,24 @@ require "irb/version"
 #     -W[level=2]       Same as `ruby -W`
 #     --inspect         Use `inspect' for output (default except for bc mode)
 #     --noinspect       Don't use inspect for output
+#     --reidline        Use Reidline extension module
+#     --noreidline      Don't use Reidline extension module
 #     --readline        Use Readline extension module
 #     --noreadline      Don't use Readline extension module
+#     --colorize        Use colorization
+#     --nocolorize      Don't use colorization
 #     --prompt prompt-mode
 #     --prompt-mode prompt-mode
 #                       Switch prompt mode. Pre-defined prompt modes are
 #                       `default', `simple', `xmp' and `inf-ruby'
 #     --inf-ruby-mode   Use prompt appropriate for inf-ruby-mode on emacs.
-#                       Suppresses --readline.
+#                       Suppresses --reidline and --readline.
 #     --simple-prompt   Simple prompt mode
 #     --noprompt        No prompt mode
 #     --tracer          Display trace for each execution of commands.
 #     --back-trace-limit n
 #                       Display backtrace top n and tail n. The default
 #                       value is 16.
-#     --irb_debug n     Set internal debug level to n (not for popular use)
 #     -v, --version     Print the version of irb
 #
 # == Configuration
@@ -95,13 +99,14 @@ require "irb/version"
 #     IRB.conf[:IRB_RC] = nil
 #     IRB.conf[:BACK_TRACE_LIMIT]=16
 #     IRB.conf[:USE_LOADER] = false
+#     IRB.conf[:USE_REIDLINE] = nil
 #     IRB.conf[:USE_READLINE] = nil
+#     IRB.conf[:USE_COLORIZE] = true
 #     IRB.conf[:USE_TRACER] = false
 #     IRB.conf[:IGNORE_SIGINT] = true
 #     IRB.conf[:IGNORE_EOF] = false
 #     IRB.conf[:PROMPT_MODE] = :DEFAULT
 #     IRB.conf[:PROMPT] = {...}
-#     IRB.conf[:DEBUG_LEVEL]=0
 #
 # === Auto indentation
 #
@@ -410,9 +415,7 @@ module IRB
       @context = Context.new(self, workspace, input_method, output_method)
       @context.main.extend ExtendCommandBundle
       @signal_status = :IN_IRB
-
       @scanner = RubyLex.new
-      @scanner.exception_on_syntax_error = false
     end
 
     def run(conf = IRB.conf)
@@ -749,8 +752,8 @@ class Binding
   #
   #     Potato.new
   #
-  # Running +ruby potato.rb+ will open an IRB session where +binding.irb+ is
-  # called, and you will see the following:
+  # Running <code>ruby potato.rb</code> will open an IRB session where
+  # +binding.irb+ is called, and you will see the following:
   #
   #     $ ruby potato.rb
   #
@@ -780,7 +783,7 @@ class Binding
   #     irb(#<Potato:0x00007feea1916670>):004:0> @cooked = true
   #     => true
   #
-  # You can exit the IRB session with the `exit` command. Note that exiting will
+  # You can exit the IRB session with the +exit+ command. Note that exiting will
   # resume execution where +binding.irb+ had paused it, as you can see from the
   # output printed to standard output in this example:
   #

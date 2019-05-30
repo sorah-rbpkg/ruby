@@ -1,6 +1,6 @@
-"exec" "${RUBY-ruby}" "-x" "$0" "$@" || true # -*- mode: ruby; coding: utf-8 -*-
+"exec" "${RUBY-ruby}" "-x" "$0" "$@" || true # -*- Ruby -*-
 #!./ruby
-# $Id: runner.rb 66344 2018-12-12 00:38:49Z k0kubun $
+# $Id$
 
 # NOTE:
 # Never use optparse in this file.
@@ -367,7 +367,9 @@ def assert_normal_exit(testsrc, *rest, timeout: nil, **opt)
 end
 
 def assert_finish(timeout_seconds, testsrc, message = '')
-  timeout_seconds *= 3 if RubyVM::MJIT.enabled? # for --jit-wait
+  if RubyVM.const_defined? :MJIT
+    timeout_seconds *= 3 if RubyVM::MJIT.enabled? # for --jit-wait
+  end
   newtest
   show_progress(message) {
     faildesc = nil

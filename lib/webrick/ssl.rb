@@ -4,7 +4,7 @@
 #
 # Copyright (c) 2003 GOTOU Yuuzou All rights reserved.
 #
-# $Id: ssl.rb 66152 2018-12-03 04:51:08Z normal $
+# $Id$
 
 require 'webrick'
 require 'openssl'

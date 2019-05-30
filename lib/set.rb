@@ -10,7 +10,7 @@
 # All rights reserved.  You can redistribute and/or modify it under the same
 # terms as Ruby.
 #
-#   $Id: set.rb 62575 2018-02-25 13:52:07Z eregon $
+#   $Id$
 #
 # == Overview
 #
@@ -527,7 +527,7 @@ class Set
     if @hash.respond_to?(:rehash)
       @hash.rehash # This should perform frozenness check.
     else
-      raise "can't modify frozen #{self.class.name}" if frozen?
+      raise FrozenError, "can't modify frozen #{self.class.name}" if frozen?
     end
     self
   end

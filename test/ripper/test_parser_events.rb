@@ -58,6 +58,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal '[assign(var_field(a),ref(a))]', parse('a=a')
     assert_equal '[ref(nil)]', parse('nil')
     assert_equal '[ref(true)]', parse('true')
+    assert_include parse('proc{@1}'), '[ref(@1)]'
   end
 
   def test_vcall
@@ -432,6 +433,13 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     tree = parse("self&.foo()", :on_call) {thru_call = true}
     assert_equal true, thru_call
     assert_equal "[call(ref(self),&.,foo,[])]", tree
+  end
+
+  def test_methref
+    thru_methref = false
+    tree = parse("obj.:foo", :on_methref) {thru_methref = true}
+    assert_equal true, thru_methref
+    assert_equal "[methref(vcall(obj),foo)]", tree
   end
 
   def test_excessed_comma
@@ -1470,15 +1478,18 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal("unterminated regexp meets end of file", compile_error('/'))
   end
 
+  def test_invalid_numbered_parameter_name
+    assert_equal("leading zero is not allowed as a numbered parameter", compile_error('proc{@0}'))
+  end
+
   def test_invalid_instance_variable_name
-    assert_equal("`@1' is not allowed as an instance variable name", compile_error('@1'))
-    assert_equal("`@%' is not allowed as an instance variable name", compile_error('@%'))
+    assert_equal("`@' without identifiers is not allowed as an instance variable name", compile_error('@%'))
     assert_equal("`@' without identifiers is not allowed as an instance variable name", compile_error('@'))
   end
 
   def test_invalid_class_variable_name
     assert_equal("`@@1' is not allowed as a class variable name", compile_error('@@1'))
-    assert_equal("`@@%' is not allowed as a class variable name", compile_error('@@%'))
+    assert_equal("`@@' without identifiers is not allowed as a class variable name", compile_error('@@%'))
     assert_equal("`@@' without identifiers is not allowed as a class variable name", compile_error('@@'))
   end
 
@@ -1497,5 +1508,23 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     fmt = nil
     assert_warn("") {fmt, = warn("\r;")}
     assert_match(/encountered/, fmt)
+  end
+
+  def test_in
+    thru_in = false
+    parse('case 0; in 0; end', :on_in) {thru_in = true}
+    assert_equal true, thru_in
+  end
+
+  def test_aryptn
+    thru_aryptn = false
+    parse('case 0; in [0]; end', :on_aryptn) {thru_aryptn = true}
+    assert_equal true, thru_aryptn
+  end
+
+  def test_hshptn
+    thru_hshptn = false
+    parse('case 0; in {a:}; end', :on_hshptn) {thru_hshptn = true}
+    assert_equal true, thru_hshptn
   end
 end if ripper_test

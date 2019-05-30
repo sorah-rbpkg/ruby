@@ -2,7 +2,7 @@
 #
 #   use-loader.rb -
 #   	$Release Version: 0.9.6$
-#   	$Revision: 65505 $
+#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --

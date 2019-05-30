@@ -1,4 +1,5 @@
-# -*- makefile-gmake -*-
+# -*- mode: makefile-gmake; indent-tabs-mode: t -*-
+
 gnumake = yes
 override gnumake_recursive := $(if $(findstring n,$(firstword $(MFLAGS))),,+)
 override mflags := $(filter-out -j%,$(MFLAGS))
@@ -88,6 +89,10 @@ install-prereq: sudo-precheck
 yes-test-all no-test-all: install
 yes-test-almost no-test-almost: install
 endif
+ifneq ($(filter love install reinstall,$(MAKECMDGOALS)),)
+# Cross referece needs to parse all files at once
+RDOCFLAGS = --force-update
+endif
 ifneq ($(filter great,$(MAKECMDGOALS)),)
 love: test-rubyspec
 endif
@@ -148,10 +153,71 @@ commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS
 	  sed 's/^@.*@$$//;s/@[A-Za-z_][A-Za-z_0-9]*@//g;/^all-incs:/d' defs/gmake.mk Makefile.in; \
 	  sed 's/{[.;]*$$([a-zA-Z0-9_]*)}//g' common.mk; \
 	} | \
-	$(MAKE) $(mflags) Q=$(Q) ECHO=$(ECHO) srcdir="$(srcdir)" srcs_vpath="$(srcdir)/" CHDIR="$(CHDIR)" \
+	$(MAKE) $(mflags) Q=$(Q) ECHO=$(ECHO) srcdir="$(srcdir)" srcs_vpath="" CHDIR="$(CHDIR)" \
 		BOOTSTRAPRUBY="$(BOOTSTRAPRUBY)" MINIRUBY="$(BASERUBY)" BASERUBY="$(BASERUBY)" \
 		VCSUP="" ENC_MK=.top-enc.mk REVISION_FORCE=PHONY CONFIGURE="$(CONFIGURE)" -f - \
 		update-src srcs all-incs
+
+GITHUB_RUBY_URL = https://github.com/ruby/ruby
+PR =
+
+COMMIT_GPG_SIGN = $(shell git -C "$(srcdir)" config commit.gpgsign)
+REMOTE_GITHUB_URL = $(shell git -C "$(srcdir)" config remote.github.url)
+
+.PHONY: fetch-github
+fetch-github:
+	$(call fetch-github,$(PR))
+
+define fetch-github
+	$(if $(1),,\
+	  echo "usage:"; echo "  make $@ PR=1234"; \
+	  exit 1; \
+	)
+	$(eval REMOTE_GITHUB_URL := $(REMOTE_GITHUB_URL))
+	$(if $(REMOTE_GITHUB_URL),, \
+	  echo adding $(GITHUB_RUBY_URL) as remote github; \
+	  git -C "$(srcdir)" remote add github $(GITHUB_RUBY_URL); \
+	  $(eval REMOTE_GITHUB_URL := $(GITHUB_RUBY_URL)) \
+	)
+	git -C "$(srcdir)" fetch -f github "pull/$(1)/head:gh-$(1)"
+endef
+
+.PHONY: checkout-github
+checkout-github: fetch-github
+	git -C "$(srcdir)" checkout "gh-$(PR)"
+
+.PHONY: merge-github
+merge-github: fetch-github
+	$(call merge-github,$(PR))
+
+define merge-github
+	$(eval GITHUB_MERGE_BASE := $(shell git -C "$(srcdir)" log -1 --format=format:%H))
+	$(eval GITHUB_MERGE_BRANCH := $(shell git -C "$(srcdir)" symbolic-ref --short HEAD))
+	$(eval GITHUB_MERGE_WORKTREE := $(shell mktemp -d "$(srcdir)/gh-$(1)-XXXXXX"))
+	git -C "$(srcdir)" worktree add $(notdir $(GITHUB_MERGE_WORKTREE)) "gh-$(1)"
+	git -C "$(GITHUB_MERGE_WORKTREE)" rebase $(GITHUB_MERGE_BRANCH)
+	git -C "$(srcdir)" worktree remove $(notdir $(GITHUB_MERGE_WORKTREE))
+	git -C "$(srcdir)" merge --ff-only "gh-$(1)"
+	git -C "$(srcdir)" branch -D "gh-$(1)"
+	git -C "$(srcdir)" filter-branch -f \
+	  --msg-filter 'cat && echo && echo "Closes: $(GITHUB_RUBY_URL)/pull/$(1)"' \
+	  -- "$(GITHUB_MERGE_BASE)..@"
+	$(eval COMMIT_GPG_SIGN := $(COMMIT_GPG_SIGN))
+	$(if $(filter true,$(COMMIT_GPG_SIGN)), \
+	  git -C "$(srcdir)" rebase --exec "git commit --amend --no-edit -S" "$(GITHUB_MERGE_BASE)"; \
+	)
+endef
+
+fetch-github-%:
+	$(call fetch-github,$*)
+
+pr-% merge-github-%: fetch-github-%
+	$(call merge-github,$*)
+
+HELP_EXTRA_TASKS = \
+	"  checkout-github:     checkout GitHub Pull Request [PR=1234]" \
+	"  merge-github:        merge GitHub Pull Request to current HEAD [PR=1234]" \
+	""
 
 ifeq ($(words $(filter update-gems extract-gems,$(MAKECMDGOALS))),2)
 extract-gems: update-gems
@@ -185,6 +251,17 @@ $(MJIT_MIN_HEADER): $(mjit_min_headers) $(PREP)
 
 endif
 
+ifeq ($(if $(wildcard $(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)),,\
+	   $(wildcard $(srcdir)/lib/unicode_normalize/tables.rb)),)
+# Needs the dependency when any Unicode data file exists, or
+# normalization tables script doesn't.  Otherwise, when the target
+# only exists, use it as-is.
+.PHONY: $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time
+UNICODE_TABLES_TIMESTAMP =
+$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: \
+	$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
+endif
+
 # GNU make treat the target as unmodified when its dependents get
 # updated but it is not updated, while others may not.
 $(srcdir)/revision.h: $(REVISION_H)
@@ -203,3 +280,8 @@ clean-srcs-ext::
 
 clean-srcs-extra::
 	$(Q)$(RM) $(patsubst $(srcdir)/%,%,$(EXTRA_SRCS))
+
+ifneq ($(filter $(VCS),git),)
+update-src::
+	@$(BASERUBY) $(srcdir)/tool/colorize.rb pass "Latest commit hash = $(shell $(filter-out svn,$(VCS)) -C $(srcdir) rev-parse --short=10 HEAD)"
+endif

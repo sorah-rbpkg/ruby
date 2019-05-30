@@ -258,6 +258,15 @@ class TestAst < Test::Unit::TestCase
     assert_equal(:SCOPE, defn.type)
   end
 
+  def test_methref
+    node = RubyVM::AbstractSyntaxTree.parse("obj.:foo")
+    _, _, body = *node.children
+    assert_equal(:METHREF, body.type)
+    recv, mid = body.children
+    assert_equal(:VCALL, recv.type)
+    assert_equal(:foo, mid)
+  end
+
   def test_dstr
     node = RubyVM::AbstractSyntaxTree.parse('"foo#{1}bar"')
     _, _, body = *node.children
@@ -268,5 +277,29 @@ class TestAst < Test::Unit::TestCase
     body, = body.children
     assert_equal(:LIT, body.type)
     assert_equal([1], body.children)
+  end
+
+  def test_while
+    node = RubyVM::AbstractSyntaxTree.parse('1 while 1')
+    _, _, body = *node.children
+    assert_equal(:WHILE, body.type)
+    type1 = body.children[2]
+    node = RubyVM::AbstractSyntaxTree.parse('begin 1 end while 1')
+    _, _, body = *node.children
+    assert_equal(:WHILE, body.type)
+    type2 = body.children[2]
+    assert_not_equal(type1, type2)
+  end
+
+  def test_until
+    node = RubyVM::AbstractSyntaxTree.parse('1 until 1')
+    _, _, body = *node.children
+    assert_equal(:UNTIL, body.type)
+    type1 = body.children[2]
+    node = RubyVM::AbstractSyntaxTree.parse('begin 1 end until 1')
+    _, _, body = *node.children
+    assert_equal(:UNTIL, body.type)
+    type2 = body.children[2]
+    assert_not_equal(type1, type2)
   end
 end

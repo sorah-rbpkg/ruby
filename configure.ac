@@ -55,25 +55,20 @@ AS_IF([test x"$HAVE_GIT" = xyes], [command -v "$GIT" > /dev/null || HAVE_GIT=no]
 AC_SUBST(GIT)
 AC_SUBST(HAVE_GIT)
 
-eval `sed -n ['s/^@%:@define RUBY_API_VERSION_\([A-Z][A-Z_0-9]*\) \([0-9][0-9]*\)/API_\1=\2/p'] $srcdir/include/ruby/version.h`
-RUBY_PROGRAM_VERSION=`sed -n 's/^@%:@define RUBY_VERSION "\(.*\)"/\1/p' $srcdir/version.h`
-MAJOR=`echo $RUBY_PROGRAM_VERSION | cut -d. -f1`
-MINOR=`echo $RUBY_PROGRAM_VERSION | cut -d. -f2`
-TEENY=`echo $RUBY_PROGRAM_VERSION | cut -d. -f3`
+eval `sed -n -e ['s/^@%:@define RUBY_[A-Z_]*VERSION_\([A-Z][A-Z][A-Z_0-9]*\) \([0-9][0-9]*\)$/\1=\2/p'] \
+      -e ['s/^@%:@define \(RUBY_PATCHLEVEL\) \(.*\)/\1=\2/p'] \
+     $srcdir/include/ruby/version.h $srcdir/version.h`
 for v in MAJOR MINOR TEENY; do
     AS_IF([eval "test \"\$$v\" = ''"], [
 	AC_MSG_ERROR(could not determine $v number from version.h)
     ])
 done
-AS_IF([test "$MAJOR.$MINOR" != "$API_MAJOR.$API_MINOR"], [
-    AC_MSG_ERROR([API version $API_MAJOR.$API_MINOR differs from program version $MAJOR.$MINOR])
-])
 AC_SUBST(MAJOR)
 AC_SUBST(MINOR)
 AC_SUBST(TEENY)
-AC_SUBST(RUBY_PROGRAM_VERSION)
 AC_SUBST(RUBY_API_VERSION, '$(MAJOR).$(MINOR)')
-RUBY_PATCHLEVEL=`sed -n 's/^#define RUBY_PATCHLEVEL //p' $srcdir/version.h`
+AC_SUBST(RUBY_PROGRAM_VERSION, '$(MAJOR).$(MINOR).$(TEENY)')
+
 dnl checks for alternative programs
 AC_CANONICAL_BUILD
 RUBY_RM_RECURSIVE
@@ -160,7 +155,7 @@ test -z "$optflags" ||
     cflagspat="$cflagspat;s|"`eval echo '"'"${optflags}"'"' | sed 's/[[][|.*]]/\\&/g;s/^ */ /;s/ *$/ /'`'| |g'
 test -z "$debugflags" ||
     cflagspat="$cflagspat;s|"`eval echo '"'"${debugflags}"'"' | sed 's/[[][|.*]]/\\&/g;s/^ */ /;s/ *$/ /'`'| |g'
-test -z "warnflags" ||
+test -z "$warnflags" ||
     cflagspat="$cflagspat;s|"`eval echo '"'"${warnflags}"'"' | sed 's/[[][|.*]]/\\&/g;s/^ */ /;s/ *$/ /'`'| |g'
 AS_IF([test -z "${CFLAGS+set}"], [
     cflags=`echo " $cflags " | sed "$cflagspat;s/^ *//;s/ *$//"`
@@ -192,7 +187,7 @@ AS_IF([test x"${build}" != x"${host}"], [
   AC_CHECK_TOOL(CC, gcc)
 ])
 
-AC_PROG_CC
+AC_PROG_CC_C99
 AS_CASE([$CC],
 [gcc-*], [
     gcc_prefix=gcc- gcc_suffix=`echo "$CC" | sed 's/^gcc//'`
@@ -486,7 +481,6 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 	particular_werror_flags=no
     ])
     for wflag in \
-		 -Werror=declaration-after-statement \
 		 -Werror=deprecated-declarations \
 		 -Werror=division-by-zero \
 		 -Werror=duplicated-cond \
@@ -494,7 +488,6 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 		 -Werror=implicit-int \
 		 -Werror=misleading-indentation \
 		 -Werror=pointer-arith \
-		 -Werror=restrict \
 		 -Werror=shorten-64-to-32 \
 		 -Werror=write-strings \
 		 -Wimplicit-fallthrough=0 \
@@ -622,10 +615,12 @@ AS_IF([test "$GCC" = yes], [
     ],
     [cygwin*|darwin*|netbsd*], [
       # need lgamma_r(), finite()
-    ],
+    ])
+
+    # ANSI (no XCFLAGS because this is C only)
+    AS_CASE(["$target_os"],
     [solaris*], [
-      # ANSI (no XCFLAGS because this is C only)
-      # Because "-std=gnu99" affects existance of functions on Solaris,
+      # Because "-std=gnu99" affects existence of functions on Solaris,
       # "-std=gnu99" will be appended to CPPFLAGS.
 	for ansi_options in -std=gnu99; do
 	    RUBY_TRY_CFLAGS(${ansi_options}, [
@@ -946,9 +941,6 @@ main()
 		ac_cv_func_fsync=yes
 		ac_cv_func_seekdir=yes
 		ac_cv_func_telldir=yes
-		ac_cv_func_isinf=yes
-		ac_cv_func_isnan=yes
-		ac_cv_func_finite=yes
 		ac_cv_func_lchown=yes
 		ac_cv_func_link=yes
 		ac_cv_func_readlink=yes
@@ -999,9 +991,6 @@ main()
 [netbsd*], [	LIBS="-lm $LIBS"
 		],
 [dragonfly*], [	LIBS="-lm $LIBS"
-		# isinf() and isnan() are macros on DragonFly.
-		ac_cv_func_isinf=yes
-		ac_cv_func_isnan=yes
 		],
 [aix*],[	LIBS="-lm $LIBS"
 		ac_cv_func_round=no
@@ -1036,6 +1025,7 @@ AC_HEADER_SYS_WAIT
 
 AC_CHECK_HEADERS(a.out.h)
 AC_CHECK_HEADERS(atomic.h)
+AC_CHECK_HEADERS(copyfile.h)
 AC_CHECK_HEADERS(direct.h)
 AC_CHECK_HEADERS(grp.h)
 AC_CHECK_HEADERS(fcntl.h)
@@ -1175,6 +1165,7 @@ AC_C_CHAR_UNSIGNED
 AC_C_INLINE
 AC_C_VOLATILE
 AC_C_TYPEOF
+AC_C_RESTRICT
 
 AS_CASE(":$ac_cv_c_const:$ac_cv_c_volatile:",
     [*:no:*], [AC_MSG_ERROR(ANSI C-conforming const and volatile are mandatory)])
@@ -1572,6 +1563,8 @@ AC_CHECK_MEMBERS([struct stat.st_ctim])
 AC_CHECK_MEMBERS([struct stat.st_ctimespec])
 AC_CHECK_MEMBERS([struct stat.st_ctimensec])
 AC_CHECK_MEMBERS([struct stat.st_birthtimespec])
+AS_IF([test "x$ac_cv_member_struct_stat_st_birthtimespec" != xyes],
+    [AC_CHECK_MEMBERS([struct statx.stx_btime])])
 
 AC_CHECK_TYPES([struct timeval], [], [], [@%:@ifdef HAVE_TIME_H
 @%:@include <time.h>
@@ -1724,11 +1717,8 @@ AC_REPLACE_FUNCS(dup2)
 AC_REPLACE_FUNCS(erf)
 AC_REPLACE_FUNCS(explicit_bzero)
 AC_REPLACE_FUNCS(ffs)
-AC_REPLACE_FUNCS(finite)
 AC_REPLACE_FUNCS(flock)
 AC_REPLACE_FUNCS(hypot)
-AC_REPLACE_FUNCS(isinf)
-AC_REPLACE_FUNCS(isnan)
 AC_REPLACE_FUNCS(lgamma_r)
 AC_REPLACE_FUNCS(memmove)
 AC_REPLACE_FUNCS(nan)
@@ -1740,6 +1730,10 @@ AC_REPLACE_FUNCS(strlcat)
 AC_REPLACE_FUNCS(strlcpy)
 AC_REPLACE_FUNCS(strstr)
 AC_REPLACE_FUNCS(tgamma)
+
+RUBY_REPLACE_FUNC([finite], [@%:@include <math.h>])
+RUBY_REPLACE_FUNC([isinf], [@%:@include <math.h>])
+RUBY_REPLACE_FUNC([isnan], [@%:@include <math.h>])
 
 # for missing/setproctitle.c
 AS_CASE(["$target_os"],
@@ -1761,33 +1755,6 @@ AS_IF([test "$rb_cv_have_signbit" = yes], [
   AC_LIBOBJ([signbit])
 ])
 
-AC_CACHE_CHECK(for broken memmem, rb_cv_broken_memmem, [
-    AC_TRY_RUN([
-@%:@include <string.h>
-
-int
-main(int argc, char **argv)
-{
-    const char *str = "hogefugafoobar";
-    const char *rs = "foo";
-    const char *empty = "";
-    char *p;
-
-    p = memmem(str, strlen(str), rs, strlen(rs));
-    if (p == str+8) {
-	p = memmem(str, strlen(str), empty, strlen(empty));
-	if (p == str)
-	    return 0;
-    }
-    return 1;
-}
-    ],
-    rb_cv_broken_memmem=no,
-    rb_cv_broken_memmem=yes,
-    rb_cv_broken_memmem=yes)
-])
-test x"$rb_cv_broken_memmem" = xyes && ac_cv_func_memmem=no
-
 AC_FUNC_FORK
 
 AC_CHECK_FUNCS(__syscall)
@@ -1799,6 +1766,7 @@ AC_CHECK_FUNCS(atan2l atan2f)
 AC_CHECK_FUNCS(chroot)
 AC_CHECK_FUNCS(chsize)
 AC_CHECK_FUNCS(clock_gettime)
+AC_CHECK_FUNCS(copy_file_range)
 AC_CHECK_FUNCS(cosh)
 AC_CHECK_FUNCS(crypt_r)
 AC_CHECK_FUNCS(daemon)
@@ -1811,6 +1779,7 @@ AC_CHECK_FUNCS(dup3)
 AC_CHECK_FUNCS(eaccess)
 AC_CHECK_FUNCS(endgrent)
 AC_CHECK_FUNCS(eventfd)
+AC_CHECK_FUNCS(fcopyfile)
 AC_CHECK_FUNCS(fchmod)
 AC_CHECK_FUNCS(fchown)
 AC_CHECK_FUNCS(fcntl)
@@ -1832,6 +1801,7 @@ AC_CHECK_FUNCS(getpgid)
 AC_CHECK_FUNCS(getpgrp)
 AC_CHECK_FUNCS(getpriority)
 AC_CHECK_FUNCS(getpwnam_r)
+AC_CHECK_FUNCS(getrandom)
 AC_CHECK_FUNCS(getresgid)
 AC_CHECK_FUNCS(getresuid)
 AC_CHECK_FUNCS(getrlimit)
@@ -1916,6 +1886,9 @@ AC_CHECK_FUNCS(utimensat)
 AC_CHECK_FUNCS(utimes)
 AC_CHECK_FUNCS(wait4)
 AC_CHECK_FUNCS(waitpid)
+
+AS_IF([test "x$ac_cv_member_struct_statx_stx_btime" = xyes],
+    [AC_CHECK_FUNCS(statx)])
 
 AS_CASE(["$ac_cv_func_memset_s:$ac_cv_func_qsort_s"], [*yes*],
     [RUBY_DEFINE_IF([!defined __STDC_WANT_LIB_EXT1__], [__STDC_WANT_LIB_EXT1__], 1)])
@@ -3022,6 +2995,7 @@ for var in bindir libdir rubylibprefix; do
 done
 
 BTESTRUBY='$(MINIRUBY)'
+BOOTSTRAPRUBY='$(BASERUBY)'
 AS_IF([test x"$cross_compiling" = xyes], [
   test x"$MINIRUBY" = x && MINIRUBY="${RUBY-$BASERUBY} -I`$CHDIR .; pwd` "-r'$(arch)-fake'
   XRUBY_LIBDIR=`${RUBY-$BASERUBY} -rrbconfig -e ['puts RbConfig::CONFIG["libdir"]']`
@@ -3034,7 +3008,6 @@ AS_IF([test x"$cross_compiling" = xyes], [
   RUNRUBY_COMMAND='$(MINIRUBY) -I`cd $(srcdir)/lib; pwd`'
   RUNRUBY='$(RUNRUBY_COMMAND)'
   XRUBY='$(MINIRUBY)'
-  BOOTSTRAPRUBY='$(BASERUBY)'
   TEST_RUNNABLE=no
   CROSS_COMPILING=yes
 ], [
@@ -3044,7 +3017,7 @@ AS_IF([test x"$cross_compiling" = xyes], [
   RUNRUBY_COMMAND='$(MINIRUBY) $(srcdir)/tool/runruby.rb --extout=$(EXTOUT) $(RUNRUBYOPT)'
   RUNRUBY='$(RUNRUBY_COMMAND) --'
   XRUBY='$(RUNRUBY)'
-  BOOTSTRAPRUBY='$(MINIRUBY)'
+  AS_CASE(["$HAVE_BASERUBY:$build_os"], [no:*|*:mingw*], [BOOTSTRAPRUBY='$(MINIRUBY)'])
   TEST_RUNNABLE=yes
   CROSS_COMPILING=no
 ])
@@ -3348,18 +3321,30 @@ CAPITARGET=""
 AC_ARG_ENABLE(install-doc,
        AS_HELP_STRING([--disable-install-doc], [do not install either rdoc indexes or C API documents during install]),
        [install_doc=$enableval], [install_doc=yes])
+AC_ARG_WITH(rdoc,
+      AS_HELP_STRING([--with-rdoc=ri,html], [comma/space separated list of RDoc formats to install]),
+      [install_rdoc=`echo ,$withval, | sed 'y/,/ /;s/ ri / rdoc /;s/^ *//;s/ *$//'`], [
 AC_ARG_ENABLE(install-rdoc,
       AS_HELP_STRING([--disable-install-rdoc], [do not install rdoc indexes during install]),
       [install_rdoc=$enableval], [install_rdoc=yes])
+])
 AC_ARG_ENABLE(install-capi,
       AS_HELP_STRING([--disable-install-capi], [do not install C API documents during install]),
       [install_capi=$enableval], [install_capi=no])
 
 AS_IF([test "$install_doc" != no], [
-    AS_IF([test "$install_rdoc" != no], [
+    AS_CASE(["$install_rdoc"],
+    [yes], [
 	RDOCTARGET="rdoc"
-    ], [
+    ],
+    [all], [
+	RDOCTARGET="rdoc html"
+    ],
+    [no|''], [
 	RDOCTARGET="nodoc"
+    ],
+    [
+	RDOCTARGET="$install_rdoc"
     ])
     AS_IF([test "$install_capi" != no -a -n "$DOXYGEN"], [
 	CAPITARGET="capi"
@@ -3600,6 +3585,7 @@ AS_IF([test "${ARCH_FLAG}"], [
     CXXFLAGS=`echo "$CXXFLAGS" | sed "s| *$archflagpat"'||'`
     LDFLAGS=`echo "$LDFLAGS" | sed "s| *$archflagpat"'||'`
 ])
+rb_cv_warnflags=`echo "$rb_cv_warnflags" | sed 's/^ *//;s/ *$//'`
 warnflags="$rb_cv_warnflags"
 AC_SUBST(cppflags)dnl
 AC_SUBST(cflags, ["${orig_cflags:+$orig_cflags }"'${optflags} ${debugflags} ${warnflags}'])dnl
@@ -3934,20 +3920,12 @@ AC_CONFIG_FILES(Makefile, [
     {
 	AS_IF([test ${VCS+set}], [
 	    :
-	], [svn info "$srcdir" > /dev/null 2>&1], [
-	    VCS='svn'
 	], [git_dir=`$GIT --work-tree="$srcdir" --git-dir="$srcdir/.git" rev-parse --git-dir 2>/dev/null`], [
-	    AS_IF([test -d "$git_dir/svn"], [
-		VCS='$(GIT) svn'
-	    ], [
-		VCS='$(GIT)'
-	    ])
+	    VCS='$(GIT)'
 	], [
 	    VCS='echo cannot'
 	])
 	AS_CASE("$VCS",
-		[svn],          [VCSUP='$(VCS) up $(SVNUPOPTIONS)'],
-		['$(GIT) svn'], [VCSUP='$(VCS) rebase $(GITSVNREBASEOPTIONS)'],
 		['$(GIT)'|git], [VCSUP='$(VCS) pull $(GITPULLOPTIONS)'],
 		[VCSUP='$(VCS)'])
 	sed -n \
@@ -4026,8 +4004,11 @@ AS_REQUIRE_SHELL_FN([config_summary],
     ])]
 )
 
+AS_IF([test $install_doc = yes],
+    [DOCTARGETS=`echo " $RDOCTARGET $CAPITARGET " | sed 's/ nodoc //g;s/^ *//;s/ *$//'`],
+    [DOCTARGETS=no])
 echo "---"
-echo "Configuration summary for $RUBY_BASE_NAME version $RUBY_PROGRAM_VERSION"
+echo "Configuration summary for $RUBY_BASE_NAME version $MAJOR.$MINOR.$TEENY"
 echo ""
 config_summary "Installation prefix" "$prefix"
 config_summary "exec prefix"         "$exec_prefix"
@@ -4051,7 +4032,7 @@ config_summary "optflags"            "$optflags"
 config_summary "debugflags"          "$debugflags"
 config_summary "warnflags"           "$warnflags"
 config_summary "strip command"       "$STRIP"
-config_summary "install doc"         "$install_doc"
+config_summary "install doc"         "$DOCTARGETS"
 config_summary "JIT support"         "$MJIT_SUPPORT"
 config_summary "man page type"       "$MANTYPE"
 config_summary "search path"         "$search_path"

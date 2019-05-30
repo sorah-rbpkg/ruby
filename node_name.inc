@@ -10,8 +10,12 @@
 	return "NODE_CASE";
       case NODE_CASE2:
 	return "NODE_CASE2";
+      case NODE_CASE3:
+	return "NODE_CASE3";
       case NODE_WHEN:
 	return "NODE_WHEN";
+      case NODE_IN:
+	return "NODE_IN";
       case NODE_WHILE:
 	return "NODE_WHILE";
       case NODE_UNTIL:
@@ -198,3 +202,9 @@
 	return "NODE_ATTRASGN";
       case NODE_LAMBDA:
 	return "NODE_LAMBDA";
+      case NODE_METHREF:
+	return "NODE_METHREF";
+      case NODE_ARYPTN:
+	return "NODE_ARYPTN";
+      case NODE_HSHPTN:
+	return "NODE_HSHPTN";

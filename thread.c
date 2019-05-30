@@ -2,7 +2,7 @@
 
   thread.c -
 
-  $Author: naruse $
+  $Author$
 
   Copyright (C) 2004-2007 Koichi Sasada
 
@@ -1421,9 +1421,10 @@ blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region)
     }
 }
 
-static void *
-call_without_gvl(void *(*func)(void *), void *data1,
-		 rb_unblock_function_t *ubf, void *data2, int fail_if_interrupted)
+void *
+rb_nogvl(void *(*func)(void *), void *data1,
+         rb_unblock_function_t *ubf, void *data2,
+         int flags)
 {
     void *val = 0;
     rb_execution_context_t *ec = GET_EC();
@@ -1436,20 +1437,27 @@ call_without_gvl(void *(*func)(void *), void *data1,
 	data2 = th;
     }
     else if (ubf && vm_living_thread_num(th->vm) == 1) {
-	ubf_th = rb_thread_start_unblock_thread();
+        if (RB_NOGVL_UBF_ASYNC_SAFE) {
+            th->vm->ubf_async_safe = 1;
+        }
+        else {
+            ubf_th = rb_thread_start_unblock_thread();
+        }
     }
 
     BLOCKING_REGION(th, {
 	val = func(data1);
 	saved_errno = errno;
-    }, ubf, data2, fail_if_interrupted);
+    }, ubf, data2, flags & RB_NOGVL_INTR_FAIL);
 
-    if (!fail_if_interrupted) {
+    th->vm->ubf_async_safe = 0;
+
+    if ((flags & RB_NOGVL_INTR_FAIL) == 0) {
 	RUBY_VM_CHECK_INTS_BLOCKING(ec);
     }
 
     if (ubf_th != Qfalse) {
-	thread_value(rb_thread_kill(ubf_th));
+        thread_value(rb_thread_kill(ubf_th));
     }
 
     errno = saved_errno;
@@ -1546,14 +1554,14 @@ void *
 rb_thread_call_without_gvl2(void *(*func)(void *), void *data1,
 			    rb_unblock_function_t *ubf, void *data2)
 {
-    return call_without_gvl(func, data1, ubf, data2, TRUE);
+    return rb_nogvl(func, data1, ubf, data2, RB_NOGVL_INTR_FAIL);
 }
 
 void *
 rb_thread_call_without_gvl(void *(*func)(void *data), void *data1,
 			    rb_unblock_function_t *ubf, void *data2)
 {
-    return call_without_gvl(func, data1, ubf, data2, FALSE);
+    return rb_nogvl(func, data1, ubf, data2, 0);
 }
 
 VALUE
@@ -3247,10 +3255,10 @@ rb_thread_aref(VALUE thread, VALUE key)
  *
  *  Returns a fiber-local for the given key. If the key can't be
  *  found, there are several options: With no other arguments, it will
- *  raise a <code>KeyError</code> exception; if <i>default</i> is
- *  given, then that will be returned; if the optional code block is
- *  specified, then that will be run and its result returned.
- *  See Thread#[] and Hash#fetch.
+ *  raise a KeyError exception; if <i>default</i> is given, then that
+ *  will be returned; if the optional code block is specified, then
+ *  that will be run and its result returned.  See Thread#[] and
+ *  Hash#fetch.
  */
 static VALUE
 rb_thread_fetch(int argc, VALUE *argv, VALUE self)
@@ -3317,7 +3325,7 @@ VALUE
 rb_thread_local_aset(VALUE thread, ID id, VALUE val)
 {
     if (OBJ_FROZEN(thread)) {
-	rb_error_frozen("thread locals");
+        rb_frozen_error_raise(thread, "can't modify frozen thread locals");
     }
 
     return threadptr_local_aset(rb_thread_ptr(thread), id, val);
@@ -3394,7 +3402,7 @@ rb_thread_variable_set(VALUE thread, VALUE id, VALUE val)
     VALUE locals;
 
     if (OBJ_FROZEN(thread)) {
-	rb_error_frozen("thread locals");
+        rb_frozen_error_raise(thread, "can't modify frozen thread locals");
     }
 
     locals = rb_ivar_get(thread, id_locals);
@@ -4949,7 +4957,7 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
     struct exec_recursive_params p;
     int outermost;
     p.list = recursive_list_access(sym);
-    p.objid = rb_obj_id(obj);
+    p.objid = rb_memory_id(obj);
     p.obj = obj;
     p.pairid = pairid;
     p.arg = arg;
@@ -5018,7 +5026,7 @@ rb_exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
 VALUE
 rb_exec_recursive_paired(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE paired_obj, VALUE arg)
 {
-    return exec_recursive(func, obj, rb_obj_id(paired_obj), arg, 0);
+    return exec_recursive(func, obj, rb_memory_id(paired_obj), arg, 0);
 }
 
 /*
@@ -5042,7 +5050,7 @@ rb_exec_recursive_outer(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
 VALUE
 rb_exec_recursive_paired_outer(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE paired_obj, VALUE arg)
 {
-    return exec_recursive(func, obj, rb_obj_id(paired_obj), arg, 1);
+    return exec_recursive(func, obj, rb_memory_id(paired_obj), arg, 1);
 }
 
 /*

@@ -2,7 +2,7 @@
 
   vm.h -
 
-  $Author: ko1 $
+  $Author$
   created at: 04/01/01 16:56:59 JST
 
   Copyright (C) 2004-2007 Koichi Sasada
@@ -17,7 +17,7 @@ typedef unsigned long lindex_t;
 typedef VALUE GENTRY;
 typedef rb_iseq_t *ISEQ;
 
-#ifdef __GCC__
+#ifdef __GNUC__
 /* TODO: machine dependent prefetch instruction */
 #define PREFETCH(pc)
 #else

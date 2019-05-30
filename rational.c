@@ -529,8 +529,8 @@ static VALUE nurat_s_convert(int argc, VALUE *argv, VALUE klass);
 
 /*
  * call-seq:
- *    Rational(x, y, exception: true)  ->  rational
- *    Rational(arg, exception: true)   ->  rational
+ *    Rational(x, y, exception: true)  ->  rational or nil
+ *    Rational(arg, exception: true)   ->  rational or nil
  *
  * Returns +x/y+ or +arg+ as a Rational.
  *
@@ -2472,8 +2472,6 @@ parse_rat(const char *s, const char *const e, int strict, int raise)
     return num;
 }
 
-#define FLOAT_ZERO_P(x) (rb_float_value(x) == 0.0)
-
 static VALUE
 string_to_r_strict(VALUE self, int raise)
 {
@@ -2801,9 +2799,3 @@ Init_Rational(void)
 
     rb_provide("rational.so");	/* for backward compatibility */
 }
-
-/*
-Local variables:
-c-file-style: "ruby"
-End:
-*/
