@@ -1,3 +1,9 @@
+ruby2.5 (2.5.5-3) unstable; urgency=medium
+
+  * ia64: Don't clear register_stack_start (Closes: #928068)
+
+ -- Antonio Terceiro <terceiro@debian.org>  Sun, 02 Jun 2019 10:16:57 -0300
+
 ruby2.5 (2.5.5-2) unstable; urgency=medium
 
   * debian/tests/excludes/: fix exclusion of Rinda tests that depend on
