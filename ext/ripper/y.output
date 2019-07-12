@@ -695,7 +695,7 @@ Grammar
   506    | tGVAR
   507    | tCVAR
 
-  508 dsym: tSYMBEG xstring_contents tSTRING_END
+  508 dsym: tSYMBEG string_contents tSTRING_END
 
   509 numeric: simple_numeric
   510        | tUMINUS_NUM simple_numeric
@@ -1369,9 +1369,9 @@ qword_list <val> (297)
 qsym_list <val> (298)
     on left: 482 483, on right: 479 483
 string_contents <val> (299)
-    on left: 484 485, on right: 467 485 608
+    on left: 484 485, on right: 467 485 508 608
 xstring_contents <val> (300)
-    on left: 486 487, on right: 468 487 508
+    on left: 486 487, on right: 468 487
 regexp_contents <val> (301)
     on left: 488 489, on right: 469 489
 string_content <val> (302)
@@ -3619,7 +3619,7 @@ State 56
 State 57
 
   503 symbol: tSYMBEG . sym
-  508 dsym: tSYMBEG . xstring_contents tSTRING_END
+  508 dsym: tSYMBEG . string_contents tSTRING_END
 
     "class"         shift, and go to state 123
     "module"        shift, and go to state 124
@@ -3699,13 +3699,13 @@ State 57
     '~'             shift, and go to state 195
     '`'             shift, and go to state 196
 
-    $default  reduce using rule 486 (xstring_contents)
+    $default  reduce using rule 484 (string_contents)
 
-    fname             go to state 288
-    op                go to state 201
-    reswords          go to state 202
-    xstring_contents  go to state 289
-    sym               go to state 290
+    fname            go to state 288
+    op               go to state 201
+    reswords         go to state 202
+    string_contents  go to state 289
+    sym              go to state 290
 
 
 State 58
@@ -8684,8 +8684,8 @@ State 288
 
 State 289
 
-  487 xstring_contents: xstring_contents . string_content
-  508 dsym: tSYMBEG xstring_contents . tSTRING_END
+  485 string_contents: string_contents . string_content
+  508 dsym: tSYMBEG string_contents . tSTRING_END
 
     tSTRING_CONTENT  shift, and go to state 482
     tSTRING_DBEG     shift, and go to state 483
@@ -8712,7 +8712,7 @@ State 291
     tSTRING_DVAR     shift, and go to state 484
     tSTRING_END      shift, and go to state 487
 
-    string_content  go to state 488
+    string_content  go to state 486
 
 
 State 292
@@ -8723,9 +8723,9 @@ State 292
     tSTRING_CONTENT  shift, and go to state 482
     tSTRING_DBEG     shift, and go to state 483
     tSTRING_DVAR     shift, and go to state 484
-    tSTRING_END      shift, and go to state 489
+    tSTRING_END      shift, and go to state 488
 
-    string_content  go to state 486
+    string_content  go to state 489
 
 
 State 293
@@ -14465,7 +14465,7 @@ State 418
     tSTRING_END      shift, and go to state 487
     tLABEL_END       shift, and go to state 613
 
-    string_content  go to state 488
+    string_content  go to state 486
 
 
 State 419
@@ -16792,16 +16792,16 @@ State 484
 
 State 485
 
-  508 dsym: tSYMBEG xstring_contents tSTRING_END .
+  508 dsym: tSYMBEG string_contents tSTRING_END .
 
     $default  reduce using rule 508 (dsym)
 
 
 State 486
 
-  487 xstring_contents: xstring_contents string_content .
+  485 string_contents: string_contents string_content .
 
-    $default  reduce using rule 487 (xstring_contents)
+    $default  reduce using rule 485 (string_contents)
 
 
 State 487
@@ -16813,16 +16813,16 @@ State 487
 
 State 488
 
-  485 string_contents: string_contents string_content .
+  468 xstring: tXSTRING_BEG xstring_contents tSTRING_END .
 
-    $default  reduce using rule 485 (string_contents)
+    $default  reduce using rule 468 (xstring)
 
 
 State 489
 
-  468 xstring: tXSTRING_BEG xstring_contents tSTRING_END .
+  487 xstring_contents: xstring_contents string_content .
 
-    $default  reduce using rule 468 (xstring)
+    $default  reduce using rule 487 (xstring_contents)
 
 
 State 490

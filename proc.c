@@ -2,7 +2,7 @@
 
   proc.c - Proc, Binding, Env
 
-  $Author: stomar $
+  $Author: naruse $
   created at: Wed Jan 17 12:13:14 2007
 
   Copyright (C) 2004-2007 Koichi Sasada
@@ -1547,7 +1547,7 @@ method_hash(VALUE method)
     hash = rb_hash_method_entry(hash, m->me);
     hash = rb_hash_end(hash);
 
-    return INT2FIX(hash);
+    return ST2FIX(hash);
 }
 
 /*

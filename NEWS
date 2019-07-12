@@ -272,8 +272,11 @@ sufficient information, see the ChangeLog file or Redmine
 
 [Regexp/String]
 
-    * Update Unicode version and Emoji version from 11.0.0 to 12.0.0.
-      [Feature #15321]
+    * Update Unicode version to 12.1.0, adding support for
+      U+32FF SQUARE ERA NAME REIWA [Feature #15195]
+
+    * Update Unicode version and Emoji version from 11.0.0 to
+      12.0.0. [Feature #15321]
 
     * Update Unicode version from 10.0.0 to 11.0.0. [Feature #14802]
 
@@ -455,6 +458,10 @@ sufficient information, see the ChangeLog file or Redmine
     * Add Net::HTTPClientException to deprecate Net::HTTPServerException,
       whose name is misleading.  [Bug #14688]
 
+  [Net::IMAP]
+
+    * Add Server Name Indication (SNI) support.  [Feature #15594]
+
 [NKF]
 
   * Upgrade to nkf v2.1.5
@@ -523,8 +530,14 @@ sufficient information, see the ChangeLog file or Redmine
 
 [CSV]
 
-  * Upgrade to 3.0.4.
+  * Upgrade to 3.0.9.
     See https://github.com/ruby/csv/blob/master/NEWS.md.
+
+[Date]
+
+  * Date.jisx0301, Date#jisx0301, and Date.parse provisionally support the
+    new Japanese era as an informal extension, until the new JIS X 0301 is
+    issued.  [Feature #15742]
 
 [RSS]
 
