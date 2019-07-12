@@ -1,7 +1,261 @@
 ------------------------------------------------------------------------
-r67232 | naruse | 2019-03-13 05:23:16 +0900 (Wed, 13 Mar 2019) | 1 line
+r67580 | naruse | 2019-04-17 13:49:56 +0900 (Wed, 17 Apr 2019) | 1 line
 
-add tag v2_6_2
+add tag v2_6_3
+------------------------------------------------------------------------
+r67571 | svn | 2019-04-16 09:02:01 +0900 (Tue, 16 Apr 2019) | 1 line
+
+* 2019-04-16
+------------------------------------------------------------------------
+r67570 | knu | 2019-04-16 09:02:00 +0900 (Tue, 16 Apr 2019) | 1 line
+
+Mention SNI support in Net::IMAP
+------------------------------------------------------------------------
+r67567 | naruse | 2019-04-15 23:42:35 +0900 (Mon, 15 Apr 2019) | 6 lines
+
+merge revision(s) 67561:
+
+	Import CSV 3.0.9
+
+	This fixes test failures on Windows.
+
+------------------------------------------------------------------------
+r67565 | naruse | 2019-04-15 22:36:58 +0900 (Mon, 15 Apr 2019) | 14 lines
+
+merge revision(s) 67560,67561:
+
+        Import CSV 3.0.8
+
+        This includes performance improvements and backward incompatibility
+        fixes.
+
+
+        Import CSV 3.0.9
+
+        This fixes test failures on Windows.
+
+Note that r67562's commit message is wrong.
+
+------------------------------------------------------------------------
+r67564 | naruse | 2019-04-15 22:27:53 +0900 (Mon, 15 Apr 2019) | 9 lines
+
+merge revision(s) 67563:
+
+	Support SNI (Reapplying r67488)
+
+	This fixes connecting using TLS 1.3 to imap.gmail.com
+
+	[Fix GH-2077] [Feature #15594]
+
+	From: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+------------------------------------------------------------------------
+r67562 | naruse | 2019-04-15 18:22:11 +0900 (Mon, 15 Apr 2019) | 8 lines
+
+merge revision(s) 66720:
+
+        separate downloading of Unicode property files and auxiliary files
+
+        Separate downloading of Unicode property files in ucd and in ucd/auxiliary.
+        This is needed because we need information from separate index.html files
+        to discover the exact file names of property files during a beta period.
+
+------------------------------------------------------------------------
+r67529 | naruse | 2019-04-14 07:18:20 +0900 (Sun, 14 Apr 2019) | 7 lines
+
+merge revision(s) 66720:
+
+	separate downloading of Unicode property files and auxiliary files
+
+	Separate downloading of Unicode property files in ucd and in ucd/auxiliary.
+	This is needed because we need information from separate index.html files
+	to discover the exact file names of property files during a beta period.
+------------------------------------------------------------------------
+r67528 | naruse | 2019-04-14 07:04:51 +0900 (Sun, 14 Apr 2019) | 45 lines
+
+merge revision(s) 66737,66738,67413,67445,67446,67447,67448,67450,67451,67454:
+
+	add logic to handle Unicode beta period file names
+
+	In downloader.rb, add logic to handle file names of the form
+	UnicodeData-12.0.0d6.txt. To find the right file, we download
+	the index of the directory. Then we download the files by finding
+	the file names from the index. Files are always checked for changes,
+	because changes might be frequent during the beta period.
+	We also check whether any index.html files are left when we are not
+	in the beta period. This would indicate that we might have stale
+	data from the beta period rather than the actual release data.
+
+	simplify filename-related code
+
+	(Thanks to Nobuyoshi Nakada for the hint!)
+
+	downloader.rb: keep linked file newer than cached file
+
+	* tool/downloader.rb (Downloader.save_cache): keep linked file
+	  newer than cached file, so that GNU make triggers when the
+	  content is updated.  it uses the timestamp of symlink itself
+	  instead of the target.
+
+	add puts statements to debug Unicode file download (temporary)
+
+	Unicode file download doesn't work with Visual Studio, see e.g.
+	https://ci.appveyor.com/project/ruby/ruby/builds/23614399/job/f8vya2l7fjdfcye4
+	We temporarily produce more output for debugging.
+
+	* remove trailing spaces.
+
+	output more debug information in downloader.rb (temporary)
+
+	Unicode file download doesn't work with Visual Studio, we need more debug output.
+
+	downloader.rb: quote base name
+
+	downloader.rb: fix typo, extra %
+
+	revert r67445, (r67446,) r67447
+
+	Debugging output is no longer needed because the problem has been fixed with r67449.
+
+	appveyor.yml: Use pre-generated headers and tables
+------------------------------------------------------------------------
+r67527 | naruse | 2019-04-14 00:14:02 +0900 (Sun, 14 Apr 2019) | 31 lines
+
+merge revision(s) 66745,67397,67398,67399,67400,67409,67410,67411,67412,67425,67426,67473,67474: [Backport #15742]
+
+	Bump version to date-2.0.0.
+
+	  I forgot to change it when Ruby 2.6.0 was released.
+
+	date_parse.c: extract Japanese era initials
+
+	* expand tabs.
+
+	date_parse.c: removed 'r' which is not in JIS X 0301 yet
+
+	Added tests for end of Heisei
+
+	date: use del_hash to extract an element destructively
+
+	* expand tabs.
+
+	date_parse.c: renamed JAPANESE prefix as JISX0301
+
+	date_parse.c: name JISX0301_DEFAULT_ERA
+
+	date: make zone a substring to copy encoding and taintedness
+
+	* expand tabs.
+
+	date_core.c: [DOC] Heisei will be assumed if no-era [ci skip]
+
+	date: support for Reiwa, new Japanese era
+
+	[Feature #15742]
+------------------------------------------------------------------------
+r67526 | svn | 2019-04-14 00:01:42 +0900 (Sun, 14 Apr 2019) | 1 line
+
+* 2019-04-14
+------------------------------------------------------------------------
+r67525 | naruse | 2019-04-14 00:01:39 +0900 (Sun, 14 Apr 2019) | 32 lines
+
+merge revision(s) 67439,67441,67453,67476: [Backport #15740]
+
+        change lib/unicode_normalize/tables.rb to single item per line to make diffs shorter
+
+        * template/unicode_norm_gen.tmpl: Change formatting of output to produce only a
+          single item (or range) for each line to make future diffs shorter and easier
+          to understand and check.
+
+        * lib/unicode_normalize/tables.rb: output of the above
+
+        update to Unicode Version 12.1.0 (beta)
+
+        Unicode Version 12.1.0 adds one single character, U+32FF SQUARE ERA NAME REIWA,
+        for the new Japanese era starting on May 1st. 12.1.0 will be finalized only on
+        May 7th, so we go with the beta version because further changes in the data we
+        need are highly unlikely, and we want to make sure Ruby is ready for the new era.
+
+        * common.mk: change UNICODE_VERSION to 12.1.0, UNICODE_BETA to YES
+
+        * enc/unicode/12.1.0, enc/unicode/12.1.0/casefold.h, enc/unicode/12.1.0/name2ctype.h:
+          add directory and generated data files for new version
+
+        * lib/unicode_normalize/tables.rb: update for new character
+
+        * test/ruby/test_regexp.rb: add test for character property age=12.1
+
+        * test/test_unicode_normalize.rb: add test for NFKC decomposition of new character
+
+        This (mostly) completes issue #15195.
+
+        remove Unicode 12.0.0 related directory and generated files
+
+------------------------------------------------------------------------
+r67524 | naruse | 2019-04-13 16:33:10 +0900 (Sat, 13 Apr 2019) | 9 lines
+
+merge revision(s) 67497,67498: [Backport #15760]
+
+	ext/openssl/ossl_bn.c (ossl_bn_initialize): get rid of SEGV
+
+	OpenSSL::BN.new(nil, 2) dumped core.
+
+	[ruby-core:92231] [Bug #15760]
+
+	* expand tabs.
+------------------------------------------------------------------------
+r67516 | naruse | 2019-04-11 21:09:34 +0900 (Thu, 11 Apr 2019) | 6 lines
+
+merge revision(s) 67466: [Backport #15755]
+
+	enumerator.c: force hash values fixable
+
+	* enumerator.c (arith_seq_hash): force hash values fixable on
+	  LLP64 environment.  [ruby-core:92190] [Bug #15755]
+------------------------------------------------------------------------
+r67515 | naruse | 2019-04-11 21:09:16 +0900 (Thu, 11 Apr 2019) | 6 lines
+
+merge revision(s) 67467: [Backport #15756]
+
+	range.c: force hash values fixable
+
+	* range.c (method_hash): force hash values fixable on LLP64
+	  environment.  [ruby-core:92191] [Bug #15756]
+------------------------------------------------------------------------
+r67514 | naruse | 2019-04-11 21:08:55 +0900 (Thu, 11 Apr 2019) | 6 lines
+
+merge revision(s) 67468: [Backport #15757]
+
+	range.c: force hash values fixable
+
+	* range.c (range_hash): force hash values fixable on LLP64
+	  environment.  [ruby-core:92194] [Bug #15757]
+------------------------------------------------------------------------
+r67353 | naruse | 2019-03-28 12:28:38 +0900 (Thu, 28 Mar 2019) | 7 lines
+
+merge revision(s) 67332: [Backport #15649]
+
+	dir.c: fix Dir.glob starts with brace
+
+	* dir.c (ruby_glob0): expand braces if a glob pattern starts with
+	  brace.
+	  [ruby-core:91728] [Bug #15649]
+------------------------------------------------------------------------
+r67352 | naruse | 2019-03-28 12:26:50 +0900 (Thu, 28 Mar 2019) | 3 lines
+
+merge revision(s) 67270: [Backport #15670]
+
+	dsym should be treated as string [ruby-core:91852] [Bug #15670]
+------------------------------------------------------------------------
+r67351 | naruse | 2019-03-28 12:24:57 +0900 (Thu, 28 Mar 2019) | 3 lines
+
+merge revision(s) 67247: [Backport #15666]
+
+	Guard out the test when it is run under root permission
+------------------------------------------------------------------------
+r67246 | naruse | 2019-03-14 06:55:03 +0900 (Thu, 14 Mar 2019) | 2 lines
+
+bump up teeny version to 2.6.3
+
 ------------------------------------------------------------------------
 r67231 | naruse | 2019-03-13 05:22:33 +0900 (Wed, 13 Mar 2019) | 2 lines
 
