@@ -1,0 +1,53 @@
+From: Sorah Fukumori <sorah@cookpad.com>
+Date: Sat, 13 Jul 2019 11:52:24 +0900
+Subject: port test_io.rb(test_select_leak) from trunk
+
+---
+ test/ruby/test_io.rb | 27 ++++++++++++++++++++++-----
+ 1 file changed, 22 insertions(+), 5 deletions(-)
+
+diff --git a/test/ruby/test_io.rb b/test/ruby/test_io.rb
+index 200db7a..b9c835c 100644
+--- a/test/ruby/test_io.rb
++++ b/test/ruby/test_io.rb
+@@ -3564,18 +3564,35 @@ def test_write_no_garbage
+   end
+ 
+   def test_select_leak
+-    assert_no_memory_leak([], <<-"end;", <<-"end;", rss: true, timeout: 60)
++    # avoid malloc arena explosion from glibc and jemalloc:
++    env = {
++      'MALLOC_ARENA_MAX' => '1',
++      'MALLOC_ARENA_TEST' => '1',
++      'MALLOC_CONF' => 'narenas:1',
++    }
++    assert_no_memory_leak([env], <<-"end;", <<-"end;", rss: true, timeout: 60)
+       r, w = IO.pipe
+       rset = [r]
+       wset = [w]
++      exc = StandardError.new(-"select used to leak on exception")
++      exc.set_backtrace([])
+       Thread.new { IO.select(rset, wset, nil, 0) }.join
+     end;
+-      20_000.times do
+-        th = Thread.new { IO.select(rset, wset) }
++      th = Thread.new do
++        Thread.handle_interrupt(StandardError => :on_blocking) do
++          begin
++            IO.select(rset, wset)
++          rescue
++            retry
++          end while true
++        end
++      end
++      50_000.times do
+         Thread.pass until th.stop?
+-        th.kill
+-        th.join
++        th.raise(exc)
+       end
++      th.kill
++      th.join
+     end;
+   end
+ end
