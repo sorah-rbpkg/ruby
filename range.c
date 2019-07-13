@@ -2,7 +2,7 @@
 
   range.c -
 
-  $Author: mrkn $
+  $Author: naruse $
   created at: Thu Aug 19 17:46:47 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -229,7 +229,7 @@ range_hash(VALUE range)
     hash = rb_hash_uint(hash, EXCL(range) << 24);
     hash = rb_hash_end(hash);
 
-    return LONG2FIX(hash);
+    return ST2FIX(hash);
 }
 
 static void

@@ -8,7 +8,7 @@
 
   $Idaemons: /home/cvs/rb/enumerator/enumerator.c,v 1.1.1.1 2001/07/15 10:12:48 knu Exp $
   $RoughId: enumerator.c,v 1.6 2003/07/27 11:03:24 nobu Exp $
-  $Id: enumerator.c 66953 2019-01-30 14:41:42Z naruse $
+  $Id: enumerator.c 67516 2019-04-11 12:09:34Z naruse $
 
 ************************************************/
 
@@ -3132,7 +3132,7 @@ arith_seq_hash(VALUE self)
     hash = rb_hash_uint(hash, NUM2LONG(v));
     hash = rb_hash_end(hash);
 
-    return LONG2FIX(hash);
+    return ST2FIX(hash);
 }
 
 #define NUM_GE(x, y) RTEST(rb_num_coerce_relop((x), (y), idGE))

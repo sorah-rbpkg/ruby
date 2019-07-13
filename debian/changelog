@@ -1,3 +1,9 @@
+ruby2.6 (2.6.3-0nkmi1~dist) unstable; urgency=medium
+
+  * 2.6.3
+
+ -- Sorah Fukumori <sorah@cookpad.com>  Fri, 12 Jul 2019 21:32:50 +0000
+
 ruby2.6 (2.6.2-0nkmi1~dist) unstable; urgency=medium
 
   * 2.6.2
