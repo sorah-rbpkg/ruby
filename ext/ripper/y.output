@@ -8,7 +8,7 @@ Grammar
 
     0 $accept: program "end-of-input"
 
-    1 $@1: /* empty */
+    1 $@1: %empty
 
     2 program: $@1 top_compstmt
 
@@ -21,7 +21,7 @@ Grammar
 
     8 top_stmt: stmt
 
-    9 $@2: /* empty */
+    9 $@2: %empty
 
    10 top_stmt: keyword_BEGIN $@2 '{' top_compstmt '}'
 
@@ -36,11 +36,11 @@ Grammar
 
    17 stmt_or_begin: stmt
 
-   18 $@3: /* empty */
+   18 $@3: %empty
 
    19 stmt_or_begin: keyword_BEGIN $@3 '{' top_compstmt '}'
 
-   20 $@4: /* empty */
+   20 $@4: %empty
 
    21 stmt: keyword_alias fitem $@4 fitem
    22     | keyword_alias tGVAR tGVAR
@@ -87,7 +87,7 @@ Grammar
    57 block_command: block_call
    58              | block_call call_op2 operation2 command_args
 
-   59 @5: /* empty */
+   59 @5: %empty
 
    60 cmd_brace_block: "{ arg" @5 brace_body '}'
 
@@ -172,7 +172,7 @@ Grammar
 
   125 undef_list: fitem
 
-  126 $@6: /* empty */
+  126 $@6: %empty
 
   127 undef_list: undef_list ',' $@6 fitem
 
@@ -289,7 +289,7 @@ Grammar
   236    | arg "&&" arg
   237    | arg "||" arg
 
-  238 $@7: /* empty */
+  238 $@7: %empty
 
   239 arg: keyword_defined opt_nl $@7 arg
   240    | arg '?' arg opt_nl ':' arg
@@ -322,7 +322,7 @@ Grammar
   260          | args ',' assocs opt_block_arg
   261          | block_arg
 
-  262 @8: /* empty */
+  262 @8: %empty
 
   263 command_args: @8 call_args
 
@@ -355,17 +355,17 @@ Grammar
   285        | backref
   286        | tFID
 
-  287 @9: /* empty */
+  287 @9: %empty
 
   288 primary: k_begin @9 bodystmt k_end
 
-  289 $@10: /* empty */
+  289 $@10: %empty
 
   290 primary: "( arg" $@10 rparen
 
-  291 $@11: /* empty */
+  291 $@11: %empty
 
-  292 $@12: /* empty */
+  292 $@12: %empty
 
   293 primary: "( arg" $@11 stmt $@12 rparen
   294        | "(" compstmt ')'
@@ -378,7 +378,7 @@ Grammar
   301        | keyword_yield '(' rparen
   302        | keyword_yield
 
-  303 $@13: /* empty */
+  303 $@13: %empty
 
   304 primary: keyword_defined opt_nl '(' $@13 expr rparen
   305        | keyword_not '(' expr rparen
@@ -390,47 +390,47 @@ Grammar
   311        | k_if expr_value then compstmt if_tail k_end
   312        | k_unless expr_value then compstmt opt_else k_end
 
-  313 $@14: /* empty */
+  313 $@14: %empty
 
-  314 $@15: /* empty */
+  314 $@15: %empty
 
   315 primary: k_while $@14 expr_value do $@15 compstmt k_end
 
-  316 $@16: /* empty */
+  316 $@16: %empty
 
-  317 $@17: /* empty */
+  317 $@17: %empty
 
   318 primary: k_until $@16 expr_value do $@17 compstmt k_end
   319        | k_case expr_value opt_terms case_body k_end
   320        | k_case opt_terms case_body k_end
 
-  321 $@18: /* empty */
+  321 $@18: %empty
 
-  322 $@19: /* empty */
+  322 $@19: %empty
 
   323 primary: k_for for_var keyword_in $@18 expr_value do $@19 compstmt k_end
 
-  324 @20: /* empty */
+  324 @20: %empty
 
   325 primary: k_class cpath superclass @20 bodystmt k_end
 
-  326 @21: /* empty */
+  326 @21: %empty
 
   327 primary: k_class "<<" expr @21 term bodystmt k_end
 
-  328 @22: /* empty */
+  328 @22: %empty
 
   329 primary: k_module cpath @22 bodystmt k_end
 
-  330 @23: /* empty */
+  330 @23: %empty
 
-  331 @24: /* empty */
+  331 @24: %empty
 
   332 primary: k_def fname @23 @24 f_arglist bodystmt k_end
 
-  333 @25: /* empty */
+  333 @25: %empty
 
-  334 @26: /* empty */
+  334 @26: %empty
 
   335 primary: k_def singleton dot_or_colon @25 fname @26 f_arglist bodystmt k_end
   336        | keyword_break
@@ -500,7 +500,7 @@ Grammar
   379                | f_block_arg
 
   380 opt_block_args_tail: ',' block_args_tail
-  381                    | /* empty */
+  381                    | %empty
 
   382 block_param: f_arg ',' f_block_optarg ',' f_rest_arg opt_block_args_tail
   383            | f_arg ',' f_block_optarg ',' f_rest_arg ',' f_arg opt_block_args_tail
@@ -534,13 +534,13 @@ Grammar
   406 bvar: tIDENTIFIER
   407     | f_bad_arg
 
-  408 @27: /* empty */
+  408 @27: %empty
 
-  409 @28: /* empty */
+  409 @28: %empty
 
-  410 @29: /* empty */
+  410 @29: %empty
 
-  411 @30: /* empty */
+  411 @30: %empty
 
   412 lambda: @27 @28 f_larglist @29 @30 lambda_body
 
@@ -550,7 +550,7 @@ Grammar
   415 lambda_body: tLAMBEG compstmt '}'
   416            | keyword_do_LAMBDA compstmt k_end
 
-  417 @31: /* empty */
+  417 @31: %empty
 
   418 do_block: keyword_do_block @31 do_body keyword_end
 
@@ -561,43 +561,43 @@ Grammar
 
   423 method_call: fcall paren_args
 
-  424 @32: /* empty */
+  424 @32: %empty
 
   425 method_call: primary_value call_op operation2 @32 opt_paren_args
 
-  426 @33: /* empty */
+  426 @33: %empty
 
   427 method_call: primary_value "::" operation2 @33 paren_args
   428            | primary_value "::" operation3
 
-  429 @34: /* empty */
+  429 @34: %empty
 
   430 method_call: primary_value call_op @34 paren_args
 
-  431 @35: /* empty */
+  431 @35: %empty
 
   432 method_call: primary_value "::" @35 paren_args
   433            | keyword_super paren_args
   434            | keyword_super
   435            | primary_value '[' opt_call_args rbracket
 
-  436 @36: /* empty */
+  436 @36: %empty
 
   437 brace_block: '{' @36 brace_body '}'
 
-  438 @37: /* empty */
+  438 @37: %empty
 
   439 brace_block: keyword_do @37 do_body keyword_end
 
-  440 @38: /* empty */
+  440 @38: %empty
 
-  441 @39: /* empty */
+  441 @39: %empty
 
   442 brace_body: @38 @39 opt_block_param compstmt
 
-  443 @40: /* empty */
+  443 @40: %empty
 
-  444 @41: /* empty */
+  444 @41: %empty
 
   445 do_body: @40 @41 opt_block_param compstmt
 
@@ -638,7 +638,7 @@ Grammar
   468 words: tWORDS_BEG ' ' tSTRING_END
   469      | tWORDS_BEG word_list tSTRING_END
 
-  470 word_list: /* empty */
+  470 word_list: %empty
   471          | word_list word ' '
 
   472 word: string_content
@@ -647,7 +647,7 @@ Grammar
   474 symbols: tSYMBOLS_BEG ' ' tSTRING_END
   475        | tSYMBOLS_BEG symbol_list tSTRING_END
 
-  476 symbol_list: /* empty */
+  476 symbol_list: %empty
   477            | symbol_list word ' '
 
   478 qwords: tQWORDS_BEG ' ' tSTRING_END
@@ -656,36 +656,36 @@ Grammar
   480 qsymbols: tQSYMBOLS_BEG ' ' tSTRING_END
   481         | tQSYMBOLS_BEG qsym_list tSTRING_END
 
-  482 qword_list: /* empty */
+  482 qword_list: %empty
   483           | qword_list tSTRING_CONTENT ' '
 
-  484 qsym_list: /* empty */
+  484 qsym_list: %empty
   485          | qsym_list tSTRING_CONTENT ' '
 
-  486 string_contents: /* empty */
+  486 string_contents: %empty
   487                | string_contents string_content
 
-  488 xstring_contents: /* empty */
+  488 xstring_contents: %empty
   489                 | xstring_contents string_content
 
-  490 regexp_contents: /* empty */
+  490 regexp_contents: %empty
   491                | regexp_contents string_content
 
   492 string_content: tSTRING_CONTENT
 
-  493 @42: /* empty */
+  493 @42: %empty
 
   494 string_content: tSTRING_DVAR @42 string_dvar
 
-  495 @43: /* empty */
+  495 @43: %empty
 
-  496 @44: /* empty */
+  496 @44: %empty
 
-  497 @45: /* empty */
+  497 @45: %empty
 
-  498 @46: /* empty */
+  498 @46: %empty
 
-  499 @47: /* empty */
+  499 @47: %empty
 
   500 string_content: tSTRING_DBEG @43 @44 @45 @46 @47 compstmt tSTRING_DEND
 
@@ -734,14 +734,14 @@ Grammar
   533 backref: tNTH_REF
   534        | tBACK_REF
 
-  535 $@48: /* empty */
+  535 $@48: %empty
 
   536 superclass: '<' $@48 expr_value term
-  537           | /* empty */
+  537           | %empty
 
   538 f_arglist: '(' f_args rparen
 
-  539 @49: /* empty */
+  539 @49: %empty
 
   540 f_arglist: @49 f_args term
 
@@ -751,7 +751,7 @@ Grammar
   544          | f_block_arg
 
   545 opt_args_tail: ',' args_tail
-  546              | /* empty */
+  546              | %empty
 
   547 f_args: f_arg ',' f_optarg ',' f_rest_arg opt_args_tail
   548       | f_arg ',' f_optarg ',' f_rest_arg ',' f_arg opt_args_tail
@@ -767,7 +767,7 @@ Grammar
   558       | f_rest_arg opt_args_tail
   559       | f_rest_arg ',' f_arg opt_args_tail
   560       | args_tail
-  561       | /* empty */
+  561       | %empty
 
   562 f_bad_arg: tCONSTANT
   563          | tIVAR
@@ -831,7 +831,7 @@ Grammar
 
   601 singleton: var_ref
 
-  602 $@50: /* empty */
+  602 $@50: %empty
 
   603 singleton: '(' $@50 expr rparen
 
@@ -868,17 +868,17 @@ Grammar
   626 call_op2: call_op
   627         | "::"
 
-  628 opt_terms: /* empty */
+  628 opt_terms: %empty
   629          | terms
 
-  630 opt_nl: /* empty */
+  630 opt_nl: %empty
   631       | '\n'
 
   632 rparen: opt_nl ')'
 
   633 rbracket: opt_nl ']'
 
-  634 trailer: /* empty */
+  634 trailer: %empty
   635        | '\n'
   636        | ','
 
@@ -888,7 +888,7 @@ Grammar
   639 terms: term
   640      | terms ';'
 
-  641 none: /* empty */
+  641 none: %empty
 
 
 Terminals, with rules where they appear
@@ -1517,7 +1517,7 @@ none (362)
     457 600 604
 
 
-state 0
+State 0
 
     0 $accept: . program "end-of-input"
 
@@ -1527,14 +1527,14 @@ state 0
     $@1      go to state 2
 
 
-state 1
+State 1
 
     0 $accept: program . "end-of-input"
 
     "end-of-input"  shift, and go to state 3
 
 
-state 2
+State 2
 
     2 program: $@1 . top_compstmt
 
@@ -1661,14 +1661,14 @@ state 2
     none              go to state 119
 
 
-state 3
+State 3
 
     0 $accept: program "end-of-input" .
 
     $default  accept
 
 
-state 4
+State 4
 
     7 top_stmts: error . top_stmt
 
@@ -1787,28 +1787,28 @@ state 4
     operation         go to state 118
 
 
-state 5
+State 5
 
   348 k_class: keyword_class .
 
     $default  reduce using rule 348 (k_class)
 
 
-state 6
+State 6
 
   349 k_module: keyword_module .
 
     $default  reduce using rule 349 (k_module)
 
 
-state 7
+State 7
 
   350 k_def: keyword_def .
 
     $default  reduce using rule 350 (k_def)
 
 
-state 8
+State 8
 
    25 stmt: keyword_undef . undef_list
 
@@ -1898,56 +1898,56 @@ state 8
     dsym        go to state 202
 
 
-state 9
+State 9
 
   341 k_begin: keyword_begin .
 
     $default  reduce using rule 341 (k_begin)
 
 
-state 10
+State 10
 
   342 k_if: keyword_if .
 
     $default  reduce using rule 342 (k_if)
 
 
-state 11
+State 11
 
   343 k_unless: keyword_unless .
 
     $default  reduce using rule 343 (k_unless)
 
 
-state 12
+State 12
 
   346 k_case: keyword_case .
 
     $default  reduce using rule 346 (k_case)
 
 
-state 13
+State 13
 
   344 k_while: keyword_while .
 
     $default  reduce using rule 344 (k_while)
 
 
-state 14
+State 14
 
   345 k_until: keyword_until .
 
     $default  reduce using rule 345 (k_until)
 
 
-state 15
+State 15
 
   347 k_for: keyword_for .
 
     $default  reduce using rule 347 (k_for)
 
 
-state 16
+State 16
 
    71 command: keyword_break . call_args
   336 primary: keyword_break .
@@ -2062,7 +2062,7 @@ state 16
     operation         go to state 118
 
 
-state 17
+State 17
 
    72 command: keyword_next . call_args
   337 primary: keyword_next .
@@ -2177,21 +2177,21 @@ state 17
     operation         go to state 118
 
 
-state 18
+State 18
 
   338 primary: keyword_redo .
 
     $default  reduce using rule 338 (primary)
 
 
-state 19
+State 19
 
   339 primary: keyword_retry .
 
     $default  reduce using rule 339 (primary)
 
 
-state 20
+State 20
 
    70 command: keyword_return . call_args
   299 primary: keyword_return .
@@ -2306,7 +2306,7 @@ state 20
     operation         go to state 118
 
 
-state 21
+State 21
 
    69 command: keyword_yield . command_args
   300 primary: keyword_yield . '(' call_args rparen
@@ -2377,7 +2377,7 @@ state 21
     @8            go to state 230
 
 
-state 22
+State 22
 
    68 command: keyword_super . command_args
   433 method_call: keyword_super . paren_args
@@ -2450,35 +2450,35 @@ state 22
     @8            go to state 230
 
 
-state 23
+State 23
 
   523 keyword_variable: keyword_self .
 
     $default  reduce using rule 523 (keyword_variable)
 
 
-state 24
+State 24
 
   522 keyword_variable: keyword_nil .
 
     $default  reduce using rule 522 (keyword_variable)
 
 
-state 25
+State 25
 
   524 keyword_variable: keyword_true .
 
     $default  reduce using rule 524 (keyword_variable)
 
 
-state 26
+State 26
 
   525 keyword_variable: keyword_false .
 
     $default  reduce using rule 525 (keyword_variable)
 
 
-state 27
+State 27
 
    51 expr: keyword_not . opt_nl expr
   305 primary: keyword_not . '(' expr rparen
@@ -2492,7 +2492,7 @@ state 27
     opt_nl  go to state 236
 
 
-state 28
+State 28
 
    21 stmt: keyword_alias . fitem $@4 fitem
    22     | keyword_alias . tGVAR tGVAR
@@ -2585,7 +2585,7 @@ state 28
     dsym      go to state 202
 
 
-state 29
+State 29
 
   239 arg: keyword_defined . opt_nl $@7 arg
   304 primary: keyword_defined . opt_nl '(' $@13 expr rparen
@@ -2597,7 +2597,7 @@ state 29
     opt_nl  go to state 239
 
 
-state 30
+State 30
 
    10 top_stmt: keyword_BEGIN . $@2 '{' top_compstmt '}'
 
@@ -2606,35 +2606,35 @@ state 30
     $@2  go to state 240
 
 
-state 31
+State 31
 
    31 stmt: keyword_END . '{' compstmt '}'
 
     '{'  shift, and go to state 241
 
 
-state 32
+State 32
 
   527 keyword_variable: keyword__LINE__ .
 
     $default  reduce using rule 527 (keyword_variable)
 
 
-state 33
+State 33
 
   526 keyword_variable: keyword__FILE__ .
 
     $default  reduce using rule 526 (keyword_variable)
 
 
-state 34
+State 34
 
   528 keyword_variable: keyword__ENCODING__ .
 
     $default  reduce using rule 528 (keyword_variable)
 
 
-state 35
+State 35
 
   517 user_variable: tIDENTIFIER .
   612 operation: tIDENTIFIER .
@@ -2704,7 +2704,7 @@ state 35
     $default           reduce using rule 612 (operation)
 
 
-state 36
+State 36
 
   286 primary: tFID .
   614 operation: tFID .
@@ -2771,21 +2771,21 @@ state 36
     $default           reduce using rule 614 (operation)
 
 
-state 37
+State 37
 
   519 user_variable: tGVAR .
 
     $default  reduce using rule 519 (user_variable)
 
 
-state 38
+State 38
 
   518 user_variable: tIVAR .
 
     $default  reduce using rule 518 (user_variable)
 
 
-state 39
+State 39
 
   520 user_variable: tCONSTANT .
   613 operation: tCONSTANT .
@@ -2855,63 +2855,63 @@ state 39
     $default           reduce using rule 613 (operation)
 
 
-state 40
+State 40
 
   521 user_variable: tCVAR .
 
     $default  reduce using rule 521 (user_variable)
 
 
-state 41
+State 41
 
   513 simple_numeric: tINTEGER .
 
     $default  reduce using rule 513 (simple_numeric)
 
 
-state 42
+State 42
 
   514 simple_numeric: tFLOAT .
 
     $default  reduce using rule 514 (simple_numeric)
 
 
-state 43
+State 43
 
   515 simple_numeric: tRATIONAL .
 
     $default  reduce using rule 515 (simple_numeric)
 
 
-state 44
+State 44
 
   516 simple_numeric: tIMAGINARY .
 
     $default  reduce using rule 516 (simple_numeric)
 
 
-state 45
+State 45
 
   462 string: tCHAR .
 
     $default  reduce using rule 462 (string)
 
 
-state 46
+State 46
 
   533 backref: tNTH_REF .
 
     $default  reduce using rule 533 (backref)
 
 
-state 47
+State 47
 
   534 backref: tBACK_REF .
 
     $default  reduce using rule 534 (backref)
 
 
-state 48
+State 48
 
   217 arg: "unary+" . arg
 
@@ -3012,7 +3012,7 @@ state 48
     operation         go to state 118
 
 
-state 49
+State 49
 
   218 arg: "unary-" . arg
 
@@ -3113,7 +3113,7 @@ state 49
     operation         go to state 118
 
 
-state 50
+State 50
 
   100 mlhs_node: ":: at EXPR_BEG" . tCONSTANT
   109 lhs: ":: at EXPR_BEG" . tCONSTANT
@@ -3123,7 +3123,7 @@ state 50
     tCONSTANT  shift, and go to state 251
 
 
-state 51
+State 51
 
    74 mlhs: "(" . mlhs_inner rparen
    88 mlhs_item: "(" . mlhs_inner rparen
@@ -3253,7 +3253,7 @@ state 51
     none              go to state 261
 
 
-state 52
+State 52
 
   290 primary: "( arg" . $@10 rparen
   293        | "( arg" . $@11 stmt $@12 rparen
@@ -3266,7 +3266,7 @@ state 52
     $@11  go to state 263
 
 
-state 53
+State 53
 
   297 primary: "[" . aref_args ']'
 
@@ -3378,7 +3378,7 @@ state 53
     none              go to state 267
 
 
-state 54
+State 54
 
   298 primary: "{" . assoc_list '}'
 
@@ -3488,7 +3488,7 @@ state 54
     none              go to state 271
 
 
-state 55
+State 55
 
    83 mlhs_basic: "*" . mlhs_node
    84           | "*" . mlhs_node ',' mlhs_post
@@ -3589,7 +3589,7 @@ state 55
     operation         go to state 118
 
 
-state 56
+State 56
 
   310 primary: "->" . lambda
 
@@ -3599,7 +3599,7 @@ state 56
     @27     go to state 283
 
 
-state 57
+State 57
 
   505 symbol: tSYMBEG . sym
   510 dsym: tSYMBEG . xstring_contents tSTRING_END
@@ -3691,7 +3691,7 @@ state 57
     sym               go to state 289
 
 
-state 58
+State 58
 
   465 string1: tSTRING_BEG . string_contents tSTRING_END
 
@@ -3700,7 +3700,7 @@ state 58
     string_contents  go to state 290
 
 
-state 59
+State 59
 
   466 xstring: tXSTRING_BEG . xstring_contents tSTRING_END
 
@@ -3709,7 +3709,7 @@ state 59
     xstring_contents  go to state 291
 
 
-state 60
+State 60
 
   467 regexp: tREGEXP_BEG . regexp_contents tREGEXP_END
 
@@ -3718,7 +3718,7 @@ state 60
     regexp_contents  go to state 292
 
 
-state 61
+State 61
 
   468 words: tWORDS_BEG . ' ' tSTRING_END
   469      | tWORDS_BEG . word_list tSTRING_END
@@ -3730,7 +3730,7 @@ state 61
     word_list  go to state 294
 
 
-state 62
+State 62
 
   478 qwords: tQWORDS_BEG . ' ' tSTRING_END
   479       | tQWORDS_BEG . qword_list tSTRING_END
@@ -3742,7 +3742,7 @@ state 62
     qword_list  go to state 296
 
 
-state 63
+State 63
 
   474 symbols: tSYMBOLS_BEG . ' ' tSTRING_END
   475        | tSYMBOLS_BEG . symbol_list tSTRING_END
@@ -3754,7 +3754,7 @@ state 63
     symbol_list  go to state 298
 
 
-state 64
+State 64
 
   480 qsymbols: tQSYMBOLS_BEG . ' ' tSTRING_END
   481         | tQSYMBOLS_BEG . qsym_list tSTRING_END
@@ -3766,7 +3766,7 @@ state 64
     qsym_list  go to state 300
 
 
-state 65
+State 65
 
   216 arg: tUMINUS_NUM . simple_numeric "**" arg
   512 numeric: tUMINUS_NUM . simple_numeric
@@ -3779,7 +3779,7 @@ state 65
     simple_numeric  go to state 301
 
 
-state 66
+State 66
 
    52 expr: '!' . command_call
   232 arg: '!' . arg
@@ -3885,7 +3885,7 @@ state 66
     operation         go to state 118
 
 
-state 67
+State 67
 
   233 arg: '~' . arg
 
@@ -3986,14 +3986,14 @@ state 67
     operation         go to state 118
 
 
-state 68
+State 68
 
     2 program: $@1 top_compstmt .
 
     $default  reduce using rule 2 (program)
 
 
-state 69
+State 69
 
     3 top_compstmt: top_stmts . opt_terms
     6 top_stmts: top_stmts . terms top_stmt
@@ -4008,14 +4008,14 @@ state 69
     terms      go to state 309
 
 
-state 70
+State 70
 
     5 top_stmts: top_stmt .
 
     $default  reduce using rule 5 (top_stmts)
 
 
-state 71
+State 71
 
     8 top_stmt: stmt .
    26 stmt: stmt . modifier_if expr_value
@@ -4033,14 +4033,14 @@ state 71
     $default  reduce using rule 8 (top_stmt)
 
 
-state 72
+State 72
 
    32 stmt: command_asgn .
 
     $default  reduce using rule 32 (stmt)
 
 
-state 73
+State 73
 
    36 stmt: expr .
    49 expr: expr . keyword_and expr
@@ -4052,21 +4052,21 @@ state 73
     $default  reduce using rule 36 (stmt)
 
 
-state 74
+State 74
 
    48 expr: command_call .
 
     $default  reduce using rule 48 (expr)
 
 
-state 75
+State 75
 
    56 command_call: block_command .
 
     $default  reduce using rule 56 (command_call)
 
 
-state 76
+State 76
 
    62 command: fcall . command_args
    63        | fcall . command_args cmd_brace_block
@@ -4085,7 +4085,7 @@ state 76
     brace_block   go to state 321
 
 
-state 77
+State 77
 
    55 command_call: command .
   419 block_call: command . do_block
@@ -4097,7 +4097,7 @@ state 77
     do_block  go to state 323
 
 
-state 78
+State 78
 
    33 stmt: mlhs . '=' command_call
    35     | mlhs . '=' mrhs_arg
@@ -4105,21 +4105,21 @@ state 78
     '='  shift, and go to state 324
 
 
-state 79
+State 79
 
    73 mlhs: mlhs_basic .
 
     $default  reduce using rule 73 (mlhs)
 
 
-state 80
+State 80
 
    89 mlhs_head: mlhs_item . ','
 
     ','  shift, and go to state 325
 
 
-state 81
+State 81
 
    77 mlhs_basic: mlhs_head .
    78           | mlhs_head . mlhs_item
@@ -4224,14 +4224,14 @@ state 81
     operation         go to state 118
 
 
-state 82
+State 82
 
    87 mlhs_item: mlhs_node .
 
     $default  reduce using rule 87 (mlhs_item)
 
 
-state 83
+State 83
 
    34 stmt: lhs . '=' mrhs
    37 command_asgn: lhs . '=' command_rhs
@@ -4240,7 +4240,7 @@ state 83
     '='  shift, and go to state 329
 
 
-state 84
+State 84
 
    53 expr: arg .
   208 arg: arg . ".." arg
@@ -4300,7 +4300,7 @@ state 84
     $default  reduce using rule 53 (expr)
 
 
-state 85
+State 85
 
   241 arg: primary .
   340 primary_value: primary .
@@ -4312,7 +4312,7 @@ state 85
     $default  reduce using rule 241 (arg)
 
 
-state 86
+State 86
 
    39 command_asgn: primary_value . '[' opt_call_args rbracket tOP_ASGN command_rhs
    40             | primary_value . call_op tIDENTIFIER tOP_ASGN command_rhs
@@ -4354,7 +4354,7 @@ state 86
     call_op  go to state 360
 
 
-state 87
+State 87
 
   288 primary: k_begin . @9 bodystmt k_end
 
@@ -4363,7 +4363,7 @@ state 87
     @9  go to state 361
 
 
-state 88
+State 88
 
   311 primary: k_if . expr_value then compstmt if_tail k_end
 
@@ -4470,7 +4470,7 @@ state 88
     operation         go to state 118
 
 
-state 89
+State 89
 
   312 primary: k_unless . expr_value then compstmt opt_else k_end
 
@@ -4577,7 +4577,7 @@ state 89
     operation         go to state 118
 
 
-state 90
+State 90
 
   315 primary: k_while . $@14 expr_value do $@15 compstmt k_end
 
@@ -4586,7 +4586,7 @@ state 90
     $@14  go to state 365
 
 
-state 91
+State 91
 
   318 primary: k_until . $@16 expr_value do $@17 compstmt k_end
 
@@ -4595,7 +4595,7 @@ state 91
     $@16  go to state 366
 
 
-state 92
+State 92
 
   319 primary: k_case . expr_value opt_terms case_body k_end
   320        | k_case . opt_terms case_body k_end
@@ -4710,7 +4710,7 @@ state 92
     terms             go to state 369
 
 
-state 93
+State 93
 
   323 primary: k_for . for_var keyword_in $@18 expr_value do $@19 compstmt k_end
 
@@ -4812,7 +4812,7 @@ state 93
     operation         go to state 118
 
 
-state 94
+State 94
 
   325 primary: k_class . cpath superclass @20 bodystmt k_end
   327        | k_class . "<<" expr @21 term bodystmt k_end
@@ -4910,7 +4910,7 @@ state 94
     operation         go to state 118
 
 
-state 95
+State 95
 
   329 primary: k_module . cpath @22 bodystmt k_end
 
@@ -5006,7 +5006,7 @@ state 95
     operation         go to state 118
 
 
-state 96
+State 96
 
   332 primary: k_def . fname @23 @24 f_arglist bodystmt k_end
   335        | k_def . singleton dot_or_colon @25 fname @26 f_arglist bodystmt k_end
@@ -5099,7 +5099,7 @@ state 96
     singleton         go to state 401
 
 
-state 97
+State 97
 
    57 block_command: block_call .
    58              | block_call . call_op2 operation2 command_args
@@ -5117,7 +5117,7 @@ state 97
     call_op2  go to state 404
 
 
-state 98
+State 98
 
   308 primary: method_call .
   309        | method_call . brace_block
@@ -5130,21 +5130,21 @@ state 98
     brace_block  go to state 405
 
 
-state 99
+State 99
 
   276 primary: literal .
 
     $default  reduce using rule 276 (primary)
 
 
-state 100
+State 100
 
   277 primary: strings .
 
     $default  reduce using rule 277 (primary)
 
 
-state 101
+State 101
 
   461 strings: string .
   464 string: string . string1
@@ -5156,84 +5156,84 @@ state 101
     string1  go to state 406
 
 
-state 102
+State 102
 
   463 string: string1 .
 
     $default  reduce using rule 463 (string)
 
 
-state 103
+State 103
 
   278 primary: xstring .
 
     $default  reduce using rule 278 (primary)
 
 
-state 104
+State 104
 
   279 primary: regexp .
 
     $default  reduce using rule 279 (primary)
 
 
-state 105
+State 105
 
   280 primary: words .
 
     $default  reduce using rule 280 (primary)
 
 
-state 106
+State 106
 
   282 primary: symbols .
 
     $default  reduce using rule 282 (primary)
 
 
-state 107
+State 107
 
   281 primary: qwords .
 
     $default  reduce using rule 281 (primary)
 
 
-state 108
+State 108
 
   283 primary: qsymbols .
 
     $default  reduce using rule 283 (primary)
 
 
-state 109
+State 109
 
   459 literal: symbol .
 
     $default  reduce using rule 459 (literal)
 
 
-state 110
+State 110
 
   460 literal: dsym .
 
     $default  reduce using rule 460 (literal)
 
 
-state 111
+State 111
 
   458 literal: numeric .
 
     $default  reduce using rule 458 (literal)
 
 
-state 112
+State 112
 
   511 numeric: simple_numeric .
 
     $default  reduce using rule 511 (numeric)
 
 
-state 113
+State 113
 
    93 mlhs_node: user_variable .
   102 lhs: user_variable .
@@ -5246,7 +5246,7 @@ state 113
     $default  reduce using rule 529 (var_ref)
 
 
-state 114
+State 114
 
    94 mlhs_node: keyword_variable .
   103 lhs: keyword_variable .
@@ -5259,14 +5259,14 @@ state 114
     $default  reduce using rule 530 (var_ref)
 
 
-state 115
+State 115
 
   284 primary: var_ref .
 
     $default  reduce using rule 284 (primary)
 
 
-state 116
+State 116
 
    38 command_asgn: var_lhs . tOP_ASGN command_rhs
   200 arg: var_lhs . tOP_ASGN arg_rhs
@@ -5274,7 +5274,7 @@ state 116
     tOP_ASGN  shift, and go to state 407
 
 
-state 117
+State 117
 
    44 command_asgn: backref . tOP_ASGN command_rhs
   101 mlhs_node: backref .
@@ -5289,567 +5289,567 @@ state 117
     $default  reduce using rule 285 (primary)
 
 
-state 118
+State 118
 
    61 fcall: operation .
 
     $default  reduce using rule 61 (fcall)
 
 
-state 119
+State 119
 
     4 top_stmts: none .
 
     $default  reduce using rule 4 (top_stmts)
 
 
-state 120
+State 120
 
     7 top_stmts: error top_stmt .
 
     $default  reduce using rule 7 (top_stmts)
 
 
-state 121
+State 121
 
   168 reswords: keyword_class .
 
     $default  reduce using rule 168 (reswords)
 
 
-state 122
+State 122
 
   179 reswords: keyword_module .
 
     $default  reduce using rule 179 (reswords)
 
 
-state 123
+State 123
 
   169 reswords: keyword_def .
 
     $default  reduce using rule 169 (reswords)
 
 
-state 124
+State 124
 
   192 reswords: keyword_undef .
 
     $default  reduce using rule 192 (reswords)
 
 
-state 125
+State 125
 
   165 reswords: keyword_begin .
 
     $default  reduce using rule 165 (reswords)
 
 
-state 126
+State 126
 
   185 reswords: keyword_rescue .
 
     $default  reduce using rule 185 (reswords)
 
 
-state 127
+State 127
 
   175 reswords: keyword_ensure .
 
     $default  reduce using rule 175 (reswords)
 
 
-state 128
+State 128
 
   174 reswords: keyword_end .
 
     $default  reduce using rule 174 (reswords)
 
 
-state 129
+State 129
 
   195 reswords: keyword_if .
 
     $default  reduce using rule 195 (reswords)
 
 
-state 130
+State 130
 
   196 reswords: keyword_unless .
 
     $default  reduce using rule 196 (reswords)
 
 
-state 131
+State 131
 
   190 reswords: keyword_then .
 
     $default  reduce using rule 190 (reswords)
 
 
-state 132
+State 132
 
   173 reswords: keyword_elsif .
 
     $default  reduce using rule 173 (reswords)
 
 
-state 133
+State 133
 
   172 reswords: keyword_else .
 
     $default  reduce using rule 172 (reswords)
 
 
-state 134
+State 134
 
   167 reswords: keyword_case .
 
     $default  reduce using rule 167 (reswords)
 
 
-state 135
+State 135
 
   193 reswords: keyword_when .
 
     $default  reduce using rule 193 (reswords)
 
 
-state 136
+State 136
 
   197 reswords: keyword_while .
 
     $default  reduce using rule 197 (reswords)
 
 
-state 137
+State 137
 
   198 reswords: keyword_until .
 
     $default  reduce using rule 198 (reswords)
 
 
-state 138
+State 138
 
   177 reswords: keyword_for .
 
     $default  reduce using rule 177 (reswords)
 
 
-state 139
+State 139
 
   166 reswords: keyword_break .
 
     $default  reduce using rule 166 (reswords)
 
 
-state 140
+State 140
 
   180 reswords: keyword_next .
 
     $default  reduce using rule 180 (reswords)
 
 
-state 141
+State 141
 
   184 reswords: keyword_redo .
 
     $default  reduce using rule 184 (reswords)
 
 
-state 142
+State 142
 
   186 reswords: keyword_retry .
 
     $default  reduce using rule 186 (reswords)
 
 
-state 143
+State 143
 
   178 reswords: keyword_in .
 
     $default  reduce using rule 178 (reswords)
 
 
-state 144
+State 144
 
   171 reswords: keyword_do .
 
     $default  reduce using rule 171 (reswords)
 
 
-state 145
+State 145
 
   187 reswords: keyword_return .
 
     $default  reduce using rule 187 (reswords)
 
 
-state 146
+State 146
 
   194 reswords: keyword_yield .
 
     $default  reduce using rule 194 (reswords)
 
 
-state 147
+State 147
 
   189 reswords: keyword_super .
 
     $default  reduce using rule 189 (reswords)
 
 
-state 148
+State 148
 
   188 reswords: keyword_self .
 
     $default  reduce using rule 188 (reswords)
 
 
-state 149
+State 149
 
   181 reswords: keyword_nil .
 
     $default  reduce using rule 181 (reswords)
 
 
-state 150
+State 150
 
   191 reswords: keyword_true .
 
     $default  reduce using rule 191 (reswords)
 
 
-state 151
+State 151
 
   176 reswords: keyword_false .
 
     $default  reduce using rule 176 (reswords)
 
 
-state 152
+State 152
 
   164 reswords: keyword_and .
 
     $default  reduce using rule 164 (reswords)
 
 
-state 153
+State 153
 
   183 reswords: keyword_or .
 
     $default  reduce using rule 183 (reswords)
 
 
-state 154
+State 154
 
   182 reswords: keyword_not .
 
     $default  reduce using rule 182 (reswords)
 
 
-state 155
+State 155
 
   163 reswords: keyword_alias .
 
     $default  reduce using rule 163 (reswords)
 
 
-state 156
+State 156
 
   170 reswords: keyword_defined .
 
     $default  reduce using rule 170 (reswords)
 
 
-state 157
+State 157
 
   161 reswords: keyword_BEGIN .
 
     $default  reduce using rule 161 (reswords)
 
 
-state 158
+State 158
 
   162 reswords: keyword_END .
 
     $default  reduce using rule 162 (reswords)
 
 
-state 159
+State 159
 
   158 reswords: keyword__LINE__ .
 
     $default  reduce using rule 158 (reswords)
 
 
-state 160
+State 160
 
   159 reswords: keyword__FILE__ .
 
     $default  reduce using rule 159 (reswords)
 
 
-state 161
+State 161
 
   160 reswords: keyword__ENCODING__ .
 
     $default  reduce using rule 160 (reswords)
 
 
-state 162
+State 162
 
   116 fname: tIDENTIFIER .
 
     $default  reduce using rule 116 (fname)
 
 
-state 163
+State 163
 
   118 fname: tFID .
 
     $default  reduce using rule 118 (fname)
 
 
-state 164
+State 164
 
   117 fname: tCONSTANT .
 
     $default  reduce using rule 117 (fname)
 
 
-state 165
+State 165
 
   153 op: "unary+" .
 
     $default  reduce using rule 153 (op)
 
 
-state 166
+State 166
 
   154 op: "unary-" .
 
     $default  reduce using rule 154 (op)
 
 
-state 167
+State 167
 
   149 op: "**" .
 
     $default  reduce using rule 149 (op)
 
 
-state 168
+State 168
 
   131 op: "<=>" .
 
     $default  reduce using rule 131 (op)
 
 
-state 169
+State 169
 
   132 op: "==" .
 
     $default  reduce using rule 132 (op)
 
 
-state 170
+State 170
 
   133 op: "===" .
 
     $default  reduce using rule 133 (op)
 
 
-state 171
+State 171
 
   140 op: "!=" .
 
     $default  reduce using rule 140 (op)
 
 
-state 172
+State 172
 
   137 op: ">=" .
 
     $default  reduce using rule 137 (op)
 
 
-state 173
+State 173
 
   139 op: "<=" .
 
     $default  reduce using rule 139 (op)
 
 
-state 174
+State 174
 
   134 op: "=~" .
 
     $default  reduce using rule 134 (op)
 
 
-state 175
+State 175
 
   135 op: "!~" .
 
     $default  reduce using rule 135 (op)
 
 
-state 176
+State 176
 
   155 op: "[]" .
 
     $default  reduce using rule 155 (op)
 
 
-state 177
+State 177
 
   156 op: "[]=" .
 
     $default  reduce using rule 156 (op)
 
 
-state 178
+State 178
 
   141 op: "<<" .
 
     $default  reduce using rule 141 (op)
 
 
-state 179
+State 179
 
   142 op: ">>" .
 
     $default  reduce using rule 142 (op)
 
 
-state 180
+State 180
 
   146 op: "*" .
 
     $default  reduce using rule 146 (op)
 
 
-state 181
+State 181
 
   150 op: "**arg" .
 
     $default  reduce using rule 150 (op)
 
 
-state 182
+State 182
 
   136 op: '>' .
 
     $default  reduce using rule 136 (op)
 
 
-state 183
+State 183
 
   138 op: '<' .
 
     $default  reduce using rule 138 (op)
 
 
-state 184
+State 184
 
   128 op: '|' .
 
     $default  reduce using rule 128 (op)
 
 
-state 185
+State 185
 
   129 op: '^' .
 
     $default  reduce using rule 129 (op)
 
 
-state 186
+State 186
 
   130 op: '&' .
 
     $default  reduce using rule 130 (op)
 
 
-state 187
+State 187
 
   143 op: '+' .
 
     $default  reduce using rule 143 (op)
 
 
-state 188
+State 188
 
   144 op: '-' .
 
     $default  reduce using rule 144 (op)
 
 
-state 189
+State 189
 
   145 op: '*' .
 
     $default  reduce using rule 145 (op)
 
 
-state 190
+State 190
 
   147 op: '/' .
 
     $default  reduce using rule 147 (op)
 
 
-state 191
+State 191
 
   148 op: '%' .
 
     $default  reduce using rule 148 (op)
 
 
-state 192
+State 192
 
   151 op: '!' .
 
     $default  reduce using rule 151 (op)
 
 
-state 193
+State 193
 
   152 op: '~' .
 
     $default  reduce using rule 152 (op)
 
 
-state 194
+State 194
 
   157 op: '`' .
 
     $default  reduce using rule 157 (op)
 
 
-state 195
+State 195
 
   121 fsym: fname .
 
     $default  reduce using rule 121 (fsym)
 
 
-state 196
+State 196
 
   123 fitem: fsym .
 
     $default  reduce using rule 123 (fitem)
 
 
-state 197
+State 197
 
   125 undef_list: fitem .
 
     $default  reduce using rule 125 (undef_list)
 
 
-state 198
+State 198
 
    25 stmt: keyword_undef undef_list .
   127 undef_list: undef_list . ',' $@6 fitem
@@ -5859,35 +5859,35 @@ state 198
     $default  reduce using rule 25 (stmt)
 
 
-state 199
+State 199
 
   119 fname: op .
 
     $default  reduce using rule 119 (fname)
 
 
-state 200
+State 200
 
   120 fname: reswords .
 
     $default  reduce using rule 120 (fname)
 
 
-state 201
+State 201
 
   122 fsym: symbol .
 
     $default  reduce using rule 122 (fsym)
 
 
-state 202
+State 202
 
   124 fitem: dsym .
 
     $default  reduce using rule 124 (fitem)
 
 
-state 203
+State 203
 
   305 primary: keyword_not . '(' expr rparen
   306        | keyword_not . '(' rparen
@@ -5895,7 +5895,7 @@ state 203
     '('  shift, and go to state 234
 
 
-state 204
+State 204
 
   609 assoc: tLABEL . arg_value
 
@@ -5997,7 +5997,7 @@ state 204
     operation         go to state 118
 
 
-state 205
+State 205
 
   109 lhs: ":: at EXPR_BEG" . tCONSTANT
   206 arg: ":: at EXPR_BEG" . tCONSTANT tOP_ASGN arg_rhs
@@ -6006,7 +6006,7 @@ state 205
     tCONSTANT  shift, and go to state 411
 
 
-state 206
+State 206
 
   294 primary: "(" . compstmt ')'
 
@@ -6133,7 +6133,7 @@ state 206
     none              go to state 261
 
 
-state 207
+State 207
 
   268 args: "*" . arg_value
 
@@ -6235,7 +6235,7 @@ state 207
     operation         go to state 118
 
 
-state 208
+State 208
 
   611 assoc: "**arg" . arg_value
 
@@ -6337,7 +6337,7 @@ state 208
     operation         go to state 118
 
 
-state 209
+State 209
 
   264 block_arg: "&" . arg_value
 
@@ -6439,7 +6439,7 @@ state 209
     operation         go to state 118
 
 
-state 210
+State 210
 
   465 string1: tSTRING_BEG . string_contents tSTRING_END
   610 assoc: tSTRING_BEG . string_contents tLABEL_END arg_value
@@ -6449,7 +6449,7 @@ state 210
     string_contents  go to state 415
 
 
-state 211
+State 211
 
   232 arg: '!' . arg
 
@@ -6550,21 +6550,21 @@ state 211
     operation         go to state 118
 
 
-state 212
+State 212
 
   257 call_args: command .
 
     $default  reduce using rule 257 (call_args)
 
 
-state 213
+State 213
 
   199 arg: lhs . '=' arg_rhs
 
     '='  shift, and go to state 416
 
 
-state 214
+State 214
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -6624,7 +6624,7 @@ state 214
     $default  reduce using rule 242 (arg_value)
 
 
-state 215
+State 215
 
   267 args: arg_value .
   608 assoc: arg_value . "=>" arg_value
@@ -6634,21 +6634,21 @@ state 215
     $default  reduce using rule 267 (args)
 
 
-state 216
+State 216
 
    71 command: keyword_break call_args .
 
     $default  reduce using rule 71 (command)
 
 
-state 217
+State 217
 
   261 call_args: block_arg .
 
     $default  reduce using rule 261 (call_args)
 
 
-state 218
+State 218
 
   258 call_args: args . opt_block_arg
   260          | args . ',' assocs opt_block_arg
@@ -6663,7 +6663,7 @@ state 218
     none           go to state 420
 
 
-state 219
+State 219
 
    64 command: primary_value . call_op operation2 command_args
    65        | primary_value . call_op operation2 command_args cmd_brace_block
@@ -6695,7 +6695,7 @@ state 219
     call_op  go to state 423
 
 
-state 220
+State 220
 
   102 lhs: user_variable .
   529 var_ref: user_variable .
@@ -6706,7 +6706,7 @@ state 220
     $default  reduce using rule 529 (var_ref)
 
 
-state 221
+State 221
 
   103 lhs: keyword_variable .
   530 var_ref: keyword_variable .
@@ -6717,14 +6717,14 @@ state 221
     $default  reduce using rule 530 (var_ref)
 
 
-state 222
+State 222
 
   200 arg: var_lhs . tOP_ASGN arg_rhs
 
     tOP_ASGN  shift, and go to state 424
 
 
-state 223
+State 223
 
   110 lhs: backref .
   207 arg: backref . tOP_ASGN arg_rhs
@@ -6736,7 +6736,7 @@ state 223
     $default  reduce using rule 285 (primary)
 
 
-state 224
+State 224
 
   259 call_args: assocs . opt_block_arg
   607 assocs: assocs . ',' assoc
@@ -6749,28 +6749,28 @@ state 224
     none           go to state 420
 
 
-state 225
+State 225
 
   606 assocs: assoc .
 
     $default  reduce using rule 606 (assocs)
 
 
-state 226
+State 226
 
    72 command: keyword_next call_args .
 
     $default  reduce using rule 72 (command)
 
 
-state 227
+State 227
 
    70 command: keyword_return call_args .
 
     $default  reduce using rule 70 (command)
 
 
-state 228
+State 228
 
   300 primary: keyword_yield '(' . call_args rparen
   301        | keyword_yield '(' . rparen
@@ -6888,14 +6888,14 @@ state 228
     rparen            go to state 430
 
 
-state 229
+State 229
 
    69 command: keyword_yield command_args .
 
     $default  reduce using rule 69 (command)
 
 
-state 230
+State 230
 
   263 command_args: @8 . call_args
 
@@ -7007,7 +7007,7 @@ state 230
     operation         go to state 118
 
 
-state 231
+State 231
 
   249 paren_args: '(' . opt_call_args rparen
 
@@ -7123,21 +7123,21 @@ state 231
     none              go to state 436
 
 
-state 232
+State 232
 
   433 method_call: keyword_super paren_args .
 
     $default  reduce using rule 433 (method_call)
 
 
-state 233
+State 233
 
    68 command: keyword_super command_args .
 
     $default  reduce using rule 68 (command)
 
 
-state 234
+State 234
 
   305 primary: keyword_not '(' . expr rparen
   306        | keyword_not '(' . rparen
@@ -7249,14 +7249,14 @@ state 234
     rparen            go to state 438
 
 
-state 235
+State 235
 
   631 opt_nl: '\n' .
 
     $default  reduce using rule 631 (opt_nl)
 
 
-state 236
+State 236
 
    51 expr: keyword_not opt_nl . expr
 
@@ -7362,7 +7362,7 @@ state 236
     operation         go to state 118
 
 
-state 237
+State 237
 
    22 stmt: keyword_alias tGVAR . tGVAR
    23     | keyword_alias tGVAR . tBACK_REF
@@ -7373,7 +7373,7 @@ state 237
     tBACK_REF  shift, and go to state 442
 
 
-state 238
+State 238
 
    21 stmt: keyword_alias fitem . $@4 fitem
 
@@ -7382,7 +7382,7 @@ state 238
     $@4  go to state 443
 
 
-state 239
+State 239
 
   239 arg: keyword_defined opt_nl . $@7 arg
   304 primary: keyword_defined opt_nl . '(' $@13 expr rparen
@@ -7394,14 +7394,14 @@ state 239
     $@7  go to state 445
 
 
-state 240
+State 240
 
    10 top_stmt: keyword_BEGIN $@2 . '{' top_compstmt '}'
 
     '{'  shift, and go to state 446
 
 
-state 241
+State 241
 
    31 stmt: keyword_END '{' . compstmt '}'
 
@@ -7528,28 +7528,28 @@ state 241
     none              go to state 261
 
 
-state 242
+State 242
 
   336 primary: keyword_break .
 
     $default  reduce using rule 336 (primary)
 
 
-state 243
+State 243
 
   337 primary: keyword_next .
 
     $default  reduce using rule 337 (primary)
 
 
-state 244
+State 244
 
   299 primary: keyword_return .
 
     $default  reduce using rule 299 (primary)
 
 
-state 245
+State 245
 
   300 primary: keyword_yield . '(' call_args rparen
   301        | keyword_yield . '(' rparen
@@ -7560,7 +7560,7 @@ state 245
     $default  reduce using rule 302 (primary)
 
 
-state 246
+State 246
 
   433 method_call: keyword_super . paren_args
   434            | keyword_super .
@@ -7572,7 +7572,7 @@ state 246
     paren_args  go to state 232
 
 
-state 247
+State 247
 
   307 primary: fcall . brace_block
   423 method_call: fcall . paren_args
@@ -7585,7 +7585,7 @@ state 247
     brace_block  go to state 321
 
 
-state 248
+State 248
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -7618,7 +7618,7 @@ state 248
     $default  reduce using rule 217 (arg)
 
 
-state 249
+State 249
 
   104 lhs: primary_value . '[' opt_call_args rbracket
   105    | primary_value . call_op tIDENTIFIER
@@ -7646,7 +7646,7 @@ state 249
     call_op  go to state 449
 
 
-state 250
+State 250
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -7681,7 +7681,7 @@ state 250
     $default  reduce using rule 218 (arg)
 
 
-state 251
+State 251
 
   100 mlhs_node: ":: at EXPR_BEG" tCONSTANT .
   109 lhs: ":: at EXPR_BEG" tCONSTANT .
@@ -7695,7 +7695,7 @@ state 251
     $default  reduce using rule 296 (primary)
 
 
-state 252
+State 252
 
    16 stmts: error . stmt
 
@@ -7812,7 +7812,7 @@ state 252
     operation         go to state 118
 
 
-state 253
+State 253
 
    19 stmt_or_begin: keyword_BEGIN . $@3 '{' top_compstmt '}'
 
@@ -7821,7 +7821,7 @@ state 253
     $@3  go to state 452
 
 
-state 254
+State 254
 
    74 mlhs: "(" . mlhs_inner rparen
    76 mlhs_inner: "(" . mlhs_inner rparen
@@ -7952,14 +7952,14 @@ state 254
     none              go to state 261
 
 
-state 255
+State 255
 
   294 primary: "(" compstmt . ')'
 
     ')'  shift, and go to state 454
 
 
-state 256
+State 256
 
    12 compstmt: stmts . opt_terms
    15 stmts: stmts . terms stmt_or_begin
@@ -7974,14 +7974,14 @@ state 256
     terms      go to state 456
 
 
-state 257
+State 257
 
    14 stmts: stmt_or_begin .
 
     $default  reduce using rule 14 (stmts)
 
 
-state 258
+State 258
 
    17 stmt_or_begin: stmt .
    26 stmt: stmt . modifier_if expr_value
@@ -7999,7 +7999,7 @@ state 258
     $default  reduce using rule 17 (stmt_or_begin)
 
 
-state 259
+State 259
 
    74 mlhs: "(" mlhs_inner . rparen
    88 mlhs_item: "(" mlhs_inner . rparen
@@ -8012,7 +8012,7 @@ state 259
     rparen  go to state 457
 
 
-state 260
+State 260
 
    73 mlhs: mlhs_basic .
    75 mlhs_inner: mlhs_basic .
@@ -8021,14 +8021,14 @@ state 260
     $default  reduce using rule 75 (mlhs_inner)
 
 
-state 261
+State 261
 
    13 stmts: none .
 
     $default  reduce using rule 13 (stmts)
 
 
-state 262
+State 262
 
   290 primary: "( arg" $@10 . rparen
 
@@ -8040,7 +8040,7 @@ state 262
     rparen  go to state 458
 
 
-state 263
+State 263
 
   293 primary: "( arg" $@11 . stmt $@12 rparen
 
@@ -8157,14 +8157,14 @@ state 263
     operation         go to state 118
 
 
-state 264
+State 264
 
   297 primary: "[" aref_args . ']'
 
     ']'  shift, and go to state 460
 
 
-state 265
+State 265
 
   244 aref_args: args . trailer
   245          | args . ',' assocs trailer
@@ -8179,7 +8179,7 @@ state 265
     trailer  go to state 463
 
 
-state 266
+State 266
 
   246 aref_args: assocs . trailer
   607 assocs: assocs . ',' assoc
@@ -8192,28 +8192,28 @@ state 266
     trailer  go to state 465
 
 
-state 267
+State 267
 
   243 aref_args: none .
 
     $default  reduce using rule 243 (aref_args)
 
 
-state 268
+State 268
 
   608 assoc: arg_value . "=>" arg_value
 
     "=>"  shift, and go to state 417
 
 
-state 269
+State 269
 
   298 primary: "{" assoc_list . '}'
 
     '}'  shift, and go to state 466
 
 
-state 270
+State 270
 
   605 assoc_list: assocs . trailer
   607 assocs: assocs . ',' assoc
@@ -8226,14 +8226,14 @@ state 270
     trailer  go to state 467
 
 
-state 271
+State 271
 
   604 assoc_list: none .
 
     $default  reduce using rule 604 (assoc_list)
 
 
-state 272
+State 272
 
   304 primary: keyword_defined . opt_nl '(' $@13 expr rparen
 
@@ -8244,7 +8244,7 @@ state 272
     opt_nl  go to state 468
 
 
-state 273
+State 273
 
   100 mlhs_node: ":: at EXPR_BEG" . tCONSTANT
   296 primary: ":: at EXPR_BEG" . tCONSTANT
@@ -8252,7 +8252,7 @@ state 273
     tCONSTANT  shift, and go to state 469
 
 
-state 274
+State 274
 
   512 numeric: tUMINUS_NUM . simple_numeric
 
@@ -8264,7 +8264,7 @@ state 274
     simple_numeric  go to state 470
 
 
-state 275
+State 275
 
    86 mlhs_basic: "*" ',' . mlhs_post
 
@@ -8361,7 +8361,7 @@ state 275
     operation         go to state 118
 
 
-state 276
+State 276
 
    83 mlhs_basic: "*" mlhs_node .
    84           | "*" mlhs_node . ',' mlhs_post
@@ -8371,14 +8371,14 @@ state 276
     $default  reduce using rule 83 (mlhs_basic)
 
 
-state 277
+State 277
 
   340 primary_value: primary .
 
     $default  reduce using rule 340 (primary_value)
 
 
-state 278
+State 278
 
    95 mlhs_node: primary_value . '[' opt_call_args rbracket
    96          | primary_value . call_op tIDENTIFIER
@@ -8401,7 +8401,7 @@ state 278
     call_op  go to state 476
 
 
-state 279
+State 279
 
    93 mlhs_node: user_variable .
   529 var_ref: user_variable .
@@ -8413,7 +8413,7 @@ state 279
     $default  reduce using rule 93 (mlhs_node)
 
 
-state 280
+State 280
 
    94 mlhs_node: keyword_variable .
   530 var_ref: keyword_variable .
@@ -8425,7 +8425,7 @@ state 280
     $default  reduce using rule 94 (mlhs_node)
 
 
-state 281
+State 281
 
   101 mlhs_node: backref .
   285 primary: backref .
@@ -8437,14 +8437,14 @@ state 281
     $default  reduce using rule 101 (mlhs_node)
 
 
-state 282
+State 282
 
   310 primary: "->" lambda .
 
     $default  reduce using rule 310 (primary)
 
 
-state 283
+State 283
 
   412 lambda: @27 . @28 f_larglist @29 @30 lambda_body
 
@@ -8453,35 +8453,35 @@ state 283
     @28  go to state 477
 
 
-state 284
+State 284
 
   508 sym: tGVAR .
 
     $default  reduce using rule 508 (sym)
 
 
-state 285
+State 285
 
   507 sym: tIVAR .
 
     $default  reduce using rule 507 (sym)
 
 
-state 286
+State 286
 
   509 sym: tCVAR .
 
     $default  reduce using rule 509 (sym)
 
 
-state 287
+State 287
 
   506 sym: fname .
 
     $default  reduce using rule 506 (sym)
 
 
-state 288
+State 288
 
   489 xstring_contents: xstring_contents . string_content
   510 dsym: tSYMBEG xstring_contents . tSTRING_END
@@ -8494,14 +8494,14 @@ state 288
     string_content  go to state 482
 
 
-state 289
+State 289
 
   505 symbol: tSYMBEG sym .
 
     $default  reduce using rule 505 (symbol)
 
 
-state 290
+State 290
 
   465 string1: tSTRING_BEG string_contents . tSTRING_END
   487 string_contents: string_contents . string_content
@@ -8514,7 +8514,7 @@ state 290
     string_content  go to state 484
 
 
-state 291
+State 291
 
   466 xstring: tXSTRING_BEG xstring_contents . tSTRING_END
   489 xstring_contents: xstring_contents . string_content
@@ -8527,7 +8527,7 @@ state 291
     string_content  go to state 482
 
 
-state 292
+State 292
 
   467 regexp: tREGEXP_BEG regexp_contents . tREGEXP_END
   491 regexp_contents: regexp_contents . string_content
@@ -8540,14 +8540,14 @@ state 292
     string_content  go to state 487
 
 
-state 293
+State 293
 
   468 words: tWORDS_BEG ' ' . tSTRING_END
 
     tSTRING_END  shift, and go to state 488
 
 
-state 294
+State 294
 
   469 words: tWORDS_BEG word_list . tSTRING_END
   471 word_list: word_list . word ' '
@@ -8561,14 +8561,14 @@ state 294
     string_content  go to state 491
 
 
-state 295
+State 295
 
   478 qwords: tQWORDS_BEG ' ' . tSTRING_END
 
     tSTRING_END  shift, and go to state 492
 
 
-state 296
+State 296
 
   479 qwords: tQWORDS_BEG qword_list . tSTRING_END
   483 qword_list: qword_list . tSTRING_CONTENT ' '
@@ -8577,14 +8577,14 @@ state 296
     tSTRING_END      shift, and go to state 494
 
 
-state 297
+State 297
 
   474 symbols: tSYMBOLS_BEG ' ' . tSTRING_END
 
     tSTRING_END  shift, and go to state 495
 
 
-state 298
+State 298
 
   475 symbols: tSYMBOLS_BEG symbol_list . tSTRING_END
   477 symbol_list: symbol_list . word ' '
@@ -8598,14 +8598,14 @@ state 298
     string_content  go to state 491
 
 
-state 299
+State 299
 
   480 qsymbols: tQSYMBOLS_BEG ' ' . tSTRING_END
 
     tSTRING_END  shift, and go to state 498
 
 
-state 300
+State 300
 
   481 qsymbols: tQSYMBOLS_BEG qsym_list . tSTRING_END
   485 qsym_list: qsym_list . tSTRING_CONTENT ' '
@@ -8614,7 +8614,7 @@ state 300
     tSTRING_END      shift, and go to state 500
 
 
-state 301
+State 301
 
   216 arg: tUMINUS_NUM simple_numeric . "**" arg
   512 numeric: tUMINUS_NUM simple_numeric .
@@ -8624,14 +8624,14 @@ state 301
     $default  reduce using rule 512 (numeric)
 
 
-state 302
+State 302
 
    52 expr: '!' command_call .
 
     $default  reduce using rule 52 (expr)
 
 
-state 303
+State 303
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -8664,7 +8664,7 @@ state 303
     $default  reduce using rule 232 (arg)
 
 
-state 304
+State 304
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -8697,35 +8697,35 @@ state 304
     $default  reduce using rule 233 (arg)
 
 
-state 305
+State 305
 
   637 term: ';' .
 
     $default  reduce using rule 637 (term)
 
 
-state 306
+State 306
 
   638 term: '\n' .
 
     $default  reduce using rule 638 (term)
 
 
-state 307
+State 307
 
     3 top_compstmt: top_stmts opt_terms .
 
     $default  reduce using rule 3 (top_compstmt)
 
 
-state 308
+State 308
 
   639 terms: term .
 
     $default  reduce using rule 639 (terms)
 
 
-state 309
+State 309
 
     6 top_stmts: top_stmts terms . top_stmt
   629 opt_terms: terms .
@@ -8849,7 +8849,7 @@ state 309
     operation         go to state 118
 
 
-state 310
+State 310
 
    26 stmt: stmt modifier_if . expr_value
 
@@ -8956,7 +8956,7 @@ state 310
     operation         go to state 118
 
 
-state 311
+State 311
 
    27 stmt: stmt modifier_unless . expr_value
 
@@ -9063,7 +9063,7 @@ state 311
     operation         go to state 118
 
 
-state 312
+State 312
 
    28 stmt: stmt modifier_while . expr_value
 
@@ -9170,7 +9170,7 @@ state 312
     operation         go to state 118
 
 
-state 313
+State 313
 
    29 stmt: stmt modifier_until . expr_value
 
@@ -9277,7 +9277,7 @@ state 313
     operation         go to state 118
 
 
-state 314
+State 314
 
    30 stmt: stmt modifier_rescue . stmt
 
@@ -9394,7 +9394,7 @@ state 314
     operation         go to state 118
 
 
-state 315
+State 315
 
    49 expr: expr keyword_and . expr
 
@@ -9500,7 +9500,7 @@ state 315
     operation         go to state 118
 
 
-state 316
+State 316
 
    50 expr: expr keyword_or . expr
 
@@ -9606,7 +9606,7 @@ state 316
     operation         go to state 118
 
 
-state 317
+State 317
 
   439 brace_block: keyword_do . @37 do_body keyword_end
 
@@ -9615,7 +9615,7 @@ state 317
     @37  go to state 511
 
 
-state 318
+State 318
 
   437 brace_block: '{' . @36 brace_body '}'
 
@@ -9624,14 +9624,14 @@ state 318
     @36  go to state 512
 
 
-state 319
+State 319
 
   423 method_call: fcall paren_args .
 
     $default  reduce using rule 423 (method_call)
 
 
-state 320
+State 320
 
    62 command: fcall command_args .
    63        | fcall command_args . cmd_brace_block
@@ -9643,14 +9643,14 @@ state 320
     cmd_brace_block  go to state 514
 
 
-state 321
+State 321
 
   307 primary: fcall brace_block .
 
     $default  reduce using rule 307 (primary)
 
 
-state 322
+State 322
 
   418 do_block: keyword_do_block . @31 do_body keyword_end
 
@@ -9659,14 +9659,14 @@ state 322
     @31  go to state 515
 
 
-state 323
+State 323
 
   419 block_call: command do_block .
 
     $default  reduce using rule 419 (block_call)
 
 
-state 324
+State 324
 
    33 stmt: mlhs '=' . command_call
    35     | mlhs '=' . mrhs_arg
@@ -9777,14 +9777,14 @@ state 324
     operation         go to state 118
 
 
-state 325
+State 325
 
    89 mlhs_head: mlhs_item ',' .
 
     $default  reduce using rule 89 (mlhs_head)
 
 
-state 326
+State 326
 
    88 mlhs_item: "(" . mlhs_inner rparen
   294 primary: "(" . compstmt ')'
@@ -9913,7 +9913,7 @@ state 326
     none              go to state 261
 
 
-state 327
+State 327
 
    79 mlhs_basic: mlhs_head "*" . mlhs_node
    80           | mlhs_head "*" . mlhs_node ',' mlhs_post
@@ -10014,7 +10014,7 @@ state 327
     operation         go to state 118
 
 
-state 328
+State 328
 
    78 mlhs_basic: mlhs_head mlhs_item .
    90 mlhs_head: mlhs_head mlhs_item . ','
@@ -10024,7 +10024,7 @@ state 328
     $default  reduce using rule 78 (mlhs_basic)
 
 
-state 329
+State 329
 
    34 stmt: lhs '=' . mrhs
    37 command_asgn: lhs '=' . command_rhs
@@ -10138,7 +10138,7 @@ state 329
     operation         go to state 118
 
 
-state 330
+State 330
 
   215 arg: arg "**" . arg
 
@@ -10239,7 +10239,7 @@ state 330
     operation         go to state 118
 
 
-state 331
+State 331
 
   222 arg: arg "<=>" . arg
 
@@ -10340,7 +10340,7 @@ state 331
     operation         go to state 118
 
 
-state 332
+State 332
 
   227 arg: arg "==" . arg
 
@@ -10441,7 +10441,7 @@ state 332
     operation         go to state 118
 
 
-state 333
+State 333
 
   228 arg: arg "===" . arg
 
@@ -10542,7 +10542,7 @@ state 333
     operation         go to state 118
 
 
-state 334
+State 334
 
   229 arg: arg "!=" . arg
 
@@ -10643,7 +10643,7 @@ state 334
     operation         go to state 118
 
 
-state 335
+State 335
 
   224 arg: arg ">=" . arg
 
@@ -10744,7 +10744,7 @@ state 335
     operation         go to state 118
 
 
-state 336
+State 336
 
   226 arg: arg "<=" . arg
 
@@ -10845,7 +10845,7 @@ state 336
     operation         go to state 118
 
 
-state 337
+State 337
 
   236 arg: arg "&&" . arg
 
@@ -10946,7 +10946,7 @@ state 337
     operation         go to state 118
 
 
-state 338
+State 338
 
   237 arg: arg "||" . arg
 
@@ -11047,7 +11047,7 @@ state 338
     operation         go to state 118
 
 
-state 339
+State 339
 
   230 arg: arg "=~" . arg
 
@@ -11148,7 +11148,7 @@ state 339
     operation         go to state 118
 
 
-state 340
+State 340
 
   231 arg: arg "!~" . arg
 
@@ -11249,7 +11249,7 @@ state 340
     operation         go to state 118
 
 
-state 341
+State 341
 
   208 arg: arg ".." . arg
 
@@ -11350,7 +11350,7 @@ state 341
     operation         go to state 118
 
 
-state 342
+State 342
 
   209 arg: arg "..." . arg
 
@@ -11451,7 +11451,7 @@ state 342
     operation         go to state 118
 
 
-state 343
+State 343
 
   234 arg: arg "<<" . arg
 
@@ -11552,7 +11552,7 @@ state 343
     operation         go to state 118
 
 
-state 344
+State 344
 
   235 arg: arg ">>" . arg
 
@@ -11653,7 +11653,7 @@ state 344
     operation         go to state 118
 
 
-state 345
+State 345
 
   240 arg: arg '?' . arg opt_nl ':' arg
 
@@ -11754,7 +11754,7 @@ state 345
     operation         go to state 118
 
 
-state 346
+State 346
 
   223 arg: arg '>' . arg
 
@@ -11855,7 +11855,7 @@ state 346
     operation         go to state 118
 
 
-state 347
+State 347
 
   225 arg: arg '<' . arg
 
@@ -11956,7 +11956,7 @@ state 347
     operation         go to state 118
 
 
-state 348
+State 348
 
   219 arg: arg '|' . arg
 
@@ -12057,7 +12057,7 @@ state 348
     operation         go to state 118
 
 
-state 349
+State 349
 
   220 arg: arg '^' . arg
 
@@ -12158,7 +12158,7 @@ state 349
     operation         go to state 118
 
 
-state 350
+State 350
 
   221 arg: arg '&' . arg
 
@@ -12259,7 +12259,7 @@ state 350
     operation         go to state 118
 
 
-state 351
+State 351
 
   210 arg: arg '+' . arg
 
@@ -12360,7 +12360,7 @@ state 351
     operation         go to state 118
 
 
-state 352
+State 352
 
   211 arg: arg '-' . arg
 
@@ -12461,7 +12461,7 @@ state 352
     operation         go to state 118
 
 
-state 353
+State 353
 
   212 arg: arg '*' . arg
 
@@ -12562,7 +12562,7 @@ state 353
     operation         go to state 118
 
 
-state 354
+State 354
 
   213 arg: arg '/' . arg
 
@@ -12663,7 +12663,7 @@ state 354
     operation         go to state 118
 
 
-state 355
+State 355
 
   214 arg: arg '%' . arg
 
@@ -12764,14 +12764,14 @@ state 355
     operation         go to state 118
 
 
-state 356
+State 356
 
   625 call_op: "&." .
 
     $default  reduce using rule 625 (call_op)
 
 
-state 357
+State 357
 
    42 command_asgn: primary_value "::" . tCONSTANT tOP_ASGN command_rhs
    43             | primary_value "::" . tIDENTIFIER tOP_ASGN command_rhs
@@ -12830,7 +12830,7 @@ state 357
     operation3  go to state 568
 
 
-state 358
+State 358
 
    39 command_asgn: primary_value '[' . opt_call_args rbracket tOP_ASGN command_rhs
    95 mlhs_node: primary_value '[' . opt_call_args rbracket
@@ -12950,14 +12950,14 @@ state 358
     none              go to state 436
 
 
-state 359
+State 359
 
   624 call_op: '.' .
 
     $default  reduce using rule 624 (call_op)
 
 
-state 360
+State 360
 
    40 command_asgn: primary_value call_op . tIDENTIFIER tOP_ASGN command_rhs
    41             | primary_value call_op . tCONSTANT tOP_ASGN command_rhs
@@ -13013,7 +13013,7 @@ state 360
     operation2  go to state 575
 
 
-state 361
+State 361
 
   288 primary: k_begin @9 . bodystmt k_end
 
@@ -13144,7 +13144,7 @@ state 361
     none              go to state 261
 
 
-state 362
+State 362
 
    49 expr: expr . keyword_and expr
    50     | expr . keyword_or expr
@@ -13156,7 +13156,7 @@ state 362
     $default  reduce using rule 54 (expr_value)
 
 
-state 363
+State 363
 
   311 primary: k_if expr_value . then compstmt if_tail k_end
 
@@ -13168,7 +13168,7 @@ state 363
     term  go to state 580
 
 
-state 364
+State 364
 
   312 primary: k_unless expr_value . then compstmt opt_else k_end
 
@@ -13180,7 +13180,7 @@ state 364
     term  go to state 580
 
 
-state 365
+State 365
 
   315 primary: k_while $@14 . expr_value do $@15 compstmt k_end
 
@@ -13287,7 +13287,7 @@ state 365
     operation         go to state 118
 
 
-state 366
+State 366
 
   318 primary: k_until $@16 . expr_value do $@17 compstmt k_end
 
@@ -13394,7 +13394,7 @@ state 366
     operation         go to state 118
 
 
-state 367
+State 367
 
   319 primary: k_case expr_value . opt_terms case_body k_end
 
@@ -13408,7 +13408,7 @@ state 367
     terms      go to state 369
 
 
-state 368
+State 368
 
   320 primary: k_case opt_terms . case_body k_end
 
@@ -13417,7 +13417,7 @@ state 368
     case_body  go to state 586
 
 
-state 369
+State 369
 
   629 opt_terms: terms .
   640 terms: terms . ';'
@@ -13427,7 +13427,7 @@ state 369
     $default  reduce using rule 629 (opt_terms)
 
 
-state 370
+State 370
 
   100 mlhs_node: ":: at EXPR_BEG" . tCONSTANT
   109 lhs: ":: at EXPR_BEG" . tCONSTANT
@@ -13436,21 +13436,21 @@ state 370
     tCONSTANT  shift, and go to state 587
 
 
-state 371
+State 371
 
   362 for_var: mlhs .
 
     $default  reduce using rule 362 (for_var)
 
 
-state 372
+State 372
 
   361 for_var: lhs .
 
     $default  reduce using rule 361 (for_var)
 
 
-state 373
+State 373
 
    95 mlhs_node: primary_value . '[' opt_call_args rbracket
    96          | primary_value . call_op tIDENTIFIER
@@ -13478,14 +13478,14 @@ state 373
     call_op  go to state 590
 
 
-state 374
+State 374
 
   323 primary: k_for for_var . keyword_in $@18 expr_value do $@19 compstmt k_end
 
     keyword_in  shift, and go to state 591
 
 
-state 375
+State 375
 
    93 mlhs_node: user_variable .
   102 lhs: user_variable .
@@ -13496,7 +13496,7 @@ state 375
     $default    reduce using rule 529 (var_ref)
 
 
-state 376
+State 376
 
    94 mlhs_node: keyword_variable .
   103 lhs: keyword_variable .
@@ -13507,7 +13507,7 @@ state 376
     $default    reduce using rule 530 (var_ref)
 
 
-state 377
+State 377
 
   101 mlhs_node: backref .
   110 lhs: backref .
@@ -13518,7 +13518,7 @@ state 377
     $default    reduce using rule 285 (primary)
 
 
-state 378
+State 378
 
   111 cname: tIDENTIFIER .
   517 user_variable: tIDENTIFIER .
@@ -13534,7 +13534,7 @@ state 378
     $default    reduce using rule 111 (cname)
 
 
-state 379
+State 379
 
   112 cname: tCONSTANT .
   520 user_variable: tCONSTANT .
@@ -13550,7 +13550,7 @@ state 379
     $default    reduce using rule 112 (cname)
 
 
-state 380
+State 380
 
   327 primary: k_class "<<" . expr @21 term bodystmt k_end
 
@@ -13656,7 +13656,7 @@ state 380
     operation         go to state 118
 
 
-state 381
+State 381
 
   113 cpath: ":: at EXPR_BEG" . cname
   296 primary: ":: at EXPR_BEG" . tCONSTANT
@@ -13667,14 +13667,14 @@ state 381
     cname  go to state 595
 
 
-state 382
+State 382
 
   114 cpath: cname .
 
     $default  reduce using rule 114 (cpath)
 
 
-state 383
+State 383
 
   325 primary: k_class cpath . superclass @20 bodystmt k_end
 
@@ -13685,7 +13685,7 @@ state 383
     superclass  go to state 597
 
 
-state 384
+State 384
 
   115 cpath: primary_value . "::" cname
   295 primary: primary_value . "::" tCONSTANT
@@ -13704,28 +13704,28 @@ state 384
     call_op  go to state 600
 
 
-state 385
+State 385
 
   529 var_ref: user_variable .
 
     $default  reduce using rule 529 (var_ref)
 
 
-state 386
+State 386
 
   530 var_ref: keyword_variable .
 
     $default  reduce using rule 530 (var_ref)
 
 
-state 387
+State 387
 
   285 primary: backref .
 
     $default  reduce using rule 285 (primary)
 
 
-state 388
+State 388
 
   329 primary: k_module cpath . @22 bodystmt k_end
 
@@ -13734,7 +13734,7 @@ state 388
     @22  go to state 601
 
 
-state 389
+State 389
 
   188 reswords: keyword_self .
   523 keyword_variable: keyword_self .
@@ -13744,7 +13744,7 @@ state 389
     $default  reduce using rule 188 (reswords)
 
 
-state 390
+State 390
 
   181 reswords: keyword_nil .
   522 keyword_variable: keyword_nil .
@@ -13754,7 +13754,7 @@ state 390
     $default  reduce using rule 181 (reswords)
 
 
-state 391
+State 391
 
   191 reswords: keyword_true .
   524 keyword_variable: keyword_true .
@@ -13764,7 +13764,7 @@ state 391
     $default  reduce using rule 191 (reswords)
 
 
-state 392
+State 392
 
   176 reswords: keyword_false .
   525 keyword_variable: keyword_false .
@@ -13774,7 +13774,7 @@ state 392
     $default  reduce using rule 176 (reswords)
 
 
-state 393
+State 393
 
   158 reswords: keyword__LINE__ .
   527 keyword_variable: keyword__LINE__ .
@@ -13784,7 +13784,7 @@ state 393
     $default  reduce using rule 158 (reswords)
 
 
-state 394
+State 394
 
   159 reswords: keyword__FILE__ .
   526 keyword_variable: keyword__FILE__ .
@@ -13794,7 +13794,7 @@ state 394
     $default  reduce using rule 159 (reswords)
 
 
-state 395
+State 395
 
   160 reswords: keyword__ENCODING__ .
   528 keyword_variable: keyword__ENCODING__ .
@@ -13804,7 +13804,7 @@ state 395
     $default  reduce using rule 160 (reswords)
 
 
-state 396
+State 396
 
   116 fname: tIDENTIFIER .
   517 user_variable: tIDENTIFIER .
@@ -13814,7 +13814,7 @@ state 396
     $default  reduce using rule 116 (fname)
 
 
-state 397
+State 397
 
   117 fname: tCONSTANT .
   520 user_variable: tCONSTANT .
@@ -13824,7 +13824,7 @@ state 397
     $default  reduce using rule 117 (fname)
 
 
-state 398
+State 398
 
   603 singleton: '(' . $@50 expr rparen
 
@@ -13833,7 +13833,7 @@ state 398
     $@50  go to state 602
 
 
-state 399
+State 399
 
   332 primary: k_def fname . @23 @24 f_arglist bodystmt k_end
 
@@ -13842,14 +13842,14 @@ state 399
     @23  go to state 603
 
 
-state 400
+State 400
 
   601 singleton: var_ref .
 
     $default  reduce using rule 601 (singleton)
 
 
-state 401
+State 401
 
   335 primary: k_def singleton . dot_or_colon @25 fname @26 f_arglist bodystmt k_end
 
@@ -13859,21 +13859,21 @@ state 401
     dot_or_colon  go to state 606
 
 
-state 402
+State 402
 
   627 call_op2: "::" .
 
     $default  reduce using rule 627 (call_op2)
 
 
-state 403
+State 403
 
   626 call_op2: call_op .
 
     $default  reduce using rule 626 (call_op2)
 
 
-state 404
+State 404
 
    58 block_command: block_call call_op2 . operation2 command_args
   420 block_call: block_call call_op2 . operation2 opt_paren_args
@@ -13918,21 +13918,21 @@ state 404
     operation2  go to state 609
 
 
-state 405
+State 405
 
   309 primary: method_call brace_block .
 
     $default  reduce using rule 309 (primary)
 
 
-state 406
+State 406
 
   464 string: string string1 .
 
     $default  reduce using rule 464 (string)
 
 
-state 407
+State 407
 
    38 command_asgn: var_lhs tOP_ASGN . command_rhs
   200 arg: var_lhs tOP_ASGN . arg_rhs
@@ -14041,7 +14041,7 @@ state 407
     operation         go to state 118
 
 
-state 408
+State 408
 
    44 command_asgn: backref tOP_ASGN . command_rhs
   207 arg: backref tOP_ASGN . arg_rhs
@@ -14150,7 +14150,7 @@ state 408
     operation         go to state 118
 
 
-state 409
+State 409
 
   127 undef_list: undef_list ',' . $@6 fitem
 
@@ -14159,14 +14159,14 @@ state 409
     $@6  go to state 615
 
 
-state 410
+State 410
 
   609 assoc: tLABEL arg_value .
 
     $default  reduce using rule 609 (assoc)
 
 
-state 411
+State 411
 
   109 lhs: ":: at EXPR_BEG" tCONSTANT .
   206 arg: ":: at EXPR_BEG" tCONSTANT . tOP_ASGN arg_rhs
@@ -14178,28 +14178,28 @@ state 411
     $default  reduce using rule 296 (primary)
 
 
-state 412
+State 412
 
   268 args: "*" arg_value .
 
     $default  reduce using rule 268 (args)
 
 
-state 413
+State 413
 
   611 assoc: "**arg" arg_value .
 
     $default  reduce using rule 611 (assoc)
 
 
-state 414
+State 414
 
   264 block_arg: "&" arg_value .
 
     $default  reduce using rule 264 (block_arg)
 
 
-state 415
+State 415
 
   465 string1: tSTRING_BEG string_contents . tSTRING_END
   487 string_contents: string_contents . string_content
@@ -14214,7 +14214,7 @@ state 415
     string_content  go to state 484
 
 
-state 416
+State 416
 
   199 arg: lhs '=' . arg_rhs
 
@@ -14316,7 +14316,7 @@ state 416
     operation         go to state 118
 
 
-state 417
+State 417
 
   608 assoc: arg_value "=>" . arg_value
 
@@ -14418,7 +14418,7 @@ state 417
     operation         go to state 118
 
 
-state 418
+State 418
 
   260 call_args: args ',' . assocs opt_block_arg
   265 opt_block_arg: ',' . block_arg
@@ -14530,21 +14530,21 @@ state 418
     operation         go to state 118
 
 
-state 419
+State 419
 
   258 call_args: args opt_block_arg .
 
     $default  reduce using rule 258 (call_args)
 
 
-state 420
+State 420
 
   266 opt_block_arg: none .
 
     $default  reduce using rule 266 (opt_block_arg)
 
 
-state 421
+State 421
 
    66 command: primary_value "::" . operation2 command_args
    67        | primary_value "::" . operation2 command_args cmd_brace_block
@@ -14599,7 +14599,7 @@ state 421
     operation3  go to state 568
 
 
-state 422
+State 422
 
   104 lhs: primary_value '[' . opt_call_args rbracket
   201 arg: primary_value '[' . opt_call_args rbracket tOP_ASGN arg_rhs
@@ -14717,7 +14717,7 @@ state 422
     none              go to state 436
 
 
-state 423
+State 423
 
    64 command: primary_value call_op . operation2 command_args
    65        | primary_value call_op . operation2 command_args cmd_brace_block
@@ -14769,7 +14769,7 @@ state 423
     operation2  go to state 575
 
 
-state 424
+State 424
 
   200 arg: var_lhs tOP_ASGN . arg_rhs
 
@@ -14871,7 +14871,7 @@ state 424
     operation         go to state 118
 
 
-state 425
+State 425
 
   207 arg: backref tOP_ASGN . arg_rhs
 
@@ -14973,7 +14973,7 @@ state 425
     operation         go to state 118
 
 
-state 426
+State 426
 
   265 opt_block_arg: ',' . block_arg
   607 assocs: assocs ',' . assoc
@@ -15081,14 +15081,14 @@ state 426
     operation         go to state 118
 
 
-state 427
+State 427
 
   259 call_args: assocs opt_block_arg .
 
     $default  reduce using rule 259 (call_args)
 
 
-state 428
+State 428
 
   300 primary: keyword_yield '(' call_args . rparen
 
@@ -15100,28 +15100,28 @@ state 428
     rparen  go to state 628
 
 
-state 429
+State 429
 
   632 rparen: opt_nl . ')'
 
     ')'  shift, and go to state 629
 
 
-state 430
+State 430
 
   301 primary: keyword_yield '(' rparen .
 
     $default  reduce using rule 301 (primary)
 
 
-state 431
+State 431
 
   263 command_args: @8 call_args .
 
     $default  reduce using rule 263 (command_args)
 
 
-state 432
+State 432
 
   249 paren_args: '(' opt_call_args . rparen
 
@@ -15133,14 +15133,14 @@ state 432
     rparen  go to state 630
 
 
-state 433
+State 433
 
   253 opt_call_args: call_args .
 
     $default  reduce using rule 253 (opt_call_args)
 
 
-state 434
+State 434
 
   254 opt_call_args: args . ','
   255              | args . ',' assocs ','
@@ -15157,7 +15157,7 @@ state 434
     none           go to state 420
 
 
-state 435
+State 435
 
   256 opt_call_args: assocs . ','
   259 call_args: assocs . opt_block_arg
@@ -15171,14 +15171,14 @@ state 435
     none           go to state 420
 
 
-state 436
+State 436
 
   252 opt_call_args: none .
 
     $default  reduce using rule 252 (opt_call_args)
 
 
-state 437
+State 437
 
    49 expr: expr . keyword_and expr
    50     | expr . keyword_or expr
@@ -15194,14 +15194,14 @@ state 437
     rparen  go to state 633
 
 
-state 438
+State 438
 
   306 primary: keyword_not '(' rparen .
 
     $default  reduce using rule 306 (primary)
 
 
-state 439
+State 439
 
    49 expr: expr . keyword_and expr
    50     | expr . keyword_or expr
@@ -15210,28 +15210,28 @@ state 439
     $default  reduce using rule 51 (expr)
 
 
-state 440
+State 440
 
    22 stmt: keyword_alias tGVAR tGVAR .
 
     $default  reduce using rule 22 (stmt)
 
 
-state 441
+State 441
 
    24 stmt: keyword_alias tGVAR tNTH_REF .
 
     $default  reduce using rule 24 (stmt)
 
 
-state 442
+State 442
 
    23 stmt: keyword_alias tGVAR tBACK_REF .
 
     $default  reduce using rule 23 (stmt)
 
 
-state 443
+State 443
 
    21 stmt: keyword_alias fitem $@4 . fitem
 
@@ -15320,7 +15320,7 @@ state 443
     dsym      go to state 202
 
 
-state 444
+State 444
 
   304 primary: keyword_defined opt_nl '(' . $@13 expr rparen
 
@@ -15329,7 +15329,7 @@ state 444
     $@13  go to state 635
 
 
-state 445
+State 445
 
   239 arg: keyword_defined opt_nl $@7 . arg
 
@@ -15430,7 +15430,7 @@ state 445
     operation         go to state 118
 
 
-state 446
+State 446
 
    10 top_stmt: keyword_BEGIN $@2 '{' . top_compstmt '}'
 
@@ -15557,14 +15557,14 @@ state 446
     none              go to state 119
 
 
-state 447
+State 447
 
    31 stmt: keyword_END '{' compstmt . '}'
 
     '}'  shift, and go to state 638
 
 
-state 448
+State 448
 
   106 lhs: primary_value "::" . tIDENTIFIER
   108    | primary_value "::" . tCONSTANT
@@ -15617,7 +15617,7 @@ state 448
     operation3  go to state 568
 
 
-state 449
+State 449
 
   105 lhs: primary_value call_op . tIDENTIFIER
   107    | primary_value call_op . tCONSTANT
@@ -15667,7 +15667,7 @@ state 449
     operation2  go to state 640
 
 
-state 450
+State 450
 
   206 arg: ":: at EXPR_BEG" tCONSTANT tOP_ASGN . arg_rhs
 
@@ -15769,7 +15769,7 @@ state 450
     operation         go to state 118
 
 
-state 451
+State 451
 
    16 stmts: error stmt .
    26 stmt: stmt . modifier_if expr_value
@@ -15787,14 +15787,14 @@ state 451
     $default  reduce using rule 16 (stmts)
 
 
-state 452
+State 452
 
    19 stmt_or_begin: keyword_BEGIN $@3 . '{' top_compstmt '}'
 
     '{'  shift, and go to state 642
 
 
-state 453
+State 453
 
    74 mlhs: "(" mlhs_inner . rparen
    76 mlhs_inner: "(" mlhs_inner . rparen
@@ -15808,21 +15808,21 @@ state 453
     rparen  go to state 643
 
 
-state 454
+State 454
 
   294 primary: "(" compstmt ')' .
 
     $default  reduce using rule 294 (primary)
 
 
-state 455
+State 455
 
    12 compstmt: stmts opt_terms .
 
     $default  reduce using rule 12 (compstmt)
 
 
-state 456
+State 456
 
    15 stmts: stmts terms . stmt_or_begin
   629 opt_terms: terms .
@@ -15946,7 +15946,7 @@ state 456
     operation         go to state 118
 
 
-state 457
+State 457
 
    74 mlhs: "(" mlhs_inner rparen .
    88 mlhs_item: "(" mlhs_inner rparen .
@@ -15955,14 +15955,14 @@ state 457
     $default  reduce using rule 74 (mlhs)
 
 
-state 458
+State 458
 
   290 primary: "( arg" $@10 rparen .
 
     $default  reduce using rule 290 (primary)
 
 
-state 459
+State 459
 
    26 stmt: stmt . modifier_if expr_value
    27     | stmt . modifier_unless expr_value
@@ -15982,14 +15982,14 @@ state 459
     $@12  go to state 645
 
 
-state 460
+State 460
 
   297 primary: "[" aref_args ']' .
 
     $default  reduce using rule 297 (primary)
 
 
-state 461
+State 461
 
   245 aref_args: args ',' . assocs trailer
   269 args: args ',' . arg_value
@@ -16101,21 +16101,21 @@ state 461
     operation         go to state 118
 
 
-state 462
+State 462
 
   635 trailer: '\n' .
 
     $default  reduce using rule 635 (trailer)
 
 
-state 463
+State 463
 
   244 aref_args: args trailer .
 
     $default  reduce using rule 244 (aref_args)
 
 
-state 464
+State 464
 
   607 assocs: assocs ',' . assoc
   636 trailer: ',' .
@@ -16223,35 +16223,35 @@ state 464
     operation         go to state 118
 
 
-state 465
+State 465
 
   246 aref_args: assocs trailer .
 
     $default  reduce using rule 246 (aref_args)
 
 
-state 466
+State 466
 
   298 primary: "{" assoc_list '}' .
 
     $default  reduce using rule 298 (primary)
 
 
-state 467
+State 467
 
   605 assoc_list: assocs trailer .
 
     $default  reduce using rule 605 (assoc_list)
 
 
-state 468
+State 468
 
   304 primary: keyword_defined opt_nl . '(' $@13 expr rparen
 
     '('  shift, and go to state 444
 
 
-state 469
+State 469
 
   100 mlhs_node: ":: at EXPR_BEG" tCONSTANT .
   296 primary: ":: at EXPR_BEG" tCONSTANT .
@@ -16263,21 +16263,21 @@ state 469
     $default  reduce using rule 100 (mlhs_node)
 
 
-state 470
+State 470
 
   512 numeric: tUMINUS_NUM simple_numeric .
 
     $default  reduce using rule 512 (numeric)
 
 
-state 471
+State 471
 
    91 mlhs_post: mlhs_item .
 
     $default  reduce using rule 91 (mlhs_post)
 
 
-state 472
+State 472
 
    86 mlhs_basic: "*" ',' mlhs_post .
    92 mlhs_post: mlhs_post . ',' mlhs_item
@@ -16287,7 +16287,7 @@ state 472
     $default  reduce using rule 86 (mlhs_basic)
 
 
-state 473
+State 473
 
    84 mlhs_basic: "*" mlhs_node ',' . mlhs_post
 
@@ -16384,7 +16384,7 @@ state 473
     operation         go to state 118
 
 
-state 474
+State 474
 
    97 mlhs_node: primary_value "::" . tIDENTIFIER
    99          | primary_value "::" . tCONSTANT
@@ -16435,7 +16435,7 @@ state 474
     operation3  go to state 568
 
 
-state 475
+State 475
 
    95 mlhs_node: primary_value '[' . opt_call_args rbracket
   435 method_call: primary_value '[' . opt_call_args rbracket
@@ -16552,7 +16552,7 @@ state 475
     none              go to state 436
 
 
-state 476
+State 476
 
    96 mlhs_node: primary_value call_op . tIDENTIFIER
    98          | primary_value call_op . tCONSTANT
@@ -16600,7 +16600,7 @@ state 476
     operation2  go to state 640
 
 
-state 477
+State 477
 
   412 lambda: @27 @28 . f_larglist @29 @30 lambda_body
 
@@ -16642,14 +16642,14 @@ state 477
     f_block_arg   go to state 686
 
 
-state 478
+State 478
 
   492 string_content: tSTRING_CONTENT .
 
     $default  reduce using rule 492 (string_content)
 
 
-state 479
+State 479
 
   500 string_content: tSTRING_DBEG . @43 @44 @45 @46 @47 compstmt tSTRING_DEND
 
@@ -16658,7 +16658,7 @@ state 479
     @43  go to state 687
 
 
-state 480
+State 480
 
   494 string_content: tSTRING_DVAR . @42 string_dvar
 
@@ -16667,70 +16667,70 @@ state 480
     @42  go to state 688
 
 
-state 481
+State 481
 
   510 dsym: tSYMBEG xstring_contents tSTRING_END .
 
     $default  reduce using rule 510 (dsym)
 
 
-state 482
+State 482
 
   489 xstring_contents: xstring_contents string_content .
 
     $default  reduce using rule 489 (xstring_contents)
 
 
-state 483
+State 483
 
   465 string1: tSTRING_BEG string_contents tSTRING_END .
 
     $default  reduce using rule 465 (string1)
 
 
-state 484
+State 484
 
   487 string_contents: string_contents string_content .
 
     $default  reduce using rule 487 (string_contents)
 
 
-state 485
+State 485
 
   466 xstring: tXSTRING_BEG xstring_contents tSTRING_END .
 
     $default  reduce using rule 466 (xstring)
 
 
-state 486
+State 486
 
   467 regexp: tREGEXP_BEG regexp_contents tREGEXP_END .
 
     $default  reduce using rule 467 (regexp)
 
 
-state 487
+State 487
 
   491 regexp_contents: regexp_contents string_content .
 
     $default  reduce using rule 491 (regexp_contents)
 
 
-state 488
+State 488
 
   468 words: tWORDS_BEG ' ' tSTRING_END .
 
     $default  reduce using rule 468 (words)
 
 
-state 489
+State 489
 
   469 words: tWORDS_BEG word_list tSTRING_END .
 
     $default  reduce using rule 469 (words)
 
 
-state 490
+State 490
 
   471 word_list: word_list word . ' '
   473 word: word . string_content
@@ -16743,49 +16743,49 @@ state 490
     string_content  go to state 690
 
 
-state 491
+State 491
 
   472 word: string_content .
 
     $default  reduce using rule 472 (word)
 
 
-state 492
+State 492
 
   478 qwords: tQWORDS_BEG ' ' tSTRING_END .
 
     $default  reduce using rule 478 (qwords)
 
 
-state 493
+State 493
 
   483 qword_list: qword_list tSTRING_CONTENT . ' '
 
     ' '  shift, and go to state 691
 
 
-state 494
+State 494
 
   479 qwords: tQWORDS_BEG qword_list tSTRING_END .
 
     $default  reduce using rule 479 (qwords)
 
 
-state 495
+State 495
 
   474 symbols: tSYMBOLS_BEG ' ' tSTRING_END .
 
     $default  reduce using rule 474 (symbols)
 
 
-state 496
+State 496
 
   475 symbols: tSYMBOLS_BEG symbol_list tSTRING_END .
 
     $default  reduce using rule 475 (symbols)
 
 
-state 497
+State 497
 
   473 word: word . string_content
   477 symbol_list: symbol_list word . ' '
@@ -16798,28 +16798,28 @@ state 497
     string_content  go to state 690
 
 
-state 498
+State 498
 
   480 qsymbols: tQSYMBOLS_BEG ' ' tSTRING_END .
 
     $default  reduce using rule 480 (qsymbols)
 
 
-state 499
+State 499
 
   485 qsym_list: qsym_list tSTRING_CONTENT . ' '
 
     ' '  shift, and go to state 693
 
 
-state 500
+State 500
 
   481 qsymbols: tQSYMBOLS_BEG qsym_list tSTRING_END .
 
     $default  reduce using rule 481 (qsymbols)
 
 
-state 501
+State 501
 
   216 arg: tUMINUS_NUM simple_numeric "**" . arg
 
@@ -16920,49 +16920,49 @@ state 501
     operation         go to state 118
 
 
-state 502
+State 502
 
   640 terms: terms ';' .
 
     $default  reduce using rule 640 (terms)
 
 
-state 503
+State 503
 
     6 top_stmts: top_stmts terms top_stmt .
 
     $default  reduce using rule 6 (top_stmts)
 
 
-state 504
+State 504
 
    26 stmt: stmt modifier_if expr_value .
 
     $default  reduce using rule 26 (stmt)
 
 
-state 505
+State 505
 
    27 stmt: stmt modifier_unless expr_value .
 
     $default  reduce using rule 27 (stmt)
 
 
-state 506
+State 506
 
    28 stmt: stmt modifier_while expr_value .
 
     $default  reduce using rule 28 (stmt)
 
 
-state 507
+State 507
 
    29 stmt: stmt modifier_until expr_value .
 
     $default  reduce using rule 29 (stmt)
 
 
-state 508
+State 508
 
    26 stmt: stmt . modifier_if expr_value
    27     | stmt . modifier_unless expr_value
@@ -16974,7 +16974,7 @@ state 508
     $default  reduce using rule 30 (stmt)
 
 
-state 509
+State 509
 
    49 expr: expr . keyword_and expr
    49     | expr keyword_and expr .
@@ -16983,7 +16983,7 @@ state 509
     $default  reduce using rule 49 (expr)
 
 
-state 510
+State 510
 
    49 expr: expr . keyword_and expr
    50     | expr . keyword_or expr
@@ -16992,7 +16992,7 @@ state 510
     $default  reduce using rule 50 (expr)
 
 
-state 511
+State 511
 
   439 brace_block: keyword_do @37 . do_body keyword_end
 
@@ -17002,7 +17002,7 @@ state 511
     @40      go to state 696
 
 
-state 512
+State 512
 
   437 brace_block: '{' @36 . brace_body '}'
 
@@ -17012,7 +17012,7 @@ state 512
     @38         go to state 698
 
 
-state 513
+State 513
 
    60 cmd_brace_block: "{ arg" . @5 brace_body '}'
 
@@ -17021,14 +17021,14 @@ state 513
     @5  go to state 699
 
 
-state 514
+State 514
 
    63 command: fcall command_args cmd_brace_block .
 
     $default  reduce using rule 63 (command)
 
 
-state 515
+State 515
 
   418 do_block: keyword_do_block @31 . do_body keyword_end
 
@@ -17038,7 +17038,7 @@ state 515
     @40      go to state 696
 
 
-state 516
+State 516
 
   268 args: "*" . arg_value
   275 mrhs: "*" . arg_value
@@ -17141,14 +17141,14 @@ state 516
     operation         go to state 118
 
 
-state 517
+State 517
 
    33 stmt: mlhs '=' command_call .
 
     $default  reduce using rule 33 (stmt)
 
 
-state 518
+State 518
 
   267 args: arg_value .
   272 mrhs_arg: arg_value .
@@ -17157,7 +17157,7 @@ state 518
     $default  reduce using rule 272 (mrhs_arg)
 
 
-state 519
+State 519
 
   269 args: args . ',' arg_value
   270     | args . ',' "*" arg_value
@@ -17167,21 +17167,21 @@ state 519
     ','  shift, and go to state 702
 
 
-state 520
+State 520
 
    35 stmt: mlhs '=' mrhs_arg .
 
     $default  reduce using rule 35 (stmt)
 
 
-state 521
+State 521
 
   271 mrhs_arg: mrhs .
 
     $default  reduce using rule 271 (mrhs_arg)
 
 
-state 522
+State 522
 
    88 mlhs_item: "(" mlhs_inner . rparen
 
@@ -17193,7 +17193,7 @@ state 522
     rparen  go to state 703
 
 
-state 523
+State 523
 
    82 mlhs_basic: mlhs_head "*" ',' . mlhs_post
 
@@ -17290,7 +17290,7 @@ state 523
     operation         go to state 118
 
 
-state 524
+State 524
 
    79 mlhs_basic: mlhs_head "*" mlhs_node .
    80           | mlhs_head "*" mlhs_node . ',' mlhs_post
@@ -17300,28 +17300,28 @@ state 524
     $default  reduce using rule 79 (mlhs_basic)
 
 
-state 525
+State 525
 
    90 mlhs_head: mlhs_head mlhs_item ',' .
 
     $default  reduce using rule 90 (mlhs_head)
 
 
-state 526
+State 526
 
    47 command_rhs: command_asgn .
 
     $default  reduce using rule 47 (command_rhs)
 
 
-state 527
+State 527
 
    37 command_asgn: lhs '=' command_rhs .
 
     $default  reduce using rule 37 (command_asgn)
 
 
-state 528
+State 528
 
    45 command_rhs: command_call .
    46            | command_call . modifier_rescue stmt
@@ -17331,7 +17331,7 @@ state 528
     $default  reduce using rule 45 (command_rhs)
 
 
-state 529
+State 529
 
    37 command_asgn: lhs . '=' command_rhs
   199 arg: lhs . '=' arg_rhs
@@ -17339,7 +17339,7 @@ state 529
     '='  shift, and go to state 707
 
 
-state 530
+State 530
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -17403,28 +17403,28 @@ state 530
     $default  reduce using rule 247 (arg_rhs)
 
 
-state 531
+State 531
 
   267 args: arg_value .
 
     $default  reduce using rule 267 (args)
 
 
-state 532
+State 532
 
   199 arg: lhs '=' arg_rhs .
 
     $default  reduce using rule 199 (arg)
 
 
-state 533
+State 533
 
    34 stmt: lhs '=' mrhs .
 
     $default  reduce using rule 34 (stmt)
 
 
-state 534
+State 534
 
    39 command_asgn: primary_value . '[' opt_call_args rbracket tOP_ASGN command_rhs
    40             | primary_value . call_op tIDENTIFIER tOP_ASGN command_rhs
@@ -17461,7 +17461,7 @@ state 534
     call_op  go to state 711
 
 
-state 535
+State 535
 
    44 command_asgn: backref . tOP_ASGN command_rhs
   110 lhs: backref .
@@ -17474,7 +17474,7 @@ state 535
     $default  reduce using rule 285 (primary)
 
 
-state 536
+State 536
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -17509,7 +17509,7 @@ state 536
     $default  reduce using rule 215 (arg)
 
 
-state 537
+State 537
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -17565,7 +17565,7 @@ state 537
     $default  reduce using rule 222 (arg)
 
 
-state 538
+State 538
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -17621,7 +17621,7 @@ state 538
     $default  reduce using rule 227 (arg)
 
 
-state 539
+State 539
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -17677,7 +17677,7 @@ state 539
     $default  reduce using rule 228 (arg)
 
 
-state 540
+State 540
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -17733,7 +17733,7 @@ state 540
     $default  reduce using rule 229 (arg)
 
 
-state 541
+State 541
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -17778,7 +17778,7 @@ state 541
     $default  reduce using rule 224 (arg)
 
 
-state 542
+State 542
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -17823,7 +17823,7 @@ state 542
     $default  reduce using rule 226 (arg)
 
 
-state 543
+State 543
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -17878,7 +17878,7 @@ state 543
     $default  reduce using rule 236 (arg)
 
 
-state 544
+State 544
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -17934,7 +17934,7 @@ state 544
     $default  reduce using rule 237 (arg)
 
 
-state 545
+State 545
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -17990,7 +17990,7 @@ state 545
     $default  reduce using rule 230 (arg)
 
 
-state 546
+State 546
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -18046,7 +18046,7 @@ state 546
     $default  reduce using rule 231 (arg)
 
 
-state 547
+State 547
 
   208 arg: arg . ".." arg
   208    | arg ".." arg .
@@ -18106,7 +18106,7 @@ state 547
     $default  reduce using rule 208 (arg)
 
 
-state 548
+State 548
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -18166,7 +18166,7 @@ state 548
     $default  reduce using rule 209 (arg)
 
 
-state 549
+State 549
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -18206,7 +18206,7 @@ state 549
     $default  reduce using rule 234 (arg)
 
 
-state 550
+State 550
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -18246,7 +18246,7 @@ state 550
     $default  reduce using rule 235 (arg)
 
 
-state 551
+State 551
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -18309,7 +18309,7 @@ state 551
     opt_nl  go to state 712
 
 
-state 552
+State 552
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -18354,7 +18354,7 @@ state 552
     $default  reduce using rule 223 (arg)
 
 
-state 553
+State 553
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -18399,7 +18399,7 @@ state 553
     $default  reduce using rule 225 (arg)
 
 
-state 554
+State 554
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -18442,7 +18442,7 @@ state 554
     $default  reduce using rule 219 (arg)
 
 
-state 555
+State 555
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -18485,7 +18485,7 @@ state 555
     $default  reduce using rule 220 (arg)
 
 
-state 556
+State 556
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -18527,7 +18527,7 @@ state 556
     $default  reduce using rule 221 (arg)
 
 
-state 557
+State 557
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -18565,7 +18565,7 @@ state 557
     $default  reduce using rule 210 (arg)
 
 
-state 558
+State 558
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -18603,7 +18603,7 @@ state 558
     $default  reduce using rule 211 (arg)
 
 
-state 559
+State 559
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -18638,7 +18638,7 @@ state 559
     $default  reduce using rule 212 (arg)
 
 
-state 560
+State 560
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -18673,7 +18673,7 @@ state 560
     $default  reduce using rule 213 (arg)
 
 
-state 561
+State 561
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -18708,7 +18708,7 @@ state 561
     $default  reduce using rule 214 (arg)
 
 
-state 562
+State 562
 
    43 command_asgn: primary_value "::" tIDENTIFIER . tOP_ASGN command_rhs
    97 mlhs_node: primary_value "::" tIDENTIFIER .
@@ -18775,7 +18775,7 @@ state 562
     $default         reduce using rule 615 (operation2)
 
 
-state 563
+State 563
 
   617 operation2: tFID .
   620 operation3: tFID .
@@ -18844,7 +18844,7 @@ state 563
     $default           reduce using rule 617 (operation2)
 
 
-state 564
+State 564
 
    42 command_asgn: primary_value "::" tCONSTANT . tOP_ASGN command_rhs
    99 mlhs_node: primary_value "::" tCONSTANT .
@@ -18909,7 +18909,7 @@ state 564
     $default         reduce using rule 616 (operation2)
 
 
-state 565
+State 565
 
   618 operation2: op .
   621 operation3: op .
@@ -18978,7 +18978,7 @@ state 565
     $default           reduce using rule 618 (operation2)
 
 
-state 566
+State 566
 
   432 method_call: primary_value "::" @35 . paren_args
 
@@ -18987,7 +18987,7 @@ state 566
     paren_args  go to state 715
 
 
-state 567
+State 567
 
    66 command: primary_value "::" operation2 . command_args
    67        | primary_value "::" operation2 . command_args cmd_brace_block
@@ -19001,14 +19001,14 @@ state 567
     @33           go to state 717
 
 
-state 568
+State 568
 
   428 method_call: primary_value "::" operation3 .
 
     $default  reduce using rule 428 (method_call)
 
 
-state 569
+State 569
 
    39 command_asgn: primary_value '[' opt_call_args . rbracket tOP_ASGN command_rhs
    95 mlhs_node: primary_value '[' opt_call_args . rbracket
@@ -19024,7 +19024,7 @@ state 569
     rbracket  go to state 719
 
 
-state 570
+State 570
 
    40 command_asgn: primary_value call_op tIDENTIFIER . tOP_ASGN command_rhs
    96 mlhs_node: primary_value call_op tIDENTIFIER .
@@ -19039,14 +19039,14 @@ state 570
     $default  reduce using rule 615 (operation2)
 
 
-state 571
+State 571
 
   617 operation2: tFID .
 
     $default  reduce using rule 617 (operation2)
 
 
-state 572
+State 572
 
    41 command_asgn: primary_value call_op tCONSTANT . tOP_ASGN command_rhs
    98 mlhs_node: primary_value call_op tCONSTANT .
@@ -19061,14 +19061,14 @@ state 572
     $default  reduce using rule 616 (operation2)
 
 
-state 573
+State 573
 
   618 operation2: op .
 
     $default  reduce using rule 618 (operation2)
 
 
-state 574
+State 574
 
   430 method_call: primary_value call_op @34 . paren_args
 
@@ -19077,7 +19077,7 @@ state 574
     paren_args  go to state 722
 
 
-state 575
+State 575
 
    64 command: primary_value call_op operation2 . command_args
    65        | primary_value call_op operation2 . command_args cmd_brace_block
@@ -19149,7 +19149,7 @@ state 575
     @32           go to state 724
 
 
-state 576
+State 576
 
   288 primary: k_begin @9 bodystmt . k_end
 
@@ -19158,7 +19158,7 @@ state 576
     k_end  go to state 726
 
 
-state 577
+State 577
 
    11 bodystmt: compstmt . opt_rescue opt_else opt_ensure
 
@@ -19170,14 +19170,14 @@ state 577
     none        go to state 729
 
 
-state 578
+State 578
 
   353 then: keyword_then .
 
     $default  reduce using rule 353 (then)
 
 
-state 579
+State 579
 
   311 primary: k_if expr_value then . compstmt if_tail k_end
 
@@ -19306,7 +19306,7 @@ state 579
     none              go to state 261
 
 
-state 580
+State 580
 
   352 then: term .
   354     | term . keyword_then
@@ -19316,7 +19316,7 @@ state 580
     $default  reduce using rule 352 (then)
 
 
-state 581
+State 581
 
   312 primary: k_unless expr_value then . compstmt opt_else k_end
 
@@ -19444,7 +19444,7 @@ state 581
     none              go to state 261
 
 
-state 582
+State 582
 
   315 primary: k_while $@14 expr_value . do $@15 compstmt k_end
 
@@ -19456,7 +19456,7 @@ state 582
     term  go to state 735
 
 
-state 583
+State 583
 
   318 primary: k_until $@16 expr_value . do $@17 compstmt k_end
 
@@ -19468,7 +19468,7 @@ state 583
     term  go to state 735
 
 
-state 584
+State 584
 
   319 primary: k_case expr_value opt_terms . case_body k_end
 
@@ -19477,7 +19477,7 @@ state 584
     case_body  go to state 737
 
 
-state 585
+State 585
 
   446 case_body: keyword_when . args then compstmt cases
 
@@ -19581,7 +19581,7 @@ state 585
     operation         go to state 118
 
 
-state 586
+State 586
 
   320 primary: k_case opt_terms case_body . k_end
 
@@ -19590,7 +19590,7 @@ state 586
     k_end  go to state 739
 
 
-state 587
+State 587
 
   100 mlhs_node: ":: at EXPR_BEG" tCONSTANT .
   109 lhs: ":: at EXPR_BEG" tCONSTANT .
@@ -19601,7 +19601,7 @@ state 587
     $default    reduce using rule 296 (primary)
 
 
-state 588
+State 588
 
    97 mlhs_node: primary_value "::" . tIDENTIFIER
    99          | primary_value "::" . tCONSTANT
@@ -19654,7 +19654,7 @@ state 588
     operation3  go to state 568
 
 
-state 589
+State 589
 
    95 mlhs_node: primary_value '[' . opt_call_args rbracket
   104 lhs: primary_value '[' . opt_call_args rbracket
@@ -19772,7 +19772,7 @@ state 589
     none              go to state 436
 
 
-state 590
+State 590
 
    96 mlhs_node: primary_value call_op . tIDENTIFIER
    98          | primary_value call_op . tCONSTANT
@@ -19822,7 +19822,7 @@ state 590
     operation2  go to state 640
 
 
-state 591
+State 591
 
   323 primary: k_for for_var keyword_in . $@18 expr_value do $@19 compstmt k_end
 
@@ -19831,7 +19831,7 @@ state 591
     $@18  go to state 745
 
 
-state 592
+State 592
 
    49 expr: expr . keyword_and expr
    50     | expr . keyword_or expr
@@ -19845,14 +19845,14 @@ state 592
     @21  go to state 746
 
 
-state 593
+State 593
 
   111 cname: tIDENTIFIER .
 
     $default  reduce using rule 111 (cname)
 
 
-state 594
+State 594
 
   112 cname: tCONSTANT .
   296 primary: ":: at EXPR_BEG" tCONSTANT .
@@ -19864,14 +19864,14 @@ state 594
     $default  reduce using rule 112 (cname)
 
 
-state 595
+State 595
 
   113 cpath: ":: at EXPR_BEG" cname .
 
     $default  reduce using rule 113 (cpath)
 
 
-state 596
+State 596
 
   536 superclass: '<' . $@48 expr_value term
 
@@ -19880,7 +19880,7 @@ state 596
     $@48  go to state 747
 
 
-state 597
+State 597
 
   325 primary: k_class cpath superclass . @20 bodystmt k_end
 
@@ -19889,7 +19889,7 @@ state 597
     @20  go to state 748
 
 
-state 598
+State 598
 
   115 cpath: primary_value "::" . cname
   295 primary: primary_value "::" . tCONSTANT
@@ -19940,7 +19940,7 @@ state 598
     operation3  go to state 568
 
 
-state 599
+State 599
 
   435 method_call: primary_value '[' . opt_call_args rbracket
 
@@ -20056,7 +20056,7 @@ state 599
     none              go to state 436
 
 
-state 600
+State 600
 
   425 method_call: primary_value call_op . operation2 @32 opt_paren_args
   430            | primary_value call_op . @34 paren_args
@@ -20102,7 +20102,7 @@ state 600
     operation2  go to state 640
 
 
-state 601
+State 601
 
   329 primary: k_module cpath @22 . bodystmt k_end
 
@@ -20233,7 +20233,7 @@ state 601
     none              go to state 261
 
 
-state 602
+State 602
 
   603 singleton: '(' $@50 . expr rparen
 
@@ -20339,7 +20339,7 @@ state 602
     operation         go to state 118
 
 
-state 603
+State 603
 
   332 primary: k_def fname @23 . @24 f_arglist bodystmt k_end
 
@@ -20348,21 +20348,21 @@ state 603
     @24  go to state 755
 
 
-state 604
+State 604
 
   623 dot_or_colon: "::" .
 
     $default  reduce using rule 623 (dot_or_colon)
 
 
-state 605
+State 605
 
   622 dot_or_colon: '.' .
 
     $default  reduce using rule 622 (dot_or_colon)
 
 
-state 606
+State 606
 
   335 primary: k_def singleton dot_or_colon . @25 fname @26 f_arglist bodystmt k_end
 
@@ -20371,21 +20371,21 @@ state 606
     @25  go to state 756
 
 
-state 607
+State 607
 
   615 operation2: tIDENTIFIER .
 
     $default  reduce using rule 615 (operation2)
 
 
-state 608
+State 608
 
   616 operation2: tCONSTANT .
 
     $default  reduce using rule 616 (operation2)
 
 
-state 609
+State 609
 
    58 block_command: block_call call_op2 operation2 . command_args
   420 block_call: block_call call_op2 operation2 . opt_paren_args
@@ -20429,14 +20429,14 @@ state 609
     none            go to state 760
 
 
-state 610
+State 610
 
    38 command_asgn: var_lhs tOP_ASGN command_rhs .
 
     $default  reduce using rule 38 (command_asgn)
 
 
-state 611
+State 611
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -20498,28 +20498,28 @@ state 611
     $default  reduce using rule 247 (arg_rhs)
 
 
-state 612
+State 612
 
   200 arg: var_lhs tOP_ASGN arg_rhs .
 
     $default  reduce using rule 200 (arg)
 
 
-state 613
+State 613
 
    44 command_asgn: backref tOP_ASGN command_rhs .
 
     $default  reduce using rule 44 (command_asgn)
 
 
-state 614
+State 614
 
   207 arg: backref tOP_ASGN arg_rhs .
 
     $default  reduce using rule 207 (arg)
 
 
-state 615
+State 615
 
   127 undef_list: undef_list ',' $@6 . fitem
 
@@ -20608,7 +20608,7 @@ state 615
     dsym      go to state 202
 
 
-state 616
+State 616
 
   610 assoc: tSTRING_BEG string_contents tLABEL_END . arg_value
 
@@ -20710,14 +20710,14 @@ state 616
     operation         go to state 118
 
 
-state 617
+State 617
 
   608 assoc: arg_value "=>" arg_value .
 
     $default  reduce using rule 608 (assoc)
 
 
-state 618
+State 618
 
   270 args: args ',' "*" . arg_value
 
@@ -20819,7 +20819,7 @@ state 618
     operation         go to state 118
 
 
-state 619
+State 619
 
   269 args: args ',' arg_value .
   608 assoc: arg_value . "=>" arg_value
@@ -20829,14 +20829,14 @@ state 619
     $default  reduce using rule 269 (args)
 
 
-state 620
+State 620
 
   265 opt_block_arg: ',' block_arg .
 
     $default  reduce using rule 265 (opt_block_arg)
 
 
-state 621
+State 621
 
   260 call_args: args ',' assocs . opt_block_arg
   607 assocs: assocs . ',' assoc
@@ -20849,7 +20849,7 @@ state 621
     none           go to state 420
 
 
-state 622
+State 622
 
   106 lhs: primary_value "::" tIDENTIFIER .
   204 arg: primary_value "::" tIDENTIFIER . tOP_ASGN arg_rhs
@@ -20923,7 +20923,7 @@ state 622
     $default           reduce using rule 615 (operation2)
 
 
-state 623
+State 623
 
   108 lhs: primary_value "::" tCONSTANT .
   205 arg: primary_value "::" tCONSTANT . tOP_ASGN arg_rhs
@@ -20995,7 +20995,7 @@ state 623
     $default           reduce using rule 616 (operation2)
 
 
-state 624
+State 624
 
   104 lhs: primary_value '[' opt_call_args . rbracket
   201 arg: primary_value '[' opt_call_args . rbracket tOP_ASGN arg_rhs
@@ -21009,7 +21009,7 @@ state 624
     rbracket  go to state 767
 
 
-state 625
+State 625
 
   105 lhs: primary_value call_op tIDENTIFIER .
   202 arg: primary_value call_op tIDENTIFIER . tOP_ASGN arg_rhs
@@ -21021,7 +21021,7 @@ state 625
     $default  reduce using rule 615 (operation2)
 
 
-state 626
+State 626
 
   107 lhs: primary_value call_op tCONSTANT .
   203 arg: primary_value call_op tCONSTANT . tOP_ASGN arg_rhs
@@ -21033,35 +21033,35 @@ state 626
     $default  reduce using rule 616 (operation2)
 
 
-state 627
+State 627
 
   607 assocs: assocs ',' assoc .
 
     $default  reduce using rule 607 (assocs)
 
 
-state 628
+State 628
 
   300 primary: keyword_yield '(' call_args rparen .
 
     $default  reduce using rule 300 (primary)
 
 
-state 629
+State 629
 
   632 rparen: opt_nl ')' .
 
     $default  reduce using rule 632 (rparen)
 
 
-state 630
+State 630
 
   249 paren_args: '(' opt_call_args rparen .
 
     $default  reduce using rule 249 (paren_args)
 
 
-state 631
+State 631
 
   254 opt_call_args: args ',' .
   255              | args ',' . assocs ','
@@ -21177,7 +21177,7 @@ state 631
     operation         go to state 118
 
 
-state 632
+State 632
 
   256 opt_call_args: assocs ',' .
   265 opt_block_arg: ',' . block_arg
@@ -21288,21 +21288,21 @@ state 632
     operation         go to state 118
 
 
-state 633
+State 633
 
   305 primary: keyword_not '(' expr rparen .
 
     $default  reduce using rule 305 (primary)
 
 
-state 634
+State 634
 
    21 stmt: keyword_alias fitem $@4 fitem .
 
     $default  reduce using rule 21 (stmt)
 
 
-state 635
+State 635
 
   304 primary: keyword_defined opt_nl '(' $@13 . expr rparen
 
@@ -21408,7 +21408,7 @@ state 635
     operation         go to state 118
 
 
-state 636
+State 636
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -21468,21 +21468,21 @@ state 636
     $default  reduce using rule 239 (arg)
 
 
-state 637
+State 637
 
    10 top_stmt: keyword_BEGIN $@2 '{' top_compstmt . '}'
 
     '}'  shift, and go to state 772
 
 
-state 638
+State 638
 
    31 stmt: keyword_END '{' compstmt '}' .
 
     $default  reduce using rule 31 (stmt)
 
 
-state 639
+State 639
 
   427 method_call: primary_value "::" operation2 . @33 paren_args
 
@@ -21491,7 +21491,7 @@ state 639
     @33  go to state 717
 
 
-state 640
+State 640
 
   425 method_call: primary_value call_op operation2 . @32 opt_paren_args
 
@@ -21500,14 +21500,14 @@ state 640
     @32  go to state 724
 
 
-state 641
+State 641
 
   206 arg: ":: at EXPR_BEG" tCONSTANT tOP_ASGN arg_rhs .
 
     $default  reduce using rule 206 (arg)
 
 
-state 642
+State 642
 
    19 stmt_or_begin: keyword_BEGIN $@3 '{' . top_compstmt '}'
 
@@ -21634,7 +21634,7 @@ state 642
     none              go to state 119
 
 
-state 643
+State 643
 
    74 mlhs: "(" mlhs_inner rparen .
    76 mlhs_inner: "(" mlhs_inner rparen .
@@ -21645,14 +21645,14 @@ state 643
     $default  reduce using rule 76 (mlhs_inner)
 
 
-state 644
+State 644
 
    15 stmts: stmts terms stmt_or_begin .
 
     $default  reduce using rule 15 (stmts)
 
 
-state 645
+State 645
 
   293 primary: "( arg" $@11 stmt $@12 . rparen
 
@@ -21664,7 +21664,7 @@ state 645
     rparen  go to state 774
 
 
-state 646
+State 646
 
   245 aref_args: args ',' assocs . trailer
   607 assocs: assocs . ',' assoc
@@ -21677,7 +21677,7 @@ state 646
     trailer  go to state 775
 
 
-state 647
+State 647
 
    92 mlhs_post: mlhs_post ',' . mlhs_item
 
@@ -21773,7 +21773,7 @@ state 647
     operation         go to state 118
 
 
-state 648
+State 648
 
    84 mlhs_basic: "*" mlhs_node ',' mlhs_post .
    92 mlhs_post: mlhs_post . ',' mlhs_item
@@ -21783,7 +21783,7 @@ state 648
     $default  reduce using rule 84 (mlhs_basic)
 
 
-state 649
+State 649
 
    97 mlhs_node: primary_value "::" tIDENTIFIER .
   615 operation2: tIDENTIFIER .
@@ -21798,7 +21798,7 @@ state 649
     $default    reduce using rule 619 (operation3)
 
 
-state 650
+State 650
 
    99 mlhs_node: primary_value "::" tCONSTANT .
   295 primary: primary_value "::" tCONSTANT .
@@ -21812,7 +21812,7 @@ state 650
     $default  reduce using rule 99 (mlhs_node)
 
 
-state 651
+State 651
 
    95 mlhs_node: primary_value '[' opt_call_args . rbracket
   435 method_call: primary_value '[' opt_call_args . rbracket
@@ -21825,7 +21825,7 @@ state 651
     rbracket  go to state 777
 
 
-state 652
+State 652
 
    96 mlhs_node: primary_value call_op tIDENTIFIER .
   615 operation2: tIDENTIFIER .
@@ -21838,7 +21838,7 @@ state 652
     $default    reduce using rule 615 (operation2)
 
 
-state 653
+State 653
 
    98 mlhs_node: primary_value call_op tCONSTANT .
   616 operation2: tCONSTANT .
@@ -21851,56 +21851,56 @@ state 653
     $default    reduce using rule 616 (operation2)
 
 
-state 654
+State 654
 
   567 f_norm_arg: tIDENTIFIER .
 
     $default  reduce using rule 567 (f_norm_arg)
 
 
-state 655
+State 655
 
   564 f_bad_arg: tGVAR .
 
     $default  reduce using rule 564 (f_bad_arg)
 
 
-state 656
+State 656
 
   563 f_bad_arg: tIVAR .
 
     $default  reduce using rule 563 (f_bad_arg)
 
 
-state 657
+State 657
 
   562 f_bad_arg: tCONSTANT .
 
     $default  reduce using rule 562 (f_bad_arg)
 
 
-state 658
+State 658
 
   565 f_bad_arg: tCVAR .
 
     $default  reduce using rule 565 (f_bad_arg)
 
 
-state 659
+State 659
 
   573 f_label: tLABEL .
 
     $default  reduce using rule 573 (f_label)
 
 
-state 660
+State 660
 
   582 kwrest_mark: "**" .
 
     $default  reduce using rule 582 (kwrest_mark)
 
 
-state 661
+State 661
 
   570 f_arg_item: "(" . f_margs rparen
 
@@ -21919,42 +21919,42 @@ state 661
     f_norm_arg   go to state 783
 
 
-state 662
+State 662
 
   593 restarg_mark: "*" .
 
     $default  reduce using rule 593 (restarg_mark)
 
 
-state 663
+State 663
 
   583 kwrest_mark: "**arg" .
 
     $default  reduce using rule 583 (kwrest_mark)
 
 
-state 664
+State 664
 
   597 blkarg_mark: "&" .
 
     $default  reduce using rule 597 (blkarg_mark)
 
 
-state 665
+State 665
 
   596 blkarg_mark: '&' .
 
     $default  reduce using rule 596 (blkarg_mark)
 
 
-state 666
+State 666
 
   592 restarg_mark: '*' .
 
     $default  reduce using rule 592 (restarg_mark)
 
 
-state 667
+State 667
 
   413 f_larglist: '(' . f_args opt_bv_decl ')'
 
@@ -21994,7 +21994,7 @@ state 667
     f_block_arg   go to state 686
 
 
-state 668
+State 668
 
   412 lambda: @27 @28 f_larglist . @29 @30 lambda_body
 
@@ -22003,35 +22003,35 @@ state 668
     @29  go to state 785
 
 
-state 669
+State 669
 
   560 f_args: args_tail .
 
     $default  reduce using rule 560 (f_args)
 
 
-state 670
+State 670
 
   414 f_larglist: f_args .
 
     $default  reduce using rule 414 (f_larglist)
 
 
-state 671
+State 671
 
   566 f_norm_arg: f_bad_arg .
 
     $default  reduce using rule 566 (f_norm_arg)
 
 
-state 672
+State 672
 
   568 f_arg_asgn: f_norm_arg .
 
     $default  reduce using rule 568 (f_arg_asgn)
 
 
-state 673
+State 673
 
   569 f_arg_item: f_arg_asgn .
   586 f_opt: f_arg_asgn . '=' arg_value
@@ -22041,14 +22041,14 @@ state 673
     $default  reduce using rule 569 (f_arg_item)
 
 
-state 674
+State 674
 
   571 f_arg: f_arg_item .
 
     $default  reduce using rule 571 (f_arg)
 
 
-state 675
+State 675
 
   547 f_args: f_arg . ',' f_optarg ',' f_rest_arg opt_args_tail
   548       | f_arg . ',' f_optarg ',' f_rest_arg ',' f_arg opt_args_tail
@@ -22066,7 +22066,7 @@ state 675
     opt_args_tail  go to state 788
 
 
-state 676
+State 676
 
   574 f_kw: f_label . arg_value
   575     | f_label .
@@ -22171,14 +22171,14 @@ state 676
     operation         go to state 118
 
 
-state 677
+State 677
 
   580 f_kwarg: f_kw .
 
     $default  reduce using rule 580 (f_kwarg)
 
 
-state 678
+State 678
 
   541 args_tail: f_kwarg . ',' f_kwrest opt_f_block_arg
   542          | f_kwarg . opt_f_block_arg
@@ -22192,7 +22192,7 @@ state 678
     none             go to state 792
 
 
-state 679
+State 679
 
   584 f_kwrest: kwrest_mark . tIDENTIFIER
   585         | kwrest_mark .
@@ -22202,7 +22202,7 @@ state 679
     $default  reduce using rule 585 (f_kwrest)
 
 
-state 680
+State 680
 
   543 args_tail: f_kwrest . opt_f_block_arg
 
@@ -22214,14 +22214,14 @@ state 680
     none             go to state 792
 
 
-state 681
+State 681
 
   590 f_optarg: f_opt .
 
     $default  reduce using rule 590 (f_optarg)
 
 
-state 682
+State 682
 
   554 f_args: f_optarg . ',' f_rest_arg opt_args_tail
   555       | f_optarg . ',' f_rest_arg ',' f_arg opt_args_tail
@@ -22236,7 +22236,7 @@ state 682
     opt_args_tail  go to state 797
 
 
-state 683
+State 683
 
   594 f_rest_arg: restarg_mark . tIDENTIFIER
   595           | restarg_mark .
@@ -22246,7 +22246,7 @@ state 683
     $default  reduce using rule 595 (f_rest_arg)
 
 
-state 684
+State 684
 
   558 f_args: f_rest_arg . opt_args_tail
   559       | f_rest_arg . ',' f_arg opt_args_tail
@@ -22258,21 +22258,21 @@ state 684
     opt_args_tail  go to state 800
 
 
-state 685
+State 685
 
   598 f_block_arg: blkarg_mark . tIDENTIFIER
 
     tIDENTIFIER  shift, and go to state 801
 
 
-state 686
+State 686
 
   544 args_tail: f_block_arg .
 
     $default  reduce using rule 544 (args_tail)
 
 
-state 687
+State 687
 
   500 string_content: tSTRING_DBEG @43 . @44 @45 @46 @47 compstmt tSTRING_DEND
 
@@ -22281,7 +22281,7 @@ state 687
     @44  go to state 802
 
 
-state 688
+State 688
 
   494 string_content: tSTRING_DVAR @42 . string_dvar
 
@@ -22295,42 +22295,42 @@ state 688
     backref      go to state 807
 
 
-state 689
+State 689
 
   471 word_list: word_list word ' ' .
 
     $default  reduce using rule 471 (word_list)
 
 
-state 690
+State 690
 
   473 word: word string_content .
 
     $default  reduce using rule 473 (word)
 
 
-state 691
+State 691
 
   483 qword_list: qword_list tSTRING_CONTENT ' ' .
 
     $default  reduce using rule 483 (qword_list)
 
 
-state 692
+State 692
 
   477 symbol_list: symbol_list word ' ' .
 
     $default  reduce using rule 477 (symbol_list)
 
 
-state 693
+State 693
 
   485 qsym_list: qsym_list tSTRING_CONTENT ' ' .
 
     $default  reduce using rule 485 (qsym_list)
 
 
-state 694
+State 694
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -22365,14 +22365,14 @@ state 694
     $default  reduce using rule 216 (arg)
 
 
-state 695
+State 695
 
   439 brace_block: keyword_do @37 do_body . keyword_end
 
     keyword_end  shift, and go to state 808
 
 
-state 696
+State 696
 
   445 do_body: @40 . @41 opt_block_param compstmt
 
@@ -22381,14 +22381,14 @@ state 696
     @41  go to state 809
 
 
-state 697
+State 697
 
   437 brace_block: '{' @36 brace_body . '}'
 
     '}'  shift, and go to state 810
 
 
-state 698
+State 698
 
   442 brace_body: @38 . @39 opt_block_param compstmt
 
@@ -22397,7 +22397,7 @@ state 698
     @39  go to state 811
 
 
-state 699
+State 699
 
    60 cmd_brace_block: "{ arg" @5 . brace_body '}'
 
@@ -22407,14 +22407,14 @@ state 699
     @38         go to state 698
 
 
-state 700
+State 700
 
   418 do_block: keyword_do_block @31 do_body . keyword_end
 
     keyword_end  shift, and go to state 813
 
 
-state 701
+State 701
 
   268 args: "*" arg_value .
   275 mrhs: "*" arg_value .
@@ -22423,7 +22423,7 @@ state 701
     $default  reduce using rule 275 (mrhs)
 
 
-state 702
+State 702
 
   269 args: args ',' . arg_value
   270     | args ',' . "*" arg_value
@@ -22529,14 +22529,14 @@ state 702
     operation         go to state 118
 
 
-state 703
+State 703
 
    88 mlhs_item: "(" mlhs_inner rparen .
 
     $default  reduce using rule 88 (mlhs_item)
 
 
-state 704
+State 704
 
    82 mlhs_basic: mlhs_head "*" ',' mlhs_post .
    92 mlhs_post: mlhs_post . ',' mlhs_item
@@ -22546,7 +22546,7 @@ state 704
     $default  reduce using rule 82 (mlhs_basic)
 
 
-state 705
+State 705
 
    80 mlhs_basic: mlhs_head "*" mlhs_node ',' . mlhs_post
 
@@ -22643,7 +22643,7 @@ state 705
     operation         go to state 118
 
 
-state 706
+State 706
 
    46 command_rhs: command_call modifier_rescue . stmt
 
@@ -22760,7 +22760,7 @@ state 706
     operation         go to state 118
 
 
-state 707
+State 707
 
    37 command_asgn: lhs '=' . command_rhs
   199 arg: lhs '=' . arg_rhs
@@ -22869,7 +22869,7 @@ state 707
     operation         go to state 118
 
 
-state 708
+State 708
 
   248 arg_rhs: arg modifier_rescue . arg
 
@@ -22970,7 +22970,7 @@ state 708
     operation         go to state 118
 
 
-state 709
+State 709
 
    42 command_asgn: primary_value "::" . tCONSTANT tOP_ASGN command_rhs
    43             | primary_value "::" . tIDENTIFIER tOP_ASGN command_rhs
@@ -23027,7 +23027,7 @@ state 709
     operation3  go to state 568
 
 
-state 710
+State 710
 
    39 command_asgn: primary_value '[' . opt_call_args rbracket tOP_ASGN command_rhs
   104 lhs: primary_value '[' . opt_call_args rbracket
@@ -23146,7 +23146,7 @@ state 710
     none              go to state 436
 
 
-state 711
+State 711
 
    40 command_asgn: primary_value call_op . tIDENTIFIER tOP_ASGN command_rhs
    41             | primary_value call_op . tCONSTANT tOP_ASGN command_rhs
@@ -23200,14 +23200,14 @@ state 711
     operation2  go to state 575
 
 
-state 712
+State 712
 
   240 arg: arg '?' arg opt_nl . ':' arg
 
     ':'  shift, and go to state 824
 
 
-state 713
+State 713
 
    43 command_asgn: primary_value "::" tIDENTIFIER tOP_ASGN . command_rhs
   204 arg: primary_value "::" tIDENTIFIER tOP_ASGN . arg_rhs
@@ -23316,7 +23316,7 @@ state 713
     operation         go to state 118
 
 
-state 714
+State 714
 
    42 command_asgn: primary_value "::" tCONSTANT tOP_ASGN . command_rhs
   205 arg: primary_value "::" tCONSTANT tOP_ASGN . arg_rhs
@@ -23425,14 +23425,14 @@ state 714
     operation         go to state 118
 
 
-state 715
+State 715
 
   432 method_call: primary_value "::" @35 paren_args .
 
     $default  reduce using rule 432 (method_call)
 
 
-state 716
+State 716
 
    66 command: primary_value "::" operation2 command_args .
    67        | primary_value "::" operation2 command_args . cmd_brace_block
@@ -23444,7 +23444,7 @@ state 716
     cmd_brace_block  go to state 829
 
 
-state 717
+State 717
 
   427 method_call: primary_value "::" operation2 @33 . paren_args
 
@@ -23453,14 +23453,14 @@ state 717
     paren_args  go to state 830
 
 
-state 718
+State 718
 
   633 rbracket: opt_nl . ']'
 
     ']'  shift, and go to state 831
 
 
-state 719
+State 719
 
    39 command_asgn: primary_value '[' opt_call_args rbracket . tOP_ASGN command_rhs
    95 mlhs_node: primary_value '[' opt_call_args rbracket .
@@ -23475,7 +23475,7 @@ state 719
     $default  reduce using rule 435 (method_call)
 
 
-state 720
+State 720
 
    40 command_asgn: primary_value call_op tIDENTIFIER tOP_ASGN . command_rhs
   202 arg: primary_value call_op tIDENTIFIER tOP_ASGN . arg_rhs
@@ -23584,7 +23584,7 @@ state 720
     operation         go to state 118
 
 
-state 721
+State 721
 
    41 command_asgn: primary_value call_op tCONSTANT tOP_ASGN . command_rhs
   203 arg: primary_value call_op tCONSTANT tOP_ASGN . arg_rhs
@@ -23693,14 +23693,14 @@ state 721
     operation         go to state 118
 
 
-state 722
+State 722
 
   430 method_call: primary_value call_op @34 paren_args .
 
     $default  reduce using rule 430 (method_call)
 
 
-state 723
+State 723
 
    64 command: primary_value call_op operation2 command_args .
    65        | primary_value call_op operation2 command_args . cmd_brace_block
@@ -23712,7 +23712,7 @@ state 723
     cmd_brace_block  go to state 837
 
 
-state 724
+State 724
 
   425 method_call: primary_value call_op operation2 @32 . opt_paren_args
 
@@ -23725,21 +23725,21 @@ state 724
     none            go to state 760
 
 
-state 725
+State 725
 
   351 k_end: keyword_end .
 
     $default  reduce using rule 351 (k_end)
 
 
-state 726
+State 726
 
   288 primary: k_begin @9 bodystmt k_end .
 
     $default  reduce using rule 288 (primary)
 
 
-state 727
+State 727
 
   449 opt_rescue: keyword_rescue . exc_list exc_var then compstmt opt_rescue
 
@@ -23848,7 +23848,7 @@ state 727
     none              go to state 842
 
 
-state 728
+State 728
 
    11 bodystmt: compstmt opt_rescue . opt_else opt_ensure
 
@@ -23860,14 +23860,14 @@ state 728
     none      go to state 845
 
 
-state 729
+State 729
 
   450 opt_rescue: none .
 
     $default  reduce using rule 450 (opt_rescue)
 
 
-state 730
+State 730
 
   311 primary: k_if expr_value then compstmt . if_tail k_end
 
@@ -23881,14 +23881,14 @@ state 730
     none      go to state 845
 
 
-state 731
+State 731
 
   354 then: term keyword_then .
 
     $default  reduce using rule 354 (then)
 
 
-state 732
+State 732
 
   312 primary: k_unless expr_value then compstmt . opt_else k_end
 
@@ -23900,14 +23900,14 @@ state 732
     none      go to state 845
 
 
-state 733
+State 733
 
   356 do: keyword_do_cond .
 
     $default  reduce using rule 356 (do)
 
 
-state 734
+State 734
 
   315 primary: k_while $@14 expr_value do . $@15 compstmt k_end
 
@@ -23916,14 +23916,14 @@ state 734
     $@15  go to state 850
 
 
-state 735
+State 735
 
   355 do: term .
 
     $default  reduce using rule 355 (do)
 
 
-state 736
+State 736
 
   318 primary: k_until $@16 expr_value do . $@17 compstmt k_end
 
@@ -23932,7 +23932,7 @@ state 736
     $@17  go to state 851
 
 
-state 737
+State 737
 
   319 primary: k_case expr_value opt_terms case_body . k_end
 
@@ -23941,7 +23941,7 @@ state 737
     k_end  go to state 852
 
 
-state 738
+State 738
 
   269 args: args . ',' arg_value
   270     | args . ',' "*" arg_value
@@ -23956,14 +23956,14 @@ state 738
     term  go to state 580
 
 
-state 739
+State 739
 
   320 primary: k_case opt_terms case_body k_end .
 
     $default  reduce using rule 320 (primary)
 
 
-state 740
+State 740
 
    97 mlhs_node: primary_value "::" tIDENTIFIER .
   106 lhs: primary_value "::" tIDENTIFIER .
@@ -23976,7 +23976,7 @@ state 740
     $default    reduce using rule 619 (operation3)
 
 
-state 741
+State 741
 
    99 mlhs_node: primary_value "::" tCONSTANT .
   108 lhs: primary_value "::" tCONSTANT .
@@ -23989,7 +23989,7 @@ state 741
     $default    reduce using rule 295 (primary)
 
 
-state 742
+State 742
 
    95 mlhs_node: primary_value '[' opt_call_args . rbracket
   104 lhs: primary_value '[' opt_call_args . rbracket
@@ -24003,7 +24003,7 @@ state 742
     rbracket  go to state 855
 
 
-state 743
+State 743
 
    96 mlhs_node: primary_value call_op tIDENTIFIER .
   105 lhs: primary_value call_op tIDENTIFIER .
@@ -24014,7 +24014,7 @@ state 743
     $default    reduce using rule 615 (operation2)
 
 
-state 744
+State 744
 
    98 mlhs_node: primary_value call_op tCONSTANT .
   107 lhs: primary_value call_op tCONSTANT .
@@ -24025,7 +24025,7 @@ state 744
     $default    reduce using rule 616 (operation2)
 
 
-state 745
+State 745
 
   323 primary: k_for for_var keyword_in $@18 . expr_value do $@19 compstmt k_end
 
@@ -24132,7 +24132,7 @@ state 745
     operation         go to state 118
 
 
-state 746
+State 746
 
   327 primary: k_class "<<" expr @21 . term bodystmt k_end
 
@@ -24142,7 +24142,7 @@ state 746
     term  go to state 857
 
 
-state 747
+State 747
 
   536 superclass: '<' $@48 . expr_value term
 
@@ -24249,7 +24249,7 @@ state 747
     operation         go to state 118
 
 
-state 748
+State 748
 
   325 primary: k_class cpath superclass @20 . bodystmt k_end
 
@@ -24380,7 +24380,7 @@ state 748
     none              go to state 261
 
 
-state 749
+State 749
 
   111 cname: tIDENTIFIER .
   615 operation2: tIDENTIFIER .
@@ -24396,7 +24396,7 @@ state 749
     $default    reduce using rule 111 (cname)
 
 
-state 750
+State 750
 
   112 cname: tCONSTANT .
   295 primary: primary_value "::" tCONSTANT .
@@ -24410,14 +24410,14 @@ state 750
     $default  reduce using rule 112 (cname)
 
 
-state 751
+State 751
 
   115 cpath: primary_value "::" cname .
 
     $default  reduce using rule 115 (cpath)
 
 
-state 752
+State 752
 
   435 method_call: primary_value '[' opt_call_args . rbracket
 
@@ -24429,7 +24429,7 @@ state 752
     rbracket  go to state 860
 
 
-state 753
+State 753
 
   329 primary: k_module cpath @22 bodystmt . k_end
 
@@ -24438,7 +24438,7 @@ state 753
     k_end  go to state 861
 
 
-state 754
+State 754
 
    49 expr: expr . keyword_and expr
    50     | expr . keyword_or expr
@@ -24454,7 +24454,7 @@ state 754
     rparen  go to state 862
 
 
-state 755
+State 755
 
   332 primary: k_def fname @23 @24 . f_arglist bodystmt k_end
 
@@ -24466,7 +24466,7 @@ state 755
     @49        go to state 865
 
 
-state 756
+State 756
 
   335 primary: k_def singleton dot_or_colon @25 . fname @26 f_arglist bodystmt k_end
 
@@ -24550,14 +24550,14 @@ state 756
     reswords  go to state 200
 
 
-state 757
+State 757
 
   251 opt_paren_args: paren_args .
 
     $default  reduce using rule 251 (opt_paren_args)
 
 
-state 758
+State 758
 
   420 block_call: block_call call_op2 operation2 opt_paren_args .
   421           | block_call call_op2 operation2 opt_paren_args . brace_block
@@ -24570,7 +24570,7 @@ state 758
     brace_block  go to state 867
 
 
-state 759
+State 759
 
    58 block_command: block_call call_op2 operation2 command_args .
   422 block_call: block_call call_op2 operation2 command_args . do_block
@@ -24582,42 +24582,42 @@ state 759
     do_block  go to state 868
 
 
-state 760
+State 760
 
   250 opt_paren_args: none .
 
     $default  reduce using rule 250 (opt_paren_args)
 
 
-state 761
+State 761
 
   127 undef_list: undef_list ',' $@6 fitem .
 
     $default  reduce using rule 127 (undef_list)
 
 
-state 762
+State 762
 
   610 assoc: tSTRING_BEG string_contents tLABEL_END arg_value .
 
     $default  reduce using rule 610 (assoc)
 
 
-state 763
+State 763
 
   270 args: args ',' "*" arg_value .
 
     $default  reduce using rule 270 (args)
 
 
-state 764
+State 764
 
   260 call_args: args ',' assocs opt_block_arg .
 
     $default  reduce using rule 260 (call_args)
 
 
-state 765
+State 765
 
   204 arg: primary_value "::" tIDENTIFIER tOP_ASGN . arg_rhs
 
@@ -24719,7 +24719,7 @@ state 765
     operation         go to state 118
 
 
-state 766
+State 766
 
   205 arg: primary_value "::" tCONSTANT tOP_ASGN . arg_rhs
 
@@ -24821,7 +24821,7 @@ state 766
     operation         go to state 118
 
 
-state 767
+State 767
 
   104 lhs: primary_value '[' opt_call_args rbracket .
   201 arg: primary_value '[' opt_call_args rbracket . tOP_ASGN arg_rhs
@@ -24833,7 +24833,7 @@ state 767
     $default  reduce using rule 435 (method_call)
 
 
-state 768
+State 768
 
   202 arg: primary_value call_op tIDENTIFIER tOP_ASGN . arg_rhs
 
@@ -24935,7 +24935,7 @@ state 768
     operation         go to state 118
 
 
-state 769
+State 769
 
   203 arg: primary_value call_op tCONSTANT tOP_ASGN . arg_rhs
 
@@ -25037,7 +25037,7 @@ state 769
     operation         go to state 118
 
 
-state 770
+State 770
 
   255 opt_call_args: args ',' assocs . ','
   260 call_args: args ',' assocs . opt_block_arg
@@ -25051,7 +25051,7 @@ state 770
     none           go to state 420
 
 
-state 771
+State 771
 
    49 expr: expr . keyword_and expr
    50     | expr . keyword_or expr
@@ -25067,42 +25067,42 @@ state 771
     rparen  go to state 871
 
 
-state 772
+State 772
 
    10 top_stmt: keyword_BEGIN $@2 '{' top_compstmt '}' .
 
     $default  reduce using rule 10 (top_stmt)
 
 
-state 773
+State 773
 
    19 stmt_or_begin: keyword_BEGIN $@3 '{' top_compstmt . '}'
 
     '}'  shift, and go to state 872
 
 
-state 774
+State 774
 
   293 primary: "( arg" $@11 stmt $@12 rparen .
 
     $default  reduce using rule 293 (primary)
 
 
-state 775
+State 775
 
   245 aref_args: args ',' assocs trailer .
 
     $default  reduce using rule 245 (aref_args)
 
 
-state 776
+State 776
 
    92 mlhs_post: mlhs_post ',' mlhs_item .
 
     $default  reduce using rule 92 (mlhs_post)
 
 
-state 777
+State 777
 
    95 mlhs_node: primary_value '[' opt_call_args rbracket .
   435 method_call: primary_value '[' opt_call_args rbracket .
@@ -25115,7 +25115,7 @@ state 777
     $default    reduce using rule 435 (method_call)
 
 
-state 778
+State 778
 
   364 f_marg: "(" . f_margs rparen
 
@@ -25134,7 +25134,7 @@ state 778
     f_norm_arg   go to state 783
 
 
-state 779
+State 779
 
   372 f_margs: "*" . f_norm_arg
   373        | "*" . f_norm_arg ',' f_marg_list
@@ -25154,14 +25154,14 @@ state 779
     f_norm_arg  go to state 875
 
 
-state 780
+State 780
 
   365 f_marg_list: f_marg .
 
     $default  reduce using rule 365 (f_marg_list)
 
 
-state 781
+State 781
 
   366 f_marg_list: f_marg_list . ',' f_marg
   367 f_margs: f_marg_list .
@@ -25175,7 +25175,7 @@ state 781
     $default  reduce using rule 367 (f_margs)
 
 
-state 782
+State 782
 
   570 f_arg_item: "(" f_margs . rparen
 
@@ -25187,14 +25187,14 @@ state 782
     rparen  go to state 877
 
 
-state 783
+State 783
 
   363 f_marg: f_norm_arg .
 
     $default  reduce using rule 363 (f_marg)
 
 
-state 784
+State 784
 
   413 f_larglist: '(' f_args . opt_bv_decl ')'
 
@@ -25206,7 +25206,7 @@ state 784
     opt_nl       go to state 879
 
 
-state 785
+State 785
 
   412 lambda: @27 @28 f_larglist @29 . @30 lambda_body
 
@@ -25215,7 +25215,7 @@ state 785
     @30  go to state 880
 
 
-state 786
+State 786
 
   586 f_opt: f_arg_asgn '=' . arg_value
 
@@ -25317,7 +25317,7 @@ state 786
     operation         go to state 118
 
 
-state 787
+State 787
 
   545 opt_args_tail: ',' . args_tail
   547 f_args: f_arg ',' . f_optarg ',' f_rest_arg opt_args_tail
@@ -25360,21 +25360,21 @@ state 787
     f_block_arg   go to state 686
 
 
-state 788
+State 788
 
   553 f_args: f_arg opt_args_tail .
 
     $default  reduce using rule 553 (f_args)
 
 
-state 789
+State 789
 
   574 f_kw: f_label arg_value .
 
     $default  reduce using rule 574 (f_kw)
 
 
-state 790
+State 790
 
   541 args_tail: f_kwarg ',' . f_kwrest opt_f_block_arg
   581 f_kwarg: f_kwarg ',' . f_kw
@@ -25394,28 +25394,28 @@ state 790
     f_block_arg  go to state 888
 
 
-state 791
+State 791
 
   542 args_tail: f_kwarg opt_f_block_arg .
 
     $default  reduce using rule 542 (args_tail)
 
 
-state 792
+State 792
 
   600 opt_f_block_arg: none .
 
     $default  reduce using rule 600 (opt_f_block_arg)
 
 
-state 793
+State 793
 
   584 f_kwrest: kwrest_mark tIDENTIFIER .
 
     $default  reduce using rule 584 (f_kwrest)
 
 
-state 794
+State 794
 
   599 opt_f_block_arg: ',' . f_block_arg
 
@@ -25426,14 +25426,14 @@ state 794
     f_block_arg  go to state 888
 
 
-state 795
+State 795
 
   543 args_tail: f_kwrest opt_f_block_arg .
 
     $default  reduce using rule 543 (args_tail)
 
 
-state 796
+State 796
 
   545 opt_args_tail: ',' . args_tail
   554 f_args: f_optarg ',' . f_rest_arg opt_args_tail
@@ -25473,21 +25473,21 @@ state 796
     f_block_arg   go to state 686
 
 
-state 797
+State 797
 
   556 f_args: f_optarg opt_args_tail .
 
     $default  reduce using rule 556 (f_args)
 
 
-state 798
+State 798
 
   594 f_rest_arg: restarg_mark tIDENTIFIER .
 
     $default  reduce using rule 594 (f_rest_arg)
 
 
-state 799
+State 799
 
   545 opt_args_tail: ',' . args_tail
   559 f_args: f_rest_arg ',' . f_arg opt_args_tail
@@ -25519,21 +25519,21 @@ state 799
     f_block_arg  go to state 686
 
 
-state 800
+State 800
 
   558 f_args: f_rest_arg opt_args_tail .
 
     $default  reduce using rule 558 (f_args)
 
 
-state 801
+State 801
 
   598 f_block_arg: blkarg_mark tIDENTIFIER .
 
     $default  reduce using rule 598 (f_block_arg)
 
 
-state 802
+State 802
 
   500 string_content: tSTRING_DBEG @43 @44 . @45 @46 @47 compstmt tSTRING_DEND
 
@@ -25542,49 +25542,49 @@ state 802
     @45  go to state 894
 
 
-state 803
+State 803
 
   501 string_dvar: tGVAR .
 
     $default  reduce using rule 501 (string_dvar)
 
 
-state 804
+State 804
 
   502 string_dvar: tIVAR .
 
     $default  reduce using rule 502 (string_dvar)
 
 
-state 805
+State 805
 
   503 string_dvar: tCVAR .
 
     $default  reduce using rule 503 (string_dvar)
 
 
-state 806
+State 806
 
   494 string_content: tSTRING_DVAR @42 string_dvar .
 
     $default  reduce using rule 494 (string_content)
 
 
-state 807
+State 807
 
   504 string_dvar: backref .
 
     $default  reduce using rule 504 (string_dvar)
 
 
-state 808
+State 808
 
   439 brace_block: keyword_do @37 do_body keyword_end .
 
     $default  reduce using rule 439 (brace_block)
 
 
-state 809
+State 809
 
   445 do_body: @40 @41 . opt_block_param compstmt
 
@@ -25598,14 +25598,14 @@ state 809
     none             go to state 899
 
 
-state 810
+State 810
 
   437 brace_block: '{' @36 brace_body '}' .
 
     $default  reduce using rule 437 (brace_block)
 
 
-state 811
+State 811
 
   442 brace_body: @38 @39 . opt_block_param compstmt
 
@@ -25619,21 +25619,21 @@ state 811
     none             go to state 899
 
 
-state 812
+State 812
 
    60 cmd_brace_block: "{ arg" @5 brace_body . '}'
 
     '}'  shift, and go to state 901
 
 
-state 813
+State 813
 
   418 do_block: keyword_do_block @31 do_body keyword_end .
 
     $default  reduce using rule 418 (do_block)
 
 
-state 814
+State 814
 
   270 args: args ',' "*" . arg_value
   274 mrhs: args ',' "*" . arg_value
@@ -25736,7 +25736,7 @@ state 814
     operation         go to state 118
 
 
-state 815
+State 815
 
   269 args: args ',' arg_value .
   273 mrhs: args ',' arg_value .
@@ -25745,7 +25745,7 @@ state 815
     $default  reduce using rule 273 (mrhs)
 
 
-state 816
+State 816
 
    80 mlhs_basic: mlhs_head "*" mlhs_node ',' mlhs_post .
    92 mlhs_post: mlhs_post . ',' mlhs_item
@@ -25755,7 +25755,7 @@ state 816
     $default  reduce using rule 80 (mlhs_basic)
 
 
-state 817
+State 817
 
    26 stmt: stmt . modifier_if expr_value
    27     | stmt . modifier_unless expr_value
@@ -25767,7 +25767,7 @@ state 817
     $default  reduce using rule 46 (command_rhs)
 
 
-state 818
+State 818
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -25827,7 +25827,7 @@ state 818
     $default  reduce using rule 248 (arg_rhs)
 
 
-state 819
+State 819
 
    43 command_asgn: primary_value "::" tIDENTIFIER . tOP_ASGN command_rhs
   106 lhs: primary_value "::" tIDENTIFIER .
@@ -25893,7 +25893,7 @@ state 819
     $default         reduce using rule 615 (operation2)
 
 
-state 820
+State 820
 
    42 command_asgn: primary_value "::" tCONSTANT . tOP_ASGN command_rhs
   108 lhs: primary_value "::" tCONSTANT .
@@ -25957,7 +25957,7 @@ state 820
     $default         reduce using rule 616 (operation2)
 
 
-state 821
+State 821
 
    39 command_asgn: primary_value '[' opt_call_args . rbracket tOP_ASGN command_rhs
   104 lhs: primary_value '[' opt_call_args . rbracket
@@ -25972,7 +25972,7 @@ state 821
     rbracket  go to state 903
 
 
-state 822
+State 822
 
    40 command_asgn: primary_value call_op tIDENTIFIER . tOP_ASGN command_rhs
   105 lhs: primary_value call_op tIDENTIFIER .
@@ -25985,7 +25985,7 @@ state 822
     $default  reduce using rule 615 (operation2)
 
 
-state 823
+State 823
 
    41 command_asgn: primary_value call_op tCONSTANT . tOP_ASGN command_rhs
   107 lhs: primary_value call_op tCONSTANT .
@@ -25998,7 +25998,7 @@ state 823
     $default  reduce using rule 616 (operation2)
 
 
-state 824
+State 824
 
   240 arg: arg '?' arg opt_nl ':' . arg
 
@@ -26099,56 +26099,56 @@ state 824
     operation         go to state 118
 
 
-state 825
+State 825
 
    43 command_asgn: primary_value "::" tIDENTIFIER tOP_ASGN command_rhs .
 
     $default  reduce using rule 43 (command_asgn)
 
 
-state 826
+State 826
 
   204 arg: primary_value "::" tIDENTIFIER tOP_ASGN arg_rhs .
 
     $default  reduce using rule 204 (arg)
 
 
-state 827
+State 827
 
    42 command_asgn: primary_value "::" tCONSTANT tOP_ASGN command_rhs .
 
     $default  reduce using rule 42 (command_asgn)
 
 
-state 828
+State 828
 
   205 arg: primary_value "::" tCONSTANT tOP_ASGN arg_rhs .
 
     $default  reduce using rule 205 (arg)
 
 
-state 829
+State 829
 
    67 command: primary_value "::" operation2 command_args cmd_brace_block .
 
     $default  reduce using rule 67 (command)
 
 
-state 830
+State 830
 
   427 method_call: primary_value "::" operation2 @33 paren_args .
 
     $default  reduce using rule 427 (method_call)
 
 
-state 831
+State 831
 
   633 rbracket: opt_nl ']' .
 
     $default  reduce using rule 633 (rbracket)
 
 
-state 832
+State 832
 
    39 command_asgn: primary_value '[' opt_call_args rbracket tOP_ASGN . command_rhs
   201 arg: primary_value '[' opt_call_args rbracket tOP_ASGN . arg_rhs
@@ -26257,49 +26257,49 @@ state 832
     operation         go to state 118
 
 
-state 833
+State 833
 
    40 command_asgn: primary_value call_op tIDENTIFIER tOP_ASGN command_rhs .
 
     $default  reduce using rule 40 (command_asgn)
 
 
-state 834
+State 834
 
   202 arg: primary_value call_op tIDENTIFIER tOP_ASGN arg_rhs .
 
     $default  reduce using rule 202 (arg)
 
 
-state 835
+State 835
 
    41 command_asgn: primary_value call_op tCONSTANT tOP_ASGN command_rhs .
 
     $default  reduce using rule 41 (command_asgn)
 
 
-state 836
+State 836
 
   203 arg: primary_value call_op tCONSTANT tOP_ASGN arg_rhs .
 
     $default  reduce using rule 203 (arg)
 
 
-state 837
+State 837
 
    65 command: primary_value call_op operation2 command_args cmd_brace_block .
 
     $default  reduce using rule 65 (command)
 
 
-state 838
+State 838
 
   425 method_call: primary_value call_op operation2 @32 opt_paren_args .
 
     $default  reduce using rule 425 (method_call)
 
 
-state 839
+State 839
 
   267 args: arg_value .
   451 exc_list: arg_value .
@@ -26308,14 +26308,14 @@ state 839
     $default  reduce using rule 451 (exc_list)
 
 
-state 840
+State 840
 
   452 exc_list: mrhs .
 
     $default  reduce using rule 452 (exc_list)
 
 
-state 841
+State 841
 
   449 opt_rescue: keyword_rescue exc_list . exc_var then compstmt opt_rescue
 
@@ -26327,14 +26327,14 @@ state 841
     none     go to state 909
 
 
-state 842
+State 842
 
   453 exc_list: none .
 
     $default  reduce using rule 453 (exc_list)
 
 
-state 843
+State 843
 
   360 opt_else: keyword_else . compstmt
 
@@ -26462,7 +26462,7 @@ state 843
     none              go to state 261
 
 
-state 844
+State 844
 
    11 bodystmt: compstmt opt_rescue opt_else . opt_ensure
 
@@ -26474,14 +26474,14 @@ state 844
     none        go to state 913
 
 
-state 845
+State 845
 
   359 opt_else: none .
 
     $default  reduce using rule 359 (opt_else)
 
 
-state 846
+State 846
 
   358 if_tail: keyword_elsif . expr_value then compstmt if_tail
 
@@ -26588,7 +26588,7 @@ state 846
     operation         go to state 118
 
 
-state 847
+State 847
 
   311 primary: k_if expr_value then compstmt if_tail . k_end
 
@@ -26597,14 +26597,14 @@ state 847
     k_end  go to state 915
 
 
-state 848
+State 848
 
   357 if_tail: opt_else .
 
     $default  reduce using rule 357 (if_tail)
 
 
-state 849
+State 849
 
   312 primary: k_unless expr_value then compstmt opt_else . k_end
 
@@ -26613,7 +26613,7 @@ state 849
     k_end  go to state 916
 
 
-state 850
+State 850
 
   315 primary: k_while $@14 expr_value do $@15 . compstmt k_end
 
@@ -26740,7 +26740,7 @@ state 850
     none              go to state 261
 
 
-state 851
+State 851
 
   318 primary: k_until $@16 expr_value do $@17 . compstmt k_end
 
@@ -26867,14 +26867,14 @@ state 851
     none              go to state 261
 
 
-state 852
+State 852
 
   319 primary: k_case expr_value opt_terms case_body k_end .
 
     $default  reduce using rule 319 (primary)
 
 
-state 853
+State 853
 
   269 args: args ',' . arg_value
   270     | args ',' . "*" arg_value
@@ -26978,7 +26978,7 @@ state 853
     operation         go to state 118
 
 
-state 854
+State 854
 
   446 case_body: keyword_when args then . compstmt cases
 
@@ -27107,7 +27107,7 @@ state 854
     none              go to state 261
 
 
-state 855
+State 855
 
    95 mlhs_node: primary_value '[' opt_call_args rbracket .
   104 lhs: primary_value '[' opt_call_args rbracket .
@@ -27118,7 +27118,7 @@ state 855
     $default    reduce using rule 435 (method_call)
 
 
-state 856
+State 856
 
   323 primary: k_for for_var keyword_in $@18 expr_value . do $@19 compstmt k_end
 
@@ -27130,7 +27130,7 @@ state 856
     term  go to state 735
 
 
-state 857
+State 857
 
   327 primary: k_class "<<" expr @21 term . bodystmt k_end
 
@@ -27261,7 +27261,7 @@ state 857
     none              go to state 261
 
 
-state 858
+State 858
 
   536 superclass: '<' $@48 expr_value . term
 
@@ -27271,7 +27271,7 @@ state 858
     term  go to state 923
 
 
-state 859
+State 859
 
   325 primary: k_class cpath superclass @20 bodystmt . k_end
 
@@ -27280,28 +27280,28 @@ state 859
     k_end  go to state 924
 
 
-state 860
+State 860
 
   435 method_call: primary_value '[' opt_call_args rbracket .
 
     $default  reduce using rule 435 (method_call)
 
 
-state 861
+State 861
 
   329 primary: k_module cpath @22 bodystmt k_end .
 
     $default  reduce using rule 329 (primary)
 
 
-state 862
+State 862
 
   603 singleton: '(' $@50 expr rparen .
 
     $default  reduce using rule 603 (singleton)
 
 
-state 863
+State 863
 
   538 f_arglist: '(' . f_args rparen
 
@@ -27341,7 +27341,7 @@ state 863
     f_block_arg   go to state 686
 
 
-state 864
+State 864
 
   332 primary: k_def fname @23 @24 f_arglist . bodystmt k_end
 
@@ -27472,7 +27472,7 @@ state 864
     none              go to state 261
 
 
-state 865
+State 865
 
   540 f_arglist: @49 . f_args term
 
@@ -27512,7 +27512,7 @@ state 865
     f_block_arg   go to state 686
 
 
-state 866
+State 866
 
   335 primary: k_def singleton dot_or_colon @25 fname . @26 f_arglist bodystmt k_end
 
@@ -27521,21 +27521,21 @@ state 866
     @26  go to state 928
 
 
-state 867
+State 867
 
   421 block_call: block_call call_op2 operation2 opt_paren_args brace_block .
 
     $default  reduce using rule 421 (block_call)
 
 
-state 868
+State 868
 
   422 block_call: block_call call_op2 operation2 command_args do_block .
 
     $default  reduce using rule 422 (block_call)
 
 
-state 869
+State 869
 
   201 arg: primary_value '[' opt_call_args rbracket tOP_ASGN . arg_rhs
 
@@ -27637,7 +27637,7 @@ state 869
     operation         go to state 118
 
 
-state 870
+State 870
 
   255 opt_call_args: args ',' assocs ',' .
   265 opt_block_arg: ',' . block_arg
@@ -27748,21 +27748,21 @@ state 870
     operation         go to state 118
 
 
-state 871
+State 871
 
   304 primary: keyword_defined opt_nl '(' $@13 expr rparen .
 
     $default  reduce using rule 304 (primary)
 
 
-state 872
+State 872
 
    19 stmt_or_begin: keyword_BEGIN $@3 '{' top_compstmt '}' .
 
     $default  reduce using rule 19 (stmt_or_begin)
 
 
-state 873
+State 873
 
   364 f_marg: "(" f_margs . rparen
 
@@ -27774,7 +27774,7 @@ state 873
     rparen  go to state 929
 
 
-state 874
+State 874
 
   375 f_margs: "*" ',' . f_marg_list
 
@@ -27791,7 +27791,7 @@ state 874
     f_norm_arg   go to state 783
 
 
-state 875
+State 875
 
   372 f_margs: "*" f_norm_arg .
   373        | "*" f_norm_arg . ',' f_marg_list
@@ -27801,7 +27801,7 @@ state 875
     $default  reduce using rule 372 (f_margs)
 
 
-state 876
+State 876
 
   366 f_marg_list: f_marg_list ',' . f_marg
   368 f_margs: f_marg_list ',' . "*" f_norm_arg
@@ -27822,21 +27822,21 @@ state 876
     f_norm_arg  go to state 783
 
 
-state 877
+State 877
 
   570 f_arg_item: "(" f_margs rparen .
 
     $default  reduce using rule 570 (f_arg_item)
 
 
-state 878
+State 878
 
   413 f_larglist: '(' f_args opt_bv_decl . ')'
 
     ')'  shift, and go to state 934
 
 
-state 879
+State 879
 
   402 opt_bv_decl: opt_nl .
   403            | opt_nl . ';' bv_decls opt_nl
@@ -27846,7 +27846,7 @@ state 879
     $default  reduce using rule 402 (opt_bv_decl)
 
 
-state 880
+State 880
 
   412 lambda: @27 @28 f_larglist @29 @30 . lambda_body
 
@@ -27856,28 +27856,28 @@ state 880
     lambda_body  go to state 938
 
 
-state 881
+State 881
 
   586 f_opt: f_arg_asgn '=' arg_value .
 
     $default  reduce using rule 586 (f_opt)
 
 
-state 882
+State 882
 
   545 opt_args_tail: ',' args_tail .
 
     $default  reduce using rule 545 (opt_args_tail)
 
 
-state 883
+State 883
 
   572 f_arg: f_arg ',' f_arg_item .
 
     $default  reduce using rule 572 (f_arg)
 
 
-state 884
+State 884
 
   547 f_args: f_arg ',' f_optarg . ',' f_rest_arg opt_args_tail
   548       | f_arg ',' f_optarg . ',' f_rest_arg ',' f_arg opt_args_tail
@@ -27892,7 +27892,7 @@ state 884
     opt_args_tail  go to state 940
 
 
-state 885
+State 885
 
   551 f_args: f_arg ',' f_rest_arg . opt_args_tail
   552       | f_arg ',' f_rest_arg . ',' f_arg opt_args_tail
@@ -27904,14 +27904,14 @@ state 885
     opt_args_tail  go to state 942
 
 
-state 886
+State 886
 
   581 f_kwarg: f_kwarg ',' f_kw .
 
     $default  reduce using rule 581 (f_kwarg)
 
 
-state 887
+State 887
 
   541 args_tail: f_kwarg ',' f_kwrest . opt_f_block_arg
 
@@ -27923,14 +27923,14 @@ state 887
     none             go to state 792
 
 
-state 888
+State 888
 
   599 opt_f_block_arg: ',' f_block_arg .
 
     $default  reduce using rule 599 (opt_f_block_arg)
 
 
-state 889
+State 889
 
   557 f_args: f_optarg ',' f_arg . opt_args_tail
   572 f_arg: f_arg . ',' f_arg_item
@@ -27942,14 +27942,14 @@ state 889
     opt_args_tail  go to state 945
 
 
-state 890
+State 890
 
   591 f_optarg: f_optarg ',' f_opt .
 
     $default  reduce using rule 591 (f_optarg)
 
 
-state 891
+State 891
 
   554 f_args: f_optarg ',' f_rest_arg . opt_args_tail
   555       | f_optarg ',' f_rest_arg . ',' f_arg opt_args_tail
@@ -27961,14 +27961,14 @@ state 891
     opt_args_tail  go to state 947
 
 
-state 892
+State 892
 
   569 f_arg_item: f_arg_asgn .
 
     $default  reduce using rule 569 (f_arg_item)
 
 
-state 893
+State 893
 
   559 f_args: f_rest_arg ',' f_arg . opt_args_tail
   572 f_arg: f_arg . ',' f_arg_item
@@ -27980,7 +27980,7 @@ state 893
     opt_args_tail  go to state 948
 
 
-state 894
+State 894
 
   500 string_content: tSTRING_DBEG @43 @44 @45 . @46 @47 compstmt tSTRING_DEND
 
@@ -27989,14 +27989,14 @@ state 894
     @46  go to state 949
 
 
-state 895
+State 895
 
   400 block_param_def: "||" .
 
     $default  reduce using rule 400 (block_param_def)
 
 
-state 896
+State 896
 
   399 block_param_def: '|' . opt_bv_decl '|'
   401                | '|' . block_param opt_bv_decl '|'
@@ -28040,7 +28040,7 @@ state 896
     opt_nl           go to state 879
 
 
-state 897
+State 897
 
   445 do_body: @40 @41 opt_block_param . compstmt
 
@@ -28167,21 +28167,21 @@ state 897
     none              go to state 261
 
 
-state 898
+State 898
 
   398 opt_block_param: block_param_def .
 
     $default  reduce using rule 398 (opt_block_param)
 
 
-state 899
+State 899
 
   397 opt_block_param: none .
 
     $default  reduce using rule 397 (opt_block_param)
 
 
-state 900
+State 900
 
   442 brace_body: @38 @39 opt_block_param . compstmt
 
@@ -28308,14 +28308,14 @@ state 900
     none              go to state 261
 
 
-state 901
+State 901
 
    60 cmd_brace_block: "{ arg" @5 brace_body '}' .
 
     $default  reduce using rule 60 (cmd_brace_block)
 
 
-state 902
+State 902
 
   270 args: args ',' "*" arg_value .
   274 mrhs: args ',' "*" arg_value .
@@ -28324,7 +28324,7 @@ state 902
     $default  reduce using rule 274 (mrhs)
 
 
-state 903
+State 903
 
    39 command_asgn: primary_value '[' opt_call_args rbracket . tOP_ASGN command_rhs
   104 lhs: primary_value '[' opt_call_args rbracket .
@@ -28337,7 +28337,7 @@ state 903
     $default  reduce using rule 435 (method_call)
 
 
-state 904
+State 904
 
   208 arg: arg . ".." arg
   209    | arg . "..." arg
@@ -28397,21 +28397,21 @@ state 904
     $default  reduce using rule 240 (arg)
 
 
-state 905
+State 905
 
    39 command_asgn: primary_value '[' opt_call_args rbracket tOP_ASGN command_rhs .
 
     $default  reduce using rule 39 (command_asgn)
 
 
-state 906
+State 906
 
   201 arg: primary_value '[' opt_call_args rbracket tOP_ASGN arg_rhs .
 
     $default  reduce using rule 201 (arg)
 
 
-state 907
+State 907
 
   454 exc_var: "=>" . lhs
 
@@ -28506,7 +28506,7 @@ state 907
     operation         go to state 118
 
 
-state 908
+State 908
 
   449 opt_rescue: keyword_rescue exc_list exc_var . then compstmt opt_rescue
 
@@ -28518,21 +28518,21 @@ state 908
     term  go to state 580
 
 
-state 909
+State 909
 
   455 exc_var: none .
 
     $default  reduce using rule 455 (exc_var)
 
 
-state 910
+State 910
 
   360 opt_else: keyword_else compstmt .
 
     $default  reduce using rule 360 (opt_else)
 
 
-state 911
+State 911
 
   456 opt_ensure: keyword_ensure . compstmt
 
@@ -28659,21 +28659,21 @@ state 911
     none              go to state 261
 
 
-state 912
+State 912
 
    11 bodystmt: compstmt opt_rescue opt_else opt_ensure .
 
     $default  reduce using rule 11 (bodystmt)
 
 
-state 913
+State 913
 
   457 opt_ensure: none .
 
     $default  reduce using rule 457 (opt_ensure)
 
 
-state 914
+State 914
 
   358 if_tail: keyword_elsif expr_value . then compstmt if_tail
 
@@ -28685,21 +28685,21 @@ state 914
     term  go to state 580
 
 
-state 915
+State 915
 
   311 primary: k_if expr_value then compstmt if_tail k_end .
 
     $default  reduce using rule 311 (primary)
 
 
-state 916
+State 916
 
   312 primary: k_unless expr_value then compstmt opt_else k_end .
 
     $default  reduce using rule 312 (primary)
 
 
-state 917
+State 917
 
   315 primary: k_while $@14 expr_value do $@15 compstmt . k_end
 
@@ -28708,7 +28708,7 @@ state 917
     k_end  go to state 974
 
 
-state 918
+State 918
 
   318 primary: k_until $@16 expr_value do $@17 compstmt . k_end
 
@@ -28717,14 +28717,14 @@ state 918
     k_end  go to state 975
 
 
-state 919
+State 919
 
   269 args: args ',' arg_value .
 
     $default  reduce using rule 269 (args)
 
 
-state 920
+State 920
 
   446 case_body: keyword_when args then compstmt . cases
 
@@ -28739,7 +28739,7 @@ state 920
     none       go to state 845
 
 
-state 921
+State 921
 
   323 primary: k_for for_var keyword_in $@18 expr_value do . $@19 compstmt k_end
 
@@ -28748,7 +28748,7 @@ state 921
     $@19  go to state 979
 
 
-state 922
+State 922
 
   327 primary: k_class "<<" expr @21 term bodystmt . k_end
 
@@ -28757,21 +28757,21 @@ state 922
     k_end  go to state 980
 
 
-state 923
+State 923
 
   536 superclass: '<' $@48 expr_value term .
 
     $default  reduce using rule 536 (superclass)
 
 
-state 924
+State 924
 
   325 primary: k_class cpath superclass @20 bodystmt k_end .
 
     $default  reduce using rule 325 (primary)
 
 
-state 925
+State 925
 
   538 f_arglist: '(' f_args . rparen
 
@@ -28783,7 +28783,7 @@ state 925
     rparen  go to state 981
 
 
-state 926
+State 926
 
   332 primary: k_def fname @23 @24 f_arglist bodystmt . k_end
 
@@ -28792,7 +28792,7 @@ state 926
     k_end  go to state 982
 
 
-state 927
+State 927
 
   540 f_arglist: @49 f_args . term
 
@@ -28802,7 +28802,7 @@ state 927
     term  go to state 983
 
 
-state 928
+State 928
 
   335 primary: k_def singleton dot_or_colon @25 fname @26 . f_arglist bodystmt k_end
 
@@ -28814,14 +28814,14 @@ state 928
     @49        go to state 865
 
 
-state 929
+State 929
 
   364 f_marg: "(" f_margs rparen .
 
     $default  reduce using rule 364 (f_marg)
 
 
-state 930
+State 930
 
   366 f_marg_list: f_marg_list . ',' f_marg
   375 f_margs: "*" ',' f_marg_list .
@@ -28831,7 +28831,7 @@ state 930
     $default  reduce using rule 375 (f_margs)
 
 
-state 931
+State 931
 
   373 f_margs: "*" f_norm_arg ',' . f_marg_list
 
@@ -28848,7 +28848,7 @@ state 931
     f_norm_arg   go to state 783
 
 
-state 932
+State 932
 
   368 f_margs: f_marg_list ',' "*" . f_norm_arg
   369        | f_marg_list ',' "*" . f_norm_arg ',' f_marg_list
@@ -28868,21 +28868,21 @@ state 932
     f_norm_arg  go to state 988
 
 
-state 933
+State 933
 
   366 f_marg_list: f_marg_list ',' f_marg .
 
     $default  reduce using rule 366 (f_marg_list)
 
 
-state 934
+State 934
 
   413 f_larglist: '(' f_args opt_bv_decl ')' .
 
     $default  reduce using rule 413 (f_larglist)
 
 
-state 935
+State 935
 
   403 opt_bv_decl: opt_nl ';' . bv_decls opt_nl
 
@@ -28897,7 +28897,7 @@ state 935
     f_bad_arg  go to state 992
 
 
-state 936
+State 936
 
   416 lambda_body: keyword_do_LAMBDA . compstmt k_end
 
@@ -29024,7 +29024,7 @@ state 936
     none              go to state 261
 
 
-state 937
+State 937
 
   415 lambda_body: tLAMBEG . compstmt '}'
 
@@ -29151,14 +29151,14 @@ state 937
     none              go to state 261
 
 
-state 938
+State 938
 
   412 lambda: @27 @28 f_larglist @29 @30 lambda_body .
 
     $default  reduce using rule 412 (lambda)
 
 
-state 939
+State 939
 
   545 opt_args_tail: ',' . args_tail
   547 f_args: f_arg ',' f_optarg ',' . f_rest_arg opt_args_tail
@@ -29198,14 +29198,14 @@ state 939
     f_block_arg   go to state 686
 
 
-state 940
+State 940
 
   549 f_args: f_arg ',' f_optarg opt_args_tail .
 
     $default  reduce using rule 549 (f_args)
 
 
-state 941
+State 941
 
   545 opt_args_tail: ',' . args_tail
   552 f_args: f_arg ',' f_rest_arg ',' . f_arg opt_args_tail
@@ -29237,21 +29237,21 @@ state 941
     f_block_arg  go to state 686
 
 
-state 942
+State 942
 
   551 f_args: f_arg ',' f_rest_arg opt_args_tail .
 
     $default  reduce using rule 551 (f_args)
 
 
-state 943
+State 943
 
   541 args_tail: f_kwarg ',' f_kwrest opt_f_block_arg .
 
     $default  reduce using rule 541 (args_tail)
 
 
-state 944
+State 944
 
   545 opt_args_tail: ',' . args_tail
   572 f_arg: f_arg ',' . f_arg_item
@@ -29282,14 +29282,14 @@ state 944
     f_block_arg  go to state 686
 
 
-state 945
+State 945
 
   557 f_args: f_optarg ',' f_arg opt_args_tail .
 
     $default  reduce using rule 557 (f_args)
 
 
-state 946
+State 946
 
   545 opt_args_tail: ',' . args_tail
   555 f_args: f_optarg ',' f_rest_arg ',' . f_arg opt_args_tail
@@ -29321,21 +29321,21 @@ state 946
     f_block_arg  go to state 686
 
 
-state 947
+State 947
 
   554 f_args: f_optarg ',' f_rest_arg opt_args_tail .
 
     $default  reduce using rule 554 (f_args)
 
 
-state 948
+State 948
 
   559 f_args: f_rest_arg ',' f_arg opt_args_tail .
 
     $default  reduce using rule 559 (f_args)
 
 
-state 949
+State 949
 
   500 string_content: tSTRING_DBEG @43 @44 @45 @46 . @47 compstmt tSTRING_DEND
 
@@ -29344,14 +29344,14 @@ state 949
     @47  go to state 999
 
 
-state 950
+State 950
 
   396 block_param: block_args_tail .
 
     $default  reduce using rule 396 (block_param)
 
 
-state 951
+State 951
 
   401 block_param_def: '|' block_param . opt_bv_decl '|'
 
@@ -29363,14 +29363,14 @@ state 951
     opt_nl       go to state 879
 
 
-state 952
+State 952
 
   399 block_param_def: '|' opt_bv_decl . '|'
 
     '|'  shift, and go to state 1001
 
 
-state 953
+State 953
 
   569 f_arg_item: f_arg_asgn .
   587 f_block_opt: f_arg_asgn . '=' primary_value
@@ -29380,7 +29380,7 @@ state 953
     $default  reduce using rule 569 (f_arg_item)
 
 
-state 954
+State 954
 
   382 block_param: f_arg . ',' f_block_optarg ',' f_rest_arg opt_block_args_tail
   383            | f_arg . ',' f_block_optarg ',' f_rest_arg ',' f_arg opt_block_args_tail
@@ -29399,7 +29399,7 @@ state 954
     opt_block_args_tail  go to state 1004
 
 
-state 955
+State 955
 
   576 f_block_kw: f_label . primary_value
   577           | f_label .
@@ -29496,14 +29496,14 @@ state 955
     operation         go to state 118
 
 
-state 956
+State 956
 
   578 f_block_kwarg: f_block_kw .
 
     $default  reduce using rule 578 (f_block_kwarg)
 
 
-state 957
+State 957
 
   376 block_args_tail: f_block_kwarg . ',' f_kwrest opt_f_block_arg
   377                | f_block_kwarg . opt_f_block_arg
@@ -29517,7 +29517,7 @@ state 957
     none             go to state 792
 
 
-state 958
+State 958
 
   378 block_args_tail: f_kwrest . opt_f_block_arg
 
@@ -29529,14 +29529,14 @@ state 958
     none             go to state 792
 
 
-state 959
+State 959
 
   588 f_block_optarg: f_block_opt .
 
     $default  reduce using rule 588 (f_block_optarg)
 
 
-state 960
+State 960
 
   390 block_param: f_block_optarg . ',' f_rest_arg opt_block_args_tail
   391            | f_block_optarg . ',' f_rest_arg ',' f_arg opt_block_args_tail
@@ -29551,7 +29551,7 @@ state 960
     opt_block_args_tail  go to state 1011
 
 
-state 961
+State 961
 
   394 block_param: f_rest_arg . opt_block_args_tail
   395            | f_rest_arg . ',' f_arg opt_block_args_tail
@@ -29563,28 +29563,28 @@ state 961
     opt_block_args_tail  go to state 1013
 
 
-state 962
+State 962
 
   379 block_args_tail: f_block_arg .
 
     $default  reduce using rule 379 (block_args_tail)
 
 
-state 963
+State 963
 
   445 do_body: @40 @41 opt_block_param compstmt .
 
     $default  reduce using rule 445 (do_body)
 
 
-state 964
+State 964
 
   442 brace_body: @38 @39 opt_block_param compstmt .
 
     $default  reduce using rule 442 (brace_body)
 
 
-state 965
+State 965
 
   109 lhs: ":: at EXPR_BEG" . tCONSTANT
   296 primary: ":: at EXPR_BEG" . tCONSTANT
@@ -29592,14 +29592,14 @@ state 965
     tCONSTANT  shift, and go to state 1014
 
 
-state 966
+State 966
 
   454 exc_var: "=>" lhs .
 
     $default  reduce using rule 454 (exc_var)
 
 
-state 967
+State 967
 
   104 lhs: primary_value . '[' opt_call_args rbracket
   105    | primary_value . call_op tIDENTIFIER
@@ -29622,7 +29622,7 @@ state 967
     call_op  go to state 1017
 
 
-state 968
+State 968
 
   102 lhs: user_variable .
   529 var_ref: user_variable .
@@ -29633,7 +29633,7 @@ state 968
     $default      reduce using rule 529 (var_ref)
 
 
-state 969
+State 969
 
   103 lhs: keyword_variable .
   530 var_ref: keyword_variable .
@@ -29644,7 +29644,7 @@ state 969
     $default      reduce using rule 530 (var_ref)
 
 
-state 970
+State 970
 
   110 lhs: backref .
   285 primary: backref .
@@ -29655,7 +29655,7 @@ state 970
     $default      reduce using rule 285 (primary)
 
 
-state 971
+State 971
 
   449 opt_rescue: keyword_rescue exc_list exc_var then . compstmt opt_rescue
 
@@ -29785,14 +29785,14 @@ state 971
     none              go to state 261
 
 
-state 972
+State 972
 
   456 opt_ensure: keyword_ensure compstmt .
 
     $default  reduce using rule 456 (opt_ensure)
 
 
-state 973
+State 973
 
   358 if_tail: keyword_elsif expr_value then . compstmt if_tail
 
@@ -29921,42 +29921,42 @@ state 973
     none              go to state 261
 
 
-state 974
+State 974
 
   315 primary: k_while $@14 expr_value do $@15 compstmt k_end .
 
     $default  reduce using rule 315 (primary)
 
 
-state 975
+State 975
 
   318 primary: k_until $@16 expr_value do $@17 compstmt k_end .
 
     $default  reduce using rule 318 (primary)
 
 
-state 976
+State 976
 
   447 cases: opt_else .
 
     $default  reduce using rule 447 (cases)
 
 
-state 977
+State 977
 
   448 cases: case_body .
 
     $default  reduce using rule 448 (cases)
 
 
-state 978
+State 978
 
   446 case_body: keyword_when args then compstmt cases .
 
     $default  reduce using rule 446 (case_body)
 
 
-state 979
+State 979
 
   323 primary: k_for for_var keyword_in $@18 expr_value do $@19 . compstmt k_end
 
@@ -30083,35 +30083,35 @@ state 979
     none              go to state 261
 
 
-state 980
+State 980
 
   327 primary: k_class "<<" expr @21 term bodystmt k_end .
 
     $default  reduce using rule 327 (primary)
 
 
-state 981
+State 981
 
   538 f_arglist: '(' f_args rparen .
 
     $default  reduce using rule 538 (f_arglist)
 
 
-state 982
+State 982
 
   332 primary: k_def fname @23 @24 f_arglist bodystmt k_end .
 
     $default  reduce using rule 332 (primary)
 
 
-state 983
+State 983
 
   540 f_arglist: @49 f_args term .
 
     $default  reduce using rule 540 (f_arglist)
 
 
-state 984
+State 984
 
   335 primary: k_def singleton dot_or_colon @25 fname @26 f_arglist . bodystmt k_end
 
@@ -30242,7 +30242,7 @@ state 984
     none              go to state 261
 
 
-state 985
+State 985
 
   366 f_marg_list: f_marg_list ',' . f_marg
 
@@ -30258,7 +30258,7 @@ state 985
     f_norm_arg  go to state 783
 
 
-state 986
+State 986
 
   366 f_marg_list: f_marg_list . ',' f_marg
   373 f_margs: "*" f_norm_arg ',' f_marg_list .
@@ -30268,7 +30268,7 @@ state 986
     $default  reduce using rule 373 (f_margs)
 
 
-state 987
+State 987
 
   371 f_margs: f_marg_list ',' "*" ',' . f_marg_list
 
@@ -30285,7 +30285,7 @@ state 987
     f_norm_arg   go to state 783
 
 
-state 988
+State 988
 
   368 f_margs: f_marg_list ',' "*" f_norm_arg .
   369        | f_marg_list ',' "*" f_norm_arg . ',' f_marg_list
@@ -30295,14 +30295,14 @@ state 988
     $default  reduce using rule 368 (f_margs)
 
 
-state 989
+State 989
 
   406 bvar: tIDENTIFIER .
 
     $default  reduce using rule 406 (bvar)
 
 
-state 990
+State 990
 
   403 opt_bv_decl: opt_nl ';' bv_decls . opt_nl
   405 bv_decls: bv_decls . ',' bvar
@@ -30315,21 +30315,21 @@ state 990
     opt_nl  go to state 1025
 
 
-state 991
+State 991
 
   404 bv_decls: bvar .
 
     $default  reduce using rule 404 (bv_decls)
 
 
-state 992
+State 992
 
   407 bvar: f_bad_arg .
 
     $default  reduce using rule 407 (bvar)
 
 
-state 993
+State 993
 
   416 lambda_body: keyword_do_LAMBDA compstmt . k_end
 
@@ -30338,14 +30338,14 @@ state 993
     k_end  go to state 1026
 
 
-state 994
+State 994
 
   415 lambda_body: tLAMBEG compstmt . '}'
 
     '}'  shift, and go to state 1027
 
 
-state 995
+State 995
 
   550 f_args: f_arg ',' f_optarg ',' f_arg . opt_args_tail
   572 f_arg: f_arg . ',' f_arg_item
@@ -30357,7 +30357,7 @@ state 995
     opt_args_tail  go to state 1028
 
 
-state 996
+State 996
 
   547 f_args: f_arg ',' f_optarg ',' f_rest_arg . opt_args_tail
   548       | f_arg ',' f_optarg ',' f_rest_arg . ',' f_arg opt_args_tail
@@ -30369,7 +30369,7 @@ state 996
     opt_args_tail  go to state 1030
 
 
-state 997
+State 997
 
   552 f_args: f_arg ',' f_rest_arg ',' f_arg . opt_args_tail
   572 f_arg: f_arg . ',' f_arg_item
@@ -30381,7 +30381,7 @@ state 997
     opt_args_tail  go to state 1031
 
 
-state 998
+State 998
 
   555 f_args: f_optarg ',' f_rest_arg ',' f_arg . opt_args_tail
   572 f_arg: f_arg . ',' f_arg_item
@@ -30393,7 +30393,7 @@ state 998
     opt_args_tail  go to state 1032
 
 
-state 999
+State 999
 
   500 string_content: tSTRING_DBEG @43 @44 @45 @46 @47 . compstmt tSTRING_DEND
 
@@ -30520,21 +30520,21 @@ state 999
     none              go to state 261
 
 
-state 1000
+State 1000
 
   401 block_param_def: '|' block_param opt_bv_decl . '|'
 
     '|'  shift, and go to state 1034
 
 
-state 1001
+State 1001
 
   399 block_param_def: '|' opt_bv_decl '|' .
 
     $default  reduce using rule 399 (block_param_def)
 
 
-state 1002
+State 1002
 
   587 f_block_opt: f_arg_asgn '=' . primary_value
 
@@ -30628,7 +30628,7 @@ state 1002
     operation         go to state 118
 
 
-state 1003
+State 1003
 
   380 opt_block_args_tail: ',' . block_args_tail
   382 block_param: f_arg ',' . f_block_optarg ',' f_rest_arg opt_block_args_tail
@@ -30674,21 +30674,21 @@ state 1003
     f_block_arg      go to state 962
 
 
-state 1004
+State 1004
 
   389 block_param: f_arg opt_block_args_tail .
 
     $default  reduce using rule 389 (block_param)
 
 
-state 1005
+State 1005
 
   296 primary: ":: at EXPR_BEG" . tCONSTANT
 
     tCONSTANT  shift, and go to state 1039
 
 
-state 1006
+State 1006
 
   295 primary: primary_value . "::" tCONSTANT
   425 method_call: primary_value . call_op operation2 @32 opt_paren_args
@@ -30709,7 +30709,7 @@ state 1006
     call_op  go to state 600
 
 
-state 1007
+State 1007
 
   376 block_args_tail: f_block_kwarg ',' . f_kwrest opt_f_block_arg
   579 f_block_kwarg: f_block_kwarg ',' . f_block_kw
@@ -30729,21 +30729,21 @@ state 1007
     f_block_arg  go to state 888
 
 
-state 1008
+State 1008
 
   377 block_args_tail: f_block_kwarg opt_f_block_arg .
 
     $default  reduce using rule 377 (block_args_tail)
 
 
-state 1009
+State 1009
 
   378 block_args_tail: f_kwrest opt_f_block_arg .
 
     $default  reduce using rule 378 (block_args_tail)
 
 
-state 1010
+State 1010
 
   380 opt_block_args_tail: ',' . block_args_tail
   390 block_param: f_block_optarg ',' . f_rest_arg opt_block_args_tail
@@ -30783,14 +30783,14 @@ state 1010
     f_block_arg      go to state 962
 
 
-state 1011
+State 1011
 
   392 block_param: f_block_optarg opt_block_args_tail .
 
     $default  reduce using rule 392 (block_param)
 
 
-state 1012
+State 1012
 
   380 opt_block_args_tail: ',' . block_args_tail
   395 block_param: f_rest_arg ',' . f_arg opt_block_args_tail
@@ -30822,14 +30822,14 @@ state 1012
     f_block_arg      go to state 962
 
 
-state 1013
+State 1013
 
   394 block_param: f_rest_arg opt_block_args_tail .
 
     $default  reduce using rule 394 (block_param)
 
 
-state 1014
+State 1014
 
   109 lhs: ":: at EXPR_BEG" tCONSTANT .
   296 primary: ":: at EXPR_BEG" tCONSTANT .
@@ -30840,7 +30840,7 @@ state 1014
     $default      reduce using rule 296 (primary)
 
 
-state 1015
+State 1015
 
   106 lhs: primary_value "::" . tIDENTIFIER
   108    | primary_value "::" . tCONSTANT
@@ -30891,7 +30891,7 @@ state 1015
     operation3  go to state 568
 
 
-state 1016
+State 1016
 
   104 lhs: primary_value '[' . opt_call_args rbracket
   435 method_call: primary_value '[' . opt_call_args rbracket
@@ -31008,7 +31008,7 @@ state 1016
     none              go to state 436
 
 
-state 1017
+State 1017
 
   105 lhs: primary_value call_op . tIDENTIFIER
   107    | primary_value call_op . tCONSTANT
@@ -31056,7 +31056,7 @@ state 1017
     operation2  go to state 640
 
 
-state 1018
+State 1018
 
   449 opt_rescue: keyword_rescue exc_list exc_var then compstmt . opt_rescue
 
@@ -31068,7 +31068,7 @@ state 1018
     none        go to state 729
 
 
-state 1019
+State 1019
 
   358 if_tail: keyword_elsif expr_value then compstmt . if_tail
 
@@ -31082,7 +31082,7 @@ state 1019
     none      go to state 845
 
 
-state 1020
+State 1020
 
   323 primary: k_for for_var keyword_in $@18 expr_value do $@19 compstmt . k_end
 
@@ -31091,7 +31091,7 @@ state 1020
     k_end  go to state 1054
 
 
-state 1021
+State 1021
 
   335 primary: k_def singleton dot_or_colon @25 fname @26 f_arglist bodystmt . k_end
 
@@ -31100,7 +31100,7 @@ state 1021
     k_end  go to state 1055
 
 
-state 1022
+State 1022
 
   366 f_marg_list: f_marg_list . ',' f_marg
   371 f_margs: f_marg_list ',' "*" ',' f_marg_list .
@@ -31110,7 +31110,7 @@ state 1022
     $default  reduce using rule 371 (f_margs)
 
 
-state 1023
+State 1023
 
   369 f_margs: f_marg_list ',' "*" f_norm_arg ',' . f_marg_list
 
@@ -31127,7 +31127,7 @@ state 1023
     f_norm_arg   go to state 783
 
 
-state 1024
+State 1024
 
   405 bv_decls: bv_decls ',' . bvar
 
@@ -31141,35 +31141,35 @@ state 1024
     f_bad_arg  go to state 992
 
 
-state 1025
+State 1025
 
   403 opt_bv_decl: opt_nl ';' bv_decls opt_nl .
 
     $default  reduce using rule 403 (opt_bv_decl)
 
 
-state 1026
+State 1026
 
   416 lambda_body: keyword_do_LAMBDA compstmt k_end .
 
     $default  reduce using rule 416 (lambda_body)
 
 
-state 1027
+State 1027
 
   415 lambda_body: tLAMBEG compstmt '}' .
 
     $default  reduce using rule 415 (lambda_body)
 
 
-state 1028
+State 1028
 
   550 f_args: f_arg ',' f_optarg ',' f_arg opt_args_tail .
 
     $default  reduce using rule 550 (f_args)
 
 
-state 1029
+State 1029
 
   545 opt_args_tail: ',' . args_tail
   548 f_args: f_arg ',' f_optarg ',' f_rest_arg ',' . f_arg opt_args_tail
@@ -31201,42 +31201,42 @@ state 1029
     f_block_arg  go to state 686
 
 
-state 1030
+State 1030
 
   547 f_args: f_arg ',' f_optarg ',' f_rest_arg opt_args_tail .
 
     $default  reduce using rule 547 (f_args)
 
 
-state 1031
+State 1031
 
   552 f_args: f_arg ',' f_rest_arg ',' f_arg opt_args_tail .
 
     $default  reduce using rule 552 (f_args)
 
 
-state 1032
+State 1032
 
   555 f_args: f_optarg ',' f_rest_arg ',' f_arg opt_args_tail .
 
     $default  reduce using rule 555 (f_args)
 
 
-state 1033
+State 1033
 
   500 string_content: tSTRING_DBEG @43 @44 @45 @46 @47 compstmt . tSTRING_DEND
 
     tSTRING_DEND  shift, and go to state 1059
 
 
-state 1034
+State 1034
 
   401 block_param_def: '|' block_param opt_bv_decl '|' .
 
     $default  reduce using rule 401 (block_param_def)
 
 
-state 1035
+State 1035
 
   295 primary: primary_value . "::" tCONSTANT
   425 method_call: primary_value . call_op operation2 @32 opt_paren_args
@@ -31257,14 +31257,14 @@ state 1035
     call_op  go to state 600
 
 
-state 1036
+State 1036
 
   380 opt_block_args_tail: ',' block_args_tail .
 
     $default  reduce using rule 380 (opt_block_args_tail)
 
 
-state 1037
+State 1037
 
   382 block_param: f_arg ',' f_block_optarg . ',' f_rest_arg opt_block_args_tail
   383            | f_arg ',' f_block_optarg . ',' f_rest_arg ',' f_arg opt_block_args_tail
@@ -31279,7 +31279,7 @@ state 1037
     opt_block_args_tail  go to state 1061
 
 
-state 1038
+State 1038
 
   386 block_param: f_arg ',' f_rest_arg . opt_block_args_tail
   388            | f_arg ',' f_rest_arg . ',' f_arg opt_block_args_tail
@@ -31291,14 +31291,14 @@ state 1038
     opt_block_args_tail  go to state 1063
 
 
-state 1039
+State 1039
 
   296 primary: ":: at EXPR_BEG" tCONSTANT .
 
     $default  reduce using rule 296 (primary)
 
 
-state 1040
+State 1040
 
   295 primary: primary_value "::" . tCONSTANT
   427 method_call: primary_value "::" . operation2 @33 paren_args
@@ -31347,14 +31347,14 @@ state 1040
     operation3  go to state 568
 
 
-state 1041
+State 1041
 
   579 f_block_kwarg: f_block_kwarg ',' f_block_kw .
 
     $default  reduce using rule 579 (f_block_kwarg)
 
 
-state 1042
+State 1042
 
   376 block_args_tail: f_block_kwarg ',' f_kwrest . opt_f_block_arg
 
@@ -31366,7 +31366,7 @@ state 1042
     none             go to state 792
 
 
-state 1043
+State 1043
 
   393 block_param: f_block_optarg ',' f_arg . opt_block_args_tail
   572 f_arg: f_arg . ',' f_arg_item
@@ -31378,14 +31378,14 @@ state 1043
     opt_block_args_tail  go to state 1068
 
 
-state 1044
+State 1044
 
   589 f_block_optarg: f_block_optarg ',' f_block_opt .
 
     $default  reduce using rule 589 (f_block_optarg)
 
 
-state 1045
+State 1045
 
   390 block_param: f_block_optarg ',' f_rest_arg . opt_block_args_tail
   391            | f_block_optarg ',' f_rest_arg . ',' f_arg opt_block_args_tail
@@ -31397,7 +31397,7 @@ state 1045
     opt_block_args_tail  go to state 1070
 
 
-state 1046
+State 1046
 
   395 block_param: f_rest_arg ',' f_arg . opt_block_args_tail
   572 f_arg: f_arg . ',' f_arg_item
@@ -31409,7 +31409,7 @@ state 1046
     opt_block_args_tail  go to state 1071
 
 
-state 1047
+State 1047
 
   106 lhs: primary_value "::" tIDENTIFIER .
   615 operation2: tIDENTIFIER .
@@ -31422,7 +31422,7 @@ state 1047
     $default      reduce using rule 619 (operation3)
 
 
-state 1048
+State 1048
 
   108 lhs: primary_value "::" tCONSTANT .
   295 primary: primary_value "::" tCONSTANT .
@@ -31435,7 +31435,7 @@ state 1048
     $default      reduce using rule 295 (primary)
 
 
-state 1049
+State 1049
 
   104 lhs: primary_value '[' opt_call_args . rbracket
   435 method_call: primary_value '[' opt_call_args . rbracket
@@ -31448,7 +31448,7 @@ state 1049
     rbracket  go to state 1072
 
 
-state 1050
+State 1050
 
   105 lhs: primary_value call_op tIDENTIFIER .
   615 operation2: tIDENTIFIER .
@@ -31459,7 +31459,7 @@ state 1050
     $default      reduce using rule 615 (operation2)
 
 
-state 1051
+State 1051
 
   107 lhs: primary_value call_op tCONSTANT .
   616 operation2: tCONSTANT .
@@ -31470,35 +31470,35 @@ state 1051
     $default      reduce using rule 616 (operation2)
 
 
-state 1052
+State 1052
 
   449 opt_rescue: keyword_rescue exc_list exc_var then compstmt opt_rescue .
 
     $default  reduce using rule 449 (opt_rescue)
 
 
-state 1053
+State 1053
 
   358 if_tail: keyword_elsif expr_value then compstmt if_tail .
 
     $default  reduce using rule 358 (if_tail)
 
 
-state 1054
+State 1054
 
   323 primary: k_for for_var keyword_in $@18 expr_value do $@19 compstmt k_end .
 
     $default  reduce using rule 323 (primary)
 
 
-state 1055
+State 1055
 
   335 primary: k_def singleton dot_or_colon @25 fname @26 f_arglist bodystmt k_end .
 
     $default  reduce using rule 335 (primary)
 
 
-state 1056
+State 1056
 
   366 f_marg_list: f_marg_list . ',' f_marg
   369 f_margs: f_marg_list ',' "*" f_norm_arg ',' f_marg_list .
@@ -31508,14 +31508,14 @@ state 1056
     $default  reduce using rule 369 (f_margs)
 
 
-state 1057
+State 1057
 
   405 bv_decls: bv_decls ',' bvar .
 
     $default  reduce using rule 405 (bv_decls)
 
 
-state 1058
+State 1058
 
   548 f_args: f_arg ',' f_optarg ',' f_rest_arg ',' f_arg . opt_args_tail
   572 f_arg: f_arg . ',' f_arg_item
@@ -31527,14 +31527,14 @@ state 1058
     opt_args_tail  go to state 1073
 
 
-state 1059
+State 1059
 
   500 string_content: tSTRING_DBEG @43 @44 @45 @46 @47 compstmt tSTRING_DEND .
 
     $default  reduce using rule 500 (string_content)
 
 
-state 1060
+State 1060
 
   380 opt_block_args_tail: ',' . block_args_tail
   382 block_param: f_arg ',' f_block_optarg ',' . f_rest_arg opt_block_args_tail
@@ -31574,14 +31574,14 @@ state 1060
     f_block_arg      go to state 962
 
 
-state 1061
+State 1061
 
   384 block_param: f_arg ',' f_block_optarg opt_block_args_tail .
 
     $default  reduce using rule 384 (block_param)
 
 
-state 1062
+State 1062
 
   380 opt_block_args_tail: ',' . block_args_tail
   388 block_param: f_arg ',' f_rest_arg ',' . f_arg opt_block_args_tail
@@ -31613,14 +31613,14 @@ state 1062
     f_block_arg      go to state 962
 
 
-state 1063
+State 1063
 
   386 block_param: f_arg ',' f_rest_arg opt_block_args_tail .
 
     $default  reduce using rule 386 (block_param)
 
 
-state 1064
+State 1064
 
   615 operation2: tIDENTIFIER .
   619 operation3: tIDENTIFIER .
@@ -31629,7 +31629,7 @@ state 1064
     $default  reduce using rule 619 (operation3)
 
 
-state 1065
+State 1065
 
   295 primary: primary_value "::" tCONSTANT .
   616 operation2: tCONSTANT .
@@ -31638,14 +31638,14 @@ state 1065
     $default  reduce using rule 295 (primary)
 
 
-state 1066
+State 1066
 
   376 block_args_tail: f_block_kwarg ',' f_kwrest opt_f_block_arg .
 
     $default  reduce using rule 376 (block_args_tail)
 
 
-state 1067
+State 1067
 
   380 opt_block_args_tail: ',' . block_args_tail
   572 f_arg: f_arg ',' . f_arg_item
@@ -31676,14 +31676,14 @@ state 1067
     f_block_arg      go to state 962
 
 
-state 1068
+State 1068
 
   393 block_param: f_block_optarg ',' f_arg opt_block_args_tail .
 
     $default  reduce using rule 393 (block_param)
 
 
-state 1069
+State 1069
 
   380 opt_block_args_tail: ',' . block_args_tail
   391 block_param: f_block_optarg ',' f_rest_arg ',' . f_arg opt_block_args_tail
@@ -31715,21 +31715,21 @@ state 1069
     f_block_arg      go to state 962
 
 
-state 1070
+State 1070
 
   390 block_param: f_block_optarg ',' f_rest_arg opt_block_args_tail .
 
     $default  reduce using rule 390 (block_param)
 
 
-state 1071
+State 1071
 
   395 block_param: f_rest_arg ',' f_arg opt_block_args_tail .
 
     $default  reduce using rule 395 (block_param)
 
 
-state 1072
+State 1072
 
   104 lhs: primary_value '[' opt_call_args rbracket .
   435 method_call: primary_value '[' opt_call_args rbracket .
@@ -31740,14 +31740,14 @@ state 1072
     $default      reduce using rule 435 (method_call)
 
 
-state 1073
+State 1073
 
   548 f_args: f_arg ',' f_optarg ',' f_rest_arg ',' f_arg opt_args_tail .
 
     $default  reduce using rule 548 (f_args)
 
 
-state 1074
+State 1074
 
   385 block_param: f_arg ',' f_block_optarg ',' f_arg . opt_block_args_tail
   572 f_arg: f_arg . ',' f_arg_item
@@ -31759,7 +31759,7 @@ state 1074
     opt_block_args_tail  go to state 1078
 
 
-state 1075
+State 1075
 
   382 block_param: f_arg ',' f_block_optarg ',' f_rest_arg . opt_block_args_tail
   383            | f_arg ',' f_block_optarg ',' f_rest_arg . ',' f_arg opt_block_args_tail
@@ -31771,7 +31771,7 @@ state 1075
     opt_block_args_tail  go to state 1080
 
 
-state 1076
+State 1076
 
   388 block_param: f_arg ',' f_rest_arg ',' f_arg . opt_block_args_tail
   572 f_arg: f_arg . ',' f_arg_item
@@ -31783,7 +31783,7 @@ state 1076
     opt_block_args_tail  go to state 1081
 
 
-state 1077
+State 1077
 
   391 block_param: f_block_optarg ',' f_rest_arg ',' f_arg . opt_block_args_tail
   572 f_arg: f_arg . ',' f_arg_item
@@ -31795,14 +31795,14 @@ state 1077
     opt_block_args_tail  go to state 1082
 
 
-state 1078
+State 1078
 
   385 block_param: f_arg ',' f_block_optarg ',' f_arg opt_block_args_tail .
 
     $default  reduce using rule 385 (block_param)
 
 
-state 1079
+State 1079
 
   380 opt_block_args_tail: ',' . block_args_tail
   383 block_param: f_arg ',' f_block_optarg ',' f_rest_arg ',' . f_arg opt_block_args_tail
@@ -31834,28 +31834,28 @@ state 1079
     f_block_arg      go to state 962
 
 
-state 1080
+State 1080
 
   382 block_param: f_arg ',' f_block_optarg ',' f_rest_arg opt_block_args_tail .
 
     $default  reduce using rule 382 (block_param)
 
 
-state 1081
+State 1081
 
   388 block_param: f_arg ',' f_rest_arg ',' f_arg opt_block_args_tail .
 
     $default  reduce using rule 388 (block_param)
 
 
-state 1082
+State 1082
 
   391 block_param: f_block_optarg ',' f_rest_arg ',' f_arg opt_block_args_tail .
 
     $default  reduce using rule 391 (block_param)
 
 
-state 1083
+State 1083
 
   383 block_param: f_arg ',' f_block_optarg ',' f_rest_arg ',' f_arg . opt_block_args_tail
   572 f_arg: f_arg . ',' f_arg_item
@@ -31867,7 +31867,7 @@ state 1083
     opt_block_args_tail  go to state 1084
 
 
-state 1084
+State 1084
 
   383 block_param: f_arg ',' f_block_optarg ',' f_rest_arg ',' f_arg opt_block_args_tail .
 

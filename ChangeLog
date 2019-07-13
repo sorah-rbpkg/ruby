@@ -1,7 +1,182 @@
 ------------------------------------------------------------------------
-r65137 | usa | 2018-10-18 00:34:55 +0900 (Thu, 18 Oct 2018) | 1 line
+r67394 | usa | 2019-04-01 00:03:52 +0900 (Mon, 01 Apr 2019) | 1 line
 
-add tag v2_4_5
+add tag v2_4_6
+------------------------------------------------------------------------
+r67393 | svn | 2019-04-01 00:01:14 +0900 (Mon, 01 Apr 2019) | 1 line
+
+* 2019-04-01
+------------------------------------------------------------------------
+r67392 | usa | 2019-04-01 00:01:13 +0900 (Mon, 01 Apr 2019) | 6 lines
+
+merge revision(s) 67201: [Backport #15650]
+
+	eval.c: clear internal errinfo
+
+	* eval.c (ruby_cleanup): clear internal error info when invoking
+	  end procs.  [ruby-core:91731] [Bug #15650]
+------------------------------------------------------------------------
+r67391 | usa | 2019-03-31 23:58:24 +0900 (Sun, 31 Mar 2019) | 6 lines
+
+merge revision(s) 67188: [Backport #15642]
+
+	io.c: chomp CR at the end of read buffer
+
+	* io.c (rb_io_getline_fast): chomp CR followed by LF but separated
+	  by the read buffer boundary.  [ruby-core:91707] [Bug #15642]
+------------------------------------------------------------------------
+r67303 | usa | 2019-03-19 03:30:36 +0900 (Tue, 19 Mar 2019) | 2 lines
+
+Applied security patches for RubyGems
+
+------------------------------------------------------------------------
+r67154 | usa | 2019-03-01 16:57:58 +0900 (Fri, 01 Mar 2019) | 3 lines
+
+merge revision(s) 65365:
+
+	Update for tzdata-2018f
+------------------------------------------------------------------------
+r67153 | usa | 2019-03-01 15:19:58 +0900 (Fri, 01 Mar 2019) | 2 lines
+
+Get rid of "shadowing outer local varable" warning
+
+------------------------------------------------------------------------
+r67148 | usa | 2019-02-28 23:55:05 +0900 (Thu, 28 Feb 2019) | 9 lines
+
+merge revision(s) 66909: [Backport #15555]
+
+	tmpdir.rb: permission of user given directory
+
+	* lib/tmpdir.rb (Dir.mktmpdir): check if the permission of the
+	  parent directory only when using the default temporary
+	  directory, and no check against user given directory.  the
+	  security is the user's responsibility in that case.
+	  [ruby-core:91216] [Bug #15555]
+------------------------------------------------------------------------
+r67147 | usa | 2019-02-28 23:52:06 +0900 (Thu, 28 Feb 2019) | 12 lines
+
+merge revision(s) 62872,62873: [Backport #14621]
+
+	parse.y: unindent continued line
+
+	* parse.y (tokadd_string): stop at continued line in dedented here
+	  documents, to dedent for each lines before removing escaped
+	  newlines.  [ruby-core:86236] [Bug #14621]
+
+	parse.y: terminator at continued line
+
+	* parse.y (here_document): a continuing line is not the
+	  terminator.  [ruby-core:86283] [Bug #14621]
+------------------------------------------------------------------------
+r66975 | usa | 2019-02-01 11:17:14 +0900 (Fri, 01 Feb 2019) | 2 lines
+
+Revert r66968
+
+------------------------------------------------------------------------
+r66970 | usa | 2019-01-31 20:08:07 +0900 (Thu, 31 Jan 2019) | 3 lines
+
+merge revision(s) 65667: [Backport #15284]
+
+	Fix for bison 3.2 [Bug #15284]
+------------------------------------------------------------------------
+r66969 | usa | 2019-01-31 20:03:57 +0900 (Thu, 31 Jan 2019) | 5 lines
+
+merge revision(s) 66685,66686: [Backport #15495]
+
+	Try to update cert
+
+	Try to update cert (2nd try)
+------------------------------------------------------------------------
+r66968 | usa | 2019-01-31 20:02:52 +0900 (Thu, 31 Jan 2019) | 17 lines
+
+merge revision(s) 64589,64593: [Backport #15041]
+
+	cont.c: set th->root_fiber to current fiber at fork
+
+	Otherwise, th->root_fiber can point to an invalid Fiber,
+	because Fibers do not live across fork.  So consider
+	whatever Fiber is running the root fiber.
+
+	[ruby-core:88723] [Bug #15041]
+
+	cont.c (rb_fiber_atfork): th->root_fiber may not exist
+
+	Otherwise, bootstraptest/test_fork.rb fails with -DVM_CHECK_MODE=2
+
+	[Bug #15041]
+
+	Fixes: r64589 "cont.c: set th->root_fiber to current fiber at fork"
+------------------------------------------------------------------------
+r66967 | usa | 2019-01-31 19:59:53 +0900 (Thu, 31 Jan 2019) | 6 lines
+
+merge revision(s) 65974: [Backport #15340]
+
+	Normalize month-mday before finding epoch
+
+	Especially over the year 2038, 30 Feb and so on may cause odd behavior
+	on validating found epoch with given year-month-day [Bug #15340]
+------------------------------------------------------------------------
+r66966 | usa | 2019-01-31 19:58:49 +0900 (Thu, 31 Jan 2019) | 10 lines
+
+merge revision(s) 66756: [Backport #15479]
+
+	Mark array as "going to be modified" in `Array#reject!`
+
+	Before this patch, if `reject!` is called on a shared array it can
+	mutate the shared array rather than a copy.  This patch marks the array
+	as "going to be modified" so that the shared source array isn't
+	mutated.
+
+	[Bug #15479] [ruby-core:90781]
+------------------------------------------------------------------------
+r66965 | usa | 2019-01-31 19:56:17 +0900 (Thu, 31 Jan 2019) | 7 lines
+
+merge revision(s) 66242: [Backport #15387]
+
+	io.c (io_write_nonblock): add RB_GC_GUARD, io_fflush may switch threads
+
+	Since io_fflush may block on mutex or rb_io_wait_readable and
+	switch threads, we need to ensure the `str' VALUE returned by
+	`rb_obj_as_string` is visible to GC.
+------------------------------------------------------------------------
+r66964 | usa | 2019-01-31 19:55:37 +0900 (Thu, 31 Jan 2019) | 6 lines
+
+merge revision(s) 66401: [Backport #15412]
+
+	Move autoload to toplevel
+
+	So that classes which uses Net::HTTP with https can use OpenSSL
+	namespace for example exception classes like OpenSSL::SSL::SSLError.
+------------------------------------------------------------------------
+r66963 | usa | 2019-01-31 19:51:55 +0900 (Thu, 31 Jan 2019) | 2 lines
+
+Fixed [Bug #14731]
+
+------------------------------------------------------------------------
+r66962 | usa | 2019-01-31 19:47:59 +0900 (Thu, 31 Jan 2019) | 7 lines
+
+merge revision(s) 63334: [Backport #14729]
+
+	object.c: raise on long invalid float string
+
+	* object.c (rb_cstr_to_dbl_raise): check long invalid float
+	  string more precisely when truncating insignificant part.
+	  [ruby-core:86800] [Bug #14729]
+------------------------------------------------------------------------
+r66961 | usa | 2019-01-31 19:36:30 +0900 (Thu, 31 Jan 2019) | 7 lines
+
+merge revision(s) 64879: [Backport #15162]
+
+	transcode.c: add GC guard on raise
+
+	* transcode.c (econv_s_search_convpath): add GC guard to fix SEGV
+	  on raise.
+	  [Bug #15162] [ruby-core:89172]
+------------------------------------------------------------------------
+r65342 | usa | 2018-10-24 07:55:53 +0900 (Wed, 24 Oct 2018) | 2 lines
+
+bump teeny
+
 ------------------------------------------------------------------------
 r65134 | usa | 2018-10-18 00:30:28 +0900 (Thu, 18 Oct 2018) | 2 lines
 
@@ -6002,11 +6177,11 @@ Add volatile to a suppress warning.
 Without the fix, the following warning is shown:
 
     compiling cont.c
-    cont.c: In function ?\226?\128?\152rb_callcc?\226?\128?\153:
-    cont.c:949:39: warning: passing argument 1 of ?\226?\128?\152cont_capture?\226?\128?\153 discards ?\226?\128?\152volatile?\226?\128?\153 qualifier from pointer target type [-Wdiscarded-qualifiers]
+    cont.c: In function 'rb_callcc':
+    cont.c:949:39: warning: passing argument 1 of 'cont_capture' discards 'volatile' qualifier from pointer target type [-Wdiscarded-qualifiers]
 	 volatile VALUE val = cont_capture(&called);
 					   ^
-    cont.c:473:1: note: expected ?\226?\128?\152int * volatile?\226?\128?\153 but argument is of type ?\226?\128?\152volatile int *?\226?\128?\153
+    cont.c:473:1: note: expected 'int * volatile' but argument is of type 'volatile int *'
      cont_capture(int *volatile stat)
      ^
 ------------------------------------------------------------------------
@@ -6134,7 +6309,7 @@ Make `trace_running` an integer flag again
 * vm_core.h (rb_vm_struct): trace_running should be a counter but
   not a bit flag.  [ruby-core:78514] [Bug #13011]
 
-Author: David Rodr?\195?\173guez <deivid.rodriguez@gmail.com>
+Author: David Rodriguez <deivid.rodriguez@gmail.com>
 ------------------------------------------------------------------------
 r57001 | mrkn | 2016-12-06 22:40:31 +0900 (Tue, 06 Dec 2016) | 9 lines
 
@@ -7007,7 +7182,7 @@ test_fileutils.rb: Use primary group too
 
 * test/fileutils/test_fileutils.rb (TestFileUtils#setup): Use
   primary group as well as supplementary groups.  based on the
-  patch by V?\195?\173t Ondruch at [ruby-core:78053].  [Bug #12910]
+  patch by Vit Ondruch at [ruby-core:78053].  [Bug #12910]
 
 It might happen in certain environments (systemd-nspawn) that
 process has no supplementary groups, but primary groups should be
@@ -8319,7 +8494,7 @@ Insure has a different meaning than ensure and we mean the latter in
 this case.
 
 *Ensure* is to do or have what is necessary for success.
-Example: These blankets ensure that you?\226?\128?\153ll be warm enough.
+Example: These blankets ensure that you'll be warm enough.
 
 *Insure* is to cover with an insurance policy.
 Example: I will insure my home with additional fire and flood policies.
