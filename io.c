@@ -2,7 +2,7 @@
 
   io.c -
 
-  $Author: nagachika $
+  $Author: usa $
   created at: Fri Oct 15 18:08:59 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -2712,6 +2712,7 @@ io_write_nonblock(VALUE io, VALUE str, VALUE ex)
 
     rb_io_set_nonblock(fptr);
     n = write(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str));
+    RB_GC_GUARD(str);
 
     if (n == -1) {
 	int e = errno;
@@ -3016,6 +3017,12 @@ rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc, int chomp)
 		read_buffered_data(RSTRING_PTR(str)+len, pending - chomplen, fptr);
 		fptr->rbuf.off += chomplen;
 		fptr->rbuf.len -= chomplen;
+                if (pending == 1 && chomplen == 1 && len > 0) {
+                    if (RSTRING_PTR(str)[len-1] == '\r') {
+                        rb_str_resize(str, --len);
+                        break;
+                    }
+                }
 	    }
 	    len += pending - chomplen;
 	    if (cr != ENC_CODERANGE_BROKEN)

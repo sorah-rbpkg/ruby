@@ -1250,6 +1250,65 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[7, 8, 9, 10], a, bug2545)
   end
 
+  def test_shared_array_reject!
+    c = []
+    b = [1, 2, 3, 4]
+    3.times do
+      a = b.dup
+      c << a.dup
+
+      begin
+        a.reject! do |x|
+          case x
+          when 2 then true
+          when 3 then raise StandardError, 'Oops'
+          else false
+          end
+        end
+      rescue StandardError
+      end
+
+      c << a.dup
+    end
+
+    bug90781 = '[ruby-core:90781]'
+    assert_equal [[1, 2, 3, 4],
+                  [1, 3, 4],
+                  [1, 2, 3, 4],
+                  [1, 3, 4],
+                  [1, 2, 3, 4],
+                  [1, 3, 4]], c, bug90781
+  end
+
+  def test_iseq_shared_array_reject!
+    c = []
+    3.times do
+      a = [1, 2, 3, 4]
+      c << a.dup
+
+      begin
+        a.reject! do |x|
+          case x
+          when 2 then true
+          when 3 then raise StandardError, 'Oops'
+          else false
+          end
+        end
+      rescue StandardError
+      end
+
+      c << a.dup
+    end
+
+    bug90781 = '[ruby-core:90781]'
+    assert_equal [[1, 2, 3, 4],
+                  [1, 3, 4],
+                  [1, 2, 3, 4],
+                  [1, 3, 4],
+                  [1, 2, 3, 4],
+                  [1, 3, 4]], c, bug90781
+  end
+
   def test_replace
     a = @cls[ 1, 2, 3]
     a_id = a.__id__
@@ -1880,8 +1939,7 @@ class TestArray < Test::Unit::TestCase
 
   def test_permutation_stack_error
     bug9932 = '[ruby-core:63103] [Bug #9932]'
-    # On some platforms (armel, mips), permutation is very expensive/slow.
-    assert_separately([], <<-"end;", timeout: 60) #    do
+    assert_separately([], <<-"end;", timeout: 30) #    do
       assert_nothing_raised(SystemStackError, "#{bug9932}") do
         assert_equal(:ok, Array.new(100_000, nil).permutation {break :ok})
       end
