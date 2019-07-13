@@ -2,7 +2,7 @@
 
   parse.y -
 
-  $Author: nobu $
+  $Author: naruse $
   created at: Fri May 28 18:02:42 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -3763,7 +3763,7 @@ sym		: fname
 		| tCVAR
 		;
 
-dsym		: tSYMBEG xstring_contents tSTRING_END
+dsym		: tSYMBEG string_contents tSTRING_END
 		    {
 			SET_LEX_STATE(EXPR_END);
 		    /*%%%*/
