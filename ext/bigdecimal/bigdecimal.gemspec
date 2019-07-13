@@ -4,7 +4,6 @@ _VERSION = '1.3.2'
 Gem::Specification.new do |s|
   s.name          = "bigdecimal"
   s.version       = _VERSION
-  s.date = RUBY_RELEASE_DATE
   s.authors       = ["Kenta Murata", "Zachary Scott", "Shigeo Kobayashi"]
   s.email         = ["mrkn@mrkn.jp"]
 
