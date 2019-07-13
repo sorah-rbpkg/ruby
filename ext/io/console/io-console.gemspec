@@ -1,10 +1,11 @@
 # -*- ruby -*-
 _VERSION = "0.4.6"
+date = %w$Date:: 2016-09-11 19:33:36 +0900#$[1]
 
 Gem::Specification.new do |s|
   s.name = "io-console"
   s.version = _VERSION
-  s.date = RUBY_RELEASE_DATE
+  s.date = date
   s.summary = "Console interface"
   s.email = "nobu@ruby-lang.org"
   s.description = "add console capabilities to IO instances."
