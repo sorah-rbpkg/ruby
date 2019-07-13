@@ -3564,18 +3564,35 @@ __END__
   end
 
   def test_select_leak
-    assert_no_memory_leak([], <<-"end;", <<-"end;", rss: true, timeout: 60)
+    # avoid malloc arena explosion from glibc and jemalloc:
+    env = {
+      'MALLOC_ARENA_MAX' => '1',
+      'MALLOC_ARENA_TEST' => '1',
+      'MALLOC_CONF' => 'narenas:1',
+    }
+    assert_no_memory_leak([env], <<-"end;", <<-"end;", rss: true, timeout: 60)
       r, w = IO.pipe
       rset = [r]
       wset = [w]
+      exc = StandardError.new(-"select used to leak on exception")
+      exc.set_backtrace([])
       Thread.new { IO.select(rset, wset, nil, 0) }.join
     end;
-      20_000.times do
-        th = Thread.new { IO.select(rset, wset) }
-        Thread.pass until th.stop?
-        th.kill
-        th.join
+      th = Thread.new do
+        Thread.handle_interrupt(StandardError => :on_blocking) do
+          begin
+            IO.select(rset, wset)
+          rescue
+            retry
+          end while true
+        end
       end
+      50_000.times do
+        Thread.pass until th.stop?
+        th.raise(exc)
+      end
+      th.kill
+      th.join
     end;
   end
 end
