@@ -1,0 +1,17 @@
+From: Sorah Fukumori <sorah@cookpad.com>
+Date: Sat, 13 Jul 2019 12:29:34 +0900
+Subject: TestNetHTTPS: exclude test_session_reuse*
+
+---
+ test/excludes/TestNetHTTPS.rb | 2 ++
+ 1 file changed, 2 insertions(+)
+ create mode 100644 test/excludes/TestNetHTTPS.rb
+
+diff --git a/test/excludes/TestNetHTTPS.rb b/test/excludes/TestNetHTTPS.rb
+new file mode 100644
+index 0000000..8e34dda
+--- /dev/null
++++ b/test/excludes/TestNetHTTPS.rb
+@@ -0,0 +1,2 @@
++exclude :test_session_reuse, "broken with OpenSSL 1.1.x in 2.4 https://github.com/ruby/openssl/issues/207"
++exclude :test_session_reuse_but_expire, "broken with OpenSSL 1.1.x in 2.4 https://github.com/ruby/openssl/issues/207"
