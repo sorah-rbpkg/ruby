@@ -56,6 +56,9 @@ endif
 configure_options += --enable-ipv6
 configure_options += --with-dbm-type=gdbm_compat
 
+# do not compress debug sections for arch-dep Ruby packages with dh_compat 12
+configure_options += --with-compress-debug-sections=no
+
 # hardening and other standard Debian build flags
 export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow
 configure_options += $(shell dpkg-buildflags --export=configure)
