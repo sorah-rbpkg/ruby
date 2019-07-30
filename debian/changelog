@@ -1,3 +1,10 @@
+ruby2.5 (2.5.5-4) unstable; urgency=medium
+
+  [ HIGUCHI Daisuke (VDR dai) ]
+  * debian/rules: do not compress debug sections for arch-dep Ruby packages with dh_compat 12
+
+ -- Antonio Terceiro <terceiro@debian.org>  Tue, 30 Jul 2019 09:41:10 -0300
+
 ruby2.5 (2.5.5-3) unstable; urgency=medium
 
   * ia64: Don't clear register_stack_start (Closes: #928068)
