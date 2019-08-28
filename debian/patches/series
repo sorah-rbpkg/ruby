@@ -1,1 +1,2 @@
 0001-port-test_io.rb-test_select_leak-from-trunk.patch
+0002-TestNetHTTPS-exclude-test_session_reuse.patch
