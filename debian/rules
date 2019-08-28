@@ -76,9 +76,6 @@ endif
 override_dh_auto_install-arch:
 	$(MAKE) extract-gems
 	$(MAKE) install-nodoc V=1 DESTDIR=$(CURDIR)/debian/tmp
-	# handle embedded copy of jquery
-	$(RM) $(CURDIR)/debian/tmp/usr/lib/ruby/$(RUBY_API_VERSION)/rdoc/generator/template/darkfish/js/jquery.js
-	dh_link -plibruby$(RUBY_VERSION) /usr/share/javascript/jquery/jquery.min.js /usr/lib/ruby/$(RUBY_API_VERSION)/rdoc/generator/template/darkfish/js/jquery.js
 	# handle embedded copy of Lato (font)
 	$(RM) $(CURDIR)/debian/tmp/usr/lib/ruby/$(RUBY_API_VERSION)/rdoc/generator/template/darkfish/fonts/Lato-Regular.ttf
 	dh_link -plibruby$(RUBY_VERSION) /usr/share/fonts/truetype/lato/Lato-Regular.ttf /usr/lib/ruby/$(RUBY_API_VERSION)/rdoc/generator/template/darkfish/fonts/Lato-Regular.ttf

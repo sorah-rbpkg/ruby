@@ -2,7 +2,7 @@
 
   gc.c -
 
-  $Author: naruse $
+  $Author: usa $
   created at: Tue Oct  5 09:44:46 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -2386,8 +2386,6 @@ Init_heap(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-    gc_stress_set(objspace, ruby_initial_gc_stress);
-
 #if RGENGC_ESTIMATE_OLDMALLOC
     objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
 #endif
@@ -2407,6 +2405,14 @@ Init_heap(void)
 
     objspace->profile.invoke_time = getrusage_time();
     finalizer_table = st_init_numtable();
+}
+
+void
+Init_gc_stress(void)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+
+    gc_stress_set(objspace, ruby_initial_gc_stress);
 }
 
 typedef int each_obj_callback(void *, void *, size_t, void *);

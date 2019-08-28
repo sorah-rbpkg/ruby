@@ -2,7 +2,7 @@
 
   file.c -
 
-  $Author: naruse $
+  $Author: usa $
   created at: Mon Nov 15 12:24:34 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -4145,7 +4145,7 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode
 	}
     }
 
-    OBJ_INFECT(resolved, unresolved_path);
+    rb_obj_taint(resolved);
     RB_GC_GUARD(unresolved_path);
     RB_GC_GUARD(curdir);
     return resolved;
