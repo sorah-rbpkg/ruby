@@ -2,7 +2,7 @@
 
   compile.c - ruby node tree -> VM instruction sequence
 
-  $Author: naruse $
+  $Author: nagachika $
   created at: 04/01/01 03:42:15 JST
 
   Copyright (C) 2004-2007 Koichi Sasada
@@ -2709,7 +2709,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
     optimize_checktype(iseq, iobj);
 
     if (IS_INSN_ID(iobj, jump)) {
-	INSN *niobj, *diobj, *piobj, *dniobj;
+	INSN *niobj, *diobj, *piobj;
 	diobj = (INSN *)get_destination_insn(iobj);
 	niobj = (INSN *)get_next_insn(iobj);
 
@@ -2740,11 +2740,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    remove_unreachable_chunk(iseq, iobj->link.next);
 	    goto again;
 	}
-	else if (dniobj = 0,
-		 IS_INSN_ID(diobj, leave) ||
-		 (diobj->operand_size == 0 &&
-		  (dniobj = (INSN *)get_next_insn(diobj)) != 0 &&
-		  (IS_INSN_ID(dniobj, leave) || (dniobj = 0)))) {
+	else if (IS_INSN_ID(diobj, leave)) {
 	    INSN *pop;
 	    /*
 	     *  jump LABEL
@@ -2760,22 +2756,16 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	     */
 	    /* replace */
 	    unref_destination(iobj, 0);
-	    iobj->insn_id = diobj->insn_id;
+	    iobj->insn_id = BIN(leave);
 	    iobj->operand_size = 0;
 	    iobj->insn_info = diobj->insn_info;
-	    if (dniobj) {
-		dniobj = new_insn_body(iseq, dniobj->insn_info.line_no, BIN(leave), 0);
-		ELEM_INSERT_NEXT(&iobj->link, &dniobj->link);
-	    }
-	    else {
-		dniobj = iobj;
-	    }
 	    /* adjust stack depth */
 	    pop = new_insn_body(iseq, diobj->insn_info.line_no, BIN(pop), 0);
-	    ELEM_INSERT_NEXT(&dniobj->link, &pop->link);
+	    ELEM_INSERT_NEXT(&iobj->link, &pop->link);
 	    goto again;
 	}
-	else if ((piobj = (INSN *)get_prev_insn(iobj)) != 0 &&
+       else if (IS_INSN(iobj->link.prev) &&
+                 (piobj = (INSN *)iobj->link.prev) &&
 		 (IS_INSN_ID(piobj, branchif) ||
 		  IS_INSN_ID(piobj, branchunless))) {
 	    INSN *pdiobj = (INSN *)get_destination_insn(piobj);
