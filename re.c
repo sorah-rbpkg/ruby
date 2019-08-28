@@ -2,7 +2,7 @@
 
   re.c -
 
-  $Author: stomar $
+  $Author: nagachika $
   created at: Mon Aug  9 18:24:49 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -1298,6 +1298,12 @@ void
 rb_match_busy(VALUE match)
 {
     FL_SET(match, MATCH_BUSY);
+}
+
+void
+rb_match_unbusy(VALUE match)
+{
+    FL_UNSET(match, MATCH_BUSY);
 }
 
 int
