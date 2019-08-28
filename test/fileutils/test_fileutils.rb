@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-# $Id: test_fileutils.rb 61188 2017-12-12 18:44:49Z eregon $
+# $Id: test_fileutils.rb 67704 2019-04-30 13:00:04Z usa $
 
 require 'fileutils'
 require 'etc'
@@ -701,6 +701,17 @@ class TestFileUtils < Test::Unit::TestCase
     remove_entry_secure 'tmp/tmpdir/c', true
     assert_file_not_exist 'tmp/tmpdir/a'
     assert_file_not_exist 'tmp/tmpdir/c'
+
+    unless root_in_posix?
+      File.chmod(01777, 'tmp/tmpdir')
+      if File.sticky?('tmp/tmpdir')
+        Dir.mkdir 'tmp/tmpdir/d', 0
+        assert_raise(Errno::EACCES) {remove_entry_secure 'tmp/tmpdir/d'}
+        File.chmod 0777, 'tmp/tmpdir/d'
+        Dir.rmdir 'tmp/tmpdir/d'
+      end
+    end
+
     Dir.rmdir 'tmp/tmpdir'
   end
 

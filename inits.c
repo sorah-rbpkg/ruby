@@ -2,7 +2,7 @@
 
   inits.c -
 
-  $Author: watson1978 $
+  $Author: usa $
   created at: Tue Dec 28 16:01:58 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -61,5 +61,6 @@ rb_call_inits(void)
     CALL(Complex);
     CALL(version);
     CALL(vm_trace);
+    CALL(gc_stress);
 }
 #undef CALL
