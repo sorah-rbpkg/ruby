@@ -2,7 +2,7 @@
 
   dir.c -
 
-  $Author: nagachika $
+  $Author: usa $
   created at: Wed Jan  5 09:51:01 JST 1994
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -2655,7 +2655,7 @@ file_s_fnmatch(int argc, VALUE *argv, VALUE obj)
     else
 	flags = 0;
 
-    StringValue(pattern);
+    StringValueCStr(pattern);
     FilePathStringValue(path);
 
     if (flags & FNM_EXTGLOB) {
