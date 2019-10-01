@@ -1,7 +1,59 @@
 ------------------------------------------------------------------------
-r67796 | usa | 2019-08-28 15:50:12 +0900 (Wed, 28 Aug 2019) | 1 line
+r67816 | usa | 2019-10-01 20:02:30 +0900 (Tue, 01 Oct 2019) | 1 line
 
-add tag v2_5_6
+add tag v2_5_7
+------------------------------------------------------------------------
+r67815 | usa | 2019-10-01 20:02:16 +0900 (Tue, 01 Oct 2019) | 2 lines
+
+Forgotten to update :)
+
+------------------------------------------------------------------------
+r67814 | usa | 2019-10-01 20:01:53 +0900 (Tue, 01 Oct 2019) | 6 lines
+
+lib/shell/command-processor.rb (Shell#[]): prevent unknown command
+
+`FileTest.send(command, ...)` allows to call not only FileTest-related
+methods but also any method that belongs to Kernel, Object, etc.
+patched by <mame@ruby-lang.org>
+
+------------------------------------------------------------------------
+r67813 | usa | 2019-10-01 20:01:05 +0900 (Tue, 01 Oct 2019) | 10 lines
+
+merge revision(s) 3ce238b5f9795581eb84114dcfbdf4aa086bfecc
+
+WEBrick: prevent response splitting and header injection
+
+This is a follow up to d9d4a28.
+The commit prevented CRLR, but did not address an isolated CR or an
+isolated LF.
+
+Co-Authored-By: NARUSE, Yui <naruse@airemix.jp>
+
+------------------------------------------------------------------------
+r67811 | usa | 2019-10-01 19:59:42 +0900 (Tue, 01 Oct 2019) | 7 lines
+
+merge revision(s) 36e057e26ef2104bc2349799d6c52d22bb1c7d03
+
+Loop with String#scan without creating substrings
+
+Create the substrings necessary parts only, instead of cutting the
+rest of the buffer.  Also removed a useless, probable typo, regexp.
+
+------------------------------------------------------------------------
+r67809 | usa | 2019-10-01 19:58:14 +0900 (Tue, 01 Oct 2019) | 7 lines
+
+merge revision(s) a0a2640b398cffd351f87d3f6243103add66575b
+
+Fix for wrong fnmatch patttern
+
+* dir.c (file_s_fnmatch): ensure that pattern does not contain a
+  NUL character.  https://hackerone.com/reports/449617
+
+------------------------------------------------------------------------
+r67800 | usa | 2019-09-02 05:10:27 +0900 (Mon, 02 Sep 2019) | 2 lines
+
+Bump version to 2.5.7
+
 ------------------------------------------------------------------------
 r67793 | usa | 2019-08-28 15:43:56 +0900 (Wed, 28 Aug 2019) | 3 lines
 
