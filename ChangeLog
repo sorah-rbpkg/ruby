@@ -1,7 +1,124 @@
 ------------------------------------------------------------------------
-r67798 | nagachika | 2019-08-28 16:36:58 +0900 (Wed, 28 Aug 2019) | 1 line
+r67812 | nagachika | 2019-10-01 20:01:01 +0900 (Tue, 01 Oct 2019) | 1 line
 
-add tag v2_6_4
+add tag v2_6_5
+------------------------------------------------------------------------
+r67810 | nagachika | 2019-10-01 19:59:35 +0900 (Tue, 01 Oct 2019) | 4 lines
+
+lib/shell/command-processor.rb (Shell#[]): prevent unknown command
+
+`FileTest.send(command, ...)` allows to call not only FileTest-related
+methods but also any method that belongs to Kernel, Object, etc.
+------------------------------------------------------------------------
+r67808 | nagachika | 2019-10-01 19:57:43 +0900 (Tue, 01 Oct 2019) | 9 lines
+
+merge revision(s) 3ce238b5f9795581eb84114dcfbdf4aa086bfecc:
+
+	WEBrick: prevent response splitting and header injection
+
+	This is a follow up to d9d4a28f1cdd05a0e8dabb36d747d40bbcc30f16.
+	The commit prevented CRLR, but did not address an isolated CR or an
+	isolated LF.
+
+	Co-Authored-By: NARUSE, Yui <naruse@airemix.jp>
+------------------------------------------------------------------------
+r67807 | nagachika | 2019-10-01 19:56:49 +0900 (Tue, 01 Oct 2019) | 6 lines
+
+merge revision(s) 36e057e26ef2104bc2349799d6c52d22bb1c7d03:
+
+	Loop with String#scan without creating substrings
+
+	Create the substrings necessary parts only, instead of cutting the
+	rest of the buffer.  Also removed a useless, probable typo, regexp.
+------------------------------------------------------------------------
+r67806 | nagachika | 2019-10-01 19:56:11 +0900 (Tue, 01 Oct 2019) | 6 lines
+
+merge revision(s) a0a2640b398cffd351f87d3f6243103add66575b:
+
+	Fix for wrong fnmatch patttern
+
+	* dir.c (file_s_fnmatch): ensure that pattern does not contain a
+	  NUL character.  https://hackerone.com/reports/449617
+------------------------------------------------------------------------
+r67805 | nagachika | 2019-09-28 13:32:46 +0900 (Sat, 28 Sep 2019) | 8 lines
+
+merge revision(s) 8b3774be3dd9f472bddd99e84e3c9fe2ff99d7ac: [Backport #15935]
+
+	Fix memory leak
+
+	* string.c (str_make_independent_expand): free independent buffer.
+	  [Bug# 15935]
+
+	Co-Authored-By: luke-gru (Luke Gruber) <luke.gru@gmail.com>
+------------------------------------------------------------------------
+r67804 | nagachika | 2019-09-27 20:23:18 +0900 (Fri, 27 Sep 2019) | 15 lines
+
+merge revision(s) 93faa011d393bb4b5cf31a0cbb46922f0a5e7cdc: [Backport #16151]
+
+	Tag string shared roots to fix use-after-free
+
+	The buffer deduplication codepath in rb_fstring can be used to free the buffer
+	of shared string roots, which leads to use-after-free.
+
+	Introudce a new flag to tag strings that at one point have been a shared root.
+	Check for it in rb_fstring to avoid freeing buffers that are shared by
+	multiple strings. This change is based on nobu's idea in [ruby-core:94838].
+
+	The included test case test for the sequence of calls to internal functions
+	that lead to this bug. See attached ticket for Ruby level repros.
+
+	[Bug #16151]
+------------------------------------------------------------------------
+r67803 | nagachika | 2019-09-14 11:24:58 +0900 (Sat, 14 Sep 2019) | 15 lines
+
+merge revision(s) ade1283ca276f7d589ffd3539fbc7b9817f682d5: [Backport #16136]
+
+	Fix a use-after-free bug by avoiding rb_str_new_frozen
+
+	`str2 = rb_str_new_frozen(str1)` seems to make str1 a shared string that
+	refers to str2, but str2 is not marked as STR_IS_SHARED_M nor
+	STR_NOFREE.
+	`rb_fstring(str2)` frees str2's ptr because it is not marked, and the
+	free'ed pointer is the same as str1's ptr.
+	After that, accessing str1 may cause use-after-free memory corruption.
+
+	I guess this is a bug of rb_str_new_frozen, but I'm completely unsure
+	what it should be; the string states and flags are not documented.
+	So, this is a workaround for [Bug #16136].  I confirmed that rspec of
+	activeadmin runs gracefully.
+------------------------------------------------------------------------
+r67802 | nagachika | 2019-09-13 20:21:17 +0900 (Fri, 13 Sep 2019) | 15 lines
+
+merge revision(s) 547887138f19959f649b1c0dbcde5659ae3878ed:
+
+	test/ruby/test_fiber.rb: reduce the count of object creation to cause
+	 GC
+
+	The test consistently fails on OpenBSD.
+
+	https://rubyci.org/logs/rubyci.s3.amazonaws.com/openbsd-current/ruby-master/log/20190903T010009Z.fail.html.gz
+	```
+	  1) Failure:
+	TestFiber#test_fork_from_fiber [/home/chkbuild/chkbuild/tmp/build/20190903T010009Z/ruby/test/ruby/test_fiber.rb:327]:
+	[ruby-core:41456].
+	<0> expected but was
+	<1>.
+	```
+------------------------------------------------------------------------
+r67801 | nagachika | 2019-09-13 20:17:07 +0900 (Fri, 13 Sep 2019) | 8 lines
+
+merge revision(s) b0b0ded5aa2cf7c4574b057d8326ed4e1c172c12:
+
+	webrick/test_utils.rb: loosen timeout severity
+
+	to stabilize CI failure like:
+	https://rubyci.org/logs/rubyci.s3.amazonaws.com/osx1013/ruby-trunk/log/20181228T114501Z.fail.html.gz
+
+	git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/trunk@66616 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+------------------------------------------------------------------------
+r67799 | nagachika | 2019-08-29 20:50:49 +0900 (Thu, 29 Aug 2019) | 1 line
+
+bump up teeny version to 2.6.5.
 ------------------------------------------------------------------------
 r67797 | nagachika | 2019-08-28 16:36:31 +0900 (Wed, 28 Aug 2019) | 7 lines
 
@@ -3268,7 +3385,7 @@ I think we can avoid this sort of circular dependency by not requiring
 
 [Fix GH-2045]
 
-From: David Rodr?\195?\173guez <deivid.rodriguez@riseup.net>
+From: David Rodriguez <deivid.rodriguez@riseup.net>
 ------------------------------------------------------------------------
 r66300 | duerst | 2018-12-10 08:14:29 +0900 (Mon, 10 Dec 2018) | 31 lines
 
@@ -12886,7 +13003,7 @@ Tests and documentation are included.
 
 It solves partially https://bugs.ruby-lang.org/issues/14097
 
-From: Ana Mar?\195?\173a Mart?\195?\173nez G?\195?\179mez <ammartinez@suse.de>
+From: Ana Maria Martinez Gomez <ammartinez@suse.de>
 ------------------------------------------------------------------------
 r64920 | nobu | 2018-10-05 12:25:33 +0900 (Fri, 05 Oct 2018) | 1 line
 
@@ -13776,7 +13893,7 @@ Avoid repeating code and improve readability in `rb_ary_or` and
 
 [Fix GH-1747] [Feature #14097]
 
-From: Ana Mar?\195?\173a Mart?\195?\173nez G?\195?\179mez <ammartinez@suse.de>
+From: Ana Maria Martinez Gomez <ammartinez@suse.de>
 ------------------------------------------------------------------------
 r64789 | nobu | 2018-09-20 12:18:54 +0900 (Thu, 20 Sep 2018) | 8 lines
 
@@ -13787,7 +13904,7 @@ Link Array#union from | method
 
 [Fix GH-1747] [Feature #14097]
 
-From: Ana Mar?\195?\173a Mart?\195?\173nez G?\195?\179mez <ammartinez@suse.de>
+From: Ana Maria Martinez Gomez <ammartinez@suse.de>
 ------------------------------------------------------------------------
 r64788 | nobu | 2018-09-20 12:18:53 +0900 (Thu, 20 Sep 2018) | 8 lines
 
@@ -13798,7 +13915,7 @@ Avoid repeating code and improve readability in `rb_ary_or` and
 
 [Fix GH-1747] [Feature #14097]
 
-From: Ana Mar?\195?\173a Mart?\195?\173nez G?\195?\179mez <ammartinez@suse.de>
+From: Ana Maria Martinez Gomez <ammartinez@suse.de>
 ------------------------------------------------------------------------
 r64787 | nobu | 2018-09-20 12:18:52 +0900 (Thu, 20 Sep 2018) | 15 lines
 
@@ -13816,7 +13933,7 @@ It solves partially https://bugs.ruby-lang.org/issues/14097
 
 [Fix GH-1747] [Feature #14097]
 
-From: Ana Mar?\195?\173a Mart?\195?\173nez G?\195?\179mez <ammartinez@suse.de>
+From: Ana Maria Martinez Gomez <ammartinez@suse.de>
 ------------------------------------------------------------------------
 r64786 | nobu | 2018-09-20 10:43:35 +0900 (Thu, 20 Sep 2018) | 5 lines
 
@@ -13969,11 +14086,11 @@ r64762 | k0kubun | 2018-09-16 22:22:00 +0900 (Sun, 16 Sep 2018) | 9 lines
 
 addr2line.c: fix -Wmaybe-uninitialized
 
-../addr2line.c: In function ?\226?\128?\152fill_lines?\226?\128?\153:
-../addr2line.c:709:8: warning: ?\226?\128?\152file?\226?\128?\153 may be used uninitialized in this function [-Wmaybe-uninitialized]
+../addr2line.c: In function 'fill_lines':
+../addr2line.c:709:8: warning: 'file' may be used uninitialized in this function [-Wmaybe-uninitialized]
      if (file != NULL) {
         ^
-../addr2line.c:535:11: warning: ?\226?\128?\152filesize?\226?\128?\153 may be used uninitialized in this function [-Wmaybe-uninitialized]
+../addr2line.c:535:11: warning: 'filesize' may be used uninitialized in this function [-Wmaybe-uninitialized]
      off_t filesize;
            ^~~~~~~~
 ------------------------------------------------------------------------
@@ -14014,7 +14131,7 @@ Patch by Lars Kanis. [Fix GH-1949]
 ------------------------------------------------------------------------
 r64755 | marcandre | 2018-09-16 11:42:26 +0900 (Sun, 16 Sep 2018) | 1 line
 
-array.c: Optimize rb_ary_and. Patch by Stefan Sch?\195?\188?\195?\159ler. [Fix GH-1938]
+array.c: Optimize rb_ary_and. Patch by Stefan Schu{U+00DF}ler. [Fix GH-1938]
 ------------------------------------------------------------------------
 r64754 | svn | 2018-09-16 01:27:07 +0900 (Sun, 16 Sep 2018) | 1 line
 
@@ -17577,7 +17694,7 @@ ruby/openssl.git. Changes can be found at:
 Brian Cunnie (1):
       Correctly verify abbreviated IPv6 SANs
 
-Janko Marohni?\196?\135 (1):
+Janko Marohnic (1):
       Reduce memory allocation when writing to SSLSocket
 
 Jeremy Evans (1):
@@ -18321,7 +18438,7 @@ r64154 | nobu | 2018-08-01 02:11:00 +0900 (Wed, 01 Aug 2018) | 5 lines
 
 [Fix GH-1923]
 
-From: Andrea G?\195?\179mez <crypto.andrea@protonmail.ch>
+From: Andrea Gomez <crypto.andrea@protonmail.ch>
 ------------------------------------------------------------------------
 r64153 | kazu | 2018-08-01 00:20:55 +0900 (Wed, 01 Aug 2018) | 3 lines
 
@@ -18730,7 +18847,7 @@ compatibility.
 
 Based on the patch
 
-From: Lourens Naud?\195?\169 <lourens@bearmetal.eu>
+From: Lourens Naude <lourens@bearmetal.eu>
 ------------------------------------------------------------------------
 r64095 | nobu | 2018-07-29 09:09:08 +0900 (Sun, 29 Jul 2018) | 4 lines
 
@@ -19982,7 +20099,7 @@ affecting performance of most setters as most objects are not frozen.
 
 [Fix GH-1913]
 
-From: Lourens Naud?\195?\169 <lourens@bearmetal.eu>
+From: Lourens Naude <lourens@bearmetal.eu>
 ------------------------------------------------------------------------
 r63958 | kazu | 2018-07-12 12:59:13 +0900 (Thu, 12 Jul 2018) | 9 lines
 
@@ -20918,7 +21035,7 @@ r63842 | kazu | 2018-07-04 00:25:49 +0900 (Wed, 04 Jul 2018) | 5 lines
 
 Fix compile error
 
-signal.c:69:10: error: variably modified ?\226?\128?\152signm?\226?\128?\153 at file scope
+signal.c:69:10: error: variably modified 'signm' at file scope
      char signm[LONGEST_SIGNAME + 1];
           ^
 ------------------------------------------------------------------------
@@ -27485,7 +27602,7 @@ r62888 | naruse | 2018-03-22 15:59:54 +0900 (Thu, 22 Mar 2018) | 3 lines
 
 each_grapheme_cluster shouldn't return size [Bug #14363]
 
-From: Stefan Sch?\195?\188?\195?\159ler <mail@stefanschuessler.de>
+From: Stefan Schu{U+00DF}ler <mail@stefanschuessler.de>
 ------------------------------------------------------------------------
 r62887 | nobu | 2018-03-22 15:47:53 +0900 (Thu, 22 Mar 2018) | 4 lines
 
@@ -27709,19 +27826,19 @@ CSV.table   | 10.933 | 11.277 | 3.1%
 ## Before
 ```
 Calculating -------------------------------------
-         CSV.foreach     44.825  (?\194?\177 0.0%) i/s -    228.000  in   5.086576s
-           CSV#shift     45.200  (?\194?\177 0.0%) i/s -    228.000  in   5.044297s
-            CSV.read     42.968  (?\194?\177 0.0%) i/s -    216.000  in   5.027504s
-           CSV.table     10.933  (?\194?\177 0.0%) i/s -     55.000  in   5.031098s
+         CSV.foreach     44.825  ({U+00B1} 0.0%) i/s -    228.000  in   5.086576s
+           CSV#shift     45.200  ({U+00B1} 0.0%) i/s -    228.000  in   5.044297s
+            CSV.read     42.968  ({U+00B1} 0.0%) i/s -    216.000  in   5.027504s
+           CSV.table     10.933  ({U+00B1} 0.0%) i/s -     55.000  in   5.031098s
 ```
 
 ## After
 ```
 Calculating -------------------------------------
-         CSV.foreach     48.201  (?\194?\177 0.0%) i/s -    244.000  in   5.062256s
-           CSV#shift     49.584  (?\194?\177 0.0%) i/s -    248.000  in   5.001652s
-            CSV.read     46.853  (?\194?\177 0.0%) i/s -    236.000  in   5.037044s
-           CSV.table     11.277  (?\194?\177 0.0%) i/s -     57.000  in   5.054694s
+         CSV.foreach     48.201  ({U+00B1} 0.0%) i/s -    244.000  in   5.062256s
+           CSV#shift     49.584  ({U+00B1} 0.0%) i/s -    248.000  in   5.001652s
+            CSV.read     46.853  ({U+00B1} 0.0%) i/s -    236.000  in   5.037044s
+           CSV.table     11.277  ({U+00B1} 0.0%) i/s -     57.000  in   5.054694s
 ```
 
 ## Benchmark code
@@ -28191,7 +28308,7 @@ This patch will replace Regexp#=~ without special variables to Regexp#match?.
 * Memory : 16 GB
 
 ## TL;DR
-?\194?\160                           | Before | After  | Speed up
+                            | Before | After  | Speed up
 --------------------------- | ------ | ------ | --------
 Pathname#absolute?          | 142836 | 198487 | 39.0%
 Pathname#cleanpath          |  60706 |  79415 | 30.8%
@@ -28206,33 +28323,33 @@ Pathname#relative_path_from |  28362 |  37494 | 32.2%
 ## Before
 ```
 Calculating -------------------------------------
-  Pathname#absolute?    142.836k (?\194?\177 0.1%) i/s -    722.304k in   5.056884s
-  Pathname#cleanpath     60.706k (?\194?\177 0.1%) i/s -    306.764k in   5.053305s
-      Pathname#root?    603.806k (?\194?\177 0.3%) i/s -      3.062M in   5.071696s
-  Pathname#absolute?    142.592k (?\194?\177 0.1%) i/s -    720.846k in   5.055301s
+  Pathname#absolute?    142.836k ({U+00B1} 0.1%) i/s -    722.304k in   5.056884s
+  Pathname#cleanpath     60.706k ({U+00B1} 0.1%) i/s -    306.764k in   5.053305s
+      Pathname#root?    603.806k ({U+00B1} 0.3%) i/s -      3.062M in   5.071696s
+  Pathname#absolute?    142.592k ({U+00B1} 0.1%) i/s -    720.846k in   5.055301s
 Pathname#each_filename
-                        115.600k (?\194?\177 0.1%) i/s -    586.818k in   5.076292s
-     Pathname#ascend     50.494k (?\194?\177 0.1%) i/s -    255.301k in   5.056049s
-          Pathname#+    100.550k (?\194?\177 0.1%) i/s -    509.630k in   5.068433s
-       Pathname#join     46.673k (?\194?\177 0.1%) i/s -    236.433k in   5.065696s
+                        115.600k ({U+00B1} 0.1%) i/s -    586.818k in   5.076292s
+     Pathname#ascend     50.494k ({U+00B1} 0.1%) i/s -    255.301k in   5.056049s
+          Pathname#+    100.550k ({U+00B1} 0.1%) i/s -    509.630k in   5.068433s
+       Pathname#join     46.673k ({U+00B1} 0.1%) i/s -    236.433k in   5.065696s
 Pathname#relative_path_from
-                         28.362k (?\194?\177 0.0%) i/s -    143.728k in   5.067640s
+                         28.362k ({U+00B1} 0.0%) i/s -    143.728k in   5.067640s
 ```
 
 ## After
 ```
 Calculating -------------------------------------
-  Pathname#absolute?    198.487k (?\194?\177 0.1%) i/s -    995.665k in   5.016272s
-  Pathname#cleanpath     79.415k (?\194?\177 0.1%) i/s -    404.406k in   5.092344s
-      Pathname#root?    759.157k (?\194?\177 0.0%) i/s -      3.800M in   5.005072s
-  Pathname#absolute?    197.859k (?\194?\177 0.1%) i/s -    995.720k in   5.032494s
+  Pathname#absolute?    198.487k ({U+00B1} 0.1%) i/s -    995.665k in   5.016272s
+  Pathname#cleanpath     79.415k ({U+00B1} 0.1%) i/s -    404.406k in   5.092344s
+      Pathname#root?    759.157k ({U+00B1} 0.0%) i/s -      3.800M in   5.005072s
+  Pathname#absolute?    197.859k ({U+00B1} 0.1%) i/s -    995.720k in   5.032494s
 Pathname#each_filename
-                        152.982k (?\194?\177 0.1%) i/s -    775.555k in   5.069607s
-     Pathname#ascend     63.606k (?\194?\177 0.0%) i/s -    320.862k in   5.044560s
-          Pathname#+    130.372k (?\194?\177 0.1%) i/s -    660.856k in   5.068991s
-       Pathname#join     60.994k (?\194?\177 0.1%) i/s -    305.068k in   5.001626s
+                        152.982k ({U+00B1} 0.1%) i/s -    775.555k in   5.069607s
+     Pathname#ascend     63.606k ({U+00B1} 0.0%) i/s -    320.862k in   5.044560s
+          Pathname#+    130.372k ({U+00B1} 0.1%) i/s -    660.856k in   5.068991s
+       Pathname#join     60.994k ({U+00B1} 0.1%) i/s -    305.068k in   5.001626s
 Pathname#relative_path_from
-                         37.494k (?\194?\177 0.4%) i/s -    189.124k in   5.044146s
+                         37.494k ({U+00B1} 0.4%) i/s -    189.124k in   5.044146s
 ```
 
 ## Benchmark code
@@ -28529,7 +28646,7 @@ r62709 | kazu | 2018-03-10 09:34:24 +0900 (Sat, 10 Mar 2018) | 8 lines
 Fix warning: cast from pointer to integer of different size
 
 ```
-.../ruby/iseq.c: In function ?\226?\128?\152rb_vm_insn_null_translator?\226?\128?\153:
+.../ruby/iseq.c: In function 'rb_vm_insn_null_translator':
 .../ruby/iseq.c:137:12: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
      return (int)addr;
             ^
@@ -30226,7 +30343,7 @@ they wouldn't be parsed correctly and compiling would fail as a RUBY
 without arguments would then be present in the Makefile's in ext/*
 [ruby-core:85620] [Bug #14486] [Fix GH-1819]
 
-Author:    Carl Ho?\204?\136rberg <carl.hoerberg@gmail.com>
+Author:    Carl Horberg <carl.hoerberg@gmail.com>
 ------------------------------------------------------------------------
 r62478 | normal | 2018-02-19 09:30:43 +0900 (Mon, 19 Feb 2018) | 5 lines
 
@@ -31363,26 +31480,26 @@ From current output, I can't know what's wrong from current error log.
 https://rubyci.org/logs/rubyci.s3.amazonaws.com/centos7/ruby-trunk/log/20180211T110003Z.log.html.gz#miniruby
 
 compiling mjit.c
-mjit.c:573:1: error: stray ?\226?\128?\152\?\226?\128?\153 in program
+mjit.c:573:1: error: stray '\' in program
  static const char *const CC_DEBUG_ARGS[] = {MJIT_DEBUGFLAGS NULL};
  ^
-mjit.c:573:1: error: stray ?\226?\128?\152\?\226?\128?\153 in program
-mjit.c:574:1: error: stray ?\226?\128?\152\?\226?\128?\153 in program
+mjit.c:573:1: error: stray '\' in program
+mjit.c:574:1: error: stray '\' in program
  static const char *const CC_OPTIMIZE_ARGS[] = {MJIT_OPTFLAGS NULL};
  ^
-mjit.c:574:1: error: stray ?\226?\128?\152\?\226?\128?\153 in program
-mjit.c:584:5: error: stray ?\226?\128?\152\?\226?\128?\153 in program
+mjit.c:574:1: error: stray '\' in program
+mjit.c:584:5: error: stray '\' in program
      MJIT_CC_COMMON MJIT_CFLAGS GCC_PIC_FLAGS
      ^
-mjit.c:584:5: error: stray ?\226?\128?\152\?\226?\128?\153 in program
-mjit.c:584:5: error: stray ?\226?\128?\152\?\226?\128?\153 in program
-mjit.c:584:5: error: stray ?\226?\128?\152\?\226?\128?\153 in program
-mjit.c:588:1: error: stray ?\226?\128?\152\?\226?\128?\153 in program
+mjit.c:584:5: error: stray '\' in program
+mjit.c:584:5: error: stray '\' in program
+mjit.c:584:5: error: stray '\' in program
+mjit.c:588:1: error: stray '\' in program
  static const char *const CC_LDSHARED_ARGS[] = {MJIT_LDSHARED GCC_PIC_FLAGS NULL};
  ^
-mjit.c:588:1: error: stray ?\226?\128?\152\?\226?\128?\153 in program
-mjit.c:588:1: error: stray ?\226?\128?\152\?\226?\128?\153 in program
-mjit.c:589:1: error: stray ?\226?\128?\152\?\226?\128?\153 in program
+mjit.c:588:1: error: stray '\' in program
+mjit.c:588:1: error: stray '\' in program
+mjit.c:589:1: error: stray '\' in program
  static const char *const CC_DLDFLAGS_ARGS[] = {MJIT_DLDFLAGS NULL};
  ^
 cc1: warning: unrecognized command line option "-Wno-self-assign" [enabled by default]
@@ -31977,8 +32094,8 @@ r62288 | k0kubun | 2018-02-07 23:08:24 +0900 (Wed, 07 Feb 2018) | 7 lines
 
 mjit.c: fix -Wdiscarded-qualifiers warning
 
-../mjit.c: In function ?\226?\128?\152system_tmpdir?\226?\128?\153:
-../mjit.c:1231:9: warning: assignment discards ?\226?\128?\152const?\226?\128?\153 qualifier from pointer target type [-Wdiscarded-qualifiers]
+../mjit.c: In function 'system_tmpdir':
+../mjit.c:1231:9: warning: assignment discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
   tmpdir = "/tmp";
          ^
 ../mjit.c: At top level:
@@ -35201,7 +35318,7 @@ parse.y: set location of string/literals in the lexer instead of actions
 ------------------------------------------------------------------------
 r61862 | mame | 2018-01-16 10:43:25 +0900 (Tue, 16 Jan 2018) | 4 lines
 
-parse.y (new_regexp): Fix SEGV of `/#{"\u3042"}#{'?\227?\129?\132'}/` in non UTF-8
+parse.y (new_regexp): Fix SEGV of `/#{"\u3042"}#{'{U+3044}'}/` in non UTF-8
 
 Mixing other encoding string literals in one Regexp caused SEGV.
 This bug was found by CoverityScan.
@@ -38492,4 +38609,9 @@ r61475 | k0kubun | 2017-12-25 23:22:21 +0900 (Mon, 25 Dec 2017) | 3 lines
 cont.c: fix comment to follow field name change
 
 saved_thread was renamed to saved_ec in r59831 [ci skip]
+------------------------------------------------------------------------
+r61474 | matz | 2017-12-25 23:05:59 +0900 (Mon, 25 Dec 2017) | 2 lines
+
+version.h (RUBY_VERSION): 2.6.0 development has started.
+
 ------------------------------------------------------------------------
