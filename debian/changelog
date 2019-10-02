@@ -1,3 +1,9 @@
+ruby2.5 (2.5.7-0nkmi1~dist) unstable; urgency=medium
+
+  * Ruby 2.5.7
+
+ -- Sorah Fukumori <sorah@cookpad.com>  Tue, 01 Oct 2019 23:49:02 +0000
+
 ruby2.5 (2.5.6-0nkmi1~dist) unstable; urgency=medium
 
   * Ruby 2.5.6
