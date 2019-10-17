@@ -1,3 +1,9 @@
+ruby2.4 (2.4.9-0nkmi1~dist) unstable; urgency=medium
+
+  * 2.4.9
+
+ -- Sorah Fukumori <her@sorah.jp>  Thu, 17 Oct 2019 13:52:01 +0000
+
 ruby2.4 (2.4.8-0nkmi1~dist) unstable; urgency=medium
 
   * 2.4.8
