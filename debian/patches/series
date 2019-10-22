@@ -3,6 +3,3 @@
 0003-Mark-Gemspec-reproducible-change-fixing-784225-too.patch
 0004-Make-gemspecs-reproducible.patch
 0005-exclude-several-tests-unstable-in-Docker.patch
-0006-Port-to-kfreebsd-amd64.patch
-0007-Fix-setup-command-if-format_executable-is-true-by-de.patch
-0008-Fix-setup-command-test-for-bundler-with-program_suff.patch

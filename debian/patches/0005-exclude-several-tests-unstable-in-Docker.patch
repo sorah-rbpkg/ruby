@@ -3,18 +3,21 @@ Date: Fri, 26 Oct 2018 21:57:31 +0900
 Subject: exclude several tests unstable in Docker
 
 ---
- test/dtrace/helper.rb | 1 +
- 1 file changed, 1 insertion(+)
+ test/dtrace/helper.rb | 4 ++++
+ 1 file changed, 4 insertions(+)
 
 diff --git a/test/dtrace/helper.rb b/test/dtrace/helper.rb
-index 023d116..500da5d 100644
+index ce73080..3ac1aa6 100644
 --- a/test/dtrace/helper.rb
 +++ b/test/dtrace/helper.rb
-@@ -53,6 +53,7 @@ else
-   cmd = false
+@@ -34,6 +34,10 @@ if ok
+   end
  end
- ok &= system(*cmd, err: IO::NULL, out: IO::NULL) if cmd
-+ok = false # Doesn't work properly inside Docker build
  
- module DTrace
-   class TestCase < Test::Unit::TestCase
++
++ok = false # doesn't work properly inside Docker build
++
++
+ # use miniruby to reduce the amount of trace data we don't care about
+ rubybin = "miniruby#{RbConfig::CONFIG["EXEEXT"]}"
+ rubybin = File.join(File.dirname(EnvUtil.rubybin), rubybin)
