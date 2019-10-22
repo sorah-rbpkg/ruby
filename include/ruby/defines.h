@@ -38,6 +38,9 @@ extern "C" {
 #ifndef DEPRECATED_TYPE
 # define DEPRECATED_TYPE(mesg, decl) decl
 #endif
+#ifndef RUBY_CXX_DEPRECATED
+# define RUBY_CXX_DEPRECATED(mesg) /* nothing */
+#endif
 #ifndef NOINLINE
 # define NOINLINE(x) x
 #endif
@@ -218,9 +221,18 @@ RUBY_SYMBOL_EXPORT_BEGIN
 # define RUBY_ATTR_ALLOC_SIZE(params)
 #endif
 
-void *ruby_xmalloc(size_t) RUBY_ATTR_ALLOC_SIZE((1));
-void *ruby_xmalloc2(size_t,size_t) RUBY_ATTR_ALLOC_SIZE((1,2));
-void *ruby_xcalloc(size_t,size_t) RUBY_ATTR_ALLOC_SIZE((1,2));
+#ifdef __has_attribute
+# if __has_attribute(malloc)
+#  define RUBY_ATTR_MALLOC __attribute__((__malloc__))
+# endif
+#endif
+#ifndef RUBY_ATTR_MALLOC
+# define RUBY_ATTR_MALLOC
+#endif
+
+void *ruby_xmalloc(size_t) RUBY_ATTR_MALLOC RUBY_ATTR_ALLOC_SIZE((1));
+void *ruby_xmalloc2(size_t,size_t) RUBY_ATTR_MALLOC RUBY_ATTR_ALLOC_SIZE((1,2));
+void *ruby_xcalloc(size_t,size_t) RUBY_ATTR_MALLOC RUBY_ATTR_ALLOC_SIZE((1,2));
 void *ruby_xrealloc(void*,size_t) RUBY_ATTR_ALLOC_SIZE((2));
 void *ruby_xrealloc2(void*,size_t,size_t) RUBY_ATTR_ALLOC_SIZE((2,3));
 void ruby_xfree(void*);
@@ -401,10 +413,6 @@ ruby_xrealloc2_with_location(void *ptr, size_t s1, size_t s2, const char *file, 
 #if defined(__sparc)
 void rb_sparc_flush_register_windows(void);
 #  define FLUSH_REGISTER_WINDOWS rb_sparc_flush_register_windows()
-#elif defined(__ia64)
-void *rb_ia64_bsp(void);
-void rb_ia64_flushrs(void);
-#  define FLUSH_REGISTER_WINDOWS rb_ia64_flushrs()
 #else
 #  define FLUSH_REGISTER_WINDOWS ((void)0)
 #endif

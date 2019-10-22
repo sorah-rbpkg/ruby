@@ -14,7 +14,17 @@
 #include "vm_core.h"
 #include "iseq.h"
 #ifdef HAVE_UCONTEXT_H
-#include "ucontext.h"
+#include <ucontext.h>
+#endif
+#ifdef __APPLE__
+#ifdef HAVE_LIBPROC_H
+#include <libproc.h>
+#endif
+#include <mach/vm_map.h>
+#include <mach/mach_init.h>
+#ifdef __LP64__
+#define vm_region_recurse vm_region_recurse_64
+#endif
 #endif
 
 /* see vm_insnhelper.h for the values */
@@ -649,14 +659,6 @@ dump_thread(void *arg)
 		    frame.AddrFrame.Offset = context.Rbp;
 		    frame.AddrStack.Mode = AddrModeFlat;
 		    frame.AddrStack.Offset = context.Rsp;
-#elif defined(_M_IA64) || defined(__ia64__)
-		    mac = IMAGE_FILE_MACHINE_IA64;
-		    frame.AddrPC.Mode = AddrModeFlat;
-		    frame.AddrPC.Offset = context.StIIP;
-		    frame.AddrBStore.Mode = AddrModeFlat;
-		    frame.AddrBStore.Offset = context.RsBSP;
-		    frame.AddrStack.Mode = AddrModeFlat;
-		    frame.AddrStack.Offset = context.IntSp;
 #else	/* i386 */
 		    mac = IMAGE_FILE_MACHINE_I386;
 		    frame.AddrPC.Mode = AddrModeFlat;
@@ -992,6 +994,42 @@ rb_vm_bugreport(const void *ctx)
 	    fprintf(stderr, "\n");
 	}
 #endif /* __FreeBSD__ */
+#ifdef __APPLE__
+        vm_address_t addr = 0;
+        vm_size_t size = 0;
+        struct vm_region_submap_info map;
+        mach_msg_type_number_t count = VM_REGION_SUBMAP_INFO_COUNT;
+        natural_t depth = 0;
+
+        fprintf(stderr, "* Process memory map:\n\n");
+        while (1) {
+            if (vm_region_recurse(mach_task_self(), &addr, &size, &depth,
+                        (vm_region_recurse_info_t)&map, &count) != KERN_SUCCESS) {
+                break;
+            }
+
+            if (map.is_submap) {
+                // We only look at main addresses
+                depth++;
+            }
+            else {
+                fprintf(stderr, "%lx-%lx %s%s%s", addr, (addr+size),
+                        ((map.protection & VM_PROT_READ) != 0 ? "r" : "-"),
+                        ((map.protection & VM_PROT_WRITE) != 0 ? "w" : "-"),
+                    ((map.protection & VM_PROT_EXECUTE) != 0 ? "x" : "-"));
+#ifdef HAVE_LIBPROC_H
+                char buff[PATH_MAX];
+                if (proc_regionfilename(getpid(), addr, buff, sizeof(buff)) > 0) {
+                    fprintf(stderr, " %s", buff);
+                }
+#endif
+                fprintf(stderr, "\n");
+            }
+
+            addr += size;
+            size = 0;
+        }
+#endif
     }
 }
 

@@ -9,7 +9,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.1.0.pre1".freeze
+  VERSION = "3.1.0.pre2".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -469,7 +469,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     subdirs.each do |name|
       subdir = File.join dir, name
       next if File.exist? subdir
-      FileUtils.mkdir_p subdir, options rescue nil
+      FileUtils.mkdir_p subdir, **options rescue nil
     end
   ensure
     File.umask old_umask
@@ -565,8 +565,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   #++
   #--
   #
-  # FIXME move to pathsupport
-  #
   #++
 
   def self.find_home
@@ -645,14 +643,12 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # <tt>https://rubygems.org</tt>.
 
   def self.host
-    # TODO: move to utils
     @host ||= Gem::DEFAULT_HOST
   end
 
   ## Set the default RubyGems API host.
 
   def self.host=(host)
-    # TODO: move to utils
     @host = host
   end
 
@@ -668,6 +664,21 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     index = $LOAD_PATH.index RbConfig::CONFIG['sitelibdir']
 
     index
+  end
+
+  ##
+  # Add a list of paths to the $LOAD_PATH at the proper place.
+
+  def self.add_to_load_path(*paths)
+    insert_index = load_path_insert_index
+
+    if insert_index
+      # gem directories must come after -I and ENV['RUBYLIB']
+      $LOAD_PATH.insert(insert_index, *paths)
+    else
+      # we are probably testing in core, -I and RUBYLIB don't apply
+      $LOAD_PATH.unshift(*paths)
+    end
   end
 
   @yaml_loaded = false
@@ -1013,6 +1024,10 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     @suffix_pattern ||= "{#{suffixes.join(',')}}"
   end
 
+  def self.suffix_regexp
+    @suffix_regexp ||= /#{Regexp.union(suffixes)}\z/
+  end
+
   ##
   # Suffixes for require-able paths.
 
@@ -1081,6 +1096,13 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     end
 
     @@win_platform
+  end
+
+  ##
+  # Is this a java platform?
+
+  def self.java_platform?
+    RUBY_PLATFORM == "java"
   end
 
   ##
@@ -1186,7 +1208,13 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     require 'rubygems/user_interaction'
     Gem::DefaultUserInteraction.use_ui(ui) do
       require "bundler"
-      @gemdeps = Bundler.setup
+      begin
+        @gemdeps = Bundler.setup
+      ensure
+        if Gem::DefaultUserInteraction.ui.is_a?(Gem::SilentUI)
+          Gem::DefaultUserInteraction.ui.close
+        end
+      end
       Bundler.ui = nil
       @gemdeps.requested_specs.map(&:to_spec).sort_by(&:name)
     end
@@ -1212,6 +1240,23 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     extend Gem::Deprecate
     deprecate :detect_gemdeps, "Gem.use_gemdeps", 2018, 12
 
+  end
+
+  ##
+  # The SOURCE_DATE_EPOCH environment variable (or, if that's not set, the current time), converted to Time object.
+  # This is used throughout RubyGems for enabling reproducible builds.
+  #
+  # If it is not set as an environment variable already, this also sets it.
+  #
+  # Details on SOURCE_DATE_EPOCH:
+  # https://reproducible-builds.org/specs/source-date-epoch/
+
+  def self.source_date_epoch
+    if ENV["SOURCE_DATE_EPOCH"].nil? || ENV["SOURCE_DATE_EPOCH"].empty?
+      ENV["SOURCE_DATE_EPOCH"] = Time.now.to_i.to_s
+    end
+
+    Time.at(ENV["SOURCE_DATE_EPOCH"].to_i).utc.freeze
   end
 
   # FIX: Almost everywhere else we use the `def self.` way of defining class
@@ -1243,14 +1288,12 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     #
 
     def register_default_spec(spec)
-      new_format = Gem.default_gems_use_full_paths? || spec.require_paths.any? {|path| spec.files.any? {|f| f.start_with? path } }
+      new_format = spec.require_paths.any? {|path| spec.files.any? {|f| f.start_with? path } }
 
       if new_format
         prefix_group = spec.require_paths.map {|f| f + "/"}.join("|")
         prefix_pattern = /^(#{prefix_group})/
       end
-
-      suffix_pattern = /#{Regexp.union(Gem.suffixes)}\z/
 
       spec.files.each do |file|
         if new_format
@@ -1259,7 +1302,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
         end
 
         @path_to_default_spec_map[file] = spec
-        @path_to_default_spec_map[file.sub(suffix_pattern, "")] = spec
+        @path_to_default_spec_map[file.sub(suffix_regexp, "")] = spec
       end
     end
 
@@ -1267,17 +1310,8 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     # Find a Gem::Specification of default gem from +path+
 
     def find_unresolved_default_spec(path)
-      @path_to_default_spec_map[path]
-    end
-
-    ##
-    # Remove needless Gem::Specification of default gem from
-    # unresolved default gem list
-
-    def remove_unresolved_default_spec(spec)
-      spec.files.each do |file|
-        @path_to_default_spec_map.delete(file)
-      end
+      default_spec = @path_to_default_spec_map[path]
+      return default_spec if default_spec && loaded_specs[default_spec.name] != default_spec
     end
 
     ##
@@ -1371,14 +1405,12 @@ begin
 rescue LoadError
 end
 
-if defined?(RUBY_ENGINE)
-  begin
-    ##
-    # Defaults the Ruby implementation wants to provide for RubyGems
+begin
+  ##
+  # Defaults the Ruby implementation wants to provide for RubyGems
 
-    require "rubygems/defaults/#{RUBY_ENGINE}"
-  rescue LoadError
-  end
+  require "rubygems/defaults/#{RUBY_ENGINE}"
+rescue LoadError
 end
 
 ##

@@ -14,7 +14,9 @@ class Test_StringCapacity < Test::Unit::TestCase
   end
 
   def test_capacity_shared
-    assert_equal 0, capa(:abcdefghijklmnopqrstuvwxyz.to_s)
+    str = :abcdefghijklmnopqrstuvwxyz.to_s.dup
+    assert Bug::String.shared_string? str
+    assert_equal 0, capa(str)
   end
 
   def test_capacity_normal
@@ -36,5 +38,24 @@ class Test_StringCapacity < Test::Unit::TestCase
     assert_equal(1024*1024, capa(s))
     open(__FILE__) {|f|s = f.read(1024*1024)}
     assert_operator(capa(s), :<=, s.bytesize+4096)
+  end
+
+  def test_literal_capacity
+    s = "I am testing string literal capacity"
+    assert_equal(s.length, capa(s))
+  end
+
+  def test_capacity_frozen
+    s = String.new("I am testing", capacity: 1000)
+    s << "fstring capacity"
+    s.freeze
+    assert_equal(s.length, capa(s))
+  end
+
+  def test_capacity_fstring
+    s = String.new("I am testing", capacity: 1000)
+    s << "fstring capacity"
+    s = -s
+    assert_equal(s.length, capa(s))
   end
 end

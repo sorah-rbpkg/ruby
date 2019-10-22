@@ -125,7 +125,10 @@ class Gem::Resolver
 
     data = yield
     $stderr.printf "%10s (%d entries)\n", stage.to_s.upcase, data.size
-    PP.pp data, $stderr unless data.empty?
+    unless data.empty?
+      require 'pp'
+      PP.pp data, $stderr
+    end
   end
 
   ##
@@ -246,7 +249,7 @@ class Gem::Resolver
     sources.each do |source|
       groups[source].
         sort_by { |spec| [spec.version, Gem::Platform.local =~ spec.platform ? 1 : 0] }.
-        map { |spec| ActivationRequest.new spec, dependency, [] }.
+        map { |spec| ActivationRequest.new spec, dependency }.
         each { |activation_request| activation_requests << activation_request }
     end
 

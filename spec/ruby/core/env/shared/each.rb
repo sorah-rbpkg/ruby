@@ -8,7 +8,7 @@ describe :env_each, shared: true do
       ENV.clear
       ENV["foo"] = "bar"
       ENV["baz"] = "boo"
-      ENV.send(@method) { |k, v| e << [k, v] }
+      ENV.send(@method) { |k, v| e << [k, v] }.should equal(ENV)
       e.should include(["foo", "bar"])
       e.should include(["baz", "boo"])
     ensure
@@ -30,7 +30,7 @@ describe :env_each, shared: true do
       @external = Encoding.default_external
       @internal = Encoding.default_internal
 
-      Encoding.default_external = Encoding::ASCII_8BIT
+      Encoding.default_external = Encoding::BINARY
 
       @locale_encoding = Encoding.find "locale"
     end

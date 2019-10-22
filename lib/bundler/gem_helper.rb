@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "bundler/vendored_thor" unless defined?(Thor)
-require "bundler"
+require_relative "vendored_thor" unless defined?(Thor)
+require_relative "../bundler"
 require "shellwords"
 
 module Bundler
@@ -75,8 +75,8 @@ module Bundler
 
     def build_gem
       file_name = nil
-      gem = ENV["BUNDLE_GEM"] ? ENV["BUNDLE_GEM"] : "gem"
-      sh(%W[#{gem} build -V #{spec_path}]) do
+      gem = ENV["GEM_COMMAND"] ? ENV["GEM_COMMAND"] : "gem"
+      sh("#{gem} build -V #{spec_path}".shellsplit) do
         file_name = File.basename(built_gem_path)
         SharedHelpers.filesystem_access(File.join(base, "pkg")) {|p| FileUtils.mkdir_p(p) }
         FileUtils.mv(built_gem_path, "pkg")
@@ -87,10 +87,10 @@ module Bundler
 
     def install_gem(built_gem_path = nil, local = false)
       built_gem_path ||= build_gem
-      gem = ENV["BUNDLE_GEM"] ? ENV["BUNDLE_GEM"] : "gem"
-      cmd = %W[#{gem} install #{built_gem_path}]
-      cmd << "--local" if local
-      out, status = sh_with_status(cmd)
+      gem = ENV["GEM_COMMAND"] ? ENV["GEM_COMMAND"] : "gem"
+      cmd = "#{gem} install #{built_gem_path}"
+      cmd += " --local" if local
+      out, status = sh_with_status(cmd.shellsplit)
       unless status.success? && out[/Successfully installed/]
         raise "Couldn't install gem, run `gem install #{built_gem_path}' for more detailed output"
       end
@@ -106,7 +106,7 @@ module Bundler
       unless allowed_push_host || Bundler.user_home.join(".gem/credentials").file?
         raise "Your rubygems.org credentials aren't set. Run `gem push` to set them."
       end
-      sh(gem_command)
+      sh_with_input(gem_command)
       Bundler.ui.confirm "Pushed #{name} #{version} to #{gem_push_host}"
     end
 
@@ -178,6 +178,13 @@ module Bundler
 
     def name
       gemspec.name
+    end
+
+    def sh_with_input(cmd)
+      Bundler.ui.debug(cmd)
+      SharedHelpers.chdir(base) do
+        abort unless Kernel.system(*cmd)
+      end
     end
 
     def sh(cmd, &block)

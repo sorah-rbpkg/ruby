@@ -1,15 +1,12 @@
 # frozen_string_literal: true
 
-require "bundler/compatibility_guard"
-
 require "pathname"
 require "rbconfig"
-require "rubygems"
 
-require "bundler/version"
-require "bundler/constants"
-require "bundler/rubygems_integration"
-require "bundler/current_ruby"
+require_relative "version"
+require_relative "constants"
+require_relative "rubygems_integration"
+require_relative "current_ruby"
 
 module Bundler
   module SharedHelpers
@@ -20,7 +17,7 @@ module Bundler
     end
 
     def default_gemfile
-      gemfile = find_gemfile(:order_matters)
+      gemfile = find_gemfile
       raise GemfileNotFound, "Could not locate Gemfile" unless gemfile
       Pathname.new(gemfile).untaint.expand_path
     end
@@ -103,9 +100,7 @@ module Bundler
     #
     # @see {Bundler::PermissionError}
     def filesystem_access(path, action = :write, &block)
-      # Use block.call instead of yield because of a bug in Ruby 2.2.2
-      # See https://github.com/bundler/bundler/issues/5341 for details
-      block.call(path.dup.untaint)
+      yield(path.dup.untaint)
     rescue Errno::EACCES
       raise PermissionError.new(path, action)
     rescue Errno::EAGAIN
@@ -132,14 +127,15 @@ module Bundler
     def major_deprecation(major_version, message)
       bundler_major_version = Bundler.bundler_major_version
       if bundler_major_version > major_version
-        require "bundler/errors"
+        require_relative "errors"
         raise DeprecatedError, "[REMOVED] #{message}"
       end
 
       return unless bundler_major_version >= major_version && prints_major_deprecations?
       @major_deprecation_ui ||= Bundler::UI::Shell.new("no-color" => true)
-      ui = Bundler.ui.is_a?(@major_deprecation_ui.class) ? Bundler.ui : @major_deprecation_ui
-      ui.warn("[DEPRECATED] #{message}")
+      with_major_deprecation_ui do |ui|
+        ui.warn("[DEPRECATED] #{message}")
+      end
     end
 
     def print_major_deprecations!
@@ -216,6 +212,21 @@ module Bundler
 
   private
 
+    def with_major_deprecation_ui(&block)
+      ui = Bundler.ui
+
+      if ui.is_a?(@major_deprecation_ui.class)
+        yield ui
+      else
+        begin
+          Bundler.ui = @major_deprecation_ui
+          yield Bundler.ui
+        ensure
+          Bundler.ui = ui
+        end
+      end
+    end
+
     def validate_bundle_path
       path_separator = Bundler.rubygems.path_separator
       return unless Bundler.bundle_path.to_s.split(path_separator).size > 1
@@ -228,7 +239,7 @@ module Bundler
       raise Bundler::PathError, message
     end
 
-    def find_gemfile(order_matters = false)
+    def find_gemfile
       given = ENV["BUNDLE_GEMFILE"]
       return given if given && !given.empty?
       find_file(*gemfile_names)
@@ -257,7 +268,7 @@ module Bundler
       until !File.directory?(current) || current == previous
         if ENV["BUNDLE_SPEC_RUN"]
           # avoid stepping above the tmp directory when testing
-          gemspec = if ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"]
+          gemspec = if ENV["GEM_COMMAND"]
             # for Ruby Core
             "lib/bundler/bundler.gemspec"
           else
@@ -289,21 +300,17 @@ module Bundler
     public :set_env
 
     def set_bundle_variables
-      begin
-        exe_file = Bundler.rubygems.bin_path("bundler", "bundle", VERSION)
-        unless File.exist?(exe_file)
-          exe_file = File.expand_path("../../../exe/bundle", __FILE__)
-        end
-        Bundler::SharedHelpers.set_env "BUNDLE_BIN_PATH", exe_file
-      rescue Gem::GemNotFoundException
-        exe_file = File.expand_path("../../../exe/bundle", __FILE__)
-        # for Ruby core repository
-        exe_file = File.expand_path("../../../../bin/bundle", __FILE__) unless File.exist?(exe_file)
-        Bundler::SharedHelpers.set_env "BUNDLE_BIN_PATH", exe_file
-      end
+      # bundler exe & lib folders have same root folder, typical gem installation
+      exe_file = File.expand_path("../../../exe/bundle", __FILE__)
 
-      # Set BUNDLE_GEMFILE
-      Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", find_gemfile(:order_matters).to_s
+      # for Ruby core repository testing
+      exe_file = File.expand_path("../../../libexec/bundle", __FILE__) unless File.exist?(exe_file)
+
+      # bundler is a default gem, exe path is separate
+      exe_file = Bundler.rubygems.bin_path("bundler", "bundle", VERSION) unless File.exist?(exe_file)
+
+      Bundler::SharedHelpers.set_env "BUNDLE_BIN_PATH", exe_file
+      Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", find_gemfile.to_s
       Bundler::SharedHelpers.set_env "BUNDLER_VERSION", Bundler::VERSION
     end
 
@@ -316,8 +323,9 @@ module Bundler
 
     def set_rubyopt
       rubyopt = [ENV["RUBYOPT"]].compact
-      return if !rubyopt.empty? && rubyopt.first =~ %r{-rbundler/setup}
-      rubyopt.unshift %(-rbundler/setup)
+      setup_require = "-r#{File.expand_path("setup", __dir__)}"
+      return if !rubyopt.empty? && rubyopt.first =~ /#{setup_require}/
+      rubyopt.unshift setup_require
       Bundler::SharedHelpers.set_env "RUBYOPT", rubyopt.join(" ")
     end
 
@@ -351,9 +359,9 @@ module Bundler
     end
 
     def prints_major_deprecations?
-      require "bundler"
+      require_relative "../bundler"
       return false if Bundler.settings[:silence_deprecations]
-      require "bundler/deprecate"
+      require_relative "deprecate"
       return false if Bundler::Deprecate.skip
       true
     end

@@ -58,7 +58,9 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal '[assign(var_field(a),ref(a))]', parse('a=a')
     assert_equal '[ref(nil)]', parse('nil')
     assert_equal '[ref(true)]', parse('true')
-    assert_include parse('proc{@1}'), '[ref(@1)]'
+    assert_equal '[vcall(_0)]', parse('_0')
+    assert_equal '[vcall(_1)]', parse('_1')
+    assert_include parse('proc{_1}'), '[ref(_1)]'
   end
 
   def test_vcall
@@ -127,6 +129,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_args_new = false
     parse('m()', :on_args_new) {thru_args_new = true}
     assert_equal true, thru_args_new
+  end
+
+  def test_args_forward
+    thru_args_forward = false
+    parse('def m(...) n(...) end', :on_args_forward) {thru_args_forward = true}
+    assert_equal true, thru_args_forward
   end
 
   def test_arg_paren
@@ -482,7 +490,17 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     }
     assert_equal true, thru_heredoc_dedent
     assert_match(/string_content\(\), heredoc\n/, tree)
+    assert_equal(" heredoc\n", str.children[1])
     assert_equal(1, width)
+  end
+
+  def test_unterminated_heredoc
+    assert_match("can't find string \"a\" anywhere before EOF", compile_error("<<a"))
+    assert_match("can't find string \"a\" anywhere before EOF", compile_error('<<"a"'))
+    assert_match("can't find string \"a\" anywhere before EOF", compile_error("<<'a'"))
+    msg = nil
+    parse('<<"', :on_parse_error) {|_, e| msg = e}
+    assert_equal("unterminated here document identifier", msg)
   end
 
   def test_massign
@@ -528,7 +546,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     tree = parse("a, *b = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
     assert_equal false, thru_mlhs_add_post
     assert_include(tree, "massign([var_field(a),*var_field(b)],")
-    thru_massign_add_post = false
+    thru_mlhs_add_post = false
     tree = parse("a, *b, c = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
     assert_equal true, thru_mlhs_add_post
     assert_include(tree, "massign([var_field(a),*var_field(b),var_field(c)],")
@@ -741,6 +759,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal true, thru_ifop
   end
 
+  def test_ignored_nl
+    ignored_nl = []
+    parse("foo # comment\n...\n", :on_ignored_nl) {|_, a| ignored_nl << a}
+    assert_equal ["\n"], ignored_nl
+  end
+
   def test_lambda
     thru_lambda = false
     parse('->{}', :on_lambda) {thru_lambda = true}
@@ -928,6 +952,10 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     parse('a {|**x|}', :on_params) {|_, *v| thru_params = true; arg = v}
     assert_equal true, thru_params
     assert_equal [nil, nil, nil, nil, nil, "**x", nil], arg
+    thru_params = false
+    parse('a {|**nil|}', :on_params) {|_, *v| thru_params = true; arg = v}
+    assert_equal true, thru_params
+    assert_equal [nil, nil, nil, nil, nil, :nil, nil], arg
   end
 
   def test_params_mlhs
@@ -1135,6 +1163,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_kwrest = false
     parse('def a(**x) end', :on_kwrest_param) {|n, val| thru_kwrest = val}
     assert_equal "x", thru_kwrest
+  end
+
+  def test_nokw_param
+    thru_nokw = false
+    parse('def a(**nil) end', :on_nokw_param) {|n, val| thru_nokw = val}
+    assert_equal nil, thru_nokw
   end
 
   def test_retry
@@ -1466,7 +1500,8 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal("[fcall(proc,[],&block([],[void()]))]", parse("proc{|;y|}"))
     if defined?(Process::RLIMIT_AS)
       dir = File.dirname(__FILE__)
-      as = (RubyVM::MJIT.enabled? ? 150 : 100) * 1024 * 1024
+      as = 100 * 1024 * 1024 # 100MB
+      as *= 2 if RubyVM::MJIT.enabled? # space for compiler
       assert_in_out_err(%W(-I#{dir} -rdummyparser),
                         "Process.setrlimit(Process::RLIMIT_AS,#{as}); "\
                         "puts DummyParser.new('proc{|;y|!y}').parse",
@@ -1478,11 +1513,8 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal("unterminated regexp meets end of file", compile_error('/'))
   end
 
-  def test_invalid_numbered_parameter_name
-    assert_equal("leading zero is not allowed as a numbered parameter", compile_error('proc{@0}'))
-  end
-
   def test_invalid_instance_variable_name
+    assert_equal("`@1' is not allowed as an instance variable name", compile_error('proc{@1}'))
     assert_equal("`@' without identifiers is not allowed as an instance variable name", compile_error('@%'))
     assert_equal("`@' without identifiers is not allowed as an instance variable name", compile_error('@'))
   end

@@ -88,14 +88,14 @@ METHOD_ENTRY_FLAGS_SET(rb_method_entry_t *me, rb_method_visibility_t visi, unsig
     VM_ASSERT(basic <= 1);
     me->flags =
       (me->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2)) |
-	((visi << (IMEMO_FL_USHIFT+0)) | (basic << (IMEMO_FL_USHIFT+2)));
+        ((visi << (IMEMO_FL_USHIFT+0)) | (basic << (IMEMO_FL_USHIFT+2)));
 }
 static inline void
 METHOD_ENTRY_FLAGS_COPY(rb_method_entry_t *dst, const rb_method_entry_t *src)
 {
     dst->flags =
       (dst->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2)) |
-	(src->flags & (IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2));
+        (src->flags & (IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2));
 }
 
 typedef enum {
@@ -115,7 +115,8 @@ typedef enum {
     END_OF_ENUMERATION(VM_METHOD_TYPE)
 } rb_method_type_t;
 #define VM_METHOD_TYPE_MINIMUM_BITS 4
-/* TODO: STATIC_ASSERT for VM_METHOD_TYPE_MINIMUM_BITS */
+STATIC_ASSERT(VM_METHOD_TYPE_MINIMUM_BITS,
+              VM_METHOD_TYPE_REFINED <= (1<<VM_METHOD_TYPE_MINIMUM_BITS));
 
 #ifndef rb_iseq_t
 typedef struct rb_iseq_struct rb_iseq_t;
@@ -159,26 +160,27 @@ enum method_optimized_type {
     OPTIMIZED_METHOD_TYPE__MAX
 };
 
-PACKED_STRUCT_UNALIGNED(struct rb_method_definition_struct {
+struct rb_method_definition_struct {
     BITFIELD(rb_method_type_t, type, VM_METHOD_TYPE_MINIMUM_BITS);
     int alias_count : 28;
     int complemented_count : 28;
 
     union {
-	rb_method_iseq_t iseq;
-	rb_method_cfunc_t cfunc;
-	rb_method_attr_t attr;
-	rb_method_alias_t alias;
-	rb_method_refined_t refined;
+        rb_method_iseq_t iseq;
+        rb_method_cfunc_t cfunc;
+        rb_method_attr_t attr;
+        rb_method_alias_t alias;
+        rb_method_refined_t refined;
         rb_method_bmethod_t bmethod;
 
         enum method_optimized_type optimize_type;
     } body;
 
     ID original_id;
-});
+};
 
 typedef struct rb_method_definition_struct rb_method_definition_t;
+STATIC_ASSERT(sizeof_method_def, offsetof(rb_method_definition_t, body)==8);
 
 #define UNDEFINED_METHOD_ENTRY_P(me) (!(me) || !(me)->def || (me)->def->type == VM_METHOD_TYPE_UNDEF)
 #define UNDEFINED_REFINED_METHOD_P(def) \

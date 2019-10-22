@@ -70,7 +70,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def notownedfile
     return @notownedfile if defined? @notownedfile
-    if Process.euid != 0
+    if Process.euid != File.stat("/").uid
       @notownedfile = '/'
     else
       @notownedfile = nil
@@ -184,6 +184,24 @@ class TestFileExhaustive < Test::Unit::TestCase
         define_method(:to_path) { file }
       end
       assert_equal(file, File.path(o))
+    end
+  end
+
+  def test_path_taint
+    [regular_file, utf8_file].each do |file|
+      file.untaint
+      assert_equal(false, File.open(file) {|f| f.path}.tainted?)
+      assert_equal(true, File.open(file.dup.taint) {|f| f.path}.tainted?)
+      o = Object.new
+      class << o; self; end.class_eval do
+        define_method(:to_path) { file }
+      end
+      assert_equal(false, File.open(o) {|f| f.path}.tainted?)
+      class << o; self; end.class_eval do
+        remove_method(:to_path)
+        define_method(:to_path) { file.dup.taint }
+      end
+      assert_equal(true, File.open(o) {|f| f.path}.tainted?)
     end
   end
 
@@ -624,13 +642,14 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_birthtime
+    skip if RUBY_PLATFORM =~ /android/
     [regular_file, utf8_file].each do |file|
       t1 = File.birthtime(file)
       t2 = File.open(file) {|f| f.birthtime}
       assert_kind_of(Time, t1)
       assert_kind_of(Time, t2)
       assert_equal(t1, t2)
-    rescue Errno::ENOSYS
+    rescue Errno::ENOSYS, NotImplementedError
       # ignore unsupporting filesystems
     rescue Errno::EPERM
       # Docker prohibits statx syscall by the default.
@@ -683,7 +702,6 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_utime_symlinkfile
     return unless symlinkfile
     t = Time.local(2000)
-    stat = File.lstat(symlinkfile)
     assert_equal(1, File.utime(t, t, symlinkfile))
     assert_equal(t, File.stat(regular_file).atime)
     assert_equal(t, File.stat(regular_file).mtime)
@@ -1290,21 +1308,23 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal(".test", File.extname(regular_file))
     assert_equal(".test", File.extname(utf8_file))
     prefixes = ["", "/", ".", "/.", "bar/.", "/bar/."]
-    infixes = ["", " ", "."]
+    infixes = ["", " "]
     infixes2 = infixes + [".ext "]
     appendixes = [""]
     if NTFS
       appendixes << " " << "." << "::$DATA" << "::$DATA.bar"
+    else
+      appendixes << [".", "."]
     end
     prefixes.each do |prefix|
-      appendixes.each do |appendix|
+      appendixes.each do |appendix, ext = ""|
         infixes.each do |infix|
           path = "#{prefix}foo#{infix}#{appendix}"
-          assert_equal("", File.extname(path), "File.extname(#{path.inspect})")
+          assert_equal(ext, File.extname(path), "File.extname(#{path.inspect})")
         end
         infixes2.each do |infix|
           path = "#{prefix}foo#{infix}.ext#{appendix}"
-          assert_equal(".ext", File.extname(path), "File.extname(#{path.inspect})")
+          assert_equal(ext.empty? ? ".ext" : appendix, File.extname(path), "File.extname(#{path.inspect})")
         end
       end
     end

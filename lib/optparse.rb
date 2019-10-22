@@ -592,7 +592,7 @@ class OptionParser
     #            +max+ columns.
     # +indent+:: Prefix string indents all summarized lines.
     #
-    def summarize(sdone = [], ldone = [], width = 1, max = width - 1, indent = "")
+    def summarize(sdone = {}, ldone = {}, width = 1, max = width - 1, indent = "")
       sopts, lopts = [], [], nil
       @short.each {|s| sdone.fetch(s) {sopts << s}; sdone[s] = true} if @short
       @long.each {|s| ldone.fetch(s) {lopts << s}; ldone[s] = true} if @long
@@ -864,6 +864,10 @@ class OptionParser
     #
     def complete(id, opt, icase = false, *pat, &block)
       __send__(id).complete(opt, icase, *pat, &block)
+    end
+
+    def get_candidates(id)
+      yield __send__(id).keys
     end
 
     #
@@ -1764,12 +1768,27 @@ XXX
     if pat.empty?
       search(typ, opt) {|sw| return [sw, opt]} # exact match or...
     end
-    raise AmbiguousOption, catch(:ambiguous) {
+    ambiguous = catch(:ambiguous) {
       visit(:complete, typ, opt, icase, *pat) {|o, *sw| return sw}
-      raise InvalidOption, opt
     }
+    exc = ambiguous ? AmbiguousOption : InvalidOption
+    raise exc.new(opt, additional: self.:additional_message.curry[typ])
   end
   private :complete
+
+  #
+  # Returns additional info.
+  #
+  def additional_message(typ, opt)
+    return unless typ and opt and defined?(DidYouMean::SpellChecker)
+    all_candidates = []
+    visit(:get_candidates, typ) do |candidates|
+      all_candidates.concat(candidates)
+    end
+    all_candidates.select! {|cand| cand.is_a?(String) }
+    checker = DidYouMean::SpellChecker.new(dictionary: all_candidates)
+    DidYouMean.formatter.message_for(all_candidates & checker.correct(opt))
+  end
 
   def candidate(word)
     list = []
@@ -1997,13 +2016,16 @@ XXX
     # Reason which caused the error.
     Reason = 'parse error'
 
-    def initialize(*args)
+    def initialize(*args, additional: nil)
+      @additional = additional
+      @arg0, = args
       @args = args
       @reason = nil
     end
 
     attr_reader :args
     attr_writer :reason
+    attr_accessor :additional
 
     #
     # Pushes back erred argument(s) to +argv+.
@@ -2048,7 +2070,7 @@ XXX
     # Default stringizing method to emit standard error message.
     #
     def message
-      reason + ': ' + args.join(' ')
+      "#{reason}: #{args.join(' ')}#{additional[@arg0] if additional}"
     end
 
     alias to_s message

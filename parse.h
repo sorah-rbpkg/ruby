@@ -1,9 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.3.2.  */
+/* A Bison parser, made by GNU Bison 3.0.4.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2019 Free Software Foundation,
-   Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,9 +29,6 @@
 
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
-
-/* Undocumented macros, especially those whose name start with YY_,
-   are private implementation details.  Do not rely on them.  */
 
 #ifndef YY_YY_Y_TAB_H_INCLUDED
 # define YY_YY_Y_TAB_H_INCLUDED
@@ -106,17 +102,16 @@ extern int yydebug;
     tCONSTANT = 311,
     tCVAR = 312,
     tLABEL = 313,
-    tNUMPARAM = 314,
-    tINTEGER = 315,
-    tFLOAT = 316,
-    tRATIONAL = 317,
-    tIMAGINARY = 318,
-    tCHAR = 319,
-    tNTH_REF = 320,
-    tBACK_REF = 321,
-    tSTRING_CONTENT = 322,
-    tREGEXP_END = 323,
-    tSP = 324,
+    tINTEGER = 314,
+    tFLOAT = 315,
+    tRATIONAL = 316,
+    tIMAGINARY = 317,
+    tCHAR = 318,
+    tNTH_REF = 319,
+    tBACK_REF = 320,
+    tSTRING_CONTENT = 321,
+    tREGEXP_END = 322,
+    tSP = 323,
     tUPLUS = 132,
     tUMINUS = 133,
     tPOW = 134,
@@ -141,36 +136,36 @@ extern int yydebug;
     tANDDOT = 150,
     tCOLON2 = 147,
     tMETHREF = 151,
-    tCOLON3 = 325,
-    tOP_ASGN = 326,
-    tASSOC = 327,
-    tLPAREN = 328,
-    tLPAREN_ARG = 329,
-    tRPAREN = 330,
-    tLBRACK = 331,
-    tLBRACE = 332,
-    tLBRACE_ARG = 333,
-    tSTAR = 334,
-    tDSTAR = 335,
-    tAMPER = 336,
-    tLAMBDA = 337,
-    tSYMBEG = 338,
-    tSTRING_BEG = 339,
-    tXSTRING_BEG = 340,
-    tREGEXP_BEG = 341,
-    tWORDS_BEG = 342,
-    tQWORDS_BEG = 343,
-    tSYMBOLS_BEG = 344,
-    tQSYMBOLS_BEG = 345,
-    tSTRING_END = 346,
-    tSTRING_DEND = 347,
-    tSTRING_DBEG = 348,
-    tSTRING_DVAR = 349,
-    tLAMBEG = 350,
-    tLABEL_END = 351,
-    tLOWEST = 352,
-    tUMINUS_NUM = 353,
-    tLAST_TOKEN = 354
+    tCOLON3 = 324,
+    tOP_ASGN = 325,
+    tASSOC = 326,
+    tLPAREN = 327,
+    tLPAREN_ARG = 328,
+    tRPAREN = 329,
+    tLBRACK = 330,
+    tLBRACE = 331,
+    tLBRACE_ARG = 332,
+    tSTAR = 333,
+    tDSTAR = 334,
+    tAMPER = 335,
+    tLAMBDA = 336,
+    tSYMBEG = 337,
+    tSTRING_BEG = 338,
+    tXSTRING_BEG = 339,
+    tREGEXP_BEG = 340,
+    tWORDS_BEG = 341,
+    tQWORDS_BEG = 342,
+    tSYMBOLS_BEG = 343,
+    tQSYMBOLS_BEG = 344,
+    tSTRING_END = 345,
+    tSTRING_DEND = 346,
+    tSTRING_DBEG = 347,
+    tSTRING_DVAR = 348,
+    tLAMBEG = 349,
+    tLABEL_END = 350,
+    tLOWEST = 351,
+    tUMINUS_NUM = 352,
+    tLAST_TOKEN = 353
   };
 #endif
 

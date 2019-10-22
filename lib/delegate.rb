@@ -60,8 +60,8 @@ class Delegator < BasicObject
 
   ##
   # :method: raise
-  # Use __raise__ if your Delegator does not have a object to delegate the
-  # raise method call.
+  # Use #__raise__ if your Delegator does not have a object to delegate the
+  # #raise method call.
   #
 
   #
@@ -75,14 +75,14 @@ class Delegator < BasicObject
   #
   # Handles the magic of delegation through \_\_getobj\_\_.
   #
-  def method_missing(m, *args, &block)
+  ruby2_keywords def method_missing(m, *args, &block)
     r = true
     target = self.__getobj__ {r = false}
 
-    if r && target.respond_to?(m)
+    if r && target_respond_to?(target, m, false)
       target.__send__(m, *args, &block)
     elsif ::Kernel.method_defined?(m) || ::Kernel.private_method_defined?(m)
-      ::Kernel.instance_method(m).bind(self).(*args, &block)
+      ::Kernel.instance_method(m).bind_call(self, *args, &block)
     else
       super(m, *args, &block)
     end
@@ -95,12 +95,22 @@ class Delegator < BasicObject
   def respond_to_missing?(m, include_private)
     r = true
     target = self.__getobj__ {r = false}
-    r &&= target.respond_to?(m, include_private)
-    if r && include_private && !target.respond_to?(m, false)
+    r &&= target_respond_to?(target, m, include_private)
+    if r && include_private && !target_respond_to?(target, m, false)
       warn "delegator does not forward private method \##{m}", uplevel: 3
       return false
     end
     r
+  end
+
+  # Handle BasicObject instances
+  private def target_respond_to?(target, m, include_private)
+    case target
+    when Object
+      target.respond_to?(m, include_private)
+    else
+      ::Kernel.instance_method(:respond_to?).bind_call(target, m, include_private)
+    end
   end
 
   #
@@ -360,6 +370,14 @@ end
 #     end
 #   end
 #
+# or:
+#
+#   MyClass = DelegateClass(ClassToDelegateTo) do    # Step 1
+#     def initialize
+#       super(obj_of_ClassToDelegateTo)              # Step 2
+#     end
+#   end
+#
 # Here's a sample of use from Tempfile which is really a File object with a
 # few special rules about storage location and when the File should be
 # deleted.  That makes for an almost textbook perfect example of how to use
@@ -383,11 +401,13 @@ end
 #     # ...
 #   end
 #
-def DelegateClass(superclass)
+def DelegateClass(superclass, &block)
   klass = Class.new(Delegator)
-  methods = superclass.instance_methods
-  methods -= ::Delegator.public_api
-  methods -= [:to_s, :inspect, :=~, :!~, :===]
+  ignores = [*::Delegator.public_api, :to_s, :inspect, :=~, :!~, :===]
+  protected_instance_methods = superclass.protected_instance_methods
+  protected_instance_methods -= ignores
+  public_instance_methods = superclass.public_instance_methods
+  public_instance_methods -= ignores
   klass.module_eval do
     def __getobj__ # :nodoc:
       unless defined?(@delegate_dc_obj)
@@ -400,15 +420,20 @@ def DelegateClass(superclass)
       __raise__ ::ArgumentError, "cannot delegate to self" if self.equal?(obj)
       @delegate_dc_obj = obj
     end
-    methods.each do |method|
+    protected_instance_methods.each do |method|
+      define_method(method, Delegator.delegating_block(method))
+      protected method
+    end
+    public_instance_methods.each do |method|
       define_method(method, Delegator.delegating_block(method))
     end
   end
   klass.define_singleton_method :public_instance_methods do |all=true|
-    super(all) - superclass.protected_instance_methods
+    super(all) | superclass.public_instance_methods
   end
   klass.define_singleton_method :protected_instance_methods do |all=true|
     super(all) | superclass.protected_instance_methods
   end
+  klass.module_eval(&block) if block
   return klass
 end

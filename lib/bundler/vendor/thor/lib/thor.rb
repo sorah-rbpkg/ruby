@@ -1,5 +1,5 @@
 require "set"
-require "bundler/vendor/thor/lib/thor/base"
+require_relative "thor/base"
 
 class Bundler::Thor
   class << self
@@ -90,9 +90,14 @@ class Bundler::Thor
     # ==== Parameters
     # Hash[String|Array => Symbol]:: Maps the string or the strings in the array to the given command.
     #
-    def map(mappings = nil)
+    def map(mappings = nil, **kw)
       @map ||= from_superclass(:map, {})
 
+      if mappings && !kw.empty?
+        mappings = kw.merge!(mappings)
+      else
+        mappings ||= kw
+      end
       if mappings
         mappings.each do |key, value|
           if key.respond_to?(:each)

@@ -51,10 +51,11 @@ module IRB # :nodoc:
     @CONF[:IGNORE_SIGINT] = true
     @CONF[:IGNORE_EOF] = false
     @CONF[:ECHO] = nil
+    @CONF[:ECHO_ON_ASSIGNMENT] = nil
     @CONF[:VERBOSE] = nil
 
     @CONF[:EVAL_HISTORY] = nil
-    @CONF[:SAVE_HISTORY] = nil
+    @CONF[:SAVE_HISTORY] = 1000
 
     @CONF[:BACK_TRACE_LIMIT] = 16
 
@@ -83,7 +84,7 @@ module IRB # :nodoc:
       :SIMPLE => {
         :PROMPT_I => ">> ",
         :PROMPT_N => ">> ",
-        :PROMPT_S => nil,
+        :PROMPT_S => "%l> ",
         :PROMPT_C => "?> ",
         :RETURN => "=> %s\n"
       },
@@ -105,7 +106,7 @@ module IRB # :nodoc:
     }
 
     @CONF[:PROMPT_MODE] = (STDIN.tty? ? :DEFAULT : :NULL)
-    @CONF[:AUTO_INDENT] = false
+    @CONF[:AUTO_INDENT] = true
 
     @CONF[:CONTEXT_MODE] = 3 # use binding in function on TOPLEVEL_BINDING
     @CONF[:SINGLE_IRB] = false
@@ -172,6 +173,10 @@ module IRB # :nodoc:
         @CONF[:ECHO] = true
       when "--noecho"
         @CONF[:ECHO] = false
+      when "--echo-on-assignment"
+        @CONF[:ECHO_ON_ASSIGNMENT] = true
+      when "--noecho-on-assignment"
+        @CONF[:ECHO_ON_ASSIGNMENT] = false
       when "--verbose"
         @CONF[:VERBOSE] = true
       when "--noverbose"

@@ -1,4 +1,14 @@
 class Reline::ANSI
+  RAW_KEYSTROKE_CONFIG = {
+    [27, 91, 65] => :ed_prev_history,     # ↑
+    [27, 91, 66] => :ed_next_history,     # ↓
+    [27, 91, 67] => :ed_next_char,        # →
+    [27, 91, 68] => :ed_prev_char,        # ←
+    [27, 91, 51, 126] => :key_delete,     # Del
+    [27, 91, 49, 126] => :ed_move_to_beg, # Home
+    [27, 91, 52, 126] => :ed_move_to_end, # End
+  }
+
   @@input = STDIN
   def self.input=(val)
     @@input = val
@@ -14,18 +24,20 @@ class Reline::ANSI
     unless @@buf.empty?
       return @@buf.shift
     end
-    c = nil
-    loop do
-      result = select([@@input], [], [], 0.1)
-      next if result.nil?
-      c = @@input.read(1)
-      break
-    end
-    c&.ord
+    @@input.getbyte
   end
 
   def self.ungetc(c)
     @@buf.unshift(c)
+  end
+
+  def self.retrieve_keybuffer
+      result = select([@@input], [], [], 0.001)
+      return if result.nil?
+      str = @@input.read_nonblock(1024)
+      str.bytes.each do |c|
+        @@buf.push(c)
+      end
   end
 
   def self.get_screen_size
@@ -96,12 +108,22 @@ class Reline::ANSI
     print "\e[1;1H"
   end
 
+  @@old_winch_handler = nil
+  def self.set_winch_handler(&handler)
+    @@old_winch_handler = Signal.trap('WINCH', &handler)
+  end
+
   def self.prep
+    retrieve_keybuffer
     int_handle = Signal.trap('INT', 'IGNORE')
     otio = `stty -g`.chomp
     setting = ' -echo -icrnl cbreak'
-    if (`stty -a`.scan(/-parenb\b/).first == '-parenb')
+    stty = `stty -a`
+    if /-parenb\b/ =~ stty
       setting << ' pass8'
+    end
+    if /\bdsusp *=/ =~ stty
+      setting << ' dsusp undef'
     end
     setting << ' -ixoff'
     `stty #{setting}`
@@ -113,5 +135,6 @@ class Reline::ANSI
     int_handle = Signal.trap('INT', 'IGNORE')
     `stty #{otio}`
     Signal.trap('INT', int_handle)
+    Signal.trap('WINCH', @@old_winch_handler) if @@old_winch_handler
   end
 end

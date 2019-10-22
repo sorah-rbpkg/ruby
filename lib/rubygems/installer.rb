@@ -65,6 +65,11 @@ class Gem::Installer
 
   attr_reader :options
 
+  ##
+  # The gem package instance.
+
+  attr_reader :package
+
   @path_warning = false
 
   @install_lock = Mutex.new
@@ -352,7 +357,7 @@ class Gem::Installer
   def run_pre_install_hooks # :nodoc:
     Gem.pre_install_hooks.each do |hook|
       if hook.call(self) == false
-        location = " at #{$1}" if hook.inspect =~ /@(.*:\d+)/
+        location = " at #{$1}" if hook.inspect =~ /[ @](.*:\d+)/
 
         message = "pre-install hook#{location} failed for #{spec.full_name}"
         raise Gem::InstallError, message
@@ -365,7 +370,7 @@ class Gem::Installer
       if hook.call(self) == false
         FileUtils.rm_rf gem_dir
 
-        location = " at #{$1}" if hook.inspect =~ /@(.*:\d+)/
+        location = " at #{$1}" if hook.inspect =~ /[ @](.*:\d+)/
 
         message = "post-build hook#{location} failed for #{spec.full_name}"
         raise Gem::InstallError, message
@@ -443,7 +448,7 @@ class Gem::Installer
   #
 
   def default_spec_file
-    File.join Gem::Specification.default_specifications_dir, "#{spec.full_name}.gemspec"
+    File.join Gem.default_specifications_dir, "#{spec.full_name}.gemspec"
   end
 
   ##
@@ -693,7 +698,7 @@ class Gem::Installer
     @development         = options[:development]
     @build_root          = options[:build_root]
 
-    @build_args          = options[:build_args] || Gem::Command.build_args
+    @build_args = options[:build_args] || Gem::Command.build_args
 
     unless @build_root.nil?
       require 'pathname'
@@ -749,7 +754,11 @@ class Gem::Installer
       raise Gem::InstallError, "#{spec} has an invalid specification_version"
     end
 
-    if spec.dependencies.any? {|dep| dep.type =~ /\R/ || dep.name =~ /\R/ }
+    if spec.dependencies.any? {|dep| dep.type != :runtime && dep.type != :development }
+      raise Gem::InstallError, "#{spec} has an invalid dependencies"
+    end
+
+    if spec.dependencies.any? {|dep| dep.name =~ /(?:\R|[<>])/ }
       raise Gem::InstallError, "#{spec} has an invalid dependencies"
     end
   end
@@ -771,7 +780,7 @@ class Gem::Installer
 
 require 'rubygems'
 
-version = "#{Gem::Requirement.default}.a"
+version = "#{Gem::Requirement.default_prerelease}"
 
 str = ARGV.first
 if str
@@ -806,7 +815,7 @@ TEXT
       # stub & ruby.exe withing same folder.  Portable
       <<-TEXT
 @ECHO OFF
-@"%~dp0ruby.exe" "%~dpn0" %*
+@"%~dp0#{ruby_exe}" "%~dpn0" %*
       TEXT
     elsif bindir.downcase.start_with? rb_topdir.downcase
       # stub within ruby folder, but not standard bin.  Portable
@@ -816,14 +825,14 @@ TEXT
       rel  = to.relative_path_from from
       <<-TEXT
 @ECHO OFF
-@"%~dp0#{rel}/ruby.exe" "%~dpn0" %*
+@"%~dp0#{rel}/#{ruby_exe}" "%~dpn0" %*
       TEXT
     else
       # outside ruby folder, maybe -user-install or bundler.  Portable, but ruby
       # is dependent on PATH
       <<-TEXT
 @ECHO OFF
-@ruby.exe "%~dpn0" %*
+@#{ruby_exe} "%~dpn0" %*
       TEXT
     end
   end

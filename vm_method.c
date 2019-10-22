@@ -114,7 +114,7 @@ rb_clear_method_cache_by_class(VALUE klass)
 }
 
 VALUE
-rb_f_notimplement(int argc, const VALUE *argv, VALUE obj)
+rb_f_notimplement(int argc, const VALUE *argv, VALUE obj, VALUE marker)
 {
     rb_notimplement();
 
@@ -787,10 +787,10 @@ method_entry_get_without_cache(VALUE klass, ID id,
     return me;
 }
 
-#if VM_DEBUG_VERIFY_METHOD_CACHE
 static void
 verify_method_cache(VALUE klass, ID id, VALUE defined_class, rb_method_entry_t *me)
 {
+    if (!VM_DEBUG_VERIFY_METHOD_CACHE) return;
     VALUE actual_defined_class;
     rb_method_entry_t *actual_me =
       method_entry_get_without_cache(klass, id, &actual_defined_class);
@@ -799,26 +799,23 @@ verify_method_cache(VALUE klass, ID id, VALUE defined_class, rb_method_entry_t *
 	rb_bug("method cache verification failed");
     }
 }
-#endif
 
 static rb_method_entry_t *
 method_entry_get(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
-#if OPT_GLOBAL_METHOD_CACHE
     struct cache_entry *ent;
+    if (!OPT_GLOBAL_METHOD_CACHE) goto nocache;
     ent = GLOBAL_METHOD_CACHE(klass, id);
     if (ent->method_state == GET_GLOBAL_METHOD_STATE() &&
 	ent->class_serial == RCLASS_SERIAL(klass) &&
 	ent->mid == id) {
-#if VM_DEBUG_VERIFY_METHOD_CACHE
 	verify_method_cache(klass, id, ent->defined_class, ent->me);
-#endif
 	if (defined_class_ptr) *defined_class_ptr = ent->defined_class;
 	RB_DEBUG_COUNTER_INC(mc_global_hit);
 	return ent->me;
     }
-#endif
 
+  nocache:
     RB_DEBUG_COUNTER_INC(mc_global_miss);
     return method_entry_get_without_cache(klass, id, defined_class_ptr);
 }
@@ -1130,19 +1127,33 @@ rb_scope_visibility_set(rb_method_visibility_t visi)
 }
 
 static void
+scope_visibility_check(void)
+{
+    /* Check for public/protected/private/module_function called inside a method */
+    rb_control_frame_t *cfp = rb_current_execution_context()->cfp+1;
+    if (cfp && cfp->iseq && cfp->iseq->body->type == ISEQ_TYPE_METHOD) {
+        rb_warn("calling %s without arguments inside a method may not have the intended effect",
+            rb_id2name(rb_frame_this_func()));
+    }
+}
+
+static void
 rb_scope_module_func_set(void)
 {
+    scope_visibility_check();
     vm_cref_set_visibility(METHOD_VISI_PRIVATE, TRUE);
 }
 
+const rb_cref_t *rb_vm_cref_in_context(VALUE self, VALUE cbase);
 void
 rb_attr(VALUE klass, ID id, int read, int write, int ex)
 {
     ID attriv;
     rb_method_visibility_t visi;
     const rb_execution_context_t *ec = GET_EC();
+    const rb_cref_t *cref = rb_vm_cref_in_context(klass, klass);
 
-    if (!ex) {
+    if (!ex || !cref) {
 	visi = METHOD_VISI_PUBLIC;
     }
     else {
@@ -1664,7 +1675,8 @@ static VALUE
 set_visibility(int argc, const VALUE *argv, VALUE module, rb_method_visibility_t visi)
 {
     if (argc == 0) {
-	rb_scope_visibility_set(visi);
+        scope_visibility_check();
+        rb_scope_visibility_set(visi);
     }
     else {
 	set_method_visibility(module, argc, argv, visi);
@@ -1748,6 +1760,112 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
 
 /*
  *  call-seq:
+ *     ruby2_keywords(method_name, ...)    -> self
+ *
+ *  For the given method names, marks the method as passing keywords through
+ *  a normal argument splat.  This should only be called on methods that
+ *  accept an argument splat (<tt>*args</tt>) but not explicit keywords or
+ *  a keyword splat.  It marks the method such that if the method is called
+ *  with keyword arguments, the final hash argument is marked with a special
+ *  flag such that if it is the final element of a normal argument splat to
+ *  another method call, and that method calls does not include explicit
+ *  keywords or a keyword splat, the final element is interpreted as keywords.
+ *  In other words, keywords will be passed through the method to other
+ *  methods.
+ *
+ *  This should only be used for methods that delegate keywords to another
+ *  method, and only for backwards compatibility with Ruby versions before
+ *  2.7.
+ *
+ *  This method will probably be removed at some point, as it exists only
+ *  for backwards compatibility, so always check that the module responds
+ *  to this method before calling it.
+ *
+ *    module Mod
+ *      def foo(meth, *args, &block)
+ *        send(:"do_#{meth}", *args, &block)
+ *      end
+ *      ruby2_keywords(:foo) if respond_to?(:ruby2_keywords, true)
+ *    end
+ */
+
+static VALUE
+rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
+{
+    int i;
+    VALUE origin_class = RCLASS_ORIGIN(module);
+
+    rb_check_frozen(module);
+
+    for (i = 0; i < argc; i++) {
+        VALUE v = argv[i];
+        ID name = rb_check_id(&v);
+        rb_method_entry_t *me;
+        VALUE defined_class;
+
+        if (!name) {
+            rb_print_undef_str(module, v);
+        }
+
+        me = search_method(origin_class, name, &defined_class);
+        if (!me && RB_TYPE_P(module, T_MODULE)) {
+            me = search_method(rb_cObject, name, &defined_class);
+        }
+
+        if (UNDEFINED_METHOD_ENTRY_P(me) ||
+            UNDEFINED_REFINED_METHOD_P(me->def)) {
+            rb_print_undef(module, name, METHOD_VISI_UNDEF);
+        }
+
+        if (module == defined_class || origin_class == defined_class) {
+            switch (me->def->type) {
+              case VM_METHOD_TYPE_ISEQ:
+                if (me->def->body.iseq.iseqptr->body->param.flags.has_rest &&
+                        !me->def->body.iseq.iseqptr->body->param.flags.has_kw &&
+                        !me->def->body.iseq.iseqptr->body->param.flags.has_kwrest) {
+                    me->def->body.iseq.iseqptr->body->param.flags.ruby2_keywords = 1;
+                    rb_clear_method_cache_by_class(module);
+                }
+                else {
+                    rb_warn("Skipping set of ruby2_keywords flag for %s (method accepts keywords or method does not accept argument splat)", rb_id2name(name));
+                }
+                break;
+              case VM_METHOD_TYPE_BMETHOD: {
+                VALUE procval = me->def->body.bmethod.proc;
+                if (vm_block_handler_type(procval) == block_handler_type_proc) {
+                    procval = vm_proc_to_block_handler(VM_BH_TO_PROC(procval));
+                }
+
+                if (vm_block_handler_type(procval) == block_handler_type_iseq) {
+                    const struct rb_captured_block *captured = VM_BH_TO_ISEQ_BLOCK(procval);
+                    const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
+                    if (iseq->body->param.flags.has_rest &&
+                            !iseq->body->param.flags.has_kw &&
+                            !iseq->body->param.flags.has_kwrest) {
+                        iseq->body->param.flags.ruby2_keywords = 1;
+                        rb_clear_method_cache_by_class(module);
+                    }
+                    else {
+                        rb_warn("Skipping set of ruby2_keywords flag for %s (method accepts keywords or method does not accept argument splat)", rb_id2name(name));
+                    }
+                    return Qnil;
+                }
+              }
+              /* fallthrough */
+              default:
+                rb_warn("Skipping set of ruby2_keywords flag for %s (method not defined in Ruby)", rb_id2name(name));
+                break;
+            }
+        }
+        else {
+            rb_warn("Skipping set of ruby2_keywords flag for %s (can only set in method defining module)", rb_id2name(name));
+        }
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
  *     mod.public_class_method(symbol, ...)    -> mod
  *     mod.public_class_method(string, ...)    -> mod
  *
@@ -1803,7 +1921,7 @@ rb_mod_private_method(int argc, VALUE *argv, VALUE obj)
  */
 
 static VALUE
-top_public(int argc, VALUE *argv)
+top_public(int argc, VALUE *argv, VALUE _)
 {
     return rb_mod_public(argc, argv, rb_cObject);
 }
@@ -1821,7 +1939,7 @@ top_public(int argc, VALUE *argv)
  *  String arguments are converted to symbols.
  */
 static VALUE
-top_private(int argc, VALUE *argv)
+top_private(int argc, VALUE *argv, VALUE _)
 {
     return rb_mod_private(argc, argv, rb_cObject);
 }
@@ -1917,12 +2035,12 @@ rb_method_basic_definition_p(VALUE klass, ID id)
 
 static VALUE
 call_method_entry(rb_execution_context_t *ec, VALUE defined_class, VALUE obj, ID id,
-		  const rb_method_entry_t *me, int argc, const VALUE *argv)
+                  const rb_method_entry_t *me, int argc, const VALUE *argv, int kw_splat)
 {
     const rb_callable_method_entry_t *cme =
-	prepare_callable_method_entry(defined_class, id, me);
+        prepare_callable_method_entry(defined_class, id, me);
     VALUE passed_block_handler = vm_passed_block_handler(ec);
-    VALUE result = rb_vm_call0(ec, obj, id, argc, argv, cme);
+    VALUE result = rb_vm_call_kw(ec, obj, id, argc, argv, cme, kw_splat);
     vm_passed_block_handler_set(ec, passed_block_handler);
     return result;
 }
@@ -1939,7 +2057,7 @@ basic_obj_respond_to_missing(rb_execution_context_t *ec, VALUE klass, VALUE obj,
     if (!me || METHOD_ENTRY_BASIC(me)) return Qundef;
     args[0] = mid;
     args[1] = priv;
-    return call_method_entry(ec, defined_class, obj, rtmid, me, 2, args);
+    return call_method_entry(ec, defined_class, obj, rtmid, me, 2, args, RB_NO_KEYWORDS);
 }
 
 static inline int
@@ -2006,7 +2124,7 @@ vm_respond_to(rb_execution_context_t *ec, VALUE klass, VALUE obj, ID id, int pri
 		}
 	    }
 	}
-	result = call_method_entry(ec, defined_class, obj, resid, me, argc, args);
+        result = call_method_entry(ec, defined_class, obj, resid, me, argc, args, RB_NO_KEYWORDS);
 	return RTEST(result);
     }
 }
@@ -2091,7 +2209,7 @@ obj_respond_to_missing(VALUE obj, VALUE mid, VALUE priv)
 void
 Init_Method(void)
 {
-#if OPT_GLOBAL_METHOD_CACHE
+    if (!OPT_GLOBAL_METHOD_CACHE) return;
     char *ptr = getenv("RUBY_GLOBAL_METHOD_CACHE_SIZE");
     int val;
 
@@ -2110,7 +2228,6 @@ Init_Method(void)
 	fprintf(stderr, "[FATAL] failed to allocate memory\n");
 	exit(EXIT_FAILURE);
     }
-#endif
 }
 
 void
@@ -2129,6 +2246,7 @@ Init_eval_method(void)
     rb_define_private_method(rb_cModule, "protected", rb_mod_protected, -1);
     rb_define_private_method(rb_cModule, "private", rb_mod_private, -1);
     rb_define_private_method(rb_cModule, "module_function", rb_mod_modfunc, -1);
+    rb_define_private_method(rb_cModule, "ruby2_keywords", rb_mod_ruby2_keywords, -1);
 
     rb_define_method(rb_cModule, "method_defined?", rb_mod_method_defined, -1);
     rb_define_method(rb_cModule, "public_method_defined?", rb_mod_public_method_defined, -1);

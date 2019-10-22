@@ -49,7 +49,6 @@ ripper_init_eventids2_table(VALUE self)
     rb_hash_aset(h, intern_sym("symbols_beg"), INT2FIX(1));
     rb_hash_aset(h, intern_sym("tlambda"), INT2FIX(1));
     rb_hash_aset(h, intern_sym("tlambeg"), INT2FIX(1));
-    rb_hash_aset(h, intern_sym("tnumparam"), INT2FIX(1));
     rb_hash_aset(h, intern_sym("tstring_beg"), INT2FIX(1));
     rb_hash_aset(h, intern_sym("tstring_content"), INT2FIX(1));
     rb_hash_aset(h, intern_sym("tstring_end"), INT2FIX(1));

@@ -557,7 +557,7 @@ module Spec
             "#!/usr/bin/env ruby\n"
           end
           @spec.files << executable
-          write executable, "#{shebang}require '#{@name}' ; puts #{Builders.constantize(@name)}"
+          write executable, "#{shebang}require_relative '../lib/#{@name}' ; puts #{Builders.constantize(@name)}"
         end
       end
 
@@ -689,7 +689,7 @@ module Spec
           elsif tag = options[:tag]
             `git tag #{Shellwords.shellescape(tag)}`
           elsif options[:remote]
-            silently("git remote add origin file://#{options[:remote]}")
+            silently("git remote add origin #{options[:remote]}")
           elsif options[:push]
             silently("git push origin #{options[:push]}")
           end

@@ -1,5 +1,5 @@
 # -*- ruby -*-
-_VERSION = "0.4.7"
+_VERSION = "0.4.9"
 date = %w$Date::                           $[1]
 
 Gem::Specification.new do |s|
@@ -20,12 +20,8 @@ Gem::Specification.new do |s|
     ext/io/console/console.c
     ext/io/console/extconf.rb
     ext/io/console/win32_vk.inc
-    lib/io/console.rb
     lib/io/console/size.rb
   ]
   s.extensions = %w[ext/io/console/extconf.rb]
   s.license = "BSD-2-Clause"
-
-  s.add_development_dependency 'rake-compiler'
-  s.add_development_dependency 'rake-compiler-dock', ">= 0.6.1"
 end

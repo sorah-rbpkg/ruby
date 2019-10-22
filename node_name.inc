@@ -86,10 +86,10 @@
 	return "NODE_SUPER";
       case NODE_ZSUPER:
 	return "NODE_ZSUPER";
-      case NODE_ARRAY:
-	return "NODE_ARRAY";
-      case NODE_ZARRAY:
-	return "NODE_ZARRAY";
+      case NODE_LIST:
+	return "NODE_LIST";
+      case NODE_ZLIST:
+	return "NODE_ZLIST";
       case NODE_VALUES:
 	return "NODE_VALUES";
       case NODE_HASH:

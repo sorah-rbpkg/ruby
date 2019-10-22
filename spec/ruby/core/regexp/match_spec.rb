@@ -5,14 +5,14 @@ describe :regexp_match, shared: true do
   it "returns nil if there is no match" do
     /xyz/.send(@method,"abxyc").should be_nil
   end
-
-  it "returns nil if the object is nil" do
-    /\w+/.send(@method, nil).should be_nil
-  end
 end
 
 describe "Regexp#=~" do
   it_behaves_like :regexp_match, :=~
+
+  it "returns nil if the object is nil" do
+    (/\w+/ =~ nil).should be_nil
+  end
 
   it "returns the index of the first character of the matching region" do
     (/(.)(.)(.)/ =~ "abc").should == 0
@@ -35,7 +35,7 @@ describe "Regexp#match" do
   end
 
   it "raises a TypeError on an uninitialized Regexp" do
-    lambda { Regexp.allocate.match('foo') }.should raise_error(TypeError)
+    -> { Regexp.allocate.match('foo') }.should raise_error(TypeError)
   end
 
   describe "with [string, position]" do
@@ -50,7 +50,7 @@ describe "Regexp#match" do
 
       it "raises an ArgumentError for an invalid encoding" do
         x96 = ([150].pack('C')).force_encoding('utf-8')
-        lambda { /(.).(.)/.match("Hello, #{x96} world!", 1) }.should raise_error(ArgumentError)
+        -> { /(.).(.)/.match("Hello, #{x96} world!", 1) }.should raise_error(ArgumentError)
       end
     end
 
@@ -65,7 +65,7 @@ describe "Regexp#match" do
 
       it "raises an ArgumentError for an invalid encoding" do
         x96 = ([150].pack('C')).force_encoding('utf-8')
-        lambda { /(.).(.)/.match("Hello, #{x96} world!", -1) }.should raise_error(ArgumentError)
+        -> { /(.).(.)/.match("Hello, #{x96} world!", -1) }.should raise_error(ArgumentError)
       end
     end
 
@@ -87,23 +87,31 @@ describe "Regexp#match" do
     end
   end
 
-  it "resets $~ if passed nil" do
-    # set $~
-    /./.match("a")
-    $~.should be_kind_of(MatchData)
+  ruby_version_is ""..."2.7" do
+    it "resets $~ if passed nil" do
+      # set $~
+      /./.match("a")
+      $~.should be_kind_of(MatchData)
 
-    /1/.match(nil)
-    $~.should be_nil
+      /1/.match(nil)
+      $~.should be_nil
+    end
+  end
+
+  ruby_version_is "2.7" do
+    it "raises TypeError when the given argument is nil" do
+      -> { /foo/.match(nil) }.should raise_error(TypeError)
+    end
   end
 
   it "raises TypeError when the given argument cannot be coerced to String" do
     f = 1
-    lambda { /foo/.match(f)[0] }.should raise_error(TypeError)
+    -> { /foo/.match(f)[0] }.should raise_error(TypeError)
   end
 
   it "raises TypeError when the given argument is an Exception" do
     f = Exception.new("foo")
-    lambda { /foo/.match(f)[0] }.should raise_error(TypeError)
+    -> { /foo/.match(f)[0] }.should raise_error(TypeError)
   end
 end
 
@@ -129,8 +137,16 @@ describe "Regexp#match?" do
     /str/i.match?('string', 1).should be_false
   end
 
-  it "returns false when given nil" do
-    /./.match?(nil).should be_false
+  ruby_version_is ""..."2.7" do
+    it "returns false when given nil" do
+      /./.match?(nil).should be_false
+    end
+  end
+
+  ruby_version_is "2.7" do
+    it "raises TypeError when given nil" do
+      -> { /./.match?(nil) }.should raise_error(TypeError)
+    end
   end
 end
 

@@ -26,6 +26,11 @@
  * * mc_cme_complement: callable_method_entry complement counts.
  * * mc_cme_complement_hit: callable_method_entry cache hit counts.
  * * mc_search_super: search_method() call counts.
+ * * mc_miss_by_nome: inline mc miss by no ment.
+ * * mc_miss_by_distinct:        ... by distinct ment.
+ * * mc_miss_by_refine:          ... by ment being refined.
+ * * mc_miss_by_visi:            ... by visibility change.
+ * * mc_miss_spurious: spurious inline mc misshit.
  */
 RB_DEBUG_COUNTER(mc_inline_hit)
 RB_DEBUG_COUNTER(mc_inline_miss)
@@ -36,6 +41,11 @@ RB_DEBUG_COUNTER(mc_class_serial_miss)
 RB_DEBUG_COUNTER(mc_cme_complement)
 RB_DEBUG_COUNTER(mc_cme_complement_hit)
 RB_DEBUG_COUNTER(mc_search_super)
+RB_DEBUG_COUNTER(mc_miss_by_nome)
+RB_DEBUG_COUNTER(mc_miss_by_distinct)
+RB_DEBUG_COUNTER(mc_miss_by_refine)
+RB_DEBUG_COUNTER(mc_miss_by_visi)
+RB_DEBUG_COUNTER(mc_miss_spurious)
 
 /*
  * call cache fastpath usage
@@ -174,9 +184,9 @@ RB_DEBUG_COUNTER(gc_isptr_maybe)
  *   * str_nofree:        nofree
  *   * str_fstr:          fstr
  *   * hash_empty: hash is empty
- *   * hash_under4:     has under 4 entries
- *   * hash_ge4:        has n entries (4<=n<8)
- *   * hash_ge8:        has n entries (8<=n)
+ *   * hash_1_4:       has 1 to 4 entries
+ *   * hash_5_8:       has 5 to 8 entries
+ *   * hash_g8:        has n entries (n>8)
  *   * match_under4:    has under 4 oniguruma regions allocated
  *   * match_ge4:       has n regions allocated (4<=n<8)
  *   * match_ge8:       has n regions allocated (8<=n)
@@ -206,15 +216,29 @@ RB_DEBUG_COUNTER(obj_str_fstr)
 RB_DEBUG_COUNTER(obj_ary_embed)
 RB_DEBUG_COUNTER(obj_ary_transient)
 RB_DEBUG_COUNTER(obj_ary_ptr)
+RB_DEBUG_COUNTER(obj_ary_extracapa)
+/*
+  ary_shared_create: shared ary by Array#dup and so on.
+  ary_shared: finished in shard.
+  ary_shared_root_occupied: shared_root but has only 1 refcnt.
+    The number (ary_shared - ary_shared_root_occupied) is meaningful.
+ */
+RB_DEBUG_COUNTER(obj_ary_shared_create)
+RB_DEBUG_COUNTER(obj_ary_shared)
+RB_DEBUG_COUNTER(obj_ary_shared_root_occupied)
 
 RB_DEBUG_COUNTER(obj_hash_empty)
-RB_DEBUG_COUNTER(obj_hash_under4)
-RB_DEBUG_COUNTER(obj_hash_ge4)
-RB_DEBUG_COUNTER(obj_hash_ge8)
+RB_DEBUG_COUNTER(obj_hash_1)
+RB_DEBUG_COUNTER(obj_hash_2)
+RB_DEBUG_COUNTER(obj_hash_3)
+RB_DEBUG_COUNTER(obj_hash_4)
+RB_DEBUG_COUNTER(obj_hash_5_8)
+RB_DEBUG_COUNTER(obj_hash_g8)
+
+RB_DEBUG_COUNTER(obj_hash_null)
 RB_DEBUG_COUNTER(obj_hash_ar)
 RB_DEBUG_COUNTER(obj_hash_st)
 RB_DEBUG_COUNTER(obj_hash_transient)
-
 RB_DEBUG_COUNTER(obj_hash_force_convert)
 
 RB_DEBUG_COUNTER(obj_struct_embed)
@@ -252,6 +276,11 @@ RB_DEBUG_COUNTER(obj_imemo_parser_strterm)
 RB_DEBUG_COUNTER(obj_iclass_ptr)
 RB_DEBUG_COUNTER(obj_class_ptr)
 RB_DEBUG_COUNTER(obj_module_ptr)
+
+/* ar_table */
+RB_DEBUG_COUNTER(artable_hint_hit)
+RB_DEBUG_COUNTER(artable_hint_miss)
+RB_DEBUG_COUNTER(artable_hint_notfound)
 
 /* heap function counts
  *
@@ -331,7 +360,8 @@ rb_debug_counter_add(enum rb_debug_counter_type type, int add, int cond)
     return cond;
 }
 
-VALUE rb_debug_counter_reset(void);
+VALUE rb_debug_counter_reset(VALUE klass);
+VALUE rb_debug_counter_show(VALUE klass);
 
 #define RB_DEBUG_COUNTER_INC(type)                rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, 1)
 #define RB_DEBUG_COUNTER_INC_UNLESS(type, cond) (!rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, !(cond)))

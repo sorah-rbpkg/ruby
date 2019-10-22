@@ -171,7 +171,7 @@ def install(src, dest, options = {})
   strip = options.delete(:strip)
   options[:preserve] = true
   d = with_destdir(dest)
-  super(src, d, options)
+  super(src, d, **options)
   srcs = Array(src)
   if strip
     d = srcs.map {|s| File.join(d, File.basename(s))} if $made_dirs[dest]
@@ -253,7 +253,7 @@ def install_recursive(srcdir, dest, options = {})
         elsif stat.symlink?
           # skip
         else
-          files << [src, d, false] if File.fnmatch?(glob, f) and !skip[f]
+          files << [src, d, false] if File.fnmatch?(glob, f, File::FNM_EXTGLOB) and !skip[f]
         end
       end
       paths.insert(0, *files)
@@ -469,7 +469,8 @@ PROLOG_SCRIPT.default = (load_relative || /\s/ =~ bindir) ?
 # -*- ruby -*-
 _=_\\
 =begin
-#{prolog_script}=end
+#{prolog_script.chomp}
+=end
 EOS
 
 installer = Struct.new(:ruby_shebang, :ruby_bin, :ruby_install_name, :stub, :trans)
@@ -575,7 +576,7 @@ install?(:local, :comm, :hdr, :'comm-hdr') do
     noinst << "win32.h"
   end
   noinst = nil if noinst.empty?
-  install_recursive(File.join(srcdir, "include"), rubyhdrdir, :no_install => noinst, :glob => "*.h", :mode => $data_mode)
+  install_recursive(File.join(srcdir, "include"), rubyhdrdir, :no_install => noinst, :glob => "*.{h,hpp}", :mode => $data_mode)
 end
 
 install?(:local, :comm, :man) do
@@ -827,7 +828,7 @@ def install_default_gem(dir, srcdir)
     spec
   }
   gems.compact.sort_by(&:name).each do |gemspec|
-    old_gemspecs = Dir[File.join(default_spec_dir, "#{gemspec.name}-*.gemspec")]
+    old_gemspecs = Dir[File.join(with_destdir(default_spec_dir), "#{gemspec.name}-*.gemspec")]
     if old_gemspecs.size > 0
       old_gemspecs.each {|spec| FileUtils.rm spec }
     end
@@ -840,8 +841,12 @@ def install_default_gem(dir, srcdir)
       gemspec.to_ruby
     end
 
+    specific_gem_dir = File.join(gem_dir, 'gems', full_name)
+
+    makedirs(specific_gem_dir)
+
     unless gemspec.executables.empty? then
-      bin_dir = File.join(gem_dir, 'gems', full_name, gemspec.bindir)
+      bin_dir = File.join(specific_gem_dir, gemspec.bindir)
       makedirs(bin_dir)
 
       gemspec.executables.map {|exec|

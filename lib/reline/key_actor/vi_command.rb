@@ -55,7 +55,7 @@ class Reline::KeyActor::ViCommand < Reline::KeyActor::Base
     #  26 ^Z
     :ed_unassigned,
     #  27 ^[
-    :em_meta_next,
+    :ed_unassigned,
     #  28 ^\
     :ed_ignore,
     #  29 ^]
@@ -189,7 +189,7 @@ class Reline::KeyActor::ViCommand < Reline::KeyActor::Base
     #  93 ]
     :ed_unassigned,
     #  94 ^
-    :ed_move_to_beg,
+    :vi_first_print,
     #  95 _
     :vi_history_word,
     #  96 `

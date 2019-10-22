@@ -11,7 +11,7 @@ module ProcessSpecs
       clocks -= [:CLOCK_BOOTTIME_ALARM, :CLOCK_REALTIME_ALARM]
     end
 
-    clocks.map { |c|
+    clocks.sort.map { |c|
       [c, Process.const_get(c)]
     }
   end
@@ -34,7 +34,7 @@ module ProcessSpecs
     end
 
     # These clocks in practice on ARM on Linux do not seem to match their reported resolution.
-    platform_is :armv7l, :aarch64 do
+    platform_is :armv7, :aarch64 do
       clocks = clocks.reject { |clock, value|
         [:CLOCK_PROCESS_CPUTIME_ID, :CLOCK_THREAD_CPUTIME_ID, :CLOCK_MONOTONIC_RAW].include?(clock)
       }

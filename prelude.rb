@@ -8,7 +8,7 @@ class << Thread
   def exclusive(&block) end if false
   mutex = Mutex.new # :nodoc:
   define_method(:exclusive) do |&block|
-    warn "Thread.exclusive is deprecated, use Thread::Mutex", caller
+    warn "Thread.exclusive is deprecated, use Thread::Mutex", uplevel: 1
     mutex.synchronize(&block)
   end
 end
@@ -38,6 +38,10 @@ class IO
   # read_nonblock.
   #
   # read_nonblock causes EOFError on EOF.
+  #
+  # On some platforms, such as Windows, non-blocking mode is not supported
+  # on IO objects other than sockets. In such cases, Errno::EBADF will
+  # be raised.
   #
   # If the read byte buffer is not empty,
   # read_nonblock reads from the buffer like readpartial.
@@ -134,8 +138,8 @@ end
 
 class TracePoint
   # call-seq:
-  #    trace.enable(target: nil, target_line: nil)    -> true or false
-  #    trace.enable(target: nil, target_line: nil) { block }  -> obj
+  #    trace.enable(target: nil, target_line: nil, target_thread: nil)    -> true or false
+  #    trace.enable(target: nil, target_line: nil, target_thread: nil) { block }  -> obj
   #
   # Activates the trace.
   #
@@ -163,9 +167,10 @@ class TracePoint
   #    trace.enabled?
   #    #=> false
   #
-  # <i>target</i> and <i>target_line</i> parameters are used to limit tracing
-  # only to specified code objects. <i>target</i> should be a code object for
-  # which RubyVM::InstructionSequence.of will return an instruction sequence.
+  # +target+, +target_line+ and +target_thread+ parameters are used to
+  # limit tracing only to specified code objects. +target+ should be a
+  # code object for which RubyVM::InstructionSequence.of will return
+  # an instruction sequence.
   #
   #    t = TracePoint.new(:line) { |tp| p tp }
   #

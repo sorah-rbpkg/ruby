@@ -268,8 +268,9 @@ static const char *const CC_DEBUG_ARGS[] = {MJIT_DEBUGFLAGS NULL};
 static const char *const CC_OPTIMIZE_ARGS[] = {MJIT_OPTFLAGS NULL};
 
 static const char *const CC_LDSHARED_ARGS[] = {MJIT_LDSHARED GCC_PIC_FLAGS NULL};
-static const char *const CC_DLDFLAGS_ARGS[] = {
-    MJIT_DLDFLAGS
+static const char *const CC_DLDFLAGS_ARGS[] = {MJIT_DLDFLAGS NULL};
+// `CC_LINKER_ARGS` are linker flags which must be passed to `-c` as well.
+static const char *const CC_LINKER_ARGS[] = {
 #if defined __GNUC__ && !defined __clang__ && !defined(__OpenBSD__)
     "-nostartfiles",
 #endif
@@ -285,6 +286,9 @@ static const char *const CC_LIBS[] = {
     "-lmsvcrt", // mingw
 # endif
     "-lgcc", // mingw, cygwin, and GCC platforms using `-nodefaultlibs -nostdlib`
+#endif
+#if defined __ANDROID__
+    "-lm", // to avoid 'cannot locate symbol "modf" referenced by .../_ruby_mjit_XXX.so"'
 #endif
     NULL
 };
@@ -528,7 +532,8 @@ form_args(int num, ...)
         n = args_len(args);
         if ((tmp = (char **)realloc(res, sizeof(char *) * (len + n + 1))) == NULL) {
             free(res);
-            return NULL;
+            res = NULL;
+            break;
         }
         res = tmp;
         MEMCPY(res + len, args, char *, n + 1);
@@ -547,36 +552,36 @@ COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
 static pid_t
 start_process(const char *abspath, char *const *argv)
 {
-    pid_t pid;
     // Not calling non-async-signal-safe functions between vfork
     // and execv for safety
     int dev_null = rb_cloexec_open(ruby_null_device, O_WRONLY, 0);
-
+    if (dev_null < 0) {
+        verbose(1, "MJIT: Failed to open a null device: %s", strerror(errno));
+        return -1;
+    }
     if (mjit_opts.verbose >= 2) {
-        int i;
         const char *arg;
-
         fprintf(stderr, "Starting process: %s", abspath);
-        for (i = 0; (arg = argv[i]) != NULL; i++)
+        for (int i = 0; (arg = argv[i]) != NULL; i++)
             fprintf(stderr, " %s", arg);
         fprintf(stderr, "\n");
     }
-#ifdef _WIN32
-    {
-        extern HANDLE rb_w32_start_process(const char *abspath, char *const *argv, int out_fd);
-        int out_fd = 0;
-        if (mjit_opts.verbose <= 1) {
-            // Discard cl.exe's outputs like:
-            //   _ruby_mjit_p12u3.c
-            //     Creating library C:.../_ruby_mjit_p12u3.lib and object C:.../_ruby_mjit_p12u3.exp
-            out_fd = dev_null;
-        }
 
-        pid = (pid_t)rb_w32_start_process(abspath, argv, out_fd);
-        if (pid == 0) {
-            verbose(1, "MJIT: Failed to create process: %s", dlerror());
-            return -1;
-        }
+    pid_t pid;
+#ifdef _WIN32
+    extern HANDLE rb_w32_start_process(const char *abspath, char *const *argv, int out_fd);
+    int out_fd = 0;
+    if (mjit_opts.verbose <= 1) {
+        // Discard cl.exe's outputs like:
+        //   _ruby_mjit_p12u3.c
+        //     Creating library C:.../_ruby_mjit_p12u3.lib and object C:.../_ruby_mjit_p12u3.exp
+        out_fd = dev_null;
+    }
+
+    pid = (pid_t)rb_w32_start_process(abspath, argv, out_fd);
+    if (pid == 0) {
+        verbose(1, "MJIT: Failed to create process: %s", dlerror());
+        return -1;
     }
 #else
     if ((pid = vfork()) == 0) { /* TODO: reuse some function in process.c */
@@ -609,7 +614,6 @@ static int
 exec_process(const char *path, char *const argv[])
 {
     int stat, exit_code = -2;
-    pid_t pid;
     rb_vm_t *vm = WAITPID_USE_SIGCHLD ? GET_VM() : 0;
     rb_nativethread_cond_t cond;
 
@@ -618,7 +622,7 @@ exec_process(const char *path, char *const argv[])
         rb_native_mutex_lock(&vm->waitpid_lock);
     }
 
-    pid = start_process(path, argv);
+    pid_t pid = start_process(path, argv);
     for (;pid > 0;) {
         pid_t r = vm ? ruby_waitpid_locked(vm, pid, &stat, 0, &cond)
                      : waitpid(pid, &stat, 0);
@@ -670,10 +674,8 @@ remove_so_file(const char *so_file, struct rb_mjit_unit *unit)
 static bool
 compile_c_to_so(const char *c_file, const char *so_file)
 {
-    int exit_code;
     const char *files[] = { NULL, NULL, NULL, NULL, NULL, NULL, "-link", libruby_pathflag, NULL };
-    char **args;
-    char *p, *obj_file;
+    char *p;
 
     // files[0] = "-Fe*.dll"
     files[0] = p = alloca(sizeof(char) * (rb_strlen_lit("-Fe") + strlen(so_file) + 1));
@@ -684,7 +686,7 @@ compile_c_to_so(const char *c_file, const char *so_file)
     // files[1] = "-Fo*.obj"
     // We don't need .obj file, but it's somehow created to cwd without -Fo and we want to control the output directory.
     files[1] = p = alloca(sizeof(char) * (rb_strlen_lit("-Fo") + strlen(so_file) - rb_strlen_lit(DLEXT) + rb_strlen_lit(".obj") + 1));
-    obj_file = p = append_lit(p, "-Fo");
+    char *obj_file = p = append_lit(p, "-Fo");
     p = append_str2(p, so_file, strlen(so_file) - rb_strlen_lit(DLEXT));
     p = append_lit(p, ".obj");
     *p = '\0';
@@ -714,12 +716,12 @@ compile_c_to_so(const char *c_file, const char *so_file)
     p = append_lit(p, ".pdb");
     *p = '\0';
 
-    args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
-                     files, CC_LIBS, CC_DLDFLAGS_ARGS);
+    char **args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
+            files, CC_LIBS, CC_DLDFLAGS_ARGS);
     if (args == NULL)
         return false;
 
-    exit_code = exec_process(cc_path, args);
+    int exit_code = exec_process(cc_path, args);
     free(args);
 
     if (exit_code == 0) {
@@ -745,7 +747,6 @@ compile_c_to_so(const char *c_file, const char *so_file)
 static void
 make_pch(void)
 {
-    int exit_code;
     const char *rest_args[] = {
 # ifdef __clang__
         "-emit-pch",
@@ -753,16 +754,12 @@ make_pch(void)
         // -nodefaultlibs is a linker flag, but it may affect cc1 behavior on Gentoo, which should NOT be changed on pch:
         // https://gitweb.gentoo.org/proj/gcc-patches.git/tree/7.3.0/gentoo/13_all_default-ssp-fix.patch
         GCC_NOSTDLIB_FLAGS
-        "-o", NULL, NULL,
+        "-o", pch_file, header_file,
         NULL,
     };
-    char **args;
-    int len = sizeof(rest_args) / sizeof(const char *);
 
-    rest_args[len - 2] = header_file;
-    rest_args[len - 3] = pch_file;
     verbose(2, "Creating precompiled header");
-    args = form_args(3, cc_common_args, CC_CODEFLAG_ARGS, rest_args);
+    char **args = form_args(3, cc_common_args, CC_CODEFLAG_ARGS, rest_args);
     if (args == NULL) {
         mjit_warning("making precompiled header failed on forming args");
         CRITICAL_SECTION_START(3, "in make_pch");
@@ -771,7 +768,7 @@ make_pch(void)
         return;
     }
 
-    exit_code = exec_process(cc_path, args);
+    int exit_code = exec_process(cc_path, args);
     free(args);
 
     CRITICAL_SECTION_START(3, "in make_pch");
@@ -791,26 +788,19 @@ make_pch(void)
 static bool
 compile_c_to_o(const char *c_file, const char *o_file)
 {
-    int exit_code;
     const char *files[] = {
-        "-o", NULL, NULL,
+        "-o", o_file, c_file,
 # ifdef __clang__
-        "-include-pch", NULL,
+        "-include-pch", pch_file,
 # endif
         "-c", NULL
     };
-    char **args;
 
-    files[1] = o_file;
-    files[2] = c_file;
-# ifdef __clang__
-    files[4] = pch_file;
-# endif
-    args = form_args(5, cc_common_args, CC_CODEFLAG_ARGS, files, CC_LIBS, CC_DLDFLAGS_ARGS);
+    char **args = form_args(4, cc_common_args, CC_CODEFLAG_ARGS, files, CC_LINKER_ARGS);
     if (args == NULL)
         return false;
 
-    exit_code = exec_process(cc_path, args);
+    int exit_code = exec_process(cc_path, args);
     free(args);
 
     if (exit_code != 0)
@@ -822,23 +812,20 @@ compile_c_to_o(const char *c_file, const char *o_file)
 static bool
 link_o_to_so(const char **o_files, const char *so_file)
 {
-    int exit_code;
     const char *options[] = {
-        "-o", NULL,
+        "-o", so_file,
 # ifdef _WIN32
         libruby_pathflag,
 # endif
         NULL
     };
-    char **args;
 
-    options[1] = so_file;
-    args = form_args(6, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
-                     options, o_files, CC_LIBS, CC_DLDFLAGS_ARGS);
+    char **args = form_args(7, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
+            options, o_files, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
     if (args == NULL)
         return false;
 
-    exit_code = exec_process(cc_path, args);
+    int exit_code = exec_process(cc_path, args);
     free(args);
 
     if (exit_code != 0)
@@ -1051,7 +1038,6 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         fclose(f);
         if (!mjit_opts.save_temps)
             remove_file(c_file);
-        free_unit(unit);
         in_jit = false; // just being explicit for return
     }
     else {
@@ -1067,8 +1053,8 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     if (FIXNUM_P(unit->iseq->body->location.first_lineno))
         // FIX2INT may fallback to rb_num2long(), which is a method call and dangerous in MJIT worker. So using only FIX2LONG.
         iseq_lineno = FIX2LONG(unit->iseq->body->location.first_lineno);
-    char *iseq_label = alloca(RSTRING_LEN(unit->iseq->body->location.label));
-    char *iseq_path  = alloca(RSTRING_LEN(rb_iseq_path(unit->iseq)));
+    char *iseq_label = alloca(RSTRING_LEN(unit->iseq->body->location.label) + 1);
+    char *iseq_path  = alloca(RSTRING_LEN(rb_iseq_path(unit->iseq)) + 1);
     strcpy(iseq_label, RSTRING_PTR(unit->iseq->body->location.label));
     strcpy(iseq_path,  RSTRING_PTR(rb_iseq_path(unit->iseq)));
 
@@ -1097,9 +1083,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 #else
     // splitting .c -> .o step and .o -> .so step, to cache .o files in the future
     if ((success = compile_c_to_o(c_file, o_file)) != false) {
-        const char *o_files[2] = { NULL, NULL };
-        o_files[0] = o_file;
-        success = link_o_to_so(o_files, so_file);
+        success = link_o_to_so((const char *[]){ o_file, NULL }, so_file);
 
         // Always set o_file for compaction. The value is also used for lazy deletion.
         unit->o_file = strdup(o_file);
@@ -1123,11 +1107,8 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         remove_so_file(so_file, unit);
 
     if ((uintptr_t)func > (uintptr_t)LAST_JIT_ISEQ_FUNC) {
-        CRITICAL_SECTION_START(3, "end of jit");
-        add_to_list(unit, &active_units);
         verbose(1, "JIT success (%.1fms): %s@%s:%ld -> %s",
                 end_time - start_time, iseq_label, iseq_path, iseq_lineno, c_file);
-        CRITICAL_SECTION_FINISH(3, "end of jit");
     }
     return (mjit_func_t)func;
 }
@@ -1243,19 +1224,20 @@ mjit_worker(void)
             mjit_func_t func = convert_unit_to_func(unit);
             (void)RB_DEBUG_COUNTER_INC_IF(mjit_compile_failures, func == (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC);
 
-            // `mjit_copy_cache_from_main_thread` in `mjit_compile` may wait for a long time
-            // and worker may be stopped during the compilation.
-            if (stop_worker_p)
-                break;
-
             CRITICAL_SECTION_START(3, "in jit func replace");
             while (in_gc) { // Make sure we're not GC-ing when touching ISeq
                 verbose(3, "Waiting wakeup from GC");
                 rb_native_cond_wait(&mjit_gc_wakeup, &mjit_engine_mutex);
             }
             if (unit->iseq) { // Check whether GCed or not
+                if ((uintptr_t)func > (uintptr_t)LAST_JIT_ISEQ_FUNC) {
+                    add_to_list(unit, &active_units);
+                }
                 // Usage of jit_code might be not in a critical section.
                 MJIT_ATOMIC_SET(unit->iseq->body->jit_func, func);
+            }
+            else {
+                free_unit(unit);
             }
             CRITICAL_SECTION_FINISH(3, "in jit func replace");
 

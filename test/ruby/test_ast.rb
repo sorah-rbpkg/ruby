@@ -74,7 +74,7 @@ class TestAst < Test::Unit::TestCase
       children = node.children.grep(RubyVM::AbstractSyntaxTree::Node)
 
       return true if children.empty?
-      # These NODE_D* has NODE_ARRAY as nd_next->nd_next whose last locations
+      # These NODE_D* has NODE_LIST as nd_next->nd_next whose last locations
       # we can not update when item is appended.
       return true if [:DSTR, :DXSTR, :DREGX, :DSYM].include? node.type
 
@@ -130,6 +130,12 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
+  private def parse(src)
+    EnvUtil.suppress_warning {
+      RubyVM::AbstractSyntaxTree.parse(src)
+    }
+  end
+
   def test_allocate
     assert_raise(TypeError) {RubyVM::AbstractSyntaxTree::Node.allocate}
   end
@@ -144,19 +150,19 @@ class TestAst < Test::Unit::TestCase
 
   def test_column_with_long_heredoc_identifier
     term = "A"*257
-    ast = RubyVM::AbstractSyntaxTree.parse("<<-#{term}\n""ddddddd\n#{term}\n")
+    ast = parse("<<-#{term}\n""ddddddd\n#{term}\n")
     node = ast.children[2]
     assert_equal(:STR, node.type)
     assert_equal(0, node.first_column)
   end
 
   def test_column_of_heredoc
-    node = RubyVM::AbstractSyntaxTree.parse("<<-SRC\nddddddd\nSRC\n").children[2]
+    node = parse("<<-SRC\nddddddd\nSRC\n").children[2]
     assert_equal(:STR, node.type)
     assert_equal(0, node.first_column)
     assert_equal(6, node.last_column)
 
-    node = RubyVM::AbstractSyntaxTree.parse("<<SRC\nddddddd\nSRC\n").children[2]
+    node = parse("<<SRC\nddddddd\nSRC\n").children[2]
     assert_equal(:STR, node.type)
     assert_equal(0, node.first_column)
     assert_equal(5, node.last_column)
@@ -205,9 +211,9 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_scope_local_variables
-    node = RubyVM::AbstractSyntaxTree.parse("x = 0")
+    node = RubyVM::AbstractSyntaxTree.parse("_x = 0")
     lv, _, body = *node.children
-    assert_equal([:x], lv)
+    assert_equal([:_x], lv)
     assert_equal(:LASGN, body.type)
   end
 
@@ -268,7 +274,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_dstr
-    node = RubyVM::AbstractSyntaxTree.parse('"foo#{1}bar"')
+    node = parse('"foo#{1}bar"')
     _, _, body = *node.children
     assert_equal(:DSTR, body.type)
     head, body = body.children
@@ -280,11 +286,11 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_while
-    node = RubyVM::AbstractSyntaxTree.parse('1 while 1')
+    node = RubyVM::AbstractSyntaxTree.parse('1 while qux')
     _, _, body = *node.children
     assert_equal(:WHILE, body.type)
     type1 = body.children[2]
-    node = RubyVM::AbstractSyntaxTree.parse('begin 1 end while 1')
+    node = RubyVM::AbstractSyntaxTree.parse('begin 1 end while qux')
     _, _, body = *node.children
     assert_equal(:WHILE, body.type)
     type2 = body.children[2]
@@ -292,14 +298,27 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_until
-    node = RubyVM::AbstractSyntaxTree.parse('1 until 1')
+    node = RubyVM::AbstractSyntaxTree.parse('1 until qux')
     _, _, body = *node.children
     assert_equal(:UNTIL, body.type)
     type1 = body.children[2]
-    node = RubyVM::AbstractSyntaxTree.parse('begin 1 end until 1')
+    node = RubyVM::AbstractSyntaxTree.parse('begin 1 end until qux')
     _, _, body = *node.children
     assert_equal(:UNTIL, body.type)
     type2 = body.children[2]
     assert_not_equal(type1, type2)
+  end
+
+  def test_keyword_rest
+    kwrest = lambda do |arg_str|
+      node = RubyVM::AbstractSyntaxTree.parse("def a(#{arg_str}) end")
+      node = node.children.last.children.last.children[1].children[-2]
+      node ? node.children : node
+    end
+
+    assert_equal(nil, kwrest.call(''))
+    assert_equal([nil], kwrest.call('**'))
+    assert_equal(false, kwrest.call('**nil'))
+    assert_equal([:a], kwrest.call('**a'))
   end
 end
