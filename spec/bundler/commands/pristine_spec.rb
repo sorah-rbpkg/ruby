@@ -19,7 +19,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
     end
 
     install_gemfile! <<-G
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "weakling"
       gem "very_simple_binary"
       gem "foo", :git => "#{lib_path("foo")}"
@@ -42,8 +42,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
       expect(changes_txt).to_not be_file
     end
 
-    it "does not delete the bundler gem", :rubygems => ">= 2.6.2" do
-      ENV["BUNDLER_SPEC_KEEP_DEFAULT_BUNDLER_GEM"] = "true"
+    it "does not delete the bundler gem" do
       system_gems :bundler
       bundle! "install"
       bundle! "pristine", :system_bundler => true

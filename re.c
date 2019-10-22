@@ -1292,6 +1292,12 @@ rb_match_busy(VALUE match)
     FL_SET(match, MATCH_BUSY);
 }
 
+void
+rb_match_unbusy(VALUE match)
+{
+    FL_UNSET(match, MATCH_BUSY);
+}
+
 int
 rb_match_count(VALUE match)
 {
@@ -1327,7 +1333,8 @@ match_set_string(VALUE m, VALUE string, long pos, long len)
 
     match->str = string;
     match->regexp = Qnil;
-    onig_region_resize(&rmatch->regs, 1);
+    int err = onig_region_resize(&rmatch->regs, 1);
+    if (err) rb_memerror();
     rmatch->regs.beg[0] = pos;
     rmatch->regs.end[0] = pos + len;
     OBJ_INFECT(match, string);
@@ -1818,25 +1825,25 @@ rb_reg_match_last(VALUE match)
 }
 
 static VALUE
-last_match_getter(void)
+last_match_getter(ID _x, VALUE *_y)
 {
     return rb_reg_last_match(rb_backref_get());
 }
 
 static VALUE
-prematch_getter(void)
+prematch_getter(ID _x, VALUE *_y)
 {
     return rb_reg_match_pre(rb_backref_get());
 }
 
 static VALUE
-postmatch_getter(void)
+postmatch_getter(ID _x, VALUE *_y)
 {
     return rb_reg_match_post(rb_backref_get());
 }
 
 static VALUE
-last_paren_match_getter(void)
+last_paren_match_getter(ID _x, VALUE *_y)
 {
     return rb_reg_match_last(rb_backref_get());
 }
@@ -3316,6 +3323,7 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 	pos = 0;
     }
 
+    str = SYMBOL_P(str) ? rb_sym2str(str) : StringValue(str);
     pos = reg_match_pos(re, &str, pos);
     if (pos < 0) {
 	rb_backref_set(Qnil);
@@ -3361,7 +3369,6 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
     const UChar *start, *end;
     int tmpreg;
 
-    if (NIL_P(str)) return Qfalse;
     str = SYMBOL_P(str) ? rb_sym2str(str) : StringValue(str);
     if (pos) {
 	if (pos < 0) {
@@ -3578,8 +3585,8 @@ rb_reg_quote(VALUE str)
  *     Regexp.quote(str)    -> string
  *
  *  Escapes any characters that would have special meaning in a regular
- *  expression. Returns a new escaped string, or self if no characters are
- *  escaped.  For any string,
+ *  expression. Returns a new escaped string with the same or compatible
+ *  encoding. For any string,
  *  <code>Regexp.new(Regexp.escape(<i>str</i>))=~<i>str</i></code> will be true.
  *
  *     Regexp.escape('\*?{}.')   #=> \\\*\?\{\}\.
@@ -3913,27 +3920,27 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 }
 
 static VALUE
-kcode_getter(void)
+kcode_getter(ID _x, VALUE *_y)
 {
     rb_warn("variable $KCODE is no longer effective");
     return Qnil;
 }
 
 static void
-kcode_setter(VALUE val, ID id)
+kcode_setter(VALUE val, ID id, VALUE *_)
 {
     rb_warn("variable $KCODE is no longer effective; ignored");
 }
 
 static VALUE
-ignorecase_getter(void)
+ignorecase_getter(ID _x, VALUE *_y)
 {
     rb_warn("variable $= is no longer effective");
     return Qfalse;
 }
 
 static void
-ignorecase_setter(VALUE val, ID id)
+ignorecase_setter(VALUE val, ID id, VALUE *_)
 {
     rb_warn("variable $= is no longer effective; ignored");
 }
@@ -3948,8 +3955,14 @@ match_getter(void)
     return match;
 }
 
+static VALUE
+get_LAST_MATCH_INFO(ID _x, VALUE *_y)
+{
+    return match_getter();
+}
+
 static void
-match_setter(VALUE val)
+match_setter(VALUE val, ID _x, VALUE *_y)
 {
     if (!NIL_P(val)) {
 	Check_Type(val, T_MATCH);
@@ -3986,7 +3999,7 @@ match_setter(VALUE val)
  */
 
 static VALUE
-rb_reg_s_last_match(int argc, VALUE *argv)
+rb_reg_s_last_match(int argc, VALUE *argv, VALUE _)
 {
     if (rb_check_arity(argc, 0, 1) == 1) {
         VALUE match = rb_backref_get();
@@ -4036,7 +4049,7 @@ Init_Regexp(void)
     onig_set_warn_func(re_warn);
     onig_set_verb_warn_func(re_warn);
 
-    rb_define_virtual_variable("$~", match_getter, match_setter);
+    rb_define_virtual_variable("$~", get_LAST_MATCH_INFO, match_setter);
     rb_define_virtual_variable("$&", last_match_getter, 0);
     rb_define_virtual_variable("$`", prematch_getter, 0);
     rb_define_virtual_variable("$'", postmatch_getter, 0);

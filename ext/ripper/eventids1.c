@@ -10,6 +10,7 @@ static struct {
     ID id_args_add;
     ID id_args_add_block;
     ID id_args_add_star;
+    ID id_args_forward;
     ID id_args_new;
     ID id_array;
     ID id_aryptn;
@@ -74,6 +75,7 @@ static struct {
     ID id_mrhs_new;
     ID id_mrhs_new_from_args;
     ID id_next;
+    ID id_nokw_param;
     ID id_opassign;
     ID id_operator_ambiguous;
     ID id_param_error;
@@ -148,6 +150,7 @@ static struct {
 #define ripper_id_args_add ripper_parser_ids.id_args_add
 #define ripper_id_args_add_block ripper_parser_ids.id_args_add_block
 #define ripper_id_args_add_star ripper_parser_ids.id_args_add_star
+#define ripper_id_args_forward ripper_parser_ids.id_args_forward
 #define ripper_id_args_new ripper_parser_ids.id_args_new
 #define ripper_id_array ripper_parser_ids.id_array
 #define ripper_id_aryptn ripper_parser_ids.id_aryptn
@@ -212,6 +215,7 @@ static struct {
 #define ripper_id_mrhs_new ripper_parser_ids.id_mrhs_new
 #define ripper_id_mrhs_new_from_args ripper_parser_ids.id_mrhs_new_from_args
 #define ripper_id_next ripper_parser_ids.id_next
+#define ripper_id_nokw_param ripper_parser_ids.id_nokw_param
 #define ripper_id_opassign ripper_parser_ids.id_opassign
 #define ripper_id_operator_ambiguous ripper_parser_ids.id_operator_ambiguous
 #define ripper_id_param_error ripper_parser_ids.id_param_error
@@ -289,6 +293,7 @@ ripper_init_eventids1(void)
     set_id1(args_add);
     set_id1(args_add_block);
     set_id1(args_add_star);
+    set_id1(args_forward);
     set_id1(args_new);
     set_id1(array);
     set_id1(aryptn);
@@ -353,6 +358,7 @@ ripper_init_eventids1(void)
     set_id1(mrhs_new);
     set_id1(mrhs_new_from_args);
     set_id1(next);
+    set_id1(nokw_param);
     set_id1(opassign);
     set_id1(operator_ambiguous);
     set_id1(param_error);
@@ -432,6 +438,7 @@ ripper_init_eventids1_table(VALUE self)
     rb_hash_aset(h, intern_sym("args_add"), INT2FIX(2));
     rb_hash_aset(h, intern_sym("args_add_block"), INT2FIX(2));
     rb_hash_aset(h, intern_sym("args_add_star"), INT2FIX(2));
+    rb_hash_aset(h, intern_sym("args_forward"), INT2FIX(0));
     rb_hash_aset(h, intern_sym("args_new"), INT2FIX(0));
     rb_hash_aset(h, intern_sym("array"), INT2FIX(1));
     rb_hash_aset(h, intern_sym("aryptn"), INT2FIX(4));
@@ -496,6 +503,7 @@ ripper_init_eventids1_table(VALUE self)
     rb_hash_aset(h, intern_sym("mrhs_new"), INT2FIX(0));
     rb_hash_aset(h, intern_sym("mrhs_new_from_args"), INT2FIX(1));
     rb_hash_aset(h, intern_sym("next"), INT2FIX(1));
+    rb_hash_aset(h, intern_sym("nokw_param"), INT2FIX(1));
     rb_hash_aset(h, intern_sym("opassign"), INT2FIX(3));
     rb_hash_aset(h, intern_sym("operator_ambiguous"), INT2FIX(2));
     rb_hash_aset(h, intern_sym("param_error"), INT2FIX(1));

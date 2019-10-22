@@ -132,6 +132,27 @@ class TestObject < Test::Unit::TestCase
     assert_equal(0.0, nil.to_f)
   end
 
+  def test_nil_to_s
+    str = nil.to_s
+    assert_equal("", str)
+    assert_predicate(str, :frozen?)
+    assert_same(str, nil.to_s)
+  end
+
+  def test_true_to_s
+    str = true.to_s
+    assert_equal("true", str)
+    assert_predicate(str, :frozen?)
+    assert_same(str, true.to_s)
+  end
+
+  def test_false_to_s
+    str = false.to_s
+    assert_equal("false", str)
+    assert_predicate(str, :frozen?)
+    assert_same(str, false.to_s)
+  end
+
   def test_not
     assert_equal(false, Object.new.send(:!))
     assert_equal(true, nil.send(:!))
@@ -863,6 +884,29 @@ class TestObject < Test::Unit::TestCase
     assert_match(/\bInspect\u{3042}:.* @\u{3044}=42\b/, x.inspect)
     x.instance_variable_set("@\u{3046}".encode(Encoding::EUC_JP), 6)
     assert_match(/@\u{3046}=6\b/, x.inspect)
+  end
+
+  def test_singleton_methods
+    assert_equal([], Object.new.singleton_methods)
+    assert_equal([], Object.new.singleton_methods(false))
+    c = Class.new
+    def c.foo; end
+    assert_equal([:foo], c.singleton_methods - [:yaml_tag])
+    assert_equal([:foo], c.singleton_methods(false))
+    assert_equal([], c.singleton_class.singleton_methods(false))
+    c.singleton_class.singleton_class
+    assert_equal([], c.singleton_class.singleton_methods(false))
+
+    o = c.new.singleton_class
+    assert_equal([:foo], o.singleton_methods - [:yaml_tag])
+    assert_equal([], o.singleton_methods(false))
+    o.singleton_class
+    assert_equal([:foo], o.singleton_methods - [:yaml_tag])
+    assert_equal([], o.singleton_methods(false))
+
+    c.extend(Module.new{def bar; end})
+    assert_equal([:bar, :foo], c.singleton_methods.sort - [:yaml_tag])
+    assert_equal([:foo], c.singleton_methods(false))
   end
 
   def test_singleton_class

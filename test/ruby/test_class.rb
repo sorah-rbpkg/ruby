@@ -131,6 +131,48 @@ class TestClass < Test::Unit::TestCase
       [:module_function, :extend_object, :append_features, :prepend_features])
   end
 
+  def test_visibility_inside_method
+    assert_warn(/calling private without arguments inside a method may not have the intended effect/, '[ruby-core:79751]') do
+      Class.new do
+        def self.foo
+          private
+        end
+        foo
+      end
+    end
+
+    assert_warn(/calling protected without arguments inside a method may not have the intended effect/, '[ruby-core:79751]') do
+      Class.new do
+        def self.foo
+          protected
+        end
+        foo
+      end
+    end
+
+    assert_warn(/calling public without arguments inside a method may not have the intended effect/, '[ruby-core:79751]') do
+      Class.new do
+        def self.foo
+          public
+        end
+        foo
+      end
+    end
+
+    assert_warn(/calling private without arguments inside a method may not have the intended effect/, '[ruby-core:79751]') do
+      Class.new do
+        class << self
+          alias priv private
+        end
+
+        def self.foo
+          priv
+        end
+        foo
+      end
+    end
+  end
+
   def test_method_redefinition
     feature2155 = '[ruby-dev:39400]'
 
@@ -329,18 +371,22 @@ class TestClass < Test::Unit::TestCase
     end;
   end
 
-  module M
-    C = 1
-
-    def self.m
-      C
-    end
+  class CloneTest
+    def foo; TEST; end
   end
 
-  def test_constant_access_from_method_in_cloned_module # [ruby-core:47834]
-    m = M.dup
-    assert_equal 1, m::C
-    assert_equal 1, m.m
+  CloneTest1 = CloneTest.clone
+  CloneTest2 = CloneTest.clone
+  class CloneTest1
+    TEST = :C1
+  end
+  class CloneTest2
+    TEST = :C2
+  end
+
+  def test_constant_access_from_method_in_cloned_class
+    assert_equal :C1, CloneTest1.new.foo, '[Bug #15877]'
+    assert_equal :C2, CloneTest2.new.foo, '[Bug #15877]'
   end
 
   def test_invalid_superclass
@@ -587,15 +633,17 @@ class TestClass < Test::Unit::TestCase
 
   def test_redefinition_mismatch
     m = Module.new
-    m.module_eval "A = 1"
-    assert_raise_with_message(TypeError, /is not a class/) {
+    m.module_eval "A = 1", __FILE__, line = __LINE__
+    e = assert_raise_with_message(TypeError, /is not a class/) {
       m.module_eval "class A; end"
     }
+    assert_include(e.message, "#{__FILE__}:#{line}: previous definition")
     n = "M\u{1f5ff}"
-    m.module_eval "#{n} = 42"
-    assert_raise_with_message(TypeError, "#{n} is not a class") {
+    m.module_eval "#{n} = 42", __FILE__, line = __LINE__
+    e = assert_raise_with_message(TypeError, /#{n} is not a class/) {
       m.module_eval "class #{n}; end"
     }
+    assert_include(e.message, "#{__FILE__}:#{line}: previous definition")
 
     assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
     begin;

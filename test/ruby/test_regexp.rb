@@ -539,7 +539,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_match
-    assert_nil(//.match(nil))
+    assert_raise(TypeError) { //.match(nil) }
     assert_equal("abc", /.../.match(:abc)[0])
     assert_raise(TypeError) { /.../.match(Object.new)[0] }
     assert_equal("bc", /../.match('abc', 1)[0])
@@ -561,10 +561,10 @@ class TestRegexp < Test::Unit::TestCase
     /backref/ =~ 'backref'
     # must match here, but not in a separate method, e.g., assert_send,
     # to check if $~ is affected or not.
-    assert_equal(false, //.match?(nil))
     assert_equal(true, //.match?(""))
     assert_equal(true, /.../.match?(:abc))
     assert_raise(TypeError) { /.../.match?(Object.new) }
+    assert_raise(TypeError) { //.match?(nil) }
     assert_equal(true, /b/.match?('abc'))
     assert_equal(true, /b/.match?('abc', 1))
     assert_equal(true, /../.match?('abc', 1))
@@ -1124,6 +1124,8 @@ class TestRegexp < Test::Unit::TestCase
 
     bug8151 = '[ruby-core:53649]'
     assert_warning(/\A\z/, bug8151) { Regexp.new('(?:[\u{33}])').to_s }
+
+    assert_warning(%r[/.*/\Z]) { Regexp.new("[\n\n]") }
   end
 
   def test_property_warn

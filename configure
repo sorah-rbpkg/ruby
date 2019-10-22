@@ -427,7 +427,7 @@ else
 	$as_echo_n "   * $1:                     " | dd bs=1 count=26 2>/dev/null
 	if test "$FOLD"; then :
 
-	    echo "$2" | fold -s -w50 |
+	    echo "$2" | fold -s -w$fold_width |
 	    sed '1!s/^/                          /;$!s/$/\\/'
 
 else
@@ -798,7 +798,8 @@ MJIT_HEADER_INSTALL_DIR
 MJIT_HEADER_FLAGS
 ARCH_FLAG
 DLDFLAGS
-X_FIBER_COROUTINE_H
+X_COROUTINE_SRC
+X_COROUTINE_H
 ALLOCA
 MATHN
 LIBOBJS
@@ -908,6 +909,7 @@ infodir
 docdir
 oldincludedir
 includedir
+runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -945,7 +947,7 @@ with_jemalloc
 enable_largefile
 enable_mathn
 enable_setreuid
-enable_fiber_coroutine
+with_coroutine
 with_dln_a_out
 enable_rpath
 with_valgrind
@@ -1042,6 +1044,7 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
+runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE}'
@@ -1294,6 +1297,15 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -runstatedir | --runstatedir | --runstatedi | --runstated \
+  | --runstate | --runstat | --runsta | --runst | --runs \
+  | --run | --ru | --r)
+    ac_prev=runstatedir ;;
+  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
+  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
+  | --run=* | --ru=* | --r=*)
+    runstatedir=$ac_optarg ;;
+
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1431,7 +1443,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir
+		libdir localedir mandir runstatedir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1584,6 +1596,7 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
+  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1629,8 +1642,6 @@ Optional Features:
   --disable-mathn         disable canonicalization for mathn
   --enable-setreuid       use setreuid()/setregid() according to need even if
                           obsolete
-  --disable-fiber-coroutine
-                          disable native coroutine implementation for fiber
   --enable-rpath          embed run path into extension libraries. enabled by
                           default on ELF platforms
   --enable-multiarch      enable multiarch compatible directories
@@ -1671,6 +1682,8 @@ Optional Packages:
   --with-winnt-ver=0xXXXX target Windows NT version (default to 0x0600)
   --without-gmp           disable GNU GMP to accelerate Bignum operations
   --with-jemalloc         use jemalloc allocator
+  --with-coroutine=IMPLEMENTATION
+                          specify the coroutine implementation to use
   --with-dln-a-out        use dln_a_out if possible
   --without-valgrind      disable valgrind memcheck support
   --with-ext=EXTS         pass to --with-ext option of extmk.rb
@@ -2939,6 +2952,7 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 : "environment section" && {
 HAVE_BASERUBY=yes
+BASERUBY_VERSION=
 
     msg_checking= msg_result_yes= msg_result_no= msg_result_other= msg_reset=
     case "x${CONFIGURE_TTY}" in #(
@@ -3043,6 +3057,7 @@ if test "$HAVE_BASERUBY" = yes -a "`RUBYOPT=- $BASERUBY -e 'print 42' 2>/dev/nul
     if test "`RUBYOPT=- $BASERUBY --disable=gems -e 'print 42' 2>/dev/null`" = 42; then :
 
 	BASERUBY="$BASERUBY --disable=gems"
+        BASERUBY_VERSION=`$BASERUBY -v`
 
 fi
     $BASERUBY -C "$srcdir" tool/downloader.rb -d tool -e gnu config.guess config.sub >&6
@@ -3370,13 +3385,6 @@ if test -z "${CFLAGS+set}"; then :
     cflags="$cflags "'${optflags} ${debugflags} ${warnflags}'
 
 fi
-if test -z "${CXXFLAGS+set}"; then :
-
-    cxxflags=`echo " $cxxflags " | sed "$cflagspat;s/^ *//;s/ *$//"`
-    orig_cxxflags="$cxxflags"
-    cxxflags="$cxxflags "'${optflags} ${debugflags} ${warnflags}'
-
-fi
 
 case "$host_os:$build_os" in #(
   darwin*:darwin*) :
@@ -3493,7 +3501,109 @@ fi
 SRC
 	as_fn_error $? "clang version 3.0 or later is required" "$LINENO" 5
 
+fi ;; #(
+  openbsd*:openbsd*) :
+
+    if test -n "$ac_tool_prefix"; then
+  for ac_prog in cc
+  do
+    # Extract the first word of "$ac_tool_prefix$ac_prog", so it can be a program name with args.
+set dummy $ac_tool_prefix$ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_CC+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$CC"; then
+  ac_cv_prog_CC="$CC" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_CC="$ac_tool_prefix$ac_prog"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
 fi
+fi
+CC=$ac_cv_prog_CC
+if test -n "$CC"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $CC" >&5
+    colorize_result "$CC" ; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+    $as_echo "${msg_result_no}no${msg_reset}" >&6 ; }
+fi
+
+
+    test -n "$CC" && break
+  done
+fi
+if test -z "$CC"; then
+  ac_ct_CC=$CC
+  for ac_prog in cc
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_CC+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_CC"; then
+  ac_cv_prog_ac_ct_CC="$ac_ct_CC" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_CC="$ac_prog"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_CC=$ac_cv_prog_ac_ct_CC
+if test -n "$ac_ct_CC"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_CC" >&5
+    colorize_result "$ac_ct_CC" ; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+    $as_echo "${msg_result_no}no${msg_reset}" >&6 ; }
+fi
+
+
+  test -n "$ac_ct_CC" && break
+done
+
+  if test "x$ac_ct_CC" = x; then
+    CC=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    CC=$ac_ct_CC
+  fi
+fi
+
  ;; #(
   *) :
      ;;
@@ -4822,7 +4932,7 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
  ;; #(
-  clang-*) :
+  clang-*|clang) :
 
     gcc_prefix=clang- gcc_suffix=`echo "$CC" | sed 's/^clang//'`
     ac_ext=cpp
@@ -5086,28 +5196,307 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
     gcc_prefix= gcc_suffix= ;;
 esac
 
-case "$build_os" in #(
-  darwin1*.*) :
+case "$build_os:${CXX}" in #(
+  darwin1*.*:) :
 
-    case "x$CC" in #(
-  xgcc-4.2|x/usr/bin/gcc-4.2) :
-    : ${CXX=g++-4.2} ;; #(
-  xgcc|x/usr/bin/gcc) :
-    : ${CXX=g++} ;; #(
-  xcc|x/usr/bin/cc) :
-    : ${CXX=c++} ;; #(
-  xicc) :
-    : ${CXX=icpc} ;; #(
-  xclang|x/usr/bin/clang) :
-    : ${CXX=clang++} ;; #(
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking CXX for $CC" >&5
+$as_echo_n "checking CXX for $CC... " >&6; }
+        case "/$CC " in #(
+  *[\ /]"gcc-4.2 "*) :
+    pat='gcc-4\.2' CXX=g++-4.2 ;; #(
+  *[\ /]"gcc "*) :
+    pat=gcc CXX=g++ ;; #(
+  *[\ /]"cc "*) :
+    pat=cc CXX=c++ ;; #(
+  *[\ /]"icc "*) :
+    pat=icc CXX=icpc ;; #(
+  *[\ /]"clang "*) :
+    pat=clang CXX=clang++ ;; #(
   *) :
      ;;
 esac
-   ;; #(
+        if test "${CXX}"; then :
+
+            CXX=`echo "/$CC " | sed "s:\([ /]\)${pat}:\1$CXX:; s:^/::; s: *$::"`
+
+fi
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $CXX" >&5
+    colorize_result "$CXX" ; } ;; #(
+  openbsd*:*) :
+
+        if test -n "$ac_tool_prefix"; then
+  for ac_prog in c++
+  do
+    # Extract the first word of "$ac_tool_prefix$ac_prog", so it can be a program name with args.
+set dummy $ac_tool_prefix$ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_CXX+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$CXX"; then
+  ac_cv_prog_CXX="$CXX" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_CXX="$ac_tool_prefix$ac_prog"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+CXX=$ac_cv_prog_CXX
+if test -n "$CXX"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $CXX" >&5
+    colorize_result "$CXX" ; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+    $as_echo "${msg_result_no}no${msg_reset}" >&6 ; }
+fi
+
+
+    test -n "$CXX" && break
+  done
+fi
+if test -z "$CXX"; then
+  ac_ct_CXX=$CXX
+  for ac_prog in c++
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_CXX+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_CXX"; then
+  ac_cv_prog_ac_ct_CXX="$ac_ct_CXX" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_CXX="$ac_prog"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_CXX=$ac_cv_prog_ac_ct_CXX
+if test -n "$ac_ct_CXX"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_CXX" >&5
+    colorize_result "$ac_ct_CXX" ; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+    $as_echo "${msg_result_no}no${msg_reset}" >&6 ; }
+fi
+
+
+  test -n "$ac_ct_CXX" && break
+done
+
+  if test "x$ac_ct_CXX" = x; then
+    CXX=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    CXX=$ac_ct_CXX
+  fi
+fi
+
+     ;; #(
   *) :
      ;;
 esac
 test -z "$CXX" || ac_cv_prog_CXX="$CXX"
+
+
+ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking how to run the C preprocessor" >&5
+$as_echo_n "checking how to run the C preprocessor... " >&6; }
+# On Suns, sometimes $CPP names a directory.
+if test -n "$CPP" && test -d "$CPP"; then
+  CPP=
+fi
+if test -z "$CPP"; then
+  if ${ac_cv_prog_CPP+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+      # Double quotes because CPP needs to be expanded
+    for CPP in "$CC -E" "$CC -E -traditional-cpp" "/lib/cpp"
+    do
+      ac_preproc_ok=false
+for ac_c_preproc_warn_flag in '' yes
+do
+  # Use a header file that comes with gcc, so configuring glibc
+  # with a fresh cross-compiler works.
+  # Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
+  # <limits.h> exists even on freestanding compilers.
+  # On the NeXT, cc -E runs the code through the compiler's parser,
+  # not just through cpp. "Syntax error" is here to catch this case.
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#ifdef __STDC__
+# include <limits.h>
+#else
+# include <assert.h>
+#endif
+		     Syntax error
+_ACEOF
+if ac_fn_c_try_cpp "$LINENO"; then :
+
+else
+  # Broken: fails on valid input.
+continue
+fi
+rm -f conftest.err conftest.i conftest.$ac_ext
+
+  # OK, works on sane cases.  Now check whether nonexistent headers
+  # can be detected and how.
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <ac_nonexistent.h>
+_ACEOF
+if ac_fn_c_try_cpp "$LINENO"; then :
+  # Broken: success on invalid input.
+continue
+else
+  # Passes both tests.
+ac_preproc_ok=:
+break
+fi
+rm -f conftest.err conftest.i conftest.$ac_ext
+
+done
+# Because of `break', _AC_PREPROC_IFELSE's cleaning code was skipped.
+rm -f conftest.i conftest.err conftest.$ac_ext
+if $ac_preproc_ok; then :
+  break
+fi
+
+    done
+    ac_cv_prog_CPP=$CPP
+
+fi
+  CPP=$ac_cv_prog_CPP
+else
+  ac_cv_prog_CPP=$CPP
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $CPP" >&5
+    colorize_result "$CPP" ; }
+ac_preproc_ok=false
+for ac_c_preproc_warn_flag in '' yes
+do
+  # Use a header file that comes with gcc, so configuring glibc
+  # with a fresh cross-compiler works.
+  # Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
+  # <limits.h> exists even on freestanding compilers.
+  # On the NeXT, cc -E runs the code through the compiler's parser,
+  # not just through cpp. "Syntax error" is here to catch this case.
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#ifdef __STDC__
+# include <limits.h>
+#else
+# include <assert.h>
+#endif
+		     Syntax error
+_ACEOF
+if ac_fn_c_try_cpp "$LINENO"; then :
+
+else
+  # Broken: fails on valid input.
+continue
+fi
+rm -f conftest.err conftest.i conftest.$ac_ext
+
+  # OK, works on sane cases.  Now check whether nonexistent headers
+  # can be detected and how.
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <ac_nonexistent.h>
+_ACEOF
+if ac_fn_c_try_cpp "$LINENO"; then :
+  # Broken: success on invalid input.
+continue
+else
+  # Passes both tests.
+ac_preproc_ok=:
+break
+fi
+rm -f conftest.err conftest.i conftest.$ac_ext
+
+done
+# Because of `break', _AC_PREPROC_IFELSE's cleaning code was skipped.
+rm -f conftest.i conftest.err conftest.$ac_ext
+if $ac_preproc_ok; then :
+
+else
+  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "C preprocessor \"$CPP\" fails sanity check
+See \`config.log' for more details" "$LINENO" 5; }
+fi
+
+ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
+case "$target_os" in #(
+  darwin*) :
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking if minimum required OS X version is supported" >&5
+$as_echo_n "checking if minimum required OS X version is supported... " >&6; }
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <AvailabilityMacros.h>
+	#if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_5
+	#error pre OS X 10.5
+	[!<===== pre OS X 10.5 =====>]
+	#endif
+
+_ACEOF
+if ac_fn_c_try_cpp "$LINENO"; then :
+  macosx_min_required=yes
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+    $as_echo "${msg_result_no}no${msg_reset}" >&6 ; }
+	as_fn_error $? "Unsupported OS X version is required" "$LINENO" 5
+fi
+rm -f conftest.err conftest.i conftest.$ac_ext
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${macosx_min_required}" >&5
+    colorize_result "${macosx_min_required}" ; }
+ ;; #(
+  *) :
+     ;;
+esac
 
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
@@ -5365,145 +5754,6 @@ ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
-
-
-ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking how to run the C preprocessor" >&5
-$as_echo_n "checking how to run the C preprocessor... " >&6; }
-# On Suns, sometimes $CPP names a directory.
-if test -n "$CPP" && test -d "$CPP"; then
-  CPP=
-fi
-if test -z "$CPP"; then
-  if ${ac_cv_prog_CPP+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-      # Double quotes because CPP needs to be expanded
-    for CPP in "$CC -E" "$CC -E -traditional-cpp" "/lib/cpp"
-    do
-      ac_preproc_ok=false
-for ac_c_preproc_warn_flag in '' yes
-do
-  # Use a header file that comes with gcc, so configuring glibc
-  # with a fresh cross-compiler works.
-  # Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
-  # <limits.h> exists even on freestanding compilers.
-  # On the NeXT, cc -E runs the code through the compiler's parser,
-  # not just through cpp. "Syntax error" is here to catch this case.
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#ifdef __STDC__
-# include <limits.h>
-#else
-# include <assert.h>
-#endif
-		     Syntax error
-_ACEOF
-if ac_fn_c_try_cpp "$LINENO"; then :
-
-else
-  # Broken: fails on valid input.
-continue
-fi
-rm -f conftest.err conftest.i conftest.$ac_ext
-
-  # OK, works on sane cases.  Now check whether nonexistent headers
-  # can be detected and how.
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <ac_nonexistent.h>
-_ACEOF
-if ac_fn_c_try_cpp "$LINENO"; then :
-  # Broken: success on invalid input.
-continue
-else
-  # Passes both tests.
-ac_preproc_ok=:
-break
-fi
-rm -f conftest.err conftest.i conftest.$ac_ext
-
-done
-# Because of `break', _AC_PREPROC_IFELSE's cleaning code was skipped.
-rm -f conftest.i conftest.err conftest.$ac_ext
-if $ac_preproc_ok; then :
-  break
-fi
-
-    done
-    ac_cv_prog_CPP=$CPP
-
-fi
-  CPP=$ac_cv_prog_CPP
-else
-  ac_cv_prog_CPP=$CPP
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $CPP" >&5
-    colorize_result "$CPP" ; }
-ac_preproc_ok=false
-for ac_c_preproc_warn_flag in '' yes
-do
-  # Use a header file that comes with gcc, so configuring glibc
-  # with a fresh cross-compiler works.
-  # Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
-  # <limits.h> exists even on freestanding compilers.
-  # On the NeXT, cc -E runs the code through the compiler's parser,
-  # not just through cpp. "Syntax error" is here to catch this case.
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#ifdef __STDC__
-# include <limits.h>
-#else
-# include <assert.h>
-#endif
-		     Syntax error
-_ACEOF
-if ac_fn_c_try_cpp "$LINENO"; then :
-
-else
-  # Broken: fails on valid input.
-continue
-fi
-rm -f conftest.err conftest.i conftest.$ac_ext
-
-  # OK, works on sane cases.  Now check whether nonexistent headers
-  # can be detected and how.
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <ac_nonexistent.h>
-_ACEOF
-if ac_fn_c_try_cpp "$LINENO"; then :
-  # Broken: success on invalid input.
-continue
-else
-  # Passes both tests.
-ac_preproc_ok=:
-break
-fi
-rm -f conftest.err conftest.i conftest.$ac_ext
-
-done
-# Because of `break', _AC_PREPROC_IFELSE's cleaning code was skipped.
-rm -f conftest.i conftest.err conftest.$ac_ext
-if $ac_preproc_ok; then :
-
-else
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "C preprocessor \"$CPP\" fails sanity check
-See \`config.log' for more details" "$LINENO" 5; }
-fi
-
-ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
-
 
 case "$host_os" in #(
   cygwin*) :
@@ -5937,14 +6187,7 @@ if test "$GCC" = yes; then :
     gcc_minor=`echo =__GNUC_MINOR__ | $CC -E -xc - | sed '/^=/!d;s///'`
     test -n "$gcc_major" || gcc_major=0
     test -n "$gcc_minor" || gcc_minor=0
-    case "x$CC" in #(
-  xicc) :
-
-      icc_version=`echo =__ICC | $CC -E -xc - | sed '/^=/!d;s///'`
-     ;; #(
-  *) :
-     ;;
-esac
+    icc_version=`echo =__ICC | $CC -E -xc - | sed '/^=/!d;s///;/^__ICC/d'`
     test -n "$icc_version" || icc_version=0
     # RUBY_APPEND_OPTIONS(XCFLAGS, ["-include ruby/config.h" "-include ruby/missing.h"])
 
@@ -9887,26 +10130,56 @@ esac
      CPPFLAGS="$CPPFLAGS ${rb_opt}" ;;
 esac
 	done
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether Mac OS X 10.5 or later" >&5
-$as_echo_n "checking whether Mac OS X 10.5 or later... " >&6; }
-		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <AvailabilityMacros.h>
-		    #if MAC_OS_X_VERSION_MAX_ALLOWED <= 1040
-		    #error pre OS X 10.4
-		    [!<===== pre OS X 10.4 =====>]
-		    #endif
-
-_ACEOF
-if ac_fn_c_try_cpp "$LINENO"; then :
-  macosx_10_5=yes
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether syscall(2) is deprecated" >&5
+$as_echo_n "checking whether syscall(2) is deprecated... " >&6; }
+if ${rb_cv_syscall_deprecated+:} false; then :
+  $as_echo_n "(cached) " >&6
 else
-  macosx_10_5=no
+  save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS $rb_cv_warnflags"
+if test "${ac_c_werror_flag+set}"; then :
+
+  rb_c_werror_flag="$ac_c_werror_flag"
+
+else
+
+  unset rb_c_werror_flag
+
 fi
-rm -f conftest.err conftest.i conftest.$ac_ext
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $macosx_10_5" >&5
-    colorize_result "$macosx_10_5" ; }
-		if test "${target_os#darwin}" -ge 16; then :
+ac_c_werror_flag=yes
+
+			cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <unistd.h>
+int
+main ()
+{
+if (syscall(0)) return 1;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  rb_cv_syscall_deprecated=no
+else
+  rb_cv_syscall_deprecated=yes
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+CFLAGS="$save_CFLAGS"
+save_CFLAGS=
+if test "${rb_c_werror_flag+set}"; then :
+
+  ac_c_werror_flag="$rb_c_werror_flag"
+
+else
+
+  unset ac_c_werror_flag
+
+fi
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $rb_cv_syscall_deprecated" >&5
+    colorize_result "$rb_cv_syscall_deprecated" ; }
+		if test $rb_cv_syscall_deprecated = yes; then :
 
 		    ac_cv_func___syscall=no
 		    ac_cv_func_syscall=no
@@ -9914,19 +10187,8 @@ rm -f conftest.err conftest.i conftest.$ac_ext
 		    ac_cv_header_syscall_h=no
 
 fi
-		if test $macosx_10_5 = yes; then :
-
-		    ac_cv_func_getcontext=no
-		    ac_cv_func_setcontext=no
-
-else
-
-		    $as_echo "#define BROKEN_SETREUID 1" >>confdefs.h
-
-		    $as_echo "#define BROKEN_SETREGID 1" >>confdefs.h
-
-
-fi
+		ac_cv_func_getcontext=no
+		ac_cv_func_setcontext=no
 		incs=`$CC -v -E -xc - < /dev/null 2>&1 | sed '1,/^#include </d;s/^ *//;s|[^./][^/]*/\.\./||g;/\/include$/!d;s||/lib|;/\/usr\/lib/d'`
 		for d in `$CC -print-search-dirs | sed -e '/^libraries: */!d;s///' | tr : '\012' | fgrep -v /../ | sed -n 's|^\(/.*/lib\)/$|\1|p'`; do
 		    incs=`echo "$incs" | fgrep -v "$d"`
@@ -10328,7 +10590,7 @@ esac
 
 		    ac_cv_func___builtin_setjmp=yes
 		    ac_cv_func_round=no
-		    rb_cv_fiber_coroutine=yes
+		    rb_cv_coroutine=yes
 
 fi
 		ac_cv_func_tgamma=no
@@ -11697,7 +11959,7 @@ else
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -11743,7 +12005,7 @@ else
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -11767,7 +12029,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -11812,7 +12074,7 @@ else
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -11836,7 +12098,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -17567,6 +17829,74 @@ if test "$rb_cv_func_weak" != x; then :
 
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for __attribute__((__depreacted__(msg))) in C++" >&5
+$as_echo_n "checking for __attribute__((__depreacted__(msg))) in C++... " >&6; }
+if ${rb_cv_CentOS6_CXX_workaround+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS $rb_cv_warnflags"
+if test "${ac_c_werror_flag+set}"; then :
+
+  rb_c_werror_flag="$ac_c_werror_flag"
+
+else
+
+  unset rb_c_werror_flag
+
+fi
+ac_c_werror_flag=yes
+
+    ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+__attribute__((__deprecated__("message"))) int conftest(...);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  rb_cv_CentOS6_CXX_workaround=yes
+else
+  rb_cv_CentOS6_CXX_workaround=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+    ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+CFLAGS="$save_CFLAGS"
+save_CFLAGS=
+if test "${rb_c_werror_flag+set}"; then :
+
+  ac_c_werror_flag="$rb_c_werror_flag"
+
+else
+
+  unset ac_c_werror_flag
+
+fi
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $rb_cv_CentOS6_CXX_workaround" >&5
+    colorize_result "$rb_cv_CentOS6_CXX_workaround" ; }
+if test "$rb_cv_CentOS6_CXX_workaround" != no; then :
+
+  $as_echo "#define RUBY_CXX_DEPRECATED(msg) __attribute__((__deprecated__(msg)))" >>confdefs.h
+
+fi
+
 if_i386=${universal_binary+defined __i386__}
         rbcv_cond="${if_i386}"; test "$rbcv_cond" || unset rbcv_cond
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for FUNC_STDCALL function attribute" >&5
@@ -22098,48 +22428,6 @@ esac
 
 
 
-# http://sources.redhat.com/ml/libc-hacker/2005-08/msg00008.html
-# Debian GNU/Linux Etch's libc6.1 2.3.6.ds1-13etch5 has this problem.
-# Debian GNU/Linux Lenny's libc6.1 2.7-10 has no problem.
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for broken erfc of glibc-2.3.6 on IA64" >&5
-$as_echo_n "checking for broken erfc of glibc-2.3.6 on IA64... " >&6; }
-if ${rb_cv_broken_glibc_ia64_erfc+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test "$cross_compiling" = yes; then :
-  rb_cv_broken_glibc_ia64_erfc=no
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <math.h>
-int
-main()
-{
-   erfc(10000.0);
-   return 0;
-}
-
-_ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-  rb_cv_broken_glibc_ia64_erfc=no
-else
-  rb_cv_broken_glibc_ia64_erfc=yes
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $rb_cv_broken_glibc_ia64_erfc" >&5
-    colorize_result "$rb_cv_broken_glibc_ia64_erfc" ; }
-case $rb_cv_broken_glibc_ia64_erfc in #(
-  yes) :
-    ac_cv_func_erf=no ;; #(
-  *) :
-     ;;
-esac
-
 case "$target_os" in #(
   freebsd*) :
 
@@ -23029,6 +23317,17 @@ _ACEOF
 fi
 done
 
+for ac_func in explicit_memset
+do :
+  ac_fn_c_check_func "$LINENO" "explicit_memset" "ac_cv_func_explicit_memset"
+if test "x$ac_cv_func_explicit_memset" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_EXPLICIT_MEMSET 1
+_ACEOF
+
+fi
+done
+
 for ac_func in fcopyfile
 do :
   ac_fn_c_check_func "$LINENO" "fcopyfile" "ac_cv_func_fcopyfile"
@@ -23750,6 +24049,17 @@ do :
 if test "x$ac_cv_func_readlink" = xyes; then :
   cat >>confdefs.h <<_ACEOF
 #define HAVE_READLINK 1
+_ACEOF
+
+fi
+done
+
+for ac_func in realpath
+do :
+  ac_fn_c_check_func "$LINENO" "realpath" "ac_cv_func_realpath"
+if test "x$ac_cv_func_realpath" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_REALPATH 1
 _ACEOF
 
 fi
@@ -25872,49 +26182,6 @@ esac
 
 fi
 
-if test x"$target_cpu" = xia64; then :
-
-    case " $LIBOBJS " in
-  *" ia64.$ac_objext "* ) ;;
-  *) LIBOBJS="$LIBOBJS ia64.$ac_objext"
- ;;
-esac
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for __libc_ia64_register_backing_store_base" >&5
-$as_echo_n "checking for __libc_ia64_register_backing_store_base... " >&6; }
-if ${rb_cv___libc_ia64_register_backing_store_base+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  rb_cv___libc_ia64_register_backing_store_base=no
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-extern unsigned long __libc_ia64_register_backing_store_base;
-int
-main ()
-{
-unsigned long p = __libc_ia64_register_backing_store_base;
-       printf("%ld\n", p);
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  rb_cv___libc_ia64_register_backing_store_base=yes
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $rb_cv___libc_ia64_register_backing_store_base" >&5
-    colorize_result "$rb_cv___libc_ia64_register_backing_store_base" ; }
-    if test $rb_cv___libc_ia64_register_backing_store_base = yes; then :
-
-      $as_echo "#define HAVE___LIBC_IA64_REGISTER_BACKING_STORE_BASE 1" >>confdefs.h
-
-
-fi
-
-fi
-
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether right shift preserve sign bit" >&5
 $as_echo_n "checking whether right shift preserve sign bit... " >&6; }
 if ${rb_cv_rshift_sign+:} false; then :
@@ -26023,7 +26290,7 @@ if eval \${$as_stack_grow_dir+:} false; then :
 else
 
 case "$archs" in #(
-  m68*|x86*|x64|i?86|ia64|ppc*|sparc*|alpha*) :
+  m68*|x86*|x64|i?86|ppc*|sparc*|alpha*) :
      dir=-1 ;; #(
   hppa*) :
      dir=+1 ;; #(
@@ -26120,7 +26387,7 @@ if eval \${$as_stack_grow_dir+:} false; then :
 else
 
 case "$target_cpu" in #(
-  m68*|x86*|x64|i?86|ia64|ppc*|sparc*|alpha*) :
+  m68*|x86*|x64|i?86|ppc*|sparc*|alpha*) :
      dir=-1 ;; #(
   hppa*) :
      dir=+1 ;; #(
@@ -26175,12 +26442,13 @@ _ACEOF
 
 fi
 
-# Check whether --enable-fiber-coroutine was given.
-if test "${enable_fiber_coroutine+set}" = set; then :
-  enableval=$enable_fiber_coroutine; rb_cv_fiber_coroutine=$enableval
+
+# Check whether --with-coroutine was given.
+if test "${with_coroutine+set}" = set; then :
+  withval=$with_coroutine; rb_cv_coroutine=$withval
 fi
 
-case "$rb_cv_fiber_coroutine" in #(
+case $rb_cv_coroutine in #(
   yes|'') :
 
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking native coroutine implementation for ${target_cpu}-${target_os}" >&5
@@ -26188,59 +26456,93 @@ $as_echo_n "checking native coroutine implementation for ${target_cpu}-${target_
     case "$target_cpu-$target_os" in #(
   x*64-darwin*) :
 
-	    rb_cv_fiber_coroutine=amd64
-	 ;; #(
-  x*64-linux) :
+            rb_cv_coroutine=amd64
+         ;; #(
+  x*64-linux*) :
 
-	    case "$ac_cv_sizeof_voidp" in #(
+            case "$ac_cv_sizeof_voidp" in #(
   8) :
-     rb_cv_fiber_coroutine=amd64  ;; #(
+     rb_cv_coroutine=amd64  ;; #(
   4) :
-     rb_cv_fiber_coroutine=x86  ;; #(
+     rb_cv_coroutine=x86  ;; #(
   *) :
-     rb_cv_fiber_coroutine=
-	     ;; #(
+     rb_cv_coroutine=
+             ;; #(
   *) :
      ;;
 esac
-	 ;; #(
-  *86-linux) :
+         ;; #(
+  *86-linux*) :
 
-	    rb_cv_fiber_coroutine=x86
-	 ;; #(
+            rb_cv_coroutine=x86
+         ;; #(
   x64-mingw32) :
 
-	    rb_cv_fiber_coroutine=win64
-	 ;; #(
-  powerpc64le-linux) :
+            rb_cv_coroutine=win64
+         ;; #(
+  *86-mingw32) :
 
-	    rb_cv_fiber_coroutine=ppc64le
-	 ;; #(
+            rb_cv_coroutine=win32
+         ;; #(
+  armv7*-linux*) :
+
+            rb_cv_coroutine=ucontext
+         ;; #(
+  aarch64-linux*) :
+
+            rb_cv_coroutine=arm64
+         ;; #(
+  powerpc64le-linux*) :
+
+            rb_cv_coroutine=ppc64le
+         ;; #(
+  x86_64-openbsd*) :
+
+            rb_cv_coroutine=amd64
+         ;; #(
+  i386-openbsd*) :
+
+            rb_cv_coroutine=x86
+         ;; #(
+  *-openbsd*) :
+
+            rb_cv_coroutine=copy
+         ;; #(
   *) :
 
-	    rb_cv_fiber_coroutine=
+            rb_cv_coroutine=ucontext
 
      ;; #(
   *) :
      ;;
 esac
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${rb_cv_fiber_coroutine:-no}" >&5
-    colorize_result "${rb_cv_fiber_coroutine:-no}" ; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${rb_cv_coroutine}" >&5
+    colorize_result "${rb_cv_coroutine}" ; }
  ;; #(
   *) :
      ;;
 esac
-if test "${rb_cv_fiber_coroutine:-no}" != no; then :
+COROUTINE_H=coroutine/$rb_cv_coroutine/Context.h
+case $rb_cv_coroutine in #(
+  copy|ucontext) :
 
-    COROUTINE_H=coroutine/$rb_cv_fiber_coroutine/Context.h
-    cat >>confdefs.h <<_ACEOF
-#define FIBER_USE_COROUTINE "$COROUTINE_H"
+        COROUTINE_SRC=coroutine/$rb_cv_coroutine/Context.c
+     ;; #(
+  *) :
+
+        COROUTINE_SRC=coroutine/$rb_cv_coroutine/Context.'$(ASMEXT)'
+     ;; #(
+  *) :
+     ;;
+esac
+cat >>confdefs.h <<_ACEOF
+#define COROUTINE_H "$COROUTINE_H"
 _ACEOF
 
-    X_FIBER_COROUTINE_H=$COROUTINE_H
+X_COROUTINE_H=$COROUTINE_H
 
+X_COROUTINE_SRC=$COROUTINE_SRC
 
-fi
 
 if test x"$enable_pthread" = xyes; then :
 
@@ -27318,6 +27620,18 @@ fi
 esac
 case "$target_cpu-$target_os" in #(
   *-darwin*) :
+
+    for ac_header in libproc.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "libproc.h" "ac_cv_header_libproc_h" "$ac_includes_default"
+if test "x$ac_cv_header_libproc_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBPROC_H 1
+_ACEOF
+
+fi
+
+done
 
     for ac_header in execinfo.h
 do :
@@ -29048,10 +29362,12 @@ cat >>confdefs.h <<_ACEOF
 #define RUBY_LONGJMP(env,val) ${setjmp_prefix}longjmp($setjmp_cast(env),val)
 _ACEOF
 
-cat >>confdefs.h <<_ACEOF
+if test x$setjmp_prefix != x__builtin_; then :
+  cat >>confdefs.h <<_ACEOF
 #define RUBY_JMP_BUF ${setjmp_sigmask+${setjmp_prefix}}jmp_buf
 _ACEOF
 
+fi
 if test x$setjmp_suffix = xex; then :
   cat >>confdefs.h <<_ACEOF
 #define RUBY_USE_SETJMPEX 1
@@ -29625,7 +29941,6 @@ fi
 rb_cv_warnflags=`echo "$rb_cv_warnflags" | sed 's/^ *//;s/ *$//'`
 warnflags="$rb_cv_warnflags"
 cflags="${orig_cflags:+$orig_cflags }"'${optflags} ${debugflags} ${warnflags}'
-cxxflags="${orig_cxxflags:+$orig_cxxflags }"'${optflags} ${debugflags} ${warnflags}'
 
 
 
@@ -30096,7 +30411,7 @@ if test x"$firstmf" != x; then :
 
 
 fi
-ac_config_files="$ac_config_files Makefile"
+ac_config_files="$ac_config_files Makefile:template/Makefile.in"
 
 
 
@@ -30838,7 +31153,7 @@ for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
     "$firstmf") CONFIG_FILES="$CONFIG_FILES $firstmf:$firsttmpl" ;;
-    "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+    "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile:template/Makefile.in" ;;
     "$ruby_pc") CONFIG_FILES="$CONFIG_FILES $ruby_pc:template/ruby.pc.in" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
@@ -31397,6 +31712,7 @@ else
 fi
 
 fi
+fold_width=`expr $COLUMNS - 30 2>/dev/null` || fold_width=50
 
 
 if test $install_doc = yes; then :
@@ -31419,6 +31735,7 @@ config_summary "vendor path"         "$vendordir"
 config_summary "target OS"           "$target_os"
 config_summary "compiler"            "$CC"
 config_summary "with pthread"        "$enable_pthread"
+config_summary "with coroutine"      "$rb_cv_coroutine"
 config_summary "enable shared libs"  "$ENABLE_SHARED"
 config_summary "dynamic library ext" "$DLEXT"
 config_summary "CFLAGS"              "$cflags"
@@ -31434,6 +31751,7 @@ config_summary "JIT support"         "$MJIT_SUPPORT"
 config_summary "man page type"       "$MANTYPE"
 config_summary "search path"         "$search_path"
 config_summary "static-linked-ext"   ${EXTSTATIC:+"yes"}
+config_summary "BASERUBY -v"         "$BASERUBY_VERSION"
 echo ""
 echo "---"
 

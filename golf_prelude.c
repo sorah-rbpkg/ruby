@@ -11,17 +11,18 @@
 
 static const char prelude_name0[] = "<internal:golf_prelude>";
 static const struct {
-    char L0[494]; /* 1..18 */
-    char L18[460]; /* 19..33 */
-    char L33[499]; /* 34..63 */
-    char L63[475]; /* 64..96 */
-    char L96[494]; /* 97..117 */
-    char L117[175]; /* 118..129 */
+    char L0[462]; /* 1..18 */
+    char L18[485]; /* 19..34 */
+    char L34[505]; /* 35..59 */
+    char L59[487]; /* 60..96 */
+    char L96[493]; /* 97..116 */
+    char L116[222]; /* 117..131 */
 } prelude_code0 = {
 #line 1 "golf_prelude.rb"
 "class Object\n"
 "  @@golf_hash = {}\n"
 "\n"
+"  verbose, $VERBOSE = $VERBOSE, nil\n"
 "  def method_missing m, *a, &b\n"
 "    t = @@golf_hash[ [m, self.class] ] ||= matching_methods(m)[0]\n"
 "    if t && b\n"
@@ -33,12 +34,13 @@ static const struct {
 "      t ? __send__(t, *a, &b) : super\n"
 "    end\n"
 "  end\n"
+"  $VERBOSE = verbose\n"
 "\n"
 "  def matching_methods(s = '', m = callable_methods)\n"
-"    r = /^#{s.to_s.gsub(/./){\"(.*?)\" + Regexp.escape($&)}}/\n"
-"    m.grep(r).sort_by do |i|\n"
 ,
 #line 19 "golf_prelude.rb"
+"    r = /^#{s.to_s.gsub(/./){\"(.*?)\" + Regexp.escape($&)}}/\n"
+"    m.grep(r).sort_by do |i|\n"
 "      i.to_s.match(r).captures.map(&:size) << i\n"
 "    end\n"
 "  end\n"
@@ -53,9 +55,9 @@ static const struct {
 "    s = s.to_s\n"
 "    our_case = (?A..?Z) === s[0]\n"
 "    if m.index(s.to_sym)\n"
-"      1.upto(s.size){|z| s.scan(/./).combination(z).map{|trial|\n"
 ,
-#line 34 "golf_prelude.rb"
+#line 35 "golf_prelude.rb"
+"      1.upto(s.size){|z| s.scan(/./).combination(z).map{|trial|\n"
 "        next unless ((?A..?Z) === trial[0]) == our_case\n"
 "        trial *= ''\n"
 "        return trial if matching_methods(trial, m)[0].to_s == s\n"
@@ -80,14 +82,14 @@ static const struct {
 "'[i=n**4%-15,i+13]||n}\n"
 "  end\n"
 "\n"
+,
+#line 60 "golf_prelude.rb"
 "  alias say puts\n"
 "\n"
 "  def do_while\n"
 "    0 while yield\n"
 "  end\n"
 "\n"
-,
-#line 64 "golf_prelude.rb"
 "  def do_until\n"
 "    0 until yield\n"
 "  end\n"
@@ -119,10 +121,10 @@ static const struct {
 "\n"
 "  (Array.instance_methods - instance_methods - %i[to_ary transpose flatten flatten! compact compact! assoc rassoc]).each{|meth|\n"
 "    eval \"\n"
-"    def #{meth}(*args, &block)\n"
-"      a = to_a\n"
 ,
 #line 97 "golf_prelude.rb"
+"    def #{meth}(*args, &block)\n"
+"      a = to_a\n"
 "      result = a.#{meth}(*args, &block)\n"
 "      replace(a.join)\n"
 "      if result.class == Array\n"
@@ -141,11 +143,11 @@ static const struct {
 "  (Array.instance_methods - instance_methods - [:replace] + [:to_s]).each{|meth|\n"
 "    eval \"\n"
 "    def #{meth}(*args, &block)\n"
+,
+#line 117 "golf_prelude.rb"
 "      to_a.#{meth}(*args, &block)\n"
 "    end\"\n"
 "  }\n"
-,
-#line 118 "golf_prelude.rb"
 "  alias old_inspect inspect\n"
 "  alias inspect old_to_s\n"
 "end\n"
@@ -157,7 +159,7 @@ static const struct {
 "    end\n"
 "  end\n"
 "end\n"
-#line 161 "golf.c"
+#line 163 "golf.c"
 };
 
 

@@ -111,7 +111,8 @@ class TestGCCompact < Test::Unit::TestCase
 
     GC.verify_compaction_references(toward: :empty)
 
-    return
+    skip "time consuming"
+
     new_tenants = 10.times.map {
       find_object_in_recycled_slot(addresses)
     }
@@ -119,6 +120,8 @@ class TestGCCompact < Test::Unit::TestCase
     collisions = GC.stat(:object_id_collisions)
     skip "couldn't get objects to collide" if collisions == 0
     assert_operator collisions, :>, 0
+    ids.clear
+    new_tenants.clear
   end
 
   def test_complex_hash_keys
@@ -126,5 +129,19 @@ class TestGCCompact < Test::Unit::TestCase
     hash = list_of_objects.hash
     GC.verify_compaction_references(toward: :empty)
     assert_equal hash, list_of_objects.hash
+  end
+
+  def walk_ast ast
+    children = ast.children.grep(RubyVM::AbstractSyntaxTree::Node)
+    children.each do |child|
+      assert child.type
+      walk_ast child
+    end
+  end
+
+  def test_ast_compacts
+    ast = RubyVM::AbstractSyntaxTree.parse_file __FILE__
+    assert GC.compact
+    walk_ast ast
   end
 end

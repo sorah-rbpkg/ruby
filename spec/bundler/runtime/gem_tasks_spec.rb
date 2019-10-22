@@ -11,7 +11,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
     end
     bundled_app("Rakefile").open("w") do |f|
       f.write <<-RAKEFILE
-        $:.unshift("#{bundler_path}")
+        $:.unshift("#{lib}")
         require "bundler/gem_tasks"
       RAKEFILE
     end
@@ -19,10 +19,10 @@ RSpec.describe "require 'bundler/gem_tasks'" do
 
   it "includes the relevant tasks" do
     with_gem_path_as(Spec::Path.base_system_gems.to_s) do
-      sys_exec "#{rake} -T"
+      sys_exec "#{rake} -T", "RUBYOPT" => "-I#{lib}"
     end
 
-    expect(last_command.stderr).to eq("")
+    expect(err).to eq("")
     expected_tasks = [
       "rake build",
       "rake clean",
@@ -39,6 +39,6 @@ RSpec.describe "require 'bundler/gem_tasks'" do
     with_gem_path_as(Spec::Path.base_system_gems.to_s) do
       sys_exec! %(#{rake} -e 'load "Rakefile"; puts CLOBBER.inspect')
     end
-    expect(last_command.stdout).to eq '["pkg"]'
+    expect(out).to eq '["pkg"]'
   end
 end

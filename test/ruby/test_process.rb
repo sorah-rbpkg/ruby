@@ -246,19 +246,17 @@ class TestProcess < Test::Unit::TestCase
     assert_raise(ArgumentError) do
       system(RUBY, '-e', 'exit',  'rlimit_bogus'.to_sym => 123)
     end
-    assert_separately([],"#{<<-"begin;"}\n#{<<~'end;'}")
+    assert_separately([],"#{<<~"begin;"}\n#{<<~'end;'}", 'rlimit_cpu'.to_sym => 3600)
     BUG = "[ruby-core:82033] [Bug #13744]"
-    RUBY = "#{RUBY}"
     begin;
-      assert(system("#{RUBY}", "-e",
-                 "exit([3600,3600] == Process.getrlimit(:CPU))",
-             'rlimit_cpu'.to_sym => 3600), BUG)
-      assert_raise(ArgumentError, BUG) do
-        system("#{RUBY}", '-e', 'exit',  :rlimit_bogus => 123)
-      end
+      assert_equal([3600,3600], Process.getrlimit(:CPU), BUG)
     end;
 
-    assert_raise(ArgumentError, /rlimit_cpu/) {
+    assert_raise_with_message(ArgumentError, /bogus/) do
+      system(RUBY, '-e', 'exit', :rlimit_bogus => 123)
+    end
+
+    assert_raise_with_message(ArgumentError, /rlimit_cpu/) {
       system(RUBY, '-e', 'exit', "rlimit_cpu\0".to_sym => 3600)
     }
   end
@@ -636,7 +634,7 @@ class TestProcess < Test::Unit::TestCase
       rescue NotImplementedError
         return
       end
-      assert(FileTest.pipe?("fifo"), "should be pipe")
+      assert_file.pipe?("fifo")
       t1 = Thread.new {
         system(*ECHO["output to fifo"], :out=>"fifo")
       }
@@ -1400,6 +1398,14 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_argv0_keep_alive
+    assert_in_out_err([], <<~REPRO, ['-'], [], "[Bug #15887]")
+      $0 = "diverge"
+      4.times { GC.start }
+      puts Process.argv0
+    REPRO
+  end
+
   def test_status
     with_tmpchdir do
       s = run_in_child("exit 1")
@@ -1577,6 +1583,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_setegid
+    skip "root can use Process.egid on Android platform" if RUBY_PLATFORM =~ /android/
     assert_nothing_raised(TypeError) {Process.egid += 0}
   rescue NotImplementedError
   end
@@ -1627,7 +1634,7 @@ class TestProcess < Test::Unit::TestCase
         w.puts
       end
       Process.wait pid
-      assert sig_r.wait_readable(5), 'self-pipe not readable'
+      assert_send [sig_r, :wait_readable, 5], 'self-pipe not readable'
     end
     if RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE. It may trigger extra SIGCHLD.
       assert_equal [true], signal_received.uniq, "[ruby-core:19744]"
@@ -1865,6 +1872,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_execopts_uid
+    skip "root can use uid option of Kernel#system on Android platform" if RUBY_PLATFORM =~ /android/
     feature6975 = '[ruby-core:47414]'
 
     [30000, [Process.uid, ENV["USER"]]].each do |uid, user|
@@ -1896,6 +1904,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_gid
     skip "Process.groups not implemented on Windows platform" if windows?
+    skip "root can use Process.groups on Android platform" if RUBY_PLATFORM =~ /android/
     feature6975 = '[ruby-core:47414]'
 
     groups = Process.groups.map do |g|
@@ -2252,7 +2261,7 @@ EOS
     th = Process.detach(pid)
     assert_equal pid, th.pid
     status = th.value
-    assert status.success?, status.inspect
+    assert_predicate status, :success?
   end if defined?(fork)
 
   def test_kill_at_spawn_failure
@@ -2260,7 +2269,9 @@ EOS
     th = nil
     x = with_tmpchdir {|d|
       prog = "#{d}/notexist"
-      th = Thread.start {system(prog);sleep}
+      q = Thread::Queue.new
+      th = Thread.start {system(prog);q.push(nil);sleep}
+      q.pop
       th.kill
       th.join(0.1)
     }
@@ -2354,7 +2365,6 @@ EOS
           w.syswrite("exec failed\n")
         end
         q = Queue.new
-        run = true
         th1 = Thread.new { i = 0; i += 1 while q.empty?; i }
         th2 = Thread.new { j = 0; j += 1 while q.empty? && Thread.pass.nil?; j }
         sleep 0.5

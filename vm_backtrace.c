@@ -32,19 +32,36 @@ id2str(ID id)
 inline static int
 calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
 {
-    size_t pos = (size_t)(pc - iseq->body->iseq_encoded);
-    if (LIKELY(pos)) {
-        /* use pos-1 because PC points next instruction at the beginning of instruction */
-        pos--;
+    VM_ASSERT(iseq);
+    VM_ASSERT(iseq->body);
+    VM_ASSERT(iseq->body->iseq_encoded);
+    VM_ASSERT(iseq->body->iseq_size);
+    if (! pc) {
+        /* This can happen during VM bootup. */
+        VM_ASSERT(iseq->body->type == ISEQ_TYPE_TOP);
+        VM_ASSERT(! iseq->body->local_table);
+        VM_ASSERT(! iseq->body->local_table_size);
+        return 0;
     }
-#if VMDEBUG && defined(HAVE_BUILTIN___BUILTIN_TRAP)
     else {
-        /* SDR() is not possible; that causes infinite loop. */
-        rb_print_backtrace();
-        __builtin_trap();
-    }
+        ptrdiff_t n = pc - iseq->body->iseq_encoded;
+        VM_ASSERT(n <= iseq->body->iseq_size);
+        VM_ASSERT(n >= 0);
+        ASSUME(n >= 0);
+        size_t pos = n; /* no overflow */
+        if (LIKELY(pos)) {
+            /* use pos-1 because PC points next instruction at the beginning of instruction */
+            pos--;
+        }
+#if VMDEBUG && defined(HAVE_BUILTIN___BUILTIN_TRAP)
+        else {
+            /* SDR() is not possible; that causes infinite loop. */
+            rb_print_backtrace();
+            __builtin_trap();
+        }
 #endif
-    return rb_iseq_line_no(iseq, pos);
+        return rb_iseq_line_no(iseq, pos);
+    }
 }
 
 int
@@ -451,6 +468,12 @@ backtrace_each(const rb_execution_context_t *ec,
     const rb_control_frame_t *cfp;
     ptrdiff_t size, i;
 
+    // In the case the thread vm_stack or cfp is not initialized, there is no backtrace.
+    if (start_cfp == NULL) {
+        init(arg, 0);
+        return;
+    }
+
     /*                <- start_cfp (end control frame)
      *  top frame (dummy)
      *  top frame (dummy)
@@ -503,7 +526,7 @@ bt_init(void *ptr, size_t size)
     struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
     arg->btobj = backtrace_alloc(rb_cBacktrace);
     GetCoreDataFromValue(arg->btobj, rb_backtrace_t, arg->bt);
-    arg->bt->backtrace_base = arg->bt->backtrace = ruby_xmalloc(sizeof(rb_backtrace_location_t) * size);
+    arg->bt->backtrace_base = arg->bt->backtrace = ALLOC_N(rb_backtrace_location_t, size);
     arg->bt->backtrace_size = 0;
 }
 
@@ -984,7 +1007,7 @@ rb_vm_thread_backtrace_locations(int argc, const VALUE *argv, VALUE thval)
  */
 
 static VALUE
-rb_f_caller(int argc, VALUE *argv)
+rb_f_caller(int argc, VALUE *argv, VALUE _)
 {
     return ec_backtrace_to_ary(GET_EC(), argc, argv, 1, 1, 1);
 }
@@ -1012,7 +1035,7 @@ rb_f_caller(int argc, VALUE *argv)
  *  entries within the specified range.
  */
 static VALUE
-rb_f_caller_locations(int argc, VALUE *argv)
+rb_f_caller_locations(int argc, VALUE *argv, VALUE _)
 {
     return ec_backtrace_to_ary(GET_EC(), argc, argv, 1, 1, 0);
 }
@@ -1290,7 +1313,7 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
     const rb_callable_method_entry_t *cme;
 
     for (i=0; i<limit && cfp != end_cfp;) {
-	if (cfp->iseq && cfp->pc) {
+        if (VM_FRAME_RUBYFRAME_P(cfp)) {
 	    if (start > 0) {
 		start--;
 		continue;

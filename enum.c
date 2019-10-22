@@ -14,15 +14,14 @@
 #include "ruby/util.h"
 #include "id.h"
 #include "symbol.h"
-#include "transient_heap.h"
 
 #include <assert.h>
 
 VALUE rb_mEnumerable;
 
 static ID id_next;
-static ID id_div;
 
+#define id_div idDiv
 #define id_each idEach
 #define id_eqq  idEqq
 #define id_cmp  idCmp
@@ -436,7 +435,7 @@ enum_size_over_p(VALUE obj, long n)
  *
  *     [:foo, :bar].filter { |x| x == :foo }   #=> [:foo]
  *
- *  See also Enumerable#reject.
+ *  See also Enumerable#reject, Enumerable#grep.
  */
 
 static VALUE
@@ -1220,6 +1219,10 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
  *
  *     sorted = Dir["*"].sort_by { |f| test(?M, f) }
  *     sorted   #=> ["mon", "tues", "wed", "thurs"]
+ *
+ *  To produce the reverse of a specific order, the following can be used:
+ *
+ *    ary.sort_by { ... }.reverse!
  */
 
 static VALUE
@@ -1532,7 +1535,7 @@ nmin_filter(struct nmin_data *data)
 }
 
 static VALUE
-nmin_i(VALUE i, VALUE *_data, int argc, VALUE *argv)
+nmin_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _data))
 {
     struct nmin_data *data = (struct nmin_data *)_data;
     VALUE cmpv;
@@ -1592,7 +1595,7 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
 	for (i = 0; i < RARRAY_LEN(obj); i++) {
 	    VALUE args[1];
 	    args[0] = RARRAY_AREF(obj, i);
-	    nmin_i(obj, (VALUE*)&data, 1, args);
+            nmin_i(obj, (VALUE)&data, 1, args, Qundef);
 	}
     }
     else {
@@ -2527,10 +2530,15 @@ enum_each_slice_size(VALUE obj, VALUE args, VALUE eobj)
 {
     VALUE n, size;
     long slice_size = NUM2LONG(RARRAY_AREF(args, 0));
+    ID infinite_p;
+    CONST_ID(infinite_p, "infinite?");
     if (slice_size <= 0) rb_raise(rb_eArgError, "invalid slice size");
 
     size = enum_size(obj, 0, 0);
     if (size == Qnil) return Qnil;
+    if (RB_FLOAT_TYPE_P(size) && RTEST(rb_funcall(size, infinite_p, 0))) {
+        return size;
+    }
 
     n = add_int(size, slice_size-1);
     return div_int(n, slice_size);
@@ -2715,14 +2723,16 @@ zip_ary(RB_BLOCK_CALL_FUNC_ARGLIST(val, memoval))
 }
 
 static VALUE
-call_next(VALUE *v)
+call_next(VALUE w)
 {
+    VALUE *v = (VALUE *)w;
     return v[0] = rb_funcallv(v[1], id_next, 0, 0);
 }
 
 static VALUE
-call_stop(VALUE *v)
+call_stop(VALUE w, VALUE _)
 {
+    VALUE *v = (VALUE *)w;
     return v[0] = Qundef;
 }
 
@@ -4009,7 +4019,7 @@ int_range_sum(VALUE beg, VALUE end, int excl, VALUE init)
  *   { 1 => 10, 2 => 20 }.sum {|k, v| k * v }  #=> 50
  *   (1..10).sum                               #=> 55
  *   (1..10).sum {|v| v * 2 }                  #=> 110
- *   [Object.new].each.sum                     #=> TypeError
+ *   ('a'..'z').sum                            #=> TypeError
  *
  * This method can be used for non-numeric objects by
  * explicit <i>init</i> argument.
@@ -4018,7 +4028,7 @@ int_range_sum(VALUE beg, VALUE end, int excl, VALUE init)
  *   "a\nb\nc".each_line.lazy.map(&:chomp).sum("")  #=> "abc"
  *
  * Enumerable#sum method may not respect method redefinition of "+"
- * methods such as Integer#+.
+ * methods such as Integer#+, or "each" methods such as Range#each.
  */
 static VALUE
 enum_sum(int argc, VALUE* argv, VALUE obj)
@@ -4192,5 +4202,4 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "uniq", enum_uniq, 0);
 
     id_next = rb_intern("next");
-    id_div = rb_intern("div");
 }

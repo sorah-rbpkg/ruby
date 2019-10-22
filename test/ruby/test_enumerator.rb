@@ -113,6 +113,11 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([[1,2,3],[4,5,6],[7,8,9],[10]], (1..10).each_slice(3).to_a)
   end
 
+  def test_each_slice_size
+    assert_equal(4, (1..10).each_slice(3).size)
+    assert_equal(Float::INFINITY, 1.step.each_slice(3).size)
+  end
+
   def test_cons
     a = [[1,2,3], [2,3,4], [3,4,5], [4,5,6], [5,6,7], [6,7,8], [7,8,9], [8,9,10]]
     assert_equal(a, (1..10).each_cons(3).to_a)
@@ -805,5 +810,58 @@ class TestEnumerator < Test::Unit::TestCase
       ']>',
       e5.inspect
     )
+  end
+
+  def test_produce
+    assert_raise(ArgumentError) { Enumerator.produce }
+
+    # Without initial object
+    passed_args = []
+    enum = Enumerator.produce { |obj| passed_args << obj; (obj || 0).succ }
+    assert_instance_of(Enumerator, enum)
+    assert_equal Float::INFINITY, enum.size
+    assert_equal [1, 2, 3], enum.take(3)
+    assert_equal [nil, 1, 2], passed_args
+
+    # With initial object
+    passed_args = []
+    enum = Enumerator.produce(1) { |obj| passed_args << obj; obj.succ }
+    assert_instance_of(Enumerator, enum)
+    assert_equal Float::INFINITY, enum.size
+    assert_equal [1, 2, 3], enum.take(3)
+    assert_equal [1, 2], passed_args
+
+    # With initial keyword arguments
+    passed_args = []
+    enum = Enumerator.produce(a: 1, b: 1) { |obj| passed_args << obj; obj.shift if obj.respond_to?(:shift)}
+    assert_instance_of(Enumerator, enum)
+    assert_equal Float::INFINITY, enum.size
+    assert_equal [{b: 1}, [1], :a, nil], enum.take(4)
+    assert_equal [{b: 1}, [1], :a], passed_args
+
+    # Raising StopIteration
+    words = "The quick brown fox jumps over the lazy dog.".scan(/\w+/)
+    enum = Enumerator.produce { words.shift or raise StopIteration }
+    assert_equal Float::INFINITY, enum.size
+    assert_instance_of(Enumerator, enum)
+    assert_equal %w[The quick brown fox jumps over the lazy dog], enum.to_a
+
+    # Raising StopIteration
+    object = [[[["abc", "def"], "ghi", "jkl"], "mno", "pqr"], "stuv", "wxyz"]
+    enum = Enumerator.produce(object) { |obj|
+      obj.respond_to?(:first) or raise StopIteration
+      obj.first
+    }
+    assert_equal Float::INFINITY, enum.size
+    assert_instance_of(Enumerator, enum)
+    assert_nothing_raised {
+      assert_equal [
+        [[[["abc", "def"], "ghi", "jkl"], "mno", "pqr"], "stuv", "wxyz"],
+        [[["abc", "def"], "ghi", "jkl"], "mno", "pqr"],
+        [["abc", "def"], "ghi", "jkl"],
+        ["abc", "def"],
+        "abc",
+      ], enum.to_a
+    }
   end
 end

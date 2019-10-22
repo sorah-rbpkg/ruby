@@ -52,6 +52,8 @@ char *getenv();
 #endif
 char *getlogin();
 
+#define RUBY_ETC_VERSION "1.0.1"
+
 #include "constdefs.h"
 
 /* call-seq:
@@ -229,7 +231,7 @@ etc_getpwnam(VALUE obj, VALUE nam)
 #ifdef HAVE_GETPWENT
 static int passwd_blocking = 0;
 static VALUE
-passwd_ensure(void)
+passwd_ensure(VALUE _)
 {
     endpwent();
     passwd_blocking = (int)Qfalse;
@@ -237,7 +239,7 @@ passwd_ensure(void)
 }
 
 static VALUE
-passwd_iterate(void)
+passwd_iterate(VALUE _)
 {
     struct passwd *pw;
 
@@ -473,7 +475,7 @@ etc_getgrnam(VALUE obj, VALUE nam)
 #ifdef HAVE_GETGRENT
 static int group_blocking = 0;
 static VALUE
-group_ensure(void)
+group_ensure(VALUE _)
 {
     endgrent();
     group_blocking = (int)Qfalse;
@@ -482,7 +484,7 @@ group_ensure(void)
 
 
 static VALUE
-group_iterate(void)
+group_iterate(VALUE _)
 {
     struct group *pw;
 
@@ -645,7 +647,7 @@ etc_sysconfdir(VALUE obj)
  * Returns system temporary directory; typically "/tmp".
  */
 static VALUE
-etc_systmpdir(void)
+etc_systmpdir(VALUE _)
 {
     VALUE tmpdir;
 #ifdef _WIN32
@@ -754,9 +756,6 @@ etc_uname(VALUE obj)
 # ifndef PROCESSOR_ARCHITECTURE_AMD64
 #   define PROCESSOR_ARCHITECTURE_AMD64 9
 # endif
-# ifndef PROCESSOR_ARCHITECTURE_IA64
-#   define PROCESSOR_ARCHITECTURE_IA64 6
-# endif
 # ifndef PROCESSOR_ARCHITECTURE_INTEL
 #   define PROCESSOR_ARCHITECTURE_INTEL 0
 # endif
@@ -767,9 +766,6 @@ etc_uname(VALUE obj)
 	break;
       case PROCESSOR_ARCHITECTURE_ARM:
 	mach = "ARM";
-	break;
-      case PROCESSOR_ARCHITECTURE_IA64:
-	mach = "IA64";
 	break;
       case PROCESSOR_ARCHITECTURE_INTEL:
 	mach = "x86";
@@ -1068,6 +1064,7 @@ Init_etc(void)
     VALUE mEtc;
 
     mEtc = rb_define_module("Etc");
+    rb_define_const(mEtc, "VERSION", rb_str_new_cstr(RUBY_ETC_VERSION));
     init_constants(mEtc);
 
     rb_define_module_function(mEtc, "getlogin", etc_getlogin, 0);

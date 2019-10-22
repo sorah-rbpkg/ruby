@@ -58,7 +58,7 @@ class Test_String_Fstring < Test::Unit::TestCase
   end
 
   def test_singleton_class
-    str = noninterned_name.force_encoding("us-ascii")
+    str = noninterned_name
     fstr = Bug::String.fstring(str)
     assert_raise(TypeError) {fstr.singleton_class}
   end
@@ -70,5 +70,14 @@ class Test_String_Fstring < Test::Unit::TestCase
     str = S.new(__method__.to_s * 3)
     str.freeze
     assert_fstring(str) {|s| assert_instance_of(S, s)}
+  end
+
+  def test_shared_string_safety
+    _unused = -('a' * 30).force_encoding(Encoding::ASCII)
+    str = ('a' * 30).force_encoding(Encoding::ASCII).taint
+    frozen_str = Bug::String.rb_str_new_frozen(str)
+    assert_fstring(frozen_str) {|s| assert_equal(str, s)}
+    GC.start
+    assert_equal('a' * 30, str, "[Bug #16151]")
   end
 end

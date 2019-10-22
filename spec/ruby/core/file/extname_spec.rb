@@ -20,8 +20,14 @@ describe "File.extname" do
     File.extname("..").should ==  ""
     File.extname("...").should ==  ""
     File.extname("....").should ==  ""
-    File.extname(".foo.").should ==  ""
-    File.extname("foo.").should ==  ""
+    guard -> { platform_is :windows or ruby_version_is ""..."2.7" } do
+      File.extname(".foo.").should == ""
+      File.extname("foo.").should == ""
+    end
+    guard -> { platform_is_not :windows and ruby_version_is "2.7" } do
+      File.extname(".foo.").should == "."
+      File.extname("foo.").should == "."
+    end
   end
 
   it "returns only the last extension of a file with several dots" do
@@ -33,15 +39,15 @@ describe "File.extname" do
   end
 
   it "raises a TypeError if not passed a String type" do
-    lambda { File.extname(nil)   }.should raise_error(TypeError)
-    lambda { File.extname(0)     }.should raise_error(TypeError)
-    lambda { File.extname(true)  }.should raise_error(TypeError)
-    lambda { File.extname(false) }.should raise_error(TypeError)
+    -> { File.extname(nil)   }.should raise_error(TypeError)
+    -> { File.extname(0)     }.should raise_error(TypeError)
+    -> { File.extname(true)  }.should raise_error(TypeError)
+    -> { File.extname(false) }.should raise_error(TypeError)
   end
 
   it "raises an ArgumentError if not passed one argument" do
-    lambda { File.extname }.should raise_error(ArgumentError)
-    lambda { File.extname("foo.bar", "foo.baz") }.should raise_error(ArgumentError)
+    -> { File.extname }.should raise_error(ArgumentError)
+    -> { File.extname("foo.bar", "foo.baz") }.should raise_error(ArgumentError)
   end
 
 

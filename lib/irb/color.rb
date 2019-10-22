@@ -67,19 +67,23 @@ module IRB # :nodoc:
 
     class << self
       def colorable?
-        $stdout.tty? && (/mswin|mingw/ =~ RUBY_PLATFORM || (ENV.key?('TERM') && ENV['TERM'] != 'dumb'))
+        $stdout.tty? && supported? && (/mswin|mingw/ =~ RUBY_PLATFORM || (ENV.key?('TERM') && ENV['TERM'] != 'dumb'))
       end
 
-      def inspect_colorable?(obj)
+      def inspect_colorable?(obj, seen: {}.compare_by_identity)
         case obj
         when String, Symbol, Regexp, Integer, Float, FalseClass, TrueClass, NilClass
           true
         when Hash
-          obj.all? { |k, v| inspect_colorable?(k) && inspect_colorable?(v) }
+          without_circular_ref(obj, seen: seen) do
+            obj.all? { |k, v| inspect_colorable?(k, seen: seen) && inspect_colorable?(v, seen: seen) }
+          end
         when Array
-          obj.all? { |o| inspect_colorable?(o) }
+          without_circular_ref(obj, seen: seen) do
+            obj.all? { |o| inspect_colorable?(o, seen: seen) }
+          end
         when Range
-          inspect_colorable?(obj.begin) && inspect_colorable?(obj.end)
+          inspect_colorable?(obj.begin, seen: seen) && inspect_colorable?(obj.end, seen: seen)
         when Module
           !obj.name.nil?
         else
@@ -98,31 +102,19 @@ module IRB # :nodoc:
         "#{seq}#{text}#{clear}"
       end
 
-      def scan(code)
-        Ripper::Lexer.new(code).scan
-      end
-
-      def colorize_code(code)
+      # If `complete` is false (code is incomplete), this does not warn compile_error.
+      # This option is needed to avoid warning a user when the compile_error is happening
+      # because the input is not wrong but just incomplete.
+      def colorize_code(code, complete: true)
         return code unless colorable?
 
         symbol_state = SymbolState.new
         colored = +''
         length = 0
-        pos = [1, 0]
 
-        scan(code).each do |elem|
-          token = elem.event
-          str = elem.tok
-          expr = elem.state
+        scan(code, allow_last_error: !complete) do |token, str, expr|
           in_symbol = symbol_state.scan_token(token)
-          next if ([elem.pos[0], elem.pos[1] + str.bytesize] <=> pos) <= 0
           str.each_line do |line|
-            if line.end_with?("\n")
-              pos[0] += 1
-              pos[1] = 0
-            else
-              pos[1] += line.bytesize
-            end
             line = Reline::Unicode.escape_for_print(line)
             if seq = dispatch_seq(token, expr, line, in_symbol: in_symbol)
               colored << seq.map { |s| "\e[#{s}m" }.join('')
@@ -135,12 +127,56 @@ module IRB # :nodoc:
         end
 
         # give up colorizing incomplete Ripper tokens
-        return code if length != code.bytesize
+        if length != code.bytesize
+          return Reline::Unicode.escape_for_print(code)
+        end
 
         colored
       end
 
       private
+
+      def without_circular_ref(obj, seen:, &block)
+        return false if seen.key?(obj)
+        seen[obj] = true
+        block.call
+      ensure
+        seen.delete(obj)
+      end
+
+      # Ripper::Lexer::Elem#state is supported on Ruby 2.5+
+      def supported?
+        return @supported if defined?(@supported)
+        @supported = Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.5.0')
+      end
+
+      def scan(code, allow_last_error:)
+        pos = [1, 0]
+
+        lexer = Ripper::Lexer.new(code)
+        if lexer.respond_to?(:scan) # Ruby 2.7+
+          lexer.scan.each do |elem|
+            str = elem.tok
+            next if allow_last_error and /meets end of file|unexpected end-of-input/ =~ elem.message
+            next if ([elem.pos[0], elem.pos[1] + str.bytesize] <=> pos) <= 0
+
+            str.each_line do |line|
+              if line.end_with?("\n")
+                pos[0] += 1
+                pos[1] = 0
+              else
+                pos[1] += line.bytesize
+              end
+            end
+
+            yield(elem.event, str, elem.state)
+          end
+        else
+          lexer.parse.each do |elem|
+            yield(elem.event, elem.tok, elem.state)
+          end
+        end
+      end
 
       def dispatch_seq(token, expr, str, in_symbol:)
         if token == :on_parse_error or token == :compile_error

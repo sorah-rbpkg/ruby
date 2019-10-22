@@ -20,6 +20,14 @@
 #include <wchar.h>
 #endif
 #ifdef __APPLE__
+# if !(defined(__has_feature) && defined(__has_attribute))
+/* Maybe a bug in SDK of Xcode 10.2.1 */
+/* In this condition, <os/availability.h> does not define
+ * API_AVAILABLE and similar, but __API_AVAILABLE and similar which
+ * are defined in <Availability.h> */
+#   define API_AVAILABLE(...)
+#   define API_DEPRECATED(...)
+# endif
 #include <CoreFoundation/CFString.h>
 #endif
 
@@ -115,6 +123,12 @@ int flock(int, int);
 #define rename(f, t)	rb_w32_urename((f), (t))
 #undef symlink
 #define symlink(s, l)	rb_w32_usymlink((s), (l))
+
+#ifdef HAVE_REALPATH
+/* Don't use native realpath(3) on Windows, as the check for
+   absolute paths does not work for drive letters. */
+#undef HAVE_REALPATH
+#endif
 #else
 #define STAT(p, s)	stat((p), (s))
 #endif
@@ -130,6 +144,16 @@ int flock(int, int);
 /* utime may fail if time is out-of-range for the FS [ruby-dev:38277] */
 #if defined DOSISH || defined __CYGWIN__
 #  define UTIME_EINVAL
+#endif
+
+/* Solaris 10 realpath(3) doesn't support File.realpath */
+#if defined HAVE_REALPATH && defined __sun && defined __SVR4
+#undef HAVE_REALPATH
+#endif
+
+#ifdef HAVE_REALPATH
+#include <limits.h>
+#include <stdlib.h>
 #endif
 
 VALUE rb_cFile;
@@ -451,7 +475,7 @@ rb_file_path(VALUE obj)
         rb_raise(rb_eIOError, "File is unnamed (TMPFILE?)");
     }
 
-    return rb_obj_taint(rb_str_dup(fptr->pathv));
+    return rb_str_dup(fptr->pathv);
 }
 
 static size_t
@@ -1198,6 +1222,8 @@ rb_statx(VALUE file, struct statx *stx, unsigned int mask)
 
 # define statx_has_birthtime(st) ((st)->stx_mask & STATX_BTIME)
 
+NORETURN(static void statx_notimplement(const char *field_name));
+
 /* rb_notimplement() shows "function is unimplemented on this machine".
    It is not applicable to statx which behavior depends on the filesystem. */
 static void
@@ -1777,6 +1803,9 @@ rb_file_exists_p(VALUE obj, VALUE fname)
  *
  * Returns <code>true</code> if the named file is readable by the effective
  * user and group id of this process. See eaccess(3).
+ *
+ * Note that some OS-level security features may cause this to return true
+ * even though the file is not readable by the effective user/group.
  */
 
 static VALUE
@@ -1792,6 +1821,9 @@ rb_file_readable_p(VALUE obj, VALUE fname)
  *
  * Returns <code>true</code> if the named file is readable by the real
  * user and group id of this process. See access(3).
+ *
+ * Note that some OS-level security features may cause this to return true
+ * even though the file is not readable by the real user/group.
  */
 
 static VALUE
@@ -1845,6 +1877,9 @@ rb_file_world_readable_p(VALUE obj, VALUE fname)
  *
  * Returns <code>true</code> if the named file is writable by the effective
  * user and group id of this process. See eaccess(3).
+ *
+ * Note that some OS-level security features may cause this to return true
+ * even though the file is not writable by the effective user/group.
  */
 
 static VALUE
@@ -1859,7 +1894,10 @@ rb_file_writable_p(VALUE obj, VALUE fname)
  *    File.writable_real?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file is writable by the real
- * user and group id of this process. See access(3)
+ * user and group id of this process. See access(3).
+ *
+ * Note that some OS-level security features may cause this to return true
+ * even though the file is not writable by the real user/group.
  */
 
 static VALUE
@@ -1905,6 +1943,13 @@ rb_file_world_writable_p(VALUE obj, VALUE fname)
  *
  * Returns <code>true</code> if the named file is executable by the effective
  * user and group id of this process. See eaccess(3).
+ *
+ * Windows does not support execute permissions separately from read
+ * permissions. On Windows, a file is only considered executable if it ends in
+ * .bat, .cmd, .com, or .exe.
+ *
+ * Note that some OS-level security features may cause this to return true
+ * even though the file is not executable by the effective user/group.
  */
 
 static VALUE
@@ -1920,6 +1965,13 @@ rb_file_executable_p(VALUE obj, VALUE fname)
  *
  * Returns <code>true</code> if the named file is executable by the real
  * user and group id of this process. See access(3).
+ *
+ * Windows does not support execute permissions separately from read
+ * permissions. On Windows, a file is only considered executable if it ends in
+ * .bat, .cmd, .com, or .exe.
+ *
+ * Note that some OS-level security features may cause this to return true
+ * even though the file is not executable by the real user/group.
  */
 
 static VALUE
@@ -2504,7 +2556,7 @@ chmod_internal(const char *path, void *mode)
  */
 
 static VALUE
-rb_file_s_chmod(int argc, VALUE *argv)
+rb_file_s_chmod(int argc, VALUE *argv, VALUE _)
 {
     mode_t mode;
 
@@ -2576,7 +2628,7 @@ lchmod_internal(const char *path, void *mode)
  */
 
 static VALUE
-rb_file_s_lchmod(int argc, VALUE *argv)
+rb_file_s_lchmod(int argc, VALUE *argv, VALUE _)
 {
     mode_t mode;
 
@@ -2635,7 +2687,7 @@ chown_internal(const char *path, void *arg)
  */
 
 static VALUE
-rb_file_s_chown(int argc, VALUE *argv)
+rb_file_s_chown(int argc, VALUE *argv, VALUE _)
 {
     struct chown_args arg;
 
@@ -2707,7 +2759,7 @@ lchown_internal(const char *path, void *arg)
  */
 
 static VALUE
-rb_file_s_lchown(int argc, VALUE *argv)
+rb_file_s_lchown(int argc, VALUE *argv, VALUE _)
 {
     struct chown_args arg;
 
@@ -2885,7 +2937,7 @@ utime_internal_i(int argc, VALUE *argv, int follow)
  */
 
 static VALUE
-rb_file_s_utime(int argc, VALUE *argv)
+rb_file_s_utime(int argc, VALUE *argv, VALUE _)
 {
     return utime_internal_i(argc, argv, FALSE);
 }
@@ -2904,7 +2956,7 @@ rb_file_s_utime(int argc, VALUE *argv)
  */
 
 static VALUE
-rb_file_s_lutime(int argc, VALUE *argv)
+rb_file_s_lutime(int argc, VALUE *argv, VALUE _)
 {
     return utime_internal_i(argc, argv, TRUE);
 }
@@ -3183,19 +3235,20 @@ rb_file_s_rename(VALUE klass, VALUE from, VALUE to)
  */
 
 static VALUE
-rb_file_s_umask(int argc, VALUE *argv)
+rb_file_s_umask(int argc, VALUE *argv, VALUE _)
 {
     mode_t omask = 0;
 
-    if (argc == 0) {
+    switch (argc) {
+      case 0:
 	omask = umask(0);
 	umask(omask);
-    }
-    else if (argc == 1) {
+        break;
+      case 1:
 	omask = umask(NUM2MODET(argv[0]));
-    }
-    else {
-	rb_check_arity(argc, 0, 1);
+        break;
+      default:
+        rb_error_arity(argc, 0, 1);
     }
     return MODET2NUM(omask);
 }
@@ -3997,6 +4050,13 @@ rb_file_expand_path_fast(VALUE fname, VALUE dname)
     return expand_path(fname, dname, 0, 0, EXPAND_PATH_BUFFER());
 }
 
+VALUE
+rb_file_s_expand_path(int argc, const VALUE *argv)
+{
+    rb_check_arity(argc, 1, 2);
+    return rb_file_expand_path(argv[0], argc > 1 ? argv[1] : Qnil);
+}
+
 /*
  *  call-seq:
  *     File.expand_path(file_name [, dir_string] )  ->  abs_file_name
@@ -4025,11 +4085,10 @@ rb_file_expand_path_fast(VALUE fname, VALUE dname)
  *  parent, the root of the project and appends +lib/mygem.rb+.
  */
 
-VALUE
-rb_file_s_expand_path(int argc, const VALUE *argv)
+static VALUE
+s_expand_path(int c, const VALUE * v, VALUE _)
 {
-    rb_check_arity(argc, 1, 2);
-    return rb_file_expand_path(argv[0], argc > 1 ? argv[1] : Qnil);
+    return rb_file_s_expand_path(c, v);
 }
 
 VALUE
@@ -4037,6 +4096,13 @@ rb_file_absolute_path(VALUE fname, VALUE dname)
 {
     check_expand_path_args(fname, dname);
     return expand_path(fname, dname, 1, 1, EXPAND_PATH_BUFFER());
+}
+
+VALUE
+rb_file_s_absolute_path(int argc, const VALUE *argv)
+{
+    rb_check_arity(argc, 1, 2);
+    return rb_file_absolute_path(argv[0], argc > 1 ? argv[1] : Qnil);
 }
 
 /*
@@ -4052,11 +4118,29 @@ rb_file_absolute_path(VALUE fname, VALUE dname)
  *     File.absolute_path("~oracle/bin")       #=> "<relative_path>/~oracle/bin"
  */
 
-VALUE
-rb_file_s_absolute_path(int argc, const VALUE *argv)
+static VALUE
+s_absolute_path(int c, const VALUE * v, VALUE _)
 {
-    rb_check_arity(argc, 1, 2);
-    return rb_file_absolute_path(argv[0], argc > 1 ? argv[1] : Qnil);
+    return rb_file_s_absolute_path(c, v);
+}
+
+/*
+ *  call-seq:
+ *     File.absolute_path?(file_name)  ->  true or false
+ *
+ *  Returns <code>true</code> if +file_name+ is an absolute path, and
+ *  <code>false</code> otherwise.
+ *
+ *     File.absolute_path?("c:/foo")     #=> false (on Linux), true (on Windows)
+ */
+
+static VALUE
+s_absolute_path_p(VALUE klass, VALUE fname)
+{
+    VALUE path = rb_get_path(fname);
+
+    if (!rb_is_absolute_path(RSTRING_PTR(path))) return Qfalse;
+    return Qtrue;
 }
 
 enum rb_realpath_mode {
@@ -4182,7 +4266,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE f
 }
 
 static VALUE
-rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
+rb_check_realpath_emulate(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
 {
     long prefixlen;
     VALUE resolved;
@@ -4274,6 +4358,77 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode
     RB_GC_GUARD(unresolved_path);
     RB_GC_GUARD(curdir);
     return resolved;
+}
+
+static VALUE rb_file_join(VALUE ary);
+
+static VALUE
+rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
+{
+#ifdef HAVE_REALPATH
+    VALUE unresolved_path;
+    rb_encoding *origenc;
+    char *resolved_ptr = NULL;
+    VALUE resolved;
+    struct stat st;
+
+    if (mode == RB_REALPATH_DIR) {
+        return rb_check_realpath_emulate(basedir, path, mode);
+    }
+
+    unresolved_path = rb_str_dup_frozen(path);
+    origenc = rb_enc_get(unresolved_path);
+    if (*RSTRING_PTR(unresolved_path) != '/' && !NIL_P(basedir)) {
+        unresolved_path = rb_file_join(rb_assoc_new(basedir, unresolved_path));
+    }
+    unresolved_path = TO_OSPATH(unresolved_path);
+
+    if ((resolved_ptr = realpath(RSTRING_PTR(unresolved_path), NULL)) == NULL) {
+        /* glibc realpath(3) does not allow /path/to/file.rb/../other_file.rb,
+           returning ENOTDIR in that case.
+           glibc realpath(3) can also return ENOENT for paths that exist,
+           such as /dev/fd/5.
+           Fallback to the emulated approach in either of those cases. */
+        if (errno == ENOTDIR ||
+            (errno == ENOENT && rb_file_exist_p(0, unresolved_path))) {
+            return rb_check_realpath_emulate(basedir, path, mode);
+
+        }
+        if (mode == RB_REALPATH_CHECK) {
+            return Qnil;
+        }
+        rb_sys_fail_path(unresolved_path);
+    }
+    resolved = ospath_new(resolved_ptr, strlen(resolved_ptr), rb_filesystem_encoding());
+    free(resolved_ptr);
+
+    if (rb_stat(resolved, &st) < 0) {
+        if (mode == RB_REALPATH_CHECK) {
+            return Qnil;
+        }
+        rb_sys_fail_path(unresolved_path);
+    }
+
+    if (origenc != rb_enc_get(resolved)) {
+        if (!rb_enc_str_asciionly_p(resolved)) {
+            resolved = rb_str_conv_enc(resolved, NULL, origenc);
+        }
+        rb_enc_associate(resolved, origenc);
+    }
+
+    if (rb_enc_str_coderange(resolved) == ENC_CODERANGE_BROKEN) {
+        rb_enc_associate(resolved, rb_filesystem_encoding());
+        if (rb_enc_str_coderange(resolved) == ENC_CODERANGE_BROKEN) {
+            rb_enc_associate(resolved, rb_ascii8bit_encoding());
+        }
+    }
+
+    rb_obj_taint(resolved);
+    RB_GC_GUARD(unresolved_path);
+    return resolved;
+#else
+    return rb_check_realpath_emulate(basedir, path, mode);
+#endif /* HAVE_REALPATH */
 }
 
 VALUE
@@ -4450,7 +4605,7 @@ ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encodin
  */
 
 static VALUE
-rb_file_s_basename(int argc, VALUE *argv)
+rb_file_s_basename(int argc, VALUE *argv, VALUE _)
 {
     VALUE fname, fext, basename;
     const char *name, *p;
@@ -4634,10 +4789,13 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
  *  An empty string will also be returned when the period is the last character
  *  in +path+.
  *
+ *  On Windows, trailing dots are truncated.
+ *
  *     File.extname("test.rb")         #=> ".rb"
  *     File.extname("a/b/d/test.rb")   #=> ".rb"
  *     File.extname(".a/b/d/test.rb")  #=> ".rb"
- *     File.extname("foo.")            #=> ""
+ *     File.extname("foo.")            #=> "" on Windows
+ *     File.extname("foo.")            #=> "." on non-Windows
  *     File.extname("test")            #=> ""
  *     File.extname(".profile")        #=> ""
  *     File.extname(".profile.sh")     #=> ".sh"
@@ -4655,7 +4813,7 @@ rb_file_s_extname(VALUE klass, VALUE fname)
     name = StringValueCStr(fname);
     len = RSTRING_LEN(fname);
     e = ruby_enc_find_extname(name, &len, rb_enc_get(fname));
-    if (len <= 1)
+    if (len < 1)
 	return rb_str_new(0, 0);
     extname = rb_str_subseq(fname, e - name, len); /* keep the dot, too! */
     OBJ_INFECT(extname, fname);
@@ -4694,10 +4852,8 @@ static VALUE
 rb_file_s_split(VALUE klass, VALUE path)
 {
     FilePathStringValue(path);		/* get rid of converting twice */
-    return rb_assoc_new(rb_file_dirname(path), rb_file_s_basename(1,&path));
+    return rb_assoc_new(rb_file_dirname(path), rb_file_s_basename(1,&path,Qundef));
 }
-
-static VALUE rb_file_join(VALUE ary);
 
 static VALUE
 file_inspect_join(VALUE ary, VALUE arg, int recur)
@@ -5121,7 +5277,7 @@ test_check(int n, int argc, VALUE *argv)
  */
 
 static VALUE
-rb_f_test(int argc, VALUE *argv)
+rb_f_test(int argc, VALUE *argv, VALUE _)
 {
     int cmd;
 
@@ -5928,7 +6084,7 @@ nogvl_mkfifo(void *ptr)
  */
 
 static VALUE
-rb_file_s_mkfifo(int argc, VALUE *argv)
+rb_file_s_mkfifo(int argc, VALUE *argv, VALUE _)
 {
     VALUE path;
     struct mkfifo_arg ma;
@@ -6386,8 +6542,9 @@ Init_File(void)
     rb_define_singleton_method(rb_cFile, "umask", rb_file_s_umask, -1);
     rb_define_singleton_method(rb_cFile, "truncate", rb_file_s_truncate, 2);
     rb_define_singleton_method(rb_cFile, "mkfifo", rb_file_s_mkfifo, -1);
-    rb_define_singleton_method(rb_cFile, "expand_path", rb_file_s_expand_path, -1);
-    rb_define_singleton_method(rb_cFile, "absolute_path", rb_file_s_absolute_path, -1);
+    rb_define_singleton_method(rb_cFile, "expand_path", s_expand_path, -1);
+    rb_define_singleton_method(rb_cFile, "absolute_path", s_absolute_path, -1);
+    rb_define_singleton_method(rb_cFile, "absolute_path?", s_absolute_path_p, 1);
     rb_define_singleton_method(rb_cFile, "realpath", rb_file_s_realpath, -1);
     rb_define_singleton_method(rb_cFile, "realdirpath", rb_file_s_realdirpath, -1);
     rb_define_singleton_method(rb_cFile, "basename", rb_file_s_basename, -1);

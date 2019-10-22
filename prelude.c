@@ -11,8 +11,8 @@
 
 static const char prelude_name0[] = "<internal:prelude>";
 static const struct {
-    char L0[491]; /* 1..130 */
-    char L130[442]; /* 131..219 */
+    char L0[499]; /* 1..134 */
+    char L134[443]; /* 135..224 */
 } prelude_code0 = {
 #line 1 "prelude.rb"
 "class << Thread\n"
@@ -25,7 +25,7 @@ static const struct {
 "  def exclusive(&block) end if false\n"
 "  mutex = Mutex.new\n"/* :nodoc: */
 "  define_method(:exclusive) do |&block|\n"
-"    warn \"Thread.exclusive is deprecated, use Thread::Mutex\", caller\n"
+"    warn \"Thread.exclusive is deprecated, use Thread::Mutex\", uplevel: 1\n"
 "    mutex.synchronize(&block)\n"
 "  end\n"
 "end\n"
@@ -55,6 +55,10 @@ static const struct {
 "\n"/* read_nonblock. */
 "\n"/*  */
 "\n"/* read_nonblock causes EOFError on EOF. */
+"\n"/*  */
+"\n"/* On some platforms, such as Windows, non-blocking mode is not supported */
+"\n"/* on IO objects other than sockets. In such cases, Errno::EBADF will */
+"\n"/* be raised. */
 "\n"/*  */
 "\n"/* If the read byte buffer is not empty, */
 "\n"/* read_nonblock reads from the buffer like readpartial. */
@@ -146,15 +150,15 @@ static const struct {
 "\n"/* return the symbol +:wait_writable+ instead. */
 "  def write_nonblock(buf, exception: true)\n"
 ,
-#line 131 "prelude.rb"
+#line 135 "prelude.rb"
 "    __write_nonblock(buf, exception)\n"
 "  end\n"
 "end\n"
 "\n"
 "class TracePoint\n"
 "\n"/* call-seq: */
-"\n"/*    trace.enable(target: nil, target_line: nil)    -> true or false */
-"\n"/*    trace.enable(target: nil, target_line: nil) { block }  -> obj */
+"\n"/*    trace.enable(target: nil, target_line: nil, target_thread: nil)    -> true or false */
+"\n"/*    trace.enable(target: nil, target_line: nil, target_thread: nil) { block }  -> obj */
 "\n"/*  */
 "\n"/* Activates the trace. */
 "\n"/*  */
@@ -182,9 +186,10 @@ static const struct {
 "\n"/*    trace.enabled? */
 "\n"/*    #=> false */
 "\n"/*  */
-"\n"/* <i>target</i> and <i>target_line</i> parameters are used to limit tracing */
-"\n"/* only to specified code objects. <i>target</i> should be a code object for */
-"\n"/* which RubyVM::InstructionSequence.of will return an instruction sequence. */
+"\n"/* +target+, +target_line+ and +target_thread+ parameters are used to */
+"\n"/* limit tracing only to specified code objects. +target+ should be a */
+"\n"/* code object for which RubyVM::InstructionSequence.of will return */
+"\n"/* an instruction sequence. */
 "\n"/*  */
 "\n"/*    t = TracePoint.new(:line) { |tp| p tp } */
 "\n"/*  */
@@ -235,7 +240,7 @@ static const struct {
 "\n"
 "  private :pp\n"
 "end\n"
-#line 239 "prelude.c"
+#line 244 "prelude.c"
 };
 
 static const char prelude_name1[] = "<internal:gem_prelude>";
@@ -251,7 +256,7 @@ static const struct {
 "  rescue Gem::LoadError, LoadError\n"
 "  end if defined?(DidYouMean)\n"
 "end\n"
-#line 255 "prelude.c"
+#line 260 "prelude.c"
 };
 
 

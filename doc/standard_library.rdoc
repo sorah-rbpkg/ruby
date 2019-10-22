@@ -33,7 +33,6 @@ OptionParser:: Ruby-oriented class for command-line option analysis
 PP:: Provides a PrettyPrinter for Ruby objects
 PrettyPrinter:: Implements a pretty printing algorithm for readable structure
 PStore:: Implements a file based persistence mechanism based on a Hash
-Racc:: A LALR(1) parser generator written in Ruby.
 RbConfig:: Information of your configure and build of Ruby
 resolv-replace.rb:: Replace Socket DNS with Resolv
 Resolv::  Thread-aware DNS resolver library in Ruby
@@ -73,7 +72,6 @@ WIN32OLE:: Provides an interface for OLE Automation in Ruby
 == Libraries
 
 Bundler:: Manage your Ruby application's gem dependencies
-CMath:: Provides Trigonometric and Transcendental functions for complex numbers
 CSV:: Provides an interface to read and write CSV files and data
 E2MM:: Module for defining custom exceptions with specific messages
 FileUtils:: Several file utility methods for copying, moving, removing, etc
@@ -85,13 +83,10 @@ Matrix:: Represents a mathematical matrix.
 Mutex_m:: Mixin to extend objects to be handled like a Mutex
 OpenStruct:: Class to build custom data structures, similar to a Hash
 Prime:: Prime numbers and factorization library
+Racc:: A LALR(1) parser generator written in Ruby.
 RDoc:: Produces HTML and command-line documentation for Ruby
 REXML:: An XML toolkit for Ruby
 RSS:: Family of libraries that support various formats of XML "feeds"
-Scanf:: A Ruby implementation of the C function scanf(3)
-Shell:: An idiomatic Ruby interface for common UNIX shell commands
-Synchronizer:: A module that provides a two-phase lock with a counter
-ThreadsWait:: Watches for termination of multiple threads
 Tracer:: Outputs a source level execution trace of a Ruby program
 WEBrick:: An HTTP server toolkit for Ruby
 

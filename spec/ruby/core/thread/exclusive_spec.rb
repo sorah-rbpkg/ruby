@@ -1,8 +1,15 @@
 require_relative '../../spec_helper'
 
 describe "Thread.exclusive" do
+  verbose = Object
+
   before :each do
     ScratchPad.clear
+    verbose, $VERBOSE = $VERBOSE, nil
+  end
+
+  after :each do
+    $VERBOSE = verbose
   end
 
   it "yields to the block" do
@@ -28,7 +35,7 @@ describe "Thread.exclusive" do
 
     q1.pop.should == :ready
 
-    lambda { Thread.exclusive { } }.should block_caller
+    -> { Thread.exclusive { } }.should block_caller
 
     q2.push :done
     t.join
@@ -36,7 +43,7 @@ describe "Thread.exclusive" do
 
   it "is not recursive" do
     Thread.exclusive do
-      lambda { Thread.exclusive { } }.should raise_error(ThreadError)
+      -> { Thread.exclusive { } }.should raise_error(ThreadError)
     end
   end
 end

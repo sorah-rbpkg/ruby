@@ -173,7 +173,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal(10000, Time.at(0.00001).nsec)
     assert_equal(3000, Time.at(0.000003).nsec)
     assert_equal(200, Time.at(0.0000002r).nsec)
-    assert_equal(199, Time.at(0.0000002).nsec)
+    assert_in_delta(200, Time.at(0.0000002).nsec, 1, "should be within FP error")
     assert_equal(10, Time.at(0.00000001).nsec)
     assert_equal(1, Time.at(0.000000001).nsec)
 
@@ -375,6 +375,16 @@ class TestTime < Test::Unit::TestCase
     end
   end
 
+  def test_marshal_distant_past
+    assert_marshal_roundtrip(Time.utc(1890, 1, 1))
+    assert_marshal_roundtrip(Time.utc(-4.5e9, 1, 1))
+  end
+
+  def test_marshal_distant_future
+    assert_marshal_roundtrip(Time.utc(30000, 1, 1))
+    assert_marshal_roundtrip(Time.utc(5.67e9, 4, 8))
+  end
+
   def test_at3
     t2000 = get_t2000
     assert_equal(t2000, Time.at(t2000))
@@ -541,6 +551,30 @@ class TestTime < Test::Unit::TestCase
     assert_equal(Encoding::US_ASCII, t2000.to_s.encoding)
     assert_kind_of(String, Time.at(946684800).getlocal.to_s)
     assert_equal(Time.at(946684800).getlocal.to_s, Time.at(946684800).to_s)
+  end
+
+  def test_inspect
+    t2000 = get_t2000
+    assert_equal("2000-01-01 00:00:00 UTC", t2000.inspect)
+    assert_equal(Encoding::US_ASCII, t2000.inspect.encoding)
+    assert_kind_of(String, Time.at(946684800).getlocal.inspect)
+    assert_equal(Time.at(946684800).getlocal.inspect, Time.at(946684800).inspect)
+
+    t2000 = get_t2000 + 1/10r
+    assert_equal("2000-01-01 00:00:00.1 UTC", t2000.inspect)
+    t2000 = get_t2000 + 1/1000000000r
+    assert_equal("2000-01-01 00:00:00.000000001 UTC", t2000.inspect)
+    t2000 = get_t2000 + 1/10000000000r
+    assert_equal("2000-01-01 00:00:00 1/10000000000 UTC", t2000.inspect)
+    t2000 = get_t2000 + 0.1
+    assert_equal("2000-01-01 00:00:00 3602879701896397/36028797018963968 UTC", t2000.inspect)
+
+    t2000 = get_t2000
+    t2000 = t2000.localtime(9*3600)
+    assert_equal("2000-01-01 09:00:00 +0900", t2000.inspect)
+
+    t2000 = get_t2000.localtime(9*3600) + 1/10r
+    assert_equal("2000-01-01 09:00:00.1 +0900", t2000.inspect)
   end
 
   def assert_zone_encoding(time)
@@ -1216,6 +1250,7 @@ class TestTime < Test::Unit::TestCase
     size = GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
     case size
     when 20 then expect = 50
+    when 24 then expect = 54
     when 40 then expect = 86
     when 48 then expect = 94
     else

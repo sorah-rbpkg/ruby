@@ -22,16 +22,6 @@ end
 
 $debug = false
 
-Spec::Manpages.setup unless Gem.win_platform?
-Spec::Rubygems.setup
-ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -r#{Spec::Path.spec_dir}/support/hax.rb"
-ENV["BUNDLE_SPEC_RUN"] = "true"
-
-# Don't wrap output in tests
-ENV["THOR_COLUMNS"] = "10000"
-
-Spec::CodeClimate.setup
-
 module Gem
   def self.ruby=(ruby)
     @ruby = ruby
@@ -60,6 +50,8 @@ RSpec.configure do |config|
   # forever due to memory constraints
   config.fail_fast ||= 25 if ENV["CI"]
 
+  config.bisect_runner = :shell
+
   if ENV["BUNDLER_SUDO_TESTS"] && Spec::Sudo.present?
     config.filter_run :sudo => true
   else
@@ -72,16 +64,18 @@ RSpec.configure do |config|
     config.filter_run_excluding :realworld => true
   end
 
-  config.filter_run_excluding :ruby => RequirementChecker.against(RUBY_VERSION)
+  git_version = Bundler::Source::Git::GitProxy.new(nil, nil, nil).version
+
   config.filter_run_excluding :rubygems => RequirementChecker.against(Gem::VERSION)
-  config.filter_run_excluding :rubygems_master => (ENV["RGV"] != "master")
+  config.filter_run_excluding :git => RequirementChecker.against(git_version)
   config.filter_run_excluding :bundler => RequirementChecker.against(Bundler::VERSION.split(".")[0])
-  config.filter_run_excluding :ruby_repo => !(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"]).nil?
+  config.filter_run_excluding :ruby_repo => !ENV["GEM_COMMAND"].nil?
+  config.filter_run_excluding :no_color_tty => Gem.win_platform? || !ENV["GITHUB_ACTION"].nil?
 
   config.filter_run_when_matching :focus unless ENV["CI"]
 
   original_wd  = Dir.pwd
-  original_env = ENV.to_hash.delete_if {|k, _v| k.start_with?(Bundler::EnvironmentPreserver::BUNDLER_PREFIX) }
+  original_env = ENV.to_hash
 
   config.expect_with :rspec do |c|
     c.syntax = :expect
@@ -92,16 +86,27 @@ RSpec.configure do |config|
   end
 
   config.around :each do |example|
-    if ENV["BUNDLE_RUBY"]
+    if ENV["RUBY"]
       orig_ruby = Gem.ruby
-      Gem.ruby = ENV["BUNDLE_RUBY"]
+      Gem.ruby = ENV["RUBY"]
     end
     example.run
-    Gem.ruby = orig_ruby if ENV["BUNDLE_RUBY"]
+    Gem.ruby = orig_ruby if ENV["RUBY"]
   end
 
   config.before :suite do
-    if ENV["BUNDLE_RUBY"]
+    Spec::Rubygems.setup
+    ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -r#{Spec::Path.spec_dir}/support/hax.rb"
+    ENV["BUNDLE_SPEC_RUN"] = "true"
+    ENV["BUNDLE_USER_CONFIG"] = ENV["BUNDLE_USER_CACHE"] = ENV["BUNDLE_USER_PLUGIN"] = nil
+    ENV["GEMRC"] = nil
+
+    # Don't wrap output in tests
+    ENV["THOR_COLUMNS"] = "10000"
+
+    original_env = ENV.to_hash
+
+    if ENV["RUBY"]
       FileUtils.cp_r Spec::Path.bindir, File.join(Spec::Path.root, "lib", "exe")
     end
   end
@@ -110,14 +115,15 @@ RSpec.configure do |config|
     build_repo1
   end
 
-  config.before :each do
+  config.around :each do |example|
+    ENV.replace(original_env)
     reset!
     system_gems []
     in_app_root
     @command_executions = []
-  end
 
-  config.after :each do |example|
+    example.run
+
     all_output = @command_executions.map(&:to_s_verbose).join("\n\n")
     if example.exception && !all_output.empty?
       warn all_output unless config.formatters.grep(RSpec::Core::Formatters::DocumentationFormatter).empty?
@@ -128,11 +134,10 @@ RSpec.configure do |config|
     end
 
     Dir.chdir(original_wd)
-    ENV.replace(original_env)
   end
 
   config.after :suite do
-    if ENV["BUNDLE_RUBY"]
+    if ENV["RUBY"]
       FileUtils.rm_rf File.join(Spec::Path.root, "lib", "exe")
     end
   end
