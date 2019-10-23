@@ -4,7 +4,6 @@ exec 2>&1
 set -e
 #set -x
 
-KNOW_FAILURES=$(dirname $(readlink -f $0))/known-failures.txt
 # test against the default OpenSSL settings and not the Debian-specific ones
 export OPENSSL_CONF=`pwd`/debian/openssl.cnf
 
@@ -18,6 +17,7 @@ if [ -z "$AUTOPKGTEST_TMP" ]; then
   trap cleanup INT TERM EXIT
 fi
 
+skiplist=$(readlink -f $(dirname $0))/skiplist
 excludedir=$(readlink -f $(dirname $0))/excludes
 cp -r 'test/' $AUTOPKGTEST_TMP
 cp -r 'tool/' $AUTOPKGTEST_TMP
@@ -29,45 +29,16 @@ if [ -z "$tests" ]; then
   tests=$(find 'test/' -name 'test_*.rb' -and -not -path '*-ext-*' | sort)
 fi
 
-pass=0
-fail=0
-fail_expected=0
-total=0
-
 excludes="--excludes-dir=test/excludes/"
 excludes="$excludes --excludes-dir=${excludedir}/any/"
 excludes="$excludes --excludes-dir=${excludedir}/$(dpkg-architecture -qDEB_HOST_ARCH)/"
+excludes="$excludes --excludes-dir=${excludedir}/autopkgtest/"
 
+run_tests=''
 for t in $tests; do
-  if ruby2.7 test/runner.rb -v $excludes --name='!/memory_leak/' $t >log 2>&1; then
-    echo "PASS $t"
-    pass=$(($pass + 1))
-  else
-    if grep "^$t$" $KNOW_FAILURES; then
-      fail_expected=$(($fail_expected + 1))
-      echo "FAIL (EXPECTED) $t"
-      echo "FAIL (EXPECTED) $t" | sed -e 's/./-/g'
-    else
-      fail=$(($fail + 1))
-      echo "FAIL $t"
-      echo "FAIL $t" | sed -e 's/./-/g'
-    fi
-    echo
-    cat log
+  if ! grep -q "^$t$" "$skiplist"; then
+    run_tests="$run_tests $t"
   fi
-  total=$(($total + 1))
 done
-rm -f log
 
-echo
-echo "Finished"
-echo '--------'
-echo "   Tests executed: $(($total))"
-echo "             PASS: $pass"
-echo "             FAIL: $fail"
-echo "EXPECTED FAILURES: $fail_expected"
-echo
-
-if [ $fail -gt 0 ]; then
-  exit 1
-fi
+ruby2.7 test/runner.rb -v $excludes --name='!/memory_leak/' $run_tests
