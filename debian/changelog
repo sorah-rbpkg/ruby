@@ -1,8 +1,13 @@
-ruby2.5 (2.5.5-5) UNRELEASED; urgency=medium
+ruby2.5 (2.5.7-1) UNRELEASED; urgency=medium
 
+  [ Utkarsh Gupta ]
   * Add salsa-ci.yml
 
- -- Utkarsh Gupta <guptautkarsh2102@gmail.com>  Tue, 13 Aug 2019 03:21:24 +0530
+  [ Antonio Terceiro ]
+  * New upstream version 2.5.7
+  * Refresh patches
+
+ -- Antonio Terceiro <terceiro@debian.org>  Wed, 23 Oct 2019 11:14:23 -0300
 
 ruby2.5 (2.5.5-4) unstable; urgency=medium
 
