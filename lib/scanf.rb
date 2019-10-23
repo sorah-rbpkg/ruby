@@ -3,9 +3,9 @@
 #
 #--
 # $Release Version: 1.1.2 $
-# $Revision: 60261 $
-# $Id: scanf.rb 60261 2017-10-21 12:34:13Z nobu $
-# $Author: nobu $
+# $Revision: 67754 $
+# $Id: scanf.rb 67754 2019-08-26 14:18:58Z usa $
+# $Author: usa $
 #++
 #
 # == Description
@@ -660,7 +660,7 @@ class IO
 
     begin
       seek(start_position + matched_so_far, IO::SEEK_SET)
-    rescue Errno::ESPIPE
+    rescue Errno::ESPIPE, Errno::EINVAL
     end
 
     soak_up_spaces if fstr.last_spec && fstr.space
