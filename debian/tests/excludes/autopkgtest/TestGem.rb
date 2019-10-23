@@ -1,0 +1,5 @@
+exclude :test_self_prefix, 'depends on source tree'
+exclude :test_default_path_missing_vendor, 'depends on source tree'
+exclude :test_default_path, 'depends on source tree'
+exclude :test_default_path_user_home, 'depends on source tree'
+exclude :test_default_path_vendor_dir, 'depends on source tree'

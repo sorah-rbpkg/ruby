@@ -1,0 +1,8 @@
+exclude :test_default_gem, 'depends on source tree'
+exclude :test_check_executable_overwrite_default_bin_dir, 'depends on source tree'
+exclude :test_install_creates_working_binstub, 'depends on source tree'
+exclude :test_conflicting_binstubs, 'depends on source tree'
+exclude :test_install_with_no_prior_files, 'depends on source tree'
+exclude :test_install, 'depends on source tree'
+exclude :test_install_creates_binstub_that_understand_version, 'depends on source tree'
+exclude :test_install_creates_binstub_that_dont_trust_encoding, 'depends on source tree'
