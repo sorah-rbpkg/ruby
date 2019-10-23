@@ -2,7 +2,7 @@
 
   string.c -
 
-  $Author: nagachika $
+  $Author: usa $
   created at: Mon Aug  9 17:12:58 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -1127,12 +1127,19 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
 	TERM_FILL(ptr2+len, termlen);
     }
     else {
-	str = rb_str_new_frozen(str);
+        VALUE root;
+        if (STR_SHARED_P(str)) {
+            root = RSTRING(str)->as.heap.aux.shared;
+            RSTRING_GETMEM(str, ptr, len);
+        }
+        else {
+            root = rb_str_new_frozen(str);
+            RSTRING_GETMEM(root, ptr, len);
+        }
 	FL_SET(str2, STR_NOEMBED);
-	RSTRING_GETMEM(str, ptr, len);
 	RSTRING(str2)->as.heap.len = len;
 	RSTRING(str2)->as.heap.ptr = ptr;
-	STR_SET_SHARED(str2, str);
+	STR_SET_SHARED(str2, root);
     }
     return str2;
 }
@@ -1283,6 +1290,7 @@ str_new_empty(VALUE str)
 }
 
 #define STR_BUF_MIN_SIZE 127
+STATIC_ASSERT(STR_BUF_MIN_SIZE, STR_BUF_MIN_SIZE > RSTRING_EMBED_LEN_MAX);
 
 VALUE
 rb_str_buf_new(long capa)
@@ -1472,10 +1480,13 @@ str_duplicate(VALUE klass, VALUE str)
     MEMCPY(RSTRING(dup)->as.ary, RSTRING(str)->as.ary,
 	   char, embed_size);
     if (flags & STR_NOEMBED) {
-	if (UNLIKELY(!(flags & FL_FREEZE))) {
-	    str = str_new_frozen(klass, str);
-	    FL_SET_RAW(str, flags & FL_TAINT);
-	    flags = FL_TEST_RAW(str, flag_mask);
+        if (FL_TEST_RAW(str, STR_SHARED)) {
+            str = RSTRING(str)->as.heap.aux.shared;
+        }
+        else if (UNLIKELY(!(flags & FL_FREEZE))) {
+            str = str_new_frozen(klass, str);
+            FL_SET_RAW(str, flags & FL_TAINT);
+            flags = FL_TEST_RAW(str, flag_mask);
 	}
 	if (flags & STR_NOEMBED) {
 	    RB_OBJ_WRITE(dup, &RSTRING(dup)->as.heap.aux.shared, str);
@@ -1562,7 +1573,18 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
 	    }
 	    str_modifiable(str);
 	    if (STR_EMBED_P(str)) { /* make noembed always */
-		RSTRING(str)->as.heap.ptr = ALLOC_N(char, (size_t)capa + termlen);
+                char *new_ptr = ALLOC_N(char, (size_t)capa + termlen);
+                memcpy(new_ptr, RSTRING(str)->as.ary, RSTRING_EMBED_LEN_MAX + 1);
+                RSTRING(str)->as.heap.ptr = new_ptr;
+            }
+            else if (FL_TEST(str, STR_SHARED|STR_NOFREE)) {
+                const size_t size = (size_t)capa + termlen;
+                const char *const old_ptr = RSTRING_PTR(str);
+                const size_t osize = RSTRING(str)->as.heap.len + TERM_LEN(str);
+                char *new_ptr = ALLOC_N(char, (size_t)capa + termlen);
+                memcpy(new_ptr, old_ptr, osize < size ? osize : size);
+                FL_UNSET_RAW(str, STR_SHARED);
+                RSTRING(str)->as.heap.ptr = new_ptr;
 	    }
 	    else if (STR_HEAP_SIZE(str) != (size_t)capa + termlen) {
 		REALLOC_N(RSTRING(str)->as.heap.ptr, char, (size_t)capa + termlen);
@@ -4978,7 +5000,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
                 cr = cr2;
 	}
 	plen = end0 - beg0;
-	rp = RSTRING_PTR(repl); rlen = RSTRING_LEN(repl);
+	rlen = RSTRING_LEN(repl);
 	len = RSTRING_LEN(str);
 	if (rlen > plen) {
 	    RESIZE_CAPA(str, len + rlen - plen);
@@ -4987,7 +5009,8 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	if (rlen != plen) {
 	    memmove(p + beg0 + rlen, p + beg0 + plen, len - beg0 - plen);
 	}
-	memcpy(p + beg0, rp, rlen);
+	rp = RSTRING_PTR(repl);
+	memmove(p + beg0, rp, rlen);
 	len += rlen - plen;
 	STR_SET_LEN(str, len);
 	TERM_FILL(&RSTRING_PTR(str)[len], TERM_LEN(str));
@@ -6374,6 +6397,23 @@ typedef struct mapping_buffer {
     OnigUChar space[1];
 } mapping_buffer;
 
+static void
+mapping_buffer_free(void *p)
+{
+    mapping_buffer *previous_buffer;
+    mapping_buffer *current_buffer = p;
+    while (current_buffer) {
+        previous_buffer = current_buffer;
+        current_buffer  = current_buffer->next;
+        ruby_sized_xfree(previous_buffer, previous_buffer->capa);
+    }
+}
+
+static const rb_data_type_t mapping_buffer_type = {
+    "mapping_buffer",
+    {0, mapping_buffer_free,}
+};
+
 static VALUE
 rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 {
@@ -6381,8 +6421,9 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 
     OnigUChar *source_current, *source_end;
     int target_length = 0;
-    mapping_buffer pre_buffer, /* only next pointer used */
-		  *current_buffer = &pre_buffer;
+    VALUE buffer_anchor;
+    mapping_buffer *current_buffer = 0;
+    mapping_buffer **pre_buffer;
     size_t buffer_count = 0;
     int buffer_length_or_invalid;
 
@@ -6391,14 +6432,17 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     source_current = (OnigUChar*)RSTRING_PTR(source);
     source_end = (OnigUChar*)RSTRING_END(source);
 
+    buffer_anchor = TypedData_Wrap_Struct(0, &mapping_buffer_type, 0);
+    pre_buffer = (mapping_buffer **)&DATA_PTR(buffer_anchor);
     while (source_current < source_end) {
 	/* increase multiplier using buffer count to converge quickly */
 	size_t capa = (size_t)(source_end-source_current)*++buffer_count + CASE_MAPPING_ADDITIONAL_LENGTH;
 	if (CASEMAP_DEBUG) {
 	    fprintf(stderr, "Buffer allocation, capa is %"PRIuSIZE"\n", capa); /* for tuning */
 	}
-	current_buffer->next = xmalloc(offsetof(mapping_buffer, space) + capa);
-	current_buffer = current_buffer->next;
+        current_buffer = xmalloc(offsetof(mapping_buffer, space) + capa);
+        *pre_buffer = current_buffer;
+        pre_buffer = &current_buffer->next;
 	current_buffer->next = NULL;
 	current_buffer->capa = capa;
 	buffer_length_or_invalid = enc->case_map(flags,
@@ -6407,14 +6451,9 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 				   current_buffer->space+current_buffer->capa,
 				   enc);
 	if (buffer_length_or_invalid < 0) {
-	    mapping_buffer *previous_buffer;
-
-	    current_buffer = pre_buffer.next;
-	    while (current_buffer) {
-		previous_buffer = current_buffer;
-		current_buffer  = current_buffer->next;
-		xfree(previous_buffer);
-	    }
+            current_buffer = DATA_PTR(buffer_anchor);
+            DATA_PTR(buffer_anchor) = 0;
+	    mapping_buffer_free(current_buffer);
 	    rb_raise(rb_eArgError, "input string invalid");
 	}
 	target_length  += current_buffer->used = buffer_length_or_invalid;
@@ -6425,23 +6464,22 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 
     if (buffer_count==1) {
 	target = rb_str_new_with_class(source, (const char*)current_buffer->space, target_length);
-	xfree(current_buffer);
     }
     else {
 	char *target_current;
-	mapping_buffer *previous_buffer;
 
 	target = rb_str_new_with_class(source, 0, target_length);
 	target_current = RSTRING_PTR(target);
-	current_buffer=pre_buffer.next;
+	current_buffer = DATA_PTR(buffer_anchor);
 	while (current_buffer) {
 	    memcpy(target_current, current_buffer->space, current_buffer->used);
 	    target_current += current_buffer->used;
-	    previous_buffer = current_buffer;
 	    current_buffer  = current_buffer->next;
-	    xfree(previous_buffer);
 	}
     }
+    current_buffer = DATA_PTR(buffer_anchor);
+    DATA_PTR(buffer_anchor) = 0;
+    mapping_buffer_free(current_buffer);
 
     /* TODO: check about string terminator character */
     OBJ_INFECT_RAW(target, source);
