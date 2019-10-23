@@ -28,44 +28,16 @@ if [ -z "$tests" ]; then
   tests=$(find 'test/' -name 'test_*.rb' -and -not -path '*-ext-*' | sort)
 fi
 
-pass=0
-fail=0
-skip=0
-total=0
-
 excludes="--excludes-dir=test/excludes/"
 excludes="$excludes --excludes-dir=${excludedir}/any/"
 excludes="$excludes --excludes-dir=${excludedir}/$(dpkg-architecture -qDEB_HOST_ARCH)/"
 excludes="$excludes --excludes-dir=${excludedir}/autopkgtest/"
 
+run_tests=''
 for t in $tests; do
-  if grep -q "^$t$" "$skiplist"; then
-    echo "SKIP $t"
-    skip=$(($skip + 1))
-  elif ruby2.5 test/runner.rb -v $excludes --name='!/memory_leak/' $t >log 2>&1; then
-    echo "PASS $t"
-    pass=$(($pass + 1))
-    total=$(($total + 1))
-  else
-    fail=$(($fail + 1))
-    total=$(($total + 1))
-    echo "FAIL $t"
-    echo "FAIL $t" | sed -e 's/./-/g'
-    echo
-    cat log
+  if ! grep -q "^$t$" "$skiplist"; then
+    run_tests="$run_tests $t"
   fi
 done
-rm -f log
 
-echo
-echo "Finished"
-echo '--------'
-echo "   Tests executed: $(($total))"
-echo "             PASS: $pass"
-echo "             FAIL: $fail"
-echo "             SKIP: $skip"
-echo
-
-if [ $fail -gt 0 ]; then
-  exit 1
-fi
+ruby2.5 test/runner.rb -v $excludes --name='!/memory_leak/' $run_tests
