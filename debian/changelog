@@ -1,4 +1,4 @@
-ruby2.5 (2.5.7-1) UNRELEASED; urgency=medium
+ruby2.5 (2.5.7-1) unstable; urgency=medium
 
   [ Utkarsh Gupta ]
   * Add salsa-ci.yml
@@ -6,8 +6,12 @@ ruby2.5 (2.5.7-1) UNRELEASED; urgency=medium
   [ Antonio Terceiro ]
   * New upstream version 2.5.7
   * Refresh patches
+  * autopkgtest: rework "expected failures" mechanism. We now just skip the
+    tests cases that are known to fail, and not load at all the test files
+    that fail to load. This will make the output in case of failures a lot
+    more clear.
 
- -- Antonio Terceiro <terceiro@debian.org>  Wed, 23 Oct 2019 11:14:23 -0300
+ -- Antonio Terceiro <terceiro@debian.org>  Wed, 23 Oct 2019 12:48:04 -0300
 
 ruby2.5 (2.5.5-4) unstable; urgency=medium
 
