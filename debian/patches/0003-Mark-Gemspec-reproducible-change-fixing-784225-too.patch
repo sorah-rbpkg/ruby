@@ -15,7 +15,7 @@ diff --git a/lib/rubygems/specification.rb b/lib/rubygems/specification.rb
 index 2560324..07fdd30 100644
 --- a/lib/rubygems/specification.rb
 +++ b/lib/rubygems/specification.rb
-@@ -1787,7 +1787,9 @@ def date= date
+@@ -1787,7 +1787,9 @@ class Gem::Specification < Gem::BasicSpecification
                  raise(Gem::InvalidSpecificationException,
                        "invalid date format in specification: #{date.inspect}")
                end

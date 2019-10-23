@@ -219,7 +219,7 @@ diff --git a/test/openssl/test_pair.rb b/test/openssl/test_pair.rb
 index d26aafa..08c15a0 100644
 --- a/test/openssl/test_pair.rb
 +++ b/test/openssl/test_pair.rb
-@@ -10,7 +10,7 @@ def setup
+@@ -10,7 +10,7 @@ module OpenSSL::SSLPairM
      ee_exts = [
        ["keyUsage", "keyEncipherment,digitalSignature", true],
      ]
@@ -228,7 +228,7 @@ index d26aafa..08c15a0 100644
      @svr_cert = issue_cert(svr_dn, @svr_key, 1, ee_exts, nil, nil)
    end
  
-@@ -23,7 +23,7 @@ def ssl_pair
+@@ -23,7 +23,7 @@ module OpenSSL::SSLPairM
        sctx = OpenSSL::SSL::SSLContext.new
        sctx.cert = @svr_cert
        sctx.key = @svr_key
@@ -237,7 +237,7 @@ index d26aafa..08c15a0 100644
        sctx.options |= OpenSSL::SSL::OP_NO_COMPRESSION
        ssls = OpenSSL::SSL::SSLServer.new(tcps, sctx)
        ns = ssls.accept
-@@ -397,7 +397,7 @@ def test_connect_accept_nonblock_no_exception
+@@ -397,7 +397,7 @@ module OpenSSL::TestPairM
      ctx2 = OpenSSL::SSL::SSLContext.new
      ctx2.cert = @svr_cert
      ctx2.key = @svr_key
@@ -246,7 +246,7 @@ index d26aafa..08c15a0 100644
  
      sock1, sock2 = tcp_pair
  
-@@ -445,7 +445,7 @@ def test_connect_accept_nonblock
+@@ -445,7 +445,7 @@ module OpenSSL::TestPairM
      ctx = OpenSSL::SSL::SSLContext.new
      ctx.cert = @svr_cert
      ctx.key = @svr_key
@@ -259,7 +259,7 @@ diff --git a/test/openssl/test_pkey_dh.rb b/test/openssl/test_pkey_dh.rb
 index 77cdb0a..8c8fbae 100644
 --- a/test/openssl/test_pkey_dh.rb
 +++ b/test/openssl/test_pkey_dh.rb
-@@ -19,7 +19,7 @@ def test_new_break
+@@ -19,7 +19,7 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
    end
  
    def test_DHparams
@@ -268,7 +268,7 @@ index 77cdb0a..8c8fbae 100644
      asn1 = OpenSSL::ASN1::Sequence([
        OpenSSL::ASN1::Integer(dh1024.p),
        OpenSSL::ASN1::Integer(dh1024.g)
-@@ -42,7 +42,7 @@ def test_DHparams
+@@ -42,7 +42,7 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
    end
  
    def test_public_key
@@ -277,7 +277,7 @@ index 77cdb0a..8c8fbae 100644
      public_key = dh.public_key
      assert_no_key(public_key) #implies public_key.public? is false!
      assert_equal(dh.to_der, public_key.to_der)
-@@ -50,14 +50,14 @@ def test_public_key
+@@ -50,14 +50,14 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
    end
  
    def test_generate_key
@@ -298,7 +298,7 @@ diff --git a/test/openssl/test_ssl.rb b/test/openssl/test_ssl.rb
 index 060c1f1..46570b8 100644
 --- a/test/openssl/test_ssl.rb
 +++ b/test/openssl/test_ssl.rb
-@@ -708,7 +708,7 @@ def socketpair
+@@ -708,7 +708,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
  
    def test_tlsext_hostname
      fooctx = OpenSSL::SSL::SSLContext.new
@@ -307,7 +307,7 @@ index 060c1f1..46570b8 100644
      fooctx.cert = @cli_cert
      fooctx.key = @cli_key
  
-@@ -760,7 +760,7 @@ def test_servername_cb_raises_an_exception_on_unknown_objects
+@@ -760,7 +760,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
      ctx2 = OpenSSL::SSL::SSLContext.new
      ctx2.cert = @svr_cert
      ctx2.key = @svr_key
@@ -316,7 +316,7 @@ index 060c1f1..46570b8 100644
      ctx2.servername_cb = lambda { |args| Object.new }
  
      sock1, sock2 = socketpair
-@@ -1140,7 +1140,7 @@ def test_alpn_protocol_selection_cancel
+@@ -1140,7 +1140,7 @@ if openssl?(1, 0, 2) || libressl?
      ctx1 = OpenSSL::SSL::SSLContext.new
      ctx1.cert = @svr_cert
      ctx1.key = @svr_key
@@ -325,7 +325,7 @@ index 060c1f1..46570b8 100644
      ctx1.alpn_select_cb = -> (protocols) { nil }
      ssl1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
  
-@@ -1382,20 +1382,21 @@ def test_fallback_scsv
+@@ -1382,20 +1382,21 @@ end
    def test_dh_callback
      pend "TLS 1.2 is not supported" unless tls12_supported?
  
@@ -353,7 +353,7 @@ diff --git a/test/openssl/utils.rb b/test/openssl/utils.rb
 index 6318246..1da3d8f 100644
 --- a/test/openssl/utils.rb
 +++ b/test/openssl/utils.rb
-@@ -42,10 +42,8 @@ module Fixtures
+@@ -42,10 +42,8 @@ module OpenSSL::TestUtils
  
      def pkey(name)
        OpenSSL::PKey.read(read_file("pkey", name))
@@ -379,7 +379,7 @@ index 6318246..1da3d8f 100644
      @ca  = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA")
      @svr = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
      @cli = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
-@@ -200,7 +198,7 @@ def start_server(verify_mode: OpenSSL::SSL::VERIFY_NONE, start_immediately: true
+@@ -200,7 +198,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
        ctx.cert_store = store
        ctx.cert = @svr_cert
        ctx.key = @svr_key

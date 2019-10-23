@@ -17,7 +17,7 @@ diff --git a/lib/mkmf.rb b/lib/mkmf.rb
 index 74b4228..ae77bb4 100644
 --- a/lib/mkmf.rb
 +++ b/lib/mkmf.rb
-@@ -2284,7 +2284,7 @@ def create_makefile(target, srcprefix = nil)
+@@ -2284,7 +2284,7 @@ LOCAL_LIBS = #{$LOCAL_LIBS}
  LIBS = #{$LIBRUBYARG} #{$libs} #{$LIBS}
  ORIG_SRCS = #{orig_srcs.collect(&File.method(:basename)).join(' ')}
  SRCS = $(ORIG_SRCS) #{(srcs - orig_srcs).collect(&File.method(:basename)).join(' ')}

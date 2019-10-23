@@ -16,7 +16,7 @@ diff --git a/ext/bigdecimal/bigdecimal.gemspec b/ext/bigdecimal/bigdecimal.gemsp
 index c8c9087..9cf22f7 100644
 --- a/ext/bigdecimal/bigdecimal.gemspec
 +++ b/ext/bigdecimal/bigdecimal.gemspec
-@@ -6,6 +6,7 @@
+@@ -6,6 +6,7 @@ Gem::Specification.new do |s|
    s.name          = "bigdecimal"
    s.version       = bigdecimal_version
    s.authors       = ["Kenta Murata", "Zachary Scott", "Shigeo Kobayashi"]
@@ -37,10 +37,10 @@ index b29f4ec..36ed213 100644
    spec.email         = ["aaron@tenderlovemaking.com", "hsbt@ruby-lang.org"]
  
 diff --git a/ext/io/console/io-console.gemspec b/ext/io/console/io-console.gemspec
-index 822d3eb..18d2887 100644
+index 3713d71..e70dcd6 100644
 --- a/ext/io/console/io-console.gemspec
 +++ b/ext/io/console/io-console.gemspec
-@@ -5,7 +5,7 @@
+@@ -5,7 +5,7 @@ date = %w$Date:: 2017-09-15 23:46:46 +0000#$[1]
  Gem::Specification.new do |s|
    s.name = "io-console"
    s.version = _VERSION
@@ -53,7 +53,7 @@ diff --git a/lib/ipaddr.gemspec b/lib/ipaddr.gemspec
 index 16df170..433e43b 100644
 --- a/lib/ipaddr.gemspec
 +++ b/lib/ipaddr.gemspec
-@@ -5,6 +5,7 @@
+@@ -5,6 +5,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
  Gem::Specification.new do |spec|
    spec.name          = "ipaddr"
    spec.version       = "1.2.0"
@@ -65,7 +65,7 @@ diff --git a/lib/rdoc/rdoc.gemspec b/lib/rdoc/rdoc.gemspec
 index 8c92908..0e6c0c7 100644
 --- a/lib/rdoc/rdoc.gemspec
 +++ b/lib/rdoc/rdoc.gemspec
-@@ -7,6 +7,7 @@
+@@ -7,6 +7,7 @@ end
  
  Gem::Specification.new do |s|
    s.name = "rdoc"
