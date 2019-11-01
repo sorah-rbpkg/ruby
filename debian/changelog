@@ -1,4 +1,4 @@
-ruby2.5 (2.7.0~preview2-1) UNRELEASED; urgency=medium
+ruby2.7 (2.7.0~preview2-1) UNRELEASED; urgency=medium
 
   [ Antonio Terceiro ]
   * New upstream version 2.5.7
@@ -7,8 +7,9 @@ ruby2.5 (2.7.0~preview2-1) UNRELEASED; urgency=medium
   [ Lucas Kanashiro ]
   * d/watch: track release 2.7.x
   * New upstream version 2.7.0~preview2
+  * Ruby 2.7
 
- -- Lucas Kanashiro <kanashiro@debian.org>  Fri, 01 Nov 2019 15:13:01 -0300
+ -- Lucas Kanashiro <kanashiro@debian.org>  Fri, 01 Nov 2019 15:16:03 -0300
 
 ruby2.5 (2.5.7-1) unstable; urgency=medium
 
