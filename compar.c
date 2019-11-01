@@ -2,7 +2,7 @@
 
   compar.c -
 
-  $Author: nobu $
+  $Author$
   created at: Thu Aug 26 14:39:48 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -11,6 +11,7 @@
 
 #include "ruby/ruby.h"
 #include "id.h"
+#include "internal.h"
 
 VALUE rb_mComparable;
 
@@ -95,7 +96,7 @@ cmpint(VALUE x, VALUE y)
  *     obj > other    -> true or false
  *
  *  Compares two objects based on the receiver's <code><=></code>
- *  method, returning true if it returns 1.
+ *  method, returning true if it returns a value greater than 0.
  */
 
 static VALUE
@@ -110,7 +111,7 @@ cmp_gt(VALUE x, VALUE y)
  *     obj >= other    -> true or false
  *
  *  Compares two objects based on the receiver's <code><=></code>
- *  method, returning true if it returns 0 or 1.
+ *  method, returning true if it returns a value greater than or equal to 0.
  */
 
 static VALUE
@@ -125,7 +126,7 @@ cmp_ge(VALUE x, VALUE y)
  *     obj < other    -> true or false
  *
  *  Compares two objects based on the receiver's <code><=></code>
- *  method, returning true if it returns -1.
+ *  method, returning true if it returns a value less than 0.
  */
 
 static VALUE
@@ -140,7 +141,7 @@ cmp_lt(VALUE x, VALUE y)
  *     obj <= other    -> true or false
  *
  *  Compares two objects based on the receiver's <code><=></code>
- *  method, returning true if it returns -1 or 0.
+ *  method, returning true if it returns a value less than or equal to 0.
  */
 
 static VALUE
@@ -154,9 +155,9 @@ cmp_le(VALUE x, VALUE y)
  *  call-seq:
  *     obj.between?(min, max)    -> true or false
  *
- *  Returns <code>false</code> if <i>obj</i> <code><=></code>
- *  <i>min</i> is less than zero or if <i>anObject</i> <code><=></code>
- *  <i>max</i> is greater than zero, <code>true</code> otherwise.
+ *  Returns <code>false</code> if _obj_ <code><=></code> _min_ is less
+ *  than zero or if _obj_ <code><=></code> _max_ is greater than zero,
+ *  <code>true</code> otherwise.
  *
  *     3.between?(1, 5)               #=> true
  *     6.between?(1, 5)               #=> false
@@ -176,24 +177,46 @@ cmp_between(VALUE x, VALUE min, VALUE max)
 /*
  *  call-seq:
  *     obj.clamp(min, max) ->  obj
+ *     obj.clamp(range)    ->  obj
  *
- * Returns <i>min</i> if <i>obj</i> <code><=></code> <i>min</i> is less
- * than zero, <i>max</i> if <i>obj</i> <code><=></code> <i>max</i> is
- * greater than zero and <i>obj</i> otherwise.
+ * In the first form, returns _min_ if _obj_ <code><=></code> _min_ is
+ * less than zero, _max_ if _obj_ <code><=></code> _max_ is greater
+ * than zero and _obj_ otherwise.  In the second form, clamps by
+ * _range.min_ and _range.max_.  If _range_ is an exclusive range,
+ * raises an ArgumentError.
  *
  *     12.clamp(0, 100)         #=> 12
  *     523.clamp(0, 100)        #=> 100
  *     -3.123.clamp(0, 100)     #=> 0
+ *     12.clamp(0..100)         #=> 12
+ *     523.clamp(0..100)        #=> 100
+ *     -3.123.clamp(0..100)     #=> 0
  *
  *     'd'.clamp('a', 'f')      #=> 'd'
  *     'z'.clamp('a', 'f')      #=> 'f'
+ *     'd'.clamp('a'..'f')      #=> 'd'
+ *     'z'.clamp('a'..'f')      #=> 'f'
+ *
+ *     12.clamp(0...100)        #=> ArgumentError
  */
 
 static VALUE
-cmp_clamp(VALUE x, VALUE min, VALUE max)
+cmp_clamp(int argc, VALUE *argv, VALUE x)
 {
+    VALUE min, max;
     int c;
 
+    if (rb_scan_args(argc, argv, "11", &min, &max) == 1) {
+        VALUE range = min;
+        int excl;
+        if (!rb_range_values(range, &min, &max, &excl)) {
+            rb_raise(rb_eTypeError, "wrong argument type %s (expected Range)",
+                     rb_builtin_class_name(range));
+        }
+        if (excl || NIL_P(min) || NIL_P(max)) {
+            rb_raise(rb_eArgError, "cannot clamp with an exclusive range");
+        }
+    }
     if (cmpint(min, max) > 0) {
 	rb_raise(rb_eArgError, "min argument must be smaller than max argument");
     }
@@ -207,16 +230,17 @@ cmp_clamp(VALUE x, VALUE min, VALUE max)
 }
 
 /*
- *  The <code>Comparable</code> mixin is used by classes whose objects
- *  may be ordered. The class must define the <code><=></code> operator,
- *  which compares the receiver against another object, returning -1, 0,
- *  or +1 depending on whether the receiver is less than, equal to, or
- *  greater than the other object. If the other object is not comparable
- *  then the <code><=></code> operator should return nil.
- *  <code>Comparable</code> uses
- *  <code><=></code> to implement the conventional comparison operators
- *  (<code><</code>, <code><=</code>, <code>==</code>, <code>>=</code>,
- *  and <code>></code>) and the method <code>between?</code>.
+ *  The Comparable mixin is used by classes whose objects may be
+ *  ordered. The class must define the <code><=></code> operator,
+ *  which compares the receiver against another object, returning
+ *  a value less than 0, 0, or a value greater than 0, depending on
+ *  whether the receiver is less than, equal to,
+ *  or greater than the other object. If the other object is not
+ *  comparable then the <code><=></code> operator should return +nil+.
+ *  Comparable uses <code><=></code> to implement the conventional
+ *  comparison operators (<code><</code>, <code><=</code>,
+ *  <code>==</code>, <code>>=</code>, and <code>></code>) and the
+ *  method <code>between?</code>.
  *
  *     class SizeMatters
  *       include Comparable
@@ -258,5 +282,5 @@ Init_Comparable(void)
     rb_define_method(rb_mComparable, "<", cmp_lt, 1);
     rb_define_method(rb_mComparable, "<=", cmp_le, 1);
     rb_define_method(rb_mComparable, "between?", cmp_between, 2);
-    rb_define_method(rb_mComparable, "clamp", cmp_clamp, 2);
+    rb_define_method(rb_mComparable, "clamp", cmp_clamp, -1);
 }

@@ -10,7 +10,7 @@
 # All rights reserved.  You can redistribute and/or modify it under the same
 # terms as Ruby.
 #
-#   $Id: set.rb 60881 2017-11-22 21:13:51Z stomar $
+#   $Id$
 #
 # == Overview
 #
@@ -424,6 +424,9 @@ class Set
     self if size != n
   end
 
+  # Equivalent to Set#select!
+  alias filter! select!
+
   # Merges the elements of the given enumerable object to the set and
   # returns self.
   def merge(enum)
@@ -524,7 +527,7 @@ class Set
     if @hash.respond_to?(:rehash)
       @hash.rehash # This should perform frozenness check.
     else
-      raise "can't modify frozen #{self.class.name}" if frozen?
+      raise FrozenError, "can't modify frozen #{self.class.name}" if frozen?
     end
     self
   end
@@ -801,7 +804,8 @@ class SortedSet < Set
 
   def initialize(*args, &block) # :nodoc:
     SortedSet.setup
-    initialize(*args, &block)
+    @keys = nil
+    super
   end
 end
 

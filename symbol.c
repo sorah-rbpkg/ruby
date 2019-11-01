@@ -9,8 +9,9 @@
 
 **********************************************************************/
 
-#include "internal.h"
+#include "ruby/encoding.h"
 #include "ruby/st.h"
+#include "internal.h"
 #include "symbol.h"
 #include "gc.h"
 #include "probes.h"
@@ -62,12 +63,8 @@ enum id_entry_type {
     ID_ENTRY_SIZE
 };
 
-static struct symbols {
-    rb_id_serial_t last_id;
-    st_table *str_sym;
-    VALUE ids;
-    VALUE dsymbol_fstr_hash;
-} global_symbols = {tNEXT_ID-1};
+rb_symbols_t ruby_global_symbols = {tNEXT_ID-1};
+#define global_symbols ruby_global_symbols
 
 static const struct st_hash_type symhash = {
     rb_str_hash_cmp,
@@ -201,10 +198,46 @@ rb_enc_symname_p(const char *name, rb_encoding *enc)
     return rb_enc_symname2_p(name, strlen(name), enc);
 }
 
+static int
+rb_sym_constant_char_p(const char *name, long nlen, rb_encoding *enc)
+{
+    int c, len;
+    const char *end = name + nlen;
+
+    if (nlen < 1) return FALSE;
+    if (ISASCII(*name)) return ISUPPER(*name);
+    c = rb_enc_precise_mbclen(name, end, enc);
+    if (!MBCLEN_CHARFOUND_P(c)) return FALSE;
+    len = MBCLEN_CHARFOUND_LEN(c);
+    c = rb_enc_mbc_to_codepoint(name, end, enc);
+    if (ONIGENC_IS_UNICODE(enc)) {
+	static int ctype_titlecase = 0;
+	if (rb_enc_isupper(c, enc)) return TRUE;
+	if (rb_enc_islower(c, enc)) return FALSE;
+	if (!ctype_titlecase) {
+	    static const UChar cname[] = "titlecaseletter";
+	    static const UChar *const end = cname + sizeof(cname) - 1;
+	    ctype_titlecase = ONIGENC_PROPERTY_NAME_TO_CTYPE(enc, cname, end);
+	}
+	if (rb_enc_isctype(c, ctype_titlecase, enc)) return TRUE;
+    }
+    else {
+	/* fallback to case-folding */
+	OnigUChar fold[ONIGENC_GET_CASE_FOLD_CODES_MAX_NUM];
+	const OnigUChar *beg = (const OnigUChar *)name;
+	int r = enc->mbc_case_fold(ONIGENC_CASE_FOLD,
+				   &beg, (const OnigUChar *)end,
+				   fold, enc);
+	if (r > 0 && (r != len || memcmp(fold, name, r)))
+	    return TRUE;
+    }
+    return FALSE;
+}
+
 #define IDSET_ATTRSET_FOR_SYNTAX ((1U<<ID_LOCAL)|(1U<<ID_CONST))
 #define IDSET_ATTRSET_FOR_INTERN (~(~0U<<(1<<ID_SCOPE_SHIFT)) & ~(1U<<ID_ATTRSET))
 
-static int
+int
 rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int allowed_attrset)
 {
     const char *m = name;
@@ -281,7 +314,7 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
 	break;
 
       default:
-	type = ISUPPER(*m) ? ID_CONST : ID_LOCAL;
+	type = rb_sym_constant_char_p(m, e-m, enc) ? ID_CONST : ID_LOCAL;
       id:
 	if (m >= e || (*m != '_' && !ISALPHA(*m) && ISASCII(*m))) {
 	    if (len > 1 && *(e-1) == '=') {
@@ -496,7 +529,7 @@ dsymbol_alloc(const VALUE klass, const VALUE str, rb_encoding * const enc, const
     const VALUE dsym = rb_newobj_of(klass, T_SYMBOL | FL_WB_PROTECTED);
     long hashval;
 
-    rb_enc_associate(dsym, enc);
+    rb_enc_set_index(dsym, rb_enc_to_index(enc));
     OBJ_FREEZE(dsym);
     RB_OBJ_WRITE(dsym, &RSYMBOL(dsym)->fstr, str);
     RSYMBOL(dsym)->id = type;
@@ -666,8 +699,8 @@ rb_gc_free_dsymbol(VALUE sym)
  *     str.intern   -> symbol
  *     str.to_sym   -> symbol
  *
- *  Returns the <code>Symbol</code> corresponding to <i>str</i>, creating the
- *  symbol if it did not previously exist. See <code>Symbol#id2name</code>.
+ *  Returns the Symbol corresponding to <i>str</i>, creating the
+ *  symbol if it did not previously exist. See Symbol#id2name.
  *
  *     "Koala".intern         #=> :Koala
  *     s = 'cat'.to_sym       #=> :cat
@@ -706,7 +739,8 @@ rb_str_intern(VALUE str)
 	enc = ascii;
     }
     else {
-	str = rb_str_new_frozen(str);
+        str = rb_str_dup(str);
+        OBJ_FREEZE(str);
     }
     str = rb_fstring(str);
     type = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
@@ -809,22 +843,6 @@ symbols_i(st_data_t key, st_data_t value, st_data_t arg)
     }
 
 }
-
-/*
- *  call-seq:
- *     Symbol.all_symbols    => array
- *
- *  Returns an array of all the symbols currently in Ruby's symbol
- *  table.
- *
- *     Symbol.all_symbols.size    #=> 903
- *     Symbol.all_symbols[1,20]   #=> [:floor, :ARGV, :Binding, :symlink,
- *                                     :chown, :EOFError, :$;, :String,
- *                                     :LOCK_SH, :"setuid?", :$<,
- *                                     :default_proc, :compact, :extend,
- *                                     :Tms, :getwd, :$=, :ThreadGroup,
- *                                     :wait2, :$>]
- */
 
 VALUE
 rb_sym_all_symbols(void)

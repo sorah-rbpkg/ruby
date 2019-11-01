@@ -187,6 +187,16 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_redefine_method('String', '<<', 'assert_equal "b", "a" << "b"')
   end
 
+  def test_fixnum_and
+    assert_equal 1, 1&3
+    assert_redefine_method('Integer', '&', 'assert_equal 3, 1&3')
+  end
+
+  def test_fixnum_or
+    assert_equal 3, 1|3
+    assert_redefine_method('Integer', '|', 'assert_equal 1, 3|1')
+  end
+
   def test_array_plus
     assert_equal [1,2], [1]+[2]
     assert_redefine_method('Array', '+', 'assert_equal [2], [1]+[2]')
@@ -262,7 +272,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     unless file
       loc, = caller_locations(1, 1)
       file = loc.path
-      line ||= loc.lineno
+      line ||= loc.lineno + 1
     end
     RubyVM::InstructionSequence.new("proc {|_|_.class_eval {#{src}}}",
                                     file, (path || file), line,
@@ -337,7 +347,7 @@ class TestRubyOptimization < Test::Unit::TestCase
   def test_tailcall_inhibited_by_rescue
     bug12082 = '[ruby-core:73871] [Bug #12082]'
 
-    tailcall("#{<<-"begin;"}\n#{<<~"end;"}")
+    EnvUtil.suppress_warning {tailcall("#{<<-"begin;"}\n#{<<~"end;"}")}
     begin;
       def to_be_rescued
         return do_raise
@@ -388,7 +398,7 @@ class TestRubyOptimization < Test::Unit::TestCase
         foo
       end;1
     end;
-    status, _err = EnvUtil.invoke_ruby([], "", true, true, {}) {
+    status, _err = EnvUtil.invoke_ruby([], "", true, true, **{}) {
       |in_p, out_p, err_p, pid|
       in_p.write(script)
       in_p.close
@@ -415,7 +425,7 @@ class TestRubyOptimization < Test::Unit::TestCase
   def test_tailcall_condition_block
     bug = '[ruby-core:78015] [Bug #12905]'
 
-    src = "#{<<-"begin;"}\n#{<<~"end;"}"
+    src = "#{<<-"begin;"}\n#{<<~"end;"}", __FILE__, nil, __LINE__+1
     begin;
       def run(current, final)
         if current < final
@@ -427,13 +437,13 @@ class TestRubyOptimization < Test::Unit::TestCase
     end;
 
     obj = Object.new
-    self.class.tailcall(obj.singleton_class, src, tailcall: false)
+    self.class.tailcall(obj.singleton_class, *src, tailcall: false)
     e = assert_raise(SystemStackError) {
       obj.run(1, Float::INFINITY)
     }
     level = e.backtrace_locations.size
     obj = Object.new
-    self.class.tailcall(obj.singleton_class, src, tailcall: true)
+    self.class.tailcall(obj.singleton_class, *src, tailcall: true)
     level *= 2
     mesg = message {"#{bug}: #{$!.backtrace_locations.size} / #{level} stack levels"}
     assert_nothing_raised(SystemStackError, mesg) {
@@ -557,12 +567,30 @@ class TestRubyOptimization < Test::Unit::TestCase
       when "1.8.0"..."1.8.8" then :bar
       end
     end;
-    iseq = RubyVM::InstructionSequence.compile(code)
-    insn = iseq.disasm
-    assert_match %r{putobject\s+#{Regexp.quote('"1.8.0"..."1.8.8"')}}, insn
-    assert_match %r{putobject\s+#{Regexp.quote('"2.0.0".."2.3.2"')}}, insn
-    assert_no_match(/putstring/, insn)
-    assert_no_match(/newrange/, insn)
+    [ true, false ].each do |opt|
+      iseq = RubyVM::InstructionSequence.compile(code,
+                                                 frozen_string_literal: opt)
+      insn = iseq.disasm
+      assert_match %r{putobject\s+#{Regexp.quote('"1.8.0"..."1.8.8"')}}, insn
+      assert_match %r{putobject\s+#{Regexp.quote('"2.0.0".."2.3.2"')}}, insn
+      assert_no_match(/putstring/, insn)
+      assert_no_match(/newrange/, insn)
+    end
+  end
+
+  def test_peephole_dstr
+    code = "#{<<~'begin;'}\n#{<<~'end;'}"
+    begin;
+      exp = -'a'
+      z = 'a'
+      [exp, -"#{z}"]
+    end;
+    [ false, true ].each do |fsl|
+      iseq = RubyVM::InstructionSequence.compile(code,
+                                                 frozen_string_literal: fsl)
+      assert_same(*iseq.eval,
+                  "[ruby-core:85542] [Bug #14475] fsl: #{fsl}")
+    end
   end
 
   def test_branch_condition_backquote
@@ -677,7 +705,7 @@ class TestRubyOptimization < Test::Unit::TestCase
         $SAFE = 1
         b.call
       end
-      assert_equal 0, foo{$SAFE}
+      assert_equal 1, foo{$SAFE}
     END
   end
 
@@ -689,7 +717,7 @@ class TestRubyOptimization < Test::Unit::TestCase
   end
 
   def test_clear_unreachable_keyword_args
-    assert_separately [], <<-END, timeout: 15
+    assert_separately [], <<-END, timeout: 60
       script =  <<-EOS
         if true
         else
@@ -723,6 +751,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     h = {}
     assert_equal(bug, eval('{ok: 42, **h}; bug'))
     assert_equal(:ok, eval('{ok: bug = :ok, **h}; bug'))
+    assert_empty(h)
   end
 
   def test_overwritten_blockparam
@@ -733,6 +762,18 @@ class TestRubyOptimization < Test::Unit::TestCase
       :ng
     end
     assert_equal(:ok, obj.a())
+  end
+
+  def test_blockparam_in_rescue
+    obj = Object.new
+    def obj.foo(&b)
+      raise
+    rescue
+      b.call
+    end
+    result = nil
+    assert_equal(42, obj.foo {result = 42})
+    assert_equal(42, result)
   end
 
   def test_unconditional_branch_to_leave_block
@@ -782,6 +823,21 @@ class TestRubyOptimization < Test::Unit::TestCase
       assert_raise(RuntimeError) {
         begin raise ensure nil if nil end
       }
+    end;
+  end
+
+  def test_optimized_rescue
+    assert_in_out_err("", "#{<<~"begin;"}\n#{<<~'end;'}", [], /END \(RuntimeError\)/)
+    begin;
+      if false
+        begin
+          require "some_mad_stuff"
+        rescue LoadError
+          puts "no mad stuff loaded"
+        end
+      end
+
+      raise  "END"
     end;
   end
 end

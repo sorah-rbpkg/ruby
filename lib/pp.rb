@@ -89,7 +89,7 @@ class PP < PrettyPrint
 
   # :stopdoc:
   def PP.mcall(obj, mod, meth, *args, &block)
-    mod.instance_method(meth).bind(obj).call(*args, &block)
+    mod.instance_method(meth).bind_call(obj, *args, &block)
   end
   # :startdoc:
 
@@ -174,7 +174,7 @@ class PP < PrettyPrint
     # A convenience method, like object_group, but also reformats the Object's
     # object_id.
     def object_address_group(obj, &block)
-      str = Kernel.instance_method(:to_s).bind(obj).call
+      str = Kernel.instance_method(:to_s).bind_call(obj)
       str.chomp!('>')
       group(1, str, '>', &block)
     end
@@ -279,9 +279,9 @@ class PP < PrettyPrint
     # This module provides predefined #pretty_print methods for some of
     # the most commonly used built-in classes for convenience.
     def pretty_print(q)
-      method_method = Object.instance_method(:method).bind(self)
+      umethod_method = Object.instance_method(:method)
       begin
-        inspect_method = method_method.call(:inspect)
+        inspect_method = umethod_method.bind_call(self, :inspect)
       rescue NameError
       end
       if inspect_method && inspect_method.owner != Kernel
@@ -318,7 +318,7 @@ class PP < PrettyPrint
     # However, doing this requires that every class that #inspect is called on
     # implement #pretty_print, or a RuntimeError will be raised.
     def pretty_print_inspect
-      if Object.instance_method(:method).bind(self).call(:pretty_print).owner == PP::ObjectMixin
+      if Object.instance_method(:method).bind_call(self, :pretty_print).owner == PP::ObjectMixin
         raise "pretty_print is not overridden for #{self.class}"
       end
       PP.singleline_pp(self, ''.dup)
@@ -386,7 +386,7 @@ class Range # :nodoc:
     q.breakable ''
     q.text(self.exclude_end? ? '...' : '..')
     q.breakable ''
-    q.pp self.end
+    q.pp self.end if self.end
   end
 end
 
@@ -510,6 +510,40 @@ class MatchData # :nodoc:
           q.pp self[i]
         end
       }
+    }
+  end
+end
+
+class RubyVM::AbstractSyntaxTree::Node
+  def pretty_print_children(q, names = [])
+    children.zip(names) do |c, n|
+      if n
+        q.breakable
+        q.text "#{n}:"
+      end
+      q.group(2) do
+        q.breakable
+        q.pp c
+      end
+    end
+  end
+
+  def pretty_print(q)
+    q.group(1, "(#{type}@#{first_lineno}:#{first_column}-#{last_lineno}:#{last_column}", ")") {
+      case type
+      when :SCOPE
+        pretty_print_children(q, %w"tbl args body")
+      when :ARGS
+        pretty_print_children(q, %w[pre_num pre_init opt first_post post_num post_init rest kw kwrest block])
+      when :DEFN
+        pretty_print_children(q, %w[mid body])
+      when :ARYPTN
+        pretty_print_children(q, %w[const pre rest post])
+      when :HSHPTN
+        pretty_print_children(q, %w[const kw kwrest])
+      else
+        pretty_print_children(q)
+      end
     }
   end
 end

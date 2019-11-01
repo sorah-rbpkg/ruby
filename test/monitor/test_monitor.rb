@@ -172,6 +172,8 @@ class TestMonitor < Test::Unit::TestCase
       assert @monitor.mon_locked?
       assert @monitor.mon_owned?
     end
+  ensure
+    th.join
   end
 
   def test_cond
@@ -268,5 +270,27 @@ class TestMonitor < Test::Unit::TestCase
 #       assert_equal("bar", d)
 #     end
 #     cumber_thread.kill
+  end
+
+  def test_wait_interruption
+    cond = @monitor.new_cond
+
+    th = Thread.start {
+      @monitor.synchronize do
+        begin
+          cond.wait(0.1)
+          @monitor.mon_owned?
+        rescue Interrupt
+          @monitor.mon_owned?
+        end
+      end
+    }
+    sleep(0.1)
+    th.raise(Interrupt)
+
+    begin
+      assert_equal true, th.value
+    rescue Interrupt
+    end
   end
 end

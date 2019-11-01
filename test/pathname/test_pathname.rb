@@ -291,9 +291,10 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def relative_path_from(dest_directory, base_directory)
-    Pathname.new(dest_directory).relative_path_from(Pathname.new(base_directory)).to_s
+    Pathname.new(dest_directory).relative_path_from(base_directory).to_s
   end
 
+  defassert(:relative_path_from, "../a", Pathname.new("a"), "b")
   defassert(:relative_path_from, "../a", "a", "b")
   defassert(:relative_path_from, "../a", "a", "b/")
   defassert(:relative_path_from, "../a", "a/", "b")
@@ -468,6 +469,12 @@ class TestPathname < Test::Unit::TestCase
 
   def test_initialize_nul
     assert_raise(ArgumentError) { Pathname.new("a\0") }
+  end
+
+  def test_global_constructor
+    p = Pathname.new('a')
+    assert_equal(p, Pathname('a'))
+    assert_same(p, Pathname(p))
   end
 
   class AnotherStringLike # :nodoc:
@@ -738,6 +745,14 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_readlines_opts
+    with_tmpchdir('rubytest-pathname') {|dir|
+      open("a", "w") {|f| f.puts 1, 2 }
+      a = Pathname("a").readlines 1, chomp: true
+      assert_equal(["1", "", "2", ""], a)
+    }
+  end
+
   def test_read
     with_tmpchdir('rubytest-pathname') {|dir|
       open("a", "w") {|f| f.puts 1, 2 }
@@ -762,10 +777,26 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_write_opts
+    with_tmpchdir('rubytest-pathname') {|dir|
+      path = Pathname("a")
+      path.write "abc", mode: "w"
+      assert_equal("abc", path.read)
+    }
+  end
+
   def test_binwrite
     with_tmpchdir('rubytest-pathname') {|dir|
       path = Pathname("a")
       path.binwrite "abc\x80"
+      assert_equal("abc\x80".b, path.binread)
+    }
+  end
+
+  def test_binwrite_opts
+    with_tmpchdir('rubytest-pathname') {|dir|
+      path = Pathname("a")
+      path.binwrite "abc\x80", mode: 'w'
       assert_equal("abc\x80".b, path.binread)
     }
   end
@@ -788,10 +819,21 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_birthtime
-    assert_kind_of(Time, Pathname(__FILE__).birthtime)
-  rescue NotImplementedError
-    assert_raise(NotImplementedError) do
-      File.birthtime(__FILE__)
+    skip if RUBY_PLATFORM =~ /android/
+    # Check under a (probably) local filesystem.
+    # Remote filesystems often may not support birthtime.
+    with_tmpchdir('rubytest-pathname') do |dir|
+      open("a", "w") {}
+      assert_kind_of(Time, Pathname("a").birthtime)
+    rescue Errno::EPERM
+      # Docker prohibits statx syscall by the default.
+      skip("statx(2) is prohibited by seccomp")
+    rescue Errno::ENOSYS
+      skip("statx(2) is not supported on this filesystem")
+    rescue NotImplementedError
+      # assert_raise(NotImplementedError) do
+      #   File.birthtime("a")
+      # end
     end
   end
 
@@ -911,15 +953,23 @@ class TestPathname < Test::Unit::TestCase
         assert_equal("abc", f.read)
       }
 
+      path.open(mode: "r") {|f|
+        assert_equal("abc", f.read)
+      }
+
       Pathname("b").open("w", 0444) {|f| f.write "def" }
       assert_equal(0444 & ~File.umask, File.stat("b").mode & 0777)
       assert_equal("def", File.read("b"))
 
-      Pathname("c").open("w", 0444, {}) {|f| f.write "ghi" }
+      Pathname("c").open("w", 0444, **{}) {|f| f.write "ghi" }
       assert_equal(0444 & ~File.umask, File.stat("c").mode & 0777)
       assert_equal("ghi", File.read("c"))
 
       g = path.open
+      assert_equal("abc", g.read)
+      g.close
+
+      g = path.open(mode: "r")
       assert_equal("abc", g.read)
       g.close
     }
@@ -1240,6 +1290,17 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_s_glob_3args
+    with_tmpchdir('rubytest-pathname') {|dir|
+      open("f", "w") {|f| f.write "abc" }
+      Dir.chdir("/") {
+        assert_equal(
+          [Pathname("."), Pathname(".."), Pathname("f")],
+          Pathname.glob("*", File::FNM_DOTMATCH, base: dir).sort)
+      }
+    }
+  end
+
   def test_s_getwd
     wd = Pathname.getwd
     assert_kind_of(Pathname, wd)
@@ -1412,6 +1473,8 @@ class TestPathname < Test::Unit::TestCase
       $SAFE = 1
       assert_equal("foo/bar", File.join(Pathname.new("foo"), Pathname.new("bar").taint))
     }.call
+  ensure
+    $SAFE = 0
   end
 
   def test_relative_path_from_casefold
@@ -1425,5 +1488,20 @@ class TestPathname < Test::Unit::TestCase
       bar = Pathname.new("b\u{e4}r".encode("ISO-8859-1"))
       assert_instance_of(Pathname, foo.relative_path_from(bar))
     end;
+  end
+
+  def test_relative_path_from_mock
+    assert_equal(
+      Pathname.new("../bar"),
+      Pathname.new("/foo/bar").relative_path_from(Pathname.new("/foo/baz")))
+    assert_equal(
+      Pathname.new("../bar"),
+      Pathname.new("/foo/bar").relative_path_from("/foo/baz"))
+    obj = Object.new
+    def obj.cleanpath() Pathname.new("/foo/baz") end
+    def obj.is_a?(m) m == Pathname end
+    assert_equal(
+      Pathname.new("../bar"),
+      Pathname.new("/foo/bar").relative_path_from(obj))
   end
 end

@@ -35,6 +35,34 @@ class TestVariable < Test::Unit::TestCase
     end
   end
 
+  def test_singleton_class_included_class_variable
+    c = Class.new
+    c.extend(Olympians)
+    assert_empty(c.singleton_class.class_variables)
+    assert_raise(NameError){ c.singleton_class.class_variable_get(:@@rule) }
+    c.class_variable_set(:@@foo, 1)
+    assert_equal([:@@foo], c.singleton_class.class_variables)
+    assert_equal(1, c.singleton_class.class_variable_get(:@@foo))
+    
+    c = Class.new
+    c.extend(Olympians)
+    sc = Class.new(c)
+    assert_empty(sc.singleton_class.class_variables)
+    assert_raise(NameError){ sc.singleton_class.class_variable_get(:@@rule) }
+    c.class_variable_set(:@@foo, 1)
+    assert_equal([:@@foo], sc.singleton_class.class_variables)
+    assert_equal(1, sc.singleton_class.class_variable_get(:@@foo))
+
+    c = Class.new
+    o = c.new
+    o.extend(Olympians)
+    assert_equal([:@@rule], o.singleton_class.class_variables)
+    assert_equal("Zeus", o.singleton_class.class_variable_get(:@@rule))
+    c.class_variable_set(:@@foo, 1)
+    assert_equal([:@@foo, :@@rule], o.singleton_class.class_variables.sort)
+    assert_equal(1, o.singleton_class.class_variable_get(:@@foo))
+  end
+
   def test_variable
     assert_instance_of(Integer, $$)
 
@@ -135,7 +163,7 @@ class TestVariable < Test::Unit::TestCase
   def test_special_constant_ivars
     [ true, false, :symbol, "dsym#{rand(9999)}".to_sym, 1, 1.0 ].each do |v|
       assert_empty v.instance_variables
-      msg = "can't modify frozen #{v.class}"
+      msg = "can't modify frozen #{v.class}: #{v.inspect}"
 
       assert_raise_with_message(FrozenError, msg) do
         v.instance_variable_set(:@foo, :bar)

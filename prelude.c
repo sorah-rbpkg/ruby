@@ -9,27 +9,24 @@
 #include "iseq.h"
 
 
+static const char prelude_name0[] = "<internal:prelude>";
 static const struct {
-  char L0[18];
-} prelude_name0 = {"<internal:prelude>"};
-static const struct {
-    char L0[495]; /* 1..130 */
-    char L130[258]; /* 131..156 */
+    char L0[499]; /* 1..134 */
+    char L134[443]; /* 135..224 */
 } prelude_code0 = {
 #line 1 "prelude.rb"
-"class Thread\n"
-"  MUTEX_FOR_THREAD_EXCLUSIVE = Thread::Mutex.new\n"/* :nodoc: */
-"  private_constant :MUTEX_FOR_THREAD_EXCLUSIVE\n"
-"\n"
+"class << Thread\n"
 "\n"/* call-seq: */
-"\n"/*    Thread.exclusive { block }   => obj */
+"\n"/*    Thread.exclusive { block }   -> obj */
 "\n"/*  */
 "\n"/* Wraps the block in a single, VM-global Mutex.synchronize, returning the */
 "\n"/* value of the block. A thread executing inside the exclusive section will */
 "\n"/* only block other threads which also use the Thread.exclusive mechanism. */
-"  def self.exclusive(&block)\n"
-"    warn \"Thread.exclusive is deprecated, use Thread::Mutex\", caller\n"
-"    MUTEX_FOR_THREAD_EXCLUSIVE.synchronize(&block)\n"
+"  def exclusive(&block) end if false\n"
+"  mutex = Mutex.new\n"/* :nodoc: */
+"  define_method(:exclusive) do |&block|\n"
+"    warn \"Thread.exclusive is deprecated, use Thread::Mutex\", uplevel: 1\n"
+"    mutex.synchronize(&block)\n"
 "  end\n"
 "end\n"
 "\n"
@@ -58,6 +55,10 @@ static const struct {
 "\n"/* read_nonblock. */
 "\n"/*  */
 "\n"/* read_nonblock causes EOFError on EOF. */
+"\n"/*  */
+"\n"/* On some platforms, such as Windows, non-blocking mode is not supported */
+"\n"/* on IO objects other than sockets. In such cases, Errno::EBADF will */
+"\n"/* be raised. */
 "\n"/*  */
 "\n"/* If the read byte buffer is not empty, */
 "\n"/* read_nonblock reads from the buffer like readpartial. */
@@ -147,15 +148,78 @@ static const struct {
 "\n"/* By specifying a keyword argument _exception_ to +false+, you can indicate */
 "\n"/* that write_nonblock should not raise an IO::WaitWritable exception, but */
 "\n"/* return the symbol +:wait_writable+ instead. */
-,
-#line 131 "prelude.rb"
 "  def write_nonblock(buf, exception: true)\n"
+,
+#line 135 "prelude.rb"
 "    __write_nonblock(buf, exception)\n"
 "  end\n"
 "end\n"
 "\n"
-"\n"/* :stopdoc: */
+"class TracePoint\n"
+"\n"/* call-seq: */
+"\n"/*    trace.enable(target: nil, target_line: nil, target_thread: nil)    -> true or false */
+"\n"/*    trace.enable(target: nil, target_line: nil, target_thread: nil) { block }  -> obj */
+"\n"/*  */
+"\n"/* Activates the trace. */
+"\n"/*  */
+"\n"/* Returns +true+ if trace was enabled. */
+"\n"/* Returns +false+ if trace was disabled. */
+"\n"/*  */
+"\n"/*   trace.enabled?  #=> false */
+"\n"/*   trace.enable    #=> false (previous state) */
+"\n"/*                   #   trace is enabled */
+"\n"/*   trace.enabled?  #=> true */
+"\n"/*   trace.enable    #=> true (previous state) */
+"\n"/*                   #   trace is still enabled */
+"\n"/*  */
+"\n"/* If a block is given, the trace will only be enabled within the scope of the */
+"\n"/* block. */
+"\n"/*  */
+"\n"/*    trace.enabled? */
+"\n"/*    #=> false */
+"\n"/*  */
+"\n"/*    trace.enable do */
+"\n"/*      trace.enabled? */
+"\n"/*      # only enabled for this block */
+"\n"/*    end */
+"\n"/*  */
+"\n"/*    trace.enabled? */
+"\n"/*    #=> false */
+"\n"/*  */
+"\n"/* +target+, +target_line+ and +target_thread+ parameters are used to */
+"\n"/* limit tracing only to specified code objects. +target+ should be a */
+"\n"/* code object for which RubyVM::InstructionSequence.of will return */
+"\n"/* an instruction sequence. */
+"\n"/*  */
+"\n"/*    t = TracePoint.new(:line) { |tp| p tp } */
+"\n"/*  */
+"\n"/*    def m1 */
+"\n"/*      p 1 */
+"\n"/*    end */
+"\n"/*  */
+"\n"/*    def m2 */
+"\n"/*      p 2 */
+"\n"/*    end */
+"\n"/*  */
+"\n"/*    t.enable(target: method(:m1)) */
+"\n"/*  */
+"\n"/*    m1 */
+"\n"/*    # prints #<TracePoint:line@test.rb:5 in `m1'> */
+"\n"/*    m2 */
+"\n"/*    # prints nothing */
+"\n"/*  */
+"\n"/* Note: You cannot access event hooks within the +enable+ block. */
+"\n"/*  */
+"\n"/*    trace.enable { p tp.lineno } */
+"\n"/*    #=> RuntimeError: access from outside */
+"\n"/*  */
+"  def enable target: nil, target_line: nil, target_thread: nil, &blk\n"
+"    self.__enable target, target_line, target_thread, &blk\n"
+"  end\n"
+"end\n"
+"\n"
 "class Binding\n"
+"\n"/* :nodoc: */
 "  def irb\n"
 "    require 'irb'\n"
 "    irb\n"
@@ -173,13 +237,13 @@ static const struct {
 "\n"
 "\n"/* suppress redefinition warning */
 "  alias pp pp\n"/* :nodoc: */
+"\n"
+"  private :pp\n"
 "end\n"
-#line 178 "prelude.c"
+#line 244 "prelude.c"
 };
 
-static const struct {
-  char L0[22];
-} prelude_name1 = {"<internal:gem_prelude>"};
+static const char prelude_name1[] = "<internal:gem_prelude>";
 static const struct {
     char L0[168]; /* 1..9 */
 } prelude_code1 = {
@@ -192,14 +256,15 @@ static const struct {
 "  rescue Gem::LoadError, LoadError\n"
 "  end if defined?(DidYouMean)\n"
 "end\n"
-#line 196 "prelude.c"
+#line 260 "prelude.c"
 };
 
 
-#define PRELUDE_STR(n) rb_usascii_str_new_static(prelude_##n.L0, sizeof(prelude_##n))
-#ifdef __GNUC__
-# pragma GCC diagnostic push
-# pragma GCC diagnostic error "-Wmissing-field-initializers"
+#define PRELUDE_NAME(n) rb_usascii_str_new_static(prelude_name##n, sizeof(prelude_name##n)-1)
+#define PRELUDE_CODE(n) rb_utf8_str_new_static(prelude_code##n.L0, sizeof(prelude_code##n))
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(4, 2, 0)
+COMPILER_WARNING_ERROR(-Wmissing-field-initializers)
 #endif
 static void
 prelude_eval(VALUE code, VALUE name, int line)
@@ -207,7 +272,7 @@ prelude_eval(VALUE code, VALUE name, int line)
     static const rb_compile_option_t optimization = {
 	TRUE, /* int inline_const_cache; */
 	TRUE, /* int peephole_optimization; */
-	TRUE, /* int tailcall_optimization; */
+	FALSE,/* int tailcall_optimization; */
 	TRUE, /* int specialized_instruction; */
 	TRUE, /* int operands_unification; */
 	TRUE, /* int instructions_unification; */
@@ -219,23 +284,21 @@ prelude_eval(VALUE code, VALUE name, int line)
     };
 
     rb_ast_t *ast = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
-    if (!ast->root) {
+    if (!ast->body.root) {
 	rb_ast_dispose(ast);
 	rb_exc_raise(rb_errinfo());
     }
-    rb_iseq_eval(rb_iseq_new_with_opt(ast->root, name, name, Qnil, INT2FIX(line),
+    rb_iseq_eval(rb_iseq_new_with_opt(&ast->body, name, name, Qnil, INT2FIX(line),
 				      NULL, ISEQ_TYPE_TOP, &optimization));
     rb_ast_dispose(ast);
 }
-#ifdef __GNUC__
-# pragma GCC diagnostic pop
-#endif
+COMPILER_WARNING_POP
 
 void
 Init_prelude(void)
 {
-    prelude_eval(PRELUDE_STR(code0), PRELUDE_STR(name0), 1);
-    prelude_eval(PRELUDE_STR(code1), PRELUDE_STR(name1), 1);
+    prelude_eval(PRELUDE_CODE(0), PRELUDE_NAME(0), 1);
+    prelude_eval(PRELUDE_CODE(1), PRELUDE_NAME(1), 1);
 
 #if 0
     printf("%.*s", (int)sizeof(prelude_code0), prelude_code0.L0);

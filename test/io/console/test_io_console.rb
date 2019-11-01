@@ -7,6 +7,18 @@ rescue LoadError
 end
 
 class TestIO_Console < Test::Unit::TestCase
+  PATHS = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|/\w+\.rb)\z") {$`}
+  PATHS.uniq!
+
+  # FreeBSD seems to hang on TTOU when running parallel tests
+  # tested on FreeBSD 11.x
+  def set_winsize_setup
+    @old_ttou = trap(:TTOU, 'IGNORE') if RUBY_PLATFORM =~ /freebsd/i
+  end
+
+  def set_winsize_teardown
+    trap(:TTOU, @old_ttou) if defined?(@old_ttou) and @old_ttou
+  end
 end
 
 defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
@@ -127,22 +139,22 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       sleep 0.1
       s.print "b\n"
       sleep 0.1
-      assert_equal("a\r\nb\r\n", m.readpartial(10))
-      assert_equal("a\n", s.readpartial(10))
+      assert_equal("a\r\nb\r\n", m.gets + m.gets)
+      assert_equal("a\n", s.gets)
       s.noecho {
         assert_not_send([s, :echo?])
         m.print "a\n"
         s.print "b\n"
-        assert_equal("b\r\n", m.readpartial(10))
-        assert_equal("a\n", s.readpartial(10))
+        assert_equal("b\r\n", m.gets)
+        assert_equal("a\n", s.gets)
       }
       assert_send([s, :echo?])
       m.print "a\n"
       sleep 0.1
       s.print "b\n"
       sleep 0.1
-      assert_equal("a\r\nb\r\n", m.readpartial(10))
-      assert_equal("a\n", s.readpartial(10))
+      assert_equal("a\r\nb\r\n", m.gets + m.gets)
+      assert_equal("a\n", s.gets)
     }
   end
 
@@ -165,22 +177,22 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       sleep 0.1
       s.print "b\n"
       sleep 0.1
-      assert_equal("a\r\nb\r\n", m.readpartial(10))
-      assert_equal("a\n", s.readpartial(10))
+      assert_equal("a\r\nb\r\n", m.gets + m.gets)
+      assert_equal("a\n", s.gets)
       s.echo = false
       assert_not_send([s, :echo?])
       m.print "a\n"
       s.print "b\n"
-      assert_equal("b\r\n", m.readpartial(10))
-      assert_equal("a\n", s.readpartial(10))
+      assert_equal("b\r\n", m.gets)
+      assert_equal("a\n", s.gets)
       s.echo = true
       assert_send([s, :echo?])
       m.print "a\n"
       sleep 0.1
       s.print "b\n"
       sleep 0.1
-      assert_equal("a\r\nb\r\n", m.readpartial(10))
-      assert_equal("a\n", s.readpartial(10))
+      assert_equal("a\r\nb\r\n", m.gets + m.gets)
+      assert_equal("a\n", s.gets)
     }
   end
 
@@ -202,7 +214,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       s.iflush
       m.print "b\n"
       m.flush
-      assert_equal("b\n", s.readpartial(10))
+      assert_equal("b\n", s.gets)
     }
   end
 
@@ -212,6 +224,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       s.oflush # oflush may be issued after "a" is already sent.
       s.print "b"
       s.flush
+      sleep 0.1
       assert_include(["b", "ab"], m.readpartial(10))
     }
   end
@@ -222,7 +235,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       s.ioflush
       m.print "b\n"
       m.flush
-      assert_equal("b\n", s.readpartial(10))
+      assert_equal("b\n", s.gets)
     }
   end
 
@@ -254,6 +267,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 
   def test_set_winsize_invalid_dev
+    set_winsize_setup
     [IO::NULL, __FILE__].each do |path|
       open(path) do |io|
         begin
@@ -265,6 +279,28 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
         end
         assert_raise(ArgumentError) {io.winsize = [0, 0, 0]}
       end
+    end
+  ensure
+    set_winsize_teardown
+  end
+
+  def test_cursor_position
+    run_pty("#{<<~"begin;"}\n#{<<~'end;'}") do |r, w, _|
+      begin;
+        con = IO.console
+        p con.cursor
+        con.cursor_down(3); con.puts
+        con.cursor_right(4); con.puts
+        con.cursor_left(2); con.puts
+        con.cursor_up(1); con.puts
+      end;
+      assert_equal("\e[6n", r.readpartial(5))
+      w.print("\e[12;34R"); w.flush
+      assert_equal([11, 33], eval(r.gets))
+      assert_equal("\e[3B", r.gets.chomp)
+      assert_equal("\e[4C", r.gets.chomp)
+      assert_equal("\e[2D", r.gets.chomp)
+      assert_equal("\e[1A", r.gets.chomp)
     end
   end
 
@@ -292,7 +328,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 
   def run_pty(src, n = 1)
-    r, w, pid = PTY.spawn(EnvUtil.rubybin, "-rio/console", "-e", src)
+    r, w, pid = PTY.spawn(EnvUtil.rubybin, "-I#{TestIO_Console::PATHS.join(File::PATH_SEPARATOR)}", "-rio/console", "-e", src)
   rescue RuntimeError
     skip $!
   else
@@ -321,6 +357,7 @@ defined?(IO.console) and TestIO_Console.class_eval do
     end
 
     def test_set_winsize_console
+      set_winsize_setup
       s = IO.console.winsize
       assert_nothing_raised(TypeError) {IO.console.winsize = s}
       bug = '[ruby-core:82741] [Bug #13888]'
@@ -328,6 +365,8 @@ defined?(IO.console) and TestIO_Console.class_eval do
       assert_equal([s[0], s[1]+1], IO.console.winsize, bug)
       IO.console.winsize = s
       assert_equal(s, IO.console.winsize, bug)
+    ensure
+      set_winsize_teardown
     end
 
     def test_close

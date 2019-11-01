@@ -166,13 +166,14 @@ class Resolv
   # Resolv::Hosts is a hostname resolver that uses the system hosts file.
 
   class Hosts
-    begin
-      raise LoadError unless /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
-      require 'win32/resolv'
-      DefaultFileName = Win32::Resolv.get_hosts_path
-    rescue LoadError
-      DefaultFileName = '/etc/hosts'
+    if /mswin|mingw|cygwin/ =~ RUBY_PLATFORM and
+      begin
+        require 'win32/resolv'
+        DefaultFileName = Win32::Resolv.get_hosts_path || IO::NULL
+      rescue LoadError
+      end
     end
+    DefaultFileName ||= '/etc/hosts'
 
     ##
     # Creates a new Resolv::Hosts, using +filename+ for its data source.
@@ -236,9 +237,7 @@ class Resolv
 
     def each_address(name, &proc)
       lazy_initialize
-      if @name2addr.include?(name)
-        @name2addr[name].each(&proc)
-      end
+      @name2addr[name]&.each(&proc)
     end
 
     ##
@@ -453,6 +452,8 @@ class Resolv
       case address
       when Name
         ptr = address
+      when IPv4, IPv6
+        ptr = address.to_name
       when IPv4::Regex
         ptr = IPv4.create(address).to_name
       when IPv6::Regex
@@ -513,10 +514,15 @@ class Resolv
 
     def fetch_resource(name, typeclass)
       lazy_initialize
-      requester = make_udp_requester
+      begin
+        requester = make_udp_requester
+      rescue Errno::EACCES
+        # fall back to TCP
+      end
       senders = {}
       begin
         @config.resolv(name) {|candidate, tout, nameserver, port|
+          requester ||= make_tcp_requester(nameserver, port)
           msg = Message.new
           msg.rd = 1
           msg.add_question(candidate, typeclass)
@@ -549,7 +555,7 @@ class Resolv
           end
         }
       ensure
-        requester.close
+        requester&.close
       end
     end
 
@@ -611,16 +617,6 @@ class Resolv
       end
     end
 
-
-    def self.rangerand(range) # :nodoc:
-      base = range.begin
-      len = range.end - range.begin
-      if !range.exclude_end?
-        len += 1
-      end
-      base + random(len)
-    end
-
     RequestID = {} # :nodoc:
     RequestIDMutex = Thread::Mutex.new # :nodoc:
 
@@ -629,7 +625,7 @@ class Resolv
       RequestIDMutex.synchronize {
         h = (RequestID[[host, port]] ||= {})
         begin
-          id = rangerand(0x0000..0xffff)
+          id = random(0x0000..0xffff)
         end while h[id]
         h[id] = true
       }
@@ -650,7 +646,7 @@ class Resolv
 
     def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
       begin
-        port = rangerand(1024..65535)
+        port = random(1024..65535)
         udpsock.bind(bind_host, port)
       rescue Errno::EADDRINUSE, # POSIX
              Errno::EACCES, # SunOS: See PRIV_SYS_NFS in privileges(5)
@@ -2540,7 +2536,7 @@ class Resolv
     attr_reader :address
 
     def to_s # :nodoc:
-      address = sprintf("%X:%X:%X:%X:%X:%X:%X:%X", *@address.unpack("nnnnnnnn"))
+      address = sprintf("%x:%x:%x:%x:%x:%x:%x:%x", *@address.unpack("nnnnnnnn"))
       unless address.sub!(/(^|:)0(:0)+(:|$)/, '::')
         address.sub!(/(^|:)0(:|$)/, '::')
       end
@@ -2639,7 +2635,7 @@ class Resolv
     def each_address(name)
       name = Resolv::DNS::Name.create(name)
 
-      return unless name.to_a.last.to_s == 'local'
+      return unless name[-1].to_s == 'local'
 
       super(name)
     end
