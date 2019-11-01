@@ -189,6 +189,20 @@ replace_to_long_name(wchar_t **wfullpath, size_t size, size_t buffer_size)
 	pos--;
     }
 
+    if ((pos >= *wfullpath + 2) &&
+        (*wfullpath)[0] == L'\\' && (*wfullpath)[1] == L'\\') {
+        /* UNC path: no short file name, and needs Network Share
+         * Management functions instead of FindFirstFile. */
+        if (pos == *wfullpath + 2) {
+            /* //host only */
+            return size;
+        }
+        if (!wmemchr(*wfullpath + 2, L'\\', pos - *wfullpath - 2)) {
+            /* //host/share only */
+            return size;
+        }
+    }
+
     find_handle = FindFirstFileW(*wfullpath, &find_data);
     if (find_handle != INVALID_HANDLE_VALUE) {
 	size_t trail_pos = pos - *wfullpath + IS_DIR_SEPARATOR_P(*pos);
@@ -264,7 +278,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     size_t size = 0, whome_len = 0;
     size_t buffer_len = 0;
     long wpath_len = 0, wdir_len = 0;
-    char *fullpath = NULL;
     wchar_t *wfullpath = NULL, *wpath = NULL, *wpath_pos = NULL;
     wchar_t *wdir = NULL, *wdir_pos = NULL;
     wchar_t *whome = NULL, *buffer = NULL, *buffer_pos = NULL;
@@ -596,9 +609,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
     if (wfullpath != wfullpath_buffer)
 	xfree(wfullpath);
-
-    if (fullpath)
-	xfree(fullpath);
 
     rb_enc_associate(result, path_encoding);
     return result;

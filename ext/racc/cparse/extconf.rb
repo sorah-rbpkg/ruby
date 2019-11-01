@@ -1,6 +1,8 @@
 # frozen_string_literal: false
-# $Id: extconf.rb 53143 2015-12-16 05:31:54Z naruse $
+# $Id$
 
 require 'mkmf'
-have_func('rb_block_call', 'ruby/ruby.h')
+
+have_func('rb_ary_subseq')
+
 create_makefile 'racc/cparse'

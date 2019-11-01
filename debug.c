@@ -2,7 +2,7 @@
 
   debug.c -
 
-  $Author: nobu $
+  $Author$
   created at: 04/08/25 02:31:54 JST
 
   Copyright (C) 2004-2007 Koichi Sasada
@@ -11,6 +11,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
+#include "ruby/io.h"
 #include "ruby/util.h"
 #include "vm_debug.h"
 #include "eval_intern.h"

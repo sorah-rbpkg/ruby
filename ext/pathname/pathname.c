@@ -368,10 +368,10 @@ path_each_line(int argc, VALUE *argv, VALUE self)
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
     if (rb_block_given_p()) {
-        return rb_block_call(rb_cIO, id_foreach, 1+n, args, 0, 0);
+        return rb_block_call(rb_cFile, id_foreach, 1+n, args, 0, 0);
     }
     else {
-        return rb_funcallv(rb_cIO, id_foreach, 1+n, args);
+        return rb_funcallv(rb_cFile, id_foreach, 1+n, args);
     }
 }
 
@@ -382,7 +382,7 @@ path_each_line(int argc, VALUE *argv, VALUE self)
  *
  * Returns all data from the file, or the first +N+ bytes if specified.
  *
- * See IO.read.
+ * See File.read.
  *
  */
 static VALUE
@@ -393,7 +393,7 @@ path_read(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcallv(rb_cIO, id_read, 1+n, args);
+    return rb_funcallv_kw(rb_cFile, id_read, 1+n, args, RB_PASS_CALLED_KEYWORDS);
 }
 
 /*
@@ -402,7 +402,7 @@ path_read(int argc, VALUE *argv, VALUE self)
  *
  * Returns all the bytes from the file, or the first +N+ if specified.
  *
- * See IO.binread.
+ * See File.binread.
  *
  */
 static VALUE
@@ -413,7 +413,7 @@ path_binread(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "02", &args[1], &args[2]);
-    return rb_funcallv(rb_cIO, id_binread, 1+n, args);
+    return rb_funcallv(rb_cFile, id_binread, 1+n, args);
 }
 
 /*
@@ -423,7 +423,7 @@ path_binread(int argc, VALUE *argv, VALUE self)
  *
  * Writes +contents+ to the file.
  *
- * See IO.write.
+ * See File.write.
  *
  */
 static VALUE
@@ -434,7 +434,7 @@ path_write(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcallv(rb_cIO, id_write, 1+n, args);
+    return rb_funcallv_kw(rb_cFile, id_write, 1+n, args, RB_PASS_CALLED_KEYWORDS);
 }
 
 /*
@@ -444,7 +444,7 @@ path_write(int argc, VALUE *argv, VALUE self)
  *
  * Writes +contents+ to the file, opening it in binary mode.
  *
- * See IO.binwrite.
+ * See File.binwrite.
  *
  */
 static VALUE
@@ -455,7 +455,7 @@ path_binwrite(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcallv(rb_cIO, id_binwrite, 1+n, args);
+    return rb_funcallv_kw(rb_cFile, id_binwrite, 1+n, args, RB_PASS_CALLED_KEYWORDS);
 }
 
 /*
@@ -466,7 +466,7 @@ path_binwrite(int argc, VALUE *argv, VALUE self)
  *
  * Returns all the lines from the file.
  *
- * See IO.readlines.
+ * See File.readlines.
  *
  */
 static VALUE
@@ -477,7 +477,7 @@ path_readlines(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcallv(rb_cIO, id_readlines, 1+n, args);
+    return rb_funcallv_kw(rb_cFile, id_readlines, 1+n, args, RB_PASS_CALLED_KEYWORDS);
 }
 
 /*
@@ -512,7 +512,7 @@ path_atime(VALUE self)
     return rb_funcall(rb_cFile, id_atime, 1, get_strpath(self));
 }
 
-#if defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) || defined(_WIN32)
+#if defined(HAVE_RB_FILE_S_BIRTHTIME)
 /*
  * call-seq:
  *   pathname.birthtime	-> time
@@ -528,6 +528,7 @@ path_birthtime(VALUE self)
     return rb_funcall(rb_cFile, id_birthtime, 1, get_strpath(self));
 }
 #else
+/* check at compilation time for `respond_to?` */
 # define path_birthtime rb_f_notimplement
 #endif
 
@@ -677,10 +678,10 @@ path_open(int argc, VALUE *argv, VALUE self)
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
     if (rb_block_given_p()) {
-        return rb_block_call(rb_cFile, id_open, 1+n, args, 0, 0);
+        return rb_block_call_kw(rb_cFile, id_open, 1+n, args, 0, 0, RB_PASS_CALLED_KEYWORDS);
     }
     else {
-        return rb_funcallv(rb_cFile, id_open, 1+n, args);
+        return rb_funcallv_kw(rb_cFile, id_open, 1+n, args, RB_PASS_CALLED_KEYWORDS);
     }
 }
 
@@ -1091,17 +1092,17 @@ s_glob_i(RB_BLOCK_CALL_FUNC_ARGLIST(elt, klass))
 static VALUE
 path_s_glob(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE args[2];
+    VALUE args[3];
     int n;
 
-    n = rb_scan_args(argc, argv, "11", &args[0], &args[1]);
+    n = rb_scan_args(argc, argv, "12", &args[0], &args[1], &args[2]);
     if (rb_block_given_p()) {
-        return rb_block_call(rb_cDir, id_glob, n, args, s_glob_i, klass);
+        return rb_block_call_kw(rb_cDir, id_glob, n, args, s_glob_i, klass, RB_PASS_CALLED_KEYWORDS);
     }
     else {
         VALUE ary;
         long i;
-        ary = rb_funcallv(rb_cDir, id_glob, n, args);
+        ary = rb_funcallv_kw(rb_cDir, id_glob, n, args, RB_PASS_CALLED_KEYWORDS);
         ary = rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
         for (i = 0; i < RARRAY_LEN(ary); i++) {
             VALUE elt = RARRAY_AREF(ary, i);
@@ -1144,12 +1145,12 @@ path_glob(int argc, VALUE *argv, VALUE self)
     n = 3;
 
     if (rb_block_given_p()) {
-        return rb_block_call(rb_cDir, id_glob, n, args, glob_i, self);
+        return rb_block_call_kw(rb_cDir, id_glob, n, args, glob_i, self, RB_PASS_KEYWORDS);
     }
     else {
         VALUE ary;
         long i;
-        ary = rb_funcallv(rb_cDir, id_glob, n, args);
+        ary = rb_funcallv_kw(rb_cDir, id_glob, n, args, RB_PASS_KEYWORDS);
         ary = rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
         for (i = 0; i < RARRAY_LEN(ary); i++) {
             VALUE elt = RARRAY_AREF(ary, i);
@@ -1322,6 +1323,8 @@ path_unlink(VALUE self)
 static VALUE
 path_f_pathname(VALUE self, VALUE str)
 {
+    if (CLASS_OF(str) == rb_cPathname)
+        return str;
     return rb_class_new_instance(1, &str, rb_cPathname);
 }
 

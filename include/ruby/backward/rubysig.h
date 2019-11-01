@@ -2,8 +2,8 @@
 
   rubysig.h -
 
-  $Author: kosaki $
-  $Date: 2015-10-18 02:10:34 +0000 (Sun, 18 Oct 2015) $
+  $Author$
+  $Date$
   created at: Wed Aug 16 01:15:38 JST 1995
 
   Copyright (C) 1993-2008 Yukihiro Matsumoto

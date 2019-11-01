@@ -12,12 +12,12 @@
 # This program is free software. You can re-distribute and/or
 # modify this program under the same terms as Ruby itself.
 #
-# $Id: smtp.rb 59381 2017-07-20 23:34:03Z kazu $
+# $Id$
 #
 # See Net::SMTP for documentation.
 #
 
-require 'net/protocol'
+require_relative 'protocol'
 require 'digest/md5'
 require 'timeout'
 begin
@@ -38,7 +38,7 @@ module Net
     include SMTPError
   end
 
-  # Represents SMTP error code 420 or 450, a temporary error.
+  # Represents SMTP error code 4xx, a temporary error.
   class SMTPServerBusy < ProtoServerError
     include SMTPError
   end
@@ -169,7 +169,7 @@ module Net
   #
   class SMTP < Protocol
 
-    Revision = %q$Revision: 59381 $.split[1]
+    Revision = %q$Revision$.split[1]
 
     # The default SMTP port number, 25.
     def SMTP.default_port

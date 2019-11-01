@@ -335,7 +335,7 @@ class FTPTest < Test::Unit::TestCase
       sleep(0.1)
       sock.print("331 Please specify the password.\r\n")
       commands.push(sock.gets)
-      sleep(0.3)
+      sleep(2.0) # Net::ReadTimeout
       sock.print("230 Login successful.\r\n")
       commands.push(sock.gets)
       sleep(0.1)
@@ -344,7 +344,7 @@ class FTPTest < Test::Unit::TestCase
     begin
       begin
         ftp = Net::FTP.new
-        ftp.read_timeout = 0.2
+        ftp.read_timeout = 0.4
         ftp.connect(SERVER_ADDR, server.port)
         assert_raise(Net::ReadTimeout) do
           ftp.login
@@ -377,7 +377,7 @@ class FTPTest < Test::Unit::TestCase
     begin
       begin
         ftp = Net::FTP.new
-        ftp.read_timeout = 0.2
+        ftp.read_timeout = 1.0
         ftp.connect(SERVER_ADDR, server.port)
         ftp.login
         assert_match(/\AUSER /, commands.shift)
@@ -386,7 +386,7 @@ class FTPTest < Test::Unit::TestCase
         assert_equal(nil, commands.shift)
       ensure
         ftp.close
-        assert_equal(0.2, ftp.read_timeout)
+        assert_equal(1.0, ftp.read_timeout)
       end
     ensure
       server.close
@@ -530,6 +530,7 @@ class FTPTest < Test::Unit::TestCase
       sock.print("553 Requested action not taken.\r\n")
       commands.push(sock.gets)
       sock.print("200 Switching to Binary mode.\r\n")
+      [host, port]
     }
     begin
       begin
@@ -662,7 +663,7 @@ class FTPTest < Test::Unit::TestCase
       sock.print("150 Opening BINARY mode data connection for foo (#{binary_data.size} bytes)\r\n")
       conn = TCPSocket.new(host, port)
       binary_data.scan(/.{1,1024}/nm) do |s|
-        sleep(0.1)
+        sleep(0.2)
         conn.print(s)
       end
       conn.shutdown(Socket::SHUT_WR)
@@ -673,7 +674,7 @@ class FTPTest < Test::Unit::TestCase
     begin
       begin
         ftp = Net::FTP.new
-        ftp.read_timeout = 0.2
+        ftp.read_timeout = 1.0
         ftp.connect(SERVER_ADDR, server.port)
         ftp.login
         assert_match(/\AUSER /, commands.shift)
@@ -711,6 +712,7 @@ class FTPTest < Test::Unit::TestCase
       host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("550 Requested action not taken.\r\n")
+      [host, port]
     }
     begin
       begin
@@ -937,6 +939,7 @@ class FTPTest < Test::Unit::TestCase
       host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("452 Requested file action aborted.\r\n")
+      [host, port]
     }
     begin
       begin
@@ -1518,6 +1521,102 @@ EOF
         ftp.connect(SERVER_ADDR, server.port)
         assert_equal("UNIX Type: L8", ftp.system)
         assert_match("SYST\r\n", commands.shift)
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
+  def test_features
+    commands = []
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp).\r\n")
+      commands.push(sock.gets)
+      sock.print("211-Features\r\n")
+      sock.print(" LANG EN*\r\n")
+      sock.print(" UTF8\r\n")
+      sock.print("211 End\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.connect(SERVER_ADDR, server.port)
+        assert_equal(['LANG EN*', 'UTF8'], ftp.features)
+        assert_equal("FEAT\r\n", commands.shift)
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
+  def test_features_not_implemented
+    commands = []
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp).\r\n")
+      commands.push(sock.gets)
+      sock.print("502 Not Implemented\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.connect(SERVER_ADDR, server.port)
+        assert_raise(Net::FTPPermError) do
+          ftp.features
+        end
+        assert_equal("FEAT\r\n", commands.shift)
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+
+  end
+
+  def test_option
+    commands = []
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp)\r\n")
+      commands.push(sock.gets)
+      sock.print("200 OPTS UTF8 command successful\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.connect(SERVER_ADDR, server.port)
+        ftp.option("UTF8", "ON")
+        assert_equal("OPTS UTF8 ON\r\n", commands.shift)
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
+  def test_option_not_implemented
+    commands = []
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp)\r\n")
+      commands.push(sock.gets)
+      sock.print("502 Not implemented\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.connect(SERVER_ADDR, server.port)
+        assert_raise(Net::FTPPermError) do
+          ftp.option("UTF8", "ON")
+        end
+        assert_equal("OPTS UTF8 ON\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure
         ftp.close if ftp
@@ -2171,7 +2270,7 @@ EOF
           begin
             ftp = Net::FTP.new
             ftp.resume = resume
-            ftp.read_timeout = 0.2
+            ftp.read_timeout = RubyVM::MJIT.enabled? ? 5 : 0.2 # use large timeout for --jit-wait
             ftp.connect(SERVER_ADDR, server.port)
             ftp.login
             assert_match(/\AUSER /, commands.shift)

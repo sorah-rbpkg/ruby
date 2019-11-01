@@ -322,7 +322,7 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
       case SO_DONTROUTE:
       case SO_BROADCAST:
       case SO_OOBINLINE:
-        /* AIX doesn' set len for boolean options */
+        /* AIX doesn't set len for boolean options */
         len = sizeof(int);
     }
 #endif
@@ -672,7 +672,7 @@ bsock_recv_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str, VALUE ex)
  *   BasicSocket.do_not_reverse_lookup  #=> false
  */
 static VALUE
-bsock_do_not_rev_lookup(void)
+bsock_do_not_rev_lookup(VALUE _)
 {
     return rsock_do_not_reverse_lookup?Qtrue:Qfalse;
 }
