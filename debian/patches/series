@@ -1,11 +1,7 @@
 0001-rdoc-build-reproducible-documentation.patch
 0002-lib-mkmf.rb-sort-list-of-object-files-in-generated-M.patch
 0003-Mark-Gemspec-reproducible-change-fixing-784225-too.patch
-0004-Make-gemspecs-reproducible.patch
-0005-ia64-update-ia64-specific-code-to-use-execution-cont.patch
-0006-Fix-FTBFS-on-hurd.patch
-0007-Port-to-kfreebsd-amd64.patch
 0008-Disable-tests-failing-on-Ubuntu-builders.patch
-0009-test-test_pair-fix-deadlock-in-test_connect_accept_n.patch
-0010-test-use-larger-keys-for-SSL-tests.patch
-0011-ia64-Don-t-clear-register_stack_start.patch
+0005-Make-gemspecs-reproducible.patch
+0006-Fix-FTBS-on-hurd.patch
+0007-Port-to-kfreebsd-amd64.patch

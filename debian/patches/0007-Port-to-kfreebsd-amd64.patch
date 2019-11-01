@@ -1,5 +1,5 @@
-From: Svante Signell <svante.signell@gmail.com>
-Date: Sun, 10 Jun 2018 22:01:23 -0300
+From: Lucas Kanashiro <kanashiro@debian.org>
+Date: Fri, 1 Nov 2019 16:07:51 -0300
 Subject: Port to kfreebsd-amd64
 
 Closes: #899267
@@ -14,7 +14,7 @@ Signed-off-by: Svante Signell <svante.signell@gmail.com>
  4 files changed, 26 insertions(+), 2 deletions(-)
 
 diff --git a/ext/socket/option.c b/ext/socket/option.c
-index bf3af17..8fa2932 100644
+index 5ad44cd..87ddbc9 100644
 --- a/ext/socket/option.c
 +++ b/ext/socket/option.c
 @@ -10,6 +10,7 @@ VALUE rb_cSockOpt;
@@ -26,18 +26,18 @@ index bf3af17..8fa2932 100644
      defined(__APPLE__) || \
      defined(_WIN32) || \
 diff --git a/ext/socket/raddrinfo.c b/ext/socket/raddrinfo.c
-index dcabb20..595bb5f 100644
+index 0499b84..ae9470c 100644
 --- a/ext/socket/raddrinfo.c
 +++ b/ext/socket/raddrinfo.c
-@@ -1670,10 +1670,21 @@ addrinfo_mload(VALUE self, VALUE ary)
+@@ -1794,10 +1794,21 @@ addrinfo_mload(VALUE self, VALUE ary)
          INIT_SOCKADDR_UN(&uaddr, sizeof(struct sockaddr_un));
  
          StringValue(v);
 +#ifdef __FreeBSD_kernel__
-+	/* sys/un.h defines struct sockaddr_un as:
-+	   char sun_path[104];
-+	   char __sun_user_compat[4];
-+	*/
++       /* sys/un.h defines struct sockaddr_un as:
++          char sun_path[104];
++          char __sun_user_compat[4];
++       */
 +        if (sizeof(uaddr.sun_path) + 4 < (size_t)RSTRING_LEN(v))
 +            rb_raise(rb_eSocket,
 +                "too long AF_UNIX path (%"PRIuSIZE" bytes given but %"PRIuSIZE" bytes max)",
@@ -51,33 +51,33 @@ index dcabb20..595bb5f 100644
          memcpy(uaddr.sun_path, RSTRING_PTR(v), RSTRING_LEN(v));
          len = (socklen_t)sizeof(uaddr);
          memcpy(&ss, &uaddr, len);
-@@ -2319,10 +2330,21 @@ addrinfo_unix_path(VALUE self)
-     if (e < s)
+@@ -2442,10 +2453,21 @@ addrinfo_unix_path(VALUE self)
+     if (n < 0)
          rb_raise(rb_eSocket, "too short AF_UNIX address: %"PRIuSIZE" bytes given for minimum %"PRIuSIZE" bytes.",
-             (size_t)rai->sockaddr_len, (size_t)(s - (char *)addr));
+                  (size_t)rai->sockaddr_len, offsetof(struct sockaddr_un, sun_path));
 +#ifdef __FreeBSD_kernel__
-+	/* sys/un.h defines struct sockaddr_un as:
-+	   char sun_path[104];
-+	   char __sun_user_compat[4];
-+	*/
-+    if (addr->sun_path + sizeof(addr->sun_path) + 4 < e)
++       /* sys/un.h defines struct sockaddr_un as:
++          char sun_path[104];
++          char __sun_user_compat[4];
++       */
++    if ((long)sizeof(addr->sun_path) + 4 < n)
 +        rb_raise(rb_eSocket,
 +            "too long AF_UNIX path (%"PRIuSIZE" bytes given but %"PRIuSIZE" bytes max)",
-+            (size_t)(e - addr->sun_path), sizeof(addr->sun_path) + 4);
++            (size_t)n, sizeof(addr->sun_path) + 4);
 +#else
-     if (addr->sun_path + sizeof(addr->sun_path) < e)
+     if ((long)sizeof(addr->sun_path) < n)
          rb_raise(rb_eSocket,
              "too long AF_UNIX path (%"PRIuSIZE" bytes given but %"PRIuSIZE" bytes max)",
-             (size_t)(e - addr->sun_path), sizeof(addr->sun_path));
+             (size_t)n, sizeof(addr->sun_path));
 +#endif
-     while (s < e && *(e-1) == '\0')
-         e--;
-     return rb_str_new(s, e-s);
+     return rb_str_new(addr->sun_path, n);
+ }
+ #endif
 diff --git a/test/fiddle/test_handle.rb b/test/fiddle/test_handle.rb
-index 77559eb..040b16c 100644
+index c0fac39..3187800 100644
 --- a/test/fiddle/test_handle.rb
 +++ b/test/fiddle/test_handle.rb
-@@ -169,6 +169,7 @@ module Fiddle
+@@ -173,6 +173,7 @@ module Fiddle
      end unless /mswin|mingw/ =~ RUBY_PLATFORM
  
      def test_dlerror
@@ -85,7 +85,7 @@ index 77559eb..040b16c 100644
        # FreeBSD (at least 7.2 to 7.2) calls nsdispatch(3) when it calls
        # getaddrinfo(3). And nsdispatch(3) doesn't call dlerror(3) even if
        # it calls _nss_cache_cycle_prevention_function with dlsym(3).
-@@ -177,7 +178,7 @@ module Fiddle
+@@ -181,7 +182,7 @@ module Fiddle
        require 'socket'
        Socket.gethostbyname("localhost")
        Fiddle.dlopen("/lib/libc.so.7").sym('strcpy')
@@ -95,10 +95,10 @@ index 77559eb..040b16c 100644
      def test_no_memory_leak
        assert_no_memory_leak(%w[-W0 -rfiddle.so], '', '100_000.times {Fiddle::Handle.allocate}; GC.start', rss: true)
 diff --git a/test/socket/test_socket.rb b/test/socket/test_socket.rb
-index 126f789..f2d350d 100644
+index 3b2ea51..60a8b85 100644
 --- a/test/socket/test_socket.rb
 +++ b/test/socket/test_socket.rb
-@@ -507,7 +507,7 @@ class TestSocket < Test::Unit::TestCase
+@@ -521,7 +521,7 @@ class TestSocket < Test::Unit::TestCase
    end
  
    def test_bintime

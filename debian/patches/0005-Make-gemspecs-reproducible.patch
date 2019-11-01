@@ -1,5 +1,5 @@
-From: Antonio Terceiro <terceiro@debian.org>
-Date: Tue, 10 Oct 2017 15:08:43 -0300
+From: Lucas Kanashiro <kanashiro@debian.org>
+Date: Fri, 1 Nov 2019 15:25:17 -0300
 Subject: Make gemspecs reproducible
 
 Without an explicit date, they will get the current date and make the
@@ -13,7 +13,7 @@ build unreproducible
  5 files changed, 5 insertions(+), 1 deletion(-)
 
 diff --git a/ext/bigdecimal/bigdecimal.gemspec b/ext/bigdecimal/bigdecimal.gemspec
-index c8c9087..9cf22f7 100644
+index 53dbe91..78d23bb 100644
 --- a/ext/bigdecimal/bigdecimal.gemspec
 +++ b/ext/bigdecimal/bigdecimal.gemspec
 @@ -6,6 +6,7 @@ Gem::Specification.new do |s|
@@ -37,10 +37,10 @@ index b29f4ec..36ed213 100644
    spec.email         = ["aaron@tenderlovemaking.com", "hsbt@ruby-lang.org"]
  
 diff --git a/ext/io/console/io-console.gemspec b/ext/io/console/io-console.gemspec
-index 3713d71..e70dcd6 100644
+index eab5517..14bfcc1 100644
 --- a/ext/io/console/io-console.gemspec
 +++ b/ext/io/console/io-console.gemspec
-@@ -5,7 +5,7 @@ date = %w$Date:: 2017-09-15 23:46:46 +0000#$[1]
+@@ -5,7 +5,7 @@ date = %w$Date::                           $[1]
  Gem::Specification.new do |s|
    s.name = "io-console"
    s.version = _VERSION
@@ -50,19 +50,19 @@ index 3713d71..e70dcd6 100644
    s.email = "nobu@ruby-lang.org"
    s.description = "add console capabilities to IO instances."
 diff --git a/lib/ipaddr.gemspec b/lib/ipaddr.gemspec
-index 16df170..433e43b 100644
+index 2de9ef4..4f8072a 100644
 --- a/lib/ipaddr.gemspec
 +++ b/lib/ipaddr.gemspec
-@@ -5,6 +5,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+@@ -6,6 +6,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
  Gem::Specification.new do |spec|
    spec.name          = "ipaddr"
-   spec.version       = "1.2.0"
+   spec.version       = "1.2.2"
 +  spec.date          = RUBY_RELEASE_DATE
    spec.authors       = ["Akinori MUSHA", "Hajimu UMEMOTO"]
    spec.email         = ["knu@idaemons.org", "ume@mahoroba.org"]
  
 diff --git a/lib/rdoc/rdoc.gemspec b/lib/rdoc/rdoc.gemspec
-index 8c92908..0e6c0c7 100644
+index 9b274c7..eb7a47e 100644
 --- a/lib/rdoc/rdoc.gemspec
 +++ b/lib/rdoc/rdoc.gemspec
 @@ -7,6 +7,7 @@ end
@@ -71,5 +71,5 @@ index 8c92908..0e6c0c7 100644
    s.name = "rdoc"
 +  s.date = RUBY_RELEASE_DATE
    s.version = RDoc::VERSION
-   s.date = "2017-12-24"
  
+   s.authors = [

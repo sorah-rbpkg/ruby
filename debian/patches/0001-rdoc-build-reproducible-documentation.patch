@@ -13,10 +13,10 @@ Signed-off-by: Christian Hofstaedtler <zeha@debian.org>
  2 files changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/lib/rdoc/generator/json_index.rb b/lib/rdoc/generator/json_index.rb
-index e4cfe96..bcf5b00 100644
+index 3a10000..f40bb37 100644
 --- a/lib/rdoc/generator/json_index.rb
 +++ b/lib/rdoc/generator/json_index.rb
-@@ -175,7 +175,7 @@ class RDoc::Generator::JsonIndex
+@@ -178,7 +178,7 @@ class RDoc::Generator::JsonIndex
      debug_msg "Writing gzipped search index to %s" % outfile
  
      Zlib::GzipWriter.open(outfile) do |gz|
@@ -25,7 +25,7 @@ index e4cfe96..bcf5b00 100644
        gz.orig_name = search_index_file.basename.to_s
        gz.write search_index
        gz.close
-@@ -193,7 +193,7 @@ class RDoc::Generator::JsonIndex
+@@ -196,7 +196,7 @@ class RDoc::Generator::JsonIndex
          debug_msg "Writing gzipped file to %s" % outfile
  
          Zlib::GzipWriter.open(outfile) do |gz|
@@ -35,10 +35,10 @@ index e4cfe96..bcf5b00 100644
            gz.write data
            gz.close
 diff --git a/lib/rdoc/rdoc.rb b/lib/rdoc/rdoc.rb
-index 68775c8..9cc583f 100644
+index c60e017..368c9dc 100644
 --- a/lib/rdoc/rdoc.rb
 +++ b/lib/rdoc/rdoc.rb
-@@ -315,7 +315,7 @@ option)
+@@ -312,7 +312,7 @@ option)
        end
      end
  
