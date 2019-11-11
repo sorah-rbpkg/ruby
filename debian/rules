@@ -58,6 +58,9 @@ configure_options += $(shell dpkg-buildflags --export=configure)
 # Always build with /bin/bash, to get consistent rbconfig.rb (which embeds SHELL).
 export SHELL := /bin/bash
 
+# Some tests rely on $HOME
+export HOME := $(shell mktemp -d)
+
 %:
 	dh $@
 
