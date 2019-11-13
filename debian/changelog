@@ -1,4 +1,4 @@
-ruby2.7 (2.7.0~preview2-1) UNRELEASED; urgency=medium
+ruby2.7 (2.7.0~preview2-1~exp1) experimental; urgency=medium
 
   [ Antonio Terceiro ]
   * New upstream version 2.5.7
