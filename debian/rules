@@ -79,12 +79,15 @@ override_dh_auto_clean:
 override_dh_auto_build-arch:
 	dh_auto_build -- main V=1
 
+# see full list in common.mk (search for /^check:/)
+TEST_TARGETS := test test-tool test-all # missing test-spec
+
 excludes =
 excludes += --excludes-dir=debian/tests/excludes/any/
 excludes += --excludes-dir=debian/tests/excludes/$(DEB_HOST_ARCH)/
 override_dh_auto_test-arch:
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
-	$(MAKE) check V=1 RUBY_TESTOPTS=-v TESTS="$(excludes)" OPENSSL_CONF=/dev/null
+	$(MAKE) $(TEST_TARGETS) V=1 RUBY_TESTOPTS=-v TESTS="$(excludes)" OPENSSL_CONF=/dev/null
 endif
 
 override_dh_auto_install-arch:
