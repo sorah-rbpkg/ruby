@@ -8,8 +8,18 @@ ruby2.7 (2.7.0~preview2-1) UNRELEASED; urgency=medium
   * d/watch: track release 2.7.x
   * New upstream version 2.7.0~preview2
   * Ruby 2.7
+  * Update patches
+  * Exclude tests which fail due to ~ in version string
+  * debian/rules: define $HOME since some tests rely on it
 
- -- Lucas Kanashiro <kanashiro@debian.org>  Fri, 01 Nov 2019 15:16:03 -0300
+  [ Antonio Terceiro ]
+  * skip test-spec during build
+  * Update symbols file with new symbols in ruby 2.7
+
+  [ Lucas Kanashiro ]
+  * Add myself to Uploaders list
+
+ -- Lucas Kanashiro <kanashiro@debian.org>  Wed, 13 Nov 2019 20:40:21 -0300
 
 ruby2.5 (2.5.7-1) unstable; urgency=medium
 
