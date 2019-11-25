@@ -1,3 +1,20 @@
+ruby2.1 (2.1.5-2+deb8u8) jessie-security; urgency=medium
+
+  * Non-maintainer upload by the LTS Team. 
+  * CVE-2019-15845
+    path matching might pass in File.fnmatch and File.fnmatch? due
+    to a NUL character injection
+  * CVE-2019-16201
+    A loop caused by a wrong regular expression could lead to a denial
+    of service of a WEBrick service.
+  * CVE-2019-16254
+    This is the same issue as CVE-2017-17742, whose fix was not complete.
+  * CVE-2019-16255
+    Giving untrusted data to the first argument of Shell#[] and Shell#test
+    might lead to a code injection vulnerability.
+
+ -- Thorsten Alteholz <debian@alteholz.de>  Mon, 25 Nov 2019 19:03:02 +0100
+
 ruby2.1 (2.1.5-2+deb8u7) jessie-security; urgency=medium
 
   * Non-maintainer upload by the Debian LTS Team.
