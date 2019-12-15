@@ -1,0 +1,44 @@
+From: Nobuyoshi Nakada <nobu@ruby-lang.org>
+Date: Wed, 12 Dec 2018 14:38:09 +0900
+Subject: Fix for wrong fnmatch patttern
+Origin: https://github.com/ruby/ruby/commit/a0a2640b398cffd351f87d3f6243103add66575b
+Bug-Debian-Security: https://security-tracker.debian.org/tracker/CVE-2019-15845
+
+* dir.c (file_s_fnmatch): ensure that pattern does not contain a
+  NUL character.  https://hackerone.com/reports/449617
+---
+ dir.c                     | 2 +-
+ test/ruby/test_fnmatch.rb | 6 ++++++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/dir.c b/dir.c
+index 6d1f50192743..d20cf60a7f4e 100644
+--- a/dir.c
++++ b/dir.c
+@@ -3211,7 +3211,7 @@ file_s_fnmatch(int argc, VALUE *argv, VALUE obj)
+     else
+ 	flags = 0;
+ 
+-    StringValue(pattern);
++    StringValueCStr(pattern);
+     FilePathStringValue(path);
+ 
+     if (flags & FNM_EXTGLOB) {
+diff --git a/test/ruby/test_fnmatch.rb b/test/ruby/test_fnmatch.rb
+index f594a00ad3d6..16f1076e48cc 100644
+--- a/test/ruby/test_fnmatch.rb
++++ b/test/ruby/test_fnmatch.rb
+@@ -160,4 +160,10 @@ def test_unicode
+     assert_file.fnmatch("[a-\u3042]*", "\u3042")
+     assert_file.not_fnmatch("[a-\u3042]*", "\u3043")
+   end
++
++  def test_nullchar
++    assert_raise(ArgumentError) {
++      File.fnmatch("a\0z", "a")
++    }
++  end
+ end
+-- 
+2.20.1
+

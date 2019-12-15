@@ -1,0 +1,63 @@
+From: usa <usa@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
+Date: Tue, 1 Oct 2019 11:01:53 +0000
+Subject: lib/shell/command-processor.rb (Shell#[]): prevent unknown command
+Origin: https://github.com/ruby/ruby/commit/3af01ae1101e0b8815ae5a106be64b0e82a58640
+Bug-Debian-Security: https://security-tracker.debian.org/tracker/CVE-2019-16255
+
+`FileTest.send(command, ...)` allows to call not only FileTest-related
+methods but also any method that belongs to Kernel, Object, etc.
+patched by <mame@ruby-lang.org>
+
+
+git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/branches/ruby_2_5@67814 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+---
+ lib/shell/command-processor.rb       |  3 +++
+ test/shell/test_command_processor.rb | 18 ++++++++++++++++++
+ 2 files changed, 21 insertions(+)
+
+diff --git a/lib/shell/command-processor.rb b/lib/shell/command-processor.rb
+index b52cb0043f75..08ea5c874c12 100644
+--- a/lib/shell/command-processor.rb
++++ b/lib/shell/command-processor.rb
+@@ -180,6 +180,9 @@ def test(command, file1, file2=nil)
+             top_level_test(command, file1)
+           end
+         else
++          unless FileTest.methods(false).include?(command.to_sym)
++            raise "unsupported command: #{ command }"
++          end
+           if file2
+             FileTest.send(command, file1, file2)
+           else
+diff --git a/test/shell/test_command_processor.rb b/test/shell/test_command_processor.rb
+index 06b5ecc1d9b4..51e14b5a6954 100644
+--- a/test/shell/test_command_processor.rb
++++ b/test/shell/test_command_processor.rb
+@@ -67,6 +67,24 @@ def test_system_directory
+     Dir.rmdir(path)
+   end
+ 
++  def test_test
++    name = "foo#{exeext}"
++    path = File.join(@tmpdir, name)
++    open(path, "w", 0644) {}
++
++    assert_equal(true, @shell[?e, path])
++    assert_equal(true, @shell[:e, path])
++    assert_equal(true, @shell["e", path])
++    assert_equal(true, @shell[:exist?, path])
++    assert_equal(true, @shell["exist?", path])
++    assert_raise_with_message(RuntimeError, /unsupported command/) do
++      assert_equal(true, @shell[:instance_eval, path])
++    end
++  ensure
++    Process.waitall
++    File.unlink(path)
++  end
++
+   def test_option_type
+     name = 'foo.cmd'
+     path = File.join(@tmpdir, name)
+-- 
+2.20.1
+

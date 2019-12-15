@@ -9,3 +9,7 @@
 0009-test-test_pair-fix-deadlock-in-test_connect_accept_n.patch
 0010-test-use-larger-keys-for-SSL-tests.patch
 0011-ia64-Don-t-clear-register_stack_start.patch
+0012-Fix-for-wrong-fnmatch-patttern.patch
+0013-Loop-with-String-scan-without-creating-substrings.patch
+0014-WEBrick-prevent-response-splitting-and-header-inject.patch
+0015-lib-shell-command-processor.rb-Shell-prevent-unknown.patch

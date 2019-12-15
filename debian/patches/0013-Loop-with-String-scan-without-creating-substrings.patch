@@ -1,0 +1,79 @@
+From: Nobuyoshi Nakada <nobu@ruby-lang.org>
+Date: Tue, 13 Aug 2019 12:14:28 +0900
+Subject: Loop with String#scan without creating substrings
+Origin: https://github.com/ruby/ruby/commit/36e057e26ef2104bc2349799d6c52d22bb1c7d03
+Bug-Debian-Security: https://security-tracker.debian.org/tracker/CVE-2019-16201
+
+Create the substrings necessary parts only, instead of cutting the
+rest of the buffer.  Also removed a useless, probable typo, regexp.
+---
+ lib/webrick/httpauth/digestauth.rb | 19 ++-----------------
+ test/webrick/test_httpauth.rb      | 22 ++++++++++++++++++++++
+ 2 files changed, 24 insertions(+), 17 deletions(-)
+
+diff --git a/lib/webrick/httpauth/digestauth.rb b/lib/webrick/httpauth/digestauth.rb
+index 6416a40998f5..3cf12899d2f2 100644
+--- a/lib/webrick/httpauth/digestauth.rb
++++ b/lib/webrick/httpauth/digestauth.rb
+@@ -290,23 +290,8 @@ def _authenticate(req, res)
+ 
+       def split_param_value(string)
+         ret = {}
+-        while string.bytesize != 0
+-          case string
+-          when /^\s*([\w\-\.\*\%\!]+)=\s*\"((\\.|[^\"])*)\"\s*,?/
+-            key = $1
+-            matched = $2
+-            string = $'
+-            ret[key] = matched.gsub(/\\(.)/, "\\1")
+-          when /^\s*([\w\-\.\*\%\!]+)=\s*([^,\"]*),?/
+-            key = $1
+-            matched = $2
+-            string = $'
+-            ret[key] = matched.clone
+-          when /^s*^,/
+-            string = $'
+-          else
+-            break
+-          end
++        string.scan(/\G\s*([\w\-.*%!]+)=\s*(?:\"((?>\\.|[^\"])*)\"|([^,\"]*))\s*,?/) do
++          ret[$1] = $3 || $2.gsub(/\\(.)/, "\\1")
+         end
+         ret
+       end
+diff --git a/test/webrick/test_httpauth.rb b/test/webrick/test_httpauth.rb
+index 4df7141e857a..9fe8af8be215 100644
+--- a/test/webrick/test_httpauth.rb
++++ b/test/webrick/test_httpauth.rb
+@@ -310,6 +310,28 @@ def test_digest_auth_int
+     }
+   end
+ 
++  def test_digest_auth_invalid
++    digest_auth = WEBrick::HTTPAuth::DigestAuth.new(Realm: 'realm', UserDB: '')
++
++    def digest_auth.error(fmt, *)
++    end
++
++    def digest_auth.try_bad_request(len)
++      request = {"Authorization" => %[Digest a="#{'\b'*len}]}
++      authenticate request, nil
++    end
++
++    bad_request = WEBrick::HTTPStatus::BadRequest
++    t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
++    assert_raise(bad_request) {digest_auth.try_bad_request(10)}
++    limit = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0)
++    [20, 50, 100, 200].each do |len|
++      assert_raise(bad_request) do
++        Timeout.timeout(len*limit) {digest_auth.try_bad_request(len)}
++      end
++    end
++  end
++
+   private
+   def credentials_for_request(user, password, params, body = nil)
+     cnonce = "hoge"
+-- 
+2.20.1
+

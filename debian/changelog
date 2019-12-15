@@ -1,3 +1,14 @@
+ruby2.5 (2.5.5-3+deb10u1) buster-security; urgency=high
+
+  * Non-maintainer upload by the Security Team.
+  * Fix for wrong fnmatch patttern (CVE-2019-15845)
+  * Loop with String#scan without creating substrings (CVE-2019-16201)
+  * WEBrick: prevent response splitting and header injection (CVE-2019-16254)
+  * lib/shell/command-processor.rb (Shell#[]): prevent unknown command
+    (CVE-2019-16255)
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Sun, 15 Dec 2019 13:58:03 +0100
+
 ruby2.5 (2.5.5-3) unstable; urgency=medium
 
   * ia64: Don't clear register_stack_start (Closes: #928068)
