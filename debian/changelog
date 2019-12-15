@@ -1,3 +1,14 @@
+ruby2.3 (2.3.3-1+deb9u7) stretch-security; urgency=high
+
+  * Non-maintainer upload by the Security Team.
+  * Fix for wrong fnmatch patttern (CVE-2019-15845)
+  * Loop with String#scan without creating substring (CVE-2019-16201)
+  * WEBrick: prevent response splitting and header injection (CVE-2019-16254)
+  * lib/shell/command-processor.rb (Shell#[]): prevent unknown command
+    (CVE-2019-16255)
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Sun, 15 Dec 2019 17:28:25 +0100
+
 ruby2.3 (2.3.3-1+deb9u6) stretch-security; urgency=medium
 
   * CVE-2019-8320, CVE-2019-8321, CVE-2019-8322, CVE-2019-8323, CVE-2019-8324

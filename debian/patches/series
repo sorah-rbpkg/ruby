@@ -1,2 +1,6 @@
 debian-changes
 CVE-2019-8320-25.patch
+Fix-for-wrong-fnmatch-patttern.patch
+Loop-with-String-scan-without-creating-substrings.patch
+WEBrick-prevent-response-splitting-and-header-inject.patch
+lib-shell-command-processor.rb-Shell-prevent-unknown.patch
