@@ -38,34 +38,25 @@ typedef enum call_type {
 } call_type;
 
 static VALUE send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope);
-static VALUE vm_call0_body(rb_execution_context_t* ec, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv);
+static VALUE vm_call0_body(rb_execution_context_t* ec, struct rb_calling_info *calling, struct rb_call_data *cd, const VALUE *argv);
 
 #ifndef MJIT_HEADER
 
 MJIT_FUNC_EXPORTED VALUE
 rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me, int kw_splat)
 {
-    struct rb_calling_info calling_entry, *calling;
-    struct rb_call_info ci_entry;
-    struct rb_call_cache cc_entry;
-
-    calling = &calling_entry;
-
-    ci_entry.flag = kw_splat ? VM_CALL_KW_SPLAT : 0;
-    ci_entry.mid = id;
-
-    cc_entry.me = me;
-
-    calling->recv = recv;
-    calling->argc = argc;
-    calling->kw_splat = kw_splat;
-
-    return vm_call0_body(ec, calling, &ci_entry, &cc_entry, argv);
+    struct rb_calling_info calling = { Qundef, recv, argc, kw_splat, };
+    struct rb_call_info ci = { id, (kw_splat ? VM_CALL_KW_SPLAT : 0), argc, };
+    struct rb_call_cache cc = { 0, { 0, }, me, me->def->method_serial, vm_call_general, { 0, }, };
+    struct rb_call_data cd = { cc, ci, };
+    return vm_call0_body(ec, &calling, &cd, argv);
 }
 
 static VALUE
-vm_call0_cfunc_with_frame(rb_execution_context_t* ec, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv)
+vm_call0_cfunc_with_frame(rb_execution_context_t* ec, struct rb_calling_info *calling, struct rb_call_data *cd, const VALUE *argv)
 {
+    const struct rb_call_info *ci = &cd->ci;
+    const struct rb_call_cache *cc = &cd->cc;
     VALUE val;
     const rb_callable_method_entry_t *me = cc->me;
     const rb_method_cfunc_t *cfunc = UNALIGNED_MEMBER_PTR(me->def, body.cfunc);
@@ -109,15 +100,18 @@ vm_call0_cfunc_with_frame(rb_execution_context_t* ec, struct rb_calling_info *ca
 }
 
 static VALUE
-vm_call0_cfunc(rb_execution_context_t *ec, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv)
+vm_call0_cfunc(rb_execution_context_t *ec, struct rb_calling_info *calling, struct rb_call_data *cd, const VALUE *argv)
 {
-    return vm_call0_cfunc_with_frame(ec, calling, ci, cc, argv);
+    return vm_call0_cfunc_with_frame(ec, calling, cd, argv);
 }
 
 /* `ci' should point temporal value (on stack value) */
 static VALUE
-vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv)
+vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, struct rb_call_data *cd, const VALUE *argv)
 {
+    const struct rb_call_info *ci = &cd->ci;
+    struct rb_call_cache *cc = &cd->cc;
+
     VALUE ret;
 
     calling->block_handler = vm_passed_block_handler(ec);
@@ -137,13 +131,13 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 		*reg_cfp->sp++ = argv[i];
 	    }
 
-	    vm_call_iseq_setup(ec, reg_cfp, calling, ci, cc);
+            vm_call_iseq_setup(ec, reg_cfp, calling, cd);
 	    VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);
 	    return vm_exec(ec, TRUE); /* CHECK_INTS in this function */
 	}
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
       case VM_METHOD_TYPE_CFUNC:
-	ret = vm_call0_cfunc(ec, calling, ci, cc, argv);
+        ret = vm_call0_cfunc(ec, calling, cd, argv);
 	goto success;
       case VM_METHOD_TYPE_ATTRSET:
         if (calling->kw_splat &&
@@ -151,7 +145,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
                 RB_TYPE_P(argv[calling->argc-1], T_HASH) &&
                 RHASH_EMPTY_P(argv[calling->argc-1])) {
             if (calling->argc == 1) {
-                rb_warn("The keyword argument is passed as the last hash parameter");
+                rb_warn("Passing the keyword argument as the last hash parameter is deprecated");
             }
             else {
                 calling->argc--;
@@ -173,7 +167,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 	ret = rb_attr_get(calling->recv, cc->me->def->body.attr.id);
 	goto success;
       case VM_METHOD_TYPE_BMETHOD:
-	ret = vm_call_bmethod_body(ec, calling, ci, cc, argv);
+        ret = vm_call_bmethod_body(ec, calling, cd, argv);
 	goto success;
       case VM_METHOD_TYPE_ZSUPER:
       case VM_METHOD_TYPE_REFINED:
@@ -185,22 +179,25 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 		super_class = RCLASS_ORIGIN(super_class);
 	    }
 	    else if (cc->me->def->body.refined.orig_me) {
-		cc->me = refined_method_callable_without_refinement(cc->me);
+                CC_SET_ME(cc, refined_method_callable_without_refinement(cc->me));
 		goto again;
 	    }
 
 	    super_class = RCLASS_SUPER(super_class);
+            if (super_class) {
+                CC_SET_ME(cc, rb_callable_method_entry(super_class, ci->mid));
+                if (cc->me) {
+                    RUBY_VM_CHECK_INTS(ec);
+                    goto again;
+                }
+            }
 
-	    if (!super_class || !(cc->me = rb_callable_method_entry(super_class, ci->mid))) {
-		enum method_missing_reason ex = (type == VM_METHOD_TYPE_ZSUPER) ? MISSING_SUPER : 0;
-                ret = method_missing(calling->recv, ci->mid, calling->argc, argv, ex, calling->kw_splat);
-		goto success;
-	    }
-	    RUBY_VM_CHECK_INTS(ec);
-	    goto again;
+            enum method_missing_reason ex = (type == VM_METHOD_TYPE_ZSUPER) ? MISSING_SUPER : 0;
+            ret = method_missing(calling->recv, ci->mid, calling->argc, argv, ex, calling->kw_splat);
+            goto success;
 	}
       case VM_METHOD_TYPE_ALIAS:
-	cc->me = aliased_callable_method_entry(cc->me);
+        CC_SET_ME(cc, aliased_callable_method_entry(cc->me));
 	goto again;
       case VM_METHOD_TYPE_MISSING:
 	{
@@ -262,12 +259,6 @@ rb_adjust_argv_kw_splat(int *argc, const VALUE **argv, int *kw_splat)
     }
 
     return 0;
-}
-
-VALUE
-rb_vm_call(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me)
-{
-    return rb_vm_call0(ec, recv, id, argc, argv, me, RB_NO_KEYWORDS);
 }
 
 MJIT_FUNC_EXPORTED VALUE
@@ -502,6 +493,8 @@ check_funcall_missing(rb_execution_context_t *ec, VALUE klass, VALUE recv, ID mi
     return ret;
 }
 
+static VALUE rb_check_funcall_default_kw(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE def, int kw_splat);
+
 VALUE
 rb_check_funcall_kw(VALUE recv, ID mid, int argc, const VALUE *argv, int kw_splat)
 {
@@ -514,7 +507,7 @@ rb_check_funcall(VALUE recv, ID mid, int argc, const VALUE *argv)
     return rb_check_funcall_default_kw(recv, mid, argc, argv, Qundef, RB_NO_KEYWORDS);
 }
 
-VALUE
+static VALUE
 rb_check_funcall_default_kw(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE def, int kw_splat)
 {
     VALUE klass = CLASS_OF(recv);
@@ -1001,20 +994,22 @@ rb_funcallv_public_kw(VALUE recv, ID mid, int argc, const VALUE *argv, int kw_sp
 /*!
  * Calls a method
  * \private
- * \param cc     opaque call cache
+ * \param cd     opaque call data
  * \param recv   receiver of the method
  * \param mid    an ID that represents the name of the method
  * \param argc   the number of arguments
  * \param argv   pointer to an array of method arguments
  */
 VALUE
-rb_funcallv_with_cc(struct rb_call_cache_and_mid *cc, VALUE recv, ID mid, int argc, const VALUE *argv)
+rb_funcallv_with_cc(struct rb_call_data *cd, VALUE recv, ID mid, int argc, const VALUE *argv)
 {
-    if (LIKELY(cc->mid == mid)) {
-        const struct rb_call_info ci = { mid, VM_CALL_ARGS_SIMPLE, argc, };
-        vm_search_method(&ci, &cc->cc, recv);
+    const struct rb_call_info *ci = &cd->ci;
+    struct rb_call_cache *cc = &cd->cc;
 
-        if (LIKELY(! UNDEFINED_METHOD_ENTRY_P(cc->cc.me))) {
+    if (LIKELY(ci->mid == mid)) {
+        vm_search_method(cd, recv);
+
+        if (LIKELY(! UNDEFINED_METHOD_ENTRY_P(cc->me))) {
             return vm_call0_body(
                 GET_EC(),
                 &(struct rb_calling_info) {
@@ -1023,14 +1018,13 @@ rb_funcallv_with_cc(struct rb_call_cache_and_mid *cc, VALUE recv, ID mid, int ar
                     argc,
                     RB_NO_KEYWORDS,
                 },
-                &ci,
-                &cc->cc,
+                cd,
                 argv
             );
         }
     }
 
-    *cc = (struct rb_call_cache_and_mid) /* reset */ { { 0, }, mid, };
+    *cd = (struct rb_call_data) /* reset */ { { 0, }, { mid, }, };
     return rb_funcallv(recv, mid, argc, argv);
 }
 
@@ -1743,6 +1737,21 @@ rb_eval_string_protect(const char *str, int *pstate)
     return rb_protect(eval_string_protect, (VALUE)str, pstate);
 }
 
+struct eval_string_wrap_arg {
+    VALUE top_self;
+    VALUE klass;
+    const char *str;
+};
+
+static VALUE
+eval_string_wrap_protect(VALUE data)
+{
+    const struct eval_string_wrap_arg *const arg = (struct eval_string_wrap_arg*)data;
+    rb_cref_t *cref = rb_vm_cref_new_toplevel();
+    cref->klass = arg->klass;
+    return eval_string_with_cref(arg->top_self, rb_str_new_cstr(arg->str), cref, rb_str_new_cstr("eval"), 1);
+}
+
 /**
  * Evaluates the given string under a module binding in an isolated binding.
  * This is same as the binding for loaded libraries on "load('foo', true)".
@@ -1762,12 +1771,17 @@ rb_eval_string_wrap(const char *str, int *pstate)
     VALUE self = th->top_self;
     VALUE wrapper = th->top_wrapper;
     VALUE val;
+    struct eval_string_wrap_arg data;
 
     th->top_wrapper = rb_module_new();
     th->top_self = rb_obj_clone(rb_vm_top_self());
     rb_extend_object(th->top_self, th->top_wrapper);
 
-    val = rb_eval_string_protect(str, &state);
+    data.top_self = th->top_self;
+    data.klass = th->top_wrapper;
+    data.str = str;
+
+    val = rb_protect(eval_string_wrap_protect, (VALUE)&data, &state);
 
     th->top_self = self;
     th->top_wrapper = wrapper;
@@ -1782,23 +1796,17 @@ rb_eval_string_wrap(const char *str, int *pstate)
 }
 
 VALUE
-rb_eval_cmd(VALUE cmd, VALUE arg, int level)
+rb_eval_cmd_kw(VALUE cmd, VALUE arg, int kw_splat)
 {
     enum ruby_tag_type state;
     volatile VALUE val = Qnil;		/* OK */
-    const int VAR_NOCLOBBERED(current_safe_level) = rb_safe_level();
     rb_execution_context_t * volatile ec = GET_EC();
 
-    if (OBJ_TAINTED(cmd)) {
-	level = RUBY_SAFE_LEVEL_MAX;
-    }
-
     EC_PUSH_TAG(ec);
-    rb_set_safe_level_force(level);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	if (!RB_TYPE_P(cmd, T_STRING)) {
-	    val = rb_funcallv(cmd, idCall, RARRAY_LENINT(arg),
-			      RARRAY_CONST_PTR(arg));
+            val = rb_funcallv_kw(cmd, idCall, RARRAY_LENINT(arg),
+                              RARRAY_CONST_PTR(arg), kw_splat);
 	}
 	else {
 	    val = eval_string_with_cref(rb_vm_top_self(), cmd, NULL, 0, 0);
@@ -1806,9 +1814,15 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
     }
     EC_POP_TAG();
 
-    rb_set_safe_level_force(current_safe_level);
     if (state) EC_JUMP_TAG(ec, state);
     return val;
+}
+
+VALUE
+rb_eval_cmd(VALUE cmd, VALUE arg, int _level)
+{
+    rb_warn("rb_eval_cmd will be removed in Ruby 3.0");
+    return rb_eval_cmd_kw(cmd, arg, RB_NO_KEYWORDS);
 }
 
 /* block eval under the class/module context */

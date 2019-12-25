@@ -38,11 +38,11 @@
 
 enum ruby_insn_type_chars {
     TS_VARIABLE = '.',
-    TS_CALLCACHE = 'E',
-    TS_CALLINFO = 'C',
+    TS_CALLDATA = 'C',
     TS_CDHASH = 'H',
     TS_GENTRY = 'G',
     TS_IC = 'K',
+    TS_IVC = 'A',
     TS_ID = 'I',
     TS_ISE = 'T',
     TS_ISEQ = 'S',
@@ -51,12 +51,13 @@ enum ruby_insn_type_chars {
     TS_LINDEX = 'L',
     TS_FUNCPTR = 'F',
     TS_NUM = 'N',
+    TS_BUILTIN = 'R',
 };
 
 CONSTFUNC(MAYBE_UNUSED(static const char *insn_name(VALUE insn)));
 
 #ifdef RUBY_VM_INSNS_INFO
-const int rb_vm_max_insn_name_size = 28;
+const int rb_vm_max_insn_name_size = 38;
 #endif
 
 const char *
@@ -110,7 +111,6 @@ insn_name(VALUE i)
         "checkmatch" "\0"
         "checkkeyword" "\0"
         "checktype" "\0"
-        "methodref" "\0"
         "defineclass" "\0"
         "definemethod" "\0"
         "definesmethod" "\0"
@@ -158,6 +158,9 @@ insn_name(VALUE i)
         "opt_not" "\0"
         "opt_regexpmatch2" "\0"
         "opt_call_c_function" "\0"
+        "invokebuiltin" "\0"
+        "opt_invokebuiltin_delegate" "\0"
+        "opt_invokebuiltin_delegate_leave" "\0"
         "getlocal_WC_0" "\0"
         "getlocal_WC_1" "\0"
         "setlocal_WC_0" "\0"
@@ -211,7 +214,6 @@ insn_name(VALUE i)
         "trace_checkmatch" "\0"
         "trace_checkkeyword" "\0"
         "trace_checktype" "\0"
-        "trace_methodref" "\0"
         "trace_defineclass" "\0"
         "trace_definemethod" "\0"
         "trace_definesmethod" "\0"
@@ -259,6 +261,9 @@ insn_name(VALUE i)
         "trace_opt_not" "\0"
         "trace_opt_regexpmatch2" "\0"
         "trace_opt_call_c_function" "\0"
+        "trace_invokebuiltin" "\0"
+        "trace_opt_invokebuiltin_delegate" "\0"
+        "trace_opt_invokebuiltin_delegate_leave" "\0"
         "trace_getlocal_WC_0" "\0"
         "trace_getlocal_WC_1" "\0"
         "trace_setlocal_WC_0" "\0"
@@ -272,19 +277,20 @@ insn_name(VALUE i)
          165,  177,  189,  199,  209,  216,  224,  234,  251,  261,  275,  284,
          297,  306,  313,  322,  338,  347,  355,  367,  379,  390,  398,  407,
          411,  415,  420,  425,  433,  438,  443,  455,  463,  474,  487,  497,
-         507,  519,  532,  546,  551,  574,  589,  599,  614,  631,  648,  660,
-         672,  678,  684,  689,  698,  711,  721,  740,  759,  764,  782,  791,
-         801,  810,  818,  826,  833,  841,  848,  855,  862,  869,  878,  886,
-         893,  902,  911,  925,  939,  950,  959,  971,  980,  988, 1005, 1025,
-        1039, 1053, 1067, 1081, 1102, 1123, 1133, 1148, 1163, 1183, 1203, 1228,
-        1245, 1262, 1288, 1314, 1337, 1360, 1378, 1396, 1412, 1428, 1441, 1455,
-        1471, 1494, 1510, 1530, 1545, 1564, 1579, 1592, 1607, 1629, 1644, 1658,
-        1676, 1694, 1711, 1725, 1740, 1750, 1760, 1771, 1782, 1796, 1807, 1818,
-        1836, 1850, 1867, 1886, 1902, 1918, 1936, 1955, 1975, 1986, 2015, 2036,
-        2052, 2073, 2096, 2119, 2137, 2155, 2167, 2179, 2190, 2205, 2224, 2240,
-        2265, 2290, 2301, 2325, 2340, 2356, 2371, 2385, 2399, 2412, 2426, 2439,
-        2452, 2465, 2478, 2493, 2507, 2520, 2535, 2550, 2570, 2590, 2607, 2622,
-        2640, 2655, 2669, 2692, 2718, 2738, 2758, 2778, 2798, 2825,
+         509,  522,  536,  541,  564,  579,  589,  604,  621,  638,  650,  662,
+         668,  674,  679,  688,  701,  711,  730,  749,  754,  772,  781,  791,
+         800,  808,  816,  823,  831,  838,  845,  852,  859,  868,  876,  883,
+         892,  901,  915,  929,  940,  949,  961,  970,  978,  995, 1015, 1029,
+        1056, 1089, 1103, 1117, 1131, 1145, 1166, 1187, 1197, 1212, 1227, 1247,
+        1267, 1292, 1309, 1326, 1352, 1378, 1401, 1424, 1442, 1460, 1476, 1492,
+        1505, 1519, 1535, 1558, 1574, 1594, 1609, 1628, 1643, 1656, 1671, 1693,
+        1708, 1722, 1740, 1758, 1775, 1789, 1804, 1814, 1824, 1835, 1846, 1860,
+        1871, 1882, 1900, 1914, 1931, 1950, 1966, 1984, 2003, 2023, 2034, 2063,
+        2084, 2100, 2121, 2144, 2167, 2185, 2203, 2215, 2227, 2238, 2253, 2272,
+        2288, 2313, 2338, 2349, 2373, 2388, 2404, 2419, 2433, 2447, 2460, 2474,
+        2487, 2500, 2513, 2526, 2541, 2555, 2568, 2583, 2598, 2618, 2638, 2655,
+        2670, 2688, 2703, 2717, 2740, 2766, 2786, 2819, 2858, 2878, 2898, 2918,
+        2938, 2965,
     };
 
     ASSERT_VM_INSTRUCTION_SIZE(y);
@@ -300,13 +306,13 @@ insn_len(VALUE i)
     static const char t[] = {
         1, 3, 3, 3, 3, 3, 3, 2, 3, 3, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1,
         2, 3, 1, 2, 2, 2, 2, 3, 1, 2, 2, 2, 1, 1, 2, 1, 2, 2, 2, 2, 4, 2, 3,
-        2, 2, 4, 3, 3, 4, 3, 4, 3, 4, 2, 2, 4, 2, 1, 2, 2, 2, 2, 2, 3, 2, 3,
-        3, 3, 3, 3, 3, 3, 3, 5, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 3, 3, 3, 3,
-        3, 3, 2, 2, 2, 2, 2, 1, 1, 1, 3, 3, 3, 3, 3, 3, 2, 3, 3, 2, 2, 2, 2,
-        2, 2, 1, 1, 2, 2, 2, 2, 1, 2, 3, 1, 2, 2, 2, 2, 3, 1, 2, 2, 2, 1, 1,
-        2, 1, 2, 2, 2, 2, 4, 2, 3, 2, 2, 4, 3, 3, 4, 3, 4, 3, 4, 2, 2, 4, 2,
-        1, 2, 2, 2, 2, 2, 3, 2, 3, 3, 3, 3, 3, 3, 3, 3, 5, 3, 3, 3, 3, 3, 3,
-        3, 3, 3, 4, 4, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 1, 1,
+        2, 4, 3, 3, 3, 2, 3, 2, 3, 2, 2, 3, 2, 1, 2, 2, 2, 2, 2, 3, 2, 3, 3,
+        2, 2, 2, 2, 2, 2, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 2, 2, 2, 2, 2,
+        2, 2, 2, 3, 3, 2, 2, 2, 2, 1, 1, 1, 3, 3, 3, 3, 3, 3, 2, 3, 3, 2, 2,
+        2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 2, 3, 1, 2, 2, 2, 2, 3, 1, 2, 2, 2,
+        1, 1, 2, 1, 2, 2, 2, 2, 4, 2, 3, 2, 4, 3, 3, 3, 2, 3, 2, 3, 2, 2, 3,
+        2, 1, 2, 2, 2, 2, 2, 3, 2, 3, 3, 2, 2, 2, 2, 2, 2, 3, 2, 2, 2, 2, 2,
+        2, 2, 2, 2, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 2, 2, 2, 2, 1, 1,
     };
 
     ASSERT_VM_INSTRUCTION_SIZE(t);
@@ -321,7 +327,7 @@ insn_op_types(VALUE i)
 {
     static const char x[] =
         ""     "\0" "LN"   "\0" "LN"   "\0" "LN"   "\0" "LN"   "\0"
-        "LN"   "\0" "NN"   "\0" "N"    "\0" "IK"   "\0" "IK"   "\0"
+        "LN"   "\0" "NN"   "\0" "N"    "\0" "IA"   "\0" "IA"   "\0"
         "I"    "\0" "I"    "\0" "I"    "\0" "I"    "\0" "G"    "\0"
         "G"    "\0" ""     "\0" ""     "\0" "V"    "\0" "N"    "\0"
         "V"    "\0" "N"    "\0" ""     "\0" "V"    "\0" "NN"   "\0"
@@ -329,38 +335,39 @@ insn_op_types(VALUE i)
         "NN"   "\0" ""     "\0" "V"    "\0" "N"    "\0" "N"    "\0"
         ""     "\0" ""     "\0" "N"    "\0" ""     "\0" "N"    "\0"
         "N"    "\0" "N"    "\0" "N"    "\0" "NVV"  "\0" "N"    "\0"
-        "LL"   "\0" "N"    "\0" "I"    "\0" "ISN"  "\0" "IS"   "\0"
-        "IS"   "\0" "CES"  "\0" "CE"   "\0" "VCE"  "\0" "CE"   "\0"
-        "VCE"  "\0" "N"    "\0" "N"    "\0" "CES"  "\0" "C"    "\0"
-        ""     "\0" "N"    "\0" "O"    "\0" "O"    "\0" "O"    "\0"
-        "O"    "\0" "OK"   "\0" "K"    "\0" "ST"   "\0" "HO"   "\0"
-        "CE"   "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0"
-        "CE"   "\0" "CECE" "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0"
-        "CE"   "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0"
-        "CE"   "\0" "VCE"  "\0" "VCE"  "\0" "CE"   "\0" "CE"   "\0"
-        "CE"   "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0" "F"    "\0"
+        "LL"   "\0" "N"    "\0" "ISN"  "\0" "IS"   "\0" "IS"   "\0"
+        "CS"   "\0" "C"    "\0" "VC"   "\0" "C"    "\0" "VC"   "\0"
+        "N"    "\0" "N"    "\0" "CS"   "\0" "C"    "\0" ""     "\0"
+        "N"    "\0" "O"    "\0" "O"    "\0" "O"    "\0" "O"    "\0"
+        "OK"   "\0" "K"    "\0" "ST"   "\0" "HO"   "\0" "C"    "\0"
+        "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0"
+        "CC"   "\0" "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0"
+        "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0"
+        "VC"   "\0" "VC"   "\0" "C"    "\0" "C"    "\0" "C"    "\0"
+        "C"    "\0" "C"    "\0" "C"    "\0" "F"    "\0" "R"    "\0"
+        "RN"   "\0" "RN"   "\0" "L"    "\0" "L"    "\0" "L"    "\0"
+        "L"    "\0" ""     "\0" ""     "\0" ""     "\0" "LN"   "\0"
+        "LN"   "\0" "LN"   "\0" "LN"   "\0" "LN"   "\0" "NN"   "\0"
+        "N"    "\0" "IA"   "\0" "IA"   "\0" "I"    "\0" "I"    "\0"
+        "I"    "\0" "I"    "\0" "G"    "\0" "G"    "\0" ""     "\0"
+        ""     "\0" "V"    "\0" "N"    "\0" "V"    "\0" "N"    "\0"
+        ""     "\0" "V"    "\0" "NN"   "\0" ""     "\0" "N"    "\0"
+        "N"    "\0" "V"    "\0" "V"    "\0" "NN"   "\0" ""     "\0"
+        "V"    "\0" "N"    "\0" "N"    "\0" ""     "\0" ""     "\0"
+        "N"    "\0" ""     "\0" "N"    "\0" "N"    "\0" "N"    "\0"
+        "N"    "\0" "NVV"  "\0" "N"    "\0" "LL"   "\0" "N"    "\0"
+        "ISN"  "\0" "IS"   "\0" "IS"   "\0" "CS"   "\0" "C"    "\0"
+        "VC"   "\0" "C"    "\0" "VC"   "\0" "N"    "\0" "N"    "\0"
+        "CS"   "\0" "C"    "\0" ""     "\0" "N"    "\0" "O"    "\0"
+        "O"    "\0" "O"    "\0" "O"    "\0" "OK"   "\0" "K"    "\0"
+        "ST"   "\0" "HO"   "\0" "C"    "\0" "C"    "\0" "C"    "\0"
+        "C"    "\0" "C"    "\0" "C"    "\0" "CC"   "\0" "C"    "\0"
+        "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0"
+        "C"    "\0" "C"    "\0" "C"    "\0" "VC"   "\0" "VC"   "\0"
+        "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0"
+        "C"    "\0" "F"    "\0" "R"    "\0" "RN"   "\0" "RN"   "\0"
         "L"    "\0" "L"    "\0" "L"    "\0" "L"    "\0" ""     "\0"
-        ""     "\0" ""     "\0" "LN"   "\0" "LN"   "\0" "LN"   "\0"
-        "LN"   "\0" "LN"   "\0" "NN"   "\0" "N"    "\0" "IK"   "\0"
-        "IK"   "\0" "I"    "\0" "I"    "\0" "I"    "\0" "I"    "\0"
-        "G"    "\0" "G"    "\0" ""     "\0" ""     "\0" "V"    "\0"
-        "N"    "\0" "V"    "\0" "N"    "\0" ""     "\0" "V"    "\0"
-        "NN"   "\0" ""     "\0" "N"    "\0" "N"    "\0" "V"    "\0"
-        "V"    "\0" "NN"   "\0" ""     "\0" "V"    "\0" "N"    "\0"
-        "N"    "\0" ""     "\0" ""     "\0" "N"    "\0" ""     "\0"
-        "N"    "\0" "N"    "\0" "N"    "\0" "N"    "\0" "NVV"  "\0"
-        "N"    "\0" "LL"   "\0" "N"    "\0" "I"    "\0" "ISN"  "\0"
-        "IS"   "\0" "IS"   "\0" "CES"  "\0" "CE"   "\0" "VCE"  "\0"
-        "CE"   "\0" "VCE"  "\0" "N"    "\0" "N"    "\0" "CES"  "\0"
-        "C"    "\0" ""     "\0" "N"    "\0" "O"    "\0" "O"    "\0"
-        "O"    "\0" "O"    "\0" "OK"   "\0" "K"    "\0" "ST"   "\0"
-        "HO"   "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0"
-        "CE"   "\0" "CE"   "\0" "CECE" "\0" "CE"   "\0" "CE"   "\0"
-        "CE"   "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0"
-        "CE"   "\0" "CE"   "\0" "VCE"  "\0" "VCE"  "\0" "CE"   "\0"
-        "CE"   "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0" "CE"   "\0"
-        "F"    "\0" "L"    "\0" "L"    "\0" "L"    "\0" "L"    "\0"
-        ""     "\0" ""     "\0"
+        ""     "\0"
         ;
 
     static const unsigned short y[] = {
@@ -368,19 +375,20 @@ insn_op_types(VALUE i)
          31,  33,  35,  37,  39,  40,  41,  43,  45,  47,  49,  50,
          52,  55,  56,  58,  60,  62,  64,  67,  68,  70,  72,  74,
          75,  76,  78,  79,  81,  83,  85,  87,  91,  93,  96,  98,
-        100, 104, 107, 110, 114, 117, 121, 124, 128, 130, 132, 136,
-        138, 139, 141, 143, 145, 147, 149, 152, 154, 157, 160, 163,
-        166, 169, 172, 175, 178, 183, 186, 189, 192, 195, 198, 201,
-        204, 207, 210, 214, 218, 221, 224, 227, 230, 233, 236, 238,
-        240, 242, 244, 246, 247, 248, 249, 252, 255, 258, 261, 264,
-        267, 269, 272, 275, 277, 279, 281, 283, 285, 287, 288, 289,
-        291, 293, 295, 297, 298, 300, 303, 304, 306, 308, 310, 312,
-        315, 316, 318, 320, 322, 323, 324, 326, 327, 329, 331, 333,
-        335, 339, 341, 344, 346, 348, 352, 355, 358, 362, 365, 369,
-        372, 376, 378, 380, 384, 386, 387, 389, 391, 393, 395, 397,
-        400, 402, 405, 408, 411, 414, 417, 420, 423, 426, 431, 434,
-        437, 440, 443, 446, 449, 452, 455, 458, 462, 466, 469, 472,
-        475, 478, 481, 484, 486, 488, 490, 492, 494, 495,
+        102, 105, 108, 111, 113, 116, 118, 121, 123, 125, 128, 130,
+        131, 133, 135, 137, 139, 141, 144, 146, 149, 152, 154, 156,
+        158, 160, 162, 164, 167, 169, 171, 173, 175, 177, 179, 181,
+        183, 185, 188, 191, 193, 195, 197, 199, 201, 203, 205, 207,
+        210, 213, 215, 217, 219, 221, 222, 223, 224, 227, 230, 233,
+        236, 239, 242, 244, 247, 250, 252, 254, 256, 258, 260, 262,
+        263, 264, 266, 268, 270, 272, 273, 275, 278, 279, 281, 283,
+        285, 287, 290, 291, 293, 295, 297, 298, 299, 301, 302, 304,
+        306, 308, 310, 314, 316, 319, 321, 325, 328, 331, 334, 336,
+        339, 341, 344, 346, 348, 351, 353, 354, 356, 358, 360, 362,
+        364, 367, 369, 372, 375, 377, 379, 381, 383, 385, 387, 390,
+        392, 394, 396, 398, 400, 402, 404, 406, 408, 411, 414, 416,
+        418, 420, 422, 424, 426, 428, 430, 433, 436, 438, 440, 442,
+        444, 445,
     };
 
     ASSERT_VM_INSTRUCTION_SIZE(y);
@@ -474,6 +482,7 @@ leafness_of_defined(rb_num_t op_type)
       case DEFINED_ZSUPER:
         return false;
       case DEFINED_CONST:
+      case DEFINED_CONST_FROM:
         /* has rb_autoload_load(); */
         return false;
       case DEFINED_FUNC:
@@ -497,7 +506,7 @@ leafness_of_checkmatch(rb_num_t flag)
         return false;
     }
 }
-#line 501 "insns_info.inc"
+#line 510 "insns_info.inc"
 
 #line 10 "tool/ruby_vm/views/_sp_inc_helpers.erb"
 
@@ -527,7 +536,7 @@ sp_inc_of_invokeblock(const struct rb_call_info *ci)
      * instructions, except that it does not pop receiver. */
     return sp_inc_of_sendish(ci) + 1;
 }
-#line 531 "insns_info.inc"
+#line 540 "insns_info.inc"
 
 #ifndef RUBY_VM_EXEC_H
 /* can't #include "vm_exec.h" here... */
@@ -609,24 +618,24 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_setspecial(rb_num_t key)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_setspecial(rb_num_t key)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_setspecial(rb_num_t key)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_setspecial(rb_num_t key)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_getinstancevariable(ID id, IC ic)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_getinstancevariable(ID id, IC ic)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_getinstancevariable(ID id, IC ic)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_getinstancevariable(ID id, IC ic)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_getinstancevariable(ID id, IC ic)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_getinstancevariable(ID id, IC ic)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_getinstancevariable(ID id, IC ic)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_getinstancevariable(ID id, IC ic)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_getinstancevariable(ID id, IC ic)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_setinstancevariable(ID id, IC ic)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_setinstancevariable(ID id, IC ic)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_setinstancevariable(ID id, IC ic)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_setinstancevariable(ID id, IC ic)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_setinstancevariable(ID id, IC ic)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_setinstancevariable(ID id, IC ic)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_setinstancevariable(ID id, IC ic)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_setinstancevariable(ID id, IC ic)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_setinstancevariable(ID id, IC ic)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_getinstancevariable(ID id, IVC ic)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_getinstancevariable(ID id, IVC ic)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_getinstancevariable(ID id, IVC ic)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_getinstancevariable(ID id, IVC ic)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_getinstancevariable(ID id, IVC ic)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_getinstancevariable(ID id, IVC ic)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_getinstancevariable(ID id, IVC ic)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_getinstancevariable(ID id, IVC ic)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_getinstancevariable(ID id, IVC ic)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_setinstancevariable(ID id, IVC ic)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_setinstancevariable(ID id, IVC ic)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_setinstancevariable(ID id, IVC ic)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_setinstancevariable(ID id, IVC ic)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_setinstancevariable(ID id, IVC ic)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_setinstancevariable(ID id, IVC ic)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_setinstancevariable(ID id, IVC ic)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_setinstancevariable(ID id, IVC ic)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_setinstancevariable(ID id, IVC ic)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_getclassvariable(ID id)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_getclassvariable(ID id)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_getclassvariable(ID id)));
@@ -960,15 +969,6 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_checktype(rb_num_t type)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_checktype(rb_num_t type)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_checktype(rb_num_t type)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_checktype(rb_num_t type)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_methodref(ID id)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_methodref(ID id)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_methodref(ID id)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_methodref(ID id)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_methodref(ID id)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_methodref(ID id)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_methodref(ID id)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_methodref(ID id)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_methodref(ID id)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_defineclass(ID id, ISEQ class_iseq, rb_num_t flags)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_defineclass(ID id, ISEQ class_iseq, rb_num_t flags)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_defineclass(ID id, ISEQ class_iseq, rb_num_t flags)));
@@ -996,51 +996,53 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_definesmethod(ID id, ISEQ iseq))
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_definesmethod(ID id, ISEQ iseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_definesmethod(ID id, ISEQ iseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_definesmethod(ID id, ISEQ iseq)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_send(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_send(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_send(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_send(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_send(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_send(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_send(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_send(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_send(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_send_without_block(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_send_without_block(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_send_without_block(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_send_without_block(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_send_without_block(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_send_without_block(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_send_without_block(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_send_without_block(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_send_without_block(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_str_freeze(VALUE str, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_str_freeze(VALUE str, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_str_freeze(VALUE str, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_str_freeze(VALUE str, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_str_freeze(VALUE str, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_str_freeze(VALUE str, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_str_freeze(VALUE str, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_str_freeze(VALUE str, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_str_freeze(VALUE str, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_nil_p(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_nil_p(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_nil_p(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_nil_p(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_nil_p(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_nil_p(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_nil_p(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_nil_p(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_nil_p(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_str_uminus(VALUE str, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_str_uminus(VALUE str, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_str_uminus(VALUE str, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_str_uminus(VALUE str, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_str_uminus(VALUE str, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_str_uminus(VALUE str, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_str_uminus(VALUE str, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_str_uminus(VALUE str, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_str_uminus(VALUE str, CALL_INFO ci, CALL_CACHE cc)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_send(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_comptime_sp_inc_send(CALL_INFO ci, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_send(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_send(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_send(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_send(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_send(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_send(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_send(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_send(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_send_without_block(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_comptime_sp_inc_opt_send_without_block(CALL_INFO ci)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_send_without_block(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_send_without_block(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_send_without_block(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_send_without_block(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_send_without_block(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_send_without_block(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_send_without_block(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_send_without_block(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_str_freeze(VALUE str, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_str_freeze(VALUE str, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_str_freeze(VALUE str, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_str_freeze(VALUE str, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_str_freeze(VALUE str, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_str_freeze(VALUE str, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_str_freeze(VALUE str, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_str_freeze(VALUE str, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_str_freeze(VALUE str, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_nil_p(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_nil_p(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_nil_p(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_nil_p(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_nil_p(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_nil_p(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_nil_p(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_nil_p(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_nil_p(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_str_uminus(VALUE str, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_str_uminus(VALUE str, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_str_uminus(VALUE str, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_str_uminus(VALUE str, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_str_uminus(VALUE str, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_str_uminus(VALUE str, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_str_uminus(VALUE str, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_str_uminus(VALUE str, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_str_uminus(VALUE str, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_newarray_max(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_newarray_max(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_newarray_max(rb_num_t num)));
@@ -1059,24 +1061,26 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_newarray_min(rb_num_t num)))
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_newarray_min(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_newarray_min(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_newarray_min(rb_num_t num)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_invokesuper(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_invokesuper(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_invokesuper(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_invokesuper(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_invokesuper(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_invokesuper(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_invokesuper(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_invokesuper(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_invokesuper(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_invokeblock(CALL_INFO ci)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_invokeblock(CALL_INFO ci)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_invokeblock(CALL_INFO ci)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_invokeblock(CALL_INFO ci)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_invokeblock(CALL_INFO ci)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_invokeblock(CALL_INFO ci)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_invokeblock(CALL_INFO ci)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_invokeblock(CALL_INFO ci)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_invokeblock(CALL_INFO ci)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_invokesuper(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_comptime_sp_inc_invokesuper(CALL_INFO ci, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_invokesuper(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_invokesuper(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_invokesuper(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_invokesuper(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_invokesuper(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_invokesuper(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_invokesuper(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_invokesuper(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_invokeblock(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_comptime_sp_inc_invokeblock(CALL_INFO ci)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_invokeblock(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_invokeblock(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_invokeblock(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_invokeblock(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_invokeblock(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_invokeblock(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_invokeblock(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_invokeblock(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_leave(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_leave(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_leave(void)));
@@ -1167,222 +1171,222 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_case_dispatch(CDHASH hash, O
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_case_dispatch(CDHASH hash, OFFSET else_offset)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_case_dispatch(CDHASH hash, OFFSET else_offset)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_case_dispatch(CDHASH hash, OFFSET else_offset)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_plus(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_plus(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_plus(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_plus(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_plus(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_plus(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_plus(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_plus(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_plus(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_minus(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_minus(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_minus(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_minus(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_minus(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_minus(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_minus(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_minus(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_minus(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_mult(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_mult(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_mult(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_mult(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_mult(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_mult(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_mult(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_mult(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_mult(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_div(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_div(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_div(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_div(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_div(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_div(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_div(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_div(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_div(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_mod(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_mod(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_mod(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_mod(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_mod(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_mod(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_mod(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_mod(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_mod(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_eq(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_eq(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_eq(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_eq(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_eq(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_eq(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_eq(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_eq(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_eq(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_neq(CALL_INFO ci_eq, CALL_CACHE cc_eq, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_neq(CALL_INFO ci_eq, CALL_CACHE cc_eq, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_neq(CALL_INFO ci_eq, CALL_CACHE cc_eq, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_neq(CALL_INFO ci_eq, CALL_CACHE cc_eq, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_neq(CALL_INFO ci_eq, CALL_CACHE cc_eq, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_neq(CALL_INFO ci_eq, CALL_CACHE cc_eq, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_neq(CALL_INFO ci_eq, CALL_CACHE cc_eq, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_neq(CALL_INFO ci_eq, CALL_CACHE cc_eq, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_neq(CALL_INFO ci_eq, CALL_CACHE cc_eq, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_lt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_lt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_lt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_lt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_lt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_lt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_lt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_lt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_lt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_le(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_le(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_le(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_le(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_le(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_le(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_le(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_le(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_le(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_gt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_gt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_gt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_gt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_gt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_gt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_gt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_gt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_gt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_ge(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_ge(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_ge(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_ge(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_ge(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_ge(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_ge(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_ge(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_ge(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_ltlt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_ltlt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_ltlt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_ltlt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_ltlt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_ltlt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_ltlt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_ltlt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_ltlt(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_and(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_and(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_and(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_and(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_and(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_and(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_and(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_and(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_and(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_or(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_or(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_or(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_or(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_or(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_or(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_or(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_or(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_or(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_aref(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_aref(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_aref(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_aref(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_aref(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_aref(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_aref(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_aref(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_aref(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_aset(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_aset(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_aset(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_aset(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_aset(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_aset(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_aset(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_aset(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_aset(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_aset_with(VALUE key, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_aset_with(VALUE key, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_aset_with(VALUE key, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_aset_with(VALUE key, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_aset_with(VALUE key, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_aset_with(VALUE key, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_aset_with(VALUE key, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_aset_with(VALUE key, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_aset_with(VALUE key, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_aref_with(VALUE key, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_aref_with(VALUE key, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_aref_with(VALUE key, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_aref_with(VALUE key, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_aref_with(VALUE key, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_aref_with(VALUE key, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_aref_with(VALUE key, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_aref_with(VALUE key, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_aref_with(VALUE key, CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_length(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_length(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_length(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_length(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_length(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_length(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_length(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_length(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_length(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_size(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_size(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_size(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_size(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_size(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_size(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_size(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_size(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_size(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_empty_p(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_empty_p(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_empty_p(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_empty_p(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_empty_p(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_empty_p(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_empty_p(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_empty_p(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_empty_p(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_succ(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_succ(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_succ(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_succ(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_succ(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_succ(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_succ(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_succ(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_succ(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_not(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_not(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_not(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_not(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_not(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_not(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_not(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_not(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_not(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_regexpmatch2(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_regexpmatch2(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_regexpmatch2(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_regexpmatch2(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_regexpmatch2(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_regexpmatch2(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_regexpmatch2(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_regexpmatch2(CALL_INFO ci, CALL_CACHE cc)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_regexpmatch2(CALL_INFO ci, CALL_CACHE cc)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_plus(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_plus(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_plus(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_plus(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_plus(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_plus(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_plus(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_plus(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_plus(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_minus(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_minus(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_minus(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_minus(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_minus(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_minus(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_minus(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_minus(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_minus(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_mult(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_mult(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_mult(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_mult(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_mult(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_mult(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_mult(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_mult(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_mult(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_div(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_div(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_div(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_div(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_div(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_div(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_div(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_div(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_div(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_mod(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_mod(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_mod(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_mod(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_mod(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_mod(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_mod(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_mod(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_mod(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_eq(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_eq(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_eq(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_eq(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_eq(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_eq(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_eq(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_eq(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_eq(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_neq(CALL_DATA cd_eq, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_neq(CALL_DATA cd_eq, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_neq(CALL_DATA cd_eq, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_neq(CALL_DATA cd_eq, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_neq(CALL_DATA cd_eq, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_neq(CALL_DATA cd_eq, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_neq(CALL_DATA cd_eq, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_neq(CALL_DATA cd_eq, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_neq(CALL_DATA cd_eq, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_lt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_lt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_lt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_lt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_lt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_lt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_lt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_lt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_lt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_le(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_le(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_le(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_le(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_le(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_le(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_le(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_le(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_le(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_gt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_gt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_gt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_gt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_gt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_gt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_gt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_gt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_gt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_ge(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_ge(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_ge(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_ge(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_ge(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_ge(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_ge(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_ge(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_ge(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_ltlt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_ltlt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_ltlt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_ltlt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_ltlt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_ltlt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_ltlt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_ltlt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_ltlt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_and(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_and(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_and(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_and(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_and(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_and(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_and(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_and(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_and(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_or(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_or(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_or(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_or(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_or(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_or(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_or(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_or(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_or(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_aref(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_aref(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_aref(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_aref(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_aref(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_aref(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_aref(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_aref(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_aref(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_aset(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_aset(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_aset(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_aset(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_aset(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_aset(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_aset(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_aset(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_aset(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_aset_with(VALUE key, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_aset_with(VALUE key, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_aset_with(VALUE key, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_aset_with(VALUE key, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_aset_with(VALUE key, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_aset_with(VALUE key, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_aset_with(VALUE key, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_aset_with(VALUE key, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_aset_with(VALUE key, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_aref_with(VALUE key, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_aref_with(VALUE key, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_aref_with(VALUE key, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_aref_with(VALUE key, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_aref_with(VALUE key, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_aref_with(VALUE key, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_aref_with(VALUE key, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_aref_with(VALUE key, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_aref_with(VALUE key, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_length(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_length(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_length(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_length(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_length(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_length(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_length(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_length(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_length(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_size(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_size(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_size(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_size(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_size(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_size(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_size(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_size(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_size(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_empty_p(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_empty_p(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_empty_p(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_empty_p(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_empty_p(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_empty_p(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_empty_p(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_empty_p(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_empty_p(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_succ(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_succ(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_succ(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_succ(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_succ(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_succ(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_succ(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_succ(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_succ(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_not(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_not(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_not(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_not(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_not(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_not(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_not(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_not(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_not(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_regexpmatch2(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_regexpmatch2(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_regexpmatch2(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_regexpmatch2(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_regexpmatch2(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_regexpmatch2(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_regexpmatch2(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_regexpmatch2(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_regexpmatch2(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_call_c_function(rb_insn_func_t funcptr)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_call_c_function(rb_insn_func_t funcptr)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_call_c_function(rb_insn_func_t funcptr)));
@@ -1392,6 +1396,33 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_call_c_function(rb_insn_func
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_call_c_function(rb_insn_func_t funcptr)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_call_c_function(rb_insn_func_t funcptr)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_call_c_function(rb_insn_func_t funcptr)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_invokebuiltin(RB_BUILTIN bf)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_invokebuiltin(RB_BUILTIN bf)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_invokebuiltin(RB_BUILTIN bf)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_invokebuiltin(RB_BUILTIN bf)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_invokebuiltin(RB_BUILTIN bf)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_invokebuiltin(RB_BUILTIN bf)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_invokebuiltin(RB_BUILTIN bf)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_invokebuiltin(RB_BUILTIN bf)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_invokebuiltin(RB_BUILTIN bf)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_invokebuiltin_delegate(RB_BUILTIN bf, rb_num_t index)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_invokebuiltin_delegate(RB_BUILTIN bf, rb_num_t index)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_invokebuiltin_delegate(RB_BUILTIN bf, rb_num_t index)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_invokebuiltin_delegate(RB_BUILTIN bf, rb_num_t index)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_invokebuiltin_delegate(RB_BUILTIN bf, rb_num_t index)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_invokebuiltin_delegate(RB_BUILTIN bf, rb_num_t index)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_invokebuiltin_delegate(RB_BUILTIN bf, rb_num_t index)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_invokebuiltin_delegate(RB_BUILTIN bf, rb_num_t index)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_invokebuiltin_delegate(RB_BUILTIN bf, rb_num_t index)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_invokebuiltin_delegate_leave(RB_BUILTIN bf, rb_num_t index)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_invokebuiltin_delegate_leave(RB_BUILTIN bf, rb_num_t index)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_invokebuiltin_delegate_leave(RB_BUILTIN bf, rb_num_t index)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_invokebuiltin_delegate_leave(RB_BUILTIN bf, rb_num_t index)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_invokebuiltin_delegate_leave(RB_BUILTIN bf, rb_num_t index)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_invokebuiltin_delegate_leave(RB_BUILTIN bf, rb_num_t index)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_invokebuiltin_delegate_leave(RB_BUILTIN bf, rb_num_t index)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_invokebuiltin_delegate_leave(RB_BUILTIN bf, rb_num_t index)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_invokebuiltin_delegate_leave(RB_BUILTIN bf, rb_num_t index)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_getlocal_WC_0(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_getlocal_WC_0(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_getlocal_WC_0(lindex_t idx)));
@@ -1990,7 +2021,7 @@ attr_leaf_getspecial(
     return
 #line 192 "insns.def"
 (type == 0) ? true : false;
-#line 1994 "insns_info.inc"
+#line 2025 "insns_info.inc"
 }
 
 /* attr const char* name @ getspecial(key, type)()(val) */
@@ -2120,7 +2151,7 @@ attr_width_setspecial(MAYBE_UNUSED(rb_num_t key))
 enum ruby_vminsn_type
 attr_bin_getinstancevariable(
     MAYBE_UNUSED(ID id),
-    MAYBE_UNUSED(IC ic)
+    MAYBE_UNUSED(IVC ic)
 )
 {
     return BIN(getinstancevariable);
@@ -2130,7 +2161,7 @@ attr_bin_getinstancevariable(
 bool
 attr_handles_sp_getinstancevariable(
     MAYBE_UNUSED(ID id),
-    MAYBE_UNUSED(IC ic)
+    MAYBE_UNUSED(IVC ic)
 )
 {
     return false;
@@ -2140,20 +2171,20 @@ attr_handles_sp_getinstancevariable(
 bool
 attr_leaf_getinstancevariable(
     MAYBE_UNUSED(ID id),
-    MAYBE_UNUSED(IC ic)
+    MAYBE_UNUSED(IVC ic)
 )
 {
     return
 #line 214 "insns.def"
 false;
-#line 2150 "insns_info.inc"
+#line 2181 "insns_info.inc"
 }
 
 /* attr const char* name @ getinstancevariable(id, ic)()(val) */
 const char*
 attr_name_getinstancevariable(
     MAYBE_UNUSED(ID id),
-    MAYBE_UNUSED(IC ic)
+    MAYBE_UNUSED(IVC ic)
 )
 {
     return insn_name(BIN(getinstancevariable));
@@ -2163,7 +2194,7 @@ attr_name_getinstancevariable(
 rb_num_t
 attr_open_getinstancevariable(
     MAYBE_UNUSED(ID id),
-    MAYBE_UNUSED(IC ic)
+    MAYBE_UNUSED(IVC ic)
 )
 {
     return 2;
@@ -2173,7 +2204,7 @@ attr_open_getinstancevariable(
 rb_num_t
 attr_popn_getinstancevariable(
     MAYBE_UNUSED(ID id),
-    MAYBE_UNUSED(IC ic)
+    MAYBE_UNUSED(IVC ic)
 )
 {
     return 0;
@@ -2183,7 +2214,7 @@ attr_popn_getinstancevariable(
 rb_num_t
 attr_retn_getinstancevariable(
     MAYBE_UNUSED(ID id),
-    MAYBE_UNUSED(IC ic)
+    MAYBE_UNUSED(IVC ic)
 )
 {
     return 1;
@@ -2193,7 +2224,7 @@ attr_retn_getinstancevariable(
 rb_snum_t
 attr_sp_inc_getinstancevariable(
     MAYBE_UNUSED(ID id),
-    MAYBE_UNUSED(IC ic)
+    MAYBE_UNUSED(IVC ic)
 )
 {
     return 1;
@@ -2203,7 +2234,7 @@ attr_sp_inc_getinstancevariable(
 rb_num_t
 attr_width_getinstancevariable(
     MAYBE_UNUSED(ID id),
-    MAYBE_UNUSED(IC ic)
+    MAYBE_UNUSED(IVC ic)
 )
 {
     return 3;
@@ -2213,7 +2244,7 @@ attr_width_getinstancevariable(
 enum ruby_vminsn_type
 attr_bin_setinstancevariable(
     MAYBE_UNUSED(ID id),
-    MAYBE_UNUSED(IC ic)
+    MAYBE_UNUSED(IVC ic)
 )
 {
     return BIN(setinstancevariable);
@@ -2223,7 +2254,7 @@ attr_bin_setinstancevariable(
 bool
 attr_handles_sp_setinstancevariable(
     MAYBE_UNUSED(ID id),
-    MAYBE_UNUSED(IC ic)
+    MAYBE_UNUSED(IVC ic)
 )
 {
     return false;
@@ -2233,20 +2264,20 @@ attr_handles_sp_setinstancevariable(
 bool
 attr_leaf_setinstancevariable(
     MAYBE_UNUSED(ID id),
-    MAYBE_UNUSED(IC ic)
+    MAYBE_UNUSED(IVC ic)
 )
 {
     return
 #line 225 "insns.def"
 false;
-#line 2243 "insns_info.inc"
+#line 2274 "insns_info.inc"
 }
 
 /* attr const char* name @ setinstancevariable(id, ic)(val)() */
 const char*
 attr_name_setinstancevariable(
     MAYBE_UNUSED(ID id),
-    MAYBE_UNUSED(IC ic)
+    MAYBE_UNUSED(IVC ic)
 )
 {
     return insn_name(BIN(setinstancevariable));
@@ -2256,7 +2287,7 @@ attr_name_setinstancevariable(
 rb_num_t
 attr_open_setinstancevariable(
     MAYBE_UNUSED(ID id),
-    MAYBE_UNUSED(IC ic)
+    MAYBE_UNUSED(IVC ic)
 )
 {
     return 2;
@@ -2266,7 +2297,7 @@ attr_open_setinstancevariable(
 rb_num_t
 attr_popn_setinstancevariable(
     MAYBE_UNUSED(ID id),
-    MAYBE_UNUSED(IC ic)
+    MAYBE_UNUSED(IVC ic)
 )
 {
     return 1;
@@ -2276,7 +2307,7 @@ attr_popn_setinstancevariable(
 rb_num_t
 attr_retn_setinstancevariable(
     MAYBE_UNUSED(ID id),
-    MAYBE_UNUSED(IC ic)
+    MAYBE_UNUSED(IVC ic)
 )
 {
     return 0;
@@ -2286,7 +2317,7 @@ attr_retn_setinstancevariable(
 rb_snum_t
 attr_sp_inc_setinstancevariable(
     MAYBE_UNUSED(ID id),
-    MAYBE_UNUSED(IC ic)
+    MAYBE_UNUSED(IVC ic)
 )
 {
     return -1;
@@ -2296,7 +2327,7 @@ attr_sp_inc_setinstancevariable(
 rb_num_t
 attr_width_setinstancevariable(
     MAYBE_UNUSED(ID id),
-    MAYBE_UNUSED(IC ic)
+    MAYBE_UNUSED(IVC ic)
 )
 {
     return 3;
@@ -2323,7 +2354,7 @@ attr_leaf_getclassvariable(MAYBE_UNUSED(ID id))
     return
 #line 237 "insns.def"
 false;
-#line 2327 "insns_info.inc"
+#line 2358 "insns_info.inc"
 }
 
 /* attr const char* name @ getclassvariable(id)()(val) */
@@ -2389,7 +2420,7 @@ attr_leaf_setclassvariable(MAYBE_UNUSED(ID id))
     return
 #line 249 "insns.def"
 false;
-#line 2393 "insns_info.inc"
+#line 2424 "insns_info.inc"
 }
 
 /* attr const char* name @ setclassvariable(id)(val)() */
@@ -2455,7 +2486,7 @@ attr_leaf_getconstant(MAYBE_UNUSED(ID id))
     return
 #line 265 "insns.def"
 false;
-#line 2459 "insns_info.inc"
+#line 2490 "insns_info.inc"
 }
 
 /* attr const char* name @ getconstant(id)(klass, allow_nil)(val) */
@@ -2521,7 +2552,7 @@ attr_leaf_setconstant(MAYBE_UNUSED(ID id))
     return
 #line 281 "insns.def"
 false;
-#line 2525 "insns_info.inc"
+#line 2556 "insns_info.inc"
 }
 
 /* attr const char* name @ setconstant(id)(val, cbase)() */
@@ -2587,7 +2618,7 @@ attr_leaf_getglobal(MAYBE_UNUSED(GENTRY entry))
     return
 #line 294 "insns.def"
 leafness_of_getglobal(entry);
-#line 2591 "insns_info.inc"
+#line 2622 "insns_info.inc"
 }
 
 /* attr const char* name @ getglobal(entry)()(val) */
@@ -2653,7 +2684,7 @@ attr_leaf_setglobal(MAYBE_UNUSED(GENTRY entry))
     return
 #line 306 "insns.def"
 leafness_of_setglobal(entry);
-#line 2657 "insns_info.inc"
+#line 2688 "insns_info.inc"
 }
 
 /* attr const char* name @ setglobal(entry)(val)() */
@@ -3034,7 +3065,7 @@ attr_leaf_concatstrings(MAYBE_UNUSED(rb_num_t num))
     return
 #line 379 "insns.def"
 false;
-#line 3038 "insns_info.inc"
+#line 3069 "insns_info.inc"
 }
 
 /* attr const char* name @ concatstrings(num)(...)(val) */
@@ -3072,7 +3103,7 @@ attr_sp_inc_concatstrings(MAYBE_UNUSED(rb_num_t num))
     return
 #line 380 "insns.def"
 1 - (rb_snum_t)num;
-#line 3076 "insns_info.inc"
+#line 3107 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ concatstrings(num)(...)(val) */
@@ -3238,7 +3269,7 @@ attr_leaf_toregexp(
     return
 #line 415 "insns.def"
 false;
-#line 3242 "insns_info.inc"
+#line 3273 "insns_info.inc"
 }
 
 /* attr const char* name @ toregexp(opt, cnt)(...)(val) */
@@ -3291,7 +3322,7 @@ attr_sp_inc_toregexp(
     return
 #line 416 "insns.def"
 1 - (rb_snum_t)cnt;
-#line 3295 "insns_info.inc"
+#line 3326 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ toregexp(opt, cnt)(...)(val) */
@@ -3423,7 +3454,7 @@ attr_sp_inc_newarray(MAYBE_UNUSED(rb_num_t num))
     return
 #line 439 "insns.def"
 1 - (rb_snum_t)num;
-#line 3427 "insns_info.inc"
+#line 3458 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ newarray(num)(...)(val) */
@@ -3489,7 +3520,7 @@ attr_sp_inc_newarraykwsplat(MAYBE_UNUSED(rb_num_t num))
     return
 #line 454 "insns.def"
 1 - (rb_snum_t)num;
-#line 3493 "insns_info.inc"
+#line 3524 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ newarraykwsplat(num)(...)(val) */
@@ -3655,7 +3686,7 @@ attr_leaf_expandarray(
     return
 #line 500 "insns.def"
 false;
-#line 3659 "insns_info.inc"
+#line 3690 "insns_info.inc"
 }
 
 /* attr const char* name @ expandarray(num, flag)(..., ary)(...) */
@@ -3708,7 +3739,7 @@ attr_sp_inc_expandarray(
     return
 #line 501 "insns.def"
 (rb_snum_t)num - 1 + (flag & 1 ? 1 : 0);
-#line 3712 "insns_info.inc"
+#line 3743 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ expandarray(num, flag)(..., ary)(...) */
@@ -3742,7 +3773,7 @@ attr_leaf_concatarray(void)
     return
 #line 512 "insns.def"
 false;
-#line 3746 "insns_info.inc"
+#line 3777 "insns_info.inc"
 }
 
 /* attr const char* name @ concatarray()(ary1, ary2)(ary) */
@@ -3808,7 +3839,7 @@ attr_leaf_splatarray(MAYBE_UNUSED(VALUE flag))
     return
 #line 523 "insns.def"
 false;
-#line 3812 "insns_info.inc"
+#line 3843 "insns_info.inc"
 }
 
 /* attr const char* name @ splatarray(flag)(ary)(obj) */
@@ -3874,7 +3905,7 @@ attr_leaf_newhash(MAYBE_UNUSED(rb_num_t num))
     return
 #line 534 "insns.def"
 false;
-#line 3878 "insns_info.inc"
+#line 3909 "insns_info.inc"
 }
 
 /* attr const char* name @ newhash(num)(...)(val) */
@@ -3912,7 +3943,7 @@ attr_sp_inc_newhash(MAYBE_UNUSED(rb_num_t num))
     return
 #line 535 "insns.def"
 1 - (rb_snum_t)num;
-#line 3916 "insns_info.inc"
+#line 3947 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ newhash(num)(...)(val) */
@@ -3943,7 +3974,7 @@ attr_leaf_newrange(MAYBE_UNUSED(rb_num_t flag))
     return
 #line 553 "insns.def"
 false;
-#line 3947 "insns_info.inc"
+#line 3978 "insns_info.inc"
 }
 
 /* attr const char* name @ newrange(flag)(low, high)(val) */
@@ -4170,7 +4201,7 @@ attr_sp_inc_dupn(MAYBE_UNUSED(rb_num_t n))
     return
 #line 589 "insns.def"
 n;
-#line 4174 "insns_info.inc"
+#line 4205 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ dupn(n)(...)(...) */
@@ -4299,7 +4330,7 @@ attr_sp_inc_reverse(MAYBE_UNUSED(rb_num_t n))
     return
 #line 613 "insns.def"
 0;
-#line 4303 "insns_info.inc"
+#line 4334 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ reverse(n)(...)(...) */
@@ -4365,7 +4396,7 @@ attr_sp_inc_topn(MAYBE_UNUSED(rb_num_t n))
     return
 #line 643 "insns.def"
 1;
-#line 4369 "insns_info.inc"
+#line 4400 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ topn(n)(...)(val) */
@@ -4431,7 +4462,7 @@ attr_sp_inc_setn(MAYBE_UNUSED(rb_num_t n))
     return
 #line 654 "insns.def"
 0;
-#line 4435 "insns_info.inc"
+#line 4466 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ setn(n)(..., val)(val) */
@@ -4497,7 +4528,7 @@ attr_sp_inc_adjuststack(MAYBE_UNUSED(rb_num_t n))
     return
 #line 665 "insns.def"
 -(rb_snum_t)n;
-#line 4501 "insns_info.inc"
+#line 4532 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ adjuststack(n)(...)(...) */
@@ -4540,7 +4571,7 @@ attr_leaf_defined(
     return
 #line 680 "insns.def"
 leafness_of_defined(op_type);
-#line 4544 "insns_info.inc"
+#line 4575 "insns_info.inc"
 }
 
 /* attr const char* name @ defined(op_type, obj, needstr)(v)(val) */
@@ -4630,7 +4661,7 @@ attr_leaf_checkmatch(MAYBE_UNUSED(rb_num_t flag))
     return
 #line 697 "insns.def"
 leafness_of_checkmatch(flag);
-#line 4634 "insns_info.inc"
+#line 4665 "insns_info.inc"
 }
 
 /* attr const char* name @ checkmatch(flag)(target, pattern)(result) */
@@ -4824,69 +4855,6 @@ attr_sp_inc_checktype(MAYBE_UNUSED(rb_num_t type))
 /* attr rb_num_t width @ checktype(type)(val)(ret) */
 rb_num_t
 attr_width_checktype(MAYBE_UNUSED(rb_num_t type))
-{
-    return 2;
-}
-
-/* attr enum ruby_vminsn_type bin @ methodref(id)(val)(ret) */
-enum ruby_vminsn_type
-attr_bin_methodref(MAYBE_UNUSED(ID id))
-{
-    return BIN(methodref);
-}
-
-/* attr bool handles_sp @ methodref(id)(val)(ret) */
-bool
-attr_handles_sp_methodref(MAYBE_UNUSED(ID id))
-{
-    return false;
-}
-
-/* attr bool leaf @ methodref(id)(val)(ret) */
-bool
-attr_leaf_methodref(MAYBE_UNUSED(ID id))
-{
-    return true;
-}
-
-/* attr const char* name @ methodref(id)(val)(ret) */
-const char*
-attr_name_methodref(MAYBE_UNUSED(ID id))
-{
-    return insn_name(BIN(methodref));
-}
-
-/* attr rb_num_t open @ methodref(id)(val)(ret) */
-rb_num_t
-attr_open_methodref(MAYBE_UNUSED(ID id))
-{
-    return 1;
-}
-
-/* attr rb_num_t popn @ methodref(id)(val)(ret) */
-rb_num_t
-attr_popn_methodref(MAYBE_UNUSED(ID id))
-{
-    return 1;
-}
-
-/* attr rb_num_t retn @ methodref(id)(val)(ret) */
-rb_num_t
-attr_retn_methodref(MAYBE_UNUSED(ID id))
-{
-    return 1;
-}
-
-/* attr rb_snum_t sp_inc @ methodref(id)(val)(ret) */
-rb_snum_t
-attr_sp_inc_methodref(MAYBE_UNUSED(ID id))
-{
-    return 0;
-}
-
-/* attr rb_num_t width @ methodref(id)(val)(ret) */
-rb_num_t
-attr_width_methodref(MAYBE_UNUSED(ID id))
 {
     return 2;
 }
@@ -5170,490 +5138,432 @@ attr_width_definesmethod(
     return 3;
 }
 
-/* attr enum ruby_vminsn_type bin @ send(ci, cc, blockiseq)(...)(val) */
+/* attr enum ruby_vminsn_type bin @ send(cd, blockiseq)(...)(val) */
 enum ruby_vminsn_type
 attr_bin_send(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc),
+    MAYBE_UNUSED(CALL_DATA cd),
     MAYBE_UNUSED(ISEQ blockiseq)
 )
 {
     return BIN(send);
 }
 
-/* attr bool handles_sp @ send(ci, cc, blockiseq)(...)(val) */
+/* attr rb_snum_t comptime_sp_inc @ send(cd, blockiseq)(...)(val) */
+rb_snum_t
+attr_comptime_sp_inc_send(
+    MAYBE_UNUSED(CALL_INFO ci),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return
+#line 779 "insns.def"
+sp_inc_of_sendish(ci);
+#line 5162 "insns_info.inc"
+}
+
+/* attr bool handles_sp @ send(cd, blockiseq)(...)(val) */
 bool
 attr_handles_sp_send(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc),
+    MAYBE_UNUSED(CALL_DATA cd),
     MAYBE_UNUSED(ISEQ blockiseq)
 )
 {
     return true;
 }
 
-/* attr bool leaf @ send(ci, cc, blockiseq)(...)(val) */
+/* attr bool leaf @ send(cd, blockiseq)(...)(val) */
 bool
 attr_leaf_send(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc),
+    MAYBE_UNUSED(CALL_DATA cd),
     MAYBE_UNUSED(ISEQ blockiseq)
 )
 {
     return false;
 }
 
-/* attr const char* name @ send(ci, cc, blockiseq)(...)(val) */
+/* attr const char* name @ send(cd, blockiseq)(...)(val) */
 const char*
 attr_name_send(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc),
+    MAYBE_UNUSED(CALL_DATA cd),
     MAYBE_UNUSED(ISEQ blockiseq)
 )
 {
     return insn_name(BIN(send));
 }
 
-/* attr rb_num_t open @ send(ci, cc, blockiseq)(...)(val) */
+/* attr rb_num_t open @ send(cd, blockiseq)(...)(val) */
 rb_num_t
 attr_open_send(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc),
+    MAYBE_UNUSED(CALL_DATA cd),
     MAYBE_UNUSED(ISEQ blockiseq)
-)
-{
-    return 3;
-}
-
-/* attr rb_num_t popn @ send(ci, cc, blockiseq)(...)(val) */
-rb_num_t
-attr_popn_send(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc),
-    MAYBE_UNUSED(ISEQ blockiseq)
-)
-{
-    return 0;
-}
-
-/* attr rb_num_t retn @ send(ci, cc, blockiseq)(...)(val) */
-rb_num_t
-attr_retn_send(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc),
-    MAYBE_UNUSED(ISEQ blockiseq)
-)
-{
-    return 1;
-}
-
-/* attr rb_snum_t sp_inc @ send(ci, cc, blockiseq)(...)(val) */
-rb_snum_t
-attr_sp_inc_send(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc),
-    MAYBE_UNUSED(ISEQ blockiseq)
-)
-{
-    return
-#line 789 "insns.def"
-sp_inc_of_sendish(ci);
-#line 5262 "insns_info.inc"
-}
-
-/* attr rb_num_t width @ send(ci, cc, blockiseq)(...)(val) */
-rb_num_t
-attr_width_send(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc),
-    MAYBE_UNUSED(ISEQ blockiseq)
-)
-{
-    return 4;
-}
-
-/* attr enum ruby_vminsn_type bin @ opt_send_without_block(ci, cc)(...)(val) */
-enum ruby_vminsn_type
-attr_bin_opt_send_without_block(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return BIN(opt_send_without_block);
-}
-
-/* attr bool handles_sp @ opt_send_without_block(ci, cc)(...)(val) */
-bool
-attr_handles_sp_opt_send_without_block(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return
-#line 806 "insns.def"
-true;
-#line 5296 "insns_info.inc"
-}
-
-/* attr bool leaf @ opt_send_without_block(ci, cc)(...)(val) */
-bool
-attr_leaf_opt_send_without_block(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return ! attr_handles_sp_opt_send_without_block(ci, cc);
-}
-
-/* attr const char* name @ opt_send_without_block(ci, cc)(...)(val) */
-const char*
-attr_name_opt_send_without_block(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return insn_name(BIN(opt_send_without_block));
-}
-
-/* attr rb_num_t open @ opt_send_without_block(ci, cc)(...)(val) */
-rb_num_t
-attr_open_opt_send_without_block(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
 )
 {
     return 2;
 }
 
-/* attr rb_num_t popn @ opt_send_without_block(ci, cc)(...)(val) */
+/* attr rb_num_t popn @ send(cd, blockiseq)(...)(val) */
 rb_num_t
-attr_popn_opt_send_without_block(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+attr_popn_send(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
 )
 {
     return 0;
 }
 
-/* attr rb_num_t retn @ opt_send_without_block(ci, cc)(...)(val) */
+/* attr rb_num_t retn @ send(cd, blockiseq)(...)(val) */
 rb_num_t
-attr_retn_opt_send_without_block(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+attr_retn_send(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
 )
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_send_without_block(ci, cc)(...)(val) */
+/* attr rb_snum_t sp_inc @ send(cd, blockiseq)(...)(val) */
 rb_snum_t
-attr_sp_inc_opt_send_without_block(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+attr_sp_inc_send(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
 )
 {
     return
-#line 807 "insns.def"
-sp_inc_of_sendish(ci);
-#line 5359 "insns_info.inc"
+#line 778 "insns.def"
+sp_inc_of_sendish(&cd->ci);
+#line 5235 "insns_info.inc"
 }
 
-/* attr rb_num_t width @ opt_send_without_block(ci, cc)(...)(val) */
+/* attr rb_num_t width @ send(cd, blockiseq)(...)(val) */
 rb_num_t
-attr_width_opt_send_without_block(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+attr_width_send(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
 )
 {
     return 3;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_str_freeze(str, ci, cc)()(val) */
+/* attr enum ruby_vminsn_type bin @ opt_send_without_block(cd)(...)(val) */
+enum ruby_vminsn_type
+attr_bin_opt_send_without_block(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return BIN(opt_send_without_block);
+}
+
+/* attr rb_snum_t comptime_sp_inc @ opt_send_without_block(cd)(...)(val) */
+rb_snum_t
+attr_comptime_sp_inc_opt_send_without_block(MAYBE_UNUSED(CALL_INFO ci))
+{
+    return
+#line 798 "insns.def"
+sp_inc_of_sendish(ci);
+#line 5262 "insns_info.inc"
+}
+
+/* attr bool handles_sp @ opt_send_without_block(cd)(...)(val) */
+bool
+attr_handles_sp_opt_send_without_block(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 796 "insns.def"
+true;
+#line 5272 "insns_info.inc"
+}
+
+/* attr bool leaf @ opt_send_without_block(cd)(...)(val) */
+bool
+attr_leaf_opt_send_without_block(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return ! attr_handles_sp_opt_send_without_block(cd);
+}
+
+/* attr const char* name @ opt_send_without_block(cd)(...)(val) */
+const char*
+attr_name_opt_send_without_block(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return insn_name(BIN(opt_send_without_block));
+}
+
+/* attr rb_num_t open @ opt_send_without_block(cd)(...)(val) */
+rb_num_t
+attr_open_opt_send_without_block(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_num_t popn @ opt_send_without_block(cd)(...)(val) */
+rb_num_t
+attr_popn_opt_send_without_block(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 0;
+}
+
+/* attr rb_num_t retn @ opt_send_without_block(cd)(...)(val) */
+rb_num_t
+attr_retn_opt_send_without_block(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_send_without_block(cd)(...)(val) */
+rb_snum_t
+attr_sp_inc_opt_send_without_block(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 797 "insns.def"
+sp_inc_of_sendish(&cd->ci);
+#line 5317 "insns_info.inc"
+}
+
+/* attr rb_num_t width @ opt_send_without_block(cd)(...)(val) */
+rb_num_t
+attr_width_opt_send_without_block(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 2;
+}
+
+/* attr enum ruby_vminsn_type bin @ opt_str_freeze(str, cd)()(val) */
 enum ruby_vminsn_type
 attr_bin_opt_str_freeze(
     MAYBE_UNUSED(VALUE str),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return BIN(opt_str_freeze);
 }
 
-/* attr bool handles_sp @ opt_str_freeze(str, ci, cc)()(val) */
+/* attr bool handles_sp @ opt_str_freeze(str, cd)()(val) */
 bool
 attr_handles_sp_opt_str_freeze(
     MAYBE_UNUSED(VALUE str),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return false;
 }
 
-/* attr bool leaf @ opt_str_freeze(str, ci, cc)()(val) */
+/* attr bool leaf @ opt_str_freeze(str, cd)()(val) */
 bool
 attr_leaf_opt_str_freeze(
     MAYBE_UNUSED(VALUE str),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return true;
 }
 
-/* attr const char* name @ opt_str_freeze(str, ci, cc)()(val) */
+/* attr const char* name @ opt_str_freeze(str, cd)()(val) */
 const char*
 attr_name_opt_str_freeze(
     MAYBE_UNUSED(VALUE str),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return insn_name(BIN(opt_str_freeze));
 }
 
-/* attr rb_num_t open @ opt_str_freeze(str, ci, cc)()(val) */
+/* attr rb_num_t open @ opt_str_freeze(str, cd)()(val) */
 rb_num_t
 attr_open_opt_str_freeze(
     MAYBE_UNUSED(VALUE str),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 3;
-}
-
-/* attr rb_num_t popn @ opt_str_freeze(str, ci, cc)()(val) */
-rb_num_t
-attr_popn_opt_str_freeze(
-    MAYBE_UNUSED(VALUE str),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 0;
-}
-
-/* attr rb_num_t retn @ opt_str_freeze(str, ci, cc)()(val) */
-rb_num_t
-attr_retn_opt_str_freeze(
-    MAYBE_UNUSED(VALUE str),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 1;
-}
-
-/* attr rb_snum_t sp_inc @ opt_str_freeze(str, ci, cc)()(val) */
-rb_snum_t
-attr_sp_inc_opt_str_freeze(
-    MAYBE_UNUSED(VALUE str),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 1;
-}
-
-/* attr rb_num_t width @ opt_str_freeze(str, ci, cc)()(val) */
-rb_num_t
-attr_width_opt_str_freeze(
-    MAYBE_UNUSED(VALUE str),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 4;
-}
-
-/* attr enum ruby_vminsn_type bin @ opt_nil_p(ci, cc)(recv)(val) */
-enum ruby_vminsn_type
-attr_bin_opt_nil_p(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return BIN(opt_nil_p);
-}
-
-/* attr bool handles_sp @ opt_nil_p(ci, cc)(recv)(val) */
-bool
-attr_handles_sp_opt_nil_p(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return false;
-}
-
-/* attr bool leaf @ opt_nil_p(ci, cc)(recv)(val) */
-bool
-attr_leaf_opt_nil_p(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return true;
-}
-
-/* attr const char* name @ opt_nil_p(ci, cc)(recv)(val) */
-const char*
-attr_name_opt_nil_p(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return insn_name(BIN(opt_nil_p));
-}
-
-/* attr rb_num_t open @ opt_nil_p(ci, cc)(recv)(val) */
-rb_num_t
-attr_open_opt_nil_p(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return 2;
 }
 
-/* attr rb_num_t popn @ opt_nil_p(ci, cc)(recv)(val) */
+/* attr rb_num_t popn @ opt_str_freeze(str, cd)()(val) */
 rb_num_t
-attr_popn_opt_nil_p(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 1;
-}
-
-/* attr rb_num_t retn @ opt_nil_p(ci, cc)(recv)(val) */
-rb_num_t
-attr_retn_opt_nil_p(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 1;
-}
-
-/* attr rb_snum_t sp_inc @ opt_nil_p(ci, cc)(recv)(val) */
-rb_snum_t
-attr_sp_inc_opt_nil_p(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+attr_popn_opt_str_freeze(
+    MAYBE_UNUSED(VALUE str),
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return 0;
 }
 
-/* attr rb_num_t width @ opt_nil_p(ci, cc)(recv)(val) */
+/* attr rb_num_t retn @ opt_str_freeze(str, cd)()(val) */
 rb_num_t
-attr_width_opt_nil_p(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+attr_retn_opt_str_freeze(
+    MAYBE_UNUSED(VALUE str),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_str_freeze(str, cd)()(val) */
+rb_snum_t
+attr_sp_inc_opt_str_freeze(
+    MAYBE_UNUSED(VALUE str),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return 1;
+}
+
+/* attr rb_num_t width @ opt_str_freeze(str, cd)()(val) */
+rb_num_t
+attr_width_opt_str_freeze(
+    MAYBE_UNUSED(VALUE str),
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return 3;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_str_uminus(str, ci, cc)()(val) */
+/* attr enum ruby_vminsn_type bin @ opt_nil_p(cd)(recv)(val) */
+enum ruby_vminsn_type
+attr_bin_opt_nil_p(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return BIN(opt_nil_p);
+}
+
+/* attr bool handles_sp @ opt_nil_p(cd)(recv)(val) */
+bool
+attr_handles_sp_opt_nil_p(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return false;
+}
+
+/* attr bool leaf @ opt_nil_p(cd)(recv)(val) */
+bool
+attr_leaf_opt_nil_p(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return true;
+}
+
+/* attr const char* name @ opt_nil_p(cd)(recv)(val) */
+const char*
+attr_name_opt_nil_p(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return insn_name(BIN(opt_nil_p));
+}
+
+/* attr rb_num_t open @ opt_nil_p(cd)(recv)(val) */
+rb_num_t
+attr_open_opt_nil_p(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_num_t popn @ opt_nil_p(cd)(recv)(val) */
+rb_num_t
+attr_popn_opt_nil_p(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_num_t retn @ opt_nil_p(cd)(recv)(val) */
+rb_num_t
+attr_retn_opt_nil_p(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_nil_p(cd)(recv)(val) */
+rb_snum_t
+attr_sp_inc_opt_nil_p(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 0;
+}
+
+/* attr rb_num_t width @ opt_nil_p(cd)(recv)(val) */
+rb_num_t
+attr_width_opt_nil_p(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 2;
+}
+
+/* attr enum ruby_vminsn_type bin @ opt_str_uminus(str, cd)()(val) */
 enum ruby_vminsn_type
 attr_bin_opt_str_uminus(
     MAYBE_UNUSED(VALUE str),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return BIN(opt_str_uminus);
 }
 
-/* attr bool handles_sp @ opt_str_uminus(str, ci, cc)()(val) */
+/* attr bool handles_sp @ opt_str_uminus(str, cd)()(val) */
 bool
 attr_handles_sp_opt_str_uminus(
     MAYBE_UNUSED(VALUE str),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return false;
 }
 
-/* attr bool leaf @ opt_str_uminus(str, ci, cc)()(val) */
+/* attr bool leaf @ opt_str_uminus(str, cd)()(val) */
 bool
 attr_leaf_opt_str_uminus(
     MAYBE_UNUSED(VALUE str),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return true;
 }
 
-/* attr const char* name @ opt_str_uminus(str, ci, cc)()(val) */
+/* attr const char* name @ opt_str_uminus(str, cd)()(val) */
 const char*
 attr_name_opt_str_uminus(
     MAYBE_UNUSED(VALUE str),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return insn_name(BIN(opt_str_uminus));
 }
 
-/* attr rb_num_t open @ opt_str_uminus(str, ci, cc)()(val) */
+/* attr rb_num_t open @ opt_str_uminus(str, cd)()(val) */
 rb_num_t
 attr_open_opt_str_uminus(
     MAYBE_UNUSED(VALUE str),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
-    return 3;
+    return 2;
 }
 
-/* attr rb_num_t popn @ opt_str_uminus(str, ci, cc)()(val) */
+/* attr rb_num_t popn @ opt_str_uminus(str, cd)()(val) */
 rb_num_t
 attr_popn_opt_str_uminus(
     MAYBE_UNUSED(VALUE str),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return 0;
 }
 
-/* attr rb_num_t retn @ opt_str_uminus(str, ci, cc)()(val) */
+/* attr rb_num_t retn @ opt_str_uminus(str, cd)()(val) */
 rb_num_t
 attr_retn_opt_str_uminus(
     MAYBE_UNUSED(VALUE str),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_str_uminus(str, ci, cc)()(val) */
+/* attr rb_snum_t sp_inc @ opt_str_uminus(str, cd)()(val) */
 rb_snum_t
 attr_sp_inc_opt_str_uminus(
     MAYBE_UNUSED(VALUE str),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return 1;
 }
 
-/* attr rb_num_t width @ opt_str_uminus(str, ci, cc)()(val) */
+/* attr rb_num_t width @ opt_str_uminus(str, cd)()(val) */
 rb_num_t
 attr_width_opt_str_uminus(
     MAYBE_UNUSED(VALUE str),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
-    return 4;
+    return 3;
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_newarray_max(num)(...)(val) */
@@ -5675,9 +5585,9 @@ bool
 attr_leaf_opt_newarray_max(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 869 "insns.def"
+#line 860 "insns.def"
 false;
-#line 5681 "insns_info.inc"
+#line 5591 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_newarray_max(num)(...)(val) */
@@ -5713,9 +5623,9 @@ rb_snum_t
 attr_sp_inc_opt_newarray_max(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 870 "insns.def"
+#line 861 "insns.def"
 1 - (rb_snum_t)num;
-#line 5719 "insns_info.inc"
+#line 5629 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_newarray_max(num)(...)(val) */
@@ -5744,9 +5654,9 @@ bool
 attr_leaf_opt_newarray_min(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 881 "insns.def"
+#line 872 "insns.def"
 false;
-#line 5750 "insns_info.inc"
+#line 5660 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_newarray_min(num)(...)(val) */
@@ -5782,9 +5692,9 @@ rb_snum_t
 attr_sp_inc_opt_newarray_min(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 882 "insns.def"
+#line 873 "insns.def"
 1 - (rb_snum_t)num;
-#line 5788 "insns_info.inc"
+#line 5698 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_newarray_min(num)(...)(val) */
@@ -5794,173 +5704,187 @@ attr_width_opt_newarray_min(MAYBE_UNUSED(rb_num_t num))
     return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ invokesuper(ci, cc, blockiseq)(...)(val) */
+/* attr enum ruby_vminsn_type bin @ invokesuper(cd, blockiseq)(...)(val) */
 enum ruby_vminsn_type
 attr_bin_invokesuper(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc),
+    MAYBE_UNUSED(CALL_DATA cd),
     MAYBE_UNUSED(ISEQ blockiseq)
 )
 {
     return BIN(invokesuper);
 }
 
-/* attr bool handles_sp @ invokesuper(ci, cc, blockiseq)(...)(val) */
+/* attr rb_snum_t comptime_sp_inc @ invokesuper(cd, blockiseq)(...)(val) */
+rb_snum_t
+attr_comptime_sp_inc_invokesuper(
+    MAYBE_UNUSED(CALL_INFO ci),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return
+#line 885 "insns.def"
+sp_inc_of_sendish(ci);
+#line 5728 "insns_info.inc"
+}
+
+/* attr bool handles_sp @ invokesuper(cd, blockiseq)(...)(val) */
 bool
 attr_handles_sp_invokesuper(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc),
+    MAYBE_UNUSED(CALL_DATA cd),
     MAYBE_UNUSED(ISEQ blockiseq)
 )
 {
     return true;
 }
 
-/* attr bool leaf @ invokesuper(ci, cc, blockiseq)(...)(val) */
+/* attr bool leaf @ invokesuper(cd, blockiseq)(...)(val) */
 bool
 attr_leaf_invokesuper(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc),
+    MAYBE_UNUSED(CALL_DATA cd),
     MAYBE_UNUSED(ISEQ blockiseq)
 )
 {
     return false;
 }
 
-/* attr const char* name @ invokesuper(ci, cc, blockiseq)(...)(val) */
+/* attr const char* name @ invokesuper(cd, blockiseq)(...)(val) */
 const char*
 attr_name_invokesuper(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc),
+    MAYBE_UNUSED(CALL_DATA cd),
     MAYBE_UNUSED(ISEQ blockiseq)
 )
 {
     return insn_name(BIN(invokesuper));
 }
 
-/* attr rb_num_t open @ invokesuper(ci, cc, blockiseq)(...)(val) */
+/* attr rb_num_t open @ invokesuper(cd, blockiseq)(...)(val) */
 rb_num_t
 attr_open_invokesuper(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc),
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return 2;
+}
+
+/* attr rb_num_t popn @ invokesuper(cd, blockiseq)(...)(val) */
+rb_num_t
+attr_popn_invokesuper(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return 0;
+}
+
+/* attr rb_num_t retn @ invokesuper(cd, blockiseq)(...)(val) */
+rb_num_t
+attr_retn_invokesuper(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ invokesuper(cd, blockiseq)(...)(val) */
+rb_snum_t
+attr_sp_inc_invokesuper(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return
+#line 884 "insns.def"
+sp_inc_of_sendish(&cd->ci);
+#line 5801 "insns_info.inc"
+}
+
+/* attr rb_num_t width @ invokesuper(cd, blockiseq)(...)(val) */
+rb_num_t
+attr_width_invokesuper(
+    MAYBE_UNUSED(CALL_DATA cd),
     MAYBE_UNUSED(ISEQ blockiseq)
 )
 {
     return 3;
 }
 
-/* attr rb_num_t popn @ invokesuper(ci, cc, blockiseq)(...)(val) */
-rb_num_t
-attr_popn_invokesuper(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc),
-    MAYBE_UNUSED(ISEQ blockiseq)
-)
-{
-    return 0;
-}
-
-/* attr rb_num_t retn @ invokesuper(ci, cc, blockiseq)(...)(val) */
-rb_num_t
-attr_retn_invokesuper(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc),
-    MAYBE_UNUSED(ISEQ blockiseq)
-)
-{
-    return 1;
-}
-
-/* attr rb_snum_t sp_inc @ invokesuper(ci, cc, blockiseq)(...)(val) */
-rb_snum_t
-attr_sp_inc_invokesuper(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc),
-    MAYBE_UNUSED(ISEQ blockiseq)
-)
-{
-    return
-#line 893 "insns.def"
-sp_inc_of_sendish(ci);
-#line 5886 "insns_info.inc"
-}
-
-/* attr rb_num_t width @ invokesuper(ci, cc, blockiseq)(...)(val) */
-rb_num_t
-attr_width_invokesuper(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc),
-    MAYBE_UNUSED(ISEQ blockiseq)
-)
-{
-    return 4;
-}
-
-/* attr enum ruby_vminsn_type bin @ invokeblock(ci)(...)(val) */
+/* attr enum ruby_vminsn_type bin @ invokeblock(cd)(...)(val) */
 enum ruby_vminsn_type
-attr_bin_invokeblock(MAYBE_UNUSED(CALL_INFO ci))
+attr_bin_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
 {
     return BIN(invokeblock);
 }
 
-/* attr bool handles_sp @ invokeblock(ci)(...)(val) */
-bool
-attr_handles_sp_invokeblock(MAYBE_UNUSED(CALL_INFO ci))
+/* attr rb_snum_t comptime_sp_inc @ invokeblock(cd)(...)(val) */
+rb_snum_t
+attr_comptime_sp_inc_invokeblock(MAYBE_UNUSED(CALL_INFO ci))
 {
     return
-#line 910 "insns.def"
-true;
-#line 5914 "insns_info.inc"
+#line 904 "insns.def"
+sp_inc_of_invokeblock(ci);
+#line 5828 "insns_info.inc"
 }
 
-/* attr bool leaf @ invokeblock(ci)(...)(val) */
+/* attr bool handles_sp @ invokeblock(cd)(...)(val) */
 bool
-attr_leaf_invokeblock(MAYBE_UNUSED(CALL_INFO ci))
+attr_handles_sp_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
 {
-    return ! attr_handles_sp_invokeblock(ci);
+    return
+#line 902 "insns.def"
+true;
+#line 5838 "insns_info.inc"
 }
 
-/* attr const char* name @ invokeblock(ci)(...)(val) */
+/* attr bool leaf @ invokeblock(cd)(...)(val) */
+bool
+attr_leaf_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return ! attr_handles_sp_invokeblock(cd);
+}
+
+/* attr const char* name @ invokeblock(cd)(...)(val) */
 const char*
-attr_name_invokeblock(MAYBE_UNUSED(CALL_INFO ci))
+attr_name_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
 {
     return insn_name(BIN(invokeblock));
 }
 
-/* attr rb_num_t open @ invokeblock(ci)(...)(val) */
+/* attr rb_num_t open @ invokeblock(cd)(...)(val) */
 rb_num_t
-attr_open_invokeblock(MAYBE_UNUSED(CALL_INFO ci))
+attr_open_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_num_t popn @ invokeblock(ci)(...)(val) */
+/* attr rb_num_t popn @ invokeblock(cd)(...)(val) */
 rb_num_t
-attr_popn_invokeblock(MAYBE_UNUSED(CALL_INFO ci))
+attr_popn_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 0;
 }
 
-/* attr rb_num_t retn @ invokeblock(ci)(...)(val) */
+/* attr rb_num_t retn @ invokeblock(cd)(...)(val) */
 rb_num_t
-attr_retn_invokeblock(MAYBE_UNUSED(CALL_INFO ci))
+attr_retn_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ invokeblock(ci)(...)(val) */
+/* attr rb_snum_t sp_inc @ invokeblock(cd)(...)(val) */
 rb_snum_t
-attr_sp_inc_invokeblock(MAYBE_UNUSED(CALL_INFO ci))
+attr_sp_inc_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 911 "insns.def"
-sp_inc_of_invokeblock(ci);
-#line 5959 "insns_info.inc"
+#line 903 "insns.def"
+sp_inc_of_invokeblock(&cd->ci);
+#line 5883 "insns_info.inc"
 }
 
-/* attr rb_num_t width @ invokeblock(ci)(...)(val) */
+/* attr rb_num_t width @ invokeblock(cd)(...)(val) */
 rb_num_t
-attr_width_invokeblock(MAYBE_UNUSED(CALL_INFO ci))
+attr_width_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 2;
 }
@@ -5977,9 +5901,9 @@ bool
 attr_handles_sp_leave(void)
 {
     return
-#line 936 "insns.def"
+#line 929 "insns.def"
 true;
-#line 5983 "insns_info.inc"
+#line 5907 "insns_info.inc"
 }
 
 /* attr bool leaf @ leave()(val)(val) */
@@ -5987,9 +5911,9 @@ bool
 attr_leaf_leave(void)
 {
     return
-#line 935 "insns.def"
+#line 928 "insns.def"
 false;
-#line 5993 "insns_info.inc"
+#line 5917 "insns_info.inc"
 }
 
 /* attr const char* name @ leave()(val)(val) */
@@ -6053,9 +5977,9 @@ bool
 attr_leaf_throw(MAYBE_UNUSED(rb_num_t throw_state))
 {
     return
-#line 971 "insns.def"
+#line 962 "insns.def"
 false;
-#line 6059 "insns_info.inc"
+#line 5983 "insns_info.inc"
 }
 
 /* attr const char* name @ throw(throw_state)(throwobj)(val) */
@@ -6119,9 +6043,9 @@ bool
 attr_leaf_jump(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 990 "insns.def"
+#line 980 "insns.def"
 false;
-#line 6125 "insns_info.inc"
+#line 6049 "insns_info.inc"
 }
 
 /* attr const char* name @ jump(dst)()() */
@@ -6185,9 +6109,9 @@ bool
 attr_leaf_branchif(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1003 "insns.def"
+#line 993 "insns.def"
 false;
-#line 6191 "insns_info.inc"
+#line 6115 "insns_info.inc"
 }
 
 /* attr const char* name @ branchif(dst)(val)() */
@@ -6251,9 +6175,9 @@ bool
 attr_leaf_branchunless(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1018 "insns.def"
+#line 1008 "insns.def"
 false;
-#line 6257 "insns_info.inc"
+#line 6181 "insns_info.inc"
 }
 
 /* attr const char* name @ branchunless(dst)(val)() */
@@ -6317,9 +6241,9 @@ bool
 attr_leaf_branchnil(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1033 "insns.def"
+#line 1023 "insns.def"
 false;
-#line 6323 "insns_info.inc"
+#line 6247 "insns_info.inc"
 }
 
 /* attr const char* name @ branchnil(dst)(val)() */
@@ -6685,9 +6609,9 @@ attr_sp_inc_opt_case_dispatch(
 )
 {
     return
-#line 1087 "insns.def"
+#line 1077 "insns.def"
 -1;
-#line 6691 "insns_info.inc"
+#line 6615 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_case_dispatch(hash, else_offset)(..., key)() */
@@ -6700,2224 +6624,1621 @@ attr_width_opt_case_dispatch(
     return 3;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_plus(ci, cc)(recv, obj)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_plus(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
-attr_bin_opt_plus(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_bin_opt_plus(MAYBE_UNUSED(CALL_DATA cd))
 {
     return BIN(opt_plus);
 }
 
-/* attr bool handles_sp @ opt_plus(ci, cc)(recv, obj)(val) */
+/* attr bool handles_sp @ opt_plus(cd)(recv, obj)(val) */
 bool
-attr_handles_sp_opt_plus(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_handles_sp_opt_plus(MAYBE_UNUSED(CALL_DATA cd))
 {
     return false;
 }
 
-/* attr bool leaf @ opt_plus(ci, cc)(recv, obj)(val) */
+/* attr bool leaf @ opt_plus(cd)(recv, obj)(val) */
 bool
-attr_leaf_opt_plus(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_leaf_opt_plus(MAYBE_UNUSED(CALL_DATA cd))
 {
     return true;
 }
 
-/* attr const char* name @ opt_plus(ci, cc)(recv, obj)(val) */
+/* attr const char* name @ opt_plus(cd)(recv, obj)(val) */
 const char*
-attr_name_opt_plus(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_name_opt_plus(MAYBE_UNUSED(CALL_DATA cd))
 {
     return insn_name(BIN(opt_plus));
 }
 
-/* attr rb_num_t open @ opt_plus(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t open @ opt_plus(cd)(recv, obj)(val) */
 rb_num_t
-attr_open_opt_plus(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_plus(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_popn_opt_plus(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t retn @ opt_plus(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_retn_opt_plus(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_open_opt_plus(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_plus(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t popn @ opt_plus(cd)(recv, obj)(val) */
+rb_num_t
+attr_popn_opt_plus(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 2;
+}
+
+/* attr rb_num_t retn @ opt_plus(cd)(recv, obj)(val) */
+rb_num_t
+attr_retn_opt_plus(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_plus(cd)(recv, obj)(val) */
 rb_snum_t
-attr_sp_inc_opt_plus(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_sp_inc_opt_plus(MAYBE_UNUSED(CALL_DATA cd))
 {
     return -1;
 }
 
-/* attr rb_num_t width @ opt_plus(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t width @ opt_plus(cd)(recv, obj)(val) */
 rb_num_t
-attr_width_opt_plus(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_width_opt_plus(MAYBE_UNUSED(CALL_DATA cd))
 {
-    return 3;
+    return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_minus(ci, cc)(recv, obj)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_minus(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
-attr_bin_opt_minus(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_bin_opt_minus(MAYBE_UNUSED(CALL_DATA cd))
 {
     return BIN(opt_minus);
 }
 
-/* attr bool handles_sp @ opt_minus(ci, cc)(recv, obj)(val) */
+/* attr bool handles_sp @ opt_minus(cd)(recv, obj)(val) */
 bool
-attr_handles_sp_opt_minus(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_handles_sp_opt_minus(MAYBE_UNUSED(CALL_DATA cd))
 {
     return false;
 }
 
-/* attr bool leaf @ opt_minus(ci, cc)(recv, obj)(val) */
+/* attr bool leaf @ opt_minus(cd)(recv, obj)(val) */
 bool
-attr_leaf_opt_minus(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_leaf_opt_minus(MAYBE_UNUSED(CALL_DATA cd))
 {
     return true;
 }
 
-/* attr const char* name @ opt_minus(ci, cc)(recv, obj)(val) */
+/* attr const char* name @ opt_minus(cd)(recv, obj)(val) */
 const char*
-attr_name_opt_minus(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_name_opt_minus(MAYBE_UNUSED(CALL_DATA cd))
 {
     return insn_name(BIN(opt_minus));
 }
 
-/* attr rb_num_t open @ opt_minus(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t open @ opt_minus(cd)(recv, obj)(val) */
 rb_num_t
-attr_open_opt_minus(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_minus(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_popn_opt_minus(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t retn @ opt_minus(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_retn_opt_minus(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_open_opt_minus(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_minus(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t popn @ opt_minus(cd)(recv, obj)(val) */
+rb_num_t
+attr_popn_opt_minus(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 2;
+}
+
+/* attr rb_num_t retn @ opt_minus(cd)(recv, obj)(val) */
+rb_num_t
+attr_retn_opt_minus(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_minus(cd)(recv, obj)(val) */
 rb_snum_t
-attr_sp_inc_opt_minus(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_sp_inc_opt_minus(MAYBE_UNUSED(CALL_DATA cd))
 {
     return -1;
 }
 
-/* attr rb_num_t width @ opt_minus(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t width @ opt_minus(cd)(recv, obj)(val) */
 rb_num_t
-attr_width_opt_minus(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_width_opt_minus(MAYBE_UNUSED(CALL_DATA cd))
 {
-    return 3;
+    return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_mult(ci, cc)(recv, obj)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_mult(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
-attr_bin_opt_mult(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_bin_opt_mult(MAYBE_UNUSED(CALL_DATA cd))
 {
     return BIN(opt_mult);
 }
 
-/* attr bool handles_sp @ opt_mult(ci, cc)(recv, obj)(val) */
+/* attr bool handles_sp @ opt_mult(cd)(recv, obj)(val) */
 bool
-attr_handles_sp_opt_mult(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_handles_sp_opt_mult(MAYBE_UNUSED(CALL_DATA cd))
 {
     return false;
 }
 
-/* attr bool leaf @ opt_mult(ci, cc)(recv, obj)(val) */
+/* attr bool leaf @ opt_mult(cd)(recv, obj)(val) */
 bool
-attr_leaf_opt_mult(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_leaf_opt_mult(MAYBE_UNUSED(CALL_DATA cd))
 {
     return true;
 }
 
-/* attr const char* name @ opt_mult(ci, cc)(recv, obj)(val) */
+/* attr const char* name @ opt_mult(cd)(recv, obj)(val) */
 const char*
-attr_name_opt_mult(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_name_opt_mult(MAYBE_UNUSED(CALL_DATA cd))
 {
     return insn_name(BIN(opt_mult));
 }
 
-/* attr rb_num_t open @ opt_mult(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t open @ opt_mult(cd)(recv, obj)(val) */
 rb_num_t
-attr_open_opt_mult(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_mult(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_popn_opt_mult(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t retn @ opt_mult(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_retn_opt_mult(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_open_opt_mult(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_mult(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t popn @ opt_mult(cd)(recv, obj)(val) */
+rb_num_t
+attr_popn_opt_mult(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 2;
+}
+
+/* attr rb_num_t retn @ opt_mult(cd)(recv, obj)(val) */
+rb_num_t
+attr_retn_opt_mult(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_mult(cd)(recv, obj)(val) */
 rb_snum_t
-attr_sp_inc_opt_mult(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_sp_inc_opt_mult(MAYBE_UNUSED(CALL_DATA cd))
 {
     return -1;
 }
 
-/* attr rb_num_t width @ opt_mult(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t width @ opt_mult(cd)(recv, obj)(val) */
 rb_num_t
-attr_width_opt_mult(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_width_opt_mult(MAYBE_UNUSED(CALL_DATA cd))
 {
-    return 3;
+    return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_div(ci, cc)(recv, obj)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_div(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
-attr_bin_opt_div(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_bin_opt_div(MAYBE_UNUSED(CALL_DATA cd))
 {
     return BIN(opt_div);
 }
 
-/* attr bool handles_sp @ opt_div(ci, cc)(recv, obj)(val) */
+/* attr bool handles_sp @ opt_div(cd)(recv, obj)(val) */
 bool
-attr_handles_sp_opt_div(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_handles_sp_opt_div(MAYBE_UNUSED(CALL_DATA cd))
 {
     return false;
 }
 
-/* attr bool leaf @ opt_div(ci, cc)(recv, obj)(val) */
+/* attr bool leaf @ opt_div(cd)(recv, obj)(val) */
 bool
-attr_leaf_opt_div(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_leaf_opt_div(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1148 "insns.def"
+#line 1138 "insns.def"
 false;
-#line 7004 "insns_info.inc"
+#line 6838 "insns_info.inc"
 }
 
-/* attr const char* name @ opt_div(ci, cc)(recv, obj)(val) */
+/* attr const char* name @ opt_div(cd)(recv, obj)(val) */
 const char*
-attr_name_opt_div(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_name_opt_div(MAYBE_UNUSED(CALL_DATA cd))
 {
     return insn_name(BIN(opt_div));
 }
 
-/* attr rb_num_t open @ opt_div(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t open @ opt_div(cd)(recv, obj)(val) */
 rb_num_t
-attr_open_opt_div(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_div(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_popn_opt_div(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t retn @ opt_div(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_retn_opt_div(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_open_opt_div(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_div(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t popn @ opt_div(cd)(recv, obj)(val) */
+rb_num_t
+attr_popn_opt_div(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 2;
+}
+
+/* attr rb_num_t retn @ opt_div(cd)(recv, obj)(val) */
+rb_num_t
+attr_retn_opt_div(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_div(cd)(recv, obj)(val) */
 rb_snum_t
-attr_sp_inc_opt_div(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_sp_inc_opt_div(MAYBE_UNUSED(CALL_DATA cd))
 {
     return -1;
 }
 
-/* attr rb_num_t width @ opt_div(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t width @ opt_div(cd)(recv, obj)(val) */
 rb_num_t
-attr_width_opt_div(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_width_opt_div(MAYBE_UNUSED(CALL_DATA cd))
 {
-    return 3;
+    return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_mod(ci, cc)(recv, obj)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_mod(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
-attr_bin_opt_mod(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_bin_opt_mod(MAYBE_UNUSED(CALL_DATA cd))
 {
     return BIN(opt_mod);
 }
 
-/* attr bool handles_sp @ opt_mod(ci, cc)(recv, obj)(val) */
+/* attr bool handles_sp @ opt_mod(cd)(recv, obj)(val) */
 bool
-attr_handles_sp_opt_mod(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_handles_sp_opt_mod(MAYBE_UNUSED(CALL_DATA cd))
 {
     return false;
 }
 
-/* attr bool leaf @ opt_mod(ci, cc)(recv, obj)(val) */
+/* attr bool leaf @ opt_mod(cd)(recv, obj)(val) */
 bool
-attr_leaf_opt_mod(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_leaf_opt_mod(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1164 "insns.def"
+#line 1154 "insns.def"
 false;
-#line 7097 "insns_info.inc"
+#line 6904 "insns_info.inc"
 }
 
-/* attr const char* name @ opt_mod(ci, cc)(recv, obj)(val) */
+/* attr const char* name @ opt_mod(cd)(recv, obj)(val) */
 const char*
-attr_name_opt_mod(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_name_opt_mod(MAYBE_UNUSED(CALL_DATA cd))
 {
     return insn_name(BIN(opt_mod));
 }
 
-/* attr rb_num_t open @ opt_mod(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t open @ opt_mod(cd)(recv, obj)(val) */
 rb_num_t
-attr_open_opt_mod(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_mod(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_popn_opt_mod(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t retn @ opt_mod(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_retn_opt_mod(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_open_opt_mod(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_mod(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t popn @ opt_mod(cd)(recv, obj)(val) */
+rb_num_t
+attr_popn_opt_mod(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 2;
+}
+
+/* attr rb_num_t retn @ opt_mod(cd)(recv, obj)(val) */
+rb_num_t
+attr_retn_opt_mod(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_mod(cd)(recv, obj)(val) */
 rb_snum_t
-attr_sp_inc_opt_mod(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_sp_inc_opt_mod(MAYBE_UNUSED(CALL_DATA cd))
 {
     return -1;
 }
 
-/* attr rb_num_t width @ opt_mod(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t width @ opt_mod(cd)(recv, obj)(val) */
 rb_num_t
-attr_width_opt_mod(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_width_opt_mod(MAYBE_UNUSED(CALL_DATA cd))
 {
-    return 3;
+    return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_eq(ci, cc)(recv, obj)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_eq(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
-attr_bin_opt_eq(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_bin_opt_eq(MAYBE_UNUSED(CALL_DATA cd))
 {
     return BIN(opt_eq);
 }
 
-/* attr bool handles_sp @ opt_eq(ci, cc)(recv, obj)(val) */
+/* attr bool handles_sp @ opt_eq(cd)(recv, obj)(val) */
 bool
-attr_handles_sp_opt_eq(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_handles_sp_opt_eq(MAYBE_UNUSED(CALL_DATA cd))
 {
     return false;
 }
 
-/* attr bool leaf @ opt_eq(ci, cc)(recv, obj)(val) */
+/* attr bool leaf @ opt_eq(cd)(recv, obj)(val) */
 bool
-attr_leaf_opt_eq(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_leaf_opt_eq(MAYBE_UNUSED(CALL_DATA cd))
 {
     return true;
 }
 
-/* attr const char* name @ opt_eq(ci, cc)(recv, obj)(val) */
+/* attr const char* name @ opt_eq(cd)(recv, obj)(val) */
 const char*
-attr_name_opt_eq(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_name_opt_eq(MAYBE_UNUSED(CALL_DATA cd))
 {
     return insn_name(BIN(opt_eq));
 }
 
-/* attr rb_num_t open @ opt_eq(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t open @ opt_eq(cd)(recv, obj)(val) */
 rb_num_t
-attr_open_opt_eq(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_eq(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_popn_opt_eq(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t retn @ opt_eq(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_retn_opt_eq(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_open_opt_eq(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_eq(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t popn @ opt_eq(cd)(recv, obj)(val) */
+rb_num_t
+attr_popn_opt_eq(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 2;
+}
+
+/* attr rb_num_t retn @ opt_eq(cd)(recv, obj)(val) */
+rb_num_t
+attr_retn_opt_eq(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_eq(cd)(recv, obj)(val) */
 rb_snum_t
-attr_sp_inc_opt_eq(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_sp_inc_opt_eq(MAYBE_UNUSED(CALL_DATA cd))
 {
     return -1;
 }
 
-/* attr rb_num_t width @ opt_eq(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t width @ opt_eq(cd)(recv, obj)(val) */
 rb_num_t
-attr_width_opt_eq(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_width_opt_eq(MAYBE_UNUSED(CALL_DATA cd))
 {
-    return 3;
+    return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_neq(ci_eq, cc_eq, ci, cc)(recv, obj)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_neq(cd_eq, cd)(recv, obj)(val) */
 enum ruby_vminsn_type
 attr_bin_opt_neq(
-    MAYBE_UNUSED(CALL_INFO ci_eq),
-    MAYBE_UNUSED(CALL_CACHE cc_eq),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd_eq),
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return BIN(opt_neq);
 }
 
-/* attr bool handles_sp @ opt_neq(ci_eq, cc_eq, ci, cc)(recv, obj)(val) */
+/* attr bool handles_sp @ opt_neq(cd_eq, cd)(recv, obj)(val) */
 bool
 attr_handles_sp_opt_neq(
-    MAYBE_UNUSED(CALL_INFO ci_eq),
-    MAYBE_UNUSED(CALL_CACHE cc_eq),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd_eq),
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return false;
 }
 
-/* attr bool leaf @ opt_neq(ci_eq, cc_eq, ci, cc)(recv, obj)(val) */
+/* attr bool leaf @ opt_neq(cd_eq, cd)(recv, obj)(val) */
 bool
 attr_leaf_opt_neq(
-    MAYBE_UNUSED(CALL_INFO ci_eq),
-    MAYBE_UNUSED(CALL_CACHE cc_eq),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd_eq),
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return true;
 }
 
-/* attr const char* name @ opt_neq(ci_eq, cc_eq, ci, cc)(recv, obj)(val) */
+/* attr const char* name @ opt_neq(cd_eq, cd)(recv, obj)(val) */
 const char*
 attr_name_opt_neq(
-    MAYBE_UNUSED(CALL_INFO ci_eq),
-    MAYBE_UNUSED(CALL_CACHE cc_eq),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd_eq),
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return insn_name(BIN(opt_neq));
 }
 
-/* attr rb_num_t open @ opt_neq(ci_eq, cc_eq, ci, cc)(recv, obj)(val) */
+/* attr rb_num_t open @ opt_neq(cd_eq, cd)(recv, obj)(val) */
 rb_num_t
 attr_open_opt_neq(
-    MAYBE_UNUSED(CALL_INFO ci_eq),
-    MAYBE_UNUSED(CALL_CACHE cc_eq),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 4;
-}
-
-/* attr rb_num_t popn @ opt_neq(ci_eq, cc_eq, ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_popn_opt_neq(
-    MAYBE_UNUSED(CALL_INFO ci_eq),
-    MAYBE_UNUSED(CALL_CACHE cc_eq),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd_eq),
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return 2;
 }
 
-/* attr rb_num_t retn @ opt_neq(ci_eq, cc_eq, ci, cc)(recv, obj)(val) */
+/* attr rb_num_t popn @ opt_neq(cd_eq, cd)(recv, obj)(val) */
+rb_num_t
+attr_popn_opt_neq(
+    MAYBE_UNUSED(CALL_DATA cd_eq),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return 2;
+}
+
+/* attr rb_num_t retn @ opt_neq(cd_eq, cd)(recv, obj)(val) */
 rb_num_t
 attr_retn_opt_neq(
-    MAYBE_UNUSED(CALL_INFO ci_eq),
-    MAYBE_UNUSED(CALL_CACHE cc_eq),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd_eq),
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_neq(ci_eq, cc_eq, ci, cc)(recv, obj)(val) */
+/* attr rb_snum_t sp_inc @ opt_neq(cd_eq, cd)(recv, obj)(val) */
 rb_snum_t
 attr_sp_inc_opt_neq(
-    MAYBE_UNUSED(CALL_INFO ci_eq),
-    MAYBE_UNUSED(CALL_CACHE cc_eq),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd_eq),
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return -1;
 }
 
-/* attr rb_num_t width @ opt_neq(ci_eq, cc_eq, ci, cc)(recv, obj)(val) */
+/* attr rb_num_t width @ opt_neq(cd_eq, cd)(recv, obj)(val) */
 rb_num_t
 attr_width_opt_neq(
-    MAYBE_UNUSED(CALL_INFO ci_eq),
-    MAYBE_UNUSED(CALL_CACHE cc_eq),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd_eq),
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
-    return 5;
+    return 3;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_lt(ci, cc)(recv, obj)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_lt(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
-attr_bin_opt_lt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_bin_opt_lt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return BIN(opt_lt);
 }
 
-/* attr bool handles_sp @ opt_lt(ci, cc)(recv, obj)(val) */
+/* attr bool handles_sp @ opt_lt(cd)(recv, obj)(val) */
 bool
-attr_handles_sp_opt_lt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_handles_sp_opt_lt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return false;
 }
 
-/* attr bool leaf @ opt_lt(ci, cc)(recv, obj)(val) */
+/* attr bool leaf @ opt_lt(cd)(recv, obj)(val) */
 bool
-attr_leaf_opt_lt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_leaf_opt_lt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return true;
 }
 
-/* attr const char* name @ opt_lt(ci, cc)(recv, obj)(val) */
+/* attr const char* name @ opt_lt(cd)(recv, obj)(val) */
 const char*
-attr_name_opt_lt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_name_opt_lt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return insn_name(BIN(opt_lt));
 }
 
-/* attr rb_num_t open @ opt_lt(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t open @ opt_lt(cd)(recv, obj)(val) */
 rb_num_t
-attr_open_opt_lt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_lt(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_popn_opt_lt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t retn @ opt_lt(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_retn_opt_lt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_open_opt_lt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_lt(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t popn @ opt_lt(cd)(recv, obj)(val) */
+rb_num_t
+attr_popn_opt_lt(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 2;
+}
+
+/* attr rb_num_t retn @ opt_lt(cd)(recv, obj)(val) */
+rb_num_t
+attr_retn_opt_lt(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_lt(cd)(recv, obj)(val) */
 rb_snum_t
-attr_sp_inc_opt_lt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_sp_inc_opt_lt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return -1;
 }
 
-/* attr rb_num_t width @ opt_lt(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t width @ opt_lt(cd)(recv, obj)(val) */
 rb_num_t
-attr_width_opt_lt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_width_opt_lt(MAYBE_UNUSED(CALL_DATA cd))
 {
-    return 3;
+    return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_le(ci, cc)(recv, obj)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_le(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
-attr_bin_opt_le(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_bin_opt_le(MAYBE_UNUSED(CALL_DATA cd))
 {
     return BIN(opt_le);
 }
 
-/* attr bool handles_sp @ opt_le(ci, cc)(recv, obj)(val) */
+/* attr bool handles_sp @ opt_le(cd)(recv, obj)(val) */
 bool
-attr_handles_sp_opt_le(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_handles_sp_opt_le(MAYBE_UNUSED(CALL_DATA cd))
 {
     return false;
 }
 
-/* attr bool leaf @ opt_le(ci, cc)(recv, obj)(val) */
+/* attr bool leaf @ opt_le(cd)(recv, obj)(val) */
 bool
-attr_leaf_opt_le(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_leaf_opt_le(MAYBE_UNUSED(CALL_DATA cd))
 {
     return true;
 }
 
-/* attr const char* name @ opt_le(ci, cc)(recv, obj)(val) */
+/* attr const char* name @ opt_le(cd)(recv, obj)(val) */
 const char*
-attr_name_opt_le(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_name_opt_le(MAYBE_UNUSED(CALL_DATA cd))
 {
     return insn_name(BIN(opt_le));
 }
 
-/* attr rb_num_t open @ opt_le(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t open @ opt_le(cd)(recv, obj)(val) */
 rb_num_t
-attr_open_opt_le(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_le(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_popn_opt_le(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t retn @ opt_le(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_retn_opt_le(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_open_opt_le(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_le(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t popn @ opt_le(cd)(recv, obj)(val) */
+rb_num_t
+attr_popn_opt_le(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 2;
+}
+
+/* attr rb_num_t retn @ opt_le(cd)(recv, obj)(val) */
+rb_num_t
+attr_retn_opt_le(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_le(cd)(recv, obj)(val) */
 rb_snum_t
-attr_sp_inc_opt_le(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_sp_inc_opt_le(MAYBE_UNUSED(CALL_DATA cd))
 {
     return -1;
 }
 
-/* attr rb_num_t width @ opt_le(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t width @ opt_le(cd)(recv, obj)(val) */
 rb_num_t
-attr_width_opt_le(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_width_opt_le(MAYBE_UNUSED(CALL_DATA cd))
 {
-    return 3;
+    return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_gt(ci, cc)(recv, obj)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_gt(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
-attr_bin_opt_gt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_bin_opt_gt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return BIN(opt_gt);
 }
 
-/* attr bool handles_sp @ opt_gt(ci, cc)(recv, obj)(val) */
+/* attr bool handles_sp @ opt_gt(cd)(recv, obj)(val) */
 bool
-attr_handles_sp_opt_gt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_handles_sp_opt_gt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return false;
 }
 
-/* attr bool leaf @ opt_gt(ci, cc)(recv, obj)(val) */
+/* attr bool leaf @ opt_gt(cd)(recv, obj)(val) */
 bool
-attr_leaf_opt_gt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_leaf_opt_gt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return true;
 }
 
-/* attr const char* name @ opt_gt(ci, cc)(recv, obj)(val) */
+/* attr const char* name @ opt_gt(cd)(recv, obj)(val) */
 const char*
-attr_name_opt_gt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_name_opt_gt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return insn_name(BIN(opt_gt));
 }
 
-/* attr rb_num_t open @ opt_gt(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t open @ opt_gt(cd)(recv, obj)(val) */
 rb_num_t
-attr_open_opt_gt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_gt(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_popn_opt_gt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t retn @ opt_gt(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_retn_opt_gt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_open_opt_gt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_gt(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t popn @ opt_gt(cd)(recv, obj)(val) */
+rb_num_t
+attr_popn_opt_gt(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 2;
+}
+
+/* attr rb_num_t retn @ opt_gt(cd)(recv, obj)(val) */
+rb_num_t
+attr_retn_opt_gt(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_gt(cd)(recv, obj)(val) */
 rb_snum_t
-attr_sp_inc_opt_gt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_sp_inc_opt_gt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return -1;
 }
 
-/* attr rb_num_t width @ opt_gt(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t width @ opt_gt(cd)(recv, obj)(val) */
 rb_num_t
-attr_width_opt_gt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_width_opt_gt(MAYBE_UNUSED(CALL_DATA cd))
 {
-    return 3;
+    return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_ge(ci, cc)(recv, obj)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_ge(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
-attr_bin_opt_ge(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_bin_opt_ge(MAYBE_UNUSED(CALL_DATA cd))
 {
     return BIN(opt_ge);
 }
 
-/* attr bool handles_sp @ opt_ge(ci, cc)(recv, obj)(val) */
+/* attr bool handles_sp @ opt_ge(cd)(recv, obj)(val) */
 bool
-attr_handles_sp_opt_ge(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_handles_sp_opt_ge(MAYBE_UNUSED(CALL_DATA cd))
 {
     return false;
 }
 
-/* attr bool leaf @ opt_ge(ci, cc)(recv, obj)(val) */
+/* attr bool leaf @ opt_ge(cd)(recv, obj)(val) */
 bool
-attr_leaf_opt_ge(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_leaf_opt_ge(MAYBE_UNUSED(CALL_DATA cd))
 {
     return true;
 }
 
-/* attr const char* name @ opt_ge(ci, cc)(recv, obj)(val) */
+/* attr const char* name @ opt_ge(cd)(recv, obj)(val) */
 const char*
-attr_name_opt_ge(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_name_opt_ge(MAYBE_UNUSED(CALL_DATA cd))
 {
     return insn_name(BIN(opt_ge));
 }
 
-/* attr rb_num_t open @ opt_ge(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t open @ opt_ge(cd)(recv, obj)(val) */
 rb_num_t
-attr_open_opt_ge(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_ge(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_popn_opt_ge(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t retn @ opt_ge(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_retn_opt_ge(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_open_opt_ge(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_ge(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t popn @ opt_ge(cd)(recv, obj)(val) */
+rb_num_t
+attr_popn_opt_ge(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 2;
+}
+
+/* attr rb_num_t retn @ opt_ge(cd)(recv, obj)(val) */
+rb_num_t
+attr_retn_opt_ge(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_ge(cd)(recv, obj)(val) */
 rb_snum_t
-attr_sp_inc_opt_ge(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_sp_inc_opt_ge(MAYBE_UNUSED(CALL_DATA cd))
 {
     return -1;
 }
 
-/* attr rb_num_t width @ opt_ge(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t width @ opt_ge(cd)(recv, obj)(val) */
 rb_num_t
-attr_width_opt_ge(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_width_opt_ge(MAYBE_UNUSED(CALL_DATA cd))
 {
-    return 3;
+    return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_ltlt(ci, cc)(recv, obj)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_ltlt(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
-attr_bin_opt_ltlt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_bin_opt_ltlt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return BIN(opt_ltlt);
 }
 
-/* attr bool handles_sp @ opt_ltlt(ci, cc)(recv, obj)(val) */
+/* attr bool handles_sp @ opt_ltlt(cd)(recv, obj)(val) */
 bool
-attr_handles_sp_opt_ltlt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_handles_sp_opt_ltlt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return false;
 }
 
-/* attr bool leaf @ opt_ltlt(ci, cc)(recv, obj)(val) */
+/* attr bool leaf @ opt_ltlt(cd)(recv, obj)(val) */
 bool
-attr_leaf_opt_ltlt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_leaf_opt_ltlt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1266 "insns.def"
+#line 1256 "insns.def"
 false;
-#line 7748 "insns_info.inc"
+#line 7375 "insns_info.inc"
 }
 
-/* attr const char* name @ opt_ltlt(ci, cc)(recv, obj)(val) */
+/* attr const char* name @ opt_ltlt(cd)(recv, obj)(val) */
 const char*
-attr_name_opt_ltlt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_name_opt_ltlt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return insn_name(BIN(opt_ltlt));
 }
 
-/* attr rb_num_t open @ opt_ltlt(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t open @ opt_ltlt(cd)(recv, obj)(val) */
 rb_num_t
-attr_open_opt_ltlt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_ltlt(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_popn_opt_ltlt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t retn @ opt_ltlt(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_retn_opt_ltlt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_open_opt_ltlt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_ltlt(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t popn @ opt_ltlt(cd)(recv, obj)(val) */
+rb_num_t
+attr_popn_opt_ltlt(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 2;
+}
+
+/* attr rb_num_t retn @ opt_ltlt(cd)(recv, obj)(val) */
+rb_num_t
+attr_retn_opt_ltlt(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_ltlt(cd)(recv, obj)(val) */
 rb_snum_t
-attr_sp_inc_opt_ltlt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_sp_inc_opt_ltlt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return -1;
 }
 
-/* attr rb_num_t width @ opt_ltlt(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t width @ opt_ltlt(cd)(recv, obj)(val) */
 rb_num_t
-attr_width_opt_ltlt(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_width_opt_ltlt(MAYBE_UNUSED(CALL_DATA cd))
 {
-    return 3;
+    return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_and(ci, cc)(recv, obj)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_and(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
-attr_bin_opt_and(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_bin_opt_and(MAYBE_UNUSED(CALL_DATA cd))
 {
     return BIN(opt_and);
 }
 
-/* attr bool handles_sp @ opt_and(ci, cc)(recv, obj)(val) */
+/* attr bool handles_sp @ opt_and(cd)(recv, obj)(val) */
 bool
-attr_handles_sp_opt_and(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_handles_sp_opt_and(MAYBE_UNUSED(CALL_DATA cd))
 {
     return false;
 }
 
-/* attr bool leaf @ opt_and(ci, cc)(recv, obj)(val) */
+/* attr bool leaf @ opt_and(cd)(recv, obj)(val) */
 bool
-attr_leaf_opt_and(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_leaf_opt_and(MAYBE_UNUSED(CALL_DATA cd))
 {
     return true;
 }
 
-/* attr const char* name @ opt_and(ci, cc)(recv, obj)(val) */
+/* attr const char* name @ opt_and(cd)(recv, obj)(val) */
 const char*
-attr_name_opt_and(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_name_opt_and(MAYBE_UNUSED(CALL_DATA cd))
 {
     return insn_name(BIN(opt_and));
 }
 
-/* attr rb_num_t open @ opt_and(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t open @ opt_and(cd)(recv, obj)(val) */
 rb_num_t
-attr_open_opt_and(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_and(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_popn_opt_and(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t retn @ opt_and(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_retn_opt_and(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_open_opt_and(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_and(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t popn @ opt_and(cd)(recv, obj)(val) */
+rb_num_t
+attr_popn_opt_and(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 2;
+}
+
+/* attr rb_num_t retn @ opt_and(cd)(recv, obj)(val) */
+rb_num_t
+attr_retn_opt_and(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_and(cd)(recv, obj)(val) */
 rb_snum_t
-attr_sp_inc_opt_and(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_sp_inc_opt_and(MAYBE_UNUSED(CALL_DATA cd))
 {
     return -1;
 }
 
-/* attr rb_num_t width @ opt_and(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t width @ opt_and(cd)(recv, obj)(val) */
 rb_num_t
-attr_width_opt_and(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_width_opt_and(MAYBE_UNUSED(CALL_DATA cd))
 {
-    return 3;
+    return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_or(ci, cc)(recv, obj)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_or(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
-attr_bin_opt_or(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_bin_opt_or(MAYBE_UNUSED(CALL_DATA cd))
 {
     return BIN(opt_or);
 }
 
-/* attr bool handles_sp @ opt_or(ci, cc)(recv, obj)(val) */
+/* attr bool handles_sp @ opt_or(cd)(recv, obj)(val) */
 bool
-attr_handles_sp_opt_or(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_handles_sp_opt_or(MAYBE_UNUSED(CALL_DATA cd))
 {
     return false;
 }
 
-/* attr bool leaf @ opt_or(ci, cc)(recv, obj)(val) */
+/* attr bool leaf @ opt_or(cd)(recv, obj)(val) */
 bool
-attr_leaf_opt_or(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_leaf_opt_or(MAYBE_UNUSED(CALL_DATA cd))
 {
     return true;
 }
 
-/* attr const char* name @ opt_or(ci, cc)(recv, obj)(val) */
+/* attr const char* name @ opt_or(cd)(recv, obj)(val) */
 const char*
-attr_name_opt_or(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_name_opt_or(MAYBE_UNUSED(CALL_DATA cd))
 {
     return insn_name(BIN(opt_or));
 }
 
-/* attr rb_num_t open @ opt_or(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t open @ opt_or(cd)(recv, obj)(val) */
 rb_num_t
-attr_open_opt_or(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_or(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_popn_opt_or(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t retn @ opt_or(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_retn_opt_or(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_open_opt_or(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_or(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t popn @ opt_or(cd)(recv, obj)(val) */
+rb_num_t
+attr_popn_opt_or(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 2;
+}
+
+/* attr rb_num_t retn @ opt_or(cd)(recv, obj)(val) */
+rb_num_t
+attr_retn_opt_or(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_or(cd)(recv, obj)(val) */
 rb_snum_t
-attr_sp_inc_opt_or(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_sp_inc_opt_or(MAYBE_UNUSED(CALL_DATA cd))
 {
     return -1;
 }
 
-/* attr rb_num_t width @ opt_or(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t width @ opt_or(cd)(recv, obj)(val) */
 rb_num_t
-attr_width_opt_or(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_width_opt_or(MAYBE_UNUSED(CALL_DATA cd))
 {
-    return 3;
+    return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_aref(ci, cc)(recv, obj)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_aref(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
-attr_bin_opt_aref(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_bin_opt_aref(MAYBE_UNUSED(CALL_DATA cd))
 {
     return BIN(opt_aref);
 }
 
-/* attr bool handles_sp @ opt_aref(ci, cc)(recv, obj)(val) */
+/* attr bool handles_sp @ opt_aref(cd)(recv, obj)(val) */
 bool
-attr_handles_sp_opt_aref(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_handles_sp_opt_aref(MAYBE_UNUSED(CALL_DATA cd))
 {
     return false;
 }
 
-/* attr bool leaf @ opt_aref(ci, cc)(recv, obj)(val) */
+/* attr bool leaf @ opt_aref(cd)(recv, obj)(val) */
 bool
-attr_leaf_opt_aref(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_leaf_opt_aref(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1313 "insns.def"
+#line 1303 "insns.def"
 false;
-#line 8021 "insns_info.inc"
+#line 7567 "insns_info.inc"
 }
 
-/* attr const char* name @ opt_aref(ci, cc)(recv, obj)(val) */
+/* attr const char* name @ opt_aref(cd)(recv, obj)(val) */
 const char*
-attr_name_opt_aref(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_name_opt_aref(MAYBE_UNUSED(CALL_DATA cd))
 {
     return insn_name(BIN(opt_aref));
 }
 
-/* attr rb_num_t open @ opt_aref(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t open @ opt_aref(cd)(recv, obj)(val) */
 rb_num_t
-attr_open_opt_aref(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_aref(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_popn_opt_aref(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t retn @ opt_aref(ci, cc)(recv, obj)(val) */
-rb_num_t
-attr_retn_opt_aref(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_open_opt_aref(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_aref(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t popn @ opt_aref(cd)(recv, obj)(val) */
+rb_num_t
+attr_popn_opt_aref(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 2;
+}
+
+/* attr rb_num_t retn @ opt_aref(cd)(recv, obj)(val) */
+rb_num_t
+attr_retn_opt_aref(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_aref(cd)(recv, obj)(val) */
 rb_snum_t
-attr_sp_inc_opt_aref(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_sp_inc_opt_aref(MAYBE_UNUSED(CALL_DATA cd))
 {
     return -1;
 }
 
-/* attr rb_num_t width @ opt_aref(ci, cc)(recv, obj)(val) */
+/* attr rb_num_t width @ opt_aref(cd)(recv, obj)(val) */
 rb_num_t
-attr_width_opt_aref(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 3;
-}
-
-/* attr enum ruby_vminsn_type bin @ opt_aset(ci, cc)(recv, obj, set)(val) */
-enum ruby_vminsn_type
-attr_bin_opt_aset(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return BIN(opt_aset);
-}
-
-/* attr bool handles_sp @ opt_aset(ci, cc)(recv, obj, set)(val) */
-bool
-attr_handles_sp_opt_aset(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return false;
-}
-
-/* attr bool leaf @ opt_aset(ci, cc)(recv, obj, set)(val) */
-bool
-attr_leaf_opt_aset(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return
-#line 1330 "insns.def"
-false;
-#line 8114 "insns_info.inc"
-}
-
-/* attr const char* name @ opt_aset(ci, cc)(recv, obj, set)(val) */
-const char*
-attr_name_opt_aset(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return insn_name(BIN(opt_aset));
-}
-
-/* attr rb_num_t open @ opt_aset(ci, cc)(recv, obj, set)(val) */
-rb_num_t
-attr_open_opt_aset(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_width_opt_aref(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 2;
 }
 
-/* attr rb_num_t popn @ opt_aset(ci, cc)(recv, obj, set)(val) */
-rb_num_t
-attr_popn_opt_aset(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+/* attr enum ruby_vminsn_type bin @ opt_aset(cd)(recv, obj, set)(val) */
+enum ruby_vminsn_type
+attr_bin_opt_aset(MAYBE_UNUSED(CALL_DATA cd))
 {
-    return 3;
+    return BIN(opt_aset);
 }
 
-/* attr rb_num_t retn @ opt_aset(ci, cc)(recv, obj, set)(val) */
+/* attr bool handles_sp @ opt_aset(cd)(recv, obj, set)(val) */
+bool
+attr_handles_sp_opt_aset(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return false;
+}
+
+/* attr bool leaf @ opt_aset(cd)(recv, obj, set)(val) */
+bool
+attr_leaf_opt_aset(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1320 "insns.def"
+false;
+#line 7633 "insns_info.inc"
+}
+
+/* attr const char* name @ opt_aset(cd)(recv, obj, set)(val) */
+const char*
+attr_name_opt_aset(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return insn_name(BIN(opt_aset));
+}
+
+/* attr rb_num_t open @ opt_aset(cd)(recv, obj, set)(val) */
 rb_num_t
-attr_retn_opt_aset(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_open_opt_aset(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_aset(ci, cc)(recv, obj, set)(val) */
-rb_snum_t
-attr_sp_inc_opt_aset(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return -2;
-}
-
-/* attr rb_num_t width @ opt_aset(ci, cc)(recv, obj, set)(val) */
+/* attr rb_num_t popn @ opt_aset(cd)(recv, obj, set)(val) */
 rb_num_t
-attr_width_opt_aset(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_popn_opt_aset(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 3;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_aset_with(key, ci, cc)(recv, val)(val) */
+/* attr rb_num_t retn @ opt_aset(cd)(recv, obj, set)(val) */
+rb_num_t
+attr_retn_opt_aset(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_aset(cd)(recv, obj, set)(val) */
+rb_snum_t
+attr_sp_inc_opt_aset(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return -2;
+}
+
+/* attr rb_num_t width @ opt_aset(cd)(recv, obj, set)(val) */
+rb_num_t
+attr_width_opt_aset(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 2;
+}
+
+/* attr enum ruby_vminsn_type bin @ opt_aset_with(key, cd)(recv, val)(val) */
 enum ruby_vminsn_type
 attr_bin_opt_aset_with(
     MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return BIN(opt_aset_with);
 }
 
-/* attr bool handles_sp @ opt_aset_with(key, ci, cc)(recv, val)(val) */
+/* attr bool handles_sp @ opt_aset_with(key, cd)(recv, val)(val) */
 bool
 attr_handles_sp_opt_aset_with(
     MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return false;
 }
 
-/* attr bool leaf @ opt_aset_with(key, ci, cc)(recv, val)(val) */
+/* attr bool leaf @ opt_aset_with(key, cd)(recv, val)(val) */
 bool
 attr_leaf_opt_aset_with(
     MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return
-#line 1346 "insns.def"
+#line 1336 "insns.def"
 false;
-#line 8210 "insns_info.inc"
+#line 7708 "insns_info.inc"
 }
 
-/* attr const char* name @ opt_aset_with(key, ci, cc)(recv, val)(val) */
+/* attr const char* name @ opt_aset_with(key, cd)(recv, val)(val) */
 const char*
 attr_name_opt_aset_with(
     MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return insn_name(BIN(opt_aset_with));
 }
 
-/* attr rb_num_t open @ opt_aset_with(key, ci, cc)(recv, val)(val) */
+/* attr rb_num_t open @ opt_aset_with(key, cd)(recv, val)(val) */
 rb_num_t
 attr_open_opt_aset_with(
     MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 3;
-}
-
-/* attr rb_num_t popn @ opt_aset_with(key, ci, cc)(recv, val)(val) */
-rb_num_t
-attr_popn_opt_aset_with(
-    MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return 2;
 }
 
-/* attr rb_num_t retn @ opt_aset_with(key, ci, cc)(recv, val)(val) */
+/* attr rb_num_t popn @ opt_aset_with(key, cd)(recv, val)(val) */
+rb_num_t
+attr_popn_opt_aset_with(
+    MAYBE_UNUSED(VALUE key),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return 2;
+}
+
+/* attr rb_num_t retn @ opt_aset_with(key, cd)(recv, val)(val) */
 rb_num_t
 attr_retn_opt_aset_with(
     MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_aset_with(key, ci, cc)(recv, val)(val) */
+/* attr rb_snum_t sp_inc @ opt_aset_with(key, cd)(recv, val)(val) */
 rb_snum_t
 attr_sp_inc_opt_aset_with(
     MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return -1;
 }
 
-/* attr rb_num_t width @ opt_aset_with(key, ci, cc)(recv, val)(val) */
+/* attr rb_num_t width @ opt_aset_with(key, cd)(recv, val)(val) */
 rb_num_t
 attr_width_opt_aset_with(
     MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
-    return 4;
+    return 3;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_aref_with(key, ci, cc)(recv)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_aref_with(key, cd)(recv)(val) */
 enum ruby_vminsn_type
 attr_bin_opt_aref_with(
     MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return BIN(opt_aref_with);
 }
 
-/* attr bool handles_sp @ opt_aref_with(key, ci, cc)(recv)(val) */
+/* attr bool handles_sp @ opt_aref_with(key, cd)(recv)(val) */
 bool
 attr_handles_sp_opt_aref_with(
     MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return false;
 }
 
-/* attr bool leaf @ opt_aref_with(key, ci, cc)(recv)(val) */
+/* attr bool leaf @ opt_aref_with(key, cd)(recv)(val) */
 bool
 attr_leaf_opt_aref_with(
     MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return
-#line 1369 "insns.def"
+#line 1359 "insns.def"
 false;
-#line 8312 "insns_info.inc"
+#line 7801 "insns_info.inc"
 }
 
-/* attr const char* name @ opt_aref_with(key, ci, cc)(recv)(val) */
+/* attr const char* name @ opt_aref_with(key, cd)(recv)(val) */
 const char*
 attr_name_opt_aref_with(
     MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return insn_name(BIN(opt_aref_with));
 }
 
-/* attr rb_num_t open @ opt_aref_with(key, ci, cc)(recv)(val) */
+/* attr rb_num_t open @ opt_aref_with(key, cd)(recv)(val) */
 rb_num_t
 attr_open_opt_aref_with(
     MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
-    return 3;
+    return 2;
 }
 
-/* attr rb_num_t popn @ opt_aref_with(key, ci, cc)(recv)(val) */
+/* attr rb_num_t popn @ opt_aref_with(key, cd)(recv)(val) */
 rb_num_t
 attr_popn_opt_aref_with(
     MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return 1;
 }
 
-/* attr rb_num_t retn @ opt_aref_with(key, ci, cc)(recv)(val) */
+/* attr rb_num_t retn @ opt_aref_with(key, cd)(recv)(val) */
 rb_num_t
 attr_retn_opt_aref_with(
     MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_aref_with(key, ci, cc)(recv)(val) */
+/* attr rb_snum_t sp_inc @ opt_aref_with(key, cd)(recv)(val) */
 rb_snum_t
 attr_sp_inc_opt_aref_with(
     MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
     return 0;
 }
 
-/* attr rb_num_t width @ opt_aref_with(key, ci, cc)(recv)(val) */
+/* attr rb_num_t width @ opt_aref_with(key, cd)(recv)(val) */
 rb_num_t
 attr_width_opt_aref_with(
     MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
+    MAYBE_UNUSED(CALL_DATA cd)
 )
 {
-    return 4;
+    return 3;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_length(ci, cc)(recv)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_length(cd)(recv)(val) */
 enum ruby_vminsn_type
-attr_bin_opt_length(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_bin_opt_length(MAYBE_UNUSED(CALL_DATA cd))
 {
     return BIN(opt_length);
 }
 
-/* attr bool handles_sp @ opt_length(ci, cc)(recv)(val) */
+/* attr bool handles_sp @ opt_length(cd)(recv)(val) */
 bool
-attr_handles_sp_opt_length(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_handles_sp_opt_length(MAYBE_UNUSED(CALL_DATA cd))
 {
     return false;
 }
 
-/* attr bool leaf @ opt_length(ci, cc)(recv)(val) */
+/* attr bool leaf @ opt_length(cd)(recv)(val) */
 bool
-attr_leaf_opt_length(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_leaf_opt_length(MAYBE_UNUSED(CALL_DATA cd))
 {
     return true;
 }
 
-/* attr const char* name @ opt_length(ci, cc)(recv)(val) */
+/* attr const char* name @ opt_length(cd)(recv)(val) */
 const char*
-attr_name_opt_length(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_name_opt_length(MAYBE_UNUSED(CALL_DATA cd))
 {
     return insn_name(BIN(opt_length));
 }
 
-/* attr rb_num_t open @ opt_length(ci, cc)(recv)(val) */
+/* attr rb_num_t open @ opt_length(cd)(recv)(val) */
 rb_num_t
-attr_open_opt_length(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_length(ci, cc)(recv)(val) */
-rb_num_t
-attr_popn_opt_length(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_open_opt_length(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_num_t retn @ opt_length(ci, cc)(recv)(val) */
+/* attr rb_num_t popn @ opt_length(cd)(recv)(val) */
 rb_num_t
-attr_retn_opt_length(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_popn_opt_length(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_length(ci, cc)(recv)(val) */
+/* attr rb_num_t retn @ opt_length(cd)(recv)(val) */
+rb_num_t
+attr_retn_opt_length(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_length(cd)(recv)(val) */
 rb_snum_t
-attr_sp_inc_opt_length(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_sp_inc_opt_length(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 0;
 }
 
-/* attr rb_num_t width @ opt_length(ci, cc)(recv)(val) */
+/* attr rb_num_t width @ opt_length(cd)(recv)(val) */
 rb_num_t
-attr_width_opt_length(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_width_opt_length(MAYBE_UNUSED(CALL_DATA cd))
 {
-    return 3;
+    return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_size(ci, cc)(recv)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_size(cd)(recv)(val) */
 enum ruby_vminsn_type
-attr_bin_opt_size(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_bin_opt_size(MAYBE_UNUSED(CALL_DATA cd))
 {
     return BIN(opt_size);
 }
 
-/* attr bool handles_sp @ opt_size(ci, cc)(recv)(val) */
+/* attr bool handles_sp @ opt_size(cd)(recv)(val) */
 bool
-attr_handles_sp_opt_size(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_handles_sp_opt_size(MAYBE_UNUSED(CALL_DATA cd))
 {
     return false;
 }
 
-/* attr bool leaf @ opt_size(ci, cc)(recv)(val) */
+/* attr bool leaf @ opt_size(cd)(recv)(val) */
 bool
-attr_leaf_opt_size(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_leaf_opt_size(MAYBE_UNUSED(CALL_DATA cd))
 {
     return true;
 }
 
-/* attr const char* name @ opt_size(ci, cc)(recv)(val) */
+/* attr const char* name @ opt_size(cd)(recv)(val) */
 const char*
-attr_name_opt_size(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_name_opt_size(MAYBE_UNUSED(CALL_DATA cd))
 {
     return insn_name(BIN(opt_size));
 }
 
-/* attr rb_num_t open @ opt_size(ci, cc)(recv)(val) */
+/* attr rb_num_t open @ opt_size(cd)(recv)(val) */
 rb_num_t
-attr_open_opt_size(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_size(ci, cc)(recv)(val) */
-rb_num_t
-attr_popn_opt_size(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_open_opt_size(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_num_t retn @ opt_size(ci, cc)(recv)(val) */
+/* attr rb_num_t popn @ opt_size(cd)(recv)(val) */
 rb_num_t
-attr_retn_opt_size(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_popn_opt_size(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_size(ci, cc)(recv)(val) */
+/* attr rb_num_t retn @ opt_size(cd)(recv)(val) */
+rb_num_t
+attr_retn_opt_size(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_size(cd)(recv)(val) */
 rb_snum_t
-attr_sp_inc_opt_size(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_sp_inc_opt_size(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 0;
 }
 
-/* attr rb_num_t width @ opt_size(ci, cc)(recv)(val) */
+/* attr rb_num_t width @ opt_size(cd)(recv)(val) */
 rb_num_t
-attr_width_opt_size(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_width_opt_size(MAYBE_UNUSED(CALL_DATA cd))
 {
-    return 3;
+    return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_empty_p(ci, cc)(recv)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_empty_p(cd)(recv)(val) */
 enum ruby_vminsn_type
-attr_bin_opt_empty_p(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_bin_opt_empty_p(MAYBE_UNUSED(CALL_DATA cd))
 {
     return BIN(opt_empty_p);
 }
 
-/* attr bool handles_sp @ opt_empty_p(ci, cc)(recv)(val) */
+/* attr bool handles_sp @ opt_empty_p(cd)(recv)(val) */
 bool
-attr_handles_sp_opt_empty_p(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_handles_sp_opt_empty_p(MAYBE_UNUSED(CALL_DATA cd))
 {
     return false;
 }
 
-/* attr bool leaf @ opt_empty_p(ci, cc)(recv)(val) */
+/* attr bool leaf @ opt_empty_p(cd)(recv)(val) */
 bool
-attr_leaf_opt_empty_p(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_leaf_opt_empty_p(MAYBE_UNUSED(CALL_DATA cd))
 {
     return true;
 }
 
-/* attr const char* name @ opt_empty_p(ci, cc)(recv)(val) */
+/* attr const char* name @ opt_empty_p(cd)(recv)(val) */
 const char*
-attr_name_opt_empty_p(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_name_opt_empty_p(MAYBE_UNUSED(CALL_DATA cd))
 {
     return insn_name(BIN(opt_empty_p));
 }
 
-/* attr rb_num_t open @ opt_empty_p(ci, cc)(recv)(val) */
+/* attr rb_num_t open @ opt_empty_p(cd)(recv)(val) */
 rb_num_t
-attr_open_opt_empty_p(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_empty_p(ci, cc)(recv)(val) */
-rb_num_t
-attr_popn_opt_empty_p(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_open_opt_empty_p(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_num_t retn @ opt_empty_p(ci, cc)(recv)(val) */
+/* attr rb_num_t popn @ opt_empty_p(cd)(recv)(val) */
 rb_num_t
-attr_retn_opt_empty_p(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_popn_opt_empty_p(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_empty_p(ci, cc)(recv)(val) */
+/* attr rb_num_t retn @ opt_empty_p(cd)(recv)(val) */
+rb_num_t
+attr_retn_opt_empty_p(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_empty_p(cd)(recv)(val) */
 rb_snum_t
-attr_sp_inc_opt_empty_p(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_sp_inc_opt_empty_p(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 0;
 }
 
-/* attr rb_num_t width @ opt_empty_p(ci, cc)(recv)(val) */
+/* attr rb_num_t width @ opt_empty_p(cd)(recv)(val) */
 rb_num_t
-attr_width_opt_empty_p(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_width_opt_empty_p(MAYBE_UNUSED(CALL_DATA cd))
 {
-    return 3;
+    return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_succ(ci, cc)(recv)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_succ(cd)(recv)(val) */
 enum ruby_vminsn_type
-attr_bin_opt_succ(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_bin_opt_succ(MAYBE_UNUSED(CALL_DATA cd))
 {
     return BIN(opt_succ);
 }
 
-/* attr bool handles_sp @ opt_succ(ci, cc)(recv)(val) */
+/* attr bool handles_sp @ opt_succ(cd)(recv)(val) */
 bool
-attr_handles_sp_opt_succ(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_handles_sp_opt_succ(MAYBE_UNUSED(CALL_DATA cd))
 {
     return false;
 }
 
-/* attr bool leaf @ opt_succ(ci, cc)(recv)(val) */
+/* attr bool leaf @ opt_succ(cd)(recv)(val) */
 bool
-attr_leaf_opt_succ(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_leaf_opt_succ(MAYBE_UNUSED(CALL_DATA cd))
 {
     return true;
 }
 
-/* attr const char* name @ opt_succ(ci, cc)(recv)(val) */
+/* attr const char* name @ opt_succ(cd)(recv)(val) */
 const char*
-attr_name_opt_succ(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_name_opt_succ(MAYBE_UNUSED(CALL_DATA cd))
 {
     return insn_name(BIN(opt_succ));
 }
 
-/* attr rb_num_t open @ opt_succ(ci, cc)(recv)(val) */
+/* attr rb_num_t open @ opt_succ(cd)(recv)(val) */
 rb_num_t
-attr_open_opt_succ(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_succ(ci, cc)(recv)(val) */
-rb_num_t
-attr_popn_opt_succ(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_open_opt_succ(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_num_t retn @ opt_succ(ci, cc)(recv)(val) */
+/* attr rb_num_t popn @ opt_succ(cd)(recv)(val) */
 rb_num_t
-attr_retn_opt_succ(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_popn_opt_succ(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_succ(ci, cc)(recv)(val) */
+/* attr rb_num_t retn @ opt_succ(cd)(recv)(val) */
+rb_num_t
+attr_retn_opt_succ(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_succ(cd)(recv)(val) */
 rb_snum_t
-attr_sp_inc_opt_succ(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_sp_inc_opt_succ(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 0;
 }
 
-/* attr rb_num_t width @ opt_succ(ci, cc)(recv)(val) */
+/* attr rb_num_t width @ opt_succ(cd)(recv)(val) */
 rb_num_t
-attr_width_opt_succ(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_width_opt_succ(MAYBE_UNUSED(CALL_DATA cd))
 {
-    return 3;
+    return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_not(ci, cc)(recv)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_not(cd)(recv)(val) */
 enum ruby_vminsn_type
-attr_bin_opt_not(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_bin_opt_not(MAYBE_UNUSED(CALL_DATA cd))
 {
     return BIN(opt_not);
 }
 
-/* attr bool handles_sp @ opt_not(ci, cc)(recv)(val) */
+/* attr bool handles_sp @ opt_not(cd)(recv)(val) */
 bool
-attr_handles_sp_opt_not(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_handles_sp_opt_not(MAYBE_UNUSED(CALL_DATA cd))
 {
     return false;
 }
 
-/* attr bool leaf @ opt_not(ci, cc)(recv)(val) */
+/* attr bool leaf @ opt_not(cd)(recv)(val) */
 bool
-attr_leaf_opt_not(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_leaf_opt_not(MAYBE_UNUSED(CALL_DATA cd))
 {
     return true;
 }
 
-/* attr const char* name @ opt_not(ci, cc)(recv)(val) */
+/* attr const char* name @ opt_not(cd)(recv)(val) */
 const char*
-attr_name_opt_not(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_name_opt_not(MAYBE_UNUSED(CALL_DATA cd))
 {
     return insn_name(BIN(opt_not));
 }
 
-/* attr rb_num_t open @ opt_not(ci, cc)(recv)(val) */
+/* attr rb_num_t open @ opt_not(cd)(recv)(val) */
 rb_num_t
-attr_open_opt_not(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_not(ci, cc)(recv)(val) */
-rb_num_t
-attr_popn_opt_not(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_open_opt_not(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_num_t retn @ opt_not(ci, cc)(recv)(val) */
+/* attr rb_num_t popn @ opt_not(cd)(recv)(val) */
 rb_num_t
-attr_retn_opt_not(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_popn_opt_not(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_not(ci, cc)(recv)(val) */
+/* attr rb_num_t retn @ opt_not(cd)(recv)(val) */
+rb_num_t
+attr_retn_opt_not(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_not(cd)(recv)(val) */
 rb_snum_t
-attr_sp_inc_opt_not(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_sp_inc_opt_not(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 0;
 }
 
-/* attr rb_num_t width @ opt_not(ci, cc)(recv)(val) */
+/* attr rb_num_t width @ opt_not(cd)(recv)(val) */
 rb_num_t
-attr_width_opt_not(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_width_opt_not(MAYBE_UNUSED(CALL_DATA cd))
 {
-    return 3;
+    return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_regexpmatch2(ci, cc)(obj2, obj1)(val) */
+/* attr enum ruby_vminsn_type bin @ opt_regexpmatch2(cd)(obj2, obj1)(val) */
 enum ruby_vminsn_type
-attr_bin_opt_regexpmatch2(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_bin_opt_regexpmatch2(MAYBE_UNUSED(CALL_DATA cd))
 {
     return BIN(opt_regexpmatch2);
 }
 
-/* attr bool handles_sp @ opt_regexpmatch2(ci, cc)(obj2, obj1)(val) */
+/* attr bool handles_sp @ opt_regexpmatch2(cd)(obj2, obj1)(val) */
 bool
-attr_handles_sp_opt_regexpmatch2(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_handles_sp_opt_regexpmatch2(MAYBE_UNUSED(CALL_DATA cd))
 {
     return false;
 }
 
-/* attr bool leaf @ opt_regexpmatch2(ci, cc)(obj2, obj1)(val) */
+/* attr bool leaf @ opt_regexpmatch2(cd)(obj2, obj1)(val) */
 bool
-attr_leaf_opt_regexpmatch2(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_leaf_opt_regexpmatch2(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1457 "insns.def"
+#line 1447 "insns.def"
 false;
-#line 8861 "insns_info.inc"
+#line 8200 "insns_info.inc"
 }
 
-/* attr const char* name @ opt_regexpmatch2(ci, cc)(obj2, obj1)(val) */
+/* attr const char* name @ opt_regexpmatch2(cd)(obj2, obj1)(val) */
 const char*
-attr_name_opt_regexpmatch2(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_name_opt_regexpmatch2(MAYBE_UNUSED(CALL_DATA cd))
 {
     return insn_name(BIN(opt_regexpmatch2));
 }
 
-/* attr rb_num_t open @ opt_regexpmatch2(ci, cc)(obj2, obj1)(val) */
+/* attr rb_num_t open @ opt_regexpmatch2(cd)(obj2, obj1)(val) */
 rb_num_t
-attr_open_opt_regexpmatch2(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_regexpmatch2(ci, cc)(obj2, obj1)(val) */
-rb_num_t
-attr_popn_opt_regexpmatch2(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t retn @ opt_regexpmatch2(ci, cc)(obj2, obj1)(val) */
-rb_num_t
-attr_retn_opt_regexpmatch2(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_open_opt_regexpmatch2(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ opt_regexpmatch2(ci, cc)(obj2, obj1)(val) */
+/* attr rb_num_t popn @ opt_regexpmatch2(cd)(obj2, obj1)(val) */
+rb_num_t
+attr_popn_opt_regexpmatch2(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 2;
+}
+
+/* attr rb_num_t retn @ opt_regexpmatch2(cd)(obj2, obj1)(val) */
+rb_num_t
+attr_retn_opt_regexpmatch2(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_regexpmatch2(cd)(obj2, obj1)(val) */
 rb_snum_t
-attr_sp_inc_opt_regexpmatch2(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_sp_inc_opt_regexpmatch2(MAYBE_UNUSED(CALL_DATA cd))
 {
     return -1;
 }
 
-/* attr rb_num_t width @ opt_regexpmatch2(ci, cc)(obj2, obj1)(val) */
+/* attr rb_num_t width @ opt_regexpmatch2(cd)(obj2, obj1)(val) */
 rb_num_t
-attr_width_opt_regexpmatch2(
-    MAYBE_UNUSED(CALL_INFO ci),
-    MAYBE_UNUSED(CALL_CACHE cc)
-)
+attr_width_opt_regexpmatch2(MAYBE_UNUSED(CALL_DATA cd))
 {
-    return 3;
+    return 2;
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_call_c_function(funcptr)()() */
@@ -8932,9 +8253,9 @@ bool
 attr_handles_sp_opt_call_c_function(MAYBE_UNUSED(rb_insn_func_t funcptr))
 {
     return
-#line 1473 "insns.def"
+#line 1463 "insns.def"
 true;
-#line 8938 "insns_info.inc"
+#line 8259 "insns_info.inc"
 }
 
 /* attr bool leaf @ opt_call_c_function(funcptr)()() */
@@ -8942,9 +8263,9 @@ bool
 attr_leaf_opt_call_c_function(MAYBE_UNUSED(rb_insn_func_t funcptr))
 {
     return
-#line 1472 "insns.def"
+#line 1462 "insns.def"
 false;
-#line 8948 "insns_info.inc"
+#line 8269 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_call_c_function(funcptr)()() */
@@ -8987,6 +8308,261 @@ rb_num_t
 attr_width_opt_call_c_function(MAYBE_UNUSED(rb_insn_func_t funcptr))
 {
     return 2;
+}
+
+/* attr enum ruby_vminsn_type bin @ invokebuiltin(bf)(...)(ret) */
+enum ruby_vminsn_type
+attr_bin_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
+{
+    return BIN(invokebuiltin);
+}
+
+/* attr bool handles_sp @ invokebuiltin(bf)(...)(ret) */
+bool
+attr_handles_sp_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
+{
+    return false;
+}
+
+/* attr bool leaf @ invokebuiltin(bf)(...)(ret) */
+bool
+attr_leaf_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
+{
+    return
+#line 1483 "insns.def"
+false;
+#line 8335 "insns_info.inc"
+}
+
+/* attr const char* name @ invokebuiltin(bf)(...)(ret) */
+const char*
+attr_name_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
+{
+    return insn_name(BIN(invokebuiltin));
+}
+
+/* attr rb_num_t open @ invokebuiltin(bf)(...)(ret) */
+rb_num_t
+attr_open_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
+{
+    return 1;
+}
+
+/* attr rb_num_t popn @ invokebuiltin(bf)(...)(ret) */
+rb_num_t
+attr_popn_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
+{
+    return 0;
+}
+
+/* attr rb_num_t retn @ invokebuiltin(bf)(...)(ret) */
+rb_num_t
+attr_retn_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ invokebuiltin(bf)(...)(ret) */
+rb_snum_t
+attr_sp_inc_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
+{
+    return
+#line 1484 "insns.def"
+1 - bf->argc;
+#line 8373 "insns_info.inc"
+}
+
+/* attr rb_num_t width @ invokebuiltin(bf)(...)(ret) */
+rb_num_t
+attr_width_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
+{
+    return 2;
+}
+
+/* attr enum ruby_vminsn_type bin @ opt_invokebuiltin_delegate(bf, index)()(ret) */
+enum ruby_vminsn_type
+attr_bin_opt_invokebuiltin_delegate(
+    MAYBE_UNUSED(RB_BUILTIN bf),
+    MAYBE_UNUSED(rb_num_t index)
+)
+{
+    return BIN(opt_invokebuiltin_delegate);
+}
+
+/* attr bool handles_sp @ opt_invokebuiltin_delegate(bf, index)()(ret) */
+bool
+attr_handles_sp_opt_invokebuiltin_delegate(
+    MAYBE_UNUSED(RB_BUILTIN bf),
+    MAYBE_UNUSED(rb_num_t index)
+)
+{
+    return false;
+}
+
+/* attr bool leaf @ opt_invokebuiltin_delegate(bf, index)()(ret) */
+bool
+attr_leaf_opt_invokebuiltin_delegate(
+    MAYBE_UNUSED(RB_BUILTIN bf),
+    MAYBE_UNUSED(rb_num_t index)
+)
+{
+    return
+#line 1495 "insns.def"
+false;
+#line 8413 "insns_info.inc"
+}
+
+/* attr const char* name @ opt_invokebuiltin_delegate(bf, index)()(ret) */
+const char*
+attr_name_opt_invokebuiltin_delegate(
+    MAYBE_UNUSED(RB_BUILTIN bf),
+    MAYBE_UNUSED(rb_num_t index)
+)
+{
+    return insn_name(BIN(opt_invokebuiltin_delegate));
+}
+
+/* attr rb_num_t open @ opt_invokebuiltin_delegate(bf, index)()(ret) */
+rb_num_t
+attr_open_opt_invokebuiltin_delegate(
+    MAYBE_UNUSED(RB_BUILTIN bf),
+    MAYBE_UNUSED(rb_num_t index)
+)
+{
+    return 2;
+}
+
+/* attr rb_num_t popn @ opt_invokebuiltin_delegate(bf, index)()(ret) */
+rb_num_t
+attr_popn_opt_invokebuiltin_delegate(
+    MAYBE_UNUSED(RB_BUILTIN bf),
+    MAYBE_UNUSED(rb_num_t index)
+)
+{
+    return 0;
+}
+
+/* attr rb_num_t retn @ opt_invokebuiltin_delegate(bf, index)()(ret) */
+rb_num_t
+attr_retn_opt_invokebuiltin_delegate(
+    MAYBE_UNUSED(RB_BUILTIN bf),
+    MAYBE_UNUSED(rb_num_t index)
+)
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_invokebuiltin_delegate(bf, index)()(ret) */
+rb_snum_t
+attr_sp_inc_opt_invokebuiltin_delegate(
+    MAYBE_UNUSED(RB_BUILTIN bf),
+    MAYBE_UNUSED(rb_num_t index)
+)
+{
+    return 1;
+}
+
+/* attr rb_num_t width @ opt_invokebuiltin_delegate(bf, index)()(ret) */
+rb_num_t
+attr_width_opt_invokebuiltin_delegate(
+    MAYBE_UNUSED(RB_BUILTIN bf),
+    MAYBE_UNUSED(rb_num_t index)
+)
+{
+    return 3;
+}
+
+/* attr enum ruby_vminsn_type bin @ opt_invokebuiltin_delegate_leave(bf, index)()(val) */
+enum ruby_vminsn_type
+attr_bin_opt_invokebuiltin_delegate_leave(
+    MAYBE_UNUSED(RB_BUILTIN bf),
+    MAYBE_UNUSED(rb_num_t index)
+)
+{
+    return BIN(opt_invokebuiltin_delegate_leave);
+}
+
+/* attr bool handles_sp @ opt_invokebuiltin_delegate_leave(bf, index)()(val) */
+bool
+attr_handles_sp_opt_invokebuiltin_delegate_leave(
+    MAYBE_UNUSED(RB_BUILTIN bf),
+    MAYBE_UNUSED(rb_num_t index)
+)
+{
+    return false;
+}
+
+/* attr bool leaf @ opt_invokebuiltin_delegate_leave(bf, index)()(val) */
+bool
+attr_leaf_opt_invokebuiltin_delegate_leave(
+    MAYBE_UNUSED(RB_BUILTIN bf),
+    MAYBE_UNUSED(rb_num_t index)
+)
+{
+    return
+#line 1506 "insns.def"
+false;
+#line 8506 "insns_info.inc"
+}
+
+/* attr const char* name @ opt_invokebuiltin_delegate_leave(bf, index)()(val) */
+const char*
+attr_name_opt_invokebuiltin_delegate_leave(
+    MAYBE_UNUSED(RB_BUILTIN bf),
+    MAYBE_UNUSED(rb_num_t index)
+)
+{
+    return insn_name(BIN(opt_invokebuiltin_delegate_leave));
+}
+
+/* attr rb_num_t open @ opt_invokebuiltin_delegate_leave(bf, index)()(val) */
+rb_num_t
+attr_open_opt_invokebuiltin_delegate_leave(
+    MAYBE_UNUSED(RB_BUILTIN bf),
+    MAYBE_UNUSED(rb_num_t index)
+)
+{
+    return 2;
+}
+
+/* attr rb_num_t popn @ opt_invokebuiltin_delegate_leave(bf, index)()(val) */
+rb_num_t
+attr_popn_opt_invokebuiltin_delegate_leave(
+    MAYBE_UNUSED(RB_BUILTIN bf),
+    MAYBE_UNUSED(rb_num_t index)
+)
+{
+    return 0;
+}
+
+/* attr rb_num_t retn @ opt_invokebuiltin_delegate_leave(bf, index)()(val) */
+rb_num_t
+attr_retn_opt_invokebuiltin_delegate_leave(
+    MAYBE_UNUSED(RB_BUILTIN bf),
+    MAYBE_UNUSED(rb_num_t index)
+)
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_invokebuiltin_delegate_leave(bf, index)()(val) */
+rb_snum_t
+attr_sp_inc_opt_invokebuiltin_delegate_leave(
+    MAYBE_UNUSED(RB_BUILTIN bf),
+    MAYBE_UNUSED(rb_num_t index)
+)
+{
+    return 1;
+}
+
+/* attr rb_num_t width @ opt_invokebuiltin_delegate_leave(bf, index)()(val) */
+rb_num_t
+attr_width_opt_invokebuiltin_delegate_leave(
+    MAYBE_UNUSED(RB_BUILTIN bf),
+    MAYBE_UNUSED(rb_num_t index)
+)
+{
+    return 3;
 }
 
 /* attr enum ruby_vminsn_type bin @ getlocal_WC_0(idx)()(val) */
@@ -9367,11 +8943,11 @@ attr_width_putobject_INT2FIX_1_(void)
     return 1;
 }
 
-PUREFUNC(MAYBE_UNUSED(static int insn_stack_increase(int depth, int insn, const VALUE *opes)));
-PUREFUNC(static rb_snum_t insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *opes));
+PUREFUNC(MAYBE_UNUSED(static int comptime_insn_stack_increase(int depth, int insn, const VALUE *opes)));
+PUREFUNC(static rb_snum_t comptime_insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *opes));
 
 rb_snum_t
-insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *opes)
+comptime_insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *opes)
 {
     static const signed char t[] = {
            0,    1,   -1,    1,   -1,    1,    1,   -1,
@@ -9379,14 +8955,14 @@ insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *opes)
            1,    1,    1,    1,    1, -127,   -1,    0,
         -127,    0, -127, -127,    1,    1, -127,   -1,
            0, -127,   -1,   -1,    1, -127,    0, -127,
-        -127, -127, -127,    0,   -1,    1,    0,    0,
-          -1,    0,   -1, -127, -127,    1,    0,    1,
-        -127, -127, -127, -127,    0,    0,    0,   -1,
-          -1,   -1,    1,    0,    1, -127,   -1,   -1,
+        -127, -127, -127,    0,   -1,    1,    0,   -1,
+           0,   -1, -127, -127,    1,    0,    1, -127,
+        -127, -127, -127,    0,    0,    0,   -1,   -1,
+          -1,    1,    0,    1, -127,   -1,   -1,   -1,
           -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-          -1,   -1,   -1,   -1,   -1,   -2,   -1,    0,
-           0,    0,    0,    0,    0,   -1,    0,    1,
-           1,   -1,   -1,    1,    1,    0,    0,    0,
+          -1,   -1,   -1,   -1,   -2,   -1,    0,    0,
+           0,    0,    0,    0,   -1,    0, -127,    1,
+           1,    1,    1,   -1,   -1,    1,    1,    0,
            0,    0,    0,    0,    0,    0,    0,    0,
            0,    0,    0,    0,    0,    0,    0,    0,
            0,    0,    0,    0,    0,    0,    0,    0,
@@ -9399,7 +8975,7 @@ insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *opes)
            0,    0,    0,    0,    0,    0,    0,    0,
            0,    0,    0,    0,    0,    0,    0,    0,
            0,    0,    0,    0,    0,    0,    0,    0,
-           0,    0,
+           0,    0,    0,    0,    0,    0,
     };
     signed char c = t[insn];
 
@@ -9433,27 +9009,29 @@ insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *opes)
     case BIN(adjuststack):
         return attr_sp_inc_adjuststack(NUM2LONG(opes[0]));
     case BIN(send):
-        return attr_sp_inc_send((CALL_INFO)(opes[0]), (CALL_CACHE)(opes[1]), (ISEQ)(opes[2]));
+        return attr_comptime_sp_inc_send((CALL_INFO)(opes[0]), (ISEQ)(opes[1]));
     case BIN(opt_send_without_block):
-        return attr_sp_inc_opt_send_without_block((CALL_INFO)(opes[0]), (CALL_CACHE)(opes[1]));
+        return attr_comptime_sp_inc_opt_send_without_block((CALL_INFO)(opes[0]));
     case BIN(opt_newarray_max):
         return attr_sp_inc_opt_newarray_max(NUM2LONG(opes[0]));
     case BIN(opt_newarray_min):
         return attr_sp_inc_opt_newarray_min(NUM2LONG(opes[0]));
     case BIN(invokesuper):
-        return attr_sp_inc_invokesuper((CALL_INFO)(opes[0]), (CALL_CACHE)(opes[1]), (ISEQ)(opes[2]));
+        return attr_comptime_sp_inc_invokesuper((CALL_INFO)(opes[0]), (ISEQ)(opes[1]));
     case BIN(invokeblock):
-        return attr_sp_inc_invokeblock((CALL_INFO)(opes[0]));
+        return attr_comptime_sp_inc_invokeblock((CALL_INFO)(opes[0]));
     case BIN(opt_case_dispatch):
         return attr_sp_inc_opt_case_dispatch((CDHASH)(opes[0]), (OFFSET)(opes[1]));
+    case BIN(invokebuiltin):
+        return attr_sp_inc_invokebuiltin((RB_BUILTIN)(opes[0]));
     }
 }
 
 int
-insn_stack_increase(int depth, int insn, const VALUE *opes)
+comptime_insn_stack_increase(int depth, int insn, const VALUE *opes)
 {
     enum ruby_vminsn_type itype = (enum ruby_vminsn_type)insn;
-    return depth + (int)insn_stack_increase_dispatch(itype, opes);
+    return depth + (int)comptime_insn_stack_increase_dispatch(itype, opes);
 }
 
 PUREFUNC(MAYBE_UNUSED(static bool insn_may_depend_on_sp_or_pc(int insn, const VALUE *opes)));
@@ -9505,6 +9083,9 @@ insn_may_depend_on_sp_or_pc(int insn, const VALUE *opes)
       case BIN(opt_aref_with):
       case BIN(opt_regexpmatch2):
       case BIN(opt_call_c_function):
+      case BIN(invokebuiltin):
+      case BIN(opt_invokebuiltin_delegate):
+      case BIN(opt_invokebuiltin_delegate_leave):
       case BIN(trace_nop):
       case BIN(trace_getlocal):
       case BIN(trace_setlocal):
@@ -9552,7 +9133,6 @@ insn_may_depend_on_sp_or_pc(int insn, const VALUE *opes)
       case BIN(trace_checkmatch):
       case BIN(trace_checkkeyword):
       case BIN(trace_checktype):
-      case BIN(trace_methodref):
       case BIN(trace_defineclass):
       case BIN(trace_definemethod):
       case BIN(trace_definesmethod):
@@ -9600,6 +9180,9 @@ insn_may_depend_on_sp_or_pc(int insn, const VALUE *opes)
       case BIN(trace_opt_not):
       case BIN(trace_opt_regexpmatch2):
       case BIN(trace_opt_call_c_function):
+      case BIN(trace_invokebuiltin):
+      case BIN(trace_opt_invokebuiltin_delegate):
+      case BIN(trace_opt_invokebuiltin_delegate_leave):
       case BIN(trace_getlocal_WC_0):
       case BIN(trace_getlocal_WC_1):
       case BIN(trace_setlocal_WC_0):

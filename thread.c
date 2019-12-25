@@ -681,6 +681,7 @@ thread_do_start(rb_thread_t *th)
 	th->ec->root_svar = Qfalse;
 
         EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
+        vm_check_ints_blocking(th->ec);
 
         if (args_len < 8) {
             /* free proc.args if the length is enough small */
@@ -3112,7 +3113,8 @@ rb_thread_stop_p(VALUE thread)
 static VALUE
 rb_thread_safe_level(VALUE thread)
 {
-    return UINT2NUM(rb_safe_level());
+    rb_warn("Thread#safe_level will be removed in Ruby 3.0");
+    return UINT2NUM(GET_VM()->safe_level_);
 }
 
 /*
@@ -3179,12 +3181,11 @@ rb_thread_to_s(VALUE thread)
         rb_str_catf(str, "@%"PRIsVALUE, target_th->name);
     }
     if ((loc = threadptr_invoke_proc_location(target_th)) != Qnil) {
-        rb_str_catf(str, "@%"PRIsVALUE":%"PRIsVALUE,
+        rb_str_catf(str, " %"PRIsVALUE":%"PRIsVALUE,
                     RARRAY_AREF(loc, 0), RARRAY_AREF(loc, 1));
         rb_gc_force_recycle(loc);
     }
     rb_str_catf(str, " %s>", status);
-    OBJ_INFECT(str, thread);
 
     return str;
 }
@@ -3999,9 +4000,12 @@ do_select(VALUE p)
 	}, set->sigwait_fd >= 0 ? ubf_sigwait : ubf_select, set->th, TRUE);
 
         if (set->sigwait_fd >= 0) {
-            if (result > 0 && rb_fd_isset(set->sigwait_fd, set->rset))
+            if (result > 0 && rb_fd_isset(set->sigwait_fd, set->rset)) {
                 result--;
-            (void)check_signals_nogvl(set->th, set->sigwait_fd);
+                (void)check_signals_nogvl(set->th, set->sigwait_fd);
+            } else {
+                (void)check_signals_nogvl(set->th, -1);
+            }
         }
 
         RUBY_VM_CHECK_INTS_BLOCKING(set->th->ec); /* may raise */
@@ -4176,8 +4180,10 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
             if (fds[1].fd >= 0) {
                 if (result > 0 && fds[1].revents) {
                     result--;
+                    (void)check_signals_nogvl(wfd.th, fds[1].fd);
+                } else {
+                    (void)check_signals_nogvl(wfd.th, -1);
                 }
-                (void)check_signals_nogvl(wfd.th, fds[1].fd);
                 rb_sigwait_fd_put(wfd.th, fds[1].fd);
                 rb_sigwait_fd_migrate(wfd.th->vm);
             }
@@ -4393,7 +4399,7 @@ static int
 check_signals_nogvl(rb_thread_t *th, int sigwait_fd)
 {
     rb_vm_t *vm = GET_VM(); /* th may be 0 */
-    int ret = consume_communication_pipe(sigwait_fd);
+    int ret = sigwait_fd >= 0 ? consume_communication_pipe(sigwait_fd) : FALSE;
     ubf_wakeup_all_threads();
     ruby_sigchld_handler(vm);
     if (rb_signal_buff_size()) {
@@ -4880,20 +4886,20 @@ recursive_list_access(VALUE sym)
 	list = rb_hash_aref(hash, sym);
     }
     if (NIL_P(list) || !RB_TYPE_P(list, T_HASH)) {
-	list = rb_hash_new();
+	list = rb_ident_hash_new();
 	rb_hash_aset(hash, sym, list);
     }
     return list;
 }
 
 /*
- * Returns Qtrue iff obj_id (or the pair <obj, paired_obj>) is already
+ * Returns Qtrue iff obj (or the pair <obj, paired_obj>) is already
  * in the recursion list.
  * Assumes the recursion list is valid.
  */
 
 static VALUE
-recursive_check(VALUE list, VALUE obj_id, VALUE paired_obj_id)
+recursive_check(VALUE list, VALUE obj, VALUE paired_obj_id)
 {
 #if SIZEOF_LONG == SIZEOF_VOIDP
   #define OBJ_ID_EQL(obj_id, other) ((obj_id) == (other))
@@ -4902,7 +4908,7 @@ recursive_check(VALUE list, VALUE obj_id, VALUE paired_obj_id)
     rb_big_eql((obj_id), (other)) : ((obj_id) == (other)))
 #endif
 
-    VALUE pair_list = rb_hash_lookup2(list, obj_id, Qundef);
+    VALUE pair_list = rb_hash_lookup2(list, obj, Qundef);
     if (pair_list == Qundef)
 	return Qfalse;
     if (paired_obj_id) {
@@ -4919,10 +4925,10 @@ recursive_check(VALUE list, VALUE obj_id, VALUE paired_obj_id)
 }
 
 /*
- * Pushes obj_id (or the pair <obj_id, paired_obj_id>) in the recursion list.
- * For a single obj_id, it sets list[obj_id] to Qtrue.
- * For a pair, it sets list[obj_id] to paired_obj_id if possible,
- * otherwise list[obj_id] becomes a hash like:
+ * Pushes obj (or the pair <obj, paired_obj>) in the recursion list.
+ * For a single obj, it sets list[obj] to Qtrue.
+ * For a pair, it sets list[obj] to paired_obj_id if possible,
+ * otherwise list[obj] becomes a hash like:
  *   {paired_obj_id_1 => true, paired_obj_id_2 => true, ... }
  * Assumes the recursion list is valid.
  */
@@ -4950,10 +4956,10 @@ recursive_push(VALUE list, VALUE obj, VALUE paired_obj)
 }
 
 /*
- * Pops obj_id (or the pair <obj_id, paired_obj_id>) from the recursion list.
- * For a pair, if list[obj_id] is a hash, then paired_obj_id is
+ * Pops obj (or the pair <obj, paired_obj>) from the recursion list.
+ * For a pair, if list[obj] is a hash, then paired_obj_id is
  * removed from the hash and no attempt is made to simplify
- * list[obj_id] from {only_one_paired_id => true} to only_one_paired_id
+ * list[obj] from {only_one_paired_id => true} to only_one_paired_id
  * Assumes the recursion list is valid.
  */
 
@@ -4980,7 +4986,6 @@ struct exec_recursive_params {
     VALUE (*func) (VALUE, VALUE, int);
     VALUE list;
     VALUE obj;
-    VALUE objid;
     VALUE pairid;
     VALUE arg;
 };
@@ -5012,13 +5017,12 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
     struct exec_recursive_params p;
     int outermost;
     p.list = recursive_list_access(sym);
-    p.objid = rb_memory_id(obj);
     p.obj = obj;
     p.pairid = pairid;
     p.arg = arg;
     outermost = outer && !recursive_check(p.list, ID2SYM(recursive_key), 0);
 
-    if (recursive_check(p.list, p.objid, pairid)) {
+    if (recursive_check(p.list, p.obj, pairid)) {
 	if (outer && !outermost) {
 	    rb_throw_obj(p.list, p.list);
 	}
@@ -5031,9 +5035,9 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 
 	if (outermost) {
 	    recursive_push(p.list, ID2SYM(recursive_key), 0);
-	    recursive_push(p.list, p.objid, p.pairid);
+	    recursive_push(p.list, p.obj, p.pairid);
 	    result = rb_catch_protect(p.list, exec_recursive_i, (VALUE)&p, &state);
-	    if (!recursive_pop(p.list, p.objid, p.pairid)) goto invalid;
+	    if (!recursive_pop(p.list, p.obj, p.pairid)) goto invalid;
 	    if (!recursive_pop(p.list, ID2SYM(recursive_key), 0)) goto invalid;
 	    if (state != TAG_NONE) EC_JUMP_TAG(GET_EC(), state);
 	    if (result == p.list) {
@@ -5042,13 +5046,13 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 	}
 	else {
 	    volatile VALUE ret = Qundef;
-	    recursive_push(p.list, p.objid, p.pairid);
+	    recursive_push(p.list, p.obj, p.pairid);
 	    EC_PUSH_TAG(GET_EC());
 	    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 		ret = (*func)(obj, arg, FALSE);
 	    }
 	    EC_POP_TAG();
-	    if (!recursive_pop(p.list, p.objid, p.pairid)) {
+	    if (!recursive_pop(p.list, p.obj, p.pairid)) {
 	      invalid:
 		rb_raise(rb_eTypeError, "invalid inspect_tbl pair_list "
 			 "for %+"PRIsVALUE" in %+"PRIsVALUE,

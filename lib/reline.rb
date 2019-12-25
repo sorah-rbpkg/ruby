@@ -16,12 +16,6 @@ module Reline
   CursorPos = Struct.new(:x, :y)
 
   class Core
-    if RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/
-      IS_WINDOWS = true
-    else
-      IS_WINDOWS = false
-    end
-
     ATTR_READER_NAMES = %i(
       completion_append_character
       basic_word_break_characters
@@ -38,19 +32,17 @@ module Reline
       dig_perfect_match_proc
     ).each(&method(:attr_reader))
 
-    ATTR_ACCESSOR_NAMES = %i(
-      completion_case_fold
-    ).each(&method(:attr_accessor))
-
     attr_accessor :config
     attr_accessor :key_stroke
     attr_accessor :line_editor
     attr_accessor :ambiguous_width
+    attr_accessor :last_incremental_search
     attr_reader :output
 
     def initialize
       self.output = STDOUT
       yield self
+      @completion_quote_character = nil
     end
 
     def completion_append_character=(val)
@@ -89,23 +81,35 @@ module Reline
       @special_prefixes = v.encode(Encoding::default_external)
     end
 
+    def completion_case_fold=(v)
+      @config.completion_ignore_case = v
+    end
+
+    def completion_case_fold
+      @config.completion_ignore_case
+    end
+
+    def completion_quote_character
+      @completion_quote_character
+    end
+
     def completion_proc=(p)
-      raise ArgumentError unless p.is_a?(Proc)
+      raise ArgumentError unless p.respond_to?(:call)
       @completion_proc = p
     end
 
     def output_modifier_proc=(p)
-      raise ArgumentError unless p.is_a?(Proc)
+      raise ArgumentError unless p.respond_to?(:call)
       @output_modifier_proc = p
     end
 
     def prompt_proc=(p)
-      raise ArgumentError unless p.is_a?(Proc)
+      raise ArgumentError unless p.respond_to?(:call)
       @prompt_proc = p
     end
 
     def auto_indent_proc=(p)
-      raise ArgumentError unless p.is_a?(Proc)
+      raise ArgumentError unless p.respond_to?(:call)
       @auto_indent_proc = p
     end
 
@@ -114,7 +118,7 @@ module Reline
     end
 
     def dig_perfect_match_proc=(p)
-      raise ArgumentError unless p.is_a?(Proc)
+      raise ArgumentError unless p.respond_to?(:call)
       @dig_perfect_match_proc = p
     end
 
@@ -166,7 +170,7 @@ module Reline
       inner_readline(prompt, add_hist, true, &confirm_multiline_termination)
 
       whole_buffer = line_editor.whole_buffer.dup
-      whole_buffer.taint
+      whole_buffer.taint if RUBY_VERSION < '2.7'
       if add_hist and whole_buffer and whole_buffer.chomp.size > 0
         Reline::HISTORY << whole_buffer
       end
@@ -179,7 +183,7 @@ module Reline
       inner_readline(prompt, add_hist, false)
 
       line = line_editor.line.dup
-      line.taint
+      line.taint if RUBY_VERSION < '2.7'
       if add_hist and line and line.chomp.size > 0
         Reline::HISTORY << line.chomp
       end
@@ -208,6 +212,7 @@ module Reline
       end
       line_editor.output = output
       line_editor.completion_proc = completion_proc
+      line_editor.completion_append_character = completion_append_character
       line_editor.output_modifier_proc = output_modifier_proc
       line_editor.prompt_proc = prompt_proc
       line_editor.auto_indent_proc = auto_indent_proc
@@ -260,7 +265,10 @@ module Reline
         result = key_stroke.match_status(buffer)
         case result
         when :matched
-          block.(key_stroke.expand(buffer).map{ |c| Reline::Key.new(c, c, false) })
+          expanded = key_stroke.expand(buffer).map{ |expanded_c|
+            Reline::Key.new(expanded_c, expanded_c, false)
+          }
+          block.(expanded)
           break
         when :matching
           if buffer.size == 1
@@ -289,7 +297,10 @@ module Reline
           if buffer.size == 1 and c == "\e".ord
             read_escaped_key(keyseq_timeout, c, block)
           else
-            block.(buffer.map{ |c| Reline::Key.new(c, c, false) })
+            expanded = buffer.map{ |expanded_c|
+              Reline::Key.new(expanded_c, expanded_c, false)
+            }
+            block.(expanded)
           end
           break
         end
@@ -319,7 +330,7 @@ module Reline
 
     private def may_req_ambiguous_char_width
       @ambiguous_width = 2 if Reline::IOGate == Reline::GeneralIO or STDOUT.is_a?(File)
-      return if @ambiguous_width
+      return if ambiguous_width
       Reline::IOGate.move_cursor_column(0)
       print "\u{25bd}"
       @ambiguous_width = Reline::IOGate.cursor_pos.x
@@ -335,13 +346,16 @@ module Reline
   # Documented API
   #--------------------------------------------------------
 
-  (Core::ATTR_READER_NAMES + Core::ATTR_ACCESSOR_NAMES).each { |name|
+  (Core::ATTR_READER_NAMES).each { |name|
     def_single_delegators :core, "#{name}", "#{name}="
   }
   def_single_delegators :core, :input=, :output=
   def_single_delegators :core, :vi_editing_mode, :emacs_editing_mode
   def_single_delegators :core, :readline
+  def_single_delegators :core, :completion_case_fold, :completion_case_fold=
+  def_single_delegators :core, :completion_quote_character
   def_instance_delegators self, :readline
+  private :readline
 
 
   #--------------------------------------------------------
@@ -366,9 +380,12 @@ module Reline
   def_single_delegator :line_editor, :rerender, :redisplay
   def_single_delegators :core, :vi_editing_mode?, :emacs_editing_mode?
   def_single_delegators :core, :ambiguous_width
+  def_single_delegators :core, :last_incremental_search
+  def_single_delegators :core, :last_incremental_search=
 
   def_single_delegators :core, :readmultiline
   def_instance_delegators self, :readmultiline
+  private :readmultiline
 
   def self.core
     @core ||= Core.new { |core|
@@ -392,9 +409,15 @@ module Reline
   HISTORY = History.new(core.config)
 end
 
-if Reline::Core::IS_WINDOWS
+if RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/
   require 'reline/windows'
-  Reline::IOGate = Reline::Windows
+  if Reline::Windows.get_screen_size == [0, 0]
+    # Maybe Mintty on Cygwin
+    require 'reline/ansi'
+    Reline::IOGate = Reline::ANSI
+  else
+    Reline::IOGate = Reline::Windows
+  end
 else
   require 'reline/ansi'
   Reline::IOGate = Reline::ANSI

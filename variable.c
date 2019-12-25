@@ -23,6 +23,7 @@
 #include "debug_counter.h"
 #include "vm_core.h"
 #include "transient_heap.h"
+#include "variable.h"
 
 static struct rb_id_table *rb_global_tbl;
 static ID autoload, classpath, tmp_classpath;
@@ -33,12 +34,6 @@ static void setup_const_entry(rb_const_entry_t *, VALUE, VALUE, rb_const_flag_t)
 static VALUE rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility);
 static st_table *generic_iv_tbl;
 static st_table *generic_iv_tbl_compat;
-
-/* per-object */
-struct gen_ivtbl {
-    uint32_t numiv;
-    VALUE ivptr[FLEX_ARY_LEN];
-};
 
 struct ivar_update {
     union {
@@ -526,7 +521,7 @@ rb_define_virtual_variable(
 static void
 rb_trace_eval(VALUE cmd, VALUE val)
 {
-    rb_eval_cmd(cmd, rb_ary_new3(1, val), 0);
+    rb_eval_cmd_kw(cmd, rb_ary_new3(1, val), RB_NO_KEYWORDS);
 }
 
 VALUE
@@ -543,9 +538,6 @@ rb_f_trace_var(int argc, const VALUE *argv)
 	return rb_f_untrace_var(argc, argv);
     }
     entry = rb_global_entry(rb_to_id(var));
-    if (OBJ_TAINTED(cmd)) {
-	rb_raise(rb_eSecurityError, "Insecure: tainted variable trace");
-    }
     trace = ALLOC(struct trace_var);
     trace->next = entry->var->trace;
     trace->func = rb_trace_eval;
@@ -805,6 +797,12 @@ gen_ivtbl_get(VALUE obj, struct gen_ivtbl **ivtbl)
 	return 1;
     }
     return 0;
+}
+
+MJIT_FUNC_EXPORTED struct st_table *
+rb_ivar_generic_ivtbl(void)
+{
+    return generic_iv_tbl;
 }
 
 static VALUE
@@ -1805,7 +1803,6 @@ struct autoload_const {
     VALUE ad; /* autoload_data_i */
     VALUE value;
     ID id;
-    int safe_level;
     rb_const_flag_t flag;
 };
 
@@ -1969,10 +1966,6 @@ rb_autoload_str(VALUE mod, ID id, VALUE file)
 	DATA_PTR(av) = tbl = st_init_numtable();
     }
 
-    if (OBJ_TAINTED(file)) {
-	file = rb_str_dup(file);
-	FL_UNSET(file, FL_TAINT);
-    }
     file = rb_fstring(file);
     if (!autoload_featuremap) {
         autoload_featuremap = rb_ident_hash_new();
@@ -1999,7 +1992,6 @@ rb_autoload_str(VALUE mod, ID id, VALUE file)
         ac->mod = mod;
         ac->id = id;
         ac->value = Qundef;
-        ac->safe_level = rb_safe_level();
         ac->flag = CONST_PUBLIC;
         ac->ad = ad;
         list_add_tail(&ele->constants, &ac->cnode);
@@ -2039,27 +2031,12 @@ autoload_delete(VALUE mod, ID id)
 }
 
 static VALUE
-autoload_provided(VALUE arg)
-{
-    const char **p = (const char **)arg;
-    return rb_feature_provided(*p, p);
-}
-
-static VALUE
-reset_safe(VALUE safe)
-{
-    rb_set_safe_level_force((int)safe);
-    return safe;
-}
-
-static VALUE
 check_autoload_required(VALUE mod, ID id, const char **loadingpath)
 {
     VALUE file;
     VALUE load = autoload_data(mod, id);
     struct autoload_data_i *ele;
     const char *loading;
-    int safe;
 
     if (!load || !(ele = get_autoload_data(load, 0))) {
 	return 0;
@@ -2081,9 +2058,7 @@ check_autoload_required(VALUE mod, ID id, const char **loadingpath)
     }
 
     loading = RSTRING_PTR(file);
-    safe = rb_safe_level();
-    rb_set_safe_level_force(0);
-    if (!rb_ensure(autoload_provided, (VALUE)&loading, reset_safe, (VALUE)safe)) {
+    if (!rb_feature_provided(loading, &loading)) {
 	return load;
     }
     if (loadingpath && loading) {
@@ -2186,12 +2161,10 @@ autoload_reset(VALUE arg)
     /* At the last, move a value defined in autoload to constant table */
     if (RTEST(state->result)) {
         struct autoload_const *next;
-        int safe_backup = rb_safe_level();
 
         list_for_each_safe(&ele->constants, ac, next, cnode) {
             if (ac->value != Qundef) {
-                rb_ensure(autoload_const_set, (VALUE)ac,
-                          reset_safe, (VALUE)safe_backup);
+                autoload_const_set((VALUE)ac);
             }
         }
     }
@@ -2253,12 +2226,18 @@ rb_autoload_load(VALUE mod, ID id)
     struct autoload_data_i *ele;
     struct autoload_const *ac;
     struct autoload_state state;
+    int flag = -1;
+    rb_const_entry_t *ce;
 
     if (!autoload_defined_p(mod, id)) return Qfalse;
     load = check_autoload_required(mod, id, &loading);
     if (!load) return Qfalse;
     src = rb_sourcefile();
     if (src && loading && strcmp(src, loading) == 0) return Qfalse;
+
+    if ((ce = rb_const_lookup(mod, id))) {
+        flag = ce->flag & (CONST_DEPRECATED | CONST_VISIBILITY_MASK);
+    }
 
     /* set ele->state for a marker of autoloading thread */
     if (!(ele = get_autoload_data(load, &ac))) {
@@ -2291,6 +2270,9 @@ rb_autoload_load(VALUE mod, ID id)
     result = rb_ensure(autoload_require, (VALUE)&state,
 		       autoload_reset, (VALUE)&state);
 
+    if (flag > 0 && (ce = rb_const_lookup(mod, id))) {
+        ce->flag |= flag;
+    }
     RB_GC_GUARD(load);
     return result;
 }
@@ -2320,7 +2302,8 @@ rb_autoload_at_p(VALUE mod, ID id, int recur)
 MJIT_FUNC_EXPORTED void
 rb_const_warn_if_deprecated(const rb_const_entry_t *ce, VALUE klass, ID id)
 {
-    if (RB_CONST_DEPRECATED_P(ce)) {
+    if (RB_CONST_DEPRECATED_P(ce) &&
+        rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) {
 	if (klass == rb_cObject) {
 	    rb_warn("constant ::%"PRIsVALUE" is deprecated", QUOTE_ID(id));
 	}
@@ -2418,12 +2401,6 @@ rb_public_const_get_from(VALUE klass, ID id)
     return rb_const_get_0(klass, id, TRUE, TRUE, TRUE);
 }
 
-VALUE
-rb_public_const_get(VALUE klass, ID id)
-{
-    return rb_const_get_0(klass, id, FALSE, TRUE, TRUE);
-}
-
 MJIT_FUNC_EXPORTED VALUE
 rb_public_const_get_at(VALUE klass, ID id)
 {
@@ -2474,12 +2451,6 @@ rb_const_location(VALUE klass, ID id, int exclude, int recurse, int visibility)
     if (BUILTIN_TYPE(klass) != T_MODULE) return loc;
     /* search global const too, if klass is a module */
     return rb_const_location_from(rb_cObject, id, FALSE, recurse, visibility);
-}
-
-VALUE
-rb_const_source_location_from(VALUE klass, ID id)
-{
-    return rb_const_location(klass, id, TRUE, TRUE, FALSE);
 }
 
 VALUE
@@ -2654,7 +2625,7 @@ rb_const_list(void *data)
 VALUE
 rb_mod_constants(int argc, const VALUE *argv, VALUE mod)
 {
-    bool inherit = TRUE;
+    bool inherit = true;
 
     if (rb_check_arity(argc, 0, 1)) inherit = RTEST(argv[0]);
 
@@ -2723,18 +2694,6 @@ MJIT_FUNC_EXPORTED int
 rb_public_const_defined_from(VALUE klass, ID id)
 {
     return rb_const_defined_0(klass, id, TRUE, TRUE, TRUE);
-}
-
-int
-rb_public_const_defined(VALUE klass, ID id)
-{
-    return rb_const_defined_0(klass, id, FALSE, TRUE, TRUE);
-}
-
-int
-rb_public_const_defined_at(VALUE klass, ID id)
-{
-    return rb_const_defined_0(klass, id, TRUE, FALSE, TRUE);
 }
 
 static void
@@ -3033,7 +2992,19 @@ rb_mod_public_constant(int argc, const VALUE *argv, VALUE obj)
  *  call-seq:
  *     mod.deprecate_constant(symbol, ...)    => mod
  *
- *  Makes a list of existing constants deprecated.
+ *  Makes a list of existing constants deprecated. Attempt
+ *  to refer to them will produce a warning.
+ *
+ *     module HTTP
+ *       NotFound = Exception.new
+ *       NOT_FOUND = NotFound # previous version of the library used this name
+ *
+ *       deprecate_constant :NOT_FOUND
+ *     end
+ *
+ *     HTTP::NOT_FOUND
+ *     # warning: constant HTTP::NOT_FOUND is deprecated
+ *
  */
 
 VALUE
@@ -3076,7 +3047,7 @@ cvar_overtaken(VALUE front, VALUE target, ID id)
     if (front && target != front) {
 	st_data_t did = (st_data_t)id;
 
-	if (RTEST(ruby_verbose)) {
+        if (RTEST(ruby_verbose) && original_module(front) != original_module(target)) {
 	    rb_warning("class variable % "PRIsVALUE" of %"PRIsVALUE" is overtaken by %"PRIsVALUE"",
 		       ID2SYM(id), rb_class_name(original_module(front)),
 		       rb_class_name(original_module(target)));
@@ -3265,7 +3236,7 @@ cvar_list(void *data)
 VALUE
 rb_mod_class_variables(int argc, const VALUE *argv, VALUE mod)
 {
-    bool inherit = TRUE;
+    bool inherit = true;
     st_table *tbl;
 
     if (rb_check_arity(argc, 0, 1)) inherit = RTEST(argv[0]);

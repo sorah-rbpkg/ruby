@@ -841,12 +841,12 @@ enum ruby_rhash_flags {
 #define RHASH_AR_TABLE_SIZE_RAW(h) \
   ((unsigned int)((RBASIC(h)->flags & RHASH_AR_TABLE_SIZE_MASK) >> RHASH_AR_TABLE_SIZE_SHIFT))
 
-int rb_hash_ar_table_p(VALUE hash);
-struct ar_table_struct *rb_hash_ar_table(VALUE hash);
-st_table *rb_hash_st_table(VALUE hash);
 void rb_hash_st_table_set(VALUE hash, st_table *st);
 
 #if 0 /* for debug */
+int rb_hash_ar_table_p(VALUE hash);
+struct ar_table_struct *rb_hash_ar_table(VALUE hash);
+st_table *rb_hash_st_table(VALUE hash);
 #define RHASH_AR_TABLE_P(hash)       rb_hash_ar_table_p(hash)
 #define RHASH_AR_TABLE(h)            rb_hash_ar_table(h)
 #define RHASH_ST_TABLE(h)            rb_hash_st_table(h)
@@ -1004,19 +1004,25 @@ struct rb_subclass_entry {
 typedef unsigned LONG_LONG rb_serial_t;
 #define SERIALT2NUM ULL2NUM
 #define PRI_SERIALT_PREFIX PRI_LL_PREFIX
+#define SIZEOF_SERIAL_T SIZEOF_LONG_LONG
 #elif defined(HAVE_UINT64_T)
 typedef uint64_t rb_serial_t;
 #define SERIALT2NUM SIZET2NUM
 #define PRI_SERIALT_PREFIX PRI_64_PREFIX
+#define SIZEOF_SERIAL_T SIZEOF_UINT64_T
 #else
 typedef unsigned long rb_serial_t;
 #define SERIALT2NUM ULONG2NUM
 #define PRI_SERIALT_PREFIX PRI_LONG_PREFIX
+#define SIZEOF_SERIAL_T SIZEOF_LONG
 #endif
 
 struct rb_classext_struct {
     struct st_table *iv_index_tbl;
     struct st_table *iv_tbl;
+#if SIZEOF_SERIAL_T == SIZEOF_VALUE /* otherwise m_tbl is in struct RClass */
+    struct rb_id_table *m_tbl;
+#endif
     struct rb_id_table *const_tbl;
     struct rb_id_table *callable_m_tbl;
     rb_subclass_entry_t *subclasses;
@@ -1027,10 +1033,13 @@ struct rb_classext_struct {
      * included. Hopefully that makes sense.
      */
     rb_subclass_entry_t **module_subclasses;
+#if SIZEOF_SERIAL_T != SIZEOF_VALUE /* otherwise class_serial is in struct RClass */
     rb_serial_t class_serial;
+#endif
     const VALUE origin_;
     const VALUE refined_class;
     rb_alloc_func_t allocator;
+    const VALUE includer;
 };
 
 typedef struct rb_classext_struct rb_classext_t;
@@ -1040,7 +1049,13 @@ struct RClass {
     struct RBasic basic;
     VALUE super;
     rb_classext_t *ptr;
+#if SIZEOF_SERIAL_T == SIZEOF_VALUE
+    /* Class serial is as wide as VALUE.  Place it here. */
+    rb_serial_t class_serial;
+#else
+    /* Class serial does not fit into struct RClass. Place m_tbl instead. */
     struct rb_id_table *m_tbl;
+#endif
 };
 
 void rb_class_subclass_add(VALUE super, VALUE klass);
@@ -1050,21 +1065,37 @@ int rb_singleton_class_internal_p(VALUE sklass);
 #define RCLASS_EXT(c) (RCLASS(c)->ptr)
 #define RCLASS_IV_TBL(c) (RCLASS_EXT(c)->iv_tbl)
 #define RCLASS_CONST_TBL(c) (RCLASS_EXT(c)->const_tbl)
-#define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
+#if SIZEOF_SERIAL_T == SIZEOF_VALUE
+# define RCLASS_M_TBL(c) (RCLASS_EXT(c)->m_tbl)
+#else
+# define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
+#endif
 #define RCLASS_CALLABLE_M_TBL(c) (RCLASS_EXT(c)->callable_m_tbl)
 #define RCLASS_IV_INDEX_TBL(c) (RCLASS_EXT(c)->iv_index_tbl)
 #define RCLASS_ORIGIN(c) (RCLASS_EXT(c)->origin_)
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT(c)->refined_class)
-#define RCLASS_SERIAL(c) (RCLASS_EXT(c)->class_serial)
+#if SIZEOF_SERIAL_T == SIZEOF_VALUE
+# define RCLASS_SERIAL(c) (RCLASS(c)->class_serial)
+#else
+# define RCLASS_SERIAL(c) (RCLASS_EXT(c)->class_serial)
+#endif
+#define RCLASS_INCLUDER(c) (RCLASS_EXT(c)->includer)
 
 #define RCLASS_CLONED     FL_USER6
 #define RICLASS_IS_ORIGIN FL_USER5
+#define RCLASS_REFINED_BY_ANY FL_USER7
 
 static inline void
 RCLASS_SET_ORIGIN(VALUE klass, VALUE origin)
 {
     RB_OBJ_WRITE(klass, &RCLASS_ORIGIN(klass), origin);
     if (klass != origin) FL_SET(origin, RICLASS_IS_ORIGIN);
+}
+
+static inline void
+RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass)
+{
+    RB_OBJ_WRITE(iclass, &RCLASS_INCLUDER(iclass), klass);
 }
 
 #undef RCLASS_SUPER
@@ -1206,7 +1237,6 @@ typedef struct rb_imemo_tmpbuf_struct {
 } rb_imemo_tmpbuf_t;
 
 #define rb_imemo_tmpbuf_auto_free_pointer() rb_imemo_new(imemo_tmpbuf, 0, 0, 0, 0)
-VALUE rb_imemo_tmpbuf_auto_free_maybe_mark_buffer(void *buf, size_t cnt);
 rb_imemo_tmpbuf_t *rb_imemo_tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt);
 
 #define RB_IMEMO_TMPBUF_PTR(v) \
@@ -1364,7 +1394,6 @@ void rb_ary_delete_same(VALUE, VALUE);
 VALUE rb_ary_tmp_new_fill(long capa);
 VALUE rb_ary_at(VALUE, VALUE);
 VALUE rb_ary_aref1(VALUE ary, VALUE i);
-VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
 size_t rb_ary_memsize(VALUE);
 VALUE rb_to_array_type(VALUE obj);
 VALUE rb_check_to_array(VALUE ary);
@@ -1425,7 +1454,6 @@ VALUE rb_big_even_p(VALUE);
 size_t rb_big_size(VALUE);
 VALUE rb_integer_float_cmp(VALUE x, VALUE y);
 VALUE rb_integer_float_eq(VALUE x, VALUE y);
-VALUE rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base);
 VALUE rb_str_convert_to_inum(VALUE str, int base, int badcheck, int raise_exception);
 VALUE rb_big_comp(VALUE x);
 VALUE rb_big_aref(VALUE x, VALUE y);
@@ -1516,23 +1544,24 @@ extern VALUE rb_eEAGAIN;
 extern VALUE rb_eEWOULDBLOCK;
 extern VALUE rb_eEINPROGRESS;
 void rb_report_bug_valist(VALUE file, int line, const char *fmt, va_list args);
-VALUE rb_check_backtrace(VALUE);
 NORETURN(void rb_async_bug_errno(const char *,int));
 const char *rb_builtin_type_name(int t);
 const char *rb_builtin_class_name(VALUE x);
-PRINTF_ARGS(void rb_sys_warn(const char *fmt, ...), 1, 2);
-PRINTF_ARGS(void rb_syserr_warn(int err, const char *fmt, ...), 2, 3);
-PRINTF_ARGS(void rb_sys_warning(const char *fmt, ...), 1, 2);
-PRINTF_ARGS(void rb_syserr_warning(int err, const char *fmt, ...), 2, 3);
+PRINTF_ARGS(void rb_warn_deprecated(const char *fmt, const char *suggest, ...), 1, 3);
 #ifdef RUBY_ENCODING_H
 VALUE rb_syntax_error_append(VALUE, VALUE, int, int, rb_encoding*, const char*, va_list);
 PRINTF_ARGS(void rb_enc_warn(rb_encoding *enc, const char *fmt, ...), 2, 3);
-PRINTF_ARGS(void rb_sys_enc_warn(rb_encoding *enc, const char *fmt, ...), 2, 3);
-PRINTF_ARGS(void rb_syserr_enc_warn(int err, rb_encoding *enc, const char *fmt, ...), 3, 4);
-PRINTF_ARGS(void rb_enc_warning(rb_encoding *enc, const char *fmt, ...), 2, 3);
 PRINTF_ARGS(void rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...), 2, 3);
 PRINTF_ARGS(void rb_syserr_enc_warning(int err, rb_encoding *enc, const char *fmt, ...), 3, 4);
 #endif
+
+typedef enum {
+    RB_WARN_CATEGORY_NONE,
+    RB_WARN_CATEGORY_DEPRECATED,
+    RB_WARN_CATEGORY_EXPERIMENTAL,
+} rb_warning_category_t;
+rb_warning_category_t rb_warning_category_from_name(VALUE category);
+bool rb_warning_category_enabled_p(rb_warning_category_t category);
 
 #define rb_raise_cstr(etype, mesg) \
     rb_exc_raise(rb_exc_new_str(etype, rb_str_new_cstr(mesg)))
@@ -1548,10 +1577,6 @@ VALUE rb_nomethod_err_new(VALUE mesg, VALUE recv, VALUE method, VALUE args, int 
 VALUE rb_key_err_new(VALUE mesg, VALUE recv, VALUE name);
 #define rb_key_err_raise(mesg, recv, name) \
     rb_exc_raise(rb_key_err_new(mesg, recv, name))
-NORETURN(void ruby_deprecated_internal_feature(const char *));
-#define DEPRECATED_INTERNAL_FEATURE(func) \
-    (ruby_deprecated_internal_feature(func), UNREACHABLE)
-VALUE rb_warning_warn(VALUE mod, VALUE str);
 PRINTF_ARGS(VALUE rb_warning_string(const char *fmt, ...), 1, 2);
 NORETURN(void rb_vraise(VALUE, const char *, va_list));
 
@@ -1575,14 +1600,15 @@ extern const char ruby_null_device[];
 VALUE rb_home_dir_of(VALUE user, VALUE result);
 VALUE rb_default_home_dir(VALUE result);
 VALUE rb_realpath_internal(VALUE basedir, VALUE path, int strict);
-VALUE rb_check_realpath(VALUE basedir, VALUE path);
+#ifdef RUBY_ENCODING_H
+VALUE rb_check_realpath(VALUE basedir, VALUE path, rb_encoding *origenc);
+#endif
 void rb_file_const(const char*, VALUE);
 int rb_file_load_ok(const char *);
 VALUE rb_file_expand_path_fast(VALUE, VALUE);
 VALUE rb_file_expand_path_internal(VALUE, VALUE, int, int, VALUE);
-VALUE rb_get_path_check_to_string(VALUE, int);
-VALUE rb_get_path_check_convert(VALUE, VALUE, int);
-VALUE rb_get_path_check(VALUE, int);
+VALUE rb_get_path_check_to_string(VALUE);
+VALUE rb_get_path_check_convert(VALUE);
 void Init_File(void);
 int ruby_is_fd_loadable(int fd);
 
@@ -1606,7 +1632,7 @@ NORETURN(void rb_syserr_fail_path_in(const char *func_name, int err, VALUE path)
 extern VALUE *ruby_initial_gc_stress_ptr;
 extern int ruby_disable_gc;
 void Init_heap(void);
-void *ruby_mimmalloc(size_t size);
+void *ruby_mimmalloc(size_t size) RUBY_ATTR_MALLOC;
 void ruby_mimfree(void *ptr);
 void rb_objspace_set_event_hook(const rb_event_flag_t event);
 #if USE_RGENGC
@@ -1614,7 +1640,7 @@ void rb_gc_writebarrier_remember(VALUE obj);
 #else
 #define rb_gc_writebarrier_remember(obj) 0
 #endif
-void ruby_gc_set_params(int safe_level);
+void ruby_gc_set_params(void);
 void rb_copy_wb_protected_attribute(VALUE dest, VALUE obj);
 
 #if defined(HAVE_MALLOC_USABLE_SIZE) || defined(HAVE_MALLOC_SIZE) || defined(_WIN32)
@@ -1624,8 +1650,8 @@ void rb_copy_wb_protected_attribute(VALUE dest, VALUE obj);
 #define SIZED_REALLOC_N(var,type,n,old_n) REALLOC_N(var, type, n)
 #else
 RUBY_SYMBOL_EXPORT_BEGIN
-void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_ALLOC_SIZE((2));
-void *ruby_sized_xrealloc2(void *ptr, size_t new_count, size_t element_size, size_t old_count) RUBY_ATTR_ALLOC_SIZE((2, 3));
+void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
+void *ruby_sized_xrealloc2(void *ptr, size_t new_count, size_t element_size, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
 void ruby_sized_xfree(void *x, size_t size);
 RUBY_SYMBOL_EXPORT_END
 #define SIZED_REALLOC_N(var,type,n,old_n) ((var)=(type*)ruby_sized_xrealloc2((void*)(var), (n), sizeof(type), (old_n)))
@@ -1646,7 +1672,6 @@ __attribute__((__alloc_align__(1)))
 #endif
 #endif
 void *rb_aligned_malloc(size_t, size_t) RUBY_ATTR_MALLOC RUBY_ATTR_ALLOC_SIZE((2));
-void rb_aligned_free(void *);
 
 size_t rb_size_mul_or_raise(size_t, size_t, VALUE); /* used in compile.c */
 size_t rb_size_mul_add_or_raise(size_t, size_t, size_t, VALUE); /* used in iseq.h */
@@ -1668,10 +1693,8 @@ VALUE rb_hash_new_with_size(st_index_t size);
 VALUE rb_hash_has_key(VALUE hash, VALUE key);
 VALUE rb_hash_default_value(VALUE hash, VALUE key);
 VALUE rb_hash_set_default_proc(VALUE hash, VALUE proc);
-long rb_objid_hash(st_index_t index);
 long rb_dbl_long_hash(double d);
 st_table *rb_init_identtable(void);
-st_table *rb_init_identtable_with_size(st_index_t size);
 VALUE rb_hash_compare_by_id_p(VALUE hash);
 VALUE rb_to_hash_type(VALUE obj);
 VALUE rb_hash_key_str(VALUE);
@@ -1694,9 +1717,7 @@ int rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func fun
 void rb_call_inits(void);
 
 /* io.c */
-const char *ruby_get_inplace_mode(void);
 void ruby_set_inplace_mode(const char *);
-ssize_t rb_io_bufread(VALUE io, void *buf, size_t size);
 void rb_stdio_set_default_encoding(void);
 VALUE rb_io_flush_raw(VALUE, int);
 #ifdef RUBY_IO_H
@@ -1707,9 +1728,8 @@ void rb_io_fptr_finalize_internal(void *ptr);
 #define rb_io_fptr_finalize rb_io_fptr_finalize_internal
 
 /* load.c */
-VALUE rb_get_load_path(void);
 VALUE rb_get_expanded_load_path(void);
-int rb_require_internal(VALUE fname, int safe);
+int rb_require_internal(VALUE fname);
 NORETURN(void rb_load_fail(VALUE, const char*));
 
 /* loadpath.c */
@@ -1728,7 +1748,6 @@ VALUE rb_math_hypot(VALUE, VALUE);
 VALUE rb_math_log(int argc, const VALUE *argv);
 VALUE rb_math_sin(VALUE);
 VALUE rb_math_sinh(VALUE);
-VALUE rb_math_sqrt(VALUE);
 
 /* mjit.c */
 
@@ -1782,7 +1801,6 @@ int ruby_float_step(VALUE from, VALUE to, VALUE step, int excl, int allow_endles
 double ruby_float_mod(double x, double y);
 int rb_num_negative_p(VALUE);
 VALUE rb_int_succ(VALUE num);
-VALUE rb_int_pred(VALUE num);
 VALUE rb_int_uminus(VALUE num);
 VALUE rb_float_uminus(VALUE num);
 VALUE rb_int_plus(VALUE x, VALUE y);
@@ -1793,9 +1811,7 @@ VALUE rb_float_mul(VALUE x, VALUE y);
 VALUE rb_float_div(VALUE x, VALUE y);
 VALUE rb_int_idiv(VALUE x, VALUE y);
 VALUE rb_int_modulo(VALUE x, VALUE y);
-VALUE rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode);
 VALUE rb_int2str(VALUE num, int base);
-VALUE rb_dbl_hash(double d);
 VALUE rb_fix_plus(VALUE x, VALUE y);
 VALUE rb_fix_aref(VALUE fix, VALUE idx);
 VALUE rb_int_gt(VALUE x, VALUE y);
@@ -1973,7 +1989,6 @@ struct RBasicRaw {
 #ifndef USE_SYMBOL_GC
 #define USE_SYMBOL_GC 1
 #endif
-VALUE rb_parser_get_yydebug(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
 RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_parser_set_context(VALUE, const struct rb_iseq_struct *, int);
@@ -1981,23 +1996,12 @@ RUBY_SYMBOL_EXPORT_END
 void *rb_parser_load_file(VALUE parser, VALUE name);
 int rb_is_const_name(VALUE name);
 int rb_is_class_name(VALUE name);
-int rb_is_global_name(VALUE name);
 int rb_is_instance_name(VALUE name);
-int rb_is_attrset_name(VALUE name);
 int rb_is_local_name(VALUE name);
-int rb_is_method_name(VALUE name);
-int rb_is_junk_name(VALUE name);
 PUREFUNC(int rb_is_const_sym(VALUE sym));
-PUREFUNC(int rb_is_class_sym(VALUE sym));
-PUREFUNC(int rb_is_global_sym(VALUE sym));
-PUREFUNC(int rb_is_instance_sym(VALUE sym));
 PUREFUNC(int rb_is_attrset_sym(VALUE sym));
-PUREFUNC(int rb_is_local_sym(VALUE sym));
-PUREFUNC(int rb_is_method_sym(VALUE sym));
-PUREFUNC(int rb_is_junk_sym(VALUE sym));
 ID rb_make_internal_id(void);
 void rb_gc_free_dsymbol(VALUE);
-ID rb_id_attrget(ID id);
 
 /* proc.c */
 VALUE rb_proc_location(VALUE self);
@@ -2130,14 +2134,6 @@ VALUE rb_fstring_cstr(const char *str);
 VALUE rb_fstring_enc_new(const char *ptr, long len, rb_encoding *enc);
 #define rb_fstring_enc_lit(str, enc) rb_fstring_enc_new((str), rb_strlen_lit(str), (enc))
 #define rb_fstring_enc_literal(str, enc) rb_fstring_enc_lit(str, enc)
-VALUE rb_fstring_enc_cstr(const char *ptr, rb_encoding *enc);
-# ifdef HAVE_BUILTIN___BUILTIN_CONSTANT_P
-#  define rb_fstring_enc_cstr(str, enc) RB_GNUC_EXTENSION_BLOCK( \
-    (__builtin_constant_p(str)) ?		\
-	rb_fstring_enc_new((str), (long)strlen(str), (enc)) : \
-	rb_fstring_enc_cstr(str, enc) \
-)
-# endif
 #endif
 int rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p);
 int rb_str_symname_p(VALUE);
@@ -2190,15 +2186,6 @@ rb_str_eql_internal(const VALUE str1, const VALUE str2)
 /* symbol.c */
 #ifdef RUBY_ENCODING_H
 VALUE rb_sym_intern(const char *ptr, long len, rb_encoding *enc);
-VALUE rb_sym_intern_cstr(const char *ptr, rb_encoding *enc);
-#ifdef __GNUC__
-#define rb_sym_intern_cstr(ptr, enc) __extension__ ( \
-{						\
-    (__builtin_constant_p(ptr)) ?		\
-	rb_sym_intern((ptr), (long)strlen(ptr), (enc)) : \
-	rb_sym_intern_cstr((ptr), (enc)); \
-})
-#endif
 #endif
 VALUE rb_sym_intern_ascii(const char *ptr, long len);
 VALUE rb_sym_intern_ascii_cstr(const char *ptr);
@@ -2286,6 +2273,7 @@ NORETURN(VALUE rb_mod_const_missing(VALUE,VALUE));
 rb_gvar_getter_t *rb_gvar_getter_function_of(const struct rb_global_entry *);
 rb_gvar_setter_t *rb_gvar_setter_function_of(const struct rb_global_entry *);
 bool rb_gvar_is_traced(const struct rb_global_entry *);
+void rb_gvar_readonly_setter(VALUE v, ID id, VALUE *_);
 
 /* vm_insnhelper.h */
 rb_serial_t rb_next_class_serial(void);
@@ -2296,9 +2284,6 @@ void rb_vm_mark(void *ptr);
 void Init_BareVM(void);
 void Init_vm_objects(void);
 PUREFUNC(VALUE rb_vm_top_self(void));
-void rb_thread_recycle_stack_release(VALUE *);
-VALUE *rb_thread_recycle_stack(size_t);
-void rb_vm_change_state(void);
 void rb_vm_inc_const_missing_count(void);
 const void **rb_vm_get_insns_address_table(void);
 VALUE rb_source_location(int *pline);
@@ -2306,6 +2291,7 @@ const char *rb_source_location_cstr(int *pline);
 MJIT_STATIC void rb_vm_pop_cfunc_frame(void);
 int rb_vm_add_root_module(ID id, VALUE module);
 void rb_vm_check_redefinition_by_prepend(VALUE klass);
+int rb_vm_check_optimizable_mid(VALUE mid);
 VALUE rb_yield_refine_block(VALUE refinement, VALUE refinements);
 MJIT_STATIC VALUE ruby_vm_special_exception_copy(VALUE);
 PUREFUNC(st_table *rb_vm_fstring_table(void));
@@ -2326,7 +2312,6 @@ VALUE rb_check_funcall_with_hook_kw(VALUE recv, ID mid, int argc, const VALUE *a
                                  rb_check_funcall_hook *hook, VALUE arg, int kw_splat);
 const char *rb_type_str(enum ruby_value_type type);
 VALUE rb_check_funcall_default(VALUE, ID, int, const VALUE *, VALUE);
-VALUE rb_check_funcall_default_kw(VALUE, ID, int, const VALUE *, VALUE, int);
 VALUE rb_yield_1(VALUE val);
 VALUE rb_yield_force_blockarg(VALUE values);
 VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
@@ -2356,47 +2341,77 @@ struct rb_method_definition_struct;
 struct rb_execution_context_struct;
 struct rb_control_frame_struct;
 struct rb_calling_info;
-struct rb_call_info;
+struct rb_call_data;
+/* I have several reasons to chose 64 here:
+ *
+ * - A cache line must be a power-of-two size.
+ * - Setting this to anything less than or equal to 32 boosts nothing.
+ * - I have never seen an architecture that has 128 byte L1 cache line.
+ * - I know Intel Core and Sparc T4 at least uses 64.
+ * - I know jemalloc internally has this exact same `#define CACHE_LINE 64`.
+ *   https://github.com/jemalloc/jemalloc/blob/dev/include/jemalloc/internal/jemalloc_internal_types.h
+ */
+#define CACHELINE 64
 struct rb_call_cache {
     /* inline cache: keys */
     rb_serial_t method_state;
-    rb_serial_t class_serial;
+    rb_serial_t class_serial[
+        (CACHELINE
+         - sizeof(rb_serial_t)                                   /* method_state */
+         - sizeof(struct rb_callable_method_entry_struct *)      /* me */
+         - sizeof(uintptr_t)                                     /* method_serial */
+         - sizeof(enum method_missing_reason)                    /* aux */
+         - sizeof(VALUE (*)(                                     /* call */
+               struct rb_execution_context_struct *e,
+               struct rb_control_frame_struct *,
+               struct rb_calling_info *,
+               const struct rb_call_data *)))
+        / sizeof(rb_serial_t)
+    ];
 
     /* inline cache: values */
     const struct rb_callable_method_entry_struct *me;
-    const struct rb_method_definition_struct *def;
+    uintptr_t method_serial; /* me->def->method_serial */
 
     VALUE (*call)(struct rb_execution_context_struct *ec,
                   struct rb_control_frame_struct *cfp,
                   struct rb_calling_info *calling,
-                  const struct rb_call_info *ci,
-                  struct rb_call_cache *cc);
+                  struct rb_call_data *cd);
 
     union {
         unsigned int index; /* used by ivar */
         enum method_missing_reason method_missing_reason; /* used by method_missing */
-        int inc_sp; /* used by cfunc */
     } aux;
 };
-struct rb_call_cache_and_mid {
-    struct rb_call_cache cc;
+STATIC_ASSERT(cachelined, sizeof(struct rb_call_cache) <= CACHELINE);
+struct rb_call_info {
+    /* fixed at compile time */
     ID mid;
+    unsigned int flag;
+    int orig_argc;
 };
-VALUE rb_funcallv_with_cc(struct rb_call_cache_and_mid*, VALUE, ID, int, const VALUE*)
-#if GCC_VERSION_SINCE(3, 3, 0) && defined(__OPTIMIZE__)
-__attribute__((__visibility__("default"), __nonnull__(1)))
+struct rb_call_data {
+    struct rb_call_cache cc;
+    struct rb_call_info ci;
+};
+RUBY_FUNC_EXPORTED
+RUBY_FUNC_NONNULL(1, VALUE rb_funcallv_with_cc(struct rb_call_data*, VALUE, ID, int, const VALUE*));
+RUBY_FUNC_EXPORTED
+RUBY_FUNC_NONNULL(1, bool rb_method_basic_definition_p_with_cc(struct rb_call_data *, VALUE, ID));
+
+#ifdef __GNUC__
 # define rb_funcallv(recv, mid, argc, argv) \
     __extension__({ \
-        static struct rb_call_cache_and_mid \
-            rb_funcallv_opaque_cc = { {0, }, 0, }; \
-        rb_funcallv_with_cc(&rb_funcallv_opaque_cc, \
-            recv, mid, argc,argv); \
+        static struct rb_call_data rb_funcallv_data; \
+        rb_funcallv_with_cc(&rb_funcallv_data, recv, mid, argc, argv); \
+    })
+# define rb_method_basic_definition_p(klass, mid) \
+    __extension__({ \
+        static struct rb_call_data rb_mbdp; \
+        (klass == Qfalse) ? /* hidden object cannot be overridden */ true : \
+            rb_method_basic_definition_p_with_cc(&rb_mbdp, klass, mid); \
     })
 #endif
-    ;
-
-/* miniprelude.c, prelude.c */
-void Init_prelude(void);
 
 /* vm_backtrace.c */
 void Init_vm_backtrace(void);

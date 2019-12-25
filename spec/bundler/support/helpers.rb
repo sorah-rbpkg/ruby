@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require "open3"
+require_relative "command_execution"
+require_relative "the_bundle"
 
 module Spec
   module Helpers
@@ -16,17 +17,13 @@ module Spec
       FileUtils.mkdir_p(home)
       FileUtils.mkdir_p(tmpdir)
       Bundler.reset!
-      Bundler.ui = nil
-      Bundler.ui # force it to initialize
     end
 
     def self.bang(method)
       define_method("#{method}!") do |*args, &blk|
         send(method, *args, &blk).tap do
           unless last_command.success?
-            raise RuntimeError,
-              "Invoking #{method}!(#{args.map(&:inspect).join(", ")}) failed:\n#{last_command.stdboth}",
-              caller.drop_while {|bt| bt.start_with?(__FILE__) }
+            raise "Invoking #{method}!(#{args.map(&:inspect).join(", ")}) failed:\n#{last_command.stdboth}"
           end
         end
       end
@@ -77,7 +74,7 @@ module Spec
     def run(cmd, *args)
       opts = args.last.is_a?(Hash) ? args.pop : {}
       groups = args.map(&:inspect).join(", ")
-      setup = "require '#{lib}/bundler' ; Bundler.setup(#{groups})\n"
+      setup = "require '#{lib_dir}/bundler' ; Bundler.ui.silence { Bundler.setup(#{groups}) }\n"
       ruby(setup + cmd, opts)
     end
     bang :run
@@ -93,10 +90,6 @@ module Spec
       opts = args.last.is_a?(Hash) ? args.pop : {}
       args += [opts]
       run(cmd, *args)
-    end
-
-    def spec
-      spec_dir.to_s
     end
 
     def bundle(cmd, options = {})
@@ -123,14 +116,14 @@ module Spec
         end
       end
       if artifice
-        requires << File.expand_path("../artifice/#{artifice}", __FILE__)
+        requires << "support/artifice/#{artifice}"
       end
 
       requires_str = requires.map {|r| "-r#{r}" }.join(" ")
 
       load_path = []
-      load_path << lib unless system_bundler
-      load_path << spec
+      load_path << lib_dir unless system_bundler
+      load_path << spec_dir
       load_path_str = "-I#{load_path.join(File::PATH_SEPARATOR)}"
 
       args = options.map do |k, v|
@@ -174,10 +167,10 @@ module Spec
     end
 
     def ruby(ruby, options = {})
-      env = (options.delete(:env) || {}).map {|k, v| "#{k}='#{v}' " }.join
+      env = options.delete(:env) || {}
       ruby = ruby.gsub(/["`\$]/) {|m| "\\#{m}" }
-      lib_option = options[:no_lib] ? "" : " -I#{lib}"
-      sys_exec(%(#{env}#{Gem.ruby}#{lib_option} -e "#{ruby}"))
+      lib_option = options[:no_lib] ? "" : " -I#{lib_dir}"
+      sys_exec(%(#{Gem.ruby}#{lib_option} -w -e "#{ruby}"), env)
     end
     bang :ruby
 
@@ -193,7 +186,7 @@ module Spec
 
     def gembin(cmd)
       old = ENV["RUBYOPT"]
-      ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -I#{lib}"
+      ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -I#{lib_dir}"
       cmd = bundled_app("bin/#{cmd}") unless cmd.to_s.include?("/")
       sys_exec(cmd.to_s)
     ensure
@@ -212,8 +205,7 @@ module Spec
     def sys_exec(cmd, env = {})
       command_execution = CommandExecution.new(cmd.to_s, Dir.pwd)
 
-      env = env.map {|k, v| [k.to_s, v.to_s] }.to_h # convert env keys and values to string
-
+      require "open3"
       Open3.popen3(env, cmd.to_s) do |stdin, stdout, stderr, wait_thr|
         yield stdin, stdout, wait_thr if block_given?
         stdin.close
@@ -511,10 +503,6 @@ module Spec
 
     def revision_for(path)
       Dir.chdir(path) { `git rev-parse HEAD`.strip }
-    end
-
-    def capture_output
-      capture(:stdout)
     end
 
     def with_read_only(pattern)

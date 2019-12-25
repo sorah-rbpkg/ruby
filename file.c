@@ -160,8 +160,6 @@ VALUE rb_cFile;
 VALUE rb_mFileTest;
 VALUE rb_cStat;
 
-#define insecure_obj_p(obj, level) ((level) > 0 && OBJ_TAINTED(obj))
-
 static VALUE
 file_path_convert(VALUE name)
 {
@@ -195,14 +193,10 @@ check_path_encoding(VALUE str)
 }
 
 VALUE
-rb_get_path_check_to_string(VALUE obj, int level)
+rb_get_path_check_to_string(VALUE obj)
 {
     VALUE tmp;
     ID to_path;
-
-    if (insecure_obj_p(obj, level)) {
-	rb_insecure_operation();
-    }
 
     if (RB_TYPE_P(obj, T_STRING)) {
 	return obj;
@@ -214,38 +208,28 @@ rb_get_path_check_to_string(VALUE obj, int level)
 }
 
 VALUE
-rb_get_path_check_convert(VALUE obj, VALUE tmp, int level)
+rb_get_path_check_convert(VALUE obj)
 {
-    tmp = file_path_convert(tmp);
-    if (obj != tmp && insecure_obj_p(tmp, level)) {
-	rb_insecure_operation();
-    }
+    obj = file_path_convert(obj);
 
-    check_path_encoding(tmp);
-    if (!rb_str_to_cstr(tmp)) {
+    check_path_encoding(obj);
+    if (!rb_str_to_cstr(obj)) {
 	rb_raise(rb_eArgError, "path name contains null byte");
     }
 
-    return rb_str_new4(tmp);
-}
-
-VALUE
-rb_get_path_check(VALUE obj, int level)
-{
-    VALUE tmp = rb_get_path_check_to_string(obj, level);
-    return rb_get_path_check_convert(obj, tmp, level);
+    return rb_str_new4(obj);
 }
 
 VALUE
 rb_get_path_no_checksafe(VALUE obj)
 {
-    return rb_get_path_check(obj, 0);
+    return rb_get_path(obj);
 }
 
 VALUE
 rb_get_path(VALUE obj)
 {
-    return rb_get_path_check(obj, rb_safe_level());
+    return rb_get_path_check_convert(rb_get_path_check_to_string(obj));
 }
 
 VALUE
@@ -253,12 +237,12 @@ rb_str_encode_ospath(VALUE path)
 {
 #if USE_OSPATH
     int encidx = ENCODING_GET(path);
-#ifdef _WIN32
+#if 0 && defined _WIN32
     if (encidx == ENCINDEX_ASCII) {
 	encidx = rb_filesystem_encindex();
     }
 #endif
-    if (encidx != ENCINDEX_UTF_8) {
+    if (encidx != ENCINDEX_ASCII && encidx != ENCINDEX_UTF_8) {
 	rb_encoding *enc = rb_enc_from_index(encidx);
 	rb_encoding *utf8 = rb_utf8_encoding();
 	path = rb_str_conv_enc(path, enc, utf8);
@@ -1088,7 +1072,6 @@ rb_stat_inspect(VALUE self)
 	}
     }
     rb_str_buf_cat2(str, ">");
-    OBJ_INFECT(str, self);
 
     return str;
 }
@@ -3665,18 +3648,15 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     const char *s, *b, *fend;
     char *buf, *p, *pend, *root;
     size_t buflen, bdiff;
-    int tainted;
     rb_encoding *enc, *fsenc = rb_filesystem_encoding();
 
     s = StringValuePtr(fname);
     fend = s + RSTRING_LEN(fname);
     enc = rb_enc_get(fname);
     BUFINIT();
-    tainted = OBJ_TAINTED(fname);
 
     if (s[0] == '~' && abs_mode == 0) {      /* execute only if NOT absolute_path() */
 	long userlen = 0;
-	tainted = 1;
 	if (isdirsep(s[1]) || s[1] == '\0') {
 	    buf = 0;
 	    b = 0;
@@ -3734,7 +3714,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    }
 	    if (!same) {
 		char *e = append_fspath(result, fname, getcwdofdrv(*s), &enc, fsenc);
-		tainted = 1;
 		BUFINIT();
 		p = e;
 	    }
@@ -3756,7 +3735,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	}
 	else {
 	    char *e = append_fspath(result, fname, ruby_getcwd(), &enc, fsenc);
-	    tainted = 1;
 	    BUFINIT();
 	    p = e;
 	}
@@ -4007,7 +3985,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     }
 #endif
 
-    if (tainted) OBJ_TAINT(result);
     rb_str_set_len(result, p - buf);
     rb_enc_check(fname, result);
     ENC_CODERANGE_CLEAR(result);
@@ -4266,7 +4243,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE f
 }
 
 static VALUE
-rb_check_realpath_emulate(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
+rb_check_realpath_emulate(VALUE basedir, VALUE path, rb_encoding *origenc, enum rb_realpath_mode mode)
 {
     long prefixlen;
     VALUE resolved;
@@ -4274,7 +4251,7 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
     VALUE loopcheck;
     VALUE curdir = Qnil;
 
-    rb_encoding *enc, *origenc;
+    rb_encoding *enc;
     char *path_names = NULL, *basedir_names = NULL, *curdir_names = NULL;
     char *ptr, *prefixptr = NULL, *pend;
     long len;
@@ -4287,7 +4264,6 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
     }
 
     enc = rb_enc_get(unresolved_path);
-    origenc = enc;
     unresolved_path = TO_OSPATH(unresolved_path);
     RSTRING_GETMEM(unresolved_path, ptr, len);
     path_names = skipprefixroot(ptr, ptr + len, rb_enc_get(unresolved_path));
@@ -4345,7 +4321,7 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
     if (realpath_rec(&prefixlen, &resolved, path_names, Qnil, loopcheck, mode, 1))
 	return Qnil;
 
-    if (origenc != rb_enc_get(resolved)) {
+    if (origenc && origenc != rb_enc_get(resolved)) {
 	if (rb_enc_str_asciionly_p(resolved)) {
 	    rb_enc_associate(resolved, origenc);
 	}
@@ -4354,7 +4330,6 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
 	}
     }
 
-    rb_obj_taint(resolved);
     RB_GC_GUARD(unresolved_path);
     RB_GC_GUARD(curdir);
     return resolved;
@@ -4363,25 +4338,23 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
 static VALUE rb_file_join(VALUE ary);
 
 static VALUE
-rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
+rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum rb_realpath_mode mode)
 {
 #ifdef HAVE_REALPATH
     VALUE unresolved_path;
-    rb_encoding *origenc;
     char *resolved_ptr = NULL;
     VALUE resolved;
     struct stat st;
 
     if (mode == RB_REALPATH_DIR) {
-        return rb_check_realpath_emulate(basedir, path, mode);
+        return rb_check_realpath_emulate(basedir, path, origenc, mode);
     }
 
     unresolved_path = rb_str_dup_frozen(path);
-    origenc = rb_enc_get(unresolved_path);
     if (*RSTRING_PTR(unresolved_path) != '/' && !NIL_P(basedir)) {
         unresolved_path = rb_file_join(rb_assoc_new(basedir, unresolved_path));
     }
-    unresolved_path = TO_OSPATH(unresolved_path);
+    if (origenc) unresolved_path = TO_OSPATH(unresolved_path);
 
     if ((resolved_ptr = realpath(RSTRING_PTR(unresolved_path), NULL)) == NULL) {
         /* glibc realpath(3) does not allow /path/to/file.rb/../other_file.rb,
@@ -4391,7 +4364,7 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode
            Fallback to the emulated approach in either of those cases. */
         if (errno == ENOTDIR ||
             (errno == ENOENT && rb_file_exist_p(0, unresolved_path))) {
-            return rb_check_realpath_emulate(basedir, path, mode);
+            return rb_check_realpath_emulate(basedir, path, origenc, mode);
 
         }
         if (mode == RB_REALPATH_CHECK) {
@@ -4402,14 +4375,16 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode
     resolved = ospath_new(resolved_ptr, strlen(resolved_ptr), rb_filesystem_encoding());
     free(resolved_ptr);
 
-    if (rb_stat(resolved, &st) < 0) {
+    /* As `resolved` is a String in the filesystem encoding, no
+     * conversion is needed */
+    if (stat_without_gvl(RSTRING_PTR(resolved), &st) < 0) {
         if (mode == RB_REALPATH_CHECK) {
             return Qnil;
         }
         rb_sys_fail_path(unresolved_path);
     }
 
-    if (origenc != rb_enc_get(resolved)) {
+    if (origenc && origenc != rb_enc_get(resolved)) {
         if (!rb_enc_str_asciionly_p(resolved)) {
             resolved = rb_str_conv_enc(resolved, NULL, origenc);
         }
@@ -4423,11 +4398,10 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode
         }
     }
 
-    rb_obj_taint(resolved);
     RB_GC_GUARD(unresolved_path);
     return resolved;
 #else
-    return rb_check_realpath_emulate(basedir, path, mode);
+    return rb_check_realpath_emulate(basedir, path, origenc, mode);
 #endif /* HAVE_REALPATH */
 }
 
@@ -4436,13 +4410,13 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
 {
     const enum rb_realpath_mode mode =
 	strict ? RB_REALPATH_STRICT : RB_REALPATH_DIR;
-    return rb_check_realpath_internal(basedir, path, mode);
+    return rb_check_realpath_internal(basedir, path, rb_enc_get(path), mode);
 }
 
 VALUE
-rb_check_realpath(VALUE basedir, VALUE path)
+rb_check_realpath(VALUE basedir, VALUE path, rb_encoding *enc)
 {
-    return rb_check_realpath_internal(basedir, path, RB_REALPATH_CHECK);
+    return rb_check_realpath_internal(basedir, path, enc, RB_REALPATH_CHECK);
 }
 
 /*
@@ -4645,7 +4619,6 @@ rb_file_s_basename(int argc, VALUE *argv, VALUE _)
 
     basename = rb_str_new(p, f);
     rb_enc_copy(basename, fname);
-    OBJ_INFECT(basename, fname);
     return basename;
 }
 
@@ -4707,7 +4680,6 @@ rb_file_dirname(VALUE fname)
 	rb_str_cat(dirname, ".", 1);
 #endif
     rb_enc_copy(dirname, fname);
-    OBJ_INFECT(dirname, fname);
     return dirname;
 }
 
@@ -4816,7 +4788,6 @@ rb_file_s_extname(VALUE klass, VALUE fname)
     if (len < 1)
 	return rb_str_new(0, 0);
     extname = rb_str_subseq(fname, e - name, len); /* keep the dot, too! */
-    OBJ_INFECT(extname, fname);
     return extname;
 }
 
@@ -4887,7 +4858,6 @@ rb_file_join(VALUE ary)
     len += RARRAY_LEN(ary) - 1;
     result = rb_str_buf_new(len);
     RBASIC_CLEAR_CLASS(result);
-    OBJ_INFECT(result, ary);
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	tmp = RARRAY_AREF(ary, i);
 	switch (OBJ_BUILTIN_TYPE(tmp)) {
@@ -6290,13 +6260,14 @@ copy_path_class(VALUE path, VALUE orig)
 }
 
 int
-rb_find_file_ext(VALUE *filep, const char *const *ext)
+rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int _level)
 {
-    return rb_find_file_ext_safe(filep, ext, rb_safe_level());
+    rb_warn("rb_find_file_ext_safe will be removed in Ruby 3.0");
+    return rb_find_file_ext(filep, ext);
 }
 
 int
-rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
+rb_find_file_ext(VALUE *filep, const char *const *ext)
 {
     const char *f = StringValueCStr(*filep);
     VALUE fname = *filep, load_path, tmp;
@@ -6307,18 +6278,12 @@ rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
 
     if (f[0] == '~') {
 	fname = file_expand_path_1(fname);
-	if (safe_level >= 1 && OBJ_TAINTED(fname)) {
-	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
-	}
 	f = RSTRING_PTR(fname);
 	*filep = fname;
 	expanded = 1;
     }
 
     if (expanded || rb_is_absolute_path(f) || is_explicit_relative(f)) {
-	if (safe_level >= 1 && !fpath_check(fname)) {
-	    rb_raise(rb_eSecurityError, "loading from unsafe path %s", f);
-	}
 	if (!expanded) fname = file_expand_path_1(fname);
 	fnlen = RSTRING_LEN(fname);
 	for (i=0; ext[i]; i++) {
@@ -6345,14 +6310,13 @@ rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
 	for (i = 0; i < RARRAY_LEN(load_path); i++) {
 	    VALUE str = RARRAY_AREF(load_path, i);
 
-	    RB_GC_GUARD(str) = rb_get_path_check(str, safe_level);
+            RB_GC_GUARD(str) = rb_get_path(str);
 	    if (RSTRING_LEN(str) == 0) continue;
 	    rb_file_expand_path_internal(fname, str, 0, 0, tmp);
 	    if (rb_file_load_ok(RSTRING_PTR(tmp))) {
 		*filep = copy_path_class(tmp, *filep);
 		return (int)(j+1);
 	    }
-	    FL_UNSET(tmp, FL_TAINT);
 	}
 	rb_str_set_len(fname, fnlen);
     }
@@ -6362,13 +6326,14 @@ rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
 }
 
 VALUE
-rb_find_file(VALUE path)
+rb_find_file_safe(VALUE path, int _level)
 {
-    return rb_find_file_safe(path, rb_safe_level());
+    rb_warn("rb_find_file_safe will be removed in Ruby 3.0");
+    return rb_find_file(path);
 }
 
 VALUE
-rb_find_file_safe(VALUE path, int safe_level)
+rb_find_file(VALUE path)
 {
     VALUE tmp, load_path;
     const char *f = StringValueCStr(path);
@@ -6376,18 +6341,12 @@ rb_find_file_safe(VALUE path, int safe_level)
 
     if (f[0] == '~') {
 	tmp = file_expand_path_1(path);
-	if (safe_level >= 1 && OBJ_TAINTED(tmp)) {
-	    rb_raise(rb_eSecurityError, "loading from unsafe file %"PRIsVALUE, tmp);
-	}
 	path = copy_path_class(tmp, path);
 	f = RSTRING_PTR(path);
 	expanded = 1;
     }
 
     if (expanded || rb_is_absolute_path(f) || is_explicit_relative(f)) {
-	if (safe_level >= 1 && !fpath_check(path)) {
-	    rb_raise(rb_eSecurityError, "loading from unsafe path %"PRIsVALUE, path);
-	}
 	if (!rb_file_load_ok(f)) return 0;
 	if (!expanded)
 	    path = copy_path_class(file_expand_path_1(path), path);
@@ -6402,7 +6361,7 @@ rb_find_file_safe(VALUE path, int safe_level)
 	rb_enc_associate_index(tmp, rb_usascii_encindex());
 	for (i = 0; i < RARRAY_LEN(load_path); i++) {
 	    VALUE str = RARRAY_AREF(load_path, i);
-	    RB_GC_GUARD(str) = rb_get_path_check(str, safe_level);
+            RB_GC_GUARD(str) = rb_get_path(str);
 	    if (RSTRING_LEN(str) > 0) {
 		rb_file_expand_path_internal(path, str, 0, 0, tmp);
 		f = RSTRING_PTR(tmp);
@@ -6417,10 +6376,6 @@ rb_find_file_safe(VALUE path, int safe_level)
     }
 
   found:
-    if (safe_level >= 1 && !fpath_check(tmp)) {
-	rb_raise(rb_eSecurityError, "loading from unsafe file %"PRIsVALUE, tmp);
-    }
-
     return copy_path_class(tmp, path);
 }
 

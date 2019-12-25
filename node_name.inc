@@ -202,8 +202,6 @@
 	return "NODE_ATTRASGN";
       case NODE_LAMBDA:
 	return "NODE_LAMBDA";
-      case NODE_METHREF:
-	return "NODE_METHREF";
       case NODE_ARYPTN:
 	return "NODE_ARYPTN";
       case NODE_HSHPTN:

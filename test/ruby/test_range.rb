@@ -81,6 +81,8 @@ class TestRange < Test::Unit::TestCase
     assert_equal(nil, (2..1).min)
     assert_equal(1, (1...2).min)
     assert_equal(1, (1..).min)
+    assert_raise(RangeError) { (..1).min }
+    assert_raise(RangeError) { (...1).min }
 
     assert_equal(1.0, (1.0..2.0).min)
     assert_equal(nil, (2.0..1.0).min)
@@ -93,6 +95,8 @@ class TestRange < Test::Unit::TestCase
     assert_equal([0,1,2], (0..10).min(3))
     assert_equal([0,1], (0..1).min(3))
     assert_equal([0,1,2], (0..).min(3))
+    assert_raise(RangeError) { (..1).min(3) }
+    assert_raise(RangeError) { (...1).min(3) }
 
     assert_raise(RangeError) { (0..).min {|a, b| a <=> b } }
   end
@@ -119,6 +123,8 @@ class TestRange < Test::Unit::TestCase
     assert_equal([9,8,7], (0...10).max(3))
     assert_raise(RangeError) { (1..).max(3) }
     assert_raise(RangeError) { (1...).max(3) }
+
+    assert_raise(RangeError) { (..0).min {|a, b| a <=> b } }
   end
 
   def test_minmax
@@ -499,11 +505,6 @@ class TestRange < Test::Unit::TestCase
     assert_equal("0...1", (0...1).to_s)
     assert_equal("0..", (0..nil).to_s)
     assert_equal("0...", (0...nil).to_s)
-
-    bug11767 = '[ruby-core:71811] [Bug #11767]'
-    assert_predicate(("0".taint.."1").to_s, :tainted?, bug11767)
-    assert_predicate(("0".."1".taint).to_s, :tainted?, bug11767)
-    assert_predicate(("0".."1").taint.to_s, :tainted?, bug11767)
   end
 
   def test_inspect
@@ -515,11 +516,6 @@ class TestRange < Test::Unit::TestCase
     assert_equal("...1", (nil...1).inspect)
     assert_equal("nil..nil", (nil..nil).inspect)
     assert_equal("nil...nil", (nil...nil).inspect)
-
-    bug11767 = '[ruby-core:71811] [Bug #11767]'
-    assert_predicate(("0".taint.."1").inspect, :tainted?, bug11767)
-    assert_predicate(("0".."1".taint).inspect, :tainted?, bug11767)
-    assert_predicate(("0".."1").taint.inspect, :tainted?, bug11767)
   end
 
   def test_eqq
@@ -959,5 +955,9 @@ class TestRange < Test::Unit::TestCase
 
   def test_beginless_range_iteration
     assert_raise(TypeError) { (..1).each { } }
+  end
+
+  def test_count
+    assert_equal(Float::INFINITY, (1..).count)
   end
 end

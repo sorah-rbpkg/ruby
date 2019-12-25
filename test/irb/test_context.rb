@@ -34,7 +34,7 @@ module TestIRB
 
     def setup
       IRB.init_config(nil)
-      IRB.conf[:USE_READLINE] = false
+      IRB.conf[:USE_SINGLELINE] = false
       IRB.conf[:VERBOSE] = false
       workspace = IRB::WorkSpace.new(Object.new)
       @context = IRB::Context.new(nil, workspace, TestInputMethod.new)
@@ -61,6 +61,12 @@ module TestIRB
       }
       assert_match(/\A\(irb\):1:/, e.message)
       assert_not_match(/rescue _\.class/, e.message)
+    end
+
+    def test_evaluate_with_onigmo_warning
+      assert_warning("(irb):1: warning: character class has duplicated range: /[aa]/\n") do
+        @context.evaluate('/[aa]/', 1)
+      end
     end
 
     def test_eval_input

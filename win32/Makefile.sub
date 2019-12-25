@@ -4,6 +4,7 @@ SHELL = $(COMSPEC)
 ECHO1 = $(V:1=@:)
 RUNCMD = $(COMSPEC) /c
 MKFILES = Makefile verconf.mk
+NULLCMD = type nul
 NULL = nul
 CHDIR = cd
 PATH_SEPARATOR = ;
@@ -89,7 +90,7 @@ IFCHANGE = $(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat
 RM = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat
 RMDIR = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
 RMDIRS = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
-RMALL = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat -r
+RMALL = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat -f -r
 MAKEDIRS = $(COMSPEC) /E:ON /C $(srcdir:/=\)\win32\makedirs.bat
 CP = copy > nul
 MV = move > nul
@@ -242,7 +243,7 @@ COMPILERFLAG  = -Zm600
 !if $(MSC_VER) >= 1400
 WARNFLAGS = -W2 -wd4100 -wd4127 -wd4210 -wd4214 -wd4255 -wd4574 \
 	    -wd4668 -wd4710 -wd4711 -wd4820 -wd4996 \
-	    -we4028 -we4142
+	    -we4028 -we4142 -we4047
 !else
 WARNFLAGS = -W2
 !endif
@@ -525,11 +526,6 @@ NEWLINE_C = enc/trans/newline.c
 MINIPRELUDE_C = $(srcdir)/miniprelude.c
 !else
 MINIPRELUDE_C = miniprelude.c
-!endif
-!if !exist(prelude.c) && exist($(srcdir)/prelude.c)
-PRELUDE_C = $(srcdir)/prelude.c
-!else
-PRELUDE_C = prelude.c
 !endif
 !if !exist(golf_prelude.c) && exist($(srcdir)/golf_prelude.c)
 GOLF_PRELUDE_C = $(srcdir)/golf_prelude.c
@@ -1219,13 +1215,6 @@ $(RCFILES): $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
 			-rubyw_name=$(RUBYW_INSTALL_NAME) \
 			-so_name=$(RUBY_SO_NAME) \
 			. $(icondirs) $(win_srcdir)
-
-test-bundled-gems-run:
-	$(Q) for /f %G in ($(srcdir)/gems/bundled_gems) do @( \
-	  echo testing %G gem & \
-	  $(XRUBY) -C $(srcdir)/gems/src/%G -Ilib ../../../.bundle/bin/rake || \
-	  exit /b %STATUS% \
-	)
 
 update-benchmark-driver:
 	$(GIT) clone https://github.com/benchmark-driver/benchmark-driver $(srcdir)/benchmark/benchmark-driver || \

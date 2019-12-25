@@ -592,39 +592,6 @@ class TestPathname < Test::Unit::TestCase
     assert_raise(ArgumentError) { Pathname.new("\0") }
   end
 
-  def test_taint
-    obj = Pathname.new("a"); assert_same(obj, obj.taint)
-    obj = Pathname.new("a"); assert_same(obj, obj.untaint)
-
-    assert_equal(false, Pathname.new("a"          )           .tainted?)
-    assert_equal(false, Pathname.new("a"          )      .to_s.tainted?)
-    assert_equal(true,  Pathname.new("a"          ).taint     .tainted?)
-    assert_equal(true,  Pathname.new("a"          ).taint.to_s.tainted?)
-    assert_equal(true,  Pathname.new("a".dup.taint)           .tainted?)
-    assert_equal(true,  Pathname.new("a".dup.taint)      .to_s.tainted?)
-    assert_equal(true,  Pathname.new("a".dup.taint).taint     .tainted?)
-    assert_equal(true,  Pathname.new("a".dup.taint).taint.to_s.tainted?)
-
-    str = "a".dup
-    path = Pathname.new(str)
-    str.taint
-    assert_equal(false, path     .tainted?)
-    assert_equal(false, path.to_s.tainted?)
-  end
-
-  def test_untaint
-    obj = Pathname.new("a"); assert_same(obj, obj.untaint)
-
-    assert_equal(false, Pathname.new("a").taint.untaint     .tainted?)
-    assert_equal(false, Pathname.new("a").taint.untaint.to_s.tainted?)
-
-    str = "a".dup.taint
-    path = Pathname.new(str)
-    str.untaint
-    assert_equal(true, path     .tainted?)
-    assert_equal(true, path.to_s.tainted?)
-  end
-
   def test_freeze
     obj = Pathname.new("a"); assert_same(obj, obj.freeze)
 
@@ -636,20 +603,6 @@ class TestPathname < Test::Unit::TestCase
     assert_equal(false, Pathname.new("a".freeze)       .to_s.frozen?)
     assert_equal(false, Pathname.new("a"       ).freeze.to_s.frozen?)
     assert_equal(false, Pathname.new("a".freeze).freeze.to_s.frozen?)
-  end
-
-  def test_freeze_and_taint
-    obj = Pathname.new("a")
-    obj.freeze
-    assert_equal(false, obj.tainted?)
-    assert_raise(FrozenError) { obj.taint }
-
-    obj = Pathname.new("a")
-    obj.taint
-    assert_equal(true, obj.tainted?)
-    obj.freeze
-    assert_equal(true, obj.tainted?)
-    assert_nothing_raised { obj.taint }
   end
 
   def test_to_s
@@ -1465,16 +1418,6 @@ class TestPathname < Test::Unit::TestCase
 
   def test_file_fnmatch
     assert(File.fnmatch("*.*", Pathname.new("bar.baz")))
-  end
-
-  def test_file_join
-    assert_equal("foo/bar", File.join(Pathname.new("foo"), Pathname.new("bar")))
-    lambda {
-      $SAFE = 1
-      assert_equal("foo/bar", File.join(Pathname.new("foo"), Pathname.new("bar").taint))
-    }.call
-  ensure
-    $SAFE = 0
   end
 
   def test_relative_path_from_casefold
