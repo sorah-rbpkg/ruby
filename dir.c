@@ -1129,9 +1129,8 @@ rb_dir_getwd_ospath(void)
     DATA_PTR(path_guard) = path;
 #ifdef __APPLE__
     cwd = rb_str_normalize_ospath(path, strlen(path));
-    OBJ_TAINT(cwd);
 #else
-    cwd = rb_tainted_str_new2(path);
+    cwd = rb_str_new2(path);
 #endif
     DATA_PTR(path_guard) = 0;
 
@@ -2564,7 +2563,6 @@ push_pattern(const char *path, VALUE ary, void *enc)
 #if defined _WIN32 || defined __APPLE__
     VALUE name = rb_utf8_str_new_cstr(path);
     rb_encoding *eenc = rb_default_internal_encoding();
-    OBJ_TAINT(name);
     name = rb_str_conv_enc(name, NULL, eenc ? eenc : enc);
 #else
     VALUE name = rb_external_str_new_with_enc(path, strlen(path), enc);
@@ -2719,7 +2717,6 @@ rb_push_glob(VALUE str, VALUE base, int flags) /* '\0' is delimiter */
         rb_raise(rb_eArgError, "nul-separated glob pattern is deprecated");
     }
     else {
-	rb_check_safe_obj(str);
 	rb_enc_check(str, rb_enc_from_encoding(rb_usascii_encoding()));
     }
     ary = rb_ary_new();
@@ -3179,6 +3176,7 @@ fnmatch_brace(const char *pattern, VALUE val, void *enc)
  *
  *     File.fnmatch('cat', 'CAT')                     #=> false # case sensitive
  *     File.fnmatch('cat', 'CAT', File::FNM_CASEFOLD) #=> true  # case insensitive
+ *     File.fnmatch('cat', 'CAT', File::FNM_SYSCASE)  #=> true or false # depends on the system default
  *
  *     File.fnmatch('?',   '/', File::FNM_PATHNAME)  #=> false # wildcard doesn't match '/' on FNM_PATHNAME
  *     File.fnmatch('*',   '/', File::FNM_PATHNAME)  #=> false # ditto

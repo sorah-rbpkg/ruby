@@ -46,10 +46,10 @@ def string2cstr(rstring):
         clen = (flags & RSTRING_EMBED_LEN_MASK) >> RSTRING_EMBED_LEN_SHIFT
     return cptr, clen
 
-def output_string(ctx, rstring):
+def output_string(debugger, result, rstring):
     cptr, clen = string2cstr(rstring)
-    expr = 'printf("%%.*s", (size_t)%d, (const char*)%d)' % (clen, cptr)
-    ctx.frame.EvaluateExpression(expr)
+    expr = "print *(const char (*)[%d])%0#x" % (clen, cptr)
+    append_command_output(debugger, expr, result)
 
 def fixnum_p(x):
     return x & RUBY_FIXNUM_FLAG != 0
@@ -105,36 +105,41 @@ def lldb_inspect(debugger, target, result, val):
             print("T_SYMBOL: %c" % num, file=result)
         else:
             print("T_SYMBOL: (%x)" % num, file=result)
+            append_command_output(debugger, "p rb_id2name(%0#x)" % (num >> 8), result)
     elif num & RUBY_IMMEDIATE_MASK:
         print('immediate(%x)' % num, file=result)
     else:
         tRBasic = target.FindFirstType("struct RBasic").GetPointerType()
         val = val.Cast(tRBasic)
         flags = val.GetValueForExpressionPath("->flags").GetValueAsUnsigned()
+        flaginfo = ""
         if (flags & RUBY_FL_PROMOTED) == RUBY_FL_PROMOTED:
-            print("[PROMOTED] ", file=result)
+            flaginfo += "[PROMOTED] "
         if (flags & RUBY_FL_FREEZE) == RUBY_FL_FREEZE:
-            print("[FROZEN] ", file=result)
+            flaginfo += "[FROZEN] "
         flType = flags & RUBY_T_MASK
         if flType == RUBY_T_NONE:
-            print('T_NONE: %s' % val.Dereference(), file=result)
+            print('T_NONE: %s%s' % (flaginfo, val.Dereference()), file=result)
         elif flType == RUBY_T_NIL:
-            print('T_NIL: %s' % val.Dereference(), file=result)
+            print('T_NIL: %s%s' % (flaginfo, val.Dereference()), file=result)
         elif flType == RUBY_T_OBJECT:
-            tRObject = target.FindFirstType("struct RObject").GetPointerType()
-            val = val.Cast(tRObject)
-            print('T_OBJECT: %s' % val.Dereference(), file=result)
+            result.write('T_OBJECT: %s' % flaginfo)
+            append_command_output(debugger, "print *(struct RObject*)%0#x" % val.GetValueAsUnsigned(), result)
         elif flType == RUBY_T_CLASS or flType == RUBY_T_MODULE or flType == RUBY_T_ICLASS:
-            tRClass = target.FindFirstType("struct RClass").GetPointerType()
-            val = val.Cast(tRClass)
-            print('T_%s: %s' % ('CLASS' if flType == RUBY_T_CLASS else 'MODULE' if flType == RUBY_T_MODULE else 'ICLASS', val.Dereference()), file=result)
+            result.write('T_%s: %s' % ('CLASS' if flType == RUBY_T_CLASS else 'MODULE' if flType == RUBY_T_MODULE else 'ICLASS', flaginfo))
+            append_command_output(debugger, "print *(struct RClass*)%0#x" % val.GetValueAsUnsigned(), result)
         elif flType == RUBY_T_STRING:
+            result.write('T_STRING: %s' % flaginfo)
             tRString = target.FindFirstType("struct RString").GetPointerType()
             ptr, len = string2cstr(val.Cast(tRString))
             append_command_output(debugger, "print *(const char (*)[%d])%0#x" % (len, ptr), result)
         elif flType == RUBY_T_SYMBOL:
+            result.write('T_SYMBOL: %s' % flaginfo)
             tRSymbol = target.FindFirstType("struct RSymbol").GetPointerType()
-            print(val.Cast(tRSymbol).Dereference(), file=result)
+            val = val.Cast(tRSymbol)
+            append_command_output(debugger, 'print (ID)%0#x ' % val.GetValueForExpressionPath("->id").GetValueAsUnsigned(), result)
+            tRString = target.FindFirstType("struct RString").GetPointerType()
+            output_string(debugger, result, val.GetValueForExpressionPath("->fstr").Cast(tRString))
         elif flType == RUBY_T_ARRAY:
             tRArray = target.FindFirstType("struct RArray").GetPointerType()
             val = val.Cast(tRArray)
@@ -145,7 +150,7 @@ def lldb_inspect(debugger, target, result, val):
                 len = val.GetValueForExpressionPath("->as.heap.len").GetValueAsSigned()
                 ptr = val.GetValueForExpressionPath("->as.heap.ptr")
                 #print(val.GetValueForExpressionPath("->as.heap"), file=result)
-            result.write("T_ARRAY: len=%d" % len)
+            result.write("T_ARRAY: %slen=%d" % (flaginfo, len))
             if flags & RUBY_FL_USER1:
                 result.write(" (embed)")
             elif flags & RUBY_FL_USER2:
@@ -155,11 +160,15 @@ def lldb_inspect(debugger, target, result, val):
                 capa = val.GetValueForExpressionPath("->as.heap.aux.capa").GetValueAsSigned()
                 result.write(" (ownership) capa=%d" % capa)
             if len == 0:
-                result.write(" {(empty)}")
+                result.write(" {(empty)}\n")
             else:
                 result.write("\n")
-                append_command_output(debugger, "expression -Z %d -fx -- (const VALUE*)%0#x" % (len, ptr.GetValueAsUnsigned()), result)
+                if ptr.GetValueAsSigned() == 0:
+                    append_command_output(debugger, "expression -fx -- ((struct RArray*)%0#x)->as.ary" % val.GetValueAsUnsigned(), result)
+                else:
+                    append_command_output(debugger, "expression -Z %d -fx -- (const VALUE*)%0#x" % (len, ptr.GetValueAsUnsigned()), result)
         elif flType == RUBY_T_HASH:
+            result.write("T_HASH: %s" % flaginfo)
             append_command_output(debugger, "p *(struct RHash *) %0#x" % val.GetValueAsUnsigned(), result)
         elif flType == RUBY_T_BIGNUM:
             tRBignum = target.FindFirstType("struct RBignum").GetPointerType()
@@ -259,7 +268,7 @@ def dump_node(debugger, command, ctx, result, internal_dict):
     node = args[0]
 
     dump = ctx.frame.EvaluateExpression("(struct RString*)rb_parser_dump_tree((NODE*)(%s), 0)" % node)
-    output_string(ctx, dump)
+    output_string(ctx, result, dump)
 
 def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand("command script add -f lldb_cruby.lldb_rp rp")

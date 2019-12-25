@@ -308,10 +308,8 @@ void rb_check_trusted(VALUE);
 	    rb_error_frozen_object(frozen_obj); \
 	} \
     } while (0)
-#define rb_check_trusted_internal(obj) ((void) 0)
 #ifdef __GNUC__
 #define rb_check_frozen(obj) __extension__({rb_check_frozen_internal(obj);})
-#define rb_check_trusted(obj) __extension__({rb_check_trusted_internal(obj);})
 #else
 static inline void
 rb_check_frozen_inline(VALUE obj)
@@ -322,7 +320,7 @@ rb_check_frozen_inline(VALUE obj)
 static inline void
 rb_check_trusted_inline(VALUE obj)
 {
-    rb_check_trusted_internal(obj);
+    rb_check_trusted(obj);
 }
 #define rb_check_trusted(obj) rb_check_trusted_inline(obj)
 #endif
@@ -437,6 +435,7 @@ void rb_attr(VALUE,ID,int,int,int);
 int rb_method_boundp(VALUE, ID, int);
 int rb_method_basic_definition_p(VALUE, ID);
 VALUE rb_eval_cmd(VALUE, VALUE, int);
+VALUE rb_eval_cmd_kw(VALUE, VALUE, int);
 int rb_obj_respond_to(VALUE, ID, int);
 int rb_respond_to(VALUE, ID);
 NORETURN(VALUE rb_f_notimplement(int argc, const VALUE *argv, VALUE obj, VALUE marker));
@@ -459,7 +458,8 @@ int rb_provided(const char*);
 int rb_feature_provided(const char *, const char **);
 void rb_provide(const char*);
 VALUE rb_f_require(VALUE, VALUE);
-VALUE rb_require_safe(VALUE, int);
+VALUE rb_require_safe(VALUE, int); /* Remove in 3.0 */
+VALUE rb_require_string(VALUE);
 void rb_obj_call_init(VALUE, int, const VALUE*);
 void rb_obj_call_init_kw(VALUE, int, const VALUE*, int);
 VALUE rb_class_new_instance(int, const VALUE*, VALUE);
@@ -519,8 +519,8 @@ VALUE rb_file_expand_path(VALUE, VALUE);
 VALUE rb_file_s_absolute_path(int, const VALUE *);
 VALUE rb_file_absolute_path(VALUE, VALUE);
 VALUE rb_file_dirname(VALUE fname);
-int rb_find_file_ext_safe(VALUE*, const char* const*, int);
-VALUE rb_find_file_safe(VALUE, int);
+int rb_find_file_ext_safe(VALUE*, const char* const*, int); /* Remove in 3.0 */
+VALUE rb_find_file_safe(VALUE, int); /* Remove in 3.0 */
 int rb_find_file_ext(VALUE*, const char* const*);
 VALUE rb_find_file(VALUE);
 VALUE rb_file_directory_p(VALUE,VALUE);
@@ -532,10 +532,9 @@ PUREFUNC(int rb_during_gc(void));
 void rb_gc_mark_locations(const VALUE*, const VALUE*);
 void rb_mark_tbl(struct st_table*);
 void rb_mark_tbl_no_pin(struct st_table*);
-void rb_gc_update_tbl_refs(st_table *ptr);
 void rb_mark_set(struct st_table*);
 void rb_mark_hash(struct st_table*);
-void rb_update_st_references(struct st_table *ht);
+void rb_gc_update_tbl_refs(st_table *ptr);
 void rb_gc_mark_maybe(VALUE);
 void rb_gc_mark(VALUE);
 void rb_gc_mark_movable(VALUE);
@@ -953,6 +952,7 @@ VALUE rb_mutex_unlock(VALUE mutex);
 VALUE rb_mutex_sleep(VALUE self, VALUE timeout);
 VALUE rb_mutex_synchronize(VALUE mutex, VALUE (*func)(VALUE arg), VALUE arg);
 /* time.c */
+struct timespec;
 void rb_timespec_now(struct timespec *);
 VALUE rb_time_new(time_t, long);
 VALUE rb_time_nano_new(time_t, long);

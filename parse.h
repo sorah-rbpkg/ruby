@@ -135,7 +135,6 @@ extern int yydebug;
     tRSHFT = 137,
     tANDDOT = 150,
     tCOLON2 = 147,
-    tMETHREF = 151,
     tCOLON3 = 324,
     tOP_ASGN = 325,
     tASSOC = 326,
@@ -179,6 +178,7 @@ union YYSTYPE
     NODE *node;
     ID id;
     int num;
+    st_table *tbl;
     const struct vtable *vars;
     struct rb_strterm_struct *strterm;
 

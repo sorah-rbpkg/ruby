@@ -204,7 +204,6 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
         th = th0;
         errs[1] = ec->errinfo;
         if (THROW_DATA_P(ec->errinfo)) ec->errinfo = Qnil;
-	rb_set_safe_level_force(0);
 	ruby_init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
 
         SAVE_ROOT_JMPBUF(th, rb_ec_teardown(ec));
@@ -478,7 +477,7 @@ rb_class_modify_check(VALUE klass)
 
 NORETURN(static void rb_longjmp(rb_execution_context_t *, int, volatile VALUE, VALUE));
 static VALUE get_errinfo(void);
-static VALUE get_ec_errinfo(const rb_execution_context_t *ec);
+#define get_ec_errinfo(ec) rb_ec_get_errinfo(ec)
 
 static VALUE
 exc_setup_cause(VALUE exc, VALUE cause)
@@ -1543,6 +1542,9 @@ rb_mod_refine(VALUE module, VALUE klass)
     }
 
     ensure_class_or_module(klass);
+    if (RB_TYPE_P(klass, T_MODULE)) {
+        FL_SET(klass, RCLASS_REFINED_BY_ANY);
+    }
     CONST_ID(id_refinements, "__refinements__");
     refinements = rb_attr_get(module, id_refinements);
     if (NIL_P(refinements)) {
@@ -1845,8 +1847,8 @@ errinfo_place(const rb_execution_context_t *ec)
     return 0;
 }
 
-static VALUE
-get_ec_errinfo(const rb_execution_context_t *ec)
+VALUE
+rb_ec_get_errinfo(const rb_execution_context_t *ec)
 {
     const VALUE *ptr = errinfo_place(ec);
     if (ptr) {

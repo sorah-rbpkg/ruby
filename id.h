@@ -65,7 +65,6 @@ enum ruby_id_types {
 #define RUBY_TOKEN_ANDOP 148
 #define RUBY_TOKEN_OROP 149
 #define RUBY_TOKEN_ANDDOT 150
-#define RUBY_TOKEN_METHREF 151
 #define RUBY_TOKEN(t) RUBY_TOKEN_##t
 
 #define RUBY_TOKEN2ID_TYPE(tok, type) ((tok<<RUBY_ID_SCOPE_SHIFT)|type|RUBY_ID_STATIC_SYM)
@@ -109,8 +108,7 @@ enum ruby_method_ids {
     idANDOP = RUBY_TOKEN(ANDOP),
     idOROP = RUBY_TOKEN(OROP),
     idANDDOT = RUBY_TOKEN(ANDDOT),
-    idMETHREF = RUBY_TOKEN(METHREF),
-    tPRESERVED_ID_BEGIN = 151,
+    tPRESERVED_ID_BEGIN = 150,
     idNilP,
     idNULL,
     idEmptyP,

@@ -205,7 +205,6 @@ rb_class_boot(VALUE super)
     RCLASS_SET_SUPER(klass, super);
     RCLASS_M_TBL_INIT(klass);
 
-    OBJ_INFECT(klass, super);
     return (VALUE)klass;
 }
 
@@ -510,8 +509,6 @@ make_metaclass(VALUE klass)
     super = RCLASS_SUPER(klass);
     while (RB_TYPE_P(super, T_ICLASS)) super = RCLASS_SUPER(super);
     RCLASS_SET_SUPER(metaclass, super ? ENSURE_EIGENCLASS(super) : rb_cClass);
-
-    OBJ_INFECT(metaclass, RCLASS_SUPER(metaclass));
 
     return metaclass;
 }
@@ -829,6 +826,10 @@ rb_include_class_new(VALUE module, VALUE super)
 {
     VALUE klass = class_alloc(T_ICLASS, rb_cClass);
 
+    RCLASS_M_TBL(OBJ_WB_UNPROTECT(klass)) =
+      RCLASS_M_TBL(OBJ_WB_UNPROTECT(module)); /* TODO: unprotected? */
+
+    RCLASS_SET_ORIGIN(klass, module == RCLASS_ORIGIN(module) ? klass : RCLASS_ORIGIN(module));
     if (BUILTIN_TYPE(module) == T_ICLASS) {
 	module = RBASIC(module)->klass;
     }
@@ -841,9 +842,6 @@ rb_include_class_new(VALUE module, VALUE super)
     RCLASS_IV_TBL(klass) = RCLASS_IV_TBL(module);
     RCLASS_CONST_TBL(klass) = RCLASS_CONST_TBL(module);
 
-    RCLASS_M_TBL(OBJ_WB_UNPROTECT(klass)) =
-      RCLASS_M_TBL(OBJ_WB_UNPROTECT(RCLASS_ORIGIN(module))); /* TODO: unprotected? */
-
     RCLASS_SET_SUPER(klass, super);
     if (RB_TYPE_P(module, T_ICLASS)) {
 	RBASIC_SET_CLASS(klass, RBASIC(module)->klass);
@@ -851,8 +849,6 @@ rb_include_class_new(VALUE module, VALUE super)
     else {
 	RBASIC_SET_CLASS(klass, module);
     }
-    OBJ_INFECT(klass, module);
-    OBJ_INFECT(klass, super);
 
     return (VALUE)klass;
 }
@@ -867,7 +863,6 @@ ensure_includable(VALUE klass, VALUE module)
     if (!NIL_P(rb_refinement_module_get_refined_class(module))) {
 	rb_raise(rb_eArgError, "refinement module is not allowed");
     }
-    OBJ_INFECT(klass, module);
 }
 
 void
@@ -889,6 +884,8 @@ add_refined_method_entry_i(ID key, VALUE value, void *data)
     return ID_TABLE_CONTINUE;
 }
 
+static void ensure_origin(VALUE klass);
+
 static int
 include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
 {
@@ -896,12 +893,14 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
     int method_changed = 0, constant_changed = 0;
     struct rb_id_table *const klass_m_tbl = RCLASS_M_TBL(RCLASS_ORIGIN(klass));
 
+    if (FL_TEST(module, RCLASS_REFINED_BY_ANY)) {
+        ensure_origin(module);
+    }
+
     while (module) {
 	int superclass_seen = FALSE;
 	struct rb_id_table *tbl;
 
-	if (RCLASS_ORIGIN(module) != module)
-	    goto skip;
 	if (klass_m_tbl && klass_m_tbl == RCLASS_M_TBL(module))
 	    return -1;
 	/* ignore if the module included already in superclasses */
@@ -922,6 +921,7 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
 	}
 	iclass = rb_include_class_new(module, RCLASS_SUPER(c));
 	c = RCLASS_SET_SUPER(c, iclass);
+        RCLASS_SET_INCLUDER(iclass, klass);
 
 	{
 	    VALUE m = module;
@@ -979,15 +979,10 @@ move_refined_method(ID key, VALUE value, void *data)
     }
 }
 
-void
-rb_prepend_module(VALUE klass, VALUE module)
+static void
+ensure_origin(VALUE klass)
 {
-    VALUE origin;
-    int changed = 0;
-
-    ensure_includable(klass, module);
-
-    origin = RCLASS_ORIGIN(klass);
+    VALUE origin = RCLASS_ORIGIN(klass);
     if (origin == klass) {
 	origin = class_alloc(T_ICLASS, klass);
 	OBJ_WB_UNPROTECT(origin); /* TODO: conservative shading. Need more survey. */
@@ -998,6 +993,15 @@ rb_prepend_module(VALUE klass, VALUE module)
 	RCLASS_M_TBL_INIT(klass);
 	rb_id_table_foreach(RCLASS_M_TBL(origin), move_refined_method, (void *)klass);
     }
+}
+
+void
+rb_prepend_module(VALUE klass, VALUE module)
+{
+    int changed = 0;
+
+    ensure_includable(klass, module);
+    ensure_origin(klass);
     changed = include_modules_at(klass, klass, module, FALSE);
     if (changed < 0)
 	rb_raise(rb_eArgError, "cyclic prepend detected");
@@ -1097,10 +1101,11 @@ rb_mod_ancestors(VALUE mod)
     VALUE p, ary = rb_ary_new();
 
     for (p = mod; p; p = RCLASS_SUPER(p)) {
+        if (p != RCLASS_ORIGIN(p)) continue;
 	if (BUILTIN_TYPE(p) == T_ICLASS) {
 	    rb_ary_push(ary, RBASIC(p)->klass);
 	}
-	else if (p == RCLASS_ORIGIN(p)) {
+        else {
 	    rb_ary_push(ary, p);
 	}
     }
@@ -1229,7 +1234,7 @@ class_instance_method_list(int argc, const VALUE *argv, VALUE mod, int obj, int 
 	if (BUILTIN_TYPE(mod) == T_ICLASS && !prepended) continue;
 	if (!recur) break;
     }
-    ary = rb_ary_new();
+    ary = rb_ary_new2(me_arg.list->num_entries);
     st_foreach(me_arg.list, func, ary);
     st_free_table(me_arg.list);
 
@@ -1466,7 +1471,7 @@ rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
 	    klass = RCLASS_SUPER(klass);
 	}
     }
-    ary = rb_ary_new();
+    ary = rb_ary_new2(me_arg.list->num_entries);
     st_foreach(me_arg.list, ins_methods_i, ary);
     st_free_table(me_arg.list);
 
@@ -1660,12 +1665,6 @@ singleton_class_of(VALUE obj)
 	RCLASS_SERIAL(klass) = serial;
     }
 
-    if (OBJ_TAINTED(obj)) {
-	OBJ_TAINT(klass);
-    }
-    else {
-	FL_UNSET(klass, FL_TAINT);
-    }
     RB_FL_SET_RAW(klass, RB_OBJ_FROZEN_RAW(obj));
 
     return klass;
@@ -2052,7 +2051,7 @@ rb_scan_args_parse(int kw_flag, int argc, const VALUE *argv, const char *fmt, st
                     if (!keyword_given && !last_hash_keyword) {
                         /* Warn if treating positional as keyword, as in Ruby 3,
                            this will be an error */
-                        rb_warn("The last argument is used as the keyword parameter");
+                        rb_warn("Using the last argument as keyword parameters is deprecated");
                     }
                     argc--;
                 }
@@ -2067,7 +2066,7 @@ rb_scan_args_parse(int kw_flag, int argc, const VALUE *argv, const char *fmt, st
         }
         else if (arg->f_hash && keyword_given && arg->n_mand == argc) {
             /* Warn if treating keywords as positional, as in Ruby 3, this will be an error */
-            rb_warn("The keyword argument is passed as the last hash parameter");
+            rb_warn("Passing the keyword argument as the last hash parameter is deprecated");
         }
     }
     if (arg->f_hash && arg->n_mand == argc+1 && empty_keyword_given) {
@@ -2076,7 +2075,7 @@ rb_scan_args_parse(int kw_flag, int argc, const VALUE *argv, const char *fmt, st
         ptr[argc] = rb_hash_new();
         argc++;
         *(&argv) = ptr;
-        rb_warn("The keyword argument is passed as the last hash parameter");
+        rb_warn("Passing the keyword argument as the last hash parameter is deprecated");
     }
 
     arg->argc = argc;

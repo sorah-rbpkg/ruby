@@ -122,7 +122,6 @@ enum node_type {
     NODE_DSYM,
     NODE_ATTRASGN,
     NODE_LAMBDA,
-    NODE_METHREF,
     NODE_ARYPTN,
     NODE_HSHPTN,
     NODE_LAST
@@ -176,7 +175,7 @@ typedef struct RNode {
 
 #define RNODE(obj)  (R_CAST(RNode)(obj))
 
-/* FL     : 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: FINALIZE, 8: TAINT, 9: UNTRUSTED, 10: EXIVAR, 11: FREEZE */
+/* FL     : 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: FINALIZE, 8: UNUSED, 9: UNUSED, 10: EXIVAR, 11: FREEZE */
 /* NODE_FL: 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: NODE_FL_NEWLINE,
  *          8..14: nd_type,
  *          15..: nd_line
@@ -378,7 +377,6 @@ typedef struct RNode {
 #define NEW_PREEXE(b,loc) NEW_SCOPE(b,loc)
 #define NEW_POSTEXE(b,loc) NEW_NODE(NODE_POSTEXE,0,b,0,loc)
 #define NEW_ATTRASGN(r,m,a,loc) NEW_NODE(NODE_ATTRASGN,r,m,a,loc)
-#define NEW_METHREF(r,m,loc) NEW_NODE(NODE_METHREF,r,m,0,loc)
 
 #define NODE_SPECIAL_REQUIRED_KEYWORD ((NODE *)-1)
 #define NODE_REQUIRED_KEYWORD_P(node) ((node)->nd_value == NODE_SPECIAL_REQUIRED_KEYWORD)
@@ -416,21 +414,14 @@ void rb_ast_delete_node(rb_ast_t*, NODE *n);
 VALUE rb_parser_new(void);
 VALUE rb_parser_end_seen_p(VALUE);
 VALUE rb_parser_encoding(VALUE);
-VALUE rb_parser_get_yydebug(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
 VALUE rb_parser_dump_tree(const NODE *node, int comment);
 void rb_parser_set_options(VALUE, int, int, int, int);
 
-rb_ast_t *rb_parser_compile_cstr(VALUE, const char*, const char*, int, int);
 rb_ast_t *rb_parser_compile_string(VALUE, const char*, VALUE, int);
-rb_ast_t *rb_parser_compile_file(VALUE, const char*, VALUE, int);
 rb_ast_t *rb_parser_compile_string_path(VALUE vparser, VALUE fname, VALUE src, int line);
 rb_ast_t *rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE input, int line);
 rb_ast_t *rb_parser_compile_generic(VALUE vparser, VALUE (*lex_gets)(VALUE, int), VALUE fname, VALUE input, int line);
-
-rb_ast_t *rb_compile_cstr(const char*, const char*, int, int);
-rb_ast_t *rb_compile_string(const char*, VALUE, int);
-rb_ast_t *rb_compile_file(const char*, VALUE, int);
 
 void rb_node_init(NODE *n, enum node_type type, VALUE a0, VALUE a1, VALUE a2);
 const char *ruby_node_name(int node);
@@ -453,7 +444,9 @@ struct rb_args_info {
     NODE *kw_rest_arg;
 
     NODE *opt_args;
-    int no_kwarg;
+    unsigned int no_kwarg: 1;
+    unsigned int ruby2_keywords: 1;
+
     VALUE imemo;
 };
 

@@ -367,7 +367,6 @@ class TestSymbol < Test::Unit::TestCase
 
   def test_match_method
     assert_equal("bar", :"foobarbaz".match(/bar/).to_s)
-    assert_raise(TypeError) { :"".match(nil) }
 
     o = Regexp.new('foo')
     def o.match(x, y, z); x + y + z; end
@@ -419,10 +418,6 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal(false, 'Ruby'.match?('R...', 1))
     assert_equal(false, 'Ruby'.match?('P...'))
     assert_equal('backref', $&)
-  end
-
-  def test_match_p_nil
-    assert_raise(TypeError) { :''.match?(nil) }
   end
 
   def test_symbol_popped
@@ -538,14 +533,6 @@ class TestSymbol < Test::Unit::TestCase
     end;
   end
 
-  def test_not_freeze
-    bug11721 = '[ruby-core:71611] [Bug #11721]'
-    str = "\u{1f363}".taint
-    assert_not_predicate(str, :frozen?)
-    assert_equal str, str.to_sym.to_s
-    assert_not_predicate(str, :frozen?, bug11721)
-  end
-
   def test_hash_nondeterministic
     ruby = EnvUtil.rubybin
     assert_not_equal :foo.hash, `#{ruby} -e 'puts :foo.hash'`.to_i,
@@ -567,5 +554,28 @@ class TestSymbol < Test::Unit::TestCase
 
       puts :a == :a
     RUBY
+  end
+
+  def test_start_with?
+    assert_equal(true, :hello.start_with?("hel"))
+    assert_equal(false, :hello.start_with?("el"))
+    assert_equal(true, :hello.start_with?("el", "he"))
+
+    bug5536 = '[ruby-core:40623]'
+    assert_raise(TypeError, bug5536) {:str.start_with? :not_convertible_to_string}
+
+    assert_equal(true, :hello.start_with?(/hel/))
+    assert_equal("hel", $&)
+    assert_equal(false, :hello.start_with?(/el/))
+    assert_nil($&)
+  end
+
+  def test_end_with?
+    assert_equal(true, :hello.end_with?("llo"))
+    assert_equal(false, :hello.end_with?("ll"))
+    assert_equal(true, :hello.end_with?("el", "lo"))
+
+    bug5536 = '[ruby-core:40623]'
+    assert_raise(TypeError, bug5536) {:str.end_with? :not_convertible_to_string}
   end
 end

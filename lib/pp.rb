@@ -106,17 +106,17 @@ class PP < PrettyPrint
     # and preserves the previous set of objects being printed.
     def guard_inspect_key
       if Thread.current[:__recursive_key__] == nil
-        Thread.current[:__recursive_key__] = {}.taint
+        Thread.current[:__recursive_key__] = {}.compare_by_identity
       end
 
       if Thread.current[:__recursive_key__][:inspect] == nil
-        Thread.current[:__recursive_key__][:inspect] = {}.taint
+        Thread.current[:__recursive_key__][:inspect] = {}.compare_by_identity
       end
 
       save = Thread.current[:__recursive_key__][:inspect]
 
       begin
-        Thread.current[:__recursive_key__][:inspect] = {}.taint
+        Thread.current[:__recursive_key__][:inspect] = {}.compare_by_identity
         yield
       ensure
         Thread.current[:__recursive_key__][:inspect] = save
@@ -149,18 +149,20 @@ class PP < PrettyPrint
     # Object#pretty_print_cycle is used when +obj+ is already
     # printed, a.k.a the object reference chain has a cycle.
     def pp(obj)
-      id = obj.object_id
+      # If obj is a Delegator then use the object being delegated to for cycle
+      # detection
+      obj = obj.__getobj__ if defined?(::Delegator) and obj.is_a?(::Delegator)
 
-      if check_inspect_key(id)
+      if check_inspect_key(obj)
         group {obj.pretty_print_cycle self}
         return
       end
 
       begin
-        push_inspect_key(id)
+        push_inspect_key(obj)
         group {obj.pretty_print self}
       ensure
-        pop_inspect_key(id) unless PP.sharing_detection
+        pop_inspect_key(obj) unless PP.sharing_detection
       end
     end
 

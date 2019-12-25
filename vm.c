@@ -19,6 +19,8 @@
 #include "vm_debug.h"
 #include "iseq.h"
 #include "eval_intern.h"
+#include "builtin.h"
+
 #ifndef MJIT_HEADER
 #include "probes.h"
 #else
@@ -1555,6 +1557,7 @@ rb_iter_break_value(VALUE val)
 /* optimization: redefine management */
 
 static st_table *vm_opt_method_table = 0;
+static st_table *vm_opt_mid_table = 0;
 
 static int
 vm_redefinition_check_flag(VALUE klass)
@@ -1572,6 +1575,16 @@ vm_redefinition_check_flag(VALUE klass)
     if (klass == rb_cFalseClass) return FALSE_REDEFINED_OP_FLAG;
     if (klass == rb_cProc) return PROC_REDEFINED_OP_FLAG;
     return 0;
+}
+
+int
+rb_vm_check_optimizable_mid(VALUE mid)
+{
+    if (!vm_opt_mid_table) {
+      return FALSE;
+    }
+
+    return st_lookup(vm_opt_mid_table, mid, NULL);
 }
 
 static int
@@ -1628,6 +1641,7 @@ add_opt_method(VALUE klass, ID mid, VALUE bop)
 
     if (me && vm_redefinition_check_method_type(me->def)) {
 	st_insert(vm_opt_method_table, (st_data_t)me, (st_data_t)bop);
+	st_insert(vm_opt_mid_table, (st_data_t)mid, (st_data_t)Qtrue);
     }
     else {
 	rb_bug("undefined optimized method: %s", rb_id2name(mid));
@@ -1641,6 +1655,7 @@ vm_init_redefined_flag(void)
     VALUE bop;
 
     vm_opt_method_table = st_init_numtable();
+    vm_opt_mid_table = st_init_numtable();
 
 #define OP(mid_, bop_) (mid = id##mid_, bop = BOP_##bop_, ruby_vm_redefined_flag[bop] = 0)
 #define C(k) add_opt_method(rb_c##k, mid, bop)
@@ -2220,7 +2235,7 @@ rb_vm_update_references(void *ptr)
 {
     if (ptr) {
         rb_vm_t *vm = ptr;
-        rb_update_st_references(vm->frozen_strings);
+        rb_gc_update_tbl_refs(vm->frozen_strings);
     }
 }
 
@@ -2288,7 +2303,6 @@ rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE cls,
 {
     rb_vm_t *vm = GET_VM();
     VALUE exc = rb_exc_new3(cls, rb_obj_freeze(mesg));
-    OBJ_TAINT(exc);
     OBJ_FREEZE(exc);
     ((VALUE *)vm->special_exceptions)[sp] = exc;
     rb_gc_register_mark_object(exc);
@@ -2373,7 +2387,7 @@ static VALUE
 vm_default_params(void)
 {
     rb_vm_t *vm = GET_VM();
-    VALUE result = rb_hash_new();
+    VALUE result = rb_hash_new_with_size(4);
 #define SET(name) rb_hash_aset(result, ID2SYM(rb_intern(#name)), SIZET2NUM(vm->default_params.name));
     SET(thread_vm_stack_size);
     SET(thread_machine_stack_size);
@@ -2869,7 +2883,7 @@ extern size_t rb_gc_stack_maxsize;
 
 /* :nodoc: */
 static VALUE
-sdr(void)
+sdr(VALUE self)
 {
     rb_vm_bugreport(NULL);
     return Qnil;
@@ -2877,7 +2891,7 @@ sdr(void)
 
 /* :nodoc: */
 static VALUE
-nsdr(void)
+nsdr(VALUE self)
 {
     VALUE ary = rb_ary_new();
 #if HAVE_BACKTRACE
@@ -3000,12 +3014,12 @@ Init_VM(void)
      *	For example, we can create a new thread separate from the main thread's
      *	execution using ::new.
      *
-     *	    thr = Thread.new { puts "Whats the big deal" }
+     *	    thr = Thread.new { puts "What's the big deal" }
      *
      *	Then we are able to pause the execution of the main thread and allow
      *	our new thread to finish, using #join:
      *
-     *	    thr.join #=> "Whats the big deal"
+     *	    thr.join #=> "What's the big deal"
      *
      *	If we don't call +thr.join+ before the main thread terminates, then all
      *	other threads including +thr+ will be killed.
@@ -3014,7 +3028,7 @@ Init_VM(void)
      *	once, like in the following example:
      *
      *	    threads = []
-     *	    threads << Thread.new { puts "Whats the big deal" }
+     *	    threads << Thread.new { puts "What's the big deal" }
      *	    threads << Thread.new { 3.times { puts "Threads are fun!" } }
      *
      *	After creating a few threads we wait for them all to finish
@@ -3043,7 +3057,7 @@ Init_VM(void)
      *
      *	The class method ::kill, is meant to exit a given thread:
      *
-     *	    thr = Thread.new { ... }
+     *	    thr = Thread.new { sleep }
      *	    Thread.kill(thr) # sends exit() to thr
      *
      *	Alternatively, you can use the instance method #exit, or any of its

@@ -28,6 +28,9 @@ module Test
         require_relative '../../envutil'
         # for ruby core testing
         include MiniTest::Assertions
+
+        # Compatibility hack for assert_raise
+        Test::Unit::AssertionFailedError = MiniTest::Assertion
       else
         module MiniTest
           class Assertion < Exception; end
@@ -213,7 +216,7 @@ eom
           }
 
           assert expected, proc {
-            exception_details(e, message(msg) {"#{mu_pp(exp)} exception expected, not"}.call)
+            flunk(message(msg) {"#{mu_pp(exp)} exception expected, not #{mu_pp(e)}"})
           }
 
           return e
@@ -378,7 +381,7 @@ eom
           msg = "exceptions on #{errs.length} threads:\n" +
             errs.map {|t, err|
             "#{t.inspect}:\n" +
-              err.full_message(highlight: false, order: :top)
+              RUBY_VERSION >= "2.5.0" ? err.full_message(highlight: false, order: :top) : err.message
           }.join("\n---\n")
           if message
             msg = "#{message}\n#{msg}"

@@ -55,6 +55,18 @@ RSpec.describe "bundle exec" do
     expect(out).to eq("hi")
   end
 
+  it "works when exec'ing to rubygems" do
+    install_gemfile 'gem "rack"'
+    bundle "exec #{gem_cmd} --version"
+    expect(out).to eq(Gem::VERSION)
+  end
+
+  it "works when exec'ing to rubygems through sh -c" do
+    install_gemfile 'gem "rack"'
+    bundle "exec sh -c '#{gem_cmd} --version'"
+    expect(out).to eq(Gem::VERSION)
+  end
+
   it "respects custom process title when loading through ruby" do
     script_that_changes_its_own_title_and_checks_if_picked_up_by_ps_unix_utility = <<~'RUBY'
       Process.setproctitle("1-2-3-4-5-6-7-8-9-10-11-12-13-14-15")
@@ -89,7 +101,7 @@ RSpec.describe "bundle exec" do
       else
         require 'tempfile'
         io = Tempfile.new("io-test-fd")
-        args = %W[#{Gem.ruby} -I#{lib} #{bindir.join("bundle")} exec --keep-file-descriptors #{Gem.ruby} #{command.path} \#{io.to_i}]
+        args = %W[#{Gem.ruby} -I#{lib_dir} #{bindir.join("bundle")} exec --keep-file-descriptors #{Gem.ruby} #{command.path} \#{io.to_i}]
         args << { io.to_i => io }
         exec(*args)
       end
@@ -98,7 +110,7 @@ RSpec.describe "bundle exec" do
     install_gemfile ""
     sys_exec "#{Gem.ruby} #{command.path}"
 
-    expect(out).to eq("")
+    expect(out).to be_empty
     expect(err).to be_empty
   end
 
@@ -279,7 +291,7 @@ RSpec.describe "bundle exec" do
     G
 
     rubyopt = ENV["RUBYOPT"]
-    rubyopt = "-r#{lib}/bundler/setup #{rubyopt}"
+    rubyopt = "-r#{lib_dir}/bundler/setup #{rubyopt}"
 
     bundle "exec 'echo $RUBYOPT'"
     expect(out).to have_rubyopts(rubyopt)
@@ -294,7 +306,7 @@ RSpec.describe "bundle exec" do
     G
 
     rubylib = ENV["RUBYLIB"]
-    rubylib = rubylib.to_s.split(File::PATH_SEPARATOR).unshift lib.to_s
+    rubylib = rubylib.to_s.split(File::PATH_SEPARATOR).unshift lib_dir.to_s
     rubylib = rubylib.uniq.join(File::PATH_SEPARATOR)
 
     bundle "exec 'echo $RUBYLIB'"

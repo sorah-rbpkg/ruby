@@ -62,20 +62,22 @@ static struct {
 static void
 rb_class_clear_method_cache(VALUE klass, VALUE arg)
 {
+    VALUE old_serial = *(rb_serial_t *)arg;
+    if (RCLASS_SERIAL(klass) > old_serial) {
+        return;
+    }
+
     mjit_remove_class_serial(RCLASS_SERIAL(klass));
     RCLASS_SERIAL(klass) = rb_next_class_serial();
 
-    if (RB_TYPE_P(klass, T_ICLASS)) {
+    if (BUILTIN_TYPE(klass) == T_ICLASS) {
 	struct rb_id_table *table = RCLASS_CALLABLE_M_TBL(klass);
 	if (table) {
 	    rb_id_table_clear(table);
 	}
     }
     else {
-	if (RCLASS_CALLABLE_M_TBL(klass) != 0) {
-	    rb_obj_info_dump(klass);
-	    rb_bug("RCLASS_CALLABLE_M_TBL(klass) != 0");
-	}
+	VM_ASSERT(RCLASS_CALLABLE_M_TBL(klass) == 0);
     }
 
     rb_class_foreach_subclass(klass, rb_class_clear_method_cache, arg);
@@ -99,7 +101,8 @@ rb_clear_method_cache_by_class(VALUE klass)
 	    INC_GLOBAL_METHOD_STATE();
 	}
 	else {
-	    rb_class_clear_method_cache(klass, Qnil);
+	    rb_serial_t old_serial = PREV_CLASS_SERIAL();
+	    rb_class_clear_method_cache(klass, (VALUE)&old_serial);
 	}
     }
 
@@ -348,6 +351,8 @@ rb_method_definition_create(rb_method_type_t type, ID mid)
     def = ZALLOC(rb_method_definition_t);
     def->type = type;
     def->original_id = mid;
+    static uintptr_t method_serial = 1;
+    def->method_serial = method_serial++;
     return def;
 }
 
@@ -497,7 +502,7 @@ rb_add_refined_method_entry(VALUE refined_class, ID mid)
 }
 
 static void
-check_override_opt_method(VALUE klass, VALUE arg)
+check_override_opt_method_i(VALUE klass, VALUE arg)
 {
     ID mid = (ID)arg;
     const rb_method_entry_t *me, *newme;
@@ -509,7 +514,15 @@ check_override_opt_method(VALUE klass, VALUE arg)
 	    if (newme != me) rb_vm_check_redefinition_opt_method(me, me->owner);
 	}
     }
-    rb_class_foreach_subclass(klass, check_override_opt_method, (VALUE)mid);
+    rb_class_foreach_subclass(klass, check_override_opt_method_i, (VALUE)mid);
+}
+
+static void
+check_override_opt_method(VALUE klass, VALUE mid)
+{
+    if (rb_vm_check_optimizable_mid(mid)) {
+        check_override_opt_method_i(klass, mid);
+    }
 }
 
 /*
@@ -961,6 +974,7 @@ rb_resolve_refined_method(VALUE refinements, const rb_method_entry_t *me)
     return resolve_refined_method(refinements, me, NULL);
 }
 
+MJIT_FUNC_EXPORTED
 const rb_callable_method_entry_t *
 rb_resolve_refined_method_callable(VALUE refinements, const rb_callable_method_entry_t *me)
 {
@@ -1768,7 +1782,7 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
  *  a keyword splat.  It marks the method such that if the method is called
  *  with keyword arguments, the final hash argument is marked with a special
  *  flag such that if it is the final element of a normal argument splat to
- *  another method call, and that method calls does not include explicit
+ *  another method call, and that method call does not include explicit
  *  keywords or a keyword splat, the final element is interpreted as keywords.
  *  In other words, keywords will be passed through the method to other
  *  methods.
@@ -1778,8 +1792,10 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
  *  2.7.
  *
  *  This method will probably be removed at some point, as it exists only
- *  for backwards compatibility, so always check that the module responds
- *  to this method before calling it.
+ *  for backwards compatibility. As it does not exist in Ruby versions
+ *  before 2.7, check that the module responds to this method before calling
+ *  it. Also, be aware that if this method is removed, the behavior of the
+ *  method will change so that it does not pass through keywords.
  *
  *    module Mod
  *      def foo(meth, *args, &block)
@@ -1946,6 +1962,19 @@ top_private(int argc, VALUE *argv, VALUE _)
 
 /*
  *  call-seq:
+ *     ruby2_keywords(method_name, ...) -> self
+ *
+ *  For the given method names, marks the method as passing keywords through
+ *  a normal argument splat.  See Module#ruby2_keywords in detail.
+ */
+static VALUE
+top_ruby2_keywords(int argc, VALUE *argv, VALUE module)
+{
+    return rb_mod_ruby2_keywords(argc, argv, rb_cObject);
+}
+
+/*
+ *  call-seq:
  *     module_function(symbol, ...)    -> self
  *     module_function(string, ...)    -> self
  *
@@ -2024,6 +2053,21 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
     return module;
 }
 
+bool
+rb_method_basic_definition_p_with_cc(struct rb_call_data *cd, VALUE klass, ID mid)
+{
+    if (cd->ci.mid != mid) {
+        *cd = (struct rb_call_data) /* reset */ { .ci = { .mid = mid, }, };
+    }
+
+    vm_search_method_fastpath(cd, klass);
+    return cd->cc.me && METHOD_ENTRY_BASIC(cd->cc.me);
+}
+
+#ifdef __GNUC__
+#pragma push_macro("rb_method_basic_definition_p")
+#undef rb_method_basic_definition_p
+#endif
 int
 rb_method_basic_definition_p(VALUE klass, ID id)
 {
@@ -2032,6 +2076,9 @@ rb_method_basic_definition_p(VALUE klass, ID id)
     me = rb_method_entry(klass, id);
     return (me && METHOD_ENTRY_BASIC(me)) ? TRUE : FALSE;
 }
+#ifdef __GNUC__
+#pragma pop_macro("rb_method_basic_definition_p")
+#endif
 
 static VALUE
 call_method_entry(rb_execution_context_t *ec, VALUE defined_class, VALUE obj, ID id,
@@ -2259,6 +2306,8 @@ Init_eval_method(void)
 			     "public", top_public, -1);
     rb_define_private_method(rb_singleton_class(rb_vm_top_self()),
 			     "private", top_private, -1);
+    rb_define_private_method(rb_singleton_class(rb_vm_top_self()),
+			     "ruby2_keywords", top_ruby2_keywords, -1);
 
     {
 #define REPLICATE_METHOD(klass, id) do { \

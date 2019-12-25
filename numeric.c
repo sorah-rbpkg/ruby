@@ -1404,6 +1404,7 @@ rb_float_equal(VALUE x, VALUE y)
 }
 
 #define flo_eq rb_float_equal
+static VALUE rb_dbl_hash(double d);
 
 /*
  * call-seq:
@@ -1420,7 +1421,7 @@ flo_hash(VALUE num)
     return rb_dbl_hash(RFLOAT_VALUE(num));
 }
 
-VALUE
+static VALUE
 rb_dbl_hash(double d)
 {
     return LONG2FIX(rb_dbl_long_hash(d));
@@ -1461,7 +1462,7 @@ flo_cmp(VALUE x, VALUE y)
     if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
-            return INT2FIX(-FIX2INT(rel));
+            return LONG2FIX(-FIX2LONG(rel));
         return rel;
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -1507,7 +1508,7 @@ rb_float_gt(VALUE x, VALUE y)
     if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
-            return -FIX2INT(rel) > 0 ? Qtrue : Qfalse;
+            return -FIX2LONG(rel) > 0 ? Qtrue : Qfalse;
         return Qfalse;
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -1544,7 +1545,7 @@ flo_ge(VALUE x, VALUE y)
     if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
-            return -FIX2INT(rel) >= 0 ? Qtrue : Qfalse;
+            return -FIX2LONG(rel) >= 0 ? Qtrue : Qfalse;
         return Qfalse;
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -1581,7 +1582,7 @@ flo_lt(VALUE x, VALUE y)
     if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
-            return -FIX2INT(rel) < 0 ? Qtrue : Qfalse;
+            return -FIX2LONG(rel) < 0 ? Qtrue : Qfalse;
         return Qfalse;
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -1618,7 +1619,7 @@ flo_le(VALUE x, VALUE y)
     if (RB_TYPE_P(y, T_FIXNUM) || RB_TYPE_P(y, T_BIGNUM)) {
         VALUE rel = rb_integer_float_cmp(y, x);
         if (FIXNUM_P(rel))
-            return -FIX2INT(rel) <= 0 ? Qtrue : Qfalse;
+            return -FIX2LONG(rel) <= 0 ? Qtrue : Qfalse;
         return Qfalse;
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
@@ -2099,7 +2100,7 @@ int_half_p_half_down(VALUE num, VALUE n, VALUE f)
 /*
  * Assumes num is an Integer, ndigits <= 0
  */
-VALUE
+static VALUE
 rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode)
 {
     VALUE n, f, h, r;
@@ -3342,7 +3343,7 @@ rb_int_succ(VALUE num)
  *     (-1).pred   #=> -2
  */
 
-VALUE
+static VALUE
 rb_int_pred(VALUE num)
 {
     if (FIXNUM_P(num)) {

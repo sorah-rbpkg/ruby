@@ -90,7 +90,7 @@ sudo-precheck: test yes-test-testframework no-test-testframework
 install-prereq: sudo-precheck
 yes-test-all no-test-all: install
 endif
-# Cross referece needs to parse all files at once
+# Cross reference needs to parse all files at once
 love install reinstall: RDOCFLAGS = --force-update
 
 $(srcdir)/missing/des_tables.c: $(srcdir)/missing/crypt.c
@@ -241,8 +241,15 @@ HELP_EXTRA_TASKS = \
 	"  update-github:       merge master branch and push it to Pull Request [PR=1234]" \
 	""
 
-ifeq ($(words $(filter update-gems extract-gems,$(MAKECMDGOALS))),2)
+ifneq ($(filter refresh-gems,$(MAKECMDGOALS)),)
 extract-gems: update-gems
+update-gems: update-bundled_gems
+endif
+ifneq ($(filter extract-gems,$(MAKECMDGOALS)),)
+extract-gems: $(filter update-gems update-bundled_gems,$(MAKECMDGOALS))
+endif
+ifneq ($(filter update-gems,$(MAKECMDGOALS)),)
+update-gems: $(filter update-bundled_gems,$(MAKECMDGOALS))
 endif
 
 ifeq ($(filter 0 1,$(words $(arch_flags))),)
@@ -284,9 +291,13 @@ $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: \
 	$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
 endif
 
+REVISION_IN_HEADER := $(shell sed -n 's/^\#define RUBY_FULL_REVISION "\(.*\)"/\1/p' $(srcdir)/revision.h 2>/dev/null)
+REVISION_LATEST := $(shell $(CHDIR) $(srcdir) && git log -1 --format=%H 2>/dev/null)
+ifneq ($(REVISION_IN_HEADER),$(REVISION_LATEST))
 # GNU make treat the target as unmodified when its dependents get
 # updated but it is not updated, while others may not.
 $(srcdir)/revision.h: $(REVISION_H)
+endif
 
 # Query on the generated rdoc
 #
