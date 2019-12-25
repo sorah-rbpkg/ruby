@@ -1,3 +1,9 @@
+ruby2.7 (2.7.0-0nkmi1~dist) unstable; urgency=medium
+
+  * 2.7.0, happy holidays.
+
+ -- Sorah Fukumori <sorah@cookpad.com>  Wed, 25 Dec 2019 11:27:25 +0000
+
 ruby2.7 (2.7.0~preview1-0nkmi2~dist) unstable-proposed; urgency=medium
 
   * oops!
