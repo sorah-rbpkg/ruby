@@ -89,7 +89,7 @@ excludes += --excludes-dir=debian/tests/excludes/any/
 excludes += --excludes-dir=debian/tests/excludes/$(DEB_HOST_ARCH)/
 override_dh_auto_test-arch:
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
-	$(MAKE) $(TEST_TARGETS) V=1 RUBY_TESTOPTS="-v -j 4" TESTS="$(excludes)" OPENSSL_CONF=/dev/null
+	$(MAKE) $(TEST_TARGETS) V=1 RUBY_TESTOPTS="-v -j4" TESTS="$(excludes)" OPENSSL_CONF=/dev/null
 endif
 
 override_dh_auto_install-arch:
