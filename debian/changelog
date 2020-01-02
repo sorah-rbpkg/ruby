@@ -1,8 +1,11 @@
 ruby2.7 (2.7.0-1) UNRELEASED; urgency=medium
 
   * New upstream version 2.7.0
+  * Update d/libruby2.7.symbols
+  * d/copyright: remove some files dropped in this new release
+  * d/t/run-all: use AUTOPKGTEST_TMP instead of ADTTMP
 
- -- Lucas Kanashiro <kanashiro@debian.org>  Thu, 02 Jan 2020 14:59:56 -0300
+ -- Lucas Kanashiro <kanashiro@debian.org>  Thu, 02 Jan 2020 16:41:27 -0300
 
 ruby2.7 (2.7.0~preview2-1~exp1) experimental; urgency=medium
 
