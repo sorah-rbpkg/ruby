@@ -179,62 +179,83 @@ cmp_between(VALUE x, VALUE min, VALUE max)
  *     obj.clamp(min, max) ->  obj
  *     obj.clamp(range)    ->  obj
  *
- * In the first form, returns _min_ if _obj_ <code><=></code> _min_ is
- * less than zero, _max_ if _obj_ <code><=></code> _max_ is greater
- * than zero and _obj_ otherwise.  In the second form, clamps by
- * _range.min_ and _range.max_.  If _range_ is an exclusive range,
- * raises an ArgumentError.
+ * In <code>(min, max)</code> form, returns _min_ if _obj_
+ * <code><=></code> _min_ is less than zero, _max_ if _obj_
+ * <code><=></code> _max_ is greater than zero, and _obj_
+ * otherwise.
  *
  *     12.clamp(0, 100)         #=> 12
  *     523.clamp(0, 100)        #=> 100
  *     -3.123.clamp(0, 100)     #=> 0
+ *
+ *     'd'.clamp('a', 'f')      #=> 'd'
+ *     'z'.clamp('a', 'f')      #=> 'f'
+ *
+ * In <code>(range)</code> form, returns _range.begin_ if _obj_
+ * <code><=></code> _range.begin_ is less than zero, _range.end_
+ * if _obj_ <code><=></code> _range.end_ is greater than zero, and
+ * _obj_ otherwise.
+ *
  *     12.clamp(0..100)         #=> 12
  *     523.clamp(0..100)        #=> 100
  *     -3.123.clamp(0..100)     #=> 0
  *
- *     'd'.clamp('a', 'f')      #=> 'd'
- *     'z'.clamp('a', 'f')      #=> 'f'
  *     'd'.clamp('a'..'f')      #=> 'd'
  *     'z'.clamp('a'..'f')      #=> 'f'
  *
- *     12.clamp(0...100)        #=> ArgumentError
+ * If _range.begin_ is +nil+, it is considered smaller than _obj_,
+ * and if _range.end_ is +nil+, it is considered greater than
+ * _obj_.
+ *
+ *     -20.clamp(0..)           #=> 0
+ *     523.clamp(..100)         #=> 100
+ *
+ * When _range.end_ is excluded and not +nil+, an exception is
+ * raised.
+ *
+ *     100.clamp(0...100)       # ArgumentError
  */
 
 static VALUE
 cmp_clamp(int argc, VALUE *argv, VALUE x)
 {
     VALUE min, max;
-    int c;
+    int c, excl = 0;
 
     if (rb_scan_args(argc, argv, "11", &min, &max) == 1) {
         VALUE range = min;
-        int excl;
         if (!rb_range_values(range, &min, &max, &excl)) {
             rb_raise(rb_eTypeError, "wrong argument type %s (expected Range)",
                      rb_builtin_class_name(range));
         }
-        if (excl || NIL_P(min) || NIL_P(max)) {
-            rb_raise(rb_eArgError, "cannot clamp with an exclusive range");
+        if (!NIL_P(max)) {
+            if (excl) rb_raise(rb_eArgError, "cannot clamp with an exclusive range");
+            if (!NIL_P(min) && cmpint(min, max) > 0) goto arg_error;
         }
     }
-    if (cmpint(min, max) > 0) {
+    else if (cmpint(min, max) > 0) {
+      arg_error:
 	rb_raise(rb_eArgError, "min argument must be smaller than max argument");
     }
 
-    c = cmpint(x, min);
-    if (c == 0) return x;
-    if (c < 0) return min;
-    c = cmpint(x, max);
-    if (c > 0) return max;
+    if (!NIL_P(min)) {
+        c = cmpint(x, min);
+        if (c == 0) return x;
+        if (c < 0) return min;
+    }
+    if (!NIL_P(max)) {
+        c = cmpint(x, max);
+        if (c > 0) return max;
+    }
     return x;
 }
 
 /*
  *  The Comparable mixin is used by classes whose objects may be
  *  ordered. The class must define the <code><=></code> operator,
- *  which compares the receiver against another object, returning
- *  a value less than 0, 0, or a value greater than 0, depending on
- *  whether the receiver is less than, equal to,
+ *  which compares the receiver against another object, returning a
+ *  value less than 0, returning 0, or returning a value greater than 0,
+ *  depending on whether the receiver is less than, equal to,
  *  or greater than the other object. If the other object is not
  *  comparable then the <code><=></code> operator should return +nil+.
  *  Comparable uses <code><=></code> to implement the conventional

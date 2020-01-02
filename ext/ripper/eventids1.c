@@ -63,7 +63,6 @@ static struct {
     ID id_massign;
     ID id_method_add_arg;
     ID id_method_add_block;
-    ID id_methref;
     ID id_mlhs_add;
     ID id_mlhs_add_post;
     ID id_mlhs_add_star;
@@ -203,7 +202,6 @@ static struct {
 #define ripper_id_massign ripper_parser_ids.id_massign
 #define ripper_id_method_add_arg ripper_parser_ids.id_method_add_arg
 #define ripper_id_method_add_block ripper_parser_ids.id_method_add_block
-#define ripper_id_methref ripper_parser_ids.id_methref
 #define ripper_id_mlhs_add ripper_parser_ids.id_mlhs_add
 #define ripper_id_mlhs_add_post ripper_parser_ids.id_mlhs_add_post
 #define ripper_id_mlhs_add_star ripper_parser_ids.id_mlhs_add_star
@@ -346,7 +344,6 @@ ripper_init_eventids1(void)
     set_id1(massign);
     set_id1(method_add_arg);
     set_id1(method_add_block);
-    set_id1(methref);
     set_id1(mlhs_add);
     set_id1(mlhs_add_post);
     set_id1(mlhs_add_star);
@@ -491,7 +488,6 @@ ripper_init_eventids1_table(VALUE self)
     rb_hash_aset(h, intern_sym("massign"), INT2FIX(2));
     rb_hash_aset(h, intern_sym("method_add_arg"), INT2FIX(2));
     rb_hash_aset(h, intern_sym("method_add_block"), INT2FIX(2));
-    rb_hash_aset(h, intern_sym("methref"), INT2FIX(2));
     rb_hash_aset(h, intern_sym("mlhs_add"), INT2FIX(2));
     rb_hash_aset(h, intern_sym("mlhs_add_post"), INT2FIX(2));
     rb_hash_aset(h, intern_sym("mlhs_add_star"), INT2FIX(2));

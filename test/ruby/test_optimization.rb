@@ -451,6 +451,22 @@ class TestRubyOptimization < Test::Unit::TestCase
     }
   end
 
+  def test_tailcall_not_to_grow_stack
+    skip 'currently JIT-ed code always creates a new stack frame' if RubyVM::MJIT.enabled?
+    bug16161 = '[ruby-core:94881]'
+
+    tailcall("#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
+      def foo(n)
+        return :ok if n < 1
+        foo(n - 1)
+      end
+    end;
+    assert_nothing_raised(SystemStackError, bug16161) do
+      assert_equal(:ok, foo(1_000_000), bug16161)
+    end
+  end
+
   class Bug10557
     def [](_)
       block_given?
@@ -695,17 +711,6 @@ class TestRubyOptimization < Test::Unit::TestCase
       ObjectSpace.count_objects(h2)
 
       assert_equal 0, h2[:TOTAL] - h1[:TOTAL]
-    END
-  end
-
-  def test_block_parameter_should_restore_safe_level
-    assert_separately [], <<-END
-      #
-      def foo &b
-        $SAFE = 1
-        b.call
-      end
-      assert_equal 1, foo{$SAFE}
     END
   end
 

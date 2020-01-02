@@ -9,7 +9,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.1.0.pre2".freeze
+  VERSION = "3.1.2".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -18,7 +18,6 @@ require 'rubygems/compatibility'
 require 'rubygems/defaults'
 require 'rubygems/deprecate'
 require 'rubygems/errors'
-require 'rubygems/path_support'
 
 ##
 # RubyGems is the Ruby standard for publishing and managing third party
@@ -116,6 +115,11 @@ require 'rubygems/path_support'
 module Gem
   RUBYGEMS_DIR = File.dirname File.expand_path(__FILE__)
 
+  # Taint support is deprecated in Ruby 2.7.
+  # This allows switching ".untaint" to ".tap(&Gem::UNTAINT)",
+  # to avoid deprecation warnings in Ruby 2.7.
+  UNTAINT = RUBY_VERSION < '2.7' ? :untaint.to_sym : proc{}
+
   ##
   # An Array of Regexps that match windows Ruby platforms.
 
@@ -156,24 +160,14 @@ module Gem
   ].freeze
 
   ##
-  # Exception classes used in a Gem.read_binary +rescue+ statement. Not all of
-  # these are defined in Ruby 1.8.7, hence the need for this convoluted setup.
+  # Exception classes used in a Gem.read_binary +rescue+ statement
 
-  READ_BINARY_ERRORS = begin
-    read_binary_errors = [Errno::EACCES, Errno::EROFS, Errno::ENOSYS]
-    read_binary_errors << Errno::ENOTSUP if Errno.const_defined?(:ENOTSUP)
-    read_binary_errors
-  end.freeze
+  READ_BINARY_ERRORS = [Errno::EACCES, Errno::EROFS, Errno::ENOSYS, Errno::ENOTSUP].freeze
 
   ##
-  # Exception classes used in Gem.write_binary +rescue+ statement. Not all of
-  # these are defined in Ruby 1.8.7.
+  # Exception classes used in Gem.write_binary +rescue+ statement
 
-  WRITE_BINARY_ERRORS = begin
-    write_binary_errors = [Errno::ENOSYS]
-    write_binary_errors << Errno::ENOTSUP if Errno.const_defined?(:ENOTSUP)
-    write_binary_errors
-  end.freeze
+  WRITE_BINARY_ERRORS = [Errno::ENOSYS, Errno::ENOTSUP].freeze
 
   @@win_platform = nil
 
@@ -521,7 +515,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     glob_with_suffixes = "#{glob}#{Gem.suffix_pattern}"
     $LOAD_PATH.map do |load_path|
       Gem::Util.glob_files_in_dir(glob_with_suffixes, load_path)
-    end.flatten.select { |file| File.file? file.untaint }
+    end.flatten.select { |file| File.file? file.tap(&Gem::UNTAINT) }
   end
 
   ##
@@ -1083,7 +1077,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # The home directory for the user.
 
   def self.user_home
-    @user_home ||= find_home.untaint
+    @user_home ||= find_home.tap(&Gem::UNTAINT)
   end
 
   ##
@@ -1150,7 +1144,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       globbed = Gem::Util.glob_files_in_dir(glob, load_path)
 
       globbed.each do |load_path_file|
-        files << load_path_file if File.file?(load_path_file.untaint)
+        files << load_path_file if File.file?(load_path_file.tap(&Gem::UNTAINT))
       end
     end
 
@@ -1196,7 +1190,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       end
     end
 
-    path.untaint
+    path.tap(&Gem::UNTAINT)
 
     unless File.file? path
       return unless raise_exception
@@ -1209,13 +1203,12 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     Gem::DefaultUserInteraction.use_ui(ui) do
       require "bundler"
       begin
-        @gemdeps = Bundler.setup
-      ensure
-        if Gem::DefaultUserInteraction.ui.is_a?(Gem::SilentUI)
-          Gem::DefaultUserInteraction.ui.close
+        Bundler.ui.silence do
+          @gemdeps = Bundler.setup
         end
+      ensure
+        Gem::DefaultUserInteraction.ui.close
       end
-      Bundler.ui = nil
       @gemdeps.requested_specs.map(&:to_spec).sort_by(&:name)
     end
 

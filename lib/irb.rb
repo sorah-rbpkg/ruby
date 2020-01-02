@@ -9,7 +9,6 @@
 #
 #
 #
-require "e2mmap"
 require "ripper"
 
 require "irb/init"
@@ -45,8 +44,8 @@ require "irb/version"
 #     irb(main):006:1> end
 #     #=> nil
 #
-# The Readline extension module can be used with irb. Use of Readline is
-# default if it's installed.
+# The singleline editor module or multiline editor module can be used with irb.
+# Use of multiline editor is default if it's installed.
 #
 # == Command line options
 #
@@ -61,10 +60,10 @@ require "irb/version"
 #     -W[level=2]       Same as `ruby -W`
 #     --inspect         Use `inspect' for output (default except for bc mode)
 #     --noinspect       Don't use inspect for output
-#     --reidline        Use Reidline extension module
-#     --noreidline      Don't use Reidline extension module
-#     --readline        Use Readline extension module
-#     --noreadline      Don't use Readline extension module
+#     --multiline       Use multiline editor module
+#     --nomultiline     Don't use multiline editor module
+#     --singleline      Use singleline editor module
+#     --nosingleline    Don't use singleline editor module
 #     --colorize        Use colorization
 #     --nocolorize      Don't use colorization
 #     --prompt prompt-mode
@@ -72,7 +71,7 @@ require "irb/version"
 #                       Switch prompt mode. Pre-defined prompt modes are
 #                       `default', `simple', `xmp' and `inf-ruby'
 #     --inf-ruby-mode   Use prompt appropriate for inf-ruby-mode on emacs.
-#                       Suppresses --reidline and --readline.
+#                       Suppresses --multiline and --singleline.
 #     --simple-prompt   Simple prompt mode
 #     --noprompt        No prompt mode
 #     --tracer          Display trace for each execution of commands.
@@ -100,8 +99,8 @@ require "irb/version"
 #     IRB.conf[:IRB_RC] = nil
 #     IRB.conf[:BACK_TRACE_LIMIT]=16
 #     IRB.conf[:USE_LOADER] = false
-#     IRB.conf[:USE_REIDLINE] = nil
-#     IRB.conf[:USE_READLINE] = nil
+#     IRB.conf[:USE_MULTILINE] = nil
+#     IRB.conf[:USE_SINGLELINE] = nil
 #     IRB.conf[:USE_COLORIZE] = true
 #     IRB.conf[:USE_TRACER] = false
 #     IRB.conf[:IGNORE_SIGINT] = true
@@ -124,13 +123,21 @@ require "irb/version"
 # === History
 #
 # By default, irb will store the last 1000 commands you used in
-# <code>~/.irb_history</code>.
+# <code>IRB.conf[:HISTORY_FILE]</code> (<code>~/.irb_history</code> by default).
 #
 # If you want to disable history, add the following to your +.irbrc+:
 #
 #     IRB.conf[:SAVE_HISTORY] = nil
 #
 # See IRB::Context#save_history= for more information.
+#
+# The history of _results_ of commands evaluated is not stored by default,
+# but can be turned on to be stored with this +.irbrc+ setting:
+#
+#     IRB.conf[:EVAL_HISTORY] = <number>
+#
+# See IRB::Context#eval_history= and History class. The history of command
+# results is not permanently saved in any file.
 #
 # == Customizing the IRB Prompt
 #
@@ -274,7 +281,9 @@ require "irb/version"
 # <code>_</code>::
 #   The value command executed, as a local variable
 # <code>__</code>::
-#   The history of evaluated commands
+#   The history of evaluated commands. Available only if
+#   <code>IRB.conf[:EVAL_HISTORY]</code> is not +nil+ (which is the default).
+#   See also IRB::Context#eval_history= and IRB::History.
 # <code>__[line_no]</code>::
 #   Returns the evaluation value at the given line number, +line_no+.
 #   If +line_no+ is a negative, the return value +line_no+ many lines before
@@ -310,7 +319,7 @@ require "irb/version"
 #   # check if Foo#foo is available
 #   irb(main):005:0> Foo.instance_methods #=> [:foo, ...]
 #
-#   # change the active sesssion
+#   # change the active session
 #   irb(main):006:0> fg 2
 #   # define Foo#bar in the context of Foo
 #   irb.2(Foo):005:0> def bar
@@ -441,8 +450,8 @@ module IRB
     # parsed as a :method_add_arg and the output won't be suppressed
 
     # Creates a new irb session
-    def initialize(workspace = nil, input_method = nil, output_method = nil)
-      @context = Context.new(self, workspace, input_method, output_method)
+    def initialize(workspace = nil, input_method = nil)
+      @context = Context.new(self, workspace, input_method)
       @context.main.extend ExtendCommandBundle
       @signal_status = :IN_IRB
       @scanner = RubyLex.new
@@ -526,7 +535,7 @@ module IRB
       @scanner.each_top_level_statement do |line, line_no|
         signal_status(:IN_EVAL) do
           begin
-            line.untaint
+            line.untaint if RUBY_VERSION < '2.7'
             @context.evaluate(line, line_no, exception: exc)
             output_value if @context.echo? && (@context.echo_on_assignment? || !assignment_expression?(line))
           rescue Interrupt => exc
@@ -543,7 +552,7 @@ module IRB
     end
 
     def handle_exception(exc)
-      if exc.backtrace && exc.backtrace[0] =~ /irb(2)?(\/.*|-.*|\.rb)?:/ && exc.class.to_s !~ /^IRB/ &&
+      if exc.backtrace && exc.backtrace[0] =~ /\/irb(2)?(\/.*|-.*|\.rb)?:/ && exc.class.to_s !~ /^IRB/ &&
          !(SyntaxError === exc)
         irb_bug = true
       else
@@ -756,7 +765,10 @@ module IRB
       # s-expression where the second selement of the top level array is an
       # array of parsed expressions. The first element of each expression is the
       # expression's type.
-      ASSIGNMENT_NODE_TYPES.include?(Ripper.sexp(line)&.dig(1,-1,0))
+      verbose, $VERBOSE = $VERBOSE, nil
+      result = ASSIGNMENT_NODE_TYPES.include?(Ripper.sexp(line)&.dig(1,-1,0))
+      $VERBOSE = verbose
+      result
     end
 
     ATTR_TTY = "\e[%sm"

@@ -159,12 +159,23 @@ static const struct {
 "    end\n"
 "  end\n"
 "end\n"
-#line 163 "golf.c"
+#line 163 "golf_prelude.c"
 };
-
 
 #define PRELUDE_NAME(n) rb_usascii_str_new_static(prelude_name##n, sizeof(prelude_name##n)-1)
 #define PRELUDE_CODE(n) rb_utf8_str_new_static(prelude_code##n.L0, sizeof(prelude_code##n))
+
+static rb_ast_t *
+prelude_ast(VALUE name, VALUE code, int line)
+{
+    rb_ast_t *ast = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
+    if (!ast->body.root) {
+	rb_ast_dispose(ast);
+	rb_exc_raise(rb_errinfo());
+    }
+    return ast;
+}
+
 COMPILER_WARNING_PUSH
 #if GCC_VERSION_SINCE(4, 2, 0)
 COMPILER_WARNING_ERROR(-Wmissing-field-initializers)
@@ -186,11 +197,7 @@ prelude_eval(VALUE code, VALUE name, int line)
 	0, /* int debug_level; */
     };
 
-    rb_ast_t *ast = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
-    if (!ast->body.root) {
-	rb_ast_dispose(ast);
-	rb_exc_raise(rb_errinfo());
-    }
+    rb_ast_t *ast = prelude_ast(name, code, line);
     rb_iseq_eval(rb_iseq_new_with_opt(&ast->body, name, name, Qnil, INT2FIX(line),
 				      NULL, ISEQ_TYPE_TOP, &optimization));
     rb_ast_dispose(ast);

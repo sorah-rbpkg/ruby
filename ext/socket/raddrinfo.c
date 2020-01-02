@@ -503,10 +503,6 @@ str_is_number(const char *p)
 #define str_equal(ptr, len, name) \
     ((ptr)[0] == name[0] && \
      rb_strlen_lit(name) == (len) && memcmp(ptr, name, len) == 0)
-#define SafeStringValueCStr(v) do {\
-    StringValueCStr(v);\
-    rb_check_safe_obj(v);\
-} while(0)
 
 static char*
 host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr)
@@ -525,7 +521,7 @@ host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr)
         const char *name;
         size_t len;
 
-        SafeStringValueCStr(host);
+        StringValueCStr(host);
         RSTRING_GETMEM(host, name, len);
         if (!len || str_equal(name, len, "<any>")) {
             make_inetaddr(INADDR_ANY, hbuf, hbuflen);
@@ -564,7 +560,7 @@ port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr)
         const char *serv;
         size_t len;
 
-        SafeStringValueCStr(port);
+        StringValueCStr(port);
         RSTRING_GETMEM(port, serv, len);
         if (len >= pbuflen) {
             rb_raise(rb_eArgError, "service name too long (%"PRIuSIZE")",
@@ -973,7 +969,7 @@ init_addrinfo_getaddrinfo(rb_addrinfo_t *rai, VALUE node, VALUE service,
 
     canonname = Qnil;
     if (res->ai->ai_canonname) {
-        canonname = rb_tainted_str_new_cstr(res->ai->ai_canonname);
+        canonname = rb_str_new_cstr(res->ai->ai_canonname);
         OBJ_FREEZE(canonname);
     }
 
@@ -1023,8 +1019,6 @@ make_inspectname(VALUE node, VALUE service, struct addrinfo *res)
             rb_str_catf(inspectname, ":%d", FIX2INT(service));
     }
     if (!NIL_P(inspectname)) {
-        OBJ_INFECT(inspectname, node);
-        OBJ_INFECT(inspectname, service);
         OBJ_FREEZE(inspectname);
     }
     return inspectname;
@@ -1043,7 +1037,7 @@ addrinfo_firstonly_new(VALUE node, VALUE service, VALUE family, VALUE socktype, 
 
     canonname = Qnil;
     if (res->ai->ai_canonname) {
-        canonname = rb_tainted_str_new_cstr(res->ai->ai_canonname);
+        canonname = rb_str_new_cstr(res->ai->ai_canonname);
         OBJ_FREEZE(canonname);
     }
 
@@ -1073,7 +1067,7 @@ addrinfo_list_new(VALUE node, VALUE service, VALUE family, VALUE socktype, VALUE
         VALUE canonname = Qnil;
 
         if (r->ai_canonname) {
-            canonname = rb_tainted_str_new_cstr(r->ai_canonname);
+            canonname = rb_str_new_cstr(r->ai_canonname);
             OBJ_FREEZE(canonname);
         }
 
@@ -1912,7 +1906,6 @@ addrinfo_to_sockaddr(VALUE self)
     rb_addrinfo_t *rai = get_addrinfo(self);
     VALUE ret;
     ret = rb_str_new((char*)&rai->addr, rai->sockaddr_len);
-    OBJ_INFECT(ret, self);
     return ret;
 }
 
@@ -2595,7 +2588,6 @@ addrinfo_s_unix(int argc, VALUE *argv, VALUE self)
     addr = addrinfo_s_allocate(rb_cAddrinfo);
     DATA_PTR(addr) = rai = alloc_addrinfo();
     init_unix_addrinfo(rai, path, socktype);
-    OBJ_INFECT(addr, path);
     return addr;
 }
 

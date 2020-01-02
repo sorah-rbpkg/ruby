@@ -127,7 +127,7 @@ AS_CASE("${os_version_style}",
 	[minor],   [os_version_style_transform=['s/\([0-9]\.[0-9][0-9]*\)\.[0-9][.0-9]*$/\1/']],
 	[major+0], [os_version_style_transform=['s/\([0-9]\)\.[0-9][.0-9]*$/\1.0/']],
 	[major],   [os_version_style_transform=['s/\([0-9]\)\.[0-9][.0-9]*$/\1/']],
-	[none],    [os_version_style_transform=['s/[0-9]\.[0-9][.0-9]*$//']],
+	[none],    [os_version_style_transform=['s/[0-9]*\.[0-9][.0-9]*$//']],
 	[AC_MSG_ERROR(unknown --with-os-version-style: $withval)])
 AS_IF([test -z "$target_alias" -a -n "$os_version_style_transform"],
 	[
@@ -569,7 +569,19 @@ AS_IF([test "$GCC" = yes], [
     # argument check. The performance drop is very little and Ubuntu enables
     # _FORTIFY_SOURCE=2 by default. So, let's support it for protecting us from
     # a mistake of silly C extensions.
+
+    # TODO: check if link succeeds with _FORTIFY_SOURCE=2.
+    AS_CASE(["$target_os"],
+    [mingw*], [
+	fortify_source=no
+    ])
+    AC_ARG_ENABLE(fortify_source,
+		  AS_HELP_STRING([--disable-fortify-source],
+				 [disable -D_FORTIFY_SOURCE=2 option, which causes link error on mingw]),
+		  [fortify_source=$enableval])
+    AS_IF([test "x$fortify_source" != xno], [
     RUBY_TRY_CFLAGS(-D_FORTIFY_SOURCE=2, [RUBY_APPEND_OPTION(XCFLAGS, -D_FORTIFY_SOURCE=2)])
+    ])
 
     : ${MJIT_HEADER_FLAGS='-P -dD'}
 
@@ -1494,6 +1506,11 @@ done
 ])])
 AS_IF([test "$rb_cv_func_exported" != no], [
     AC_DEFINE_UNQUOTED(RUBY_FUNC_EXPORTED, [$rb_cv_func_exported extern])
+])
+RUBY_DECL_ATTRIBUTE([__nonnull__(n)], [RUBY_FUNC_NONNULL(n,x)], [rb_cv_func_nonnull],
+                    [], [function], [
+@%:@define x int conftest_attribute_check(void *p)
+@%:@define n 1
 ])
 
 RUBY_APPEND_OPTION(XCFLAGS, -DRUBY_EXPORT)
@@ -3036,6 +3053,7 @@ AS_IF([test x"$cross_compiling" = xyes], [
   XRUBY='$(MINIRUBY)'
   TEST_RUNNABLE=no
   CROSS_COMPILING=yes
+  AC_DEFINE(CROSS_COMPILING, 1)
 ], [
   MINIRUBY='./miniruby$(EXEEXT) -I$(srcdir)/lib -I.'
   MINIRUBY="$MINIRUBY"' -I$(EXTOUT)/common'
@@ -3792,8 +3810,8 @@ AS_IF([test "${universal_binary-no}" = yes ], [
     AC_SUBST(UNIVERSAL_ARCHNAMES, "${universal_archnames}")
     AC_SUBST(UNIVERSAL_INTS, "${ints}")
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM_OS, "${target_os}")
-    AC_DEFINE_UNQUOTED(RUBY_ARCH, "universal-"RUBY_PLATFORM_OS)
-    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "universal."RUBY_PLATFORM_CPU"-"RUBY_PLATFORM_OS)
+    AC_DEFINE_UNQUOTED(RUBY_ARCH, "universal-" RUBY_PLATFORM_OS)
+    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "universal." RUBY_PLATFORM_CPU "-" RUBY_PLATFORM_OS)
 ], [
     arch="${target_cpu}-${target_os}"
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "$arch")

@@ -29,8 +29,12 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_inspect
+    line = __LINE__+1
     th = Module.new {break module_eval("class C\u{30b9 30ec 30c3 30c9} < Thread; self; end")}.start{}
-    assert_match(/::C\u{30b9 30ec 30c3 30c9}:/, th.inspect)
+    s = th.inspect
+    assert_include(s, "::C\u{30b9 30ec 30c3 30c9}:")
+    assert_include(s, " #{__FILE__}:#{line} ")
+    assert_equal(s, th.to_s)
   ensure
     th.join
   end
@@ -533,23 +537,6 @@ class TestThread < Test::Unit::TestCase
     waiter&.kill&.join
   end
 
-  def test_safe_level
-    ok = false
-    t = Thread.new do
-      EnvUtil.suppress_warning do
-        $SAFE = 1
-      end
-      ok = true
-      sleep
-    end
-    Thread.pass until ok
-    assert_equal($SAFE, Thread.current.safe_level)
-    assert_equal($SAFE, t.safe_level)
-  ensure
-    $SAFE = 0
-    t&.kill&.join
-  end
-
   def test_thread_local
     t = Thread.new { sleep }
 
@@ -808,14 +795,15 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_handle_interrupt_blocking
-    r=:ng
-    e=Class.new(Exception)
+    r = nil
+    q = Queue.new
+    e = Class.new(Exception)
     th_s = Thread.current
-    th = Thread.start{
+    th = Thread.start {
       assert_raise(RuntimeError) {
         Thread.handle_interrupt(Object => :on_blocking){
           begin
-            Thread.pass until r == :wait
+            q.pop
             Thread.current.raise RuntimeError, "will raise in sleep"
             r = :ok
             sleep
@@ -825,25 +813,26 @@ class TestThread < Test::Unit::TestCase
         }
       }
     }
-    assert_raise(e) {r = :wait; sleep 0.2}
-    th.join
-    assert_equal(:ok,r)
+    assert_raise(e) {q << true; th.join}
+    assert_equal(:ok, r)
   end
 
   def test_handle_interrupt_and_io
     assert_in_out_err([], <<-INPUT, %w(ok), [])
       th_waiting = true
+      q = Queue.new
 
       t = Thread.new {
         Thread.current.report_on_exception = false
         Thread.handle_interrupt(RuntimeError => :on_blocking) {
+          q << true
           nil while th_waiting
           # async interrupt should be raised _before_ writing puts arguments
           puts "ng"
         }
       }
 
-      Thread.pass while t.stop?
+      q.pop
       t.raise RuntimeError
       th_waiting = false
       t.join rescue nil

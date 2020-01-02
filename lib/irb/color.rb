@@ -30,7 +30,7 @@ module IRB # :nodoc:
       # backtick and regexp as red (string's color, because they're sharing tokens).
       TOKEN_SEQ_EXPRS = {
         on_CHAR:            [[BLUE, BOLD],            ALL],
-        on_backtick:        [[RED],                   ALL],
+        on_backtick:        [[RED, BOLD],             ALL],
         on_comment:         [[BLUE, BOLD],            ALL],
         on_const:           [[BLUE, BOLD, UNDERLINE], ALL],
         on_embexpr_beg:     [[RED],                   ALL],
@@ -45,17 +45,18 @@ module IRB # :nodoc:
         on_int:             [[BLUE, BOLD],            ALL],
         on_kw:              [[GREEN],                 ALL],
         on_label:           [[MAGENTA],               ALL],
-        on_label_end:       [[RED],                   ALL],
-        on_qsymbols_beg:    [[RED],                   ALL],
-        on_qwords_beg:      [[RED],                   ALL],
+        on_label_end:       [[RED, BOLD],             ALL],
+        on_qsymbols_beg:    [[RED, BOLD],             ALL],
+        on_qwords_beg:      [[RED, BOLD],             ALL],
         on_rational:        [[BLUE, BOLD],            ALL],
         on_regexp_beg:      [[RED, BOLD],             ALL],
         on_regexp_end:      [[RED, BOLD],             ALL],
         on_symbeg:          [[YELLOW],                ALL],
-        on_tstring_beg:     [[RED],                   ALL],
+        on_symbols_beg:     [[RED, BOLD],             ALL],
+        on_tstring_beg:     [[RED, BOLD],             ALL],
         on_tstring_content: [[RED],                   ALL],
-        on_tstring_end:     [[RED],                   ALL],
-        on_words_beg:       [[RED],                   ALL],
+        on_tstring_end:     [[RED, BOLD],             ALL],
+        on_words_beg:       [[RED, BOLD],             ALL],
         on_parse_error:     [[RED, REVERSE],          ALL],
         compile_error:      [[RED, REVERSE],          ALL],
       }
@@ -153,6 +154,7 @@ module IRB # :nodoc:
       def scan(code, allow_last_error:)
         pos = [1, 0]
 
+        verbose, $VERBOSE = $VERBOSE, nil
         lexer = Ripper::Lexer.new(code)
         if lexer.respond_to?(:scan) # Ruby 2.7+
           lexer.scan.each do |elem|
@@ -176,6 +178,7 @@ module IRB # :nodoc:
             yield(elem.event, elem.tok, elem.state)
           end
         end
+        $VERBOSE = verbose
       end
 
       def dispatch_seq(token, expr, str, in_symbol:)
@@ -204,7 +207,7 @@ module IRB # :nodoc:
       def scan_token(token)
         prev_state = @stack.last
         case token
-        when :on_symbeg
+        when :on_symbeg, :on_symbols_beg, :on_qsymbols_beg
           @stack << true
         when :on_ident, :on_op, :on_const, :on_ivar, :on_cvar, :on_gvar, :on_kw
           if @stack.last # Pop only when it's Symbol

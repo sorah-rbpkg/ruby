@@ -4,6 +4,7 @@
  */
 #include "ruby.h"
 #include "ruby/io.h"
+#include "ruby/thread.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -22,7 +23,7 @@ typedef struct termios conmode;
 static int
 setattr(int fd, conmode *t)
 {
-    while (tcsetattr(fd, TCSAFLUSH, t)) {
+    while (tcsetattr(fd, TCSANOW, t)) {
 	if (errno != EINTR) return 0;
     }
     return 1;
@@ -164,28 +165,35 @@ set_rawmode(conmode *t, void *arg)
     cfmakeraw(t);
     t->c_lflag &= ~(ECHOE|ECHOK);
 #elif defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H
-    t->c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
+    t->c_iflag &= ~(IGNBRK|BRKINT|IGNPAR|PARMRK|INPCK|ISTRIP|INLCR|IGNCR|ICRNL|IXON|IXOFF|IXANY|IMAXBEL);
     t->c_oflag &= ~OPOST;
-    t->c_lflag &= ~(ECHO|ECHOE|ECHOK|ECHONL|ICANON|ISIG|IEXTEN);
+    t->c_lflag &= ~(ECHO|ECHOE|ECHOK|ECHONL|ICANON|ISIG|IEXTEN|XCASE);
     t->c_cflag &= ~(CSIZE|PARENB);
     t->c_cflag |= CS8;
+    t->c_cc[VMIN] = 1;
+    t->c_cc[VTIME] = 0;
 #elif defined HAVE_SGTTY_H
     t->sg_flags &= ~ECHO;
     t->sg_flags |= RAW;
 #elif defined _WIN32
     *t = 0;
 #endif
-#if defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H
     if (arg) {
 	const rawmode_arg_t *r = arg;
+#ifdef VMIN
 	if (r->vmin >= 0) t->c_cc[VMIN] = r->vmin;
+#endif
+#ifdef VTIME
 	if (r->vtime >= 0) t->c_cc[VTIME] = r->vtime;
+#endif
+#ifdef ISIG
 	if (r->intr) {
 	    t->c_iflag |= BRKINT|IXON;
-	    t->c_lflag |= ISIG|IEXTEN;
+	    t->c_lflag |= ISIG;
 	}
-    }
 #endif
+	(void)r;
+    }
 }
 
 static void
@@ -449,6 +457,27 @@ getc_call(VALUE io)
 {
     return rb_funcallv(io, id_getc, 0, 0);
 }
+#else
+static void *
+nogvl_getch(void *p)
+{
+    int len = 0;
+    wint_t *buf = p, c = _getwch();
+
+    switch (c) {
+      case WEOF:
+	break;
+      case 0x00:
+      case 0xe0:
+	buf[len++] = c;
+	c = _getwch();
+	/* fall through */
+      default:
+	buf[len++] = c;
+	break;
+    }
+    return (void *)(VALUE)len;
+}
 #endif
 
 /*
@@ -473,6 +502,7 @@ console_getch(int argc, VALUE *argv, VALUE io)
     wint_t c;
     int w, len;
     char buf[8];
+    wint_t wbuf[2];
     struct timeval *to = NULL, tv;
 
     GetOpenFile(io, fptr);
@@ -485,24 +515,29 @@ console_getch(int argc, VALUE *argv, VALUE io)
 	if (optp->vmin != 1) {
 	    rb_warning("min option ignored");
 	}
+	if (optp->intr) {
+	    w = rb_wait_for_single_fd(fptr->fd, RB_WAITFD_IN, to);
+	    if (w < 0) rb_eof_error();
+	    if (!(w & RB_WAITFD_IN)) return Qnil;
+	}
+	else {
+	    rb_warning("vtime option ignored if intr flag is unset");
+	}
     }
-    w = rb_wait_for_single_fd(fptr->fd, RB_WAITFD_IN, to);
-    if (w < 0) rb_eof_error();
-    if (!(w & RB_WAITFD_IN)) return Qnil;
-    c = _getwch();
-    switch (c) {
-      case WEOF:
+    len = (int)(VALUE)rb_thread_call_without_gvl(nogvl_getch, wbuf, RUBY_UBF_IO, 0);
+    switch (len) {
+      case 0:
 	return Qnil;
-      case 0x00:
-      case 0xe0:
-	buf[0] = (char)c;
-	c = _getwch();
+      case 2:
+	buf[0] = (char)wbuf[0];
+	c = wbuf[1];
 	len = 1;
 	do {
 	    buf[len++] = (unsigned char)c;
 	} while ((c >>= CHAR_BIT) && len < (int)sizeof(buf));
 	return rb_str_new(buf, len);
       default:
+	c = wbuf[0];
 	len = rb_uv_to_utf8(buf, c);
 	str = rb_utf8_str_new(buf, len);
 	return rb_str_conv_enc(str, NULL, rb_default_external_encoding());
@@ -1483,7 +1518,6 @@ prompt(int argc, VALUE *argv, VALUE io)
     if (argc > 0 && !NIL_P(argv[0])) {
 	VALUE str = argv[0];
 	StringValueCStr(str);
-	rb_check_safe_obj(str);
 	rb_io_write(io, str);
     }
 }

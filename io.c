@@ -23,6 +23,26 @@
 #include "ruby_atomic.h"
 #include "ccan/list/list.h"
 
+/* non-Linux poll may not work on all FDs */
+#if defined(HAVE_POLL)
+#  if defined(__linux__)
+#    define USE_POLL 1
+#  endif
+#  if defined(__FreeBSD_version) && __FreeBSD_version >= 1100000
+#    define USE_POLL 1
+#  endif
+#endif
+
+#ifndef USE_POLL
+#  define USE_POLL 0
+#endif
+
+#if !USE_POLL
+#  include "vm_core.h"
+#endif
+
+#include "builtin.h"
+
 #undef free
 #define free(x) xfree(x)
 
@@ -2473,16 +2493,6 @@ io_fread(VALUE str, long offset, long size, rb_io_t *fptr)
     return len;
 }
 
-ssize_t
-rb_io_bufread(VALUE io, void *buf, size_t size)
-{
-    rb_io_t *fptr;
-
-    GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
-    return (ssize_t)io_bufread(buf, (long)size, fptr);
-}
-
 static long
 remain_size(rb_io_t *fptr)
 {
@@ -2515,7 +2525,6 @@ remain_size(rb_io_t *fptr)
 static VALUE
 io_enc_str(VALUE str, rb_io_t *fptr)
 {
-    OBJ_TAINT(str);
     rb_enc_associate(str, io_read_encoding(fptr));
     return str;
 }
@@ -2645,7 +2654,6 @@ io_shift_cbuf(rb_io_t *fptr, int len, VALUE *strp)
 	else {
 	    rb_str_cat(str, fptr->cbuf.ptr+fptr->cbuf.off, len);
 	}
-	OBJ_TAINT(str);
 	rb_enc_associate(str, fptr->encs.enc);
     }
     fptr->cbuf.off += len;
@@ -2810,7 +2818,6 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
     }
 
     shrinkable = io_setstrbuf(&str, len);
-    OBJ_TAINT(str);
 
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
@@ -2941,7 +2948,7 @@ io_nonblock_eof(int no_exception)
 
 /* :nodoc: */
 static VALUE
-io_read_nonblock(VALUE io, VALUE length, VALUE str, VALUE ex)
+io_read_nonblock(rb_execution_context_t *ec, VALUE io, VALUE length, VALUE str, VALUE ex)
 {
     rb_io_t *fptr;
     long n, len;
@@ -2953,7 +2960,6 @@ io_read_nonblock(VALUE io, VALUE length, VALUE str, VALUE ex)
     }
 
     shrinkable = io_setstrbuf(&str, len);
-    OBJ_TAINT(str);
     rb_bool_expected(ex, "exception");
 
     GetOpenFile(io, fptr);
@@ -2993,7 +2999,7 @@ io_read_nonblock(VALUE io, VALUE length, VALUE str, VALUE ex)
 
 /* :nodoc: */
 static VALUE
-io_write_nonblock(VALUE io, VALUE str, VALUE ex)
+io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
 {
     rb_io_t *fptr;
     long n;
@@ -3140,7 +3146,6 @@ io_read(int argc, VALUE *argv, VALUE io)
     }
 #endif
     if (n == 0) return Qnil;
-    OBJ_TAINT(str);
 
     return str;
 }
@@ -3805,7 +3810,7 @@ rb_io_each_line(int argc, VALUE *argv, VALUE io)
 static VALUE
 rb_io_lines(int argc, VALUE *argv, VALUE io)
 {
-    rb_warn("IO#lines is deprecated; use #each_line instead");
+    rb_warn_deprecated("IO#lines", "#each_line");
     if (!rb_block_given_p())
 	return rb_enumeratorize(io, ID2SYM(rb_intern("each_line")), argc, argv);
     return rb_io_each_line(argc, argv, io);
@@ -3856,7 +3861,7 @@ rb_io_each_byte(VALUE io)
 static VALUE
 rb_io_bytes(VALUE io)
 {
-    rb_warn("IO#bytes is deprecated; use #each_byte instead");
+    rb_warn_deprecated("IO#bytes", "#each_byte");
     if (!rb_block_given_p())
 	return rb_enumeratorize(io, ID2SYM(rb_intern("each_byte")), 0, 0);
     return rb_io_each_byte(io);
@@ -4010,7 +4015,7 @@ rb_io_each_char(VALUE io)
 static VALUE
 rb_io_chars(VALUE io)
 {
-    rb_warn("IO#chars is deprecated; use #each_char instead");
+    rb_warn_deprecated("IO#chars", "#each_char");
     if (!rb_block_given_p())
 	return rb_enumeratorize(io, ID2SYM(rb_intern("each_char")), 0, 0);
     return rb_io_each_char(io);
@@ -4138,7 +4143,7 @@ rb_io_each_codepoint(VALUE io)
 static VALUE
 rb_io_codepoints(VALUE io)
 {
-    rb_warn("IO#codepoints is deprecated; use #each_codepoint instead");
+    rb_warn_deprecated("IO#codepoints", "#each_codepoint");
     if (!rb_block_given_p())
 	return rb_enumeratorize(io, ID2SYM(rb_intern("each_codepoint")), 0, 0);
     return rb_io_each_codepoint(io);
@@ -5175,7 +5180,6 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     if (n == 0 && ilen > 0) {
 	rb_eof_error();
     }
-    OBJ_TAINT(str);
 
     return str;
 }
@@ -5259,7 +5263,6 @@ rb_io_pread(int argc, VALUE *argv, VALUE io)
     if (n == 0 && arg.count > 0) {
 	rb_eof_error();
     }
-    OBJ_TAINT(str);
 
     return str;
 }
@@ -7078,7 +7081,6 @@ check_pipe_command(VALUE filename_or_command)
 
     if (rb_enc_ascget(s, e, &chlen, rb_enc_get(filename_or_command)) == '|') {
         VALUE cmd = rb_str_new(s+chlen, l-chlen);
-        OBJ_INFECT(cmd, filename_or_command);
         return cmd;
     }
     return Qnil;
@@ -7541,7 +7543,7 @@ rb_output_fs_setter(VALUE val, ID id, VALUE *var)
 {
     rb_str_setter(val, id, &val);
     if (!NIL_P(val)) {
-        rb_warn("non-nil $, will be deprecated");
+        rb_warn_deprecated("`$,'", NULL);
     }
     *var = val;
 }
@@ -8331,6 +8333,10 @@ rb_io_set_encoding_by_bom(VALUE io)
     }
     if (fptr->encs.enc2) {
         rb_raise(rb_eArgError, "encoding conversion is set");
+    }
+    else if (fptr->encs.enc && fptr->encs.enc != rb_ascii8bit_encoding()) {
+        rb_raise(rb_eArgError, "encoding is set to %s already",
+                 rb_enc_name(fptr->encs.enc));
     }
     if (!io_set_encoding_by_bom(io)) return Qnil;
     return rb_enc_from_encoding(fptr->encs.enc);
@@ -10801,20 +10807,6 @@ maygvl_copy_stream_continue_p(int has_gvl, struct copy_stream_struct *stp)
     return FALSE;
 }
 
-/* non-Linux poll may not work on all FDs */
-#if defined(HAVE_POLL)
-#  if defined(__linux__)
-#    define USE_POLL 1
-#  endif
-#  if defined(__FreeBSD_version) && __FreeBSD_version >= 1100000
-#    define USE_POLL 1
-#  endif
-#endif
-
-#ifndef USE_POLL
-#  define USE_POLL 0
-#endif
-
 #if USE_POLL
 #  define IOWAIT_SYSCALL "poll"
 STATIC_ASSERT(pollin_expected, POLLIN == RB_WAITFD_IN);
@@ -10830,7 +10822,6 @@ nogvl_wait_for_single_fd(int fd, short events)
     return poll(&fds, 1, -1);
 }
 #else /* !USE_POLL */
-#  include "vm_core.h"
 #  define IOWAIT_SYSCALL "select"
 static int
 nogvl_wait_for_single_fd(int fd, short events)
@@ -12488,7 +12479,7 @@ argf_each_line(int argc, VALUE *argv, VALUE argf)
 static VALUE
 argf_lines(int argc, VALUE *argv, VALUE argf)
 {
-    rb_warn("ARGF#lines is deprecated; use #each_line instead");
+    rb_warn_deprecated("ARGF#lines", "#each_line");
     if (!rb_block_given_p())
 	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_line")), argc, argv);
     return argf_each_line(argc, argv, argf);
@@ -12535,7 +12526,7 @@ argf_each_byte(VALUE argf)
 static VALUE
 argf_bytes(VALUE argf)
 {
-    rb_warn("ARGF#bytes is deprecated; use #each_byte instead");
+    rb_warn_deprecated("ARGF#bytes", "#each_byte");
     if (!rb_block_given_p())
 	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_byte")), 0, 0);
     return argf_each_byte(argf);
@@ -12574,7 +12565,7 @@ argf_each_char(VALUE argf)
 static VALUE
 argf_chars(VALUE argf)
 {
-    rb_warn("ARGF#chars is deprecated; use #each_char instead");
+    rb_warn_deprecated("ARGF#chars", "#each_char");
     if (!rb_block_given_p())
 	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_char")), 0, 0);
     return argf_each_char(argf);
@@ -12613,7 +12604,7 @@ argf_each_codepoint(VALUE argf)
 static VALUE
 argf_codepoints(VALUE argf)
 {
-    rb_warn("ARGF#codepoints is deprecated; use #each_codepoint instead");
+    rb_warn_deprecated("ARGF#codepoints", "#each_codepoint");
     if (!rb_block_given_p())
 	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_codepoint")), 0, 0);
     return argf_each_codepoint(argf);
@@ -12844,9 +12835,6 @@ opt_i_get(ID id, VALUE *var)
 static VALUE
 argf_inplace_mode_set(VALUE argf, VALUE val)
 {
-    if (rb_safe_level() >= 1 && OBJ_TAINTED(val))
-	rb_insecure_operation();
-
     if (!RTEST(val)) {
 	ARGF.inplace = Qfalse;
     }
@@ -12863,12 +12851,6 @@ static void
 opt_i_set(VALUE val, ID id, VALUE *var)
 {
     argf_inplace_mode_set(*var, val);
-}
-
-const char *
-ruby_get_inplace_mode(void)
-{
-    return RSTRING_PTR(ARGF.inplace);
 }
 
 void
@@ -13312,10 +13294,6 @@ Init_IO(void)
 
     rb_define_method(rb_cIO, "readlines",  rb_io_readlines, -1);
 
-    /* for prelude.rb use only: */
-    rb_define_private_method(rb_cIO, "__read_nonblock", io_read_nonblock, 3);
-    rb_define_private_method(rb_cIO, "__write_nonblock", io_write_nonblock, 2);
-
     rb_define_method(rb_cIO, "readpartial",  io_readpartial, -1);
     rb_define_method(rb_cIO, "read",  io_read, -1);
     rb_define_method(rb_cIO, "write", io_write_m, -1);
@@ -13524,4 +13502,12 @@ Init_IO(void)
 #endif
     sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
     sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
+}
+
+#include "io.rbinc"
+
+void
+Init_IO_nonblock(void)
+{
+    load_io();
 }

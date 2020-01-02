@@ -228,8 +228,8 @@ struct rb_fiber_struct {
     VALUE first_proc;
     struct rb_fiber_struct *prev;
     BITFIELD(enum fiber_status, status, 2);
-    /* If a fiber invokes "transfer",
-     * then this fiber can't "resume" any more after that.
+    /* If a fiber invokes by "transfer",
+     * then this fiber can't be invoked by "resume" any more after that.
      * You shouldn't mix "transfer" and "resume".
      */
     unsigned int transferred : 1;
@@ -847,6 +847,9 @@ cont_compact(void *ptr)
 {
     rb_context_t *cont = ptr;
 
+    if (cont->self) {
+        cont->self = rb_gc_location(cont->self);
+    }
     cont->value = rb_gc_location(cont->value);
     rb_execution_context_update(&cont->saved_ec);
 }
@@ -857,6 +860,9 @@ cont_mark(void *ptr)
     rb_context_t *cont = ptr;
 
     RUBY_MARK_ENTER("cont");
+    if (cont->self) {
+        rb_gc_mark_movable(cont->self);
+    }
     rb_gc_mark_movable(cont->value);
 
     rb_execution_context_mark(&cont->saved_ec);
@@ -1330,8 +1336,8 @@ cont_restore_1(rb_context_t *cont)
         /* workaround for x64 SEH */
         jmp_buf buf;
         setjmp(buf);
-        ((_JUMP_BUFFER*)(&cont->jmpbuf))->Frame =
-            ((_JUMP_BUFFER*)(&buf))->Frame;
+        _JUMP_BUFFER *bp = (void*)&cont->jmpbuf;
+        bp->Frame = ((_JUMP_BUFFER*)((void*)&buf))->Frame;
     }
 #endif
     if (cont->machine.stack_src) {
@@ -1859,6 +1865,9 @@ void
 rb_threadptr_root_fiber_setup(rb_thread_t *th)
 {
     rb_fiber_t *fiber = ruby_mimmalloc(sizeof(rb_fiber_t));
+    if (!fiber) {
+        rb_bug("%s", strerror(errno)); /* ... is it possible to call rb_bug here? */
+    }
     MEMZERO(fiber, rb_fiber_t, 1);
     fiber->cont.type = FIBER_CONTEXT;
     fiber->cont.saved_ec.fiber_ptr = fiber;
@@ -2191,15 +2200,18 @@ rb_fiber_raise(int argc, VALUE *argv, VALUE fiber)
  *  a resume call. Arguments passed to transfer are treated like those
  *  passed to resume.
  *
- *  You cannot resume a fiber that transferred control to another one.
- *  This will cause a double resume error. You need to transfer control
- *  back to this fiber before it can yield and resume.
+ *  You cannot call +resume+ on a fiber that has been transferred to.
+ *  If you call +transfer+ on a fiber, and later call +resume+ on the
+ *  the fiber, a +FiberError+ will be raised. Once you call +transfer+ on
+ *  a fiber, the only way to resume processing the fiber is to
+ *  call +transfer+ on it again.
  *
  *  Example:
  *
  *    fiber1 = Fiber.new do
  *      puts "In Fiber 1"
  *      Fiber.yield
+ *      puts "In Fiber 1 again"
  *    end
  *
  *    fiber2 = Fiber.new do
@@ -2214,20 +2226,23 @@ rb_fiber_raise(int argc, VALUE *argv, VALUE fiber)
  *
  *    fiber2.resume
  *    fiber3.resume
+ *    fiber1.resume rescue (p $!)
+ *    fiber1.transfer
  *
  *  <em>produces</em>
  *
- *    In fiber 2
- *    In fiber 1
- *    In fiber 3
+ *    In Fiber 2
+ *    In Fiber 1
+ *    In Fiber 3
+ *    #<FiberError: cannot resume transferred Fiber>
+ *    In Fiber 1 again
  *
  */
 static VALUE
 rb_fiber_m_transfer(int argc, VALUE *argv, VALUE fiber_value)
 {
     rb_fiber_t *fiber = fiber_ptr(fiber_value);
-    fiber_current()->transferred = 1;
-    fiber->transferred = 0;
+    fiber->transferred = 1;
     return fiber_switch(fiber, argc, argv, 0, PASS_KW_SPLAT);
 }
 
@@ -2274,9 +2289,15 @@ fiber_to_s(VALUE fiber_value)
 {
     const rb_fiber_t *fiber = fiber_ptr(fiber_value);
     const rb_proc_t *proc;
-    char status_info[0x10];
+    char status_info[0x20];
 
-    snprintf(status_info, 0x10, " (%s)", fiber_status_name(fiber->status));
+    if (fiber->transferred) {
+        snprintf(status_info, 0x20, " (%s, transferred)", fiber_status_name(fiber->status));
+    }
+    else {
+        snprintf(status_info, 0x20, " (%s)", fiber_status_name(fiber->status));
+    }
+
     if (!rb_obj_is_proc(fiber->first_proc)) {
         VALUE str = rb_any_to_s(fiber_value);
         strlcat(status_info, ">", sizeof(status_info));
@@ -2346,7 +2367,7 @@ rb_fiber_pool_initialize(int argc, VALUE* argv, VALUE self)
     VALUE size = Qnil, count = Qnil, vm_stack_size = Qnil;
     struct fiber_pool * fiber_pool = NULL;
 
-    // Maybe these should be keyworkd arguments.
+    // Maybe these should be keyword arguments.
     rb_scan_args(argc, argv, "03", &size, &count, &vm_stack_size);
 
     if (NIL_P(size)) {

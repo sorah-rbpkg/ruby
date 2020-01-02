@@ -128,6 +128,11 @@ env:
     arch: arm64
     <<: *gcc-8
 
+  - &s390x-linux
+    name: s390x-linux
+    arch: s390x
+    <<: *gcc-8
+    
   - &jemalloc
     name: --with-jemalloc
     <<: *gcc-8
@@ -167,7 +172,7 @@ env:
     <<: *cron-only
     <<: *make-test-only
     env:
-      - DEFS="-DCPDEBUG"
+      - cppflags=-DCPDEBUG
 
   - &WITH_COROUTINE_UCONTEXT
     name: COROUTINE=ucontext
@@ -289,6 +294,38 @@ env:
           zlib1g-dev:i386 \
           zlib1g:i386
 
+  - &arm32-linux
+    name: arm32-linux
+    arch: arm64
+    # https://packages.ubuntu.com/xenial/crossbuild-essential-armhf
+    compiler: arm-linux-gnueabihf-gcc
+    env:
+      - debugflags=-g0
+      - SETARCH='setarch linux32 --verbose --32bit'
+    before_install:
+      - sudo dpkg --add-architecture armhf
+      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
+      - |-
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
+          ccache \
+          crossbuild-essential-armhf \
+          libc6:armhf \
+          libstdc++-5-dev:armhf \
+          libffi-dev:armhf \
+          libffi6:armhf \
+          libgdbm-dev:armhf \
+          libgdbm3:armhf \
+          libncurses5-dev:armhf \
+          libncurses5:armhf \
+          libncursesw5-dev:armhf \
+          libreadline6-dev:armhf \
+          libreadline6:armhf \
+          libssl-dev:armhf \
+          libssl1.0.0:armhf \
+          linux-libc-dev:armhf \
+          zlib1g-dev:armhf \
+          zlib1g:armhf
+
   - &pedanticism
     name: -std=c99 -pedantic
     compiler: clang
@@ -335,11 +372,11 @@ env:
       - echo "ruby/spec failed on Ruby 2.4. This is likely because of a missing ruby_version_is guard, please add it. See spec/README.md."
 
   - &baseruby
-    name: "BASERUBY: Ruby 1.9.3"
+    name: "BASERUBY: Ruby 2.2"
     <<: *gcc-8
     <<: *make-test-only
     language: ruby
-    rvm: 1.9.3
+    rvm: 2.2
 
   - &dependency
     name: Check dependencies in makefiles
@@ -378,14 +415,16 @@ matrix:
   include:
     # Build every commit:
     - <<: *x86_64-linux
+    - <<: *arm64-linux
     - <<: *i686-linux
+    - <<: *arm32-linux
+    - <<: *s390x-linux
     - <<: *pedanticism
     - <<: *assertions
     - <<: *baseruby
     - <<: *rubyspec
     - <<: *dependency
     # Build every commit (Allowed Failures):
-    - <<: *arm64-linux
     - <<: *ASAN
     - <<: *MSAN
     - <<: *UBSAN
@@ -400,7 +439,7 @@ matrix:
     - <<: *CALL_THREADED_CODE
     - <<: *NO_THREADED_CODE
   allow_failures:
-    - name: arm64-linux
+    - name: s390x-linux
     - name: -fsanitize=address
     - name: -fsanitize=memory
     - name: -fsanitize=undefined
@@ -408,6 +447,9 @@ matrix:
 
 before_script:
   - date # Debugging "Permission defined" failure on darwin like https://travis-ci.org/ruby/ruby/jobs/508683759
+  - dpkg --print-architecture
+  - dpkg --print-foreign-architectures
+  - setarch --list
   - echo JOBS=${JOBS} SETARCH=${SETARCH}
   - $SETARCH uname -a
   - $SETARCH uname -r
