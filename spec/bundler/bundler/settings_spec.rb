@@ -67,7 +67,7 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
       context "when $TMPDIR is not writable" do
         it "does not raise" do
           expect(Bundler.rubygems).to receive(:user_home).twice.and_return(nil)
-          expect(FileUtils).to receive(:mkpath).twice.with(File.join(Dir.tmpdir, "bundler", "home")).and_raise(Errno::EROFS, "Read-only file system @ dir_s_mkdir - /tmp/bundler")
+          expect(Bundler).to receive(:tmp).twice.and_raise(Errno::EROFS, "Read-only file system @ dir_s_mkdir - /tmp/bundler")
 
           expect(subject.send(:global_config_file)).to be_nil
         end
@@ -180,7 +180,7 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
   end
 
   describe "#mirror_for" do
-    let(:uri) { URI("https://rubygems.org/") }
+    let(:uri) { Bundler::URI("https://rubygems.org/") }
 
     context "with no configured mirror" do
       it "returns the original URI" do
@@ -193,7 +193,7 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
     end
 
     context "with a configured mirror" do
-      let(:mirror_uri) { URI("https://rubygems-mirror.org/") }
+      let(:mirror_uri) { Bundler::URI("https://rubygems-mirror.org/") }
 
       before { settings.set_local "mirror.https://rubygems.org/", mirror_uri.to_s }
 
@@ -214,7 +214,7 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
       end
 
       context "with a file URI" do
-        let(:mirror_uri) { URI("file:/foo/BAR/baz/qUx/") }
+        let(:mirror_uri) { Bundler::URI("file:/foo/BAR/baz/qUx/") }
 
         it "returns the mirror URI" do
           expect(settings.mirror_for(uri)).to eq(mirror_uri)
@@ -232,7 +232,7 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
   end
 
   describe "#credentials_for" do
-    let(:uri) { URI("https://gemserver.example.org/") }
+    let(:uri) { Bundler::URI("https://gemserver.example.org/") }
     let(:credentials) { "username:password" }
 
     context "with no configured credentials" do
@@ -292,7 +292,7 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
     it "reads older keys without trailing slashes" do
       settings.set_local "mirror.https://rubygems.org", "http://rubygems-mirror.org"
       expect(settings.mirror_for("https://rubygems.org/")).to eq(
-        URI("http://rubygems-mirror.org/")
+        Bundler::URI("http://rubygems-mirror.org/")
       )
     end
 

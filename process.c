@@ -416,7 +416,19 @@ parent_redirect_close(int fd)
 /*
  * Document-module: Process
  *
- * Module to handle processes.
+ * The module contains several groups of functionality for handling OS processes:
+ *
+ * * Low-level property introspection and management of the current process, like
+ *   Process.argv0, Process.pid;
+ * * Low-level introspection of other processes, like Process.getpgid, Process.getpriority;
+ * * Management of the current process: Process.abort, Process.exit, Process.daemon, etc.
+ *   (for convenience, most of those are also available as global functions
+ *   and module functions of Kernel);
+ * * Creation and management of child processes: Process.fork, Process.spawn, and
+ *   related methods;
+ * * Management of low-level system clock: Process.times and Process.clock_gettime,
+ *   which could be important for proper benchmarking and other elapsed
+ *   time measurement tasks.
  */
 
 static VALUE
@@ -1562,16 +1574,6 @@ after_fork_ruby(void)
 
 #include "dln.h"
 
-static void
-security(const char *str)
-{
-    if (rb_env_path_tainted()) {
-	if (rb_safe_level() > 0) {
-	    rb_raise(rb_eSecurityError, "Insecure PATH - %s", str);
-	}
-    }
-}
-
 #if defined(HAVE_WORKING_FORK)
 
 /* try_with_sh and exec_with_sh should be async-signal-safe. Actually it is.*/
@@ -1747,7 +1749,6 @@ proc_spawn_cmd_internal(char **argv, char *prog)
 
     if (!prog)
 	prog = argv[0];
-    security(prog);
     prog = dln_find_exe_r(prog, 0, fbuf, sizeof(fbuf));
     if (!prog)
 	return -1;
@@ -1828,7 +1829,7 @@ check_exec_redirect_fd(VALUE v, int iskey)
         else
             goto wrong;
     }
-    else if (!NIL_P(tmp = rb_check_convert_type_with_id(v, T_FILE, "IO", idTo_io))) {
+    else if (!NIL_P(tmp = rb_io_check_io(v))) {
         rb_io_t *fptr;
         GetOpenFile(tmp, fptr);
         if (fptr->tied_io_for_writing)
@@ -2337,7 +2338,6 @@ rb_check_argv(int argc, VALUE *argv)
 {
     VALUE tmp, prog;
     int i;
-    const char *name = 0;
 
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
 
@@ -2352,14 +2352,12 @@ rb_check_argv(int argc, VALUE *argv)
 	SafeStringValue(prog);
 	StringValueCStr(prog);
 	prog = rb_str_new_frozen(prog);
-	name = RSTRING_PTR(prog);
     }
     for (i = 0; i < argc; i++) {
 	SafeStringValue(argv[i]);
 	argv[i] = rb_str_new_frozen(argv[i]);
 	StringValueCStr(argv[i]);
     }
-    security(name ? name : RSTRING_PTR(argv[0]));
     return prog;
 }
 
@@ -4281,7 +4279,7 @@ rb_f_abort(int argc, const VALUE *argv)
     rb_check_arity(argc, 0, 1);
     if (argc == 0) {
 	rb_execution_context_t *ec = GET_EC();
-	VALUE errinfo = ec->errinfo;
+        VALUE errinfo = rb_ec_get_errinfo(ec);
 	if (!NIL_P(errinfo)) {
 	    rb_ec_error_print(ec, errinfo);
 	}
@@ -5127,7 +5125,7 @@ proc_getpriority(VALUE obj, VALUE which, VALUE who)
  *  call-seq:
  *     Process.setpriority(kind, integer, priority)   -> 0
  *
- *  See Process#getpriority.
+ *  See Process.getpriority.
  *
  *     Process.setpriority(Process::PRIO_USER, 0, 19)      #=> 0
  *     Process.setpriority(Process::PRIO_PROCESS, 0, 19)   #=> 0
@@ -6474,7 +6472,7 @@ proc_setmaxgroups(VALUE obj, VALUE val)
     int ngroups_max = get_sc_ngroups_max();
 
     if (ngroups <= 0)
-	rb_raise(rb_eArgError, "maxgroups %d shold be positive", ngroups);
+	rb_raise(rb_eArgError, "maxgroups %d should be positive", ngroups);
 
     if (ngroups > RB_MAX_GROUPS)
 	ngroups = RB_MAX_GROUPS;

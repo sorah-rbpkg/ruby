@@ -30,9 +30,25 @@
 # * https://github.com/ruby/irb
 # * https://github.com/ruby/tracer
 # * https://github.com/ruby/forwardable
-# * https://github.com/ruby/e2mmap
 # * https://github.com/ruby/mutex_m
 # * https://github.com/ruby/racc
+# * https://github.com/ruby/singleton
+# * https://github.com/ruby/open3
+# * https://github.com/ruby/getoptlong
+# * https://github.com/ruby/pstore
+# * https://github.com/ruby/delegate
+# * https://github.com/ruby/benchmark
+# * https://github.com/ruby/net-pop
+# * https://github.com/ruby/net-smtp
+# * https://github.com/ruby/cgi
+# * https://github.com/ruby/readline
+# * https://github.com/ruby/readline-ext
+# * https://github.com/ruby/observer
+# * https://github.com/ruby/timeout
+# * https://github.com/ruby/yaml
+# * https://github.com/ruby/uri
+# * https://github.com/ruby/openssl
+# * https://github.com/ruby/did_you_mean
 #
 
 require 'fileutils'
@@ -67,12 +83,27 @@ $repositories = {
   rexml: 'ruby/rexml',
   rss: 'ruby/rss',
   irb: 'ruby/irb',
-  sync: 'ruby/sync',
   tracer: 'ruby/tracer',
   forwardable: "ruby/forwardable",
-  e2mmap: "ruby/e2mmap",
   mutex_m: "ruby/mutex_m",
-  racc: "ruby/racc"
+  racc: "ruby/racc",
+  singleton: "ruby/singleton",
+  open3: "ruby/open3",
+  getoptlong: "ruby/getoptlong",
+  pstore: "ruby/pstore",
+  delegate: "ruby/delegate",
+  benchmark: "ruby/benchmark",
+  netpop: "ruby/net-pop",
+  netsmtp: "ruby/net-smtp",
+  cgi: "ruby/cgi",
+  readline: "ruby/readline",
+  readlineext: "ruby/readline-ext",
+  observer: "ruby/observer",
+  timeout: "ruby/timeout",
+  yaml: "ruby/yaml",
+  uri: "ruby/uri",
+  openssl: "ruby/openssl",
+  did_you_mean: "ruby/did_you_mean"
 }
 
 def sync_default_gems(gem)
@@ -112,10 +143,9 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/ext/json/ext", "ext/json")
     cp_r("#{upstream}/tests", "test/json")
     cp_r("#{upstream}/lib", "ext/json")
-    rm_rf(%[ext/json/lib/json/pure*])
     cp_r("#{upstream}/json.gemspec", "ext/json")
-    rm_rf(%w[ext/json/lib/json/ext])
-    `git checkout ext/json/extconf.rb ext/json/parser/prereq.mk ext/json/generator/depend ext/json/parser/depend`
+    rm_rf(%w[ext/json/lib/json/ext ext/json/lib/json/pure.rb ext/json/lib/json/pure])
+    `git checkout ext/json/extconf.rb ext/json/parser/prereq.mk ext/json/generator/depend ext/json/parser/depend ext/json/depend`
   when "psych"
     rm_rf(%w[ext/psych test/psych])
     cp_r("#{upstream}/ext/psych", "ext")
@@ -191,10 +221,6 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/ext/fcntl", "ext")
     cp_r("#{upstream}/fcntl.gemspec", "ext/fcntl")
     `git checkout ext/fcntl/depend`
-  when "e2mmap"
-    rm_rf(%w[lib/e2mmap*])
-    cp_r(Dir.glob("#{upstream}/lib/*"), "lib")
-    cp_r("#{upstream}/e2mmap.gemspec", "lib")
   when "strscan"
     rm_rf(%w[ext/strscan test/strscan])
     cp_r("#{upstream}/ext/strscan", "ext")
@@ -208,10 +234,45 @@ def sync_default_gems(gem)
     mkdir_p("ext/racc/cparse")
     cp_r(Dir.glob("#{upstream}/ext/racc/cparse/*"), "ext/racc/cparse")
     cp_r("#{upstream}/test", "test/racc")
-    `git checkout ext/racc/cparse/README`
-  when "rexml", "rss", "matrix", "irb", "csv", "logger", "ostruct", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "mutex_m"
-    sync_lib gem
+    cp_r("#{upstream}/racc.gemspec", "lib/racc")
+    rm_rf("test/racc/lib")
+    rm_rf("lib/racc/cparse-jruby.jar")
+    `git checkout ext/racc/cparse/README ext/racc/cparse/depend`
+  when "cgi"
+    rm_rf(%w[lib/cgi.rb lib/cgi ext/cgi test/cgi])
+    cp_r("#{upstream}/ext/cgi", "ext")
+    cp_r("#{upstream}/lib", ".")
+    cp_r("#{upstream}/test/cgi", "test")
+    cp_r("#{upstream}/cgi.gemspec", "lib/cgi")
+    `git checkout ext/cgi/escape/depend`
+  when "openssl"
+    rm_rf(%w[ext/openssl test/openssl])
+    cp_r("#{upstream}/ext/openssl", "ext")
+    mkdir_p("ext/openssl/lib")
+    cp_r("#{upstream}/lib/openssl", "ext/openssl/lib")
+    cp_r("#{upstream}/lib/openssl.rb", "ext/openssl/lib")
+    cp_r("#{upstream}/test", "test/openssl")
+    rm_rf("test/openssl/envutil.rb")
+    cp_r("#{upstream}/openssl.gemspec", "ext/openssl")
+    cp_r("#{upstream}/HISTORY.md", "ext/openssl")
+    `git checkout ext/openssl/depend`
+  when "netpop"
+    sync_lib "net-pop"
+    mv "lib/net-pop.gemspec", "lib/net/pop"
+  when "netsmtp"
+    sync_lib "net-smtp"
+    mv "lib/net-smtp.gemspec", "lib/net/smtp"
+  when "readlineext"
+    sync_lib "readline-ext"
+    mv "lib/readline-ext.gemspec", "ext/readline"
+  when "did_you_mean"
+    rm_rf(%w[lib/did_you_mean* test/did_you_mean])
+    cp_r(Dir.glob("#{upstream}/lib/did_you_mean*"), "lib")
+    cp_r("#{upstream}/did_you_mean.gemspec", "lib/did_you_mean")
+    cp_r("#{upstream}/test", "test/did_you_mean")
+    rm_rf(%w[test/did_you_mean/tree_spell/test_explore.rb])
   else
+    sync_lib gem
   end
 end
 
@@ -225,7 +286,11 @@ def sync_default_gems_with_commits(gem, range)
       `git remote add #{gem} git@github.com:#{$repositories[gem.to_sym]}.git`
     end
   end
-  `git fetch --no-tags #{gem}`
+  system(*%W"git fetch --no-tags #{gem}")
+
+  unless range.include?("..")
+    range = "#{range}~1..#{range}"
+  end
 
   commits = IO.popen(%W"git log --format=%H,%s #{range}") do |f|
     f.read.split("\n").reverse.map{|commit| commit.split(',', 2)}
@@ -244,6 +309,8 @@ def sync_default_gems_with_commits(gem, range)
   puts "----"
 
   failed_commits = []
+
+  ENV["FILTER_BRANCH_SQUELCH_WARNING"] = "1"
 
   commits.each do |sha, subject|
     puts "Pick #{sha} from #{$repositories[gem.to_sym]}."
@@ -276,8 +343,10 @@ def sync_default_gems_with_commits(gem, range)
     end
   end
 
-  puts "---- failed commits ----"
-  puts failed_commits
+  unless failed_commits.empty?
+    puts "---- failed commits ----"
+    puts failed_commits
+  end
 end
 
 def sync_lib(repo)
@@ -291,7 +360,7 @@ def sync_lib(repo)
           else
             "test/test_#{repo}.rb"
           end
-  cp_r("../#{repo}/#{tests}", "test")
+  cp_r("../#{repo}/#{tests}", "test") if File.exist?("../#{repo}/#{tests}")
   gemspec = if File.directory?("lib/#{repo}")
               "lib/#{repo}/#{repo}.gemspec"
             else

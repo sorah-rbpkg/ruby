@@ -426,6 +426,9 @@ enum_size_over_p(VALUE obj, long n)
  *  Returns an array containing all elements of +enum+
  *  for which the given +block+ returns a true value.
  *
+ *  The <i>find_all</i> and <i>select</i> methods are aliases.
+ *  There is no performance benefit to either.
+ *
  *  If no block is given, an Enumerator is returned instead.
  *
  *
@@ -543,7 +546,6 @@ collect_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 static VALUE
 collect_all(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
-    rb_thread_check_ints();
     rb_ary_push(ary, rb_enum_values_pack(argc, argv));
 
     return Qnil;
@@ -647,7 +649,6 @@ enum_to_a(int argc, VALUE *argv, VALUE obj)
     VALUE ary = rb_ary_new();
 
     rb_block_call(obj, id_each, argc, argv, collect_all, ary);
-    OBJ_INFECT(ary, obj);
 
     return ary;
 }
@@ -657,7 +658,6 @@ enum_hashify(VALUE obj, int argc, const VALUE *argv, rb_block_call_func *iter)
 {
     VALUE hash = rb_hash_new();
     rb_block_call(obj, id_each, argc, argv, iter, hash);
-    OBJ_INFECT(hash, obj);
     return hash;
 }
 
@@ -665,14 +665,12 @@ static VALUE
 enum_to_h_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 {
     ENUM_WANT_SVALUE();
-    rb_thread_check_ints();
     return rb_hash_set_pair(hash, i);
 }
 
 static VALUE
 enum_to_h_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 {
-    rb_thread_check_ints();
     return rb_hash_set_pair(hash, rb_yield_values2(argc, argv));
 }
 
@@ -1004,11 +1002,11 @@ tally_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
  *  call-seq:
  *     enum.tally -> a_hash
  *
- *  Tallys the collection.  Returns a hash where the keys are the
- *  elements and the values are numbers of elements in the collection
- *  that correspond to the key.
+ *  Tallies the collection, i.e., counts the occurrences of each element.
+ *  Returns a hash with the elements of the collection as keys and the
+ *  corresponding counts as values.
  *
- *     ["a", "b", "c", "b"].tally #=> {"a"=>1, "b"=>2, "c"=>1}
+ *     ["a", "b", "c", "b"].tally  #=> {"a"=>1, "b"=>2, "c"=>1}
  */
 
 static VALUE
@@ -1245,7 +1243,6 @@ enum_sort_by(VALUE obj)
     buf = rb_ary_tmp_new(SORT_BY_BUFSIZE*2);
     rb_ary_store(buf, SORT_BY_BUFSIZE*2-1, Qnil);
     memo = MEMO_NEW(0, 0, 0);
-    OBJ_INFECT(memo, obj);
     data = (struct sort_by_data *)&memo->v1;
     RB_OBJ_WRITE(memo, &data->ary, ary);
     RB_OBJ_WRITE(memo, &data->buf, buf);
@@ -1270,7 +1267,6 @@ enum_sort_by(VALUE obj)
     }
     rb_ary_resize(ary, RARRAY_LEN(ary)/2);
     RBASIC_SET_CLASS_RAW(ary, rb_cArray);
-    OBJ_INFECT(ary, memo);
 
     return ary;
 }
@@ -2423,14 +2419,20 @@ static VALUE
 enum_reverse_each(int argc, VALUE *argv, VALUE obj)
 {
     VALUE ary;
-    long i;
+    long len;
 
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_size);
 
     ary = enum_to_a(argc, argv, obj);
 
-    for (i = RARRAY_LEN(ary); --i >= 0; ) {
-	rb_yield(RARRAY_AREF(ary, i));
+    len = RARRAY_LEN(ary);
+    while (len--) {
+        long nlen;
+        rb_yield(RARRAY_AREF(ary, len));
+        nlen = RARRAY_LEN(ary);
+        if (nlen < len) {
+            len = nlen;
+        }
     }
 
     return obj;
@@ -4026,6 +4028,10 @@ int_range_sum(VALUE beg, VALUE end, int excl, VALUE init)
  *
  *   { 1 => 10, 2 => 20 }.sum([])                   #=> [1, 10, 2, 20]
  *   "a\nb\nc".each_line.lazy.map(&:chomp).sum("")  #=> "abc"
+ *
+ * If the method is applied to an Integer range without a block,
+ * the sum is not done by iteration, but instead using Gauss's summation
+ * formula.
  *
  * Enumerable#sum method may not respect method redefinition of "+"
  * methods such as Integer#+, or "each" methods such as Range#each.

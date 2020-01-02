@@ -43,7 +43,7 @@ class TestVariable < Test::Unit::TestCase
     c.class_variable_set(:@@foo, 1)
     assert_equal([:@@foo], c.singleton_class.class_variables)
     assert_equal(1, c.singleton_class.class_variable_get(:@@foo))
-    
+
     c = Class.new
     c.extend(Olympians)
     sc = Class.new(c)
@@ -61,6 +61,29 @@ class TestVariable < Test::Unit::TestCase
     c.class_variable_set(:@@foo, 1)
     assert_equal([:@@foo, :@@rule], o.singleton_class.class_variables.sort)
     assert_equal(1, o.singleton_class.class_variable_get(:@@foo))
+  end
+
+  class IncludeRefinedModuleClassVariableNoWarning
+    module Mod
+      @@_test_include_refined_module_class_variable = true
+    end
+
+    module Mod2
+      refine Mod do
+      end
+    end
+
+    include Mod
+
+    def t
+      @@_test_include_refined_module_class_variable
+    end
+  end
+
+  def test_include_refined_module_class_variable
+    assert_warning('') do
+      IncludeRefinedModuleClassVariableNoWarning.new.t
+    end
   end
 
   def test_variable
@@ -176,6 +199,25 @@ class TestVariable < Test::Unit::TestCase
         v.remove_instance_variable(:@foo)
       end
     end
+  end
+
+  class ExIvar < Hash
+    def initialize
+      @a = 1
+      @b = 2
+      @c = 3
+    end
+
+    def ivars
+      [@a, @b, @c]
+    end
+  end
+
+  def test_external_ivars
+    3.times{
+      # check inline cache for external ivar access
+      assert_equal [1, 2, 3], ExIvar.new.ivars
+    }
   end
 
   def test_local_variables_with_kwarg

@@ -63,9 +63,7 @@ Gem::Specification.new do |spec|
     "lib/irb/notifier.rb",
     "lib/irb/output-method.rb",
     "lib/irb/ruby-lex.rb",
-    "lib/irb/ruby-token.rb",
     "lib/irb/ruby_logo.aa",
-    "lib/irb/slex.rb",
     "lib/irb/src_encoding.rb",
     "lib/irb/version.rb",
     "lib/irb/workspace.rb",
@@ -77,7 +75,7 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.required_ruby_version = Gem::Requirement.new(">= 2.4")
+  spec.required_ruby_version = Gem::Requirement.new(">= 2.5")
 
   spec.add_dependency "reline", ">= 0.0.1"
   spec.add_development_dependency "bundler"

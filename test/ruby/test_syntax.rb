@@ -93,13 +93,6 @@ class TestSyntax < Test::Unit::TestCase
     assert_valid_syntax("tap (proc do end)", __FILE__, bug9726)
   end
 
-  def test_methodref_literal
-    assert_separately [], <<-EOS
-      eval 'nil.:|;1'
-      1000.times{eval 'nil.:|;1'}
-    EOS
-  end
-
   def test_array_kwsplat_hash
     kw = {}
     h = {a: 1}
@@ -189,7 +182,7 @@ class TestSyntax < Test::Unit::TestCase
     h = {k3: 31}
     assert_raise(ArgumentError) {o.kw(**h)}
     h = {"k1"=>11, k2: 12}
-    assert_warn(/The last argument is split into positional and keyword parameters.* for `kw'/m) do
+    assert_warn(/Splitting the last argument into positional and keyword parameters is deprecated.*The called method `kw'/m) do
       assert_raise(ArgumentError) {o.kw(**h)}
     end
   end
@@ -230,29 +223,25 @@ class TestSyntax < Test::Unit::TestCase
   end
 
   def test_keyword_self_reference
-    o = Object.new
-    assert_raise(SyntaxError) do
-      o.instance_eval("def foo(var: defined?(var)) var end")
-    end
-
-    o = Object.new
-    assert_raise(SyntaxError) do
-      o.instance_eval("def foo(var: var) var end")
-    end
-
-    o = Object.new
-    assert_raise(SyntaxError) do
-      o.instance_eval("def foo(var: bar(var)) var end")
-    end
-
-    o = Object.new
-    assert_raise(SyntaxError) do
-      o.instance_eval("def foo(var: bar {var}) var end")
-    end
+    message = /circular argument reference - var/
+    assert_syntax_error("def foo(var: defined?(var)) var end", message)
+    assert_syntax_error("def foo(var: var) var end", message)
+    assert_syntax_error("def foo(var: bar(var)) var end", message)
+    assert_syntax_error("def foo(var: bar {var}) var end", message)
 
     o = Object.new
     assert_warn("") do
       o.instance_eval("def foo(var: bar {|var| var}) var end")
+    end
+
+    o = Object.new
+    assert_warn("") do
+      o.instance_eval("def foo(var: bar {| | var}) var end")
+    end
+
+    o = Object.new
+    assert_warn("") do
+      o.instance_eval("def foo(var: bar {|| var}) var end")
     end
 
     o = Object.new
@@ -269,25 +258,24 @@ class TestSyntax < Test::Unit::TestCase
   def test_keyword_invalid_name
     bug11663 = '[ruby-core:71356] [Bug #11663]'
 
-    o = o = Object.new
-    assert_syntax_error('def o.foo(arg1?:) end', /arg1\?/, bug11663)
-    assert_syntax_error('def o.foo(arg1?:, arg2:) end', /arg1\?/, bug11663)
+    assert_syntax_error('def foo(arg1?:) end', /arg1\?/, bug11663)
+    assert_syntax_error('def foo(arg1?:, arg2:) end', /arg1\?/, bug11663)
     assert_syntax_error('proc {|arg1?:|}', /arg1\?/, bug11663)
     assert_syntax_error('proc {|arg1?:, arg2:|}', /arg1\?/, bug11663)
 
     bug10545 = '[ruby-dev:48742] [Bug #10545]'
-    assert_syntax_error('def o.foo(FOO: a) end', /constant/, bug10545)
-    assert_syntax_error('def o.foo(@foo: a) end', /instance variable/)
-    assert_syntax_error('def o.foo(@@foo: a) end', /class variable/)
+    assert_syntax_error('def foo(FOO: a) end', /constant/, bug10545)
+    assert_syntax_error('def foo(@foo: a) end', /instance variable/)
+    assert_syntax_error('def foo(@@foo: a) end', /class variable/)
   end
 
   def test_keywords_specified_and_not_accepted
-    assert_syntax_error('def o.foo(a:, **nil) end', /unexpected/)
-    assert_syntax_error('def o.foo(a:, **nil, &b) end', /unexpected/)
-    assert_syntax_error('def o.foo(**a, **nil) end', /unexpected/)
-    assert_syntax_error('def o.foo(**a, **nil, &b) end', /unexpected/)
-    assert_syntax_error('def o.foo(**nil, **a) end', /unexpected/)
-    assert_syntax_error('def o.foo(**nil, **a, &b) end', /unexpected/)
+    assert_syntax_error('def foo(a:, **nil) end', /unexpected/)
+    assert_syntax_error('def foo(a:, **nil, &b) end', /unexpected/)
+    assert_syntax_error('def foo(**a, **nil) end', /unexpected/)
+    assert_syntax_error('def foo(**a, **nil, &b) end', /unexpected/)
+    assert_syntax_error('def foo(**nil, **a) end', /unexpected/)
+    assert_syntax_error('def foo(**nil, **a, &b) end', /unexpected/)
 
     assert_syntax_error('proc do |a:, **nil| end', /unexpected/)
     assert_syntax_error('proc do |a:, **nil, &b| end', /unexpected/)
@@ -298,39 +286,27 @@ class TestSyntax < Test::Unit::TestCase
   end
 
   def test_optional_self_reference
-    o = Object.new
-    assert_raise(SyntaxError) do
-      o.instance_eval("def foo(var = defined?(var)) var end")
-    end
-
-    o = Object.new
-    assert_raise(SyntaxError) do
-      o.instance_eval("def foo(var = var) var end")
-    end
-
-    o = Object.new
-    assert_raise(SyntaxError) do
-      o.instance_eval("def foo(var = bar(var)) var end")
-    end
-
-    o = Object.new
-    assert_raise(SyntaxError) do
-      o.instance_eval("def foo(var = bar {var}) var end")
-    end
-
-    o = Object.new
-    assert_raise(SyntaxError) do
-      o.instance_eval("def foo(var = (def bar;end; var)) var end")
-    end
-
-    o = Object.new
-    assert_raise(SyntaxError) do
-      o.instance_eval("def foo(var = (def self.bar;end; var)) var end")
-    end
+    message = /circular argument reference - var/
+    assert_syntax_error("def foo(var = defined?(var)) var end", message)
+    assert_syntax_error("def foo(var = var) var end", message)
+    assert_syntax_error("def foo(var = bar(var)) var end", message)
+    assert_syntax_error("def foo(var = bar {var}) var end", message)
+    assert_syntax_error("def foo(var = (def bar;end; var)) var end", message)
+    assert_syntax_error("def foo(var = (def self.bar;end; var)) var end", message)
 
     o = Object.new
     assert_warn("") do
       o.instance_eval("def foo(var = bar {|var| var}) var end")
+    end
+
+    o = Object.new
+    assert_warn("") do
+      o.instance_eval("def foo(var = bar {| | var}) var end")
+    end
+
+    o = Object.new
+    assert_warn("") do
+      o.instance_eval("def foo(var = bar {|| var}) var end")
     end
 
     o = Object.new
@@ -644,7 +620,7 @@ WARN
   def test_unassignable
     gvar = global_variables
     %w[self nil true false __FILE__ __LINE__ __ENCODING__].each do |kwd|
-      assert_raise(SyntaxError) {eval("#{kwd} = nil")}
+      assert_syntax_error("#{kwd} = nil", /Can't .* #{kwd}$/)
       assert_equal(gvar, global_variables)
     end
   end
@@ -1003,6 +979,13 @@ eom
     assert_syntax_error('0...%q.', /unterminated string/, bug10957)
   end
 
+  def test_range_at_eol
+    assert_warn(/\.\.\. at EOL/) {eval("1...\n2")}
+    assert_warn('') {eval("(1...)")}
+    assert_warn('') {eval("(1...\n2)")}
+    assert_warn('') {eval("{a: 1...\n2}")}
+  end
+
   def test_too_big_nth_ref
     bug11192 = '[ruby-core:69393] [Bug #11192]'
     assert_warn(/too big/, bug11192) do
@@ -1024,10 +1007,8 @@ eom
   def test_fluent_dot
     assert_valid_syntax("a\n.foo")
     assert_valid_syntax("a\n&.foo")
-    assert_valid_syntax("a\n.:foo")
     assert_valid_syntax("a #\n#\n.foo\n")
     assert_valid_syntax("a #\n#\n&.foo\n")
-    assert_valid_syntax("a #\n#\n.:foo\n")
   end
 
   def test_safe_call_in_massign_lhs
@@ -1455,8 +1436,17 @@ eom
     assert_syntax_error('->x=_1{}', /ordinary parameter is defined/)
     assert_syntax_error('-> {_1; -> {_2}}', /numbered parameter is already used/)
     assert_syntax_error('-> {-> {_1}; _2}', /numbered parameter is already used/)
-    assert_warn(/`_1' is used as numbered parameter/) {eval('proc {_1 = nil}')}
-    assert_warn(/`_2' is used as numbered parameter/) {eval('_2=1')}
+    assert_syntax_error('proc {_1; _1 = nil}', /Can't assign to numbered parameter _1/)
+    mesg = proc {|n| /`_#{n}' is reserved for numbered parameter/}
+    assert_warn(mesg[1]) {eval('proc {_1 = nil}')}
+    assert_warn(mesg[2]) {eval('_2=1')}
+    assert_warn(mesg[3]) {eval('proc {|_3|}')}
+    assert_warn(mesg[4]) {instance_eval('def x(_4) end')}
+    assert_warn(mesg[5]) {instance_eval('def _5; end')}
+    assert_warn(mesg[6]) {instance_eval('def self._6; end')}
+    assert_raise_with_message(NameError, /undefined local variable or method `_1'/) {
+      eval('_1')
+    }
     ['class C', 'class << C', 'module M', 'def m', 'def o.m'].each do |c|
       assert_valid_syntax("->{#{c};->{_1};end;_1}\n")
       assert_valid_syntax("->{_1;#{c};->{_1};end}\n")
@@ -1476,6 +1466,8 @@ eom
     assert_valid_syntax('def foo(...) end')
     assert_syntax_error('iter do |...| end', /unexpected/)
     assert_syntax_error('iter {|...|}', /unexpected/)
+    assert_syntax_error('->... {}', /unexpected/)
+    assert_syntax_error('->(...) {}', /unexpected/)
     assert_syntax_error('def foo(x, y, z) bar(...); end', /unexpected/)
     assert_syntax_error('def foo(x, y, z) super(...); end', /unexpected/)
     assert_syntax_error('def foo(...) yield(...); end', /unexpected/)
@@ -1489,25 +1481,59 @@ eom
 
     obj1 = Object.new
     def obj1.bar(*args, **kws, &block)
-      block.call(args, kws)
+      if block
+        block.call(args, kws)
+      else
+        [args, kws]
+      end
     end
-    obj1.instance_eval('def foo(...) bar(...) end')
+    obj1.instance_eval('def foo(...) bar(...) end', __FILE__, __LINE__)
 
     klass = Class.new {
       def foo(*args, **kws, &block)
-        block.call(args, kws)
+        if block
+          block.call(args, kws)
+        else
+          [args, kws]
+        end
       end
     }
     obj2 = klass.new
-    obj2.instance_eval('def foo(...) super(...) end')
+    obj2.instance_eval('def foo(...) super(...) end', __FILE__, __LINE__)
 
-    [obj1, obj2].each do |obj|
-      assert_equal([[1, 2, 3], {k1: 4, k2: 5}], obj.foo(1, 2, 3, k1: 4, k2: 5) {|*x| x})
-      assert_equal(-1, obj.:foo.arity)
-      parameters = obj.:foo.parameters
+    obj3 = Object.new
+    def obj3.bar(*args, &block)
+      if kws = Hash.try_convert(args.last)
+        args.pop
+      else
+        kws = {}
+      end
+      if block
+        block.call(args, kws)
+      else
+        [args, kws]
+      end
+    end
+    obj3.instance_eval('def foo(...) bar(...) end', __FILE__, __LINE__)
+
+    [obj1, obj2, obj3].each do |obj|
+      assert_warning('') {
+        assert_equal([[1, 2, 3], {k1: 4, k2: 5}], obj.foo(1, 2, 3, k1: 4, k2: 5) {|*x| x})
+      }
+      assert_warning('') {
+        assert_equal([[1, 2, 3], {k1: 4, k2: 5}], obj.foo(1, 2, 3, k1: 4, k2: 5))
+      }
+      warning = "warning: Using the last argument as keyword parameters is deprecated"
+      assert_warning(/\A\z|:(?!#{__LINE__+1})\d+: #{warning}/o) {
+        assert_equal([[], {}], obj.foo({}) {|*x| x})
+      }
+      assert_warning(/\A\z|:(?!#{__LINE__+1})\d+: #{warning}/o) {
+        assert_equal([[], {}], obj.foo({}))
+      }
+      assert_equal(-1, obj.method(:foo).arity)
+      parameters = obj.method(:foo).parameters
       assert_equal(:rest, parameters.dig(0, 0))
-      assert_equal(:keyrest, parameters.dig(1, 0))
-      assert_equal(:block, parameters.dig(2, 0))
+      assert_equal(:block, parameters.dig(1, 0))
     end
   end
 

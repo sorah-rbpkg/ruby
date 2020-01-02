@@ -49,6 +49,7 @@ EOT
   end
 
   def test_remove_const_segv
+    return if RUBY_ENGINE == 'jruby'
     stress = GC.stress
     const = JSON::SAFE_STATE_PROTOTYPE.dup
 
@@ -75,7 +76,7 @@ EOT
     silence do
       JSON.const_set :SAFE_STATE_PROTOTYPE, const
     end
-  end
+  end if JSON.const_defined?("Ext")
 
   def test_generate
     json = generate(@hash)

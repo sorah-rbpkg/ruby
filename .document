@@ -9,8 +9,14 @@
 
 # prelude
 prelude.rb
-
 rbconfig.rb
+
+ast.rb
+gc.rb
+io.rb
+pack.rb
+trace_point.rb
+warning.rb
 
 # the lib/ directory (which has its own .document file)
 lib

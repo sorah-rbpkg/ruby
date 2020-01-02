@@ -105,6 +105,7 @@ module TestStruct
     @Struct.new("KeywordInitFalse", :a, :b, keyword_init: false)
 
     assert_raise(ArgumentError) { @Struct::KeywordInitTrue.new(1, 2) }
+    assert_raise(ArgumentError) { @Struct::KeywordInitTrue.new({a: 100}, 2) }
     assert_nothing_raised { @Struct::KeywordInitFalse.new(1, 2) }
     assert_nothing_raised { @Struct::KeywordInitTrue.new(a: 1, b: 2) }
     assert_raise(ArgumentError) { @Struct::KeywordInitTrue.new(1, b: 2) }
@@ -112,8 +113,9 @@ module TestStruct
     assert_equal @Struct::KeywordInitTrue.new(a: 1, b: 2).values, @Struct::KeywordInitFalse.new(1, 2).values
     assert_equal "#{@Struct}::KeywordInitFalse", @Struct::KeywordInitFalse.inspect
     assert_equal "#{@Struct}::KeywordInitTrue(keyword_init: true)", @Struct::KeywordInitTrue.inspect
-    k = Class.new(@Struct::KeywordInitFalse) {def initialize(**) end}
-    assert_warn(/The last argument is used as the keyword parameter/) {k.new(a: 1, b: 2)}
+    # eval is needed to prevent the warning duplication filter
+    k = eval("Class.new(@Struct::KeywordInitFalse) {def initialize(**) end}")
+    assert_warn(/Using the last argument as keyword parameters is deprecated/) {k.new(a: 1, b: 2)}
     k = Class.new(@Struct::KeywordInitTrue) {def initialize(**) end}
     assert_warn('') {k.new(a: 1, b: 2)}
 
@@ -423,10 +425,22 @@ module TestStruct
     assert_nil(o.dig(:b, 0))
   end
 
-  def test_new_dupilicate
+  def test_new_duplicate
     bug12291 = '[ruby-core:74971] [Bug #12291]'
     assert_raise_with_message(ArgumentError, /duplicate member/, bug12291) {
       @Struct.new(:a, :a)
+    }
+  end
+
+  def test_deconstruct_keys
+    klass = @Struct.new(:a, :b)
+    o = klass.new(1, 2)
+    assert_equal({a: 1, b: 2}, o.deconstruct_keys(nil))
+    assert_equal({a: 1, b: 2}, o.deconstruct_keys([:b, :a]))
+    assert_equal({a: 1}, o.deconstruct_keys([:a]))
+    assert_not_send([o.deconstruct_keys([:a, :c]), :key?, :c])
+    assert_raise(TypeError) {
+      o.deconstruct_keys(0)
     }
   end
 

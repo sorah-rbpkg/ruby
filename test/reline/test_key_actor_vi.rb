@@ -8,8 +8,9 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     @config.read_lines(<<~LINES.split(/(?<=\n)/))
       set editing-mode vi
     LINES
+    @encoding = (RELINE_TEST_ENCODING rescue Encoding.default_external)
     @line_editor = Reline::LineEditor.new(@config)
-    @line_editor.reset(@prompt, (RELINE_TEST_ENCODING rescue Encoding.default_external))
+    @line_editor.reset(@prompt, @encoding)
   end
 
   def test_vi_command_mode
@@ -811,16 +812,19 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
   end
 
   def test_vi_list_or_eof
-    input_keys('a')
-    assert_byte_pointer_size('a')
-    assert_cursor(1)
-    assert_cursor_max(1)
+    input_keys("\C-d") # quit from inputing
+    assert_line(nil)
+    assert(@line_editor.finished?)
+  end
+
+  def test_vi_list_or_eof_with_non_empty_line
+    input_keys('ab')
+    assert_byte_pointer_size('ab')
+    assert_cursor(2)
+    assert_cursor_max(2)
     refute(@line_editor.finished?)
     input_keys("\C-d")
-    assert_line('a')
-    refute(@line_editor.finished?)
-    input_keys("\C-h\C-d")
-    assert_line(nil)
+    assert_line('ab')
     assert(@line_editor.finished?)
   end
 
@@ -829,6 +833,8 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
       %w{
         foo_bar
         foo_bar_baz
+      }.map { |i|
+        i.encode(@encoding)
       }
     }
     input_keys('foo')
@@ -883,6 +889,8 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
       %w{
         foo_bar
         foo_bar_baz
+      }.map { |i|
+        i.encode(@encoding)
       }
     }
     input_keys('foo')
@@ -937,6 +945,8 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
       %w{
         foo_bar
         foo_bar_baz
+      }.map { |i|
+        i.encode(@encoding)
       }
     }
     input_keys('abcde fo ABCDE')
@@ -986,6 +996,49 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_cursor(17)
     assert_cursor_max(23)
     assert_line('abcde foo_bar_baz ABCDE')
+  end
+
+  def test_completion
+    @line_editor.completion_proc = proc { |word|
+      %w{
+        foo_bar
+        foo_bar_baz
+      }.map { |i|
+        i.encode(@encoding)
+      }
+    }
+    input_keys('foo')
+    assert_byte_pointer_size('foo')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    assert_line('foo')
+    input_keys("\C-i")
+    assert_byte_pointer_size('foo_bar')
+    assert_cursor(7)
+    assert_cursor_max(7)
+    assert_line('foo_bar')
+  end
+
+  def test_completion_with_disable_completion
+    @config.disable_completion = true
+    @line_editor.completion_proc = proc { |word|
+      %w{
+        foo_bar
+        foo_bar_baz
+      }.map { |i|
+        i.encode(@encoding)
+      }
+    }
+    input_keys('foo')
+    assert_byte_pointer_size('foo')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    assert_line('foo')
+    input_keys("\C-i")
+    assert_byte_pointer_size('foo')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    assert_line('foo')
   end
 
   def test_vi_first_print

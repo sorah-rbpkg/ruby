@@ -250,7 +250,6 @@ static void
 rb_struct_modify(VALUE s)
 {
     rb_check_frozen(s);
-    rb_check_trusted(s);
 }
 
 static VALUE
@@ -633,7 +632,7 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
     n = num_members(klass);
     if (argc > 0 && RTEST(rb_struct_s_keyword_init(klass))) {
 	struct struct_hash_set_arg arg;
-	if (argc > 2 || !RB_TYPE_P(argv[0], T_HASH)) {
+	if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
 	    rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected 0)", argc);
 	}
 	rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), n);
@@ -872,7 +871,6 @@ inspect_struct(VALUE s, VALUE dummy, int recur)
 	rb_str_append(str, rb_inspect(RSTRUCT_GET(s, i)));
     }
     rb_str_cat2(str, ">");
-    OBJ_INFECT(str, s);
 
     return str;
 }
@@ -940,6 +938,36 @@ rb_struct_to_h(VALUE s)
             rb_hash_set_pair(h, rb_yield_values(2, k, v));
         else
             rb_hash_aset(h, k, v);
+    }
+    return h;
+}
+
+static VALUE
+rb_struct_deconstruct_keys(VALUE s, VALUE keys)
+{
+    VALUE h;
+    long i;
+
+    if (NIL_P(keys)) {
+        return rb_struct_to_h(s);
+    }
+    if (UNLIKELY(!RB_TYPE_P(keys, T_ARRAY))) {
+	rb_raise(rb_eTypeError,
+                 "wrong argument type %"PRIsVALUE" (expected Array or nil)",
+                 rb_obj_class(keys));
+
+    }
+    if (RSTRUCT_LEN(s) < RARRAY_LEN(keys)) {
+        return rb_hash_new_with_size(0);
+    }
+    h = rb_hash_new_with_size(RARRAY_LEN(keys));
+    for (i=0; i<RARRAY_LEN(keys); i++) {
+        VALUE key = RARRAY_AREF(keys, i);
+        int i = rb_struct_pos(s, &key);
+        if (i < 0) {
+            return h;
+        }
+        rb_hash_aset(h, key, RSTRUCT_GET(s, i));
     }
     return h;
 }
@@ -1357,6 +1385,7 @@ InitVM_Struct(void)
     rb_define_method(rb_cStruct, "dig", rb_struct_dig, -1);
 
     rb_define_method(rb_cStruct, "deconstruct", rb_struct_to_a, 0);
+    rb_define_method(rb_cStruct, "deconstruct_keys", rb_struct_deconstruct_keys, 1);
 }
 
 #undef rb_intern

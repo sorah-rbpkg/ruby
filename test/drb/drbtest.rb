@@ -11,9 +11,6 @@ class DRbService
   @@ruby << "-d" if $DEBUG
   def self.add_service_command(nm)
     dir = File.dirname(File.expand_path(__FILE__))
-    if /ssl/ =~ nm && RUBY_PLATFORM =~ /solaris/i
-      @@ruby[1..-1] = "-dv"
-    end
     DRb::ExtServManager.command[nm] = @@ruby + ["#{dir}/#{nm}"]
   end
 
@@ -45,6 +42,7 @@ class DRbService
     server.stop_service
     manager.instance_variable_get(:@queue)&.push(nil)
     manager.instance_variable_get(:@thread)&.join
+    DRb::DRbConn.stop_pool
   end
 end
 
@@ -116,6 +114,7 @@ module DRbBase
       }
     end
     @drb_service.finish
+    DRb::DRbConn.stop_pool
   end
 end
 

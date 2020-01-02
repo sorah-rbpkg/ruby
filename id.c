@@ -31,7 +31,6 @@
 #define tANDOP RUBY_TOKEN(ANDOP)
 #define tOROP RUBY_TOKEN(OROP)
 #define tANDDOT RUBY_TOKEN(ANDDOT)
-#define tMETHREF RUBY_TOKEN(METHREF)
 
 static const struct {
     unsigned short token;
@@ -58,7 +57,6 @@ static const struct {
     {tANDOP, "&&"},
     {tOROP, "||"},
     {tANDDOT, "&."},
-    {tMETHREF, ".:"},
 };
 
 static void
