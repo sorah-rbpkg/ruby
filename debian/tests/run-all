@@ -10,17 +10,17 @@ export OPENSSL_CONF=/dev/null
 tests="$@"
 
 cleanup() {
-  rm -rf "$ADTTMP"
+  rm -rf "$AUTOPKGTEST_TMP"
 }
-if [ -z "$ADTTMP" ]; then
-  ADTTMP=$(mktemp -d)
+if [ -z "$AUTOPKGTEST_TMP" ]; then
+  AUTOPKGTEST_TMP=$(mktemp -d)
   trap cleanup INT TERM EXIT
 fi
 
 skiplist=$(readlink -f $(dirname $0))/skiplist
 excludedir=$(readlink -f $(dirname $0))/excludes
-cp -r 'test/' $ADTTMP
-cd $ADTTMP
+cp -r 'test/' $AUTOPKGTEST_TMP
+cd $AUTOPKGTEST_TMP
 
 if [ -z "$tests" ]; then
   # FIXME for now, we are excluding the tests for C extensions; couldn't figure
