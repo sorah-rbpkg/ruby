@@ -20,12 +20,12 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  OnigSyntaxPosixExtended@Base 2.7.0~preview1
  OnigSyntaxPython@Base 2.7.0~preview1
  OnigSyntaxRuby@Base 2.7.0~preview1
- coroutine_transfer@Base 2.7.0~preview2-1
+ coroutine_transfer@Base 2.7.0~preview2
  dln_find_exe_r@Base 2.7.0~preview1
  dln_find_file_r@Base 2.7.0~preview1
  dln_load@Base 2.7.0~preview1
- mjit_call_p@Base 2.7.0~preview2-1
- mjit_opts@Base 2.7.0~preview2-1
+ mjit_call_p@Base 2.7.0~preview2
+ mjit_opts@Base 2.7.0~preview2
  nucomp_canonicalization@Base 2.7.0~preview1
  nurat_canonicalization@Base 2.7.0~preview1
  onig_add_end_call@Base 2.7.0~preview1
@@ -172,8 +172,8 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_absint_size@Base 2.7.0~preview1
  rb_add_event_hook2@Base 2.7.0~preview1
  rb_add_event_hook@Base 2.7.0~preview1
- rb_add_method_iseq@Base 2.7.0~preview2-1
- rb_adjust_argv_kw_splat@Base 2.7.0~preview2-1
+ rb_add_method_iseq@Base 2.7.0~preview2
+ rb_adjust_argv_kw_splat@Base 2.7.0~preview2
  rb_alias@Base 2.7.0~preview1
  rb_alias_variable@Base 2.7.0~preview1
  rb_alloc_tmp_buffer@Base 2.7.0~preview1
@@ -181,19 +181,19 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_any_to_s@Base 2.7.0~preview1
  rb_apply@Base 2.7.0~preview1
  rb_argv0@Base 2.7.0~preview1
- rb_arith_seq_new@Base 2.7.0~preview2-1
- rb_arithmetic_sequence_extract@Base 2.7.0~preview2-1
- rb_ary_aref1@Base 2.7.0~preview2-1
+ rb_arith_seq_new@Base 2.7.0~preview2
+ rb_arithmetic_sequence_extract@Base 2.7.0~preview2
+ rb_ary_aref1@Base 2.7.0~preview2
  rb_ary_aref@Base 2.7.0~preview1
  rb_ary_assoc@Base 2.7.0~preview1
- rb_ary_behead@Base 2.7.0~preview2-1
+ rb_ary_behead@Base 2.7.0~preview2
  rb_ary_cat@Base 2.7.0~preview1
  rb_ary_clear@Base 2.7.0~preview1
  rb_ary_cmp@Base 2.7.0~preview1
  rb_ary_concat@Base 2.7.0~preview1
  rb_ary_delete@Base 2.7.0~preview1
  rb_ary_delete_at@Base 2.7.0~preview1
- rb_ary_detransient@Base 2.7.0~preview2-1
+ rb_ary_detransient@Base 2.7.0~preview2
  rb_ary_dup@Base 2.7.0~preview1
  rb_ary_each@Base 2.7.0~preview1
  rb_ary_entry@Base 2.7.0~preview1
@@ -209,8 +209,8 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_ary_new_from_values@Base 2.7.0~preview1
  rb_ary_plus@Base 2.7.0~preview1
  rb_ary_pop@Base 2.7.0~preview1
- rb_ary_ptr_use_end@Base 2.7.0~preview2-1
- rb_ary_ptr_use_start@Base 2.7.0~preview2-1
+ rb_ary_ptr_use_end@Base 2.7.0~preview2
+ rb_ary_ptr_use_start@Base 2.7.0~preview2
  rb_ary_push@Base 2.7.0~preview1
  rb_ary_rassoc@Base 2.7.0~preview1
  rb_ary_replace@Base 2.7.0~preview1
@@ -225,34 +225,34 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_ary_store@Base 2.7.0~preview1
  rb_ary_subseq@Base 2.7.0~preview1
  rb_ary_tmp_new@Base 2.7.0~preview1
- rb_ary_tmp_new_from_values@Base 2.7.0~preview2-1
+ rb_ary_tmp_new_from_values@Base 2.7.0~preview2
  rb_ary_to_ary@Base 2.7.0~preview1
  rb_ary_to_s@Base 2.7.0~preview1
  rb_ary_unshift@Base 2.7.0~preview1
  rb_ascii8bit_encindex@Base 2.7.0~preview1
  rb_ascii8bit_encoding@Base 2.7.0~preview1
- rb_assert_failure@Base 2.7.0~preview2-1
+ rb_assert_failure@Base 2.7.0~preview2
  rb_assoc_new@Base 2.7.0~preview1
- rb_ast_add_mark_object@Base 2.7.0~preview2-1
- rb_ast_delete_mark_object@Base 2.7.0~rc1
- rb_ast_delete_node@Base 2.7.0~preview2-1
- rb_ast_dispose@Base 2.7.0~preview2-1
- rb_ast_free@Base 2.7.0~preview2-1
- rb_ast_mark@Base 2.7.0~preview2-1
- rb_ast_memsize@Base 2.7.0~preview2-1
- rb_ast_new@Base 2.7.0~preview2-1
- rb_ast_newnode@Base 2.7.0~preview2-1
- rb_ast_update_references@Base 2.7.0~preview2-1
+ rb_ast_add_mark_object@Base 2.7.0~preview2
+#MISSING: 2.7.0# rb_ast_delete_mark_object@Base 2.7.0~rc1
+ rb_ast_delete_node@Base 2.7.0~preview2
+ rb_ast_dispose@Base 2.7.0~preview2
+ rb_ast_free@Base 2.7.0~preview2
+ rb_ast_mark@Base 2.7.0~preview2
+ rb_ast_memsize@Base 2.7.0~preview2
+ rb_ast_new@Base 2.7.0~preview2
+ rb_ast_newnode@Base 2.7.0~preview2
+ rb_ast_update_references@Base 2.7.0~preview2
  rb_attr@Base 2.7.0~preview1
  rb_attr_get@Base 2.7.0~preview1
- rb_autoload@Base 2.7.0~preview2-1
+ rb_autoload@Base 2.7.0~preview2
  rb_autoload_load@Base 2.7.0~preview1
  rb_autoload_p@Base 2.7.0~preview1
- rb_autoloading_value@Base 2.7.0~preview2-1
+ rb_autoloading_value@Base 2.7.0~preview2
  rb_backref_get@Base 2.7.0~preview1
  rb_backref_set@Base 2.7.0~preview1
  rb_backtrace@Base 2.7.0~preview1
- rb_backtrace_use_iseq_first_lineno_for_last_location@Base 2.7.0~preview2-1
+ rb_backtrace_use_iseq_first_lineno_for_last_location@Base 2.7.0~preview2
  rb_big2dbl@Base 2.7.0~preview1
  rb_big2ll@Base 2.7.0~preview1
  rb_big2long@Base 2.7.0~preview1
@@ -297,10 +297,10 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_bigzero_p@Base 2.7.0~preview1
  rb_binding_new@Base 2.7.0~preview1
  rb_block_call@Base 2.7.0~preview1
- rb_block_call_kw@Base 2.7.0~preview2-1
+ rb_block_call_kw@Base 2.7.0~preview2
  rb_block_given_p@Base 2.7.0~preview1
  rb_block_lambda@Base 2.7.0~preview1
- rb_block_param_proxy@Base 2.7.0~preview2-1
+ rb_block_param_proxy@Base 2.7.0~preview2
  rb_block_proc@Base 2.7.0~preview1
  rb_bug@Base 2.7.0~preview1
  rb_bug_errno@Base 2.7.0~preview1
@@ -343,20 +343,20 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_cTrueClass@Base 2.7.0~preview1
  rb_cUnboundMethod@Base 2.7.0~preview1
  rb_call_super@Base 2.7.0~preview1
- rb_call_super_kw@Base 2.7.0~preview2-1
- rb_callable_method_entry@Base 2.7.0~preview2-1
- rb_callable_method_entry_with_refinements@Base 2.7.0~preview2-1
- rb_callable_method_entry_without_refinements@Base 2.7.0~preview2-1
+ rb_call_super_kw@Base 2.7.0~preview2
+ rb_callable_method_entry@Base 2.7.0~preview2
+ rb_callable_method_entry_with_refinements@Base 2.7.0~preview2
+ rb_callable_method_entry_without_refinements@Base 2.7.0~preview2
  rb_catch@Base 2.7.0~preview1
  rb_catch_obj@Base 2.7.0~preview1
  rb_char_to_option_kcode@Base 2.7.0~preview1
  rb_check_array_type@Base 2.7.0~preview1
  rb_check_convert_type@Base 2.7.0~preview1
- rb_check_convert_type_with_id@Base 2.7.0~preview2-1
+ rb_check_convert_type_with_id@Base 2.7.0~preview2
  rb_check_copyable@Base 2.7.0~preview1
  rb_check_frozen@Base 2.7.0~preview1
  rb_check_funcall@Base 2.7.0~preview1
- rb_check_funcall_kw@Base 2.7.0~preview2-1
+ rb_check_funcall_kw@Base 2.7.0~preview2
  rb_check_hash_type@Base 2.7.0~preview1
  rb_check_id@Base 2.7.0~preview1
  rb_check_id_cstr@Base 2.7.0~preview1
@@ -365,7 +365,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_check_string_type@Base 2.7.0~preview1
  rb_check_symbol@Base 2.7.0~preview1
  rb_check_symbol_cstr@Base 2.7.0~preview1
- rb_check_to_array@Base 2.7.0~preview2-1
+ rb_check_to_array@Base 2.7.0~preview2
  rb_check_to_float@Base 2.7.0~preview1
  rb_check_to_int@Base 2.7.0~preview1
  rb_check_to_integer@Base 2.7.0~preview1
@@ -374,14 +374,14 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_check_typeddata@Base 2.7.0~preview1
  rb_class2name@Base 2.7.0~preview1
  rb_class_get_superclass@Base 2.7.0~preview1
- rb_class_inherited@Base 2.7.0~preview2-1
+ rb_class_inherited@Base 2.7.0~preview2
  rb_class_inherited_p@Base 2.7.0~preview1
  rb_class_instance_methods@Base 2.7.0~preview1
  rb_class_ivar_set@Base 2.7.0~preview1
  rb_class_name@Base 2.7.0~preview1
  rb_class_new@Base 2.7.0~preview1
  rb_class_new_instance@Base 2.7.0~preview1
- rb_class_new_instance_kw@Base 2.7.0~preview2-1
+ rb_class_new_instance_kw@Base 2.7.0~preview2
  rb_class_path@Base 2.7.0~preview1
  rb_class_path_cached@Base 2.7.0~preview1
  rb_class_private_instance_methods@Base 2.7.0~preview1
@@ -390,7 +390,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_class_real@Base 2.7.0~preview1
  rb_class_superclass@Base 2.7.0~preview1
  rb_clear_constant_cache@Base 2.7.0~preview1
- rb_clear_coverages@Base 2.7.0~preview2-1
+ rb_clear_coverages@Base 2.7.0~preview2
  rb_clear_method_cache_by_class@Base 2.7.0~preview1
  rb_cloexec_dup2@Base 2.7.0~preview1
  rb_cloexec_dup@Base 2.7.0~preview1
@@ -400,26 +400,26 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_close_before_exec@Base 2.7.0~preview1
  rb_cmperr@Base 2.7.0~preview1
  rb_cmpint@Base 2.7.0~preview1
- rb_compile_cstr@Base 2.7.0~preview1
- rb_compile_file@Base 2.7.0~preview1
- rb_compile_string@Base 2.7.0~preview1
+#MISSING: 2.7.0# rb_compile_cstr@Base 2.7.0~preview1
+#MISSING: 2.7.0# rb_compile_file@Base 2.7.0~preview1
+#MISSING: 2.7.0# rb_compile_string@Base 2.7.0~preview1
  rb_compile_warn@Base 2.7.0~preview1
  rb_compile_warning@Base 2.7.0~preview1
- rb_complex_abs@Base 2.7.0~preview2-1
- rb_complex_arg@Base 2.7.0~preview2-1
- rb_complex_conjugate@Base 2.7.0~preview2-1
- rb_complex_div@Base 2.7.0~preview2-1
- rb_complex_imag@Base 2.7.0~preview2-1
- rb_complex_minus@Base 2.7.0~preview2-1
- rb_complex_mul@Base 2.7.0~preview2-1
+ rb_complex_abs@Base 2.7.0~preview2
+ rb_complex_arg@Base 2.7.0~preview2
+ rb_complex_conjugate@Base 2.7.0~preview2
+ rb_complex_div@Base 2.7.0~preview2
+ rb_complex_imag@Base 2.7.0~preview2
+ rb_complex_minus@Base 2.7.0~preview2
+ rb_complex_mul@Base 2.7.0~preview2
  rb_complex_new@Base 2.7.0~preview1
- rb_complex_new_polar@Base 2.7.0~preview2-1
- rb_complex_plus@Base 2.7.0~preview2-1
+ rb_complex_new_polar@Base 2.7.0~preview2
+ rb_complex_plus@Base 2.7.0~preview2
  rb_complex_polar@Base 2.7.0~preview1
- rb_complex_pow@Base 2.7.0~preview2-1
+ rb_complex_pow@Base 2.7.0~preview2
  rb_complex_raw@Base 2.7.0~preview1
- rb_complex_real@Base 2.7.0~preview2-1
- rb_complex_uminus@Base 2.7.0~preview2-1
+ rb_complex_real@Base 2.7.0~preview2
+ rb_complex_uminus@Base 2.7.0~preview2
  rb_const_defined@Base 2.7.0~preview1
  rb_const_defined_at@Base 2.7.0~preview1
  rb_const_defined_from@Base 2.7.0~preview1
@@ -427,12 +427,12 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_const_get_at@Base 2.7.0~preview1
  rb_const_get_from@Base 2.7.0~preview1
  rb_const_list@Base 2.7.0~preview1
- rb_const_lookup@Base 2.7.0~preview2-1
+ rb_const_lookup@Base 2.7.0~preview2
  rb_const_missing@Base 2.7.0~preview1
  rb_const_remove@Base 2.7.0~preview1
  rb_const_set@Base 2.7.0~preview1
- rb_const_source_location_at@Base 2.7.0~preview2-1
- rb_const_warn_if_deprecated@Base 2.7.0~preview2-1
+ rb_const_source_location_at@Base 2.7.0~preview2
+ rb_const_warn_if_deprecated@Base 2.7.0~preview2
  rb_convert_type@Base 2.7.0~preview1
  rb_copy_generic_ivar@Base 2.7.0~preview1
  rb_cstr2inum@Base 2.7.0~preview1
@@ -450,7 +450,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_data_typed_object_zalloc@Base 2.7.0~preview1
  rb_dbl2big@Base 2.7.0~preview1
  rb_dbl_cmp@Base 2.7.0~preview1
- rb_dbl_complex_new@Base 2.7.0~preview2-1
+ rb_dbl_complex_new@Base 2.7.0~preview2
  rb_debug_inspector_backtrace_locations@Base 2.7.0~preview1
  rb_debug_inspector_frame_binding_get@Base 2.7.0~preview1
  rb_debug_inspector_frame_class_get@Base 2.7.0~preview1
@@ -490,7 +490,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_define_virtual_variable@Base 2.7.0~preview1
  rb_detach_process@Base 2.7.0~preview1
  rb_dir_getwd@Base 2.7.0~preview1
- rb_dtrace_setup@Base 2.7.0~preview2-1
+ rb_dtrace_setup@Base 2.7.0~preview2
  rb_during_gc@Base 2.7.0~preview1
  rb_eArgError@Base 2.7.0~preview1
  rb_eEOFError@Base 2.7.0~preview1
@@ -499,7 +499,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_eException@Base 2.7.0~preview1
  rb_eFatal@Base 2.7.0~preview1
  rb_eFloatDomainError@Base 2.7.0~preview1
- rb_eFrozenError@Base 2.7.0~preview2-1
+ rb_eFrozenError@Base 2.7.0~preview2
  rb_eIOError@Base 2.7.0~preview1
  rb_eIndexError@Base 2.7.0~preview1
  rb_eInterrupt@Base 2.7.0~preview1
@@ -508,7 +508,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_eLocalJumpError@Base 2.7.0~preview1
  rb_eMathDomainError@Base 2.7.0~preview1
  rb_eNameError@Base 2.7.0~preview1
- rb_eNoMatchingPatternError@Base 2.7.0~preview2-1
+ rb_eNoMatchingPatternError@Base 2.7.0~preview2
  rb_eNoMemError@Base 2.7.0~preview1
  rb_eNoMethodError@Base 2.7.0~preview1
  rb_eNotImpError@Base 2.7.0~preview1
@@ -528,8 +528,8 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_eTypeError@Base 2.7.0~preview1
  rb_eZeroDivError@Base 2.7.0~preview1
  rb_each@Base 2.7.0~preview1
- rb_ec_backtrace_object@Base 2.7.0~preview2-1
- rb_ec_stack_check@Base 2.7.0~preview2-1
+ rb_ec_backtrace_object@Base 2.7.0~preview2
+ rb_ec_stack_check@Base 2.7.0~preview2
  rb_econv_append@Base 2.7.0~preview1
  rb_econv_asciicompat_encoding@Base 2.7.0~preview1
  rb_econv_binmode@Base 2.7.0~preview1
@@ -554,12 +554,12 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_econv_str_convert@Base 2.7.0~preview1
  rb_econv_substr_append@Base 2.7.0~preview1
  rb_econv_substr_convert@Base 2.7.0~preview1
- rb_empty_keyword_given_p@Base 2.7.0~preview2-1
- rb_enc_alias@Base 2.7.0~preview2-1
+ rb_empty_keyword_given_p@Base 2.7.0~preview2
+ rb_enc_alias@Base 2.7.0~preview2
  rb_enc_ascget@Base 2.7.0~preview1
  rb_enc_associate@Base 2.7.0~preview1
  rb_enc_associate_index@Base 2.7.0~preview1
- rb_enc_capable@Base 2.7.0~preview2-1
+ rb_enc_capable@Base 2.7.0~preview2
  rb_enc_check@Base 2.7.0~preview1
  rb_enc_code_to_mbclen@Base 2.7.0~preview1
  rb_enc_codelen@Base 2.7.0~preview1
@@ -618,7 +618,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_enum_values_pack@Base 2.7.0~preview1
  rb_enumeratorize@Base 2.7.0~preview1
  rb_enumeratorize_with_size@Base 2.7.0~preview1
- rb_enumeratorize_with_size_kw@Base 2.7.0~preview2-1
+ rb_enumeratorize_with_size_kw@Base 2.7.0~preview2
  rb_env_clear@Base 2.7.0~preview1
  rb_env_path_tainted@Base 2.7.0~preview1
  rb_eof_error@Base 2.7.0~preview1
@@ -630,6 +630,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_error_frozen_object@Base 2.7.0~preview1
  rb_error_untrusted@Base 2.7.0~preview1
  rb_eval_cmd@Base 2.7.0~preview1
+ rb_eval_cmd_kw@Base 2.7.0
  rb_eval_string@Base 2.7.0~preview1
  rb_eval_string_protect@Base 2.7.0~preview1
  rb_eval_string_wrap@Base 2.7.0~preview1
@@ -638,9 +639,9 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_exc_new_cstr@Base 2.7.0~preview1
  rb_exc_new_str@Base 2.7.0~preview1
  rb_exc_raise@Base 2.7.0~preview1
- rb_exc_set_backtrace@Base 2.7.0~preview2-1
+ rb_exc_set_backtrace@Base 2.7.0~preview2
  rb_exec_async_signal_safe@Base 2.7.0~preview1
- rb_exec_event_hooks@Base 2.7.0~preview2-1
+ rb_exec_event_hooks@Base 2.7.0~preview2
  rb_exec_recursive@Base 2.7.0~preview1
  rb_exec_recursive_outer@Base 2.7.0~preview1
  rb_exec_recursive_paired@Base 2.7.0~preview1
@@ -669,7 +670,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_f_sprintf@Base 2.7.0~preview1
  rb_f_trace_var@Base 2.7.0~preview1
  rb_f_untrace_var@Base 2.7.0~preview1
- rb_false@Base 2.7.0~preview2-1
+ rb_false@Base 2.7.0~preview2
  rb_fatal@Base 2.7.0~preview1
  rb_fd_clr@Base 2.7.0~preview1
  rb_fd_copy@Base 2.7.0~preview1
@@ -687,9 +688,9 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_fiber_current@Base 2.7.0~preview1
  rb_fiber_new@Base 2.7.0~preview1
  rb_fiber_resume@Base 2.7.0~preview1
- rb_fiber_resume_kw@Base 2.7.0~preview2-1
+ rb_fiber_resume_kw@Base 2.7.0~preview2
  rb_fiber_yield@Base 2.7.0~preview1
- rb_fiber_yield_kw@Base 2.7.0~preview2-1
+ rb_fiber_yield_kw@Base 2.7.0~preview2
  rb_file_absolute_path@Base 2.7.0~preview1
  rb_file_directory_p@Base 2.7.0~preview1
  rb_file_dirname@Base 2.7.0~preview1
@@ -697,7 +698,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_file_open@Base 2.7.0~preview1
  rb_file_open_str@Base 2.7.0~preview1
  rb_file_s_absolute_path@Base 2.7.0~preview1
- rb_file_s_birthtime@Base 2.7.0~preview2-1
+ rb_file_s_birthtime@Base 2.7.0~preview2
  rb_file_s_expand_path@Base 2.7.0~preview1
  rb_filesystem_encindex@Base 2.7.0~preview1
  rb_filesystem_encoding@Base 2.7.0~preview1
@@ -713,11 +714,11 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_fix2str@Base 2.7.0~preview1
  (arch=amd64 kfreebsd-amd64 arm64 ia64 s390x mips64el)rb_fix2uint@Base 2.7.0~preview1
  rb_fix2ushort@Base 2.7.0~preview1
- rb_fix_aref@Base 2.7.0~preview2-1
- rb_flo_div_flo@Base 2.7.0~preview2-1
- rb_float_cmp@Base 2.7.0~preview2-1
- rb_float_eql@Base 2.7.0~preview2-1
- rb_float_equal@Base 2.7.0~preview2-1
+ rb_fix_aref@Base 2.7.0~preview2
+ rb_flo_div_flo@Base 2.7.0~preview2
+ rb_float_cmp@Base 2.7.0~preview2
+ rb_float_eql@Base 2.7.0~preview2
+ rb_float_equal@Base 2.7.0~preview2
  rb_float_new@Base 2.7.0~preview1
  rb_float_new_in_heap@Base 2.7.0~preview1
  rb_float_value@Base 2.7.0~preview1
@@ -725,26 +726,26 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_flt_rationalize_with_prec@Base 2.7.0~preview1
  rb_fork_async_signal_safe@Base 2.7.0~preview1
  rb_frame_callee@Base 2.7.0~preview1
- rb_frame_method_id_and_class@Base 2.7.0~preview2-1
+ rb_frame_method_id_and_class@Base 2.7.0~preview2
  rb_frame_this_func@Base 2.7.0~preview1
  rb_free_generic_ivar@Base 2.7.0~preview1
  rb_free_tmp_buffer@Base 2.7.0~preview1
  rb_freeze_singleton_class@Base 2.7.0~preview1
- rb_frozen_error_raise@Base 2.7.0~preview2-1
+ rb_frozen_error_raise@Base 2.7.0~preview2
  rb_fs@Base 2.7.0~preview1
  rb_fstring@Base 2.7.0~preview1
- rb_fstring_new@Base 2.7.0~preview2-1
- rb_func_proc_new@Base 2.7.0~preview2-1
+ rb_fstring_new@Base 2.7.0~preview2
+ rb_func_proc_new@Base 2.7.0~preview2
  rb_funcall@Base 2.7.0~preview1
  rb_funcall_passing_block@Base 2.7.0~preview1
- rb_funcall_passing_block_kw@Base 2.7.0~preview2-1
+ rb_funcall_passing_block_kw@Base 2.7.0~preview2
  rb_funcall_with_block@Base 2.7.0~preview1
- rb_funcall_with_block_kw@Base 2.7.0~preview2-1
+ rb_funcall_with_block_kw@Base 2.7.0~preview2
  rb_funcallv@Base 2.7.0~preview1
- rb_funcallv_kw@Base 2.7.0~preview2-1
+ rb_funcallv_kw@Base 2.7.0~preview2
  rb_funcallv_public@Base 2.7.0~preview1
- rb_funcallv_public_kw@Base 2.7.0~preview2-1
- rb_funcallv_with_cc@Base 2.7.0~preview2-1
+ rb_funcallv_public_kw@Base 2.7.0~preview2
+ rb_funcallv_with_cc@Base 2.7.0~preview2
  rb_gc@Base 2.7.0~preview1
  rb_gc_adjust_memory_usage@Base 2.7.0~preview1
  rb_gc_copy_finalizer@Base 2.7.0~preview1
@@ -754,22 +755,22 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_gc_for_fd@Base 2.7.0~preview1
  rb_gc_force_recycle@Base 2.7.0~preview1
  rb_gc_latest_gc_info@Base 2.7.0~preview1
- rb_gc_location@Base 2.7.0~preview2-1
+ rb_gc_location@Base 2.7.0~preview2
  rb_gc_mark@Base 2.7.0~preview1
  rb_gc_mark_locations@Base 2.7.0~preview1
  rb_gc_mark_maybe@Base 2.7.0~preview1
- rb_gc_mark_movable@Base 2.7.0~preview2-1
+ rb_gc_mark_movable@Base 2.7.0~preview2
  rb_gc_mark_values@Base 2.7.0~preview1
- rb_gc_mark_vm_stack_values@Base 2.7.0~preview2-1
+ rb_gc_mark_vm_stack_values@Base 2.7.0~preview2
  rb_gc_register_address@Base 2.7.0~preview1
  rb_gc_register_mark_object@Base 2.7.0~preview1
  rb_gc_start@Base 2.7.0~preview1
  rb_gc_stat@Base 2.7.0~preview1
  rb_gc_unregister_address@Base 2.7.0~preview1
- rb_gc_update_tbl_refs@Base 2.7.0~preview2-1
+ rb_gc_update_tbl_refs@Base 2.7.0~preview2
  rb_gc_verify_internal_consistency@Base 2.7.0~preview1
  rb_gc_writebarrier@Base 2.7.0~preview1
- rb_gc_writebarrier_remember@Base 2.7.0~preview2-1
+ rb_gc_writebarrier_remember@Base 2.7.0~preview2
  rb_gc_writebarrier_unprotect@Base 2.7.0~preview1
  rb_gcd@Base 2.7.0~preview1
  rb_gcd_gmp@Base 2.7.0~preview1
@@ -787,15 +788,15 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_get_values_at@Base 2.7.0~preview1
  rb_gets@Base 2.7.0~preview1
  rb_glob@Base 2.7.0~preview1
- rb_global_entry@Base 2.7.0~preview2-1
+ rb_global_entry@Base 2.7.0~preview2
  rb_global_variable@Base 2.7.0~preview1
- rb_grantpt@Base 2.7.0~preview2-1
+ rb_grantpt@Base 2.7.0~preview2
  rb_gv_get@Base 2.7.0~preview1
  rb_gv_set@Base 2.7.0~preview1
- rb_gvar_defined@Base 2.7.0~preview2-1
- rb_gvar_get@Base 2.7.0~preview2-1
+ rb_gvar_defined@Base 2.7.0~preview2
+ rb_gvar_get@Base 2.7.0~preview2
  rb_gvar_readonly_setter@Base 2.7.0~preview1
- rb_gvar_set@Base 2.7.0~preview2-1
+ rb_gvar_set@Base 2.7.0~preview2
  rb_gvar_undef_getter@Base 2.7.0~preview1
  rb_gvar_undef_marker@Base 2.7.0~preview1
  rb_gvar_undef_setter@Base 2.7.0~preview1
@@ -806,13 +807,13 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_gvar_var_marker@Base 2.7.0~preview1
  rb_gvar_var_setter@Base 2.7.0~preview1
  rb_hash@Base 2.7.0~preview1
- rb_hash_ar_table_p@Base 2.7.0~preview2-1
+#MISSING: 2.7.0# rb_hash_ar_table_p@Base 2.7.0~preview2
  rb_hash_aref@Base 2.7.0~preview1
  rb_hash_aset@Base 2.7.0~preview1
- rb_hash_bulk_insert@Base 2.7.0~preview2-1
- rb_hash_bulk_insert_into_st_table@Base 2.7.0~preview2-1
+ rb_hash_bulk_insert@Base 2.7.0~preview2
+ rb_hash_bulk_insert_into_st_table@Base 2.7.0~preview2
  rb_hash_clear@Base 2.7.0~preview1
- rb_hash_compare_by_id_p@Base 2.7.0~preview2-1
+ rb_hash_compare_by_id_p@Base 2.7.0~preview2
  rb_hash_delete@Base 2.7.0~preview1
  rb_hash_delete_entry@Base 2.7.0~preview1
  rb_hash_delete_if@Base 2.7.0~preview1
@@ -820,35 +821,35 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_hash_fetch@Base 2.7.0~preview1
  rb_hash_foreach@Base 2.7.0~preview1
  rb_hash_freeze@Base 2.7.0~preview1
- rb_hash_has_key@Base 2.7.0~preview2-1
- rb_hash_keys@Base 2.7.0~preview2-1
+ rb_hash_has_key@Base 2.7.0~preview2
+ rb_hash_keys@Base 2.7.0~preview2
  rb_hash_lookup2@Base 2.7.0~preview1
  rb_hash_lookup@Base 2.7.0~preview1
  rb_hash_new@Base 2.7.0~preview1
- rb_hash_new_compare_by_id@Base 2.7.0~rc1
- rb_hash_new_with_size@Base 2.7.0~preview2-1
- rb_hash_resurrect@Base 2.7.0~preview2-1
+#MISSING: 2.7.0# rb_hash_new_compare_by_id@Base 2.7.0~rc1
+ rb_hash_new_with_size@Base 2.7.0~preview2
+ rb_hash_resurrect@Base 2.7.0~preview2
  rb_hash_set_ifnone@Base 2.7.0~preview1
  rb_hash_size@Base 2.7.0~preview1
- rb_hash_size_num@Base 2.7.0~preview2-1
- rb_hash_st_table@Base 2.7.0~preview2-1
+ rb_hash_size_num@Base 2.7.0~preview2
+#MISSING: 2.7.0# rb_hash_st_table@Base 2.7.0~preview2
  rb_hash_start@Base 2.7.0~preview1
- rb_hash_stlike_foreach@Base 2.7.0~preview2-1
- rb_hash_stlike_lookup@Base 2.7.0~preview2-1
+ rb_hash_stlike_foreach@Base 2.7.0~preview2
+ rb_hash_stlike_lookup@Base 2.7.0~preview2
  rb_hash_tbl@Base 2.7.0~preview1
- rb_hash_tbl_raw@Base 2.7.0~preview2-1
+ rb_hash_tbl_raw@Base 2.7.0~preview2
  rb_hash_update_by@Base 2.7.0~preview1
  rb_id2name@Base 2.7.0~preview1
  rb_id2str@Base 2.7.0~preview1
  rb_id2sym@Base 2.7.0~preview1
  rb_id_attrset@Base 2.7.0~preview1
- rb_id_quote_unprintable@Base 2.7.0~preview2-1
+ rb_id_quote_unprintable@Base 2.7.0~preview2
  rb_ident_hash_new@Base 2.7.0~preview1
  rb_imemo_new@Base 2.7.0~preview1
  rb_include_module@Base 2.7.0~preview1
  rb_insecure_operation@Base 2.7.0~preview1
  rb_inspect@Base 2.7.0~preview1
- rb_int128t2big@Base 2.7.0~preview2-1
+ rb_int128t2big@Base 2.7.0~preview2
  rb_int2big@Base 2.7.0~preview1
  rb_int2inum@Base 2.7.0~preview1
  rb_int_parse_cstr@Base 2.7.0~preview1
@@ -875,7 +876,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_io_close@Base 2.7.0~preview1
  rb_io_eof@Base 2.7.0~preview1
  rb_io_extract_encoding_option@Base 2.7.0~preview1
- rb_io_extract_modeenc@Base 2.7.0~preview2-1
+ rb_io_extract_modeenc@Base 2.7.0~preview2
  rb_io_fdopen@Base 2.7.0~preview1
  rb_io_flush@Base 2.7.0~preview1
  rb_io_fptr_finalize@Base 2.7.0~preview1
@@ -914,43 +915,44 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_iseq_absolute_path@Base 2.7.0~preview1
  rb_iseq_base_label@Base 2.7.0~preview1
  rb_iseq_build_from_ary@Base 2.7.0~preview1
- rb_iseq_code_location@Base 2.7.0~preview2-1
- rb_iseq_code_range@Base 2.7.0
- rb_iseq_compile@Base 2.7.0~preview1
- rb_iseq_compile_callback@Base 2.7.0~preview2-1
+ rb_iseq_code_location@Base 2.7.0~preview2
+#MISSING: 2.7.0# rb_iseq_code_range@Base 2.7.0
+#MISSING: 2.7.0# rb_iseq_compile@Base 2.7.0~preview1
+ rb_iseq_compile_callback@Base 2.7.0~preview2
  rb_iseq_compile_node@Base 2.7.0~preview1
- rb_iseq_compile_with_option@Base 2.7.0~preview1
+#MISSING: 2.7.0# rb_iseq_compile_with_option@Base 2.7.0~preview1
+ rb_iseq_constant_body_alloc@Base 2.7.0
  rb_iseq_coverage@Base 2.7.0~preview1
  rb_iseq_defined_string@Base 2.7.0~preview1
  rb_iseq_disasm@Base 2.7.0~preview1
  rb_iseq_disasm_insn@Base 2.7.0~preview1
  rb_iseq_eval@Base 2.7.0~preview1
  rb_iseq_eval_main@Base 2.7.0~preview1
- rb_iseq_event_flags@Base 2.7.0~preview2-1
+ rb_iseq_event_flags@Base 2.7.0~preview2
  rb_iseq_first_lineno@Base 2.7.0~preview1
- rb_iseq_insns_info_encode_positions@Base 2.7.0~preview2-1
+ rb_iseq_insns_info_encode_positions@Base 2.7.0~preview2
  rb_iseq_label@Base 2.7.0~preview1
  rb_iseq_line_no@Base 2.7.0~preview1
  rb_iseq_load@Base 2.7.0~preview1
  rb_iseq_local_variables@Base 2.7.0~preview1
- rb_iseq_location@Base 2.7.0~preview2-1
- rb_iseq_make_compile_option@Base 2.7.0~preview1
- rb_iseq_mark_insn_storage@Base 2.7.0~preview2-1
+ rb_iseq_location@Base 2.7.0~preview2
+#MISSING: 2.7.0# rb_iseq_make_compile_option@Base 2.7.0~preview1
+ rb_iseq_mark_insn_storage@Base 2.7.0~preview2
  rb_iseq_method_name@Base 2.7.0~preview1
  rb_iseq_new@Base 2.7.0~preview1
  rb_iseq_new_main@Base 2.7.0~preview1
  rb_iseq_new_top@Base 2.7.0~preview1
- rb_iseq_new_with_callback@Base 2.7.0~preview2-1
+ rb_iseq_new_with_callback@Base 2.7.0~preview2
  rb_iseq_new_with_opt@Base 2.7.0~preview1
  rb_iseq_original_iseq@Base 2.7.0~preview1
  rb_iseq_parameters@Base 2.7.0~preview1
  rb_iseq_path@Base 2.7.0~preview1
  rb_iseq_realpath@Base 2.7.0~preview1
- rb_iseq_remove_coverage_all@Base 2.7.0~preview2-1
- rb_iseq_trace_on_all@Base 2.7.0~preview2-1
- rb_iseq_trace_set@Base 2.7.0~preview2-1
- rb_iseq_trace_set_all@Base 2.7.0~preview2-1
- rb_iseq_translate_threaded_code@Base 2.7.0~preview1
+ rb_iseq_remove_coverage_all@Base 2.7.0~preview2
+#MISSING: 2.7.0# rb_iseq_trace_on_all@Base 2.7.0~preview2
+ rb_iseq_trace_set@Base 2.7.0~preview2
+ rb_iseq_trace_set_all@Base 2.7.0~preview2
+#MISSING: 2.7.0# rb_iseq_translate_threaded_code@Base 2.7.0~preview1
  rb_iseqw_new@Base 2.7.0~preview1
  rb_iseqw_to_iseq@Base 2.7.0~preview1
  rb_iter_break@Base 2.7.0~preview1
@@ -958,15 +960,16 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_iterate@Base 2.7.0~preview1
  rb_iv_get@Base 2.7.0~preview1
  rb_iv_set@Base 2.7.0~preview1
- rb_iv_tbl_copy@Base 2.7.0~preview2-1
+ rb_iv_tbl_copy@Base 2.7.0~preview2
  rb_ivar_count@Base 2.7.0~preview1
  rb_ivar_defined@Base 2.7.0~preview1
  rb_ivar_foreach@Base 2.7.0~preview1
+ rb_ivar_generic_ivtbl@Base 2.7.0
  rb_ivar_get@Base 2.7.0~preview1
  rb_ivar_set@Base 2.7.0~preview1
  rb_jump_tag@Base 2.7.0~preview1
- rb_keyword_error_new@Base 2.7.0~preview2-1
- rb_keyword_given_p@Base 2.7.0~preview2-1
+ rb_keyword_error_new@Base 2.7.0~preview2
+ rb_keyword_given_p@Base 2.7.0~preview2
  rb_last_status_get@Base 2.7.0~preview1
  rb_last_status_set@Base 2.7.0~preview1
  rb_lastline_get@Base 2.7.0~preview1
@@ -996,12 +999,12 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_mWaitWritable@Base 2.7.0~preview1
  rb_make_backtrace@Base 2.7.0~preview1
  rb_make_exception@Base 2.7.0~preview1
- rb_make_no_method_exception@Base 2.7.0~preview2-1
+ rb_make_no_method_exception@Base 2.7.0~preview2
  rb_mark_generic_ivar@Base 2.7.0~preview1
  rb_mark_hash@Base 2.7.0~preview1
  rb_mark_set@Base 2.7.0~preview1
  rb_mark_tbl@Base 2.7.0~preview1
- rb_mark_tbl_no_pin@Base 2.7.0~preview2-1
+ rb_mark_tbl_no_pin@Base 2.7.0~preview2
  rb_marshal_define_compat@Base 2.7.0~preview1
  rb_marshal_dump@Base 2.7.0~preview1
  rb_marshal_load@Base 2.7.0~preview1
@@ -1011,24 +1014,25 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_memcicmp@Base 2.7.0~preview1
  rb_memerror@Base 2.7.0~preview1
  rb_memhash@Base 2.7.0~preview1
- rb_memory_id@Base 2.7.0~preview2-1
+ rb_memory_id@Base 2.7.0~preview2
  rb_memsearch@Base 2.7.0~preview1
  rb_method_basic_definition_p@Base 2.7.0~preview1
+ rb_method_basic_definition_p_with_cc@Base 2.7.0
  rb_method_boundp@Base 2.7.0~preview1
  rb_method_call@Base 2.7.0~preview1
- rb_method_call_kw@Base 2.7.0~preview2-1
+ rb_method_call_kw@Base 2.7.0~preview2
  rb_method_call_with_block@Base 2.7.0~preview1
- rb_method_call_with_block_kw@Base 2.7.0~preview2-1
- rb_method_definition_create@Base 2.7.0~preview2-1
- rb_method_definition_eq@Base 2.7.0~preview2-1
- rb_method_definition_set@Base 2.7.0~preview2-1
- rb_method_entry@Base 2.7.0~preview2-1
- rb_method_entry_complement_defined_class@Base 2.7.0~preview2-1
+ rb_method_call_with_block_kw@Base 2.7.0~preview2
+ rb_method_definition_create@Base 2.7.0~preview2
+ rb_method_definition_eq@Base 2.7.0~preview2
+ rb_method_definition_set@Base 2.7.0~preview2
+ rb_method_entry@Base 2.7.0~preview2
+ rb_method_entry_complement_defined_class@Base 2.7.0~preview2
  rb_method_iseq@Base 2.7.0~preview1
- rb_mjit_add_iseq_to_process@Base 2.7.0~preview2-1
- rb_mjit_iseq_compile_info@Base 2.7.0~preview2-1
- rb_mjit_recompile_iseq@Base 2.7.0~preview2-1
- rb_mjit_wait_call@Base 2.7.0~preview2-1
+ rb_mjit_add_iseq_to_process@Base 2.7.0~preview2
+ rb_mjit_iseq_compile_info@Base 2.7.0~preview2
+ rb_mjit_recompile_iseq@Base 2.7.0~preview2
+ rb_mjit_wait_call@Base 2.7.0~preview2
  rb_mod_ancestors@Base 2.7.0~preview1
  rb_mod_class_variables@Base 2.7.0~preview1
  rb_mod_const_at@Base 2.7.0~preview1
@@ -1056,7 +1060,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_mutex_synchronize@Base 2.7.0~preview1
  rb_mutex_trylock@Base 2.7.0~preview1
  rb_mutex_unlock@Base 2.7.0~preview1
- rb_mv_generic_ivar@Base 2.7.0~preview2-1
+ rb_mv_generic_ivar@Base 2.7.0~preview2
  rb_name_error@Base 2.7.0~preview1
  rb_name_error_str@Base 2.7.0~preview1
  rb_nativethread_lock_destroy@Base 2.7.0~preview1
@@ -1067,8 +1071,8 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_need_block@Base 2.7.0~preview1
  rb_newobj@Base 2.7.0~preview1
  rb_newobj_of@Base 2.7.0~preview1
- rb_node_init@Base 2.7.0~preview2-1
- rb_nogvl@Base 2.7.0~preview2-1
+ rb_node_init@Base 2.7.0~preview2
+ rb_nogvl@Base 2.7.0~preview2
  rb_notimplement@Base 2.7.0~preview1
  rb_num2dbl@Base 2.7.0~preview1
  rb_num2fix@Base 2.7.0~preview1
@@ -1087,23 +1091,23 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_num_zerodiv@Base 2.7.0~preview1
  rb_obj_alloc@Base 2.7.0~preview1
  rb_obj_as_string@Base 2.7.0~preview1
- rb_obj_as_string_result@Base 2.7.0~preview2-1
+ rb_obj_as_string_result@Base 2.7.0~preview2
  rb_obj_call_init@Base 2.7.0~preview1
- rb_obj_call_init_kw@Base 2.7.0~preview2-1
+ rb_obj_call_init_kw@Base 2.7.0~preview2
  rb_obj_class@Base 2.7.0~preview1
  rb_obj_classname@Base 2.7.0~preview1
  rb_obj_clone@Base 2.7.0~preview1
- rb_obj_copy_ivar@Base 2.7.0~preview2-1
+ rb_obj_copy_ivar@Base 2.7.0~preview2
  rb_obj_dup@Base 2.7.0~preview1
  rb_obj_encoding@Base 2.7.0~preview1
- rb_obj_equal@Base 2.7.0~preview2-1
+ rb_obj_equal@Base 2.7.0~preview2
  rb_obj_freeze@Base 2.7.0~preview1
  rb_obj_frozen_p@Base 2.7.0~preview1
  rb_obj_gc_flags@Base 2.7.0~preview1
  rb_obj_hide@Base 2.7.0~preview1
  rb_obj_id@Base 2.7.0~preview1
  rb_obj_infect@Base 2.7.0~preview1
- rb_obj_info@Base 2.7.0~preview2-1
+ rb_obj_info@Base 2.7.0~preview2
  rb_obj_init_copy@Base 2.7.0~preview1
  rb_obj_instance_eval@Base 2.7.0~preview1
  rb_obj_instance_exec@Base 2.7.0~preview1
@@ -1115,9 +1119,9 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_obj_memsize_of@Base 2.7.0~preview1
  rb_obj_method@Base 2.7.0~preview1
  rb_obj_method_arity@Base 2.7.0~preview1
- rb_obj_method_location@Base 2.7.0~preview2-1
- rb_obj_not@Base 2.7.0~preview2-1
- rb_obj_not_equal@Base 2.7.0~preview2-1
+#MISSING: 2.7.0# rb_obj_method_location@Base 2.7.0~preview2
+ rb_obj_not@Base 2.7.0~preview2
+ rb_obj_not_equal@Base 2.7.0~preview2
  rb_obj_remove_instance_variable@Base 2.7.0~preview1
  rb_obj_respond_to@Base 2.7.0~preview1
  rb_obj_reveal@Base 2.7.0~preview1
@@ -1139,16 +1143,16 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_objspace_marked_object_p@Base 2.7.0~preview1
  rb_objspace_reachable_objects_from@Base 2.7.0~preview1
  rb_objspace_reachable_objects_from_root@Base 2.7.0~preview1
- rb_opts_exception_p@Base 2.7.0~preview2-1
+ rb_opts_exception_p@Base 2.7.0~preview2
  (arch=amd64 kfreebsd-amd64 arm64 ia64 s390x mips64el)rb_out_of_int@Base 2.7.0~preview1
  rb_output_fs@Base 2.7.0~preview1
  rb_output_rs@Base 2.7.0~preview1
  rb_p@Base 2.7.0~preview1
  rb_parser_calloc@Base 2.7.0~preview1
- rb_parser_compile_cstr@Base 2.7.0~preview1
- rb_parser_compile_file@Base 2.7.0~preview1
+#MISSING: 2.7.0# rb_parser_compile_cstr@Base 2.7.0~preview1
+#MISSING: 2.7.0# rb_parser_compile_file@Base 2.7.0~preview1
  rb_parser_compile_file_path@Base 2.7.0~preview1
- rb_parser_compile_generic@Base 2.7.0~preview2-1
+ rb_parser_compile_generic@Base 2.7.0~preview2
  rb_parser_compile_string@Base 2.7.0~preview1
  rb_parser_compile_string_path@Base 2.7.0~preview1
  rb_parser_dump_tree@Base 2.7.0~preview1
@@ -1156,18 +1160,18 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_parser_end_seen_p@Base 2.7.0~preview1
  rb_parser_fatal@Base 2.7.0~preview1
  rb_parser_free@Base 2.7.0~preview1
- rb_parser_get_yydebug@Base 2.7.0~preview1
+#MISSING: 2.7.0# rb_parser_get_yydebug@Base 2.7.0~preview1
  rb_parser_lex_state_name@Base 2.7.0~preview1
  rb_parser_malloc@Base 2.7.0~preview1
  rb_parser_new@Base 2.7.0~preview1
  rb_parser_printf@Base 2.7.0~preview1
  rb_parser_realloc@Base 2.7.0~preview1
  rb_parser_reg_compile@Base 2.7.0~preview1
- rb_parser_set_context@Base 2.7.0~preview2-1
- rb_parser_set_location@Base 2.7.0~preview2-1
- rb_parser_set_location_from_strterm_heredoc@Base 2.7.0~preview2-1
- rb_parser_set_location_of_none@Base 2.7.0~preview2-1
- rb_parser_set_options@Base 2.7.0~preview2-1
+ rb_parser_set_context@Base 2.7.0~preview2
+ rb_parser_set_location@Base 2.7.0~preview2
+ rb_parser_set_location_from_strterm_heredoc@Base 2.7.0~preview2
+ rb_parser_set_location_of_none@Base 2.7.0~preview2
+ rb_parser_set_options@Base 2.7.0~preview2
  rb_parser_set_yydebug@Base 2.7.0~preview1
  rb_parser_show_bitstack@Base 2.7.0~preview1
  rb_parser_trace_lex_state@Base 2.7.0~preview1
@@ -1181,9 +1185,9 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_prepend_module@Base 2.7.0~preview1
  rb_proc_arity@Base 2.7.0~preview1
  rb_proc_call@Base 2.7.0~preview1
- rb_proc_call_kw@Base 2.7.0~preview2-1
+ rb_proc_call_kw@Base 2.7.0~preview2
  rb_proc_call_with_block@Base 2.7.0~preview1
- rb_proc_call_with_block_kw@Base 2.7.0~preview2-1
+ rb_proc_call_with_block_kw@Base 2.7.0~preview2
  rb_proc_exec@Base 2.7.0~preview1
  rb_proc_get_iseq@Base 2.7.0~preview1
  rb_proc_lambda_p@Base 2.7.0~preview1
@@ -1203,9 +1207,9 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_protect@Base 2.7.0~preview1
  rb_provide@Base 2.7.0~preview1
  rb_provided@Base 2.7.0~preview1
- rb_public_const_defined_from@Base 2.7.0~preview2-1
- rb_public_const_get_at@Base 2.7.0~preview2-1
- rb_public_const_get_from@Base 2.7.0~preview2-1
+ rb_public_const_defined_from@Base 2.7.0~preview2
+ rb_public_const_get_at@Base 2.7.0~preview2
+ rb_public_const_get_from@Base 2.7.0~preview2
  rb_raise@Base 2.7.0~preview1
  rb_random_bytes@Base 2.7.0~preview1
  rb_random_int32@Base 2.7.0~preview1
@@ -1233,7 +1237,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_reg_match_post@Base 2.7.0~preview1
  rb_reg_match_pre@Base 2.7.0~preview1
  rb_reg_new@Base 2.7.0~preview1
- rb_reg_new_ary@Base 2.7.0~preview2-1
+ rb_reg_new_ary@Base 2.7.0~preview2
  rb_reg_new_str@Base 2.7.0~preview1
  rb_reg_nth_defined@Base 2.7.0~preview1
  rb_reg_nth_match@Base 2.7.0~preview1
@@ -1251,21 +1255,22 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_remove_method_id@Base 2.7.0~preview1
  rb_require@Base 2.7.0~preview1
  rb_require_safe@Base 2.7.0~preview1
+ rb_require_string@Base 2.7.0
  rb_rescue2@Base 2.7.0~preview1
  rb_rescue@Base 2.7.0~preview1
  rb_reserved_fd_p@Base 2.7.0~preview1
  rb_reserved_word@Base 2.7.0~preview1
  rb_reset_coverages@Base 2.7.0~preview1
  rb_reset_random_seed@Base 2.7.0~preview1
- rb_resolve_me_location@Base 2.7.0~preview2-1
- rb_resolve_refined_method_callable@Base 2.7.0~preview2-1
+ rb_resolve_me_location@Base 2.7.0~preview2
+ rb_resolve_refined_method_callable@Base 2.7.0~preview2
  rb_respond_to@Base 2.7.0~preview1
  rb_rs@Base 2.7.0~preview1
  rb_ruby_debug_ptr@Base 2.7.0~preview1
  rb_ruby_verbose_ptr@Base 2.7.0~preview1
  rb_safe_level@Base 2.7.0~preview1
  rb_scan_args@Base 2.7.0~preview1
- rb_scan_args_kw@Base 2.7.0~preview2-1
+ rb_scan_args_kw@Base 2.7.0~preview2
  rb_secure@Base 2.7.0~preview1
  rb_secure_update@Base 2.7.0~preview1
  rb_set_class_path@Base 2.7.0~preview1
@@ -1279,51 +1284,51 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_singleton_class@Base 2.7.0~preview1
  rb_singleton_class_attached@Base 2.7.0~preview1
  rb_singleton_class_clone@Base 2.7.0~preview1
- rb_source_location_cstr@Base 2.7.0~preview2-1
+ rb_source_location_cstr@Base 2.7.0~preview2
  rb_sourcefile@Base 2.7.0~preview1
  rb_sourceline@Base 2.7.0~preview1
  rb_spawn@Base 2.7.0~preview1
  rb_spawn_err@Base 2.7.0~preview1
  rb_sprintf@Base 2.7.0~preview1
- rb_st_add_direct@Base 2.7.0~preview2-1
- rb_st_cleanup_safe@Base 2.7.0~preview2-1
- rb_st_clear@Base 2.7.0~preview2-1
+ rb_st_add_direct@Base 2.7.0~preview2
+ rb_st_cleanup_safe@Base 2.7.0~preview2
+ rb_st_clear@Base 2.7.0~preview2
  rb_st_copy@Base 2.7.0~preview1
- rb_st_delete@Base 2.7.0~preview2-1
- rb_st_delete_safe@Base 2.7.0~preview2-1
- rb_st_foreach@Base 2.7.0~preview2-1
- rb_st_foreach_check@Base 2.7.0~preview2-1
- rb_st_foreach_safe@Base 2.7.0~preview2-1
- rb_st_foreach_with_replace@Base 2.7.0~preview2-1
- rb_st_free_table@Base 2.7.0~preview2-1
- rb_st_get_key@Base 2.7.0~preview2-1
- rb_st_hash@Base 2.7.0~preview2-1
- rb_st_hash_end@Base 2.7.0~preview2-1
- rb_st_hash_start@Base 2.7.0~preview2-1
- rb_st_hash_uint32@Base 2.7.0~preview2-1
- rb_st_hash_uint@Base 2.7.0~preview2-1
- rb_st_init_numtable@Base 2.7.0~preview2-1
- rb_st_init_numtable_with_size@Base 2.7.0~preview2-1
- rb_st_init_strcasetable@Base 2.7.0~preview2-1
- rb_st_init_strcasetable_with_size@Base 2.7.0~preview2-1
- rb_st_init_strtable@Base 2.7.0~preview2-1
- rb_st_init_strtable_with_size@Base 2.7.0~preview2-1
- rb_st_init_table@Base 2.7.0~preview2-1
- rb_st_init_table_with_size@Base 2.7.0~preview2-1
- rb_st_insert2@Base 2.7.0~preview2-1
- rb_st_insert@Base 2.7.0~preview2-1
- rb_st_keys@Base 2.7.0~preview2-1
- rb_st_keys_check@Base 2.7.0~preview2-1
- rb_st_locale_insensitive_strcasecmp@Base 2.7.0~preview2-1
- rb_st_locale_insensitive_strncasecmp@Base 2.7.0~preview2-1
- rb_st_lookup@Base 2.7.0~preview2-1
- rb_st_memsize@Base 2.7.0~preview2-1
- rb_st_numcmp@Base 2.7.0~preview2-1
- rb_st_numhash@Base 2.7.0~preview2-1
- rb_st_shift@Base 2.7.0~preview2-1
- rb_st_update@Base 2.7.0~preview2-1
- rb_st_values@Base 2.7.0~preview2-1
- rb_st_values_check@Base 2.7.0~preview2-1
+ rb_st_delete@Base 2.7.0~preview2
+ rb_st_delete_safe@Base 2.7.0~preview2
+ rb_st_foreach@Base 2.7.0~preview2
+ rb_st_foreach_check@Base 2.7.0~preview2
+ rb_st_foreach_safe@Base 2.7.0~preview2
+ rb_st_foreach_with_replace@Base 2.7.0~preview2
+ rb_st_free_table@Base 2.7.0~preview2
+ rb_st_get_key@Base 2.7.0~preview2
+ rb_st_hash@Base 2.7.0~preview2
+ rb_st_hash_end@Base 2.7.0~preview2
+ rb_st_hash_start@Base 2.7.0~preview2
+ rb_st_hash_uint32@Base 2.7.0~preview2
+ rb_st_hash_uint@Base 2.7.0~preview2
+ rb_st_init_numtable@Base 2.7.0~preview2
+ rb_st_init_numtable_with_size@Base 2.7.0~preview2
+ rb_st_init_strcasetable@Base 2.7.0~preview2
+ rb_st_init_strcasetable_with_size@Base 2.7.0~preview2
+ rb_st_init_strtable@Base 2.7.0~preview2
+ rb_st_init_strtable_with_size@Base 2.7.0~preview2
+ rb_st_init_table@Base 2.7.0~preview2
+ rb_st_init_table_with_size@Base 2.7.0~preview2
+ rb_st_insert2@Base 2.7.0~preview2
+ rb_st_insert@Base 2.7.0~preview2
+ rb_st_keys@Base 2.7.0~preview2
+ rb_st_keys_check@Base 2.7.0~preview2
+ rb_st_locale_insensitive_strcasecmp@Base 2.7.0~preview2
+ rb_st_locale_insensitive_strncasecmp@Base 2.7.0~preview2
+ rb_st_lookup@Base 2.7.0~preview2
+ rb_st_memsize@Base 2.7.0~preview2
+ rb_st_numcmp@Base 2.7.0~preview2
+ rb_st_numhash@Base 2.7.0~preview2
+ rb_st_shift@Base 2.7.0~preview2
+ rb_st_update@Base 2.7.0~preview2
+ rb_st_values@Base 2.7.0~preview2
+ rb_st_values_check@Base 2.7.0~preview2
  rb_stat_new@Base 2.7.0~preview1
  rb_stderr@Base 2.7.0~preview1
  rb_stdin@Base 2.7.0~preview1
@@ -1349,7 +1354,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_str_coderange_scan_restartable@Base 2.7.0~preview1
  rb_str_comparable@Base 2.7.0~preview1
  rb_str_concat@Base 2.7.0~preview1
- rb_str_concat_literals@Base 2.7.0~preview2-1
+ rb_str_concat_literals@Base 2.7.0~preview2
  rb_str_conv_enc@Base 2.7.0~preview1
  rb_str_conv_enc_opts@Base 2.7.0~preview1
  rb_str_drop_bytes@Base 2.7.0~preview1
@@ -1359,7 +1364,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_str_ellipsize@Base 2.7.0~preview1
  rb_str_encode@Base 2.7.0~preview1
  rb_str_encode_ospath@Base 2.7.0~preview1
- rb_str_eql@Base 2.7.0~preview2-1
+ rb_str_eql@Base 2.7.0~preview2
  rb_str_equal@Base 2.7.0~preview1
  rb_str_export@Base 2.7.0~preview1
  rb_str_export_locale@Base 2.7.0~preview1
@@ -1384,7 +1389,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_str_new_static@Base 2.7.0~preview1
  rb_str_new_with_class@Base 2.7.0~preview1
  rb_str_offset@Base 2.7.0~preview1
- rb_str_opt_plus@Base 2.7.0~preview2-1
+ rb_str_opt_plus@Base 2.7.0~preview2
  rb_str_plus@Base 2.7.0~preview1
  rb_str_replace@Base 2.7.0~preview1
  rb_str_resize@Base 2.7.0~preview1
@@ -1401,16 +1406,16 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_str_substr@Base 2.7.0~preview1
  rb_str_succ@Base 2.7.0~preview1
  rb_str_times@Base 2.7.0~preview1
- rb_str_tmp_frozen_acquire@Base 2.7.0~preview2-1
- rb_str_tmp_frozen_release@Base 2.7.0~preview2-1
+ rb_str_tmp_frozen_acquire@Base 2.7.0~preview2
+ rb_str_tmp_frozen_release@Base 2.7.0~preview2
  rb_str_tmp_new@Base 2.7.0~preview1
  rb_str_to_dbl@Base 2.7.0~preview1
  rb_str_to_inum@Base 2.7.0~preview1
  rb_str_to_str@Base 2.7.0~preview1
  rb_str_unlocktmp@Base 2.7.0~preview1
  rb_str_update@Base 2.7.0~preview1
- rb_str_upto_each@Base 2.7.0~preview2-1
- rb_str_upto_endless_each@Base 2.7.0~preview2-1
+ rb_str_upto_each@Base 2.7.0~preview2
+ rb_str_upto_endless_each@Base 2.7.0~preview2
  rb_str_vcatf@Base 2.7.0~preview1
  rb_string_value@Base 2.7.0~preview1
  rb_string_value_cstr@Base 2.7.0~preview1
@@ -1433,8 +1438,8 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_sym2str@Base 2.7.0~preview1
  rb_sym_all_symbols@Base 2.7.0~preview1
  rb_sym_immortal_count@Base 2.7.0~preview1
- rb_sym_proc_call@Base 2.7.0~preview2-1
- rb_sym_to_proc@Base 2.7.0~preview2-1
+ rb_sym_proc_call@Base 2.7.0~preview2
+ rb_sym_to_proc@Base 2.7.0~preview2
  rb_sym_to_s@Base 2.7.0~preview1
  rb_symname_p@Base 2.7.0~preview1
  rb_sys_fail@Base 2.7.0~preview1
@@ -1482,7 +1487,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_thread_wait_for@Base 2.7.0~preview1
  rb_thread_wakeup@Base 2.7.0~preview1
  rb_thread_wakeup_alive@Base 2.7.0~preview1
- rb_threadptr_execute_interrupts@Base 2.7.0~preview2-1
+ rb_threadptr_execute_interrupts@Base 2.7.0~preview2
  rb_throw@Base 2.7.0~preview1
  rb_throw_obj@Base 2.7.0~preview1
  rb_time_interval@Base 2.7.0~preview1
@@ -1491,10 +1496,10 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_time_num_new@Base 2.7.0~preview1
  rb_time_succ@Base 2.7.0~preview1
  rb_time_timespec@Base 2.7.0~preview1
- rb_time_timespec_interval@Base 2.7.0~preview2-1
+ rb_time_timespec_interval@Base 2.7.0~preview2
  rb_time_timespec_new@Base 2.7.0~preview1
  rb_time_timeval@Base 2.7.0~preview1
- rb_time_utc_offset@Base 2.7.0~preview2-1
+ rb_time_utc_offset@Base 2.7.0~preview2
  rb_timespec_now@Base 2.7.0~preview1
  rb_to_encoding@Base 2.7.0~preview1
  rb_to_encoding_index@Base 2.7.0~preview1
@@ -1503,7 +1508,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_to_int@Base 2.7.0~preview1
  rb_to_symbol@Base 2.7.0~preview1
  rb_tracearg_binding@Base 2.7.0~preview1
- rb_tracearg_callee_id@Base 2.7.0~preview2-1
+ rb_tracearg_callee_id@Base 2.7.0~preview2
  rb_tracearg_defined_class@Base 2.7.0~preview1
  rb_tracearg_event@Base 2.7.0~preview1
  rb_tracearg_event_flag@Base 2.7.0~preview1
@@ -1530,7 +1535,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_undefine_finalizer@Base 2.7.0~preview1
  rb_unexpected_type@Base 2.7.0~preview1
  rb_update_max_fd@Base 2.7.0~preview1
- rb_update_st_references@Base 2.7.0~preview2-1
+#MISSING: 2.7.0# rb_update_st_references@Base 2.7.0~preview2
  rb_usascii_encindex@Base 2.7.0~preview1
  rb_usascii_encoding@Base 2.7.0~preview1
  rb_usascii_str_new@Base 2.7.0~preview1
@@ -1542,21 +1547,22 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_utf8_str_new_cstr@Base 2.7.0~preview1
  rb_utf8_str_new_static@Base 2.7.0~preview1
  rb_uv_to_utf8@Base 2.7.0~preview1
- rb_vm_call0@Base 2.7.0~preview2-1
- rb_vm_call_kw@Base 2.7.0~preview2-1
- rb_vm_exec@Base 2.7.0~preview2-1
- rb_vm_get_ruby_level_next_cfp@Base 2.7.0~preview2-1
- rb_vm_invoke_bmethod@Base 2.7.0~preview2-1
- rb_vm_invoke_proc@Base 2.7.0~preview2-1
- rb_vm_localjump_error@Base 2.7.0~preview2-1
- rb_vm_make_proc_lambda@Base 2.7.0~preview2-1
- rb_vm_search_method_slowpath@Base 2.7.0~preview2-1
- rb_vrescue2@Base 2.7.0~preview2-1
+ rb_vm_call0@Base 2.7.0~preview2
+ rb_vm_call_kw@Base 2.7.0~preview2
+ rb_vm_exec@Base 2.7.0~preview2
+ rb_vm_get_ruby_level_next_cfp@Base 2.7.0~preview2
+ rb_vm_invoke_bmethod@Base 2.7.0~preview2
+ rb_vm_invoke_proc@Base 2.7.0~preview2
+ rb_vm_localjump_error@Base 2.7.0~preview2
+ rb_vm_make_proc_lambda@Base 2.7.0~preview2
+ rb_vm_search_method_slowpath@Base 2.7.0~preview2
+ rb_vrescue2@Base 2.7.0~preview2
  rb_vsprintf@Base 2.7.0~preview1
  rb_wait_for_single_fd@Base 2.7.0~preview1
  rb_waitpid@Base 2.7.0~preview1
  rb_warn@Base 2.7.0~preview1
  rb_warning@Base 2.7.0~preview1
+ rb_warning_category_enabled_p@Base 2.7.0
  rb_wb_protected_newobj_of@Base 2.7.0~preview1
  rb_wb_unprotected_newobj_of@Base 2.7.0~preview1
  rb_write_error2@Base 2.7.0~preview1
@@ -1565,19 +1571,22 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_yield@Base 2.7.0~preview1
  rb_yield_block@Base 2.7.0~preview1
  rb_yield_splat@Base 2.7.0~preview1
- rb_yield_splat_kw@Base 2.7.0~preview2-1
+ rb_yield_splat_kw@Base 2.7.0~preview2
  rb_yield_values2@Base 2.7.0~preview1
  rb_yield_values@Base 2.7.0~preview1
- rb_yield_values_kw@Base 2.7.0~preview2-1
- rb_yytnamerr@Base 2.7.0~preview2-1
+ rb_yield_values_kw@Base 2.7.0~preview2
+ rb_yytnamerr@Base 2.7.0~preview2
  ruby_Init_Continuation_body@Base 2.7.0~preview1
  ruby_Init_Fiber_as_Coroutine@Base 2.7.0~preview1
  ruby_api_version@Base 2.7.0~preview1
  ruby_brace_glob@Base 2.7.0~preview1
  ruby_cleanup@Base 2.7.0~preview1
  ruby_copyright@Base 2.7.0~preview1
- ruby_current_execution_context_ptr@Base 2.7.0~preview2-1
- ruby_current_vm_ptr@Base 2.7.0~preview2-1
+ ruby_current_execution_context_ptr@Base 2.7.0~preview2
+ ruby_current_vm_ptr@Base 2.7.0~preview2
+ ruby_debug_counter_get@Base 2.7.0
+ ruby_debug_counter_reset@Base 2.7.0
+ ruby_debug_counter_show_at_exit@Base 2.7.0
  ruby_debug_print_id@Base 2.7.0~preview1
  ruby_debug_print_indent@Base 2.7.0~preview1
  ruby_debug_print_node@Base 2.7.0~preview1
@@ -1591,9 +1600,9 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  ruby_engine@Base 2.7.0~preview1
  ruby_exec_node@Base 2.7.0~preview1
  ruby_executable_node@Base 2.7.0~preview1
- ruby_fill_random_bytes@Base 2.7.0~preview2-1
+ ruby_fill_random_bytes@Base 2.7.0~preview2
  ruby_finalize@Base 2.7.0~preview1
- ruby_float_mod@Base 2.7.0~preview2-1
+ ruby_float_mod@Base 2.7.0~preview2
  ruby_getcwd@Base 2.7.0~preview1
  ruby_glob@Base 2.7.0~preview1
  ruby_global_name_punct_bits@Base 2.7.0~preview1
@@ -1614,7 +1623,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  ruby_process_options@Base 2.7.0~preview1
  ruby_prog_init@Base 2.7.0~preview1
  ruby_release_date@Base 2.7.0~preview1
- ruby_reset_leap_second_info@Base 2.7.0~preview2-1
+ ruby_reset_leap_second_info@Base 2.7.0~preview2
  ruby_run_node@Base 2.7.0~preview1
  ruby_safe_level_2_warning@Base 2.7.0~preview1
  ruby_scan_digits@Base 2.7.0~preview1
@@ -1642,15 +1651,15 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  ruby_unsetenv@Base 2.7.0~preview1
  ruby_version@Base 2.7.0~preview1
  ruby_vm_at_exit@Base 2.7.0~preview1
- ruby_vm_class_serial@Base 2.7.0~preview2-1
- ruby_vm_const_missing_count@Base 2.7.0~preview2-1
+ ruby_vm_class_serial@Base 2.7.0~preview2
+ ruby_vm_const_missing_count@Base 2.7.0~preview2
  ruby_vm_destruct@Base 2.7.0~preview1
- ruby_vm_event_enabled_flags@Base 2.7.0~rc1
- ruby_vm_event_enabled_global_flags@Base 2.7.0~preview2-1
- ruby_vm_event_flags@Base 2.7.0~preview2-1
- ruby_vm_event_local_num@Base 2.7.0~preview2-1
- ruby_vm_global_constant_state@Base 2.7.0~preview2-1
- ruby_vm_global_method_state@Base 2.7.0~preview2-1
+#MISSING: 2.7.0# ruby_vm_event_enabled_flags@Base 2.7.0~rc1
+ ruby_vm_event_enabled_global_flags@Base 2.7.0~preview2
+ ruby_vm_event_flags@Base 2.7.0~preview2
+ ruby_vm_event_local_num@Base 2.7.0~preview2
+ ruby_vm_global_constant_state@Base 2.7.0~preview2
+ ruby_vm_global_method_state@Base 2.7.0~preview2
  ruby_vsnprintf@Base 2.7.0~preview1
  ruby_xcalloc@Base 2.7.0~preview1
  ruby_xfree@Base 2.7.0~preview1
@@ -1659,3 +1668,5 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  ruby_xrealloc2@Base 2.7.0~preview1
  ruby_xrealloc@Base 2.7.0~preview1
  setproctitle@Base 2.7.0~preview1
+ strlcat@Base 2.7.0
+ strlcpy@Base 2.7.0
