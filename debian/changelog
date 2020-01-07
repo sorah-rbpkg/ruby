@@ -1,3 +1,9 @@
+ruby2.7 (2.7.0-1) unstable; urgency=medium
+
+  * No changes rebuild
+
+ -- Lucas Kanashiro <kanashiro@debian.org>  Tue, 07 Jan 2020 16:20:19 -0300
+
 ruby2.7 (2.7.0-1~exp1) experimental; urgency=medium
 
   * New upstream version 2.7.0
