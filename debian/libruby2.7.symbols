@@ -20,7 +20,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  OnigSyntaxPosixExtended@Base 2.7.0~preview1
  OnigSyntaxPython@Base 2.7.0~preview1
  OnigSyntaxRuby@Base 2.7.0~preview1
- coroutine_transfer@Base 2.7.0~preview2
+#MISSING: 2.7.0-1# coroutine_transfer@Base 2.7.0~preview2
  dln_find_exe_r@Base 2.7.0~preview1
  dln_find_file_r@Base 2.7.0~preview1
  dln_load@Base 2.7.0~preview1
@@ -234,7 +234,6 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_assert_failure@Base 2.7.0~preview2
  rb_assoc_new@Base 2.7.0~preview1
  rb_ast_add_mark_object@Base 2.7.0~preview2
-#MISSING: 2.7.0# rb_ast_delete_mark_object@Base 2.7.0~rc1
  rb_ast_delete_node@Base 2.7.0~preview2
  rb_ast_dispose@Base 2.7.0~preview2
  rb_ast_free@Base 2.7.0~preview2
@@ -400,9 +399,6 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_close_before_exec@Base 2.7.0~preview1
  rb_cmperr@Base 2.7.0~preview1
  rb_cmpint@Base 2.7.0~preview1
-#MISSING: 2.7.0# rb_compile_cstr@Base 2.7.0~preview1
-#MISSING: 2.7.0# rb_compile_file@Base 2.7.0~preview1
-#MISSING: 2.7.0# rb_compile_string@Base 2.7.0~preview1
  rb_compile_warn@Base 2.7.0~preview1
  rb_compile_warning@Base 2.7.0~preview1
  rb_complex_abs@Base 2.7.0~preview2
@@ -709,10 +705,10 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_find_file_ext@Base 2.7.0~preview1
  rb_find_file_ext_safe@Base 2.7.0~preview1
  rb_find_file_safe@Base 2.7.0~preview1
- (arch=amd64 kfreebsd-amd64 arm64 ia64 s390x mips64el)rb_fix2int@Base 2.7.0~preview1
+#MISSING: 2.7.0-1# rb_fix2int@Base 2.7.0~preview1
  rb_fix2short@Base 2.7.0~preview1
  rb_fix2str@Base 2.7.0~preview1
- (arch=amd64 kfreebsd-amd64 arm64 ia64 s390x mips64el)rb_fix2uint@Base 2.7.0~preview1
+#MISSING: 2.7.0-1# rb_fix2uint@Base 2.7.0~preview1
  rb_fix2ushort@Base 2.7.0~preview1
  rb_fix_aref@Base 2.7.0~preview2
  rb_flo_div_flo@Base 2.7.0~preview2
@@ -807,7 +803,6 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_gvar_var_marker@Base 2.7.0~preview1
  rb_gvar_var_setter@Base 2.7.0~preview1
  rb_hash@Base 2.7.0~preview1
-#MISSING: 2.7.0# rb_hash_ar_table_p@Base 2.7.0~preview2
  rb_hash_aref@Base 2.7.0~preview1
  rb_hash_aset@Base 2.7.0~preview1
  rb_hash_bulk_insert@Base 2.7.0~preview2
@@ -826,13 +821,11 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_hash_lookup2@Base 2.7.0~preview1
  rb_hash_lookup@Base 2.7.0~preview1
  rb_hash_new@Base 2.7.0~preview1
-#MISSING: 2.7.0# rb_hash_new_compare_by_id@Base 2.7.0~rc1
  rb_hash_new_with_size@Base 2.7.0~preview2
  rb_hash_resurrect@Base 2.7.0~preview2
  rb_hash_set_ifnone@Base 2.7.0~preview1
  rb_hash_size@Base 2.7.0~preview1
  rb_hash_size_num@Base 2.7.0~preview2
-#MISSING: 2.7.0# rb_hash_st_table@Base 2.7.0~preview2
  rb_hash_start@Base 2.7.0~preview1
  rb_hash_stlike_foreach@Base 2.7.0~preview2
  rb_hash_stlike_lookup@Base 2.7.0~preview2
@@ -849,7 +842,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_include_module@Base 2.7.0~preview1
  rb_insecure_operation@Base 2.7.0~preview1
  rb_inspect@Base 2.7.0~preview1
- rb_int128t2big@Base 2.7.0~preview2
+#MISSING: 2.7.0-1# rb_int128t2big@Base 2.7.0~preview2
  rb_int2big@Base 2.7.0~preview1
  rb_int2inum@Base 2.7.0~preview1
  rb_int_parse_cstr@Base 2.7.0~preview1
@@ -916,11 +909,8 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_iseq_base_label@Base 2.7.0~preview1
  rb_iseq_build_from_ary@Base 2.7.0~preview1
  rb_iseq_code_location@Base 2.7.0~preview2
-#MISSING: 2.7.0# rb_iseq_code_range@Base 2.7.0
-#MISSING: 2.7.0# rb_iseq_compile@Base 2.7.0~preview1
  rb_iseq_compile_callback@Base 2.7.0~preview2
  rb_iseq_compile_node@Base 2.7.0~preview1
-#MISSING: 2.7.0# rb_iseq_compile_with_option@Base 2.7.0~preview1
  rb_iseq_constant_body_alloc@Base 2.7.0
  rb_iseq_coverage@Base 2.7.0~preview1
  rb_iseq_defined_string@Base 2.7.0~preview1
@@ -936,7 +926,6 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_iseq_load@Base 2.7.0~preview1
  rb_iseq_local_variables@Base 2.7.0~preview1
  rb_iseq_location@Base 2.7.0~preview2
-#MISSING: 2.7.0# rb_iseq_make_compile_option@Base 2.7.0~preview1
  rb_iseq_mark_insn_storage@Base 2.7.0~preview2
  rb_iseq_method_name@Base 2.7.0~preview1
  rb_iseq_new@Base 2.7.0~preview1
@@ -949,10 +938,8 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_iseq_path@Base 2.7.0~preview1
  rb_iseq_realpath@Base 2.7.0~preview1
  rb_iseq_remove_coverage_all@Base 2.7.0~preview2
-#MISSING: 2.7.0# rb_iseq_trace_on_all@Base 2.7.0~preview2
  rb_iseq_trace_set@Base 2.7.0~preview2
  rb_iseq_trace_set_all@Base 2.7.0~preview2
-#MISSING: 2.7.0# rb_iseq_translate_threaded_code@Base 2.7.0~preview1
  rb_iseqw_new@Base 2.7.0~preview1
  rb_iseqw_to_iseq@Base 2.7.0~preview1
  rb_iter_break@Base 2.7.0~preview1
@@ -1076,11 +1063,12 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_notimplement@Base 2.7.0~preview1
  rb_num2dbl@Base 2.7.0~preview1
  rb_num2fix@Base 2.7.0~preview1
- (arch=amd64 kfreebsd-amd64 arm64 ia64 s390x mips64el)rb_num2int@Base 2.7.0~preview1
+ rb_num2int@Base 2.7.0~preview1
+#MISSING: 2.7.0-1# rb_num2int@Base 2.7.0~preview1
  rb_num2ll@Base 2.7.0~preview1
  rb_num2long@Base 2.7.0~preview1
  rb_num2short@Base 2.7.0~preview1
- (arch=amd64 kfreebsd-amd64 arm64 ia64 s390x mips64el)rb_num2uint@Base 2.7.0~preview1
+#MISSING: 2.7.0-1# rb_num2uint@Base 2.7.0~preview1
  rb_num2ull@Base 2.7.0~preview1
  rb_num2ulong@Base 2.7.0~preview1
  rb_num2ushort@Base 2.7.0~preview1
@@ -1119,7 +1107,6 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_obj_memsize_of@Base 2.7.0~preview1
  rb_obj_method@Base 2.7.0~preview1
  rb_obj_method_arity@Base 2.7.0~preview1
-#MISSING: 2.7.0# rb_obj_method_location@Base 2.7.0~preview2
  rb_obj_not@Base 2.7.0~preview2
  rb_obj_not_equal@Base 2.7.0~preview2
  rb_obj_remove_instance_variable@Base 2.7.0~preview1
@@ -1144,13 +1131,11 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_objspace_reachable_objects_from@Base 2.7.0~preview1
  rb_objspace_reachable_objects_from_root@Base 2.7.0~preview1
  rb_opts_exception_p@Base 2.7.0~preview2
- (arch=amd64 kfreebsd-amd64 arm64 ia64 s390x mips64el)rb_out_of_int@Base 2.7.0~preview1
+#MISSING: 2.7.0-1# rb_out_of_int@Base 2.7.0~preview1
  rb_output_fs@Base 2.7.0~preview1
  rb_output_rs@Base 2.7.0~preview1
  rb_p@Base 2.7.0~preview1
  rb_parser_calloc@Base 2.7.0~preview1
-#MISSING: 2.7.0# rb_parser_compile_cstr@Base 2.7.0~preview1
-#MISSING: 2.7.0# rb_parser_compile_file@Base 2.7.0~preview1
  rb_parser_compile_file_path@Base 2.7.0~preview1
  rb_parser_compile_generic@Base 2.7.0~preview2
  rb_parser_compile_string@Base 2.7.0~preview1
@@ -1160,7 +1145,6 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_parser_end_seen_p@Base 2.7.0~preview1
  rb_parser_fatal@Base 2.7.0~preview1
  rb_parser_free@Base 2.7.0~preview1
-#MISSING: 2.7.0# rb_parser_get_yydebug@Base 2.7.0~preview1
  rb_parser_lex_state_name@Base 2.7.0~preview1
  rb_parser_malloc@Base 2.7.0~preview1
  rb_parser_new@Base 2.7.0~preview1
@@ -1535,7 +1519,6 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_undefine_finalizer@Base 2.7.0~preview1
  rb_unexpected_type@Base 2.7.0~preview1
  rb_update_max_fd@Base 2.7.0~preview1
-#MISSING: 2.7.0# rb_update_st_references@Base 2.7.0~preview2
  rb_usascii_encindex@Base 2.7.0~preview1
  rb_usascii_encoding@Base 2.7.0~preview1
  rb_usascii_str_new@Base 2.7.0~preview1
@@ -1654,7 +1637,6 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  ruby_vm_class_serial@Base 2.7.0~preview2
  ruby_vm_const_missing_count@Base 2.7.0~preview2
  ruby_vm_destruct@Base 2.7.0~preview1
-#MISSING: 2.7.0# ruby_vm_event_enabled_flags@Base 2.7.0~rc1
  ruby_vm_event_enabled_global_flags@Base 2.7.0~preview2
  ruby_vm_event_flags@Base 2.7.0~preview2
  ruby_vm_event_local_num@Base 2.7.0~preview2
