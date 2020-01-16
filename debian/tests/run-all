@@ -20,6 +20,7 @@ fi
 skiplist=$(readlink -f $(dirname $0))/skiplist
 excludedir=$(readlink -f $(dirname $0))/excludes
 cp -r 'test/' $AUTOPKGTEST_TMP
+cp -r 'tool/' $AUTOPKGTEST_TMP
 cd $AUTOPKGTEST_TMP
 
 if [ -z "$tests" ]; then
