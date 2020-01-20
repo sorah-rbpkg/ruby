@@ -5,7 +5,7 @@ set -e
 #set -x
 
 # test against the default OpenSSL settings and not the Debian-specific ones
-export OPENSSL_CONF=/dev/null
+export OPENSSL_CONF=`pwd`/debian/openssl.cnf
 
 tests="$@"
 
