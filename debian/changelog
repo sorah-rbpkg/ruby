@@ -1,4 +1,4 @@
-ruby2.7 (2.7.0-2) UNRELEASED; urgency=medium
+ruby2.7 (2.7.0-2) unstable; urgency=medium
 
   * Fix symbols file using dpkg-gensymbols (Closes: #948371)
   * debian/rules: fix dh_auto_clean override (Closes: #948187)
