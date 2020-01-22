@@ -5,7 +5,7 @@ set -e
 #set -x
 
 # test against the default OpenSSL settings and not the Debian-specific ones
-export OPENSSL_CONF=/dev/null
+export OPENSSL_CONF=`pwd`/debian/openssl.cnf
 
 tests="$@"
 
@@ -20,6 +20,7 @@ fi
 skiplist=$(readlink -f $(dirname $0))/skiplist
 excludedir=$(readlink -f $(dirname $0))/excludes
 cp -r 'test/' $AUTOPKGTEST_TMP
+cp -r 'tool/' $AUTOPKGTEST_TMP
 cd $AUTOPKGTEST_TMP
 
 if [ -z "$tests" ]; then
