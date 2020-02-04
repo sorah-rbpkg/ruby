@@ -5,3 +5,4 @@
 0005-Make-gemspecs-reproducible.patch
 0006-Fix-FTBS-on-hurd.patch
 0007-Port-to-kfreebsd-amd64.patch
+0008-Fix-priority-order-of-paths-in-I-option.patch

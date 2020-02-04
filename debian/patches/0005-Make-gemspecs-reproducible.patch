@@ -13,7 +13,7 @@ build unreproducible
  5 files changed, 5 insertions(+), 1 deletion(-)
 
 diff --git a/ext/bigdecimal/bigdecimal.gemspec b/ext/bigdecimal/bigdecimal.gemspec
-index 53dbe91..78d23bb 100644
+index 7d767f5..26de3e0 100644
 --- a/ext/bigdecimal/bigdecimal.gemspec
 +++ b/ext/bigdecimal/bigdecimal.gemspec
 @@ -6,6 +6,7 @@ Gem::Specification.new do |s|
@@ -37,7 +37,7 @@ index b29f4ec..36ed213 100644
    spec.email         = ["aaron@tenderlovemaking.com", "hsbt@ruby-lang.org"]
  
 diff --git a/ext/io/console/io-console.gemspec b/ext/io/console/io-console.gemspec
-index eab5517..14bfcc1 100644
+index fac9bff..c495cfe 100644
 --- a/ext/io/console/io-console.gemspec
 +++ b/ext/io/console/io-console.gemspec
 @@ -5,7 +5,7 @@ date = %w$Date::                           $[1]
