@@ -1,3 +1,9 @@
+ruby2.7 (2.7.0-3) unstable; urgency=medium
+
+  * Fix priority order of paths in -I option
+
+ -- Cédric Boutillier <boutil@debian.org>  Tue, 04 Feb 2020 18:58:15 +0100
+
 ruby2.7 (2.7.0-2) unstable; urgency=medium
 
   * Fix symbols file using dpkg-gensymbols (Closes: #948371)
