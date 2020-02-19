@@ -1,3 +1,9 @@
+ruby2.7 (2.7.0-4) unstable; urgency=medium
+
+  * mipsel: exclude test that fails on buildd
+
+ -- Antonio Terceiro <terceiro@debian.org>  Wed, 19 Feb 2020 08:05:27 -0300
+
 ruby2.7 (2.7.0-3) unstable; urgency=medium
 
   * Fix priority order of paths in -I option
