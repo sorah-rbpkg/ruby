@@ -90,6 +90,9 @@ TEST_TARGETS := test test-tool test-all # missing test-spec
 excludes =
 excludes += --excludes-dir=debian/tests/excludes/any/
 excludes += --excludes-dir=debian/tests/excludes/$(DEB_HOST_ARCH)/
+ifneq (,$(DEBIAN_RUBY_EXTRA_TEST_EXCLUDES))
+	excludes += --excludes-dir=debian/tests/excludes/$(DEBIAN_RUBY_EXTRA_TEST_EXCLUDES)/
+endif
 override_dh_auto_test-arch:
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
 	$(MAKE) $(TEST_TARGETS) V=1 RUBY_TESTOPTS="-v -j4" TESTS="$(excludes)" OPENSSL_CONF=/dev/null
