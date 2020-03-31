@@ -1505,9 +1505,11 @@ VALUE rb_dbl_complex_new_polar_pi(double abs, double ang);
 
 struct rb_thread_struct;
 /* cont.c */
+struct rb_fiber_struct;
 VALUE rb_obj_is_fiber(VALUE);
 void rb_fiber_reset_root_local_storage(struct rb_thread_struct *);
 void ruby_register_rollback_func_for_ensure(VALUE (*ensure_func)(VALUE), VALUE (*rollback_func)(VALUE));
+void rb_fiber_init_mjit_cont(struct rb_fiber_struct *fiber);
 
 /* debug.c */
 PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
@@ -1631,10 +1633,13 @@ NORETURN(void rb_syserr_fail_path_in(const char *func_name, int err, VALUE path)
 /* gc.c */
 extern VALUE *ruby_initial_gc_stress_ptr;
 extern int ruby_disable_gc;
+struct rb_objspace; /* in vm_core.h */
 void Init_heap(void);
 void *ruby_mimmalloc(size_t size) RUBY_ATTR_MALLOC;
 void ruby_mimfree(void *ptr);
 void rb_objspace_set_event_hook(const rb_event_flag_t event);
+VALUE rb_objspace_gc_enable(struct rb_objspace *);
+VALUE rb_objspace_gc_disable(struct rb_objspace *);
 #if USE_RGENGC
 void rb_gc_writebarrier_remember(VALUE obj);
 #else
