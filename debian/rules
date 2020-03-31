@@ -28,6 +28,9 @@ configure_options += --enable-install-static-library
 configure_options += --disable-rpath
 configure_options += --with-sitedir='/usr/local/lib/site_ruby'
 configure_options += --with-sitearchdir="/usr/local/lib/$(DEB_HOST_MULTIARCH)/site_ruby"
+configure_options += --runstatedir=/var/run
+configure_options += --localstatedir=/var
+configure_options += --sysconfdir=/etc
 
 # the following are ignored by ./configure, but used by some extconf.rb scripts
 configure_options += --enable-ipv6

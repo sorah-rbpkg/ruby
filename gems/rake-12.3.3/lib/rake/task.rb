@@ -15,6 +15,7 @@ module Rake
   class Task
     # List of prerequisites for a task.
     attr_reader :prerequisites
+    alias prereqs prerequisites
 
     # List of actions attached to a task.
     attr_reader :actions
@@ -103,6 +104,7 @@ module Rake
       @scope           = app.current_scope
       @arg_names       = nil
       @locations       = []
+      @invocation_exception = nil
     end
 
     # Enhance a task with prerequisites or actions.  Returns self.
@@ -183,20 +185,39 @@ module Rake
 
     # Same as invoke, but explicitly pass a call chain to detect
     # circular dependencies.
-    def invoke_with_call_chain(task_args, invocation_chain) # :nodoc:
-      new_chain = InvocationChain.append(self, invocation_chain)
+    #
+    # If multiple tasks depend on this
+    # one in parallel, they will all fail if the first execution of
+    # this task fails.
+    def invoke_with_call_chain(task_args, invocation_chain)
+      new_chain = Rake::InvocationChain.append(self, invocation_chain)
       @lock.synchronize do
-        if application.options.trace
-          application.trace "** Invoke #{name} #{format_trace_flags}"
+        begin
+          if application.options.trace
+            application.trace "** Invoke #{name} #{format_trace_flags}"
+          end
+
+          if @already_invoked
+            if @invocation_exception
+              if application.options.trace
+                application.trace "** Previous invocation of #{name} failed #{format_trace_flags}"
+              end
+              raise @invocation_exception
+            else
+              return
+            end
+          end
+
+          @already_invoked = true
+
+          invoke_prerequisites(task_args, new_chain)
+          execute(task_args) if needed?
+        rescue Exception => ex
+          add_chain_to(ex, new_chain)
+          @invocation_exception = ex
+          raise ex
         end
-        return if @already_invoked
-        @already_invoked = true
-        invoke_prerequisites(task_args, new_chain)
-        execute(task_args) if needed?
       end
-    rescue Exception => ex
-      add_chain_to(ex, new_chain)
-      raise ex
     end
     protected :invoke_with_call_chain
 
@@ -227,7 +248,8 @@ module Rake
           r.invoke_with_call_chain(prereq_args, invocation_chain)
         end
       end
-      futures.each(&:value)
+      # Iterate in reverse to improve performance related to thread waiting and switching
+      futures.reverse_each(&:value)
     end
 
     # Format the trace flags for display.
@@ -267,7 +289,7 @@ module Rake
     def add_description(description)
       return unless description
       comment = description.strip
-      add_comment(comment) if comment && ! comment.empty?
+      add_comment(comment) if comment && !comment.empty?
     end
 
     def comment=(comment) # :nodoc:
