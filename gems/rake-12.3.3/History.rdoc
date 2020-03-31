@@ -1,11 +1,56 @@
+=== 12.3.3
+
+==== Bug fixes
+
+* Use the application's name in error message if a task is not found.
+  Pull Request #303 by tmatilai
+
+==== Enhancements:
+
+* Use File.open explicitly.
+
+=== 12.3.2
+
+==== Bug fixes
+
+* Fixed test fails caused by 2.6 warnings.
+  Pull Request #297 by hsbt
+
+==== Enhancements:
+
+* Rdoc improvements.
+  Pull Request #293 by colby-swandale
+* Improve multitask performance.
+  Pull Request #273 by jsm
+* Add alias `prereqs`.
+  Pull Request #268 by take-cheeze
+
+=== 12.3.1
+
+==== Bug fixes
+
+* Support did_you_mean >= v1.2.0 which has a breaking change on formatters.
+  Pull request #262 by FUJI Goro.
+
+==== Enhancements:
+
+* Don't run task if it depends on already invoked but failed task.
+  Pull request #252 by Gonzalo Rodriguez.
+* Make space trimming consistent for all task arguments.
+  Pull request #259 by Gonzalo Rodriguez.
+* Removes duplicated inclusion of Rake::DSL in tests.
+  Pull request #254 by Gonzalo Rodriguez.
+* Re-raise a LoadError that didn't come from require in the test loader.
+  Pull request #250 by Dylan Thacker-Smith.
+
 === 12.3.0
 
 ==== Compatibility Changes
 
-* Bump `required_ruby_verion` to Ruby 2.0.0. Rake was already
-  removed to support for Ruby 1.9.x.
+* Bump `required_ruby_version` to Ruby 2.0.0. Rake has already
+  removed support for Ruby 1.9.x.
 
-=== Enhancements:
+==== Enhancements:
 
 * Support `test-bundled-gems` task on ruby core.
 
