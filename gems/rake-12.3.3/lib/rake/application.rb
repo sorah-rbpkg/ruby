@@ -91,7 +91,7 @@ module Rake
         begin
           args = handle_options argv
         rescue ArgumentError
-          # Backword compatibility for capistrano
+          # Backward compatibility for capistrano
           args = handle_options
         end
         collect_command_line_tasks(args)
@@ -172,7 +172,7 @@ module Rake
       args = []
 
       begin
-        /((?:[^\\,]|\\.)*?)\s*(?:,\s*(.*))?$/ =~ remaining_args
+        /\s*((?:[^\\,]|\\.)*?)\s*(?:,\s*(.*))?$/ =~ remaining_args
 
         remaining_args = $2
         args << $1.gsub(/\\(.)/, '\1')
@@ -392,7 +392,7 @@ module Rake
 
     def sort_options(options) # :nodoc:
       options.sort_by { |opt|
-        opt.select { |o| o =~ /^-/ }.map(&:downcase).sort.reverse
+        opt.select { |o| o.is_a?(String) && o =~ /^-/ }.map(&:downcase).sort.reverse
       }
     end
     private :sort_options
@@ -687,7 +687,7 @@ module Rake
 
     def raw_load_rakefile # :nodoc:
       rakefile, location = find_rakefile_location
-      if (! options.ignore_system) &&
+      if (!options.ignore_system) &&
           (options.load_system || rakefile.nil?) &&
           system_dir && File.directory?(system_dir)
         print_rakefile_directory(location)
@@ -797,7 +797,7 @@ module Rake
       backtrace.find { |str| str =~ re } || ""
     end
 
-    def set_default_options
+    def set_default_options # :nodoc:
       options.always_multitask           = false
       options.backtrace                  = false
       options.build_all                  = false

@@ -14,19 +14,16 @@ Gem::Specification.new do |s|
   s.email = ["hsbt@ruby-lang.org".freeze]
   s.files = [".gitignore".freeze, ".travis.yml".freeze, "Gemfile".freeze, "LICENSE.txt".freeze, "README.md".freeze, "Rakefile".freeze, "bin/console".freeze, "bin/setup".freeze, "lib/net-telnet.rb".freeze, "lib/net/telnet.rb".freeze, "lib/net/telnet/version.rb".freeze, "net-telnet.gemspec".freeze]
   s.homepage = "https://github.com/ruby/net-telnet".freeze
-  s.rubygems_version = "2.7.6".freeze
+  s.rubygems_version = "3.1.2".freeze
   s.summary = "Provides telnet client functionality.".freeze
 
   if s.respond_to? :specification_version then
     s.specification_version = 4
+  end
 
-    if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-      s.add_development_dependency(%q<bundler>.freeze, ["~> 1.9"])
-      s.add_development_dependency(%q<rake>.freeze, ["~> 10.0"])
-    else
-      s.add_dependency(%q<bundler>.freeze, ["~> 1.9"])
-      s.add_dependency(%q<rake>.freeze, ["~> 10.0"])
-    end
+  if s.respond_to? :add_runtime_dependency then
+    s.add_development_dependency(%q<bundler>.freeze, ["~> 1.9"])
+    s.add_development_dependency(%q<rake>.freeze, ["~> 10.0"])
   else
     s.add_dependency(%q<bundler>.freeze, ["~> 1.9"])
     s.add_dependency(%q<rake>.freeze, ["~> 10.0"])
