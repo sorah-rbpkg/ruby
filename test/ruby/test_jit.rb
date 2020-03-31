@@ -12,6 +12,10 @@ class TestJIT < Test::Unit::TestCase
     /\AJIT inline: .+\n\z/,
     /\ASuccessful MJIT finish\n\z/,
   ]
+  MAX_CACHE_PATTERNS = [
+    /\AJIT compaction \([^)]+\): .+\n\z/,
+    /\ANo units can be unloaded -- .+\n\z/,
+  ]
 
   # trace_* insns are not compiled for now...
   TEST_PENDING_INSNS = RubyVM::INSTRUCTION_NAMES.select { |n| n.start_with?('trace_') }.map(&:to_sym) + [
@@ -610,6 +614,46 @@ class TestJIT < Test::Unit::TestCase
     assert_match(/^Successful MJIT finish$/, err)
   end
 
+  def test_nothing_to_unload_with_jit_wait
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hello', success_count: 11, max_cache: 10, ignorable_patterns: MAX_CACHE_PATTERNS)
+    begin;
+      def a1() a2() end
+      def a2() a3() end
+      def a3() a4() end
+      def a4() a5() end
+      def a5() a6() end
+      def a6() a7() end
+      def a7() a8() end
+      def a8() a9() end
+      def a9() a10() end
+      def a10() a11() end
+      def a11() print('hello') end
+      a1
+    end;
+  end
+
+  def test_unload_units_on_fiber
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hello', success_count: 12, max_cache: 10, ignorable_patterns: MAX_CACHE_PATTERNS)
+    begin;
+      def a1() a2(false); a2(true) end
+      def a2(a) a3(a) end
+      def a3(a) a4(a) end
+      def a4(a) a5(a) end
+      def a5(a) a6(a) end
+      def a6(a) a7(a) end
+      def a7(a) a8(a) end
+      def a8(a) a9(a) end
+      def a9(a) a10(a) end
+      def a10(a)
+        if a
+          Fiber.new { a11 }.resume
+        end
+      end
+      def a11() print('hello') end
+      a1
+    end;
+  end
+
   def test_unload_units_and_compaction
     Dir.mktmpdir("jit_test_unload_units_") do |dir|
       # MIN_CACHE_SIZE is 10
@@ -828,6 +872,16 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_jump_to_precompiled_branch
+    assert_eval_with_jit("#{<<~'begin;'}\n#{<<~'end;'}", stdout: ".0", success_count: 1, min_calls: 1)
+    begin;
+      def test(foo)
+        ".#{foo unless foo == 1}" if true
+      end
+      print test(0)
+    end;
+  end
+
   def test_clean_so
     if RUBY_PLATFORM.match?(/mswin/)
       skip 'Removing so file is randomly failing on AppVeyor/RubyCI mswin due to Permission Denied.'
@@ -996,13 +1050,13 @@ class TestJIT < Test::Unit::TestCase
   end
 
   # Shorthand for normal test cases
-  def assert_eval_with_jit(script, stdout: nil, success_count:, min_calls: 1, insns: [], uplevel: 1)
-    out, err = eval_with_jit(script, verbose: 1, min_calls: min_calls)
+  def assert_eval_with_jit(script, stdout: nil, success_count:, min_calls: 1, max_cache: 1000, insns: [], uplevel: 1, ignorable_patterns: [])
+    out, err = eval_with_jit(script, verbose: 1, min_calls: min_calls, max_cache: max_cache)
     actual = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
     # Add --jit-verbose=2 logs for cl.exe because compiler's error message is suppressed
     # for cl.exe with --jit-verbose=1. See `start_process` in mjit_worker.c.
     if RUBY_PLATFORM.match?(/mswin/) && success_count != actual
-      out2, err2 = eval_with_jit(script, verbose: 2, min_calls: min_calls)
+      out2, err2 = eval_with_jit(script, verbose: 2, min_calls: min_calls, max_cache: max_cache)
     end
 
     # Make sure that the script has insns expected to be tested
@@ -1022,7 +1076,7 @@ class TestJIT < Test::Unit::TestCase
       assert_equal(stdout, out, "Expected stdout #{out.inspect} to match #{stdout.inspect} with script:\n#{code_block(script)}")
     end
     err_lines = err.lines.reject! do |l|
-      l.chomp.empty? || l.match?(/\A#{JIT_SUCCESS_PREFIX}/) || IGNORABLE_PATTERNS.any? { |pat| pat.match?(l) }
+      l.chomp.empty? || l.match?(/\A#{JIT_SUCCESS_PREFIX}/) || (IGNORABLE_PATTERNS + ignorable_patterns).any? { |pat| pat.match?(l) }
     end
     unless err_lines.empty?
       warn err_lines.join(''), uplevel: uplevel

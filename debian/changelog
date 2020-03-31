@@ -1,3 +1,10 @@
+ruby2.7 (2.7.1-0nkmi1~dist) unstable; urgency=medium
+
+  * bump
+  * fix sysconfdir and etc...
+
+ -- Sorah Fukumori <sorah@cookpad.com>  Tue, 31 Mar 2020 16:44:13 +0000
+
 ruby2.7 (2.7.0-0nkmi1~dist) unstable; urgency=medium
 
   * 2.7.0, happy holidays.
