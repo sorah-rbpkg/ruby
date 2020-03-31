@@ -25,8 +25,8 @@ Rake has the following features:
 
 * A library of prepackaged tasks to make building rakefiles easier. For example,
   tasks for building tarballs. (Formerly
-  tasks for building RDoc, Gems and publishing to FTP were included in rake but they're now
-  available in RDoc, RubyGems and  respectively.)
+  tasks for building RDoc, Gems, and publishing to FTP were included in rake but they're now
+  available in RDoc, RubyGems, and rake-contrib respectively.)
 
 * Supports parallel execution of tasks.
 
@@ -75,10 +75,10 @@ Type "rake --help" for all available options.
 
 === Rake Information
 
-* {Rake command-line}[rdoc-ref:doc/command_line_usage.rdoc]
-* {Writing Rakefiles}[rdoc-ref:doc/rakefile.rdoc]
-* The original {Rake announcement}[rdoc-ref:doc/rational.rdoc]
-* Rake {glossary}[rdoc-ref:doc/glossary.rdoc]
+* {Rake command-line}[link:doc/command_line_usage.rdoc]
+* {Writing Rakefiles}[link:doc/rakefile.rdoc]
+* The original {Rake announcement}[link:doc/rational.rdoc]
+* Rake {glossary}[link:doc/glossary.rdoc]
 
 === Presentations and Articles about Rake
 
@@ -130,7 +130,7 @@ Rake is available under an MIT-style license.
 = Other stuff
 
 Author::   Jim Weirich <jim.weirich@gmail.com>
-Requires:: Ruby 1.9.3 or later
+Requires:: Ruby 2.0.0 or later
 License::  Copyright Jim Weirich.
            Released under an MIT-style license.  See the MIT-LICENSE
            file included in the distribution.

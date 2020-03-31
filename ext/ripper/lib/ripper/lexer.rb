@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 #
-# $Id: lexer.rb 67242 2019-03-13 00:32:12Z nagachika $
+# $Id: lexer.rb 67871 2020-03-30 22:44:13Z usa $
 #
 # Copyright (c) 2004,2005 Minero Aoki
 #
@@ -192,7 +192,7 @@ class Ripper
       if m = /[^\w\s$()\[\]{}?*+\.]/.match(pattern)
         raise CompileError, "invalid char in pattern: #{m[0].inspect}"
       end
-      buf = ''
+      buf = +''
       pattern.scan(/(?:\w+|\$\(|[()\[\]\{\}?*+\.]+)/) do |tok|
         case tok
         when /\w/

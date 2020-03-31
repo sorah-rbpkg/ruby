@@ -1,7 +1,254 @@
 ------------------------------------------------------------------------
-r67816 | usa | 2019-10-01 20:02:30 +0900 (Tue, 01 Oct 2019) | 1 line
+r67882 | usa | 2020-03-31 21:15:56 +0900 (Tue, 31 Mar 2020) | 1 line
 
-add tag v2_5_7
+add tag v2_5_8
+------------------------------------------------------------------------
+r67881 | usa | 2020-03-31 21:13:31 +0900 (Tue, 31 Mar 2020) | 5 lines
+
+merge revision(s) 47a1872cd8b901b8aab6dedce7fa3807c97d290d: [Backport #16681]
+
+	Use osuosl instead of GitHub releases
+
+	  Because the package provided by GitHub releases is different from sourceware.
+------------------------------------------------------------------------
+r67877 | usa | 2020-03-31 20:40:08 +0900 (Tue, 31 Mar 2020) | 8 lines
+
+merge revision(s) 61b7f86248bd121be2e83768be71ef289e8e5b90
+
+	* ext/socket/init.c: do not return uninitialized buffer
+	  Resize string buffer only if some data is received in
+	  BasicSocket#read_nonblock and some methods.
+
+	Co-Authored-By: Samuel Williams <samuel.williams@oriontransfer.co.nz>
+
+------------------------------------------------------------------------
+r67872 | usa | 2020-03-31 07:47:56 +0900 (Tue, 31 Mar 2020) | 7 lines
+
+merge revision(s) 4adb2d655dcd54b28366b4d17e86b21e2b622cd1: [Backport #16738]
+
+	Make RbConfig::CONFIG values mutable [Bug #16738]
+
+	As `RbConfig.expand` modifies the argument and involved `CONFIG`
+	values, its values should be mutable.
+
+------------------------------------------------------------------------
+r67871 | usa | 2020-03-31 07:44:13 +0900 (Tue, 31 Mar 2020) | 28 lines
+
+merge revision(s) 62743: [Backport #16687]
+
+	Fix FrozenError on `Ripper.slice`
+
+	Currently `Ripper.slice` raises a FrozenError
+
+	```ruby
+	require 'ripper'
+	p Ripper.slice('foo', 'ident')
+	```
+
+	```
+	/path/to/g/lib/ruby/2.6.0/ripper/lexer.rb:193:in `concat': can't modify frozen String (FrozenError)
+		from /path/to/g/lib/ruby/2.6.0/ripper/lexer.rb:193:in `block in compile'
+		from /path/to/g/lib/ruby/2.6.0/ripper/lexer.rb:190:in `scan'
+		from /path/to/g/lib/ruby/2.6.0/ripper/lexer.rb:190:in `compile'
+		from /path/to/g/lib/ruby/2.6.0/ripper/lexer.rb:169:in `initialize'
+		from /path/to/g/lib/ruby/2.6.0/ripper/lexer.rb:151:in `new'
+		from /path/to/g/lib/ruby/2.6.0/ripper/lexer.rb:151:in `token_match'
+		from /path/to/g/lib/ruby/2.6.0/ripper/lexer.rb:144:in `slice'
+		from /tmp/tmp.kb4cnhvum2/test.rb:2:in `<main>'
+	```
+
+	This patch will fix the problem.
+
+	[Fix GH-1837]
+
+	From: Masataka Pocke Kuwabara <kuwabara@pocke.me>
+------------------------------------------------------------------------
+r67870 | usa | 2020-03-31 07:33:37 +0900 (Tue, 31 Mar 2020) | 4 lines
+
+merge revision(s) 8a6ba10f9dd456cf54de800203cf04bbe42271fb: [Backport #12392]
+
+	Do not make disabled directories at installation  [Bug #12392]
+
+------------------------------------------------------------------------
+r67869 | usa | 2020-03-31 07:22:10 +0900 (Tue, 31 Mar 2020) | 6 lines
+
+merge revision(s) 36e9ed7fef6eb2d14becf6c52452e4ab16e4bf01: [Backport #16698]
+
+	backport 80b5a0ff2a7709367178f29d4ebe1c54122b1c27 partially as a
+	 securify fix for CVE-2020-10663. The patch was provided by Jeremy Evans.
+
+	git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/branches/ruby_2_6@67856 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+------------------------------------------------------------------------
+r67868 | usa | 2020-03-31 07:11:15 +0900 (Tue, 31 Mar 2020) | 7 lines
+
+merge revision(s) 6e6844320de989cb88a154e2ac75066ccea1bba2: [Backport #16619]
+
+	Fixed duplicated warning
+
+	As `command_rhs` is always a "value expression", `command_asgn`
+	does not need the same check.
+
+------------------------------------------------------------------------
+r67867 | usa | 2020-03-31 07:05:30 +0900 (Tue, 31 Mar 2020) | 7 lines
+
+merge revision(s) 6a2d779027818eda418c9118f700b36816e833a5: [Backport #16681]
+
+	Switch to download libffi source package to github releases from
+	 sourceware.org
+
+	[Bug #16681]
+	(cherry picked from commit 86022167461dc90b70164e2bb23316959bbfd6ba)
+------------------------------------------------------------------------
+r67866 | usa | 2020-03-31 06:51:46 +0900 (Tue, 31 Mar 2020) | 10 lines
+
+merge revision(s) 77596fb7a91cc119b25ac9e19b3c8682709765b4: [Backport #16138]
+
+	Do not turn on keyword_init for Struct subclass if keyword hash is
+	 empty
+
+	This was accidentally turned on because there was no checking for
+	Qundef.
+
+	Also, since only a single keyword is currently supported, simplify
+	the rb_get_kwargs call.
+------------------------------------------------------------------------
+r67865 | usa | 2020-03-31 06:49:42 +0900 (Tue, 31 Mar 2020) | 8 lines
+
+merge revision(s) 4f19666e8b144600e959e4673f79d63f98bd637d: [Backport #16508]
+
+	`Regexp` in `MatchData` can be `nil`
+
+	`String#sub` with a string pattern defers creating a `Regexp`
+	until `MatchData#regexp` creates a `Regexp` from the matched
+	string.  `Regexp#last_match(group_name)` accessed its content
+	without creating the `Regexp` though.  [Bug #16508]
+------------------------------------------------------------------------
+r67864 | usa | 2020-03-31 06:46:27 +0900 (Tue, 31 Mar 2020) | 28 lines
+
+merge revision(s) d6a2bce64a7fa1099e507e1d36b5f1533f42f60f,c687be4bc01c9ce52ea990945d9304d6fe59fe9b: [Backport #16159]
+
+	time.c (find_time_t): fix round-to-zero bug
+
+	`find_time_t` did not work correctly for year older than the Epoch
+	because it used C's integer division (which rounds negative to zero).
+
+	For example, `TIme.new(1933)` returned a wrong time whose year is 1922
+	in Asia/Kuala_Lumpur because there is no 00:00:00 1st Jan. 1933 in the
+	time zone.
+
+	```
+	$ TZ=Asia/Kuala_Lumpur ruby -e 'p Time.new(1933)'
+	1932-12-31 00:00:00 +0700
+	```
+
+	This change fixes the issue by using `DIV` macro instead of `/`.
+	Now `Time.new(1933)` returns a time in 1933.
+
+	```
+	$ TZ=Asia/Kuala_Lumpur ruby -e 'p Time.new(1933)'
+	1933-01-01 00:20:00 +0720
+	```
+
+	[Bug #16159]
+
+	Added a test for [Bug #16159]
+
+------------------------------------------------------------------------
+r67863 | usa | 2020-03-31 06:37:50 +0900 (Tue, 31 Mar 2020) | 21 lines
+
+merge revision(s) 203b7fa1ae8cc40d41c38d684f70b3fea7fae813,0131fab749fb76800de09e49a6abf910201c5b58,9c0cd5c569ba22bc68d1a77ad6580a275cd99639,c144d7215b3444fa36d28d540b60170a5b30743d: [Backport #16196]
+
+	Guard static variable first
+
+	* ext/openssl/ossl_asn1.c (Init_ossl_asn1): register the static
+	  variable to grab an internal object, before creating the object.
+	  otherwise the just-created object could get collected during the
+	  global variable list allocation.  [Bug #16196]
+
+	Slimed down test runtime by stressing openssl.so only [Bug #16196]
+
+
+	Prefer rb_gc_register_mark_object
+
+	* ext/openssl/ossl_asn1.c (Init_ossl_asn1): prefer
+	  `rb_gc_register_mark_object`, which is better for constant
+	  objects, over `rb_gc_register_address` for global/static
+	  variables which can be re-assigned at runtime.  [Bug #16196]
+
+	Skip very time consuming test [Bug #16196]
+
+------------------------------------------------------------------------
+r67862 | usa | 2020-03-31 06:26:06 +0900 (Tue, 31 Mar 2020) | 4 lines
+
+merge revision(s) 463092b84da7933f307cc8747f948f68ef19f5fd: [Backport #16279]
+
+	Update rake-12.3.3.
+
+------------------------------------------------------------------------
+r67861 | usa | 2020-03-31 06:21:53 +0900 (Tue, 31 Mar 2020) | 14 lines
+
+merge revision(s) c9423b016cfeab852bc5a829e55e0a11f80b3ab7,0b1e26398e018116180bf41cb63887f77d5d1b82,78ee2c245331e353e218b8fac9ca722a2bcd8fea: [Backport #15968]
+
+	marshal.c: check instance variable count
+
+	* marshal.c (w_obj_each): ensure that no instance variable was
+	  added while dumping other instance variables.  [Bug #15968]
+
+	Hoisted out w_ivar_each
+
+
+	marshal.c: check instance variable count
+
+	* marshal.c (w_ivar_each): ensure that no instance variable was
+	  removed while dumping other instance variables.  [Bug #15968]
+------------------------------------------------------------------------
+r67860 | usa | 2020-03-31 06:11:41 +0900 (Tue, 31 Mar 2020) | 13 lines
+
+merge revision(s) 78ef2d0f331c3e056ee367214710b41722de2fe0: [Backport #15935]
+
+	merge revision(s) 8b3774be3dd9f472bddd99e84e3c9fe2ff99d7ac: [Backport
+	 #15935]
+
+		Fix memory leak
+
+		* string.c (str_make_independent_expand): free independent buffer.
+		  [Bug# 15935]
+
+		Co-Authored-By: luke-gru (Luke Gruber) <luke.gru@gmail.com>
+
+	git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/branches/ruby_2_6@67805 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+------------------------------------------------------------------------
+r67829 | usa | 2019-12-04 15:52:01 +0900 (Wed, 04 Dec 2019) | 7 lines
+
+merge revision(s) 2a477e0e444de6344048101466fb9189b9defddc: [Backport #16353]
+
+	test_ftp.rb: loosen timeout for Travis osx
+
+	https://travis-ci.org/ruby/ruby/jobs/454798071
+
+	git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/trunk@65723 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+------------------------------------------------------------------------
+r67827 | usa | 2019-11-08 17:29:32 +0900 (Fri, 08 Nov 2019) | 14 lines
+
+merge revision(s) 6333020fc924d3ae63775c032bbe8f57364cd42e:
+
+	atime may not updated unless strictatime is set on macOS Catalina
+
+	Cited from mount(8):
+
+	```
+	strictatime
+	        Always update the file access time when reading from a
+	        file. Without this option the filesystem may default to a
+	        less strict update mode, where some access time updates
+	        are skipped for performance reasons. This option could be
+	        ignored if it is not supported by the filesystem.
+	```
+------------------------------------------------------------------------
+r67826 | usa | 2019-10-03 11:27:34 +0900 (Thu, 03 Oct 2019) | 2 lines
+
+Bump version
+
 ------------------------------------------------------------------------
 r67815 | usa | 2019-10-01 20:02:16 +0900 (Tue, 01 Oct 2019) | 2 lines
 
