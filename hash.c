@@ -747,11 +747,14 @@ ar_free_and_clear_table(VALUE hash)
 static void
 ar_try_convert_table(VALUE hash)
 {
-    st_table *new_tab;
+    if (!RHASH_AR_TABLE_P(hash)) return;
+
     const unsigned size = RHASH_AR_TABLE_SIZE(hash);
+
+    st_table *new_tab;
     st_index_t i;
 
-    if (!RHASH_AR_TABLE_P(hash) || size < RHASH_AR_TABLE_MAX_SIZE) {
+    if (size < RHASH_AR_TABLE_MAX_SIZE) {
         return;
     }
 
@@ -961,6 +964,7 @@ ar_foreach_check(VALUE hash, st_foreach_check_callback_func *func, st_data_t arg
 
             switch (retval) {
               case ST_CHECK: {
+                  pair = RHASH_AR_TABLE_REF(hash, i);
                   if (pair->key == never) break;
                   ret = ar_find_entry_hint(hash, hint, key);
                   if (ret == RHASH_AR_TABLE_MAX_BOUND) {
@@ -994,6 +998,11 @@ ar_update(VALUE hash, st_data_t key,
     unsigned bin = RHASH_AR_TABLE_MAX_BOUND;
     st_data_t value = 0, old_key;
     st_hash_t hash_value = ar_do_hash(key);
+
+    if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
+        // `#hash` changes ar_table -> st_table
+        return -1;
+    }
 
     if (RHASH_AR_TABLE_SIZE(hash) > 0) {
         bin = ar_find_entry(hash, hash_value, key);
@@ -1044,6 +1053,11 @@ ar_insert(VALUE hash, st_data_t key, st_data_t value)
     unsigned bin = RHASH_AR_TABLE_BOUND(hash);
     st_hash_t hash_value = ar_do_hash(key);
 
+    if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
+        // `#hash` changes ar_table -> st_table
+        return -1;
+    }
+
     hash_ar_table(hash); /* prepare ltbl */
 
     bin = ar_find_entry(hash, hash_value, key);
@@ -1076,6 +1090,10 @@ ar_lookup(VALUE hash, st_data_t key, st_data_t *value)
     }
     else {
         st_hash_t hash_value = ar_do_hash(key);
+        if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
+            // `#hash` changes ar_table -> st_table
+            return st_lookup(RHASH_ST_TABLE(hash), key, value);
+        }
         unsigned bin = ar_find_entry(hash, hash_value, key);
 
         if (bin == RHASH_AR_TABLE_MAX_BOUND) {
@@ -1097,6 +1115,10 @@ ar_delete(VALUE hash, st_data_t *key, st_data_t *value)
     unsigned bin;
     st_hash_t hash_value = ar_do_hash(*key);
 
+    if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
+        // `#hash` changes ar_table -> st_table
+        return st_delete(RHASH_ST_TABLE(hash), key, value);
+    }
 
     bin = ar_find_entry(hash, hash_value, *key);
 
@@ -1858,6 +1880,52 @@ static VALUE
 rb_hash_s_try_convert(VALUE dummy, VALUE hash)
 {
     return rb_check_hash_type(hash);
+}
+
+/*
+ *  call-seq:
+ *     Hash.ruby2_keywords_hash?(hash) -> true or false
+ *
+ *  Checks if a given hash is flagged by Module#ruby2_keywords (or
+ *  Proc#ruby2_keywords).
+ *  This method is not for casual use; debugging, researching, and
+ *  some truly necessary cases like serialization of arguments.
+ *
+ *     ruby2_keywords def foo(*args)
+ *       Hash.ruby2_keywords_hash?(args.last)
+ *     end
+ *     foo(k: 1)   #=> true
+ *     foo({k: 1}) #=> false
+ */
+static VALUE
+rb_hash_s_ruby2_keywords_hash_p(VALUE dummy, VALUE hash)
+{
+    Check_Type(hash, T_HASH);
+    return (RHASH(hash)->basic.flags & RHASH_PASS_AS_KEYWORDS) ? Qtrue : Qfalse;
+}
+
+/*
+ *  call-seq:
+ *     Hash.ruby2_keywords_hash(hash) -> hash
+ *
+ *  Duplicates a given hash and adds a ruby2_keywords flag.
+ *  This method is not for casual use; debugging, researching, and
+ *  some truly necessary cases like deserialization of arguments.
+ *
+ *     h = {k: 1}
+ *     h = Hash.ruby2_keywords_hash(h)
+ *     def foo(k: 42)
+ *       k
+ *     end
+ *     foo(*[h]) #=> 1 with neither a warning or an error
+ */
+static VALUE
+rb_hash_s_ruby2_keywords_hash(VALUE dummy, VALUE hash)
+{
+    Check_Type(hash, T_HASH);
+    hash = rb_hash_dup(hash);
+    RHASH(hash)->basic.flags |= RHASH_PASS_AS_KEYWORDS;
+    return hash;
 }
 
 struct rehash_arg {
@@ -3109,7 +3177,8 @@ static int
 transform_values_foreach_replace(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
 {
     VALUE new_value = rb_yield((VALUE)*value);
-    *value = new_value;
+    VALUE hash = (VALUE)argp;
+    RB_OBJ_WRITE(hash, value, new_value);
     return ST_CONTINUE;
 }
 
@@ -3139,7 +3208,7 @@ rb_hash_transform_values(VALUE hash)
     result = hash_dup(hash, rb_cHash, 0);
 
     if (!RHASH_EMPTY_P(hash)) {
-        rb_hash_stlike_foreach_with_replace(result, transform_values_foreach_func, transform_values_foreach_replace, 0);
+        rb_hash_stlike_foreach_with_replace(result, transform_values_foreach_func, transform_values_foreach_replace, result);
     }
 
     return result;
@@ -3169,7 +3238,7 @@ rb_hash_transform_values_bang(VALUE hash)
     rb_hash_modify_check(hash);
 
     if (!RHASH_TABLE_EMPTY_P(hash)) {
-        rb_hash_stlike_foreach_with_replace(hash, transform_values_foreach_func, transform_values_foreach_replace, 0);
+        rb_hash_stlike_foreach_with_replace(hash, transform_values_foreach_func, transform_values_foreach_replace, hash);
     }
 
     return hash;
@@ -6337,6 +6406,9 @@ Init_Hash(void)
     rb_define_method(rb_cHash, ">", rb_hash_gt, 1);
 
     rb_define_method(rb_cHash, "deconstruct_keys", rb_hash_deconstruct_keys, 1);
+
+    rb_define_singleton_method(rb_cHash, "ruby2_keywords_hash?", rb_hash_s_ruby2_keywords_hash_p, 1);
+    rb_define_singleton_method(rb_cHash, "ruby2_keywords_hash", rb_hash_s_ruby2_keywords_hash, 1);
 
     /* Document-class: ENV
      *

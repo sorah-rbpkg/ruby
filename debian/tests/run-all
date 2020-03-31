@@ -9,16 +9,17 @@ KNOW_FAILURES=$(dirname $(readlink -f $0))/known-failures.txt
 tests="$@"
 
 cleanup() {
-  rm -rf "$ADTTMP"
+  rm -rf "$AUTOPKGTEST_TMP"
 }
-if [ -z "$ADTTMP" ]; then
-  ADTTMP=$(mktemp -d)
+if [ -z "$AUTOPKGTEST_TMP" ]; then
+  AUTOPKGTEST_TMP=$(mktemp -d)
   trap cleanup INT TERM EXIT
 fi
 
 excludedir=$(readlink -f $(dirname $0))/excludes
-cp -r 'test/' $ADTTMP
-cd $ADTTMP
+cp -r 'test/' $AUTOPKGTEST_TMP
+cp -r 'tool/' $AUTOPKGTEST_TMP
+cd $AUTOPKGTEST_TMP
 
 if [ -z "$tests" ]; then
   # FIXME for now, we are excluding the tests for C extensions; couldn't figure

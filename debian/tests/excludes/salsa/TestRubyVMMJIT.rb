@@ -1,0 +1,5 @@
+exclude  :test_pause,                              'fails on salsa ci'
+exclude  :test_pause_does_not_hang_on_full_units,  'fails on salsa ci'
+exclude  :test_pause_wait_false,                   'fails on salsa ci'
+exclude  :test_pause_waits_until_compaction,       'fails on salsa ci'
+exclude  :test_resume,                             'fails on salsa ci'

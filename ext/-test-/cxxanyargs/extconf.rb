@@ -27,5 +27,7 @@ if ok
   $cleanfiles << "$(FAILURES:.cpp=.failed)"
   create_makefile("-test-/cxxanyargs") do |mk|
     mk << "FAILURES #{['=', failures].join(' ')}\n"
+    mk << ".IGNORE: $(FAILURES:.cpp=.o)\n" unless $mswin
+    mk
   end
 end

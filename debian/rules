@@ -30,6 +30,9 @@ configure_options += --enable-install-static-library
 configure_options += --disable-rpath
 configure_options += --with-sitedir='/usr/local/lib/site_ruby'
 configure_options += --with-sitearchdir="/usr/local/lib/$(DEB_HOST_MULTIARCH)/site_ruby"
+configure_options += --runstatedir=/var/run
+configure_options += --localstatedir=/var
+configure_options += --sysconfdir=/etc
 
 ifneq ($(DEB_BUILD_GNU_TYPE), $(DEB_HOST_GNU_TYPE))
 # Cross-building. This is the same logic that debhelper's
@@ -72,11 +75,14 @@ override_dh_auto_configure:
 	./configure $(configure_options)
 
 override_dh_auto_clean:
-	dh_auto_clean
+	$(MAKE) clean || true
+	$(MAKE) distclean-ext || true
 	rm -f tool/config.guess tool/config.sub
 	$(RM) test/excludes/$(DEB_HOST_ARCH)
 	$(RM) -r .ext
 	$(RM) -r doc/capi
+	$(RM) .installed.list GNUmakefile Makefile builtin_binary.inc \
+		config.status enc.mk uncommon.mk verconf.h
 
 override_dh_auto_build-arch:
 	dh_auto_build -- main V=1
@@ -87,6 +93,9 @@ TEST_TARGETS := test test-tool test-all # missing test-spec
 excludes =
 excludes += --excludes-dir=debian/tests/excludes/any/
 excludes += --excludes-dir=debian/tests/excludes/$(DEB_HOST_ARCH)/
+ifneq (,$(DEBIAN_RUBY_EXTRA_TEST_EXCLUDES))
+	excludes += --excludes-dir=debian/tests/excludes/$(DEBIAN_RUBY_EXTRA_TEST_EXCLUDES)/
+endif
 override_dh_auto_test-arch:
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
 	$(MAKE) $(TEST_TARGETS) V=1 RUBY_TESTOPTS="-v -j4" TESTS="$(excludes)" OPENSSL_CONF=/dev/null
