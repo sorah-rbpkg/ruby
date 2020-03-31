@@ -1,7 +1,441 @@
 ------------------------------------------------------------------------
-r67812 | nagachika | 2019-10-01 20:01:01 +0900 (Tue, 01 Oct 2019) | 1 line
+r67876 | nagachika | 2020-03-31 20:23:13 +0900 (Tue, 31 Mar 2020) | 1 line
 
-add tag v2_6_5
+add tag v2_6_6
+------------------------------------------------------------------------
+r67875 | nagachika | 2020-03-31 20:21:22 +0900 (Tue, 31 Mar 2020) | 10 lines
+
+merge revision: 61b7f86248bd121be2e83768be71ef289e8e5b90
+
+ext/socket/init.c: do not return uninitialized buffer
+
+Resize string buffer only if some data is received in
+BasicSocket#read_nonblock and some methods.
+
+Co-Authored-By: Samuel Williams <samuel.williams@oriontransfer.co.nz>
+
+
+------------------------------------------------------------------------
+r67859 | nagachika | 2020-03-30 13:47:36 +0900 (Mon, 30 Mar 2020) | 6 lines
+
+merge revision(s) 4adb2d655dcd54b28366b4d17e86b21e2b622cd1: [Backport #16738]
+
+	Make RbConfig::CONFIG values mutable [Bug #16738]
+
+	As `RbConfig.expand` modifies the argument and involved `CONFIG`
+	values, its values should be mutable.
+------------------------------------------------------------------------
+r67858 | nagachika | 2020-03-30 11:22:51 +0900 (Mon, 30 Mar 2020) | 13 lines
+
+merge revision(s) 4c019f5a626523e99e2827ed917802e3097c380d,c3584dfacce4d0f2058d8403de6fdce4fd4d686b: [Backport #16676]
+
+	check ar_table after `#hash` call
+
+	ar_table can be converted to st_table just after `ar_do_hash()`
+	function which calls `#hash` method. We need to check
+	the representation to detect this mutation.
+	[Bug #16676]
+
+	check ar_table first.
+
+	RHASH_AR_TABLE_SIZE() has assertion that it is a ar_talbe.
+	The last commit breaks this assumption so check ar_table first.
+------------------------------------------------------------------------
+r67857 | nagachika | 2020-03-20 23:31:10 +0900 (Fri, 20 Mar 2020) | 20 lines
+
+merge revision(s) c6633f21a49c90ab7c37076d79c286bbf3438c1f:
+
+	Update some syslog tests to absurb the format change of FreeBSD
+	 syslog
+
+	FreeBSD
+
+	```
+	$ ruby -rsyslog -e 'Syslog.open("rubyspec", Syslog::LOG_PERROR) {|s| s.log(Syslog::LOG_ALERT, "Hello") }'
+	rubyspec 78462 - - Hello
+	```
+
+	Linux
+
+	```
+	$ ruby -rsyslog -e 'Syslog.open("rubyspec", Syslog::LOG_PERROR) {|s| s.log(Syslog::LOG_ALERT, "Hello") }'
+	rubyspec: Hello
+	```
+
+	https://github.com/freebsd/freebsd/commit/591ef7c8076109cff3c41f9bb50da996a34121e9
+------------------------------------------------------------------------
+r67856 | nagachika | 2020-03-20 17:12:05 +0900 (Fri, 20 Mar 2020) | 2 lines
+
+backport 80b5a0ff2a7709367178f29d4ebe1c54122b1c27 partially as a securify fix for CVE-2020-10663.
+The patch was provided by Jeremy Evans.
+------------------------------------------------------------------------
+r67855 | nagachika | 2020-03-20 17:07:34 +0900 (Fri, 20 Mar 2020) | 1 line
+
+Add svn:ignore properties.
+------------------------------------------------------------------------
+r67854 | nagachika | 2020-03-20 16:01:35 +0900 (Fri, 20 Mar 2020) | 7 lines
+
+merge revision(s) 87ad5ea729735ff6b8f1ac0bb3aad2aedd6f716e,9745e90197f129708986803e8913fb151862478a:
+
+	Skip jit_test on some new RubyCI envs for now
+
+
+	Propagate JIT skip to all tests
+
+------------------------------------------------------------------------
+r67853 | nagachika | 2020-03-20 15:47:10 +0900 (Fri, 20 Mar 2020) | 18 lines
+
+merge revision(s) b3ea0980db87404c2b7763a3fdbe898c3812843d,5fbb4555b427909aed4fe2376c4c583849c1d51c,6477d98e49dbe04deb03caee1a58a34c3b79d4e4,16415fefc14e1419d5587288fb6a69fe5ccf94ba:
+
+	Check MJIT support in one place
+
+	to fix test failure on trunk-no-mjit
+	https://gist.github.com/ko1/32ab982ffd7555988818773c08f97123
+
+	Prefer using MJIT_CC for JIT support check
+
+	because Solaris might have CC=cc and we'd like to check full path
+	MJIT_CC=/opt/developerstudio12.5/bin/cc instead.
+
+	test/lib/jit_support.rb: Update the regexp for icc
+
+	MJIT_CC is always an absolute path.
+
+	test/lib/jit_support.rb: The path to icc was changed
+
+------------------------------------------------------------------------
+r67852 | nagachika | 2020-03-20 15:43:59 +0900 (Fri, 20 Mar 2020) | 14 lines
+
+merge revision(s) 66590,66615,66781:
+
+	jit_support.rb: skip testing MJIT on oracle developer studio
+
+	jit_support.rb: deal with -std=c99 flag
+
+	CC is changed from "icc" to "icc -std=c99" by r66605.
+
+	https://rubyci.org/logs/rubyci.s3.amazonaws.com/icc-x64/ruby-trunk/log/20181228T130003Z.fail.html.gz
+
+	test_jit.rb: change format of test error output
+
+	to avoid breaking redmine quote like
+	https://bugs.ruby-lang.org/issues/15522
+------------------------------------------------------------------------
+r67851 | nagachika | 2020-03-20 15:36:58 +0900 (Fri, 20 Mar 2020) | 1 line
+
+Add svn:ignore properties.
+------------------------------------------------------------------------
+r67850 | nagachika | 2020-03-20 15:12:36 +0900 (Fri, 20 Mar 2020) | 9 lines
+
+merge revision(s) adcf0316d1ecedae2a9157ad941550e0c0fb510b: [Backport #16664]
+
+	Prevent unloading methods used in root_fiber while calling another
+	 Fiber (#2939)
+
+	Fixing SEGVs like:
+	http://ci.rvm.jp/results/trunk-mjit-wait@silicon-docker/2744905
+	http://ci.rvm.jp/results/trunk-mjit-wait@silicon-docker/2744420
+	http://ci.rvm.jp/results/trunk-mjit-wait@silicon-docker/2741400
+------------------------------------------------------------------------
+r67849 | nagachika | 2020-03-20 12:09:27 +0900 (Fri, 20 Mar 2020) | 4 lines
+
+merge revision(s) a8dcab723316997d9e01c89d6df969edce75bdca:
+
+	Avoid infinite loop on --jit-wait
+
+------------------------------------------------------------------------
+r67848 | nagachika | 2020-03-20 11:54:46 +0900 (Fri, 20 Mar 2020) | 6 lines
+
+merge revision(s) 67325:
+
+	Show retry's stdout as well
+
+	because stderr did not have sufficient information
+	https://ci.appveyor.com/project/ruby/ruby/builds/23242505/job/dirugxujk70nnhp6
+------------------------------------------------------------------------
+r67847 | nagachika | 2020-03-20 11:45:26 +0900 (Fri, 20 Mar 2020) | 7 lines
+
+merge revision(s) 67322,67323:
+
+	Insert --jit-verbose=2 logs for mswin debugging
+
+	Explain why cl.exe needs --jit-verbose=2 [ci skip]
+
+	I forgot to explain it in the previous commit
+------------------------------------------------------------------------
+r67846 | nagachika | 2020-03-19 21:55:36 +0900 (Thu, 19 Mar 2020) | 43 lines
+
+merge revision(s) c14b67b2a8cf60b37cfb221d8b97c6eb91833522: [Backport #16139]
+
+	Check frozen flag on MJIT setinstancevariable
+
+	It does not seem to have a significant performance impact, hopefully?
+
+	```
+	$ benchmark-driver -v benchmark.yml --rbenv 'before --jit;after --jit' --repeat-count=24 --output=all
+	before --jit: ruby 2.7.0dev (2019-09-03T21:02:24Z master 77596fb7a9) +JIT [x86_64-linux]
+	after --jit: ruby 2.7.0dev (2019-09-04T01:54:44Z master 7363e22d79) +JIT [x86_64-linux]
+	Calculating -------------------------------------
+	                                 before --jit           after --jit
+	Optcarrot Lan_Master.nes    48.44054595799523     71.67010255902900 fps
+	                            71.32797692837639     71.97846863769546
+	                            72.51921961607691     78.87360980544105
+	                            73.54082925611047     79.80408132389941
+	                            74.03503843709451     79.85739528572826
+	                            74.04863857926493     79.89850834901381
+	                            75.30266276129467     80.34607233076015
+	                            75.69063990896244     80.88474397425360
+	                            75.70458132587405     81.09234267781642
+	                            77.39842764662852     82.13766823612643
+	                            77.76922944068329     82.20398304840373
+	                            81.17984044023393     82.26722630628272
+	                            82.85235776076533     82.71375902781254
+	                            83.04906099135320     82.75893420702198
+	                            83.10214168136230     82.79668965325972
+	                            83.71456007558125     82.85131667916379
+	                            84.06658306760725     82.95676565411722
+	                            84.25690684305728     83.19972846225775
+	                            84.27938663923503     83.28510503845854
+	                            84.45467716218090     83.41003730434703
+	                            84.51563186125925     83.67773614721280
+	                            84.56139892968321     84.02082201151110
+	                            84.69819452180658     84.10495346787033
+	                            84.78125989622576     84.47867803506055
+	```
+
+	Note for backporter:
+	test_jit's `success_count` would be 1 in Ruby 2.6, since 2.7 introduced
+	"MJIT recompile" on JIT-ed code cancel.
+
+	[Bug #16139]
+------------------------------------------------------------------------
+r67845 | nagachika | 2020-03-18 20:59:35 +0900 (Wed, 18 Mar 2020) | 4 lines
+
+merge revision(s) ee1334189b95cb5e7785e3415b332a7a76879ac3:
+
+	Fix uplevel
+
+------------------------------------------------------------------------
+r67844 | nagachika | 2020-03-18 20:24:21 +0900 (Wed, 18 Mar 2020) | 4 lines
+
+merge revision(s) 8a6ba10f9dd456cf54de800203cf04bbe42271fb: [Backport #12392]
+
+	Do not make disabled directories at installation  [Bug #12392]
+
+------------------------------------------------------------------------
+r67843 | nagachika | 2020-03-10 20:41:32 +0900 (Tue, 10 Mar 2020) | 1 line
+
+r66845 introduced mixed declarations and code.
+------------------------------------------------------------------------
+r67842 | nagachika | 2020-03-08 10:48:27 +0900 (Sun, 08 Mar 2020) | 9 lines
+
+merge revision(s) 86022167461dc90b70164e2bb23316959bbfd6ba,47a1872cd8b901b8aab6dedce7fa3807c97d290d: [Backport #16681]
+
+	Switch to download libffi source package to github releases from
+	 sourceware.org
+
+
+	Use osuosl instead of GitHub releases
+
+	  Because the package provided by GitHub releases is different from sourceware.
+------------------------------------------------------------------------
+r67841 | nagachika | 2020-03-07 19:03:51 +0900 (Sat, 07 Mar 2020) | 10 lines
+
+merge revision(s) 77596fb7a91cc119b25ac9e19b3c8682709765b4: [Backport #16138]
+
+	Do not turn on keyword_init for Struct subclass if keyword hash is
+	 empty
+
+	This was accidentally turned on because there was no checking for
+	Qundef.
+
+	Also, since only a single keyword is currently supported, simplify
+	the rb_get_kwargs call.
+------------------------------------------------------------------------
+r67840 | nagachika | 2020-03-07 18:57:02 +0900 (Sat, 07 Mar 2020) | 5 lines
+
+merge revision(s) c4794ed73ad348a61a7cfbe3da0a7eb49ba46eb9: [Backport #16641]
+
+	Avoid jumping to a wrong destination
+
+	when the next insn is already compiled by former branches.
+------------------------------------------------------------------------
+r67839 | nagachika | 2020-03-07 18:44:38 +0900 (Sat, 07 Mar 2020) | 6 lines
+
+merge revision(s) 6e6844320de989cb88a154e2ac75066ccea1bba2: [Backport #16619]
+
+	Fixed duplicated warning
+
+	As `command_rhs` is always a "value expression", `command_asgn`
+	does not need the same check.
+------------------------------------------------------------------------
+r67838 | nagachika | 2020-03-07 18:38:30 +0900 (Sat, 07 Mar 2020) | 8 lines
+
+merge revision(s) 4f19666e8b144600e959e4673f79d63f98bd637d: [Backport #16508]
+
+	`Regexp` in `MatchData` can be `nil`
+
+	`String#sub` with a string pattern defers creating a `Regexp`
+	until `MatchData#regexp` creates a `Regexp` from the matched
+	string.  `Regexp#last_match(group_name)` accessed its content
+	without creating the `Regexp` though.  [Bug #16508]
+------------------------------------------------------------------------
+r67837 | nagachika | 2020-02-15 18:12:47 +0900 (Sat, 15 Feb 2020) | 6 lines
+
+merge revision(s) 95ab9cd8f453099d7649dc0e0eec55ea891340f5: [Backport #16624]
+
+	Restart timer thread even after preparation failed
+
+	If the timer thread is left stopped, memory crash or segfault can
+	happen. [Bug #16624]
+------------------------------------------------------------------------
+r67836 | nagachika | 2019-12-18 22:41:48 +0900 (Wed, 18 Dec 2019) | 28 lines
+
+merge revision(s) d6a2bce64a7fa1099e507e1d36b5f1533f42f60f,c687be4bc01c9ce52ea990945d9304d6fe59fe9b: [Backport #16159]
+
+	time.c (find_time_t): fix round-to-zero bug
+
+	`find_time_t` did not work correctly for year older than the Epoch
+	because it used C's integer division (which rounds negative to zero).
+
+	For example, `TIme.new(1933)` returned a wrong time whose year is 1922
+	in Asia/Kuala_Lumpur because there is no 00:00:00 1st Jan. 1933 in the
+	time zone.
+
+	```
+	$ TZ=Asia/Kuala_Lumpur ruby -e 'p Time.new(1933)'
+	1932-12-31 00:00:00 +0700
+	```
+
+	This change fixes the issue by using `DIV` macro instead of `/`.
+	Now `Time.new(1933)` returns a time in 1933.
+
+	```
+	$ TZ=Asia/Kuala_Lumpur ruby -e 'p Time.new(1933)'
+	1933-01-01 00:20:00 +0720
+	```
+
+	[Bug #16159]
+
+	Added a test for [Bug #16159]
+
+------------------------------------------------------------------------
+r67835 | nagachika | 2019-12-15 17:28:52 +0900 (Sun, 15 Dec 2019) | 5 lines
+
+merge revision(s) ff41663403d3eb76d95f465cb94e14d2faaa04d1: [Backport #16354]
+
+	Fix memory corruption in Enumerable#reverse_each [ruby-dev:50867]
+	 [Bug #16354]
+
+------------------------------------------------------------------------
+r67834 | nagachika | 2019-12-15 17:12:17 +0900 (Sun, 15 Dec 2019) | 21 lines
+
+merge revision(s) 203b7fa1ae8cc40d41c38d684f70b3fea7fae813,0131fab749fb76800de09e49a6abf910201c5b58,9c0cd5c569ba22bc68d1a77ad6580a275cd99639,c144d7215b3444fa36d28d540b60170a5b30743d: [Backport #16196]
+
+	Guard static variable first
+
+	* ext/openssl/ossl_asn1.c (Init_ossl_asn1): register the static
+	  variable to grab an internal object, before creating the object.
+	  otherwise the just-created object could get collected during the
+	  global variable list allocation.  [Bug #16196]
+
+	Slimed down test runtime by stressing openssl.so only [Bug #16196]
+
+
+	Prefer rb_gc_register_mark_object
+
+	* ext/openssl/ossl_asn1.c (Init_ossl_asn1): prefer
+	  `rb_gc_register_mark_object`, which is better for constant
+	  objects, over `rb_gc_register_address` for global/static
+	  variables which can be re-assigned at runtime.  [Bug #16196]
+
+	Skip very time consuming test [Bug #16196]
+
+------------------------------------------------------------------------
+r67833 | nagachika | 2019-12-15 16:20:58 +0900 (Sun, 15 Dec 2019) | 4 lines
+
+merge revision(s) 463092b84da7933f307cc8747f948f68ef19f5fd: [Backport #16279]
+
+	Update rake-12.3.3.
+
+------------------------------------------------------------------------
+r67832 | nagachika | 2019-12-15 16:14:45 +0900 (Sun, 15 Dec 2019) | 14 lines
+
+merge revision(s) c9423b016cfeab852bc5a829e55e0a11f80b3ab7,0b1e26398e018116180bf41cb63887f77d5d1b82,78ee2c245331e353e218b8fac9ca722a2bcd8fea: [Backport #15968]
+
+	marshal.c: check instance variable count
+
+	* marshal.c (w_obj_each): ensure that no instance variable was
+	  added while dumping other instance variables.  [Bug #15968]
+
+	Hoisted out w_ivar_each
+
+
+	marshal.c: check instance variable count
+
+	* marshal.c (w_ivar_each): ensure that no instance variable was
+	  removed while dumping other instance variables.  [Bug #15968]
+------------------------------------------------------------------------
+r67831 | nagachika | 2019-12-09 21:25:34 +0900 (Mon, 09 Dec 2019) | 5 lines
+
+merge revision(s) 7d805e67f3275aef066d77aa9c32bef715c362ed: [Backport #15780]
+
+	Avoid triggering autoload in Module#const_defined?(String)
+
+	[Bug #15780]
+------------------------------------------------------------------------
+r67830 | nagachika | 2019-12-09 21:06:38 +0900 (Mon, 09 Dec 2019) | 16 lines
+
+merge revision(s) e1b592b508c72a56ae012869d97fe1580ff87246,d10451f3fd51f577e704db770de48d05044eb45c: [Backport #15758]
+
+	test_module.rb: fix a typo
+
+	* test/ruby/test_module.rb (TestModule#test_nested_get): fix a
+	  typo.  nested module's name is a qualified path.
+
+	git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/trunk@67471 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+
+	object.c: fix searching nested const paths
+
+	* object.c (rb_mod_const_get, rb_mod_const_defined): nested const
+	  paths should not search from toplevel constants.
+	  [ruby-core:92202] [Bug #15758]
+
+	git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/trunk@67472 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+------------------------------------------------------------------------
+r67828 | nagachika | 2019-11-09 07:51:51 +0900 (Sat, 09 Nov 2019) | 14 lines
+
+merge revision(s) 6333020fc924d3ae63775c032bbe8f57364cd42e:
+
+	atime may not updated unless strictatime is set on macOS Catalina
+
+	Cited from mount(8):
+
+	```
+	strictatime
+	        Always update the file access time when reading from a
+	        file. Without this option the filesystem may default to a
+	        less strict update mode, where some access time updates
+	        are skipped for performance reasons. This option could be
+	        ignored if it is not supported by the filesystem.
+	```
+------------------------------------------------------------------------
+r67825 | nagachika | 2019-10-02 20:18:43 +0900 (Wed, 02 Oct 2019) | 10 lines
+
+merge revision(s) 63ab7046a1a5c374a52dfa79406fe52d92d80344:
+
+	Skip POINTOPOINT of IPv4 too instead of IPv6 only
+
+	Fix following error on `utun*`:
+	```
+	  1) Error:
+	TestSocket#test_udp_server:
+	Errno::ECONNREFUSED: Connection refused - recvmsg(2)
+	```
+------------------------------------------------------------------------
+r67822 | nagachika | 2019-10-02 07:38:59 +0900 (Wed, 02 Oct 2019) | 1 line
+
+bump up teeny version to 2.6.6.
 ------------------------------------------------------------------------
 r67810 | nagachika | 2019-10-01 19:59:35 +0900 (Tue, 01 Oct 2019) | 4 lines
 
