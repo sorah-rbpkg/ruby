@@ -1211,7 +1211,6 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 command_asgn	: lhs '=' command_rhs
 		    {
 #if 0
-			value_expr($3);
 			$$ = node_assign(p, $1, $3, &@$);
 #endif
 			{VALUE v1,v2,v3;v1=$1;v2=$3;v3=dispatch2(assign,v1,v2);$$=v3;}
@@ -1219,7 +1218,6 @@ command_asgn	: lhs '=' command_rhs
 		| var_lhs tOP_ASGN command_rhs
 		    {
 #if 0
-			value_expr($3);
 			$$ = new_op_assign(p, $1, $2, $3, &@$);
 #endif
 			{VALUE v1,v2,v3,v4;v1=$1;v2=$2;v3=$3;v4=dispatch3(opassign,v1,v2,v3);$$=v4;}
@@ -1227,7 +1225,6 @@ command_asgn	: lhs '=' command_rhs
 		| primary_value '[' opt_call_args rbracket tOP_ASGN command_rhs
 		    {
 #if 0
-			value_expr($6);
 			$$ = new_ary_op_assign(p, $1, $3, $5, $6, &@3, &@$);
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7;v1=$1;v2=escape_Qundef($3);v3=dispatch2(aref_field,v1,v2);v4=v3;v5=$5;v6=$6;v7=dispatch3(opassign,v4,v5,v6);$$=v7;}
@@ -1236,7 +1233,6 @@ command_asgn	: lhs '=' command_rhs
 		| primary_value call_op tIDENTIFIER tOP_ASGN command_rhs
 		    {
 #if 0
-			value_expr($5);
 			$$ = new_attr_op_assign(p, $1, $2, $3, $4, $5, &@$);
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=$1;v2=$2;v3=$3;v4=dispatch3(field,v1,v2,v3);v5=v4;v6=$4;v7=$5;v8=dispatch3(opassign,v5,v6,v7);$$=v8;}
@@ -1244,7 +1240,6 @@ command_asgn	: lhs '=' command_rhs
 		| primary_value call_op tCONSTANT tOP_ASGN command_rhs
 		    {
 #if 0
-			value_expr($5);
 			$$ = new_attr_op_assign(p, $1, $2, $3, $4, $5, &@$);
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=$1;v2=$2;v3=$3;v4=dispatch3(field,v1,v2,v3);v5=v4;v6=$4;v7=$5;v8=dispatch3(opassign,v5,v6,v7);$$=v8;}
@@ -1260,7 +1255,6 @@ command_asgn	: lhs '=' command_rhs
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN command_rhs
 		    {
 #if 0
-			value_expr($5);
 			$$ = new_attr_op_assign(p, $1, ID2VAL(idCOLON2), $3, $4, $5, &@$);
 #endif
 			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=$1;v2=ID2VAL(idCOLON2);v3=$3;v4=dispatch3(field,v1,v2,v3);v5=v4;v6=$4;v7=$5;v8=dispatch3(opassign,v5,v6,v7);$$=v8;}
