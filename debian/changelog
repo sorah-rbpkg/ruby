@@ -1,3 +1,10 @@
+ruby2.5 (2.5.8-0nkmi1~dist) unstable; urgency=medium
+
+  * Ruby 2.5.8
+  * explicitly pass runstatedir/localstatedir/sysconfdir
+
+ -- Sorah Fukumori <sorah@cookpad.com>  Tue, 31 Mar 2020 17:56:10 +0000
+
 ruby2.5 (2.5.7-0nkmi1~dist) unstable; urgency=medium
 
   * Ruby 2.5.7
