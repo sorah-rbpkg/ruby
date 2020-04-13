@@ -1,3 +1,25 @@
+ruby2.7 (2.7.0-5) UNRELEASED; urgency=medium
+
+  [ Antonio Terceiro ]
+  * Add test excludes for salsa
+
+  [ Lucas Kanashiro ]
+  * d/rules: build with -latomic on riscv64
+  * Disable some tests that fail or time out on riscv64
+  * d/control: list all libruby2.7 bundle gems in Provides field
+  * d/libruby2.7.lintian-overrides:
+    - ignore library-not-linked-against-libc errors, the *.so extension files
+      are linked against libruby2.7 only
+    - ignore wrong-path-to-the-ruby-interpreter errors, the scripts reported
+      are not supposed to be used by users
+  * d/libruby2.7.symbols: add missing symbols
+  * d/control: use secure url in Homepage field
+  * Declare compliance with Debian Policy 4.5.0
+  * d/copyright: use secure urls in Format and Source fields
+  * Bump debhelper compatibility level to 12
+
+ -- Lucas Kanashiro <kanashiro@debian.org>  Mon, 13 Apr 2020 11:54:17 -0300
+
 ruby2.7 (2.7.0-4) unstable; urgency=medium
 
   * mipsel: exclude test that fails on buildd
