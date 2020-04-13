@@ -5,3 +5,7 @@ package-contains-empty-directory
 # The *.so extension files should not be linked against libc but libruby* which
 # is already linked against libc
 library-not-linked-against-libc
+# The racc bundle gem contains 2 scripts (racc2y and y2racc) which have a wrong
+# path to the ruby interpreter, since they are not in the users' path those
+# lintian errors are ignored
+wrong-path-for-interpreter
