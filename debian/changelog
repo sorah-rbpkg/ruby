@@ -1,4 +1,4 @@
-ruby2.7 (2.7.0-5) UNRELEASED; urgency=medium
+ruby2.7 (2.7.0-5) unstable; urgency=medium
 
   [ Antonio Terceiro ]
   * Add test excludes for salsa
