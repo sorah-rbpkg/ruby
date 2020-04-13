@@ -2688,6 +2688,9 @@ AS_CASE([$coroutine_type], [yes|''], [
         [powerpc64-darwin*|ppc64-darwin*], [
             coroutine_type=ppc64
         ],
+        [x86_64-linux-gnux32], [
+            coroutine_type=ucontext
+        ],
         [x*64-linux*], [
             AS_CASE(["$ac_cv_sizeof_voidp"],
                 [8], [ coroutine_type=amd64 ],
