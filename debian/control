@@ -5,7 +5,7 @@ Maintainer: Sorah Fukumori <her@sorah.jp>
 Build-Depends: bison,
                chrpath,
                coreutils (>= 7.5),
-               debhelper (>= 9),
+               debhelper (>= 12~),
                file,
                libffi-dev,
                libgdbm-dev,
