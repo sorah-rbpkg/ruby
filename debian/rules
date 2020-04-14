@@ -53,6 +53,11 @@ configure_options += --with-dbm-type=gdbm_compat
 export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow
 configure_options += $(shell dpkg-buildflags --export=configure)
 
+# See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93808
+ifneq (,$(filter $(DEB_HOST_ARCH),sh3 sh4))
+export DEB_CFLAGS_MAINT_APPEND += -fno-crossjumping
+endif
+
 # Always build with /bin/bash, to get consistent rbconfig.rb (which embeds SHELL).
 export SHELL := /bin/bash
 
