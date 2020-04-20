@@ -1,3 +1,12 @@
+ruby2.7 (2.7.0-6) UNRELEASED; urgency=medium
+
+  * Add patch to fix FTBFS on x32: misdetected as i386 or amd64
+    (Closes: #954293)
+  * d/rules: add -fno-crossjumping to CFLAGS (Closes: #951714)
+  * Make 64-bit-only symbols optional to fix FTBFS on i386/armhf
+
+ -- Lucas Kanashiro <kanashiro@debian.org>  Mon, 20 Apr 2020 10:39:35 -0300
+
 ruby2.7 (2.7.0-5) unstable; urgency=medium
 
   [ Antonio Terceiro ]
