@@ -20,7 +20,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  OnigSyntaxPosixExtended@Base 2.7.0~preview1
  OnigSyntaxPython@Base 2.7.0~preview1
  OnigSyntaxRuby@Base 2.7.0~preview1
- coroutine_transfer@Base 2.7.0
+ (optional)coroutine_transfer@Base 2.7.0
  dln_find_exe_r@Base 2.7.0~preview1
  dln_find_file_r@Base 2.7.0~preview1
  dln_load@Base 2.7.0~preview1
@@ -705,10 +705,10 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_find_file_ext@Base 2.7.0~preview1
  rb_find_file_ext_safe@Base 2.7.0~preview1
  rb_find_file_safe@Base 2.7.0~preview1
- rb_fix2int@Base 2.7.0
+ (optional)rb_fix2int@Base 2.7.0
  rb_fix2short@Base 2.7.0~preview1
  rb_fix2str@Base 2.7.0~preview1
- rb_fix2uint@Base 2.7.0
+ (optional)rb_fix2uint@Base 2.7.0
  rb_fix2ushort@Base 2.7.0~preview1
  rb_fix_aref@Base 2.7.0~preview2
  rb_flo_div_flo@Base 2.7.0~preview2
@@ -842,7 +842,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_include_module@Base 2.7.0~preview1
  rb_insecure_operation@Base 2.7.0~preview1
  rb_inspect@Base 2.7.0~preview1
- rb_int128t2big@Base 2.7.0
+ (optional)rb_int128t2big@Base 2.7.0
  rb_int2big@Base 2.7.0~preview1
  rb_int2inum@Base 2.7.0~preview1
  rb_int_parse_cstr@Base 2.7.0~preview1
@@ -1063,12 +1063,11 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_notimplement@Base 2.7.0~preview1
  rb_num2dbl@Base 2.7.0~preview1
  rb_num2fix@Base 2.7.0~preview1
- rb_num2int@Base 2.7.0~preview1
- rb_num2int@Base 2.7.0
+ (optional)rb_num2int@Base 2.7.0
  rb_num2ll@Base 2.7.0~preview1
  rb_num2long@Base 2.7.0~preview1
  rb_num2short@Base 2.7.0~preview1
- rb_num2uint@Base 2.7.0
+ (optional)rb_num2uint@Base 2.7.0
  rb_num2ull@Base 2.7.0~preview1
  rb_num2ulong@Base 2.7.0~preview1
  rb_num2ushort@Base 2.7.0~preview1
@@ -1131,7 +1130,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_objspace_reachable_objects_from@Base 2.7.0~preview1
  rb_objspace_reachable_objects_from_root@Base 2.7.0~preview1
  rb_opts_exception_p@Base 2.7.0~preview2
- rb_out_of_int@Base 2.7.0
+ (optional)rb_out_of_int@Base 2.7.0
  rb_output_fs@Base 2.7.0~preview1
  rb_output_rs@Base 2.7.0~preview1
  rb_p@Base 2.7.0~preview1
