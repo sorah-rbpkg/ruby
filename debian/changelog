@@ -1,4 +1,4 @@
-ruby2.7 (2.7.0-6) UNRELEASED; urgency=medium
+ruby2.7 (2.7.0-6) unstable; urgency=medium
 
   * Add patch to fix FTBFS on x32: misdetected as i386 or amd64
     (Closes: #954293)
