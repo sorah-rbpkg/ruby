@@ -23,7 +23,6 @@ libruby-2.6.so.2.6 libruby2.6 #MINVER#
  dln_find_exe_r@Base 2.6.0-0nkmi1
  dln_find_file_r@Base 2.6.0-0nkmi1
  dln_load@Base 2.6.0-0nkmi1
- explicit_bzero@Base 2.6.0-0nkmi1
  mjit_add_iseq_to_process@Base 2.6.0-0nkmi1
  mjit_call_p@Base 2.6.0-0nkmi1
  mjit_opts@Base 2.6.0-0nkmi1
