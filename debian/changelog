@@ -1,3 +1,11 @@
+ruby2.1 (2.1.5-2+deb8u10) jessie-security; urgency=high
+
+  * Non-maintainer upload by the LTS team.
+  * Add patch to fix unsafe object creation vulnerability in JSON.
+    (Fixes: CVE-2020-10663)
+
+ -- Utkarsh Gupta <utkarsh@debian.org>  Wed, 29 Apr 2020 02:13:45 +0530
+
 ruby2.1 (2.1.5-2+deb8u9) jessie-security; urgency=medium
 
   * Non-maintainer upload by the LTS Security Team.
