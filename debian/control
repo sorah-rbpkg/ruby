@@ -51,6 +51,7 @@ Architecture: any
 Depends: ruby2.7-gems (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
+Provides: ${libruby:Provides}
 Description: Libraries necessary to run Ruby 2.7
  Ruby is the interpreted scripting language for quick and easy
  object-oriented programming.  It has many features to process text

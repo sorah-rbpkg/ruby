@@ -146,3 +146,8 @@ override_dh_install-arch:
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/systemtap/tapset
 	sed 's|@LIBRARY_PATH@|/usr/lib/$(DEB_HOST_MULTIARCH)/libruby-$(RUBY_VERSION).so|g' $(CURDIR)/debian/libruby.stp > $(CURDIR)/debian/tmp/usr/share/systemtap/tapset/libruby$(RUBY_VERSION)-$(DEB_HOST_MULTIARCH).stp
 	dh_install
+
+override_dh_gencontrol:
+	./debian/genprovides $(CURDIR)/debian/libruby2.7/usr/lib/ruby/gems/2.7.0/specifications/default/ \
+		>> debian/libruby2.7.substvars
+	dh_gencontrol
