@@ -1,3 +1,14 @@
+ruby2.7 (2.7.0-7) UNRELEASED; urgency=medium
+
+  [ Lucas Kanashiro ]
+  * d/rules: remove extra space from riscv configure line
+
+  [ Antonio Terceiro ]
+  * libruby: calculate provides dynamically
+  * libruby: do not provide ruby-bundler (Closes: #959393)
+
+ -- Lucas Kanashiro <kanashiro@debian.org>  Mon, 04 May 2020 15:38:31 -0300
+
 ruby2.7 (2.7.0-6) unstable; urgency=medium
 
   * Add patch to fix FTBFS on x32: misdetected as i386 or amd64
