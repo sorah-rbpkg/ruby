@@ -1,3 +1,9 @@
+ruby2.7 (2.7.1-1) UNRELEASED; urgency=medium
+
+  * New upstream version 2.7.1
+
+ -- Lucas Kanashiro <kanashiro@debian.org>  Thu, 07 May 2020 16:56:15 -0300
+
 ruby2.7 (2.7.0-7) unstable; urgency=medium
 
   [ Lucas Kanashiro ]
