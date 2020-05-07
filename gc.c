@@ -1062,6 +1062,7 @@ static int gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, 
 static int gc_verify_heap_pages(rb_objspace_t *objspace);
 
 static void gc_stress_set(rb_objspace_t *objspace, VALUE flag);
+static VALUE gc_disable_no_rest(rb_objspace_t *);
 
 static double getrusage_time(void);
 static inline void gc_prof_setup_new_record(rb_objspace_t *objspace, int reason);
@@ -1589,6 +1590,7 @@ rb_objspace_alloc(void)
     malloc_limit = gc_params.malloc_limit_min;
     list_head_init(&objspace->eden_heap.pages);
     list_head_init(&objspace->tomb_heap.pages);
+    dont_gc = TRUE;
 
     return objspace;
 }
@@ -5862,7 +5864,7 @@ gc_marks_check(rb_objspace_t *objspace, st_foreach_callback_func *checker_func, 
 #if RGENGC_ESTIMATE_OLDMALLOC
     size_t saved_oldmalloc_increase = objspace->rgengc.oldmalloc_increase;
 #endif
-    VALUE already_disabled = rb_gc_disable();
+    VALUE already_disabled = rb_objspace_gc_disable(objspace);
 
     objspace->rgengc.allrefs_table = objspace_allrefs(objspace);
 
@@ -5880,7 +5882,7 @@ gc_marks_check(rb_objspace_t *objspace, st_foreach_callback_func *checker_func, 
     objspace_allrefs_destruct(objspace->rgengc.allrefs_table);
     objspace->rgengc.allrefs_table = 0;
 
-    if (already_disabled == Qfalse) rb_gc_enable();
+    if (already_disabled == Qfalse) rb_objspace_gc_enable(objspace);
     objspace->malloc_params.increase = saved_malloc_increase;
 #if RGENGC_ESTIMATE_OLDMALLOC
     objspace->rgengc.oldmalloc_increase = saved_oldmalloc_increase;
@@ -8547,7 +8549,7 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
     }
 
     VALUE moved_list_head;
-    VALUE disabled = rb_gc_disable();
+    VALUE disabled = rb_objspace_gc_disable(objspace);
 
     if (use_toward_empty) {
         moved_list_head = gc_compact_heap(objspace, compare_free_slots);
@@ -8558,7 +8560,7 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
     heap_eden->freelist = NULL;
 
     gc_update_references(objspace);
-    if (!RTEST(disabled)) rb_gc_enable();
+    if (!RTEST(disabled)) rb_objspace_gc_enable(objspace);
 
     if (use_verifier) {
         gc_check_references_for_moved(objspace);
@@ -8618,7 +8620,7 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
 
 /*
  *  call-seq:
- *     GC.verify_compaction_references                  -> nil
+ *     GC.verify_compaction_references(toward: nil, double_heap: nil) -> nil
  *
  *  Verify compaction reference consistency.
  *
@@ -8656,7 +8658,7 @@ gc_verify_compaction_references(int argc, VALUE *argv, VALUE mod)
         }
 
         rb_get_kwargs(opt, keyword_ids, 0, 2, kwvals);
-        if (rb_intern("empty") == rb_sym2id(kwvals[0])) {
+        if (kwvals[0] != Qundef && rb_intern("empty") == rb_sym2id(kwvals[0])) {
             use_toward_empty = TRUE;
         }
         if (kwvals[1] != Qundef && RTEST(kwvals[1])) {
@@ -9209,6 +9211,12 @@ VALUE
 rb_gc_enable(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
+    return rb_objspace_gc_enable(objspace);
+}
+
+VALUE
+rb_objspace_gc_enable(rb_objspace_t *objspace)
+{
     int old = dont_gc;
 
     dont_gc = FALSE;
@@ -9225,18 +9233,29 @@ VALUE
 rb_gc_disable_no_rest(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
+    return gc_disable_no_rest(objspace);
+}
+
+static VALUE
+gc_disable_no_rest(rb_objspace_t *objspace)
+{
     int old = dont_gc;
     dont_gc = TRUE;
     return old ? Qtrue : Qfalse;
 }
 
-
 VALUE
 rb_gc_disable(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
+    return rb_objspace_gc_disable(objspace);
+}
+
+VALUE
+rb_objspace_gc_disable(rb_objspace_t *objspace)
+{
     gc_rest(objspace);
-    return rb_gc_disable_no_rest();
+    return gc_disable_no_rest(objspace);
 }
 
 static VALUE

@@ -725,10 +725,10 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 {
     const int min_argc = iseq->body->param.lead_num + iseq->body->param.post_num;
     const int max_argc = (iseq->body->param.flags.has_rest == FALSE) ? min_argc + iseq->body->param.opt_num : UNLIMITED_ARGUMENTS;
-    int opt_pc = 0;
     int given_argc;
     int kw_splat = FALSE;
     unsigned int kw_flag = ci->flag & (VM_CALL_KWARG | VM_CALL_KW_SPLAT);
+    int opt_pc = 0, allow_autosplat = !kw_flag;
     struct args_info args_body, *args;
     VALUE keyword_hash = Qnil;
     VALUE * const orig_sp = ec->cfp->sp;
@@ -821,6 +821,10 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                         kw_flag &= ~VM_CALL_KW_SPLAT;
                     }
                     else {
+                        if (RB_TYPE_P(rest_last, T_HASH) && rb_obj_frozen_p(rest_last)) {
+                            rest_last = rb_hash_new();
+                            RARRAY_ASET(args->rest, len - 1, rest_last);
+                        }
                         flag_keyword_hash = rest_last;
                     }
                 }
@@ -844,6 +848,10 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                         kw_flag &= ~VM_CALL_KW_SPLAT;
                     }
                     else {
+                        if (RB_TYPE_P(last_arg, T_HASH) && rb_obj_frozen_p(last_arg)) {
+                            last_arg = rb_hash_new();
+                            args->argv[args->argc-1] = last_arg;
+                        }
                         flag_keyword_hash = last_arg;
                     }
                 }
@@ -871,6 +879,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 	break; /* do nothing special */
       case arg_setup_block:
 	if (given_argc == 1 &&
+            allow_autosplat &&
 	    (min_argc > 0 || iseq->body->param.opt_num > 1 ||
 	     iseq->body->param.flags.has_kw || iseq->body->param.flags.has_kwrest) &&
 	    !iseq->body->param.flags.ambiguous_param0 &&
