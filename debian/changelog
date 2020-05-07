@@ -1,8 +1,12 @@
 ruby2.7 (2.7.1-1) UNRELEASED; urgency=medium
 
   * New upstream version 2.7.1
+  * d/control: rules does not require root
+  * d/copyright: update Debian packaging copyright
+  * Mark ruby2.7-doc binary package as Multi-Arch: foreign (Closes: #956798)
+  * B-d on libncurses-dev instead of libncurses{,w}5-dev (Closes: #956799)
 
- -- Lucas Kanashiro <kanashiro@debian.org>  Thu, 07 May 2020 16:56:15 -0300
+ -- Lucas Kanashiro <kanashiro@debian.org>  Thu, 07 May 2020 18:12:14 -0300
 
 ruby2.7 (2.7.0-7) unstable; urgency=medium
 
