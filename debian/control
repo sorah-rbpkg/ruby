@@ -91,6 +91,7 @@ Description: Header files for compiling extension modules for the Ruby 2.7
  many gems.
 
 Package: ruby2.7-doc
+Multi-Arch: foreign
 Section: doc
 Architecture: all
 Depends: ${misc:Depends}
