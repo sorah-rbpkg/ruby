@@ -248,6 +248,7 @@ License: Permissive
 Files: debian/*
 Copyright: 2013-2015 Antonio Terceiro <terceiro@debian.org>
  2014 Christian Hofstaedtler <zeha@debian.org>
+ 2020 Lucas Kanashiro <kanashiro@debian.org>
 License: BSD-2-clause or Ruby
 Comment:
  The Debian packaging is licensed under the same terms as the original package.
