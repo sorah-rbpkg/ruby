@@ -1,3 +1,11 @@
+ruby2.3 (2.3.3-1+deb9u8) stretch; urgency=high
+
+  * Non-maintainer upload.
+  * Add patch to fix unsafe object creation vulnerability.
+    (Fixes: CVE-2020-10663)
+
+ -- Utkarsh Gupta <utkarsh@debian.org>  Fri, 05 Jun 2020 14:25:50 +0530
+
 ruby2.3 (2.3.3-1+deb9u7) stretch-security; urgency=high
 
   * Non-maintainer upload by the Security Team.

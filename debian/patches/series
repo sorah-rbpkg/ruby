@@ -4,3 +4,4 @@ Fix-for-wrong-fnmatch-patttern.patch
 Loop-with-String-scan-without-creating-substrings.patch
 WEBrick-prevent-response-splitting-and-header-inject.patch
 lib-shell-command-processor.rb-Shell-prevent-unknown.patch
+CVE-2020-10663.patch
