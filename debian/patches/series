@@ -13,3 +13,5 @@
 0013-Loop-with-String-scan-without-creating-substrings.patch
 0014-WEBrick-prevent-response-splitting-and-header-inject.patch
 0015-lib-shell-command-processor.rb-Shell-prevent-unknown.patch
+CVE-2020-10933.patch
+CVE-2020-10663.patch
