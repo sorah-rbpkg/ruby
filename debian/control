@@ -35,7 +35,7 @@ Rules-Requires-Root: no
 Package: ruby2.7
 Multi-Arch: allowed
 Architecture: any
-Depends: rubygems-integration (>= 1.8),
+Depends: rubygems-integration (>= 1.17.1~),
          ${misc:Depends},
          ${shlibs:Depends}
 Recommends: fonts-lato,
