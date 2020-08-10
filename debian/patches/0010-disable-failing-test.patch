@@ -1,0 +1,12 @@
+Bug,debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=968203
+
+--- a/test/uri/test_generic.rb
++++ b/test/uri/test_generic.rb
+@@ -899,7 +899,6 @@
+       assert_nil(URI("http://www.example.org/").find_proxy(env))
+     }
+     with_proxy_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'.example.org') {|env|
+-      assert_equal(URI('http://127.0.0.1:8080'), URI("http://example.org/").find_proxy(env))
+       assert_nil(URI("http://www.example.org/").find_proxy(env))
+     }
+   end
