@@ -7,3 +7,4 @@
 0007-Fix-FTBFS-on-x32-misdetected-as-i386-or-amd64.patch
 0010-Fix-IRBTestIRBHistory-tests.patch
 0012-Dont-use-relative-path.patch
+0010-Fix-getcwd-ENOENT.patch
