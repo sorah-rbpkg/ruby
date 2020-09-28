@@ -136,7 +136,7 @@ define rp
       printf "%sT_ARRAY%s: len=%ld ", $color_type, $color_end, $len
       if ($flags & RUBY_FL_USER2)
 	printf "(shared) shared="
-	output/x ((struct RArray*)($arg0))->as.heap.aux.shared
+	output/x ((struct RArray*)($arg0))->as.heap.aux.shared_root
 	printf " "
       else
 	printf "(ownership) capa=%ld ", ((struct RArray*)($arg0))->as.heap.aux.capa
@@ -156,12 +156,12 @@ define rp
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_HASH
     printf "%sT_HASH%s: ", $color_type, $color_end,
-    if (((struct RHash *)($arg0))->basic->flags & RHASH_ST_TABLE_FLAG)
+    if (((struct RHash *)($arg0))->basic.flags & RHASH_ST_TABLE_FLAG)
       printf "st len=%ld ", ((struct RHash *)($arg0))->as.st->num_entries
     else
       printf "li len=%ld bound=%ld ", \
-        ((((struct RHash *)($arg0))->basic->flags & RHASH_AR_TABLE_SIZE_MASK) >> RHASH_AR_TABLE_SIZE_SHIFT), \
-        ((((struct RHash *)($arg0))->basic->flags & RHASH_AR_TABLE_BOUND_MASK) >> RHASH_AR_TABLE_BOUND_SHIFT)
+        ((((struct RHash *)($arg0))->basic.flags & RHASH_AR_TABLE_SIZE_MASK) >> RHASH_AR_TABLE_SIZE_SHIFT), \
+        ((((struct RHash *)($arg0))->basic.flags & RHASH_AR_TABLE_BOUND_MASK) >> RHASH_AR_TABLE_BOUND_SHIFT)
     end
     print (struct RHash *)($arg0)
   else
@@ -1274,7 +1274,7 @@ document rb_count_objects
   Counts all objects grouped by type.
 end
 
-# Details: https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/MachineInstructionsTraceWithGDB
+# Details: https://bugs.ruby-lang.org/projects/ruby-master/wiki/MachineInstructionsTraceWithGDB
 define trace_machine_instructions
   set logging on
   set height 0

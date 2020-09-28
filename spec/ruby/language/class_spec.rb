@@ -293,6 +293,14 @@ describe "A class definition extending an object (sclass)" do
     end
   end
 
+  ruby_version_is "3.0" do
+    it "does not allow accessing the block of the original scope" do
+      -> {
+        ClassSpecs.sclass_with_block { 123 }
+      }.should raise_error(SyntaxError)
+    end
+  end
+
   it "can use return to cause the enclosing method to return" do
     ClassSpecs.sclass_with_return.should == :inner
   end

@@ -3,17 +3,21 @@ require 'test/unit'
 
 class TestSetTraceFunc < Test::Unit::TestCase
   def setup
-    @original_compile_option = RubyVM::InstructionSequence.compile_option
-    RubyVM::InstructionSequence.compile_option = {
-      :trace_instruction => true,
-      :specialized_instruction => false
-    }
+    if defined?(RubyVM)
+      @original_compile_option = RubyVM::InstructionSequence.compile_option
+      RubyVM::InstructionSequence.compile_option = {
+        :trace_instruction => true,
+        :specialized_instruction => false
+      }
+    end
     @target_thread = Thread.current
   end
 
   def teardown
     set_trace_func(nil)
-    RubyVM::InstructionSequence.compile_option = @original_compile_option
+    if defined?(RubyVM)
+      RubyVM::InstructionSequence.compile_option = @original_compile_option
+    end
     @target_thread = nil
   end
 
@@ -137,6 +141,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal(["c-call", 9, :set_trace_func, Kernel],
                  events.shift)
     assert_equal([], events)
+
+    self.class.class_eval do
+      remove_const :Foo
+    end
   end
 
   def test_return # [ruby-dev:38701]
@@ -362,6 +370,11 @@ class TestSetTraceFunc < Test::Unit::TestCase
     end
     assert_equal([], events[:set])
     assert_equal([], events[:add])
+
+    # cleanup
+    self.class.class_eval do
+      remove_const :ThreadTraceInnerClass
+    end
   end
 
   def test_trace_defined_method
@@ -472,8 +485,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:c_call,   4, 'xyzzy', Integer,     :times,           1,           :outer, :nothing],
      [:line,     4, 'xyzzy', self.class,  method,           self,        nil,    :nothing],
      [:line,     5, 'xyzzy', self.class,  method,           self,        :inner, :nothing],
-     [:c_call,   5, 'xyzzy', Kernel,      :tap,             self,        :inner, :nothing],
-     [:c_return, 5, "xyzzy", Kernel,      :tap,             self,        :inner, self],
      [:c_return, 4, "xyzzy", Integer,     :times,           1,           :outer, 1],
      [:line,     7, 'xyzzy', self.class,  method,           self,        :outer, :nothing],
      [:c_call,   7, "xyzzy", Class,       :inherited,       Object,      :outer, :nothing],
@@ -499,8 +510,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:call,    13, "xyzzy", xyzzy.class, :bar,             xyzzy,       nil, :nothing],
      [:line,    14, "xyzzy", xyzzy.class, :bar,             xyzzy,       nil, :nothing],
      [:line,    15, "xyzzy", xyzzy.class, :bar,             xyzzy,       :XYZZY_bar, :nothing],
-     [:c_call,  15, "xyzzy", Kernel,      :tap,             xyzzy,       :XYZZY_bar, :nothing],
-     [:c_return,15, "xyzzy", Kernel,      :tap,             xyzzy,       :XYZZY_bar, xyzzy],
      [:return,  16, "xyzzy", xyzzy.class, :bar,             xyzzy,       :XYZZY_bar, xyzzy],
      [:return,  12, "xyzzy", xyzzy.class, :foo,             xyzzy,       :XYZZY_foo, xyzzy],
      [:line,    20, "xyzzy", TestSetTraceFunc, method,      self,        :outer, :nothing],
@@ -597,8 +606,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:c_call,   4, 'xyzzy', Integer,     :times,           1,           :outer, :nothing],
      [:line,     4, 'xyzzy', self.class,  method,           self,        nil,    :nothing],
      [:line,     5, 'xyzzy', self.class,  method,           self,        :inner, :nothing],
-     [:c_call,   5, 'xyzzy', Kernel,      :tap,             self,        :inner, :nothing],
-     [:c_return, 5, "xyzzy", Kernel,      :tap,             self,        :inner, self],
      [:c_return, 4, "xyzzy", Integer,     :times,           1,           :outer, 1],
      [:line,     7, 'xyzzy', self.class,  method,           self,        :outer, :nothing],
      [:c_call,   7, "xyzzy", Class,       :inherited,       Object,      :outer, :nothing],
@@ -624,8 +631,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:call,    13, "xyzzy", xyzzy.class, :bar,             xyzzy,       nil, :nothing],
      [:line,    14, "xyzzy", xyzzy.class, :bar,             xyzzy,       nil, :nothing],
      [:line,    15, "xyzzy", xyzzy.class, :bar,             xyzzy,       :XYZZY_bar, :nothing],
-     [:c_call,  15, "xyzzy", Kernel,      :tap,             xyzzy,       :XYZZY_bar, :nothing],
-     [:c_return,15, "xyzzy", Kernel,      :tap,             xyzzy,       :XYZZY_bar, xyzzy],
      [:return,  16, "xyzzy", xyzzy.class, :bar,             xyzzy,       :XYZZY_bar, xyzzy],
      [:return,  12, "xyzzy", xyzzy.class, :foo,             xyzzy,       :XYZZY_foo, xyzzy],
      [:line,    20, "xyzzy", TestSetTraceFunc, method,      self,        :outer, :nothing],
@@ -932,9 +937,9 @@ class TestSetTraceFunc < Test::Unit::TestCase
       when :line
         assert_match(/ in /, str)
       when :call, :c_call
-        assert_match(/call \`/, str) # #<TracePoint:c_call `inherited'@../trunk/test.rb:11>
+        assert_match(/call \`/, str) # #<TracePoint:c_call `inherited' ../trunk/test.rb:11>
       when :return, :c_return
-        assert_match(/return \`/, str) # #<TracePoint:return `m'@../trunk/test.rb:3>
+        assert_match(/return \`/, str) # #<TracePoint:return `m' ../trunk/test.rb:3>
       when /thread/
         assert_match(/\#<Thread:/, str) # #<TracePoint:thread_end of #<Thread:0x87076c0>>
       else
@@ -1672,7 +1677,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     TracePoint.new(:return, &capture_events).enable{
       o.alias_m
     }
-    assert_equal [[:return, :m, :alias_m]], events
+    assert_equal [[:return, :tap, :tap], [:return, :m, :alias_m]], events
     events.clear
 
     o = Class.new{
@@ -1696,13 +1701,13 @@ class TestSetTraceFunc < Test::Unit::TestCase
     events.clear
 
     o = Class.new{
-      alias alias_tap tap
-      define_method(:m){alias_tap{return}}
+      alias alias_singleton_class singleton_class
+      define_method(:m){alias_singleton_class}
     }.new
     TracePoint.new(:c_return, &capture_events).enable{
       o.m
     }
-    assert_equal [[:c_return, :tap, :alias_tap]], events
+    assert_equal [[:c_return, :singleton_class, :alias_singleton_class]], events
     events.clear
 
     c = Class.new{
@@ -2278,5 +2283,20 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_stat_exists
     assert_instance_of Hash, TracePoint.stat
+  end
+
+  def test_tracepoint_opt_invokebuiltin_delegate_leave
+    code = 'puts RubyVM::InstructionSequence.of("\x00".method(:unpack)).disasm'
+    out = EnvUtil.invoke_ruby(['-e', code], '', true).first
+    assert_match(/^0000 opt_invokebuiltin_delegate_leave /, out)
+
+    event = eval(EnvUtil.invoke_ruby(['-e', <<~'EOS'], '', true).first)
+      TracePoint.new(:return) do |tp|
+        p [tp.event, tp.method_id]
+      end.enable do
+        "\x00".unpack("c")
+      end
+    EOS
+    assert_equal [:return, :unpack], event
   end
 end

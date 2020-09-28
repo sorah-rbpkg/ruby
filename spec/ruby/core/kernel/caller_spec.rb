@@ -7,7 +7,7 @@ describe 'Kernel#caller' do
   end
 
   it 'returns an Array of caller locations' do
-    KernelSpecs::CallerTest.locations.empty?.should == false
+    KernelSpecs::CallerTest.locations.should_not.empty?
   end
 
   it 'returns an Array of caller locations using a custom offset' do
@@ -42,5 +42,13 @@ describe 'Kernel#caller' do
       "#{path}:6:in `foo'\n",
       "#{path}:2:in `block in <main>'\n"
     ]
+  end
+
+  ruby_version_is "2.6" do
+    it "works with endless ranges" do
+      locations1 = KernelSpecs::CallerTest.locations(0)
+      locations2 = KernelSpecs::CallerTest.locations(eval("(2..)"))
+      locations2.map(&:to_s).should == locations1[2..-1].map(&:to_s)
+    end
   end
 end

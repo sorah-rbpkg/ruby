@@ -1,3 +1,5 @@
+#ifndef RUBY_MJIT_H
+#define RUBY_MJIT_H 1
 /**********************************************************************
 
   mjit.h - Interface to MRI method JIT compiler for Ruby's main thread
@@ -6,13 +8,13 @@
 
 **********************************************************************/
 
-#ifndef RUBY_MJIT_H
-#define RUBY_MJIT_H 1
-
-#include "ruby.h"
-#include "debug_counter.h"
+#include "ruby/internal/config.h"
 
 #if USE_MJIT
+
+#include "debug_counter.h"
+#include "ruby.h"
+#include "vm_core.h"
 
 // Special address values of a function generated from the
 // corresponding iseq by MJIT:
@@ -59,8 +61,10 @@ struct mjit_options {
 
 // State of optimization switches
 struct rb_mjit_compile_info {
-    // Disable getinstancevariable/setinstancevariable optimizations based on inline cache
+    // Disable getinstancevariable/setinstancevariable optimizations based on inline cache (T_OBJECT)
     bool disable_ivar_cache;
+    // Disable getinstancevariable/setinstancevariable optimizations based on inline cache (FL_EXIVAR)
+    bool disable_exivar_cache;
     // Disable send/opt_send_without_block optimizations based on inline cache
     bool disable_send_cache;
     // Disable method inlining
@@ -76,10 +80,13 @@ RUBY_EXTERN bool mjit_call_p;
 extern void rb_mjit_add_iseq_to_process(const rb_iseq_t *iseq);
 extern VALUE rb_mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body);
 extern struct rb_mjit_compile_info* rb_mjit_iseq_compile_info(const struct rb_iseq_constant_body *body);
-extern void rb_mjit_recompile_iseq(const rb_iseq_t *iseq);
+extern void rb_mjit_recompile_send(const rb_iseq_t *iseq);
+extern void rb_mjit_recompile_ivar(const rb_iseq_t *iseq);
+extern void rb_mjit_recompile_exivar(const rb_iseq_t *iseq);
+extern void rb_mjit_recompile_inlining(const rb_iseq_t *iseq);
 RUBY_SYMBOL_EXPORT_END
 
-extern bool mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname);
+extern bool mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id);
 extern void mjit_init(const struct mjit_options *opts);
 extern void mjit_gc_start_hook(void);
 extern void mjit_gc_exit_hook(void);
@@ -90,6 +97,7 @@ extern struct mjit_cont *mjit_cont_new(rb_execution_context_t *ec);
 extern void mjit_cont_free(struct mjit_cont *cont);
 extern void mjit_add_class_serial(rb_serial_t class_serial);
 extern void mjit_remove_class_serial(rb_serial_t class_serial);
+extern void mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body);
 
 // A threshold used to reject long iseqs from JITting as such iseqs
 // takes too much time to be compiled.
@@ -100,7 +108,40 @@ static inline int
 mjit_target_iseq_p(struct rb_iseq_constant_body *body)
 {
     return (body->type == ISEQ_TYPE_METHOD || body->type == ISEQ_TYPE_BLOCK)
+        && !body->builtin_inline_p
         && body->iseq_size < JIT_ISEQ_SIZE_THRESHOLD;
+}
+
+#ifdef MJIT_HEADER
+NOINLINE(static COLDFUNC VALUE mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body));
+#else
+static inline VALUE mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body);
+#endif
+static VALUE
+mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body)
+{
+    uintptr_t func_i = (uintptr_t)(body->jit_func);
+    ASSUME(func_i <= LAST_JIT_ISEQ_FUNC);
+    switch ((enum rb_mjit_iseq_func)func_i) {
+      case NOT_ADDED_JIT_ISEQ_FUNC:
+        RB_DEBUG_COUNTER_INC(mjit_exec_not_added);
+        if (body->total_calls == mjit_opts.min_calls && mjit_target_iseq_p(body)) {
+            rb_mjit_add_iseq_to_process(iseq);
+            if (UNLIKELY(mjit_opts.wait)) {
+                return rb_mjit_wait_call(ec, body);
+            }
+        }
+        break;
+      case NOT_READY_JIT_ISEQ_FUNC:
+        RB_DEBUG_COUNTER_INC(mjit_exec_not_ready);
+        break;
+      case NOT_COMPILED_JIT_ISEQ_FUNC:
+        RB_DEBUG_COUNTER_INC(mjit_exec_not_compiled);
+        break;
+      default: // to avoid warning with LAST_JIT_ISEQ_FUNC
+        break;
+    }
+    return Qundef;
 }
 
 // Try to execute the current iseq in ec.  Use JIT code if it is ready.
@@ -110,8 +151,6 @@ mjit_exec(rb_execution_context_t *ec)
 {
     const rb_iseq_t *iseq;
     struct rb_iseq_constant_body *body;
-    long unsigned total_calls;
-    mjit_func_t func;
 
     if (!mjit_call_p)
         return Qundef;
@@ -119,42 +158,23 @@ mjit_exec(rb_execution_context_t *ec)
 
     iseq = ec->cfp->iseq;
     body = iseq->body;
-    total_calls = ++body->total_calls;
+    body->total_calls++;
 
-    func = body->jit_func;
-    if (UNLIKELY((uintptr_t)func <= (uintptr_t)LAST_JIT_ISEQ_FUNC)) {
+    mjit_func_t func = body->jit_func;
+    if (UNLIKELY((uintptr_t)func <= LAST_JIT_ISEQ_FUNC)) {
 #     ifdef MJIT_HEADER
         RB_DEBUG_COUNTER_INC(mjit_frame_JT2VM);
 #     else
         RB_DEBUG_COUNTER_INC(mjit_frame_VM2VM);
 #     endif
-        switch ((enum rb_mjit_iseq_func)func) {
-          case NOT_ADDED_JIT_ISEQ_FUNC:
-            RB_DEBUG_COUNTER_INC(mjit_exec_not_added);
-            if (total_calls == mjit_opts.min_calls && mjit_target_iseq_p(body)) {
-                RB_DEBUG_COUNTER_INC(mjit_exec_not_added_add_iseq);
-                rb_mjit_add_iseq_to_process(iseq);
-                if (UNLIKELY(mjit_opts.wait)) {
-                    return rb_mjit_wait_call(ec, body);
-                }
-            }
-            return Qundef;
-          case NOT_READY_JIT_ISEQ_FUNC:
-            RB_DEBUG_COUNTER_INC(mjit_exec_not_ready);
-            return Qundef;
-          case NOT_COMPILED_JIT_ISEQ_FUNC:
-            RB_DEBUG_COUNTER_INC(mjit_exec_not_compiled);
-            return Qundef;
-          default: // to avoid warning with LAST_JIT_ISEQ_FUNC
-            break;
-        }
+        return mjit_exec_slowpath(ec, iseq, body);
     }
 
-#   ifdef MJIT_HEADER
-      RB_DEBUG_COUNTER_INC(mjit_frame_JT2JT);
-#   else
-      RB_DEBUG_COUNTER_INC(mjit_frame_VM2JT);
-#   endif
+# ifdef MJIT_HEADER
+    RB_DEBUG_COUNTER_INC(mjit_frame_JT2JT);
+# else
+    RB_DEBUG_COUNTER_INC(mjit_frame_VM2JT);
+# endif
     RB_DEBUG_COUNTER_INC(mjit_exec_call_func);
     return func(ec, ec->cfp);
 }

@@ -3,7 +3,6 @@ require 'rubygems/test_case'
 require 'rubygems/commands/update_command'
 
 class TestGemCommandsUpdateCommand < Gem::TestCase
-
   def setup
     super
     common_installer_setup
@@ -159,6 +158,44 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_empty out
   end
 
+  def test_execute_system_specific_older_than_3_2_removes_plugins_dir
+    spec_fetcher do |fetcher|
+      fetcher.download 'rubygems-update', 3.1 do |s|
+        s.files = %w[setup.rb]
+      end
+    end
+
+    @cmd.options[:args]          = []
+    @cmd.options[:system]        = "3.1"
+
+    FileUtils.mkdir_p Gem.plugindir
+    write_file File.join(Gem.plugindir, 'a_plugin.rb')
+
+    @cmd.execute
+
+    refute_path_exists Gem.plugindir, "Plugins folder not removed when updating rubygems to pre-3.2"
+  end
+
+  def test_execute_system_specific_newer_than_or_equal_to_3_2_leaves_plugins_dir_alone
+    spec_fetcher do |fetcher|
+      fetcher.download 'rubygems-update', 3.2 do |s|
+        s.files = %w[setup.rb]
+      end
+    end
+
+    @cmd.options[:args]          = []
+    @cmd.options[:system]        = "3.2"
+
+    FileUtils.mkdir_p Gem.plugindir
+    plugin_file = File.join(Gem.plugindir, 'a_plugin.rb')
+    write_file plugin_file
+
+    @cmd.execute
+
+    assert_path_exists Gem.plugindir, "Plugin folder removed when updating rubygems to post-3.2"
+    assert_path_exists plugin_file, "Plugin removed when updating rubygems to post-3.2"
+  end
+
   def test_execute_system_specifically_to_latest_version
     spec_fetcher do |fetcher|
       fetcher.download 'rubygems-update', 8 do |s|
@@ -198,6 +235,25 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_empty @ui.output
     assert_equal "ERROR:  Gem names are not allowed with the --system option\n",
                  @ui.error
+  end
+
+  def test_execute_system_with_disabled_update
+    old_disable_system_update_message = Gem.disable_system_update_message
+    Gem.disable_system_update_message = "Please use package manager instead."
+
+    @cmd.options[:args] = []
+    @cmd.options[:system] = true
+
+    assert_raises Gem::MockGemUi::TermError do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_empty @ui.output
+    assert_equal "ERROR:  Please use package manager instead.\n", @ui.error
+  ensure
+    Gem.disable_system_update_message = old_disable_system_update_message
   end
 
   # before:
@@ -359,10 +415,10 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
   end
 
   def test_execute_user_install
-    spec_fetcher do |fetcher|
-      fetcher.download 'a', 2
-      fetcher.spec 'a', 1
-    end
+    a = util_spec "a", 1
+    b = util_spec "b", 1
+    install_gem_user(a)
+    install_gem(b)
 
     @cmd.handle_options %w[--user-install]
 
@@ -373,7 +429,13 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     installer = @cmd.installer
     user_install = installer.instance_variable_get :@user_install
 
-    assert user_install, 'user_install must be set on the installer'
+    assert user_install, "user_install must be set on the installer"
+
+    out = @ui.output.split "\n"
+    assert_equal "Updating installed gems", out.shift
+    assert_equal "Updating a", out.shift
+    assert_equal "Gems updated: a", out.shift
+    assert_empty out
   end
 
   def test_fetch_remote_gems
@@ -584,5 +646,4 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_equal "  a-2", out.shift
     assert_empty out
   end
-
 end

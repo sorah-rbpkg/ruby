@@ -28,6 +28,8 @@ RSpec.describe "the lockfile format" do
   end
 
   it "updates the lockfile's bundler version if current ver. is newer" do
+    system_gems "bundler-1.8.2"
+
     lockfile <<-L
       GIT
         remote: git://github.com/nex3/haml.git
@@ -50,7 +52,7 @@ RSpec.describe "the lockfile format" do
          1.8.2
     L
 
-    install_gemfile <<-G
+    install_gemfile <<-G, :env => { "BUNDLER_VERSION" => Bundler::VERSION }
       source "#{file_uri_for(gem_repo1)}"
 
       gem "rack"
@@ -206,6 +208,8 @@ RSpec.describe "the lockfile format" do
     current_version = Bundler::VERSION
     older_major = previous_major(current_version)
 
+    system_gems "bundler-#{older_major}"
+
     lockfile <<-L
       GEM
         remote: #{file_uri_for(gem_repo1)}/
@@ -222,7 +226,7 @@ RSpec.describe "the lockfile format" do
          #{older_major}
     L
 
-    install_gemfile <<-G
+    install_gemfile <<-G, :env => { "BUNDLER_VERSION" => Bundler::VERSION }
       source "#{file_uri_for(gem_repo1)}/"
 
       gem "rack"
@@ -492,7 +496,7 @@ RSpec.describe "the lockfile format" do
          #{Bundler::VERSION}
     L
 
-    bundle! "install"
+    bundle "install"
     expect(the_bundle).to include_gems "rack 1.0.0"
   end
 
@@ -616,13 +620,13 @@ RSpec.describe "the lockfile format" do
   it "serializes pinned path sources to the lockfile even when packaging" do
     build_lib "foo"
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       gem "foo", :path => "#{lib_path("foo-1.0")}"
     G
 
     bundle "config set cache_all true"
-    bundle! :cache
-    bundle! :install, :local => true
+    bundle :cache
+    bundle :install, :local => true
 
     lockfile_should_be <<-G
       PATH
@@ -746,8 +750,8 @@ RSpec.describe "the lockfile format" do
             actionpack (= 2.3.2)
             activerecord (= 2.3.2)
             activeresource (= 2.3.2)
-            rake (= 12.3.2)
-          rake (12.3.2)
+            rake (= 13.0.1)
+          rake (13.0.1)
 
       PLATFORMS
         #{lockfile_platforms}
@@ -1044,7 +1048,7 @@ RSpec.describe "the lockfile format" do
 
     simulate_platform "universal-java-16"
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}"
       gem "platform_specific"
     G
@@ -1075,7 +1079,7 @@ RSpec.describe "the lockfile format" do
 
     simulate_platform "universal-java-16"
 
-    install_gemfile! <<-G
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}"
       gem "platform_specific"
     G
@@ -1203,24 +1207,24 @@ RSpec.describe "the lockfile format" do
   end
 
   it "raises if two different versions are used" do
-    install_gemfile <<-G
+    install_gemfile <<-G, :raise_on_error => false
       source "#{file_uri_for(gem_repo1)}/"
       gem "rack", "1.0"
       gem "rack", "1.1"
     G
 
-    expect(bundled_app("Gemfile.lock")).not_to exist
+    expect(bundled_app_lock).not_to exist
     expect(err).to include "rack (= 1.0) and rack (= 1.1)"
   end
 
   it "raises if two different sources are used" do
-    install_gemfile <<-G
+    install_gemfile <<-G, :raise_on_error => false
       source "#{file_uri_for(gem_repo1)}/"
       gem "rack"
       gem "rack", :git => "git://hubz.com"
     G
 
-    expect(bundled_app("Gemfile.lock")).not_to exist
+    expect(bundled_app_lock).not_to exist
     expect(err).to include "rack (>= 0) should come from an unspecified source and git://hubz.com (at master)"
   end
 
@@ -1289,7 +1293,8 @@ RSpec.describe "the lockfile format" do
       gem "omg", :git => "#{lib_path("omg")}", :branch => 'master'
     G
 
-    bundle! :install, forgotten_command_line_options(:path => "vendor")
+    bundle "config --local path vendor"
+    bundle :install
     expect(the_bundle).to include_gems "omg 1.0"
 
     # Create a Gemfile.lock that has duplicate GIT sections
@@ -1364,7 +1369,7 @@ RSpec.describe "the lockfile format" do
         rack_middleware
     L
 
-    install_gemfile <<-G
+    install_gemfile <<-G, :raise_on_error => false
       source "#{file_uri_for(gem_repo1)}"
       gem "rack_middleware"
     G
@@ -1376,7 +1381,7 @@ RSpec.describe "the lockfile format" do
   describe "a line ending" do
     def set_lockfile_mtime_to_known_value
       time = Time.local(2000, 1, 1, 0, 0, 0)
-      File.utime(time, time, bundled_app("Gemfile.lock"))
+      File.utime(time, time, bundled_app_lock)
     end
     before(:each) do
       build_repo2
@@ -1389,7 +1394,7 @@ RSpec.describe "the lockfile format" do
     end
 
     it "generates Gemfile.lock with \\n line endings" do
-      expect(File.read(bundled_app("Gemfile.lock"))).not_to match("\r\n")
+      expect(File.read(bundled_app_lock)).not_to match("\r\n")
       expect(the_bundle).to include_gems "rack 1.0"
     end
 
@@ -1397,19 +1402,21 @@ RSpec.describe "the lockfile format" do
       it "preserves Gemfile.lock \\n line endings" do
         update_repo2
 
-        expect { bundle "update", :all => true }.to change { File.mtime(bundled_app("Gemfile.lock")) }
-        expect(File.read(bundled_app("Gemfile.lock"))).not_to match("\r\n")
+        expect { bundle "update", :all => true }.to change { File.mtime(bundled_app_lock) }
+        expect(File.read(bundled_app_lock)).not_to match("\r\n")
         expect(the_bundle).to include_gems "rack 1.2"
       end
 
       it "preserves Gemfile.lock \\n\\r line endings" do
+        skip "needs to be adapted" if Gem.win_platform?
+
         update_repo2
-        win_lock = File.read(bundled_app("Gemfile.lock")).gsub(/\n/, "\r\n")
-        File.open(bundled_app("Gemfile.lock"), "wb") {|f| f.puts(win_lock) }
+        win_lock = File.read(bundled_app_lock).gsub(/\n/, "\r\n")
+        File.open(bundled_app_lock, "wb") {|f| f.puts(win_lock) }
         set_lockfile_mtime_to_known_value
 
-        expect { bundle "update", :all => true }.to change { File.mtime(bundled_app("Gemfile.lock")) }
-        expect(File.read(bundled_app("Gemfile.lock"))).to match("\r\n")
+        expect { bundle "update", :all => true }.to change { File.mtime(bundled_app_lock) }
+        expect(File.read(bundled_app_lock)).to match("\r\n")
         expect(the_bundle).to include_gems "rack 1.2"
       end
     end
@@ -1421,20 +1428,20 @@ RSpec.describe "the lockfile format" do
                    require 'bundler'
                    Bundler.setup
                  RUBY
-        end.not_to change { File.mtime(bundled_app("Gemfile.lock")) }
+        end.not_to change { File.mtime(bundled_app_lock) }
       end
 
       it "preserves Gemfile.lock \\n\\r line endings" do
-        win_lock = File.read(bundled_app("Gemfile.lock")).gsub(/\n/, "\r\n")
-        File.open(bundled_app("Gemfile.lock"), "wb") {|f| f.puts(win_lock) }
+        win_lock = File.read(bundled_app_lock).gsub(/\n/, "\r\n")
+        File.open(bundled_app_lock, "wb") {|f| f.puts(win_lock) }
         set_lockfile_mtime_to_known_value
 
         expect do
           ruby <<-RUBY
-                   require 'bundler'
+                   require '#{lib_dir}/bundler'
                    Bundler.setup
                  RUBY
-        end.not_to change { File.mtime(bundled_app("Gemfile.lock")) }
+        end.not_to change { File.mtime(bundled_app_lock) }
       end
     end
   end
@@ -1460,7 +1467,7 @@ RSpec.describe "the lockfile format" do
          #{Bundler::VERSION}
     L
 
-    install_gemfile(<<-G)
+    install_gemfile <<-G, :raise_on_error => false
       source "#{file_uri_for(gem_repo1)}/"
       gem "rack"
     G

@@ -8,31 +8,34 @@
 
 **********************************************************************/
 
-
-#include "internal.h"
-#include "addr2line.h"
-#include "vm_core.h"
-#include "iseq.h"
-#include "gc.h"
+#include "ruby/internal/config.h"
 
 #ifdef HAVE_UCONTEXT_H
-#include <ucontext.h>
-#endif
-#ifdef __APPLE__
-#ifdef HAVE_LIBPROC_H
-#include <libproc.h>
-#endif
-#include <mach/vm_map.h>
-#include <mach/mach_init.h>
-#ifdef __LP64__
-#define vm_region_recurse vm_region_recurse_64
-#endif
+# include <ucontext.h>
 #endif
 
-/* see vm_insnhelper.h for the values */
-#ifndef VMDEBUG
-#define VMDEBUG 0
+#ifdef __APPLE__
+# ifdef HAVE_LIBPROC_H
+#  include <libproc.h>
+# endif
+# include <mach/vm_map.h>
+# include <mach/mach_init.h>
+# ifdef __LP64__
+#  define vm_region_recurse vm_region_recurse_64
+# endif
+/* that is defined in sys/queue.h, and conflicts with
+ * ccan/list/list.h */
+# undef LIST_HEAD
 #endif
+
+#include "addr2line.h"
+#include "gc.h"
+#include "internal.h"
+#include "internal/variable.h"
+#include "internal/vm.h"
+#include "iseq.h"
+#include "vm_core.h"
+#include "ractor.h"
 
 #define MAX_POSBUF 128
 
@@ -103,11 +106,11 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     }
 
     if (cfp->iseq != 0) {
-#define RUBY_VM_IFUNC_P(ptr) imemo_type_p((VALUE)ptr, imemo_ifunc)
+#define RUBY_VM_IFUNC_P(ptr) IMEMO_TYPE_P(ptr, imemo_ifunc)
 	if (RUBY_VM_IFUNC_P(cfp->iseq)) {
 	    iseq_name = "<ifunc>";
 	}
-	else if (SYMBOL_P(cfp->iseq)) {
+        else if (SYMBOL_P((VALUE)cfp->iseq)) {
 	    tmp = rb_sym2str((VALUE)cfp->iseq);
 	    iseq_name = RSTRING_PTR(tmp);
 	    snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
@@ -159,7 +162,7 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
         char buff[0x100];
 
         if (me) {
-            if (imemo_type_p((VALUE)me, imemo_ment)) {
+            if (IMEMO_TYPE_P(me, imemo_ment)) {
                 fprintf(stderr, "  me:\n");
                 fprintf(stderr, "    called_id: %s, type: %s\n", rb_id2name(me->called_id), rb_method_type_name(me->def->type));
                 fprintf(stderr, "    owner class: %s\n", rb_raw_obj_info(buff, 0x100, me->owner));
@@ -724,7 +727,7 @@ dump_thread(void *arg)
 			if (pSymFromAddr(ph, addr, &displacement, info)) {
 			    if (GetModuleFileName((HANDLE)(uintptr_t)pSymGetModuleBase64(ph, addr), libpath, sizeof(libpath)))
 				fprintf(stderr, "%s", libpath);
-			    fprintf(stderr, "(%s+0x%I64x)",
+			    fprintf(stderr, "(%s+0x%"PRI_64_PREFIX"x)",
 				    info->Name, displacement);
 			}
 			fprintf(stderr, " [0x%p]", (void *)(VALUE)addr);
@@ -753,7 +756,7 @@ rb_print_backtrace(void)
 #define MAX_NATIVE_TRACE 1024
     static void *trace[MAX_NATIVE_TRACE];
     int n = (int)backtrace(trace, MAX_NATIVE_TRACE);
-#if (defined(USE_ELF) || defined(HAVE_MACH_O_LOADER_H)) && defined(HAVE_DLADDR) && !defined(__sparc)
+#if (defined(USE_ELF) || defined(HAVE_MACH_O_LOADER_H)) && defined(HAVE_DLADDR) && !defined(__sparc) && !defined(__riscv)
     rb_dump_backtrace_with_lines(n, trace);
 #else
     char **syms = backtrace_symbols(trace, n);
@@ -917,6 +920,18 @@ rb_dump_machine_register(const ucontext_t *ctx)
 void
 rb_vm_bugreport(const void *ctx)
 {
+#if RUBY_DEVEL
+    const char *cmd = getenv("RUBY_ON_BUG");
+    if (cmd) {
+        char buf[0x100];
+        snprintf(buf, sizeof(buf), "%s %"PRI_PIDT_PREFIX"d", cmd, getpid());
+        int r = system(buf);
+        if (r == -1) {
+            snprintf(buf, sizeof(buf), "Launching RUBY_ON_BUG command failed.");
+        }
+    }
+#endif
+
 #ifdef __linux__
 # define PROC_MAPS_NAME "/proc/self/maps"
 #endif
@@ -1078,12 +1093,13 @@ const char *ruby_fill_thread_id_string(rb_nativethread_id_t thid, rb_thread_id_s
 void
 rb_vmdebug_stack_dump_all_threads(void)
 {
-    rb_vm_t *vm = GET_VM();
     rb_thread_t *th = NULL;
+    rb_ractor_t *r = GET_RACTOR();
 
-    list_for_each(&vm->living_threads, th, vmlt_node) {
+    // TODO: now it only shows current ractor
+    list_for_each(&r->threads.set, th, lt_node) {
 #ifdef NON_SCALAR_THREAD_ID
-	rb_thread_id_string_t buf;
+        rb_thread_id_string_t buf;
 	ruby_fill_thread_id_string(th->thread_id, buf);
 	fprintf(stderr, "th: %p, native_id: %s\n", th, buf);
 #else

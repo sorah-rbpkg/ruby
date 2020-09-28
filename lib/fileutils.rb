@@ -208,7 +208,9 @@ module FileUtils
     fu_output_message "mkdir -p #{mode ? ('-m %03o ' % mode) : ''}#{list.join ' '}" if verbose
     return *list if noop
 
-    list.map {|path| remove_trailing_slash(path)}.each do |path|
+    list.each do |item|
+      path = remove_trailing_slash(item)
+
       # optimize for the most common case
       begin
         fu_mkdir path, mode
@@ -917,11 +919,8 @@ module FileUtils
   private_module_function :apply_mask
 
   def symbolic_modes_to_i(mode_sym, path)  #:nodoc:
-    mode = if File::Stat === path
-             path.mode
-           else
-             File.stat(path).mode
-           end
+    path = File.stat(path) unless File::Stat === path
+    mode = path.mode
     mode_sym.split(/,/).inject(mode & 07777) do |current_mode, clause|
       target, *actions = clause.split(/([=+-])/)
       raise ArgumentError, "invalid file mode: #{mode_sym}" if actions.empty?
@@ -938,7 +937,7 @@ module FileUtils
           when "x"
             mask | 0111
           when "X"
-            if FileTest.directory? path
+            if path.directory?
               mask | 0111
             else
               mask
@@ -1290,7 +1289,7 @@ module FileUtils
 
     def entries
       opts = {}
-      opts[:encoding] = ::Encoding::UTF_8 if fu_windows?
+      opts[:encoding] = fu_windows? ? ::Encoding::UTF_8 : path.encoding
 
       files = if Dir.respond_to?(:children)
         Dir.children(path, **opts)
@@ -1345,6 +1344,7 @@ module FileUtils
       else
         File.chmod mode, path()
       end
+    rescue Errno::EOPNOTSUPP
     end
 
     def chown(uid, gid)
@@ -1439,7 +1439,7 @@ module FileUtils
       if st.symlink?
         begin
           File.lchmod mode, path
-        rescue NotImplementedError
+        rescue NotImplementedError, Errno::EOPNOTSUPP
         end
       else
         File.chmod mode, path
@@ -1559,7 +1559,15 @@ module FileUtils
     def join(dir, base)
       return File.path(dir) if not base or base == '.'
       return File.path(base) if not dir or dir == '.'
-      File.join(dir, base)
+      begin
+        File.join(dir, base)
+      rescue EncodingError
+        if fu_windows?
+          File.join(dir.encode(::Encoding::UTF_8), base.encode(::Encoding::UTF_8))
+        else
+          raise
+        end
+      end
     end
 
     if File::ALT_SEPARATOR

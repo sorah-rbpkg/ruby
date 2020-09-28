@@ -310,6 +310,7 @@ class TestM17N < Test::Unit::TestCase
     def o.inspect
       "abc".encode(Encoding.default_external)
     end
+
     assert_equal '[abc]', [o].inspect
 
     Encoding.default_external = Encoding::US_ASCII

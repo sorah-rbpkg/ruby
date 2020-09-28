@@ -359,7 +359,14 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 	    rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(status));
 	    return 0;
 	}
-	preverify_ok = ret == Qtrue;
+        if (ret != Qtrue) {
+            preverify_ok = 0;
+#if defined(X509_V_ERR_HOSTNAME_MISMATCH)
+            X509_STORE_CTX_set_error(ctx, X509_V_ERR_HOSTNAME_MISMATCH);
+#else
+            X509_STORE_CTX_set_error(ctx, X509_V_ERR_CERT_REJECTED);
+#endif
+        }
     }
 
     return ossl_verify_cb_call(cb, preverify_ok, ctx);
@@ -809,6 +816,10 @@ ossl_sslctx_setup(VALUE self)
 # endif
     }
 #endif /* OPENSSL_NO_EC */
+
+#ifdef HAVE_SSL_CTX_SET_POST_HANDSHAKE_AUTH
+    SSL_CTX_set_post_handshake_auth(ctx, 1);
+#endif
 
     val = rb_attr_get(self, id_i_cert_store);
     if (!NIL_P(val)) {
@@ -1877,18 +1888,24 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
         }
     }
     else {
-	ID meth = nonblock ? rb_intern("read_nonblock") : rb_intern("sysread");
+        ID meth = nonblock ? rb_intern("read_nonblock") : rb_intern("sysread");
 
-	rb_warning("SSL session is not started yet.");
-	if (nonblock) {
+        rb_warning("SSL session is not started yet.");
+#if defined(RB_PASS_KEYWORDS)
+        if (nonblock) {
             VALUE argv[3];
             argv[0] = len;
             argv[1] = str;
             argv[2] = opts;
             return rb_funcallv_kw(io, meth, 3, argv, RB_PASS_KEYWORDS);
         }
-	else
-	    return rb_funcall(io, meth, 2, len, str);
+#else
+        if (nonblock) {
+            return rb_funcall(io, meth, 3, len, str, opts);
+        }
+#endif
+        else
+            return rb_funcall(io, meth, 2, len, str);
     }
 
   end:
@@ -1975,15 +1992,21 @@ ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
 	ID meth = nonblock ?
 	    rb_intern("write_nonblock") : rb_intern("syswrite");
 
-	rb_warning("SSL session is not started yet.");
-	if (nonblock) {
+        rb_warning("SSL session is not started yet.");
+#if defined(RB_PASS_KEYWORDS)
+        if (nonblock) {
             VALUE argv[2];
             argv[0] = str;
             argv[1] = opts;
             return rb_funcallv_kw(io, meth, 2, argv, RB_PASS_KEYWORDS);
         }
-	else
-	    return rb_funcall(io, meth, 1, str);
+#else
+        if (nonblock) {
+            return rb_funcall(io, meth, 2, str, opts);
+        }
+#endif
+        else
+            return rb_funcall(io, meth, 1, str);
     }
 
   end:
@@ -2286,7 +2309,57 @@ ossl_ssl_get_verify_result(VALUE self)
 
     GetSSL(self, ssl);
 
-    return INT2NUM(SSL_get_verify_result(ssl));
+    return LONG2NUM(SSL_get_verify_result(ssl));
+}
+
+/*
+ * call-seq:
+ *    ssl.finished_message => "finished message"
+ *
+ * Returns the last *Finished* message sent
+ *
+ */
+static VALUE
+ossl_ssl_get_finished(VALUE self)
+{
+    SSL *ssl;
+    char sizer[1], *buf;
+    size_t len;
+
+    GetSSL(self, ssl);
+
+    len = SSL_get_finished(ssl, sizer, 0);
+    if (len == 0)
+        return Qnil;
+
+    buf = ALLOCA_N(char, len);
+    SSL_get_finished(ssl, buf, len);
+    return rb_str_new(buf, len);
+}
+
+/*
+ * call-seq:
+ *    ssl.peer_finished_message => "peer finished message"
+ *
+ * Returns the last *Finished* message received
+ *
+ */
+static VALUE
+ossl_ssl_get_peer_finished(VALUE self)
+{
+    SSL *ssl;
+    char sizer[1], *buf;
+    size_t len;
+
+    GetSSL(self, ssl);
+
+    len = SSL_get_peer_finished(ssl, sizer, 0);
+    if (len == 0)
+        return Qnil;
+
+    buf = ALLOCA_N(char, len);
+    SSL_get_peer_finished(ssl, buf, len);
+    return rb_str_new(buf, len);
 }
 
 /*
@@ -2611,13 +2684,13 @@ Init_ossl_ssl(void)
     rb_define_const(mSSLExtConfig, "HAVE_TLSEXT_HOST_NAME", Qtrue);
 
     /*
-     * A callback invoked whenever a new handshake is initiated. May be used
-     * to disable renegotiation entirely.
+     * A callback invoked whenever a new handshake is initiated on an
+     * established connection. May be used to disable renegotiation entirely.
      *
      * The callback is invoked with the active SSLSocket. The callback's
-     * return value is irrelevant, normal return indicates "approval" of the
+     * return value is ignored. A normal return indicates "approval" of the
      * renegotiation and will continue the process. To forbid renegotiation
-     * and to cancel the process, an Error may be raised within the callback.
+     * and to cancel the process, raise an exception within the callback.
      *
      * === Disable client renegotiation
      *
@@ -2625,10 +2698,8 @@ Init_ossl_ssl(void)
      * renegotiation entirely. You may use a callback as follows to implement
      * this feature:
      *
-     *   num_handshakes = 0
      *   ctx.renegotiation_cb = lambda do |ssl|
-     *     num_handshakes += 1
-     *     raise RuntimeError.new("Client renegotiation disabled") if num_handshakes > 1
+     *     raise RuntimeError, "Client renegotiation disabled"
      *   end
      */
     rb_attr(cSSLContext, rb_intern("renegotiation_cb"), 1, 1, Qfalse);
@@ -2806,6 +2877,8 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLSocket, "client_ca", ossl_ssl_get_client_ca_list, 0);
     /* #hostname is defined in lib/openssl/ssl.rb */
     rb_define_method(cSSLSocket, "hostname=", ossl_ssl_set_hostname, 1);
+    rb_define_method(cSSLSocket, "finished_message", ossl_ssl_get_finished, 0);
+    rb_define_method(cSSLSocket, "peer_finished_message", ossl_ssl_get_peer_finished, 0);
 # ifdef HAVE_SSL_GET_SERVER_TMP_KEY
     rb_define_method(cSSLSocket, "tmp_key", ossl_ssl_tmp_key, 0);
 # endif

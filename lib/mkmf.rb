@@ -1970,7 +1970,7 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
     else
       sep = ""
     end
-    possible_command = (proc {|s| s if /top_srcdir/ !~ s} unless $extmk)
+    possible_command = (proc {|s| s if /top_srcdir|tooldir/ !~ s} unless $extmk)
     extconf_h = $extconf_h ? "-DRUBY_EXTCONF_H=\\\"$(RUBY_EXTCONF_H)\\\" " : $defs.join(" ") << " "
     headers = %w[
       $(hdrdir)/ruby.h
@@ -2222,7 +2222,7 @@ RULES
     message "creating Makefile\n"
     MakeMakefile.rm_f "#{CONFTEST}*"
     if CONFIG["DLEXT"] == $OBJEXT
-      for lib in libs = $libs.split
+      for lib in libs = $libs.split(' ')
         lib.sub!(/-l(.*)/, %%"lib\\1.#{$LIBEXT}"%)
       end
       $defs.push(format("-DEXTLIB='%s'", libs.join(",")))
@@ -2822,7 +2822,12 @@ realclean: distclean
   end
 end
 
-include MakeMakefile
+# MakeMakefile::Global = #
+m = Module.new {
+  include(MakeMakefile)
+  private(*MakeMakefile.public_instance_methods(false))
+}
+include m
 
 if not $extmk and /\A(extconf|makefile).rb\z/ =~ File.basename($0)
   END {mkmf_failed($0)}
