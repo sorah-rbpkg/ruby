@@ -596,7 +596,8 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   def test_unloadable_data
-    c = eval("class Unloadable\u{23F0 23F3}<Time;;self;end")
+    name = "Unloadable\u{23F0 23F3}"
+    c = eval("class #{name} < Time;;self;end")
     c.class_eval {
       alias _dump_data _dump
       undef _dump
@@ -605,10 +606,16 @@ class TestMarshal < Test::Unit::TestCase
     assert_raise_with_message(TypeError, /Unloadable\u{23F0 23F3}/) {
       Marshal.load(d)
     }
+
+    # cleanup
+    self.class.class_eval do
+      remove_const name
+    end
   end
 
   def test_unloadable_userdef
-    c = eval("class Userdef\u{23F0 23F3}<Time;self;end")
+    name = "Userdef\u{23F0 23F3}"
+    c = eval("class #{name} < Time;self;end")
     class << c
       undef _load
     end
@@ -616,6 +623,11 @@ class TestMarshal < Test::Unit::TestCase
     assert_raise_with_message(TypeError, /Userdef\u{23F0 23F3}/) {
       Marshal.load(d)
     }
+
+    # cleanup
+    self.class.class_eval do
+      remove_const name
+    end
   end
 
   def test_unloadable_usrmarshal
@@ -631,15 +643,16 @@ class TestMarshal < Test::Unit::TestCase
 
   def test_no_internal_ids
     opt = %w[--disable=gems]
-    args = [opt, 'Marshal.dump("",STDOUT)', true, true, encoding: Encoding::ASCII_8BIT]
-    out, err, status = EnvUtil.invoke_ruby(*args)
+    args = [opt, 'Marshal.dump("",STDOUT)', true, true]
+    kw = {encoding: Encoding::ASCII_8BIT}
+    out, err, status = EnvUtil.invoke_ruby(*args, **kw)
     assert_empty(err)
     assert_predicate(status, :success?)
     expected = out
 
     opt << "--enable=frozen-string-literal"
     opt << "--debug=frozen-string-literal"
-    out, err, status = EnvUtil.invoke_ruby(*args)
+    out, err, status = EnvUtil.invoke_ruby(*args, **kw)
     assert_empty(err)
     assert_predicate(status, :success?)
     assert_equal(expected, out)
@@ -751,6 +764,51 @@ class TestMarshal < Test::Unit::TestCase
     obj.baz = :Bug15968
     assert_raise_with_message(RuntimeError, /instance variable removed/) do
       Marshal.dump(obj)
+    end
+  end
+
+  ruby2_keywords def ruby2_keywords_hash(*a)
+    a.last
+  end
+
+  def ruby2_keywords_test(key: 1)
+    key
+  end
+
+  def test_marshal_with_ruby2_keywords_hash
+    flagged_hash = ruby2_keywords_hash(key: 42)
+    hash = Marshal.load(Marshal.dump(flagged_hash))
+    assert_equal(42, ruby2_keywords_test(*[hash]))
+  end
+
+  def exception_test
+    raise
+  end
+
+  def test_marshal_exception
+    begin
+      exception_test
+    rescue => e
+      e2 = Marshal.load(Marshal.dump(e))
+      assert_equal(e.message, e2.message)
+      assert_equal(e.backtrace, e2.backtrace)
+      assert_nil(e2.backtrace_locations) # temporal
+    end
+  end
+
+  def nameerror_test
+    unknown_method
+  end
+
+  def test_marshal_nameerror
+    begin
+      nameerror_test
+    rescue NameError => e
+      e2 = Marshal.load(Marshal.dump(e))
+      assert_equal(e.message, e2.message)
+      assert_equal(e.name, e2.name)
+      assert_equal(e.backtrace, e2.backtrace)
+      assert_nil(e2.backtrace_locations) # temporal
     end
   end
 end

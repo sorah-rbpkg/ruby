@@ -1,11 +1,9 @@
-
 # frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/commands/build_command'
 require 'rubygems/package'
 
 class TestGemCommandsBuildCommand < Gem::TestCase
-
   CERT_FILE = cert_path 'public3072'
   SIGNING_KEY = key_path 'private3072'
 
@@ -17,8 +15,13 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
     readme_file = File.join(@tempdir, 'README.md')
 
-    File.open readme_file, 'w' do |f|
-      f.write 'My awesome gem'
+    begin
+      umask_orig = File.umask(2)
+      File.open readme_file, 'w' do |f|
+        f.write 'My awesome gem'
+      end
+    ensure
+      File.umask(umask_orig)
     end
 
     @gem = util_spec 'some_gem' do |s|
@@ -122,6 +125,23 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     util_test_build_gem @gem
   end
 
+  def test_execute_rubyforge_project_warning
+    rubyforge_gemspec = File.join SPECIFICATIONS, "rubyforge-0.0.1.gemspec"
+
+    @cmd.options[:args] = [rubyforge_gemspec]
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    error = @ui.error.split("\n")
+    assert_equal "WARNING:  rubyforge_project= is deprecated and ignored. Please remove this from your gemspec to ensure that your gem continues to build in the future.", error.shift
+    assert_equal "WARNING:  See https://guides.rubygems.org/specification-reference/ for help", error.shift
+    assert_equal [], error
+  end
+
   def test_execute_strict_with_warnings
     bad_gem = util_spec 'some_bad_gem' do |s|
       s.files = ['README.md']
@@ -147,7 +167,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     error = @ui.error.split "\n"
     assert_equal "WARNING:  licenses is empty, but is recommended.  Use a license identifier from", error.shift
     assert_equal "http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.", error.shift
-    assert_equal "WARNING:  See http://guides.rubygems.org/specification-reference/ for help", error.shift
+    assert_equal "WARNING:  See https://guides.rubygems.org/specification-reference/ for help", error.shift
     assert_equal [], error
 
     gem_file = File.join @tempdir, File.basename(@gem.cache_file)
@@ -488,5 +508,4 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   ensure
     ENV["SOURCE_DATE_EPOCH"] = epoch
   end
-
 end

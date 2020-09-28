@@ -9,14 +9,24 @@
 
 **********************************************************************/
 
-#include "ruby/encoding.h"
-#include "internal.h"
-#include "encindex.h"
-#include "regenc.h"
-#include <ctype.h>
-#include "ruby/util.h"
+#include "ruby/internal/config.h"
 
+#include <ctype.h>
+
+#include "encindex.h"
+#include "internal.h"
+#include "internal/enc.h"
+#include "internal/encoding.h"
+#include "internal/inits.h"
+#include "internal/load.h"
+#include "internal/object.h"
+#include "internal/string.h"
+#include "internal/vm.h"
+#include "regenc.h"
+#include "ruby/encoding.h"
+#include "ruby/util.h"
 #include "ruby_assert.h"
+
 #ifndef ENC_DEBUG
 #define ENC_DEBUG 0
 #endif
@@ -769,8 +779,18 @@ enc_get_index_str(VALUE str)
     if (i == ENCODING_INLINE_MAX) {
 	VALUE iv;
 
+#if 0
 	iv = rb_ivar_get(str, rb_id_encoding());
 	i = NUM2INT(iv);
+#else
+        /*
+         * Tentatively, assume ASCII-8BIT, if encoding index instance
+         * variable is not found.  This can happen when freeing after
+         * all instance variables are removed in `obj_free`.
+         */
+        iv = rb_attr_get(str, rb_id_encoding());
+        i = NIL_P(iv) ? ENCINDEX_ASCII : NUM2INT(iv);
+#endif
     }
     return i;
 }
@@ -909,7 +929,7 @@ enc_compatible_latter(VALUE str1, VALUE str2, int idx1, int idx2)
     if (isstr2 && RSTRING_LEN(str2) == 0)
 	return enc1;
     isstr1 = RB_TYPE_P(str1, T_STRING);
-    if (isstr1 && RSTRING_LEN(str1) == 0)
+    if (isstr1 && isstr2 && RSTRING_LEN(str1) == 0)
 	return (rb_enc_asciicompat(enc1) && rb_enc_str_asciionly_p(str2)) ? enc1 : enc2;
     if (!rb_enc_asciicompat(enc1) || !rb_enc_asciicompat(enc2)) {
 	return 0;
@@ -1282,12 +1302,13 @@ enc_compatible_p(VALUE klass, VALUE str1, VALUE str2)
     return rb_enc_from_encoding(enc);
 }
 
+NORETURN(static VALUE enc_s_alloc(VALUE klass));
 /* :nodoc: */
 static VALUE
 enc_s_alloc(VALUE klass)
 {
     rb_undefined_alloc(klass);
-    return Qnil;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 /* :nodoc: */
@@ -1355,7 +1376,7 @@ rb_locale_encindex(void)
 {
     int idx = rb_locale_charmap_index();
 
-    if (idx < 0) idx = ENCINDEX_ASCII;
+    if (idx < 0) idx = ENCINDEX_UTF_8;
 
     if (rb_enc_registered("locale") < 0) {
 # if defined _WIN32
@@ -1465,7 +1486,7 @@ rb_enc_default_external(void)
  * encoding may not be valid.  Be sure to check String#valid_encoding?.
  *
  * File data written to disk will be transcoded to the default external
- * encoding when written.
+ * encoding when written, if default_internal is not nil.
  *
  * The default external encoding is initialized by the locale or -E option.
  */
@@ -1550,8 +1571,7 @@ rb_enc_default_internal(void)
  * The script encoding (__ENCODING__), not default_internal, is used as the
  * encoding of created strings.
  *
- * Encoding::default_internal is initialized by the source file's
- * internal_encoding or -E option.
+ * Encoding::default_internal is initialized with -E option or nil otherwise.
  */
 static VALUE
 get_default_internal(VALUE klass)
@@ -1957,7 +1977,7 @@ Init_Encoding(void)
 	rb_ary_push(list, enc_new(enc_table.list[i].enc));
     }
 
-    rb_marshal_define_compat(rb_cEncoding, Qnil, NULL, enc_m_loader);
+    rb_marshal_define_compat(rb_cEncoding, Qnil, 0, enc_m_loader);
 }
 
 void

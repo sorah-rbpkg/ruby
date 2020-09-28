@@ -1,11 +1,9 @@
 # -*- ruby -*-
 _VERSION = "0.5.6"
-date = %w$Date::                           $[1]
 
 Gem::Specification.new do |s|
   s.name = "io-console"
   s.version = _VERSION
-  s.date = date
   s.summary = "Console interface"
   s.email = "nobu@ruby-lang.org"
   s.description = "add console capabilities to IO instances."
@@ -23,5 +21,5 @@ Gem::Specification.new do |s|
     lib/io/console/size.rb
   ]
   s.extensions = %w[ext/io/console/extconf.rb]
-  s.license = "BSD-2-Clause"
+  s.licenses = ["Ruby", "BSD-2-Clause"]
 end

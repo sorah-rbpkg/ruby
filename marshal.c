@@ -9,13 +9,7 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
-#include "ruby/io.h"
-#include "internal.h"
-#include "ruby/st.h"
-#include "ruby/util.h"
-#include "encindex.h"
-#include "id_table.h"
+#include "ruby/internal/config.h"
 
 #include <math.h>
 #ifdef HAVE_FLOAT_H
@@ -24,6 +18,24 @@
 #ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>
 #endif
+
+#include "encindex.h"
+#include "id_table.h"
+#include "internal.h"
+#include "internal/array.h"
+#include "internal/bignum.h"
+#include "internal/class.h"
+#include "internal/encoding.h"
+#include "internal/error.h"
+#include "internal/hash.h"
+#include "internal/object.h"
+#include "internal/struct.h"
+#include "internal/util.h"
+#include "internal/vm.h"
+#include "ruby/io.h"
+#include "ruby/ruby.h"
+#include "ruby/st.h"
+#include "ruby/util.h"
 
 #define BITSPERSHORT (2*CHAR_BIT)
 #define SHORTMASK ((1<<BITSPERSHORT)-1)
@@ -83,7 +95,7 @@ shortlen(size_t len, BDIGIT *ds)
 static ID s_dump, s_load, s_mdump, s_mload;
 static ID s_dump_data, s_load_data, s_alloc, s_call;
 static ID s_getbyte, s_read, s_write, s_binmode;
-static ID s_encoding_short;
+static ID s_encoding_short, s_ruby2_keywords_flag;
 
 #define name_s_dump	"_dump"
 #define name_s_load	"_load"
@@ -98,6 +110,7 @@ static ID s_encoding_short;
 #define name_s_write	"write"
 #define name_s_binmode	"binmode"
 #define name_s_encoding_short "E"
+#define name_s_ruby2_keywords_flag "K"
 
 typedef struct {
     VALUE newclass;
@@ -519,10 +532,13 @@ w_extended(VALUE klass, struct dump_arg *arg, int check)
 	klass = RCLASS_SUPER(klass);
     }
     while (BUILTIN_TYPE(klass) == T_ICLASS) {
-	VALUE path = rb_class_name(RBASIC(klass)->klass);
-	w_byte(TYPE_EXTENDED, arg);
-	w_unique(path, arg);
-	klass = RCLASS_SUPER(klass);
+        if (!FL_TEST(klass, RICLASS_IS_ORIGIN) ||
+                BUILTIN_TYPE(RBASIC(klass)->klass) != T_MODULE) {
+            VALUE path = rb_class_name(RBASIC(klass)->klass);
+            w_byte(TYPE_EXTENDED, arg);
+            w_unique(path, arg);
+        }
+        klass = RCLASS_SUPER(klass);
     }
 }
 
@@ -557,7 +573,7 @@ w_uclass(VALUE obj, VALUE super, struct dump_arg *arg)
     }
 }
 
-#define to_be_skipped_id(id) (id == rb_id_encoding() || id == s_encoding_short || !rb_id2str(id))
+#define to_be_skipped_id(id) (id == rb_id_encoding() || id == s_encoding_short || id == s_ruby2_keywords_flag || !rb_id2str(id))
 
 struct w_ivar_arg {
     struct dump_call_arg *dump;
@@ -574,7 +590,11 @@ w_obj_each(st_data_t key, st_data_t val, st_data_t a)
 
     if (to_be_skipped_id(id)) {
         if (id == s_encoding_short) {
-            rb_warn("instance variable `E' on class %"PRIsVALUE" is not dumped",
+            rb_warn("instance variable `"name_s_encoding_short"' on class %"PRIsVALUE" is not dumped",
+                    CLASS_OF(arg->obj));
+        }
+        if (id == s_ruby2_keywords_flag) {
+            rb_warn("instance variable `"name_s_ruby2_keywords_flag"' on class %"PRIsVALUE" is not dumped",
                     CLASS_OF(arg->obj));
         }
         return ST_CONTINUE;
@@ -654,6 +674,7 @@ has_ivars(VALUE obj, VALUE encname, VALUE *ivobj)
 {
     st_index_t enc = !NIL_P(encname);
     st_index_t num = 0;
+    st_index_t ruby2_keywords_flag = 0;
 
     if (SPECIAL_CONST_P(obj)) goto generic;
     switch (BUILTIN_TYPE(obj)) {
@@ -661,13 +682,16 @@ has_ivars(VALUE obj, VALUE encname, VALUE *ivobj)
       case T_CLASS:
       case T_MODULE:
 	break; /* counted elsewhere */
+      case T_HASH:
+        ruby2_keywords_flag = RHASH(obj)->basic.flags & RHASH_PASS_AS_KEYWORDS ? 1 : 0;
+        /* fall through */
       default:
       generic:
 	rb_ivar_foreach(obj, obj_count_ivars, (st_data_t)&num);
-	if (num) *ivobj = obj;
+	if (ruby2_keywords_flag || num) *ivobj = obj;
     }
 
-    return num + enc;
+    return num + enc + ruby2_keywords_flag;
 }
 
 static void
@@ -687,7 +711,14 @@ w_ivar(st_index_t num, VALUE ivobj, VALUE encname, struct dump_call_arg *arg)
 {
     w_long(num, arg->arg);
     num -= w_encoding(encname, arg);
-    if (ivobj != Qundef) {
+    if (RB_TYPE_P(ivobj, T_HASH) && (RHASH(ivobj)->basic.flags & RHASH_PASS_AS_KEYWORDS)) {
+        int limit = arg->limit;
+        if (limit >= 0) ++limit;
+        w_symbol(ID2SYM(s_ruby2_keywords_flag), arg->arg);
+	w_object(Qtrue, arg->arg, limit);
+        num--;
+    }
+    if (ivobj != Qundef && num) {
         w_ivar_each(ivobj, num, arg);
     }
 }
@@ -1360,6 +1391,13 @@ r_bytes0(long len, struct load_arg *arg)
     return str;
 }
 
+static inline int
+name_equal(const char *name, size_t nlen, const char *p, long l)
+{
+    if ((size_t)l != nlen || *p != *name) return 0;
+    return nlen == 1 || memcmp(p+1, name+1, nlen-1) == 0;
+}
+
 static int
 sym2encidx(VALUE sym, VALUE val)
 {
@@ -1369,17 +1407,29 @@ sym2encidx(VALUE sym, VALUE val)
     if (rb_enc_get_index(sym) != ENCINDEX_US_ASCII) return -1;
     RSTRING_GETMEM(sym, p, l);
     if (l <= 0) return -1;
-    if (l == sizeof(name_encoding) &&
-	memcmp(p, name_encoding, sizeof(name_encoding)) == 0) {
+    if (name_equal(name_encoding, sizeof(name_encoding), p, l)) {
 	int idx = rb_enc_find_index(StringValueCStr(val));
 	return idx;
     }
-    else if (l == 1 && *p == 'E') {
+    if (name_equal(name_s_encoding_short, rb_strlen_lit(name_s_encoding_short), p, l)) {
 	if (val == Qfalse) return rb_usascii_encindex();
 	else if (val == Qtrue) return rb_utf8_encindex();
 	/* bogus ignore */
     }
     return -1;
+}
+
+static int
+ruby2_keywords_flag_check(VALUE sym)
+{
+    const char *p;
+    long l;
+    RSTRING_GETMEM(sym, p, l);
+    if (l <= 0) return 0;
+    if (name_equal(name_s_ruby2_keywords_flag, rb_strlen_lit(name_s_ruby2_keywords_flag), p, 1)) {
+        return 1;
+    }
+    return 0;
 }
 
 static VALUE
@@ -1453,13 +1503,12 @@ r_string(struct load_arg *arg)
 static VALUE
 r_entry0(VALUE v, st_index_t num, struct load_arg *arg)
 {
-    st_data_t real_obj = (VALUE)Qundef;
-    if (arg->compat_tbl && st_lookup(arg->compat_tbl, v, &real_obj)) {
-        st_insert(arg->data, num, (st_data_t)real_obj);
+    st_data_t real_obj = (st_data_t)v;
+    if (arg->compat_tbl) {
+        /* real_obj is kept if not found */
+        st_lookup(arg->compat_tbl, v, &real_obj);
     }
-    else {
-        st_insert(arg->data, num, (st_data_t)v);
-    }
+    st_insert(arg->data, num, real_obj);
     return v;
 }
 
@@ -1535,8 +1584,16 @@ r_ivar(VALUE obj, int *has_encoding, struct load_arg *arg)
                 }
 		if (has_encoding) *has_encoding = TRUE;
 	    }
-	    else {
-		rb_ivar_set(obj, rb_intern_str(sym), val);
+	    else if (ruby2_keywords_flag_check(sym)) {
+                if (RB_TYPE_P(obj, T_HASH)) {
+                    RHASH(obj)->basic.flags |= RHASH_PASS_AS_KEYWORDS;
+                }
+                else {
+                    rb_raise(rb_eArgError, "ruby2_keywords flag is given but %"PRIsVALUE" is not a Hash", obj);
+                }
+            }
+            else {
+                rb_ivar_set(obj, rb_intern_str(sym), val);
 	    }
 	} while (--len > 0);
     }
@@ -1682,8 +1739,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    }
 	    v = r_object0(arg, 0, extmod);
 	    if (rb_special_const_p(v) || RB_TYPE_P(v, T_OBJECT) || RB_TYPE_P(v, T_CLASS)) {
-	      format_error:
-		rb_raise(rb_eArgError, "dump format error (user class)");
+                goto format_error;
 	    }
 	    if (RB_TYPE_P(v, T_MODULE) || !RTEST(rb_class_inherited_p(c, RBASIC(v)->klass))) {
 		VALUE tmp = rb_obj_alloc(c);
@@ -1693,6 +1749,9 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    RBASIC_SET_CLASS(v, c);
 	}
 	break;
+
+      format_error:
+        rb_raise(rb_eArgError, "dump format error (user class)");
 
       case TYPE_NIL:
 	v = Qnil;
@@ -2282,6 +2341,7 @@ Init_marshal(void)
     set_id(s_write);
     set_id(s_binmode);
     set_id(s_encoding_short);
+    set_id(s_ruby2_keywords_flag);
 
     rb_define_module_function(rb_mMarshal, "dump", marshal_dump, -1);
     rb_define_module_function(rb_mMarshal, "load", marshal_load, -1);

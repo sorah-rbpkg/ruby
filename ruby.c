@@ -11,48 +11,65 @@
 
 **********************************************************************/
 
-#ifdef __CYGWIN__
-#include <windows.h>
-#include <sys/cygwin.h>
-#endif
-#include "ruby/encoding.h"
-#include "ruby/thread.h"
-#include "ruby/version.h"
-#include "internal.h"
-#include "eval_intern.h"
-#include "dln.h"
+#include "ruby/internal/config.h"
+
+#include <ctype.h>
 #include <stdio.h>
 #include <sys/types.h>
-#include <ctype.h>
+
+#ifdef __CYGWIN__
+# include <windows.h>
+# include <sys/cygwin.h>
+#endif
 
 #ifdef __hpux
-#include <sys/pstat.h>
+# include <sys/pstat.h>
 #endif
+
 #if defined(LOAD_RELATIVE) && defined(HAVE_DLADDR)
-#include <dlfcn.h>
+# include <dlfcn.h>
 #endif
 
 #ifdef HAVE_UNISTD_H
-#include <unistd.h>
+# include <unistd.h>
 #endif
+
 #if defined(HAVE_FCNTL_H)
-#include <fcntl.h>
+# include <fcntl.h>
 #elif defined(HAVE_SYS_FCNTL_H)
-#include <sys/fcntl.h>
+# include <sys/fcntl.h>
 #endif
+
 #ifdef HAVE_SYS_PARAM_H
 # include <sys/param.h>
 #endif
+
+#include "dln.h"
+#include "eval_intern.h"
+#include "internal.h"
+#include "internal/error.h"
+#include "internal/file.h"
+#include "internal/inits.h"
+#include "internal/io.h"
+#include "internal/load.h"
+#include "internal/loadpath.h"
+#include "internal/missing.h"
+#include "internal/object.h"
+#include "internal/parse.h"
+#include "internal/process.h"
+#include "internal/variable.h"
+#include "mjit.h"
+#include "ruby/encoding.h"
+#include "ruby/thread.h"
+#include "ruby/util.h"
+#include "ruby/version.h"
+
 #ifndef MAXPATHLEN
 # define MAXPATHLEN 1024
 #endif
 #ifndef O_ACCMODE
 # define O_ACCMODE (O_RDONLY | O_WRONLY | O_RDWR)
 #endif
-
-#include "ruby/util.h"
-
-#include "mjit.h"
 
 void Init_ruby_description(void);
 
@@ -223,20 +240,26 @@ static struct {
     char **argv;
 } origarg;
 
+static const char esc_standout[] = "\n\033[1;7m";
+static const char esc_bold[] = "\033[1m";
+static const char esc_reset[] = "\033[0m";
+static const char esc_none[] = "";
+
 static void
-show_usage_line(const char *str, unsigned int namelen, unsigned int secondlen, int help)
+show_usage_line(const char *str, unsigned int namelen, unsigned int secondlen, int help, int highlight, unsigned int w)
 {
-    const unsigned int w = 16;
+    const char *sb = highlight ? esc_bold : esc_none;
+    const char *se = highlight ? esc_reset : esc_none;
     const int wrap = help && namelen + secondlen - 1 > w;
-    printf("  %.*s%-*.*s%-*s%s\n", namelen-1, str,
+    printf("  %s%.*s%-*.*s%s%-*s%s\n", sb, namelen-1, str,
 	   (wrap ? 0 : w - namelen + 1),
-	   (help ? secondlen-1 : 0), str + namelen,
+	   (help ? secondlen-1 : 0), str + namelen, se,
 	   (wrap ? w + 3 : 0), (wrap ? "\n" : ""),
 	   str + namelen + secondlen);
 }
 
 static void
-usage(const char *name, int help)
+usage(const char *name, int help, int highlight, int columns)
 {
     /* This message really ought to be max 23 lines.
      * Removed -h because the user already knows that option. Others? */
@@ -286,6 +309,7 @@ usage(const char *name, int help)
 	M("--verbose",                              "", "turn on verbose mode and disable script from stdin"),
 	M("--version",                              "", "print the version number, then exit"),
 	M("--help",			            "", "show this message, -h for short message"),
+	M("--backtrace-limit=num",                  "", "limit the maximum length of backtrace"),
     };
     static const struct message dumps[] = {
 	M("insns",                  "", "instruction sequences"),
@@ -314,27 +338,32 @@ usage(const char *name, int help)
         M("--jit-min-calls=num", "", "Number of calls to trigger JIT (for testing, default: 10000)"),
     };
     int i;
+    const char *sb = highlight ? esc_standout+1 : esc_none;
+    const char *se = highlight ? esc_reset : esc_none;
     const int num = numberof(usage_msg) - (help ? 1 : 0);
-#define SHOW(m) show_usage_line((m).str, (m).namelen, (m).secondlen, help)
+    unsigned int w = (columns > 80 ? (columns - 79) / 2 : 0) + 16;
+#define SHOW(m) show_usage_line((m).str, (m).namelen, (m).secondlen, help, highlight, w)
 
-    printf("Usage: %s [switches] [--] [programfile] [arguments]\n", name);
+    printf("%sUsage:%s %s [switches] [--] [programfile] [arguments]\n", sb, se, name);
     for (i = 0; i < num; ++i)
 	SHOW(usage_msg[i]);
 
     if (!help) return;
 
+    if (highlight) sb = esc_standout;
+
     for (i = 0; i < numberof(help_msg); ++i)
 	SHOW(help_msg[i]);
-    puts("Dump List:");
+    printf("%s""Dump List:%s\n", sb, se);
     for (i = 0; i < numberof(dumps); ++i)
 	SHOW(dumps[i]);
-    puts("Features:");
+    printf("%s""Features:%s\n", sb, se);
     for (i = 0; i < numberof(features); ++i)
 	SHOW(features[i]);
-    puts("Warning categories:");
+    printf("%s""Warning categories:%s\n", sb, se);
     for (i = 0; i < numberof(warn_categories); ++i)
 	SHOW(warn_categories[i]);
-    puts("JIT options (experimental):");
+    printf("%s""JIT options (experimental):%s\n", sb, se);
     for (i = 0; i < numberof(mjit_options); ++i)
 	SHOW(mjit_options[i]);
 }
@@ -882,9 +911,7 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
     if (NAME_MATCH_P(#bit, str, len)) {set |= mask = FEATURE_BIT(bit); FEATURE_FOUND;}
     EACH_FEATURES(SET_FEATURE, ;);
     if (NAME_MATCH_P("all", str, len)) {
-      found:
-        FEATURE_SET_TO(*argp, mask, (mask & enable));
-	return;
+        goto found;
     }
 #if AMBIGUOUS_FEATURE_NAMES
     if (matched == 1) goto found;
@@ -904,6 +931,11 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
     rb_warn("unknown argument for --%s: `%.*s'",
 	    enable ? "enable" : "disable", len, str);
     rb_warn("features are [%.*s].", (int)strlen(list), list);
+    return;
+
+  found:
+    FEATURE_SET_TO(*argp, mask, (mask & enable));
+    return;
 }
 
 static void
@@ -976,34 +1008,45 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen
 static void
 setup_mjit_options(const char *s, struct mjit_options *mjit_opt)
 {
+#define opt_match(s, l, name) \
+    ((((l) > rb_strlen_lit(name)) ? (s)[rb_strlen_lit(name)] == '=' : \
+      (l) == rb_strlen_lit(name)) && \
+     memcmp((s), name, rb_strlen_lit(name)) == 0 && \
+     (((s) += rb_strlen_lit(name)), 1))
+#define opt_match_noarg(s, l, name) \
+    opt_match(s, l, name) && (*(s) ? (rb_warn("argument to --jit-" name " is ignored"), 1) : 1)
+#define opt_match_arg(s, l, name) \
+    opt_match(s, l, name) && (*(s) ? 1 : (rb_raise(rb_eRuntimeError, "--jit-" name " needs an argument"), 0))
+    if (*s != '-') return;
+    const size_t l = strlen(++s);
     if (*s == 0) return;
-    else if (strcmp(s, "-warnings") == 0) {
+    else if (opt_match_noarg(s, l, "warnings")) {
         mjit_opt->warnings = 1;
     }
-    else if (strncmp(s, "-debug=", 7) == 0) {
-        mjit_opt->debug_flags = strdup(s + 7);
+    else if (opt_match(s, l, "debug")) {
+        if (*s)
+            mjit_opt->debug_flags = strdup(s + 1);
+        else
+            mjit_opt->debug = 1;
     }
-    else if (strcmp(s, "-debug") == 0) {
-        mjit_opt->debug = 1;
-    }
-    else if (strcmp(s, "-wait") == 0) {
+    else if (opt_match_noarg(s, l, "wait")) {
         mjit_opt->wait = 1;
     }
-    else if (strcmp(s, "-save-temps") == 0) {
+    else if (opt_match_noarg(s, l, "save-temps")) {
         mjit_opt->save_temps = 1;
     }
-    else if (strncmp(s, "-verbose=", 9) == 0) {
-        mjit_opt->verbose = atoi(s + 9);
+    else if (opt_match(s, l, "verbose")) {
+        mjit_opt->verbose = *s ? atoi(s + 1) : 1;
     }
-    else if (strncmp(s, "-max-cache=", 11) == 0) {
-        mjit_opt->max_cache_size = atoi(s + 11);
+    else if (opt_match_arg(s, l, "max-cache")) {
+        mjit_opt->max_cache_size = atoi(s + 1);
     }
-    else if (strncmp(s, "-min-calls=", 11) == 0) {
-        mjit_opt->min_calls = atoi(s + 11);
+    else if (opt_match_arg(s, l, "min-calls")) {
+        mjit_opt->min_calls = atoi(s + 1);
     }
     else {
         rb_raise(rb_eRuntimeError,
-                 "invalid MJIT option `%s' (--help will show valid MJIT options)", s + 1);
+                 "invalid MJIT option `%s' (--help will show valid MJIT options)", s);
     }
 }
 #endif
@@ -1066,6 +1109,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		warning = 1;
 		ruby_verbose = Qtrue;
 	    }
+	    FEATURE_SET(opt->warn, RB_WARN_CATEGORY_ALL_BITS);
 	    s++;
 	    goto reswitch;
 
@@ -1112,6 +1156,17 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		    }
 		}
 		warning = 1;
+		switch (v) {
+		  case 0:
+		    FEATURE_SET_TO(opt->warn, RB_WARN_CATEGORY_ALL_BITS, 0);
+		    break;
+		  case 1:
+		    FEATURE_SET_TO(opt->warn, 1U << RB_WARN_CATEGORY_DEPRECATED, 0);
+		    break;
+		  default:
+		    FEATURE_SET(opt->warn, RB_WARN_CATEGORY_ALL_BITS);
+		    break;
+		}
 	    }
 	    goto reswitch;
 
@@ -1244,18 +1299,6 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		}
 		s++;
 	    }
-	    goto reswitch;
-
-	  case 'T':
-            {
-                size_t numlen;
-
-                if (*++s) {
-                    scan_oct(s, 2, &numlen);
-                    s += numlen;
-                }
-            }
-            rb_warn("ruby -T will be removed in Ruby 3.0");
 	    goto reswitch;
 
 	  case 'I':
@@ -1395,6 +1438,12 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		opt->dump |= DUMP_BIT(help);
 		goto switch_end;
 	    }
+            else if (is_option_with_arg("backtrace-limit", Qfalse, Qfalse)) {
+                char *e;
+                long n = strtol(s, &e, 10);
+                if (errno == ERANGE || n < 0 || *e) rb_raise(rb_eRuntimeError, "wrong limit for backtrace length");
+                rb_backtrace_length_limit = n;
+            }
 	    else {
 		rb_raise(rb_eRuntimeError,
 			 "invalid option --%s  (-h will show valid options)", s);
@@ -1444,6 +1493,28 @@ ruby_init_prelude(void)
 {
     Init_builtin_features();
     rb_const_remove(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"));
+}
+
+void rb_call_builtin_inits(void);
+
+static void
+ruby_opt_init(ruby_cmdline_options_t *opt)
+{
+    if (opt->dump & dump_exit_bits) return;
+
+    if (opt->features.set & FEATURE_BIT(gems)) {
+        rb_define_module("Gem");
+        if (opt->features.set & FEATURE_BIT(did_you_mean)) {
+            rb_define_module("DidYouMean");
+        }
+    }
+
+    Init_ext(); /* load statically linked extensions before rubygems */
+    rb_call_builtin_inits();
+    ruby_init_prelude();
+
+    ruby_set_script_name(opt->script_name);
+    require_libraries(&opt->req_list);
 }
 
 static int
@@ -1569,6 +1640,12 @@ rb_f_chomp(int argc, VALUE *argv, VALUE _)
     return str;
 }
 
+static void
+setup_pager_env(void)
+{
+    if (!getenv("LESS")) ruby_setenv("LESS", "-R"); // Output "raw" control characters.
+}
+
 static VALUE
 process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
@@ -1586,11 +1663,62 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     unsigned int dump = opt->dump & dump_exit_bits;
 
     if (opt->dump & (DUMP_BIT(usage)|DUMP_BIT(help))) {
+        int tty = isatty(1);
 	const char *const progname =
 	    (argc > 0 && argv && argv[0] ? argv[0] :
 	     origarg.argc > 0 && origarg.argv && origarg.argv[0] ? origarg.argv[0] :
 	     ruby_engine);
-	usage(progname, (opt->dump & DUMP_BIT(help)));
+        int columns = 0;
+        if ((opt->dump & DUMP_BIT(help)) && tty) {
+            const char *pager_env = getenv("RUBY_PAGER");
+            if (!pager_env) pager_env = getenv("PAGER");
+            if (pager_env && *pager_env && isatty(0)) {
+                const char *columns_env = getenv("COLUMNS");
+                if (columns_env) columns = atoi(columns_env);
+                VALUE pager = rb_str_new_cstr(pager_env);
+#ifdef HAVE_WORKING_FORK
+                int fds[2];
+                if (rb_pipe(fds) == 0) {
+                    rb_pid_t pid = rb_fork();
+                    if (pid > 0) {
+                        /* exec PAGER with reading from child */
+                        dup2(fds[0], 0);
+                    }
+                    else if (pid == 0) {
+                        /* send the help message to the parent PAGER */
+                        dup2(fds[1], 1);
+                        dup2(fds[1], 2);
+                    }
+                    close(fds[0]);
+                    close(fds[1]);
+                    if (pid > 0) {
+                        setup_pager_env();
+                        rb_f_exec(1, &pager);
+                        kill(SIGTERM, pid);
+                        rb_waitpid(pid, 0, 0);
+                    }
+                }
+#else
+                setup_pager_env();
+                VALUE port = rb_io_popen(pager, rb_str_new_lit("w"), Qnil, Qnil);
+                if (!NIL_P(port)) {
+                    int oldout = dup(1);
+                    int olderr = dup(2);
+                    int fd = RFILE(port)->fptr->fd;
+                    dup2(fd, 1);
+                    dup2(fd, 2);
+                    /* more.com doesn't support CSI sequence */
+                    usage(progname, 1, 0, columns);
+                    fflush(stdout);
+                    dup2(oldout, 1);
+                    dup2(olderr, 2);
+                    rb_io_close(port);
+                    return Qtrue;
+                }
+#endif
+            }
+        }
+	usage(progname, (opt->dump & DUMP_BIT(help)), tty, columns);
 	return Qtrue;
     }
 
@@ -1759,14 +1887,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
             rb_ary_replace(vm->load_path_snapshot, load_path);
         }
     }
-    Init_ext();		/* load statically linked extensions before rubygems */
-    if (opt->features.set & FEATURE_BIT(gems)) {
-	rb_define_module("Gem");
-        if (opt->features.set & FEATURE_BIT(did_you_mean)) {
-	    rb_define_module("DidYouMean");
-	}
-    }
-    ruby_init_prelude();
+
     if (opt->features.mask & COMPILATION_FEATURES) {
 	VALUE option = rb_hash_new();
 #define SET_COMPILE_OPTION(h, o, name) \
@@ -1800,10 +1921,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	}
 #endif
 	rb_enc_associate(opt->e_script, eenc);
-	if (!(opt->dump & ~DUMP_BIT(version_v))) {
-	    ruby_set_script_name(opt->script_name);
-	    require_libraries(&opt->req_list);
-	}
+        ruby_opt_init(opt);
         ruby_set_script_name(progname);
 	rb_parser_set_options(parser, opt->do_print, opt->do_loop,
 			      opt->do_line, opt->do_split);
@@ -2030,10 +2148,7 @@ load_file_internal(VALUE argp_v)
         if (NIL_P(c)) {
 	    argp->f = f = Qnil;
 	}
-	if (!(opt->dump & ~DUMP_BIT(version_v))) {
-	    ruby_set_script_name(opt->script_name);
-	    require_libraries(&opt->req_list);	/* Why here? unnatural */
-	}
+        ruby_opt_init(opt);
     }
     if (opt->src.enc.index >= 0) {
 	enc = rb_enc_from_index(opt->src.enc.index);

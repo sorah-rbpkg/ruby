@@ -66,16 +66,15 @@ class TC_OpenStruct < Test::Unit::TestCase
     o = OpenStruct.new(foo: 42)
     o.a = 'a'
     o.freeze
-    expected_error = defined?(FrozenError) ? FrozenError : RuntimeError
-    assert_raise(expected_error) {o.b = 'b'}
+    assert_raise(FrozenError) {o.b = 'b'}
     assert_not_respond_to(o, :b)
-    assert_raise(expected_error) {o.a = 'z'}
+    assert_raise(FrozenError) {o.a = 'z'}
     assert_equal('a', o.a)
     assert_equal(42, o.foo)
     o = OpenStruct.new :a => 42
     def o.frozen?; nil end
     o.freeze
-    assert_raise(expected_error, '[ruby-core:22559]') {o.a = 1764}
+    assert_raise(FrozenError, '[ruby-core:22559]') {o.a = 1764}
   end
 
   def test_delete_field
@@ -179,19 +178,21 @@ class TC_OpenStruct < Test::Unit::TestCase
 
   def test_accessor_defines_method
     os = OpenStruct.new(foo: 42)
-    assert os.respond_to? :foo
-    assert_equal([], os.singleton_methods)
+    assert_respond_to(os, :foo)
     assert_equal(42, os.foo)
     assert_equal([:foo, :foo=], os.singleton_methods.sort)
   end
 
   def test_does_not_redefine
+    $VERBOSE, verbose_bak = nil, $VERBOSE
     os = OpenStruct.new(foo: 42)
     def os.foo
       43
     end
     os.foo = 44
     assert_equal(43, os.foo)
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_allocate_subclass
@@ -225,5 +226,45 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_raise_with_message(NoMethodError, /protected method/) do
       os.foo true, true
     end
+  end
+
+  def test_access_undefined
+    os = OpenStruct.new
+    assert_nil os.foo
+  end
+
+  def test_overridden_private_methods
+    os = OpenStruct.new(puts: :foo, format: :bar)
+    assert_equal(:foo, os.puts)
+    assert_equal(:bar, os.format)
+  end
+
+  def test_overridden_public_methods
+    os = OpenStruct.new(method: :foo, class: :bar)
+    assert_equal(:foo, os.method)
+    assert_equal(:bar, os.class)
+  end
+
+  def test_access_original_methods
+    os = OpenStruct.new(method: :foo)
+    assert_equal(os.object_id, os.method!(:object_id).call)
+  end
+
+  def test_mistaken_subclass
+    sub = Class.new(OpenStruct) do
+      def [](k)
+        __send__(k)
+        super
+      end
+
+      def []=(k, v)
+        @item_set = true
+        __send__("#{k}=", v)
+        super
+      end
+    end
+    o = sub.new
+    o.foo = 42
+    assert_equal 42, o.foo
   end
 end

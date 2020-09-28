@@ -736,6 +736,63 @@ END
     end
   end
 
+  def test_find_pattern
+    [0, 1, 2] in [*, 1 => a, *]
+    assert_equal(1, a)
+
+    [0, 1, 2] in [*a, 1 => b, *c]
+    assert_equal([0], a)
+    assert_equal(1, b)
+    assert_equal([2], c)
+
+    assert_block do
+      case [0, 1, 2]
+      in [*, 9, *]
+        false
+      else
+        true
+      end
+    end
+
+    assert_block do
+      case [0, 1, 2]
+      in [*, Integer, String, *]
+        false
+      else
+        true
+      end
+    end
+
+    [0, 1, 2] in [*a, 1 => b, 2 => c, *d]
+    assert_equal([0], a)
+    assert_equal(1, b)
+    assert_equal(2, c)
+    assert_equal([], d)
+
+    case [0, 1, 2]
+    in *, 1 => a, *;
+        assert_equal(1, a)
+    end
+
+    assert_block do
+      case [0, 1, 2]
+      in String(*, 1, *)
+        false
+      in Array(*, 1, *)
+        true
+      end
+    end
+
+    assert_block do
+      case [0, 1, 2]
+      in String[*, 1, *]
+        false
+      in Array[*, 1, *]
+        true
+      end
+    end
+  end
+
   def test_hash_pattern
     assert_block do
       [{}, C.new({})].all? do |i|
@@ -1202,6 +1259,94 @@ END
       in {**r}
         assert_equal({a: 0, b: 0, c: 0}, r)
         C.keys == nil
+      end
+    end
+  end
+
+  ################################################################
+
+  class CDeconstructCache
+    def initialize(v)
+      @v = v
+    end
+
+    def deconstruct
+      @v.shift
+    end
+  end
+
+  def test_deconstruct_cache
+    assert_block do
+      case CDeconstructCache.new([[0]])
+      in [1]
+      in [0]
+        true
+      end
+    end
+
+    assert_block do
+      case CDeconstructCache.new([[0, 1]])
+      in [1,]
+      in [0,]
+        true
+      end
+    end
+
+    assert_block do
+      case CDeconstructCache.new([[[0]]])
+      in [[1]]
+      in [[*a]]
+        a == [0]
+      end
+    end
+
+    assert_block do
+      case CDeconstructCache.new([[0]])
+      in [x] if x > 0
+      in [0]
+        true
+      end
+    end
+
+    assert_block do
+      case CDeconstructCache.new([[0]])
+      in []
+      in [1] | [0]
+        true
+      end
+    end
+
+    assert_block do
+      case CDeconstructCache.new([[0]])
+      in [1] => _
+      in [0] => _
+        true
+      end
+    end
+
+    assert_block do
+      case CDeconstructCache.new([[0]])
+      in C[0]
+      in CDeconstructCache[0]
+        true
+      end
+    end
+
+    assert_block do
+      case [CDeconstructCache.new([[0], [1]])]
+      in [[1]]
+        false
+      in [[1]]
+        true
+      end
+    end
+
+    assert_block do
+      case CDeconstructCache.new([[0, :a, 1]])
+      in [*, String => x, *]
+        false
+      in [*, Symbol => x, *]
+        x == :a
       end
     end
   end

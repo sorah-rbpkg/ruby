@@ -1,0 +1,34 @@
+name: Ruby
+
+on:
+  push:
+    branches:
+      - master
+  pull_request: {}
+
+jobs:
+  test:
+    runs-on: "ubuntu-latest"
+    strategy:
+      matrix:
+        container_tag:
+        - master-nightly-bionic 
+        - 2.6.5-bionic
+        - 2.7.0-bionic
+        job:
+        - test
+        - stdlib_test
+        - rubocop validate test_doc build test_generate_stdlib
+    container:
+      image: rubylang/ruby:${{ matrix.container_tag }}
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install
+      run: |
+        ruby -v
+        gem install bundler
+        bin/setup
+    - name: Run test
+      run: |
+        bundle exec rake ${{ matrix.job }}
+      if: "!(matrix.job == 'stdlib_test' && contains(matrix.container_tag, '2.6.5'))"

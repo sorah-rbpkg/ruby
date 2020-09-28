@@ -3,21 +3,152 @@
 // auto-generated file
 //   by ./tool/mk_builtin_loader.rb
 //   with gc.rb
+#include "internal/compilers.h"     /* for MAYBE_UNUSED */
+#include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
+#include "ruby/ruby.h"              /* for VALUE */
+#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
+struct rb_execution_context_struct; /* in vm_core.h */
 
-static void load_gc(void)
+static void
+mjit_compile_invokebuiltin_for_gc_start_internal(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 3);
+    }
+    else {
+        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
+        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_start_internal */\n", (intptr_t)gc_start_internal);
+    fprintf(f, "    val = f(ec, self, argv[0], argv[1], argv[2]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_gc_enable(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_enable */\n", (intptr_t)gc_enable);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_gc_disable(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_disable */\n", (intptr_t)gc_disable);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_gc_stress_get(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_stress_get */\n", (intptr_t)gc_stress_get);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_gc_stress_set_m(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    if (index == -1) {
+        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+    }
+    else {
+        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
+        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_stress_set_m */\n", (intptr_t)gc_stress_set_m);
+    fprintf(f, "    val = f(ec, self, argv[0]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_gc_count(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_count */\n", (intptr_t)gc_count);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_gc_stat(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    if (index == -1) {
+        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+    }
+    else {
+        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
+        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_stat */\n", (intptr_t)gc_stat);
+    fprintf(f, "    val = f(ec, self, argv[0]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_gc_latest_gc_info(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    if (index == -1) {
+        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+    }
+    else {
+        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
+        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_latest_gc_info */\n", (intptr_t)gc_latest_gc_info);
+    fprintf(f, "    val = f(ec, self, argv[0]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_rb_gc_compact(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == rb_gc_compact */\n", (intptr_t)rb_gc_compact);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_gc_verify_compaction_references(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
+    }
+    else {
+        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
+        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_verify_compaction_references */\n", (intptr_t)gc_verify_compaction_references);
+    fprintf(f, "    val = f(ec, self, argv[0], argv[1]);\n");
+}
+
+void Init_builtin_gc(void)
 {
   // table definition
   static const struct rb_builtin_function gc_table[] = {
-    RB_BUILTIN_FUNCTION(0, gc_start_internal, gc_start_internal, 3),
-    RB_BUILTIN_FUNCTION(1, gc_enable, gc_enable, 0),
-    RB_BUILTIN_FUNCTION(2, gc_disable, gc_disable, 0),
-    RB_BUILTIN_FUNCTION(3, gc_stress_get, gc_stress_get, 0),
-    RB_BUILTIN_FUNCTION(4, gc_stress_set_m, gc_stress_set_m, 1),
-    RB_BUILTIN_FUNCTION(5, gc_count, gc_count, 0),
-    RB_BUILTIN_FUNCTION(6, gc_stat, gc_stat, 1),
-    RB_BUILTIN_FUNCTION(7, gc_latest_gc_info, gc_latest_gc_info, 1),
-    RB_BUILTIN_FUNCTION(8, rb_gc_compact, rb_gc_compact, 0),
-    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
+    RB_BUILTIN_FUNCTION(0, gc_start_internal, gc_start_internal, 3, mjit_compile_invokebuiltin_for_gc_start_internal),
+    RB_BUILTIN_FUNCTION(1, gc_enable, gc_enable, 0, mjit_compile_invokebuiltin_for_gc_enable),
+    RB_BUILTIN_FUNCTION(2, gc_disable, gc_disable, 0, mjit_compile_invokebuiltin_for_gc_disable),
+    RB_BUILTIN_FUNCTION(3, gc_stress_get, gc_stress_get, 0, mjit_compile_invokebuiltin_for_gc_stress_get),
+    RB_BUILTIN_FUNCTION(4, gc_stress_set_m, gc_stress_set_m, 1, mjit_compile_invokebuiltin_for_gc_stress_set_m),
+    RB_BUILTIN_FUNCTION(5, gc_count, gc_count, 0, mjit_compile_invokebuiltin_for_gc_count),
+    RB_BUILTIN_FUNCTION(6, gc_stat, gc_stat, 1, mjit_compile_invokebuiltin_for_gc_stat),
+    RB_BUILTIN_FUNCTION(7, gc_latest_gc_info, gc_latest_gc_info, 1, mjit_compile_invokebuiltin_for_gc_latest_gc_info),
+    RB_BUILTIN_FUNCTION(8, rb_gc_compact, rb_gc_compact, 0, mjit_compile_invokebuiltin_for_rb_gc_compact),
+    RB_BUILTIN_FUNCTION(9, gc_verify_compaction_references, gc_verify_compaction_references, 2, mjit_compile_invokebuiltin_for_gc_verify_compaction_references),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),
   };
 
   // arity_check
@@ -34,6 +165,7 @@ COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
   if (0) rb_builtin_function_check_arity1(gc_stat);
   if (0) rb_builtin_function_check_arity1(gc_latest_gc_info);
   if (0) rb_builtin_function_check_arity0(rb_gc_compact);
+  if (0) rb_builtin_function_check_arity2(gc_verify_compaction_references);
 COMPILER_WARNING_POP
 
   // load

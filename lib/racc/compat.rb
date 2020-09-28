@@ -1,5 +1,6 @@
+#--
 #
-# $Id: 14fa1118eb3a23e85265e4f7afe2d5a297d69f9c $
+#
 #
 # Copyright (c) 1999-2006 Minero Aoki
 #
@@ -8,6 +9,7 @@
 # the GNU LGPL, Lesser General Public License version 2.1.
 # For details of the GNU LGPL, see the file "COPYING".
 #
+#++
 
 unless Object.method_defined?(:__send)
   class Object

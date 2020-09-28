@@ -7,7 +7,6 @@ require "rubygems/deprecate"
 # See `gem help platform` for information on platform matching.
 
 class Gem::Platform
-
   @local = nil
 
   attr_accessor :cpu
@@ -56,7 +55,7 @@ class Gem::Platform
     when String then
       arch = arch.split '-'
 
-      if arch.length > 2 and arch.last !~ /\d/  # reassemble x86-linux-gnu
+      if arch.length > 2 and arch.last !~ /\d/ # reassemble x86-linux-gnu
         extra = arch.pop
         arch.last << "-#{extra}"
       end
@@ -68,7 +67,7 @@ class Gem::Platform
              else cpu
              end
 
-      if arch.length == 2 and arch.last =~ /^\d+(\.\d+)?$/  # for command-line
+      if arch.length == 2 and arch.last =~ /^\d+(\.\d+)?$/ # for command-line
         @os, @version = arch
         return
       end
@@ -150,7 +149,7 @@ class Gem::Platform
 
     # cpu
     ([nil,'universal'].include?(@cpu) or [nil, 'universal'].include?(other.cpu) or @cpu == other.cpu or
-    (@cpu == 'arm' and other.cpu =~ /\Aarm/)) and
+    (@cpu == 'arm' and other.cpu.start_with?("arm"))) and
 
     # os
     @os == other.os and
@@ -202,5 +201,4 @@ class Gem::Platform
   # This will be replaced with Gem::Platform::local.
 
   CURRENT = 'current'.freeze
-
 end

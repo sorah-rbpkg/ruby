@@ -125,6 +125,13 @@ class TestRange < Test::Unit::TestCase
     assert_raise(RangeError) { (1...).max(3) }
 
     assert_raise(RangeError) { (..0).min {|a, b| a <=> b } }
+
+    assert_equal(2, (..2).max)
+    assert_raise(TypeError) { (...2).max }
+    assert_raise(TypeError) { (...2.0).max }
+
+    assert_equal(Float::INFINITY, (1..Float::INFINITY).max)
+    assert_nil((1..-Float::INFINITY).max)
   end
 
   def test_minmax
@@ -146,12 +153,18 @@ class TestRange < Test::Unit::TestCase
     assert_equal([nil, nil], (0...0).minmax)
 
     assert_equal([2, 1], (1..2).minmax{|a, b| b <=> a})
+
+    assert_equal(['a', 'c'], ('a'..'c').minmax)
+    assert_equal(['a', 'b'], ('a'...'c').minmax)
+
+    assert_equal([1, Float::INFINITY], (1..Float::INFINITY).minmax)
+    assert_equal([nil, nil], (1..-Float::INFINITY).minmax)
   end
 
   def test_initialize_twice
     r = eval("1..2")
-    assert_raise(NameError) { r.instance_eval { initialize 3, 4 } }
-    assert_raise(NameError) { r.instance_eval { initialize_copy 3..4 } }
+    assert_raise(FrozenError) { r.instance_eval { initialize 3, 4 } }
+    assert_raise(FrozenError) { r.instance_eval { initialize_copy 3..4 } }
   end
 
   def test_uninitialized_range

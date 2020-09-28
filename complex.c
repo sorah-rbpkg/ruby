@@ -5,16 +5,27 @@
   which is written in ruby.
 */
 
-#include "ruby/config.h"
+#include "ruby/internal/config.h"
+
 #if defined _MSC_VER
 /* Microsoft Visual C does not define M_PI and others by default */
 # define _USE_MATH_DEFINES 1
 #endif
-#include <math.h>
-#include "internal.h"
-#include "id.h"
 
+#include <ctype.h>
+#include <math.h>
+
+#undef NDEBUG
 #define NDEBUG
+#include "id.h"
+#include "internal.h"
+#include "internal/array.h"
+#include "internal/class.h"
+#include "internal/complex.h"
+#include "internal/math.h"
+#include "internal/numeric.h"
+#include "internal/object.h"
+#include "internal/rational.h"
 #include "ruby_assert.h"
 
 #define ZERO INT2FIX(0)
@@ -392,7 +403,7 @@ nucomp_s_new_internal(VALUE klass, VALUE real, VALUE imag)
 
     RCOMPLEX_SET_REAL(obj, real);
     RCOMPLEX_SET_IMAG(obj, imag);
-    OBJ_FREEZE_RAW(obj);
+    OBJ_FREEZE_RAW((VALUE)obj);
 
     return (VALUE)obj;
 }
@@ -651,8 +662,9 @@ f_complex_polar(VALUE klass, VALUE x, VALUE y)
 	    y = DBL2NUM(imag);
 	}
 	else {
-	    y = f_mul(x, DBL2NUM(sin(arg)));
-	    x = f_mul(x, DBL2NUM(cos(arg)));
+            const double ax = sin(arg), ay = cos(arg);
+            y = f_mul(x, DBL2NUM(ax));
+            x = f_mul(x, DBL2NUM(ay));
 	    if (canonicalization && f_zero_p(y)) return x;
 	}
 	return nucomp_s_new_internal(klass, x, y);
@@ -662,6 +674,16 @@ f_complex_polar(VALUE klass, VALUE x, VALUE y)
 					  f_mul(x, m_sin(y)));
 }
 
+#ifdef HAVE___COSPI
+# define cospi(x) __cospi(x)
+#else
+# define cospi(x) cos((x) * M_PI)
+#endif
+#ifdef HAVE___SINPI
+# define sinpi(x) __sinpi(x)
+#else
+# define sinpi(x) sin((x) * M_PI)
+#endif
 /* returns a Complex or Float of ang*PI-rotated abs */
 VALUE
 rb_dbl_complex_new_polar_pi(double abs, double ang)
@@ -679,8 +701,8 @@ rb_dbl_complex_new_polar_pi(double abs, double ang)
 	return DBL2NUM(abs);
     }
     else {
-	ang *= M_PI;
-	return rb_complex_new(DBL2NUM(abs * cos(ang)), DBL2NUM(abs * sin(ang)));
+        const double real = abs * cospi(ang), imag = abs * sinpi(ang);
+        return rb_complex_new(DBL2NUM(real), DBL2NUM(imag));
     }
 }
 
@@ -709,6 +731,14 @@ nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
 	nucomp_real_check(abs);
 	nucomp_real_check(arg);
 	break;
+    }
+    if (RB_TYPE_P(abs, T_COMPLEX)) {
+        get_dat1(abs);
+        abs = dat->real;
+    }
+    if (RB_TYPE_P(arg, T_COMPLEX)) {
+        get_dat1(arg);
+        arg = dat->real;
     }
     return f_complex_polar(klass, abs, arg);
 }
@@ -1700,8 +1730,6 @@ numeric_to_c(VALUE self)
     return rb_complex_new1(self);
 }
 
-#include <ctype.h>
-
 inline static int
 issign(int c)
 {
@@ -2337,7 +2365,7 @@ Init_Complex(void)
 
     rb_define_global_function("Complex", nucomp_f_complex, -1);
 
-    rb_undef_methods_from(rb_cComplex, rb_mComparable);
+    rb_undef_methods_from(rb_cComplex, RCLASS_ORIGIN(rb_mComparable));
     rb_undef_method(rb_cComplex, "%");
     rb_undef_method(rb_cComplex, "div");
     rb_undef_method(rb_cComplex, "divmod");

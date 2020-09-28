@@ -1,9 +1,10 @@
 # -*- mode: makefile-gmake; indent-tabs-mode: t -*-
 
-gnumake = yes
+reconfig config.status: export MAKE:=$(MAKE)
 override gnumake_recursive := $(if $(findstring n,$(firstword $(MFLAGS))),,+)
 override mflags := $(filter-out -j%,$(MFLAGS))
 MSPECOPT += $(if $(filter -j%,$(MFLAGS)),-j)
+nproc = $(subst -j,,$(filter -j%,$(MFLAGS)))
 
 CHECK_TARGETS := great exam love check test check% test% btest%
 # expand test targets, and those dependents
@@ -67,7 +68,7 @@ endif
 ORDERED_TEST_TARGETS := $(filter $(TEST_TARGETS), \
 	btest-ruby test-knownbug test-basic \
 	test-testframework test-tool test-ruby test-all \
-	test-spec test-bundler-prepare test-bundler \
+	test-spec test-bundler-prepare test-bundler test-bundler-parallel \
 	)
 prev_test := $(if $(filter test-spec,$(ORDERED_TEST_TARGETS)),test-spec-precheck)
 $(foreach test,$(ORDERED_TEST_TARGETS), \
@@ -90,6 +91,8 @@ sudo-precheck: test yes-test-testframework no-test-testframework
 install-prereq: sudo-precheck
 yes-test-all no-test-all: install
 endif
+yes-test-bundler-parallel: PARALLELRSPECOPTS += $(if $(nproc),-n$(shell expr $(nproc) + $(nproc) / 2))
+
 # Cross reference needs to parse all files at once
 love install reinstall: RDOCFLAGS = --force-update
 
@@ -106,6 +109,8 @@ else
 	$(Q) mv $@.new $@
 	$(Q) $(RMALL) make_des_table*
 endif
+
+config.status: $(wildcard config.cache)
 
 STUBPROGRAM = rubystub$(EXEEXT)
 IGNOREDPATTERNS = %~ .% %.orig %.rej \#%\#
@@ -241,15 +246,42 @@ HELP_EXTRA_TASKS = \
 	"  update-github:       merge master branch and push it to Pull Request [PR=1234]" \
 	""
 
-ifneq ($(filter refresh-gems,$(MAKECMDGOALS)),)
 extract-gems: update-gems
+
+BUNDLED_GEMS := $(shell sed '/^[ 	]*\#/d;/^[ 	]*$$/d;s/[ 	][ 	]*/-/;s/[ 	].*//' $(srcdir)/gems/bundled_gems)
+
+update-gems: | $(patsubst %,gems/%.gem,$(BUNDLED_GEMS))
+
+test-bundler-precheck: | $(srcdir)/.bundle/cache
+
+$(srcdir)/.bundle/cache:
+	$(MAKEDIRS) $(@D) $(CACHE_DIR)
+	$(LN_S) ../.downloaded-cache $@
+
+gems/%.gem:
+	$(ECHO) Downloading bundled gem $*...
+	$(Q) $(BASERUBY) -C "$(srcdir)" \
+	    -I./tool -rdownloader \
+	    -e 'gem = "$(@F)"' \
+	    -e 'old = Dir.glob("gems/"+gem.sub(/-[^-]*$$/, "-*.gem"))' \
+	    -e 'Downloader::RubyGems.download(gem, "gems", nil) and' \
+	    -e '(old.delete("gems/#{gem}"); !old.empty?) and' \
+	    -e 'File.unlink(*old) and' \
+	    -e 'FileUtils.rm_rf(old.map{'"|n|"'n.chomp(".gem")})'
+
+extract-gems: | $(patsubst %,.bundle/gems/%,$(BUNDLED_GEMS))
+
+.bundle/gems/%: gems/%.gem | .bundle/gems
+	$(ECHO) Extracting bundle gem $*...
+	$(Q) $(BASERUBY) -C "$(srcdir)" \
+	    -Itool -rgem-unpack \
+	    -e 'Gem.unpack("gems/$(@F).gem", ".bundle/gems")'
+
+$(srcdir)/.bundle/gems:
+	$(MAKEDIRS) $@
+
+ifneq ($(filter update-bundled_gems refresh-gems,$(MAKECMDGOALS)),)
 update-gems: update-bundled_gems
-endif
-ifneq ($(filter extract-gems,$(MAKECMDGOALS)),)
-extract-gems: $(filter update-gems update-bundled_gems,$(MAKECMDGOALS))
-endif
-ifneq ($(filter update-gems,$(MAKECMDGOALS)),)
-update-gems: $(filter update-bundled_gems,$(MAKECMDGOALS))
 endif
 
 ifeq ($(filter 0 1,$(words $(arch_flags))),)
@@ -306,19 +338,22 @@ rdoc\:%: PHONY
 	$(Q)$(RUNRUBY) $(srcdir)/libexec/ri --no-standard-docs --doc-dir=$(RDOCOUT) $(patsubst rdoc:%,%,$@)
 
 test_%.rb test/%: programs PHONY
-	+$(Q)$(exec) $(RUNRUBY) "$(TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) -- $(patsubst test/%,%,$@)
+	$(Q)$(exec) $(RUNRUBY) "$(TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) -- $(patsubst test/%,%,$@)
 
 spec/bundler/%: PHONY
-	+$(Q)$(exec) $(XRUBY) -C $(srcdir) -Ispec/bundler .bundle/bin/rspec --require spec_helper $(RSPECOPTS) $@
+	$(Q)$(exec) $(XRUBY) -C $(srcdir) -Ispec/bundler .bundle/bin/rspec --require spec_helper $(RSPECOPTS) $@
+
+spec/bundler: test-bundler-parallel
+	$(Q)$(NULLCMD)
 
 spec/%: programs exts PHONY
-	+$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec-run -B $(srcdir)/spec/default.mspec $(SPECOPTS) $(patsubst %,$(srcdir)/%,$@)
+	$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec-run -B $(srcdir)/spec/default.mspec $(SPECOPTS) $(patsubst %,$(srcdir)/%,$@)
 
 benchmark/%: miniruby$(EXEEXT) update-benchmark-driver PHONY
 	$(Q)$(BASERUBY) -rrubygems -I$(srcdir)/benchmark/lib $(srcdir)/benchmark/benchmark-driver/exe/benchmark-driver \
 	            --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common --disable-gem" \
 	            --executables="built-ruby::$(BENCH_RUBY) --disable-gem" \
-	            $(srcdir)/$@ $(OPTS)
+	            $(srcdir)/$@ $(BENCH_OPTS) $(OPTS)
 
 clean-srcs-ext::
 	$(Q)$(RM) $(patsubst $(srcdir)/%,%,$(EXT_SRCS))
@@ -328,7 +363,7 @@ clean-srcs-extra::
 
 ifneq ($(filter $(VCS),git),)
 update-src::
-	@$(BASERUBY) $(srcdir)/tool/lib/colorize.rb pass "Latest commit hash = $(shell $(filter-out svn,$(VCS)) -C $(srcdir) rev-parse --short=10 HEAD)"
+	@$(BASERUBY) $(tooldir)/lib/colorize.rb pass "Latest commit hash = $(shell $(filter-out svn,$(VCS)) -C $(srcdir) rev-parse --short=10 HEAD)"
 endif
 
 # Update dependencies and commit the updates to the current branch.
@@ -337,7 +372,7 @@ update-deps:
 	$(eval deps_dir := $(shell mktemp -d)/$(update_deps))
 	$(eval GIT_DIR := $(shell git -C $(srcdir) rev-parse --absolute-git-dir))
 	git --git-dir=$(GIT_DIR) worktree add $(deps_dir)
-	cp $(srcdir)/tool/config.guess $(srcdir)/tool/config.sub $(deps_dir)/tool
+	cp $(tooldir)/config.guess $(tooldir)/config.sub $(deps_dir)/tool
 	[ -f config.status ] && cp config.status $(deps_dir)
 	cd $(deps_dir) && autoconf && \
 	exec ./configure -q -C --enable-load-relative --disable-install-doc --disable-rubygems 'optflags=-O0' 'debugflags=-save-temps=obj -g'
