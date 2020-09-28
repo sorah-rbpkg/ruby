@@ -1,3 +1,20 @@
+ruby3.0 (3.0.0~preview1-1) UNRELEASED; urgency=medium
+
+  [ Pirate Praveen ]
+  * Bump minimum version of rubygems-integration to 1.17.1~
+
+  [ Cédric Boutillier ]
+  * [ci skip] Add .gitattributes to keep unwanted files out of the source package
+
+  [ Utkarsh Gupta ]
+  * Update d/watch for ruby3.0
+  * New upstream version 3.0.0~preview1
+  * Ruby 3.0
+  * Refresh d/patches
+  * Update package for ruby3.0
+
+ -- Utkarsh Gupta <utkarsh@debian.org>  Mon, 28 Sep 2020 20:51:18 +0530
+
 ruby2.7 (2.7.1-3) unstable; urgency=medium
 
   * Do not run TestJIT.rb test file on salsa and autopkgtest
