@@ -1,3 +1,11 @@
+ruby2.3 (2.3.3-1+deb9u9) stretch-security; urgency=high
+
+  * Non-maintainer upload by the LTS team.
+  * Add patch to fix a potential HTTP request smuggling
+    vulnerability in WEBrick. (Fixes: CVE-2020-25613)
+
+ -- Utkarsh Gupta <utkarsh@debian.org>  Thu, 01 Oct 2020 18:54:55 +0530
+
 ruby2.3 (2.3.3-1+deb9u8) stretch; urgency=high
 
   * Non-maintainer upload.
