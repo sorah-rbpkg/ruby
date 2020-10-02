@@ -208,9 +208,7 @@ module FileUtils
     fu_output_message "mkdir -p #{mode ? ('-m %03o ' % mode) : ''}#{list.join ' '}" if verbose
     return *list if noop
 
-    list.each do |item|
-      path = remove_trailing_slash(item)
-
+    list.map {|path| remove_trailing_slash(path)}.each do |path|
       # optimize for the most common case
       begin
         fu_mkdir path, mode
@@ -919,8 +917,11 @@ module FileUtils
   private_module_function :apply_mask
 
   def symbolic_modes_to_i(mode_sym, path)  #:nodoc:
-    path = File.stat(path) unless File::Stat === path
-    mode = path.mode
+    mode = if File::Stat === path
+             path.mode
+           else
+             File.stat(path).mode
+           end
     mode_sym.split(/,/).inject(mode & 07777) do |current_mode, clause|
       target, *actions = clause.split(/([=+-])/)
       raise ArgumentError, "invalid file mode: #{mode_sym}" if actions.empty?
@@ -937,7 +938,7 @@ module FileUtils
           when "x"
             mask | 0111
           when "X"
-            if path.directory?
+            if FileTest.directory? path
               mask | 0111
             else
               mask
@@ -1289,7 +1290,7 @@ module FileUtils
 
     def entries
       opts = {}
-      opts[:encoding] = fu_windows? ? ::Encoding::UTF_8 : path.encoding
+      opts[:encoding] = ::Encoding::UTF_8 if fu_windows?
 
       files = if Dir.respond_to?(:children)
         Dir.children(path, **opts)
@@ -1559,15 +1560,7 @@ module FileUtils
     def join(dir, base)
       return File.path(dir) if not base or base == '.'
       return File.path(base) if not dir or dir == '.'
-      begin
-        File.join(dir, base)
-      rescue EncodingError
-        if fu_windows?
-          File.join(dir.encode(::Encoding::UTF_8), base.encode(::Encoding::UTF_8))
-        else
-          raise
-        end
-      end
+      File.join(dir, base)
     end
 
     if File::ALT_SEPARATOR

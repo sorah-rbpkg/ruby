@@ -245,10 +245,10 @@ describe "Module#define_method" do
     -> { obj.proc_style_test :arg }.should raise_error(ArgumentError)
   end
 
-  it "raises a FrozenError if frozen" do
+  it "raises a #{frozen_error_class} if frozen" do
     -> {
       Class.new { freeze; define_method(:foo) {} }
-    }.should raise_error(FrozenError)
+    }.should raise_error(frozen_error_class)
   end
 
   it "accepts a Method (still bound)" do
@@ -355,8 +355,15 @@ describe "Module#define_method" do
     klass.new.string_test.should == "string_test result"
   end
 
-  it "is a public method" do
-    Module.should have_public_instance_method(:define_method)
+  ruby_version_is ''...'2.5' do
+    it "is a private method" do
+      Module.should have_private_instance_method(:define_method)
+    end
+  end
+  ruby_version_is '2.5' do
+    it "is a public method" do
+      Module.should have_public_instance_method(:define_method)
+    end
   end
 
   it "returns its symbol" do

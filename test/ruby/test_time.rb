@@ -108,10 +108,6 @@ class TestTime < Test::Unit::TestCase
       assert_equal(78796800, Time.utc(1972, 7, 1, 0, 0, 0).tv_sec)
       assert_equal(78796801, Time.utc(1972, 7, 1, 0, 0, 1).tv_sec)
       assert_equal(946684800, Time.utc(2000, 1, 1, 0, 0, 0).tv_sec)
-
-      # Giveup to try 2nd test because some state is changed.
-      skip if Minitest::Unit.current_repeat_count > 0
-
       assert_equal(0x7fffffff, Time.utc(2038, 1, 19, 3, 14, 7).tv_sec)
       assert_equal(0x80000000, Time.utc(2038, 1, 19, 3, 14, 8).tv_sec)
     else
@@ -435,10 +431,6 @@ class TestTime < Test::Unit::TestCase
 
     assert_equal(-4427700000, Time.utc(-4427700000,12,1).year)
     assert_equal(-2**30+10, Time.utc(-2**30+10,1,1).year)
-
-    assert_raise(ArgumentError) { Time.gm(2000, 1, -1) }
-    assert_raise(ArgumentError) { Time.gm(2000, 1, 2**30 + 1) }
-    assert_raise(ArgumentError) { Time.gm(2000, 1, -2**30 + 1) }
   end
 
   def test_time_interval
@@ -1069,11 +1061,6 @@ class TestTime < Test::Unit::TestCase
     t2 = (t+0.123456789).ceil(4)
     assert_equal([59,59,23, 31,12,1999, 5,365,false,"UTC"], t2.to_a)
     assert_equal(Rational(1235,10000), t2.subsec)
-
-    time = Time.utc(2016, 4, 23, 0, 0, 0.123456789r)
-    assert_equal(time, time.ceil(9))
-    assert_equal(time, time.ceil(10))
-    assert_equal(time, time.ceil(11))
   end
 
   def test_getlocal_dont_share_eigenclass
@@ -1149,9 +1136,6 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_2038
-    # Giveup to try 2nd test because some state is changed.
-    skip if Minitest::Unit.current_repeat_count > 0
-
     if no_leap_seconds?
       assert_equal(0x80000000, Time.utc(2038, 1, 19, 3, 14, 8).tv_sec)
     end
@@ -1268,7 +1252,6 @@ class TestTime < Test::Unit::TestCase
   def test_memsize
     # Time objects are common in some code, try to keep them small
     skip "Time object size test" if /^(?:i.?86|x86_64)-linux/ !~ RUBY_PLATFORM
-    skip "GC is in debug" if GC::INTERNAL_CONSTANTS[:DEBUG]
     require 'objspace'
     t = Time.at(0)
     size = GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]

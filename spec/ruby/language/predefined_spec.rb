@@ -53,10 +53,10 @@ describe "Predefined global $~" do
 
   it "is set to nil if the last match was unsuccessful" do
     /foo/ =~ 'foo'
-    $~.should_not.nil?
+    $~.nil?.should == false
 
     /foo/ =~ 'bar'
-    $~.should.nil?
+    $~.nil?.should == true
   end
 
   it "is set at the method-scoped level rather than block-scoped" do
@@ -398,22 +398,6 @@ describe "Predefined global $!" do
       $!.should == nil
     end
 
-    it "should be cleared when an exception is rescued even when a non-local return from block" do
-      def foo
-        [ 1 ].each do
-          begin
-            raise StandardError.new('err')
-          rescue => e
-            $!.should == e
-            return
-          end
-        end
-      end
-
-      foo
-      $!.should == nil
-    end
-
     it "should not be cleared when an exception is not rescued" do
       e = StandardError.new
       begin
@@ -544,7 +528,6 @@ $stdout          IO              The current standard output. Assignment to $std
 
 describe "Predefined global $/" do
   before :each do
-    @verbose, $VERBOSE = $VERBOSE, nil
     @dollar_slash = $/
     @dollar_dash_zero = $-0
   end
@@ -552,7 +535,6 @@ describe "Predefined global $/" do
   after :each do
     $/ = @dollar_slash
     $-0 = @dollar_dash_zero
-    $VERBOSE = @verbose
   end
 
   it "can be assigned a String" do
@@ -594,7 +576,6 @@ end
 
 describe "Predefined global $-0" do
   before :each do
-    @verbose, $VERBOSE = $VERBOSE, nil
     @dollar_slash = $/
     @dollar_dash_zero = $-0
   end
@@ -602,7 +583,6 @@ describe "Predefined global $-0" do
   after :each do
     $/ = @dollar_slash
     $-0 = @dollar_dash_zero
-    $VERBOSE = @verbose
   end
 
   it "can be assigned a String" do
@@ -653,12 +633,6 @@ describe "Predefined global $," do
   it "raises TypeError if assigned a non-String" do
     -> { $, = Object.new }.should raise_error(TypeError)
   end
-
-  ruby_version_is "2.7"..."3.0" do
-    it "warns if assigned non-nil" do
-      -> { $, = "_" }.should complain(/warning: `\$,' is deprecated/)
-    end
-  end
 end
 
 describe "Predefined global $." do
@@ -685,18 +659,6 @@ describe "Predefined global $." do
     obj.should_receive(:to_int).and_return('abc')
 
     -> { $. = obj }.should raise_error(TypeError)
-  end
-end
-
-describe "Predefined global $;" do
-  after :each do
-    $; = nil
-  end
-
-  ruby_version_is "2.7"..."3.0" do
-    it "warns if assigned non-nil" do
-      -> { $; = "_" }.should complain(/warning: `\$;' is deprecated/)
-    end
   end
 end
 
@@ -1091,6 +1053,8 @@ The following constants are defined by the Ruby interpreter.
 DATA                 IO          If the main program file contains the directive __END__, then
                                  the constant DATA will be initialized so that reading from it will
                                  return lines following __END__ from the source file.
+FALSE                FalseClass  Synonym for false.
+NIL                  NilClass    Synonym for nil.
 RUBY_PLATFORM        String      The identifier of the platform running this program. This string
                                  is in the same form as the platform identifier used by the GNU
                                  configure utility (which is not a coincidence).
@@ -1108,9 +1072,39 @@ SCRIPT_LINES__       Hash        If a constant SCRIPT_LINES__ is defined and ref
                                  the value.
 TOPLEVEL_BINDING     Binding     A Binding object representing the binding at Ruby’s top level—
                                  the level where programs are initially executed.
+TRUE                 TrueClass   Synonym for true.
 =end
 
 describe "The predefined global constants" do
+  before :each do
+    @deprecated = Warning[:deprecated]
+    Warning[:deprecated] = true
+  end
+  after :each do
+    Warning[:deprecated] = @deprecated
+  end
+
+  it "includes TRUE" do
+    Object.const_defined?(:TRUE).should == true
+    -> {
+      TRUE.should equal(true)
+    }.should complain(/constant ::TRUE is deprecated/)
+  end
+
+  it "includes FALSE" do
+    Object.const_defined?(:FALSE).should == true
+    -> {
+      FALSE.should equal(false)
+    }.should complain(/constant ::FALSE is deprecated/)
+  end
+
+  it "includes NIL" do
+    Object.const_defined?(:NIL).should == true
+    -> {
+      NIL.should equal(nil)
+    }.should complain(/constant ::NIL is deprecated/)
+  end
+
   it "includes STDIN" do
     Object.const_defined?(:STDIN).should == true
   end

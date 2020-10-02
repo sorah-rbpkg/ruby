@@ -1,5 +1,3 @@
-#ifndef RUBY_TRANSCODE_DATA_H
-#define RUBY_TRANSCODE_DATA_H 1
 /**********************************************************************
 
   transcode_data.h -
@@ -12,6 +10,9 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
+
+#ifndef RUBY_TRANSCODE_DATA_H
+#define RUBY_TRANSCODE_DATA_H 1
 
 RUBY_SYMBOL_EXPORT_BEGIN
 

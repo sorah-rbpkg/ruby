@@ -9,22 +9,13 @@
 
 **********************************************************************/
 
-#include "ruby/internal/config.h"
-
 #ifdef _MSC_VER
 # define _USE_MATH_DEFINES 1
 #endif
-
-#include <errno.h>
+#include "internal.h"
 #include <float.h>
 #include <math.h>
-
-#include "internal.h"
-#include "internal/bignum.h"
-#include "internal/complex.h"
-#include "internal/math.h"
-#include "internal/object.h"
-#include "internal/vm.h"
+#include <errno.h>
 
 #if defined(HAVE_SIGNBIT) && defined(__GNUC__) && defined(__sun) && \
     !defined(signbit)

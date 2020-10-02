@@ -3,6 +3,6 @@ require_relative 'fixtures/classes'
 
 describe "Numeric#integer?" do
   it "returns false" do
-    NumericSpecs::Subclass.new.should_not.integer?
+    NumericSpecs::Subclass.new.integer?.should == false
   end
 end

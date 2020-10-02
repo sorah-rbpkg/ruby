@@ -4,8 +4,6 @@ require 'tmpdir'
 
 class TestBugReporter < Test::Unit::TestCase
   def test_bug_reporter_add
-    skip if ENV['RUBY_ON_BUG']
-
     description = RUBY_DESCRIPTION
     description = description.sub(/\+JIT /, '') if RubyVM::MJIT.enabled?
     expected_stderr = [

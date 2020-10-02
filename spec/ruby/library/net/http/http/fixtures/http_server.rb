@@ -53,10 +53,10 @@ module NetHTTPSpecs
     end
   end
 
-  @server = nil
-  @server_thread = nil
-
   class << self
+    @server = nil
+    @server_thread = nil
+
     def port
       raise "server not started" unless @server
       @server.config[:Port]
@@ -89,12 +89,8 @@ module NetHTTPSpecs
       if @server
         begin
           @server.shutdown
-        rescue Errno::EPIPE, Errno::EBADF
+        rescue Errno::EPIPE
           # Because WEBrick is not thread-safe and only catches IOError
-
-          # EBADF can happen because WEBrick @server_thread concurrently closes the shutdown pipe
-          # once @status = :Shutdown, while the current thread does write_nonblock("\0").
-          # On MRI this EBADF is replaced by IOError due to the GIL around both #close and #write_nonblock.
         end
         @server = nil
       end

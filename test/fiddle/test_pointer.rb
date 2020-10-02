@@ -84,7 +84,7 @@ module Fiddle
     end
 
     def test_to_ptr_io
-      buf = Pointer.malloc(10, Fiddle::RUBY_FREE)
+      buf = Pointer.malloc(10)
       File.open(__FILE__, 'r') do |f|
         ptr = Pointer.to_ptr f
         fread = Function.new(@libc['fread'],
@@ -145,11 +145,7 @@ module Fiddle
 
     def test_free
       ptr = Pointer.malloc(4)
-      begin
-        assert_nil ptr.free
-      ensure
-        Fiddle.free ptr
-      end
+      assert_nil ptr.free
     end
 
     def test_free=
@@ -177,21 +173,15 @@ module Fiddle
 
     def test_size
       ptr = Pointer.malloc(4)
-      begin
-        assert_equal 4, ptr.size
-      ensure
-        Fiddle.free ptr
-      end
+      assert_equal 4, ptr.size
+      Fiddle.free ptr.to_i
     end
 
     def test_size=
       ptr = Pointer.malloc(4)
-      begin
-        ptr.size = 10
-        assert_equal 10, ptr.size
-      ensure
-        Fiddle.free ptr
-      end
+      ptr.size = 10
+      assert_equal 10, ptr.size
+      Fiddle.free ptr.to_i
     end
 
     def test_aref_aset

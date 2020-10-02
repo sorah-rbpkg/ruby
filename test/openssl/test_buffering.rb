@@ -1,4 +1,4 @@
-# frozen_string_literal: true
+# frozen_string_literal: false
 require_relative 'utils'
 
 if defined?(OpenSSL)
@@ -10,7 +10,7 @@ class OpenSSL::TestBuffering < OpenSSL::TestCase
     attr_accessor :sync
 
     def initialize
-      @io = Buffer.new
+      @io = ""
       def @io.sync
         true
       end
@@ -39,13 +39,6 @@ class OpenSSL::TestBuffering < OpenSSL::TestCase
   def setup
     super
     @io = IO.new
-  end
-
-  def test_encoding
-    @io.write '😊'
-    @io.flush
-
-    assert_equal @io.string.encoding, Encoding::BINARY
   end
 
   def test_flush

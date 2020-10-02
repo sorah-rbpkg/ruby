@@ -69,7 +69,18 @@ module URI
     end
 
     def parse(uri) # :nodoc:
-      URI.for(*self.split(uri), self)
+      scheme, userinfo, host, port,
+        registry, path, opaque, query, fragment = self.split(uri)
+      scheme_list = URI.scheme_list
+      if scheme && scheme_list.include?(uc = scheme.upcase)
+        scheme_list[uc].new(scheme, userinfo, host, port,
+                            registry, path, opaque, query,
+                            fragment, self)
+      else
+        Generic.new(scheme, userinfo, host, port,
+                    registry, path, opaque, query,
+                    fragment, self)
+      end
     end
 
 

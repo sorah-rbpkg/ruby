@@ -6,8 +6,8 @@ describe "Kernel#frozen?" do
     o = mock('o')
     p = mock('p')
     p.freeze
-    o.should_not.frozen?
-    p.should.frozen?
+    o.frozen?.should == false
+    p.frozen?.should == true
   end
 
   describe "on true, false and nil" do
@@ -50,27 +50,29 @@ describe "Kernel#frozen?" do
     end
   end
 
-  describe "on a Complex" do
-    it "returns true" do
-      c = Complex(1.3, 3.1)
-      c.frozen?.should be_true
+  ruby_version_is "2.5" do
+    describe "on a Complex" do
+      it "returns true" do
+        c = Complex(1.3, 3.1)
+        c.frozen?.should be_true
+      end
+
+      it "literal returns true" do
+        c = eval "1.3i"
+        c.frozen?.should be_true
+      end
     end
 
-    it "literal returns true" do
-      c = eval "1.3i"
-      c.frozen?.should be_true
-    end
-  end
+    describe "on a Rational" do
+      it "returns true" do
+        r = Rational(1, 3)
+        r.frozen?.should be_true
+      end
 
-  describe "on a Rational" do
-    it "returns true" do
-      r = Rational(1, 3)
-      r.frozen?.should be_true
-    end
-
-    it "literal returns true" do
-      r = eval "1/3r"
-      r.frozen?.should be_true
+      it "literal returns true" do
+        r = eval "1/3r"
+        r.frozen?.should be_true
+      end
     end
   end
 end

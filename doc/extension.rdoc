@@ -457,6 +457,8 @@ To specify whether keyword arguments are passed when calling super:
 
 RB_NO_KEYWORDS :: Do not pass keywords
 RB_PASS_KEYWORDS :: Pass keywords, final argument should be a hash of keywords
+RB_PASS_EMPTY_KEYWORDS :: Pass empty keywords (not included in arguments)
+                          (this will be removed in Ruby 3.0)
 RB_PASS_CALLED_KEYWORDS :: Pass keywords if current method was called with
                            keywords, useful for argument delegation
 
@@ -676,8 +678,7 @@ member of the struct.
                   void (*dmark)(void*);
                   void (*dfree)(void*);
                   size_t (*dsize)(const void *);
-                  void (*dcompact)(void*);
-                  void *reserved[1];
+                  void *reserved[2];
           } function;
           const rb_data_type_t *parent;
           void *data;
@@ -709,15 +710,7 @@ Its parameter is a pointer to your struct.
 You can pass 0 as dsize if it is hard to implement such a function.
 But it is still recommended to avoid 0.
 
-dcompact is invoked when memory compaction took place.
-Referred Ruby objects that were marked by rb_gc_mark_movable()
-can here be updated per rb_gc_location().
-
-You have to fill reserved with 0.
-
-parent can point to another C type definition that the Ruby object
-is inherited from. Then TypedData_Get_Struct() does also accept
-derived objects.
+You have to fill reserved and parent with 0.
 
 You can fill "data" with an arbitrary value for your use.
 Ruby does nothing with the member.
@@ -1430,6 +1423,28 @@ rb_scan_args(int argc, VALUE *argv, const char *fmt, ...) ::
                                             ; argument captured as a hash.
                                             ; If keyword arguments are not
                                             ; provided, returns nil.
+                                            ;
+                                            ; Currently, will also consider
+                                            ; final argument as keywords if
+                                            ; it is a hash or can be
+                                            ; converted to a hash with
+                                            ; #to_hash.  When the last
+                                            ; argument is nil, it is
+                                            ; captured if it is not
+                                            ; ambiguous to take it as
+                                            ; empty option hash; i.e. '*'
+                                            ; is not specified and
+                                            ; arguments are given more
+                                            ; than sufficient.
+                                            ;
+                                            ; However, handling final
+                                            ; argument as keywords if
+                                            ; method was not called with
+                                            ; keywords (whether final
+                                            ; argument is hash or nil) is
+                                            ; deprecated. In that case, a
+                                            ; warning will be emitted, and
+                                            ; in Ruby 3.0 it will be an error.
     sym-for-block-arg              := "&"   ; Indicates that an iterator
                                             ; block should be captured if
                                             ; given
@@ -1454,6 +1469,8 @@ rb_scan_args_kw(int kw_splat, int argc, VALUE *argv, const char *fmt, ...) ::
   RB_SCAN_ARGS_PASS_CALLED_KEYWORDS :: Same behavior as +rb_scan_args+.
   RB_SCAN_ARGS_KEYWORDS :: The final argument should be a hash treated as
                            keywords.
+  RB_SCAN_ARGS_EMPTY_KEYWORDS :: Don't treat a final hash as keywords.
+                                 (this will be removed in Ruby 3.0)
   RB_SCAN_ARGS_LAST_HASH_KEYWORDS :: Treat a final argument as keywords if it
                                      is a hash, and not as keywords otherwise.
 
@@ -1929,7 +1946,6 @@ the <code>*_kw</code> functions introduced in Ruby 2.7.
   #define rb_proc_call_with_block_kw(p, c, v, b, kw) rb_proc_call_with_block(p, c, v, b)
   #define rb_method_call_kw(c, v, m, kw) rb_method_call(c, v, m)
   #define rb_method_call_with_block_kw(c, v, m, b, kw) rb_method_call_with_block(c, v, m, b)
-  #define rb_eval_cmd_kwd(c, a, kw) rb_eval_cmd(c, a, 0)
   #endif
 
 == Appendix C. Functions available for use in extconf.rb
@@ -2033,7 +2049,7 @@ Before inserting write barriers, you need to know about RGenGC algorithm
 available in include/ruby/ruby.h. An example is available in iseq.c.
 
 For a complete guide for RGenGC and write barriers, please refer to
-<https://bugs.ruby-lang.org/projects/ruby-master/wiki/RGenGC>.
+<https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/RGenGC>.
 
 == Appendix E. RB_GC_GUARD to protect from premature GC
 

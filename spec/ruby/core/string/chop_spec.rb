@@ -51,13 +51,13 @@ describe "String#chop" do
 
   ruby_version_is ''...'2.7' do
     it "taints result when self is tainted" do
-      "hello".taint.chop.should.tainted?
-      "".taint.chop.should.tainted?
+      "hello".taint.chop.tainted?.should == true
+      "".taint.chop.tainted?.should == true
     end
 
     it "untrusts result when self is untrusted" do
-      "hello".untrust.chop.should.untrusted?
-      "".untrust.chop.should.untrusted?
+      "hello".untrust.chop.untrusted?.should == true
+      "".untrust.chop.untrusted?.should == true
     end
   end
 
@@ -113,14 +113,14 @@ describe "String#chop!" do
     "".chop!.should be_nil
   end
 
-  it "raises a FrozenError on a frozen instance that is modified" do
-    -> { "string\n\r".freeze.chop! }.should raise_error(FrozenError)
+  it "raises a #{frozen_error_class} on a frozen instance that is modified" do
+    -> { "string\n\r".freeze.chop! }.should raise_error(frozen_error_class)
   end
 
   # see [ruby-core:23666]
-  it "raises a FrozenError on a frozen instance that would not be modified" do
+  it "raises a #{frozen_error_class} on a frozen instance that would not be modified" do
     a = ""
     a.freeze
-    -> { a.chop! }.should raise_error(FrozenError)
+    -> { a.chop! }.should raise_error(frozen_error_class)
   end
 end

@@ -207,9 +207,13 @@ describe "Process.spawn" do
 
   it "unsets environment variables whose value is nil" do
     ENV["FOO"] = "BAR"
-    -> do
-      Process.wait Process.spawn({"FOO" => nil}, ruby_cmd("p ENV['FOO']"))
-    end.should output_to_fd("nil\n")
+    Process.wait Process.spawn({"FOO" => nil}, "echo #{@var}>#{@name}")
+    expected = "\n"
+    platform_is :windows do
+      # Windows does not expand the variable if it is unset
+      expected = "#{@var}\n"
+    end
+    File.read(@name).should == expected
   end
 
   it "calls #to_hash to convert the environment" do
@@ -415,7 +419,7 @@ describe "Process.spawn" do
 
       it "kills extra chdir processes" do
         pid = nil
-        Dir.chdir("/") do
+        Dir.chdir("/tmp") do
           pid = Process.spawn("sleep 10")
         end
 

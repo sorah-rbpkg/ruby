@@ -1,4 +1,4 @@
-# frozen_string_literal: true
+# frozen_string_literal: false
 #--
 # = Ruby-space predefined Cipher subclasses
 #

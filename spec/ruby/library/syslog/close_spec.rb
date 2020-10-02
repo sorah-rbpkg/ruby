@@ -30,7 +30,7 @@ platform_is_not :windows do
         -> {
           Syslog.open { |s| s.close }
         }.should raise_error(RuntimeError)
-        Syslog.should_not.opened?
+        Syslog.opened?.should == false
       end
 
       it "sets the identity to nil" do

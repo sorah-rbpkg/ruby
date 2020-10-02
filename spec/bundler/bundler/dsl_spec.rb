@@ -63,16 +63,16 @@ RSpec.describe Bundler::Dsl do
       end
     end
 
-    context "default git sources" do
-      it "has bitbucket, gist, and github" do
-        expect(subject.instance_variable_get(:@git_sources).keys.sort).to eq(%w[bitbucket gist github])
+    context "default git sources", :bundler => "3" do
+      it "has none" do
+        expect(subject.instance_variable_get(:@git_sources)).to eq({})
       end
     end
   end
 
   describe "#method_missing" do
     it "raises an error for unknown DSL methods" do
-      expect(Bundler).to receive(:read_file).with(source_root.join("Gemfile").to_s).
+      expect(Bundler).to receive(:read_file).with(bundled_app("Gemfile").to_s).
         and_return("unknown")
 
       error_msg = "There was an error parsing `Gemfile`: Undefined local variable or method `unknown' for Gemfile. Bundler cannot continue."
@@ -83,13 +83,13 @@ RSpec.describe Bundler::Dsl do
 
   describe "#eval_gemfile" do
     it "handles syntax errors with a useful message" do
-      expect(Bundler).to receive(:read_file).with(source_root.join("Gemfile").to_s).and_return("}")
+      expect(Bundler).to receive(:read_file).with(bundled_app("Gemfile").to_s).and_return("}")
       expect { subject.eval_gemfile("Gemfile") }.
         to raise_error(Bundler::GemfileError, /There was an error parsing `Gemfile`: (syntax error, unexpected tSTRING_DEND|(compile error - )?syntax error, unexpected '\}'). Bundler cannot continue./)
     end
 
     it "distinguishes syntax errors from evaluation errors" do
-      expect(Bundler).to receive(:read_file).with(source_root.join("Gemfile").to_s).and_return(
+      expect(Bundler).to receive(:read_file).with(bundled_app("Gemfile").to_s).and_return(
         "ruby '2.1.5', :engine => 'ruby', :engine_version => '1.2.4'"
       )
       expect { subject.eval_gemfile("Gemfile") }.
@@ -174,6 +174,40 @@ RSpec.describe Bundler::Dsl do
     end
   end
 
+  describe "#gemspec" do
+    let(:spec) do
+      Gem::Specification.new do |gem|
+        gem.name = "example"
+        gem.platform = platform
+      end
+    end
+
+    before do
+      allow(Dir).to receive(:[]).and_return(["spec_path"])
+      allow(Bundler).to receive(:load_gemspec).with("spec_path").and_return(spec)
+      allow(Bundler).to receive(:default_gemfile).and_return(Pathname.new("./Gemfile"))
+    end
+
+    context "with a ruby platform" do
+      let(:platform) { "ruby" }
+
+      it "keeps track of the ruby platforms in the dependency" do
+        subject.gemspec
+        expect(subject.dependencies.last.platforms).to eq(Bundler::Dependency::REVERSE_PLATFORM_MAP[Gem::Platform::RUBY])
+      end
+    end
+
+    context "with a jruby platform" do
+      let(:platform) { "java" }
+
+      it "keeps track of the jruby platforms in the dependency" do
+        allow(Gem::Platform).to receive(:local).and_return(java)
+        subject.gemspec
+        expect(subject.dependencies.last.platforms).to eq(Bundler::Dependency::REVERSE_PLATFORM_MAP[Gem::Platform::JAVA])
+      end
+    end
+  end
+
   context "can bundle groups of gems with" do
     # git "https://github.com/rails/rails.git" do
     #   gem "railties"
@@ -208,7 +242,7 @@ RSpec.describe Bundler::Dsl do
       end
     end
 
-    describe "#github" do
+    describe "#github", :bundler => "2" do
       it "from github" do
         spree_gems = %w[spree_core spree_api spree_backend]
         subject.github "spree" do
@@ -220,12 +254,23 @@ RSpec.describe Bundler::Dsl do
         end
       end
     end
+
+    describe "#github", :bundler => "3" do
+      it "from github" do
+        expect do
+          spree_gems = %w[spree_core spree_api spree_backend]
+          subject.github "spree" do
+            spree_gems.each {|spree_gem| subject.send :gem, spree_gem }
+          end
+        end.to raise_error(Bundler::DeprecatedError, /github method has been removed/)
+      end
+    end
   end
 
   describe "syntax errors" do
     it "will raise a Bundler::GemfileError" do
       gemfile "gem 'foo', :path => /unquoted/string/syntax/error"
-      expect { Bundler::Dsl.evaluate(bundled_app_gemfile, nil, true) }.
+      expect { Bundler::Dsl.evaluate(bundled_app("Gemfile"), nil, true) }.
         to raise_error(Bundler::GemfileError, /There was an error parsing `Gemfile`:( compile error -)? unknown regexp options - trg.+ Bundler cannot continue./)
     end
   end
@@ -233,7 +278,7 @@ RSpec.describe Bundler::Dsl do
   describe "Runtime errors" do
     it "will raise a Bundler::GemfileError" do
       gemfile "raise RuntimeError, 'foo'"
-      expect { Bundler::Dsl.evaluate(bundled_app_gemfile, nil, true) }.
+      expect { Bundler::Dsl.evaluate(bundled_app("Gemfile"), nil, true) }.
         to raise_error(Bundler::GemfileError, /There was an error parsing `Gemfile`: foo. Bundler cannot continue./i)
     end
   end

@@ -49,7 +49,6 @@ static struct {
     ID id_excessed_comma;
     ID id_fcall;
     ID id_field;
-    ID id_fndptn;
     ID id_for;
     ID id_hash;
     ID id_heredoc_dedent;
@@ -189,7 +188,6 @@ static struct {
 #define ripper_id_excessed_comma ripper_parser_ids.id_excessed_comma
 #define ripper_id_fcall ripper_parser_ids.id_fcall
 #define ripper_id_field ripper_parser_ids.id_field
-#define ripper_id_fndptn ripper_parser_ids.id_fndptn
 #define ripper_id_for ripper_parser_ids.id_for
 #define ripper_id_hash ripper_parser_ids.id_hash
 #define ripper_id_heredoc_dedent ripper_parser_ids.id_heredoc_dedent
@@ -332,7 +330,6 @@ ripper_init_eventids1(void)
     set_id1(excessed_comma);
     set_id1(fcall);
     set_id1(field);
-    set_id1(fndptn);
     set_id1(for);
     set_id1(hash);
     set_id1(heredoc_dedent);
@@ -477,7 +474,6 @@ ripper_init_eventids1_table(VALUE self)
     rb_hash_aset(h, intern_sym("excessed_comma"), INT2FIX(0));
     rb_hash_aset(h, intern_sym("fcall"), INT2FIX(1));
     rb_hash_aset(h, intern_sym("field"), INT2FIX(3));
-    rb_hash_aset(h, intern_sym("fndptn"), INT2FIX(4));
     rb_hash_aset(h, intern_sym("for"), INT2FIX(3));
     rb_hash_aset(h, intern_sym("hash"), INT2FIX(1));
     rb_hash_aset(h, intern_sym("heredoc_dedent"), INT2FIX(2));

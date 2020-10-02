@@ -12,23 +12,19 @@
 
 **********************************************************************/
 
-#include "gc.h"
+#include <ruby/io.h>
 #include "internal.h"
-#include "internal/class.h"
-#include "internal/compilers.h"
-#include "internal/hash.h"
-#include "internal/imemo.h"
+#include <ruby/st.h>
+#include <ruby/re.h>
 #include "node.h"
-#include "ruby/io.h"
-#include "ruby/re.h"
-#include "ruby/st.h"
+#include "gc.h"
 #include "symbol.h"
 
 /*
  *  call-seq:
  *    ObjectSpace.memsize_of(obj) -> Integer
  *
- *  Return consuming memory size of obj in bytes.
+ *  Return consuming memory size of obj.
  *
  *  Note that the return size is incomplete.  You need to deal with this
  *  information as only a *HINT*. Especially, the size of +T_DATA+ may not be
@@ -81,7 +77,7 @@ total_i(void *vstart, void *vend, size_t stride, void *ptr)
  *  call-seq:
  *    ObjectSpace.memsize_of_all([klass]) -> Integer
  *
- *  Return consuming memory size of all living objects in bytes.
+ *  Return consuming memory size of all living objects.
  *
  *  If +klass+ (should be Class object) is given, return the total memory size
  *  of instances of the given class.
@@ -141,8 +137,7 @@ setup_hash(int argc, VALUE *argv)
         hash = rb_hash_new();
     }
     else if (!RHASH_EMPTY_P(hash)) {
-        /* WB: no new reference */
-        st_foreach(RHASH_TBL_RAW(hash), set_zero_i, hash);
+        st_foreach(RHASH_TBL(hash), set_zero_i, hash);
     }
 
     return hash;
@@ -383,9 +378,9 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_UNLESS);
 		COUNT_NODE(NODE_CASE);
 		COUNT_NODE(NODE_CASE2);
-		COUNT_NODE(NODE_CASE3);
+                COUNT_NODE(NODE_CASE3);
 		COUNT_NODE(NODE_WHEN);
-		COUNT_NODE(NODE_IN);
+                COUNT_NODE(NODE_IN);
 		COUNT_NODE(NODE_WHILE);
 		COUNT_NODE(NODE_UNTIL);
 		COUNT_NODE(NODE_ITER);
@@ -479,9 +474,8 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_DSYM);
 		COUNT_NODE(NODE_ATTRASGN);
 		COUNT_NODE(NODE_LAMBDA);
-		COUNT_NODE(NODE_ARYPTN);
-		COUNT_NODE(NODE_FNDPTN);
-		COUNT_NODE(NODE_HSHPTN);
+                COUNT_NODE(NODE_ARYPTN);
+                COUNT_NODE(NODE_HSHPTN);
 #undef COUNT_NODE
 	      case NODE_LAST: break;
 	    }
@@ -639,8 +633,6 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
 	imemo_type_ids[8] = rb_intern("imemo_tmpbuf");
         imemo_type_ids[9] = rb_intern("imemo_ast");
         imemo_type_ids[10] = rb_intern("imemo_parser_strterm");
-        imemo_type_ids[11] = rb_intern("imemo_callinfo");
-        imemo_type_ids[12] = rb_intern("imemo_callcache");
     }
 
     rb_objspace_each_objects(count_imemo_objects_i, (void *)hash);
@@ -667,12 +659,12 @@ static const rb_data_type_t iow_data_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-static VALUE rb_cInternalObjectWrapper;
+static VALUE rb_mInternalObjectWrapper;
 
 static VALUE
 iow_newobj(VALUE obj)
 {
-    return TypedData_Wrap_Struct(rb_cInternalObjectWrapper, &iow_data_type, (void *)obj);
+    return TypedData_Wrap_Struct(rb_mInternalObjectWrapper, &iow_data_type, (void *)obj);
 }
 
 /* Returns the type of the internal object. */
@@ -868,8 +860,7 @@ wrap_klass_iow(VALUE klass)
     if (!RTEST(klass)) {
 	return Qnil;
     }
-    else if (RB_TYPE_P(klass, T_ICLASS) ||
-             CLASS_OF(klass) == Qfalse /* hidden object */) {
+    else if (RB_TYPE_P(klass, T_ICLASS)) {
 	return iow_newobj(klass);
     }
     else {
@@ -982,10 +973,10 @@ Init_objspace(void)
      *
      * You can use the #type method to check the type of the internal object.
      */
-    rb_cInternalObjectWrapper = rb_define_class_under(rb_mObjSpace, "InternalObjectWrapper", rb_cObject);
-    rb_define_method(rb_cInternalObjectWrapper, "type", iow_type, 0);
-    rb_define_method(rb_cInternalObjectWrapper, "inspect", iow_inspect, 0);
-    rb_define_method(rb_cInternalObjectWrapper, "internal_object_id", iow_internal_object_id, 0);
+    rb_mInternalObjectWrapper = rb_define_class_under(rb_mObjSpace, "InternalObjectWrapper", rb_cObject);
+    rb_define_method(rb_mInternalObjectWrapper, "type", iow_type, 0);
+    rb_define_method(rb_mInternalObjectWrapper, "inspect", iow_inspect, 0);
+    rb_define_method(rb_mInternalObjectWrapper, "internal_object_id", iow_internal_object_id, 0);
 
     Init_object_tracing(rb_mObjSpace);
     Init_objspace_dump(rb_mObjSpace);

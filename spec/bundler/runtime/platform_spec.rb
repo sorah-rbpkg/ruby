@@ -22,7 +22,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
     ruby <<-R
       begin
-        require '#{lib_dir}/bundler'
+        require 'bundler'
         Bundler.ui.silence { Bundler.setup }
       rescue Bundler::GemNotFound => e
         puts "WIN"
@@ -49,7 +49,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     G
 
     simulate_platform "x86-darwin-10"
-    install_gemfile <<-G
+    install_gemfile! <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "nokogiri"
     G
@@ -75,7 +75,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
     simulate_platform "x86-darwin-100"
 
-    install_gemfile <<-G
+    install_gemfile! <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "nokogiri"
       gem "platform_specific"
@@ -87,38 +87,37 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
   it "allows specifying only-ruby-platform" do
     simulate_platform "java"
 
-    install_gemfile <<-G
+    install_gemfile! <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "nokogiri"
       gem "platform_specific"
     G
 
-    bundle "config set force_ruby_platform true"
+    bundle! "config set force_ruby_platform true"
 
-    bundle "install"
+    bundle! "install"
 
     expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 RUBY"
   end
 
   it "allows specifying only-ruby-platform on windows with dependency platforms" do
     simulate_windows do
-      install_gemfile <<-G
+      install_gemfile! <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "nokogiri", :platforms => [:mingw, :mswin, :x64_mingw, :jruby]
         gem "platform_specific"
       G
 
-      bundle "config set force_ruby_platform true"
+      bundle! "config set force_ruby_platform true"
 
-      bundle "install"
+      bundle! "install"
 
       expect(the_bundle).to include_gems "platform_specific 1.0 RUBY"
-      expect(the_bundle).to not_include_gems "nokogiri"
     end
   end
 
   it "allows specifying only-ruby-platform on windows with gemspec dependency" do
-    build_lib("foo", "1.0", :path => bundled_app) do |s|
+    build_lib("foo", "1.0", :path => ".") do |s|
       s.add_dependency "rack"
     end
 
@@ -126,11 +125,11 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
       source "#{file_uri_for(gem_repo1)}"
       gemspec
     G
-    bundle :lock
+    bundle! :lock
 
     simulate_windows do
-      bundle "config set force_ruby_platform true"
-      bundle "install"
+      bundle! "config set force_ruby_platform true"
+      bundle! "install"
 
       expect(the_bundle).to include_gems "rack 1.0"
     end
@@ -159,7 +158,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
           requires_platform_specific
       L
 
-      install_gemfile <<-G, :verbose => true
+      install_gemfile! <<-G, :verbose => true
         source "#{file_uri_for(gem_repo2)}"
         gem "requires_platform_specific"
       G

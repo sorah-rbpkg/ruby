@@ -34,9 +34,9 @@ require_relative "bundler/build_metadata"
 # of loaded and required modules.
 #
 module Bundler
-  environment_preserver = EnvironmentPreserver.from_env
+  environment_preserver = EnvironmentPreserver.new(ENV, EnvironmentPreserver::BUNDLER_KEYS)
   ORIGINAL_ENV = environment_preserver.restore
-  environment_preserver.replace_with_backup
+  ENV.replace(environment_preserver.backup)
   SUDO_MUTEX = Mutex.new
 
   autoload :Definition,             File.expand_path("bundler/definition", __dir__)
@@ -285,13 +285,7 @@ module Bundler
 
     def app_config_path
       if app_config = ENV["BUNDLE_APP_CONFIG"]
-        app_config_pathname = Pathname.new(app_config)
-
-        if app_config_pathname.absolute?
-          app_config_pathname
-        else
-          app_config_pathname.expand_path(root)
-        end
+        Pathname.new(app_config).expand_path(root)
       else
         root.join(".bundle")
       end
@@ -457,10 +451,6 @@ EOF
       Bundler.settings[:system_bindir] || Bundler.rubygems.gem_bindir
     end
 
-    def preferred_gemfile_name
-      Bundler.settings[:init_gems_rb] ? "gems.rb" : "Gemfile"
-    end
-
     def use_system_gems?
       configured_bundle_path.use_system_gems?
     end
@@ -522,8 +512,7 @@ EOF
         Your user account isn't allowed to install to the system RubyGems.
         You can cancel this installation and run:
 
-            bundle config set --local path 'vendor/bundle'
-            bundle install
+            bundle install --path vendor/bundle
 
         to install the gems into ./vendor/bundle/, or you can enter your password
         and install the bundled gems to RubyGems using sudo.

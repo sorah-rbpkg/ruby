@@ -12,13 +12,14 @@ IMPLS = {
   },
   mri: {
     git: "https://github.com/ruby/ruby.git",
+    master: "trunk",
   },
 }
 
 MSPEC = ARGV.delete('--mspec')
 
 CHECK_LAST_MERGE = ENV['CHECK_LAST_MERGE'] != 'false'
-TEST_MASTER = ENV['TEST_MASTER'] != 'false'
+TEST_TRUNK = ENV['TEST_TRUNK'] != 'false'
 
 MSPEC_REPO = File.expand_path("../../..", __FILE__)
 raise MSPEC_REPO if !Dir.exist?(MSPEC_REPO) or !Dir.exist?("#{MSPEC_REPO}/.git")
@@ -35,9 +36,6 @@ BRIGHT_RED = "\e[31;1m"
 BRIGHT_YELLOW = "\e[33;1m"
 RESET = "\e[0m"
 
-# git filter-branch --subdirectory-filter works fine for our use case
-ENV['FILTER_BRANCH_SQUELCH_WARNING'] = '1'
-
 class RubyImplementation
   attr_reader :name
 
@@ -48,6 +46,10 @@ class RubyImplementation
 
   def git_url
     @data[:git]
+  end
+
+  def default_branch
+    @data[:master] || "master"
   end
 
   def repo_name
@@ -97,7 +99,7 @@ def update_repo(impl)
   Dir.chdir(impl.repo_name) do
     puts Dir.pwd
 
-    sh "git", "checkout", "master"
+    sh "git", "checkout", impl.default_branch
     sh "git", "pull"
   end
 end
@@ -138,7 +140,7 @@ def rebase_commits(impl)
       else
         last_merge = `git log --grep='^#{impl.last_merge_message}' -n 1 --format='%H %ct'`
       end
-      last_merge, commit_timestamp = last_merge.split(' ')
+      last_merge, commit_timestamp = last_merge.chomp.split(' ')
 
       raise "Could not find last merge" unless last_merge
       puts "Last merge is #{last_merge}"
@@ -160,12 +162,7 @@ end
 def test_new_specs
   require "yaml"
   Dir.chdir(SOURCE_REPO) do
-    diff = `git diff master`
-    abort "#{BRIGHT_YELLOW}No new commits, aborting#{RESET}" if diff.empty?
-
-    workflow = YAML.load_file(".github/workflows/ci.yml")
-    job_name = MSPEC ? "test" : "specs"
-    versions = workflow.dig("jobs", job_name, "strategy", "matrix", "ruby")
+    versions = YAML.load_file("#{MSPEC_REPO}/.travis.yml").fetch("rvm")
     versions = versions.grep(/^\d+\./) # Test on MRI
     min_version, max_version = versions.minmax
 
@@ -178,7 +175,7 @@ def test_new_specs
 
     run_test[min_version]
     run_test[max_version]
-    run_test["ruby-master"] if TEST_MASTER
+    run_test["trunk"] if TEST_TRUNK
   end
 end
 

@@ -49,6 +49,7 @@ EOT
   end
 
   def test_remove_const_segv
+    return if RUBY_ENGINE == 'jruby'
     stress = GC.stress
     const = JSON::SAFE_STATE_PROTOTYPE.dup
 
@@ -75,7 +76,7 @@ EOT
     silence do
       JSON.const_set :SAFE_STATE_PROTOTYPE, const
     end
-  end if JSON.const_defined?("Ext") && RUBY_ENGINE != 'jruby'
+  end if JSON.const_defined?("Ext")
 
   def test_generate
     json = generate(@hash)
@@ -173,7 +174,6 @@ EOT
       :ascii_only            => false,
       :buffer_initial_length => 1024,
       :depth                 => 0,
-      :escape_slash          => false,
       :indent                => "  ",
       :max_nesting           => 100,
       :object_nl             => "\n",
@@ -190,7 +190,6 @@ EOT
       :ascii_only            => false,
       :buffer_initial_length => 1024,
       :depth                 => 0,
-      :escape_slash          => false,
       :indent                => "",
       :max_nesting           => 100,
       :object_nl             => "",
@@ -207,7 +206,6 @@ EOT
       :ascii_only            => false,
       :buffer_initial_length => 1024,
       :depth                 => 0,
-      :escape_slash          => false,
       :indent                => "",
       :max_nesting           => 0,
       :object_nl             => "",
@@ -395,10 +393,6 @@ EOT
     data = [ '/' ]
     json = '["/"]'
     assert_equal json, generate(data)
-    #
-    data = [ '/' ]
-    json = '["\/"]'
-    assert_equal json, generate(data, :escape_slash => true)
     #
     data = ['"']
     json = '["\""]'

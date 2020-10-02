@@ -4,6 +4,7 @@ require 'rubygems/commands/cleanup_command'
 require 'rubygems/installer'
 
 class TestGemCommandsCleanupCommand < Gem::TestCase
+
   def setup
     super
 
@@ -219,7 +220,7 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r{^Skipped default gems: b-2}, @ui.output
+    assert_match %r%^Skipped default gems: b-2%, @ui.output
     assert_empty @ui.error
   end
 
@@ -277,4 +278,5 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
     assert_path_exists d_1.gem_dir
     assert_path_exists d_2.gem_dir
   end
+
 end

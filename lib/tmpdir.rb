@@ -20,21 +20,14 @@ class Dir
 
   def self.tmpdir
     tmp = nil
-    ['TMPDIR', 'TMP', 'TEMP', ['system temporary path', @@systmpdir], ['/tmp']*2, ['.']*2].each do |name, dir = ENV[name]|
+    [ENV['TMPDIR'], ENV['TMP'], ENV['TEMP'], @@systmpdir, '/tmp', '.'].each do |dir|
       next if !dir
       dir = File.expand_path(dir)
-      stat = File.stat(dir) rescue next
-      case
-      when !stat.directory?
-        warn "#{name} is not a directory: #{dir}"
-      when !stat.writable?
-        warn "#{name} is not writable: #{dir}"
-      when stat.world_writable? && !stat.sticky?
-        warn "#{name} is world-writable: #{dir}"
-      else
+      if stat = File.stat(dir) and stat.directory? and stat.writable? and
+          (!stat.world_writable? or stat.sticky?)
         tmp = dir
         break
-      end
+      end rescue nil
     end
     raise ArgumentError, "could not find a temporary directory" unless tmp
     tmp
@@ -117,14 +110,6 @@ class Dir
 
     UNUSABLE_CHARS = [File::SEPARATOR, File::ALT_SEPARATOR, File::PATH_SEPARATOR, ":"].uniq.join("").freeze
 
-    class << (RANDOM = Random.new)
-      MAX = 36**6 # < 0x100000000
-      def next
-        rand(MAX).to_s(36)
-      end
-    end
-    private_constant :RANDOM
-
     def create(basename, tmpdir=nil, max_try: nil, **opts)
       origdir = tmpdir
       tmpdir ||= tmpdir()
@@ -138,7 +123,7 @@ class Dir
       suffix &&= suffix.delete(UNUSABLE_CHARS)
       begin
         t = Time.now.strftime("%Y%m%d")
-        path = "#{prefix}#{t}-#{$$}-#{RANDOM.next}"\
+        path = "#{prefix}#{t}-#{$$}-#{rand(0x100000000).to_s(36)}"\
                "#{n ? %[-#{n}] : ''}#{suffix||''}"
         path = File.join(tmpdir, path)
         yield(path, n, opts, origdir)

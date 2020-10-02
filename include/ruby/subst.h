@@ -1,13 +1,5 @@
-#ifndef RUBY_SUBST_H                                 /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_SUBST_H
 #define RUBY_SUBST_H 1
-/**
- * @file
- * @author     Ruby developers <ruby-core@ruby-lang.org>
- * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
- *             Permission  is hereby  granted,  to  either redistribute  and/or
- *             modify this file, provided that  the conditions mentioned in the
- *             file COPYING are met.  Consult the file for details.
- */
 
 #undef snprintf
 #undef vsnprintf

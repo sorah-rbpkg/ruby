@@ -9,19 +9,13 @@
 
 **********************************************************************/
 
-#include "id.h"
+#include "ruby/encoding.h"
 #include "internal.h"
-#include "internal/compar.h"
-#include "internal/enum.h"
-#include "internal/hash.h"
-#include "internal/imemo.h"
-#include "internal/numeric.h"
-#include "internal/object.h"
-#include "internal/proc.h"
-#include "internal/rational.h"
 #include "ruby/util.h"
-#include "ruby_assert.h"
+#include "id.h"
 #include "symbol.h"
+
+#include <assert.h>
 
 VALUE rb_mEnumerable;
 
@@ -734,7 +728,7 @@ inject_op_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
     }
     else if (SYMBOL_P(name = memo->u3.value)) {
 	const ID mid = SYM2ID(name);
-	MEMO_V1_SET(memo, rb_funcallv_public(memo->v1, mid, 1, &i));
+	MEMO_V1_SET(memo, rb_funcallv(memo->v1, mid, 1, &i));
     }
     else {
 	VALUE args[2];
@@ -1021,7 +1015,6 @@ enum_tally(VALUE obj)
     return enum_hashify(obj, 0, 0, tally_i);
 }
 
-NORETURN(static VALUE first_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, params)));
 static VALUE
 first_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, params))
 {
@@ -1763,7 +1756,7 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *     enum.min(n) { |a, b| block } -> array
  *
  *  Returns the object in _enum_ with the minimum value. The
- *  first form assumes all objects implement <code><=></code>;
+ *  first form assumes all objects implement Comparable;
  *  the second uses the block to return <em>a <=> b</em>.
  *
  *     a = %w(albatross dog horse)
@@ -1855,7 +1848,7 @@ max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *     enum.max(n) { |a, b| block } -> array
  *
  *  Returns the object in _enum_ with the maximum value. The
- *  first form assumes all objects implement <code><=></code>;
+ *  first form assumes all objects implement Comparable;
  *  the second uses the block to return <em>a <=> b</em>.
  *
  *     a = %w(albatross dog horse)
@@ -2014,7 +2007,7 @@ minmax_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
  *
  *  Returns a two element array which contains the minimum and the
  *  maximum value in the enumerable.  The first form assumes all
- *  objects implement <code><=></code>; the second uses the
+ *  objects implement Comparable; the second uses the
  *  block to return <em>a <=> b</em>.
  *
  *     a = %w(albatross dog horse)
@@ -3203,7 +3196,7 @@ chunk_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *  The following example counts words for each initial letter.
  *
  *    open("/usr/share/dict/words", "r:iso-8859-1") { |f|
- *      f.chunk { |line| line.upcase.ord }.each { |ch, lines| p [ch.chr, lines.length] }
+ *      f.chunk { |line| line.ord }.each { |ch, lines| p [ch.chr, lines.length] }
  *    }
  *    #=> ["\n", 1]
  *    #   ["A", 1327]
@@ -3701,7 +3694,7 @@ slicewhen_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *  Creates an enumerator for each chunked elements.
  *  The beginnings of chunks are defined by the block.
  *
- *  This method splits each chunk using adjacent elements,
+ *  This method split each chunk using adjacent elements,
  *  _elt_before_ and _elt_after_,
  *  in the receiver enumerator.
  *  This method split chunks between _elt_before_ and _elt_after_ where
@@ -3780,7 +3773,7 @@ enum_slice_when(VALUE enumerable)
  *  Creates an enumerator for each chunked elements.
  *  The beginnings of chunks are defined by the block.
  *
- *  This method splits each chunk using adjacent elements,
+ *  This method split each chunk using adjacent elements,
  *  _elt_before_ and _elt_after_,
  *  in the receiver enumerator.
  *  This method split chunks between _elt_before_ and _elt_after_ where
@@ -3848,144 +3841,122 @@ struct enum_sum_memo {
 };
 
 static void
-sum_iter_normalize_memo(struct enum_sum_memo *memo)
-{
-    assert(FIXABLE(memo->n));
-    memo->v = rb_fix_plus(LONG2FIX(memo->n), memo->v);
-    memo->n = 0;
-
-    /* r can be an Integer when mathn is loaded */
-    switch (TYPE(memo->r)) {
-      case T_FIXNUM:   memo->v = rb_fix_plus(memo->r, memo->v);      break;
-      case T_BIGNUM:   memo->v = rb_big_plus(memo->r, memo->v);      break;
-      case T_RATIONAL: memo->v = rb_rational_plus(memo->r, memo->v); break;
-      case T_UNDEF:    break;
-      default:         UNREACHABLE; /* or ...? */
-    }
-    memo->r = Qundef;
-}
-
-static void
-sum_iter_fixnum(VALUE i, struct enum_sum_memo *memo)
-{
-    memo->n += FIX2LONG(i); /* should not overflow long type */
-    if (! FIXABLE(memo->n)) {
-        memo->v = rb_big_plus(LONG2NUM(memo->n), memo->v);
-        memo->n = 0;
-    }
-}
-
-static void
-sum_iter_bignum(VALUE i, struct enum_sum_memo *memo)
-{
-    memo->v = rb_big_plus(i, memo->v);
-}
-
-static void
-sum_iter_rational(VALUE i, struct enum_sum_memo *memo)
-{
-    if (memo->r == Qundef) {
-        memo->r = i;
-    }
-    else {
-        memo->r = rb_rational_plus(memo->r, i);
-    }
-}
-
-static void
-sum_iter_some_value(VALUE i, struct enum_sum_memo *memo)
-{
-    memo->v = rb_funcallv(memo->v, idPLUS, 1, &i);
-}
-
-static void
-sum_iter_Kahan_Babuska(VALUE i, struct enum_sum_memo *memo)
-{
-    /*
-     * Kahan-Babuska balancing compensated summation algorithm
-     * See http://link.springer.com/article/10.1007/s00607-005-0139-x
-     */
-    double x;
-
-    switch (TYPE(i)) {
-      case T_FLOAT:    x = RFLOAT_VALUE(i); break;
-      case T_FIXNUM:   x = FIX2LONG(i);     break;
-      case T_BIGNUM:   x = rb_big2dbl(i);   break;
-      case T_RATIONAL: x = rb_num2dbl(i);   break;
-      default:
-        memo->v = DBL2NUM(memo->f);
-        memo->float_value = 0;
-        sum_iter_some_value(i, memo);
-        return;
-    }
-
-    double f = memo->f;
-
-    if (isnan(f)) {
-        return;
-    }
-    else if (! isfinite(x)) {
-        if (isinf(x) && isinf(f) && signbit(x) != signbit(f)) {
-            i = DBL2NUM(f);
-            x = nan("");
-        }
-        memo->v = i;
-        memo->f = x;
-        return;
-    }
-    else if (isinf(f)) {
-        return;
-    }
-
-    double c = memo->c;
-    double t = f + x;
-
-    if (fabs(f) >= fabs(x)) {
-        c += ((f - t) + x);
-    }
-    else {
-        c += ((x - t) + f);
-    }
-    f = t;
-
-    memo->f = f;
-    memo->c = c;
-}
-
-static void
 sum_iter(VALUE i, struct enum_sum_memo *memo)
 {
-    assert(memo != NULL);
-    if (memo->block_given) {
-        i = rb_yield(i);
-    }
+    const int unused = (assert(memo != NULL), 0);
 
-    if (memo->float_value) {
-        sum_iter_Kahan_Babuska(i, memo);
-    }
-    else switch (TYPE(memo->v)) {
-      default:      sum_iter_some_value(i, memo);    return;
-      case T_FLOAT: sum_iter_Kahan_Babuska(i, memo); return;
-      case T_FIXNUM:
-      case T_BIGNUM:
-      case T_RATIONAL:
-        switch (TYPE(i)) {
-          case T_FIXNUM:   sum_iter_fixnum(i, memo);   return;
-          case T_BIGNUM:   sum_iter_bignum(i, memo);   return;
-          case T_RATIONAL: sum_iter_rational(i, memo); return;
-          case T_FLOAT:
-            sum_iter_normalize_memo(memo);
-            memo->f = NUM2DBL(memo->v);
-            memo->c = 0.0;
-            memo->float_value = 1;
-            sum_iter_Kahan_Babuska(i, memo);
-            return;
-          default:
-            sum_iter_normalize_memo(memo);
-            sum_iter_some_value(i, memo);
-            return;
+    long n = memo->n;
+    VALUE v = memo->v;
+    VALUE r = memo->r;
+    double f = memo->f;
+    double c = memo->c;
+
+    if (memo->block_given)
+        i = rb_yield(i);
+
+    if (memo->float_value)
+        goto float_value;
+
+    if (FIXNUM_P(v) || RB_TYPE_P(v, T_BIGNUM) || RB_TYPE_P(v, T_RATIONAL)) {
+        if (FIXNUM_P(i)) {
+            n += FIX2LONG(i); /* should not overflow long type */
+            if (!FIXABLE(n)) {
+                v = rb_big_plus(LONG2NUM(n), v);
+                n = 0;
+            }
+        }
+        else if (RB_TYPE_P(i, T_BIGNUM))
+            v = rb_big_plus(i, v);
+        else if (RB_TYPE_P(i, T_RATIONAL)) {
+            if (r == Qundef)
+                r = i;
+            else
+                r = rb_rational_plus(r, i);
+        }
+        else {
+            if (n != 0) {
+                v = rb_fix_plus(LONG2FIX(n), v);
+                n = 0;
+            }
+            if (r != Qundef) {
+                /* r can be an Integer when mathn is loaded */
+                if (FIXNUM_P(r))
+                    v = rb_fix_plus(r, v);
+                else if (RB_TYPE_P(r, T_BIGNUM))
+                    v = rb_big_plus(r, v);
+                else
+                    v = rb_rational_plus(r, v);
+                r = Qundef;
+            }
+            if (RB_FLOAT_TYPE_P(i)) {
+                f = NUM2DBL(v);
+                c = 0.0;
+                memo->float_value = 1;
+                goto float_value;
+            }
+            else
+                goto some_value;
         }
     }
+    else if (RB_FLOAT_TYPE_P(v)) {
+        /*
+         * Kahan-Babuska balancing compensated summation algorithm
+         * See http://link.springer.com/article/10.1007/s00607-005-0139-x
+         */
+        double x, t;
+
+      float_value:
+        if (RB_FLOAT_TYPE_P(i))
+            x = RFLOAT_VALUE(i);
+        else if (FIXNUM_P(i))
+            x = FIX2LONG(i);
+        else if (RB_TYPE_P(i, T_BIGNUM))
+            x = rb_big2dbl(i);
+        else if (RB_TYPE_P(i, T_RATIONAL))
+            x = rb_num2dbl(i);
+        else {
+            v = DBL2NUM(f);
+            memo->float_value = 0;
+            goto some_value;
+        }
+
+        if (isnan(f)) return;
+        if (isnan(x)) {
+            memo->v = i;
+            memo->f = x;
+            return;
+        }
+        if (isinf(x)) {
+            if (isinf(f) && signbit(x) != signbit(f)) {
+                memo->f = NAN;
+                memo->v = DBL2NUM(f);
+            }
+            else {
+                memo->f = x;
+                memo->v = i;
+            }
+            return;
+        }
+        if (isinf(f)) return;
+
+        t = f + x;
+        if (fabs(f) >= fabs(x))
+            c += ((f - t) + x);
+        else
+            c += ((x - t) + f);
+        f = t;
+    }
+    else {
+      some_value:
+        v = rb_funcallv(v, idPLUS, 1, &i);
+    }
+
+    memo->v = v;
+    memo->n = n;
+    memo->r = r;
+    memo->f = f;
+    memo->c = c;
+    (void)unused;
 }
 
 static VALUE

@@ -38,7 +38,7 @@ describe "Hash literal" do
     key.reverse!
     h["foo"].should == "bar"
     h.keys.first.should == "foo"
-    h.keys.first.should.frozen?
+    h.keys.first.frozen?.should == true
     key.should == "oof"
   end
 

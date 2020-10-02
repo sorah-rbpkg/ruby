@@ -10,6 +10,7 @@ require 'rubygems/install_message' # must come before rdoc for messaging
 require 'rubygems/rdoc'
 
 class Gem::Commands::UpdateCommand < Gem::Command
+
   include Gem::InstallUpdateOptions
   include Gem::LocalRemoteOptions
   include Gem::VersionOption
@@ -72,6 +73,8 @@ command to remove old versions.
       say "Latest version already installed. Done."
       terminate_interaction
     end
+
+    options[:user_install] = false
   end
 
   def check_update_arguments # :nodoc:
@@ -87,10 +90,9 @@ command to remove old versions.
       return
     end
 
-    gems_to_update = which_to_update(
-      highest_installed_gems,
-      options[:args].uniq
-    )
+    hig = highest_installed_gems
+
+    gems_to_update = which_to_update hig, options[:args].uniq
 
     if options[:explain]
       say "Gems to update:"
@@ -106,7 +108,7 @@ command to remove old versions.
 
     updated = update_gems gems_to_update
 
-    updated_names = updated.map {|spec| spec.name }
+    updated_names = updated.map { |spec| spec.name }
     not_updated_names = options[:args].uniq - updated_names
 
     if updated.empty?
@@ -125,7 +127,7 @@ command to remove old versions.
 
     spec_tuples, errors = fetcher.search_for_dependency dependency
 
-    error = errors.find {|e| e.respond_to? :exception }
+    error = errors.find { |e| e.respond_to? :exception }
 
     raise error if error
 
@@ -134,9 +136,6 @@ command to remove old versions.
 
   def highest_installed_gems # :nodoc:
     hig = {} # highest installed gems
-
-    # Get only gem specifications installed as --user-install
-    Gem::Specification.dirs = Gem.user_dir if options[:user_install]
 
     Gem::Specification.each do |spec|
       if hig[spec.name].nil? or hig[spec.name].version < spec.version
@@ -169,31 +168,8 @@ command to remove old versions.
     Dir.chdir update_dir do
       say "Installing RubyGems #{version}"
 
-      installed = preparing_gem_layout_for(version) do
-        system Gem.ruby, '--disable-gems', 'setup.rb', *args
-      end
-
+      installed = system Gem.ruby, '--disable-gems', 'setup.rb', *args
       say "RubyGems system software updated" if installed
-    end
-  end
-
-  def preparing_gem_layout_for(version)
-    if Gem::Version.new(version) >= Gem::Version.new("3.2.a")
-      yield
-    else
-      require "tmpdir"
-      tmpdir = Dir.mktmpdir
-      FileUtils.mv Gem.plugindir, tmpdir
-
-      status = yield
-
-      if status
-        FileUtils.rm_rf tmpdir
-      else
-        FileUtils.mv File.join(tmpdir, "plugins"), Gem.plugindir
-      end
-
-      status
     end
   end
 
@@ -230,7 +206,7 @@ command to remove old versions.
   end
 
   def update_gem(name, version = Gem::Requirement.default)
-    return if @updated.any? {|spec| spec.name == name }
+    return if @updated.any? { |spec| spec.name == name }
 
     update_options = options.dup
     update_options[:prerelease] = version.prerelease?
@@ -261,11 +237,6 @@ command to remove old versions.
   # Update RubyGems software to the latest version.
 
   def update_rubygems
-    if Gem.disable_system_update_message
-      alert_error Gem.disable_system_update_message
-      terminate_interaction 1
-    end
-
     check_update_arguments
 
     version, requirement = rubygems_target_version
@@ -296,7 +267,7 @@ command to remove old versions.
 
     highest_installed_gems.each do |l_name, l_spec|
       next if not gem_names.empty? and
-              gem_names.none? {|name| name == l_spec.name }
+              gem_names.none? { |name| name == l_spec.name }
 
       highest_remote_tup = highest_remote_name_tuple l_spec
       highest_remote_ver = highest_remote_tup.version
@@ -309,4 +280,5 @@ command to remove old versions.
 
     result
   end
+
 end

@@ -7,6 +7,7 @@
 
 require 'rubygems'
 require 'rubygems/command_manager'
+require 'rubygems/config_file'
 require 'rubygems/deprecate'
 
 ##
@@ -24,9 +25,14 @@ Gem.load_env_plugins rescue nil
 # classes they call directly.
 
 class Gem::GemRunner
-  def initialize
-    @command_manager_class = Gem::CommandManager
-    @config_file_class = Gem::ConfigFile
+
+  def initialize(options={})
+    if !options.empty? && !Gem::Deprecate.skip
+      Kernel.warn "NOTE: passing options to Gem::GemRunner.new is deprecated with no replacement. It will be removed on or after 2016-10-01."
+    end
+
+    @command_manager_class = options[:command_manager] || Gem::CommandManager
+    @config_file_class = options[:config_file] || Gem::ConfigFile
   end
 
   ##
@@ -74,6 +80,7 @@ class Gem::GemRunner
     Gem.use_paths Gem.configuration[:gemhome], Gem.configuration[:gempath]
     Gem::Command.extra_args = Gem.configuration[:gem]
   end
+
 end
 
 Gem.load_plugins

@@ -274,8 +274,6 @@ class MSpecOptions
         config[:formatter] = SpinnerFormatter
       when 't', 'method'
         config[:formatter] = MethodFormatter
-      when 'e', 'stats'
-        config[:formatter] = StatsPerFileFormatter
       when 'y', 'yaml'
         config[:formatter] = YamlFormatter
       when 'p', 'profile'
@@ -283,7 +281,7 @@ class MSpecOptions
       when 'j', 'junit'
         config[:formatter] = JUnitFormatter
       else
-        abort "Unknown format: #{o}" unless File.exist?(o)
+        abort "Unknown format: #{o}\n#{@parser}" unless File.exist?(o)
         require File.expand_path(o)
         if Object.const_defined?(:CUSTOM_MSPEC_FORMATTER)
           config[:formatter] = CUSTOM_MSPEC_FORMATTER
@@ -302,7 +300,6 @@ class MSpecOptions
     doc "       m, summary               SummaryFormatter"
     doc "       a, *, spin               SpinnerFormatter"
     doc "       t, method                MethodFormatter"
-    doc "       e, stats                 StatsPerFileFormatter"
     doc "       y, yaml                  YamlFormatter"
     doc "       p, profile               ProfileFormatter"
     doc "       j, junit                 JUnitFormatter\n"
@@ -380,7 +377,7 @@ class MSpecOptions
   def randomize
     on("-H", "--random",
        "Randomize the list of spec files") do
-      MSpec.randomize = true
+      MSpec.randomize
     end
   end
 
@@ -395,11 +392,11 @@ class MSpecOptions
     on("-V", "--verbose", "Output the name of each file processed") do
       obj = Object.new
       def obj.start
-        @width = MSpec.files_array.inject(0) { |max, f| f.size > max ? f.size : max }
+        @width = MSpec.retrieve(:files).inject(0) { |max, f| f.size > max ? f.size : max }
       end
       def obj.load
-        file = MSpec.file
-        STDERR.print "\n#{file.ljust(@width)}\n"
+        file = MSpec.retrieve :file
+        STDERR.print "\n#{file.ljust(@width)}"
       end
       MSpec.register :start, obj
       MSpec.register :load, obj
@@ -470,6 +467,8 @@ class MSpecOptions
   end
 
   def all
+    # Generated with:
+    # puts File.read(__FILE__).scan(/def (\w+).*\n\s*on\(/)
     configure {}
     targets
     formatters
@@ -482,7 +481,6 @@ class MSpecOptions
     repeat
     verbose
     interrupt
-    timeout
     verify
     action_filters
     actions

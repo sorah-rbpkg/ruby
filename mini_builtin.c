@@ -1,7 +1,6 @@
 #include "internal.h"
-#include "internal/array.h"
-#include "iseq.h"
 #include "vm_core.h"
+#include "iseq.h"
 #include "builtin.h"
 
 #include "miniprelude.c"

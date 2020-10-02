@@ -79,7 +79,7 @@ describe 'IO#write_nonblock' do
     it 'sets the IO in nonblock mode' do
       require 'io/nonblock'
       @write.write_nonblock('a')
-      @write.should.nonblock?
+      @write.nonblock?.should == true
     end
   end
 end

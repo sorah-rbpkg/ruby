@@ -78,7 +78,7 @@ class SpinnerFormatter < BaseFormatter
   # Callback for the MSpec :start event. Stores the total
   # number of files that will be processed.
   def start
-    @total = MSpec.files_array.size
+    @total = MSpec.retrieve(:files).size
     compute_progress
     print progress_line
   end

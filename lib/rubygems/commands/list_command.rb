@@ -1,19 +1,17 @@
 # frozen_string_literal: true
 require 'rubygems/command'
-require 'rubygems/query_utils'
+require 'rubygems/commands/query_command'
 
 ##
-# Searches for gems starting with the supplied argument.
+# An alternate to Gem::Commands::QueryCommand that searches for gems starting
+# with the supplied argument.
 
-class Gem::Commands::ListCommand < Gem::Command
-  include Gem::QueryUtils
+class Gem::Commands::ListCommand < Gem::Commands::QueryCommand
 
   def initialize
-    super 'list', 'Display local gems whose name matches REGEXP',
-         :name => //, :domain => :local, :details => false, :versions => true,
-         :installed => nil, :version => Gem::Requirement.default
+    super 'list', 'Display local gems whose name matches REGEXP'
 
-    add_query_options
+    remove_option('--name-matches')
   end
 
   def arguments # :nodoc:
@@ -38,4 +36,5 @@ To search for remote gems use the search command.
   def usage # :nodoc:
     "#{program_name} [REGEXP ...]"
   end
+
 end

@@ -534,11 +534,11 @@ assert_equal %Q{ENSURE\n}, %q{
  ['[ruby-core:39125]', %q{
   class Bug5234
     include Enumerable
-    def each(&block)
+    def each
       begin
         yield :foo
       ensure
-        proc(&block)
+        proc
       end
     end
   end
@@ -547,11 +547,11 @@ assert_equal %Q{ENSURE\n}, %q{
  ['[ruby-dev:45656]', %q{
   class Bug6460
     include Enumerable
-    def each(&block)
+    def each
       begin
         yield :foo
       ensure
-        1.times { Proc.new(&block) }
+        1.times { Proc.new }
       end
     end
   end

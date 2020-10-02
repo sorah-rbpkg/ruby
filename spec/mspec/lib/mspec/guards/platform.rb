@@ -26,11 +26,8 @@ class PlatformGuard < SpecGuard
   def self.os?(*oses)
     oses.any? do |os|
       raise ":java is not a valid OS" if os == :java
-      case os
-      when :windows
+      if os == :windows
         PLATFORM =~ /(mswin|mingw)/
-      when :wsl
-        wsl?
       else
         PLATFORM.include?(os.to_s)
       end
@@ -39,14 +36,6 @@ class PlatformGuard < SpecGuard
 
   def self.windows?
     os?(:windows)
-  end
-
-  def self.wsl?
-    if defined?(@wsl_p)
-      @wsl_p
-    else
-      @wsl_p = `uname -r`.match?(/microsoft/i)
-    end
   end
 
   WORD_SIZE = 1.size * 8

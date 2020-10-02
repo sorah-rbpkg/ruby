@@ -21,7 +21,9 @@ describe "NameError#name" do
 
   it "returns a class variable name as a symbol" do
     -> {
-      eval("class singleton_class::A; @@doesnt_exist end", binding, __FILE__, __LINE__)
+      -> {
+        @@doesnt_exist
+      }.should complain(/class variable access from toplevel/)
     }.should raise_error(NameError) { |e| e.name.should == :@@doesnt_exist }
   end
 

@@ -17,10 +17,6 @@ when /android/
   end
   libc_so = File.join(libdir, "libc.so")
   libm_so = File.join(libdir, "libm.so")
-when /linux-musl/
-  Dir.glob('/lib/ld-musl-*.so.1') do |ld|
-    libc_so = libm_so = ld
-  end
 when /linux/
   libdir = '/lib'
   case RbConfig::SIZEOF['void*']
@@ -31,8 +27,8 @@ when /linux/
       # In the ARM 32-bit libc package such as libc6:armhf libc6:armel,
       # libc.so and libm.so are installed to /lib/arm-linux-gnu*.
       # It's not installed to /lib32.
-      dir, = Dir.glob('/lib/arm-linux-gnu*')
-      libdir = dir if dir && File.directory?(dir)
+      dirs = Dir.glob('/lib/arm-linux-gnu*')
+      libdir = dirs[0] if dirs && File.directory?(dirs[0])
     else
       libdir = '/lib32' if File.directory? '/lib32'
     end
@@ -40,16 +36,8 @@ when /linux/
     # 64-bit ruby
     libdir = '/lib64' if File.directory? '/lib64'
   end
-
-  # Handle musl libc
-  libc_so, = Dir.glob(File.join(libdir, "libc.musl*.so*"))
-  if libc_so
-    libm_so = libc_so
-  else
-    # glibc
-    libc_so = File.join(libdir, "libc.so.6")
-    libm_so = File.join(libdir, "libm.so.6")
-  end
+  libc_so = File.join(libdir, "libc.so.6")
+  libm_so = File.join(libdir, "libm.so.6")
 when /mingw/, /mswin/
   require "rbconfig"
   crtname = RbConfig::CONFIG["RUBY_SO_NAME"][/msvc\w+/] || 'ucrtbase'

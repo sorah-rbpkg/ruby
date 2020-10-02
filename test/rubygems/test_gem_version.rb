@@ -5,6 +5,7 @@ require "rubygems/version"
 require "minitest/benchmark"
 
 class TestGemVersion < Gem::TestCase
+
   class V < ::Gem::Version
   end
 
@@ -235,7 +236,7 @@ class TestGemVersion < Gem::TestCase
     assert_equal expected, v(version).approximate_recommendation
   end
 
-  # Assert that the "approximate" recommendation for +version+ satisfies +version+.
+  # Assert that the "approximate" recommendation for +version+ satifies +version+.
 
   def assert_approximate_satisfies_itself(version)
     gem_version = v(version)
@@ -297,4 +298,5 @@ class TestGemVersion < Gem::TestCase
   def refute_version_equal(unexpected, actual)
     refute_equal v(unexpected), v(actual)
   end
+
 end

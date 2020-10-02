@@ -11,9 +11,6 @@ import lldb
 import os
 import shlex
 
-HEAP_PAGE_ALIGN_LOG = 14
-HEAP_PAGE_ALIGN_MASK = (~(~0 << HEAP_PAGE_ALIGN_LOG))
-
 def lldb_init(debugger):
     target = debugger.GetSelectedTarget()
     global SIZEOF_VALUE
@@ -135,10 +132,7 @@ def lldb_inspect(debugger, target, result, val):
             result.write('T_STRING: %s' % flaginfo)
             tRString = target.FindFirstType("struct RString").GetPointerType()
             ptr, len = string2cstr(val.Cast(tRString))
-            if len == 0:
-                result.write("(empty)\n")
-            else:
-                append_command_output(debugger, "print *(const char (*)[%d])%0#x" % (len, ptr), result)
+            append_command_output(debugger, "print *(const char (*)[%d])%0#x" % (len, ptr), result)
         elif flType == RUBY_T_SYMBOL:
             result.write('T_SYMBOL: %s' % flaginfo)
             tRSymbol = target.FindFirstType("struct RSymbol").GetPointerType()
@@ -179,14 +173,13 @@ def lldb_inspect(debugger, target, result, val):
         elif flType == RUBY_T_BIGNUM:
             tRBignum = target.FindFirstType("struct RBignum").GetPointerType()
             val = val.Cast(tRBignum)
-            sign = '+' if (flags & RUBY_FL_USER1) != 0 else '-'
             if flags & RUBY_FL_USER2:
                 len = ((flags & (RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5)) >> (RUBY_FL_USHIFT+3))
-                print("T_BIGNUM: sign=%s len=%d (embed)" % (sign, len), file=result)
+                print("T_BIGNUM: len=%d (embed)" % len, file=result)
                 append_command_output(debugger, "print ((struct RBignum *) %0#x)->as.ary" % val.GetValueAsUnsigned(), result)
             else:
                 len = val.GetValueForExpressionPath("->as.heap.len").GetValueAsSigned()
-                print("T_BIGNUM: sign=%s len=%d" % (sign, len), file=result)
+                print("T_BIGNUM: len=%d" % len, file=result)
                 print(val.Dereference(), file=result)
                 append_command_output(debugger, "expression -Z %x -fx -- (const BDIGIT*)((struct RBignum*)%d)->as.heap.digits" % (len, val.GetValueAsUnsigned()), result)
                 # append_command_output(debugger, "x ((struct RBignum *) %0#x)->as.heap.digits / %d" % (val.GetValueAsUnsigned(), len), result)
@@ -236,24 +229,6 @@ def lldb_inspect(debugger, target, result, val):
             append_command_output(debugger, "p (node_type) %d" % nd_type, result)
             val = val.Cast(tRTypedData)
             append_command_output(debugger, "p *(struct RNode *) %0#x" % val.GetValueAsUnsigned(), result)
-        elif flType == RUBY_T_MOVED:
-            tRTypedData = target.FindFirstType("struct RMoved").GetPointerType()
-            val = val.Cast(tRTypedData)
-            append_command_output(debugger, "p *(struct RMoved *) %0#x" % val.GetValueAsUnsigned(), result)
-        elif flType == RUBY_T_MATCH:
-            tRTypedData = target.FindFirstType("struct RMatch").GetPointerType()
-            val = val.Cast(tRTypedData)
-            append_command_output(debugger, "p *(struct RMatch *) %0#x" % val.GetValueAsUnsigned(), result)
-        elif flType == RUBY_T_IMEMO:
-            # I'm not sure how to get IMEMO_MASK out of lldb. It's not in globals()
-            imemo_type = (flags >> RUBY_FL_USHIFT) & 0x0F # IMEMO_MASK
-            print("T_IMEMO: ", file=result)
-            append_command_output(debugger, "p (enum imemo_type) %d" % imemo_type, result)
-            append_command_output(debugger, "p *(struct MEMO *) %0#x" % val.GetValueAsUnsigned(), result)
-        elif flType == RUBY_T_ZOMBIE:
-            tRZombie = target.FindFirstType("struct RZombie").GetPointerType()
-            val = val.Cast(tRZombie)
-            append_command_output(debugger, "p *(struct RZombie *) %0#x" % val.GetValueAsUnsigned(), result)
         else:
             print("Not-handled type %0#x" % flType, file=result)
             print(val, file=result)
@@ -286,41 +261,6 @@ def count_objects(debugger, command, ctx, result, internal_dict):
 def stack_dump_raw(debugger, command, ctx, result, internal_dict):
     ctx.frame.EvaluateExpression("rb_vmdebug_stack_dump_raw_current()")
 
-def heap_page(debugger, command, ctx, result, internal_dict):
-    target = debugger.GetSelectedTarget()
-    process = target.GetProcess()
-    thread = process.GetSelectedThread()
-    frame = thread.GetSelectedFrame()
-
-    val = frame.EvaluateExpression(command)
-    page = get_page(lldb, target, val)
-    page_type = target.FindFirstType("struct heap_page").GetPointerType()
-    page.Cast(page_type)
-    append_command_output(debugger, "p (struct heap_page *) %0#x" % page.GetValueAsUnsigned(), result)
-    append_command_output(debugger, "p *(struct heap_page *) %0#x" % page.GetValueAsUnsigned(), result)
-
-def heap_page_body(debugger, command, ctx, result, internal_dict):
-    target = debugger.GetSelectedTarget()
-    process = target.GetProcess()
-    thread = process.GetSelectedThread()
-    frame = thread.GetSelectedFrame()
-
-    val = frame.EvaluateExpression(command)
-    page = get_page_body(lldb, target, val)
-    print("Page body address: ", page.GetAddress(), file=result)
-    print(page, file=result)
-
-def get_page_body(lldb, target, val):
-    tHeapPageBody = target.FindFirstType("struct heap_page_body")
-    addr = val.GetValueAsUnsigned()
-    page_addr = addr & ~(HEAP_PAGE_ALIGN_MASK)
-    address = lldb.SBAddress(page_addr, target)
-    return target.CreateValueFromAddress("page", address, tHeapPageBody)
-
-def get_page(lldb, target, val):
-    body = get_page_body(lldb, target, val)
-    return body.GetValueForExpressionPath("->header.page")
-
 def dump_node(debugger, command, ctx, result, internal_dict):
     args = shlex.split(command)
     if not args:
@@ -335,7 +275,5 @@ def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand("command script add -f lldb_cruby.count_objects rb_count_objects")
     debugger.HandleCommand("command script add -f lldb_cruby.stack_dump_raw SDR")
     debugger.HandleCommand("command script add -f lldb_cruby.dump_node dump_node")
-    debugger.HandleCommand("command script add -f lldb_cruby.heap_page heap_page")
-    debugger.HandleCommand("command script add -f lldb_cruby.heap_page_body heap_page_body")
     lldb_init(debugger)
     print("lldb scripts for ruby has been installed.")

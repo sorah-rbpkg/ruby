@@ -44,7 +44,6 @@ class TestProfileFrames < Test::Unit::TestCase
     }.resume
 
     labels = [
-      nil,
       "test_profile_frames",
       "zab",
       "baz",
@@ -55,7 +54,6 @@ class TestProfileFrames < Test::Unit::TestCase
       "test_profile_frames",
     ]
     base_labels = [
-      nil,
       "test_profile_frames",
       "zab",
       "baz",
@@ -66,7 +64,6 @@ class TestProfileFrames < Test::Unit::TestCase
       "test_profile_frames",
     ]
     full_labels = [
-      "Bug::Debug.profile_frames",
       "TestProfileFrames#test_profile_frames",
       "#{obj.inspect}.zab",
       "SampleClassForTestProfileFrames::Sample2#baz",
@@ -77,7 +74,6 @@ class TestProfileFrames < Test::Unit::TestCase
       "TestProfileFrames#test_profile_frames",
     ]
     classes = [
-      Bug::Debug,
       TestProfileFrames,
       obj,
       SampleClassForTestProfileFrames::Sample2,
@@ -88,10 +84,9 @@ class TestProfileFrames < Test::Unit::TestCase
       TestProfileFrames,
     ]
     singleton_method_p = [
-      true, false, true, false, true, true, true, false, false, false,
+      false, true, false, true, true, true, false, false, false,
     ]
     method_names = [
-      "profile_frames",
       "test_profile_frames",
       "zab",
       "baz",
@@ -102,7 +97,6 @@ class TestProfileFrames < Test::Unit::TestCase
       "test_profile_frames",
     ]
     qualified_method_names = [
-      "Bug::Debug.profile_frames",
       "TestProfileFrames#test_profile_frames",
       "#{obj.inspect}.zab",
       "SampleClassForTestProfileFrames::Sample2#baz",
@@ -112,8 +106,8 @@ class TestProfileFrames < Test::Unit::TestCase
       "SampleClassForTestProfileFrames#foo",
       "TestProfileFrames#test_profile_frames",
     ]
-    paths = [ nil, file=__FILE__, "(eval)", file, file, file, file, file, file, nil ]
-    absolute_paths = [ "<cfunc>", file, nil, file, file, file, file, file, file, nil ]
+    paths = [ file=__FILE__, "(eval)", file, file, file, file, file, file ]
+    absolute_paths = [ file, nil, file, file, file, file, file, file ]
 
     assert_equal(labels.size, frames.size)
 
@@ -126,8 +120,8 @@ class TestProfileFrames < Test::Unit::TestCase
       assert_equal(base_labels[i], base_label, err_msg)
       assert_equal(singleton_method_p[i], singleton_p, err_msg)
       assert_equal(method_names[i], method_name, err_msg)
-      assert_equal(qualified_method_names[i], qualified_method_name, err_msg)
-      assert_equal(full_labels[i], full_label, err_msg)
+      assert_match(qualified_method_names[i], qualified_method_name, err_msg)
+      assert_match(full_labels[i], full_label, err_msg)
       assert_match(classes[i].inspect, classpath, err_msg)
       if label == method_name
         c = classes[i]

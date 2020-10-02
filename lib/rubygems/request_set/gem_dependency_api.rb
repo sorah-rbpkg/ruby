@@ -31,6 +31,7 @@
 # See `gem help install` and `gem help gem_dependencies` for further details.
 
 class Gem::RequestSet::GemDependencyAPI
+
   ENGINE_MAP = { # :nodoc:
     :jruby        => %w[jruby],
     :jruby_18     => %w[jruby],
@@ -205,7 +206,7 @@ class Gem::RequestSet::GemDependencyAPI
     @git_set            = @set.git_set
     @git_sources        = {}
     @installing         = false
-    @requires           = Hash.new {|h, name| h[name] = [] }
+    @requires           = Hash.new { |h, name| h[name] = [] }
     @vendor_set         = @set.vendor_set
     @source_set         = @set.source_set
     @gem_sources        = {}
@@ -841,4 +842,5 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
 
     Gem.sources << url
   end
+
 end

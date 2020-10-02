@@ -15,14 +15,16 @@ class TestTracepointObj < Test::Unit::TestCase
       99
       'abc'
       _="foobar"
+      Object.new
       nil
     }
     EOS
 
     newobj_count, free_count, gc_start_count, gc_end_mark_count, gc_end_sweep_count, *newobjs = *result
-    assert_equal 1, newobj_count
-    assert_equal 1, newobjs.size
+    assert_equal 2, newobj_count
+    assert_equal 2, newobjs.size
     assert_equal 'foobar', newobjs[0]
+    assert_equal Object, newobjs[1].class
     assert_operator free_count, :>=, 0
     assert_operator gc_start_count, :==, gc_end_mark_count
     assert_operator gc_start_count, :>=, gc_end_sweep_count

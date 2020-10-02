@@ -101,7 +101,7 @@ module Psych
     ###
     # Parse and return an int from +string+
     def parse_int string
-      Integer(string.gsub(/[,_]/, ''))
+      Integer(string.gsub(/[,]/, ''))
     end
 
     ###

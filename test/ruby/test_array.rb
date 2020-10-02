@@ -886,17 +886,6 @@ class TestArray < Test::Unit::TestCase
     assert_raise(NoMethodError, bug12738) { a.flatten.m }
   end
 
-  def test_flatten_recursive
-    a = []
-    a << a
-    assert_raise(ArgumentError) { a.flatten }
-    b = [1]; c = [2, b]; b << c
-    assert_raise(ArgumentError) { b.flatten }
-
-    assert_equal([1, 2, b], b.flatten(1))
-    assert_equal([1, 2, 1, 2, 1, c], b.flatten(4))
-  end
-
   def test_flatten!
     a1 = @cls[ 1, 2, 3]
     a2 = @cls[ 5, 6 ]
@@ -1745,12 +1734,10 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_min
-    assert_equal(3, [3].min)
     assert_equal(1, [1, 2, 3, 1, 2].min)
     assert_equal(3, [1, 2, 3, 1, 2].min {|a,b| b <=> a })
     cond = ->((a, ia), (b, ib)) { (b <=> a).nonzero? or ia <=> ib }
     assert_equal([3, 2], [1, 2, 3, 1, 2].each_with_index.min(&cond))
-    assert_equal(1.0, [3.0, 1.0, 2.0].min)
     ary = %w(albatross dog horse)
     assert_equal("albatross", ary.min)
     assert_equal("dog", ary.min {|a,b| a.length <=> b.length })
@@ -1769,12 +1756,10 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_max
-    assert_equal(1, [1].max)
     assert_equal(3, [1, 2, 3, 1, 2].max)
     assert_equal(1, [1, 2, 3, 1, 2].max {|a,b| b <=> a })
     cond = ->((a, ia), (b, ib)) { (b <=> a).nonzero? or ia <=> ib }
     assert_equal([1, 3], [1, 2, 3, 1, 2].each_with_index.max(&cond))
-    assert_equal(3.0, [1.0, 3.0, 2.0].max)
     ary = %w(albatross dog horse)
     assert_equal("horse", ary.max)
     assert_equal("albatross", ary.max {|a,b| a.length <=> b.length })
@@ -1792,7 +1777,6 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_minmax
-    assert_equal([3, 3], [3].minmax)
     assert_equal([1, 3], [1, 2, 3, 1, 2].minmax)
     assert_equal([3, 1], [1, 2, 3, 1, 2].minmax {|a,b| b <=> a })
     cond = ->((a, ia), (b, ib)) { (b <=> a).nonzero? or ia <=> ib }
@@ -2463,27 +2447,6 @@ class TestArray < Test::Unit::TestCase
     assert_equal("12345", [1,[2,[3,4],5]].join)
   end
 
-  def test_join_recheck_elements_type
-    x = Struct.new(:ary).new
-    def x.to_str
-      ary[2] = [0, 1, 2]
-      "z"
-    end
-    (x.ary = ["a", "b", "c", x])
-    assert_equal("ab012z", x.ary.join(""))
-  end
-
-  def test_join_recheck_array_length
-    x = Struct.new(:ary).new
-    def x.to_str
-      ary.clear
-      ary[0] = "b"
-      "z"
-    end
-    x.ary = Array.new(1023) {"a"*1} << x
-    assert_equal("b", x.ary.join(""))
-  end
-
   def test_to_a2
     klass = Class.new(Array)
     a = klass.new.to_a
@@ -2612,7 +2575,7 @@ class TestArray < Test::Unit::TestCase
 
   def test_zip_bug
     bug8153 = "ruby-core:53650"
-    r = [1]
+    r = 1..1
     def r.respond_to?(*)
       super
     end
@@ -2645,21 +2608,25 @@ class TestArray < Test::Unit::TestCase
     assert_not_equal([0, 1, 2], [0, 1, 3])
   end
 
+  A = Array.new(3, &:to_s)
+  B = A.dup
+
   def test_equal_resize
-    $test_equal_resize_a = Array.new(3, &:to_s)
-    $test_equal_resize_b = $test_equal_resize_a.dup
     o = Object.new
     def o.==(o)
-      $test_equal_resize_a.clear
-      $test_equal_resize_b.clear
+      A.clear
+      B.clear
       true
     end
-    $test_equal_resize_a[1] = o
-    assert_equal($test_equal_resize_a, $test_equal_resize_b)
+    A[1] = o
+    assert_equal(A, B)
   end
 
   def test_flatten_error
     a = []
+    a << a
+    assert_raise(ArgumentError) { a.flatten }
+
     f = [].freeze
     assert_raise(ArgumentError) { a.flatten!(1, 2) }
     assert_raise(TypeError) { a.flatten!(:foo) }

@@ -4,12 +4,12 @@ describe "ENV.empty?" do
 
   it "returns true if the Environment is empty" do
     if ENV.keys.size > 0
-      ENV.should_not.empty?
+      ENV.empty?.should == false
     end
     orig = ENV.to_hash
     begin
       ENV.clear
-      ENV.should.empty?
+      ENV.empty?.should == true
     ensure
       ENV.replace orig
     end
@@ -17,7 +17,7 @@ describe "ENV.empty?" do
 
   it "returns false if not empty" do
     if ENV.keys.size > 0
-      ENV.should_not.empty?
+      ENV.empty?.should == false
     end
   end
 end

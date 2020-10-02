@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 require_relative 'shared/sprintf'
+require "stringio"
 
 describe "Kernel#printf" do
   it "is a private method" do
@@ -9,6 +10,7 @@ describe "Kernel#printf" do
 end
 
 describe "Kernel.printf" do
+
   before :each do
     @stdout = $stdout
     @name = tmp("kernel_puts.txt")
@@ -31,18 +33,12 @@ describe "Kernel.printf" do
     object.should_receive(:write).with("string")
     Kernel.printf(object, "%s", "string")
   end
-end
 
-describe "Kernel.printf" do
   describe "formatting" do
-    before :each do
-      require "stringio"
-    end
-
     context "io is specified" do
       it_behaves_like :kernel_sprintf, -> format, *args {
-        io = StringIO.new(+"")
-        Kernel.printf(io, format, *args)
+        io = StringIO.new
+        printf(io, format, *args)
         io.string
       }
     end
@@ -50,9 +46,10 @@ describe "Kernel.printf" do
     context "io is not specified" do
       it_behaves_like :kernel_sprintf, -> format, *args {
         stdout = $stdout
+
         begin
-          $stdout = io = StringIO.new(+"")
-          Kernel.printf(format, *args)
+          $stdout = io = StringIO.new
+          printf(format, *args)
           io.string
         ensure
           $stdout = stdout

@@ -28,13 +28,8 @@ describe "Range#initialize" do
   end
 
   it "raises a NameError if called on an already initialized Range" do
-    if (0..1).frozen? # Ruby 3.0-
-      -> { (0..1).send(:initialize, 1, 3) }.should raise_error(FrozenError)
-      -> { (0..1).send(:initialize, 1, 3, true) }.should raise_error(FrozenError)
-    else
-      -> { (0..1).send(:initialize, 1, 3) }.should raise_error(NameError)
-      -> { (0..1).send(:initialize, 1, 3, true) }.should raise_error(NameError)
-    end
+    -> { (0..1).send(:initialize, 1, 3) }.should raise_error(NameError)
+    -> { (0..1).send(:initialize, 1, 3, true) }.should raise_error(NameError)
   end
 
   it "raises an ArgumentError if arguments don't respond to <=>" do

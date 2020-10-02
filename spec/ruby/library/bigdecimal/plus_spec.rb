@@ -30,8 +30,8 @@ describe "BigDecimal#+" do
   end
 
   it "returns NaN if NaN is involved" do
-    (@one + @nan).should.nan?
-    (@nan + @one).should.nan?
+    (@one + @nan).nan?.should == true
+    (@nan + @one).nan?.should == true
   end
 
   it "returns Infinity or -Infinity if these are involved" do
@@ -41,7 +41,7 @@ describe "BigDecimal#+" do
   end
 
   it "returns NaN if Infinity + (- Infinity)" do
-    (@infinity + @infinity_minus).should.nan?
+    (@infinity + @infinity_minus).nan?.should == true
   end
 
   describe "with Object" do

@@ -46,8 +46,6 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "requires the gems" do
-    skip "gems not found" if Gem.win_platform?
-
     script <<-RUBY
       gemfile do
         path "#{lib_path}" do
@@ -57,8 +55,9 @@ RSpec.describe "bundler/inline#gemfile" do
     RUBY
 
     expect(out).to eq("two")
+    expect(exitstatus).to be_zero if exitstatus
 
-    script <<-RUBY, :raise_on_error => false
+    script <<-RUBY
       gemfile do
         path "#{lib_path}" do
           gem "eleven"
@@ -79,6 +78,7 @@ RSpec.describe "bundler/inline#gemfile" do
     RUBY
 
     expect(out).to include("Rack's post install message")
+    expect(exitstatus).to be_zero if exitstatus
 
     script <<-RUBY, :artifice => "endpoint"
       gemfile(true) do
@@ -91,11 +91,10 @@ RSpec.describe "bundler/inline#gemfile" do
     err_lines = err.split("\n")
     err_lines.reject!{|line| line =~ /\.rb:\d+: warning: / } unless RUBY_VERSION < "2.7"
     expect(err_lines).to be_empty
+    expect(exitstatus).to be_zero if exitstatus
   end
 
   it "lets me use my own ui object" do
-    skip "prints just one CONFIRMED" if Gem.win_platform?
-
     script <<-RUBY, :artifice => "endpoint"
       require '#{lib_dir}/bundler'
       class MyBundlerUI < Bundler::UI::Silent
@@ -110,6 +109,7 @@ RSpec.describe "bundler/inline#gemfile" do
     RUBY
 
     expect(out).to eq("CONFIRMED!\nCONFIRMED!")
+    expect(exitstatus).to be_zero if exitstatus
   end
 
   it "has an option for quiet installation" do
@@ -126,7 +126,7 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "raises an exception if passed unknown arguments" do
-    script <<-RUBY, :raise_on_error => false
+    script <<-RUBY
       gemfile(true, :arglebargle => true) do
         path "#{lib_path}"
         gem "two"
@@ -151,6 +151,7 @@ RSpec.describe "bundler/inline#gemfile" do
     RUBY
 
     expect(out).to match("OKAY")
+    expect(exitstatus).to be_zero if exitstatus
   end
 
   it "installs quietly if necessary when the install option is not set" do
@@ -165,6 +166,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     expect(out).to eq("1.0.0")
     expect(err).to be_empty
+    expect(exitstatus).to be_zero if exitstatus
   end
 
   it "installs quietly from git if necessary when the install option is not set" do
@@ -182,6 +184,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     expect(out).to eq("1.0.0\n2.0.0")
     expect(err).to be_empty
+    expect(exitstatus).to be_zero if exitstatus
   end
 
   it "allows calling gemfile twice" do
@@ -201,6 +204,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     expect(out).to eq("two\nfour")
     expect(err).to be_empty
+    expect(exitstatus).to be_zero if exitstatus
   end
 
   it "installs inline gems when a Gemfile.lock is present" do
@@ -225,16 +229,19 @@ RSpec.describe "bundler/inline#gemfile" do
          1.13.6
     G
 
-    script <<-RUBY
-      gemfile do
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
-      end
+    in_app_root do
+      script <<-RUBY
+        gemfile do
+          source "#{file_uri_for(gem_repo1)}"
+          gem "rack"
+        end
 
-      puts RACK
-    RUBY
+        puts RACK
+      RUBY
+    end
 
     expect(err).to be_empty
+    expect(exitstatus).to be_zero if exitstatus
   end
 
   it "installs inline gems when frozen is set" do
@@ -248,21 +255,25 @@ RSpec.describe "bundler/inline#gemfile" do
     RUBY
 
     expect(last_command.stderr).to be_empty
+    expect(exitstatus).to be_zero if exitstatus
   end
 
   it "installs inline gems when BUNDLE_GEMFILE is set to an empty string" do
     ENV["BUNDLE_GEMFILE"] = ""
 
-    script <<-RUBY
-      gemfile do
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
-      end
+    in_app_root do
+      script <<-RUBY
+        gemfile do
+          source "#{file_uri_for(gem_repo1)}"
+          gem "rack"
+        end
 
-      puts RACK
-    RUBY
+        puts RACK
+      RUBY
+    end
 
     expect(err).to be_empty
+    expect(exitstatus).to be_zero if exitstatus
   end
 
   it "installs inline gems when BUNDLE_BIN is set" do

@@ -22,8 +22,9 @@ Gem::Specification.new do |s|
   s.extensions = ["ext/stringio/extconf.rb"]
   s.files = ["README.md", "ext/stringio/extconf.rb", "ext/stringio/stringio.c"]
   s.homepage = "https://github.com/ruby/stringio"
-  s.licenses = ["Ruby", "BSD-2-Clause"]
+  s.licenses = ["BSD-2-Clause"]
   s.required_ruby_version = ">= 2.5"
+  s.rubygems_version = "2.6.11"
   s.summary = "Pseudo IO on String"
 
   # s.cert_chain  = %w[certs/nobu.pem]

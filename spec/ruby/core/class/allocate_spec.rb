@@ -30,7 +30,7 @@ describe "Class#allocate" do
       end
     end
 
-    klass.allocate.should_not.initialized?
+    klass.allocate.initialized?.should == false
   end
 
   it "raises TypeError for #superclass" do

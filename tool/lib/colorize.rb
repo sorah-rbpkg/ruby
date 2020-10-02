@@ -1,12 +1,8 @@
 # frozen-string-literal: true
 
 class Colorize
-  # call-seq:
-  #   Colorize.new(colorize = nil)
-  #   Colorize.new(color: color, colors_file: colors_file)
   def initialize(color = nil, opts = ((_, color = color, nil)[0] if Hash === color))
     @colors = @reset = nil
-    @color = (opts[:color] if opts)
     if color or (color == nil && STDOUT.tty?)
       if (/\A\e\[.*m\z/ =~ IO.popen("tput smso", "r", :err => IO::NULL, &:read) rescue nil)
         @beg = "\e["
@@ -33,8 +29,7 @@ class Colorize
     "bold"=>"1", "underline"=>"4", "reverse"=>"7",
   }
 
-  # colorize.decorate(str, name = color_name)
-  def decorate(str, name = @color)
+  def decorate(str, name)
     if @colors and color = (@colors[name] || DEFAULTS[name])
       "#{@beg}#{color}m#{str}#{@reset}"
     else
@@ -50,6 +45,7 @@ class Colorize
 end
 
 if $0 == __FILE__
-  colorize = Colorize.new(ARGV.shift)
-  ARGV.each {|str| puts colorize.decorate(str)}
+  colorize = Colorize.new
+  col = ARGV.shift
+  ARGV.each {|str| puts colorize.decorate(str, col)}
 end

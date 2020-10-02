@@ -21,37 +21,19 @@ describe :hash_each, shared: true do
     ary.sort.should == ["a", "b", "c"]
   end
 
-  ruby_version_is ""..."3.0" do
-    it "yields 2 values and not an Array of 2 elements when given a callable of arity 2" do
-      obj = Object.new
-      def obj.foo(key, value)
-        ScratchPad << key << value
-      end
-
-      ScratchPad.record([])
-      { "a" => 1 }.send(@method, &obj.method(:foo))
-      ScratchPad.recorded.should == ["a", 1]
-
-      ScratchPad.record([])
-      { "a" => 1 }.send(@method, &-> key, value { ScratchPad << key << value })
-      ScratchPad.recorded.should == ["a", 1]
+  it "yields 2 values and not an Array of 2 elements when given a callable of arity 2" do
+    obj = Object.new
+    def obj.foo(key, value)
+      ScratchPad << key << value
     end
-  end
 
-  ruby_version_is "3.0" do
-    it "yields an Array of 2 elements when given a callable of arity 2" do
-      obj = Object.new
-      def obj.foo(key, value)
-      end
+    ScratchPad.record([])
+    { "a" => 1 }.send(@method, &obj.method(:foo))
+    ScratchPad.recorded.should == ["a", 1]
 
-      -> {
-        { "a" => 1 }.send(@method, &obj.method(:foo))
-      }.should raise_error(ArgumentError)
-
-      -> {
-        { "a" => 1 }.send(@method, &-> key, value { })
-      }.should raise_error(ArgumentError)
-    end
+    ScratchPad.record([])
+    { "a" => 1 }.send(@method, &-> key, value { ScratchPad << key << value })
+    ScratchPad.recorded.should == ["a", 1]
   end
 
   it "uses the same order as keys() and values()" do

@@ -5,7 +5,7 @@ describe 'String#+@' do
     input  = 'foo'.freeze
     output = +input
 
-    output.should_not.frozen?
+    output.frozen?.should == false
     output.should == 'foo'
   end
 

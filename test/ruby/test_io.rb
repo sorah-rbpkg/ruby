@@ -405,19 +405,6 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
-  def test_each_codepoint_enumerator
-    make_tempfile {|t|
-      a = ""
-      b = ""
-      File.open(t, 'rt') {|f|
-        a = f.each_codepoint.take(4).pack('U*')
-        b = f.read(8)
-      }
-      assert_equal("foo\n", a)
-      assert_equal("bar\nbaz\n", b)
-    }
-  end
-
   def test_rubydev33072
     t = make_tempfile
     path = t.path
@@ -2220,14 +2207,26 @@ class TestIO < Test::Unit::TestCase
     def o.to_open(**kw); kw; end
     assert_equal({:a=>1}, open(o, a: 1))
 
-    assert_raise(ArgumentError) { open(o, {a: 1}) }
+    w = /Using the last argument as keyword parameters is deprecated.*The called method `(to_)?open'/m
+    redefined = nil
+    w.singleton_class.define_method(:===) do |s|
+      match = super(s)
+      redefined = !$1
+      match
+    end
+
+    assert_warn(w) do
+      assert_equal({:a=>1}, open(o, {a: 1}))
+    end
 
     class << o
       remove_method(:to_open)
     end
     def o.to_open(kw); kw; end
     assert_equal({:a=>1}, open(o, a: 1))
-    assert_equal({:a=>1}, open(o, {a: 1}))
+    unless redefined
+      assert_equal({:a=>1}, open(o, {a: 1}))
+    end
   end
 
   def test_open_pipe
@@ -2425,17 +2424,6 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
-  def test_reopen_ivar
-    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
-    begin;
-      f = File.open(IO::NULL)
-      f.instance_variable_set(:@foo, 42)
-      f.reopen(STDIN)
-      f.instance_variable_defined?(:@foo)
-      f.instance_variable_get(:@foo)
-    end;
-  end
-
   def test_foreach
     a = []
     IO.foreach("|" + EnvUtil.rubybin + " -e 'puts :foo; puts :bar; puts :baz'") {|x| a << x }
@@ -2515,13 +2503,11 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_print_separators
-    EnvUtil.suppress_warning {
-      $, = ':'
-      $\ = "\n"
-    }
+    EnvUtil.suppress_warning {$, = ':'}
+    $\ = "\n"
     pipe(proc do |w|
       w.print('a')
-      EnvUtil.suppress_warning {w.print('a','b','c')}
+      w.print('a','b','c')
       w.close
     end, proc do |r|
       assert_equal("a\n", r.gets)
@@ -3075,8 +3061,11 @@ __END__
       assert_equal("\00f", File.read(path))
       assert_equal(1, File.write(path, "f", 0, encoding: "UTF-8"))
       assert_equal("ff", File.read(path))
-      File.write(path, "foo", Object.new => Object.new)
-      assert_equal("foo", File.read(path))
+      assert_raise(TypeError) {
+        assert_warn(/The last argument is split into positional and keyword parameters/) do
+          File.write(path, "foo", Object.new => Object.new)
+        end
+      }
     end
   end
 
@@ -3577,27 +3566,15 @@ __END__
   end
 
   def test_open_flag_binary
-    binary_enc = Encoding.find("BINARY")
     make_tempfile do |t|
       open(t.path, File::RDONLY, flags: File::BINARY) do |f|
         assert_equal true, f.binmode?
-        assert_equal binary_enc, f.external_encoding
       end
       open(t.path, 'r', flags: File::BINARY) do |f|
         assert_equal true, f.binmode?
-        assert_equal binary_enc, f.external_encoding
       end
       open(t.path, mode: 'r', flags: File::BINARY) do |f|
         assert_equal true, f.binmode?
-        assert_equal binary_enc, f.external_encoding
-      end
-      open(t.path, File::RDONLY|File::BINARY) do |f|
-        assert_equal true, f.binmode?
-        assert_equal binary_enc, f.external_encoding
-      end
-      open(t.path, File::RDONLY|File::BINARY, autoclose: true) do |f|
-        assert_equal true, f.binmode?
-        assert_equal binary_enc, f.external_encoding
       end
     end
   end if File::BINARY != 0
@@ -3860,22 +3837,21 @@ __END__
     end
   end
 
-  def test_select_memory_leak
+  def test_select_leak
     # avoid malloc arena explosion from glibc and jemalloc:
     env = {
       'MALLOC_ARENA_MAX' => '1',
       'MALLOC_ARENA_TEST' => '1',
       'MALLOC_CONF' => 'narenas:1',
     }
-    assert_no_memory_leak([env], "#{<<~"begin;"}\n#{<<~'else;'}", "#{<<~'end;'}", rss: true, timeout: 60)
-    begin;
+    assert_no_memory_leak([env], <<-"end;", <<-"end;", rss: true, timeout: 60)
       r, w = IO.pipe
       rset = [r]
       wset = [w]
       exc = StandardError.new(-"select used to leak on exception")
       exc.set_backtrace([])
       Thread.new { IO.select(rset, wset, nil, 0) }.join
-    else;
+    end;
       th = Thread.new do
         Thread.handle_interrupt(StandardError => :on_blocking) do
           begin
@@ -3899,23 +3875,5 @@ __END__
       assert_raise(TypeError) {Marshal.dump(r)}
       assert_raise(TypeError) {Marshal.dump(w)}
     }
-  end
-
-  def test_stdout_to_closed_pipe
-    EnvUtil.invoke_ruby(["-e", "loop {puts :ok}"], "", true, true) do
-      |in_p, out_p, err_p, pid|
-      out = out_p.gets
-      out_p.close
-      err = err_p.read
-    ensure
-      status = Process.wait2(pid)[1]
-      assert_equal("ok\n", out)
-      assert_empty(err)
-      assert_not_predicate(status, :success?)
-      if Signal.list["PIPE"]
-        assert_predicate(status, :signaled?)
-        assert_equal("PIPE", Signal.signame(status.termsig) || status.termsig)
-      end
-    end
   end
 end

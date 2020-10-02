@@ -1,6 +1,5 @@
-#--
 #
-#
+# $Id: 4c5f4311663b6d03050953d64d6a0e7905ff2216 $
 #
 # Copyright (c) 1999-2006 Minero Aoki
 #
@@ -9,7 +8,6 @@
 # the GNU LGPL, Lesser General Public License version 2.1.
 # For details of LGPL, see the file "COPYING".
 #
-#++
 
 require 'racc/parser'
 
@@ -198,7 +196,7 @@ module Racc
     def mkmapexp(arr)
       i = ii = 0
       as = arr.size
-      map = String.new
+      map = ''
       maxdup = RE_DUP_MAX
       curr = nil
       while i < as

@@ -34,10 +34,10 @@ describe :hash_update, shared: true do
     merge_bang_pairs.should == merge_pairs
   end
 
-  it "raises a FrozenError on a frozen instance that is modified" do
+  it "raises a #{frozen_error_class} on a frozen instance that is modified" do
     -> do
       HashSpecs.frozen_hash.send(@method, 1 => 2)
-    end.should raise_error(FrozenError)
+    end.should raise_error(frozen_error_class)
   end
 
   it "checks frozen status before coercing an object with #to_hash" do
@@ -47,14 +47,14 @@ describe :hash_update, shared: true do
     def obj.to_hash() raise Exception, "should not receive #to_hash" end
     obj.freeze
 
-    -> { HashSpecs.frozen_hash.send(@method, obj) }.should raise_error(FrozenError)
+    -> { HashSpecs.frozen_hash.send(@method, obj) }.should raise_error(frozen_error_class)
   end
 
   # see redmine #1571
-  it "raises a FrozenError on a frozen instance that would not be modified" do
+  it "raises a #{frozen_error_class} on a frozen instance that would not be modified" do
     -> do
       HashSpecs.frozen_hash.send(@method, HashSpecs.empty_frozen_hash)
-    end.should raise_error(FrozenError)
+    end.should raise_error(frozen_error_class)
   end
 
   it "does not raise an exception if changing the value of an existing key during iteration" do

@@ -11,10 +11,6 @@ describe "Kernel.srand" do
     srand(20).should == 10
   end
 
-  it "returns the previous seed value on the first call" do
-    ruby_exe('p srand(10)', options: '--disable-gems').chomp.should =~ /\A\d+\z/
-  end
-
   it "seeds the RNG correctly and repeatably" do
     srand(10)
     x = rand

@@ -26,10 +26,10 @@
 static inline int
 RSA_HAS_PRIVATE(RSA *rsa)
 {
-    const BIGNUM *e, *d;
+    const BIGNUM *p, *q;
 
-    RSA_get0_key(rsa, NULL, &e, &d);
-    return e && d;
+    RSA_get0_factors(rsa, &p, &q);
+    return p && q; /* d? why? */
 }
 
 static inline int
@@ -341,7 +341,6 @@ static VALUE
 ossl_rsa_export(int argc, VALUE *argv, VALUE self)
 {
     RSA *rsa;
-    const BIGNUM *n, *e, *d, *p, *q, *dmp1, *dmq1, *iqmp;
     BIO *out;
     const EVP_CIPHER *ciph = NULL;
     VALUE cipher, pass, str;
@@ -357,10 +356,7 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
     if (!(out = BIO_new(BIO_s_mem()))) {
 	ossl_raise(eRSAError, NULL);
     }
-    RSA_get0_key(rsa, &n, &e, &d);
-    RSA_get0_factors(rsa, &p, &q);
-    RSA_get0_crt_params(rsa, &dmp1, &dmq1, &iqmp);
-    if (n && e && d && p && q && dmp1 && dmq1 && iqmp) {
+    if (RSA_HAS_PRIVATE(rsa)) {
 	if (!PEM_write_bio_RSAPrivateKey(out, rsa, ciph, NULL, 0,
 					 ossl_pem_passwd_cb, (void *)pass)) {
 	    BIO_free(out);
@@ -387,27 +383,23 @@ static VALUE
 ossl_rsa_to_der(VALUE self)
 {
     RSA *rsa;
-    const BIGNUM *n, *e, *d, *p, *q, *dmp1, *dmq1, *iqmp;
     int (*i2d_func)(const RSA *, unsigned char **);
-    unsigned char *ptr;
+    unsigned char *p;
     long len;
     VALUE str;
 
     GetRSA(self, rsa);
-    RSA_get0_key(rsa, &n, &e, &d);
-    RSA_get0_factors(rsa, &p, &q);
-    RSA_get0_crt_params(rsa, &dmp1, &dmq1, &iqmp);
-    if (n && e && d && p && q && dmp1 && dmq1 && iqmp)
+    if (RSA_HAS_PRIVATE(rsa))
 	i2d_func = i2d_RSAPrivateKey;
     else
 	i2d_func = (int (*)(const RSA *, unsigned char **))i2d_RSA_PUBKEY;
     if((len = i2d_func(rsa, NULL)) <= 0)
 	ossl_raise(eRSAError, NULL);
     str = rb_str_new(0, len);
-    ptr = (unsigned char *)RSTRING_PTR(str);
-    if(i2d_func(rsa, &ptr) < 0)
+    p = (unsigned char *)RSTRING_PTR(str);
+    if(i2d_func(rsa, &p) < 0)
 	ossl_raise(eRSAError, NULL);
-    ossl_str_adjust(str, ptr);
+    ossl_str_adjust(str, p);
 
     return str;
 }

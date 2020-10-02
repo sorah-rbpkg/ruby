@@ -369,16 +369,15 @@ rb_getaddrinfo_a(const char *node, const char *service,
 	arg.timeout = timeout;
 
 	ret = (int)(VALUE)rb_thread_call_without_gvl(nogvl_gai_suspend, &arg, RUBY_UBF_IO, 0);
-        if (ret && ret != EAI_ALLDONE) {
-            /* EAI_ALLDONE indicates that the request already completed and gai_suspend was redundant */
-            /* on Ubuntu 18.04 (or other systems), gai_suspend(3) returns EAI_SYSTEM/ENOENT on timeout */
-            if (ret == EAI_SYSTEM && errno == ENOENT) {
-                return EAI_AGAIN;
-            } else {
-                return ret;
-            }
-        }
 
+	if (ret) {
+	    /* on Ubuntu 18.04 (or other systems), gai_suspend(3) returns EAI_SYSTEM/ENOENT on timeout */
+	    if (ret == EAI_SYSTEM && errno == ENOENT) {
+		return EAI_AGAIN;
+	    } else {
+		return ret;
+	    }
+	}
 
 	ret = gai_error(reqs[0]);
 	ai = reqs[0]->ar_result;
@@ -602,7 +601,7 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
 }
 
 #ifdef HAVE_GETADDRINFO_A
-struct rb_addrinfo*
+static struct rb_addrinfo*
 rsock_getaddrinfo_a(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack, VALUE timeout)
 {
     struct rb_addrinfo* res = NULL;
@@ -620,10 +619,10 @@ rsock_getaddrinfo_a(VALUE host, VALUE port, struct addrinfo *hints, int socktype
     hints->ai_flags |= additional_flags;
 
     if (NIL_P(timeout)) {
-        error = rb_getaddrinfo_a(hostp, portp, hints, &res, (struct timespec *)NULL);
+	error = rb_getaddrinfo(hostp, portp, hints, &res);
     } else {
-        struct timespec _timeout = rb_time_timespec_interval(timeout);
-        error = rb_getaddrinfo_a(hostp, portp, hints, &res, &_timeout);
+	struct timespec _timeout = rb_time_timespec_interval(timeout);
+	error = rb_getaddrinfo_a(hostp, portp, hints, &res, &_timeout);
     }
 
     if (error) {
@@ -661,20 +660,6 @@ rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags)
     hints.ai_flags = flags;
     return rsock_getaddrinfo(host, port, &hints, 1);
 }
-
-#ifdef HAVE_GETADDRINFO_A
-struct rb_addrinfo*
-rsock_addrinfo_a(VALUE host, VALUE port, int family, int socktype, int flags, VALUE timeout)
-{
-    struct addrinfo hints;
-
-    MEMZERO(&hints, struct addrinfo, 1);
-    hints.ai_family = family;
-    hints.ai_socktype = socktype;
-    hints.ai_flags = flags;
-    return rsock_getaddrinfo_a(host, port, &hints, 1, timeout);
-}
-#endif
 
 VALUE
 rsock_ipaddr(struct sockaddr *sockaddr, socklen_t sockaddrlen, int norevlookup)
@@ -957,7 +942,11 @@ call_getaddrinfo(VALUE node, VALUE service,
     }
 
 #ifdef HAVE_GETADDRINFO_A
-    res = rsock_getaddrinfo_a(node, service, &hints, socktype_hack, timeout);
+    if (NIL_P(timeout)) {
+	res = rsock_getaddrinfo(node, service, &hints, socktype_hack);
+    } else {
+	res = rsock_getaddrinfo_a(node, service, &hints, socktype_hack, timeout);
+    }
 #else
     res = rsock_getaddrinfo(node, service, &hints, socktype_hack);
 #endif
@@ -1924,7 +1913,7 @@ addrinfo_to_sockaddr(VALUE self)
  * call-seq:
  *   addrinfo.canonname => string or nil
  *
- * returns the canonical name as a string.
+ * returns the canonical name as an string.
  *
  * nil is returned if no canonical name.
  *

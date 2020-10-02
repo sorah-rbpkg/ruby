@@ -40,16 +40,16 @@ describe "Kernel#`" do
       ip = 'world'
       `echo disc #{ip}`
       $?.should be_kind_of(Process::Status)
-      $?.should_not.stopped?
-      $?.should.exited?
+      $?.stopped?.should == false
+      $?.exited?.should == true
       $?.exitstatus.should == 0
-      $?.should.success?
+      $?.success?.should == true
       `echo disc #{ip}; exit 99`
       $?.should be_kind_of(Process::Status)
-      $?.should_not.stopped?
-      $?.should.exited?
+      $?.stopped?.should == false
+      $?.exited?.should == true
       $?.exitstatus.should == 99
-      $?.should_not.success?
+      $?.success?.should == false
     end
   end
 
@@ -58,16 +58,16 @@ describe "Kernel#`" do
       ip = 'world'
       `echo disc #{ip}`
       $?.should be_kind_of(Process::Status)
-      $?.should_not.stopped?
-      $?.should.exited?
+      $?.stopped?.should == false
+      $?.exited?.should == true
       $?.exitstatus.should == 0
-      $?.should.success?
+      $?.success?.should == true
       `echo disc #{ip}& exit 99`
       $?.should be_kind_of(Process::Status)
-      $?.should_not.stopped?
-      $?.should.exited?
+      $?.stopped?.should == false
+      $?.exited?.should == true
       $?.exitstatus.should == 99
-      $?.should_not.success?
+      $?.success?.should == false
     end
   end
 end

@@ -15,7 +15,7 @@
 extern "C" {
 #endif
 
-static VALUE thread_spec_rb_thread_alone(VALUE self) {
+static VALUE thread_spec_rb_thread_alone() {
   return rb_thread_alone() ? Qtrue : Qfalse;
 }
 
@@ -89,7 +89,7 @@ static VALUE thread_spec_rb_thread_call_without_gvl_with_ubf_io(VALUE self) {
   return (VALUE)ret;
 }
 
-static VALUE thread_spec_rb_thread_current(VALUE self) {
+static VALUE thread_spec_rb_thread_current() {
   return rb_thread_current();
 }
 

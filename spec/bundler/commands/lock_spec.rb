@@ -38,8 +38,8 @@ RSpec.describe "bundle lock" do
             actionpack (= 2.3.2)
             activerecord (= 2.3.2)
             activeresource (= 2.3.2)
-            rake (= 13.0.1)
-          rake (13.0.1)
+            rake (= 12.3.2)
+          rake (12.3.2)
           with_license (1.0)
 
       PLATFORMS
@@ -78,13 +78,13 @@ RSpec.describe "bundle lock" do
   it "writes a lockfile when there is an outdated lockfile using --update" do
     lockfile @lockfile.gsub("2.3.2", "2.3.1")
 
-    bundle "lock --update"
+    bundle! "lock --update"
 
     expect(read_lockfile).to eq(@lockfile)
   end
 
   it "does not fetch remote specs when using the --local option" do
-    bundle "lock --update --local", :raise_on_error => false
+    bundle "lock --update --local"
 
     expect(err).to match(/sources listed in your Gemfile|installed locally/)
   end
@@ -133,7 +133,7 @@ RSpec.describe "bundle lock" do
   end
 
   it "update specific gems using --update" do
-    lockfile @lockfile.gsub("2.3.2", "2.3.1").gsub("13.0.1", "10.0.1")
+    lockfile @lockfile.gsub("2.3.2", "2.3.1").gsub("12.3.2", "10.0.1")
 
     bundle "lock --update rails rake"
 
@@ -143,7 +143,7 @@ RSpec.describe "bundle lock" do
   it "errors when updating a missing specific gems using --update" do
     lockfile @lockfile
 
-    bundle "lock --update blahblah", :raise_on_error => false
+    bundle "lock --update blahblah"
     expect(err).to eq("Could not find gem 'blahblah'.")
 
     expect(read_lockfile).to eq(@lockfile)
@@ -156,9 +156,9 @@ RSpec.describe "bundle lock" do
       gem "thin"
       gem "rack_middleware", :group => "test"
     G
-    bundle "config set without test"
-    bundle "config set path .bundle"
-    bundle "lock"
+    bundle! "config set without test"
+    bundle! "config set path .bundle"
+    bundle! "lock"
     expect(bundled_app(".bundle")).not_to exist
   end
 
@@ -195,8 +195,6 @@ RSpec.describe "bundle lock" do
         gem 'foo'
         gem 'qux'
       G
-
-      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     end
 
     it "single gem updates dependent gem to minor" do
@@ -213,17 +211,14 @@ RSpec.describe "bundle lock" do
   end
 
   it "supports adding new platforms" do
-    bundle "lock --add-platform java x86-mingw32"
+    bundle! "lock --add-platform java x86-mingw32"
 
-    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
     expect(lockfile.platforms).to match_array(local_platforms.unshift(java, mingw).uniq)
   end
 
   it "supports adding the `ruby` platform" do
-    bundle "lock --add-platform ruby"
-
-    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+    bundle! "lock --add-platform ruby"
     lockfile = Bundler::LockfileParser.new(read_lockfile)
     expect(lockfile.platforms).to match_array(local_platforms.unshift("ruby").uniq)
   end
@@ -234,24 +229,23 @@ RSpec.describe "bundle lock" do
   end
 
   it "allows removing platforms" do
-    bundle "lock --add-platform java x86-mingw32"
+    bundle! "lock --add-platform java x86-mingw32"
 
-    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
     expect(lockfile.platforms).to match_array(local_platforms.unshift(java, mingw).uniq)
 
-    bundle "lock --remove-platform java"
+    bundle! "lock --remove-platform java"
 
     lockfile = Bundler::LockfileParser.new(read_lockfile)
     expect(lockfile.platforms).to match_array(local_platforms.unshift(mingw).uniq)
   end
 
   it "errors when removing all platforms" do
-    bundle "lock --remove-platform #{local_platforms.join(" ")}", :raise_on_error => false
+    bundle "lock --remove-platform #{local_platforms.join(" ")}"
     expect(err).to include("Removing all platforms from the bundle is not allowed")
   end
 
-  # from https://github.com/rubygems/bundler/issues/4896
+  # from https://github.com/bundler/bundler/issues/4896
   it "properly adds platforms when platform requirements come from different dependencies" do
     build_repo4 do
       build_gem "ffi", "1.9.14"
@@ -288,7 +282,7 @@ RSpec.describe "bundle lock" do
       gem "gssapi"
     G
 
-    simulate_platform(mingw) { bundle :lock }
+    simulate_platform(mingw) { bundle! :lock }
 
     lockfile_should_be <<-G
       GEM
@@ -313,7 +307,7 @@ RSpec.describe "bundle lock" do
          #{Bundler::VERSION}
     G
 
-    simulate_platform(rb) { bundle :lock }
+    simulate_platform(rb) { bundle! :lock }
 
     lockfile_should_be <<-G
       GEM
@@ -353,14 +347,14 @@ RSpec.describe "bundle lock" do
     end
 
     it "does not implicitly update" do
-      bundle "lock"
+      bundle! "lock"
 
       expect(read_lockfile).to eq(@lockfile)
     end
 
     it "accounts for changes in the gemfile" do
       gemfile gemfile.gsub('"foo"', '"foo", "2.0"')
-      bundle "lock"
+      bundle! "lock"
 
       expect(read_lockfile).to eq(@lockfile.sub("foo (1.0)", "foo (2.0)").sub(/foo$/, "foo (= 2.0)"))
     end

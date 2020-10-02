@@ -4,7 +4,7 @@ require 'mspec/helpers'
 
 describe Object, "#tmp" do
   before :all do
-    @dir = SPEC_TEMP_DIR
+    @dir = "#{File.expand_path(Dir.pwd)}/rubyspec_temp"
   end
 
   it "returns a name relative to the current working directory" do

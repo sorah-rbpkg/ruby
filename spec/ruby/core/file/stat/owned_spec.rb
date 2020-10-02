@@ -18,15 +18,15 @@ describe "File::Stat#owned?" do
 
   it "returns true if the file is owned by the user" do
     st = File.stat(@file)
-    st.should.owned?
+    st.owned?.should == true
   end
 
-  platform_is_not :windows, :android do
+  platform_is_not :windows do
     as_user do
       it "returns false if the file is not owned by the user" do
         system_file = '/etc/passwd'
         st = File.stat(system_file)
-        st.should_not.owned?
+        st.owned?.should == false
       end
     end
   end

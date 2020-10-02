@@ -60,11 +60,11 @@ describe :io_readlines_options_19, shared: true do
       end
 
       after :each do
-        suppress_warning {$/ = @sep}
+        $/ = @sep
       end
 
       it "defaults to $/ as the separator" do
-        suppress_warning {$/ = " "}
+        $/ = " "
         result = IO.send(@method, @name, 10, &@object)
         (result ? result : ScratchPad.recorded).should == IOSpecs.lines_space_separator_limit
       end

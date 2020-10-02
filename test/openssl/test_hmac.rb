@@ -1,4 +1,4 @@
-# frozen_string_literal: true
+# frozen_string_literal: false
 require_relative 'utils'
 
 if defined?(OpenSSL)
@@ -38,16 +38,6 @@ class OpenSSL::TestHMAC < OpenSSL::TestCase
     h1.reset
     second = h1.update("test").hexdigest
     assert_equal first, second
-  end
-
-  def test_eq
-    h1 = OpenSSL::HMAC.new("KEY", "MD5")
-    h2 = OpenSSL::HMAC.new("KEY", OpenSSL::Digest.new("MD5"))
-    h3 = OpenSSL::HMAC.new("FOO", "MD5")
-
-    assert_equal h1, h2
-    refute_equal h1, h2.digest
-    refute_equal h1, h3
   end
 end
 

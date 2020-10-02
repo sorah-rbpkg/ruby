@@ -1,8 +1,6 @@
 #pragma once
 
 #include <assert.h>
-#include <stddef.h>
-#include <stdint.h>
 #include <string.h>
 
 #define COROUTINE __attribute__((noreturn)) void

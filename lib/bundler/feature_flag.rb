@@ -30,6 +30,7 @@ module Bundler
     settings_flag(:allow_bundler_dependency_conflicts) { bundler_3_mode? }
     settings_flag(:allow_offline_install) { bundler_3_mode? }
     settings_flag(:auto_clean_without_path) { bundler_3_mode? }
+    settings_flag(:auto_config_jobs) { bundler_3_mode? }
     settings_flag(:cache_all) { bundler_3_mode? }
     settings_flag(:default_install_uses_path) { bundler_3_mode? }
     settings_flag(:deployment_means_frozen) { bundler_3_mode? }
@@ -41,6 +42,7 @@ module Bundler
     settings_flag(:plugins) { @bundler_version >= Gem::Version.new("1.14") }
     settings_flag(:print_only_version_number) { bundler_3_mode? }
     settings_flag(:setup_makes_kernel_gem_public) { !bundler_3_mode? }
+    settings_flag(:skip_default_git_sources) { bundler_3_mode? }
     settings_flag(:specific_platform) { bundler_3_mode? }
     settings_flag(:suppress_install_using_messages) { bundler_3_mode? }
     settings_flag(:unlock_source_unlocks_spec) { !bundler_3_mode? }

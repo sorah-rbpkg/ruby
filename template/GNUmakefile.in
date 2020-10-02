@@ -1,5 +1,3 @@
-gnumake = yes
-
 include Makefile
 
 ifeq ($(HAVE_BASERUBY),yes)

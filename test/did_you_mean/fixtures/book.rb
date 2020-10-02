@@ -1,4 +1,4 @@
 class Book
-  class Spine
+  class Cover
   end
 end

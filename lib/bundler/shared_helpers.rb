@@ -194,7 +194,7 @@ module Bundler
       return @md5_available if defined?(@md5_available)
       @md5_available = begin
         require "openssl"
-        OpenSSL::Digest.digest("MD5", "")
+        OpenSSL::Digest::MD5.digest("")
         true
       rescue LoadError
         true

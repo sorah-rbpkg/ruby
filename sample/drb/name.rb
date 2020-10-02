@@ -39,12 +39,11 @@ require 'drb/drb'
 
 module DRbNamedObject
   DRbNAMEDICT = {}
-  DRBNAMEMUTEX = Thread::Mutex.new
   attr_reader(:drb_name)
 
   def drb_name=(name)
     @drb_name = name
-    DRBNAMEMUTEX.synchronize do
+    Thread.exclusive do
       raise(IndexError, name) if DRbNAMEDICT[name]
       DRbNAMEDICT[name] = self
     end

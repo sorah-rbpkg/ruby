@@ -261,14 +261,6 @@ rescue Exception => err
   $stderr.print 'E'
   $stderr.puts if @verbose
   error err.message, message
-ensure
-  begin
-    check_coredump
-  rescue CoreDumpError => err
-    $stderr.print 'E'
-    $stderr.puts if @verbose
-    error err.message, message
-  end
 end
 
 def show_limit(testsrc, opt = '', **argh)
@@ -283,6 +275,7 @@ end
 def assert_check(testsrc, message = '', opt = '', **argh)
   show_progress(message) {
     result = get_result_string(testsrc, opt, **argh)
+    check_coredump
     yield(result)
   }
 end
@@ -460,6 +453,7 @@ def get_result_string(src, opt = '', **argh)
       `#{@ruby} -W0 #{opt} #{filename}`
     ensure
       raise Interrupt if $? and $?.signaled? && $?.termsig == Signal.list["INT"]
+      raise CoreDumpError, "core dumped" if $? and $?.coredump?
     end
   else
     eval(src).to_s

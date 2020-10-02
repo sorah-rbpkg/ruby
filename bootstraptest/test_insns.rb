@@ -64,8 +64,8 @@ tests = [
   [ 'setinstancevariable', %q{ @x = true }, ],
   [ 'getinstancevariable', %q{ @x = true; @x }, ],
 
-  [ 'setclassvariable', %q{ class A; @@x = true; end }, ],
-  [ 'getclassvariable', %q{ class A; @@x = true; @@x end }, ],
+  [ 'setclassvariable', %q{ @@x = true }, ],
+  [ 'getclassvariable', %q{ @@x = true; @@x }, ],
 
   [ 'setconstant', %q{ X = true }, ],
   [ 'setconstant', %q{ Object::X = true }, ],
@@ -86,8 +86,11 @@ tests = [
   [ 'putobject',            %q{ /(?<x>x)/ =~ "x"; x == "x" }, ],
 
   [ 'putspecialobject',         %q{ {//=>true}[//] }, ],
+  [ 'putiseq',                  %q{ -> { true }.() }, ],
   [ 'putstring',                %q{ "true" }, ],
   [ 'tostring / concatstrings', %q{ "#{true}" }, ],
+  [ 'freezestring',             %q{ "#{true}" }, fsl, ],
+  [ 'freezestring',             %q{ "#{true}" }, '-d', fsl, ],
   [ 'toregexp',                 %q{ /#{true}/ =~ "true" && $~ }, ],
   [ 'intern',                   %q{ :"#{true}" }, ],
 
@@ -409,6 +412,8 @@ tests = [
     class String; def =~ other; true; end; end
     'true' =~ /true/
   },
+
+  [ 'opt_call_c_function', 'Struct.new(:x).new.x = true', ],
 ]
 
 # normal path
@@ -433,8 +438,3 @@ tests.compact.each {|(insn, expr, *a)|
     assert_equal 'true', progn, 'trace_' + insn, *a
   end
 }
-
-assert_normal_exit("#{<<-"begin;"}\n#{<<-'end;'}")
-begin;
-  RubyVM::InstructionSequence.compile("", debug_level: 5)
-end;

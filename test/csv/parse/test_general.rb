@@ -246,11 +246,7 @@ line,5,jkl
   private
   def assert_parse_errors_out(data, **options)
     assert_raise(CSV::MalformedCSVError) do
-      timeout = 0.2
-      if defined?(RubyVM::MJIT.enabled?) and RubyVM::MJIT.enabled?
-        timeout = 5  # for --jit-wait
-      end
-      Timeout.timeout(timeout) do
+      Timeout.timeout(0.2) do
         CSV.parse(data, **options)
         fail("Parse didn't error out")
       end

@@ -34,12 +34,17 @@ class RDoc::Context::Section
 
   attr_reader :title
 
+  @@sequence = "SEC00000"
+
   ##
   # Creates a new section with +title+ and +comment+
 
   def initialize parent, title, comment
     @parent = parent
     @title = title ? title.strip : title
+
+    @@sequence = @@sequence.succ
+    @sequence = @@sequence.dup
 
     @comments = []
 
@@ -226,6 +231,14 @@ class RDoc::Context::Section
     else
       raise RDoc::Error, "BUG: unknown comment class #{@comments.class}"
     end
+  end
+
+  ##
+  # Section sequence number (deprecated)
+
+  def sequence
+    warn "RDoc::Context::Section#sequence is deprecated, use #aref"
+    @sequence
   end
 
 end

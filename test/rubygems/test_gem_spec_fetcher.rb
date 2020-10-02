@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/spec_fetcher'
 
 class TestGemSpecFetcher < Gem::TestCase
+
   def tuple(*args)
     Gem::NameTuple.new(*args)
   end
@@ -172,19 +173,10 @@ class TestGemSpecFetcher < Gem::TestCase
     spec_fetcher do|fetcher|
       fetcher.spec 'example', 1
       fetcher.spec 'other-example', 1
-      fetcher.spec 'examp', 1
     end
 
-    suggestions = @sf.suggest_gems_from_name('examplw', :latest, 1)
+    suggestions = @sf.suggest_gems_from_name('examplw')
     assert_equal ['example'], suggestions
-
-    suggestions = @sf.suggest_gems_from_name('other')
-    assert_equal ['other-example'], suggestions
-
-    suggestions = @sf.suggest_gems_from_name('exam')
-    assert suggestions.any? { ['examp'] }
-    assert suggestions.any? { ['example'] }
-    assert suggestions.any? { ['other-example'] }
   end
 
   def test_suggest_gems_from_name_prerelease
@@ -321,7 +313,7 @@ class TestGemSpecFetcher < Gem::TestCase
     specs, _ = @sf.available_specs(:prerelease)
 
     expected = Gem::NameTuple.from_list \
-      [['a', v('2.a'), Gem::Platform::RUBY]]
+      [['a',  v('2.a'), Gem::Platform::RUBY]]
 
     assert_equal expected, specs[@source]
   end
@@ -334,4 +326,5 @@ class TestGemSpecFetcher < Gem::TestCase
     assert_equal({}, specs)
     assert_kind_of Gem::SourceFetchProblem, errors.first
   end
+
 end

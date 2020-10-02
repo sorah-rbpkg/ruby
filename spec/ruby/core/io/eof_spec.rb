@@ -12,7 +12,7 @@ describe "IO#eof?" do
   end
 
   it "returns true on an empty stream that has just been opened" do
-    File.open(@name) { |empty| empty.should.eof? }
+    File.open(@name) { |empty| empty.eof?.should == true }
   end
 
   it "raises IOError on stream not opened for reading" do
@@ -34,35 +34,35 @@ describe "IO#eof?" do
 
   it "returns false when not at end of file" do
     @io.read 1
-    @io.should_not.eof?
+    @io.eof?.should == false
   end
 
   it "returns true after reading with read with no parameters" do
     @io.read()
-    @io.should.eof?
+    @io.eof?.should == true
   end
 
   it "returns true after reading with read" do
     @io.read(File.size(@name))
-    @io.should.eof?
+    @io.eof?.should == true
   end
 
   it "returns true after reading with sysread" do
     @io.sysread(File.size(@name))
-    @io.should.eof?
+    @io.eof?.should == true
   end
 
   it "returns true after reading with readlines" do
     @io.readlines
-    @io.should.eof?
+    @io.eof?.should == true
   end
 
   it "returns false on just opened non-empty stream" do
-    @io.should_not.eof?
+    @io.eof?.should == false
   end
 
   it "does not consume the data from the stream" do
-    @io.should_not.eof?
+    @io.eof?.should == false
     @io.getc.should == 'V'
   end
 
@@ -78,7 +78,7 @@ describe "IO#eof?" do
   it "returns true on one-byte stream after single-byte read" do
     File.open(File.dirname(__FILE__) + '/fixtures/one_byte.txt') { |one_byte|
       one_byte.read(1)
-      one_byte.should.eof?
+      one_byte.eof?.should == true
     }
   end
 end
@@ -92,16 +92,16 @@ describe "IO#eof?" do
   it "returns true on receiving side of Pipe when writing side is closed" do
     @r, @w = IO.pipe
     @w.close
-    @r.should.eof?
+    @r.eof?.should == true
   end
 
   it "returns false on receiving side of Pipe when writing side wrote some data" do
     @r, @w = IO.pipe
     @w.puts "hello"
-    @r.should_not.eof?
+    @r.eof?.should == false
     @w.close
-    @r.should_not.eof?
+    @r.eof?.should == false
     @r.read
-    @r.should.eof?
+    @r.eof?.should == true
   end
 end

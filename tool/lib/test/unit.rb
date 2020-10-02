@@ -64,18 +64,7 @@ module Test
         args = @init_hook.call(args, options) if @init_hook
         non_options(args, options)
         @run_options = orig_args
-
-        if seed = options[:seed]
-          srand(seed)
-        else
-          seed = options[:seed] = srand % 100_000
-          srand(seed)
-          orig_args.unshift "--seed=#{seed}"
-        end
-
-        @help = "\n" + orig_args.map { |s|
-          "  " + (s =~ /[\s|&<>$()]/ ? s.inspect : s)
-        }.join("\n")
+        @help = orig_args.map { |s| s =~ /[\s|&<>$()]/ ? s.inspect : s }.join " "
         @options = options
       end
 
@@ -90,7 +79,7 @@ module Test
         end
 
         opts.on '-s', '--seed SEED', Integer, "Sets random seed" do |m|
-          options[:seed] = m.to_i
+          options[:seed] = m
         end
 
         opts.on '-v', '--verbose', "Verbose. Show progress processing files." do
@@ -102,7 +91,7 @@ module Test
           (options[:filter] ||= []) << a
         end
 
-        opts.on '--test-order=random|alpha|sorted|nosort', [:random, :alpha, :sorted, :nosort] do |a|
+        opts.on '--test-order=random|alpha|sorted', [:random, :alpha, :sorted] do |a|
           MiniTest::Unit::TestCase.test_order = a
         end
       end
@@ -474,14 +463,6 @@ module Test
         # Require needed thing for parallel running
         require 'timeout'
         @tasks = @files.dup # Array of filenames.
-
-        case MiniTest::Unit::TestCase.test_order
-        when :random
-          @tasks.shuffle!
-        else
-          # sorted
-        end
-
         @need_quit = false
         @dead_workers = []  # Array of dead workers.
         @warnings = []
@@ -527,7 +508,7 @@ module Test
             parallel = @options[:parallel]
             @options[:parallel] = false
             suites, rep = rep.partition {|r| r[:testcase] && r[:file] && r[:report].any? {|e| !e[2].is_a?(MiniTest::Skip)}}
-            suites.map {|r| File.realpath(r[:file])}.uniq.each {|file| require file}
+            suites.map {|r| r[:file]}.uniq.each {|file| require file}
             suites.map! {|r| eval("::"+r[:testcase])}
             del_status_line or puts
             unless suites.empty?

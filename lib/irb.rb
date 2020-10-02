@@ -542,7 +542,7 @@ module IRB
             if @context.echo?
               if assignment_expression?(line)
                 if @context.echo_on_assignment?
-                  output_value(@context.echo_on_assignment? == :truncate)
+                  output_value(@context.omit_on_assignment?)
                 end
               else
                 output_value

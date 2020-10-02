@@ -5,6 +5,7 @@ require 'rubygems/installer'
 require 'rubygems/version_option'
 
 class Gem::Commands::PristineCommand < Gem::Command
+
   include Gem::VersionOption
 
   def initialize
@@ -37,11 +38,6 @@ class Gem::Commands::PristineCommand < Gem::Command
     add_option('--only-executables',
                'Only restore executables') do |value, options|
       options[:only_executables] = value
-    end
-
-    add_option('--only-plugins',
-               'Only restore plugins') do |value, options|
-      options[:only_plugins] = value
     end
 
     add_option('-E', '--[no-]env-shebang',
@@ -130,14 +126,14 @@ extensions will be restored.
         end
       end
 
-      unless spec.extensions.empty? or options[:extensions] or options[:only_executables] or options[:only_plugins]
+      unless spec.extensions.empty? or options[:extensions] or options[:only_executables]
         say "Skipped #{spec.full_name}, it needs to compile an extension"
         next
       end
 
       gem = spec.cache_file
 
-      unless File.exist? gem or options[:only_executables] or options[:only_plugins]
+      unless File.exist? gem or options[:only_executables]
         require 'rubygems/remote_fetcher'
 
         say "Cached gem for #{spec.full_name} not found, attempting to fetch..."
@@ -176,9 +172,6 @@ extensions will be restored.
       if options[:only_executables]
         installer = Gem::Installer.for_spec(spec, installer_options)
         installer.generate_bin
-      elsif options[:only_plugins]
-        installer = Gem::Installer.for_spec(spec)
-        installer.generate_plugins
       else
         installer = Gem::Installer.at(gem, installer_options)
         installer.install
@@ -187,4 +180,5 @@ extensions will be restored.
       say "Restored #{spec.full_name}"
     end
   end
+
 end

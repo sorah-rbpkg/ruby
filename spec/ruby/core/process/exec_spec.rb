@@ -29,8 +29,16 @@ describe "Process.exec" do
     end
   end
 
-  it "raises Errno::EACCES when passed a directory" do
-    -> { Process.exec File.dirname(__FILE__) }.should raise_error(Errno::EACCES)
+  platform_is_not :openbsd do
+    it "raises Errno::EACCES when passed a directory" do
+      -> { Process.exec File.dirname(__FILE__) }.should raise_error(Errno::EACCES)
+    end
+  end
+
+  platform_is :openbsd do
+    it "raises Errno::EISDIR when passed a directory" do
+      -> { Process.exec File.dirname(__FILE__) }.should raise_error(Errno::EISDIR)
+    end
   end
 
   it "runs the specified command, replacing current process" do

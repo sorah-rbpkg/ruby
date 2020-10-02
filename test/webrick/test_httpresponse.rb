@@ -30,70 +30,70 @@ module WEBrick
     end
 
     def test_prevent_response_splitting_headers_crlf
-      res['X-header'] = "malicious\r\nCookie: cracked_indicator_for_test"
+      res['X-header'] = "malicious\r\nCookie: hack"
       io = StringIO.new
       res.send_response io
       io.rewind
       res = Net::HTTPResponse.read_new(Net::BufferedIO.new(io))
       assert_equal '500', res.code
-      refute_match 'cracked_indicator_for_test', io.string
+      refute_match 'hack', io.string
     end
 
     def test_prevent_response_splitting_cookie_headers_crlf
-      user_input = "malicious\r\nCookie: cracked_indicator_for_test"
+      user_input = "malicious\r\nCookie: hack"
       res.cookies << WEBrick::Cookie.new('author', user_input)
       io = StringIO.new
       res.send_response io
       io.rewind
       res = Net::HTTPResponse.read_new(Net::BufferedIO.new(io))
       assert_equal '500', res.code
-      refute_match 'cracked_indicator_for_test', io.string
+      refute_match 'hack', io.string
     end
 
     def test_prevent_response_splitting_headers_cr
-      res['X-header'] = "malicious\rCookie: cracked_indicator_for_test"
+      res['X-header'] = "malicious\rCookie: hack"
       io = StringIO.new
       res.send_response io
       io.rewind
       res = Net::HTTPResponse.read_new(Net::BufferedIO.new(io))
       assert_equal '500', res.code
-      refute_match 'cracked_indicator_for_test', io.string
+      refute_match 'hack', io.string
     end
 
     def test_prevent_response_splitting_cookie_headers_cr
-      user_input = "malicious\rCookie: cracked_indicator_for_test"
+      user_input = "malicious\rCookie: hack"
       res.cookies << WEBrick::Cookie.new('author', user_input)
       io = StringIO.new
       res.send_response io
       io.rewind
       res = Net::HTTPResponse.read_new(Net::BufferedIO.new(io))
       assert_equal '500', res.code
-      refute_match 'cracked_indicator_for_test', io.string
+      refute_match 'hack', io.string
     end
 
     def test_prevent_response_splitting_headers_lf
-      res['X-header'] = "malicious\nCookie: cracked_indicator_for_test"
+      res['X-header'] = "malicious\nCookie: hack"
       io = StringIO.new
       res.send_response io
       io.rewind
       res = Net::HTTPResponse.read_new(Net::BufferedIO.new(io))
       assert_equal '500', res.code
-      refute_match 'cracked_indicator_for_test', io.string
+      refute_match 'hack', io.string
     end
 
     def test_prevent_response_splitting_cookie_headers_lf
-      user_input = "malicious\nCookie: cracked_indicator_for_test"
+      user_input = "malicious\nCookie: hack"
       res.cookies << WEBrick::Cookie.new('author', user_input)
       io = StringIO.new
       res.send_response io
       io.rewind
       res = Net::HTTPResponse.read_new(Net::BufferedIO.new(io))
       assert_equal '500', res.code
-      refute_match 'cracked_indicator_for_test', io.string
+      refute_match 'hack', io.string
     end
 
     def test_set_redirect_response_splitting
-      url = "malicious\r\nCookie: cracked_indicator_for_test"
+      url = "malicious\r\nCookie: hack"
       assert_raises(URI::InvalidURIError) do
         res.set_redirect(WEBrick::HTTPStatus::MultipleChoices, url)
       end

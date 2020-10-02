@@ -229,7 +229,6 @@ module Bundler
         "BUILDBOX" => "buildbox",
         "GO_SERVER_URL" => "go",
         "SNAP_CI" => "snap",
-        "GITLAB_CI" => "gitlab",
         "CI_NAME" => ENV["CI_NAME"],
         "CI" => "ci",
       }

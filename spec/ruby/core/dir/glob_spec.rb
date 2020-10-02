@@ -119,7 +119,7 @@ describe "Dir.glob" do
   end
 
   it "handles infinite directory wildcards" do
-    Dir.glob('**/**/**').should_not.empty?
+    Dir.glob('**/**/**').empty?.should == false
   end
 
   it "handles simple filename patterns" do

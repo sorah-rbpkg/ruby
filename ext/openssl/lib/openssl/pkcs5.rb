@@ -1,4 +1,4 @@
-# frozen_string_literal: true
+# frozen_string_literal: false
 #--
 # Ruby/OpenSSL Project
 # Copyright (C) 2017 Ruby/OpenSSL Project Authors

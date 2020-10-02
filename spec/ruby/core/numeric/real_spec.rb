@@ -32,6 +32,6 @@ end
 
 describe "Numeric#real?" do
   it "returns true" do
-    NumericSpecs::Subclass.new.should.real?
+    NumericSpecs::Subclass.new.real?.should == true
   end
 end

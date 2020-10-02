@@ -47,7 +47,6 @@ env:
     - RUBY_PREFIX=/tmp/ruby-prefix
     - GEMS_FOR_TEST='timezone tzinfo'
     - UPDATE_UNICODE="UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
-    - BEFORE_INSTALL=true
     # https://github.com/travis-ci/travis-build/blob/e411371dda21430a60f61b8f3f57943d2fe4d344/lib/travis/build/bash/travis_apt_get_options.bash#L7
     - travis_apt_get_options='--allow-downgrades --allow-remove-essential --allow-change-held-packages'
     - travis_apt_get_options="-yq --no-install-suggests --no-install-recommends $travis_apt_get_options"
@@ -69,26 +68,26 @@ env:
     #     sources:
     #       - ubuntu-toolchain-r-test
     before_install:
-      - bash -cx "${BEFORE_INSTALL}"
       - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
-      - >-
-        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
-        ccache
-        gcc-8
-        g++-8
-        libffi-dev
-        libgdbm-dev
-        libgmp-dev
-        libjemalloc-dev
-        libncurses5-dev
-        libncursesw5-dev
-        libreadline6-dev
-        libssl-dev
-        libyaml-dev
-        openssl
-        valgrind
-        zlib1g-dev
+      - |-
+        ${BEFORE_INSTALL}
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
+          ccache \
+          gcc-8 \
+          g++-8 \
+          libffi-dev \
+          libgdbm-dev \
+          libgmp-dev \
+          libjemalloc-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libreadline6-dev \
+          libssl-dev \
+          libyaml-dev \
+          openssl \
+          valgrind \
+          zlib1g-dev
 
   - &clang-8
     compiler: clang-8
@@ -101,22 +100,22 @@ env:
           retries: true
     before_install:
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
-      - >-
-        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
-        clang-8
-        llvm-8-tools
-        libffi-dev
-        libgdbm-dev
-        libgmp-dev
-        libjemalloc-dev
-        libncurses5-dev
-        libncursesw5-dev
-        libreadline6-dev
-        libssl-dev
-        libyaml-dev
-        openssl
-        valgrind
-        zlib1g-dev
+      - |-
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
+          clang-8 \
+          llvm-8-tools \
+          libffi-dev \
+          libgdbm-dev \
+          libgmp-dev \
+          libjemalloc-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libreadline6-dev \
+          libssl-dev \
+          libyaml-dev \
+          openssl \
+          valgrind \
+          zlib1g-dev
 
   # --------
 
@@ -133,7 +132,7 @@ env:
     name: s390x-linux
     arch: s390x
     <<: *gcc-8
-
+    
   - &jemalloc
     name: --with-jemalloc
     <<: *gcc-8
@@ -274,26 +273,26 @@ env:
     before_install:
       - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
-      - >-
-        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
-        gcc-8-multilib
-        g++-8
-        g++-8-multilib
-        libstdc++-8-dev:i386
-        libffi-dev:i386
-        libffi6:i386
-        libgdbm-dev:i386
-        libgdbm3:i386
-        libncurses5-dev:i386
-        libncurses5:i386
-        libncursesw5-dev:i386
-        libreadline6-dev:i386
-        libreadline6:i386
-        libssl-dev:i386
-        libssl1.0.0:i386
-        linux-libc-dev:i386
-        zlib1g-dev:i386
-        zlib1g:i386
+      - |-
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
+          gcc-8-multilib \
+          g++-8 \
+          g++-8-multilib \
+          libstdc++-8-dev:i386 \
+          libffi-dev:i386 \
+          libffi6:i386 \
+          libgdbm-dev:i386 \
+          libgdbm3:i386 \
+          libncurses5-dev:i386 \
+          libncurses5:i386 \
+          libncursesw5-dev:i386 \
+          libreadline6-dev:i386 \
+          libreadline6:i386 \
+          libssl-dev:i386 \
+          libssl1.0.0:i386 \
+          linux-libc-dev:i386 \
+          zlib1g-dev:i386 \
+          zlib1g:i386
 
   - &arm32-linux
     name: arm32-linux
@@ -306,26 +305,26 @@ env:
     before_install:
       - sudo dpkg --add-architecture armhf
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
-      - >-
-        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
-        ccache
-        crossbuild-essential-armhf
-        libc6:armhf
-        libstdc++-5-dev:armhf
-        libffi-dev:armhf
-        libffi6:armhf
-        libgdbm-dev:armhf
-        libgdbm3:armhf
-        libncurses5-dev:armhf
-        libncurses5:armhf
-        libncursesw5-dev:armhf
-        libreadline6-dev:armhf
-        libreadline6:armhf
-        libssl-dev:armhf
-        libssl1.0.0:armhf
-        linux-libc-dev:armhf
-        zlib1g-dev:armhf
-        zlib1g:armhf
+      - |-
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
+          ccache \
+          crossbuild-essential-armhf \
+          libc6:armhf \
+          libstdc++-5-dev:armhf \
+          libffi-dev:armhf \
+          libffi6:armhf \
+          libgdbm-dev:armhf \
+          libgdbm3:armhf \
+          libncurses5-dev:armhf \
+          libncurses5:armhf \
+          libncursesw5-dev:armhf \
+          libreadline6-dev:armhf \
+          libreadline6:armhf \
+          libssl-dev:armhf \
+          libssl1.0.0:armhf \
+          linux-libc-dev:armhf \
+          zlib1g-dev:armhf \
+          zlib1g:armhf
 
   - &pedanticism
     name: -std=c99 -pedantic
@@ -360,27 +359,17 @@ env:
         -Wunused-variable'
       - LDFLAGS=-Wno-unused-command-line-argument
 
-  - &spec-on-old-ruby
+  - &rubyspec
+    name: Check ruby/spec version guards on Ruby 2.4
     language: ruby
+    rvm: 2.4.6
     before_install:
     install:
     before_script: chmod -R u+w spec/ruby
     # -j randomly hangs.
     script: ruby -C spec/ruby ../mspec/bin/mspec .
-
-  - &rubyspec25
-    name: Check ruby/spec version guards on Ruby 2.5
-    rvm: 2.5.7
-    <<: *spec-on-old-ruby
     after_failure:
-      - echo "ruby/spec failed on Ruby 2.5. This is likely because of a missing ruby_version_is guard, please add it. See spec/README.md."
-
-  - &rubyspec27
-    name: Check ruby/spec version guards on Ruby 2.7
-    rvm: 2.7.0
-    <<: *spec-on-old-ruby
-    after_failure:
-      - echo "ruby/spec failed on Ruby 2.7. This is likely because of a missing ruby_version_is guard, please add it. See spec/README.md."
+      - echo "ruby/spec failed on Ruby 2.4. This is likely because of a missing ruby_version_is guard, please add it. See spec/README.md."
 
   - &baseruby
     name: "BASERUBY: Ruby 2.2"
@@ -410,10 +399,10 @@ env:
       - "> .rbconfig.time"
       - sed -f tool/prereq.status template/Makefile.in common.mk > Makefile
       - make touch-unicode-files
-      - make -s $JOBS $UPDATE_UNICODE -o update-src up
+      - make -s $JOBS $UPDATE_UNICODE up
       - make -s $JOBS srcs
       - rm -f config.status Makefile rbconfig.rb .rbconfig.time
-      - $SETARCH ./configure -C --disable-install-doc --prefix=$RUBY_PREFIX --disable-rubygems --with-gcc 'optflags=-O0' 'debugflags=-save-temps=obj -g'
+      - $SETARCH ./configure -C --disable-install-doc --prefix=$RUBY_PREFIX --disable-rubygems 'optflags=-O0' 'debugflags=-save-temps=obj -g'
       - ruby tool/update-deps --fix
     script:
       - git diff --no-ext-diff --ignore-submodules --exit-code
@@ -426,17 +415,16 @@ matrix:
   include:
     # Build every commit:
     - <<: *x86_64-linux
+    - <<: *arm64-linux
     - <<: *i686-linux
+    - <<: *arm32-linux
+    - <<: *s390x-linux
     - <<: *pedanticism
     - <<: *assertions
     - <<: *baseruby
-    - <<: *rubyspec25
-    - <<: *rubyspec27
+    - <<: *rubyspec
     - <<: *dependency
     # Build every commit (Allowed Failures):
-    - <<: *arm32-linux
-    - <<: *arm64-linux
-    - <<: *s390x-linux
     - <<: *ASAN
     - <<: *MSAN
     - <<: *UBSAN
@@ -451,15 +439,22 @@ matrix:
     - <<: *CALL_THREADED_CODE
     - <<: *NO_THREADED_CODE
   allow_failures:
-    - name: arm32-linux
-    - name: arm64-linux
     - name: s390x-linux
     - name: -fsanitize=address
     - name: -fsanitize=memory
+    - name: -fsanitize=undefined
   fast_finish: true
 
 before_script:
+  - date # Debugging "Permission defined" failure on darwin like https://travis-ci.org/ruby/ruby/jobs/508683759
+  - dpkg --print-architecture
+  - dpkg --print-foreign-architectures
+  - setarch --list
+  - echo JOBS=${JOBS} SETARCH=${SETARCH}
+  - $SETARCH uname -a
+  - $SETARCH uname -r
   - rm -fr .ext autom4te.cache
+  - echo $TERM
   - |-
     [ -d ~/.downloaded-cache ] ||
     mkdir ~/.downloaded-cache
@@ -467,9 +462,9 @@ before_script:
   - "> config.status"
   - "> .rbconfig.time"
   - sed -f tool/prereq.status template/Makefile.in common.mk > Makefile
-  - make touch-unicode-files
-  - make -s $JOBS $UPDATE_UNICODE up
-  - make -s $JOBS srcs
+  - date; make touch-unicode-files
+  - date; make -s $JOBS $UPDATE_UNICODE up
+  - date; make -s $JOBS srcs
   - rm -f config.status Makefile rbconfig.rb .rbconfig.time
   - |-
     if [ -d ~/config_2nd ]; then
@@ -481,6 +476,7 @@ before_script:
   - chmod -R a-w .
   - chmod -R u+w build config_1st config_2nd
   - cd build
+  - ccache --show-stats
   - |-
     case "$CC" in
     gcc*)   CC="ccache $CC${GCC_FLAGS:+ }$GCC_FLAGS -fno-diagnostics-color";;
@@ -500,7 +496,20 @@ before_script:
   - mv ../config_2nd ~
   - chmod u-w ..
   - $SETARCH make -s $JOBS
-  - make -s install
+  - |-
+    date; : # Debugging "Permission defined" failure on darwin like https://travis-ci.org/ruby/ruby/jobs/508683759
+    if ! make install; then
+      if [ "$(uname)" = Darwin ]; then
+        # Debugging "Permission defined" failure on darwin like https://travis-ci.org/ruby/ruby/jobs/508683759
+        set -x
+        date
+        ./miniruby -e 'ARGV.map{|path|[path,File.stat(path)]}.sort_by{|path,st|st.mtime}.each{|path,st|p mtime:st.mtime.to_f, ctime:st.ctime.to_f, path:path}' .ext/.timestamp/.RUBYCOMMONDIR*time .ext/common/bigdecimal/*.rb ../ext/bigdecimal/lib/bigdecimal/*.rb . .. .ext .ext/common .ext/common/bigdecimal ext/bigdecimal ../ext ../ext/bigdecimal ../ext/bigdecimal/lib ../ext/bigdecimal/lib/bigdecimal
+        make COPY='cp -f' install
+      else
+        exit 1
+      fi
+    fi
+  - ccache --show-stats
   - |-
     [ -z "${GEMS_FOR_TEST}" ] ||
     $RUBY_PREFIX/bin/gem install --no-document $GEMS_FOR_TEST
@@ -519,7 +528,6 @@ branches:
     - ruby_2_4
     - ruby_2_5
     - ruby_2_6
-    - ruby_2_7
 
 # We want to be notified when something happens.
 notifications:
@@ -531,10 +539,11 @@ notifications:
     template:
       - "%{message} by @%{author}: See %{build_url}"
 
-  webhooks:
-    urls:
-      - secure: mRsoS/UbqDkKkW5p3AEqM27d4SZnV6Gsylo3bm8T/deltQzTsGzZwrm7OIBXZv0UFZdE68XmPlyHfZFLSP2V9QZ7apXMf9/vw0GtcSe1gchtnjpAPF6lYBn7nMCbVPPx9cS0dwL927fjdRM1vj7IKZ2bk4F0lAJ25R25S6teqdk= # ruby-lang slack: ruby/simpler-alerts-bot (travis)
-    on_success: never
+  slack:
+    rooms:
+      - secure: ah7UEHBvncXT7bM5mvYIQAO+tIyV/wl7nXLb7wQD16dO2v8Gragy0mWjB79Q09hrrMGmp6H9bCDpdGS80boIA5EHaHoG4QaP0i9bsSt8U2AMWgZtfyIgQKJ4H2kXkGlrjO+AXTgnIkP7LNjdgAVUUTGQPb26T3QmoN2Splt+fIQ= # ruby:<token>#alerts
+    on_pull_requests: false
+    on_success: change
     on_failure: always
 
   email:

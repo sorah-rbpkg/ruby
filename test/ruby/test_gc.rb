@@ -56,7 +56,6 @@ class TestGc < Test::Unit::TestCase
     return unless use_rgengc?
     skip 'stress' if GC.stress
 
-    3.times { GC.start } # full mark and next time it should be minor mark
     GC.start(full_mark: false)
     assert_nil GC.latest_gc_info(:major_by)
 
@@ -93,9 +92,6 @@ class TestGc < Test::Unit::TestCase
 
     stat, count = {}, {}
     GC.start
-    GC.stat(stat)
-    ObjectSpace.count_objects(count)
-    # repeat same methods invocation for cache object creation.
     GC.stat(stat)
     ObjectSpace.count_objects(count)
     assert_equal(count[:TOTAL]-count[:FREE], stat[:heap_live_slots])
@@ -145,15 +141,10 @@ class TestGc < Test::Unit::TestCase
     assert_equal :newobj, GC.latest_gc_info[:gc_by]
     eom
 
-    GC.latest_gc_info(h = {}) # allocate hash and rehearsal
     GC.start
-    GC.start
-    GC.start
-    GC.latest_gc_info(h)
-
-    assert_equal :force,  h[:major_by] if use_rgengc?
-    assert_equal :method, h[:gc_by]
-    assert_equal true,    h[:immediate_sweep]
+    assert_equal :force, GC.latest_gc_info[:major_by] if use_rgengc?
+    assert_equal :method, GC.latest_gc_info[:gc_by]
+    assert_equal true, GC.latest_gc_info[:immediate_sweep]
 
     GC.stress = true
     assert_equal :force, GC.latest_gc_info[:major_by]

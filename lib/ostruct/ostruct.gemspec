@@ -1,23 +1,22 @@
 # frozen_string_literal: true
 
-name = File.basename(__FILE__, ".gemspec")
-version = ["lib", Array.new(name.count("-")+1, "..").join("/")].find do |dir|
-  break File.foreach(File.join(__dir__, dir, "#{name.tr('-', '/')}.rb")) do |line|
-    /^\s*VERSION\s*=\s*"(.*)"/ =~ line and break $1
-  end rescue nil
+begin
+  require_relative "lib/ostruct/version"
+rescue LoadError
+  # for Ruby core repository
+  require_relative "version"
 end
 
 Gem::Specification.new do |spec|
-  spec.name          = name
-  spec.version       = version
+  spec.name          = "ostruct"
+  spec.version       = OpenStruct::VERSION
   spec.authors       = ["Marc-Andre Lafortune"]
   spec.email         = ["ruby-core@marc-andre.ca"]
 
   spec.summary       = %q{Class to build custom data structures, similar to a Hash.}
   spec.description   = %q{Class to build custom data structures, similar to a Hash.}
   spec.homepage      = "https://github.com/ruby/ostruct"
-  spec.licenses      = ["Ruby", "BSD-2-Clause"]
-  spec.required_ruby_version = ">= 2.5.0"
+  spec.license       = "BSD-2-Clause"
 
   spec.files         = [".gitignore", ".travis.yml", "Gemfile", "LICENSE.txt", "README.md", "Rakefile", "bin/console", "bin/setup", "lib/ostruct.rb", "lib/ostruct/version.rb", "ostruct.gemspec"]
   spec.bindir        = "exe"

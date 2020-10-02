@@ -12,24 +12,27 @@
 
 #include "builtin_binary.inc"
 
-static const unsigned char *
-bin4feature(const struct builtin_binary *bb, const char *feature, size_t *psize)
-{
-    *psize = bb->bin_size;
-    return strcmp(bb->feature, feature) ? NULL : bb->bin;
-}
-
 static const unsigned char*
 builtin_lookup(const char *feature, size_t *psize)
 {
     static int index = 0;
-    const unsigned char *bin = bin4feature(&builtin_binary[index++], feature, psize);
+    int i = index++;
 
     // usually, `builtin_binary` order is loading order at miniruby.
-    for (const struct builtin_binary *bb = &builtin_binary[0]; bb->feature &&! bin; bb++) {
-        bin = bin4feature(bb++, feature, psize);
+    if (LIKELY(strcmp(builtin_binary[i].feature, feature) == 0)) {
+      found:
+        *psize = builtin_binary[i].bin_size;
+        return builtin_binary[i].bin;
     }
-    return bin;
+    else {
+        if (0) fprintf(stderr, "builtin_lookup: cached index miss (index:%d)\n", i);
+        for (i=0; i<BUILTIN_BINARY_SIZE; i++) {
+            if (strcmp(builtin_binary[i].feature, feature) == 0) {
+                goto found;
+            }
+        }
+    }
+    rb_bug("builtin_lookup: can not find %s\n", feature);
 }
 
 void
@@ -38,9 +41,6 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
     // search binary
     size_t size;
     const unsigned char *bin = builtin_lookup(feature_name, &size);
-    if (! bin) {
-        rb_bug("builtin_lookup: can not find %s\n", feature_name);
-    }
 
     // load binary
     rb_vm_t *vm = GET_VM();

@@ -9,19 +9,10 @@
 
 **********************************************************************/
 
-#include "ruby/internal/config.h"
-
-#include <ctype.h>
-
-#include "internal.h"
-#include "internal/array.h"
-#include "internal/inits.h"
-#include "internal/object.h"
-#include "internal/string.h"
-#include "internal/transcode.h"
 #include "ruby/encoding.h"
-
+#include "internal.h"
 #include "transcode_data.h"
+#include <ctype.h>
 #include "id.h"
 
 #define ENABLE_ECONV_NEWLINE_OPTION 1
@@ -2048,6 +2039,7 @@ make_econv_exception(rb_econv_t *ec)
         size_t readagain_len = ec->last_error.readagain_len;
         VALUE bytes2 = Qnil;
         VALUE dumped2;
+        int idx;
         if (ec->last_error.result == econv_incomplete_input) {
             mesg = rb_sprintf("incomplete %s on %s",
                     StringValueCStr(dumped),
@@ -2071,7 +2063,17 @@ make_econv_exception(rb_econv_t *ec)
         rb_ivar_set(exc, rb_intern("error_bytes"), bytes);
         rb_ivar_set(exc, rb_intern("readagain_bytes"), bytes2);
         rb_ivar_set(exc, rb_intern("incomplete_input"), ec->last_error.result == econv_incomplete_input ? Qtrue : Qfalse);
-        goto set_encs;
+
+      set_encs:
+        rb_ivar_set(exc, rb_intern("source_encoding_name"), rb_str_new2(ec->last_error.source_encoding));
+        rb_ivar_set(exc, rb_intern("destination_encoding_name"), rb_str_new2(ec->last_error.destination_encoding));
+        idx = rb_enc_find_index(ec->last_error.source_encoding);
+        if (0 <= idx)
+            rb_ivar_set(exc, rb_intern("source_encoding"), rb_enc_from_encoding(rb_enc_from_index(idx)));
+        idx = rb_enc_find_index(ec->last_error.destination_encoding);
+        if (0 <= idx)
+            rb_ivar_set(exc, rb_intern("destination_encoding"), rb_enc_from_encoding(rb_enc_from_index(idx)));
+        return exc;
     }
     if (ec->last_error.result == econv_undefined_conversion) {
         VALUE bytes = rb_str_new((const char *)ec->last_error.error_bytes_start,
@@ -2123,17 +2125,6 @@ make_econv_exception(rb_econv_t *ec)
         goto set_encs;
     }
     return Qnil;
-
-  set_encs:
-    rb_ivar_set(exc, rb_intern("source_encoding_name"), rb_str_new2(ec->last_error.source_encoding));
-    rb_ivar_set(exc, rb_intern("destination_encoding_name"), rb_str_new2(ec->last_error.destination_encoding));
-    int idx = rb_enc_find_index(ec->last_error.source_encoding);
-    if (0 <= idx)
-        rb_ivar_set(exc, rb_intern("source_encoding"), rb_enc_from_encoding(rb_enc_from_index(idx)));
-    idx = rb_enc_find_index(ec->last_error.destination_encoding);
-    if (0 <= idx)
-        rb_ivar_set(exc, rb_intern("destination_encoding"), rb_enc_from_encoding(rb_enc_from_index(idx)));
-    return exc;
 }
 
 static void
@@ -2420,7 +2411,6 @@ static int
 econv_opts(VALUE opt, int ecflags)
 {
     VALUE v;
-    int newlineflag = 0;
 
     v = rb_hash_aref(opt, sym_invalid);
     if (NIL_P(v)) {
@@ -2466,7 +2456,6 @@ econv_opts(VALUE opt, int ecflags)
 #ifdef ENABLE_ECONV_NEWLINE_OPTION
     v = rb_hash_aref(opt, sym_newline);
     if (!NIL_P(v)) {
-        newlineflag = 2;
 	ecflags &= ~ECONV_NEWLINE_DECORATOR_MASK;
 	if (v == sym_universal) {
 	    ecflags |= ECONV_UNIVERSAL_NEWLINE_DECORATOR;
@@ -2488,9 +2477,10 @@ econv_opts(VALUE opt, int ecflags)
 	    rb_raise(rb_eArgError, "unexpected value for newline option");
 	}
     }
+    else
 #endif
     {
-        int setflags = 0;
+	int setflags = 0, newlineflag = 0;
 
 	v = rb_hash_aref(opt, sym_universal_newline);
 	if (RTEST(v))
@@ -2507,15 +2497,9 @@ econv_opts(VALUE opt, int ecflags)
 	    setflags |= ECONV_CR_NEWLINE_DECORATOR;
 	newlineflag |= !NIL_P(v);
 
-        switch (newlineflag) {
-          case 1:
+	if (newlineflag) {
 	    ecflags &= ~ECONV_NEWLINE_DECORATOR_MASK;
 	    ecflags |= setflags;
-            break;
-
-          case 3:
-            rb_warning(":newline option preceds other newline options");
-            break;
 	}
     }
 
@@ -2927,7 +2911,7 @@ econv_memsize(const void *ptr)
 
 static const rb_data_type_t econv_data_type = {
     "econv",
-    {0, econv_free, econv_memsize,},
+    {NULL, econv_free, econv_memsize,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 

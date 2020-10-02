@@ -13,9 +13,8 @@ Gem::Specification.new do |s|
   s.authors = ["Yukihiro Matsumoto"]
   s.email = ["matz@ruby-lang.org"]
   s.homepage = "https://github.com/ruby/dbm"
-  s.licenses = ["Ruby", "BSD-2-Clause"]
+  s.license = "BSD-2-Clause"
 
   s.add_development_dependency "rake-compiler"
   s.add_development_dependency "test-unit"
-  s.metadata["msys2_mingw_dependencies"] = "gdbm"
 end

@@ -4,19 +4,19 @@ require 'pathname'
 describe "Pathname#absolute?" do
 
   it "returns true for the root directory" do
-    Pathname.new('/').should.absolute?
+    Pathname.new('/').absolute?.should == true
   end
 
   it "returns true for a dir starting with a slash" do
-    Pathname.new('/usr/local/bin').should.absolute?
+    Pathname.new('/usr/local/bin').absolute?.should == true
   end
 
   it "returns false for a dir not starting with a slash" do
-    Pathname.new('fish').should_not.absolute?
+    Pathname.new('fish').absolute?.should == false
   end
 
   it "returns false for a dir not starting with a slash" do
-    Pathname.new('fish/dog/cow').should_not.absolute?
+    Pathname.new('fish/dog/cow').absolute?.should == false
   end
 
 end

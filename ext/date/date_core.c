@@ -11,7 +11,6 @@
 #include <sys/time.h>
 #endif
 
-#undef NDEBUG
 #define NDEBUG
 #include <assert.h>
 
@@ -4345,12 +4344,8 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
  *    Date._parse(string[, comp=true])  ->  hash
  *
  * Parses the given representation of date and time, and returns a
- * hash of parsed elements.
- *
- * This method **does not** function as a validator.  If the input
- * string does not match valid formats strictly, you may get a cryptic
- * result.  Should consider to use `Date._strptime` or
- * `DateTime._strptime` instead of this method as possible.
+ * hash of parsed elements.  This method does not function as a
+ * validator.
  *
  * If the optional second argument is true and the detected year is in
  * the range "00" to "99", considers the year a 2-digit form and makes
@@ -4369,12 +4364,7 @@ date_s__parse(int argc, VALUE *argv, VALUE klass)
  *    Date.parse(string='-4712-01-01'[, comp=true[, start=Date::ITALY]])  ->  date
  *
  * Parses the given representation of date and time, and creates a
- * date object.
- *
- * This method **does not** function as a validator.  If the input
- * string does not match valid formats strictly, you may get a cryptic
- * result.  Should consider to use `Date.strptime` instead of this
- * method as possible.
+ * date object.  This method does not function as a validator.
  *
  * If the optional second argument is true and the detected year is in
  * the range "00" to "99", considers the year a 2-digit form and makes
@@ -7211,14 +7201,11 @@ d_lite_marshal_load(VALUE self, VALUE a)
 
     if (simple_dat_p(dat)) {
 	if (df || !f_zero_p(sf) || of) {
-	    /* loading a fractional date; promote to complex */
-	    dat = ruby_xrealloc(dat, sizeof(struct ComplexDateData));
-	    RTYPEDDATA(self)->data = dat;
-	    goto complex_data;
+	    rb_raise(rb_eArgError,
+		     "cannot load complex into simple");
 	}
 	set_to_simple(self, &dat->s, nth, jd, sg, 0, 0, 0, HAVE_JD);
     } else {
-      complex_data:
 	set_to_complex(self, &dat->c, nth, jd, df, sf, of, sg,
 		       0, 0, 0, 0, 0, 0,
 		       HAVE_JD | HAVE_DF);
@@ -8010,12 +7997,7 @@ datetime_s_strptime(int argc, VALUE *argv, VALUE klass)
  *    DateTime.parse(string='-4712-01-01T00:00:00+00:00'[, comp=true[, start=Date::ITALY]])  ->  datetime
  *
  * Parses the given representation of date and time, and creates a
- * DateTime object.
- *
- * This method **does not** function as a validator.  If the input
- * string does not match valid formats strictly, you may get a cryptic
- * result.  Should consider to use `DateTime.strptime` instead of this
- * method as possible.
+ * DateTime object.  This method does not function as a validator.
  *
  * If the optional second argument is true and the detected year is in
  * the range "00" to "99", makes it full.
@@ -9589,18 +9571,18 @@ Init_date_core(void)
      * === When should you use DateTime and when should you use Time?
      *
      * It's a common misconception that
-     * {William Shakespeare}[https://en.wikipedia.org/wiki/William_Shakespeare]
+     * {William Shakespeare}[http://en.wikipedia.org/wiki/William_Shakespeare]
      * and
-     * {Miguel de Cervantes}[https://en.wikipedia.org/wiki/Miguel_de_Cervantes]
+     * {Miguel de Cervantes}[http://en.wikipedia.org/wiki/Miguel_de_Cervantes]
      * died on the same day in history -
      * so much so that UNESCO named April 23 as
-     * {World Book Day because of this fact}[https://en.wikipedia.org/wiki/World_Book_Day].
+     * {World Book Day because of this fact}[http://en.wikipedia.org/wiki/World_Book_Day].
      * However, because England hadn't yet adopted the
-     * {Gregorian Calendar Reform}[https://en.wikipedia.org/wiki/Gregorian_calendar#Gregorian_reform]
-     * (and wouldn't until {1752}[https://en.wikipedia.org/wiki/Calendar_(New_Style)_Act_1750])
+     * {Gregorian Calendar Reform}[http://en.wikipedia.org/wiki/Gregorian_calendar#Gregorian_reform]
+     * (and wouldn't until {1752}[http://en.wikipedia.org/wiki/Calendar_(New_Style)_Act_1750])
      * their deaths are actually 10 days apart.
      * Since Ruby's Time class implements a
-     * {proleptic Gregorian calendar}[https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar]
+     * {proleptic Gregorian calendar}[http://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar]
      * and has no concept of calendar reform there's no way
      * to express this with Time objects. This is where DateTime steps in:
      *
@@ -9644,7 +9626,7 @@ Init_date_core(void)
      *      #=> Fri, 04 May 1753 00:00:00 +0000
      *
      * As you can see, if we're accurately tracking the number of
-     * {solar years}[https://en.wikipedia.org/wiki/Tropical_year]
+     * {solar years}[http://en.wikipedia.org/wiki/Tropical_year]
      * since Shakespeare's birthday then the correct anniversary date
      * would be the 4th May and not the 23rd April.
      *
@@ -9656,10 +9638,10 @@ Init_date_core(void)
      * making the same mistakes as UNESCO. If you also have to deal
      * with timezones then best of luck - just bear in mind that
      * you'll probably be dealing with
-     * {local solar times}[https://en.wikipedia.org/wiki/Solar_time],
+     * {local solar times}[http://en.wikipedia.org/wiki/Solar_time],
      * since it wasn't until the 19th century that the introduction
      * of the railways necessitated the need for
-     * {Standard Time}[https://en.wikipedia.org/wiki/Standard_time#Great_Britain]
+     * {Standard Time}[http://en.wikipedia.org/wiki/Standard_time#Great_Britain]
      * and eventually timezones.
      */
 

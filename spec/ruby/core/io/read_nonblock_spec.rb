@@ -46,7 +46,7 @@ describe "IO#read_nonblock" do
       require 'io/nonblock'
       @write.write "abc"
       @read.read_nonblock(1).should == "a"
-      @read.should.nonblock?
+      @read.nonblock?.should == true
     end
   end
 

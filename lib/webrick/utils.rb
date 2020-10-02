@@ -45,7 +45,12 @@ module WEBrick
     ##
     # The server hostname
     def getservername
-      Socket::gethostname
+      host = Socket::gethostname
+      begin
+        Socket::gethostbyname(host)[0]
+      rescue
+        host
+      end
     end
     module_function :getservername
 

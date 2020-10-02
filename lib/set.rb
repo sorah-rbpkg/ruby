@@ -137,9 +137,9 @@ class Set
   end
 
   # Clone internal hash.
-  def initialize_clone(orig, freeze: nil)
+  def initialize_clone(orig)
     super
-    @hash = orig.instance_variable_get(:@hash).clone(freeze: freeze)
+    @hash = orig.instance_variable_get(:@hash).clone
   end
 
   def freeze    # :nodoc:
@@ -464,15 +464,7 @@ class Set
   #     Set['a', 'b', 'z'] & ['a', 'b', 'c']    #=> #<Set: {"a", "b"}>
   def &(enum)
     n = self.class.new
-    if enum.is_a?(Set)
-      if enum.size > size
-        each { |o| n.add(o) if enum.include?(o) }
-      else
-        enum.each { |o| n.add(o) if include?(o) }
-      end
-    else
-      do_with_enum(enum) { |o| n.add(o) if include?(o) }
-    end
+    do_with_enum(enum) { |o| n.add(o) if include?(o) }
     n
   end
   alias intersection &
@@ -778,7 +770,7 @@ class SortedSet < Set
 
             def to_a
               (@keys = @hash.keys).sort! unless @keys
-              @keys.dup
+              @keys
             end
 
             def freeze

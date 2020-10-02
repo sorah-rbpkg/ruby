@@ -85,9 +85,6 @@
 #     hello -n 6 --name -- /tmp
 #
 class GetoptLong
-  # Version.
-  VERSION = "0.1.0"
-
   #
   # Orderings.
   #

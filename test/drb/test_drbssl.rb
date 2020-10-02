@@ -59,7 +59,6 @@ end
 class TestDRbSSLAry < Test::Unit::TestCase
   include DRbAry
   def setup
-    LeakChecker.skip if defined?(LeakChecker)
     @drb_service = DRbSSLService.new
     super
     setup_service 'ut_array_drbssl.rb'

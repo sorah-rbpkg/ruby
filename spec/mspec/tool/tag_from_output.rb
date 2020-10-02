@@ -26,11 +26,10 @@ output.slice_before(NUMBER).select { |number, error_line, *rest|
     next
   end
   spec_file = spec_file[SPEC_FILE, 1]
-  prefix = spec_file.index('spec/ruby/') || spec_file.index('spec/truffle/')
+  prefix = spec_file.index('spec/ruby')
   spec_file = spec_file[prefix..-1]
 
-  tags_file = spec_file.sub('spec/ruby/', "#{tags_dir}/").sub('spec/truffle/', "#{tags_dir}/truffle/")
-  tags_file = tags_file.sub(/_spec\.rb$/, '_tags.txt')
+  tags_file = spec_file.sub('spec/ruby/', "#{tags_dir}/").sub(/_spec\.rb$/, '_tags.txt')
 
   dir = File.dirname(tags_file)
   Dir.mkdir(dir) unless Dir.exist?(dir)
@@ -38,7 +37,6 @@ output.slice_before(NUMBER).select { |number, error_line, *rest|
   tag_line = "fails:#{description}"
   lines = File.exist?(tags_file) ? File.readlines(tags_file, chomp: true) : []
   unless lines.include?(tag_line)
-    puts tags_file
     File.write(tags_file, (lines + [tag_line]).join("\n") + "\n")
   end
 }

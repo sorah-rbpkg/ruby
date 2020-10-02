@@ -1,14 +1,16 @@
-#ifndef ONIGURUMA_REGEX_H                            /*-*-C++-*-vi:se ft=cpp:*/
+/**********************************************************************
+
+  regex.h -
+
+  $Author$
+
+  Copyright (C) 1993-2007 Yukihiro Matsumoto
+
+**********************************************************************/
+
+#ifndef ONIGURUMA_REGEX_H
 #define ONIGURUMA_REGEX_H 1
-/**
- * @file
- * @author     $Author$
- * @copyright  Copyright (C) 1993-2007 Yukihiro Matsumoto
- * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
- *             Permission  is hereby  granted,  to  either redistribute  and/or
- *             modify this file, provided that  the conditions mentioned in the
- *             file COPYING are met.  Consult the file for details.
- */
+
 #if defined(__cplusplus)
 extern "C" {
 #if 0

@@ -28,8 +28,10 @@ describe "NameError#receiver" do
 
   it "returns the Object class when an undefined class variable is called" do
     -> {
-      eval("class singleton_class::A; @@doesnt_exist end", binding, __FILE__, __LINE__)
-    }.should raise_error(NameError) {|e| e.receiver.should equal(singleton_class::A) }
+      -> {
+        @@doesnt_exist
+      }.should complain(/class variable access from toplevel/)
+    }.should raise_error(NameError) {|e| e.receiver.should equal(Object) }
   end
 
   it "returns a class when an undefined class variable is called in a subclass' namespace" do

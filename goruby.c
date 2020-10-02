@@ -49,8 +49,10 @@ goruby_options(int argc, char **argv)
 	close(infd);
 	return ret;
     }
-  no_irb:
-    return ruby_options(argc, argv);
+    else {
+      no_irb:
+	return ruby_options(argc, argv);
+    }
 }
 
 int

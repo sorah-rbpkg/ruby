@@ -12,7 +12,6 @@ module Bundler
     TEST_FRAMEWORK_VERSIONS = {
       "rspec" => "3.0",
       "minitest" => "5.0",
-      "test-unit" => "3.0",
     }.freeze
 
     attr_reader :options, :gem_name, :thor, :name, :target
@@ -63,7 +62,7 @@ module Bundler
       ensure_safe_gem_name(name, constant_array)
 
       templates = {
-        "#{Bundler.preferred_gemfile_name}.tt" => Bundler.preferred_gemfile_name,
+        "Gemfile.tt" => "Gemfile",
         "lib/newgem.rb.tt" => "lib/#{namespaced_path}.rb",
         "lib/newgem/version.rb.tt" => "lib/#{namespaced_path}/version.rb",
         "newgem.gemspec.tt" => "#{name}.gemspec",
@@ -84,6 +83,8 @@ module Bundler
         config[:test] = test_framework
         config[:test_framework_version] = TEST_FRAMEWORK_VERSIONS[test_framework]
 
+        templates.merge!("travis.yml.tt" => ".travis.yml")
+
         case test_framework
         when "rspec"
           templates.merge!(
@@ -91,33 +92,15 @@ module Bundler
             "spec/spec_helper.rb.tt" => "spec/spec_helper.rb",
             "spec/newgem_spec.rb.tt" => "spec/#{namespaced_path}_spec.rb"
           )
-          config[:test_task] = :spec
         when "minitest"
           templates.merge!(
-            "test/minitest/test_helper.rb.tt" => "test/test_helper.rb",
-            "test/minitest/newgem_test.rb.tt" => "test/#{namespaced_path}_test.rb"
+            "test/test_helper.rb.tt" => "test/test_helper.rb",
+            "test/newgem_test.rb.tt" => "test/#{namespaced_path}_test.rb"
           )
-          config[:test_task] = :test
-        when "test-unit"
-          templates.merge!(
-            "test/test-unit/test_helper.rb.tt" => "test/test_helper.rb",
-            "test/test-unit/newgem_test.rb.tt" => "test/#{namespaced_path}_test.rb"
-          )
-          config[:test_task] = :test
         end
       end
 
-      config[:ci] = ask_and_set_ci
-      case config[:ci]
-      when "github"
-        templates.merge!("github/workflows/main.yml.tt" => ".github/workflows/main.yml")
-      when "travis"
-        templates.merge!("travis.yml.tt" => ".travis.yml")
-      when "gitlab"
-        templates.merge!("gitlab-ci.yml.tt" => ".gitlab-ci.yml")
-      when "circle"
-        templates.merge!("circleci/config.yml.tt" => ".circleci/config.yml")
-      end
+      config[:test_task] = config[:test] == "minitest" ? "test" : "spec"
 
       if ask_and_set(:mit, "Do you want to license your code permissively under the MIT license?",
         "This means that any other developer or company will be legally allowed to use your code " \
@@ -139,16 +122,6 @@ module Bundler
         config[:coc] = true
         Bundler.ui.info "Code of conduct enabled in config"
         templates.merge!("CODE_OF_CONDUCT.md.tt" => "CODE_OF_CONDUCT.md")
-      end
-
-      if ask_and_set(:rubocop, "Do you want to add rubocop as a dependency for gems you generate?",
-        "RuboCop is a static code analyzer that has out-of-the-box rules for many " \
-        "of the guidelines in the community style guide. " \
-        "For more information, see the RuboCop docs (https://docs.rubocop.org/en/stable/) " \
-        "and the Ruby Style Guides (https://github.com/rubocop-hq/ruby-style-guide).")
-        config[:rubocop] = true
-        Bundler.ui.info "RuboCop enabled in config"
-        templates.merge!("rubocop.yml.tt" => ".rubocop.yml")
       end
 
       templates.merge!("exe/newgem.tt" => "exe/#{name}") if config[:exe]
@@ -224,12 +197,11 @@ module Bundler
     def ask_and_set_test_framework
       test_framework = options[:test] || Bundler.settings["gem.test"]
 
-      if test_framework.to_s.empty?
+      if test_framework.nil?
         Bundler.ui.confirm "Do you want to generate tests with your gem?"
-        Bundler.ui.info hint_text("test")
-
-        result = Bundler.ui.ask "Enter a test framework. rspec/minitest/test-unit/(none):"
-        if result =~ /rspec|minitest|test-unit/
+        result = Bundler.ui.ask "Type 'rspec' or 'minitest' to generate those test files now and " \
+          "in the future. rspec/minitest/(none):"
+        if result =~ /rspec|minitest/
           test_framework = result
         else
           test_framework = false
@@ -240,52 +212,7 @@ module Bundler
         Bundler.settings.set_global("gem.test", test_framework)
       end
 
-      if options[:test] == Bundler.settings["gem.test"]
-        Bundler.ui.info "#{options[:test]} is already configured, ignoring --test flag."
-      end
-
       test_framework
-    end
-
-    def hint_text(setting)
-      if Bundler.settings["gem.#{setting}"] == false
-        "Your choice will only be applied to this gem."
-      else
-        "Future `bundle gem` calls will use your choice. " \
-        "This setting can be changed anytime with `bundle config gem.#{setting}`."
-      end
-    end
-
-    def ask_and_set_ci
-      ci_template = options[:ci] || Bundler.settings["gem.ci"]
-
-      if ci_template.to_s.empty?
-        Bundler.ui.confirm "Do you want to set up continuous integration for your gem? " \
-          "Supported services:\n" \
-          "* CircleCI:       https://circleci.com/\n" \
-          "* GitHub Actions: https://github.com/features/actions\n" \
-          "* GitLab CI:      https://docs.gitlab.com/ee/ci/\n" \
-          "* Travis CI:      https://travis-ci.org/\n" \
-          "\n"
-        Bundler.ui.info hint_text("ci")
-
-        result = Bundler.ui.ask "Enter a CI service. github/travis/gitlab/circle/(none):"
-        if result =~ /github|travis|gitlab|circle/
-          ci_template = result
-        else
-          ci_template = false
-        end
-      end
-
-      if Bundler.settings["gem.ci"].nil?
-        Bundler.settings.set_global("gem.ci", ci_template)
-      end
-
-      if options[:ci] == Bundler.settings["gem.ci"]
-        Bundler.ui.info "#{options[:ci]} is already configured, ignoring --ci flag."
-      end
-
-      ci_template
     end
 
     def bundler_dependency_version

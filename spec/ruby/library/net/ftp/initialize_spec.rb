@@ -6,7 +6,9 @@ describe "Net::FTP#initialize" do
     @ftp = Net::FTP.allocate
     @ftp.stub!(:connect)
     @port_args = []
-    @port_args << 21
+    ruby_version_is "2.5" do
+      @port_args << 21
+    end
   end
 
   it "is private" do

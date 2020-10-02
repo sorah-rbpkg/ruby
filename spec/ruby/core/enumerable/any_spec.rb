@@ -10,13 +10,13 @@ describe "Enumerable#any?" do
   end
 
   it "always returns false on empty enumeration" do
-    @empty.should_not.any?
+    @empty.any?.should == false
     @empty.any? { nil }.should == false
 
-    [].should_not.any?
+    [].any?.should == false
     [].any? { false }.should == false
 
-    {}.should_not.any?
+    {}.any?.should == false
     {}.any? { nil }.should == false
   end
 
@@ -24,6 +24,15 @@ describe "Enumerable#any?" do
     -> { @enum.any?(1, 2, 3) }.should raise_error(ArgumentError)
     -> { [].any?(1, 2, 3) }.should raise_error(ArgumentError)
     -> { {}.any?(1, 2, 3) }.should raise_error(ArgumentError)
+  end
+
+  ruby_version_is ""..."2.5" do
+    it "raises an ArgumentError when any arguments provided" do
+      -> { @enum.any?(Proc.new {}) }.should raise_error(ArgumentError)
+      -> { @enum.any?(nil) }.should raise_error(ArgumentError)
+      -> { @empty.any?(1) }.should raise_error(ArgumentError)
+      -> { @enum1.any?(1) {} }.should raise_error(ArgumentError)
+    end
   end
 
   it "does not hide exceptions out of #each" do
@@ -38,24 +47,24 @@ describe "Enumerable#any?" do
 
   describe "with no block" do
     it "returns true if any element is not false or nil" do
-      @enum.should.any?
-      @enum1.should.any?
-      @enum2.should.any?
-      EnumerableSpecs::Numerous.new(true).should.any?
-      EnumerableSpecs::Numerous.new('a','b','c').should.any?
-      EnumerableSpecs::Numerous.new('a','b','c', nil).should.any?
-      EnumerableSpecs::Numerous.new(1, nil, 2).should.any?
-      EnumerableSpecs::Numerous.new(1, false).should.any?
-      EnumerableSpecs::Numerous.new(false, nil, 1, false).should.any?
-      EnumerableSpecs::Numerous.new(false, 0, nil).should.any?
+      @enum.any?.should == true
+      @enum1.any?.should == true
+      @enum2.any?.should == true
+      EnumerableSpecs::Numerous.new(true).any?.should == true
+      EnumerableSpecs::Numerous.new('a','b','c').any?.should == true
+      EnumerableSpecs::Numerous.new('a','b','c', nil).any?.should == true
+      EnumerableSpecs::Numerous.new(1, nil, 2).any?.should == true
+      EnumerableSpecs::Numerous.new(1, false).any?.should == true
+      EnumerableSpecs::Numerous.new(false, nil, 1, false).any?.should == true
+      EnumerableSpecs::Numerous.new(false, 0, nil).any?.should == true
     end
 
     it "returns false if all elements are false or nil" do
-      EnumerableSpecs::Numerous.new(false).should_not.any?
-      EnumerableSpecs::Numerous.new(false, false).should_not.any?
-      EnumerableSpecs::Numerous.new(nil).should_not.any?
-      EnumerableSpecs::Numerous.new(nil, nil).should_not.any?
-      EnumerableSpecs::Numerous.new(nil, false, nil).should_not.any?
+      EnumerableSpecs::Numerous.new(false).any?.should == false
+      EnumerableSpecs::Numerous.new(false, false).any?.should == false
+      EnumerableSpecs::Numerous.new(nil).any?.should == false
+      EnumerableSpecs::Numerous.new(nil, nil).any?.should == false
+      EnumerableSpecs::Numerous.new(nil, false, nil).any?.should == false
     end
 
     it "gathers whole arrays as elements when each yields multiple" do
@@ -138,66 +147,68 @@ describe "Enumerable#any?" do
     end
   end
 
-  describe 'when given a pattern argument' do
-    it "calls `===` on the pattern the return value " do
-      pattern = EnumerableSpecs::Pattern.new { |x| x == 2 }
-      @enum1.any?(pattern).should == true
-      pattern.yielded.should == [[0], [1], [2]]
-    end
-
-    # may raise an exception in future versions
-    ruby_version_is ""..."2.6" do
-      it "ignores block" do
-        @enum2.any?(NilClass) { raise }.should == true
-        [1, 2, nil].any?(NilClass) { raise }.should == true
-        {a: 1}.any?(Array) { raise }.should == true
+  ruby_version_is "2.5" do
+    describe 'when given a pattern argument' do
+      it "calls `===` on the pattern the return value " do
+        pattern = EnumerableSpecs::Pattern.new { |x| x == 2 }
+        @enum1.any?(pattern).should == true
+        pattern.yielded.should == [[0], [1], [2]]
       end
-    end
 
-    it "always returns false on empty enumeration" do
-      @empty.any?(Integer).should == false
-      [].any?(Integer).should == false
-      {}.any?(NilClass).should == false
-    end
+      # may raise an exception in future versions
+      ruby_version_is ""..."2.6" do
+        it "ignores block" do
+          @enum2.any?(NilClass) { raise }.should == true
+          [1, 2, nil].any?(NilClass) { raise }.should == true
+          {a: 1}.any?(Array) { raise }.should == true
+        end
+      end
 
-    it "does not hide exceptions out of #each" do
-      -> {
-        EnumerableSpecs::ThrowingEach.new.any?(Integer)
-      }.should raise_error(RuntimeError)
-    end
+      it "always returns false on empty enumeration" do
+        @empty.any?(Integer).should == false
+        [].any?(Integer).should == false
+        {}.any?(NilClass).should == false
+      end
 
-    it "returns true if the pattern ever returns a truthy value" do
-      @enum2.any?(NilClass).should == true
-      pattern = EnumerableSpecs::Pattern.new { |x| 42 }
-      @enum.any?(pattern).should == true
+      it "does not hide exceptions out of #each" do
+        -> {
+          EnumerableSpecs::ThrowingEach.new.any?(Integer)
+        }.should raise_error(RuntimeError)
+      end
 
-      [1, 42, 3].any?(pattern).should == true
+      it "returns true if the pattern ever returns a truthy value" do
+        @enum2.any?(NilClass).should == true
+        pattern = EnumerableSpecs::Pattern.new { |x| 42 }
+        @enum.any?(pattern).should == true
 
-      pattern = EnumerableSpecs::Pattern.new { |x| x == [:b, 2] }
-      {a: 1, b: 2}.any?(pattern).should == true
-    end
+        [1, 42, 3].any?(pattern).should == true
 
-    it "returns false if the block never returns other than false or nil" do
-      pattern = EnumerableSpecs::Pattern.new { |x| nil }
-      @enum1.any?(pattern).should == false
-      pattern.yielded.should == [[0], [1], [2], [-1]]
+        pattern = EnumerableSpecs::Pattern.new { |x| x == [:b, 2] }
+        {a: 1, b: 2}.any?(pattern).should == true
+      end
 
-      [1, 2, 3].any?(pattern).should == false
-      {a: 1}.any?(pattern).should == false
-    end
+      it "returns false if the block never returns other than false or nil" do
+        pattern = EnumerableSpecs::Pattern.new { |x| nil }
+        @enum1.any?(pattern).should == false
+        pattern.yielded.should == [[0], [1], [2], [-1]]
 
-    it "does not hide exceptions out of pattern#===" do
-      pattern = EnumerableSpecs::Pattern.new { raise "from pattern" }
-      -> {
-        @enum.any?(pattern)
-      }.should raise_error(RuntimeError)
-    end
+        [1, 2, 3].any?(pattern).should == false
+        {a: 1}.any?(pattern).should == false
+      end
 
-    it "calls the pattern with gathered array when yielded with multiple arguments" do
-      multi = EnumerableSpecs::YieldsMulti.new
-      pattern = EnumerableSpecs::Pattern.new { false }
-      multi.any?(pattern).should == false
-      pattern.yielded.should == [[[1, 2]], [[3, 4, 5]], [[6, 7, 8, 9]]]
+      it "does not hide exceptions out of pattern#===" do
+        pattern = EnumerableSpecs::Pattern.new { raise "from pattern" }
+        -> {
+          @enum.any?(pattern)
+        }.should raise_error(RuntimeError)
+      end
+
+      it "calls the pattern with gathered array when yielded with multiple arguments" do
+        multi = EnumerableSpecs::YieldsMulti.new
+        pattern = EnumerableSpecs::Pattern.new { false }
+        multi.any?(pattern).should == false
+        pattern.yielded.should == [[[1, 2]], [[3, 4, 5]], [[6, 7, 8, 9]]]
+      end
     end
   end
 end

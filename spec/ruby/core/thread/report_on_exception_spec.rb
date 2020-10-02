@@ -1,8 +1,16 @@
 require_relative '../../spec_helper'
 
 describe "Thread.report_on_exception" do
-  it "defaults to true" do
-    ruby_exe("p Thread.report_on_exception").should == "true\n"
+  ruby_version_is "2.4"..."2.5" do
+    it "defaults to false" do
+      ruby_exe("p Thread.report_on_exception").should == "false\n"
+    end
+  end
+
+  ruby_version_is "2.5" do
+    it "defaults to true" do
+      ruby_exe("p Thread.report_on_exception").should == "true\n"
+    end
   end
 end
 
@@ -25,12 +33,14 @@ describe "Thread.report_on_exception=" do
 end
 
 describe "Thread#report_on_exception" do
-  it "returns true for the main Thread" do
-    Thread.current.report_on_exception.should == true
-  end
+  ruby_version_is "2.5" do
+    it "returns true for the main Thread" do
+      Thread.current.report_on_exception.should == true
+    end
 
-  it "returns true for new Threads" do
-    Thread.new { Thread.current.report_on_exception }.value.should == true
+    it "returns true for new Threads" do
+      Thread.new { Thread.current.report_on_exception }.value.should == true
+    end
   end
 
   it "returns whether the Thread will print a backtrace if it exits with an exception" do

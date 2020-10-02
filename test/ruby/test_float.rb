@@ -305,7 +305,6 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(1.0, 1.0 ** (2**32))
     assert_equal(1.0, 1.0 ** 1.0)
     assert_raise(TypeError) { 1.0 ** nil }
-    assert_equal(9.0, 3.0 ** 2)
   end
 
   def test_eql
@@ -765,9 +764,6 @@ class TestFloat < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /xxx/) {
       1.0.round(half: "\0xxx")
     }
-    assert_raise_with_message(Encoding::CompatibilityError, /ASCII incompatible/) {
-      1.0.round(half: "up".force_encoding("utf-16be"))
-    }
   end
 
   def test_Float
@@ -893,8 +889,7 @@ class TestFloat < Test::Unit::TestCase
       a = rand
       b = a+rand*1000
       s = (b - a) / 10
-      seq = (a...b).step(s)
-      assert_equal(10, seq.to_a.length, seq.inspect)
+      assert_equal(10, (a...b).step(s).to_a.length)
     end
 
     assert_equal([1.0, 2.9, 4.8, 6.699999999999999], (1.0...6.8).step(1.9).to_a)

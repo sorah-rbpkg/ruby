@@ -6,10 +6,10 @@ class RubyVM
   # abstract syntax trees. The nodes in the tree
   # are instances of RubyVM::AbstractSyntaxTree::Node.
   #
-  # This module is MRI specific as it exposes implementation details
+  # This class is MRI specific as it exposes implementation details
   # of the MRI abstract syntax tree.
   #
-  # This module is experimental and its API is not stable, therefore it might
+  # This class is experimental and its API is not stable, therefore it might
   # change without notice. As examples, the order of children nodes is not
   # guaranteed, the number of children nodes might change, there is no way to
   # access children nodes by name, etc.
@@ -32,7 +32,7 @@ class RubyVM
     #    RubyVM::AbstractSyntaxTree.parse("x = 1 + 2")
     #    # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-1:9>
     def self.parse string
-      Primitive.ast_s_parse string
+      __builtin_ast_s_parse string
     end
 
     #  call-seq:
@@ -47,7 +47,7 @@ class RubyVM
     #     RubyVM::AbstractSyntaxTree.parse_file("my-app/app.rb")
     #     # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-31:3>
     def self.parse_file pathname
-      Primitive.ast_s_parse_file pathname
+      __builtin_ast_s_parse_file pathname
     end
 
     #  call-seq:
@@ -66,7 +66,7 @@ class RubyVM
     #     RubyVM::AbstractSyntaxTree.of(method(:hello))
     #     # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-3:3>
     def self.of body
-      Primitive.ast_s_of body
+      __builtin_ast_s_of body
     end
 
     # RubyVM::AbstractSyntaxTree::Node instances are created by parse methods in
@@ -83,12 +83,10 @@ class RubyVM
       #
       #    root = RubyVM::AbstractSyntaxTree.parse("x = 1 + 2")
       #    root.type # => :SCOPE
-      #    lasgn = root.children[2]
-      #    lasgn.type # => :LASGN
-      #    call = lasgn.children[1]
+      #    call = root.children[2]
       #    call.type # => :OPCALL
       def type
-        Primitive.ast_node_type
+        __builtin_ast_node_type
       end
 
       #  call-seq:
@@ -96,7 +94,7 @@ class RubyVM
       #
       #  The line number in the source code where this AST's text began.
       def first_lineno
-        Primitive.ast_node_first_lineno
+        __builtin_ast_node_first_lineno
       end
 
       #  call-seq:
@@ -104,7 +102,7 @@ class RubyVM
       #
       #  The column number in the source code where this AST's text began.
       def first_column
-        Primitive.ast_node_first_column
+        __builtin_ast_node_first_column
       end
 
       #  call-seq:
@@ -112,7 +110,7 @@ class RubyVM
       #
       #  The line number in the source code where this AST's text ended.
       def last_lineno
-        Primitive.ast_node_last_lineno
+        __builtin_ast_node_last_lineno
       end
 
       #  call-seq:
@@ -120,7 +118,7 @@ class RubyVM
       #
       #  The column number in the source code where this AST's text ended.
       def last_column
-        Primitive.ast_node_last_column
+        __builtin_ast_node_last_column
       end
 
       #  call-seq:
@@ -131,7 +129,7 @@ class RubyVM
       #
       #  The returned array may contain other nodes or <code>nil</code>.
       def children
-        Primitive.ast_node_children
+        __builtin_ast_node_children
       end
 
       #  call-seq:
@@ -139,7 +137,7 @@ class RubyVM
       #
       #  Returns debugging information about this node as a string.
       def inspect
-        Primitive.ast_node_inspect
+        __builtin_ast_node_inspect
       end
     end
   end

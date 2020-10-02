@@ -84,12 +84,18 @@ ossl_hmac_alloc(VALUE klass)
  *
  * === A note about comparisons
  *
- * Two instances can be securely compared with #== in constant time:
+ * Two instances won't be equal when they're compared, even if they have the
+ * same value. Use #to_s or #hexdigest to return the authentication code that
+ * the instance represents. For example:
  *
  *	other_instance = OpenSSL::HMAC.new('key', OpenSSL::Digest.new('sha1'))
- *  #=> f42bb0eeb018ebbd4597ae7213711ec60760843f
- *  instance == other_instance
- *  #=> true
+ *  	#=> f42bb0eeb018ebbd4597ae7213711ec60760843f
+ *  	instance
+ *  	#=> f42bb0eeb018ebbd4597ae7213711ec60760843f
+ *  	instance == other_instance
+ *  	#=> false
+ *  	instance.to_s == other_instance.to_s
+ *  	#=> true
  *
  */
 static VALUE
@@ -353,7 +359,7 @@ Init_ossl_hmac(void)
      *   data1 = File.read("file1")
      *   data2 = File.read("file2")
      *   key = "key"
-     *   digest = OpenSSL::Digest.new('SHA256')
+     *   digest = OpenSSL::Digest::SHA256.new
      *   hmac = OpenSSL::HMAC.new(key, digest)
      *   hmac << data1
      *   hmac << data2

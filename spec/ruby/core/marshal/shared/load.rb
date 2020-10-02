@@ -1,5 +1,6 @@
 # -*- encoding: binary -*-
 require_relative '../fixtures/marshal_data'
+require 'stringio'
 
 describe :marshal_load, shared: true do
   before :all do
@@ -409,9 +410,8 @@ describe :marshal_load, shared: true do
     end
 
     it "loads a string through StringIO stream" do
-      require 'stringio'
-      obj = "This is a string which should be unmarshalled through StringIO stream!"
-      Marshal.send(@method, StringIO.new(Marshal.dump(obj))).should == obj
+        obj = "This is a string which should be unmarshalled through StringIO stream!"
+        Marshal.send(@method, StringIO.new(Marshal.dump(obj))).should == obj
     end
 
     it "loads a string with an ivar" do
@@ -623,7 +623,7 @@ describe :marshal_load, shared: true do
 
   describe "for a Regexp" do
     it "loads an extended Regexp" do
-      obj = /[a-z]/.dup.extend(Meths, MethsMore)
+      obj = /[a-z]/.extend(Meths, MethsMore)
       new_obj = Marshal.send(@method, "\004\be:\nMethse:\016MethsMore/\n[a-z]\000")
 
       new_obj.should == obj

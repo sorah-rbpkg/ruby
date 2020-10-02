@@ -354,16 +354,6 @@ describe "Multiple assignment" do
       a.should be_an_instance_of(Array)
     end
 
-    it "unfreezes the array returned from calling 'to_a' on the splatted value" do
-      obj = Object.new
-      def obj.to_a
-        [1,2].freeze
-      end
-      res = *obj
-      res.should == [1,2]
-      res.should_not.frozen?
-    end
-
     it "consumes values for an anonymous splat" do
       a = 1
       (* = *a).should == [1]

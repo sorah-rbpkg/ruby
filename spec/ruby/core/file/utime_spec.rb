@@ -3,7 +3,7 @@ require_relative '../../spec_helper'
 describe "File.utime" do
 
   before :all do
-    @time_is_float = platform_is :windows
+    @time_is_float = /mswin|mingw/ =~ RUBY_PLATFORM && RUBY_VERSION >= '2.5'
   end
 
   before :each do

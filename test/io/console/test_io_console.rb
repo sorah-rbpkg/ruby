@@ -29,20 +29,6 @@ class TestIO_Console < Test::Unit::TestCase
   def set_winsize_teardown
     trap(:TTOU, @old_ttou) if defined?(@old_ttou) and @old_ttou
   end
-
-  def test_failed_path
-    exceptions = %w[ENODEV ENOTTY EBADF ENXIO].map {|e|
-      Errno.const_get(e) if Errno.const_defined?(e)
-    }
-    exceptions.compact!
-    skip if exceptions.empty?
-    File.open(IO::NULL) do |f|
-      e = assert_raise(*exceptions) do
-        f.echo?
-      end
-      assert_include(e.message, IO::NULL)
-    end
-  end
 end
 
 defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
@@ -443,14 +429,10 @@ defined?(IO.console) and TestIO_Console.class_eval do
       s = IO.console.winsize
       assert_nothing_raised(TypeError) {IO.console.winsize = s}
       bug = '[ruby-core:82741] [Bug #13888]'
-      begin
-        IO.console.winsize = [s[0], s[1]+1]
-        assert_equal([s[0], s[1]+1], IO.console.winsize, bug)
-      rescue Errno::EINVAL    # Error if run on an actual console.
-      else
-        IO.console.winsize = s
-        assert_equal(s, IO.console.winsize, bug)
-      end
+      IO.console.winsize = [s[0], s[1]+1]
+      assert_equal([s[0], s[1]+1], IO.console.winsize, bug)
+      IO.console.winsize = s
+      assert_equal(s, IO.console.winsize, bug)
     ensure
       set_winsize_teardown
     end

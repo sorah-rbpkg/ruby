@@ -2,7 +2,7 @@
 
 *.rb
 
-# bundler # not in RDoc
+bundler
 cgi
 csv
 drb

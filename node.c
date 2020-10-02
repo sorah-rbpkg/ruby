@@ -9,9 +9,6 @@
 
 **********************************************************************/
 
-#include "internal.h"
-#include "internal/hash.h"
-#include "internal/variable.h"
 #include "ruby/ruby.h"
 #include "vm_core.h"
 
@@ -63,7 +60,7 @@
 #define SIMPLE_FIELD1(name, ann)    SIMPLE_FIELD(FIELD_NAME_LEN(name, ann), FIELD_NAME_DESC(name, ann))
 #define F_CUSTOM1(name, ann)	    SIMPLE_FIELD1(#name, ann)
 #define F_ID(name, ann) 	    SIMPLE_FIELD1(#name, ann) A_ID(node->name)
-#define F_GENTRY(name, ann)	    SIMPLE_FIELD1(#name, ann) A_ID(node->name)
+#define F_GENTRY(name, ann)	    SIMPLE_FIELD1(#name, ann) A_ID((node->name)->id)
 #define F_INT(name, ann)	    SIMPLE_FIELD1(#name, ann) A_INT(node->name)
 #define F_LONG(name, ann)	    SIMPLE_FIELD1(#name, ann) A_LONG(node->name)
 #define F_LIT(name, ann)	    SIMPLE_FIELD1(#name, ann) A_LIT(node->name)
@@ -1053,27 +1050,6 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         F_NODE(nd_apinfo->post_args, "post arguments");
         return;
 
-      case NODE_FNDPTN:
-        ANN("find pattern");
-        ANN("format: [nd_pconst](*[pre_rest_arg], args, ..., *[post_rest_arg])");
-        F_NODE(nd_pconst, "constant");
-        if (NODE_NAMED_REST_P(node->nd_fpinfo->pre_rest_arg)) {
-            F_NODE(nd_fpinfo->pre_rest_arg, "pre rest argument");
-        }
-        else {
-            F_MSG(nd_fpinfo->pre_rest_arg, "pre rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
-        }
-        F_NODE(nd_fpinfo->args, "arguments");
-
-        LAST_NODE;
-        if (NODE_NAMED_REST_P(node->nd_fpinfo->post_rest_arg)) {
-            F_NODE(nd_fpinfo->post_rest_arg, "post rest argument");
-        }
-        else {
-            F_MSG(nd_fpinfo->post_rest_arg, "post rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
-        }
-        return;
-
       case NODE_HSHPTN:
         ANN("hash pattern");
         ANN("format: [nd_pconst]([nd_pkwargs], ..., **[nd_pkwrestarg])");
@@ -1233,7 +1209,6 @@ rb_ast_newnode(rb_ast_t *ast, enum node_type type)
       case NODE_DSYM:
       case NODE_ARGS:
       case NODE_ARYPTN:
-      case NODE_FNDPTN:
         return ast_newnode_in_bucket(&nb->markable);
       default:
         return ast_newnode_in_bucket(&nb->unmarkable);
@@ -1294,6 +1269,12 @@ static void
 mark_ast_value(void *ctx, NODE * node)
 {
     switch (nd_type(node)) {
+      case NODE_ARYPTN:
+        {
+            struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
+            rb_gc_mark_movable(apinfo->imemo);
+            break;
+        }
       case NODE_ARGS:
         {
             struct rb_args_info *args = node->nd_ainfo;
@@ -1308,8 +1289,6 @@ mark_ast_value(void *ctx, NODE * node)
       case NODE_DXSTR:
       case NODE_DREGX:
       case NODE_DSYM:
-      case NODE_ARYPTN:
-      case NODE_FNDPTN:
         rb_gc_mark_movable(node->nd_lit);
         break;
       default:
@@ -1321,13 +1300,18 @@ static void
 update_ast_value(void *ctx, NODE * node)
 {
     switch (nd_type(node)) {
+      case NODE_ARYPTN:
+        {
+            struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
+            apinfo->imemo = rb_gc_location(apinfo->imemo);
+            break;
+        }
       case NODE_ARGS:
         {
             struct rb_args_info *args = node->nd_ainfo;
             args->imemo = rb_gc_location(args->imemo);
             break;
         }
-      case NODE_MATCH:
       case NODE_LIT:
       case NODE_STR:
       case NODE_XSTR:
@@ -1335,8 +1319,6 @@ update_ast_value(void *ctx, NODE * node)
       case NODE_DXSTR:
       case NODE_DREGX:
       case NODE_DSYM:
-      case NODE_ARYPTN:
-      case NODE_FNDPTN:
         node->nd_lit = rb_gc_location(node->nd_lit);
         break;
       default:

@@ -2,18 +2,18 @@ require_relative '../../spec_helper'
 
 describe "Float#finite?" do
   it "returns true for finite values" do
-    3.14159.should.finite?
+    3.14159.finite?.should == true
   end
 
   it "returns false for positive infinity" do
-    infinity_value.should_not.finite?
+    infinity_value.finite?.should == false
   end
 
   it "returns false for negative infinity" do
-    (-infinity_value).should_not.finite?
+    (-infinity_value).finite?.should == false
   end
 
   it "returns false for NaN" do
-    nan_value.should_not.finite?
+    nan_value.finite?.should == false
   end
 end

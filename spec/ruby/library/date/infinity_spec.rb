@@ -5,16 +5,16 @@ describe "Date::Infinity" do
 
   it "should be able to check whether Infinity is zero" do
     i = Date::Infinity.new
-    i.should_not.zero?
+    i.zero?.should == false
   end
 
   it "should be able to check whether Infinity is finite" do
     i1 = Date::Infinity.new
-    i1.should_not.finite?
+    i1.finite?.should == false
     i2 = Date::Infinity.new(-1)
-    i2.should_not.finite?
+    i2.finite?.should == false
     i3 = Date::Infinity.new(0)
-    i3.should_not.finite?
+    i3.finite?.should == false
   end
 
   it "should be able to check whether Infinity is infinite" do
@@ -28,11 +28,11 @@ describe "Date::Infinity" do
 
   it "should be able to check whether Infinity is not a number" do
     i1 = Date::Infinity.new
-    i1.should_not.nan?
+    i1.nan?.should == false
     i2 = Date::Infinity.new(-1)
-    i2.should_not.nan?
+    i2.nan?.should == false
     i3 = Date::Infinity.new(0)
-    i3.should.nan?
+    i3.nan?.should == true
   end
 
   it "should be able to compare Infinity objects" do

@@ -9,12 +9,9 @@
 
 **********************************************************************/
 
+#include "ruby/ruby.h"
 #include "id.h"
 #include "internal.h"
-#include "internal/compar.h"
-#include "internal/error.h"
-#include "internal/vm.h"
-#include "ruby/ruby.h"
 
 VALUE rb_mComparable;
 
@@ -233,9 +230,11 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
         }
         if (!NIL_P(max)) {
             if (excl) rb_raise(rb_eArgError, "cannot clamp with an exclusive range");
+            if (!NIL_P(min) && cmpint(min, max) > 0) goto arg_error;
         }
     }
-    if (!NIL_P(min) && !NIL_P(max) && cmpint(min, max) > 0) {
+    else if (cmpint(min, max) > 0) {
+      arg_error:
 	rb_raise(rb_eArgError, "min argument must be smaller than max argument");
     }
 

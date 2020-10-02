@@ -17,7 +17,7 @@ require 'rdoc'
 ##
 # For RubyGems backwards compatibility
 
-require_relative 'formatter'
+require 'rdoc/ri/formatter'
 
 ##
 # The RI driver implements the command-line ri tool.
@@ -356,7 +356,7 @@ or the PAGER environment variable.
       end
     end
 
-    argv = ENV['RI'].to_s.split(' ').concat argv
+    argv = ENV['RI'].to_s.split.concat argv
 
     opts.parse! argv
 
@@ -1521,7 +1521,7 @@ or the PAGER environment variable.
     pagers.compact.uniq.each do |pager|
       next unless pager
 
-      pager_cmd = pager.split(' ').first
+      pager_cmd = pager.split.first
 
       next unless in_path? pager_cmd
 

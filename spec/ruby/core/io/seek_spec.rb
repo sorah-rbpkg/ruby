@@ -44,21 +44,21 @@ describe "IO#seek" do
   it "moves the read position and clears EOF with SEEK_SET" do
     value = @io.read
     @io.seek(0, IO::SEEK_SET)
-    @io.should_not.eof?
+    @io.eof?.should == false
     value.should == @io.read
   end
 
   it "moves the read position and clears EOF with SEEK_CUR" do
     value = @io.read
     @io.seek(-1, IO::SEEK_CUR)
-    @io.should_not.eof?
+    @io.eof?.should == false
     value[-1].should == @io.read[0]
   end
 
   it "moves the read position and clears EOF with SEEK_END" do
     value = @io.read
     @io.seek(-1, IO::SEEK_END)
-    @io.should_not.eof?
+    @io.eof?.should == false
     value[-1].should == @io.read[0]
   end
 

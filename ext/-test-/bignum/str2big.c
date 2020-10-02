@@ -1,4 +1,4 @@
-#include "internal/bignum.h"
+#include "internal.h"
 
 static VALUE
 str2big_poweroftwo(VALUE str, VALUE vbase, VALUE badcheck)

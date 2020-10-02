@@ -216,7 +216,7 @@ describe "IO#read" do
 
   it "is at end-of-file when everything has been read" do
     @io.read
-    @io.should.eof?
+    @io.eof?.should == true
   end
 
   it "reads the contents of a file" do

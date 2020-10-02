@@ -4,6 +4,7 @@ require 'rubygems/dependency_list'
 require 'rubygems/uninstaller'
 
 class Gem::Commands::CleanupCommand < Gem::Command
+
   def initialize
     super 'cleanup',
           'Clean up old versions of installed gems',
@@ -68,7 +69,7 @@ If no gems are named all gems in GEM_HOME are cleaned.
       until done do
         clean_gems
 
-        this_set = @gems_to_cleanup.map {|spec| spec.full_name }.sort
+        this_set = @gems_to_cleanup.map { |spec| spec.full_name }.sort
 
         done = this_set.empty? || last_set == this_set
 
@@ -81,7 +82,7 @@ If no gems are named all gems in GEM_HOME are cleaned.
     say "Clean up complete"
 
     verbose do
-      skipped = @default_gems.map {|spec| spec.full_name }
+      skipped = @default_gems.map { |spec| spec.full_name }
 
       "Skipped default gems: #{skipped.join ', '}"
     end
@@ -98,7 +99,7 @@ If no gems are named all gems in GEM_HOME are cleaned.
     @full = Gem::DependencyList.from_specs
 
     deplist = Gem::DependencyList.new
-    @gems_to_cleanup.each {|spec| deplist.add spec }
+    @gems_to_cleanup.each { |spec| deplist.add spec }
 
     deps = deplist.strongly_connected_components.flatten
 
@@ -180,4 +181,5 @@ If no gems are named all gems in GEM_HOME are cleaned.
     # Restore path Gem::Uninstaller may have changed
     Gem.use_paths @original_home, *@original_path
   end
+
 end

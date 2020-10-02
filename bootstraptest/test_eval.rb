@@ -250,9 +250,7 @@ assert_equal 'ok', %q{
 
 assert_equal 'ok', %q{
   begin
-    class A
-      12.instance_eval { @@a }
-    end
+    12.instance_eval { @@a }
   rescue NameError
     :ok
   end
@@ -260,9 +258,7 @@ assert_equal 'ok', %q{
 
 assert_equal 'ok', %q{
   begin
-    class A
-      12.instance_exec { @@a }
-    end
+    12.instance_exec { @@a }
   rescue NameError
     :ok
   end

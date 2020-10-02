@@ -36,10 +36,9 @@
 # Hash keys with spaces or characters that could normally not be used for
 # method calls (e.g. <code>()[]*</code>) will not be immediately available
 # on the OpenStruct object as a method for retrieval or assignment, but can
-# still be reached through the Object#send method or using [].
+# still be reached through the Object#send method.
 #
 #   measurements = OpenStruct.new("length (in inches)" => 24)
-#   measurements[:"length (in inches)"]       # => 24
 #   measurements.send("length (in inches)")   # => 24
 #
 #   message = OpenStruct.new(:queued? => true)
@@ -62,7 +61,8 @@
 #   first_pet                 # => #<OpenStruct name="Rowdy">
 #   first_pet == second_pet   # => true
 #
-# == Caveats
+#
+# == Implementation
 #
 # An OpenStruct utilizes Ruby's method lookup structure to find and define the
 # necessary methods for properties. This is accomplished through the methods
@@ -71,40 +71,11 @@
 # This should be a consideration if there is a concern about the performance of
 # the objects that are created, as there is much more overhead in the setting
 # of these properties compared to using a Hash or a Struct.
-# Creating an open struct from a small Hash and accessing a few of the
-# entries can be 200 times slower than accessing the hash directly.
 #
-# This may also be the source of incompatibilities between Ruby versions:
-#
-#   o = OpenStruct.new
-#   o.then # => nil in Ruby < 2.6, enumerator for Ruby >= 2.6
-#
-# Builtin methods may be overwritten this way, which may be a source of bugs
-# or security issues:
-#
-#   o = OpenStruct.new
-#   o.methods # => [:to_h, :marshal_load, :marshal_dump, :each_pair, ...
-#   o.methods = [:foo, :bar]
-#   o.methods # => [:foo, :bar]
-#
-# To help remedy clashes, OpenStruct uses only protected/private methods ending with `!`
-# and defines aliases for builtin public methods by adding a `!`:
-#
-#   o = OpenStruct.new(make: 'Bentley', class: :luxury)
-#   o.class # => :luxury
-#   o.class! # => OpenStruct
-#
-# It is recommended (but not enforced) to not use fields ending in `!`.
-#
-# For all these reasons, consider not using OpenStruct at all.
-#
-class OpenStruct
-  VERSION = "0.2.0"
 
-  instance_methods.each do |method|
-    new_name = "#{method}!"
-    alias_method new_name, method
-  end
+require_relative 'ostruct/version'
+
+class OpenStruct
 
   #
   # Creates a new OpenStruct object.  By default, the resulting OpenStruct
@@ -124,20 +95,16 @@ class OpenStruct
     @table = {}
     if hash
       hash.each_pair do |k, v|
-        set_ostruct_member_value!(k, v)
+        k = k.to_sym
+        @table[k] = v
       end
     end
   end
 
   # Duplicates an OpenStruct object's Hash table.
-  private def initialize_clone(orig) # :nodoc:
-    super # clones the singleton class for us
-    @table = @table.dup unless @table.frozen?
-  end
-
-  private def initialize_dup(orig) # :nodoc:
+  def initialize_copy(orig) # :nodoc:
     super
-    initialize(@table)
+    @table = @table.dup
   end
 
   #
@@ -194,9 +161,23 @@ class OpenStruct
   # Provides marshalling support for use by the Marshal library.
   #
   def marshal_load(x)
-    x.each_key{|key| new_ostruct_member!(key)}
     @table = x
   end
+
+  #
+  # Used internally to check if the OpenStruct is able to be
+  # modified before granting access to the internal Hash table to be modified.
+  #
+  def modifiable? # :nodoc:
+    begin
+      @modifiable = true
+    rescue
+      exception_class = defined?(FrozenError) ? FrozenError : RuntimeError
+      raise exception_class, "can't modify frozen #{self.class}", caller(3)
+    end
+    @table
+  end
+  private :modifiable?
 
   #
   # Used internally to defined properties on the
@@ -204,26 +185,37 @@ class OpenStruct
   # define_singleton_method for both the getter method and the setter method.
   #
   def new_ostruct_member!(name) # :nodoc:
-    unless @table.key?(name)
+    name = name.to_sym
+    unless singleton_class.method_defined?(name)
       define_singleton_method(name) { @table[name] }
-      define_singleton_method("#{name}=") {|x| @table[name] = x}
+      define_singleton_method("#{name}=") {|x| modifiable?[name] = x}
     end
+    name
   end
   private :new_ostruct_member!
 
   def freeze
-    @table.freeze
+    @table.each_key {|key| new_ostruct_member!(key)}
     super
   end
 
-  private def method_missing(mid, *args) # :nodoc:
+  def respond_to_missing?(mid, include_private = false) # :nodoc:
+    mname = mid.to_s.chomp("=").to_sym
+    defined?(@table) && @table.key?(mname) || super
+  end
+
+  def method_missing(mid, *args) # :nodoc:
     len = args.length
     if mname = mid[/.*(?==\z)/m]
       if len != 1
         raise ArgumentError, "wrong number of arguments (given #{len}, expected 1)", caller(1)
       end
-      set_ostruct_member_value!(mname, args[0])
-    elsif len == 0
+      modifiable?[new_ostruct_member!(mname)] = args[0]
+    elsif len == 0 # and /\A[a-z_]\w*\z/ =~ mid #
+      if @table.key?(mid)
+        new_ostruct_member!(mid) unless frozen?
+        @table[mid]
+      end
     elsif @table.key?(mid)
       raise ArgumentError, "wrong number of arguments (given #{len}, expected 0)"
     else
@@ -262,27 +254,29 @@ class OpenStruct
   #   person.age          # => 42
   #
   def []=(name, value)
-    name = name.to_sym
-    new_ostruct_member!(name)
-    @table[name] = value
+    modifiable?[new_ostruct_member!(name)] = value
   end
-  alias_method :set_ostruct_member_value!, :[]=
-  private :set_ostruct_member_value!
 
+  #
   # :call-seq:
-  #   ostruct.dig(name, *identifiers) -> object
+  #   ostruct.dig(name, ...)  -> object
   #
-  # Finds and returns the object in nested objects
-  # that is specified by +name+ and +identifiers+.
-  # The nested objects may be instances of various classes.
-  # See {Dig Methods}[rdoc-ref:doc/dig_methods.rdoc].
+  # Extracts the nested value specified by the sequence of +name+
+  # objects by calling +dig+ at each step, returning +nil+ if any
+  # intermediate step is +nil+.
   #
-  # Examples:
   #   require "ostruct"
   #   address = OpenStruct.new("city" => "Anytown NC", "zip" => 12345)
   #   person  = OpenStruct.new("name" => "John Smith", "address" => address)
-  #   person.dig(:address, "zip") # => 12345
-  #   person.dig(:business_address, "zip") # => nil
+  #
+  #   person.dig(:address, "zip")            # => 12345
+  #   person.dig(:business_address, "zip")   # => nil
+  #
+  #   data = OpenStruct.new(:array => [1, [2, 3]])
+  #
+  #   data.dig(:array, 1, 0)   # => 2
+  #   data.dig(:array, 0, 0)   # TypeError: Integer does not have #dig method
+  #
   def dig(name, *names)
     begin
       name = name.to_sym

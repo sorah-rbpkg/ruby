@@ -5,11 +5,9 @@ require 'rubygems/command'
 require 'rubygems/gemcutter_utilities'
 
 class TestGemGemcutterUtilities < Gem::TestCase
+
   def setup
     super
-
-    credential_setup
-
     # below needed for random testing, class property
     Gem.configuration.disable_default_gem_server = nil
 
@@ -23,8 +21,6 @@ class TestGemGemcutterUtilities < Gem::TestCase
   def teardown
     ENV['RUBYGEMS_HOST'] = nil
     Gem.configuration.rubygems_api_key = nil
-
-    credential_teardown
 
     super
   end
@@ -261,4 +257,5 @@ class TestGemGemcutterUtilities < Gem::TestCase
       @cmd.verify_api_key :missing
     end
   end
+
 end

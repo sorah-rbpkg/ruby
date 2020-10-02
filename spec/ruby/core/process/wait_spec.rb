@@ -7,8 +7,9 @@ describe "Process.wait" do
   before :all do
     begin
       leaked = Process.waitall
+      puts "leaked before wait specs: #{leaked}" unless leaked.empty?
       # Ruby-space should not see PIDs used by mjit
-      raise "subprocesses leaked before wait specs: #{leaked}" unless leaked.empty?
+      leaked.should be_empty
     rescue NotImplementedError
     end
   end

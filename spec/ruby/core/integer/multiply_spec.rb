@@ -2,7 +2,13 @@ require_relative '../../spec_helper'
 require_relative 'shared/arithmetic_coerce'
 
 describe "Integer#*" do
-  it_behaves_like :integer_arithmetic_coerce_not_rescue, :*
+  ruby_version_is "2.4"..."2.5" do
+    it_behaves_like :integer_arithmetic_coerce_rescue, :*
+  end
+
+  ruby_version_is "2.5" do
+    it_behaves_like :integer_arithmetic_coerce_not_rescue, :*
+  end
 
   context "fixnum" do
     it "returns self multiplied by the given Integer" do

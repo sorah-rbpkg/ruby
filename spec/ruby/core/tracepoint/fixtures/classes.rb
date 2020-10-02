@@ -1,10 +1,4 @@
 module TracePointSpec
-  @thread = Thread.current
-
-  def self.target_thread?
-    Thread.current == @thread
-  end
-
   class ClassWithMethodAlias
     def m
     end

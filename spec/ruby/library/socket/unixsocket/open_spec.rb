@@ -21,7 +21,7 @@ describe "UNIXSocket.open" do
     it "opens a unix socket on the specified file and yields it to the block" do
       UNIXSocket.open(@path) do |client|
         client.addr[0].should == "AF_UNIX"
-        client.should_not.closed?
+        client.closed?.should == false
       end
     end
   end

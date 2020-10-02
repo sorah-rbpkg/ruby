@@ -33,12 +33,14 @@ describe "Range.new" do
     -> { Range.new(a, b) }.should raise_error(ArgumentError)
   end
 
-  it "does not rescue exception raised in #<=> when compares the given start and end" do
-    b = mock('a')
-    a = mock('b')
-    a.should_receive(:<=>).with(b).and_raise(RangeSpecs::ComparisonError)
+  ruby_version_is "2.5" do
+    it "does not rescue exception raised in #<=> when compares the given start and end" do
+      b = mock('a')
+      a = mock('b')
+      a.should_receive(:<=>).with(b).and_raise(RangeSpecs::ComparisonError)
 
-    -> { Range.new(a, b) }.should raise_error(RangeSpecs::ComparisonError)
+      -> { Range.new(a, b) }.should raise_error(RangeSpecs::ComparisonError)
+    end
   end
 
   describe "beginless/endless range" do

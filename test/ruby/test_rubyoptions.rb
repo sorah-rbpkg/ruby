@@ -501,17 +501,16 @@ class TestRubyOptions < Test::Unit::TestCase
           ["case nil; when true", "end"],
           ["if false;", "end", "if true\nelse ", "end"],
           ["else", " end", "_ = if true\n"],
-          ["begin\n    def f() = nil", "end"],
         ].each do
           |b, e = 'end', pre = nil, post = nil|
           src = ["#{pre}#{b}\n", " #{e}\n#{post}"]
           k = b[/\A\s*(\S+)/, 1]
           e = e[/\A\s*(\S+)/, 1]
-          n = 1 + src[0].count("\n")
-          n1 = 1 + (pre ? pre.count("\n") : 0)
+          n = 2
+          n += pre.count("\n") if pre
 
           a.for("no directives with #{src}") do
-            err = ["#{t.path}:#{n}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n1}"]
+            err = ["#{t.path}:#{n}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n-1}"]
             t.rewind
             t.truncate(0)
             t.puts src
@@ -530,7 +529,7 @@ class TestRubyOptions < Test::Unit::TestCase
           end
 
           a.for("false and true directives with #{src}") do
-            err = ["#{t.path}:#{n+2}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n1+2}"]
+            err = ["#{t.path}:#{n+2}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n+1}"]
             t.rewind
             t.truncate(0)
             t.puts "# -*- warn-indent: false -*-"
@@ -552,7 +551,7 @@ class TestRubyOptions < Test::Unit::TestCase
           end
 
           a.for("BOM with #{src}") do
-            err = ["#{t.path}:#{n}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n1}"]
+            err = ["#{t.path}:#{n}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n-1}"]
             t.rewind
             t.truncate(0)
             t.print "\u{feff}"
@@ -726,8 +725,6 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def assert_segv(args, message=nil)
-    skip if ENV['RUBY_ON_BUG']
-
     test_stdin = ""
     opt = SEGVTest::ExecOptions.dup
     list = SEGVTest::ExpectedStderrList
@@ -1021,11 +1018,11 @@ class TestRubyOptions < Test::Unit::TestCase
       err = !freeze ? [] : debug ? with_debug_pat : wo_debug_pat
       [
         ['"foo" << "bar"', err],
-        ['"foo#{123}bar" << "bar"', []],
+        ['"foo#{123}bar" << "bar"', err],
         ['+"foo#{123}bar" << "bar"', []],
-        ['-"foo#{123}bar" << "bar"', wo_debug_pat],
+        ['-"foo#{123}bar" << "bar"', freeze && debug ? with_debug_pat : wo_debug_pat],
       ].each do |code, expected|
-        assert_in_out_err(opt, code, [], expected, "#{opt} #{code}")
+        assert_in_out_err(opt, code, [], expected, [opt, code])
       end
     end
   end

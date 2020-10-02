@@ -1,5 +1,5 @@
 # encoding: utf-8
-# frozen-string-literal: true
+# fronzen-string-literal: true
 
 module Kernel
   module_function
@@ -40,6 +40,6 @@ module Kernel
   #    baz.rb:6: warning: invalid call to foo
   #
   def warn(*msgs, uplevel: nil)
-    Primitive.rb_warn_m(msgs, uplevel)
+    __builtin_rb_warn_m(msgs, uplevel)
   end
 end

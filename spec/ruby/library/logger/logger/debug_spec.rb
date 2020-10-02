@@ -16,12 +16,12 @@ describe "Logger#debug?" do
 
   it "returns true if severity level allows debug messages" do
     @logger.level = Logger::DEBUG
-    @logger.should.debug?
+    @logger.debug?.should == true
   end
 
   it "returns false if severity level does not allow debug messages" do
     @logger.level = Logger::WARN
-    @logger.should_not.debug?
+    @logger.debug?.should == false
   end
 end
 

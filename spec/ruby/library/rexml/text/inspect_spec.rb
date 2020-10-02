@@ -1,11 +1,8 @@
 require_relative '../../../spec_helper'
+require 'rexml/document'
 
-ruby_version_is ''...'3.0' do
-  require 'rexml/document'
-
-  describe "REXML::Text#inspect" do
-    it "inspects the string attribute as a string" do
-      REXML::Text.new("a text").inspect.should == "a text".inspect
-    end
+describe "REXML::Text#inspect" do
+  it "inspects the string attribute as a string" do
+    REXML::Text.new("a text").inspect.should == "a text".inspect
   end
 end

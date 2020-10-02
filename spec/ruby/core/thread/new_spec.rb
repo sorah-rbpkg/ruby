@@ -58,13 +58,13 @@ describe "Thread.new" do
     m2 = Mutex.new
     t = Thread.new {
       m1.lock
-      m1.should.locked?
+      m1.locked?.should == true
       m2.lock
-      m2.should.locked?
+      m2.locked?.should == true
     }
     t.join
-    m1.should_not.locked?
-    m2.should_not.locked?
+    m1.locked?.should == false
+    m2.locked?.should == false
   end
 
   it "releases Mutexes held by the Thread when the Thread finishes, also with Mutex#synchronize" do
@@ -75,9 +75,9 @@ describe "Thread.new" do
         m.lock
       }
       m.lock
-      m.should.locked?
+      m.locked?.should == true
     }
     t.join
-    m.should_not.locked?
+    m.locked?.should == false
   end
 end

@@ -7,7 +7,13 @@
 
 require 'rubygems/exceptions'
 require 'fileutils'
-require_relative 'openssl'
+
+begin
+  require 'openssl'
+rescue LoadError => e
+  raise unless (e.respond_to?(:path) && e.path == 'openssl') ||
+               e.message =~ / -- openssl$/
+end
 
 ##
 # = Signing gems
@@ -56,11 +62,11 @@ require_relative 'openssl'
 #
 #   $ tar tf your-gem-1.0.gem
 #   metadata.gz
+#   metadata.gz.sum
 #   metadata.gz.sig # metadata signature
 #   data.tar.gz
+#   data.tar.gz.sum
 #   data.tar.gz.sig # data signature
-#   checksums.yaml.gz
-#   checksums.yaml.gz.sig # checksums signature
 #
 # === Manually signing gems
 #
@@ -155,8 +161,6 @@ require_relative 'openssl'
 #     -K, --private-key KEY            Key for --sign or --build
 #     -s, --sign CERT                  Signs CERT with the key from -K
 #                                      and the certificate from -C
-#     -d, --days NUMBER_OF_DAYS        Days before the certificate expires
-#     -R, --re-sign                    Re-signs the certificate from -C with the key from -K
 #
 # We've already covered the <code>--build</code> option, and the
 # <code>--add</code>, <code>--list</code>, and <code>--remove</code> commands
@@ -261,7 +265,7 @@ require_relative 'openssl'
 # 2. Grab the public key from the gemspec
 #
 #      gem spec some_signed_gem-1.0.gem cert_chain | \
-#        ruby -ryaml -e 'puts YAML.load($stdin)' > public_key.crt
+#        ruby -ryaml -e 'puts YAML.load_documents($stdin)' > public_key.crt
 #
 # 3. Generate a SHA1 hash of the data.tar.gz
 #
@@ -333,9 +337,27 @@ module Gem::Security
   class Exception < Gem::Exception; end
 
   ##
+  # Digest algorithm used to sign gems
+
+  DIGEST_ALGORITHM =
+    if defined?(OpenSSL::Digest::SHA256)
+      OpenSSL::Digest::SHA256
+    elsif defined?(OpenSSL::Digest::SHA1)
+      OpenSSL::Digest::SHA1
+    else
+      require 'digest'
+      Digest::SHA512
+    end
+
+  ##
   # Used internally to select the signing digest from all computed digests
 
-  DIGEST_NAME = 'SHA256' # :nodoc:
+  DIGEST_NAME = # :nodoc:
+    if DIGEST_ALGORITHM.method_defined? :name
+      DIGEST_ALGORITHM.new.name
+    else
+      DIGEST_ALGORITHM.name[/::([^:]+)\z/, 1]
+    end
 
   ##
   # Algorithm for creating the key pair used to sign gems
@@ -444,22 +466,6 @@ module Gem::Security
   end
 
   ##
-  # Creates a new digest instance using the specified +algorithm+. The default
-  # is SHA256.
-
-  if defined?(OpenSSL::Digest)
-    def self.create_digest(algorithm = DIGEST_NAME)
-      OpenSSL::Digest.new(algorithm)
-    end
-  else
-    require 'digest'
-
-    def self.create_digest(algorithm = DIGEST_NAME)
-      Digest.const_get(algorithm).new
-    end
-  end
-
-  ##
   # Creates a new key pair of the specified +length+ and +algorithm+.  The
   # default is a 3072 bit RSA key.
 
@@ -477,7 +483,7 @@ module Gem::Security
 
     dcs = dcs.split '.'
 
-    name = "CN=#{cn}/#{dcs.map {|dc| "DC=#{dc}" }.join '/'}"
+    name = "CN=#{cn}/#{dcs.map { |dc| "DC=#{dc}" }.join '/'}"
 
     OpenSSL::X509::Name.parse name
   end
@@ -520,7 +526,7 @@ module Gem::Security
 
   ##
   # Sign the public key from +certificate+ with the +signing_key+ and
-  # +signing_cert+, using the Gem::Security::DIGEST_NAME.  Uses the
+  # +signing_cert+, using the Gem::Security::DIGEST_ALGORITHM.  Uses the
   # default certificate validity range and extensions.
   #
   # Returns the newly signed certificate.
@@ -547,7 +553,7 @@ module Gem::Security
     signed = create_cert signee_subject, signee_key, age, extensions, serial
     signed.issuer = signing_cert.subject
 
-    signed.sign signing_key, Gem::Security::DIGEST_NAME
+    signed.sign signing_key, Gem::Security::DIGEST_ALGORITHM.new
   end
 
   ##

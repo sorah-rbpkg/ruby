@@ -272,11 +272,6 @@ class Time
     # Takes a string representation of a Time and attempts to parse it
     # using a heuristic.
     #
-    # This method **does not** function as a validator.  If the input
-    # string does not match valid formats strictly, you may get a
-    # cryptic result.  Should consider to use `Time.strptime` instead
-    # of this method as possible.
-    #
     #     require 'time'
     #
     #     Time.parse("2010-10-31") #=> 2010-10-31 00:00:00 -0500
@@ -595,12 +590,12 @@ class Time
     end
 
     #
-    # Parses +time+ as a dateTime defined by the XML Schema and converts it to
+    # Parses +date+ as a dateTime defined by the XML Schema and converts it to
     # a Time object.  The format is a restricted version of the format defined
     # by ISO 8601.
     #
-    # ArgumentError is raised if +time+ is not compliant with the format or if
-    # the Time class cannot represent the specified time.
+    # ArgumentError is raised if +date+ is not compliant with the format or if
+    # the Time class cannot represent specified date.
     #
     # See #xmlschema for more information on this format.
     #
@@ -611,14 +606,14 @@ class Time
     #
     # You must require 'time' to use this method.
     #
-    def xmlschema(time)
+    def xmlschema(date)
       if /\A\s*
           (-?\d+)-(\d\d)-(\d\d)
           T
           (\d\d):(\d\d):(\d\d)
           (\.\d+)?
           (Z|[+-]\d\d(?::?\d\d)?)?
-          \s*\z/ix =~ time
+          \s*\z/ix =~ date
         year = $1.to_i
         mon = $2.to_i
         day = $3.to_i
@@ -641,7 +636,7 @@ class Time
           self.local(year, mon, day, hour, min, sec, usec)
         end
       else
-        raise ArgumentError.new("invalid xmlschema format: #{time.inspect}")
+        raise ArgumentError.new("invalid date: #{date.inspect}")
       end
     end
     alias iso8601 xmlschema

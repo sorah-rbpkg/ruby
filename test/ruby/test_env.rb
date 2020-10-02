@@ -106,7 +106,6 @@ class TestEnv < Test::Unit::TestCase
     assert_invalid_env {|v| ENV.delete(v)}
     assert_nil(ENV.delete("TEST"))
     assert_nothing_raised { ENV.delete(PATH_ENV) }
-    assert_equal("NO TEST", ENV.delete("TEST") {|name| "NO "+name})
   end
 
   def test_getenv
@@ -287,17 +286,6 @@ class TestEnv < Test::Unit::TestCase
     assert_equal({"foo"=>"bar", "baz"=>"qux"}, ENV.slice("foo", "baz"))
   end
 
-  def test_except
-    ENV.clear
-    ENV["foo"] = "bar"
-    ENV["baz"] = "qux"
-    ENV["bar"] = "rab"
-    assert_equal({"bar"=>"rab", "baz"=>"qux", "foo"=>"bar"}, ENV.except())
-    assert_equal({"bar"=>"rab", "baz"=>"qux", "foo"=>"bar"}, ENV.except(""))
-    assert_equal({"bar"=>"rab", "baz"=>"qux", "foo"=>"bar"}, ENV.except("unknown"))
-    assert_equal({"bar"=>"rab"}, ENV.except("foo", "baz"))
-  end
-
   def test_clear
     ENV.clear
     assert_equal(0, ENV.size)
@@ -418,8 +406,8 @@ class TestEnv < Test::Unit::TestCase
 
   def check(as, bs)
     if IGNORE_CASE
-      as = as.map {|k, v| [k.upcase, v] }
-      bs = bs.map {|k, v| [k.upcase, v] }
+      as = as.map {|xs| xs.map {|x| x.upcase } }
+      bs = bs.map {|xs| xs.map {|x| x.upcase } }
     end
     assert_equal(as.sort, bs.sort)
   end

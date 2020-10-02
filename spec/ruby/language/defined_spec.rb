@@ -275,7 +275,9 @@ describe "The defined? keyword for an expression" do
     end
 
     it "returns nil for an expression with '!' and an unset class variable" do
-      @result = eval("class singleton_class::A; defined?(!@@doesnt_exist) end", binding, __FILE__, __LINE__)
+      -> {
+        @result = defined?(!@@defined_specs_undefined_class_variable)
+      }.should complain(/class variable access from toplevel/)
       @result.should be_nil
     end
 
@@ -284,7 +286,9 @@ describe "The defined? keyword for an expression" do
     end
 
     it "returns nil for an expression with 'not' and an unset class variable" do
-      @result = eval("class singleton_class::A; defined?(not @@doesnt_exist) end", binding, __FILE__, __LINE__)
+      -> {
+        @result = defined?(not @@defined_specs_undefined_class_variable)
+      }.should complain(/class variable access from toplevel/)
       @result.should be_nil
     end
 
@@ -752,8 +756,16 @@ describe "The defined? keyword for a scoped constant" do
     defined?(DefinedSpecs::String).should be_nil
   end
 
-  it "returns nil when a constant is defined on top-level but not on the class" do
-    defined?(DefinedSpecs::Basic::String).should be_nil
+  ruby_version_is ""..."2.5" do
+    it "returns 'constant' when a constant is defined on top-level but not on the class" do
+      defined?(DefinedSpecs::Basic::String).should == 'constant'
+    end
+  end
+
+  ruby_version_is "2.5" do
+    it "returns nil when a constant is defined on top-level but not on the class" do
+      defined?(DefinedSpecs::Basic::String).should be_nil
+    end
   end
 
   it "returns 'constant' if the scoped-scoped constant is defined" do
@@ -893,21 +905,17 @@ describe "The defined? keyword for a variable scoped constant" do
   end
 
   it "returns nil if the class scoped constant is not defined" do
-    eval(<<-END, binding, __FILE__, __LINE__)
-      class singleton_class::A
-        @@defined_specs_obj = DefinedSpecs::Basic
-        defined?(@@defined_specs_obj::Undefined).should be_nil
-      end
-    END
+    -> {
+      @@defined_specs_obj = DefinedSpecs::Basic
+      defined?(@@defined_specs_obj::Undefined).should be_nil
+    }.should complain(/class variable access from toplevel/)
   end
 
   it "returns 'constant' if the constant is defined in the scope of the class variable" do
-    eval(<<-END, binding, __FILE__, __LINE__)
-      class singleton_class::A
-        @@defined_specs_obj = DefinedSpecs::Basic
-        defined?(@@defined_specs_obj::A).should == "constant"
-      end
-    END
+    -> {
+      @@defined_specs_obj = DefinedSpecs::Basic
+      defined?(@@defined_specs_obj::A).should == "constant"
+    }.should complain(/class variable access from toplevel/)
   end
 
   it "returns nil if the local scoped constant is not defined" do

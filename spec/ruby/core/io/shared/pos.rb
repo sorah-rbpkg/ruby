@@ -27,7 +27,7 @@ describe :io_pos, shared: true do
       io.read 1
       io.read 1
       io.send(@method)
-      io.should_not.eof?
+      io.eof?.should == false
     end
   end
 end

@@ -34,8 +34,6 @@ RSpec.describe Bundler::Env do
       end
 
       it "prints user home" do
-        skip "needs to use a valid HOME" if Gem.win_platform? && RUBY_VERSION < "2.6.0"
-
         with_clear_paths("HOME", "/a/b/c") do
           out = described_class.report
           expect(out).to include("User Home   /a/b/c")
@@ -43,11 +41,7 @@ RSpec.describe Bundler::Env do
       end
 
       it "prints user path" do
-        skip "needs to use a valid HOME" if Gem.win_platform? && RUBY_VERSION < "2.6.0"
-
         with_clear_paths("HOME", "/a/b/c") do
-          allow(File).to receive(:exist?)
-          allow(File).to receive(:exist?).with("/a/b/c/.gem").and_return(true)
           out = described_class.report
           expect(out).to include("User Path   /a/b/c/.gem")
         end
@@ -88,8 +82,6 @@ RSpec.describe Bundler::Env do
           BUNDLED WITH
              1.10.0
         L
-
-        allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
       end
 
       let(:output) { described_class.report(:print_gemfile => true) }
@@ -129,8 +121,6 @@ RSpec.describe Bundler::Env do
         File.open(bundled_app.join("foo.gemspec"), "wb") do |f|
           f.write(gemspec)
         end
-
-        allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
       end
 
       it "prints the gemspec" do
@@ -143,15 +133,13 @@ RSpec.describe Bundler::Env do
 
     context "when eval_gemfile is used" do
       it "prints all gemfiles" do
-        create_file bundled_app("other/Gemfile-other"), "gem 'rack'"
-        create_file bundled_app("other/Gemfile"), "eval_gemfile 'Gemfile-other'"
-        create_file bundled_app("Gemfile-alt"), <<-G
+        create_file "other/Gemfile-other", "gem 'rack'"
+        create_file "other/Gemfile", "eval_gemfile 'Gemfile-other'"
+        create_file "Gemfile-alt", <<-G
           source "#{file_uri_for(gem_repo1)}"
           eval_gemfile "other/Gemfile"
         G
-        gemfile "eval_gemfile #{bundled_app("Gemfile-alt").to_s.dump}"
-        allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-        allow(Bundler::SharedHelpers).to receive(:pwd).and_return(bundled_app)
+        gemfile "eval_gemfile #{File.expand_path("Gemfile-alt").dump}"
 
         output = described_class.report(:print_gemspecs => true)
         expect(output).to include(strip_whitespace(<<-ENV))
@@ -160,7 +148,7 @@ RSpec.describe Bundler::Env do
           ### Gemfile
 
           ```ruby
-          eval_gemfile #{bundled_app("Gemfile-alt").to_s.dump}
+          eval_gemfile #{File.expand_path("Gemfile-alt").dump}
           ```
 
           ### Gemfile-alt
@@ -185,7 +173,7 @@ RSpec.describe Bundler::Env do
           ### Gemfile.lock
 
           ```
-          <No #{bundled_app_lock} found>
+          <No #{bundled_app("Gemfile.lock")} found>
           ```
         ENV
       end

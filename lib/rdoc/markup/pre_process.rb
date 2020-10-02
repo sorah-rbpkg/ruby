@@ -178,7 +178,7 @@ class RDoc::Markup::PreProcess
 
       blankline
     when 'include' then
-      filename = param.split(' ', 2).first
+      filename = param.split.first
       include_file filename, prefix, encoding
     when 'main' then
       @options.main_page = param if @options.respond_to? :main_page

@@ -3,16 +3,11 @@
 
  sources: golf_prelude
 */
-#include "internal.h"
-#include "internal/warnings.h"
-#include "iseq.h"
 #include "ruby/ruby.h"
+#include "internal.h"
 #include "vm_core.h"
+#include "iseq.h"
 
-COMPILER_WARNING_PUSH
-#if __has_warning("-Wstring-concatenation")
-COMPILER_WARNING_IGNORED(-Wstring-concatenation)
-#endif
 
 static const char prelude_name0[] = "<internal:golf_prelude>";
 static const struct {
@@ -164,10 +159,8 @@ static const struct {
 "    end\n"
 "  end\n"
 "end\n"
-#line 168 "golf_prelude.c"
+#line 163 "golf_prelude.c"
 };
-
-COMPILER_WARNING_POP
 
 #define PRELUDE_NAME(n) rb_usascii_str_new_static(prelude_name##n, sizeof(prelude_name##n)-1)
 #define PRELUDE_CODE(n) rb_utf8_str_new_static(prelude_code##n.L0, sizeof(prelude_code##n))

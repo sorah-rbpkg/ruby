@@ -187,8 +187,8 @@ class TestISeq < Test::Unit::TestCase
     s1, s2, s3, s4 = compile(code, line, {frozen_string_literal: true}).eval
     assert_predicate(s1, :frozen?)
     assert_predicate(s2, :frozen?)
-    assert_not_predicate(s3, :frozen?)
-    assert_predicate(s4, :frozen?) # should probably not be frozen, but unrealistic code
+    assert_predicate(s3, :frozen?)
+    assert_predicate(s4, :frozen?)
   end
 
   # Safe call chain is not optimized when Coverage is running.
@@ -465,11 +465,6 @@ class TestISeq < Test::Unit::TestCase
         attr_reader :i
       end
     end;
-
-    # cleanup
-    ::Object.class_eval do
-      remove_const :P
-    end
   end
 
   def collect_from_binary_tracepoint_lines(tracepoint_type, filename)
@@ -572,13 +567,5 @@ class TestISeq < Test::Unit::TestCase
     EOS
     assert_not_nil(invokebuiltin)
     assert_equal([:func_ptr, :argc, :index, :name], invokebuiltin[1].keys)
-  end
-
-  def test_iseq_option_debug_level
-    assert_raise(TypeError) {ISeq.compile("", debug_level: "")}
-    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
-    begin;
-      RubyVM::InstructionSequence.compile("", debug_level: 5)
-    end;
   end
 end

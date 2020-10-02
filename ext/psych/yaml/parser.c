@@ -1261,10 +1261,7 @@ yaml_parser_process_directives(yaml_parser_t *parser,
                 goto error;
             }
             if (token->data.version_directive.major != 1
-                    || (
-                        token->data.version_directive.minor != 1
-                        && token->data.version_directive.minor != 2
-                    )) {
+                    || token->data.version_directive.minor != 1) {
                 yaml_parser_set_parser_error(parser,
                         "found incompatible YAML document", token->start_mark);
                 goto error;
@@ -1319,8 +1316,6 @@ yaml_parser_process_directives(yaml_parser_t *parser,
         STACK_DEL(parser, tag_directives);
     }
 
-    if (!version_directive_ref)
-        yaml_free(version_directive);
     return 1;
 
 error:
