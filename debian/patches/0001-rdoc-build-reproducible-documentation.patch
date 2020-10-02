@@ -2,7 +2,6 @@ From: Christian Hofstaedtler <zeha@debian.org>
 Date: Tue, 10 Oct 2017 15:04:34 -0300
 Subject: rdoc: build reproducible documentation
 
-- sort input filenames
 - provide a fixed timestamp to the gzip compression
 
 Signed-off-by: Antonio Terceiro <terceiro@debian.org>
@@ -32,14 +31,3 @@ Signed-off-by: Christian Hofstaedtler <zeha@debian.org>
            gz.orig_name = dest.basename.to_s
            gz.write data
            gz.close
---- a/lib/rdoc/rdoc.rb
-+++ b/lib/rdoc/rdoc.rb
-@@ -318,7 +318,7 @@
-       end
-     end
- 
--    file_list
-+    file_list.sort
-   end
- 
-   ##
