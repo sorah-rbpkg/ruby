@@ -1,3 +1,10 @@
+ruby2.7 (2.7.2-1) UNRELEASED; urgency=medium
+
+  * New upstream version 2.7.2
+  * Refresh d/patches
+
+ -- Utkarsh Gupta <utkarsh@debian.org>  Sat, 03 Oct 2020 01:25:51 +0530
+
 ruby2.7 (2.7.1-4) unstable; urgency=medium
 
   [ Pirate Praveen ]
