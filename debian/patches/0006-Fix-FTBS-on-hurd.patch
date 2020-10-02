@@ -10,11 +10,9 @@ Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
  io.c | 6 +++++-
  1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/io.c b/io.c
-index 42528c0..075d549 100644
 --- a/io.c
 +++ b/io.c
-@@ -1753,7 +1753,11 @@ io_writev(int argc, VALUE *argv, VALUE io)
+@@ -1753,7 +1753,11 @@
  
      for (i = 0; i < argc; i += cnt) {
  #ifdef HAVE_WRITEV

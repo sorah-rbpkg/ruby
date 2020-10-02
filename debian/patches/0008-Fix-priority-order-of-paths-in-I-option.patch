@@ -8,11 +8,9 @@ Author: deivid <deivid.rodriguez@riseup.net>
  lib/rubygems/core_ext/kernel_require.rb | 20 ++++++++++----------
  1 file changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/lib/rubygems/core_ext/kernel_require.rb b/lib/rubygems/core_ext/kernel_require.rb
-index 60f4d18..3828338 100644
 --- a/lib/rubygems/core_ext/kernel_require.rb
 +++ b/lib/rubygems/core_ext/kernel_require.rb
-@@ -43,18 +43,18 @@ module Kernel
+@@ -43,18 +43,18 @@
      # https://github.com/rubygems/rubygems/pull/1868
      resolved_path = begin
        rp = nil
