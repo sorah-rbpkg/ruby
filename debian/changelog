@@ -1,9 +1,15 @@
 ruby2.7 (2.7.2-1) UNRELEASED; urgency=medium
 
-  * New upstream version 2.7.2
-  * Refresh d/patches
+  [ Utkarsh Gupta ]
+  * New upstream version 2.7.2.
+  * Refresh d/patches.
+  * Add patch to fix TestIRB::TestHistory tests.
+  * Add patch to fix "real" autopkgtests failure wrt rubygems.
 
- -- Utkarsh Gupta <utkarsh@debian.org>  Sat, 03 Oct 2020 01:25:51 +0530
+  [ Cédric Boutillier ]
+  * use C.UTF-8 locale
+
+ -- Utkarsh Gupta <utkarsh@debian.org>  Wed, 07 Oct 2020 04:07:46 +0530
 
 ruby2.7 (2.7.1-4) unstable; urgency=medium
 
