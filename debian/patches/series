@@ -6,3 +6,4 @@
 0006-Fix-FTBS-on-hurd.patch
 0007-Port-to-kfreebsd-amd64.patch
 0009-Fix-FTBFS-on-x32-misdetected-as-i386-or-amd64.patch
+0010-Fix-IRBTestIRBHistory-tests.patch
