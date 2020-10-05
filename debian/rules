@@ -65,6 +65,7 @@ export SHELL := /bin/bash
 
 # Some tests rely on $HOME
 export HOME := $(shell mktemp -d)
+export LANG := C.UTF-8
 
 %:
 	dh $@
