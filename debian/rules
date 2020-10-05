@@ -70,6 +70,7 @@ configure_options += --with-out-ext=win32api
 
 # Some tests rely on $HOME
 export HOME := $(shell mktemp -d)
+export LANG := C.UTF-8
 
 %:
 	dh $@ --parallel
