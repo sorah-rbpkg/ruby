@@ -8,7 +8,6 @@ fiddle
 gdbm
 openssl
 psych
-sdbm
 zlib
 '
 
