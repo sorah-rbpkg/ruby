@@ -9,3 +9,4 @@
 0009-Dont-use-relative-path.patch
 0010-Fix-getcwd-ENOENT.patch
 0011-TestProcess-disable-gems-to-disable-rubygems_integra.patch
+0012-Dont-use-relative-path.patch
