@@ -20,14 +20,6 @@ Copyright:
  2011-2014  K.Takata  <kentkt AT csc DOT jp>
 License: BSD-2-clause
 
-Files:
- lib/rdoc/task.rb
- lib/rubygems/package_task.rb
-Copyright:
- 2003, 2004 Jim Weirich
- 2009 Eric Hodel
-License: Expat
-
 Files: enc/*.c
 Copyright: 2002-2008 K.Kosako <sndgk393@ybb@ne@jp>
 License: BSD-2-clause
@@ -96,6 +88,14 @@ License: Expat or Ruby
 Comment:
  This license information was obtained from lib/rubygems/LICENSE.txt in
  the source tree.
+
+Files:
+ lib/rdoc/task.rb
+ lib/rubygems/package_task.rb
+Copyright:
+ 2003, 2004 Jim Weirich
+ 2009 Eric Hodel
+License: Expat
 
 Files: util.c
 Copyright:
