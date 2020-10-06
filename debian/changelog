@@ -1,23 +1,37 @@
 ruby3.0 (3.0.0~preview1-1) UNRELEASED; urgency=medium
 
-  [ Pirate Praveen ]
-  * Bump minimum version of rubygems-integration to 1.17.1~
-
   [ Cédric Boutillier ]
-  * [ci skip] Add .gitattributes to keep unwanted files out of the source package
+  * [ci skip] Add .gitattributes to keep unwanted files out of
+    the source package
   * update 0001-rdoc-build-reproducible-documentation.patch
   * use C.UTF-8 locale
+  * New patch to prevent trying to download gems from internet
+  * NEWS file has now a .md extension
+  * Update symbols file
+  * Use debhelper-compat 13
+  * Add Build-Depends-Package metadata in symbols file
+  * Move paragraph in copyright file to have match
+    lib/rubygems/package_task.rb
+  * fix gbp command name in quick-build.sh
+  * Remove sdbm from builtin-extensions test
+  * hyphen-used-as-minus-sign tag removed from lintian
 
   [ Utkarsh Gupta ]
-  * Update d/watch for ruby3.0
-  * New upstream version 3.0.0~preview1
-  * Ruby 3.0
-  * Refresh d/patches
-  * Update package for ruby3.0
-  * Add patch to fix TestIRB::TestHistory tests
-  * Skip test_build_extensions_extconf_bad test as it fails in sbuild
+  * Update d/watch for ruby3.0.
+  * New upstream version 3.0.0~preview1.
+  * Ruby 3.0.
+  * Refresh d/patches.
+  * Update package for ruby3.0.
+  * Add patch to fix TestIRB::TestHistory tests.
+  * Skip test_build_extensions_extconf_bad test as it fails
+    in sbuild.
+  * Skip test/rubygems/test_bundled_ca.rb tests.
+  * Fix symbols file to fix the build for i386 arch.
+  * Skip test which require building gem native extensions.
+  * Skip test_realworld_upgraded_default_gem for autopkgtest.
+  * Add patch to fix "real" autopkgtests related to rubygems.
 
- -- Utkarsh Gupta <utkarsh@debian.org>  Mon, 05 Oct 2020 22:19:10 +0530
+ -- Utkarsh Gupta <utkarsh@debian.org>  Wed, 07 Oct 2020 04:01:25 +0530
 
 ruby2.7 (2.7.1-3) unstable; urgency=medium
 
