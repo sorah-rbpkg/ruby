@@ -852,7 +852,7 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_include_module@Base 3.0.0~preview1
 #MISSING: 3.0.0~preview1-1# rb_insecure_operation@Base 3.0.0~preview1
  rb_inspect@Base 3.0.0~preview1
- rb_int128t2big@Base 3.0.0~preview1
+#MISSING: 3.0.0~preview1-1# rb_int128t2big@Base 3.0.0~preview1
  rb_int2big@Base 3.0.0~preview1
  rb_int2inum@Base 3.0.0~preview1
  rb_int_abs@Base 3.0.0~preview1
