@@ -11,6 +11,7 @@ test/mkmf/test_have_library.rb
 test/mkmf/base.rb
 test/mkmf/test_signedness.rb
 test/mkmf/test_constant.rb
+test/rubygems/test_bundled_ca.rb
 test/rubygems/test_gem_commands_cert_command.rb
 test/rubygems/test_gem_request.rb
 test/rubygems/test_gem_security.rb
