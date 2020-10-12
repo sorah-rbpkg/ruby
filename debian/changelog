@@ -2,6 +2,7 @@ ruby2.7 (2.7.2-1) UNRELEASED; urgency=medium
 
   [ Utkarsh Gupta ]
   * New upstream version 2.7.2.
+    - Ready for glibc 2.32.
   * Refresh d/patches.
   * Add patch to fix TestIRB::TestHistory tests.
   * Add patch to fix "real" autopkgtests failure wrt rubygems.
