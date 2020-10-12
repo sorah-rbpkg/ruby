@@ -1,4 +1,4 @@
-ruby2.7 (2.7.2-1) UNRELEASED; urgency=medium
+ruby2.7 (2.7.2-1) unstable; urgency=medium
 
   [ Utkarsh Gupta ]
   * New upstream version 2.7.2.
@@ -6,11 +6,12 @@ ruby2.7 (2.7.2-1) UNRELEASED; urgency=medium
   * Refresh d/patches.
   * Add patch to fix TestIRB::TestHistory tests.
   * Add patch to fix "real" autopkgtests failure wrt rubygems.
+  * Update symbols file to add rb_ast_add_local_table@Base.
 
   [ Cédric Boutillier ]
   * use C.UTF-8 locale
 
- -- Utkarsh Gupta <utkarsh@debian.org>  Wed, 07 Oct 2020 04:07:46 +0530
+ -- Utkarsh Gupta <utkarsh@debian.org>  Tue, 13 Oct 2020 00:55:43 +0530
 
 ruby2.7 (2.7.1-4) unstable; urgency=medium
 
