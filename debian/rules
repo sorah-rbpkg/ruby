@@ -34,6 +34,13 @@ configure_options += --runstatedir=/var/run
 configure_options += --localstatedir=/var
 configure_options += --sysconfdir=/etc
 
+# These are embedded in rbconfig.rb and should be triplet-prefixed for
+# cross compilation.
+configure_options += AS=$(DEB_HOST_GNU_TYPE)-as
+configure_options += CC=$(DEB_HOST_GNU_TYPE)-gcc
+configure_options += CXX=$(DEB_HOST_GNU_TYPE)-g++
+configure_options += LD=$(DEB_HOST_GNU_TYPE)-ld
+
 ifneq ($(DEB_BUILD_GNU_TYPE), $(DEB_HOST_GNU_TYPE))
 # Cross-building. This is the same logic that debhelper's
 # lib/Debian/Debhelper/Buildsystem/autoconf.pm uses.
