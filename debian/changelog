@@ -1,4 +1,4 @@
-ruby2.7 (2.7.2-2) UNRELEASED; urgency=medium
+ruby2.7 (2.7.2-2) unstable; urgency=medium
 
   * Add patch to fix ENOENT error when cwd does not exists. (Closes: #969130)
     - Thanks, Antoni Villalonga, for the patch.
@@ -7,7 +7,7 @@ ruby2.7 (2.7.2-2) UNRELEASED; urgency=medium
   * Disable test_find_proxy_no_proxy test. (Closes: #968203)
     - Tries to parse http://example.org and thus causes FTBFS on buster.
 
- -- Utkarsh Gupta <utkarsh@debian.org>  Tue, 13 Oct 2020 13:22:00 +0530
+ -- Utkarsh Gupta <utkarsh@debian.org>  Tue, 13 Oct 2020 18:48:32 +0530
 
 ruby2.7 (2.7.2-1) unstable; urgency=medium
 
