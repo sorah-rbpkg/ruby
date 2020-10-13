@@ -1,3 +1,10 @@
+ruby2.5 (2.5.5-3+deb10u3) buster; urgency=high
+
+  * Add patch to fix a potential HTTP request smuggling
+    vulnerability in WEBrick. (Fixes: CVE-2020-25613)
+
+ -- Utkarsh Gupta <utkarsh@debian.org>  Tue, 13 Oct 2020 18:32:32 +0530
+
 ruby2.5 (2.5.5-3+deb10u2) buster-security; urgency=high
 
   * Non-maintainer upload by the Security Team.
