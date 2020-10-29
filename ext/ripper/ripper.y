@@ -968,6 +968,7 @@ static int looking_at_eol_p(struct parser_params *p);
 
 %expect 0
 %define api.pure
+%define parse.error verbose
 %lex-param {struct parser_params *p}
 %parse-param {struct parser_params *p}
 %initial-action
@@ -2022,10 +2023,6 @@ fname		: tIDENTIFIER
 			$$ = $1;
 		    }
 		| reswords
-		    {
-			SET_LEX_STATE(EXPR_ENDFN);
-			$$ = $1;
-		    }
 		;
 
 fitem		: fname
@@ -2875,11 +2872,9 @@ primary		: literal
 			ID id = internal_id(p);
 			NODE *m = NEW_ARGS_AUX(0, 0, &NULL_LOC);
 			NODE *args, *scope, *internal_var = NEW_DVAR(id, &@2);
-			VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer();
 			ID *tbl = ALLOC_N(ID, 3);
-			rb_imemo_tmpbuf_set_ptr(tmpbuf, tbl);
 			tbl[0] = 1 /* length of local var table */; tbl[1] = id /* internal id */;
-                        tbl[2] = tmpbuf;
+                        rb_ast_add_local_table(p->ast, tbl);
 
 			switch (nd_type($2)) {
 			  case NODE_LASGN:
@@ -2899,7 +2894,6 @@ primary		: literal
 			/* {|*internal_id| <m> = internal_id; ... } */
 			args = new_args(p, m, 0, id, 0, new_args_tail(p, 0, 0, 0, &@2), &@2);
 			scope = NEW_NODE(NODE_SCOPE, tbl, $5, args, &@$);
-                        RB_OBJ_WRITTEN(p->ast, Qnil, tmpbuf);
 			$$ = NEW_FOR($4, scope, &@$);
 			fixpos($$, $2);
 #endif
@@ -8737,11 +8731,12 @@ parse_ident(struct parser_params *p, int c, int cmd_state)
 	kw = rb_reserved_word(tok(p), toklen(p));
 	if (kw) {
 	    enum lex_state_e state = p->lex.state;
-	    SET_LEX_STATE(kw->state);
 	    if (IS_lex_state_for(state, EXPR_FNAME)) {
+		SET_LEX_STATE(EXPR_ENDFN);
 		set_yylval_name(rb_intern2(tok(p), toklen(p)));
 		return kw->id[0];
 	    }
+	    SET_LEX_STATE(kw->state);
 	    if (IS_lex_state(EXPR_BEG)) {
 		p->command_start = TRUE;
 	    }
@@ -9495,15 +9490,16 @@ yylex(YYSTYPE *lval, YYLTYPE *yylloc, struct parser_params *p)
     p->lval = lval;
     lval->val = Qundef;
     t = parser_yylex(p);
-    if (has_delayed_token(p))
-	dispatch_delayed_token(p, t);
-    else if (t != 0)
-	dispatch_scan_event(p, t);
 
     if (p->lex.strterm && (p->lex.strterm->flags & STRTERM_HEREDOC))
 	RUBY_SET_YYLLOC_FROM_STRTERM_HEREDOC(*yylloc);
     else
 	RUBY_SET_YYLLOC(*yylloc);
+
+    if (has_delayed_token(p))
+	dispatch_delayed_token(p, t);
+    else if (t != 0)
+	dispatch_scan_event(p, t);
 
     return t;
 }
@@ -11826,12 +11822,9 @@ local_tbl(struct parser_params *p)
     int cnt = cnt_args + cnt_vars;
     int i, j;
     ID *buf;
-    VALUE tbl = 0;
 
     if (cnt <= 0) return 0;
-    tbl = rb_imemo_tmpbuf_auto_free_pointer();
     buf = ALLOC_N(ID, cnt + 2);
-    rb_imemo_tmpbuf_set_ptr(tbl, buf);
     MEMCPY(buf+1, p->lvtbl->args->tbl, ID, cnt_args);
     /* remove IDs duplicated to warn shadowing */
     for (i = 0, j = cnt_args+1; i < cnt_vars; ++i) {
@@ -11842,11 +11835,9 @@ local_tbl(struct parser_params *p)
     }
     if (--j < cnt) {
 	REALLOC_N(buf, ID, (cnt = j) + 2);
-	rb_imemo_tmpbuf_set_ptr(tbl, buf);
     }
     buf[0] = cnt;
-    buf[cnt + 1] = (ID)tbl;
-    RB_OBJ_WRITTEN(p->ast, Qnil, tbl);
+    rb_ast_add_local_table(p->ast, buf);
 
     return buf;
 }
