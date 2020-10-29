@@ -1,16 +1,18 @@
 From: Antoni Villalonga <antoni@friki.cat>
 Date: Fri, 28 Aug 2020 02:09:42 +0200
 Subject: Rescue getcwd ENOENT error
-Forwarded: not-needed
-Bug-Debian: http://bugs.debian.org/969130
-Upstream-Author: David Rodríguez
 
 Rescue ENOENT error allowing run ruby scripts when cwd does not exists.
 Cherry-pick from upstream 96064e6f1ce100a37680dc8f9509f06b3350e9c8
+---
+ lib/rubygems/bundler_version_finder.rb | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
+diff --git a/lib/rubygems/bundler_version_finder.rb b/lib/rubygems/bundler_version_finder.rb
+index 38da773..ea6698f 100644
 --- a/lib/rubygems/bundler_version_finder.rb
 +++ b/lib/rubygems/bundler_version_finder.rb
-@@ -82,12 +82,19 @@
+@@ -82,12 +82,19 @@ To install the missing version, run `gem install bundler:#{vr.first}`
    def self.lockfile_contents
      gemfile = ENV["BUNDLE_GEMFILE"]
      gemfile = nil if gemfile && gemfile.empty?
