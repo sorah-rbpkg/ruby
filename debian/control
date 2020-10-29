@@ -5,13 +5,12 @@ Maintainer: Sorah Fukumori <her@sorah.jp>
 Build-Depends: bison,
                chrpath,
                coreutils (>= 7.5),
-               debhelper (>= 9),
+               debhelper (>= 12~),
                file,
                libffi-dev,
                libgdbm-dev,
                libgmp-dev,
-               libncurses5-dev,
-               libncursesw5-dev,
+               libncurses-dev,
                libreadline6-dev,
                libssl-dev,
                libyaml-dev,
@@ -23,15 +22,16 @@ Build-Depends: bison,
                systemtap-sdt-dev [linux-any],
                tzdata,
                zlib1g-dev
-Standards-Version: 4.1.5
-Homepage: http://www.ruby-lang.org/
+Standards-Version: 4.5.0
+Homepage: https://www.ruby-lang.org/
 Vcs-Git: https://github.com/sorah-rbpkg/ruby
 Vcs-Browser: https://github.com/sorah-rbpkg/ruby
+Rules-Requires-Root: no
 
 Package: ruby2.7
 Multi-Arch: allowed
 Architecture: any
-Depends: rubygems-integration (>= 1.8),
+Depends: rubygems-integration (>= 1.17.1~),
          ${misc:Depends},
          ${shlibs:Depends}
 Recommends: fonts-lato
@@ -51,6 +51,7 @@ Architecture: any
 Depends: ruby2.7-gems (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
+Provides: ${libruby:Provides}
 Description: Libraries necessary to run Ruby 2.7
  Ruby is the interpreted scripting language for quick and easy
  object-oriented programming.  It has many features to process text
@@ -86,6 +87,7 @@ Description: Header files for compiling extension modules for the Ruby 2.7
  many gems.
 
 Package: ruby2.7-doc
+Multi-Arch: foreign
 Section: doc
 Architecture: all
 Depends: ${misc:Depends}

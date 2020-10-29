@@ -1,0 +1,24 @@
+From: Lucas Kanashiro <kanashiro@debian.org>
+Date: Mon, 13 Apr 2020 14:40:16 -0300
+Subject: Fix FTBFS on x32: misdetected as i386 or amd64
+
+Author: Thorsten Glaser <t.glaser@tarent.de>
+Bug: #954293
+---
+ configure.ac | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/configure.ac b/configure.ac
+index 6766df2..429c35b 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -2312,6 +2312,9 @@ AS_CASE([$rb_cv_coroutine], [yes|''], [
+         [arm64-darwin*], [
+             rb_cv_coroutine=arm64
+         ],
++        [x86_64-linux-gnux32], [
++            rb_cv_coroutine=ucontext
++        ],
+         [x*64-linux*], [
+             AS_CASE(["$ac_cv_sizeof_voidp"],
+                 [8], [ rb_cv_coroutine=amd64 ],

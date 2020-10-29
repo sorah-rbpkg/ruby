@@ -6487,6 +6487,9 @@ $as_echo_n "checking for real target cpu... " >&6; }
 #ifdef __ppc64__
 "processor-name=powerpc64"
 #endif
+#ifdef __arm64__
+"processor-name=arm64"
+#endif
 EOF
 	    sed -n 's/^"processor-name=\(.*\)"/\1/p'`
 	    target="$target_cpu${target}"
@@ -8455,7 +8458,7 @@ fi
 		 -Wsuggest-attribute=format \
 		 -Wsuggest-attribute=noreturn \
 		 -Wunused-variable \
-		 -diag-disable=175,188,2259 \
+		 -diag-disable=175,188,1684,2259,2312 \
 		 $extra_warnflags \
 		 ; do
 	if test "$particular_werror_flags" != yes; then :
@@ -26555,6 +26558,10 @@ $as_echo_n "checking native coroutine implementation for ${target_cpu}-${target_
   x*64-darwin*) :
 
             rb_cv_coroutine=amd64
+         ;; #(
+  arm64-darwin*) :
+
+            rb_cv_coroutine=arm64
          ;; #(
   x*64-linux*) :
 

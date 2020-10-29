@@ -1,5 +1,6 @@
 /usr/lib/*/*.so.*
 /usr/lib/*/ruby
+/usr/lib/*/libruby-*-static.a
 /usr/lib/ruby/*.0
 /usr/lib/ruby/vendor_ruby
 /usr/lib/ruby/gems/*.0/gems/rdoc-*

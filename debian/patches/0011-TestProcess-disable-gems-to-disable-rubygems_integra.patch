@@ -1,0 +1,43 @@
+From: Sorah Fukumori <sorah@cookpad.com>
+Date: Thu, 29 Oct 2020 16:15:31 +0900
+Subject: TestProcess: --disable-gems to disable rubygems_integration
+
+rubygems-integration might fail during build when the installed
+rubygems-integration is not the latest one. Some tests in TestProcess
+removes $DEBIAN_DISABLE_RUBYGEMS_INTEGRATION so rubygems-integration
+lets such test fail.
+---
+ test/ruby/test_process.rb | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/test/ruby/test_process.rb b/test/ruby/test_process.rb
+index ab723c6..8776c99 100644
+--- a/test/ruby/test_process.rb
++++ b/test/ruby/test_process.rb
+@@ -278,7 +278,7 @@ class TestProcess < Test::Unit::TestCase
+   end
+   PREENVARG = ['-e', "%w[#{MANDATORY_ENVS.join(' ')}].each{|e|ENV.delete(e)}"]
+   ENVARG = ['-e', 'ENV.each {|k,v| puts "#{k}=#{v}" }']
+-  ENVCOMMAND = [RUBY].concat(PREENVARG).concat(ENVARG)
++  ENVCOMMAND = [RUBY, '--disable-gems'].concat(PREENVARG).concat(ENVARG)
+ 
+   def test_execopts_env
+     assert_raise(ArgumentError) {
+@@ -297,7 +297,7 @@ class TestProcess < Test::Unit::TestCase
+       assert_equal(prog, e.message.sub(/.* - /, ''))
+     }
+     h = {}
+-    cmd = [h, RUBY]
++    cmd = [h, RUBY, '--disable-gems']
+     (ENV.keys + MANDATORY_ENVS).each do |k|
+       case k
+       when /\APATH\z/i
+@@ -383,7 +383,7 @@ class TestProcess < Test::Unit::TestCase
+     with_tmpchdir do |d|
+       open('test-script', 'w') do |f|
+         ENVCOMMAND.each_with_index do |cmd, i|
+-          next if i.zero? or cmd == "-e"
++          next if i.zero? or cmd == "-e" or cmd == "--disable-gems"
+           f.puts cmd
+         end
+       end
