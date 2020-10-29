@@ -34,6 +34,13 @@ configure_options += --runstatedir=/var/run
 configure_options += --localstatedir=/var
 configure_options += --sysconfdir=/etc
 
+# These are embedded in rbconfig.rb and should be triplet-prefixed for
+# cross compilation.
+configure_options += AS=$(DEB_HOST_GNU_TYPE)-as
+configure_options += CC=$(DEB_HOST_GNU_TYPE)-gcc
+configure_options += CXX=$(DEB_HOST_GNU_TYPE)-g++
+configure_options += LD=$(DEB_HOST_GNU_TYPE)-ld
+
 ifneq ($(DEB_BUILD_GNU_TYPE), $(DEB_HOST_GNU_TYPE))
 # Cross-building. This is the same logic that debhelper's
 # lib/Debian/Debhelper/Buildsystem/autoconf.pm uses.
@@ -49,9 +56,17 @@ endif
 configure_options += --enable-ipv6
 configure_options += --with-dbm-type=gdbm_compat
 
+# do not compress debug sections for arch-dep Ruby packages with dh_compat 12
+configure_options += --with-compress-debug-sections=no
+
 # hardening and other standard Debian build flags
 export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow
 configure_options += $(shell dpkg-buildflags --export=configure)
+
+# See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93808
+ifneq (,$(filter $(DEB_HOST_ARCH),sh3 sh4))
+export DEB_CFLAGS_MAINT_APPEND += -fno-crossjumping
+endif
 
 # Always build with /bin/bash, to get consistent rbconfig.rb (which embeds SHELL).
 export SHELL := /bin/bash
@@ -65,6 +80,7 @@ configure_options += --with-out-ext=win32api
 
 # Some tests rely on $HOME
 export HOME := $(shell mktemp -d)
+export LANG := C.UTF-8
 
 %:
 	dh $@ --parallel
@@ -72,7 +88,11 @@ export HOME := $(shell mktemp -d)
 override_dh_auto_configure:
 	cp /usr/share/misc/config.guess tool
 	cp /usr/share/misc/config.sub tool
+ifeq (riscv64,$(DEB_HOST_ARCH))
+	LIBS="-latomic" ./configure $(configure_options)
+else
 	./configure $(configure_options)
+endif
 
 override_dh_auto_clean:
 	$(MAKE) clean || true
@@ -98,7 +118,7 @@ ifneq (,$(DEBIAN_RUBY_EXTRA_TEST_EXCLUDES))
 endif
 override_dh_auto_test-arch:
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
-	$(MAKE) $(TEST_TARGETS) V=1 RUBY_TESTOPTS="-v -j4" TESTS="$(excludes)" OPENSSL_CONF=/dev/null
+	$(MAKE) $(TEST_TARGETS) V=1 RUBY_TESTOPTS="-v -j4" TESTS="$(excludes)" OPENSSL_CONF=$(CURDIR)/debian/openssl.cnf
 endif
 
 override_dh_auto_install-arch:
@@ -137,3 +157,8 @@ override_dh_install-arch:
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/systemtap/tapset
 	sed 's|@LIBRARY_PATH@|/usr/lib/$(DEB_HOST_MULTIARCH)/libruby-$(RUBY_VERSION).so|g' $(CURDIR)/debian/libruby.stp > $(CURDIR)/debian/tmp/usr/share/systemtap/tapset/libruby$(RUBY_VERSION)-$(DEB_HOST_MULTIARCH).stp
 	dh_install
+
+override_dh_gencontrol:
+	./debian/genprovides $(CURDIR)/debian/libruby2.7/usr/lib/ruby/gems/2.7.0/specifications/default/ \
+		>> debian/libruby2.7.substvars
+	dh_gencontrol

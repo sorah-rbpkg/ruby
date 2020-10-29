@@ -5,6 +5,8 @@
 /usr/lib/ruby/gems/*.0/specifications/net-telnet-*
 /usr/lib/ruby/gems/*.0/specifications/xmlrpc-*
 /usr/lib/ruby/gems/*.0/cache/*
+/usr/lib/ruby/gems/*.0/gems/power_assert-*
+/usr/lib/ruby/gems/*.0/gems/racc-*
 /usr/lib/ruby/gems/*.0/gems/test-unit-*
 /usr/lib/ruby/gems/*.0/gems/minitest-*
 /usr/lib/ruby/gems/*.0/gems/rake-*
