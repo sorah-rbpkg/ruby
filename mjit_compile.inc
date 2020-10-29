@@ -7574,7 +7574,7 @@ switch (insn) {
         fprintf(f, "        val = vm_invoke_builtin_delegate(ec, reg_cfp, bf, (unsigned int)index);\n");
         fprintf(f, "\n");
         fprintf(f, "        /* leave fastpath */\n");
-        fprintf(f, "        /* TracePoint/return should fallback this insn to opt_invokebuiltin_delegate */\n");
+        fprintf(f, "        /* TracePoint/return fallbacks this insn to opt_invokebuiltin_delegate */\n");
         fprintf(f, "        if (vm_pop_frame(ec, GET_CFP(), GET_EP())) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
         fprintf(f, "            rb_ec_thread_ptr(ec)->retval = val;\n");
