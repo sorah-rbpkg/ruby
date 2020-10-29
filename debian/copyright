@@ -1,6 +1,6 @@
-Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: ruby
-Source: http://ftp.ruby-lang.org/pub/ruby/
+Source: https://ftp.ruby-lang.org/pub/ruby/
 Files-Excluded: gems/*-* ext/fiddle/libffi-*
 
 Files: *
@@ -254,6 +254,7 @@ License: Permissive
 Files: debian/*
 Copyright: 2013-2015 Antonio Terceiro <terceiro@debian.org>
  2014 Christian Hofstaedtler <zeha@debian.org>
+ 2020 Lucas Kanashiro <kanashiro@debian.org>
 License: BSD-2-clause or Ruby
 Comment:
  The Debian packaging is licensed under the same terms as the original package.

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+set -eu
+
+printf 'libruby:Provides='
+ls -1 "$@" \
+	| grep -v bundler \
+	| sed -e 's/_/-/g; s/\(.*\)-\([0-9.]\+\)\.gemspec/ruby-\1 (= \2), /' | xargs echo
