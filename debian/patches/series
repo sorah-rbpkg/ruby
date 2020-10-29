@@ -8,3 +8,4 @@
 0008-Fix-IRBTestIRBHistory-tests.patch
 0009-Dont-use-relative-path.patch
 0010-Fix-getcwd-ENOENT.patch
+0011-TestProcess-disable-gems-to-disable-rubygems_integra.patch
