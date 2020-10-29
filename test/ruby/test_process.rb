@@ -290,7 +290,7 @@ class TestProcess < Test::Unit::TestCase
   end
   PREENVARG = ['-e', "%w[#{MANDATORY_ENVS.join(' ')}].each{|e|ENV.delete(e)}"]
   ENVARG = ['-e', 'ENV.each {|k,v| puts "#{k}=#{v}" }']
-  ENVCOMMAND = [RUBY].concat(PREENVARG).concat(ENVARG)
+  ENVCOMMAND = [RUBY, '--disable-gems'].concat(PREENVARG).concat(ENVARG)
 
   def test_execopts_env
     assert_raise(ArgumentError) {
@@ -309,7 +309,7 @@ class TestProcess < Test::Unit::TestCase
       assert_equal(prog, e.message.sub(/.* - /, ''))
     }
     h = {}
-    cmd = [h, RUBY]
+    cmd = [h, RUBY, '--disable-gems']
     (ENV.keys + MANDATORY_ENVS).each do |k|
       case k
       when /\APATH\z/i
@@ -402,7 +402,7 @@ class TestProcess < Test::Unit::TestCase
     with_tmpchdir do |d|
       open('test-script', 'w') do |f|
         ENVCOMMAND.each_with_index do |cmd, i|
-          next if i.zero? or cmd == "-e"
+          next if i.zero? or cmd == "-e" or cmd == "--disable-gems"
           f.puts cmd
         end
       end
