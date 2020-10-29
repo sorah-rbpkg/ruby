@@ -1,5 +1,960 @@
 -*- coding: utf-8 -*-
 
+commit 5445e0435260b449decf2ac16f9d09bae3cafe72
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-10-01 21:15:38 +0900
+
+    merge revision(s) 0168094da28c146062db22e69cbd9316418310f9,cdef17096c03099f17ecf0af51f43faa0944f96d,b7d86e330c76b4f9615511307e1c40f4f2937c83:
+
+            Use libSystem.dylib instead of libm.dylib and libc.dylib
+
+              Because macOS 11.0(Big Sur) was removed libc and libm from `/usr/lib`.
+
+            libSystem.dylib is also symlink. Use libSystem.B.dylib
+
+            Workaroud for macOS Big Sur(11.0)
+
+commit b35bfa6abb7760e4323a4341dff840f59ddcfde1
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-10-01 21:02:05 +0900
+
+    merge revision(s) 35ba2783fe6b3316a6bbc6f00bf975ad7185d6e0,e8edc34f0abe176b24975a1fed1f2c3782f0a252: [Backport #16807]
+
+            Use a linked list to eliminate imemo tmp bufs for managing local
+             tables
+
+            This patch changes local table memory to be managed by a linked list
+            rather than via the garbage collector.  It reduces allocations from the
+            GC and also fixes a use-after-free bug in the concurrent-with-sweep
+            compactor I'm working on.
+
+            Remove unused struct member
+
+            I accidentally added this in 35ba2783fe6b3316a6bbc6f00bf975ad7185d6e0,
+            and it's making the size of RVALUE be too big. I'm sorry! orz
+
+commit 811b2b0df5e670ad8db7951191232ce3f5b0d978
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-10-01 19:10:30 +0900
+
+    bump teeny version to 2.7.2.
+
+commit 229c041f057f24b8e5c0c911738e17dfb3da4515
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-10-01 07:53:55 +0900
+
+    merge revision(s) d732bc51bdbfe7d66038731d42e01a511d13b5f8,633a1f15d8228236094ddee12e4e169d655ec49e,95f387f61a4a4ea92635da760b7de5b1e09bb84e,528a3a17977aa1843a26630c96635c3cb161e729,261569d4aac440f25de588cca365163ecf1124a2,e4a9e926f0fe0acf2fbe61da6e075a95d34be066,318be1cb2f9c6f04403c063a5618c6267012ee51,e1855100e46040e73630b378974c17764e0cccee,9cfa811b0f209d714f89fe0de6778c71f77556c7,b68dab866724aacc1cbc6b7d5e1f555dec092346: [Backport #17202]
+
+            Revert "Revert "Revert "[ruby/fiddle] Use ffi_closure_free by
+             default. (#20)"""
+
+            This reverts commit 87f6154bb4c67ca77ee353bb1fe25a922036c0e5.
+
+            It turned out that the change fails to build on macOS
+
+            https://rubyci.org/logs/rubyci.s3.amazonaws.com/osx1014/ruby-master/log/20200304T074503Z.fail.html.gz
+            ```
+            + make 'TESTS=--hide-skip -v fiddle' RUBYOPT=-w test-all
+            dyld: lazy symbol binding failed: Symbol not found: _ffi_closure_alloc
+              Referenced from: /Users/hsbt/Documents/cb/tmp/build/20200304T074503Z/ruby/.ext/x86_64-darwin18/fiddle.bundle
+              Expected in: flat namespace
+
+            dyld: Symbol not found: _ffi_closure_alloc
+              Referenced from: /Users/hsbt/Documents/cb/tmp/build/20200304T074503Z/ruby/.ext/x86_64-darwin18/fiddle.bundle
+              Expected in: flat namespace
+
+            make: *** [yes-test-all] Abort trap: 6
+            ```
+
+            [ruby/fiddle] Use ffi_closure_free if available
+
+            [ruby/fiddle] ffi_closure_free is available in the bundled libffi
+
+            [ruby/fiddle] use ffi_closure_alloc only with 3.2 or later
+
+            [ruby/fiddle] always use ffi_closure_alloc on Windows
+
+            Fixed a typo
+
+            Show libffi version only if set
+
+            ext/fiddle/extconf.rb: check if ffi_closure_alloc is available
+
+            to define HAVE_FFI_CLOSURE_ALLOC.
+            The macro is used in closure.c, so have_func check is needed.
+
+            If pkg-config is not installed, extconf.rb fails to detect the version
+            of libffi, and does not add "-DUSE_FFI_CLOSURE_ALLOC=1" even when system
+            libffi version is >= 3.2.
+
+            If USE_FFI_CLOSURE_ALLOC is not defined, closure.c attempts to check if
+            HAVE_FFI_CLOSURE_ALLOC is defined or not, but have_func was removed with
+            528a3a17977aa1843a26630c96635c3cb161e729, so the macro is always not
+            defined.
+
+            This resulted in this deprecation warning:
+
+            https://rubyci.org/logs/rubyci.s3.amazonaws.com/ubuntu2004/ruby-master/log/20200512T123003Z.log.html.gz
+            ```
+            compiling closure.c
+            closure.c: In function 'initialize':
+            closure.c:265:5: warning: 'ffi_prep_closure' is deprecated: use ffi_prep_closure_loc instead [-Wdeprecated-declarations]
+              265 |     result = ffi_prep_closure(pcl, cif, callback, (void *)self);
+                  |     ^~~~~~
+            In file included from ./fiddle.h:42,
+                             from closure.c:1:
+            /usr/include/x86_64-linux-gnu/ffi.h:334:1: note: declared here
+              334 | ffi_prep_closure (ffi_closure*,
+                  | ^~~~~~~~~~~~~~~~
+            ```
+
+            Do not try ffi_closure_alloc if libffi is <= 3.1
+
+            Maybe due to e1855100e46040e73630b378974c17764e0cccee, CentOS, RHEL, and
+            Fedora CIs have started failing with SEGV.  Try to avoid
+            ffi_closure_alloc on those environments.
+
+            https://rubyci.org/logs/rubyci.s3.amazonaws.com/centos8/ruby-master/log/20200512T183004Z.fail.html.gz
+            https://rubyci.org/logs/rubyci.s3.amazonaws.com/fedora32/ruby-master/log/20200512T183004Z.fail.html.gz
+            https://rubyci.org/logs/rubyci.s3.amazonaws.com/rhel8/ruby-master/log/20200512T183003Z.fail.html.gz
+
+            ext/fiddle/extconf.rb: Fix the condition of libffi <= 3.1
+
+            ver is [3, 1, 0] which is not less then or equal to [3, 1]
+
+commit f46929833923d96e4dc706945fd537a1caaebe66
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-09-30 19:24:17 +0900
+
+    merge revision(s) f96216df8dfd2d1e206150572912289f4dda7386,0091fac1d8de07e86fef8315ba77609bed9dd7f5,04c704c5c967ea9bded6bf645439fe59c7d9f7d6,23655e6de5ee989feb8c65c7061fe9a71579dc54,7cb8904a12c850ee30dcd67817fa2f9dc3fee813,41168f69fbeb32cfc88210911d62e419b8116589,87f6154bb4c67ca77ee353bb1fe25a922036c0e5: [Backport #17202]
+
+            Remove "All Rights Reserved." from Copyright statement.
+
+            Patch assembly so that it aligns properly
+
+            Removed trailing spaces [ci skip]
+
+            Fix build error on Apple silicon macOS
+
+            This patch will fix following build error on macOS 11.0 + Xcode 12 beta.
+
+            ```
+            $ ./configure
+            $ make V=1
+                    BASERUBY = /Users/watson/.rbenv/shims/ruby --disable=gems
+                    CC = clang -fdeclspec
+                    LD = ld
+                    LDSHARED = clang -fdeclspec -dynamiclib
+                    CFLAGS = -O3 -ggdb3 -Wall -Wextra -Werror=deprecated-declarations -Werror=division-by-zero -Werror=implicit-function-declaration -Werror=implicit-int -Werror=misleading-indentation -Werror=pointer-arith -Werror=shorten-64-to-32 -Werror=write-strings -Wmissing-noreturn -Wno-constant-logical-operand -Wno-long-long -Wno-missing-field-initializers -Wno-overlength-strings -Wno-parentheses-equality -Wno-self-assign -Wno-tautological-compare -Wno-unused-parameter -Wno-unused-value -Wunused-variable -Werror=extra-tokens -std=gnu99  -pipe
+                    XCFLAGS = -D_FORTIFY_SOURCE=2 -fstack-protector-strong -fno-strict-overflow -DRUBY_DEVEL=1 -fvisibility=hidden -DRUBY_EXPORT -fPIE -DCANONICALIZATION_FOR_MATHN -I. -I.ext/include/arm64-darwin20 -I./include -I. -I./enc/unicode/12.1.0
+                    CPPFLAGS = -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT
+                    DLDFLAGS = -Wl,-undefined,dynamic_lookup -Wl,-multiply_defined,suppress -fstack-protector-strong -Wl,-pie -framework Security -framework Foundation
+                    SOLIBS = -lpthread -ldl -lobjc
+                    LANG = ja_JP.UTF-8
+                    LC_ALL =
+                    LC_CTYPE =
+                    MFLAGS =
+            Apple clang version 12.0.0 (clang-1200.0.22.19)
+            Target: arm64-apple-darwin20.0.0
+            Thread model: posix
+            InstalledDir: /Applications/Xcode-beta.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
+            clang -fdeclspec -O3 -ggdb3 -Wall -Wextra -Werror=deprecated-declarations -Werror=division-by-zero -Werror=implicit-function-declaration -Werror=implicit-int -Werror=misleading-indentation -Werror=pointer-arith -Werror=shorten-64-to-32 -Werror=write-strings -Wmissing-noreturn -Wno-constant-logical-operand -Wno-long-long -Wno-missing-field-initializers -Wno-overlength-strings -Wno-parentheses-equality -Wno-self-assign -Wno-tautological-compare -Wno-unused-parameter -Wno-unused-value -Wunused-variable -Werror=extra-tokens -std=gnu99  -pipe  -D_FORTIFY_SOURCE=2 -fstack-protector-strong -fno-strict-overflow -DRUBY_DEVEL=1 -fvisibility=hidden -DRUBY_EXPORT -fPIE -DCANONICALIZATION_FOR_MATHN -I. -I.ext/include/arm64-darwin20 -I./include -I. -I./enc/unicode/12.1.0 -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT    -o cont.o -c cont.c
+            In file included from cont.c:19:
+            ./coroutine/ucontext/Context.h:32:5: error: 'getcontext' is deprecated: first deprecated in macOS 10.6 [-Werror,-Wdeprecated-declarations]
+                getcontext(&context->state);
+                ^
+            /Applications/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/ucontext.h:37:6: note: 'getcontext' has been
+                  explicitly marked deprecated here
+            int  getcontext(ucontext_t *) __OSX_AVAILABLE_BUT_DEPRECATED(__MAC_10_5, __MAC_10_6, __IPHONE_2_0, __IPHONE_2_0) __WATCHOS_PROHIBITED __TVOS_PROHIBITED;
+                 ^
+            In file included from cont.c:19:
+            ./coroutine/ucontext/Context.h:51:5: error: 'makecontext' is deprecated: first deprecated in macOS 10.6 [-Werror,-Wdeprecated-declarations]
+                makecontext(&context->state, (void(*)(void))coroutine_trampoline, 2, (void*)start, (void*)context);
+                ^
+            /Applications/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/ucontext.h:38:6: note: 'makecontext' has been
+                  explicitly marked deprecated here
+            void makecontext(ucontext_t *, void (*)(), int, ...) __OSX_AVAILABLE_BUT_DEPRECATED(__MAC_10_5, __MAC_10_6, __IPHONE_2_0, __IPHONE_2_0) __WATCHOS_PROHI...
+                 ^
+            In file included from cont.c:19:
+            ./coroutine/ucontext/Context.h:59:5: error: 'swapcontext' is deprecated: first deprecated in macOS 10.6 [-Werror,-Wdeprecated-declarations]
+                swapcontext(&current->state, &target->state);
+                ^
+            /Applications/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/ucontext.h:40:6: note: 'swapcontext' has been
+                  explicitly marked deprecated here
+            int  swapcontext(ucontext_t * __restrict, const ucontext_t * __restrict) __OSX_AVAILABLE_BUT_DEPRECATED(__MAC_10_5, __MAC_10_6, __IPHONE_2_0, __IPHONE_...
+                 ^
+            3 errors generated.
+            make: *** [cont.o] Error 1
+            ```
+
+            Extract correct processor name for ARM64 Macs
+
+            Prefix export symbol prefix to coroutine_transfer
+
+            Revert "Revert "[ruby/fiddle] Use ffi_closure_free by default.
+             (#20)""
+
+            This reverts commit efd641ffab34e433a8d8a7d78914576f2425aa90.
+
+            This changeset seems to be needed to suppress a warning on Ubuntu 20.04
+            https://rubyci.org/logs/rubyci.s3.amazonaws.com/ubuntu/ruby-master/log/20200304T033004Z.log.html.gz
+            ```
+            closure.c:264:5: warning: 'ffi_prep_closure' is deprecated: use ffi_prep_closure_loc instead [-Wdeprecated-declarations]
+              264 |     result = ffi_prep_closure(pcl, cif, callback, (void *)self);
+                  |     ^~~~~~
+            ```
+
+            I guess there was a reason why the commit was reverted (maybe some CIs
+            failed?), so try it again.
+
+commit ea347990a5416c73a74f7dfa8a13b5ad5b7e79d4
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-09-30 07:50:06 +0900
+
+    merge revision(s) 07786edd66f59a529d6febb2e0fe901782991755,1917afa34bca55ba1ea578234132b7e4479ea3c9,0c611d7f4fce67c64bee4815f263c55ef15561c4:
+
+            test/net/http/test_https.rb: Stop the error due to openssl 1.1.1h
+
+            On some environments that uses OpenSSL 1.1.1h, the two tests now fail.
+
+            http://rubyci.s3.amazonaws.com/android29-x86_64/ruby-master/log/20200924T062352Z.fail.html.gz
+            https://github.com/ruby/ruby/runs/1159288773?check_suite_focus=true
+
+            ```
+              1) Failure:
+            TestNetHTTPS#test_get [/data/data/com.termux/files/home/cb/tmp/build/20200924T062352Z/ruby/test/net/http/test_https.rb:47]:
+            <"0\x82\x03\xED0\x82\x02\xD5\xA0\x03..."> expected but was
+            <"0\x82\x03\xE30\x82\x02\xCB\xA0\x03...">.
+            ```
+
+            Not sure why, but verify_callback now seems to receive only SERVER_CERT
+            but not CA_CERT.
+            It would be good to investigate the issue furthermore, but tentatively,
+            I want to stop the failures.
+
+            test/net/http/test_https.rb: the order of verify_callback seems to
+             vary
+
+            ... depending upon the environment.
+
+            test/net/http/test_https.rb: The test logic was buggy
+
+            The expected certs must be `[CA_CERT, SERVER_CERT]` before 1.1.1g and
+            `[SERVER_CERT]` after 1.1.1h.
+
+commit 828c34e58b63d64558ec0f2d1d7ae401c5e6b21f
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-09-29 22:46:14 +0900
+
+    merge revision(s) d23d2f3f6fbb5d787b0dd80675c489a692be23e2:
+
+            [ruby/webrick] Make it more strict to interpret some headers
+
+            Some regexps were too tolerant.
+
+            https://github.com/ruby/webrick/commit/8946bb38b4
+
+commit df3f52a6331f1a47af9933b77311a8650727d8d1
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-09-29 22:43:25 +0900
+
+    merge revision(s) 996af2ce086249e904b2ce95ab2fcd1de7d757be: [Backport #16345] [Backport #17000]
+
+            Disable deprecation warning by the default [Feature #16345]
+
+            And `-w` option turns it on.
+
+commit 665589cbdf7bf652067113dd1c0bc49012b990e0
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-09-29 20:33:06 +0900
+
+    merge revision(s) df14c758fc705c49c2aaf4c9276a8f7229438fbf: [Backport #17181]
+
+            Make hash returned by Hash#transform_values not have a default
+
+            This sets an explicit default of nil.  There is probably a better
+            approach of removing the default.
+
+            Fixes [Bug #17181]
+
+commit c10326d913a0340fc78ec94dc09d9e9398b31f1c
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-09-20 20:23:51 +0900
+
+    bump patchlevel to 128
+
+commit 1b39a995b559677bf4bf2d0ac3a1c924928a936f
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-09-20 20:23:12 +0900
+
+    Revert "statement experssion is a GCCism" to pass ICC CI.
+
+    This reverts commit a6b50f379d4b71acac73ac6b22cbe2d2c5b50b3f.
+
+commit eb8270d67596fff58e245ff4227dd35e67dbef5c
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-09-17 21:23:39 +0900
+
+    Skip bundler spec using irb with simulated JRuby environment.
+
+commit 0ebf6ea9a0d74f859ee4009fbe6693996f1fcdc7
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-09-16 21:10:19 +0900
+
+    bump patchlevel to 126
+
+commit 21c1b676c4e9075549978918304206218478c459
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-09-16 11:36:44 +0900
+
+    Merge latest readline-ext
+
+commit 2159798f4c0f71007db733cddd82b99186c8e424
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-09-16 11:19:17 +0900
+
+    Merge IRB 1.2.6
+
+commit 3bb503e0e8f92c039ce50f430b14649a36c03feb
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-09-16 11:19:06 +0900
+
+    Merge Reline 0.1.5
+
+commit ed39078d37e16b541d717cd87cacb21aa33e6ef1
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-09-15 20:56:13 +0900
+
+    bump patchlevel to 125
+
+commit 7d76314885be3532999684356657ce36da84d04e
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-06-30 21:23:37 +0900
+
+    Merge RubyGems 3.1.4
+
+commit 3590f082442afc4506250f5274a7877371a112de
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-02-09 11:04:53 +0900
+
+    spec/ruby/core/file/utime_spec.rb: far future timestamp may be trancated
+
+    Under some Ext4 filesystem settings, a timestamp is limited up to
+    0x37fffffff (2446-05-10).
+
+    https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout#Inode_Timestamps
+    > Therefore, timestamps should not overflow until May 2446.
+
+    Actually the spec fails under one of our CI environments, like:
+
+    ```
+    1)
+    File.utime allows Time instances in the far future to set mtime and atime FAILED
+    Expected 2446 == 559444
+    to be truthy but was false
+    ```
+    https://rubyci.org/logs/rubyci.s3.amazonaws.com/arch/ruby-master/log/20200208T180002Z.fail.html.gz
+
+commit 277076173af868d297070da43fcb3a06ccb7e21f
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-09-07 21:13:43 +0900
+
+    Run a TracePoint test in an insolated process
+
+    to prevent a random failure like
+    http://ci.rvm.jp/results/trunk-random2@phosphorus-docker/3024287
+
+commit 2b5b9e12805597c3577b02b6c344d2b874220f3b
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2020-09-07 21:07:33 +0900
+
+    * 2020-09-07 [ci skip]
+
+commit a2f3aaea12ebaebf150a27268fc5f0f465e53b8f
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-09-07 21:06:48 +0900
+
+    Fix a random test failure by TracePoint
+
+    A test worker process may already be enabling TracePoint, which results
+    in changing the insn name in this test.
+
+    http://ci.rvm.jp/results/trunk-random0@phosphorus-docker/3022750
+
+commit dd4e51d84e01d9c60458dfe19a0b4d4e05b55140
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-09-06 11:16:29 +0900
+
+    merge revision(s) ff5e66034006a875125581114cce19d46843b32a: [Backport #17015]
+
+            Added `NODE_SPECIAL_EXCESSIVE_COMMA` info to `ARGS` of
+             `RubyVM::AbstractSyntaxTree`.
+
+commit 3fef159f81fad6ffb9af5b60f4c8ec867fdb2391
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-09-06 11:05:52 +0900
+
+    merge revision(s) 3e02cd518fbe4d91c2aca7fbc3c5aafa387d3cb7: [Backport #17149]
+
+            Trace :return of builtin methods
+
+            using opt_invokebuiltin_delegate_leave insn.
+
+            Since Ruby 2.7, :return of methods using builtin have not been traced properly.
+
+commit e778de2c82478dda930cfc8d795ed4e0e60ea775
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-09-06 10:54:53 +0900
+
+    merge revision(s) 11963da9e8e98821860fbb0c0f2adc118860c814: [Backport #16603] [Backport #17141]
+
+            Check type of empty keyword [Bug #16603]
+
+            Co-authored-by: Yusuke Endoh <mame@ruby-lang.org>
+
+commit 9a1f0240cae95df4207bd95e7c0380d5307b7c9e
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-09-05 19:19:20 +0900
+
+    bump patchlevel to 119
+
+commit 2c9dd060ab487a96e391793bd782cef6fd471b83
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-09-05 19:18:07 +0900
+
+    Revert "Don't display singleton class in Method#inspect unless method defined there"
+    [Backport #16771]
+
+    This reverts commit 0d24fb774d84d4a99454ce10fd343da00049a588.
+
+commit e9e4f8430a62f56a4e62dd728f4498ee4c300c12
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-08-07 20:16:51 +0900
+
+    merge revision(s) 8e189df32cacef4b21e357a590d349330532baf5: [Backport #17013]
+
+            Add operator info to `OP_ASGN2` of `RubyVM::AbstractSyntaxTree`.
+
+commit 23d130a9ddcaf766d6ce309f8518b434a2537fc1
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-08-01 17:33:56 +0900
+
+    merge revision(s) d05f04d27dd86c67e4a8dfff4392f806cf577bdf: [Backport #16931]
+
+            Fixed `defined?` against protected method call
+
+            Protected methods are restricted to be called according to the
+            class/module in where it is defined, not the actual receiver's
+            class.  [Bug #16931]
+
+commit 315f1ee8a80680fd7aff5fa27abfd965d1906809
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-06-02 17:07:41 +0900
+
+    Split test_defined_method
+
+commit 171d4c512b1497178b39db32b255eb521560d78c
+  Author: Peter Zhu <peter@peterzhu.ca>
+  Date:   2020-05-08 06:05:46 +0900
+
+    Fix typo in test name
+
+commit b222ae41015646e238e1d2f6710da02f38578388
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-04-23 09:43:30 +0900
+
+    Test for [Bug #16669]
+
+commit 34427bc09e68a81a9986bc7fe0d1d9886e6d00d5
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-04-22 22:21:11 +0900
+
+    Split test_defined
+
+commit a024bae53999cb02f6ef556bbe03af8b6d002bcf
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-08-01 16:56:42 +0900
+
+    bump up patchlevel for a332e8a0ddad90c540c6c52f0db2a45e5955a23d
+
+commit a332e8a0ddad90c540c6c52f0db2a45e5955a23d
+  Author: MSP-Greg <Greg.mpls@gmail.com>
+  Date:   2020-07-26 22:57:59 +0900
+
+    ruby_2_7 update MinGW Actions workflow
+
+commit 05c4c88767b54808cd1459a1d6da11179c422cfa
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-26 18:32:36 +0900
+
+    merge revision(s) 1b4d406e3a04032b6d01e92b6d184a16945c6ac3: [Backport #16498] [Backport #16914]
+
+            Hash#transform_values should return a plain new Hash
+
+            [Bug #16498]
+
+commit 61c6d433060881e952140d2154c06f8c9803dc8a
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-26 17:45:27 +0900
+
+    partially merge revision adf709a78534c1483ba851ccb0490464ca31503c: [Backport #16801]
+
+            Classes made from Struct should have default new singleton method.
+
+            Co-authored-by: Yusuke Endoh mame@ruby-lang.org
+            Co-authored-by: John Hawthorn john@hawthorn.email
+            Co-authored-by: Adam Hess HParker@github.com
+            Co-authored-by: Jose Cortinas jacortinas@gmail.com
+            Co-authored-by: Jean Boussier jean.boussier@gmail.com
+
+commit 43cc6997c59d2fbe3b91e91ee52faaa8749e9349
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-26 16:19:40 +0900
+
+    merge revision(s) a0bc3f2a1c2c98f225612101cb4e1ea1a6813546,75a0447c15a7ab017bd4240c2a9cc69b134b80b9,f1699314147bad2cf5550cc582693424fdbc2510: [Backport #16846]
+
+            Suppress C4267 "possible loss of data" warnings
+
+            Suppress C4267 "possible loss of data" warnings
+
+            Just cast down explicitly.
+
+            win32ole: separate global variable declarations and definitions
+
+            https://gcc.gnu.org/gcc-10/changes.html#c
+
+            > * GCC now defaults to `-fno-common`.  As a result, global
+            >   variable accesses are more efficient on various targets.  In
+            >   C, global variables with multiple tentative definitions now
+            >   result in linker errors.  With `-fcommon` such definitions are
+            >   silently merged during linking.
+
+commit 578bacc471fa3fa14f8607fe67adccce21e81657
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-25 21:42:20 +0900
+
+    merge revision(s) 5e81e8675a020ecd493620a4ff38db8fcf4b972a: [Backport #16780]
+
+            Ignore exceptions when closing data connections [Bug #16780]
+
+            Patch by koshigoe (Masataka SUZUKI). Thanks!
+
+commit 12391cdbe11f3fbeb3b04c30b944139e5bbd9ea6
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-25 14:17:35 +0900
+
+    merge revision(s) cbe4f75ef802f13d05f94e42274b65a062bd3666: [Backport #16834]
+
+            Fix rb_profile_frame_classpath to handle module singletons
+
+            Right now `SomeClass.method` is properly named, but `SomeModule.method`
+            is displayed as `#<Module:0x000055eb5d95adc8>.method` which makes
+            profiling annoying.
+
+commit be359442cb07c25fdc769431ffed3249b9016829
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-25 13:40:48 +0900
+
+    merge revision(s) 71c166e11e761dcaaa943f9b94da38f86ada1bdb: [Backport #16854]
+
+            Fixed argument forwarding in reserved word method [Bug #16854]
+
+commit 89f06ce8b8a887f12b53ea190d79a58e98b59008
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-25 12:00:39 +0900
+
+    merge revision(s) 08529a61153e5c40f57a65272211357511d6e6db: [Backport #16798]
+
+            Compare environment variable names in those manor [Bug #16798]
+
+commit 2e9626fddd168bd12352b4f5dc3412c6a33ce44e
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-25 11:56:28 +0900
+
+    merge revision(s) 2f1895fa15386fb3cdc91c5604171290828b9da8: [Backport #16767]
+
+            Fixed formatted substring expansion [Bug #16767]
+
+commit c65aae118ccff86096b9983641b371491bc23434
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-23 17:47:12 +0900
+
+    merge revision(s) 927308108cced69cae478798004524b9a5d2f252: [Backport #16764]
+
+            Fix source location of autoloaded constant [Bug #16764]
+
+commit 4437f9eb0bf8369bcf12bd7cd324e11b5d885e07
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-23 17:30:26 +0900
+
+    merge revision(s) da05c1552ee519d8f180b48d97148d28501acb35: [Backport #16749]
+
+            Update to ruby/spec@cc7b9e5
+
+commit c53cee7a0e7b3e87ba3fbafa86bd74460af18d93
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-23 17:22:45 +0900
+
+    merge revision(s) 72c02aa4b79731c7f25c9267f74b347f1946c704: [Backport #16662]
+
+            Moved not-implemented method tests [Bug #16662]
+
+            Test not-implemented method with the dedicated methods, instead of
+            platform dependent features.
+
+commit ae804b143455075687c8b4a401fba48fda72a217
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-23 16:59:03 +0900
+
+    merge revision(s) b23fd59cbb3f097bcd559d0c85a86ff7a1eeeb7e: [Backport #16501]
+
+            marshal.c: Support dump and load of a Hash with the ruby2_keywords
+             flag
+
+            It is useful for a program that dumps and load arguments (like drb).
+            In future, they should deal with both positional arguments and keyword
+            ones explicitly, but until ruby2_keywords is deprecated, it is good to
+            support the flag in marshal.
+
+            The implementation is similar to String's encoding; it is dumped as a
+            hidden instance variable.
+
+            [Feature #16501]
+
+commit f1563edca0af1a5ad5cc748eb855ff9265e69e7f
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-01-11 16:32:56 +0900
+
+    Get rid of use of magic number 'E'
+
+commit 4f714939efde6d6b3b74c09e1e151e6ce6818b90
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-23 14:02:05 +0900
+
+    merge revision(s) e04418bb16cd99b4a4402e7457d3bdc967284f98: [Backport #16830]
+
+            [ruby/uri] Check if DN exists
+
+            https://bugs.ruby-lang.org/issues/16830
+
+            https://github.com/ruby/uri/commit/b4bf8c1217
+
+commit 9da6470d7b3aa136b4b92469c8bbc522beb1ac31
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-23 13:50:56 +0900
+
+    merge revision(s) a2be428c5fec31b8adbd5ac087e7637ddf7e54d0: [Backport #16826]
+
+            Fix ObjectSpace::WeakMap#key? to work if the value is nil
+
+            * Fixes [Bug #16826]
+
+commit 27fa1c61b78c1685ccf9ac203a95cfa9041d618f
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-23 12:13:30 +0900
+
+    merge revision(s) 579645d9f870fa4116dcd3200bbbb6e2c0b7f400: [Backport #17033]
+
+            Fixed infinite loop at error in printing cause [Bug #17033]
+
+commit 4be9bf1f67b997fc519625d56a93b8a68a70d124
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-23 11:33:11 +0900
+
+    merge revision(s) 99a9c3fe2eaab8157765d792dc871da6daea0327: [Backport #17024]
+
+            Fixed yday and wday with timezone [Bug #17024]
+
+commit 13d2ab0d88bbf72ed310efaec6edc46dd96fdb4d
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-23 11:16:31 +0900
+
+    merge revision(s) 2ecfb88ee50510955acd3ae9fc94a5f109e7f109: [Backport #16918]
+
+            Correctly remove temporary directory if path yielded is mutated
+
+            Another approach would be to freeze the string, but that could
+            cause backwards compatibility issues.
+
+            Fixes [Bug #16918]
+
+commit cc39480cf9f2767967b6bcc69ccb3c201e5b2231
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-23 11:11:12 +0900
+
+    merge revision(s) 5a79d8e0507cd143100bf928a88a59a8b5a5bca6,160511d851375f7cb922faae3a9310633187f51f: [Backport #16925]
+
+            Fix error raised by Net::HTTPResponse#inflater if the block raises
+
+            * See https://bugs.ruby-lang.org/issues/13882#note-6
+
+            Quarantine specs which fail frequently with CHECK_LEAKS=true
+
+commit d24cce8e7f48b0b45f726f5f1ac7ff796f46ba72
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-19 12:16:37 +0900
+
+    merge revision(s) bf1a6771f305ea286a3ae575676924551c03e857,c1463625555b061a2b94c3b6c5581730b482a285: [Backport #17012] [Backport #17014]
+
+            Fix non-numeric exclusive Range#minmax bug
+
+            The implementation of Range#minmax added in d5c60214c45 causes the
+            following incorrect behaviour:
+
+              ('a'...'c').minmax => ["a", ["a", "b"]]
+
+            instead of
+
+              ('a'...'c').minmax => ["a", "b"]
+
+            This is because the C implementation of Range#minmax (range_minmax)
+            directly delegates to the C implementation of Range#min (range_min) and
+            Range#max (range_max), without changing the execution context.
+
+            Range#max's C implementation (range_max), when given a non-numeric
+            exclusive range, delegates to super, which is meant to call
+            Enumerable#max. However, because range_max is called directly by
+            range_minmax, super calls Enumerable#minmax instead, causing the
+            incorrect nesting.
+
+            Perhaps it is possible to change the execution context in an optimized
+            manner, but the simplest solution seems to be to just explicitly
+            delegate from Range#minmax to Range#min and Range#max.
+
+            Use static variables in Range#minmax
+
+commit f43b8c4f7304ebea91cd01d5606e13273d0fd755
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-19 11:56:32 +0900
+
+    merge revision(s) 0ba27259d390e902139c0e2e94b9d18ef227748e: [Backport #16940]
+
+            Fix crashes in the peephole optimizer on OpenBSD/sparc64
+
+            These crashes are due to alignment issues, casting ADJUST to INSN
+            and then accessing after the end of the ADJUST.  These patches
+            come from Stefan Sperling <stsp@apache.org>, who reported the
+            issue.
+
+commit e619178e52250ceda3a0fe32ff5addb16617b58c
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-19 11:52:11 +0900
+
+    merge revision(s) 6e7e7c1e577d6c2276e9a8cc85c28c55c46c2618: [Backport #17023]
+
+            Only marked objects should be considered movable
+
+            Ruby's GC is incremental, meaning that during the mark phase (and also
+            the sweep phase) programs are allowed to run.  This means that programs
+            can allocate objects before the mark or sweep phase have actually
+            completed.  Those objects may not have had a chance to be marked, so we
+            can't know if they are movable or not. Something that references the
+            newly created object might have called the pinning function during the
+            mark phase, but since the mark phase hasn't run we can't know if there
+            is a "pinning" relationship.
+
+            To be conservative, we must only allow objects that are not pinned but
+            also marked to move.
+
+commit ad15fd03e915272bdf4b3a8403722b397e3afcf8
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-19 11:32:59 +0900
+
+    merge revision(s) 26c179d7e7e7ae0eb21050659c3e8778358230ab: [Backport #17026]
+
+            Check argument to ObjectSpace._id2ref
+
+            Ensure that the argument is an Integer or implicitly convert to,
+            before dereferencing as a Bignum.  Addressed a regression in
+            b99833baec2.
+
+            Reported by u75615 at https://hackerone.com/reports/898614
+
+commit 9e76124a2b11003f1000bd330a0121f1914af290
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-18 13:24:25 +0900
+
+    bump patchlevel to 93
+
+commit 17b088d1e5d0378d9752f807e607adde0cb47ef1
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-03-12 15:30:20 +0900
+
+    Update some syslog tests to absurb the format change of FreeBSD syslog
+
+    FreeBSD
+
+    ```
+    $ ruby -rsyslog -e 'Syslog.open("rubyspec", Syslog::LOG_PERROR) {|s| s.log(Syslog::LOG_ALERT, "Hello") }'
+    rubyspec 78462 - - Hello
+    ```
+
+    Linux
+
+    ```
+    $ ruby -rsyslog -e 'Syslog.open("rubyspec", Syslog::LOG_PERROR) {|s| s.log(Syslog::LOG_ALERT, "Hello") }'
+    rubyspec: Hello
+    ```
+
+    https://github.com/freebsd/freebsd/commit/591ef7c8076109cff3c41f9bb50da996a34121e9
+
+commit 0c4d93e6991d365cc77fbaaeae367b9651f2d4cd
+  Author: Kazuki Yamaguchi <k@rhe.jp>
+  Date:   2020-02-17 17:14:47 +0900
+
+    test/openssl/test_ssl: skip test_fallback_scsv if necessary
+
+    Run the test case only when the OpenSSL supports both TLS 1.1 and TLS
+    1.2. Note that the fallback SCSV mechanism is for TLS 1.2 or older and
+    not for 1.3.
+
+    Fixes: https://github.com/ruby/openssl/issues/336
+
+commit bad7ab35d1e38f47b09f15fc5750387ac73b2286
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-05-12 17:47:27 +0900
+
+    test/lib/jit_support.rb: Let JIT tests skip on centos8
+
+    It has the same issue as RHEL 8.  k0kubun said he will fix later
+
+commit b4c893a62c71ac28795f8fcefb375131833afd0c
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-11 16:10:41 +0900
+
+    OpenSSL 1.1.1 introduces a new '.include' directive. Update our config
+    parser to support that.
+
+    As mentioned in the referenced GitHub issue, we should use the OpenSSL
+    API instead of implementing the parsing logic ourselves, but it will
+    need backwards-incompatible changes which we can't backport to stable
+    versions. So continue to use the Ruby implementation for now.
+
+    References:
+      https://github.com/ruby/openssl/issues/208
+      https://github.com/ruby/openssl/pull/216
+
+    The original patch was written by Kazuki Yamaguchi <k@rhe.jp> and
+    the patch for ruby_2_7 branch was prepared by Vít Ondruch.
+
+commit a0bb4eb04512b3f8ca50ec5fa72e3d4a8278ca46
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-10 08:51:53 +0900
+
+    bump patchlevel: merge commits: 5c2508060b79b4299a18d05511d3530ad14b1b7a 2480ef904c66812cf366e5d9bc8a9c3c20bbf271 47720e2255f34ecad49763c66a7ea02a55a3f60a
+
+commit b971bad49b95d4c1f68bb2242d4267355f1cd497
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-05-04 13:35:38 +0900
+
+    Bison 3.59.1 folds yydestruct function header
+
+commit 06ab2791c38c431e08bc8d9381c9a1ca727297c4
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-05-20 10:52:32 +0900
+
+    pure_parser.rb: get rid of an error at localed messages
+
+commit 1ee1684a4a3edb26b5aa32acc967b9ef26284d42
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-05-04 18:10:02 +0900
+
+    Bison 3.5.91 now defaults parse.error to "simple"
+
+commit 601613fdf3907f3842a9d465926dca7c37d56f72
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-09 21:03:58 +0900
+
+    merge revision(s) 87ad5ea729735ff6b8f1ac0bb3aad2aedd6f716e,9745e90197f129708986803e8913fb151862478a:
+
+            Skip jit_test on some new RubyCI envs for now
+
+            Propagate JIT skip to all tests
+
+commit 6c22070408f9729621712190bfc8460e5eebcb03
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-09 20:54:28 +0900
+
+    merge revision(s) 21d8e6924844d592ff2d5a2e7309457eb92e66f6:
+
+            disable to show the maximum number of threads.
+
+            On Deiban 9 environment, the thread tests failed and
+            this maximum threads information can finish up the machine
+            resources. To check it, I turned-off showing this information.
+
+commit 9720591043003a5262c8f3e1c1720771bc77488b
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-07-05 07:03:14 +0900
+
+    merge revision(s) 75802bcff1b941818832f0145071f7ce9c843d8d:
+
+            configure: suppress icc warnings
+
+            Every time a pointer to/from VALUE conversion happens, these two
+            warnings are issued:
+
+            - warning #1684: conversion from pointer to same-sized integral type (potential portability problem)
+            - warning #2312: pointer cast involving 64-bit pointed-to type
+
+            Thank you, but we are well aware of the "potential portability problem".
+            Let us ignore them all.
+
+commit 799c5766a4dc215d139d2c26ac68636f43a64fbf
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-06-27 12:29:42 +0900
+
+    merge revision(s) a19228f878d955eaf2cce086bcf53f46fdf894b9: [Backport #16979]
+
+            brace the fact that lchmod(2) can EOPNOTSUPP
+
+            Musl libc has this function as a tiny wrapper of fchmodat(3posix).  On
+            the other hand Linux kernel does not support changing modes of a symlink.
+            The operation always fails with EOPNOTSUPP.  This fchmodat behaviour is
+            defined in POSIX.  We have to take care of such exceptions.
+
+commit d8a32b146561a0ddd3e60da9863a082b7e7725db
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-06-27 12:20:36 +0900
+
+    merge revision(s) 263b941321c3de6afc8f9dafbc2625f866b7437e: [Backport #16981]
+
+            [ripper] fix mismatched indentations warning [Bug #16981]
+
+            The scanner location has to be set from `lex.ptok` before it is
+            flushed by dispatching the scanner event.
+
+commit 3c55d93cf68b1a969b90b306de4dd8b88d74a2f2
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-06-13 11:29:51 +0900
+
+    merge revision(s) 7e289cdf3fed588b2d5a6973e29f9ff95cb8d76c: [Backport #16949]
+
+            [ruby/psych] Fixing compatibility with libyaml 0.2.5
+
+            The main issue is that commas aren't allowed in local tags.  libyaml
+            was updated to follow the spec, and our tests were out of date.
+
+            See: https://github.com/yaml/libyaml/issues/196
+
+            https://github.com/ruby/psych/commit/3f5e520fd3
+
+commit 241cb3fa0316b3846f7b137921301f7279a03161
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2020-06-08 09:58:19 +0900
+
+    * 2020-06-08 [ci skip]
+
+commit 16aef5da5622971ae83dcc281b03a53c5f622ca3
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-06-07 12:04:23 +0900
+
+    merge revision(s) ac2106acc276854ae2ac8cc5fa6859aa28362f2f,cf90df22c74da2f87421749e8d065cfbd3812afd: [Backport #16813]
+
+            [DOC] Fixed explanation for Method#>> [Bug #16813] [ci skip]
+
+            [DOC] Separated Method#[] from Method#call [Bug #16813] [ci skip]
+
 commit a0c7c23c9cec0d0ffcba012279cd652d28ad5bf3
   Author: NARUSE, Yui <naruse@airemix.jp>
   Date:   2020-03-31 19:27:41 +0900

@@ -1558,10 +1558,8 @@ rb_hash_new_with_size(st_index_t size)
 }
 
 static VALUE
-hash_dup(VALUE hash, VALUE klass, VALUE flags)
+hash_copy(VALUE ret, VALUE hash)
 {
-    VALUE ret = hash_alloc_flags(klass, flags,
-				 RHASH_IFNONE(hash));
     if (!RHASH_EMPTY_P(hash)) {
         if (RHASH_AR_TABLE_P(hash))
             ar_copy(ret, hash);
@@ -1569,6 +1567,13 @@ hash_dup(VALUE hash, VALUE klass, VALUE flags)
             RHASH_ST_TABLE_SET(ret, st_copy(RHASH_ST_TABLE(hash)));
     }
     return ret;
+}
+
+static VALUE
+hash_dup(VALUE hash, VALUE klass, VALUE flags)
+{
+    return hash_copy(hash_alloc_flags(klass, flags, RHASH_IFNONE(hash)),
+                     hash);
 }
 
 VALUE
@@ -3205,7 +3210,8 @@ rb_hash_transform_values(VALUE hash)
     VALUE result;
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    result = hash_dup(hash, rb_cHash, 0);
+    result = hash_copy(hash_alloc(rb_cHash), hash);
+    SET_DEFAULT(result, Qnil);
 
     if (!RHASH_EMPTY_P(hash)) {
         rb_hash_stlike_foreach_with_replace(result, transform_values_foreach_func, transform_values_foreach_replace, result);
@@ -6106,13 +6112,29 @@ env_invert(VALUE _)
     return rb_hash_invert(env_to_hash());
 }
 
+static void
+keylist_delete(VALUE keys, VALUE key)
+{
+    long keylen, elen;
+    const char *keyptr, *eptr;
+    RSTRING_GETMEM(key, keyptr, keylen);
+    for (long i=0; i<RARRAY_LEN(keys); i++) {
+        VALUE e = RARRAY_AREF(keys, i);
+        RSTRING_GETMEM(e, eptr, elen);
+        if (elen != keylen) continue;
+        if (!ENVNMATCH(keyptr, eptr, elen)) continue;
+        rb_ary_delete_at(keys, i);
+        return;
+    }
+}
+
 static int
 env_replace_i(VALUE key, VALUE val, VALUE keys)
 {
+    env_name(key);
     env_aset(key, val);
-    if (rb_ary_includes(keys, key)) {
-	rb_ary_delete(keys, key);
-    }
+
+    keylist_delete(keys, key);
     return ST_CONTINUE;
 }
 
