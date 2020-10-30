@@ -1,13 +1,14 @@
-From b1509ce1c9d42bac9bc57b6ea96164711f0c85f7 Mon Sep 17 00:00:00 2001
 From: aycabta <aycabta@gmail.com>
 Date: Mon, 5 Oct 2020 18:57:47 +0900
 Subject: [PATCH] Remove system method for E2E testing because depends on ruby
  command
 
 ---
- test/irb/test_history.rb | 129 +++++++++++++++++++++++----------------
- 1 file changed, 75 insertions(+), 54 deletions(-)
+ test/irb/test_history.rb | 146 +++++++++++++++++++++++++++--------------------
+ 1 file changed, 83 insertions(+), 63 deletions(-)
 
+diff --git a/test/irb/test_history.rb b/test/irb/test_history.rb
+index 3591f88..392a6af 100644
 --- a/test/irb/test_history.rb
 +++ b/test/irb/test_history.rb
 @@ -1,6 +1,7 @@
@@ -18,7 +19,7 @@ Subject: [PATCH] Remove system method for E2E testing because depends on ruby
  require 'readline'
  
  module TestIRB
-@@ -13,133 +14,152 @@
+@@ -13,133 +14,152 @@ module TestIRB
        IRB.conf[:RC_NAME_GENERATOR] = nil
      end
  
