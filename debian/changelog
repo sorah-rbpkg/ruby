@@ -1,3 +1,16 @@
+ruby2.7 (2.7.2-3) UNRELEASED; urgency=medium
+
+  * d/p/0013-Enable-arm64-optimizations-that-exist-for-power-x86-.patch:
+    Backport an upstream patch. It includes enabling unaligned memory access,
+    gc and vm_exec.c optimizations (LP: #1901074).
+  * Refresh and sort patches numerically.
+  * B-d on debhelper-compat instead of debhelper.
+  * Drop debian/ruby2.7.lintian-overrides. The only override there is
+    hyphen-used-as-minus-sign and it seems to not be a thing anymore.
+    Moreover, it is malformed according to lintian.
+
+ -- Lucas Kanashiro <kanashiro@debian.org>  Fri, 30 Oct 2020 16:04:41 -0300
+
 ruby2.7 (2.7.2-2) unstable; urgency=medium
 
   * Add patch to fix ENOENT error when cwd does not exists. (Closes: #969130)
