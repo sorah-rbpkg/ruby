@@ -10,3 +10,4 @@
 0010-Fix-IRBTestIRBHistory-tests.patch
 0012-Dont-use-relative-path.patch
 0013-Fix-getcwd-ENOENT.patch
+0013-Enable-arm64-optimizations-that-exist-for-power-x86-.patch
