@@ -6,15 +6,13 @@ Subject: don't try to download stuff in configure
  defs/gmake.mk | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/defs/gmake.mk b/defs/gmake.mk
-index 7e9566f..8faa6c5 100644
 --- a/defs/gmake.mk
 +++ b/defs/gmake.mk
-@@ -250,7 +250,7 @@ extract-gems: update-gems
+@@ -250,7 +250,7 @@
  
- BUNDLED_GEMS := $(shell sed '/^[ 	]*\#/d;/^[ 	]*$$/d;s/[ 	][ 	]*/-/;s/[ 	].*//' $(srcdir)/gems/bundled_gems)
+ bundled-gems := $(shell sed '/^[ 	]*\#/d;/^[ 	]*$$/d;s/[ 	][ 	]*/-/;s/[ 	].*//' $(srcdir)/gems/bundled_gems)
  
--update-gems: | $(patsubst %,gems/%.gem,$(BUNDLED_GEMS))
+-update-gems: | $(patsubst %,gems/%.gem,$(bundled-gems))
 +update-gems:
  
  test-bundler-precheck: | $(srcdir)/.bundle/cache

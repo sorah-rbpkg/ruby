@@ -25,7 +25,7 @@ Signed-off-by: Svante Signell <svante.signell@gmail.com>
      defined(_WIN32) || \
 --- a/ext/socket/raddrinfo.c
 +++ b/ext/socket/raddrinfo.c
-@@ -1799,10 +1799,21 @@
+@@ -1670,10 +1670,21 @@
          INIT_SOCKADDR_UN(&uaddr, sizeof(struct sockaddr_un));
  
          StringValue(v);
@@ -47,7 +47,7 @@ Signed-off-by: Svante Signell <svante.signell@gmail.com>
          memcpy(uaddr.sun_path, RSTRING_PTR(v), RSTRING_LEN(v));
          len = (socklen_t)sizeof(uaddr);
          memcpy(&ss, &uaddr, len);
-@@ -2446,10 +2457,21 @@
+@@ -2317,10 +2328,21 @@
      if (n < 0)
          rb_raise(rb_eSocket, "too short AF_UNIX address: %"PRIuSIZE" bytes given for minimum %"PRIuSIZE" bytes.",
                   (size_t)rai->sockaddr_len, offsetof(struct sockaddr_un, sun_path));
