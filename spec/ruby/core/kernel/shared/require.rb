@@ -160,6 +160,14 @@ describe :kernel_require_basic, shared: true do
       ScratchPad.recorded.should == [:loaded]
     end
 
+    it "accepts an Object with #to_path in $LOAD_PATH" do
+      obj = mock("to_path")
+      obj.should_receive(:to_path).at_least(:once).and_return(CODE_LOADING_DIR)
+      $LOAD_PATH << obj
+      @object.send(@method, "load_fixture.rb").should be_true
+      ScratchPad.recorded.should == [:loaded]
+    end
+
     it "does not require file twice after $LOAD_PATH change" do
       $LOAD_PATH << CODE_LOADING_DIR
       @object.require("load_fixture.rb").should be_true
@@ -343,6 +351,21 @@ describe :kernel_require, shared: true do
           @object.require(symlink_path).should be_true
           loaded_feature = $LOADED_FEATURES.last
           ScratchPad.recorded.should == [loaded_feature]
+        end
+
+        it "requires only once when a new matching file added to path" do
+          @object.require('load_fixture').should be_true
+          ScratchPad.recorded.should == [:loaded]
+
+          symlink_to_code_dir_two = tmp("codesymlinktwo")
+          File.symlink("#{CODE_LOADING_DIR}/b", symlink_to_code_dir_two)
+          begin
+            $LOAD_PATH.unshift(symlink_to_code_dir_two)
+
+            @object.require('load_fixture').should be_false
+          ensure
+            rm_r symlink_to_code_dir_two
+          end
         end
       end
 

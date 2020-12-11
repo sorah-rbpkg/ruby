@@ -118,7 +118,7 @@ module Bundler
               git_retry %(clone --no-checkout --quiet "#{path}" "#{destination}")
               File.chmod(((File.stat(destination).mode | 0o777) & ~File.umask), destination)
             rescue Errno::EEXIST => e
-              file_path = e.message[%r{.*?(/.*)}, 1]
+              file_path = e.message[%r{.*?((?:[a-zA-Z]:)?/.*)}, 1]
               raise GitError, "Bundler could not install a gem because it needs to " \
                 "create a directory, but a file exists - #{file_path}. Please delete " \
                 "this file and try again."
@@ -136,11 +136,13 @@ module Bundler
           if submodules
             git_retry "submodule update --init --recursive", :dir => destination
           elsif Gem::Version.create(version) >= Gem::Version.create("2.9.0")
-            git_retry "submodule deinit --all --force", :dir => destination
+            inner_command = "git -C $toplevel submodule deinit --force $sm_path"
+            inner_command = inner_command.gsub("$") { '\$' } unless Bundler::WINDOWS
+            git_retry "submodule foreach --quiet \"#{inner_command}\"", :dir => destination
           end
         end
 
-      private
+        private
 
         def git_null(command, dir: SharedHelpers.pwd)
           check_allowed(command)

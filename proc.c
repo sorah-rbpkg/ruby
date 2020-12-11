@@ -48,6 +48,7 @@ VALUE rb_cProc;
 static rb_block_call_func bmcall;
 static int method_arity(VALUE);
 static int method_min_max_arity(VALUE, int *max);
+static VALUE proc_binding(VALUE self);
 
 #define attached id__attached__
 
@@ -66,7 +67,7 @@ block_mark(const struct rb_block *block)
 	    RUBY_MARK_MOVABLE_UNLESS_NULL(captured->self);
 	    RUBY_MARK_MOVABLE_UNLESS_NULL((VALUE)captured->code.val);
 	    if (captured->ep && captured->ep[VM_ENV_DATA_INDEX_ENV] != Qundef /* cfunc_proc_t */) {
-                RUBY_MARK_MOVABLE_UNLESS_NULL(VM_ENV_ENVVAL(captured->ep));
+                rb_gc_mark(VM_ENV_ENVVAL(captured->ep));
 	    }
 	}
 	break;
@@ -89,9 +90,6 @@ block_compact(struct rb_block *block)
 	    struct rb_captured_block *captured = &block->as.captured;
             captured->self = rb_gc_location(captured->self);
             captured->code.val = rb_gc_location(captured->code.val);
-            if (captured->ep && captured->ep[VM_ENV_DATA_INDEX_ENV] != Qundef /* cfunc_proc_t */) {
-                UPDATE_REFERENCE(captured->ep[VM_ENV_DATA_INDEX_ENV]);
-            }
 	}
 	break;
       case block_type_symbol:
@@ -423,7 +421,11 @@ get_local_variable_ptr(const rb_env_t **envp, ID lid)
     const rb_env_t *env = *envp;
     do {
 	if (!VM_ENV_FLAGS(env->ep, VM_FRAME_FLAG_CFRAME)) {
-	    const rb_iseq_t *iseq = env->iseq;
+            if (VM_ENV_FLAGS(env->ep, VM_ENV_FLAG_ISOLATED)) {
+                return NULL;
+            }
+
+            const rb_iseq_t *iseq = env->iseq;
 	    unsigned int i;
 
 	    VM_ASSERT(rb_obj_is_iseq((VALUE)iseq));
@@ -2740,13 +2742,16 @@ rb_obj_method_arity(VALUE obj, ID id)
 }
 
 VALUE
-rb_callable_receiver(VALUE callable) {
+rb_callable_receiver(VALUE callable)
+{
     if (rb_obj_is_proc(callable)) {
-        VALUE binding = rb_funcall(callable, rb_intern("binding"), 0);
+        VALUE binding = proc_binding(callable);
         return rb_funcall(binding, rb_intern("receiver"), 0);
-    } else if (rb_obj_is_method(callable)) {
+    }
+    else if (rb_obj_is_method(callable)) {
         return method_receiver(callable);
-    } else {
+    }
+    else {
         return Qundef;
     }
 }
@@ -3240,6 +3245,8 @@ proc_binding(VALUE self)
 
     GetProcPtr(self, proc);
     block = &proc->block;
+
+    if (proc->is_isolated) rb_raise(rb_eArgError, "Can't create Binding from isolated Proc");
 
   again:
     switch (vm_block_type(block)) {
@@ -3912,7 +3919,7 @@ proc_ruby2_keywords(VALUE procval)
  * == Conversion of other objects to procs
  *
  * Any object that implements the +to_proc+ method can be converted into
- * a proc by the <code>&</code> operator, and therefore con be
+ * a proc by the <code>&</code> operator, and therefore can be
  * consumed by iterators.
  *
 
@@ -4061,6 +4068,7 @@ Init_Proc(void)
     rb_define_method(rb_cProc, "source_location", rb_proc_location, 0);
     rb_define_method(rb_cProc, "parameters", rb_proc_parameters, 0);
     rb_define_method(rb_cProc, "ruby2_keywords", proc_ruby2_keywords, 0);
+    // rb_define_method(rb_cProc, "isolate", rb_proc_isolate, 0); is not accepted.
 
     /* Exceptions */
     rb_eLocalJumpError = rb_define_class("LocalJumpError", rb_eStandardError);

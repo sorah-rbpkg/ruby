@@ -22,13 +22,13 @@
 #include "gc.h"
 #include "internal.h"
 #include "internal/cont.h"
-#include "internal/mjit.h"
 #include "internal/proc.h"
 #include "internal/warnings.h"
+#include "internal/scheduler.h"
 #include "mjit.h"
 #include "vm_core.h"
 #include "id_table.h"
-#include "ractor.h"
+#include "ractor_core.h"
 
 static const int DEBUG = 0;
 
@@ -235,14 +235,11 @@ struct rb_fiber_struct {
     rb_context_t cont;
     VALUE first_proc;
     struct rb_fiber_struct *prev;
-    BITFIELD(enum fiber_status, status, 2);
-    /* If a fiber invokes by "transfer",
-     * then this fiber can't be invoked by "resume" any more after that.
-     * You shouldn't mix "transfer" and "resume".
-     */
-    unsigned int transferred : 1;
+    VALUE resuming_fiber;
 
+    BITFIELD(enum fiber_status, status, 2);
     /* Whether the fiber is allowed to implicitly yield. */
+    unsigned int yielding : 1;
     unsigned int blocking : 1;
 
     struct coroutine_context context;
@@ -919,11 +916,13 @@ cont_mark(void *ptr)
     RUBY_MARK_LEAVE("cont");
 }
 
+#if 0
 static int
 fiber_is_root_p(const rb_fiber_t *fiber)
 {
     return fiber == fiber->cont.saved_ec.thread_ptr->root_fiber;
 }
+#endif
 
 static void
 cont_free(void *ptr)
@@ -940,14 +939,13 @@ cont_free(void *ptr)
     else {
         rb_fiber_t *fiber = (rb_fiber_t*)cont;
         coroutine_destroy(&fiber->context);
-        if (!fiber_is_root_p(fiber)) {
-            fiber_stack_release(fiber);
-        }
+        fiber_stack_release(fiber);
     }
 
     RUBY_FREE_UNLESS_NULL(cont->saved_vm_stack.ptr);
 
-    if (mjit_enabled && cont->mjit_cont != NULL) {
+    if (mjit_enabled) {
+        VM_ASSERT(cont->mjit_cont != NULL);
         mjit_cont_free(cont->mjit_cont);
     }
     /* free rb_cont_t or rb_fiber_t */
@@ -1157,11 +1155,10 @@ VALUE rb_fiberptr_self(struct rb_fiber_struct *fiber)
     return fiber->cont.self;
 }
 
+// This is used for root_fiber because other fibers call cont_init_mjit_cont through cont_new.
 void
 rb_fiber_init_mjit_cont(struct rb_fiber_struct *fiber)
 {
-    // Currently this function is meant for root_fiber. Others go through cont_new.
-    // XXX: Is this mjit_cont `mjit_cont_free`d?
     cont_init_mjit_cont(&fiber->cont);
 }
 
@@ -1824,17 +1821,22 @@ static VALUE
 rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
 {
     VALUE pool = Qnil;
-    VALUE blocking = Qtrue;
+    VALUE blocking = Qfalse;
 
     if (kw_splat != RB_NO_KEYWORDS) {
-      VALUE options = Qnil;
-      VALUE arguments[2] = {Qundef};
+        VALUE options = Qnil;
+        VALUE arguments[2] = {Qundef};
 
-      argc = rb_scan_args_kw(kw_splat, argc, argv, ":", &options);
-      rb_get_kwargs(options, fiber_initialize_keywords, 0, 2, arguments);
+        argc = rb_scan_args_kw(kw_splat, argc, argv, ":", &options);
+        rb_get_kwargs(options, fiber_initialize_keywords, 0, 2, arguments);
 
-      blocking = arguments[0];
-      pool = arguments[1];
+        if (arguments[0] != Qundef) {
+            blocking = arguments[0];
+        }
+
+        if (arguments[1] != Qundef) {
+            pool = arguments[1];
+        }
     }
 
     return fiber_initialize(self, rb_block_proc(), rb_fiber_pool_default(pool), RTEST(blocking));
@@ -1873,6 +1875,22 @@ static VALUE
 rb_f_fiber(int argc, VALUE *argv, VALUE obj)
 {
     return rb_f_fiber_kw(argc, argv, rb_keyword_given_p());
+}
+
+static VALUE
+rb_fiber_scheduler(VALUE klass)
+{
+    return rb_scheduler_get();
+}
+
+static VALUE
+rb_fiber_set_scheduler(VALUE klass, VALUE scheduler)
+{
+    // if (rb_scheduler_get() != Qnil) {
+    //     rb_raise(rb_eFiberError, "Scheduler is already defined!");
+    // }
+
+    return rb_scheduler_set(scheduler);
 }
 
 static void rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt);
@@ -1968,6 +1986,9 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     fiber->blocking = 1;
     fiber_status_set(fiber, FIBER_RESUMED); /* skip CREATED */
     th->ec = &fiber->cont.saved_ec;
+    // This skips mjit_cont_new for the initial thread because mjit_enabled is always false
+    // at this point. mjit_init calls rb_fiber_init_mjit_cont again for this root_fiber.
+    rb_fiber_init_mjit_cont(fiber);
 }
 
 void
@@ -2012,25 +2033,33 @@ fiber_current(void)
 }
 
 static inline rb_fiber_t*
-return_fiber(void)
+return_fiber(bool terminate)
 {
     rb_fiber_t *fiber = fiber_current();
     rb_fiber_t *prev = fiber->prev;
 
-    if (!prev) {
+    if (prev) {
+        fiber->prev = NULL;
+        prev->resuming_fiber = Qnil;
+        return prev;
+    }
+    else {
+        if (!terminate) {
+            rb_raise(rb_eFiberError, "attempt to yield on a not resumed fiber");
+        }
+
         rb_thread_t *th = GET_THREAD();
         rb_fiber_t *root_fiber = th->root_fiber;
 
         VM_ASSERT(root_fiber != NULL);
 
-        if (root_fiber == fiber) {
-            rb_raise(rb_eFiberError, "can't yield from root fiber");
+        // search resuming fiber
+        for (fiber = root_fiber;
+             RTEST(fiber->resuming_fiber);
+             fiber = fiber_ptr(fiber->resuming_fiber)) {
         }
-        return root_fiber;
-    }
-    else {
-        fiber->prev = NULL;
-        return prev;
+
+        return fiber;
     }
 }
 
@@ -2075,7 +2104,7 @@ fiber_store(rb_fiber_t *next_fiber, rb_thread_t *th)
 }
 
 static inline VALUE
-fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int is_resume, int kw_splat)
+fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, VALUE resuming_fiber, bool yielding)
 {
     VALUE value;
     rb_context_t *cont = &fiber->cont;
@@ -2122,11 +2151,21 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int is_resume, int 
 
     VM_ASSERT(FIBER_RUNNABLE_P(fiber));
 
-    if (is_resume) {
+    rb_fiber_t *current_fiber = fiber_current();
+
+    VM_ASSERT(!RTEST(current_fiber->resuming_fiber));
+    if (RTEST(resuming_fiber)) {
+        current_fiber->resuming_fiber = resuming_fiber;
         fiber->prev = fiber_current();
+        fiber->yielding = 0;
     }
 
-    if (fiber_current()->blocking) {
+    VM_ASSERT(!current_fiber->yielding);
+    if (yielding) {
+        current_fiber->yielding = 1;
+    }
+
+    if (current_fiber->blocking) {
         th->blocking -= 1;
     }
 
@@ -2136,7 +2175,7 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int is_resume, int 
 
     value = fiber_store(fiber, th);
 
-    if (is_resume && FIBER_TERMINATED_P(fiber)) {
+    if (RTEST(resuming_fiber) && FIBER_TERMINATED_P(fiber)) {
         fiber_stack_release(fiber);
     }
 
@@ -2154,13 +2193,25 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int is_resume, int 
 VALUE
 rb_fiber_transfer(VALUE fiber_value, int argc, const VALUE *argv)
 {
-    return fiber_switch(fiber_ptr(fiber_value), argc, argv, 0, RB_NO_KEYWORDS);
+    return fiber_switch(fiber_ptr(fiber_value), argc, argv, RB_NO_KEYWORDS, Qfalse, false);
 }
 
 VALUE
 rb_fiber_blocking_p(VALUE fiber)
 {
     return (fiber_ptr(fiber)->blocking == 0) ? Qfalse : Qtrue;
+}
+
+static VALUE
+rb_f_fiber_blocking_p(VALUE klass)
+{
+    rb_thread_t *thread = GET_THREAD();
+    unsigned blocking = thread->blocking;
+
+    if (blocking == 0)
+        return Qfalse;
+
+    return INT2NUM(blocking);
 }
 
 void
@@ -2183,29 +2234,38 @@ rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt)
     fiber->cont.machine.stack = NULL;
     fiber->cont.machine.stack_size = 0;
 
-    next_fiber = return_fiber();
+    next_fiber = return_fiber(true);
     if (need_interrupt) RUBY_VM_SET_INTERRUPT(&next_fiber->cont.saved_ec);
-    fiber_switch(next_fiber, 1, &value, 0, RB_NO_KEYWORDS);
+    fiber_switch(next_fiber, 1, &value, RB_NO_KEYWORDS, Qfalse, false);
 }
 
 VALUE
 rb_fiber_resume_kw(VALUE fiber_value, int argc, const VALUE *argv, int kw_splat)
 {
     rb_fiber_t *fiber = fiber_ptr(fiber_value);
+    rb_fiber_t *current_fiber = fiber_current();
 
     if (argc == -1 && FIBER_CREATED_P(fiber)) {
         rb_raise(rb_eFiberError, "cannot raise exception on unborn fiber");
     }
-
-    if (fiber->prev != 0 || fiber_is_root_p(fiber)) {
-        rb_raise(rb_eFiberError, "double resume");
+    else if (FIBER_TERMINATED_P(fiber)) {
+        rb_raise(rb_eFiberError, "attempt to resume a terminated fiber");
+    }
+    else if (fiber == current_fiber) {
+        rb_raise(rb_eFiberError, "attempt to resume the current fiber");
+    }
+    else if (fiber->prev != NULL) {
+        rb_raise(rb_eFiberError, "attempt to resume a resumed fiber (double resume)");
+    }
+    else if (RTEST(fiber->resuming_fiber)) {
+        rb_raise(rb_eFiberError, "attempt to resume a resuming fiber");
+    }
+    else if (fiber->prev == NULL &&
+             (!fiber->yielding && fiber->status != FIBER_CREATED)) {
+        rb_raise(rb_eFiberError, "attempt to resume a transferring fiber");
     }
 
-    if (fiber->transferred != 0) {
-        rb_raise(rb_eFiberError, "cannot resume transferred Fiber");
-    }
-
-    return fiber_switch(fiber, argc, argv, 1, kw_splat);
+    return fiber_switch(fiber, argc, argv, kw_splat, fiber_value, false);
 }
 
 VALUE
@@ -2217,13 +2277,13 @@ rb_fiber_resume(VALUE fiber_value, int argc, const VALUE *argv)
 VALUE
 rb_fiber_yield_kw(int argc, const VALUE *argv, int kw_splat)
 {
-    return fiber_switch(return_fiber(), argc, argv, 0, kw_splat);
+    return fiber_switch(return_fiber(false), argc, argv, kw_splat, Qfalse, true);
 }
 
 VALUE
 rb_fiber_yield(int argc, const VALUE *argv)
 {
-    return fiber_switch(return_fiber(), argc, argv, 0, RB_NO_KEYWORDS);
+    return fiber_switch(return_fiber(false), argc, argv, RB_NO_KEYWORDS, Qfalse, true);
 }
 
 void
@@ -2364,8 +2424,13 @@ static VALUE
 rb_fiber_m_transfer(int argc, VALUE *argv, VALUE fiber_value)
 {
     rb_fiber_t *fiber = fiber_ptr(fiber_value);
-    fiber->transferred = 1;
-    return fiber_switch(fiber, argc, argv, 0, rb_keyword_given_p());
+    if (RTEST(fiber->resuming_fiber)) {
+        rb_raise(rb_eFiberError, "attempt to transfer to a resuming fiber");
+    }
+    if (fiber->yielding) {
+        rb_raise(rb_eFiberError, "attempt to transfer to a yielding fiber");
+    }
+    return fiber_switch(fiber, argc, argv, rb_keyword_given_p(), Qfalse, false);
 }
 
 /*
@@ -2413,8 +2478,8 @@ fiber_to_s(VALUE fiber_value)
     const rb_proc_t *proc;
     char status_info[0x20];
 
-    if (fiber->transferred) {
-        snprintf(status_info, 0x20, " (%s, transferred)", fiber_status_name(fiber->status));
+    if (RTEST(fiber->resuming_fiber)) {
+        snprintf(status_info, 0x20, " (%s by resuming)", fiber_status_name(fiber->status));
     }
     else {
         snprintf(status_info, 0x20, " (%s)", fiber_status_name(fiber->status));
@@ -2564,6 +2629,10 @@ Init_Cont(void)
     rb_define_method(rb_cFiber, "backtrace_locations", rb_fiber_backtrace_locations, -1);
     rb_define_method(rb_cFiber, "to_s", fiber_to_s, 0);
     rb_define_alias(rb_cFiber, "inspect", "to_s");
+
+    rb_define_singleton_method(rb_cFiber, "blocking?", rb_f_fiber_blocking_p, 0);
+    rb_define_singleton_method(rb_cFiber, "scheduler", rb_fiber_scheduler, 0);
+    rb_define_singleton_method(rb_cFiber, "set_scheduler", rb_fiber_set_scheduler, 1);
 
     rb_define_singleton_method(rb_cFiber, "schedule", rb_f_fiber, -1);
     //rb_define_global_function("Fiber", rb_f_fiber, -1);

@@ -1,3 +1,0 @@
-module RBS
-  def self.logger: () -> Logger
-end

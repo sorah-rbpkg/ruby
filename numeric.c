@@ -467,17 +467,23 @@ rb_num_coerce_cmp(VALUE x, VALUE y, ID func)
     return Qnil;
 }
 
+static VALUE
+ensure_cmp(VALUE c, VALUE x, VALUE y)
+{
+    if (NIL_P(c)) rb_cmperr(x, y);
+    return c;
+}
+
 VALUE
 rb_num_coerce_relop(VALUE x, VALUE y, ID func)
 {
-    VALUE c, x0 = x, y0 = y;
+    VALUE x0 = x, y0 = y;
 
-    if (!do_coerce(&x, &y, FALSE) ||
-	NIL_P(c = rb_funcall(x, func, 1, y))) {
+    if (!do_coerce(&x, &y, FALSE)) {
 	rb_cmperr(x0, y0);
-	return Qnil;		/* not reached */
+	UNREACHABLE_RETURN(Qnil);
     }
-    return c;
+    return ensure_cmp(rb_funcall(x, func, 1, y), x0, y0);
 }
 
 NORETURN(static VALUE num_sadded(VALUE x, VALUE name));
@@ -1518,7 +1524,7 @@ flo_cmp(VALUE x, VALUE y)
 MJIT_FUNC_EXPORTED int
 rb_float_cmp(VALUE x, VALUE y)
 {
-    return NUM2INT(flo_cmp(x, y));
+    return NUM2INT(ensure_cmp(flo_cmp(x, y), x, y));
 }
 
 /*
@@ -1814,6 +1820,15 @@ rb_flo_is_finite_p(VALUE num)
     return Qtrue;
 }
 
+static VALUE
+flo_nextafter(VALUE flo, double value)
+{
+    double x, y;
+    x = NUM2DBL(flo);
+    y = nextafter(x, value);
+    return DBL2NUM(y);
+}
+
 /*
  *  call-seq:
  *     float.next_float  ->  float
@@ -1869,10 +1884,7 @@ rb_flo_is_finite_p(VALUE num)
 static VALUE
 flo_next_float(VALUE vx)
 {
-    double x, y;
-    x = NUM2DBL(vx);
-    y = nextafter(x, HUGE_VAL);
-    return DBL2NUM(y);
+    return flo_nextafter(vx, HUGE_VAL);
 }
 
 /*
@@ -1920,10 +1932,7 @@ flo_next_float(VALUE vx)
 static VALUE
 flo_prev_float(VALUE vx)
 {
-    double x, y;
-    x = NUM2DBL(vx);
-    y = nextafter(x, -HUGE_VAL);
-    return DBL2NUM(y);
+    return flo_nextafter(vx, -HUGE_VAL);
 }
 
 /*
@@ -2689,9 +2698,9 @@ num_step_check_fix_args(int argc, VALUE *to, VALUE *step, VALUE by, int fix_nil,
         if (argc > 1 && NIL_P(*step)) {
             rb_raise(rb_eTypeError, "step must be numeric");
         }
-        if (!allow_zero_step && rb_equal(*step, INT2FIX(0))) {
-            rb_raise(rb_eArgError, "step can't be 0");
-        }
+    }
+    if (!allow_zero_step && rb_equal(*step, INT2FIX(0))) {
+        rb_raise(rb_eArgError, "step can't be 0");
     }
     if (NIL_P(*step)) {
 	*step = INT2FIX(1);
@@ -2794,6 +2803,9 @@ num_step(int argc, VALUE *argv, VALUE from)
         }
         if (NIL_P(step)) {
             step = INT2FIX(1);
+        }
+        else if (rb_equal(step, INT2FIX(0))) {
+            rb_raise(rb_eArgError, "step can't be 0");
         }
         if ((NIL_P(to) || rb_obj_is_kind_of(to, rb_cNumeric)) &&
             rb_obj_is_kind_of(step, rb_cNumeric)) {
@@ -3417,7 +3429,7 @@ int_chr(int argc, VALUE *argv, VALUE num)
 	if (0xff < i) {
 	    enc = rb_default_internal_encoding();
 	    if (!enc) {
-		rb_raise(rb_eRangeError, "%d out of char range", i);
+		rb_raise(rb_eRangeError, "%u out of char range", i);
 	    }
 	    goto decode;
 	}
@@ -5091,7 +5103,7 @@ int_upto(VALUE from, VALUE to)
 	    rb_yield(i);
 	    i = rb_funcall(i, '+', 1, INT2FIX(1));
 	}
-	if (NIL_P(c)) rb_cmperr(i, to);
+	ensure_cmp(c, i, to);
     }
     return from;
 }
@@ -5536,16 +5548,13 @@ rb_int_s_isqrt(VALUE self, VALUE num)
 void
 Init_Numeric(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
 #ifdef _UNICOSMP
     /* Turn off floating point exceptions for divide by zero, etc. */
     _set_Creg(0, 0);
 #endif
-    id_coerce = rb_intern("coerce");
-    id_to = rb_intern("to");
-    id_by = rb_intern("by");
+    id_coerce = rb_intern_const("coerce");
+    id_to = rb_intern_const("to");
+    id_by = rb_intern_const("by");
 
     rb_eZeroDivError = rb_define_class("ZeroDivisionError", rb_eStandardError);
     rb_eFloatDomainError = rb_define_class("FloatDomainError", rb_eRangeError);

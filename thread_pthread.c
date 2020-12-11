@@ -194,6 +194,7 @@ designate_timer_thread(rb_global_vm_lock_t *gvl)
 static void
 do_gvl_timer(rb_global_vm_lock_t *gvl, rb_thread_t *th)
 {
+    rb_vm_t *vm = GET_VM();
     static rb_hrtime_t abs;
     native_thread_data_t *nd = &th->native_thread_data;
 
@@ -208,14 +209,14 @@ do_gvl_timer(rb_global_vm_lock_t *gvl, rb_thread_t *th)
     gvl->timer_err = native_cond_timedwait(&nd->cond.gvlq, &gvl->lock, &abs);
 
     ubf_wakeup_all_threads();
-    ruby_sigchld_handler(GET_VM());
+    ruby_sigchld_handler(vm);
 
     if (UNLIKELY(rb_signal_buff_size())) {
-        if (th == GET_VM()->ractor.main_thread) {
+        if (th == vm->ractor.main_thread) {
             RUBY_VM_SET_TRAP_INTERRUPT(th->ec);
         }
         else {
-            threadptr_trap_interrupt(GET_VM()->ractor.main_thread);
+            threadptr_trap_interrupt(vm->ractor.main_thread);
         }
     }
 
@@ -223,7 +224,10 @@ do_gvl_timer(rb_global_vm_lock_t *gvl, rb_thread_t *th)
      * Timeslice.  Warning: the process may fork while this
      * thread is contending for GVL:
      */
-    if (gvl->owner) timer_thread_function(gvl->owner->ec);
+    if (gvl->owner) {
+        // strictly speaking, accessing "gvl->owner" is not thread-safe
+        RUBY_VM_SET_TIMER_INTERRUPT(gvl->owner->ec);
+    }
     gvl->timer = 0;
 }
 
@@ -550,7 +554,11 @@ native_cond_timeout(rb_nativethread_cond_t *cond, const rb_hrtime_t rel)
 #define native_cleanup_push pthread_cleanup_push
 #define native_cleanup_pop  pthread_cleanup_pop
 
+#ifdef RB_THREAD_LOCAL_SPECIFIER
+static RB_THREAD_LOCAL_SPECIFIER rb_thread_t *ruby_native_thread;
+#else
 static pthread_key_t ruby_native_thread_key;
+#endif
 
 static void
 null_func(int i)
@@ -561,7 +569,11 @@ null_func(int i)
 static rb_thread_t *
 ruby_thread_from_native(void)
 {
+#ifdef RB_THREAD_LOCAL_SPECIFIER
+    return ruby_native_thread;
+#else
     return pthread_getspecific(ruby_native_thread_key);
+#endif
 }
 
 static int
@@ -570,7 +582,12 @@ ruby_thread_set_native(rb_thread_t *th)
     if (th && th->ec) {
         rb_ractor_set_current_ec(th->ractor, th->ec);
     }
+#ifdef RB_THREAD_LOCAL_SPECIFIER
+    ruby_native_thread = th;
+    return 1;
+#else
     return pthread_setspecific(ruby_native_thread_key, th) == 0;
+#endif
 }
 
 static void native_thread_init(rb_thread_t *th);
@@ -587,12 +604,15 @@ Init_native_thread(rb_thread_t *th)
         if (r) condattr_monotonic = NULL;
     }
 #endif
+
+#ifndef RB_THREAD_LOCAL_SPECIFIER
     if (pthread_key_create(&ruby_native_thread_key, 0) == EAGAIN) {
         rb_bug("pthread_key_create failed (ruby_native_thread_key)");
     }
     if (pthread_key_create(&ruby_current_ec_key, 0) == EAGAIN) {
         rb_bug("pthread_key_create failed (ruby_current_ec_key)");
     }
+#endif
     th->thread_id = pthread_self();
     ruby_thread_set_native(th);
     fill_thread_id_str(th);

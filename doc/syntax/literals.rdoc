@@ -143,6 +143,10 @@ Double-quote strings allow interpolation of other values using
 Any expression may be placed inside the interpolated section, but it's best to
 keep the expression small for readability.
 
+You can also use <tt>#@foo</tt>, <tt>#@@foo</tt> and <tt>#$foo</tt> as a
+shorthand for, respectively, <tt>#{ @foo }</tt>, <tt>#{ @@foo }</tt> and
+<tt>#{ $foo }</tt>.
+
 Interpolation may be disabled by escaping the "#" character or using
 single-quote strings:
 
@@ -359,7 +363,7 @@ See Regexp for a description of the syntax of regular expressions.
 
 == Procs
 
-A proc can be created with <tt>-></tt>:
+A lambda proc can be created with <tt>-></tt>:
 
   -> { 1 + 1 }
 

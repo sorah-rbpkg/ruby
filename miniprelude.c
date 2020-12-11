@@ -174,7 +174,7 @@ static const struct {
 static const char prelude_name1[] = "<internal:dir>";
 static const struct {
     char L0[508]; /* 1..109 */
-    char L109[163]; /* 110..139 */
+    char L109[161]; /* 110..137 */
 } prelude_code1 = {
 #line 1 "dir.rb"
 "class Dir\n"
@@ -260,7 +260,9 @@ static const struct {
 "\n"/*   File::FNM_DOTMATCH flag or something like <code>"{*,.*}"</code>. */
 "\n"/*  */
 "\n"/* <code>**</code>:: */
-"\n"/*   Matches directories recursively. */
+"\n"/*   Matches directories recursively if followed by <code>/</code>.  If */
+"\n"/*   this path segment contains any other characters, it is the same as the */
+"\n"/*   usual <code>*</code>. */
 "\n"/*  */
 "\n"/* <code>?</code>:: */
 "\n"/*   Matches any one character. Equivalent to <code>/.{1}/</code> in regexp. */
@@ -284,10 +286,10 @@ static const struct {
 "\n"/*   <code>Dir["c:/foo*"]</code> instead. */
 "\n"/*  */
 "\n"/* Examples: */
-"\n"/*  */
-"\n"/*    Dir["config.?"]                     #=> ["config.h"] */
 ,
 #line 110 "dir.rb"
+"\n"/*  */
+"\n"/*    Dir["config.?"]                     #=> ["config.h"] */
 "\n"/*    Dir.glob("config.?")                #=> ["config.h"] */
 "\n"/*    Dir.glob("*.[a-z][a-z]")            #=> ["main.rb"] */
 "\n"/*    Dir.glob("*.[^r]*")                 #=> ["config.h"] */
@@ -296,35 +298,32 @@ static const struct {
 "\n"/*    Dir.glob("*", File::FNM_DOTMATCH)   #=> [".", "..", "config.h", "main.rb"] */
 "\n"/*    Dir.glob(["*.rb", "*.h"])           #=> ["main.rb", "config.h"] */
 "\n"/*  */
-"\n"/*    rbfiles = File.join("**", "*.rb") */
-"\n"/*    Dir.glob(rbfiles)                   #=> ["main.rb", */
+"\n"/*    Dir.glob("**\/\*.rb")                 #=> ["main.rb", */
 "\n"/*                                        #    "lib/song.rb", */
 "\n"/*                                        #    "lib/song/karaoke.rb"] */
 "\n"/*  */
-"\n"/*    Dir.glob(rbfiles, base: "lib")      #=> ["song.rb", */
+"\n"/*    Dir.glob("**\/\*.rb", base: "lib")    #=> ["song.rb", */
 "\n"/*                                        #    "song/karaoke.rb"] */
 "\n"/*  */
-"\n"/*    libdirs = File.join("**", "lib") */
-"\n"/*    Dir.glob(libdirs)                   #=> ["lib"] */
+"\n"/*    Dir.glob("**\/lib")                  #=> ["lib"] */
 "\n"/*  */
-"\n"/*    librbfiles = File.join("**", "lib", "**", "*.rb") */
-"\n"/*    Dir.glob(librbfiles)                #=> ["lib/song.rb", */
+"\n"/*    Dir.glob("**\/lib/\**\/\*.rb")          #=> ["lib/song.rb", */
 "\n"/*                                        #    "lib/song/karaoke.rb"] */
 "\n"/*  */
-"\n"/*    librbfiles = File.join("**", "lib", "*.rb") */
-"\n"/*    Dir.glob(librbfiles)                #=> ["lib/song.rb"] */
+"\n"/*    Dir.glob("**\/lib/\*.rb")             #=> ["lib/song.rb"] */
 "  def self.glob(pattern, _flags = 0, flags: _flags, base: nil, sort: true)\n"
 "    Primitive.dir_s_glob(pattern, flags, base, sort)\n"
 "  end\n"
 "end\n"
-#line 321 "miniprelude.c"
+#line 319 "miniprelude.c"
 };
 
 static const char prelude_name2[] = "<internal:gc>";
 static const struct {
-    char L0[506]; /* 1..71 */
-    char L71[462]; /* 72..183 */
-    char L183[374]; /* 184..196 */
+    char L0[489]; /* 1..58 */
+    char L58[486]; /* 59..182 */
+    char L182[502]; /* 183..225 */
+    char L225[128]; /* 226..231 */
 } prelude_code2 = {
 #line 1 "gc.rb"
 "\n"/* for gc.c */
@@ -360,11 +359,34 @@ static const struct {
 "\n"/*  are not guaranteed to be future-compatible, and may be ignored if the */
 "\n"/*  underlying implementation does not support them. */
 "  def self.start full_mark: true, immediate_mark: true, immediate_sweep: true\n"
-"    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep\n"
+"    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false\n"
 "  end\n"
 "\n"
 "  def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true\n"
-"    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep\n"
+"    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false\n"
+"  end\n"
+"\n"
+"\n"/*  call-seq: */
+"\n"/*     GC.auto_compact    -> true or false */
+"\n"/*  */
+"\n"/*  Returns whether or not automatic compaction has been enabled. */
+"\n"/*  */
+"  def self.auto_compact\n"
+"    Primitive.gc_get_auto_compact\n"
+"  end\n"
+"\n"
+"\n"/*  call-seq: */
+"\n"/*     GC.auto_compact = flag */
+"\n"/*  */
+"\n"/*  Updates automatic compaction mode. */
+"\n"/*  */
+"\n"/*  When enabled, the compactor will execute on every major collection. */
+"\n"/*  */
+"\n"/*  Enabling compaction will degrade performance on major collections. */
+"  def self.auto_compact=(flag)\n"
+,
+#line 59 "gc.rb"
+"    Primitive.gc_set_auto_compact(flag)\n"
 "  end\n"
 "\n"
 "\n"/*  call-seq: */
@@ -398,8 +420,6 @@ static const struct {
 "\n"/*  */
 "\n"/*  Returns current status of GC stress mode. */
 "  def self.stress\n"
-,
-#line 72 "gc.rb"
 "    Primitive.gc_stress_get\n"
 "  end\n"
 "\n"
@@ -490,12 +510,28 @@ static const struct {
 "\n"/* If the optional argument, hash, is given, */
 "\n"/* it is overwritten and returned. */
 "\n"/* This is intended to avoid probe effect. */
+,
+#line 183 "gc.rb"
 "  def self.latest_gc_info hash_or_key = nil\n"
 "    Primitive.gc_latest_gc_info hash_or_key\n"
 "  end\n"
 "\n"
+"\n"/*  call-seq: */
+"\n"/*     GC.latest_compact_info -> {:considered=>{:T_CLASS=>11}, :moved=>{:T_CLASS=>11}} */
+"\n"/*  */
+"\n"/*  Returns information about object moved in the most recent GC compaction. */
+"\n"/*  */
+"\n"/* The returned hash has two keys :considered and :moved.  The hash for */
+"\n"/* :considered lists the number of objects that were considered for movement */
+"\n"/* by the compactor, and the :moved hash lists the number of objects that */
+"\n"/* were actually moved.  Some objects can't be moved (maybe they were pinned) */
+"\n"/* so these numbers can be used to calculate compaction efficiency. */
+"  def self.latest_compact_info\n"
+"    Primitive.gc_compact_stats\n"
+"  end\n"
+"\n"
 "  def self.compact\n"
-"    Primitive.rb_gc_compact\n"
+"    Primitive.gc_compact\n"
 "  end\n"
 "\n"
 "\n"/* call-seq: */
@@ -512,21 +548,21 @@ static const struct {
 "\n"/* then performs a full GC.  If any object contains a reference to a T_MOVED */
 "\n"/* object, that object should be pushed on the mark stack, and will */
 "\n"/* make a SEGV. */
-,
-#line 184 "gc.rb"
 "  def self.verify_compaction_references(toward: nil, double_heap: false)\n"
-"    Primitive.gc_verify_compaction_references(toward, double_heap)\n"
+"    Primitive.gc_verify_compaction_references(double_heap, toward == :empty)\n"
 "  end\n"
 "end\n"
 "\n"
 "module ObjectSpace\n"
 "  def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true\n"
-"    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep\n"
+,
+#line 226 "gc.rb"
+"    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false\n"
 "  end\n"
 "\n"
 "  module_function :garbage_collect\n"
 "end\n"
-#line 530 "miniprelude.c"
+#line 566 "miniprelude.c"
 };
 
 static const char prelude_name3[] = "<internal:integer>";
@@ -621,7 +657,7 @@ static const struct {
 "    Primitive.cexpr! 'rb_int_zero_p(self)'\n"
 "  end\n"
 "end\n"
-#line 625 "miniprelude.c"
+#line 661 "miniprelude.c"
 };
 
 static const char prelude_name4[] = "<internal:io>";
@@ -752,7 +788,7 @@ static const struct {
 "    Primitive.io_write_nonblock(buf, exception)\n"
 "  end\n"
 "end\n"
-#line 756 "miniprelude.c"
+#line 792 "miniprelude.c"
 };
 
 static const char prelude_name5[] = "<internal:pack>";
@@ -974,7 +1010,7 @@ static const struct {
 "\n"/*  V             | Integer | 32-bit unsigned, VAX (little-endian) byte order */
 "\n"/*                |         | */
 "\n"/*  U             | Integer | UTF-8 character */
-"\n"/*  w             | Integer | BER-compressed integer (see Array.pack) */
+"\n"/*  w             | Integer | BER-compressed integer (see Array#pack) */
 "\n"/*  */
 "\n"/*  Float        |         | */
 "\n"/*  Directive    | Returns | Meaning */
@@ -1043,7 +1079,7 @@ static const struct {
 "    Primitive.pack_unpack1(fmt)\n"
 "  end\n"
 "end\n"
-#line 1047 "miniprelude.c"
+#line 1083 "miniprelude.c"
 };
 
 static const char prelude_name6[] = "<internal:trace_point>";
@@ -1408,12 +1444,12 @@ static const struct {
 "    Primitive.tracepoint_attr_instruction_sequence\n"
 "  end\n"
 "end\n"
-#line 1412 "miniprelude.c"
+#line 1448 "miniprelude.c"
 };
 
 static const char prelude_name7[] = "<internal:warning>";
 static const struct {
-    char L0[152]; /* 1..46 */
+    char L0[177]; /* 1..46 */
 } prelude_code7 = {
 #line 1 "warning.rb"
 "\n"/* encoding: utf-8 */
@@ -1457,16 +1493,16 @@ static const struct {
 "\n"/*  */
 "\n"/*    baz.rb:6: warning: invalid call to foo */
 "\n"/*  */
-"  def warn(*msgs, uplevel: nil)\n"
-"    Primitive.rb_warn_m(msgs, uplevel)\n"
+"  def warn(*msgs, uplevel: nil, category: nil)\n"
+"    Primitive.rb_warn_m(msgs, uplevel, category)\n"
 "  end\n"
 "end\n"
-#line 1465 "miniprelude.c"
+#line 1501 "miniprelude.c"
 };
 
 static const char prelude_name8[] = "<internal:array>";
 static const struct {
-    char L0[314]; /* 1..60 */
+    char L0[316]; /* 1..62 */
 } prelude_code8 = {
 #line 1 "array.rb"
 "class Array\n"
@@ -1475,7 +1511,8 @@ static const struct {
 "\n"/*  */
 "\n"/* Shuffles the elements of +self+ in place. */
 "\n"/*    a = [1, 2, 3] #=> [1, 2, 3] */
-"\n"/*    a.shuffle! #=> [2, 3, 1] */
+"\n"/*    a.shuffle!    #=> [2, 3, 1] */
+"\n"/*    a             #=> [2, 3, 1] */
 "\n"/*  */
 "\n"/* The optional +random+ argument will be used as the random number generator: */
 "\n"/*    a.shuffle!(random: Random.new(1))  #=> [1, 3, 2] */
@@ -1488,7 +1525,8 @@ static const struct {
 "\n"/*  */
 "\n"/* Returns a new array with elements of +self+ shuffled. */
 "\n"/*    a = [1, 2, 3] #=> [1, 2, 3] */
-"\n"/*    a.shuffle #=> [2, 3, 1] */
+"\n"/*    a.shuffle     #=> [2, 3, 1] */
+"\n"/*    a             #=> [1, 2, 3] */
 "\n"/*  */
 "\n"/* The optional +random+ argument will be used as the random number generator: */
 "\n"/*    a.shuffle(random: Random.new(1))  #=> [1, 3, 2] */
@@ -1508,8 +1546,8 @@ static const struct {
 "\n"/*    a.sample # => 8 */
 "\n"/* If +self+ is empty, returns +nil+. */
 "\n"/*  */
-"\n"/* When argument +n+ is given (but not keyword argument +random+), */
-"\n"/* returns a new \Array containing +n+ random elements from +self+: */
+"\n"/* When argument +n+ is given, returns a new \Array containing +n+ random */
+"\n"/* elements from +self+: */
 "\n"/*    a.sample(3) # => [8, 9, 2] */
 "\n"/*    a.sample(6) # => [9, 6, 10, 3, 1, 4] */
 "\n"/* Returns no more than <tt>a.size</tt> elements */
@@ -1528,7 +1566,7 @@ static const struct {
 "    Primitive.rb_ary_sample(random, n, ary)\n"
 "  end\n"
 "end\n"
-#line 1532 "miniprelude.c"
+#line 1570 "miniprelude.c"
 };
 
 static const char prelude_name9[] = "<internal:kernel>";
@@ -1713,22 +1751,23 @@ static const struct {
 "    Primitive.rb_f_float(arg, exception)\n"
 "  end\n"
 "end\n"
-#line 1717 "miniprelude.c"
+#line 1755 "miniprelude.c"
 };
 
 static const char prelude_name10[] = "<internal:ractor>";
 static const struct {
-    char L0[502]; /* 1..72 */
-    char L72[494]; /* 73..86 */
-    char L86[483]; /* 87..124 */
-    char L124[462]; /* 125..141 */
-    char L141[388]; /* 142..166 */
+    char L0[503]; /* 1..72 */
+    char L72[507]; /* 73..81 */
+    char L81[508]; /* 82..117 */
+    char L117[450]; /* 118..141 */
+    char L141[498]; /* 142..169 */
+    char L169[223]; /* 170..182 */
 } prelude_code10 = {
 #line 1 "ractor.rb"
 "class Ractor\n"
 "\n"/* Create a new Ractor with args and a block. */
 "\n"/* args are passed via incoming channel. */
-"\n"/* A block (Proc) will be isolated (can't acccess to outer variables) */
+"\n"/* A block (Proc) will be isolated (can't access to outer variables) */
 "\n"/*  */
 "\n"/* A ractor has default two channels: */
 "\n"/* an incoming channel and an outgoing channel. */
@@ -1741,23 +1780,23 @@ static const struct {
 "\n"/* The result of the block is sent via the outgoing channel */
 "\n"/* and other */
 "\n"/*  */
-"\n"/* r = Ractor.new do */
-"\n"/*   Ractor.recv    # recv via r's mailbox => 1 */
-"\n"/*   Ractor.recv    # recv via r's mailbox => 2 */
-"\n"/*   Ractor.yield 3 # yield a message (3) and wait for taking by another ractor. */
-"\n"/*   'ok'           # the return value will be yielded. */
-"\n"/*                  # and r's incoming/outgoing ports are closed automatically. */
-"\n"/* end */
-"\n"/* r.send 1 # send a message (1) into r's mailbox. */
-"\n"/* r <<   2 # << is an alias of `send`. */
-"\n"/* p r.take   # take a message from r's outgoing port #=> 3 */
-"\n"/* p r.take   #                                        => 'ok' */
-"\n"/* p r.take   # raise Ractor::ClosedError */
+"\n"/*   r = Ractor.new do */
+"\n"/*     Ractor.receive # receive via r's mailbox => 1 */
+"\n"/*     Ractor.receive # receive via r's mailbox => 2 */
+"\n"/*     Ractor.yield 3 # yield a message (3) and wait for taking by another ractor. */
+"\n"/*     'ok'           # the return value will be yielded. */
+"\n"/*                    # and r's incoming/outgoing ports are closed automatically. */
+"\n"/*   end */
+"\n"/*   r.send 1 # send a message (1) into r's mailbox. */
+"\n"/*   r <<   2 # << is an alias of `send`. */
+"\n"/*   p r.take   # take a message from r's outgoing port => 3 */
+"\n"/*   p r.take   # => 'ok' */
+"\n"/*   p r.take   # raise Ractor::ClosedError */
 "\n"/*  */
 "\n"/* other options: */
 "\n"/*   name: Ractor's name */
 "\n"/*  */
-"  def self.new *args, name: nil, &block\n"
+"  def self.new(*args, name: nil, &block)\n"
 "    b = block\n"/* TODO: builtin bug */
 "    raise ArgumentError, \"must be called with a block\" unless block\n"
 "    loc = caller_locations(1, 1).first\n"
@@ -1780,67 +1819,77 @@ static const struct {
 "\n"
 "\n"/* Multiplex multiple Ractor communications. */
 "\n"/*  */
-"\n"/* r, obj = Ractor.select(r1, r2) */
-"\n"/* #=> wait for taking from r1 or r2 */
-"\n"/* #   returned obj is a taken object from Ractor r */
+"\n"/*   r, obj = Ractor.select(r1, r2) */
+"\n"/*   #=> wait for taking from r1 or r2 */
+"\n"/*   #   returned obj is a taken object from Ractor r */
 "\n"/*  */
-"\n"/* r, obj = Ractor.select(r1, r2, Ractor.current) */
-"\n"/* #=> wait for taking from r1 or r2 */
-"\n"/* #         or recv from incoming queue */
-"\n"/* #   If recv is succeed, then obj is received value */
-"\n"/* #   and r is :recv (Ractor.current) */
+"\n"/*   r, obj = Ractor.select(r1, r2, Ractor.current) */
+"\n"/*   #=> wait for taking from r1 or r2 */
+"\n"/*   #         or receive from incoming queue */
+"\n"/*   #   If receive is succeed, then obj is received value */
+"\n"/*   #   and r is :receive (Ractor.current) */
 "\n"/*  */
-"\n"/* r, obj = Ractor.select(r1, r2, Ractor.current, yield_value: obj) */
-"\n"/* #=> wait for taking from r1 or r2 */
-"\n"/* #         or recv from incoming queue */
-"\n"/* #         or yield (Ractor.yield) obj */
-"\n"/* #   If yield is succeed, then obj is nil */
-"\n"/* #   and r is :yield */
+"\n"/*   r, obj = Ractor.select(r1, r2, Ractor.current, yield_value: obj) */
+"\n"/*   #=> wait for taking from r1 or r2 */
+"\n"/*   #         or receive from incoming queue */
+"\n"/*   #         or yield (Ractor.yield) obj */
+"\n"/*   #   If yield is succeed, then obj is nil */
+"\n"/*   #   and r is :yield */
 "\n"/*  */
 ,
 #line 73 "ractor.rb"
-"  def self.select *ractors, yield_value: yield_unspecified = true, move: false\n"
+"  def self.select(*ractors, yield_value: yield_unspecified = true, move: false)\n"
+"    raise ArgumentError, 'specify at least one ractor or `yield_value`' if yield_unspecified && ractors.empty?\n"
+"\n"
 "    __builtin_cstmt! %q{\n"
 "      const VALUE *rs = RARRAY_CONST_PTR_TRANSIENT(ractors);\n"
 "      VALUE rv;\n"
 "      VALUE v = ractor_select(ec, rs, RARRAY_LENINT(ractors),\n"
 "                              yield_unspecified == Qtrue ? Qundef : yield_value,\n"
 "                              (bool)RTEST(move) ? true : false, &rv);\n"
+,
+#line 82 "ractor.rb"
 "      return rb_ary_new_from_args(2, rv, v);\n"
 "    }\n"
 "  end\n"
 "\n"
 "\n"/* Receive an incoming message from Ractor's incoming queue. */
-"  def self.recv\n"
+"  def self.receive\n"
 "    __builtin_cexpr! %q{\n"
-,
-#line 87 "ractor.rb"
-"      ractor_recv(ec, rb_ec_ractor_ptr(ec))\n"
+"      ractor_receive(ec, rb_ec_ractor_ptr(ec))\n"
 "    }\n"
 "  end\n"
 "\n"
-"  private def recv\n"
+"  class << self\n"
+"    alias recv receive\n"
+"  end\n"
+"\n"
+"  private def receive\n"
 "    __builtin_cexpr! %q{\n"
 "      // TODO: check current actor\n"
-"      ractor_recv(ec, RACTOR_PTR(self))\n"
+"      ractor_receive(ec, RACTOR_PTR(self))\n"
 "    }\n"
 "  end\n"
+"  alias recv receive\n"
 "\n"
 "\n"/* Send a message to a Ractor's incoming queue. */
 "\n"/*  */
 "\n"/* # Example: */
 "\n"/*   r = Ractor.new do */
-"\n"/*     p Ractor.recv #=> 'ok' */
+"\n"/*     p Ractor.receive #=> 'ok' */
 "\n"/*   end */
 "\n"/*   r.send 'ok' # send to r's incoming queue. */
-"  def send obj, move: false\n"
+"  def send(obj, move: false)\n"
 "    __builtin_cexpr! %q{\n"
 "      ractor_send(ec, RACTOR_PTR(self), obj, move)\n"
 "    }\n"
 "  end\n"
+"  alias << send\n"
+,
+#line 118 "ractor.rb"
 "\n"
 "\n"/* yield a message to the ractor's outgoing port. */
-"  def self.yield obj, move: false\n"
+"  def self.yield(obj, move: false)\n"
 "    __builtin_cexpr! %q{\n"
 "      ractor_yield(ec, rb_ec_ractor_ptr(ec), obj, move)\n"
 "    }\n"
@@ -1853,27 +1902,23 @@ static const struct {
 "\n"/*   p r.take #=> 'ok' */
 "  def take\n"
 "    __builtin_cexpr! %q{\n"
-,
-#line 125 "ractor.rb"
 "      ractor_take(ec, RACTOR_PTR(self))\n"
 "    }\n"
 "  end\n"
-"\n"
-"  alias << send\n"
 "\n"
 "  def inspect\n"
 "    loc  = __builtin_cexpr! %q{ RACTOR_PTR(self)->loc }\n"
 "    name = __builtin_cexpr! %q{ RACTOR_PTR(self)->name }\n"
 "    id   = __builtin_cexpr! %q{ INT2FIX(RACTOR_PTR(self)->id) }\n"
 "    status = __builtin_cexpr! %q{\n"
+,
+#line 142 "ractor.rb"
 "      rb_str_new2(ractor_status_str(RACTOR_PTR(self)->status_))\n"
 "    }\n"
 "    \"#<Ractor:##{id}#{name ? ' '+name : ''}#{loc ? \" \" + loc : ''} #{status}>\"\n"
 "  end\n"
 "\n"
 "  def name\n"
-,
-#line 142 "ractor.rb"
 "    __builtin_cexpr! %q{ RACTOR_PTR(self)->name }\n"
 "  end\n"
 "\n"
@@ -1881,24 +1926,36 @@ static const struct {
 "    attr_reader :ractor\n"
 "  end\n"
 "\n"
+"\n"/* Closes the incoming port and returns its previous state. */
 "  def close_incoming\n"
 "    __builtin_cexpr! %q{\n"
 "      ractor_close_incoming(ec, RACTOR_PTR(self));\n"
 "    }\n"
 "  end\n"
 "\n"
+"\n"/* Closes the outgoing port and returns its previous state. */
 "  def close_outgoing\n"
 "    __builtin_cexpr! %q{\n"
 "      ractor_close_outgoing(ec, RACTOR_PTR(self));\n"
 "    }\n"
 "  end\n"
 "\n"
-"  def close\n"
-"    close_incoming\n"
-"    close_outgoing\n"
+"\n"/* utility method */
+,
+#line 170 "ractor.rb"
+"  def self.shareable? obj\n"
+"    __builtin_cexpr! %q{\n"
+"      rb_ractor_shareable_p(obj) ? Qtrue : Qfalse;\n"
+"    }\n"
+"  end\n"
+"\n"
+"  def self.make_shareable obj\n"
+"    __builtin_cexpr! %q{\n"
+"      rb_ractor_make_shareable(obj);\n"
+"    }\n"
 "  end\n"
 "end\n"
-#line 1902 "miniprelude.c"
+#line 1959 "miniprelude.c"
 };
 
 static const char prelude_name11[] = "<internal:prelude>";
@@ -1928,17 +1985,26 @@ static const struct {
 "\n"
 "  private :pp\n"
 "end\n"
-#line 1932 "miniprelude.c"
+#line 1989 "miniprelude.c"
 };
 
 static const char prelude_name12[] = "<internal:gem_prelude>";
 static const struct {
-    char L0[86]; /* 1..3 */
+    char L0[219]; /* 1..12 */
 } prelude_code12 = {
 #line 1 "gem_prelude.rb"
-"require 'rubygems.rb' if defined?(Gem)\n"
-"require 'did_you_mean' if defined?(DidYouMean)\n"
-#line 1942 "miniprelude.c"
+"begin\n"
+"  require 'rubygems'\n"
+"rescue LoadError\n"
+"  warn \"`RubyGems' were not loaded.\"\n"
+"end if defined?(Gem)\n"
+"\n"
+"begin\n"
+"  require 'did_you_mean'\n"
+"rescue LoadError\n"
+"  warn \"`did_you_mean' was not loaded.\"\n"
+"end if defined?(DidYouMean)\n"
+#line 2008 "miniprelude.c"
 };
 
 COMPILER_WARNING_POP

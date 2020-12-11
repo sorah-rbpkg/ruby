@@ -22,8 +22,19 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
   end
 
   def test_handle_options_dry_run
-    @cmd.handle_options %w[--dryrun]
+    @cmd.handle_options %w[--dry-run]
     assert @cmd.options[:dryrun]
+  end
+
+  def test_handle_options_deprecated_dry_run
+    use_ui @ui do
+      @cmd.handle_options %w[--dryrun]
+      assert @cmd.options[:dryrun]
+    end
+
+    assert_equal \
+      "WARNING:  The \"--dryrun\" option has been deprecated and will be removed in future versions of Rubygems. Use --dry-run instead\n",
+      @ui.error
   end
 
   def test_handle_options_n
@@ -210,7 +221,7 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
     @b_2 = util_spec 'b', 3
 
     install_gem @b_1
-    install_default_specs @b_default
+    install_default_gems @b_default
     install_gem @b_2
 
     @cmd.options[:args] = []

@@ -138,19 +138,6 @@ RSpec.describe "compact index api" do
     expect(the_bundle).to include_gems("foo 1.0")
   end
 
-  it "falls back when the API errors out" do
-    simulate_platform mswin
-
-    gemfile <<-G
-      source "#{source_uri}"
-      gem "rcov"
-    G
-
-    bundle :install, :artifice => "windows"
-    expect(out).to include("Fetching source index from #{source_uri}")
-    expect(the_bundle).to include_gems "rcov 1.0.0"
-  end
-
   it "falls back when the API URL returns 403 Forbidden" do
     gemfile <<-G
       source "#{source_uri}"
@@ -258,14 +245,37 @@ The checksum of /versions does not match the checksum provided by the server! So
   end
 
   it "does not double check for gems that are only installed locally" do
-    system_gems %w[rack-1.0.0 thin-1.0 net_a-1.0]
+    build_repo2 do
+      build_gem "net_a" do |s|
+        s.add_dependency "net_b"
+        s.add_dependency "net_build_extensions"
+      end
+
+      build_gem "net_b"
+
+      build_gem "net_build_extensions" do |s|
+        s.add_dependency "rake"
+        s.extensions << "Rakefile"
+        s.write "Rakefile", <<-RUBY
+          task :default do
+            path = File.expand_path("../lib", __FILE__)
+            FileUtils.mkdir_p(path)
+            File.open("\#{path}/net_build_extensions.rb", "w") do |f|
+              f.puts "NET_BUILD_EXTENSIONS = 'YES'"
+            end
+          end
+        RUBY
+      end
+    end
+
+    system_gems %w[rack-1.0.0 thin-1.0 net_a-1.0], :gem_repo => gem_repo2
     bundle "config set --local path.system true"
     ENV["BUNDLER_SPEC_ALL_REQUESTS"] = strip_whitespace(<<-EOS).strip
       #{source_uri}/versions
       #{source_uri}/info/rack
     EOS
 
-    install_gemfile <<-G, :artifice => "compact_index", :verbose => true
+    install_gemfile <<-G, :artifice => "compact_index", :verbose => true, :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
       source "#{source_uri}"
       gem "rack"
     G
@@ -499,13 +509,19 @@ The checksum of /versions does not match the checksum provided by the server! So
   end
 
   it "does not refetch if the only unmet dependency is bundler" do
+    build_repo2 do
+      build_gem "bundler_dep" do |s|
+        s.add_dependency "bundler"
+      end
+    end
+
     gemfile <<-G
       source "#{source_uri}"
 
       gem "bundler_dep"
     G
 
-    bundle :install, :artifice => "compact_index"
+    bundle :install, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
     expect(out).to include("Fetching gem metadata from #{source_uri}")
   end
 
@@ -598,27 +614,6 @@ The checksum of /versions does not match the checksum provided by the server! So
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
 
-    it "strips http basic authentication creds for modern index" do
-      gemfile <<-G
-        source "#{basic_auth_source_uri}"
-        gem "rack"
-      G
-
-      bundle :install, :artifice => "endopint_marshal_fail_basic_authentication"
-      expect(out).not_to include("#{user}:#{password}")
-      expect(the_bundle).to include_gems "rack 1.0.0"
-    end
-
-    it "strips http basic auth creds when it can't reach the server" do
-      gemfile <<-G
-        source "#{basic_auth_source_uri}"
-        gem "rack"
-      G
-
-      bundle :install, :artifice => "endpoint_500", :raise_on_error => false
-      expect(out).not_to include("#{user}:#{password}")
-    end
-
     it "strips http basic auth creds when warning about ambiguous sources", :bundler => "< 3" do
       gemfile <<-G
         source "#{basic_auth_source_uri}"
@@ -690,7 +685,7 @@ The checksum of /versions does not match the checksum provided by the server! So
 
       it "shows instructions if auth is not provided for the source" do
         bundle :install, :artifice => "compact_index_strict_basic_authentication", :raise_on_error => false
-        expect(err).to include("bundle config set #{source_hostname} username:password")
+        expect(err).to include("bundle config set --global #{source_hostname} username:password")
       end
 
       it "fails if authentication has already been provided, but failed" do
@@ -878,7 +873,7 @@ The checksum of /versions does not match the checksum provided by the server! So
         and include("1. delete the downloaded gem located at: `#{default_bundle_path}/gems/rack-1.0.0/rack-1.0.0.gem`").
         and include("2. run `bundle install`").
         and include("If you wish to continue installing the downloaded gem, and are certain it does not pose a security issue despite the mismatching checksum, do the following:").
-        and include("1. run `bundle config set disable_checksum_validation true` to turn off checksum verification").
+        and include("1. run `bundle config set --local disable_checksum_validation true` to turn off checksum verification").
         and include("2. run `bundle install`").
         and match(/\(More info: The expected SHA256 checksum was "#{"ab" * 22}", but the checksum for the downloaded gem was ".+?"\.\)/)
     end

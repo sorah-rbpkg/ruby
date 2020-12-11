@@ -160,8 +160,7 @@ module Bundler
         selected_sgs << sg_ruby if sg_ruby
         sg_all_platforms = nil
         all_platforms = @platforms + [platform]
-        sorted_all_platforms = self.class.sort_platforms(all_platforms)
-        sorted_all_platforms.reverse_each do |other_platform|
+        self.class.sort_platforms(all_platforms).reverse_each do |other_platform|
           if sg_all_platforms.nil?
             sg_all_platforms = sg.copy_for(other_platform)
           else
@@ -250,7 +249,7 @@ module Bundler
       ["00", *platform.to_a.map {|part| part || "" }]
     end
 
-  private
+    private
 
     # returns an integer \in (-\infty, 0]
     # a number closer to 0 means the dependency is less constraining
@@ -302,7 +301,7 @@ module Bundler
           versions_with_platforms = specs.map {|s| [s.version, s.platform] }
           message = String.new("Could not find gem '#{SharedHelpers.pretty_dependency(requirement)}' in #{source}#{cache_message}.\n")
           message << if versions_with_platforms.any?
-            "The source contains '#{name}' at: #{formatted_versions_with_platforms(versions_with_platforms)}"
+            "The source contains the following versions of '#{name}': #{formatted_versions_with_platforms(versions_with_platforms)}"
           else
             "The source does not contain any versions of '#{name}'"
           end

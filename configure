@@ -801,7 +801,6 @@ MJIT_TABS
 X_COROUTINE_SRC
 X_COROUTINE_H
 ALLOCA
-MATHN
 LIBOBJS
 dsymutil
 codesign
@@ -1655,7 +1654,7 @@ Optional Features:
                           disable -D_FORTIFY_SOURCE=2 option, which causes
                           link error on mingw
   --disable-largefile     omit support for large files
-  --disable-mathn         disable canonicalization for mathn
+  --enable-mathn          enable canonicalization for mathn
   --enable-setreuid       use setreuid()/setregid() according to need even if
                           obsolete
   --enable-rpath          embed run path into extension libraries. enabled by
@@ -3366,7 +3365,7 @@ if test ! -z "$ac_cv_prog_CC" -a ! -z "$CC" -a "$CC" != "$ac_cv_prog_CC"; then :
 
 fi
 case "${build_os}" in #(
-  linux*) :
+  linux*|cygwin*) :
 
     if test -n "$ac_tool_prefix"; then
   for ac_prog in gcc clang cc
@@ -5303,16 +5302,6 @@ else
   NM="$ac_cv_path_NM"
 fi
 
- ;; #(
-  darwin*) :
-
-    if libtool 2>&1 | grep no_warning_for_no_symbols > /dev/null; then :
-
-        ac_cv_prog_ac_ct_RANLIB=:
-        ac_cv_prog_ac_ct_AR='libtool -static'
-        rb_cv_arflags='-no_warning_for_no_symbols -o'
-
-fi
  ;; #(
   *) :
      ;;
@@ -7588,6 +7577,8 @@ if test -z "${CFLAGS+set}"; then :
 
 fi
 
+
+
 case "$host_os:$build_os" in #(
   darwin*:darwin*) :
 
@@ -7595,21 +7586,31 @@ case "$host_os:$build_os" in #(
     # clang version 1.0 (http://llvm.org/svn/llvm-project/cfe/tags/Apple/clang-23 exported)
     # Apple clang version 2.0 (tags/Apple/clang-137) (based on LLVM 2.9svn)
     # Apple clang version 2.1 (tags/Apple/clang-163.7.1) (based on LLVM 3.0svn)
-    if ! $CC -E -xc - <<SRC >/dev/null; then :
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
 
-	#if defined __APPLE_CC__ && defined __clang_major__ && __clang_major__ < 3
-	#error premature clang
-	#endif
-SRC
-	as_fn_error $? "clang version 3.0 or later is required" "$LINENO" 5
+	    #if defined __APPLE_CC__ && defined __clang_major__ && __clang_major__ < 3
+	    #error premature clang
+	    #endif
 
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_cpp "$LINENO"; then :
+
+else
+  as_fn_error $? "clang version 3.0 or later is required" "$LINENO" 5
 fi
+rm -f conftest.err conftest.i conftest.$ac_ext
  ;; #(
   *) :
      ;;
 esac
-
-
 
 case "$target_os" in #(
   darwin*) :
@@ -8042,7 +8043,7 @@ if test "x${ARCH_FLAG}" != x; then :
 fi
 # RUBY_UNIVERSAL_ARCH end
 
-if test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" = no -a "$universal_binary" = no; then :
+if test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" = no -a "${universal_binary:-no}" = no; then :
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking arch option" >&5
@@ -8061,6 +8062,11 @@ esac
 
 
 fi
+host_os=$target_os
+host_vendor=$target_vendor
+host_cpu=$target_cpu
+host=$target
+host_alias=$target_alias
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $AR flags" >&5
 $as_echo_n "checking for $AR flags... " >&6; }
@@ -9972,8 +9978,8 @@ fi
     if test "x$fortify_source" != xno; then :
 
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether -D_FORTIFY_SOURCE=2 is accepted as CFLAGS" >&5
-$as_echo_n "checking whether -D_FORTIFY_SOURCE=2 is accepted as CFLAGS... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $optflags -D_FORTIFY_SOURCE=2 is accepted as CFLAGS" >&5
+$as_echo_n "checking whether $optflags -D_FORTIFY_SOURCE=2 is accepted as CFLAGS... " >&6; }
     save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $rb_cv_warnflags"
 if test "${ac_c_werror_flag+set}"; then :
@@ -9987,10 +9993,10 @@ else
 fi
 ac_c_werror_flag=yes
 
-    CFLAGS="$CFLAGS -D_FORTIFY_SOURCE=2"
+    CFLAGS="$CFLAGS $optflags -D_FORTIFY_SOURCE=2"
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-
+#include <stdio.h>
 int
 main ()
 {
@@ -13010,7 +13016,10 @@ fi
 
 done
 
-for ac_header in x86intrin.h
+case "$target_cpu" in #(
+  x64|x86_64|i3-686*) :
+
+  for ac_header in x86intrin.h
 do :
   ac_fn_c_check_header_mongrel "$LINENO" "x86intrin.h" "ac_cv_header_x86intrin_h" "$ac_includes_default"
 if test "x$ac_cv_header_x86intrin_h" = xyes; then :
@@ -13022,6 +13031,10 @@ fi
 
 done
 
+ ;; #(
+  *) :
+     ;;
+esac
 
 
 # Check whether --with-gmp was given.
@@ -19861,13 +19874,8 @@ esac
 
 # Check whether --enable-mathn was given.
 if test "${enable_mathn+set}" = set; then :
-  enableval=$enable_mathn; mathn=$enableval
-else
-  mathn=yes
+  enableval=$enable_mathn; as_fn_error $? "mathn support has been dropped" "$LINENO" 5
 fi
-
-test "x$mathn" = xyes || mathn=
-MATHN=$mathn
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for function name string predefined identifier" >&5

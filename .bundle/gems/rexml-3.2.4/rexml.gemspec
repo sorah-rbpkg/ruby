@@ -1,32 +1,84 @@
-# -*- encoding: utf-8 -*-
-# stub: rexml 3.2.4 ruby lib
+begin
+  require_relative "lib/rexml/rexml"
+rescue LoadError
+  # for Ruby core repository
+  require_relative "rexml"
+end
 
-Gem::Specification.new do |s|
-  s.name = "rexml".freeze
-  s.version = "3.2.4"
+Gem::Specification.new do |spec|
+  spec.name          = "rexml"
+  spec.version       = REXML::VERSION
+  spec.authors       = ["Kouhei Sutou"]
+  spec.email         = ["kou@cozmixng.org"]
 
-  s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
-  s.require_paths = ["lib".freeze]
-  s.authors = ["Kouhei Sutou".freeze]
-  s.bindir = "exe".freeze
-  s.date = "2020-01-31"
-  s.description = "An XML toolkit for Ruby".freeze
-  s.email = ["kou@cozmixng.org".freeze]
-  s.files = [".gitignore".freeze, ".travis.yml".freeze, "Gemfile".freeze, "LICENSE.txt".freeze, "NEWS.md".freeze, "README.md".freeze, "Rakefile".freeze, "lib/rexml/attlistdecl.rb".freeze, "lib/rexml/attribute.rb".freeze, "lib/rexml/cdata.rb".freeze, "lib/rexml/child.rb".freeze, "lib/rexml/comment.rb".freeze, "lib/rexml/doctype.rb".freeze, "lib/rexml/document.rb".freeze, "lib/rexml/dtd/attlistdecl.rb".freeze, "lib/rexml/dtd/dtd.rb".freeze, "lib/rexml/dtd/elementdecl.rb".freeze, "lib/rexml/dtd/entitydecl.rb".freeze, "lib/rexml/dtd/notationdecl.rb".freeze, "lib/rexml/element.rb".freeze, "lib/rexml/encoding.rb".freeze, "lib/rexml/entity.rb".freeze, "lib/rexml/formatters/default.rb".freeze, "lib/rexml/formatters/pretty.rb".freeze, "lib/rexml/formatters/transitive.rb".freeze, "lib/rexml/functions.rb".freeze, "lib/rexml/instruction.rb".freeze, "lib/rexml/light/node.rb".freeze, "lib/rexml/namespace.rb".freeze, "lib/rexml/node.rb".freeze, "lib/rexml/output.rb".freeze, "lib/rexml/parent.rb".freeze, "lib/rexml/parseexception.rb".freeze, "lib/rexml/parsers/baseparser.rb".freeze, "lib/rexml/parsers/lightparser.rb".freeze, "lib/rexml/parsers/pullparser.rb".freeze, "lib/rexml/parsers/sax2parser.rb".freeze, "lib/rexml/parsers/streamparser.rb".freeze, "lib/rexml/parsers/treeparser.rb".freeze, "lib/rexml/parsers/ultralightparser.rb".freeze, "lib/rexml/parsers/xpathparser.rb".freeze, "lib/rexml/quickpath.rb".freeze, "lib/rexml/rexml.rb".freeze, "lib/rexml/sax2listener.rb".freeze, "lib/rexml/security.rb".freeze, "lib/rexml/source.rb".freeze, "lib/rexml/streamlistener.rb".freeze, "lib/rexml/text.rb".freeze, "lib/rexml/undefinednamespaceexception.rb".freeze, "lib/rexml/validation/relaxng.rb".freeze, "lib/rexml/validation/validation.rb".freeze, "lib/rexml/validation/validationexception.rb".freeze, "lib/rexml/xmldecl.rb".freeze, "lib/rexml/xmltokens.rb".freeze, "lib/rexml/xpath.rb".freeze, "lib/rexml/xpath_parser.rb".freeze, "rexml.gemspec".freeze]
-  s.homepage = "https://github.com/ruby/rexml".freeze
-  s.licenses = ["BSD-2-Clause".freeze]
-  s.rubygems_version = "3.1.4".freeze
-  s.summary = "An XML toolkit for Ruby".freeze
+  spec.summary       = %q{An XML toolkit for Ruby}
+  spec.description   = %q{An XML toolkit for Ruby}
+  spec.homepage      = "https://github.com/ruby/rexml"
+  spec.license       = "BSD-2-Clause"
 
-  if s.respond_to? :specification_version then
-    s.specification_version = 4
-  end
+  spec.files         = [
+    ".gitignore",
+    ".travis.yml",
+    "Gemfile",
+    "LICENSE.txt",
+    "NEWS.md",
+    "README.md",
+    "Rakefile",
+    "lib/rexml/attlistdecl.rb",
+    "lib/rexml/attribute.rb",
+    "lib/rexml/cdata.rb",
+    "lib/rexml/child.rb",
+    "lib/rexml/comment.rb",
+    "lib/rexml/doctype.rb",
+    "lib/rexml/document.rb",
+    "lib/rexml/dtd/attlistdecl.rb",
+    "lib/rexml/dtd/dtd.rb",
+    "lib/rexml/dtd/elementdecl.rb",
+    "lib/rexml/dtd/entitydecl.rb",
+    "lib/rexml/dtd/notationdecl.rb",
+    "lib/rexml/element.rb",
+    "lib/rexml/encoding.rb",
+    "lib/rexml/entity.rb",
+    "lib/rexml/formatters/default.rb",
+    "lib/rexml/formatters/pretty.rb",
+    "lib/rexml/formatters/transitive.rb",
+    "lib/rexml/functions.rb",
+    "lib/rexml/instruction.rb",
+    "lib/rexml/light/node.rb",
+    "lib/rexml/namespace.rb",
+    "lib/rexml/node.rb",
+    "lib/rexml/output.rb",
+    "lib/rexml/parent.rb",
+    "lib/rexml/parseexception.rb",
+    "lib/rexml/parsers/baseparser.rb",
+    "lib/rexml/parsers/lightparser.rb",
+    "lib/rexml/parsers/pullparser.rb",
+    "lib/rexml/parsers/sax2parser.rb",
+    "lib/rexml/parsers/streamparser.rb",
+    "lib/rexml/parsers/treeparser.rb",
+    "lib/rexml/parsers/ultralightparser.rb",
+    "lib/rexml/parsers/xpathparser.rb",
+    "lib/rexml/quickpath.rb",
+    "lib/rexml/rexml.rb",
+    "lib/rexml/sax2listener.rb",
+    "lib/rexml/security.rb",
+    "lib/rexml/source.rb",
+    "lib/rexml/streamlistener.rb",
+    "lib/rexml/text.rb",
+    "lib/rexml/undefinednamespaceexception.rb",
+    "lib/rexml/validation/relaxng.rb",
+    "lib/rexml/validation/validation.rb",
+    "lib/rexml/validation/validationexception.rb",
+    "lib/rexml/xmldecl.rb",
+    "lib/rexml/xmltokens.rb",
+    "lib/rexml/xpath.rb",
+    "lib/rexml/xpath_parser.rb",
+    "rexml.gemspec",
+  ]
+  spec.bindir        = "exe"
+  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
+  spec.require_paths = ["lib"]
 
-  if s.respond_to? :add_runtime_dependency then
-    s.add_development_dependency(%q<bundler>.freeze, [">= 0"])
-    s.add_development_dependency(%q<rake>.freeze, [">= 0"])
-  else
-    s.add_dependency(%q<bundler>.freeze, [">= 0"])
-    s.add_dependency(%q<rake>.freeze, [">= 0"])
-  end
+  spec.add_development_dependency "bundler"
+  spec.add_development_dependency "rake"
 end

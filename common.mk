@@ -196,7 +196,8 @@ TESTOPTS      = $(RUBY_TESTOPTS)
 
 TESTRUN_SCRIPT = $(srcdir)/test.rb
 
-COMPILE_PRELUDE = $(tooldir)/generic_erb.rb $(srcdir)/template/prelude.c.tmpl
+COMPILE_PRELUDE = $(tooldir)/generic_erb.rb $(srcdir)/template/prelude.c.tmpl \
+	$(tooldir)/ruby_vm/helpers/c_escape.rb
 
 SHOWFLAGS = showflags
 
@@ -605,7 +606,7 @@ clean-local:: clean-runnable
 	$(Q)$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	$(Q)$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) dmyenc.$(OBJEXT) $(ARCHFILE) .*.time
 	$(Q)$(RM) y.tab.c y.output encdb.h transdb.h config.log rbconfig.rb $(ruby_pc) $(COROUTINE_H:/Context.h=/.time)
-	$(Q)$(RM) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT) ruby.imp ChangeLog
+	$(Q)$(RM) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT) ruby.imp ChangeLog $(STATIC_RUBY)$(EXEEXT)
 	$(Q)$(RM) GNUmakefile.old Makefile.old $(arch)-fake.rb bisect.sh $(ENC_TRANS_D) builtin_binary.inc
 	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine 2> $(NULL) || $(NULLCMD)
 
@@ -731,6 +732,7 @@ RUBYSPEC_CAPIEXT = spec/ruby/optional/capi/ext
 clean-spec: PHONY
 	-$(Q) $(RM) $(RUBYSPEC_CAPIEXT)/*.$(OBJEXT) $(RUBYSPEC_CAPIEXT)/*.$(DLEXT)
 	-$(Q) $(RMDIRS) $(RUBYSPEC_CAPIEXT) 2> $(NULL) || $(NULLCMD)
+	-$(Q) $(RMALL) rubyspec_temp
 
 check: main test test-tool test-all test-spec
 	$(ECHO) check succeeded
@@ -1265,11 +1267,12 @@ lldb-ruby: $(PROGRAM) PHONY
 	lldb $(enable_shared:yes=-o 'target modules add ${LIBRUBY_SO}') -o '$(LLDB_INIT)' $(PROGRAM) -- $(TESTRUN_SCRIPT)
 
 DISTPKGS = gzip,zip,all
+PKGSDIR = tmp
 dist:
 	$(BASERUBY) $(tooldir)/make-snapshot \
 	-srcdir=$(srcdir) -packages=$(DISTPKGS) \
 	-unicode-version=$(UNICODE_VERSION) \
-	tmp $(RELNAME)
+	$(DISTOPTS) $(PKGSDIR) $(RELNAME)
 
 up:: update-remote
 
@@ -1296,7 +1299,7 @@ update-config_files: PHONY
 	    config.guess config.sub
 
 refresh-gems: update-bundled_gems prepare-gems
-prepare-gems: update-gems extract-gems
+prepare-gems: $(HAVE_BASERUBY:yes=update-gems) $(HAVE_BASERUBY:yes=extract-gems)
 
 update-gems$(gnumake:yes=-nongnumake): PHONY
 	$(ECHO) Downloading bundled gem files...
@@ -1325,16 +1328,7 @@ extract-gems$(gnumake:yes=-nongnumake): PHONY
 
 update-bundled_gems: PHONY
 	$(Q) $(RUNRUBY) -rrubygems \
-	    -pla \
-	    -e 'unless /^[^#]/!~(gem=$$F[0])' \
-	    -e '(gem,src), = Gem::SpecFetcher.fetcher.detect(:latest) {'"|s|" \
-	    -e   's.platform=="ruby"&&s.name==gem' \
-	    -e '}' \
-	    -e 'gem = src.fetch_spec(gem)' \
-	    -e 'uri = gem.metadata["source_code_uri"]||gem.homepage' \
-	    -e 'uri = uri.sub(%r[\Ahttps://github\.com/[^/]+/[^/]+\K/tree/.*], "")' \
-	    -e '$$_ = [gem.name, gem.version, uri].join(" ")' \
-	    -e 'end' \
+	     $(tooldir)/update-bundled_gems.rb \
 	     "$(srcdir)/gems/bundled_gems" | \
 	"$(IFCHANGE)" "$(srcdir)/gems/bundled_gems" -
 
@@ -1350,7 +1344,7 @@ test-bundled-gems-prepare: $(TEST_RUNNABLE)-test-bundled-gems-prepare
 no-test-bundled-gems-prepare: no-test-bundled-gems-precheck
 yes-test-bundled-gems-prepare: yes-test-bundled-gems-precheck
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
-		--install-dir .bundle --conservative "bundler" "minitest:~> 5" "test-unit" "rake" "hoe" "yard" "pry" "packnga" "rexml" "json-schema"
+		--install-dir .bundle --conservative "bundler" "minitest:~> 5" "test-unit" "rake" "hoe" "yard" "pry" "packnga" "rexml" "json-schema" "rbs"
 
 PREPARE_BUNDLED_GEMS = test-bundled-gems-prepare
 test-bundled-gems: $(TEST_RUNNABLE)-test-bundled-gems
@@ -1360,8 +1354,9 @@ no-test-bundled-gems:
 # Override this to allow failure of specific gems on CI
 # TEST_BUNDLED_GEMS_ALLOW_FAILURES =
 
+BUNDLED_GEMS =
 test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
-	$(Q) $(XRUBY) $(tooldir)/test-bundled-gems.rb
+	$(Q) $(XRUBY) $(tooldir)/test-bundled-gems.rb $(BUNDLED_GEMS)
 
 test-bundler-precheck: $(TEST_RUNNABLE)-test-bundler-precheck
 no-test-bundler-precheck:
@@ -3198,8 +3193,8 @@ cont.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 cont.$(OBJEXT): $(top_srcdir)/internal/cont.h
 cont.$(OBJEXT): $(top_srcdir)/internal/gc.h
 cont.$(OBJEXT): $(top_srcdir)/internal/imemo.h
-cont.$(OBJEXT): $(top_srcdir)/internal/mjit.h
 cont.$(OBJEXT): $(top_srcdir)/internal/proc.h
+cont.$(OBJEXT): $(top_srcdir)/internal/scheduler.h
 cont.$(OBJEXT): $(top_srcdir)/internal/serial.h
 cont.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 cont.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -3370,7 +3365,7 @@ cont.$(OBJEXT): {$(VPATH)}missing.h
 cont.$(OBJEXT): {$(VPATH)}mjit.h
 cont.$(OBJEXT): {$(VPATH)}node.h
 cont.$(OBJEXT): {$(VPATH)}ractor.h
-cont.$(OBJEXT): {$(VPATH)}ractor_pub.h
+cont.$(OBJEXT): {$(VPATH)}ractor_core.h
 cont.$(OBJEXT): {$(VPATH)}ruby_assert.h
 cont.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 cont.$(OBJEXT): {$(VPATH)}st.h
@@ -3564,7 +3559,7 @@ debug.$(OBJEXT): {$(VPATH)}node.h
 debug.$(OBJEXT): {$(VPATH)}onigmo.h
 debug.$(OBJEXT): {$(VPATH)}oniguruma.h
 debug.$(OBJEXT): {$(VPATH)}ractor.h
-debug.$(OBJEXT): {$(VPATH)}ractor_pub.h
+debug.$(OBJEXT): {$(VPATH)}ractor_core.h
 debug.$(OBJEXT): {$(VPATH)}ruby_assert.h
 debug.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 debug.$(OBJEXT): {$(VPATH)}st.h
@@ -4617,6 +4612,7 @@ encoding.$(OBJEXT): {$(VPATH)}internal/variable.h
 encoding.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 encoding.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 encoding.$(OBJEXT): {$(VPATH)}missing.h
+encoding.$(OBJEXT): {$(VPATH)}node.h
 encoding.$(OBJEXT): {$(VPATH)}onigmo.h
 encoding.$(OBJEXT): {$(VPATH)}oniguruma.h
 encoding.$(OBJEXT): {$(VPATH)}regenc.h
@@ -4624,6 +4620,8 @@ encoding.$(OBJEXT): {$(VPATH)}ruby_assert.h
 encoding.$(OBJEXT): {$(VPATH)}st.h
 encoding.$(OBJEXT): {$(VPATH)}subst.h
 encoding.$(OBJEXT): {$(VPATH)}util.h
+encoding.$(OBJEXT): {$(VPATH)}vm_debug.h
+encoding.$(OBJEXT): {$(VPATH)}vm_sync.h
 enum.$(OBJEXT): $(hdrdir)/ruby.h
 enum.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enum.$(OBJEXT): $(top_srcdir)/internal/array.h
@@ -5210,8 +5208,8 @@ eval.$(OBJEXT): $(top_srcdir)/internal/hash.h
 eval.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 eval.$(OBJEXT): $(top_srcdir)/internal/inits.h
 eval.$(OBJEXT): $(top_srcdir)/internal/io.h
-eval.$(OBJEXT): $(top_srcdir)/internal/mjit.h
 eval.$(OBJEXT): $(top_srcdir)/internal/object.h
+eval.$(OBJEXT): $(top_srcdir)/internal/scheduler.h
 eval.$(OBJEXT): $(top_srcdir)/internal/serial.h
 eval.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 eval.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -5395,7 +5393,7 @@ eval.$(OBJEXT): {$(VPATH)}probes.dmyh
 eval.$(OBJEXT): {$(VPATH)}probes.h
 eval.$(OBJEXT): {$(VPATH)}probes_helper.h
 eval.$(OBJEXT): {$(VPATH)}ractor.h
-eval.$(OBJEXT): {$(VPATH)}ractor_pub.h
+eval.$(OBJEXT): {$(VPATH)}ractor_core.h
 eval.$(OBJEXT): {$(VPATH)}ruby_assert.h
 eval.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 eval.$(OBJEXT): {$(VPATH)}st.h
@@ -5817,7 +5815,7 @@ gc.$(OBJEXT): {$(VPATH)}oniguruma.h
 gc.$(OBJEXT): {$(VPATH)}probes.dmyh
 gc.$(OBJEXT): {$(VPATH)}probes.h
 gc.$(OBJEXT): {$(VPATH)}ractor.h
-gc.$(OBJEXT): {$(VPATH)}ractor_pub.h
+gc.$(OBJEXT): {$(VPATH)}ractor_core.h
 gc.$(OBJEXT): {$(VPATH)}re.h
 gc.$(OBJEXT): {$(VPATH)}regenc.h
 gc.$(OBJEXT): {$(VPATH)}regex.h
@@ -6737,7 +6735,7 @@ io.$(OBJEXT): {$(VPATH)}missing.h
 io.$(OBJEXT): {$(VPATH)}node.h
 io.$(OBJEXT): {$(VPATH)}onigmo.h
 io.$(OBJEXT): {$(VPATH)}oniguruma.h
-io.$(OBJEXT): {$(VPATH)}ractor_pub.h
+io.$(OBJEXT): {$(VPATH)}ractor.h
 io.$(OBJEXT): {$(VPATH)}ruby_assert.h
 io.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 io.$(OBJEXT): {$(VPATH)}st.h
@@ -6756,6 +6754,7 @@ iseq.$(OBJEXT): $(hdrdir)/ruby.h
 iseq.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/array.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/bits.h
+iseq.$(OBJEXT): $(top_srcdir)/internal/class.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/compile.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/error.h
@@ -8000,7 +7999,9 @@ math.$(OBJEXT): {$(VPATH)}missing.h
 math.$(OBJEXT): {$(VPATH)}st.h
 math.$(OBJEXT): {$(VPATH)}subst.h
 memory_view.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+memory_view.$(OBJEXT): $(top_srcdir)/internal/hash.h
 memory_view.$(OBJEXT): $(top_srcdir)/internal/util.h
+memory_view.$(OBJEXT): $(top_srcdir)/internal/variable.h
 memory_view.$(OBJEXT): {$(VPATH)}assert.h
 memory_view.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 memory_view.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
@@ -8012,7 +8013,9 @@ memory_view.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 memory_view.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 memory_view.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 memory_view.$(OBJEXT): {$(VPATH)}config.h
+memory_view.$(OBJEXT): {$(VPATH)}constant.h
 memory_view.$(OBJEXT): {$(VPATH)}defines.h
+memory_view.$(OBJEXT): {$(VPATH)}id_table.h
 memory_view.$(OBJEXT): {$(VPATH)}intern.h
 memory_view.$(OBJEXT): {$(VPATH)}internal.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/anyargs.h
@@ -8407,7 +8410,6 @@ mjit.$(OBJEXT): $(top_srcdir)/internal/file.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/gc.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/hash.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/imemo.h
-mjit.$(OBJEXT): $(top_srcdir)/internal/mjit.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/serial.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 mjit.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -9745,7 +9747,7 @@ parse.$(OBJEXT): {$(VPATH)}parse.h
 parse.$(OBJEXT): {$(VPATH)}parse.y
 parse.$(OBJEXT): {$(VPATH)}probes.dmyh
 parse.$(OBJEXT): {$(VPATH)}probes.h
-parse.$(OBJEXT): {$(VPATH)}ractor_pub.h
+parse.$(OBJEXT): {$(VPATH)}ractor.h
 parse.$(OBJEXT): {$(VPATH)}regenc.h
 parse.$(OBJEXT): {$(VPATH)}regex.h
 parse.$(OBJEXT): {$(VPATH)}ruby_assert.h
@@ -9990,7 +9992,6 @@ process.$(OBJEXT): $(top_srcdir)/internal/eval.h
 process.$(OBJEXT): $(top_srcdir)/internal/gc.h
 process.$(OBJEXT): $(top_srcdir)/internal/hash.h
 process.$(OBJEXT): $(top_srcdir)/internal/imemo.h
-process.$(OBJEXT): $(top_srcdir)/internal/mjit.h
 process.$(OBJEXT): $(top_srcdir)/internal/object.h
 process.$(OBJEXT): $(top_srcdir)/internal/process.h
 process.$(OBJEXT): $(top_srcdir)/internal/scheduler.h
@@ -10013,6 +10014,7 @@ process.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 process.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 process.$(OBJEXT): {$(VPATH)}config.h
 process.$(OBJEXT): {$(VPATH)}constant.h
+process.$(OBJEXT): {$(VPATH)}debug_counter.h
 process.$(OBJEXT): {$(VPATH)}defines.h
 process.$(OBJEXT): {$(VPATH)}dln.h
 process.$(OBJEXT): {$(VPATH)}encoding.h
@@ -10164,11 +10166,12 @@ process.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 process.$(OBJEXT): {$(VPATH)}io.h
 process.$(OBJEXT): {$(VPATH)}method.h
 process.$(OBJEXT): {$(VPATH)}missing.h
+process.$(OBJEXT): {$(VPATH)}mjit.h
 process.$(OBJEXT): {$(VPATH)}node.h
 process.$(OBJEXT): {$(VPATH)}onigmo.h
 process.$(OBJEXT): {$(VPATH)}oniguruma.h
 process.$(OBJEXT): {$(VPATH)}process.c
-process.$(OBJEXT): {$(VPATH)}ractor_pub.h
+process.$(OBJEXT): {$(VPATH)}ractor.h
 process.$(OBJEXT): {$(VPATH)}ruby_assert.h
 process.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 process.$(OBJEXT): {$(VPATH)}st.h
@@ -10185,10 +10188,17 @@ ractor.$(OBJEXT): $(CCAN_DIR)/list/list.h
 ractor.$(OBJEXT): $(CCAN_DIR)/str/str.h
 ractor.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/array.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/bignum.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/bits.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/complex.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/error.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/gc.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/hash.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/numeric.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/rational.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/serial.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -10212,6 +10222,7 @@ ractor.$(OBJEXT): {$(VPATH)}debug.h
 ractor.$(OBJEXT): {$(VPATH)}debug_counter.h
 ractor.$(OBJEXT): {$(VPATH)}defines.h
 ractor.$(OBJEXT): {$(VPATH)}encoding.h
+ractor.$(OBJEXT): {$(VPATH)}gc.h
 ractor.$(OBJEXT): {$(VPATH)}id.h
 ractor.$(OBJEXT): {$(VPATH)}id_table.h
 ractor.$(OBJEXT): {$(VPATH)}intern.h
@@ -10365,7 +10376,7 @@ ractor.$(OBJEXT): {$(VPATH)}ractor.c
 ractor.$(OBJEXT): {$(VPATH)}ractor.h
 ractor.$(OBJEXT): {$(VPATH)}ractor.rb
 ractor.$(OBJEXT): {$(VPATH)}ractor.rbinc
-ractor.$(OBJEXT): {$(VPATH)}ractor_pub.h
+ractor.$(OBJEXT): {$(VPATH)}ractor_core.h
 ractor.$(OBJEXT): {$(VPATH)}ruby_assert.h
 ractor.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 ractor.$(OBJEXT): {$(VPATH)}st.h
@@ -10373,6 +10384,8 @@ ractor.$(OBJEXT): {$(VPATH)}subst.h
 ractor.$(OBJEXT): {$(VPATH)}thread.h
 ractor.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 ractor.$(OBJEXT): {$(VPATH)}thread_native.h
+ractor.$(OBJEXT): {$(VPATH)}transient_heap.h
+ractor.$(OBJEXT): {$(VPATH)}variable.h
 ractor.$(OBJEXT): {$(VPATH)}vm_core.h
 ractor.$(OBJEXT): {$(VPATH)}vm_debug.h
 ractor.$(OBJEXT): {$(VPATH)}vm_opts.h
@@ -10552,6 +10565,7 @@ random.$(OBJEXT): {$(VPATH)}missing.h
 random.$(OBJEXT): {$(VPATH)}mt19937.c
 random.$(OBJEXT): {$(VPATH)}onigmo.h
 random.$(OBJEXT): {$(VPATH)}oniguruma.h
+random.$(OBJEXT): {$(VPATH)}ractor.h
 random.$(OBJEXT): {$(VPATH)}random.c
 random.$(OBJEXT): {$(VPATH)}random.h
 random.$(OBJEXT): {$(VPATH)}ruby_atomic.h
@@ -10935,6 +10949,7 @@ re.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 re.$(OBJEXT): $(top_srcdir)/internal/re.h
 re.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 re.$(OBJEXT): $(top_srcdir)/internal/string.h
+re.$(OBJEXT): $(top_srcdir)/internal/variable.h
 re.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 re.$(OBJEXT): {$(VPATH)}assert.h
 re.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -10947,9 +10962,11 @@ re.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 re.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 re.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 re.$(OBJEXT): {$(VPATH)}config.h
+re.$(OBJEXT): {$(VPATH)}constant.h
 re.$(OBJEXT): {$(VPATH)}defines.h
 re.$(OBJEXT): {$(VPATH)}encindex.h
 re.$(OBJEXT): {$(VPATH)}encoding.h
+re.$(OBJEXT): {$(VPATH)}id_table.h
 re.$(OBJEXT): {$(VPATH)}intern.h
 re.$(OBJEXT): {$(VPATH)}internal.h
 re.$(OBJEXT): {$(VPATH)}internal/anyargs.h
@@ -12291,8 +12308,20 @@ ruby.$(OBJEXT): {$(VPATH)}thread_native.h
 ruby.$(OBJEXT): {$(VPATH)}util.h
 ruby.$(OBJEXT): {$(VPATH)}vm_core.h
 ruby.$(OBJEXT): {$(VPATH)}vm_opts.h
+scheduler.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
+scheduler.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
+scheduler.$(OBJEXT): $(CCAN_DIR)/list/list.h
+scheduler.$(OBJEXT): $(CCAN_DIR)/str/str.h
 scheduler.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+scheduler.$(OBJEXT): $(top_srcdir)/internal/array.h
+scheduler.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+scheduler.$(OBJEXT): $(top_srcdir)/internal/gc.h
+scheduler.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/scheduler.h
+scheduler.$(OBJEXT): $(top_srcdir)/internal/serial.h
+scheduler.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+scheduler.$(OBJEXT): $(top_srcdir)/internal/vm.h
+scheduler.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 scheduler.$(OBJEXT): {$(VPATH)}assert.h
 scheduler.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 scheduler.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
@@ -12306,7 +12335,9 @@ scheduler.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 scheduler.$(OBJEXT): {$(VPATH)}config.h
 scheduler.$(OBJEXT): {$(VPATH)}defines.h
 scheduler.$(OBJEXT): {$(VPATH)}encoding.h
+scheduler.$(OBJEXT): {$(VPATH)}id.h
 scheduler.$(OBJEXT): {$(VPATH)}intern.h
+scheduler.$(OBJEXT): {$(VPATH)}internal.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
@@ -12449,12 +12480,20 @@ scheduler.$(OBJEXT): {$(VPATH)}internal/variable.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 scheduler.$(OBJEXT): {$(VPATH)}io.h
+scheduler.$(OBJEXT): {$(VPATH)}method.h
 scheduler.$(OBJEXT): {$(VPATH)}missing.h
+scheduler.$(OBJEXT): {$(VPATH)}node.h
 scheduler.$(OBJEXT): {$(VPATH)}onigmo.h
 scheduler.$(OBJEXT): {$(VPATH)}oniguruma.h
+scheduler.$(OBJEXT): {$(VPATH)}ruby_assert.h
+scheduler.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 scheduler.$(OBJEXT): {$(VPATH)}scheduler.c
 scheduler.$(OBJEXT): {$(VPATH)}st.h
 scheduler.$(OBJEXT): {$(VPATH)}subst.h
+scheduler.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+scheduler.$(OBJEXT): {$(VPATH)}thread_native.h
+scheduler.$(OBJEXT): {$(VPATH)}vm_core.h
+scheduler.$(OBJEXT): {$(VPATH)}vm_opts.h
 setproctitle.$(OBJEXT): $(hdrdir)/ruby.h
 setproctitle.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 setproctitle.$(OBJEXT): {$(VPATH)}assert.h
@@ -13964,6 +14003,7 @@ thread.$(OBJEXT): $(top_srcdir)/internal/thread.h
 thread.$(OBJEXT): $(top_srcdir)/internal/time.h
 thread.$(OBJEXT): $(top_srcdir)/internal/vm.h
 thread.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+thread.$(OBJEXT): {$(VPATH)}$(COROUTINE_H)
 thread.$(OBJEXT): {$(VPATH)}assert.h
 thread.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 thread.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
@@ -14135,7 +14175,7 @@ thread.$(OBJEXT): {$(VPATH)}node.h
 thread.$(OBJEXT): {$(VPATH)}onigmo.h
 thread.$(OBJEXT): {$(VPATH)}oniguruma.h
 thread.$(OBJEXT): {$(VPATH)}ractor.h
-thread.$(OBJEXT): {$(VPATH)}ractor_pub.h
+thread.$(OBJEXT): {$(VPATH)}ractor_core.h
 thread.$(OBJEXT): {$(VPATH)}ruby_assert.h
 thread.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 thread.$(OBJEXT): {$(VPATH)}st.h
@@ -14693,7 +14733,6 @@ transient_heap.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 transient_heap.$(OBJEXT): {$(VPATH)}method.h
 transient_heap.$(OBJEXT): {$(VPATH)}missing.h
 transient_heap.$(OBJEXT): {$(VPATH)}node.h
-transient_heap.$(OBJEXT): {$(VPATH)}ractor_pub.h
 transient_heap.$(OBJEXT): {$(VPATH)}ruby_assert.h
 transient_heap.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 transient_heap.$(OBJEXT): {$(VPATH)}st.h
@@ -15061,7 +15100,7 @@ variable.$(OBJEXT): {$(VPATH)}node.h
 variable.$(OBJEXT): {$(VPATH)}onigmo.h
 variable.$(OBJEXT): {$(VPATH)}oniguruma.h
 variable.$(OBJEXT): {$(VPATH)}ractor.h
-variable.$(OBJEXT): {$(VPATH)}ractor_pub.h
+variable.$(OBJEXT): {$(VPATH)}ractor_core.h
 variable.$(OBJEXT): {$(VPATH)}ruby_assert.h
 variable.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 variable.$(OBJEXT): {$(VPATH)}st.h
@@ -15075,6 +15114,7 @@ variable.$(OBJEXT): {$(VPATH)}variable.h
 variable.$(OBJEXT): {$(VPATH)}vm_core.h
 variable.$(OBJEXT): {$(VPATH)}vm_debug.h
 variable.$(OBJEXT): {$(VPATH)}vm_opts.h
+variable.$(OBJEXT): {$(VPATH)}vm_sync.h
 version.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 version.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 version.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -15282,13 +15322,13 @@ vm.$(OBJEXT): $(top_srcdir)/internal/gc.h
 vm.$(OBJEXT): $(top_srcdir)/internal/hash.h
 vm.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 vm.$(OBJEXT): $(top_srcdir)/internal/inits.h
-vm.$(OBJEXT): $(top_srcdir)/internal/mjit.h
 vm.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 vm.$(OBJEXT): $(top_srcdir)/internal/object.h
 vm.$(OBJEXT): $(top_srcdir)/internal/parse.h
 vm.$(OBJEXT): $(top_srcdir)/internal/proc.h
 vm.$(OBJEXT): $(top_srcdir)/internal/random.h
 vm.$(OBJEXT): $(top_srcdir)/internal/re.h
+vm.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 vm.$(OBJEXT): $(top_srcdir)/internal/serial.h
 vm.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 vm.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -15473,7 +15513,7 @@ vm.$(OBJEXT): {$(VPATH)}probes.dmyh
 vm.$(OBJEXT): {$(VPATH)}probes.h
 vm.$(OBJEXT): {$(VPATH)}probes_helper.h
 vm.$(OBJEXT): {$(VPATH)}ractor.h
-vm.$(OBJEXT): {$(VPATH)}ractor_pub.h
+vm.$(OBJEXT): {$(VPATH)}ractor_core.h
 vm.$(OBJEXT): {$(VPATH)}ruby_assert.h
 vm.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm.$(OBJEXT): {$(VPATH)}st.h
@@ -15865,7 +15905,7 @@ vm_dump.$(OBJEXT): {$(VPATH)}missing.h
 vm_dump.$(OBJEXT): {$(VPATH)}node.h
 vm_dump.$(OBJEXT): {$(VPATH)}procstat_vm.c
 vm_dump.$(OBJEXT): {$(VPATH)}ractor.h
-vm_dump.$(OBJEXT): {$(VPATH)}ractor_pub.h
+vm_dump.$(OBJEXT): {$(VPATH)}ractor_core.h
 vm_dump.$(OBJEXT): {$(VPATH)}ruby_assert.h
 vm_dump.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm_dump.$(OBJEXT): {$(VPATH)}st.h
@@ -16061,7 +16101,7 @@ vm_sync.$(OBJEXT): {$(VPATH)}missing.h
 vm_sync.$(OBJEXT): {$(VPATH)}node.h
 vm_sync.$(OBJEXT): {$(VPATH)}procstat_vm.c
 vm_sync.$(OBJEXT): {$(VPATH)}ractor.h
-vm_sync.$(OBJEXT): {$(VPATH)}ractor_pub.h
+vm_sync.$(OBJEXT): {$(VPATH)}ractor_core.h
 vm_sync.$(OBJEXT): {$(VPATH)}ruby_assert.h
 vm_sync.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm_sync.$(OBJEXT): {$(VPATH)}st.h

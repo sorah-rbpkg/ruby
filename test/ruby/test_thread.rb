@@ -309,7 +309,7 @@ class TestThread < Test::Unit::TestCase
       s += 1
     end
     Thread.pass until t.stop?
-    sleep 1 if RubyVM::MJIT.enabled? # t.stop? behaves unexpectedly with --jit-wait
+    sleep 1 if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # t.stop? behaves unexpectedly with --jit-wait
     assert_equal(1, s)
     t.wakeup
     Thread.pass while t.alive?
@@ -488,6 +488,19 @@ class TestThread < Test::Unit::TestCase
         assert_raise(RuntimeError) { th.join }
       }
     end;
+  end
+
+  def test_ignore_deadlock
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      skip "can't trap a signal from another process on Windows"
+    end
+    assert_in_out_err([], <<-INPUT, %w(false :sig), [], :signal=>:INT, timeout: 1, timeout_error: nil)
+      p Thread.ignore_deadlock
+      q = Queue.new
+      trap(:INT){q.push :sig}
+      Thread.ignore_deadlock = true
+      p q.pop
+    INPUT
   end
 
   def test_status_and_stop_p
@@ -1325,7 +1338,7 @@ q.pop
     opts = { timeout: 5, timeout_error: nil }
 
     # prevent SIGABRT from slow shutdown with MJIT
-    opts[:reprieve] = 3 if RubyVM::MJIT.enabled?
+    opts[:reprieve] = 3 if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
 
     assert_normal_exit(<<-_end, '[Bug #8996]', **opts)
       Thread.report_on_exception = false

@@ -49,7 +49,7 @@ typedef struct {
     ssize_t len;
 
     /* 1 for readonly memory, 0 for writable memory. */
-    int readonly;
+    bool readonly;
 
     /* A string to describe the format of an element, or NULL for unsigned byte.
      * The format string is a sequence the following pack-template specifiers:
@@ -85,7 +85,7 @@ typedef struct {
     } item_desc;
 
     /* The number of dimension. */
-    int ndim;
+    ssize_t ndim;
 
     /* ndim size array indicating the number of elements in each dimension.
      * This can be NULL when ndim == 1. */
@@ -118,24 +118,44 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 /* memory_view.c */
 bool rb_memory_view_register(VALUE klass, const rb_memory_view_entry_t *entry);
 
-#define rb_memory_view_is_contiguous(view) ( \
-    rb_memory_view_is_row_major_contiguous(view) \
-    || rb_memory_view_is_column_major_contiguous(view))
-
-int rb_memory_view_is_row_major_contiguous(const rb_memory_view_t *view);
-int rb_memory_view_is_column_major_contiguous(const rb_memory_view_t *view);
-void rb_memory_view_fill_contiguous_strides(const int ndim, const int item_size, const ssize_t *const shape, const int row_major_p, ssize_t *const strides);
-int rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data, const ssize_t len, const int readonly);
+RBIMPL_ATTR_PURE()
+bool rb_memory_view_is_row_major_contiguous(const rb_memory_view_t *view);
+RBIMPL_ATTR_PURE()
+bool rb_memory_view_is_column_major_contiguous(const rb_memory_view_t *view);
+RBIMPL_ATTR_NOALIAS()
+void rb_memory_view_fill_contiguous_strides(const ssize_t ndim, const ssize_t item_size, const ssize_t *const shape, const bool row_major_p, ssize_t *const strides);
+RBIMPL_ATTR_NOALIAS()
+int rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data, const ssize_t len, const bool readonly);
 ssize_t rb_memory_view_parse_item_format(const char *format,
                                          rb_memory_view_item_component_t **members,
-                                         ssize_t *n_members, const char **err);
+                                         size_t *n_members, const char **err);
 ssize_t rb_memory_view_item_size_from_format(const char *format, const char **err);
 void *rb_memory_view_get_item_pointer(rb_memory_view_t *view, const ssize_t *indices);
+VALUE rb_memory_view_extract_item_members(const void *ptr, const rb_memory_view_item_component_t *members, const size_t n_members);
 
 int rb_memory_view_available_p(VALUE obj);
 int rb_memory_view_get(VALUE obj, rb_memory_view_t* memory_view, int flags);
 int rb_memory_view_release(rb_memory_view_t* memory_view);
 
+/* for testing */
+RUBY_EXTERN VALUE rb_memory_view_exported_object_registry;
+RUBY_EXTERN const rb_data_type_t rb_memory_view_exported_object_registry_data_type;
+
 RBIMPL_SYMBOL_EXPORT_END()
+
+RBIMPL_ATTR_PURE()
+static inline bool
+rb_memory_view_is_contiguous(const rb_memory_view_t *view)
+{
+    if (rb_memory_view_is_row_major_contiguous(view)) {
+        return true;
+    }
+    else if (rb_memory_view_is_column_major_contiguous(view)) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
 
 #endif /* RUBY_BUFFER_H */

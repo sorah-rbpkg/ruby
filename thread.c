@@ -94,7 +94,7 @@
 #include "ruby/thread_native.h"
 #include "timev.h"
 #include "vm_core.h"
-#include "ractor.h"
+#include "ractor_core.h"
 #include "vm_debug.h"
 #include "vm_sync.h"
 
@@ -341,7 +341,6 @@ rb_thread_s_debug_set(VALUE self, VALUE val)
 #endif
 
 NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *stack_start));
-static void timer_thread_function(rb_execution_context_t *ec);
 void ruby_sigchld_handler(rb_vm_t *); /* signal.c */
 
 static void
@@ -588,16 +587,15 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 }
 
 void
-rb_thread_terminate_all(void)
+rb_thread_terminate_all(rb_thread_t *th)
 {
-    rb_thread_t *volatile th = GET_THREAD(); /* main thread */
+    rb_ractor_t *cr = th->ractor;
     rb_execution_context_t * volatile ec = th->ec;
-    rb_ractor_t *r = th->ractor;
     volatile int sleeping = 0;
 
-    if (r->threads.main != th) {
+    if (cr->threads.main != th) {
         rb_bug("rb_thread_terminate_all: called by child thread (%p, %p)",
-               (void *)r->threads.main, (void *)th);
+               (void *)cr->threads.main, (void *)th);
     }
 
     /* unlock all locking mutexes */
@@ -607,9 +605,9 @@ rb_thread_terminate_all(void)
     if (EC_EXEC_TAG() == TAG_NONE) {
       retry:
 	thread_debug("rb_thread_terminate_all (main thread: %p)\n", (void *)th);
-	terminate_all(th->ractor, th);
+	terminate_all(cr, th);
 
-	while (rb_ractor_living_thread_num(th->ractor) > 1) {
+	while (rb_ractor_living_thread_num(cr) > 1) {
             rb_hrtime_t rel = RB_HRTIME_PER_SEC;
 	    /*q
 	     * Thread exiting routine in thread_start_func_2 notify
@@ -720,7 +718,7 @@ thread_do_start_proc(rb_thread_t *th)
         VM_ASSERT(FIXNUM_P(args));
         args_len = FIX2INT(args);
         args_ptr = ALLOCA_N(VALUE, args_len);
-        rb_ractor_recv_parameters(th->ec, th->ractor, args_len, (VALUE *)args_ptr);
+        rb_ractor_receive_parameters(th->ec, th->ractor, args_len, (VALUE *)args_ptr);
         vm_check_ints_blocking(th->ec);
 
         // kick thread
@@ -774,7 +772,7 @@ thread_do_start(rb_thread_t *th)
         rb_bug("unreachable");
     }
 
-    rb_thread_scheduler_set(th->self, Qnil);
+    rb_scheduler_set(Qnil);
 }
 
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
@@ -827,24 +825,28 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 	    errinfo = th->ec->errinfo;
 
             if (state == TAG_FATAL) {
+                if (th->invoke_type == thread_invoke_type_ractor_proc) {
+                    rb_ractor_atexit(th->ec, Qnil);
+                }
 		/* fatal error within this thread, need to stop whole script */
 	    }
 	    else if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
 		/* exit on main_thread. */
 	    }
 	    else {
-                if (th->invoke_type == thread_invoke_type_ractor_proc) {
-                    rb_ractor_atexit_exception(th->ec);
-                }
-
                 if (th->report_on_exception) {
 		    VALUE mesg = rb_thread_to_s(th->self);
 		    rb_str_cat_cstr(mesg, " terminated with exception (report_on_exception is true):\n");
 		    rb_write_error_str(mesg);
 		    rb_ec_error_print(th->ec, errinfo);
 		}
-		if (th->vm->thread_abort_on_exception ||
-		    th->abort_on_exception || RTEST(ruby_debug)) {
+
+                if (th->invoke_type == thread_invoke_type_ractor_proc) {
+                    rb_ractor_atexit_exception(th->ec);
+                }
+
+                if (th->vm->thread_abort_on_exception ||
+                    th->abort_on_exception || RTEST(ruby_debug)) {
 		    /* exit on main_thread */
 		}
 		else {
@@ -855,6 +857,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 	}
 
         if (th->invoke_type == thread_invoke_type_ractor_proc) {
+            rb_thread_terminate_all(th);
             rb_ractor_teardown(th->ec);
         }
 
@@ -1175,8 +1178,10 @@ thread_join_sleep(VALUE arg)
     }
 
     while (target_th->status != THREAD_KILLED) {
-        if (th->scheduler != Qnil) {
-            rb_scheduler_block(th->scheduler, target_th->self, p->timeout);
+        VALUE scheduler = rb_scheduler_current();
+
+        if (scheduler != Qnil) {
+            rb_scheduler_block(scheduler, target_th->self, p->timeout);
         } else if (!limit) {
             th->status = THREAD_STOPPED_FOREVER;
             rb_ractor_sleeper_threads_inc(th->ractor);
@@ -1520,7 +1525,7 @@ rb_thread_sleep_interruptible(void)
 static void
 rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker)
 {
-    VALUE scheduler = rb_thread_current_scheduler();
+    VALUE scheduler = rb_scheduler_current();
     if (scheduler != Qnil) {
         rb_scheduler_block(scheduler, blocker, Qnil);
     } else {
@@ -1787,23 +1792,23 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
     rb_execution_context_t * volatile ec = GET_EC();
     volatile int saved_errno = 0;
     enum ruby_tag_type state;
-    struct waiting_fd wfd;
+    COROUTINE_STACK_LOCAL(struct waiting_fd, wfd);
 
-    wfd.fd = fd;
-    wfd.th = rb_ec_thread_ptr(ec);
+    wfd->fd = fd;
+    wfd->th = rb_ec_thread_ptr(ec);
 
     RB_VM_LOCK_ENTER();
     {
-        list_add(&rb_ec_vm_ptr(ec)->waiting_fds, &wfd.wfd_node);
+        list_add(&rb_ec_vm_ptr(ec)->waiting_fds, &wfd->wfd_node);
     }
     RB_VM_LOCK_LEAVE();
 
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-	BLOCKING_REGION(wfd.th, {
+	BLOCKING_REGION(wfd->th, {
 	    val = func(data1);
 	    saved_errno = errno;
-	}, ubf_select, wfd.th, FALSE);
+	}, ubf_select, wfd->th, FALSE);
     }
     EC_POP_TAG();
 
@@ -1813,7 +1818,8 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
      */
     RB_VM_LOCK_ENTER();
     {
-        list_del(&wfd.wfd_node);
+        list_del(&wfd->wfd_node);
+        COROUTINE_STACK_FREE(wfd);
     }
     RB_VM_LOCK_LEAVE();
 
@@ -3063,7 +3069,7 @@ rb_thread_abort_exc_set(VALUE thread, VALUE val)
  *
  *  There is also an instance level method to set this for a specific thread,
  *  see #report_on_exception=.
-  *
+ *
  */
 
 static VALUE
@@ -3107,6 +3113,52 @@ static VALUE
 rb_thread_s_report_exc_set(VALUE self, VALUE val)
 {
     GET_THREAD()->vm->thread_report_on_exception = RTEST(val);
+    return val;
+}
+
+
+/*
+ *  call-seq:
+ *     Thread.ignore_deadlock -> true or false
+ *
+ *  Returns the status of the global ``ignore deadlock'' condition.
+ *  The default is +false+, so that deadlock conditions are not ignored.
+ *
+ *  See also ::ignore_deadlock=.
+ *
+ */
+
+static VALUE
+rb_thread_s_ignore_deadlock(VALUE _)
+{
+    return GET_THREAD()->vm->thread_ignore_deadlock ? Qtrue : Qfalse;
+}
+
+
+/*
+ *  call-seq:
+ *     Thread.ignore_deadlock = boolean   -> true or false
+ *
+ *  Returns the new state.
+ *  When set to +true+, the VM will not check for deadlock conditions.
+ *  It is only useful to set this if your application can break a
+ *  deadlock condition via some other means, such as a signal.
+ *
+ *     Thread.ignore_deadlock = true
+ *     queue = Queue.new
+ *
+ *     trap(:SIGUSR1){queue.push "Received signal"}
+ *
+ *     # raises fatal error unless ignoring deadlock
+ *     puts queue.pop
+ *
+ *  See also ::ignore_deadlock.
+ */
+
+static VALUE
+rb_thread_s_ignore_deadlock_set(VALUE self, VALUE val)
+{
+    GET_THREAD()->vm->thread_ignore_deadlock = RTEST(val);
     return val;
 }
 
@@ -3748,78 +3800,6 @@ rb_thread_variables(VALUE thread)
     return ary;
 }
 
-VALUE
-rb_thread_scheduler_get(VALUE thread)
-{
-    rb_thread_t * th = rb_thread_ptr(thread);
-
-    VM_ASSERT(th);
-
-    return th->scheduler;
-}
-
-VALUE
-rb_thread_scheduler_set(VALUE thread, VALUE scheduler)
-{
-    rb_thread_t * th = rb_thread_ptr(thread);
-
-    VM_ASSERT(th);
-
-    // We invoke Scheduler#close when setting it to something else, to ensure the previous scheduler runs to completion before changing the scheduler. That way, we do not need to consider interactions, e.g., of a Fiber from the previous scheduler with the new scheduler.
-    if (th->scheduler != Qnil) {
-        rb_scheduler_close(th->scheduler);
-    }
-
-    th->scheduler = scheduler;
-
-    return th->scheduler;
-}
-
-/*
- *  call-seq:
- *     Thread.scheduler -> scheduler or nil
- *
- *  Returns the current scheduler if scheduling operations are permitted.
-  *
- */
-
-static VALUE
-rb_thread_scheduler(VALUE klass)
-{
-    return rb_thread_scheduler_if_nonblocking(rb_thread_current());
-}
-
-VALUE
-rb_thread_current_scheduler()
-{
-    return rb_thread_scheduler_if_nonblocking(rb_thread_current());
-}
-
-VALUE
-rb_thread_scheduler_if_nonblocking(VALUE thread)
-{
-    rb_thread_t * th = rb_thread_ptr(thread);
-
-    VM_ASSERT(th);
-
-    if (th->blocking == 0) {
-        return th->scheduler;
-    } else {
-        return Qnil;
-    }
-}
-
-static VALUE
-rb_thread_blocking_p(VALUE thread)
-{
-    unsigned blocking = rb_thread_ptr(thread)->blocking;
-
-    if (blocking == 0)
-        return Qfalse;
-
-    return INT2NUM(blocking);
-}
-
 /*
  *  call-seq:
  *     thr.thread_variable?(key)   -> true or false
@@ -4454,7 +4434,13 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
         } while (wait_retryable(&result, lerrno, to, end));
     }
     EC_POP_TAG();
-    list_del(&wfd.wfd_node);
+
+    RB_VM_LOCK_ENTER();
+    {
+        list_del(&wfd.wfd_node);
+    }
+    RB_VM_LOCK_LEAVE();
+
     if (state) {
         EC_JUMP_TAG(wfd.th->ec, state);
     }
@@ -4589,15 +4575,6 @@ rb_threadptr_check_signal(rb_thread_t *mth)
     if (rb_signal_buff_size() > 0) {
 	/* wakeup main thread */
 	threadptr_trap_interrupt(mth);
-    }
-}
-
-static void
-timer_thread_function(rb_execution_context_t *ec)
-{
-    // strictly speaking, accessing gvl->owner is not thread-safe
-    if (ec) {
-        RUBY_VM_SET_TIMER_INTERRUPT(ec);
     }
 }
 
@@ -5428,7 +5405,7 @@ rb_thread_backtrace_locations_m(int argc, VALUE *argv, VALUE thval)
 }
 
 void
-Init_Thread_Mutex()
+Init_Thread_Mutex(void)
 {
     rb_thread_t *th = GET_THREAD();
 
@@ -5455,15 +5432,12 @@ Init_Thread_Mutex()
 void
 Init_Thread(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
     VALUE cThGroup;
     rb_thread_t *th = GET_THREAD();
 
-    sym_never = ID2SYM(rb_intern("never"));
-    sym_immediate = ID2SYM(rb_intern("immediate"));
-    sym_on_blocking = ID2SYM(rb_intern("on_blocking"));
+    sym_never = ID2SYM(rb_intern_const("never"));
+    sym_immediate = ID2SYM(rb_intern_const("immediate"));
+    sym_on_blocking = ID2SYM(rb_intern_const("on_blocking"));
 
     rb_define_singleton_method(rb_cThread, "new", thread_s_new, -1);
     rb_define_singleton_method(rb_cThread, "start", thread_start, -2);
@@ -5479,6 +5453,8 @@ Init_Thread(void)
     rb_define_singleton_method(rb_cThread, "abort_on_exception=", rb_thread_s_abort_exc_set, 1);
     rb_define_singleton_method(rb_cThread, "report_on_exception", rb_thread_s_report_exc, 0);
     rb_define_singleton_method(rb_cThread, "report_on_exception=", rb_thread_s_report_exc_set, 1);
+    rb_define_singleton_method(rb_cThread, "ignore_deadlock", rb_thread_s_ignore_deadlock, 0);
+    rb_define_singleton_method(rb_cThread, "ignore_deadlock=", rb_thread_s_ignore_deadlock_set, 1);
 #if THREAD_DEBUG < 0
     rb_define_singleton_method(rb_cThread, "DEBUG", rb_thread_s_debug, 0);
     rb_define_singleton_method(rb_cThread, "DEBUG=", rb_thread_s_debug_set, 1);
@@ -5503,7 +5479,6 @@ Init_Thread(void)
     rb_define_method(rb_cThread, "keys", rb_thread_keys, 0);
     rb_define_method(rb_cThread, "priority", rb_thread_priority, 0);
     rb_define_method(rb_cThread, "priority=", rb_thread_priority_set, 1);
-    rb_define_method(rb_cThread, "blocking?", rb_thread_blocking_p, 0);
     rb_define_method(rb_cThread, "status", rb_thread_status, 0);
     rb_define_method(rb_cThread, "thread_variable_get", rb_thread_variable_get, 1);
     rb_define_method(rb_cThread, "thread_variable_set", rb_thread_variable_set, 2);
@@ -5518,10 +5493,6 @@ Init_Thread(void)
     rb_define_method(rb_cThread, "group", rb_thread_group, 0);
     rb_define_method(rb_cThread, "backtrace", rb_thread_backtrace_m, -1);
     rb_define_method(rb_cThread, "backtrace_locations", rb_thread_backtrace_locations_m, -1);
-
-    rb_define_singleton_method(rb_cThread, "scheduler", rb_thread_scheduler, 0);
-    rb_define_method(rb_cThread, "scheduler", rb_thread_scheduler_get, 0);
-    rb_define_method(rb_cThread, "scheduler=", rb_thread_scheduler_set, 1);
 
     rb_define_method(rb_cThread, "name", rb_thread_getname, 0);
     rb_define_method(rb_cThread, "name=", rb_thread_setname, 1);
@@ -5543,7 +5514,7 @@ Init_Thread(void)
 	rb_define_const(cThGroup, "Default", th->thgroup);
     }
 
-    recursive_key = rb_intern("__recursive_key__");
+    recursive_key = rb_intern_const("__recursive_key__");
     rb_eThreadError = rb_define_class("ThreadError", rb_eStandardError);
 
     /* init thread core */
@@ -5610,6 +5581,8 @@ debug_deadlock_check(rb_ractor_t *r, VALUE msg)
 static void
 rb_check_deadlock(rb_ractor_t *r)
 {
+    if (GET_THREAD()->vm->thread_ignore_deadlock) return;
+
     int found = 0;
     rb_thread_t *th = NULL;
     int sleeper_num = rb_ractor_sleeper_thread_num(r);

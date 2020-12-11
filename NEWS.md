@@ -44,11 +44,31 @@ sufficient information, see the ChangeLog file or Redmine
   C-API methods related to $SAFE have been removed.
   [[Feature #16131]]
 
+* $KCODE is now a normal global variable with no special behavior.  No
+  warnings are emitted by access/assignment to it, and the assigned
+  value will be returned.  [[Feature #17136]]
+
 * yield in singleton class definitions in methods is now a SyntaxError
   instead of a warning. yield in a class definition outside of a method
   is now a SyntaxError instead of a LocalJumpError.  [[Feature #15575]]
 
-* Find pattern is added. [[Feature #16828]]
+* Pattern matching is no longer experimental. [[Feature #17260]]
+
+* One-line pattern matching now uses `=>` instead of `in`.  [EXPERIMENTAL]
+  [[Feature #17260]]
+
+    ```ruby
+    # version 3.0
+    {a: 0, b: 1} => {a:}
+    p a # => 0
+
+    # version 2.7
+    {a: 0, b: 1} in {a:}
+    p a # => 0
+    ```
+
+* Find pattern is added.  [EXPERIMENTAL]
+  [[Feature #16828]]
 
     ```ruby
     case ["a", 1, "b", "c", 2, "d", "e", "f", 3]
@@ -62,16 +82,12 @@ sufficient information, see the ChangeLog file or Redmine
 
 * When a class variable is overtaken by the same definition in an
   ancestor class/module, a RuntimeError is now raised (previously,
-  it only issued a warning in verbose mode.  Additionally, accessing a
+  it only issued a warning in verbose mode).  Additionally, accessing a
   class variable from the toplevel scope is now a RuntimeError.
   [[Bug #14541]]
 
-* Rightward assignment statement is added.  [EXPERIMENTAL]
-  [[Feature #15921]]
-
-    ```ruby
-    fib(10) => x
-    ```
+* Assigning to a numbered parameter is now a SyntaxError instead of
+  a warning.
 
 * Endless method definition is added.  [EXPERIMENTAL]
   [[Feature #16746]]
@@ -83,7 +99,9 @@ sufficient information, see the ChangeLog file or Redmine
 * Interpolated String literals are no longer frozen when
   `# frozen-string-literal: true` is used. [[Feature #17104]]
 
-* RBS is introduced. It is a type definition languaged for Ruby programs.
+* A static analysis foundation is introduced.  See "Static analysis" section in detail.
+  * RBS is introduced. It is a type definition language for Ruby programs.
+  * TypeProf is experimentally bundled. It is a type analysis tool for Ruby programs.
 
 ## Command line options
 
@@ -94,88 +112,130 @@ non-empty value, and the standard input and output are tty, `--help`
 option shows the help message via the pager designated by the value.
 [[Feature #16754]]
 
+### `--backtrace-limit` option
+
+`--backtrace-limit` option limits the maximum length of backtrace.
+[[Feature #8661]]
+
 ## Core classes updates
 
 Outstanding ones only.
 
+* Array
+
+    * The following methods now return Array instances instead of
+      subclass instances when called on subclass instances:
+      [[Bug #6087]]
+
+        * Array#drop
+        * Array#drop_while
+        * Array#flatten
+        * Array#slice!
+        * Array#slice / Array#[]
+        * Array#take
+        * Array#take_while
+        * Array#uniq
+        * Array#*
+
+* ConditionVariable
+
+    * ConditionVariable#wait may now invoke the `block`/`unblock` scheduler
+      hooks in a non-blocking context. [[Feature #16786]]
+
 * Dir
 
-    * Modified method
-
-        * Dir.glob and Dir.[] now sort the results by default, and
-          accept `sort:` keyword option.  [[Feature #8709]]
+    * Dir.glob and Dir.[] now sort the results by default, and
+      accept `sort:` keyword option.  [[Feature #8709]]
 
 * ENV
 
-    * New method
+    * ENV.except has been added, which returns a hash excluding the
+      given keys and their values.  [[Feature #15822]]
 
-        * ENV.except, which returns a hash excluding the given keys
-          and their values.  [[Feature #15822]]
+    * Windows: Read ENV names and values as UTF-8 encoded Strings
+      [[Feature #12650]]
+
+* Encoding
+
+    * Added new encoding IBM720.  [[Feature #16233]]
+
+    * Changed default for Encoding.default_external to UTF-8 on Windows
+      [[Feature #16604]]
+
+* Fiber
+
+    * Fiber.new(blocking: true/false) allows you to create non-blocking
+      execution contexts. [[Feature #16786]]
+
+    * Fiber#blocking? tells whether the fiber is non-blocking. [[Feature #16786]]
+
+    * Fiber#backtrace & Fiber#backtrace_locations provide per-fiber backtrace.
+      [[Feature #16815]]
+
+    * The limitation of Fiber#transfer is relaxed. [[Bug #17221]]
+
+* GC
+
+    * GC.auto_compact= and GC.auto_compact have been added to control
+      when compaction runs.  Setting `auto_compact=` to true will cause
+      compaction to occur during major collections.  At the moment,
+      compaction adds significant overhead to major collections, so please
+      test first!  [[Feature #17176]]
 
 * Hash
 
-    * Modified method
+    * Hash#transform_keys now accepts a hash that maps keys to new
+      keys.  [[Feature #16274]]
 
-        * Hash#transform_keys now accepts a hash that maps keys to new
-          keys.  [[Feature #16274]]
+    * Hash#except has been added, which returns a hash excluding the
+      given keys and their values.  [[Feature #15822]]
 
-    * New method
+* IO
 
-        * Hash#except, which returns a hash excluding the given keys
-          and their values.  [[Feature #15822]]
+    * IO#nonblock? now defaults to `true`. [[Feature #16786]]
+
+    * IO#wait_readable, IO#wait_writable, IO#read, IO#write and other
+      related methods (e.g. IO#puts, IO#gets) may invoke the scheduler hook
+      `#io_wait(io, events, timeout)` in a non-blocking execution context.
+      [[Feature #16786]]
 
 * Kernel
 
-    * Modified method
+    * Kernel#clone when called with `freeze: false` keyword will call
+      `#initialize_clone` with the `freeze: false` keyword.
+      [[Bug #14266]]
 
-        * Kernel#clone when called with `freeze: false` keyword will call
-          `#initialize_clone` with the `freeze: false` keyword.
-          [[Bug #14266]]
+    * Kernel#clone when called with `freeze: true` keyword will call
+      `#initialize_clone` with the `freeze: true` keyword, and will
+      return a frozen copy even if the receiver is unfrozen.
+      [[Feature #16175]]
 
-        * Kernel#clone when called with `freeze: true` keyword will call
-          `#initialize_clone` with the `freeze: true` keyword, and will
-          return a frozen copy even if the receiver is unfrozen.
-          [[Feature #16175]]
+    * Kernel#eval when called with two arguments will use "(eval)"
+      for `__FILE__` and 1 for `__LINE__` in the evaluated code.
+      [[Bug #4352]]
 
-        * Kernel#eval when called with two arguments will use "(eval)"
-          for `__FILE__` and 1 for `__LINE__` in the evaluated code.
-          [[Bug #4352]]
+    * Kernel#lambda now warns if called without a literal block.
+      [[Feature #15973]]
 
-        * Kernel#lambda now warns if called without a literal block.
-          [[Feature #15973]]
+    * Kernel.sleep invokes the scheduler hook `#kernel_sleep(...)` in a
+      non-blocking execution context. [[Feature #16786]]
 
 * Module
 
-    * Modified method
+    * Module#include and Module#prepend now affect classes and modules
+      that have already included or prepended the receiver, mirroring the
+      behavior if the arguments were included in the receiver before
+      the other modules and classes included or prepended the receiver.
+      [[Feature #9573]]
 
-        * Module#include and #prepend now affect classes and modules that
-          have already included or prepended the receiver, mirroring the
-          behavior if the arguments were included in the receiver before
-          the other modules and classes included or prepended the receiver.
-          [[Feature #9573]]
-
-            ```ruby
-            class C; end
-            module M1; end
-            module M2; end
-            C.include M1
-            M1.include M2
-            p C.ancestors #=> [C, M1, M2, Object, Kernel, BasicObject]
-            ```
-
-* Range
-
-    * All Range objects are frozen. [Feature #15504]
-
-* Thread
-
-    * Introduce `Thread#scheduler` for intercepting blocking operations and
-      `Thread.scheduler` for accessing the current scheduler. See
-      doc/scheduler.md for more details. [[Feature #16786]]
-    * `Thread#blocking?` tells whether the current execution context is
-      blocking. [[Feature #16786]]
-    * `Thread#join` invokes the scheduler hooks `block`/`unblock` in a
-      non-blocking execution context. [[Feature #16786]]
+        ```ruby
+        class C; end
+        module M1; end
+        module M2; end
+        C.include M1
+        M1.include M2
+        p C.ancestors #=> [C, M1, M2, Object, Kernel, BasicObject]
+        ```
 
 * Mutex
 
@@ -183,119 +243,166 @@ Outstanding ones only.
       should be compatible for essentially all usages and avoids blocking when
       using a scheduler. [[Feature #16792]]
 
-* Fiber
+* Proc
 
-    * `Fiber.new(blocking: true/false)` allows you to create non-blocking
-      execution contexts. [[Feature #16786]]
-    * `Fiber#blocking?` tells whether the fiber is non-blocking. [[Feature #16786]]
-    * `Fiber#backtrace` & `Fiber#backtrace_locations` provide per-fiber backtrace.
-      [[Feature #16815]]
-
-* Kernel
-
-    * `Kernel.sleep(...)` invokes the scheduler hook `#kernel_sleep(...)` in a
-      non-blocking execution context. [[Feature #16786]]
-
-* IO
-
-    * `IO#nonblock?` now defaults to `true`. [[Feature #16786]]
-    * `IO#wait_readable`, `IO#wait_writable`, `IO#read`, `IO#write` and other
-      related methods (e.g. `#puts`, `#gets`) may invoke the scheduler hook
-      `#io_wait(io, events, timeout)` in a non-blocking execution context.
-      [[Feature #16786]]
-
-* ConditionVariable
-
-    * `ConditionVariable#wait` may now invoke the `block`/`unblock` scheduler
-      hooks in a non-blocking context. [[Feature #16786]]
+    * Proc#== and Proc#eql? are now defined and will return true for
+      separate Proc instances if the procs were created from the same block.
+      [[Feature #14267]]
 
 * Queue / SizedQueue
 
-    * `Queue#pop`, `SizedQueue#push` and related methods may now invoke the
+    * Queue#pop, SizedQueue#push and related methods may now invoke the
       `block`/`unblock` scheduler hooks in a non-blocking context.
       [[Feature #16786]]
 
 * Ractor
 
-    * new class to enable parallel execution. See doc/ractor.md for
+    * New class added to enable parallel execution. See doc/ractor.md for
       more details.
+
+* String
+
+    * The following methods now return or yield String instances
+      instead of subclass instances when called on subclass instances:
+      [[Bug #10845]]
+
+        * String#*
+        * String#capitalize
+        * String#center
+        * String#chomp
+        * String#chop
+        * String#delete
+        * String#delete_prefix
+        * String#delete_suffix
+        * String#downcase
+        * String#dump
+        * String#each_char
+        * String#each_grapheme_cluster
+        * String#each_line
+        * String#gsub
+        * String#ljust
+        * String#lstrip
+        * String#partition
+        * String#reverse
+        * String#rjust
+        * String#rpartition
+        * String#rstrip
+        * String#scrub
+        * String#slice!
+        * String#slice / String#[]
+        * String#split
+        * String#squeeze
+        * String#strip
+        * String#sub
+        * String#succ / String#next
+        * String#swapcase
+        * String#tr
+        * String#tr_s
+        * String#upcase
 
 * Symbol
 
-    * Modified method
+    * Symbol#to_proc now returns a lambda Proc.  [[Feature #16260]]
 
-        * Symbol#to_proc now returns a lambda Proc.
-          [[Feature #16260]]
+    * Symbol#name has been added, which returns the name of the symbol
+      if it is named.  The returned string is frozen.  [[Feature #16150]]
 
-    * New method
+* Thread
 
-        * Symbol#name, which returns the name of the symbol if it is
-          named.  The returned string cannot be modified.
-          [[Feature #16150]]
+    * Introduce Fiber.set_scheduler for intercepting blocking operations and
+      Fiber.scheduler for accessing the current scheduler. See
+      doc/scheduler.md for more details. [[Feature #16786]]
+
+    * Fiber.blocking? tells whether the current execution context is
+      blocking. [[Feature #16786]]
+
+    * Thread#join invokes the scheduler hooks `block`/`unblock` in a
+      non-blocking execution context. [[Feature #16786]]
+
+    * Thread.ignore_deadlock accessor has been added for disabling the
+      default deadlock detection, allowing the use of signal handlers to
+      break deadlock. [[Bug #13768]]
 
 * Warning
 
-    * Modified method
-
-        * Warning#warn now supports a category kwarg.
-        [[Feature #17122]]
+    * Warning#warn now supports a category keyword argument.
+      [[Feature #17122]]
 
 ## Stdlib updates
 
 Outstanding ones only.
 
-* RubyGems
-
-    * Update to RubyGems 3.2.0.rc.1
-
 * Bundler
 
-    * Update to Bundler 2.2.0.rc.1
+    * Update to Bundler 2.2.0
 
-* Net::HTTP
+* CSV
 
-    * New method
+    * Update to CSV 3.1.9
 
-        * Add Net::HTTP#verify_hostname= and Net::HTTP#verify_hostname
-          to skip hostname verification.  [[Feature #16555]]
+* Fiddle
 
-    * Modified method
-
-        * Net::HTTP.get, Net::HTTP.get_response, and Net::HTTP.get_print can
-          take request headers as a Hash in the second argument when the first
-          argument is a URI.  [[Feature #16686]]
+    * Update to Fiddle 1.0.2
 
 * IRB
 
     * Update to IRB 1.2.6
 
+* Net::HTTP
+
+    * Net::HTTP#verify_hostname= and Net::HTTP#verify_hostname have been
+      added to skip hostname verification.  [[Feature #16555]]
+
+    * Net::HTTP.get, Net::HTTP.get_response, and Net::HTTP.get_print
+      can take the request headers as a Hash in the second argument when the
+      first argument is a URI.  [[Feature #16686]]
+
+* Net::SMTP
+
+    * Add SNI support.
+
+    * Net::SMTP.start arguments are keyword arguments.
+
+    * TLS should not check the host name by default.
+
+* OpenStruct
+
+    * Initialization no longer lazy [[Bug #12136]]
+
+    * Builtin methods can now be overridden safely. [[Bug #15409]]
+
+    * Implementation uses only methods ending with `!`.
+
+    * Ractor compatible.
+
+    * Improved support for YAML [[Bug #8382]]
+
+    * Use officially discouraged. Read "Caveats" section.
+
 * Reline
 
     * Update to Reline 0.1.5
 
-* Socket
+* RubyGems
 
-    * TCPSocket.new now supports `resolv_timeout`. [[Feature #17134]]
-
-      ```ruby
-      # it raises SocketError if name resolution is not finished within resolve_timeout.
-      tcp_socket = TCPSocket.new("example.com", 80, resolv_timeout: 10)
-      ```
+    * Update to RubyGems 3.2.0
 
 ## Compatibility issues
 
 Excluding feature bug fixes.
 
-* Regexp literals are frozen [[Feature #8948]] [[Feature #16377]]
+* Regexp literals and all Range objects are frozen [[Feature #8948]] [[Feature #16377]] [[Feature #15504]]
 
     ```ruby
     /foo/.frozen? #=> true
+    (42...).frozen? # => true
     ```
 
 * EXPERIMENTAL: Hash#each consistently yields a 2-element array [[Bug #12706]]
 
     * Now `{ a: 1 }.each(&->(k, v) { })` raises an ArgumentError
       due to lambda's arity check.
+
     * This is experimental; if it brings a big incompatibility issue,
       it may be reverted until 2.8/3.0 release.
 
@@ -304,7 +411,7 @@ Excluding feature bug fixes.
 
 * `TRUE`/`FALSE`/`NIL` constants are no longer defined.
 
-* `Integer#zero?` overrides `Numeric#zero?` for optimization.  [[Misc #16961]]
+* Integer#zero? overrides Numeric#zero? for optimization.  [[Misc #16961]]
 
 ## Stdlib compatibility issues
 
@@ -312,31 +419,43 @@ Excluding feature bug fixes.
 
     * The following libraries are promoted the default gems from stdlib.
 
+        * English
         * abbrev
         * base64
-        * English
+        * drb
+        * debug
         * erb
         * find
-        * io-nonblock
-        * io-wait
         * net-ftp
         * net-http
         * net-imap
         * net-protocol
-        * nkf
         * open-uri
         * optparse
-        * resolv
+        * pp
+        * prettyprint
         * resolv-replace
+        * resolv
         * rinda
-        * securerandom
         * set
+        * securerandom
         * shellwords
         * tempfile
-        * time
         * tmpdir
+        * time
         * tsort
+        * un
         * weakref
+
+    * The following extensions are promoted the default gems from stdlib.
+
+        * digest
+        * io-nonblock
+        * io-wait
+        * nkf
+        * pathname
+        * syslog
+        * win32ole
 
 * Bundled gems
 
@@ -375,9 +494,9 @@ Excluding feature bug fixes.
   * Inline method caches pointed from ISeq can be accessed by multiple Ractors
     in parallel and synchronization is needed even for method caches. However,
     such synchronization can be overhead so introducing new inline method cache
-    mehanisms, (1) Disposable inline method cache (2) per-Class method cache
+    mechanisms, (1) Disposable inline method cache (2) per-Class method cache
     and (3) new invalidation mechanism. (1) can avoid per-method call
-    syncrhonization because it only use atomic operations.
+    synchronization because it only uses atomic operations.
     See the ticket for more details.
 
 * The number of hashes allocated when using a keyword splat in
@@ -401,22 +520,53 @@ Excluding feature bug fixes.
 * Always generate appropriate code for `==`, `nil?`, and `!` calls depending on
   a receiver class.
 
-* Optimize instance variable access in some core classes like Hash and their subclasses
+* Optimize instance variable access in some core classes like Hash and their subclasses.
 
-* Eliminate VM register access on a method return
+* Eliminate VM register access on a method return.
 
-* Optimize C method call a little
+* Optimize C method calls a little.
 
-## RBS
+## Static analysis
+
+### RBS
 
 * RBS is a new language for type definition of Ruby programs.
   It allows writing types of classes and modules with advanced
-  types including union types, overloading, generics, and 
+  types including union types, overloading, generics, and
   _interface types_ for duck typing.
 
 * Ruby ships with type definitions for core/stdlib classes.
 
 * `rbs` gem is bundled to load and process RBS files.
+
+### TypeProf
+
+* TypeProf is a type analysis tool for Ruby code based on abstract interpretation.
+  * It reads non-annotated Ruby code, tries inferring its type signature, and prints
+    the analysis result in RBS format.
+  * Though it supports only a subset of the Ruby language yet, we will continuously
+    improve the coverage of language features, the analysis performance, and usability.
+
+```ruby
+# test.rb
+def foo(x)
+  if x > 10
+    x.to_s
+  else
+    nil
+  end
+end
+
+foo(42)
+```
+
+```
+$ typeprof test.rb
+# Classes
+class Object
+  def foo : (Integer) -> String?
+end
+```
 
 ## Miscellaneous changes
 
@@ -424,25 +574,33 @@ Excluding feature bug fixes.
   splats, those are now removed just as they are for methods not
   using `ruby2_keywords`.
 
-* Taint deprecation warnings are now issued in regular mode in
-  addition to verbose warning mode.  [[Feature #16131]]
-
 * When an exception is caught in the default handler, the error
   message and backtrace are printed in order from the innermost.
   [[Feature #8661]]
 
 
 [Bug #4352]:      https://bugs.ruby-lang.org/issues/4352
+[Bug #6087]:      https://bugs.ruby-lang.org/issues/6087
+[Bug #8382]:      https://bugs.ruby-lang.org/issues/8382
 [Bug #8446]:      https://bugs.ruby-lang.org/issues/8446
 [Feature #8661]:  https://bugs.ruby-lang.org/issues/8661
 [Feature #8709]:  https://bugs.ruby-lang.org/issues/8709
 [Feature #8948]:  https://bugs.ruby-lang.org/issues/8948
 [Feature #9573]:  https://bugs.ruby-lang.org/issues/9573
+[Bug #10845]:     https://bugs.ruby-lang.org/issues/10845
+[Bug #12136]:     https://bugs.ruby-lang.org/issues/12136
+[Feature #12650]: https://bugs.ruby-lang.org/issues/12650
 [Bug #12706]:     https://bugs.ruby-lang.org/issues/12706
+[Feature #13767]: https://bugs.ruby-lang.org/issues/13767
+[Bug #13768]:     https://bugs.ruby-lang.org/issues/13768
 [Feature #14183]: https://bugs.ruby-lang.org/issues/14183
 [Bug #14266]:     https://bugs.ruby-lang.org/issues/14266
+[Feature #14267]: https://bugs.ruby-lang.org/issues/14267
 [Feature #14413]: https://bugs.ruby-lang.org/issues/14413
 [Bug #14541]:     https://bugs.ruby-lang.org/issues/14541
+[Feature #14722]: https://bugs.ruby-lang.org/issues/14722
+[Bug #15409]:     https://bugs.ruby-lang.org/issues/15409
+[Feature #15504]: https://bugs.ruby-lang.org/issues/15504
 [Feature #15575]: https://bugs.ruby-lang.org/issues/15575
 [Feature #15822]: https://bugs.ruby-lang.org/issues/15822
 [Feature #15921]: https://bugs.ruby-lang.org/issues/15921
@@ -451,11 +609,13 @@ Excluding feature bug fixes.
 [Feature #16150]: https://bugs.ruby-lang.org/issues/16150
 [Feature #16166]: https://bugs.ruby-lang.org/issues/16166
 [Feature #16175]: https://bugs.ruby-lang.org/issues/16175
+[Feature #16233]: https://bugs.ruby-lang.org/issues/16233
 [Feature #16260]: https://bugs.ruby-lang.org/issues/16260
 [Feature #16274]: https://bugs.ruby-lang.org/issues/16274
 [Feature #16377]: https://bugs.ruby-lang.org/issues/16377
 [Feature #16378]: https://bugs.ruby-lang.org/issues/16378
 [Feature #16555]: https://bugs.ruby-lang.org/issues/16555
+[Feature #16604]: https://bugs.ruby-lang.org/issues/16604
 [Feature #16614]: https://bugs.ruby-lang.org/issues/16614
 [Feature #16686]: https://bugs.ruby-lang.org/issues/16686
 [Feature #16746]: https://bugs.ruby-lang.org/issues/16746
@@ -467,4 +627,9 @@ Excluding feature bug fixes.
 [Misc #16961]:    https://bugs.ruby-lang.org/issues/16961
 [Feature #17104]: https://bugs.ruby-lang.org/issues/17104
 [Feature #17122]: https://bugs.ruby-lang.org/issues/17122
+[Feature #17134]: https://bugs.ruby-lang.org/issues/17134
+[Feature #17136]: https://bugs.ruby-lang.org/issues/17136
+[Feature #17176]: https://bugs.ruby-lang.org/issues/17176
+[Bug #17221]:     https://bugs.ruby-lang.org/issues/17221
+[Feature #17260]: https://bugs.ruby-lang.org/issues/17260
 [GH-2991]:        https://github.com/ruby/ruby/pull/2991

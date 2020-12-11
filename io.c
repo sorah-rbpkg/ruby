@@ -134,7 +134,7 @@
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby_atomic.h"
-#include "ractor_pub.h"
+#include "ruby/ractor.h"
 
 #if !USE_POLL
 #  include "vm_core.h"
@@ -1262,8 +1262,9 @@ io_fflush(rb_io_t *fptr)
 }
 
 VALUE
-rb_io_wait(VALUE io, VALUE events, VALUE timeout) {
-    VALUE scheduler = rb_thread_current_scheduler();
+rb_io_wait(VALUE io, VALUE events, VALUE timeout)
+{
+    VALUE scheduler = rb_scheduler_current();
 
     if (scheduler != Qnil) {
         return rb_scheduler_io_wait(scheduler, io, events, timeout);
@@ -1305,7 +1306,7 @@ rb_io_from_fd(int fd)
 int
 rb_io_wait_readable(int f)
 {
-    VALUE scheduler = rb_thread_current_scheduler();
+    VALUE scheduler = rb_scheduler_current();
     if (scheduler != Qnil) {
         return RTEST(
             rb_scheduler_io_wait_readable(scheduler, rb_io_from_fd(f))
@@ -1336,7 +1337,7 @@ rb_io_wait_readable(int f)
 int
 rb_io_wait_writable(int f)
 {
-    VALUE scheduler = rb_thread_current_scheduler();
+    VALUE scheduler = rb_scheduler_current();
     if (scheduler != Qnil) {
         return RTEST(
             rb_scheduler_io_wait_writable(scheduler, rb_io_from_fd(f))
@@ -1376,7 +1377,7 @@ rb_io_wait_writable(int f)
 int
 rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 {
-    VALUE scheduler = rb_thread_current_scheduler();
+    VALUE scheduler = rb_scheduler_current();
 
     if (scheduler != Qnil) {
         return RTEST(
@@ -1537,7 +1538,7 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
 
     if ((n = len) <= 0) return n;
 
-    VALUE scheduler = rb_thread_current_scheduler();
+    VALUE scheduler = rb_scheduler_current();
     if (scheduler != Qnil && rb_scheduler_supports_io_write(scheduler)) {
         ssize_t length = RB_NUM2SSIZE(
             rb_scheduler_io_write(scheduler, fptr->self, str, offset, len)
@@ -2622,7 +2623,7 @@ bufread_call(VALUE arg)
 static long
 io_fread(VALUE str, long offset, long size, rb_io_t *fptr)
 {
-    VALUE scheduler = rb_thread_current_scheduler();
+    VALUE scheduler = rb_scheduler_current();
     if (scheduler != Qnil && rb_scheduler_supports_io_read(scheduler)) {
         ssize_t length = RB_NUM2SSIZE(
             rb_scheduler_io_read(scheduler, fptr->self, str, offset, size)
@@ -3958,19 +3959,6 @@ rb_io_each_line(int argc, VALUE *argv, VALUE io)
 }
 
 /*
- *  This is a deprecated alias for #each_line.
- */
-
-static VALUE
-rb_io_lines(int argc, VALUE *argv, VALUE io)
-{
-    rb_warn_deprecated("IO#lines", "#each_line");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(io, ID2SYM(rb_intern("each_line")), argc, argv);
-    return rb_io_each_line(argc, argv, io);
-}
-
-/*
  *  call-seq:
  *     ios.each_byte {|byte| block }  -> ios
  *     ios.each_byte                  -> an_enumerator
@@ -4006,19 +3994,6 @@ rb_io_each_byte(VALUE io)
 	READ_CHECK(fptr);
     } while (io_fillbuf(fptr) >= 0);
     return io;
-}
-
-/*
- *  This is a deprecated alias for #each_byte.
- */
-
-static VALUE
-rb_io_bytes(VALUE io)
-{
-    rb_warn_deprecated("IO#bytes", "#each_byte");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(io, ID2SYM(rb_intern("each_byte")), 0, 0);
-    return rb_io_each_byte(io);
 }
 
 static VALUE
@@ -4163,20 +4138,6 @@ rb_io_each_char(VALUE io)
 }
 
 /*
- *  This is a deprecated alias for #each_char.
- */
-
-static VALUE
-rb_io_chars(VALUE io)
-{
-    rb_warn_deprecated("IO#chars", "#each_char");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(io, ID2SYM(rb_intern("each_char")), 0, 0);
-    return rb_io_each_char(io);
-}
-
-
-/*
  *  call-seq:
  *     ios.each_codepoint {|c| block }  -> ios
  *     ios.codepoints     {|c| block }  -> ios
@@ -4292,20 +4253,6 @@ rb_io_each_codepoint(VALUE io)
     rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(enc));
     UNREACHABLE_RETURN(Qundef);
 }
-
-/*
- *  This is a deprecated alias for #each_codepoint.
- */
-
-static VALUE
-rb_io_codepoints(VALUE io)
-{
-    rb_warn_deprecated("IO#codepoints", "#each_codepoint");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(io, ID2SYM(rb_intern("each_codepoint")), 0, 0);
-    return rb_io_each_codepoint(io);
-}
-
 
 /*
  *  call-seq:
@@ -7605,7 +7552,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
 	int e = rb_freopen(rb_str_encode_ospath(fptr->pathv),
 			   rb_io_oflags_modestr(oflags),
 			   fptr->stdio_file);
-	if (e) rb_syserr_fail_path(e, fptr->pathv);
+        if (e) rb_syserr_fail_path(e, fptr->pathv);
         fptr->fd = fileno(fptr->stdio_file);
         rb_fd_fix_cloexec(fptr->fd);
 #ifdef USE_SETVBUF
@@ -11076,7 +11023,7 @@ STATIC_ASSERT(pollout_expected, POLLOUT == RB_WAITFD_OUT);
 static int
 nogvl_wait_for_single_fd(VALUE th, int fd, short events)
 {
-    VALUE scheduler = rb_thread_scheduler_if_nonblocking(th);
+    VALUE scheduler = rb_thread_scheduler_current(th);
     if (scheduler != Qnil) {
         struct wait_for_single_fd args = {.scheduler = scheduler, .fd = fd, .events = events};
         rb_thread_call_with_gvl(rb_thread_scheduler_wait_for_single_fd, &args);
@@ -11095,7 +11042,7 @@ nogvl_wait_for_single_fd(VALUE th, int fd, short events)
 static int
 nogvl_wait_for_single_fd(VALUE th, int fd, short events)
 {
-    VALUE scheduler = rb_thread_scheduler_if_nonblocking(th);
+    VALUE scheduler = rb_thread_scheduler_current(th);
     if (scheduler != Qnil) {
         struct wait_for_single_fd args = {.scheduler = scheduler, .fd = fd, .events = events};
         rb_thread_call_with_gvl(rb_thread_scheduler_wait_for_single_fd, &args);
@@ -12754,23 +12701,7 @@ argf_each_line(int argc, VALUE *argv, VALUE argf)
 }
 
 /*
- *  This is a deprecated alias for #each_line.
- */
-
-static VALUE
-argf_lines(int argc, VALUE *argv, VALUE argf)
-{
-    rb_warn_deprecated("ARGF#lines", "#each_line");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_line")), argc, argv);
-    return argf_each_line(argc, argv, argf);
-}
-
-/*
  *  call-seq:
- *     ARGF.bytes     {|byte| block }  -> ARGF
- *     ARGF.bytes                      -> an_enumerator
- *
  *     ARGF.each_byte {|byte| block }  -> ARGF
  *     ARGF.each_byte                  -> an_enumerator
  *
@@ -12801,19 +12732,6 @@ argf_each_byte(VALUE argf)
 }
 
 /*
- *  This is a deprecated alias for #each_byte.
- */
-
-static VALUE
-argf_bytes(VALUE argf)
-{
-    rb_warn_deprecated("ARGF#bytes", "#each_byte");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_byte")), 0, 0);
-    return argf_each_byte(argf);
-}
-
-/*
  *  call-seq:
  *     ARGF.each_char {|char| block }  -> ARGF
  *     ARGF.each_char                  -> an_enumerator
@@ -12840,19 +12758,6 @@ argf_each_char(VALUE argf)
 }
 
 /*
- *  This is a deprecated alias for #each_char.
- */
-
-static VALUE
-argf_chars(VALUE argf)
-{
-    rb_warn_deprecated("ARGF#chars", "#each_char");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_char")), 0, 0);
-    return argf_each_char(argf);
-}
-
-/*
  *  call-seq:
  *     ARGF.each_codepoint {|codepoint| block }  -> ARGF
  *     ARGF.each_codepoint                       -> an_enumerator
@@ -12876,19 +12781,6 @@ argf_each_codepoint(VALUE argf)
 	argf_block_call(rb_intern("each_codepoint"), 0, 0, argf);
     }
     return argf;
-}
-
-/*
- *  This is a deprecated alias for #each_codepoint.
- */
-
-static VALUE
-argf_codepoints(VALUE argf)
-{
-    rb_warn_deprecated("ARGF#codepoints", "#each_codepoint");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_codepoint")), 0, 0);
-    return argf_each_codepoint(argf);
 }
 
 /*
@@ -13422,9 +13314,6 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
 void
 Init_IO(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
     VALUE rb_cARGF;
 #ifdef __CYGWIN__
 #include <sys/cygwin.h>
@@ -13442,12 +13331,12 @@ Init_IO(void)
     rb_eIOError = rb_define_class("IOError", rb_eStandardError);
     rb_eEOFError = rb_define_class("EOFError", rb_eIOError);
 
-    id_write = rb_intern("write");
-    id_read = rb_intern("read");
-    id_getc = rb_intern("getc");
-    id_flush = rb_intern("flush");
-    id_readpartial = rb_intern("readpartial");
-    id_set_encoding = rb_intern("set_encoding");
+    id_write = rb_intern_const("write");
+    id_read = rb_intern_const("read");
+    id_getc = rb_intern_const("getc");
+    id_flush = rb_intern_const("flush");
+    id_readpartial = rb_intern_const("readpartial");
+    id_set_encoding = rb_intern_const("set_encoding");
 
     rb_define_global_function("syscall", rb_f_syscall, -1);
 
@@ -13542,6 +13431,7 @@ Init_IO(void)
     rb_define_hooked_variable("$\\", &rb_output_rs, 0, deprecated_str_setter);
 
     rb_define_virtual_variable("$_", get_LAST_READ_LINE, set_LAST_READ_LINE);
+    rb_gvar_ractor_local("$_");
 
     rb_define_method(rb_cIO, "initialize_copy", rb_io_init_copy, 1);
     rb_define_method(rb_cIO, "reopen", rb_io_reopen, -1);
@@ -13556,10 +13446,6 @@ Init_IO(void)
     rb_define_method(rb_cIO, "each_byte",  rb_io_each_byte, 0);
     rb_define_method(rb_cIO, "each_char",  rb_io_each_char, 0);
     rb_define_method(rb_cIO, "each_codepoint",  rb_io_each_codepoint, 0);
-    rb_define_method(rb_cIO, "lines",  rb_io_lines, -1);
-    rb_define_method(rb_cIO, "bytes",  rb_io_bytes, 0);
-    rb_define_method(rb_cIO, "chars",  rb_io_chars, 0);
-    rb_define_method(rb_cIO, "codepoints",  rb_io_codepoints, 0);
 
     rb_define_method(rb_cIO, "syswrite", rb_io_syswrite, 1);
     rb_define_method(rb_cIO, "sysread",  rb_io_sysread, -1);
@@ -13698,10 +13584,6 @@ Init_IO(void)
     rb_define_method(rb_cARGF, "each_byte",  argf_each_byte, 0);
     rb_define_method(rb_cARGF, "each_char",  argf_each_char, 0);
     rb_define_method(rb_cARGF, "each_codepoint",  argf_each_codepoint, 0);
-    rb_define_method(rb_cARGF, "lines", argf_lines, -1);
-    rb_define_method(rb_cARGF, "bytes", argf_bytes, 0);
-    rb_define_method(rb_cARGF, "chars", argf_chars, 0);
-    rb_define_method(rb_cARGF, "codepoints", argf_codepoints, 0);
 
     rb_define_method(rb_cARGF, "read",  argf_read, -1);
     rb_define_method(rb_cARGF, "readpartial",  argf_readpartial, -1);
@@ -13763,6 +13645,8 @@ Init_IO(void)
     ARGF.filename = rb_str_new2("-");
 
     rb_define_hooked_variable("$-i", &argf, opt_i_get, opt_i_set);
+    rb_gvar_ractor_local("$-i");
+
     rb_define_hooked_variable("$*", &argf, argf_argv_getter, rb_gvar_readonly_setter);
 
 #if defined (_WIN32) || defined(__CYGWIN__)
@@ -13773,33 +13657,33 @@ Init_IO(void)
 
     rb_define_method(rb_cFile, "initialize",  rb_file_initialize, -1);
 
-    sym_mode = ID2SYM(rb_intern("mode"));
-    sym_perm = ID2SYM(rb_intern("perm"));
-    sym_flags = ID2SYM(rb_intern("flags"));
-    sym_extenc = ID2SYM(rb_intern("external_encoding"));
-    sym_intenc = ID2SYM(rb_intern("internal_encoding"));
+    sym_mode = ID2SYM(rb_intern_const("mode"));
+    sym_perm = ID2SYM(rb_intern_const("perm"));
+    sym_flags = ID2SYM(rb_intern_const("flags"));
+    sym_extenc = ID2SYM(rb_intern_const("external_encoding"));
+    sym_intenc = ID2SYM(rb_intern_const("internal_encoding"));
     sym_encoding = ID2SYM(rb_id_encoding());
-    sym_open_args = ID2SYM(rb_intern("open_args"));
-    sym_textmode = ID2SYM(rb_intern("textmode"));
-    sym_binmode = ID2SYM(rb_intern("binmode"));
-    sym_autoclose = ID2SYM(rb_intern("autoclose"));
-    sym_normal = ID2SYM(rb_intern("normal"));
-    sym_sequential = ID2SYM(rb_intern("sequential"));
-    sym_random = ID2SYM(rb_intern("random"));
-    sym_willneed = ID2SYM(rb_intern("willneed"));
-    sym_dontneed = ID2SYM(rb_intern("dontneed"));
-    sym_noreuse = ID2SYM(rb_intern("noreuse"));
-    sym_SET = ID2SYM(rb_intern("SET"));
-    sym_CUR = ID2SYM(rb_intern("CUR"));
-    sym_END = ID2SYM(rb_intern("END"));
+    sym_open_args = ID2SYM(rb_intern_const("open_args"));
+    sym_textmode = ID2SYM(rb_intern_const("textmode"));
+    sym_binmode = ID2SYM(rb_intern_const("binmode"));
+    sym_autoclose = ID2SYM(rb_intern_const("autoclose"));
+    sym_normal = ID2SYM(rb_intern_const("normal"));
+    sym_sequential = ID2SYM(rb_intern_const("sequential"));
+    sym_random = ID2SYM(rb_intern_const("random"));
+    sym_willneed = ID2SYM(rb_intern_const("willneed"));
+    sym_dontneed = ID2SYM(rb_intern_const("dontneed"));
+    sym_noreuse = ID2SYM(rb_intern_const("noreuse"));
+    sym_SET = ID2SYM(rb_intern_const("SET"));
+    sym_CUR = ID2SYM(rb_intern_const("CUR"));
+    sym_END = ID2SYM(rb_intern_const("END"));
 #ifdef SEEK_DATA
-    sym_DATA = ID2SYM(rb_intern("DATA"));
+    sym_DATA = ID2SYM(rb_intern_const("DATA"));
 #endif
 #ifdef SEEK_HOLE
-    sym_HOLE = ID2SYM(rb_intern("HOLE"));
+    sym_HOLE = ID2SYM(rb_intern_const("HOLE"));
 #endif
-    sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
-    sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
+    sym_wait_readable = ID2SYM(rb_intern_const("wait_readable"));
+    sym_wait_writable = ID2SYM(rb_intern_const("wait_writable"));
 }
 
 #include "io.rbinc"

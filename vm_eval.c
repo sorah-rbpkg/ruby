@@ -1085,12 +1085,14 @@ send_internal_kw(int argc, const VALUE *argv, VALUE recv, call_type scope)
  *    foo.__send__(string [, args...])   -> obj
  *
  *  Invokes the method identified by _symbol_, passing it any
- *  arguments specified. You can use <code>__send__</code> if the name
- *  +send+ clashes with an existing method in _obj_.
+ *  arguments specified.
  *  When the method is identified by a string, the string is converted
  *  to a symbol.
  *
  *  BasicObject implements +__send__+, Kernel implements +send+.
+ *  <code>__send__</code> is safer than +send+
+ *  when _obj_ has the same method name like <code>Socket</code>.
+ *  See also <code>public_send</code>.
  *
  *     class Klass
  *       def hello(*args)
@@ -1461,6 +1463,23 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
     VALUE realpath = Qnil;
     rb_iseq_t *iseq = NULL;
     rb_ast_t *ast;
+    int isolated_depth = 0;
+    {
+        int depth = 1;
+        const VALUE *ep = vm_block_ep(base_block);
+
+        while (1) {
+            if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ISOLATED)) {
+                isolated_depth = depth;
+                break;
+            }
+            else if (VM_ENV_LOCAL_P(ep)) {
+                break;
+            }
+            ep = VM_ENV_PREV_EP(ep);
+            depth++;
+        }
+    }
 
     if (!fname) {
 	fname = rb_source_location(&line);
@@ -1477,10 +1496,10 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
     rb_parser_set_context(parser, parent, FALSE);
     ast = rb_parser_compile_string_path(parser, fname, src, line);
     if (ast->body.root) {
-	iseq = rb_iseq_new_with_opt(&ast->body,
-				    parent->body->location.label,
-				    fname, realpath, INT2FIX(line),
-				    parent, ISEQ_TYPE_EVAL, NULL);
+        iseq = rb_iseq_new_eval(&ast->body,
+                                parent->body->location.label,
+                                fname, realpath, INT2FIX(line),
+                                parent, isolated_depth);
     }
     rb_ast_dispose(ast);
 

@@ -47,13 +47,14 @@ rb_serial_t rb_next_class_serial(void);
 /* vm.c */
 VALUE rb_obj_is_thread(VALUE obj);
 void rb_vm_mark(void *ptr);
+void rb_vm_each_stack_value(void *ptr, void (*cb)(VALUE, void*), void *ctx);
 PUREFUNC(VALUE rb_vm_top_self(void));
 void rb_vm_inc_const_missing_count(void);
 const void **rb_vm_get_insns_address_table(void);
 VALUE rb_source_location(int *pline);
 const char *rb_source_location_cstr(int *pline);
 MJIT_STATIC void rb_vm_pop_cfunc_frame(void);
-int rb_vm_add_root_module(ID id, VALUE module);
+int rb_vm_add_root_module(VALUE module);
 void rb_vm_check_redefinition_by_prepend(VALUE klass);
 int rb_vm_check_optimizable_mid(VALUE mid);
 VALUE rb_yield_refine_block(VALUE refinement, VALUE refinements);
@@ -98,7 +99,7 @@ MJIT_SYMBOL_EXPORT_END
 /* vm_method.c */
 struct rb_execution_context_struct;
 MJIT_SYMBOL_EXPORT_BEGIN
-int rb_ec_obj_respond_to(struct rb_execution_context_struct *ec, VALUE obj, ID id, int priv);
+int rb_ec_obj_respond_to(struct rb_execution_context_struct *ec, VALUE klass, VALUE obj, ID id, int priv);
 MJIT_SYMBOL_EXPORT_END
 
 /* vm_dump.c */

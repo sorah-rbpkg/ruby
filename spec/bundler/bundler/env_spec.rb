@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "openssl"
 require "bundler/settings"
 
 RSpec.describe Bundler::Env do
@@ -60,7 +59,7 @@ RSpec.describe Bundler::Env do
         end
       end
 
-    private
+      private
 
       def with_clear_paths(env_var, env_value)
         old_env_var = ENV[env_var]

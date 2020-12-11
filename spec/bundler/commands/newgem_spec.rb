@@ -12,11 +12,13 @@ RSpec.describe "bundle gem" do
 
   def bundle_exec_rubocop
     prepare_gemspec(bundled_app(gem_name, "#{gem_name}.gemspec"))
-    rubocop_version = RUBY_VERSION > "2.4" ? "0.85.1" : "0.80.1"
+    rubocop_version = RUBY_VERSION > "2.4" ? "0.90.0" : "0.80.1"
     gems = ["minitest", "rake", "rake-compiler", "rspec", "rubocop -v #{rubocop_version}", "test-unit"]
+    gems.unshift "parallel -v 1.19.2" if RUBY_VERSION < "2.5"
+    gems += ["rubocop-ast -v 0.4.0"] if rubocop_version == "0.90.0"
     path = Bundler.feature_flag.default_install_uses_path? ? local_gem_path(:base => bundled_app(gem_name)) : system_gem_path
     realworld_system_gems gems, :path => path
-    bundle "exec rubocop --config .rubocop.yml", :dir => bundled_app(gem_name)
+    bundle "exec rubocop --debug --config .rubocop.yml", :dir => bundled_app(gem_name)
   end
 
   let(:generated_gemspec) { Bundler.load_gemspec_uncached(bundled_app(gem_name).join("#{gem_name}.gemspec")) }
@@ -376,6 +378,8 @@ RSpec.describe "bundle gem" do
       expect(bundled_app("#{gem_name}/bin/console")).to exist
       expect(bundled_app("#{gem_name}/bin/setup")).to be_executable
       expect(bundled_app("#{gem_name}/bin/console")).to be_executable
+      expect(bundled_app("#{gem_name}/bin/setup").read).to start_with("#!")
+      expect(bundled_app("#{gem_name}/bin/console").read).to start_with("#!")
     end
 
     it "starts with version 0.1.0" do
@@ -420,7 +424,7 @@ RSpec.describe "bundle gem" do
     it "requires the version file" do
       bundle "gem #{gem_name}"
 
-      expect(bundled_app("#{gem_name}/lib/#{require_path}.rb").read).to match(%r{require "#{require_path}/version"})
+      expect(bundled_app("#{gem_name}/lib/#{require_path}.rb").read).to match(%r{require_relative "#{require_relative_path}/version"})
     end
 
     it "creates a base error class" do
@@ -907,6 +911,8 @@ RSpec.describe "bundle gem" do
 
     let(:require_path) { "test_gem" }
 
+    let(:require_relative_path) { "test_gem" }
+
     let(:flags) { nil }
 
     it "does not nest constants" do
@@ -959,6 +965,8 @@ RSpec.describe "bundle gem" do
     let(:gem_name) { "test-gem" }
 
     let(:require_path) { "test/gem" }
+
+    let(:require_relative_path) { "gem" }
 
     it "nests constants so they work" do
       bundle "gem #{gem_name}"

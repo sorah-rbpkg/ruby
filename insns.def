@@ -213,7 +213,7 @@ getinstancevariable
 /* "instance variable not initialized" warning can be hooked. */
 // attr bool leaf = false; /* has rb_warning() */
 {
-    val = vm_getinstancevariable(GET_SELF(), id, ic);
+    val = vm_getinstancevariable(GET_ISEQ(), GET_SELF(), id, ic);
 }
 
 /* Set value of instance variable id of self to val. */
@@ -224,7 +224,7 @@ setinstancevariable
 ()
 // attr bool leaf = false; /* has rb_check_frozen_internal() */
 {
-    vm_setinstancevariable(GET_SELF(), id, val, ic);
+    vm_setinstancevariable(GET_ISEQ(), GET_SELF(), id, val, ic);
 }
 
 /* Get value of class variable id of klass as val. */
@@ -363,7 +363,7 @@ putstring
 ()
 (VALUE val)
 {
-    val = rb_str_resurrect(str);
+    val = rb_ec_str_resurrect(ec, str);
 }
 
 /* put concatenate strings */
@@ -426,7 +426,7 @@ newarray
 (VALUE val)
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
-    val = rb_ary_new4(num, STACK_ADDR_FROM_TOP(num));
+    val = rb_ec_ary_new_from_values(ec, num, STACK_ADDR_FROM_TOP(num));
 }
 
 /* put new array initialized with num values on the stack. There

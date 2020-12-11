@@ -23,6 +23,7 @@
 #include "id_table.h"
 #include "internal.h"
 #include "internal/bits.h"
+#include "internal/class.h"
 #include "internal/compile.h"
 #include "internal/error.h"
 #include "internal/file.h"
@@ -129,6 +130,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
 	    ruby_xfree((void *)body->param.keyword);
 	}
 	compile_data_free(ISEQ_COMPILE_DATA(iseq));
+        if (body->outer_variables) rb_id_table_free(body->outer_variables);
 	ruby_xfree(body);
     }
 
@@ -178,6 +180,20 @@ iseq_extract_values(VALUE *code, size_t pos, iseq_value_itr_t * func, void *data
                       code[pos + op_no + 1] = newop;
                   }
               }
+            }
+            break;
+          case TS_IVC:
+            {
+                IVC ivc = (IVC)code[pos + op_no + 1];
+                if (ivc->entry) {
+                    if (RB_TYPE_P(ivc->entry->class_value, T_NONE)) {
+                        rb_bug("!! %u", ivc->entry->index);
+                    }
+                    VALUE nv = func(data, ivc->entry->class_value);
+                    if (ivc->entry->class_value != nv) {
+                        ivc->entry->class_value = nv;
+                    }
+                }
             }
             break;
           case TS_ISE:
@@ -560,8 +576,7 @@ new_arena(void)
 static VALUE
 prepare_iseq_build(rb_iseq_t *iseq,
                    VALUE name, VALUE path, VALUE realpath, VALUE first_lineno, const rb_code_location_t *code_location, const int node_id,
-		   const rb_iseq_t *parent, enum iseq_type type,
-		   const rb_compile_option_t *option)
+		   const rb_iseq_t *parent, int isolated_depth, enum iseq_type type, const rb_compile_option_t *option)
 {
     VALUE coverage = Qfalse;
     VALUE err_info = Qnil;
@@ -588,11 +603,11 @@ prepare_iseq_build(rb_iseq_t *iseq,
 
     ISEQ_COMPILE_DATA(iseq)->node.storage_head = ISEQ_COMPILE_DATA(iseq)->node.storage_current = new_arena();
     ISEQ_COMPILE_DATA(iseq)->insn.storage_head = ISEQ_COMPILE_DATA(iseq)->insn.storage_current = new_arena();
+    ISEQ_COMPILE_DATA(iseq)->isolated_depth = isolated_depth;
     ISEQ_COMPILE_DATA(iseq)->option = option;
-
     ISEQ_COMPILE_DATA(iseq)->ivar_cache_table = NULL;
-
     ISEQ_COMPILE_DATA(iseq)->builtin_function_table = GET_VM()->builtin_function_table;
+
 
     if (option->coverage_enabled) {
 	VALUE coverages = rb_get_coverages();
@@ -779,8 +794,8 @@ rb_iseq_t *
 rb_iseq_new(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath,
 	    const rb_iseq_t *parent, enum iseq_type type)
 {
-    return rb_iseq_new_with_opt(ast, name, path, realpath, INT2FIX(0), parent, type,
-				&COMPILE_OPTION_DEFAULT);
+    return rb_iseq_new_with_opt(ast, name, path, realpath, INT2FIX(0), parent,
+                                0, type, &COMPILE_OPTION_DEFAULT);
 }
 
 rb_iseq_t *
@@ -795,8 +810,8 @@ rb_iseq_new_top(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath
         }
     }
 
-    return rb_iseq_new_with_opt(ast, name, path, realpath, INT2FIX(0), parent, ISEQ_TYPE_TOP,
-				&COMPILE_OPTION_DEFAULT);
+    return rb_iseq_new_with_opt(ast, name, path, realpath, INT2FIX(0), parent, 0,
+                                ISEQ_TYPE_TOP, &COMPILE_OPTION_DEFAULT);
 }
 
 rb_iseq_t *
@@ -804,7 +819,14 @@ rb_iseq_new_main(const rb_ast_body_t *ast, VALUE path, VALUE realpath, const rb_
 {
     return rb_iseq_new_with_opt(ast, rb_fstring_lit("<main>"),
 				path, realpath, INT2FIX(0),
-				parent, ISEQ_TYPE_MAIN, &COMPILE_OPTION_DEFAULT);
+				parent, 0, ISEQ_TYPE_MAIN, &COMPILE_OPTION_DEFAULT);
+}
+
+rb_iseq_t *
+rb_iseq_new_eval(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath, VALUE first_lineno, const rb_iseq_t *parent, int isolated_depth)
+{
+    return rb_iseq_new_with_opt(ast, name, path, realpath, first_lineno,
+                                parent, isolated_depth, ISEQ_TYPE_EVAL, &COMPILE_OPTION_DEFAULT);
 }
 
 static inline rb_iseq_t *
@@ -823,8 +845,8 @@ iseq_translate(rb_iseq_t *iseq)
 
 rb_iseq_t *
 rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath,
-		     VALUE first_lineno, const rb_iseq_t *parent,
-		     enum iseq_type type, const rb_compile_option_t *option)
+		     VALUE first_lineno, const rb_iseq_t *parent, int isolated_depth,
+                     enum iseq_type type, const rb_compile_option_t *option)
 {
     const NODE *node = ast ? ast->root : 0;
     /* TODO: argument check */
@@ -839,7 +861,7 @@ rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE rea
     }
     if (ast && ast->compile_option) rb_iseq_make_compile_option(&new_opt, ast->compile_option);
 
-    prepare_iseq_build(iseq, name, path, realpath, first_lineno, node ? &node->nd_loc : NULL, node ? nd_node_id(node) : -1, parent, type, &new_opt);
+    prepare_iseq_build(iseq, name, path, realpath, first_lineno, node ? &node->nd_loc : NULL, node ? nd_node_id(node) : -1, parent, isolated_depth, type, &new_opt);
 
     rb_iseq_compile_node(iseq, node);
     finish_iseq_build(iseq);
@@ -858,7 +880,7 @@ rb_iseq_new_with_callback(
     rb_iseq_t *iseq = iseq_alloc();
 
     if (!option) option = &COMPILE_OPTION_DEFAULT;
-    prepare_iseq_build(iseq, name, path, realpath, first_lineno, NULL, -1, parent, type, option);
+    prepare_iseq_build(iseq, name, path, realpath, first_lineno, NULL, -1, parent, 0, type, option);
 
     rb_iseq_compile_callback(iseq, ifunc);
     finish_iseq_build(iseq);
@@ -971,7 +993,7 @@ iseq_load(VALUE data, const rb_iseq_t *parent, VALUE opt)
     make_compile_option(&option, opt);
     option.peephole_optimization = FALSE; /* because peephole optimization can modify original iseq */
     prepare_iseq_build(iseq, name, path, realpath, first_lineno, &tmp_loc, NUM2INT(node_id),
-		       parent, (enum iseq_type)iseq_type, &option);
+                       parent, 0, (enum iseq_type)iseq_type, &option);
 
     rb_iseq_build_from_ary(iseq, misc, locals, params, exception, body);
 
@@ -1039,7 +1061,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
     else {
 	INITIALIZED VALUE label = rb_fstring_lit("<compiled>");
 	iseq = rb_iseq_new_with_opt(&ast->body, label, file, realpath, line,
-				    0, ISEQ_TYPE_TOP, &option);
+				    NULL, 0, ISEQ_TYPE_TOP, &option);
 	rb_ast_dispose(ast);
     }
 
@@ -1281,7 +1303,7 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
 
     parser = rb_parser_new();
     rb_parser_set_context(parser, NULL, FALSE);
-    ast = rb_parser_compile_file_path(parser, file, f, NUM2INT(line));
+    ast = (rb_ast_t *)rb_parser_load_file(parser, file);
     if (!ast->body.root) exc = GET_EC()->errinfo;
 
     rb_io_close(f);
@@ -1295,7 +1317,7 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
     ret = iseqw_new(rb_iseq_new_with_opt(&ast->body, rb_fstring_lit("<main>"),
 					 file,
 					 rb_realpath_internal(Qnil, file, 1),
-					 line, NULL, ISEQ_TYPE_TOP, &option));
+					 line, NULL, 0, ISEQ_TYPE_TOP, &option));
     rb_ast_dispose(ast);
     return ret;
 }
@@ -1846,6 +1868,7 @@ local_var_name(const rb_iseq_t *diseq, VALUE level, VALUE op)
 }
 
 int rb_insn_unified_local_var_level(VALUE);
+VALUE rb_dump_literal(VALUE lit);
 
 VALUE
 rb_insn_operand_intern(const rb_iseq_t *iseq,
@@ -1921,7 +1944,7 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 		break;
 	    }
 	}
-	ret = rb_inspect(op);
+	ret = rb_dump_literal(op);
 	if (CLASS_OF(op) == rb_cISeq) {
 	    if (child) {
 		rb_ary_push(child, op);
@@ -3145,13 +3168,16 @@ rb_vm_insn_addr2insn(const void *addr)
 }
 
 static inline int
-encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon)
+encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon, bool remain_current_trace)
 {
     st_data_t key = (st_data_t)*iseq_encoded_insn;
     st_data_t val;
 
     if (st_lookup(encoded_insn_data, key, &val)) {
         insn_data_t *e = (insn_data_t *)val;
+        if (remain_current_trace && key == (st_data_t)e->trace_encoded_insn) {
+            turnon = 1;
+        }
         *iseq_encoded_insn = (VALUE) (turnon ? e->trace_encoded_insn : e->notrace_encoded_insn);
         return e->insn_len;
     }
@@ -3164,7 +3190,7 @@ rb_iseq_trace_flag_cleared(const rb_iseq_t *iseq, size_t pos)
 {
     const struct rb_iseq_constant_body *const body = iseq->body;
     VALUE *iseq_encoded = (VALUE *)body->iseq_encoded;
-    encoded_iseq_trace_instrument(&iseq_encoded[pos], 0);
+    encoded_iseq_trace_instrument(&iseq_encoded[pos], 0, false);
 }
 
 static int
@@ -3193,7 +3219,7 @@ iseq_add_local_tracepoint(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, 
         if (pc_events & target_events) {
             n++;
         }
-        pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & (target_events | iseq->aux.exec.global_trace_events));
+        pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & (target_events | iseq->aux.exec.global_trace_events), true);
     }
 
     if (n > 0) {
@@ -3258,7 +3284,7 @@ iseq_remove_local_tracepoint(const rb_iseq_t *iseq, VALUE tpval)
 
         for (pc = 0; pc<body->iseq_size;) {
             rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pc);
-            pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & (local_events | iseq->aux.exec.global_trace_events));
+            pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & (local_events | iseq->aux.exec.global_trace_events), false);
         }
     }
     return n;
@@ -3310,7 +3336,7 @@ rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
 
         for (pc=0; pc<body->iseq_size;) {
             rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pc);
-            pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & enabled_events);
+            pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & enabled_events, true);
 	}
     }
 }

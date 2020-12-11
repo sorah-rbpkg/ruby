@@ -36,6 +36,7 @@
 #include "ruby/encoding.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
+#include "ruby/assert.h"
 #include "builtin.h"
 
 /*!
@@ -279,7 +280,7 @@ rb_obj_not_equal(VALUE obj1, VALUE obj2)
  * It returns the \a cl itself if it is neither a singleton class or a module.
  *
  * \param[in] cl a Class object.
- * \return the ancestor class found, or a falsey value if nothing found.
+ * \return the ancestor class found, or Qfalse if nothing found.
  */
 VALUE
 rb_class_real(VALUE cl)
@@ -320,24 +321,12 @@ rb_obj_singleton_class(VALUE obj)
     return rb_singleton_class(obj);
 }
 
-struct st_table *
-rb_obj_iv_index_tbl(const struct RObject *obj)
-{
-    /* This is a function that practically never gets used.  Just to keep
-     * backwards compatibility to ruby 2.x. */
-    return ROBJECT_IV_INDEX_TBL((VALUE)obj);
-}
-
 /*! \private */
 MJIT_FUNC_EXPORTED void
 rb_obj_copy_ivar(VALUE dest, VALUE obj)
 {
-    if (!(RBASIC(dest)->flags & ROBJECT_EMBED) && ROBJECT_IVPTR(dest)) {
-	xfree(ROBJECT_IVPTR(dest));
-	ROBJECT(dest)->as.heap.ivptr = 0;
-	ROBJECT(dest)->as.heap.numiv = 0;
-	ROBJECT(dest)->as.heap.iv_index_tbl = 0;
-    }
+    RUBY_ASSERT(RBASIC(dest)->flags & ROBJECT_EMBED);
+
     if (RBASIC(obj)->flags & ROBJECT_EMBED) {
 	MEMCPY(ROBJECT(dest)->as.ary, ROBJECT(obj)->as.ary, VALUE, ROBJECT_EMBED_LEN_MAX);
 	RBASIC(dest)->flags |= ROBJECT_EMBED;
@@ -1144,7 +1133,7 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  */
 
 static VALUE
-rb_obj_dummy()
+rb_obj_dummy(void)
 {
     return Qnil;
 }
@@ -4486,9 +4475,6 @@ InitVM_Object(void)
     rb_cModule = rb_define_class("Module", rb_cObject);
     rb_cClass =  rb_define_class("Class",  rb_cModule);
 #endif
-
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
 
     rb_define_private_method(rb_cBasicObject, "initialize", rb_obj_dummy0, 0);
     rb_define_alloc_func(rb_cBasicObject, rb_class_allocate_instance);

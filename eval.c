@@ -26,17 +26,17 @@
 #include "internal/hash.h"
 #include "internal/inits.h"
 #include "internal/io.h"
-#include "internal/mjit.h"
 #include "internal/object.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
+#include "internal/scheduler.h"
 #include "iseq.h"
 #include "mjit.h"
 #include "probes.h"
 #include "probes_helper.h"
 #include "ruby/vm.h"
 #include "vm_core.h"
-#include "ractor.h"
+#include "ractor_core.h"
 
 NORETURN(void rb_raise_jump(VALUE, VALUE));
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
@@ -147,8 +147,26 @@ ruby_options(int argc, char **argv)
 }
 
 static void
+rb_ec_scheduler_finalize(rb_execution_context_t *ec)
+{
+    enum ruby_tag_type state;
+
+    EC_PUSH_TAG(ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        rb_scheduler_set(Qnil);
+    }
+    else {
+        state = error_handle(ec, state);
+    }
+    EC_POP_TAG();
+}
+
+static void
 rb_ec_teardown(rb_execution_context_t *ec)
 {
+    // If the user code defined a scheduler for the top level thread, run it:
+    rb_ec_scheduler_finalize(ec);
+
     EC_PUSH_TAG(ec);
     if (EC_EXEC_TAG() == TAG_NONE) {
         rb_vm_trap_exit(rb_ec_vm_ptr(ec));
@@ -156,13 +174,6 @@ rb_ec_teardown(rb_execution_context_t *ec)
     EC_POP_TAG();
     rb_ec_exec_end_proc(ec);
     rb_ec_clear_all_trace_func(ec);
-}
-
-static void
-rb_ec_scheduler_finalize(rb_execution_context_t *ec)
-{
-    rb_thread_t *thread = rb_ec_thread_ptr(ec);
-    rb_thread_scheduler_set(thread->self, Qnil);
 }
 
 static void
@@ -217,6 +228,7 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
 
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
+
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         th = th0;
@@ -277,9 +289,6 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
 	    sysex = EXIT_FAILURE;
 	}
     }
-
-    // If the user code defined a scheduler for the top level thread, run it:
-    rb_ec_scheduler_finalize(ec);
 
     mjit_finish(true); // We still need ISeqs here.
 
@@ -2073,6 +2082,9 @@ Init_eval(void)
 {
     rb_define_virtual_variable("$@", errat_getter, errat_setter);
     rb_define_virtual_variable("$!", errinfo_getter, 0);
+
+    rb_gvar_ractor_local("$@");
+    rb_gvar_ractor_local("$!");
 
     rb_define_global_function("raise", f_raise, -1);
     rb_define_global_function("fail", f_raise, -1);

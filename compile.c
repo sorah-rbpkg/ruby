@@ -1304,6 +1304,9 @@ new_insn_send(rb_iseq_t *iseq, int line_no, ID id, VALUE argc, const rb_iseq_t *
     VALUE *operands = compile_data_calloc2(iseq, sizeof(VALUE), 2);
     operands[0] = (VALUE)new_callinfo(iseq, id, FIX2INT(argc), FIX2INT(flag), keywords, blockiseq != NULL);
     operands[1] = (VALUE)blockiseq;
+    if (blockiseq) {
+        RB_OBJ_WRITTEN(iseq, Qundef, blockiseq);
+    }
     return new_insn_core(iseq, line_no, BIN(send), 2, operands);
 }
 
@@ -1319,9 +1322,12 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
     ast.line_count = -1;
 
     debugs("[new_child_iseq]> ---------------------------------------\n");
+    int isolated_depth = ISEQ_COMPILE_DATA(iseq)->isolated_depth;
     ret_iseq = rb_iseq_new_with_opt(&ast, name,
 				    rb_iseq_path(iseq), rb_iseq_realpath(iseq),
-				    INT2FIX(line_no), parent, type, ISEQ_COMPILE_DATA(iseq)->option);
+                                    INT2FIX(line_no), parent,
+                                    isolated_depth ? isolated_depth + 1 : 0,
+                                    type, ISEQ_COMPILE_DATA(iseq)->option);
     debugs("[new_child_iseq]< ---------------------------------------\n");
     return ret_iseq;
 }
@@ -1601,13 +1607,50 @@ iseq_block_param_id_p(const rb_iseq_t *iseq, ID id, int *pidx, int *plevel)
 }
 
 static void
-check_access_outer_variables(const rb_iseq_t *iseq, int level)
+access_outer_variables(const rb_iseq_t *iseq, int level, ID id, bool write)
 {
-    // set access_outer_variables
+    int isolated_depth = ISEQ_COMPILE_DATA(iseq)->isolated_depth;
+
+    if (isolated_depth && level >= isolated_depth) {
+        if (id == rb_intern("yield")) {
+            COMPILE_ERROR(iseq, ISEQ_LAST_LINE(iseq), "can not yield from isolated Proc", rb_id2name(id));
+        }
+        else {
+            COMPILE_ERROR(iseq, ISEQ_LAST_LINE(iseq), "can not access variable `%s' from isolated Proc", rb_id2name(id));
+        }
+    }
+
     for (int i=0; i<level; i++) {
-        iseq->body->access_outer_variables = TRUE;
+        VALUE val;
+        struct rb_id_table *ovs = iseq->body->outer_variables;
+
+        if (!ovs) {
+            ovs = iseq->body->outer_variables = rb_id_table_create(8);
+        }
+
+        if (rb_id_table_lookup(iseq->body->outer_variables, id, &val)) {
+            if (write && !val) {
+                rb_id_table_insert(iseq->body->outer_variables, id, Qtrue);
+            }
+        }
+        else {
+            rb_id_table_insert(iseq->body->outer_variables, id, write ? Qtrue : Qfalse);
+        }
+
         iseq = iseq->body->parent_iseq;
     }
+}
+
+static ID
+iseq_lvar_id(const rb_iseq_t *iseq, int idx, int level)
+{
+    for (int i=0; i<level; i++) {
+        iseq = iseq->body->parent_iseq;
+    }
+
+    ID id = iseq->body->local_table[iseq->body->local_table_size - idx];
+    // fprintf(stderr, "idx:%d level:%d ID:%s\n", idx, level, rb_id2name(id));
+    return id;
 }
 
 static void
@@ -1619,7 +1662,7 @@ iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int idx, in
     else {
 	ADD_INSN2(seq, line, getlocal, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
     }
-    check_access_outer_variables(iseq, level);
+    if (level > 0) access_outer_variables(iseq, level, iseq_lvar_id(iseq, idx, level), Qfalse);
 }
 
 static void
@@ -1631,7 +1674,7 @@ iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int idx, in
     else {
 	ADD_INSN2(seq, line, setlocal, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
     }
-    check_access_outer_variables(iseq, level);
+    if (level > 0) access_outer_variables(iseq, level, iseq_lvar_id(iseq, idx, level), Qtrue);
 }
 
 
@@ -2332,6 +2375,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                                               ic_index, body->is_size);
 			    }
 			    generated_iseq[code_index + 1 + j] = (VALUE)ic;
+
+                            if (type == TS_IVC) FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
 			    break;
 			}
                         case TS_CALLDATA:
@@ -2855,7 +2900,6 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    goto again;
 	}
         else if (IS_INSN_ID(diobj, leave)) {
-	    INSN *pop;
 	    /*
 	     *  jump LABEL
 	     *  ...
@@ -2863,7 +2907,6 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	     *  leave
 	     * =>
 	     *  leave
-	     *  pop
 	     *  ...
 	     * LABEL:
 	     *  leave
@@ -2873,9 +2916,6 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
             iobj->insn_id = BIN(leave);
 	    iobj->operand_size = 0;
 	    iobj->insn_info = diobj->insn_info;
-	    /* adjust stack depth */
-	    pop = new_insn_body(iseq, diobj->insn_info.line_no, BIN(pop), 0);
-            ELEM_INSERT_NEXT(&iobj->link, &pop->link);
 	    goto again;
 	}
         else if (IS_INSN(iobj->link.prev) &&
@@ -3828,8 +3868,16 @@ static int
 compile_dstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node)
 {
     int cnt;
-    CHECK(compile_dstr_fragments(iseq, ret, node, &cnt));
-    ADD_INSN1(ret, nd_line(node), concatstrings, INT2FIX(cnt));
+    if (!node->nd_next) {
+        VALUE lit = rb_fstring(node->nd_lit);
+        const int line = (int)nd_line(node);
+        ADD_INSN1(ret, line, putstring, lit);
+        RB_OBJ_WRITTEN(iseq, Qundef, lit);
+    }
+    else {
+        CHECK(compile_dstr_fragments(iseq, ret, node, &cnt));
+        ADD_INSN1(ret, nd_line(node), concatstrings, INT2FIX(cnt));
+    }
     return COMPILE_OK;
 }
 
@@ -3886,7 +3934,10 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
 	    LABEL *label = NEW_LABEL(nd_line(cond));
 	    CHECK(compile_branch_condition(iseq, ret, cond->nd_1st, label,
 					   else_label));
-	    if (!label->refcnt) break;
+            if (!label->refcnt) {
+                ADD_INSN(ret, nd_line(cond), putnil);
+                break;
+            }
 	    ADD_LABEL(ret, label);
 	    cond = cond->nd_2nd;
 	    goto again;
@@ -3896,7 +3947,10 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
 	    LABEL *label = NEW_LABEL(nd_line(cond));
 	    CHECK(compile_branch_condition(iseq, ret, cond->nd_1st, then_label,
 					   label));
-	    if (!label->refcnt) break;
+            if (!label->refcnt) {
+                ADD_INSN(ret, nd_line(cond), putnil);
+                break;
+            }
 	    ADD_LABEL(ret, label);
 	    cond = cond->nd_2nd;
 	    goto again;
@@ -5374,6 +5428,9 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
 		branches);
 	    end_label = NEW_LABEL(line);
 	    ADD_INSNL(then_seq, line, jump, end_label);
+            if (!popped) {
+                ADD_INSN(then_seq, line, pop);
+            }
 	}
 	ADD_SEQ(ret, then_seq);
     }
@@ -7191,6 +7248,92 @@ delegate_call_p(const rb_iseq_t *iseq, unsigned int argc, const LINK_ANCHOR *arg
 }
 
 static int
+compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int line, int popped,
+                              const rb_iseq_t *parent_block, LINK_ANCHOR *args, const char *builtin_func)
+{
+    NODE *args_node = node->nd_args;
+
+    if (parent_block != NULL) {
+        COMPILE_ERROR(iseq, line, "should not call builtins here.");
+        return COMPILE_NG;
+    }
+    else {
+# define BUILTIN_INLINE_PREFIX "_bi"
+        char inline_func[DECIMAL_SIZE_OF_BITS(sizeof(int) * CHAR_BIT) + sizeof(BUILTIN_INLINE_PREFIX)];
+        bool cconst = false;
+      retry:;
+        const struct rb_builtin_function *bf = iseq_builtin_function_lookup(iseq, builtin_func);
+
+        if (bf == NULL) {
+            if (strcmp("cstmt!", builtin_func) == 0 ||
+                strcmp("cexpr!", builtin_func) == 0) {
+                // ok
+            }
+            else if (strcmp("cconst!", builtin_func) == 0) {
+                cconst = true;
+            }
+            else if (strcmp("cinit!", builtin_func) == 0) {
+                // ignore
+                GET_VM()->builtin_inline_index++;
+                return COMPILE_OK;
+            }
+            else if (strcmp("attr!", builtin_func) == 0) {
+                // There's only "inline" attribute for now
+                iseq->body->builtin_inline_p = true;
+                return COMPILE_OK;
+            }
+            else if (1) {
+                rb_bug("can't find builtin function:%s", builtin_func);
+            }
+            else {
+                COMPILE_ERROR(ERROR_ARGS "can't find builtin function:%s", builtin_func);
+                return COMPILE_NG;
+            }
+
+            if (GET_VM()->builtin_inline_index == INT_MAX) {
+                rb_bug("builtin inline function index overflow:%s", builtin_func);
+            }
+            int inline_index = GET_VM()->builtin_inline_index++;
+            snprintf(inline_func, sizeof(inline_func), BUILTIN_INLINE_PREFIX "%d", inline_index);
+            builtin_func = inline_func;
+            args_node = NULL;
+            goto retry;
+        }
+
+        if (cconst) {
+            typedef VALUE(*builtin_func0)(void *, VALUE);
+            VALUE const_val = (*(builtin_func0)bf->func_ptr)(NULL, Qnil);
+            ADD_INSN1(ret, line, putobject, const_val);
+            return COMPILE_OK;
+        }
+
+        // fprintf(stderr, "func_name:%s -> %p\n", builtin_func, bf->func_ptr);
+
+        unsigned int flag = 0;
+        struct rb_callinfo_kwarg *keywords = NULL;
+        VALUE argc = setup_args(iseq, args, args_node, &flag, &keywords);
+
+        if (FIX2INT(argc) != bf->argc) {
+            COMPILE_ERROR(ERROR_ARGS "argc is not match for builtin function:%s (expect %d but %d)",
+                          builtin_func, bf->argc, FIX2INT(argc));
+            return COMPILE_NG;
+        }
+
+        unsigned int start_index;
+        if (delegate_call_p(iseq, FIX2INT(argc), args, &start_index)) {
+            ADD_INSN2(ret, line, opt_invokebuiltin_delegate, bf, INT2FIX(start_index));
+        }
+        else {
+            ADD_SEQ(ret, args);
+            ADD_INSN1(ret,line, invokebuiltin, bf);
+        }
+
+        if (popped) ADD_INSN(ret, line, pop);
+        return COMPILE_OK;
+    }
+}
+
+static int
 compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, int line, int popped)
 {
     /* call:  obj.method(...)
@@ -7275,86 +7418,12 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
         }
     }
 #endif
-    const char *builtin_func;
-    NODE *args_node = node->nd_args;
 
+    const char *builtin_func;
     if (UNLIKELY(iseq_has_builtin_function_table(iseq)) &&
         (builtin_func = iseq_builtin_function_name(type, node->nd_recv, mid)) != NULL) {
-
-        if (parent_block != NULL) {
-            COMPILE_ERROR(iseq, line, "should not call builtins here.");
-            return COMPILE_NG;
-        }
-        else {
-            char inline_func[0x20];
-            bool cconst = false;
-          retry:;
-            const struct rb_builtin_function *bf = iseq_builtin_function_lookup(iseq, builtin_func);
-
-            if (bf == NULL) {
-                if (strcmp("cstmt!", builtin_func) == 0 ||
-                    strcmp("cexpr!", builtin_func) == 0) {
-                    // ok
-                }
-                else if (strcmp("cconst!", builtin_func) == 0) {
-                    cconst = true;
-                }
-                else if (strcmp("cinit!", builtin_func) == 0) {
-                    // ignore
-                    GET_VM()->builtin_inline_index++;
-                    return COMPILE_OK;
-                }
-                else if (strcmp("attr!", builtin_func) == 0) {
-                    // There's only "inline" attribute for now
-                    iseq->body->builtin_inline_p = true;
-                    return COMPILE_OK;
-                }
-                else if (1) {
-                    rb_bug("can't find builtin function:%s", builtin_func);
-                }
-                else {
-                    COMPILE_ERROR(ERROR_ARGS "can't find builtin function:%s", builtin_func);
-                    return COMPILE_NG;
-                }
-
-                int inline_index = GET_VM()->builtin_inline_index++;
-                snprintf(inline_func, 0x20, "_bi%d", inline_index);
-                builtin_func = inline_func;
-                args_node = NULL;
-                goto retry;
-            }
-
-            if (cconst) {
-                typedef VALUE(*builtin_func0)(void *, VALUE);
-                VALUE const_val = (*(builtin_func0)bf->func_ptr)(NULL, Qnil);
-                ADD_INSN1(ret, line, putobject, const_val);
-                return COMPILE_OK;
-            }
-
-            // fprintf(stderr, "func_name:%s -> %p\n", builtin_func, bf->func_ptr);
-
-            argc = setup_args(iseq, args, args_node, &flag, &keywords);
-
-            if (FIX2INT(argc) != bf->argc) {
-                COMPILE_ERROR(ERROR_ARGS "argc is not match for builtin function:%s (expect %d but %d)",
-                              builtin_func, bf->argc, FIX2INT(argc));
-                return COMPILE_NG;
-            }
-
-            unsigned int start_index;
-            if (delegate_call_p(iseq, FIX2INT(argc), args, &start_index)) {
-                ADD_INSN2(ret, line, opt_invokebuiltin_delegate, bf, INT2FIX(start_index));
-            }
-            else {
-                ADD_SEQ(ret, args);
-                ADD_INSN1(ret,line, invokebuiltin, bf);
-            }
-
-            if (popped) ADD_INSN(ret, line, pop);
-            return COMPILE_OK;
-        }
+        return compile_builtin_function_call(iseq, ret, node, line, popped, parent_block, args, builtin_func);
     }
-
 
     /* receiver */
     if (type == NODE_CALL || type == NODE_OPCALL || type == NODE_QCALL) {
@@ -8189,7 +8258,12 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    ADD_INSN(ret, line, pop);
 	}
 
-        iseq->body->access_outer_variables = TRUE;
+        int level = 0;
+        const rb_iseq_t *tmp_iseq = iseq;
+        for (; tmp_iseq != iseq->body->local_iseq; level++ ) {
+            tmp_iseq = tmp_iseq->body->parent_iseq;
+        }
+        if (level > 0) access_outer_variables(iseq, level, rb_intern("yield"), true);
 	break;
       }
       case NODE_LVAR:{
@@ -8322,6 +8396,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	debugp_param("lit", node->nd_lit);
 	if (!popped) {
 	    ADD_INSN1(ret, line, putobject, node->nd_lit);
+            RB_OBJ_WRITTEN(iseq, Qundef, node->nd_lit);
 	}
 	break;
       }
@@ -8636,8 +8711,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	VALUE flag = INT2FIX(excl);
 	const NODE *b = node->nd_beg;
 	const NODE *e = node->nd_end;
-        // TODO: Ractor can not use cached Range objects
-	if (0 && optimizable_range_item_p(b) && optimizable_range_item_p(e)) {
+
+        if (optimizable_range_item_p(b) && optimizable_range_item_p(e)) {
 	    if (!popped) {
                 VALUE bv = nd_type(b) == NODE_LIT ? b->nd_lit : Qnil;
                 VALUE ev = nd_type(e) == NODE_LIT ? e->nd_lit : Qnil;
@@ -9115,18 +9190,16 @@ register_label(rb_iseq_t *iseq, struct st_table *labels_table, VALUE obj)
 static VALUE
 get_exception_sym2type(VALUE sym)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
     static VALUE symRescue, symEnsure, symRetry;
     static VALUE symBreak, symRedo, symNext;
 
     if (symRescue == 0) {
-	symRescue = ID2SYM(rb_intern("rescue"));
-	symEnsure = ID2SYM(rb_intern("ensure"));
-	symRetry  = ID2SYM(rb_intern("retry"));
-	symBreak  = ID2SYM(rb_intern("break"));
-	symRedo   = ID2SYM(rb_intern("redo"));
-	symNext   = ID2SYM(rb_intern("next"));
+	symRescue = ID2SYM(rb_intern_const("rescue"));
+	symEnsure = ID2SYM(rb_intern_const("ensure"));
+	symRetry  = ID2SYM(rb_intern_const("retry"));
+	symBreak  = ID2SYM(rb_intern_const("break"));
+	symRedo   = ID2SYM(rb_intern_const("redo"));
+	symNext   = ID2SYM(rb_intern_const("next"));
     }
 
     if (sym == symRescue) return CATCH_TYPE_RESCUE;
@@ -9192,7 +9265,7 @@ insn_make_insn_table(void)
     table = st_init_numtable_with_size(VM_INSTRUCTION_SIZE);
 
     for (i=0; i<VM_INSTRUCTION_SIZE; i++) {
-	st_insert(table, ID2SYM(rb_intern(insn_name(i))), i);
+	st_insert(table, ID2SYM(rb_intern_const(insn_name(i))), i);
     }
 
     return table;
@@ -9227,10 +9300,10 @@ iseq_build_callinfo_from_hash(rb_iseq_t *iseq, VALUE op)
     struct rb_callinfo_kwarg *kw_arg = 0;
 
     if (!NIL_P(op)) {
-	VALUE vmid = rb_hash_aref(op, ID2SYM(rb_intern("mid")));
-	VALUE vflag = rb_hash_aref(op, ID2SYM(rb_intern("flag")));
-	VALUE vorig_argc = rb_hash_aref(op, ID2SYM(rb_intern("orig_argc")));
-	VALUE vkw_arg = rb_hash_aref(op, ID2SYM(rb_intern("kw_arg")));
+	VALUE vmid = rb_hash_aref(op, ID2SYM(rb_intern_const("mid")));
+	VALUE vflag = rb_hash_aref(op, ID2SYM(rb_intern_const("flag")));
+	VALUE vorig_argc = rb_hash_aref(op, ID2SYM(rb_intern_const("orig_argc")));
+	VALUE vkw_arg = rb_hash_aref(op, ID2SYM(rb_intern_const("kw_arg")));
 
 	if (!NIL_P(vmid)) mid = SYM2ID(vmid);
 	if (!NIL_P(vflag)) flag = NUM2UINT(vflag);
@@ -9259,7 +9332,7 @@ iseq_build_callinfo_from_hash(rb_iseq_t *iseq, VALUE op)
 static rb_event_flag_t
 event_name_to_flag(VALUE sym)
 {
-#define CHECK_EVENT(ev) if (sym == ID2SYM(rb_intern(#ev))) return ev;
+#define CHECK_EVENT(ev) if (sym == ID2SYM(rb_intern_const(#ev))) return ev;
 		CHECK_EVENT(RUBY_EVENT_LINE);
 		CHECK_EVENT(RUBY_EVENT_CLASS);
 		CHECK_EVENT(RUBY_EVENT_END);
@@ -9464,7 +9537,7 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
     iseq->body->param.flags.has_kw = TRUE;
 
     keyword->num = len;
-#define SYM(s) ID2SYM(rb_intern(#s))
+#define SYM(s) ID2SYM(rb_intern_const(#s))
     (void)int_param(&keyword->bits_start, params, SYM(kwbits));
     i = keyword->bits_start - keyword->num;
     ids = (ID *)&iseq->body->local_table[i];
@@ -9577,7 +9650,7 @@ void
 rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 			 VALUE exception, VALUE body)
 {
-#define SYM(s) ID2SYM(rb_intern(#s))
+#define SYM(s) ID2SYM(rb_intern_const(#s))
     int i, len;
     unsigned int arg_size, local_size, stack_max;
     ID *tbl;
@@ -9585,7 +9658,7 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
     VALUE labels_wrapper = Data_Wrap_Struct(0, rb_mark_set, st_free_table, labels_table);
     VALUE arg_opt_labels = rb_hash_aref(params, SYM(opt));
     VALUE keywords = rb_hash_aref(params, SYM(keyword));
-    VALUE sym_arg_rest = ID2SYM(rb_intern("#arg_rest"));
+    VALUE sym_arg_rest = ID2SYM(rb_intern_const("#arg_rest"));
     DECL_ANCHOR(anchor);
     INIT_ANCHOR(anchor);
 
@@ -10223,14 +10296,13 @@ ibf_load_builtin(const struct ibf_load *load, ibf_offset_t *offset)
     const char *name = (char *)ibf_load_ptr(load, offset, len);
 
     if (0) {
-        for (int i=0; i<len; i++) fprintf(stderr, "%c", name[i]);
-        fprintf(stderr, "!!\n");
+        fprintf(stderr, "%.*s!!\n", len, name);
     }
 
     const struct rb_builtin_function *table = GET_VM()->builtin_function_table;
-    if (table == NULL) rb_bug("%s: table is not provided.", RUBY_FUNCTION_NAME_STRING);
+    if (table == NULL) rb_raise(rb_eArgError, "builtin function table is not provided");
     if (strncmp(table[i].name, name, len) != 0) {
-        rb_bug("%s: index (%d) mismatch (expect %s but %s).", RUBY_FUNCTION_NAME_STRING, i, name, table[i].name);
+        rb_raise(rb_eArgError, "builtin function index (%d) mismatch (expect %s but %s)", i, name, table[i].name);
     }
     // fprintf(stderr, "load-builtin: name:%s(%d)\n", table[i].name, table[i].argc);
 

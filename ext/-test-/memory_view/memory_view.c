@@ -2,8 +2,7 @@
 #include "ruby/memory_view.h"
 
 #define STRUCT_ALIGNOF(T, result) do { \
-    struct S { char _; T t; }; \
-    (result) = (int)offsetof(struct S, t); \
+    (result) = RUBY_ALIGNOF(T); \
 } while(0)
 
 static ID id_str;
@@ -25,48 +24,24 @@ static VALUE sym_endianness;
 static VALUE sym_little_endian;
 static VALUE sym_big_endian;
 
-static VALUE exported_objects;
-
 static int
 exportable_string_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
 {
     VALUE str = rb_ivar_get(obj, id_str);
     rb_memory_view_init_as_byte_array(view, obj, RSTRING_PTR(str), RSTRING_LEN(str), true);
-
-    VALUE count = rb_hash_lookup2(exported_objects, obj, INT2FIX(0));
-    count = rb_funcall(count, '+', 1, INT2FIX(1));
-    rb_hash_aset(exported_objects, obj, count);
-
-    return 1;
-}
-
-static int
-exportable_string_release_memory_view(VALUE obj, rb_memory_view_t *view)
-{
-    VALUE count = rb_hash_lookup2(exported_objects, obj, INT2FIX(0));
-    if (INT2FIX(1) == count) {
-        rb_hash_delete(exported_objects, obj);
-    }
-    else if (INT2FIX(0) == count) {
-        rb_raise(rb_eRuntimeError, "Duplicated releasing of a memory view has been occurred for %"PRIsVALUE, obj);
-    }
-    else {
-        count = rb_funcall(count, '-', 1, INT2FIX(1));
-        rb_hash_aset(exported_objects, obj, count);
-    }
-
     return 1;
 }
 
 static int
 exportable_string_memory_view_available_p(VALUE obj)
 {
-    return Qtrue;
+    VALUE str = rb_ivar_get(obj, id_str);
+    return !NIL_P(str);
 }
 
 static const rb_memory_view_entry_t exportable_string_memory_view_entry = {
     exportable_string_get_memory_view,
-    exportable_string_release_memory_view,
+    NULL,
     exportable_string_memory_view_available_p
 };
 
@@ -92,7 +67,7 @@ memory_view_item_size_from_format(VALUE mod, VALUE format)
     ssize_t item_size = rb_memory_view_item_size_from_format(c_str, &err);
     if (!err)
         return rb_assoc_new(SSIZET2NUM(item_size), Qnil);
-    else 
+    else
         return rb_assoc_new(SSIZET2NUM(item_size), rb_str_new_cstr(err));
 }
 
@@ -105,15 +80,15 @@ memory_view_parse_item_format(VALUE mod, VALUE format)
     const char *err = NULL;
 
     rb_memory_view_item_component_t *members;
-    ssize_t n_members;
+    size_t n_members;
     ssize_t item_size = rb_memory_view_parse_item_format(c_str, &members, &n_members, &err);
 
     VALUE result = rb_ary_new_capa(3);
     rb_ary_push(result, SSIZET2NUM(item_size));
 
     if (!err) {
-        VALUE ary = rb_ary_new_capa(n_members);
-        ssize_t i;
+        VALUE ary = rb_ary_new_capa((long)n_members);
+        size_t i;
         for (i = 0; i < n_members; ++i) {
             VALUE member = rb_hash_new();
             rb_hash_aset(member, sym_format, rb_str_new(&members[i].format, 1));
@@ -185,7 +160,7 @@ memory_view_get_memory_view_info(VALUE mod, VALUE obj)
 static VALUE
 memory_view_fill_contiguous_strides(VALUE mod, VALUE ndim_v, VALUE item_size_v, VALUE shape_v, VALUE row_major_p)
 {
-    int i, ndim = FIX2INT(ndim_v);
+    ssize_t i, ndim = NUM2SSIZET(ndim_v);
 
     Check_Type(shape_v, T_ARRAY);
     ssize_t *shape = ALLOC_N(ssize_t, ndim);
@@ -208,8 +183,79 @@ memory_view_fill_contiguous_strides(VALUE mod, VALUE ndim_v, VALUE item_size_v, 
 }
 
 static VALUE
+memory_view_get_ref_count(VALUE obj)
+{
+    extern VALUE rb_memory_view_exported_object_registry;
+    extern const rb_data_type_t rb_memory_view_exported_object_registry_data_type;
+
+    if (rb_memory_view_exported_object_registry == Qundef) {
+        return Qnil;
+    }
+
+    st_table *table;
+    TypedData_Get_Struct(rb_memory_view_exported_object_registry, st_table,
+                         &rb_memory_view_exported_object_registry_data_type,
+                         table);
+
+    st_data_t count;
+    if (st_lookup(table, (st_data_t)obj, &count)) {
+        return ULL2NUM(count);
+    }
+
+    return Qnil;
+}
+
+static VALUE
+memory_view_ref_count_while_exporting_i(VALUE obj, long n)
+{
+    if (n == 0) {
+        return memory_view_get_ref_count(obj);
+    }
+
+    rb_memory_view_t view;
+    if (!rb_memory_view_get(obj, &view, 0)) {
+        return Qnil;
+    }
+
+    VALUE ref_count = memory_view_ref_count_while_exporting_i(obj, n-1);
+    rb_memory_view_release(&view);
+
+    return ref_count;
+}
+
+static VALUE
+memory_view_ref_count_while_exporting(VALUE mod, VALUE obj, VALUE n)
+{
+    Check_Type(n, T_FIXNUM);
+    return memory_view_ref_count_while_exporting_i(obj, FIX2LONG(n));
+}
+
+static VALUE
+memory_view_extract_item_members(VALUE mod, VALUE str, VALUE format)
+{
+    StringValue(str);
+    StringValue(format);
+
+    rb_memory_view_item_component_t *members;
+    size_t n_members;
+    const char *err = NULL;
+    (void)rb_memory_view_parse_item_format(RSTRING_PTR(format), &members, &n_members, &err);
+    if (err != NULL) {
+        rb_raise(rb_eArgError, "Unable to parse item format");
+    }
+
+    VALUE item = rb_memory_view_extract_item_members(RSTRING_PTR(str), members, n_members);
+    xfree(members);
+
+    return item;
+}
+
+static VALUE
 expstr_initialize(VALUE obj, VALUE s)
 {
+    if (!NIL_P(s)) {
+        Check_Type(s, T_STRING);
+    }
     rb_ivar_set(obj, id_str, s);
     return Qnil;
 }
@@ -248,28 +294,6 @@ mdview_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
     view->shape = shape;
     view->strides = strides;
 
-    VALUE count = rb_hash_lookup2(exported_objects, obj, INT2FIX(0));
-    count = rb_funcall(count, '+', 1, INT2FIX(1));
-    rb_hash_aset(exported_objects, obj, count);
-
-    return 1;
-}
-
-static int
-mdview_release_memory_view(VALUE obj, rb_memory_view_t *view)
-{
-    VALUE count = rb_hash_lookup2(exported_objects, obj, INT2FIX(0));
-    if (INT2FIX(1) == count) {
-        rb_hash_delete(exported_objects, obj);
-    }
-    else if (INT2FIX(0) == count) {
-        rb_raise(rb_eRuntimeError, "Duplicated releasing of a memory view has been occurred for %"PRIsVALUE, obj);
-    }
-    else {
-        count = rb_funcall(count, '-', 1, INT2FIX(1));
-        rb_hash_aset(exported_objects, obj, count);
-    }
-
     return 1;
 }
 
@@ -281,7 +305,7 @@ mdview_memory_view_available_p(VALUE obj)
 
 static const rb_memory_view_entry_t mdview_memory_view_entry = {
     mdview_get_memory_view,
-    mdview_release_memory_view,
+    NULL,
     mdview_memory_view_available_p
 };
 
@@ -341,6 +365,8 @@ Init_memory_view(void)
     rb_define_module_function(mMemoryViewTestUtils, "parse_item_format", memory_view_parse_item_format, 1);
     rb_define_module_function(mMemoryViewTestUtils, "get_memory_view_info", memory_view_get_memory_view_info, 1);
     rb_define_module_function(mMemoryViewTestUtils, "fill_contiguous_strides", memory_view_fill_contiguous_strides, 4);
+    rb_define_module_function(mMemoryViewTestUtils, "ref_count_while_exporting", memory_view_ref_count_while_exporting, 2);
+    rb_define_module_function(mMemoryViewTestUtils, "extract_item_members", memory_view_extract_item_members, 2);
 
     VALUE cExportableString = rb_define_class_under(mMemoryViewTestUtils, "ExportableString", rb_cObject);
     rb_define_method(cExportableString, "initialize", expstr_initialize, 1);
@@ -351,35 +377,35 @@ Init_memory_view(void)
     rb_define_method(cMDView, "[]", mdview_aref, 1);
     rb_memory_view_register(cMDView, &mdview_memory_view_entry);
 
-    id_str = rb_intern("__str__");
-    sym_format = ID2SYM(rb_intern("format"));
-    sym_native_size_p = ID2SYM(rb_intern("native_size_p"));
-    sym_offset = ID2SYM(rb_intern("offset"));
-    sym_size = ID2SYM(rb_intern("size"));
-    sym_repeat = ID2SYM(rb_intern("repeat"));
-    sym_obj = ID2SYM(rb_intern("obj"));
-    sym_len = ID2SYM(rb_intern("len"));
-    sym_readonly = ID2SYM(rb_intern("readonly"));
-    sym_format = ID2SYM(rb_intern("format"));
-    sym_item_size = ID2SYM(rb_intern("item_size"));
-    sym_ndim = ID2SYM(rb_intern("ndim"));
-    sym_shape = ID2SYM(rb_intern("shape"));
-    sym_strides = ID2SYM(rb_intern("strides"));
-    sym_sub_offsets = ID2SYM(rb_intern("sub_offsets"));
-    sym_endianness = ID2SYM(rb_intern("endianness"));
-    sym_little_endian = ID2SYM(rb_intern("little_endian"));
-    sym_big_endian = ID2SYM(rb_intern("big_endian"));
+    id_str = rb_intern_const("__str__");
+    sym_format = ID2SYM(rb_intern_const("format"));
+    sym_native_size_p = ID2SYM(rb_intern_const("native_size_p"));
+    sym_offset = ID2SYM(rb_intern_const("offset"));
+    sym_size = ID2SYM(rb_intern_const("size"));
+    sym_repeat = ID2SYM(rb_intern_const("repeat"));
+    sym_obj = ID2SYM(rb_intern_const("obj"));
+    sym_len = ID2SYM(rb_intern_const("len"));
+    sym_readonly = ID2SYM(rb_intern_const("readonly"));
+    sym_format = ID2SYM(rb_intern_const("format"));
+    sym_item_size = ID2SYM(rb_intern_const("item_size"));
+    sym_ndim = ID2SYM(rb_intern_const("ndim"));
+    sym_shape = ID2SYM(rb_intern_const("shape"));
+    sym_strides = ID2SYM(rb_intern_const("strides"));
+    sym_sub_offsets = ID2SYM(rb_intern_const("sub_offsets"));
+    sym_endianness = ID2SYM(rb_intern_const("endianness"));
+    sym_little_endian = ID2SYM(rb_intern_const("little_endian"));
+    sym_big_endian = ID2SYM(rb_intern_const("big_endian"));
 
 #ifdef WORDS_BIGENDIAN
-    rb_const_set(mMemoryViewTestUtils, rb_intern("NATIVE_ENDIAN"), sym_big_endian);
+    rb_const_set(mMemoryViewTestUtils, rb_intern_const("NATIVE_ENDIAN"), sym_big_endian);
 #else
-    rb_const_set(mMemoryViewTestUtils, rb_intern("NATIVE_ENDIAN"), sym_little_endian);
+    rb_const_set(mMemoryViewTestUtils, rb_intern_const("NATIVE_ENDIAN"), sym_little_endian);
 #endif
 
 #define DEF_ALIGNMENT_CONST(type, TYPE) do { \
     int alignment; \
     STRUCT_ALIGNOF(type, alignment); \
-    rb_const_set(mMemoryViewTestUtils, rb_intern(#TYPE "_ALIGNMENT"), INT2FIX(alignment)); \
+    rb_const_set(mMemoryViewTestUtils, rb_intern_const(#TYPE "_ALIGNMENT"), INT2FIX(alignment)); \
 } while(0)
 
     DEF_ALIGNMENT_CONST(short, SHORT);
@@ -394,7 +420,4 @@ Init_memory_view(void)
     DEF_ALIGNMENT_CONST(double, DOUBLE);
 
 #undef DEF_ALIGNMENT_CONST
-
-    exported_objects = rb_hash_new();
-    rb_gc_register_mark_object(exported_objects);
 }

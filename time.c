@@ -4260,40 +4260,6 @@ time_minus(VALUE time1, VALUE time2)
     return time_add(tobj, time1, time2, -1);
 }
 
-/*
- * call-seq:
- *   time.succ   -> new_time
- *
- * Returns a new Time object, one second later than _time_.
- * Time#succ is obsolete since 1.9.2 for time is not a discrete value.
- *
- *     t = Time.now       #=> 2007-11-19 08:23:57 -0600
- *     t.succ             #=> 2007-11-19 08:23:58 -0600
- *
- * Use instead <code>time + 1</code>
- *
- *     t + 1              #=> 2007-11-19 08:23:58 -0600
- */
-
-VALUE
-rb_time_succ(VALUE time)
-{
-    struct time_object *tobj;
-    struct time_object *tobj2;
-
-    rb_warn("Time#succ is obsolete; use time + 1");
-    GetTimeval(time, tobj);
-    time = time_new_timew(rb_cTime, wadd(tobj->timew, WINT2FIXWV(TIME_SCALE)));
-    GetTimeval(time, tobj2);
-    TZMODE_COPY(tobj2, tobj);
-    if (TZMODE_LOCALTIME_P(tobj2) && maybe_tzobj_p(tobj2->vtm.zone)) {
-        zone_localtime(tobj2->vtm.zone, time);
-    }
-    return time;
-}
-
-#define time_succ rb_time_succ
-
 static VALUE
 ndigits_denominator(VALUE ndigits)
 {
@@ -5498,6 +5464,7 @@ tm_from_time(VALUE klass, VALUE time)
     ttm = DATA_PTR(tm);
     v = &vtm;
     GMTIMEW(ttm->timew = tobj->timew, v);
+    ttm->timew = wsub(ttm->timew, v->subsecx);
     v->subsecx = INT2FIX(0);
     v->zone = Qnil;
     ttm->vtm = *v;
@@ -5686,7 +5653,7 @@ Init_tm(VALUE outer, const char *name)
 #endif
     rb_define_method(tm, "initialize", tm_initialize, -1);
     rb_define_method(tm, "utc", tm_to_time, 0);
-    rb_alias(tm, rb_intern("to_time"), rb_intern("utc"));
+    rb_alias(tm, rb_intern_const("to_time"), rb_intern_const("utc"));
     rb_define_singleton_method(tm, "from_time", tm_from_time, 1);
     /* :startdoc:*/
 
@@ -5860,29 +5827,26 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
 void
 Init_Time(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
-    id_submicro = rb_intern("submicro");
-    id_nano_num = rb_intern("nano_num");
-    id_nano_den = rb_intern("nano_den");
-    id_offset = rb_intern("offset");
-    id_zone = rb_intern("zone");
-    id_nanosecond = rb_intern("nanosecond");
-    id_microsecond = rb_intern("microsecond");
-    id_millisecond = rb_intern("millisecond");
-    id_nsec = rb_intern("nsec");
-    id_usec = rb_intern("usec");
-    id_local_to_utc = rb_intern("local_to_utc");
-    id_utc_to_local = rb_intern("utc_to_local");
-    id_year = rb_intern("year");
-    id_mon = rb_intern("mon");
-    id_mday = rb_intern("mday");
-    id_hour = rb_intern("hour");
-    id_min = rb_intern("min");
-    id_sec = rb_intern("sec");
-    id_isdst = rb_intern("isdst");
-    id_find_timezone = rb_intern("find_timezone");
+    id_submicro = rb_intern_const("submicro");
+    id_nano_num = rb_intern_const("nano_num");
+    id_nano_den = rb_intern_const("nano_den");
+    id_offset = rb_intern_const("offset");
+    id_zone = rb_intern_const("zone");
+    id_nanosecond = rb_intern_const("nanosecond");
+    id_microsecond = rb_intern_const("microsecond");
+    id_millisecond = rb_intern_const("millisecond");
+    id_nsec = rb_intern_const("nsec");
+    id_usec = rb_intern_const("usec");
+    id_local_to_utc = rb_intern_const("local_to_utc");
+    id_utc_to_local = rb_intern_const("utc_to_local");
+    id_year = rb_intern_const("year");
+    id_mon = rb_intern_const("mon");
+    id_mday = rb_intern_const("mday");
+    id_hour = rb_intern_const("hour");
+    id_min = rb_intern_const("min");
+    id_sec = rb_intern_const("sec");
+    id_isdst = rb_intern_const("isdst");
+    id_find_timezone = rb_intern_const("find_timezone");
 
     str_utc = rb_fstring_lit("UTC");
     rb_gc_register_mark_object(str_utc);
@@ -5925,7 +5889,6 @@ Init_Time(void)
     rb_define_method(rb_cTime, "+", time_plus, 1);
     rb_define_method(rb_cTime, "-", time_minus, 1);
 
-    rb_define_method(rb_cTime, "succ", time_succ, 0);
     rb_define_method(rb_cTime, "round", time_round, -1);
     rb_define_method(rb_cTime, "floor", time_floor, -1);
     rb_define_method(rb_cTime, "ceil", time_ceil, -1);

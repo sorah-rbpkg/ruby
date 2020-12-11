@@ -364,13 +364,13 @@ switch (insn) {
     MAYBE_UNUSED(ID id) = (ID)operands[0];
     MAYBE_UNUSED(IVC ic) = (IVC)operands[1];
     IVC ic_copy = &(status->is_entries + ((union iseq_inline_storage_entry *)ic - body->is_entries))->iv_cache;
-    if (!status->compile_info->disable_ivar_cache && ic_copy->ic_serial) { // Only initialized (ic_serial > 0) IVCs are optimized
+    if (!status->compile_info->disable_ivar_cache && ic_copy->entry) { // Only ic_copy is enabled.
         fprintf(f, "{\n");
         fprintf(f, "    VALUE obj = GET_SELF();\n");
-        fprintf(f, "    const st_index_t index = %"PRIuSIZE";\n", ic_copy->index);
+        fprintf(f, "    const uint32_t index = %u;\n", (ic_copy->entry->index));
         if (status->merge_ivar_guards_p) {
             fprintf(f, "    VM_ASSERT(RB_TYPE_P(obj, T_OBJECT));\n");
-            fprintf(f, "    VM_ASSERT((rb_serial_t)%"PRI_SERIALT_PREFIX"u == RCLASS_SERIAL(RBASIC(obj)->klass));\n", ic_copy->ic_serial);
+            fprintf(f, "    VM_ASSERT((rb_serial_t)%"PRI_SERIALT_PREFIX"u == RCLASS_SERIAL(RBASIC(obj)->klass));\n", ic_copy->entry->class_serial);
             fprintf(f, "    VM_ASSERT(index < ROBJECT_NUMIV(obj));\n");
             fprintf(f, "    VALUE val;\n");
             fprintf(f, "    if (LIKELY(%sRB_FL_ANY_RAW(obj, ROBJECT_EMBED) && (val = ROBJECT(obj)->as.%s) != Qundef)) {\n",
@@ -380,7 +380,7 @@ switch (insn) {
             fprintf(f, "    }\n");
         }
         else {
-            fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->ic_serial);
+            fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->entry->class_serial);
             fprintf(f, "    VALUE val;\n");
             fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && (val = ROBJECT_IVPTR(obj)[index]) != Qundef)) {\n");
             fprintf(f, "        stack[%d] = val;\n", b->stack_size);
@@ -396,14 +396,14 @@ switch (insn) {
         fprintf(f, "}\n");
         break;
     }
-    else if (!status->compile_info->disable_exivar_cache && ic_copy->ic_serial) {
+    else if (!status->compile_info->disable_exivar_cache && ic_copy->entry) {
         fprintf(f, "{\n");
         fprintf(f, "    VALUE obj = GET_SELF();\n");
-        fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->ic_serial);
-        fprintf(f, "    const st_index_t index = %"PRIuSIZE";\n", ic_copy->index);
+        fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->entry->class_serial);
+        fprintf(f, "    const uint32_t index = %u;\n", ic_copy->entry->index);
         fprintf(f, "    struct gen_ivtbl *ivtbl;\n");
         fprintf(f, "    VALUE val;\n");
-        fprintf(f, "    if (LIKELY(FL_TEST_RAW(obj, FL_EXIVAR) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && st_lookup(rb_ivar_generic_ivtbl(obj), (st_data_t)obj, (st_data_t *)&ivtbl) && index < ivtbl->numiv && (val = ivtbl->ivptr[index]) != Qundef)) {\n");
+        fprintf(f, "    if (LIKELY(FL_TEST_RAW(obj, FL_EXIVAR) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && rb_ivar_generic_ivtbl_lookup(obj, &ivtbl) && index < ivtbl->numiv && (val = ivtbl->ivptr[index]) != Qundef)) {\n");
         fprintf(f, "        stack[%d] = val;\n", b->stack_size);
         fprintf(f, "    }\n");
         fprintf(f, "    else {\n");
@@ -445,7 +445,7 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        val = vm_getinstancevariable(GET_SELF(), id, ic);\n");
+        fprintf(f, "        val = vm_getinstancevariable(GET_ISEQ(), GET_SELF(), id, ic);\n");
         fprintf(f, "    }\n");
         fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_getinstancevariable(id, ic) - 1);
         fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
@@ -466,13 +466,13 @@ switch (insn) {
     MAYBE_UNUSED(ID id) = (ID)operands[0];
     MAYBE_UNUSED(IVC ic) = (IVC)operands[1];
     IVC ic_copy = &(status->is_entries + ((union iseq_inline_storage_entry *)ic - body->is_entries))->iv_cache;
-    if (!status->compile_info->disable_ivar_cache && ic_copy->ic_serial) { // Only initialized (ic_serial > 0) IVCs are optimized
+    if (!status->compile_info->disable_ivar_cache && ic_copy->entry) { // Only ic_copy is enabled.
         fprintf(f, "{\n");
         fprintf(f, "    VALUE obj = GET_SELF();\n");
-        fprintf(f, "    const st_index_t index = %"PRIuSIZE";\n", ic_copy->index);
+        fprintf(f, "    const uint32_t index = %u;\n", (ic_copy->entry->index));
         if (status->merge_ivar_guards_p) {
             fprintf(f, "    VM_ASSERT(RB_TYPE_P(obj, T_OBJECT));\n");
-            fprintf(f, "    VM_ASSERT((rb_serial_t)%"PRI_SERIALT_PREFIX"u == RCLASS_SERIAL(RBASIC(obj)->klass));\n", ic_copy->ic_serial);
+            fprintf(f, "    VM_ASSERT((rb_serial_t)%"PRI_SERIALT_PREFIX"u == RCLASS_SERIAL(RBASIC(obj)->klass));\n", ic_copy->entry->class_serial);
             fprintf(f, "    VM_ASSERT(index < ROBJECT_NUMIV(obj));\n");
             fprintf(f, "    if (LIKELY(!RB_OBJ_FROZEN(obj) && %sRB_FL_ANY_RAW(obj, ROBJECT_EMBED))) {\n", status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "!" : "");
             fprintf(f, "        RB_OBJ_WRITE(obj, &ROBJECT(obj)->as.%s, stack[%d]);\n",
@@ -480,7 +480,7 @@ switch (insn) {
             fprintf(f, "    }\n");
         }
         else {
-            fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->ic_serial);
+            fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->entry->class_serial);
             fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && !RB_OBJ_FROZEN(obj))) {\n");
             fprintf(f, "        VALUE *ptr = ROBJECT_IVPTR(obj);\n");
             fprintf(f, "        RB_OBJ_WRITE(obj, &ptr[index], stack[%d]);\n", b->stack_size - 1);
@@ -526,7 +526,7 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        vm_setinstancevariable(GET_SELF(), id, val, ic);\n");
+        fprintf(f, "        vm_setinstancevariable(GET_ISEQ(), GET_SELF(), id, val, ic);\n");
         fprintf(f, "    }\n");
         fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
         fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_setinstancevariable(id, ic));
@@ -918,7 +918,7 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        val = rb_str_resurrect(str);\n");
+        fprintf(f, "        val = rb_ec_str_resurrect(ec, str);\n");
         fprintf(f, "    }\n");
         fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_putstring(str) - 1);
         b->stack_size += attr_sp_inc_putstring(str);
@@ -1086,7 +1086,7 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        val = rb_ary_new4(num, %s);\n",
+        fprintf(f, "        val = rb_ec_ary_new_from_values(ec, num, %s);\n",
                 (status->local_stack_p ? "(stack + (stack_size - (num)))" : "STACK_ADDR_FROM_TOP(num)"));
         fprintf(f, "    }\n");
         fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_newarray(num) - 1);
@@ -1908,7 +1908,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -2072,7 +2073,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -2278,7 +2280,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -3222,7 +3225,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -3425,7 +3429,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -3628,7 +3633,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -3831,7 +3837,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -4042,7 +4049,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -4253,7 +4261,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -4502,7 +4511,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -4705,7 +4715,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -4908,7 +4919,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -5111,7 +5123,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -5314,7 +5327,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -5525,7 +5539,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -5728,7 +5743,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -5931,7 +5947,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -6142,7 +6159,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -6472,7 +6490,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -6674,7 +6693,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -6876,7 +6896,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -7078,7 +7099,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -7280,7 +7302,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);
@@ -7482,7 +7505,8 @@ switch (insn) {
             && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
             && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
     )) {
-        if (false && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
             fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
         int sp_inc = (int)sp_inc_of_sendish(ci);

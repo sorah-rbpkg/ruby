@@ -1368,14 +1368,15 @@ st_cleanup_safe(st_table *tab ATTRIBUTE_UNUSED,
 {
 }
 
-/* Find entry with KEY in table TAB, call FUNC with the key and the
-   value of the found entry, and non-zero as the 3rd argument.  If the
-   entry is not found, call FUNC with KEY, and 2 zero arguments.  If
-   the call returns ST_CONTINUE, the table will have an entry with key
-   and value returned by FUNC through the 1st and 2nd parameters.  If
-   the call of FUNC returns ST_DELETE, the table will not have entry
-   with KEY.  The function returns flag of that the entry with KEY was
-   in the table before the call.  */
+/* Find entry with KEY in table TAB, call FUNC with pointers to copies
+   of the key and the value of the found entry, and non-zero as the
+   3rd argument.  If the entry is not found, call FUNC with a pointer
+   to KEY, a pointer to zero, and a zero argument.  If the call
+   returns ST_CONTINUE, the table will have an entry with key and
+   value returned by FUNC through the 1st and 2nd parameters.  If the
+   call of FUNC returns ST_DELETE, the table will not have entry with
+   KEY.  The function returns flag of that the entry with KEY was in
+   the table before the call.  */
 int
 st_update(st_table *tab, st_data_t key,
 	  st_update_callback_func *func, st_data_t arg)
@@ -2238,4 +2239,19 @@ rb_hash_bulk_insert_into_st_table(long argc, const VALUE *argv, VALUE hash)
     else
         st_insert_generic(tab, argc, argv, hash);
 }
+
+// to iterate iv_index_tbl
+st_data_t
+rb_st_nth_key(st_table *tab, st_index_t index)
+{
+    if (LIKELY(tab->entries_start == 0 &&
+               tab->num_entries == tab->entries_bound &&
+               index < tab->num_entries)) {
+        return tab->entries[index].key;
+    }
+    else {
+        rb_bug("unreachable");
+    }
+}
+
 #endif

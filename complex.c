@@ -429,18 +429,6 @@ f_complex_new_bang2(VALUE klass, VALUE x, VALUE y)
     return nucomp_s_new_internal(klass, x, y);
 }
 
-#ifdef CANONICALIZATION_FOR_MATHN
-static int canonicalization = 0;
-
-RUBY_FUNC_EXPORTED void
-nucomp_canonicalization(int f)
-{
-    canonicalization = f;
-}
-#else
-#define canonicalization 0
-#endif
-
 inline static void
 nucomp_real_check(VALUE num)
 {
@@ -456,10 +444,6 @@ inline static VALUE
 nucomp_s_canonicalize_internal(VALUE klass, VALUE real, VALUE imag)
 {
     int complex_r, complex_i;
-#ifdef CANONICALIZATION_FOR_MATHN
-    if (k_exact_zero_p(imag) && canonicalization)
-	return real;
-#endif
     complex_r = RB_TYPE_P(real, T_COMPLEX);
     complex_i = RB_TYPE_P(imag, T_COMPLEX);
     if (!complex_r && !complex_i) {
@@ -636,14 +620,12 @@ f_complex_polar(VALUE klass, VALUE x, VALUE y)
     assert(!RB_TYPE_P(x, T_COMPLEX));
     assert(!RB_TYPE_P(y, T_COMPLEX));
     if (f_zero_p(x) || f_zero_p(y)) {
-	if (canonicalization) return x;
 	return nucomp_s_new_internal(klass, x, RFLOAT_0);
     }
     if (RB_FLOAT_TYPE_P(y)) {
 	const double arg = RFLOAT_VALUE(y);
 	if (arg == M_PI) {
 	    x = f_negate(x);
-	    if (canonicalization) return x;
 	    y = RFLOAT_0;
 	}
 	else if (arg == M_PI_2) {
@@ -658,14 +640,12 @@ f_complex_polar(VALUE klass, VALUE x, VALUE y)
 	    const double abs = RFLOAT_VALUE(x);
 	    const double real = abs * cos(arg), imag = abs * sin(arg);
 	    x = DBL2NUM(real);
-	    if (canonicalization && imag == 0.0) return x;
 	    y = DBL2NUM(imag);
 	}
 	else {
             const double ax = sin(arg), ay = cos(arg);
             y = f_mul(x, DBL2NUM(ax));
             x = f_mul(x, DBL2NUM(ay));
-	    if (canonicalization && f_zero_p(y)) return x;
 	}
 	return nucomp_s_new_internal(klass, x, y);
     }
@@ -725,7 +705,6 @@ nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
     switch (rb_scan_args(argc, argv, "11", &abs, &arg)) {
       case 1:
 	nucomp_real_check(abs);
-	if (canonicalization) return abs;
 	return nucomp_s_new_internal(klass, abs, ZERO);
       default:
 	nucomp_real_check(abs);
@@ -2337,20 +2316,17 @@ void
 Init_Complex(void)
 {
     VALUE compat;
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
-
-    id_abs = rb_intern("abs");
-    id_arg = rb_intern("arg");
-    id_denominator = rb_intern("denominator");
-    id_numerator = rb_intern("numerator");
-    id_real_p = rb_intern("real?");
-    id_i_real = rb_intern("@real");
-    id_i_imag = rb_intern("@image"); /* @image, not @imag */
-    id_finite_p = rb_intern("finite?");
-    id_infinite_p = rb_intern("infinite?");
-    id_rationalize = rb_intern("rationalize");
-    id_PI = rb_intern("PI");
+    id_abs = rb_intern_const("abs");
+    id_arg = rb_intern_const("arg");
+    id_denominator = rb_intern_const("denominator");
+    id_numerator = rb_intern_const("numerator");
+    id_real_p = rb_intern_const("real?");
+    id_i_real = rb_intern_const("@real");
+    id_i_imag = rb_intern_const("@image"); /* @image, not @imag */
+    id_finite_p = rb_intern_const("finite?");
+    id_infinite_p = rb_intern_const("infinite?");
+    id_rationalize = rb_intern_const("rationalize");
+    id_PI = rb_intern_const("PI");
 
     rb_cComplex = rb_define_class("Complex", rb_cNumeric);
 

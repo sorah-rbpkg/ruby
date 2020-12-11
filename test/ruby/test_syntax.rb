@@ -1388,6 +1388,15 @@ eom
     assert_nil obj.test
   end
 
+  def test_assignment_return_in_loop
+    obj = Object.new
+    def obj.test
+      x = nil
+      _y = (return until x unless x)
+    end
+    assert_nil obj.test, "[Bug #16695]"
+  end
+
   def test_method_call_location
     line = __LINE__+5
     e = assert_raise(NoMethodError) do
@@ -1415,21 +1424,24 @@ eom
   end
 
   def test_methoddef_endless
-    assert_syntax_error('private def foo = 42', /unexpected '='/)
+    assert_valid_syntax('private def foo = 42')
     assert_valid_syntax('private def foo() = 42')
     assert_valid_syntax('private def inc(x) = x + 1')
-    assert_syntax_error('private def obj.foo = 42', /unexpected '='/)
+    assert_valid_syntax('private def obj.foo = 42')
     assert_valid_syntax('private def obj.foo() = 42')
     assert_valid_syntax('private def obj.inc(x) = x + 1')
-    eval('def self.inc(x) = x + 1 => @x')
-    assert_equal(:inc, @x)
     k = Class.new do
       class_eval('def rescued(x) = raise("to be caught") rescue "instance #{x}"')
       class_eval('def self.rescued(x) = raise("to be caught") rescue "class #{x}"')
     end
     assert_equal("class ok", k.rescued("ok"))
     assert_equal("instance ok", k.new.rescued("ok"))
-    assert_syntax_error('def foo=() = 42', /setter method cannot be defined in an endless method definition/)
+
+    error = /setter method cannot be defined in an endless method definition/
+    assert_syntax_error('def foo=() = 42', error)
+    assert_syntax_error('def obj.foo=() = 42', error)
+    assert_syntax_error('def foo=() = 42 rescue nil', error)
+    assert_syntax_error('def obj.foo=() = 42 rescue nil', error)
   end
 
   def test_methoddef_in_cond
@@ -1498,6 +1510,11 @@ eom
     assert_valid_syntax("tap {a = (true ? true : break)}")
     assert_valid_syntax("tap {a = (break if false)}")
     assert_valid_syntax("tap {a = (break unless true)}")
+  end
+
+  def test_tautological_condition
+    assert_valid_syntax("def f() return if false and invalid; nil end")
+    assert_valid_syntax("def f() return unless true or invalid; nil end")
   end
 
   def test_argument_forwarding
@@ -1693,13 +1710,6 @@ eom
     assert_equal [[4, 1, 5, 2], {a: 1}], obj.foo(4, 5, 2, a: 1)
     assert_equal [[4, 1, 5, 2, 3], {a: 1}], obj.foo(4, 5, 2, 3, a: 1)
     assert_equal [[4, 1, 5, 2, 3], {a: 1}], obj.foo(4, 5, 2, 3, a: 1){|args, kws| [args, kws]}
-  end
-
-  def test_rightward_assign
-    assert_equal(1, eval("1 => a"))
-    assert_equal([2,3], eval("13.divmod(5) => a,b; [a, b]"))
-    assert_equal([2,3,2,3], eval("13.divmod(5) => a,b => c, d; [a, b, c, d]"))
-    assert_equal(3, eval("1+2 => a"))
   end
 
   private

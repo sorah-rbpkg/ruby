@@ -631,6 +631,16 @@ class TestModule < Test::Unit::TestCase
     assert_equal([m1, m2], m3.included_modules)
   end
 
+  def test_include_with_prepend
+    c = Class.new{def m; [:c] end}
+    p = Module.new{def m; [:p] + super end}
+    q = Module.new{def m; [:q] + super end; include p}
+    r = Module.new{def m; [:r] + super end; prepend q}
+    s = Module.new{def m; [:s] + super end; include r}
+    a = Class.new(c){def m; [:a] + super end; prepend p; include s}
+    assert_equal([:p, :a, :s, :q, :r, :c], a.new.m)
+  end
+
   def test_instance_methods
     assert_equal([:user, :user2], User.instance_methods(false).sort)
     assert_equal([:user, :user2, :mixin].sort, User.instance_methods(true).sort)
@@ -2527,31 +2537,6 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NoMethodError) {Object.remove_const}
     Module.new.public_class_method(:remove_const)
     assert_raise(NoMethodError, bug8284) {Object.remove_const}
-  end
-
-  def test_include_module_with_constants_does_not_invalidate_method_cache
-    assert_in_out_err([], <<-RUBY, %w(123 456 true), [])
-      A = 123
-
-      class Foo
-        def self.a
-          A
-        end
-      end
-
-      module M
-        A = 456
-      end
-
-      puts Foo.a
-      starting = RubyVM.stat[:global_method_state]
-
-      Foo.send(:include, M)
-
-      ending = RubyVM.stat[:global_method_state]
-      puts Foo.a
-      puts starting == ending
-    RUBY
   end
 
   def test_return_value_of_define_method

@@ -441,7 +441,7 @@ INSN_ENTRY(getinstancevariable)
 #   define NAME_OF_CURRENT_INSN getinstancevariable
 #   line 215 "insns.def"
 {
-    val = vm_getinstancevariable(GET_SELF(), id, ic);
+    val = vm_getinstancevariable(GET_ISEQ(), GET_SELF(), id, ic);
 }
 #   line 447 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
@@ -485,7 +485,7 @@ INSN_ENTRY(setinstancevariable)
 #   define NAME_OF_CURRENT_INSN setinstancevariable
 #   line 226 "insns.def"
 {
-    vm_setinstancevariable(GET_SELF(), id, val, ic);
+    vm_setinstancevariable(GET_ISEQ(), GET_SELF(), id, val, ic);
 }
 #   line 491 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
@@ -928,7 +928,7 @@ INSN_ENTRY(putstring)
 #   define NAME_OF_CURRENT_INSN putstring
 #   line 365 "insns.def"
 {
-    val = rb_str_resurrect(str);
+    val = rb_ec_str_resurrect(ec, str);
 }
 #   line 934 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
@@ -1140,7 +1140,7 @@ INSN_ENTRY(newarray)
 #   define NAME_OF_CURRENT_INSN newarray
 #   line 428 "insns.def"
 {
-    val = rb_ary_new4(num, STACK_ADDR_FROM_TOP(num));
+    val = rb_ec_ary_new_from_values(ec, num, STACK_ADDR_FROM_TOP(num));
 }
 #   line 1146 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN

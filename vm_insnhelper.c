@@ -83,7 +83,10 @@ NORETURN(MJIT_STATIC void rb_ec_stack_overflow(rb_execution_context_t *ec, int c
 MJIT_STATIC void
 rb_ec_stack_overflow(rb_execution_context_t *ec, int crit)
 {
-    if (crit || rb_during_gc()) {
+    if (rb_during_gc()) {
+        rb_bug("system stack overflow during GC. Faulty native extension?");
+    }
+    if (crit) {
 	ec->raised_flag = RAISED_STACKOVERFLOW;
 	ec->errinfo = rb_ec_vm_ptr(ec)->special_exceptions[ruby_error_stackfatal];
 	EC_JUMP_TAG(ec, TAG_RAISE);
@@ -1000,7 +1003,7 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
                             if (UNLIKELY(!rb_ractor_main_p())) {
                                 if (!rb_ractor_shareable_p(val)) {
                                     rb_raise(rb_eNameError,
-                                             "can not access non-sharable objects in constant %"PRIsVALUE"::%s by non-main ractor.", rb_class_path(klass), rb_id2name(id));
+                                             "can not access non-shareable objects in constant %"PRIsVALUE"::%s by non-main ractor.", rb_class_path(klass), rb_id2name(id));
                                 }
                             }
 			    return val;
@@ -1076,9 +1079,25 @@ vm_search_const_defined_class(const VALUE cbase, ID id)
     return 0;
 }
 
-ALWAYS_INLINE(static VALUE vm_getivar(VALUE, ID, IVC, const struct rb_callcache *, int));
+static bool
+iv_index_tbl_lookup(struct st_table *iv_index_tbl, ID id, struct rb_iv_index_tbl_entry **ent)
+{
+    int found;
+
+    if (iv_index_tbl == NULL) return false;
+
+    RB_VM_LOCK_ENTER();
+    {
+        found = st_lookup(iv_index_tbl, (st_data_t)id, (st_data_t *)ent);
+    }
+    RB_VM_LOCK_LEAVE();
+
+    return found ? true : false;
+}
+
+ALWAYS_INLINE(static VALUE vm_getivar(VALUE, ID, const rb_iseq_t *, IVC, const struct rb_callcache *, int));
 static inline VALUE
-vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
+vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr)
 {
 #if OPT_IC_FOR_IVAR
     VALUE val = Qundef;
@@ -1089,8 +1108,8 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
     else if (LIKELY(is_attr ?
                     RB_DEBUG_COUNTER_INC_UNLESS(ivar_get_ic_miss_unset, vm_cc_attr_index(cc) > 0) :
                     RB_DEBUG_COUNTER_INC_UNLESS(ivar_get_ic_miss_serial,
-                                                ic->ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass)))) {
-        st_index_t index = !is_attr ? ic->index : (vm_cc_attr_index(cc) - 1);
+                                                ic->entry && ic->entry->class_serial == RCLASS_SERIAL(RBASIC(obj)->klass)))) {
+        uint32_t index = !is_attr ? ic->entry->index : (vm_cc_attr_index(cc) - 1);
 
         RB_DEBUG_COUNTER_INC(ivar_get_ic_hit);
 
@@ -1101,7 +1120,7 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
         else if (FL_TEST_RAW(obj, FL_EXIVAR)) {
             struct gen_ivtbl *ivtbl;
 
-            if (LIKELY(st_lookup(rb_ivar_generic_ivtbl(obj), (st_data_t)obj, (st_data_t *)&ivtbl)) &&
+            if (LIKELY(rb_ivar_generic_ivtbl_lookup(obj, &ivtbl)) &&
                 LIKELY(index < ivtbl->numiv)) {
                 val = ivtbl->ivptr[index];
             }
@@ -1113,8 +1132,6 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
         st_index_t numiv;
         VALUE *ivptr;
 
-        st_data_t index;
-
         if (BUILTIN_TYPE(obj) == T_OBJECT) {
             iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
             numiv = ROBJECT_NUMIV(obj);
@@ -1123,7 +1140,7 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
 	}
         else if (FL_TEST_RAW(obj, FL_EXIVAR)) {
             struct gen_ivtbl *ivtbl;
-            if (LIKELY(st_lookup(rb_ivar_generic_ivtbl(obj), (st_data_t)obj, (st_data_t *)&ivtbl))) {
+            if (LIKELY(rb_ivar_generic_ivtbl_lookup(obj, &ivtbl))) {
                 numiv = ivtbl->numiv;
                 ivptr = ivtbl->ivptr;
                 iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
@@ -1140,17 +1157,19 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
 
       fill:
         if (iv_index_tbl) {
-            if (st_lookup(iv_index_tbl, id, &index)) {
+            struct rb_iv_index_tbl_entry *ent;
+
+            if (iv_index_tbl_lookup(iv_index_tbl, id, &ent)) {
                 if (!is_attr) {
-                    ic->index = index;
-                    ic->ic_serial = RCLASS_SERIAL(RBASIC(obj)->klass);
+                    ic->entry = ent;
+                    RB_OBJ_WRITTEN(iseq, Qundef, ent->class_value);
                 }
                 else { /* call_info */
-                    vm_cc_attr_index_set(cc, (int)index + 1);
+                    vm_cc_attr_index_set(cc, (int)ent->index + 1);
                 }
 
-                if (index < numiv) {
-                    val = ivptr[index];
+                if (ent->index < numiv) {
+                    val = ivptr[ent->index];
                 }
             }
         }
@@ -1179,41 +1198,57 @@ vm_getivar(VALUE obj, ID id, IVC ic, const struct rb_callcache *cc, int is_attr)
 }
 
 static inline VALUE
-vm_setivar(VALUE obj, ID id, VALUE val, IVC ic, const struct rb_callcache *cc, int is_attr)
+vm_setivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr)
 {
 #if OPT_IC_FOR_IVAR
     rb_check_frozen_internal(obj);
 
     if (LIKELY(RB_TYPE_P(obj, T_OBJECT))) {
 	VALUE klass = RBASIC(obj)->klass;
-	st_data_t index;
+	uint32_t index;
 
 	if (LIKELY(
-	    (!is_attr && RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_serial, ic->ic_serial == RCLASS_SERIAL(klass))) ||
-	    ( is_attr && RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_unset, vm_cc_attr_index(cc) > 0)))) {
+	    (!is_attr && RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_serial, ic->entry && ic->entry->class_serial  == RCLASS_SERIAL(klass))) ||
+            ( is_attr && RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_unset, vm_cc_attr_index(cc) > 0)))) {
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
-	    index = !is_attr ? ic->index : vm_cc_attr_index(cc)-1;
+	    index = !is_attr ? ic->entry->index : vm_cc_attr_index(cc)-1;
 
-	    if (RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_oorange, index < ROBJECT_NUMIV(obj))) {
-		RB_OBJ_WRITE(obj, &ptr[index], val);
-		RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
-		return val; /* inline cache hit */
-	    }
+            if (index >= ROBJECT_NUMIV(obj)) {
+                st_table * iv_idx_tbl = ROBJECT_IV_INDEX_TBL(obj);
+                rb_init_iv_list(obj, ROBJECT_NUMIV(obj), (uint32_t)iv_idx_tbl->num_entries, iv_idx_tbl);
+                ptr = ROBJECT_IVPTR(obj);
+            }
+            RB_OBJ_WRITE(obj, &ptr[index], val);
+            RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
+            return val; /* inline cache hit */
 	}
 	else {
 	    struct st_table *iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
+            struct rb_iv_index_tbl_entry *ent;
 
-	    if (iv_index_tbl && st_lookup(iv_index_tbl, (st_data_t)id, &index)) {
+            if (iv_index_tbl_lookup(iv_index_tbl, id, &ent)) {
                 if (!is_attr) {
-                    ic->index = index;
-                    ic->ic_serial = RCLASS_SERIAL(klass);
+                    ic->entry = ent;
+                    RB_OBJ_WRITTEN(iseq, Qundef, ent->class_value);
                 }
-		else if (index >= INT_MAX) {
+		else if (ent->index >= INT_MAX) {
 		    rb_raise(rb_eArgError, "too many instance variables");
 		}
 		else {
-		    vm_cc_attr_index_set(cc, (int)(index + 1));
+		    vm_cc_attr_index_set(cc, (int)(ent->index + 1));
 		}
+
+                index = ent->index;
+
+                VALUE *ptr = ROBJECT_IVPTR(obj);
+                if (index >= ROBJECT_NUMIV(obj)) {
+                    rb_init_iv_list(obj, ROBJECT_NUMIV(obj), (uint32_t)iv_index_tbl->num_entries, iv_index_tbl);
+                    ptr = ROBJECT_IVPTR(obj);
+                }
+                RB_OBJ_WRITE(obj, &ptr[index], val);
+                RB_DEBUG_COUNTER_INC(ivar_set_ic_miss_iv_hit);
+
+                return val;
 	    }
 	    /* fall through */
 	}
@@ -1227,15 +1262,15 @@ vm_setivar(VALUE obj, ID id, VALUE val, IVC ic, const struct rb_callcache *cc, i
 }
 
 static inline VALUE
-vm_getinstancevariable(VALUE obj, ID id, IVC ic)
+vm_getinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, IVC ic)
 {
-    return vm_getivar(obj, id, ic, NULL, FALSE);
+    return vm_getivar(obj, id, iseq, ic, NULL, FALSE);
 }
 
 static inline void
-vm_setinstancevariable(VALUE obj, ID id, VALUE val, IVC ic)
+vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IVC ic)
 {
-    vm_setivar(obj, id, val, ic, 0, 0);
+    vm_setivar(obj, id, val, iseq, ic, 0, 0);
 }
 
 static VALUE
@@ -2434,110 +2469,275 @@ vm_call_iseq_setup_tailcall(rb_execution_context_t *ec, rb_control_frame_t *cfp,
     return Qundef;
 }
 
+static void
+ractor_unsafe_check(void)
+{
+    if (!rb_ractor_main_p()) {
+        rb_raise(rb_eRactorUnsafeError, "ractor unsafe method called from not main ractor");
+    }
+}
+
 static VALUE
 call_cfunc_m2(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
+    ractor_unsafe_check();
     return (*func)(recv, rb_ary_new4(argc, argv));
 }
 
 static VALUE
 call_cfunc_m1(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
+    ractor_unsafe_check();
     return (*func)(argc, argv, recv);
 }
 
 static VALUE
 call_cfunc_0(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
+    ractor_unsafe_check();
     VALUE(*f)(VALUE) = (VALUE(*)(VALUE))func;
     return (*f)(recv);
 }
+
 static VALUE
 call_cfunc_1(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+{
+    ractor_unsafe_check();
+    VALUE(*f)(VALUE, VALUE) = (VALUE(*)(VALUE, VALUE))func;
+    return (*f)(recv, argv[0]);
+}
+
+static VALUE
+call_cfunc_2(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+{
+    ractor_unsafe_check();
+    VALUE(*f)(VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE))func;
+    return (*f)(recv, argv[0], argv[1]);
+}
+
+static VALUE
+call_cfunc_3(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+{
+    ractor_unsafe_check();
+    VALUE(*f)(VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE))func;
+    return (*f)(recv, argv[0], argv[1], argv[2]);
+}
+
+static VALUE
+call_cfunc_4(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+{
+    ractor_unsafe_check();
+    VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE))func;
+    return (*f)(recv, argv[0], argv[1], argv[2], argv[3]);
+}
+
+static VALUE
+call_cfunc_5(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+{
+    ractor_unsafe_check();
+    VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
+    return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4]);
+}
+
+static VALUE
+call_cfunc_6(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+{
+    ractor_unsafe_check();
+    VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
+    return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
+}
+
+static VALUE
+call_cfunc_7(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+{
+    ractor_unsafe_check();
+    VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
+    return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
+}
+
+static VALUE
+call_cfunc_8(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+{
+    ractor_unsafe_check();
+    VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
+    return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7]);
+}
+
+static VALUE
+call_cfunc_9(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+{
+    ractor_unsafe_check();
+    VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
+    return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8]);
+}
+
+static VALUE
+call_cfunc_10(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+{
+    ractor_unsafe_check();
+    VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
+    return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9]);
+}
+
+static VALUE
+call_cfunc_11(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+{
+    ractor_unsafe_check();
+    VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
+    return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10]);
+}
+
+static VALUE
+call_cfunc_12(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+{
+    ractor_unsafe_check();
+    VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
+    return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10], argv[11]);
+}
+
+static VALUE
+call_cfunc_13(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+{
+    ractor_unsafe_check();
+    VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
+    return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10], argv[11], argv[12]);
+}
+
+static VALUE
+call_cfunc_14(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+{
+    ractor_unsafe_check();
+    VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
+    return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10], argv[11], argv[12], argv[13]);
+}
+
+static VALUE
+call_cfunc_15(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+{
+    ractor_unsafe_check();
+    VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
+    return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10], argv[11], argv[12], argv[13], argv[14]);
+}
+
+static VALUE
+ractor_safe_call_cfunc_m2(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+{
+    return (*func)(recv, rb_ary_new4(argc, argv));
+}
+
+static VALUE
+ractor_safe_call_cfunc_m1(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+{
+    return (*func)(argc, argv, recv);
+}
+
+static VALUE
+ractor_safe_call_cfunc_0(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+{
+    VALUE(*f)(VALUE) = (VALUE(*)(VALUE))func;
+    return (*f)(recv);
+}
+
+static VALUE
+ractor_safe_call_cfunc_1(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
     VALUE(*f)(VALUE, VALUE) = (VALUE(*)(VALUE, VALUE))func;
     return (*f)(recv, argv[0]);
 }
+
 static VALUE
-call_cfunc_2(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+ractor_safe_call_cfunc_2(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
     VALUE(*f)(VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE))func;
     return (*f)(recv, argv[0], argv[1]);
 }
+
 static VALUE
-call_cfunc_3(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+ractor_safe_call_cfunc_3(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
     VALUE(*f)(VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE))func;
     return (*f)(recv, argv[0], argv[1], argv[2]);
 }
+
 static VALUE
-call_cfunc_4(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+ractor_safe_call_cfunc_4(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
     VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE))func;
     return (*f)(recv, argv[0], argv[1], argv[2], argv[3]);
 }
+
 static VALUE
-call_cfunc_5(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+ractor_safe_call_cfunc_5(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
     VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
     return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4]);
 }
+
 static VALUE
-call_cfunc_6(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+ractor_safe_call_cfunc_6(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
     VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
     return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
 }
+
 static VALUE
-call_cfunc_7(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+ractor_safe_call_cfunc_7(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
     VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
     return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
 }
+
 static VALUE
-call_cfunc_8(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+ractor_safe_call_cfunc_8(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
     VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
     return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7]);
 }
+
 static VALUE
-call_cfunc_9(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+ractor_safe_call_cfunc_9(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
     VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
     return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8]);
 }
+
 static VALUE
-call_cfunc_10(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+ractor_safe_call_cfunc_10(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
     VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
     return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9]);
 }
+
 static VALUE
-call_cfunc_11(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+ractor_safe_call_cfunc_11(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
     VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
     return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10]);
 }
+
 static VALUE
-call_cfunc_12(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+ractor_safe_call_cfunc_12(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
     VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
     return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10], argv[11]);
 }
+
 static VALUE
-call_cfunc_13(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+ractor_safe_call_cfunc_13(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
     VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
     return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10], argv[11], argv[12]);
 }
+
 static VALUE
-call_cfunc_14(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+ractor_safe_call_cfunc_14(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
     VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
     return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10], argv[11], argv[12], argv[13]);
 }
+
 static VALUE
-call_cfunc_15(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
+ractor_safe_call_cfunc_15(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
     VALUE(*f)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) = (VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE))func;
     return (*f)(recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10], argv[11], argv[12], argv[13], argv[14]);
@@ -2648,7 +2848,7 @@ vm_call_ivar(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_call
     const struct rb_callcache *cc = cd->cc;
     RB_DEBUG_COUNTER_INC(ccf_ivar);
     cfp->sp -= 1;
-    return vm_getivar(calling->recv, vm_cc_cme(cc)->def->body.attr.id, NULL, cc, TRUE);
+    return vm_getivar(calling->recv, vm_cc_cme(cc)->def->body.attr.id, NULL, NULL, cc, TRUE);
 }
 
 static VALUE
@@ -2658,7 +2858,7 @@ vm_call_attrset(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_c
     RB_DEBUG_COUNTER_INC(ccf_attrset);
     VALUE val = *(cfp->sp - 1);
     cfp->sp -= 2;
-    return vm_setivar(calling->recv, vm_cc_cme(cc)->def->body.attr.id, val, NULL, cc, 1);
+    return vm_setivar(calling->recv, vm_cc_cme(cc)->def->body.attr.id, val, NULL, NULL, cc, 1);
 }
 
 static inline VALUE
@@ -2668,13 +2868,15 @@ vm_call_bmethod_body(rb_execution_context_t *ec, struct rb_calling_info *calling
     VALUE val;
     const struct rb_callcache *cc = cd->cc;
     const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
+    VALUE procv = cme->def->body.bmethod.proc;
 
-    if (cme->def->body.bmethod.defined_ractor != rb_ec_ractor_ptr(ec)->self) {
+    if (!RB_OBJ_SHAREABLE_P(procv) &&
+        cme->def->body.bmethod.defined_ractor != rb_ec_ractor_ptr(ec)->self) {
         rb_raise(rb_eRuntimeError, "defined in a different Ractor");
     }
 
     /* control block frame */
-    GetProcPtr(cme->def->body.bmethod.proc, proc);
+    GetProcPtr(procv, proc);
     val = rb_vm_invoke_bmethod(ec, proc, calling->recv, calling->argc, argv, calling->kw_splat, calling->block_handler, vm_cc_cme(cc));
 
     return val;
@@ -3311,7 +3513,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
     }
 
     if (BUILTIN_TYPE(current_defined_class) != T_MODULE &&
-	!FL_TEST(current_defined_class, RMODULE_INCLUDED_INTO_REFINEMENT) &&
+	!FL_TEST_RAW(current_defined_class, RMODULE_INCLUDED_INTO_REFINEMENT) &&
         reg_cfp->iseq != method_entry_iseqptr(me) &&
         !rb_obj_is_kind_of(recv, current_defined_class)) {
 	VALUE m = RB_TYPE_P(current_defined_class, T_ICLASS) ?
@@ -3332,11 +3534,14 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
 		 " Specify all arguments explicitly.");
     }
 
+    ID mid = me->def->original_id;
+
     // update iseq. really? (TODO)
-    cd->ci = vm_ci_new_runtime(me->def->original_id,
+    cd->ci = vm_ci_new_runtime(mid,
                                vm_ci_flag(cd->ci),
                                vm_ci_argc(cd->ci),
                                vm_ci_kwarg(cd->ci));
+
     RB_OBJ_WRITTEN(reg_cfp->iseq, Qundef, cd->ci);
 
     klass = vm_search_normal_superclass(me->defined_class);
@@ -3349,8 +3554,6 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
     else {
         vm_search_method_fastpath((VALUE)reg_cfp->iseq, cd, klass);
         const rb_callable_method_entry_t *cached_cme = vm_cc_cme(cd->cc);
-
-        ID mid = vm_ci_mid(cd->ci);
 
         // define_method can cache for different method id
         if (cached_cme == NULL) {
@@ -3732,7 +3935,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
       }
       case DEFINED_FUNC:
 	klass = CLASS_OF(v);
-	if (rb_ec_obj_respond_to(ec, v, SYM2ID(obj), TRUE)) {
+	if (rb_ec_obj_respond_to(ec, klass, v, SYM2ID(obj), TRUE)) {
 	    expr_type = DEFINED_METHOD;
 	}
 	break;
@@ -3773,7 +3976,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
 		VALUE klass = vm_search_normal_superclass(me->defined_class);
 		ID id = me->def->original_id;
 
-		if (rb_method_boundp(klass, id, 0)) {
+		if (rb_ec_obj_respond_to(ec, klass, GET_SELF(), id, TRUE)) {
 		    expr_type = DEFINED_ZSUPER;
 		}
 	    }
@@ -3996,6 +4199,7 @@ vm_declare_class(ID id, rb_num_t flags, VALUE cbase, VALUE super)
     /* new class declaration */
     VALUE s = VM_DEFINECLASS_HAS_SUPERCLASS_P(flags) ? super : rb_cObject;
     VALUE c = declare_under(id, cbase, rb_define_class_id(id, s));
+    rb_define_alloc_func(c, rb_get_alloc_func(c));
     rb_class_inherited(s, c);
     return c;
 }
@@ -4004,7 +4208,7 @@ static VALUE
 vm_declare_module(ID id, VALUE cbase)
 {
     /* new module declaration */
-    return declare_under(id, cbase, rb_define_module_id(id));
+    return declare_under(id, cbase, rb_module_new());
 }
 
 NORETURN(static void unmatched_redefinition(const char *type, VALUE cbase, ID id, VALUE old));
@@ -4030,7 +4234,7 @@ vm_define_class(ID id, rb_num_t flags, VALUE cbase, VALUE super)
 
     if (VM_DEFINECLASS_HAS_SUPERCLASS_P(flags) && !RB_TYPE_P(super, T_CLASS)) {
 	rb_raise(rb_eTypeError,
-		 "superclass must be a Class (%"PRIsVALUE" given)",
+                 "superclass must be an instance of Class (given an instance of %"PRIsVALUE")",
 		 rb_obj_class(super));
     }
 

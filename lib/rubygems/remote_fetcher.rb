@@ -78,7 +78,6 @@ class Gem::RemoteFetcher
   def initialize(proxy=nil, dns=nil, headers={})
     require 'net/http'
     require 'stringio'
-    require 'time'
     require 'uri'
 
     Socket.do_not_reverse_lookup = true
@@ -114,11 +113,12 @@ class Gem::RemoteFetcher
   # always replaced.
 
   def download(spec, source_uri, install_dir = Gem.dir)
+    install_cache_dir = File.join install_dir, "cache"
     cache_dir =
       if Dir.pwd == install_dir # see fetch_command
         install_dir
-      elsif File.writable? install_dir
-        File.join install_dir, "cache"
+      elsif File.writable?(install_cache_dir) || (File.writable?(install_dir) && (not File.exist?(install_cache_dir)))
+        install_cache_dir
       else
         File.join Gem.user_dir, "cache"
       end
@@ -262,7 +262,7 @@ class Gem::RemoteFetcher
   rescue Timeout::Error
     raise UnknownHostError.new('timed out', uri)
   rescue IOError, SocketError, SystemCallError,
-         *(OpenSSL::SSL::SSLError if defined?(OpenSSL)) => e
+         *(OpenSSL::SSL::SSLError if Gem::HAVE_OPENSSL) => e
     if e.message =~ /getaddrinfo/
       raise UnknownHostError.new('no such name', uri)
     else

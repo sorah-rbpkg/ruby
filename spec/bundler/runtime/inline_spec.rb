@@ -339,4 +339,64 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(last_command).to be_success
     expect(out).to include("BUNDLE_GEMFILE is empty")
   end
+
+  it "does not error out if library requires optional dependencies" do
+    Dir.mkdir tmp("path_without_gemfile")
+
+    foo_code = <<~RUBY
+      begin
+        gem "bar"
+      rescue LoadError
+      end
+
+      puts "WIN"
+    RUBY
+
+    build_lib "foo", "1.0.0" do |s|
+      s.write "lib/foo.rb", foo_code
+    end
+
+    script <<-RUBY, :dir => tmp("path_without_gemfile")
+      gemfile do
+        path "#{lib_path}" do
+          gem "foo", require: false
+        end
+      end
+
+      require "foo"
+    RUBY
+
+    expect(out).to eq("WIN")
+    expect(err).to be_empty
+  end
+
+  it "when requiring fileutils after does not show redefinition warnings" do
+    dependency_installer_loads_fileutils = ruby "require 'rubygems/dependency_installer'; puts $LOADED_FEATURES.grep(/fileutils/)", :raise_on_error => false
+    skip "does not work if rubygems/dependency_installer loads fileutils, which happens until rubygems 3.2.0" unless dependency_installer_loads_fileutils.empty?
+
+    skip "does not work on ruby 3.0 because it changes the path to look for default gems, tsort is a default gem there, and we can't install it either like we do with fiddle because it doesn't yet exist" unless RUBY_VERSION < "3.0.0"
+
+    Dir.mkdir tmp("path_without_gemfile")
+
+    default_fileutils_version = ruby "gem 'fileutils', '< 999999'; require 'fileutils'; puts FileUtils::VERSION", :raise_on_error => false
+    skip "fileutils isn't a default gem" if default_fileutils_version.empty?
+
+    realworld_system_gems "fileutils --version 1.4.1"
+
+    realworld_system_gems "fiddle" # not sure why, but this is needed on Windows to boot rubygems succesfully
+
+    realworld_system_gems "timeout uri" # this spec uses net/http which requires these default gems
+
+    script <<-RUBY, :dir => tmp("path_without_gemfile"), :env => { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }
+      require "bundler/inline"
+
+      gemfile(true) do
+        source "#{file_uri_for(gem_repo2)}"
+      end
+
+      require "fileutils"
+    RUBY
+
+    expect(err).to eq("The Gemfile specifies no dependencies")
+  end
 end
