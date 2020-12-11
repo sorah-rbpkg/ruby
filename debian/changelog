@@ -1,3 +1,13 @@
+ruby3.0 (3.0.0~preview2-1) experimental; urgency=medium
+
+  * New upstream version 3.0.0~preview2
+  * Re-format d/gbp.conf
+  * Drop patches that has been merged upstream
+  * Refresh d/patches
+  * Update symbols file
+
+ -- Utkarsh Gupta <utkarsh@debian.org>  Sat, 12 Dec 2020 02:50:00 +0530
+
 ruby3.0 (3.0.0~preview1-1) experimental; urgency=medium
 
   [ Cédric Boutillier ]
