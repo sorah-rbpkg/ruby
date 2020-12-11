@@ -3,13 +3,34 @@
 // auto-generated file
 //   by ./tool/mk_builtin_loader.rb
 //   with warning.rb
+#include "internal/compilers.h"     /* for MAYBE_UNUSED */
+#include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
+#include "ruby/ruby.h"              /* for VALUE */
+#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
+struct rb_execution_context_struct; /* in vm_core.h */
 
-static void load_warning(void)
+static void
+mjit_compile_invokebuiltin_for_rb_warn_m(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 3);
+    }
+    else {
+        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
+        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == rb_warn_m */\n", (intptr_t)rb_warn_m);
+    fprintf(f, "    val = f(ec, self, argv[0], argv[1], argv[2]);\n");
+}
+
+void Init_builtin_warning(void)
 {
   // table definition
   static const struct rb_builtin_function warning_table[] = {
-    RB_BUILTIN_FUNCTION(0, rb_warn_m, rb_warn_m, 2),
-    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
+    RB_BUILTIN_FUNCTION(0, rb_warn_m, rb_warn_m, 3, mjit_compile_invokebuiltin_for_rb_warn_m),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),
   };
 
   // arity_check
@@ -17,7 +38,7 @@ COMPILER_WARNING_PUSH
 #if GCC_VERSION_SINCE(5, 1, 0) || __clang__
 COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
 #endif
-  if (0) rb_builtin_function_check_arity2(rb_warn_m);
+  if (0) rb_builtin_function_check_arity3(rb_warn_m);
 COMPILER_WARNING_POP
 
   // load

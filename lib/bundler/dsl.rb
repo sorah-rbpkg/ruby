@@ -63,7 +63,7 @@ module Bundler
       development_group = opts[:development_group] || :development
       expanded_path     = gemfile_root.join(path)
 
-      gemspecs = Dir[File.join(expanded_path, "{,*}.gemspec")].map {|g| Bundler.load_gemspec(g) }.compact
+      gemspecs = Gem::Util.glob_files_in_dir("{,*}.gemspec", expanded_path).map {|g| Bundler.load_gemspec(g) }.compact
       gemspecs.reject! {|s| s.name != name } if name
       Index.sort_specs(gemspecs)
       specs_by_name_and_version = gemspecs.group_by {|s| [s.name, s.version] }
@@ -75,8 +75,7 @@ module Bundler
 
         @gemspecs << spec
 
-        gem_platforms = Bundler::Dependency::REVERSE_PLATFORM_MAP[Bundler::GemHelpers.generic_local_platform]
-        gem spec.name, :name => spec.name, :path => path, :glob => glob, :platforms => gem_platforms
+        gem spec.name, :name => spec.name, :path => path, :glob => glob
 
         group(development_group) do
           spec.development_dependencies.each do |dep|
@@ -223,7 +222,6 @@ module Bundler
 
     def github(repo, options = {})
       raise ArgumentError, "GitHub sources require a block" unless block_given?
-      raise DeprecatedError, "The #github method has been removed" if Bundler.feature_flag.skip_default_git_sources?
       github_uri  = @git_sources["github"].call(repo)
       git_options = normalize_hash(options).merge("uri" => github_uri)
       git_source  = @sources.add_git_source(git_options)
@@ -281,11 +279,9 @@ module Bundler
       raise GemfileError, "Undefined local variable or method `#{name}' for Gemfile"
     end
 
-  private
+    private
 
     def add_git_sources
-      return if Bundler.feature_flag.skip_default_git_sources?
-
       git_source(:github) do |repo_name|
         warn_deprecated_git_source(:github, <<-'RUBY'.strip, 'Change any "reponame" :github sources to "username/reponame".')
 "https://github.com/#{repo_name}.git"
@@ -461,7 +457,7 @@ repo_name ||= user_name
           "Using `source` more than once without a block is a security risk, and " \
           "may result in installing unexpected gems. To resolve this warning, use " \
           "a block to indicate which gems should come from the secondary source. " \
-          "To upgrade this warning to an error, run `bundle config set " \
+          "To upgrade this warning to an error, run `bundle config set --local " \
           "disable_multisource true`."
       end
     end
@@ -571,7 +567,7 @@ The :#{name} git source is deprecated, and will be removed in the future.#{addit
         end
       end
 
-    private
+      private
 
       def parse_line_number_from_description
         description = self.description

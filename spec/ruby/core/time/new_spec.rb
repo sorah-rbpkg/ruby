@@ -15,7 +15,7 @@ end
 
 describe "Time.new with a utc_offset argument" do
   it "returns a non-UTC time" do
-    Time.new(2000, 1, 1, 0, 0, 0, 0).utc?.should == false
+    Time.new(2000, 1, 1, 0, 0, 0, 0).should_not.utc?
   end
 
   it "returns a Time with a UTC offset of the specified number of Integer seconds" do
@@ -121,7 +121,7 @@ describe "Time.new with a utc_offset argument" do
   end
 end
 
-ruby_version_is "2.7" do
+ruby_version_is "2.6" do
   describe "Time.new with a timezone argument" do
     it "returns a Time in the timezone" do
       zone = TimeSpecs::Timezone.new(offset: (5*3600+30*60))
@@ -129,7 +129,7 @@ ruby_version_is "2.7" do
 
       time.zone.should == zone
       time.utc_offset.should == 5*3600+30*60
-      ruby_version_is "2.7" do
+      ruby_version_is "3.0" do
         time.wday.should == 6
         time.yday.should == 1
       end

@@ -54,6 +54,12 @@ char *getlogin();
 
 #define RUBY_ETC_VERSION "1.1.0"
 
+#ifdef HAVE_RB_DEPRECATE_CONSTANT
+void rb_deprecate_constant(VALUE mod, const char *name);
+#else
+# define rb_deprecate_constant(mod,name) ((void)(mod),(void)(name))
+#endif
+
 #include "constdefs.h"
 
 /* call-seq:
@@ -119,6 +125,12 @@ safe_setup_filesystem_str(const char *str)
 #endif
 
 #ifdef HAVE_GETPWENT
+# ifdef __APPLE__
+#   define PW_TIME2VAL(t) INT2NUM((int)(t))
+# else
+#   define PW_TIME2VAL(t) TIMET2NUM(t)
+# endif
+
 static VALUE
 setup_passwd(struct passwd *pwd)
 {
@@ -136,7 +148,7 @@ setup_passwd(struct passwd *pwd)
 			 safe_setup_filesystem_str(pwd->pw_dir),
 			 safe_setup_filesystem_str(pwd->pw_shell),
 #ifdef HAVE_STRUCT_PASSWD_PW_CHANGE
-			 INT2NUM(pwd->pw_change),
+			 PW_TIME2VAL(pwd->pw_change),
 #endif
 #ifdef HAVE_STRUCT_PASSWD_PW_QUOTA
 			 INT2NUM(pwd->pw_quota),
@@ -151,7 +163,7 @@ setup_passwd(struct passwd *pwd)
 			 safe_setup_locale_str(pwd->pw_comment),
 #endif
 #ifdef HAVE_STRUCT_PASSWD_PW_EXPIRE
-			 INT2NUM(pwd->pw_expire),
+			 PW_TIME2VAL(pwd->pw_expire),
 #endif
 			 0		/*dummy*/
 	);
@@ -1165,6 +1177,7 @@ Init_etc(void)
     rb_define_const(mEtc, "Passwd", sPasswd);
 #endif
     rb_define_const(rb_cStruct, "Passwd", sPasswd); /* deprecated name */
+    rb_deprecate_constant(rb_cStruct, "Passwd");
     rb_extend_object(sPasswd, rb_mEnumerable);
     rb_define_singleton_method(sPasswd, "each", etc_each_passwd, 0);
 
@@ -1200,6 +1213,7 @@ Init_etc(void)
     rb_define_const(mEtc, "Group", sGroup);
 #endif
     rb_define_const(rb_cStruct, "Group", sGroup); /* deprecated name */
+    rb_deprecate_constant(rb_cStruct, "Group");
     rb_extend_object(sGroup, rb_mEnumerable);
     rb_define_singleton_method(sGroup, "each", etc_each_group, 0);
 #endif

@@ -138,4 +138,49 @@ class TestRipper::Lexer < Test::Unit::TestCase
     assert_equal pos, code.bytesize
     assert_equal expected.size, result.size
   end
+
+  def test_trailing_on_embexpr_end
+    # This is useful for scanning a template engine literal `{ foo, bar: baz }`
+    # whose body inside brackes works like trailing method arguments, like Haml.
+    token = Ripper.lex("a( foo, bar: baz }").last
+    assert_equal [[1, 17], :on_embexpr_end, "}", state(:EXPR_ARG)], token
+  end
+
+  BAD_CODE = {
+    parse_error: 'def req(true) end',
+    assign_error: 'begin; nil = 1; end',
+    alias_error: 'begin; alias $x $1; end',
+    class_name_error: 'class bad; end',
+    param_error: 'def req(@a) end',
+  }
+
+  def test_raise_errors_keyword
+    all_assertions do |all|
+      BAD_CODE.each do |err, code|
+        all.for(err) do
+          assert_raise(SyntaxError) { Ripper.tokenize(code, raise_errors: true) }
+        end
+      end
+    end
+  end
+
+  def test_tokenize_with_syntax_error
+    all_assertions do |all|
+      BAD_CODE.each do |err, code|
+        all.for(err) do
+          assert_equal "end", Ripper.tokenize(code).last
+        end
+      end
+    end
+  end
+
+  def test_lex_with_syntax_error
+    all_assertions do |all|
+      BAD_CODE.each do |err, code|
+        all.for(err) do
+          assert_equal [[1, code.size-3], :on_kw, "end", state(:EXPR_END)], Ripper.lex(code).last
+        end
+      end
+    end
+  end
 end

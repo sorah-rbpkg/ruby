@@ -230,7 +230,11 @@ module Bundler
         @allow_remote || @allow_cached
       end
 
-    private
+      def local?
+        @local
+      end
+
+      private
 
       def serialize_gemspecs_in(destination)
         destination = destination.expand_path(Bundler.root) if destination.relative?
@@ -254,10 +258,6 @@ module Bundler
 
       def has_app_cache?
         cached_revision && super
-      end
-
-      def local?
-        @local
       end
 
       def requires_checkout?

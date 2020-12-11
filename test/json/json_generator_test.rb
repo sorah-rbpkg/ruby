@@ -49,7 +49,6 @@ EOT
   end
 
   def test_remove_const_segv
-    return if RUBY_ENGINE == 'jruby'
     stress = GC.stress
     const = JSON::SAFE_STATE_PROTOTYPE.dup
 
@@ -76,7 +75,7 @@ EOT
     silence do
       JSON.const_set :SAFE_STATE_PROTOTYPE, const
     end
-  end if JSON.const_defined?("Ext")
+  end if JSON.const_defined?("Ext") && RUBY_ENGINE != 'jruby'
 
   def test_generate
     json = generate(@hash)
@@ -93,6 +92,11 @@ EOT
   end
 
   def test_generate_pretty
+    json = pretty_generate({})
+    assert_equal(<<'EOT'.chomp, json)
+{
+}
+EOT
     json = pretty_generate(@hash)
     # hashes aren't (insertion) ordered on every ruby implementation
     # assert_equal(@json3, json)
@@ -174,6 +178,7 @@ EOT
       :ascii_only            => false,
       :buffer_initial_length => 1024,
       :depth                 => 0,
+      :escape_slash          => false,
       :indent                => "  ",
       :max_nesting           => 100,
       :object_nl             => "\n",
@@ -190,6 +195,7 @@ EOT
       :ascii_only            => false,
       :buffer_initial_length => 1024,
       :depth                 => 0,
+      :escape_slash          => false,
       :indent                => "",
       :max_nesting           => 100,
       :object_nl             => "",
@@ -206,6 +212,7 @@ EOT
       :ascii_only            => false,
       :buffer_initial_length => 1024,
       :depth                 => 0,
+      :escape_slash          => false,
       :indent                => "",
       :max_nesting           => 0,
       :object_nl             => "",
@@ -393,6 +400,10 @@ EOT
     data = [ '/' ]
     json = '["/"]'
     assert_equal json, generate(data)
+    #
+    data = [ '/' ]
+    json = '["\/"]'
+    assert_equal json, generate(data, :escape_slash => true)
     #
     data = ['"']
     json = '["\""]'

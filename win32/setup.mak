@@ -132,9 +132,6 @@ int main(void) {return (EnumProcesses(NULL,0,NULL) ? 0 : 1);}
 <<
 
 -version-: nul verconf.mk
-	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(MAKEFILE)" | findstr "=" >>$(MAKEFILE)
-MSC_VER = _MSC_VER
-<<
 
 verconf.mk: nul
 	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(@)" > $(*F).bat && cmd /c $(*F).bat > $(@)
@@ -152,6 +149,12 @@ echo TEENY = RUBY_VERSION_TEENY
 #if defined RUBY_PATCHLEVEL && RUBY_PATCHLEVEL < 0
 echo RUBY_DEVEL = yes
 #endif
+set /a MSC_VER = _MSC_VER
+#if _MSC_VER > 1900
+set /a MSC_VER_LOWER = MSC_VER/10*10+0
+set /a MSC_VER_UPPER = MSC_VER/10*10+9
+#endif
+set MSC_VER
 del %0 & exit
 <<
 

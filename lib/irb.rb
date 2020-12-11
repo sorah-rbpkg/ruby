@@ -400,7 +400,7 @@ module IRB
     irb.run(@CONF)
   end
 
-  # Calls each event hook of <code>IRB.conf[:TA_EXIT]</code> when the current session quits.
+  # Calls each event hook of <code>IRB.conf[:AT_EXIT]</code> when the current session quits.
   def IRB.irb_at_exit
     @CONF[:AT_EXIT].each{|hook| hook.call}
   end
@@ -542,7 +542,7 @@ module IRB
             if @context.echo?
               if assignment_expression?(line)
                 if @context.echo_on_assignment?
-                  output_value(@context.omit_on_assignment?)
+                  output_value(@context.echo_on_assignment? == :truncate)
                 end
               else
                 output_value
@@ -761,7 +761,7 @@ module IRB
             str = "%s...\e[0m" % lines.first
             multiline_p = false
           else
-            str.gsub!(/(\A.*?\n).*/m, "\\1...")
+            str = str.gsub(/(\A.*?\n).*/m, "\\1...")
           end
         else
           output_width = Reline::Unicode.calculate_width(@context.return_format % str, true)

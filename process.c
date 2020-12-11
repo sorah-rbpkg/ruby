@@ -11,82 +11,110 @@
 
 **********************************************************************/
 
-#include "ruby/config.h"
-#include "ruby/io.h"
-#include "internal.h"
-#include "ruby/thread.h"
-#include "ruby/util.h"
-#include "vm_core.h"
-#include "hrtime.h"
+#include "ruby/internal/config.h"
 
-#include <stdio.h>
+#include "internal/scheduler.h"
+
+#include <ctype.h>
 #include <errno.h>
 #include <signal.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <time.h>
+
 #ifdef HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-#ifdef HAVE_PROCESS_H
-#include <process.h>
+# include <stdlib.h>
 #endif
 
-#include <time.h>
-#include <ctype.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+
+#ifdef HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+
+#ifdef HAVE_PROCESS_H
+# include <process.h>
+#endif
 
 #ifndef EXIT_SUCCESS
-#define EXIT_SUCCESS 0
+# define EXIT_SUCCESS 0
 #endif
+
 #ifndef EXIT_FAILURE
-#define EXIT_FAILURE 1
+# define EXIT_FAILURE 1
 #endif
 
 #ifdef HAVE_SYS_WAIT_H
 # include <sys/wait.h>
 #endif
+
 #ifdef HAVE_SYS_RESOURCE_H
 # include <sys/resource.h>
 #endif
+
 #ifdef HAVE_VFORK_H
 # include <vfork.h>
 #endif
+
 #ifdef HAVE_SYS_PARAM_H
 # include <sys/param.h>
 #endif
+
 #ifndef MAXPATHLEN
 # define MAXPATHLEN 1024
 #endif
-#include "ruby/st.h"
 
 #include <sys/stat.h>
 
 #ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
+# include <sys/time.h>
 #endif
+
 #ifdef HAVE_SYS_TIMES_H
-#include <sys/times.h>
+# include <sys/times.h>
 #endif
 
 #ifdef HAVE_PWD_H
-#include <pwd.h>
+# include <pwd.h>
 #endif
+
 #ifdef HAVE_GRP_H
-#include <grp.h>
+# include <grp.h>
 # ifdef __CYGWIN__
 int initgroups(const char *, rb_gid_t);
 # endif
 #endif
+
 #ifdef HAVE_SYS_ID_H
-#include <sys/id.h>
+# include <sys/id.h>
 #endif
 
 #ifdef __APPLE__
 # include <mach/mach_time.h>
 #endif
+
+#include "dln.h"
+#include "hrtime.h"
+#include "internal.h"
+#include "internal/bits.h"
+#include "internal/dir.h"
+#include "internal/error.h"
+#include "internal/eval.h"
+#include "internal/hash.h"
+#include "internal/object.h"
+#include "internal/process.h"
+#include "internal/thread.h"
+#include "internal/variable.h"
+#include "internal/warnings.h"
+#include "mjit.h"
+#include "ruby/io.h"
+#include "ruby/st.h"
+#include "ruby/thread.h"
+#include "ruby/util.h"
+#include "vm_core.h"
+#include "ruby/ractor.h"
 
 /* define system APIs */
 #ifdef _WIN32
@@ -154,12 +182,40 @@ static int exec_async_signal_safe(const struct rb_execarg *, char *, size_t);
 #define p_gid_from_name p_gid_from_name
 #endif
 
+#if defined(HAVE_UNISTD_H)
+# if defined(HAVE_GETLOGIN_R)
+#  define USE_GETLOGIN_R 1
+#  define GETLOGIN_R_SIZE_DEFAULT   0x100
+#  define GETLOGIN_R_SIZE_LIMIT    0x1000
+#  if defined(_SC_LOGIN_NAME_MAX)
+#    define GETLOGIN_R_SIZE_INIT sysconf(_SC_LOGIN_NAME_MAX)
+#  else
+#    define GETLOGIN_R_SIZE_INIT GETLOGIN_R_SIZE_DEFAULT
+#  endif
+# elif defined(HAVE_GETLOGIN)
+#  define USE_GETLOGIN 1
+# endif
+#endif
+
 #if defined(HAVE_PWD_H)
-# if defined(HAVE_GETPWNAM_R) && defined(_SC_GETPW_R_SIZE_MAX)
+# if defined(HAVE_GETPWUID_R)
+#  define USE_GETPWUID_R 1
+# elif defined(HAVE_GETPWUID)
+#  define USE_GETPWUID 1
+# endif
+# if defined(HAVE_GETPWNAM_R)
 #  define USE_GETPWNAM_R 1
-#  define GETPW_R_SIZE_INIT sysconf(_SC_GETPW_R_SIZE_MAX)
+# elif defined(HAVE_GETPWNAM)
+#  define USE_GETPWNAM 1
+# endif
+# if defined(HAVE_GETPWNAM_R) || defined(HAVE_GETPWUID_R)
 #  define GETPW_R_SIZE_DEFAULT 0x1000
 #  define GETPW_R_SIZE_LIMIT  0x10000
+#  if defined(_SC_GETPW_R_SIZE_MAX)
+#   define GETPW_R_SIZE_INIT sysconf(_SC_GETPW_R_SIZE_MAX)
+#  else
+#   define GETPW_R_SIZE_INIT GETPW_R_SIZE_DEFAULT
+#  endif
 # endif
 # ifdef USE_GETPWNAM_R
 #   define PREPARE_GETPWNAM \
@@ -316,8 +372,6 @@ close_unless_reserved(int fd)
 
 /*#define DEBUG_REDIRECT*/
 #if defined(DEBUG_REDIRECT)
-
-#include <stdarg.h>
 
 static void
 ttyprintf(const char *fmt, ...)
@@ -548,6 +602,7 @@ rb_last_status_set(int status, rb_pid_t pid)
     th->last_status = rb_obj_alloc(rb_cProcessStatus);
     rb_ivar_set(th->last_status, id_status, INT2FIX(status));
     rb_ivar_set(th->last_status, id_pid, PIDT2NUM(pid));
+    rb_obj_freeze(th->last_status);
 }
 
 void
@@ -1563,7 +1618,12 @@ after_exec(void)
 }
 
 #if defined HAVE_WORKING_FORK || defined HAVE_DAEMON
-#define before_fork_ruby() before_exec()
+static void
+before_fork_ruby(void)
+{
+    before_exec();
+}
+
 static void
 after_fork_ruby(void)
 {
@@ -1571,8 +1631,6 @@ after_fork_ruby(void)
     after_exec();
 }
 #endif
-
-#include "dln.h"
 
 #if defined(HAVE_WORKING_FORK)
 
@@ -1837,8 +1895,7 @@ check_exec_redirect_fd(VALUE v, int iskey)
         fd = fptr->fd;
     }
     else {
-      wrong:
-        rb_raise(rb_eArgError, "wrong exec redirect");
+        goto wrong;
     }
     if (fd < 0) {
         rb_raise(rb_eArgError, "negative file descriptor");
@@ -1849,6 +1906,10 @@ check_exec_redirect_fd(VALUE v, int iskey)
     }
 #endif
     return INT2FIX(fd);
+
+  wrong:
+    rb_raise(rb_eArgError, "wrong exec redirect");
+    UNREACHABLE_RETURN(Qundef);
 }
 
 static VALUE
@@ -1883,7 +1944,7 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
 
     switch (TYPE(val)) {
       case T_SYMBOL:
-        if (!(id = rb_check_id(&val))) goto wrong_symbol;
+        id = rb_check_id(&val);
         if (id == id_close) {
             param = Qnil;
             eargp->fd_close = check_exec_redirect1(eargp->fd_close, key, param);
@@ -1901,7 +1962,6 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
             eargp->fd_dup2 = check_exec_redirect1(eargp->fd_dup2, key, param);
         }
         else {
-	  wrong_symbol:
             rb_raise(rb_eArgError, "wrong exec redirect symbol: %"PRIsVALUE,
                                    val);
         }
@@ -2304,7 +2364,7 @@ check_exec_env_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
 
     k = StringValueCStr(key);
     if (strchr(k, '='))
-        rb_raise(rb_eArgError, "environment name contains a equal : %s", k);
+        rb_raise(rb_eArgError, "environment name contains a equal : %"PRIsVALUE, key);
 
     if (!NIL_P(val))
         StringValueCStr(val);
@@ -2369,6 +2429,8 @@ check_hash(VALUE obj)
       case T_STRING:
       case T_ARRAY:
 	return Qnil;
+      default:
+        break;
     }
     return rb_check_hash_type(obj);
 }
@@ -2716,8 +2778,6 @@ rb_execarg_parent_start1(VALUE execarg_obj)
             int fd2;
             if (NIL_P(fd2v)) {
                 struct open_struct open_data;
-                FilePathValue(vpath);
-		vpath = rb_str_encode_ospath(vpath);
               again:
                 open_data.fname = vpath;
                 open_data.oflags = flags;
@@ -2910,6 +2970,8 @@ rb_f_exec(int argc, const VALUE *argv)
     UNREACHABLE_RETURN(Qnil);
 }
 
+NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
+
 /*
  *  call-seq:
  *     exec([env,] command... [,options])
@@ -2986,7 +3048,8 @@ rb_f_exec(int argc, const VALUE *argv)
 static VALUE
 f_exec(int c, const VALUE *a, VALUE _)
 {
-    return rb_f_exec(c, a);
+    rb_f_exec(c, a);
+    UNREACHABLE_RETURN(Qnil);
 }
 
 #define ERRMSG(str) do { if (errmsg && 0 < errmsg_buflen) strlcpy(errmsg, (str), errmsg_buflen); } while (0)
@@ -3475,10 +3538,8 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
 
     if (eargp->chdir_given) {
         if (sargp) {
-            char *cwd = ruby_getcwd();
             sargp->chdir_given = 1;
-            sargp->chdir_dir = hide_obj(rb_str_new2(cwd));
-            xfree(cwd);
+            sargp->chdir_dir = hide_obj(rb_dir_getwd_ospath());
         }
         if (chdir(RSTRING_PTR(eargp->chdir_dir)) == -1) { /* async-signal-safe */
             ERRMSG("chdir");
@@ -3938,10 +3999,6 @@ disable_child_handler_fork_child(struct child_handler_disabler_state *old, char 
     return 0;
 }
 
-COMPILER_WARNING_PUSH
-#ifdef __GNUC__
-COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
-#endif
 static rb_pid_t
 retry_fork_async_signal_safe(int *status, int *ep,
         int (*chfunc)(void*, char *, size_t), void *charg,
@@ -3966,9 +4023,9 @@ retry_fork_async_signal_safe(int *status, int *ep,
         if (!has_privilege())
             pid = vfork();
         else
-            pid = fork();
+            pid = rb_fork();
 #else
-        pid = fork();
+        pid = rb_fork();
 #endif
         if (pid == 0) {/* fork succeed, child process */
             int ret;
@@ -4002,7 +4059,6 @@ retry_fork_async_signal_safe(int *status, int *ep,
             return -1;
     }
 }
-COMPILER_WARNING_POP
 
 static rb_pid_t
 fork_check_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
@@ -4032,7 +4088,7 @@ fork_check_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
                       "only used by extensions");
             rb_protect(proc_syswait, (VALUE)pid, status);
         }
-        else if (!w) {
+        else if (!w || w == WAITPID_LOCK_ONLY) {
             rb_syswait(pid);
         }
         errno = err;
@@ -4056,10 +4112,6 @@ rb_fork_async_signal_safe(int *status,
     return fork_check_err(status, chfunc, charg, fds, errmsg, errmsg_buflen, 0);
 }
 
-COMPILER_WARNING_PUSH
-#ifdef __GNUC__
-COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
-#endif
 rb_pid_t
 rb_fork_ruby(int *status)
 {
@@ -4074,7 +4126,7 @@ rb_fork_ruby(int *status)
         if (mjit_enabled) mjit_pause(false); // Don't leave locked mutex to child. Note: child_handler must be enabled to pause MJIT.
 	disable_child_handler_before_fork(&old);
 	before_fork_ruby();
-	pid = fork();
+	pid = rb_fork();
 	err = errno;
         after_fork_ruby();
 	disable_child_handler_fork_parent(&old); /* yes, bad name */
@@ -4086,7 +4138,6 @@ rb_fork_ruby(int *status)
 	    return -1;
     }
 }
-COMPILER_WARNING_POP
 
 #endif
 
@@ -4166,6 +4217,7 @@ exit_status_code(VALUE status)
     return istatus;
 }
 
+NORETURN(static VALUE rb_f_exit_bang(int argc, VALUE *argv, VALUE obj));
 /*
  *  call-seq:
  *     Process.exit!(status=false)
@@ -4222,6 +4274,7 @@ rb_f_exit(int argc, const VALUE *argv)
     UNREACHABLE_RETURN(Qnil);
 }
 
+NORETURN(static VALUE f_exit(int c, const VALUE *a, VALUE _));
 /*
  *  call-seq:
  *     exit(status=true)
@@ -4266,7 +4319,8 @@ rb_f_exit(int argc, const VALUE *argv)
 static VALUE
 f_exit(int c, const VALUE *a, VALUE _)
 {
-    return rb_f_exit(c, a);
+    rb_f_exit(c, a);
+    UNREACHABLE_RETURN(Qnil);
 }
 
 /*
@@ -4297,7 +4351,7 @@ rb_f_abort(int argc, const VALUE *argv)
 
 	args[1] = args[0] = argv[0];
 	StringValue(args[0]);
-	rb_io_puts(1, args, rb_stderr);
+	rb_io_puts(1, args, rb_ractor_stderr());
 	args[0] = INT2NUM(EXIT_FAILURE);
 	rb_exc_raise(rb_class_new_instance(2, args, rb_eSystemExit));
     }
@@ -4305,10 +4359,12 @@ rb_f_abort(int argc, const VALUE *argv)
     UNREACHABLE_RETURN(Qnil);
 }
 
+NORETURN(static VALUE f_abort(int c, const VALUE *a, VALUE _));
 static VALUE
 f_abort(int c, const VALUE *a, VALUE _)
 {
-    return rb_f_abort(c, a);
+    rb_f_abort(c, a);
+    UNREACHABLE_RETURN(Qnil);
 }
 
 void
@@ -4875,20 +4931,25 @@ rb_f_spawn(int argc, VALUE *argv, VALUE _)
 static VALUE
 rb_f_sleep(int argc, VALUE *argv, VALUE _)
 {
-    time_t beg, end;
+    time_t beg = time(0);
+    VALUE scheduler = rb_scheduler_current();
 
-    beg = time(0);
-    if (argc == 0) {
-	rb_thread_sleep_forever();
+    if (scheduler != Qnil) {
+        rb_scheduler_kernel_sleepv(scheduler, argc, argv);
     }
     else {
-	rb_check_arity(argc, 0, 1);
-	rb_thread_wait_for(rb_time_interval(argv[0]));
+        if (argc == 0) {
+            rb_thread_sleep_forever();
+        }
+        else {
+            rb_check_arity(argc, 0, 1);
+            rb_thread_wait_for(rb_time_interval(argv[0]));
+        }
     }
 
-    end = time(0) - beg;
+    time_t end = time(0) - beg;
 
-    return INT2FIX(end);
+    return TIMET2NUM(end);
 }
 
 
@@ -5509,6 +5570,246 @@ check_gid_switch(void)
 }
 
 
+#if defined(HAVE_PWD_H)
+/**
+ * Best-effort attempt to obtain the name of the login user, if any,
+ * associated with the process. Processes not descended from login(1) (or
+ * similar) may not have a logged-in user; returns Qnil in that case.
+ */
+VALUE
+rb_getlogin(void)
+{
+#if ( !defined(USE_GETLOGIN_R) && !defined(USE_GETLOGIN) )
+    return Qnil;
+#else
+    char MAYBE_UNUSED(*login) = NULL;
+
+# ifdef USE_GETLOGIN_R
+
+#if defined(__FreeBSD__)
+    typedef int getlogin_r_size_t;
+#else
+    typedef size_t getlogin_r_size_t;
+#endif
+
+    long loginsize = GETLOGIN_R_SIZE_INIT;  /* maybe -1 */
+
+    if (loginsize < 0)
+        loginsize = GETLOGIN_R_SIZE_DEFAULT;
+
+    VALUE maybe_result = rb_str_buf_new(loginsize);
+
+    login = RSTRING_PTR(maybe_result);
+    loginsize = rb_str_capacity(maybe_result);
+    rb_str_set_len(maybe_result, loginsize);
+
+    int gle;
+    errno = 0;
+    while ((gle = getlogin_r(login, (getlogin_r_size_t)loginsize)) != 0) {
+
+        if (gle == ENOTTY || gle == ENXIO || gle == ENOENT) {
+            rb_str_resize(maybe_result, 0);
+            return Qnil;
+        }
+
+        if (gle != ERANGE || loginsize >= GETLOGIN_R_SIZE_LIMIT) {
+            rb_str_resize(maybe_result, 0);
+            rb_syserr_fail(gle, "getlogin_r");
+        }
+
+        rb_str_modify_expand(maybe_result, loginsize);
+        login = RSTRING_PTR(maybe_result);
+        loginsize = rb_str_capacity(maybe_result);
+    }
+
+    if (login == NULL) {
+        rb_str_resize(maybe_result, 0);
+        return Qnil;
+    }
+
+    return maybe_result;
+
+# elif USE_GETLOGIN
+
+    errno = 0;
+    login = getlogin();
+    if (errno) {
+        if (errno == ENOTTY || errno == ENXIO || errno == ENOENT) {
+            return Qnil;
+        }
+        rb_syserr_fail(errno, "getlogin");
+    }
+
+    return login ? rb_str_new_cstr(login) : Qnil;
+# endif
+
+#endif
+}
+
+VALUE
+rb_getpwdirnam_for_login(VALUE login_name)
+{
+#if ( !defined(USE_GETPWNAM_R) && !defined(USE_GETPWNAM) )
+    return Qnil;
+#else
+
+    if (NIL_P(login_name)) {
+        /* nothing to do; no name with which to query the password database */
+        return Qnil;
+    }
+
+    char *login = RSTRING_PTR(login_name);
+
+    struct passwd *pwptr;
+
+# ifdef USE_GETPWNAM_R
+
+    struct passwd pwdnm;
+    char *bufnm;
+    long bufsizenm = GETPW_R_SIZE_INIT;  /* maybe -1 */
+
+    if (bufsizenm < 0)
+        bufsizenm = GETPW_R_SIZE_DEFAULT;
+
+    VALUE getpwnm_tmp = rb_str_tmp_new(bufsizenm);
+
+    bufnm = RSTRING_PTR(getpwnm_tmp);
+    bufsizenm = rb_str_capacity(getpwnm_tmp);
+    rb_str_set_len(getpwnm_tmp, bufsizenm);
+
+    int enm;
+    errno = 0;
+    while ((enm = getpwnam_r(login, &pwdnm, bufnm, bufsizenm, &pwptr)) != 0) {
+
+        if (enm == ENOENT || enm== ESRCH || enm == EBADF || enm == EPERM) {
+            /* not found; non-errors */
+            rb_str_resize(getpwnm_tmp, 0);
+            return Qnil;
+        }
+
+        if (enm != ERANGE || bufsizenm >= GETPW_R_SIZE_LIMIT) {
+            rb_str_resize(getpwnm_tmp, 0);
+            rb_syserr_fail(enm, "getpwnam_r");
+        }
+
+        rb_str_modify_expand(getpwnm_tmp, bufsizenm);
+        bufnm = RSTRING_PTR(getpwnm_tmp);
+        bufsizenm = rb_str_capacity(getpwnm_tmp);
+    }
+
+    if (pwptr == NULL) {
+        /* no record in the password database for the login name */
+        rb_str_resize(getpwnm_tmp, 0);
+        return Qnil;
+    }
+
+    /* found it */
+    VALUE result = rb_str_new_cstr(pwptr->pw_dir);
+    rb_str_resize(getpwnm_tmp, 0);
+    return result;
+
+# elif USE_GETPWNAM
+
+    errno = 0;
+    pwptr = getpwnam(login);
+    if (pwptr) {
+        /* found it */
+        return rb_str_new_cstr(pwptr->pw_dir);
+    }
+    if (errno
+        /*   avoid treating as errors errno values that indicate "not found" */
+        && ( errno != ENOENT && errno != ESRCH && errno != EBADF && errno != EPERM)) {
+        rb_syserr_fail(errno, "getpwnam");
+    }
+
+    return Qnil;  /* not found */
+# endif
+
+#endif
+}
+
+/**
+ * Look up the user's dflt home dir in the password db, by uid.
+ */
+VALUE
+rb_getpwdiruid(void)
+{
+# if !defined(USE_GETPWUID_R) && !defined(USE_GETPWUID)
+    /* Should never happen... </famous-last-words> */
+    return Qnil;
+# else
+    uid_t ruid = getuid();
+
+    struct passwd *pwptr;
+
+# ifdef USE_GETPWUID_R
+
+    struct passwd pwdid;
+    char *bufid;
+    long bufsizeid = GETPW_R_SIZE_INIT;  /* maybe -1 */
+
+    if (bufsizeid < 0)
+        bufsizeid = GETPW_R_SIZE_DEFAULT;
+
+    VALUE getpwid_tmp = rb_str_tmp_new(bufsizeid);
+
+    bufid = RSTRING_PTR(getpwid_tmp);
+    bufsizeid = rb_str_capacity(getpwid_tmp);
+    rb_str_set_len(getpwid_tmp, bufsizeid);
+
+    int eid;
+    errno = 0;
+    while ((eid = getpwuid_r(ruid, &pwdid, bufid, bufsizeid, &pwptr)) != 0) {
+
+        if (eid == ENOENT || eid== ESRCH || eid == EBADF || eid == EPERM) {
+            /* not found; non-errors */
+            rb_str_resize(getpwid_tmp, 0);
+            return Qnil;
+        }
+
+        if (eid != ERANGE || bufsizeid >= GETPW_R_SIZE_LIMIT) {
+            rb_str_resize(getpwid_tmp, 0);
+            rb_syserr_fail(eid, "getpwuid_r");
+        }
+
+        rb_str_modify_expand(getpwid_tmp, bufsizeid);
+        bufid = RSTRING_PTR(getpwid_tmp);
+        bufsizeid = rb_str_capacity(getpwid_tmp);
+    }
+
+    if (pwptr == NULL) {
+        /* no record in the password database for the uid */
+        rb_str_resize(getpwid_tmp, 0);
+        return Qnil;
+    }
+
+    /* found it */
+    VALUE result = rb_str_new_cstr(pwptr->pw_dir);
+    rb_str_resize(getpwid_tmp, 0);
+    return result;
+
+# elif defined(USE_GETPWUID)
+
+    errno = 0;
+    pwptr = getpwuid(ruid);
+    if (pwptr) {
+        /* found it */
+        return rb_str_new_cstr(pwptr->pw_dir);
+    }
+    if (errno
+        /*   avoid treating as errors errno values that indicate "not found" */
+        && ( errno == ENOENT || errno == ESRCH || errno == EBADF || errno == EPERM)) {
+        rb_syserr_fail(errno, "getpwuid");
+    }
+
+    return Qnil;  /* not found */
+# endif
+
+#endif /* !defined(USE_GETPWUID_R) && !defined(USE_GETPWUID) */
+}
+#endif /* HAVE_PWD_H */
+
+
 /*********************************************************************
  * Document-class: Process::Sys
  *
@@ -5566,7 +5867,7 @@ obj2uid(VALUE id
 #ifndef USE_GETPWNAM_R
 	    endpwent();
 #endif
-	    rb_raise(rb_eArgError, "can't find user for %s", usrname);
+            rb_raise(rb_eArgError, "can't find user for %"PRIsVALUE, id);
 	}
 	uid = pwptr->pw_uid;
 #ifndef USE_GETPWNAM_R
@@ -5645,7 +5946,7 @@ obj2gid(VALUE id
 #if !defined(USE_GETGRNAM_R) && defined(HAVE_ENDGRENT)
 	    endgrent();
 #endif
-	    rb_raise(rb_eArgError, "can't find group for %s", grpname);
+            rb_raise(rb_eArgError, "can't find group for %"PRIsVALUE, id);
 	}
 	gid = grptr->gr_gid;
 #if !defined(USE_GETGRNAM_R) && defined(HAVE_ENDGRENT)
@@ -7936,29 +8237,33 @@ rb_clock_gettime(int argc, VALUE *argv, VALUE _)
  *  call-seq:
  *     Process.clock_getres(clock_id [, unit])   -> number
  *
- *  Returns the time resolution returned by POSIX clock_getres() function.
+ *  Returns an estimate of the resolution of a +clock_id+ using the POSIX
+ *  <code>clock_getres()</code> function.
+ *
+ *  Note the reported resolution is often inaccurate on most platforms due to
+ *  underlying bugs for this function and therefore the reported resolution
+ *  often differs from the actual resolution of the clock in practice.
+ *  Inaccurate reported resolutions have been observed for various clocks including
+ *  CLOCK_MONOTONIC and CLOCK_MONOTONIC_RAW when using Linux, macOS, BSD or AIX
+ *  platforms, when using ARM processors, or when using virtualization.
  *
  *  +clock_id+ specifies a kind of clock.
  *  See the document of +Process.clock_gettime+ for details.
- *
- *  +clock_id+ can be a symbol as +Process.clock_gettime+.
- *  However the result may not be accurate.
- *  For example, <code>Process.clock_getres(:GETTIMEOFDAY_BASED_CLOCK_REALTIME)</code>
- *  returns 1.0e-06 which means 1 microsecond, but actual resolution can be more coarse.
+ *  +clock_id+ can be a symbol as for +Process.clock_gettime+.
  *
  *  If the given +clock_id+ is not supported, Errno::EINVAL is raised.
  *
- *  +unit+ specifies a type of the return value.
+ *  +unit+ specifies the type of the return value.
  *  +Process.clock_getres+ accepts +unit+ as +Process.clock_gettime+.
- *  The default value, +:float_second+, is also same as
+ *  The default value, +:float_second+, is also the same as
  *  +Process.clock_gettime+.
  *
  *  +Process.clock_getres+ also accepts +:hertz+ as +unit+.
- *  +:hertz+ means a the reciprocal of +:float_second+.
+ *  +:hertz+ means the reciprocal of +:float_second+.
  *
  *  +:hertz+ can be used to obtain the exact value of
- *  the clock ticks per second for times() function and
- *  CLOCKS_PER_SEC for clock() function.
+ *  the clock ticks per second for the times() function and
+ *  CLOCKS_PER_SEC for the clock() function.
  *
  *  <code>Process.clock_getres(:TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID, :hertz)</code>
  *  returns the clock ticks per second.
@@ -8142,10 +8447,12 @@ static VALUE rb_mProcID_Syscall;
 void
 InitVM_process(void)
 {
-#undef rb_intern
-#define rb_intern(str) rb_intern_const(str)
     rb_define_virtual_variable("$?", get_CHILD_STATUS, 0);
     rb_define_virtual_variable("$$", get_PROCESS_ID, 0);
+
+    rb_gvar_ractor_local("$$");
+    rb_gvar_ractor_local("$?");
+
     rb_define_global_function("exec", f_exec, -1);
     rb_define_global_function("fork", rb_f_fork, 0);
     rb_define_global_function("exit!", rb_f_exit_bang, -1);
@@ -8569,46 +8876,46 @@ InitVM_process(void)
 void
 Init_process(void)
 {
-    id_in = rb_intern("in");
-    id_out = rb_intern("out");
-    id_err = rb_intern("err");
-    id_pid = rb_intern("pid");
-    id_uid = rb_intern("uid");
-    id_gid = rb_intern("gid");
-    id_close = rb_intern("close");
-    id_child = rb_intern("child");
+    id_in = rb_intern_const("in");
+    id_out = rb_intern_const("out");
+    id_err = rb_intern_const("err");
+    id_pid = rb_intern_const("pid");
+    id_uid = rb_intern_const("uid");
+    id_gid = rb_intern_const("gid");
+    id_close = rb_intern_const("close");
+    id_child = rb_intern_const("child");
 #ifdef HAVE_SETPGID
-    id_pgroup = rb_intern("pgroup");
+    id_pgroup = rb_intern_const("pgroup");
 #endif
 #ifdef _WIN32
-    id_new_pgroup = rb_intern("new_pgroup");
+    id_new_pgroup = rb_intern_const("new_pgroup");
 #endif
-    id_unsetenv_others = rb_intern("unsetenv_others");
-    id_chdir = rb_intern("chdir");
-    id_umask = rb_intern("umask");
-    id_close_others = rb_intern("close_others");
-    id_ENV = rb_intern("ENV");
-    id_nanosecond = rb_intern("nanosecond");
-    id_microsecond = rb_intern("microsecond");
-    id_millisecond = rb_intern("millisecond");
-    id_second = rb_intern("second");
-    id_float_microsecond = rb_intern("float_microsecond");
-    id_float_millisecond = rb_intern("float_millisecond");
-    id_float_second = rb_intern("float_second");
-    id_GETTIMEOFDAY_BASED_CLOCK_REALTIME = rb_intern("GETTIMEOFDAY_BASED_CLOCK_REALTIME");
-    id_TIME_BASED_CLOCK_REALTIME = rb_intern("TIME_BASED_CLOCK_REALTIME");
+    id_unsetenv_others = rb_intern_const("unsetenv_others");
+    id_chdir = rb_intern_const("chdir");
+    id_umask = rb_intern_const("umask");
+    id_close_others = rb_intern_const("close_others");
+    id_ENV = rb_intern_const("ENV");
+    id_nanosecond = rb_intern_const("nanosecond");
+    id_microsecond = rb_intern_const("microsecond");
+    id_millisecond = rb_intern_const("millisecond");
+    id_second = rb_intern_const("second");
+    id_float_microsecond = rb_intern_const("float_microsecond");
+    id_float_millisecond = rb_intern_const("float_millisecond");
+    id_float_second = rb_intern_const("float_second");
+    id_GETTIMEOFDAY_BASED_CLOCK_REALTIME = rb_intern_const("GETTIMEOFDAY_BASED_CLOCK_REALTIME");
+    id_TIME_BASED_CLOCK_REALTIME = rb_intern_const("TIME_BASED_CLOCK_REALTIME");
 #ifdef HAVE_TIMES
-    id_TIMES_BASED_CLOCK_MONOTONIC = rb_intern("TIMES_BASED_CLOCK_MONOTONIC");
-    id_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID = rb_intern("TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID");
+    id_TIMES_BASED_CLOCK_MONOTONIC = rb_intern_const("TIMES_BASED_CLOCK_MONOTONIC");
+    id_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID = rb_intern_const("TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID");
 #endif
 #ifdef RUSAGE_SELF
-    id_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID = rb_intern("GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID");
+    id_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID = rb_intern_const("GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID");
 #endif
-    id_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID = rb_intern("CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID");
+    id_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID = rb_intern_const("CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID");
 #ifdef __APPLE__
-    id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC = rb_intern("MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC");
+    id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC = rb_intern_const("MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC");
 #endif
-    id_hertz = rb_intern("hertz");
+    id_hertz = rb_intern_const("hertz");
 
     InitVM(process);
 }

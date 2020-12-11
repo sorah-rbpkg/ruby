@@ -5,7 +5,6 @@
 # and +version+ are needed.
 
 class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
-
   ##
   # An IndexSpecification is created from the index format described in `gem
   # help generate_index`.
@@ -32,6 +31,17 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
 
   def dependencies
     spec.dependencies
+  end
+
+  def ==(other)
+    self.class === other &&
+      @name == other.name &&
+      @version == other.version &&
+      @platform == other.platform
+  end
+
+  def hash
+    @name.hash ^ @version.hash ^ @platform.hash
   end
 
   def inspect # :nodoc:
@@ -65,5 +75,4 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
         @source.fetch_spec tuple
       end
   end
-
 end

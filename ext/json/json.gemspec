@@ -2,21 +2,23 @@
 
 Gem::Specification.new do |s|
   s.name = "json"
-  s.version = "2.3.0"
+  s.version = "2.3.1"
 
-  s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
-  s.require_paths = ["lib"]
-  s.authors = ["Florian Frank"]
-  s.date = "2019-12-11"
+  s.summary = "JSON Implementation for Ruby"
   s.description = "This is a JSON implementation as a Ruby extension in C."
+  s.licenses = ["Ruby"]
+  s.authors = ["Florian Frank"]
   s.email = "flori@ping.de"
+
   s.extensions = ["ext/json/ext/generator/extconf.rb", "ext/json/ext/parser/extconf.rb", "ext/json/extconf.rb"]
   s.extra_rdoc_files = ["README.md"]
+  s.rdoc_options = ["--title", "JSON implemention for Ruby", "--main", "README.md"]
   s.files = [
     ".gitignore",
     ".travis.yml",
     "CHANGES.md",
     "Gemfile",
+    "LICENSE",
     "README-json-jruby.md",
     "README.md",
     "Rakefile",
@@ -121,13 +123,18 @@ Gem::Specification.new do |s|
     "tools/server.rb",
   ]
   s.homepage = "http://flori.github.com/json"
-  s.licenses = ["Ruby"]
-  s.rdoc_options = ["--title", "JSON implemention for Ruby", "--main", "README.md"]
-  s.required_ruby_version = Gem::Requirement.new(">= 1.9")
-  s.rubygems_version = "3.0.3"
-  s.summary = "JSON Implementation for Ruby"
+  s.metadata = {
+    'bug_tracker_uri'   => 'https://github.com/flori/json/issues',
+    'changelog_uri'     => 'https://github.com/flori/json/blob/master/CHANGES.md',
+    'documentation_uri' => 'http://flori.github.io/json/doc/index.html',
+    'homepage_uri'      => 'http://flori.github.io/json/',
+    'source_code_uri'   => 'https://github.com/flori/json',
+    'wiki_uri'          => 'https://github.com/flori/json/wiki'
+  }
+
+  s.required_ruby_version = Gem::Requirement.new(">= 2.0")
   s.test_files = ["tests/test_helper.rb"]
 
   s.add_development_dependency("rake", [">= 0"])
-  s.add_development_dependency("test-unit", ["~> 2.0"])
+  s.add_development_dependency("test-unit", [">= 2.0", "< 4.0"])
 end

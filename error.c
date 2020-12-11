@@ -9,26 +9,39 @@
 
 **********************************************************************/
 
-#include "ruby/encoding.h"
-#include "ruby/st.h"
-#include "internal.h"
-#include "ruby_assert.h"
-#include "vm_core.h"
-#include "builtin.h"
+#include "ruby/internal/config.h"
 
-#include <stdio.h>
-#include <stdarg.h>
-#ifdef HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
 #include <errno.h>
+#include <stdarg.h>
+#include <stdio.h>
+
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
+#endif
+
 #ifdef HAVE_UNISTD_H
-#include <unistd.h>
+# include <unistd.h>
 #endif
 
 #if defined __APPLE__
 # include <AvailabilityMacros.h>
 #endif
+
+#include "internal.h"
+#include "internal/error.h"
+#include "internal/eval.h"
+#include "internal/io.h"
+#include "internal/load.h"
+#include "internal/object.h"
+#include "internal/symbol.h"
+#include "internal/thread.h"
+#include "internal/variable.h"
+#include "ruby/encoding.h"
+#include "ruby/st.h"
+#include "ruby_assert.h"
+#include "vm_core.h"
+
+#include "builtin.h"
 
 /*!
  * \defgroup exception Exception handlings
@@ -51,6 +64,7 @@ VALUE rb_iseqw_local_variables(VALUE iseqval);
 VALUE rb_iseqw_new(const rb_iseq_t *);
 int rb_str_end_with_asciichar(VALUE str, int c);
 
+long rb_backtrace_length_limit = -1;
 VALUE rb_eEAGAIN;
 VALUE rb_eEWOULDBLOCK;
 VALUE rb_eEINPROGRESS;
@@ -58,6 +72,9 @@ static VALUE rb_mWarning;
 static VALUE rb_cWarningBuffer;
 
 static ID id_warn;
+static ID id_category;
+static VALUE sym_category;
+static VALUE warning_categories;
 
 extern const char ruby_description[];
 
@@ -169,7 +186,7 @@ rb_warning_category_enabled_p(rb_warning_category_t category)
 }
 
 /*
- * call-seq
+ * call-seq:
  *    Warning[category]  -> true or false
  *
  * Returns the flag to show the warning messages for +category+.
@@ -195,7 +212,7 @@ rb_warning_s_aref(VALUE mod, VALUE category)
 }
 
 /*
- * call-seq
+ * call-seq:
  *    Warning[category] = flag -> flag
  *
  * Sets the warning flags for +category+.
@@ -217,15 +234,25 @@ rb_warning_s_aset(VALUE mod, VALUE category, VALUE flag)
 
 /*
  * call-seq:
- *    warn(msg)  -> nil
+ *    warn(msg, category: nil)  -> nil
  *
  * Writes warning message +msg+ to $stderr. This method is called by
- * Ruby for all emitted warnings.
+ * Ruby for all emitted warnings. A +category+ may be included with
+ * the warning, but is ignored by default.
+ *
+ * See the documentation of the Warning module for how to customize this.
  */
 
 static VALUE
-rb_warning_s_warn(VALUE mod, VALUE str)
+rb_warning_s_warn(int argc, VALUE *argv, VALUE mod)
 {
+    VALUE str;
+    VALUE opt;
+    VALUE category;
+
+    rb_scan_args(argc, argv, "1:", &str, &opt);
+    if (!NIL_P(opt)) rb_get_kwargs(opt, &id_category, 0, 1, &category);
+
     Check_Type(str, T_STRING);
     rb_must_asciicompat(str);
     rb_write_error_str(str);
@@ -240,17 +267,64 @@ rb_warning_s_warn(VALUE mod, VALUE str)
  *  Warning.warn is called for all warnings issued by Ruby.
  *  By default, warnings are printed to $stderr.
  *
- *  By overriding Warning.warn, you can change how warnings are
- *  handled by Ruby, either filtering some warnings, and/or outputting
- *  warnings somewhere other than $stderr.  When Warning.warn is
- *  overridden, super can be called to get the default behavior of
- *  printing the warning to $stderr.
+ *  Changing the behavior of Warning.warn is useful to customize how warnings are
+ *  handled by Ruby, for instance by filtering some warnings, and/or outputting
+ *  warnings somewhere other than $stderr.
+ *
+ *  If you want to change the behavior of Warning.warn you should use
+ *  +Warning.extend(MyNewModuleWithWarnMethod)+ and you can use `super`
+ *  to get the default behavior of printing the warning to $stderr.
+ *
+ *  Example:
+ *    module MyWarningFilter
+ *      def warn(message, category: nil, **kwargs)
+ *        if /some warning I want to ignore/.matches?(message)
+ *          # ignore
+ *        else
+ *          super
+ *        end
+ *      end
+ *    end
+ *    Warning.extend MyWarningFilter
+ *
+ *  You should never redefine Warning#warn (the instance method), as that will
+ *  then no longer provide a way to use the default behavior.
+ *
+ *  The +warning+ gem provides convenient ways to customize Warning.warn.
  */
 
 static VALUE
 rb_warning_warn(VALUE mod, VALUE str)
 {
     return rb_funcallv(mod, id_warn, 1, &str);
+}
+
+
+static int
+rb_warning_warn_arity(void) {
+    return rb_method_entry_arity(rb_method_entry(rb_singleton_class(rb_mWarning), id_warn));
+}
+
+static VALUE
+rb_warn_category(VALUE str, VALUE category)
+{
+    if (category != Qnil) {
+        category = rb_to_symbol_type(category);
+        if (rb_hash_aref(warning_categories, category) != Qtrue) {
+            rb_raise(rb_eArgError, "invalid warning category used: %s", rb_id2name(SYM2ID(category)));
+        }
+    }
+
+    if (rb_warning_warn_arity() == 1) {
+        return rb_warning_warn(rb_mWarning, str);
+    }
+    else {
+        VALUE args[2];
+        args[0] = str;
+        args[1] = rb_hash_new();
+        rb_hash_aset(args[1], sym_category, category);
+        return rb_funcallv_kw(rb_mWarning, id_warn, 2, args, RB_PASS_KEYWORDS);
+    }
 }
 
 static void
@@ -322,6 +396,16 @@ rb_warn(const char *fmt, ...)
 }
 
 void
+rb_category_warn(const char *category, const char *fmt, ...)
+{
+    if (!NIL_P(ruby_verbose)) {
+        with_warning_string(mesg, 0, fmt) {
+            rb_warn_category(mesg, ID2SYM(rb_intern(category)));
+        }
+    }
+}
+
+void
 rb_enc_warn(rb_encoding *enc, const char *fmt, ...)
 {
     if (!NIL_P(ruby_verbose)) {
@@ -339,6 +423,17 @@ rb_warning(const char *fmt, ...)
 	with_warning_string(mesg, 0, fmt) {
 	    rb_write_warning_str(mesg);
 	}
+    }
+}
+
+/* rb_category_warning() reports only in verbose mode */
+void
+rb_category_warning(const char *category, const char *fmt, ...)
+{
+    if (RTEST(ruby_verbose)) {
+        with_warning_string(mesg, 0, fmt) {
+            rb_warn_category(mesg, ID2SYM(rb_intern(category)));
+        }
     }
 }
 
@@ -375,7 +470,21 @@ rb_warn_deprecated(const char *fmt, const char *suggest, ...)
     rb_str_cat_cstr(mesg, " is deprecated");
     if (suggest) rb_str_catf(mesg, "; use %s instead", suggest);
     rb_str_cat_cstr(mesg, "\n");
-    rb_write_warning_str(mesg);
+    rb_warn_category(mesg, ID2SYM(rb_intern("deprecated")));
+}
+
+void
+rb_warn_deprecated_to_remove(const char *fmt, const char *removal, ...)
+{
+    if (NIL_P(ruby_verbose)) return;
+    if (!rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) return;
+    va_list args;
+    va_start(args, removal);
+    VALUE mesg = warning_string(0, fmt, args);
+    va_end(args);
+    rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
+    rb_str_catf(mesg, " is deprecated and will be removed in Ruby %s\n", removal);
+    rb_warn_category(mesg, ID2SYM(rb_intern("deprecated")));
 }
 
 static inline int
@@ -395,9 +504,10 @@ warning_write(int argc, VALUE *argv, VALUE buf)
     return buf;
 }
 
-VALUE rb_ec_backtrace_location_ary(rb_execution_context_t *ec, long lev, long n);
+VALUE rb_ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, long n, bool skip_internal);
+
 static VALUE
-rb_warn_m(rb_execution_context_t *ec, VALUE exc, VALUE msgs, VALUE uplevel)
+rb_warn_m(rb_execution_context_t *ec, VALUE exc, VALUE msgs, VALUE uplevel, VALUE category)
 {
     VALUE location = Qnil;
     int argc = RARRAY_LENINT(msgs);
@@ -410,7 +520,7 @@ rb_warn_m(rb_execution_context_t *ec, VALUE exc, VALUE msgs, VALUE uplevel)
             if (lev < 0) {
                 rb_raise(rb_eArgError, "negative level (%ld)", lev);
             }
-            location = rb_ec_backtrace_location_ary(ec, lev + 1, 1);
+            location = rb_ec_backtrace_location_ary(ec, lev + 1, 1, TRUE);
             if (!NIL_P(location)) {
                 location = rb_ary_entry(location, 0);
             }
@@ -433,12 +543,13 @@ rb_warn_m(rb_execution_context_t *ec, VALUE exc, VALUE msgs, VALUE uplevel)
 	    rb_io_puts(argc, argv, str);
 	    RBASIC_SET_CLASS(str, rb_cString);
 	}
+
 	if (exc == rb_mWarning) {
 	    rb_must_asciicompat(str);
 	    rb_write_error_str(str);
 	}
 	else {
-	    rb_write_warning_str(str);
+            rb_warn_category(str, category);
 	}
     }
     return Qnil;
@@ -569,17 +680,6 @@ bug_report_begin_valist(FILE *out, const char *fmt, va_list args)
     snprintf(buf, sizeof(buf), "\n%s\n\n", ruby_description);
     fputs(buf, out);
     preface_dump(out);
-
-#if RUBY_DEVEL
-    const char *cmd = getenv("RUBY_ON_BUG");
-    if (cmd) {
-        snprintf(buf, sizeof(buf), "%s %"PRI_PIDT_PREFIX"d", cmd, getpid());
-        int r = system(buf);
-        if (r == -1) {
-            snprintf(buf, sizeof(buf), "Launching RUBY_ON_BUG command failed.");
-        }
-    }
-#endif
 }
 
 #define bug_report_begin(out, fmt) do { \
@@ -633,17 +733,25 @@ die(void)
 }
 
 void
-rb_bug(const char *fmt, ...)
+rb_bug_without_die(const char *fmt, ...)
 {
     const char *file = NULL;
     int line = 0;
 
     if (GET_EC()) {
-	file = rb_source_location_cstr(&line);
+        file = rb_source_location_cstr(&line);
     }
 
     report_bug(file, line, fmt, NULL);
+}
 
+void
+rb_bug(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    rb_bug_without_die(fmt, args);
+    va_end(args);
     die();
 }
 
@@ -738,7 +846,7 @@ static const char builtin_types[][10] = {
     "Array",
     "Hash",
     "Struct",
-    "Bignum",
+    "Integer",
     "File",
     "Data",			/* internal use: wrapped C pointers */
     "MatchData",		/* data of $~ */
@@ -749,7 +857,7 @@ static const char builtin_types[][10] = {
     "true",
     "false",
     "Symbol",			/* :symbol */
-    "Fixnum",
+    "Integer",
     "undef",			/* internal use: #undef; should not happen */
     "",				/* 0x17 */
     "",				/* 0x18 */
@@ -767,6 +875,17 @@ rb_builtin_type_name(int t)
     name = builtin_types[t];
     if (*name) return name;
     return 0;
+}
+
+static VALUE
+displaying_class_of(VALUE x)
+{
+    switch (x) {
+      case Qfalse: return rb_fstring_cstr("false");
+      case Qnil:   return rb_fstring_cstr("nil");
+      case Qtrue:  return rb_fstring_cstr("true");
+      default:     return rb_obj_class(x);
+    }
 }
 
 static const char *
@@ -816,13 +935,8 @@ unexpected_type(VALUE x, int xt, int t)
     VALUE mesg, exc = rb_eFatal;
 
     if (tname) {
-	const char *cname = builtin_class_name(x);
-	if (cname)
-	    mesg = rb_sprintf("wrong argument type %s (expected %s)",
-			      cname, tname);
-	else
-	    mesg = rb_sprintf("wrong argument type %"PRIsVALUE" (expected %s)",
-			      rb_obj_class(x), tname);
+        mesg = rb_sprintf("wrong argument type %"PRIsVALUE" (expected %s)",
+                          displaying_class_of(x), tname);
 	exc = rb_eTypeError;
     }
     else if (xt > T_MASK && xt <= 0x3f) {
@@ -890,26 +1004,26 @@ rb_typeddata_is_instance_of(VALUE obj, const rb_data_type_t *data_type)
 void *
 rb_check_typeddata(VALUE obj, const rb_data_type_t *data_type)
 {
-    const char *etype;
+    VALUE actual;
 
     if (!RB_TYPE_P(obj, T_DATA)) {
-      wrong_type:
-	etype = builtin_class_name(obj);
-	if (!etype)
-	    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected %s)",
-		     rb_obj_class(obj), data_type->wrap_struct_name);
-      wrong_datatype:
-	rb_raise(rb_eTypeError, "wrong argument type %s (expected %s)",
-		 etype, data_type->wrap_struct_name);
+        actual = displaying_class_of(obj);
     }
-    if (!RTYPEDDATA_P(obj)) {
-	goto wrong_type;
+    else if (!RTYPEDDATA_P(obj)) {
+        actual = displaying_class_of(obj);
     }
     else if (!rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), data_type)) {
-	etype = RTYPEDDATA_TYPE(obj)->wrap_struct_name;
-	goto wrong_datatype;
+        const char *name = RTYPEDDATA_TYPE(obj)->wrap_struct_name;
+        actual = rb_str_new_cstr(name); /* or rb_fstring_cstr? not sure... */
     }
-    return DATA_PTR(obj);
+    else {
+        return DATA_PTR(obj);
+    }
+
+    const char *expected = data_type->wrap_struct_name;
+    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected %s)",
+             actual, expected);
+    UNREACHABLE_RETURN(NULL);
 }
 
 /* exception classes */
@@ -988,7 +1102,8 @@ exc_init(VALUE exc, VALUE mesg)
 
 /*
  * call-seq:
- *    Exception.new(msg = nil)   ->  exception
+ *    Exception.new(msg = nil)        ->  exception
+ *    Exception.exception(msg = nil)  ->  exception
  *
  *  Construct a new Exception object, optionally passing in
  *  a message.
@@ -1007,7 +1122,7 @@ exc_initialize(int argc, VALUE *argv, VALUE exc)
  *  Document-method: exception
  *
  *  call-seq:
- *     exc.exception(string)  ->  an_exception or exc
+ *     exc.exception([string])  ->  an_exception or exc
  *
  *  With no argument, or if the argument is the same as the receiver,
  *  return the receiver. Otherwise, create a new
@@ -1748,6 +1863,17 @@ name_err_mesg_equal(VALUE obj1, VALUE obj2)
 
 /* :nodoc: */
 static VALUE
+name_err_mesg_receiver_name(VALUE obj)
+{
+    if (RB_SPECIAL_CONST_P(obj)) return Qundef;
+    if (RB_BUILTIN_TYPE(obj) == T_MODULE || RB_BUILTIN_TYPE(obj) == T_CLASS) {
+        return rb_check_funcall(obj, rb_intern("name"), 0, 0);
+    }
+    return Qundef;
+}
+
+/* :nodoc: */
+static VALUE
 name_err_mesg_to_str(VALUE obj)
 {
     VALUE *ptr, mesg;
@@ -1774,10 +1900,12 @@ name_err_mesg_to_str(VALUE obj)
 	    d = FAKE_CSTR(&d_str, "false");
 	    break;
 	  default:
-	    d = rb_protect(rb_inspect, obj, &state);
+	    d = rb_protect(name_err_mesg_receiver_name, obj, &state);
+	    if (state || d == Qundef || d == Qnil)
+		d = rb_protect(rb_inspect, obj, &state);
 	    if (state)
 		rb_set_errinfo(Qnil);
-	    if (NIL_P(d) || RSTRING_LEN(d) > 65) {
+	    if (NIL_P(d)) {
 		d = rb_any_to_s(obj);
 	    }
 	    singleton = (RSTRING_LEN(d) > 0 && RSTRING_PTR(d)[0] == '#');
@@ -2540,10 +2668,56 @@ syserr_eqq(VALUE self, VALUE exc)
  *  * fatal
  */
 
+static VALUE
+exception_alloc(VALUE klass)
+{
+    return rb_class_allocate_instance(klass);
+}
+
+static VALUE
+exception_dumper(VALUE exc)
+{
+    // TODO: Currently, the instance variables "bt" and "bt_locations"
+    // refers to the same object (Array of String). But "bt_locations"
+    // should have an Array of Thread::Backtrace::Locations.
+
+    return exc;
+}
+
+static int
+ivar_copy_i(st_data_t key, st_data_t val, st_data_t exc)
+{
+    rb_ivar_set((VALUE) exc, (ID) key, (VALUE) val);
+    return ST_CONTINUE;
+}
+
+static VALUE
+exception_loader(VALUE exc, VALUE obj)
+{
+    // The loader function of rb_marshal_define_compat seems to be called for two events:
+    // one is for fixup (r_fixup_compat), the other is for TYPE_USERDEF.
+    // In the former case, the first argument is an instance of Exception (because
+    // we pass rb_eException to rb_marshal_define_compat). In the latter case, the first
+    // argument is a class object (see TYPE_USERDEF case in r_object0).
+    // We want to copy all instance variables (but "bt_locations") from obj to exc.
+    // But we do not want to do so in the second case, so the following branch is for that.
+    if (RB_TYPE_P(exc, T_CLASS)) return obj; // maybe called from Marshal's TYPE_USERDEF
+
+    rb_ivar_foreach(obj, ivar_copy_i, exc);
+
+    if (rb_attr_get(exc, id_bt) == rb_attr_get(exc, id_bt_locations)) {
+        rb_ivar_set(exc, id_bt_locations, Qnil);
+    }
+
+    return exc;
+}
+
 void
 Init_Exception(void)
 {
     rb_eException   = rb_define_class("Exception", rb_cObject);
+    rb_define_alloc_func(rb_eException, exception_alloc);
+    rb_marshal_define_compat(rb_eException, rb_eException, exception_dumper, exception_loader);
     rb_define_singleton_method(rb_eException, "exception", rb_class_new_instance, -1);
     rb_define_singleton_method(rb_eException, "to_tty?", exc_s_to_tty_p, 0);
     rb_define_method(rb_eException, "exception", exc_exception, -1);
@@ -2623,7 +2797,7 @@ Init_Exception(void)
     rb_mWarning = rb_define_module("Warning");
     rb_define_singleton_method(rb_mWarning, "[]", rb_warning_s_aref, 1);
     rb_define_singleton_method(rb_mWarning, "[]=", rb_warning_s_aset, 2);
-    rb_define_method(rb_mWarning, "warn", rb_warning_s_warn, 1);
+    rb_define_method(rb_mWarning, "warn", rb_warning_s_warn, -1);
     rb_extend_object(rb_mWarning, rb_mWarning);
 
     /* :nodoc: */
@@ -2642,10 +2816,18 @@ Init_Exception(void)
     id_errno = rb_intern_const("errno");
     id_i_path = rb_intern_const("@path");
     id_warn = rb_intern_const("warn");
+    id_category = rb_intern_const("category");
     id_top = rb_intern_const("top");
     id_bottom = rb_intern_const("bottom");
     id_iseq = rb_make_internal_id();
     id_recv = rb_make_internal_id();
+
+    sym_category = ID2SYM(id_category);
+
+    warning_categories = rb_hash_new();
+    rb_gc_register_mark_object(warning_categories);
+    rb_hash_aset(warning_categories, ID2SYM(rb_intern_const("deprecated")), Qtrue);
+    rb_obj_freeze(warning_categories);
 }
 
 void
@@ -2816,6 +2998,12 @@ rb_sys_fail_path_in(const char *func_name, VALUE path)
 void
 rb_syserr_fail_path_in(const char *func_name, int n, VALUE path)
 {
+    rb_exc_raise(rb_syserr_new_path_in(func_name, n, path));
+}
+
+VALUE
+rb_syserr_new_path_in(const char *func_name, int n, VALUE path)
+{
     VALUE args[2];
 
     if (!path) path = Qnil;
@@ -2827,7 +3015,7 @@ rb_syserr_fail_path_in(const char *func_name, int n, VALUE path)
     }
     args[0] = path;
     args[1] = rb_str_new_cstr(func_name);
-    rb_exc_raise(rb_class_new_instance(2, args, get_syserr(n)));
+    return rb_class_new_instance(2, args, get_syserr(n));
 }
 #endif
 
@@ -3035,14 +3223,14 @@ rb_check_frozen(VALUE obj)
 void
 rb_error_untrusted(VALUE obj)
 {
-    rb_warning("rb_error_untrusted is deprecated and will be removed in Ruby 3.2.");
+    rb_warn_deprecated_to_remove("rb_error_untrusted", "3.2");
 }
 
 #undef rb_check_trusted
 void
 rb_check_trusted(VALUE obj)
 {
-    rb_warning("rb_check_trusted is deprecated and will be removed in Ruby 3.2.");
+    rb_warn_deprecated_to_remove("rb_check_trusted", "3.2");
 }
 
 void
@@ -3065,12 +3253,6 @@ Init_syserr(void)
 }
 
 #include "warning.rbinc"
-
-void
-Init_warning(void)
-{
-    load_warning();
-}
 
 /*!
  * \}

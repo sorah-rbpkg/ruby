@@ -1,19 +1,22 @@
-begin
-  require_relative "lib/delegate/version"
-rescue LoadError # Fallback to load version file in ruby core repository
-  require_relative "version"
+# frozen_string_literal: true
+
+name = File.basename(__FILE__, ".gemspec")
+version = ["lib", Array.new(name.count("-")+1, "..").join("/")].find do |dir|
+  break File.foreach(File.join(__dir__, dir, "#{name.tr('-', '/')}.rb")) do |line|
+    /^\s*VERSION\s*=\s*"(.*)"/ =~ line and break $1
+  end rescue nil
 end
 
 Gem::Specification.new do |spec|
-  spec.name          = "delegate"
-  spec.version       = Delegator::VERSION
+  spec.name          = name
+  spec.version       = version
   spec.authors       = ["Yukihiro Matsumoto"]
   spec.email         = ["matz@ruby-lang.org"]
 
   spec.summary       = %q{Provides three abilities to delegate method calls to an object.}
   spec.description   = %q{Provides three abilities to delegate method calls to an object.}
   spec.homepage      = "https://github.com/ruby/delegate"
-  spec.license       = "BSD-2-Clause"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
@@ -24,4 +27,5 @@ Gem::Specification.new do |spec|
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
+  spec.required_ruby_version = '>= 2.7'
 end

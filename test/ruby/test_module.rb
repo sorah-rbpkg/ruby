@@ -88,8 +88,11 @@ class TestModule < Test::Unit::TestCase
     private :user3
   end
 
-  module Other
-    def other
+  OtherSetup = -> do
+    remove_const :Other if defined? ::TestModule::Other
+    module Other
+      def other
+      end
     end
   end
 
@@ -223,6 +226,8 @@ class TestModule < Test::Unit::TestCase
   @@class_eval = 'b'
 
   def test_class_eval
+    OtherSetup.call
+
     Other.class_eval("CLASS_EVAL = 1")
     assert_equal(1, Other::CLASS_EVAL)
     assert_include(Other.constants, :CLASS_EVAL)
@@ -297,6 +302,8 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_nested_get
+    OtherSetup.call
+
     assert_equal Other, Object.const_get([self.class, 'Other'].join('::'))
     assert_equal User::USER, self.class.const_get([User, 'USER'].join('::'))
     assert_raise(NameError) {
@@ -305,6 +312,8 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_nested_get_symbol
+    OtherSetup.call
+
     const = [self.class, Other].join('::').to_sym
     assert_raise(NameError) {Object.const_get(const)}
 
@@ -331,6 +340,8 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_nested_defined
+    OtherSetup.call
+
     assert_send([Object, :const_defined?, [self.class.name, 'Other'].join('::')])
     assert_send([self.class, :const_defined?, 'User::USER'])
     assert_not_send([self.class, :const_defined?, 'User::Foo'])
@@ -338,6 +349,8 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_nested_defined_symbol
+    OtherSetup.call
+
     const = [self.class, Other].join('::').to_sym
     assert_raise(NameError) {Object.const_defined?(const)}
 
@@ -363,6 +376,8 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_const_set
+    OtherSetup.call
+
     assert_not_operator(Other, :const_defined?, :KOALA)
     Other.const_set(:KOALA, 99)
     assert_operator(Other, :const_defined?, :KOALA)
@@ -421,6 +436,8 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_dup
+    OtherSetup.call
+
     bug6454 = '[ruby-core:45132]'
 
     a = Module.new
@@ -462,6 +479,138 @@ class TestModule < Test::Unit::TestCase
     assert_raise(ArgumentError) { Module.new { include } }
   end
 
+  def test_prepend_works_with_duped_classes
+    m = Module.new
+    a = Class.new do
+      def b; 2 end
+      prepend m
+    end
+    a2 = a.dup.new
+    a.class_eval do
+      def b; 1 end
+    end
+    assert_equal(2, a2.b)
+  end
+
+  def test_gc_prepend_chain
+    assert_separately([], <<-EOS)
+      10000.times { |i|
+        m1 = Module.new do
+          def foo; end
+        end
+        m2 = Module.new do
+          prepend m1
+          def bar; end
+        end
+        m3 = Module.new do
+          def baz; end
+          prepend m2
+        end
+        Class.new do
+          prepend m3
+        end
+      }
+      GC.start
+    EOS
+  end
+
+  def test_refine_module_then_include
+    assert_separately([], "#{<<~"end;"}\n")
+      module M
+      end
+      class C
+        include M
+      end
+      module RefinementBug
+        refine M do
+          def refined_method
+            :rm
+          end
+        end
+      end
+      using RefinementBug
+
+      class A
+        include M
+      end
+
+      assert_equal(:rm, C.new.refined_method)
+    end;
+  end
+
+  def test_include_into_module_already_included
+    c = Class.new{def foo; [:c] end}
+    modules = lambda do ||
+      sub = Class.new(c){def foo; [:sc] + super end}
+      [
+        Module.new{def foo; [:m1] + super end},
+        Module.new{def foo; [:m2] + super end},
+        Module.new{def foo; [:m3] + super end},
+        sub,
+        sub.new
+      ]
+    end
+
+    m1, m2, m3, sc, o = modules.call
+    assert_equal([:sc, :c], o.foo)
+    sc.include m1
+    assert_equal([:sc, :m1, :c], o.foo)
+    m1.include m2
+    assert_equal([:sc, :m1, :m2, :c], o.foo)
+    m2.include m3
+    assert_equal([:sc, :m1, :m2, :m3, :c], o.foo)
+
+    m1, m2, m3, sc, o = modules.call
+    sc.prepend m1
+    assert_equal([:m1, :sc, :c], o.foo)
+    m1.include m2
+    assert_equal([:m1, :m2, :sc, :c], o.foo)
+    m2.include m3
+    assert_equal([:m1, :m2, :m3, :sc, :c], o.foo)
+
+    m1, m2, m3, sc, o = modules.call
+    sc.include m2
+    assert_equal([:sc, :m2, :c], o.foo)
+    sc.prepend m1
+    assert_equal([:m1, :sc, :m2, :c], o.foo)
+    m1.include m2
+    assert_equal([:m1, :sc, :m2, :c], o.foo)
+    m1.include m3
+    assert_equal([:m1, :m3, :sc, :m2, :c], o.foo)
+
+    m1, m2, m3, sc, o = modules.call
+    sc.include m3
+    sc.include m2
+    assert_equal([:sc, :m2, :m3, :c], o.foo)
+    sc.prepend m1
+    assert_equal([:m1, :sc, :m2, :m3, :c], o.foo)
+    m1.include m2
+    m1.include m3
+    assert_equal([:m1, :sc, :m2, :m3, :c], o.foo)
+
+    m1, m2, m3, sc, o = modules.call
+    assert_equal([:sc, :c], o.foo)
+    sc.prepend m1
+    assert_equal([:m1, :sc, :c], o.foo)
+    m1.prepend m2
+    assert_equal([:m2, :m1, :sc, :c], o.foo)
+    m2.prepend m3
+    assert_equal([:m3, :m2, :m1, :sc, :c], o.foo)
+    m1, m2, m3, sc, o = modules.call
+    sc.include m1
+    assert_equal([:sc, :m1, :c], o.foo)
+    sc.prepend m2
+    assert_equal([:m2, :sc, :m1, :c], o.foo)
+    sc.prepend m3
+    assert_equal([:m3, :m2, :sc, :m1, :c], o.foo)
+    m1, m2, m3, sc, o = modules.call
+    sc.include m1
+    assert_equal([:sc, :m1, :c], o.foo)
+    m2.prepend m3
+    m1.include m2
+    assert_equal([:sc, :m1, :m3, :m2, :c], o.foo)
+  end
+
   def test_included_modules
     assert_equal([], Mixin.included_modules)
     assert_equal([Mixin], User.included_modules)
@@ -470,6 +619,26 @@ class TestModule < Test::Unit::TestCase
     mixins << JSON::Ext::Generator::GeneratorMethods::String if defined?(JSON::Ext::Generator::GeneratorMethods::String)
     assert_equal([Kernel], Object.included_modules - mixins)
     assert_equal([Comparable, Kernel], String.included_modules - mixins)
+  end
+
+  def test_included_modules_with_prepend
+    m1 = Module.new
+    m2 = Module.new
+    m3 = Module.new
+
+    m2.prepend m1
+    m3.include m2
+    assert_equal([m1, m2], m3.included_modules)
+  end
+
+  def test_include_with_prepend
+    c = Class.new{def m; [:c] end}
+    p = Module.new{def m; [:p] + super end}
+    q = Module.new{def m; [:q] + super end; include p}
+    r = Module.new{def m; [:r] + super end; prepend q}
+    s = Module.new{def m; [:s] + super end; include r}
+    a = Class.new(c){def m; [:a] + super end; prepend p; include s}
+    assert_equal([:p, :a, :s, :q, :r, :c], a.new.m)
   end
 
   def test_instance_methods
@@ -522,6 +691,11 @@ class TestModule < Test::Unit::TestCase
     assert !c.method_defined?(:userx, false)
     c.define_method(:userx){}
     assert c.method_defined?(:userx, false)
+
+    # cleanup
+    User.class_eval do
+      remove_const :FOO
+    end
   end
 
   def module_exec_aux
@@ -552,6 +726,14 @@ class TestModule < Test::Unit::TestCase
       def dynamically_added_method_4; end
     end
     assert_method_defined?(User, :dynamically_added_method_4)
+
+    # cleanup
+    User.class_eval do
+      remove_method :dynamically_added_method_1
+      remove_method :dynamically_added_method_2
+      remove_method :dynamically_added_method_3
+      remove_method :dynamically_added_method_4
+    end
   end
 
   def test_module_eval
@@ -595,13 +777,13 @@ class TestModule < Test::Unit::TestCase
     n = Module.new
     m.const_set(:N, n)
     assert_nil(m.name)
-    assert_nil(n.name)
+    assert_match(/::N$/, n.name)
     assert_equal([:N], m.constants)
     m.module_eval("module O end")
     assert_equal([:N, :O], m.constants.sort)
     m.module_eval("class C; end")
     assert_equal([:C, :N, :O], m.constants.sort)
-    assert_nil(m::N.name)
+    assert_match(/::N$/, m::N.name)
     assert_match(/\A#<Module:.*>::O\z/, m::O.name)
     assert_match(/\A#<Module:.*>::C\z/, m::C.name)
     self.class.const_set(:M, m)
@@ -651,6 +833,10 @@ class TestModule < Test::Unit::TestCase
     Object.module_eval "WALTER = 99"
     c2 = Module.constants
     assert_equal([:WALTER], c2 - c1)
+
+    Object.class_eval do
+      remove_const :WALTER
+    end
 
     assert_equal([], Module.constants(true))
     assert_equal([], Module.constants(false))
@@ -1966,6 +2152,33 @@ class TestModule < Test::Unit::TestCase
     assert_include(im, mixin, bug8025)
   end
 
+  def test_prepended_module_with_super_and_alias
+    bug16736 = '[Bug #16736]'
+
+    a = labeled_class("A") do
+      def m; "A"; end
+    end
+    m = labeled_module("M") do
+      prepend Module.new
+
+      def self.included(base)
+        base.alias_method :base_m, :m
+      end
+
+      def m
+        super + "M"
+      end
+
+      def m2
+        base_m
+      end
+    end
+    b = labeled_class("B", a) do
+      include m
+    end
+    assert_equal("AM", b.new.m2, bug16736)
+  end
+
   def test_prepend_super_in_alias
     bug7842 = '[Bug #7842]'
 
@@ -2084,6 +2297,22 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:@@bar], m2.class_variables(false))
   end
 
+  def test_class_variable_in_dup_class
+    a = Class.new do
+      @@a = 'A'
+      def a=(x)
+        @@a = x
+      end
+      def a
+        @@a
+      end
+    end
+
+    b = a.dup
+    b.new.a = 'B'
+    assert_equal 'A', a.new.a, '[ruby-core:17019]'
+  end
+
   Bug6891 = '[ruby-core:47241]'
 
   def test_extend_module_with_protected_method
@@ -2160,6 +2389,9 @@ class TestModule < Test::Unit::TestCase
   class AttrTest
     class << self
       attr_accessor :cattr
+      def reset
+        self.cattr = nil
+      end
     end
     attr_accessor :iattr
     def ivar
@@ -2202,6 +2434,8 @@ class TestModule < Test::Unit::TestCase
     assert_warning '' do
       assert_equal(42, AttrTest.cattr)
     end
+
+    AttrTest.reset
   end
 
   def test_uninitialized_attr_non_object
@@ -2305,31 +2539,6 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NoMethodError, bug8284) {Object.remove_const}
   end
 
-  def test_include_module_with_constants_does_not_invalidate_method_cache
-    assert_in_out_err([], <<-RUBY, %w(123 456 true), [])
-      A = 123
-
-      class Foo
-        def self.a
-          A
-        end
-      end
-
-      module M
-        A = 456
-      end
-
-      puts Foo.a
-      starting = RubyVM.stat[:global_method_state]
-
-      Foo.send(:include, M)
-
-      ending = RubyVM.stat[:global_method_state]
-      puts Foo.a
-      puts starting == ending
-    RUBY
-  end
-
   def test_return_value_of_define_method
     retvals = []
     Class.new.class_eval do
@@ -2368,7 +2577,10 @@ class TestModule < Test::Unit::TestCase
 
   def test_inspect_segfault
     bug_10282 = '[ruby-core:65214] [Bug #10282]'
-    assert_separately [], <<-RUBY
+    assert_separately [], "#{<<~"begin;"}\n#{<<~'end;'}"
+    bug_10282 = "#{bug_10282}"
+    begin;
+      line = __LINE__ + 2
       module ShallowInspect
         def shallow_inspect
           "foo"
@@ -2385,9 +2597,9 @@ class TestModule < Test::Unit::TestCase
 
       A.prepend InspectIsShallow
 
-      expect = "#<Method: A(ShallowInspect)#inspect(shallow_inspect)() -:7>"
-      assert_equal expect, A.new.method(:inspect).inspect, "#{bug_10282}"
-    RUBY
+      expect = "#<Method: A(ShallowInspect)#inspect(shallow_inspect)() -:#{line}>"
+      assert_equal expect, A.new.method(:inspect).inspect, bug_10282
+    end;
   end
 
   def test_define_method_with_unbound_method
@@ -2497,6 +2709,18 @@ class TestModule < Test::Unit::TestCase
 
     assert_equal :M1, CloneTestC1.new.foo, '[Bug #15877]'
     assert_equal :M2, CloneTestC2.new.foo, '[Bug #15877]'
+  end
+
+  def test_clone_freeze
+    m = Module.new.freeze
+    assert_predicate m.clone, :frozen?
+    assert_not_predicate m.clone(freeze: false), :frozen?
+  end
+
+  def test_module_name_in_singleton_method
+    s = Object.new.singleton_class
+    mod = s.const_set(:Foo, Module.new)
+    assert_match(/::Foo$/, mod.name, '[Bug #14895]')
   end
 
   private

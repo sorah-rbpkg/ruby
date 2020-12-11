@@ -34,9 +34,9 @@ require_relative "bundler/build_metadata"
 # of loaded and required modules.
 #
 module Bundler
-  environment_preserver = EnvironmentPreserver.new(ENV, EnvironmentPreserver::BUNDLER_KEYS)
+  environment_preserver = EnvironmentPreserver.from_env
   ORIGINAL_ENV = environment_preserver.restore
-  ENV.replace(environment_preserver.backup)
+  environment_preserver.replace_with_backup
   SUDO_MUTEX = Mutex.new
 
   autoload :Definition,             File.expand_path("bundler/definition", __dir__)
@@ -285,7 +285,13 @@ module Bundler
 
     def app_config_path
       if app_config = ENV["BUNDLE_APP_CONFIG"]
-        Pathname.new(app_config).expand_path(root)
+        app_config_pathname = Pathname.new(app_config)
+
+        if app_config_pathname.absolute?
+          app_config_pathname
+        else
+          app_config_pathname.expand_path(root)
+        end
       else
         root.join(".bundle")
       end
@@ -347,7 +353,10 @@ EOF
       env.delete_if {|k, _| k[0, 7] == "BUNDLE_" }
 
       if env.key?("RUBYOPT")
-        env["RUBYOPT"] = env["RUBYOPT"].sub "-rbundler/setup", ""
+        rubyopt = env["RUBYOPT"].split(" ")
+        rubyopt.delete("-r#{File.expand_path("bundler/setup", __dir__)}")
+        rubyopt.delete("-rbundler/setup")
+        env["RUBYOPT"] = rubyopt.join(" ")
       end
 
       if env.key?("RUBYLIB")
@@ -447,8 +456,12 @@ EOF
       # system binaries. If you put '-n foo' in your .gemrc, RubyGems will
       # install binstubs there instead. Unfortunately, RubyGems doesn't expose
       # that directory at all, so rather than parse .gemrc ourselves, we allow
-      # the directory to be set as well, via `bundle config set bindir foo`.
+      # the directory to be set as well, via `bundle config set --local bindir foo`.
       Bundler.settings[:system_bindir] || Bundler.rubygems.gem_bindir
+    end
+
+    def preferred_gemfile_name
+      Bundler.settings[:init_gems_rb] ? "gems.rb" : "Gemfile"
     end
 
     def use_system_gems?
@@ -512,7 +525,8 @@ EOF
         Your user account isn't allowed to install to the system RubyGems.
         You can cancel this installation and run:
 
-            bundle install --path vendor/bundle
+            bundle config set --local path 'vendor/bundle'
+            bundle install
 
         to install the gems into ./vendor/bundle/, or you can enter your password
         and install the bundled gems to RubyGems using sudo.
@@ -588,6 +602,10 @@ EOF
       reset_rubygems!
     end
 
+    def reset_settings!
+      @settings = nil
+    end
+
     def reset_paths!
       @bin_path = nil
       @bundler_major_version = nil
@@ -610,7 +628,7 @@ EOF
       @rubygems = nil
     end
 
-  private
+    private
 
     def eval_yaml_gemspec(path, contents)
       require_relative "bundler/psyched_yaml"

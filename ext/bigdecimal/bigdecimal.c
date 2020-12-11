@@ -14,6 +14,7 @@
 #include "ruby/util.h"
 
 #ifndef BIGDECIMAL_DEBUG
+# undef NDEBUG
 # define NDEBUG
 #endif
 #include <assert.h>
@@ -123,6 +124,30 @@ rb_rational_den(VALUE rat)
     return RRATIONAL(rat)->den;
 #else
     return rb_funcall(rat, rb_intern("denominator"), 0);
+#endif
+}
+#endif
+
+#ifndef HAVE_RB_COMPLEX_REAL
+static inline VALUE
+rb_complex_real(VALUE cmp)
+{
+#ifdef HAVE_TYPE_STRUCT_RCOMPLEX
+  return RCOMPLEX(cmp)->real;
+#else
+  return rb_funcall(cmp, rb_intern("real"), 0);
+#endif
+}
+#endif
+
+#ifndef HAVE_RB_COMPLEX_IMAG
+static inline VALUE
+rb_complex_imag(VALUE cmp)
+{
+#ifdef HAVE_TYPE_STRUCT_RCOMPLEX
+  return RCOMPLEX(cmp)->imag;
+#else
+  return rb_funcall(cmp, rb_intern("imag"), 0);
 #endif
 }
 #endif
@@ -343,8 +368,8 @@ BigDecimal_prec(VALUE self)
     VALUE obj;
 
     GUARD_OBJ(p, GetVpValue(self, 1));
-    obj = rb_assoc_new(INT2NUM(p->Prec*VpBaseFig()),
-		       INT2NUM(p->MaxPrec*VpBaseFig()));
+    obj = rb_assoc_new(SIZET2NUM(p->Prec*VpBaseFig()),
+		       SIZET2NUM(p->MaxPrec*VpBaseFig()));
     return obj;
 }
 
@@ -2067,7 +2092,7 @@ BigDecimal_to_s(int argc, VALUE *argv, VALUE self)
 	nc += (nc + mc - 1) / mc + 1;
     }
 
-    str = rb_str_new(0, nc);
+    str = rb_usascii_str_new(0, nc);
     psz = RSTRING_PTR(str);
 
     if (fmt) {
@@ -2132,7 +2157,7 @@ BigDecimal_split(VALUE self)
     rb_ary_push(obj, str);
     rb_str_resize(str, strlen(psz1));
     rb_ary_push(obj, INT2FIX(10));
-    rb_ary_push(obj, INT2NUM(e));
+    rb_ary_push(obj, SSIZET2NUM(e));
     return obj;
 }
 
@@ -2145,7 +2170,7 @@ static VALUE
 BigDecimal_exponent(VALUE self)
 {
     ssize_t e = VpExponent10(GetVpValue(self, 1));
-    return INT2NUM(e);
+    return SSIZET2NUM(e);
 }
 
 /* Returns a string representation of self.
@@ -2628,6 +2653,7 @@ VpNewVarArg(int argc, VALUE *argv)
         }
     }
 
+  retry:
     switch (TYPE(iniValue)) {
       case T_DATA:
 	if (is_kind_of_BigDecimal(iniValue)) {
@@ -2664,6 +2690,18 @@ VpNewVarArg(int argc, VALUE *argv)
 		     RB_OBJ_CLASSNAME(iniValue));
 	}
 	return GetVpValueWithPrec(iniValue, mf, 1);
+
+      case T_COMPLEX:
+        {
+            VALUE im;
+            im = rb_complex_imag(iniValue);
+            if (!is_zero(im)) {
+                rb_raise(rb_eArgError,
+                         "Unable to make a BigDecimal from non-zero imaginary number");
+            }
+            iniValue = rb_complex_real(iniValue);
+            goto retry;
+        }
 
       case T_STRING:
 	/* fall through */
@@ -2765,7 +2803,7 @@ static VALUE
 BigDecimal_limit(int argc, VALUE *argv, VALUE self)
 {
     VALUE  nFig;
-    VALUE  nCur = INT2NUM(VpGetPrecLimit());
+    VALUE  nCur = SIZET2NUM(VpGetPrecLimit());
 
     if (rb_scan_args(argc, argv, "01", &nFig) == 1) {
 	int nf;
@@ -3450,7 +3488,6 @@ Init_bigdecimal(void)
 
 
     /* instance methods */
-    rb_define_method(rb_cBigDecimal, "initialize_copy", BigDecimal_initialize_copy, 1);
     rb_define_method(rb_cBigDecimal, "precs", BigDecimal_prec, 0);
 
     rb_define_method(rb_cBigDecimal, "add", BigDecimal_add2, 2);
@@ -4144,7 +4181,7 @@ VpAlloc(size_t mx, const char *szVal, int strict_p, int exc)
         /* at least mx digits. */
         /* szVal==NULL ==> allocate zero value. */
         vp = VpAllocReal(mx);
-        /* xmalloc() alway returns(or throw interruption) */
+        /* xmalloc() always returns(or throw interruption) */
         vp->MaxPrec = mx;    /* set max precision */
         VpSetZero(vp, 1);    /* initialize vp to zero. */
         return vp;
@@ -4320,7 +4357,7 @@ VpAlloc(size_t mx, const char *szVal, int strict_p, int exc)
     nalloc = Max(nalloc, mx);
     mx = nalloc;
     vp = VpAllocReal(mx);
-    /* xmalloc() alway returns(or throw interruption) */
+    /* xmalloc() always returns(or throw interruption) */
     vp->MaxPrec = mx;        /* set max precision */
     VpSetZero(vp, sign);
     VpCtoV(vp, psz, ni, psz + ipf, nf, psz + ipe, ne);

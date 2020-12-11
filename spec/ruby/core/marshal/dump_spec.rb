@@ -235,13 +235,13 @@ describe "Marshal.dump" do
     end
 
     it "dumps a Regexp with instance variables" do
-      o = //
+      o = Regexp.new("")
       o.instance_variable_set(:@ivar, :ivar)
       Marshal.dump(o).should == "\x04\bI/\x00\x00\a:\x06EF:\n@ivar:\tivar"
     end
 
     it "dumps an extended Regexp" do
-      Marshal.dump(//.extend(Meths)).should == "\x04\bIe:\nMeths/\x00\x00\x06:\x06EF"
+      Marshal.dump(Regexp.new("").extend(Meths)).should == "\x04\bIe:\nMeths/\x00\x00\x06:\x06EF"
     end
 
     it "dumps a Regexp subclass" do
@@ -411,13 +411,15 @@ describe "Marshal.dump" do
       load.should == (1...2)
     end
 
-    it "dumps a Range with extra instance variables" do
-      range = (1...3)
-      range.instance_variable_set :@foo, 42
-      dump = Marshal.dump(range)
-      load = Marshal.load(dump)
-      load.should == range
-      load.instance_variable_get(:@foo).should == 42
+    ruby_version_is ""..."3.0" do
+      it "dumps a Range with extra instance variables" do
+        range = (1...3)
+        range.instance_variable_set :@foo, 42
+        dump = Marshal.dump(range)
+        load = Marshal.load(dump)
+        load.should == range
+        load.instance_variable_get(:@foo).should == 42
+      end
     end
   end
 
@@ -556,13 +558,10 @@ describe "Marshal.dump" do
   end
 
   describe "when passed a StringIO" do
-
     it "should raise an error" do
       require "stringio"
-
       -> { Marshal.dump(StringIO.new) }.should raise_error(TypeError)
     end
-
   end
 
   it "raises a TypeError if marshalling a Method instance" do

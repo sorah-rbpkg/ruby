@@ -11,7 +11,7 @@
 
 **********************************************************************/
 
-#define STRINGIO_VERSION "0.1.0"
+#define STRINGIO_VERSION "0.1.4"
 
 #include "ruby.h"
 #include "ruby/io.h"
@@ -833,18 +833,6 @@ strio_each_byte(VALUE self)
 }
 
 /*
- *  This is a deprecated alias for #each_byte.
- */
-static VALUE
-strio_bytes(VALUE self)
-{
-    rb_warn("StringIO#bytes is deprecated; use #each_byte instead");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(self, ID2SYM(rb_intern("each_byte")), 0, 0);
-    return strio_each_byte(self);
-}
-
-/*
  * call-seq:
  *   strio.getc   -> string or nil
  *
@@ -1058,18 +1046,6 @@ strio_each_char(VALUE self)
 }
 
 /*
- *  This is a deprecated alias for #each_char.
- */
-static VALUE
-strio_chars(VALUE self)
-{
-    rb_warn("StringIO#chars is deprecated; use #each_char instead");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(self, ID2SYM(rb_intern("each_char")), 0, 0);
-    return strio_each_char(self);
-}
-
-/*
  * call-seq:
  *   strio.each_codepoint {|c| block }  -> strio
  *   strio.each_codepoint               -> anEnumerator
@@ -1095,22 +1071,10 @@ strio_each_codepoint(VALUE self)
 
 	c = rb_enc_codepoint_len(RSTRING_PTR(ptr->string)+ptr->pos,
 				 RSTRING_END(ptr->string), &n, enc);
-	rb_yield(UINT2NUM(c));
 	ptr->pos += n;
+	rb_yield(UINT2NUM(c));
     }
     return self;
-}
-
-/*
- *  This is a deprecated alias for #each_codepoint.
- */
-static VALUE
-strio_codepoints(VALUE self)
-{
-    rb_warn("StringIO#codepoints is deprecated; use #each_codepoint instead");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(self, ID2SYM(rb_intern("each_codepoint")), 0, 0);
-    return strio_each_codepoint(self);
 }
 
 /* Boyer-Moore search: copied from regex.c */
@@ -1364,18 +1328,6 @@ strio_each(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- *  This is a deprecated alias for #each_line.
- */
-static VALUE
-strio_lines(int argc, VALUE *argv, VALUE self)
-{
-    rb_warn("StringIO#lines is deprecated; use #each_line instead");
-    if (!rb_block_given_p())
-	return rb_enumeratorize(self, ID2SYM(rb_intern("each_line")), argc, argv);
-    return strio_each(argc, argv, self);
-}
-
-/*
  * call-seq:
  *   strio.readlines(sep=$/, chomp: false)     ->   array
  *   strio.readlines(limit, chomp: false)      ->   array
@@ -1429,13 +1381,18 @@ strio_write(VALUE self, VALUE str)
     long len, olen;
     rb_encoding *enc, *enc2;
     rb_encoding *const ascii8bit = rb_ascii8bit_encoding();
+    rb_encoding *usascii = 0;
 
     if (!RB_TYPE_P(str, T_STRING))
 	str = rb_obj_as_string(str);
     enc = get_enc(ptr);
     enc2 = rb_enc_get(str);
-    if (enc != enc2 && enc != ascii8bit) {
-	str = rb_str_conv_enc(str, enc2, enc);
+    if (enc != enc2 && enc != ascii8bit && enc != (usascii = rb_usascii_encoding())) {
+	VALUE converted = rb_str_conv_enc(str, enc2, enc);
+	if (converted == str && enc2 != ascii8bit && enc2 != usascii) { /* conversion failed */
+	    rb_enc_check(rb_enc_from_encoding(enc), str);
+	}
+	str = converted;
     }
     len = RSTRING_LEN(str);
     if (len == 0) return 0;
@@ -1532,7 +1489,6 @@ strio_read(int argc, VALUE *argv, VALUE self)
     long len;
     int binary = 0;
 
-    rb_check_arity(argc, 0, 2);
     switch (argc) {
       case 2:
 	str = argv[1];
@@ -1572,6 +1528,8 @@ strio_read(int argc, VALUE *argv, VALUE self)
 	    len -= ptr->pos;
 	}
 	break;
+      default:
+        rb_error_arity(argc, 0, 2);
     }
     if (NIL_P(str)) {
 	rb_encoding *enc = binary ? rb_ascii8bit_encoding() : get_enc(ptr);
@@ -1837,13 +1795,9 @@ Init_stringio(void)
 
     rb_define_method(StringIO, "each", strio_each, -1);
     rb_define_method(StringIO, "each_line", strio_each, -1);
-    rb_define_method(StringIO, "lines", strio_lines, -1);
     rb_define_method(StringIO, "each_byte", strio_each_byte, 0);
-    rb_define_method(StringIO, "bytes", strio_bytes, 0);
     rb_define_method(StringIO, "each_char", strio_each_char, 0);
-    rb_define_method(StringIO, "chars", strio_chars, 0);
     rb_define_method(StringIO, "each_codepoint", strio_each_codepoint, 0);
-    rb_define_method(StringIO, "codepoints", strio_codepoints, 0);
     rb_define_method(StringIO, "getc", strio_getc, 0);
     rb_define_method(StringIO, "ungetc", strio_ungetc, 1);
     rb_define_method(StringIO, "ungetbyte", strio_ungetbyte, 1);

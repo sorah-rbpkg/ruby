@@ -10,10 +10,13 @@
 # prelude
 prelude.rb
 rbconfig.rb
-
+array.rb
 ast.rb
+dir.rb
 gc.rb
+integer.rb
 io.rb
+kernel.rb
 pack.rb
 trace_point.rb
 warning.rb
@@ -25,7 +28,7 @@ lib
 ext
 
 # rdoc files
-NEWS
+NEWS.md
 
 README.md
 README.ja.md

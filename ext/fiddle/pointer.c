@@ -193,14 +193,34 @@ rb_fiddle_ptr_initialize(int argc, VALUE argv[], VALUE self)
 
 /*
  * call-seq:
- *
  *    Fiddle::Pointer.malloc(size, freefunc = nil)  => fiddle pointer instance
+ *
+ * == Examples
+ *
+ *    # Relying on the garbage collector - may lead to unlimited memory allocated before freeing any, but safe
+ *    pointer = Fiddle::Pointer.malloc(size, Fiddle::RUBY_FREE)
+ *    ...
+ *
+ *    # Manual freeing
+ *    pointer = Fiddle::Pointer.malloc(size)
+ *    begin
+ *      ...
+ *    ensure
+ *      Fiddle.free pointer
+ *    end
+ *
+ *    # No free function and no call to free - the native memory will leak if the pointer is garbage collected
+ *    pointer = Fiddle::Pointer.malloc(size)
+ *    ...
  *
  * Allocate +size+ bytes of memory and associate it with an optional
  * +freefunc+ that will be called when the pointer is garbage collected.
- *
  * +freefunc+ must be an address pointing to a function or an instance of
- * Fiddle::Function
+ * +Fiddle::Function+. Using +freefunc+ may lead to unlimited memory being
+ * allocated before any is freed as the native memory the pointer references
+ * does not contribute to triggering the Ruby garbage collector. Consider
+ * manually freeing the memory as illustrated above. You cannot combine
+ * the techniques as this may lead to a double-free.
  */
 static VALUE
 rb_fiddle_ptr_s_malloc(int argc, VALUE argv[], VALUE klass)
@@ -541,7 +561,7 @@ rb_fiddle_ptr_aref(int argc, VALUE argv[], VALUE self)
     struct ptr_data *data;
 
     TypedData_Get_Struct(self, struct ptr_data, &fiddle_ptr_data_type, data);
-    if (!data->ptr) rb_raise(rb_eFiddleError, "NULL pointer dereference");
+    if (!data->ptr) rb_raise(rb_eFiddleDLError, "NULL pointer dereference");
     switch( rb_scan_args(argc, argv, "11", &arg0, &arg1) ){
       case 1:
 	offset = NUM2ULONG(arg0);
@@ -579,7 +599,7 @@ rb_fiddle_ptr_aset(int argc, VALUE argv[], VALUE self)
     struct ptr_data *data;
 
     TypedData_Get_Struct(self, struct ptr_data, &fiddle_ptr_data_type, data);
-    if (!data->ptr) rb_raise(rb_eFiddleError, "NULL pointer dereference");
+    if (!data->ptr) rb_raise(rb_eFiddleDLError, "NULL pointer dereference");
     switch( rb_scan_args(argc, argv, "21", &arg0, &arg1, &arg2) ){
       case 2:
 	offset = NUM2ULONG(arg0);
@@ -660,7 +680,7 @@ rb_fiddle_ptr_s_to_ptr(VALUE self, VALUE val)
 	    wrap = 0;
 	}
 	else{
-	    rb_raise(rb_eFiddleError, "to_ptr should return a Fiddle::Pointer object");
+	    rb_raise(rb_eFiddleDLError, "to_ptr should return a Fiddle::Pointer object");
 	}
     }
     else{

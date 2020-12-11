@@ -5,7 +5,6 @@ require 'rubygems/command'
 require 'rubygems/dependency_installer'
 
 class TestGemInstallUpdateOptions < Gem::InstallerTestCase
-
   def setup
     super
 
@@ -31,7 +30,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
 
     args.concat %w[--vendor] unless Gem.java_platform?
 
-    args.concat %w[-P HighSecurity] if defined?(OpenSSL::SSL)
+    args.concat %w[-P HighSecurity] if Gem::HAVE_OPENSSL
 
     assert @cmd.handles?(args)
   end
@@ -93,7 +92,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   end
 
   def test_security_policy
-    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+    skip 'openssl is missing' unless Gem::HAVE_OPENSSL
 
     @cmd.handle_options %w[-P HighSecurity]
 
@@ -101,7 +100,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   end
 
   def test_security_policy_unknown
-    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+    skip 'openssl is missing' unless Gem::HAVE_OPENSSL
 
     @cmd.add_install_update_options
 
@@ -194,4 +193,15 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
     assert_equal true, @cmd.options[:post_install_message]
   end
 
+  def test_minimal_deps_no
+    @cmd.handle_options %w[--no-minimal-deps]
+
+    assert_equal false, @cmd.options[:minimal_deps]
+  end
+
+  def test_minimal_deps
+    @cmd.handle_options %w[--minimal-deps]
+
+    assert_equal true, @cmd.options[:minimal_deps]
+  end
 end

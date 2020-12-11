@@ -9,13 +9,21 @@
 
 **********************************************************************/
 
+#include "ruby/internal/config.h"
+
+#include <ctype.h>
+
+#include "encindex.h"
+#include "internal.h"
+#include "internal/hash.h"
+#include "internal/imemo.h"
+#include "internal/re.h"
+#include "internal/string.h"
+#include "internal/variable.h"
+#include "regint.h"
 #include "ruby/encoding.h"
 #include "ruby/re.h"
 #include "ruby/util.h"
-#include "internal.h"
-#include "regint.h"
-#include "encindex.h"
-#include <ctype.h>
 
 VALUE rb_eRegexpError;
 
@@ -304,8 +312,10 @@ char_to_option(int c)
     return val;
 }
 
+enum { OPTBUF_SIZE = 4 };
+
 static char *
-option_to_str(char str[4], int options)
+option_to_str(char str[OPTBUF_SIZE], int options)
 {
     char *p = str;
     if (options & ONIG_OPTION_MULTILINE) *p++ = 'm';
@@ -455,7 +465,7 @@ rb_reg_desc(const char *s, long len, VALUE re)
     rb_reg_expr_str(str, s, len, enc, resenc, '/');
     rb_str_buf_cat2(str, "/");
     if (re) {
-	char opts[4];
+	char opts[OPTBUF_SIZE];
 	rb_reg_check(re);
 	if (*option_to_str(opts, RREGEXP_PTR(re)->options))
 	    rb_str_buf_cat2(str, opts);
@@ -547,7 +557,7 @@ rb_reg_str_with_term(VALUE re, int term)
     long len;
     const UChar* ptr;
     VALUE str = rb_str_buf_new2("(?");
-    char optbuf[5];
+    char optbuf[OPTBUF_SIZE + 1]; /* for '-' */
     rb_encoding *enc = rb_enc_get(re);
 
     rb_reg_check(re);
@@ -661,7 +671,7 @@ rb_reg_raise(const char *s, long len, const char *err, VALUE re)
 static VALUE
 rb_enc_reg_error_desc(const char *s, long len, rb_encoding *enc, int options, const char *err)
 {
-    char opts[6];
+    char opts[OPTBUF_SIZE + 1];	/* for '/' */
     VALUE desc = rb_str_buf_new2(err);
     rb_encoding *resenc = rb_default_internal_encoding();
     if (resenc == NULL) resenc = rb_default_external_encoding();
@@ -917,12 +927,12 @@ make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_bu
  *  aliased as global variables:
  *
  *  * <code>$~</code> is Regexp.last_match;
- *  * <code>$&</code> is Regexp.last_match<code>[0]</code>;
+ *  * <code>$&</code> is Regexp.last_match<code>[ 0 ]</code>;
  *  * <code>$1</code>, <code>$2</code>, and so on are
- *    Regexp.last_match<code>[i]</code> (captures by number);
+ *    Regexp.last_match<code>[ i ]</code> (captures by number);
  *  * <code>$`</code> is Regexp.last_match<code>.pre_match</code>;
  *  * <code>$'</code> is Regexp.last_match<code>.post_match</code>;
- *  * <code>$+</code> is Regexp.last_match<code>[-1]</code> (the last capture).
+ *  * <code>$+</code> is Regexp.last_match<code>[ -1 ]</code> (the last capture).
  *
  *  See also "Special global variables" section in Regexp documentation.
  */
@@ -1474,8 +1484,10 @@ rb_reg_prepare_re0(VALUE re, VALUE str, onig_errmsg_buffer err)
 	rb_raise(rb_eArgError, "regexp preprocess failed: %s", err);
     }
 
-    r = onig_new(&reg, (UChar* )RSTRING_PTR(unescaped),
-		 (UChar* )(RSTRING_PTR(unescaped) + RSTRING_LEN(unescaped)),
+    const char *ptr;
+    long len;
+    RSTRING_GETMEM(unescaped, ptr, len);
+    r = onig_new(&reg, (UChar *)ptr, (UChar *)(ptr + len),
 		 reg->options, enc,
 		 OnigDefaultSyntax, &einfo);
     if (r) {
@@ -1532,12 +1544,15 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
     long result;
     VALUE match;
     struct re_registers regi, *regs = &regi;
-    char *range = RSTRING_PTR(str);
+    char *start, *range;
+    long len;
     regex_t *reg;
     int tmpreg;
     onig_errmsg_buffer err = "";
 
-    if (pos > RSTRING_LEN(str) || pos < 0) {
+    RSTRING_GETMEM(str, start, len);
+    range = start;
+    if (pos > len || pos < 0) {
 	rb_backref_set(Qnil);
 	return -1;
     }
@@ -1559,12 +1574,12 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
 	MEMZERO(regs, struct re_registers, 1);
     }
     if (!reverse) {
-	range += RSTRING_LEN(str);
+	range += len;
     }
     result = onig_search(reg,
-			 (UChar*)(RSTRING_PTR(str)),
-			 ((UChar*)(RSTRING_PTR(str)) + RSTRING_LEN(str)),
-			 ((UChar*)(RSTRING_PTR(str)) + pos),
+			 (UChar*)start,
+			 ((UChar*)(start + len)),
+			 ((UChar*)(start + pos)),
 			 ((UChar*)range),
 			 regs, ONIG_OPTION_NONE);
     if (!tmpreg) RREGEXP(re)->usecnt--;
@@ -1640,10 +1655,13 @@ rb_reg_start_with_p(VALUE re, VALUE str)
     if (NIL_P(match)) {
 	MEMZERO(regs, struct re_registers, 1);
     }
+    const char *ptr;
+    long len;
+    RSTRING_GETMEM(str, ptr, len);
     result = onig_match(reg,
-	    (UChar*)(RSTRING_PTR(str)),
-	    ((UChar*)(RSTRING_PTR(str)) + RSTRING_LEN(str)),
-	    (UChar*)(RSTRING_PTR(str)),
+	    (UChar*)(ptr),
+	    ((UChar*)(ptr + len)),
+	    (UChar*)(ptr),
 	    regs, ONIG_OPTION_NONE);
     if (!tmpreg) RREGEXP(re)->usecnt--;
     if (tmpreg) {
@@ -2926,7 +2944,9 @@ rb_reg_init_str_enc(VALUE re, VALUE s, rb_encoding *enc, int options)
 MJIT_FUNC_EXPORTED VALUE
 rb_reg_new_ary(VALUE ary, int opt)
 {
-    return rb_reg_new_str(rb_reg_preprocess_dregexp(ary, opt), opt);
+    VALUE re = rb_reg_new_str(rb_reg_preprocess_dregexp(ary, opt), opt);
+    rb_obj_freeze(re);
+    return re;
 }
 
 VALUE
@@ -2961,6 +2981,7 @@ rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline)
 	return Qnil;
     }
     FL_SET(re, REG_LITERAL);
+    rb_obj_freeze(re);
     return re;
 }
 
@@ -3257,8 +3278,8 @@ rb_reg_match2(VALUE re)
 
 /*
  *  call-seq:
- *     rxp.match(str)       -> matchdata or nil
- *     rxp.match(str,pos)   -> matchdata or nil
+ *     rxp.match(str, pos=0)                   -> matchdata or nil
+ *     rxp.match(str, pos=0) {|match| block }  -> obj
  *
  *  Returns a MatchData object describing the match, or
  *  <code>nil</code> if there was no match. This is equivalent to
@@ -3502,8 +3523,9 @@ rb_reg_quote(VALUE str)
     }
     t = RSTRING_PTR(tmp);
     /* copy upto metacharacter */
-    memcpy(t, RSTRING_PTR(str), s - RSTRING_PTR(str));
-    t += s - RSTRING_PTR(str);
+    const char *p = RSTRING_PTR(str);
+    memcpy(t, p, s - p);
+    t += s - p;
 
     while (s < send) {
         c = rb_enc_ascget(s, send, &clen, enc);
@@ -3781,10 +3803,12 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
     rb_encoding *str_enc = rb_enc_get(str);
     rb_encoding *src_enc = rb_enc_get(src);
     int acompat = rb_enc_asciicompat(str_enc);
+    long n;
 #define ASCGET(s,e,cl) (acompat ? (*(cl)=1,ISASCII((s)[0])?(s)[0]:-1) : rb_enc_ascget((s), (e), (cl), str_enc))
 
-    p = s = RSTRING_PTR(str);
-    e = s + RSTRING_LEN(str);
+    RSTRING_GETMEM(str, s, n);
+    p = s;
+    e = s + n;
 
     while (s < e) {
         int c = ASCGET(s, e, &clen);
@@ -3893,19 +3917,6 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
     }
 
     return val;
-}
-
-static VALUE
-kcode_getter(ID _x, VALUE *_y)
-{
-    rb_warn("variable $KCODE is no longer effective");
-    return Qnil;
-}
-
-static void
-kcode_setter(VALUE val, ID id, VALUE *_)
-{
-    rb_warn("variable $KCODE is no longer effective; ignored");
 }
 
 static VALUE
@@ -4031,9 +4042,13 @@ Init_Regexp(void)
     rb_define_virtual_variable("$'", postmatch_getter, 0);
     rb_define_virtual_variable("$+", last_paren_match_getter, 0);
 
+    rb_gvar_ractor_local("$~");
+    rb_gvar_ractor_local("$&");
+    rb_gvar_ractor_local("$`");
+    rb_gvar_ractor_local("$'");
+    rb_gvar_ractor_local("$+");
+
     rb_define_virtual_variable("$=", ignorecase_getter, ignorecase_setter);
-    rb_define_virtual_variable("$KCODE", kcode_getter, kcode_setter);
-    rb_define_virtual_variable("$-K", kcode_getter, kcode_setter);
 
     rb_cRegexp = rb_define_class("Regexp", rb_cObject);
     rb_define_alloc_func(rb_cRegexp, rb_reg_s_alloc);

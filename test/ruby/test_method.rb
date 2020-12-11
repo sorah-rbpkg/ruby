@@ -104,6 +104,12 @@ class TestMethod < Test::Unit::TestCase
     assert_raise(TypeError) do
       um.bind(Base.new)
     end
+
+    # cleanup
+    Derived.class_eval do
+      remove_method :foo
+      def foo() :derived; end
+    end
   end
 
   def test_callee
@@ -459,6 +465,14 @@ class TestMethod < Test::Unit::TestCase
     c3.class_eval { alias bar foo }
     m3 = c3.new.method(:bar)
     assert_equal("#<Method: #{c3.inspect}(#{c.inspect})#bar(foo)() #{__FILE__}:#{line_no}>", m3.inspect, bug7806)
+
+    bug15608 = '[ruby-core:91570] [Bug #15608]'
+    c4 = Class.new(c)
+    c4.class_eval { alias bar foo }
+    o = c4.new
+    o.singleton_class
+    m4 = o.method(:bar)
+    assert_equal("#<Method: #{c4.inspect}(#{c.inspect})#bar(foo)() #{__FILE__}:#{line_no}>", m4.inspect, bug15608)
   end
 
   def test_callee_top_level
@@ -790,7 +804,9 @@ class TestMethod < Test::Unit::TestCase
     assert_instance_of String, __dir__
     assert_equal(File.dirname(File.realpath(__FILE__)), __dir__)
     bug8436 = '[ruby-core:55123] [Bug #8436]'
-    assert_equal(__dir__, eval("__dir__", binding), bug8436)
+    file, line = *binding.source_location
+    file = File.realpath(file)
+    assert_equal(__dir__, eval("__dir__", binding, file, line), bug8436)
     bug8662 = '[ruby-core:56099] [Bug #8662]'
     assert_equal("arbitrary", eval("__dir__", binding, "arbitrary/file.rb"), bug8662)
     assert_equal("arbitrary", Object.new.instance_eval("__dir__", "arbitrary/file.rb"), bug8662)
@@ -812,7 +828,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(c, c.instance_method(:foo).owner)
     assert_equal(c, x.method(:foo).owner)
     assert_equal(x.singleton_class, x.method(:bar).owner)
-    assert_not_equal(x.method(:foo), x.method(:bar), bug7613)
+    assert_equal(x.method(:foo), x.method(:bar), bug7613)
     assert_equal(c, x.method(:zot).owner, bug7993)
     assert_equal(c, c.instance_method(:zot).owner, bug7993)
   end
@@ -1064,6 +1080,86 @@ class TestMethod < Test::Unit::TestCase
       '[ruby-core:85231] [Bug #14421]'
   end
 
+  def test_super_method_alias
+    c0 = Class.new do
+      def m1
+        [:C0_m1]
+      end
+      def m2
+        [:C0_m2]
+      end
+    end
+
+    c1 = Class.new(c0) do
+      def m1
+        [:C1_m1] + super
+      end
+      alias m2 m1
+    end
+
+    c2 = Class.new(c1) do
+      def m2
+        [:C2_m2] + super
+      end
+    end
+    o1 = c2.new
+    assert_equal([:C2_m2, :C1_m1, :C0_m1], o1.m2)
+
+    m = o1.method(:m2)
+    assert_equal([:C2_m2, :C1_m1, :C0_m1], m.call)
+
+    m = m.super_method
+    assert_equal([:C1_m1, :C0_m1], m.call)
+
+    m = m.super_method
+    assert_equal([:C0_m1], m.call)
+
+    assert_nil(m.super_method)
+  end
+
+  def test_super_method_alias_to_prepended_module
+    m = Module.new do
+      def m1
+        [:P_m1] + super
+      end
+
+      def m2
+        [:P_m2] + super
+      end
+    end
+
+    c0 = Class.new do
+      def m1
+        [:C0_m1]
+      end
+    end
+
+    c1 = Class.new(c0) do
+      def m1
+        [:C1_m1] + super
+      end
+      prepend m
+      alias m2 m1
+    end
+
+    o1 = c1.new
+    assert_equal([:P_m2, :P_m1, :C1_m1, :C0_m1], o1.m2)
+
+    m = o1.method(:m2)
+    assert_equal([:P_m2, :P_m1, :C1_m1, :C0_m1], m.call)
+
+    m = m.super_method
+    assert_equal([:P_m1, :C1_m1, :C0_m1], m.call)
+
+    m = m.super_method
+    assert_equal([:C1_m1, :C0_m1], m.call)
+
+    m = m.super_method
+    assert_equal([:C0_m1], m.call)
+
+    assert_nil(m.super_method)
+  end
+
   def rest_parameter(*rest)
     rest
   end
@@ -1100,17 +1196,22 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([:bar, :foo], b.local_variables.sort, bug11012)
   end
 
-  class MethodInMethodClass
-    def m1
-      def m2
-      end
+  MethodInMethodClass_Setup = -> do
+    remove_const :MethodInMethodClass if defined? MethodInMethodClass
 
-      self.class.send(:define_method, :m3){} # [Bug #11754]
+    class MethodInMethodClass
+      def m1
+        def m2
+        end
+        self.class.send(:define_method, :m3){} # [Bug #11754]
+      end
+      private
     end
-    private
   end
 
   def test_method_in_method_visibility_should_be_public
+    MethodInMethodClass_Setup.call
+
     assert_equal([:m1].sort, MethodInMethodClass.public_instance_methods(false).sort)
     assert_equal([].sort, MethodInMethodClass.private_instance_methods(false).sort)
 
@@ -1158,6 +1259,27 @@ class TestMethod < Test::Unit::TestCase
     assert_separately [], body
     # without trace insn
     assert_separately [], "RubyVM::InstructionSequence.compile_option = {trace_instruction: false}\n" + body
+  end
+
+  def test_zsuper_private_override_instance_method
+    assert_separately(%w(--disable-gems), <<-'end;', timeout: 30)
+      # Bug #16942 [ruby-core:98691]
+      module M
+        def x
+        end
+      end
+
+      module M2
+        prepend Module.new
+        include M
+        private :x
+      end
+
+      ::Object.prepend(M2)
+
+      m = Object.instance_method(:x)
+      assert_equal M, m.owner
+    end;
   end
 
   def test_eqq
@@ -1265,5 +1387,9 @@ class TestMethod < Test::Unit::TestCase
 
     assert_operator nummodule, :>, 0
     assert_operator nummethod, :>, 0
+  end
+
+  def test_invalidating_CC_ASAN
+    assert_ruby_status(['-e', 'using Module.new'])
   end
 end
