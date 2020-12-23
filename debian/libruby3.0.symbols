@@ -353,6 +353,7 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
 #MISSING: 3.0.0~preview2# rb_callable_receiver@Base 3.0.0~preview1
  rb_catch@Base 3.0.0~preview1
  rb_catch_obj@Base 3.0.0~preview1
+ rb_category_compile_warn@Base 3.0.0~rc1
  rb_category_warn@Base 3.0.0~preview2
  rb_category_warning@Base 3.0.0~preview2
  rb_char_to_option_kcode@Base 3.0.0~preview1
@@ -985,6 +986,7 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_ivar_foreach@Base 3.0.0~preview1
 #MISSING: 3.0.0~preview2# rb_ivar_generic_ivtbl@Base 3.0.0~preview1
  rb_ivar_generic_ivtbl_lookup@Base 3.0.0~preview2
+ rb_ivar_generic_lookup_with_index@Base 3.0.0~rc1
  rb_ivar_get@Base 3.0.0~preview1
  rb_ivar_set@Base 3.0.0~preview1
  rb_jump_tag@Base 3.0.0~preview1
@@ -1041,12 +1043,14 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_memory_view_extract_item_members@Base 3.0.0~preview2
  rb_memory_view_fill_contiguous_strides@Base 3.0.0~preview1
  rb_memory_view_get@Base 3.0.0~preview1
+ rb_memory_view_get_item@Base 3.0.0~rc1
  rb_memory_view_get_item_pointer@Base 3.0.0~preview1
  rb_memory_view_init_as_byte_array@Base 3.0.0~preview1
  rb_memory_view_is_column_major_contiguous@Base 3.0.0~preview1
  rb_memory_view_is_row_major_contiguous@Base 3.0.0~preview1
  rb_memory_view_item_size_from_format@Base 3.0.0~preview1
  rb_memory_view_parse_item_format@Base 3.0.0~preview1
+ rb_memory_view_prepare_item_desc@Base 3.0.0~rc1
  rb_memory_view_register@Base 3.0.0~preview1
  rb_memory_view_release@Base 3.0.0~preview1
  rb_memsearch@Base 3.0.0~preview1
@@ -1064,7 +1068,10 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_method_entry_with_refinements@Base 3.0.0~preview1
  rb_method_iseq@Base 3.0.0~preview1
  rb_mjit_add_iseq_to_process@Base 3.0.0~preview1
+ rb_mjit_after_vm_ic_update@Base 3.0.0~rc1
+ rb_mjit_before_vm_ic_update@Base 3.0.0~rc1
  rb_mjit_iseq_compile_info@Base 3.0.0~preview1
+ rb_mjit_recompile_const@Base 3.0.0~rc1
  rb_mjit_recompile_exivar@Base 3.0.0~preview1
  rb_mjit_recompile_inlining@Base 3.0.0~preview1
 #MISSING: 3.0.0~preview2# rb_mjit_recompile_iseq@Base 3.0.0~preview2
