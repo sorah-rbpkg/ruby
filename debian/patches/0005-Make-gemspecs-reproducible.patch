@@ -24,10 +24,10 @@ build unreproducible
    s.summary       = "Arbitrary-precision decimal floating-point number library."
 --- a/ext/fiddle/fiddle.gemspec
 +++ b/ext/fiddle/fiddle.gemspec
-@@ -13,6 +13,7 @@
+@@ -8,6 +8,7 @@
  Gem::Specification.new do |spec|
    spec.name          = "fiddle"
-   spec.version       = source_version
+   spec.version       = version_module::Fiddle::VERSION
 +  spec.date          = RUBY_RELEASE_DATE
    spec.authors       = ["Aaron Patterson", "SHIBATA Hiroshi"]
    spec.email         = ["aaron@tenderlovemaking.com", "hsbt@ruby-lang.org"]
