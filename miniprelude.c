@@ -322,8 +322,8 @@ static const char prelude_name2[] = "<internal:gc>";
 static const struct {
     char L0[489]; /* 1..58 */
     char L58[486]; /* 59..182 */
-    char L182[502]; /* 183..225 */
-    char L225[128]; /* 226..231 */
+    char L182[430]; /* 183..235 */
+    char L235[211]; /* 236..242 */
 } prelude_code2 = {
 #line 1 "gc.rb"
 "\n"/* for gc.c */
@@ -530,6 +530,17 @@ static const struct {
 "    Primitive.gc_compact_stats\n"
 "  end\n"
 "\n"
+"\n"/*  call-seq: */
+"\n"/*     GC.compact */
+"\n"/*  */
+"\n"/* This function compacts objects together in Ruby's heap.  It eliminates */
+"\n"/* unused space (or fragmentation) in the heap by moving objects in to that */
+"\n"/* unused space.  This function returns a hash which contains statistics about */
+"\n"/* which objects were moved.  See `GC.latest_gc_info` for details about */
+"\n"/* compaction statistics. */
+"\n"/*  */
+"\n"/* This method is implementation specific and not expected to be implemented */
+"\n"/* in any implementation besides MRI. */
 "  def self.compact\n"
 "    Primitive.gc_compact\n"
 "  end\n"
@@ -554,21 +565,21 @@ static const struct {
 "end\n"
 "\n"
 "module ObjectSpace\n"
-"  def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true\n"
 ,
-#line 226 "gc.rb"
+#line 236 "gc.rb"
+"  def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true\n"
 "    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false\n"
 "  end\n"
 "\n"
 "  module_function :garbage_collect\n"
 "end\n"
-#line 566 "miniprelude.c"
+#line 577 "miniprelude.c"
 };
 
 static const char prelude_name3[] = "<internal:integer>";
 static const struct {
-    char L0[473]; /* 1..39 */
-    char L39[271]; /* 40..85 */
+    char L0[485]; /* 1..79 */
+    char L79[300]; /* 80..126 */
 } prelude_code3 = {
 #line 1 "integer.rb"
 "class Integer\n"
@@ -577,6 +588,47 @@ static const struct {
 "    Primitive.cexpr! 'rb_int_abs(self)'\n"
 "  end\n"
 "\n"
+"\n"/* call-seq: */
+"\n"/*    int.bit_length  ->  integer */
+"\n"/*  */
+"\n"/* Returns the number of bits of the value of +int+. */
+"\n"/*  */
+"\n"/* "Number of bits" means the bit position of the highest bit */
+"\n"/* which is different from the sign bit */
+"\n"/* (where the least significant bit has bit position 1). */
+"\n"/* If there is no such bit (zero or minus one), zero is returned. */
+"\n"/*  */
+"\n"/* I.e. this method returns <i>ceil(log2(int < 0 ? -int : int+1))</i>. */
+"\n"/*  */
+"\n"/*    (-2**1000-1).bit_length   #=> 1001 */
+"\n"/*    (-2**1000).bit_length     #=> 1000 */
+"\n"/*    (-2**1000+1).bit_length   #=> 1000 */
+"\n"/*    (-2**12-1).bit_length     #=> 13 */
+"\n"/*    (-2**12).bit_length       #=> 12 */
+"\n"/*    (-2**12+1).bit_length     #=> 12 */
+"\n"/*    -0x101.bit_length         #=> 9 */
+"\n"/*    -0x100.bit_length         #=> 8 */
+"\n"/*    -0xff.bit_length          #=> 8 */
+"\n"/*    -2.bit_length             #=> 1 */
+"\n"/*    -1.bit_length             #=> 0 */
+"\n"/*    0.bit_length              #=> 0 */
+"\n"/*    1.bit_length              #=> 1 */
+"\n"/*    0xff.bit_length           #=> 8 */
+"\n"/*    0x100.bit_length          #=> 9 */
+"\n"/*    (2**12-1).bit_length      #=> 12 */
+"\n"/*    (2**12).bit_length        #=> 13 */
+"\n"/*    (2**12+1).bit_length      #=> 13 */
+"\n"/*    (2**1000-1).bit_length    #=> 1000 */
+"\n"/*    (2**1000).bit_length      #=> 1001 */
+"\n"/*    (2**1000+1).bit_length    #=> 1001 */
+"\n"/*  */
+"\n"/* This method can be used to detect overflow in Array#pack as follows: */
+"\n"/*  */
+"\n"/*    if n.bit_length < 32 */
+"\n"/*      [n].pack("l") # no overflow */
+"\n"/*    else */
+"\n"/*      raise "overflow" */
+"\n"/*    end */
 "  def bit_length\n"
 "    Primitive.attr! 'inline'\n"
 "    Primitive.cexpr! 'rb_int_bit_length(self)'\n"
@@ -609,9 +661,9 @@ static const struct {
 "\n"/*  */
 "\n"/*  Returns +true+ if +int+ is an odd number. */
 "  def odd?\n"
-"    Primitive.attr! 'inline'\n"
 ,
-#line 40 "integer.rb"
+#line 80 "integer.rb"
+"    Primitive.attr! 'inline'\n"
 "    Primitive.cexpr! 'rb_int_odd_p(self)'\n"
 "  end\n"
 "\n"
@@ -657,7 +709,7 @@ static const struct {
 "    Primitive.cexpr! 'rb_int_zero_p(self)'\n"
 "  end\n"
 "end\n"
-#line 661 "miniprelude.c"
+#line 713 "miniprelude.c"
 };
 
 static const char prelude_name4[] = "<internal:io>";
@@ -788,7 +840,7 @@ static const struct {
 "    Primitive.io_write_nonblock(buf, exception)\n"
 "  end\n"
 "end\n"
-#line 792 "miniprelude.c"
+#line 844 "miniprelude.c"
 };
 
 static const char prelude_name5[] = "<internal:pack>";
@@ -1079,7 +1131,7 @@ static const struct {
 "    Primitive.pack_unpack1(fmt)\n"
 "  end\n"
 "end\n"
-#line 1083 "miniprelude.c"
+#line 1135 "miniprelude.c"
 };
 
 static const char prelude_name6[] = "<internal:trace_point>";
@@ -1444,12 +1496,12 @@ static const struct {
 "    Primitive.tracepoint_attr_instruction_sequence\n"
 "  end\n"
 "end\n"
-#line 1448 "miniprelude.c"
+#line 1500 "miniprelude.c"
 };
 
 static const char prelude_name7[] = "<internal:warning>";
 static const struct {
-    char L0[177]; /* 1..46 */
+    char L0[185]; /* 1..54 */
 } prelude_code7 = {
 #line 1 "warning.rb"
 "\n"/* encoding: utf-8 */
@@ -1459,7 +1511,7 @@ static const struct {
 "  module_function\n"
 "\n"
 "\n"/* call-seq: */
-"\n"/*    warn(*msgs, uplevel: nil)   -> nil */
+"\n"/*    warn(*msgs, uplevel: nil, category: nil)   -> nil */
 "\n"/*  */
 "\n"/* If warnings have been disabled (for example with the */
 "\n"/* <code>-W0</code> flag), does nothing.  Otherwise, */
@@ -1493,11 +1545,19 @@ static const struct {
 "\n"/*  */
 "\n"/*    baz.rb:6: warning: invalid call to foo */
 "\n"/*  */
+"\n"/* If <code>category</code> keyword argument is given, passes the category */
+"\n"/* to <code>Warning.warn</code>.  The category given must be be one of the */
+"\n"/* following categories: */
+"\n"/*  */
+"\n"/* :deprecated :: Used for warning for deprecated functionality that may */
+"\n"/*                be removed in the future. */
+"\n"/* :experimental :: Used for experimental features that may change in */
+"\n"/*                  future releases. */
 "  def warn(*msgs, uplevel: nil, category: nil)\n"
 "    Primitive.rb_warn_m(msgs, uplevel, category)\n"
 "  end\n"
 "end\n"
-#line 1501 "miniprelude.c"
+#line 1561 "miniprelude.c"
 };
 
 static const char prelude_name8[] = "<internal:array>";
@@ -1566,7 +1626,7 @@ static const struct {
 "    Primitive.rb_ary_sample(random, n, ary)\n"
 "  end\n"
 "end\n"
-#line 1570 "miniprelude.c"
+#line 1630 "miniprelude.c"
 };
 
 static const char prelude_name9[] = "<internal:kernel>";
@@ -1751,50 +1811,260 @@ static const struct {
 "    Primitive.rb_f_float(arg, exception)\n"
 "  end\n"
 "end\n"
-#line 1755 "miniprelude.c"
+#line 1815 "miniprelude.c"
 };
 
 static const char prelude_name10[] = "<internal:ractor>";
 static const struct {
-    char L0[503]; /* 1..72 */
-    char L72[507]; /* 73..81 */
-    char L81[508]; /* 82..117 */
-    char L117[450]; /* 118..141 */
-    char L141[498]; /* 142..169 */
-    char L169[223]; /* 170..182 */
+    char L0[508]; /* 1..249 */
+    char L249[457]; /* 250..321 */
+    char L321[507]; /* 322..391 */
+    char L391[496]; /* 392..545 */
+    char L545[456]; /* 546..654 */
+    char L654[480]; /* 655..682 */
+    char L682[508]; /* 683..754 */
+    char L754[65]; /* 755..760 */
 } prelude_code10 = {
 #line 1 "ractor.rb"
+"\n"/* Ractor is a Actor-model abstraction for Ruby that provides thread-safe parallel execution. */
+"\n"/*  */
+"\n"/* To achieve this, ractors severely limit data sharing between different ractors. */
+"\n"/* Unlike threads, ractors can't access each other's data, nor any data through variables of */
+"\n"/* the outer scope. */
+"\n"/*  */
+"\n"/*     # The simplest ractor */
+"\n"/*     r = Ractor.new {puts "I am in Ractor!"} */
+"\n"/*     r.take # allow it to finish */
+"\n"/*     # here "I am in Ractor!" would be printed */
+"\n"/*  */
+"\n"/*     a = 1 */
+"\n"/*     r = Ractor.new {puts "I am in Ractor! a=#{a}"} */
+"\n"/*     # fails immediately with */
+"\n"/*     # ArgumentError (can not isolate a Proc because it accesses outer variables (a).) */
+"\n"/*  */
+"\n"/* On CRuby (the default implementation), Global Virtual Machine Lock (GVL) is held per ractor, so */
+"\n"/* ractors are performed in parallel without locking each other. */
+"\n"/*  */
+"\n"/* Instead of accessing the shared state, the data should be passed to and from ractors via */
+"\n"/* sending and receiving messages, thus making them _actors_ ("Ractor" stands for "Ruby Actor"). */
+"\n"/*  */
+"\n"/*     a = 1 */
+"\n"/*     r = Ractor.new do */
+"\n"/*       a_in_ractor = receive # receive blocks till somebody will pass message */
+"\n"/*       puts "I am in Ractor! a=#{a_in_ractor}" */
+"\n"/*     end */
+"\n"/*     r.send(a)  # pass it */
+"\n"/*     r.take */
+"\n"/*     # here "I am in Ractor! a=1" would be printed */
+"\n"/*  */
+"\n"/* There are two pairs of methods for sending/receiving messages: */
+"\n"/*  */
+"\n"/* * Ractor#send and Ractor.receive for when the _sender_ knows the receiver (push); */
+"\n"/* * Ractor.yield and Ractor#take for when the _receiver_ knows the sender (pull); */
+"\n"/*  */
+"\n"/* In addition to that, an argument to Ractor.new would be passed to block and available there */
+"\n"/* as if received by Ractor.receive, and the last block value would be sent outside of the */
+"\n"/* ractor as if sent by Ractor.yield. */
+"\n"/*  */
+"\n"/* A little demonstration on a classic ping-pong: */
+"\n"/*  */
+"\n"/*     server = Ractor.new do */
+"\n"/*       puts "Server starts: #{self.inspect}" */
+"\n"/*       puts "Server sends: ping" */
+"\n"/*       Ractor.yield 'ping'                       # The server doesn't know the receiver and sends to whoever interested */
+"\n"/*       received = Ractor.receive                 # The server doesn't know the sender and receives from whoever sent */
+"\n"/*       puts "Server received: #{received}" */
+"\n"/*     end */
+"\n"/*  */
+"\n"/*     client = Ractor.new(server) do |srv|        # The server is sent inside client, and available as srv */
+"\n"/*       puts "Client starts: #{self.inspect}" */
+"\n"/*       received = srv.take                       # The Client takes a message specifically from the server */
+"\n"/*       puts "Client received from " \ */
+"\n"/*            "#{srv.inspect}: #{received}" */
+"\n"/*       puts "Client sends to " \ */
+"\n"/*            "#{srv.inspect}: pong" */
+"\n"/*       srv.send 'pong'                           # The client sends a message specifically to the server */
+"\n"/*     end */
+"\n"/*  */
+"\n"/*     [client, server].each(&:take)               # Wait till they both finish */
+"\n"/*  */
+"\n"/* This will output: */
+"\n"/*  */
+"\n"/*     Server starts: #<Ractor:#2 test.rb:1 running> */
+"\n"/*     Server sends: ping */
+"\n"/*     Client starts: #<Ractor:#3 test.rb:8 running> */
+"\n"/*     Client received from #<Ractor:#2 rac.rb:1 blocking>: ping */
+"\n"/*     Client sends to #<Ractor:#2 rac.rb:1 blocking>: pong */
+"\n"/*     Server received: pong */
+"\n"/*  */
+"\n"/* It is said that Ractor receives messages via the <em>incoming port</em>, and sends them */
+"\n"/* to the <em>outgoing port</em>. Either one can be disabled with Ractor#close_incoming and */
+"\n"/* Ractor#close_outgoing respectively. */
+"\n"/*  */
+"\n"/* == Shareable and unshareable objects */
+"\n"/*  */
+"\n"/* When the object is sent to and from the ractor, it is important to understand whether the */
+"\n"/* object is shareable or not. Shareable objects are basically those which can be used by several */
+"\n"/* threads without compromising thread-safety; e.g. immutable ones. Ractor.shareable? allows to */
+"\n"/* check this, and Ractor.make_shareable tries to make object shareable if it is not. */
+"\n"/*  */
+"\n"/*     Ractor.shareable?(1)            #=> true -- numbers and other immutable basic values are */
+"\n"/*     Ractor.shareable?('foo')        #=> false, unless the string is frozen due to # freeze_string_literals: true */
+"\n"/*     Ractor.shareable?('foo'.freeze) #=> true */
+"\n"/*  */
+"\n"/*     ary = ['hello', 'world'] */
+"\n"/*     ary.frozen?                 #=> false */
+"\n"/*     ary[0].frozen?              #=> false */
+"\n"/*     Ractor.make_shareable(ary) */
+"\n"/*     ary.frozen?                 #=> true */
+"\n"/*     ary[0].frozen?              #=> true */
+"\n"/*     ary[1].frozen?              #=> true */
+"\n"/*  */
+"\n"/* When a shareable object is sent (via #send or Ractor.yield), no additional processing happens, */
+"\n"/* and it just becomes usable by both ractors. When an unshareable object is sent, it can be */
+"\n"/* either _copied_ or _moved_. The first is the default, and it makes the object's full copy by */
+"\n"/* deep cloning of non-shareable parts of its structure. */
+"\n"/*  */
+"\n"/*     data = ['foo', 'bar'.freeze] */
+"\n"/*     r = Ractor.new do */
+"\n"/*       data2 = Ractor.receive */
+"\n"/*       puts "In ractor: #{data2.object_id}, #{data2[0].object_id}, #{data2[1].object_id}" */
+"\n"/*     end */
+"\n"/*     r.send(data) */
+"\n"/*     r.take */
+"\n"/*     puts "Outside  : #{data.object_id}, #{data[0].object_id}, #{data[1].object_id}" */
+"\n"/*  */
+"\n"/* This will output: */
+"\n"/*  */
+"\n"/*     In ractor: 340, 360, 320 */
+"\n"/*     Outside  : 380, 400, 320 */
+"\n"/*  */
+"\n"/* (Note that object id of both array and non-frozen string inside array have changed inside */
+"\n"/* the ractor, showing it is different objects. But the second array's element, which is a */
+"\n"/* shareable frozen string, has the same object_id.) */
+"\n"/*  */
+"\n"/* Deep cloning of the data may be slow, and sometimes impossible. Alternatively, */
+"\n"/* <tt>move: true</tt> may be used on sending. This will <em>move</em> the object to the */
+"\n"/* receiving ractor, making it inaccessible for a sending ractor. */
+"\n"/*  */
+"\n"/*     data = ['foo', 'bar'] */
+"\n"/*     r = Ractor.new do */
+"\n"/*       data_in_ractor = Ractor.receive */
+"\n"/*       puts "In ractor: #{data_in_ractor.object_id}, #{data_in_ractor[0].object_id}" */
+"\n"/*     end */
+"\n"/*     r.send(data, move: true) */
+"\n"/*     r.take */
+"\n"/*     puts "Outside: moved? #{Ractor::MovedObject === data}" */
+"\n"/*     puts "Outside: #{data.inspect}" */
+"\n"/*  */
+"\n"/* This will output: */
+"\n"/*  */
+"\n"/*     In ractor: 100, 120 */
+"\n"/*     Outside: moved? true */
+"\n"/*     test.rb:9:in `method_missing': can not send any methods to a moved object (Ractor::MovedError) */
+"\n"/*  */
+"\n"/* Notice that even +inspect+ (and more basic methods like <tt>__id__</tt>) is inaccessible */
+"\n"/* on a moved object. */
+"\n"/*  */
+"\n"/* Besides frozen objects, shareable objects are instances of Module, Class and Ractor itself. Modules */
+"\n"/* and classes, though, can not access instance variables from ractors other than main: */
+"\n"/*  */
+"\n"/*     class C */
+"\n"/*       class << self */
+"\n"/*         attr_accessor :tricky */
+"\n"/*       end */
+"\n"/*     end */
+"\n"/*  */
+"\n"/*     C.tricky = 'test' */
+"\n"/*  */
+"\n"/*     r = Ractor.new(C) do |cls| */
+"\n"/*       puts "I see #{cls}" */
+"\n"/*       puts "I can't see #{cls.tricky}" */
+"\n"/*     end */
+"\n"/*     r.take */
+"\n"/*     # I see C */
+"\n"/*     # can not access instance variables of classes/modules from non-main Ractors (RuntimeError) */
+"\n"/*  */
+"\n"/* Ractors can access constants if they are shareable. The main Ractor is the only one that can */
+"\n"/* access non-shareable constants. */
+"\n"/*  */
+"\n"/*     GOOD = 'good'.freeze */
+"\n"/*     BAD = 'bad' */
+"\n"/*  */
+"\n"/*     r = Ractor.new do */
+"\n"/*       puts "GOOD=#{GOOD}" */
+"\n"/*       puts "BAD=#{BAD}" */
+"\n"/*     end */
+"\n"/*     r.take */
+"\n"/*     # GOOD=good */
+"\n"/*     # can not access non-shareable objects in constant Object::BAD by non-main Ractor. (NameError) */
+"\n"/*  */
+"\n"/*     # Consider the same C class from above */
+"\n"/*  */
+"\n"/*     r = Ractor.new do */
+"\n"/*       puts "I see #{C}" */
+"\n"/*       puts "I can't see #{C.tricky}" */
+"\n"/*     end */
+"\n"/*     r.take */
+"\n"/*     # I see C */
+"\n"/*     # can not access instance variables of classes/modules from non-main Ractors (RuntimeError) */
+"\n"/*  */
+"\n"/* See also the description of <tt># shareable_constant_value</tt> pragma in */
+"\n"/* {Comments syntax}[rdoc-ref:doc/syntax/comments.rdoc] explanation. */
+"\n"/*  */
+"\n"/* == Ractors vs threads */
+"\n"/*  */
+"\n"/* Each ractor creates its own thread. New threads can be created from inside ractor, having the full */
+"\n"/* access to its data (and, on CRuby, sharing GVL with other threads of this ractor). */
+"\n"/*  */
+"\n"/*     r = Ractor.new do */
+"\n"/*       a = 1 */
+"\n"/*       Thread.new {puts "Thread in ractor: a=#{a}"}.join */
+"\n"/*     end */
+"\n"/*     r.take */
+"\n"/*     # Here "Thread in ractor: a=1" will be printed */
+"\n"/*  */
+"\n"/* == Note on code examples */
+"\n"/*  */
+"\n"/* In examples below, sometimes we use the following method to wait till ractors that */
+"\n"/* are not currently blocked will finish (or process till next blocking) method. */
+"\n"/*  */
+"\n"/*     def wait */
+"\n"/*       sleep(0.1) */
+"\n"/*     end */
+"\n"/*  */
+"\n"/* It is **only for demonstration purposes** and shouldn't be used in a real code. */
+"\n"/* Most of the times, just #take is used to wait till ractor will finish. */
+"\n"/*  */
 "class Ractor\n"
 "\n"/* Create a new Ractor with args and a block. */
-"\n"/* args are passed via incoming channel. */
-"\n"/* A block (Proc) will be isolated (can't access to outer variables) */
 "\n"/*  */
-"\n"/* A ractor has default two channels: */
-"\n"/* an incoming channel and an outgoing channel. */
+"\n"/* A block (Proc) will be isolated (can't access to outer variables). +self+ */
+"\n"/* inside the block will refer to the current Ractor. */
 "\n"/*  */
-"\n"/* Other ractors send objects to the ractor via the incoming channel and */
-"\n"/* the ractor receives them. */
-"\n"/* The ractor send objects via the outgoing channel and other ractors can */
-"\n"/* receive them. */
+"\n"/*    r = Ractor.new {puts "Hi, I am #{self.inspect}"} */
+"\n"/*    r.take */
+"\n"/*    # Prints "Hi, I am #<Ractor:#2 test.rb:1 running>" */
 "\n"/*  */
-"\n"/* The result of the block is sent via the outgoing channel */
-"\n"/* and other */
+"\n"/* +args+ passed to the method would be propagated to block args by the same rules as */
+"\n"/* objects passed through #send/Ractor.receive: if +args+ are not shareable, they */
+"\n"/* will be copied (via deep cloning, which might be inefficient). */
 "\n"/*  */
-"\n"/*   r = Ractor.new do */
-"\n"/*     Ractor.receive # receive via r's mailbox => 1 */
-"\n"/*     Ractor.receive # receive via r's mailbox => 2 */
-"\n"/*     Ractor.yield 3 # yield a message (3) and wait for taking by another ractor. */
-"\n"/*     'ok'           # the return value will be yielded. */
-"\n"/*                    # and r's incoming/outgoing ports are closed automatically. */
-"\n"/*   end */
-"\n"/*   r.send 1 # send a message (1) into r's mailbox. */
-"\n"/*   r <<   2 # << is an alias of `send`. */
-"\n"/*   p r.take   # take a message from r's outgoing port => 3 */
-"\n"/*   p r.take   # => 'ok' */
-"\n"/*   p r.take   # raise Ractor::ClosedError */
+"\n"/*    arg = [1, 2, 3] */
+"\n"/*    puts "Passing: #{arg} (##{arg.object_id})" */
+"\n"/*    r = Ractor.new(arg) {|received_arg| */
+"\n"/*     puts "Received: #{received_arg} (##{received_arg.object_id})" */
+"\n"/*    } */
+"\n"/*    r.take */
+"\n"/*    # Prints: */
+"\n"/*    #   Passing: [1, 2, 3] (#280) */
+"\n"/*    #   Received: [1, 2, 3] (#300) */
 "\n"/*  */
-"\n"/* other options: */
-"\n"/*   name: Ractor's name */
+"\n"/* Ractor's +name+ can be set for debugging purposes: */
+"\n"/*  */
+"\n"/*    r = Ractor.new(name: 'my ractor') {} */
+"\n"/*    p r */
+"\n"/*    #=> #<Ractor:#3 my ractor test.rb:1 terminated> */
 "\n"/*  */
 "  def self.new(*args, name: nil, &block)\n"
 "    b = block\n"/* TODO: builtin bug */
@@ -1804,122 +2074,433 @@ static const struct {
 "    __builtin_ractor_create(loc, name, args, b)\n"
 "  end\n"
 "\n"
-"\n"/* return current Ractor */
+"\n"/* Returns the currently executing Ractor. */
+,
+#line 250 "ractor.rb"
+"\n"/*  */
+"\n"/*   Ractor.current #=> #<Ractor:#1 running> */
 "  def self.current\n"
 "    __builtin_cexpr! %q{\n"
 "      rb_ec_ractor_ptr(ec)->self\n"
 "    }\n"
 "  end\n"
 "\n"
+"\n"/* Returns total count of Ractors currently running. */
+"\n"/*  */
+"\n"/*    Ractor.count                   #=> 1 */
+"\n"/*    r = Ractor.new(name: 'example') {sleep(0.1)} */
+"\n"/*    Ractor.count                   #=> 2 (main + example ractor) */
+"\n"/*    r.take                         # wait till r will finish */
+"\n"/*    Ractor.count                   #=> 1 */
 "  def self.count\n"
 "    __builtin_cexpr! %q{\n"
 "      ULONG2NUM(GET_VM()->ractor.cnt);\n"
 "    }\n"
 "  end\n"
 "\n"
-"\n"/* Multiplex multiple Ractor communications. */
+"\n"/* call-seq: Ractor.select(*ractors, [yield_value:, move: false]) -> [ractor or symbol, obj] */
 "\n"/*  */
-"\n"/*   r, obj = Ractor.select(r1, r2) */
-"\n"/*   #=> wait for taking from r1 or r2 */
-"\n"/*   #   returned obj is a taken object from Ractor r */
+"\n"/* Waits for the first ractor to have something in its outgoing port, reads from this ractor, and */
+"\n"/* returns that ractor and the object received. */
 "\n"/*  */
-"\n"/*   r, obj = Ractor.select(r1, r2, Ractor.current) */
-"\n"/*   #=> wait for taking from r1 or r2 */
-"\n"/*   #         or receive from incoming queue */
-"\n"/*   #   If receive is succeed, then obj is received value */
-"\n"/*   #   and r is :receive (Ractor.current) */
+"\n"/*    r1 = Ractor.new {Ractor.yield 'from 1'} */
+"\n"/*    r2 = Ractor.new {Ractor.yield 'from 2'} */
 "\n"/*  */
-"\n"/*   r, obj = Ractor.select(r1, r2, Ractor.current, yield_value: obj) */
-"\n"/*   #=> wait for taking from r1 or r2 */
-"\n"/*   #         or receive from incoming queue */
-"\n"/*   #         or yield (Ractor.yield) obj */
-"\n"/*   #   If yield is succeed, then obj is nil */
-"\n"/*   #   and r is :yield */
+"\n"/*    r, obj = Ractor.select(r1, r2) */
 "\n"/*  */
-,
-#line 73 "ractor.rb"
+"\n"/*    puts "received #{obj.inspect} from #{r.inspect}" */
+"\n"/*    # Prints: received "from 1" from #<Ractor:#2 test.rb:1 running> */
+"\n"/*  */
+"\n"/* If one of the given ractors is the current ractor, and it would be selected, +r+ will contain */
+"\n"/* +:receive+ symbol instead of the ractor object. */
+"\n"/*  */
+"\n"/*    r1 = Ractor.new(Ractor.current) do |main| */
+"\n"/*      main.send 'to main' */
+"\n"/*      Ractor.yield 'from 1' */
+"\n"/*    end */
+"\n"/*    r2 = Ractor.new do */
+"\n"/*      Ractor.yield 'from 2' */
+"\n"/*    end */
+"\n"/*  */
+"\n"/*    r, obj = Ractor.select(r1, r2, Ractor.current) */
+"\n"/*    puts "received #{obj.inspect} from #{r.inspect}" */
+"\n"/*    # Prints: received "to main" from :receive */
+"\n"/*  */
+"\n"/* If +yield_value+ is provided, that value may be yielded if another Ractor is calling #take. */
+"\n"/* In this case, the pair <tt>[:yield, nil]</tt> would be returned: */
+"\n"/*  */
+"\n"/*    r1 = Ractor.new(Ractor.current) do |main| */
+"\n"/*      puts "Received from main: #{main.take}" */
+"\n"/*    end */
+"\n"/*  */
+"\n"/*    puts "Trying to select" */
+"\n"/*    r, obj = Ractor.select(r1, Ractor.current, yield_value: 123) */
+"\n"/*    wait */
+"\n"/*    puts "Received #{obj.inspect} from #{r.inspect}" */
+"\n"/*  */
+"\n"/* This will print: */
+"\n"/*  */
+"\n"/*    Trying to select */
+"\n"/*    Received from main: 123 */
+"\n"/*    Received nil from :yield */
+"\n"/*  */
+"\n"/* +move+ boolean flag defines whether yielded value should be copied (default) or moved. */
 "  def self.select(*ractors, yield_value: yield_unspecified = true, move: false)\n"
 "    raise ArgumentError, 'specify at least one ractor or `yield_value`' if yield_unspecified && ractors.empty?\n"
 "\n"
 "    __builtin_cstmt! %q{\n"
+,
+#line 322 "ractor.rb"
 "      const VALUE *rs = RARRAY_CONST_PTR_TRANSIENT(ractors);\n"
 "      VALUE rv;\n"
 "      VALUE v = ractor_select(ec, rs, RARRAY_LENINT(ractors),\n"
 "                              yield_unspecified == Qtrue ? Qundef : yield_value,\n"
 "                              (bool)RTEST(move) ? true : false, &rv);\n"
-,
-#line 82 "ractor.rb"
 "      return rb_ary_new_from_args(2, rv, v);\n"
 "    }\n"
 "  end\n"
 "\n"
-"\n"/* Receive an incoming message from Ractor's incoming queue. */
+"\n"/* Receive an incoming message from the current Ractor's incoming port's queue, which was */
+"\n"/* sent there by #send. */
+"\n"/*  */
+"\n"/*     r = Ractor.new do */
+"\n"/*       v1 = Ractor.receive */
+"\n"/*       puts "Received: #{v1}" */
+"\n"/*     end */
+"\n"/*     r.send('message1') */
+"\n"/*     r.take */
+"\n"/*     # Here will be printed: "Received: message1" */
+"\n"/*  */
+"\n"/* Alternatively, private instance method +receive+ may be used: */
+"\n"/*  */
+"\n"/*     r = Ractor.new do */
+"\n"/*       v1 = receive */
+"\n"/*       puts "Received: #{v1}" */
+"\n"/*     end */
+"\n"/*     r.send('message1') */
+"\n"/*     r.take */
+"\n"/*     # Here will be printed: "Received: message1" */
+"\n"/*  */
+"\n"/* The method blocks if the queue is empty. */
+"\n"/*  */
+"\n"/*     r = Ractor.new do */
+"\n"/*       puts "Before first receive" */
+"\n"/*       v1 = Ractor.receive */
+"\n"/*       puts "Received: #{v1}" */
+"\n"/*       v2 = Ractor.receive */
+"\n"/*       puts "Received: #{v2}" */
+"\n"/*     end */
+"\n"/*     wait */
+"\n"/*     puts "Still not received" */
+"\n"/*     r.send('message1') */
+"\n"/*     wait */
+"\n"/*     puts "Still received only one" */
+"\n"/*     r.send('message2') */
+"\n"/*     r.take */
+"\n"/*  */
+"\n"/* Output: */
+"\n"/*  */
+"\n"/*     Before first receive */
+"\n"/*     Still not received */
+"\n"/*     Received: message1 */
+"\n"/*     Still received only one */
+"\n"/*     Received: message2 */
+"\n"/*  */
+"\n"/* If close_incoming was called on the ractor, the method raises Ractor::ClosedError: */
+"\n"/*  */
+"\n"/*     Ractor.new do */
+"\n"/*       close_incoming */
+"\n"/*       receive */
+"\n"/*     end */
+"\n"/*     wait */
+"\n"/*     # in `receive': The incoming port is already closed => #<Ractor:#2 test.rb:1 running> (Ractor::ClosedError) */
+"\n"/*  */
 "  def self.receive\n"
 "    __builtin_cexpr! %q{\n"
 "      ractor_receive(ec, rb_ec_ractor_ptr(ec))\n"
 "    }\n"
 "  end\n"
 "\n"
+,
+#line 392 "ractor.rb"
 "  class << self\n"
 "    alias recv receive\n"
 "  end\n"
 "\n"
+"\n"/* same as Ractor.receive */
 "  private def receive\n"
 "    __builtin_cexpr! %q{\n"
-"      // TODO: check current actor\n"
-"      ractor_receive(ec, RACTOR_PTR(self))\n"
+"      ractor_receive(ec, rb_ec_ractor_ptr(ec))\n"
 "    }\n"
 "  end\n"
 "  alias recv receive\n"
 "\n"
-"\n"/* Send a message to a Ractor's incoming queue. */
+"\n"/* Receive only a specific message. */
 "\n"/*  */
-"\n"/* # Example: */
+"\n"/* Instead of Ractor.receive, Ractor.receive_if can provide a pattern */
+"\n"/* by a block and you can choose the receiving message. */
+"\n"/*  */
+"\n"/*     r = Ractor.new do */
+"\n"/*       p Ractor.receive_if{|msg| msg.match?(/foo/)} #=> "foo3" */
+"\n"/*       p Ractor.receive_if{|msg| msg.match?(/bar/)} #=> "bar1" */
+"\n"/*       p Ractor.receive_if{|msg| msg.match?(/baz/)} #=> "baz2" */
+"\n"/*     end */
+"\n"/*     r << "bar1" */
+"\n"/*     r << "baz2" */
+"\n"/*     r << "foo3" */
+"\n"/*     r.take */
+"\n"/*  */
+"\n"/* This will output: */
+"\n"/*  */
+"\n"/*     foo3 */
+"\n"/*     bar1 */
+"\n"/*     baz2 */
+"\n"/*  */
+"\n"/* If the block returns a truthy value, the message will be removed from the incoming queue */
+"\n"/* and return this method with the message. */
+"\n"/* When the block is escaped by break/return/exception and so on, the message also */
+"\n"/* removed from the incoming queue. */
+"\n"/* Otherwise, the messsage remains in the incoming queue and the next received */
+"\n"/* message is checked by the given block. */
+"\n"/*  */
+"\n"/* If there is no messages in the incoming queue matching the check, the method will */
+"\n"/* block until such message arrives. */
+"\n"/*  */
+"\n"/*     r = Ractor.new do */
+"\n"/*       val = Ractor.receive_if{|msg| msg.is_a?(Array)} */
+"\n"/*       puts "Received successfully: #{val}" */
+"\n"/*     end */
+"\n"/*  */
+"\n"/*     r.send(1) */
+"\n"/*     r.send('test') */
+"\n"/*     wait */
+"\n"/*     puts "2 non-matching sent, nothing received" */
+"\n"/*     r.send([1, 2, 3]) */
+"\n"/*     wait */
+"\n"/*  */
+"\n"/* Prints: */
+"\n"/*  */
+"\n"/*     2 non-matching sent, nothing received */
+"\n"/*     Received successfully: [1, 2, 3] */
+"\n"/*  */
+"\n"/* Note that you can not call receive/receive_if in the given block recursively. */
+"\n"/* It means that you should not do any tasks in the block. */
+"\n"/*  */
+"\n"/*     Ractor.current << true */
+"\n"/*     Ractor.receive_if{|msg| Ractor.receive} */
+"\n"/*     #=> `receive': can not call receive/receive_if recursively (Ractor::Error) */
+"\n"/*  */
+"  def self.receive_if &b\n"
+"    Primitive.ractor_receive_if b\n"
+"  end\n"
+"\n"
+"  private def receive_if &b\n"
+"    Primitive.ractor_receive_if b\n"
+"  end\n"
+"\n"
+"\n"/* Send a message to a Ractor's incoming queue to be consumed by Ractor.receive. */
+"\n"/*  */
 "\n"/*   r = Ractor.new do */
-"\n"/*     p Ractor.receive #=> 'ok' */
+"\n"/*     value = Ractor.receive */
+"\n"/*     puts "Received #{value}" */
 "\n"/*   end */
-"\n"/*   r.send 'ok' # send to r's incoming queue. */
+"\n"/*   r.send 'message' */
+"\n"/*   # Prints: "Received: message" */
+"\n"/*  */
+"\n"/* The method is non-blocking (will return immediately even if the ractor is not ready */
+"\n"/* to receive anything): */
+"\n"/*  */
+"\n"/*    r = Ractor.new {sleep(5)} */
+"\n"/*    r.send('test') */
+"\n"/*    puts "Sent successfully" */
+"\n"/*    # Prints: "Sent successfully" immediately */
+"\n"/*  */
+"\n"/* Attempt to send to ractor which already finished its execution will raise Ractor::ClosedError. */
+"\n"/*  */
+"\n"/*   r = Ractor.new {} */
+"\n"/*   r.take */
+"\n"/*   p r */
+"\n"/*   # "#<Ractor:#6 (irb):23 terminated>" */
+"\n"/*   r.send('test') */
+"\n"/*   # Ractor::ClosedError (The incoming-port is already closed) */
+"\n"/*  */
+"\n"/* If close_incoming was called on the ractor, the method also raises Ractor::ClosedError. */
+"\n"/*  */
+"\n"/*    r =  Ractor.new do */
+"\n"/*      sleep(500) */
+"\n"/*      receive */
+"\n"/*    end */
+"\n"/*    r.close_incoming */
+"\n"/*    r.send('test') */
+"\n"/*    # Ractor::ClosedError (The incoming-port is already closed) */
+"\n"/*    # The error would be raised immediately, not when ractor will try to receive */
+"\n"/*  */
+"\n"/* If the +obj+ is unshareable, by default it would be copied into ractor by deep cloning. */
+"\n"/* If the <tt>move: true</tt> is passed, object is _moved_ into ractor and becomes */
+"\n"/* inaccessible to sender. */
+"\n"/*  */
+"\n"/*    r = Ractor.new {puts "Received: #{receive}"} */
+"\n"/*    msg = 'message' */
+"\n"/*    r.send(msg, move: true) */
+"\n"/*    r.take */
+"\n"/*    p msg */
+"\n"/*  */
+"\n"/* This prints: */
+"\n"/*  */
+"\n"/*    Received: message */
+"\n"/*    in `p': undefined method `inspect' for #<Ractor::MovedObject:0x000055c99b9b69b8> */
+"\n"/*  */
+"\n"/* All references to the object and its parts will become invalid in sender. */
+"\n"/*  */
+"\n"/*    r = Ractor.new {puts "Received: #{receive}"} */
+"\n"/*    s = 'message' */
+"\n"/*    ary = [s] */
+"\n"/*    copy = ary.dup */
+"\n"/*    r.send(ary, move: true) */
+"\n"/*  */
+"\n"/*    s.inspect */
+"\n"/*    # Ractor::MovedError (can not send any methods to a moved object) */
+"\n"/*    ary.class */
+"\n"/*    # Ractor::MovedError (can not send any methods to a moved object) */
+"\n"/*    copy.class */
+"\n"/*    # => Array, it is different object */
+"\n"/*    copy[0].inspect */
+"\n"/*    # Ractor::MovedError (can not send any methods to a moved object) */
+"\n"/*    # ...but its item was still a reference to `s`, which was moved */
+"\n"/*  */
+"\n"/* If the object was shareable, <tt>move: true</tt> has no effect on it: */
+"\n"/*  */
+"\n"/*    r = Ractor.new {puts "Received: #{receive}"} */
+"\n"/*    s = 'message'.freeze */
+"\n"/*    r.send(s, move: true) */
+"\n"/*    s.inspect #=> "message", still available */
+"\n"/*  */
 "  def send(obj, move: false)\n"
 "    __builtin_cexpr! %q{\n"
+,
+#line 546 "ractor.rb"
 "      ractor_send(ec, RACTOR_PTR(self), obj, move)\n"
 "    }\n"
 "  end\n"
 "  alias << send\n"
-,
-#line 118 "ractor.rb"
 "\n"
-"\n"/* yield a message to the ractor's outgoing port. */
+"\n"/* Send a message to the current ractor's outgoing port to be consumed by #take. */
+"\n"/*  */
+"\n"/*    r = Ractor.new {Ractor.yield 'Hello from ractor'} */
+"\n"/*    puts r.take */
+"\n"/*    # Prints: "Hello from ractor" */
+"\n"/*  */
+"\n"/* The method is blocking, and will return only when somebody consumes the */
+"\n"/* sent message. */
+"\n"/*  */
+"\n"/*    r = Ractor.new do */
+"\n"/*      Ractor.yield 'Hello from ractor' */
+"\n"/*      puts "Ractor: after yield" */
+"\n"/*    end */
+"\n"/*    wait */
+"\n"/*    puts "Still not taken" */
+"\n"/*    puts r.take */
+"\n"/*  */
+"\n"/* This will print: */
+"\n"/*  */
+"\n"/*    Still not taken */
+"\n"/*    Hello from ractor */
+"\n"/*    Ractor: after yield */
+"\n"/*  */
+"\n"/* If the outgoing port was closed with #close_outgoing, the method will raise: */
+"\n"/*  */
+"\n"/*    r = Ractor.new do */
+"\n"/*      close_outgoing */
+"\n"/*      Ractor.yield 'Hello from ractor' */
+"\n"/*    end */
+"\n"/*    wait */
+"\n"/*    # `yield': The outgoing-port is already closed (Ractor::ClosedError) */
+"\n"/*  */
+"\n"/* The meaning of +move+ argument is the same as for #send. */
 "  def self.yield(obj, move: false)\n"
 "    __builtin_cexpr! %q{\n"
 "      ractor_yield(ec, rb_ec_ractor_ptr(ec), obj, move)\n"
 "    }\n"
 "  end\n"
 "\n"
-"\n"/* Take a message from ractor's outgoing port. */
+"\n"/* Take a message from ractor's outgoing port, which was put there by Ractor.yield or at ractor's */
+"\n"/* finalization. */
 "\n"/*  */
-"\n"/* Example: */
-"\n"/*   r = Ractor.new{ 'oK' } */
-"\n"/*   p r.take #=> 'ok' */
+"\n"/*   r = Ractor.new do */
+"\n"/*     Ractor.yield 'explicit yield' */
+"\n"/*     'last value' */
+"\n"/*   end */
+"\n"/*   puts r.take #=> 'explicit yield' */
+"\n"/*   puts r.take #=> 'last value' */
+"\n"/*   puts r.take # Ractor::ClosedError (The outgoing-port is already closed) */
+"\n"/*  */
+"\n"/* The fact that the last value is also put to outgoing port means that +take+ can be used */
+"\n"/* as some analog of Thread#join ("just wait till ractor finishes"), but don't forget it */
+"\n"/* will raise if somebody had already consumed everything ractor have produced. */
+"\n"/*  */
+"\n"/* If the outgoing port was closed with #close_outgoing, the method will raise Ractor::ClosedError. */
+"\n"/*  */
+"\n"/*    r = Ractor.new do */
+"\n"/*      sleep(500) */
+"\n"/*      Ractor.yield 'Hello from ractor' */
+"\n"/*    end */
+"\n"/*    r.close_outgoing */
+"\n"/*    r.take */
+"\n"/*    # Ractor::ClosedError (The outgoing-port is already closed) */
+"\n"/*    # The error would be raised immediately, not when ractor will try to receive */
+"\n"/*  */
+"\n"/* If an uncaught exception is raised in the Ractor, it is propagated on take as a */
+"\n"/* Ractor::RemoteError. */
+"\n"/*  */
+"\n"/*   r = Ractor.new {raise "Something weird happened"} */
+"\n"/*  */
+"\n"/*   begin */
+"\n"/*     r.take */
+"\n"/*   rescue => e */
+"\n"/*     p e              #  => #<Ractor::RemoteError: thrown by remote Ractor.> */
+"\n"/*     p e.ractor == r  # => true */
+"\n"/*     p e.cause        # => #<RuntimeError: Something weird happened> */
+"\n"/*   end */
+"\n"/*  */
+"\n"/* Ractor::ClosedError is a descendant of StopIteration, so the closing of the ractor will break */
+"\n"/* the loops without propagating the error: */
+"\n"/*  */
+"\n"/*     r = Ractor.new do */
+"\n"/*       3.times {|i| Ractor.yield "message #{i}"} */
+"\n"/*       "finishing" */
+"\n"/*     end */
+"\n"/*  */
+"\n"/*     loop {puts "Received: " + r.take} */
+"\n"/*     puts "Continue successfully" */
+"\n"/*  */
+"\n"/* This will print: */
+"\n"/*  */
+"\n"/*     Received: message 0 */
+"\n"/*     Received: message 1 */
+"\n"/*     Received: message 2 */
+"\n"/*     Received: finishing */
+"\n"/*     Continue successfully */
 "  def take\n"
 "    __builtin_cexpr! %q{\n"
 "      ractor_take(ec, RACTOR_PTR(self))\n"
 "    }\n"
 "  end\n"
 "\n"
-"  def inspect\n"
-"    loc  = __builtin_cexpr! %q{ RACTOR_PTR(self)->loc }\n"
-"    name = __builtin_cexpr! %q{ RACTOR_PTR(self)->name }\n"
-"    id   = __builtin_cexpr! %q{ INT2FIX(RACTOR_PTR(self)->id) }\n"
-"    status = __builtin_cexpr! %q{\n"
+"  def inspect\n"/* :nodoc: */
+"    loc  = __builtin_cexpr! %q{RACTOR_PTR(self)->loc}\n"
 ,
-#line 142 "ractor.rb"
+#line 655 "ractor.rb"
+"    name = __builtin_cexpr! %q{RACTOR_PTR(self)->name}\n"
+"    id   = __builtin_cexpr! %q{INT2FIX(RACTOR_PTR(self)->id)}\n"
+"    status = __builtin_cexpr! %q{\n"
 "      rb_str_new2(ractor_status_str(RACTOR_PTR(self)->status_))\n"
 "    }\n"
 "    \"#<Ractor:##{id}#{name ? ' '+name : ''}#{loc ? \" \" + loc : ''} #{status}>\"\n"
 "  end\n"
 "\n"
+"\n"/* The name set in Ractor.new, or +nil+. */
 "  def name\n"
-"    __builtin_cexpr! %q{ RACTOR_PTR(self)->name }\n"
+"    __builtin_cexpr! %q{RACTOR_PTR(self)->name}\n"
 "  end\n"
 "\n"
 "  class RemoteError\n"
@@ -1927,35 +2508,98 @@ static const struct {
 "  end\n"
 "\n"
 "\n"/* Closes the incoming port and returns its previous state. */
+"\n"/* All further attempts to Ractor.receive in the ractor, and #send to the ractor */
+"\n"/* will fail with Ractor::ClosedError. */
+"\n"/*  */
+"\n"/*   r = Ractor.new {sleep(500)} */
+"\n"/*   r.close_incoming  #=> false */
+"\n"/*   r.close_incoming  #=> true */
+"\n"/*   r.send('test') */
+"\n"/*   # Ractor::ClosedError (The incoming-port is already closed) */
 "  def close_incoming\n"
 "    __builtin_cexpr! %q{\n"
+,
+#line 683 "ractor.rb"
 "      ractor_close_incoming(ec, RACTOR_PTR(self));\n"
 "    }\n"
 "  end\n"
 "\n"
 "\n"/* Closes the outgoing port and returns its previous state. */
+"\n"/* All further attempts to Ractor.yield in the ractor, and #take from the ractor */
+"\n"/* will fail with Ractor::ClosedError. */
+"\n"/*  */
+"\n"/*   r = Ractor.new {sleep(500)} */
+"\n"/*   r.close_outgoing  #=> false */
+"\n"/*   r.close_outgoing  #=> true */
+"\n"/*   r.take */
+"\n"/*   # Ractor::ClosedError (The outgoing-port is already closed) */
 "  def close_outgoing\n"
 "    __builtin_cexpr! %q{\n"
 "      ractor_close_outgoing(ec, RACTOR_PTR(self));\n"
 "    }\n"
 "  end\n"
 "\n"
-"\n"/* utility method */
-,
-#line 170 "ractor.rb"
+"\n"/* Checks if the object is shareable by ractors. */
+"\n"/*  */
+"\n"/*     Ractor.shareable?(1)            #=> true -- numbers and other immutable basic values are frozen */
+"\n"/*     Ractor.shareable?('foo')        #=> false, unless the string is frozen due to # freeze_string_literals: true */
+"\n"/*     Ractor.shareable?('foo'.freeze) #=> true */
+"\n"/*  */
+"\n"/* See also the "Shareable and unshareable objects" section in the Ractor class docs. */
 "  def self.shareable? obj\n"
 "    __builtin_cexpr! %q{\n"
 "      rb_ractor_shareable_p(obj) ? Qtrue : Qfalse;\n"
 "    }\n"
 "  end\n"
 "\n"
-"  def self.make_shareable obj\n"
-"    __builtin_cexpr! %q{\n"
-"      rb_ractor_make_shareable(obj);\n"
-"    }\n"
+"\n"/* Make +obj+ sharable. */
+"\n"/*  */
+"\n"/* Basically, traverse referring objects from obj and freeze them. */
+"\n"/*  */
+"\n"/* When a sharable object is found in traversing, stop traversing */
+"\n"/* from this shareable object. */
+"\n"/*  */
+"\n"/* If +copy+ keyword is +true+, it makes a deep copied object */
+"\n"/* and make it sharable. This is safer option (but it can take more time). */
+"\n"/*  */
+"\n"/* Note that the specification and implementation of this method are not */
+"\n"/* matured and can be changed in a future. */
+"\n"/*  */
+"\n"/*   obj = ['test'] */
+"\n"/*   Ractor.shareable?(obj)     #=> false */
+"\n"/*   Ractor.make_shareable(obj) #=> ["test"] */
+"\n"/*   Ractor.shareable?(obj)     #=> true */
+"\n"/*   obj.frozen?                #=> true */
+"\n"/*   obj[0].frozen?             #=> true */
+"\n"/*  */
+"\n"/*   # Copy vs non-copy versions: */
+"\n"/*   obj1 = ['test'] */
+"\n"/*   obj1s = Ractor.make_shareable(obj1) */
+"\n"/*   obj1.frozen?                        #=> true */
+"\n"/*   obj1s.object_id == obj1.object_id   #=> true */
+"\n"/*   obj2 = ['test'] */
+"\n"/*   obj2s = Ractor.make_shareable(obj2, copy: true) */
+"\n"/*   obj2.frozen?                        #=> false */
+"\n"/*   obj2s.frozen?                       #=> true */
+"\n"/*   obj2s.object_id == obj1.object_id   #=> false */
+"\n"/*   obj2s[0].object_id == obj2[0].object_id #=> false */
+"\n"/*  */
+"\n"/* See also the "Shareable and unshareable objects" section in the Ractor class docs. */
+"  def self.make_shareable obj, copy: false\n"
+"    if copy\n"
+"      __builtin_cexpr! %q{\n"
+"        rb_ractor_make_copy_shareable(obj);\n"
+"      }\n"
+"    else\n"
+"      __builtin_cexpr! %q{\n"
+,
+#line 755 "ractor.rb"
+"        rb_ractor_make_shareable(obj);\n"
+"      }\n"
+"    end\n"
 "  end\n"
 "end\n"
-#line 1959 "miniprelude.c"
+#line 2603 "miniprelude.c"
 };
 
 static const char prelude_name11[] = "<internal:prelude>";
@@ -1985,7 +2629,7 @@ static const struct {
 "\n"
 "  private :pp\n"
 "end\n"
-#line 1989 "miniprelude.c"
+#line 2633 "miniprelude.c"
 };
 
 static const char prelude_name12[] = "<internal:gem_prelude>";
@@ -2004,7 +2648,7 @@ static const struct {
 "rescue LoadError\n"
 "  warn \"`did_you_mean' was not loaded.\"\n"
 "end if defined?(DidYouMean)\n"
-#line 2008 "miniprelude.c"
+#line 2652 "miniprelude.c"
 };
 
 COMPILER_WARNING_POP

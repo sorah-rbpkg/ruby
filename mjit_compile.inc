@@ -37,7 +37,7 @@
  */
 
 switch (insn) {
-  case BIN(nop):
+  case BIN(nop): {
     fprintf(f, "{\n");
     {
         if (status->local_stack_p) {
@@ -45,7 +45,7 @@ switch (insn) {
         }
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -61,7 +61,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(getlocal):
+  }
+  case BIN(getlocal): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(lindex_t idx) = (lindex_t)operands[0];
@@ -78,7 +79,7 @@ switch (insn) {
         fprintf(f, "    level = (rb_num_t)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -97,7 +98,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(setlocal):
+  }
+  case BIN(setlocal): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(lindex_t idx) = (lindex_t)operands[0];
@@ -115,7 +117,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -133,7 +135,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(getblockparam):
+  }
+  case BIN(getblockparam): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(lindex_t idx) = (lindex_t)operands[0];
@@ -150,7 +153,7 @@ switch (insn) {
         fprintf(f, "    level = (rb_num_t)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -179,7 +182,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(setblockparam):
+  }
+  case BIN(setblockparam): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(lindex_t idx) = (lindex_t)operands[0];
@@ -197,7 +201,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -220,7 +224,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(getblockparamproxy):
+  }
+  case BIN(getblockparamproxy): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(lindex_t idx) = (lindex_t)operands[0];
@@ -237,7 +242,7 @@ switch (insn) {
         fprintf(f, "    level = (rb_num_t)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -287,7 +292,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(getspecial):
+  }
+  case BIN(getspecial): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(rb_num_t key) = (rb_num_t)operands[0];
@@ -303,7 +309,7 @@ switch (insn) {
         fprintf(f, "    type = (rb_num_t)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -328,7 +334,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(setspecial):
+  }
+  case BIN(setspecial): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(rb_num_t key) = (rb_num_t)operands[0];
@@ -342,7 +349,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -358,7 +365,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(getinstancevariable):
+  }
+  case BIN(getinstancevariable): {
 #if OPT_IC_FOR_IVAR
 {
     MAYBE_UNUSED(ID id) = (ID)operands[0];
@@ -435,7 +443,7 @@ switch (insn) {
         fprintf(f, "    ic = (IVC)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -460,7 +468,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(setinstancevariable):
+  }
+  case BIN(setinstancevariable): {
 #if OPT_IC_FOR_IVAR
 {
     MAYBE_UNUSED(ID id) = (ID)operands[0];
@@ -474,14 +483,14 @@ switch (insn) {
             fprintf(f, "    VM_ASSERT(RB_TYPE_P(obj, T_OBJECT));\n");
             fprintf(f, "    VM_ASSERT((rb_serial_t)%"PRI_SERIALT_PREFIX"u == RCLASS_SERIAL(RBASIC(obj)->klass));\n", ic_copy->entry->class_serial);
             fprintf(f, "    VM_ASSERT(index < ROBJECT_NUMIV(obj));\n");
-            fprintf(f, "    if (LIKELY(!RB_OBJ_FROZEN(obj) && %sRB_FL_ANY_RAW(obj, ROBJECT_EMBED))) {\n", status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "!" : "");
+            fprintf(f, "    if (LIKELY(!RB_OBJ_FROZEN_RAW(obj) && %sRB_FL_ANY_RAW(obj, ROBJECT_EMBED))) {\n", status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "!" : "");
             fprintf(f, "        RB_OBJ_WRITE(obj, &ROBJECT(obj)->as.%s, stack[%d]);\n",
                     status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "heap.ivptr[index]" : "ary[index]", b->stack_size - 1);
             fprintf(f, "    }\n");
         }
         else {
             fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->entry->class_serial);
-            fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && !RB_OBJ_FROZEN(obj))) {\n");
+            fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && !RB_OBJ_FROZEN_RAW(obj))) {\n");
             fprintf(f, "        VALUE *ptr = ROBJECT_IVPTR(obj);\n");
             fprintf(f, "        RB_OBJ_WRITE(obj, &ptr[index], stack[%d]);\n", b->stack_size - 1);
             fprintf(f, "    }\n");
@@ -516,7 +525,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -540,7 +549,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(getclassvariable):
+  }
+  case BIN(getclassvariable): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(ID id) = (ID)operands[0];
@@ -554,7 +564,7 @@ switch (insn) {
         comment_id(f, (ID)operands[0]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -579,7 +589,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(setclassvariable):
+  }
+  case BIN(setclassvariable): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(ID id) = (ID)operands[0];
@@ -594,7 +605,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -619,7 +630,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(getconstant):
+  }
+  case BIN(getconstant): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(ID id) = (ID)operands[0];
@@ -635,7 +647,7 @@ switch (insn) {
         fprintf(f, "    klass = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    allow_nil = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -660,7 +672,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(setconstant):
+  }
+  case BIN(setconstant): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(ID id) = (ID)operands[0];
@@ -676,7 +689,7 @@ switch (insn) {
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    cbase = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -702,7 +715,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(getglobal):
+  }
+  case BIN(getglobal): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(ID gid) = (ID)operands[0];
@@ -716,7 +730,7 @@ switch (insn) {
         comment_id(f, (ID)operands[0]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -741,7 +755,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(setglobal):
+  }
+  case BIN(setglobal): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(ID gid) = (ID)operands[0];
@@ -756,7 +771,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -780,7 +795,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(putnil):
+  }
+  case BIN(putnil): {
     fprintf(f, "{\n");
     {
         if (status->local_stack_p) {
@@ -789,7 +805,7 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -806,7 +822,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(putself):
+  }
+  case BIN(putself): {
     fprintf(f, "{\n");
     {
         if (status->local_stack_p) {
@@ -815,7 +832,7 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -832,7 +849,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(putobject):
+  }
+  case BIN(putobject): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(VALUE val) = (VALUE)operands[0];
@@ -845,7 +863,7 @@ switch (insn) {
         if (SYMBOL_P((VALUE)operands[0])) comment_id(f, SYM2ID((VALUE)operands[0]));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -862,7 +880,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(putspecialobject):
+  }
+  case BIN(putspecialobject): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(rb_num_t value_type) = (rb_num_t)operands[0];
@@ -875,7 +894,7 @@ switch (insn) {
         fprintf(f, "    value_type = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -895,7 +914,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(putstring):
+  }
+  case BIN(putstring): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(VALUE str) = (VALUE)operands[0];
@@ -908,7 +928,7 @@ switch (insn) {
         if (SYMBOL_P((VALUE)operands[0])) comment_id(f, SYM2ID((VALUE)operands[0]));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -925,7 +945,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(concatstrings):
+  }
+  case BIN(concatstrings): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(rb_num_t num) = (rb_num_t)operands[0];
@@ -938,7 +959,7 @@ switch (insn) {
         fprintf(f, "    num = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -964,7 +985,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(tostring):
+  }
+  case BIN(tostring): {
     fprintf(f, "{\n");
     {
         if (status->local_stack_p) {
@@ -975,7 +997,7 @@ switch (insn) {
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    str = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -992,7 +1014,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(toregexp):
+  }
+  case BIN(toregexp): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(rb_num_t opt) = (rb_num_t)operands[0];
@@ -1008,7 +1031,7 @@ switch (insn) {
         fprintf(f, "    cnt = (rb_num_t)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1036,7 +1059,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(intern):
+  }
+  case BIN(intern): {
     fprintf(f, "{\n");
     {
         if (status->local_stack_p) {
@@ -1046,7 +1070,7 @@ switch (insn) {
 
         fprintf(f, "    str = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1063,7 +1087,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(newarray):
+  }
+  case BIN(newarray): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(rb_num_t num) = (rb_num_t)operands[0];
@@ -1076,7 +1101,7 @@ switch (insn) {
         fprintf(f, "    num = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1094,7 +1119,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(newarraykwsplat):
+  }
+  case BIN(newarraykwsplat): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(rb_num_t num) = (rb_num_t)operands[0];
@@ -1107,7 +1133,7 @@ switch (insn) {
         fprintf(f, "    num = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1132,7 +1158,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(duparray):
+  }
+  case BIN(duparray): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(VALUE ary) = (VALUE)operands[0];
@@ -1145,7 +1172,7 @@ switch (insn) {
         if (SYMBOL_P((VALUE)operands[0])) comment_id(f, SYM2ID((VALUE)operands[0]));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1163,7 +1190,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(duphash):
+  }
+  case BIN(duphash): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(VALUE hash) = (VALUE)operands[0];
@@ -1176,7 +1204,7 @@ switch (insn) {
         if (SYMBOL_P((VALUE)operands[0])) comment_id(f, SYM2ID((VALUE)operands[0]));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1194,7 +1222,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(expandarray):
+  }
+  case BIN(expandarray): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(rb_num_t num) = (rb_num_t)operands[0];
@@ -1211,7 +1240,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    ary = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1235,7 +1264,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(concatarray):
+  }
+  case BIN(concatarray): {
     fprintf(f, "{\n");
     {
         if (status->local_stack_p) {
@@ -1246,7 +1276,7 @@ switch (insn) {
         fprintf(f, "    ary1 = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    ary2 = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1271,7 +1301,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(splatarray):
+  }
+  case BIN(splatarray): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(VALUE flag) = (VALUE)operands[0];
@@ -1285,7 +1316,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    ary = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1310,7 +1341,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(newhash):
+  }
+  case BIN(newhash): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(rb_num_t num) = (rb_num_t)operands[0];
@@ -1323,7 +1355,7 @@ switch (insn) {
         fprintf(f, "    num = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1355,7 +1387,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(newrange):
+  }
+  case BIN(newrange): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(rb_num_t flag) = (rb_num_t)operands[0];
@@ -1370,7 +1403,7 @@ switch (insn) {
         fprintf(f, "    low = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    high = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1395,7 +1428,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(pop):
+  }
+  case BIN(pop): {
     fprintf(f, "{\n");
     {
         if (status->local_stack_p) {
@@ -1405,7 +1439,7 @@ switch (insn) {
 
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1422,7 +1456,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(dup):
+  }
+  case BIN(dup): {
     fprintf(f, "{\n");
     {
         if (status->local_stack_p) {
@@ -1432,7 +1467,7 @@ switch (insn) {
 
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1450,7 +1485,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(dupn):
+  }
+  case BIN(dupn): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(rb_num_t n) = (rb_num_t)operands[0];
@@ -1462,7 +1498,7 @@ switch (insn) {
         fprintf(f, "    n = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1482,7 +1518,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(swap):
+  }
+  case BIN(swap): {
     fprintf(f, "{\n");
     {
         if (status->local_stack_p) {
@@ -1493,7 +1530,7 @@ switch (insn) {
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1511,7 +1548,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(reverse):
+  }
+  case BIN(reverse): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(rb_num_t n) = (rb_num_t)operands[0];
@@ -1523,7 +1561,7 @@ switch (insn) {
         fprintf(f, "    n = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1550,7 +1588,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(topn):
+  }
+  case BIN(topn): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(rb_num_t n) = (rb_num_t)operands[0];
@@ -1563,7 +1602,7 @@ switch (insn) {
         fprintf(f, "    n = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1581,7 +1620,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(setn):
+  }
+  case BIN(setn): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(rb_num_t n) = (rb_num_t)operands[0];
@@ -1595,7 +1635,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1613,7 +1653,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(adjuststack):
+  }
+  case BIN(adjuststack): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(rb_num_t n) = (rb_num_t)operands[0];
@@ -1625,7 +1666,7 @@ switch (insn) {
         fprintf(f, "    n = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1641,7 +1682,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(defined):
+  }
+  case BIN(defined): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(rb_num_t op_type) = (rb_num_t)operands[0];
@@ -1663,7 +1705,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    v = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1688,7 +1730,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(checkmatch):
+  }
+  case BIN(checkmatch): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(rb_num_t flag) = (rb_num_t)operands[0];
@@ -1703,7 +1746,7 @@ switch (insn) {
         fprintf(f, "    target = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    pattern = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1728,7 +1771,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(checkkeyword):
+  }
+  case BIN(checkkeyword): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(lindex_t kw_bits_index) = (lindex_t)operands[0];
@@ -1744,7 +1788,7 @@ switch (insn) {
         fprintf(f, "    keyword_index = (lindex_t)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1761,7 +1805,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(checktype):
+  }
+  case BIN(checktype): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(rb_num_t type) = (rb_num_t)operands[0];
@@ -1775,7 +1820,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1792,7 +1837,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(definemethod):
+  }
+  case BIN(definemethod): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(ID id) = (ID)operands[0];
@@ -1809,7 +1855,7 @@ switch (insn) {
         fprintf(f, "    iseq = (ISEQ)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1841,7 +1887,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(definesmethod):
+  }
+  case BIN(definesmethod): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(ID id) = (ID)operands[0];
@@ -1860,7 +1907,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1892,7 +1939,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(send):
+  }
+  case BIN(send): {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     MAYBE_UNUSED(ISEQ blockiseq) = (ISEQ)operands[1];
@@ -1926,7 +1974,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -1962,8 +2010,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -2014,7 +2063,7 @@ switch (insn) {
         fprintf(f, "    blockiseq = (ISEQ)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -2033,7 +2082,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -2058,7 +2107,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_send_without_block):
+  }
+  case BIN(opt_send_without_block): {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -2091,7 +2141,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -2127,8 +2177,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -2175,7 +2226,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -2194,7 +2245,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -2219,7 +2270,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_str_freeze):
+  }
+  case BIN(opt_str_freeze): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(VALUE str) = (VALUE)operands[0];
@@ -2237,7 +2289,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[1])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -2264,8 +2316,9 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_nil_p):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_nil_p))) {
+  }
+  case BIN(opt_nil_p): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_nil_p))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -2298,7 +2351,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -2334,8 +2387,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -2382,7 +2436,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -2401,7 +2455,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -2425,8 +2479,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -2441,7 +2495,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -2467,7 +2521,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_str_uminus):
+  }
+  case BIN(opt_str_uminus): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(VALUE str) = (VALUE)operands[0];
@@ -2485,7 +2540,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[1])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -2512,7 +2567,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_newarray_max):
+  }
+  case BIN(opt_newarray_max): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(rb_num_t num) = (rb_num_t)operands[0];
@@ -2525,7 +2581,7 @@ switch (insn) {
         fprintf(f, "    num = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -2551,7 +2607,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_newarray_min):
+  }
+  case BIN(opt_newarray_min): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(rb_num_t num) = (rb_num_t)operands[0];
@@ -2564,7 +2621,7 @@ switch (insn) {
         fprintf(f, "    num = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -2590,7 +2647,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(invokesuper):
+  }
+  case BIN(invokesuper): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -2608,7 +2666,7 @@ switch (insn) {
         fprintf(f, "    blockiseq = (ISEQ)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -2627,7 +2685,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_super_method);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -2652,7 +2710,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(invokeblock):
+  }
+  case BIN(invokeblock): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -2666,7 +2725,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -2684,13 +2743,8 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        if (UNLIKELY(vm_cc_call(cd->cc) != vm_invokeblock_i)) {\n");
-        fprintf(f, "            const struct rb_callcache *cc = vm_cc_new(0, NULL, vm_invokeblock_i);\n");
-        fprintf(f, "            RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, cc);\n");
-        fprintf(f, "        }\n");
-        fprintf(f, "\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_invokeblock);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_invokeblock);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -2715,27 +2769,26 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(leave):
-    {
-      if (b->stack_size != 1) {
-          if (mjit_opts.warnings || mjit_opts.verbose)
-              fprintf(stderr, "MJIT warning: Unexpected JIT stack_size on leave: %d\n", b->stack_size);
-          status->success = false;
-      }
-      if (status->inlined_iseqs != NULL) { // the current ISeq is NOT being inlined
-          fprintf(f, "    if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {\n");
-          fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-          fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-          fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_leave);\n");
-          fprintf(f, "        goto cancel;\n");
-          fprintf(f, "    }\n");
-          fprintf(f, "    ec->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(reg_cfp);\n"); // vm_pop_frame
-      }
-      fprintf(f, "    return stack[0];\n");
-      b->stack_size += attr_sp_inc_leave();
-      b->finish_p = TRUE;
-      break;
+  }
+  case BIN(leave): {
+    if (b->stack_size != 1) {
+        if (mjit_opts.warnings || mjit_opts.verbose)
+            fprintf(stderr, "MJIT warning: Unexpected JIT stack_size on leave: %d\n", b->stack_size);
+        status->success = false;
     }
+    if (status->inlined_iseqs != NULL) { // the current ISeq is NOT being inlined
+        fprintf(f, "    if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {\n");
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_leave);\n");
+        fprintf(f, "        goto cancel;\n");
+        fprintf(f, "    }\n");
+        fprintf(f, "    ec->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(reg_cfp);\n"); // vm_pop_frame
+    }
+    fprintf(f, "    return stack[0];\n");
+    b->stack_size += attr_sp_inc_leave();
+    b->finish_p = TRUE;
+    break;
     fprintf(f, "{\n");
     {
         if (status->local_stack_p) {
@@ -2745,7 +2798,7 @@ switch (insn) {
 
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -2801,7 +2854,8 @@ switch (insn) {
     fprintf(f, "}\n");
     b->finish_p = TRUE;
     break;
-  case BIN(throw):
+  }
+  case BIN(throw): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(rb_num_t throw_state) = (rb_num_t)operands[0];
@@ -2815,7 +2869,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    throwobj = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -2843,7 +2897,8 @@ switch (insn) {
     fprintf(f, "}\n");
     b->finish_p = TRUE;
     break;
-  case BIN(jump):
+  }
+  case BIN(jump): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(OFFSET dst) = (OFFSET)operands[0];
@@ -2855,7 +2910,7 @@ switch (insn) {
         fprintf(f, "    dst = (OFFSET)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -2865,23 +2920,24 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        RUBY_VM_CHECK_INTS(ec);\n");
+        fprintf(f, "            if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {\n");
+        fprintf(f, "                reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
+        fprintf(f, "                rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);\n");
+        fprintf(f, "                if (UNLIKELY(!mjit_call_p)) {\n");
+        fprintf(f, "                    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "                    RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+        fprintf(f, "                    goto cancel;\n");
+        fprintf(f, "                }\n");
+        fprintf(f, "            }\n");
         next_pos = pos + insn_len(insn) + (unsigned int)dst;
         fprintf(f, "            goto label_%d;\n", next_pos);
-        fprintf(f, "    }\n");
-        fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_jump(dst));
-        if (!pc_moved_p) {
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-        }
-        fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-        fprintf(f, "        goto cancel;\n");
         fprintf(f, "    }\n");
         b->stack_size += attr_sp_inc_jump(dst);
     }
     fprintf(f, "}\n");
     break;
-  case BIN(branchif):
+  }
+  case BIN(branchif): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(OFFSET dst) = (OFFSET)operands[0];
@@ -2895,7 +2951,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -2906,18 +2962,18 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        if (RTEST(val)) {\n");
-        fprintf(f, "            RUBY_VM_CHECK_INTS(ec);\n");
+        fprintf(f, "            if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {\n");
+        fprintf(f, "                reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
+        fprintf(f, "                rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);\n");
+        fprintf(f, "                if (UNLIKELY(!mjit_call_p)) {\n");
+        fprintf(f, "                    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "                    RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+        fprintf(f, "                    goto cancel;\n");
+        fprintf(f, "                }\n");
+        fprintf(f, "            }\n");
         next_pos = pos + insn_len(insn) + (unsigned int)dst;
         fprintf(f, "            goto label_%d;\n", next_pos);
         fprintf(f, "        }\n");
-        fprintf(f, "    }\n");
-        fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_branchif(dst));
-        if (!pc_moved_p) {
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-        }
-        fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-        fprintf(f, "        goto cancel;\n");
         fprintf(f, "    }\n");
         b->stack_size += attr_sp_inc_branchif(dst);
     }
@@ -2929,7 +2985,8 @@ switch (insn) {
         compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
     }
     break;
-  case BIN(branchunless):
+  }
+  case BIN(branchunless): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(OFFSET dst) = (OFFSET)operands[0];
@@ -2943,7 +3000,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -2954,18 +3011,18 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        if (!RTEST(val)) {\n");
-        fprintf(f, "            RUBY_VM_CHECK_INTS(ec);\n");
+        fprintf(f, "            if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {\n");
+        fprintf(f, "                reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
+        fprintf(f, "                rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);\n");
+        fprintf(f, "                if (UNLIKELY(!mjit_call_p)) {\n");
+        fprintf(f, "                    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "                    RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+        fprintf(f, "                    goto cancel;\n");
+        fprintf(f, "                }\n");
+        fprintf(f, "            }\n");
         next_pos = pos + insn_len(insn) + (unsigned int)dst;
         fprintf(f, "            goto label_%d;\n", next_pos);
         fprintf(f, "        }\n");
-        fprintf(f, "    }\n");
-        fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_branchunless(dst));
-        if (!pc_moved_p) {
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-        }
-        fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-        fprintf(f, "        goto cancel;\n");
         fprintf(f, "    }\n");
         b->stack_size += attr_sp_inc_branchunless(dst);
     }
@@ -2977,7 +3034,8 @@ switch (insn) {
         compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
     }
     break;
-  case BIN(branchnil):
+  }
+  case BIN(branchnil): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(OFFSET dst) = (OFFSET)operands[0];
@@ -2991,7 +3049,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -3002,18 +3060,18 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        if (NIL_P(val)) {\n");
-        fprintf(f, "            RUBY_VM_CHECK_INTS(ec);\n");
+        fprintf(f, "            if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {\n");
+        fprintf(f, "                reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
+        fprintf(f, "                rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);\n");
+        fprintf(f, "                if (UNLIKELY(!mjit_call_p)) {\n");
+        fprintf(f, "                    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "                    RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+        fprintf(f, "                    goto cancel;\n");
+        fprintf(f, "                }\n");
+        fprintf(f, "            }\n");
         next_pos = pos + insn_len(insn) + (unsigned int)dst;
         fprintf(f, "            goto label_%d;\n", next_pos);
         fprintf(f, "        }\n");
-        fprintf(f, "    }\n");
-        fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_branchnil(dst));
-        if (!pc_moved_p) {
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-        }
-        fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-        fprintf(f, "        goto cancel;\n");
         fprintf(f, "    }\n");
         b->stack_size += attr_sp_inc_branchnil(dst);
     }
@@ -3025,7 +3083,31 @@ switch (insn) {
         compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
     }
     break;
-  case BIN(opt_getinlinecache):
+  }
+  case BIN(opt_getinlinecache): {
+    OFFSET dst = (OFFSET)operands[0];
+    IC ic = (IC)operands[1];
+
+    rb_mjit_before_vm_ic_update();
+    rb_serial_t ic_serial = ic->ic_serial;
+    const rb_cref_t *ic_cref = ic->ic_cref;
+    VALUE ic_value = ic->value;
+    rb_mjit_after_vm_ic_update();
+
+    if (ic_serial && !status->compile_info->disable_const_cache) {
+        fprintf(f, "    if (vm_ic_hit_p((rb_serial_t)%"PRI_SERIALT_PREFIX"u, (const rb_cref_t *)0x%"PRIxVALUE", reg_cfp->ep)) {", ic_serial, (VALUE)ic_cref);
+        fprintf(f, "        stack[%d] = 0x%"PRIxVALUE";\n", b->stack_size, ic_value);
+        fprintf(f, "        goto label_%d;\n", pos + insn_len(insn) + (int)dst);
+        fprintf(f, "    }");
+        fprintf(f, "    else {");
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        goto const_cancel;\n");
+        fprintf(f, "    }");
+
+        b->stack_size += attr_sp_inc_opt_getinlinecache(dst, ic);
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(OFFSET dst) = (OFFSET)operands[0];
@@ -3042,7 +3124,7 @@ switch (insn) {
         fprintf(f, "    ic = (IC)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -3052,7 +3134,7 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        if (vm_ic_hit_p(ic, GET_EP())) {\n");
+        fprintf(f, "        if (vm_ic_hit_p(ic->ic_serial, ic->ic_cref, GET_EP())) {\n");
         fprintf(f, "            val = ic->value;\n");
         fprintf(f, "            stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_opt_getinlinecache(dst, ic) - 1);
         next_pos = pos + insn_len(insn) + (unsigned int)dst;
@@ -3073,7 +3155,8 @@ switch (insn) {
         compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
     }
     break;
-  case BIN(opt_setinlinecache):
+  }
+  case BIN(opt_setinlinecache): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(IC ic) = (IC)operands[0];
@@ -3087,7 +3170,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -3104,7 +3187,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(once):
+  }
+  case BIN(once): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(ISEQ iseq) = (ISEQ)operands[0];
@@ -3121,7 +3205,7 @@ switch (insn) {
         fprintf(f, "    ise = (ISE)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -3154,7 +3238,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_case_dispatch):
+  }
+  case BIN(opt_case_dispatch): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CDHASH hash) = (CDHASH)operands[0];
@@ -3172,7 +3257,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    key = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -3209,8 +3294,9 @@ switch (insn) {
         compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
     }
     break;
-  case BIN(opt_plus):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_plus))) {
+  }
+  case BIN(opt_plus): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_plus))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -3243,7 +3329,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -3279,8 +3365,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -3327,7 +3414,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -3346,7 +3433,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -3370,8 +3457,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -3387,7 +3474,7 @@ switch (insn) {
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -3413,8 +3500,9 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_minus):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_minus))) {
+  }
+  case BIN(opt_minus): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_minus))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -3447,7 +3535,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -3483,8 +3571,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -3531,7 +3620,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -3550,7 +3639,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -3574,8 +3663,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -3591,7 +3680,7 @@ switch (insn) {
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -3617,8 +3706,9 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_mult):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_mult))) {
+  }
+  case BIN(opt_mult): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_mult))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -3651,7 +3741,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -3687,8 +3777,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -3735,7 +3826,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -3754,7 +3845,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -3778,8 +3869,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -3795,7 +3886,7 @@ switch (insn) {
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -3821,8 +3912,9 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_div):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_div))) {
+  }
+  case BIN(opt_div): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_div))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -3855,7 +3947,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -3891,8 +3983,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -3939,7 +4032,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -3958,7 +4051,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -3982,8 +4075,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -3999,7 +4092,7 @@ switch (insn) {
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -4033,8 +4126,9 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_mod):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_mod))) {
+  }
+  case BIN(opt_mod): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_mod))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -4067,7 +4161,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -4103,8 +4197,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -4151,7 +4246,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -4170,7 +4265,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -4194,8 +4289,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -4211,7 +4306,7 @@ switch (insn) {
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -4245,8 +4340,9 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_eq):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_eq))) {
+  }
+  case BIN(opt_eq): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_eq))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -4279,7 +4375,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -4315,8 +4411,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -4363,7 +4460,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -4382,7 +4479,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -4406,8 +4503,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -4423,7 +4520,7 @@ switch (insn) {
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -4449,7 +4546,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_neq):
+  }
+  case BIN(opt_neq): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd_eq) = (CALL_DATA)operands[0];
@@ -4469,7 +4567,7 @@ switch (insn) {
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -4495,8 +4593,9 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_lt):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_lt))) {
+  }
+  case BIN(opt_lt): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_lt))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -4529,7 +4628,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -4565,8 +4664,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -4613,7 +4713,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -4632,7 +4732,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -4656,8 +4756,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -4673,7 +4773,7 @@ switch (insn) {
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -4699,8 +4799,9 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_le):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_le))) {
+  }
+  case BIN(opt_le): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_le))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -4733,7 +4834,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -4769,8 +4870,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -4817,7 +4919,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -4836,7 +4938,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -4860,8 +4962,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -4877,7 +4979,7 @@ switch (insn) {
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -4903,8 +5005,9 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_gt):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_gt))) {
+  }
+  case BIN(opt_gt): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_gt))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -4937,7 +5040,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -4973,8 +5076,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -5021,7 +5125,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -5040,7 +5144,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -5064,8 +5168,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -5081,7 +5185,7 @@ switch (insn) {
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -5107,8 +5211,9 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_ge):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_ge))) {
+  }
+  case BIN(opt_ge): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_ge))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -5141,7 +5246,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -5177,8 +5282,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -5225,7 +5331,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -5244,7 +5350,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -5268,8 +5374,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -5285,7 +5391,7 @@ switch (insn) {
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -5311,8 +5417,9 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_ltlt):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_ltlt))) {
+  }
+  case BIN(opt_ltlt): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_ltlt))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -5345,7 +5452,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -5381,8 +5488,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -5429,7 +5537,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -5448,7 +5556,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -5472,8 +5580,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -5489,7 +5597,7 @@ switch (insn) {
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -5523,8 +5631,9 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_and):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_and))) {
+  }
+  case BIN(opt_and): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_and))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -5557,7 +5666,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -5593,8 +5702,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -5641,7 +5751,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -5660,7 +5770,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -5684,8 +5794,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -5701,7 +5811,7 @@ switch (insn) {
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -5727,8 +5837,9 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_or):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_or))) {
+  }
+  case BIN(opt_or): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_or))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -5761,7 +5872,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -5797,8 +5908,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -5845,7 +5957,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -5864,7 +5976,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -5888,8 +6000,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -5905,7 +6017,7 @@ switch (insn) {
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -5931,8 +6043,9 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_aref):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_aref))) {
+  }
+  case BIN(opt_aref): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_aref))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -5965,7 +6078,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -6001,8 +6114,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -6049,7 +6163,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -6068,7 +6182,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -6092,8 +6206,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -6109,7 +6223,7 @@ switch (insn) {
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -6143,8 +6257,9 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_aset):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_aset))) {
+  }
+  case BIN(opt_aset): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_aset))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -6177,7 +6292,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -6213,8 +6328,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -6261,7 +6377,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -6280,7 +6396,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -6304,8 +6420,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -6322,7 +6438,7 @@ switch (insn) {
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    set = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -6356,7 +6472,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_aset_with):
+  }
+  case BIN(opt_aset_with): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(VALUE key) = (VALUE)operands[0];
@@ -6376,7 +6493,7 @@ switch (insn) {
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -6418,7 +6535,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_aref_with):
+  }
+  case BIN(opt_aref_with): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(VALUE key) = (VALUE)operands[0];
@@ -6437,7 +6555,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -6474,8 +6592,9 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_length):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_length))) {
+  }
+  case BIN(opt_length): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_length))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -6508,7 +6627,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -6544,8 +6663,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -6592,7 +6712,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -6611,7 +6731,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -6635,8 +6755,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -6651,7 +6771,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -6677,8 +6797,9 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_size):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_size))) {
+  }
+  case BIN(opt_size): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_size))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -6711,7 +6832,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -6747,8 +6868,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -6795,7 +6917,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -6814,7 +6936,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -6838,8 +6960,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -6854,7 +6976,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -6880,8 +7002,9 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_empty_p):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_empty_p))) {
+  }
+  case BIN(opt_empty_p): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_empty_p))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -6914,7 +7037,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -6950,8 +7073,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -6998,7 +7122,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -7017,7 +7141,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -7041,8 +7165,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -7057,7 +7181,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -7083,8 +7207,9 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_succ):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_succ))) {
+  }
+  case BIN(opt_succ): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_succ))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -7117,7 +7242,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -7153,8 +7278,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -7201,7 +7327,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -7220,7 +7346,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -7244,8 +7370,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -7260,7 +7386,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -7286,8 +7412,9 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_not):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_not))) {
+  }
+  case BIN(opt_not): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_not))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -7320,7 +7447,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -7356,8 +7483,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -7404,7 +7532,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -7423,7 +7551,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -7447,8 +7575,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -7463,7 +7591,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -7489,8 +7617,9 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_regexpmatch2):
-      if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_regexpmatch2))) {
+  }
+  case BIN(opt_regexpmatch2): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_regexpmatch2))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
@@ -7523,7 +7652,7 @@ switch (insn) {
         fprintf(f, "    }\n");
 
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -7559,8 +7688,9 @@ switch (insn) {
             fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
             if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
-                fprintf(f, "        struct rb_call_data cc_cd = { .ci = (CALL_INFO)0x%"PRIxVALUE", .cc = cc };\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
-                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling, &cc_cd);\n");
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
             }
             else { // VM_METHOD_TYPE_ISEQ
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
@@ -7607,7 +7737,7 @@ switch (insn) {
         comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -7626,7 +7756,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -7650,8 +7780,8 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
@@ -7667,7 +7797,7 @@ switch (insn) {
         fprintf(f, "    obj2 = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj1 = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -7701,8 +7831,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(invokebuiltin):
-    {
+  }
+  case BIN(invokebuiltin): {
         RB_BUILTIN bf = (RB_BUILTIN)operands[0];
         rb_snum_t sp_inc = attr_sp_inc_invokebuiltin(bf);
         unsigned sp = b->stack_size + (unsigned)sp_inc;
@@ -7718,7 +7848,6 @@ switch (insn) {
             b->stack_size = sp;
             break;
         }
-    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(RB_BUILTIN bf) = (RB_BUILTIN)operands[0];
@@ -7731,7 +7860,7 @@ switch (insn) {
         fprintf(f, "    bf = (RB_BUILTIN)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -7757,8 +7886,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_invokebuiltin_delegate):
-    {
+  }
+  case BIN(opt_invokebuiltin_delegate): {
         RB_BUILTIN bf = (RB_BUILTIN)operands[0];
         rb_num_t index = (rb_num_t)operands[1];
         rb_snum_t sp_inc = attr_sp_inc_opt_invokebuiltin_delegate(bf, index);
@@ -7775,7 +7904,6 @@ switch (insn) {
             b->stack_size = sp;
             break;
         }
-    }
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(RB_BUILTIN bf) = (RB_BUILTIN)operands[0];
@@ -7792,7 +7920,7 @@ switch (insn) {
         fprintf(f, "    index = (rb_num_t)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -7817,8 +7945,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_invokebuiltin_delegate_leave):
-    {
+  }
+  case BIN(opt_invokebuiltin_delegate_leave): {
         RB_BUILTIN bf = (RB_BUILTIN)operands[0];
         rb_num_t index = (rb_num_t)operands[1];
         rb_snum_t sp_inc = attr_sp_inc_opt_invokebuiltin_delegate_leave(bf, index);
@@ -7833,20 +7961,19 @@ switch (insn) {
             fprintf(f, "    stack[%u] = val;\n", sp - 1);
             fprintf(f, "}\n");
         }
-      if (status->inlined_iseqs != NULL) { // the current ISeq is NOT being inlined
-          fprintf(f, "    if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {\n");
-          fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-          fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-          fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_leave);\n");
-          fprintf(f, "        goto cancel;\n");
-          fprintf(f, "    }\n");
-          fprintf(f, "    ec->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(reg_cfp);\n"); // vm_pop_frame
-      }
-      fprintf(f, "    return stack[0];\n");
-      b->stack_size += attr_sp_inc_opt_invokebuiltin_delegate_leave(bf, index);
-      b->finish_p = TRUE;
-      break;
+    if (status->inlined_iseqs != NULL) { // the current ISeq is NOT being inlined
+        fprintf(f, "    if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {\n");
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_leave);\n");
+        fprintf(f, "        goto cancel;\n");
+        fprintf(f, "    }\n");
+        fprintf(f, "    ec->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(reg_cfp);\n"); // vm_pop_frame
     }
+    fprintf(f, "    return stack[0];\n");
+    b->stack_size += attr_sp_inc_opt_invokebuiltin_delegate_leave(bf, index);
+    b->finish_p = TRUE;
+    break;
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(RB_BUILTIN bf) = (RB_BUILTIN)operands[0];
@@ -7863,7 +7990,7 @@ switch (insn) {
         fprintf(f, "    index = (rb_num_t)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || TRUE) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -7908,7 +8035,8 @@ switch (insn) {
     fprintf(f, "}\n");
     b->finish_p = TRUE;
     break;
-  case BIN(getlocal_WC_0):
+  }
+  case BIN(getlocal_WC_0): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(lindex_t idx) = (lindex_t)operands[0];
@@ -7923,7 +8051,7 @@ switch (insn) {
         fprintf(f, "    idx = (lindex_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -7942,7 +8070,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(getlocal_WC_1):
+  }
+  case BIN(getlocal_WC_1): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(lindex_t idx) = (lindex_t)operands[0];
@@ -7957,7 +8086,7 @@ switch (insn) {
         fprintf(f, "    idx = (lindex_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -7976,7 +8105,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(setlocal_WC_0):
+  }
+  case BIN(setlocal_WC_0): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(lindex_t idx) = (lindex_t)operands[0];
@@ -7992,7 +8122,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -8010,7 +8140,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(setlocal_WC_1):
+  }
+  case BIN(setlocal_WC_1): {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(lindex_t idx) = (lindex_t)operands[0];
@@ -8026,7 +8157,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -8044,7 +8175,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(putobject_INT2FIX_0_):
+  }
+  case BIN(putobject_INT2FIX_0_): {
     fprintf(f, "{\n");
     {
         if (status->local_stack_p) {
@@ -8054,7 +8186,7 @@ switch (insn) {
 
         fprintf(f, "    val = INT2FIX(0);\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -8071,7 +8203,8 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(putobject_INT2FIX_1_):
+  }
+  case BIN(putobject_INT2FIX_1_): {
     fprintf(f, "{\n");
     {
         if (status->local_stack_p) {
@@ -8081,7 +8214,7 @@ switch (insn) {
 
         fprintf(f, "    val = INT2FIX(1);\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (body->catch_except_p || FALSE) {
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -8098,6 +8231,7 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
+  }
   default:
     if (mjit_opts.warnings || mjit_opts.verbose)
         fprintf(stderr, "MJIT warning: Skipped to compile unsupported instruction: %s\n", insn_name(insn));

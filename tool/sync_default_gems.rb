@@ -17,7 +17,6 @@ REPOSITORIES = {
   "io-nonblock": 'ruby/io-nonblock',
   "io-wait": 'ruby/io-wait',
   csv: 'ruby/csv',
-  webrick: 'ruby/webrick',
   dbm: 'ruby/dbm',
   gdbm: 'ruby/gdbm',
   etc: 'ruby/etc',
@@ -122,6 +121,7 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/tests", "test/json")
     cp_r("#{upstream}/lib", "ext/json")
     cp_r("#{upstream}/json.gemspec", "ext/json")
+    cp_r("#{upstream}/VERSION", "ext/json")
     rm_rf(%w[ext/json/lib/json/ext ext/json/lib/json/pure.rb ext/json/lib/json/pure])
     `git checkout ext/json/extconf.rb ext/json/parser/prereq.mk ext/json/generator/depend ext/json/parser/depend ext/json/depend`
   when "psych"
@@ -314,13 +314,14 @@ def sync_default_gems(gem)
     rm_rf(%w[ext/pathname test/pathname])
     cp_r("#{upstream}/ext/pathname", "ext")
     cp_r("#{upstream}/test/pathname", "test")
+    cp_r("#{upstream}/lib", "ext/pathname")
     cp_r("#{upstream}/pathname.gemspec", "ext/pathname")
     `git checkout ext/pathname/depend`
   when "digest"
     rm_rf(%w[ext/digest test/digest])
     cp_r("#{upstream}/ext/digest", "ext")
     mkdir_p("#{upstream}/ext/digest/lib")
-    cp_r("#{upstream}/lib/digest.rb", "ext/digest/lib")
+    cp_r("#{upstream}/lib/digest.rb", "ext/digest/lib/")
     cp_r("#{upstream}/test/digest", "test")
     cp_r("#{upstream}/digest.gemspec", "ext/digest")
     `git checkout ext/digest/depend ext/digest/*/depend`

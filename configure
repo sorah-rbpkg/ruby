@@ -3315,8 +3315,6 @@ test "$program_suffix" != NONE &&
 ac_script='s/[\\$]/&&/g;s/;s,x,x,$//'
 program_transform_name=`$as_echo "$program_transform_name" | sed "$ac_script"`
 
-
-
 # suppress error messages, rm: cannot remove 'conftest.dSYM', from
 # AC_EGREP_CPP with CFLAGS=-g on Darwin.
 case $build_os in #(
@@ -7484,9 +7482,7 @@ if test "${CXX}" = "g++" -a -z "${GXX}"; then :
     # AC_PROG_CXX sets $CXX to "g++" when it purposefully finds that there is
     # _no_ g++.  This brain-damaged design must be worked around.  Thankfully,
     # similar thing doesn't happen for AC_PROG_CC.
-    { $as_echo "$as_me:${as_lineno-$LINENO}: C++ features disabled due to lack of a C++ compiler." >&5
-$as_echo "$as_me: C++ features disabled due to lack of a C++ compiler." >&6;}
-    { CXX=; unset CXX;}
+    rb_there_is_in_fact_no_gplusplus_but_autoconf_is_cheating_us=true
 
 fi
 
@@ -10043,7 +10039,7 @@ fi
 
     # -fstack-protector
     case "$target_os" in #(
-  mingw*) :
+  mingw*|haiku*) :
 
 	stack_protector=no
      ;; #(
@@ -11933,7 +11929,12 @@ fi
 esac
 : ${ORIG_LIBS=$LIBS}
 
-if test -n "${CXX}"; then :
+if test -n "${rb_there_is_in_fact_no_gplusplus_but_autoconf_is_cheating_us}"; then :
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Test skipped due to lack of a C++ compiler." >&5
+$as_echo "$as_me: Test skipped due to lack of a C++ compiler." >&6;}
+
+elif test -n "${CXX}"; then :
 
     save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $rb_cv_warnflags"
@@ -17584,210 +17585,6 @@ _ACEOF
 
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for prototypes" >&5
-$as_echo_n "checking for prototypes... " >&6; }
-if ${rb_cv_have_prototypes+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-int foo(int x) { return 0; }
-int
-main ()
-{
-return foo(10);
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  rb_cv_have_prototypes=yes
-else
-  rb_cv_have_prototypes=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $rb_cv_have_prototypes" >&5
-    colorize_result "$rb_cv_have_prototypes" ; }
-if test "$rb_cv_have_prototypes" = yes; then :
-
-  $as_echo "#define HAVE_PROTOTYPES 1" >>confdefs.h
-
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking token paste string" >&5
-$as_echo_n "checking token paste string... " >&6; }
-if ${rb_cv_tokenpaste+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#define paste(a,b) a##b
-int
-main ()
-{
-int xy = 1; return paste(x,y);
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  rb_cv_tokenpaste=ansi
-else
-  rb_cv_tokenpaste=knr
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $rb_cv_tokenpaste" >&5
-    colorize_result "$rb_cv_tokenpaste" ; }
-if test "$rb_cv_tokenpaste" = ansi; then :
-
-  $as_echo "#define TOKEN_PASTE(x,y) x##y" >>confdefs.h
-
-
-else
-
-  $as_echo "#define TOKEN_PASTE(x,y) x/**/y" >>confdefs.h
-
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking stringization" >&5
-$as_echo_n "checking stringization... " >&6; }
-if ${rb_cv_stringization+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  rb_cv_stringization=no
-  for string in "#expr" '"expr"'; do
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-#define STRINGIZE0(expr) $string
-#define STRINGIZE(expr) STRINGIZE0(expr)
-#undef real_test_for_stringization
-#define test_for_stringization -.real_test_for_stringization.-
-const char stringized[] = STRINGIZE(test_for_stringization);
-
-int
-main ()
-{
-static int test_array [1 - 2 * !(sizeof(stringized) == 32)];
-test_array [0] = 0;
-return test_array [0];
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  rb_cv_stringization="$string"; break
-else
-  rb_cv_stringization=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  done
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $rb_cv_stringization" >&5
-    colorize_result "$rb_cv_stringization" ; }
-$as_echo "#define STRINGIZE(expr) STRINGIZE0(expr)" >>confdefs.h
-
-if test x"$rb_cv_stringization" != xno -a "$rb_cv_stringization" != "#expr"; then :
-
-  cat >>confdefs.h <<_ACEOF
-#define STRINGIZE0(expr) $rb_cv_stringization
-_ACEOF
-
-  $as_echo "#define OLD_FASHIONED_STRINGIZATION 1" >>confdefs.h
-
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking string literal concatenation" >&5
-$as_echo_n "checking string literal concatenation... " >&6; }
-if ${rb_cv_string_literal_concatenation+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-const char concatenated_literal[] = "literals" "to"
-  "be" "concatenated.";
-
-int
-main ()
-{
-static int test_array [1 - 2 * !(sizeof(concatenated_literal) == 26)];
-test_array [0] = 0;
-return test_array [0];
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  rb_cv_string_literal_concatenation=yes
-else
-  rb_cv_string_literal_concatenation=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $rb_cv_string_literal_concatenation" >&5
-    colorize_result "$rb_cv_string_literal_concatenation" ; }
-if test "$rb_cv_string_literal_concatenation" = no; then :
-
-  as_fn_error $? "No string literal concatenation" "$LINENO" 5
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for variable length prototypes and stdarg.h" >&5
-$as_echo_n "checking for variable length prototypes and stdarg.h... " >&6; }
-if ${rb_cv_stdarg+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <stdarg.h>
-int foo(int x, ...) {
-	va_list va;
-	va_start(va, x);
-	va_arg(va, int);
-	va_arg(va, char *);
-	va_arg(va, double);
-	return 0;
-}
-
-int
-main ()
-{
-return foo(10, "", 3.14);
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  rb_cv_stdarg=yes
-else
-  rb_cv_stdarg=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $rb_cv_stdarg" >&5
-    colorize_result "$rb_cv_stdarg" ; }
-if test "$rb_cv_stdarg" = yes; then :
-
-  $as_echo "#define HAVE_STDARG_PROTOTYPES 1" >>confdefs.h
-
-
-fi
-
 # __VA_ARGS__ is also tested in AC_PROG_CC_C99 since autoconf 2.60a (around
 # 2006). The check below is redundant and should always success.  Remain not
 # deleted for backward compat.
@@ -20571,10 +20368,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-$as_echo "#define HAVE_ST_BLKSIZE 1" >>confdefs.h
-
 fi
-
 
 ac_fn_c_check_member "$LINENO" "struct stat" "st_blocks" "ac_cv_member_struct_stat_st_blocks" "$ac_includes_default"
 if test "x$ac_cv_member_struct_stat_st_blocks" = xyes; then :
@@ -20584,17 +20378,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-$as_echo "#define HAVE_ST_BLOCKS 1" >>confdefs.h
-
-else
-  case " $LIBOBJS " in
-  *" fileblocks.$ac_objext "* ) ;;
-  *) LIBOBJS="$LIBOBJS fileblocks.$ac_objext"
- ;;
-esac
-
 fi
-
 
 ac_fn_c_check_member "$LINENO" "struct stat" "st_rdev" "ac_cv_member_struct_stat_st_rdev" "$ac_includes_default"
 if test "x$ac_cv_member_struct_stat_st_rdev" = xyes; then :
@@ -20604,10 +20388,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-$as_echo "#define HAVE_ST_RDEV 1" >>confdefs.h
-
 fi
-
 
 
 
@@ -23368,39 +23149,6 @@ fi
 
 cat >>confdefs.h <<_ACEOF
 #define GETGROUPS_T $ac_cv_type_getgroups
-_ACEOF
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking return type of signal handlers" >&5
-$as_echo_n "checking return type of signal handlers... " >&6; }
-if ${ac_cv_type_signal+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <sys/types.h>
-#include <signal.h>
-
-int
-main ()
-{
-return *(signal (0, 0)) (0) == 1;
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv_type_signal=int
-else
-  ac_cv_type_signal=void
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_type_signal" >&5
-    colorize_result "$ac_cv_type_signal" ; }
-
-cat >>confdefs.h <<_ACEOF
-#define RETSIGTYPE $ac_cv_type_signal
 _ACEOF
 
 
@@ -27974,6 +27722,10 @@ esac
 
             rb_cv_coroutine=copy
          ;; #(
+  *-haiku*) :
+
+            rb_cv_coroutine=copy
+         ;; #(
   *) :
 
             rb_cv_coroutine=ucontext
@@ -28532,9 +28284,7 @@ done
  ;;
 esac
 
-    if test "x$compress_debug_sections" = xzlib; then :
-
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for uncompress in -lz" >&5
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for uncompress in -lz" >&5
 $as_echo_n "checking for uncompress in -lz... " >&6; }
 if ${ac_cv_lib_z_uncompress+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -28579,8 +28329,6 @@ _ACEOF
 
 fi
 
-
-fi
 
 fi
 

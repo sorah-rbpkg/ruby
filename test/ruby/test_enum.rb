@@ -27,7 +27,6 @@ class TestEnumerable < Test::Unit::TestCase
       end
     end
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -63,11 +62,32 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([[2, 1], [2, 4]], a)
   end
 
+  def test_grep_optimization
+    bug17030 = '[ruby-core:99156]'
+    'set last match' =~ /set last (.*)/
+    assert_equal([:a, 'b', :c], [:a, 'b', 'z', :c, 42, nil].grep(/[a-d]/), bug17030)
+    assert_equal(['z', 42, nil], [:a, 'b', 'z', :c, 42, nil].grep_v(/[a-d]/), bug17030)
+    assert_equal('match', $1, bug17030)
+
+    regexp = Regexp.new('x')
+    assert_equal([], @obj.grep(regexp), bug17030) # sanity check
+    def regexp.===(other)
+      true
+    end
+    assert_equal([1, 2, 3, 1, 2], @obj.grep(regexp), bug17030)
+
+    o = Object.new
+    def o.to_str
+      'hello'
+    end
+    assert_same(o, [o].grep(/ll/).first, bug17030)
+  end
+
   def test_count
     assert_equal(5, @obj.count)
     assert_equal(2, @obj.count(1))
     assert_equal(3, @obj.count {|x| x % 2 == 1 })
-    assert_equal(2, @obj.count(1) {|x| x % 2 == 1 })
+    assert_equal(2, assert_warning(/given block not used/) {@obj.count(1) {|x| x % 2 == 1 }})
     assert_raise(ArgumentError) { @obj.count(0, 1) }
 
     if RUBY_ENGINE == "ruby"
@@ -95,7 +115,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(1, @obj.find_index {|x| x % 2 == 0 })
     assert_equal(nil, @obj.find_index {|x| false })
     assert_raise(ArgumentError) { @obj.find_index(0, 1) }
-    assert_equal(1, @obj.find_index(2) {|x| x == 1 })
+    assert_equal(1, assert_warning(/given block not used/) {@obj.find_index(2) {|x| x == 1 }})
   end
 
   def test_find_all
@@ -206,7 +226,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(48, @obj.inject {|z, x| z * 2 + x })
     assert_equal(12, @obj.inject(:*))
     assert_equal(24, @obj.inject(2) {|z, x| z * x })
-    assert_equal(24, @obj.inject(2, :*) {|z, x| z * x })
+    assert_equal(24, assert_warning(/given block not used/) {@obj.inject(2, :*) {|z, x| z * x }})
     assert_equal(nil, @empty.inject() {9})
   end
 
@@ -416,7 +436,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(false, [true, true, false].all?)
     assert_equal(true, [].all?)
     assert_equal(true, @empty.all?)
-    assert_equal(true, @obj.all?(Fixnum))
+    assert_equal(true, @obj.all?(Integer))
     assert_equal(false, @obj.all?(1..2))
   end
 

@@ -2643,7 +2643,8 @@ rb_hash_except(int argc, VALUE *argv, VALUE hash)
     int i;
     VALUE key, result;
 
-    result = rb_obj_dup(hash);
+    result = hash_alloc(rb_cHash);
+    hash_copy(result, hash);
 
     for (i = 0; i < argc; i++) {
         key = argv[i];
@@ -3188,16 +3189,27 @@ transform_keys_i(VALUE key, VALUE value, VALUE result)
  *  call-seq:
  *    hash.transform_keys {|key| ... } -> new_hash
  *    hash.transform_keys(hash2) -> new_hash
+ *    hash.transform_keys(hash2) {|other_key| ...} -> new_hash
  *    hash.transform_keys -> new_enumerator
  *
  *  Returns a new \Hash object; each entry has:
  *  * A key provided by the block.
  *  * The value from +self+.
  *
+ *  An optional hash argument can be provided to map keys to new keys.
+ *  Any key not given will be mapped using the provided block,
+ *  or remain the same if no block is given.
+ *
  *  Transform keys:
  *      h = {foo: 0, bar: 1, baz: 2}
  *      h1 = h.transform_keys {|key| key.to_s }
  *      h1 # => {"foo"=>0, "bar"=>1, "baz"=>2}
+ *
+ *      h.transform_keys(foo: :bar, bar: :foo)
+ *      #=> {bar: 0, foo: 1, baz: 2}
+ *
+ *      h.transform_keys(foo: :hello, &:to_s)
+ *      #=> {:hello=>0, "bar"=>1, "baz"=>2}
  *
  *  Overwrites values for duplicate keys:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -3243,22 +3255,12 @@ static VALUE rb_hash_flatten(int argc, VALUE *argv, VALUE hash);
 /*
  *  call-seq:
  *    hash.transform_keys! {|key| ... } -> self
+ *    hash.transform_keys!(hash2) -> self
+ *    hash.transform_keys!(hash2) {|other_key| ...} -> self
  *    hash.transform_keys! -> new_enumerator
  *
- *  Returns +self+ with new keys provided by the block:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.transform_keys! {|key| key.to_s } # => {"foo"=>0, "bar"=>1, "baz"=>2}
- *
- *  Overwrites values for duplicate keys:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.transform_keys! {|key| :bat }
- *    h1 # => {:bat=>2}
- *
- *  Returns a new \Enumerator if no block given:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.transform_keys! # => #<Enumerator: {"foo"=>0, "bar"=>1, "baz"=>2}:transform_keys!>
- *    h1 = e.each { |key| key.to_s }
- *    h1 # => {"foo"=>0, "bar"=>1, "baz"=>2}
+ *  Same as Hash#transform_keys but modifies the receiver in place
+ *  instead of returning a new hash.
  */
 static VALUE
 rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)

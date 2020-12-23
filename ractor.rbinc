@@ -9,29 +9,29 @@
 #include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
 struct rb_execution_context_struct; /* in vm_core.h */
 
-static VALUE builtin_inline_class_43(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_253(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 43 "ractor.rb"
+#line 253 "ractor.rb"
 return 
       rb_ec_ractor_ptr(ec)->self;
 #line 18 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_49(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_266(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 49 "ractor.rb"
+#line 266 "ractor.rb"
 return 
       ULONG2NUM(GET_VM()->ractor.cnt);;
 #line 26 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_76(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_321(struct rb_execution_context_struct *ec, const VALUE self)
 {
 MAYBE_UNUSED(const VALUE) yield_unspecified = rb_vm_lvar(ec, -3);
 MAYBE_UNUSED(const VALUE) move = rb_vm_lvar(ec, -5);
 MAYBE_UNUSED(const VALUE) yield_value = rb_vm_lvar(ec, -6);
 MAYBE_UNUSED(const VALUE) ractors = rb_vm_lvar(ec, -7);
-#line 76 "ractor.rb"
+#line 321 "ractor.rb"
 
       const VALUE *rs = RARRAY_CONST_PTR_TRANSIENT(ractors);
       VALUE rv;
@@ -42,135 +42,145 @@ MAYBE_UNUSED(const VALUE) ractors = rb_vm_lvar(ec, -7);
 #line 43 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_88(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_387(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 88 "ractor.rb"
+#line 387 "ractor.rb"
 return 
       ractor_receive(ec, rb_ec_ractor_ptr(ec));
 #line 51 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_98(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_398(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 98 "ractor.rb"
+#line 398 "ractor.rb"
 return 
-      // TODO: check current actor
-      ractor_receive(ec, RACTOR_PTR(self));
-#line 60 "ractor.rbinc"
+      ractor_receive(ec, rb_ec_ractor_ptr(ec));
+#line 59 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_113(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_545(struct rb_execution_context_struct *ec, const VALUE self)
 {
 MAYBE_UNUSED(const VALUE) move = rb_vm_lvar(ec, -4);
 MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -5);
-#line 113 "ractor.rb"
+#line 545 "ractor.rb"
 return 
       ractor_send(ec, RACTOR_PTR(self), obj, move);
-#line 70 "ractor.rbinc"
+#line 69 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_121(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_585(struct rb_execution_context_struct *ec, const VALUE self)
 {
 MAYBE_UNUSED(const VALUE) move = rb_vm_lvar(ec, -4);
 MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -5);
-#line 121 "ractor.rb"
+#line 585 "ractor.rb"
 return 
       ractor_yield(ec, rb_ec_ractor_ptr(ec), obj, move);
-#line 80 "ractor.rbinc"
+#line 79 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_132(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_648(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 132 "ractor.rb"
+#line 648 "ractor.rb"
 return 
       ractor_take(ec, RACTOR_PTR(self));
-#line 88 "ractor.rbinc"
+#line 87 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_138(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_654(struct rb_execution_context_struct *ec, const VALUE self)
 {
 MAYBE_UNUSED(const VALUE) status = rb_vm_lvar(ec, -3);
 MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -4);
 MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -5);
 MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -6);
-#line 138 "ractor.rb"
-return  RACTOR_PTR(self)->loc;
-#line 99 "ractor.rbinc"
+#line 654 "ractor.rb"
+return RACTOR_PTR(self)->loc;
+#line 98 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_139(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_655(struct rb_execution_context_struct *ec, const VALUE self)
 {
 MAYBE_UNUSED(const VALUE) status = rb_vm_lvar(ec, -3);
 MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -4);
 MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -5);
 MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -6);
-#line 139 "ractor.rb"
-return  RACTOR_PTR(self)->name;
-#line 110 "ractor.rbinc"
+#line 655 "ractor.rb"
+return RACTOR_PTR(self)->name;
+#line 109 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_140(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_656(struct rb_execution_context_struct *ec, const VALUE self)
 {
 MAYBE_UNUSED(const VALUE) status = rb_vm_lvar(ec, -3);
 MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -4);
 MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -5);
 MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -6);
-#line 140 "ractor.rb"
-return  INT2FIX(RACTOR_PTR(self)->id);
-#line 121 "ractor.rbinc"
+#line 656 "ractor.rb"
+return INT2FIX(RACTOR_PTR(self)->id);
+#line 120 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_141(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_657(struct rb_execution_context_struct *ec, const VALUE self)
 {
 MAYBE_UNUSED(const VALUE) status = rb_vm_lvar(ec, -3);
 MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -4);
 MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -5);
 MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -6);
-#line 141 "ractor.rb"
+#line 657 "ractor.rb"
 return 
       rb_str_new2(ractor_status_str(RACTOR_PTR(self)->status_));
-#line 133 "ractor.rbinc"
+#line 132 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_148(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_665(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 148 "ractor.rb"
-return  RACTOR_PTR(self)->name;
-#line 140 "ractor.rbinc"
+#line 665 "ractor.rb"
+return RACTOR_PTR(self)->name;
+#line 139 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_157(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_682(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 157 "ractor.rb"
+#line 682 "ractor.rb"
 return 
       ractor_close_incoming(ec, RACTOR_PTR(self));;
-#line 148 "ractor.rbinc"
+#line 147 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_164(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_697(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 164 "ractor.rb"
+#line 697 "ractor.rb"
 return 
       ractor_close_outgoing(ec, RACTOR_PTR(self));;
-#line 156 "ractor.rbinc"
+#line 155 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_171(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_710(struct rb_execution_context_struct *ec, const VALUE self)
 {
 MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -3);
-#line 171 "ractor.rb"
+#line 710 "ractor.rb"
 return 
       rb_ractor_shareable_p(obj) ? Qtrue : Qfalse;;
-#line 165 "ractor.rbinc"
+#line 164 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_177(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_750(struct rb_execution_context_struct *ec, const VALUE self)
 {
-MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -3);
-#line 177 "ractor.rb"
+MAYBE_UNUSED(const VALUE) copy = rb_vm_lvar(ec, -4);
+MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -5);
+#line 750 "ractor.rb"
 return 
-      rb_ractor_make_shareable(obj);;
+        rb_ractor_make_copy_shareable(obj);;
 #line 174 "ractor.rbinc"
+}
+
+static VALUE builtin_inline_class_754(struct rb_execution_context_struct *ec, const VALUE self)
+{
+MAYBE_UNUSED(const VALUE) copy = rb_vm_lvar(ec, -4);
+MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -5);
+#line 754 "ractor.rb"
+return 
+        rb_ractor_make_shareable(obj);;
+#line 184 "ractor.rbinc"
 }
 
 static void
@@ -196,15 +206,15 @@ mjit_compile_invokebuiltin_for__bi0(FILE *f, long index, unsigned stack_size, bo
     fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
         fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "#line 43 \"ractor.rb\"\n");
+        fprintf(f, "%s", "#line 253 \"ractor.rb\"\n");
         fprintf(f, "%s", "    return \n");
         fprintf(f, "%s", "          rb_ec_ractor_ptr(ec)->self;\n");
-        fprintf(f, "%s", "#line 181 \"ractor.rbinc\"\n");
+        fprintf(f, "%s", "#line 191 \"ractor.rbinc\"\n");
         fprintf(f, "%s", "    }\n");
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_43 */\n", (intptr_t)builtin_inline_class_43);
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_253 */\n", (intptr_t)builtin_inline_class_253);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -215,15 +225,15 @@ mjit_compile_invokebuiltin_for__bi1(FILE *f, long index, unsigned stack_size, bo
     fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
         fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "#line 49 \"ractor.rb\"\n");
+        fprintf(f, "%s", "#line 266 \"ractor.rb\"\n");
         fprintf(f, "%s", "    return \n");
         fprintf(f, "%s", "          ULONG2NUM(GET_VM()->ractor.cnt);;\n");
-        fprintf(f, "%s", "#line 188 \"ractor.rbinc\"\n");
+        fprintf(f, "%s", "#line 198 \"ractor.rbinc\"\n");
         fprintf(f, "%s", "    }\n");
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_49 */\n", (intptr_t)builtin_inline_class_49);
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_266 */\n", (intptr_t)builtin_inline_class_266);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -238,7 +248,7 @@ mjit_compile_invokebuiltin_for__bi2(FILE *f, long index, unsigned stack_size, bo
         fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) move = rb_vm_lvar(ec, -5);\n");
         fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) yield_value = rb_vm_lvar(ec, -6);\n");
         fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) ractors = rb_vm_lvar(ec, -7);\n");
-        fprintf(f, "%s", "#line 76 \"ractor.rb\"\n");
+        fprintf(f, "%s", "#line 321 \"ractor.rb\"\n");
         fprintf(f, "%s", "    \n");
         fprintf(f, "%s", "          const VALUE *rs = RARRAY_CONST_PTR_TRANSIENT(ractors);\n");
         fprintf(f, "%s", "          VALUE rv;\n");
@@ -246,12 +256,12 @@ mjit_compile_invokebuiltin_for__bi2(FILE *f, long index, unsigned stack_size, bo
         fprintf(f, "%s", "                                  yield_unspecified == Qtrue ? Qundef : yield_value,\n");
         fprintf(f, "%s", "                                  (bool)RTEST(move) ? true : false, &rv);\n");
         fprintf(f, "%s", "          return rb_ary_new_from_args(2, rv, v);\n");
-        fprintf(f, "%s", "#line 204 \"ractor.rbinc\"\n");
+        fprintf(f, "%s", "#line 214 \"ractor.rbinc\"\n");
         fprintf(f, "%s", "    }\n");
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_76 */\n", (intptr_t)builtin_inline_class_76);
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_321 */\n", (intptr_t)builtin_inline_class_321);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -262,15 +272,15 @@ mjit_compile_invokebuiltin_for__bi3(FILE *f, long index, unsigned stack_size, bo
     fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
         fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "#line 88 \"ractor.rb\"\n");
+        fprintf(f, "%s", "#line 387 \"ractor.rb\"\n");
         fprintf(f, "%s", "    return \n");
         fprintf(f, "%s", "          ractor_receive(ec, rb_ec_ractor_ptr(ec));\n");
-        fprintf(f, "%s", "#line 211 \"ractor.rbinc\"\n");
+        fprintf(f, "%s", "#line 221 \"ractor.rbinc\"\n");
         fprintf(f, "%s", "    }\n");
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_88 */\n", (intptr_t)builtin_inline_class_88);
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_387 */\n", (intptr_t)builtin_inline_class_387);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -281,17 +291,32 @@ mjit_compile_invokebuiltin_for__bi4(FILE *f, long index, unsigned stack_size, bo
     fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
         fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "#line 98 \"ractor.rb\"\n");
+        fprintf(f, "%s", "#line 398 \"ractor.rb\"\n");
         fprintf(f, "%s", "    return \n");
-        fprintf(f, "%s", "          // TODO: check current actor\n");
-        fprintf(f, "%s", "          ractor_receive(ec, RACTOR_PTR(self));\n");
-        fprintf(f, "%s", "#line 219 \"ractor.rbinc\"\n");
+        fprintf(f, "%s", "          ractor_receive(ec, rb_ec_ractor_ptr(ec));\n");
+        fprintf(f, "%s", "#line 228 \"ractor.rbinc\"\n");
         fprintf(f, "%s", "    }\n");
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_98 */\n", (intptr_t)builtin_inline_class_98);
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_398 */\n", (intptr_t)builtin_inline_class_398);
     fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_ractor_receive_if(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    if (index == -1) {
+        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+    }
+    else {
+        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
+        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == ractor_receive_if */\n", (intptr_t)ractor_receive_if);
+    fprintf(f, "    val = f(ec, self, argv[0]);\n");
 }
 
 static void
@@ -303,15 +328,15 @@ mjit_compile_invokebuiltin_for__bi5(FILE *f, long index, unsigned stack_size, bo
         fprintf(f, "%s", "    {\n");
         fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) move = rb_vm_lvar(ec, -4);\n");
         fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -5);\n");
-        fprintf(f, "%s", "#line 113 \"ractor.rb\"\n");
+        fprintf(f, "%s", "#line 545 \"ractor.rb\"\n");
         fprintf(f, "%s", "    return \n");
         fprintf(f, "%s", "          ractor_send(ec, RACTOR_PTR(self), obj, move);\n");
-        fprintf(f, "%s", "#line 228 \"ractor.rbinc\"\n");
+        fprintf(f, "%s", "#line 237 \"ractor.rbinc\"\n");
         fprintf(f, "%s", "    }\n");
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_113 */\n", (intptr_t)builtin_inline_class_113);
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_545 */\n", (intptr_t)builtin_inline_class_545);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -324,15 +349,15 @@ mjit_compile_invokebuiltin_for__bi6(FILE *f, long index, unsigned stack_size, bo
         fprintf(f, "%s", "    {\n");
         fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) move = rb_vm_lvar(ec, -4);\n");
         fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -5);\n");
-        fprintf(f, "%s", "#line 121 \"ractor.rb\"\n");
+        fprintf(f, "%s", "#line 585 \"ractor.rb\"\n");
         fprintf(f, "%s", "    return \n");
         fprintf(f, "%s", "          ractor_yield(ec, rb_ec_ractor_ptr(ec), obj, move);\n");
-        fprintf(f, "%s", "#line 237 \"ractor.rbinc\"\n");
+        fprintf(f, "%s", "#line 246 \"ractor.rbinc\"\n");
         fprintf(f, "%s", "    }\n");
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_121 */\n", (intptr_t)builtin_inline_class_121);
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_585 */\n", (intptr_t)builtin_inline_class_585);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -343,15 +368,15 @@ mjit_compile_invokebuiltin_for__bi7(FILE *f, long index, unsigned stack_size, bo
     fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
         fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "#line 132 \"ractor.rb\"\n");
+        fprintf(f, "%s", "#line 648 \"ractor.rb\"\n");
         fprintf(f, "%s", "    return \n");
         fprintf(f, "%s", "          ractor_take(ec, RACTOR_PTR(self));\n");
-        fprintf(f, "%s", "#line 244 \"ractor.rbinc\"\n");
+        fprintf(f, "%s", "#line 253 \"ractor.rbinc\"\n");
         fprintf(f, "%s", "    }\n");
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_132 */\n", (intptr_t)builtin_inline_class_132);
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_648 */\n", (intptr_t)builtin_inline_class_648);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -366,14 +391,14 @@ mjit_compile_invokebuiltin_for__bi8(FILE *f, long index, unsigned stack_size, bo
         fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -4);\n");
         fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -5);\n");
         fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -6);\n");
-        fprintf(f, "%s", "#line 138 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return  RACTOR_PTR(self)->loc;\n");
-        fprintf(f, "%s", "#line 254 \"ractor.rbinc\"\n");
+        fprintf(f, "%s", "#line 654 \"ractor.rb\"\n");
+        fprintf(f, "%s", "    return RACTOR_PTR(self)->loc;\n");
+        fprintf(f, "%s", "#line 263 \"ractor.rbinc\"\n");
         fprintf(f, "%s", "    }\n");
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_138 */\n", (intptr_t)builtin_inline_class_138);
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_654 */\n", (intptr_t)builtin_inline_class_654);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -388,14 +413,14 @@ mjit_compile_invokebuiltin_for__bi9(FILE *f, long index, unsigned stack_size, bo
         fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -4);\n");
         fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -5);\n");
         fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -6);\n");
-        fprintf(f, "%s", "#line 139 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return  RACTOR_PTR(self)->name;\n");
-        fprintf(f, "%s", "#line 264 \"ractor.rbinc\"\n");
+        fprintf(f, "%s", "#line 655 \"ractor.rb\"\n");
+        fprintf(f, "%s", "    return RACTOR_PTR(self)->name;\n");
+        fprintf(f, "%s", "#line 273 \"ractor.rbinc\"\n");
         fprintf(f, "%s", "    }\n");
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_139 */\n", (intptr_t)builtin_inline_class_139);
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_655 */\n", (intptr_t)builtin_inline_class_655);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -410,14 +435,14 @@ mjit_compile_invokebuiltin_for__bi10(FILE *f, long index, unsigned stack_size, b
         fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -4);\n");
         fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -5);\n");
         fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -6);\n");
-        fprintf(f, "%s", "#line 140 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return  INT2FIX(RACTOR_PTR(self)->id);\n");
-        fprintf(f, "%s", "#line 274 \"ractor.rbinc\"\n");
+        fprintf(f, "%s", "#line 656 \"ractor.rb\"\n");
+        fprintf(f, "%s", "    return INT2FIX(RACTOR_PTR(self)->id);\n");
+        fprintf(f, "%s", "#line 283 \"ractor.rbinc\"\n");
         fprintf(f, "%s", "    }\n");
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_140 */\n", (intptr_t)builtin_inline_class_140);
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_656 */\n", (intptr_t)builtin_inline_class_656);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -432,15 +457,15 @@ mjit_compile_invokebuiltin_for__bi11(FILE *f, long index, unsigned stack_size, b
         fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -4);\n");
         fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -5);\n");
         fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -6);\n");
-        fprintf(f, "%s", "#line 141 \"ractor.rb\"\n");
+        fprintf(f, "%s", "#line 657 \"ractor.rb\"\n");
         fprintf(f, "%s", "    return \n");
         fprintf(f, "%s", "          rb_str_new2(ractor_status_str(RACTOR_PTR(self)->status_));\n");
-        fprintf(f, "%s", "#line 285 \"ractor.rbinc\"\n");
+        fprintf(f, "%s", "#line 294 \"ractor.rbinc\"\n");
         fprintf(f, "%s", "    }\n");
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_141 */\n", (intptr_t)builtin_inline_class_141);
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_657 */\n", (intptr_t)builtin_inline_class_657);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -451,14 +476,14 @@ mjit_compile_invokebuiltin_for__bi12(FILE *f, long index, unsigned stack_size, b
     fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
         fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "#line 148 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return  RACTOR_PTR(self)->name;\n");
-        fprintf(f, "%s", "#line 291 \"ractor.rbinc\"\n");
+        fprintf(f, "%s", "#line 665 \"ractor.rb\"\n");
+        fprintf(f, "%s", "    return RACTOR_PTR(self)->name;\n");
+        fprintf(f, "%s", "#line 300 \"ractor.rbinc\"\n");
         fprintf(f, "%s", "    }\n");
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_148 */\n", (intptr_t)builtin_inline_class_148);
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_665 */\n", (intptr_t)builtin_inline_class_665);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -469,15 +494,15 @@ mjit_compile_invokebuiltin_for__bi13(FILE *f, long index, unsigned stack_size, b
     fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
         fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "#line 157 \"ractor.rb\"\n");
+        fprintf(f, "%s", "#line 682 \"ractor.rb\"\n");
         fprintf(f, "%s", "    return \n");
         fprintf(f, "%s", "          ractor_close_incoming(ec, RACTOR_PTR(self));;\n");
-        fprintf(f, "%s", "#line 298 \"ractor.rbinc\"\n");
+        fprintf(f, "%s", "#line 307 \"ractor.rbinc\"\n");
         fprintf(f, "%s", "    }\n");
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_157 */\n", (intptr_t)builtin_inline_class_157);
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_682 */\n", (intptr_t)builtin_inline_class_682);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -488,15 +513,15 @@ mjit_compile_invokebuiltin_for__bi14(FILE *f, long index, unsigned stack_size, b
     fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
         fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "#line 164 \"ractor.rb\"\n");
+        fprintf(f, "%s", "#line 697 \"ractor.rb\"\n");
         fprintf(f, "%s", "    return \n");
         fprintf(f, "%s", "          ractor_close_outgoing(ec, RACTOR_PTR(self));;\n");
-        fprintf(f, "%s", "#line 305 \"ractor.rbinc\"\n");
+        fprintf(f, "%s", "#line 314 \"ractor.rbinc\"\n");
         fprintf(f, "%s", "    }\n");
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_164 */\n", (intptr_t)builtin_inline_class_164);
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_697 */\n", (intptr_t)builtin_inline_class_697);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -508,15 +533,15 @@ mjit_compile_invokebuiltin_for__bi15(FILE *f, long index, unsigned stack_size, b
     if (inlinable_p) {
         fprintf(f, "%s", "    {\n");
         fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -3);\n");
-        fprintf(f, "%s", "#line 171 \"ractor.rb\"\n");
+        fprintf(f, "%s", "#line 710 \"ractor.rb\"\n");
         fprintf(f, "%s", "    return \n");
         fprintf(f, "%s", "          rb_ractor_shareable_p(obj) ? Qtrue : Qfalse;;\n");
-        fprintf(f, "%s", "#line 313 \"ractor.rbinc\"\n");
+        fprintf(f, "%s", "#line 322 \"ractor.rbinc\"\n");
         fprintf(f, "%s", "    }\n");
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_171 */\n", (intptr_t)builtin_inline_class_171);
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_710 */\n", (intptr_t)builtin_inline_class_710);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -527,16 +552,38 @@ mjit_compile_invokebuiltin_for__bi16(FILE *f, long index, unsigned stack_size, b
     fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
         fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -3);\n");
-        fprintf(f, "%s", "#line 177 \"ractor.rb\"\n");
+        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) copy = rb_vm_lvar(ec, -4);\n");
+        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -5);\n");
+        fprintf(f, "%s", "#line 750 \"ractor.rb\"\n");
         fprintf(f, "%s", "    return \n");
-        fprintf(f, "%s", "          rb_ractor_make_shareable(obj);;\n");
-        fprintf(f, "%s", "#line 321 \"ractor.rbinc\"\n");
+        fprintf(f, "%s", "            rb_ractor_make_copy_shareable(obj);;\n");
+        fprintf(f, "%s", "#line 331 \"ractor.rbinc\"\n");
         fprintf(f, "%s", "    }\n");
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_177 */\n", (intptr_t)builtin_inline_class_177);
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_750 */\n", (intptr_t)builtin_inline_class_750);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi17(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        fprintf(f, "%s", "    {\n");
+        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) copy = rb_vm_lvar(ec, -4);\n");
+        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -5);\n");
+        fprintf(f, "%s", "#line 754 \"ractor.rb\"\n");
+        fprintf(f, "%s", "    return \n");
+        fprintf(f, "%s", "            rb_ractor_make_shareable(obj);;\n");
+        fprintf(f, "%s", "#line 340 \"ractor.rbinc\"\n");
+        fprintf(f, "%s", "    }\n");
+        fprintf(f, "%s", "    \n");
+        return;
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_754 */\n", (intptr_t)builtin_inline_class_754);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -545,23 +592,25 @@ void Init_builtin_ractor(void)
   // table definition
   static const struct rb_builtin_function ractor_table[] = {
     RB_BUILTIN_FUNCTION(0, ractor_create, ractor_create, 4, mjit_compile_invokebuiltin_for_ractor_create),
-    RB_BUILTIN_FUNCTION(1, _bi0, builtin_inline_class_43, 0, mjit_compile_invokebuiltin_for__bi0),
-    RB_BUILTIN_FUNCTION(2, _bi1, builtin_inline_class_49, 0, mjit_compile_invokebuiltin_for__bi1),
-    RB_BUILTIN_FUNCTION(3, _bi2, builtin_inline_class_76, 0, mjit_compile_invokebuiltin_for__bi2),
-    RB_BUILTIN_FUNCTION(4, _bi3, builtin_inline_class_88, 0, mjit_compile_invokebuiltin_for__bi3),
-    RB_BUILTIN_FUNCTION(5, _bi4, builtin_inline_class_98, 0, mjit_compile_invokebuiltin_for__bi4),
-    RB_BUILTIN_FUNCTION(6, _bi5, builtin_inline_class_113, 0, mjit_compile_invokebuiltin_for__bi5),
-    RB_BUILTIN_FUNCTION(7, _bi6, builtin_inline_class_121, 0, mjit_compile_invokebuiltin_for__bi6),
-    RB_BUILTIN_FUNCTION(8, _bi7, builtin_inline_class_132, 0, mjit_compile_invokebuiltin_for__bi7),
-    RB_BUILTIN_FUNCTION(9, _bi8, builtin_inline_class_138, 0, mjit_compile_invokebuiltin_for__bi8),
-    RB_BUILTIN_FUNCTION(10, _bi9, builtin_inline_class_139, 0, mjit_compile_invokebuiltin_for__bi9),
-    RB_BUILTIN_FUNCTION(11, _bi10, builtin_inline_class_140, 0, mjit_compile_invokebuiltin_for__bi10),
-    RB_BUILTIN_FUNCTION(12, _bi11, builtin_inline_class_141, 0, mjit_compile_invokebuiltin_for__bi11),
-    RB_BUILTIN_FUNCTION(13, _bi12, builtin_inline_class_148, 0, mjit_compile_invokebuiltin_for__bi12),
-    RB_BUILTIN_FUNCTION(14, _bi13, builtin_inline_class_157, 0, mjit_compile_invokebuiltin_for__bi13),
-    RB_BUILTIN_FUNCTION(15, _bi14, builtin_inline_class_164, 0, mjit_compile_invokebuiltin_for__bi14),
-    RB_BUILTIN_FUNCTION(16, _bi15, builtin_inline_class_171, 0, mjit_compile_invokebuiltin_for__bi15),
-    RB_BUILTIN_FUNCTION(17, _bi16, builtin_inline_class_177, 0, mjit_compile_invokebuiltin_for__bi16),
+    RB_BUILTIN_FUNCTION(1, _bi0, builtin_inline_class_253, 0, mjit_compile_invokebuiltin_for__bi0),
+    RB_BUILTIN_FUNCTION(2, _bi1, builtin_inline_class_266, 0, mjit_compile_invokebuiltin_for__bi1),
+    RB_BUILTIN_FUNCTION(3, _bi2, builtin_inline_class_321, 0, mjit_compile_invokebuiltin_for__bi2),
+    RB_BUILTIN_FUNCTION(4, _bi3, builtin_inline_class_387, 0, mjit_compile_invokebuiltin_for__bi3),
+    RB_BUILTIN_FUNCTION(5, _bi4, builtin_inline_class_398, 0, mjit_compile_invokebuiltin_for__bi4),
+    RB_BUILTIN_FUNCTION(6, ractor_receive_if, ractor_receive_if, 1, mjit_compile_invokebuiltin_for_ractor_receive_if),
+    RB_BUILTIN_FUNCTION(7, _bi5, builtin_inline_class_545, 0, mjit_compile_invokebuiltin_for__bi5),
+    RB_BUILTIN_FUNCTION(8, _bi6, builtin_inline_class_585, 0, mjit_compile_invokebuiltin_for__bi6),
+    RB_BUILTIN_FUNCTION(9, _bi7, builtin_inline_class_648, 0, mjit_compile_invokebuiltin_for__bi7),
+    RB_BUILTIN_FUNCTION(10, _bi8, builtin_inline_class_654, 0, mjit_compile_invokebuiltin_for__bi8),
+    RB_BUILTIN_FUNCTION(11, _bi9, builtin_inline_class_655, 0, mjit_compile_invokebuiltin_for__bi9),
+    RB_BUILTIN_FUNCTION(12, _bi10, builtin_inline_class_656, 0, mjit_compile_invokebuiltin_for__bi10),
+    RB_BUILTIN_FUNCTION(13, _bi11, builtin_inline_class_657, 0, mjit_compile_invokebuiltin_for__bi11),
+    RB_BUILTIN_FUNCTION(14, _bi12, builtin_inline_class_665, 0, mjit_compile_invokebuiltin_for__bi12),
+    RB_BUILTIN_FUNCTION(15, _bi13, builtin_inline_class_682, 0, mjit_compile_invokebuiltin_for__bi13),
+    RB_BUILTIN_FUNCTION(16, _bi14, builtin_inline_class_697, 0, mjit_compile_invokebuiltin_for__bi14),
+    RB_BUILTIN_FUNCTION(17, _bi15, builtin_inline_class_710, 0, mjit_compile_invokebuiltin_for__bi15),
+    RB_BUILTIN_FUNCTION(18, _bi16, builtin_inline_class_750, 0, mjit_compile_invokebuiltin_for__bi16),
+    RB_BUILTIN_FUNCTION(19, _bi17, builtin_inline_class_754, 0, mjit_compile_invokebuiltin_for__bi17),
     RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),
   };
 
@@ -571,23 +620,25 @@ COMPILER_WARNING_PUSH
 COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
 #endif
   if (0) rb_builtin_function_check_arity4(ractor_create);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_43);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_49);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_76);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_88);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_98);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_113);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_121);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_132);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_138);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_139);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_140);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_141);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_148);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_157);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_164);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_171);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_177);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_253);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_266);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_321);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_387);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_398);
+  if (0) rb_builtin_function_check_arity1(ractor_receive_if);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_545);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_585);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_648);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_654);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_655);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_656);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_657);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_665);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_682);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_697);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_710);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_750);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_754);
 COMPILER_WARNING_POP
 
   // load

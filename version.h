@@ -16,7 +16,7 @@
 
 #define RUBY_RELEASE_YEAR 2020
 #define RUBY_RELEASE_MONTH 12
-#define RUBY_RELEASE_DAY 8
+#define RUBY_RELEASE_DAY 20
 
 #include "ruby/version.h"
 
@@ -47,7 +47,7 @@
 #endif
 
 #if RUBY_PATCHLEVEL == -1
-#define RUBY_PATCHLEVEL_STR "preview2"
+#define RUBY_PATCHLEVEL_STR "rc1"
 #else
 #define RUBY_PATCHLEVEL_STR "p"STRINGIZE(RUBY_PATCHLEVEL)
 #endif

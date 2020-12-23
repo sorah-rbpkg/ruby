@@ -8,171 +8,171 @@
  */
 
 static VALUE
-vm_call_iseq_setup_normal_0start_0params_0locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_0params_0locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 0, 0);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 0, 0);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_0params_1locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_0params_1locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 0, 1);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 0, 1);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_0params_2locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_0params_2locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 0, 2);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 0, 2);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_0params_3locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_0params_3locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 0, 3);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 0, 3);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_0params_4locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_0params_4locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 0, 4);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 0, 4);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_0params_5locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_0params_5locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 0, 5);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 0, 5);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_1params_0locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_1params_0locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 1, 0);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 1, 0);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_1params_1locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_1params_1locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 1, 1);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 1, 1);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_1params_2locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_1params_2locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 1, 2);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 1, 2);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_1params_3locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_1params_3locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 1, 3);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 1, 3);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_1params_4locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_1params_4locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 1, 4);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 1, 4);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_1params_5locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_1params_5locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 1, 5);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 1, 5);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_2params_0locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_2params_0locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 2, 0);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 2, 0);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_2params_1locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_2params_1locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 2, 1);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 2, 1);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_2params_2locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_2params_2locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 2, 2);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 2, 2);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_2params_3locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_2params_3locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 2, 3);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 2, 3);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_2params_4locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_2params_4locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 2, 4);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 2, 4);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_2params_5locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_2params_5locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 2, 5);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 2, 5);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_3params_0locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_3params_0locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 3, 0);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 3, 0);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_3params_1locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_3params_1locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 3, 1);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 3, 1);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_3params_2locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_3params_2locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 3, 2);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 3, 2);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_3params_3locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_3params_3locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 3, 3);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 3, 3);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_3params_4locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_3params_4locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 3, 4);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 3, 4);
 }
 
 static VALUE
-vm_call_iseq_setup_normal_0start_3params_5locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, struct rb_call_data *cd)
+vm_call_iseq_setup_normal_0start_3params_5locals(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_fix);
-    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cd->cc), 0, 3, 5);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(calling->cc), 0, 3, 5);
 }
 
 /* vm_call_iseq_handlers[param][local] */

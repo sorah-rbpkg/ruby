@@ -995,6 +995,7 @@ collect_outer_variable_names(ID id, VALUE val, void *ptr)
 }
 
 VALUE rb_ractor_error_class(void);
+VALUE rb_ractor_make_shareable(VALUE obj);
 
 static const rb_env_t *
 env_copy(const VALUE *src_ep, VALUE read_only_variables)
@@ -2530,6 +2531,13 @@ rb_vm_each_stack_value(void *ptr, void (*cb)(VALUE, void*), void *ctx)
     }
 }
 
+static enum rb_id_table_iterator_result
+vm_mark_negative_cme(VALUE val, void *dmy)
+{
+    rb_gc_mark(val);
+    return ID_TABLE_CONTINUE;
+}
+
 void
 rb_vm_mark(void *ptr)
 {
@@ -2584,6 +2592,8 @@ rb_vm_mark(void *ptr)
 	rb_hook_list_mark(&vm->global_hooks);
 
 	rb_gc_mark_values(RUBY_NSIG, vm->trap_list.cmd);
+
+        rb_id_table_foreach_values(vm->negative_cme_table, vm_mark_negative_cme, NULL);
 
         mjit_mark();
     }
@@ -3168,6 +3178,12 @@ m_core_hash_merge_kwd(VALUE recv, VALUE hash, VALUE kw)
 }
 
 static VALUE
+m_core_make_shareable(VALUE recv, VALUE obj)
+{
+    return rb_ractor_make_shareable(obj);
+}
+
+static VALUE
 core_hash_merge_kwd(VALUE hash, VALUE kw)
 {
     rb_hash_foreach(rb_to_hash_type(kw), kwmerge_i, hash);
@@ -3331,6 +3347,7 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_raise, f_raise, -1);
     rb_define_method_id(klass, idProc, f_proc, 0);
     rb_define_method_id(klass, idLambda, f_lambda, 0);
+    rb_define_method(klass, "make_shareable", m_core_make_shareable, 1);
     rb_obj_freeze(fcore);
     RBASIC_CLEAR_CLASS(klass);
     rb_obj_freeze(klass);
@@ -3578,7 +3595,6 @@ Init_VM(void)
     rb_define_singleton_method(rb_cRubyVM, "SDR", sdr, 0);
     rb_define_singleton_method(rb_cRubyVM, "NSDR", nsdr, 0);
     rb_define_singleton_method(rb_cRubyVM, "mtbl", vm_mtbl, 2);
-    rb_define_singleton_method(rb_cRubyVM, "mtbl", vm_mtbl, 2);
     rb_define_singleton_method(rb_cRubyVM, "mtbl2", vm_mtbl2, 2);
 #else
     (void)sdr;
@@ -3660,6 +3676,7 @@ Init_BareVM(void)
 
     vm->objspace = rb_objspace_alloc();
     ruby_current_vm_ptr = vm;
+    vm->negative_cme_table = rb_id_table_create(16);
 
     Init_native_thread(th);
     th->vm = vm;

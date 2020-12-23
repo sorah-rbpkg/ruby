@@ -1,5 +1,3487 @@
 -*- coding: utf-8 -*-
 
+commit 8680ae9cbd6e7e7e08f6d21fa8d35abdc82342da
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-20 19:36:24 +0900
+
+    irb: Removed unused variables
+
+commit 4b6e3f7b82e03d6eb6562631365d35abaee35fb3
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-20 19:35:59 +0900
+
+    irb: Define extension command on the given object
+
+commit 37987d99940f10bc6fec9b4825d7ce72df391d42
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-20 02:20:27 +0900
+
+    win32: Deprecate file CP version functions
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3948
+
+commit 95862ae44046cfc66c474ce534c204d276ea704d
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-20 15:29:21 +0900
+
+    win32: Added rb_w32_ureaddir only for UTF-8 [Feature #12654]
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3948
+
+commit 5b98b2ce39ed979aec614365a2dc3e1c30052bca
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-20 02:16:31 +0900
+
+    win32: Use UTF-8 as filesystem encoding [Feature #12654]
+
+    Co-Authored-By: Dāvis Mosāns <davispuh@gmail.com>
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3948
+
+commit feea436febb50eb4265bd985a550e384c606122c
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-20 18:25:39 +0900
+
+    irb: Define extension command only on the given object
+
+    Not to interfer in class variables.
+
+commit 0fad9a9e30d3dd362d9567284284206e1a476920
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-20 17:10:11 +0900
+
+    Set non-verbose mode as well as tty mode
+
+commit 59b84fbf2ef38f1f7c93c526bdb64e382f3dd635
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-20 17:07:24 +0900
+
+    Set :DEFAULT to PROMPT_MODE for CI
+
+commit 216a087e9351132b83110e0f7aad81d796371bdd
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-20 16:48:47 +0900
+
+    Suppress errors related to using variables that are not directly related to testing
+
+commit 24fcbc92b44d44bccf28d9375201162e627bb4ec
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-20 16:16:11 +0900
+
+    [ruby/irb] Version 1.2.8
+
+    https://github.com/ruby/irb/commit/bcd96834c7
+
+commit a7cacd33ccef56b6377d511e0bf3f8b7c1f760be
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-20 16:15:58 +0900
+
+    [ruby/reline] Version 0.1.10
+
+    https://github.com/ruby/reline/commit/723c6e191a
+
+commit 9f08e3c703795e81d333d568e7e44743022468f1
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-08-15 06:36:24 +0900
+
+    [ruby/irb] Add measure command
+
+    You can use "measure" command to check performance in IRB like below:
+
+      irb(main):001:0> 3
+      => 3
+      irb(main):002:0> measure
+      TIME is added.
+      => nil
+      irb(main):003:0> 3
+      processing time: 0.000058s
+      => 3
+      irb(main):004:0> measure :off
+      => nil
+      irb(main):005:0> 3
+      => 3
+
+    You can set "measure :on" by "IRB.conf[:MEASURE] = true" in .irbrc, and, also,
+    set custom performance check method:
+
+      IRB.conf[:MEASURE_PROC][:CUSTOM] = proc { |context, code, line_no, &block|
+        time = Time.now
+        result = block.()
+        now = Time.now
+        puts 'custom processing time: %fs' % (Time.now - time) if IRB.conf[:MEASURE]
+        result
+      }
+
+    https://github.com/ruby/irb/commit/3899eaf2e2
+
+commit 8b6aaeaddf2d13833c0540490a84741035a3a808
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-20 12:20:00 +0900
+
+    [ruby/irb] Handle rest of tokens correctly if no newline at last
+
+    https://github.com/ruby/irb/commit/f3c8edad2a
+
+commit 67ee1cbdd5def5b8e9db987a4a9367ab1d22fcfe
+  Author: Kazuki Tsujimoto <kazuki@callcc.net>
+  Date:   2020-12-20 16:00:13 +0900
+
+    Remove unnecessary files from .document
+
+    * ruby:ext/rbconfig/exts.mk
+    * ruby:ext/rbconfig/sizeof/Makefile
+    * ruby:ext/rbconfig/sizeof/depend
+    * ruby:ext/rbconfig/sizeof/mkmf.log
+    * ruby:ext/win32/depend
+    * ruby:ext/win32/exts.mk
+    * ruby:ext/win32/resolv/depend
+    * ruby:lib/racc/pre-setup
+
+commit b911509a08cee6c99ab8eec01516ebe84ba9029d
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-20 15:13:07 +0900
+
+    Adjusted indents of closing braces [ci skip]
+
+commit 7d0144e055fdbd7110cf84275b9e145550b77fd3
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-20 14:35:59 +0900
+
+    Check mjit_call_p only when interrupted
+
+    for leaf_without_check_ints insns.
+
+    $ benchmark-driver -v --rbenv 'before --jit;after --jit' --repeat-count=12 --alternate --output=all benchmark.yml
+    before --jit: ruby 3.0.0dev (2020-12-20T05:02:18Z master 02b3555874) +JIT [x86_64-linux]
+    after --jit: ruby 3.0.0dev (2020-12-20T05:36:00Z master 3f58de4eab) +JIT [x86_64-linux]
+    last_commit=Check mjit_call_p only when interrupted
+    Calculating -------------------------------------
+                                     before --jit           after --jit
+    Optcarrot Lan_Master.nes    84.50647332260259     85.85057800433144 fps
+                                91.17796644338372     92.09930605656054
+                                91.29346683444497     93.01336611323687
+                                91.50322318568884     93.07234029037433
+                                91.66560903214686     93.22773241529644
+                                91.82315142636172     93.37032901061119
+                                92.15066379608260     93.83701526141679
+                                92.37897097456643     93.86032792681507
+                                92.53049815524908     93.91211970920320
+                                92.78414507914283     94.09109196967890
+                                92.90299756525958     94.40107239595325
+                                93.70279428858790     95.01326369371263
+
+commit ae1cc3fd4e4e926dc9d84723ae2696b9799cfe9d
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-20 14:28:55 +0900
+
+    Made an internal callback function static
+
+commit 02b3555874cecb93bdfff7c1ea6a80ca908785c9
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-20 14:02:18 +0900
+
+    Install gdb on Actions
+
+commit 85ec6cc38767320bc8767298c909f75e61b0d63b
+  Author: Kazuki Tsujimoto <kazuki@callcc.net>
+  Date:   2020-12-20 13:28:40 +0900
+
+    Fix markups and indentation
+
+commit d37be18af5a789003e46015c2a2a916923e7682a
+  Author: Kazuki Tsujimoto <kazuki@callcc.net>
+  Date:   2020-12-20 13:25:43 +0900
+
+    Fix typos
+
+commit 4902f96ee56d0391165b9ba769224c0d88d105fe
+  Author: Kazuki Tsujimoto <kazuki@callcc.net>
+  Date:   2020-12-20 13:22:53 +0900
+
+    Update documentation for pattern matching
+
+commit b1b6dbfdc3abaca44e971979328fd396b424c32a
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-20 12:37:27 +0900
+
+    `assert_ractor` tweak. Thanks Nobu
+
+commit f70b894b8829c064e39646c9b5f6d304d13bb16d
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-20 03:23:41 +0900
+
+    sync RCLASS_CONST_TBL()
+
+    RCLASS_CONST_TBL() is shared resource so we need to sync with
+    other ractors.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3944
+
+commit 648bbfcc65ad28841db2206513375dd88f064c52
+  Author: Soutaro Matsumoto <matsumoto@soutaro.com>
+  Date:   2020-12-20 10:25:27 +0900
+
+    Update rbs 1.0.0.pre (#3941)
+
+  Notes:
+    Merged-By: soutaro <matsumoto@soutaro.com>
+
+commit 6343a8112950b12df942f5098edc093bca96ef2d
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-20 02:19:06 +0900
+
+    [ruby/ostruct] Add Ractor test
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3942
+
+commit 67e062b523e1a1bdf597a500027c916c16cd07a1
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-20 02:17:47 +0900
+
+    [ruby/matrix] Add Ractor test
+
+    This reverts commit cacdf2681dcc7c431973f33a18979b10566ec2f9.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3942
+
+commit 70f20234b297a7fc9940bace30101813aa9df052
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-20 02:54:07 +0900
+
+    Add `assert_ractor` [Feature #17367]
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3942
+
+commit 7f8108eeff8ffa66c93efb07d4bead1baf7153a8
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-20 04:51:00 +0900
+
+    fix indent
+
+commit bcf4b236e424ce0e6055f4a9651b5369a830866a
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-20 04:22:13 +0900
+
+    ext/racc/cparse is ractor-safe
+
+commit 846c4b03b8e9ff788f355f1bcd12e75715288e95
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-20 04:21:54 +0900
+
+    ext/monitor is ractor-safe
+
+commit c1461c927b123468ba83713676dcda48e51c8ec1
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-20 04:09:40 +0900
+
+    cgi/escape is ractor-safe
+
+commit 362138004624f0d8664c16da4c0d5133ac213942
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-20 04:14:05 +0900
+
+    NEWS.md: remove nonsense caveat
+
+    3.0 will be released in a few days (hopefully), so remove a caution: "it
+    may be reverted until 3.0 release."
+
+commit ed4381d94132990067922bc4204c8abb99cde3e8
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-20 03:14:58 +0900
+
+    BigDecimal#precs is deprecated
+
+commit c01ad11f908c2a57c2348e83d109b08fdd89dc4e
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-20 03:13:33 +0900
+
+    bigdecimal: initialize conditionally assigned variable
+
+commit b2acae32742adf86a64ba5c0af55830bb3bddc0d
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-20 02:56:18 +0900
+
+    Reduced ID caches
+
+    NEW_GASGN and NEW_GVAR evaluate `id` argument twice.
+
+commit a273171ca8848e85367628343ddd64ac6c0f70c1
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-20 03:08:24 +0900
+
+    Tweak Ractor doc [doc] [ci skip]
+
+commit 1f565ac6d98e902f51a0ea7b8b4aa85693deea6e
+  Author: Victor Shepelev <zverok.offline@gmail.com>
+  Date:   2020-12-20 03:04:40 +0900
+
+    Add documentation for Ractor (#3895)
+
+  Notes:
+    Merged-By: marcandre <github@marc-andre.ca>
+
+commit d44671c819e104d329e604fdf9bb59bbb426afb5
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-11-28 18:39:57 +0900
+
+    Revived the getenv macro for dln_find.c
+
+    This partially reverts commit "Windows: Improve readablity of
+    getenv() encoding" 14453a256d58b11b06d432e2a4388d95aac298d6.
+
+    The `getenv` macro defined here is to also substitute the function
+    in dln_find.c, not only in this file.
+
+commit 50f1e7eb23382ca1f62668d9067cce2fc09ee866
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-20 00:42:04 +0900
+
+    NEWS: Add an entry of Pathname [ci skip]
+
+commit 48bd5a3d577d48e4feab7e843dfac037335ff575
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2020-12-20 00:41:06 +0900
+
+    * 2020-12-20 [ci skip]
+
+commit de80b928910b7ca785725382cec53cb27f1d65ed
+  Author: Kenta Murata <mrkn@users.noreply.github.com>
+  Date:   2020-12-20 00:40:47 +0900
+
+    [pathname] Make Pathname Ractor safe (#3940)
+
+  Notes:
+    Merged-By: mrkn <mrkn@ruby-lang.org>
+
+commit d62414b48fbb944cc9e4442ad7d04d40a27fa4e9
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-19 22:15:48 +0900
+
+    NEWS: Update BigDecimal version [ci skip]
+
+commit 8355a3e17b6ea05ee60400ae41a1553eee900ed8
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-19 21:13:33 +0900
+
+    [bigdecimal] Fix deprecation warning test
+
+commit 8986f948e0a7da0e53647d1ce7ea8d626051b7e3
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-19 19:21:56 +0900
+
+    [bigdecimal] Version 3.0.0
+
+    https://github.com/ruby/bigdecimal/commit/e68f1eb33a
+
+commit df3deb3baa0eabc66a47879be115ae3ffca4daba
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-19 17:06:14 +0900
+
+    [bigdecimal] Add BigDecimal#n_significant_digits
+
+    https://github.com/ruby/bigdecimal/commit/981dc48f95
+    https://github.com/ruby/bigdecimal/commit/9ecf880ec04
+
+commit 654f6fbf19c0ca2e01765a909b4d952b7f0f5baa
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-19 11:55:46 +0900
+
+    [bigdecimal] Make BigDecimal#precs deprecated
+
+    https://github.com/ruby/bigdecimal/commit/7e80e6e145
+    https://github.com/ruby/bigdecimal/commit/0ed7846e8c
+
+commit ff9e40811c67b1090966b655f7adc0684fc58abe
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-19 04:24:15 +0900
+
+    [bigdecimal] Add BigDecimal#precision
+
+    https://github.com/ruby/bigdecimal/commit/458eb66c49
+
+commit 928a06723d1ede495b7c3b42f3ca48e370ccec77
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-19 02:45:47 +0900
+
+    [bigdecimal] Make bigdecimal Ractor safe
+
+    https://github.com/ruby/bigdecimal/commit/93fc392640
+    https://github.com/ruby/bigdecimal/commit/a90d13c4d0
+
+commit 97d4e72e0bc4b07442f5ce674a945df91d9fce3c
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-19 01:30:37 +0900
+
+    [bigdecimal] Use DBLE_FIG
+
+    https://github.com/ruby/bigdecimal/commit/12296dcb90
+
+commit e1424c35012ccf1f3822c9046081b225aef4142e
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-18 23:46:26 +0900
+
+    [bigdecimal] Fix the default precision of Float#to_d
+
+    Fix https://github.com/ruby/bigdecimal/issues/70
+    [Bug #13331]
+
+    https://github.com/ruby/bigdecimal/commit/aa536cd4b5
+
+commit 4735a5b9d2cbde69c501ee8d5bb570f4fac7e51d
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-19 21:19:16 +0900
+
+    test/ruby/test_module.rb: Avoid "warning: method redefined"
+
+commit 1ba8d63b49318e5682a22502c5f5b70e3298da8f
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-19 18:22:44 +0900
+
+    Recommit 34f06062174882a98ebef998c50ad8d4f7fc0f2e
+
+commit eb8ea336d33af7e1dec4c17964c671c33cf75ce1
+  Author: Radosław Bułat <radek.bulat@gmail.com>
+  Date:   2020-12-19 03:17:57 +0900
+
+    Feature 17314: allow to pass array to public, protected and private methods
+
+commit 8148f88b92a6b8d850b991afe74fb0d0f9c11887
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-19 18:04:47 +0900
+
+    ALWAYS_INLINE implies inline
+
+commit 0d3dc2ec807c313d0952d15ac4f30bc8586bba2f
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-18 04:43:11 +0900
+
+    Make `Hash#except` always return a Hash
+
+    [Feature #15822]
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3929
+
+commit 5611066e03fe73bdbb08cc46f79530c69975cf17
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-19 17:33:21 +0900
+
+    Prefer RB_OBJ_FROZEN_RAW
+
+    following the original implementation's change.
+    RB_TYPE_P(obj, T_OBJECT) is already checked in these places.
+
+    ```
+    $ benchmark-driver -v --rbenv 'before --jit;after --jit' --repeat-count=12 --alternate --output=all benchmark.yml
+    before --jit: ruby 3.0.0dev (2020-12-19T08:27:44Z master 52b1716c78) +JIT [x86_64-linux]
+    after --jit: ruby 3.0.0dev (2020-12-19T08:27:44Z master 52b1716c78) +JIT [x86_64-linux]
+    Calculating -------------------------------------
+                                     before --jit           after --jit
+    Optcarrot Lan_Master.nes    88.04551460097873     84.38303800957766 fps
+                                88.25194345156318     85.31098251408059
+                                88.34143982084871     86.60491582339496
+                                88.63486879856976     88.23675694701865
+                                88.85392212902701     88.23696283371444
+                                89.05739427483194     88.97185459567562
+                                89.08141031147311     90.16373192658857
+                                89.11359420883423     90.61655686444394
+                                89.80323392966130     90.77044959019291
+                                90.58912189625207     90.88534596330966
+                                90.59847996970350     91.34314801302897
+                                90.61180456415137     93.11599164249547
+    ```
+
+commit e33eb09b76e9070fd49837e8b896319636501b38
+  Author: Nobuhiro IMAI <nov@yo.rim.or.jp>
+  Date:   2020-12-19 01:31:12 +0900
+
+    ripper: fix `#tok` on some error events [Bug 17345]
+
+    sorting alias target by event arity, and setup suitable `Elem` for error.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3936
+
+commit 52b1716c78a7ad9daa317e3eb43f744744b9f736
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-19 17:27:42 +0900
+
+    Fix vm_search_invokeblock
+
+    call_ needs to be vm_invokeblock_i, and flags is also not empty.
+
+commit 8ec8f37566902c0167f736d345bb5c8cca6016d3
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-19 16:30:09 +0900
+
+    discourage inlining for vm_sendish()
+
+    reversing 9213771817 only for JIT, because it made JIT slower.
+
+    $ benchmark-driver -v --rbenv 'before;after;before --jit;after --jit' --repeat-count=36 --alternate --output=all benchmark.yml
+    before: ruby 3.0.0dev (2020-12-19T07:38:17Z master a139318538) [x86_64-linux]
+    after: ruby 3.0.0dev (2020-12-19T07:52:01Z master ce9faaeff5) [x86_64-linux]
+    last_commit=discourage inlining for vm_sendish()
+    before --jit: ruby 3.0.0dev (2020-12-19T07:38:17Z master a139318538) +JIT [x86_64-linux]
+    after --jit: ruby 3.0.0dev (2020-12-19T07:52:01Z master ce9faaeff5) +JIT [x86_64-linux]
+    last_commit=discourage inlining for vm_sendish()
+    Calculating -------------------------------------
+                                           before                 after          before --jit           after --jit
+    Optcarrot Lan_Master.nes    42.83365858987760     42.68912456143848     76.50136803552716     65.74704713379785 fps
+                                42.87724738609940     42.89045158177300     79.72624911659534     81.26221749201044
+                                43.34963955708526     42.95431841174180     80.18085951039328     82.86458983313545
+                                43.56786038452823     43.57563008888242     80.45933051716041     83.09150550702445
+                                43.83219269706004     43.60748924115331     80.67164125046142     83.39458202043882
+                                43.99035062888973     43.62050459554573     80.93204435712701     83.56303651352751
+                                44.25176047881120     44.04822899344536     81.15051082548314     83.58166141398522
+                                44.41978060794512     44.06521657912991     81.35651907376140     83.80036752456826
+                                44.46864790591856     44.09325484326153     81.53456531520031     83.87502933718609
+                                45.54712020644544     44.70693952869038     81.97738413452767     83.95818356402224
+                                45.84292299382878     44.77704345873913     82.35118338199700     83.95966387450966
+                                45.89411137280815     45.41425773286726     83.01052538434648     84.12812994632024
+                                45.93130099197283     46.16884439916935     83.50833510120576     84.26276094927231
+                                46.13648038236674     46.66645417860622     84.88757531920830     85.41732546800056
+                                46.74873798919658     46.71790568883760     84.90953097036886     85.56340808970482
+                                47.11273577214855     46.74581938882115     84.93196765297411     85.57603396455576
+                                47.17870777128640     46.82414166607185     84.97178445888456     86.63510466280221
+                                47.19338055580042     46.83645774240446     85.43536447262163     86.74129103462393
+                                47.25761413477774     46.86834469505590     85.59822430471097     86.85376073363715
+                                47.53327847102834     46.90228589364909     85.76446609620548     87.26108400015282
+                                47.64308771617673     47.02814519551055     85.79904863600991     87.72293541243303
+                                47.80286861846863     47.44672838168050     85.88640862064263     87.86803587836525
+                                47.86455937950740     47.65301489003541     85.88750199172448     88.16881051171814
+                                47.90065455321760     47.73425082354376     85.94295700508701     88.71267004066843
+                                47.90727961241468     47.86377917424705     85.94674546805844     88.77726627283683
+                                47.93243954623904     47.88720812998766     86.51872778134982     88.78993962536994
+                                47.95062952008558     47.88774830879015     86.63116771614249     88.88085054889298
+                                47.95097849989396     47.89825669442417     86.77387990931732     89.72021826461126
+                                48.04730571166697     47.89981045730949     86.95084011077047     89.75804193954582
+                                48.08042611622322     48.03246661737583     87.87239147980547     90.05949240088842
+                                48.08999523258601     48.15253490344558     88.31289344498016     90.36439442190294
+                                48.25670456430854     48.26904755214532     88.33999433286937     90.54253266759406
+                                48.25947200597002     48.41894159956091     88.35502296938638     90.72591894564106
+                                48.30826210577268     48.43125201523194     88.58311746582939     90.77173035874087
+                                48.31514124187375     48.53932287546499     88.89099681179805     91.07747476133886
+                                48.44349281318267     48.58969411593706     89.34043973691581     91.08545627378257
+
+commit 349e79bae02a8a161c06ba5f6fa203d609f6e8b9
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-19 16:53:18 +0900
+
+    Try to test with rake-13.0.2 again.
+
+      [ruby/fileutils] Make verbose output go to stdout instead of stderr
+
+      This reverts commit 510df47f5f7f83918d3aa00316c8a5b959d80d7c.
+
+commit bdd18090ad75cd5659b561890756c5e0b1227b69
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-19 16:52:56 +0900
+
+    Bump bundled rake version to 13.0.2
+
+commit a139318538f070cb3eb2ca1a72ae56a8c9c4acad
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-19 15:51:42 +0900
+
+    Added macros for headers which are not included by ruby.h
+
+commit 042c3e91fbc621e28e5edda015c43e01341fee1c
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-19 16:10:57 +0900
+
+    Check macros for headers
+
+commit 197550c9564d56372d4ea30dd3f17c8905072c21
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-19 16:09:54 +0900
+
+    Renamed check_encoding.yml as check_misc.yml [ci skip]
+
+commit 5c9d6ea6b43443c470a490858a8ad11b36ed5516
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-19 15:34:26 +0900
+
+    Strip trailing spaces [ci skip]
+
+commit 553d6fa0a05fc766229c094b231ac1e103906ba8
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-19 15:32:06 +0900
+
+    [DOC] Marked dtrace arguments as description list [ci skip]
+
+commit a5832c9a37c34756020425b60dd265ca1a45d95b
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-19 15:01:47 +0900
+
+    [DOC] Fixed markups in dtrace_probes.rdoc [ci skip]
+
+    * `+` can enclose just a word.
+    * TIDYLINK with braces gets confused when other braces even inside
+      code precede.
+
+commit 144b11e03ee0994cacd3fa5eb9ff8b87bd627452
+  Author: Kazuhiro NISHIYAMA <zn@mbf.nifty.com>
+  Date:   2020-12-19 15:24:09 +0900
+
+    Fix `warning: instance variable @head not initialized` and remove unused instance variable
+
+commit e64af7d5ad8791cc8fe5ea4e75072e3857bcb270
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-19 15:08:54 +0900
+
+    NEWS: Add an entry of Digest 3.0.0 [ci skip]
+
+commit 0cb556b457cdb200966aa011de21b752940a9c1f
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-18 17:56:01 +0900
+
+    [digest] Version 3.0.0
+
+    https://github.com/ruby/digest/commit/4bbd247a32
+
+commit b66f52b0e374d298cbd3a68029226dc1ccd77554
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-16 23:04:42 +0900
+
+    [digest] Make digest Ractor safe
+
+    https://github.com/ruby/digest/commit/c13a024b85
+    https://github.com/ruby/digest/commit/9edca3f8be
+    https://github.com/ruby/digest/commit/378b56b6ca
+
+commit feacae193ca3856b1d326697835357791a6df12b
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-17 11:02:31 +0900
+
+    [digest] Added rb_digest_make_metadata to wrap metadata
+
+    https://github.com/ruby/digest/commit/7046fe6005
+
+commit 5b2cf7eac89550fc88aea45ad2a9dfe9a261c2b1
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-19 11:48:04 +0900
+
+    Partially reintroduce e042e8460bb9a63c05f938d51e8c7c5345a6f3a4 and ...
+
+    34f06062174882a98ebef998c50ad8d4f7fc0f2e
+
+    Add a test for alias_method
+
+commit 51bcd50915941d21df806e8dcde769ae63b6eaaf
+  Author: Radosław Bułat <radek.bulat@gmail.com>
+  Date:   2020-12-19 03:14:23 +0900
+
+    Feature 17314: alias_method returns symbol
+
+commit 34f6b22df073fe86e30aca99be5aa0b0eb8653df
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-18 12:10:20 +0900
+
+    Use rb_id_attrset without intermediate strings
+
+commit 5616f2ee93e63e575dc5e30db75a6f475ac57fb3
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-18 12:59:01 +0900
+
+    Added missing tests for public, private, protected and alias_method
+
+commit d40d95296d0947edf513ad5bc7d4bf338b2e3877
+  Author: Radosław Bułat <radek.bulat@gmail.com>
+  Date:   2020-12-19 01:40:31 +0900
+
+    Feature 17314: update docs and NEWS about attr* methods returning array of symbols
+
+commit 76e88480371469400346fca609efe67096813915
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-19 05:57:12 +0900
+
+    unfreeze Ractor::MovedObject
+
+    Matz prefers to unfreeze the class.
+    [Feature #17401]
+
+commit 80cb9165fa34185b601970da407a295a78ec9eff
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-19 05:52:18 +0900
+
+    add "copy: true" option for Ractor.make_shareable
+
+    Ractor.make_shareable(obj) tries to make obj a shareable object
+    by changing the attribute of obj and traversable objects from obj
+    (mainly freeze them).
+
+    "copy: true" option is more conservative approach by make deep
+    copied object and make it sharable. It doesn't affect any existing
+    objects.
+
+commit cee02d754d76563635c1db90d2ab6c01f8492470
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-19 04:30:25 +0900
+
+    fix refinements/prepend bug
+
+    replaced method entry should be invalidated.
+    [Bug #17386]
+
+commit 04d62e6f6202684c57f2fcf71bbfcb891cd4ddd9
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-19 04:29:58 +0900
+
+    fix method cache debug tool
+
+commit 0e79d4cde547edd52b2d5bf576780906e45a742d
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-19 03:25:48 +0900
+
+    Added tests for [Feature #17314]
+
+    Partially reintroduce 34f06062174882a98ebef998c50ad8d4f7fc0f2e
+
+commit aa7a02071072b5b0dd15357740d0ffd506bb0381
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-19 03:20:09 +0900
+
+    Revert "Revert "Use rb_id_attrset without intermediate strings""
+
+    This reverts commit 41c208d4a463183fddca250026e5f1cd759d2604.
+
+    Reintroduce 66090b9d10cdaed917b525225e59d1c19e399248.
+
+commit 346bf0f5a586ce6140e28aca145e5b6a8160ee4f
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-19 03:16:20 +0900
+
+    spec/ruby/core/module/attr_*: Add version guards
+
+commit 5944c4b3cfbbf8b774a4a76ca71ab9f71c71d1b0
+  Author: Radosław Bułat <radek.bulat@gmail.com>
+  Date:   2020-12-19 03:11:35 +0900
+
+    attr_reader, attr_writer, attr_accessor and attr methods returns array of symbols (#3935)
+
+    Co-authored-by: Yusuke Endoh <mame@ruby-lang.org>
+
+  Notes:
+    Merged-By: mame <mame@ruby-lang.org>
+
+commit f6641d73764115c3f6bdf435a381711d894300b6
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-19 03:06:16 +0900
+
+    NEWS: Add an entry of StringScanner 3.0.0 [ci skip]
+
+commit b3b7f1e580007fbb21e37afcfcde56364825fc69
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-19 03:05:00 +0900
+
+    NEWS: Add an entry of StringIO 3.0.0 [ci skip]
+
+commit f213a271a1eedfe6b956826ea9a60b334452c4ee
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-19 03:02:04 +0900
+
+    NEWS: fiddle 1.0.4 [ci skip]
+
+commit 7e2dbbda357b8c509358a3aa10ff6d588ed819e2
+  Author: Jeremy Evans <code@jeremyevans.net>
+  Date:   2020-12-17 02:02:23 +0900
+
+    Use category: :experimental in warnings that are related to experimental features
+
+    This adds rb_category_compile_warn in order to emit compiler warnings
+    with categories.  Note that Ripper currently ignores the category
+    for these warnings, but by default it ignores the warnings completely,
+    so this shouldn't matter.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3917
+
+commit 05313c914b29f7027b27a91021ae2662f0149e54
+  Author: Jeremy Evans <code@jeremyevans.net>
+  Date:   2020-09-29 02:10:31 +0900
+
+    Use category: :deprecated in warnings that are related to deprecation
+
+    Also document that both :deprecated and :experimental are supported
+    :category option values.
+
+    The locations where warnings were marked as deprecation warnings
+    was previously reviewed by shyouhei.
+
+    Comment a couple locations where deprecation warnings should probably
+    be used but are not currently used because deprecation warning
+    enablement has not occurred at the time they are called
+    (RUBY_FREE_MIN, RUBY_HEAP_MIN_SLOTS, -K).
+
+    Add assert_deprecated_warn to test assertions.  Use this to simplify
+    some tests, and fix failing tests after marking some warnings with
+    deprecated category.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3917
+
+commit 6ced55b07cf00e4ce8ffac5762f10e8ff1ecc59b
+  Author: Jeremy Evans <code@jeremyevans.net>
+  Date:   2020-12-17 01:37:04 +0900
+
+    Make warning_categories a map of category symbols to category numbers
+
+    Use this to simplify rb_warning_category_from_name.
+
+    This also adds support for using the :experimental category in
+    Kernel#warn and Warning.warn.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3917
+
+commit 52fb696ee7d01b1d55a1d5c42c60c6a5ebfc4502
+  Author: Jeremy Evans <code@jeremyevans.net>
+  Date:   2020-12-17 01:15:13 +0900
+
+    Switch rb_category_warn{,ing} to accept an rb_warning_category_t
+
+    Since we decided to only allowing specific warning categories,
+    there is no reason to have an API that accepts a general string,
+    as it is more error-prone.  Switch to only allowing the specific
+    warning categories.
+
+    As rb_category_warn{,ing} are public API, this requires making
+    rb_warning_category_t public API as well.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3917
+
+commit 7b06085c7bf8cc0db157e46fb11d16a6447d4d63
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-19 02:44:20 +0900
+
+    [bigdecimal] Fix test for d5ab8e8562
+
+commit d5ab8e8562ec15979a32365fe4bf85be9e6334c0
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-19 02:29:18 +0900
+
+    [bigdecimal] Use rb_undef_alloc_func to undefine allocate
+
+commit c2a5594e271170b57f92d7461466f3c0ab8da863
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-19 00:41:00 +0900
+
+    [ruby/reline] Use cached prompt list when just moved the cursor
+
+    https://github.com/ruby/reline/commit/cfe619460b
+
+commit d4257c6152ac9ad5179eb77d6e68942a5b9c011f
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-18 23:36:33 +0900
+
+    [ruby/reline] Yank by em-kill-region correctly
+
+    This closes ruby/reline#106.
+
+    https://github.com/ruby/reline/commit/2549a52e15
+
+commit af2c81e10c15c267611e59f11b7152545c617826
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-18 23:35:15 +0900
+
+    [ruby/reline] Bind yank-pop correctly
+
+    https://github.com/ruby/reline/commit/3c74beac65
+
+commit 671f2762fb8a4832d2c17322ee600f53c91f76f5
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-18 22:25:09 +0900
+
+    [ruby/reline] Add Enumerable to KillRing for debugging
+
+    https://github.com/ruby/reline/commit/d208874152
+
+commit dc61affd67a3e93c870bf6f79eefc0473630d6f1
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-19 01:52:14 +0900
+
+    [ruby/reline] [ruby/irb] Call ripper only once when generating dynamic prompt
+
+    https://github.com/ruby/irb/commit/babb122a48
+
+    https://github.com/ruby/reline/commit/e6dbcb3b42
+
+commit e76b56f58e44cb54497d93526d649950f5bdd1c0
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-19 02:04:34 +0900
+
+    support Ruby 2.x for openssl
+
+commit ad76c8fb6bc9df26601b0b454f3f0b61c2c772c9
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-18 23:16:54 +0900
+
+    Update TypeProf to 0.10.0
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3933
+
+commit 19a98a8791f99085aca11413a331811659c8b78c
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-19 00:34:14 +0900
+
+    Fixed not to make non-literal expression shareable [Feature #17273]
+
+    Non-literal expression which is not a part of a literal expression
+    is not a subject of `shareable_literal_value: literal`.
+
+commit 6945597f6ff491a3f745b66017190715d1642563
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2020-12-19 00:04:41 +0900
+
+    * 2020-12-19 [ci skip]
+
+commit ed5c09f38459fe4a0f94c9e24358b21ff5f151c6
+  Author: Radosław Bułat <radek.bulat@gmail.com>
+  Date:   2020-11-09 19:25:11 +0900
+
+    Remove unused variable
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3934
+
+commit c71934f8a50746c9cd01a86375b178d5c7823259
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-18 09:24:37 +0900
+
+    [stringio] Version 3.0.0
+
+    https://github.com/ruby/stringio/commit/831be01071
+
+commit e1b5289a2bf297d80ea35b32a32a0c5c34ab2ad8
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-17 10:38:42 +0900
+
+    [stringio] Add test-unit in the development dependencies
+
+    https://github.com/ruby/stringio/commit/de010fc0e9
+
+commit 3d3194412918012ddab185751b84ebb64fe6e5d5
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-17 10:05:07 +0900
+
+    [stringio] Make stringio Ractor safe
+
+    https://github.com/ruby/stringio/commit/ee3fec7512
+    https://github.com/ruby/stringio/commit/18dcd045ef
+    https://github.com/ruby/stringio/commit/18dcd045ef
+
+commit 14ca7f633cae9938b7d8bc722fe1c5c96f6bcd95
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-18 21:58:41 +0900
+
+    [openssl] Fix dependencies
+
+commit b5588edc0a538de840c79e0bbc9d271ba0c5a711
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-18 18:19:33 +0900
+
+    openssl is ractor-safe
+
+    ossl_bn_ctx is C's global variable and it should be ractor-local
+    to make it ractor-safe.
+
+commit 74ab2c3b463da4d98803fe694acad831938a97e5
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-18 17:59:26 +0900
+
+    finalizing should be checked before VM lock
+
+commit 7d32bf78537eaeb046166b45a79b47316ccf6f02
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-18 17:56:08 +0900
+
+    Removed a moved local variable
+
+commit 61236770e6cc41f1364dc04249d845def03d9f37
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-18 17:49:22 +0900
+
+    need to sync gc_finalize_deferred
+
+    gc_finalize_deferred() runs finalizers and it accesses objspace,
+    so it need to sync.
+
+commit 75416b86287c8266cef3a8b372625c1738661a24
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-17 13:50:08 +0900
+
+    Removed old GC.stat keys deprecated since 2.2
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3921
+
+commit 763d5f9c6baf57108396ee5452fa73c834fe9ce0
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-17 13:49:10 +0900
+
+    Removed old GC tuning environment variables deprecated since 2.1
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3921
+
+commit 982443e6e373f5a3ac22ee495909cb9adffcd08d
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-18 14:12:42 +0900
+
+    Revert "Better cooperation between public/protected/private with attr* and alias_method"
+
+    This reverts commit 81739ad4fdfcc86a769056fec352f27c686fba1b.
+
+commit 41c208d4a463183fddca250026e5f1cd759d2604
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-18 14:12:38 +0900
+
+    Revert "Use rb_id_attrset without intermediate strings"
+
+    This reverts commit 66090b9d10cdaed917b525225e59d1c19e399248.
+
+commit c4e50b58d1e6f030b24faffbc208d3d454d1f433
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-18 14:12:15 +0900
+
+    Revert "Added missing tests for public, private, protected and alias_method"
+
+    This reverts commit e042e8460bb9a63c05f938d51e8c7c5345a6f3a4.
+
+commit 0a60ba923e044ec2e84ac63406ca85b7bb8fc73f
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-18 14:12:09 +0900
+
+    Revert "Added tests for [Feature #17314]"
+
+    This reverts commit 34f06062174882a98ebef998c50ad8d4f7fc0f2e.
+
+commit 8e03e3b0baf12b0e470ef7188559097fea95cb37
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-18 15:09:55 +0900
+
+    Drop token info also for endless singleton method definition
+
+commit ffc8a72f39f15d2977908a71d0c3bd8047c1fd41
+  Author: Kazuhiro NISHIYAMA <zn@mbf.nifty.com>
+  Date:   2020-12-18 14:59:20 +0900
+
+    Sort URLs by issue numbers [ci skip]
+
+commit f0ec923c5852b9ae9c82824137641e4e1dfad35a
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-18 14:36:06 +0900
+
+    Remove --jit-save-temps from MJIT
+
+    It's probably not helping the backtrace.
+
+commit b5de66e13278ec588cbc8b76b7212e22898e6a89
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-17 22:40:26 +0900
+
+    [strscan] Fix license comment and files
+
+    https://github.com/ruby/strscan/commit/a999f2c6d1
+
+commit 5370963992a0c79925c812e70beb94d09dbc5e47
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-17 18:32:08 +0900
+
+    [strscan] Version 3.0.0
+
+    https://github.com/ruby/strscan/commit/08645e4e77
+
+commit 985f0af2576c4b4f9f4e75dce7299ba9d55d9419
+  Author: Kenta Murata <mrkn@users.noreply.github.com>
+  Date:   2020-12-17 18:29:21 +0900
+
+    [strscan] Make strscan Ractor safe (#17)
+
+    * Make strscan Ractor safe
+
+    * Add test-unit in the development dependencies
+
+    https://github.com/ruby/strscan/commit/3c93c2bebe
+
+commit cfa124ef05e1b899c1953888c0fb3076388a0d8e
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-18 14:14:40 +0900
+
+    acquire VM lock on gc_verify_internal_consistency()
+
+    There is a case to call this function without VM lock acquiring.
+
+commit 8cba3b35e095bf17308ed00bf19f6d6f7a682ae2
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-18 14:11:50 +0900
+
+    Bump version RubyGems and Bundler in NEWS
+
+commit b44f7151c71011460877bdba549453aaeada88fe
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-18 11:37:13 +0900
+
+    zlib is ractor-safe
+
+commit 0e40cc9b194a5e46024d32b85a61e651372a65cb
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-18 12:13:33 +0900
+
+    Merge RubyGems 3.2.2 and Bundler 2.2.2
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3930
+
+commit 34f06062174882a98ebef998c50ad8d4f7fc0f2e
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-18 13:03:22 +0900
+
+    Added tests for [Feature #17314]
+
+commit e042e8460bb9a63c05f938d51e8c7c5345a6f3a4
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-18 12:59:01 +0900
+
+    Added missing tests for public, private, protected and alias_method
+
+commit 66090b9d10cdaed917b525225e59d1c19e399248
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-18 12:10:20 +0900
+
+    Use rb_id_attrset without intermediate strings
+
+commit a07f2498031d5f4c53ddc03d61a8a41a6b77baca
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-18 11:23:16 +0900
+
+    socket is ractor-safe.
+
+commit aa82b067cbf24e781fedfe951be153b6b1d21ddf
+  Author: 卜部昌平 <shyouhei@ruby-lang.org>
+  Date:   2020-12-18 11:18:09 +0900
+
+    ruby_set_stack_size: no longer exists
+
+    Deleted since fc3c60f6081d85f6274986a7a08b59db1515fcb5
+
+commit 51c2725dc646030283d01ce23a32c06f0f1c8bf6
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-18 09:12:26 +0900
+
+    use eval to create different Regexp objects
+
+    Only one warning is shown for the same Regexp object, so create
+    different objects to support repeating tests.
+
+    http://ci.rvm.jp/results/trunk-repeat20@phosphorus-docker/3290658
+
+commit 29e42b8bfdfc7a2d879a4ddb1db3d4453d66143a
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-18 08:25:24 +0900
+
+    add explicit check
+
+    To debug this issue:
+    https://rubyci.org/logs/rubyci.s3.amazonaws.com/solaris10-gcc/ruby-master/log/20201217T220004Z.fail.html.gz
+
+commit 895b10ad020a788566c6e35431d07e6121e38c87
+  Author: Aaron Patterson <tenderlove@ruby-lang.org>
+  Date:   2020-12-18 06:25:35 +0900
+
+    Add documentation about GC.compact
+
+    [Misc #16443][ruby-core:96395]
+
+commit 81739ad4fdfcc86a769056fec352f27c686fba1b
+  Author: Radosław Bułat <radek.bulat@gmail.com>
+  Date:   2020-11-09 19:25:11 +0900
+
+    Better cooperation between public/protected/private with attr* and alias_method
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3757
+
+commit f7a6b460d5cf3665d3cc682fec34f989b639e7a6
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2020-12-18 01:20:56 +0900
+
+    * 2020-12-18 [ci skip]
+
+commit 6538c89f1c9d1af95c0fb3e58ac0e807a5fe47f4
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-18 01:19:03 +0900
+
+    gc_verify_internal_consistency() needs barrier
+
+    gc_verify_internal_consistency() accesses all slots (objects) so
+    all ractors should stop before starting this function.
+
+commit caef364cc5e9816b398f46a7da50057707f87af3
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-17 22:39:37 +0900
+
+    test/ruby: suppress some warnings
+
+    follow up to 9908177857a28633d6279c43a1ad4dfedcb98596
+
+commit 980f994b3b349486c5e64b51241330d4c9fc63f1
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-11-21 06:58:02 +0900
+
+    [ruby/irb] Change context-mode's default to new mode 4.
+
+    This new mode uses a copy of the TOPLEVEL_BINDING. This is compatible with refinements (contrary to mode 3), while keeping nested IRB sessions separate
+
+    https://github.com/ruby/irb/commit/25c731cb2f
+
+commit 753222d72c8787f2d57781c2e55194da2d3d0d8f
+  Author: Jeremy Evans <code@jeremyevans.net>
+  Date:   2020-12-09 01:56:01 +0900
+
+    [ruby/irb] Enable deprecation warnings when using -W or -w
+
+    Requested in Ruby Bug 17377
+
+    https://github.com/ruby/irb/commit/698f6eb34a
+
+commit 336fe648b08e7bd062dc8d4cc11781dd8d617f11
+  Author: Benoit Daloze <eregontp@gmail.com>
+  Date:   2020-11-06 02:13:56 +0900
+
+    [ruby/irb] Skip the few failing tests on TruffleRuby
+
+    https://github.com/ruby/irb/commit/22717844c0
+
+commit b5effe07bd7965a3d90c36509025c4231f306741
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-11-22 22:03:09 +0900
+
+    [ruby/irb] Fixed a typo in a comment [ci skip]
+
+    https://github.com/ruby/irb/commit/ce373417f3
+
+commit cbf6a7f906d17968c8f54f4efb1899e9b204ccfe
+  Author: Nobuhiro IMAI <nov@yo.rim.or.jp>
+  Date:   2020-11-21 08:40:31 +0900
+
+    [ruby/irb] workaround for lack of tokens from `Ripper.lex`
+
+    * Fixes #38
+
+    https://github.com/ruby/irb/commit/905fb8e52e
+
+commit 422e2c7274d9dbf1ff93dccc0c3c388f4775e636
+  Author: Robert Schulze <robert@dotless.de>
+  Date:   2020-05-05 16:24:52 +0900
+
+    [ruby/reline] Use plus operator to create unfrozen string
+
+    https://github.com/ruby/reline/commit/ca274b0d37
+
+commit cdf2790aa089c5ff608dd97407b5ce684cc9f415
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-17 19:57:44 +0900
+
+    [ruby/reline] Support longer than screen height on Windows
+
+    https://github.com/ruby/reline/commit/2a97ca9362
+
+commit 0158ba7e51cb3fc5a204cb65d1be1618802e08d2
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-16 16:28:51 +0900
+
+    [ruby/reline] Make a log file on windows if debug env is set
+
+    https://github.com/ruby/reline/commit/dff30a2d44
+
+commit 2b8fa7817643a9ac7632b66ffed7cb5fd3753966
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-13 11:30:05 +0900
+
+    [ruby/reline] Support longer than screen height
+
+    https://github.com/ruby/reline/commit/e83a3de9ed
+
+commit 9908177857a28633d6279c43a1ad4dfedcb98596
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-17 20:06:18 +0900
+
+    test/ruby: Check warning messages at a finer granularity
+
+    Instead of suppressing all warnings wholly in each test scripts by
+    setting `$VERBOSE` to `nil` in `setup` methods.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3925
+
+    Merged-By: nobu <nobu@ruby-lang.org>
+
+commit d597d7a8b6e753cfe40b8470c770f744adde5d4f
+  Author: Yale Kozinski <ytk@kozinski.com>
+  Date:   2020-11-23 18:17:06 +0900
+
+    Fixing glitchy kill ring behavior in irb
+    See https://github.com/ruby/irb/issues/85 for details
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3806
+
+commit da3438a50454706cce2e5b06bdad498b42977f8f
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-17 17:29:05 +0900
+
+    sync obj_to_id_tbl
+
+    objspace->obj_to_id_tbl is a shared table so we need to synchronize
+    it to access.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3924
+
+commit 7f11c8086a4b5924737223322e24be23e9ff34c5
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-17 17:20:29 +0900
+
+    reduce barrier counts for GC events
+
+    mark needs barrier (stop other ractors), but other GC events don't need
+    barriers (maybe...).
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3923
+
+commit 99b91453809be68c604f94416030addfff3d6142
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-17 04:06:04 +0900
+
+    relax synchronization on WB
+
+    Current synchronization is too much on write barriers.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3918
+
+commit 44fba194a5561a5ca20f6bd91fb96b7d8edd1dbb
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-17 17:24:51 +0900
+
+    ruby/pathname separated .rb file to top-level directory.
+
+commit c42948d78463d7e38f04070236985dcda895efd5
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-17 17:03:05 +0900
+
+    add debug counters for gc start events
+
+commit 92137718170118030a1f56303764d08201bf5c33
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-17 15:46:36 +0900
+
+    encourage inlining for vm_sendish()
+
+    Some tunings.
+    * add `inline` for vm_sendish()
+    * pass enum instead of func ptr to vm_sendish()
+    * reorder initial order of `calling` struct.
+    * add ALWAYS_INLINE for vm_search_method_fastpath()
+    * call vm_search_method_fastpath() from vm_sendish()
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3922
+
+commit 5d74894f2bc4a3a18aec952d946ead3d784cb4b4
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-17 15:08:04 +0900
+
+    Lazily move PC with RUBY_VM_CHECK_INTS
+
+    ```
+    $ benchmark-driver -v --rbenv 'before --jit;after --jit' --repeat-count=12 --alternate --output=all benchmark.yml
+    before --jit: ruby 3.0.0dev (2020-12-17T06:17:46Z master 3b4d698e0b) +JIT [x86_64-linux]
+    after --jit: ruby 3.0.0dev (2020-12-17T07:01:48Z master 843abb96f0) +JIT [x86_64-linux]
+    last_commit=Lazily move PC with RUBY_VM_CHECK_INTS
+    Calculating -------------------------------------
+                                     before --jit           after --jit
+    Optcarrot Lan_Master.nes    80.29343646660429     83.15779723251525 fps
+                                82.26755637885149     85.50197941326810
+                                83.50682959728820     88.14657804306270
+                                85.01236533133049     88.78201988978667
+                                87.81799334561326     88.94841008936447
+                                87.88228562393064     89.37925215601926
+                                88.06695585889995     89.86143277214475
+                                88.84730834922165     90.00773346420887
+                                90.46317871213088     90.82603371104014
+                                90.96308347148916     91.29797694822179
+                                90.97945938504556     91.31086331868738
+                                91.57127890154500     91.49949184318844
+    ```
+
+commit 3b4d698e0b5a79b63b05ae0c79d282a9049225e4
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-17 15:12:50 +0900
+
+    Ignore catch_except_p for PC motion
+
+    We probably don't need to move it when an insn is leaf...
+
+commit a09c3c6fe1f24e5956b43157e6e40dfe4f986bed
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-17 14:37:45 +0900
+
+    expand VERSION path for ruby repository.
+
+commit 46ea74297eb3e46e19fb692a8d8eef817b93a49b
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-17 14:20:42 +0900
+
+    Bump version to json-2.4.1 and use VERSION file for json version same as upstream
+
+commit ccf9da079f0a9987f80d74b971a11bcd236d3576
+  Author: d-m-u <16326669+d-m-u@users.noreply.github.com>
+  Date:   2020-12-17 13:20:49 +0900
+
+    fix doc typo
+
+    s/it's/its
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3920
+
+commit d07183ec85dc20c7c034170bd8964c79c34a47d7
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-17 12:43:17 +0900
+
+    Do not access jit_unit if NULL
+
+commit 93ba3ac03681a2a65ca28b4c5aaba72da9e16f97
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-17 03:46:44 +0900
+
+    RGENGC_PROFILE=0
+
+    Enabled this flag, maybe accidentally.
+
+commit 2a3324fcd2f9681e167b2619563a5c26e1a362fe
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-17 01:56:30 +0900
+
+    No sync on ASCII/US_ASCCII/UTF-8
+
+    rb_enc_from_index(index) doesn't need locking if index specify
+    ASCII/US_ASCCII/UTF-8.
+    rb_enc_from_index() is called frequently so it has impact.
+
+                                   user     system      total        real
+    r_parallel/miniruby       174  0.000209   0.000000   5.559872 (  1.811501)
+    r_parallel/master_mini    175  0.000238   0.000000  12.664707 (  3.523641)
+
+    (repeat x1000 `s.split(/,/)` where s = '0,,' * 1000)
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3916
+
+commit c58142134cccdd31811f12aabf4f9dd3ce6a17f7
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-17 01:29:15 +0900
+
+    make RB_DEBUG_COUNTER_INC()_thread-safe
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3915
+
+commit d5929b39a9c7944de14c133fa3948b7b3a92e423
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-16 23:57:35 +0900
+
+    Make Ractor#receive_if private
+
+commit 24f018972b958d6287c71a4682ea1dcc8d1fa16e
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-17 00:31:14 +0900
+
+    fix timing bug
+
+    ractor_sleep() can remain wait.status by interrupt, so that this
+    patch handles more correctly.
+
+    This patch fixed this kind of assertion failures:
+
+       Assertion Failed: ../src/ractor.c:1332:ractor_yield_atexit:cr->sync.wait.status == wait_none
+
+commit 84c9ebd65f8a6fcd2e22225c563fb671dc690a9a
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2020-12-17 00:31:09 +0900
+
+    * 2020-12-17 [ci skip]
+
+commit b29c0fadeca7bd7d00d9fe17345fe88bf968312f
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-17 00:28:48 +0900
+
+    add HAVE_RB_EXT_RACTOR_SAFE macro
+
+    define HAVE_RB_EXT_RACTOR_SAFE to check rb_ext_ractor_safe() is
+    available or not.
+
+commit 53babf35ef5b643774636550ea23851e2607e076
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-16 23:24:07 +0900
+
+    Inline getconstant on JIT (#3906)
+
+    * Inline getconstant on JIT
+
+    * Support USE_MJIT=0
+
+  Notes:
+    Merged-By: k0kubun <takashikkbn@gmail.com>
+
+commit bfb374be2342d7822cd37a1b100cb1715f85ca74
+  Author: Kazuhiro NISHIYAMA <zn@mbf.nifty.com>
+  Date:   2020-12-16 22:59:05 +0900
+
+    Fix a typo [ci skip]
+
+commit 9c859f4b3c2098af590d3e0eadc2d1011fb32bb8
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-16 22:53:43 +0900
+
+    Ripper: Pass callback result to alias_error as well as other errors
+
+    [Bug #17345]
+
+commit 47328ad217ecaf240f0faedac89723dcd6a917ac
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-16 21:01:45 +0900
+
+    Ripper: Fixed erred token on wrong alias [Bug #17345]
+
+commit 359ad4423ed0f314822a3b97831fe9e4272ea347
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-16 20:33:31 +0900
+
+    strip trailing spaces [ci skip]
+
+commit a9a7f4d8b8ec30abc7a47ce700edc7209ae12279
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-08 14:04:18 +0900
+
+    Ractor#receive_if to receive only matched messages
+
+    Instead of Ractor.receive, Ractor.receive_if can provide a pattern
+    by a block and you can choose the receiving message.
+
+    [Feature #17378]
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3862
+
+commit ddb93c3d64b8997c85f23c96a73ad0a9a7f82ad1
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-16 17:05:39 +0900
+
+    Made LARGEFILE_SUPPORT mandatory
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3914
+
+commit 5193fbb6d0dedfbc2b3c017456fb58a13136de01
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-16 17:00:04 +0900
+
+    Removed stale declaration
+
+    rb_w32_pipe_exec was removed in 1.9.3, at
+    commit:7ac32d7a16734ea66de15319bcff2fd429abae7f.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3914
+
+commit 8b32191a3101cb6441fc64c87cfd011fdadc6867
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-15 23:17:23 +0900
+
+    Ignore failure on unsupported fcntl to drop non-blocking mode
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3913
+
+commit 4fe7f270ce924b6339e9ccf56c3fff2de3f4fa8b
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-16 17:39:23 +0900
+
+    Different names instead of `ulimit`
+
+commit 5d8f227d0edd3c542fcac465eb82005a5f852d34
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-16 16:14:02 +0900
+
+    Lazily move units from active_units to stale_units
+
+    to avoid SEGV like
+    http://ci.rvm.jp/results/trunk-mjit@phosphorus-docker/3289588
+    by a race condition between mjit_recompile and compation around active_units
+
+commit 0a521618723e5e602c1288b4185b869e94332172
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-16 17:18:07 +0900
+
+    fix Ractor#receive by other ractors
+
+    Ractor#receive can be called by the another Ractors using send,
+    so making this method completely same as `Ractor.receive` even if
+    the ractor is specified by the receiver (OO term :p).
+
+commit c668772b145b7fd889000480778e011a808442ab
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-16 16:17:54 +0900
+
+    test/ruby/test_enum.rb: Avoid "warning: assigned but unused variable"
+
+commit 19157a3c001d68acdc8e5190a806189840d23375
+  Author: David CARLIER <devnexen@gmail.com>
+  Date:   2020-12-16 15:32:11 +0900
+
+    vm debug: dump registers on ARM too. (#3900)
+
+    * vm debug: dump registers on ARM too.
+
+  Notes:
+    Merged-By: nurse <naruse@airemix.jp>
+
+commit 98dca855736c9fb8d4edef8b33a5df1cfe67ebb7
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-16 14:13:32 +0900
+
+    tuning vm_setivar_slowpath() more.
+
+    specify inline/noinline code for is_attr condition.
+
+commit 1bafb3cb47649037cc93fec97503c18a864e3983
+  Author: Kenta Murata <mrkn@users.noreply.github.com>
+  Date:   2020-12-16 13:43:56 +0900
+
+    [memory_view] Make MemoryView API Ractor-safe (#3911)
+
+    * memory_view.c: make Ractor-safe
+
+    * test/ruby/test_memory_view.rb: Add test_ractor
+
+    * memory_view: fix typo
+
+    * memory_view.c: Use st_update in unregster_exported_object
+
+    * memory_view: update dependency
+
+  Notes:
+    Merged-By: mrkn <mrkn@ruby-lang.org>
+
+commit 1e11c12a066036e85177104a9f8f5469063858a7
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-16 13:30:34 +0900
+
+    remove unused function
+
+commit 5499651ee75538a4d8a3bb4a7442f5f59f36acd8
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-16 12:03:36 +0900
+
+    tuning ivar set
+
+    * make rb_init_iv_list() simple
+    * introduce vm_setivar_slowpath() for cache miss cases
+
+    ../clean/miniruby is 647ee6f091.
+
+    Calculating -------------------------------------
+                          ./miniruby  ../clean/miniruby  ../ruby_2_7/miniruby
+             vm_ivar_init     7.388M             6.814M                5.771M i/s -     30.000M times in 4.060420s 4.402534s 5.198781s
+    vm_ivar_init_subclass     2.158M             2.147M                1.974M i/s -      3.000M times in 1.390328s 1.397587s 1.519951s
+              vm_ivar_set   128.607M            97.931M              140.668M i/s -     30.000M times in 0.233269s 0.306338s 0.213268s
+                  vm_ivar   144.315M           151.722M              117.734M i/s -     30.000M times in 0.207879s 0.197730s 0.254811s
+
+    Comparison:
+                          vm_ivar_init
+               ./miniruby:   7388398.8 i/s
+        ../clean/miniruby:   6814257.1 i/s - 1.08x  slower
+     ../ruby_2_7/miniruby:   5770583.9 i/s - 1.28x  slower
+
+                 vm_ivar_init_subclass
+               ./miniruby:   2157763.6 i/s
+        ../clean/miniruby:   2146557.0 i/s - 1.01x  slower
+     ../ruby_2_7/miniruby:   1973747.9 i/s - 1.09x  slower
+
+                           vm_ivar_set
+     ../ruby_2_7/miniruby: 140668063.8 i/s
+               ./miniruby: 128606912.1 i/s - 1.09x  slower
+        ../clean/miniruby:  97931027.8 i/s - 1.44x  slower
+
+                               vm_ivar
+        ../clean/miniruby: 151722121.9 i/s
+               ./miniruby: 144314526.5 i/s - 1.05x  slower
+     ../ruby_2_7/miniruby: 117734305.5 i/s - 1.29x  slower
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3912
+
+commit ad8e82f70828bf6a0a36648f8b4bdc3142b09968
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-16 12:31:40 +0900
+
+    Fixed marshal compatibility of Process::Status
+
+commit b30d7fea569cf64325d55b901af784ee13a477f8
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-16 12:14:30 +0900
+
+    Removed leading spaces [ci skip]
+
+commit cfefd1e524fdd8c832c5a762d5ec969b71190827
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-16 11:26:26 +0900
+
+    Added entry for webrick changes at Ruby 3.0 to NEWS
+
+commit 0b678cc9e5a5149e40765562142ed1dc05d09b53
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-16 10:10:05 +0900
+
+    add vm_sync debug counters
+
+    * vm_sync_lock
+    * vm_sync_lock_enter
+    * vm_sync_lock_enter_nb
+    * vm_sync_lock_enter_cr
+    * vm_sync_barrier
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3910
+
+commit 171f0431e766ba5b1a326386fff34a30f6cbc4c5
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-16 10:36:23 +0900
+
+    fix typo
+
+commit dff67c809f786c94933583a450dbd9398fa07039
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-16 10:29:48 +0900
+
+    fix duplicated name
+
+commit ccc828f49956424b2548e32cb3bc3a78e16e207b
+  Author: 卜部昌平 <shyouhei@ruby-lang.org>
+  Date:   2020-12-15 16:57:28 +0900
+
+    configure.ac: avoid squashing CXX=g++
+
+    We are discussing this issue at [Bug #17337] but in the meantime, leave
+    this questionable autoconf glitch as-is to save sassc and eventmachine.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3907
+
+commit 8558d5e4801b74b058dc2a534be2be85037cadb5
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-16 07:05:35 +0900
+
+    Document Hash#transform_keys with hash. Amend NEWS [DOC] [ci skip]
+
+commit d5f0d338c7b5d3d64929b51d29061d369550e8c4
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-09 11:20:37 +0900
+
+    Optimize `Enumerable#grep{_v}`
+
+    [Bug #17030]
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3868
+
+commit a039dc018ccf34e217f767eac500b9400c58f069
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-16 00:07:37 +0900
+
+    [DOC] Described "numeric representation" more precisely [ci skip]
+
+    [Bug #17395]
+
+commit efc6a4e580b863ee032d61a7f3927be86de64a03
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2020-12-16 00:04:59 +0900
+
+    * 2020-12-16 [ci skip]
+
+commit 289d42c932b744260359ee2c02d6723ecb8fc714
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-15 23:43:08 +0900
+
+    Removed unneeded cast and use the real name
+
+commit 8f6cb5b70b5ca107260960a107e257ef202c9dc0
+  Author: Zoltán Mizsei <zmizsei@extrowerk.com>
+  Date:   2020-10-30 06:47:24 +0900
+
+    TEST: multiarch support for Haiku
+
+commit 95423215849ad26e1b928b3d36af021472bb185b
+  Author: Zoltán Mizsei <zmizsei@extrowerk.com>
+  Date:   2020-10-30 06:49:45 +0900
+
+    Haiku: disable stack-protector
+
+commit 4d43ac2fb94de27ed6f87f92f2ef71808c9cc44b
+  Author: Zoltán Mizsei <zmizsei@extrowerk.com>
+  Date:   2020-10-30 06:49:17 +0900
+
+    Add Haiku to the context support list
+
+commit e0bdd54348514ff06df88a9bac88fa56058235a4
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-15 14:14:13 +0900
+
+    Ripper: Refined error callbacks [Bug #17345]
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3909
+
+commit 2e436982ee64301aceb97e0c8d5b06b94fc7b580
+  Author: Junichi Ito <jit@sonicgarden.jp>
+  Date:   2020-12-15 20:11:02 +0900
+
+    Fix typo in NEWS.md
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3908
+
+commit 151ff609e595e78b7937ecb4b011879dc5a0cbd1
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-15 20:05:32 +0900
+
+    Added updated versions of the default gems on NEWS
+
+commit ad3e3bd65a69c05035289b0dbf04394a8238fbfb
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-15 19:54:58 +0900
+
+    Bump version to json-2.4.0
+
+commit 5463eff5f6236f89c137c562ee271e1c1ff92a89
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-15 16:33:49 +0900
+
+    Lock only active_units references
+
+    556a7285080c1344c75bb93a333c9bfc5d631c61 was not good maybe because it
+    wasn't using list_for_each_safe. If list_for_each_safe is safe for
+    list_del for any nodes (is that true?), this should be fine.
+
+commit ce6fafb8cc59658245a70ff24c75a3108a39ba93
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-15 15:15:23 +0900
+
+    Cache warning category IDs
+
+commit a86c147579745859ea064ec22b2901a7ac7e4abf
+  Author: Kenta Murata <mrkn@users.noreply.github.com>
+  Date:   2020-12-15 15:17:15 +0900
+
+    Import bigdecimal 2.0.2 (#3905)
+
+    * remove duplicated include
+
+    * Make BigDecimal#round with argument < 1 return Integer
+
+    Fixes [Bug #12780]
+
+    * Use a higher default precision for BigDecimal#power and #**
+
+    When a fractional power is given, increase the precision if the
+    precision isn't specified via power's second argument:
+
+    Float: increase by 15 (rough number of decimal precision in float)
+    BigDecimal: increase by adding similar precision modifier as done to
+                calculate the base precision.
+    Rational: double the precision, since a BigDecimal is created, but
+              the created BigDecimal uses the same precision.
+
+    Increasing the precision for these power calculations has the obvious
+    tradeoff of making the calculations slower.
+
+    Fixes Ruby Bug #17264
+
+    * Use DBLE_FIG for a Float value
+
+    * Version 2.0.1
+
+    Co-authored-by: pavel <pavel.rosicky@easy.cz>
+    Co-authored-by: Jeremy Evans <code@jeremyevans.net>
+
+  Notes:
+    Merged-By: mrkn <mrkn@ruby-lang.org>
+
+commit 9d85ed6cbb50960d08bdb24c303a8f5e06b7e922
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-15 14:06:53 +0900
+
+    Simplify positioning of '{' and '}'
+
+    and fix inconsistent indentation in mjit_compile.inc.erb
+
+commit 72a73691bd069c20f07a42bbd2740ada319ee001
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-15 12:10:35 +0900
+
+    add several debug counters
+
+    add cc_found_in_ccs (renamed from cc_found_ccs), cc_not_found_in_ccs,
+    call0_public, call0_other debug counters to measure more details.
+
+    also it contains several modification.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3903
+
+commit aa6287cd26582e64c19e37dea3fd90b380b85d5b
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-15 05:40:38 +0900
+
+    fix inline method cache sync bug
+
+    `cd` is passed to method call functions to method invocation
+    functions, but `cd` can be manipulated by other ractors simultaneously
+    so it contains thread-safety issue.
+
+    To solve this issue, this patch stores `ci` and found `cc` to `calling`
+    and stops to pass `cd`.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3903
+
+commit 40b7358e934e3b1f2cc7a664f97e5cc1393cbc77
+  Author: John Hawthorn <john@hawthorn.email>
+  Date:   2020-12-15 10:34:31 +0900
+
+    Skip defined check in NODE_OP_ASGN_OR with ivar
+
+    Previously we would add code to check if an ivar was defined when using
+    `@foo ||= 123`, which was slower than `@foo || (@foo = 123)` when `@foo`
+    was already defined.
+
+    Recently 01b7d5acc702df22d306ae95f1a9c3096e63e624 made it so that
+    accessing an undefined variable no longer generates a warning, making
+    the defined check unnecessary and both statements exactly equal.
+
+    This commit avoids emitting the defined instruction when compiling
+    NODE_OP_ASGN_OR with a NODE_IVAR.
+
+    Before:
+
+        $ ruby --dump=insn -e '@foo ||= 123'
+        == disasm: #<ISeq:<main>@-e:1 (1,0)-(1,12)> (catch: FALSE)
+        0000 putnil                                                           (   1)[Li]
+        0001 defined                      instance-variable, :@foo, false
+        0005 branchunless                 14
+        0007 getinstancevariable          :@foo, <is:0>
+        0010 dup
+        0011 branchif                     20
+        0013 pop
+        0014 putobject                    123
+        0016 dup
+        0017 setinstancevariable          :@foo, <is:0>
+        0020 leave
+
+    After:
+
+        $ ./ruby --dump=insn -e '@foo ||= 123'
+        == disasm: #<ISeq:<main>@-e:1 (1,0)-(1,12)> (catch: FALSE)
+        0000 getinstancevariable                    :@foo, <is:0>             (   1)[Li]
+        0003 dup
+        0004 branchif                               13
+        0006 pop
+        0007 putobject                              123
+        0009 dup
+        0010 setinstancevariable                    :@foo, <is:0>
+        0013 leave
+
+    This seems to be about 50% faster in this benchmark:
+
+        require "benchmark/ips"
+
+        class Foo
+          def initialize
+            @foo = nil
+          end
+
+          def test1
+            @foo ||= 123
+          end
+
+          def test2
+            @foo || (@foo = 123)
+          end
+        end
+
+        FOO = Foo.new
+
+        Benchmark.ips do |x|
+          x.report("test1", "FOO.test1")
+          x.report("test2", "FOO.test2")
+        end
+
+    Before:
+
+        $ ruby benchmark_ivar.rb
+        Warming up --------------------------------------
+                       test1     1.957M i/100ms
+                       test2     3.125M i/100ms
+        Calculating -------------------------------------
+                       test1     20.030M (± 1.7%) i/s -    101.780M in   5.083040s
+                       test2     31.227M (± 4.5%) i/s -    156.262M in   5.015936s
+
+    After:
+
+        $ ./ruby benchmark_ivar.rb
+        Warming up --------------------------------------
+                       test1     3.205M i/100ms
+                       test2     3.197M i/100ms
+        Calculating -------------------------------------
+                       test1     32.066M (± 1.1%) i/s -    163.440M in   5.097581s
+                       test2     31.438M (± 4.9%) i/s -    159.860M in   5.098961s
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3904
+
+commit 2fa9f3c0322570dfb1672b49bc1f3306ef595131
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-15 08:32:54 +0900
+
+    Prepare to release rubygems-3.2.1 and bundler-2.2.1
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3901
+
+commit 7898f4243f5df9ead0bf91cc8c40907c559d18c0
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-15 09:37:11 +0900
+
+    ripper: return pushed new token instead of the token list
+
+commit c59b9a8c0c50a6df13909c71e43de09a152b122d
+  Author: Alan Wu <alanwu@ruby-lang.org>
+  Date:   2020-12-15 10:01:55 +0900
+
+    Move docs for Integer#bit_length [ci skip]
+
+commit befa24488c2757b55be12ae3ca866156f5a4073f
+  Author: Alan Wu <alanwu@ruby-lang.org>
+  Date:   2020-12-15 10:01:01 +0900
+
+    Help RDoc find Exception [ci skip]
+
+    This was on top of `Init_Exception()`.
+
+commit 928cb6eeb6497f9e59ccde394cde60319c63b371
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-15 08:38:36 +0900
+
+    NEWS: make links to label [ci skip]
+
+commit 78fad67ce67048b99c9b4e91b87444b1db2b82e8
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-14 21:30:16 +0900
+
+    NEWS: make links to other document files [ci skip]
+
+commit a5fd65157500a65debeb88f5ac6a62821f96972e
+  Author: Alan Wu <alanwu@ruby-lang.org>
+  Date:   2020-12-15 08:26:32 +0900
+
+    Reword docs for Fiddle::Function#call [ci skip]
+
+    I'm using `<code>` instead of `+` since `+` only works when it encloses
+    a single word.
+
+commit 25a48b703ec738d4667a7b8edcfe8e100ed6ca84
+  Author: Alan Wu <alanwu@ruby-lang.org>
+  Date:   2020-12-15 07:56:42 +0900
+
+    Update dependencies
+
+commit f5c89c1660afd3a89514125aad579c0a96990c4b
+  Author: Benoit Daloze <eregontp@gmail.com>
+  Date:   2020-12-15 04:24:18 +0900
+
+    Deprecate Random::DEFAULT
+
+    * Closes [Feature #17351].
+
+commit c183288754fdad17e627c4182de599d965e99405
+  Author: Benoit Daloze <eregontp@gmail.com>
+  Date:   2020-12-15 04:11:15 +0900
+
+    Remove references to Random::DEFAULT in the documentation
+
+    * Random::DEFAULT is no longer a Random instance, and referencing it is
+      more confusing than helpful. Related to [Feature #17351]
+
+commit f7850bbea8842da3e709cf5759f05b38c20e9dac
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-14 23:55:44 +0900
+
+    NEWS: get rid of unintended link [ci skip]
+
+commit 7ca82ff888ac1fafbe928ed296599f30f25f507b
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2020-12-15 00:05:38 +0900
+
+    * 2020-12-15 [ci skip]
+
+commit 6b3a808b8476b61d6327f0c7a134736c1369779d
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-14 23:57:13 +0900
+
+    Fix code block indents [ci skip]
+
+    RDoc::Markdown requires all block elements nested under bullet
+    list to be indended deeper than the first column of the list.
+
+commit b3e99b36765f99add04e8106b85bb32f3d3022f7
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-14 23:53:50 +0900
+
+    Fix indent for rdoc's markdown
+
+    It seems that nested points need four spaces
+
+commit c2a60fec2f79c05bdb865c143b6ad8eddfc6cc36
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-14 20:13:12 +0900
+
+    Merge Psych-3.2.1 from ruby/psych
+
+commit 27520a1e1e8ac1ef0607a75d654e2cff6d36e15a
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-14 19:39:32 +0900
+
+    Fixed dst name for digest gem
+
+commit 332317472779554f991ffa5bad74c1255828cc21
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-11-26 18:10:42 +0900
+
+    Support shareable_constant_value: literal
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3681
+
+commit 89e489d51d164cf22bce3a7580e5695da22fb347
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-11-13 14:03:25 +0900
+
+    Make shareable_constant_value tri-state
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3681
+
+commit 7060aeedbd69c0888379cbf91f0bb2208bc59308
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-11-02 19:48:17 +0900
+
+    shareable_constant_value: is effective only in comment-only line
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3681
+
+commit 25cf1aca927946595b1325e4fde7f642bba2a706
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-10-22 16:25:28 +0900
+
+    Added continued line case
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3681
+
+commit 78cb9b627b19069abad5b27f1710abacf1eed064
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-10-22 16:24:38 +0900
+
+    Added false case
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3681
+
+commit d19601fb569a2b3adea1bfb1938820314833a475
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-10-21 14:35:42 +0900
+
+    Test by Ractor.shareable?
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3681
+
+commit 11d9983bc340f3cc05da3a87d5d0c63f4f6bd899
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-10-21 14:11:18 +0900
+
+    Make the value shareable deeply
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3681
+
+commit 070a990bcb81ed371fc60e3922f5329b1020aa44
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-10-10 16:24:54 +0900
+
+    Save and pass lex_context wholly
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3681
+
+commit dc1cc33d691faacccd2c12ce3ca75b24cc89dbf9
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-10-10 00:44:14 +0900
+
+    Determine shareable-ness after assignment operator
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3681
+
+commit 60f0c376f762aafadaba38e761d2dc9b0c1c0c82
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-10-09 23:55:22 +0900
+
+    Implemented shareable_constant_value op_asgn
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3681
+
+commit 65450e8f7daf59ca64a12ff1da0efdc0f4280dc1
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-10-20 17:28:12 +0900
+
+    Call FrozenCore.make_shareable
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3681
+
+commit f43c71abe07b4b2b0f8f9a69c567fcd0f38faef6
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-10-09 23:06:13 +0900
+
+    Implemented shareable_constant_value
+
+    It does shallow freeze only for now.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3681
+
+commit b1bd223085d7b97d8de8679894a81b7993c26b28
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-10-09 20:06:30 +0900
+
+    Support shareable_constant_value pragma
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3681
+
+commit 7060d6b721092d56f1cbc084940db960e01671fd
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-14 18:37:22 +0900
+
+    fix condition and add another debug counter
+
+    mc_inline_miss_same_def is added to check same method or not.
+    Also the mc_inline_miss_same_cc calculation was fixed.
+
+commit e889c025501850de9a91012552d38924cc5fb947
+  Author: Junichi Ito <jit@sonicgarden.jp>
+  Date:   2020-12-14 06:01:51 +0900
+
+    Add information to Caveats section in NEWS.md
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3896
+
+commit c37ba2c5478c8fa81f3cb26d7ddb9b79d681147d
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-14 18:17:35 +0900
+
+    add ccs_not_found debug counter
+
+    ccs_not_found to count not found in ccs table.
+
+commit da3be76cb017c188d1a99d8aa14d13c15d93f9d1
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-14 17:56:34 +0900
+
+    add debug counters to survey the IMC miss
+
+commit aacd2295d0f2c982641229e159ff179462d83a36
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-14 16:35:27 +0900
+
+    Debug the command used for gdb dump
+
+    It's not working
+    http://ci.rvm.jp/results/trunk-mjit@phosphorus-docker/3288206. I'm
+    debugging why.
+
+commit 8d83334a695b7454e9b942289eaede843c4c3660
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-14 16:33:54 +0900
+
+    @ruby is the target Ruby in bootstraptest
+
+commit ab869d6b9ba07fa9453d39902d8641c3db485b76
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-14 15:56:13 +0900
+
+    test/ruby/test_method_cache.rb: suppress "assigned but unused variable"
+
+commit 53edb27baccaffe919c2885a9c86312cc51ea9fb
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-14 14:51:39 +0900
+
+    use method cache on Object#respond_to?
+
+    rb_method_boundp (method_boundp) searches method_entry, but this
+    search did not use pCMC, so change to use it.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3899
+
+commit 0362b4c689e319e233691ee052cd703bf8d2baa1
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-14 10:50:22 +0900
+
+    add tests for method cache.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3892
+
+commit a8aa169b8f1f89660037c874e8fc2feaf596a43a
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-14 10:49:07 +0900
+
+    add cc_invalidate_negative debug counter
+
+    counts for invalidating negative cache.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3892
+
+commit 967040ba59799e6b7891168ffbf37cc646988d84
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-13 05:55:18 +0900
+
+    Introduce negative method cache
+
+    pCMC doesn't have negative method cache so this patch  implements it.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3892
+
+commit fa63052be19b26d39b22689ad9969aa83909809e
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-13 01:32:17 +0900
+
+    create ccs with 0 capa
+
+    ccs is created with default 4 capa, but it is too much, so start
+    with 0 and extend to 1, 2, 4, 8, ...
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3892
+
+commit 85a7f723c300c45c8fff40c2595422e13a8d9237
+  Author: Kazuhiro NISHIYAMA <zn@mbf.nifty.com>
+  Date:   2020-12-14 10:26:04 +0900
+
+    Fix a typo [ci skip]
+
+commit 66756c6d4234c5908213ada7934f8773fa7bebc6
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2020-12-14 08:17:34 +0900
+
+    * 2020-12-14 [ci skip]
+
+commit ea6856dcdf9e5909d12e6c4960d4a39fabaac85b
+  Author: Junichi Ito <jit@sonicgarden.jp>
+  Date:   2020-12-14 07:34:10 +0900
+
+    Remove "2.8" from NEWS.md
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3897
+
+commit 6e84af2fa9c5986d9717bfdfe70c88f402742f5c
+  Author: Kazuhiro NISHIYAMA <zn@mbf.nifty.com>
+  Date:   2020-12-13 20:26:22 +0900
+
+    `ulimit` does not affect another shell
+
+commit 12eb5734b3ca1dabfd8286de1d0841d80286fe02
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-13 19:26:47 +0900
+
+    Sorted links by URLs and issue numbers [ci skip]
+
+    ```
+    ruby -e 'puts readlines.sort_by {[_1[%r[(https?://.*?)(?:/\d+)?$],1], _1[/\d+$/].to_i]}'
+    ```
+
+commit a3adb10aacb48efe0ecb059f012969dc08145360
+  Author: Junichi Ito <jit@sonicgarden.jp>
+  Date:   2020-12-13 17:15:34 +0900
+
+    Add NEWS about open-uri and Kernel#open
+
+    There might be a lot of codes using redefined Kernel#open via open-uri, so it's worth mentioning that.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3894
+
+commit c7530f0d568e9772bef22a93907f92d8cd872995
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-13 13:39:57 +0900
+
+    Wait testing/helper threads to terminate
+
+commit 416e402cf3d756dcf9c5b10dc7042adf686efacf
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-13 13:12:18 +0900
+
+    Fixed a suspicious comparison
+
+commit 97e6c28db4cfb2b383870769940ade08cbe1a6bf
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-13 11:34:57 +0900
+
+    Narrowed down unaligned member access region in RB_OBJ_WRITE
+
+    Since UNALIGNED_MEMBER_ACCESS assigns to an intermediate variable,
+    it can cause unused-value warnings.
+
+commit 88f3ce12d32ffbef983b0950743c20253ea2d0c6
+  Author: Kazuki Tsujimoto <kazuki@callcc.net>
+  Date:   2020-12-13 11:50:14 +0900
+
+    Reintroduce `expr in pat` [Feature #17371]
+
+commit a8cf526ae99c9e0823cd8c7c5ac96e43061fafa6
+  Author: Kazuki Tsujimoto <kazuki@callcc.net>
+  Date:   2020-12-13 11:47:02 +0900
+
+    Don't emit warning when the pattern of one-line pattern matching is just a variable pattern
+
+    https://github.com/ruby/dev-meeting-log/blob/master/DevelopersMeeting20201210Japan.md#feature-17371-reintroduce-expr-in-pat-ktsj
+
+commit 1b45174aeaad4ab0e14b37f70d60a1d43ae21adc
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-13 11:47:48 +0900
+
+    Allow dumping a core file on Actions
+
+    to see a C backtrace.
+
+commit 246d7e4f1d92851356d459f424cbc3491135d1ac
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-13 11:46:13 +0900
+
+    Dump a backtrace with gdb
+
+    Because Ruby often fails to dump a C backtrace.
+
+commit 92dfe9aefb62e526bf30b42168ecd4fc9a9db1cf
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2020-12-13 01:30:32 +0900
+
+    * 2020-12-13 [ci skip]
+
+commit 3b7c05ef8dc15371316e5254d33af12928183971
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-13 01:10:49 +0900
+
+    Fixed RUBY_RM_RECURSIVE when autoconf met the required version
+
+    Before 9189cf5793cd527a86b711d15d5fd0633ec082e1 the result of
+    `m4_version_compare` was compared to -1, however the `$2` of
+    `m4_version_prereq` has different meaning and is expanded when
+    the required version met.
+
+commit 7ef5226520cbd13bdbc65a7f3c60188e002b133c
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-12 23:25:15 +0900
+
+    spec: suppress deprecations of "lambda(&proc_block)" pattern
+
+commit efbef729b2aee13241e6f7606f90d407f4530df8
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-12 23:11:47 +0900
+
+    test/ruby/test_lambda.rb: prevent lambda(&proc_block) warnings
+
+commit 248f1ef2821325987b7525fc6c839145d66c65e4
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-12 23:09:11 +0900
+
+    tool/mk_builtin_loader.rb: prevent "assigned but unused variable"
+
+commit 4d2ad8d737c55c3efd4c75131687dd1c8db7441b
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-12 17:20:58 +0900
+
+    Removed obsolete autoconf checks
+
+    Use regular `AC_CHECK_MEMBERS` instead of:
+    * `AC_STRUCT_ST_BLKSIZE`
+    * `AC_STRUCT_ST_BLOCKS`
+    * `AC_STRUCT_ST_RDEV`
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3890
+
+commit 0df67a469561fab80b78478b99703ed893c4db07
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-12 16:06:19 +0900
+
+    Signal handler type should be void
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3889
+
+commit 21c5726418136d6efa98cbf205860a8bee328907
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-12 16:01:10 +0900
+
+    Omit checks for C89 standard or later
+
+    Now we require C99, these features available of course.
+
+    * prototypes
+    * stdarg prototypes
+    * token pasting
+    * stringization
+    * string literal concatenation
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3889
+
+commit e53c0bc906c514ca6f0d40e2140dee1e23b4591e
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-12 15:52:15 +0900
+
+    Add some JIT options to MJIT Actions
+
+    hoping to improve C backtrace outputs
+
+commit 68af5235292f82145c599038b4bff7d9225e62d7
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-12 14:22:59 +0900
+
+    Added parentheses to silence sizeof-array-div warnings [Bug #17385]
+
+    As well as 2366c681166a1dab95de6b9ca8ffcaae18aadd39.
+
+commit 52bca75cde2d888e636301fc43f6371808118154
+  Author: S-H-GAMELINKS <gamelinks007@gmail.com>
+  Date:   2020-12-11 14:20:43 +0900
+
+    Remove unused function declarations
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3886
+
+commit 3e2399134509930f3fe4d98787264f3a2c96af4c
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-12 12:58:45 +0900
+
+    Lock GC while searching the best iseq
+
+    To fix
+    http://ci.rvm.jp/results/trunk-mjit-wait@phosphorus-docker/3286265
+
+commit 4e5156621e3557af98d3d91aff243278e1d8dbef
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-12 11:44:25 +0900
+
+    [DOC] Process::Status.wait return nil if no child processes [ci skip]
+
+commit 70a311fdeb66ce80b562ccc4459c409cea64b74c
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-12 06:54:46 +0900
+
+    trap on non-main ractor
+
+    trap can accept blopck/Proc and it can violate Rator isolation,
+    so the Proc should be isolatable when trap is used on non-main ractor.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3888
+
+commit 124321e0c7ab8dac1ffce78c653cc677f878d5b0
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-12 06:29:11 +0900
+
+    fix lambda's warning and tests
+
+    There are warning condition bugs and test bugs.
+    b53ccb9c69abd24e3bdad66cbe4c7e7480eaef16
+
+commit d741c77b5fd976300815c1ea987e76e92b71122f
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-11 16:37:20 +0900
+
+    fix ivar with shareable objects issue
+
+    Instance variables of sharable objects are accessible only from
+    main ractor, so we need to check it correctly.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3887
+
+commit 31e8de2920935d500105949bda931f3ca22cdbff
+  Author: nicholas a. evans <nicholas.evans@gmail.com>
+  Date:   2020-11-18 09:23:51 +0900
+
+    Let Fiber#raise work with transferring fibers
+
+    This automatically choosess whether to use transfer on a transferring
+    fiber or resume on a yielding fiber.  If the fiber is resuming, it
+    raises a FiberError.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3795
+
+commit e795b632467317cdea07d0599bf2c5d08b403f00
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2020-12-12 00:29:02 +0900
+
+    * 2020-12-12 [ci skip]
+
+commit abbc43413c5cc2a2c26520d22856e316041ea3d1
+  Author: Kazuhiro NISHIYAMA <zn@mbf.nifty.com>
+  Date:   2020-12-12 00:28:08 +0900
+
+    Remove unused link [ci skip]
+
+commit eea756ac861dc7d4a1de67741c8730cb3ca868ca
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-11 23:14:36 +0900
+
+    Strip trailing spaces [ci skip]
+
+commit 68d3952c52de3b7cf4aba10d61085244f1bf449b
+  Author: ima1zumi <mariimaizumi5@gmail.com>
+  Date:   2020-12-11 22:18:36 +0900
+
+    [ruby/reline] Fix breaking to input Emoji with ZWJ.
+
+    https://github.com/ruby/reline/commit/f21dfdbb11
+
+commit ed343c76fbd94dfcd429668b72844e0db87a0b46
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-11 19:54:14 +0900
+
+    RDoc states that Process::Status.wait returns nil if cannot wait
+
+commit 1728eba48a163c09c0e2a918c13d5c08961bf9a9
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-11 19:40:25 +0900
+
+    [DOC] Fixed the RDoc location of Process::Status.wait [ci skip]
+
+commit 885135f84cd609fb1c7be3fa0a20ae77969eae9d
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-11 14:56:48 +0900
+
+    Allow an MJIT worker to show a backtrace on SEGV
+
+    An MJIT worker thread doesn't have ec, and it's required for SDR() and
+    rb_backtrace_print_as_bugreport(). Therefore it must be checked.
+
+commit 4439b783366aa8d7dddbb39673f4074bb062f3d6
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-11 14:36:42 +0900
+
+    Save a core file from bootstraptest
+
+commit a6a68bae3ced278bb41a42d363a0eaee86fa31bd
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-11 14:16:35 +0900
+
+    Removed needless gemspec of webrick
+
+commit 947a5505e50de1321fd26bf9a5b016be33ae189c
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-11 14:15:52 +0900
+
+    Bump webrick-1.7.0 for version management with ruby/webrick.
+
+commit bca57b911a185ab3d0fe19f6f739f6b27bfd48c5
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-11 14:09:34 +0900
+
+    [DOC] Moved RDoc of abort [ci skip]
+
+commit c718c300079573392d4de6f51fbb28b3a34c5341
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-10-04 00:07:37 +0900
+
+    addr2line.c: support debuglink by build_id
+
+    Currently, addr2line.c supports only one path format of debuglink:
+    "/usr/lib/debug/usr/bin/ruby.debug".
+
+    However, recent debian packages seem to use another format by build_id:
+    "/usr/lib/debug/.build-id/ab/cdef1234.debug".
+
+    https://github.com/Debian/debhelper/blob/5d1bb29841043d8e47ebbdd043e6cd086cad508e/dh_strip#L292
+    https://github.com/Debian/debhelper/blob/5d1bb29841043d8e47ebbdd043e6cd086cad508e/dh_strip#L353
+
+    This changeset makes ruby backtrace support the second format.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3627
+
+commit 8c5ec10038a9bbc328eeb3756da207ba5976072d
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-11 10:54:06 +0900
+
+    Link zlib always if available
+
+    Major Linux distribution packages including Debian, Ubuntu, and Fedora
+    use `--compress-debug-sections=no` to build ruby, and then extract and
+    compress debug symbols as separate files. However, the configure option
+    makes ruby not link zlib, thus the generated binary cannot uncompress
+    the compressed separate debug symbol files, and fails to show C level
+    backtrace when a critical error like segfault occurs.
+
+    This change makes ruby always link zlib if it is available so that it
+    can show C level backtrace correctly.
+
+    Related: Debian packages require https://github.com/ruby/ruby/pull/3627
+    to load debug symbol files.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3884
+
+commit 288e93bea872e99ccf706294dc63b8a2b139ea2c
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-11 13:40:03 +0900
+
+    Exclude parenthesized function declarations such as NORETURN
+
+    Fixes https://github.com/ruby/ruby/pull/3883
+
+commit b53ccb9c69abd24e3bdad66cbe4c7e7480eaef16
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-11 11:54:50 +0900
+
+    show deprecation warning correctly for lambda(&b)
+
+    lambda(&b) where b is given block of method (like: def foo(&b))
+    should warn correctly.
+    [Feature #17361]
+
+    Also labmda(&labmda_block) or lambda(&:to_s) (Symbol#to_proc)
+    should not warn (but I'm not sure who cares about it).
+
+commit ad6573163f4a7b7eedb904f2f6f730c3cd2669e3
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-11 11:52:19 +0900
+
+    add RUNOPT and RUNOPT0 for dev rules.
+
+    run, runruby, ... accept RUNOPT and RUNOPT0 configuration to pass
+    some commandline argument like that:
+
+      $(BTESTRUBY) $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
+
+    RUNOPT0 is options for ruby interpreter (-w, -v, ...)
+    RUNOPT is options for the script (ARGV/ARGF)
+
+commit 56918578ea48ef3bc6a5f27f884fb2cccbe02c06
+  Author: Masaki Matsushita <glass.saga@gmail.com>
+  Date:   2020-12-11 11:13:13 +0900
+
+    Remove unimplemented parameter from comment
+
+    :resolv_timeout of TCPSocket.new is not implemented for now.
+
+commit 974e89ae0743e591f0034de6c8dfc41a81d6429d
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-11 09:54:34 +0900
+
+    revert da3bca513f437b05b3953c3712ff48621fc5e008
+
+    It seems introduce critical problems. Now I could not find
+    out the issue.
+
+    http://ci.rvm.jp/results/trunk-test@ruby-sky1/3286048
+
+commit 9b0c36b39032cffff3c62a2b0e1fc38fa429f5ea
+  Author: Kenta Murata <mrkn@users.noreply.github.com>
+  Date:   2020-12-11 09:41:12 +0900
+
+    Import fiddle-1.0.4 (#3860)
+
+    I don't use tool/sync_default_gem.rb because the last sync was incomplete.
+
+    Co-authored-by: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+    Co-authored-by: Alan Wu <XrXr@users.noreply.github.com>
+    Co-authored-by: sinisterchipmunk <sinisterchipmunk@gmail.com>
+    Co-authored-by: Sutou Kouhei <kou@clear-code.com>
+
+  Notes:
+    Merged-By: mrkn <mrkn@ruby-lang.org>
+
+commit 6b1d2de6cc2e85fda7885fe77dbd7c99c4eb1ef2
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-11 07:40:22 +0900
+
+    Unfortunately getinstancevariable was still not leaf
+
+    https://github.com/ruby/ruby/runs/1533401436
+
+commit 97868f16ff764e60176e817db101e65c9d58eff3
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-11 06:00:02 +0900
+
+    Reintroduce the fix again
+
+commit 4474aadae8d6610cc5b1c62156739d4245a1a38c
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-11 04:48:54 +0900
+
+    Fix the path properly
+
+    :disappointed:
+
+commit f56ab7a4764131e5c01e279623e2a141442426a8
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-11 04:18:23 +0900
+
+    Try fixing the -I position
+
+    https://github.com/ruby/ruby/runs/1532260149
+    :thinking:
+
+commit dca13e2bf7b7efeb2841a039e3cfd7b5cd650a7b
+  Author: Jeremy Evans <code@jeremyevans.net>
+  Date:   2020-12-09 02:00:04 +0900
+
+    Make ruby -We the same as ruby -W -e
+
+    This changes the behavior, which I'm not sure is acceptable.
+    However, it's odd to allow an option to be combined, but change
+    the behavior of the option when combined.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3867
+
+commit 699608487d2ff09bb5c610a9d1e6e13f5bd2a25e
+  Author: Jeremy Evans <code@jeremyevans.net>
+  Date:   2020-12-11 00:36:55 +0900
+
+    Make getinstancevariable a leaf instruction
+
+    It can no longer issue a warning.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3879
+
+commit 01b7d5acc702df22d306ae95f1a9c3096e63e624
+  Author: Jeremy Evans <code@jeremyevans.net>
+  Date:   2020-12-10 13:53:02 +0900
+
+    Remove the uninitialized instance variable verbose mode warning
+
+    This speeds up all instance variable access, even when not in
+    verbose mode.  Uninitialized instance variable warnings were
+    rarely helpful, and resulted in slower code if you wanted to
+    avoid warnings when run in verbose mode.
+
+    Implements [Feature #17055]
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3879
+
+commit 4a559aa22537bbd2f17c7babb1aca48d1a3a4647
+  Author: MSP-Greg <MSP-Greg@users.noreply.github.com>
+  Date:   2020-12-11 02:27:02 +0900
+
+    Actions mingw - add tool/test for WEBrick in spec tests (#3882)
+
+    Some spec tests require WEBrick, and the spec tests are run from install with the MinGW CI.
+
+  Notes:
+    Merged-By: k0kubun <takashikkbn@gmail.com>
+
+commit f3c19ddfbcfde63505a34b7a5b3a640f23b22dc0
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-11 00:09:09 +0900
+
+    Show C backtrace appropriately at core dump for GCC 8 or later
+
+    When ruby is compiled by GCC 8 or later, some frames of C level
+    backtrace information lacks.
+
+    ```
+    $ ./miniruby -e '1.times { Process.kill(:SEGV, $$) }'
+
+    ...
+
+    -- C level backtrace information
+    -------------------------------------------
+    /home/mame/work/ruby-gcc-9/miniruby(rb_vm_bugreport+0x611) [0x558a5fdcbc21] ../ruby/vm_dump.c:758
+    [0x558a5fbc789a]
+    /home/mame/work/ruby-gcc-9/miniruby(sigsegv+0x4d) [0x558a5fd1eaed] ../ruby/signal.c:959
+    /lib/x86_64-linux-gnu/libpthread.so.0(__restore_rt+0x0) [0x7f687e6713c0]
+    /lib/x86_64-linux-gnu/libc.so.6(kill+0xb) [0x7f687e31355b] ../sysdeps/unix/syscall-template.S:78
+    /home/mame/work/ruby-gcc-9/miniruby(rb_f_kill+0x350) [0x558a5fd1fe60] ../ruby/signal.c:480
+    [0x558a5fda50d3]
+    [0x558a5fdb085c]
+    [0x558a5fdb0fe7]
+    [0x558a5fdbae1a]
+    [0x558a5fdaf484]
+    /home/mame/work/ruby-gcc-9/miniruby(rb_yield_1+0x29f) [0x558a5fdb2fbf] ../ruby/vm.c:1265
+    /home/mame/work/ruby-gcc-9/miniruby(int_dotimes+0x5c) [0x558a5fc72f2c] ../ruby/numeric.c:5198
+    [0x558a5fda50d3]
+    [0x558a5fdb085c]
+    [0x558a5fdb0fe7]
+    [0x558a5fdbaf21]
+    [0x558a5fdaf484]
+    /home/mame/work/ruby-gcc-9/miniruby(rb_ec_exec_node+0xed) [0x558a5fbcc4fd] ../ruby/eval.c:317
+    /home/mame/work/ruby-gcc-9/miniruby(ruby_run_node+0x4f) [0x558a5fbd110f] ../ruby/eval.c:375
+    /home/mame/work/ruby-gcc-9/miniruby(main+0x73) [0x558a5fb2c083] ../ruby/main.c:50
+    ```
+
+    By this one-line change, it shows all locations.
+
+    ```
+    $ ./miniruby -e '1.times { Process.kill(:SEGV, $$) }'
+
+    ...
+
+    -- C level backtrace information -------------------------------------------
+    /home/mame/work/ruby-gcc-9/miniruby(rb_print_backtrace+0x11) [0x558247adec21] ../ruby/vm_dump.c:758
+    /home/mame/work/ruby-gcc-9/miniruby(rb_vm_bugreport) ../ruby/vm_dump.c:956
+    /home/mame/work/ruby-gcc-9/miniruby(rb_bug_for_fatal_signal+0x15a) [0x5582478da89a] ../ruby/error.c:773
+    /home/mame/work/ruby-gcc-9/miniruby(sigsegv+0x4d) [0x558247a31aed] ../ruby/signal.c:959
+    /lib/x86_64-linux-gnu/libpthread.so.0(__restore_rt+0x0) [0x7f82202f73c0]
+    /lib/x86_64-linux-gnu/libc.so.6(kill+0xb) [0x7f821ff9955b] ../sysdeps/unix/syscall-template.S:78
+    /home/mame/work/ruby-gcc-9/miniruby(rb_f_kill+0x350) [0x558247a32e60] ../ruby/signal.c:480
+    /home/mame/work/ruby-gcc-9/miniruby(vm_call_cfunc_with_frame+0x123) [0x558247ab80d3] ../ruby/vm_insnhelper.c:2821
+    /home/mame/work/ruby-gcc-9/miniruby(vm_call_method_each_type+0x7c) [0x558247ac385c] ../ruby/vm_insnhelper.c:3324
+    /home/mame/work/ruby-gcc-9/miniruby(vm_call_method+0xc7) [0x558247ac3fe7] ../ruby/vm_insnhelper.c:3428
+    /home/mame/work/ruby-gcc-9/miniruby(vm_sendish+0x14) [0x558247acde1a] ../ruby/vm_insnhelper.c:4412
+    /home/mame/work/ruby-gcc-9/miniruby(vm_exec_core) ../ruby/insns.def:789
+    /home/mame/work/ruby-gcc-9/miniruby(rb_vm_exec+0x1a4) [0x558247ac2484] ../ruby/vm.c:2165
+    /home/mame/work/ruby-gcc-9/miniruby(rb_yield_1+0x29f) [0x558247ac5fbf] ../ruby/vm.c:1265
+    /home/mame/work/ruby-gcc-9/miniruby(int_dotimes+0x5c) [0x558247985f2c] ../ruby/numeric.c:5198
+    /home/mame/work/ruby-gcc-9/miniruby(vm_call_cfunc_with_frame+0x123) [0x558247ab80d3] ../ruby/vm_insnhelper.c:2821
+    /home/mame/work/ruby-gcc-9/miniruby(vm_call_method_each_type+0x7c) [0x558247ac385c] ../ruby/vm_insnhelper.c:3324
+    /home/mame/work/ruby-gcc-9/miniruby(vm_call_method+0xc7) [0x558247ac3fe7] ../ruby/vm_insnhelper.c:3428
+    /home/mame/work/ruby-gcc-9/miniruby(vm_sendish+0x14) [0x558247acdf21] ../ruby/vm_insnhelper.c:4412
+    /home/mame/work/ruby-gcc-9/miniruby(vm_exec_core) ../ruby/insns.def:770
+    /home/mame/work/ruby-gcc-9/miniruby(rb_vm_exec+0x1a4) [0x558247ac2484] ../ruby/vm.c:2165
+    /home/mame/work/ruby-gcc-9/miniruby(rb_ec_exec_node+0xed) [0x5582478df4fd] ../ruby/eval.c:317
+    /home/mame/work/ruby-gcc-9/miniruby(ruby_run_node+0x4f) [0x5582478e410f] ../ruby/eval.c:375
+    /home/mame/work/ruby-gcc-9/miniruby(main+0x73) [0x55824783f083] ../ruby/main.c:50
+    ```
+
+    Details:
+
+    In short, it is an uninitialized variable bug.
+
+    Until GCC 7, all function locations are represented by a pair of
+    DW_AT_low_pc and DW_AT_high_pc in DWARF information.
+    But since GCC 8, some functions are split to multiple chunks, which are
+    represented by DW_AT_ranges.
+    DW_AT_ranges are represented as offsets from a base address.
+    According to DWARF specification, it is the base address of the
+    compilation unit, but GCC seems to use zero as default.
+    The function "di_read_cu" in addr2line.c had a comment about the fact.
+    However, the base address wasn't initialized as zero.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3881
+
+commit 7f4c31d6a38f11046bb9e5a9aa1139d91c0eb289
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2020-12-11 01:19:47 +0900
+
+    * 2020-12-11 [ci skip]
+
+commit b72f613210de7b80ce76edb9beef2101d4311d68
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-11 00:56:06 +0900
+
+    Suppress a "clobbered" warning by gcc on macOS
+
+commit 673fcb7e9a31b0021783dfe73b41eeb5210b6b28
+  Author: Kazuhiro NISHIYAMA <zn@mbf.nifty.com>
+  Date:   2020-12-10 21:48:04 +0900
+
+    Fix a link [ci skip]
+
+commit 73db60bdda64fab43f6ba4d1902337a39715fd91
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-10 21:41:47 +0900
+
+    include/ruby/memory_view.h: fix the return type of rb_memory_view_prepare_item_desc
+
+commit 0fcd478a4e50af309ad8a1a7afc3e121609ebbf3
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-10 21:35:53 +0900
+
+    include/ruby/memory_view.h: fix typo
+
+commit d5dfc3f2c833d62e4e0fb3145ed729f48b8e2a66
+  Author: Kazuhiro NISHIYAMA <zn@mbf.nifty.com>
+  Date:   2020-12-10 21:04:57 +0900
+
+    Use `abort(message)` instead of `puts` and `exit`
+
+commit 78f188524f551c97b1a7a44ae13514729f1a21c7
+  Author: Masaki Matsushita <glass.saga@gmail.com>
+  Date:   2020-09-25 16:20:18 +0900
+
+    Add connect_timeout to TCPSocket
+
+    Add connect_timeout to TCPSocket.new in the same way as Socket.tcp.
+
+    Closes [Feature #17187]
+
+commit 658b4ff60934b9fb6845e214fda83229e631e366
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-10 18:55:03 +0900
+
+    Fixed the test failures called WEBrick.new directly
+
+commit 72f1c43584df714a011864ca9fafc6e15ace392c
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-10 13:27:08 +0900
+
+    ObjectSpace._id2ref should not support unshareable
+
+    ObjectSpace._id2ref(id) can return any objects even if they are
+    unshareable, so this patch raises RangeError if it runs on multi-ractor
+    mode and the found object is unshareable.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3878
+
+commit 7856da5fe75a76bec909778e411270c10a04ca3a
+  Author: NARUSE, Yui <naruse@airemix.jp>
+  Date:   2020-12-09 17:41:21 +0900
+
+    remove bz2
+
+commit 142f154a0a0863dc48cf767b2d1b5acec0371999
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-10 18:16:15 +0900
+
+    Unpoison freelist to chain
+
+commit 9a17437558e42aa1da372b515ba8bc18067d578c
+  Author: Lourens Naudé <lourens@bearmetal.eu>
+  Date:   2019-11-26 22:07:49 +0900
+
+    Right size literal regular expression buffers on compile
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/2696
+
+commit e7433a3288b48f90447bc8ebb1531f57be17392c
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-10 16:20:21 +0900
+
+    Added help message for gem i webrick in rdoc
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3729
+
+commit 4ccc66265cdef0480eb6ff46f6be9f8de1a01891
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-11-03 07:14:36 +0900
+
+    Added help message for gem i webrick in gem server command
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3729
+
+commit b084f8abcf5b7310ce8f08d48a1a3f3e56876123
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-11-03 07:11:40 +0900
+
+    Completely removed webrick
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3729
+
+commit 880727f037ee7dfeeb3dbc9027622798d46fdbac
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-11-02 20:02:12 +0900
+
+    Added help message for gem i webrick in un.rb
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3729
+
+commit 05cc58c2ebc467ebc18897b1aef2c2089b26adf3
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-11-02 19:58:57 +0900
+
+    webrick was removed from ruby repo
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3729
+
+commit 0e73b49b4c35a3ae8fd5530a730556b4e4ef4377
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-11-02 19:57:27 +0900
+
+    Promote webrick to bundled gems
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3729
+
+commit 087ac34fb2f6fa74bd84a290d511f4d47a286119
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-11-02 16:48:20 +0900
+
+    Added tool/lib into test-spec loadpath
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3729
+
+commit 5dc786bf86bb6e0da2639f88659598ec8b9db30d
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-11-02 13:44:28 +0900
+
+    Move webrick library into internal test toolchain
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3729
+
+commit 46d3ea2c2569e2e5a9ee3e7e206f07f0f8b693f5
+  Author: 卜部昌平 <shyouhei@ruby-lang.org>
+  Date:   2020-12-10 17:41:39 +0900
+
+    .github: reduce (#3876)
+
+    Comment out some 50-ish tests.
+    fix https://bugs.ruby-lang.org/issues/17376
+
+commit 9e8f732f397ec73ebcab2d121f02c909c8f06755
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-10 17:21:59 +0900
+
+    Revert "Revert some recent JIT changes"
+
+    This reverts commit b7dc04e51823f9fe8b5355c30a304ecdb11fe5ed.
+
+    This should be fine, rather necessary, too.
+
+commit 12a1a2518161bda1d893920f70e936c82925e758
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-10 17:21:33 +0900
+
+    Revert "Revert "Have list_node at the top of rb_mjit_unit""
+
+    This reverts commit 73b07c437e24711c23dd2dd01d3ffc5f1012e046.
+
+    This was, of course, innocent.
+
+commit 16c765990ceaf5fb1efaeba2850083cfec7c137e
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-10 17:17:59 +0900
+
+    Use list_for_each_safe when list_del is used inside
+
+    list_for_each seems to cause all the SEGVs we've seen.
+
+commit da3bca513f437b05b3953c3712ff48621fc5e008
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-10 10:58:25 +0900
+
+    cache free pages per ractor
+
+    Per ractor method cache (GH-#3842) only cached 1 page and this patch
+    caches several pages to keep at least 512 free slots if available.
+    If you increase the number of cached free slots, all cached slots
+    will be collected when the GC is invoked.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3875
+
+commit 554c0949777cd495e5a1296bd6719fcf508a70d0
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-10 10:38:30 +0900
+
+    set min/maximum free slots relative to ractor cnt
+
+    A program with multiple ractors can consume more objects per
+    unit time, so this patch set minimum/maximum free_slots to
+    relative to ractors count (upto 8).
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3875
+
+commit eafe000af3d363f6cb65be99edcfccedf35d801c
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-10 10:28:53 +0900
+
+    lazy sweep tries to collect 2048 slots
+
+    Lazy sweep tries to collect free (unused) slots incrementally, and
+    it only collect a few pages. This patch makes lazy sweep collects
+    more objects (at least 2048 objects) and GC overhead of multi-ractor
+    execution will be reduced.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3875
+
+commit 2544f7196ee7d157000244ca9cac55514e3b193d
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-10 00:58:44 +0900
+
+    test/ruby/test_arithmetic_sequence.rb: restore test_last_bug17218
+
+    And rename the existing `test_last_bug17218` to `test_to_a_bug17218`.
+
+commit bb489aca5815acf3afd43ec9e3cdae008d882e3a
+  Author: Kenta Murata <mrkn@users.noreply.github.com>
+  Date:   2020-12-10 00:24:36 +0900
+
+    memory_view.c: Add rb_memory_view_get_item and rb_memory_view_prepare_item_desc (#3871)
+
+  Notes:
+    Merged-By: mrkn <mrkn@ruby-lang.org>
+
+commit 549118b3e29713835226d4088ba65f58eee7c054
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2020-12-10 00:17:44 +0900
+
+    * 2020-12-10 [ci skip]
+
+commit 3156fb0f2c3ebf8229f392c8502c08fe165ab181
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-10 00:16:49 +0900
+
+    test/ruby/test_arithmetic_sequence.rb: remove a duplicated test
+
+    There is another "test_last_bug17218"
+
+commit fad3023e94c45e7f03478732f7641b6f39ba9d12
+  Author: Kenta Murata <mrkn@users.noreply.github.com>
+  Date:   2020-12-09 18:48:59 +0900
+
+    Fix ArithmeticSequence#last and ArithmeticSequence#each for non-integer sequences (#3870)
+
+    [Bug #17218]
+    [ruby-core:100312]
+
+  Notes:
+    Merged-By: mrkn <mrkn@ruby-lang.org>
+
+commit cacdf2681dcc7c431973f33a18979b10566ec2f9
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-09 18:21:00 +0900
+
+    [ruby/matrix] Disable Ractor test
+
+commit 150dbb656dd8c479f32db3bc83ae9fc57fe48608
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-09 14:30:05 +0900
+
+    [ruby/matrix] v0.3.1
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3869
+
+commit a7dccd08e7c9cf0e5d0c0fdbe659ccc921624e6f
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-09-27 04:49:43 +0900
+
+    [ruby/matrix] Make frozen matrices Ractor shareable
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3869
+
+commit 6b264e833f9b9c86819feff88048ffcdf8d67af8
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-09 15:24:16 +0900
+
+    [ruby/prime] Fix gemspec
+
+commit 45b29754cfba8435bc4980a87cd0d32c648f8a2e
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-09 14:49:06 +0900
+
+    need the lock for debug checking.
+
+    Checking code (RGENGC_CHECK_MODE > 0) need a VM lock because it
+    refers objspace.
+
+commit 47ff8de645b6791f961f2c971436f035534209a5
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-09 15:03:29 +0900
+
+    Update maintainers list [doc] [ci skip]
+
+commit b603085d2f4b997541247f8eab864f92f9b5f006
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-09 14:45:56 +0900
+
+    [ruby/prime] v0.1.2
+
+commit 1866d483dce614a02c5186bd0588b48a5041e55e
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-05 14:20:39 +0900
+
+    [ruby/prime] Optimize `Integer#prime?`
+
+    Miller Rabin algorithm can be used to test primality for integers smaller than a max value "MaxMR" (~3e24)
+
+    It can be much faster than previous implementation: ~100x faster for numbers with 13 digits, at least 5 orders of magnitude for even larger numbers (previous implementation is so slow that it requires more patience than I have for more precise estimate).
+
+    Miller Rabin test becomes faster than previous implementation at somewhere in the range 1e5-1e6. It seems that the range 62000..66000 is where Miller Rabin starts being always faster, so I picked 0xffff arbitrarily; before that, or above "MaxMR", the previous implementation remains.
+
+    I compared the `faster_prime` gem too. It is slower than previous implementation up to ~1e4. After that it becomes faster and faster compared to previous implementation, but is still slower than Miller Rabin starting at ~1e5 and up to MaxMR. Thus, after this commit, builtin `Integer#prime?` will be similar or faster than `faster_prime` up to "MaxMR".
+
+    Adapted from patch of Stephen Blackstone [Feature #16468]
+
+    Benchmark results and code: https://gist.github.com/marcandre/b263bdae488e76dabdda84daf73733b9
+
+    Co-authored-by: Stephen Blackstone <sblackstone@gmail.com>
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3847
+
+commit dea600046aa5895e745a8d655ff90616705e11a6
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-09 13:10:28 +0900
+
+    Ad-hoc fix of test-bundler
+
+commit b419f90a8bc3e472635a813e56cc2153b3125b41
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-09 11:49:20 +0900
+
+    Tweaked `Process::Status.wait`
+
+    * revert `rb_last_status_set`
+    * renamed the new function as `rb_process_status_new`
+    * `rb_process_status_new` always freezes the return value
+    * marked `Process::Status.wait` as EXPERIMENTAL, as it has not
+      been discussed totally yet.
+
+commit 4f907a80f04292e472d2eea660c4f5c0cb62e00f
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-09 11:32:18 +0900
+
+    Removed declaration of non-existent symbol
+
+commit 27b6df9653e88e83c6a524149ef44070802770c5
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-10-24 06:42:48 +0900
+
+    Add test that `Ractor.make_shareable` calls user defined `#freeze`
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3694
+
+commit 2553c5f94a5d51c2c5876b31e4c1521ad9be12f6
+  Author: Samuel Williams <samuel.williams@oriontransfer.co.nz>
+  Date:   2020-12-08 05:29:09 +0900
+
+    Add support for non-blocking `Process.wait`.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3853
+
+commit a4a92ae6d99a75e11165ca09c44ccf47cf342047
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2020-12-09 01:41:06 +0900
+
+    * 2020-12-09 [ci skip]
+
+commit ee194af2aa170c0cb1bfd5fed4e84259a8150ece
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-08 00:42:20 +0900
+
+    re-layout rb_ractor_t
+
+    separate synchronization data and ractor local data.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3858
+
+commit 2749123e213007e20d2f5e65ce941ff53feb4c76
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-08 19:33:43 +0900
+
+    Supported category option in Warning#warn
+
+commit d5ffa4e9a43ebdd451fb2c46529d301dec03f666
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-08 19:32:33 +0900
+
+    [DOC] mentioned category option
+
+commit 2427393b4d1ea0557362b106044e3aba3da32370
+  Author: Kenta Murata <mrkn@users.noreply.github.com>
+  Date:   2020-12-08 21:58:08 +0900
+
+    Revert "test/fiddle/helper.rb: remove duplication (#3863)" (#3865)
+
+    This reverts commit bd47a8d660ab33a20c5e28d0effcc29105c434e4.
+
+    `libc_so` and `libm_so` are `nil` at line 124 because Big Sur doesn't have `/usr/lib/libSystem.B.dylib`.
+    The reassignment at line 127 is necessary in this case.
+
+  Notes:
+    Merged-By: mrkn <mrkn@ruby-lang.org>
+
+commit 30d4a7ad9a1f629d84b9b0e22db4ba146e63fd61
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-08 21:42:03 +0900
+
+    Update rubygems.org links for published default gems.
+
+commit 09229c71bcdc82b2e7c3138baa4cb2696b97ec5d
+  Author: Samuel Williams <samuel.williams@oriontransfer.co.nz>
+  Date:   2020-12-08 17:21:28 +0900
+
+    Fix "Ruby is not properly fortified on armv7hl".
+
+
+    See <https://bugs.ruby-lang.org/issues/16762> for more details.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3866
+
+commit aeeaf90b7ee8230425e8c68cb9cfc962b0a186f4
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-08 18:38:25 +0900
+
+    Added missing dependency of fileutils
+
 commit d7a16670c30160cf7f0d57d2a970faefb331a024
   Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
   Date:   2020-12-08 17:49:51 +0900
@@ -447,7 +3929,7 @@ commit 1d0bf3d8dd8de40d498a7c2784a84aa566d290b9
   Author: Koichi Sasada <ko1@atdot.net>
   Date:   2020-12-05 05:42:44 +0900
 
-    log for the beggining of vm_lock_enter
+    log for the beginning of vm_lock_enter
 
     Before this patch, there is no information to start locking.
 
