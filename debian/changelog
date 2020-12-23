@@ -1,3 +1,12 @@
+ruby3.0 (3.0.0~rc1-1) experimental; urgency=medium
+
+  * New upstream version 3.0.0~rc1
+  * Refresh d/patches
+  * Don't run test_class_no_openssl_override test
+  * Update symbols file
+
+ -- Utkarsh Gupta <utkarsh@debian.org>  Wed, 23 Dec 2020 21:28:34 +0530
+
 ruby3.0 (3.0.0~preview2-1) experimental; urgency=medium
 
   * New upstream version 3.0.0~preview2
