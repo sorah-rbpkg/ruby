@@ -1140,7 +1140,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		if (*++s) {
 		    v = scan_oct(s, 1, &numlen);
 		    if (numlen == 0)
-			v = 1;
+                        v = 2;
 		    s += numlen;
 		}
 		if (!opt->warning) {
@@ -1747,7 +1747,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     }
 
     if (opt->src.enc.name)
-	rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
+        /* cannot set deprecated category, as enabling deprecation warnings based on flags
+         * has not happened yet.
+         */
+        rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
 #if USE_MJIT
     if (opt->features.set & FEATURE_BIT(jit)) {
@@ -2244,9 +2247,13 @@ open_load_file(VALUE fname_v, int *xflag)
 	rb_update_max_fd(fd);
 
 #if defined HAVE_FCNTL && MODE_TO_LOAD != O_RDONLY
+# ifdef ENOTSUP
+#   define IS_SUPPORTED_OP(e) ((e) != ENOTSUP)
+# else
+#   define IS_SUPPORTED_OP(e) ((void)(e), 1)
+# endif
 	/* disabling O_NONBLOCK */
-	if (fcntl(fd, F_SETFL, 0) < 0) {
-	    e = errno;
+	if (fcntl(fd, F_SETFL, 0) < 0 && IS_SUPPORTED_OP(e = errno)) {
 	    (void)close(fd);
 	    rb_load_fail(fname_v, strerror(e));
 	}

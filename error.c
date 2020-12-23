@@ -63,6 +63,7 @@
 VALUE rb_iseqw_local_variables(VALUE iseqval);
 VALUE rb_iseqw_new(const rb_iseq_t *);
 int rb_str_end_with_asciichar(VALUE str, int c);
+VALUE rb_ident_hash_new(void);
 
 long rb_backtrace_length_limit = -1;
 VALUE rb_eEAGAIN;
@@ -73,8 +74,11 @@ static VALUE rb_cWarningBuffer;
 
 static ID id_warn;
 static ID id_category;
+static ID id_deprecated;
+static ID id_experimental;
 static VALUE sym_category;
 static VALUE warning_categories;
+static VALUE warning_category_t_map;
 
 extern const char ruby_description[];
 
@@ -158,18 +162,13 @@ rb_warning_category_mask(VALUE category)
 rb_warning_category_t
 rb_warning_category_from_name(VALUE category)
 {
-    rb_warning_category_t cat = RB_WARN_CATEGORY_NONE;
+    VALUE cat_value;
     Check_Type(category, T_SYMBOL);
-    if (category == ID2SYM(rb_intern("deprecated"))) {
-        cat = RB_WARN_CATEGORY_DEPRECATED;
-    }
-    else if (category == ID2SYM(rb_intern("experimental"))) {
-        cat = RB_WARN_CATEGORY_EXPERIMENTAL;
-    }
-    else {
+    cat_value = rb_hash_aref(warning_categories, category);
+    if (cat_value == Qnil) {
         rb_raise(rb_eArgError, "unknown category: %"PRIsVALUE, category);
     }
-    return cat;
+    return NUM2INT(cat_value);
 }
 
 void
@@ -238,7 +237,7 @@ rb_warning_s_aset(VALUE mod, VALUE category, VALUE flag)
  *
  * Writes warning message +msg+ to $stderr. This method is called by
  * Ruby for all emitted warnings. A +category+ may be included with
- * the warning, but is ignored by default.
+ * the warning.
  *
  * See the documentation of the Warning module for how to customize this.
  */
@@ -248,13 +247,17 @@ rb_warning_s_warn(int argc, VALUE *argv, VALUE mod)
 {
     VALUE str;
     VALUE opt;
-    VALUE category;
+    VALUE category = Qnil;
 
     rb_scan_args(argc, argv, "1:", &str, &opt);
     if (!NIL_P(opt)) rb_get_kwargs(opt, &id_category, 0, 1, &category);
 
     Check_Type(str, T_STRING);
     rb_must_asciicompat(str);
+    if (!NIL_P(category)) {
+        rb_warning_category_t cat = rb_warning_category_from_name(category);
+        if (!rb_warning_category_enabled_p(cat)) return Qnil;
+    }
     rb_write_error_str(str);
     return Qnil;
 }
@@ -301,7 +304,8 @@ rb_warning_warn(VALUE mod, VALUE str)
 
 
 static int
-rb_warning_warn_arity(void) {
+rb_warning_warn_arity(void)
+{
     return rb_method_entry_arity(rb_method_entry(rb_singleton_class(rb_mWarning), id_warn));
 }
 
@@ -310,7 +314,7 @@ rb_warn_category(VALUE str, VALUE category)
 {
     if (category != Qnil) {
         category = rb_to_symbol_type(category);
-        if (rb_hash_aref(warning_categories, category) != Qtrue) {
+        if (!RTEST(rb_hash_aref(warning_categories, category))) {
             rb_raise(rb_eArgError, "invalid warning category used: %s", rb_id2name(SYM2ID(category)));
         }
     }
@@ -371,6 +375,20 @@ rb_compile_warning(const char *file, int line, const char *fmt, ...)
     rb_write_warning_str(str);
 }
 
+void
+rb_category_compile_warn(rb_warning_category_t category, const char *file, int line, const char *fmt, ...)
+{
+    VALUE str;
+    va_list args;
+
+    if (NIL_P(ruby_verbose)) return;
+
+    va_start(args, fmt);
+    str = warn_vsprintf(NULL, file, line, fmt, args);
+    va_end(args);
+    rb_warn_category(str, rb_hash_fetch(warning_category_t_map, INT2NUM(category)));
+}
+
 static VALUE
 warning_string(rb_encoding *enc, const char *fmt, va_list args)
 {
@@ -396,11 +414,11 @@ rb_warn(const char *fmt, ...)
 }
 
 void
-rb_category_warn(const char *category, const char *fmt, ...)
+rb_category_warn(rb_warning_category_t category, const char *fmt, ...)
 {
     if (!NIL_P(ruby_verbose)) {
         with_warning_string(mesg, 0, fmt) {
-            rb_warn_category(mesg, ID2SYM(rb_intern(category)));
+            rb_warn_category(mesg, rb_hash_fetch(warning_category_t_map, INT2NUM(category)));
         }
     }
 }
@@ -428,11 +446,11 @@ rb_warning(const char *fmt, ...)
 
 /* rb_category_warning() reports only in verbose mode */
 void
-rb_category_warning(const char *category, const char *fmt, ...)
+rb_category_warning(rb_warning_category_t category, const char *fmt, ...)
 {
     if (RTEST(ruby_verbose)) {
         with_warning_string(mesg, 0, fmt) {
-            rb_warn_category(mesg, ID2SYM(rb_intern(category)));
+            rb_warn_category(mesg, rb_hash_fetch(warning_category_t_map, INT2NUM(category)));
         }
     }
 }
@@ -470,7 +488,7 @@ rb_warn_deprecated(const char *fmt, const char *suggest, ...)
     rb_str_cat_cstr(mesg, " is deprecated");
     if (suggest) rb_str_catf(mesg, "; use %s instead", suggest);
     rb_str_cat_cstr(mesg, "\n");
-    rb_warn_category(mesg, ID2SYM(rb_intern("deprecated")));
+    rb_warn_category(mesg, ID2SYM(id_deprecated));
 }
 
 void
@@ -484,7 +502,7 @@ rb_warn_deprecated_to_remove(const char *fmt, const char *removal, ...)
     va_end(args);
     rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
     rb_str_catf(mesg, " is deprecated and will be removed in Ruby %s\n", removal);
-    rb_warn_category(mesg, ID2SYM(rb_intern("deprecated")));
+    rb_warn_category(mesg, ID2SYM(id_deprecated));
 }
 
 static inline int
@@ -2574,6 +2592,8 @@ syserr_eqq(VALUE self, VALUE exc)
  */
 
 /*
+ *  Document-class: Exception
+ *
  *  \Class Exception and its subclasses are used to communicate between
  *  Kernel#raise and +rescue+ statements in <code>begin ... end</code> blocks.
  *
@@ -2817,6 +2837,8 @@ Init_Exception(void)
     id_i_path = rb_intern_const("@path");
     id_warn = rb_intern_const("warn");
     id_category = rb_intern_const("category");
+    id_deprecated = rb_intern_const("deprecated");
+    id_experimental = rb_intern_const("experimental");
     id_top = rb_intern_const("top");
     id_bottom = rb_intern_const("bottom");
     id_iseq = rb_make_internal_id();
@@ -2824,10 +2846,18 @@ Init_Exception(void)
 
     sym_category = ID2SYM(id_category);
 
-    warning_categories = rb_hash_new();
+    warning_categories = rb_ident_hash_new();
     rb_gc_register_mark_object(warning_categories);
-    rb_hash_aset(warning_categories, ID2SYM(rb_intern_const("deprecated")), Qtrue);
+    rb_hash_aset(warning_categories, ID2SYM(id_deprecated), INT2NUM(RB_WARN_CATEGORY_DEPRECATED));
+    rb_hash_aset(warning_categories, ID2SYM(id_experimental), INT2NUM(RB_WARN_CATEGORY_EXPERIMENTAL));
     rb_obj_freeze(warning_categories);
+
+    warning_category_t_map = rb_ident_hash_new();
+    rb_gc_register_mark_object(warning_category_t_map);
+    rb_hash_aset(warning_category_t_map, INT2NUM(RB_WARN_CATEGORY_NONE), Qnil);
+    rb_hash_aset(warning_category_t_map, INT2NUM(RB_WARN_CATEGORY_DEPRECATED), ID2SYM(id_deprecated));
+    rb_hash_aset(warning_category_t_map, INT2NUM(RB_WARN_CATEGORY_EXPERIMENTAL), ID2SYM(id_experimental));
+    rb_obj_freeze(warning_category_t_map);
 }
 
 void

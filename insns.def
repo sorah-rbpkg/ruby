@@ -210,8 +210,8 @@ getinstancevariable
 (ID id, IVC ic)
 ()
 (VALUE val)
-/* "instance variable not initialized" warning can be hooked. */
-// attr bool leaf = false; /* has rb_warning() */
+/* Ractor crashes when it accesses class/module-level instances variables. */
+// attr bool leaf = false; /* has IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR() */
 {
     val = vm_getinstancevariable(GET_ISEQ(), GET_SELF(), id, ic);
 }
@@ -767,7 +767,7 @@ send
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);
-    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -786,7 +786,7 @@ opt_send_without_block
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
-    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -873,7 +873,7 @@ invokesuper
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);
-    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_super_method);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -891,13 +891,8 @@ invokeblock
 // attr rb_snum_t sp_inc = sp_inc_of_invokeblock(cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_invokeblock(ci);
 {
-    if (UNLIKELY(vm_cc_call(cd->cc) != vm_invokeblock_i)) {
-        const struct rb_callcache *cc = vm_cc_new(0, NULL, vm_invokeblock_i);
-        RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, cc);
-    }
-
     VALUE bh = VM_BLOCK_HANDLER_NONE;
-    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_invokeblock);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_invokeblock);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -966,7 +961,7 @@ jump
 ()
 ()
 /* Same discussion as leave. */
-// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+// attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
 {
     RUBY_VM_CHECK_INTS(ec);
     JUMP(dst);
@@ -979,7 +974,7 @@ branchif
 (VALUE val)
 ()
 /* Same discussion as jump. */
-// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+// attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
 {
     if (RTEST(val)) {
 	RUBY_VM_CHECK_INTS(ec);
@@ -994,7 +989,7 @@ branchunless
 (VALUE val)
 ()
 /* Same discussion as jump. */
-// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+// attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
 {
     if (!RTEST(val)) {
 	RUBY_VM_CHECK_INTS(ec);
@@ -1009,7 +1004,7 @@ branchnil
 (VALUE val)
 ()
 /* Same discussion as jump. */
-// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+// attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
 {
     if (NIL_P(val)) {
 	RUBY_VM_CHECK_INTS(ec);
@@ -1028,7 +1023,7 @@ opt_getinlinecache
 ()
 (VALUE val)
 {
-    if (vm_ic_hit_p(ic, GET_EP())) {
+    if (vm_ic_hit_p(ic->ic_serial, ic->ic_cref, GET_EP())) {
 	val = ic->value;
 	JUMP(dst);
     }

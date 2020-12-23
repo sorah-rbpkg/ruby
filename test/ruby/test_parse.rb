@@ -6,7 +6,6 @@ require 'stringio'
 class TestParse < Test::Unit::TestCase
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -399,7 +398,6 @@ class TestParse < Test::Unit::TestCase
 
   def test_arg2
     o = Object.new
-
     assert_nothing_raised do
       eval <<-END, nil, __FILE__, __LINE__+1
         def o.foo(a=42,*r,z,&b); b.call(r.inject(a*1000+z*100, :+)); end
@@ -411,6 +409,7 @@ class TestParse < Test::Unit::TestCase
     assert_equal(-42100, o.foo(1) {|x| -x })
     assert_raise(ArgumentError) { o.foo() }
 
+    o = Object.new
     assert_nothing_raised do
       eval <<-END, nil, __FILE__, __LINE__+1
         def o.foo(a=42,z,&b); b.call(a*1000+z*100); end
@@ -420,6 +419,7 @@ class TestParse < Test::Unit::TestCase
     assert_equal(-42100, o.foo(1) {|x| -x } )
     assert_raise(ArgumentError) { o.foo() }
 
+    o = Object.new
     assert_nothing_raised do
       eval <<-END, nil, __FILE__, __LINE__+1
         def o.foo(*r,z,&b); b.call(r.inject(z*100, :+)); end
@@ -724,13 +724,13 @@ x = __ENCODING__
   end
 
   def test_float
-    assert_equal(1.0/0, eval("1e10000"))
+    assert_predicate(assert_warning(/out of range/) {eval("1e10000")}, :infinite?)
     assert_syntax_error('1_E', /trailing `_'/)
     assert_syntax_error('1E1E1', /unexpected constant/)
   end
 
   def test_global_variable
-    assert_equal(nil, eval('$-x'))
+    assert_equal(nil, assert_warning(/not initialized/) {eval('$-x')})
     assert_equal(nil, eval('alias $preserve_last_match $&'))
     assert_equal(nil, eval('alias $& $test_parse_foobarbazqux'))
     $test_parse_foobarbazqux = nil
@@ -823,13 +823,13 @@ x = __ENCODING__
   end
 
   def test_assign_in_conditional
-    assert_nothing_raised do
+    assert_warning(/`= literal' in conditional/) do
       eval <<-END, nil, __FILE__, __LINE__+1
         (x, y = 1, 2) ? 1 : 2
       END
     end
 
-    assert_nothing_raised do
+    assert_warning(/`= literal' in conditional/) do
       eval <<-END, nil, __FILE__, __LINE__+1
         if @x = true
           1
@@ -841,13 +841,13 @@ x = __ENCODING__
   end
 
   def test_literal_in_conditional
-    assert_nothing_raised do
+    assert_warning(/string literal in condition/) do
       eval <<-END, nil, __FILE__, __LINE__+1
         "foo" ? 1 : 2
       END
     end
 
-    assert_nothing_raised do
+    assert_warning(/regex literal in condition/) do
       x = "bar"
       eval <<-END, nil, __FILE__, __LINE__+1
         /foo#{x}baz/ ? 1 : 2
@@ -860,13 +860,13 @@ x = __ENCODING__
       END
     end
 
-    assert_nothing_raised do
+    assert_warning(/string literal in flip-flop/) do
       eval <<-END, nil, __FILE__, __LINE__+1
         ("foo".."bar") ? 1 : 2
       END
     end
 
-    assert_nothing_raised do
+    assert_warning(/literal in condition/) do
       x = "bar"
       eval <<-END, nil, __FILE__, __LINE__+1
         :"foo#{"x"}baz" ? 1 : 2
@@ -1172,6 +1172,52 @@ x = __ENCODING__
     w = "void value expression"
     ex = assert_syntax_error("x = return 1", w)
     assert_equal(1, ex.message.scan(w).size, "same #{w.inspect} warning should be just once")
+  end
+
+  def test_shareable_constant_value
+    assert_warning(/invalid value/) do
+      assert_valid_syntax("# shareable_constant_value: invalid-option", verbose: true)
+    end
+    assert_warning(/ignored/) do
+      assert_valid_syntax("nil # shareable_constant_value: true", verbose: true)
+    end
+    a, b, c = Class.new.class_eval("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: experimental_everything
+      A = [[1]]
+      # shareable_constant_value: none
+      B = [[2]]
+      # shareable_constant_value: literal
+      C = [["shareable", "constant#{nil}"]]
+      D = A
+
+      [A, B, C]
+    end;
+    assert_send([Ractor, :shareable?, a])
+    assert_not_send([Ractor, :shareable?, b])
+    assert_send([Ractor, :shareable?, c])
+    assert_equal([1], a[0])
+    assert_send([Ractor, :shareable?, a[0]])
+    a, b = Class.new.class_eval("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: none
+      class X
+        # shareable_constant_value: experimental_everything
+        A = [[1]]
+      end
+      B = []
+      [X::A, B]
+    end;
+    assert_send([Ractor, :shareable?, a])
+    assert_not_send([Ractor, :shareable?, b])
+    assert_equal([1], a[0])
+    assert_send([Ractor, :shareable?, a[0]])
+
+    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /unshareable expression/)
+    begin;
+      # shareable_constant_value: literal
+      C = ["Not " + "shareable"]
+    end;
   end
 
 =begin

@@ -60,11 +60,26 @@ class RubyLex
       @io.dynamic_prompt do |lines|
         lines << '' if lines.empty?
         result = []
-        lines.each_index { |i|
-          c = lines[0..i].map{ |l| l + "\n" }.join
-          ltype, indent, continue, code_block_open = check_state(c)
-          result << @prompt.call(ltype, indent, continue || code_block_open, @line_no + i)
-        }
+        tokens = ripper_lex_without_warning(lines.map{ |l| l + "\n" }.join)
+        code = String.new
+        partial_tokens = []
+        unprocessed_tokens = []
+        line_num_offset = 0
+        tokens.each do |t|
+          code << t[2]
+          partial_tokens << t
+          unprocessed_tokens << t
+          if t[2].include?("\n")
+            ltype, indent, continue, code_block_open = check_state(code, partial_tokens)
+            result << @prompt.call(ltype, indent, continue || code_block_open, @line_no + line_num_offset)
+            line_num_offset += 1
+            unprocessed_tokens = []
+          end
+        end
+        unless unprocessed_tokens.empty?
+          ltype, indent, continue, code_block_open = check_state(code, unprocessed_tokens)
+          result << @prompt.call(ltype, indent, continue || code_block_open, @line_no + line_num_offset)
+        end
         result
       end
     end
@@ -121,12 +136,12 @@ class RubyLex
     end
   end
 
-  def check_state(code)
-    @tokens = ripper_lex_without_warning(code)
-    ltype = process_literal_type
-    indent = process_nesting_level
-    continue = process_continue
-    code_block_open = check_code_block(code)
+  def check_state(code, tokens = nil)
+    tokens = ripper_lex_without_warning(code) unless tokens
+    ltype = process_literal_type(tokens)
+    indent = process_nesting_level(tokens)
+    continue = process_continue(tokens)
+    code_block_open = check_code_block(code, tokens)
     [ltype, indent, continue, code_block_open]
   end
 
@@ -186,36 +201,36 @@ class RubyLex
     code = @line + (line.nil? ? '' : line)
     code.gsub!(/\s*\z/, '').concat("\n")
     @tokens = ripper_lex_without_warning(code)
-    @continue = process_continue
-    @code_block_open = check_code_block(code)
-    @indent = process_nesting_level
-    @ltype = process_literal_type
+    @continue = process_continue(@tokens)
+    @code_block_open = check_code_block(code, @tokens)
+    @indent = process_nesting_level(@tokens)
+    @ltype = process_literal_type(@tokens)
     line
   end
 
-  def process_continue
+  def process_continue(tokens)
     # last token is always newline
-    if @tokens.size >= 2 and @tokens[-2][1] == :on_regexp_end
+    if tokens.size >= 2 and tokens[-2][1] == :on_regexp_end
       # end of regexp literal
       return false
-    elsif @tokens.size >= 2 and @tokens[-2][1] == :on_semicolon
+    elsif tokens.size >= 2 and tokens[-2][1] == :on_semicolon
       return false
-    elsif @tokens.size >= 2 and @tokens[-2][1] == :on_kw and ['begin', 'else', 'ensure'].include?(@tokens[-2][2])
+    elsif tokens.size >= 2 and tokens[-2][1] == :on_kw and ['begin', 'else', 'ensure'].include?(tokens[-2][2])
       return false
-    elsif !@tokens.empty? and @tokens.last[2] == "\\\n"
+    elsif !tokens.empty? and tokens.last[2] == "\\\n"
       return true
-    elsif @tokens.size >= 1 and @tokens[-1][1] == :on_heredoc_end # "EOH\n"
+    elsif tokens.size >= 1 and tokens[-1][1] == :on_heredoc_end # "EOH\n"
       return false
-    elsif @tokens.size >= 2 and defined?(Ripper::EXPR_BEG) and @tokens[-2][3].anybits?(Ripper::EXPR_BEG | Ripper::EXPR_FNAME)
+    elsif tokens.size >= 2 and defined?(Ripper::EXPR_BEG) and tokens[-2][3].anybits?(Ripper::EXPR_BEG | Ripper::EXPR_FNAME)
       # end of literal except for regexp
       return true
     end
     false
   end
 
-  def check_code_block(code)
-    return true if @tokens.empty?
-    if @tokens.last[1] == :on_heredoc_beg
+  def check_code_block(code, tokens)
+    return true if tokens.empty?
+    if tokens.last[1] == :on_heredoc_beg
       return true
     end
 
@@ -287,7 +302,7 @@ class RubyLex
     end
 
     if defined?(Ripper::EXPR_BEG)
-      last_lex_state = @tokens.last[3]
+      last_lex_state = tokens.last[3]
       if last_lex_state.allbits?(Ripper::EXPR_BEG)
         return false
       elsif last_lex_state.allbits?(Ripper::EXPR_DOT)
@@ -306,10 +321,10 @@ class RubyLex
     false
   end
 
-  def process_nesting_level
+  def process_nesting_level(tokens)
     indent = 0
     in_oneliner_def = nil
-    @tokens.each_with_index { |t, index|
+    tokens.each_with_index { |t, index|
       # detecting one-liner method definition
       if in_oneliner_def.nil?
         if t[3].allbits?(Ripper::EXPR_ENDFN)
@@ -337,10 +352,10 @@ class RubyLex
       when :on_rbracket, :on_rbrace, :on_rparen
         indent -= 1
       when :on_kw
-        next if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
+        next if index > 0 and tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
         case t[2]
         when 'do'
-          if index > 0 and @tokens[index - 1][3].anybits?(Ripper::EXPR_CMDARG | Ripper::EXPR_ENDFN | Ripper::EXPR_ARG)
+          if index > 0 and tokens[index - 1][3].anybits?(Ripper::EXPR_CMDARG | Ripper::EXPR_ENDFN | Ripper::EXPR_ARG)
             # method_with_block do; end
             indent += 1
           else
@@ -381,7 +396,7 @@ class RubyLex
           end
         else
           if in_oneliner_def == :BODY
-            # one[-liner method definition
+            # one-liner method definition
             depth_difference -= 1
           end
           in_oneliner_def = nil
@@ -522,12 +537,12 @@ class RubyLex
     corresponding_token_depth
   end
 
-  def check_string_literal
+  def check_string_literal(tokens)
     i = 0
     start_token = []
     end_type = []
-    while i < @tokens.size
-      t = @tokens[i]
+    while i < tokens.size
+      t = tokens[i]
       case t[1]
       when :on_tstring_beg
         start_token << t
@@ -537,7 +552,7 @@ class RubyLex
         end_type << :on_regexp_end
       when :on_symbeg
         acceptable_single_tokens = %i{on_ident on_const on_op on_cvar on_ivar on_gvar on_kw}
-        if (i + 1) < @tokens.size and acceptable_single_tokens.all?{ |t| @tokens[i + 1][1] != t }
+        if (i + 1) < tokens.size and acceptable_single_tokens.all?{ |t| tokens[i + 1][1] != t }
           start_token << t
           end_type << :on_tstring_end
         end
@@ -559,8 +574,8 @@ class RubyLex
     start_token.last.nil? ? '' : start_token.last
   end
 
-  def process_literal_type
-    start_token = check_string_literal
+  def process_literal_type(tokens)
+    start_token = check_string_literal(tokens)
     case start_token[1]
     when :on_tstring_beg
       case start_token[2]

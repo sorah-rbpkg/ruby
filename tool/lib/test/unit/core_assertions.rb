@@ -330,6 +330,22 @@ eom
         raise marshal_error if marshal_error
       end
 
+      # Run Ractor-related test without influencing the main test suite
+      def assert_ractor(src, args: [], require: nil, file: nil, line: nil, ignore_stderr: nil, **opt)
+        return unless defined?(Ractor)
+
+        require = "require #{require.inspect}" if require
+
+        assert_separately(args, file, line, <<~RUBY, ignore_stderr: ignore_stderr, **opt)
+          #{require}
+          previous_verbose = $VERBOSE
+          $VERBOSE = nil
+          Ractor.new {} # trigger initial warning
+          $VERBOSE = previous_verbose
+          #{src}
+        RUBY
+      end
+
       # :call-seq:
       #   assert_throw( tag, failure_message = nil, &block )
       #
@@ -585,6 +601,20 @@ eom
 
       def assert_warn(*args)
         assert_warning(*args) {$VERBOSE = false; yield}
+      end
+
+      def assert_deprecated_warning(mesg = /deprecated/)
+        assert_warning(mesg) do
+          Warning[:deprecated] = true
+          yield
+        end
+      end
+
+      def assert_deprecated_warn(mesg = /deprecated/)
+        assert_warn(mesg) do
+          Warning[:deprecated] = true
+          yield
+        end
       end
 
       class << (AssertFile = Struct.new(:failure_message).new)

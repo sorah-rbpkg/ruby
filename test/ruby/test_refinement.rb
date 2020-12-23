@@ -1652,7 +1652,6 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_reopen_refinement_module
     assert_separately([], <<-"end;")
-      $VERBOSE = nil
       class C
       end
 
@@ -1669,6 +1668,7 @@ class TestRefinement < Test::Unit::TestCase
 
       module R
         refine C do
+          alias m m
           def m
             :bar
           end
@@ -2445,5 +2445,32 @@ class TestRefinement < Test::Unit::TestCase
 
   def eval_using(mod, s)
     eval("using #{mod}; #{s}", Sandbox::BINDING)
+  end
+
+  # [Bug #17386]
+  def test_prepended_with_method_cache
+    foo = Class.new do
+      def foo
+        :Foo
+      end
+    end
+
+    code = Module.new do
+      def foo
+        :Code
+      end
+    end
+
+    _ext = Module.new do
+      refine foo do
+        def foo; end
+      end
+    end
+
+    obj = foo.new
+
+    assert_equal :Foo, obj.foo
+    foo.prepend code
+    assert_equal :Code, obj.foo
   end
 end

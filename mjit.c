@@ -82,6 +82,24 @@ mjit_gc_exit_hook(void)
     CRITICAL_SECTION_FINISH(4, "mjit_gc_exit_hook");
 }
 
+// Lock setinlinecache
+void
+rb_mjit_before_vm_ic_update(void)
+{
+    if (!mjit_enabled)
+        return;
+    CRITICAL_SECTION_START(3, "before vm_ic_update");
+}
+
+// Unlock setinlinecache
+void
+rb_mjit_after_vm_ic_update(void)
+{
+    if (!mjit_enabled)
+        return;
+    CRITICAL_SECTION_FINISH(3, "after vm_ic_update");
+}
+
 // Deal with ISeq movement from compactor
 void
 mjit_update_references(const rb_iseq_t *iseq)
@@ -332,11 +350,15 @@ mjit_recompile(const rb_iseq_t *iseq)
 
     verbose(1, "JIT recompile: %s@%s:%d", RSTRING_PTR(iseq->body->location.label),
             RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(iseq->body->location.first_lineno));
-
-    CRITICAL_SECTION_START(3, "in rb_mjit_recompile_iseq");
-    remove_from_list(iseq->body->jit_unit, &active_units);
     iseq->body->jit_func = (mjit_func_t)NOT_ADDED_JIT_ISEQ_FUNC;
-    add_to_list(iseq->body->jit_unit, &stale_units);
+
+    if (iseq->body->jit_unit == NULL) // mjit_free_iseq is already called
+        return;
+
+    // Lazily move active_units to stale_units to avoid race conditions around active_units with compaction
+    CRITICAL_SECTION_START(3, "in rb_mjit_recompile_iseq");
+    iseq->body->jit_unit->stale_p = true;
+    pending_stale_p = true;
     CRITICAL_SECTION_FINISH(3, "in rb_mjit_recompile_iseq");
 
     mjit_add_iseq_to_process(iseq, &iseq->body->jit_unit->compile_info);
@@ -374,6 +396,14 @@ void
 rb_mjit_recompile_inlining(const rb_iseq_t *iseq)
 {
     rb_mjit_iseq_compile_info(iseq->body)->disable_inlining = true;
+    mjit_recompile(iseq);
+}
+
+// Recompile iseq, disabling getconstant inlining
+void
+rb_mjit_recompile_const(const rb_iseq_t *iseq)
+{
+    rb_mjit_iseq_compile_info(iseq->body)->disable_const_cache = true;
     mjit_recompile(iseq);
 }
 

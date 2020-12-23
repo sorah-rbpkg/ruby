@@ -838,7 +838,7 @@ test-spec-precheck: main
 test-spec: $(TEST_RUNNABLE)-test-spec
 yes-test-spec: test-spec-precheck
 	$(gnumake_recursive)$(Q) \
-	$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/default.mspec $(MSPECOPT) $(SPECOPTS)
+	$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/default.mspec -I$(srcdir)/tool/lib $(MSPECOPT) $(SPECOPTS)
 no-test-spec:
 
 RUNNABLE = $(LIBRUBY_RELATIVE:no=un)-runnable
@@ -1207,10 +1207,10 @@ $(srcdir)/ext/etc/constdefs.h: $(srcdir)/ext/etc/depend
 ##
 
 run: fake miniruby$(EXEEXT) PHONY
-	$(BTESTRUBY) $(TESTRUN_SCRIPT) $(RUNOPT)
+	$(BTESTRUBY) $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
 
 runruby: $(PROGRAM) PHONY
-	$(RUNRUBY) $(TESTRUN_SCRIPT)
+	$(RUNRUBY) $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
 
 parse: fake miniruby$(EXEEXT) PHONY
 	$(BTESTRUBY) --dump=parsetree_with_comment,insns $(TESTRUN_SCRIPT)
@@ -1253,18 +1253,18 @@ run.gdb:
 
 
 gdb: miniruby$(EXEEXT) run.gdb PHONY
-	gdb -x run.gdb --quiet --args $(MINIRUBY) $(TESTRUN_SCRIPT)
+	gdb -x run.gdb --quiet --args $(MINIRUBY) $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
 
 gdb-ruby: $(PROGRAM) run.gdb PHONY
-	$(Q) $(RUNRUBY_COMMAND) $(RUNRUBY_DEBUGGER) -- $(TESTRUN_SCRIPT)
+	$(Q) $(RUNRUBY_COMMAND) $(RUNRUBY_DEBUGGER) -- $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
 
 LLDB_INIT = command script import -r $(srcdir)/misc/lldb_cruby.py
 
 lldb: miniruby$(EXEEXT) PHONY
-	lldb -o '$(LLDB_INIT)' miniruby$(EXEEXT) -- $(TESTRUN_SCRIPT)
+	lldb -o '$(LLDB_INIT)' miniruby$(EXEEXT) -- $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
 
 lldb-ruby: $(PROGRAM) PHONY
-	lldb $(enable_shared:yes=-o 'target modules add ${LIBRUBY_SO}') -o '$(LLDB_INIT)' $(PROGRAM) -- $(TESTRUN_SCRIPT)
+	lldb $(enable_shared:yes=-o 'target modules add ${LIBRUBY_SO}') -o '$(LLDB_INIT)' $(PROGRAM) -- $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
 
 DISTPKGS = gzip,zip,all
 PKGSDIR = tmp
@@ -3733,6 +3733,7 @@ debug_counter.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 debug_counter.$(OBJEXT): {$(VPATH)}missing.h
 debug_counter.$(OBJEXT): {$(VPATH)}st.h
 debug_counter.$(OBJEXT): {$(VPATH)}subst.h
+debug_counter.$(OBJEXT): {$(VPATH)}thread_native.h
 dir.$(OBJEXT): $(hdrdir)/ruby.h
 dir.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 dir.$(OBJEXT): $(top_srcdir)/internal/array.h
@@ -4464,6 +4465,7 @@ encoding.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 encoding.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 encoding.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 encoding.$(OBJEXT): {$(VPATH)}config.h
+encoding.$(OBJEXT): {$(VPATH)}debug_counter.h
 encoding.$(OBJEXT): {$(VPATH)}defines.h
 encoding.$(OBJEXT): {$(VPATH)}encindex.h
 encoding.$(OBJEXT): {$(VPATH)}encoding.c
@@ -4639,6 +4641,7 @@ enum.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 enum.$(OBJEXT): $(top_srcdir)/internal/object.h
 enum.$(OBJEXT): $(top_srcdir)/internal/proc.h
 enum.$(OBJEXT): $(top_srcdir)/internal/rational.h
+enum.$(OBJEXT): $(top_srcdir)/internal/re.h
 enum.$(OBJEXT): $(top_srcdir)/internal/serial.h
 enum.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 enum.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -4823,6 +4826,7 @@ enumerator.$(OBJEXT): $(top_srcdir)/internal/hash.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/range.h
+enumerator.$(OBJEXT): $(top_srcdir)/internal/rational.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/serial.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -4989,6 +4993,7 @@ enumerator.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 enumerator.$(OBJEXT): {$(VPATH)}missing.h
 enumerator.$(OBJEXT): {$(VPATH)}onigmo.h
 enumerator.$(OBJEXT): {$(VPATH)}oniguruma.h
+enumerator.$(OBJEXT): {$(VPATH)}ruby_assert.h
 enumerator.$(OBJEXT): {$(VPATH)}st.h
 enumerator.$(OBJEXT): {$(VPATH)}subst.h
 error.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
@@ -8014,6 +8019,7 @@ memory_view.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 memory_view.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 memory_view.$(OBJEXT): {$(VPATH)}config.h
 memory_view.$(OBJEXT): {$(VPATH)}constant.h
+memory_view.$(OBJEXT): {$(VPATH)}debug_counter.h
 memory_view.$(OBJEXT): {$(VPATH)}defines.h
 memory_view.$(OBJEXT): {$(VPATH)}id_table.h
 memory_view.$(OBJEXT): {$(VPATH)}intern.h
@@ -8161,8 +8167,11 @@ memory_view.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 memory_view.$(OBJEXT): {$(VPATH)}memory_view.c
 memory_view.$(OBJEXT): {$(VPATH)}memory_view.h
 memory_view.$(OBJEXT): {$(VPATH)}missing.h
+memory_view.$(OBJEXT): {$(VPATH)}node.h
 memory_view.$(OBJEXT): {$(VPATH)}st.h
 memory_view.$(OBJEXT): {$(VPATH)}subst.h
+memory_view.$(OBJEXT): {$(VPATH)}vm_debug.h
+memory_view.$(OBJEXT): {$(VPATH)}vm_sync.h
 miniinit.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 miniinit.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 miniinit.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -10002,6 +10011,7 @@ process.$(OBJEXT): $(top_srcdir)/internal/thread.h
 process.$(OBJEXT): $(top_srcdir)/internal/variable.h
 process.$(OBJEXT): $(top_srcdir)/internal/vm.h
 process.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+process.$(OBJEXT): {$(VPATH)}$(COROUTINE_H)
 process.$(OBJEXT): {$(VPATH)}assert.h
 process.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 process.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
@@ -10404,6 +10414,7 @@ random.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 random.$(OBJEXT): $(top_srcdir)/internal/serial.h
 random.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 random.$(OBJEXT): $(top_srcdir)/internal/string.h
+random.$(OBJEXT): $(top_srcdir)/internal/variable.h
 random.$(OBJEXT): $(top_srcdir)/internal/vm.h
 random.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 random.$(OBJEXT): {$(VPATH)}assert.h
@@ -10417,8 +10428,10 @@ random.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 random.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 random.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 random.$(OBJEXT): {$(VPATH)}config.h
+random.$(OBJEXT): {$(VPATH)}constant.h
 random.$(OBJEXT): {$(VPATH)}defines.h
 random.$(OBJEXT): {$(VPATH)}encoding.h
+random.$(OBJEXT): {$(VPATH)}id_table.h
 random.$(OBJEXT): {$(VPATH)}intern.h
 random.$(OBJEXT): {$(VPATH)}internal.h
 random.$(OBJEXT): {$(VPATH)}internal/anyargs.h
@@ -12689,6 +12702,7 @@ signal.$(OBJEXT): {$(VPATH)}defines.h
 signal.$(OBJEXT): {$(VPATH)}encoding.h
 signal.$(OBJEXT): {$(VPATH)}eval_intern.h
 signal.$(OBJEXT): {$(VPATH)}id.h
+signal.$(OBJEXT): {$(VPATH)}id_table.h
 signal.$(OBJEXT): {$(VPATH)}intern.h
 signal.$(OBJEXT): {$(VPATH)}internal.h
 signal.$(OBJEXT): {$(VPATH)}internal/anyargs.h
@@ -12836,6 +12850,8 @@ signal.$(OBJEXT): {$(VPATH)}missing.h
 signal.$(OBJEXT): {$(VPATH)}node.h
 signal.$(OBJEXT): {$(VPATH)}onigmo.h
 signal.$(OBJEXT): {$(VPATH)}oniguruma.h
+signal.$(OBJEXT): {$(VPATH)}ractor.h
+signal.$(OBJEXT): {$(VPATH)}ractor_core.h
 signal.$(OBJEXT): {$(VPATH)}ruby_assert.h
 signal.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 signal.$(OBJEXT): {$(VPATH)}signal.c
@@ -12844,6 +12860,7 @@ signal.$(OBJEXT): {$(VPATH)}subst.h
 signal.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 signal.$(OBJEXT): {$(VPATH)}thread_native.h
 signal.$(OBJEXT): {$(VPATH)}vm_core.h
+signal.$(OBJEXT): {$(VPATH)}vm_debug.h
 signal.$(OBJEXT): {$(VPATH)}vm_opts.h
 sprintf.$(OBJEXT): $(hdrdir)/ruby.h
 sprintf.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -13814,6 +13831,7 @@ symbol.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 symbol.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 symbol.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 symbol.$(OBJEXT): {$(VPATH)}config.h
+symbol.$(OBJEXT): {$(VPATH)}debug_counter.h
 symbol.$(OBJEXT): {$(VPATH)}defines.h
 symbol.$(OBJEXT): {$(VPATH)}encoding.h
 symbol.$(OBJEXT): {$(VPATH)}gc.h
@@ -15943,6 +15961,7 @@ vm_sync.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 vm_sync.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 vm_sync.$(OBJEXT): {$(VPATH)}config.h
 vm_sync.$(OBJEXT): {$(VPATH)}constant.h
+vm_sync.$(OBJEXT): {$(VPATH)}debug_counter.h
 vm_sync.$(OBJEXT): {$(VPATH)}defines.h
 vm_sync.$(OBJEXT): {$(VPATH)}gc.h
 vm_sync.$(OBJEXT): {$(VPATH)}id.h
