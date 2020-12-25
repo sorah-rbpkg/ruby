@@ -1,3 +1,11 @@
+ruby3.0 (3.0.0-1) experimental; urgency=medium
+
+  * New upstream version 3.0.0
+  * Refresh d/patches
+  * Update symbols file
+
+ -- Utkarsh Gupta <utkarsh@debian.org>  Fri, 25 Dec 2020 19:50:25 +0530
+
 ruby3.0 (3.0.0~rc1-1) experimental; urgency=medium
 
   * New upstream version 3.0.0~rc1
