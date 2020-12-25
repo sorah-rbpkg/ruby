@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require 'benchmark'
 require 'rubygems/test_case'
+require 'date'
 require 'pathname'
 require 'stringio'
 require 'rubygems/ext'
@@ -9,7 +10,6 @@ require 'rubygems/installer'
 require 'rubygems/platform'
 
 class TestGemSpecification < Gem::TestCase
-
   LEGACY_YAML_SPEC = <<-EOF.freeze
 --- !ruby/object:Gem::Specification
 rubygems_version: "1.0"
@@ -140,12 +140,12 @@ end
       install_specs c1, c2, b1, b2, a1
 
       a1.activate
-      assert_equal %w(a-1), loaded_spec_names
+      assert_equal %w[a-1], loaded_spec_names
       assert_equal ["b (> 0)"], unresolved_names
 
       require "d#{$$}"
 
-      assert_equal %w(a-1 b-2 c-2), loaded_spec_names
+      assert_equal %w[a-1 b-2 c-2], loaded_spec_names
       assert_equal [], unresolved_names
     end
   end
@@ -187,12 +187,12 @@ end
       install_specs c1, c2, b1, b2, a1
 
       a1.activate
-      assert_equal %w(a-1), loaded_spec_names
+      assert_equal %w[a-1], loaded_spec_names
       assert_equal ["b (> 0)"], unresolved_names
 
       require "d#{$$}"
 
-      assert_equal %w(a-1 b-2 c-2), loaded_spec_names
+      assert_equal %w[a-1 b-2 c-2], loaded_spec_names
       assert_equal [], unresolved_names
     end
   end
@@ -209,12 +209,12 @@ end
       install_specs c1, b1, a1, a2, c2, b2
 
       a2.activate
-      assert_equal %w(a-2), loaded_spec_names
+      assert_equal %w[a-2], loaded_spec_names
       assert_equal ["b (> 0)"], unresolved_names
 
       require "d#{$$}"
 
-      assert_equal %w(a-2 b-1 c-1), loaded_spec_names
+      assert_equal %w[a-2 b-1 c-1], loaded_spec_names
       assert_equal [], unresolved_names
     end
   end
@@ -231,12 +231,12 @@ end
       install_specs d1, c1, c2, b1, b2, a1
 
       a1.activate
-      assert_equal %w(a-1), loaded_spec_names
+      assert_equal %w[a-1], loaded_spec_names
       assert_equal ["b (> 0)"], unresolved_names
 
       require "d#{$$}"
 
-      assert_equal %w(a-1 d-1), loaded_spec_names
+      assert_equal %w[a-1 d-1], loaded_spec_names
       assert_equal ["b (> 0)"], unresolved_names
     end
   end
@@ -246,7 +246,7 @@ end
       a1 = util_spec "a", "1", "b" => "> 0"
       b1 = util_spec "b", "1", "c" => ">= 0" # unresolved
       b2 = util_spec "b", "2", "c" => ">= 0"
-      c1 = util_spec "c", "1", nil, "lib/c#{$$}.rb"  # 1st level
+      c1 = util_spec "c", "1", nil, "lib/c#{$$}.rb" # 1st level
       c2 = util_spec "c", "2", nil, "lib/c#{$$}.rb"
 
       install_specs c1, c2, b1, b2, a1
@@ -255,7 +255,7 @@ end
 
       require "c#{$$}"
 
-      assert_equal %w(a-1 b-2 c-2), loaded_spec_names
+      assert_equal %w[a-1 b-2 c-2], loaded_spec_names
     end
   end
 
@@ -264,7 +264,7 @@ end
       a1 = util_spec "a", "1", "b" => "> 0"
       b1 = util_spec "b", "1", "c" => ">= 0" # unresolved
       b2 = util_spec "b", "2", "c" => ">= 0"
-      c1 = util_spec "c", "1", "d" => ">= 0"  # 1st level
+      c1 = util_spec "c", "1", "d" => ">= 0" # 1st level
       c2 = util_spec "c", "2", "d" => ">= 0"
       d1 = util_spec "d", "1", nil, "lib/d#{$$}.rb" # 2nd level
       d2 = util_spec "d", "2", nil, "lib/d#{$$}.rb"
@@ -275,7 +275,7 @@ end
 
       require "d#{$$}"
 
-      assert_equal %w(a-1 b-2 c-2 d-2), loaded_spec_names
+      assert_equal %w[a-1 b-2 c-2 d-2], loaded_spec_names
     end
   end
 
@@ -296,7 +296,7 @@ end
 
       require "d#{$$}"
 
-      assert_equal %w(a-1 b-2 c-2 d-2), loaded_spec_names
+      assert_equal %w[a-1 b-2 c-2 d-2], loaded_spec_names
     end
   end
 
@@ -318,7 +318,7 @@ end
 
       require "d#{$$}"
 
-      assert_equal %w(a-1 b-2 c-2 d-2), loaded_spec_names
+      assert_equal %w[a-1 b-2 c-2 d-2], loaded_spec_names
     end
   end
 
@@ -336,12 +336,12 @@ end
       install_specs c1, c2, c3, b1, b2, a1, a2, base
 
       base.activate
-      assert_equal %w(0-1), loaded_spec_names
+      assert_equal %w[0-1], loaded_spec_names
       assert_equal ["A (>= 1)"], unresolved_names
 
       require "d#{$$}"
 
-      assert_equal %w(0-1 A-2 b-2 c-2), loaded_spec_names
+      assert_equal %w[0-1 A-2 b-2 c-2], loaded_spec_names
       assert_equal [], unresolved_names
     end
   end
@@ -364,7 +364,7 @@ end
 
       require "d#{$$}"
 
-      assert_includes [%w(a-1 b-2 c-3 d-2),%w(a-1 b-2 d-2)], loaded_spec_names
+      assert_includes [%w[a-1 b-2 c-3 d-2],%w[a-1 b-2 d-2]], loaded_spec_names
     end
   end
 
@@ -386,7 +386,7 @@ end
 
       require "d#{$$}"
 
-      assert_includes [%w(a-1 b-2 d-2 xc-3), %w(a-1 b-2 d-2)], loaded_spec_names
+      assert_includes [%w[a-1 b-2 d-2 xc-3], %w[a-1 b-2 d-2]], loaded_spec_names
     end
   end
 
@@ -515,16 +515,16 @@ end
       require "b/c"
     end
 
-    assert_equal %w(a-1 b-1), loaded_spec_names
+    assert_equal %w[a-1 b-1], loaded_spec_names
   end
 
   def test_self_activate_via_require_wtf
     save_loaded_features do
-      a1 = util_spec "a", "1", "b" => "> 0", "d" => "> 0"    # this
+      a1 = util_spec "a", "1", "b" => "> 0", "d" => "> 0" # this
       b1 = util_spec "b", "1", { "c" => ">= 1" }, "lib/b#{$$}.rb"
       b2 = util_spec "b", "2", { "c" => ">= 2" }, "lib/b#{$$}.rb" # this
       c1 = util_spec "c", "1"
-      c2 = util_spec "c", "2"                                # this
+      c2 = util_spec "c", "2" # this
       d1 = util_spec "d", "1", { "c" => "< 2" },  "lib/d#{$$}.rb"
       d2 = util_spec "d", "2", { "c" => "< 2" },  "lib/d#{$$}.rb" # this
 
@@ -532,7 +532,7 @@ end
 
       a1.activate
 
-      assert_equal %w(a-1), loaded_spec_names
+      assert_equal %w[a-1], loaded_spec_names
       assert_equal ["b (> 0)", "d (> 0)"], unresolved_names
 
       require "b#{$$}"
@@ -543,7 +543,7 @@ end
 
       assert_equal "unable to find a version of 'd' to activate", e.message
 
-      assert_equal %w(a-1 b-2 c-2), loaded_spec_names
+      assert_equal %w[a-1 b-2 c-2], loaded_spec_names
       assert_equal ["d (> 0)"], unresolved_names
     end
   end
@@ -558,7 +558,7 @@ end
     install_specs c1, c2, b1, b2, a1
 
     a1.activate
-    assert_equal %w(a-1 b-1 c-1), loaded_spec_names
+    assert_equal %w[a-1 b-1 c-1], loaded_spec_names
   end
 
   def test_self_activate_loaded
@@ -720,7 +720,7 @@ end
       version
     ]
 
-    actual_value = Gem::Specification.attribute_names.map { |a| a.to_s }.sort
+    actual_value = Gem::Specification.attribute_names.map {|a| a.to_s }.sort
 
     assert_equal expected_value, actual_value
   end
@@ -795,7 +795,7 @@ bindir:
     op = spec.dependencies.first.requirement.requirements.first.first
     refute_kind_of YAML::Syck::DefaultKey, op
 
-    refute_match %r%DefaultKey%, spec.to_ruby
+    refute_match %r{DefaultKey}, spec.to_ruby
   end
 
   def test_self_from_yaml_cleans_up_defaultkey
@@ -829,7 +829,7 @@ bindir:
     op = spec.dependencies.first.requirement.requirements.first.first
     refute_kind_of YAML::Syck::DefaultKey, op
 
-    refute_match %r%DefaultKey%, spec.to_ruby
+    refute_match %r{DefaultKey}, spec.to_ruby
   end
 
   def test_self_from_yaml_cleans_up_defaultkey_from_newer_192
@@ -863,7 +863,7 @@ bindir:
     op = spec.dependencies.first.requirement.requirements.first.first
     refute_kind_of YAML::Syck::DefaultKey, op
 
-    refute_match %r%DefaultKey%, spec.to_ruby
+    refute_match %r{DefaultKey}, spec.to_ruby
   end
 
   def test_self_from_yaml_cleans_up_Date_objects
@@ -1113,13 +1113,13 @@ dependencies: []
     install_specs @a1
 
     assert_includes Gem::Specification.all_names, 'a-1'
-    assert_includes Gem::Specification.stubs.map { |s| s.full_name }, 'a-1'
+    assert_includes Gem::Specification.stubs.map {|s| s.full_name }, 'a-1'
 
     uninstall_gem @a1
     Gem::Specification.reset
 
     refute_includes Gem::Specification.all_names, 'a-1'
-    refute_includes Gem::Specification.stubs.map { |s| s.full_name }, 'a-1'
+    refute_includes Gem::Specification.stubs.map {|s| s.full_name }, 'a-1'
   end
 
   def test_self_remove_spec_removed
@@ -1134,48 +1134,30 @@ dependencies: []
     Gem::Specification.reset
 
     refute_includes Gem::Specification.all_names, 'a-1'
-    refute_includes Gem::Specification.stubs.map { |s| s.full_name }, 'a-1'
+    refute_includes Gem::Specification.stubs.map {|s| s.full_name }, 'a-1'
   end
 
-  def test_self_stubs
+  def test_self_stubs_for_lazy_loading
     Gem.loaded_specs.clear
     Gem::Specification.class_variable_set(:@@stubs, nil)
 
     dir_standard_specs = File.join Gem.dir, 'specifications'
-    dir_default_specs = Gem.default_specifications_dir
 
-    # Create gemspecs in three locations used in stubs
-    loaded_spec = Gem::Specification.new 'a', '3'
-    Gem.loaded_specs['a'] = loaded_spec
-    save_gemspec 'a', '2', dir_default_specs
-    save_gemspec 'a', '1', dir_standard_specs
+    save_gemspec('a-1', '1', dir_standard_specs){|s| s.name = 'a' }
+    save_gemspec('b-1', '1', dir_standard_specs){|s| s.name = 'b' }
 
-    full_names = ['a-3', 'a-2', 'a-1']
-    assert_equal full_names, Gem::Specification.stubs.map { |s| s.full_name }
-
-    Gem.loaded_specs.delete 'a'
-    Gem::Specification.class_variable_set(:@@stubs, nil)
-  end
-
-  def test_self_stubs_for
-    Gem.loaded_specs.clear
-    Gem::Specification.class_variable_set(:@@stubs, nil)
-
-    dir_standard_specs = File.join Gem.dir, 'specifications'
-    dir_default_specs = Gem.default_specifications_dir
-
-    # Create gemspecs in three locations used in stubs
-    loaded_spec = Gem::Specification.new 'a', '3'
-    Gem.loaded_specs['a'] = loaded_spec
-    save_gemspec('a-2', '2', dir_default_specs) { |s| s.name = 'a' }
-    save_gemspec('a-1', '1', dir_standard_specs) { |s| s.name = 'a' }
-
-    full_names = ['a-3', 'a-2', 'a-1']
-
-    assert_equal full_names, Gem::Specification.stubs_for('a').map { |s| s.full_name }
+    assert_equal ['a-1'], Gem::Specification.stubs_for('a').map {|s| s.full_name }
     assert_equal 1, Gem::Specification.class_variable_get(:@@stubs_by_name).length
+    assert_equal ['b-1'], Gem::Specification.stubs_for('b').map {|s| s.full_name }
+    assert_equal 2, Gem::Specification.class_variable_get(:@@stubs_by_name).length
+
+    assert_equal(
+      Gem::Specification.stubs_for('a').map {|s| s.object_id },
+      Gem::Specification.stubs_for('a').map {|s| s.object_id }
+    )
 
     Gem.loaded_specs.delete 'a'
+    Gem.loaded_specs.delete 'b'
     Gem::Specification.class_variable_set(:@@stubs, nil)
   end
 
@@ -1187,7 +1169,7 @@ dependencies: []
 
     # create user spec
     user_spec_dir = File.join Gem.user_dir, 'specifications'
-    FileUtils.mkdir_p(user_spec_dir)  unless Dir.exist? user_spec_dir
+    FileUtils.mkdir_p(user_spec_dir) unless Dir.exist? user_spec_dir
     # dirs doesn't include user ?
     Gem::Specification.dirs << user_spec_dir
 
@@ -1197,7 +1179,7 @@ dependencies: []
 
     #create specs
     platforms.each do |plat|
-      spec = Gem::Specification.new(gem, v) { |s| s.platform = plat }
+      spec = Gem::Specification.new(gem, v) {|s| s.platform = plat }
       File.open File.join(user_spec_dir, "#{gem}-#{v}-#{plat}.gemspec"), 'w' do |io|
         io.write spec.to_ruby
       end
@@ -1388,12 +1370,12 @@ dependencies: []
       awesome.add_dependency :gem_name
     end
 
-    assert_equal %w[true gem_name], gem.dependencies.map { |dep| dep.name }
+    assert_equal %w[true gem_name], gem.dependencies.map {|dep| dep.name }
   end
 
   def test_add_dependency_from_existing_dependency
     dep  = Gem::Dependency.new("existing_dep", Gem::Requirement.new('> 1'), :runtime)
-    spec = Gem::Specification.new { |s| s.add_dependency dep }
+    spec = Gem::Specification.new {|s| s.add_dependency dep }
     assert_equal dep, spec.dependencies.first
   end
 
@@ -1402,7 +1384,7 @@ dependencies: []
       awesome.add_development_dependency "monkey"
     end
 
-    monkey = gem.dependencies.detect { |d| d.name == "monkey" }
+    monkey = gem.dependencies.detect {|d| d.name == "monkey" }
     assert_equal(:development, monkey.type)
   end
 
@@ -1500,7 +1482,7 @@ dependencies: []
     default = new_default_spec 'default', 2
     install_default_gems default
 
-    stub = Gem::Specification.stubs.find { |s| s.name == 'default' }
+    stub = Gem::Specification.stubs.find {|s| s.name == 'default' }
     assert_predicate stub, :default_gem?
 
     stub = Gem::Specification.find_all_by_name('default').first
@@ -1855,7 +1837,6 @@ dependencies: []
       RbConfig::CONFIG['ENABLE_SHARED'], 'no'
 
     class << Gem
-
       alias orig_default_ext_dir_for default_ext_dir_for
 
       remove_method :default_ext_dir_for
@@ -1863,7 +1844,6 @@ dependencies: []
       def Gem.default_ext_dir_for(base_dir)
         'elsewhere'
       end
-
     end
 
     ext_spec
@@ -1877,20 +1857,18 @@ dependencies: []
     RbConfig::CONFIG['ENABLE_SHARED'] = enable_shared
 
     class << Gem
-
       remove_method :default_ext_dir_for
 
       alias default_ext_dir_for orig_default_ext_dir_for
-
     end
   end
 
   def test_files
-    @a1.files = %w(files bin/common)
-    @a1.test_files = %w(test_files bin/common)
-    @a1.executables = %w(executables common)
-    @a1.extra_rdoc_files = %w(extra_rdoc_files bin/common)
-    @a1.extensions = %w(extensions bin/common)
+    @a1.files = %w[files bin/common]
+    @a1.test_files = %w[test_files bin/common]
+    @a1.executables = %w[executables common]
+    @a1.extra_rdoc_files = %w[extra_rdoc_files bin/common]
+    @a1.extensions = %w[extensions bin/common]
 
     expected = %w[
       bin/common
@@ -1904,11 +1882,11 @@ dependencies: []
   end
 
   def test_files_append
-    @a1.files            = %w(files bin/common)
-    @a1.test_files       = %w(test_files bin/common)
-    @a1.executables      = %w(executables common)
-    @a1.extra_rdoc_files = %w(extra_rdoc_files bin/common)
-    @a1.extensions       = %w(extensions bin/common)
+    @a1.files            = %w[files bin/common]
+    @a1.test_files       = %w[test_files bin/common]
+    @a1.executables      = %w[executables common]
+    @a1.extra_rdoc_files = %w[extra_rdoc_files bin/common]
+    @a1.extensions       = %w[extensions bin/common]
 
     expected = %w[
       bin/common
@@ -2022,7 +2000,7 @@ dependencies: []
     test_cases = {
       'i386-mswin32'      => 'a-1-x86-mswin32-60',
       'i386-mswin32_80'   => 'a-1-x86-mswin32-80',
-      'i386-mingw32'      => 'a-1-x86-mingw32'
+      'i386-mingw32'      => 'a-1-x86-mingw32',
     }
 
     test_cases.each do |arch, expected|
@@ -2171,11 +2149,9 @@ dependencies: []
 
   def test_require_paths_default_ext_dir_for
     class << Gem
-
       send :alias_method, :orig_default_ext_dir_for, :default_ext_dir_for
 
       remove_method :default_ext_dir_for
-
     end
 
     def Gem.default_ext_dir_for(base_dir)
@@ -2191,11 +2167,9 @@ dependencies: []
     end
   ensure
     class << Gem
-
       send :remove_method, :default_ext_dir_for
       send :alias_method,  :default_ext_dir_for, :orig_default_ext_dir_for
       send :remove_method, :orig_default_ext_dir_for
-
     end
   end
 
@@ -2297,12 +2271,12 @@ dependencies: []
       install_specs a1 # , a2, b1, b2, c1, c2
 
       a1.activate
-      assert_equal %w(a-1), loaded_spec_names
+      assert_equal %w[a-1], loaded_spec_names
       assert_equal [], unresolved_names
 
       assert require "d#{$$}"
 
-      assert_equal %w(a-1), loaded_spec_names
+      assert_equal %w[a-1], loaded_spec_names
       assert_equal [], unresolved_names
     end
   end
@@ -2320,12 +2294,12 @@ dependencies: []
 
       a1.activate
       c1.activate
-      assert_equal %w(a-1 c-1), loaded_spec_names
+      assert_equal %w[a-1 c-1], loaded_spec_names
       assert_equal ["b (> 0)"], unresolved_names
 
       assert require "d#{$$}"
 
-      assert_equal %w(a-1 c-1), loaded_spec_names
+      assert_equal %w[a-1 c-1], loaded_spec_names
       assert_equal ["b (> 0)"], unresolved_names
     end
   end
@@ -2348,7 +2322,7 @@ dependencies: []
 
     expected = %w[rake jabber4r pqa]
 
-    assert_equal expected, @c1.runtime_dependencies.map { |d| d.name }
+    assert_equal expected, @c1.runtime_dependencies.map {|d| d.name }
   end
 
   def test_spaceship_name
@@ -2458,6 +2432,9 @@ end
   end
 
   def test_to_ruby_with_rsa_key
+    require 'rubygems/openssl'
+    skip 'openssl is missing' unless defined?(OpenSSL::PKey::RSA)
+
     rsa_key = OpenSSL::PKey::RSA.new(2048)
     @a2.signing_key = rsa_key
     ruby_code = @a2.to_ruby
@@ -2661,7 +2638,7 @@ end
   def test_to_yaml_platform_empty_string
     @a1.instance_variable_set :@original_platform, ''
 
-    assert_match %r|^platform: ruby$|, @a1.to_yaml
+    assert_match %r{^platform: ruby$}, @a1.to_yaml
   end
 
   def test_to_yaml_platform_legacy
@@ -2679,7 +2656,7 @@ end
   def test_to_yaml_platform_nil
     @a1.instance_variable_set :@original_platform, nil
 
-    assert_match %r|^platform: ruby$|, @a1.to_yaml
+    assert_match %r{^platform: ruby$}, @a1.to_yaml
   end
 
   def test_validate
@@ -2723,7 +2700,7 @@ end
         @a1.validate
       end
 
-      assert_equal %{"#{f}" or "#{t}" is not an author}, e.message
+      assert_equal %("#{f}" or "#{t}" is not an author), e.message
 
       @a1.authors = ["#{t} (who is writing this software)"]
 
@@ -2731,7 +2708,7 @@ end
         @a1.validate
       end
 
-      assert_equal %{"#{f}" or "#{t}" is not an author}, e.message
+      assert_equal %("#{f}" or "#{t}" is not an author), e.message
     end
   end
 
@@ -2856,6 +2833,37 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     end
   end
 
+  def test_validate_rake_extension_have_rake_dependency_warning
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = ['Rakefile']
+      File.write File.join(@tempdir, 'Rakefile'), ''
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      assert_match(/add rake as a dependency/, @ui.error)
+    end
+  end
+
+  def test_validate_rake_extension_have_rake_dependency_no_warning
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = ['Rakefile']
+      @a1.add_runtime_dependency 'rake'
+      File.write File.join(@tempdir, 'Rakefile'), ''
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      refute_match(/add rake as a dependency/, @ui.error)
+    end
+  end
+
   def test_validate_description
     util_setup_validate
 
@@ -2883,7 +2891,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
         @a1.validate
       end
 
-      assert_equal %{"#{f}" or "#{t}" is not a description}, e.message
+      assert_equal %("#{f}" or "#{t}" is not a description), e.message
 
       @a1.description = "#{t} (describe your package)"
 
@@ -2891,7 +2899,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
         @a1.validate
       end
 
-      assert_equal %{"#{f}" or "#{t}" is not a description}, e.message
+      assert_equal %("#{f}" or "#{t}" is not a description), e.message
     end
   end
 
@@ -2905,7 +2913,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
         @a1.validate
       end
 
-      assert_equal %{"#{f}" or "#{t}" is not an email}, e.message
+      assert_equal %("#{f}" or "#{t}" is not an email), e.message
 
       @a1.email = "#{t} (your e-mail)"
 
@@ -2913,7 +2921,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
         @a1.validate
       end
 
-      assert_equal %{"#{f}" or "#{t}" is not an email}, e.message
+      assert_equal %("#{f}" or "#{t}" is not an email), e.message
     end
   end
 
@@ -3027,8 +3035,8 @@ Please report a bug if this causes problems.
 
     specification.define_singleton_method(:find_all_by_name) do |dep_name|
       [
-        specification.new { |s| s.name = "z", s.version = Gem::Version.new("1") },
-        specification.new { |s| s.name = "z", s.version = Gem::Version.new("2") }
+        specification.new {|s| s.name = "z", s.version = Gem::Version.new("1") },
+        specification.new {|s| s.name = "z", s.version = Gem::Version.new("2") },
       ]
     end
 
@@ -3044,6 +3052,13 @@ Please report a bug if this causes problems.
 
     assert_output nil, expected do
       specification.reset
+    end
+  end
+
+  def test_duplicate_runtime_dependency
+    expected = "WARNING: duplicated b dependency [\"~> 3.0\", \"~> 3.0\"]\n"
+    assert_output nil, expected do
+      @a1.add_runtime_dependency "b", "~> 3.0", "~> 3.0"
     end
   end
 
@@ -3122,10 +3137,21 @@ Please report a bug if this causes problems.
       @a1.validate
     end
 
-    assert_match <<-warning, @ui.error
+    assert_match <<-WARNING, @ui.error
 WARNING:  licenses is empty, but is recommended.  Use a license identifier from
 http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
-    warning
+    WARNING
+  end
+
+  def test_validate_license_in_a_non_packaging_context
+    util_setup_validate
+
+    use_ui @ui do
+      @a1.licenses.clear
+      @a1.validate(false)
+    end
+
+    assert_empty @ui.error
   end
 
   def test_removed_methods
@@ -3151,10 +3177,10 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
       @a1.validate
     end
 
-    assert_match <<-warning, @ui.error
+    assert_match <<-WARNING, @ui.error
 WARNING:  license value 'BSD' is invalid.  Use a license identifier from
 http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
-    warning
+    WARNING
   end
 
   def test_validate_license_values_plus
@@ -3198,14 +3224,14 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
       @a1.validate
     end
 
-    assert_match <<-warning, @ui.error
+    assert_match <<-WARNING, @ui.error
 WARNING:  license value 'GPL-2.0+ FOO' is invalid.  Use a license identifier from
 http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
-    warning
-    assert_match <<-warning, @ui.error
+    WARNING
+    assert_match <<-WARNING, @ui.error
 WARNING:  license value 'GPL-2.0 FOO' is invalid.  Use a license identifier from
 http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
-    warning
+    WARNING
   end
 
   def test_validate_license_with_invalid_exception
@@ -3216,10 +3242,10 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
       @a1.validate
     end
 
-    assert_match <<-warning, @ui.error
+    assert_match <<-WARNING, @ui.error
 WARNING:  license value 'GPL-2.0+ WITH Autocofn-exception-2.0' is invalid.  Use a license identifier from
 http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
-    warning
+    WARNING
   end
 
   def test_validate_license_gives_suggestions
@@ -3230,11 +3256,11 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
       @a1.validate
     end
 
-    assert_match <<-warning, @ui.error
+    assert_match <<-WARNING, @ui.error
 WARNING:  license value 'ruby' is invalid.  Use a license identifier from
 http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
 Did you mean 'Ruby'?
-    warning
+    WARNING
   end
 
   def test_validate_empty_files
@@ -3330,7 +3356,7 @@ Did you mean 'Ruby'?
           spec.validate
         end
 
-        assert_match %r%^#{name}%, e.message
+        assert_match %r{^#{name}}, e.message
       end
     end
   end
@@ -3430,7 +3456,7 @@ Did you mean 'Ruby'?
         @a1.validate
       end
 
-      assert_equal %{"#{f}" or "#{t}" is not a summary}, e.message
+      assert_equal %("#{f}" or "#{t}" is not a summary), e.message
 
       @a1.summary = "#{t} (describe your package)"
 
@@ -3438,7 +3464,7 @@ Did you mean 'Ruby'?
         @a1.validate
       end
 
-      assert_equal %{"#{f}" or "#{t}" is not a summary}, e.message
+      assert_equal %("#{f}" or "#{t}" is not a summary), e.message
     end
   end
 
@@ -3552,7 +3578,8 @@ Did you mean 'Ruby'?
         s.metadata = {
           "one"          => "two",
           "home"         => "three",
-          "homepage_uri" => "https://example.com/user/repo"
+          "homepage_uri" => "https://example.com/user/repo",
+          "funding_uri"  => "https://example.com/donate",
         }
       end
 
@@ -3812,7 +3839,7 @@ end
 
     default_gem_spec = new_default_spec("default", "2.0.0.0",
                                         nil, "default/gem.rb")
-    spec_path = File.join(@default_spec_dir, default_gem_spec.spec_name)
+    spec_path = File.join(@gemhome, "specifications", "default", default_gem_spec.spec_name)
     write_file(spec_path) do |file|
       file.print(default_gem_spec.to_ruby)
     end
@@ -3837,12 +3864,17 @@ end
       FileUtils.mkdir_p "test"
       FileUtils.mkdir_p "bin"
 
-      FileUtils.touch File.join("ext", "a", "extconf.rb")
-      FileUtils.touch File.join("lib", "code.rb")
-      FileUtils.touch File.join("test", "suite.rb")
+      begin
+        umask_orig = File.umask(2)
+        FileUtils.touch File.join("ext", "a", "extconf.rb")
+        FileUtils.touch File.join("lib", "code.rb")
+        FileUtils.touch File.join("test", "suite.rb")
 
-      File.open "bin/exec", "w", 0755 do |fp|
-        fp.puts "#!#{Gem.ruby}"
+        File.open "bin/exec", "w", 0755 do |fp|
+          fp.puts "#!#{Gem.ruby}"
+        end
+      ensure
+        File.umask(umask_orig)
       end
     end
   end
@@ -3896,5 +3928,4 @@ end
   ensure
     $VERBOSE = old_verbose
   end
-
 end

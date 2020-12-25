@@ -56,23 +56,26 @@ describe "Integer#>> (with n >> m)" do
       (3 >> bignum_value).should == 0
     end
 
-    it "returns an Bignum == fixnum_max * 2 when fixnum_max >> -1 and n > 0" do
+    it "returns an Integer == fixnum_max * 2 when fixnum_max >> -1 and n > 0" do
       result = fixnum_max >> -1
-      result.should be_an_instance_of(Bignum)
+      result.should be_an_instance_of(Integer)
       result.should == fixnum_max * 2
     end
 
-    it "returns an Bignum == fixnum_min * 2 when fixnum_min >> -1 and n < 0" do
+    it "returns an Integer == fixnum_min * 2 when fixnum_min >> -1 and n < 0" do
       result = fixnum_min >> -1
-      result.should be_an_instance_of(Bignum)
+      result.should be_an_instance_of(Integer)
       result.should == fixnum_min * 2
     end
 
     it "calls #to_int to convert the argument to an Integer" do
       obj = mock("2")
       obj.should_receive(:to_int).and_return(2)
-
       (8 >> obj).should == 2
+
+      obj = mock("to_int_bignum")
+      obj.should_receive(:to_int).and_return(bignum_value)
+      (8 >> obj).should == 0
     end
 
     it "raises a TypeError when #to_int does not return an Integer" do
@@ -150,19 +153,19 @@ describe "Integer#>> (with n >> m)" do
       (@bignum >> 68).should == 0
     end
 
-    it "returns 0 when m is a Bignum" do
+    it "returns 0 when m is an Integer" do
       (@bignum >> bignum_value).should == 0
     end
 
-    it "returns a Fixnum == fixnum_max when (fixnum_max * 2) >> 1 and n > 0" do
+    it "returns an Integer == fixnum_max when (fixnum_max * 2) >> 1 and n > 0" do
       result = (fixnum_max * 2) >> 1
-      result.should be_an_instance_of(Fixnum)
+      result.should be_an_instance_of(Integer)
       result.should == fixnum_max
     end
 
-    it "returns a Fixnum == fixnum_min when (fixnum_min * 2) >> 1 and n < 0" do
+    it "returns an Integer == fixnum_min when (fixnum_min * 2) >> 1 and n < 0" do
       result = (fixnum_min * 2) >> 1
-      result.should be_an_instance_of(Fixnum)
+      result.should be_an_instance_of(Integer)
       result.should == fixnum_min
     end
 

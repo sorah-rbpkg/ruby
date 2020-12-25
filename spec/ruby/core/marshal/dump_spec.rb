@@ -15,8 +15,8 @@ describe "Marshal.dump" do
     Marshal.dump(false).should == "\004\bF"
   end
 
-  describe "with a Fixnum" do
-    it "dumps a Fixnum" do
+  describe "with an Integer" do
+    it "dumps an Integer" do
       [ [Marshal,  0,       "\004\bi\000"],
         [Marshal,  5,       "\004\bi\n"],
         [Marshal,  8,       "\004\bi\r"],
@@ -38,11 +38,11 @@ describe "Marshal.dump" do
     end
 
     platform_is wordsize: 64 do
-      it "dumps a positive Fixnum > 31 bits as a Bignum" do
+      it "dumps a positive Integer > 31 bits as an Integer" do
         Marshal.dump(2**31 + 1).should == "\x04\bl+\a\x01\x00\x00\x80"
       end
 
-      it "dumps a negative Fixnum > 31 bits as a Bignum" do
+      it "dumps a negative Integer > 31 bits as an Integer" do
         Marshal.dump(-2**31 - 1).should == "\x04\bl-\a\x01\x00\x00\x80"
       end
     end
@@ -157,14 +157,14 @@ describe "Marshal.dump" do
     end
   end
 
-  describe "with a Bignum" do
-    it "dumps a Bignum" do
+  describe "with an Integer" do
+    it "dumps an Integer" do
       [ [Marshal, -4611686018427387903,    "\004\bl-\t\377\377\377\377\377\377\377?"],
         [Marshal, -2361183241434822606847, "\004\bl-\n\377\377\377\377\377\377\377\377\177\000"],
       ].should be_computed_by(:dump)
     end
 
-    it "dumps a Bignum" do
+    it "dumps an Integer" do
       [ [Marshal,  2**64, "\004\bl+\n\000\000\000\000\000\000\000\000\001\000"],
         [Marshal,  2**90, "\004\bl+\v#{"\000" * 11}\004"],
         [Marshal, -2**63, "\004\bl-\t\000\000\000\000\000\000\000\200"],
@@ -235,13 +235,13 @@ describe "Marshal.dump" do
     end
 
     it "dumps a Regexp with instance variables" do
-      o = //
+      o = Regexp.new("")
       o.instance_variable_set(:@ivar, :ivar)
       Marshal.dump(o).should == "\x04\bI/\x00\x00\a:\x06EF:\n@ivar:\tivar"
     end
 
     it "dumps an extended Regexp" do
-      Marshal.dump(//.extend(Meths)).should == "\x04\bIe:\nMeths/\x00\x00\x06:\x06EF"
+      Marshal.dump(Regexp.new("").extend(Meths)).should == "\x04\bIe:\nMeths/\x00\x00\x06:\x06EF"
     end
 
     it "dumps a Regexp subclass" do
@@ -411,13 +411,15 @@ describe "Marshal.dump" do
       load.should == (1...2)
     end
 
-    it "dumps a Range with extra instance variables" do
-      range = (1...3)
-      range.instance_variable_set :@foo, 42
-      dump = Marshal.dump(range)
-      load = Marshal.load(dump)
-      load.should == range
-      load.instance_variable_get(:@foo).should == 42
+    ruby_version_is ""..."3.0" do
+      it "dumps a Range with extra instance variables" do
+        range = (1...3)
+        range.instance_variable_set :@foo, 42
+        dump = Marshal.dump(range)
+        load = Marshal.load(dump)
+        load.should == range
+        load.instance_variable_get(:@foo).should == 42
+      end
     end
   end
 
@@ -556,13 +558,10 @@ describe "Marshal.dump" do
   end
 
   describe "when passed a StringIO" do
-
     it "should raise an error" do
       require "stringio"
-
       -> { Marshal.dump(StringIO.new) }.should raise_error(TypeError)
     end
-
   end
 
   it "raises a TypeError if marshalling a Method instance" do

@@ -38,6 +38,6 @@
 
 /* Let .bss section automatically initialize this variable */
 /* cf. Section 6.7.8 of ISO/IEC 9899:1999 */
-static const int *const *const unified_insns_data[206];
+static const int *const *const unified_insns_data[202];
 
 ASSERT_VM_INSTRUCTION_SIZE(unified_insns_data);

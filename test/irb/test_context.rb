@@ -68,6 +68,7 @@ module TestIRB
     end
 
     def test_evaluate_with_encoding_error_without_lineno
+      skip if RUBY_ENGINE == 'truffleruby'
       assert_raise_with_message(EncodingError, /invalid symbol/) {
         @context.evaluate(%q[{"\xAE": 1}], 1)
         # The backtrace of this invalid encoding hash doesn't contain lineno.
@@ -75,6 +76,7 @@ module TestIRB
     end
 
     def test_evaluate_with_onigmo_warning
+      skip if RUBY_ENGINE == 'truffleruby'
       assert_warning("(irb):1: warning: character class has duplicated range: /[aa]/\n") do
         @context.evaluate('/[aa]/', 1)
       end
@@ -228,7 +230,6 @@ module TestIRB
 
       irb.context.echo = true
       irb.context.echo_on_assignment = false
-      irb.context.omit_on_assignment = true
       out, err = capture_io do
         irb.eval_input
       end
@@ -237,8 +238,7 @@ module TestIRB
 
       input.reset
       irb.context.echo = true
-      irb.context.echo_on_assignment = true
-      irb.context.omit_on_assignment = true
+      irb.context.echo_on_assignment = :truncate
       out, err = capture_io do
         irb.eval_input
       end
@@ -248,7 +248,6 @@ module TestIRB
       input.reset
       irb.context.echo = true
       irb.context.echo_on_assignment = true
-      irb.context.omit_on_assignment = false
       out, err = capture_io do
         irb.eval_input
       end
@@ -258,7 +257,15 @@ module TestIRB
       input.reset
       irb.context.echo = false
       irb.context.echo_on_assignment = false
-      irb.context.omit_on_assignment = true
+      out, err = capture_io do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_equal("", out)
+
+      input.reset
+      irb.context.echo = false
+      irb.context.echo_on_assignment = :truncate
       out, err = capture_io do
         irb.eval_input
       end
@@ -268,17 +275,6 @@ module TestIRB
       input.reset
       irb.context.echo = false
       irb.context.echo_on_assignment = true
-      irb.context.omit_on_assignment = true
-      out, err = capture_io do
-        irb.eval_input
-      end
-      assert_empty err
-      assert_equal("", out)
-
-      input.reset
-      irb.context.echo = false
-      irb.context.echo_on_assignment = true
-      irb.context.omit_on_assignment = false
       out, err = capture_io do
         irb.eval_input
       end
@@ -298,7 +294,6 @@ module TestIRB
 
       irb.context.echo = true
       irb.context.echo_on_assignment = false
-      irb.context.omit_on_assignment = true
       out, err = capture_io do
         irb.eval_input
       end
@@ -308,8 +303,7 @@ module TestIRB
 
       input.reset
       irb.context.echo = true
-      irb.context.echo_on_assignment = true
-      irb.context.omit_on_assignment = true
+      irb.context.echo_on_assignment = :truncate
       out, err = capture_io do
         irb.eval_input
       end
@@ -320,7 +314,6 @@ module TestIRB
       input.reset
       irb.context.echo = true
       irb.context.echo_on_assignment = true
-      irb.context.omit_on_assignment = false
       out, err = capture_io do
         irb.eval_input
       end
@@ -331,7 +324,16 @@ module TestIRB
       input.reset
       irb.context.echo = false
       irb.context.echo_on_assignment = false
-      irb.context.omit_on_assignment = true
+      out, err = capture_io do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_equal("", out)
+      irb.context.evaluate('A.remove_method(:inspect)', 0)
+
+      input.reset
+      irb.context.echo = false
+      irb.context.echo_on_assignment = :truncate
       out, err = capture_io do
         irb.eval_input
       end
@@ -342,18 +344,6 @@ module TestIRB
       input.reset
       irb.context.echo = false
       irb.context.echo_on_assignment = true
-      irb.context.omit_on_assignment = true
-      out, err = capture_io do
-        irb.eval_input
-      end
-      assert_empty err
-      assert_equal("", out)
-      irb.context.evaluate('A.remove_method(:inspect)', 0)
-
-      input.reset
-      irb.context.echo = false
-      irb.context.echo_on_assignment = true
-      irb.context.omit_on_assignment = false
       out, err = capture_io do
         irb.eval_input
       end
@@ -370,26 +360,22 @@ module TestIRB
       irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
 
       assert(irb.context.echo?, "echo? should be true by default")
-      assert(irb.context.echo_on_assignment?, "echo_on_assignment? should be true by default")
-      assert(irb.context.omit_on_assignment?, "omit_on_assignment? should be true by default")
+      assert_equal(:truncate, irb.context.echo_on_assignment?, "echo_on_assignment? should be :truncate by default")
 
       # Explicitly set :ECHO to false
       IRB.conf[:ECHO] = false
       irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
 
       refute(irb.context.echo?, "echo? should be false when IRB.conf[:ECHO] is set to false")
-      assert(irb.context.echo_on_assignment?, "echo_on_assignment? should be true by default")
-      assert(irb.context.omit_on_assignment?, "omit_on_assignment? should be true by default")
+      assert_equal(:truncate, irb.context.echo_on_assignment?, "echo_on_assignment? should be :truncate by default")
 
       # Explicitly set :ECHO_ON_ASSIGNMENT to true
       IRB.conf[:ECHO] = nil
       IRB.conf[:ECHO_ON_ASSIGNMENT] = false
-      IRB.conf[:OMIT_ON_ASSIGNMENT] = false
       irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
 
       assert(irb.context.echo?, "echo? should be true by default")
       refute(irb.context.echo_on_assignment?, "echo_on_assignment? should be false when IRB.conf[:ECHO_ON_ASSIGNMENT] is set to false")
-      refute(irb.context.omit_on_assignment?, "omit_on_assignment? should be false when IRB.conf[:OMIT_ON_ASSIGNMENT] is set to false")
     end
 
     def test_multiline_output_on_default_inspector

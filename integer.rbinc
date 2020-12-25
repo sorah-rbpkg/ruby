@@ -1,0 +1,244 @@
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file
+//   by ./tool/mk_builtin_loader.rb
+//   with integer.rb
+#include "internal/compilers.h"     /* for MAYBE_UNUSED */
+#include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
+#include "ruby/ruby.h"              /* for VALUE */
+#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
+struct rb_execution_context_struct; /* in vm_core.h */
+
+static VALUE builtin_inline_class_8(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 8 "integer.rb"
+return rb_int_uminus(self);
+#line 17 "integer.rbinc"
+}
+
+static VALUE builtin_inline_class_24(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 24 "integer.rb"
+return rb_int_comp(self);
+#line 24 "integer.rbinc"
+}
+
+static VALUE builtin_inline_class_29(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 29 "integer.rb"
+return rb_int_abs(self);
+#line 31 "integer.rbinc"
+}
+
+static VALUE builtin_inline_class_75(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 75 "integer.rb"
+return rb_int_bit_length(self);
+#line 38 "integer.rbinc"
+}
+
+static VALUE builtin_inline_class_84(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 84 "integer.rb"
+return rb_int_even_p(self);
+#line 45 "integer.rbinc"
+}
+
+static VALUE builtin_inline_class_97(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 97 "integer.rb"
+return rb_int_abs(self);
+#line 52 "integer.rbinc"
+}
+
+static VALUE builtin_inline_class_106(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 106 "integer.rb"
+return rb_int_odd_p(self);
+#line 59 "integer.rbinc"
+}
+
+static VALUE builtin_inline_class_148(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 148 "integer.rb"
+return rb_int_zero_p(self);
+#line 66 "integer.rbinc"
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi0(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        fprintf(f, "%s", "    {\n");
+        fprintf(f, "%s", "#line 8 \"integer.rb\"\n");
+        fprintf(f, "%s", "    return rb_int_uminus(self);\n");
+        fprintf(f, "%s", "#line 72 \"integer.rbinc\"\n");
+        fprintf(f, "%s", "    }\n");
+        fprintf(f, "%s", "    \n");
+        return;
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_8 */\n", (intptr_t)builtin_inline_class_8);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi1(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        fprintf(f, "%s", "    {\n");
+        fprintf(f, "%s", "#line 24 \"integer.rb\"\n");
+        fprintf(f, "%s", "    return rb_int_comp(self);\n");
+        fprintf(f, "%s", "#line 78 \"integer.rbinc\"\n");
+        fprintf(f, "%s", "    }\n");
+        fprintf(f, "%s", "    \n");
+        return;
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_24 */\n", (intptr_t)builtin_inline_class_24);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi2(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        fprintf(f, "%s", "    {\n");
+        fprintf(f, "%s", "#line 29 \"integer.rb\"\n");
+        fprintf(f, "%s", "    return rb_int_abs(self);\n");
+        fprintf(f, "%s", "#line 84 \"integer.rbinc\"\n");
+        fprintf(f, "%s", "    }\n");
+        fprintf(f, "%s", "    \n");
+        return;
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_29 */\n", (intptr_t)builtin_inline_class_29);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi3(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        fprintf(f, "%s", "    {\n");
+        fprintf(f, "%s", "#line 75 \"integer.rb\"\n");
+        fprintf(f, "%s", "    return rb_int_bit_length(self);\n");
+        fprintf(f, "%s", "#line 90 \"integer.rbinc\"\n");
+        fprintf(f, "%s", "    }\n");
+        fprintf(f, "%s", "    \n");
+        return;
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_75 */\n", (intptr_t)builtin_inline_class_75);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi4(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        fprintf(f, "%s", "    {\n");
+        fprintf(f, "%s", "#line 84 \"integer.rb\"\n");
+        fprintf(f, "%s", "    return rb_int_even_p(self);\n");
+        fprintf(f, "%s", "#line 96 \"integer.rbinc\"\n");
+        fprintf(f, "%s", "    }\n");
+        fprintf(f, "%s", "    \n");
+        return;
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_84 */\n", (intptr_t)builtin_inline_class_84);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi5(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        fprintf(f, "%s", "    {\n");
+        fprintf(f, "%s", "#line 97 \"integer.rb\"\n");
+        fprintf(f, "%s", "    return rb_int_abs(self);\n");
+        fprintf(f, "%s", "#line 102 \"integer.rbinc\"\n");
+        fprintf(f, "%s", "    }\n");
+        fprintf(f, "%s", "    \n");
+        return;
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_97 */\n", (intptr_t)builtin_inline_class_97);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi6(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        fprintf(f, "%s", "    {\n");
+        fprintf(f, "%s", "#line 106 \"integer.rb\"\n");
+        fprintf(f, "%s", "    return rb_int_odd_p(self);\n");
+        fprintf(f, "%s", "#line 108 \"integer.rbinc\"\n");
+        fprintf(f, "%s", "    }\n");
+        fprintf(f, "%s", "    \n");
+        return;
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_106 */\n", (intptr_t)builtin_inline_class_106);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi7(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        fprintf(f, "%s", "    {\n");
+        fprintf(f, "%s", "#line 148 \"integer.rb\"\n");
+        fprintf(f, "%s", "    return rb_int_zero_p(self);\n");
+        fprintf(f, "%s", "#line 114 \"integer.rbinc\"\n");
+        fprintf(f, "%s", "    }\n");
+        fprintf(f, "%s", "    \n");
+        return;
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_148 */\n", (intptr_t)builtin_inline_class_148);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+void Init_builtin_integer(void)
+{
+  // table definition
+  static const struct rb_builtin_function integer_table[] = {
+    RB_BUILTIN_FUNCTION(0, _bi0, builtin_inline_class_8, 0, mjit_compile_invokebuiltin_for__bi0),
+    RB_BUILTIN_FUNCTION(1, _bi1, builtin_inline_class_24, 0, mjit_compile_invokebuiltin_for__bi1),
+    RB_BUILTIN_FUNCTION(2, _bi2, builtin_inline_class_29, 0, mjit_compile_invokebuiltin_for__bi2),
+    RB_BUILTIN_FUNCTION(3, _bi3, builtin_inline_class_75, 0, mjit_compile_invokebuiltin_for__bi3),
+    RB_BUILTIN_FUNCTION(4, _bi4, builtin_inline_class_84, 0, mjit_compile_invokebuiltin_for__bi4),
+    RB_BUILTIN_FUNCTION(5, _bi5, builtin_inline_class_97, 0, mjit_compile_invokebuiltin_for__bi5),
+    RB_BUILTIN_FUNCTION(6, _bi6, builtin_inline_class_106, 0, mjit_compile_invokebuiltin_for__bi6),
+    RB_BUILTIN_FUNCTION(7, _bi7, builtin_inline_class_148, 0, mjit_compile_invokebuiltin_for__bi7),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),
+  };
+
+  // arity_check
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(5, 1, 0) || __clang__
+COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
+#endif
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_8);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_24);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_29);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_75);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_84);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_97);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_106);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_148);
+COMPILER_WARNING_POP
+
+  // load
+  rb_load_with_builtin_functions("integer", integer_table);
+}

@@ -99,7 +99,7 @@ module Bundler
         install_serially
       end
 
-      handle_error if @specs.any?(&:failed?)
+      handle_error if failed_specs.any?
       @specs
     ensure
       worker_pool && worker_pool.stop
@@ -130,7 +130,11 @@ module Bundler
       Bundler.ui.warn(warning.join("\n"))
     end
 
-  private
+    private
+
+    def failed_specs
+      @specs.select(&:failed?)
+    end
 
     def install_with_worker
       enqueue_specs
@@ -156,17 +160,13 @@ module Bundler
       gem_installer = Bundler::GemInstaller.new(
         spec_install.spec, @installer, @standalone, worker_num, @force
       )
-      success, message = begin
-        gem_installer.install_from_spec
-      rescue RuntimeError => e
-        raise e, "#{e}\n\n#{require_tree_for_spec(spec_install.spec)}"
-      end
+      success, message = gem_installer.install_from_spec
       if success
         spec_install.state = :installed
         spec_install.post_install_message = message unless message.nil?
       else
-        spec_install.state = :failed
         spec_install.error = "#{message}\n\n#{require_tree_for_spec(spec_install.spec)}"
+        spec_install.state = :failed
       end
       Plugin.hook(Plugin::Events::GEM_AFTER_INSTALL, spec_install)
       spec_install
@@ -190,11 +190,11 @@ module Bundler
     end
 
     def handle_error
-      errors = @specs.select(&:failed?).map(&:error)
+      errors = failed_specs.map(&:error)
       if exception = errors.find {|e| e.is_a?(Bundler::BundlerError) }
         raise exception
       end
-      raise Bundler::InstallError, errors.map(&:to_s).join("\n\n")
+      raise Bundler::InstallError, errors.join("\n\n")
     end
 
     def require_tree_for_spec(spec)

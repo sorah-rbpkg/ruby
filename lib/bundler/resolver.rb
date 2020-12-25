@@ -75,12 +75,17 @@ module Bundler
       return unless debug?
       debug_info = yield
       debug_info = debug_info.inspect unless debug_info.is_a?(String)
-      warn debug_info.split("\n").map {|s| "  " * depth + s }
+      puts debug_info.split("\n").map {|s| "BUNDLER: " + "  " * depth + s }
     end
 
     def debug?
       return @debug_mode if defined?(@debug_mode)
-      @debug_mode = ENV["DEBUG_RESOLVER"] || ENV["DEBUG_RESOLVER_TREE"] || false
+      @debug_mode =
+        ENV["BUNDLER_DEBUG_RESOLVER"] ||
+        ENV["BUNDLER_DEBUG_RESOLVER_TREE"] ||
+        ENV["DEBUG_RESOLVER"] ||
+        ENV["DEBUG_RESOLVER_TREE"] ||
+        false
     end
 
     def before_resolution
@@ -101,18 +106,19 @@ module Bundler
       specification.dependencies_for_activated_platforms
     end
 
-    def search_for(dependency)
-      platform = dependency.__platform
-      dependency = dependency.dep unless dependency.is_a? Gem::Dependency
-      search = @search_for[dependency] ||= begin
+    def search_for(dependency_proxy)
+      platform = dependency_proxy.__platform
+      dependency = dependency_proxy.dep
+      @search_for[dependency_proxy] ||= begin
+        name = dependency.name
         index = index_for(dependency)
-        results = index.search(dependency, @base[dependency.name])
+        results = index.search(dependency, @base[name])
 
-        if vertex = @base_dg.vertex_named(dependency.name)
+        if vertex = @base_dg.vertex_named(name)
           locked_requirement = vertex.payload.requirement
         end
 
-        if !@prerelease_specified[dependency.name] && (!@use_gvp || locked_requirement.nil?)
+        if !@prerelease_specified[name] && (!@use_gvp || locked_requirement.nil?)
           # Move prereleases to the beginning of the list, so they're considered
           # last during resolution.
           pre, results = results.partition {|spec| spec.version.prerelease? }
@@ -140,13 +146,27 @@ module Bundler
         end
         # GVP handles major itself, but it's still a bit risky to trust it with it
         # until we get it settled with new behavior. For 2.x it can take over all cases.
-        if !@use_gvp
+        search = if !@use_gvp
           spec_groups
         else
           @gem_version_promoter.sort_versions(dependency, spec_groups)
         end
+        selected_sgs = []
+        search.each do |sg|
+          next unless sg.for?(platform)
+          sg_all_platforms = sg.copy_for(self.class.sort_platforms(@platforms).reverse)
+          next unless sg_all_platforms
+
+          selected_sgs << sg_all_platforms
+
+          next if sg_all_platforms.activated_platforms == [Gem::Platform::RUBY]
+          # Add a spec group for "non platform specific spec" as the fallback
+          # spec group.
+          sg_ruby = sg.copy_for([Gem::Platform::RUBY])
+          selected_sgs.insert(-2, sg_ruby) if sg_ruby
+        end
+        selected_sgs
       end
-      search.select {|sg| sg.for?(platform) }.each {|sg| sg.activate_platform!(platform) }
     end
 
     def index_for(dependency)
@@ -183,9 +203,7 @@ module Bundler
     end
 
     def requirement_satisfied_by?(requirement, activated, spec)
-      return false unless requirement.matches_spec?(spec) || spec.source.is_a?(Source::Gemspec)
-      spec.activate_platform!(requirement.__platform) if !@platforms || @platforms.include?(requirement.__platform)
-      true
+      requirement.matches_spec?(spec) || spec.source.is_a?(Source::Gemspec)
     end
 
     def relevant_sources_for_vertex(vertex)
@@ -223,11 +241,12 @@ module Bundler
     end
 
     def self.platform_sort_key(platform)
-      return ["", "", ""] if Gem::Platform::RUBY == platform
-      platform.to_a.map {|part| part || "" }
+      # Prefer specific platform to not specific platform
+      return ["99-LAST", "", "", ""] if Gem::Platform::RUBY == platform
+      ["00", *platform.to_a.map {|part| part || "" }]
     end
 
-  private
+    private
 
     # returns an integer \in (-\infty, 0]
     # a number closer to 0 means the dependency is less constraining
@@ -279,7 +298,7 @@ module Bundler
           versions_with_platforms = specs.map {|s| [s.version, s.platform] }
           message = String.new("Could not find gem '#{SharedHelpers.pretty_dependency(requirement)}' in #{source}#{cache_message}.\n")
           message << if versions_with_platforms.any?
-            "The source contains '#{name}' at: #{formatted_versions_with_platforms(versions_with_platforms)}"
+            "The source contains the following versions of '#{name}': #{formatted_versions_with_platforms(versions_with_platforms)}"
           else
             "The source does not contain any versions of '#{name}'"
           end
