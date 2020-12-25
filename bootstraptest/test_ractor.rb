@@ -396,6 +396,13 @@ assert_equal 'ok', %q{
   end
 }
 
+# Ractor.main returns main ractor
+assert_equal 'true', %q{
+  Ractor.new{
+    Ractor.main
+  }.take == Ractor.current
+}
+
 # a ractor with closed outgoing port should terminate
 assert_equal 'ok', %q{
   Ractor.new do
@@ -1149,6 +1156,14 @@ assert_equal '[:ok, false, false]', %q{
   [(Ractor.make_shareable(x) rescue :ok), Ractor.shareable?(x), Ractor.shareable?(y)]
 }
 
+# Ractor.make_shareable with Class/Module
+assert_equal '[C, M]', %q{
+  class C; end
+  module M; end
+
+  Ractor.make_shareable(ary = [C, M])
+}
+
 # define_method() can invoke different Ractor's proc if the proc is shareable.
 assert_equal '1', %q{
   class C
@@ -1191,6 +1206,18 @@ assert_equal '[false, false, true, true]', %q{
   r
 }
 
+# TracePoint with normal Proc should be Ractor local
+assert_equal '[4, 8]', %q{
+  rs = []
+  TracePoint.new(:line){|tp| rs << tp.lineno if tp.path == __FILE__}.enable do
+    Ractor.new{ # line 4
+      a = 1
+      b = 2
+    }.take
+    c = 3       # line 8
+  end
+  rs
+}
 
 # Ractor deep copies frozen objects (ary)
 assert_equal '[true, false]', %q{
@@ -1223,6 +1250,20 @@ assert_equal '[:ok, :ok]', %q{
   rescue => Ractor::RemoteError
     a << :ok
   end
+}
+
+# Ractor-local storage
+assert_equal '[nil, "b", "a"]', %q{
+  ans = []
+  Ractor.current[:key] = 'a'
+  r = Ractor.new{
+    Ractor.yield self[:key]
+    self[:key] = 'b'
+    self[:key]
+  }
+  ans << r.take
+  ans << r.take
+  ans << Ractor.current[:key]
 }
 
 ###

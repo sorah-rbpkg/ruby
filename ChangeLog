@@ -1,5 +1,1906 @@
 -*- coding: utf-8 -*-
 
+commit 95aff214687a5e12c3eb57d056665741e734c188
+  Author: TAKANO Mitsuhiro <takano32@gmail.com>
+  Date:   2020-12-25 12:06:46 +0900
+
+    Disable DTrace in FreeBSD (#3999)
+
+    The latest ruby cannot compile with FreeBSD Dtrace enabled.
+
+commit 312171907c678837f7b687aff0c8b4e2652df83c
+  Author: Kazuhiro NISHIYAMA <zn@mbf.nifty.com>
+  Date:   2020-12-25 11:32:19 +0900
+
+    Sort URLs by issue numbers and remove duplicated [ci skip]
+
+commit 0a31310b99e5c91188af550c0492ac8ecda17cb2
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-25 11:10:29 +0900
+
+    define RGENGC_DEBUG_ENABLED() as 0
+
+    on RUBY_DEVEL==0 and !HAVE_VA_ARGS_MACRO.
+
+    gc_report() is always enabled on such configuration
+    (maybe it is a bug) so disable RGENGC_DEBUG_ENABLED().
+
+commit 5c6f5b16c65506d0aadacb69b2a110f7a75cbf8b
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-25 10:22:43 +0900
+
+    Update stdlib section for Ruby 3.0
+
+commit a628a108fe884d87e527d6f1a46e65ce37b6103e
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-25 09:51:45 +0900
+
+    USE_RUBY_DEBUG_LOG is not defined !devel build
+
+commit 3fadf2665a109ca3e9b490aff2100ad190765358
+  Author: NARUSE, Yui <naruse@airemix.jp>
+  Date:   2020-12-25 08:45:09 +0900
+
+    v3.0.0p0
+
+commit 93a1ef67095c6654df753b2ecf8a4e36fe2a22c6
+  Author: Marcus Stollsteimer <sto.mar@web.de>
+  Date:   2020-12-25 07:20:04 +0900
+
+    Fix typos
+
+commit c3f91f9d8823d607e73f621bbf40f4cba44dc739
+  Author: Marcus Stollsteimer <sto.mar@web.de>
+  Date:   2020-12-25 07:09:51 +0900
+
+    [DOC] Fix typos
+
+commit db2ebbd71b746734b88832b1e70db8afed3d68ed
+  Author: Marc-André Lafortune <github@marc-andre.ca>
+  Date:   2020-12-25 02:08:12 +0900
+
+    Optimize calls to `Kernel#hash` (#3987)
+
+    This avoids recursive checks when the `hash` method of an object
+    isn't specialized.
+
+  Notes:
+    Merged-By: nurse <naruse@airemix.jp>
+
+commit 8981a63f12f9c30e9c6f893d292d01fd5df89991
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-25 01:59:07 +0900
+
+    Update TypeProf to 0.11.0 (#3996)
+
+  Notes:
+    Merged-By: mame <mame@ruby-lang.org>
+
+commit 9b091084a19ccfd338f7662cd9b9a2f1613e4a3b
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-25 01:44:54 +0900
+
+    [memory_view] Add documentation [ci skip]
+
+commit 523b520b44c403345cd9d96ee33ae27fef3c89a5
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-25 01:17:44 +0900
+
+    [ruby/reline] 0.2.0
+
+    https://github.com/ruby/reline/commit/064664c8f9
+
+commit 32616229e3794ffba370fac0d385adc51a1baa94
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-25 01:17:29 +0900
+
+    [ruby/irb] Version 1.3.0
+
+    https://github.com/ruby/irb/commit/ec83280e66
+
+commit d143b75f8ef6043168477f0c77668eb3a5502070
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-25 00:56:17 +0900
+
+    Adjusted indents [ci skip]
+
+commit 0356c3269a7c01fefdd3105d119494c81cd18d03
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2020-12-25 00:14:50 +0900
+
+    * 2020-12-25 [ci skip]
+
+commit c64a067d0569a0aa20ff325c800c1cd74977313c
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-25 00:06:16 +0900
+
+    configure.ac: Make it possible to build on Android Termux
+
+    The recent Termux's clang predefines `__ANDROID_API__` as a fixed number
+    24. However, when it is lower to the current device version, some
+    functions that "configure" determines available are not declared
+    correctly in the header files.
+
+    This change forces to overwrite the predefined `__ANDROID_API__` macro
+    with the current device version.
+
+    ref: https://github.com/termux/termux-packages/issues/6176
+
+commit 81562f943e4f33fbfd00fdfd115890ba0b76916c
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-24 19:47:35 +0900
+
+    Updated access to Process::Status attributes
+
+    pst_pid() no longer returns Qnil even if the receiver is not
+    initialized.
+
+commit 9a7647d9eb59c8ed00b0de46fbf26f744a4158c5
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-24 22:53:24 +0900
+
+    [ruby/reline] Doesn't contain terminate spaces by cw
+
+    This closes ruby/reline#233.
+
+    https://github.com/ruby/reline/commit/4c3f2e2eae
+
+commit 78421319d0401c37497f2b5df7110e92eef9f0e4
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-24 21:44:09 +0900
+
+    [ruby/reline] Use #bytesize for vi_replace_char
+
+    This closes ruby/reline#228.
+
+    https://github.com/ruby/reline/commit/8205fa0b00
+
+commit 0db9842b2ca85709424d6c9c1e11caeae30dfae7
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-24 21:24:35 +0900
+
+    [ruby/reline] Delete the last char of a line by dw
+
+    This closes ruby/reline#229.
+
+    https://github.com/ruby/reline/commit/3f0ae689c4
+
+commit 8d5d139afaf37665d2e77eeb1197e216491d805d
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-24 20:28:26 +0900
+
+    [ruby/reline] Suppress crashing when boken prompt_list is given
+
+    https://github.com/ruby/reline/commit/922d087e7a
+
+commit 634b231f33d28e4048afdc643dcf14c924b98f2e
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-24 07:15:54 +0900
+
+    [ruby/reline] Discard prompt cache by changing mode icon
+
+    https://github.com/ruby/reline/commit/bfeda8a79b
+
+commit 167dc37632300e0061351ab87ddc89ebe9c5f53f
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-24 22:09:09 +0900
+
+    [ruby/irb] Try not to register the exact same measuring method twice
+
+    https://github.com/ruby/irb/commit/cc66b5573e
+
+commit 2c752ff9309496d18c2158f593cab2b6fc671783
+  Author: Kazuhiro NISHIYAMA <zn@mbf.nifty.com>
+  Date:   2020-12-24 23:13:12 +0900
+
+    Fix a typo [ci skip]
+
+commit bdbbfd1fa53baac4d12530a6791140e35a9df46b
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-24 16:44:38 +0900
+
+    Store errno in struct rb_process_status
+
+    To propagate errno in the fiber thread scheduler hook.
+    Returns nil when no terminated process.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3998
+
+commit c752d29bbf784334240fca8956e39f035fb76ec1
+  Author: Soutaro Matsumoto <matsumoto@soutaro.com>
+  Date:   2020-12-24 21:26:46 +0900
+
+    Bundle RBS 1.0.0 (#3994)
+
+  Notes:
+    Merged-By: soutaro <matsumoto@soutaro.com>
+
+commit 9f9a389d95d8a4615b39b196e549e3d5f9d00794
+  Author: Marcus Stollsteimer <sto.mar@web.de>
+  Date:   2020-12-24 19:35:03 +0900
+
+    doc/syntax/pattern_matching.rdoc: fix typos, grammar, style
+
+commit a4419a55f0117a9729be412432835b77dab0d55a
+  Author: Marcus Stollsteimer <sto.mar@web.de>
+  Date:   2020-12-24 19:31:06 +0900
+
+    doc/extension.ja.rdoc: remove trailing whitespace
+
+commit c601a7ecfdfebcbf3534c4c22a3a7afc4dbf3333
+  Author: Marcus Stollsteimer <sto.mar@web.de>
+  Date:   2020-12-24 19:30:30 +0900
+
+    doc/keywords.rdoc: fix typo
+
+commit 7ca2ca9e32ceea48e2e3a2d31318dff57da7f08e
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-24 16:53:26 +0900
+
+    Remove unneeded code
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3993
+
+commit 1a74fb011d318a5afde7b233a6b8c34e7c2b8263
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-24 18:03:39 +0900
+
+    doc/maintainers.rdoc: typo
+
+commit 8664c3ddef548b53c4f5c5264cccd24ae08f174f
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-24 17:41:48 +0900
+
+    update doc/ractor.md
+
+commit a89932799c914d1864fc91f33d6461592dbfd3fb
+  Author: NARUSE, Yui <naruse@airemix.jp>
+  Date:   2020-12-24 17:19:16 +0900
+
+    gen-release-note.rb: Avoid to depend release metadata
+
+    Because it doesn't have metadata when I edit draft.
+
+commit 6a6daf3803771884f4cbf8e134802ae430568ba2
+  Author: NARUSE, Yui <naruse@airemix.jp>
+  Date:   2020-12-24 17:18:07 +0900
+
+    Add tag key
+
+    Release note will use tag value when I write GitHub URLs with release
+    tags.
+
+commit 709d9cf1ba47d6df20ba067fdc8e92a7a817d1d3
+  Author: NARUSE, Yui <naruse@airemix.jp>
+  Date:   2020-12-21 03:02:30 +0900
+
+    Add release engineering related tools
+
+commit d58537cf8f4c3a3569fb5dd647dd5f0a19a9f3be
+  Author: NARUSE, Yui <naruse@airemix.jp>
+  Date:   2020-12-21 02:26:19 +0900
+
+    Revert "remove bz2"
+
+    This reverts commit 7856da5fe75a76bec909778e411270c10a04ca3a.
+    For other branches
+
+commit eb3944c287a455fb1673dd74e31b56afb3c3b649
+  Author: Soutaro Matsumoto <matsumoto@soutaro.com>
+  Date:   2020-12-24 17:19:23 +0900
+
+    Bundle RBS 1.0.0.pre2 (#3991)
+
+  Notes:
+    Merged-By: soutaro <matsumoto@soutaro.com>
+
+commit 85f01794795521e29e64e06ead416cbd3d52c55c
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-24 17:14:48 +0900
+
+    doc/keywords.rdoc: mention pattern matching in the `in` keyword section
+
+commit 1415653c84602b3ac4ee449858783aacd8af81ed
+  Author: zverok <zverok.offline@gmail.com>
+  Date:   2020-12-13 01:55:17 +0900
+
+    Redocument non-blocking Fibers and scheduler
+
+    * Document Fiber's method related to scheduling;
+    * Extend Fiber's class docs with concepts of non-blocking
+      fibers;
+    * Introduce "imaginary" (documentation-only) class
+      Fiber::SchedulerInterface to properly document how
+      scheduler's methods should look.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3891
+
+commit 1729fd8c0acd66aec20bb6986bd82913c9dc190d
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-24 17:00:30 +0900
+
+    doc/contributing.rdoc: remove outdated content
+
+commit f910a27d37a3ab132126f13a20a458afa8889231
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-24 16:37:52 +0900
+
+    README.md: Haiku is currently unsupported
+
+commit b343d547923cf29456910b20fcd1c0a58ed68176
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-24 16:16:20 +0900
+
+    Use RBIMPL_COMPILER_{SINCE,BEFORE} for MSVC
+
+    Pointed out by @shyouhei.
+
+    NOTE: Already we have dropped the support for older MSVCs,
+    probably prior to 1300 or 1400.  Remove the conditional code,
+    especially in win32/Makefile.sub.
+
+commit a76082f499ef819a18a0426973ea531019df4e0a
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-24 16:10:10 +0900
+
+    Add call-seq to Ractor doc; improve wording [doc]
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3992
+
+commit e44a8bd791ee0a2bcb5845c6152daab75e4e6b9e
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-24 16:06:40 +0900
+
+    Let's be more accurate [ci skip]
+
+commit 176b75747c3a079cab5cc83c47d54fa4f9dfa6be
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-24 15:59:57 +0900
+
+    Add NEWS entries about JIT in Jul ~ Dec
+
+    * Instance variables
+      * Merge ivar guards on JIT https://github.com/ruby/ruby/commit/a69dd699ee630dd1086627dbca15a218a8538b6f https://github.com/ruby/ruby/commit/e4f7eee009ebe1f23ee3e5ea69ccd9ea1530bc6f
+      * Prefer RB_OBJ_FROZEN_RAW https://github.com/ruby/ruby/commit/5611066e03fe73bdbb08cc46f79530c69975cf17
+      * Skip checking ROBJECT_EMBED https://github.com/ruby/ruby/commit/81a8d1cf09d59f0d69143d7896545f849f580a4e
+    * Method inlining
+      * Mark some Integer methods as inline https://github.com/ruby/ruby/commit/0703e014713ae92f4c8a2b31e385718dc2452eac
+      * Allow inlining Integer#-@ and #~ https://github.com/ruby/ruby/commit/dbb4f1996939d0ce977e6b37579e28dd886428ff
+      * Inline builtin struct aref https://github.com/ruby/ruby/commit/167d139487d67613bd02522e24476f06ffa137b7
+      * Make Kernel#then, #yield_self, #frozen? builtin https://github.com/ruby/ruby/commit/24fa37d87a24dc932c1d778bcaf91204f5c12a76
+      * (For future) Rewrite Kernel#tap with Ruby https://github.com/ruby/ruby/commit/f3a0d7a2035e9f5e0c70effd55732607e3def263
+    * Other optimizations
+      * Inline constant references https://github.com/ruby/ruby/commit/53babf35ef5b643774636550ea23851e2607e076
+      * Lazily move PC with RUBY_VM_CHECK_INTS https://github.com/ruby/ruby/commit/5d74894f2bc4a3a18aec952d946ead3d784cb4b4
+      * Cache access to reg_cfp->self on JIT https://github.com/ruby/ruby/commit/d40983772966938828a28c6e89752a3e76447b9e
+    * JIT compaction
+      * Shrink the blocking region for compile_compact_jit_code https://github.com/ruby/ruby/commit/ed8e552d4d2c825a3f780ac8bd898eaaca7c21e7
+      * Stop leaving .c files for JIT compaction in /tmp https://github.com/ruby/ruby/commit/fa1250a506e9b6a1bcbf664f6b7b9c06e045d9b9
+    * GC of JIT-ed code
+      * Run unload_units in the JIT worker thread https://github.com/ruby/ruby/commit/16dab6b69263ed9c816bc0283c8c1f2f95dc1027
+      * Avoid unloading units which have enough total_calls https://github.com/ruby/ruby/commit/d80226e7bd801fcbccf71f19ba373b7baf71a49e
+      * Throttle unload_units https://github.com/ruby/ruby/commit/122cd35939ddf8ef7bfa17ad75570c01d0cf06ab
+      * Throttle JIT compaction https://github.com/ruby/ruby/commit/096f54428d8000cccce430022784cb0e7cd31cb4
+    * Compilation speed
+      * Eliminate IVC sync between JIT and Ruby threads https://github.com/ruby/ruby/commit/0960f56a1d773c5417e9de729e159d346aec17ca
+      * Lazily move units from active_units to stale_units https://github.com/ruby/ruby/commit/5d8f227d0edd3c542fcac465eb82005a5f852d34
+
+    Please see https://github.com/ruby/ruby/commit/200c5f4075cb1d179c2eba5b30b5b0a500870f67 for other improvements in Jan ~ Jun.
+
+commit 8aa299de24145891848ce50e29856d2275c75fd3
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-24 15:36:08 +0900
+
+    Tweak magic comments [doc]
+
+commit 8c510e4095458c783420ea0da86f9eedb139731d
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-24 14:57:16 +0900
+
+    NEWS.md: grammatical improvement
+
+commit 24ae0e8ed73947e030b31badb9d620ddf71898b6
+  Author: zverok <zverok.offline@gmail.com>
+  Date:   2020-12-23 15:14:18 +0900
+
+    Review comments
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3981
+
+commit 5696c693540a06c01bf6172d33aff731ad61f871
+  Author: zverok <zverok.offline@gmail.com>
+  Date:   2020-12-23 06:23:14 +0900
+
+    Redocument Fiber#transfer
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3981
+
+commit 8e1c0b2f93abe23f42bd7eba0a3f0d3f3669e486
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-24 13:43:22 +0900
+
+    dir.c: chdir conflict should raise only when called in different thread
+
+    ... and keep it as a warning (like 2.7) when it is called in the same
+    thread. [Bug #15661]
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3990
+
+commit e43b5aa52dcd1eaded1141ab85a30bc8c7c4a6e4
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-24 14:31:01 +0900
+
+    remove redundant example.
+
+    pointed by @marcandre.
+
+commit 6f29716f9ffb710af7f344839ec67ef2b8a48ab2
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-24 10:59:27 +0900
+
+    shareable_constant_value: experimental_copy
+
+    "experimental_everything" makes the assigned value, it means
+    the assignment change the state of assigned value.
+    "experimental_copy" tries to make a deep copy and make copyied object
+    sharable.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3989
+
+commit 1e215a66d26d56befab4fbb72e1d953879411955
+  Author: Jeremy Evans <code@jeremyevans.net>
+  Date:   2020-12-23 14:30:32 +0900
+
+    Fix class of method in Method#inspect for singleton classes of classes
+
+    Previously, due to a change to fix bug 15608, Method#inspect output
+    changed for class methods:
+
+    Ruby 2.7
+    "#<Method: String.prepend(*)>"
+
+    Before change:
+    "#<Method: #<Class:Object>(Module)#prepend(*)>"
+
+    This is wrong because the Method object was created from String and
+    not Object. This is because the fix for bug 15608 assumed it was
+    being called on the singleton class of a instance, and would skip
+    the first singleton class until it got to the class itself.  For
+    class methods, this results in always using the superclass. Fix
+    behavior to not skip until the superclass if the singleton class
+    is the singleton class of a module or class.
+
+    After change:
+    "#<Method: #<Class:Object>(Module)#prepend(*)>"
+
+    Fixes [Bug #17428]
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3984
+
+commit 9aca51e8a597fb4689c058b4e6b215ae87434e1b
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-24 12:09:08 +0900
+
+    add about Ractor into extension.rdoc [ci skip]
+
+commit 66719d7dc8de7b61129d50f40c81ebd9cee323f0
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-23 16:30:16 +0900
+
+    etc: use atomic operation instead of mutex
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3983
+
+commit 6ed6b85ece8733518a7da0c3ec714f20d1102bf5
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-23 14:09:28 +0900
+
+    Expose atomic operation macros with RUBY prefix [Feature #17433]
+
+    Now we need atomic operations, which are lighter than mutex, more
+    widely for extension libraries because of Ractor.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3983
+
+commit f755926ddd3b92248f1fcdf977bd8537bff1f1dd
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-24 10:14:39 +0900
+
+    test/ruby/test_module.rb: not depend on the order of method definitions
+
+commit 05a756b3323d23b8f6ec899eaa83f7172ada0999
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-24 09:32:31 +0900
+
+    [memory_view] Fix some grammar issues in a comment
+
+commit ae26d5bd41ba3718073176a6be7b16924c5b138b
+  Author: Marcus Stollsteimer <sto.mar@web.de>
+  Date:   2020-12-24 05:56:04 +0900
+
+    doc/fiber.md: fix typos
+
+commit 7340e7f82780f529d80490045f5ea3e2559d563c
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-24 04:29:59 +0900
+
+    introduce rb_ractor_atfork()
+
+    to reset main ractor at fork().
+
+commit 7fcb6b3dbe7517fe5426fdb6871cd4940a71b7e8
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-24 04:18:17 +0900
+
+    fix ractor-locking around rb_ractor_thread_list()
+
+    With locking a ractor, rb_ary_push() can call RB_VM_LOCK_ENTER()
+    and it violates an assertion: should not acquire ractor-lock.
+
+commit 458d5175b9f3476c4d0c95c35458aab10c78e647
+  Author: Marcus Stollsteimer <sto.mar@web.de>
+  Date:   2020-12-24 03:47:26 +0900
+
+    Small improvements in magic comments docs
+
+    * remove a duplicate statement
+    * fix rdoc markup
+    * fix typos
+
+commit b32ed8aa41795e3b153b423ae14d2699060d73db
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-24 01:58:43 +0900
+
+    remove method__cache__clear
+
+    DTrace probe method__cache__clear is no longer used.
+    [Bug #16658]
+
+commit a8fc72f5a8c30ef7b5e78824e15e9868f52a3c33
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-24 01:50:45 +0900
+
+    sample/trick2015/kinaba/entry.rb: The constant "Data" has been removed
+
+    Instead, use "Proc" as a 4-letter constant.
+
+commit 8feb40f49a5862ba1a42a5d8d9e228e1a8883a29
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-17 05:39:02 +0900
+
+    Document shareable_constant_value and other magic constants [doc]
+
+commit 4a8ff22f0c9f8a7cd9a68f49523fa2573a4326e9
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-24 01:25:22 +0900
+
+    Reset paren_nest at tAREF and tASET [Bug #17431]
+
+commit fb545743932a5efd5a34ed9da981248dae3cc5ff
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-24 01:24:30 +0900
+
+    Pass keyword options in assert_syntax_error
+
+commit 221ca0f8281d39f0dfdfe13b2448875384bbf735
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2020-12-24 00:16:59 +0900
+
+    * 2020-12-24 [ci skip]
+
+commit 3a81daaf8dc037057d96b8e8cdc6ab1691e7e9d9
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-24 00:15:29 +0900
+
+    Module#public_class_method also accepts a symbol array as an argument
+
+    I'm unsure if this is intentional, but add a document anyway.
+    [Feature #17314]
+
+commit 94015200b69820575c8b11d4181d397b033b69ac
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-23 23:40:04 +0900
+
+    [fiddle] Update to 1.0.6
+
+commit 28e9344fa49387ef84c71a72d1ba7e32b61cf4c7
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-23 20:29:57 +0900
+
+    [ruby/irb] Change StdioInputMethod#eof? to non-blocking
+
+    This fixes --inf-ruby-mode.
+
+    https://github.com/ruby/irb/commit/0e4a818955
+
+commit 129ecb43e54b3249734c69787f813d49ce995567
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-23 21:19:27 +0900
+
+    [ruby/irb] Fix error_message for assert_dynamic_prompt
+
+    https://github.com/ruby/irb/commit/b12dfb6298
+
+commit 31bd17218515a20cf46951018d413b739935beba
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-23 21:18:48 +0900
+
+    [ruby/irb] Suppress "shadowing outer" warning
+
+    https://github.com/ruby/irb/commit/8b83fbef69
+
+commit 684649ea0573c94f4d5004d9f200df65205ea246
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-23 19:47:09 +0900
+
+    [ruby/psych] Bump version to 3.3.0
+
+    https://github.com/ruby/psych/commit/0abce07b90
+
+commit 8259d88938bcbd65c7994e3d8261c4de82e74174
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-23 18:45:14 +0900
+
+    [ruby/psych] Skip test_ractor.rb with ruby/psych repo
+
+      Because ruby/psych still uses minitest. minitest didn't support
+      assert_ractor provided by test suite of ruby/ruby repo.
+
+    https://github.com/ruby/psych/commit/7da26358f1
+
+commit aad88cc10ba268625aaa93ddcc6ff5036052c5cd
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-23 16:51:16 +0900
+
+    [ruby/date] Define dummy RUBY_TYPED_FROZEN_SHAREABLE for old Ruby
+
+    https://github.com/ruby/date/commit/9f3e90ad10
+
+commit aa856d50772aaaceb7b245b8b59f1ab1851a7fab
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-23 16:54:54 +0900
+
+    [ruby/date] Fix envutil for old Ruby
+
+    https://github.com/ruby/date/commit/57e25c406a
+
+commit 313d63c2ac447abc59a878dec0d619314d75449b
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-23 18:06:27 +0900
+
+    Use rb_init_identtable instead of direct use of rb_hashtype_ident
+
+commit e052d0716325bcb499c57b1de0c6e3eb9effb299
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-23 16:55:36 +0900
+
+    Revert "need to clear blocking cnt at fork (child process)"
+
+    This reverts commit 0dd4896175f95c4c2a26d91a97b9fcb9a74cc0c6.
+
+    It breaks the tests on RUBY_DEBUG=1.
+
+commit 81a8d1cf09d59f0d69143d7896545f849f580a4e
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-23 16:38:01 +0900
+
+    Skip checking ROBJECT_EMBED
+
+    when we already check ROBJECT_NUMIV(self) is larger than
+    ROBJECT_EMBED_LEN_MAX at the beginning of the method, because the number
+    of instance variables for the same object doesn't decrease.
+
+    ```
+    $ benchmark-driver -v --rbenv 'before --jit;after --jit' --repeat-count=4 --alternate --output=all benchmark_3000.yml
+    before --jit: ruby 3.0.0dev (2020-12-23T06:32:19Z master dbb4f19969) +JIT [x86_64-linux]
+    after --jit: ruby 3.0.0dev (2020-12-23T07:45:42Z master 95e866c098) +JIT [x86_64-linux]
+    last_commit=Skip checking ROBJECT_EMBED
+    Calculating -------------------------------------
+                                  before --jit           after --jit
+    Optcarrot 3000 frames   102.34091772397872    102.77738408379015 fps
+                            103.37784821624231    105.46530219076179
+                            104.39567016876369    106.43712452152215
+                            105.31782092252713    106.54986150067481
+    ```
+
+commit dbb4f1996939d0ce977e6b37579e28dd886428ff
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-23 15:23:45 +0900
+
+    Allow inlining Integer#-@ and #~
+
+    ```
+    $ benchmark-driver -v --rbenv 'before --jit;after --jit' benchmark/mjit_integer.yml --filter '(comp|uminus)'
+    before --jit: ruby 3.0.0dev (2020-12-23T05:41:44Z master 0dd4896175) +JIT [x86_64-linux]
+    after --jit: ruby 3.0.0dev (2020-12-23T06:25:41Z master 8887d78992) +JIT [x86_64-linux]
+    last_commit=Allow inlining Integer#-@ and #~
+    Calculating -------------------------------------
+                         before --jit  after --jit
+            mjit_comp(1)      44.006M      70.417M i/s -     40.000M times in 0.908967s 0.568042s
+          mjit_uminus(1)      44.333M      68.422M i/s -     40.000M times in 0.902255s 0.584603s
+
+    Comparison:
+                         mjit_comp(1)
+             after --jit:  70417331.4 i/s
+            before --jit:  44005980.4 i/s - 1.60x  slower
+
+                       mjit_uminus(1)
+             after --jit:  68422468.8 i/s
+            before --jit:  44333371.0 i/s - 1.54x  slower
+    ```
+
+commit daec109f423e54094800e083fc8a8ca5cbceb866
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-23 11:29:00 +0900
+
+    [ruby/psych] Optimize cache with `compare_by_identity`
+
+    Using `compare_by_identity` gives a 4x performance boost on cache hits.
+    Benchmark in https://github.com/JuanitoFatas/fast-ruby/issues/189
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3953
+
+commit c5a445d577b786e31c420b5857ad05b954b420ec
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-21 11:42:25 +0900
+
+    [ruby/psych] Make Ractor-ready.
+
+    Config is Ractor-local.
+
+    Benchmarking reveals that using `Ractor.local_storage` for storing cache
+    is similar to accessing a constant (~15% slower).
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3953
+
+commit 3ee0ad919034fbc098939979c872d041a82c4334
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-22 10:01:54 +0900
+
+    [ruby/psych] Don't use instance variables directly for config
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3953
+
+commit d1963adae8373cac771f3d62cd8d92ab11deff9e
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-21 11:41:02 +0900
+
+    [ruby/psych] Avoid methods depending on bindings
+
+    Improves Ractor-readiness.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3953
+
+commit 0eb94dae4aec58de06051cf89d555994838452f2
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-21 11:39:56 +0900
+
+    [ruby/psych] Freeze constants.
+
+    Improves Ractor-readiness.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3953
+
+commit 0dd4896175f95c4c2a26d91a97b9fcb9a74cc0c6
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-23 14:40:58 +0900
+
+    need to clear blocking cnt at fork (child process)
+
+commit 5cf25c55a69264138179f7c955d149a154b50458
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-23 14:03:54 +0900
+
+    Update version for Ractor-safe extensions
+
+commit 61bd28b836190bbc8ce110e780da4c4aad9f485b
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-23 13:15:49 +0900
+
+    [ruby/date] Workaround for non-ruby repository like ruby/date, flori/json
+
+    https://github.com/ruby/date/commit/1ff7fa2d80
+
+commit 8a1e12499b83870f9f102f0f0ea512f0355aac67
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-22 22:10:11 +0900
+
+    Ensure non-literal expressions shareable if `leteral`
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3950
+
+commit c0a2d95cf318cf9b9ffe23f0a4b8720f69775448
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-22 08:26:42 +0900
+
+    Update rb_ractor_ensure_shareable
+
+    * Fixed use of rb_ractor_shareable_p
+    * Raise Ractor::IsolationError
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3950
+
+commit b2aa21b868419c2d87e2812b6b3584a8a1479c23
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-21 15:15:35 +0900
+
+    Split the test
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3950
+
+commit d1c7db9d003fe2f989e1cd2f55698a900291b48a
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-21 15:08:22 +0900
+
+    Added assertions
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3950
+
+commit 0c450b86476322ea4c407d0de4d7d1c5d8523126
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-21 15:11:50 +0900
+
+    `begin ... end` is not a literal
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3950
+
+commit e70206f5701fca5cce38dbfac8ffaa0d9a5c61a3
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-21 15:04:06 +0900
+
+    Added dedicated helper methods
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3950
+
+commit 7a094146e6ef38453a7e475450d90a9c83ea2277
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-19 20:42:58 +0900
+
+    Changed shareable literal semantics [Feature #17397]
+
+    When `literal`, check if the literal about to be assigned to a
+    constant is ractor-shareable, otherwise raise `Ractor::Error` at
+    runtime instead of `SyntaxError`.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3950
+
+commit f14aaa2b1282d6dea9fad3d050e65828f1e269e1
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-22 16:09:52 +0900
+
+    Guard < Ruby 3.0 for the repositories of default gems.
+
+commit 7e44ade5658bc6ae16e9838c64ff9e90d4fd805e
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-23 13:34:11 +0900
+
+    ruby_single_main_ractor should be clear before warn
+
+    rb_warn can produce T_HASH object and it should not use
+    transient heap.
+
+commit 02233ed024095d67683330b2ee9df08d943a5cd0
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-23 12:18:41 +0900
+
+    Adapt tool/search-cgvars.rb for MacOS
+
+commit 3df3b47187d7a137d4eb5a7887e9c8fa22a121c6
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-23 12:16:18 +0900
+
+    Add tool/search-cgvars.rb, thanks @ko1
+
+commit 082114da0552484d2695f685d781418fa51c7ef8
+  Author: Kazuhiro NISHIYAMA <zn@mbf.nifty.com>
+  Date:   2020-12-23 11:13:50 +0900
+
+    [DOC] Add doc to sharing_detection= [ci skip]
+
+    Before:
+    ```
+    $ ri sharing_detection=
+    = .sharing_detection=
+    (from ruby core)
+    === Implementation from PP
+    ------------------------------------------------------------------------
+      sharing_detection=(b)
+    ------------------------------------------------------------------------
+    Returns the sharing detection flag as a boolean value. It is false by
+    default.
+    ```
+
+    After:
+    ```
+    $ ri sharing_detection=
+    = .sharing_detection=
+
+    (from ruby core)
+    === Implementation from PP
+    ------------------------------------------------------------------------
+      sharing_detection=(b)
+
+    ------------------------------------------------------------------------
+
+    Sets the sharing detection flag to b.
+    ```
+
+commit 339227363ce0cf967fa17efa4489d823932ddabd
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-23 08:45:19 +0900
+
+    Merge RubyGems 3.2.3 and Bundler 2.2.3
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3982
+
+commit 733ed1e18498f97250b788f169c37b170e0cf2b6
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-22 22:41:54 +0900
+
+    ripper: fix bad label parameter handling [Bug #17425]
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3977
+
+commit cd63f0358ffb43890d20bb5612c5d82be19fae62
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-22 13:31:11 +0900
+
+    [ruby/etc] Make Ractor safe
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3954
+
+commit 3286380ebcc239b3fe1044884780162f1ee079fe
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-22 14:02:45 +0900
+
+    [ruby/etc] Refactor locks using mutex API
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3954
+
+commit 9636d14f6f4a1dc21ca61c280b26ec8fb3935168
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-23 00:51:26 +0900
+
+    [memory_view] Acquire VM lock while running exported_object_registry_free
+
+    exported_object_registry is freed at exit, so this change is just in case.
+
+commit 01ab29cc285ec92c07cd67db6f8616690bd217f8
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-23 00:43:26 +0900
+
+    [memory_view] Make some rb_memroy_view_t members const
+
+commit db0385d6576bb9d2486e799c935e6b1fa1e7dfcc
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-23 00:43:18 +0900
+
+    [memory_view] Remove needless use of StringValueCStr
+
+commit b3ea828c8ef92f2fab4646f72144f7c468339a81
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-23 00:40:54 +0900
+
+    [memory_view] Add mdview_release_view for test
+
+commit 74652e640a3ef50eb5442eb98438e3d634a4faf7
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-23 00:33:24 +0900
+
+    [memory_view][fiddle] Rename len to byte_size in rb_memory_view_t
+
+commit 05014dcb887681d986105653ab527da2c4ff7774
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-22 17:33:14 +0900
+
+    [memory_view][fiddle] Use bool for boolean return value
+
+commit 74a3569b597f28780958dc3001b41120b54a8a48
+  Author: Marcus Stollsteimer <sto.mar@web.de>
+  Date:   2020-12-23 07:20:14 +0900
+
+    NEWS: fix typos and grammar
+
+commit 841d22ea479f37ab03d3f6c575997a2dd1b6d0a8
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-23 02:18:32 +0900
+
+    [ruby/reline] [ruby/irb] Handle multiple newlines in a token correctly
+
+    Co-authored-by: manga_osyo <manga.osyo@gmail.com>
+    Co-authored-by: ima1zumi <mariimaizumi5@gmail.com>
+
+    https://github.com/ruby/irb/commit/c59a9be82f
+
+    https://github.com/ruby/reline/commit/a7922da16b
+
+commit be5faa2519f1ab70eafd58caccbc3a8cba2718dc
+  Author: Takeru Naito <takeru.naito@gmail.com>
+  Date:   2020-12-22 12:58:12 +0900
+
+    [ruby/irb] Make it possible to use measure even if it is installed as gem
+
+    Include the file that implements this command in the irb gem.
+
+    Co-Authored-By: scivola <scivola@users.noreply.github.com>
+
+    https://github.com/ruby/irb/commit/d8dfea5b57
+
+commit 32849dc1bbc3296aa13f86a35468ce16f8c32aab
+  Author: Sutou Kouhei <kou@clear-code.com>
+  Date:   2020-12-22 14:56:47 +0900
+
+    fiddle: Update to 1.0.5
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3970
+
+commit 228fa3ac6ec25eba5139674d04a74f07a34f2874
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-22 17:27:18 +0900
+
+    NEWS: Mention deprecation warnings not being shown by default
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3974
+
+commit fd745cc92c5e4dfa226cbdbbeb118f6b780666e1
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-22 16:52:05 +0900
+
+    NEWS: group keyword arguments related items together
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3974
+
+commit 5a6d27fe220548eb4ab5232d7f7331b42a66a17f
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-22 16:50:39 +0900
+
+    NEWS: combine $SAFE and $KCODE, move lower
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3974
+
+commit 1bd7427f29bb0e69e6e03d6d66aac6c9a6f7a300
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-22 16:49:27 +0900
+
+    NEWS: move error handling at end of section
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3974
+
+commit f1591b385890fe5e650bf8d5fa75e05a7c01ecea
+  Author: Delton Ding <dsh0416@gmail.com>
+  Date:   2020-12-22 16:01:53 +0900
+
+    Add verbose nil in testing
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3971
+
+commit c6d7e02b90f96d9bcd04edd48b7374f31c510b2a
+  Author: Delton Ding <dsh0416@gmail.com>
+  Date:   2020-12-22 15:30:59 +0900
+
+    Enable `Fiber.current` and `Fiber#alive?` call inside ractor
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3971
+
+commit 487355873ad0de9ab70611d63d97f3fbbfebe79d
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2020-12-23 02:37:59 +0900
+
+    * 2020-12-23 [ci skip]
+
+commit b222a1a49473490ef8903b76868de86cd0a2164e
+  Author: Kazuki Tsujimoto <kazuki@callcc.net>
+  Date:   2020-12-23 02:32:30 +0900
+
+    Fix a message in example code
+
+    Thanks to @zverok for the report.
+
+commit 31b17a14abf9686a0a9b6777c6b47285f510b66a
+  Author: Kazuki Tsujimoto <kazuki@callcc.net>
+  Date:   2020-12-23 02:31:02 +0900
+
+    Make NoMatchingPatternError a subclass of StandardError
+
+commit 53510d1e8a827596dba926c689406edafa399ada
+  Author: ima1zumi <mariimaizumi5@gmail.com>
+  Date:   2020-12-22 13:59:14 +0900
+
+    [ruby/reline] [ruby/reline] Remove unused `attr_writer`
+
+    https://github.com/ruby/reline/commit/ecdc1b7116
+
+    https://github.com/ruby/reline/commit/a7922da16b
+
+commit 299f5708a2274d069c624073ca3958f8625faf35
+  Author: ima1zumi <mariimaizumi5@gmail.com>
+  Date:   2020-12-22 00:59:48 +0900
+
+    [ruby/reline] Fixed an exception occurred when ambiguous width character was passed to `#calculate_width` [Bug #17405]
+
+    https://github.com/ruby/reline/commit/f79b4c857f
+
+commit b52bc4a9c29e80e10b7e64dbebd97117916d3982
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-22 04:38:01 +0900
+
+    [ruby/reline] Support isearch-terminators
+
+    https://github.com/ruby/reline/commit/a7922da16b
+
+commit 294552ca6c38b90a2be257727ce5df69b93a4de7
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-21 23:02:46 +0900
+
+    [ruby/reline] Render refreshed prompt just after i-search finished
+
+    https://github.com/ruby/reline/commit/0d3188fe34
+
+commit 0b14abe8e7610e81e6bac7a4696cdcc24ca164c0
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-22 05:08:12 +0900
+
+    [ruby/irb] Suppress "shadowing outer" warning
+
+    https://github.com/ruby/irb/commit/27b149c599
+
+commit fbcdcbff0de551321eee486bfbff9bd9288331d3
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-22 05:01:35 +0900
+
+    [ruby/irb] Version 1.2.9
+
+    https://github.com/ruby/irb/commit/9668e5fe6b
+
+commit 4131cd05be4c00e2d6740d1619711e574cd731af
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-22 04:56:03 +0900
+
+    [ruby/irb] Support arg for measure command
+
+    https://github.com/ruby/irb/commit/b43f35d8f3
+
+commit 47b26795d06ea13d646edddd51470d9a6cd377b4
+  Author: aycabta <aycabta@gmail.com>
+  Date:   2020-12-22 04:49:02 +0900
+
+    [ruby/irb] Change variables handling for compatibility
+
+    https://github.com/ruby/irb/commit/26fd1a75cf
+
+commit cae8bbfe6271a15cf212a83a9c3ac3fedcdc7718
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-22 17:07:23 +0900
+
+    pp is ractor-ready.
+
+    `@sharing_detection` is only one obstruction to support pp on
+    non-main ractors, so make it ractor-local.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3973
+
+commit 034c19ce288b951cfaf3bbd996ce19e14fdeb502
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-22 21:51:15 +0900
+
+    Merge json-2.5.1
+
+commit 9b9cbbbc17bb5840581c7da37fd0feb0a7d4c1f3
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-22 21:43:30 +0900
+
+    Update library versions of the default gems.
+
+      They are followed up with
+      https://github.com/ruby/ruby/commit/8fb02b7a97317090e3946e6f2d4a7d034f9699f1
+
+commit 96b881679390271eb2234060ea7eed77a997d707
+  Author: Akinori MUSHA <knu@idaemons.org>
+  Date:   2020-12-22 21:41:44 +0900
+
+    Import set 1.0.1
+
+    - Eliminate warnings
+    - Convert rdoc to markdown
+
+commit f08cbdbf7d9b31ab570a235e4503ded2bc79d005
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-22 20:55:35 +0900
+
+    Move the library to extensions for some of default gems
+
+commit 93a56a5e98875ed619fe5c29f401a8a43632dbed
+  Author: Samuel Williams <samuel.williams@oriontransfer.co.nz>
+  Date:   2020-12-22 06:55:29 +0900
+
+    Update fiber scheduler documentation.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3965
+
+commit edb76e8765b7f165237c8ca6155cff1cc0f18cf9
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-22 18:18:32 +0900
+
+    Prepare to release json-2.5.0
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3975
+
+commit f2f00e24fa14b8114d6c3bea11170b2b3e309719
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-20 12:29:16 +0900
+
+    [ruby/date] Make Ractor-compatible
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3946
+
+commit ee102de6d7ec2454dc5da223483737478eb7bcc7
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-20 12:28:20 +0900
+
+    [ruby/date] Deep-freeze internal constants.
+
+    Probably not strictly necessary, but good principle anyways.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3946
+
+commit 7fbad9224188905a6d96dee5aad5b1e1564e4461
+  Author: 卜部昌平 <shyouhei@ruby-lang.org>
+  Date:   2020-12-22 16:15:35 +0900
+
+    rb_cData: no longer exists
+
+    Commit 8918a9cf6c65409ae1ffcdea324a1b97c6e5bb70 introduced macro
+    `#define rb_cData rb_cData()`.  This deleting `VALUE rb_cData;`
+    declaration was then macro-expanded into `VALUE rb_cData();`.  This
+    worked by accident because the expanded expression happen to be a K&R
+    style function declaration.
+
+    This is rather complicated and I guess unintended.  Just delete the line
+    to keep things simple straight forward.
+
+commit 7898bc92258aff74d7600abe5dbdedff9b543cf0
+  Author: 卜部昌平 <shyouhei@ruby-lang.org>
+  Date:   2020-12-22 15:25:03 +0900
+
+    rb_cCont: no longer exists
+
+    Deleted well over a decade ago in commit 977d66ec993b0f1892fb3e4cd8ac.
+
+commit 15b81edd86a760331cb551b39882fab6fb9f4e37
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-22 15:05:58 +0900
+
+    MJIT is enabled whenever an MJIT header is used
+
+    ```
+    $ benchmark-driver -v --rbenv 'before --jit;after --jit' --repeat-count=4 --alternate --output=all benchmark.yml
+    before --jit: ruby 3.0.0dev (2020-12-22T05:16:39Z master 692af8e8f8) +JIT [x86_64-linux]
+    after --jit: ruby 3.0.0dev (2020-12-22T06:05:59Z master d2ca23fdbc) +JIT [x86_64-linux]
+    last_commit=MJIT is enabled whenever an MJIT header is used
+    Calculating -------------------------------------
+                                 before --jit           after --jit
+    Optcarrot 180 frames    86.61115328062763     91.49245232931852 fps
+                            90.18653732453176     92.31139517827663
+                            91.29817884736318     93.84437713805814
+                            92.76118222412521     93.91929147901106
+    ```
+
+commit 95acd3c0302b571a4d77debc05bf38cf0bcce929
+  Author: Yuki Nishijima <yk.nishijima@gmail.com>
+  Date:   2020-12-22 14:42:32 +0900
+
+    Sync did_you_mean
+
+commit 692af8e8f8b5f9965450d8f2577f435feaa6f80d
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-22 14:16:19 +0900
+
+    Prefer stdbool in vm_exec
+
+    Make the code a bit modern and consistent with some other places.
+
+commit 03f2b093201762031d5be64d0cce85da26c1d3b3
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-22 14:05:36 +0900
+
+    NEWS.md: fix the format
+
+commit fee2913d0af894492542cc0ed5e45dbf00e8f8df
+  Author: 卜部昌平 <shyouhei@ruby-lang.org>
+  Date:   2020-07-28 11:03:00 +0900
+
+    Struct::Tms: delete
+
+    Has been deprecated since 44c53ee473d3b3973cb5c3ce03fbf4f280fd75ff.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3969
+
+commit fa356a798aefc20725467d4fad02df8325d63e71
+  Author: 卜部昌平 <shyouhei@ruby-lang.org>
+  Date:   2020-08-13 11:44:15 +0900
+
+    Enumerator.new: raise unless block given
+
+    Has been deprecated since c73b6bd7ebd01133538c645566944132dbde4d13.
+    [Feature #17116] [ruby-dev:50945]
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3968
+
+commit 7204b81bcb13f84ca3cc34384d205565fd5ad381
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-22 12:59:47 +0900
+
+    fix to use rb_ractor_id()
+
+    Catch up recent changes on USE_RUBY_DEBUG_LOG=1.
+
+commit 2e1cdf36ba950fef3f7d6fc215835ce3027699f4
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-22 12:46:15 +0900
+
+    add a NEWS entry about ractor C API
+
+commit be9b5553a3ae3a90c73d4c11786cb1a813e915f6
+  Author: Akinori MUSHA <knu@idaemons.org>
+  Date:   2020-12-22 12:26:45 +0900
+
+    Add entries for set 1.0.0
+
+commit 3fa4bd82928983cf5f6711c130711502397e05e2
+  Author: Akinori MUSHA <knu@idaemons.org>
+  Date:   2020-12-22 12:20:21 +0900
+
+    Import set 1.0.0
+
+    - SortedSet has been removed for dependency and performance reasons.
+    - Set#join is added as a shorthand for `.to_a.join`.
+    - Set#<=> is added.
+
+    https://github.com/ruby/set/blob/v1.0.0/CHANGELOG.md
+
+commit 63b872c409ec441718f55c60362a441cf108cfc0
+  Author: Akinori MUSHA <knu@idaemons.org>
+  Date:   2020-12-22 12:17:47 +0900
+
+    Prepare for importing the set gem
+
+commit d0050edb84e9c3ba99946e08325e168deb741e28
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-22 11:07:13 +0900
+
+    Update Fiber#backtrace doc [See bug #17408]
+
+commit 843fd1e8cfccdf1efcbb157315e267e4f380e030
+  Author: zverok <zverok.offline@gmail.com>
+  Date:   2020-12-22 06:42:01 +0900
+
+    Document Fiber#backtrace and #backtrace_locations
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3966
+
+commit 816bbfdc87d4a5f600f28cf4b0eaa5161af80645
+  Author: zverok <zverok.offline@gmail.com>
+  Date:   2020-12-22 06:15:47 +0900
+
+    Document Proc#==
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3966
+
+commit 861dbd950684d311e4f4bfed0e14885ed8a90b53
+  Author: zverok <zverok.offline@gmail.com>
+  Date:   2020-12-21 05:06:26 +0900
+
+    Random instance methods
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3966
+
+commit 4728c0d900f40036757d869fd5f20673c563bac7
+  Author: zverok <zverok.offline@gmail.com>
+  Date:   2020-12-17 07:49:52 +0900
+
+    Add Symbol#name and freezing explanation to #to_s
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3966
+
+commit 4a18cc7f604c259415d933acd9fd00234733cab6
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-22 09:04:54 +0900
+
+    NEWS.md: mention the behavior change of Binding#eval
+
+    [Bug #17419]
+
+commit 91773ddd261abfc13f8a36d82b9c27a507c7cd81
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-22 08:56:46 +0900
+
+    Remove debugging code
+
+commit 831f7850689c51f8d7b17eb76c7f20b0eda16778
+  Author: nagachika <nagachika@ruby-lang.org>
+  Date:   2020-12-22 08:08:27 +0900
+
+    [DOC] Fix typo in Ractor.make_shareable documentation.
+
+commit a29b9e5efe286e8ad1b0d67c38f03cbb70951076
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-22 07:52:06 +0900
+
+    Remvoed no longer needed version guards
+
+commit c34c6a89cb7524050dc6f174da53a8159a7bbd64
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-22 01:05:52 +0900
+
+    fix ractor's doc. [ci skip]
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3960
+
+commit 520dcbd6009b07458d67309ae33a602d77062975
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-22 05:27:47 +0900
+
+    reset cache before iterating
+
+    cee02d754d76563635c1db90d2ab6c01f8492470 resets pCMC and `me`
+    will be a invalidated and continuing the invalidated `me`,
+    it will break the data structure. This patch tris to clear
+    all methods of specified class before manipulating the `me`s.
+    [Bug #17417]
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3964
+
+commit d0e4ccbefcdd6032d0ae70bc54c9a4fb55d92576
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-22 02:22:51 +0900
+
+    add Ractor.main
+
+    It returns main Ractor, like Thread.main.
+    [Feature #17418]
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3963
+
+commit 35471a948739ca13b85fe900871e081d553f68e6
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-22 01:55:15 +0900
+
+    add Ractor#[]/#[]= for ractor local storage
+
+    This API is similar to plain old Thread#[]/Fiber#[] interface
+    with symbol key.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3962
+
+commit 8f2031a06725d32f59e5ecd88ede3f96e8c5e9b1
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-22 03:30:40 +0900
+
+    Ractor#to_s as #inspect
+
+commit 8918a9cf6c65409ae1ffcdea324a1b97c6e5bb70
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-22 01:00:43 +0900
+
+    Removed rb_cData entity
+
+    * Use the wrapper of rb_cObject instead of data access
+    * Replaced rest of extensions
+    * Updated the version guard for Data
+    * Added the version guard of rb_cData
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3961
+
+commit c30f03d32833f38fedf41ecb08f1ade9c6657fef
+  Author: 卜部昌平 <shyouhei@ruby-lang.org>
+  Date:   2020-07-27 16:15:28 +0900
+
+    Data: delete
+
+    Has been deprecated since 684bdf6171b76f5bc5e4f05926a5ab01ec2b4fd5.
+
+    Matz says in [ruby-core:83954] that Data should be an alias of Object.
+    Because rb_cData has not been deprecated, let us deprecate the constant
+    to make it a C-level synonym of rb_cObject.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3961
+
+commit 5c0abe2d94c545275079a862dc36bb163953010a
+  Author: Kazuki Tsujimoto <kazuki@callcc.net>
+  Date:   2020-12-22 02:08:32 +0900
+
+    Update documentation for pattern matching
+
+commit 208f7d7c801c83facab4c24a36ed5e5b49b75377
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2020-12-22 00:03:21 +0900
+
+    * 2020-12-22 [ci skip]
+
+commit 02d9524cdaca1754718bf1d591408d377e6b383a
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-20 01:44:41 +0900
+
+    separate rb_ractor_pub from rb_ractor_t
+
+    separate some fields from rb_ractor_t to rb_ractor_pub and put it
+    at the beginning of rb_ractor_t and declare it in vm_core.h so
+    vm_core.h can access rb_ractor_pub fields.
+
+    Now rb_ec_ractor_hooks() is a complete inline function and no
+    MJIT related issue.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3943
+
+commit a2950369bd8a5866092f6badf59b0811653a6092
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-19 06:38:58 +0900
+
+    TracePoint.new(&block) should be ractor-local
+
+    TracePoint should be ractor-local because the Proc can violate the
+    Ractor-safe.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3943
+
+commit c7a5cc2c3098ea74343a0dbab36b3a65bc7a4144
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-21 21:46:10 +0900
+
+    Replaced magic numbers tr table
+
+commit 84eebb3c9e92d33055393d32a276e11f3e1afd3f
+  Author: Naohisa Goto <ngotogenome@gmail.com>
+  Date:   2020-12-21 23:08:35 +0900
+
+    On Solaris, _XOPEN_SOURCE should be undefined for C++ sources.
+
+commit 91e2f08a6a296acb7debb184ffe1229c5c25bb0c
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-21 23:28:05 +0900
+
+    export rb_eRactorIsolationError for MJIT
+
+    https://ci.appveyor.com/project/ruby/ruby/builds/36942168/job/7ugrpk0pndoly9wp
+    ```
+    _ruby_mjit_p11920u0.c
+    C:\Users\appveyor\AppData\Local\Temp\1/_ruby_mjit_p11920u0.c(14) : warning C4005: 'GET_SELF' : macro redefinition
+            c:\projects\ruby\vm_insnhelper.h(111) : see previous definition of 'GET_SELF'
+       Creating library C:\Users\appveyor\AppData\Local\Temp\1/_ruby_mjit_p11920u0.lib and object C:\Users\appveyor\AppData\Local\Temp\1/_ruby_mjit_p11920u0.exp
+    _ruby_mjit_p11920u0.obj : error LNK2001: unresolved external symbol rb_eRactorIsolationError
+    C:\Users\appveyor\AppData\Local\Temp\1/_ruby_mjit_p11920u0.so : fatal error LNK1120: 1 unresolved externals
+    ```
+
+commit 0b6a80c0beec5afb3a98535c5bc851bb77b3a5e2
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-21 22:40:38 +0900
+
+    [json] Avoid method redefinition
+
+commit dca6752fecc6733575145185764d7b6a218cee96
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-21 18:06:28 +0900
+
+    Introduce Ractor::IsolationError
+
+    Ractor has several restrictions to keep each ractor being isolated
+    and some operation such as `CONST="foo"` in non-main ractor raises
+    an exception. This kind of operation raises an error but there is
+    confusion (some code raises RuntimeError and some code raises
+    NameError).
+
+    To make clear we introduce Ractor::IsolationError which is raised
+    when the isolation between ractors is violated.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3957
+
+commit 8c0c61728fd08bd7c3c29612de8b3486d75339dc
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-21 22:16:02 +0900
+
+    NEWS: JSON is Ractor compatible [ci skip]
+
+commit 14d7d1df25bbefadfc385042d541b4afc31e4c1b
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-21 15:57:42 +0900
+
+    [json] Make json Ractor safe
+
+commit 4c2e7f26bda8df087a66e546744de0d0d467ea7c
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-21 15:50:04 +0900
+
+    [json] JSON_parse_float: Fix how to convert number
+
+    Stop BigDecimal-specific optimization.  Instead, it tries the conversion
+    methods in the following order:
+
+    1. `try_convert`,
+    2. `new`, and
+    3. class-named function, e.g. `Foo::Bar.Baz` function for `Foo::Bar::Baz` class
+
+    If all the above candidates are unavailable, it fallbacks to Float.
+
+commit 596da98b3ff28ff48b10aed0bbe75287862eacbb
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-21 15:45:50 +0900
+
+    [json] Make JSON.create_id thread-safe
+
+commit 98cc15ed1e9193e17fad6b87cccf8f8b5ade7801
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-20 12:17:32 +0900
+
+    [json] Stop using prototype objects
+
+commit d84dd66da065cc40da69df5e042205209411c086
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-21 18:17:45 +0900
+
+    Fixed a typo in an error class name
+
+commit b9d00f42e63593e8c52dbe86cd4ebb7a120f768e
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-21 18:09:45 +0900
+
+    Enable escape sequence on Windows10 console via pager too
+
+commit d8469507b943376b2b1b9be2692ff2fe055496a3
+  Author: Kenta Murata <mrkn@mrkn.jp>
+  Date:   2020-12-16 17:53:37 +0900
+
+    [ruby/digest] Remove .gitignore and .travis.yml from gemspec
+
+    https://github.com/ruby/digest/commit/7b57b73f46
+
+commit 09f939d3a0140478f2e547f45b4becd05247d360
+  Author: U.Nakamura <usa@ruby-lang.org>
+  Date:   2020-12-21 17:29:09 +0900
+
+    Enable escape sequence on Windows10 console
+
+            * win32/win32.c (init_stdhandle): enable escape sequence on
+              Windows10 console to show `ruby --help` colors correctly.
+
+commit 95ce5c0ee9baa692d419dd45f0e00cbd5cee4d4c
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-21 13:27:52 +0900
+
+    [ruby/rdoc] Bump version to 6.3.0
+
+    https://github.com/ruby/rdoc/commit/3d3616cb94
+
+commit 391343e82867919bb13be4660fd49e05ebd5983c
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-21 13:35:37 +0900
+
+    [ruby/rdoc] Guard for WEBrick
+
+    https://github.com/ruby/rdoc/commit/b1e7129e05
+
+commit f26f905b28c5531c78445ac15d74ca1265eff5c5
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-21 16:17:28 +0900
+
+    Mark an ISeq being JIT-ed
+
+    This is to avoid SEGV on a CC reference in a normal compilation
+    https://github.com/ruby/ruby/runs/1586578023
+
+commit 1fdc97f1b76b7532d011b20d52f843a2bb0d1a2f
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-21 15:41:52 +0900
+
+    Mark active_units
+
+    to avoid SEGV on mjit_recompile and compact_all_jit_code.
+
+    For some reason, ISeqs on stack are sometimes GC-ed (why?) and therefore
+    it may run mjit_recompile on a GC-ed ISeq, which I expected d07183ec85d
+    to fix but apparently it may refer to random things if already GC-ed.
+    Marking active_units would workaround the situation.
+    http://ci.rvm.jp/results/trunk-mjit-wait@phosphorus-docker/3292740
+
+    Also, while compact_all_jit_code was executed, we saw some SEGVs where
+    CCs seemed to be already GC-ed, meaning their owner ISeq was not marked
+    properly. Even if units are still in active_units, it's not guaranteed
+    that their ISeqs are in use. So in this case we need to mark active_units
+    for a legitimate reason.
+    http://ci.rvm.jp/results/trunk-mjit-wait@phosphorus-docker/3293277
+    http://ci.rvm.jp/results/trunk-mjit-wait@phosphorus-docker/3293090
+
+commit a574df14e45b8b5a1de7bfe949e08b61ae51b0bd
+  Author: Takashi Kokubun <takashikkbn@gmail.com>
+  Date:   2020-12-21 14:54:27 +0900
+
+    Stop marking unit_queue
+
+    The original motivation of this marking was https://github.com/k0kubun/yarv-mjit/issues/20.
+    As wanabe said, there are multiple options to mitigate the issue, and
+    Eric Wong introduced another fix at 143776f6fe by checking unit->iseq
+    inside the lock.
+
+    Therefore this particular condition has been covered in two ways, and
+    the script given by wanabe no longer crashes without mjit_mark().
+
+commit 74a78778362a7ad9aa246f2cb1a30174a6007365
+  Author: Kazuhiro NISHIYAMA <zn@mbf.nifty.com>
+  Date:   2020-12-21 13:25:03 +0900
+
+    [DOC] Remove about FrozenError from Ractor::MovedObject [ci skip]
+
+    Because unfreeze Ractor::MovedObject at
+    https://github.com/ruby/ruby/commit/76e88480371469400346fca609efe67096813915
+
+commit 1ecac8e4d031c244df711d573fa73ce339ffa2f5
+  Author: Marc-Andre Lafortune <github@marc-andre.ca>
+  Date:   2020-12-21 11:51:11 +0900
+
+    Add `require_relative` option to `assert_ractor`
+
+commit eee93bc9330cb069abb679a0a0d48a49b10f6a4e
+  Author: Yusuke Endoh <mame@ruby-lang.org>
+  Date:   2020-12-21 11:33:22 +0900
+
+    eval_error.c: fix off-by-one error for --backtrace-limit
+
+    https://bugs.ruby-lang.org/issues/17413
+
+commit ac78d90d5e90d414fed2c5ea61faaaa4c57e1815
+  Author: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  Date:   2020-12-21 11:22:58 +0900
+
+    Bump bundled rake version to 13.0.3
+
+commit fe60480947969d32797c265085cceb90b771702a
+  Author: 卜部昌平 <shyouhei@ruby-lang.org>
+  Date:   2020-12-14 16:54:12 +0900
+
+    include/ruby/internal/xmalloc.h: document rb_eNoMemError
+
+    It was my bad, the exception that actually raises is rb_eNoMemError.
+    [ci skip]
+
+commit 11656d15e2c5d5779a637eaf5f388a5c18bef629
+  Author: 卜部昌平 <shyouhei@ruby-lang.org>
+  Date:   2020-12-14 15:17:59 +0900
+
+    include/ruby/internal/xmalloc.h: doxygen tag
+
+    `@exception` is an alias of `@throw`.  It might suite Ruby's document
+    because ruby uses `raise` terminology instead of `throw`. [ci skip]
+
+commit 63849a1cd98c7ae3a7d6af3f69814f01dfae25ea
+  Author: Kazuhiro NISHIYAMA <zn@mbf.nifty.com>
+  Date:   2020-12-21 10:54:24 +0900
+
+    Fix misspellings [ci skip]
+
+commit 5253b9579a129f66a768dae24bd50a95bab02841
+  Author: Victor Shepelev <zverok.offline@gmail.com>
+  Date:   2020-12-21 09:32:30 +0900
+
+    Document usage of ArithmeticSequence in Array#slice, and add to NEWS (#3952)
+
+  Notes:
+    Merged-By: mrkn <mrkn@ruby-lang.org>
+
+commit 6be61ab264c98c96e26b5d3398cf80b49197ba29
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-21 02:04:38 +0900
+
+    should use owned_p instead of locked_p
+
+    It should raise an error if the same thread tris to call
+    receive/receive_if.
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3949
+
+commit 435b619a3d5a2d5754a3f739c50f64d1ad520ffc
+  Author: Ivan Denysov <johnny.denisov@gmail.com>
+  Date:   2020-12-21 02:24:30 +0900
+
+    fix phrasing in comment
+
+  Notes:
+    Merged: https://github.com/ruby/ruby/pull/3951
+
+commit 7600f69a8e7955fc2ba3ef83d0c9fa019114216e
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-21 02:20:57 +0900
+
+    rename to rb_ractor_make_shareable_copy()
+
+    from rb_ractor_make_copy_shareable().
+
+commit 9c73c756244fa27ffa99d81dcc73a4ad14198002
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-21 01:16:26 +0900
+
+    Use Integer instead of Fixnum/Bignum
+
+commit fb8f011422c645ebe29e94c3fb2079af73d1d35f
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-21 00:40:56 +0900
+
+    Fixed indefinite articles before "Integer" [ci skip]
+
+commit ad534a677a6df7437c934440b35affa88ce3648a
+  Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+  Date:   2020-12-21 00:20:06 +0900
+
+    Fixnum as a Symbol was an old feature until 1.6
+
+commit a365ae841b9fe06c1ed9efad3c457cd2d1260524
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2020-12-21 01:15:45 +0900
+
+    * 2020-12-21 [ci skip]
+
+commit 730f314171e67d981887c061d5dabf927ff5efd5
+  Author: Koichi Sasada <ko1@atdot.net>
+  Date:   2020-12-21 01:13:39 +0900
+
+    fix Ractor.make_shareable() with Class/Module
+
+    To check shareable-ness, rb_ractor_shareable_p() is needed
+    for Class/Module objects isntead of checking flags.
+
 commit 8680ae9cbd6e7e7e08f6d21fa8d35abdc82342da
   Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
   Date:   2020-12-20 19:36:24 +0900

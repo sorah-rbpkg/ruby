@@ -68,6 +68,26 @@ class Reline::LineEditor
     end
   end
 
+  private def check_mode_icon
+    mode_icon = nil
+    if @config.show_mode_in_prompt
+      if @config.editing_mode_is?(:vi_command)
+        mode_icon = @config.vi_cmd_mode_icon
+      elsif @config.editing_mode_is?(:vi_insert)
+        mode_icon = @config.vi_ins_mode_icon
+      elsif @config.editing_mode_is?(:emacs)
+        mode_icon = @config.emacs_mode_string
+      else
+        mode_icon = '?'
+      end
+    end
+    if mode_icon != @prev_mode_icon
+      @rerender_all = true
+    end
+    @prev_mode_icon = mode_icon
+    mode_icon
+  end
+
   private def check_multiline_prompt(buffer, prompt)
     if @vi_arg
       prompt = "(arg: #{@vi_arg}) "
@@ -78,7 +98,11 @@ class Reline::LineEditor
     else
       prompt = @prompt
     end
-    return [prompt, calculate_width(prompt, true), [prompt] * buffer.size] if simplified_rendering?
+    if simplified_rendering?
+      mode_icon = check_mode_icon
+      prompt = mode_icon + prompt if mode_icon
+      return [prompt, calculate_width(prompt, true), [prompt] * buffer.size]
+    end
     if @prompt_proc
       use_cached_prompt_list = false
       if @cached_prompt_list
@@ -95,35 +119,16 @@ class Reline::LineEditor
         @prompt_cache_time = Time.now.to_f
       end
       prompt_list.map!{ prompt } if @vi_arg or @searching_prompt
-      if @config.show_mode_in_prompt
-        if @config.editing_mode_is?(:vi_command)
-          mode_icon = @config.vi_cmd_mode_icon
-        elsif @config.editing_mode_is?(:vi_insert)
-          mode_icon = @config.vi_ins_mode_icon
-        elsif @config.editing_mode_is?(:emacs)
-          mode_icon = @config.emacs_mode_string
-        else
-          mode_icon = '?'
-        end
-        prompt_list.map!{ |pr| mode_icon + pr }
-      end
+      mode_icon = check_mode_icon
+      prompt_list = prompt_list.map{ |pr| mode_icon + pr } if mode_icon
       prompt = prompt_list[@line_index]
+      prompt = prompt_list[0] if prompt.nil?
       prompt_width = calculate_width(prompt, true)
       [prompt, prompt_width, prompt_list]
     else
+      mode_icon = check_mode_icon
+      prompt = mode_icon + prompt if mode_icon
       prompt_width = calculate_width(prompt, true)
-      if @config.show_mode_in_prompt
-        if @config.editing_mode_is?(:vi_command)
-          mode_icon = @config.vi_cmd_mode_icon
-        elsif @config.editing_mode_is?(:vi_insert)
-          mode_icon = @config.vi_ins_mode_icon
-        elsif @config.editing_mode_is?(:emacs)
-          mode_icon = @config.emacs_mode_string
-        else
-          mode_icon = '?'
-        end
-        prompt = mode_icon + prompt
-      end
       [prompt, prompt_width, nil]
     end
   end
@@ -213,6 +218,8 @@ class Reline::LineEditor
     @eof = false
     @continuous_insertion_buffer = String.new(encoding: @encoding)
     @scroll_partial_screen = nil
+    @prev_mode_icon = nil
+    @drop_terminate_spaces = false
     reset_line
   end
 
@@ -1593,9 +1600,11 @@ class Reline::LineEditor
     searcher = generate_searcher
     searcher.resume(key)
     @searching_prompt = "(reverse-i-search)`': "
+    termination_keys = ["\C-j".ord]
+    termination_keys.concat(@config.isearch_terminators&.chars&.map(&:ord)) if @config.isearch_terminators
     @waiting_proc = ->(k) {
       case k
-      when "\C-j".ord
+      when *termination_keys
         if @history_pointer
           buffer = Reline::HISTORY[@history_pointer]
         else
@@ -1614,6 +1623,8 @@ class Reline::LineEditor
         @waiting_proc = nil
         @cursor_max = calculate_width(@line)
         @cursor = @byte_pointer = 0
+        @rerender_all = true
+        @cached_prompt_list = nil
         searcher.resume(-1)
       when "\C-g".ord
         if @is_multiline
@@ -1657,6 +1668,8 @@ class Reline::LineEditor
           @waiting_proc = nil
           @cursor_max = calculate_width(@line)
           @cursor = @byte_pointer = 0
+          @rerender_all = true
+          @cached_prompt_list = nil
           searcher.resume(-1)
         end
       end
@@ -2176,7 +2189,7 @@ class Reline::LineEditor
 
   private def vi_next_word(key, arg: 1)
     if @line.bytesize > @byte_pointer
-      byte_size, width = Reline::Unicode.vi_forward_word(@line, @byte_pointer)
+      byte_size, width = Reline::Unicode.vi_forward_word(@line, @byte_pointer, @drop_terminate_spaces)
       @byte_pointer += byte_size
       @cursor += width
     end
@@ -2304,6 +2317,7 @@ class Reline::LineEditor
   end
 
   private def vi_change_meta(key, arg: 1)
+    @drop_terminate_spaces = true
     @waiting_operator_proc = proc { |cursor_diff, byte_pointer_diff|
       if byte_pointer_diff > 0
         @line, cut = byteslice!(@line, @byte_pointer, byte_pointer_diff)
@@ -2315,6 +2329,7 @@ class Reline::LineEditor
       @cursor_max -= cursor_diff.abs
       @byte_pointer += byte_pointer_diff if byte_pointer_diff < 0
       @config.editing_mode = :vi_insert
+      @drop_terminate_spaces = false
     }
     @waiting_operator_vi_arg = arg
   end
@@ -2466,7 +2481,7 @@ class Reline::LineEditor
         byte_size = Reline::Unicode.get_next_mbchar_size(@line, @byte_pointer)
         before = @line.byteslice(0, @byte_pointer)
         remaining_point = @byte_pointer + byte_size
-        after = @line.byteslice(remaining_point, @line.size - remaining_point)
+        after = @line.byteslice(remaining_point, @line.bytesize - remaining_point)
         @line = before + k.chr + after
         @cursor_max = calculate_width(@line)
         @waiting_proc = nil
@@ -2477,7 +2492,7 @@ class Reline::LineEditor
         end
         before = @line.byteslice(0, @byte_pointer)
         remaining_point = @byte_pointer + byte_size
-        after = @line.byteslice(remaining_point, @line.size - remaining_point)
+        after = @line.byteslice(remaining_point, @line.bytesize - remaining_point)
         replaced = k.chr * arg
         @line = before + replaced + after
         @byte_pointer += replaced.bytesize

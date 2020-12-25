@@ -49,7 +49,6 @@ VALUE rb_mKernel; /*!< Kernel module */
 VALUE rb_cObject; /*!< Object class */
 VALUE rb_cModule; /*!< Module class */
 VALUE rb_cClass; /*!< Class class */
-VALUE rb_cData; /*!< Data class */
 
 VALUE rb_cNilClass; /*!< NilClass class */
 VALUE rb_cTrueClass; /*!< TrueClass class */
@@ -2264,7 +2263,7 @@ id_for_attr(VALUE obj, VALUE name)
  *  value of each instance variable. Equivalent to calling
  *  ``<code>attr</code><i>:name</i>'' on each name in turn.
  *  String arguments are converted to symbols.
- *  Returns an array of defined methods names as symbols.
+ *  Returns an array of defined method names as symbols.
  */
 
 static VALUE
@@ -2290,7 +2289,7 @@ rb_mod_attr_reader(int argc, VALUE *argv, VALUE klass)
  *  The first form is equivalent to #attr_reader.
  *  The second form is equivalent to <code>attr_accessor(name)</code> but deprecated.
  *  The last form is equivalent to <code>attr_reader(name)</code> but deprecated.
- *  Returns an array of defined methods names as symbols.
+ *  Returns an array of defined method names as symbols.
  *--
  * \private
  * \todo can be static?
@@ -2320,7 +2319,7 @@ rb_mod_attr(int argc, VALUE *argv, VALUE klass)
  *  Creates an accessor method to allow assignment to the attribute
  *  <i>symbol</i><code>.id2name</code>.
  *  String arguments are converted to symbols.
- *  Returns an array of defined methods names as symbols.
+ *  Returns an array of defined method names as symbols.
  */
 
 static VALUE
@@ -2347,7 +2346,7 @@ rb_mod_attr_writer(int argc, VALUE *argv, VALUE klass)
  *  (<code>@name</code>) and a corresponding access method to read it.
  *  Also creates a method called <code>name=</code> to set the attribute.
  *  String arguments are converted to symbols.
- *  Returns an array of defined methods names as symbols.
+ *  Returns an array of defined method names as symbols.
  *
  *     module Mod
  *       attr_accessor(:one, :two) #=> [:one, :one=, :two, :two=]
@@ -4661,16 +4660,6 @@ InitVM_Object(void)
     rb_undef_method(rb_cClass, "extend_object");
     rb_undef_method(rb_cClass, "append_features");
     rb_undef_method(rb_cClass, "prepend_features");
-
-    /*
-     * Document-class: Data
-     *
-     * This is a deprecated class, base class for C extensions using
-     * Data_Make_Struct or Data_Wrap_Struct.
-     */
-    rb_cData = rb_define_class("Data", rb_cObject);
-    rb_undef_alloc_func(rb_cData);
-    rb_deprecate_constant(rb_cObject, "Data");
 
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);
     rb_cTrueClass_to_s = rb_fstring_enc_lit("true", rb_usascii_encoding());

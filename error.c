@@ -2786,7 +2786,7 @@ Init_Exception(void)
     rb_define_method(rb_eNameError, "name", name_err_name, 0);
     rb_define_method(rb_eNameError, "receiver", name_err_receiver, 0);
     rb_define_method(rb_eNameError, "local_variables", name_err_local_variables, 0);
-    rb_cNameErrorMesg = rb_define_class_under(rb_eNameError, "message", rb_cData);
+    rb_cNameErrorMesg = rb_define_class_under(rb_eNameError, "message", rb_cObject);
     rb_define_method(rb_cNameErrorMesg, "==", name_err_mesg_equal, 1);
     rb_define_method(rb_cNameErrorMesg, "to_str", name_err_mesg_to_str, 0);
     rb_define_method(rb_cNameErrorMesg, "_dump", name_err_mesg_dump, 1);
@@ -2804,7 +2804,7 @@ Init_Exception(void)
     rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
     rb_eEncodingError = rb_define_class("EncodingError", rb_eStandardError);
     rb_eEncCompatError = rb_define_class_under(rb_cEncoding, "CompatibilityError", rb_eEncodingError);
-    rb_eNoMatchingPatternError = rb_define_class("NoMatchingPatternError", rb_eRuntimeError);
+    rb_eNoMatchingPatternError = rb_define_class("NoMatchingPatternError", rb_eStandardError);
 
     syserr_tbl = st_init_numtable();
     rb_eSystemCallError = rb_define_class("SystemCallError", rb_eStandardError);

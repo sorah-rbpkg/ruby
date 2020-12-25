@@ -381,8 +381,8 @@ switch (insn) {
             fprintf(f, "    VM_ASSERT((rb_serial_t)%"PRI_SERIALT_PREFIX"u == RCLASS_SERIAL(RBASIC(obj)->klass));\n", ic_copy->entry->class_serial);
             fprintf(f, "    VM_ASSERT(index < ROBJECT_NUMIV(obj));\n");
             fprintf(f, "    VALUE val;\n");
-            fprintf(f, "    if (LIKELY(%sRB_FL_ANY_RAW(obj, ROBJECT_EMBED) && (val = ROBJECT(obj)->as.%s) != Qundef)) {\n",
-                    status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "!" : "",
+            fprintf(f, "    if (LIKELY(%s && (val = ROBJECT(obj)->as.%s) != Qundef)) {\n",
+                    status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "true" : "RB_FL_ANY_RAW(obj, ROBJECT_EMBED)",
                     status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "heap.ivptr[index]" : "ary[index]");
             fprintf(f, "        stack[%d] = val;\n", b->stack_size);
             fprintf(f, "    }\n");
@@ -483,7 +483,7 @@ switch (insn) {
             fprintf(f, "    VM_ASSERT(RB_TYPE_P(obj, T_OBJECT));\n");
             fprintf(f, "    VM_ASSERT((rb_serial_t)%"PRI_SERIALT_PREFIX"u == RCLASS_SERIAL(RBASIC(obj)->klass));\n", ic_copy->entry->class_serial);
             fprintf(f, "    VM_ASSERT(index < ROBJECT_NUMIV(obj));\n");
-            fprintf(f, "    if (LIKELY(!RB_OBJ_FROZEN_RAW(obj) && %sRB_FL_ANY_RAW(obj, ROBJECT_EMBED))) {\n", status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "!" : "");
+            fprintf(f, "    if (LIKELY(!RB_OBJ_FROZEN_RAW(obj) && %s)) {\n", status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "true" : "RB_FL_ANY_RAW(obj, ROBJECT_EMBED)");
             fprintf(f, "        RB_OBJ_WRITE(obj, &ROBJECT(obj)->as.%s, stack[%d]);\n",
                     status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "heap.ivptr[index]" : "ary[index]", b->stack_size - 1);
             fprintf(f, "    }\n");
@@ -2018,12 +2018,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -2185,12 +2185,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -2395,12 +2395,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -3373,12 +3373,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -3579,12 +3579,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -3785,12 +3785,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -3991,12 +3991,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -4205,12 +4205,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -4419,12 +4419,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -4672,12 +4672,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -4878,12 +4878,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -5084,12 +5084,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -5290,12 +5290,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -5496,12 +5496,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -5710,12 +5710,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -5916,12 +5916,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -6122,12 +6122,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -6336,12 +6336,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -6671,12 +6671,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -6876,12 +6876,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -7081,12 +7081,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -7286,12 +7286,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -7491,12 +7491,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }
@@ -7696,12 +7696,12 @@ switch (insn) {
                 fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "        val = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
                     fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "            val = vm_exec(ec, FALSE);\n");
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");
                 }
             }

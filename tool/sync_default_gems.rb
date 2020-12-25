@@ -119,6 +119,7 @@ def sync_default_gems(gem)
     rm_rf(%w[ext/json test/json])
     cp_r("#{upstream}/ext/json/ext", "ext/json")
     cp_r("#{upstream}/tests", "test/json")
+    rm_rf("test/json/lib")
     cp_r("#{upstream}/lib", "ext/json")
     cp_r("#{upstream}/json.gemspec", "ext/json")
     cp_r("#{upstream}/VERSION", "ext/json")
@@ -325,6 +326,9 @@ def sync_default_gems(gem)
     cp_r("#{upstream}/test/digest", "test")
     cp_r("#{upstream}/digest.gemspec", "ext/digest")
     `git checkout ext/digest/depend ext/digest/*/depend`
+  when "set"
+    sync_lib gem, upstream
+    cp_r("#{upstream}/test", ".")
   else
     sync_lib gem, upstream
   end

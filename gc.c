@@ -378,7 +378,7 @@ static ruby_gc_params_t gc_params = {
 #if RGENGC_DEBUG < 0 && !defined(_MSC_VER)
 # define RGENGC_DEBUG_ENABLED(level) (-(RGENGC_DEBUG) >= (level) && ruby_rgengc_debug >= (level))
 #else
-# define RGENGC_DEBUG_ENABLED(level) ((RGENGC_DEBUG) >= (level))
+# define RGENGC_DEBUG_ENABLED(level) 0
 #endif
 int ruby_rgengc_debug;
 
@@ -11152,7 +11152,6 @@ static const rb_data_type_t weakmap_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-extern const struct st_hash_type rb_hashtype_ident;
 static VALUE wmap_finalize(RB_BLOCK_CALL_FUNC_ARGLIST(objid, self));
 
 static VALUE
@@ -11160,8 +11159,8 @@ wmap_allocate(VALUE klass)
 {
     struct weakmap *w;
     VALUE obj = TypedData_Make_Struct(klass, struct weakmap, &weakmap_type, w);
-    w->obj2wmap = st_init_table(&rb_hashtype_ident);
-    w->wmap2obj = st_init_table(&rb_hashtype_ident);
+    w->obj2wmap = rb_init_identtable();
+    w->wmap2obj = rb_init_identtable();
     w->final = rb_func_lambda_new(wmap_finalize, obj, 1, 1);
     return obj;
 }
@@ -12348,7 +12347,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
             else if (rb_ractor_p(obj)) {
                 rb_ractor_t *r = (void *)DATA_PTR(obj);
                 if (r) {
-                    APPENDF((BUFF_ARGS, "r:%d", r->id));
+                    APPENDF((BUFF_ARGS, "r:%d", r->pub.id));
                 }
             }
 	    else {

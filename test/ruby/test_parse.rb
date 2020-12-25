@@ -1174,14 +1174,39 @@ x = __ENCODING__
     assert_equal(1, ex.message.scan(w).size, "same #{w.inspect} warning should be just once")
   end
 
-  def test_shareable_constant_value
+  def eval_separately(code)
+    Class.new.class_eval(code)
+  end
+
+  def assert_raise_separately(error, message, code)
+    assert_raise_with_message(error, message) do
+      eval_separately(code)
+    end
+  end
+
+  def assert_ractor_shareable(obj)
+    assert Ractor.shareable?(obj), ->{"Expected #{mu_pp(obj)} to be ractor shareable"}
+  end
+
+  def assert_not_ractor_shareable(obj)
+    assert !Ractor.shareable?(obj), ->{"Expected #{mu_pp(obj)} not to be ractor shareable"}
+  end
+
+  def test_shareable_constant_value_invalid
     assert_warning(/invalid value/) do
       assert_valid_syntax("# shareable_constant_value: invalid-option", verbose: true)
     end
+  end
+
+  def test_shareable_constant_value_ignored
     assert_warning(/ignored/) do
       assert_valid_syntax("nil # shareable_constant_value: true", verbose: true)
     end
-    a, b, c = Class.new.class_eval("#{<<~"begin;"}\n#{<<~'end;'}")
+  end
+
+  def test_shareable_constant_value_simple
+    obj = [['unsharable_value']]
+    a, b, c = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: experimental_everything
       A = [[1]]
@@ -1193,30 +1218,75 @@ x = __ENCODING__
 
       [A, B, C]
     end;
-    assert_send([Ractor, :shareable?, a])
-    assert_not_send([Ractor, :shareable?, b])
-    assert_send([Ractor, :shareable?, c])
+    assert_ractor_shareable(a)
+    assert_not_ractor_shareable(b)
+    assert_ractor_shareable(c)
     assert_equal([1], a[0])
-    assert_send([Ractor, :shareable?, a[0]])
-    a, b = Class.new.class_eval("#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ractor_shareable(a[0])
+
+    a, obj = eval_separately(<<~'end;')
+      # shareable_constant_value: experimental_copy
+      obj = [["unshareable"]]
+      A = obj
+      [A, obj]
+    end;
+
+    assert_ractor_shareable(a)
+    assert_not_ractor_shareable(obj)
+    assert_equal obj, a
+    assert !obj.equal?(a)
+  end
+
+  def test_shareable_constant_value_nested
+    a, b = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: none
       class X
         # shareable_constant_value: experimental_everything
-        A = [[1]]
+        var = [[1]]
+        A = var
       end
       B = []
       [X::A, B]
     end;
-    assert_send([Ractor, :shareable?, a])
-    assert_not_send([Ractor, :shareable?, b])
+    assert_ractor_shareable(a)
+    assert_not_ractor_shareable(b)
     assert_equal([1], a[0])
-    assert_send([Ractor, :shareable?, a[0]])
+    assert_ractor_shareable(a[0])
+  end
 
-    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /unshareable expression/)
+  def test_shareable_constant_value_unshareable_literal
+    assert_raise_separately(Ractor::IsolationError, /unshareable/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: literal
       C = ["Not " + "shareable"]
+    end;
+  end
+
+  def test_shareable_constant_value_nonliteral
+    assert_raise_separately(Ractor::IsolationError, /unshareable/, "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      var = [:not_frozen]
+      C = var
+    end;
+
+    assert_raise_separately(Ractor::IsolationError, /unshareable/, "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      D = begin [] end
+    end;
+  end
+
+  def test_shareable_constant_value_unfrozen
+    assert_raise_separately(Ractor::Error, /does not freeze object correctly/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: experimental_everything
+      o = Object.new
+      def o.freeze; self; end
+      C = [o]
     end;
   end
 

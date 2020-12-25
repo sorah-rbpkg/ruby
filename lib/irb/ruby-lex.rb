@@ -66,14 +66,19 @@ class RubyLex
         unprocessed_tokens = []
         line_num_offset = 0
         tokens.each do |t|
-          code << t[2]
           partial_tokens << t
           unprocessed_tokens << t
           if t[2].include?("\n")
-            ltype, indent, continue, code_block_open = check_state(code, partial_tokens)
-            result << @prompt.call(ltype, indent, continue || code_block_open, @line_no + line_num_offset)
-            line_num_offset += 1
+            t_str = t[2]
+            t_str.each_line("\n") do |s|
+              code << s << "\n"
+              ltype, indent, continue, code_block_open = check_state(code, partial_tokens)
+              result << @prompt.call(ltype, indent, continue || code_block_open, @line_no + line_num_offset)
+              line_num_offset += 1
+            end
             unprocessed_tokens = []
+          else
+            code << t[2]
           end
         end
         unless unprocessed_tokens.empty?
@@ -201,14 +206,14 @@ class RubyLex
     code = @line + (line.nil? ? '' : line)
     code.gsub!(/\s*\z/, '').concat("\n")
     @tokens = ripper_lex_without_warning(code)
-    @continue = process_continue(@tokens)
-    @code_block_open = check_code_block(code, @tokens)
-    @indent = process_nesting_level(@tokens)
-    @ltype = process_literal_type(@tokens)
+    @continue = process_continue
+    @code_block_open = check_code_block(code)
+    @indent = process_nesting_level
+    @ltype = process_literal_type
     line
   end
 
-  def process_continue(tokens)
+  def process_continue(tokens = @tokens)
     # last token is always newline
     if tokens.size >= 2 and tokens[-2][1] == :on_regexp_end
       # end of regexp literal
@@ -228,7 +233,7 @@ class RubyLex
     false
   end
 
-  def check_code_block(code, tokens)
+  def check_code_block(code, tokens = @tokens)
     return true if tokens.empty?
     if tokens.last[1] == :on_heredoc_beg
       return true
@@ -321,7 +326,7 @@ class RubyLex
     false
   end
 
-  def process_nesting_level(tokens)
+  def process_nesting_level(tokens = @tokens)
     indent = 0
     in_oneliner_def = nil
     tokens.each_with_index { |t, index|
@@ -552,7 +557,7 @@ class RubyLex
         end_type << :on_regexp_end
       when :on_symbeg
         acceptable_single_tokens = %i{on_ident on_const on_op on_cvar on_ivar on_gvar on_kw}
-        if (i + 1) < tokens.size and acceptable_single_tokens.all?{ |t| tokens[i + 1][1] != t }
+        if (i + 1) < tokens.size and acceptable_single_tokens.all?{ |st| tokens[i + 1][1] != st }
           start_token << t
           end_type << :on_tstring_end
         end
@@ -574,7 +579,7 @@ class RubyLex
     start_token.last.nil? ? '' : start_token.last
   end
 
-  def process_literal_type(tokens)
+  def process_literal_type(tokens = @tokens)
     start_token = check_string_literal(tokens)
     case start_token[1]
     when :on_tstring_beg
