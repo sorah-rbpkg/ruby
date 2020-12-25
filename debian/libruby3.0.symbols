@@ -312,7 +312,7 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_cBinding@Base 3.0.0~preview1
  rb_cClass@Base 3.0.0~preview1
  rb_cComplex@Base 3.0.0~preview1
- rb_cData@Base 3.0.0~preview1
+#MISSING: 3.0.0# rb_cData@Base 3.0.0~preview1
  rb_cDir@Base 3.0.0~preview1
  rb_cEncoding@Base 3.0.0~preview1
  rb_cEnumerator@Base 3.0.0~preview1
@@ -519,6 +519,7 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_eNoMemError@Base 3.0.0~preview1
  rb_eNoMethodError@Base 3.0.0~preview1
  rb_eNotImpError@Base 3.0.0~preview1
+ rb_eRactorIsolationError@Base 3.0.0
  rb_eRactorUnsafeError@Base 3.0.0~preview2
  rb_eRangeError@Base 3.0.0~preview1
  rb_eRegexpError@Base 3.0.0~preview1
@@ -870,11 +871,13 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_int2inum@Base 3.0.0~preview1
  rb_int_abs@Base 3.0.0~preview1
  rb_int_bit_length@Base 3.0.0~preview1
+ rb_int_comp@Base 3.0.0
  rb_int_even_p@Base 3.0.0~preview1
  rb_int_odd_p@Base 3.0.0~preview1
  rb_int_pair_to_real@Base 3.0.0~preview1
  rb_int_parse_cstr@Base 3.0.0~preview1
  rb_int_positive_pow@Base 3.0.0~preview1
+ rb_int_uminus@Base 3.0.0
  rb_int_zero_p@Base 3.0.0~preview1
  rb_integer_pack@Base 3.0.0~preview1
  rb_integer_unpack@Base 3.0.0~preview1
