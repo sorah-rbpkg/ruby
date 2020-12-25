@@ -1,3 +1,9 @@
+ruby3.0 (3.0.0-0nkmi1~dist) unstable; urgency=medium
+
+  * Happy holidays, here comes 3.0.0
+
+ -- Sorah Fukumori <sorah@cookpad.com>  Fri, 25 Dec 2020 09:53:21 +0000
+
 ruby2.7 (2.7.2-0nkmi1~dist) unstable; urgency=medium
 
   * Follow Debian upstream
