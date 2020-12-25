@@ -27,23 +27,27 @@ describe "Kernel.lambda" do
   end
 
   it "creates a lambda-style Proc if given a literal block via Kernel.public_send" do
-    l = Kernel.public_send(:lambda) { 42 }
-    l.lambda?.should be_true
+    suppress_warning do
+      l = Kernel.public_send(:lambda) { 42 }
+      l.lambda?.should be_true
+    end
   end
 
   it "returns the passed Proc if given an existing Proc" do
     some_proc = proc {}
-    l = lambda(&some_proc)
+    l = suppress_warning {lambda(&some_proc)}
     l.should equal(some_proc)
     l.lambda?.should be_false
   end
 
   it "creates a lambda-style Proc when called with zsuper" do
-    l = KernelSpecs::LambdaSpecs::ForwardBlockWithZSuper.new.lambda { 42 }
-    l.lambda?.should be_true
-    l.call.should == 42
+    suppress_warning do
+      l = KernelSpecs::LambdaSpecs::ForwardBlockWithZSuper.new.lambda { 42 }
+      l.lambda?.should be_true
+      l.call.should == 42
 
-    lambda { l.call(:extra) }.should raise_error(ArgumentError)
+      lambda { l.call(:extra) }.should raise_error(ArgumentError)
+    end
   end
 
   it "returns the passed Proc if given an existing Proc through super" do
@@ -55,7 +59,7 @@ describe "Kernel.lambda" do
 
   it "does not create lambda-style Procs when captured with #method" do
     kernel_lambda = method(:lambda)
-    l = kernel_lambda.call { 42 }
+    l = suppress_warning {kernel_lambda.call { 42 }}
     l.lambda?.should be_false
     l.call(:extra).should == 42
   end

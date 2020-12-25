@@ -5,7 +5,6 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
   require 'rubygems/simple_gem'
 
   class TestGemPackageOld < Gem::TestCase
-
     def setup
       super
 
@@ -24,7 +23,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
     end
 
     def test_contents_security_policy
-      skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+      skip 'openssl is missing' unless Gem::HAVE_OPENSSL
 
       @package.security_policy = Gem::Security::AlmostNoSecurity
 
@@ -45,7 +44,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
     end
 
     def test_extract_files_security_policy
-      skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+      skip 'openssl is missing' unless Gem::HAVE_OPENSSL
 
       @package.security_policy = Gem::Security::AlmostNoSecurity
 
@@ -59,7 +58,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
     end
 
     def test_spec_security_policy
-      skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+      skip 'openssl is missing' unless Gem::HAVE_OPENSSL
 
       @package.security_policy = Gem::Security::AlmostNoSecurity
 
@@ -69,7 +68,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
     end
 
     def test_verify
-      skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+      skip 'openssl is missing' unless Gem::HAVE_OPENSSL
 
       assert @package.verify
 
@@ -87,6 +86,5 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
                    'and cannot be verified',
                    e.message
     end
-
   end
 end

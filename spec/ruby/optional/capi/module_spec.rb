@@ -135,7 +135,7 @@ describe "CApiModule" do
     end
 
     it "returns a constant defined at toplevel" do
-      @m.rb_const_get(CApiModuleSpecs::A, :Fixnum).should == Fixnum
+      @m.rb_const_get(CApiModuleSpecs::A, :Integer).should == Integer
     end
 
     it "returns a constant defined in a superclass" do
@@ -176,8 +176,8 @@ describe "CApiModule" do
     end
 
     it "calls #const_missing if the constant is not defined in the class or ancestors" do
-      CApiModuleSpecs::M.should_receive(:const_missing).with(:Fixnum)
-      @m.rb_const_get_from(CApiModuleSpecs::M, :Fixnum)
+      CApiModuleSpecs::M.should_receive(:const_missing).with(:Integer)
+      @m.rb_const_get_from(CApiModuleSpecs::M, :Integer)
     end
 
     it "resolves autoload constants" do
@@ -336,12 +336,12 @@ describe "CApiModule" do
         @frozen = @class.dup.freeze
       end
 
-      it "raises a #{frozen_error_class} when passed a name" do
-        -> { @m.rb_undef_method @frozen, "ruby_test_method" }.should raise_error(frozen_error_class)
+      it "raises a FrozenError when passed a name" do
+        -> { @m.rb_undef_method @frozen, "ruby_test_method" }.should raise_error(FrozenError)
       end
 
-      it "raises a #{frozen_error_class} when passed a missing name" do
-        -> { @m.rb_undef_method @frozen, "not_exist" }.should raise_error(frozen_error_class)
+      it "raises a FrozenError when passed a missing name" do
+        -> { @m.rb_undef_method @frozen, "not_exist" }.should raise_error(FrozenError)
       end
     end
   end

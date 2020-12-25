@@ -18,7 +18,7 @@ require "socket"
 require "monitor"
 require "digest/md5"
 require "strscan"
-require_relative 'protocol'
+require 'net/protocol'
 begin
   require "openssl"
 rescue LoadError
@@ -201,6 +201,8 @@ module Net
   #    Unicode", RFC 2152, May 1997.
   #
   class IMAP < Protocol
+    VERSION = "0.1.1"
+
     include MonitorMixin
     if defined?(OpenSSL::SSL)
       include OpenSSL
@@ -1540,7 +1542,7 @@ module Net
 
     class RawData # :nodoc:
       def send_data(imap, tag)
-        imap.send(:put_string, @data)
+        imap.__send__(:put_string, @data)
       end
 
       def validate
@@ -1555,7 +1557,7 @@ module Net
 
     class Atom # :nodoc:
       def send_data(imap, tag)
-        imap.send(:put_string, @data)
+        imap.__send__(:put_string, @data)
       end
 
       def validate
@@ -1570,7 +1572,7 @@ module Net
 
     class QuotedString # :nodoc:
       def send_data(imap, tag)
-        imap.send(:send_quoted_string, @data)
+        imap.__send__(:send_quoted_string, @data)
       end
 
       def validate
@@ -1585,7 +1587,7 @@ module Net
 
     class Literal # :nodoc:
       def send_data(imap, tag)
-        imap.send(:send_literal, @data, tag)
+        imap.__send__(:send_literal, @data, tag)
       end
 
       def validate
@@ -1600,7 +1602,7 @@ module Net
 
     class MessageSet # :nodoc:
       def send_data(imap, tag)
-        imap.send(:put_string, format_internal(@data))
+        imap.__send__(:put_string, format_internal(@data))
       end
 
       def validate

@@ -9,7 +9,7 @@ describe :kernel_float, shared: true do
     float2.should equal float
   end
 
-  it "returns a Float for Fixnums" do
+  it "returns a Float for Integers" do
     @object.send(:Float, 1).should == 1.0
   end
 
@@ -17,7 +17,7 @@ describe :kernel_float, shared: true do
     @object.send(:Float, Complex(1)).should == 1.0
   end
 
-  it "returns a Float for Bignums" do
+  it "returns a Float for Integers" do
     @object.send(:Float, 1000000000000).should == 1000000000000.0
   end
 
@@ -52,6 +52,12 @@ describe :kernel_float, shared: true do
 
   it "raises an ArgumentError for a String of word characters" do
     -> { @object.send(:Float, "float") }.should raise_error(ArgumentError)
+  end
+
+  it "raises an ArgumentError for a String with string in error message" do
+    -> { @object.send(:Float, "foo") }.should raise_error(ArgumentError) { |e|
+      e.message.should == 'invalid value for Float(): "foo"'
+    }
   end
 
   it "raises an ArgumentError if there are two decimal points in the String" do

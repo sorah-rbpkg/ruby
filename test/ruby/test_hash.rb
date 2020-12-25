@@ -86,7 +86,6 @@ class TestHash < Test::Unit::TestCase
       'nil' => nil
     ]
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -266,10 +265,13 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_AREF_fstring_key
+    # warmup ObjectSpace.count_objects
+    ObjectSpace.count_objects
+
     h = {"abc" => 1}
-    before = GC.stat(:total_allocated_objects)
+    before = ObjectSpace.count_objects[:T_STRING]
     5.times{ h["abc"] }
-    assert_equal before, GC.stat(:total_allocated_objects)
+    assert_equal before, ObjectSpace.count_objects[:T_STRING]
   end
 
   def test_ASET_fstring_key
@@ -875,7 +877,7 @@ class TestHash < Test::Unit::TestCase
   def test_to_s
     h = @cls[ 1 => 2, "cat" => "dog", 1.5 => :fred ]
     assert_equal(h.inspect, h.to_s)
-    $, = ":"
+    assert_deprecated_warning { $, = ":" }
     assert_equal(h.inspect, h.to_s)
     h = @cls[]
     assert_equal(h.inspect, h.to_s)
@@ -944,7 +946,7 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_fetch2
-    assert_equal(:bar, @h.fetch(0, :foo) { :bar })
+    assert_equal(:bar, assert_warning(/block supersedes default value argument/) {@h.fetch(0, :foo) { :bar }})
   end
 
   def test_default_proc
@@ -1033,6 +1035,14 @@ class TestHash < Test::Unit::TestCase
     assert_equal({}, {}.slice)
   end
 
+  def test_except
+    h = @cls[1=>2,3=>4,5=>6]
+    assert_equal({5=>6}, h.except(1, 3))
+    assert_equal({1=>2,3=>4,5=>6}, h.except(7))
+    assert_equal({1=>2,3=>4,5=>6}, h.except)
+    assert_equal({}, {}.except)
+  end
+
   def test_filter
     assert_equal({3=>4,5=>6}, @cls[1=>2,3=>4,5=>6].filter {|k, v| k + v >= 7 })
 
@@ -1101,6 +1111,7 @@ class TestHash < Test::Unit::TestCase
     def o.to_hash; @cls[]; end
     def o.==(x); true; end
     assert_equal({}, o)
+    o.singleton_class.remove_method(:==)
     def o.==(x); false; end
     assert_not_equal({}, o)
 
@@ -1117,6 +1128,7 @@ class TestHash < Test::Unit::TestCase
     def o.to_hash; @cls[]; end
     def o.eql?(x); true; end
     assert_send([@cls[], :eql?, o])
+    o.singleton_class.remove_method(:eql?)
     def o.eql?(x); false; end
     assert_not_send([@cls[], :eql?, o])
   end
@@ -1624,6 +1636,8 @@ class TestHash < Test::Unit::TestCase
     }
 
     assert_equal([10, 20, 30], [1, 2, 3].map(&h))
+
+    assert_equal(true, h.to_proc.lambda?)
   end
 
   def test_transform_keys
@@ -1638,6 +1652,9 @@ class TestHash < Test::Unit::TestCase
 
     y = x.transform_keys.with_index {|k, i| "#{k}.#{i}" }
     assert_equal(%w(a.0 b.1 c.2), y.keys)
+
+    assert_equal({A: 1, B: 2, c: 3}, x.transform_keys({a: :A, b: :B, d: :D}))
+    assert_equal({A: 1, B: 2, "c" => 3}, x.transform_keys({a: :A, b: :B, d: :D}, &:to_s))
   end
 
   def test_transform_keys_bang
@@ -1660,6 +1677,13 @@ class TestHash < Test::Unit::TestCase
     x = @cls[true => :a, false => :b]
     x.transform_keys! {|k| !k }
     assert_equal([false, :a, true, :b], x.flatten)
+
+    x = @cls[a: 1, b: 2, c: 3]
+    x.transform_keys!({a: :A, b: :B, d: :D})
+    assert_equal({A: 1, B: 2, c: 3}, x)
+    x = @cls[a: 1, b: 2, c: 3]
+    x.transform_keys!({a: :A, b: :B, d: :D}, &:to_s)
+    assert_equal({A: 1, B: 2, "c" => 3}, x)
   end
 
   def test_transform_values
@@ -1746,6 +1770,12 @@ class TestHash < Test::Unit::TestCase
       @cls = SubHash
       super
     end
+
+    def test_reject
+      assert_warning(/extra states are no longer copied/) do
+        super
+      end
+    end
   end
 
   ruby2_keywords def get_flagged_hash(*args)
@@ -1828,5 +1858,11 @@ class TestHash < Test::Unit::TestCase
 
     h[obj2] = true
     assert_equal true, h[obj]
+  end
+
+  def test_bug_12706
+    assert_raise(ArgumentError) do
+      {a: 1}.each(&->(k, v) {})
+    end
   end
 end

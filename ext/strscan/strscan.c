@@ -4,8 +4,8 @@
     Copyright (c) 1999-2006 Minero Aoki
 
     This program is free software.
-    You can distribute/modify this program under the terms of
-    the Ruby License. For details, see the file COPYING.
+    You can redistribute this program under the terms of the Ruby's or 2-clause
+    BSD License.  For details, see the COPYING and LICENSE.txt files.
 */
 
 #include "ruby/ruby.h"
@@ -22,7 +22,7 @@ extern size_t onig_region_memsize(const struct re_registers *regs);
 
 #include <stdbool.h>
 
-#define STRSCAN_VERSION "1.0.3"
+#define STRSCAN_VERSION "3.0.0"
 
 /* =======================================================================
                          Data Type Definitions
@@ -176,6 +176,7 @@ strscan_mark(void *ptr)
 {
     struct strscanner *p = ptr;
     rb_gc_mark(p->str);
+    rb_gc_mark(p->regex);
 }
 
 static void
@@ -212,6 +213,7 @@ strscan_s_allocate(VALUE klass)
     CLEAR_MATCH_STATUS(p);
     onig_region_init(&(p->regs));
     p->str = Qnil;
+    p->regex = Qnil;
     return obj;
 }
 
@@ -447,7 +449,7 @@ strscan_get_charpos(VALUE self)
 
     GET_SCANNER(self, p);
 
-    substr = rb_funcall(p->str, id_byteslice, 2, INT2FIX(0), INT2NUM(p->curr));
+    substr = rb_funcall(p->str, id_byteslice, 2, INT2FIX(0), LONG2NUM(p->curr));
 
     return rb_str_length(substr);
 }
@@ -473,7 +475,7 @@ strscan_set_pos(VALUE self, VALUE v)
     if (i < 0) rb_raise(rb_eRangeError, "index out of range");
     if (i > S_LEN(p)) rb_raise(rb_eRangeError, "index out of range");
     p->curr = i;
-    return INT2NUM(i);
+    return LONG2NUM(i);
 }
 
 static inline UChar *
@@ -848,9 +850,8 @@ adjust_registers_to_matched(struct strscanner *p)
  *   s.getch           # => "b"
  *   s.getch           # => nil
  *
- *   $KCODE = 'EUC'
- *   s = StringScanner.new("\244\242")
- *   s.getch           # => "\244\242"   # Japanese hira-kana "A" in EUC-JP
+ *   s = StringScanner.new("\244\242".force_encoding("euc-jp"))
+ *   s.getch           # => "\x{A4A2}"   # Japanese hira-kana "A" in EUC-JP
  *   s.getch           # => nil
  */
 static VALUE
@@ -885,10 +886,9 @@ strscan_getch(VALUE self)
  *   s.get_byte         # => "b"
  *   s.get_byte         # => nil
  *
- *   $KCODE = 'EUC'
- *   s = StringScanner.new("\244\242")
- *   s.get_byte         # => "\244"
- *   s.get_byte         # => "\242"
+ *   s = StringScanner.new("\244\242".force_encoding("euc-jp"))
+ *   s.get_byte         # => "\xA4"
+ *   s.get_byte         # => "\xA2"
  *   s.get_byte         # => nil
  */
 static VALUE
@@ -1091,8 +1091,9 @@ strscan_matched(VALUE self)
 }
 
 /*
- * Returns the size of the most recent match (see #matched), or +nil+ if there
- * was no recent match.
+ * Returns the size of the most recent match in bytes, or +nil+ if there
+ * was no recent match.  This is different than <tt>matched.size</tt>,
+ * which will return the size in characters.
  *
  *   s = StringScanner.new('test string')
  *   s.check /\w+/           # -> "test"
@@ -1107,7 +1108,7 @@ strscan_matched_size(VALUE self)
 
     GET_SCANNER(self, p);
     if (! MATCHED_P(p)) return Qnil;
-    return INT2NUM(p->regs.end[0] - p->regs.beg[0]);
+    return LONG2NUM(p->regs.end[0] - p->regs.beg[0]);
 }
 
 static int
@@ -1169,7 +1170,7 @@ strscan_aref(VALUE self, VALUE idx)
             idx = rb_sym2str(idx);
             /* fall through */
         case T_STRING:
-            if (!p->regex) return Qnil;
+            if (!RTEST(p->regex)) return Qnil;
             RSTRING_GETMEM(idx, name, i);
             i = name_to_backref_number(&(p->regs), p->regex, name, name + i, rb_enc_get(idx));
             break;
@@ -1570,6 +1571,10 @@ strscan_fixed_anchor_p(VALUE self)
 void
 Init_strscan(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
 #undef rb_intern
     ID id_scanerr = rb_intern("ScanError");
     VALUE tmp;

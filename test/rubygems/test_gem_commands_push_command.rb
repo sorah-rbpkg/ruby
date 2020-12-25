@@ -3,9 +3,11 @@ require 'rubygems/test_case'
 require 'rubygems/commands/push_command'
 
 class TestGemCommandsPushCommand < Gem::TestCase
-
   def setup
     super
+
+    credential_setup
+
     ENV["RUBYGEMS_HOST"] = nil
     Gem.host = Gem::DEFAULT_HOST
     Gem.configuration.disable_default_gem_server = false
@@ -37,6 +39,8 @@ class TestGemCommandsPushCommand < Gem::TestCase
   end
 
   def teardown
+    credential_teardown
+
     super
 
     singleton_gem_class.class_eval do
@@ -148,7 +152,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
     keys = {
       :rubygems_api_key => 'KEY',
-      @host => @api_key
+      @host => @api_key,
     }
 
     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
@@ -183,7 +187,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
     keys = {
       :rubygems_api_key => 'KEY',
-      @host => @api_key
+      @host => @api_key,
     }
 
     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
@@ -246,7 +250,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
       spec.metadata['allowed_push_host'] = "https://privategemserver.example"
     end
 
-    response = %{ERROR:  "#{@host}" is not allowed by the gemspec, which only allows "https://privategemserver.example"}
+    response = %(ERROR:  "#{@host}" is not allowed by the gemspec, which only allows "https://privategemserver.example")
 
     assert_raises Gem::MockGemUi::TermError do
       send_battery
@@ -267,7 +271,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
     keys = {
       :rubygems_api_key => 'KEY',
-      @host => @api_key
+      @host => @api_key,
     }
 
     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
@@ -298,7 +302,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     api_key = "PRIVKEY"
 
     keys = {
-      host => api_key
+      host => api_key,
     }
 
     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
@@ -355,7 +359,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     end
     Gem.configuration.load_api_keys
 
-    @cmd.handle_options %w(-k other)
+    @cmd.handle_options %w[-k other]
     @cmd.instance_variable_set :@host, @host
     @cmd.send_gem(@path)
 
@@ -369,7 +373,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
     @fetcher.data["#{Gem.host}/api/v1/gems"] = [
       [response_fail, 401, 'Unauthorized'],
-      [response_success, 200, 'OK']
+      [response_success, 200, 'OK'],
     ]
 
     @otp_ui = Gem::MockGemUi.new "111111\n"
@@ -400,10 +404,74 @@ class TestGemCommandsPushCommand < Gem::TestCase
     assert_equal '111111', @fetcher.last_request['OTP']
   end
 
+  def test_sending_gem_unathorized_api_key_with_mfa_enabled
+    response_mfa_enabled = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
+    response_forbidden = "The API key doesn't have access"
+    response_success   = 'Successfully registered gem: freewill (1.0.0)'
+
+    @fetcher.data["#{@host}/api/v1/gems"] = [
+      [response_mfa_enabled, 401, 'Unauthorized'],
+      [response_forbidden, 403, 'Forbidden'],
+      [response_success, 200, "OK"],
+    ]
+
+    @fetcher.data["#{@host}/api/v1/api_key"] = ["", 200, "OK"]
+    @cmd.instance_variable_set :@host, @host
+    @cmd.instance_variable_set :@scope, :push_rubygem
+
+    @ui = Gem::MockGemUi.new "11111\nsome@mail.com\npass\n"
+    use_ui @ui do
+      @cmd.send_gem(@path)
+    end
+
+    mfa_notice = "You have enabled multi-factor authentication. Please enter OTP code."
+    access_notice = "The existing key doesn't have access of push_rubygem on https://rubygems.example. Please sign in to update access."
+    assert_match mfa_notice, @ui.output
+    assert_match access_notice, @ui.output
+    assert_match "Email:", @ui.output
+    assert_match "Password:", @ui.output
+    assert_match "Added push_rubygem scope to the existing API key", @ui.output
+    assert_match response_success, @ui.output
+    assert_equal '11111', @fetcher.last_request['OTP']
+  end
+
+  def test_sending_gem_with_no_local_creds
+    Gem.configuration.rubygems_api_key = nil
+
+    response_mfa_enabled = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
+    response_success     = 'Successfully registered gem: freewill (1.0.0)'
+
+    @fetcher.data["#{@host}/api/v1/gems"] = [
+      [response_success, 200, "OK"],
+    ]
+
+    @fetcher.data["#{@host}/api/v1/api_key"] = [
+      [response_mfa_enabled, 401, 'Unauthorized'],
+      ["", 200, "OK"],
+    ]
+
+    @cmd.instance_variable_set :@scope, :push_rubygem
+    @cmd.options[:args] = [@path]
+    @cmd.options[:host] = @host
+
+    @ui = Gem::MockGemUi.new "some@mail.com\npass\n11111\n"
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    mfa_notice = "You have enabled multi-factor authentication. Please enter OTP code."
+    assert_match mfa_notice, @ui.output
+    assert_match "Enter your https://rubygems.example credentials.", @ui.output
+    assert_match "Email:", @ui.output
+    assert_match "Password:", @ui.output
+    assert_match "Signed in with API key:", @ui.output
+    assert_match response_success, @ui.output
+    assert_equal '11111', @fetcher.last_request['OTP']
+  end
+
   private
 
   def singleton_gem_class
     class << Gem; self; end
   end
-
 end

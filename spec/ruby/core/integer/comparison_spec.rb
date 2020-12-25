@@ -27,7 +27,7 @@ describe "Integer#<=>" do
   end
 
   context "bignum" do
-    describe "with a Fixnum" do
+    describe "with an Integer" do
       it "returns -1 when other is larger" do
         (-bignum_value <=> 2).should == -1
       end
@@ -37,7 +37,7 @@ describe "Integer#<=>" do
       end
     end
 
-    describe "with a Bignum" do
+    describe "with an Integer" do
       describe "when other is negative" do
         it "returns -1 when self is negative and other is larger" do
           (-bignum_value(42) <=> -bignum_value).should == -1
@@ -116,7 +116,7 @@ describe "Integer#<=>" do
     describe "with an Object" do
       before :each do
         @big = bignum_value
-        @num = mock("value for Bignum#<=>")
+        @num = mock("value for Integer#<=>")
       end
 
       it "calls #coerce on other" do
@@ -124,23 +124,11 @@ describe "Integer#<=>" do
         @big <=> @num
       end
 
-      ruby_version_is ""..."2.5" do
-        it "returns nil if #coerce raises an exception" do
-          @num.should_receive(:coerce).with(@big).and_raise(RuntimeError)
-          -> {
-            @result = (@big <=> @num)
-          }.should complain(/Numerical comparison operators will no more rescue exceptions/)
-          @result.should be_nil
-        end
-      end
-
-      ruby_version_is "2.5" do
-        it "lets the exception go through if #coerce raises an exception" do
-          @num.should_receive(:coerce).with(@big).and_raise(RuntimeError.new("my error"))
-          -> {
-            @big <=> @num
-          }.should raise_error(RuntimeError, "my error")
-        end
+      it "lets the exception go through if #coerce raises an exception" do
+        @num.should_receive(:coerce).with(@big).and_raise(RuntimeError.new("my error"))
+        -> {
+          @big <=> @num
+        }.should raise_error(RuntimeError, "my error")
       end
 
       it "raises an exception if #coerce raises a non-StandardError exception" do
@@ -170,7 +158,7 @@ describe "Integer#<=>" do
     end
 
     # The tests below are taken from matz's revision 23730 for Ruby trunk
-    it "returns 1 when self is Infinity and other is a Bignum" do
+    it "returns 1 when self is Infinity and other is an Integer" do
       (infinity_value <=> Float::MAX.to_i*2).should == 1
     end
 
