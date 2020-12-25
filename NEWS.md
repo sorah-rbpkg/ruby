@@ -14,15 +14,6 @@ sufficient information, see the ChangeLog file or Redmine
   Code that resulted in deprecation warnings in Ruby 2.7 will now
   result in ArgumentError or different behavior. [[Feature #14183]]
 
-* Arguments forwarding (`...`) now supports leading arguments.
-  [[Feature #16378]]
-
-    ```ruby
-    def method_missing(meth, ...)
-      send(:"do_#{meth}", ...)
-    end
-    ```
-
 * Procs accepting a single rest argument and keywords are no longer
   subject to autosplatting.  This now matches the behavior of Procs
   accepting a single rest argument and no keywords.
@@ -40,22 +31,20 @@ sufficient information, see the ChangeLog file or Redmine
     # 3.0 => [[[1, {:a=>1}]], {}]
     ```
 
-* $SAFE is now a normal global variable with no special behavior.
-  C-API methods related to $SAFE have been removed.
-  [[Feature #16131]]
+* Arguments forwarding (`...`) now supports leading arguments.
+  [[Feature #16378]]
 
-* $KCODE is now a normal global variable with no special behavior.  No
-  warnings are emitted by access/assignment to it, and the assigned
-  value will be returned.  [[Feature #17136]]
+    ```ruby
+    def method_missing(meth, ...)
+      send(:"do_#{meth}", ...)
+    end
+    ```
 
-* yield in singleton class definitions in methods is now a SyntaxError
-  instead of a warning. yield in a class definition outside of a method
-  is now a SyntaxError instead of a LocalJumpError.  [[Feature #15575]]
-
-* Pattern matching(`case/in`) is no longer experimental. [[Feature #17260]]
+* Pattern matching (`case/in`) is no longer experimental. [[Feature #17260]]
 
 * One-line pattern matching is redesigned.  [EXPERIMENTAL]
-    * `=>` is added. It can be used as like rightward assignment.
+
+    * `=>` is added. It can be used like a rightward assignment.
       [[Feature #17260]]
 
         ```ruby
@@ -89,15 +78,6 @@ sufficient information, see the ChangeLog file or Redmine
     end
     ```
 
-* When a class variable is overtaken by the same definition in an
-  ancestor class/module, a RuntimeError is now raised (previously,
-  it only issued a warning in verbose mode).  Additionally, accessing a
-  class variable from the toplevel scope is now a RuntimeError.
-  [[Bug #14541]]
-
-* Assigning to a numbered parameter is now a SyntaxError instead of
-  a warning.
-
 * Endless method definition is added.  [EXPERIMENTAL]
   [[Feature #16746]]
 
@@ -108,6 +88,10 @@ sufficient information, see the ChangeLog file or Redmine
 * Interpolated String literals are no longer frozen when
   `# frozen-string-literal: true` is used. [[Feature #17104]]
 
+* Magic comment `shareable_constant_value` added to freeze constants.
+  See {Magic Comments}[rdoc-ref:doc/syntax/comments.rdoc@Magic+Comments] for more details.
+  [[Feature #17273]]
+
 * A {static analysis}[rdoc-label:label-Static+analysis] foundation is
   introduced.
     * {RBS}[rdoc-label:label-RBS] is introduced. It is a type definition
@@ -115,18 +99,39 @@ sufficient information, see the ChangeLog file or Redmine
     * {TypeProf}[rdoc-label:label-TypeProf] is experimentally bundled. It is a
       type analysis tool for Ruby programs.
 
+* Deprecation warnings are no longer shown by default (since Ruby 2.7.2).
+  Turn them on with `-W:deprecated` (or with `-w` to show other warnings too).
+  [[Feature #16345]]
+
+* $SAFE and $KCODE are now normal global variables with no special behavior.
+  C-API methods related to $SAFE have been removed.
+  [[Feature #16131]] [[Feature #17136]]
+
+* yield in singleton class definitions in methods is now a SyntaxError
+  instead of a warning. yield in a class definition outside of a method
+  is now a SyntaxError instead of a LocalJumpError.  [[Feature #15575]]
+
+* When a class variable is overtaken by the same definition in an
+  ancestor class/module, a RuntimeError is now raised (previously,
+  it only issued a warning in verbose mode).  Additionally, accessing a
+  class variable from the toplevel scope is now a RuntimeError.
+  [[Bug #14541]]
+
+* Assigning to a numbered parameter is now a SyntaxError instead of
+  a warning.
+
 ## Command line options
 
 ### `--help` option
 
 When the environment variable `RUBY_PAGER` or `PAGER` is present and has
-non-empty value, and the standard input and output are tty, `--help`
+a non-empty value, and the standard input and output are tty, the `--help`
 option shows the help message via the pager designated by the value.
 [[Feature #16754]]
 
 ### `--backtrace-limit` option
 
-`--backtrace-limit` option limits the maximum length of backtrace.
+The `--backtrace-limit` option limits the maximum length of a backtrace.
 [[Feature #8661]]
 
 ## Core classes updates
@@ -149,6 +154,20 @@ Outstanding ones only.
         * Array#uniq
         * Array#*
 
+    * Can be sliced with Enumerator::ArithmeticSequence
+
+        ```ruby
+        dirty_data = ['--', 'data1', '--', 'data2', '--', 'data3']
+        dirty_data[(1..).step(2)] # take each second element
+        # => ["data1", "data2", "data3"]
+        ```
+
+* Binding
+
+    * Binding#eval when called with one argument will use "(eval)"
+      for `__FILE__` and 1 for `__LINE__` in the evaluated code.
+      [[Bug #4352]] [[Bug #17419]]
+
 * ConditionVariable
 
     * ConditionVariable#wait may now invoke the `block`/`unblock` scheduler
@@ -157,7 +176,7 @@ Outstanding ones only.
 * Dir
 
     * Dir.glob and Dir.[] now sort the results by default, and
-      accept `sort:` keyword option.  [[Feature #8709]]
+      accept the `sort:` keyword option.  [[Feature #8709]]
 
 * ENV
 
@@ -181,7 +200,7 @@ Outstanding ones only.
 
     * Fiber#blocking? tells whether the fiber is non-blocking. [[Feature #16786]]
 
-    * Fiber#backtrace & Fiber#backtrace_locations provide per-fiber backtrace.
+    * Fiber#backtrace and Fiber#backtrace_locations provide per-fiber backtrace.
       [[Feature #16815]]
 
     * The limitation of Fiber#transfer is relaxed. [[Bug #17221]]
@@ -196,7 +215,7 @@ Outstanding ones only.
 
 * Hash
 
-    * Hash#transform_keys and transform_keys! now accepts a hash that maps
+    * Hash#transform_keys and Hash#transform_keys! now accept a hash that maps
       keys to new keys.  [[Feature #16274]]
 
     * Hash#except has been added, which returns a hash excluding the
@@ -213,11 +232,11 @@ Outstanding ones only.
 
 * Kernel
 
-    * Kernel#clone when called with `freeze: false` keyword will call
+    * Kernel#clone when called with the `freeze: false` keyword will call
       `#initialize_clone` with the `freeze: false` keyword.
       [[Bug #14266]]
 
-    * Kernel#clone when called with `freeze: true` keyword will call
+    * Kernel#clone when called with the `freeze: true` keyword will call
       `#initialize_clone` with the `freeze: true` keyword, and will
       return a frozen copy even if the receiver is unfrozen.
       [[Feature #16175]]
@@ -249,14 +268,15 @@ Outstanding ones only.
         p C.ancestors #=> [C, M1, M2, Object, Kernel, BasicObject]
         ```
 
-    * Module#public, Module#protected and Module#private methods now accept single
-      array argument with a list of method names. [[Feature #17314]]
+    * Module#public, Module#protected, Module#private, Module#public_class_method,
+      Module#private_class_method, toplevel "private" and "public" methods
+      now accept single array argument with a list of method names. [[Feature #17314]]
 
     * Module#attr_accessor, Module#attr_reader, Module#attr_writer and Module#attr
-      methods now return array of defined methods names as symbols.
+      methods now return an array of defined method names as symbols.
       [[Feature #17314]]
 
-    * Module#alias_method now returns the defined alias as symbol.
+    * Module#alias_method now returns the defined alias as a symbol.
       [[Feature #17314]]
 
 * Mutex
@@ -340,17 +360,20 @@ Outstanding ones only.
     * Symbol#name has been added, which returns the name of the symbol
       if it is named.  The returned string is frozen.  [[Feature #16150]]
 
-* Thread
+* Fiber
 
     * Introduce Fiber.set_scheduler for intercepting blocking operations and
       Fiber.scheduler for accessing the current scheduler. See
-      rdoc-ref:scheduler.md for more details. [[Feature #16786]]
+      rdoc-ref:fiber.md for more details about what operations are supported and
+      how to implement the scheduler hooks. [[Feature #16786]]
 
     * Fiber.blocking? tells whether the current execution context is
       blocking. [[Feature #16786]]
 
     * Thread#join invokes the scheduler hooks `block`/`unblock` in a
       non-blocking execution context. [[Feature #16786]]
+
+* Thread
 
     * Thread.ignore_deadlock accessor has been added for disabling the
       default deadlock detection, allowing the use of signal handlers to
@@ -373,11 +396,23 @@ Outstanding ones only.
 
 * Bundler
 
-    * Update to Bundler 2.2.2
+    * Update to Bundler 2.2.3
+
+* CGI
+
+    * Update to 0.2.0
+
+    * This version is Ractor compatible.
 
 * CSV
 
     * Update to CSV 3.1.9
+
+* Date
+
+    * Update to Date 3.1.1
+
+    * This version is Ractor compatible.
 
 * Digest
 
@@ -385,9 +420,15 @@ Outstanding ones only.
 
     * This version is Ractor compatible.
 
+* Etc
+
+    * Update to Etc 1.2.0
+
+    * This version is Ractor compatible.
+
 * Fiddle
 
-    * Update to Fiddle 1.0.4
+    * Update to Fiddle 1.0.5
 
 * IRB
 
@@ -395,7 +436,19 @@ Outstanding ones only.
 
 * JSON
 
-    * Update to JSON 2.4.0
+    * Update to JSON 2.5.0
+
+    * This version is Ractor compatible.
+
+* Set
+
+    * Update to set 1.0.0
+
+    * SortedSet has been removed for dependency and performance reasons.
+
+    * Set#join is added as a shorthand for `.to_a.join`.
+
+    * Set#<=> is added.
 
 * Socket
 
@@ -420,7 +473,7 @@ Outstanding ones only.
 
 * OpenStruct
 
-    * Initialization no longer lazy [[Bug #12136]]
+    * Initialization is no longer lazy. [[Bug #12136]]
 
     * Builtin methods can now be overridden safely. [[Bug #15409]]
 
@@ -428,7 +481,7 @@ Outstanding ones only.
 
     * Ractor compatible.
 
-    * Improved support for YAML [[Bug #8382]]
+    * Improved support for YAML. [[Bug #8382]]
 
     * Use officially discouraged. Read OpenStruct@Caveats section.
 
@@ -438,7 +491,9 @@ Outstanding ones only.
 
 * Psych
 
-    * Update to Psych 3.2.1
+    * Update to Psych 3.3.0
+
+    * This version is Ractor compatible.
 
 * Reline
 
@@ -446,7 +501,7 @@ Outstanding ones only.
 
 * RubyGems
 
-    * Update to RubyGems 3.2.2
+    * Update to RubyGems 3.2.3
 
 * StringIO
 
@@ -464,14 +519,14 @@ Outstanding ones only.
 
 Excluding feature bug fixes.
 
-* Regexp literals and all Range objects are frozen [[Feature #8948]] [[Feature #16377]] [[Feature #15504]]
+* Regexp literals and all Range objects are frozen. [[Feature #8948]] [[Feature #16377]] [[Feature #15504]]
 
     ```ruby
     /foo/.frozen? #=> true
     (42...).frozen? # => true
     ```
 
-* EXPERIMENTAL: Hash#each consistently yields a 2-element array [[Bug #12706]]
+* EXPERIMENTAL: Hash#each consistently yields a 2-element array. [[Bug #12706]]
 
     * Now `{ a: 1 }.each(&->(k, v) { })` raises an ArgumentError
       due to lambda's arity check.
@@ -483,17 +538,19 @@ Excluding feature bug fixes.
 
 * Integer#zero? overrides Numeric#zero? for optimization.  [[Misc #16961]]
 
-* Enumerable#grep and grep_v when passed a Regexp and no block no longer modify
-  Regexp.last_match [[Bug #17030]]
+* Enumerable#grep and Enumerable#grep_v when passed a Regexp and no block no longer modify
+  Regexp.last_match. [[Bug #17030]]
 
 * Requiring 'open-uri' no longer redefines `Kernel#open`.
   Call `URI.open` directly or `use URI#open` instead. [[Misc #15893]]
+
+* SortedSet has been removed for dependency and performance reasons.
 
 ## Stdlib compatibility issues
 
 * Default gems
 
-    * The following libraries are promoted the default gems from stdlib.
+    * The following libraries are promoted to default gems from stdlib.
 
         * English
         * abbrev
@@ -523,7 +580,7 @@ Excluding feature bug fixes.
         * un
         * weakref
 
-    * The following extensions are promoted the default gems from stdlib.
+    * The following extensions are promoted to default gems from stdlib.
 
         * digest
         * io-nonblock
@@ -540,26 +597,28 @@ Excluding feature bug fixes.
       your plan to https://github.com/ruby/xmlrpc
       or https://github.com/ruby/net-telnet.
 
-* SDBM have been removed from ruby standard library. [[Bug #8446]]
+* SDBM has been removed from the Ruby standard library. [[Bug #8446]]
 
     * The issues of sdbm will be handled at https://github.com/ruby/sdbm
 
-* WEBrick have been removed from ruby standard library. [[Feature #17303]]
+* WEBrick has been removed from the Ruby standard library. [[Feature #17303]]
 
-    * The issues of webrick will be handled at https://github.com/ruby/webrick
+    * The issues of WEBrick will be handled at https://github.com/ruby/webrick
 
 ## C API updates
 
 * C API functions related to $SAFE have been removed.
   [[Feature #16131]]
 
-* C API header file `ruby/ruby.h` was split. [[GH-2991]] Should have no impact
-  on extension libraries, but users might experience slow compilations.
+* C API header file `ruby/ruby.h` was split. [[GH-2991]]
+
+    This should have no impact on extension libraries,
+    but users might experience slow compilations.
 
 * Memory view interface [EXPERIMENTAL]
 
     * The memory view interface is a C-API set to exchange a raw memory area,
-      such as a numeric array and a bitmap image, between extension libraries.
+      such as a numeric array or a bitmap image, between extension libraries.
       The extension libraries can share also the metadata of the memory area
       that consists of the shape, the element format, and so on.
       Using these kinds of metadata, the extension libraries can share even
@@ -567,9 +626,11 @@ Excluding feature bug fixes.
       This feature is designed by referring to Python's buffer protocol.
       [[Feature #13767]] [[Feature #14722]]
 
+* Ractor related C APIs are introduced (experimental) in "include/ruby/ractor.h".
+
 ## Implementation improvements
 
-* New method cache mechanism for Ractor [[Feature #16614]]
+* New method cache mechanism for Ractor. [[Feature #16614]]
 
     * Inline method caches pointed from ISeq can be accessed by multiple Ractors
       in parallel and synchronization is needed even for method caches. However,
@@ -589,22 +650,51 @@ Excluding feature bug fixes.
 
 ### JIT
 
-* Native functions shared by multiple methods are deduplicated on JIT compaction.
+* Performance improvements of JIT-ed code
 
-* Decrease code size of hot paths by some optimizations and partitioning cold paths.
+    * Microarchitectural optimizations
 
-* Not only pure Ruby methods but also some C methods skip pushing a method frame.
+        * Native functions shared by multiple methods are deduplicated on JIT compaction.
 
-    * `Kernel#class`, `Integer#zero?`
+        * Decrease code size of hot paths by some optimizations and partitioning cold paths.
 
-* Always generate appropriate code for `==`, `nil?`, and `!` calls depending on
-  a receiver class.
+    * Instance variables
 
-* Optimize instance variable access in some core classes like Hash and their subclasses.
+        * Eliminate some redundant checks.
 
-* Eliminate VM register access on a method return.
+        * Skip checking a class and a object multiple times in a method when possible.
 
-* Optimize C method calls a little.
+        * Optimize accesses in some core classes like Hash and their subclasses.
+
+    * Method inlining support for some C methods
+
+        * `Kernel`: `#class`, `#frozen?`
+
+        * `Integer`: `#-@`, `#~`, `#abs`, `#bit_length`, `#even?`, `#integer?`, `#magnitude`,
+          `#odd?`, `#ord`, `#to_i`, `#to_int`, `#zero?`
+
+        * `Struct`: reader methods for 10th or later members
+
+    * Constant references are inlined.
+
+    * Always generate appropriate code for `==`, `nil?`, and `!` calls depending on
+      a receiver class.
+
+    * Reduce the number of PC accesses on branches and method returns.
+
+    * Optimize C method calls a little.
+
+* Compilation process improvements
+
+    * It does not keep temporary files in /tmp anymore.
+
+    * Throttle GC and compaction of JIT-ed code.
+
+    * Avoid GC-ing JIT-ed code when not necessary.
+
+    * GC-ing JIT-ed code is executed in a background thread.
+
+    * Reduce the number of locks between Ruby and JIT threads.
 
 ## Static analysis
 
@@ -622,10 +712,12 @@ Excluding feature bug fixes.
 ### TypeProf
 
 * TypeProf is a type analysis tool for Ruby code based on abstract interpretation.
+
     * It reads non-annotated Ruby code, tries inferring its type signature, and prints
       the analysis result in RBS format.
+
     * Though it supports only a subset of the Ruby language yet, we will continuously
-      improve the coverage of language features, the analysis performance, and usability.
+      improve the coverage of language features, analysis performance, and usability.
 
 ```ruby
 # test.rb
@@ -695,6 +787,7 @@ end
 [Feature #16233]: https://bugs.ruby-lang.org/issues/16233
 [Feature #16260]: https://bugs.ruby-lang.org/issues/16260
 [Feature #16274]: https://bugs.ruby-lang.org/issues/16274
+[Feature #16345]: https://bugs.ruby-lang.org/issues/16345
 [Feature #16377]: https://bugs.ruby-lang.org/issues/16377
 [Feature #16378]: https://bugs.ruby-lang.org/issues/16378
 [Feature #16555]: https://bugs.ruby-lang.org/issues/16555
@@ -717,10 +810,11 @@ end
 [Feature #17187]: https://bugs.ruby-lang.org/issues/17187
 [Bug #17221]:     https://bugs.ruby-lang.org/issues/17221
 [Feature #17260]: https://bugs.ruby-lang.org/issues/17260
+[Feature #17273]: https://bugs.ruby-lang.org/issues/17273
 [Feature #17303]: https://bugs.ruby-lang.org/issues/17303
 [Feature #17314]: https://bugs.ruby-lang.org/issues/17314
 [Feature #17322]: https://bugs.ruby-lang.org/issues/17322
 [Feature #17351]: https://bugs.ruby-lang.org/issues/17351
 [Feature #17371]: https://bugs.ruby-lang.org/issues/17371
+[Bug #17419]:     https://bugs.ruby-lang.org/issues/17419
 [GH-2991]:        https://github.com/ruby/ruby/pull/2991
-[Feature #17314]: https://bugs.ruby-lang.org/issues/17314

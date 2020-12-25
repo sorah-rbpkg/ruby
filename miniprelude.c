@@ -578,11 +578,36 @@ static const struct {
 
 static const char prelude_name3[] = "<internal:integer>";
 static const struct {
-    char L0[485]; /* 1..79 */
-    char L79[300]; /* 80..126 */
+    char L0[474]; /* 1..83 */
+    char L83[499]; /* 84..151 */
 } prelude_code3 = {
 #line 1 "integer.rb"
 "class Integer\n"
+"\n"/* call-seq: */
+"\n"/*    -int  ->  integer */
+"\n"/*  */
+"\n"/* Returns +int+, negated. */
+"  def -@\n"
+"    Primitive.attr! 'inline'\n"
+"    Primitive.cexpr! 'rb_int_uminus(self)'\n"
+"  end\n"
+"\n"
+"\n"/* call-seq: */
+"\n"/*   ~int  ->  integer */
+"\n"/*  */
+"\n"/* One's complement: returns a number where each bit is flipped. */
+"\n"/*  */
+"\n"/* Inverts the bits in an Integer. As integers are conceptually of */
+"\n"/* infinite length, the result acts as if it had an infinite number of */
+"\n"/* one bits to the left. In hex representations, this is displayed */
+"\n"/* as two periods to the left of the digits. */
+"\n"/*  */
+"\n"/*   sprintf("%X", ~0x1122334455)    #=> "..FEEDDCCBBAA" */
+"  def ~\n"
+"    Primitive.attr! 'inline'\n"
+"    Primitive.cexpr! 'rb_int_comp(self)'\n"
+"  end\n"
+"\n"
 "  def abs\n"
 "    Primitive.attr! 'inline'\n"
 "    Primitive.cexpr! 'rb_int_abs(self)'\n"
@@ -640,6 +665,8 @@ static const struct {
 "\n"/*  Returns +true+ if +int+ is an even number. */
 "  def even?\n"
 "    Primitive.attr! 'inline'\n"
+,
+#line 84 "integer.rb"
 "    Primitive.cexpr! 'rb_int_even_p(self)'\n"
 "  end\n"
 "\n"
@@ -661,8 +688,6 @@ static const struct {
 "\n"/*  */
 "\n"/*  Returns +true+ if +int+ is an odd number. */
 "  def odd?\n"
-,
-#line 80 "integer.rb"
 "    Primitive.attr! 'inline'\n"
 "    Primitive.cexpr! 'rb_int_odd_p(self)'\n"
 "  end\n"
@@ -709,7 +734,7 @@ static const struct {
 "    Primitive.cexpr! 'rb_int_zero_p(self)'\n"
 "  end\n"
 "end\n"
-#line 713 "miniprelude.c"
+#line 738 "miniprelude.c"
 };
 
 static const char prelude_name4[] = "<internal:io>";
@@ -840,7 +865,7 @@ static const struct {
 "    Primitive.io_write_nonblock(buf, exception)\n"
 "  end\n"
 "end\n"
-#line 844 "miniprelude.c"
+#line 869 "miniprelude.c"
 };
 
 static const char prelude_name5[] = "<internal:pack>";
@@ -1131,7 +1156,7 @@ static const struct {
 "    Primitive.pack_unpack1(fmt)\n"
 "  end\n"
 "end\n"
-#line 1135 "miniprelude.c"
+#line 1160 "miniprelude.c"
 };
 
 static const char prelude_name6[] = "<internal:trace_point>";
@@ -1496,7 +1521,7 @@ static const struct {
 "    Primitive.tracepoint_attr_instruction_sequence\n"
 "  end\n"
 "end\n"
-#line 1500 "miniprelude.c"
+#line 1525 "miniprelude.c"
 };
 
 static const char prelude_name7[] = "<internal:warning>";
@@ -1557,7 +1582,7 @@ static const struct {
 "    Primitive.rb_warn_m(msgs, uplevel, category)\n"
 "  end\n"
 "end\n"
-#line 1561 "miniprelude.c"
+#line 1586 "miniprelude.c"
 };
 
 static const char prelude_name8[] = "<internal:array>";
@@ -1626,7 +1651,7 @@ static const struct {
 "    Primitive.rb_ary_sample(random, n, ary)\n"
 "  end\n"
 "end\n"
-#line 1630 "miniprelude.c"
+#line 1655 "miniprelude.c"
 };
 
 static const char prelude_name9[] = "<internal:kernel>";
@@ -1811,31 +1836,36 @@ static const struct {
 "    Primitive.rb_f_float(arg, exception)\n"
 "  end\n"
 "end\n"
-#line 1815 "miniprelude.c"
+#line 1840 "miniprelude.c"
 };
 
 static const char prelude_name10[] = "<internal:ractor>";
 static const struct {
-    char L0[508]; /* 1..249 */
-    char L249[457]; /* 250..321 */
-    char L321[507]; /* 322..391 */
-    char L391[496]; /* 392..545 */
-    char L545[456]; /* 546..654 */
-    char L654[480]; /* 655..682 */
-    char L682[508]; /* 683..754 */
-    char L754[65]; /* 755..760 */
+    char L0[473]; /* 1..266 */
+    char L266[502]; /* 267..344 */
+    char L344[477]; /* 345..416 */
+    char L416[508]; /* 417..578 */
+    char L578[467]; /* 579..699 */
+    char L699[486]; /* 700..716 */
+    char L716[493]; /* 717..811 */
+    char L811[422]; /* 812..839 */
 } prelude_code10 = {
 #line 1 "ractor.rb"
 "\n"/* Ractor is a Actor-model abstraction for Ruby that provides thread-safe parallel execution. */
 "\n"/*  */
-"\n"/* To achieve this, ractors severely limit data sharing between different ractors. */
-"\n"/* Unlike threads, ractors can't access each other's data, nor any data through variables of */
-"\n"/* the outer scope. */
+"\n"/* Ractor.new can make new Ractor and it will run in parallel. */
 "\n"/*  */
 "\n"/*     # The simplest ractor */
 "\n"/*     r = Ractor.new {puts "I am in Ractor!"} */
-"\n"/*     r.take # allow it to finish */
+"\n"/*     r.take # wait it to finish */
 "\n"/*     # here "I am in Ractor!" would be printed */
+"\n"/*  */
+"\n"/* Ractors do not share usual objects, so the some kind of thread-safety concerns such as data-race, */
+"\n"/* race-conditions are not available on multi-ractor programming. */
+"\n"/*  */
+"\n"/* To achieve this, ractors severely limit object sharing between different ractors. */
+"\n"/* For example, unlike threads, ractors can't access each other's objects, nor any objects through */
+"\n"/* variables of the outer scope. */
 "\n"/*  */
 "\n"/*     a = 1 */
 "\n"/*     r = Ractor.new {puts "I am in Ractor! a=#{a}"} */
@@ -1845,8 +1875,8 @@ static const struct {
 "\n"/* On CRuby (the default implementation), Global Virtual Machine Lock (GVL) is held per ractor, so */
 "\n"/* ractors are performed in parallel without locking each other. */
 "\n"/*  */
-"\n"/* Instead of accessing the shared state, the data should be passed to and from ractors via */
-"\n"/* sending and receiving messages, thus making them _actors_ ("Ractor" stands for "Ruby Actor"). */
+"\n"/* Instead of accessing the shared state, the objects should be passed to and from ractors via */
+"\n"/* sending and receiving objects as messages. */
 "\n"/*  */
 "\n"/*     a = 1 */
 "\n"/*     r = Ractor.new do */
@@ -1899,14 +1929,17 @@ static const struct {
 "\n"/*  */
 "\n"/* It is said that Ractor receives messages via the <em>incoming port</em>, and sends them */
 "\n"/* to the <em>outgoing port</em>. Either one can be disabled with Ractor#close_incoming and */
-"\n"/* Ractor#close_outgoing respectively. */
+"\n"/* Ractor#close_outgoing respectively. If a ractor terminated, its ports will be closed */
+"\n"/* automatically. */
 "\n"/*  */
 "\n"/* == Shareable and unshareable objects */
 "\n"/*  */
 "\n"/* When the object is sent to and from the ractor, it is important to understand whether the */
-"\n"/* object is shareable or not. Shareable objects are basically those which can be used by several */
-"\n"/* threads without compromising thread-safety; e.g. immutable ones. Ractor.shareable? allows to */
-"\n"/* check this, and Ractor.make_shareable tries to make object shareable if it is not. */
+"\n"/* object is shareable or unshareable. Most of objects are unshareable objects. */
+"\n"/*  */
+"\n"/* Shareable objects are basically those which can be used by several threads without compromising */
+"\n"/* thread-safety; e.g. immutable ones. Ractor.shareable? allows to check this, and Ractor.make_shareable */
+"\n"/* tries to make object shareable if it is not. */
 "\n"/*  */
 "\n"/*     Ractor.shareable?(1)            #=> true -- numbers and other immutable basic values are */
 "\n"/*     Ractor.shareable?('foo')        #=> false, unless the string is frozen due to # freeze_string_literals: true */
@@ -1943,7 +1976,7 @@ static const struct {
 "\n"/* the ractor, showing it is different objects. But the second array's element, which is a */
 "\n"/* shareable frozen string, has the same object_id.) */
 "\n"/*  */
-"\n"/* Deep cloning of the data may be slow, and sometimes impossible. Alternatively, */
+"\n"/* Deep cloning of the objects may be slow, and sometimes impossible. Alternatively, */
 "\n"/* <tt>move: true</tt> may be used on sending. This will <em>move</em> the object to the */
 "\n"/* receiving ractor, making it inaccessible for a sending ractor. */
 "\n"/*  */
@@ -1966,8 +1999,13 @@ static const struct {
 "\n"/* Notice that even +inspect+ (and more basic methods like <tt>__id__</tt>) is inaccessible */
 "\n"/* on a moved object. */
 "\n"/*  */
-"\n"/* Besides frozen objects, shareable objects are instances of Module, Class and Ractor itself. Modules */
-"\n"/* and classes, though, can not access instance variables from ractors other than main: */
+"\n"/* Besides frozen objects, there are shareable objects. Class and Module objects are shareable so */
+"\n"/* the Class/Module definitons are shared between ractors. Ractor objects are also shareable objects. */
+"\n"/* All operations for the shareable mutable objects are thread-safe, so the thread-safety property */
+"\n"/* will be kept. We can not define mutable shareable objects in Ruby, but C extensions can introduce them. */
+"\n"/*  */
+"\n"/* It is prohibited to access instance variables of mutable shareable objects (especially Modules and classes) */
+"\n"/* from ractors other than main: */
 "\n"/*  */
 "\n"/*     class C */
 "\n"/*       class << self */
@@ -2014,8 +2052,8 @@ static const struct {
 "\n"/*  */
 "\n"/* == Ractors vs threads */
 "\n"/*  */
-"\n"/* Each ractor creates its own thread. New threads can be created from inside ractor, having the full */
-"\n"/* access to its data (and, on CRuby, sharing GVL with other threads of this ractor). */
+"\n"/* Each ractor creates its own thread. New threads can be created from inside ractor */
+"\n"/* (and, on CRuby, sharing GVL with other threads of this ractor). */
 "\n"/*  */
 "\n"/*     r = Ractor.new do */
 "\n"/*       a = 1 */
@@ -2036,13 +2074,21 @@ static const struct {
 "\n"/* It is **only for demonstration purposes** and shouldn't be used in a real code. */
 "\n"/* Most of the times, just #take is used to wait till ractor will finish. */
 "\n"/*  */
+"\n"/* == Reference */
+"\n"/*  */
+"\n"/* See {Ractor desgin doc}[rdoc-ref:doc/ractor.md] for more details. */
+"\n"/*  */
 "class Ractor\n"
+"\n"/*  */
+"\n"/*  call-seq: */
+"\n"/*     Ractor.new(*args, name: nil) {|*args| block } -> ractor */
+"\n"/*  */
 "\n"/* Create a new Ractor with args and a block. */
 "\n"/*  */
 "\n"/* A block (Proc) will be isolated (can't access to outer variables). +self+ */
 "\n"/* inside the block will refer to the current Ractor. */
 "\n"/*  */
-"\n"/*    r = Ractor.new {puts "Hi, I am #{self.inspect}"} */
+"\n"/*    r = Ractor.new { puts "Hi, I am #{self.inspect}" } */
 "\n"/*    r.take */
 "\n"/*    # Prints "Hi, I am #<Ractor:#2 test.rb:1 running>" */
 "\n"/*  */
@@ -2053,7 +2099,7 @@ static const struct {
 "\n"/*    arg = [1, 2, 3] */
 "\n"/*    puts "Passing: #{arg} (##{arg.object_id})" */
 "\n"/*    r = Ractor.new(arg) {|received_arg| */
-"\n"/*     puts "Received: #{received_arg} (##{received_arg.object_id})" */
+"\n"/*      puts "Received: #{received_arg} (##{received_arg.object_id})" */
 "\n"/*    } */
 "\n"/*    r.take */
 "\n"/*    # Prints: */
@@ -2071,25 +2117,26 @@ static const struct {
 "    raise ArgumentError, \"must be called with a block\" unless block\n"
 "    loc = caller_locations(1, 1).first\n"
 "    loc = \"#{loc.path}:#{loc.lineno}\"\n"
+,
+#line 267 "ractor.rb"
 "    __builtin_ractor_create(loc, name, args, b)\n"
 "  end\n"
 "\n"
 "\n"/* Returns the currently executing Ractor. */
-,
-#line 250 "ractor.rb"
 "\n"/*  */
 "\n"/*   Ractor.current #=> #<Ractor:#1 running> */
 "  def self.current\n"
 "    __builtin_cexpr! %q{\n"
-"      rb_ec_ractor_ptr(ec)->self\n"
+"      rb_ractor_self(rb_ec_ractor_ptr(ec));\n"
 "    }\n"
 "  end\n"
 "\n"
 "\n"/* Returns total count of Ractors currently running. */
 "\n"/*  */
 "\n"/*    Ractor.count                   #=> 1 */
-"\n"/*    r = Ractor.new(name: 'example') {sleep(0.1)} */
+"\n"/*    r = Ractor.new(name: 'example') { Ractor.yield(1) } */
 "\n"/*    Ractor.count                   #=> 2 (main + example ractor) */
+"\n"/*    r.take                         # wait for Ractor.yield(1) */
 "\n"/*    r.take                         # wait till r will finish */
 "\n"/*    Ractor.count                   #=> 1 */
 "  def self.count\n"
@@ -2098,7 +2145,9 @@ static const struct {
 "    }\n"
 "  end\n"
 "\n"
-"\n"/* call-seq: Ractor.select(*ractors, [yield_value:, move: false]) -> [ractor or symbol, obj] */
+"\n"/*  */
+"\n"/* call-seq: */
+"\n"/*    Ractor.select(*ractors, [yield_value:, move: false]) -> [ractor or symbol, obj] */
 "\n"/*  */
 "\n"/* Waits for the first ractor to have something in its outgoing port, reads from this ractor, and */
 "\n"/* returns that ractor and the object received. */
@@ -2148,9 +2197,9 @@ static const struct {
 "  def self.select(*ractors, yield_value: yield_unspecified = true, move: false)\n"
 "    raise ArgumentError, 'specify at least one ractor or `yield_value`' if yield_unspecified && ractors.empty?\n"
 "\n"
-"    __builtin_cstmt! %q{\n"
 ,
-#line 322 "ractor.rb"
+#line 345 "ractor.rb"
+"    __builtin_cstmt! %q{\n"
 "      const VALUE *rs = RARRAY_CONST_PTR_TRANSIENT(ractors);\n"
 "      VALUE rv;\n"
 "      VALUE v = ractor_select(ec, rs, RARRAY_LENINT(ractors),\n"
@@ -2160,6 +2209,10 @@ static const struct {
 "    }\n"
 "  end\n"
 "\n"
+"\n"/*  */
+"\n"/* call-seq: */
+"\n"/*    Ractor.receive -> msg */
+"\n"/*  */
 "\n"/* Receive an incoming message from the current Ractor's incoming port's queue, which was */
 "\n"/* sent there by #send. */
 "\n"/*  */
@@ -2206,7 +2259,8 @@ static const struct {
 "\n"/*     Still received only one */
 "\n"/*     Received: message2 */
 "\n"/*  */
-"\n"/* If close_incoming was called on the ractor, the method raises Ractor::ClosedError: */
+"\n"/* If close_incoming was called on the ractor, the method raises Ractor::ClosedError */
+"\n"/* if there are no more messages in incoming queue: */
 "\n"/*  */
 "\n"/*     Ractor.new do */
 "\n"/*       close_incoming */
@@ -2217,12 +2271,12 @@ static const struct {
 "\n"/*  */
 "  def self.receive\n"
 "    __builtin_cexpr! %q{\n"
+,
+#line 417 "ractor.rb"
 "      ractor_receive(ec, rb_ec_ractor_ptr(ec))\n"
 "    }\n"
 "  end\n"
 "\n"
-,
-#line 392 "ractor.rb"
 "  class << self\n"
 "    alias recv receive\n"
 "  end\n"
@@ -2235,6 +2289,10 @@ static const struct {
 "  end\n"
 "  alias recv receive\n"
 "\n"
+"\n"/*  */
+"\n"/* call-seq: */
+"\n"/*    Ractor.receive_if {|msg| block } -> msg */
+"\n"/*  */
 "\n"/* Receive only a specific message. */
 "\n"/*  */
 "\n"/* Instead of Ractor.receive, Ractor.receive_if can provide a pattern */
@@ -2257,14 +2315,15 @@ static const struct {
 "\n"/*     baz2 */
 "\n"/*  */
 "\n"/* If the block returns a truthy value, the message will be removed from the incoming queue */
-"\n"/* and return this method with the message. */
-"\n"/* When the block is escaped by break/return/exception and so on, the message also */
-"\n"/* removed from the incoming queue. */
-"\n"/* Otherwise, the messsage remains in the incoming queue and the next received */
-"\n"/* message is checked by the given block. */
+"\n"/* and returned. */
+"\n"/* Otherwise, the messsage remains in the incoming queue and the following received */
+"\n"/* messages are checked by the given block. */
 "\n"/*  */
-"\n"/* If there is no messages in the incoming queue matching the check, the method will */
-"\n"/* block until such message arrives. */
+"\n"/* If there are no messages left in the incoming queue, the method will */
+"\n"/* block until new messages arrive. */
+"\n"/*  */
+"\n"/* If the block is escaped by break/return/exception/throw, the message is removed from */
+"\n"/* the incoming queue as if a truthy value had been returned. */
 "\n"/*  */
 "\n"/*     r = Ractor.new do */
 "\n"/*       val = Ractor.receive_if{|msg| msg.is_a?(Array)} */
@@ -2298,6 +2357,10 @@ static const struct {
 "    Primitive.ractor_receive_if b\n"
 "  end\n"
 "\n"
+"\n"/*  */
+"\n"/* call-seq: */
+"\n"/*    ractor.send(msg, move: false) -> self */
+"\n"/*  */
 "\n"/* Send a message to a Ractor's incoming queue to be consumed by Ractor.receive. */
 "\n"/*  */
 "\n"/*   r = Ractor.new do */
@@ -2372,18 +2435,22 @@ static const struct {
 "\n"/*  */
 "\n"/*    r = Ractor.new {puts "Received: #{receive}"} */
 "\n"/*    s = 'message'.freeze */
+,
+#line 579 "ractor.rb"
 "\n"/*    r.send(s, move: true) */
 "\n"/*    s.inspect #=> "message", still available */
 "\n"/*  */
 "  def send(obj, move: false)\n"
 "    __builtin_cexpr! %q{\n"
-,
-#line 546 "ractor.rb"
 "      ractor_send(ec, RACTOR_PTR(self), obj, move)\n"
 "    }\n"
 "  end\n"
 "  alias << send\n"
 "\n"
+"\n"/*  */
+"\n"/*  call-seq: */
+"\n"/*     Ractor.yield(msg, move: false) -> nil */
+"\n"/*  */
 "\n"/* Send a message to the current ractor's outgoing port to be consumed by #take. */
 "\n"/*  */
 "\n"/*    r = Ractor.new {Ractor.yield 'Hello from ractor'} */
@@ -2423,6 +2490,10 @@ static const struct {
 "    }\n"
 "  end\n"
 "\n"
+"\n"/*  */
+"\n"/*  call-seq: */
+"\n"/*     ractor.take -> msg */
+"\n"/*  */
 "\n"/* Take a message from ractor's outgoing port, which was put there by Ractor.yield or at ractor's */
 "\n"/* finalization. */
 "\n"/*  */
@@ -2486,17 +2557,19 @@ static const struct {
 "    }\n"
 "  end\n"
 "\n"
-"  def inspect\n"/* :nodoc: */
-"    loc  = __builtin_cexpr! %q{RACTOR_PTR(self)->loc}\n"
+"  def inspect\n"
 ,
-#line 655 "ractor.rb"
-"    name = __builtin_cexpr! %q{RACTOR_PTR(self)->name}\n"
-"    id   = __builtin_cexpr! %q{INT2FIX(RACTOR_PTR(self)->id)}\n"
+#line 700 "ractor.rb"
+"    loc  = __builtin_cexpr! %q{ RACTOR_PTR(self)->loc }\n"
+"    name = __builtin_cexpr! %q{ RACTOR_PTR(self)->name }\n"
+"    id   = __builtin_cexpr! %q{ INT2FIX(rb_ractor_id(RACTOR_PTR(self))) }\n"
 "    status = __builtin_cexpr! %q{\n"
 "      rb_str_new2(ractor_status_str(RACTOR_PTR(self)->status_))\n"
 "    }\n"
 "    \"#<Ractor:##{id}#{name ? ' '+name : ''}#{loc ? \" \" + loc : ''} #{status}>\"\n"
 "  end\n"
+"\n"
+"  alias to_s inspect\n"
 "\n"
 "\n"/* The name set in Ractor.new, or +nil+. */
 "  def name\n"
@@ -2504,9 +2577,15 @@ static const struct {
 "  end\n"
 "\n"
 "  class RemoteError\n"
+,
+#line 717 "ractor.rb"
 "    attr_reader :ractor\n"
 "  end\n"
 "\n"
+"\n"/*  */
+"\n"/*  call-seq: */
+"\n"/*     ractor.close_incoming -> true | false */
+"\n"/*  */
 "\n"/* Closes the incoming port and returns its previous state. */
 "\n"/* All further attempts to Ractor.receive in the ractor, and #send to the ractor */
 "\n"/* will fail with Ractor::ClosedError. */
@@ -2518,12 +2597,14 @@ static const struct {
 "\n"/*   # Ractor::ClosedError (The incoming-port is already closed) */
 "  def close_incoming\n"
 "    __builtin_cexpr! %q{\n"
-,
-#line 683 "ractor.rb"
 "      ractor_close_incoming(ec, RACTOR_PTR(self));\n"
 "    }\n"
 "  end\n"
 "\n"
+"\n"/*  */
+"\n"/* call-seq: */
+"\n"/*    ractor.close_outgoing -> true | false */
+"\n"/*  */
 "\n"/* Closes the outgoing port and returns its previous state. */
 "\n"/* All further attempts to Ractor.yield in the ractor, and #take from the ractor */
 "\n"/* will fail with Ractor::ClosedError. */
@@ -2539,6 +2620,10 @@ static const struct {
 "    }\n"
 "  end\n"
 "\n"
+"\n"/*  */
+"\n"/* call-seq: */
+"\n"/*    Ractor.shareable?(obj) -> true | false */
+"\n"/*  */
 "\n"/* Checks if the object is shareable by ractors. */
 "\n"/*  */
 "\n"/*     Ractor.shareable?(1)            #=> true -- numbers and other immutable basic values are frozen */
@@ -2552,18 +2637,20 @@ static const struct {
 "    }\n"
 "  end\n"
 "\n"
-"\n"/* Make +obj+ sharable. */
 "\n"/*  */
-"\n"/* Basically, traverse referring objects from obj and freeze them. */
+"\n"/* call-seq: */
+"\n"/*    Ractor.make_shareable(obj, copy: false) -> shareable_obj */
 "\n"/*  */
-"\n"/* When a sharable object is found in traversing, stop traversing */
-"\n"/* from this shareable object. */
+"\n"/* Make +obj+ shareable between ractors. */
 "\n"/*  */
-"\n"/* If +copy+ keyword is +true+, it makes a deep copied object */
-"\n"/* and make it sharable. This is safer option (but it can take more time). */
+"\n"/* +obj+ and all the objects it refers to will be frozen, unless they are */
+"\n"/* already shareable. */
+"\n"/*  */
+"\n"/* If +copy+ keyword is +true+, the method will copy objects before freezing them */
+"\n"/* This is safer option but it can take be slower. */
 "\n"/*  */
 "\n"/* Note that the specification and implementation of this method are not */
-"\n"/* matured and can be changed in a future. */
+"\n"/* mature and may be changed in the future. */
 "\n"/*  */
 "\n"/*   obj = ['test'] */
 "\n"/*   Ractor.shareable?(obj)     #=> false */
@@ -2581,25 +2668,42 @@ static const struct {
 "\n"/*   obj2s = Ractor.make_shareable(obj2, copy: true) */
 "\n"/*   obj2.frozen?                        #=> false */
 "\n"/*   obj2s.frozen?                       #=> true */
-"\n"/*   obj2s.object_id == obj1.object_id   #=> false */
+"\n"/*   obj2s.object_id == obj2.object_id   #=> false */
 "\n"/*   obj2s[0].object_id == obj2[0].object_id #=> false */
 "\n"/*  */
 "\n"/* See also the "Shareable and unshareable objects" section in the Ractor class docs. */
 "  def self.make_shareable obj, copy: false\n"
 "    if copy\n"
+,
+#line 812 "ractor.rb"
 "      __builtin_cexpr! %q{\n"
-"        rb_ractor_make_copy_shareable(obj);\n"
+"        rb_ractor_make_shareable_copy(obj);\n"
 "      }\n"
 "    else\n"
 "      __builtin_cexpr! %q{\n"
-,
-#line 755 "ractor.rb"
 "        rb_ractor_make_shareable(obj);\n"
 "      }\n"
 "    end\n"
 "  end\n"
+"\n"
+"\n"/* get a value from ractor-local storage */
+"  def [](sym)\n"
+"    Primitive.ractor_local_value(sym)\n"
+"  end\n"
+"\n"
+"\n"/* set a value in ractor-local storage */
+"  def []=(sym, val)\n"
+"    Primitive.ractor_local_value_set(sym, val)\n"
+"  end\n"
+"\n"
+"\n"/* returns main ractor */
+"  def self.main\n"
+"    __builtin_cexpr! %q{\n"
+"      rb_ractor_self(GET_VM()->ractor.main_ractor);\n"
+"    }\n"
+"  end\n"
 "end\n"
-#line 2603 "miniprelude.c"
+#line 2707 "miniprelude.c"
 };
 
 static const char prelude_name11[] = "<internal:prelude>";
@@ -2629,7 +2733,7 @@ static const struct {
 "\n"
 "  private :pp\n"
 "end\n"
-#line 2633 "miniprelude.c"
+#line 2737 "miniprelude.c"
 };
 
 static const char prelude_name12[] = "<internal:gem_prelude>";
@@ -2648,7 +2752,7 @@ static const struct {
 "rescue LoadError\n"
 "  warn \"`did_you_mean' was not loaded.\"\n"
 "end if defined?(DidYouMean)\n"
-#line 2652 "miniprelude.c"
+#line 2756 "miniprelude.c"
 };
 
 COMPILER_WARNING_POP

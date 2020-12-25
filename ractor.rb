@@ -1,13 +1,18 @@
 # Ractor is a Actor-model abstraction for Ruby that provides thread-safe parallel execution.
 #
-# To achieve this, ractors severely limit data sharing between different ractors.
-# Unlike threads, ractors can't access each other's data, nor any data through variables of
-# the outer scope.
+# Ractor.new can make new Ractor and it will run in parallel.
 #
 #     # The simplest ractor
 #     r = Ractor.new {puts "I am in Ractor!"}
-#     r.take # allow it to finish
+#     r.take # wait it to finish
 #     # here "I am in Ractor!" would be printed
+#
+# Ractors do not share usual objects, so the some kind of thread-safety concerns such as data-race,
+# race-conditions are not available on multi-ractor programming.
+#
+# To achieve this, ractors severely limit object sharing between different ractors.
+# For example, unlike threads, ractors can't access each other's objects, nor any objects through
+# variables of the outer scope.
 #
 #     a = 1
 #     r = Ractor.new {puts "I am in Ractor! a=#{a}"}
@@ -17,8 +22,8 @@
 # On CRuby (the default implementation), Global Virtual Machine Lock (GVL) is held per ractor, so
 # ractors are performed in parallel without locking each other.
 #
-# Instead of accessing the shared state, the data should be passed to and from ractors via
-# sending and receiving messages, thus making them _actors_ ("Ractor" stands for "Ruby Actor").
+# Instead of accessing the shared state, the objects should be passed to and from ractors via
+# sending and receiving objects as messages.
 #
 #     a = 1
 #     r = Ractor.new do
@@ -71,14 +76,17 @@
 #
 # It is said that Ractor receives messages via the <em>incoming port</em>, and sends them
 # to the <em>outgoing port</em>. Either one can be disabled with Ractor#close_incoming and
-# Ractor#close_outgoing respectively.
+# Ractor#close_outgoing respectively. If a ractor terminated, its ports will be closed
+# automatically.
 #
 # == Shareable and unshareable objects
 #
 # When the object is sent to and from the ractor, it is important to understand whether the
-# object is shareable or not. Shareable objects are basically those which can be used by several
-# threads without compromising thread-safety; e.g. immutable ones. Ractor.shareable? allows to
-# check this, and Ractor.make_shareable tries to make object shareable if it is not.
+# object is shareable or unshareable. Most of objects are unshareable objects.
+#
+# Shareable objects are basically those which can be used by several threads without compromising
+# thread-safety; e.g. immutable ones. Ractor.shareable? allows to check this, and Ractor.make_shareable
+# tries to make object shareable if it is not.
 #
 #     Ractor.shareable?(1)            #=> true -- numbers and other immutable basic values are
 #     Ractor.shareable?('foo')        #=> false, unless the string is frozen due to # freeze_string_literals: true
@@ -115,7 +123,7 @@
 # the ractor, showing it is different objects. But the second array's element, which is a
 # shareable frozen string, has the same object_id.)
 #
-# Deep cloning of the data may be slow, and sometimes impossible. Alternatively,
+# Deep cloning of the objects may be slow, and sometimes impossible. Alternatively,
 # <tt>move: true</tt> may be used on sending. This will <em>move</em> the object to the
 # receiving ractor, making it inaccessible for a sending ractor.
 #
@@ -138,8 +146,13 @@
 # Notice that even +inspect+ (and more basic methods like <tt>__id__</tt>) is inaccessible
 # on a moved object.
 #
-# Besides frozen objects, shareable objects are instances of Module, Class and Ractor itself. Modules
-# and classes, though, can not access instance variables from ractors other than main:
+# Besides frozen objects, there are shareable objects. Class and Module objects are shareable so
+# the Class/Module definitons are shared between ractors. Ractor objects are also shareable objects.
+# All operations for the shareable mutable objects are thread-safe, so the thread-safety property
+# will be kept. We can not define mutable shareable objects in Ruby, but C extensions can introduce them.
+#
+# It is prohibited to access instance variables of mutable shareable objects (especially Modules and classes)
+# from ractors other than main:
 #
 #     class C
 #       class << self
@@ -186,8 +199,8 @@
 #
 # == Ractors vs threads
 #
-# Each ractor creates its own thread. New threads can be created from inside ractor, having the full
-# access to its data (and, on CRuby, sharing GVL with other threads of this ractor).
+# Each ractor creates its own thread. New threads can be created from inside ractor
+# (and, on CRuby, sharing GVL with other threads of this ractor).
 #
 #     r = Ractor.new do
 #       a = 1
@@ -208,13 +221,21 @@
 # It is **only for demonstration purposes** and shouldn't be used in a real code.
 # Most of the times, just #take is used to wait till ractor will finish.
 #
+# == Reference
+#
+# See {Ractor desgin doc}[rdoc-ref:doc/ractor.md] for more details.
+#
 class Ractor
+  #
+  #  call-seq:
+  #     Ractor.new(*args, name: nil) {|*args| block } -> ractor
+  #
   # Create a new Ractor with args and a block.
   #
   # A block (Proc) will be isolated (can't access to outer variables). +self+
   # inside the block will refer to the current Ractor.
   #
-  #    r = Ractor.new {puts "Hi, I am #{self.inspect}"}
+  #    r = Ractor.new { puts "Hi, I am #{self.inspect}" }
   #    r.take
   #    # Prints "Hi, I am #<Ractor:#2 test.rb:1 running>"
   #
@@ -225,7 +246,7 @@ class Ractor
   #    arg = [1, 2, 3]
   #    puts "Passing: #{arg} (##{arg.object_id})"
   #    r = Ractor.new(arg) {|received_arg|
-  #     puts "Received: #{received_arg} (##{received_arg.object_id})"
+  #      puts "Received: #{received_arg} (##{received_arg.object_id})"
   #    }
   #    r.take
   #    # Prints:
@@ -251,15 +272,16 @@ class Ractor
   #   Ractor.current #=> #<Ractor:#1 running>
   def self.current
     __builtin_cexpr! %q{
-      rb_ec_ractor_ptr(ec)->self
+      rb_ractor_self(rb_ec_ractor_ptr(ec));
     }
   end
 
   # Returns total count of Ractors currently running.
   #
   #    Ractor.count                   #=> 1
-  #    r = Ractor.new(name: 'example') {sleep(0.1)}
+  #    r = Ractor.new(name: 'example') { Ractor.yield(1) }
   #    Ractor.count                   #=> 2 (main + example ractor)
+  #    r.take                         # wait for Ractor.yield(1)
   #    r.take                         # wait till r will finish
   #    Ractor.count                   #=> 1
   def self.count
@@ -268,7 +290,9 @@ class Ractor
     }
   end
 
-  # call-seq: Ractor.select(*ractors, [yield_value:, move: false]) -> [ractor or symbol, obj]
+  #
+  # call-seq:
+  #    Ractor.select(*ractors, [yield_value:, move: false]) -> [ractor or symbol, obj]
   #
   # Waits for the first ractor to have something in its outgoing port, reads from this ractor, and
   # returns that ractor and the object received.
@@ -328,6 +352,10 @@ class Ractor
     }
   end
 
+  #
+  # call-seq:
+  #    Ractor.receive -> msg
+  #
   # Receive an incoming message from the current Ractor's incoming port's queue, which was
   # sent there by #send.
   #
@@ -374,7 +402,8 @@ class Ractor
   #     Still received only one
   #     Received: message2
   #
-  # If close_incoming was called on the ractor, the method raises Ractor::ClosedError:
+  # If close_incoming was called on the ractor, the method raises Ractor::ClosedError
+  # if there are no more messages in incoming queue:
   #
   #     Ractor.new do
   #       close_incoming
@@ -401,6 +430,10 @@ class Ractor
   end
   alias recv receive
 
+  #
+  # call-seq:
+  #    Ractor.receive_if {|msg| block } -> msg
+  #
   # Receive only a specific message.
   #
   # Instead of Ractor.receive, Ractor.receive_if can provide a pattern
@@ -423,14 +456,15 @@ class Ractor
   #     baz2
   #
   # If the block returns a truthy value, the message will be removed from the incoming queue
-  # and return this method with the message.
-  # When the block is escaped by break/return/exception and so on, the message also
-  # removed from the incoming queue.
-  # Otherwise, the messsage remains in the incoming queue and the next received
-  # message is checked by the given block.
+  # and returned.
+  # Otherwise, the messsage remains in the incoming queue and the following received
+  # messages are checked by the given block.
   #
-  # If there is no messages in the incoming queue matching the check, the method will
-  # block until such message arrives.
+  # If there are no messages left in the incoming queue, the method will
+  # block until new messages arrive.
+  #
+  # If the block is escaped by break/return/exception/throw, the message is removed from
+  # the incoming queue as if a truthy value had been returned.
   #
   #     r = Ractor.new do
   #       val = Ractor.receive_if{|msg| msg.is_a?(Array)}
@@ -464,6 +498,10 @@ class Ractor
     Primitive.ractor_receive_if b
   end
 
+  #
+  # call-seq:
+  #    ractor.send(msg, move: false) -> self
+  #
   # Send a message to a Ractor's incoming queue to be consumed by Ractor.receive.
   #
   #   r = Ractor.new do
@@ -548,6 +586,10 @@ class Ractor
   end
   alias << send
 
+  #
+  #  call-seq:
+  #     Ractor.yield(msg, move: false) -> nil
+  #
   # Send a message to the current ractor's outgoing port to be consumed by #take.
   #
   #    r = Ractor.new {Ractor.yield 'Hello from ractor'}
@@ -587,6 +629,10 @@ class Ractor
     }
   end
 
+  #
+  #  call-seq:
+  #     ractor.take -> msg
+  #
   # Take a message from ractor's outgoing port, which was put there by Ractor.yield or at ractor's
   # finalization.
   #
@@ -650,15 +696,17 @@ class Ractor
     }
   end
 
-  def inspect # :nodoc:
-    loc  = __builtin_cexpr! %q{RACTOR_PTR(self)->loc}
-    name = __builtin_cexpr! %q{RACTOR_PTR(self)->name}
-    id   = __builtin_cexpr! %q{INT2FIX(RACTOR_PTR(self)->id)}
+  def inspect
+    loc  = __builtin_cexpr! %q{ RACTOR_PTR(self)->loc }
+    name = __builtin_cexpr! %q{ RACTOR_PTR(self)->name }
+    id   = __builtin_cexpr! %q{ INT2FIX(rb_ractor_id(RACTOR_PTR(self))) }
     status = __builtin_cexpr! %q{
       rb_str_new2(ractor_status_str(RACTOR_PTR(self)->status_))
     }
     "#<Ractor:##{id}#{name ? ' '+name : ''}#{loc ? " " + loc : ''} #{status}>"
   end
+
+  alias to_s inspect
 
   # The name set in Ractor.new, or +nil+.
   def name
@@ -669,6 +717,10 @@ class Ractor
     attr_reader :ractor
   end
 
+  #
+  #  call-seq:
+  #     ractor.close_incoming -> true | false
+  #
   # Closes the incoming port and returns its previous state.
   # All further attempts to Ractor.receive in the ractor, and #send to the ractor
   # will fail with Ractor::ClosedError.
@@ -684,6 +736,10 @@ class Ractor
     }
   end
 
+  #
+  # call-seq:
+  #    ractor.close_outgoing -> true | false
+  #
   # Closes the outgoing port and returns its previous state.
   # All further attempts to Ractor.yield in the ractor, and #take from the ractor
   # will fail with Ractor::ClosedError.
@@ -699,6 +755,10 @@ class Ractor
     }
   end
 
+  #
+  # call-seq:
+  #    Ractor.shareable?(obj) -> true | false
+  #
   # Checks if the object is shareable by ractors.
   #
   #     Ractor.shareable?(1)            #=> true -- numbers and other immutable basic values are frozen
@@ -712,18 +772,20 @@ class Ractor
     }
   end
 
-  # Make +obj+ sharable.
   #
-  # Basically, traverse referring objects from obj and freeze them.
+  # call-seq:
+  #    Ractor.make_shareable(obj, copy: false) -> shareable_obj
   #
-  # When a sharable object is found in traversing, stop traversing
-  # from this shareable object.
+  # Make +obj+ shareable between ractors.
   #
-  # If +copy+ keyword is +true+, it makes a deep copied object
-  # and make it sharable. This is safer option (but it can take more time).
+  # +obj+ and all the objects it refers to will be frozen, unless they are
+  # already shareable.
+  #
+  # If +copy+ keyword is +true+, the method will copy objects before freezing them
+  # This is safer option but it can take be slower.
   #
   # Note that the specification and implementation of this method are not
-  # matured and can be changed in a future.
+  # mature and may be changed in the future.
   #
   #   obj = ['test']
   #   Ractor.shareable?(obj)     #=> false
@@ -741,19 +803,36 @@ class Ractor
   #   obj2s = Ractor.make_shareable(obj2, copy: true)
   #   obj2.frozen?                        #=> false
   #   obj2s.frozen?                       #=> true
-  #   obj2s.object_id == obj1.object_id   #=> false
+  #   obj2s.object_id == obj2.object_id   #=> false
   #   obj2s[0].object_id == obj2[0].object_id #=> false
   #
   # See also the "Shareable and unshareable objects" section in the Ractor class docs.
   def self.make_shareable obj, copy: false
     if copy
       __builtin_cexpr! %q{
-        rb_ractor_make_copy_shareable(obj);
+        rb_ractor_make_shareable_copy(obj);
       }
     else
       __builtin_cexpr! %q{
         rb_ractor_make_shareable(obj);
       }
     end
+  end
+
+  # get a value from ractor-local storage
+  def [](sym)
+    Primitive.ractor_local_value(sym)
+  end
+
+  # set a value in ractor-local storage
+  def []=(sym, val)
+    Primitive.ractor_local_value_set(sym, val)
+  end
+
+  # returns main ractor
+  def self.main
+    __builtin_cexpr! %q{
+      rb_ractor_self(GET_VM()->ractor.main_ractor);
+    }
   end
 end

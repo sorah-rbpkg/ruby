@@ -1002,7 +1002,7 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
                         else {
                             if (UNLIKELY(!rb_ractor_main_p())) {
                                 if (!rb_ractor_shareable_p(val)) {
-                                    rb_raise(rb_eNameError,
+                                    rb_raise(rb_eRactorIsolationError,
                                              "can not access non-shareable objects in constant %"PRIsVALUE"::%s by non-main ractor.", rb_class_path(klass), rb_id2name(id));
                                 }
                             }
@@ -2948,7 +2948,7 @@ vm_call_bmethod_body(rb_execution_context_t *ec, struct rb_calling_info *calling
     VALUE procv = cme->def->body.bmethod.proc;
 
     if (!RB_OBJ_SHAREABLE_P(procv) &&
-        cme->def->body.bmethod.defined_ractor != rb_ec_ractor_ptr(ec)->self) {
+        cme->def->body.bmethod.defined_ractor != rb_ractor_self(rb_ec_ractor_ptr(ec))) {
         rb_raise(rb_eRuntimeError, "defined in a different Ractor");
     }
 
@@ -5308,7 +5308,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             return;
         }
         else {
-            rb_hook_list_t *global_hooks = rb_vm_global_hooks(ec);
+            rb_hook_list_t *global_hooks = rb_ec_ractor_hooks(ec);
 
             if (0) {
                 fprintf(stderr, "vm_trace>>%4d (%4x) - %s:%d %s\n",

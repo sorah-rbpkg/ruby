@@ -9104,31 +9104,12 @@ else
 	target_os=${target_os}-android
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for Android API version" >&5
 $as_echo_n "checking for Android API version... " >&6; }
-	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-		#ifndef __ANDROID_API__
-		#error android
-		#endif
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: defined by the compiler" >&5
-    $as_echo "${msg_result_other}defined by the compiler${msg_reset}" >&6 ; }
-else
-
-		rb_android_api=`getprop ro.build.version.sdk`
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $rb_android_api" >&5
+        # hacky workaround: https://github.com/termux/termux-packages/issues/6176
+        rb_android_api=`getprop ro.build.version.sdk`
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $rb_android_api" >&5
     colorize_result "$rb_android_api" ; }
-		# RUBY_APPEND_OPTIONS(CPPFLAGS)
-	for rb_opt in -D__ANDROID_API__=$rb_android_api; do
+        # RUBY_APPEND_OPTIONS(CPPFLAGS)
+	for rb_opt in -D__ANDROID_API__=$rb_android_api -Wno-macro-redefined; do
 	case " ${CPPFLAGS-} " in #(
   *" ${rb_opt} "*) :
      ;; #(
@@ -9138,9 +9119,6 @@ else
      CPPFLAGS="$CPPFLAGS ${rb_opt}" ;;
 esac
 	done
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
@@ -11742,6 +11720,18 @@ fi
      CPPFLAGS="${rb_opt}" ;; #(
   *) :
      CPPFLAGS="$CPPFLAGS ${rb_opt}" ;;
+esac
+	done
+		    # _XOPEN_SOURCE should not be defined for C++ on Solaris.
+		    # RUBY_APPEND_OPTIONS(CXXFLAGS)
+	for rb_opt in -U_XOPEN_SOURCE; do
+	case " ${CXXFLAGS-} " in #(
+  *" ${rb_opt} "*) :
+     ;; #(
+  '  ') :
+     CXXFLAGS="${rb_opt}" ;; #(
+  *) :
+     CXXFLAGS="$CXXFLAGS ${rb_opt}" ;;
 esac
 	done
 
@@ -30130,6 +30120,14 @@ esac
 
     rb_cv_dtrace_available=no
  ;;
+esac
+case "$target_os" in #(
+  freebsd*) :
+
+         rb_cv_dtrace_available=no
+	  ;; #(
+  *) :
+     ;;
 esac
 if test "${enable_dtrace}" = yes; then :
       if test -z "$DTRACE"; then :
