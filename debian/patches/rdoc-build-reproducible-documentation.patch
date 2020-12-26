@@ -9,8 +9,7 @@ Signed-off-by: Antonio Terceiro <terceiro@debian.org>
 Signed-off-by: Christian Hofstaedtler <zeha@debian.org>
 ---
  lib/rdoc/generator/json_index.rb | 4 ++--
- lib/rdoc/rdoc.rb                 | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/lib/rdoc/generator/json_index.rb b/lib/rdoc/generator/json_index.rb
 index 3a10000..f40bb37 100644
@@ -34,16 +33,3 @@ index 3a10000..f40bb37 100644
            gz.orig_name = dest.basename.to_s
            gz.write data
            gz.close
-diff --git a/lib/rdoc/rdoc.rb b/lib/rdoc/rdoc.rb
-index c60e017..368c9dc 100644
---- a/lib/rdoc/rdoc.rb
-+++ b/lib/rdoc/rdoc.rb
-@@ -312,7 +312,7 @@ option)
-       end
-     end
- 
--    file_list.flatten
-+    file_list.flatten.sort
-   end
- 
-   ##
