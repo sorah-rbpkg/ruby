@@ -36,9 +36,16 @@ excludes="$excludes --excludes-dir=${excludedir}/autopkgtest/"
 
 run_tests=''
 for t in $tests; do
-  if ! grep -q "^$t$" "$skiplist"; then
-    run_tests="$run_tests $t"
+  if grep -q "^$t$" "$skiplist"; then
+    continue
   fi
+  case "$t" in
+    test/rubygems/*)
+      continue
+      ;;
+  esac
+
+  run_tests="$run_tests $t"
 done
 
 ruby2.7 test/runner.rb -v $excludes --name='!/memory_leak/' $run_tests
