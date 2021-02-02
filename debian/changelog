@@ -1,3 +1,21 @@
+ruby2.7 (2.7.2-4) UNRELEASED; urgency=medium
+
+  [ Antonio Terceiro ]
+  * autopkgtest: skip all rubygems-related tests.
+    During autopkgtest, we don't want to run the tests from the rubygems
+    included with ruby against the (often newer) rubygems provided by
+    ruby-rubygems. (Closes: #980192)
+
+  [ Lucas Kanashiro ]
+  * Reduce Build-Depends: (Closes: #981080)
+    - Remove b-d on chrpath, it is not used anymore
+    - Add <!nocheck> to b-d needed only for testing
+  * Use libedit-dev instead of libreadline6-dev (Closes: #977724)
+  * Bump debhelper compatibility level to 13
+  * Declare compliance with Debian Policy 4.5.1
+
+ -- Lucas Kanashiro <kanashiro@debian.org>  Tue, 02 Feb 2021 11:12:23 -0300
+
 ruby2.7 (2.7.2-3) unstable; urgency=medium
 
   * d/p/0013-Enable-arm64-optimizations-that-exist-for-power-x86-.patch:
