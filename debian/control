@@ -7,7 +7,6 @@ Uploaders: Antonio Terceiro <terceiro@debian.org>,
            Lucas Kanashiro <kanashiro@debian.org>,
            Utkarsh Gupta <utkarsh@debian.org>
 Build-Depends: bison,
-               chrpath,
                coreutils (>= 7.5),
                debhelper-compat (= 12),
                file,
