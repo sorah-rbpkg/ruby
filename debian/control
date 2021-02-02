@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Sorah Fukumori <sorah@cookpad.com>
 Build-Depends: bison,
                coreutils (>= 7.5),
-               debhelper (>= 12~),
+               debhelper-compat (= 13),
                file,
                libffi-dev,
                libgdbm-dev,
