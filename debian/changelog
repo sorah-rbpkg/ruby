@@ -1,3 +1,9 @@
+ruby2.7 (2.7.2-4~fto10+1) buster-fasttrack; urgency=medium
+
+  * Rebuild for buster-fasttrack.
+
+ -- Pirate Praveen <praveen@debian.org>  Thu, 04 Feb 2021 01:21:29 +0530
+
 ruby2.7 (2.7.2-4) unstable; urgency=medium
 
   [ Antonio Terceiro ]
