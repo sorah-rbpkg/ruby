@@ -233,6 +233,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_ascii8bit_encoding@Base 2.7.0~preview1
  rb_assert_failure@Base 2.7.0~preview2
  rb_assoc_new@Base 2.7.0~preview1
+ rb_ast_add_local_table@Base 2.7.2
  rb_ast_add_mark_object@Base 2.7.0~preview2
  rb_ast_delete_node@Base 2.7.0~preview2
  rb_ast_dispose@Base 2.7.0~preview2

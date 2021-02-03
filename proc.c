@@ -2230,10 +2230,22 @@ method_clone(VALUE self)
  */
 
 
+/*  Document-method: Method#[]
+ *
+ *  call-seq:
+ *     meth[args, ...]         -> obj
+ *
+ *  Invokes the <i>meth</i> with the specified arguments, returning the
+ *  method's return value, like #call.
+ *
+ *     m = 12.method("+")
+ *     m[3]         #=> 15
+ *     m[20]        #=> 32
+ */
+
 /*
  *  call-seq:
  *     meth.call(args, ...)    -> obj
- *     meth[args, ...]         -> obj
  *
  *  Invokes the <i>meth</i> with the specified arguments, returning the
  *  method's return value.
@@ -2804,8 +2816,7 @@ method_inspect(VALUE method)
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     str = rb_sprintf("#<% "PRIsVALUE": ", rb_obj_class(method));
 
-    mklass = data->iclass;
-    if (!mklass) mklass = data->klass;
+    mklass = data->klass;
 
     if (RB_TYPE_P(mklass, T_ICLASS)) {
         /* TODO: I'm not sure why mklass is T_ICLASS.
@@ -2845,12 +2856,6 @@ method_inspect(VALUE method)
 	}
     }
     else {
-        mklass = data->klass;
-        if (FL_TEST(mklass, FL_SINGLETON)) {
-            do {
-               mklass = RCLASS_SUPER(mklass);
-            } while (RB_TYPE_P(mklass, T_ICLASS));
-        }
 	rb_str_buf_append(str, rb_inspect(mklass));
 	if (defined_class != mklass) {
 	    rb_str_catf(str, "(% "PRIsVALUE")", defined_class);
@@ -3479,8 +3484,8 @@ rb_method_compose_to_left(VALUE self, VALUE g)
  *     meth >> g -> a_proc
  *
  *  Returns a proc that is the composition of this method and the given <i>g</i>.
- *  The returned proc takes a variable number of arguments, calls <i>g</i> with them
- *  then calls this method with the result.
+ *  The returned proc takes a variable number of arguments, calls this method
+ *  with them then calls <i>g</i> with the result.
  *
  *     def f(x)
  *       x * x

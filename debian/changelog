@@ -1,3 +1,75 @@
+ruby2.7 (2.7.2-4) unstable; urgency=medium
+
+  [ Antonio Terceiro ]
+  * autopkgtest: skip all rubygems-related tests.
+    During autopkgtest, we don't want to run the tests from the rubygems
+    included with ruby against the (often newer) rubygems provided by
+    ruby-rubygems. (Closes: #980192)
+
+  [ Lucas Kanashiro ]
+  * Reduce Build-Depends: (Closes: #981080)
+    - Remove b-d on chrpath, it is not used anymore
+    - Add <!nocheck> to b-d needed only for testing
+  * Use libedit-dev instead of libreadline6-dev (Closes: #977724)
+  * Bump debhelper compatibility level to 13
+  * Declare compliance with Debian Policy 4.5.1
+
+ -- Lucas Kanashiro <kanashiro@debian.org>  Tue, 02 Feb 2021 11:12:23 -0300
+
+ruby2.7 (2.7.2-3) unstable; urgency=medium
+
+  * d/p/0013-Enable-arm64-optimizations-that-exist-for-power-x86-.patch:
+    Backport an upstream patch. It includes enabling unaligned memory access,
+    gc and vm_exec.c optimizations (LP: #1901074).
+  * Refresh and sort patches numerically.
+  * B-d on debhelper-compat instead of debhelper.
+  * Drop debian/ruby2.7.lintian-overrides. The only override there is
+    hyphen-used-as-minus-sign and it seems to not be a thing anymore.
+    Moreover, it is malformed according to lintian.
+
+ -- Lucas Kanashiro <kanashiro@debian.org>  Fri, 30 Oct 2020 16:04:41 -0300
+
+ruby2.7 (2.7.2-2) unstable; urgency=medium
+
+  * Add patch to fix ENOENT error when cwd does not exists. (Closes: #969130)
+    - Thanks, Antoni Villalonga, for the patch.
+  * Place arch-qualified tools in rbconfig.rb. (Closes: #970469)
+    - Thanks, Helmut Grohne, for the debdiff.
+  * Disable test_find_proxy_no_proxy test. (Closes: #968203)
+    - Tries to parse http://example.org and thus causes FTBFS on buster.
+
+ -- Utkarsh Gupta <utkarsh@debian.org>  Tue, 13 Oct 2020 18:48:32 +0530
+
+ruby2.7 (2.7.2-1) unstable; urgency=medium
+
+  [ Utkarsh Gupta ]
+  * New upstream version 2.7.2.
+    - Ready for glibc 2.32.
+  * Refresh d/patches.
+  * Add patch to fix TestIRB::TestHistory tests.
+  * Add patch to fix "real" autopkgtests failure wrt rubygems.
+  * Update symbols file to add rb_ast_add_local_table@Base.
+
+  [ Cédric Boutillier ]
+  * use C.UTF-8 locale
+
+ -- Utkarsh Gupta <utkarsh@debian.org>  Tue, 13 Oct 2020 00:55:43 +0530
+
+ruby2.7 (2.7.1-4) unstable; urgency=medium
+
+  [ Pirate Praveen ]
+  * Bump minimum version of rubygems-integration to 1.17.1~
+
+  [ Cédric Boutillier ]
+  * [ci skip] Add .gitattributes to keep unwanted files out of the source package
+
+  [ Utkarsh Gupta ]
+  * Add myself as an uploader
+  * Add patch to fix a potential HTTP request smuggling
+    vulnerability in WEBrick. (Fixes: CVE-2020-25613)
+
+ -- Utkarsh Gupta <utkarsh@debian.org>  Thu, 01 Oct 2020 20:10:11 +0530
+
 ruby2.7 (2.7.1-3+fto10+2) buster-fasttrack; urgency=medium
 
   * Bump minimum version of rubygems-integration to 1.17.1~

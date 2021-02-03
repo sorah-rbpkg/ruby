@@ -530,7 +530,7 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 		 -Wsuggest-attribute=format \
 		 -Wsuggest-attribute=noreturn \
 		 -Wunused-variable \
-		 -diag-disable=175,188,2259 \
+		 -diag-disable=175,188,1684,2259,2312 \
 		 $extra_warnflags \
 		 ; do
 	AS_IF([test "$particular_werror_flags" != yes], [
@@ -2308,6 +2308,9 @@ AS_CASE([$rb_cv_coroutine], [yes|''], [
     AS_CASE(["$target_cpu-$target_os"],
         [x*64-darwin*], [
             rb_cv_coroutine=amd64
+        ],
+        [arm64-darwin*], [
+            rb_cv_coroutine=arm64
         ],
         [x*64-linux*], [
             AS_CASE(["$ac_cv_sizeof_voidp"],

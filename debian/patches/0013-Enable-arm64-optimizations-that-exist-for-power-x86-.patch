@@ -1,0 +1,172 @@
+From: AGSaidi <AGSaidi@users.noreply.github.com>
+Date: Thu, 13 Aug 2020 12:15:54 -0500
+Subject: Enable arm64 optimizations that exist for power/x86 (#3393)
+
+* Enable unaligned accesses on arm64
+
+64-bit Arm platforms support unaligned accesses.
+
+Running the string benchmarks this change improves performance
+by an average of 1.04x, min .96x, max 1.21x, median 1.01x
+
+* arm64 enable gc optimizations
+
+Similar to x86 and powerpc optimizations.
+
+|       |compare-ruby|built-ruby|
+|:------|-----------:|---------:|
+|hash1  |       0.225|     0.237|
+|       |           -|     1.05x|
+|hash2  |       0.110|     0.110|
+|       |       1.00x|         -|
+
+* vm_exec.c: improve performance for arm64
+
+|                               |compare-ruby|built-ruby|
+|:------------------------------|-----------:|---------:|
+|vm_array                       |     26.501M|   27.959M|
+|                               |           -|     1.06x|
+|vm_attr_ivar                   |     21.606M|   31.429M|
+|                               |           -|     1.45x|
+|vm_attr_ivar_set               |     21.178M|   26.113M|
+|                               |           -|     1.23x|
+|vm_backtrace                   |       6.621|     6.668|
+|                               |           -|     1.01x|
+|vm_bigarray                    |     26.205M|   29.958M|
+|                               |           -|     1.14x|
+|vm_bighash                     |    504.155k|  479.306k|
+|                               |       1.05x|         -|
+|vm_block                       |     16.692M|   21.315M|
+|                               |           -|     1.28x|
+|block_handler_type_iseq        |       5.083|     7.004|
+|                               |           -|     1.38x|
+
+Origin: upstream, https://github.com/ruby/ruby/commit/511b55bcefc81c03
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/ruby2.7/+bug/1901074
+Reviewed-By: Lucas Kanashiro <kanashiro@debian.org>
+Last-Updated: 2020-10-30
+---
+ gc.c                   | 13 +++++++++++++
+ gc.h                   |  2 ++
+ include/ruby/defines.h |  2 +-
+ regint.h               |  2 +-
+ siphash.c              |  2 +-
+ st.c                   |  2 +-
+ vm_exec.c              |  8 ++++++++
+ 7 files changed, 27 insertions(+), 4 deletions(-)
+
+diff --git a/gc.c b/gc.c
+index 73faf46..b06fdc5 100644
+--- a/gc.c
++++ b/gc.c
+@@ -1153,6 +1153,19 @@ tick(void)
+     return val;
+ }
+ 
++#elif defined(__aarch64__) &&  defined(__GNUC__)
++typedef unsigned long tick_t;
++#define PRItick "lu"
++
++static __inline__ tick_t
++tick(void)
++{
++    unsigned long val;
++    __asm__ __volatile__ ("mrs %0, cntvct_el0", : "=r" (val));
++    return val;
++}
++
++
+ #elif defined(_WIN32) && defined(_MSC_VER)
+ #include <intrin.h>
+ typedef unsigned __int64 tick_t;
+diff --git a/gc.h b/gc.h
+index cf794fa..72e3935 100644
+--- a/gc.h
++++ b/gc.h
+@@ -8,6 +8,8 @@
+ #define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("movl\t%%esp, %0" : "=r" (*(p)))
+ #elif defined(__powerpc64__) && defined(__GNUC__)
+ #define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("mr\t%0, %%r1" : "=r" (*(p)))
++#elif defined(__aarch64__) && defined(__GNUC__)
++#define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("mov\t%0, sp" : "=r" (*(p)))
+ #else
+ NOINLINE(void rb_gc_set_stack_end(VALUE **stack_end_p));
+ #define SET_MACHINE_STACK_END(p) rb_gc_set_stack_end(p)
+diff --git a/include/ruby/defines.h b/include/ruby/defines.h
+index 5e03d49..e953b05 100644
+--- a/include/ruby/defines.h
++++ b/include/ruby/defines.h
+@@ -485,7 +485,7 @@ void rb_sparc_flush_register_windows(void);
+ #ifndef UNALIGNED_WORD_ACCESS
+ # if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
+      defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || \
+-     defined(__powerpc64__) || \
++     defined(__powerpc64__) || defined(__aarch64__) || \
+      defined(__mc68020__)
+ #   define UNALIGNED_WORD_ACCESS 1
+ # else
+diff --git a/regint.h b/regint.h
+index a2f5bbb..0740429 100644
+--- a/regint.h
++++ b/regint.h
+@@ -52,7 +52,7 @@
+ #ifndef UNALIGNED_WORD_ACCESS
+ # if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
+      defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || \
+-     defined(__powerpc64__) || \
++     defined(__powerpc64__) || defined(__aarch64__) || \
+      defined(__mc68020__)
+ #  define UNALIGNED_WORD_ACCESS 1
+ # else
+diff --git a/siphash.c b/siphash.c
+index 153d2c6..ddf8ee2 100644
+--- a/siphash.c
++++ b/siphash.c
+@@ -30,7 +30,7 @@
+ #ifndef UNALIGNED_WORD_ACCESS
+ # if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
+      defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || \
+-     defined(__powerpc64__) || \
++     defined(__powerpc64__) || defined(__aarch64__) || \
+      defined(__mc68020__)
+ #   define UNALIGNED_WORD_ACCESS 1
+ # endif
+diff --git a/st.c b/st.c
+index 2b973ea..4258f93 100644
+--- a/st.c
++++ b/st.c
+@@ -1815,7 +1815,7 @@ st_values_check(st_table *tab, st_data_t *values, st_index_t size,
+ #ifndef UNALIGNED_WORD_ACCESS
+ # if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
+      defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || \
+-     defined(__powerpc64__) || \
++     defined(__powerpc64__) || defined(__aarch64__) || \
+      defined(__mc68020__)
+ #   define UNALIGNED_WORD_ACCESS 1
+ # endif
+diff --git a/vm_exec.c b/vm_exec.c
+index 0adaa7b..cb09738 100644
+--- a/vm_exec.c
++++ b/vm_exec.c
+@@ -27,6 +27,9 @@ static void vm_analysis_insn(int insn);
+ #elif defined(__GNUC__) && defined(__powerpc64__)
+ #define DECL_SC_REG(type, r, reg) register type reg_##r __asm__("r" reg)
+ 
++#elif defined(__GNUC__) && defined(__aarch64__)
++#define DECL_SC_REG(type, r, reg) register type reg_##r __asm__("x" reg)
++
+ #else
+ #define DECL_SC_REG(type, r, reg) register type reg_##r
+ #endif
+@@ -74,6 +77,11 @@ vm_exec_core(rb_execution_context_t *ec, VALUE initial)
+     DECL_SC_REG(rb_control_frame_t *, cfp, "15");
+ #define USE_MACHINE_REGS 1
+ 
++#elif defined(__GNUC__) && defined(__aarch64__)
++    DECL_SC_REG(const VALUE *, pc, "19");
++    DECL_SC_REG(rb_control_frame_t *, cfp, "20");
++#define USE_MACHINE_REGS 1
++
+ #else
+     register rb_control_frame_t *reg_cfp;
+     const VALUE *reg_pc;

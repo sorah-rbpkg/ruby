@@ -37,7 +37,7 @@ index b29f4ec..36ed213 100644
    spec.email         = ["aaron@tenderlovemaking.com", "hsbt@ruby-lang.org"]
  
 diff --git a/ext/io/console/io-console.gemspec b/ext/io/console/io-console.gemspec
-index fac9bff..c495cfe 100644
+index 814bd4e..2e50587 100644
 --- a/ext/io/console/io-console.gemspec
 +++ b/ext/io/console/io-console.gemspec
 @@ -5,7 +5,7 @@ date = %w$Date::                           $[1]

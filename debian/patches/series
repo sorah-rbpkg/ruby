@@ -1,10 +1,14 @@
 0001-rdoc-build-reproducible-documentation.patch
 0002-lib-mkmf.rb-sort-list-of-object-files-in-generated-M.patch
 0003-Mark-Gemspec-reproducible-change-fixing-784225-too.patch
-0008-Disable-tests-failing-on-Ubuntu-builders.patch
+0004-Disable-tests-failing-on-Ubuntu-builders.patch
 0005-Make-gemspecs-reproducible.patch
 0006-Fix-FTBS-on-hurd.patch
 0007-Port-to-kfreebsd-amd64.patch
 0008-Fix-priority-order-of-paths-in-I-option.patch
 0009-Fix-FTBFS-on-x32-misdetected-as-i386-or-amd64.patch
 0010-disable-failing-test.patch
+0010-Fix-IRBTestIRBHistory-tests.patch
+0011-Dont-use-relative-path.patch
+0012-Fix-getcwd-ENOENT.patch
+0013-Enable-arm64-optimizations-that-exist-for-power-x86-.patch

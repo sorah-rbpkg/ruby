@@ -2279,4 +2279,20 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def test_stat_exists
     assert_instance_of Hash, TracePoint.stat
   end
+
+  def test_tracepoint_opt_invokebuiltin_delegate_leave
+    code = 'puts RubyVM::InstructionSequence.of("\x00".method(:unpack)).disasm'
+    out = EnvUtil.invoke_ruby(['-e', code], '', true).first
+    assert_match /^0000 opt_invokebuiltin_delegate_leave /, out
+
+    event = eval(EnvUtil.invoke_ruby(['-e', <<~'EOS'], '', true).first)
+      set_trace_func(proc {}); set_trace_func(nil) # Is it okay that this is required?
+      TracePoint.new(:return) do |tp|
+        p [tp.event, tp.method_id]
+      end.enable do
+        "\x00".unpack("c")
+      end
+    EOS
+    assert_equal [:return, :unpack], event
+  end
 end

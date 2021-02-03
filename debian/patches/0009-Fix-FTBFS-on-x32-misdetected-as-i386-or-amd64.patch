@@ -9,12 +9,12 @@ Bug: #954293
  1 file changed, 3 insertions(+)
 
 diff --git a/configure.ac b/configure.ac
-index f1ed36b..ac0ea42 100644
+index 6766df2..429c35b 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -2309,6 +2309,9 @@ AS_CASE([$rb_cv_coroutine], [yes|''], [
-         [x*64-darwin*], [
-             rb_cv_coroutine=amd64
+@@ -2312,6 +2312,9 @@ AS_CASE([$rb_cv_coroutine], [yes|''], [
+         [arm64-darwin*], [
+             rb_cv_coroutine=arm64
          ],
 +        [x86_64-linux-gnux32], [
 +            rb_cv_coroutine=ucontext
