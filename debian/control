@@ -3,7 +3,6 @@ Section: ruby
 Priority: optional
 Maintainer: Debian Ruby Team <pkg-ruby-extras-maintainers@lists.alioth.debian.org>
 Uploaders: Antonio Terceiro <terceiro@debian.org>,
-           Chris Hofstaedtler <zeha@debian.org>,
            Lucas Kanashiro <kanashiro@debian.org>
 Build-Depends: bison,
                chrpath,
