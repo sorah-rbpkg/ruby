@@ -806,6 +806,12 @@ if defined? Zlib
           gz = Zlib::GzipReader.new(io)
           assert_raise(NoMethodError) { gz.path }
         end
+      rescue Errno::EINVAL
+        skip 'O_TMPFILE not supported (EINVAL)'
+      rescue Errno::EISDIR
+        skip 'O_TMPFILE not supported (EISDIR)'
+      rescue Errno::EOPNOTSUPP
+        skip 'O_TMPFILE not supported (EOPNOTSUPP)'
       end
     end
   end
