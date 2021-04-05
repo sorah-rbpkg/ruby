@@ -1,8 +1,7 @@
 Source: ruby2.6
 Section: ruby
 Priority: optional
-Maintainer: Sorah Fukumori <her@sorah.jp>,
-  Sorah Fukumori <sorah@cookpad.com>
+Maintainer: Sorah Fukumori <her@sorah.jp>
 Build-Depends: bison,
                chrpath,
                coreutils (>= 7.5),
