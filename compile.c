@@ -2,7 +2,7 @@
 
   compile.c - ruby node tree -> VM instruction sequence
 
-  $Author: nagachika $
+  $Author: usa $
   created at: 04/01/01 03:42:15 JST
 
   Copyright (C) 2004-2007 Koichi Sasada
@@ -2724,7 +2724,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    ELEM_REMOVE(&iobj->link);
 	    return COMPILE_OK;
 	}
-	else if (iobj != diobj && IS_INSN_ID(diobj, jump) &&
+        else if (iobj != diobj && IS_INSN(&diobj->link) &&
+                 IS_INSN_ID(diobj, jump) &&
 		 OPERAND_AT(iobj, 0) != OPERAND_AT(diobj, 0)) {
 	    /*
 	     *  useless jump elimination:
@@ -2741,7 +2742,6 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    goto again;
 	}
 	else if (IS_INSN_ID(diobj, leave)) {
-	    INSN *pop;
 	    /*
 	     *  jump LABEL
 	     *  ...
@@ -2749,7 +2749,6 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	     *  leave
 	     * =>
 	     *  leave
-	     *  pop
 	     *  ...
 	     * LABEL:
 	     *  leave
@@ -2759,9 +2758,6 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    iobj->insn_id = BIN(leave);
 	    iobj->operand_size = 0;
 	    iobj->insn_info = diobj->insn_info;
-	    /* adjust stack depth */
-	    pop = new_insn_body(iseq, diobj->insn_info.line_no, BIN(pop), 0);
-	    ELEM_INSERT_NEXT(&iobj->link, &pop->link);
 	    goto again;
 	}
        else if (IS_INSN(iobj->link.prev) &&
@@ -2867,109 +2863,135 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	 *   if L2
 	 */
 	INSN *nobj = (INSN *)get_destination_insn(iobj);
-	INSN *pobj = (INSN *)iobj->link.prev;
-	int prev_dup = 0;
-	if (pobj) {
-	    if (!IS_INSN(&pobj->link))
-		pobj = 0;
-	    else if (IS_INSN_ID(pobj, dup))
-		prev_dup = 1;
-	}
 
-	for (;;) {
-	    if (IS_INSN_ID(nobj, jump)) {
-		replace_destination(iobj, nobj);
-	    }
-	    else if (prev_dup && IS_INSN_ID(nobj, dup) &&
-		     !!(nobj = (INSN *)nobj->link.next) &&
-		     /* basic blocks, with no labels in the middle */
-		     nobj->insn_id == iobj->insn_id) {
-		/*
-		 *   dup
-		 *   if L1
-		 *   ...
-		 * L1:
-		 *   dup
-		 *   if L2
-		 * =>
-		 *   dup
-		 *   if L2
-		 *   ...
-		 * L1:
-		 *   dup
-		 *   if L2
-		 */
-		replace_destination(iobj, nobj);
-	    }
-	    else if (pobj) {
-		/*
-		 *   putnil
-		 *   if L1
-		 * =>
-		 *   # nothing
-		 *
-		 *   putobject true
-		 *   if L1
-		 * =>
-		 *   jump L1
-		 *
-		 *   putstring ".."
-		 *   if L1
-		 * =>
-		 *   jump L1
-		 *
-		 *   putstring ".."
-		 *   dup
-		 *   if L1
-		 * =>
-		 *   putstring ".."
-		 *   jump L1
-		 *
-		 */
-		int cond;
-		if (prev_dup && IS_INSN(pobj->link.prev)) {
-		    pobj = (INSN *)pobj->link.prev;
-		}
-		if (IS_INSN_ID(pobj, putobject)) {
-		    cond = (IS_INSN_ID(iobj, branchif) ?
-			    OPERAND_AT(pobj, 0) != Qfalse :
-			    IS_INSN_ID(iobj, branchunless) ?
-			    OPERAND_AT(pobj, 0) == Qfalse :
-			    FALSE);
-		}
-		else if (IS_INSN_ID(pobj, putstring) ||
-			 IS_INSN_ID(pobj, duparray) ||
-			 IS_INSN_ID(pobj, newarray)) {
-		    cond = IS_INSN_ID(iobj, branchif);
-		}
-		else if (IS_INSN_ID(pobj, putnil)) {
-		    cond = !IS_INSN_ID(iobj, branchif);
-		}
-		else break;
-		if (prev_dup || !IS_INSN_ID(pobj, newarray)) {
-		    ELEM_REMOVE(iobj->link.prev);
-		}
-		else if (!iseq_pop_newarray(iseq, pobj)) {
-		    pobj = new_insn_core(iseq, pobj->insn_info.line_no, BIN(pop), 0, NULL);
-                    ELEM_INSERT_PREV(&iobj->link, &pobj->link);
-		}
-		if (cond) {
-		    if (prev_dup) {
-			pobj = new_insn_core(iseq, pobj->insn_info.line_no, BIN(putnil), 0, NULL);
-			ELEM_INSERT_NEXT(&iobj->link, &pobj->link);
-		    }
-		    iobj->insn_id = BIN(jump);
-		    goto again;
-		}
-		else {
-		    unref_destination(iobj, 0);
-		    ELEM_REMOVE(&iobj->link);
-		}
-		break;
-	    }
-	    else break;
-	    nobj = (INSN *)get_destination_insn(nobj);
-	}
+        /* This is super nasty hack!!!
+         *
+         * This jump-jump optimization may ignore event flags of the jump
+         * instruction being skipped.  Actually, Line 2 TracePoint event
+         * is never fired in the following code:
+         *
+         *   1: raise if 1 == 2
+         *   2: while true
+         *   3:   break
+         *   4: end
+         *
+         * This is critical for coverage measurement.  [Bug #15980]
+         *
+         * This is a stopgap measure: stop the jump-jump optimization if
+         * coverage measurement is enabled and if the skipped instruction
+         * has any event flag.
+         *
+         * Note that, still, TracePoint Line event does not occur on Line 2.
+         * This should be fixed in future.
+         */
+        int stop_optimization =
+	    ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq) &&
+            nobj->insn_info.events;
+	if (!stop_optimization) {
+            INSN *pobj = (INSN *)iobj->link.prev;
+            int prev_dup = 0;
+            if (pobj) {
+                if (!IS_INSN(&pobj->link))
+                    pobj = 0;
+                else if (IS_INSN_ID(pobj, dup))
+                    prev_dup = 1;
+            }
+
+            for (;;) {
+                if (IS_INSN(&nobj->link) && IS_INSN_ID(nobj, jump)) {
+                    replace_destination(iobj, nobj);
+                }
+                else if (prev_dup && IS_INSN_ID(nobj, dup) &&
+                         !!(nobj = (INSN *)nobj->link.next) &&
+                         /* basic blocks, with no labels in the middle */
+                         nobj->insn_id == iobj->insn_id) {
+                    /*
+                     *   dup
+                     *   if L1
+                     *   ...
+                     * L1:
+                     *   dup
+                     *   if L2
+                     * =>
+                     *   dup
+                     *   if L2
+                     *   ...
+                     * L1:
+                     *   dup
+                     *   if L2
+                     */
+                    replace_destination(iobj, nobj);
+                }
+                else if (pobj) {
+                    /*
+                     *   putnil
+                     *   if L1
+                     * =>
+                     *   # nothing
+                     *
+                     *   putobject true
+                     *   if L1
+                     * =>
+                     *   jump L1
+                     *
+                     *   putstring ".."
+                     *   if L1
+                     * =>
+                     *   jump L1
+                     *
+                     *   putstring ".."
+                     *   dup
+                     *   if L1
+                     * =>
+                     *   putstring ".."
+                     *   jump L1
+                     *
+                     */
+                    int cond;
+                    if (prev_dup && IS_INSN(pobj->link.prev)) {
+                        pobj = (INSN *)pobj->link.prev;
+                    }
+                    if (IS_INSN_ID(pobj, putobject)) {
+                        cond = (IS_INSN_ID(iobj, branchif) ?
+                                OPERAND_AT(pobj, 0) != Qfalse :
+                                IS_INSN_ID(iobj, branchunless) ?
+                                OPERAND_AT(pobj, 0) == Qfalse :
+                                FALSE);
+                    }
+                    else if (IS_INSN_ID(pobj, putstring) ||
+                             IS_INSN_ID(pobj, duparray) ||
+                             IS_INSN_ID(pobj, newarray)) {
+                        cond = IS_INSN_ID(iobj, branchif);
+                    }
+                    else if (IS_INSN_ID(pobj, putnil)) {
+                        cond = !IS_INSN_ID(iobj, branchif);
+                    }
+                    else break;
+                    if (prev_dup || !IS_INSN_ID(pobj, newarray)) {
+                        ELEM_REMOVE(iobj->link.prev);
+                    }
+                    else if (!iseq_pop_newarray(iseq, pobj)) {
+                        pobj = new_insn_core(iseq, pobj->insn_info.line_no, BIN(pop), 0, NULL);
+                        ELEM_INSERT_PREV(&iobj->link, &pobj->link);
+                    }
+                    if (cond) {
+                        if (prev_dup) {
+                            pobj = new_insn_core(iseq, pobj->insn_info.line_no, BIN(putnil), 0, NULL);
+                            ELEM_INSERT_NEXT(&iobj->link, &pobj->link);
+                        }
+                        iobj->insn_id = BIN(jump);
+                        goto again;
+                    }
+                    else {
+                        unref_destination(iobj, 0);
+                        ELEM_REMOVE(&iobj->link);
+                    }
+                    break;
+                }
+                else break;
+                nobj = (INSN *)get_destination_insn(nobj);
+            }
+        }
     }
 
     if (IS_INSN_ID(iobj, pop)) {
@@ -5032,6 +5054,9 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
 		branches);
 	    end_label = NEW_LABEL(line);
 	    ADD_INSNL(then_seq, line, jump, end_label);
+            if (!popped) {
+                ADD_INSN(then_seq, line, pop);
+            }
 	}
 	ADD_SEQ(ret, then_seq);
     }
