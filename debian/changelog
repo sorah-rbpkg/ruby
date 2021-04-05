@@ -1,3 +1,9 @@
+ruby2.5 (2.5.9-0nkmi1~dist) unstable; urgency=medium
+
+  * Ruby 2.5.9, the last release of Ruby 2.5 series.
+
+ -- Sorah Fukumori <sorah@cookpad.com>  Tue, 06 Apr 2021 03:50:28 +0900
+
 ruby2.5 (2.5.8-0nkmi1~dist) unstable; urgency=medium
 
   * Ruby 2.5.8
