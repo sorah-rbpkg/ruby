@@ -1302,12 +1302,16 @@ static INSN *
 new_insn_send(rb_iseq_t *iseq, int line_no, ID id, VALUE argc, const rb_iseq_t *blockiseq, VALUE flag, struct rb_callinfo_kwarg *keywords)
 {
     VALUE *operands = compile_data_calloc2(iseq, sizeof(VALUE), 2);
-    operands[0] = (VALUE)new_callinfo(iseq, id, FIX2INT(argc), FIX2INT(flag), keywords, blockiseq != NULL);
+    VALUE ci = (VALUE)new_callinfo(iseq, id, FIX2INT(argc), FIX2INT(flag), keywords, blockiseq != NULL);
+    operands[0] = ci;
     operands[1] = (VALUE)blockiseq;
     if (blockiseq) {
         RB_OBJ_WRITTEN(iseq, Qundef, blockiseq);
     }
-    return new_insn_core(iseq, line_no, BIN(send), 2, operands);
+    INSN *insn = new_insn_core(iseq, line_no, BIN(send), 2, operands);
+    RB_OBJ_WRITTEN(iseq, Qundef, ci);
+    RB_GC_GUARD(ci);
+    return insn;
 }
 
 static rb_iseq_t *
@@ -2359,11 +2363,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			    }
 			    break;
 			}
-		      case TS_ISE: /* inline storage entry */
-			/* Treated as an IC, but may contain a markable VALUE */
-                        FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
-                        /* fall through */
 		      case TS_IC: /* inline cache */
+		      case TS_ISE: /* inline storage entry */
 		      case TS_IVC: /* inline ivar cache */
 			{
 			    unsigned int ic_index = FIX2UINT(operands[j]);
@@ -2375,8 +2376,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                                               ic_index, body->is_size);
 			    }
 			    generated_iseq[code_index + 1 + j] = (VALUE)ic;
-
-                            if (type == TS_IVC) FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
+                            FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
 			    break;
 			}
                         case TS_CALLDATA:
@@ -6400,11 +6400,11 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
             int pat_line = nd_line(pattern);
             LABEL *next_pat = NEW_LABEL(pat_line);
             ADD_INSN (cond_seq, pat_line, dup);
-
             // NOTE: set deconstructed_pos to the current cached value location
             // (it's "under" the matchee value, so it's position is 2)
             CHECK(iseq_compile_pattern_each(iseq, cond_seq, pattern, l1, next_pat, FALSE, 2));
             ADD_LABEL(cond_seq, next_pat);
+            LABEL_UNREMOVABLE(next_pat);
         }
         else {
             COMPILE_ERROR(ERROR_ARGS "unexpected node");
@@ -9440,14 +9440,13 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			}
 			break;
 		      case TS_ISE:
-                        FL_SET((VALUE)iseq, ISEQ_MARKABLE_ISEQ);
-                        /* fall through */
 		      case TS_IC:
                       case TS_IVC:  /* inline ivar cache */
 			argv[j] = op;
 			if (NUM2UINT(op) >= iseq->body->is_size) {
 			    iseq->body->is_size = NUM2INT(op) + 1;
 			}
+                        FL_SET((VALUE)iseq, ISEQ_MARKABLE_ISEQ);
 			break;
                       case TS_CALLDATA:
 			argv[j] = iseq_build_callinfo_from_hash(iseq, op);
@@ -10425,14 +10424,13 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                     break;
                 }
               case TS_ISE:
-                FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
-                /* fall through */
               case TS_IC:
               case TS_IVC:
                 {
                     VALUE op = ibf_load_small_value(load, &reading_pos);
                     code[code_index] = (VALUE)&is_entries[op];
                 }
+                FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
                 break;
               case TS_CALLDATA:
                 {

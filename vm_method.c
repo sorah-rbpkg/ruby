@@ -136,6 +136,7 @@ static void
 clear_method_cache_by_id_in_class(VALUE klass, ID mid)
 {
     VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
+    if (rb_objspace_garbage_object_p(klass)) return;
 
     if (LIKELY(RCLASS_EXT(klass)->subclasses == NULL)) {
         // no subclasses
@@ -959,7 +960,7 @@ rb_method_entry_at(VALUE klass, ID id)
 }
 
 static inline rb_method_entry_t*
-search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
+search_method0(VALUE klass, ID id, VALUE *defined_class_ptr, bool skip_refined)
 {
     rb_method_entry_t *me = NULL;
 
@@ -968,7 +969,9 @@ search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
     for (; klass; klass = RCLASS_SUPER(klass)) {
 	RB_DEBUG_COUNTER_INC(mc_search_super);
         if ((me = lookup_method_table(klass, id)) != 0) {
-            break;
+            if (!skip_refined || me->def->type != VM_METHOD_TYPE_REFINED) {
+                break;
+            }
         }
     }
 
@@ -978,6 +981,12 @@ search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
 
     VM_ASSERT(me == NULL || !METHOD_ENTRY_INVALIDATED(me));
     return me;
+}
+
+static inline rb_method_entry_t*
+search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
+{
+    return search_method0(klass, id, defined_class_ptr, false);
 }
 
 static rb_method_entry_t *
@@ -1185,11 +1194,10 @@ rb_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 }
 
 static const rb_callable_method_entry_t *
-callable_method_entry_refeinements(VALUE klass, ID id, VALUE *defined_class_ptr, bool with_refinements)
+callable_method_entry_refeinements0(VALUE klass, ID id, VALUE *defined_class_ptr, bool with_refinements,
+                                    const rb_callable_method_entry_t *cme)
 {
-    const rb_callable_method_entry_t *cme = callable_method_entry(klass, id, defined_class_ptr);
-
-    if (cme == NULL || cme->def->type != VM_METHOD_TYPE_REFINED) {
+    if (cme == NULL || LIKELY(cme->def->type != VM_METHOD_TYPE_REFINED)) {
         return cme;
     }
     else {
@@ -1197,6 +1205,13 @@ callable_method_entry_refeinements(VALUE klass, ID id, VALUE *defined_class_ptr,
         const rb_method_entry_t *me = method_entry_resolve_refinement(klass, id, with_refinements, dcp);
         return prepare_callable_method_entry(*dcp, id, me, TRUE);
     }
+}
+
+static const rb_callable_method_entry_t *
+callable_method_entry_refeinements(VALUE klass, ID id, VALUE *defined_class_ptr, bool with_refinements)
+{
+    const rb_callable_method_entry_t *cme = callable_method_entry(klass, id, defined_class_ptr);
+    return callable_method_entry_refeinements0(klass, id, defined_class_ptr, with_refinements, cme);
 }
 
 MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
@@ -1361,7 +1376,7 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
     VALUE defined_class;
     VALUE origin_class = RCLASS_ORIGIN(klass);
 
-    me = search_method(origin_class, name, &defined_class);
+    me = search_method0(origin_class, name, &defined_class, true);
 
     if (!me && RB_TYPE_P(klass, T_MODULE)) {
 	me = search_method(rb_cObject, name, &defined_class);
@@ -2106,7 +2121,7 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
 
 /*
  *  call-seq:
- *     ruby2_keywords(method_name, ...)    -> self
+ *     ruby2_keywords(method_name, ...)    -> nil
  *
  *  For the given method names, marks the method as passing keywords through
  *  a normal argument splat.  This should only be called on methods that
@@ -2197,7 +2212,7 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
                     else {
                         rb_warn("Skipping set of ruby2_keywords flag for %s (method accepts keywords or method does not accept argument splat)", rb_id2name(name));
                     }
-                    return Qnil;
+                    break;
                 }
               }
               /* fallthrough */
@@ -2435,8 +2450,9 @@ basic_obj_respond_to_missing(rb_execution_context_t *ec, VALUE klass, VALUE obj,
 }
 
 static inline int
-basic_obj_respond_to(rb_execution_context_t *ec, VALUE klass, VALUE obj, ID id, int pub)
+basic_obj_respond_to(rb_execution_context_t *ec, VALUE obj, ID id, int pub)
 {
+    VALUE klass = CLASS_OF(obj);
     VALUE ret;
 
     switch (method_boundp(klass, id, pub|BOUND_RESPONDS)) {
@@ -2491,7 +2507,8 @@ vm_respond_to(rb_execution_context_t *ec, VALUE klass, VALUE obj, ID id, int pri
 		    VALUE path = RARRAY_AREF(location, 0);
 		    VALUE line = RARRAY_AREF(location, 1);
 		    if (!NIL_P(path)) {
-			rb_compile_warn(RSTRING_PTR(path), NUM2INT(line),
+			rb_category_compile_warn(RB_WARN_CATEGORY_DEPRECATED,
+					RSTRING_PTR(path), NUM2INT(line),
 					"respond_to? is defined here");
 		    }
 		}
@@ -2506,14 +2523,15 @@ int
 rb_obj_respond_to(VALUE obj, ID id, int priv)
 {
     rb_execution_context_t *ec = GET_EC();
-    return rb_ec_obj_respond_to(ec, CLASS_OF(obj), obj, id, priv);
+    return rb_ec_obj_respond_to(ec, obj, id, priv);
 }
 
 int
-rb_ec_obj_respond_to(rb_execution_context_t *ec, VALUE klass, VALUE obj, ID id, int priv)
+rb_ec_obj_respond_to(rb_execution_context_t *ec, VALUE obj, ID id, int priv)
 {
+    VALUE klass = CLASS_OF(obj);
     int ret = vm_respond_to(ec, klass, obj, id, priv);
-    if (ret == -1) ret = basic_obj_respond_to(ec, klass, obj, id, !priv);
+    if (ret == -1) ret = basic_obj_respond_to(ec, obj, id, !priv);
     return ret;
 }
 
@@ -2558,7 +2576,7 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
 	if (ret == Qundef) ret = Qfalse;
 	return ret;
     }
-    if (basic_obj_respond_to(ec, CLASS_OF(obj), obj, id, !RTEST(priv)))
+    if (basic_obj_respond_to(ec, obj, id, !RTEST(priv)))
 	return Qtrue;
     return Qfalse;
 }

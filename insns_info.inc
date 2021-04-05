@@ -6467,7 +6467,7 @@ attr_sp_inc_opt_case_dispatch(
 )
 {
     return
-#line 1061 "insns.def"
+#line 1062 "insns.def"
 -1;
 #line 6473 "insns_info.inc"
 }
@@ -6690,7 +6690,7 @@ bool
 attr_leaf_opt_div(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1122 "insns.def"
+#line 1123 "insns.def"
 false;
 #line 6696 "insns_info.inc"
 }
@@ -6756,7 +6756,7 @@ bool
 attr_leaf_opt_mod(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1138 "insns.def"
+#line 1139 "insns.def"
 false;
 #line 6762 "insns_info.inc"
 }
@@ -7227,7 +7227,7 @@ bool
 attr_leaf_opt_ltlt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1240 "insns.def"
+#line 1241 "insns.def"
 false;
 #line 7233 "insns_info.inc"
 }
@@ -7419,7 +7419,7 @@ bool
 attr_leaf_opt_aref(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1287 "insns.def"
+#line 1288 "insns.def"
 false;
 #line 7425 "insns_info.inc"
 }
@@ -7485,7 +7485,7 @@ bool
 attr_leaf_opt_aset(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1304 "insns.def"
+#line 1305 "insns.def"
 false;
 #line 7491 "insns_info.inc"
 }
@@ -7560,7 +7560,7 @@ attr_leaf_opt_aset_with(
 )
 {
     return
-#line 1320 "insns.def"
+#line 1321 "insns.def"
 false;
 #line 7566 "insns_info.inc"
 }
@@ -7653,7 +7653,7 @@ attr_leaf_opt_aref_with(
 )
 {
     return
-#line 1343 "insns.def"
+#line 1344 "insns.def"
 false;
 #line 7659 "insns_info.inc"
 }
@@ -8052,7 +8052,7 @@ bool
 attr_leaf_opt_regexpmatch2(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1431 "insns.def"
+#line 1432 "insns.def"
 false;
 #line 8058 "insns_info.inc"
 }
@@ -8118,7 +8118,7 @@ bool
 attr_leaf_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
 {
     return
-#line 1467 "insns.def"
+#line 1468 "insns.def"
 false;
 #line 8124 "insns_info.inc"
 }
@@ -8156,7 +8156,7 @@ rb_snum_t
 attr_sp_inc_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
 {
     return
-#line 1468 "insns.def"
+#line 1469 "insns.def"
 1 - bf->argc;
 #line 8162 "insns_info.inc"
 }
@@ -8196,7 +8196,7 @@ attr_leaf_opt_invokebuiltin_delegate(
 )
 {
     return
-#line 1479 "insns.def"
+#line 1480 "insns.def"
 false;
 #line 8202 "insns_info.inc"
 }
@@ -8289,7 +8289,7 @@ attr_leaf_opt_invokebuiltin_delegate_leave(
 )
 {
     return
-#line 1490 "insns.def"
+#line 1491 "insns.def"
 false;
 #line 8295 "insns_info.inc"
 }

@@ -220,7 +220,7 @@ RSpec.describe "The library itself" do
 
     gem_list = loaded_gemspec.files
 
-    expect(git_list.to_set).to eq(gem_list.to_set)
+    expect(git_list.sort).to eq(gem_list.sort)
   end
 
   it "does not contain any warnings" do
@@ -249,7 +249,7 @@ RSpec.describe "The library itself" do
   end
 
   it "does not use require internally, but require_relative" do
-    exempt = %r{templates/|man/|vendor/}
+    exempt = %r{templates/|\.5|\.1|vendor/}
     all_bad_requires = []
     lib_tracked_files.each do |filename|
       next if filename =~ exempt
