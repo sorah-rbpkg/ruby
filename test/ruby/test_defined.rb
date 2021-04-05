@@ -258,6 +258,23 @@ class TestDefined < Test::Unit::TestCase
     assert_separately([], "assert_nil(defined?(super))")
   end
 
+  def test_respond_to
+    obj = "#{self.class.name}##{__method__}"
+    class << obj
+      def respond_to?(mid)
+        true
+      end
+    end
+    assert_warn(/deprecated method signature.*\n.*respond_to\? is defined here/) do
+      Warning[:deprecated] = true
+      defined?(obj.foo)
+    end
+    assert_warn('') do
+      Warning[:deprecated] = false
+      defined?(obj.foo)
+    end
+  end
+
   class ExampleRespondToMissing
     attr_reader :called
 
@@ -300,39 +317,6 @@ class TestDefined < Test::Unit::TestCase
 
   def test_top_level_constant_not_defined
     assert_nil(defined?(TestDefined::Object))
-  end
-
-  def test_super_with_method_missing
-    c0 = EnvUtil.labeled_class("C0") do
-      attr_reader :calls
-
-      def initialize
-        @calls = []
-      end
-
-      def method_missing(*args)
-        @calls << [:method_missing, *args]
-      end
-
-      def respond_to_missing?(*args)
-        @calls << [:respond_to_missing?, *args]
-        true
-      end
-    end
-
-    c1 = EnvUtil.labeled_class("C1", c0) do
-      def foo
-        super
-        defined?(super)
-      end
-    end
-
-    c = c1.new
-    assert_not_nil(c.foo)
-    assert_equal([
-                   [:method_missing, :foo],
-                   [:respond_to_missing?, :foo, true],
-                 ], c.calls)
   end
 
   class RefinedClass

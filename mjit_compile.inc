@@ -2780,8 +2780,7 @@ switch (insn) {
         fprintf(f, "    if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {\n");
         fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-        fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_leave);\n");
-        fprintf(f, "        goto cancel;\n");
+        fprintf(f, "        rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);\n");
         fprintf(f, "    }\n");
         fprintf(f, "    ec->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(reg_cfp);\n"); // vm_pop_frame
     }
@@ -3088,11 +3087,13 @@ switch (insn) {
     OFFSET dst = (OFFSET)operands[0];
     IC ic = (IC)operands[1];
 
-    rb_mjit_before_vm_ic_update();
-    rb_serial_t ic_serial = ic->ic_serial;
-    const rb_cref_t *ic_cref = ic->ic_cref;
-    VALUE ic_value = ic->value;
-    rb_mjit_after_vm_ic_update();
+    struct iseq_inline_constant_cache_entry *ice = ic->entry;
+    if (ice == NULL) {
+        goto getinlinecache_cancel;
+    }
+    rb_serial_t ic_serial = ice->ic_serial;
+    const rb_cref_t *ic_cref = ice->ic_cref;
+    VALUE ic_value = ice->value;
 
     if (ic_serial && !status->compile_info->disable_const_cache) {
         fprintf(f, "    if (vm_ic_hit_p((rb_serial_t)%"PRI_SERIALT_PREFIX"u, (const rb_cref_t *)0x%"PRIxVALUE", reg_cfp->ep)) {", ic_serial, (VALUE)ic_cref);
@@ -3108,6 +3109,7 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_getinlinecache(dst, ic);
         break;
     }
+    getinlinecache_cancel:;
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(OFFSET dst) = (OFFSET)operands[0];
@@ -3134,8 +3136,9 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        if (vm_ic_hit_p(ic->ic_serial, ic->ic_cref, GET_EP())) {\n");
-        fprintf(f, "            val = ic->value;\n");
+        fprintf(f, "        struct iseq_inline_constant_cache_entry *ice = ic->entry;\n");
+        fprintf(f, "        if (ice && vm_ic_hit_p(ice, GET_EP())) {\n");
+        fprintf(f, "            val = ice->value;\n");
         fprintf(f, "            stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_opt_getinlinecache(dst, ic) - 1);
         next_pos = pos + insn_len(insn) + (unsigned int)dst;
         fprintf(f, "            goto label_%d;\n", next_pos);
@@ -3180,7 +3183,7 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        vm_ic_update(ic, val, GET_EP());\n");
+        fprintf(f, "        vm_ic_update(GET_ISEQ(), ic, val, GET_EP());\n");
         fprintf(f, "    }\n");
         fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_opt_setinlinecache(ic) - 1);
         b->stack_size += attr_sp_inc_opt_setinlinecache(ic);
@@ -7965,8 +7968,7 @@ switch (insn) {
         fprintf(f, "    if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {\n");
         fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-        fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_leave);\n");
-        fprintf(f, "        goto cancel;\n");
+        fprintf(f, "        rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);\n");
         fprintf(f, "    }\n");
         fprintf(f, "    ec->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(reg_cfp);\n"); // vm_pop_frame
     }
