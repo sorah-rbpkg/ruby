@@ -738,13 +738,17 @@ rb_get_alloc_func(VALUE klass)
 }
 
 static inline rb_method_entry_t*
-search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
+search_method0(VALUE klass, ID id, VALUE *defined_class_ptr, bool skip_refined)
 {
     rb_method_entry_t *me;
 
     for (; klass; klass = RCLASS_SUPER(klass)) {
 	RB_DEBUG_COUNTER_INC(mc_search_super);
-	if ((me = lookup_method_table(klass, id)) != 0) break;
+	if ((me = lookup_method_table(klass, id)) != 0) {
+	    if (!skip_refined || me->def->type != VM_METHOD_TYPE_REFINED) {
+		break;
+	    }
+	}
     }
 
     if (defined_class_ptr)
@@ -811,6 +815,12 @@ verify_method_cache(VALUE klass, ID id, VALUE defined_class, rb_method_entry_t *
     if (me != actual_me || defined_class != actual_defined_class) {
 	rb_bug("method cache verification failed");
     }
+}
+
+static inline rb_method_entry_t*
+search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
+{
+    return search_method0(klass, id, defined_class_ptr, false);
 }
 
 static rb_method_entry_t *
@@ -1068,7 +1078,7 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
     VALUE defined_class;
     VALUE origin_class = RCLASS_ORIGIN(klass);
 
-    me = search_method(origin_class, name, &defined_class);
+    me = search_method0(origin_class, name, &defined_class, true);
     if (!me && RB_TYPE_P(klass, T_MODULE)) {
 	me = search_method(rb_cObject, name, &defined_class);
     }
@@ -1774,7 +1784,7 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
 
 /*
  *  call-seq:
- *     ruby2_keywords(method_name, ...)    -> self
+ *     ruby2_keywords(method_name, ...)    -> nil
  *
  *  For the given method names, marks the method as passing keywords through
  *  a normal argument splat.  This should only be called on methods that
@@ -1864,7 +1874,7 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
                     else {
                         rb_warn("Skipping set of ruby2_keywords flag for %s (method accepts keywords or method does not accept argument splat)", rb_id2name(name));
                     }
-                    return Qnil;
+                    break;
                 }
               }
               /* fallthrough */

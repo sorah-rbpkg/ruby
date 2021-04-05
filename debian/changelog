@@ -1,3 +1,9 @@
+ruby2.7 (2.7.3-0nkmi1~dist) unstable; urgency=medium
+
+  * 2.7.3
+
+ -- Sorah Fukumori <sorah@cookpad.com>  Tue, 06 Apr 2021 02:26:12 +0900
+
 ruby2.7 (2.7.2-0nkmi1~dist) unstable; urgency=medium
 
   * Follow Debian upstream
