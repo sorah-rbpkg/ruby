@@ -6521,7 +6521,7 @@ if test "x${ARCH_FLAG}" != x; then :
 fi
 # RUBY_UNIVERSAL_ARCH end
 
-if test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" = no -a "$universal_binary" = no; then :
+if test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" = no -a "${universal_binary:-no}" = no; then :
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking arch option" >&5
@@ -6540,6 +6540,11 @@ esac
 
 
 fi
+host_os=$target_os
+host_vendor=$target_vendor
+host_cpu=$target_cpu
+host=$target
+host_alias=$target_alias
 
 case "$target_os" in #(
   darwin*) :
@@ -18372,7 +18377,7 @@ else
 
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-unsigned char atomic_var;
+unsigned int atomic_var;
 int
 main ()
 {
@@ -18412,7 +18417,7 @@ else
 
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-unsigned char atomic_var;
+unsigned int atomic_var;
 int
 main ()
 {
@@ -23627,6 +23632,28 @@ _ACEOF
 fi
 done
 
+for ac_func in getlogin
+do :
+  ac_fn_c_check_func "$LINENO" "getlogin" "ac_cv_func_getlogin"
+if test "x$ac_cv_func_getlogin" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_GETLOGIN 1
+_ACEOF
+
+fi
+done
+
+for ac_func in getlogin_r
+do :
+  ac_fn_c_check_func "$LINENO" "getlogin_r" "ac_cv_func_getlogin_r"
+if test "x$ac_cv_func_getlogin_r" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_GETLOGIN_R 1
+_ACEOF
+
+fi
+done
+
 for ac_func in getpgid
 do :
   ac_fn_c_check_func "$LINENO" "getpgid" "ac_cv_func_getpgid"
@@ -23660,12 +23687,45 @@ _ACEOF
 fi
 done
 
+for ac_func in getpwnam
+do :
+  ac_fn_c_check_func "$LINENO" "getpwnam" "ac_cv_func_getpwnam"
+if test "x$ac_cv_func_getpwnam" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_GETPWNAM 1
+_ACEOF
+
+fi
+done
+
 for ac_func in getpwnam_r
 do :
   ac_fn_c_check_func "$LINENO" "getpwnam_r" "ac_cv_func_getpwnam_r"
 if test "x$ac_cv_func_getpwnam_r" = xyes; then :
   cat >>confdefs.h <<_ACEOF
 #define HAVE_GETPWNAM_R 1
+_ACEOF
+
+fi
+done
+
+for ac_func in getpwuid
+do :
+  ac_fn_c_check_func "$LINENO" "getpwuid" "ac_cv_func_getpwuid"
+if test "x$ac_cv_func_getpwuid" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_GETPWUID 1
+_ACEOF
+
+fi
+done
+
+for ac_func in getpwuid_r
+do :
+  ac_fn_c_check_func "$LINENO" "getpwuid_r" "ac_cv_func_getpwuid_r"
+if test "x$ac_cv_func_getpwuid_r" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_GETPWUID_R 1
 _ACEOF
 
 fi
@@ -26824,11 +26884,11 @@ if ${rb_cv_func_pthread_setname_np_arguments+:} false; then :
 else
   rb_cv_func_pthread_setname_np_arguments=
 	    # Linux,AIX,  (pthread_self(), name)
-	    # NetBSD (pthread_self(), name, \"%s\")
+	    # NetBSD (pthread_self(), \"%s\", name)
 	    # Darwin (name)
 	    for mac in \
 		"(pthread_self(), name)" \
-		"(pthread_self(), name, \"%s\")" \
+		"(pthread_self(), \"%s\", name)" \
 		"(name)" \
 		; do
 		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -27974,12 +28034,12 @@ main(void)
     stack_t ss;
     struct sigaction sa;
 
-    ss.ss_sp = malloc(SIGSTKSZ);
+    ss.ss_sp = malloc(16*1024);
     if (ss.ss_sp == NULL) {
 	fprintf(stderr, "cannot allocate memory for sigaltstack\n");
 	return EXIT_FAILURE;
     }
-    ss.ss_size = SIGSTKSZ;
+    ss.ss_size = 16*1024;
     ss.ss_flags = 0;
     if (sigaltstack(&ss, NULL) == -1) {
 	fprintf(stderr, "sigaltstack failed\n");

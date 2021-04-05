@@ -2737,7 +2737,6 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    goto again;
 	}
         else if (IS_INSN_ID(diobj, leave)) {
-	    INSN *pop;
 	    /*
 	     *  jump LABEL
 	     *  ...
@@ -2745,7 +2744,6 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	     *  leave
 	     * =>
 	     *  leave
-	     *  pop
 	     *  ...
 	     * LABEL:
 	     *  leave
@@ -2755,9 +2753,6 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
             iobj->insn_id = BIN(leave);
 	    iobj->operand_size = 0;
 	    iobj->insn_info = diobj->insn_info;
-	    /* adjust stack depth */
-	    pop = new_insn_body(iseq, diobj->insn_info.line_no, BIN(pop), 0);
-            ELEM_INSERT_NEXT(&iobj->link, &pop->link);
 	    goto again;
 	}
        else if (IS_INSN(iobj->link.prev) &&
@@ -5247,6 +5242,9 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
 		branches);
 	    end_label = NEW_LABEL(line);
 	    ADD_INSNL(then_seq, line, jump, end_label);
+            if (!popped) {
+                ADD_INSN(then_seq, line, pop);
+            }
 	}
 	ADD_SEQ(ret, then_seq);
     }
@@ -9849,14 +9847,13 @@ ibf_load_builtin(const struct ibf_load *load, ibf_offset_t *offset)
     const char *name = (char *)ibf_load_ptr(load, offset, len);
 
     if (0) {
-        for (int i=0; i<len; i++) fprintf(stderr, "%c", name[i]);
-        fprintf(stderr, "!!\n");
+        fprintf(stderr, "%.*s!!\n", len, name);
     }
 
     const struct rb_builtin_function *table = GET_VM()->builtin_function_table;
-    if (table == NULL) rb_bug("%s: table is not provided.", RUBY_FUNCTION_NAME_STRING);
+    if (table == NULL) rb_raise(rb_eArgError, "builtin function table is not provided");
     if (strncmp(table[i].name, name, len) != 0) {
-        rb_bug("%s: index (%d) mismatch (expect %s but %s).", RUBY_FUNCTION_NAME_STRING, i, name, table[i].name);
+        rb_raise(rb_eArgError, "builtin function index (%d) mismatch (expect %s but %s)", i, name, table[i].name);
     }
     // fprintf(stderr, "load-builtin: name:%s(%d)\n", table[i].name, table[i].argc);
 
