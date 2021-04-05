@@ -26,7 +26,20 @@ begin
 rescue LoadError
 end
 
-require 'bundler'
+if File.exist?(bundler_gemspec)
+  require_relative '../../bundler/lib/bundler'
+else
+  require 'bundler'
+end
+
+# Enable server plugin needed for bisection
+if ENV["RG_BISECT_SERVER_PLUGIN"]
+  require ENV["RG_BISECT_SERVER_PLUGIN"]
+
+  Minitest.extensions << "server"
+end
+
+ENV["MT_NO_PLUGINS"] = "true"
 
 require 'minitest/autorun'
 
@@ -250,16 +263,16 @@ class Gem::TestCase < Minitest::Test
   def assert_contains_make_command(target, output, msg = nil)
     if output.match(/\n/)
       msg = message(msg) do
-        'Expected output containing make command "%s": %s' % [
+        "Expected output containing make command \"%s\", but was \n\nBEGIN_OF_OUTPUT\n%sEND_OF_OUTPUT" % [
           ('%s %s' % [make_command, target]).rstrip,
-          output.inspect,
+          output,
         ]
       end
     else
       msg = message(msg) do
         'Expected make command "%s": %s' % [
           ('%s %s' % [make_command, target]).rstrip,
-          output.inspect,
+          output,
         ]
       end
     end
@@ -298,7 +311,7 @@ class Gem::TestCase < Minitest::Test
     ENV['XDG_CONFIG_HOME'] = nil
     ENV['XDG_DATA_HOME'] = nil
     ENV['SOURCE_DATE_EPOCH'] = nil
-    ENV["TMPDIR"] = @tmp
+    ENV['BUNDLER_VERSION'] = nil
 
     @current_dir = Dir.pwd
     @fetcher     = nil
@@ -309,13 +322,10 @@ class Gem::TestCase < Minitest::Test
     # capture output
     Gem::DefaultUserInteraction.ui = Gem::MockGemUi.new
 
-    tmpdir = File.realpath Dir.tmpdir
-    tmpdir.tap(&Gem::UNTAINT)
-
-    @tempdir = File.join(tmpdir, "test_rubygems_#{$$}")
+    @tempdir = Dir.mktmpdir("test_rubygems_", @tmp)
     @tempdir.tap(&Gem::UNTAINT)
 
-    FileUtils.mkdir_p @tempdir
+    ENV["TMPDIR"] = @tempdir
 
     @orig_SYSTEM_WIDE_CONFIG_FILE = Gem::ConfigFile::SYSTEM_WIDE_CONFIG_FILE
     Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
@@ -354,7 +364,9 @@ class Gem::TestCase < Minitest::Test
     Dir.chdir @tempdir
 
     ENV['HOME'] = @userhome
+    Gem.instance_variable_set :@config_file, nil
     Gem.instance_variable_set :@user_home, nil
+    Gem.instance_variable_set :@config_home, nil
     Gem.instance_variable_set :@data_home, nil
     Gem.instance_variable_set :@gemdeps, nil
     Gem.instance_variable_set :@env_requirements_by_name, nil

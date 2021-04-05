@@ -424,13 +424,6 @@ rb_vm_gvl_destroy(rb_global_vm_lock_t *gvl)
 {
     gvl_release(gvl);
     gvl_destroy(gvl);
-
-    if (0) {
-        rb_vm_t *vm = GET_VM();
-        /* may be held by running threads */
-        rb_native_mutex_destroy(&vm->waitpid_lock);
-        rb_native_mutex_destroy(&vm->workqueue_lock);
-    }
 }
 
 void
@@ -777,6 +770,11 @@ thread_do_start(rb_thread_t *th)
 
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
 
+// io.c
+VALUE rb_io_prep_stdin(void);
+VALUE rb_io_prep_stdout(void);
+VALUE rb_io_prep_stderr(void);
+
 static int
 thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 {
@@ -799,6 +797,10 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
         RB_VM_LOCK();
         {
             rb_vm_ractor_blocking_cnt_dec(th->vm, th->ractor, __FILE__, __LINE__);
+            rb_ractor_t *r = th->ractor;
+            r->r_stdin = rb_io_prep_stdin();
+            r->r_stdout = rb_io_prep_stdout();
+            r->r_stderr = rb_io_prep_stderr();
         }
         RB_VM_UNLOCK();
     }
@@ -1650,6 +1652,8 @@ rb_nogvl(void *(*func)(void *), void *data1,
     void *val = 0;
     rb_execution_context_t *ec = GET_EC();
     rb_thread_t *th = rb_ec_thread_ptr(ec);
+    rb_vm_t *vm = rb_ec_vm_ptr(ec);
+    bool is_main_thread = vm->ractor.main_thread == th;
     int saved_errno = 0;
     VALUE ubf_th = Qfalse;
 
@@ -1657,9 +1661,9 @@ rb_nogvl(void *(*func)(void *), void *data1,
 	ubf = ubf_select;
 	data2 = th;
     }
-    else if (ubf && rb_ractor_living_thread_num(th->ractor) == 1) {
+    else if (ubf && rb_ractor_living_thread_num(th->ractor) == 1 && is_main_thread) {
         if (flags & RB_NOGVL_UBF_ASYNC_SAFE) {
-            th->vm->ubf_async_safe = 1;
+            vm->ubf_async_safe = 1;
         }
         else {
             ubf_th = rb_thread_start_unblock_thread();
@@ -1671,7 +1675,7 @@ rb_nogvl(void *(*func)(void *), void *data1,
 	saved_errno = errno;
     }, ubf, data2, flags & RB_NOGVL_INTR_FAIL);
 
-    th->vm->ubf_async_safe = 0;
+    if (is_main_thread) vm->ubf_async_safe = 0;
 
     if ((flags & RB_NOGVL_INTR_FAIL) == 0) {
 	RUBY_VM_CHECK_INTS_BLOCKING(ec);
