@@ -5,6 +5,8 @@ set -e
 #set -x
 
 KNOW_FAILURES=$(dirname $(readlink -f $0))/known-failures.txt
+# test against the default OpenSSL settings and not the Debian-specific ones
+export OPENSSL_CONF=`pwd`/debian/openssl.cnf
 
 tests="$@"
 
