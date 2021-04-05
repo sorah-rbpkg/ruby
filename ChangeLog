@@ -1,7 +1,69 @@
 ------------------------------------------------------------------------
-r67882 | usa | 2020-03-31 21:15:56 +0900 (Tue, 31 Mar 2020) | 1 line
+r67939 | usa | 2021-04-05 20:46:35 +0900 (Mon, 05 Apr 2021) | 1 line
 
-add tag v2_5_8
+add tag v2_5_9
+------------------------------------------------------------------------
+r67938 | usa | 2021-04-05 20:46:23 +0900 (Mon, 05 Apr 2021) | 2 lines
+
+Oops, forgotten to add
+
+------------------------------------------------------------------------
+r67937 | usa | 2021-04-05 20:45:31 +0900 (Mon, 05 Apr 2021) | 2 lines
+
+REXML 3.1.7.4
+
+------------------------------------------------------------------------
+r67893 | usa | 2021-02-16 22:35:19 +0900 (Tue, 16 Feb 2021) | 4 lines
+
+Backport webrick patch for CVE-2020-25613
+
+[Backport #17201]
+
+------------------------------------------------------------------------
+r67889 | usa | 2020-12-09 22:55:29 +0900 (Wed, 09 Dec 2020) | 2 lines
+
+[Backport #17381] repalce the old certs in RubyGems
+
+------------------------------------------------------------------------
+r67887 | usa | 2020-10-28 22:12:06 +0900 (Wed, 28 Oct 2020) | 21 lines
+
+merge revision(s): 07786ed
+
+	* test/net/http/test_https.rb: Stop the error due to openssl 1.1.1h
+
+	On some environments that uses OpenSSL 1.1.1h, the two tests now fail.
+
+	http://rubyci.s3.amazonaws.com/android29-x86_64/ruby-master/log/20200924T062352Z.fail.html.gz
+	https://github.com/ruby/ruby/runs/1159288773?check_suite_focus=true
+
+	```
+	  1) Failure:
+	TestNetHTTPS#test_get [/data/data/com.termux/files/home/cb/tmp/build/202	00924T062352Z/ruby/test/net/http/test_https.rb:47]:
+	<"0\x82\x03\xED0\x82\x02\xD5\xA0\x03..."> expected but was
+	<"0\x82\x03\xE30\x82\x02\xCB\xA0\x03...">.
+	```
+
+	Not sure why, but verify_callback now seems to receive only SERVER_CERT
+	but not CA_CERT.
+	It would be good to investigate the issue furthermore, but tentatively,
+	I want to stop the failures.
+
+------------------------------------------------------------------------
+r67885 | usa | 2020-06-14 01:03:14 +0900 (Sun, 14 Jun 2020) | 13 lines
+
+merge revision(s) 7e289cdf3fed588b2d5a6973e29f9ff95cb8d76c: [Backport #16949]
+
+[ruby/psych] Fixing compatibility with libyaml 0.2.5
+
+The main issue is that commas aren't allowed in local tags.  libyaml
+was updated to follow the spec, and our tests were out of date.
+
+See: https://github.com/yaml/libyaml/issues/196
+
+https://github.com/ruby/psych/commit/3f5e520fd3
+
+Note that this is not security fix, but need for release processs.
+
 ------------------------------------------------------------------------
 r67881 | usa | 2020-03-31 21:13:31 +0900 (Tue, 31 Mar 2020) | 5 lines
 
