@@ -1,9 +1,9 @@
 Source: ruby3.0
 Section: ruby
 Priority: optional
-Maintainer: Sorah Fukumori <her@sorah.jp>
+Maintainer: Sorah Fukumori <her@sorah.jp>,
+  Sorah Fukumori <sorah@cookpad.com>
 Build-Depends: bison,
-               chrpath,
                coreutils (>= 7.5),
                debhelper (>= 12~),
                file,
@@ -14,15 +14,15 @@ Build-Depends: bison,
                libreadline6-dev,
                libssl-dev,
                libyaml-dev,
-               netbase,
-               openssl,
-               procps,
+               netbase <!nocheck>,
+               openssl <!nocheck>,
+               procps <!nocheck>,
                ruby:native <cross>,
-               rubygems-integration (>= 1.6),
+               rubygems-integration (>= 1.6) <!nocheck>,
                systemtap-sdt-dev [linux-any],
                tzdata,
                zlib1g-dev
-Standards-Version: 4.5.0
+Standards-Version: 4.5.1
 Homepage: https://www.ruby-lang.org/
 Vcs-Git: https://github.com/sorah-rbpkg/ruby
 Vcs-Browser: https://github.com/sorah-rbpkg/ruby

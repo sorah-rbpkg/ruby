@@ -92,19 +92,23 @@ class TestGc < Test::Unit::TestCase
     assert_kind_of(Integer, res[:count])
 
     stat, count = {}, {}
-    GC.start
-    GC.stat(stat)
-    ObjectSpace.count_objects(count)
-    # repeat same methods invocation for cache object creation.
-    GC.stat(stat)
-    ObjectSpace.count_objects(count)
+    2.times{ # to ignore const cache imemo creation
+      GC.start
+      GC.stat(stat)
+      ObjectSpace.count_objects(count)
+      # repeat same methods invocation for cache object creation.
+      GC.stat(stat)
+      ObjectSpace.count_objects(count)
+    }
     assert_equal(count[:TOTAL]-count[:FREE], stat[:heap_live_slots])
     assert_equal(count[:FREE], stat[:heap_free_slots])
 
     # measure again without GC.start
-    1000.times{ "a" + "b" }
-    GC.stat(stat)
-    ObjectSpace.count_objects(count)
+    2.times{ # to ignore const cache imemo creation
+      1000.times{ "a" + "b" }
+      GC.stat(stat)
+      ObjectSpace.count_objects(count)
+    }
     assert_equal(count[:FREE], stat[:heap_free_slots])
   end
 
@@ -169,6 +173,16 @@ class TestGc < Test::Unit::TestCase
     assert_equal info[:gc_by], GC.latest_gc_info(:gc_by)
     assert_raise(ArgumentError){ GC.latest_gc_info(:invalid) }
     assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) {GC.latest_gc_info(:"\u{30eb 30d3 30fc}")}
+  end
+
+  def test_stress_compile_send
+    assert_in_out_err(%w[--disable-gems], <<-EOS, [], [], "")
+      GC.stress = true
+      begin
+        eval("A::B.c(1, 1, d: 234)")
+      rescue
+      end
+    EOS
   end
 
   def test_singleton_method

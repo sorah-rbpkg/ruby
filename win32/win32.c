@@ -2693,7 +2693,7 @@ init_stdhandle(void)
         DWORD m;
         if (GetConsoleMode(h, &m)) {
 #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
-#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x200
+#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x4
 #endif
             SetConsoleMode(h, m | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
         }
@@ -7285,7 +7285,7 @@ rb_w32_write_console(uintptr_t strarg, int fd)
 	break;
     }
     reslen = 0;
-    if (dwMode & 4) {	/* ENABLE_VIRTUAL_TERMINAL_PROCESSING */
+    if (dwMode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) {
 	if (!WriteConsoleW(handle, ptr, len, &reslen, NULL))
 	    reslen = (DWORD)-1L;
     }
@@ -7399,7 +7399,7 @@ wutimensat(int dirfd, const WCHAR *path, const struct timespec *times, int flags
 static int
 w32_utimensat(int dirfd, const char *path, const struct timespec *times, int flags, UINT cp)
 {
-    WCHAR *wpath = mbstr_to_wstr(filecp(), path, -1, NULL);
+    WCHAR *wpath = mbstr_to_wstr(cp, path, -1, NULL);
     int ret = -1;
 
     if (wpath) {
