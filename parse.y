@@ -2,7 +2,7 @@
 
   parse.y -
 
-  $Author: nagachika $
+  $Author: usa $
   created at: Fri May 28 18:02:42 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
@@ -758,7 +758,8 @@ static void token_info_pop(struct parser_params*, const char *token, const rb_co
 static void token_info_warn(struct parser_params *p, const char *token, token_info *ptinfo_beg, int same, const rb_code_location_t *loc);
 %}
 
-%pure-parser
+%expect 0
+%define api.pure
 %lex-param {struct parser_params *p}
 %parse-param {struct parser_params *p}
 %initial-action
@@ -8313,15 +8314,16 @@ yylex(YYSTYPE *lval, YYLTYPE *yylloc, struct parser_params *p)
     p->lval = lval;
     lval->val = Qundef;
     t = parser_yylex(p);
-    if (has_delayed_token(p))
-	dispatch_delayed_token(p, t);
-    else if (t != 0)
-	dispatch_scan_event(p, t);
 
     if (p->lex.strterm && (p->lex.strterm->flags & STRTERM_HEREDOC))
 	RUBY_SET_YYLLOC_FROM_STRTERM_HEREDOC(*yylloc);
     else
 	RUBY_SET_YYLLOC(*yylloc);
+
+    if (has_delayed_token(p))
+	dispatch_delayed_token(p, t);
+    else if (t != 0)
+	dispatch_scan_event(p, t);
 
     return t;
 }
@@ -9137,7 +9139,7 @@ parser_token_value_print(struct parser_params *p, enum yytokentype type, const Y
 #ifndef RIPPER
 	v = rb_id2str(valp->id);
 #else
-	v = valp->val;
+	v = valp->node->nd_rval;
 #endif
 	rb_parser_printf(p, "%"PRIsVALUE, v);
 	break;
@@ -9478,10 +9480,10 @@ node_assign(struct parser_params *p, NODE *lhs, NODE *rhs, const YYLTYPE *loc)
     return lhs;
 }
 
-static int
-value_expr_gen(struct parser_params *p, NODE *node)
+static NODE *
+value_expr_check(struct parser_params *p, NODE *node)
 {
-    int cond = 0;
+    NODE *void_node = 0, *vn;
 
     if (!node) {
 	rb_warning0("empty expression");
@@ -9493,9 +9495,7 @@ value_expr_gen(struct parser_params *p, NODE *node)
 	  case NODE_NEXT:
 	  case NODE_REDO:
 	  case NODE_RETRY:
-	    if (!cond) yyerror1(&node->nd_loc, "void value expression");
-	    /* or "control never reach"? */
-	    return FALSE;
+	    return void_node ? void_node : node;
 
 	  case NODE_BLOCK:
 	    while (node->nd_next) {
@@ -9518,14 +9518,15 @@ value_expr_gen(struct parser_params *p, NODE *node)
 		node = node->nd_body;
 		break;
 	    }
-	    if (!value_expr(node->nd_body)) return FALSE;
+	    vn = value_expr_check(p, node->nd_body);
+	    if (!vn) return NULL;
+	    if (!void_node) void_node = vn;
 	    node = node->nd_else;
 	    break;
 
 	  case NODE_AND:
 	  case NODE_OR:
-	    cond = 1;
-	    node = node->nd_2nd;
+	    node = node->nd_1st;
 	    break;
 
 	  case NODE_LASGN:
@@ -9533,13 +9534,25 @@ value_expr_gen(struct parser_params *p, NODE *node)
 	  case NODE_DASGN_CURR:
 	  case NODE_MASGN:
 	    mark_lvar_used(p, node);
-	    return TRUE;
+	    return NULL;
 
 	  default:
-	    return TRUE;
+	    return NULL;
 	}
     }
 
+    return NULL;
+}
+
+static int
+value_expr_gen(struct parser_params *p, NODE *node)
+{
+    NODE *void_node = value_expr_check(p, node);
+    if (void_node) {
+	yyerror1(&void_node->nd_loc, "void value expression");
+	/* or "control never reach"? */
+	return FALSE;
+    }
     return TRUE;
 }
 
@@ -10671,12 +10684,13 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
     NODE *node, *succ;
 
     if (!len) return ST_CONTINUE;
-    if (len < MAX_WORD_LENGTH && rb_reserved_word(s, (int)len))
-        return ST_CONTINUE;
     if (rb_enc_symname_type(s, len, enc, (1U<<ID_LOCAL)) != ID_LOCAL)
         return ST_CONTINUE;
 
     var = intern_cstr(s, len, enc);
+    if (len < MAX_WORD_LENGTH && rb_reserved_word(s, (int)len)) {
+	if (!lvar_defined(p, var)) return ST_CONTINUE;
+    }
     node = node_assign(p, assignable(p, var, 0, arg->loc), NEW_LIT(ID2SYM(var), arg->loc), arg->loc);
     succ = arg->succ_block;
     if (!succ) succ = NEW_BEGIN(0, arg->loc);
