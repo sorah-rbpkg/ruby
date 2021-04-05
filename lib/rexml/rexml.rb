@@ -24,8 +24,8 @@
 module REXML
   COPYRIGHT = "Copyright © 2001-2008 Sean Russell <ser@germane-software.com>"
   DATE = "2008/019"
-  VERSION = "3.1.7.3"
-  REVISION = %w$Revision: 53141 $[1] || ''
+  VERSION = "3.1.7.4"
+  REVISION = %w$Revision: 67937 $[1] || ''
 
   Copyright = COPYRIGHT
   Version = VERSION
