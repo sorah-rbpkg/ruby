@@ -324,6 +324,7 @@ fiber_pool_vacancy_push(struct fiber_pool_vacancy * vacancy, struct fiber_pool_v
 #ifdef FIBER_POOL_ALLOCATION_FREE
     if (head) {
         head->previous = vacancy;
+        vacancy->previous = NULL;
     }
 #endif
 
@@ -919,9 +920,7 @@ cont_free(void *ptr)
     else {
         rb_fiber_t *fiber = (rb_fiber_t*)cont;
         coroutine_destroy(&fiber->context);
-        if (!fiber_is_root_p(fiber)) {
-            fiber_stack_release(fiber);
-        }
+        fiber_stack_release(fiber);
     }
 
     RUBY_FREE_UNLESS_NULL(cont->saved_vm_stack.ptr);
