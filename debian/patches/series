@@ -3,9 +3,7 @@
 0003-Mark-Gemspec-reproducible-change-fixing-784225-too.patch
 0004-Make-gemspecs-reproducible.patch
 0005-exclude-several-tests-unstable-in-Docker.patch
-0006-Fix-priority-order-of-paths-in-I-option.patch
-0007-Fix-FTBFS-on-x32-misdetected-as-i386-or-amd64.patch
-0008-Fix-IRBTestIRBHistory-tests.patch
-0009-Dont-use-relative-path.patch
-0010-Fix-getcwd-ENOENT.patch
-0011-TestProcess-disable-gems-to-disable-rubygems_integra.patch
+0006-Fix-FTBFS-on-x32-misdetected-as-i386-or-amd64.patch
+0007-Make-lib-and-test-more-independent-from-each-other.patch
+0008-Rescue-getcwd-ENOENT-error.patch
+0009-TestProcess-disable-gems-to-disable-rubygems_integra.patch

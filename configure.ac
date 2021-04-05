@@ -309,9 +309,14 @@ AC_SUBST(CC_VERSION_MESSAGE, $cc_version_message)
 : ${DLDFLAGS="$LDFLAGS"}
 
 RUBY_UNIVERSAL_ARCH
-AS_IF([test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" = no -a "$universal_binary" = no], [
+AS_IF([test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" = no -a "${universal_binary:-no}" = no], [
     RUBY_DEFAULT_ARCH("$target_cpu")
 ])
+host_os=$target_os
+host_vendor=$target_vendor
+host_cpu=$target_cpu
+host=$target
+host_alias=$target_alias
 
 AS_CASE(["$target_os"], [darwin*], [
 if libtool 2>&1 | grep no_warning_for_no_symbols > /dev/null; then
@@ -1452,7 +1457,7 @@ AS_IF([test "$GCC" = yes], [
     ])
 
     AC_CACHE_CHECK([for __atomic builtins], [rb_cv_gcc_atomic_builtins], [
-	AC_TRY_LINK([unsigned char atomic_var;],
+	AC_TRY_LINK([unsigned int atomic_var;],
 		    [
 			__atomic_exchange_n(&atomic_var, 0, __ATOMIC_SEQ_CST);
 			__atomic_exchange_n(&atomic_var, 1, __ATOMIC_SEQ_CST);
@@ -1467,7 +1472,7 @@ AS_IF([test "$GCC" = yes], [
     ])
 
     AC_CACHE_CHECK([for __sync builtins], [rb_cv_gcc_sync_builtins], [
-	AC_TRY_LINK([unsigned char atomic_var;],
+	AC_TRY_LINK([unsigned int atomic_var;],
 		    [
 			__sync_lock_test_and_set(&atomic_var, 0);
 			__sync_lock_test_and_set(&atomic_var, 1);
@@ -1828,10 +1833,15 @@ AC_CHECK_FUNCS(getgidx)
 AC_CHECK_FUNCS(getgrnam)
 AC_CHECK_FUNCS(getgrnam_r)
 AC_CHECK_FUNCS(getgroups)
+AC_CHECK_FUNCS(getlogin)
+AC_CHECK_FUNCS(getlogin_r)
 AC_CHECK_FUNCS(getpgid)
 AC_CHECK_FUNCS(getpgrp)
 AC_CHECK_FUNCS(getpriority)
+AC_CHECK_FUNCS(getpwnam)
 AC_CHECK_FUNCS(getpwnam_r)
+AC_CHECK_FUNCS(getpwuid)
+AC_CHECK_FUNCS(getpwuid_r)
 AC_CHECK_FUNCS(getrandom)
 AC_CHECK_FUNCS(getresgid)
 AC_CHECK_FUNCS(getresuid)
@@ -2410,11 +2420,11 @@ AS_IF([test x"$enable_pthread" = xyes], [
 	AC_CACHE_CHECK([arguments of pthread_setname_np], [rb_cv_func_pthread_setname_np_arguments],
 	    [rb_cv_func_pthread_setname_np_arguments=
 	    # Linux,AIX,  (pthread_self(), name)
-	    # NetBSD (pthread_self(), name, \"%s\")
+	    # NetBSD (pthread_self(), \"%s\", name)
 	    # Darwin (name)
 	    for mac in \
 		"(pthread_self(), name)" \
-		"(pthread_self(), name, \"%s\")" \
+		"(pthread_self(), \"%s\", name)" \
 		"(name)" \
 		; do
 		AC_TRY_COMPILE([
@@ -2860,12 +2870,12 @@ main(void)
     stack_t ss;
     struct sigaction sa;
 
-    ss.ss_sp = malloc(SIGSTKSZ);
+    ss.ss_sp = malloc(16*1024);
     if (ss.ss_sp == NULL) {
 	fprintf(stderr, "cannot allocate memory for sigaltstack\n");
 	return EXIT_FAILURE;
     }
-    ss.ss_size = SIGSTKSZ;
+    ss.ss_size = 16*1024;
     ss.ss_flags = 0;
     if (sigaltstack(&ss, NULL) == -1) {
 	fprintf(stderr, "sigaltstack failed\n");
