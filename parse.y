@@ -2418,6 +2418,32 @@ paren_args	: '(' opt_call_args rparen
 		    /*% %*/
 		    /*% ripper: arg_paren!(escape_Qundef($2)) %*/
 		    }
+		| '(' args ',' args_forward rparen
+		    {
+			if (!local_id(p, idFWD_REST) ||
+#if idFWD_KWREST
+			    !local_id(p, idFWD_KWREST) ||
+#endif
+			    !local_id(p, idFWD_BLOCK)) {
+			    compile_error(p, "unexpected ...");
+			    $$ = Qnone;
+			}
+			else {
+			/*%%%*/
+			    NODE *splat = NEW_SPLAT(NEW_LVAR(idFWD_REST, &@4), &@4);
+#if idFWD_KWREST
+			    NODE *kwrest = list_append(p, NEW_LIST(0, &@4), NEW_LVAR(idFWD_KWREST, &@4));
+#endif
+			    NODE *block = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, &@4), &@4);
+			    $$ = rest_arg_append(p, $2, splat, &@$);
+#if idFWD_KWREST
+			    $$ = arg_append(p, $$, new_hash(p, kwrest, &@4), &@4);
+#endif
+			    $$ = arg_blk_pass($$, block);
+			/*% %*/
+			/*% ripper: arg_paren!(args_add!($2, $4)) %*/
+			}
+		    }
 		| '(' args_forward rparen
 		    {
 			if (!local_id(p, idFWD_REST) ||
@@ -4815,6 +4841,21 @@ f_arglist	: '(' f_args rparen
 			$$ = $2;
 		    /*% %*/
 		    /*% ripper: paren!($2) %*/
+			SET_LEX_STATE(EXPR_BEG);
+			p->command_start = TRUE;
+		    }
+		| '(' f_arg ',' args_forward rparen
+		    {
+			arg_var(p, idFWD_REST);
+#if idFWD_KWREST
+			arg_var(p, idFWD_KWREST);
+#endif
+			arg_var(p, idFWD_BLOCK);
+		    /*%%%*/
+			$$ = new_args_tail(p, Qnone, idFWD_KWREST, idFWD_BLOCK, &@4);
+			$$ = new_args(p, $2, Qnone, idFWD_REST, Qnone, $$, &@4);
+		    /*% %*/
+		    /*% ripper: paren!(params_new($2, Qnone, $4, Qnone, Qnone, Qnone, Qnone)) %*/
 			SET_LEX_STATE(EXPR_BEG);
 			p->command_start = TRUE;
 		    }
@@ -12147,12 +12188,13 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
     NODE *node, *succ;
 
     if (!len) return ST_CONTINUE;
-    if (len < MAX_WORD_LENGTH && rb_reserved_word(s, (int)len))
-        return ST_CONTINUE;
     if (rb_enc_symname_type(s, len, enc, (1U<<ID_LOCAL)) != ID_LOCAL)
         return ST_CONTINUE;
 
     var = intern_cstr(s, len, enc);
+    if (len < MAX_WORD_LENGTH && rb_reserved_word(s, (int)len)) {
+        if (!lvar_defined(p, var)) return ST_CONTINUE;
+    }
     node = node_assign(p, assignable(p, var, 0, arg->loc), NEW_LIT(ID2SYM(var), arg->loc), arg->loc);
     succ = arg->succ_block;
     if (!succ) succ = NEW_BEGIN(0, arg->loc);
@@ -12673,7 +12715,6 @@ count_char(const char *str, int c)
 RUBY_FUNC_EXPORTED size_t
 rb_yytnamerr(struct parser_params *p, char *yyres, const char *yystr)
 {
-    YYUSE(p);
     if (*yystr == '"') {
 	size_t yyn = 0, bquote = 0;
 	const char *yyp = yystr;
