@@ -12,38 +12,34 @@ module Psych
     ###
     # This class walks a YAML AST, converting each node to Ruby
     class ToRuby < Psych::Visitors::Visitor
-      def self.create(symbolize_names: false, freeze: false)
+      def self.create
         class_loader = ClassLoader.new
         scanner      = ScalarScanner.new class_loader
-        new(scanner, class_loader, symbolize_names: symbolize_names, freeze: freeze)
+        new(scanner, class_loader)
       end
 
       attr_reader :class_loader
 
-      def initialize ss, class_loader, symbolize_names: false, freeze: false
+      def initialize ss, class_loader
         super()
         @st = {}
         @ss = ss
         @domain_types = Psych.domain_types
         @class_loader = class_loader
-        @symbolize_names = symbolize_names
-        @freeze = freeze
       end
 
       def accept target
         result = super
+        return result if @domain_types.empty? || !target.tag
 
-        unless @domain_types.empty? || !target.tag
-          key = target.tag.sub(/^[!\/]*/, '').sub(/(,\d+)\//, '\1:')
-          key = "tag:#{key}" unless key =~ /^(?:tag:|x-private)/
+        key = target.tag.sub(/^[!\/]*/, '').sub(/(,\d+)\//, '\1:')
+        key = "tag:#{key}" unless key =~ /^(?:tag:|x-private)/
 
-          if @domain_types.key? key
-            value, block = @domain_types[key]
-            result = block.call value, result
-          end
+        if @domain_types.key? key
+          value, block = @domain_types[key]
+          return block.call value, result
         end
 
-        result = deduplicate(result).freeze if @freeze
         result
       end
 
@@ -337,12 +333,13 @@ module Psych
         list
       end
 
+      SHOVEL = '<<'
       def revive_hash hash, o
         o.children.each_slice(2) { |k,v|
-          key = accept(k)
+          key = deduplicate(accept(k))
           val = accept(v)
 
-          if key == '<<' && k.tag != "tag:yaml.org,2002:str"
+          if key == SHOVEL && k.tag != "tag:yaml.org,2002:str"
             case v
             when Nodes::Alias, Nodes::Mapping
               begin
@@ -364,12 +361,6 @@ module Psych
               hash[key] = val
             end
           else
-            if @symbolize_names
-              key = key.to_sym
-            elsif !@freeze
-              key = deduplicate(key)
-            end
-
             hash[key] = val
           end
 
@@ -380,8 +371,6 @@ module Psych
       if RUBY_VERSION < '2.7'
         def deduplicate key
           if key.is_a?(String)
-            # It is important to untaint the string, otherwise it won't
-            # be deduplicated into an fstring, but simply frozen.
             -(key.untaint)
           else
             key

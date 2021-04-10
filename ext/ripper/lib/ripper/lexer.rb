@@ -14,24 +14,17 @@ require 'ripper/core'
 class Ripper
 
   # Tokenizes the Ruby program and returns an array of strings.
-  # The +filename+ and +lineno+ arguments are mostly ignored, since the
-  # return value is just the tokenized input.
-  # By default, this method does not handle syntax errors in +src+,
-  # use the +raise_errors+ keyword to raise a SyntaxError for an error in +src+.
   #
   #   p Ripper.tokenize("def m(a) nil end")
   #      # => ["def", " ", "m", "(", "a", ")", " ", "nil", " ", "end"]
   #
-  def Ripper.tokenize(src, filename = '-', lineno = 1, **kw)
-    Lexer.new(src, filename, lineno).tokenize(**kw)
+  def Ripper.tokenize(src, filename = '-', lineno = 1)
+    Lexer.new(src, filename, lineno).tokenize
   end
 
   # Tokenizes the Ruby program and returns an array of an array,
   # which is formatted like
   # <code>[[lineno, column], type, token, state]</code>.
-  # The +filename+ argument is mostly ignored.
-  # By default, this method does not handle syntax errors in +src+,
-  # use the +raise_errors+ keyword to raise a SyntaxError for an error in +src+.
   #
   #   require 'ripper'
   #   require 'pp'
@@ -48,8 +41,8 @@ class Ripper
   #        [[1, 12], :on_sp,     " ",   END      ],
   #        [[1, 13], :on_kw,     "end", END      ]]
   #
-  def Ripper.lex(src, filename = '-', lineno = 1, **kw)
-    Lexer.new(src, filename, lineno).lex(**kw)
+  def Ripper.lex(src, filename = '-', lineno = 1)
+    Lexer.new(src, filename, lineno).lex
   end
 
   class Lexer < ::Ripper   #:nodoc: internal use only
@@ -102,17 +95,17 @@ class Ripper
 
     attr_reader :errors
 
-    def tokenize(**kw)
-      parse(**kw).sort_by(&:pos).map(&:tok)
+    def tokenize
+      parse().sort_by(&:pos).map(&:tok)
     end
 
-    def lex(**kw)
-      parse(**kw).sort_by(&:pos).map(&:to_a)
+    def lex
+      parse().sort_by(&:pos).map(&:to_a)
     end
 
     # parse the code and returns elements including errors.
-    def scan(**kw)
-      result = (parse(**kw) + errors + @stack.flatten).uniq.sort_by {|e| [*e.pos, (e.message ? -1 : 0)]}
+    def scan
+      result = (parse() + errors + @stack.flatten).uniq.sort_by {|e| [*e.pos, (e.message ? -1 : 0)]}
       result.each_with_index do |e, i|
         if e.event == :on_parse_error and e.tok.empty? and (pre = result[i-1]) and
           pre.pos[0] == e.pos[0] and (pre.pos[1] + pre.tok.size) == e.pos[1]
@@ -125,19 +118,13 @@ class Ripper
       result
     end
 
-    def parse(raise_errors: false)
+    def parse
       @errors = []
       @buf = []
       @stack = []
-      super()
-      if raise_errors and !@errors.empty?
-        raise SyntaxError, @errors.map(&:message).join(' ;')
-      end
+      super
       @buf.flatten!
-      unless (result = @buf).empty?
-        result.concat(@buf) until (@buf = []; super(); @buf.empty?)
-      end
-      result
+      @buf
     end
 
     private
@@ -185,23 +172,14 @@ class Ripper
     end
 
     def _push_token(tok)
-      e = Elem.new([lineno(), column()], __callee__, tok, state())
-      @buf.push(e)
-      e
+      @buf.push Elem.new([lineno(), column()], __callee__, tok, state())
     end
 
-    def on_error1(mesg)
+    def on_error(mesg)
       @errors.push Elem.new([lineno(), column()], __callee__, token(), state(), mesg)
     end
-
-    def on_error2(mesg, elem)
-      @errors.push Elem.new(elem.pos, __callee__, elem.tok, elem.state, mesg)
-    end
-    PARSER_EVENTS.grep(/_error\z/) do |e|
-      arity = PARSER_EVENT_TABLE.fetch(e)
-      alias_method "on_#{e}", "on_error#{arity}"
-    end
-    alias compile_error on_error1
+    alias on_parse_error on_error
+    alias compile_error on_error
 
     (SCANNER_EVENTS.map {|event|:"on_#{event}"} - private_instance_methods(false)).each do |event|
       alias_method event, :_push_token

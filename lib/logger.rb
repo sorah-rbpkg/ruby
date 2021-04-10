@@ -349,9 +349,8 @@ class Logger
   # === Args
   #
   # +logdev+::
-  #   The log device.  This is a filename (String), IO object (typically
-  #   +STDOUT+, +STDERR+, or an open file), +nil+ (it writes nothing) or
-  #   +File::NULL+ (same as +nil+).
+  #   The log device.  This is a filename (String) or IO object (typically
+  #   +STDOUT+, +STDERR+, or an open file).
   # +shift_age+::
   #   Number of old log files to keep, *or* frequency of rotation (+daily+,
   #   +weekly+ or +monthly+). Default value is 0, which disables log file
@@ -386,7 +385,7 @@ class Logger
     self.datetime_format = datetime_format
     self.formatter = formatter
     @logdev = nil
-    if logdev && logdev != File::NULL
+    if logdev
       @logdev = LogDevice.new(logdev, shift_age: shift_age,
         shift_size: shift_size,
         shift_period_suffix: shift_period_suffix,
@@ -411,7 +410,7 @@ class Logger
   # Reopen a log device.
   #
   def reopen(logdev = nil)
-    @logdev&.reopen(logdev)
+    @logdev.reopen(logdev)
     self
   end
 

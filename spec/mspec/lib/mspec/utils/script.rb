@@ -3,6 +3,7 @@ require 'mspec/guards/version'
 require 'mspec/utils/warnings'
 
 # MSpecScript provides a skeleton for all the MSpec runner scripts.
+
 class MSpecScript
   # Returns the config object. Maintained at the class
   # level to easily enable simple config files. See the
@@ -38,8 +39,8 @@ class MSpecScript
   end
 
   def initialize
-    ruby_version_is ""..."2.5" do
-      abort "MSpec needs Ruby 2.5 or more recent"
+    ruby_version_is ""..."2.4" do
+      abort "MSpec needs Ruby 2.4 or more recent"
     end
 
     config[:formatter] = nil
@@ -126,7 +127,7 @@ class MSpecScript
 
     if formatter = config_formatter
       formatter.register
-      MSpec.formatter = formatter
+      MSpec.store :formatter, formatter
     end
 
     MatchFilter.new(:include, *config[:includes]).register    unless config[:includes].empty?

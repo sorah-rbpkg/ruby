@@ -6,6 +6,7 @@ require "rubygems/package"
 require "rubygems/command_manager"
 
 class TestGemCommandsHelpCommand < Gem::TestCase
+
   def setup
     super
 
@@ -40,26 +41,13 @@ class TestGemCommandsHelpCommand < Gem::TestCase
 
     util_gem 'commands' do |out, err|
       mgr.command_names.each do |cmd|
-        unless mgr[cmd].deprecated?
-          assert_match(/\s+#{cmd}\s+\S+/, out)
-        end
+        assert_match(/\s+#{cmd}\s+\S+/, out)
       end
 
-      if Gem::HAVE_OPENSSL
+      if defined?(OpenSSL::SSL)
         assert_empty err
 
         refute_match 'No command found for ', out
-      end
-    end
-  end
-
-  def test_gem_help_commands_omits_deprecated_commands
-    mgr = Gem::CommandManager.new
-
-    util_gem 'commands' do |out, err|
-      deprecated_commands = mgr.command_names.select {|cmd| mgr[cmd].deprecated? }
-      deprecated_commands.each do |cmd|
-        refute_match(/\A\s+#{cmd}\s+\S+\z/, out)
       end
     end
   end
@@ -83,4 +71,5 @@ class TestGemCommandsHelpCommand < Gem::TestCase
 
     yield @ui.output, @ui.error
   end
+
 end

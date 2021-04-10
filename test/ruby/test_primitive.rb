@@ -26,31 +26,24 @@ class TestRubyPrimitive < Test::Unit::TestCase
     assert_equal 4, c
   end
 
-  C_Setup = -> do
-    remove_const :C if defined? ::TestRubyPrimitive::C
-    remove_const :A if defined? ::TestRubyPrimitive::A
-
-    C = 1
-    class A
-      Const = 1
-      class B
-        Const = 2
-        class C
-          Const = 3
-          def const
-            Const
-          end
+  C = 1
+  class A
+    Const = 1
+    class B
+      Const = 2
+      class C
+        Const = 3
+        def const
+          Const
         end
       end
     end
-    (1..2).map {
-      A::B::C::Const
-    }
   end
+  (1..2).map {
+    A::B::C::Const
+  }
 
   def test_constant
-    C_Setup.call
-
     assert_equal 1, C
     assert_equal 1, C
     assert_equal 1, A::Const
@@ -152,60 +145,42 @@ class TestRubyPrimitive < Test::Unit::TestCase
     assert_equal 7, ($test_ruby_primitive_gvar = 7)
   end
 
-  A7_Setup = -> do
-    remove_const :A7 if defined? TestRubyPrimitive::A7
+  class A7
+    @@c = 1
+    def m
+      @@c += 1
+    end
+  end
 
-    class A7
-      @@c = 1
+  def test_cvar_from_instance_method
+    assert_equal 2, A7.new.m
+    assert_equal 3, A7.new.m
+    assert_equal 4, A7.new.m
+  end
+
+  class A8
+    @@c = 1
+    class << self
       def m
         @@c += 1
       end
     end
   end
 
-  def test_cvar_from_instance_method
-    A7_Setup.call
-
-    assert_equal 2, A7.new.m
-    assert_equal 3, A7.new.m
-    assert_equal 4, A7.new.m
-  end
-
-  A8_Setup = -> do
-    remove_const :A8 if defined? TestRubyPrimitive::A8
-
-    class A8
-      @@c = 1
-      class << self
-        def m
-          @@c += 1
-        end
-      end
-    end
-  end
-
   def test_cvar_from_singleton_method
-    A8_Setup.call
-
     assert_equal 2, A8.m
     assert_equal 3, A8.m
     assert_equal 4, A8.m
   end
 
-  A9_Setup = -> do
-    remove_const :A8 if defined? TestRubyPrimitive::A8
-
-    class A9
-      @@c = 1
-      def self.m
-        @@c += 1
-      end
+  class A9
+    @@c = 1
+    def self.m
+      @@c += 1
     end
   end
 
   def test_cvar_from_singleton_method2
-    A9_Setup.call
-
     assert_equal 2, A9.m
     assert_equal 3, A9.m
     assert_equal 4, A9.m
@@ -223,9 +198,6 @@ class TestRubyPrimitive < Test::Unit::TestCase
     @iv = 2
     @iv += 2
     assert_equal 4, @iv
-
-    # init @@cv
-    @@cv = nil
 
     @@cv ||= 1
     assert_equal 1, @@cv

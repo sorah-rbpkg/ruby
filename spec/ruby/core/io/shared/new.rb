@@ -18,7 +18,7 @@ describe :io_new, shared: true do
     rm_r @name
   end
 
-  it "creates an IO instance from an Integer argument" do
+  it "creates an IO instance from a Fixnum argument" do
     @io = IO.send(@method, @fd, "w")
     @io.should be_an_instance_of(IO)
   end
@@ -55,7 +55,7 @@ describe :io_new, shared: true do
     end
   end
 
-  it "calls #to_int on an object to convert to an Integer" do
+  it "calls #to_int on an object to convert to a Fixnum" do
     obj = mock("file descriptor")
     obj.should_receive(:to_int).and_return(@fd)
     @io = IO.send(@method, obj, "w")
@@ -148,22 +148,22 @@ describe :io_new, shared: true do
 
   it "sets binmode from mode string" do
     @io = IO.send(@method, @fd, 'wb')
-    @io.should.binmode?
+    @io.binmode?.should == true
   end
 
   it "does not set binmode without being asked" do
     @io = IO.send(@method, @fd, 'w')
-    @io.should_not.binmode?
+    @io.binmode?.should == false
   end
 
   it "sets binmode from :binmode option" do
     @io = IO.send(@method, @fd, 'w', binmode: true)
-    @io.should.binmode?
+    @io.binmode?.should == true
   end
 
   it "does not set binmode from false :binmode" do
     @io = IO.send(@method, @fd, 'w', binmode: false)
-    @io.should_not.binmode?
+    @io.binmode?.should == false
   end
 
   it "sets external encoding to binary with binmode in mode string" do
@@ -197,21 +197,11 @@ describe :io_new, shared: true do
     @io.internal_encoding.to_s.should == 'IBM866'
   end
 
-  ruby_version_is ''...'3.0' do
-    it "accepts nil options" do
-      @io = suppress_keyword_warning do
-        IO.send(@method, @fd, 'w', nil)
-      end
-      @io.write("foo").should == 3
+  it "accepts nil options" do
+    @io = suppress_keyword_warning do
+      IO.send(@method, @fd, 'w', nil)
     end
-  end
-
-  ruby_version_is '3.0' do
-    it "raises ArgumentError for nil options" do
-      -> {
-        IO.send(@method, @fd, 'w', nil)
-      }.should raise_error(ArgumentError)
-    end
+    @io.write("foo").should == 3
   end
 
   it "coerces mode with #to_str" do
@@ -270,13 +260,13 @@ describe :io_new, shared: true do
 
   it "accepts an :autoclose option" do
     @io = IO.send(@method, @fd, 'w', autoclose: false)
-    @io.should_not.autoclose?
+    @io.autoclose?.should == false
     @io.autoclose = true
   end
 
   it "accepts any truthy option :autoclose" do
     @io = IO.send(@method, @fd, 'w', autoclose: 42)
-    @io.should.autoclose?
+    @io.autoclose?.should == true
   end
 end
 
@@ -382,21 +372,11 @@ describe :io_new_errors, shared: true do
     }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'3.0' do
-    it "raises TypeError if passed a hash for mode and nil for options" do
-      -> {
-        suppress_keyword_warning do
-          @io = IO.send(@method, @fd, {mode: 'w'}, nil)
-        end
-      }.should raise_error(TypeError)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "raises ArgumentError if passed a hash for mode and nil for options" do
-      -> {
+  it "raises TypeError if passed a hash for mode and nil for options" do
+    -> {
+      suppress_keyword_warning do
         @io = IO.send(@method, @fd, {mode: 'w'}, nil)
-      }.should raise_error(ArgumentError)
-    end
+      end
+    }.should raise_error(TypeError)
   end
 end

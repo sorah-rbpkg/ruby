@@ -1,4 +1,4 @@
-#!/usr/bin/ruby -pi.bak
+#!/usr/bin/ruby -pi
 BEGIN {
   # pathological setting
   ENV['LANG'] = ENV['LC_MESSAGES'] = ENV['LC_ALL'] = 'C'

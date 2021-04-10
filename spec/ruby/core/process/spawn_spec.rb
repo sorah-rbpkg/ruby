@@ -48,10 +48,10 @@ describe "Process.spawn" do
     -> { Process.wait Process.spawn("echo spawn") }.should output_to_fd("spawn\n")
   end
 
-  it "returns the process ID of the new process as an Integer" do
+  it "returns the process ID of the new process as a Fixnum" do
     pid = Process.spawn(*ruby_exe, "-e", "exit")
     Process.wait pid
-    pid.should be_an_instance_of(Integer)
+    pid.should be_an_instance_of(Fixnum)
   end
 
   it "returns immediately" do
@@ -207,9 +207,13 @@ describe "Process.spawn" do
 
   it "unsets environment variables whose value is nil" do
     ENV["FOO"] = "BAR"
-    -> do
-      Process.wait Process.spawn({"FOO" => nil}, ruby_cmd("p ENV['FOO']"))
-    end.should output_to_fd("nil\n")
+    Process.wait Process.spawn({"FOO" => nil}, "echo #{@var}>#{@name}")
+    expected = "\n"
+    platform_is :windows do
+      # Windows does not expand the variable if it is unset
+      expected = "#{@var}\n"
+    end
+    File.read(@name).should == expected
   end
 
   it "calls #to_hash to convert the environment" do
@@ -415,7 +419,7 @@ describe "Process.spawn" do
 
       it "kills extra chdir processes" do
         pid = nil
-        Dir.chdir("/") do
+        Dir.chdir("/tmp") do
           pid = Process.spawn("sleep 10")
         end
 
@@ -457,7 +461,7 @@ describe "Process.spawn" do
 
   # redirection
 
-  it "redirects STDOUT to the given file descriptor if out: Integer" do
+  it "redirects STDOUT to the given file descriptor if out: Fixnum" do
     File.open(@name, 'w') do |file|
       -> do
         Process.wait Process.spawn("echo glark", out: file.fileno)
@@ -483,7 +487,7 @@ describe "Process.spawn" do
     File.read(@name).should == "glark\n"
   end
 
-  it "redirects STDERR to the given file descriptor if err: Integer" do
+  it "redirects STDERR to the given file descriptor if err: Fixnum" do
     File.open(@name, 'w') do |file|
       -> do
         Process.wait Process.spawn("echo glark>&2", err: file.fileno)
@@ -534,17 +538,6 @@ describe "Process.spawn" do
     touch @name
     Process.wait Process.spawn(ruby_cmd("print(:glark); STDOUT.flush; STDERR.print(:bang)"), [:out, :err] => @name)
     File.read(@name).should == "glarkbang"
-  end
-
-  platform_is_not :windows, :android do
-    it "closes STDERR in the child if :err => :close" do
-      File.open(@name, 'w') do |file|
-        -> do
-          code = "begin; STDOUT.puts 'out'; STDERR.puts 'hello'; rescue => e; puts 'rescued'; end"
-          Process.wait Process.spawn(ruby_cmd(code), :out => file, :err => :close)
-        end.should output_to_fd("out\nrescued\n", file)
-      end
-    end
   end
 
   # :close_others
@@ -706,15 +699,13 @@ describe "Process.spawn" do
       end
 
       it "maps the key to a file descriptor in the child that inherits the file descriptor from the parent specified by the value" do
-        File.open(__FILE__, "r") do |f|
-          child_fd = f.fileno
-          args = ruby_cmd(fixture(__FILE__, "map_fd.rb"), args: [child_fd.to_s])
-          pid = Process.spawn(*args, { child_fd => @io })
-          Process.waitpid pid
-          @io.rewind
+        child_fd = find_unused_fd
+        args = ruby_cmd(fixture(__FILE__, "map_fd.rb"), args: [child_fd.to_s])
+        pid = Process.spawn(*args, { child_fd => @io })
+        Process.waitpid pid
+        @io.rewind
 
-          @io.read.should == "writing to fd: #{child_fd}"
-        end
+        @io.read.should == "writing to fd: #{child_fd}"
       end
     end
   end

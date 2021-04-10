@@ -9,6 +9,21 @@
  */
 #include "ossl.h"
 
+#define NewPKCS7(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_pkcs7_type, 0)
+#define SetPKCS7(obj, pkcs7) do { \
+    if (!(pkcs7)) { \
+	ossl_raise(rb_eRuntimeError, "PKCS7 wasn't initialized."); \
+    } \
+    RTYPEDDATA_DATA(obj) = (pkcs7); \
+} while (0)
+#define GetPKCS7(obj, pkcs7) do { \
+    TypedData_Get_Struct((obj), PKCS7, &ossl_pkcs7_type, (pkcs7)); \
+    if (!(pkcs7)) { \
+	ossl_raise(rb_eRuntimeError, "PKCS7 wasn't initialized."); \
+    } \
+} while (0)
+
 #define NewPKCS7si(klass) \
     TypedData_Wrap_Struct((klass), &ossl_pkcs7_signer_info_type, 0)
 #define SetPKCS7si(obj, p7si) do { \
@@ -60,7 +75,7 @@ ossl_pkcs7_free(void *ptr)
     PKCS7_free(ptr);
 }
 
-const rb_data_type_t ossl_pkcs7_type = {
+static const rb_data_type_t ossl_pkcs7_type = {
     "OpenSSL/PKCS7",
     {
 	0, ossl_pkcs7_free,
@@ -1073,6 +1088,7 @@ Init_ossl_pkcs7(void)
     rb_define_alloc_func(cPKCS7Signer, ossl_pkcs7si_alloc);
     rb_define_method(cPKCS7Signer, "initialize", ossl_pkcs7si_initialize,3);
     rb_define_method(cPKCS7Signer, "issuer", ossl_pkcs7si_get_issuer, 0);
+    rb_define_alias(cPKCS7Signer, "name", "issuer");
     rb_define_method(cPKCS7Signer, "serial", ossl_pkcs7si_get_serial,0);
     rb_define_method(cPKCS7Signer,"signed_time",ossl_pkcs7si_get_signed_time,0);
 

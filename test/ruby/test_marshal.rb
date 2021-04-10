@@ -8,6 +8,7 @@ class TestMarshal < Test::Unit::TestCase
 
   def setup
     @verbose = $VERBOSE
+    $VERBOSE = nil
   end
 
   def teardown
@@ -156,29 +157,20 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   def test_change_class_name
-    self.class.__send__(:remove_const, :C3) if self.class.const_defined?(:C3)
     eval("class C3; def _dump(s); 'foo'; end; end")
     m = Marshal.dump(C3.new)
     assert_raise(TypeError) { Marshal.load(m) }
-    self.class.__send__(:remove_const, :C3)
     eval("C3 = nil")
     assert_raise(TypeError) { Marshal.load(m) }
-  ensure
-    self.class.__send__(:remove_const, :C3) if self.class.const_defined?(:C3)
   end
 
   def test_change_struct
-    self.class.__send__(:remove_const, :C3) if self.class.const_defined?(:C3)
     eval("C3 = Struct.new(:foo, :bar)")
     m = Marshal.dump(C3.new("FOO", "BAR"))
-    self.class.__send__(:remove_const, :C3)
     eval("C3 = Struct.new(:foo)")
     assert_raise(TypeError) { Marshal.load(m) }
-    self.class.__send__(:remove_const, :C3)
     eval("C3 = Struct.new(:foo, :baz)")
     assert_raise(TypeError) { Marshal.load(m) }
-  ensure
-    self.class.__send__(:remove_const, :C3) if self.class.const_defined?(:C3)
   end
 
   class C4
@@ -550,7 +542,7 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   class TestForRespondToFalse
-    def respond_to?(a, priv = false)
+    def respond_to?(a)
       false
     end
   end
@@ -578,7 +570,7 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   def test_continuation
-    EnvUtil.suppress_warning {require "continuation"}
+    require "continuation"
     c = Bug9523.new
     assert_raise_with_message(RuntimeError, /Marshal\.dump reentered at marshal_dump/) do
       Marshal.dump(c)
@@ -604,8 +596,7 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   def test_unloadable_data
-    name = "Unloadable\u{23F0 23F3}"
-    c = eval("class #{name} < Time;;self;end")
+    c = eval("class Unloadable\u{23F0 23F3}<Time;;self;end")
     c.class_eval {
       alias _dump_data _dump
       undef _dump
@@ -614,16 +605,10 @@ class TestMarshal < Test::Unit::TestCase
     assert_raise_with_message(TypeError, /Unloadable\u{23F0 23F3}/) {
       Marshal.load(d)
     }
-
-    # cleanup
-    self.class.class_eval do
-      remove_const name
-    end
   end
 
   def test_unloadable_userdef
-    name = "Userdef\u{23F0 23F3}"
-    c = eval("class #{name} < Time;self;end")
+    c = eval("class Userdef\u{23F0 23F3}<Time;self;end")
     class << c
       undef _load
     end
@@ -631,11 +616,6 @@ class TestMarshal < Test::Unit::TestCase
     assert_raise_with_message(TypeError, /Userdef\u{23F0 23F3}/) {
       Marshal.load(d)
     }
-
-    # cleanup
-    self.class.class_eval do
-      remove_const name
-    end
   end
 
   def test_unloadable_usrmarshal
@@ -651,16 +631,15 @@ class TestMarshal < Test::Unit::TestCase
 
   def test_no_internal_ids
     opt = %w[--disable=gems]
-    args = [opt, 'Marshal.dump("",STDOUT)', true, true]
-    kw = {encoding: Encoding::ASCII_8BIT}
-    out, err, status = EnvUtil.invoke_ruby(*args, **kw)
+    args = [opt, 'Marshal.dump("",STDOUT)', true, true, encoding: Encoding::ASCII_8BIT]
+    out, err, status = EnvUtil.invoke_ruby(*args)
     assert_empty(err)
     assert_predicate(status, :success?)
     expected = out
 
     opt << "--enable=frozen-string-literal"
     opt << "--debug=frozen-string-literal"
-    out, err, status = EnvUtil.invoke_ruby(*args, **kw)
+    out, err, status = EnvUtil.invoke_ruby(*args)
     assert_empty(err)
     assert_predicate(status, :success?)
     assert_equal(expected, out)
@@ -787,36 +766,5 @@ class TestMarshal < Test::Unit::TestCase
     flagged_hash = ruby2_keywords_hash(key: 42)
     hash = Marshal.load(Marshal.dump(flagged_hash))
     assert_equal(42, ruby2_keywords_test(*[hash]))
-  end
-
-  def exception_test
-    raise
-  end
-
-  def test_marshal_exception
-    begin
-      exception_test
-    rescue => e
-      e2 = Marshal.load(Marshal.dump(e))
-      assert_equal(e.message, e2.message)
-      assert_equal(e.backtrace, e2.backtrace)
-      assert_nil(e2.backtrace_locations) # temporal
-    end
-  end
-
-  def nameerror_test
-    unknown_method
-  end
-
-  def test_marshal_nameerror
-    begin
-      nameerror_test
-    rescue NameError => e
-      e2 = Marshal.load(Marshal.dump(e))
-      assert_equal(e.message, e2.message)
-      assert_equal(e.name, e2.name)
-      assert_equal(e.backtrace, e2.backtrace)
-      assert_nil(e2.backtrace_locations) # temporal
-    end
   end
 end

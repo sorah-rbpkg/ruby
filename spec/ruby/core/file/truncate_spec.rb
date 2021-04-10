@@ -18,7 +18,7 @@ describe "File.truncate" do
 
     File.open(@name, "r") do |f|
       f.read(99).should == "12345"
-      f.should.eof?
+      f.eof?.should == true
     end
   end
 
@@ -120,7 +120,7 @@ describe "File#truncate" do
     File.size(@name).should == 5
     File.open(@name, "r") do |f|
       f.read(99).should == "12345"
-      f.should.eof?
+      f.eof?.should == true
     end
   end
 
@@ -161,7 +161,7 @@ describe "File#truncate" do
 
   it "raises an IOError if file is closed" do
     @file.close
-    @file.should.closed?
+    @file.closed?.should == true
     -> { @file.truncate(42) }.should raise_error(IOError)
   end
 

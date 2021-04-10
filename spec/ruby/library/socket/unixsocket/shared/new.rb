@@ -18,7 +18,7 @@ describe :unixsocket_new, shared: true do
       @client = UNIXSocket.send(@method, @path)
 
       @client.addr[0].should == "AF_UNIX"
-      @client.should_not.closed?
+      @client.closed?.should == false
     end
   end
 end

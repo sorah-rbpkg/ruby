@@ -8,17 +8,12 @@ require 'rbconfig'
 OBJDIR ||= File.expand_path("../../../ext/#{RUBY_ENGINE}/#{RUBY_VERSION}", __FILE__)
 
 def object_path
-  path = OBJDIR
-  if ENV['SPEC_CAPI_CXX'] == 'true'
-    path = "#{path}/cxx"
-  end
-  mkdir_p(path)
-  path
+  mkdir_p(OBJDIR)
+  OBJDIR
 end
 
 def compile_extension(name)
   debug = false
-  cxx = ENV['SPEC_CAPI_CXX'] == 'true'
   run_mkmf_in_process = RUBY_ENGINE == 'truffleruby'
 
   core_ext_dir = File.expand_path("../ext", __FILE__)
@@ -32,9 +27,11 @@ def compile_extension(name)
   ruby_header = "#{RbConfig::CONFIG['rubyhdrdir']}/ruby.h"
 
   if RbConfig::CONFIG["ENABLE_SHARED"] == "yes"
-    libdirname = RbConfig::CONFIG['LIBPATHENV'] == 'PATH' ? 'bindir' :
-                   RbConfig::CONFIG['libdirname'] # defined since 2.1
-    libruby_so = "#{RbConfig::CONFIG[libdirname]}/#{RbConfig::CONFIG['LIBRUBY_SO']}"
+    if PlatformGuard.windows?
+      libruby_so = "#{RbConfig::CONFIG['bindir']}/#{RbConfig::CONFIG['LIBRUBY_SO']}"
+    else
+      libruby_so = "#{RbConfig::CONFIG['libdir']}/#{RbConfig::CONFIG['LIBRUBY_SO']}"
+    end
   end
 
   begin
@@ -57,11 +54,7 @@ def compile_extension(name)
   Dir.mkdir(tmpdir)
   begin
     ["#{core_ext_dir}/rubyspec.h", "#{spec_ext_dir}/#{ext}.c"].each do |file|
-      if cxx and file.end_with?('.c')
-        cp file, "#{tmpdir}/#{File.basename(file, '.c')}.cpp"
-      else
-        cp file, "#{tmpdir}/#{File.basename(file)}"
-      end
+      cp file, "#{tmpdir}/#{File.basename(file)}"
     end
 
     Dir.chdir(tmpdir) do
@@ -71,14 +64,11 @@ def compile_extension(name)
         init_mkmf unless required
         create_makefile(ext, tmpdir)
       else
-        File.write("extconf.rb", <<-RUBY)
-          require 'mkmf'
-          $ruby = ENV.values_at('RUBY_EXE', 'RUBY_FLAGS').join(' ')
+        File.write("extconf.rb", "require 'mkmf'\n" +
+          "$ruby = ENV.values_at('RUBY_EXE', 'RUBY_FLAGS').join(' ')\n" +
           # MRI magic to consider building non-bundled extensions
-          $extout = nil
-          append_cflags '-Wno-declaration-after-statement'
-          create_makefile(#{ext.inspect})
-        RUBY
+          "$extout = nil\n" +
+          "create_makefile(#{ext.inspect})\n")
         output = ruby_exe("extconf.rb")
         raise "extconf failed:\n#{output}" unless $?.success?
         $stderr.puts output if debug
@@ -126,9 +116,7 @@ def setup_make
 end
 
 def load_extension(name)
-  ext_path = compile_extension(name)
-  require ext_path
-  ext_path
+  require compile_extension(name)
 rescue LoadError => e
   if %r{/usr/sbin/execerror ruby "\(ld 3 1 main ([/a-zA-Z0-9_\-.]+_spec\.so)"} =~ e.message
     system('/usr/sbin/execerror', "#{RbConfig::CONFIG["bindir"]}/ruby", "(ld 3 1 main #{$1}")

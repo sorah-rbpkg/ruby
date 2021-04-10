@@ -12,6 +12,7 @@ require 'rubygems/version_option'
 # See `gem help install`
 
 class Gem::Commands::InstallCommand < Gem::Command
+
   attr_reader :installed_specs # :nodoc:
 
   include Gem::VersionOption
@@ -217,7 +218,7 @@ You can use `i` command instead of `install`.
       gem_version ||= options[:version]
       domain = options[:domain]
       domain = :local unless options[:suggest_alternate]
-      suppress_suggestions = (domain == :local)
+      supress_suggestions = (domain == :local)
 
       begin
         install_gem gem_name, gem_version
@@ -225,11 +226,11 @@ You can use `i` command instead of `install`.
         alert_error "Error installing #{gem_name}:\n\t#{e.message}"
         exit_code |= 1
       rescue Gem::GemNotFoundException => e
-        show_lookup_failure e.name, e.version, e.errors, suppress_suggestions
+        show_lookup_failure e.name, e.version, e.errors, supress_suggestions
 
         exit_code |= 2
       rescue Gem::UnsatisfiableDependencyError => e
-        show_lookup_failure e.name, e.version, e.errors, suppress_suggestions,
+        show_lookup_failure e.name, e.version, e.errors, supress_suggestions,
                             "'#{gem_name}' (#{gem_version})"
 
         exit_code |= 2
@@ -269,4 +270,5 @@ You can use `i` command instead of `install`.
     gems = @installed_specs.length == 1 ? 'gem' : 'gems'
     say "#{@installed_specs.length} #{gems} installed"
   end
+
 end

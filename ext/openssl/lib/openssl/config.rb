@@ -1,4 +1,4 @@
-# frozen_string_literal: true
+# frozen_string_literal: false
 =begin
 = Ruby-space definitions that completes C-space funcs for Config
 
@@ -37,7 +37,7 @@ module OpenSSL
       def parse(string)
         c = new()
         parse_config(StringIO.new(string)).each do |section, hash|
-          c.set_section(section, hash)
+          c[section] = hash
         end
         c
       end
@@ -53,8 +53,9 @@ module OpenSSL
       def parse_config(io)
         begin
           parse_config_lines(io)
-        rescue => error
-          raise ConfigError, "error in line #{io.lineno}: " + error.message
+        rescue ConfigError => e
+          e.message.replace("error in line #{io.lineno}: " + e.message)
+          raise
         end
       end
 
@@ -266,7 +267,7 @@ module OpenSSL
       if filename
         File.open(filename.to_s) do |file|
           Config.parse_config(file).each do |section, hash|
-            set_section(section, hash)
+            self[section] = hash
           end
         end
       end
@@ -315,8 +316,6 @@ module OpenSSL
     end
 
     ##
-    # *Deprecated in v2.2.0*. This method will be removed in a future release.
-    #
     # Set the target _key_ with a given _value_ under a specific _section_.
     #
     # Given the following configurating file being loaded:
@@ -371,8 +370,6 @@ module OpenSSL
     end
 
     ##
-    # *Deprecated in v2.2.0*. This method will be removed in a future release.
-    #
     # Sets a specific _section_ name with a Hash _pairs_.
     #
     # Given the following configuration being created:
@@ -398,13 +395,9 @@ module OpenSSL
     #
     def []=(section, pairs)
       check_modify
-      set_section(section, pairs)
-    end
-
-    def set_section(section, pairs) # :nodoc:
-      hash = @data[section] ||= {}
+      @data[section] ||= {}
       pairs.each do |key, value|
-        hash[key] = value
+        self.add_value(section, key, value)
       end
     end
 
@@ -489,8 +482,6 @@ module OpenSSL
     end
 
     def check_modify
-      warn "#{caller(2, 1)[0]}: warning: do not modify OpenSSL::Config; this " \
-        "method is deprecated and will be removed in a future release."
       raise TypeError.new("Insecure: can't modify OpenSSL config") if frozen?
     end
 

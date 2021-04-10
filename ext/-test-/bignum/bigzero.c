@@ -1,4 +1,4 @@
-#include "internal/bignum.h"
+#include "internal.h"
 
 static VALUE
 bug_big_zero(VALUE self, VALUE length)

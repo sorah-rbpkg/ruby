@@ -2,6 +2,7 @@
 unless defined?(::JSON::JSON_LOADED) and ::JSON::JSON_LOADED
   require 'json'
 end
+defined?(::Complex) or require 'complex'
 
 class Complex
 

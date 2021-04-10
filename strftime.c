@@ -47,7 +47,10 @@
  * January 1996
  */
 
-#include "ruby/internal/config.h"
+#include "ruby/ruby.h"
+#include "ruby/encoding.h"
+#include "timev.h"
+#include "internal.h"
 
 #ifndef GAWK
 #include <stdio.h>
@@ -64,14 +67,6 @@
 #endif
 #endif
 #include <math.h>
-
-#include "internal.h"
-#include "internal/string.h"
-#include "internal/util.h"
-#include "internal/vm.h"
-#include "ruby/encoding.h"
-#include "ruby/ruby.h"
-#include "timev.h"
 
 /* defaults: season to taste */
 #define SYSV_EXT	1	/* stuff in System V ascftime routine */
@@ -266,7 +261,8 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 	static const char ampm[][3] = { "AM", "PM", };
 
 	if (format == NULL || format_len == 0 || vtm == NULL) {
-                goto err;
+	err:
+		return 0;
 	}
 
 	if (enc &&
@@ -910,9 +906,6 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 	rb_str_set_len(ftime, len);
 	rb_str_resize(ftime, len);
 	return ftime;
-
-err:
-        return 0;
 }
 
 static size_t

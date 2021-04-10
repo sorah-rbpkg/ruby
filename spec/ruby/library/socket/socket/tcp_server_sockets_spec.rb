@@ -32,7 +32,7 @@ describe 'Socket.tcp_server_sockets' do
       Socket.tcp_server_sockets(0) { |socks| sockets = socks }
 
       sockets.each do |socket|
-        socket.should.closed?
+        socket.closed?.should == true
       end
     end
   end

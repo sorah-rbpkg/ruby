@@ -52,7 +52,12 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     @th = nil
     @hard_break = "<br>\n"
 
-    init_regexp_handlings
+    # external links
+    @markup.add_regexp_handling(/(?:link:|https?:|mailto:|ftp:|irc:|www\.)\S+\w/,
+                                :HYPERLINK)
+
+    add_regexp_handling_RDOCLINK
+    add_regexp_handling_TIDYLINK
 
     init_tags
   end
@@ -60,24 +65,6 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   # :section: Regexp Handling
   #
   # These methods are used by regexp handling markup added by RDoc::Markup#add_regexp_handling.
-
-  ##
-  # Adds regexp handlings.
-
-  def init_regexp_handlings
-    # external links
-    @markup.add_regexp_handling(/(?:link:|https?:|mailto:|ftp:|irc:|www\.)\S+\w/,
-                                :HYPERLINK)
-    init_link_notation_regexp_handlings
-  end
-
-  ##
-  # Adds regexp handlings about link notations.
-
-  def init_link_notation_regexp_handlings
-    add_regexp_handling_RDOCLINK
-    add_regexp_handling_TIDYLINK
-  end
 
   def handle_RDOCLINK url # :nodoc:
     case url

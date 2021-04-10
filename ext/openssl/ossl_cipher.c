@@ -104,7 +104,7 @@ ossl_cipher_alloc(VALUE klass)
  *  call-seq:
  *     Cipher.new(string) -> cipher
  *
- *  The string must contain a valid cipher name like "AES-256-CBC".
+ *  The string must be a valid cipher name like "AES-128-CBC" or "3DES".
  *
  *  A list of cipher names is available by calling OpenSSL::Cipher.ciphers.
  */
@@ -237,7 +237,8 @@ ossl_cipher_init(int argc, VALUE *argv, VALUE self, int mode)
 	ossl_raise(eCipherError, NULL);
     }
 
-    rb_ivar_set(self, id_key_set, p_key ? Qtrue : Qfalse);
+    if (p_key)
+	rb_ivar_set(self, id_key_set, Qtrue);
 
     return self;
 }
@@ -851,6 +852,22 @@ Init_ossl_cipher(void)
      *
      *  cipher = OpenSSL::Cipher.new('AES-128-CBC')
      *
+     * For each algorithm supported, there is a class defined under the
+     * Cipher class that goes by the name of the cipher, e.g. to obtain an
+     * instance of AES, you could also use
+     *
+     *   # these are equivalent
+     *   cipher = OpenSSL::Cipher::AES.new(128, :CBC)
+     *   cipher = OpenSSL::Cipher::AES.new(128, 'CBC')
+     *   cipher = OpenSSL::Cipher::AES.new('128-CBC')
+     *
+     * Finally, due to its wide-spread use, there are also extra classes
+     * defined for the different key sizes of AES
+     *
+     *   cipher = OpenSSL::Cipher::AES128.new(:CBC)
+     *   cipher = OpenSSL::Cipher::AES192.new(:CBC)
+     *   cipher = OpenSSL::Cipher::AES256.new(:CBC)
+     *
      * === Choosing either encryption or decryption mode
      *
      * Encryption and decryption are often very similar operations for
@@ -879,7 +896,7 @@ Init_ossl_cipher(void)
      * without processing the password further. A simple and secure way to
      * create a key for a particular Cipher is
      *
-     *  cipher = OpenSSL::Cipher.new('AES-256-CFB')
+     *  cipher = OpenSSL::AES256.new(:CFB)
      *  cipher.encrypt
      *  key = cipher.random_key # also sets the generated key on the Cipher
      *
@@ -947,14 +964,14 @@ Init_ossl_cipher(void)
      *
      *   data = "Very, very confidential data"
      *
-     *   cipher = OpenSSL::Cipher.new('AES-128-CBC')
+     *   cipher = OpenSSL::Cipher::AES.new(128, :CBC)
      *   cipher.encrypt
      *   key = cipher.random_key
      *   iv = cipher.random_iv
      *
      *   encrypted = cipher.update(data) + cipher.final
      *   ...
-     *   decipher = OpenSSL::Cipher.new('AES-128-CBC')
+     *   decipher = OpenSSL::Cipher::AES.new(128, :CBC)
      *   decipher.decrypt
      *   decipher.key = key
      *   decipher.iv = iv
@@ -990,7 +1007,7 @@ Init_ossl_cipher(void)
      * not to reuse the _key_ and _nonce_ pair. Reusing an nonce ruins the
      * security guarantees of GCM mode.
      *
-     *   cipher = OpenSSL::Cipher.new('AES-128-GCM').encrypt
+     *   cipher = OpenSSL::Cipher::AES.new(128, :GCM).encrypt
      *   cipher.key = key
      *   cipher.iv = nonce
      *   cipher.auth_data = auth_data
@@ -1006,7 +1023,7 @@ Init_ossl_cipher(void)
      * ciphertext with a probability of 1/256.
      *
      *   raise "tag is truncated!" unless tag.bytesize == 16
-     *   decipher = OpenSSL::Cipher.new('AES-128-GCM').decrypt
+     *   decipher = OpenSSL::Cipher::AES.new(128, :GCM).decrypt
      *   decipher.key = key
      *   decipher.iv = nonce
      *   decipher.auth_tag = tag

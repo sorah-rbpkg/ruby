@@ -2,7 +2,7 @@
 
 *.rb
 
-# bundler # not in RDoc
+bundler
 cgi
 csv
 drb
@@ -11,8 +11,7 @@ irb
 matrix
 net
 optparse
-racc/*.rb
-racc/rdoc
+racc
 rdoc
 rexml
 rinda

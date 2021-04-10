@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "Process.euid" do
   it "returns the effective user ID for this process" do
-    Process.euid.should be_kind_of(Integer)
+    Process.euid.should be_kind_of(Fixnum)
   end
 
   it "also goes by Process::UID.eid" do

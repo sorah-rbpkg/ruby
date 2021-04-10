@@ -5,11 +5,9 @@ require 'rubygems/command'
 require 'rubygems/gemcutter_utilities'
 
 class TestGemGemcutterUtilities < Gem::TestCase
+
   def setup
     super
-
-    credential_setup
-
     # below needed for random testing, class property
     Gem.configuration.disable_default_gem_server = nil
 
@@ -24,15 +22,13 @@ class TestGemGemcutterUtilities < Gem::TestCase
     ENV['RUBYGEMS_HOST'] = nil
     Gem.configuration.rubygems_api_key = nil
 
-    credential_teardown
-
     super
   end
 
   def test_alternate_key_alternate_host
     keys = {
       :rubygems_api_key => 'KEY',
-      "http://rubygems.engineyard.com" => "EYKEY",
+      "http://rubygems.engineyard.com" => "EYKEY"
     }
 
     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
@@ -202,7 +198,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
 
     assert_match 'You have enabled multi-factor authentication. Please enter OTP code.', @sign_in_ui.output
     assert_match 'Code: ', @sign_in_ui.output
-    assert_match 'Signed in with API key:', @sign_in_ui.output
+    assert_match 'Signed in.', @sign_in_ui.output
     assert_equal '111111', @fetcher.last_request['OTP']
   end
 
@@ -233,7 +229,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     @fetcher.data["#{host}/api/v1/api_key"] = response
     Gem::RemoteFetcher.fetcher = @fetcher
 
-    @sign_in_ui = Gem::MockGemUi.new("#{email}\n#{password}\n\n\n\n\n\n\n\n\n" + extra_input)
+    @sign_in_ui = Gem::MockGemUi.new("#{email}\n#{password}\n" + extra_input)
 
     use_ui @sign_in_ui do
       if args.length > 0
@@ -261,4 +257,5 @@ class TestGemGemcutterUtilities < Gem::TestCase
       @cmd.verify_api_key :missing
     end
   end
+
 end

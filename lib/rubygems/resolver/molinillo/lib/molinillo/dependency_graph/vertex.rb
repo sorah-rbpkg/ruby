@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-
 module Gem::Resolver::Molinillo
   class DependencyGraph
     # A vertex in a {DependencyGraph} that encapsulates a {#name} and a
@@ -33,7 +32,7 @@ module Gem::Resolver::Molinillo
       # @return [Array<Object>] all of the requirements that required
       #   this vertex
       def requirements
-        (incoming_edges.map(&:requirement) + explicit_requirements).uniq
+        incoming_edges.map(&:requirement) + explicit_requirements
       end
 
       # @return [Array<Edge>] the edges of {#graph} that have `self` as their
@@ -50,25 +49,14 @@ module Gem::Resolver::Molinillo
         incoming_edges.map(&:origin)
       end
 
-      # @return [Set<Vertex>] the vertices of {#graph} where `self` is a
+      # @return [Array<Vertex>] the vertices of {#graph} where `self` is a
       #   {#descendent?}
       def recursive_predecessors
-        _recursive_predecessors
-      end
-
-      # @param [Set<Vertex>] vertices the set to add the predecessors to
-      # @return [Set<Vertex>] the vertices of {#graph} where `self` is a
-      #   {#descendent?}
-      def _recursive_predecessors(vertices = Set.new)
-        incoming_edges.each do |edge|
-          vertex = edge.origin
-          next unless vertices.add?(vertex)
-          vertex._recursive_predecessors(vertices)
-        end
-
+        vertices = predecessors
+        vertices += vertices.map(&:recursive_predecessors).flatten(1)
+        vertices.uniq!
         vertices
       end
-      protected :_recursive_predecessors
 
       # @return [Array<Vertex>] the vertices of {#graph} that have an edge with
       #   `self` as their {Edge#origin}
@@ -76,25 +64,14 @@ module Gem::Resolver::Molinillo
         outgoing_edges.map(&:destination)
       end
 
-      # @return [Set<Vertex>] the vertices of {#graph} where `self` is an
+      # @return [Array<Vertex>] the vertices of {#graph} where `self` is an
       #   {#ancestor?}
       def recursive_successors
-        _recursive_successors
-      end
-
-      # @param [Set<Vertex>] vertices the set to add the successors to
-      # @return [Set<Vertex>] the vertices of {#graph} where `self` is an
-      #   {#ancestor?}
-      def _recursive_successors(vertices = Set.new)
-        outgoing_edges.each do |edge|
-          vertex = edge.destination
-          next unless vertices.add?(vertex)
-          vertex._recursive_successors(vertices)
-        end
-
+        vertices = successors
+        vertices += vertices.map(&:recursive_successors).flatten(1)
+        vertices.uniq!
         vertices
       end
-      protected :_recursive_successors
 
       # @return [String] a string suitable for debugging
       def inspect
@@ -130,20 +107,10 @@ module Gem::Resolver::Molinillo
       # dependency graph?
       # @return true iff there is a path following edges within this {#graph}
       def path_to?(other)
-        _path_to?(other)
+        equal?(other) || successors.any? { |v| v.path_to?(other) }
       end
 
       alias descendent? path_to?
-
-      # @param [Vertex] other the vertex to check if there's a path to
-      # @param [Set<Vertex>] visited the vertices of {#graph} that have been visited
-      # @return [Boolean] whether there is a path to `other` from `self`
-      def _path_to?(other, visited = Set.new)
-        return false unless visited.add?(self)
-        return true if equal?(other)
-        successors.any? { |v| v._path_to?(other, visited) }
-      end
-      protected :_path_to?
 
       # Is there a path from `other` to `self` following edges in the
       # dependency graph?

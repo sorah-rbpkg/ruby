@@ -125,18 +125,14 @@ module Bundler
         @expanded_original_path ||= expand(original_path)
       end
 
-      private
+    private
 
       def expanded_path
         @expanded_path ||= expand(path)
       end
 
       def expand(somepath)
-        if Bundler.current_ruby.jruby? # TODO: Unify when https://github.com/rubygems/bundler/issues/7598 fixed upstream and all supported jrubies include the fix
-          somepath.expand_path(root_path).expand_path
-        else
-          somepath.expand_path(root_path)
-        end
+        somepath.expand_path(root_path)
       rescue ArgumentError => e
         Bundler.ui.debug(e)
         raise PathError, "There was an error while trying to use the path " \
@@ -171,7 +167,7 @@ module Bundler
 
         if File.directory?(expanded_path)
           # We sort depth-first since `<<` will override the earlier-found specs
-          Gem::Util.glob_files_in_dir(@glob, expanded_path).sort_by {|p| -p.split(File::SEPARATOR).size }.each do |file|
+          Dir["#{expanded_path}/#{@glob}"].sort_by {|p| -p.split(File::SEPARATOR).size }.each do |file|
             next unless spec = load_gemspec(file)
             spec.source = self
 

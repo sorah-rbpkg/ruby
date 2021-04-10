@@ -65,10 +65,12 @@ module Spec
     end
 
     def local_ruby_engine
-      RUBY_ENGINE
+      ENV["BUNDLER_SPEC_RUBY_ENGINE"] || RUBY_ENGINE
     end
 
     def local_engine_version
+      return ENV["BUNDLER_SPEC_RUBY_ENGINE_VERSION"] if ENV["BUNDLER_SPEC_RUBY_ENGINE_VERSION"]
+
       RUBY_ENGINE_VERSION
     end
 
@@ -94,7 +96,11 @@ module Spec
     end
 
     def local_platforms
-      [specific_local_platform]
+      if Bundler.feature_flag.specific_platform?
+        [local, specific_local_platform]
+      else
+        [local]
+      end
     end
   end
 end

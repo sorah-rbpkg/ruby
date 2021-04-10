@@ -55,10 +55,6 @@
 #include "win32/file.h"
 #include "id.h"
 #include "internal.h"
-#include "internal/enc.h"
-#include "internal/object.h"
-#include "internal/static_assert.h"
-#include "ruby/internal/stdbool.h"
 #include "encindex.h"
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
 
@@ -71,13 +67,10 @@ static int w32_stati128(const char *path, struct stati128 *st, UINT cp, BOOL lst
 static char *w32_getenv(const char *name, UINT cp);
 
 #undef getenv
-/*
- * Do not remove the macros to substitute functions in dln_find.c.
- */
 #define DLN_FIND_EXTRA_ARG_DECL ,UINT cp
 #define DLN_FIND_EXTRA_ARG ,cp
 #define rb_w32_stati128(path, st) w32_stati128(path, st, cp, FALSE)
-#define getenv(name) w32_getenv(name, cp) /* Necessarily For dln.c */
+#define getenv(name) w32_getenv(name, cp)
 #undef CharNext
 #define CharNext(p) CharNextExA(cp, (p), 0)
 #define dln_find_exe_r rb_w32_udln_find_exe_r
@@ -1365,7 +1358,7 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 	int redir = -1;
 	int nt;
 	while (ISSPACE(*cmd)) cmd++;
-	if ((shell = w32_getenv("RUBYSHELL", cp)) && (redir = has_redirection(cmd, cp))) {
+	if ((shell = getenv("RUBYSHELL")) && (redir = has_redirection(cmd, cp))) {
 	    size_t shell_len = strlen(shell);
 	    char *tmp = ALLOCV(v, shell_len + strlen(cmd) + sizeof(" -c ") + 2);
 	    memcpy(tmp, shell, shell_len + 1);
@@ -1373,7 +1366,7 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 	    sprintf(tmp + shell_len, " -c \"%s\"", cmd);
 	    cmd = tmp;
 	}
-	else if ((shell = w32_getenv("COMSPEC", cp)) &&
+	else if ((shell = getenv("COMSPEC")) &&
 		 (nt = !is_command_com(shell),
 		  (redir < 0 ? has_redirection(cmd, cp) : redir) ||
 		  is_internal_cmd(cmd, nt))) {
@@ -1494,7 +1487,7 @@ w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags, UIN
     if (check_spawn_mode(mode)) return -1;
 
     if (!prog) prog = argv[0];
-    if ((shell = w32_getenv("COMSPEC", cp)) &&
+    if ((shell = getenv("COMSPEC")) &&
 	internal_cmd_match(prog, tmpnt = !is_command_com(shell))) {
 	ntcmd = tmpnt;
 	prog = shell;
@@ -1569,7 +1562,7 @@ rb_w32_uaspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags)
 rb_pid_t
 rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 {
-    return w32_aspawn_flags(mode, prog, argv, 0, filecp());
+    return rb_w32_aspawn_flags(mode, prog, argv, 0);
 }
 
 /* License: Ruby's */
@@ -2270,7 +2263,7 @@ rb_w32_conv_from_wstr(const WCHAR *wstr, long *lenp, rb_encoding *enc)
     long len;
     char *ptr;
 
-    if (NIL_P(str)) return wstr_to_utf8(wstr, lenp);
+    if (NIL_P(str)) return wstr_to_filecp(wstr, lenp);
     *lenp = len = RSTRING_LEN(str);
     memcpy(ptr = malloc(len + 1), RSTRING_PTR(str), len);
     ptr[len] = '\0';
@@ -2354,14 +2347,6 @@ rb_w32_readdir(DIR *dirp, rb_encoding *enc)
     }
     else
 	return readdir_internal(dirp, ruby_direct_conv, enc);
-}
-
-/* License: Ruby's */
-struct direct  *
-rb_w32_ureaddir(DIR *dirp)
-{
-    const UINT cp = CP_UTF8;
-    return readdir_internal(dirp, win32_direct_conv, &cp);
 }
 
 //
@@ -2687,17 +2672,6 @@ init_stdhandle(void)
     }
     if (nullfd >= 0 && !keep) close(nullfd);
     setvbuf(stderr, NULL, _IONBF, 0);
-
-    {
-        HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
-        DWORD m;
-        if (GetConsoleMode(h, &m)) {
-#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
-#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x200
-#endif
-            SetConsoleMode(h, m | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
-        }
-    }
 }
 
 #undef getsockopt
@@ -5293,7 +5267,7 @@ static int
 wrename(const WCHAR *oldpath, const WCHAR *newpath)
 {
     int res = 0;
-    DWORD oldatts = 0, newatts = (DWORD)-1;
+    DWORD oldatts, newatts = (DWORD)-1;
     DWORD oldvsn = 0, newvsn = 0, e;
 
     e = get_attr_vsn(oldpath, &oldatts, &oldvsn);
@@ -5714,7 +5688,7 @@ rb_w32_stat(const char *path, struct stat *st)
 {
     struct stati128 tmp;
 
-    if (w32_stati128(path, &tmp, filecp(), FALSE)) return -1;
+    if (rb_w32_stati128(path, &tmp)) return -1;
     COPY_STAT(tmp, *st, (_off_t));
     return 0;
 }
@@ -5831,11 +5805,11 @@ rb_w32_lseek(int fd, off_t ofs, int whence)
 }
 
 /* License: Ruby's */
-static int
-w32_access(const char *path, int mode, UINT cp)
+int
+rb_w32_access(const char *path, int mode)
 {
     struct stati128 stat;
-    if (w32_stati128(path, &stat, cp, FALSE) != 0)
+    if (rb_w32_stati128(path, &stat) != 0)
 	return -1;
     mode <<= 6;
     if ((stat.st_mode & mode) != mode) {
@@ -5847,16 +5821,17 @@ w32_access(const char *path, int mode, UINT cp)
 
 /* License: Ruby's */
 int
-rb_w32_access(const char *path, int mode)
-{
-    return w32_access(path, mode, filecp());
-}
-
-/* License: Ruby's */
-int
 rb_w32_uaccess(const char *path, int mode)
 {
-    return w32_access(path, mode, CP_UTF8);
+    struct stati128 stat;
+    if (rb_w32_ustati128(path, &stat) != 0)
+	return -1;
+    mode <<= 6;
+    if ((stat.st_mode & mode) != mode) {
+	errno = EACCES;
+	return -1;
+    }
+    return 0;
 }
 
 /* License: Ruby's */
@@ -7396,20 +7371,6 @@ wutimensat(int dirfd, const WCHAR *path, const struct timespec *times, int flags
 }
 
 /* License: Ruby's */
-static int
-w32_utimensat(int dirfd, const char *path, const struct timespec *times, int flags, UINT cp)
-{
-    WCHAR *wpath = mbstr_to_wstr(filecp(), path, -1, NULL);
-    int ret = -1;
-
-    if (wpath) {
-	ret = wutimensat(dirfd, wpath, times, flags);
-	free(wpath);
-    }
-    return ret;
-}
-
-/* License: Ruby's */
 int
 rb_w32_uutime(const char *path, const struct utimbuf *times)
 {
@@ -7419,7 +7380,7 @@ rb_w32_uutime(const char *path, const struct utimbuf *times)
     ts[0].tv_nsec = 0;
     ts[1].tv_sec = times->modtime;
     ts[1].tv_nsec = 0;
-    return w32_utimensat(AT_FDCWD, path, ts, 0, CP_UTF8);
+    return rb_w32_uutimensat(AT_FDCWD, path, ts, 0);
 }
 
 /* License: Ruby's */
@@ -7432,7 +7393,7 @@ rb_w32_utime(const char *path, const struct utimbuf *times)
     ts[0].tv_nsec = 0;
     ts[1].tv_sec = times->modtime;
     ts[1].tv_nsec = 0;
-    return w32_utimensat(AT_FDCWD, path, ts, 0, filecp());
+    return rb_w32_utimensat(AT_FDCWD, path, ts, 0);
 }
 
 /* License: Ruby's */
@@ -7445,7 +7406,7 @@ rb_w32_uutimes(const char *path, const struct timeval *times)
     ts[0].tv_nsec = times[0].tv_usec * 1000;
     ts[1].tv_sec = times[1].tv_sec;
     ts[1].tv_nsec = times[1].tv_usec * 1000;
-    return w32_utimensat(AT_FDCWD, path, ts, 0, CP_UTF8);
+    return rb_w32_uutimensat(AT_FDCWD, path, ts, 0);
 }
 
 /* License: Ruby's */
@@ -7458,21 +7419,35 @@ rb_w32_utimes(const char *path, const struct timeval *times)
     ts[0].tv_nsec = times[0].tv_usec * 1000;
     ts[1].tv_sec = times[1].tv_sec;
     ts[1].tv_nsec = times[1].tv_usec * 1000;
-    return w32_utimensat(AT_FDCWD, path, ts, 0, filecp());
+    return rb_w32_utimensat(AT_FDCWD, path, ts, 0);
 }
 
 /* License: Ruby's */
 int
 rb_w32_uutimensat(int dirfd, const char *path, const struct timespec *times, int flags)
 {
-    return w32_utimensat(dirfd, path, times, flags, CP_UTF8);
+    WCHAR *wpath;
+    int ret;
+
+    if (!(wpath = utf8_to_wstr(path, NULL)))
+	return -1;
+    ret = wutimensat(dirfd, wpath, times, flags);
+    free(wpath);
+    return ret;
 }
 
 /* License: Ruby's */
 int
 rb_w32_utimensat(int dirfd, const char *path, const struct timespec *times, int flags)
 {
-    return w32_utimensat(dirfd, path, times, flags, filecp());
+    WCHAR *wpath;
+    int ret;
+
+    if (!(wpath = filecp_to_wstr(path, NULL)))
+	return -1;
+    ret = wutimensat(dirfd, wpath, times, flags);
+    free(wpath);
+    return ret;
 }
 
 /* License: Ruby's */

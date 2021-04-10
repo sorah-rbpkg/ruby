@@ -50,42 +50,10 @@ class Reline::LineEditor
   CompletionJourneyData = Struct.new('CompletionJourneyData', :preposing, :postposing, :list, :pointer)
   MenuInfo = Struct.new('MenuInfo', :target, :list)
 
-  PROMPT_LIST_CACHE_TIMEOUT = 0.5
-
   def initialize(config, encoding)
     @config = config
     @completion_append_character = ''
     reset_variables(encoding: encoding)
-  end
-
-  def simplified_rendering?
-    if finished?
-      false
-    elsif @just_cursor_moving and not @rerender_all
-      true
-    else
-      not @rerender_all and not finished? and Reline::IOGate.in_pasting?
-    end
-  end
-
-  private def check_mode_icon
-    mode_icon = nil
-    if @config.show_mode_in_prompt
-      if @config.editing_mode_is?(:vi_command)
-        mode_icon = @config.vi_cmd_mode_icon
-      elsif @config.editing_mode_is?(:vi_insert)
-        mode_icon = @config.vi_ins_mode_icon
-      elsif @config.editing_mode_is?(:emacs)
-        mode_icon = @config.emacs_mode_string
-      else
-        mode_icon = '?'
-      end
-    end
-    if mode_icon != @prev_mode_icon
-      @rerender_all = true
-    end
-    @prev_mode_icon = mode_icon
-    mode_icon
   end
 
   private def check_multiline_prompt(buffer, prompt)
@@ -98,37 +66,38 @@ class Reline::LineEditor
     else
       prompt = @prompt
     end
-    if simplified_rendering?
-      mode_icon = check_mode_icon
-      prompt = mode_icon + prompt if mode_icon
-      return [prompt, calculate_width(prompt, true), [prompt] * buffer.size]
-    end
     if @prompt_proc
-      use_cached_prompt_list = false
-      if @cached_prompt_list
-        if @just_cursor_moving
-          use_cached_prompt_list = true
-        elsif Time.now.to_f < (@prompt_cache_time + PROMPT_LIST_CACHE_TIMEOUT) and buffer.size == @cached_prompt_list.size
-          use_cached_prompt_list = true
-        end
-      end
-      if use_cached_prompt_list
-        prompt_list = @cached_prompt_list
-      else
-        prompt_list = @cached_prompt_list = @prompt_proc.(buffer)
-        @prompt_cache_time = Time.now.to_f
-      end
+      prompt_list = @prompt_proc.(buffer)
       prompt_list.map!{ prompt } if @vi_arg or @searching_prompt
-      mode_icon = check_mode_icon
-      prompt_list = prompt_list.map{ |pr| mode_icon + pr } if mode_icon
+      if @config.show_mode_in_prompt
+        if @config.editing_mode_is?(:vi_command)
+          mode_icon = @config.vi_cmd_mode_icon
+        elsif @config.editing_mode_is?(:vi_insert)
+          mode_icon = @config.vi_ins_mode_icon
+        elsif @config.editing_mode_is?(:emacs)
+          mode_icon = @config.emacs_mode_string
+        else
+          mode_icon = '?'
+        end
+        prompt_list.map!{ |pr| mode_icon + pr }
+      end
       prompt = prompt_list[@line_index]
-      prompt = prompt_list[0] if prompt.nil?
       prompt_width = calculate_width(prompt, true)
       [prompt, prompt_width, prompt_list]
     else
-      mode_icon = check_mode_icon
-      prompt = mode_icon + prompt if mode_icon
       prompt_width = calculate_width(prompt, true)
+      if @config.show_mode_in_prompt
+        if @config.editing_mode_is?(:vi_command)
+          mode_icon = @config.vi_cmd_mode_icon
+        elsif @config.editing_mode_is?(:vi_insert)
+          mode_icon = @config.vi_ins_mode_icon
+        elsif @config.editing_mode_is?(:emacs)
+          mode_icon = @config.emacs_mode_string
+        else
+          mode_icon = '?'
+        end
+        prompt = mode_icon + prompt
+      end
       [prompt, prompt_width, nil]
     end
   end
@@ -136,7 +105,6 @@ class Reline::LineEditor
   def reset(prompt = '', encoding:)
     @rest_height = (Reline::IOGate.get_screen_size.first - 1) - Reline::IOGate.cursor_pos.y
     @screen_size = Reline::IOGate.get_screen_size
-    @screen_height = @screen_size.first
     reset_variables(prompt, encoding: encoding)
     @old_trap = Signal.trap('SIGINT') {
       @old_trap.call if @old_trap.respond_to?(:call) # can also be string, ex: "DEFAULT"
@@ -146,7 +114,6 @@ class Reline::LineEditor
       @rest_height = (Reline::IOGate.get_screen_size.first - 1) - Reline::IOGate.cursor_pos.y
       old_screen_size = @screen_size
       @screen_size = Reline::IOGate.get_screen_size
-      @screen_height = @screen_size.first
       if old_screen_size.last < @screen_size.last # columns increase
         @rerender_all = true
         rerender
@@ -198,12 +165,11 @@ class Reline::LineEditor
     @cleared = false
     @rerender_all = false
     @history_pointer = nil
-    @kill_ring ||= Reline::KillRing.new
+    @kill_ring = Reline::KillRing.new
     @vi_clipboard = ''
     @vi_arg = nil
     @waiting_proc = nil
     @waiting_operator_proc = nil
-    @waiting_operator_vi_arg = nil
     @completion_journey_data = nil
     @completion_state = CompletionState::NORMAL
     @perfect_matched = nil
@@ -211,15 +177,7 @@ class Reline::LineEditor
     @first_prompt = true
     @searching_prompt = nil
     @first_char = true
-    @add_newline_to_end_of_buffer = false
-    @just_cursor_moving = nil
-    @cached_prompt_list = nil
-    @prompt_cache_time = nil
     @eof = false
-    @continuous_insertion_buffer = String.new(encoding: @encoding)
-    @scroll_partial_screen = nil
-    @prev_mode_icon = nil
-    @drop_terminate_spaces = false
     reset_line
   end
 
@@ -264,7 +222,6 @@ class Reline::LineEditor
     @buffer_of_lines.insert(@line_index + 1, String.new(next_line, encoding: @encoding))
     @previous_line_index = @line_index
     @line_index += 1
-    @just_cursor_moving = false
   end
 
   private def calculate_height_by_width(width)
@@ -305,28 +262,28 @@ class Reline::LineEditor
     end
   end
 
-  private def calculate_nearest_cursor(line_to_calc = @line, cursor = @cursor, started_from = @started_from, byte_pointer = @byte_pointer, update = true)
-    new_cursor_max = calculate_width(line_to_calc)
+  private def calculate_nearest_cursor
+    @cursor_max = calculate_width(line)
     new_cursor = 0
     new_byte_pointer = 0
     height = 1
     max_width = @screen_size.last
     if @config.editing_mode_is?(:vi_command)
-      last_byte_size = Reline::Unicode.get_prev_mbchar_size(line_to_calc, line_to_calc.bytesize)
+      last_byte_size = Reline::Unicode.get_prev_mbchar_size(@line, @line.bytesize)
       if last_byte_size > 0
-        last_mbchar = line_to_calc.byteslice(line_to_calc.bytesize - last_byte_size, last_byte_size)
+        last_mbchar = @line.byteslice(@line.bytesize - last_byte_size, last_byte_size)
         last_width = Reline::Unicode.get_mbchar_width(last_mbchar)
-        end_of_line_cursor = new_cursor_max - last_width
+        cursor_max = @cursor_max - last_width
       else
-      end_of_line_cursor = new_cursor_max
+        cursor_max = @cursor_max
       end
     else
-    end_of_line_cursor = new_cursor_max
+      cursor_max = @cursor_max
     end
-    line_to_calc.encode(Encoding::UTF_8).grapheme_clusters.each do |gc|
+    @line.encode(Encoding::UTF_8).grapheme_clusters.each do |gc|
       mbchar_width = Reline::Unicode.get_mbchar_width(gc)
       now = new_cursor + mbchar_width
-      if now > end_of_line_cursor or now > cursor
+      if now > cursor_max or now > @cursor
         break
       end
       new_cursor += mbchar_width
@@ -335,21 +292,9 @@ class Reline::LineEditor
       end
       new_byte_pointer += gc.bytesize
     end
-    new_started_from = height - 1
-    if update
-      @cursor = new_cursor
-      @cursor_max = new_cursor_max
-      @started_from = new_started_from
-      @byte_pointer = new_byte_pointer
-    else
-      [new_cursor, new_cursor_max, new_started_from, new_byte_pointer]
-    end
-  end
-
-  def rerender_all
-    @rerender_all = true
-    process_insert(force: true)
-    rerender
+    @started_from = height - 1
+    @cursor = new_cursor
+    @byte_pointer = new_byte_pointer
   end
 
   def rerender
@@ -357,53 +302,168 @@ class Reline::LineEditor
     if @menu_info
       scroll_down(@highest_in_all - @first_line_started_from)
       @rerender_all = true
-    end
-    if @menu_info
-      show_menu
+      @menu_info.list.sort!.each do |item|
+        Reline::IOGate.move_cursor_column(0)
+        @output.write item
+        @output.flush
+        scroll_down(1)
+      end
+      scroll_down(@highest_in_all - 1)
+      move_cursor_up(@highest_in_all - 1 - @first_line_started_from)
       @menu_info = nil
     end
     prompt, prompt_width, prompt_list = check_multiline_prompt(whole_lines, prompt)
     if @cleared
-      clear_screen_buffer(prompt, prompt_list, prompt_width)
+      Reline::IOGate.clear_screen
       @cleared = false
+      back = 0
+      modify_lines(whole_lines).each_with_index do |line, index|
+        if @prompt_proc
+          pr = prompt_list[index]
+          height = render_partial(pr, calculate_width(pr), line, false)
+        else
+          height = render_partial(prompt, prompt_width, line, false)
+        end
+        if index < (@buffer_of_lines.size - 1)
+          move_cursor_down(height)
+          back += height
+        end
+      end
+      move_cursor_up(back)
+      move_cursor_down(@first_line_started_from + @started_from)
+      Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
       return
     end
     new_highest_in_this = calculate_height_by_width(prompt_width + calculate_width(@line.nil? ? '' : @line))
     # FIXME: end of logical line sometimes breaks
-    if @add_newline_to_end_of_buffer
-      rerender_added_newline
-      @add_newline_to_end_of_buffer = false
-    else
-      if @just_cursor_moving and not @rerender_all
-        rendered = just_move_cursor
-        @just_cursor_moving = false
-        return
-      elsif @previous_line_index or new_highest_in_this != @highest_in_this
-        rerender_changed_current_line
-        @previous_line_index = nil
-        rendered = true
-      elsif @rerender_all
-        rerender_all_lines
-        @rerender_all = false
-        rendered = true
+    if @previous_line_index or new_highest_in_this != @highest_in_this
+      if @previous_line_index
+        new_lines = whole_lines(index: @previous_line_index, line: @line)
       else
+        new_lines = whole_lines
       end
+      prompt, prompt_width, prompt_list = check_multiline_prompt(new_lines, prompt)
+      all_height = calculate_height_by_lines(new_lines, prompt_list || prompt)
+      diff = all_height - @highest_in_all
+      move_cursor_down(@highest_in_all - @first_line_started_from - @started_from - 1)
+      if diff > 0
+        scroll_down(diff)
+        move_cursor_up(all_height - 1)
+      elsif diff < 0
+        (-diff).times do
+          Reline::IOGate.move_cursor_column(0)
+          Reline::IOGate.erase_after_cursor
+          move_cursor_up(1)
+        end
+        move_cursor_up(all_height - 1)
+      else
+        move_cursor_up(all_height - 1)
+      end
+      @highest_in_all = all_height
+      back = 0
+      modify_lines(new_lines).each_with_index do |line, index|
+        if @prompt_proc
+          prompt = prompt_list[index]
+          prompt_width = calculate_width(prompt, true)
+        end
+        height = render_partial(prompt, prompt_width, line, false)
+        if index < (new_lines.size - 1)
+          scroll_down(1)
+          back += height
+        else
+          back += height - 1
+        end
+      end
+      move_cursor_up(back)
+      if @previous_line_index
+        @buffer_of_lines[@previous_line_index] = @line
+        @line = @buffer_of_lines[@line_index]
+      end
+      @first_line_started_from =
+        if @line_index.zero?
+          0
+        else
+          calculate_height_by_lines(@buffer_of_lines[0..(@line_index - 1)], prompt_list || prompt)
+        end
+      if @prompt_proc
+        prompt = prompt_list[@line_index]
+        prompt_width = calculate_width(prompt, true)
+      end
+      move_cursor_down(@first_line_started_from)
+      calculate_nearest_cursor
+      @started_from = calculate_height_by_width(prompt_width + @cursor) - 1
+      move_cursor_down(@started_from)
+      Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
+      @highest_in_this = calculate_height_by_width(prompt_width + @cursor_max)
+      @previous_line_index = nil
+      rendered = true
+    elsif @rerender_all
+      move_cursor_up(@first_line_started_from + @started_from)
+      Reline::IOGate.move_cursor_column(0)
+      back = 0
+      new_buffer = whole_lines
+      prompt, prompt_width, prompt_list = check_multiline_prompt(new_buffer, prompt)
+      new_buffer.each_with_index do |line, index|
+        prompt_width = calculate_width(prompt_list[index], true) if @prompt_proc
+        width = prompt_width + calculate_width(line)
+        height = calculate_height_by_width(width)
+        back += height
+      end
+      if back > @highest_in_all
+        scroll_down(back - 1)
+        move_cursor_up(back - 1)
+      elsif back < @highest_in_all
+        scroll_down(back)
+        Reline::IOGate.erase_after_cursor
+        (@highest_in_all - back - 1).times do
+          scroll_down(1)
+          Reline::IOGate.erase_after_cursor
+        end
+        move_cursor_up(@highest_in_all - 1)
+      end
+      modify_lines(new_buffer).each_with_index do |line, index|
+        if @prompt_proc
+          prompt = prompt_list[index]
+          prompt_width = calculate_width(prompt, true)
+        end
+        render_partial(prompt, prompt_width, line, false)
+        if index < (new_buffer.size - 1)
+          move_cursor_down(1)
+        end
+      end
+      move_cursor_up(back - 1)
+      if @prompt_proc
+        prompt = prompt_list[@line_index]
+        prompt_width = calculate_width(prompt, true)
+      end
+      @highest_in_all = back
+      @highest_in_this = calculate_height_by_width(prompt_width + @cursor_max)
+      @first_line_started_from =
+        if @line_index.zero?
+          0
+        else
+          calculate_height_by_lines(new_buffer[0..(@line_index - 1)], prompt_list || prompt)
+        end
+      @started_from = calculate_height_by_width(prompt_width + @cursor) - 1
+      move_cursor_down(@first_line_started_from + @started_from)
+      Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
+      @rerender_all = false
+      rendered = true
     end
     line = modify_lines(whole_lines)[@line_index]
     if @is_multiline
       prompt, prompt_width, prompt_list = check_multiline_prompt(whole_lines, prompt)
       if finished?
         # Always rerender on finish because output_modifier_proc may return a different output.
-        render_partial(prompt, prompt_width, line, @first_line_started_from)
+        render_partial(prompt, prompt_width, line)
         scroll_down(1)
         Reline::IOGate.move_cursor_column(0)
         Reline::IOGate.erase_after_cursor
       elsif not rendered
-        render_partial(prompt, prompt_width, line, @first_line_started_from)
+        render_partial(prompt, prompt_width, line)
       end
-      @buffer_of_lines[@line_index] = @line
     else
-      render_partial(prompt, prompt_width, line, 0)
+      render_partial(prompt, prompt_width, line)
       if finished?
         scroll_down(1)
         Reline::IOGate.move_cursor_column(0)
@@ -412,237 +472,8 @@ class Reline::LineEditor
     end
   end
 
-  private def calculate_scroll_partial_screen(highest_in_all, cursor_y)
-    if @screen_height < highest_in_all
-      old_scroll_partial_screen = @scroll_partial_screen
-      if cursor_y == 0
-        @scroll_partial_screen = 0
-      elsif cursor_y == (highest_in_all - 1)
-        @scroll_partial_screen = highest_in_all - @screen_height
-      else
-        if @scroll_partial_screen
-          if cursor_y <= @scroll_partial_screen
-            @scroll_partial_screen = cursor_y
-          elsif (@scroll_partial_screen + @screen_height - 1) < cursor_y
-            @scroll_partial_screen = cursor_y - (@screen_height - 1)
-          end
-        else
-          if cursor_y > (@screen_height - 1)
-            @scroll_partial_screen = cursor_y - (@screen_height - 1)
-          else
-            @scroll_partial_screen = 0
-          end
-        end
-      end
-      if @scroll_partial_screen != old_scroll_partial_screen
-        @rerender_all = true
-      end
-    else
-      if @scroll_partial_screen
-        @rerender_all = true
-      end
-      @scroll_partial_screen = nil
-    end
-  end
-
-  private def rerender_added_newline
-    scroll_down(1)
-    new_lines = whole_lines(index: @previous_line_index, line: @line)
-    prompt, prompt_width, = check_multiline_prompt(new_lines, prompt)
-    @buffer_of_lines[@previous_line_index] = @line
-    @line = @buffer_of_lines[@line_index]
-    render_partial(prompt, prompt_width, @line, @first_line_started_from + @started_from + 1, with_control: false)
-    @cursor = @cursor_max = calculate_width(@line)
-    @byte_pointer = @line.bytesize
-    @highest_in_all += @highest_in_this
-    @highest_in_this = calculate_height_by_width(prompt_width + @cursor_max)
-    @first_line_started_from += @started_from + 1
-    @started_from = calculate_height_by_width(prompt_width + @cursor) - 1
-    @previous_line_index = nil
-  end
-
-  def just_move_cursor
-    prompt, prompt_width, prompt_list = check_multiline_prompt(@buffer_of_lines, prompt)
-    move_cursor_up(@started_from)
-    new_first_line_started_from =
-      if @line_index.zero?
-        0
-      else
-        calculate_height_by_lines(@buffer_of_lines[0..(@line_index - 1)], prompt_list || prompt)
-      end
-    first_line_diff = new_first_line_started_from - @first_line_started_from
-    new_cursor, _, new_started_from, _ = calculate_nearest_cursor(@line, @cursor, @started_from, @byte_pointer, false)
-    new_started_from = calculate_height_by_width(prompt_width + new_cursor) - 1
-    calculate_scroll_partial_screen(@highest_in_all, new_first_line_started_from + new_started_from)
-    @previous_line_index = nil
-    if @rerender_all
-      @line = @buffer_of_lines[@line_index]
-      rerender_all_lines
-      @rerender_all = false
-      true
-    else
-      @line = @buffer_of_lines[@line_index]
-      @first_line_started_from = new_first_line_started_from
-      @started_from = new_started_from
-      @cursor = new_cursor
-      move_cursor_down(first_line_diff + @started_from)
-      Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
-      false
-    end
-  end
-
-  private def rerender_changed_current_line
-    if @previous_line_index
-      new_lines = whole_lines(index: @previous_line_index, line: @line)
-    else
-      new_lines = whole_lines
-    end
-    prompt, prompt_width, prompt_list = check_multiline_prompt(new_lines, prompt)
-    all_height = calculate_height_by_lines(new_lines, prompt_list || prompt)
-    diff = all_height - @highest_in_all
-    move_cursor_down(@highest_in_all - @first_line_started_from - @started_from - 1)
-    if diff > 0
-      scroll_down(diff)
-      move_cursor_up(all_height - 1)
-    elsif diff < 0
-      (-diff).times do
-        Reline::IOGate.move_cursor_column(0)
-        Reline::IOGate.erase_after_cursor
-        move_cursor_up(1)
-      end
-      move_cursor_up(all_height - 1)
-    else
-      move_cursor_up(all_height - 1)
-    end
-    @highest_in_all = all_height
-    back = render_whole_lines(new_lines, prompt_list || prompt, prompt_width)
-    move_cursor_up(back)
-    if @previous_line_index
-      @buffer_of_lines[@previous_line_index] = @line
-      @line = @buffer_of_lines[@line_index]
-    end
-    @first_line_started_from =
-      if @line_index.zero?
-        0
-      else
-        calculate_height_by_lines(@buffer_of_lines[0..(@line_index - 1)], prompt_list || prompt)
-      end
-    if @prompt_proc
-      prompt = prompt_list[@line_index]
-      prompt_width = calculate_width(prompt, true)
-    end
-    move_cursor_down(@first_line_started_from)
-    calculate_nearest_cursor
-    @started_from = calculate_height_by_width(prompt_width + @cursor) - 1
-    move_cursor_down(@started_from)
-    Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
-    @highest_in_this = calculate_height_by_width(prompt_width + @cursor_max)
-  end
-
-  private def rerender_all_lines
-    move_cursor_up(@first_line_started_from + @started_from)
-    Reline::IOGate.move_cursor_column(0)
-    back = 0
-    new_buffer = whole_lines
-    prompt, prompt_width, prompt_list = check_multiline_prompt(new_buffer, prompt)
-    new_buffer.each_with_index do |line, index|
-      prompt_width = calculate_width(prompt_list[index], true) if @prompt_proc
-      width = prompt_width + calculate_width(line)
-      height = calculate_height_by_width(width)
-      back += height
-    end
-    old_highest_in_all = @highest_in_all
-    if @line_index.zero?
-      new_first_line_started_from = 0
-    else
-      new_first_line_started_from = calculate_height_by_lines(new_buffer[0..(@line_index - 1)], prompt_list || prompt)
-    end
-    new_started_from = calculate_height_by_width(prompt_width + @cursor) - 1
-    if back > old_highest_in_all
-      scroll_down(back - 1)
-      move_cursor_up(back - 1)
-    elsif back < old_highest_in_all
-      scroll_down(back)
-      Reline::IOGate.erase_after_cursor
-      (old_highest_in_all - back - 1).times do
-        scroll_down(1)
-        Reline::IOGate.erase_after_cursor
-      end
-      move_cursor_up(old_highest_in_all - 1)
-    end
-    calculate_scroll_partial_screen(back, new_first_line_started_from + new_started_from)
-    render_whole_lines(new_buffer, prompt_list || prompt, prompt_width)
-    if @prompt_proc
-      prompt = prompt_list[@line_index]
-      prompt_width = calculate_width(prompt, true)
-    end
-    @highest_in_this = calculate_height_by_width(prompt_width + @cursor_max)
-    @highest_in_all = back
-    @first_line_started_from = new_first_line_started_from
-    @started_from = new_started_from
-    if @scroll_partial_screen
-      Reline::IOGate.move_cursor_up(@screen_height - (@first_line_started_from + @started_from - @scroll_partial_screen) - 1)
-      Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
-    else
-      move_cursor_down(@first_line_started_from + @started_from - back + 1)
-      Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
-    end
-  end
-
-  private def render_whole_lines(lines, prompt, prompt_width)
-    rendered_height = 0
-    modify_lines(lines).each_with_index do |line, index|
-      if prompt.is_a?(Array)
-        line_prompt = prompt[index]
-        prompt_width = calculate_width(line_prompt, true)
-      else
-        line_prompt = prompt
-      end
-      height = render_partial(line_prompt, prompt_width, line, rendered_height, with_control: false)
-      if index < (lines.size - 1)
-        if @scroll_partial_screen
-          if (@scroll_partial_screen - height) < rendered_height and (@scroll_partial_screen + @screen_height - 1) >= (rendered_height + height)
-            move_cursor_down(1)
-          end
-        else
-          scroll_down(1)
-        end
-        rendered_height += height
-      else
-        rendered_height += height - 1
-      end
-    end
-    rendered_height
-  end
-
-  private def render_partial(prompt, prompt_width, line_to_render, this_started_from, with_control: true)
+  private def render_partial(prompt, prompt_width, line_to_render, with_control = true)
     visual_lines, height = split_by_width(line_to_render.nil? ? prompt : prompt + line_to_render, @screen_size.last)
-    cursor_up_from_last_line = 0
-    # TODO: This logic would be sometimes buggy if this logical line isn't the current @line_index.
-    if @scroll_partial_screen
-      last_visual_line = this_started_from + (height - 1)
-      last_screen_line = @scroll_partial_screen + (@screen_height - 1)
-      if (@scroll_partial_screen - this_started_from) >= height
-        # Render nothing because this line is before the screen.
-        visual_lines = []
-      elsif this_started_from > last_screen_line
-        # Render nothing because this line is after the screen.
-        visual_lines = []
-      else
-        deleted_lines_before_screen = []
-        if @scroll_partial_screen > this_started_from and last_visual_line >= @scroll_partial_screen
-          # A part of visual lines are before the screen.
-          deleted_lines_before_screen = visual_lines.shift((@scroll_partial_screen - this_started_from) * 2)
-          deleted_lines_before_screen.compact!
-        end
-        if this_started_from <= last_screen_line and last_screen_line < last_visual_line
-          # A part of visual lines are after the screen.
-          visual_lines.pop((last_visual_line - last_screen_line) * 2)
-        end
-        move_cursor_up(deleted_lines_before_screen.size - @started_from)
-        cursor_up_from_last_line = @started_from - deleted_lines_before_screen.size
-      end
-    end
     if with_control
       if height > @highest_in_this
         diff = height - @highest_in_this
@@ -656,14 +487,10 @@ class Reline::LineEditor
         @highest_in_this = height
       end
       move_cursor_up(@started_from)
-      cursor_up_from_last_line = height - 1 - @started_from
       @started_from = calculate_height_by_width(prompt_width + @cursor) - 1
     end
-    if Reline::Unicode::CSI_REGEXP.match?(prompt + line_to_render)
-      @output.write "\e[0m" # clear character decorations
-    end
+    Reline::IOGate.move_cursor_column(0)
     visual_lines.each_with_index do |line, index|
-      Reline::IOGate.move_cursor_column(0)
       if line.nil?
         if calculate_width(visual_lines[index - 1], true) == Reline::IOGate.get_screen_size.last
           # reaches the end of line
@@ -695,18 +522,14 @@ class Reline::LineEditor
         @pre_input_hook&.call
       end
     end
-    unless visual_lines.empty?
-      Reline::IOGate.erase_after_cursor
-      Reline::IOGate.move_cursor_column(0)
-    end
+    Reline::IOGate.erase_after_cursor
     if with_control
       # Just after rendring, so the cursor is on the last line.
       if finished?
         Reline::IOGate.move_cursor_column(0)
       else
         # Moves up from bottom of lines to the cursor position.
-        move_cursor_up(cursor_up_from_last_line)
-        # This logic is buggy if a fullwidth char is wrapped because there is only one halfwidth at end of a line.
+        move_cursor_up(height - 1 - @started_from)
         Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
       end
     end
@@ -714,46 +537,13 @@ class Reline::LineEditor
   end
 
   private def modify_lines(before)
-    return before if before.nil? || before.empty? || simplified_rendering?
+    return before if before.nil? || before.empty?
 
     if after = @output_modifier_proc&.call("#{before.join("\n")}\n", complete: finished?)
       after.lines("\n").map { |l| l.chomp('') }
     else
       before
     end
-  end
-
-  private def show_menu
-    scroll_down(@highest_in_all - @first_line_started_from)
-    @rerender_all = true
-    @menu_info.list.sort!.each do |item|
-      Reline::IOGate.move_cursor_column(0)
-      @output.write item
-      @output.flush
-      scroll_down(1)
-    end
-    scroll_down(@highest_in_all - 1)
-    move_cursor_up(@highest_in_all - 1 - @first_line_started_from)
-  end
-
-  private def clear_screen_buffer(prompt, prompt_list, prompt_width)
-    Reline::IOGate.clear_screen
-    back = 0
-    modify_lines(whole_lines).each_with_index do |line, index|
-      if @prompt_proc
-        pr = prompt_list[index]
-        height = render_partial(pr, calculate_width(pr), line, back, with_control: false)
-      else
-        height = render_partial(prompt, prompt_width, line, back, with_control: false)
-      end
-      if index < (@buffer_of_lines.size - 1)
-        move_cursor_down(height)
-        back += height
-      end
-    end
-    move_cursor_up(back)
-    move_cursor_down(@first_line_started_from + @started_from)
-    Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
   end
 
   def editing_mode
@@ -775,7 +565,7 @@ class Reline::LineEditor
       else
         i&.start_with?(target)
       end
-    }.uniq
+    }
     if is_menu
       menu(target, list)
       return nil
@@ -892,8 +682,7 @@ class Reline::LineEditor
     if @waiting_operator_proc
       if VI_MOTIONS.include?(method_symbol)
         old_cursor, old_byte_pointer = @cursor, @byte_pointer
-        @vi_arg = @waiting_operator_vi_arg if @waiting_operator_vi_arg > 1
-        block.(true)
+        block.()
         unless @waiting_proc
           cursor_diff, byte_pointer_diff = @cursor - old_cursor, @byte_pointer - old_byte_pointer
           @cursor, @byte_pointer = old_cursor, old_byte_pointer
@@ -901,56 +690,27 @@ class Reline::LineEditor
         else
           old_waiting_proc = @waiting_proc
           old_waiting_operator_proc = @waiting_operator_proc
-          current_waiting_operator_proc = @waiting_operator_proc
           @waiting_proc = proc { |k|
             old_cursor, old_byte_pointer = @cursor, @byte_pointer
             old_waiting_proc.(k)
             cursor_diff, byte_pointer_diff = @cursor - old_cursor, @byte_pointer - old_byte_pointer
             @cursor, @byte_pointer = old_cursor, old_byte_pointer
-            current_waiting_operator_proc.(cursor_diff, byte_pointer_diff)
+            @waiting_operator_proc.(cursor_diff, byte_pointer_diff)
             @waiting_operator_proc = old_waiting_operator_proc
           }
         end
       else
         # Ignores operator when not motion is given.
-        block.(false)
+        block.()
       end
       @waiting_operator_proc = nil
-      @waiting_operator_vi_arg = nil
-      @vi_arg = nil
     else
-      block.(false)
+      block.()
     end
   end
 
   private def argumentable?(method_obj)
-    method_obj and method_obj.parameters.any? { |param| param[0] == :key and param[1] == :arg }
-  end
-
-  private def inclusive?(method_obj)
-    # If a motion method with the keyword argument "inclusive" follows the
-    # operator, it must contain the character at the cursor position.
-    method_obj and method_obj.parameters.any? { |param| param[0] == :key and param[1] == :inclusive }
-  end
-
-  def wrap_method_call(method_symbol, method_obj, key, with_operator = false)
-    if @config.editing_mode_is?(:emacs, :vi_insert) and @waiting_proc.nil? and @waiting_operator_proc.nil?
-      not_insertion = method_symbol != :ed_insert
-      process_insert(force: not_insertion)
-    end
-    if @vi_arg and argumentable?(method_obj)
-      if with_operator and inclusive?(method_obj)
-        method_obj.(key, arg: @vi_arg, inclusive: true)
-      else
-        method_obj.(key, arg: @vi_arg)
-      end
-    else
-      if with_operator and inclusive?(method_obj)
-        method_obj.(key, inclusive: true)
-      else
-        method_obj.(key)
-      end
-    end
+    method_obj and method_obj.parameters.length != 1
   end
 
   private def process_key(key, method_symbol)
@@ -961,11 +721,11 @@ class Reline::LineEditor
     end
     if method_symbol and key.is_a?(Symbol)
       if @vi_arg and argumentable?(method_obj)
-        run_for_operators(key, method_symbol) do |with_operator|
-          wrap_method_call(method_symbol, method_obj, key, with_operator)
+        run_for_operators(key, method_symbol) do
+          method_obj.(key, arg: @vi_arg)
         end
       else
-        wrap_method_call(method_symbol, method_obj, key) if method_obj
+        method_obj&.(key)
       end
       @kill_ring.process
       @vi_arg = nil
@@ -974,15 +734,15 @@ class Reline::LineEditor
         ed_argument_digit(key)
       else
         if argumentable?(method_obj)
-          run_for_operators(key, method_symbol) do |with_operator|
-            wrap_method_call(method_symbol, method_obj, key, with_operator)
+          run_for_operators(key, method_symbol) do
+            method_obj.(key, arg: @vi_arg)
           end
         elsif @waiting_proc
           @waiting_proc.(key)
         elsif method_obj
-          wrap_method_call(method_symbol, method_obj, key)
+          method_obj.(key)
         else
-          ed_insert(key) unless @config.editing_mode_is?(:vi_command)
+          ed_insert(key)
         end
         @kill_ring.process
         @vi_arg = nil
@@ -992,15 +752,15 @@ class Reline::LineEditor
       @kill_ring.process
     elsif method_obj
       if method_symbol == :ed_argument_digit
-        wrap_method_call(method_symbol, method_obj, key)
+        method_obj.(key)
       else
-        run_for_operators(key, method_symbol) do |with_operator|
-          wrap_method_call(method_symbol, method_obj, key, with_operator)
+        run_for_operators(key, method_symbol) do
+          method_obj.(key)
         end
       end
       @kill_ring.process
     else
-      ed_insert(key) unless @config.editing_mode_is?(:vi_command)
+      ed_insert(key)
     end
   end
 
@@ -1043,7 +803,6 @@ class Reline::LineEditor
   end
 
   def input_key(key)
-    @just_cursor_moving = nil
     if key.char.nil?
       if @first_char
         @line = nil
@@ -1051,7 +810,6 @@ class Reline::LineEditor
       finish
       return
     end
-    old_line = @line.dup
     @first_char = false
     completion_occurs = false
     if @config.editing_mode_is?(:emacs, :vi_insert) and key.char == "\C-i".ord
@@ -1059,7 +817,6 @@ class Reline::LineEditor
         result = call_completion_proc
         if result.is_a?(Array)
           completion_occurs = true
-          process_insert
           complete(result)
         end
       end
@@ -1068,7 +825,6 @@ class Reline::LineEditor
         result = call_completion_proc
         if result.is_a?(Array)
           completion_occurs = true
-          process_insert
           move_completed_list(result, "\C-p".ord == key.char ? :up : :down)
         end
       end
@@ -1080,18 +836,7 @@ class Reline::LineEditor
     unless completion_occurs
       @completion_state = CompletionState::NORMAL
     end
-    if not Reline::IOGate.in_pasting? and @just_cursor_moving.nil?
-      if @previous_line_index and @buffer_of_lines[@previous_line_index] == @line
-        @just_cursor_moving = true
-      elsif @previous_line_index.nil? and @buffer_of_lines[@line_index] == @line and old_line == @line
-        @just_cursor_moving = true
-      else
-        @just_cursor_moving = false
-      end
-    else
-      @just_cursor_moving = false
-    end
-    if @is_multiline and @auto_indent_proc and not simplified_rendering?
+    if @is_multiline and @auto_indent_proc
       process_auto_indent
     end
   end
@@ -1293,7 +1038,6 @@ class Reline::LineEditor
 
   def finish
     @finished = true
-    @rerender_all = true
     @config.reset
   end
 
@@ -1322,9 +1066,6 @@ class Reline::LineEditor
 
   private def key_newline(key)
     if @is_multiline
-      if (@buffer_of_lines.size - 1) == @line_index and @line.bytesize == @byte_pointer
-        @add_newline_to_end_of_buffer = true
-      end
       next_line = @line.byteslice(@byte_pointer, @line.bytesize - @byte_pointer)
       cursor_line = @line.byteslice(0, @byte_pointer)
       insert_new_line(cursor_line, next_line)
@@ -1335,62 +1076,38 @@ class Reline::LineEditor
 
   private def ed_unassigned(key) end # do nothing
 
-  private def process_insert(force: false)
-    return if @continuous_insertion_buffer.empty? or (Reline::IOGate.in_pasting? and not force)
-    width = Reline::Unicode.calculate_width(@continuous_insertion_buffer)
-    bytesize = @continuous_insertion_buffer.bytesize
-    if @cursor == @cursor_max
-      @line += @continuous_insertion_buffer
-    else
-      @line = byteinsert(@line, @byte_pointer, @continuous_insertion_buffer)
-    end
-    @byte_pointer += bytesize
-    @cursor += width
-    @cursor_max += width
-    @continuous_insertion_buffer.clear
-  end
-
   private def ed_insert(key)
-    str = nil
-    width = nil
-    bytesize = nil
     if key.instance_of?(String)
       begin
         key.encode(Encoding::UTF_8)
       rescue Encoding::UndefinedConversionError
         return
       end
-      str = key
-      bytesize = key.bytesize
+      width = Reline::Unicode.get_mbchar_width(key)
+      if @cursor == @cursor_max
+        @line += key
+      else
+        @line = byteinsert(@line, @byte_pointer, key)
+      end
+      @byte_pointer += key.bytesize
+      @cursor += width
+      @cursor_max += width
     else
       begin
         key.chr.encode(Encoding::UTF_8)
       rescue Encoding::UndefinedConversionError
         return
       end
-      str = key.chr
-      bytesize = 1
+      if @cursor == @cursor_max
+        @line += key.chr
+      else
+        @line = byteinsert(@line, @byte_pointer, key.chr)
+      end
+      width = Reline::Unicode.get_mbchar_width(key.chr)
+      @byte_pointer += 1
+      @cursor += width
+      @cursor_max += width
     end
-    if Reline::IOGate.in_pasting?
-      @continuous_insertion_buffer << str
-      return
-    elsif not @continuous_insertion_buffer.empty?
-      process_insert
-    end
-    width = Reline::Unicode.get_mbchar_width(str)
-    if @cursor == @cursor_max
-      @line += str
-    else
-      @line = byteinsert(@line, @byte_pointer, str)
-    end
-    last_byte_size = Reline::Unicode.get_prev_mbchar_size(@line, @byte_pointer)
-    @byte_pointer += bytesize
-    last_mbchar = @line.byteslice((@byte_pointer - bytesize - last_byte_size), last_byte_size)
-    if last_byte_size != 0 and (last_mbchar + str).grapheme_clusters.size == 1
-      width = 0
-    end
-    @cursor += width
-    @cursor_max += width
   end
   alias_method :ed_digit, :ed_insert
   alias_method :self_insert, :ed_insert
@@ -1447,7 +1164,6 @@ class Reline::LineEditor
     arg -= 1
     ed_prev_char(key, arg: arg) if arg > 0
   end
-  alias_method :backward_char, :ed_prev_char
 
   private def vi_first_print(key)
     @byte_pointer, @cursor = Reline::Unicode.vi_first_print(@line)
@@ -1600,11 +1316,9 @@ class Reline::LineEditor
     searcher = generate_searcher
     searcher.resume(key)
     @searching_prompt = "(reverse-i-search)`': "
-    termination_keys = ["\C-j".ord]
-    termination_keys.concat(@config.isearch_terminators&.chars&.map(&:ord)) if @config.isearch_terminators
     @waiting_proc = ->(k) {
       case k
-      when *termination_keys
+      when "\C-j".ord
         if @history_pointer
           buffer = Reline::HISTORY[@history_pointer]
         else
@@ -1623,8 +1337,6 @@ class Reline::LineEditor
         @waiting_proc = nil
         @cursor_max = calculate_width(@line)
         @cursor = @byte_pointer = 0
-        @rerender_all = true
-        @cached_prompt_list = nil
         searcher.resume(-1)
       when "\C-g".ord
         if @is_multiline
@@ -1668,8 +1380,6 @@ class Reline::LineEditor
           @waiting_proc = nil
           @cursor_max = calculate_width(@line)
           @cursor = @byte_pointer = 0
-          @rerender_all = true
-          @cached_prompt_list = nil
           searcher.resume(-1)
         end
       end
@@ -1883,7 +1593,6 @@ class Reline::LineEditor
   end
 
   private def ed_newline(key)
-    process_insert(force: true)
     if @is_multiline
       if @config.editing_mode_is?(:vi_command)
         if @line_index < (@buffer_of_lines.size - 1)
@@ -1962,7 +1671,6 @@ class Reline::LineEditor
       @cursor = 0
     end
   end
-  alias_method :kill_line, :em_kill_line
 
   private def em_delete(key)
     if (not @is_multiline and @line.empty?) or (@is_multiline and @line.empty? and @buffer_of_lines.size == 1)
@@ -2013,7 +1721,6 @@ class Reline::LineEditor
       @byte_pointer += yanked.bytesize
     end
   end
-  alias_method :yank, :em_yank
 
   private def em_yank_pop(key)
     yanked, prev_yank = @kill_ring.yank_pop
@@ -2030,7 +1737,6 @@ class Reline::LineEditor
       @byte_pointer += yanked.bytesize
     end
   end
-  alias_method :yank_pop, :em_yank_pop
 
   private def ed_clear_screen(key)
     @cleared = true
@@ -2161,10 +1867,9 @@ class Reline::LineEditor
       @byte_pointer -= byte_size
       @cursor -= width
       @cursor_max -= width
-      @kill_ring.append(deleted, true)
+      @kill_ring.append(deleted)
     end
   end
-  alias_method :unix_word_rubout, :em_kill_region
 
   private def copy_for_vi(text)
     if @config.editing_mode_is?(:vi_insert) or @config.editing_mode_is?(:vi_command)
@@ -2185,11 +1890,11 @@ class Reline::LineEditor
     ed_prev_char(key)
     @config.editing_mode = :vi_command
   end
-  alias_method :vi_movement_mode, :vi_command_mode
+  alias_method :backward_char, :ed_prev_char
 
   private def vi_next_word(key, arg: 1)
     if @line.bytesize > @byte_pointer
-      byte_size, width = Reline::Unicode.vi_forward_word(@line, @byte_pointer, @drop_terminate_spaces)
+      byte_size, width = Reline::Unicode.vi_forward_word(@line, @byte_pointer)
       @byte_pointer += byte_size
       @cursor += width
     end
@@ -2207,22 +1912,13 @@ class Reline::LineEditor
     vi_prev_word(key, arg: arg) if arg > 0
   end
 
-  private def vi_end_word(key, arg: 1, inclusive: false)
+  private def vi_end_word(key, arg: 1)
     if @line.bytesize > @byte_pointer
       byte_size, width = Reline::Unicode.vi_forward_end_word(@line, @byte_pointer)
       @byte_pointer += byte_size
       @cursor += width
     end
     arg -= 1
-    if inclusive and arg.zero?
-      byte_size = Reline::Unicode.get_next_mbchar_size(@line, @byte_pointer)
-      if byte_size > 0
-        c = @line.byteslice(@byte_pointer, byte_size)
-        width = Reline::Unicode.get_mbchar_width(c)
-        @byte_pointer += byte_size
-        @cursor += width
-      end
-    end
     vi_end_word(key, arg: arg) if arg > 0
   end
 
@@ -2246,22 +1942,13 @@ class Reline::LineEditor
     vi_prev_big_word(key, arg: arg) if arg > 0
   end
 
-  private def vi_end_big_word(key, arg: 1, inclusive: false)
+  private def vi_end_big_word(key, arg: 1)
     if @line.bytesize > @byte_pointer
       byte_size, width = Reline::Unicode.vi_big_forward_end_word(@line, @byte_pointer)
       @byte_pointer += byte_size
       @cursor += width
     end
     arg -= 1
-    if inclusive and arg.zero?
-      byte_size = Reline::Unicode.get_next_mbchar_size(@line, @byte_pointer)
-      if byte_size > 0
-        c = @line.byteslice(@byte_pointer, byte_size)
-        width = Reline::Unicode.get_mbchar_width(c)
-        @byte_pointer += byte_size
-        @cursor += width
-      end
-    end
     vi_end_big_word(key, arg: arg) if arg > 0
   end
 
@@ -2316,8 +2003,7 @@ class Reline::LineEditor
     @cursor = 0
   end
 
-  private def vi_change_meta(key, arg: 1)
-    @drop_terminate_spaces = true
+  private def vi_change_meta(key)
     @waiting_operator_proc = proc { |cursor_diff, byte_pointer_diff|
       if byte_pointer_diff > 0
         @line, cut = byteslice!(@line, @byte_pointer, byte_pointer_diff)
@@ -2329,12 +2015,10 @@ class Reline::LineEditor
       @cursor_max -= cursor_diff.abs
       @byte_pointer += byte_pointer_diff if byte_pointer_diff < 0
       @config.editing_mode = :vi_insert
-      @drop_terminate_spaces = false
     }
-    @waiting_operator_vi_arg = arg
   end
 
-  private def vi_delete_meta(key, arg: 1)
+  private def vi_delete_meta(key)
     @waiting_operator_proc = proc { |cursor_diff, byte_pointer_diff|
       if byte_pointer_diff > 0
         @line, cut = byteslice!(@line, @byte_pointer, byte_pointer_diff)
@@ -2346,19 +2030,9 @@ class Reline::LineEditor
       @cursor_max -= cursor_diff.abs
       @byte_pointer += byte_pointer_diff if byte_pointer_diff < 0
     }
-    @waiting_operator_vi_arg = arg
   end
 
-  private def vi_yank(key, arg: 1)
-    @waiting_operator_proc = proc { |cursor_diff, byte_pointer_diff|
-      if byte_pointer_diff > 0
-        cut = @line.byteslice(@byte_pointer, byte_pointer_diff)
-      elsif byte_pointer_diff < 0
-        cut = @line.byteslice(@byte_pointer + byte_pointer_diff, -byte_pointer_diff)
-      end
-      copy_for_vi(cut)
-    }
-    @waiting_operator_vi_arg = arg
+  private def vi_yank(key)
   end
 
   private def vi_list_or_eof(key)
@@ -2481,7 +2155,7 @@ class Reline::LineEditor
         byte_size = Reline::Unicode.get_next_mbchar_size(@line, @byte_pointer)
         before = @line.byteslice(0, @byte_pointer)
         remaining_point = @byte_pointer + byte_size
-        after = @line.byteslice(remaining_point, @line.bytesize - remaining_point)
+        after = @line.byteslice(remaining_point, @line.size - remaining_point)
         @line = before + k.chr + after
         @cursor_max = calculate_width(@line)
         @waiting_proc = nil
@@ -2492,7 +2166,7 @@ class Reline::LineEditor
         end
         before = @line.byteslice(0, @byte_pointer)
         remaining_point = @byte_pointer + byte_size
-        after = @line.byteslice(remaining_point, @line.bytesize - remaining_point)
+        after = @line.byteslice(remaining_point, @line.size - remaining_point)
         replaced = k.chr * arg
         @line = before + replaced + after
         @byte_pointer += replaced.bytesize
@@ -2503,15 +2177,15 @@ class Reline::LineEditor
     }
   end
 
-  private def vi_next_char(key, arg: 1, inclusive: false)
-    @waiting_proc = ->(key_for_proc) { search_next_char(key_for_proc, arg, inclusive: inclusive) }
+  private def vi_next_char(key, arg: 1)
+    @waiting_proc = ->(key_for_proc) { search_next_char(key_for_proc, arg) }
   end
 
-  private def vi_to_next_char(key, arg: 1, inclusive: false)
-    @waiting_proc = ->(key_for_proc) { search_next_char(key_for_proc, arg, need_prev_char: true, inclusive: inclusive) }
+  private def vi_to_next_char(key, arg: 1)
+    @waiting_proc = ->(key_for_proc) { search_next_char(key_for_proc, arg, true) }
   end
 
-  private def search_next_char(key, arg, need_prev_char: false, inclusive: false)
+  private def search_next_char(key, arg, need_prev_char = false)
     if key.instance_of?(String)
       inputed_char = key
     else
@@ -2547,15 +2221,6 @@ class Reline::LineEditor
       byte_size, width = prev_total
       @byte_pointer += byte_size
       @cursor += width
-    end
-    if inclusive
-      byte_size = Reline::Unicode.get_next_mbchar_size(@line, @byte_pointer)
-      if byte_size > 0
-        c = @line.byteslice(@byte_pointer, byte_size)
-        width = Reline::Unicode.get_mbchar_width(c)
-        @byte_pointer += byte_size
-        @cursor += width
-      end
     end
     @waiting_proc = nil
   end
@@ -2628,7 +2293,6 @@ class Reline::LineEditor
   alias_method :set_mark, :em_set_mark
 
   private def em_exchange_mark(key)
-    return unless @mark_pointer
     new_pointer = [@byte_pointer, @line_index]
     @previous_line_index = @line_index
     @byte_pointer, @line_index = @mark_pointer

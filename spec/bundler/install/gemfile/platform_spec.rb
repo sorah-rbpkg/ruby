@@ -50,31 +50,6 @@ RSpec.describe "bundle install across platforms" do
     expect(the_bundle).to include_gems "platform_specific 1.0 JAVA"
   end
 
-  it "pulls the pure ruby version on jruby if the java platform is not present in the lockfile and bundler is run in frozen mode", :jruby do
-    lockfile <<-G
-      GEM
-        remote: #{file_uri_for(gem_repo1)}
-        specs:
-          platform_specific (1.0)
-
-      PLATFORMS
-        ruby
-
-      DEPENDENCIES
-        platform_specific
-    G
-
-    bundle "config set --local frozen true"
-
-    install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-
-      gem "platform_specific"
-    G
-
-    expect(the_bundle).to include_gems "platform_specific 1.0 RUBY"
-  end
-
   it "works with gems that have different dependencies" do
     simulate_platform "java"
     install_gemfile <<-G
@@ -120,7 +95,7 @@ RSpec.describe "bundle install across platforms" do
 
     simulate_platform java
 
-    install_gemfile <<-G
+    install_gemfile! <<-G
       source "#{file_uri_for(gem_repo4)}"
 
       gem "empyrean", "0.1.0"
@@ -153,7 +128,7 @@ RSpec.describe "bundle install across platforms" do
          #{Bundler::VERSION}
     L
 
-    bundle "lock --add-platform ruby"
+    bundle! "lock --add-platform ruby"
 
     good_lockfile = strip_whitespace(<<-L)
       GEM
@@ -220,23 +195,23 @@ RSpec.describe "bundle install across platforms" do
 
     aggregate_failures do
       lockfile bad_lockfile
-      bundle :install
+      bundle! :install
       lockfile_should_be good_lockfile
 
       lockfile bad_lockfile
-      bundle :update, :all => true
+      bundle! :update, :all => true
       lockfile_should_be good_lockfile
 
       lockfile bad_lockfile
-      bundle "update ffi"
+      bundle! "update ffi"
       lockfile_should_be good_lockfile
 
       lockfile bad_lockfile
-      bundle "update empyrean"
+      bundle! "update empyrean"
       lockfile_should_be good_lockfile
 
       lockfile bad_lockfile
-      bundle :lock
+      bundle! :lock
       lockfile_should_be good_lockfile
     end
   end
@@ -255,33 +230,30 @@ RSpec.describe "bundle install across platforms" do
     expect(the_bundle).to include_gems "nokogiri 1.4.2 JAVA", "weakling 0.0.3"
   end
 
-  it "works with gems with platform-specific dependency having different requirements order" do
+  it "works with gems that have extra platform-specific runtime dependencies", :bundler => "< 3" do
     simulate_platform x64_mac
 
     update_repo2 do
-      build_gem "fspath", "3"
-      build_gem "image_optim_pack", "1.2.3" do |s|
-        s.add_runtime_dependency "fspath", ">= 2.1", "< 4"
-      end
-      build_gem "image_optim_pack", "1.2.3" do |s|
+      build_gem "facter", "2.4.6"
+      build_gem "facter", "2.4.6" do |s|
         s.platform = "universal-darwin"
-        s.add_runtime_dependency "fspath", "< 4", ">= 2.1"
+        s.add_runtime_dependency "CFPropertyList"
       end
+      build_gem "CFPropertyList"
     end
 
-    install_gemfile <<-G
-      source "#{file_uri_for(gem_repo2)}"
-    G
-
-    install_gemfile <<-G
+    install_gemfile! <<-G
       source "#{file_uri_for(gem_repo2)}"
 
-      gem "image_optim_pack"
+      gem "facter"
     G
 
-    expect(err).not_to include "Unable to use the platform-specific"
+    expect(err).to include "Unable to use the platform-specific (universal-darwin) version of facter (2.4.6) " \
+      "because it has different dependencies from the ruby version. " \
+      "To use the platform-specific version of the gem, run `bundle config set specific_platform true` and install again."
 
-    expect(the_bundle).to include_gem "image_optim_pack 1.2.3 universal-darwin"
+    expect(the_bundle).to include_gem "facter 2.4.6"
+    expect(the_bundle).not_to include_gem "CFPropertyList"
   end
 
   it "fetches gems again after changing the version of Ruby" do
@@ -291,20 +263,17 @@ RSpec.describe "bundle install across platforms" do
       gem "rack", "1.0.0"
     G
 
-    bundle "config --local path vendor/bundle"
-    bundle :install
+    bundle! :install, forgotten_command_line_options(:path => "vendor/bundle")
 
     FileUtils.mv(vendored_gems, bundled_app("vendor/bundle", Gem.ruby_engine, "1.8"))
 
-    bundle :install
+    bundle! :install
     expect(vendored_gems("gems/rack-1.0.0")).to exist
   end
 end
 
 RSpec.describe "bundle install with platform conditionals" do
   it "installs gems tagged w/ the current platforms" do
-    skip "platform issues" if Gem.win_platform?
-
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
 
@@ -330,8 +299,6 @@ RSpec.describe "bundle install with platform conditionals" do
   end
 
   it "installs gems tagged w/ the current platforms inline" do
-    skip "platform issues" if Gem.win_platform?
-
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "nokogiri", :platforms => :#{local_tag}
@@ -350,8 +317,6 @@ RSpec.describe "bundle install with platform conditionals" do
   end
 
   it "installs gems tagged w/ the current platform inline" do
-    skip "platform issues" if Gem.win_platform?
-
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "nokogiri", :platform => :#{local_tag}
@@ -377,10 +342,12 @@ RSpec.describe "bundle install with platform conditionals" do
     G
 
     bundle :list
+    expect(exitstatus).to eq(0) if exitstatus
   end
 
   it "does not attempt to install gems from :rbx when using --local" do
     simulate_platform "ruby"
+    simulate_ruby_engine "ruby"
 
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -393,6 +360,7 @@ RSpec.describe "bundle install with platform conditionals" do
 
   it "does not attempt to install gems from other rubies when using --local" do
     simulate_platform "ruby"
+    simulate_ruby_engine "ruby"
     other_ruby_version_tag = RUBY_VERSION =~ /^1\.8/ ? :ruby_19 : :ruby_18
 
     gemfile <<-G
@@ -404,8 +372,9 @@ RSpec.describe "bundle install with platform conditionals" do
     expect(out).not_to match(/Could not find gem 'some_gem/)
   end
 
-  it "does not print a warning when a dependency is unused on a platform different from the current one" do
+  it "prints a helpful warning when a dependency is unused on any platform" do
     simulate_platform "ruby"
+    simulate_ruby_engine "ruby"
 
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -413,24 +382,30 @@ RSpec.describe "bundle install with platform conditionals" do
       gem "rack", :platform => [:mingw, :mswin, :x64_mingw, :jruby]
     G
 
-    bundle "install"
+    bundle! "install"
 
-    expect(err).to be_empty
+    expect(err).to include <<-O.strip
+The dependency #{Gem::Dependency.new("rack", ">= 0")} will be unused by any of the platforms Bundler is installing for. Bundler is installing for ruby but the dependency is only for x86-mingw32, x86-mswin32, x64-mingw32, java. To add those platforms to the bundle, run `bundle lock --add-platform x86-mingw32 x86-mswin32 x64-mingw32 java`.
+    O
+  end
 
-    lockfile_should_be <<-L
-      GEM
-        remote: #{file_uri_for(gem_repo1)}/
-        specs:
+  context "when disable_platform_warnings is true" do
+    before { bundle! "config set disable_platform_warnings true" }
 
-      PLATFORMS
-        ruby
+    it "does not print the warning when a dependency is unused on any platform" do
+      simulate_platform "ruby"
+      simulate_ruby_engine "ruby"
 
-      DEPENDENCIES
-        rack
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
 
-      BUNDLED WITH
-         #{Bundler::VERSION}
-    L
+        gem "rack", :platform => [:mingw, :mswin, :x64_mingw, :jruby]
+      G
+
+      bundle! "install"
+
+      expect(out).not_to match(/The dependency (.*) will be unused/)
+    end
   end
 end
 
@@ -438,21 +413,13 @@ RSpec.describe "when a gem has no architecture" do
   it "still installs correctly" do
     simulate_platform mswin
 
-    build_repo2 do
-      # The rcov gem is platform mswin32, but has no arch
-      build_gem "rcov" do |s|
-        s.platform = Gem::Platform.new([nil, "mswin32", nil])
-        s.write "lib/rcov.rb", "RCOV = '1.0.0'"
-      end
-    end
-
     gemfile <<-G
       # Try to install gem with nil arch
       source "http://localgemserver.test/"
       gem "rcov"
     G
 
-    bundle :install, :artifice => "windows", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+    bundle :install, :artifice => "windows"
     expect(the_bundle).to include_gems "rcov 1.0.0"
   end
 end

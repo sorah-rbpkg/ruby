@@ -52,23 +52,9 @@ char *getenv();
 #endif
 char *getlogin();
 
-#define RUBY_ETC_VERSION "1.2.0"
-
-#ifdef HAVE_RB_DEPRECATE_CONSTANT
-void rb_deprecate_constant(VALUE mod, const char *name);
-#else
-# define rb_deprecate_constant(mod,name) ((void)(mod),(void)(name))
-#endif
+#define RUBY_ETC_VERSION "1.1.0"
 
 #include "constdefs.h"
-
-#ifdef HAVE_RUBY_ATOMIC_H
-# include "ruby/atomic.h"
-#else
-typedef int rb_atomic_t;
-# define RUBY_ATOMIC_CAS(var, oldval, newval) \
-    ((var) == (oldval) ? ((var) = (newval), (oldval)) : (var))
-#endif
 
 /* call-seq:
  *	getlogin	->  String
@@ -133,12 +119,6 @@ safe_setup_filesystem_str(const char *str)
 #endif
 
 #ifdef HAVE_GETPWENT
-# ifdef __APPLE__
-#   define PW_TIME2VAL(t) INT2NUM((int)(t))
-# else
-#   define PW_TIME2VAL(t) TIMET2NUM(t)
-# endif
-
 static VALUE
 setup_passwd(struct passwd *pwd)
 {
@@ -156,7 +136,7 @@ setup_passwd(struct passwd *pwd)
 			 safe_setup_filesystem_str(pwd->pw_dir),
 			 safe_setup_filesystem_str(pwd->pw_shell),
 #ifdef HAVE_STRUCT_PASSWD_PW_CHANGE
-			 PW_TIME2VAL(pwd->pw_change),
+			 INT2NUM(pwd->pw_change),
 #endif
 #ifdef HAVE_STRUCT_PASSWD_PW_QUOTA
 			 INT2NUM(pwd->pw_quota),
@@ -171,7 +151,7 @@ setup_passwd(struct passwd *pwd)
 			 safe_setup_locale_str(pwd->pw_comment),
 #endif
 #ifdef HAVE_STRUCT_PASSWD_PW_EXPIRE
-			 PW_TIME2VAL(pwd->pw_expire),
+			 INT2NUM(pwd->pw_expire),
 #endif
 			 0		/*dummy*/
 	);
@@ -248,12 +228,12 @@ etc_getpwnam(VALUE obj, VALUE nam)
 }
 
 #ifdef HAVE_GETPWENT
-static rb_atomic_t passwd_blocking;
+static int passwd_blocking = 0;
 static VALUE
 passwd_ensure(VALUE _)
 {
     endpwent();
-    passwd_blocking = 0;
+    passwd_blocking = (int)Qfalse;
     return Qnil;
 }
 
@@ -272,9 +252,10 @@ passwd_iterate(VALUE _)
 static void
 each_passwd(void)
 {
-    if (RUBY_ATOMIC_CAS(passwd_blocking, 0, 1)) {
+    if (passwd_blocking) {
 	rb_raise(rb_eRuntimeError, "parallel passwd iteration");
     }
+    passwd_blocking = (int)Qtrue;
     rb_ensure(passwd_iterate, 0, passwd_ensure, 0);
 }
 #endif
@@ -490,12 +471,12 @@ etc_getgrnam(VALUE obj, VALUE nam)
 }
 
 #ifdef HAVE_GETGRENT
-static rb_atomic_t group_blocking;
+static int group_blocking = 0;
 static VALUE
 group_ensure(VALUE _)
 {
     endgrent();
-    group_blocking = 0;
+    group_blocking = (int)Qfalse;
     return Qnil;
 }
 
@@ -515,9 +496,10 @@ group_iterate(VALUE _)
 static void
 each_group(void)
 {
-    if (RUBY_ATOMIC_CAS(group_blocking, 0, 1)) {
+    if (group_blocking) {
 	rb_raise(rb_eRuntimeError, "parallel group iteration");
     }
+    group_blocking = (int)Qtrue;
     rb_ensure(group_iterate, 0, group_ensure, 0);
 }
 #endif
@@ -1082,9 +1064,6 @@ Init_etc(void)
 {
     VALUE mEtc;
 
-    #ifdef HAVE_RB_EXT_RACTOR_SAFE
-	RB_EXT_RACTOR_SAFE(true);
-    #endif
     mEtc = rb_define_module("Etc");
     rb_define_const(mEtc, "VERSION", rb_str_new_cstr(RUBY_ETC_VERSION));
     init_constants(mEtc);
@@ -1186,9 +1165,9 @@ Init_etc(void)
     rb_define_const(mEtc, "Passwd", sPasswd);
 #endif
     rb_define_const(rb_cStruct, "Passwd", sPasswd); /* deprecated name */
-    rb_deprecate_constant(rb_cStruct, "Passwd");
     rb_extend_object(sPasswd, rb_mEnumerable);
     rb_define_singleton_method(sPasswd, "each", etc_each_passwd, 0);
+
 #ifdef HAVE_GETGRENT
     sGroup = rb_struct_define_under(mEtc, "Group", "name",
 #ifdef HAVE_STRUCT_GROUP_GR_PASSWD
@@ -1221,7 +1200,6 @@ Init_etc(void)
     rb_define_const(mEtc, "Group", sGroup);
 #endif
     rb_define_const(rb_cStruct, "Group", sGroup); /* deprecated name */
-    rb_deprecate_constant(rb_cStruct, "Group");
     rb_extend_object(sGroup, rb_mEnumerable);
     rb_define_singleton_method(sGroup, "each", etc_each_group, 0);
 #endif

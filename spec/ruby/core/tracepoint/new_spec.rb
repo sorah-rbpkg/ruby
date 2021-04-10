@@ -8,10 +8,7 @@ describe 'TracePoint.new' do
 
   it 'includes :line event when event is not specified' do
     event_name = nil
-    TracePoint.new { |tp|
-      next unless TracePointSpec.target_thread?
-      event_name = tp.event
-    }.enable do
+    TracePoint.new() { |tp| event_name = tp.event }.enable do
       event_name.should equal(:line)
 
       event_name = nil
@@ -28,10 +25,7 @@ describe 'TracePoint.new' do
     event_name = nil
     (o = mock('line')).should_receive(:to_sym).and_return(:line)
 
-    TracePoint.new(o) { |tp|
-      next unless TracePointSpec.target_thread?
-      event_name = tp.event
-    }.enable do
+    TracePoint.new(o) { |tp| event_name = tp.event }.enable do
       line_event = true
       event_name.should == :line
     end
@@ -40,7 +34,6 @@ describe 'TracePoint.new' do
   it 'includes multiple events when multiple event names are passed as params' do
     event_name = nil
     TracePoint.new(:end, :call) do |tp|
-      next unless TracePointSpec.target_thread?
       event_name = tp.event
     end.enable do
       TracePointSpec.test
@@ -56,14 +49,16 @@ describe 'TracePoint.new' do
 
   it 'raises a TypeError when the given object is not a string/symbol' do
     o = mock('123')
-    -> { TracePoint.new(o) {} }.should raise_error(TypeError)
+    -> { TracePoint.new(o) {}}.should raise_error(TypeError)
 
     o.should_receive(:to_sym).and_return(123)
-    -> { TracePoint.new(o) {} }.should raise_error(TypeError)
+    -> { TracePoint.new(o) {}}.should raise_error(TypeError)
   end
 
-  it 'expects to be called with a block' do
-    -> { TracePoint.new(:line) }.should raise_error(ArgumentError, "must be called with a block")
+  ruby_version_is "2.5" do
+    it 'expects to be called with a block' do
+      -> { TracePoint.new(:line) }.should raise_error(ArgumentError, "must be called with a block")
+    end
   end
 
   it "raises a Argument error when the given argument doesn't match an event name" do

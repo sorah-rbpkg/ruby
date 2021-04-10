@@ -5,7 +5,7 @@ require_relative 'fixtures/classes'
 # TODO: Add missing String#[]= specs:
 #   String#[re, idx] = obj
 
-describe "String#[]= with Integer index" do
+describe "String#[]= with Fixnum index" do
   it "replaces the char at idx with other_str" do
     a = "hello"
     a[0] = "bam"
@@ -18,11 +18,11 @@ describe "String#[]= with Integer index" do
     it "taints self if other_str is tainted" do
       a = "hello"
       a[0] = "".taint
-      a.should.tainted?
+      a.tainted?.should == true
 
       a = "hello"
       a[0] = "x".taint
-      a.should.tainted?
+      a.tainted?.should == true
     end
   end
 
@@ -52,11 +52,11 @@ describe "String#[]= with Integer index" do
     str.should == "hello"
   end
 
-  it "raises a FrozenError when self is frozen" do
+  it "raises a #{frozen_error_class} when self is frozen" do
     a = "hello"
     a.freeze
 
-    -> { a[0] = "bam" }.should raise_error(FrozenError)
+    -> { a[0] = "bam" }.should raise_error(frozen_error_class)
   end
 
   it "calls to_int on index" do
@@ -85,7 +85,7 @@ describe "String#[]= with Integer index" do
     -> { "test"[1] = nil       }.should raise_error(TypeError)
   end
 
-  it "raises a TypeError if passed an Integer replacement" do
+  it "raises a TypeError if passed a Fixnum replacement" do
     -> { "abc"[1] = 65 }.should raise_error(TypeError)
   end
 
@@ -102,7 +102,7 @@ describe "String#[]= with Integer index" do
     str.should == "あa"
   end
 
-  it "raises a TypeError if #to_int does not return an Integer" do
+  it "raises a TypeError if #to_int does not return an Fixnum" do
     index = mock("string element set")
     index.should_receive(:to_int).and_return('1')
 
@@ -243,7 +243,7 @@ describe "String#[]= with a Regexp index" do
       str.should == "axc"
     end
 
-    it "raises a TypeError if #to_int does not return an Integer" do
+    it "raises a TypeError if #to_int does not return a Fixnum" do
       ref = mock("string element set regexp ref")
       ref.should_receive(:to_int).and_return(nil)
 
@@ -438,7 +438,7 @@ describe "String#[]= with a Range index" do
   end
 end
 
-describe "String#[]= with Integer index, count" do
+describe "String#[]= with Fixnum index, count" do
   it "starts at idx and overwrites count characters before inserting the rest of other_str" do
     a = "hello"
     a[0, 2] = "xx"
@@ -491,11 +491,11 @@ describe "String#[]= with Integer index, count" do
     it "taints self if other_str is tainted" do
       a = "hello"
       a[0, 0] = "".taint
-      a.should.tainted?
+      a.tainted?.should == true
 
       a = "hello"
       a[1, 4] = "x".taint
-      a.should.tainted?
+      a.tainted?.should == true
     end
   end
 

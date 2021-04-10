@@ -1372,9 +1372,6 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
                   assert_not_same assert_nothing_raised
                   assert_nothing_thrown assert_raise]
 
-    # These are compatibility methods for Minitest 5
-    ignores += %w[assertions assertions=]
-
     asserts = methods.grep(/^assert/).sort - ignores
     refutes = methods.grep(/^refute/).sort - ignores
 

@@ -9,11 +9,7 @@ describe :file_identical, shared: true do
     touch(@file2) { |f| f.puts "file2" }
 
     rm_r @link
-    begin
-      File.link(@file1, @link)
-    rescue Errno::EACCES
-      File.symlink(@file1, @link)
-    end
+    File.link(@file1, @link)
   end
 
   after :each do

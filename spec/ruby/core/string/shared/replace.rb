@@ -15,28 +15,28 @@ describe :string_replace, shared: true do
       a = ""
       b = "".taint
       a.send(@method, b)
-      a.should.tainted?
+      a.tainted?.should == true
     end
 
     it "does not untaint self if other is untainted" do
       a = "".taint
       b = ""
       a.send(@method, b)
-      a.should.tainted?
+      a.tainted?.should == true
     end
 
     it "untrusts self if other is untrusted" do
       a = ""
       b = "".untrust
       a.send(@method, b)
-      a.should.untrusted?
+      a.untrusted?.should == true
     end
 
     it "does not trust self if other is trusted" do
       a = "".untrust
       b = ""
       a.send(@method, b)
-      a.should.untrusted?
+      a.untrusted?.should == true
     end
   end
 
@@ -64,14 +64,14 @@ describe :string_replace, shared: true do
     -> { "hello".send(@method, mock('x')) }.should raise_error(TypeError)
   end
 
-  it "raises a FrozenError on a frozen instance that is modified" do
+  it "raises a #{frozen_error_class} on a frozen instance that is modified" do
     a = "hello".freeze
-    -> { a.send(@method, "world") }.should raise_error(FrozenError)
+    -> { a.send(@method, "world") }.should raise_error(frozen_error_class)
   end
 
   # see [ruby-core:23666]
-  it "raises a FrozenError on a frozen instance when self-replacing" do
+  it "raises a #{frozen_error_class} on a frozen instance when self-replacing" do
     a = "hello".freeze
-    -> { a.send(@method, a) }.should raise_error(FrozenError)
+    -> { a.send(@method, a) }.should raise_error(frozen_error_class)
   end
 end

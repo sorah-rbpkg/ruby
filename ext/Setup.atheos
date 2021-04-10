@@ -20,6 +20,7 @@ pty
 racc/parse
 readline
 ripper
+sdbm
 socket
 stringio
 strscan

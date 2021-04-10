@@ -400,7 +400,7 @@ module IRB
     irb.run(@CONF)
   end
 
-  # Calls each event hook of <code>IRB.conf[:AT_EXIT]</code> when the current session quits.
+  # Calls each event hook of <code>IRB.conf[:TA_EXIT]</code> when the current session quits.
   def IRB.irb_at_exit
     @CONF[:AT_EXIT].each{|hook| hook.call}
   end
@@ -538,28 +538,11 @@ module IRB
         signal_status(:IN_EVAL) do
           begin
             line.untaint if RUBY_VERSION < '2.7'
-            if IRB.conf[:MEASURE] && IRB.conf[:MEASURE_CALLBACKS].empty?
-              IRB.set_measure_callback
-            end
-            if IRB.conf[:MEASURE] && !IRB.conf[:MEASURE_CALLBACKS].empty?
-              result = nil
-              last_proc = proc{ result = @context.evaluate(line, line_no, exception: exc) }
-              IRB.conf[:MEASURE_CALLBACKS].inject(last_proc) { |chain, item|
-                _name, callback, arg = item
-                proc {
-                  callback.(@context, line, line_no, arg, exception: exc) do
-                    chain.call
-                  end
-                }
-              }.call
-              @context.set_last_value(result)
-            else
-              @context.evaluate(line, line_no, exception: exc)
-            end
+            @context.evaluate(line, line_no, exception: exc)
             if @context.echo?
               if assignment_expression?(line)
                 if @context.echo_on_assignment?
-                  output_value(@context.echo_on_assignment? == :truncate)
+                  output_value(@context.omit_on_assignment?)
                 end
               else
                 output_value
@@ -778,7 +761,7 @@ module IRB
             str = "%s...\e[0m" % lines.first
             multiline_p = false
           else
-            str = str.gsub(/(\A.*?\n).*/m, "\\1...")
+            str.gsub!(/(\A.*?\n).*/m, "\\1...")
           end
         else
           output_width = Reline::Unicode.calculate_width(@context.return_format % str, true)

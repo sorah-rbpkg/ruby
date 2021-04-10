@@ -6,11 +6,11 @@ describe "Zlib::GzipFile#closed?" do
   it "returns the closed status" do
     io = StringIO.new
     Zlib::GzipWriter.wrap io do |gzio|
-      gzio.should_not.closed?
+      gzio.closed?.should == false
 
       gzio.close
 
-      gzio.should.closed?
+      gzio.closed?.should == true
     end
   end
 end

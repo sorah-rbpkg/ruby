@@ -148,14 +148,14 @@ describe "String#sub with pattern, replacement" do
 
       hello_t.taint; a_t.taint; empty_t.taint
 
-      hello_t.sub(/./, a).should.tainted?
-      hello_t.sub(/./, empty).should.tainted?
+      hello_t.sub(/./, a).tainted?.should == true
+      hello_t.sub(/./, empty).tainted?.should == true
 
-      hello.sub(/./, a_t).should.tainted?
-      hello.sub(/./, empty_t).should.tainted?
-      hello.sub(//, empty_t).should.tainted?
+      hello.sub(/./, a_t).tainted?.should == true
+      hello.sub(/./, empty_t).tainted?.should == true
+      hello.sub(//, empty_t).tainted?.should == true
 
-      hello.sub(//.taint, "foo").should_not.tainted?
+      hello.sub(//.taint, "foo").tainted?.should == false
     end
   end
 
@@ -192,22 +192,11 @@ describe "String#sub with pattern, replacement" do
     -> { "hello".sub(/[aeiou]/, 99) }.should raise_error(TypeError)
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instances when called on a subclass" do
-      StringSpecs::MyString.new("").sub(//, "").should be_an_instance_of(StringSpecs::MyString)
-      StringSpecs::MyString.new("").sub(/foo/, "").should be_an_instance_of(StringSpecs::MyString)
-      StringSpecs::MyString.new("foo").sub(/foo/, "").should be_an_instance_of(StringSpecs::MyString)
-      StringSpecs::MyString.new("foo").sub("foo", "").should be_an_instance_of(StringSpecs::MyString)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns String instances when called on a subclass" do
-      StringSpecs::MyString.new("").sub(//, "").should be_an_instance_of(String)
-      StringSpecs::MyString.new("").sub(/foo/, "").should be_an_instance_of(String)
-      StringSpecs::MyString.new("foo").sub(/foo/, "").should be_an_instance_of(String)
-      StringSpecs::MyString.new("foo").sub("foo", "").should be_an_instance_of(String)
-    end
+  it "returns subclass instances when called on a subclass" do
+    StringSpecs::MyString.new("").sub(//, "").should be_an_instance_of(StringSpecs::MyString)
+    StringSpecs::MyString.new("").sub(/foo/, "").should be_an_instance_of(StringSpecs::MyString)
+    StringSpecs::MyString.new("foo").sub(/foo/, "").should be_an_instance_of(StringSpecs::MyString)
+    StringSpecs::MyString.new("foo").sub("foo", "").should be_an_instance_of(StringSpecs::MyString)
   end
 
   it "sets $~ to MatchData of match and nil when there's none" do
@@ -309,14 +298,14 @@ describe "String#sub with pattern and block" do
 
       hello_t.taint; a_t.taint; empty_t.taint
 
-      hello_t.sub(/./) { a }.should.tainted?
-      hello_t.sub(/./) { empty }.should.tainted?
+      hello_t.sub(/./) { a }.tainted?.should == true
+      hello_t.sub(/./) { empty }.tainted?.should == true
 
-      hello.sub(/./) { a_t }.should.tainted?
-      hello.sub(/./) { empty_t }.should.tainted?
-      hello.sub(//) { empty_t }.should.tainted?
+      hello.sub(/./) { a_t }.tainted?.should == true
+      hello.sub(/./) { empty_t }.tainted?.should == true
+      hello.sub(//) { empty_t }.tainted?.should == true
 
-      hello.sub(//.taint) { "foo" }.should_not.tainted?
+      hello.sub(//.taint) { "foo" }.tainted?.should == false
     end
   end
 end
@@ -331,8 +320,8 @@ describe "String#sub! with pattern, replacement" do
   ruby_version_is ''...'2.7' do
     it "taints self if replacement is tainted" do
       a = "hello"
-      a.sub!(/./.taint, "foo").should_not.tainted?
-      a.sub!(/./, "foo".taint).should.tainted?
+      a.sub!(/./.taint, "foo").tainted?.should == false
+      a.sub!(/./, "foo".taint).tainted?.should == true
     end
   end
 
@@ -343,13 +332,13 @@ describe "String#sub! with pattern, replacement" do
     a.should == "hello"
   end
 
-  it "raises a FrozenError when self is frozen" do
+  it "raises a #{frozen_error_class} when self is frozen" do
     s = "hello"
     s.freeze
 
-    -> { s.sub!(/ROAR/, "x")    }.should raise_error(FrozenError)
-    -> { s.sub!(/e/, "e")       }.should raise_error(FrozenError)
-    -> { s.sub!(/[aeiou]/, '*') }.should raise_error(FrozenError)
+    -> { s.sub!(/ROAR/, "x")    }.should raise_error(frozen_error_class)
+    -> { s.sub!(/e/, "e")       }.should raise_error(frozen_error_class)
+    -> { s.sub!(/[aeiou]/, '*') }.should raise_error(frozen_error_class)
   end
 end
 
@@ -381,8 +370,8 @@ describe "String#sub! with pattern and block" do
   ruby_version_is ''...'2.7' do
     it "taints self if block's result is tainted" do
       a = "hello"
-      a.sub!(/./.taint) { "foo" }.should_not.tainted?
-      a.sub!(/./) { "foo".taint }.should.tainted?
+      a.sub!(/./.taint) { "foo" }.tainted?.should == false
+      a.sub!(/./) { "foo".taint }.tainted?.should == true
     end
   end
 
@@ -398,13 +387,13 @@ describe "String#sub! with pattern and block" do
     -> { str.sub!(//) { str << 'x' } }.should raise_error(RuntimeError)
   end
 
-  it "raises a FrozenError when self is frozen" do
+  it "raises a #{frozen_error_class} when self is frozen" do
     s = "hello"
     s.freeze
 
-    -> { s.sub!(/ROAR/) { "x" }    }.should raise_error(FrozenError)
-    -> { s.sub!(/e/) { "e" }       }.should raise_error(FrozenError)
-    -> { s.sub!(/[aeiou]/) { '*' } }.should raise_error(FrozenError)
+    -> { s.sub!(/ROAR/) { "x" }    }.should raise_error(frozen_error_class)
+    -> { s.sub!(/e/) { "e" }       }.should raise_error(frozen_error_class)
+    -> { s.sub!(/[aeiou]/) { '*' } }.should raise_error(frozen_error_class)
   end
 end
 

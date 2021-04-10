@@ -1,15 +1,11 @@
 # frozen_string_literal: true
 require 'rubygems/command'
 require 'rubygems/package'
-require 'rubygems/version_option'
 
 class Gem::Commands::BuildCommand < Gem::Command
-  include Gem::VersionOption
 
   def initialize
     super 'build', 'Build a gem from a gemspec'
-
-    add_platform_option
 
     add_option '--force', 'skip validation of the spec' do |value, options|
       options[:force] = true
@@ -61,18 +57,14 @@ Gems can be saved to a specified filename with the output option:
   end
 
   def execute
-    if build_path = options[:build_path]
-      Dir.chdir(build_path) { build_gem }
-      return
-    end
-
-    build_gem
+    gem_name = get_one_optional_argument || find_gemspec
+    build_gem(gem_name)
   end
 
   private
 
-  def find_gemspec(glob = "*.gemspec")
-    gemspecs = Dir.glob(glob).sort
+  def find_gemspec
+    gemspecs = Dir.glob("*.gemspec").sort
 
     if gemspecs.size > 1
       alert_error "Multiple gemspecs found: #{gemspecs}, please specify one"
@@ -82,19 +74,28 @@ Gems can be saved to a specified filename with the output option:
     gemspecs.first
   end
 
-  def build_gem
-    gemspec = resolve_gem_name
+  def build_gem(gem_name)
+    gemspec = File.exist?(gem_name) ? gem_name : "#{gem_name}.gemspec"
 
-    if gemspec
-      build_package(gemspec)
+    if File.exist?(gemspec)
+      spec = Gem::Specification.load(gemspec)
+
+      if options[:build_path]
+        Dir.chdir(File.dirname(gemspec)) do
+          spec = Gem::Specification.load(File.basename(gemspec))
+          build_package(spec)
+        end
+      else
+        build_package(spec)
+      end
+
     else
-      alert_error error_message
+      alert_error "Gemspec file not found: #{gemspec}"
       terminate_interaction(1)
     end
   end
 
-  def build_package(gemspec)
-    spec = Gem::Specification.load(gemspec)
+  def build_package(spec)
     if spec
       Gem::Package.build(
         spec,
@@ -108,25 +109,4 @@ Gems can be saved to a specified filename with the output option:
     end
   end
 
-  def resolve_gem_name
-    return find_gemspec unless gem_name
-
-    if File.exist?(gem_name)
-      gem_name
-    else
-      find_gemspec("#{gem_name}.gemspec") || find_gemspec(gem_name)
-    end
-  end
-
-  def error_message
-    if gem_name
-      "Couldn't find a gemspec file matching '#{gem_name}' in #{Dir.pwd}"
-    else
-      "Couldn't find a gemspec file in #{Dir.pwd}"
-    end
-  end
-
-  def gem_name
-    get_one_optional_argument
-  end
 end

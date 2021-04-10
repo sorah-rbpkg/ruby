@@ -79,7 +79,7 @@ INSN_ENTRY(getlocal)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, idx);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, level);
@@ -97,7 +97,7 @@ INSN_ENTRY(getlocal)
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -125,7 +125,7 @@ INSN_ENTRY(setlocal)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, idx);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, level);
@@ -143,7 +143,7 @@ INSN_ENTRY(setlocal)
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -168,7 +168,7 @@ INSN_ENTRY(getblockparam)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, idx);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, level);
@@ -196,7 +196,7 @@ INSN_ENTRY(getblockparam)
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -224,7 +224,7 @@ INSN_ENTRY(setblockparam)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, idx);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, level);
@@ -247,7 +247,7 @@ INSN_ENTRY(setblockparam)
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -272,7 +272,7 @@ INSN_ENTRY(getblockparamproxy)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, idx);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, level);
@@ -321,7 +321,7 @@ INSN_ENTRY(getblockparamproxy)
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -349,7 +349,7 @@ INSN_ENTRY(getspecial)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, key);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, type);
@@ -365,7 +365,7 @@ INSN_ENTRY(getspecial)
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -392,7 +392,7 @@ INSN_ENTRY(setspecial)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, key);
 
@@ -407,7 +407,7 @@ INSN_ENTRY(setspecial)
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -432,7 +432,7 @@ INSN_ENTRY(getinstancevariable)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, id);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, ic);
@@ -441,14 +441,14 @@ INSN_ENTRY(getinstancevariable)
 #   define NAME_OF_CURRENT_INSN getinstancevariable
 #   line 215 "insns.def"
 {
-    val = vm_getinstancevariable(GET_ISEQ(), GET_SELF(), id, ic);
+    val = vm_getinstancevariable(GET_SELF(), id, ic);
 }
 #   line 447 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -476,7 +476,7 @@ INSN_ENTRY(setinstancevariable)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, id);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, ic);
@@ -485,14 +485,14 @@ INSN_ENTRY(setinstancevariable)
 #   define NAME_OF_CURRENT_INSN setinstancevariable
 #   line 226 "insns.def"
 {
-    vm_setinstancevariable(GET_ISEQ(), GET_SELF(), id, val, ic);
+    vm_setinstancevariable(GET_SELF(), id, val, ic);
 }
 #   line 491 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -516,7 +516,7 @@ INSN_ENTRY(getclassvariable)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, id);
 
@@ -524,14 +524,14 @@ INSN_ENTRY(getclassvariable)
 #   define NAME_OF_CURRENT_INSN getclassvariable
 #   line 238 "insns.def"
 {
-    val = rb_cvar_get(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP(), 1), id);
+    val = rb_cvar_get(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP()), id);
 }
 #   line 530 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -558,7 +558,7 @@ INSN_ENTRY(setclassvariable)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, id);
 
@@ -567,14 +567,14 @@ INSN_ENTRY(setclassvariable)
 #   line 250 "insns.def"
 {
     vm_ensure_not_refinement_module(GET_SELF());
-    rb_cvar_set(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP(), 1), id, val);
+    rb_cvar_set(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP()), id, val);
 }
 #   line 573 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -600,7 +600,7 @@ INSN_ENTRY(getconstant)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, id);
 
@@ -615,7 +615,7 @@ INSN_ENTRY(getconstant)
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -643,7 +643,7 @@ INSN_ENTRY(setconstant)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, id);
 
@@ -660,7 +660,7 @@ INSN_ENTRY(setconstant)
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -669,7 +669,7 @@ INSN_ENTRY(setconstant)
     END_INSN(setconstant);
 }
 
-/* insn getglobal(gid)()(val) */
+/* insn getglobal(entry)()(val) */
 INSN_ENTRY(getglobal)
 {
     /* ###  Declare that we have just entered into an instruction. ### */
@@ -677,29 +677,30 @@ INSN_ENTRY(getglobal)
     DEBUG_ENTER_INSN("getglobal");
 
     /* ###  Declare and assign variables. ### */
-    ID gid = (ID)GET_OPERAND(1);
-#   define INSN_ATTR(x) attr_ ## x ## _getglobal(gid)
+    GENTRY entry = (GENTRY)GET_OPERAND(1);
+#   define INSN_ATTR(x) attr_ ## x ## _getglobal(entry)
     bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
-    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, gid);
+    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, entry);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN getglobal
 #   line 295 "insns.def"
 {
-    val = rb_gvar_get(gid);
+    struct rb_global_entry *gentry = (void *)entry;
+    val = rb_gvar_get(gentry);
 }
-#   line 698 "vm.inc"
+#   line 699 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -711,7 +712,7 @@ INSN_ENTRY(getglobal)
     END_INSN(getglobal);
 }
 
-/* insn setglobal(gid)(val)() */
+/* insn setglobal(entry)(val)() */
 INSN_ENTRY(setglobal)
 {
     /* ###  Declare that we have just entered into an instruction. ### */
@@ -719,29 +720,30 @@ INSN_ENTRY(setglobal)
     DEBUG_ENTER_INSN("setglobal");
 
     /* ###  Declare and assign variables. ### */
-    ID gid = (ID)GET_OPERAND(1);
-#   define INSN_ATTR(x) attr_ ## x ## _setglobal(gid)
+    GENTRY entry = (GENTRY)GET_OPERAND(1);
+#   define INSN_ATTR(x) attr_ ## x ## _setglobal(entry)
     bool leaf = INSN_ATTR(leaf);
     VALUE val = TOPN(0);
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
-    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, gid);
+    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, entry);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN setglobal
-#   line 306 "insns.def"
+#   line 307 "insns.def"
 {
-    rb_gvar_set(gid, val);
+    struct rb_global_entry *gentry = (void *)entry;
+    rb_gvar_set(gentry, val);
 }
-#   line 740 "vm.inc"
+#   line 742 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -764,21 +766,21 @@ INSN_ENTRY(putnil)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN putnil
-#   line 320 "insns.def"
+#   line 322 "insns.def"
 {
     val = Qnil;
 }
-#   line 777 "vm.inc"
+#   line 779 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -804,21 +806,21 @@ INSN_ENTRY(putself)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN putself
-#   line 330 "insns.def"
+#   line 332 "insns.def"
 {
     val = GET_SELF();
 }
-#   line 817 "vm.inc"
+#   line 819 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -875,25 +877,25 @@ INSN_ENTRY(putspecialobject)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, value_type);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN putspecialobject
-#   line 352 "insns.def"
+#   line 354 "insns.def"
 {
     enum vm_special_object_type type;
 
     type = (enum vm_special_object_type)value_type;
     val = vm_get_special_object(GET_EP(), type);
 }
-#   line 892 "vm.inc"
+#   line 894 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -920,22 +922,22 @@ INSN_ENTRY(putstring)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, str);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN putstring
-#   line 365 "insns.def"
+#   line 367 "insns.def"
 {
-    val = rb_ec_str_resurrect(ec, str);
+    val = rb_str_resurrect(str);
 }
-#   line 934 "vm.inc"
+#   line 936 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -962,22 +964,22 @@ INSN_ENTRY(concatstrings)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, num);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN concatstrings
-#   line 379 "insns.def"
+#   line 381 "insns.def"
 {
     val = rb_str_concat_literals(num, STACK_ADDR_FROM_TOP(num));
 }
-#   line 976 "vm.inc"
+#   line 978 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -1004,21 +1006,21 @@ INSN_ENTRY(tostring)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN tostring
-#   line 389 "insns.def"
+#   line 391 "insns.def"
 {
     val = rb_obj_as_string_result(str, val);
 }
-#   line 1017 "vm.inc"
+#   line 1019 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -1028,6 +1030,48 @@ INSN_ENTRY(tostring)
 
     /* ### Leave the instruction. ### */
     END_INSN(tostring);
+}
+
+/* insn freezestring(debug_info)(str)(str) */
+INSN_ENTRY(freezestring)
+{
+    /* ###  Declare that we have just entered into an instruction. ### */
+    START_OF_ORIGINAL_INSN(freezestring);
+    DEBUG_ENTER_INSN("freezestring");
+
+    /* ###  Declare and assign variables. ### */
+    VALUE debug_info = (VALUE)GET_OPERAND(1);
+#   define INSN_ATTR(x) attr_ ## x ## _freezestring(debug_info)
+    bool leaf = INSN_ATTR(leaf);
+    VALUE str = TOPN(0);
+
+    /* ### Instruction preambles. ### */
+    if (! leaf) ADD_PC(INSN_ATTR(width));
+    SETUP_CANARY();
+    COLLECT_USAGE_INSN(INSN_ATTR(bin));
+    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, debug_info);
+
+    /* ### Here we do the instruction body. ### */
+#   define NAME_OF_CURRENT_INSN freezestring
+#   line 401 "insns.def"
+{
+    vm_freezestring(str, debug_info);
+}
+#   line 1061 "vm.inc"
+#   undef NAME_OF_CURRENT_INSN
+
+    /* ### Instruction trailers. ### */
+    CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
+    CHECK_CANARY();
+    INC_SP(INSN_ATTR(sp_inc));
+    TOPN(0) = str;
+    VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
+    VM_ASSERT(!RB_TYPE_P(TOPN(0), T_MOVED));
+    if (leaf) ADD_PC(INSN_ATTR(width));
+#   undef INSN_ATTR
+
+    /* ### Leave the instruction. ### */
+    END_INSN(freezestring);
 }
 
 /* insn toregexp(opt, cnt)(...)(val) */
@@ -1046,25 +1090,25 @@ INSN_ENTRY(toregexp)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, opt);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, cnt);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN toregexp
-#   line 405 "insns.def"
+#   line 417 "insns.def"
 {
     const VALUE ary = rb_ary_tmp_new_from_values(0, cnt, STACK_ADDR_FROM_TOP(cnt));
     val = rb_reg_new_ary(ary, (int)opt);
     rb_ary_clear(ary);
 }
-#   line 1063 "vm.inc"
+#   line 1107 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -1091,21 +1135,21 @@ INSN_ENTRY(intern)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN intern
-#   line 417 "insns.def"
+#   line 429 "insns.def"
 {
     sym = rb_str_intern(str);
 }
-#   line 1104 "vm.inc"
+#   line 1148 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = sym;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -1132,22 +1176,22 @@ INSN_ENTRY(newarray)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, num);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN newarray
-#   line 428 "insns.def"
+#   line 440 "insns.def"
 {
-    val = rb_ec_ary_new_from_values(ec, num, STACK_ADDR_FROM_TOP(num));
+    val = rb_ary_new4(num, STACK_ADDR_FROM_TOP(num));
 }
-#   line 1146 "vm.inc"
+#   line 1190 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -1174,13 +1218,13 @@ INSN_ENTRY(newarraykwsplat)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, num);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN newarraykwsplat
-#   line 443 "insns.def"
+#   line 455 "insns.def"
 {
     if (RHASH_EMPTY_P(*STACK_ADDR_FROM_TOP(1))) {
         val = rb_ary_new4(num-1, STACK_ADDR_FROM_TOP(num));
@@ -1189,12 +1233,12 @@ INSN_ENTRY(newarraykwsplat)
         val = rb_ary_new4(num, STACK_ADDR_FROM_TOP(num));
     }
 }
-#   line 1193 "vm.inc"
+#   line 1237 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -1221,23 +1265,23 @@ INSN_ENTRY(duparray)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, ary);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN duparray
-#   line 458 "insns.def"
+#   line 470 "insns.def"
 {
     RUBY_DTRACE_CREATE_HOOK(ARRAY, RARRAY_LEN(ary));
     val = rb_ary_resurrect(ary);
 }
-#   line 1236 "vm.inc"
+#   line 1280 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -1264,23 +1308,23 @@ INSN_ENTRY(duphash)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, hash);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN duphash
-#   line 469 "insns.def"
+#   line 481 "insns.def"
 {
     RUBY_DTRACE_CREATE_HOOK(HASH, RHASH_SIZE(hash) << 1);
     val = rb_hash_resurrect(hash);
 }
-#   line 1279 "vm.inc"
+#   line 1323 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -1314,11 +1358,11 @@ INSN_ENTRY(expandarray)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN expandarray
-#   line 490 "insns.def"
+#   line 502 "insns.def"
 {
     vm_expandarray(GET_SP(), ary, num, (int)flag);
 }
-#   line 1322 "vm.inc"
+#   line 1366 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1347,21 +1391,21 @@ INSN_ENTRY(concatarray)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN concatarray
-#   line 501 "insns.def"
+#   line 513 "insns.def"
 {
     ary = vm_concat_array(ary1, ary2);
 }
-#   line 1360 "vm.inc"
+#   line 1404 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = ary;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -1389,22 +1433,22 @@ INSN_ENTRY(splatarray)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, flag);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN splatarray
-#   line 512 "insns.def"
+#   line 524 "insns.def"
 {
     obj = vm_splat_array(flag, ary);
 }
-#   line 1403 "vm.inc"
+#   line 1447 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = obj;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -1431,13 +1475,13 @@ INSN_ENTRY(newhash)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, num);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN newhash
-#   line 524 "insns.def"
+#   line 536 "insns.def"
 {
     RUBY_DTRACE_CREATE_HOOK(HASH, num);
 
@@ -1447,12 +1491,12 @@ INSN_ENTRY(newhash)
         rb_hash_bulk_insert(num, STACK_ADDR_FROM_TOP(num), val);
     }
 }
-#   line 1451 "vm.inc"
+#   line 1495 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -1481,22 +1525,22 @@ INSN_ENTRY(newrange)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, flag);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN newrange
-#   line 542 "insns.def"
+#   line 554 "insns.def"
 {
     val = rb_range_new(low, high, (int)flag);
 }
-#   line 1495 "vm.inc"
+#   line 1539 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -1522,22 +1566,22 @@ INSN_ENTRY(pop)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN pop
-#   line 556 "insns.def"
+#   line 568 "insns.def"
 {
     (void)val;
     /* none */
 }
-#   line 1536 "vm.inc"
+#   line 1580 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -1562,21 +1606,21 @@ INSN_ENTRY(dup)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN dup
-#   line 567 "insns.def"
+#   line 579 "insns.def"
 {
     val1 = val2 = val;
 }
-#   line 1575 "vm.inc"
+#   line 1619 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val2;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -1610,14 +1654,14 @@ INSN_ENTRY(dupn)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN dupn
-#   line 578 "insns.def"
+#   line 590 "insns.def"
 {
     void *dst = GET_SP();
     void *src = STACK_ADDR_FROM_TOP(n);
 
     MEMCPY(dst, src, VALUE, n);
 }
-#   line 1621 "vm.inc"
+#   line 1665 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1682,7 +1726,7 @@ INSN_ENTRY(reverse)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN reverse
-#   line 602 "insns.def"
+#   line 614 "insns.def"
 {
     rb_num_t i;
     VALUE *sp = STACK_ADDR_FROM_TOP(n);
@@ -1694,7 +1738,7 @@ INSN_ENTRY(reverse)
 	TOPN(i) = v0;
     }
 }
-#   line 1698 "vm.inc"
+#   line 1742 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1722,22 +1766,22 @@ INSN_ENTRY(topn)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, n);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN topn
-#   line 632 "insns.def"
+#   line 644 "insns.def"
 {
     val = TOPN(n);
 }
-#   line 1736 "vm.inc"
+#   line 1780 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -1764,22 +1808,22 @@ INSN_ENTRY(setn)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, n);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN setn
-#   line 643 "insns.def"
+#   line 655 "insns.def"
 {
     TOPN(n) = val;
 }
-#   line 1778 "vm.inc"
+#   line 1822 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -1836,7 +1880,7 @@ INSN_ENTRY(defined)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, op_type);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, obj);
@@ -1844,16 +1888,16 @@ INSN_ENTRY(defined)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN defined
-#   line 669 "insns.def"
+#   line 681 "insns.def"
 {
     val = vm_defined(ec, GET_CFP(), op_type, obj, needstr, v);
 }
-#   line 1852 "vm.inc"
+#   line 1896 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -1882,22 +1926,22 @@ INSN_ENTRY(checkmatch)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, flag);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN checkmatch
-#   line 686 "insns.def"
+#   line 698 "insns.def"
 {
     result = vm_check_match(ec, target, pattern, flag);
 }
-#   line 1896 "vm.inc"
+#   line 1940 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = result;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -1925,23 +1969,23 @@ INSN_ENTRY(checkkeyword)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, kw_bits_index);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, keyword_index);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN checkkeyword
-#   line 696 "insns.def"
+#   line 708 "insns.def"
 {
     ret = vm_check_keyword(kw_bits_index, keyword_index, GET_EP());
 }
-#   line 1940 "vm.inc"
+#   line 1984 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = ret;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -1969,22 +2013,22 @@ INSN_ENTRY(checktype)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, type);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN checktype
-#   line 706 "insns.def"
+#   line 718 "insns.def"
 {
     ret = (TYPE(val) == (int)type) ? Qtrue : Qfalse;
 }
-#   line 1983 "vm.inc"
+#   line 2027 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = ret;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -2016,7 +2060,7 @@ INSN_ENTRY(defineclass)
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
     POPN(INSN_ATTR(popn));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, id);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, class_iseq);
@@ -2024,7 +2068,7 @@ INSN_ENTRY(defineclass)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN defineclass
-#   line 722 "insns.def"
+#   line 734 "insns.def"
 {
     VALUE klass = vm_find_or_create_class_by_id(id, flags, cbase, super);
 
@@ -2040,12 +2084,12 @@ INSN_ENTRY(defineclass)
     RESTORE_REGS();
     NEXT_INSN();
 }
-#   line 2044 "vm.inc"
+#   line 2088 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     PUSH(val);
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -2070,23 +2114,23 @@ INSN_ENTRY(definemethod)
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
     POPN(INSN_ATTR(popn));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, id);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, iseq);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN definemethod
-#   line 743 "insns.def"
+#   line 755 "insns.def"
 {
     vm_define_method(ec, Qnil, id, (VALUE)iseq, FALSE);
 }
-#   line 2085 "vm.inc"
+#   line 2129 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
 
@@ -2111,23 +2155,23 @@ INSN_ENTRY(definesmethod)
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
     POPN(INSN_ATTR(popn));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, id);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, iseq);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN definesmethod
-#   line 752 "insns.def"
+#   line 764 "insns.def"
 {
     vm_define_method(ec, obj, id, (VALUE)iseq, TRUE);
 }
-#   line 2126 "vm.inc"
+#   line 2170 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
 
@@ -2152,29 +2196,29 @@ INSN_ENTRY(send)
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
     POPN(INSN_ATTR(popn));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, blockiseq);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN send
-#   line 768 "insns.def"
+#   line 780 "insns.def"
 {
-    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);
-    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
+    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), &cd->ci, blockiseq, false);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);
 
     if (val == Qundef) {
         RESTORE_REGS();
         NEXT_INSN();
     }
 }
-#   line 2173 "vm.inc"
+#   line 2217 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     PUSH(val);
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -2199,28 +2243,28 @@ INSN_ENTRY(opt_send_without_block)
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
     POPN(INSN_ATTR(popn));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_send_without_block
-#   line 787 "insns.def"
+#   line 799 "insns.def"
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
-    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);
 
     if (val == Qundef) {
         RESTORE_REGS();
         NEXT_INSN();
     }
 }
-#   line 2219 "vm.inc"
+#   line 2263 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     PUSH(val);
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -2245,14 +2289,14 @@ INSN_ENTRY(opt_str_freeze)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, str);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_str_freeze
-#   line 802 "insns.def"
+#   line 814 "insns.def"
 {
     val = vm_opt_str_freeze(str, BOP_FREEZE, idFreeze);
 
@@ -2261,12 +2305,12 @@ INSN_ENTRY(opt_str_freeze)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 2265 "vm.inc"
+#   line 2309 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -2294,26 +2338,26 @@ INSN_ENTRY(opt_nil_p)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_nil_p
-#   line 817 "insns.def"
+#   line 829 "insns.def"
 {
-    val = vm_opt_nil_p(GET_ISEQ(), cd, recv);
+    val = vm_opt_nil_p(cd, recv);
 
     if (val == Qundef) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 2312 "vm.inc"
+#   line 2356 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -2341,14 +2385,14 @@ INSN_ENTRY(opt_str_uminus)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, str);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_str_uminus
-#   line 830 "insns.def"
+#   line 842 "insns.def"
 {
     val = vm_opt_str_freeze(str, BOP_UMINUS, idUMinus);
 
@@ -2357,12 +2401,12 @@ INSN_ENTRY(opt_str_uminus)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 2361 "vm.inc"
+#   line 2405 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -2389,22 +2433,22 @@ INSN_ENTRY(opt_newarray_max)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, num);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_newarray_max
-#   line 850 "insns.def"
+#   line 862 "insns.def"
 {
     val = vm_opt_newarray_max(num, STACK_ADDR_FROM_TOP(num));
 }
-#   line 2403 "vm.inc"
+#   line 2447 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -2431,22 +2475,22 @@ INSN_ENTRY(opt_newarray_min)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, num);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_newarray_min
-#   line 862 "insns.def"
+#   line 874 "insns.def"
 {
     val = vm_opt_newarray_min(num, STACK_ADDR_FROM_TOP(num));
 }
-#   line 2445 "vm.inc"
+#   line 2489 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -2475,29 +2519,29 @@ INSN_ENTRY(invokesuper)
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
     POPN(INSN_ATTR(popn));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, blockiseq);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN invokesuper
-#   line 874 "insns.def"
+#   line 886 "insns.def"
 {
-    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);
-    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
+    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), &cd->ci, blockiseq, true);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_super_method);
 
     if (val == Qundef) {
         RESTORE_REGS();
         NEXT_INSN();
     }
 }
-#   line 2496 "vm.inc"
+#   line 2540 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     PUSH(val);
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -2522,28 +2566,32 @@ INSN_ENTRY(invokeblock)
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
     POPN(INSN_ATTR(popn));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN invokeblock
-#   line 893 "insns.def"
+#   line 905 "insns.def"
 {
+    if (UNLIKELY(cd->cc.call != vm_invokeblock_i)) {
+        cd->cc.call = vm_invokeblock_i; // check before setting to avoid CoW
+    }
+
     VALUE bh = VM_BLOCK_HANDLER_NONE;
-    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_invokeblock);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_invokeblock);
 
     if (val == Qundef) {
         RESTORE_REGS();
         NEXT_INSN();
     }
 }
-#   line 2542 "vm.inc"
+#   line 2590 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     PUSH(val);
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -2567,12 +2615,12 @@ INSN_ENTRY(leave)
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
     POPN(INSN_ATTR(popn));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN leave
-#   line 914 "insns.def"
+#   line 930 "insns.def"
 {
     if (OPT_CHECKED_RUN) {
         const VALUE *const bp = vm_base_ptr(GET_CFP());
@@ -2593,12 +2641,12 @@ INSN_ENTRY(leave)
 	RESTORE_REGS();
     }
 }
-#   line 2597 "vm.inc"
+#   line 2645 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     PUSH(val);
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -2623,24 +2671,24 @@ INSN_ENTRY(throw)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, throw_state);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN throw
-#   line 947 "insns.def"
+#   line 963 "insns.def"
 {
     val = vm_throw(ec, GET_CFP(), throw_state, throwobj);
     THROW_EXCEPTION(val);
     /* unreachable */
 }
-#   line 2639 "vm.inc"
+#   line 2687 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -2666,23 +2714,23 @@ INSN_ENTRY(jump)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, dst);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN jump
-#   line 965 "insns.def"
+#   line 981 "insns.def"
 {
     RUBY_VM_CHECK_INTS(ec);
     JUMP(dst);
 }
-#   line 2681 "vm.inc"
+#   line 2729 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -2706,25 +2754,25 @@ INSN_ENTRY(branchif)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, dst);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN branchif
-#   line 978 "insns.def"
+#   line 994 "insns.def"
 {
     if (RTEST(val)) {
 	RUBY_VM_CHECK_INTS(ec);
 	JUMP(dst);
     }
 }
-#   line 2723 "vm.inc"
+#   line 2771 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -2748,25 +2796,25 @@ INSN_ENTRY(branchunless)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, dst);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN branchunless
-#   line 993 "insns.def"
+#   line 1009 "insns.def"
 {
     if (!RTEST(val)) {
 	RUBY_VM_CHECK_INTS(ec);
 	JUMP(dst);
     }
 }
-#   line 2765 "vm.inc"
+#   line 2813 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -2790,25 +2838,25 @@ INSN_ENTRY(branchnil)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, dst);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN branchnil
-#   line 1008 "insns.def"
+#   line 1024 "insns.def"
 {
     if (NIL_P(val)) {
 	RUBY_VM_CHECK_INTS(ec);
 	JUMP(dst);
     }
 }
-#   line 2807 "vm.inc"
+#   line 2855 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -2833,16 +2881,16 @@ INSN_ENTRY(opt_getinlinecache)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, dst);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, ic);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_getinlinecache
-#   line 1025 "insns.def"
+#   line 1041 "insns.def"
 {
-    if (vm_ic_hit_p(ic->ic_serial, ic->ic_cref, GET_EP())) {
+    if (vm_ic_hit_p(ic, GET_EP())) {
 	val = ic->value;
 	JUMP(dst);
     }
@@ -2850,12 +2898,12 @@ INSN_ENTRY(opt_getinlinecache)
 	val = Qnil;
     }
 }
-#   line 2854 "vm.inc"
+#   line 2902 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -2882,22 +2930,22 @@ INSN_ENTRY(opt_setinlinecache)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, ic);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_setinlinecache
-#   line 1041 "insns.def"
+#   line 1057 "insns.def"
 {
     vm_ic_update(ic, val, GET_EP());
 }
-#   line 2896 "vm.inc"
+#   line 2944 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -2926,23 +2974,23 @@ INSN_ENTRY(once)
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
     POPN(INSN_ATTR(popn));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, iseq);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, ise);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN once
-#   line 1051 "insns.def"
+#   line 1067 "insns.def"
 {
     val = vm_once_dispatch(ec, iseq, ise);
 }
-#   line 2941 "vm.inc"
+#   line 2989 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     PUSH(val);
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -2967,14 +3015,14 @@ INSN_ENTRY(opt_case_dispatch)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, hash);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, else_offset);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_case_dispatch
-#   line 1062 "insns.def"
+#   line 1078 "insns.def"
 {
     OFFSET dst = vm_case_dispatch(hash, else_offset, key);
 
@@ -2982,12 +3030,12 @@ INSN_ENTRY(opt_case_dispatch)
 	JUMP(dst);
     }
 }
-#   line 2986 "vm.inc"
+#   line 3034 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -3013,13 +3061,13 @@ INSN_ENTRY(opt_plus)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_plus
-#   line 1078 "insns.def"
+#   line 1094 "insns.def"
 {
     val = vm_opt_plus(recv, obj);
 
@@ -3027,12 +3075,12 @@ INSN_ENTRY(opt_plus)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3031 "vm.inc"
+#   line 3079 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -3061,13 +3109,13 @@ INSN_ENTRY(opt_minus)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_minus
-#   line 1092 "insns.def"
+#   line 1108 "insns.def"
 {
     val = vm_opt_minus(recv, obj);
 
@@ -3075,12 +3123,12 @@ INSN_ENTRY(opt_minus)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3079 "vm.inc"
+#   line 3127 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -3109,13 +3157,13 @@ INSN_ENTRY(opt_mult)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_mult
-#   line 1106 "insns.def"
+#   line 1122 "insns.def"
 {
     val = vm_opt_mult(recv, obj);
 
@@ -3123,12 +3171,12 @@ INSN_ENTRY(opt_mult)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3127 "vm.inc"
+#   line 3175 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -3157,13 +3205,13 @@ INSN_ENTRY(opt_div)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_div
-#   line 1123 "insns.def"
+#   line 1139 "insns.def"
 {
     val = vm_opt_div(recv, obj);
 
@@ -3171,12 +3219,12 @@ INSN_ENTRY(opt_div)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3175 "vm.inc"
+#   line 3223 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -3205,13 +3253,13 @@ INSN_ENTRY(opt_mod)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_mod
-#   line 1139 "insns.def"
+#   line 1155 "insns.def"
 {
     val = vm_opt_mod(recv, obj);
 
@@ -3219,12 +3267,12 @@ INSN_ENTRY(opt_mod)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3223 "vm.inc"
+#   line 3271 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -3253,26 +3301,26 @@ INSN_ENTRY(opt_eq)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_eq
-#   line 1153 "insns.def"
+#   line 1169 "insns.def"
 {
-    val = opt_equality(GET_ISEQ(), recv, obj, cd);
+    val = opt_eq_func(recv, obj, cd);
 
     if (val == Qundef) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3271 "vm.inc"
+#   line 3319 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -3302,27 +3350,27 @@ INSN_ENTRY(opt_neq)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd_eq);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_neq
-#   line 1167 "insns.def"
+#   line 1183 "insns.def"
 {
-    val = vm_opt_neq(GET_ISEQ(), cd, cd_eq, recv, obj);
+    val = vm_opt_neq(cd, cd_eq, recv, obj);
 
     if (val == Qundef) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3321 "vm.inc"
+#   line 3369 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -3351,13 +3399,13 @@ INSN_ENTRY(opt_lt)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_lt
-#   line 1181 "insns.def"
+#   line 1197 "insns.def"
 {
     val = vm_opt_lt(recv, obj);
 
@@ -3365,12 +3413,12 @@ INSN_ENTRY(opt_lt)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3369 "vm.inc"
+#   line 3417 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -3399,13 +3447,13 @@ INSN_ENTRY(opt_le)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_le
-#   line 1195 "insns.def"
+#   line 1211 "insns.def"
 {
     val = vm_opt_le(recv, obj);
 
@@ -3413,12 +3461,12 @@ INSN_ENTRY(opt_le)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3417 "vm.inc"
+#   line 3465 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -3447,13 +3495,13 @@ INSN_ENTRY(opt_gt)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_gt
-#   line 1209 "insns.def"
+#   line 1225 "insns.def"
 {
     val = vm_opt_gt(recv, obj);
 
@@ -3461,12 +3509,12 @@ INSN_ENTRY(opt_gt)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3465 "vm.inc"
+#   line 3513 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -3495,13 +3543,13 @@ INSN_ENTRY(opt_ge)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_ge
-#   line 1223 "insns.def"
+#   line 1239 "insns.def"
 {
     val = vm_opt_ge(recv, obj);
 
@@ -3509,12 +3557,12 @@ INSN_ENTRY(opt_ge)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3513 "vm.inc"
+#   line 3561 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -3543,13 +3591,13 @@ INSN_ENTRY(opt_ltlt)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_ltlt
-#   line 1241 "insns.def"
+#   line 1257 "insns.def"
 {
     val = vm_opt_ltlt(recv, obj);
 
@@ -3557,12 +3605,12 @@ INSN_ENTRY(opt_ltlt)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3561 "vm.inc"
+#   line 3609 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -3591,13 +3639,13 @@ INSN_ENTRY(opt_and)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_and
-#   line 1255 "insns.def"
+#   line 1271 "insns.def"
 {
     val = vm_opt_and(recv, obj);
 
@@ -3605,12 +3653,12 @@ INSN_ENTRY(opt_and)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3609 "vm.inc"
+#   line 3657 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -3639,13 +3687,13 @@ INSN_ENTRY(opt_or)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_or
-#   line 1269 "insns.def"
+#   line 1285 "insns.def"
 {
     val = vm_opt_or(recv, obj);
 
@@ -3653,12 +3701,12 @@ INSN_ENTRY(opt_or)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3657 "vm.inc"
+#   line 3705 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -3687,13 +3735,13 @@ INSN_ENTRY(opt_aref)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_aref
-#   line 1288 "insns.def"
+#   line 1304 "insns.def"
 {
     val = vm_opt_aref(recv, obj);
 
@@ -3701,12 +3749,12 @@ INSN_ENTRY(opt_aref)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3705 "vm.inc"
+#   line 3753 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -3736,13 +3784,13 @@ INSN_ENTRY(opt_aset)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_aset
-#   line 1305 "insns.def"
+#   line 1321 "insns.def"
 {
     val = vm_opt_aset(recv, obj, set);
 
@@ -3750,12 +3798,12 @@ INSN_ENTRY(opt_aset)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3754 "vm.inc"
+#   line 3802 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -3784,14 +3832,14 @@ INSN_ENTRY(opt_aset_with)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, key);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_aset_with
-#   line 1321 "insns.def"
+#   line 1337 "insns.def"
 {
     VALUE tmp = vm_opt_aset_with(recv, key, val);
 
@@ -3806,12 +3854,12 @@ INSN_ENTRY(opt_aset_with)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3810 "vm.inc"
+#   line 3858 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -3840,14 +3888,14 @@ INSN_ENTRY(opt_aref_with)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, key);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_aref_with
-#   line 1344 "insns.def"
+#   line 1360 "insns.def"
 {
     val = vm_opt_aref_with(recv, key);
 
@@ -3858,12 +3906,12 @@ INSN_ENTRY(opt_aref_with)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3862 "vm.inc"
+#   line 3910 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -3891,13 +3939,13 @@ INSN_ENTRY(opt_length)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_length
-#   line 1361 "insns.def"
+#   line 1377 "insns.def"
 {
     val = vm_opt_length(recv, BOP_LENGTH);
 
@@ -3905,12 +3953,12 @@ INSN_ENTRY(opt_length)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3909 "vm.inc"
+#   line 3957 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -3938,13 +3986,13 @@ INSN_ENTRY(opt_size)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_size
-#   line 1375 "insns.def"
+#   line 1391 "insns.def"
 {
     val = vm_opt_length(recv, BOP_SIZE);
 
@@ -3952,12 +4000,12 @@ INSN_ENTRY(opt_size)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3956 "vm.inc"
+#   line 4004 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -3985,13 +4033,13 @@ INSN_ENTRY(opt_empty_p)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_empty_p
-#   line 1389 "insns.def"
+#   line 1405 "insns.def"
 {
     val = vm_opt_empty_p(recv);
 
@@ -3999,12 +4047,12 @@ INSN_ENTRY(opt_empty_p)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 4003 "vm.inc"
+#   line 4051 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -4032,13 +4080,13 @@ INSN_ENTRY(opt_succ)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_succ
-#   line 1403 "insns.def"
+#   line 1419 "insns.def"
 {
     val = vm_opt_succ(recv);
 
@@ -4046,12 +4094,12 @@ INSN_ENTRY(opt_succ)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 4050 "vm.inc"
+#   line 4098 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -4079,26 +4127,26 @@ INSN_ENTRY(opt_not)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_not
-#   line 1417 "insns.def"
+#   line 1433 "insns.def"
 {
-    val = vm_opt_not(GET_ISEQ(), cd, recv);
+    val = vm_opt_not(cd, recv);
 
     if (val == Qundef) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 4097 "vm.inc"
+#   line 4145 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -4127,13 +4175,13 @@ INSN_ENTRY(opt_regexpmatch2)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_regexpmatch2
-#   line 1432 "insns.def"
+#   line 1448 "insns.def"
 {
     val = vm_opt_regexpmatch2(obj2, obj1);
 
@@ -4141,12 +4189,12 @@ INSN_ENTRY(opt_regexpmatch2)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 4145 "vm.inc"
+#   line 4193 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -4158,7 +4206,54 @@ INSN_ENTRY(opt_regexpmatch2)
     END_INSN(opt_regexpmatch2);
 }
 
-/* insn invokebuiltin(bf)(...)(val) */
+/* insn opt_call_c_function(funcptr)()() */
+INSN_ENTRY(opt_call_c_function)
+{
+    /* ###  Declare that we have just entered into an instruction. ### */
+    START_OF_ORIGINAL_INSN(opt_call_c_function);
+    DEBUG_ENTER_INSN("opt_call_c_function");
+
+    /* ###  Declare and assign variables. ### */
+    rb_insn_func_t funcptr = (rb_insn_func_t)GET_OPERAND(1);
+#   define INSN_ATTR(x) attr_ ## x ## _opt_call_c_function(funcptr)
+    bool leaf = INSN_ATTR(leaf);
+
+    /* ### Instruction preambles. ### */
+    if (! leaf) ADD_PC(INSN_ATTR(width));
+    POPN(INSN_ATTR(popn));
+    SETUP_CANARY();
+    COLLECT_USAGE_INSN(INSN_ATTR(bin));
+    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, funcptr);
+
+    /* ### Here we do the instruction body. ### */
+#   define NAME_OF_CURRENT_INSN opt_call_c_function
+#   line 1464 "insns.def"
+{
+    reg_cfp = (funcptr)(ec, reg_cfp);
+
+    if (reg_cfp == 0) {
+	VALUE err = ec->errinfo;
+	ec->errinfo = Qnil;
+	THROW_EXCEPTION(err);
+    }
+
+    RESTORE_REGS();
+    NEXT_INSN();
+}
+#   line 4244 "vm.inc"
+#   undef NAME_OF_CURRENT_INSN
+
+    /* ### Instruction trailers. ### */
+    CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
+    CHECK_CANARY();
+    if (leaf) ADD_PC(INSN_ATTR(width));
+#   undef INSN_ATTR
+
+    /* ### Leave the instruction. ### */
+    END_INSN(opt_call_c_function);
+}
+
+/* insn invokebuiltin(bf)(...)(ret) */
 INSN_ENTRY(invokebuiltin)
 {
     /* ###  Declare that we have just entered into an instruction. ### */
@@ -4169,28 +4264,28 @@ INSN_ENTRY(invokebuiltin)
     RB_BUILTIN bf = (RB_BUILTIN)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _invokebuiltin(bf)
     bool leaf = INSN_ATTR(leaf);
-    VALUE val;
+    VALUE ret;
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, bf);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN invokebuiltin
-#   line 1469 "insns.def"
+#   line 1485 "insns.def"
 {
-    val = vm_invoke_builtin(ec, reg_cfp, bf, STACK_ADDR_FROM_TOP(bf->argc));
+    ret = vm_invoke_builtin(ec, reg_cfp, bf, STACK_ADDR_FROM_TOP(bf->argc));
 }
-#   line 4187 "vm.inc"
+#   line 4282 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
-    TOPN(0) = val;
+    TOPN(0) = ret;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_MOVED));
     if (leaf) ADD_PC(INSN_ATTR(width));
@@ -4200,7 +4295,7 @@ INSN_ENTRY(invokebuiltin)
     END_INSN(invokebuiltin);
 }
 
-/* insn opt_invokebuiltin_delegate(bf, index)()(val) */
+/* insn opt_invokebuiltin_delegate(bf, index)()(ret) */
 INSN_ENTRY(opt_invokebuiltin_delegate)
 {
     /* ###  Declare that we have just entered into an instruction. ### */
@@ -4212,29 +4307,29 @@ INSN_ENTRY(opt_invokebuiltin_delegate)
     rb_num_t index = (rb_num_t)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_invokebuiltin_delegate(bf, index)
     bool leaf = INSN_ATTR(leaf);
-    VALUE val;
+    VALUE ret;
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, bf);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, index);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_invokebuiltin_delegate
-#   line 1480 "insns.def"
+#   line 1496 "insns.def"
 {
-    val = vm_invoke_builtin_delegate(ec, reg_cfp, bf, (unsigned int)index);
+    ret = vm_invoke_builtin_delegate(ec, reg_cfp, bf, (unsigned int)index);
 }
-#   line 4231 "vm.inc"
+#   line 4326 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
-    TOPN(0) = val;
+    TOPN(0) = ret;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_MOVED));
     if (leaf) ADD_PC(INSN_ATTR(width));
@@ -4260,14 +4355,14 @@ INSN_ENTRY(opt_invokebuiltin_delegate_leave)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, bf);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, index);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_invokebuiltin_delegate_leave
-#   line 1491 "insns.def"
+#   line 1507 "insns.def"
 {
     val = vm_invoke_builtin_delegate(ec, reg_cfp, bf, (unsigned int)index);
 
@@ -4285,12 +4380,12 @@ INSN_ENTRY(opt_invokebuiltin_delegate_leave)
         RESTORE_REGS();
     }
 }
-#   line 4289 "vm.inc"
+#   line 4384 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -4312,7 +4407,7 @@ INSN_ENTRY(getlocal_WC_0)
     /* ###  Declare and assign variables. ### */
 #line 10 "defs/opt_operand.def"
     const rb_num_t level = 0;
-#line 4316 "vm.inc"
+#line 4411 "vm.inc"
     lindex_t idx = (lindex_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _getlocal_WC_0(idx)
     bool leaf = INSN_ATTR(leaf);
@@ -4320,7 +4415,7 @@ INSN_ENTRY(getlocal_WC_0)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, idx);
 
@@ -4332,12 +4427,12 @@ INSN_ENTRY(getlocal_WC_0)
     RB_DEBUG_COUNTER_INC(lvar_get);
     (void)RB_DEBUG_COUNTER_INC_IF(lvar_get_dynamic, level > 0);
 }
-#   line 4336 "vm.inc"
+#   line 4431 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -4359,7 +4454,7 @@ INSN_ENTRY(getlocal_WC_1)
     /* ###  Declare and assign variables. ### */
 #line 11 "defs/opt_operand.def"
     const rb_num_t level = 1;
-#line 4363 "vm.inc"
+#line 4458 "vm.inc"
     lindex_t idx = (lindex_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _getlocal_WC_1(idx)
     bool leaf = INSN_ATTR(leaf);
@@ -4367,7 +4462,7 @@ INSN_ENTRY(getlocal_WC_1)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, idx);
 
@@ -4379,12 +4474,12 @@ INSN_ENTRY(getlocal_WC_1)
     RB_DEBUG_COUNTER_INC(lvar_get);
     (void)RB_DEBUG_COUNTER_INC_IF(lvar_get_dynamic, level > 0);
 }
-#   line 4383 "vm.inc"
+#   line 4478 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     TOPN(0) = val;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
@@ -4406,7 +4501,7 @@ INSN_ENTRY(setlocal_WC_0)
     /* ###  Declare and assign variables. ### */
 #line 12 "defs/opt_operand.def"
     const rb_num_t level = 0;
-#line 4410 "vm.inc"
+#line 4505 "vm.inc"
     lindex_t idx = (lindex_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _setlocal_WC_0(idx)
     bool leaf = INSN_ATTR(leaf);
@@ -4414,7 +4509,7 @@ INSN_ENTRY(setlocal_WC_0)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, idx);
 
@@ -4426,12 +4521,12 @@ INSN_ENTRY(setlocal_WC_0)
     RB_DEBUG_COUNTER_INC(lvar_set);
     (void)RB_DEBUG_COUNTER_INC_IF(lvar_set_dynamic, level > 0);
 }
-#   line 4430 "vm.inc"
+#   line 4525 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -4450,7 +4545,7 @@ INSN_ENTRY(setlocal_WC_1)
     /* ###  Declare and assign variables. ### */
 #line 13 "defs/opt_operand.def"
     const rb_num_t level = 1;
-#line 4454 "vm.inc"
+#line 4549 "vm.inc"
     lindex_t idx = (lindex_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _setlocal_WC_1(idx)
     bool leaf = INSN_ATTR(leaf);
@@ -4458,7 +4553,7 @@ INSN_ENTRY(setlocal_WC_1)
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
-    SETUP_CANARY(leaf);
+    SETUP_CANARY();
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, idx);
 
@@ -4470,12 +4565,12 @@ INSN_ENTRY(setlocal_WC_1)
     RB_DEBUG_COUNTER_INC(lvar_set);
     (void)RB_DEBUG_COUNTER_INC_IF(lvar_set_dynamic, level > 0);
 }
-#   line 4474 "vm.inc"
+#   line 4569 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    CHECK_CANARY();
     INC_SP(INSN_ATTR(sp_inc));
     if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
@@ -4494,7 +4589,7 @@ INSN_ENTRY(putobject_INT2FIX_0_)
     /* ###  Declare and assign variables. ### */
 #line 15 "defs/opt_operand.def"
     const VALUE val = INT2FIX(0);
-#line 4498 "vm.inc"
+#line 4593 "vm.inc"
 #   define INSN_ATTR(x) attr_ ## x ## _putobject_INT2FIX_0_()
     bool leaf = INSN_ATTR(leaf);
 
@@ -4525,7 +4620,7 @@ INSN_ENTRY(putobject_INT2FIX_1_)
     /* ###  Declare and assign variables. ### */
 #line 16 "defs/opt_operand.def"
     const VALUE val = INT2FIX(1);
-#line 4529 "vm.inc"
+#line 4624 "vm.inc"
 #   define INSN_ATTR(x) attr_ ## x ## _putobject_INT2FIX_1_()
     bool leaf = INSN_ATTR(leaf);
 
@@ -4549,7 +4644,7 @@ INSN_ENTRY(putobject_INT2FIX_1_)
 /* insn trace_nop(...)(...)(...) */
 INSN_ENTRY(trace_nop)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(nop);
     END_INSN(trace_nop);
 }
@@ -4557,7 +4652,7 @@ INSN_ENTRY(trace_nop)
 /* insn trace_getlocal(...)(...)(...) */
 INSN_ENTRY(trace_getlocal)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(getlocal);
     END_INSN(trace_getlocal);
 }
@@ -4565,7 +4660,7 @@ INSN_ENTRY(trace_getlocal)
 /* insn trace_setlocal(...)(...)(...) */
 INSN_ENTRY(trace_setlocal)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(setlocal);
     END_INSN(trace_setlocal);
 }
@@ -4573,7 +4668,7 @@ INSN_ENTRY(trace_setlocal)
 /* insn trace_getblockparam(...)(...)(...) */
 INSN_ENTRY(trace_getblockparam)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(getblockparam);
     END_INSN(trace_getblockparam);
 }
@@ -4581,7 +4676,7 @@ INSN_ENTRY(trace_getblockparam)
 /* insn trace_setblockparam(...)(...)(...) */
 INSN_ENTRY(trace_setblockparam)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(setblockparam);
     END_INSN(trace_setblockparam);
 }
@@ -4589,7 +4684,7 @@ INSN_ENTRY(trace_setblockparam)
 /* insn trace_getblockparamproxy(...)(...)(...) */
 INSN_ENTRY(trace_getblockparamproxy)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(getblockparamproxy);
     END_INSN(trace_getblockparamproxy);
 }
@@ -4597,7 +4692,7 @@ INSN_ENTRY(trace_getblockparamproxy)
 /* insn trace_getspecial(...)(...)(...) */
 INSN_ENTRY(trace_getspecial)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(getspecial);
     END_INSN(trace_getspecial);
 }
@@ -4605,7 +4700,7 @@ INSN_ENTRY(trace_getspecial)
 /* insn trace_setspecial(...)(...)(...) */
 INSN_ENTRY(trace_setspecial)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(setspecial);
     END_INSN(trace_setspecial);
 }
@@ -4613,7 +4708,7 @@ INSN_ENTRY(trace_setspecial)
 /* insn trace_getinstancevariable(...)(...)(...) */
 INSN_ENTRY(trace_getinstancevariable)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(getinstancevariable);
     END_INSN(trace_getinstancevariable);
 }
@@ -4621,7 +4716,7 @@ INSN_ENTRY(trace_getinstancevariable)
 /* insn trace_setinstancevariable(...)(...)(...) */
 INSN_ENTRY(trace_setinstancevariable)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(setinstancevariable);
     END_INSN(trace_setinstancevariable);
 }
@@ -4629,7 +4724,7 @@ INSN_ENTRY(trace_setinstancevariable)
 /* insn trace_getclassvariable(...)(...)(...) */
 INSN_ENTRY(trace_getclassvariable)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(getclassvariable);
     END_INSN(trace_getclassvariable);
 }
@@ -4637,7 +4732,7 @@ INSN_ENTRY(trace_getclassvariable)
 /* insn trace_setclassvariable(...)(...)(...) */
 INSN_ENTRY(trace_setclassvariable)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(setclassvariable);
     END_INSN(trace_setclassvariable);
 }
@@ -4645,7 +4740,7 @@ INSN_ENTRY(trace_setclassvariable)
 /* insn trace_getconstant(...)(...)(...) */
 INSN_ENTRY(trace_getconstant)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(getconstant);
     END_INSN(trace_getconstant);
 }
@@ -4653,7 +4748,7 @@ INSN_ENTRY(trace_getconstant)
 /* insn trace_setconstant(...)(...)(...) */
 INSN_ENTRY(trace_setconstant)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(setconstant);
     END_INSN(trace_setconstant);
 }
@@ -4661,7 +4756,7 @@ INSN_ENTRY(trace_setconstant)
 /* insn trace_getglobal(...)(...)(...) */
 INSN_ENTRY(trace_getglobal)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(getglobal);
     END_INSN(trace_getglobal);
 }
@@ -4669,7 +4764,7 @@ INSN_ENTRY(trace_getglobal)
 /* insn trace_setglobal(...)(...)(...) */
 INSN_ENTRY(trace_setglobal)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(setglobal);
     END_INSN(trace_setglobal);
 }
@@ -4677,7 +4772,7 @@ INSN_ENTRY(trace_setglobal)
 /* insn trace_putnil(...)(...)(...) */
 INSN_ENTRY(trace_putnil)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(putnil);
     END_INSN(trace_putnil);
 }
@@ -4685,7 +4780,7 @@ INSN_ENTRY(trace_putnil)
 /* insn trace_putself(...)(...)(...) */
 INSN_ENTRY(trace_putself)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(putself);
     END_INSN(trace_putself);
 }
@@ -4693,7 +4788,7 @@ INSN_ENTRY(trace_putself)
 /* insn trace_putobject(...)(...)(...) */
 INSN_ENTRY(trace_putobject)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(putobject);
     END_INSN(trace_putobject);
 }
@@ -4701,7 +4796,7 @@ INSN_ENTRY(trace_putobject)
 /* insn trace_putspecialobject(...)(...)(...) */
 INSN_ENTRY(trace_putspecialobject)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(putspecialobject);
     END_INSN(trace_putspecialobject);
 }
@@ -4709,7 +4804,7 @@ INSN_ENTRY(trace_putspecialobject)
 /* insn trace_putstring(...)(...)(...) */
 INSN_ENTRY(trace_putstring)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(putstring);
     END_INSN(trace_putstring);
 }
@@ -4717,7 +4812,7 @@ INSN_ENTRY(trace_putstring)
 /* insn trace_concatstrings(...)(...)(...) */
 INSN_ENTRY(trace_concatstrings)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(concatstrings);
     END_INSN(trace_concatstrings);
 }
@@ -4725,15 +4820,23 @@ INSN_ENTRY(trace_concatstrings)
 /* insn trace_tostring(...)(...)(...) */
 INSN_ENTRY(trace_tostring)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(tostring);
     END_INSN(trace_tostring);
+}
+
+/* insn trace_freezestring(...)(...)(...) */
+INSN_ENTRY(trace_freezestring)
+{
+    vm_trace(ec, GET_CFP(), GET_PC());
+    DISPATCH_ORIGINAL_INSN(freezestring);
+    END_INSN(trace_freezestring);
 }
 
 /* insn trace_toregexp(...)(...)(...) */
 INSN_ENTRY(trace_toregexp)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(toregexp);
     END_INSN(trace_toregexp);
 }
@@ -4741,7 +4844,7 @@ INSN_ENTRY(trace_toregexp)
 /* insn trace_intern(...)(...)(...) */
 INSN_ENTRY(trace_intern)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(intern);
     END_INSN(trace_intern);
 }
@@ -4749,7 +4852,7 @@ INSN_ENTRY(trace_intern)
 /* insn trace_newarray(...)(...)(...) */
 INSN_ENTRY(trace_newarray)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(newarray);
     END_INSN(trace_newarray);
 }
@@ -4757,7 +4860,7 @@ INSN_ENTRY(trace_newarray)
 /* insn trace_newarraykwsplat(...)(...)(...) */
 INSN_ENTRY(trace_newarraykwsplat)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(newarraykwsplat);
     END_INSN(trace_newarraykwsplat);
 }
@@ -4765,7 +4868,7 @@ INSN_ENTRY(trace_newarraykwsplat)
 /* insn trace_duparray(...)(...)(...) */
 INSN_ENTRY(trace_duparray)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(duparray);
     END_INSN(trace_duparray);
 }
@@ -4773,7 +4876,7 @@ INSN_ENTRY(trace_duparray)
 /* insn trace_duphash(...)(...)(...) */
 INSN_ENTRY(trace_duphash)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(duphash);
     END_INSN(trace_duphash);
 }
@@ -4781,7 +4884,7 @@ INSN_ENTRY(trace_duphash)
 /* insn trace_expandarray(...)(...)(...) */
 INSN_ENTRY(trace_expandarray)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(expandarray);
     END_INSN(trace_expandarray);
 }
@@ -4789,7 +4892,7 @@ INSN_ENTRY(trace_expandarray)
 /* insn trace_concatarray(...)(...)(...) */
 INSN_ENTRY(trace_concatarray)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(concatarray);
     END_INSN(trace_concatarray);
 }
@@ -4797,7 +4900,7 @@ INSN_ENTRY(trace_concatarray)
 /* insn trace_splatarray(...)(...)(...) */
 INSN_ENTRY(trace_splatarray)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(splatarray);
     END_INSN(trace_splatarray);
 }
@@ -4805,7 +4908,7 @@ INSN_ENTRY(trace_splatarray)
 /* insn trace_newhash(...)(...)(...) */
 INSN_ENTRY(trace_newhash)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(newhash);
     END_INSN(trace_newhash);
 }
@@ -4813,7 +4916,7 @@ INSN_ENTRY(trace_newhash)
 /* insn trace_newrange(...)(...)(...) */
 INSN_ENTRY(trace_newrange)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(newrange);
     END_INSN(trace_newrange);
 }
@@ -4821,7 +4924,7 @@ INSN_ENTRY(trace_newrange)
 /* insn trace_pop(...)(...)(...) */
 INSN_ENTRY(trace_pop)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(pop);
     END_INSN(trace_pop);
 }
@@ -4829,7 +4932,7 @@ INSN_ENTRY(trace_pop)
 /* insn trace_dup(...)(...)(...) */
 INSN_ENTRY(trace_dup)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(dup);
     END_INSN(trace_dup);
 }
@@ -4837,7 +4940,7 @@ INSN_ENTRY(trace_dup)
 /* insn trace_dupn(...)(...)(...) */
 INSN_ENTRY(trace_dupn)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(dupn);
     END_INSN(trace_dupn);
 }
@@ -4845,7 +4948,7 @@ INSN_ENTRY(trace_dupn)
 /* insn trace_swap(...)(...)(...) */
 INSN_ENTRY(trace_swap)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(swap);
     END_INSN(trace_swap);
 }
@@ -4853,7 +4956,7 @@ INSN_ENTRY(trace_swap)
 /* insn trace_reverse(...)(...)(...) */
 INSN_ENTRY(trace_reverse)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(reverse);
     END_INSN(trace_reverse);
 }
@@ -4861,7 +4964,7 @@ INSN_ENTRY(trace_reverse)
 /* insn trace_topn(...)(...)(...) */
 INSN_ENTRY(trace_topn)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(topn);
     END_INSN(trace_topn);
 }
@@ -4869,7 +4972,7 @@ INSN_ENTRY(trace_topn)
 /* insn trace_setn(...)(...)(...) */
 INSN_ENTRY(trace_setn)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(setn);
     END_INSN(trace_setn);
 }
@@ -4877,7 +4980,7 @@ INSN_ENTRY(trace_setn)
 /* insn trace_adjuststack(...)(...)(...) */
 INSN_ENTRY(trace_adjuststack)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(adjuststack);
     END_INSN(trace_adjuststack);
 }
@@ -4885,7 +4988,7 @@ INSN_ENTRY(trace_adjuststack)
 /* insn trace_defined(...)(...)(...) */
 INSN_ENTRY(trace_defined)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(defined);
     END_INSN(trace_defined);
 }
@@ -4893,7 +4996,7 @@ INSN_ENTRY(trace_defined)
 /* insn trace_checkmatch(...)(...)(...) */
 INSN_ENTRY(trace_checkmatch)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(checkmatch);
     END_INSN(trace_checkmatch);
 }
@@ -4901,7 +5004,7 @@ INSN_ENTRY(trace_checkmatch)
 /* insn trace_checkkeyword(...)(...)(...) */
 INSN_ENTRY(trace_checkkeyword)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(checkkeyword);
     END_INSN(trace_checkkeyword);
 }
@@ -4909,7 +5012,7 @@ INSN_ENTRY(trace_checkkeyword)
 /* insn trace_checktype(...)(...)(...) */
 INSN_ENTRY(trace_checktype)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(checktype);
     END_INSN(trace_checktype);
 }
@@ -4917,7 +5020,7 @@ INSN_ENTRY(trace_checktype)
 /* insn trace_defineclass(...)(...)(...) */
 INSN_ENTRY(trace_defineclass)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(defineclass);
     END_INSN(trace_defineclass);
 }
@@ -4925,7 +5028,7 @@ INSN_ENTRY(trace_defineclass)
 /* insn trace_definemethod(...)(...)(...) */
 INSN_ENTRY(trace_definemethod)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(definemethod);
     END_INSN(trace_definemethod);
 }
@@ -4933,7 +5036,7 @@ INSN_ENTRY(trace_definemethod)
 /* insn trace_definesmethod(...)(...)(...) */
 INSN_ENTRY(trace_definesmethod)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(definesmethod);
     END_INSN(trace_definesmethod);
 }
@@ -4941,7 +5044,7 @@ INSN_ENTRY(trace_definesmethod)
 /* insn trace_send(...)(...)(...) */
 INSN_ENTRY(trace_send)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(send);
     END_INSN(trace_send);
 }
@@ -4949,7 +5052,7 @@ INSN_ENTRY(trace_send)
 /* insn trace_opt_send_without_block(...)(...)(...) */
 INSN_ENTRY(trace_opt_send_without_block)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_send_without_block);
 }
@@ -4957,7 +5060,7 @@ INSN_ENTRY(trace_opt_send_without_block)
 /* insn trace_opt_str_freeze(...)(...)(...) */
 INSN_ENTRY(trace_opt_str_freeze)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_str_freeze);
     END_INSN(trace_opt_str_freeze);
 }
@@ -4965,7 +5068,7 @@ INSN_ENTRY(trace_opt_str_freeze)
 /* insn trace_opt_nil_p(...)(...)(...) */
 INSN_ENTRY(trace_opt_nil_p)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_nil_p);
     END_INSN(trace_opt_nil_p);
 }
@@ -4973,7 +5076,7 @@ INSN_ENTRY(trace_opt_nil_p)
 /* insn trace_opt_str_uminus(...)(...)(...) */
 INSN_ENTRY(trace_opt_str_uminus)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_str_uminus);
     END_INSN(trace_opt_str_uminus);
 }
@@ -4981,7 +5084,7 @@ INSN_ENTRY(trace_opt_str_uminus)
 /* insn trace_opt_newarray_max(...)(...)(...) */
 INSN_ENTRY(trace_opt_newarray_max)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_newarray_max);
     END_INSN(trace_opt_newarray_max);
 }
@@ -4989,7 +5092,7 @@ INSN_ENTRY(trace_opt_newarray_max)
 /* insn trace_opt_newarray_min(...)(...)(...) */
 INSN_ENTRY(trace_opt_newarray_min)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_newarray_min);
     END_INSN(trace_opt_newarray_min);
 }
@@ -4997,7 +5100,7 @@ INSN_ENTRY(trace_opt_newarray_min)
 /* insn trace_invokesuper(...)(...)(...) */
 INSN_ENTRY(trace_invokesuper)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(invokesuper);
     END_INSN(trace_invokesuper);
 }
@@ -5005,7 +5108,7 @@ INSN_ENTRY(trace_invokesuper)
 /* insn trace_invokeblock(...)(...)(...) */
 INSN_ENTRY(trace_invokeblock)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(invokeblock);
     END_INSN(trace_invokeblock);
 }
@@ -5013,7 +5116,7 @@ INSN_ENTRY(trace_invokeblock)
 /* insn trace_leave(...)(...)(...) */
 INSN_ENTRY(trace_leave)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(leave);
     END_INSN(trace_leave);
 }
@@ -5021,7 +5124,7 @@ INSN_ENTRY(trace_leave)
 /* insn trace_throw(...)(...)(...) */
 INSN_ENTRY(trace_throw)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(throw);
     END_INSN(trace_throw);
 }
@@ -5029,7 +5132,7 @@ INSN_ENTRY(trace_throw)
 /* insn trace_jump(...)(...)(...) */
 INSN_ENTRY(trace_jump)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(jump);
     END_INSN(trace_jump);
 }
@@ -5037,7 +5140,7 @@ INSN_ENTRY(trace_jump)
 /* insn trace_branchif(...)(...)(...) */
 INSN_ENTRY(trace_branchif)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(branchif);
     END_INSN(trace_branchif);
 }
@@ -5045,7 +5148,7 @@ INSN_ENTRY(trace_branchif)
 /* insn trace_branchunless(...)(...)(...) */
 INSN_ENTRY(trace_branchunless)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(branchunless);
     END_INSN(trace_branchunless);
 }
@@ -5053,7 +5156,7 @@ INSN_ENTRY(trace_branchunless)
 /* insn trace_branchnil(...)(...)(...) */
 INSN_ENTRY(trace_branchnil)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(branchnil);
     END_INSN(trace_branchnil);
 }
@@ -5061,7 +5164,7 @@ INSN_ENTRY(trace_branchnil)
 /* insn trace_opt_getinlinecache(...)(...)(...) */
 INSN_ENTRY(trace_opt_getinlinecache)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_getinlinecache);
     END_INSN(trace_opt_getinlinecache);
 }
@@ -5069,7 +5172,7 @@ INSN_ENTRY(trace_opt_getinlinecache)
 /* insn trace_opt_setinlinecache(...)(...)(...) */
 INSN_ENTRY(trace_opt_setinlinecache)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_setinlinecache);
     END_INSN(trace_opt_setinlinecache);
 }
@@ -5077,7 +5180,7 @@ INSN_ENTRY(trace_opt_setinlinecache)
 /* insn trace_once(...)(...)(...) */
 INSN_ENTRY(trace_once)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(once);
     END_INSN(trace_once);
 }
@@ -5085,7 +5188,7 @@ INSN_ENTRY(trace_once)
 /* insn trace_opt_case_dispatch(...)(...)(...) */
 INSN_ENTRY(trace_opt_case_dispatch)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_case_dispatch);
     END_INSN(trace_opt_case_dispatch);
 }
@@ -5093,7 +5196,7 @@ INSN_ENTRY(trace_opt_case_dispatch)
 /* insn trace_opt_plus(...)(...)(...) */
 INSN_ENTRY(trace_opt_plus)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_plus);
     END_INSN(trace_opt_plus);
 }
@@ -5101,7 +5204,7 @@ INSN_ENTRY(trace_opt_plus)
 /* insn trace_opt_minus(...)(...)(...) */
 INSN_ENTRY(trace_opt_minus)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_minus);
     END_INSN(trace_opt_minus);
 }
@@ -5109,7 +5212,7 @@ INSN_ENTRY(trace_opt_minus)
 /* insn trace_opt_mult(...)(...)(...) */
 INSN_ENTRY(trace_opt_mult)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_mult);
     END_INSN(trace_opt_mult);
 }
@@ -5117,7 +5220,7 @@ INSN_ENTRY(trace_opt_mult)
 /* insn trace_opt_div(...)(...)(...) */
 INSN_ENTRY(trace_opt_div)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_div);
     END_INSN(trace_opt_div);
 }
@@ -5125,7 +5228,7 @@ INSN_ENTRY(trace_opt_div)
 /* insn trace_opt_mod(...)(...)(...) */
 INSN_ENTRY(trace_opt_mod)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_mod);
     END_INSN(trace_opt_mod);
 }
@@ -5133,7 +5236,7 @@ INSN_ENTRY(trace_opt_mod)
 /* insn trace_opt_eq(...)(...)(...) */
 INSN_ENTRY(trace_opt_eq)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_eq);
     END_INSN(trace_opt_eq);
 }
@@ -5141,7 +5244,7 @@ INSN_ENTRY(trace_opt_eq)
 /* insn trace_opt_neq(...)(...)(...) */
 INSN_ENTRY(trace_opt_neq)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_neq);
     END_INSN(trace_opt_neq);
 }
@@ -5149,7 +5252,7 @@ INSN_ENTRY(trace_opt_neq)
 /* insn trace_opt_lt(...)(...)(...) */
 INSN_ENTRY(trace_opt_lt)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_lt);
     END_INSN(trace_opt_lt);
 }
@@ -5157,7 +5260,7 @@ INSN_ENTRY(trace_opt_lt)
 /* insn trace_opt_le(...)(...)(...) */
 INSN_ENTRY(trace_opt_le)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_le);
     END_INSN(trace_opt_le);
 }
@@ -5165,7 +5268,7 @@ INSN_ENTRY(trace_opt_le)
 /* insn trace_opt_gt(...)(...)(...) */
 INSN_ENTRY(trace_opt_gt)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_gt);
     END_INSN(trace_opt_gt);
 }
@@ -5173,7 +5276,7 @@ INSN_ENTRY(trace_opt_gt)
 /* insn trace_opt_ge(...)(...)(...) */
 INSN_ENTRY(trace_opt_ge)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_ge);
     END_INSN(trace_opt_ge);
 }
@@ -5181,7 +5284,7 @@ INSN_ENTRY(trace_opt_ge)
 /* insn trace_opt_ltlt(...)(...)(...) */
 INSN_ENTRY(trace_opt_ltlt)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_ltlt);
     END_INSN(trace_opt_ltlt);
 }
@@ -5189,7 +5292,7 @@ INSN_ENTRY(trace_opt_ltlt)
 /* insn trace_opt_and(...)(...)(...) */
 INSN_ENTRY(trace_opt_and)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_and);
     END_INSN(trace_opt_and);
 }
@@ -5197,7 +5300,7 @@ INSN_ENTRY(trace_opt_and)
 /* insn trace_opt_or(...)(...)(...) */
 INSN_ENTRY(trace_opt_or)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_or);
     END_INSN(trace_opt_or);
 }
@@ -5205,7 +5308,7 @@ INSN_ENTRY(trace_opt_or)
 /* insn trace_opt_aref(...)(...)(...) */
 INSN_ENTRY(trace_opt_aref)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_aref);
     END_INSN(trace_opt_aref);
 }
@@ -5213,7 +5316,7 @@ INSN_ENTRY(trace_opt_aref)
 /* insn trace_opt_aset(...)(...)(...) */
 INSN_ENTRY(trace_opt_aset)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_aset);
     END_INSN(trace_opt_aset);
 }
@@ -5221,7 +5324,7 @@ INSN_ENTRY(trace_opt_aset)
 /* insn trace_opt_aset_with(...)(...)(...) */
 INSN_ENTRY(trace_opt_aset_with)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_aset_with);
     END_INSN(trace_opt_aset_with);
 }
@@ -5229,7 +5332,7 @@ INSN_ENTRY(trace_opt_aset_with)
 /* insn trace_opt_aref_with(...)(...)(...) */
 INSN_ENTRY(trace_opt_aref_with)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_aref_with);
     END_INSN(trace_opt_aref_with);
 }
@@ -5237,7 +5340,7 @@ INSN_ENTRY(trace_opt_aref_with)
 /* insn trace_opt_length(...)(...)(...) */
 INSN_ENTRY(trace_opt_length)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_length);
     END_INSN(trace_opt_length);
 }
@@ -5245,7 +5348,7 @@ INSN_ENTRY(trace_opt_length)
 /* insn trace_opt_size(...)(...)(...) */
 INSN_ENTRY(trace_opt_size)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_size);
     END_INSN(trace_opt_size);
 }
@@ -5253,7 +5356,7 @@ INSN_ENTRY(trace_opt_size)
 /* insn trace_opt_empty_p(...)(...)(...) */
 INSN_ENTRY(trace_opt_empty_p)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_empty_p);
     END_INSN(trace_opt_empty_p);
 }
@@ -5261,7 +5364,7 @@ INSN_ENTRY(trace_opt_empty_p)
 /* insn trace_opt_succ(...)(...)(...) */
 INSN_ENTRY(trace_opt_succ)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_succ);
     END_INSN(trace_opt_succ);
 }
@@ -5269,7 +5372,7 @@ INSN_ENTRY(trace_opt_succ)
 /* insn trace_opt_not(...)(...)(...) */
 INSN_ENTRY(trace_opt_not)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_not);
     END_INSN(trace_opt_not);
 }
@@ -5277,15 +5380,23 @@ INSN_ENTRY(trace_opt_not)
 /* insn trace_opt_regexpmatch2(...)(...)(...) */
 INSN_ENTRY(trace_opt_regexpmatch2)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_regexpmatch2);
     END_INSN(trace_opt_regexpmatch2);
+}
+
+/* insn trace_opt_call_c_function(...)(...)(...) */
+INSN_ENTRY(trace_opt_call_c_function)
+{
+    vm_trace(ec, GET_CFP(), GET_PC());
+    DISPATCH_ORIGINAL_INSN(opt_call_c_function);
+    END_INSN(trace_opt_call_c_function);
 }
 
 /* insn trace_invokebuiltin(...)(...)(...) */
 INSN_ENTRY(trace_invokebuiltin)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(invokebuiltin);
     END_INSN(trace_invokebuiltin);
 }
@@ -5293,7 +5404,7 @@ INSN_ENTRY(trace_invokebuiltin)
 /* insn trace_opt_invokebuiltin_delegate(...)(...)(...) */
 INSN_ENTRY(trace_opt_invokebuiltin_delegate)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_invokebuiltin_delegate);
     END_INSN(trace_opt_invokebuiltin_delegate);
 }
@@ -5301,7 +5412,7 @@ INSN_ENTRY(trace_opt_invokebuiltin_delegate)
 /* insn trace_opt_invokebuiltin_delegate_leave(...)(...)(...) */
 INSN_ENTRY(trace_opt_invokebuiltin_delegate_leave)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(opt_invokebuiltin_delegate_leave);
     END_INSN(trace_opt_invokebuiltin_delegate_leave);
 }
@@ -5309,7 +5420,7 @@ INSN_ENTRY(trace_opt_invokebuiltin_delegate_leave)
 /* insn trace_getlocal_WC_0(...)(...)(...) */
 INSN_ENTRY(trace_getlocal_WC_0)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(getlocal_WC_0);
     END_INSN(trace_getlocal_WC_0);
 }
@@ -5317,7 +5428,7 @@ INSN_ENTRY(trace_getlocal_WC_0)
 /* insn trace_getlocal_WC_1(...)(...)(...) */
 INSN_ENTRY(trace_getlocal_WC_1)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(getlocal_WC_1);
     END_INSN(trace_getlocal_WC_1);
 }
@@ -5325,7 +5436,7 @@ INSN_ENTRY(trace_getlocal_WC_1)
 /* insn trace_setlocal_WC_0(...)(...)(...) */
 INSN_ENTRY(trace_setlocal_WC_0)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(setlocal_WC_0);
     END_INSN(trace_setlocal_WC_0);
 }
@@ -5333,7 +5444,7 @@ INSN_ENTRY(trace_setlocal_WC_0)
 /* insn trace_setlocal_WC_1(...)(...)(...) */
 INSN_ENTRY(trace_setlocal_WC_1)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(setlocal_WC_1);
     END_INSN(trace_setlocal_WC_1);
 }
@@ -5341,7 +5452,7 @@ INSN_ENTRY(trace_setlocal_WC_1)
 /* insn trace_putobject_INT2FIX_0_(...)(...)(...) */
 INSN_ENTRY(trace_putobject_INT2FIX_0_)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(putobject_INT2FIX_0_);
     END_INSN(trace_putobject_INT2FIX_0_);
 }
@@ -5349,7 +5460,7 @@ INSN_ENTRY(trace_putobject_INT2FIX_0_)
 /* insn trace_putobject_INT2FIX_1_(...)(...)(...) */
 INSN_ENTRY(trace_putobject_INT2FIX_1_)
 {
-    vm_trace(ec, GET_CFP());
+    vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(putobject_INT2FIX_1_);
     END_INSN(trace_putobject_INT2FIX_1_);
 }

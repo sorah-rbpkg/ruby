@@ -1,14 +1,13 @@
-#--
 #
-#
+# $Id: 4c5f4311663b6d03050953d64d6a0e7905ff2216 $
 #
 # Copyright (c) 1999-2006 Minero Aoki
 #
 # This program is free software.
-# You can distribute/modify this program under the same terms of ruby.
-# see the file "COPYING".
+# You can distribute/modify this program under the terms of
+# the GNU LGPL, Lesser General Public License version 2.1.
+# For details of LGPL, see the file "COPYING".
 #
-#++
 
 require 'racc/parser'
 
@@ -197,7 +196,7 @@ module Racc
     def mkmapexp(arr)
       i = ii = 0
       as = arr.size
-      map = String.new
+      map = ''
       maxdup = RE_DUP_MAX
       curr = nil
       while i < as
@@ -230,7 +229,7 @@ module Racc
       map = '-' * 10240
 
       # sort long to short
-      entries.sort_by!.with_index {|a,i| [-a[0].size, i] }
+      entries.sort! {|a,b| b[0].size <=> a[0].size }
 
       entries.each do |arr, chkval, expr, min, ptri|
         if upper + arr.size > map.size

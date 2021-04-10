@@ -26,12 +26,13 @@ RSpec.describe "bundle cache with path" do
     expect(bundled_app("vendor/cache/foo-1.0")).to exist
     expect(bundled_app("vendor/cache/foo-1.0/.bundlecache")).to be_file
 
+    FileUtils.rm_rf lib_path("foo-1.0")
     expect(the_bundle).to include_gems "foo 1.0"
   end
 
   it "copies when the path is outside the bundle and the paths intersect" do
-    libname = File.basename(bundled_app) + "_gem"
-    libpath = File.join(File.dirname(bundled_app), libname)
+    libname = File.basename(Dir.pwd) + "_gem"
+    libpath = File.join(File.dirname(Dir.pwd), libname)
 
     build_lib libname, :path => libpath
 
@@ -44,6 +45,7 @@ RSpec.describe "bundle cache with path" do
     expect(bundled_app("vendor/cache/#{libname}")).to exist
     expect(bundled_app("vendor/cache/#{libname}/.bundlecache")).to be_file
 
+    FileUtils.rm_rf libpath
     expect(the_bundle).to include_gems "#{libname} 1.0"
   end
 
@@ -64,6 +66,7 @@ RSpec.describe "bundle cache with path" do
     bundle :cache
 
     expect(bundled_app("vendor/cache/foo-1.0")).to exist
+    FileUtils.rm_rf lib_path("foo-1.0")
 
     run "require 'foo'"
     expect(out).to eq("CACHE")
@@ -79,19 +82,15 @@ RSpec.describe "bundle cache with path" do
     bundle "config set cache_all true"
     bundle :cache
 
-    expect(bundled_app("vendor/cache/foo-1.0")).to exist
-
-    build_lib "bar"
-
     install_gemfile <<-G
       gem "bar", :path => '#{lib_path("bar-1.0")}'
     G
 
     bundle :cache
-    expect(bundled_app("vendor/cache/foo-1.0")).not_to exist
+    expect(bundled_app("vendor/cache/bar-1.0")).not_to exist
   end
 
-  it "does not cache path gems by default", :bundler => "< 3" do
+  it "raises a warning without --all", :bundler => "< 3" do
     build_lib "foo"
 
     install_gemfile <<-G
@@ -99,20 +98,8 @@ RSpec.describe "bundle cache with path" do
     G
 
     bundle :cache
-    expect(err).to be_empty
+    expect(err).to match(/please pass the \-\-all flag/)
     expect(bundled_app("vendor/cache/foo-1.0")).not_to exist
-  end
-
-  it "caches path gems by default", :bundler => "3" do
-    build_lib "foo"
-
-    install_gemfile <<-G
-      gem "foo", :path => '#{lib_path("foo-1.0")}'
-    G
-
-    bundle :cache
-    expect(err).to be_empty
-    expect(bundled_app("vendor/cache/foo-1.0")).to exist
   end
 
   it "stores the given flag" do
@@ -151,7 +138,7 @@ RSpec.describe "bundle cache with path" do
       gem "baz", :path => '#{lib_path("baz-1.0")}'
     G
 
-    bundle "cache --no-all", :raise_on_error => false
+    bundle "cache --no-all"
     expect(bundled_app("vendor/cache/baz-1.0")).not_to exist
   end
 end

@@ -3,12 +3,7 @@ require 'rdoc'
 require 'erb'
 require 'time'
 require 'json'
-
-begin
-  require 'webrick'
-rescue LoadError
-  abort "webrick is not found. You may need to `gem install webrick` to install webrick."
-end
+require 'webrick'
 
 ##
 # This is a WEBrick servlet that allows you to browse ri documentation.

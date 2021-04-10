@@ -31,6 +31,7 @@ class BundlerVCRHTTP < Net::HTTP
 
     def recorded_response?
       return true if ENV["BUNDLER_SPEC_PRE_RECORDED"]
+      return false if ENV["BUNDLER_SPEC_FORCE_RECORD"]
       request_pair_paths.all? {|f| File.exist?(f) }
     end
 
@@ -39,7 +40,7 @@ class BundlerVCRHTTP < Net::HTTP
         response_io = ::Net::BufferedIO.new(response_file)
         ::Net::HTTPResponse.read_new(response_io).tap do |response|
           response.decode_content = request.decode_content if request.respond_to?(:decode_content)
-          response.uri = request.uri
+          response.uri = request.uri if request.respond_to?(:uri)
 
           response.reading_body(response_io, request.response_body_permitted?) do
             response_block.call(response) if response_block
@@ -56,7 +57,6 @@ class BundlerVCRHTTP < Net::HTTP
       response = http.request_without_vcr(request, body, &response_block)
       @recording = false
       unless @recording
-        require "fileutils"
         FileUtils.mkdir_p(File.dirname(request_path))
         binwrite(request_path, request_to_string(request))
         binwrite(response_path, response_to_string(response))
@@ -79,7 +79,7 @@ class BundlerVCRHTTP < Net::HTTP
     end
 
     def read_stored_request(path)
-      contents = File.binread(path)
+      contents = File.read(path)
       headers = {}
       method = nil
       path = nil

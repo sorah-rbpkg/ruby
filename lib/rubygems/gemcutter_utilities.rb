@@ -8,12 +8,10 @@ require 'rubygems/text'
 module Gem::GemcutterUtilities
 
   ERROR_CODE = 1
-  API_SCOPES = %i[index_rubygems push_rubygem yank_rubygem add_owner remove_owner access_webhooks show_dashboard].freeze
 
   include Gem::Text
 
   attr_writer :host
-  attr_writer :scope
 
   ##
   # Add the --key option
@@ -21,7 +19,7 @@ module Gem::GemcutterUtilities
   def add_key_option
     add_option('-k', '--key KEYNAME', Symbol,
                'Use the given API key',
-               "from #{Gem.configuration.credentials_path}") do |value,options|
+               'from ~/.gem/credentials') do |value,options|
       options[:key] = value
     end
   end
@@ -74,7 +72,7 @@ module Gem::GemcutterUtilities
   #
   # If +allowed_push_host+ metadata is present, then it will only allow that host.
 
-  def rubygems_api_request(method, path, host = nil, allowed_push_host = nil, scope: nil, &block)
+  def rubygems_api_request(method, path, host = nil, allowed_push_host = nil, &block)
     require 'net/http'
 
     self.host = host if host
@@ -94,18 +92,14 @@ module Gem::GemcutterUtilities
     end
 
     uri = URI.parse "#{self.host}/#{path}"
-    response = request_with_otp(method, uri, &block)
 
-    if mfa_unauthorized?(response)
-      ask_otp
-      response = request_with_otp(method, uri, &block)
-    end
+    request_method = Net::HTTP.const_get method.to_s.capitalize
+    response = Gem::RemoteFetcher.fetcher.request(uri, request_method, &block)
+    return response unless mfa_unauthorized?(response)
 
-    if api_key_forbidden?(response)
-      update_scope(scope)
-      request_with_otp(method, uri, &block)
-    else
-      response
+    Gem::RemoteFetcher.fetcher.request(uri, request_method) do |req|
+      req.add_field "OTP", get_otp
+      block.call(req)
     end
   end
 
@@ -113,37 +107,24 @@ module Gem::GemcutterUtilities
     response.kind_of?(Net::HTTPUnauthorized) && response.body.start_with?('You have enabled multifactor authentication')
   end
 
-  def update_scope(scope)
-    sign_in_host        = self.host
-    pretty_host         = pretty_host(sign_in_host)
-    update_scope_params = { scope => true }
-
-    say "The existing key doesn't have access of #{scope} on #{pretty_host}. Please sign in to update access."
-
-    email    = ask "   Email: "
-    password = ask_for_password "Password: "
-
-    response = rubygems_api_request(:put, "api/v1/api_key",
-                                    sign_in_host, scope: scope) do |request|
-      request.basic_auth email, password
-      request["OTP"] = options[:otp] if options[:otp]
-      request.body = URI.encode_www_form({:api_key => api_key }.merge(update_scope_params))
-    end
-
-    with_response response do |resp|
-      say "Added #{scope} scope to the existing API key"
-    end
+  def get_otp
+    say 'You have enabled multi-factor authentication. Please enter OTP code.'
+    ask 'Code: '
   end
 
   ##
   # Signs in with the RubyGems API at +sign_in_host+ and sets the rubygems API
   # key.
 
-  def sign_in(sign_in_host = nil, scope: nil)
+  def sign_in(sign_in_host = nil)
     sign_in_host ||= self.host
     return if api_key
 
-    pretty_host = pretty_host(sign_in_host)
+    pretty_host = if Gem::DEFAULT_HOST == sign_in_host
+                    'RubyGems.org'
+                  else
+                    sign_in_host
+                  end
 
     say "Enter your #{pretty_host} credentials."
     say "Don't have an account yet? " +
@@ -153,18 +134,14 @@ module Gem::GemcutterUtilities
     password = ask_for_password "Password: "
     say "\n"
 
-    key_name     = get_key_name(scope)
-    scope_params = get_scope_params(scope)
-
-    response = rubygems_api_request(:post, "api/v1/api_key",
-                                    sign_in_host, scope: scope) do |request|
+    response = rubygems_api_request(:get, "api/v1/api_key",
+                                    sign_in_host) do |request|
       request.basic_auth email, password
-      request["OTP"] = options[:otp] if options[:otp]
-      request.body = URI.encode_www_form({ name: key_name }.merge(scope_params))
+      request.add_field "OTP", options[:otp] if options[:otp]
     end
 
     with_response response do |resp|
-      say "Signed in with API key: #{key_name}."
+      say "Signed in."
       set_api_key host, resp.body
     end
   end
@@ -218,62 +195,4 @@ module Gem::GemcutterUtilities
     end
   end
 
-  private
-
-  def request_with_otp(method, uri, &block)
-    request_method = Net::HTTP.const_get method.to_s.capitalize
-
-    Gem::RemoteFetcher.fetcher.request(uri, request_method) do |req|
-      req["OTP"] = options[:otp] if options[:otp]
-      block.call(req)
-    end
-  end
-
-  def ask_otp
-    say 'You have enabled multi-factor authentication. Please enter OTP code.'
-    options[:otp] = ask 'Code: '
-  end
-
-  def pretty_host(host)
-    if Gem::DEFAULT_HOST == host
-      'RubyGems.org'
-    else
-      host
-    end
-  end
-
-  def get_scope_params(scope)
-    scope_params = {}
-
-    if scope
-      scope_params = { scope => true }
-    else
-      say "Please select scopes you want to enable for the API key (y/n)"
-      API_SCOPES.each do |scope|
-        selected = ask "#{scope} [y/N]: "
-        scope_params[scope] = true if selected =~ /^[yY](es)?$/
-      end
-      say "\n"
-    end
-
-    scope_params
-  end
-
-  def get_key_name(scope)
-    hostname = Socket.gethostname || "unknown-host"
-    user = ENV["USER"] || ENV["USERNAME"] || "unknown-user"
-    ts = Time.now.strftime("%Y%m%d%H%M%S")
-    default_key_name = "#{hostname}-#{user}-#{ts}"
-
-    key_name = ask "API Key name [#{default_key_name}]: " unless scope
-    if key_name.nil? || key_name.empty?
-      default_key_name
-    else
-      key_name
-    end
-  end
-
-  def api_key_forbidden?(response)
-    response.kind_of?(Net::HTTPForbidden) && response.body.start_with?("The API key doesn't have access")
-  end
 end

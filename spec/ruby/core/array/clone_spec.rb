@@ -12,8 +12,8 @@ describe "Array#clone" do
     aa = a.clone
     bb = b.clone
 
-    aa.should.frozen?
-    bb.should_not.frozen?
+    aa.frozen?.should == true
+    bb.frozen?.should == false
   end
 
   it "copies singleton methods" do

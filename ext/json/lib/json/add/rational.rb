@@ -2,6 +2,7 @@
 unless defined?(::JSON::JSON_LOADED) and ::JSON::JSON_LOADED
   require 'json'
 end
+defined?(::Rational) or require 'rational'
 
 class Rational
   # Deserializes JSON string by converting numerator value <tt>n</tt>,

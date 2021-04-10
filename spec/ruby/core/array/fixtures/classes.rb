@@ -126,7 +126,7 @@ module ArraySpecs
     attr_accessor :order
   end
 
-  class ComparableWithInteger
+  class ComparableWithFixnum
     include Comparable
     def initialize(num)
       @num = num
@@ -144,7 +144,7 @@ module ArraySpecs
   end
 
   def self.universal_pack_object
-    obj = mock("string float int".freeze)
+    obj = mock("string float int")
     obj.stub!(:to_int).and_return(1)
     obj.stub!(:to_str).and_return("1")
     obj.stub!(:to_f).and_return(1.0)

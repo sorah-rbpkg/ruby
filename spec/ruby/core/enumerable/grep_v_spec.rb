@@ -20,25 +20,15 @@ describe "Enumerable#grep_v" do
     $&.should == "e"
   end
 
-  ruby_version_is ""..."3.0.0" do
-    it "sets $~ to the last match when given no block" do
-      "z" =~ /z/ # Reset $~
-      ["abc", "def"].grep_v(/e/).should == ["abc"]
+  it "sets $~ to the last match when given no block" do
+    "z" =~ /z/ # Reset $~
+    ["abc", "def"].grep_v(/e/).should == ["abc"]
 
-      # Set by the match of "def"
-      $&.should == "e"
+    # Set by the match of "def"
+    $&.should == "e"
 
-      ["abc", "def"].grep_v(/b/)
-      $&.should == nil
-    end
-  end
-
-  ruby_version_is "3.0.0" do
-    it "does not set $~ when given no block" do
-      "z" =~ /z/ # Reset $~
-      ["abc", "def"].grep_v(/e/).should == ["abc"]
-      $&.should == "z"
-    end
+    ["abc", "def"].grep_v(/b/)
+    $&.should == nil
   end
 
   describe "without block" do

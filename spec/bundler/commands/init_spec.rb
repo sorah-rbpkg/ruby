@@ -2,9 +2,9 @@
 
 RSpec.describe "bundle init" do
   it "generates a Gemfile" do
-    bundle :init
+    bundle! :init
     expect(out).to include("Writing new Gemfile")
-    expect(bundled_app_gemfile).to be_file
+    expect(bundled_app("Gemfile")).to be_file
   end
 
   context "when a Gemfile already exists" do
@@ -15,11 +15,11 @@ RSpec.describe "bundle init" do
     end
 
     it "does not change existing Gemfiles" do
-      expect { bundle :init, :raise_on_error => false }.not_to change { File.read(bundled_app_gemfile) }
+      expect { bundle :init }.not_to change { File.read(bundled_app("Gemfile")) }
     end
 
     it "notifies the user that an existing Gemfile already exists" do
-      bundle :init, :raise_on_error => false
+      bundle :init
       expect(err).to include("Gemfile already exists")
     end
   end
@@ -28,11 +28,13 @@ RSpec.describe "bundle init" do
     let(:subdir) { "child_dir" }
 
     it "lets users generate a Gemfile in a child directory" do
-      bundle :init
+      bundle! :init
 
       FileUtils.mkdir bundled_app(subdir)
 
-      bundle :init, :dir => bundled_app(subdir)
+      Dir.chdir bundled_app(subdir) do
+        bundle! :init
+      end
 
       expect(out).to include("Writing new Gemfile")
       expect(bundled_app("#{subdir}/Gemfile")).to be_file
@@ -48,7 +50,9 @@ RSpec.describe "bundle init" do
       mode = File.stat(bundled_app(subdir)).mode ^ 0o222
       FileUtils.chmod mode, bundled_app(subdir)
 
-      bundle :init, :dir => bundled_app(subdir), :raise_on_error => false
+      Dir.chdir bundled_app(subdir) do
+        bundle :init
+      end
 
       expect(err).to include("directory is not writable")
       expect(Dir[bundled_app("#{subdir}/*")]).to be_empty
@@ -71,7 +75,7 @@ RSpec.describe "bundle init" do
 
       bundle :init, :gemspec => spec_file
 
-      gemfile = bundled_app_gemfile.read
+      gemfile = bundled_app("Gemfile").read
       expect(gemfile).to match(%r{source 'https://rubygems.org'})
       expect(gemfile.scan(/gem "rack", "= 1.0.1"/).size).to eq(1)
       expect(gemfile.scan(/gem "rspec", "= 1.2"/).size).to eq(1)
@@ -89,7 +93,7 @@ RSpec.describe "bundle init" do
           S
         end
 
-        bundle :init, :gemspec => spec_file, :raise_on_error => false
+        bundle :init, :gemspec => spec_file
         expect(err).to include("There was an error while loading `test.gemspec`")
       end
     end
@@ -99,7 +103,7 @@ RSpec.describe "bundle init" do
     before { bundle "config set init_gems_rb true" }
 
     it "generates a gems.rb" do
-      bundle :init
+      bundle! :init
       expect(out).to include("Writing new gems.rb")
       expect(bundled_app("gems.rb")).to be_file
     end
@@ -112,11 +116,11 @@ RSpec.describe "bundle init" do
       end
 
       it "does not change existing Gemfiles" do
-        expect { bundle :init, :raise_on_error => false }.not_to change { File.read(bundled_app("gems.rb")) }
+        expect { bundle :init }.not_to change { File.read(bundled_app("gems.rb")) }
       end
 
       it "notifies the user that an existing gems.rb already exists" do
-        bundle :init, :raise_on_error => false
+        bundle :init
         expect(err).to include("gems.rb already exists")
       end
     end
@@ -125,11 +129,13 @@ RSpec.describe "bundle init" do
       let(:subdir) { "child_dir" }
 
       it "lets users generate a Gemfile in a child directory" do
-        bundle :init
+        bundle! :init
 
         FileUtils.mkdir bundled_app(subdir)
 
-        bundle :init, :dir => bundled_app(subdir)
+        Dir.chdir bundled_app(subdir) do
+          bundle! :init
+        end
 
         expect(out).to include("Writing new gems.rb")
         expect(bundled_app("#{subdir}/gems.rb")).to be_file

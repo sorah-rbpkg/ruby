@@ -132,8 +132,7 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
   struct rb_vm_tag _tag; \
   _tag.state = TAG_NONE; \
   _tag.tag = Qundef; \
-  _tag.prev = _ec->tag; \
-  _tag.lock_rec = rb_ec_vm_lock_rec(_ec); \
+  _tag.prev = _ec->tag;
 
 #define EC_POP_TAG() \
   _ec->tag = _tag.prev; \
@@ -158,23 +157,12 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 # define VAR_NOCLOBBERED(var) var
 #endif
 
-static inline void
-rb_ec_vm_lock_rec_check(const rb_execution_context_t *ec, unsigned int recorded_lock_rec)
-{
-    unsigned int current_lock_rec = rb_ec_vm_lock_rec(ec);
-    if (current_lock_rec != recorded_lock_rec) {
-        rb_ec_vm_lock_rec_release(ec, recorded_lock_rec, current_lock_rec);
-    }
-}
-
 /* clear ec->tag->state, and return the value */
 static inline int
 rb_ec_tag_state(const rb_execution_context_t *ec)
 {
-    struct rb_vm_tag *tag = ec->tag;
-    enum ruby_tag_type state = tag->state;
-    tag->state = TAG_NONE;
-    rb_ec_vm_lock_rec_check(ec, tag->lock_rec);
+    enum ruby_tag_type state = ec->tag->state;
+    ec->tag->state = TAG_NONE;
     return state;
 }
 
@@ -293,16 +281,26 @@ rb_cref_t *rb_vm_cref(void);
 rb_cref_t *rb_vm_cref_replace_with_duplicated_cref(void);
 VALUE rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, VALUE block_handler, VALUE filename);
 void rb_vm_set_progname(VALUE filename);
+void rb_thread_terminate_all(void);
 VALUE rb_vm_cbase(void);
 
 /* vm_backtrace.c */
 VALUE rb_ec_backtrace_object(const rb_execution_context_t *ec);
 VALUE rb_ec_backtrace_str_ary(const rb_execution_context_t *ec, long lev, long n);
-VALUE rb_ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, long n, bool skip_internal);
+VALUE rb_ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, long n);
 
 #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
 # ifdef HAVE_MBLEN
-#  define CharNext(p) ((p) + mblen((p), RUBY_MBCHAR_MAXSIZE))
+#  define CharNext(p) rb_char_next(p)
+static inline const char *
+rb_char_next(const char *p)
+{
+    if (p) {
+        int len = mblen(p, RUBY_MBCHAR_MAXSIZE);
+        p += len > 0 ? len : 1;
+    }
+    return p;
+}
 # else
 #  define CharNext(p) ((p) + 1)
 # endif

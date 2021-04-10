@@ -14,8 +14,8 @@ describe "String#capitalize" do
 
   ruby_version_is ''...'2.7' do
     it "taints resulting string when self is tainted" do
-      "".taint.capitalize.should.tainted?
-      "hello".taint.capitalize.should.tainted?
+      "".taint.capitalize.tainted?.should == true
+      "hello".taint.capitalize.tainted?.should == true
     end
   end
 
@@ -80,18 +80,9 @@ describe "String#capitalize" do
     -> { "abc".capitalize(:invalid_option) }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instances when called on a subclass" do
-      StringSpecs::MyString.new("hello").capitalize.should be_an_instance_of(StringSpecs::MyString)
-      StringSpecs::MyString.new("Hello").capitalize.should be_an_instance_of(StringSpecs::MyString)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns String instances when called on a subclass" do
-      StringSpecs::MyString.new("hello").capitalize.should be_an_instance_of(String)
-      StringSpecs::MyString.new("Hello").capitalize.should be_an_instance_of(String)
-    end
+  it "returns subclass instances when called on a subclass" do
+    StringSpecs::MyString.new("hello").capitalize.should be_an_instance_of(StringSpecs::MyString)
+    StringSpecs::MyString.new("Hello").capitalize.should be_an_instance_of(StringSpecs::MyString)
   end
 end
 
@@ -100,12 +91,6 @@ describe "String#capitalize!" do
     a = "hello"
     a.capitalize!.should equal(a)
     a.should == "Hello"
-  end
-
-  it "modifies self in place for non-ascii-compatible encodings" do
-    a = "heLLo".encode("utf-16le")
-    a.capitalize!
-    a.should == "Hello".encode("utf-16le")
   end
 
   describe "full Unicode case mapping" do
@@ -119,12 +104,6 @@ describe "String#capitalize!" do
       a = "ß"
       a.capitalize!
       a.should == "Ss"
-    end
-
-    it "works for non-ascii-compatible encodings" do
-      a = "äöü".encode("utf-16le")
-      a.capitalize!
-      a.should == "Äöü".encode("utf-16le")
     end
 
     it "updates string metadata" do
@@ -143,12 +122,6 @@ describe "String#capitalize!" do
       a = "ßet"
       a.capitalize!(:ascii)
       a.should == "ßet"
-    end
-
-    it "works for non-ascii-compatible encodings" do
-      a = "aBc".encode("utf-16le")
-      a.capitalize!(:ascii)
-      a.should == "Abc".encode("utf-16le")
     end
   end
 
@@ -205,10 +178,10 @@ describe "String#capitalize!" do
     "H".capitalize!.should == nil
   end
 
-  it "raises a FrozenError when self is frozen" do
+  it "raises a #{frozen_error_class} when self is frozen" do
     ["", "Hello", "hello"].each do |a|
       a.freeze
-      -> { a.capitalize! }.should raise_error(FrozenError)
+      -> { a.capitalize! }.should raise_error(frozen_error_class)
     end
   end
 end

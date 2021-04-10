@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-
 module Gem::Resolver::Molinillo
   # A state that a {Resolution} can be in
   # @attr [String] name the name of the current requirement
@@ -8,8 +7,7 @@ module Gem::Resolver::Molinillo
   # @attr [Object] requirement the current requirement
   # @attr [Object] possibilities the possibilities to satisfy the current requirement
   # @attr [Integer] depth the depth of the resolution
-  # @attr [Hash] conflicts unresolved conflicts, indexed by dependency name
-  # @attr [Array<UnwindDetails>] unused_unwind_options unwinds for previous conflicts that weren't explored
+  # @attr [Set<Object>] conflicts unresolved conflicts
   ResolutionState = Struct.new(
     :name,
     :requirements,
@@ -17,15 +15,14 @@ module Gem::Resolver::Molinillo
     :requirement,
     :possibilities,
     :depth,
-    :conflicts,
-    :unused_unwind_options
+    :conflicts
   )
 
   class ResolutionState
     # Returns an empty resolution state
     # @return [ResolutionState] an empty state
     def self.empty
-      new(nil, [], DependencyGraph.new, nil, nil, 0, {}, [])
+      new(nil, [], DependencyGraph.new, nil, nil, 0, Set.new)
     end
   end
 
@@ -43,8 +40,7 @@ module Gem::Resolver::Molinillo
         requirement,
         [possibilities.pop],
         depth + 1,
-        conflicts.dup,
-        unused_unwind_options.dup
+        conflicts.dup
       ).tap do |state|
         state.activated.tag(state)
       end

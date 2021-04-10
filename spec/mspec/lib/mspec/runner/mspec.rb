@@ -10,6 +10,7 @@ class MSpecEnv
 end
 
 module MSpec
+
   @exit    = nil
   @abort   = nil
   @start   = nil
@@ -19,8 +20,8 @@ module MSpec
   @after   = nil
   @leave   = nil
   @finish  = nil
-  @exclude = []
-  @include = []
+  @exclude = nil
+  @include = nil
   @leave   = nil
   @load    = nil
   @unload  = nil
@@ -32,19 +33,13 @@ module MSpec
   @guarded = []
   @features     = {}
   @exception    = nil
-  @randomize    = false
-  @repeat       = 1
+  @randomize    = nil
+  @repeat       = nil
   @expectation  = nil
   @expectations = false
 
-  class << self
-    attr_reader :file, :include, :exclude
-    attr_writer :repeat, :randomize
-    attr_accessor :formatter
-  end
-
-  def self.describe(description, options = nil, &block)
-    state = ContextState.new description, options
+  def self.describe(mod, options = nil, &block)
+    state = ContextState.new mod, options
     state.parent = current
 
     MSpec.register_current state
@@ -60,10 +55,6 @@ module MSpec
     actions :start
     files
     actions :finish
-  end
-
-  def self.files_array
-    @files
   end
 
   def self.each_file(&block)
@@ -83,7 +74,7 @@ module MSpec
       # The parent closed the connection without QUIT
       abort "the parent did not send QUIT"
     else
-      return unless files = @files
+      return unless files = retrieve(:files)
       shuffle files if randomize?
       files.each(&block)
     end
@@ -92,11 +83,10 @@ module MSpec
   def self.files
     each_file do |file|
       setup_env
-      @file = file
+      store :file, file
       actions :load
       protect("loading #{file}") { Kernel.load file }
       actions :unload
-      raise "#{file} was executed but did not reset the current example: #{@current}" if @current
     end
   end
 
@@ -111,7 +101,7 @@ module MSpec
 
   def self.protect(location, &block)
     begin
-      @env.instance_exec(&block)
+      @env.instance_eval(&block)
       return true
     rescue SystemExit => e
       raise e
@@ -140,24 +130,22 @@ module MSpec
 
   # Sets the toplevel ContextState to +state+.
   def self.register_current(state)
-    @current = state
+    store :current, state
   end
 
   # Sets the toplevel ContextState to +nil+.
   def self.clear_current
-    @current = nil
+    store :current, nil
   end
 
   # Returns the toplevel ContextState.
   def self.current
-    @current
+    retrieve :current
   end
 
   # Stores the shared ContextState keyed by description.
   def self.register_shared(state)
-    name = state.to_s
-    raise "duplicated shared #describe: #{name}" if @shared.key?(name)
-    @shared[name] = state
+    @shared[state.to_s] = state
   end
 
   # Returns the shared ContextState matching description.
@@ -167,17 +155,17 @@ module MSpec
 
   # Stores the exit code used by the runner scripts.
   def self.register_exit(code)
-    @exit = code
+    store :exit, code
   end
 
   # Retrieves the stored exit code.
   def self.exit_code
-    @exit.to_i
+    retrieve(:exit).to_i
   end
 
   # Stores the list of files to be evaluated.
   def self.register_files(files)
-    @files = files
+    store :files, files
   end
 
   # Stores one or more substitution patterns for transforming
@@ -188,7 +176,7 @@ module MSpec
   #
   # See also +tags_file+.
   def self.register_tags_patterns(patterns)
-    @tags_patterns = patterns
+    store :tags_patterns, patterns
   end
 
   # Registers an operating mode. Modes recognized by MSpec:
@@ -199,30 +187,30 @@ module MSpec
   #   :report - specs that are guarded are reported
   #   :unguarded - all guards are forced off
   def self.register_mode(mode)
-    modes = @modes
+    modes = retrieve :modes
     modes << mode unless modes.include? mode
   end
 
   # Clears all registered modes.
   def self.clear_modes
-    @modes = []
+    store :modes, []
   end
 
   # Returns +true+ if +mode+ is registered.
   def self.mode?(mode)
-    @modes.include? mode
+    retrieve(:modes).include? mode
   end
 
   def self.enable_feature(feature)
-    @features[feature] = true
+    retrieve(:features)[feature] = true
   end
 
   def self.disable_feature(feature)
-    @features[feature] = false
+    retrieve(:features)[feature] = false
   end
 
   def self.feature_enabled?(feature)
-    @features[feature] || false
+    retrieve(:features)[feature] || false
   end
 
   def self.retrieve(symbol)
@@ -271,17 +259,21 @@ module MSpec
     end
   end
 
+  def self.randomize(flag = true)
+    @randomize = flag
+  end
+
   def self.randomize?
-    @randomize
+    @randomize == true
+  end
+
+  def self.repeat=(times)
+    @repeat = times
   end
 
   def self.repeat
-    if @repeat == 1
+    (@repeat || 1).times do
       yield
-    else
-      @repeat.times do
-        yield
-      end
     end
   end
 
@@ -297,17 +289,17 @@ module MSpec
 
   # Records that an expectation has been encountered in an example.
   def self.expectation
-    @expectations = true
+    store :expectations, true
   end
 
   # Returns true if an expectation has been encountered
   def self.expectation?
-    @expectations
+    retrieve :expectations
   end
 
   # Resets the flag that an expectation has been encountered in an example.
   def self.clear_expectations
-    @expectations = false
+    store :expectations, false
   end
 
   # Transforms a spec filename into a tags filename by applying each
@@ -321,9 +313,9 @@ module MSpec
   #
   # See also +register_tags_patterns+.
   def self.tags_file
-    patterns = @tags_patterns ||
+    patterns = retrieve(:tags_patterns) ||
                [[%r(spec/), 'spec/tags/'], [/_spec.rb$/, '_tags.txt']]
-    patterns.inject(@file.dup) do |file, pattern|
+    patterns.inject(retrieve(:file).dup) do |file, pattern|
       file.gsub(*pattern)
     end
   end

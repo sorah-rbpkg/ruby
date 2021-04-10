@@ -58,8 +58,8 @@ describe 'The -K command line option' do
   end
 
   it "ignores unknown codes" do
-    external = Encoding.find('external')
+    locale = Encoding.find('locale')
     ruby_exe(@test_string, options: '-KZ').should ==
-      [Encoding::UTF_8.name, external.name, nil].inspect
+      [Encoding::UTF_8.name, locale.name, nil].inspect
   end
 end

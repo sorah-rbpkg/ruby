@@ -17,7 +17,7 @@
 
 require "socket"
 require "monitor"
-require "net/protocol"
+require_relative "protocol"
 require "time"
 begin
   require "openssl"
@@ -85,7 +85,6 @@ module Net
     end
 
     # :stopdoc:
-    VERSION = "0.1.1"
     FTP_PORT = 21
     CRLF = "\r\n"
     DEFAULT_BLOCKSIZE = BufferedIO::BUFSIZE
@@ -183,16 +182,16 @@ module Net
     # The available options are:
     #
     # port::      Port number (default value is 21)
-    # ssl::       If +options+[:ssl] is true, then an attempt will be made
+    # ssl::       If options[:ssl] is true, then an attempt will be made
     #             to use SSL (now TLS) to connect to the server.  For this
     #             to work OpenSSL [OSSL] and the Ruby OpenSSL [RSSL]
-    #             extensions need to be installed.  If +options+[:ssl] is a
+    #             extensions need to be installed.  If options[:ssl] is a
     #             hash, it's passed to OpenSSL::SSL::SSLContext#set_params
     #             as parameters.
     # private_data_connection::  If true, TLS is used for data connections.
-    #                            Default: +true+ when +options+[:ssl] is true.
-    # username::  Username for login.  If +options+[:username] is the string
-    #             "anonymous" and the +options+[:password] is +nil+,
+    #                            Default: +true+ when options[:ssl] is true.
+    # username::  Username for login.  If options[:username] is the string
+    #             "anonymous" and the options[:password] is +nil+,
     #             "anonymous@" is used as a password.
     # password::  Password for login.
     # account::   Account information for ACCT.
@@ -1045,11 +1044,11 @@ module Net
     TIME_PARSER = ->(value, local = false) {
       unless /\A(?<year>\d{4})(?<month>\d{2})(?<day>\d{2})
             (?<hour>\d{2})(?<min>\d{2})(?<sec>\d{2})
-            (?:\.(?<fractions>\d+))?/x =~ value
+            (\.(?<fractions>\d+))?/x =~ value
         raise FTPProtoError, "invalid time-val: #{value}"
       end
       usec = fractions.to_i * 10 ** (6 - fractions.to_s.size)
-      Time.public_send(local ? :local : :utc, year, month, day, hour, min, sec, usec)
+      Time.send(local ? :local : :utc, year, month, day, hour, min, sec, usec)
     }
     FACT_PARSERS = Hash.new(CASE_DEPENDENT_PARSER)
     FACT_PARSERS["size"] = DECIMAL_PARSER
@@ -1370,7 +1369,7 @@ module Net
       if !resp.start_with?("227")
         raise FTPReplyError, resp
       end
-      if m = /\((?<host>\d+(?:,\d+){3}),(?<port>\d+,\d+)\)/.match(resp)
+      if m = /\((?<host>\d+(,\d+){3}),(?<port>\d+,\d+)\)/.match(resp)
         return parse_pasv_ipv4_host(m["host"]), parse_pasv_port(m["port"])
       else
         raise FTPProtoError, resp
@@ -1386,9 +1385,9 @@ module Net
       if !resp.start_with?("228")
         raise FTPReplyError, resp
       end
-      if m = /\(4,4,(?<host>\d+(?:,\d+){3}),2,(?<port>\d+,\d+)\)/.match(resp)
+      if m = /\(4,4,(?<host>\d+(,\d+){3}),2,(?<port>\d+,\d+)\)/.match(resp)
         return parse_pasv_ipv4_host(m["host"]), parse_pasv_port(m["port"])
-      elsif m = /\(6,16,(?<host>\d+(?:,\d+){15}),2,(?<port>\d+,\d+)\)/.match(resp)
+      elsif m = /\(6,16,(?<host>\d+(,(\d+)){15}),2,(?<port>\d+,\d+)\)/.match(resp)
         return parse_pasv_ipv6_host(m["host"]), parse_pasv_port(m["port"])
       else
         raise FTPProtoError, resp

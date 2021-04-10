@@ -36,9 +36,4 @@ describe "CGI.unescapeHTML" do
     input = "fooooooo&#"
     CGI.unescapeHTML(input).should == input
   end
-
-  it "unescapes invalid encoding" do
-    input = "\xFF&"
-    CGI.unescapeHTML(input).should == input
-  end
 end

@@ -40,8 +40,8 @@ describe "Array#delete" do
     [1, 2, 3].freeze.delete(0).should == nil
   end
 
-  it "raises a FrozenError on a frozen array" do
-    -> { [1, 2, 3].freeze.delete(1) }.should raise_error(FrozenError)
+  it "raises a #{frozen_error_class} on a frozen array" do
+    -> { [1, 2, 3].freeze.delete(1) }.should raise_error(frozen_error_class)
   end
 
   ruby_version_is ''...'2.7' do

@@ -14,7 +14,7 @@ describe "IO#close" do
 
   it "closes the stream" do
     @io.close
-    @io.should.closed?
+    @io.closed?.should == true
   end
 
   it "returns nil" do
@@ -44,20 +44,22 @@ describe "IO#close" do
     @io.close.should be_nil
   end
 
-  it 'raises an IOError with a clear message' do
-    read_io, write_io = IO.pipe
-    going_to_read = false
-    thread = Thread.new do
-      -> do
-        going_to_read = true
-        read_io.read
-      end.should raise_error(IOError, 'stream closed in another thread')
-    end
+  ruby_version_is '2.5' do
+    it 'raises an IOError with a clear message' do
+      read_io, write_io = IO.pipe
+      going_to_read = false
+      thread = Thread.new do
+        -> do
+          going_to_read = true
+          read_io.read
+        end.should raise_error(IOError, 'stream closed in another thread')
+      end
 
-    Thread.pass until going_to_read && thread.stop?
-    read_io.close
-    thread.join
-    write_io.close
+      Thread.pass until going_to_read && thread.stop?
+      read_io.close
+      thread.join
+      write_io.close
+    end
   end
 end
 

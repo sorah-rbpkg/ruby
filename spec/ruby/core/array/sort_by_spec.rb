@@ -23,12 +23,12 @@ describe "Array#sort_by!" do
     a.should be_an_instance_of(Array)
   end
 
-  it "raises a FrozenError on a frozen array" do
-    -> { ArraySpecs.frozen_array.sort_by! {}}.should raise_error(FrozenError)
+  it "raises a #{frozen_error_class} on a frozen array" do
+    -> { ArraySpecs.frozen_array.sort_by! {}}.should raise_error(frozen_error_class)
   end
 
-  it "raises a FrozenError on an empty frozen array" do
-    -> { ArraySpecs.empty_frozen_array.sort_by! {}}.should raise_error(FrozenError)
+  it "raises a #{frozen_error_class} on an empty frozen array" do
+    -> { ArraySpecs.empty_frozen_array.sort_by! {}}.should raise_error(frozen_error_class)
   end
 
   it "returns the specified value when it would break in the given block" do

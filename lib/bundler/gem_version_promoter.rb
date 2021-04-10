@@ -7,7 +7,7 @@ module Bundler
   # available dependency versions as found in its index, before returning it to
   # to the resolution engine to select the best version.
   class GemVersionPromoter
-    DEBUG = ENV["BUNDLER_DEBUG_RESOLVER"] || ENV["DEBUG_RESOLVER"]
+    DEBUG = ENV["DEBUG_RESOLVER"]
 
     attr_reader :level, :locked_specs, :unlock_gems
 
@@ -98,7 +98,7 @@ module Bundler
       level == :minor
     end
 
-    private
+  private
 
     def filter_dep_specs(spec_groups, locked_spec)
       res = spec_groups.select do |spec_group|

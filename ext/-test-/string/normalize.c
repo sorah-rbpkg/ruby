@@ -1,4 +1,4 @@
-#include "internal/file.h"
+#include "internal.h"
 
 #ifdef __APPLE__
 static VALUE

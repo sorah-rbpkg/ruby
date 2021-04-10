@@ -23,8 +23,8 @@ platform_is_not :windows do
 
         st = f.stat
 
-        st.should.file?
-        st.should_not.zero?
+        st.file?.should == true
+        st.zero?.should == false
         st.size.should == 8
         st.size?.should == 8
         st.blksize.should >= 0
@@ -38,18 +38,8 @@ platform_is_not :windows do
       File.symlink(@file, @link)
       st = File.stat(@link)
 
-      st.should.file?
-      st.should_not.symlink?
-    end
-
-    it "returns an error when given missing non-ASCII path" do
-      missing_path = "/missingfilepath\xE3E4".b
-      -> {
-        File.stat(missing_path)
-      }.should raise_error(SystemCallError) { |e|
-        [Errno::ENOENT, Errno::EILSEQ].should include(e.class)
-        e.message.should include(missing_path)
-      }
+      st.file?.should == true
+      st.symlink?.should == false
     end
   end
 end

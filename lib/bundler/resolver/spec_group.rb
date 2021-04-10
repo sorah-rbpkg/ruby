@@ -6,10 +6,9 @@ module Bundler
       include GemHelpers
 
       attr_accessor :name, :version, :source
-      attr_accessor :ignores_bundler_dependencies, :activated_platforms
+      attr_accessor :ignores_bundler_dependencies
 
       def initialize(all_specs)
-        @all_specs = all_specs
         raise ArgumentError, "cannot initialize with an empty value" unless exemplary_spec = all_specs.first
         @name = exemplary_spec.name
         @version = exemplary_spec.version
@@ -25,40 +24,32 @@ module Bundler
 
       def to_specs
         @activated_platforms.map do |p|
-          specs = @specs[p]
-          next unless specs.any?
-
-          specs.map do |s|
-            lazy_spec = LazySpecification.new(name, version, s.platform, source)
-            lazy_spec.dependencies.replace s.dependencies
-            lazy_spec
-          end
-        end.flatten.compact.uniq
+          next unless s = @specs[p]
+          lazy_spec = LazySpecification.new(name, version, s.platform, source)
+          lazy_spec.dependencies.replace s.dependencies
+          lazy_spec
+        end.compact
       end
 
-      def copy_for(platforms)
-        platforms.select! {|p| for?(p) }
-        return unless platforms.any?
-
-        copied_sg = self.class.new(@all_specs)
-        copied_sg.ignores_bundler_dependencies = @ignores_bundler_dependencies
-        copied_sg.activated_platforms = platforms
-        copied_sg
+      def activate_platform!(platform)
+        return unless for?(platform)
+        return if @activated_platforms.include?(platform)
+        @activated_platforms << platform
       end
 
       def for?(platform)
-        @specs[platform].any?
+        spec = @specs[platform]
+        !spec.nil?
       end
 
       def to_s
-        activated_platforms_string = sorted_activated_platforms.join(", ")
-        "#{name} (#{version}) (#{activated_platforms_string})"
+        @to_s ||= "#{name} (#{version})"
       end
 
       def dependencies_for_activated_platforms
         dependencies = @activated_platforms.map {|p| __dependencies[p] }
         metadata_dependencies = @activated_platforms.map do |platform|
-          metadata_dependencies(@specs[platform].first, platform)
+          metadata_dependencies(@specs[platform], platform)
         end
         dependencies.concat(metadata_dependencies).flatten
       end
@@ -67,7 +58,6 @@ module Bundler
         return unless other.is_a?(SpecGroup)
         name == other.name &&
           version == other.version &&
-          sorted_activated_platforms == other.sorted_activated_platforms &&
           source == other.source
       end
 
@@ -75,27 +65,19 @@ module Bundler
         return unless other.is_a?(SpecGroup)
         name.eql?(other.name) &&
           version.eql?(other.version) &&
-          sorted_activated_platforms.eql?(other.sorted_activated_platforms) &&
           source.eql?(other.source)
       end
 
       def hash
-        name.hash ^ version.hash ^ sorted_activated_platforms.hash ^ source.hash
+        to_s.hash ^ source.hash
       end
 
-      protected
-
-      def sorted_activated_platforms
-        @activated_platforms.sort_by(&:to_s)
-      end
-
-      private
+    private
 
       def __dependencies
         @dependencies = Hash.new do |dependencies, platform|
           dependencies[platform] = []
-          specs = @specs[platform]
-          if spec = specs.first
+          if spec = @specs[platform]
             spec.dependencies.each do |dep|
               next if dep.type == :development
               next if @ignores_bundler_dependencies && dep.name == "bundler".freeze
@@ -107,7 +89,10 @@ module Bundler
       end
 
       def metadata_dependencies(spec, platform)
-        return [] unless spec && spec.is_a?(Gem::Specification)
+        return [] unless spec
+        # Only allow endpoint specifications since they won't hit the network to
+        # fetch the full gemspec when calling required_ruby_version
+        return [] if !spec.is_a?(EndpointSpecification) && !spec.is_a?(Gem::Specification)
         dependencies = []
         if !spec.required_ruby_version.nil? && !spec.required_ruby_version.none?
           dependencies << DepProxy.new(Gem::Dependency.new("Ruby\0", spec.required_ruby_version), platform)

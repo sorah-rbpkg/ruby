@@ -5,6 +5,7 @@
 # dependency resolution in the resolver is included.
 
 class Gem::Resolver::Specification
+
   ##
   # The dependencies of the gem for this specification
 
@@ -44,16 +45,6 @@ class Gem::Resolver::Specification
   attr_reader :version
 
   ##
-  # The required_ruby_version constraint for this specification.
-
-  attr_reader :required_ruby_version
-
-  ##
-  # The required_ruby_version constraint for this specification.
-
-  attr_reader :required_rubygems_version
-
-  ##
   # Sets default instance variables for the specification.
 
   def initialize
@@ -63,8 +54,6 @@ class Gem::Resolver::Specification
     @set          = nil
     @source       = nil
     @version      = nil
-    @required_ruby_version = Gem::Requirement.default
-    @required_rubygems_version = Gem::Requirement.default
   end
 
   ##
@@ -116,10 +105,11 @@ class Gem::Resolver::Specification
   # Returns true if this specification is installable on this platform.
 
   def installable_platform?
-    Gem::Platform.match_spec? spec
+    Gem::Platform.match spec.platform
   end
 
   def local? # :nodoc:
     false
   end
+
 end

@@ -4,11 +4,8 @@ describe :file_readable, shared: true do
     platform_is :windows do
       @file2 = File.join(ENV["WINDIR"], "system32/drivers/etc/services").tr(File::SEPARATOR, File::ALT_SEPARATOR)
     end
-    platform_is_not :windows, :android do
+    platform_is_not :windows do
       @file2 = "/etc/passwd"
-    end
-    platform_is :android do
-      @file2 = "/system/bin/sh"
     end
   end
 

@@ -248,14 +248,26 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 	/* now append the file name */
 	i = fnlen;
 	if (fspace < i) {
-            goto toolong;
+	  toolong:
+	    PATHNAME_TOO_LONG();
+	    goto next;
 	}
 	fspace -= i;
 	memcpy(bp, fname, i + 1);
 
 #if defined(DOSISH)
 	if (exe_flag && !ext) {
-            goto needs_extension;
+	  needs_extension:
+	    for (j = 0; j < sizeof(extension) / sizeof(extension[0]); j++) {
+		if (fspace < strlen(extension[j])) {
+		    PATHNAME_TOO_LONG();
+		    continue;
+		}
+		strlcpy(bp + i, extension[j], fspace);
+		if (stat(fbuf, &st) == 0)
+		    return fbuf;
+	    }
+	    goto next;
 	}
 #endif
 
@@ -272,25 +284,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 	if (*ep == '\0') {
 	    return NULL;
 	}
-        continue;
 
-      toolong:
-        PATHNAME_TOO_LONG();
-        goto next;
-
-#if defined(DOSISH)
-      needs_extension:
-        for (j = 0; j < sizeof(extension) / sizeof(extension[0]); j++) {
-            if (fspace < strlen(extension[j])) {
-                PATHNAME_TOO_LONG();
-                continue;
-            }
-            strlcpy(bp + i, extension[j], fspace);
-            if (stat(fbuf, &st) == 0)
-                return fbuf;
-        }
-        goto next;
-#endif
 	/* otherwise try the next component in the search path */
     }
 }

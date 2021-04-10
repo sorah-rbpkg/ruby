@@ -124,7 +124,6 @@ module Bundler::Molinillo
       dot.join("\n")
     end
 
-    # @param [DependencyGraph] other
     # @return [Boolean] whether the two dependency graphs are equal, determined
     #   by a recursive traversal of each {#root_vertices} and its
     #   {Vertex#successors}
@@ -191,7 +190,7 @@ module Bundler::Molinillo
     # @return [Edge] the added edge
     def add_edge(origin, destination, requirement)
       if destination.path_to?(origin)
-        raise CircularDependencyError.new(path(destination, origin))
+        raise CircularDependencyError.new([origin, destination])
       end
       add_edge_no_circular(origin, destination, requirement)
     end
@@ -219,38 +218,6 @@ module Bundler::Molinillo
     # @return (see #add_edge)
     def add_edge_no_circular(origin, destination, requirement)
       log.add_edge_no_circular(self, origin.name, destination.name, requirement)
-    end
-
-    # Returns the path between two vertices
-    # @raise [ArgumentError] if there is no path between the vertices
-    # @param [Vertex] from
-    # @param [Vertex] to
-    # @return [Array<Vertex>] the shortest path from `from` to `to`
-    def path(from, to)
-      distances = Hash.new(vertices.size + 1)
-      distances[from.name] = 0
-      predecessors = {}
-      each do |vertex|
-        vertex.successors.each do |successor|
-          if distances[successor.name] > distances[vertex.name] + 1
-            distances[successor.name] = distances[vertex.name] + 1
-            predecessors[successor] = vertex
-          end
-        end
-      end
-
-      path = [to]
-      while before = predecessors[to]
-        path << before
-        to = before
-        break if to == from
-      end
-
-      unless path.last.equal?(from)
-        raise ArgumentError, "There is no path from #{from.name} to #{to.name}"
-      end
-
-      path.reverse
     end
   end
 end

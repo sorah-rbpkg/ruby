@@ -1,23 +1,15 @@
 # frozen_string_literal: true
 class LeakChecker
-  @@try_lsof = nil # not-tried-yet
-
   def initialize
     @fd_info = find_fds
-    @@skip = false
     @tempfile_info = find_tempfiles
     @thread_info = find_threads
     @env_info = find_env
     @encoding_info = find_encodings
     @old_verbose = $VERBOSE
-    @old_warning_flags = find_warning_flags
   end
 
   def check(test_name)
-    if /i386-solaris/ =~ RUBY_PLATFORM && /TestGem/ =~ test_name
-      GC.verify_internal_consistency
-    end
-
     leaks = [
       check_fd_leak(test_name),
       check_thread_leak(test_name),
@@ -25,7 +17,6 @@ class LeakChecker
       check_env(test_name),
       check_encodings(test_name),
       check_verbose(test_name),
-      check_warning_flags(test_name),
     ]
     GC.start if leaks.any?
   end
@@ -38,19 +29,19 @@ class LeakChecker
     if IO.respond_to?(:console) and (m = IO.method(:console)).arity.nonzero?
       m[:close]
     end
-    %w"/proc/self/fd /dev/fd".each do |fd_dir|
-      if File.directory?(fd_dir)
-        fds = Dir.open(fd_dir) {|d|
-          a = d.grep(/\A\d+\z/, &:to_i)
-          if d.respond_to? :fileno
-            a -= [d.fileno]
-          end
-          a
-        }
-        return fds.sort
-      end
+    fd_dir = "/proc/self/fd"
+    if File.directory?(fd_dir)
+      fds = Dir.open(fd_dir) {|d|
+        a = d.grep(/\A\d+\z/, &:to_i)
+        if d.respond_to? :fileno
+          a -= [d.fileno]
+        end
+        a
+      }
+      fds.sort
+    else
+      []
     end
-    []
   end
 
   def check_fd_leak(test_name)
@@ -64,7 +55,7 @@ class LeakChecker
       }
     end
     fd_leaked = live2 - live1
-    if !@@skip && !fd_leaked.empty?
+    if !fd_leaked.empty?
       leaked = true
       h = {}
       ObjectSpace.each_object(IO) {|io|
@@ -77,7 +68,7 @@ class LeakChecker
         end
         (h[fd] ||= []) << [io, autoclose, inspect]
       }
-      fd_leaked.select! {|fd|
+      fd_leaked.each {|fd|
         str = ''.dup
         pos = nil
         if h[fd]
@@ -92,39 +83,20 @@ class LeakChecker
           }.sort.each {|s|
             str << s
           }
-        else
-          begin
-            io = IO.for_fd(fd, autoclose: false)
-            s = io.stat
-          rescue Errno::EBADF
-            # something un-stat-able
-            next
-          else
-            next if /darwin/ =~ RUBY_PLATFORM and [0, -1].include?(s.dev)
-            str << ' ' << s.inspect
-          ensure
-            io&.close
-          end
         end
         puts "Leaked file descriptor: #{test_name}: #{fd}#{str}"
         puts "  The IO was created at #{pos}" if pos
-        true
       }
-      unless fd_leaked.empty?
-        unless @@try_lsof == false
-          @@try_lsof |= system("lsof -p #$$", out: MiniTest::Unit.output)
-        end
-      end
+      #system("lsof -p #$$") if !fd_leaked.empty?
       h.each {|fd, list|
         next if list.length <= 1
         if 1 < list.count {|io, autoclose, inspect| autoclose }
           str = list.map {|io, autoclose, inspect| " #{inspect}" + (autoclose ? "(autoclose)" : "") }.sort.join
-          puts "Multiple autoclose IO objects for a file descriptor in: #{test_name}: #{str}"
+          puts "Multiple autoclose IO object for a file descriptor:#{str}"
         end
       }
     end
     @fd_info = live2
-    @@skip = false
     return leaked
   end
 
@@ -239,49 +211,22 @@ class LeakChecker
   end
 
   def find_encodings
-    {
-      'Encoding.default_internal' => Encoding.default_internal,
-      'Encoding.default_external' => Encoding.default_external,
-      'STDIN.internal_encoding' => STDIN.internal_encoding,
-      'STDIN.external_encoding' => STDIN.external_encoding,
-      'STDOUT.internal_encoding' => STDOUT.internal_encoding,
-      'STDOUT.external_encoding' => STDOUT.external_encoding,
-      'STDERR.internal_encoding' => STDERR.internal_encoding,
-      'STDERR.external_encoding' => STDERR.external_encoding,
-    }
+    [Encoding.default_internal, Encoding.default_external]
   end
 
   def check_encodings(test_name)
-    old_encoding_info = @encoding_info
-    @encoding_info = find_encodings
+    old_internal, old_external = @encoding_info
+    new_internal, new_external = find_encodings
     leaked = false
-    @encoding_info.each do |key, new_encoding|
-      old_encoding = old_encoding_info[key]
-      if new_encoding != old_encoding
-        leaked = true
-        puts "#{key} changed: #{test_name} : #{old_encoding.inspect} to #{new_encoding.inspect}"
-      end
+    if new_internal != old_internal
+      leaked = true
+      puts "Encoding.default_internal changed: #{test_name} : #{old_internal.inspect} to #{new_internal.inspect}"
     end
-    leaked
-  end
-
-  WARNING_CATEGORIES = (Warning.respond_to?(:[]) ? %i[deprecated experimental] : []).freeze
-
-  def find_warning_flags
-    WARNING_CATEGORIES.to_h do |category|
-      [category, Warning[category]]
+    if new_external != old_external
+      leaked = true
+      puts "Encoding.default_external changed: #{test_name} : #{old_external.inspect} to #{new_external.inspect}"
     end
-  end
-
-  def check_warning_flags(test_name)
-    new_warning_flags = find_warning_flags
-    leaked = false
-    WARNING_CATEGORIES.each do |category|
-      if new_warning_flags[category] != @old_warning_flags[category]
-        leaked = true
-        puts "Warning[#{category.inspect}] changed: #{test_name} : #{@old_warning_flags[category]} to #{new_warning_flags[category]}"
-      end
-    end
+    @encoding_info = [new_internal, new_external]
     return leaked
   end
 
@@ -291,9 +236,5 @@ class LeakChecker
       output.set_encoding(nil, nil)
     end
     output.puts(*a)
-  end
-
-  def self.skip
-    @@skip = true
   end
 end

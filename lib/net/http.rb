@@ -20,7 +20,7 @@
 # See Net::HTTP for an overview and examples.
 #
 
-require 'net/protocol'
+require_relative 'protocol'
 require 'uri'
 autoload :OpenSSL, 'openssl'
 
@@ -388,7 +388,6 @@ module Net   #:nodoc:
   class HTTP < Protocol
 
     # :stopdoc:
-    VERSION = "0.1.1"
     Revision = %q$Revision$.split[1]
     HTTPVersion = '1.1'
     begin
@@ -428,7 +427,7 @@ module Net   #:nodoc:
     #
     # Gets the body text from the target and outputs it to $stdout.  The
     # target can either be specified as
-    # (+uri+, +headers+), or as (+host+, +path+, +port+ = 80); so:
+    # (+uri+), or as (+host+, +path+, +port+ = 80); so:
     #
     #    Net::HTTP.get_print URI('http://www.example.com/index.html')
     #
@@ -436,12 +435,8 @@ module Net   #:nodoc:
     #
     #    Net::HTTP.get_print 'www.example.com', '/index.html'
     #
-    # you can also specify request headers:
-    #
-    #    Net::HTTP.get_print URI('http://www.example.com/index.html'), { 'Accept' => 'text/html' }
-    #
-    def HTTP.get_print(uri_or_host, path_or_headers = nil, port = nil)
-      get_response(uri_or_host, path_or_headers, port) {|res|
+    def HTTP.get_print(uri_or_host, path = nil, port = nil)
+      get_response(uri_or_host, path, port) {|res|
         res.read_body do |chunk|
           $stdout.print chunk
         end
@@ -451,7 +446,7 @@ module Net   #:nodoc:
 
     # Sends a GET request to the target and returns the HTTP response
     # as a string.  The target can either be specified as
-    # (+uri+, +headers+), or as (+host+, +path+, +port+ = 80); so:
+    # (+uri+), or as (+host+, +path+, +port+ = 80); so:
     #
     #    print Net::HTTP.get(URI('http://www.example.com/index.html'))
     #
@@ -459,17 +454,13 @@ module Net   #:nodoc:
     #
     #    print Net::HTTP.get('www.example.com', '/index.html')
     #
-    # you can also specify request headers:
-    #
-    #    Net::HTTP.get(URI('http://www.example.com/index.html'), { 'Accept' => 'text/html' })
-    #
-    def HTTP.get(uri_or_host, path_or_headers = nil, port = nil)
-      get_response(uri_or_host, path_or_headers, port).body
+    def HTTP.get(uri_or_host, path = nil, port = nil)
+      get_response(uri_or_host, path, port).body
     end
 
     # Sends a GET request to the target and returns the HTTP response
     # as a Net::HTTPResponse object.  The target can either be specified as
-    # (+uri+, +headers+), or as (+host+, +path+, +port+ = 80); so:
+    # (+uri+), or as (+host+, +path+, +port+ = 80); so:
     #
     #    res = Net::HTTP.get_response(URI('http://www.example.com/index.html'))
     #    print res.body
@@ -479,23 +470,17 @@ module Net   #:nodoc:
     #    res = Net::HTTP.get_response('www.example.com', '/index.html')
     #    print res.body
     #
-    # you can also specify request headers:
-    #
-    #    Net::HTTP.get_response(URI('http://www.example.com/index.html'), { 'Accept' => 'text/html' })
-    #
-    def HTTP.get_response(uri_or_host, path_or_headers = nil, port = nil, &block)
-      if path_or_headers && !path_or_headers.is_a?(Hash)
+    def HTTP.get_response(uri_or_host, path = nil, port = nil, &block)
+      if path
         host = uri_or_host
-        path = path_or_headers
         new(host, port || HTTP.default_port).start {|http|
           return http.request_get(path, &block)
         }
       else
         uri = uri_or_host
-        headers = path_or_headers
         start(uri.hostname, uri.port,
               :use_ssl => uri.scheme == 'https') {|http|
-          return http.request_get(uri, headers, &block)
+          return http.request_get(uri, &block)
         }
       end
     end
@@ -586,7 +571,7 @@ module Net   #:nodoc:
     # _opt_     :: optional hash
     #
     # _opt_ sets following values by its accessor.
-    # The keys are ipaddr, ca_file, ca_path, cert, cert_store, ciphers, keep_alive_timeout,
+    # The keys are ipaddr, ca_file, ca_path, cert, cert_store, ciphers,
     # close_on_empty_response, key, open_timeout, read_timeout, write_timeout, ssl_timeout,
     # ssl_version, use_ssl, verify_callback, verify_depth and verify_mode.
     # If you set :use_ssl as true, you can use https and default value of
@@ -851,7 +836,6 @@ module Net   #:nodoc:
       :@cert,
       :@cert_store,
       :@ciphers,
-      :@extra_chain_cert,
       :@key,
       :@ssl_timeout,
       :@ssl_version,
@@ -860,7 +844,6 @@ module Net   #:nodoc:
       :@verify_callback,
       :@verify_depth,
       :@verify_mode,
-      :@verify_hostname,
     ]
     SSL_ATTRIBUTES = [
       :ca_file,
@@ -868,7 +851,6 @@ module Net   #:nodoc:
       :cert,
       :cert_store,
       :ciphers,
-      :extra_chain_cert,
       :key,
       :ssl_timeout,
       :ssl_version,
@@ -877,7 +859,6 @@ module Net   #:nodoc:
       :verify_callback,
       :verify_depth,
       :verify_mode,
-      :verify_hostname,
     ]
 
     # Sets path of a CA certification file in PEM format.
@@ -898,10 +879,6 @@ module Net   #:nodoc:
 
     # Sets the available ciphers.  See OpenSSL::SSL::SSLContext#ciphers=
     attr_accessor :ciphers
-
-    # Sets the extra X509 certificates to be added to the certificate chain.
-    # See OpenSSL::SSL::SSLContext#extra_chain_cert=
-    attr_accessor :extra_chain_cert
 
     # Sets an OpenSSL::PKey::RSA or OpenSSL::PKey::DSA object.
     # (This method is appeared in Michal Rokos's OpenSSL extension.)
@@ -930,10 +907,6 @@ module Net   #:nodoc:
     #
     # OpenSSL::SSL::VERIFY_NONE or OpenSSL::SSL::VERIFY_PEER are acceptable.
     attr_accessor :verify_mode
-
-    # Sets to check the server certificate is valid for the hostname.
-    # See OpenSSL::SSL::SSLContext#verify_hostname=
-    attr_accessor :verify_hostname
 
     # Returns the X.509 certificates the server presented.
     def peer_cert
@@ -1013,11 +986,9 @@ module Net   #:nodoc:
         ssl_parameters = Hash.new
         iv_list = instance_variables
         SSL_IVNAMES.each_with_index do |ivname, i|
-          if iv_list.include?(ivname)
+          if iv_list.include?(ivname) and
             value = instance_variable_get(ivname)
-            unless value.nil?
-              ssl_parameters[SSL_ATTRIBUTES[i]] = value
-            end
+            ssl_parameters[SSL_ATTRIBUTES[i]] = value if value
           end
         end
         @ssl_context = OpenSSL::SSL::SSLContext.new
@@ -1036,7 +1007,7 @@ module Net   #:nodoc:
           s.session = @ssl_session
         end
         ssl_socket_connect(s, @open_timeout)
-        if (@ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE) && @ssl_context.verify_hostname
+        if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
           s.post_connection_check(@address)
         end
         D "SSL established, protocol: #{s.ssl_version}, cipher: #{s.cipher[0]}"

@@ -1,6 +1,5 @@
-#include "internal.h"
-#include "internal/string.h"
 #include "ruby/encoding.h"
+#include "internal.h"
 
 static VALUE
 bug_str_cstr_term(VALUE str)

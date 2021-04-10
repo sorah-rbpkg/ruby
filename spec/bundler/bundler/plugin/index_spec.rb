@@ -4,7 +4,6 @@ RSpec.describe Bundler::Plugin::Index do
   Index = Bundler::Plugin::Index
 
   before do
-    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     gemfile ""
     path = lib_path(plugin_name)
     index.register_plugin("new-plugin", path.to_s, [path.join("lib").to_s], commands, sources, hooks)
@@ -118,11 +117,11 @@ RSpec.describe Bundler::Plugin::Index do
 
   describe "global index" do
     before do
-      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(nil)
-
-      Bundler::Plugin.reset!
-      path = lib_path("gplugin")
-      index.register_plugin("gplugin", path.to_s, [path.join("lib").to_s], [], ["glb_source"], [])
+      Dir.chdir(tmp) do
+        Bundler::Plugin.reset!
+        path = lib_path("gplugin")
+        index.register_plugin("gplugin", path.to_s, [path.join("lib").to_s], [], ["glb_source"], [])
+      end
     end
 
     it "skips sources" do

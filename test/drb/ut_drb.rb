@@ -69,7 +69,7 @@ class DRbEx
     private def priv; 3; end
   end
   def basic_object
-    @basic_object = BO.new
+    BO.new
   end
 
   def unknown_class

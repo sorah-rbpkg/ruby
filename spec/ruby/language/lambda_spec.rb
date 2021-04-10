@@ -179,33 +179,17 @@ describe "A lambda literal -> () { }" do
       result.should == [1, 2, 3, [4, 5], 6, [7, 8], 9, 10, 11, 12]
     end
 
-    ruby_version_is ''...'3.0' do
-      evaluate <<-ruby do
-          @a = -> (*, **k) { k }
-        ruby
+    evaluate <<-ruby do
+        @a = -> (*, **k) { k }
+      ruby
 
-        @a.().should == {}
-        @a.(1, 2, 3, a: 4, b: 5).should == {a: 4, b: 5}
+      @a.().should == {}
+      @a.(1, 2, 3, a: 4, b: 5).should == {a: 4, b: 5}
 
-        suppress_keyword_warning do
-          h = mock("keyword splat")
-          h.should_receive(:to_hash).and_return({a: 1})
-          @a.(h).should == {a: 1}
-        end
-      end
-    end
-
-    ruby_version_is '3.0' do
-      evaluate <<-ruby do
-          @a = -> (*, **k) { k }
-        ruby
-
-        @a.().should == {}
-        @a.(1, 2, 3, a: 4, b: 5).should == {a: 4, b: 5}
-
+      suppress_keyword_warning do
         h = mock("keyword splat")
-        h.should_not_receive(:to_hash)
-        @a.(h).should == {}
+        h.should_receive(:to_hash).and_return({a: 1})
+        @a.(h).should == {a: 1}
       end
     end
 
@@ -348,14 +332,15 @@ describe "A lambda expression 'lambda { ... }'" do
   end
 
   it "requires a block" do
-    suppress_warning do
-      lambda { lambda }.should raise_error(ArgumentError)
+    lambda { lambda }.should raise_error(ArgumentError)
+  end
+
+  ruby_version_is "2.5" do
+    it "may include a rescue clause" do
+      eval('lambda do raise ArgumentError; rescue ArgumentError; 7; end').should be_an_instance_of(Proc)
     end
   end
 
-  it "may include a rescue clause" do
-    eval('lambda do raise ArgumentError; rescue ArgumentError; 7; end').should be_an_instance_of(Proc)
-  end
 
   context "with an implicit block" do
     before do
@@ -377,11 +362,9 @@ describe "A lambda expression 'lambda { ... }'" do
     ruby_version_is "2.7" do
       it "raises ArgumentError" do
         implicit_lambda = nil
-        suppress_warning do
-          -> {
-            meth { 1 }
-          }.should raise_error(ArgumentError, /tried to create Proc object without a block/)
-        end
+        -> {
+          meth { 1 }
+        }.should raise_error(ArgumentError, /tried to create Proc object without a block/)
       end
     end
   end
@@ -550,33 +533,17 @@ describe "A lambda expression 'lambda { ... }'" do
       result.should == [1, 2, 3, [4, 5], 6, [7, 8], 9, 10, 11, 12]
     end
 
-    ruby_version_is ''...'3.0' do
-      evaluate <<-ruby do
-          @a = lambda { |*, **k| k }
-        ruby
+    evaluate <<-ruby do
+        @a = lambda { |*, **k| k }
+      ruby
 
-        @a.().should == {}
-        @a.(1, 2, 3, a: 4, b: 5).should == {a: 4, b: 5}
+      @a.().should == {}
+      @a.(1, 2, 3, a: 4, b: 5).should == {a: 4, b: 5}
 
-        suppress_keyword_warning do
-          h = mock("keyword splat")
-          h.should_receive(:to_hash).and_return({a: 1})
-          @a.(h).should == {a: 1}
-        end
-      end
-    end
-
-    ruby_version_is '3.0' do
-      evaluate <<-ruby do
-          @a = lambda { |*, **k| k }
-        ruby
-
-        @a.().should == {}
-        @a.(1, 2, 3, a: 4, b: 5).should == {a: 4, b: 5}
-
+      suppress_keyword_warning do
         h = mock("keyword splat")
-        h.should_not_receive(:to_hash)
-        @a.(h).should == {}
+        h.should_receive(:to_hash).and_return({a: 1})
+        @a.(h).should == {a: 1}
       end
     end
 

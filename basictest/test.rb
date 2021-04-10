@@ -1425,6 +1425,9 @@ marity_test(:test_ok)
 marity_test(:marity_test)
 marity_test(:p)
 
+lambda(&method(:test_ok)).call(true)
+lambda(&block_get{|a,n| test_ok(a,n)}).call(true, 2)
+
 class ITER_TEST1
    def a
      block_given?
@@ -2137,7 +2140,7 @@ $_ = foobar
 test_ok($_ == foobar)
 
 class Gods
-  @@rule = "Uranus"
+  @@rule = "Uranus"		# private to Gods
   def ruler0
     @@rule
   end
@@ -2160,7 +2163,7 @@ module Olympians
 end
 
 class Titans < Gods
-  @@rule = "Cronus"		# modifies @@rule in Gods
+  @@rule = "Cronus"		# do not affect @@rule in Gods
   include Olympians
   def ruler4
     @@rule
@@ -2175,14 +2178,7 @@ test_ok(Titans.ruler2 == "Cronus")
 atlas = Titans.new
 test_ok(atlas.ruler0 == "Cronus")
 test_ok(atlas.ruler3 == "Zeus")
-begin
-  atlas.ruler4
-rescue RuntimeError => e
-  test_ok(e.message.include?("class variable @@rule of Olympians is overtaken by Gods"))
-else
-  test_ok(false)
-end
-test_ok(atlas.ruler3 == "Zeus")
+test_ok(atlas.ruler4 == "Cronus")
 
 test_check "trace"
 $x = 1234

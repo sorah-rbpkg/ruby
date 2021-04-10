@@ -225,8 +225,6 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
   def test_method_should_use_refinements
-    skip if Minitest::Unit.current_repeat_count > 0
-
     foo = Foo.new
     assert_raise(NameError) { foo.method(:z) }
     assert_equal("FooExt#z", FooExtClient.method_z(foo).call)
@@ -248,8 +246,6 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
   def test_instance_method_should_use_refinements
-    skip if Minitest::Unit.current_repeat_count > 0
-
     foo = Foo.new
     assert_raise(NameError) { Foo.instance_method(:z) }
     assert_equal("FooExt#z", FooExtClient.instance_method_z(foo).bind(foo).call)
@@ -920,7 +916,7 @@ class TestRefinement < Test::Unit::TestCase
         #{PrependAfterRefine_CODE}
         undef PrependAfterRefine
       }
-    }, timeout: 60
+    }, timeout: 30
   end
 
   def test_prepend_after_refine
@@ -1652,6 +1648,7 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_reopen_refinement_module
     assert_separately([], <<-"end;")
+      $VERBOSE = nil
       class C
       end
 
@@ -1668,7 +1665,6 @@ class TestRefinement < Test::Unit::TestCase
 
       module R
         refine C do
-          alias m m
           def m
             :bar
           end
@@ -2384,108 +2380,6 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_prepend_refined_module
     assert_equal(0, Bug13446::GenericEnumerable.new.sum)
-  end
-
-  def test_unbound_refine_method
-    a = EnvUtil.labeled_class("A") do
-      def foo
-        self.class
-      end
-    end
-    b = EnvUtil.labeled_class("B")
-    bar = EnvUtil.labeled_module("R") do
-      break refine a do
-        def foo
-          super
-        end
-      end
-    end
-    assert_raise(TypeError) do
-      bar.instance_method(:foo).bind(b.new)
-    end
-  end
-
-  def test_refine_frozen_class
-    verbose_bak, $VERBOSE = $VERBOSE, nil
-    singleton_class.instance_variable_set(:@x, self)
-    class << self
-      c = Class.new do
-        def foo
-          :cfoo
-        end
-      end
-      foo = Module.new do
-        refine c do
-          def foo
-            :rfoo
-          end
-        end
-      end
-      using foo
-      @x.assert_equal(:rfoo, c.new.foo)
-      c.freeze
-      foo.module_eval do
-        refine c do
-          def foo
-            :rfoo2
-          end
-          def bar
-            :rbar
-          end
-        end
-      end
-      @x.assert_equal(:rfoo2, c.new.foo)
-      @x.assert_equal(:rbar, c.new.bar, '[ruby-core:71391] [Bug #11669]')
-    end
-  ensure
-    $VERBOSE = verbose_bak
-  end
-
-  # [Bug #17386]
-  def test_prepended_with_method_cache
-    foo = Class.new do
-      def foo
-        :Foo
-      end
-    end
-
-    code = Module.new do
-      def foo
-        :Code
-      end
-    end
-
-    _ext = Module.new do
-      refine foo do
-        def foo; end
-      end
-    end
-
-    obj = foo.new
-
-    assert_equal :Foo, obj.foo
-    foo.prepend code
-    assert_equal :Code, obj.foo
-  end
-
-  # [Bug #17417]
-  def test_prepended_with_method_cache_17417
-    assert_normal_exit %q{
-      module M
-        def hoge; end
-      end
-
-      module R
-        refine Hash do
-          def except *args; end
-        end
-      end
-
-      h = {}
-      h.method(:except) # put it on pCMC
-      Hash.prepend(M)
-      h.method(:except)
-    }
   end
 
   private

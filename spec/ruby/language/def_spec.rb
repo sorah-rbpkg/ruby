@@ -89,26 +89,6 @@ describe "An instance method" do
     def foo(a); end
     -> { foo 1, 2 }.should raise_error(ArgumentError, 'wrong number of arguments (given 2, expected 1)')
   end
-
-  it "raises FrozenError with the correct class name" do
-    -> {
-      Module.new do
-        self.freeze
-        def foo; end
-      end
-    }.should raise_error(FrozenError) { |e|
-      e.message.should.start_with? "can't modify frozen module"
-    }
-
-    -> {
-      Class.new do
-        self.freeze
-        def foo; end
-      end
-    }.should raise_error(FrozenError){ |e|
-      e.message.should.start_with? "can't modify frozen class"
-    }
-  end
 end
 
 describe "An instance method definition with a splat" do
@@ -281,29 +261,10 @@ describe "A singleton method definition" do
     (obj==2).should == 2
   end
 
-  it "raises FrozenError if frozen" do
+  it "raises #{frozen_error_class} if frozen" do
     obj = Object.new
     obj.freeze
-    -> { def obj.foo; end }.should raise_error(FrozenError)
-  end
-
-  it "raises FrozenError with the correct class name" do
-    obj = Object.new
-    obj.freeze
-    -> { def obj.foo; end }.should raise_error(FrozenError){ |e|
-      e.message.should.start_with? "can't modify frozen object"
-    }
-
-    c = obj.singleton_class
-    -> { def c.foo; end }.should raise_error(FrozenError){ |e|
-      e.message.should.start_with? "can't modify frozen Class"
-    }
-
-    m = Module.new
-    m.freeze
-    -> { def m.foo; end }.should raise_error(FrozenError){ |e|
-      e.message.should.start_with? "can't modify frozen Module"
-    }
+    -> { def obj.foo; end }.should raise_error(frozen_error_class)
   end
 end
 
@@ -451,12 +412,12 @@ describe "A method definition inside a metaclass scope" do
     -> { Object.new.a_singleton_method }.should raise_error(NoMethodError)
   end
 
-  it "raises FrozenError if frozen" do
+  it "raises #{frozen_error_class} if frozen" do
     obj = Object.new
     obj.freeze
 
     class << obj
-      -> { def foo; end }.should raise_error(FrozenError)
+      -> { def foo; end }.should raise_error(frozen_error_class)
     end
   end
 end

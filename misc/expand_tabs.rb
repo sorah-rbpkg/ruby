@@ -81,6 +81,7 @@ DEFAULT_GEM_LIBS = %w[
   sync
   thwait
   tracer
+  webrick
 ]
 
 DEFAULT_GEM_EXTS = %w[
@@ -95,6 +96,7 @@ DEFAULT_GEM_EXTS = %w[
   json
   openssl
   psych
+  sdbm
   stringio
   strscan
   zlib

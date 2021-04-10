@@ -166,7 +166,8 @@ RSpec.describe "bundle flex_install" do
 
       expect(the_bundle).to include_gems "rack_middleware 1.0", "rack 0.9.1"
 
-      build_repo2 do
+      build_repo2
+      update_repo2 do
         build_gem "rack-obama", "2.0" do |s|
           s.add_dependency "rack", "=1.2"
         end
@@ -183,8 +184,8 @@ RSpec.describe "bundle flex_install" do
     end
 
     it "does not install gems whose dependencies are not met" do
-      bundle :install, :raise_on_error => false
-      ruby <<-RUBY, :raise_on_error => false
+      bundle :install
+      ruby <<-RUBY
         require 'bundler/setup'
       RUBY
       expect(err).to match(/could not find gem 'rack-obama/i)
@@ -209,7 +210,7 @@ RSpec.describe "bundle flex_install" do
         the gems in your Gemfile, which may resolve the conflict.
       E
 
-      bundle :install, :retry => 0, :raise_on_error => false
+      bundle :install, :retry => 0
       expect(err).to end_with(nice_error)
     end
   end
@@ -231,8 +232,8 @@ RSpec.describe "bundle flex_install" do
 
     it "does something" do
       expect do
-        bundle "install", :raise_on_error => false
-      end.not_to change { File.read(bundled_app_lock) }
+        bundle "install"
+      end.not_to change { File.read(bundled_app("Gemfile.lock")) }
 
       expect(err).to include("rack = 0.9.1")
       expect(err).to include("locked at 1.0.0")
@@ -247,11 +248,11 @@ RSpec.describe "bundle flex_install" do
   describe "when adding a new source" do
     it "updates the lockfile", :bundler => "< 3" do
       build_repo2
-      install_gemfile <<-G
+      install_gemfile! <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
-      install_gemfile <<-G
+      install_gemfile! <<-G
         source "#{file_uri_for(gem_repo1)}"
         source "#{file_uri_for(gem_repo2)}"
         gem "rack"
@@ -277,12 +278,12 @@ RSpec.describe "bundle flex_install" do
 
     it "updates the lockfile", :bundler => "3" do
       build_repo2
-      install_gemfile <<-G
+      install_gemfile! <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
-      install_gemfile <<-G
+      install_gemfile! <<-G
         source "#{file_uri_for(gem_repo1)}"
         source "#{file_uri_for(gem_repo2)}" do
         end
@@ -340,7 +341,7 @@ RSpec.describe "bundle flex_install" do
       G
 
       # upgrade Rails to 3.0.0 and then install again
-      install_gemfile <<-G, :raise_on_error => false
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "rails", "3.0.0"
         gem "capybara", "0.3.9"

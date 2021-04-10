@@ -4,7 +4,7 @@ begin
 rescue Gem::LoadError
 end unless defined?(RDoc)
 
-require_relative '../task'
+require 'rdoc/task'
 
 ##
 # RDoc::RI::Task creates ri data in <code>./.rdoc</code> for your project.

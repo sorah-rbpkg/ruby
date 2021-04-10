@@ -2060,7 +2060,7 @@ Init_readline(void)
      * The history buffer. It extends Enumerable module, so it behaves
      * just like an array.
      * For example, gets the fifth content that the user input by
-     * <code>HISTORY[4]</code>.
+     * HISTORY[4].
      */
     rb_define_const(mReadline, "HISTORY", history);
 

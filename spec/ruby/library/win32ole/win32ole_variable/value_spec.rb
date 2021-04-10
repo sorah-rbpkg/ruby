@@ -9,7 +9,7 @@ platform_is :windows do
       @var = ole_type.variables[0]
     end
 
-    it "returns an Integer" do
+    it "returns a Integer" do
       # according to doc, this could return nil
       @var.value.should be_kind_of Integer
     end

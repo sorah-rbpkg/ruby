@@ -19,17 +19,13 @@ describe "String#encode" do
     it "returns a copy when Encoding.default_internal is nil" do
       Encoding.default_internal = nil
       str = "あ"
-      encoded = str.encode
-      encoded.should_not equal(str)
-      encoded.should == str
+      str.encode.should_not equal(str)
     end
 
     it "returns a copy for a ASCII-only String when Encoding.default_internal is nil" do
       Encoding.default_internal = nil
       str = "abc"
-      encoded = str.encode
-      encoded.should_not equal(str)
-      encoded.should == str
+      str.encode.should_not equal(str)
     end
 
     it "encodes an ascii substring of a binary string to UTF-8" do
@@ -43,9 +39,7 @@ describe "String#encode" do
   describe "when passed to encoding" do
     it "returns a copy when passed the same encoding as the String" do
       str = "あ"
-      encoded = str.encode(Encoding::UTF_8)
-      encoded.should_not equal(str)
-      encoded.should == str
+      str.encode(Encoding::UTF_8).should_not equal(str)
     end
 
     it "round trips a String" do
@@ -81,7 +75,6 @@ describe "String#encode" do
       encoded = str.encode("utf-8", "utf-8")
 
       encoded.should_not equal(str)
-      encoded.should == str.force_encoding("utf-8")
       encoded.encoding.should == Encoding::UTF_8
     end
 
@@ -94,28 +87,14 @@ describe "String#encode" do
   describe "when passed to, options" do
     it "returns a copy when the destination encoding is the same as the String encoding" do
       str = "あ"
-      encoded = str.encode(Encoding::UTF_8, undef: :replace)
-      encoded.should_not equal(str)
-      encoded.should == str
+      str.encode(Encoding::UTF_8, undef: :replace).should_not equal(str)
     end
   end
 
   describe "when passed to, from, options" do
     it "returns a copy when both encodings are the same" do
       str = "あ"
-      encoded = str.encode("utf-8", "utf-8", invalid: :replace)
-      encoded.should_not equal(str)
-      encoded.should == str
-    end
-
-    it "returns a copy in the destination encoding when both encodings are the same" do
-      str = "あ"
-      str.force_encoding("binary")
-      encoded = str.encode("utf-8", "utf-8", invalid: :replace)
-
-      encoded.should_not equal(str)
-      encoded.should == str.force_encoding("utf-8")
-      encoded.encoding.should == Encoding::UTF_8
+      str.encode("utf-8", "utf-8", invalid: :replace).should_not equal(str)
     end
   end
 end
@@ -133,13 +112,13 @@ describe "String#encode!" do
 
   it_behaves_like :string_encode, :encode!
 
-  it "raises a FrozenError when called on a frozen String" do
-    -> { "foo".freeze.encode!("euc-jp") }.should raise_error(FrozenError)
+  it "raises a #{frozen_error_class} when called on a frozen String" do
+    -> { "foo".freeze.encode!("euc-jp") }.should raise_error(frozen_error_class)
   end
 
   # http://redmine.ruby-lang.org/issues/show/1836
-  it "raises a FrozenError when called on a frozen String when it's a no-op" do
-    -> { "foo".freeze.encode!("utf-8") }.should raise_error(FrozenError)
+  it "raises a #{frozen_error_class} when called on a frozen String when it's a no-op" do
+    -> { "foo".freeze.encode!("utf-8") }.should raise_error(frozen_error_class)
   end
 
   describe "when passed no options" do

@@ -8,7 +8,7 @@ describe "Class#superclass" do
     Class.superclass.should == Module
     Class.new.superclass.should == Object
     Class.new(String).superclass.should == String
-    Class.new(Integer).superclass.should == Integer
+    Class.new(Fixnum).superclass.should == Fixnum
   end
 
   # redmine:567

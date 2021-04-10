@@ -41,14 +41,14 @@ describe "BigDecimal#add" do
     @frac_3.add(@frac_4, 6).should == BigDecimal("0.11111E16")
   end
 
-  it "returns a + [Integer value] with given precision" do
+  it "returns a + [Fixnum value] with given precision" do
     (1..10).each {|precision|
       @dot_ones.add(0, precision).should == BigDecimal("0." + "1" * precision)
     }
     BigDecimal("0.88").add(0, 1).should == BigDecimal("0.9")
   end
 
-  it "returns a + [Integer value] with given precision" do
+  it "returns a + [Bignum value] with given precision" do
     bignum = 10000000000000000000
     (1..20).each {|precision|
       @dot_ones.add(bignum, precision).should == BigDecimal("0.1E20")
@@ -136,8 +136,8 @@ describe "BigDecimal#add" do
   end
 
   it "returns NaN if NaN is involved" do
-    @one.add(@nan, 10000).should.nan?
-    @nan.add(@one, 1).should.nan?
+    @one.add(@nan, 10000).nan?.should == true
+    @nan.add(@one, 1).nan?.should == true
   end
 
   it "returns Infinity or -Infinity if these are involved" do
@@ -166,8 +166,8 @@ describe "BigDecimal#add" do
   end
 
   it "returns NaN if Infinity + (- Infinity)" do
-    @infinity.add(@infinity_minus, 10000).should.nan?
-    @infinity_minus.add(@infinity, 10000).should.nan?
+    @infinity.add(@infinity_minus, 10000).nan?.should == true
+    @infinity_minus.add(@infinity, 10000).nan?.should == true
   end
 
   it "raises TypeError when adds nil" do

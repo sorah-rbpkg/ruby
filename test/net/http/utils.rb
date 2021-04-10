@@ -81,11 +81,7 @@ module TestNetHTTPUtils
     end
 
     def do_GET(req, res)
-      if req['Accept'] != '*/*'
-        res['Content-Type'] = req['Accept']
-      else
-        res['Content-Type'] = $test_net_http_data_type
-      end
+      res['Content-Type'] = $test_net_http_data_type
       res.body = $test_net_http_data
       res.chunked = @chunked
     end

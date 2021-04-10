@@ -1,5 +1,3 @@
-#ifndef RUBY_INSNHELPER_H
-#define RUBY_INSNHELPER_H
 /**********************************************************************
 
   insnhelper.h - helper macros to implement each instructions
@@ -11,9 +9,13 @@
 
 **********************************************************************/
 
+#ifndef RUBY_INSNHELPER_H
+#define RUBY_INSNHELPER_H
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 RUBY_EXTERN VALUE ruby_vm_const_missing_count;
+RUBY_EXTERN rb_serial_t ruby_vm_global_method_state;
 RUBY_EXTERN rb_serial_t ruby_vm_global_constant_state;
 RUBY_EXTERN rb_serial_t ruby_vm_class_serial;
 
@@ -92,7 +94,7 @@ enum vm_regan_acttype {
 #define SET_SP(x)  (VM_REG_SP  = (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
 #define INC_SP(x)  (VM_REG_SP += (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
 #define DEC_SP(x)  (VM_REG_SP -= (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
-#define SET_SV(x)  (*GET_SP() = rb_ractor_confirm_belonging(x))
+#define SET_SV(x)  (*GET_SP() = (x))
   /* set current stack value as x */
 
 /* instruction sequence C struct */
@@ -119,11 +121,18 @@ enum vm_regan_acttype {
  */
 
 static inline void
-CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enabled)
+CC_SET_FASTPATH(CALL_CACHE cc, vm_call_handler func, bool enabled)
 {
     if (LIKELY(enabled)) {
-        vm_cc_call_set(cc, func);
+        cc->call = func;
     }
+}
+
+static inline void
+CC_SET_ME(CALL_CACHE cc, const rb_callable_method_entry_t *me)
+{
+    cc->me = me;
+    cc->method_serial = me ? me->def->method_serial : 0;
 }
 
 #define GET_BLOCK_HANDLER() (GET_LEP()[VM_ENV_DATA_INDEX_SPECVAL])
@@ -138,27 +147,27 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
 /**********************************************************/
 
 #if VM_CHECK_MODE > 0
-#define SETUP_CANARY(cond) \
-    VALUE *canary = 0; \
-    if (cond) { \
+#define SETUP_CANARY() \
+    VALUE *canary; \
+    if (leaf) { \
         canary = GET_SP(); \
         SET_SV(vm_stack_canary); \
     } \
     else {\
         SET_SV(Qfalse); /* cleanup */ \
     }
-#define CHECK_CANARY(cond, insn) \
-    if (cond) { \
+#define CHECK_CANARY() \
+    if (leaf) { \
         if (*canary == vm_stack_canary) { \
             *canary = Qfalse; /* cleanup */ \
         } \
         else { \
-            vm_canary_is_found_dead(insn, *canary); \
+            vm_canary_is_found_dead(INSN_ATTR(bin), *canary); \
         } \
     }
 #else
-#define SETUP_CANARY(cond)       if (cond) {} else {}
-#define CHECK_CANARY(cond, insn) if (cond) {(void)(insn);}
+#define SETUP_CANARY()          /* void */
+#define CHECK_CANARY()          /* void */
 #endif
 
 /**********************************************************/
@@ -177,6 +186,8 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
 
 #define PREV_CLASS_SERIAL() (ruby_vm_class_serial)
 #define NEXT_CLASS_SERIAL() (++ruby_vm_class_serial)
+#define GET_GLOBAL_METHOD_STATE() (ruby_vm_global_method_state)
+#define INC_GLOBAL_METHOD_STATE() (++ruby_vm_global_method_state)
 #define GET_GLOBAL_CONSTANT_STATE() (ruby_vm_global_constant_state)
 #define INC_GLOBAL_CONSTANT_STATE() (++ruby_vm_global_constant_state)
 
@@ -239,19 +250,18 @@ THROW_DATA_CONSUMED_SET(struct vm_throw_data *obj)
     }
 }
 
-#define IS_ARGS_SPLAT(ci)          (vm_ci_flag(ci) & VM_CALL_ARGS_SPLAT)
-#define IS_ARGS_KEYWORD(ci)        (vm_ci_flag(ci) & VM_CALL_KWARG)
-#define IS_ARGS_KW_SPLAT(ci)       (vm_ci_flag(ci) & VM_CALL_KW_SPLAT)
-#define IS_ARGS_KW_OR_KW_SPLAT(ci) (vm_ci_flag(ci) & (VM_CALL_KWARG | VM_CALL_KW_SPLAT))
-#define IS_ARGS_KW_SPLAT_MUT(ci)   (vm_ci_flag(ci) & VM_CALL_KW_SPLAT_MUT)
+#define IS_ARGS_SPLAT(ci)   ((ci)->flag & VM_CALL_ARGS_SPLAT)
+#define IS_ARGS_KEYWORD(ci) ((ci)->flag & VM_CALL_KWARG)
+#define IS_ARGS_KW_SPLAT(ci) ((ci)->flag & VM_CALL_KW_SPLAT)
+#define IS_ARGS_KW_OR_KW_SPLAT(ci) ((ci)->flag & (VM_CALL_KWARG | VM_CALL_KW_SPLAT))
 
 /* If this returns true, an optimized function returned by `vm_call_iseq_setup_func`
    can be used as a fastpath. */
-static inline bool
-vm_call_iseq_optimizable_p(const struct rb_callinfo *ci, const struct rb_callcache *cc)
+static bool
+vm_call_iseq_optimizable_p(const struct rb_call_info *ci, const struct rb_call_cache *cc)
 {
     return !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
-        METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc));
+        !(METHOD_ENTRY_VISI(cc->me) == METHOD_VISI_PROTECTED);
 }
 
 #endif /* RUBY_INSNHELPER_H */

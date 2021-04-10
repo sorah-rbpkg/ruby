@@ -123,9 +123,8 @@ Init_enc_set_filesystem_encoding(void)
     idx = ENCINDEX_US_ASCII;
 #elif defined _WIN32
     char cp[SIZEOF_CP_NAME];
-    const UINT codepage = ruby_w32_codepage[1];
-    if (!codepage) return ENCINDEX_UTF_8;
-    /* for debugging */
+    const UINT codepage = ruby_w32_codepage[1] ? ruby_w32_codepage[1] :
+	AreFileApisANSI() ? GetACP() : GetOEMCP();
     CP_FORMAT(cp, codepage);
     idx = rb_enc_find_index(cp);
     if (idx < 0) idx = ENCINDEX_ASCII;

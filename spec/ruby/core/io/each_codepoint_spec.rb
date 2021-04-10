@@ -4,7 +4,7 @@ require_relative 'shared/codepoints'
 
 # See redmine #1667
 describe "IO#each_codepoint" do
-  it_behaves_like :io_codepoints, :each_codepoint
+  it_behaves_like :io_codepoints, :codepoints
 end
 
 describe "IO#each_codepoint" do

@@ -784,7 +784,7 @@ int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const
     if opt and !opt.empty?
       [[:to_str], [:join, " "], [:to_s]].each do |meth, *args|
         if opt.respond_to?(meth)
-          break opt = opt.__send__(meth, *args)
+          break opt = opt.send(meth, *args)
         end
       end
       opt = "#{opt} #{libs}"
@@ -982,7 +982,7 @@ SRC
       if noun
         [[:to_str], [:join, ","], [:to_s]].each do |meth, *args|
           if noun.respond_to?(meth)
-            break noun = noun.__send__(meth, *args)
+            break noun = noun.send(meth, *args)
           end
         end
         unless noun.empty?
@@ -1970,7 +1970,7 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
     else
       sep = ""
     end
-    possible_command = (proc {|s| s if /top_srcdir|tooldir/ !~ s} unless $extmk)
+    possible_command = (proc {|s| s if /top_srcdir/ !~ s} unless $extmk)
     extconf_h = $extconf_h ? "-DRUBY_EXTCONF_H=\\\"$(RUBY_EXTCONF_H)\\\" " : $defs.join(" ") << " "
     headers = %w[
       $(hdrdir)/ruby.h
@@ -2222,7 +2222,7 @@ RULES
     message "creating Makefile\n"
     MakeMakefile.rm_f "#{CONFTEST}*"
     if CONFIG["DLEXT"] == $OBJEXT
-      for lib in libs = $libs.split(' ')
+      for lib in libs = $libs.split
         lib.sub!(/-l(.*)/, %%"lib\\1.#{$LIBEXT}"%)
       end
       $defs.push(format("-DEXTLIB='%s'", libs.join(",")))
@@ -2822,12 +2822,7 @@ realclean: distclean
   end
 end
 
-# MakeMakefile::Global = #
-m = Module.new {
-  include(MakeMakefile)
-  private(*MakeMakefile.public_instance_methods(false))
-}
-include m
+include MakeMakefile
 
 if not $extmk and /\A(extconf|makefile).rb\z/ =~ File.basename($0)
   END {mkmf_failed($0)}

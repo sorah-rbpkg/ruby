@@ -45,7 +45,7 @@ describe "IO#close_write" do
 
     io.close_write
 
-    io.should.closed?
+    io.closed?.should == true
   end
 
   it "flushes and closes the write stream" do

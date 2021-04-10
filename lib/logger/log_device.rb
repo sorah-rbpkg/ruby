@@ -135,7 +135,7 @@ class Logger
       end
     end
 
-    if /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
+    if /mswin|mingw/ =~ RUBY_PLATFORM
       def lock_shift_log
         yield
       end

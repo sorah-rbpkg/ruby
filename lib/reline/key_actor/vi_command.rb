@@ -17,7 +17,7 @@ class Reline::KeyActor::ViCommand < Reline::KeyActor::Base
     #   7 ^G
     :ed_unassigned,
     #   8 ^H
-    :ed_unassigned,
+    :ed_delete_prev_char,
     #   9 ^I
     :ed_unassigned,
     #  10 ^J
@@ -255,7 +255,7 @@ class Reline::KeyActor::ViCommand < Reline::KeyActor::Base
     # 126 ~
     :vi_change_case,
     # 127 ^?
-    :ed_unassigned,
+    :ed_delete_prev_char,
     # 128 M-^@
     :ed_unassigned,
     # 129 M-^A

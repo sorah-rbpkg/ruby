@@ -22,7 +22,7 @@ module DirSpecs
       [0xe9].pack('U')
     ].each do |dir|
       begin
-        Dir.rmdir mock_dir(dir)
+        Dir.rmdir dir
       rescue
       end
     end
@@ -36,8 +36,6 @@ module DirSpecs
         .dotfile
         .dotsubdir/.dotfile
         .dotsubdir/nondotfile
-        nested/.dotsubir/.dotfile
-        nested/.dotsubir/nondotfile
 
         deeply/.dotfile
         deeply/nested/.dotfile.ext
@@ -162,7 +160,6 @@ module DirSpecs
       dir_filename_ordering
       file_one.ext
       file_two.ext
-      nested
       nondotfile
       special
       subdir_one

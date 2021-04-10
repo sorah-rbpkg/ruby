@@ -1,6 +1,6 @@
 require_relative '../../spec_helper'
 
-describe "Integer#upto [stop] when self and stop are Integers" do
+describe "Integer#upto [stop] when self and stop are Fixnums" do
   it "does not yield when stop is less than self" do
     result = []
     5.upto(4) { |x| result << x }

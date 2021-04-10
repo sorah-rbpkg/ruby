@@ -21,14 +21,14 @@ describe "BigDecimal#finite?" do
   end
 
   it "is false if Infinity or NaN" do
-    @infinity.should_not.finite?
-    @infinity_minus.should_not.finite?
-    @nan.should_not.finite?
+    @infinity.finite?.should == false
+    @infinity_minus.finite?.should == false
+    @nan.finite?.should == false
   end
 
   it "returns true for finite values" do
     @finite_vals.each do |val|
-      val.should.finite?
+      val.finite?.should == true
     end
   end
 end

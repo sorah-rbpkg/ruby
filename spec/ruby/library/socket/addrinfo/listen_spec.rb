@@ -29,6 +29,6 @@ describe 'Addrinfo#listen' do
       socket = sock
     end
 
-    socket.should.closed?
+    socket.closed?.should == true
   end
 end

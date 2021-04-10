@@ -1,5 +1,4 @@
-#ifndef RUBY_VM_OPTS_H/*-*-c-*-*/
-#define RUBY_VM_OPTS_H
+/*-*-c-*-*/
 /**********************************************************************
 
   vm_opts.h - VM optimize option
@@ -9,6 +8,10 @@
   Copyright (C) 2004-2007 Koichi Sasada
 
 **********************************************************************/
+
+
+#ifndef RUBY_VM_OPTS_H
+#define RUBY_VM_OPTS_H
 
 /* Compile options.
  * You can change these options at runtime by VM::CompileOption.
@@ -60,10 +63,6 @@
 /* misc */
 #ifndef OPT_SUPPORT_JOKE
 #define OPT_SUPPORT_JOKE             0
-#endif
-
-#ifndef OPT_SUPPORT_CALL_C_FUNCTION
-#define OPT_SUPPORT_CALL_C_FUNCTION  0
 #endif
 
 #ifndef VM_COLLECT_USAGE_DETAILS

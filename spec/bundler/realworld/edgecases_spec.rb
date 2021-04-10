@@ -2,7 +2,7 @@
 
 RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
   def rubygems_version(name, requirement)
-    ruby <<-RUBY
+    ruby! <<-RUBY
       require "#{spec_dir}/support/artifice/vcr"
       require "#{lib_dir}/bundler"
       require "#{lib_dir}/bundler/source/rubygems/remote"
@@ -29,7 +29,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
       gem 'capybara', '~> 2.2.0'
       gem 'rack-cache', '1.2.0' # last version that works on Ruby 1.9
     G
-    bundle :lock
+    bundle! :lock
     expect(lockfile).to include(rubygems_version("rails", "~> 5.0"))
     expect(lockfile).to include("capybara (2.2.1)")
   end
@@ -43,7 +43,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
       gem "gxapi_rails", "< 0.1.0" # 0.1.0 was released way after the test was written
       gem 'rack-cache', '1.2.0' # last version that works on Ruby 1.9
     G
-    bundle :lock
+    bundle! :lock
     expect(lockfile).to include("gxapi_rails (0.0.6)")
   end
 
@@ -56,13 +56,13 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
       gem "activerecord", "~> 3.0"
       gem "builder", "~> 2.1.2"
     G
-    bundle :lock
+    bundle! :lock
     expect(lockfile).to include(rubygems_version("i18n", "~> 0.6.0"))
     expect(lockfile).to include(rubygems_version("activesupport", "~> 3.0"))
   end
 
   it "is able to update a top-level dependency when there is a conflict on a shared transitive child" do
-    # from https://github.com/rubygems/bundler/issues/5031
+    # from https://github.com/bundler/bundler/issues/5031
 
     gemfile <<-G
       source "https://rubygems.org"
@@ -189,12 +189,12 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
         rails (~> 4.2.7.1)
     L
 
-    bundle "lock --update paperclip"
+    bundle! "lock --update paperclip"
 
     expect(lockfile).to include(rubygems_version("paperclip", "~> 5.1.0"))
   end
 
-  # https://github.com/rubygems/bundler/issues/1500
+  # https://github.com/bundler/bundler/issues/1500
   it "does not fail install because of gem plugins" do
     realworld_system_gems("open_gem --version 1.4.2", "rake --version 0.9.2")
     gemfile <<-G
@@ -204,7 +204,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
     G
 
     bundle "config set --local path vendor/bundle"
-    bundle :install
+    bundle! :install
     expect(err).not_to include("Could not find rake")
     expect(err).to be_empty
   end
@@ -332,128 +332,16 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
         activesupport!
     L
 
-    bundle :lock
+    bundle! :lock
     expect(err).to be_empty
   end
 
   it "outputs a helpful error message when gems have invalid gemspecs" do
-    install_gemfile <<-G, :standalone => true, :raise_on_error => false
+    install_gemfile <<-G, :standalone => true
       source 'https://rubygems.org'
       gem "resque-scheduler", "2.2.0"
-      gem "redis-namespace", "1.6.0" # for a consistent resolution including ruby 2.3.0
     G
     expect(err).to include("You have one or more invalid gemspecs that need to be fixed.")
     expect(err).to include("resque-scheduler 2.2.0 has an invalid gemspec")
-  end
-
-  it "doesn't hang on big gemfile" do
-    skip "Only for ruby 2.7.2" if RUBY_VERSION != "2.7.2"
-
-    gemfile <<~G
-      # frozen_string_literal: true
-
-      source "https://rubygems.org"
-
-      ruby "2.7.2"
-
-      gem "rails"
-      gem "pg", ">= 0.18", "< 2.0"
-      gem "goldiloader"
-      gem "awesome_nested_set"
-      gem "circuitbox"
-      gem "passenger"
-      gem "globalid"
-      gem "rack-cors"
-      gem "rails-pg-extras"
-      gem "linear_regression_trend"
-      gem "rack-protection"
-      gem "pundit"
-      gem "remote_ip_proxy_scrubber"
-      gem "bcrypt"
-      gem "searchkick"
-      gem "excon"
-      gem "faraday_middleware-aws-sigv4"
-      gem "typhoeus"
-      gem "sidekiq"
-      gem "sidekiq-undertaker"
-      gem "sidekiq-cron"
-      gem "storext"
-      gem "appsignal"
-      gem "fcm"
-      gem "business_time"
-      gem "tzinfo"
-      gem "holidays"
-      gem "bigdecimal"
-      gem "progress_bar"
-      gem "redis"
-      gem "hiredis"
-      gem "state_machines"
-      gem "state_machines-audit_trail"
-      gem "state_machines-activerecord"
-      gem "interactor"
-      gem "ar_transaction_changes"
-      gem "redis-rails"
-      gem "seed_migration"
-      gem "lograge"
-      gem "graphiql-rails", group: :development
-      gem "graphql"
-      gem "pusher"
-      gem "rbnacl"
-      gem "jwt"
-      gem "json-schema"
-      gem "discard"
-      gem "money"
-      gem "strip_attributes"
-      gem "validates_email_format_of"
-      gem "audited"
-      gem "concurrent-ruby"
-      gem "with_advisory_lock"
-
-      group :test do
-        gem "rspec-sidekiq"
-        gem "simplecov", require: false
-      end
-
-      group :development, :test do
-        gem "byebug", platform: :mri
-        gem "guard"
-        gem "guard-bundler"
-        gem "guard-rspec"
-        gem "rb-fsevent"
-        gem "rspec_junit_formatter"
-        gem "rspec-collection_matchers"
-        gem "rspec-rails"
-        gem "rspec-retry"
-        gem "state_machines-rspec"
-        gem "dotenv-rails"
-        gem "database_cleaner-active_record"
-        gem "database_cleaner-redis"
-        gem "timecop"
-      end
-
-      gem "factory_bot_rails"
-      gem "faker"
-
-      group :development do
-        gem "listen"
-        gem "sql_queries_count"
-        gem "rubocop"
-        gem "rubocop-performance"
-        gem "rubocop-rspec"
-        gem "rubocop-rails"
-        gem "brakeman"
-        gem "bundler-audit"
-        gem "solargraph"
-        gem "annotate"
-      end
-    G
-
-    bundle :lock, :env => { "DEBUG_RESOLVER" => "1" }
-
-    if Bundler.feature_flag.bundler_3_mode?
-      expect(out).to include("BUNDLER: Finished resolution (2492 steps)")
-    else
-      expect(out).to include("BUNDLER: Finished resolution (2722 steps)")
-    end
   end
 end

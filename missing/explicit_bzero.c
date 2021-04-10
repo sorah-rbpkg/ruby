@@ -17,9 +17,9 @@
 
 /* OS support note:
  * BSDs have explicit_bzero().
- * macOS has memset_s().
+ * OS-X has memset_s().
  * Windows has SecureZeroMemory() since XP.
- * Linux has explicit_bzero() since glibc 2.25, musl libc 1.1.20.
+ * Linux has none. *Sigh*
  */
 
 /*

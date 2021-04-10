@@ -39,14 +39,13 @@ describe "StringIO#print" do
   end
 
   it "honors the output record separator global" do
-    old_rs = $\
-    suppress_warning {$\ = 'x'}
+    old_rs, $\ = $\, 'x'
 
     begin
       @io.print(5, 6, 7, 8)
       @io.string.should == '5678xle'
     ensure
-      suppress_warning {$\ = old_rs}
+      $\ = old_rs
     end
   end
 
@@ -59,14 +58,13 @@ describe "StringIO#print" do
   end
 
   it "correctly updates the current position when honoring the output record separator global" do
-    old_rs = $\
-    suppress_warning {$\ = 'x'}
+    old_rs, $\ = $\, 'x'
 
     begin
       @io.print(5, 6, 7, 8)
       @io.pos.should eql(5)
     ensure
-      suppress_warning {$\ = old_rs}
+      $\ = old_rs
     end
   end
 end

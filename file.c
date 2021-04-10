@@ -11,22 +11,14 @@
 
 **********************************************************************/
 
-#include "ruby/internal/config.h"
-
 #ifdef _WIN32
-# include "missing/file.h"
-# include "ruby.h"
+#include "missing/file.h"
 #endif
-
-#include <ctype.h>
-#include <time.h>
-
 #ifdef __CYGWIN__
-# include <windows.h>
-# include <sys/cygwin.h>
-# include <wchar.h>
+#include <windows.h>
+#include <sys/cygwin.h>
+#include <wchar.h>
 #endif
-
 #ifdef __APPLE__
 # if !(defined(__has_feature) && defined(__has_attribute))
 /* Maybe a bug in SDK of Xcode 10.2.1 */
@@ -36,13 +28,21 @@
 #   define API_AVAILABLE(...)
 #   define API_DEPRECATED(...)
 # endif
-# include <CoreFoundation/CFString.h>
+#include <CoreFoundation/CFString.h>
 #endif
+
+#include "id.h"
+#include "ruby/encoding.h"
+#include "ruby/io.h"
+#include "ruby/util.h"
+#include "ruby/thread.h"
+#include "internal.h"
+#include "dln.h"
+#include "encindex.h"
 
 #ifdef HAVE_UNISTD_H
-# include <unistd.h>
+#include <unistd.h>
 #endif
-
 #ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
 #endif
@@ -60,73 +60,77 @@ int flock(int, int);
 # define MAXPATHLEN 1024
 #endif
 
+#include <ctype.h>
+
+#include <time.h>
+
 #ifdef HAVE_UTIME_H
-# include <utime.h>
+#include <utime.h>
 #elif defined HAVE_SYS_UTIME_H
-# include <sys/utime.h>
+#include <sys/utime.h>
 #endif
 
 #ifdef HAVE_PWD_H
-# include <pwd.h>
+#include <pwd.h>
 #endif
 
 #ifdef HAVE_SYS_SYSMACROS_H
-# include <sys/sysmacros.h>
+#include <sys/sysmacros.h>
 #endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #ifdef HAVE_SYS_MKDEV_H
-# include <sys/mkdev.h>
+#include <sys/mkdev.h>
 #endif
 
 #if defined(HAVE_FCNTL_H)
-# include <fcntl.h>
+#include <fcntl.h>
 #endif
 
 #if defined(HAVE_SYS_TIME_H)
-# include <sys/time.h>
+#include <sys/time.h>
 #endif
 
 #if !defined HAVE_LSTAT && !defined lstat
-# define lstat stat
+#define lstat stat
 #endif
 
 /* define system APIs */
 #ifdef _WIN32
-# include "win32/file.h"
-# define STAT(p, s)      rb_w32_ustati128((p), (s))
-# undef lstat
-# define lstat(p, s)     rb_w32_ulstati128((p), (s))
-# undef access
-# define access(p, m)    rb_w32_uaccess((p), (m))
-# undef truncate
-# define truncate(p, n)  rb_w32_utruncate((p), (n))
-# undef chmod
-# define chmod(p, m)     rb_w32_uchmod((p), (m))
-# undef chown
-# define chown(p, o, g)  rb_w32_uchown((p), (o), (g))
-# undef lchown
-# define lchown(p, o, g) rb_w32_ulchown((p), (o), (g))
-# undef utimensat
-# define utimensat(s, p, t, f)   rb_w32_uutimensat((s), (p), (t), (f))
-# undef link
-# define link(f, t)      rb_w32_ulink((f), (t))
-# undef unlink
-# define unlink(p)       rb_w32_uunlink(p)
-# undef rename
-# define rename(f, t)    rb_w32_urename((f), (t))
-# undef symlink
-# define symlink(s, l)   rb_w32_usymlink((s), (l))
+#include "win32/file.h"
+#define STAT(p, s)	rb_w32_ustati128((p), (s))
+#undef lstat
+#define lstat(p, s)	rb_w32_ulstati128((p), (s))
+#undef access
+#define access(p, m)	rb_w32_uaccess((p), (m))
+#undef truncate
+#define truncate(p, n)	rb_w32_utruncate((p), (n))
+#undef chmod
+#define chmod(p, m)	rb_w32_uchmod((p), (m))
+#undef chown
+#define chown(p, o, g)	rb_w32_uchown((p), (o), (g))
+#undef lchown
+#define lchown(p, o, g)	rb_w32_ulchown((p), (o), (g))
+#undef utimensat
+#define utimensat(s, p, t, f)	rb_w32_uutimensat((s), (p), (t), (f))
+#undef link
+#define link(f, t)	rb_w32_ulink((f), (t))
+#undef unlink
+#define unlink(p)	rb_w32_uunlink(p)
+#undef rename
+#define rename(f, t)	rb_w32_urename((f), (t))
+#undef symlink
+#define symlink(s, l)	rb_w32_usymlink((s), (l))
 
-# ifdef HAVE_REALPATH
+#ifdef HAVE_REALPATH
 /* Don't use native realpath(3) on Windows, as the check for
    absolute paths does not work for drive letters. */
-#  undef HAVE_REALPATH
-# endif
+#undef HAVE_REALPATH
+#endif
 #else
-# define STAT(p, s)      stat((p), (s))
+#define STAT(p, s)	stat((p), (s))
 #endif
 
 #if defined _WIN32 || defined __APPLE__
@@ -139,7 +143,7 @@ int flock(int, int);
 
 /* utime may fail if time is out-of-range for the FS [ruby-dev:38277] */
 #if defined DOSISH || defined __CYGWIN__
-# define UTIME_EINVAL
+#  define UTIME_EINVAL
 #endif
 
 /* Solaris 10 realpath(3) doesn't support File.realpath */
@@ -148,28 +152,9 @@ int flock(int, int);
 #endif
 
 #ifdef HAVE_REALPATH
-# include <limits.h>
-# include <stdlib.h>
+#include <limits.h>
+#include <stdlib.h>
 #endif
-
-#include "dln.h"
-#include "encindex.h"
-#include "id.h"
-#include "internal.h"
-#include "internal/compilers.h"
-#include "internal/dir.h"
-#include "internal/error.h"
-#include "internal/file.h"
-#include "internal/io.h"
-#include "internal/load.h"
-#include "internal/object.h"
-#include "internal/process.h"
-#include "internal/thread.h"
-#include "internal/vm.h"
-#include "ruby/encoding.h"
-#include "ruby/io.h"
-#include "ruby/thread.h"
-#include "ruby/util.h"
 
 VALUE rb_cFile;
 VALUE rb_mFileTest;
@@ -682,21 +667,7 @@ rb_stat_mode(VALUE self)
 static VALUE
 rb_stat_nlink(VALUE self)
 {
-    /* struct stat::st_nlink is nlink_t in POSIX.  Not the case for Windows. */
-    const struct stat *ptr = get_stat(self);
-
-    if (sizeof(ptr->st_nlink) <= sizeof(int)) {
-        return UINT2NUM((unsigned)ptr->st_nlink);
-    }
-    else if (sizeof(ptr->st_nlink) == sizeof(long)) {
-        return ULONG2NUM((unsigned long)ptr->st_nlink);
-    }
-    else if (sizeof(ptr->st_nlink) == sizeof(LONG_LONG)) {
-        return ULL2NUM((unsigned LONG_LONG)ptr->st_nlink);
-    }
-    else {
-        rb_bug(":FIXME: don't know what to do");
-    }
+    return UINT2NUM(get_stat(self)->st_nlink);
 }
 
 /*
@@ -1253,7 +1224,7 @@ statx_birthtime(const struct statx *stx, VALUE fname)
         /* birthtime is not supported on the filesystem */
         statx_notimplement("birthtime");
     }
-    return rb_time_nano_new(stx->stx_btime.tv_sec, stx->stx_btime.tv_nsec);
+    return rb_time_nano_new((time_t)stx->stx_btime.tv_sec, stx->stx_btime.tv_nsec);
 }
 
 typedef struct statx statx_data;
@@ -1787,20 +1758,25 @@ rb_file_exist_p(VALUE obj, VALUE fname)
     return Qtrue;
 }
 
-/* :nodoc: */
+/*
+ * call-seq:
+ *    File.exists?(file_name)   ->  true or false
+ *
+ * Deprecated method. Don't use.
+ */
 static VALUE
 rb_file_exists_p(VALUE obj, VALUE fname)
 {
-    const char *s = "FileTest#exist?";
+    const char *s = "FileTest#";
     if (obj == rb_mFileTest) {
-	s = "FileTest.exist?";
+	s = "FileTest.";
     }
     else if (obj == rb_cFile ||
 	     (RB_TYPE_P(obj, T_CLASS) &&
 	      RTEST(rb_class_inherited_p(obj, rb_cFile)))) {
-	s = "File.exist?";
+	s = "File.";
     }
-    rb_warn_deprecated("%.*ss?", s, (int)(strlen(s)-1), s);
+    rb_warning("%sexists? is a deprecated name, use %sexist? instead", s, s);
     return rb_file_exist_p(obj, fname);
 }
 
@@ -4389,6 +4365,7 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
     VALUE unresolved_path;
     char *resolved_ptr = NULL;
     VALUE resolved;
+    struct stat st;
 
     if (mode == RB_REALPATH_DIR) {
         return rb_check_realpath_emulate(basedir, path, origenc, mode);
@@ -4419,17 +4396,14 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
     resolved = ospath_new(resolved_ptr, strlen(resolved_ptr), rb_filesystem_encoding());
     free(resolved_ptr);
 
-# if !defined(__LINUX__) && !defined(__APPLE__)
     /* As `resolved` is a String in the filesystem encoding, no
      * conversion is needed */
-    struct stat st;
     if (stat_without_gvl(RSTRING_PTR(resolved), &st) < 0) {
         if (mode == RB_REALPATH_CHECK) {
             return Qnil;
         }
         rb_sys_fail_path(unresolved_path);
     }
-# endif
 
     if (origenc && origenc != rb_enc_get(resolved)) {
         if (!rb_enc_str_asciionly_p(resolved)) {
@@ -5301,7 +5275,14 @@ rb_f_test(int argc, VALUE *argv, VALUE _)
     if (argc == 0) rb_check_arity(argc, 2, 3);
     cmd = NUM2CHR(argv[0]);
     if (cmd == 0) {
-        goto unknown;
+      unknown:
+	/* unknown command */
+	if (ISPRINT(cmd)) {
+	    rb_raise(rb_eArgError, "unknown command '%s%c'", cmd == '\'' || cmd == '\\' ? "\\" : "", cmd);
+	}
+	else {
+	    rb_raise(rb_eArgError, "unknown command \"\\x%02X\"", cmd);
+	}
     }
     if (strchr("bcdefgGkloOprRsSuwWxXz", cmd)) {
 	CHECK(1);
@@ -5427,15 +5408,7 @@ rb_f_test(int argc, VALUE *argv, VALUE _)
 	    return Qfalse;
 	}
     }
-  unknown:
-    /* unknown command */
-    if (ISPRINT(cmd)) {
-        rb_raise(rb_eArgError, "unknown command '%s%c'", cmd == '\'' || cmd == '\\' ? "\\" : "", cmd);
-    }
-    else {
-        rb_raise(rb_eArgError, "unknown command \"\\x%02X\"", cmd);
-    }
-    UNREACHABLE_RETURN(Qundef);
+    goto unknown;
 }
 
 
@@ -6158,7 +6131,7 @@ rb_is_absolute_path(const char *path)
 
 #if ENABLE_PATH_CHECK
 static int
-path_check_0(VALUE path)
+path_check_0(VALUE path, int execpath)
 {
     struct stat st;
     const char *p0 = StringValueCStr(path);
@@ -6186,12 +6159,12 @@ path_check_0(VALUE path)
 #endif
 	if (STAT(p0, &st) == 0 && S_ISDIR(st.st_mode) && (st.st_mode & S_IWOTH)
 #ifdef S_ISVTX
-	    && !(p && (st.st_mode & S_ISVTX))
+	    && !(p && execpath && (st.st_mode & S_ISVTX))
 #endif
 	    && !access(p0, W_OK)) {
-	    rb_enc_warn(enc, "Insecure world writable dir %s in PATH, mode 0%"
+	    rb_enc_warn(enc, "Insecure world writable dir %s in %sPATH, mode 0%"
 			PRI_MODET_PREFIX"o",
-			p0, st.st_mode);
+			p0, (execpath ? "" : "LOAD_"), st.st_mode);
 	    if (p) *p = '/';
 	    RB_GC_GUARD(path);
 	    return 0;
@@ -6204,6 +6177,12 @@ path_check_0(VALUE path)
 	*p = '\0';
     }
 }
+#endif
+
+#if ENABLE_PATH_CHECK
+#define fpath_check(path) path_check_0((path), FALSE)
+#else
+#define fpath_check(path) 1
 #endif
 
 int
@@ -6221,7 +6200,7 @@ rb_path_check(const char *path)
     if (!p) p = pend;
 
     for (;;) {
-	if (!path_check_0(rb_str_new(p0, p - p0))) {
+	if (!path_check_0(rb_str_new(p0, p - p0), TRUE)) {
 	    return 0;		/* not safe */
 	}
 	p0 = p + 1;
@@ -6302,6 +6281,13 @@ copy_path_class(VALUE path, VALUE orig)
 }
 
 int
+rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int _level)
+{
+    rb_warn("rb_find_file_ext_safe will be removed in Ruby 3.0");
+    return rb_find_file_ext(filep, ext);
+}
+
+int
 rb_find_file_ext(VALUE *filep, const char *const *ext)
 {
     const char *f = StringValueCStr(*filep);
@@ -6358,6 +6344,13 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
     rb_str_resize(tmp, 0);
     RB_GC_GUARD(load_path);
     return 0;
+}
+
+VALUE
+rb_find_file_safe(VALUE path, int _level)
+{
+    rb_warn("rb_find_file_safe will be removed in Ruby 3.0");
+    return rb_find_file(path);
 }
 
 VALUE

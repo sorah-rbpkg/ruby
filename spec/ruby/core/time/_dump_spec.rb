@@ -15,11 +15,11 @@ describe "Time#_dump" do
 
   # http://redmine.ruby-lang.org/issues/show/627
   it "preserves the GMT flag" do
-    @t.should.gmt?
+    @t.gmt?.should == true
     dump = @t.send(:_dump).unpack("VV").first
     ((dump >> 30) & 0x1).should == 1
 
-    @local.should_not.gmt?
+    @local.gmt?.should == false
     dump = @local.send(:_dump).unpack("VV").first
     ((dump >> 30) & 0x1).should == 0
   end

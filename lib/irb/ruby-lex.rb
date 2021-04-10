@@ -60,31 +60,11 @@ class RubyLex
       @io.dynamic_prompt do |lines|
         lines << '' if lines.empty?
         result = []
-        tokens = ripper_lex_without_warning(lines.map{ |l| l + "\n" }.join)
-        code = String.new
-        partial_tokens = []
-        unprocessed_tokens = []
-        line_num_offset = 0
-        tokens.each do |t|
-          partial_tokens << t
-          unprocessed_tokens << t
-          if t[2].include?("\n")
-            t_str = t[2]
-            t_str.each_line("\n") do |s|
-              code << s << "\n"
-              ltype, indent, continue, code_block_open = check_state(code, partial_tokens)
-              result << @prompt.call(ltype, indent, continue || code_block_open, @line_no + line_num_offset)
-              line_num_offset += 1
-            end
-            unprocessed_tokens = []
-          else
-            code << t[2]
-          end
-        end
-        unless unprocessed_tokens.empty?
-          ltype, indent, continue, code_block_open = check_state(code, unprocessed_tokens)
-          result << @prompt.call(ltype, indent, continue || code_block_open, @line_no + line_num_offset)
-        end
+        lines.each_index { |i|
+          c = lines[0..i].map{ |l| l + "\n" }.join
+          ltype, indent, continue, code_block_open = check_state(c)
+          result << @prompt.call(ltype, indent, continue || code_block_open, @line_no + i)
+        }
         result
       end
     end
@@ -141,12 +121,12 @@ class RubyLex
     end
   end
 
-  def check_state(code, tokens = nil)
-    tokens = ripper_lex_without_warning(code) unless tokens
-    ltype = process_literal_type(tokens)
-    indent = process_nesting_level(tokens)
-    continue = process_continue(tokens)
-    code_block_open = check_code_block(code, tokens)
+  def check_state(code)
+    @tokens = ripper_lex_without_warning(code)
+    ltype = process_literal_type
+    indent = process_nesting_level
+    continue = process_continue
+    code_block_open = check_code_block(code)
     [ltype, indent, continue, code_block_open]
   end
 
@@ -213,45 +193,40 @@ class RubyLex
     line
   end
 
-  def process_continue(tokens = @tokens)
+  def process_continue
     # last token is always newline
-    if tokens.size >= 2 and tokens[-2][1] == :on_regexp_end
+    if @tokens.size >= 2 and @tokens[-2][1] == :on_regexp_end
       # end of regexp literal
       return false
-    elsif tokens.size >= 2 and tokens[-2][1] == :on_semicolon
+    elsif @tokens.size >= 2 and @tokens[-2][1] == :on_semicolon
       return false
-    elsif tokens.size >= 2 and tokens[-2][1] == :on_kw and ['begin', 'else', 'ensure'].include?(tokens[-2][2])
+    elsif @tokens.size >= 2 and @tokens[-2][1] == :on_kw and ['begin', 'else', 'ensure'].include?(@tokens[-2][2])
       return false
-    elsif !tokens.empty? and tokens.last[2] == "\\\n"
+    elsif !@tokens.empty? and @tokens.last[2] == "\\\n"
       return true
-    elsif tokens.size >= 1 and tokens[-1][1] == :on_heredoc_end # "EOH\n"
+    elsif @tokens.size >= 1 and @tokens[-1][1] == :on_heredoc_end # "EOH\n"
       return false
-    elsif tokens.size >= 2 and defined?(Ripper::EXPR_BEG) and tokens[-2][3].anybits?(Ripper::EXPR_BEG | Ripper::EXPR_FNAME)
+    elsif @tokens.size >= 2 and defined?(Ripper::EXPR_BEG) and @tokens[-2][3].anybits?(Ripper::EXPR_BEG | Ripper::EXPR_FNAME)
       # end of literal except for regexp
       return true
     end
     false
   end
 
-  def check_code_block(code, tokens = @tokens)
-    return true if tokens.empty?
-    if tokens.last[1] == :on_heredoc_beg
+  def check_code_block(code)
+    return true if @tokens.empty?
+    if @tokens.last[1] == :on_heredoc_beg
       return true
     end
 
     begin # check if parser error are available
       verbose, $VERBOSE = $VERBOSE, nil
       case RUBY_ENGINE
-      when 'ruby'
-        self.class.compile_with_errors_suppressed(code) do |inner_code, line_no|
-          RubyVM::InstructionSequence.compile(inner_code, nil, nil, line_no)
-        end
       when 'jruby'
         JRuby.compile_ir(code)
       else
-        catch(:valid) do
-          eval("BEGIN { throw :valid, true }\n#{code}")
-          false
+        self.class.compile_with_errors_suppressed(code) do |inner_code, line_no|
+          RubyVM::InstructionSequence.compile(inner_code, nil, nil, line_no)
         end
       end
     rescue EncodingError
@@ -307,7 +282,7 @@ class RubyLex
     end
 
     if defined?(Ripper::EXPR_BEG)
-      last_lex_state = tokens.last[3]
+      last_lex_state = @tokens.last[3]
       if last_lex_state.allbits?(Ripper::EXPR_BEG)
         return false
       elsif last_lex_state.allbits?(Ripper::EXPR_DOT)
@@ -326,10 +301,10 @@ class RubyLex
     false
   end
 
-  def process_nesting_level(tokens = @tokens)
+  def process_nesting_level
     indent = 0
     in_oneliner_def = nil
-    tokens.each_with_index { |t, index|
+    @tokens.each_with_index { |t, index|
       # detecting one-liner method definition
       if in_oneliner_def.nil?
         if t[3].allbits?(Ripper::EXPR_ENDFN)
@@ -342,11 +317,13 @@ class RubyLex
           if t[2] == '='
             in_oneliner_def = :BODY
           end
-        else
+        elsif t[3].allbits?(Ripper::EXPR_END)
           if in_oneliner_def == :BODY
             # one-liner method definition
             indent -= 1
           end
+          in_oneliner_def = nil
+        else
           in_oneliner_def = nil
         end
       end
@@ -357,10 +334,10 @@ class RubyLex
       when :on_rbracket, :on_rbrace, :on_rparen
         indent -= 1
       when :on_kw
-        next if index > 0 and tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
+        next if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
         case t[2]
         when 'do'
-          if index > 0 and tokens[index - 1][3].anybits?(Ripper::EXPR_CMDARG | Ripper::EXPR_ENDFN | Ripper::EXPR_ARG)
+          if index > 0 and @tokens[index - 1][3].anybits?(Ripper::EXPR_CMDARG | Ripper::EXPR_ENDFN | Ripper::EXPR_ARG)
             # method_with_block do; end
             indent += 1
           else
@@ -399,11 +376,13 @@ class RubyLex
           if t[2] == '='
             in_oneliner_def = :BODY
           end
-        else
+        elsif t[3].allbits?(Ripper::EXPR_END)
           if in_oneliner_def == :BODY
-            # one-liner method definition
+            # one[-liner method definition
             depth_difference -= 1
           end
+          in_oneliner_def = nil
+        else
           in_oneliner_def = nil
         end
       end
@@ -472,7 +451,7 @@ class RubyLex
           if t[2] == '='
             in_oneliner_def = :BODY
           end
-        else
+        elsif t[3].allbits?(Ripper::EXPR_END)
           if in_oneliner_def == :BODY
             # one-liner method definition
             if is_first_printable_of_line
@@ -482,6 +461,8 @@ class RubyLex
               corresponding_token_depth = nil
             end
           end
+          in_oneliner_def = nil
+        else
           in_oneliner_def = nil
         end
       end
@@ -542,12 +523,12 @@ class RubyLex
     corresponding_token_depth
   end
 
-  def check_string_literal(tokens)
+  def check_string_literal
     i = 0
     start_token = []
     end_type = []
-    while i < tokens.size
-      t = tokens[i]
+    while i < @tokens.size
+      t = @tokens[i]
       case t[1]
       when :on_tstring_beg
         start_token << t
@@ -557,7 +538,7 @@ class RubyLex
         end_type << :on_regexp_end
       when :on_symbeg
         acceptable_single_tokens = %i{on_ident on_const on_op on_cvar on_ivar on_gvar on_kw}
-        if (i + 1) < tokens.size and acceptable_single_tokens.all?{ |st| tokens[i + 1][1] != st }
+        if (i + 1) < @tokens.size and acceptable_single_tokens.all?{ |t| @tokens[i + 1][1] != t }
           start_token << t
           end_type << :on_tstring_end
         end
@@ -579,8 +560,8 @@ class RubyLex
     start_token.last.nil? ? '' : start_token.last
   end
 
-  def process_literal_type(tokens = @tokens)
-    start_token = check_string_literal(tokens)
+  def process_literal_type
+    start_token = check_string_literal
     case start_token[1]
     when :on_tstring_beg
       case start_token[2]

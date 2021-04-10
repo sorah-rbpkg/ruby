@@ -13,11 +13,7 @@ end
 
 module MSpec
   def self.format(obj)
-    if String === obj and obj.include?("\n")
-      "\n#{obj.inspect.gsub('\n', "\n")}"
-    else
-      obj.pretty_inspect.chomp
-    end
+    obj.pretty_inspect.chomp
   rescue => e
     "#<#{obj.class}>(#pretty_inspect raised #{e.inspect})"
   end

@@ -2,20 +2,13 @@
  * load methods from eval.c
  */
 
-#include "dln.h"
-#include "eval_intern.h"
-#include "internal.h"
-#include "internal/dir.h"
-#include "internal/error.h"
-#include "internal/file.h"
-#include "internal/load.h"
-#include "internal/parse.h"
-#include "internal/thread.h"
-#include "internal/variable.h"
-#include "iseq.h"
-#include "probes.h"
 #include "ruby/encoding.h"
 #include "ruby/util.h"
+#include "internal.h"
+#include "dln.h"
+#include "eval_intern.h"
+#include "probes.h"
+#include "iseq.h"
 
 static VALUE ruby_dln_librefs;
 
@@ -480,7 +473,9 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
     }
     if (st_get_key(loading_tbl, (st_data_t)feature, &data)) {
 	if (fn) *fn = (const char*)data;
-        goto loading;
+      loading:
+	if (!ext) return 'u';
+	return !IS_RBEXT(ext) ? 's' : 'r';
     }
     else {
 	VALUE bufstr;
@@ -512,10 +507,6 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
 	rb_str_resize(bufstr, 0);
     }
     return 0;
-
-  loading:
-    if (!ext) return 'u';
-    return !IS_RBEXT(ext) ? 's' : 'r';
 }
 
 int
@@ -680,30 +671,14 @@ rb_load_protect(VALUE fname, int wrap, int *pstate)
  *  call-seq:
  *     load(filename, wrap=false)   -> true
  *
- *  Loads and executes the Ruby program in the file _filename_.
- *
- *  If the filename is an absolute path (e.g. starts with '/'), the file
- *  will be loaded directly using the absolute path.
- *
- *  If the filename is an explicit relative path (e.g. starts with './' or
- *  '../'), the file will be loaded using the relative path from the current
- *  directory.
- *
- *  Otherwise, the file will be searched for in the library
- *  directories listed in <code>$LOAD_PATH</code> (<code>$:</code>).
- *  If the file is found in a directory, it will attempt to load the file
- *  relative to that directory.  If the file is not found in any of the
- *  directories in <code>$LOAD_PATH</code>, the file will be loaded using
- *  the relative path from the current directory.
- *
- *  If the file doesn't exist when there is an attempt to load it, a
- *  LoadError will be raised.
- *
- *  If the optional _wrap_ parameter is +true+, the loaded script will
- *  be executed under an anonymous module, protecting the calling
- *  program's global namespace. In no circumstance will any local
- *  variables in the loaded file be propagated to the loading
- *  environment.
+ *  Loads and executes the Ruby
+ *  program in the file _filename_. If the filename does not
+ *  resolve to an absolute path, the file is searched for in the library
+ *  directories listed in <code>$:</code>. If the optional _wrap_
+ *  parameter is +true+, the loaded script will be executed
+ *  under an anonymous module, protecting the calling program's global
+ *  namespace. In no circumstance will any local variables in the loaded
+ *  file be propagated to the loading environment.
  */
 
 static VALUE
@@ -801,10 +776,8 @@ load_unlock(const char *ftptr, int done)
  *  Loads the given +name+, returning +true+ if successful and +false+ if the
  *  feature is already loaded.
  *
- *  If the filename neither resolves to an absolute path nor starts with
- *  './' or '../', the file will be searched for in the library
- *  directories listed in <code>$LOAD_PATH</code> (<code>$:</code>).
- *  If the filename starts with './' or '../', resolution is based on Dir.pwd.
+ *  If the filename does not resolve to an absolute path, it will be searched
+ *  for in the directories listed in <code>$LOAD_PATH</code> (<code>$:</code>).
  *
  *  If the filename has the extension ".rb", it is loaded as a source file; if
  *  the extension is ".so", ".o", or ".dll", or the default shared library
@@ -936,7 +909,9 @@ search_required(VALUE fname, volatile VALUE *path, feature_func rb_feature_p)
 
       default:
 	if (ft) {
-            goto statically_linked;
+	  statically_linked:
+	    if (loading) *path = rb_filesystem_str_new_cstr(loading);
+	    return ft;
 	}
         /* fall through */
       case 1:
@@ -946,10 +921,6 @@ search_required(VALUE fname, volatile VALUE *path, feature_func rb_feature_p)
 	*path = tmp;
     }
     return type ? 's' : 'r';
-
-  statically_linked:
-    if (loading) *path = rb_filesystem_str_new_cstr(loading);
-    return ft;
 }
 
 static void
@@ -997,25 +968,6 @@ rb_resolve_feature_path(VALUE klass, VALUE fname)
     return rb_ary_new_from_args(2, sym, path);
 }
 
-static void
-ext_config_push(rb_thread_t *th, struct rb_ext_config *prev)
-{
-    *prev = th->ext_config;
-    th->ext_config = (struct rb_ext_config){0};
-}
-
-static void
-ext_config_pop(rb_thread_t *th, struct rb_ext_config *prev)
-{
-    th->ext_config = *prev;
-}
-
-void
-rb_ext_ractor_safe(bool flag)
-{
-    GET_THREAD()->ext_config.ractor_safe = flag;
-}
-
 /*
  * returns
  *  0: if already loaded (false)
@@ -1034,8 +986,6 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
     enum ruby_tag_type state;
     char *volatile ftptr = 0;
     VALUE path;
-    volatile bool reset_ext_config = false;
-    struct rb_ext_config prev_ext_config;
 
     fname = rb_get_path(fname);
     path = rb_str_encode_ospath(fname);
@@ -1066,8 +1016,6 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
 		    break;
 
 		  case 's':
-                    reset_ext_config = true;
-                    ext_config_push(th, &prev_ext_config);
 		    handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
 						    path, VM_BLOCK_HANDLER_NONE, path);
 		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
@@ -1078,12 +1026,9 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception)
 	}
     }
     EC_POP_TAG();
-
-    rb_thread_t *th2 = rb_ec_thread_ptr(ec);
-    th2->top_self = self;
-    th2->top_wrapper = wrapper;
-    if (reset_ext_config) ext_config_pop(th2, &prev_ext_config);
-
+    th = rb_ec_thread_ptr(ec);
+    th->top_self = self;
+    th->top_wrapper = wrapper;
     if (ftptr) load_unlock(RSTRING_PTR(path), !state);
 
     if (state) {
@@ -1133,6 +1078,23 @@ ruby_require_internal(const char *fname, unsigned int len)
     int result = require_internal(ec, str, 0);
     rb_set_errinfo(Qnil);
     return result == TAG_RETURN ? 1 : result ? -1 : 0;
+}
+
+VALUE
+rb_require_safe(VALUE fname, int safe)
+{
+    rb_warn("rb_require_safe will be removed in Ruby 3.0");
+    rb_execution_context_t *ec = GET_EC();
+    int result = require_internal(ec, fname, 1);
+
+    if (result > TAG_RETURN) {
+        EC_JUMP_TAG(ec, result);
+    }
+    if (result < 0) {
+        load_failed(fname);
+    }
+
+    return result ? Qtrue : Qfalse;
 }
 
 VALUE
@@ -1260,7 +1222,7 @@ static VALUE
 rb_f_autoload(VALUE obj, VALUE sym, VALUE file)
 {
     VALUE klass = rb_class_real(rb_vm_cbase());
-    if (!klass) {
+    if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "Can not set autoload on singleton class");
     }
     return rb_mod_autoload(klass, sym, file);
@@ -1291,13 +1253,15 @@ rb_f_autoload_p(int argc, VALUE *argv, VALUE obj)
 void
 Init_load(void)
 {
+#undef rb_intern
+#define rb_intern(str) rb_intern2((str), strlen(str))
     rb_vm_t *vm = GET_VM();
     static const char var_load_path[] = "$:";
     ID id_load_path = rb_intern2(var_load_path, sizeof(var_load_path)-1);
 
     rb_define_hooked_variable(var_load_path, (VALUE*)vm, load_path_getter, rb_gvar_readonly_setter);
-    rb_alias_variable(rb_intern_const("$-I"), id_load_path);
-    rb_alias_variable(rb_intern_const("$LOAD_PATH"), id_load_path);
+    rb_alias_variable(rb_intern("$-I"), id_load_path);
+    rb_alias_variable(rb_intern("$LOAD_PATH"), id_load_path);
     vm->load_path = rb_ary_new();
     vm->expanded_load_path = rb_ary_tmp_new(0);
     vm->load_path_snapshot = rb_ary_tmp_new(0);

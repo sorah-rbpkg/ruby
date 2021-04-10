@@ -51,11 +51,10 @@ describe "StringIO#readlines when passed no argument" do
 
   it "returns an Array containing lines based on $/" do
     begin
-      old_sep = $/;
-      suppress_warning {$/ = " "}
+      old_sep, $/ = $/, " "
       @io.readlines.should == ["this ", "is\nan ", "example\nfor ", "StringIO#readlines"]
     ensure
-      suppress_warning {$/ = old_sep}
+      $/ = old_sep
     end
   end
 

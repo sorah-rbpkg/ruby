@@ -4,6 +4,7 @@
 # used by both Specification and StubSpecification.
 
 class Gem::BasicSpecification
+
   ##
   # Allows installation of extensions for git: gems.
 
@@ -38,8 +39,10 @@ class Gem::BasicSpecification
   end
 
   class << self
+
     extend Gem::Deprecate
-    rubygems_deprecate :default_specifications_dir, "Gem.default_specifications_dir"
+    deprecate :default_specifications_dir, "Gem.default_specifications_dir", 2020, 02
+
   end
 
   ##
@@ -271,16 +274,10 @@ class Gem::BasicSpecification
   # Return all files in this gem that match for +glob+.
 
   def matches_for_glob(glob) # TODO: rename?
+    # TODO: do we need these?? Kill it
     glob = File.join(self.lib_dirs_glob, glob)
 
-    Dir[glob].map {|f| f.tap(&Gem::UNTAINT) } # FIX our tests are broken, run w/ SAFE=1
-  end
-
-  ##
-  # Returns the list of plugins in this spec.
-
-  def plugins
-    matches_for_glob("rubygems#{Gem.plugin_suffix_pattern}")
+    Dir[glob].map { |f| f.tap(&Gem::UNTAINT) } # FIX our tests are broken, run w/ SAFE=1
   end
 
   ##
@@ -332,14 +329,15 @@ class Gem::BasicSpecification
   def have_file?(file, suffixes)
     return true if raw_require_paths.any? do |path|
       base = File.join(gems_dir, full_name, path.tap(&Gem::UNTAINT), file).tap(&Gem::UNTAINT)
-      suffixes.any? {|suf| File.file? base + suf }
+      suffixes.any? { |suf| File.file? base + suf }
     end
 
     if have_extensions?
       base = File.join extension_dir, file
-      suffixes.any? {|suf| File.file? base + suf }
+      suffixes.any? { |suf| File.file? base + suf }
     else
       false
     end
   end
+
 end

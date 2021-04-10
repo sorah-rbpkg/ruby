@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'mspec/expectations/expectations'
 require 'mspec/helpers/tmp'
 require 'mspec/helpers/fs'
 require 'mspec/matchers/base'
@@ -9,7 +8,7 @@ require 'mspec/runner/example'
 describe MSpec, ".register_files" do
   it "records which spec files to run" do
     MSpec.register_files [:one, :two, :three]
-    MSpec.files_array.should == [:one, :two, :three]
+    MSpec.retrieve(:files).should == [:one, :two, :three]
   end
 end
 
@@ -67,9 +66,9 @@ end
 describe MSpec, ".randomize" do
   it "sets the flag to randomize spec execution order" do
     MSpec.randomize?.should == false
-    MSpec.randomize = true
+    MSpec.randomize
     MSpec.randomize?.should == true
-    MSpec.randomize = false
+    MSpec.randomize false
     MSpec.randomize?.should == false
   end
 end
@@ -343,19 +342,17 @@ describe MSpec, ".files" do
   end
 
   it "shuffles the file list if .randomize? is true" do
-    MSpec.randomize = true
+    MSpec.randomize
     MSpec.should_receive(:shuffle)
     MSpec.files
-    MSpec.randomize = false
+    MSpec.randomize false
   end
 
   it "registers the current file" do
-    load = double("load")
-    files = []
-    load.stub(:load).and_return { files << MSpec.file }
-    MSpec.register :load, load
+    MSpec.should_receive(:store).with(:file, :one)
+    MSpec.should_receive(:store).with(:file, :two)
+    MSpec.should_receive(:store).with(:file, :three)
     MSpec.files
-    files.should == [:one, :two, :three]
   end
 end
 

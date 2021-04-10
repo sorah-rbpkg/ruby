@@ -35,11 +35,9 @@ module Psych
 
     constants.each do |const|
       konst = const_get const
-      class_eval <<~RUBY
-        def #{const.to_s.downcase}
-          load #{konst.inspect}
-        end
-      RUBY
+      define_method(const.to_s.downcase) do
+        load konst
+      end
     end
 
     private
@@ -71,7 +69,7 @@ module Psych
       rescue
         nil
       end
-    }.compact].freeze
+    }.compact]
 
     class Restricted < ClassLoader
       def initialize classes, symbols

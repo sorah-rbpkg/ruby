@@ -66,7 +66,7 @@ describe :dir_open, shared: true do
       Dir.send(@method, DirSpecs.mock_dir) do |dir|
         io = IO.for_fd(dir.fileno)
         io.autoclose = false
-        io.should.close_on_exec?
+        io.close_on_exec?.should == true
       end
     end
   end

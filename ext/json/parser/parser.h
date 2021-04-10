@@ -37,7 +37,6 @@ typedef struct JSON_ParserStruct {
     int allow_nan;
     int parsing_name;
     int symbolize_names;
-    int freeze;
     VALUE object_class;
     VALUE array_class;
     VALUE decimal_class;

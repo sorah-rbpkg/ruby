@@ -1,5 +1,3 @@
-#ifndef RUBY_ISEQ_H
-#define RUBY_ISEQ_H 1
 /**********************************************************************
 
   iseq.h -
@@ -10,8 +8,9 @@
   Copyright (C) 2004-2008 Koichi Sasada
 
 **********************************************************************/
-#include "internal/gc.h"
-#include "vm_core.h"
+
+#ifndef RUBY_ISEQ_H
+#define RUBY_ISEQ_H 1
 
 RUBY_EXTERN const int ruby_api_version[];
 #define ISEQ_MAJOR_VERSION ((unsigned int)ruby_api_version[0])
@@ -23,6 +22,14 @@ typedef struct rb_iseq_struct rb_iseq_t;
 #endif
 
 extern const ID rb_iseq_shared_exc_local_tbl[];
+
+static inline size_t
+rb_call_info_kw_arg_bytes(int keyword_len)
+{
+    return rb_size_mul_add_or_raise(
+        keyword_len - 1, sizeof(VALUE), sizeof(struct rb_call_info_kw_arg),
+        rb_eRuntimeError);
+}
 
 #define ISEQ_COVERAGE(iseq)           iseq->body->variable.coverage
 #define ISEQ_COVERAGE_SET(iseq, cov)  RB_OBJ_WRITE(iseq, &iseq->body->variable.coverage, cov)
@@ -80,7 +87,7 @@ ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 #define ISEQ_TRANSLATED       IMEMO_FL_USER3
 #define ISEQ_MARKABLE_ISEQ    IMEMO_FL_USER4
 
-#define ISEQ_EXECUTABLE_P(iseq) (FL_TEST_RAW(((VALUE)iseq), ISEQ_NOT_LOADED_YET | ISEQ_USE_COMPILE_DATA) == 0)
+#define ISEQ_EXECUTABLE_P(iseq) (FL_TEST_RAW((iseq), ISEQ_NOT_LOADED_YET | ISEQ_USE_COMPILE_DATA) == 0)
 
 struct iseq_compile_data {
     /* GC is needed */
@@ -105,8 +112,8 @@ struct iseq_compile_data {
     int last_line;
     int label_no;
     int node_level;
-    int isolated_depth;
     unsigned int ci_index;
+    unsigned int ci_kw_index;
     const rb_compile_option_t *option;
     struct rb_id_table *ivar_cache_table;
     const struct rb_builtin_function *builtin_function_table;

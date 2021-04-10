@@ -37,7 +37,7 @@ describe "Mutex#sleep" do
     locked = false
     th = Thread.new { m.lock; locked = true; m.sleep }
     Thread.pass until locked
-    Thread.pass until th.stop?
+    Thread.pass while th.status and th.status != "sleep"
     m.locked?.should be_false
     th.run
     th.join
@@ -63,23 +63,15 @@ describe "Mutex#sleep" do
       end
     end
     Thread.pass until locked
-    Thread.pass until th.stop?
+    Thread.pass while th.status and th.status != "sleep"
     th.raise(Exception)
     th.value.should be_true
   end
 
   it "returns the rounded number of seconds asleep" do
     m = Mutex.new
-    locked = false
-    th = Thread.start do
-      m.lock
-      locked = true
-      m.sleep
-    end
-    Thread.pass until locked
-    Thread.pass until th.stop?
-    th.wakeup
-    th.value.should be_kind_of(Integer)
+    m.lock
+    m.sleep(0.001).should be_kind_of(Integer)
   end
 
   it "wakes up when requesting sleep times near or equal to zero" do
@@ -97,7 +89,7 @@ describe "Mutex#sleep" do
     m.lock
     times.each do |time|
       # just testing that sleep completes
-      -> {m.sleep(time)}.should_not raise_error
+      m.sleep(time).should_not == nil
     end
   end
 end

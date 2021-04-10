@@ -11,6 +11,8 @@ class Date
 
   class Infinity < Numeric # :nodoc:
 
+    include Comparable
+
     def initialize(d=1) @d = d <=> 0 end
 
     def d() @d end

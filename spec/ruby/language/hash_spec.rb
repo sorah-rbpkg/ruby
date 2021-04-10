@@ -38,7 +38,7 @@ describe "Hash literal" do
     key.reverse!
     h["foo"].should == "bar"
     h.keys.first.should == "foo"
-    h.keys.first.should.frozen?
+    h.keys.first.frozen?.should == true
     key.should == "oof"
   end
 
@@ -147,12 +147,6 @@ describe "Hash literal" do
     obj.should_receive(:to_hash).and_return(obj)
 
     -> { {**obj} }.should raise_error(TypeError)
-  end
-
-  it "raises a TypeError if the object does not respond to #to_hash" do
-    obj = 42
-    -> { {**obj} }.should raise_error(TypeError)
-    -> { {a: 1, **obj} }.should raise_error(TypeError)
   end
 
   it "does not change encoding of literal string keys during creation" do

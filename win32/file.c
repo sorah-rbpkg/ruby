@@ -5,7 +5,6 @@
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
 #include "internal.h"
-#include "internal/error.h"
 #include <winbase.h>
 #include <wchar.h>
 #include <shlwapi.h>
@@ -157,7 +156,7 @@ replace_to_long_name(wchar_t **wfullpath, size_t size, size_t buffer_size)
     /*
       Skip long name conversion if the path is already long name.
       Short name is 8.3 format.
-      https://en.wikipedia.org/wiki/8.3_filename
+      http://en.wikipedia.org/wiki/8.3_filename
       This check can be skipped for directory components that have file
       extensions longer than 3 characters, or total lengths longer than
       12 characters.
@@ -347,7 +346,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	if (path_cp == INVALID_CODE_PAGE || rb_enc_str_asciionly_p(path)) {
 	    /* use filesystem encoding if expanding home dir */
 	    path_encoding = rb_filesystem_encoding();
-	    cp = path_cp = code_page(path_encoding);
+	    cp = path_cp = system_code_page();
 	}
 
 	/* ignores dir since we are expanding home */

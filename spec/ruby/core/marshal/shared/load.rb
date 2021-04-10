@@ -1,5 +1,6 @@
 # -*- encoding: binary -*-
 require_relative '../fixtures/marshal_data'
+require 'stringio'
 
 describe :marshal_load, shared: true do
   before :all do
@@ -211,14 +212,14 @@ describe :marshal_load, shared: true do
         y.first.tainted?.should be_false
       end
 
-      it "does not taint Integers" do
+      it "does not taint Fixnums" do
         x = [1]
         y = Marshal.send(@method, Marshal.dump(x).taint)
         y.tainted?.should be_true
         y.first.tainted?.should be_false
       end
 
-      it "does not taint Integers" do
+      it "does not taint Bignums" do
         x = [bignum_value]
         y = Marshal.send(@method, Marshal.dump(x).taint)
         y.tainted?.should be_true
@@ -409,9 +410,8 @@ describe :marshal_load, shared: true do
     end
 
     it "loads a string through StringIO stream" do
-      require 'stringio'
-      obj = "This is a string which should be unmarshalled through StringIO stream!"
-      Marshal.send(@method, StringIO.new(Marshal.dump(obj))).should == obj
+        obj = "This is a string which should be unmarshalled through StringIO stream!"
+        Marshal.send(@method, StringIO.new(Marshal.dump(obj))).should == obj
     end
 
     it "loads a string with an ivar" do
@@ -623,7 +623,7 @@ describe :marshal_load, shared: true do
 
   describe "for a Regexp" do
     it "loads an extended Regexp" do
-      obj = /[a-z]/.dup.extend(Meths, MethsMore)
+      obj = /[a-z]/.extend(Meths, MethsMore)
       new_obj = Marshal.send(@method, "\004\be:\nMethse:\016MethsMore/\n[a-z]\000")
 
       new_obj.should == obj
@@ -667,7 +667,7 @@ describe :marshal_load, shared: true do
     end
   end
 
-  describe "for an Integer" do
+  describe "for a Integer" do
     it "loads 0" do
       Marshal.send(@method, "\004\bi\000").should == 0
       Marshal.send(@method, "\004\bi\005").should == 0
@@ -740,19 +740,19 @@ describe :marshal_load, shared: true do
     end
   end
 
-  describe "for an Integer" do
+  describe "for a Bignum" do
     platform_is wordsize: 64 do
-      context "that is Integer on 32-bit platforms but Integer on 64-bit" do
-        it "dumps an Integer" do
+      context "that is Bignum on 32-bit platforms but Fixnum on 64-bit" do
+        it "dumps a Fixnum" do
           val = Marshal.send(@method, "\004\bl+\ab:wU")
           val.should == 1433877090
-          val.class.should == Integer
+          val.class.should == Fixnum
         end
 
-        it "dumps an array containing multiple references to the Integer as an array of Integer" do
+        it "dumps an array containing multiple references to the Bignum as an array of Fixnum" do
           arr = Marshal.send(@method, "\004\b[\al+\a\223BwU@\006")
           arr.should == [1433879187, 1433879187]
-          arr.each { |v| v.class.should == Integer }
+          arr.each { |v| v.class.should == Fixnum }
         end
       end
     end

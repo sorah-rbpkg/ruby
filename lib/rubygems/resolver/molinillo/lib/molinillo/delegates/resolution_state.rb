@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-
 module Gem::Resolver::Molinillo
   # @!visibility private
   module Delegates
@@ -45,12 +44,6 @@ module Gem::Resolver::Molinillo
       def conflicts
         current_state = state || Gem::Resolver::Molinillo::ResolutionState.empty
         current_state.conflicts
-      end
-
-      # (see Gem::Resolver::Molinillo::ResolutionState#unused_unwind_options)
-      def unused_unwind_options
-        current_state = state || Gem::Resolver::Molinillo::ResolutionState.empty
-        current_state.unused_unwind_options
       end
     end
   end

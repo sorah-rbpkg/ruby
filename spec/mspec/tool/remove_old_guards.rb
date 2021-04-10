@@ -57,10 +57,9 @@ def search(regexp)
 end
 
 version = Regexp.escape(ARGV.fetch(0))
-version += "(?:\\.0)?" if version.count(".") < 2
-remove_guards(/ruby_version_is (["'])#{version}\1 do/, true)
-remove_guards(/ruby_version_is (["'])[0-9.]*\1 *... *(["'])#{version}\2 do/, false)
-remove_guards(/ruby_bug "#\d+", (["'])[0-9.]*\1 *... *(["'])#{version}\2 do/, true)
+remove_guards(/ruby_version_is ["']#{version}["'] do/, true)
+remove_guards(/ruby_version_is ["'][0-9.]*["']...["']#{version}["'] do/, false)
+remove_guards(/ruby_bug "#\d+", ["'][0-9.]*["']...["']#{version}["'] do/, true)
 
-search(/(["'])#{version}\1/)
+search(/["']#{version}["']/)
 search(/^\s*#.+#{version}/)

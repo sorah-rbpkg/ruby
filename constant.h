@@ -1,5 +1,3 @@
-#ifndef CONSTANT_H
-#define CONSTANT_H
 /**********************************************************************
 
   constant.h -
@@ -10,8 +8,8 @@
   Copyright (C) 2009 Yusuke Endoh
 
 **********************************************************************/
-#include "ruby/ruby.h"
-#include "id_table.h"
+#ifndef CONSTANT_H
+#define CONSTANT_H
 
 typedef enum {
     CONST_DEPRECATED = 0x100,
@@ -41,15 +39,12 @@ VALUE rb_mod_private_constant(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_mod_public_constant(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_mod_deprecate_constant(int argc, const VALUE *argv, VALUE obj);
 void rb_free_const_table(struct rb_id_table *tbl);
-VALUE rb_const_source_location(VALUE, ID);
-
-MJIT_SYMBOL_EXPORT_BEGIN
-int rb_autoloading_value(VALUE mod, ID id, VALUE *value, rb_const_flag_t *flag);
-rb_const_entry_t *rb_const_lookup(VALUE klass, ID id);
 VALUE rb_public_const_get_at(VALUE klass, ID id);
 VALUE rb_public_const_get_from(VALUE klass, ID id);
 int rb_public_const_defined_from(VALUE klass, ID id);
+rb_const_entry_t *rb_const_lookup(VALUE klass, ID id);
+int rb_autoloading_value(VALUE mod, ID id, VALUE *value, rb_const_flag_t *flag);
+VALUE rb_const_source_location(VALUE, ID);
 VALUE rb_const_source_location_at(VALUE, ID);
-MJIT_SYMBOL_EXPORT_END
 
 #endif /* CONSTANT_H */

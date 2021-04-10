@@ -2,14 +2,12 @@
 
 module Bundler
   module URICredentialsFilter
-    module_function
+  module_function
 
     def credential_filtered_uri(uri_to_anonymize)
       return uri_to_anonymize if uri_to_anonymize.nil?
       uri = uri_to_anonymize.dup
       if uri.is_a?(String)
-        return uri if File.exist?(uri)
-
         require_relative "vendored_uri"
         uri = Bundler::URI(uri)
       end

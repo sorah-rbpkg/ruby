@@ -93,25 +93,11 @@ class PP < PrettyPrint
   end
   # :startdoc:
 
-  if defined? ::Ractor
-    class << self
-      # Returns the sharing detection flag as a boolean value.
-      # It is false (nil) by default.
-      def sharing_detection
-        Ractor.current[:pp_sharing_detection]
-      end
-      # Sets the sharing detection flag to b.
-      def sharing_detection=(b)
-        Ractor.current[:pp_sharing_detection] = b
-      end
-    end
-  else
-    @sharing_detection = false
-    class << self
-      # Returns the sharing detection flag as a boolean value.
-      # It is false by default.
-      attr_accessor :sharing_detection
-    end
+  @sharing_detection = false
+  class << self
+    # Returns the sharing detection flag as a boolean value.
+    # It is false by default.
+    attr_accessor :sharing_detection
   end
 
   module PPMethods
@@ -237,7 +223,16 @@ class PP < PrettyPrint
         else
           sep.call
         end
-        yield(*v, **{})
+        case v.last
+        when Hash
+          if Hash.ruby2_keywords_hash?(v.last)
+            yield(*v, **{})
+          else
+            yield(*v)
+          end
+        else
+          yield(*v)
+        end
       }
     end
 

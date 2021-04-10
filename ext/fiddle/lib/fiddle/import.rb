@@ -83,7 +83,11 @@ module Fiddle
         when Importer
           lib.handlers
         else
-          Fiddle.dlopen(lib)
+          begin
+            Fiddle.dlopen(lib)
+          rescue DLError
+            raise(DLError, "can't load #{lib}")
+          end
         end
       }.flatten()
       @handler = CompositeHandler.new(handles)
@@ -117,8 +121,6 @@ module Fiddle
           return SIZEOF_DOUBLE
         when TYPE_VOIDP
           return SIZEOF_VOIDP
-        when TYPE_CONST_STRING
-          return SIZEOF_CONST_STRING
         else
           if defined?(TYPE_LONG_LONG) and
             ty == TYPE_LONG_LONG

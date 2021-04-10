@@ -397,56 +397,28 @@ describe :array_slice, shared: true do
       @array = ArraySpecs::MyArray[1, 2, 3, 4, 5]
     end
 
-    ruby_version_is ''...'3.0' do
-      it "returns a subclass instance with [n, m]" do
-        @array.send(@method, 0, 2).should be_an_instance_of(ArraySpecs::MyArray)
-      end
-
-      it "returns a subclass instance with [-n, m]" do
-        @array.send(@method, -3, 2).should be_an_instance_of(ArraySpecs::MyArray)
-      end
-
-      it "returns a subclass instance with [n..m]" do
-        @array.send(@method, 1..3).should be_an_instance_of(ArraySpecs::MyArray)
-      end
-
-      it "returns a subclass instance with [n...m]" do
-        @array.send(@method, 1...3).should be_an_instance_of(ArraySpecs::MyArray)
-      end
-
-      it "returns a subclass instance with [-n..-m]" do
-        @array.send(@method, -3..-1).should be_an_instance_of(ArraySpecs::MyArray)
-      end
-
-      it "returns a subclass instance with [-n...-m]" do
-        @array.send(@method, -3...-1).should be_an_instance_of(ArraySpecs::MyArray)
-      end
+    it "returns a subclass instance with [n, m]" do
+      @array.send(@method, 0, 2).should be_an_instance_of(ArraySpecs::MyArray)
     end
 
-    ruby_version_is '3.0' do
-      it "returns a Array instance with [n, m]" do
-        @array.send(@method, 0, 2).should be_an_instance_of(Array)
-      end
+    it "returns a subclass instance with [-n, m]" do
+      @array.send(@method, -3, 2).should be_an_instance_of(ArraySpecs::MyArray)
+    end
 
-      it "returns a Array instance with [-n, m]" do
-        @array.send(@method, -3, 2).should be_an_instance_of(Array)
-      end
+    it "returns a subclass instance with [n..m]" do
+      @array.send(@method, 1..3).should be_an_instance_of(ArraySpecs::MyArray)
+    end
 
-      it "returns a Array instance with [n..m]" do
-        @array.send(@method, 1..3).should be_an_instance_of(Array)
-      end
+    it "returns a subclass instance with [n...m]" do
+      @array.send(@method, 1...3).should be_an_instance_of(ArraySpecs::MyArray)
+    end
 
-      it "returns a Array instance with [n...m]" do
-        @array.send(@method, 1...3).should be_an_instance_of(Array)
-      end
+    it "returns a subclass instance with [-n..-m]" do
+      @array.send(@method, -3..-1).should be_an_instance_of(ArraySpecs::MyArray)
+    end
 
-      it "returns a Array instance with [-n..-m]" do
-        @array.send(@method, -3..-1).should be_an_instance_of(Array)
-      end
-
-      it "returns a Array instance with [-n...-m]" do
-        @array.send(@method, -3...-1).should be_an_instance_of(Array)
-      end
+    it "returns a subclass instance with [-n...-m]" do
+      @array.send(@method, -3...-1).should be_an_instance_of(ArraySpecs::MyArray)
     end
 
     it "returns an empty array when m == n with [m...n]" do
@@ -486,38 +458,23 @@ describe :array_slice, shared: true do
     end
   end
 
-  it "raises a RangeError when the start index is out of range of Integer" do
+  it "raises a RangeError when the start index is out of range of Fixnum" do
     array = [1, 2, 3, 4, 5, 6]
     obj = mock('large value')
-    obj.should_receive(:to_int).and_return(bignum_value)
+    obj.should_receive(:to_int).and_return(0x8000_0000_0000_0000_0000)
     -> { array.send(@method, obj) }.should raise_error(RangeError)
 
     obj = 8e19
     -> { array.send(@method, obj) }.should raise_error(RangeError)
-
-    # boundary value when longs are 64 bits
-    -> { array.send(@method, 2.0**63) }.should raise_error(RangeError)
-
-    # just under the boundary value when longs are 64 bits
-    array.send(@method, max_long.to_f.prev_float).should == nil
   end
 
-  it "raises a RangeError when the length is out of range of Integer" do
+  it "raises a RangeError when the length is out of range of Fixnum" do
     array = [1, 2, 3, 4, 5, 6]
     obj = mock('large value')
-    obj.should_receive(:to_int).and_return(bignum_value)
+    obj.should_receive(:to_int).and_return(0x8000_0000_0000_0000_0000)
     -> { array.send(@method, 1, obj) }.should raise_error(RangeError)
 
     obj = 8e19
     -> { array.send(@method, 1, obj) }.should raise_error(RangeError)
-  end
-
-  it "raises a type error if a range is passed with a length" do
-    ->{ [1, 2, 3].send(@method, 1..2, 1) }.should raise_error(TypeError)
-  end
-
-  it "raises a RangeError if passed a range with a bound that is too large" do
-    -> { "hello".send(@method, bignum_value..(bignum_value + 1)) }.should raise_error(RangeError)
-    -> { "hello".send(@method, 0..bignum_value) }.should raise_error(RangeError)
   end
 end

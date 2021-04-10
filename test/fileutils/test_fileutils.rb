@@ -51,11 +51,7 @@ class TestFileUtils < Test::Unit::TestCase
     end
 
     def check_have_symlink?
-      Dir.mktmpdir do |dir|
-        Dir.chdir(dir) do
-          File.symlink "symlink", "symlink"
-        end
-      end
+      File.symlink "", ""
     rescue NotImplementedError, Errno::EACCES
       return false
     rescue
@@ -72,13 +68,8 @@ class TestFileUtils < Test::Unit::TestCase
     end
 
     def check_have_hardlink?
-      Dir.mktmpdir do |dir|
-        Dir.chdir(dir) do
-          File.write "dummy", "dummy"
-          File.link "dummy", "hardlink"
-        end
-      end
-    rescue NotImplementedError, Errno::EACCES
+      File.link nil, nil
+    rescue NotImplementedError
       return false
     rescue
       return true
@@ -750,34 +741,6 @@ class TestFileUtils < Test::Unit::TestCase
     assert_file_not_exist 'tmp/tmpdir3'
   end
 
-  def test_remove_entry_cjk_path
-    dir = "tmpdir\u3042"
-    my_rm_rf dir
-
-    Dir.mkdir dir
-    File.write("#{dir}/\u3042.txt", "test_remove_entry_cjk_path")
-
-    remove_entry dir
-    assert_file_not_exist dir
-  end
-
-  def test_remove_entry_multibyte_path
-    c = "\u00a7"
-    begin
-      c = c.encode('filesystem')
-    rescue EncodingError
-      c = c.b
-    end
-    dir = "tmpdir#{c}"
-    my_rm_rf dir
-
-    Dir.mkdir dir
-    File.write("#{dir}/#{c}.txt", "test_remove_entry_multibyte_path")
-
-    remove_entry dir
-    assert_file_not_exist dir
-  end
-
   def test_remove_entry_secure
     check_singleton :remove_entry_secure
 
@@ -1219,8 +1182,6 @@ class TestFileUtils < Test::Unit::TestCase
     assert_filemode 04500, 'tmp/j'
     install 'tmp/j', 'tmp/k', :mode => "+s"
     assert_filemode 06500, 'tmp/k'
-    install 'tmp/a', 'tmp/l', :mode => "o+X"
-    assert_equal_filemode 'tmp/a', 'tmp/l'
   end if have_file_perm?
 
   def test_chmod
@@ -1748,16 +1709,16 @@ class TestFileUtils < Test::Unit::TestCase
     o.extend(FileUtils)
     o.singleton_class.send(:public, :chdir)
     o.freeze
-    orig_stdout = $stdout
-    $stdout = StringIO.new
+    orig_stderr = $stderr
+    $stderr = StringIO.new
     o.chdir('.', verbose: true){}
-    $stdout.rewind
-    assert_equal(<<-END, $stdout.read)
+    $stderr.rewind
+    assert_equal(<<-END, $stderr.read)
 cd .
 cd -
     END
   ensure
-    $stdout = orig_stdout if orig_stdout
+    $stderr = orig_stderr if orig_stderr
   end
 
   def test_getwd

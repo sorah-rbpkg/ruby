@@ -7,7 +7,6 @@ describe "TracePoint#callee_id" do
     obj = TracePointSpec::ClassWithMethodAlias.new
 
     TracePoint.new(:call) do |tp|
-      next unless TracePointSpec.target_thread?
       a << tp.callee_id
     end.enable do
       obj.m_alias

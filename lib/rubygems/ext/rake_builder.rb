@@ -8,9 +8,10 @@
 require "shellwords"
 
 class Gem::Ext::RakeBuilder < Gem::Ext::Builder
-  def self.build(extension, dest_path, results, args=[], lib_dir=nil, extension_dir=Dir.pwd)
+
+  def self.build(extension, dest_path, results, args=[], lib_dir=nil)
     if File.basename(extension) =~ /mkrf_conf/i
-      run([Gem.ruby, File.basename(extension), *args], results, class_name, extension_dir)
+      run([Gem.ruby, File.basename(extension), *args], results)
     end
 
     rake = ENV['rake']
@@ -19,15 +20,16 @@ class Gem::Ext::RakeBuilder < Gem::Ext::Builder
       rake = rake.shellsplit
     else
       begin
-        rake = [Gem.ruby, "-I#{File.expand_path("../..", __dir__)}", "-rrubygems", Gem.bin_path('rake', 'rake')]
+        rake = [Gem.ruby, "-I#{File.expand_path("..", __dir__)}", "-rrubygems", Gem.bin_path('rake', 'rake')]
       rescue Gem::Exception
         rake = [Gem.default_exec_format % 'rake']
       end
     end
 
     rake_args = ["RUBYARCHDIR=#{dest_path}", "RUBYLIBDIR=#{dest_path}", *args]
-    run(rake + rake_args, results, class_name, extension_dir)
+    run(rake + rake_args, results)
 
     results
   end
+
 end

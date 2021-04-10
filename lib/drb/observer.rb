@@ -13,7 +13,7 @@ module DRb
         if defined? @observer_peers
           @observer_peers.each do |observer, method|
             begin
-              observer.__send__(method, *arg)
+              observer.send(method, *arg)
             rescue
               delete_observer(observer)
             end

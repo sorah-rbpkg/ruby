@@ -1,6 +1,5 @@
 # frozen_string_literal: true
-
-require_relative 'action'
+require 'rubygems/resolver/molinillo/lib/molinillo/dependency_graph/action'
 module Gem::Resolver::Molinillo
   class DependencyGraph
     # @!visibility private

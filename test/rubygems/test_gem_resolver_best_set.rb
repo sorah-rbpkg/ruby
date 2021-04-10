@@ -2,6 +2,7 @@
 require 'rubygems/test_case'
 
 class TestGemResolverBestSet < Gem::TestCase
+
   def setup
     super
 
@@ -29,7 +30,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     found = set.find_all req
 
-    assert_equal %w[a-1], found.map {|s| s.full_name }
+    assert_equal %w[a-1], found.map { |s| s.full_name }
   end
 
   def test_find_all_fallback
@@ -39,7 +40,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     set = @DR::BestSet.new
 
-    api_uri = URI(@gem_repo)
+    api_uri = URI(@gem_repo) + './api/v1/dependencies'
 
     set.sets << Gem::Resolver::APISet.new(api_uri)
 
@@ -49,7 +50,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     found = set.find_all req
 
-    assert_equal %w[a-1], found.map {|s| s.full_name }
+    assert_equal %w[a-1], found.map { |s| s.full_name }
   end
 
   def test_find_all_local
@@ -99,12 +100,12 @@ class TestGemResolverBestSet < Gem::TestCase
   def test_replace_failed_api_set
     set = @DR::BestSet.new
 
-    api_uri = URI(@gem_repo) + './info/'
+    api_uri = URI(@gem_repo) + './api/v1/dependencies'
     api_set = Gem::Resolver::APISet.new api_uri
 
     set.sets << api_set
 
-    error_uri = api_uri + 'a'
+    error_uri = api_uri + '?gems=a'
 
     error = Gem::RemoteFetcher::FetchError.new 'bogus', error_uri
 
@@ -132,4 +133,5 @@ class TestGemResolverBestSet < Gem::TestCase
 
     assert_equal error, e
   end
+
 end

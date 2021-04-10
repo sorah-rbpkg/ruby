@@ -8,8 +8,6 @@ require 'rdoc/markdown'
 class TestRDocMarkdown < RDoc::TestCase
 
   def setup
-    super
-
     @RM = RDoc::Markup
 
     @parser = RDoc::Markdown.new

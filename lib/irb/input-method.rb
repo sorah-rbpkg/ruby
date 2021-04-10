@@ -83,15 +83,7 @@ module IRB
     #
     # See IO#eof? for more information.
     def eof?
-      rs, = IO.select([@stdin], [], [], 0.00001)
-      if rs and rs[0]
-        c = @stdin.getc
-        result = c.nil? ? true : false
-        @stdin.ungetc(c) unless c.nil?
-        result
-      else # buffer is empty
-        false
-      end
+      @stdin.eof?
     end
 
     # Whether this input method is still readable when there is no more data to

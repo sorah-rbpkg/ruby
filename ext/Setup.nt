@@ -21,6 +21,7 @@ nkf
 racc/cparse
 #readline
 #ripper
+sdbm
 socket
 stringio
 strscan

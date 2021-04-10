@@ -21,16 +21,13 @@
  *
  */
 
-#include "eval_intern.h"
 #include "internal.h"
-#include "internal/hash.h"
-#include "internal/symbol.h"
-#include "iseq.h"
-#include "mjit.h"
 #include "ruby/debug.h"
-#include "vm_core.h"
-#include "ruby/ractor.h"
 
+#include "vm_core.h"
+#include "mjit.h"
+#include "iseq.h"
+#include "eval_intern.h"
 #include "builtin.h"
 
 /* (1) trace mechanisms */
@@ -68,7 +65,6 @@ static void clean_hooks(const rb_execution_context_t *ec, rb_hook_list_t *list);
 void
 rb_hook_list_free(rb_hook_list_t *hooks)
 {
-    hooks->need_clean = TRUE;
     clean_hooks(GET_EC(), hooks);
 }
 
@@ -138,7 +134,7 @@ hook_list_connect(VALUE list_owner, rb_hook_list_t *list, rb_event_hook_t *hook,
 static void
 connect_event_hook(const rb_execution_context_t *ec, rb_event_hook_t *hook)
 {
-    rb_hook_list_t *list = rb_ec_ractor_hooks(ec);
+    rb_hook_list_t *list = rb_vm_global_hooks(ec);
     hook_list_connect(Qundef, list, hook, TRUE);
 }
 
@@ -197,7 +193,7 @@ clean_hooks(const rb_execution_context_t *ec, rb_hook_list_t *list)
 	}
     }
 
-    if (list == rb_ec_ractor_hooks(ec)) {
+    if (list == rb_vm_global_hooks(ec)) {
         /* global events */
         update_global_event_hook(list->events);
     }
@@ -222,7 +218,8 @@ clean_hooks_check(const rb_execution_context_t *ec, rb_hook_list_t *list)
 static int
 remove_event_hook(const rb_execution_context_t *ec, const rb_thread_t *filter_th, rb_event_hook_func_t func, VALUE data)
 {
-    rb_hook_list_t *list = rb_ec_ractor_hooks(ec);
+    rb_vm_t *vm = rb_ec_vm_ptr(ec);
+    rb_hook_list_t *list = &vm->global_hooks;
     int ret = 0;
     rb_event_hook_t *hook = list->hooks;
 
@@ -375,7 +372,7 @@ rb_exec_event_hooks(rb_trace_arg_t *trace_arg, rb_hook_list_t *hooks, int pop_p)
 
             ec->trace_arg = trace_arg;
             /* only global hooks */
-            exec_hooks_unprotected(ec, rb_ec_ractor_hooks(ec), trace_arg);
+            exec_hooks_unprotected(ec, rb_vm_global_hooks(ec), trace_arg);
             ec->trace_arg = prev_trace_arg;
 	}
     }
@@ -709,7 +706,6 @@ typedef struct rb_tp_struct {
     void (*func)(VALUE tpval, void *data);
     void *data;
     VALUE proc;
-    rb_ractor_t *ractor;
     VALUE self;
 } rb_tp_t;
 
@@ -1115,9 +1111,7 @@ tp_call_trace(VALUE tpval, rb_trace_arg_t *trace_arg)
 	(*tp->func)(tpval, tp->data);
     }
     else {
-        if (tp->ractor == NULL || tp->ractor == GET_RACTOR()) {
-            rb_proc_call_with_block((VALUE)tp->proc, 1, &tpval, Qnil);
-        }
+	rb_proc_call_with_block((VALUE)tp->proc, 1, &tpval, Qnil);
     }
 }
 
@@ -1364,7 +1358,6 @@ tracepoint_new(VALUE klass, rb_thread_t *target_th, rb_event_flag_t events, void
     TypedData_Get_Struct(tpval, rb_tp_t, &tp_data_type, tp);
 
     tp->proc = proc;
-    tp->ractor = rb_ractor_shareable_p(proc) ? NULL : GET_RACTOR();
     tp->func = func;
     tp->data = data;
     tp->events = events;
@@ -1460,8 +1453,8 @@ tracepoint_inspect(rb_execution_context_t *ec, VALUE self)
 	    {
 		VALUE sym = rb_tracearg_method_id(trace_arg);
 		if (NIL_P(sym))
-                    break;
-		return rb_sprintf("#<TracePoint:%"PRIsVALUE" %"PRIsVALUE":%d in `%"PRIsVALUE"'>",
+		    goto default_inspect;
+		return rb_sprintf("#<TracePoint:%"PRIsVALUE"@%"PRIsVALUE":%d in `%"PRIsVALUE"'>",
 				  rb_tracearg_event(trace_arg),
 				  rb_tracearg_path(trace_arg),
 				  FIX2INT(rb_tracearg_lineno(trace_arg)),
@@ -1471,7 +1464,7 @@ tracepoint_inspect(rb_execution_context_t *ec, VALUE self)
 	  case RUBY_EVENT_C_CALL:
 	  case RUBY_EVENT_RETURN:
 	  case RUBY_EVENT_C_RETURN:
-	    return rb_sprintf("#<TracePoint:%"PRIsVALUE" `%"PRIsVALUE"' %"PRIsVALUE":%d>",
+	    return rb_sprintf("#<TracePoint:%"PRIsVALUE" `%"PRIsVALUE"'@%"PRIsVALUE":%d>",
 			      rb_tracearg_event(trace_arg),
 			      rb_tracearg_method_id(trace_arg),
 			      rb_tracearg_path(trace_arg),
@@ -1482,12 +1475,12 @@ tracepoint_inspect(rb_execution_context_t *ec, VALUE self)
 			      rb_tracearg_event(trace_arg),
 			      rb_tracearg_self(trace_arg));
 	  default:
-            break;
+	  default_inspect:
+	    return rb_sprintf("#<TracePoint:%"PRIsVALUE"@%"PRIsVALUE":%d>",
+			      rb_tracearg_event(trace_arg),
+			      rb_tracearg_path(trace_arg),
+			      FIX2INT(rb_tracearg_lineno(trace_arg)));
 	}
-        return rb_sprintf("#<TracePoint:%"PRIsVALUE" %"PRIsVALUE":%d>",
-                          rb_tracearg_event(trace_arg),
-                          rb_tracearg_path(trace_arg),
-                          FIX2INT(rb_tracearg_lineno(trace_arg)));
     }
     else {
 	return rb_sprintf("#<TracePoint:%s>", tp->tracing ? "enabled" : "disabled");
@@ -1518,7 +1511,7 @@ tracepoint_stat_s(rb_execution_context_t *ec, VALUE self)
     rb_vm_t *vm = GET_VM();
     VALUE stat = rb_hash_new();
 
-    tracepoint_stat_event_hooks(stat, vm->self, rb_ec_ractor_hooks(ec)->hooks);
+    tracepoint_stat_event_hooks(stat, vm->self, vm->global_hooks.hooks);
     /* TODO: thread local hooks */
 
     return stat;
@@ -1537,6 +1530,8 @@ Init_vm_trace(void)
 
     rb_cTracePoint = rb_define_class("TracePoint", rb_cObject);
     rb_undef_alloc_func(rb_cTracePoint);
+
+    load_trace_point();
 }
 
 typedef struct rb_postponed_job_struct {
@@ -1570,7 +1565,7 @@ enum postponed_job_register_result {
 /* Async-signal-safe */
 static enum postponed_job_register_result
 postponed_job_register(rb_execution_context_t *ec, rb_vm_t *vm,
-                       unsigned int flags, rb_postponed_job_func_t func, void *data, rb_atomic_t max, rb_atomic_t expected_index)
+                       unsigned int flags, rb_postponed_job_func_t func, void *data, int max, int expected_index)
 {
     rb_postponed_job_t *pjob;
 
@@ -1621,7 +1616,7 @@ rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, 
     rb_execution_context_t *ec = GET_EC();
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
     rb_postponed_job_t *pjob;
-    rb_atomic_t i, index;
+    int i, index;
 
   begin:
     index = vm->postponed_job_index;
@@ -1658,8 +1653,7 @@ rb_workqueue_register(unsigned flags, rb_postponed_job_func_t func, void *data)
     list_add_tail(&vm->workqueue, &wq_job->jnode);
     rb_nativethread_lock_unlock(&vm->workqueue_lock);
 
-    // TODO: current implementation affects only main ractor
-    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(rb_vm_main_ractor_ec(vm));
+    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(GET_EC());
 
     return TRUE;
 }
@@ -1685,7 +1679,7 @@ rb_postponed_job_flush(rb_vm_t *vm)
     {
 	EC_PUSH_TAG(ec);
 	if (EC_EXEC_TAG() == TAG_NONE) {
-            rb_atomic_t index;
+            int index;
             struct rb_workqueue_job *wq_job;
 
             while ((index = vm->postponed_job_index) > 0) {

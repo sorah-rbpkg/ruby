@@ -33,22 +33,24 @@ describe "Float#<=>" do
     coercible.call_count.should == 3
   end
 
-  it "raises TypeError when #coerce misbehaves" do
-    klass = Class.new do
-      def coerce(other)
-        :incorrect
+  ruby_version_is "2.5" do
+    it "raises TypeError when #coerce misbehaves" do
+      klass = Class.new do
+        def coerce(other)
+          :incorrect
+        end
       end
-    end
 
-    bad_coercible = klass.new
-    -> {
-      4.2 <=> bad_coercible
-    }.should raise_error(TypeError, "coerce must return [x, y]")
+      bad_coercible = klass.new
+      -> {
+        4.2 <=> bad_coercible
+      }.should raise_error(TypeError, "coerce must return [x, y]")
+    end
   end
 
   # The 4 tests below are taken from matz's revision 23730 for Ruby trunk
   #
-  it "returns 1 when self is Infinity and other is an Integer" do
+  it "returns 1 when self is Infinity and other is a Bignum" do
     (infinity_value <=> Float::MAX.to_i*2).should == 1
   end
 

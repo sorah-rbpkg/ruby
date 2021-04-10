@@ -11,39 +11,35 @@
 
 **********************************************************************/
 
-#include "ruby/internal/config.h"
-
-#include <errno.h>
+#include "internal.h"
+#include "vm_core.h"
 #include <signal.h>
 #include <stdio.h>
-
+#include <errno.h>
+#include "ruby_atomic.h"
+#include "eval_intern.h"
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
-
 #ifdef HAVE_SYS_UIO_H
-# include <sys/uio.h>
+#include <sys/uio.h>
 #endif
-
 #ifdef HAVE_UCONTEXT_H
-# include <ucontext.h>
+#include <ucontext.h>
 #endif
 
-#if HAVE_PTHREAD_H
-# include <pthread.h>
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+# include <valgrind/memcheck.h>
+# ifndef VALGRIND_MAKE_MEM_DEFINED
+#  define VALGRIND_MAKE_MEM_DEFINED(p, n) VALGRIND_MAKE_READABLE((p), (n))
+# endif
+# ifndef VALGRIND_MAKE_MEM_UNDEFINED
+#  define VALGRIND_MAKE_MEM_UNDEFINED(p, n) VALGRIND_MAKE_WRITABLE((p), (n))
+# endif
+#else
+# define VALGRIND_MAKE_MEM_DEFINED(p, n) 0
+# define VALGRIND_MAKE_MEM_UNDEFINED(p, n) 0
 #endif
-
-#include "debug_counter.h"
-#include "eval_intern.h"
-#include "internal.h"
-#include "internal/eval.h"
-#include "internal/sanitizers.h"
-#include "internal/signal.h"
-#include "internal/string.h"
-#include "internal/thread.h"
-#include "ruby_atomic.h"
-#include "vm_core.h"
-#include "ractor_core.h"
 
 #ifdef NEED_RUBY_ATOMIC_OPS
 rb_atomic_t
@@ -244,7 +240,23 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
 	    prefix += signame_prefix_len;
     }
     if (len <= (long)prefix) {
-        goto unsupported;
+      unsupported:
+	if (prefix == signame_prefix_len) {
+	    prefix = 0;
+	}
+	else if (prefix > signame_prefix_len) {
+	    prefix -= signame_prefix_len;
+	    len -= prefix;
+	    vsig = rb_str_subseq(vsig, prefix, len);
+	    prefix = 0;
+	}
+	else {
+	    len -= prefix;
+	    vsig = rb_str_subseq(vsig, prefix, len);
+	    prefix = signame_prefix_len;
+	}
+	rb_raise(rb_eArgError, "unsupported signal `%.*s%"PRIsVALUE"'",
+		 prefix, signame_prefix, vsig);
     }
 
     if (prefix_ptr) *prefix_ptr = prefix;
@@ -257,25 +269,7 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
 	    return negative ? -sigs->signo : sigs->signo;
 	}
     }
-
-  unsupported:
-    if (prefix == signame_prefix_len) {
-        prefix = 0;
-    }
-    else if (prefix > signame_prefix_len) {
-        prefix -= signame_prefix_len;
-        len -= prefix;
-        vsig = rb_str_subseq(vsig, prefix, len);
-        prefix = 0;
-    }
-    else {
-        len -= prefix;
-        vsig = rb_str_subseq(vsig, prefix, len);
-        prefix = signame_prefix_len;
-    }
-    rb_raise(rb_eArgError, "unsupported signal `%.*s%"PRIsVALUE"'",
-             prefix, signame_prefix, vsig);
-    UNREACHABLE_RETURN(0);
+    goto unsupported;
 }
 
 static const char*
@@ -401,6 +395,7 @@ interrupt_init(int argc, VALUE *argv, VALUE self)
     return rb_call_super(2, args);
 }
 
+#include "debug_counter.h"
 void rb_malloc_info_show_results(void); /* gc.c */
 
 void
@@ -415,7 +410,7 @@ ruby_default_signal(int sig)
     raise(sig);
 }
 
-static void sighandler(int sig);
+static RETSIGTYPE sighandler(int sig);
 static int signal_ignored(int sig);
 static void signal_enque(int sig);
 
@@ -449,7 +444,7 @@ rb_f_kill(int argc, const VALUE *argv)
 	}
     }
     else {
-	const rb_pid_t self = (GET_THREAD() == GET_VM()->ractor.main_thread) ? getpid() : -1;
+	const rb_pid_t self = (GET_THREAD() == GET_VM()->main_thread) ? getpid() : -1;
 	int wakeup = 0;
 
 	for (i=1; i<argc; i++) {
@@ -496,7 +491,7 @@ rb_f_kill(int argc, const VALUE *argv)
 	    }
 	}
 	if (wakeup) {
-	    rb_threadptr_check_signal(GET_VM()->ractor.main_thread);
+	    rb_threadptr_check_signal(GET_VM()->main_thread);
 	}
     }
     rb_thread_execute_interrupts(rb_thread_current());
@@ -519,19 +514,17 @@ typedef void ruby_sigaction_t(int, siginfo_t*, void*);
 #define SIGINFO_ARG , siginfo_t *info, void *ctx
 #define SIGINFO_CTX ctx
 #else
-typedef void ruby_sigaction_t(int);
+typedef RETSIGTYPE ruby_sigaction_t(int);
 #define SIGINFO_ARG
 #define SIGINFO_CTX 0
 #endif
 
 #ifdef USE_SIGALTSTACK
-/* XXX: BSD_vfprintf() uses >1500B stack and x86-64 need >5KiB stack. */
-#define RUBY_SIGALTSTACK_SIZE (16*1024)
-
 static int
 rb_sigaltstack_size(void)
 {
-    int size = RUBY_SIGALTSTACK_SIZE;
+    /* XXX: BSD_vfprintf() uses >1500KiB stack and x86-64 need >5KiB stack. */
+    int size = 16*1024;
 
 #ifdef MINSIGSTKSZ
     {
@@ -552,25 +545,14 @@ rb_sigaltstack_size(void)
     return size;
 }
 
-static int rb_sigaltstack_size_value = 0;
-
-void *
-rb_allocate_sigaltstack(void)
-{
-    if (!rb_sigaltstack_size_value) {
-	rb_sigaltstack_size_value = rb_sigaltstack_size();
-    }
-    return xmalloc(rb_sigaltstack_size_value);
-}
-
 /* alternate stack for SIGSEGV */
 void *
-rb_register_sigaltstack(void *altstack)
+rb_register_sigaltstack(void)
 {
     stack_t newSS, oldSS;
 
-    newSS.ss_size = rb_sigaltstack_size_value;
-    newSS.ss_sp = altstack;
+    newSS.ss_size = rb_sigaltstack_size();
+    newSS.ss_sp = xmalloc(newSS.ss_size);
     newSS.ss_flags = 0;
 
     sigaltstack(&newSS, &oldSS); /* ignore error. */
@@ -712,7 +694,7 @@ static rb_atomic_t sigchld_hit;
 # define GET_SIGCHLD_HIT() 0
 #endif
 
-static void
+static RETSIGTYPE
 sighandler(int sig)
 {
     int old_errnum = errno;
@@ -745,6 +727,10 @@ rb_signal_buff_size(void)
 {
     return signal_buff.size;
 }
+
+#if HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
 
 static void
 rb_disable_interrupt(void)
@@ -930,7 +916,7 @@ NOINLINE(static void check_reserved_signal_(const char *name, size_t name_len));
 static sighandler_t default_sigbus_handler;
 NORETURN(static ruby_sigaction_t sigbus);
 
-static void
+static RETSIGTYPE
 sigbus(int sig SIGINFO_ARG)
 {
     check_reserved_signal("BUS");
@@ -952,7 +938,7 @@ sigbus(int sig SIGINFO_ARG)
 static sighandler_t default_sigsegv_handler;
 NORETURN(static ruby_sigaction_t sigsegv);
 
-static void
+static RETSIGTYPE
 sigsegv(int sig SIGINFO_ARG)
 {
     check_reserved_signal("SEGV");
@@ -966,7 +952,7 @@ sigsegv(int sig SIGINFO_ARG)
 static sighandler_t default_sigill_handler;
 NORETURN(static ruby_sigaction_t sigill);
 
-static void
+static RETSIGTYPE
 sigill(int sig SIGINFO_ARG)
 {
     check_reserved_signal("ILL");
@@ -1031,7 +1017,7 @@ check_reserved_signal_(const char *name, size_t name_len)
 #endif
 
 #if defined SIGPIPE || defined SIGSYS
-static void
+static RETSIGTYPE
 sig_do_nothing(int sig)
 {
 }
@@ -1213,14 +1199,6 @@ trap_handler(VALUE *cmd, int sig)
 	    *cmd = command;
 	    RSTRING_GETMEM(command, cptr, len);
 	    switch (len) {
-              sig_ign:
-                func = SIG_IGN;
-                *cmd = Qtrue;
-                break;
-              sig_dfl:
-                func = default_handler(sig);
-                *cmd = 0;
-                break;
 	      case 0:
                 goto sig_ign;
 		break;
@@ -1235,10 +1213,14 @@ trap_handler(VALUE *cmd, int sig)
                 break;
 	      case 7:
 		if (memcmp(cptr, "SIG_IGN", 7) == 0) {
-                    goto sig_ign;
+sig_ign:
+                    func = SIG_IGN;
+                    *cmd = Qtrue;
 		}
 		else if (memcmp(cptr, "SIG_DFL", 7) == 0) {
-                    goto sig_dfl;
+sig_dfl:
+                    func = default_handler(sig);
+                    *cmd = 0;
 		}
 		else if (memcmp(cptr, "DEFAULT", 7) == 0) {
                     goto sig_dfl;
@@ -1411,11 +1393,6 @@ sig_trap(int argc, VALUE *argv, VALUE _)
 	func = trap_handler(&cmd, sig);
     }
 
-    if (rb_obj_is_proc(cmd) &&
-        !rb_ractor_main_p() && !rb_ractor_shareable_p(cmd)) {
-        cmd = rb_proc_isolate(cmd);
-    }
-
     return trap(sig, func, cmd);
 }
 
@@ -1586,7 +1563,7 @@ Init_signal(void)
 	force_install_sighandler(SIGILL, (sighandler_t)sigill, &default_sigill_handler);
 #endif
 #ifdef SIGSEGV
-	RB_ALTSTACK_INIT(GET_VM()->main_altstack, rb_allocate_sigaltstack());
+	RB_ALTSTACK_INIT(GET_VM()->main_altstack);
 	force_install_sighandler(SIGSEGV, (sighandler_t)sigsegv, &default_sigsegv_handler);
 #endif
     }

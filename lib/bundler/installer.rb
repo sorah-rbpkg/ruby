@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "erb"
 require "rubygems/dependency_installer"
 require_relative "worker"
 require_relative "installer/parallel_installer"
@@ -134,18 +135,12 @@ module Bundler
           next
         end
 
-        mode = Bundler::WINDOWS ? "wb:UTF-8" : "w"
-        require "erb"
-        content = if RUBY_VERSION >= "2.6"
-          ERB.new(template, :trim_mode => "-").result(binding)
-        else
-          ERB.new(template, nil, "-").result(binding)
-        end
-
-        File.write(binstub_path, content, :mode => mode, :perm => 0o777 & ~File.umask)
-        if Bundler::WINDOWS || options[:all_platforms]
-          prefix = "@ruby -x \"%~f0\" %*\n@exit /b %ERRORLEVEL%\n\n"
-          File.write("#{binstub_path}.cmd", prefix + content, :mode => mode)
+        File.open(binstub_path, "w", 0o777 & ~File.umask) do |f|
+          if RUBY_VERSION >= "2.6"
+            f.puts ERB.new(template, :trim_mode => "-").result(binding)
+          else
+            f.puts ERB.new(template, nil, "-").result(binding)
+          end
         end
       end
 
@@ -164,7 +159,7 @@ module Bundler
       end
     end
 
-    def generate_standalone_bundler_executable_stubs(spec, options = {})
+    def generate_standalone_bundler_executable_stubs(spec)
       # double-assignment to avoid warnings about variables that will be used by ERB
       bin_path = Bundler.bin_path
       unless path = Bundler.settings[:path]
@@ -180,24 +175,17 @@ module Bundler
         next if executable == "bundle"
         executable_path = Pathname(spec.full_gem_path).join(spec.bindir, executable).relative_path_from(bin_path)
         executable_path = executable_path
-
-        mode = Bundler::WINDOWS ? "wb:UTF-8" : "w"
-        require "erb"
-        content = if RUBY_VERSION >= "2.6"
-          ERB.new(template, :trim_mode => "-").result(binding)
-        else
-          ERB.new(template, nil, "-").result(binding)
-        end
-
-        File.write("#{bin_path}/#{executable}", content, :mode => mode, :perm => 0o755)
-        if Bundler::WINDOWS || options[:all_platforms]
-          prefix = "@ruby -x \"%~f0\" %*\n@exit /b %ERRORLEVEL%\n\n"
-          File.write("#{bin_path}/#{executable}.cmd", prefix + content, :mode => mode)
+        File.open "#{bin_path}/#{executable}", "w", 0o755 do |f|
+          if RUBY_VERSION >= "2.6"
+            f.puts ERB.new(template, :trim_mode => "-").result(binding)
+          else
+            f.puts ERB.new(template, nil, "-").result(binding)
+          end
         end
       end
     end
 
-    private
+  private
 
     # the order that the resolver provides is significant, since
     # dependencies might affect the installation of a gem.
@@ -214,14 +202,20 @@ module Bundler
         return jobs
       end
 
+      return 1 unless can_install_in_parallel?
+
+      auto_config_jobs = Bundler.feature_flag.auto_config_jobs?
       if jobs = Bundler.settings[:jobs]
-        return jobs
+        if auto_config_jobs
+          jobs
+        else
+          [jobs.pred, 1].max
+        end
+      elsif auto_config_jobs
+        processor_count
+      else
+        1
       end
-
-      # Parallelization has some issues on Windows, so it's not yet the default
-      return 1 if Gem.win_platform?
-
-      processor_count
     end
 
     def processor_count
@@ -244,7 +238,6 @@ module Bundler
         end
       end.flatten
       Bundler.rubygems.load_plugin_files(path_plugin_files)
-      Bundler.rubygems.load_env_plugins
     end
 
     def ensure_specs_are_compatible!
@@ -281,6 +274,10 @@ module Bundler
       end
     end
 
+    def can_install_in_parallel?
+      true
+    end
+
     def install_in_parallel(size, standalone, force = false)
       spec_installations = ParallelInstaller.call(self, @definition.specs, size, standalone, force)
       spec_installations.each do |installation|
@@ -299,7 +296,7 @@ module Bundler
 
     # returns whether or not a re-resolve was needed
     def resolve_if_needed(options)
-      if !@definition.unlocking? && !options["force"] && !Bundler.settings[:inline] && Bundler.default_lockfile.file?
+      if !@definition.unlocking? && !options["force"] && !options["all-platforms"] && !Bundler.settings[:inline] && Bundler.default_lockfile.file?
         return false if @definition.nothing_changed? && !@definition.missing_specs?
       end
 

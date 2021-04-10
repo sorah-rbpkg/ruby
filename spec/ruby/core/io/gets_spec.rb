@@ -41,7 +41,7 @@ describe "IO#gets" do
     ruby_version_is ''...'2.7' do
       it "returns tainted strings" do
         while line = @io.gets
-          line.should.tainted?
+          line.tainted?.should == true
         end
       end
     end
@@ -67,7 +67,7 @@ describe "IO#gets" do
     ruby_version_is ''...'2.7' do
       it "returns tainted strings" do
         while line = @io.gets(nil)
-          line.should.tainted?
+          line.tainted?.should == true
         end
       end
     end
@@ -103,7 +103,7 @@ describe "IO#gets" do
     ruby_version_is ''...'2.7' do
       it "returns tainted strings" do
         while line = @io.gets("")
-          line.should.tainted?
+          line.tainted?.should == true
         end
       end
     end
@@ -129,7 +129,7 @@ describe "IO#gets" do
     ruby_version_is ''...'2.7' do
       it "returns tainted strings" do
         while line = @io.gets("la")
-          line.should.tainted?
+          line.tainted?.should == true
         end
       end
     end

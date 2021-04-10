@@ -16,12 +16,12 @@ describe "Logger#error?" do
 
   it "returns true if severity level allows printing errors" do
     @logger.level = Logger::INFO
-    @logger.should.error?
+    @logger.error?.should == true
   end
 
   it "returns false if severity level does not allow errors" do
     @logger.level = Logger::FATAL
-    @logger.should_not.error?
+    @logger.error?.should == false
   end
 end
 

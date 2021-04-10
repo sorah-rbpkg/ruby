@@ -1,10 +1,10 @@
 require_relative '../../spec_helper'
 
 describe "Regexp#options" do
-  it "returns an Integer bitvector of regexp options for the Regexp object" do
-    /cat/.options.should be_kind_of(Integer)
+  it "returns a Fixnum bitvector of regexp options for the Regexp object" do
+    /cat/.options.should be_kind_of(Fixnum)
     not_supported_on :opal do
-      /cat/ix.options.should be_kind_of(Integer)
+      /cat/ix.options.should be_kind_of(Fixnum)
     end
   end
 

@@ -3,6 +3,7 @@ require 'rubygems/installer_test_case'
 require 'rubygems/commands/uninstall_command'
 
 class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
+
   def setup
     super
     @cmd = Gem::Commands::UninstallCommand.new
@@ -486,7 +487,7 @@ WARNING:  Use your OS package manager to uninstall vendor gems
     end
 
     assert_empty @ui.output
-    assert_match %r{Error: unable to successfully uninstall '#{@spec.name}'}, @ui.error
+    assert_match %r!Error: unable to successfully uninstall '#{@spec.name}'!, @ui.error
   end
 
   private
@@ -501,4 +502,5 @@ WARNING:  Use your OS package manager to uninstall vendor gems
       end
     end
   end
+
 end

@@ -8,7 +8,7 @@ require_relative '../lib/jit_support'
 
 class TestRubyOptions < Test::Unit::TestCase
   NO_JIT_DESCRIPTION =
-    if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE
+    if RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE
       RUBY_DESCRIPTION.sub(/\+JIT /, '')
     else
       RUBY_DESCRIPTION
@@ -72,9 +72,8 @@ class TestRubyOptions < Test::Unit::TestCase
     ENV['RUBYOPT'] = nil
     assert_in_out_err(%w(-W0 -e) + ['p $-W'], "", %w(0), [])
     assert_in_out_err(%w(-W1 -e) + ['p $-W'], "", %w(1), [])
-    assert_in_out_err(%w(-Wx -e) + ['p $-W'], "", %w(2), [])
+    assert_in_out_err(%w(-Wx -e) + ['p $-W'], "", %w(1), [])
     assert_in_out_err(%w(-W -e) + ['p $-W'], "", %w(2), [])
-    assert_in_out_err(%w(-We) + ['p $-W'], "", %w(2), [])
     assert_in_out_err(%w(-w -W0 -e) + ['p $-W'], "", %w(0), [])
     assert_in_out_err(%w(-W:deprecated -e) + ['p Warning[:deprecated]'], "", %w(true), [])
     assert_in_out_err(%w(-W:no-deprecated -e) + ['p Warning[:deprecated]'], "", %w(false), [])
@@ -83,8 +82,16 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(-W:qux), "", [], /unknown warning category: `qux'/)
     assert_in_out_err(%w(-w -e) + ['p Warning[:deprecated]'], "", %w(true), [])
     assert_in_out_err(%w(-W -e) + ['p Warning[:deprecated]'], "", %w(true), [])
-    assert_in_out_err(%w(-We) + ['p Warning[:deprecated]'], "", %w(true), [])
     assert_in_out_err(%w(-e) + ['p Warning[:deprecated]'], "", %w(false), [])
+    code = 'puts "#{$VERBOSE}:#{Warning[:deprecated]}:#{Warning[:experimental]}"'
+    Tempfile.create(["test_ruby_test_rubyoption", ".rb"]) do |t|
+      t.puts code
+      t.close
+      assert_in_out_err(["-r#{t.path}", '-e', code], "", %w(false:false:true false:false:true), [])
+      assert_in_out_err(["-r#{t.path}", '-w', '-e', code], "", %w(true:true:true true:true:true), [])
+      assert_in_out_err(["-r#{t.path}", '-W:deprecated', '-e', code], "", %w(false:true:true false:true:true), [])
+      assert_in_out_err(["-r#{t.path}", '-W:no-experimental', '-e', code], "", %w(false:false:false false:false:false), [])
+    end
   ensure
     ENV['RUBYOPT'] = save_rubyopt
   end
@@ -119,7 +126,7 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_verbose
     assert_in_out_err(["-vve", ""]) do |r, e|
       assert_match(VERSION_PATTERN, r[0])
-      if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? && !mjit_force_enabled? # checking -DMJIT_FORCE_ENABLE
+      if RubyVM::MJIT.enabled? && !mjit_force_enabled? # checking -DMJIT_FORCE_ENABLE
         assert_equal(NO_JIT_DESCRIPTION, r[0])
       else
         assert_equal(RUBY_DESCRIPTION, r[0])
@@ -182,7 +189,7 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_version
     assert_in_out_err(%w(--version)) do |r, e|
       assert_match(VERSION_PATTERN, r[0])
-      if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE
+      if RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE
         assert_equal(EnvUtil.invoke_ruby(['-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
       else
         assert_equal(RUBY_DESCRIPTION, r[0])
@@ -212,7 +219,7 @@ class TestRubyOptions < Test::Unit::TestCase
       ].each do |args|
         assert_in_out_err(args) do |r, e|
           assert_match(VERSION_PATTERN_WITH_JIT, r[0])
-          if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE
+          if RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE
             assert_equal(RUBY_DESCRIPTION, r[0])
           else
             assert_equal(EnvUtil.invoke_ruby(['--jit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
@@ -503,18 +510,16 @@ class TestRubyOptions < Test::Unit::TestCase
           ["case nil; when true", "end"],
           ["if false;", "end", "if true\nelse ", "end"],
           ["else", " end", "_ = if true\n"],
-          ["begin\n    def f() = nil", "end"],
-          ["begin\n    def self.f() = nil", "end"],
         ].each do
           |b, e = 'end', pre = nil, post = nil|
           src = ["#{pre}#{b}\n", " #{e}\n#{post}"]
           k = b[/\A\s*(\S+)/, 1]
           e = e[/\A\s*(\S+)/, 1]
-          n = 1 + src[0].count("\n")
-          n1 = 1 + (pre ? pre.count("\n") : 0)
+          n = 2
+          n += pre.count("\n") if pre
 
           a.for("no directives with #{src}") do
-            err = ["#{t.path}:#{n}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n1}"]
+            err = ["#{t.path}:#{n}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n-1}"]
             t.rewind
             t.truncate(0)
             t.puts src
@@ -533,7 +538,7 @@ class TestRubyOptions < Test::Unit::TestCase
           end
 
           a.for("false and true directives with #{src}") do
-            err = ["#{t.path}:#{n+2}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n1+2}"]
+            err = ["#{t.path}:#{n+2}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n+1}"]
             t.rewind
             t.truncate(0)
             t.puts "# -*- warn-indent: false -*-"
@@ -555,7 +560,7 @@ class TestRubyOptions < Test::Unit::TestCase
           end
 
           a.for("BOM with #{src}") do
-            err = ["#{t.path}:#{n}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n1}"]
+            err = ["#{t.path}:#{n}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n-1}"]
             t.rewind
             t.truncate(0)
             t.print "\u{feff}"
@@ -729,8 +734,6 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def assert_segv(args, message=nil)
-    skip if ENV['RUBY_ON_BUG']
-
     test_stdin = ""
     opt = SEGVTest::ExecOptions.dup
     list = SEGVTest::ExpectedStderrList
@@ -1024,11 +1027,11 @@ class TestRubyOptions < Test::Unit::TestCase
       err = !freeze ? [] : debug ? with_debug_pat : wo_debug_pat
       [
         ['"foo" << "bar"', err],
-        ['"foo#{123}bar" << "bar"', []],
+        ['"foo#{123}bar" << "bar"', err],
         ['+"foo#{123}bar" << "bar"', []],
-        ['-"foo#{123}bar" << "bar"', wo_debug_pat],
+        ['-"foo#{123}bar" << "bar"', freeze && debug ? with_debug_pat : wo_debug_pat],
       ].each do |code, expected|
-        assert_in_out_err(opt, code, [], expected, "#{opt} #{code}")
+        assert_in_out_err(opt, code, [], expected, [opt, code])
       end
     end
   end
@@ -1064,6 +1067,11 @@ class TestRubyOptions < Test::Unit::TestCase
         assert_ruby_status([{"RUBYLIB"=>"."}, *%w[-E cp932:utf-8 a.rb]])
       end
     end
+  end
+
+  def test_rubylib_invalid_encoding
+    env = {"RUBYLIB"=>"\xFF", "LOCALE"=>"en_US.UTF-8", "LC_ALL"=>"en_US.UTF-8"}
+    assert_ruby_status([env, "-e;"])
   end
 
   def test_null_script

@@ -210,10 +210,10 @@ getinstancevariable
 (ID id, IVC ic)
 ()
 (VALUE val)
-/* Ractor crashes when it accesses class/module-level instances variables. */
-// attr bool leaf = false; /* has IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR() */
+/* "instance variable not initialized" warning can be hooked. */
+// attr bool leaf = false; /* has rb_warning() */
 {
-    val = vm_getinstancevariable(GET_ISEQ(), GET_SELF(), id, ic);
+    val = vm_getinstancevariable(GET_SELF(), id, ic);
 }
 
 /* Set value of instance variable id of self to val. */
@@ -224,7 +224,7 @@ setinstancevariable
 ()
 // attr bool leaf = false; /* has rb_check_frozen_internal() */
 {
-    vm_setinstancevariable(GET_ISEQ(), GET_SELF(), id, val, ic);
+    vm_setinstancevariable(GET_SELF(), id, val, ic);
 }
 
 /* Get value of class variable id of klass as val. */
@@ -236,7 +236,7 @@ getclassvariable
 /* "class variable access from toplevel" warning can be hooked. */
 // attr bool leaf = false; /* has rb_warning() */
 {
-    val = rb_cvar_get(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP(), 1), id);
+    val = rb_cvar_get(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP()), id);
 }
 
 /* Set value of class variable id of klass as val. */
@@ -249,7 +249,7 @@ setclassvariable
 // attr bool leaf = false; /* has rb_warning() */
 {
     vm_ensure_not_refinement_module(GET_SELF());
-    rb_cvar_set(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP(), 1), id, val);
+    rb_cvar_set(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP()), id, val);
 }
 
 /* Get constant variable id. If klass is Qnil and allow_nil is Qtrue, constants
@@ -288,23 +288,25 @@ setconstant
 /* get global variable id. */
 DEFINE_INSN
 getglobal
-(ID gid)
+(GENTRY entry)
 ()
 (VALUE val)
-// attr bool leaf = false;
+// attr bool leaf = leafness_of_getglobal(entry);
 {
-    val = rb_gvar_get(gid);
+    struct rb_global_entry *gentry = (void *)entry;
+    val = rb_gvar_get(gentry);
 }
 
 /* set global variable id as val. */
 DEFINE_INSN
 setglobal
-(ID gid)
+(GENTRY entry)
 (VALUE val)
 ()
-// attr bool leaf = false;
+// attr bool leaf = leafness_of_setglobal(entry);
 {
-    rb_gvar_set(gid, val);
+    struct rb_global_entry *gentry = (void *)entry;
+    rb_gvar_set(gentry, val);
 }
 
 /**********************************************************/
@@ -363,7 +365,7 @@ putstring
 ()
 (VALUE val)
 {
-    val = rb_ec_str_resurrect(ec, str);
+    val = rb_str_resurrect(str);
 }
 
 /* put concatenate strings */
@@ -373,7 +375,7 @@ concatstrings
 (...)
 (VALUE val)
 /* This instruction can concat UTF-8 and binary strings, resulting in
- * Encoding::CompatibilityError. */
+ * Encoding::CompatiblityError. */
 // attr bool leaf = false; /* has rb_enc_cr_str_buf_cat() */
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
@@ -388,6 +390,16 @@ tostring
 (VALUE val)
 {
     val = rb_obj_as_string_result(str, val);
+}
+
+/* Freeze (dynamically) created strings. if debug_info is given, set it. */
+DEFINE_INSN
+freezestring
+(VALUE debug_info)
+(VALUE str)
+(VALUE str)
+{
+    vm_freezestring(str, debug_info);
 }
 
 /* compile str to Regexp and push it.
@@ -426,7 +438,7 @@ newarray
 (VALUE val)
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
-    val = rb_ec_ary_new_from_values(ec, num, STACK_ADDR_FROM_TOP(num));
+    val = rb_ary_new4(num, STACK_ADDR_FROM_TOP(num));
 }
 
 /* put new array initialized with num values on the stack. There
@@ -763,11 +775,11 @@ send
 (CALL_DATA cd, ISEQ blockiseq)
 (...)
 (VALUE val)
-// attr rb_snum_t sp_inc = sp_inc_of_sendish(cd->ci);
+// attr rb_snum_t sp_inc = sp_inc_of_sendish(&cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
-    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);
-    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
+    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), &cd->ci, blockiseq, false);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -782,11 +794,11 @@ opt_send_without_block
 (...)
 (VALUE val)
 // attr bool handles_sp = true;
-// attr rb_snum_t sp_inc = sp_inc_of_sendish(cd->ci);
+// attr rb_snum_t sp_inc = sp_inc_of_sendish(&cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
-    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -815,7 +827,7 @@ opt_nil_p
 (VALUE recv)
 (VALUE val)
 {
-    val = vm_opt_nil_p(GET_ISEQ(), cd, recv);
+    val = vm_opt_nil_p(cd, recv);
 
     if (val == Qundef) {
         CALL_SIMPLE_METHOD();
@@ -869,11 +881,11 @@ invokesuper
 (CALL_DATA cd, ISEQ blockiseq)
 (...)
 (VALUE val)
-// attr rb_snum_t sp_inc = sp_inc_of_sendish(cd->ci);
+// attr rb_snum_t sp_inc = sp_inc_of_sendish(&cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
-    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);
-    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
+    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), &cd->ci, blockiseq, true);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_super_method);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -888,11 +900,15 @@ invokeblock
 (...)
 (VALUE val)
 // attr bool handles_sp = true;
-// attr rb_snum_t sp_inc = sp_inc_of_invokeblock(cd->ci);
+// attr rb_snum_t sp_inc = sp_inc_of_invokeblock(&cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_invokeblock(ci);
 {
+    if (UNLIKELY(cd->cc.call != vm_invokeblock_i)) {
+        cd->cc.call = vm_invokeblock_i; // check before setting to avoid CoW
+    }
+
     VALUE bh = VM_BLOCK_HANDLER_NONE;
-    val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_invokeblock);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_invokeblock);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -961,7 +977,7 @@ jump
 ()
 ()
 /* Same discussion as leave. */
-// attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
+// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
 {
     RUBY_VM_CHECK_INTS(ec);
     JUMP(dst);
@@ -974,7 +990,7 @@ branchif
 (VALUE val)
 ()
 /* Same discussion as jump. */
-// attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
+// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
 {
     if (RTEST(val)) {
 	RUBY_VM_CHECK_INTS(ec);
@@ -989,7 +1005,7 @@ branchunless
 (VALUE val)
 ()
 /* Same discussion as jump. */
-// attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
+// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
 {
     if (!RTEST(val)) {
 	RUBY_VM_CHECK_INTS(ec);
@@ -1004,7 +1020,7 @@ branchnil
 (VALUE val)
 ()
 /* Same discussion as jump. */
-// attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
+// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
 {
     if (NIL_P(val)) {
 	RUBY_VM_CHECK_INTS(ec);
@@ -1023,7 +1039,7 @@ opt_getinlinecache
 ()
 (VALUE val)
 {
-    if (vm_ic_hit_p(ic->ic_serial, ic->ic_cref, GET_EP())) {
+    if (vm_ic_hit_p(ic, GET_EP())) {
 	val = ic->value;
 	JUMP(dst);
     }
@@ -1151,7 +1167,7 @@ opt_eq
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    val = opt_equality(GET_ISEQ(), recv, obj, cd);
+    val = opt_eq_func(recv, obj, cd);
 
     if (val == Qundef) {
         CALL_SIMPLE_METHOD();
@@ -1165,7 +1181,7 @@ opt_neq
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    val = vm_opt_neq(GET_ISEQ(), cd, cd_eq, recv, obj);
+    val = vm_opt_neq(cd, cd_eq, recv, obj);
 
     if (val == Qundef) {
         CALL_SIMPLE_METHOD();
@@ -1415,7 +1431,7 @@ opt_not
 (VALUE recv)
 (VALUE val)
 {
-    val = vm_opt_not(GET_ISEQ(), cd, recv);
+    val = vm_opt_not(cd, recv);
 
     if (val == Qundef) {
         CALL_SIMPLE_METHOD();
@@ -1438,7 +1454,7 @@ opt_regexpmatch2
 }
 
 /* call native compiled method */
-DEFINE_INSN_IF(SUPPORT_CALL_C_FUNCTION)
+DEFINE_INSN
 opt_call_c_function
 (rb_insn_func_t funcptr)
 ()
@@ -1463,11 +1479,11 @@ DEFINE_INSN
 invokebuiltin
 (RB_BUILTIN bf)
 (...)
-(VALUE val)
+(VALUE ret)
 // attr bool leaf = false; /* anything can happen inside */
 // attr rb_snum_t sp_inc = 1 - bf->argc;
 {
-    val = vm_invoke_builtin(ec, reg_cfp, bf, STACK_ADDR_FROM_TOP(bf->argc));
+    ret = vm_invoke_builtin(ec, reg_cfp, bf, STACK_ADDR_FROM_TOP(bf->argc));
 }
 
 /* call specific function with args (same parameters) */
@@ -1475,10 +1491,10 @@ DEFINE_INSN
 opt_invokebuiltin_delegate
 (RB_BUILTIN bf, rb_num_t index)
 ()
-(VALUE val)
+(VALUE ret)
 // attr bool leaf = false; /* anything can happen inside */
 {
-    val = vm_invoke_builtin_delegate(ec, reg_cfp, bf, (unsigned int)index);
+    ret = vm_invoke_builtin_delegate(ec, reg_cfp, bf, (unsigned int)index);
 }
 
 /* call specific function with args (same parameters) and leave */

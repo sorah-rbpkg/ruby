@@ -206,5 +206,3 @@
 	return "NODE_ARYPTN";
       case NODE_HSHPTN:
 	return "NODE_HSHPTN";
-      case NODE_FNDPTN:
-	return "NODE_FNDPTN";

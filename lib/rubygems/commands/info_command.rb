@@ -1,18 +1,14 @@
 # frozen_string_literal: true
 
 require 'rubygems/command'
-require 'rubygems/query_utils'
+require 'rubygems/commands/query_command'
 
-class Gem::Commands::InfoCommand < Gem::Command
-  include Gem::QueryUtils
+class Gem::Commands::InfoCommand < Gem::Commands::QueryCommand
 
   def initialize
-    super "info", "Show information for the given gem",
-         :name => //, :domain => :local, :details => false, :versions => true,
-         :installed => nil, :version => Gem::Requirement.default
+    super "info", "Show information for the given gem"
 
-    add_query_options
-
+    remove_option('--name-matches')
     remove_option('-d')
 
     defaults[:details] = true
@@ -35,4 +31,5 @@ class Gem::Commands::InfoCommand < Gem::Command
   def defaults_str
     "--local"
   end
+
 end

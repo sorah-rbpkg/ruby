@@ -9,21 +9,12 @@
 
 **********************************************************************/
 
-#include "ruby/internal/config.h"
-
+#include "ruby/encoding.h"
+#include "internal.h"
+#include <sys/types.h>
 #include <ctype.h>
 #include <errno.h>
 #include <float.h>
-#include <sys/types.h>
-
-#include "internal.h"
-#include "internal/array.h"
-#include "internal/bits.h"
-#include "internal/string.h"
-#include "internal/symbol.h"
-#include "internal/util.h"
-#include "internal/variable.h"
-
 #include "builtin.h"
 
 /*
@@ -1768,5 +1759,7 @@ utf8_to_uv(const char *p, long *lenp)
 void
 Init_pack(void)
 {
+    load_pack();
+
     id_associated = rb_make_internal_id();
 }

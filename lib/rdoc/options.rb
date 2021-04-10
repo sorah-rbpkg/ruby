@@ -755,7 +755,7 @@ Usage: #{opt.program_name} [options] [names...]
 
       opt.on("--[no-]force-update", "-U",
              "Forces rdoc to scan all sources even if",
-             "no files are newer than the flag file.") do |value|
+             "newer than the flag file.") do |value|
         @force_update = value
       end
 

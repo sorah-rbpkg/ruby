@@ -251,7 +251,7 @@ module EnumerableSpecs
     end
   end
 
-  class ComparableWithInteger
+  class ComparableWithFixnum
     include Comparable
     def initialize(num)
       @num = num

@@ -14,7 +14,7 @@ describe "Kernel#sleep" do
     sleep(0.001).should >= 0
   end
 
-  it "accepts an Integer" do
+  it "accepts a Fixnum" do
     sleep(0).should >= 0
   end
 

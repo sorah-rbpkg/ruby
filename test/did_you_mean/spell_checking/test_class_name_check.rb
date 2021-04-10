@@ -66,9 +66,7 @@ class ClassNameCheckTest < Test::Unit::TestCase
   end
 
   def test_does_not_suggest_user_input
-    Book.send(:remove_const, :Spine) if Book.constants.include?(:Spine)
-
-    error = assert_raise(NameError) { ::Book::Spine }
+    error = assert_raise(NameError) { ::Book::Cover }
 
     # This is a weird require, but in a multi-threaded condition, a constant may
     # be loaded between when a NameError occurred and when the spell checker

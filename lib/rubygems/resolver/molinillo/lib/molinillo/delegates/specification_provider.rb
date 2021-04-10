@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-
 module Gem::Resolver::Molinillo
   module Delegates
     # Delegates all {Gem::Resolver::Molinillo::SpecificationProvider} methods to a

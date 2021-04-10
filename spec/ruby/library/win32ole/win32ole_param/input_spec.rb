@@ -13,7 +13,7 @@ platform_is :windows do
     end
 
     it "returns true for 3rd parameter of FileSystemObject's 'CopyFile' method" do
-      @param_overwritefiles.should.input?
+      @param_overwritefiles.input?.should == true
     end
 
   end
