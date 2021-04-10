@@ -12,11 +12,9 @@ build unreproducible
  lib/rdoc/rdoc.gemspec             | 1 +
  5 files changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/ext/bigdecimal/bigdecimal.gemspec b/ext/bigdecimal/bigdecimal.gemspec
-index 7d767f5..26de3e0 100644
 --- a/ext/bigdecimal/bigdecimal.gemspec
 +++ b/ext/bigdecimal/bigdecimal.gemspec
-@@ -6,6 +6,7 @@ Gem::Specification.new do |s|
+@@ -6,6 +6,7 @@
    s.name          = "bigdecimal"
    s.version       = bigdecimal_version
    s.authors       = ["Kenta Murata", "Zachary Scott", "Shigeo Kobayashi"]
@@ -24,8 +22,6 @@ index 7d767f5..26de3e0 100644
    s.email         = ["mrkn@mrkn.jp"]
  
    s.summary       = "Arbitrary-precision decimal floating-point number library."
-diff --git a/ext/fiddle/fiddle.gemspec b/ext/fiddle/fiddle.gemspec
-index b29f4ec..36ed213 100644
 --- a/ext/fiddle/fiddle.gemspec
 +++ b/ext/fiddle/fiddle.gemspec
 @@ -2,6 +2,7 @@
@@ -36,11 +32,9 @@ index b29f4ec..36ed213 100644
    spec.authors       = ["Aaron Patterson", "SHIBATA Hiroshi"]
    spec.email         = ["aaron@tenderlovemaking.com", "hsbt@ruby-lang.org"]
  
-diff --git a/ext/io/console/io-console.gemspec b/ext/io/console/io-console.gemspec
-index 814bd4e..2e50587 100644
 --- a/ext/io/console/io-console.gemspec
 +++ b/ext/io/console/io-console.gemspec
-@@ -5,7 +5,7 @@ date = %w$Date::                           $[1]
+@@ -5,7 +5,7 @@
  Gem::Specification.new do |s|
    s.name = "io-console"
    s.version = _VERSION
@@ -49,11 +43,9 @@ index 814bd4e..2e50587 100644
    s.summary = "Console interface"
    s.email = "nobu@ruby-lang.org"
    s.description = "add console capabilities to IO instances."
-diff --git a/lib/ipaddr.gemspec b/lib/ipaddr.gemspec
-index 2de9ef4..4f8072a 100644
 --- a/lib/ipaddr.gemspec
 +++ b/lib/ipaddr.gemspec
-@@ -6,6 +6,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+@@ -6,6 +6,7 @@
  Gem::Specification.new do |spec|
    spec.name          = "ipaddr"
    spec.version       = "1.2.2"
@@ -61,11 +53,9 @@ index 2de9ef4..4f8072a 100644
    spec.authors       = ["Akinori MUSHA", "Hajimu UMEMOTO"]
    spec.email         = ["knu@idaemons.org", "ume@mahoroba.org"]
  
-diff --git a/lib/rdoc/rdoc.gemspec b/lib/rdoc/rdoc.gemspec
-index 9b274c7..eb7a47e 100644
 --- a/lib/rdoc/rdoc.gemspec
 +++ b/lib/rdoc/rdoc.gemspec
-@@ -7,6 +7,7 @@ end
+@@ -7,6 +7,7 @@
  
  Gem::Specification.new do |s|
    s.name = "rdoc"

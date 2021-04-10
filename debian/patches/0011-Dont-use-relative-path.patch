@@ -8,11 +8,9 @@ Subject: [PATCH] Make lib/ and test/ more independent from each other
  test/rubygems/test_gem_stub_specification.rb     | 8 ++++----
  3 files changed, 5 insertions(+), 7 deletions(-)
 
-diff --git a/lib/rubygems/test_case.rb b/lib/rubygems/test_case.rb
-index 8940320..53ba84a 100644
 --- a/lib/rubygems/test_case.rb
 +++ b/lib/rubygems/test_case.rb
-@@ -96,8 +96,6 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
+@@ -96,8 +96,6 @@
  
    TEST_PATH = ENV.fetch('RUBYGEMS_TEST_PATH', File.expand_path('../../../test/rubygems', __FILE__))
  
@@ -21,11 +19,9 @@ index 8940320..53ba84a 100644
    def assert_activate(expected, *specs)
      specs.each do |spec|
        case spec
-diff --git a/test/rubygems/test_gem_commands_build_command.rb b/test/rubygems/test_gem_commands_build_command.rb
-index 309e15f..aaca54f 100644
 --- a/test/rubygems/test_gem_commands_build_command.rb
 +++ b/test/rubygems/test_gem_commands_build_command.rb
-@@ -123,7 +123,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
+@@ -123,7 +123,7 @@
    end
  
    def test_execute_rubyforge_project_warning
@@ -34,11 +30,9 @@ index 309e15f..aaca54f 100644
  
      @cmd.options[:args] = [rubyforge_gemspec]
  
-diff --git a/test/rubygems/test_gem_stub_specification.rb b/test/rubygems/test_gem_stub_specification.rb
-index 91a46d7..2579f8a 100644
 --- a/test/rubygems/test_gem_stub_specification.rb
 +++ b/test/rubygems/test_gem_stub_specification.rb
-@@ -4,14 +4,14 @@ require "rubygems/stub_specification"
+@@ -4,14 +4,14 @@
  
  class TestStubSpecification < Gem::TestCase
  
