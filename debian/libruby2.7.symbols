@@ -701,6 +701,7 @@ libruby-2.7.so.2.7 libruby2.7 #MINVER#
  rb_filesystem_encoding@Base 2.7.0~preview1
  rb_filesystem_str_new@Base 2.7.0~preview1
  rb_filesystem_str_new_cstr@Base 2.7.0~preview1
+ rb_find_defined_class_by_owner@Base 2.7.3
  rb_find_encoding@Base 2.7.0~preview1
  rb_find_file@Base 2.7.0~preview1
  rb_find_file_ext@Base 2.7.0~preview1
