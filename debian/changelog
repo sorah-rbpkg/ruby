@@ -1,3 +1,9 @@
+ruby2.7 (2.7.3-2) unstable; urgency=medium
+
+  * Revert upstream change that breaks building for 32-bit arm
+
+ -- Antonio Terceiro <terceiro@debian.org>  Mon, 19 Apr 2021 15:17:53 -0300
+
 ruby2.7 (2.7.3-1) unstable; urgency=medium
 
   [ Chris Hofstaedtler ]
