@@ -9,7 +9,7 @@ Subject: [PATCH] Make lib/ and test/ more independent from each other
  3 files changed, 5 insertions(+), 7 deletions(-)
 
 diff --git a/lib/rubygems/test_case.rb b/lib/rubygems/test_case.rb
-index 8940320..53ba84a 100644
+index c6f5f29..1410b34 100644
 --- a/lib/rubygems/test_case.rb
 +++ b/lib/rubygems/test_case.rb
 @@ -96,8 +96,6 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni

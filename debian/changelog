@@ -1,3 +1,26 @@
+ruby2.7 (2.7.3-2) unstable; urgency=medium
+
+  * Revert upstream change that breaks building for 32-bit arm
+
+ -- Antonio Terceiro <terceiro@debian.org>  Mon, 19 Apr 2021 15:17:53 -0300
+
+ruby2.7 (2.7.3-1) unstable; urgency=medium
+
+  [ Chris Hofstaedtler ]
+  * Remove myself from Uploaders
+
+  [ Utkarsh Gupta ]
+  * New upstream version 2.7.3
+    - Fixes CVE-2021-28965: XML round-trip vulnerability in REXML.
+  * Refresh d/patches
+  * Drop patches that have been merged upstream
+    - d/p/0008-Fix-priority-order-of-paths-in-I-option.patch
+    - d/p/0010-Fix-IRBTestIRBHistory-tests.patch
+    - d/p/0013-Enable-arm64-optimizations-that-exist-for-power-x86-.patch
+  * Update symbols file
+
+ -- Utkarsh Gupta <utkarsh@debian.org>  Sat, 17 Apr 2021 20:12:52 +0530
+
 ruby2.7 (2.7.2-4~fto10+1) buster-fasttrack; urgency=medium
 
   * Rebuild for buster-fasttrack.
