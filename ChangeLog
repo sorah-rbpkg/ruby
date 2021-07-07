@@ -1,7 +1,127 @@
 ------------------------------------------------------------------------
-r67941 | usa | 2021-04-05 20:48:34 +0900 (Mon, 05 Apr 2021) | 1 line
+r67951 | usa | 2021-07-07 19:38:58 +0900 (Wed, 07 Jul 2021) | 1 line
 
-add tag v2_6_7
+add tag v2_6_8
+------------------------------------------------------------------------
+r67950 | usa | 2021-07-07 19:38:10 +0900 (Wed, 07 Jul 2021) | 6 lines
+
+Fix StartTLS stripping vulnerability
+
+Reported by Alexandr Savca in https://hackerone.com/reports/1178562
+
+Co-authored-by: Shugo Maeda <shugo@ruby-lang.org>
+
+------------------------------------------------------------------------
+r67949 | usa | 2021-07-07 19:34:08 +0900 (Wed, 07 Jul 2021) | 7 lines
+
+Ignore IP addresses in PASV responses by default, and add new option use_pasv_ip
+
+This fixes CVE-2021-31810.
+Reported by Alexandr Savca.
+
+Co-authored-by: Shugo Maeda <shugo@ruby-lang.org>
+
+------------------------------------------------------------------------
+r67948 | usa | 2021-07-04 02:10:56 +0900 (Sun, 04 Jul 2021) | 2 lines
+
+patchlevel for previous commit
+
+------------------------------------------------------------------------
+r67947 | usa | 2021-07-04 02:10:28 +0900 (Sun, 04 Jul 2021) | 8 lines
+
+merge revision(s) b1c73f23,c9ab8fe2: [Backport #17877]
+
+	[ruby/rdoc] Use File.open to fix the OS Command Injection vulnerability in CVE-2021-31799
+	
+	https://github.com/ruby/rdoc/commit/a7f5d6ab88
+
+	The test for command injection on Unix platforms should be omitted on Windows
+
+------------------------------------------------------------------------
+r67946 | usa | 2021-07-04 01:56:34 +0900 (Sun, 04 Jul 2021) | 23 lines
+
+merge revision(s) 9edc1625: [Backport #17781]
+
+	[ruby/resolv] Fix confusion of received response message
+
+	This is a follow up for commit 33fb966197f1 ("Remove sender/message_id
+	pair after response received in resolv", 2020-09-11).
+
+	As the @senders instance variable is also used for tracking transaction
+	ID allocation, simply removing an entry without releasing the ID would
+	eventually deplete the ID space and cause
+	Resolv::DNS.allocate_request_id to hang.
+
+	It seems the intention of the code was to check that the received DNS
+	message is actually the response for the question made within the method
+	earlier. Let's have it actually do so.
+
+	[Bug #12838] https://bugs.ruby-lang.org/issues/12838
+	[Bug #17748] https://bugs.ruby-lang.org/issues/17748
+
+	https://github.com/ruby/resolv/commit/53ca9c9209
+	---
+	 lib/resolv.rb | 6 +++---
+	 1 file changed, 3 insertions(+), 3 deletions(-)
+------------------------------------------------------------------------
+r67945 | usa | 2021-07-04 01:53:29 +0900 (Sun, 04 Jul 2021) | 11 lines
+
+merge revision(s) d8a13e50: [Backport #17780]
+
+	[Bug #17780] Fix Method#super_method for module alias
+
+	Method#super_method crashes for aliased module methods because they are
+	not defined on a class. This bug was introduced in
+	c60aaed1856b2b6f90de0992c34771830019e021 as part of bug #17130.
+	---
+	 proc.c                   |  2 +-
+	 test/ruby/test_method.rb | 13 +++++++++++++
+	 2 files changed, 14 insertions(+), 1 deletion(-)
+------------------------------------------------------------------------
+r67944 | usa | 2021-06-24 00:47:43 +0900 (Thu, 24 Jun 2021) | 30 lines
+
+merge revision(s) 17aeff3e77e6fe0d37a9943dd93bcb16c4bb9f66,1616dcb16ef34ebf4ffc2167292f9a779f3e121e,1616dcb16ef34ebf4ffc2167292f9a779f3e121e:
+
+	make-snapshot: get rid of circular dependency
+
+	git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/trunk@66865 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+	---
+	 tool/make-snapshot | 5 ++---
+	 1 file changed, 2 insertions(+), 3 deletions(-)
+
+	make-snapshot: try downloading Unicode files
+
+	[Bug #15593]
+
+	git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/trunk@67038 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+	---
+	 tool/make-snapshot | 7 +------
+	 1 file changed, 1 insertion(+), 6 deletions(-)
+
+	make-snapshot: try downloading Unicode files
+
+	[Bug #15593]
+
+	git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/trunk@67038 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+	---
+	 tool/make-snapshot | 7 +------
+	 1 file changed, 1 insertion(+), 6 deletions(-)
+
+	these patches are not for security issue, but are needed to resolv a
+	packaging problem.
+
+------------------------------------------------------------------------
+r67943 | usa | 2021-05-10 12:24:37 +0900 (Mon, 10 May 2021) | 1 line
+
+fix previous commit
+------------------------------------------------------------------------
+r67942 | usa | 2021-05-10 01:11:52 +0900 (Mon, 10 May 2021) | 5 lines
+
+fix macos build
+
+note that this is not a security fix, but recognized as critical build problem.
+[Backport #17777]
+
 ------------------------------------------------------------------------
 r67940 | usa | 2021-04-05 20:48:23 +0900 (Mon, 05 Apr 2021) | 2 lines
 
