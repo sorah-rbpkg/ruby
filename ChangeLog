@@ -1,5 +1,1532 @@
 -*- coding: utf-8 -*-
 
+commit 0db68f023372b634603c74fca94588b457be084c
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-07-07 19:08:35 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-07-07 19:08:35 +0900
+
+    bump up RUBY_PATCHLEVEL
+
+commit e2ac25d0eb66de99f098d6669cf4f06796aa6256
+  Author:     Shugo Maeda <shugo@ruby-lang.org>
+  AuthorDate: 2021-05-11 10:31:27 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-07-07 19:08:18 +0900
+
+    Fix StartTLS stripping vulnerability
+
+    This fixes CVE-2021-32066.
+    Reported by Alexandr Savca in <https://hackerone.com/reports/1178562>.
+
+commit fc71da2673b4cef08749a6756c3fe2ca214820b7
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-07-07 19:06:32 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-07-07 19:06:32 +0900
+
+    bump up RUBY_PATCHLEVEL
+
+commit bf4d05173c7cf04d8892e4b64508ecf7902717cd
+  Author:     Yusuke Endoh <mame@ruby-lang.org>
+  AuthorDate: 2021-07-07 11:57:15 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-07-07 19:05:36 +0900
+
+    Ignore IP addresses in PASV responses by default, and add new option use_pasv_ip
+
+    This fixes CVE-2021-31810.
+    Reported by Alexandr Savca.
+
+    Co-authored-by: Shugo Maeda <shugo@ruby-lang.org>
+
+commit 1545d4f9050d7223cdfb2cf5fca170d5828512a5
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2021-07-07 10:03:29 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2021-07-07 10:03:29 +0900
+
+    * 2021-07-07 [ci skip]
+
+commit ec171fa1f9165c31b00971f90c74ef9674d82973
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2021-07-07 08:57:34 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-07-07 10:03:15 +0900
+
+    Merge RubyGems-3.2.22 and Bundler-2.2.22
+
+commit 865221f0ba69f07f700e06b2d2f0a859a01dd233
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2021-06-28 19:25:33 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-07-07 10:03:15 +0900
+
+    Merge RubyGems-3.2.21 and Bundler-2.2.21
+
+commit a50de0adfff8166ea18570edafafb0ba501ff2fa
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2021-04-15 13:36:06 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-07-07 10:03:15 +0900
+
+    Also merge tool/bundler/*.rb for testing of Bundler
+
+commit 39f61c3d380576da2f11da73a4b3b640a687d851
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2021-05-12 16:01:49 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-07-07 10:03:15 +0900
+
+    Use assert_raise instead of assert_raises
+
+commit fd5e314ecc238a73ca70418c9dc7bce1c8141a50
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2021-05-11 20:08:03 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-07-07 10:03:15 +0900
+
+    Workaround for make test-tool
+
+commit 596a99ac7faf4e7cc25fedb2b17fa49918323d56
+  Author:     Yusuke Endoh <mame@ruby-lang.org>
+  AuthorDate: 2021-05-11 19:46:15 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-07-07 10:03:15 +0900
+
+    Fix a typo of c6a11b865e1f9085c88fe169a1f47680383580c2
+
+    It failed to define `refute_path_not_exist`
+
+commit 152397e495650dc5d55b85796a4272c3b52e0b15
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2021-05-11 19:32:03 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-07-07 10:03:15 +0900
+
+    Alias assert/refute_path_exists for test-unit gem.
+    It's required at https://github.com/rubygems/rubygems/pull/3141
+
+commit bf0e7095dc75516e61d077f70ee8733ecb54faa6
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2021-06-14 13:03:16 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-07-07 10:03:15 +0900
+
+    Use the latest version of Bundler's gemspec
+
+commit 1e98ec27f6ab893d7c9c1d48214fbe9bb2aa049c
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2021-06-14 12:55:54 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-07-07 10:03:15 +0900
+
+    Merge RubyGems-3.2.20 and Bundler-2.2.20
+
+commit f63d3bbb6e27daaac8211c57929d62add4fef1ad
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2021-06-14 12:55:30 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-07-07 10:03:15 +0900
+
+    Merge RubyGems-3.2.19 and Bundler-2.2.19
+
+commit d4b4281959d2a9846d766253b5e21e8158948aa7
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2021-06-14 12:55:03 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-07-07 10:03:15 +0900
+
+    Merge RubyGems-3.2.18 and Bundler-2.2.18
+
+commit dd28c03d5fd7a82d1b694a9c2332a55dab81add9
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2021-06-14 12:54:37 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-07-07 10:03:15 +0900
+
+    Merge RubyGems-3.2.17 and Bundler-2.2.17
+
+commit 3e2f089432119cf67017d55f4deef2ea909ceb79
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2021-06-14 12:54:06 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-07-07 10:03:15 +0900
+
+    Merge RubyGems-3.2.16 and Bundler-2.2.16
+
+commit 69fd46f2524ac5df5b739f0a19c71aecfa180d48
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-07-03 14:22:06 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-07-03 14:22:06 +0900
+
+    Revert "merge revision(s) e86c1f6fc53433ef5c82ed2b7a4cc9a12c153e4c,f6539202c52a051a4e6946a318a1d9cd29002990: [Backport #1205]"
+
+    This reverts commit e62cccaeb0986d43480bccbd365cb20056bda4d7.
+
+commit e62cccaeb0986d43480bccbd365cb20056bda4d7
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-07-03 13:49:46 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-07-03 13:49:46 +0900
+
+    merge revision(s) e86c1f6fc53433ef5c82ed2b7a4cc9a12c153e4c,f6539202c52a051a4e6946a318a1d9cd29002990: [Backport #1205]
+
+            Work around issue transcoding issue with non-ASCII compatible
+             encodings and xml escaping
+
+            When using a non-ASCII compatible source and destination encoding
+            and xml escaping (the :xml option to String#encode), the resulting
+            string was broken, as it used the correct non-ASCII compatible
+            encoding, but contained data that was ASCII-compatible instead of
+            compatible with the string's encoding.
+
+            Work around this issue by detecting the case where both the
+            source and destination encoding are non-ASCII compatible, and
+            transcoding the source string from the non-ASCII compatible
+            encoding to UTF-8. The xml escaping code will correctly handle
+            the UTF-8 source string and the return the correctly encoded
+            and escaped value.
+
+            Fixes [Bug #12052]
+
+            Co-authored-by: Nobuyoshi Nakada <nobu@ruby-lang.org>
+            ---
+             test/ruby/test_transcode.rb | 19 +++++++++++++++++++
+             transcode.c                 |  6 ++++++
+             2 files changed, 25 insertions(+)
+
+            =?UTF-8?q?-=20add=20regression=20tests=20for=20U+6E7F=20(?=
+             =?UTF-8?q?=E6=B9=BF)=20in=20ISO-2022-JP?=
+            MIME-Version: 1.0
+            Content-Type: text/plain; charset=UTF-8
+            Content-Transfer-Encoding: 8bit
+
+              In ISO-2022-JP, the bytes use to code are the same as those for "<>".
+              This adds regression tests to make sure that these bytes, when representing
+              湿, are NOT　escaped with encode("ISO-2022-JP, xml: :text) or similar.
+              These are additional regression tests for #12052.
+            ---
+             test/ruby/test_transcode.rb | 3 +++
+             1 file changed, 3 insertions(+)
+
+commit 2aad080396f5b79a33502f1d812fb237968cb931
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-07-03 12:09:42 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-07-03 12:09:42 +0900
+
+    merge revision(s) 0846c2da457e7523819236ac7da492029b3ef73d,6c7cb00c094332a208cf36e5cd723a9ba60c41b8: [Backport #16376]
+
+            Check backref number buffer overrun [Bug #16376]
+
+            ---
+             regcomp.c                | 21 ++++++++++++---------
+             test/ruby/test_regexp.rb |  6 ++++++
+             2 files changed, 18 insertions(+), 9 deletions(-)
+
+            test/ruby/test_regexp.rb: Avoid "ambiguity between regexp and two
+             divisions"
+
+            ---
+             test/ruby/test_regexp.rb | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 934001fb08ef133b2925f1651f36f83ddcd2f46d
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-07-03 11:38:10 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-07-03 11:38:10 +0900
+
+    merge revision(s) 5d710d7e41ef3a9877426c87de121be3bf770e34: [Backport #17476]
+
+            Fix the wrong file detection for net-*.gemspec
+
+            [Bug #17476][ruby-core:101724]
+            ---
+             tool/rbinstall.rb | 5 +++++
+             1 file changed, 5 insertions(+)
+
+commit f0a1c063490d69f0868876deed74ad52db63cf4b
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-06-13 14:07:06 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-06-13 14:07:06 +0900
+
+    merge revision(s) d74e5d5b4fba41a9120b3ed2762cf765478605ad: [Backport #17948]
+
+            Crash more nicely when the VM isn't fully set up
+
+            If we crash but the VM isn't fully alive, we can get an infinite loop.
+            ---
+             vm_dump.c | 62 ++++++++++++++++++++++++++++++++------------------------------
+             1 file changed, 32 insertions(+), 30 deletions(-)
+
+commit 3d6b5c23139f097ca5022bcb84135b42ee0ff2b4
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-06-10 16:09:02 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-06-10 16:09:02 +0900
+
+    merge revision(s) 773c690f2553db31a9cc83a037f5449e0c1ea456:
+
+            [ruby/net-ftp] Bump version to 0.1.2
+
+            https://github.com/ruby/net-ftp/commit/895ba44b3c
+            ---
+             lib/net/ftp.rb | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 24370a7a38db06a29637052a174c1fdc9c779a28
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-06-10 16:08:40 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-06-10 16:08:40 +0900
+
+    merge revision(s) 370949aad60e992c26037241c07489c056554ea3:
+
+            test/net/ftp/test_ftp.rb - fix intermittent MinGW failure
+
+            Fixes intermittent error as below:
+
+            [242/838] 5316=test_ftp
+            #<Thread:0x0000020aa8733f20 D:/a/ruby/ruby/src/test/net/ftp/test_ftp.rb:2532 run> terminated with exception (report_on_exception is true):
+            D:/a/ruby/ruby/src/tool/lib/minitest/unit.rb:199:in `assert': Expected #<Errno::ECONNRESET: An existing connection was forcibly closed by the remote host.> to be nil. (MiniTest::Assertion)
+                    from D:/a/ruby/ruby/src/tool/lib/test/unit/core_assertions.rb:504:in `assert'
+                    from D:/a/ruby/ruby/src/tool/lib/minitest/unit.rb:299:in `assert_nil'
+                    from D:/a/ruby/ruby/src/test/net/ftp/test_ftp.rb:430:in `ensure in block in test_list_read_timeout_exceeded'
+                    from D:/a/ruby/ruby/src/test/net/ftp/test_ftp.rb:431:in `block in test_list_read_timeout_exceeded'
+                    from D:/a/ruby/ruby/src/test/net/ftp/test_ftp.rb:2539:in `block in create_ftp_server'
+            D:/a/ruby/ruby/src/test/net/ftp/test_ftp.rb:426:in `write': An existing connection was forcibly closed by the remote host. (Errno::ECONNRESET)
+                    from D:/a/ruby/ruby/src/test/net/ftp/test_ftp.rb:426:in `print'
+                    from D:/a/ruby/ruby/src/test/net/ftp/test_ftp.rb:426:in `block (2 levels) in test_list_read_timeout_exceeded'
+                    from D:/a/ruby/ruby/src/test/net/ftp/test_ftp.rb:420:in `each'
+                    from D:/a/ruby/ruby/src/test/net/ftp/test_ftp.rb:420:in `each_with_index'
+                    from D:/a/ruby/ruby/src/test/net/ftp/test_ftp.rb:420:in `block in test_list_read_timeout_exceeded'
+                    from D:/a/ruby/ruby/src/test/net/ftp/test_ftp.rb:2539:in `block in create_ftp_server'
+            ---
+             test/net/ftp/test_ftp.rb | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 98e5d1f23c8fd492f7b856902132c11752967d3a
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-06-10 16:07:42 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-06-10 16:07:42 +0900
+
+    merge revision(s) fe11031b677f301fa011202f3d27e8eb73064264:
+
+            test/net/ftp/test_ftp.rb: remove unused variable
+
+            ---
+             test/net/ftp/test_ftp.rb | 1 -
+             1 file changed, 1 deletion(-)
+
+commit 02411b16afa615617b8076548571cc2cdd6a5228
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-06-10 16:07:25 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-06-10 16:07:25 +0900
+
+    merge revision(s) 1b2abb6590a653cb7b31d73c42edbaf2d0617b27:
+
+            [ruby/net-ftp] Replace "iff" with "if and only if"
+
+            iff means if and only if, but readers without that knowledge might
+            assume this to be a spelling mistake. To me, this seems like
+            exclusionary language that is unnecessary. Simply using "if and only if"
+            instead should suffice.
+
+            https://github.com/ruby/net-ftp/commit/e920473618
+            ---
+             lib/net/ftp.rb | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 6363492817d9dc73da836da852d7cb6a4ace3a8f
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-06-10 16:06:01 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-06-10 16:06:01 +0900
+
+    merge revision(s) 990baec41174a0b4cf7e285cf3185b4ab444437e:
+
+            [ruby/net-ftp] Close the passive connection data socket if there is
+             an error setting up the transfer
+
+            Previously, the connection leaked in this case.  This uses
+            begin/ensure and checking for an error in the ensure block.
+
+            An alternative approach would be to not even perform the
+            connection until after the RETR (or other) command has been
+            sent.  However, I'm not sure all FTP servers support that.
+            The current behavior is:
+
+            * Send (PASV/EPSV)
+            * Connect to the host/port returned in 227/229 reply
+            * Send (RETR/other command)
+
+            Changing it to connect after the RETR could break things.
+            FTP servers might expect that the client has already
+            connected before sending the RETR.  The alternative
+            approach is more likely to introduce backwards compatibility
+            issues, compared to the begin/ensure approach taken here.
+
+            Fixes Ruby Bug 17027
+
+            https://github.com/ruby/net-ftp/commit/6e8535f076
+            ---
+             lib/net/ftp.rb           | 24 ++++++++++++++----------
+             test/net/ftp/test_ftp.rb | 39 +++++++++++++++++++++++++++++++++++++--
+             2 files changed, 51 insertions(+), 12 deletions(-)
+
+commit ced669aed0de19090d1ba85eb9881becb693a735
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-06-10 16:01:53 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-06-10 16:01:53 +0900
+
+    merge revision(s) a86c6cb34df0c44973efe6578ba1cd9150af22cf:
+
+            [ruby/net-ftp] Replace Timeout.timeout with socket timeout
+
+            Timeout.timeout is inefficient since it spins up a new thread for
+            each invocation, use Socket.tcp's connect_timeout option instead
+            when we aren't using SOCKS (we can't replace Timeout.timeout
+            for SOCKS yet since SOCKSSocket doesn't have a connect_timeout
+            option).
+
+            https://github.com/ruby/net-ftp/commit/d65910132f
+            ---
+             lib/net/ftp.rb | 17 +++++++++++------
+             1 file changed, 11 insertions(+), 6 deletions(-)
+
+commit d4f4ae599f650feb0a9da6fa486ce425dbe8a81a
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-06-10 10:31:27 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-06-10 10:31:27 +0900
+
+    merge revision(s) 73f9831a57e133ab5645221df862a176a42f6685: [Backport #17941]
+
+            POSIX timer cannot be shared in forked process [Bug #17941]
+
+            ---
+             thread_pthread.c | 1 +
+             1 file changed, 1 insertion(+)
+
+commit 2dd18df4a35a4b2dd0cf2dec7759898246fc6935
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-06-03 20:46:53 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-06-03 20:46:53 +0900
+
+    merge revision(s) 86c262541ad07528842d76dab4b9b34bd888d5f4,7e14762159643b4415e094f9d2a90afaf7994588: [Backport #17935]
+
+            Fix a race condition around mjit_recompile
+
+            This fixes SEGVs like https://github.com/ruby/ruby/runs/2715166621?check_suite_focus=true.
+
+            When mjit_recompile is called when mjit_compile is compiling the exact
+            same iseq (and after it called mjit_capture_cc_entries), iseq->body->jit_unit
+            is re-created and its cc_entries becomes NULL. Then, when it tries to
+            lookup cc_entries through iseq->body->jit_unit, it fails.
+            ---
+             mjit.c        | 21 +++++++++++++--------
+             mjit_worker.c |  4 ++++
+             2 files changed, 17 insertions(+), 8 deletions(-)
+
+            Do not doubly hold an MJIT lock
+
+            This is a follow-up of 86c262541ad07528842d76dab4b9b34bd888d5f4.
+            CRITICAL_SECTION_START/FINISH are not needed when it's called from an
+            MJIT worker.
+
+            Also, ZALLOC needs to be calloc because ZALLOC may trigger GC, which an
+            MJIT worker must not do.
+            ---
+             mjit.c        | 23 ++++++++++++++---------
+             mjit_worker.c |  4 ++--
+             2 files changed, 16 insertions(+), 11 deletions(-)
+
+commit 9680ee97e0b3e87c0fc9a65c01de1ee50a1a178b
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-06-03 20:46:01 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-06-03 20:46:01 +0900
+
+    merge revision(s) 1aac0e88193a82ed36b43e852c46414181b66455: [Backport #17928]
+
+            Mark inlined ISeqs during MJIT compilation (#4539)
+
+            [Bug #17584]
+            ---
+             common.mk      |  6 ++++++
+             mjit.c         | 18 +++++++++++-----
+             mjit_compile.c | 24 +++++++++++++++------
+             mjit_worker.c  | 66 ++++++++++++++++++++++++++++++++++++++++++++++++++++++----
+             4 files changed, 99 insertions(+), 15 deletions(-)
+
+commit a21ec8d1ecc6e978ea6b18a27046c424e2849752
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-05-29 14:36:28 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-05-29 14:36:28 +0900
+
+    merge revision(s) 636d4f7eb9f3fcb088e1a44af4181c4aa36789b4: [Backport #17822]
+
+            Avoid setting the visibility of refinement method entries
+
+            Since refinement search is always performed, these entries should always
+            be public. The method entry that the refinement search returns decides
+            the visibility.
+
+            Fixes [Bug #17822]
+            ---
+             test/ruby/test_refinement.rb | 22 ++++++++++++++++++++++
+             vm_method.c                  | 15 ++++++++++-----
+             2 files changed, 32 insertions(+), 5 deletions(-)
+
+commit d47df50678b00bd622e6be474031204ed2e52b31
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-05-29 14:35:12 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-05-29 14:35:12 +0900
+
+    merge revision(s) 39a2ba5cc559900c30c3143da32446c2f20a7484: [Backport #17806]
+
+            Method cache: fix refinement entry handling
+
+            To invalidate some callable method entries, we replace the entry in the
+            class. Most types of method entries are on the method table of the
+            origin class, but refinement entries without an orig_me are housed in
+            the method table of the class itself. They are there because refinements
+            take priority over prepended methods.
+
+            By unconditionally inserting a copy of the refinement entry into the
+            origin class, clearing the method cache created situations where there
+            are refinement entry duplicates in the lookup chain, leading to infinite
+            loops and other problems.
+
+            Update the replacement logic to use the right class that houses the
+            method entry. Also, be more selective about cache invalidation when
+            moving refinement entries for prepend. This avoids calling
+            clear_method_cache_by_id_in_class() before refinement entries are in the
+            place it expects.
+
+            [Bug #17806]
+            ---
+             class.c                      |  4 +++-
+             test/ruby/test_refinement.rb | 49 ++++++++++++++++++++++++++++++++++++++++++++
+             vm_method.c                  | 13 ++++++++++--
+             3 files changed, 63 insertions(+), 3 deletions(-)
+
+commit 7b6a2ad04a3272a31323493133498dfc60d77d76
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-05-29 14:34:00 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-05-29 14:34:00 +0900
+
+    merge revision(s) 4b36a597f48c857aa5eb9ed80fec0d02f6284646: [Backport #17519]
+
+            Fix setting method visibility for a refinement without an origin
+             class
+
+            If a class has been refined but does not have an origin class,
+            there is a single method entry marked with VM_METHOD_TYPE_REFINED,
+            but it contains the original method entry.  If the original method
+            entry is present, we shouldn't skip the method when searching even
+            when skipping refined methods.
+
+            Fixes [Bug #17519]
+            ---
+             test/ruby/test_module.rb | 110 ++++++++++++++++++++++++++++++++++++++++++++++-
+             vm_method.c              |   3 +-
+             2 files changed, 111 insertions(+), 2 deletions(-)
+
+commit 20bf397f7cebd8156d76941dd54659cf9b8c8fe7
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-05-29 14:04:25 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-05-29 14:04:25 +0900
+
+    merge revision(s) fd8991f797c145615820b4c76e6b7ac5a71339ea: [Backport #17889]
+
+            Fix lazy enumerator with index size
+
+            Fixes [Bug #17889]
+            ---
+             enumerator.c                      | 7 ++++++-
+             test/ruby/test_lazy_enumerator.rb | 4 ++++
+             2 files changed, 10 insertions(+), 1 deletion(-)
+
+commit 9d63a8dd0beefa49796eb86ab688c2eb0cd89a20
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-05-29 13:39:20 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-05-29 13:39:20 +0900
+
+    merge revision(s) 5cdf99f64e344b8e4638824d55f5caf33be682ca: [Backport #17761]
+
+            mkmf: fixed install directories of header files in extension
+             libraries [Bug #17761]
+
+            When installing an extension library which provides a header, that
+            header should be installed under site_ruby (or vendor_ruby when
+            "--vendor" option was given to extconf.rb).  However, currently
+            this file is about to be installed in the core include directory.
+            ---
+             lib/mkmf.rb               |  8 ++++----
+             test/mkmf/test_install.rb | 30 ++++++++++++++++++++++++++++++
+             2 files changed, 34 insertions(+), 4 deletions(-)
+             create mode 100644 test/mkmf/test_install.rb
+
+commit 5af5ea7f860ed64062796e54e73274e7a56c7280
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-05-23 16:09:17 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-05-23 16:09:17 +0900
+
+    merge revision(s) cfd162d535c7a4f8b1f95255cc6be696a8b75557: [Backport #17467]
+
+            Make String#{strip,lstrip}{,!} strip leading NUL bytes
+
+            The documentation already specifies that they strip whitespace
+            and defines whitespace to include null.
+
+            This wraps the new behavior in the appropriate guards in the specs,
+            but does not specify behavior for previous versions, because this
+            is a bug that could be backported.
+
+            Fixes [Bug #17467]
+            ---
+             spec/ruby/core/string/lstrip_spec.rb | 18 ++++++++++++------
+             spec/ruby/core/string/strip_spec.rb  | 22 ++++++++++------------
+             string.c                             |  4 ++--
+             test/ruby/test_string.rb             | 16 ++++++++++++++++
+             4 files changed, 40 insertions(+), 20 deletions(-)
+
+commit 44b87adc07621b6a8eddfcf4aaff34ce634179d4
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-05-23 15:51:10 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-05-23 15:51:10 +0900
+
+    merge revision(s) e019dd24df4ed7063ad80d4c2e4070141793f598,7954bb056be30e86c419fe3792064d28990a4999,7d3fdfb27dac456827b004d9e66a44b15f8cd762: [Backport #17736]
+
+            Ensure the receiver is modifiable before shrinking [Bug #17736]
+
+            * Ensure the receiver is modifiable before shinking [Bug #17736]
+
+            * Assert the receivers are not modified
+            ---
+             array.c                 |  1 +
+             test/ruby/test_array.rb | 36 ++++++++++++++++++++++++++++++++++++
+             2 files changed, 37 insertions(+)
+
+            Some Hash destructive methods ensure the receiver modifiable [Bug
+             #17736]
+
+            refs:
+
+            * https://bugs.ruby-lang.org/issues/17736
+            * https://github.com/ruby/ruby/pull/4296
+
+            This commit aims to cover following methods
+
+            * Hash#select!
+            * Hash#filter!
+            * Hash#keep_if
+            * Hash#reject!
+            * Hash#delete_if
+
+            I think these are not all.
+
+            ---
+
+            * Ensure the receiver is modifiable or not
+            * Assert the receiver is not modified
+            ---
+             hash.c                 |  2 ++
+             test/ruby/test_hash.rb | 42 ++++++++++++++++++++++++++++++++++++++++++
+             2 files changed, 44 insertions(+)
+
+            Hash#transform_values! ensures receiver modifiable in block [Bug
+             #17736]
+
+            ---
+             hash.c                 | 1 +
+             test/ruby/test_hash.rb | 9 +++++++++
+             2 files changed, 10 insertions(+)
+
+commit 86f7e55dfb5938e0c617b8629a1fbb4d24341dc0
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-05-23 15:05:06 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-05-23 15:05:06 +0900
+
+    merge revision(s) 10e63f3f56cc0f559816d921f3e771dea02f3eb9:
+
+            [ruby/rdoc] Vertical-bar is disallowed in path names on Windows
+
+            No risk of remote code execution, when the file cannot be created.
+
+            https://github.com/ruby/rdoc/runs/2565343916?check_suite_focus=true#step:5:58
+            ```
+            Error: test_remove_unparseable_CVE_2021_31799(TestRDocRDoc): Errno::EINVAL: Invalid argument @ utime_failed - | touch evil.txt && echo tags
+            D:/rubyinstaller-head-x64/lib/ruby/3.1.0/fileutils.rb:1142:in `utime'
+            D:/rubyinstaller-head-x64/lib/ruby/3.1.0/fileutils.rb:1142:in `block in touch'
+            D:/rubyinstaller-head-x64/lib/ruby/3.1.0/fileutils.rb:1139:in `each'
+            D:/rubyinstaller-head-x64/lib/ruby/3.1.0/fileutils.rb:1139:in `touch'
+            D:/a/rdoc/rdoc/test/rdoc/test_rdoc_rdoc.rb:463:in `block (2 levels) in test_remove_unparseable_CVE_2021_31799'
+                 460:     temp_dir do
+                 461:       file_list = ['| touch evil.txt && echo tags']
+                 462:       file_list.each do |f|
+              => 463:         FileUtils.touch f
+                 464:       end
+                 465:
+                 466:       assert_equal file_list, @rdoc.remove_unparseable(file_list)
+            ```
+
+            https://github.com/ruby/rdoc/commit/a7df7dc8fa
+            ---
+             test/rdoc/test_rdoc_rdoc.rb | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 410216c9db033a72f4dd119c366bc58dd54383ec
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-05-23 14:59:26 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-05-23 14:59:26 +0900
+
+    merge revision(s) d8a13e504992a45d52063f7c925408d7aad3595a: [Backport #17780]
+
+            [Bug #17780] Fix Method#super_method for module alias
+
+            Method#super_method crashes for aliased module methods because they are
+            not defined on a class. This bug was introduced in
+            c60aaed1856b2b6f90de0992c34771830019e021 as part of bug #17130.
+            ---
+             proc.c                   |  2 +-
+             test/ruby/test_method.rb | 13 +++++++++++++
+             2 files changed, 14 insertions(+), 1 deletion(-)
+
+commit fc73fc79cbaee6674256589b7cfe53d20b638a05
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-05-23 14:40:20 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-05-23 14:40:20 +0900
+
+    merge revision(s) 1ad222477344597038d7ec08885a41f547c2a3b4: [Backport #17625]
+
+            [ruby/openssl] Fixed the results of
+             OpenSSL::Timestamp::Response#failure_info
+
+            Made stored values `Symbol`s instead of `ID`s.
+
+            Fixes https://bugs.ruby-lang.org/issues/17625
+
+            Co-Authored-By: xtkoba (Tee KOBAYASHI) <xtkoba+ruby@gmail.com>
+
+            https://github.com/ruby/openssl/commit/f2d004679a
+            ---
+             ext/openssl/ossl_ts.c   | 22 +++++++++++-----------
+             test/openssl/test_ts.rb |  5 +++++
+             2 files changed, 16 insertions(+), 11 deletions(-)
+
+commit f9196de1dee6f5ab8b6fe115070b92775a3500fe
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-05-23 14:36:05 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-05-23 14:36:05 +0900
+
+    merge revision(s) 3a3b19b2bba49e5d6f1cf13764eb6dd701397be9: [Backport #17827]
+
+            Fix Monitor to lock per Fiber, like Mutex [Bug #17827]
+
+            ---
+             ext/monitor/monitor.c        | 10 +++++-----
+             test/monitor/test_monitor.rb |  7 +++++++
+             2 files changed, 12 insertions(+), 5 deletions(-)
+
+commit 31816356eee6313fe968eecd4cd3ad9ac4848819
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-05-22 17:09:16 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-05-22 17:09:16 +0900
+
+    merge revision(s) 2bc293e899c9d32dcd794a73de8925c49ecf8f15,d0e6c6e682b9ba2b0309a5177933a0628e8ef316,cc0dc67bbbe1951ff90004bc987f78545625d772,e1eff837cf12a8e813de9d4ff2db50c9b68b86b5,0ab0b86c8491d639b9ff1335ddf35e341ecd867e,6911b4bc82889860ff7da4ecf975504cdc3e5314: [Backport #17854]
+
+            cdhash_cmp: can take rational literals
+
+            Rational literals are those integers suffixed with `r`.  They tend to
+            be a part of more complex expressions like `123/456r`, but in theory
+            they can live alone.  When such "bare" rational literals are passed to
+            case-when branch, we have to take care of them.  Fixes [Bug #17854]
+            ---
+             common.mk                  |  1 +
+             compile.c                  |  7 +++++++
+             internal/rational.h        |  1 +
+             rational.c                 | 13 ++++++++++---
+             test/ruby/test_rational.rb |  7 +++++++
+             5 files changed, 26 insertions(+), 3 deletions(-)
+
+            cdhash_cmp: rational literals with fractions
+
+            Nobu kindly pointed out that rational literals can have fractions.
+            ---
+             compile.c                  | 5 +++--
+             test/ruby/test_rational.rb | 4 ++++
+             2 files changed, 7 insertions(+), 2 deletions(-)
+
+            cdhash_cmp: can also take complex
+
+            There are complex literals `123i`, which can also be a case condition.
+            ---
+             compile.c                  | 15 +++++++++++----
+             complex.c                  | 12 +++++++++---
+             internal/complex.h         |  1 +
+             test/ruby/test_rational.rb |  4 ++++
+             4 files changed, 25 insertions(+), 7 deletions(-)
+
+            cdhash_cmp: recursively apply
+
+            For instance a rational's numerator can be a bignum.  Comparison using
+            C's == can be insufficient.
+            ---
+             compile.c | 4 ++--
+             1 file changed, 2 insertions(+), 2 deletions(-)
+
+            cdhash_cmp: should use ||
+
+            cf: https://github.com/ruby/ruby/pull/4469#discussion_r628386707
+            ---
+             compile.c | 4 ++--
+             1 file changed, 2 insertions(+), 2 deletions(-)
+
+            test_cdhash: refactor change class
+
+            It is now strange to test Complex in a class named Rational_Test.
+            ---
+             test/ruby/test_rational.rb | 15 ---------------
+             test/ruby/test_syntax.rb   | 15 +++++++++++++++
+             2 files changed, 15 insertions(+), 15 deletions(-)
+
+commit af9de56c6fde7f9adb81d6ed0ef3067af81f90e5
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-05-22 16:47:24 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-05-22 16:47:24 +0900
+
+    merge revision(s) 110f242ef9b495037f59e4972ee102a8b8b372d5: [Backport #17861]
+
+            Also `\U` after control/meta is invalid [Bug #17861]
+
+            As well as `\u`, `\U` should be invalid there too.
+            And highlight including `u`/`U` not only the backslash before it.
+            ---
+             parse.y                 | 12 ++++++++++--
+             test/ruby/test_parse.rb | 15 +++++++++++++++
+             2 files changed, 25 insertions(+), 2 deletions(-)
+
+commit 5e21726cda22e3cb34127751aec7e9babb4308b3
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-05-22 16:27:29 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-05-22 16:27:29 +0900
+
+    merge revision(s) 799ea1d1540aca03542ee31647052343507a4b41: [Backport #16651]
+
+            mkmf.rb: convert also arch_hdrdir [Bug #16651]
+
+            ---
+             lib/mkmf.rb | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit ddd720f8dcd98de6a250a152fa40c3c044d62383
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-05-22 15:51:37 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-05-22 15:51:37 +0900
+
+    merge revision(s) 5026f9a5d5012248729a0052cd6cec811748291b: [Backport #17868]
+
+            compile.c: stop the jump-jump optimization if the second has any
+             event
+
+            Fixes [Bug #17868]
+            ---
+             compile.c                      |  3 ++-
+             test/ruby/test_settracefunc.rb | 15 +++++++++++++++
+             2 files changed, 17 insertions(+), 1 deletion(-)
+
+commit 9c0df2e81c22e6e35f3c5d69a070c2a3cf67e320
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-05-22 15:20:23 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-05-22 15:20:23 +0900
+
+    merge revision(s) 9edc162583a4f685332239f6249745ad9b518cbe: [Backport #17781]
+
+            [ruby/resolv] Fix confusion of received response message
+
+            This is a follow up for commit 33fb966197f1 ("Remove sender/message_id
+            pair after response received in resolv", 2020-09-11).
+
+            As the @senders instance variable is also used for tracking transaction
+            ID allocation, simply removing an entry without releasing the ID would
+            eventually deplete the ID space and cause
+            Resolv::DNS.allocate_request_id to hang.
+
+            It seems the intention of the code was to check that the received DNS
+            message is actually the response for the question made within the method
+            earlier. Let's have it actually do so.
+
+            [Bug #12838] https://bugs.ruby-lang.org/issues/12838
+            [Bug #17748] https://bugs.ruby-lang.org/issues/17748
+
+            https://github.com/ruby/resolv/commit/53ca9c9209
+            ---
+             lib/resolv.rb | 6 +++---
+             1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit e175917f66f0b51638d9d9e143918d4109d489f4
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-05-22 14:59:05 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-05-22 14:59:05 +0900
+
+    merge revision(s) dfe21ef7a15a30fc33f3a5cc089e15d09e905eb4: [Backport #17874] [Backport #17876]
+
+            Do not block JIT with pending_stale_p
+
+            Because we want to flush pending stale units before unloading units, the
+            pending_stale_p check is implemented in this waiting loop.
+
+            However, once all methods are called more than --jit-min-calls,
+            mjit_worker_wakeup will not be signaled again. As a result, when
+            mjit_recompile is called after that and pending_stale_p becomes true,
+            MJIT stops processing methods in the unit queue even if the queue is
+            very long and MJIT does nothing, waiting for the signal.
+
+            There should be a better way to handle this, but as a fix to be
+            backported to Ruby 3.0, let me make an obvious simple commit here.
+            ---
+             mjit_worker.c | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 2a70d2148453aeb39443f4c84147ace722d53a9a
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-05-22 14:51:13 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-05-22 14:51:55 +0900
+
+    merge revision(s) b1c73f239fe9af97de837331849f55d67c27561e,bb570ce6d80d28cfc7131dcb72885eed2f989b30,b88d1e6b44164bca0c2b85ea6639469813e1e1d8,127f735c1e5e0771076caf2a74390757a42fb177,f3f1a666c77f8c528b0adc9ccf78e4b9910bd6e0,fa048a0f8523cefde5428805dd334691486319e6,d5d1c41728d65acfb8aa2cf95f2d8ac88f271cd1,52ebaf718e6a78297ceb0dff49815eeed28eae45,7fe22152fc28084f4395fece84ff6e5eb2d6b288,19e6d271266eca5925e66fc8ec39b251a2fa6bcd,05898c5b9001c0b1e8bd7bf0d12b42a8e7c388b8,3651f678a719ae3a35825bcb4e0dabbc7c60d8df,10b082064e6ab0943cce4ef43e567d8044c7096d,de8e6218a3257fe19b46ff0aa157e66f452ac8b7,971a0cd246db6578e1ea8760a903e1a23e3681f3,61a29a41e1d0d11a9963315aa86d25ed690124c0,ff9a00887161840eb8a34d53749a7d7962181cfe,fad3412d475b57055f426cf4e86eafeab516672b,54aa11efa8b1be2c5d20402890d6d2fa90aa19a8,e84d275fe6d0c14ba58ce73b13323879c060b7ae,61e1cf23ac0d122fba3ad4cbaa402c7c94ad54d3,a6948329f8f89fb390215086fe4a888915fd589e,64b991b0cd98ee8f23266b8cbea0fa34bdaab1ec,b1c73f239fe9af97de837331849f55d67c27561e,0ee24b4fab1a1faef600a42c29863e1c3edd8c61: [Backport #17877]
+
+    Synchronize rdoc with upstream version v6.3.1.
+
+            [ruby/rdoc] Use File.open to fix the OS Command Injection
+             vulnerability in CVE-2021-31799
+
+            https://github.com/ruby/rdoc/commit/a7f5d6ab88
+            ---
+             lib/rdoc/rdoc.rb            |  2 +-
+             test/rdoc/test_rdoc_rdoc.rb | 12 ++++++++++++
+             2 files changed, 13 insertions(+), 1 deletion(-)
+
+            [ruby/rdoc] Support ChangeLog generated by `git log`
+
+            https://github.com/ruby/rdoc/commit/5e0a123ca1
+            ---
+             lib/rdoc/parser/changelog.rb            | 35 +++++++++++++++++++++
+             test/rdoc/test_rdoc_parser_changelog.rb | 56 +++++++++++++++++++++++++++++++++
+             2 files changed, 91 insertions(+)
+
+            [ruby/rdoc] Make each commit entries h3
+
+            https://github.com/ruby/rdoc/commit/11eefb2ae9
+            ---
+             lib/rdoc/parser/changelog.rb            | 12 ++++++------
+             test/rdoc/test_rdoc_parser_changelog.rb | 12 ++++--------
+             2 files changed, 10 insertions(+), 14 deletions(-)
+
+            [ruby/rdoc] Tweak log entry markdown
+
+            * add 3 levels to headings
+            * prefix commit log to labels to make unique IDs
+
+            https://github.com/ruby/rdoc/commit/5074c13209
+            ---
+             lib/rdoc/parser/changelog.rb            | 20 +++++++++++++++++-
+             test/rdoc/test_rdoc_parser_changelog.rb | 36 ++++++++++++++++++++++++++++++++-
+             2 files changed, 54 insertions(+), 2 deletions(-)
+
+            [ruby/rdoc] Shorten commit hashes
+
+            https://github.com/ruby/rdoc/commit/5d3e153963
+            ---
+             lib/rdoc/parser/changelog.rb            | 2 +-
+             test/rdoc/test_rdoc_parser_changelog.rb | 2 +-
+             2 files changed, 2 insertions(+), 2 deletions(-)
+
+            [ruby/rdoc] Add links to the commits
+
+            https://github.com/ruby/rdoc/commit/1821628076
+            ---
+             lib/rdoc/parser/changelog.rb            | 107 +++++++++++++++++++++++++-------
+             test/rdoc/test_rdoc_parser_changelog.rb |  36 ++++++-----
+             2 files changed, 107 insertions(+), 36 deletions(-)
+
+            [ruby/rdoc] Sort by CommitDate if available
+
+            https://github.com/ruby/rdoc/commit/455715e930
+            ---
+             lib/rdoc/parser/changelog.rb            | 11 ++++++---
+             test/rdoc/test_rdoc_parser_changelog.rb | 40 +++++++++++++++++++++++++++++++++
+             2 files changed, 48 insertions(+), 3 deletions(-)
+
+            [ruby/rdoc] Skip non-date logs by git-log
+
+            `RDoc::Parser::ChangeLog` mis-parses ChangeLog generated by
+            git-log, because of too heuristic `Time.parse`.
+
+            For instance, "commit 8187228de0142d3ac7950b7d977c2849e934c637"
+            results in "8187-08-16", that is, day 228 in the year 8187.
+
+            https://github.com/ruby/rdoc/commit/9711e6f6d9
+            ---
+             lib/rdoc/parser/changelog.rb            | 36 ++++++++++++++++++++-------------
+             test/rdoc/test_rdoc_parser_changelog.rb |  2 ++
+             2 files changed, 24 insertions(+), 14 deletions(-)
+
+            [ruby/rdoc] Support other date formats in git-log
+
+            https://github.com/ruby/rdoc/commit/ad8cf37d72
+            ---
+             lib/rdoc/parser/changelog.rb            |  6 +++---
+             test/rdoc/test_rdoc_parser_changelog.rb | 22 ++++++++++++++++++++++
+             2 files changed, 25 insertions(+), 3 deletions(-)
+
+            [ruby/rdoc] Support iso-strict format in git-log
+
+            https://github.com/ruby/rdoc/commit/2a6c22da63
+            ---
+             lib/rdoc/parser/changelog.rb            |  6 +++---
+             test/rdoc/test_rdoc_parser_changelog.rb | 11 +++++++++++
+             2 files changed, 14 insertions(+), 3 deletions(-)
+
+            [ruby/rdoc] Update Rdoc.css sidebar panel.
+
+            Updates css so the sidebar look like a panel instead of looking like chopped edges.
+
+            https://github.com/ruby/rdoc/commit/b0098c6d72
+            ---
+             lib/rdoc/generator/template/darkfish/css/rdoc.css | 1 +
+             1 file changed, 1 insertion(+)
+
+            [ruby/rdoc] Support GFM table
+
+            https://github.com/ruby/rdoc/commit/9dc933df16
+            ---
+             lib/rdoc/markdown.rb                    | 349 +++++++++++++++++++++++++++++++-
+             lib/rdoc/markup.rb                      |   1 +
+             lib/rdoc/markup/table.rb                |  47 +++++
+             lib/rdoc/markup/to_html.rb              |  23 +++
+             lib/rdoc/markup/to_joined_paragraph.rb  |   1 +
+             lib/rdoc/markup/to_rdoc.rb              |  28 +++
+             lib/rdoc/markup/to_table_of_contents.rb |   1 +
+             test/rdoc/test_rdoc_markdown.rb         |  23 +++
+             8 files changed, 471 insertions(+), 2 deletions(-)
+             create mode 100644 lib/rdoc/markup/table.rb
+
+            [ruby/rdoc] Add table style
+
+            https://github.com/ruby/rdoc/commit/2219c5ae80
+            ---
+             lib/rdoc/generator/template/darkfish/css/rdoc.css | 19 +++++++++++++++++++
+             1 file changed, 19 insertions(+)
+
+            [ruby/rdoc] Fixed CodeFence without blank lines
+
+            Currently a fenced code block needs a preceding blank line, it
+            should not be required, as:
+            https://github.github.com/gfm/#fenced-code-blocks
+            > A fenced code block may interrupt a paragraph, and does not
+            > require a blank line either before or after.
+
+            Just recommended:
+            https://docs.github.com/en/github/writing-on-github/creating-and-highlighting-code-blocks
+            > We recommend placing a blank line before and after code blocks
+            > to make the raw formatting easier to read.
+
+            https://github.com/ruby/rdoc/commit/0e1776caf3
+            ---
+             lib/rdoc/markdown.rb            | 447 +++++++---------------------------------
+             test/rdoc/test_rdoc_markdown.rb |  36 +++-
+             2 files changed, 112 insertions(+), 371 deletions(-)
+
+            [ruby/rdoc] Allow partial default values to be overridden with
+             .rdoc_options
+
+            https://github.com/ruby/rdoc/commit/e14800891f
+            ---
+             lib/rdoc/options.rb         | 34 +++++++++++++++++++++++++++++++++-
+             lib/rdoc/rdoc.rb            |  7 ++++++-
+             test/rdoc/test_rdoc_rdoc.rb | 12 ++++++++++++
+             3 files changed, 51 insertions(+), 2 deletions(-)
+
+            [ruby/rdoc] Allow empty .rdoc_options
+
+            https://github.com/ruby/rdoc/commit/0c8cb25b50
+            ---
+             lib/rdoc/rdoc.rb            |  2 ++
+             test/rdoc/test_rdoc_rdoc.rb | 11 +++++++++++
+             2 files changed, 13 insertions(+)
+
+            [ruby/rdoc] Suppress unused variable warning of "text"
+
+            https://github.com/ruby/rdoc/commit/3a4120b155
+            ---
+             lib/rdoc/markdown.rb | 345 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+             1 file changed, 343 insertions(+), 2 deletions(-)
+
+            [ruby/rdoc] Get rid of a trailing space
+
+            https://github.com/ruby/rdoc/commit/7b7b91768e
+            ---
+             lib/rdoc/markdown.rb | 7 +++----
+             1 file changed, 3 insertions(+), 4 deletions(-)
+
+            [ruby/rdoc] Disable other notations in <code> tags
+
+            https://github.com/ruby/rdoc/commit/0cd3b55210
+            ---
+             lib/rdoc/markup/attr_span.rb                    |  10 ++-
+             lib/rdoc/markup/attribute_manager.rb            | 102 ++++++++++++++++++------
+             test/rdoc/test_rdoc_markup_attribute_manager.rb |  24 +++++-
+             test/rdoc/test_rdoc_markup_to_html.rb           |   6 ++
+             4 files changed, 114 insertions(+), 28 deletions(-)
+
+            [ruby/rdoc] Treat other tags as word boundaries
+
+            https://github.com/ruby/rdoc/commit/8222f85a17
+            ---
+             lib/rdoc/markup/attribute_manager.rb  | 17 +++++++++++++----
+             test/rdoc/test_rdoc_markup_to_html.rb |  5 +++++
+             2 files changed, 18 insertions(+), 4 deletions(-)
+
+            [ruby/rdoc] Treat emphasis tags as excluding other notations
+
+            And exclusive notations don't exclude other exclusive notations.
+
+            https://github.com/ruby/rdoc/commit/b8baa9a435
+            ---
+             lib/rdoc/markup/attr_span.rb                    |  2 +-
+             lib/rdoc/markup/attribute_manager.rb            | 10 +++++-----
+             test/rdoc/test_rdoc_markup_attribute_manager.rb |  1 +
+             3 files changed, 7 insertions(+), 6 deletions(-)
+
+            [ruby/rdoc] Clarify that dots in URL are replaced
+
+            The dots in all path components from the document root are
+            replaced with underscores, not only in the basename.
+
+            https://github.com/ruby/rdoc/commit/7a3417ea4c
+            ---
+             test/rdoc/test_rdoc_top_level.rb | 3 +++
+             1 file changed, 3 insertions(+)
+
+            [ruby/rdoc] Links to document texts without "rdoc-ref:" prefix
+
+            While links to generated HTML from RDoc file needs to be prefixed
+            by "rdoc-ref:" currently, in case of explicit references this
+            seems just redundant.
+
+            Also GitHub RDoc support does not work with this prefix.
+
+            This patch lets links to such document texts (".rb", ".rdoc" and
+            ".md" now) refer URLs generated by `RDoc::TopLevel#http_url`
+            without the prefix.
+
+            https://github.com/ruby/rdoc/commit/f18b27b69d
+            ---
+             lib/rdoc/markup/to_html.rb            |  4 ++++
+             test/rdoc/test_rdoc_markup_to_html.rb | 21 +++++++++++++++++++++
+             2 files changed, 25 insertions(+)
+
+            [ruby/rdoc] Use File.open to fix the OS Command Injection
+             vulnerability in CVE-2021-31799
+
+            https://github.com/ruby/rdoc/commit/a7f5d6ab88
+            ---
+             lib/rdoc/rdoc.rb            |  2 +-
+             test/rdoc/test_rdoc_rdoc.rb | 12 ++++++++++++
+             2 files changed, 13 insertions(+), 1 deletion(-)
+
+            [ruby/rdoc] Version 6.3.1
+
+            https://github.com/ruby/rdoc/commit/9307f932b7
+            ---
+             lib/rdoc/version.rb | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 3e07a4edc92f18dec4806961c1b724ac5cf4d6b2
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-04-29 17:53:07 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-04-29 17:53:07 +0900
+
+    merge revision(s) 3a3033c138c0951ad5edbf02b5c233b58a190d2f: [Backport #17787]
+
+            get rid of using `__builtin_unreachable` directly [Bug #17787]
+
+            As it is an independent feature from `clz`, `ctz` and `popcount`,
+            it might be unavailable even if the latters are built in.
+            ---
+             internal/bits.h | 6 +++---
+             1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit cc4e602634e894c831a4103a5803a3de566c1856
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-04-29 17:49:55 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-04-29 17:49:55 +0900
+
+    merge revision(s) 87c546b5fa97e6e226cce4daf417617a1143f642,7a3322a0fd660d676f1918bd7c4a37676b44e1c2:
+
+            Avoid using inconsistent coding style
+
+            Other `_mjit_compile_*.erb` files don't use goto. These files'd better
+            be consistent for readability.
+            ---
+             tool/ruby_vm/views/_mjit_compile_getinlinecache.erb | 14 +++-----------
+             1 file changed, 3 insertions(+), 11 deletions(-)
+
+            Fix broken JIT of getinlinecache
+
+            e7fc353f04 reverted vm_ic_hit_p's signature change made in 53babf35ef,
+            which broke JIT compilation of getinlinecache.
+
+            To make sure it doesn't happen again, I separated vm_inlined_ic_hit_p to
+            make the intention clear.
+            ---
+             test/ruby/test_jit.rb                              | 12 +++++++++++
+             .../ruby_vm/views/_mjit_compile_getinlinecache.erb |  2 +-
+             vm_insnhelper.c                                    | 25 ++++++++++++++--------
+             3 files changed, 29 insertions(+), 10 deletions(-)
+
+commit 58240b5d0b52d9685b773e5b9e45d22ca500392a
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-04-29 17:20:52 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-04-29 17:20:52 +0900
+
+    merge revision(s) 4ae27d8075b2d138d13cb2b112f0ee50934b3017,2670509ebba5ba31a5bf34cf906943075446e005,8e2ac2140d1cd9c163c1556df58c020dc22ab269:
+
+            [ruby/net-ftp] Reduce resource cosumption of Net::FTP::TIME_PARSER
+
+            Reported by Alexandr Savca as a DoS vulnerability, but Net::FTP is a
+            client library and the impact of the issue is low, so I have decided
+            to fix it as a normal issue.
+            Based on patch by nobu.
+
+            https://github.com/ruby/net-ftp/commit/a93af636f8
+            ---
+             lib/net/ftp.rb           |  5 +++--
+             test/net/ftp/test_ftp.rb | 11 +++++++++++
+             2 files changed, 14 insertions(+), 2 deletions(-)
+
+            [ruby/net-ftp] Add test cases
+
+            https://github.com/ruby/net-ftp/commit/865232bb2a
+            ---
+             test/net/ftp/test_ftp.rb | 6 ++++++
+             1 file changed, 6 insertions(+)
+
+            test/net/ftp/test_ftp.rb: reduce the size of a long response
+
+            "9" * 999999999 (about 1 GB) was too large for some CI servers.
+            This commit changes the size to 999999 (about 1 MB).
+
+            http://rubyci.s3.amazonaws.com/scw-9d6766/ruby-master/log/20210427T141707Z.fail.html.gz
+            http://rubyci.s3.amazonaws.com/raspbian10-aarch64/ruby-master/log/20210427T145408Z.fail.html.gz
+            ---
+             test/net/ftp/test_ftp.rb | 4 ++--
+             1 file changed, 2 insertions(+), 2 deletions(-)
+
+commit 13f93ad16d3d1ecf96ece229cd4bc5ea294e1a71
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-04-24 14:04:04 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-04-24 14:04:04 +0900
+
+    merge revision(s) 611e711085c7e3984555a79626d025c8b876eced,a9c5c2d614f30a616970245fef3e7ffc151e2ecf: [Backport #17527]
+
+            Test incorrect behaviour of `rb_io_wait_readable/writable`.
+
+            ---
+             test/fiber/test_io.rb | 35 +++++++++++++++++++++++++++++++++++
+             1 file changed, 35 insertions(+)
+
+            Check errno before invoking scheduler in
+             `rb_io_wait_readable/writable`.
+
+            See <https://bugs.ruby-lang.org/issues/17527> for more details.
+            ---
+             io.c | 66 +++++++++++++++++++++++++++++++++++-------------------------------
+             1 file changed, 35 insertions(+), 31 deletions(-)
+
+commit 5a9b5b8e953dc36f4f7f7639e8aeaa8132241c79
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-04-18 19:03:43 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-04-18 19:04:24 +0900
+
+    Add execution bit for autogen.sh.
+
+commit a55ba76617f240337854668c8b5dd9961873f5af
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-04-18 18:03:33 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-04-18 18:05:27 +0900
+
+    merge revision(s) 4250d7c910fd67c0da07c6213901009330e3cd51,83f96642d2d74569cc38319d02d5922fac8f66b8,447feb0aa08e20cc5eeb8b3a6f881de261a2c9a2,1d80d703141f01383604022f9e8e53e10865197c,e271a3d4afc47e812b50fc9c50f6bf34d2d723a6,366e88e508de7c59d69906ad948cccd7979e932b,d825e34962540d345eb3c5a70eb264b415e915a5,4250d7c910fd67c0da07c6213901009330e3cd51,f9e43782995b1f77e7b10c79941bbbda15620e2a: [Backport #17723]
+
+            autogen.sh: Added
+
+            Currently it just runs "autoreconf --install"
+            ---
+             aclocal.m4 | 4 ++--
+             autogen.sh | 3 +++
+             2 files changed, 5 insertions(+), 2 deletions(-)
+             create mode 100755 autogen.sh
+
+            autogen.sh: Allow AUTORECONF envvar to specify the autoreconf
+             executable
+
+            ---
+             autogen.sh | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+            Improved autogen.sh
+
+            * update in the source directory
+            * make symbolic links instead of copies
+            * forward the arguments to autoreconf as-is
+            ---
+             autogen.sh | 8 +++++++-
+             1 file changed, 7 insertions(+), 1 deletion(-)
+
+            autogen.sh: Make it work with sh (not bash)
+
+            ---
+             autogen.sh | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+            [DOC] Update README files to use autoreconf [ci skip]
+
+            ---
+             README.ja.md | 3 +--
+             README.md    | 3 +--
+             2 files changed, 2 insertions(+), 4 deletions(-)
+
+            [DOC] Update README [ci skip]
+
+            * Use `autogen.sh`.
+            * The subversion repository is only for old versions, and
+              secondary now.
+            * Moved long links to footnotes.
+            ---
+             README.ja.md | 22 +++++++++-------------
+             README.md    | 11 +++++++----
+             2 files changed, 16 insertions(+), 17 deletions(-)
+
+            Use autogen.sh
+
+            ---
+             .github/workflows/baseruby.yml           | 2 +-
+             .github/workflows/check_dependencies.yml | 2 +-
+             .github/workflows/compilers.yml          | 2 +-
+             .github/workflows/macos.yml              | 2 +-
+             .github/workflows/mjit.yml               | 2 +-
+             .github/workflows/ubuntu.yml             | 2 +-
+             6 files changed, 6 insertions(+), 6 deletions(-)
+
+            autogen.sh: Added
+
+            Currently it just runs "autoreconf --install"
+            ---
+             aclocal.m4 | 4 ++--
+             autogen.sh | 3 +++
+             2 files changed, 5 insertions(+), 2 deletions(-)
+             create mode 100755 autogen.sh
+
+            get rid of aclocal (#4280)
+
+            ---
+             aclocal.m4   | 47 -----------------------------------------------
+             configure.ac | 35 ++++++++++++++++++++++++++++++++++-
+             2 files changed, 34 insertions(+), 48 deletions(-)
+
+commit 6e6157d9a985dd39a141e26e579b8508f6ceff15
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-04-18 17:59:19 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-04-18 17:59:19 +0900
+
+    merge revision(s) 6268fdc662c75c61091b2ab0b476ec15df023328:
+
+            spec/ruby/core/hash/transform_keys_spec.rb: Fix the failure of
+             ruby_3_0
+
+            https://github.com/ruby/spec/pull/833
+            https://github.com/ruby/spec/commit/8290e5ad8952b14ee9a5069651d9864c66681112
+            ---
+             spec/ruby/core/hash/transform_keys_spec.rb | 4 ++--
+             1 file changed, 2 insertions(+), 2 deletions(-)
+
+commit 316699605c4ffd37329370233dcee48d6fa8e0d1
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-04-15 13:51:10 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-04-15 13:51:10 +0900
+
+    bump up RUBY_PATCHLEVEL
+
+commit ce06c24b0c1fd9a3e74909886b425feb0af50233
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2021-04-06 16:07:16 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-04-15 13:43:56 +0900
+
+    merge revision(s) c32375883a6,48bb0329eb3:
+
+            Update for autoconf 2.70
+
+            ---
+             configure.ac                         | 232 +++++++++++++++++------------------
+             tool/m4/ruby_check_builtin_setjmp.m4 |   8 +-
+             tool/m4/ruby_check_printf_prefix.m4  |   9 +-
+             tool/m4/ruby_check_setjmp.m4         |   6 +-
+             tool/m4/ruby_check_sysconf.m4        |   6 +-
+             tool/m4/ruby_cppoutfile.m4           |   4 +-
+             tool/m4/ruby_decl_attribute.m4       |   4 +-
+             tool/m4/ruby_dtrace_available.m4     |   2 +-
+             tool/m4/ruby_dtrace_postprocess.m4   |   2 +-
+             tool/m4/ruby_mingw32.m4              |   4 +-
+             tool/m4/ruby_stack_grow_direction.m4 |   4 +-
+             tool/m4/ruby_try_cflags.m4           |   2 +-
+             tool/m4/ruby_try_cxxflags.m4         |   2 +-
+             tool/m4/ruby_try_ldflags.m4          |   2 +-
+             14 files changed, 143 insertions(+), 144 deletions(-)
+
+            Revert AC_PROG_CC_C99 for -std=gnu99 option to gcc 4.8
+
+            ---
+             configure.ac | 5 ++++-
+             1 file changed, 4 insertions(+), 1 deletion(-)
+
+commit 6add6014d8626c4e5f6816030ea651321e6aa044
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2021-04-06 16:06:36 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-04-15 13:43:56 +0900
+
+    merge revision(s) a3851d97ede:
+
+            Removed unused AC_CHECKING
+
+            ---
+             configure.ac | 7 -------
+             1 file changed, 7 deletions(-)
+
+commit 84d9a9afc0b49d095541acb9832f8b12fb506e19
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-04-15 10:11:19 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-04-15 10:25:30 +0900
+
+    merge revision(s) 31e0382723bfb35cffe3ca485dd0577668cafa07,5e5fb72f99701dc27c66ab148471893f14e6d6f0,fb6ebe55d91187d9635e0183d47dbf38e95b1141,522d4cd32f7727886f4fcbc28ed29c08d361ee20: [Backport #17735]
+
+            Keep non evaluated keys in `Hash#transform_keys!` [Bug #17735]
+
+            ---
+             hash.c                                     |  6 +++++-
+             spec/ruby/core/hash/transform_keys_spec.rb | 12 +++++++++++-
+             test/ruby/test_hash.rb                     |  8 ++++++++
+             3 files changed, 24 insertions(+), 2 deletions(-)
+
+            Clear an intermediate hash [Bug #17735]
+
+            ---
+             hash.c | 1 +
+             1 file changed, 1 insertion(+)
+
+            Hide an intermediate array
+
+            ---
+             hash.c | 6 ++++--
+             1 file changed, 4 insertions(+), 2 deletions(-)
+
+            Force recycle intermediate collection in Hash#transform_keys! [Bug
+             #17735]
+
+            * Force recycle intermediate hash
+
+            * Force recycle intermediate array too
+
+            https://github.com/ruby/ruby/pull/4329#issuecomment-808840718
+            ---
+             hash.c | 2 ++
+             1 file changed, 2 insertions(+)
+
+commit d5a34e1b142eccc54971494be2243a0c6ac01d94
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-04-15 09:46:36 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-04-15 09:46:36 +0900
+
+    merge revision(s) fbbc37dc1d5b329777e6d9716118db528ab70730: [Backport #17802]
+
+            test/drb/test_drb.rb: Specify the host of DRbServer
+
+            to try fixing the following error.
+
+            http://rubyci.s3.amazonaws.com/opensuseleap/ruby-master/log/20210407T063004Z.log.html.gz
+            ```
+            [  605/21105] DRbTests::TestDRbSSLAry#test_06_next/home/chkbuild/chkbuild/tmp/build/20210407T063004Z/ruby/lib/drb/drb.rb:1138:in `method_missing': undefined method `regist' for [1, 2, "III", 4, "five", 6]:Array (NoMethodError)
+                    from /home/chkbuild/chkbuild/tmp/build/20210407T063004Z/ruby/lib/drb/extserv.rb:21:in `block in initialize'
+                    from /home/chkbuild/chkbuild/tmp/build/20210407T063004Z/ruby/.ext/common/monitor.rb:202:in `synchronize'
+                    from /home/chkbuild/chkbuild/tmp/build/20210407T063004Z/ruby/.ext/common/monitor.rb:202:in `mon_synchronize'
+                    from /home/chkbuild/chkbuild/tmp/build/20210407T063004Z/ruby/lib/drb/extserv.rb:20:in `initialize'
+                    from /home/chkbuild/chkbuild/tmp/build/20210407T063004Z/ruby/test/drb/ut_array_drbssl.rb:35:in `new'
+                    from /home/chkbuild/chkbuild/tmp/build/20210407T063004Z/ruby/test/drb/ut_array_drbssl.rb:35:in `<main>'
+             = 100.05 s
+            ```
+
+            Here is my analysis:
+            The test of drb used both `druby://:0` and `druby://localhost:0` for
+            DRbServer. However, the former listens on IPv4, and the latter does on
+            IPv6, depending on environments. The port 0 is automatically assigned,
+            but sometimes the same port is used to both because they are different
+            protocols (IPv4 and IPv6). In this case, their URIs are resolved to the
+            completely same one (`druby://localhost:port`), which confuses the
+            method `DRb.here?` which determines the DRbObject is remote or local.
+
+            This changeset uses `druby://localhost:0` consistently.
+            ---
+             test/drb/test_drb.rb    | 4 ++--
+             test/drb/test_drbssl.rb | 2 +-
+             2 files changed, 3 insertions(+), 3 deletions(-)
+
+commit f057a60792293cccfb259430c1a48d445c5c9310
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-04-15 09:44:59 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-04-15 09:44:59 +0900
+
+    bump teeny version to 3.0.2.
+
 commit 0fb782ee38ea37fd5fe8b1f775f8ad866a82a3f0
   Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   AuthorDate: 2021-04-05 21:20:51 +0900
