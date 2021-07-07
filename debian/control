@@ -1,7 +1,7 @@
 Source: ruby3.0
 Section: ruby
 Priority: optional
-Maintainer: Sorah Fukumori <her@sorah.jp>
+Maintainer: Sorah Fukumori <sorah@cookpad.com>
 Build-Depends: bison,
                coreutils (>= 7.5),
                debhelper (>= 12~),

@@ -1,3 +1,10 @@
+ruby3.0 (3.0.2-0nkmi1~dist) unstable; urgency=medium
+
+  * Ruby 3.0.2
+  * Update maintainer email
+
+ -- Sorah Fukumori <sorah@cookpad.com>  Thu, 08 Jul 2021 02:31:55 +0900
+
 ruby3.0 (3.0.1-0nkmi1~dist) unstable; urgency=medium
 
   * Ruby 3.0.1
