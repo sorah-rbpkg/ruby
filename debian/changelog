@@ -1,3 +1,10 @@
+ruby2.6 (2.6.8-0nkmi1~dist) unstable; urgency=medium
+
+  * 2.6.8
+  * Update maintainer email
+
+ -- Sorah Fukumori <sorah@cookpad.com>  Thu, 08 Jul 2021 04:25:43 +0900
+
 ruby2.6 (2.6.7-0nkmi1~dist) unstable; urgency=medium
 
   * 2.6.7
