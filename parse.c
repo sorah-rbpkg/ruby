@@ -13740,7 +13740,11 @@ read_escape(struct parser_params *p, int flags, rb_encoding **encp)
 	    goto eof;
 	}
 	if ((c = nextc(p)) == '\\') {
-	    if (peek(p, 'u')) goto eof;
+	    switch (peekc(p)) {
+	      case 'u': case 'U':
+		nextc(p);
+		goto eof;
+	    }
 	    return read_escape(p, flags|ESCAPE_META, encp) | 0x80;
 	}
 	else if (c == -1 || !ISASCII(c)) goto eof;
@@ -13765,7 +13769,11 @@ read_escape(struct parser_params *p, int flags, rb_encoding **encp)
       case 'c':
 	if (flags & ESCAPE_CONTROL) goto eof;
 	if ((c = nextc(p))== '\\') {
-	    if (peek(p, 'u')) goto eof;
+	    switch (peekc(p)) {
+	      case 'u': case 'U':
+		nextc(p);
+		goto eof;
+	    }
 	    c = read_escape(p, flags|ESCAPE_CONTROL, encp);
 	}
 	else if (c == '?')
