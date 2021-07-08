@@ -1,5 +1,262 @@
 -*- coding: utf-8 -*-
 
+commit a21a3b7d23704a01d34bd79d09dc37897e00922a
+  Author:     Yusuke Endoh <mame@ruby-lang.org>
+  AuthorDate: 2021-07-07 12:06:44 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2021-07-07 19:48:22 +0900
+
+    Fix StartTLS stripping vulnerability
+
+    Reported by Alexandr Savca in https://hackerone.com/reports/1178562
+
+    Co-authored-by: Shugo Maeda <shugo@ruby-lang.org>
+
+commit 3ca1399150ed4eacfd2fe1ee251b966f8d1ee469
+  Author:     Yusuke Endoh <mame@ruby-lang.org>
+  AuthorDate: 2021-07-07 12:05:44 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2021-07-07 19:47:46 +0900
+
+    Ignore IP addresses in PASV responses by default, and add new option use_pasv_ip
+
+    This fixes CVE-2021-81810.
+    Reported by Alexandr Savca.
+
+    Co-authored-by: Shugo Maeda <shugo@ruby-lang.org>
+
+commit 87d02eacd26d0b2884016315baf2440d100f177e
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2021-06-02 01:40:08 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2021-06-02 01:40:08 +0900
+
+    merge revision(s) 9edc162583a4f685332239f6249745ad9b518cbe: [Backport #17781]
+
+            [ruby/resolv] Fix confusion of received response message
+
+            This is a follow up for commit 33fb966197f1 ("Remove sender/message_id
+            pair after response received in resolv", 2020-09-11).
+
+            As the @senders instance variable is also used for tracking transaction
+            ID allocation, simply removing an entry without releasing the ID would
+            eventually deplete the ID space and cause
+            Resolv::DNS.allocate_request_id to hang.
+
+            It seems the intention of the code was to check that the received DNS
+            message is actually the response for the question made within the method
+            earlier. Let's have it actually do so.
+
+            [Bug #12838] https://bugs.ruby-lang.org/issues/12838
+            [Bug #17748] https://bugs.ruby-lang.org/issues/17748
+
+            https://github.com/ruby/resolv/commit/53ca9c9209
+            ---
+             lib/resolv.rb | 6 +++---
+             1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit 9e0e99023ddef9c0ea80dfc7f0b6924c1be95d03
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2021-05-31 23:47:41 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2021-05-31 23:47:41 +0900
+
+    bump the verion of RDoc for previous merge
+
+commit 483f303d02e768b69e476e0b9be4ab2f26389522
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2021-05-31 23:44:23 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2021-05-31 23:44:23 +0900
+
+    merge revision(s) a7f5d6ab88 c9ab8fe2 [Backport#17877]
+
+            a fix of RDoc for CVE-2021-31799
+
+commit d8bbbc308e99635091fe9c6e89ee8d711cc008b9
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2021-05-31 23:10:35 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2021-05-31 23:10:35 +0900
+
+    bump patchlevel for previous merge commit
+
+commit 29bbad939939c6dceb804aac667ba372fdee4ef5
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2021-05-31 23:04:44 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2021-05-31 23:04:44 +0900
+
+    Fix 2.7 build (#4359)
+
+    * merge revision(s) fcc88da5eb162043adcba552646677d2ab5adf55:
+
+            configure.ac: fix for upcoming autoconf-2.70
+
+            The failure initially noticed on `autoconf-2.69d` (soon to become 2.70):
+
+            ```
+            $ ./configure
+            ./configure: line 8720: syntax error near unexpected token `fi'
+            ./configure: line 8720: `fi'
+            ```
+
+            Before the change generated `./configure ` snippet looked like:
+
+            ```
+                if ! $CC -E -xc - <<SRC >/dev/null
+            then :
+
+                    #if defined __APPLE_CC__ && defined __clang_major__ && __clang_major__ < 3
+                    #error premature clang
+                    #endif
+            SRC
+                    as_fn_error $? "clang version 3.0 or later is required" "$LINENO" 5
+            fi
+            ```
+
+            Note the newline that breaks here-document syntax.
+
+            After the change the snippet does not use here-document.
+
+            Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
+            ---
+             configure.ac | 15 ++++++++-------
+             1 file changed, 8 insertions(+), 7 deletions(-)
+
+    * merge revision(s) 0df67a469561fab80b78478b99703ed893c4db07:
+
+            Signal handler type should be void
+
+            ---
+             configure.ac                          |  1 -
+             include/ruby/internal/intern/signal.h |  3 +--
+             signal.c                              | 14 +++++++-------
+             vm_core.h                             |  2 +-
+             win32/Makefile.sub                    |  1 -
+             5 files changed, 9 insertions(+), 12 deletions(-)
+
+    * merge revision(s) 4d2ad8d737c55c3efd4c75131687dd1c8db7441b:
+
+            Removed obsolete autoconf checks
+
+            Use regular `AC_CHECK_MEMBERS` instead of:
+            * `AC_STRUCT_ST_BLKSIZE`
+            * `AC_STRUCT_ST_BLOCKS`
+            * `AC_STRUCT_ST_RDEV`
+            ---
+             configure.ac         | 6 +++---
+             missing/fileblocks.c | 1 -
+             win32/Makefile.sub   | 1 -
+             3 files changed, 3 insertions(+), 5 deletions(-)
+             delete mode 100644 missing/fileblocks.c
+
+    * merge revision(s) 3b7c05ef8dc15371316e5254d33af12928183971:
+
+            Fixed RUBY_RM_RECURSIVE when autoconf met the required version
+
+            Before 9189cf5793cd527a86b711d15d5fd0633ec082e1 the result of
+            `m4_version_compare` was compared to -1, however the `$2` of
+            `m4_version_prereq` has different meaning and is expanded when
+            the required version met.
+            ---
+             tool/m4/ruby_rm_recursive.m4 | 4 ++--
+             1 file changed, 2 insertions(+), 2 deletions(-)
+
+    * merge revision(s) c32375883a696fcf8e9e99875f1339ee5474a255,48bb0329eb325bc5b77c222f45b8dc97a208d986:
+
+            Update for autoconf 2.70
+
+            ---
+             configure.ac                         | 232 +++++++++++++++++------------------
+             tool/m4/ruby_check_builtin_setjmp.m4 |   8 +-
+             tool/m4/ruby_check_printf_prefix.m4  |   9 +-
+             tool/m4/ruby_check_setjmp.m4         |   6 +-
+             tool/m4/ruby_check_sysconf.m4        |   6 +-
+             tool/m4/ruby_cppoutfile.m4           |   4 +-
+             tool/m4/ruby_decl_attribute.m4       |   4 +-
+             tool/m4/ruby_dtrace_available.m4     |   2 +-
+             tool/m4/ruby_dtrace_postprocess.m4   |   2 +-
+             tool/m4/ruby_mingw32.m4              |   4 +-
+             tool/m4/ruby_stack_grow_direction.m4 |   4 +-
+             tool/m4/ruby_try_cflags.m4           |   2 +-
+             tool/m4/ruby_try_cxxflags.m4         |   2 +-
+             tool/m4/ruby_try_ldflags.m4          |   2 +-
+             14 files changed, 143 insertions(+), 144 deletions(-)
+
+            Revert AC_PROG_CC_C99 for -std=gnu99 option to gcc 4.8
+
+            ---
+             configure.ac | 5 ++++-
+             1 file changed, 4 insertions(+), 1 deletion(-)
+
+    Co-authored-by: Sergei Trofimovich <slyfox@gentoo.org>
+
+commit fd95a1805922d9fbe65e6f4c08609c7eac10b723
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2021-05-31 23:01:45 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2021-05-31 23:01:45 +0900
+
+    merge revision(s) d8a13e504992a45d52063f7c925408d7aad3595a: [Backport #17780]
+
+            [Bug #17780] Fix Method#super_method for module alias
+
+            Method#super_method crashes for aliased module methods because they are
+            not defined on a class. This bug was introduced in
+            c60aaed1856b2b6f90de0992c34771830019e021 as part of bug #17130.
+            ---
+             proc.c                   |  2 +-
+             test/ruby/test_method.rb | 13 +++++++++++++
+             2 files changed, 14 insertions(+), 1 deletion(-)
+
+commit 67f1cd20bfb97ff6e5a15d27c8ef06cdb97ed37a
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2021-04-16 05:30:08 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2021-04-16 05:30:08 +0900
+
+    merge revision(s) fbbc37dc1d5b329777e6d9716118db528ab70730: [Backport #17802]
+
+            test/drb/test_drb.rb: Specify the host of DRbServer
+
+            to try fixing the following error.
+
+            http://rubyci.s3.amazonaws.com/opensuseleap/ruby-master/log/20210407T063004Z.log.html.gz
+            ```
+            [  605/21105] DRbTests::TestDRbSSLAry#test_06_next/home/chkbuild/chkbuild/tmp/build/20210407T063004Z/ruby/lib/drb/drb.rb:1138:in `method_missing': undefined method `regist' for [1, 2, "III", 4, "five", 6]:Array (NoMethodError)
+                    from /home/chkbuild/chkbuild/tmp/build/20210407T063004Z/ruby/lib/drb/extserv.rb:21:in `block in initialize'
+                    from /home/chkbuild/chkbuild/tmp/build/20210407T063004Z/ruby/.ext/common/monitor.rb:202:in `synchronize'
+                    from /home/chkbuild/chkbuild/tmp/build/20210407T063004Z/ruby/.ext/common/monitor.rb:202:in `mon_synchronize'
+                    from /home/chkbuild/chkbuild/tmp/build/20210407T063004Z/ruby/lib/drb/extserv.rb:20:in `initialize'
+                    from /home/chkbuild/chkbuild/tmp/build/20210407T063004Z/ruby/test/drb/ut_array_drbssl.rb:35:in `new'
+                    from /home/chkbuild/chkbuild/tmp/build/20210407T063004Z/ruby/test/drb/ut_array_drbssl.rb:35:in `<main>'
+             = 100.05 s
+            ```
+
+            Here is my analysis:
+            The test of drb used both `druby://:0` and `druby://localhost:0` for
+            DRbServer. However, the former listens on IPv4, and the latter does on
+            IPv6, depending on environments. The port 0 is automatically assigned,
+            but sometimes the same port is used to both because they are different
+            protocols (IPv4 and IPv6). In this case, their URIs are resolved to the
+            completely same one (`druby://localhost:port`), which confuses the
+            method `DRb.here?` which determines the DRbObject is remote or local.
+
+            This changeset uses `druby://localhost:0` consistently.
+            ---
+             test/drb/test_drb.rb    | 4 ++--
+             test/drb/test_drbssl.rb | 2 +-
+             2 files changed, 3 insertions(+), 3 deletions(-)
+
+commit 06732f8a1cbb69576de6383e55e2ddb976c63b34
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-04-05 23:31:27 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-04-05 23:31:27 +0900
+
+    bump teeny version to 2.7.4.
+
 commit 6847ee089d7655b2a0eea4fee3133aeacd4cc7cc
   Author:     nagachika <nagachika@ruby-lang.org>
   AuthorDate: 2021-04-05 21:39:38 +0900
