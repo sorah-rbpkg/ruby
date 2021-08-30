@@ -1,8 +1,14 @@
-ruby3.0 (3.0.0-2) UNRELEASED; urgency=medium
+ruby3.0 (3.0.0-2) unstable; urgency=medium
 
-  * Fix symbols file for i386 build
+  [ Utkarsh Gupta ]
+  * Upload to unstable.
+  * Fix symbols file for i386 build.
+  * Cherry-pick 250ebbab from master.
 
- -- Utkarsh Gupta <utkarsh@debian.org>  Tue, 29 Dec 2020 01:38:00 +0530
+  [ Chris Hofstaedtler ]
+  * Remove myself from Uploaders
+
+ -- Utkarsh Gupta <utkarsh@debian.org>  Mon, 30 Aug 2021 17:54:14 +0530
 
 ruby3.0 (3.0.0-1) experimental; urgency=medium
 
