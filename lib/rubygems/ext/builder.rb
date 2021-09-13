@@ -28,16 +28,17 @@ class Gem::Ext::Builder
     unless make_program
       make_program = (/mswin/ =~ RUBY_PLATFORM) ? 'nmake' : 'make'
     end
+    make_program = Shellwords.split(make_program)
 
-    destdir = '"DESTDIR=%s"' % ENV['DESTDIR']
+    destdir = 'DESTDIR=%s' % ENV['DESTDIR']
 
     ['clean', '', 'install'].each do |target|
       # Pass DESTDIR via command line to override what's in MAKEFLAGS
       cmd = [
-        make_program,
+        *make_program,
         destdir,
         target,
-      ].join(' ').rstrip
+      ].reject(&:empty?)
       begin
         run(cmd, results, "make #{target}".rstrip, make_dir)
       rescue Gem::InstallError
@@ -56,7 +57,7 @@ class Gem::Ext::Builder
         p(command)
       end
       results << "current directory: #{dir}"
-      results << (command.respond_to?(:shelljoin) ? command.shelljoin : command)
+      results << command.shelljoin
 
       require "open3"
       # Set $SOURCE_DATE_EPOCH for the subprocess.

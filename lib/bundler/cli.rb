@@ -122,9 +122,7 @@ module Bundler
       else command = "bundle-#{cli}"
       end
 
-      man_path = File.expand_path("../../../man", __FILE__)
-      # man files are located under ruby's mandir with the default gems of bundler
-      man_path = RbConfig::CONFIG["mandir"] unless File.directory?(man_path)
+      man_path = File.expand_path("man", __dir__)
       man_pages = Hash[Dir.glob(File.join(man_path, "**", "*")).grep(/.*\.\d*\Z/).collect do |f|
         [File.basename(f, ".*"), f]
       end]
@@ -134,8 +132,7 @@ module Bundler
         if Bundler.which("man") && man_path !~ %r{^file:/.+!/META-INF/jruby.home/.+}
           Kernel.exec "man #{man_page}"
         else
-          fallback_man_path = File.expand_path("../man", __FILE__)
-          puts File.read("#{fallback_man_path}/#{File.basename(man_page)}.ronn")
+          puts File.read("#{man_path}/#{File.basename(man_page)}.ronn")
         end
       elsif command_path = Bundler.which("bundler-#{cli}")
         Kernel.exec(command_path, "--help")
@@ -311,39 +308,19 @@ module Bundler
       end
     end
 
-    unless Bundler.feature_flag.bundler_3_mode?
-      desc "show GEM [OPTIONS]", "Shows all gems that are part of the bundle, or the path to a given gem"
-      long_desc <<-D
-        Show lists the names and versions of all gems that are required by your Gemfile.
-        Calling show with [GEM] will list the exact location of that gem on your machine.
-      D
-      method_option "paths", :type => :boolean,
-                             :banner => "List the paths of all gems that are required by your Gemfile."
-      method_option "outdated", :type => :boolean,
-                                :banner => "Show verbose output including whether gems are outdated."
-      def show(gem_name = nil)
-        if ARGV[0] == "show"
-          rest = ARGV[1..-1]
-
-          if flag = rest.find{|arg| ["--verbose", "--outdated"].include?(arg) }
-            Bundler::SharedHelpers.major_deprecation(2, "the `#{flag}` flag to `bundle show` was undocumented and will be removed without replacement")
-          else
-            new_command = rest.find {|arg| !arg.start_with?("--") } ? "info" : "list"
-
-            new_arguments = rest.map do |arg|
-              next arg if arg != "--paths"
-              next "--path" if new_command == "info"
-            end
-
-            old_argv = ARGV.join(" ")
-            new_argv = [new_command, *new_arguments.compact].join(" ")
-
-            Bundler::SharedHelpers.major_deprecation(2, "use `bundle #{new_argv}` instead of `bundle #{old_argv}`")
-          end
-        end
-        require_relative "cli/show"
-        Show.new(options, gem_name).run
-      end
+    desc "show GEM [OPTIONS]", "Shows all gems that are part of the bundle, or the path to a given gem"
+    long_desc <<-D
+      Show lists the names and versions of all gems that are required by your Gemfile.
+      Calling show with [GEM] will list the exact location of that gem on your machine.
+    D
+    method_option "paths", :type => :boolean,
+                           :banner => "List the paths of all gems that are required by your Gemfile."
+    method_option "outdated", :type => :boolean,
+                              :banner => "Show verbose output including whether gems are outdated."
+    def show(gem_name = nil)
+      SharedHelpers.major_deprecation(2, "the `--outdated` flag to `bundle show` was undocumented and will be removed without replacement") if ARGV.include?("--outdated")
+      require_relative "cli/show"
+      Show.new(options, gem_name).run
     end
 
     desc "list", "List all gems in the bundle"
@@ -507,8 +484,8 @@ module Bundler
       By default, setting a configuration value sets it for all projects
       on the machine.
 
-      If a global setting is superceded by local configuration, this command
-      will show the current value, as well as any superceded values and
+      If a global setting is superseded by local configuration, this command
+      will show the current value, as well as any superseded values and
       where they were specified.
     D
     require_relative "cli/config"
@@ -589,10 +566,12 @@ module Bundler
     method_option :git, :type => :boolean, :default => true, :desc => "Initialize a git repo inside your library."
     method_option :mit, :type => :boolean, :desc => "Generate an MIT license file. Set a default with `bundle config set --global gem.mit true`."
     method_option :rubocop, :type => :boolean, :desc => "Add rubocop to the generated Rakefile and gemspec. Set a default with `bundle config set --global gem.rubocop true`."
+    method_option :changelog, :type => :boolean, :desc => "Generate changelog file. Set a default with `bundle config set --global gem.changelog true`."
     method_option :test, :type => :string, :lazy_default => Bundler.settings["gem.test"] || "", :aliases => "-t", :banner => "Use the specified test framework for your library",
                          :desc => "Generate a test directory for your library, either rspec, minitest or test-unit. Set a default with `bundle config set --global gem.test (rspec|minitest|test-unit)`."
     method_option :ci, :type => :string, :lazy_default => Bundler.settings["gem.ci"] || "",
                        :desc => "Generate CI configuration, either GitHub Actions, Travis CI, GitLab CI or CircleCI. Set a default with `bundle config set --global gem.ci (github|travis|gitlab|circle)`"
+    method_option :github_username, :type => :string, :default => Bundler.settings["gem.github_username"], :banner => "Set your username on GitHub", :desc => "Fill in GitHub username on README so that you don't have to do it manually. Set a default with `bundle config set --global gem.github_username <your_username>`."
 
     def gem(name)
     end

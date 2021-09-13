@@ -63,13 +63,13 @@ module Bundler
   autoload :Resolver,               File.expand_path("bundler/resolver", __dir__)
   autoload :Retry,                  File.expand_path("bundler/retry", __dir__)
   autoload :RubyDsl,                File.expand_path("bundler/ruby_dsl", __dir__)
-  autoload :RubyGemsGemInstaller,   File.expand_path("bundler/rubygems_gem_installer", __dir__)
   autoload :RubyVersion,            File.expand_path("bundler/ruby_version", __dir__)
   autoload :Runtime,                File.expand_path("bundler/runtime", __dir__)
   autoload :Settings,               File.expand_path("bundler/settings", __dir__)
   autoload :SharedHelpers,          File.expand_path("bundler/shared_helpers", __dir__)
   autoload :Source,                 File.expand_path("bundler/source", __dir__)
   autoload :SourceList,             File.expand_path("bundler/source_list", __dir__)
+  autoload :SourceMap,              File.expand_path("bundler/source_map", __dir__)
   autoload :SpecSet,                File.expand_path("bundler/spec_set", __dir__)
   autoload :StubSpecification,      File.expand_path("bundler/stub_specification", __dir__)
   autoload :UI,                     File.expand_path("bundler/ui", __dir__)
@@ -198,7 +198,7 @@ module Bundler
 
     def frozen_bundle?
       frozen = settings[:deployment]
-      frozen ||= settings[:frozen] unless feature_flag.deployment_means_frozen?
+      frozen ||= settings[:frozen]
       frozen
     end
 
@@ -441,7 +441,7 @@ EOF
     end
 
     def local_platform
-      return Gem::Platform::RUBY if settings[:force_ruby_platform]
+      return Gem::Platform::RUBY if settings[:force_ruby_platform] || Gem.platforms == [Gem::Platform::RUBY]
       Gem::Platform.local
     end
 

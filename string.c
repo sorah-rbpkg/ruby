@@ -9265,14 +9265,14 @@ lstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
 
     /* remove spaces at head */
     if (single_byte_optimizable(str)) {
-	while (s < e && ascii_isspace(*s)) s++;
+        while (s < e && (*s == '\0' || ascii_isspace(*s))) s++;
     }
     else {
 	while (s < e) {
 	    int n;
 	    unsigned int cc = rb_enc_codepoint_len(s, e, &n, enc);
 
-	    if (!rb_isspace(cc)) break;
+            if (cc && !rb_isspace(cc)) break;
 	    s += n;
 	}
     }
@@ -11505,6 +11505,10 @@ rb_interned_str_cstr(const char *ptr)
 VALUE
 rb_enc_interned_str(const char *ptr, long len, rb_encoding *enc)
 {
+    if (UNLIKELY(rb_enc_autoload_p(enc))) {
+        rb_enc_autoload(enc);
+    }
+
     struct RString fake_str;
     return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), TRUE);
 }

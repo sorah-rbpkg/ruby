@@ -105,7 +105,7 @@ module Gem
   end
 
   class Dependency
-    attr_accessor :source, :groups, :all_sources
+    attr_accessor :source, :groups
 
     alias_method :eql?, :==
 
@@ -116,7 +116,7 @@ module Gem
     end
 
     def to_yaml_properties
-      instance_variables.reject {|p| ["@source", "@groups", "@all_sources"].include?(p.to_s) }
+      instance_variables.reject {|p| ["@source", "@groups"].include?(p.to_s) }
     end
 
     def to_lock
@@ -155,6 +155,22 @@ module Gem
       end
 
       prepend OrderIndependentComparison
+    end
+  end
+
+  if Gem::Requirement.new("~> 2.0").hash == Gem::Requirement.new("~> 2.0.0").hash
+    class Requirement
+      module CorrectHashForLambdaOperator
+        def hash
+          if requirements.any? {|r| r.first == "~>" }
+            requirements.map {|r| r.first == "~>" ? [r[0], r[1].to_s] : r }.sort.hash
+          else
+            super
+          end
+        end
+      end
+
+      prepend CorrectHashForLambdaOperator
     end
   end
 

@@ -318,40 +318,7 @@ RSpec.describe "the lockfile format" do
     G
   end
 
-  it "generates a lockfile without credentials for a configured source", :bundler => "< 3" do
-    bundle "config set http://localgemserver.test/ user:pass"
-
-    install_gemfile(<<-G, :artifice => "endpoint_strict_basic_authentication", :quiet => true)
-      source "http://localgemserver.test/" do
-
-      end
-
-      source "http://user:pass@othergemserver.test/" do
-        gem "rack-obama", ">= 1.0"
-      end
-    G
-
-    lockfile_should_be <<-G
-      GEM
-        remote: http://localgemserver.test/
-        remote: http://user:pass@othergemserver.test/
-        specs:
-          rack (1.0.0)
-          rack-obama (1.0)
-            rack
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        rack-obama (>= 1.0)!
-
-      BUNDLED WITH
-         #{Bundler::VERSION}
-    G
-  end
-
-  it "generates a lockfile without credentials for a configured source", :bundler => "3" do
+  it "generates a lockfile without credentials for a configured source" do
     bundle "config set http://localgemserver.test/ user:pass"
 
     install_gemfile(<<-G, :artifice => "endpoint_strict_basic_authentication", :quiet => true)
@@ -668,6 +635,30 @@ RSpec.describe "the lockfile format" do
         bar!
         foo!
         rack
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    G
+  end
+
+  it "removes redundant sources" do
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo2)}/"
+
+      gem "rack", :source => "#{file_uri_for(gem_repo2)}/"
+    G
+
+    lockfile_should_be <<-G
+      GEM
+        remote: #{file_uri_for(gem_repo2)}/
+        specs:
+          rack (1.0.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        rack!
 
       BUNDLED WITH
          #{Bundler::VERSION}
@@ -1134,7 +1125,7 @@ RSpec.describe "the lockfile format" do
     G
 
     expect(bundled_app_lock).not_to exist
-    expect(err).to include "rack (>= 0) should come from an unspecified source and git://hubz.com (at master)"
+    expect(err).to include "rack (>= 0) should come from an unspecified source and git://hubz.com"
   end
 
   it "works correctly with multiple version dependencies" do
@@ -1185,83 +1176,6 @@ RSpec.describe "the lockfile format" do
       BUNDLED WITH
          #{Bundler::VERSION}
     G
-  end
-
-  # Some versions of the Bundler 1.1 RC series introduced corrupted
-  # lockfiles. There were two major problems:
-  #
-  # * multiple copies of the same GIT section appeared in the lockfile
-  # * when this happened, those sections got multiple copies of gems
-  #   in those sections.
-  it "fixes corrupted lockfiles" do
-    build_git "omg", :path => lib_path("omg")
-    revision = revision_for(lib_path("omg"))
-
-    gemfile <<-G
-      source "#{file_uri_for(gem_repo2)}/"
-      gem "omg", :git => "#{lib_path("omg")}", :branch => 'master'
-    G
-
-    bundle "config --local path vendor"
-    bundle :install
-    expect(the_bundle).to include_gems "omg 1.0"
-
-    # Create a Gemfile.lock that has duplicate GIT sections
-    lockfile <<-L
-      GIT
-        remote: #{lib_path("omg")}
-        revision: #{revision}
-        branch: master
-        specs:
-          omg (1.0)
-
-      GIT
-        remote: #{lib_path("omg")}
-        revision: #{revision}
-        branch: master
-        specs:
-          omg (1.0)
-
-      GEM
-        remote: #{file_uri_for(gem_repo2)}/
-        specs:
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        omg!
-
-      BUNDLED WITH
-         #{Bundler::VERSION}
-    L
-
-    FileUtils.rm_rf(bundled_app("vendor"))
-    bundle "install"
-    expect(the_bundle).to include_gems "omg 1.0"
-
-    # Confirm that duplicate specs do not appear
-    lockfile_should_be(<<-L)
-      GIT
-        remote: #{lib_path("omg")}
-        revision: #{revision}
-        branch: master
-        specs:
-          omg (1.0)
-
-      GEM
-        remote: #{file_uri_for(gem_repo2)}/
-        specs:
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        omg!
-
-      BUNDLED WITH
-         #{Bundler::VERSION}
-    L
   end
 
   it "raises a helpful error message when the lockfile is missing deps" do
@@ -1335,7 +1249,10 @@ RSpec.describe "the lockfile format" do
 
         expect { bundle "update", :all => true }.to change { File.mtime(bundled_app_lock) }
         expect(File.read(bundled_app_lock)).to match("\r\n")
-        expect(the_bundle).to include_gems "rack 1.2"
+
+        simulate_bundler_version_when_missing_prerelease_default_gem_activation do
+          expect(the_bundle).to include_gems "rack 1.2"
+        end
       end
     end
 
@@ -1356,7 +1273,7 @@ RSpec.describe "the lockfile format" do
 
         expect do
           ruby <<-RUBY
-                   require '#{lib_dir}/bundler'
+                   require '#{entrypoint}'
                    Bundler.setup
                  RUBY
         end.not_to change { File.mtime(bundled_app_lock) }

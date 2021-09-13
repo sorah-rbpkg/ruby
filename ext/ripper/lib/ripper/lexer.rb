@@ -130,12 +130,13 @@ class Ripper
       @buf = []
       @stack = []
       super()
+      @buf = @stack.pop unless @stack.empty?
       if raise_errors and !@errors.empty?
         raise SyntaxError, @errors.map(&:message).join(' ;')
       end
       @buf.flatten!
       unless (result = @buf).empty?
-        result.concat(@buf) until (@buf = []; super(); @buf.empty?)
+        result.concat(@buf) until (@buf = []; super(); @buf.flatten!; @buf.empty?)
       end
       result
     end
