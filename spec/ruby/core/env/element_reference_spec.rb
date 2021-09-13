@@ -16,7 +16,7 @@ describe "ENV.[]" do
 
   it "returns only frozen values" do
     ENV[@variable] = "a non-frozen string"
-    ENV[@variable].frozen?.should == true
+    ENV[@variable].should.frozen?
   end
 
   it "coerces a non-string name with #to_str" do
@@ -59,6 +59,7 @@ describe "ENV.[]" do
     Encoding.default_internal = nil
 
     locale = Encoding.find('locale')
+    locale = Encoding::UTF_8 if platform_is :windows
     locale = Encoding::BINARY if locale == Encoding::US_ASCII
     ENV[@variable] = "\xC3\xB8"
     ENV[@variable].encoding.should == locale

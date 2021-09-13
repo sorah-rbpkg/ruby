@@ -1,0 +1,82 @@
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file
+//   by ./tool/mk_builtin_loader.rb
+//   with array.rb
+#include "internal/compilers.h"     /* for MAYBE_UNUSED */
+#include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
+#include "ruby/ruby.h"              /* for VALUE */
+#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
+struct rb_execution_context_struct; /* in vm_core.h */
+
+static void
+mjit_compile_invokebuiltin_for_rb_ary_shuffle_bang(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    if (index == -1) {
+        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+    }
+    else {
+        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
+        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == rb_ary_shuffle_bang */\n", (intptr_t)rb_ary_shuffle_bang);
+    fprintf(f, "    val = f(ec, self, argv[0]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_rb_ary_shuffle(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    if (index == -1) {
+        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+    }
+    else {
+        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
+        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == rb_ary_shuffle */\n", (intptr_t)rb_ary_shuffle);
+    fprintf(f, "    val = f(ec, self, argv[0]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_rb_ary_sample(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 3);
+    }
+    else {
+        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
+        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == rb_ary_sample */\n", (intptr_t)rb_ary_sample);
+    fprintf(f, "    val = f(ec, self, argv[0], argv[1], argv[2]);\n");
+}
+
+void Init_builtin_array(void)
+{
+  // table definition
+  static const struct rb_builtin_function array_table[] = {
+    RB_BUILTIN_FUNCTION(0, rb_ary_shuffle_bang, rb_ary_shuffle_bang, 1, mjit_compile_invokebuiltin_for_rb_ary_shuffle_bang),
+    RB_BUILTIN_FUNCTION(1, rb_ary_shuffle, rb_ary_shuffle, 1, mjit_compile_invokebuiltin_for_rb_ary_shuffle),
+    RB_BUILTIN_FUNCTION(2, rb_ary_sample, rb_ary_sample, 3, mjit_compile_invokebuiltin_for_rb_ary_sample),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),
+  };
+
+  // arity_check
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(5, 1, 0) || __clang__
+COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
+#endif
+  if (0) rb_builtin_function_check_arity1(rb_ary_shuffle_bang);
+  if (0) rb_builtin_function_check_arity1(rb_ary_shuffle);
+  if (0) rb_builtin_function_check_arity3(rb_ary_sample);
+COMPILER_WARNING_POP
+
+  // load
+  rb_load_with_builtin_functions("array", array_table);
+}

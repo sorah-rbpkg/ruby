@@ -3,14 +3,51 @@
 // auto-generated file
 //   by ./tool/mk_builtin_loader.rb
 //   with io.rb
+#include "internal/compilers.h"     /* for MAYBE_UNUSED */
+#include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
+#include "ruby/ruby.h"              /* for VALUE */
+#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
+struct rb_execution_context_struct; /* in vm_core.h */
 
-static void load_io(void)
+static void
+mjit_compile_invokebuiltin_for_io_read_nonblock(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 3);
+    }
+    else {
+        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
+        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == io_read_nonblock */\n", (intptr_t)io_read_nonblock);
+    fprintf(f, "    val = f(ec, self, argv[0], argv[1], argv[2]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_io_write_nonblock(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
+    }
+    else {
+        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
+        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == io_write_nonblock */\n", (intptr_t)io_write_nonblock);
+    fprintf(f, "    val = f(ec, self, argv[0], argv[1]);\n");
+}
+
+void Init_builtin_io(void)
 {
   // table definition
   static const struct rb_builtin_function io_table[] = {
-    RB_BUILTIN_FUNCTION(0, io_read_nonblock, io_read_nonblock, 3),
-    RB_BUILTIN_FUNCTION(1, io_write_nonblock, io_write_nonblock, 2),
-    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
+    RB_BUILTIN_FUNCTION(0, io_read_nonblock, io_read_nonblock, 3, mjit_compile_invokebuiltin_for_io_read_nonblock),
+    RB_BUILTIN_FUNCTION(1, io_write_nonblock, io_write_nonblock, 2, mjit_compile_invokebuiltin_for_io_write_nonblock),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),
   };
 
   // arity_check

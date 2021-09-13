@@ -1,10 +1,10 @@
 [![Build Status](https://travis-ci.org/ruby/ruby.svg?branch=master)](https://travis-ci.org/ruby/ruby)
 [![Build status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/master?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/master)
-![](https://github.com/ruby/ruby/workflows/Cygwin/badge.svg)
-![](https://github.com/ruby/ruby/workflows/macOS/badge.svg)
-![](https://github.com/ruby/ruby/workflows/MJIT/badge.svg)
-![](https://github.com/ruby/ruby/workflows/Ubuntu/badge.svg)
-![](https://github.com/ruby/ruby/workflows/Windows/badge.svg)
+[![Actions Status](https://github.com/ruby/ruby/workflows/macOS/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"macOS")
+[![Actions Status](https://github.com/ruby/ruby/workflows/MinGW/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"MinGW")
+[![Actions Status](https://github.com/ruby/ruby/workflows/MJIT/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"MJIT")
+[![Actions Status](https://github.com/ruby/ruby/workflows/Ubuntu/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Ubuntu")
+[![Actions Status](https://github.com/ruby/ruby/workflows/Windows/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Windows")
 
 # What's Ruby
 
@@ -24,8 +24,8 @@ It is simple, straightforward, and extensible.
 *   Garbage Collection
 *   Dynamic Loading of Object Files (on some architectures)
 *   Highly Portable (works on many Unix-like/POSIX compatible platforms as
-    well as Windows, macOS, Haiku, etc.) cf.
-    https://github.com/ruby/ruby/blob/master/doc/contributing.rdoc#platform-maintainers
+    well as Windows, macOS, etc.) cf.
+    https://github.com/ruby/ruby/blob/master/doc/contributing.rdoc#label-Platform+Maintainers
 
 
 ## How to get Ruby
@@ -51,7 +51,8 @@ if you are a committer.
 
 ### Subversion
 
-Stable branches for older Ruby versions can be checked out with the following command:
+Stable branches for older Ruby versions can be checked out with also the
+following command:
 
     $ svn co https://svn.ruby-lang.org/repos/ruby/branches/ruby_2_6/ ruby
 
@@ -71,16 +72,17 @@ send the following phrase:
 
     subscribe
 
-in the mail body (not subject) to the address
-[ruby-talk-request@ruby-lang.org](mailto:ruby-talk-request@ruby-lang.org?subject=Join%20Ruby%20Mailing%20List&body=subscribe).
+in the mail body (not subject) to the address [ruby-talk-request@ruby-lang.org].
+
+[ruby-talk-request@ruby-lang.org]: mailto:ruby-talk-request@ruby-lang.org?subject=Join%20Ruby%20Mailing%20List&body=subscribe
 
 ## How to compile and install
 
 1.  If you want to use Microsoft Visual C++ to compile Ruby, read
     [win32/README.win32](win32/README.win32) instead of this document.
 
-2.  If `./configure` does not exist or is older than `configure.ac`, run
-    `autoconf` to (re)generate configure.
+2.  Run `./autogen.sh` to generate configure, when you build the source checked
+    out from the Git repository.
 
 3.  Run `./configure`, which will generate `config.h` and `Makefile`.
 
@@ -88,7 +90,7 @@ in the mail body (not subject) to the address
     environment. Specify `optflags=..` and `warnflags=..` as necessary to
     override them.
 
-4.  Edit `defines.h` if you need. Usually this step will not be needed.
+4.  Edit `include/ruby/defines.h` if you need. Usually this step will not be needed.
 
 5.  Remove comment mark(`#`) before the module names from `ext/Setup` (or add
     module names if not present), if you want to link modules statically.
@@ -108,12 +110,7 @@ in the mail body (not subject) to the address
     interpreter works well. If you see the message "`check succeeded`", your
     Ruby works as it should (hopefully).
 
-8.  Optionally, run `make update-gems` and `make extract-gems`.
-
-    If you want to install bundled gems, run `make update-gems` and
-    `make extract-gems` before running `make install`.
-
-9.  Run '`make install`'.
+8.  Run '`make install`'.
 
     This command will create the following directories and install files into
     them.

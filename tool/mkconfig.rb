@@ -283,9 +283,9 @@ print <<EOS
   #   require 'rbconfig'
   #
   #   print <<-END_OF_MAKEFILE
-  #   prefix = \#{Config::MAKEFILE_CONFIG['prefix']}
-  #   exec_prefix = \#{Config::MAKEFILE_CONFIG['exec_prefix']}
-  #   bindir = \#{Config::MAKEFILE_CONFIG['bindir']}
+  #   prefix = \#{RbConfig::MAKEFILE_CONFIG['prefix']}
+  #   exec_prefix = \#{RbConfig::MAKEFILE_CONFIG['exec_prefix']}
+  #   bindir = \#{RbConfig::MAKEFILE_CONFIG['bindir']}
   #   END_OF_MAKEFILE
   #
   #   => prefix = /usr/local
@@ -295,7 +295,7 @@ print <<EOS
   # RbConfig.expand is used for resolving references like above in rbconfig.
   #
   #   require 'rbconfig'
-  #   p Config.expand(Config::MAKEFILE_CONFIG["bindir"])
+  #   p RbConfig.expand(RbConfig::MAKEFILE_CONFIG["bindir"])
   #   # => "/usr/local/bin"
   MAKEFILE_CONFIG = {}
   CONFIG.each{|k,v| MAKEFILE_CONFIG[k] = v.dup}
@@ -333,8 +333,8 @@ print <<EOS
   # :nodoc:
   # call-seq:
   #
-  #   RbConfig.fire_update!(key, val)               -> string
-  #   RbConfig.fire_update!(key, val, mkconf, conf) -> string
+  #   RbConfig.fire_update!(key, val)               -> array
+  #   RbConfig.fire_update!(key, val, mkconf, conf) -> array
   #
   # updates +key+ in +mkconf+ with +val+, and all values depending on
   # the +key+ in +mkconf+.
