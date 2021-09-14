@@ -244,6 +244,7 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_ast_memsize@Base 3.0.0~preview1
  rb_ast_new@Base 3.0.0~preview1
  rb_ast_newnode@Base 3.0.0~preview1
+ rb_ast_node_type_change@Base 3.0.2
  rb_ast_update_references@Base 3.0.0~preview1
  rb_attr@Base 3.0.0~preview1
  rb_attr_get@Base 3.0.0~preview1
@@ -866,7 +867,7 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_init_iv_list@Base 3.0.0~preview2
 #MISSING: 3.0.0~preview1# rb_insecure_operation@Base 3.0.0~preview1
  rb_inspect@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview2# rb_int128t2big@Base 3.0.0~preview2
+ rb_int128t2big@Base 3.0.2
  rb_int2big@Base 3.0.0~preview1
  rb_int2inum@Base 3.0.0~preview1
  rb_int_abs@Base 3.0.0~preview1
@@ -1071,8 +1072,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_method_entry_with_refinements@Base 3.0.0~preview1
  rb_method_iseq@Base 3.0.0~preview1
  rb_mjit_add_iseq_to_process@Base 3.0.0~preview1
- rb_mjit_after_vm_ic_update@Base 3.0.0~rc1
- rb_mjit_before_vm_ic_update@Base 3.0.0~rc1
  rb_mjit_iseq_compile_info@Base 3.0.0~preview1
  rb_mjit_recompile_const@Base 3.0.0~rc1
  rb_mjit_recompile_exivar@Base 3.0.0~preview1
@@ -1248,8 +1247,11 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_proc_call_with_block_kw@Base 3.0.0~preview1
  rb_proc_exec@Base 3.0.0~preview1
  rb_proc_get_iseq@Base 3.0.0~preview1
+ rb_proc_isolate@Base 3.0.2
+ rb_proc_isolate_bang@Base 3.0.2
  rb_proc_lambda_p@Base 3.0.0~preview1
  rb_proc_new@Base 3.0.0~preview1
+ rb_proc_ractor_make_shareable@Base 3.0.2
  rb_proc_times@Base 3.0.0~preview1
  rb_profile_frame_absolute_path@Base 3.0.0~preview1
  rb_profile_frame_base_label@Base 3.0.0~preview1
@@ -1274,9 +1276,12 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_ractor_local_storage_ptr_set@Base 3.0.0~preview2
  rb_ractor_local_storage_type_free@Base 3.0.0~preview2
  rb_ractor_local_storage_value@Base 3.0.0~preview2
+ rb_ractor_local_storage_value_lookup@Base 3.0.2
  rb_ractor_local_storage_value_newkey@Base 3.0.0~preview2
  rb_ractor_local_storage_value_set@Base 3.0.0~preview2
  rb_ractor_main_p_@Base 3.0.0~preview1
+ rb_ractor_make_shareable@Base 3.0.2
+ rb_ractor_make_shareable_copy@Base 3.0.2
  rb_ractor_shareable_p_continue@Base 3.0.0~preview1
  rb_ractor_stderr@Base 3.0.0~preview1
  rb_ractor_stderr_set@Base 3.0.0~preview1
