@@ -2,8 +2,10 @@
 
 set -e
 
+BUNDLED_GEMS_FILE=gems/bundled_gems
 rc=0
-while read gem version repository; do
+# Skip the lines of $BUNDLED_GEMS_FILE with comments
+sed '/^#/d' $BUNDLED_GEMS_FILE | while read gem version repository; do
   if ruby3.0 -e "gem '${gem}'" 2>/dev/null; then
     if ruby3.0 -e "gem '${gem}', '>= ${version}'" 2>/dev/null; then
       echo "I: ${gem} (>= ${version}) OK"
@@ -15,6 +17,6 @@ while read gem version repository; do
     echo "E: ${gem} not found"
     rc=1
   fi
-done < gems/bundled_gems
+done
 
 exit $rc
