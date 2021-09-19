@@ -1,3 +1,14 @@
+ruby2.3 (2.3.3-1+deb9u10) stretch-security; urgency=high
+
+  * Add patch to use File.open to fix the OS Command
+    Injection vulnerability. (Fixes: CVE-2021-31799)
+  * Add patch to fix StartTLS stripping vulnerability.
+    (Fixes: CVE-2021-32066)
+  * Add patch to ignore IP addresses in PASV responses
+    by default. (Fixes: CVE-2021-31810)
+
+ -- Utkarsh Gupta <utkarsh@debian.org>  Sun, 19 Sep 2021 09:10:46 +0530
+
 ruby2.3 (2.3.3-1+deb9u9) stretch-security; urgency=high
 
   * Non-maintainer upload by the LTS team.
