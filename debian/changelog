@@ -7,8 +7,10 @@ ruby3.0 (3.0.2-1) UNRELEASED; urgency=medium
   * d/t/bundled-gems: adjust test due to upstream changes.
   * d/t/skiplist: add new files in test/mkmf.
   * Exclude some tests which are failing due to a rubygems version mismatch.
-    The ruby-rubygems version is different than wan embedded in ruby.
+    The ruby-rubygems version is different than the one embedded in ruby.
   * Exclude from autopkgtest another test relying in the source tree structure.
+  * d/missing-sources/jquery.js: removed, it is not needed anymore.
+  * d/rules: use variables instead of hardcoded ruby version in dh_gencontrol.
 
  -- Lucas Kanashiro <kanashiro@debian.org>  Thu, 30 Sep 2021 15:34:22 -0300
 
