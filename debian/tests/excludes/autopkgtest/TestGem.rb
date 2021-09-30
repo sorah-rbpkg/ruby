@@ -10,3 +10,4 @@ exclude :test_auto_activation_of_specific_gemdeps_file, 'failure against ruby2.7
 exclude :test_use_gemdeps_automatic, 'failure against ruby2.7, cant find gem bundler (= 2.1.2)'
 exclude :test_self_use_gemdeps, 'failure against ruby2.7, cant find gem bundler (= 2.1.2)'
 exclude :test_use_gemdeps_specific, 'failure against ruby2.7, cant find gem bundler (= 2.1.2)'
+exclude :test_use_gemdeps_missing_gem, 'failure against ruby-rubygems, version mismatch'
