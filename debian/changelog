@@ -1,8 +1,16 @@
 ruby3.0 (3.0.2-1) UNRELEASED; urgency=medium
 
   * New upstream release.
+  * Add patch to make resolv allow dash in zone_id in IPv6 local addresses.
+  * Skip tests which require to update gems in the system.
+  * Symbols update for 3.0.2 release.
+  * d/t/bundled-gems: adjust test due to upstream changes.
+  * d/t/skiplist: add new files in test/mkmf.
+  * Exclude some tests which are failing due to a rubygems version mismatch.
+    The ruby-rubygems version is different than wan embedded in ruby.
+  * Exclude from autopkgtest another test relying in the source tree structure.
 
- -- Lucas Kanashiro <kanashiro@debian.org>  Mon, 13 Sep 2021 16:21:24 -0300
+ -- Lucas Kanashiro <kanashiro@debian.org>  Thu, 30 Sep 2021 15:34:22 -0300
 
 ruby3.0 (3.0.0-2) unstable; urgency=medium
 
