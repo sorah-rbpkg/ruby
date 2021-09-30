@@ -1,4 +1,4 @@
-ruby3.0 (3.0.2-1) UNRELEASED; urgency=medium
+ruby3.0 (3.0.2-1) unstable; urgency=medium
 
   * New upstream release.
   * Add patch to make resolv allow dash in zone_id in IPv6 local addresses.
