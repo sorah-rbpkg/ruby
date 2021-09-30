@@ -11,4 +11,12 @@ test/mkmf/test_have_library.rb
 test/mkmf/base.rb
 test/mkmf/test_signedness.rb
 test/mkmf/test_constant.rb
-test/rdoc/test_rdoc_rubygems_hook.rb
+test/mkmf/test_install.rb
+test/mkmf/test_mkmf.rb
+test/rubygems/test_bundled_ca.rb
+test/rubygems/test_gem_commands_cert_command.rb
+test/rubygems/test_gem_request.rb
+test/rubygems/test_gem_security.rb
+test/rubygems/test_gem_security_policy.rb
+test/rubygems/test_gem_security_signer.rb
+test/rubygems/test_gem_security_trust_dir.rb

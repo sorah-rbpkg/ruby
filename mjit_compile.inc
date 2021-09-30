@@ -37,17 +37,17 @@
  */
 
 switch (insn) {
-  case BIN(nop):
+  case BIN(nop): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
         }
 
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -61,10 +61,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(getlocal):
+  }
+  case BIN(getlocal): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(lindex_t idx) = (lindex_t)operands[0];
         MAYBE_UNUSED(rb_num_t level) = (rb_num_t)operands[1];
         if (status->local_stack_p) {
@@ -78,9 +78,10 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    level = (rb_num_t)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -97,10 +98,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(setlocal):
+  }
+  case BIN(setlocal): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(lindex_t idx) = (lindex_t)operands[0];
         MAYBE_UNUSED(rb_num_t level) = (rb_num_t)operands[1];
         if (status->local_stack_p) {
@@ -115,9 +116,10 @@ switch (insn) {
         fprintf(f, "    level = (rb_num_t)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -133,10 +135,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(getblockparam):
+  }
+  case BIN(getblockparam): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(lindex_t idx) = (lindex_t)operands[0];
         MAYBE_UNUSED(rb_num_t level) = (rb_num_t)operands[1];
         if (status->local_stack_p) {
@@ -150,9 +152,10 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    level = (rb_num_t)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -179,10 +182,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(setblockparam):
+  }
+  case BIN(setblockparam): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(lindex_t idx) = (lindex_t)operands[0];
         MAYBE_UNUSED(rb_num_t level) = (rb_num_t)operands[1];
         if (status->local_stack_p) {
@@ -197,9 +200,10 @@ switch (insn) {
         fprintf(f, "    level = (rb_num_t)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -220,10 +224,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(getblockparamproxy):
+  }
+  case BIN(getblockparamproxy): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(lindex_t idx) = (lindex_t)operands[0];
         MAYBE_UNUSED(rb_num_t level) = (rb_num_t)operands[1];
         if (status->local_stack_p) {
@@ -237,9 +241,10 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    level = (rb_num_t)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -287,10 +292,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(getspecial):
+  }
+  case BIN(getspecial): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(rb_num_t key) = (rb_num_t)operands[0];
         MAYBE_UNUSED(rb_num_t type) = (rb_num_t)operands[1];
         if (status->local_stack_p) {
@@ -303,9 +308,10 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    type = (rb_num_t)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -328,10 +334,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(setspecial):
+  }
+  case BIN(setspecial): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(rb_num_t key) = (rb_num_t)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -342,9 +348,10 @@ switch (insn) {
         fprintf(f, "    key = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -358,21 +365,35 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(getinstancevariable):
+  }
+  case BIN(getinstancevariable): {
 #if OPT_IC_FOR_IVAR
 {
     MAYBE_UNUSED(ID id) = (ID)operands[0];
     MAYBE_UNUSED(IVC ic) = (IVC)operands[1];
     IVC ic_copy = &(status->is_entries + ((union iseq_inline_storage_entry *)ic - body->is_entries))->iv_cache;
-    if (!status->compile_info->disable_ivar_cache && ic_copy->ic_serial) {
+    if (!status->compile_info->disable_ivar_cache && ic_copy->entry) { // Only ic_copy is enabled.
         fprintf(f, "{\n");
         fprintf(f, "    VALUE obj = GET_SELF();\n");
-        fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->ic_serial);
-        fprintf(f, "    const st_index_t index = %"PRIuSIZE";\n", ic_copy->index);
-        fprintf(f, "    VALUE val;\n");
-        fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && (val = ROBJECT_IVPTR(obj)[index]) != Qundef)) {\n");
-        fprintf(f, "        stack[%d] = val;\n", b->stack_size);
-        fprintf(f, "    }\n");
+        fprintf(f, "    const uint32_t index = %u;\n", (ic_copy->entry->index));
+        if (status->merge_ivar_guards_p) {
+            fprintf(f, "    VM_ASSERT(RB_TYPE_P(obj, T_OBJECT));\n");
+            fprintf(f, "    VM_ASSERT((rb_serial_t)%"PRI_SERIALT_PREFIX"u == RCLASS_SERIAL(RBASIC(obj)->klass));\n", ic_copy->entry->class_serial);
+            fprintf(f, "    VM_ASSERT(index < ROBJECT_NUMIV(obj));\n");
+            fprintf(f, "    VALUE val;\n");
+            fprintf(f, "    if (LIKELY(%s && (val = ROBJECT(obj)->as.%s) != Qundef)) {\n",
+                    status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "true" : "RB_FL_ANY_RAW(obj, ROBJECT_EMBED)",
+                    status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "heap.ivptr[index]" : "ary[index]");
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size);
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->entry->class_serial);
+            fprintf(f, "    VALUE val;\n");
+            fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && (val = ROBJECT_IVPTR(obj)[index]) != Qundef)) {\n");
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size);
+            fprintf(f, "    }\n");
+        }
         fprintf(f, "    else {\n");
         fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
         fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
@@ -383,11 +404,30 @@ switch (insn) {
         fprintf(f, "}\n");
         break;
     }
+    else if (!status->compile_info->disable_exivar_cache && ic_copy->entry) {
+        fprintf(f, "{\n");
+        fprintf(f, "    VALUE obj = GET_SELF();\n");
+        fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->entry->class_serial);
+        fprintf(f, "    const uint32_t index = %u;\n", ic_copy->entry->index);
+        fprintf(f, "    struct gen_ivtbl *ivtbl;\n");
+        fprintf(f, "    VALUE val;\n");
+        fprintf(f, "    if (LIKELY(FL_TEST_RAW(obj, FL_EXIVAR) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && rb_ivar_generic_ivtbl_lookup(obj, &ivtbl) && index < ivtbl->numiv && (val = ivtbl->ivptr[index]) != Qundef)) {\n");
+        fprintf(f, "        stack[%d] = val;\n", b->stack_size);
+        fprintf(f, "    }\n");
+        fprintf(f, "    else {\n");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto exivar_cancel;\n");
+        fprintf(f, "    }\n");
+
+        b->stack_size += attr_sp_inc_getinstancevariable(id, ic);
+        fprintf(f, "}\n");
+        break;
+    }
 }
 #endif // OPT_IC_FOR_IVAR
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(ID id) = (ID)operands[0];
         MAYBE_UNUSED(IVC ic) = (IVC)operands[1];
         if (status->local_stack_p) {
@@ -402,9 +442,10 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    ic = (IVC)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -412,7 +453,7 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        val = vm_getinstancevariable(GET_SELF(), id, ic);\n");
+        fprintf(f, "        val = vm_getinstancevariable(GET_ISEQ(), GET_SELF(), id, ic);\n");
         fprintf(f, "    }\n");
         fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_getinstancevariable(id, ic) - 1);
         fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
@@ -427,22 +468,33 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(setinstancevariable):
+  }
+  case BIN(setinstancevariable): {
 #if OPT_IC_FOR_IVAR
 {
     MAYBE_UNUSED(ID id) = (ID)operands[0];
     MAYBE_UNUSED(IVC ic) = (IVC)operands[1];
     IVC ic_copy = &(status->is_entries + ((union iseq_inline_storage_entry *)ic - body->is_entries))->iv_cache;
-    if (!status->compile_info->disable_ivar_cache && ic_copy->ic_serial) {
+    if (!status->compile_info->disable_ivar_cache && ic_copy->entry) { // Only ic_copy is enabled.
         fprintf(f, "{\n");
         fprintf(f, "    VALUE obj = GET_SELF();\n");
-        fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->ic_serial);
-        fprintf(f, "    const st_index_t index = %"PRIuSIZE";\n", ic_copy->index);
-        fprintf(f, "    VALUE val = stack[%d];\n", b->stack_size - 1);
-        fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && !RB_OBJ_FROZEN(obj))) {\n");
-        fprintf(f, "        VALUE *ptr = ROBJECT_IVPTR(obj);\n");
-        fprintf(f, "        RB_OBJ_WRITE(obj, &ptr[index], val);\n");
-        fprintf(f, "    }\n");
+        fprintf(f, "    const uint32_t index = %u;\n", (ic_copy->entry->index));
+        if (status->merge_ivar_guards_p) {
+            fprintf(f, "    VM_ASSERT(RB_TYPE_P(obj, T_OBJECT));\n");
+            fprintf(f, "    VM_ASSERT((rb_serial_t)%"PRI_SERIALT_PREFIX"u == RCLASS_SERIAL(RBASIC(obj)->klass));\n", ic_copy->entry->class_serial);
+            fprintf(f, "    VM_ASSERT(index < ROBJECT_NUMIV(obj));\n");
+            fprintf(f, "    if (LIKELY(!RB_OBJ_FROZEN_RAW(obj) && %s)) {\n", status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "true" : "RB_FL_ANY_RAW(obj, ROBJECT_EMBED)");
+            fprintf(f, "        RB_OBJ_WRITE(obj, &ROBJECT(obj)->as.%s, stack[%d]);\n",
+                    status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX ? "heap.ivptr[index]" : "ary[index]", b->stack_size - 1);
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->entry->class_serial);
+            fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && !RB_OBJ_FROZEN_RAW(obj))) {\n");
+            fprintf(f, "        VALUE *ptr = ROBJECT_IVPTR(obj);\n");
+            fprintf(f, "        RB_OBJ_WRITE(obj, &ptr[index], stack[%d]);\n", b->stack_size - 1);
+            fprintf(f, "    }\n");
+        }
         fprintf(f, "    else {\n");
         fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
         fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
@@ -457,7 +509,6 @@ switch (insn) {
 #endif // OPT_IC_FOR_IVAR
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(ID id) = (ID)operands[0];
         MAYBE_UNUSED(IVC ic) = (IVC)operands[1];
         if (status->local_stack_p) {
@@ -473,9 +524,10 @@ switch (insn) {
         fprintf(f, "    ic = (IVC)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -483,7 +535,7 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        vm_setinstancevariable(GET_SELF(), id, val, ic);\n");
+        fprintf(f, "        vm_setinstancevariable(GET_ISEQ(), GET_SELF(), id, val, ic);\n");
         fprintf(f, "    }\n");
         fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
         fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_setinstancevariable(id, ic));
@@ -497,10 +549,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(getclassvariable):
+  }
+  case BIN(getclassvariable): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(ID id) = (ID)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -511,9 +563,10 @@ switch (insn) {
         fprintf(f, "    id = (ID)0x%"PRIxVALUE";", operands[0]);
         comment_id(f, (ID)operands[0]);
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -521,7 +574,7 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        val = rb_cvar_get(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP()), id);\n");
+        fprintf(f, "        val = rb_cvar_get(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP(), 1), id);\n");
         fprintf(f, "    }\n");
         fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_getclassvariable(id) - 1);
         fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
@@ -536,10 +589,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(setclassvariable):
+  }
+  case BIN(setclassvariable): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(ID id) = (ID)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -551,9 +604,10 @@ switch (insn) {
         comment_id(f, (ID)operands[0]);
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -562,7 +616,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        vm_ensure_not_refinement_module(GET_SELF());\n");
-        fprintf(f, "        rb_cvar_set(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP()), id, val);\n");
+        fprintf(f, "        rb_cvar_set(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP(), 1), id, val);\n");
         fprintf(f, "    }\n");
         fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
         fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_setclassvariable(id));
@@ -576,10 +630,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(getconstant):
+  }
+  case BIN(getconstant): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(ID id) = (ID)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -592,9 +646,10 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    klass = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    allow_nil = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -617,10 +672,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(setconstant):
+  }
+  case BIN(setconstant): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(ID id) = (ID)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -633,9 +688,10 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    cbase = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -659,22 +715,24 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(getglobal):
+  }
+  case BIN(getglobal): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
-        MAYBE_UNUSED(GENTRY entry) = (GENTRY)operands[0];
+        MAYBE_UNUSED(ID gid) = (ID)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
         }
-        fprintf(f, "    MAYBE_UNUSED(GENTRY) entry;\n");
+        fprintf(f, "    MAYBE_UNUSED(ID) gid;\n");
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
-        fprintf(f, "    entry = (GENTRY)0x%"PRIxVALUE";", operands[0]);
+        fprintf(f, "    gid = (ID)0x%"PRIxVALUE";", operands[0]);
+        comment_id(f, (ID)operands[0]);
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -682,39 +740,40 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        struct rb_global_entry *gentry = (void *)entry;\n");
-        fprintf(f, "        val = rb_gvar_get(gentry);\n");
+        fprintf(f, "        val = rb_gvar_get(gid);\n");
         fprintf(f, "    }\n");
-        fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_getglobal(entry) - 1);
+        fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_getglobal(gid) - 1);
         fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_getglobal(entry));
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_getglobal(gid));
         if (!pc_moved_p) {
             fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
         }
         fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
         fprintf(f, "        goto cancel;\n");
         fprintf(f, "    }\n");
-        b->stack_size += attr_sp_inc_getglobal(entry);
+        b->stack_size += attr_sp_inc_getglobal(gid);
     }
     fprintf(f, "}\n");
     break;
-  case BIN(setglobal):
+  }
+  case BIN(setglobal): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
-        MAYBE_UNUSED(GENTRY entry) = (GENTRY)operands[0];
+        MAYBE_UNUSED(ID gid) = (ID)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
         }
-        fprintf(f, "    MAYBE_UNUSED(GENTRY) entry;\n");
+        fprintf(f, "    MAYBE_UNUSED(ID) gid;\n");
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
-        fprintf(f, "    entry = (GENTRY)0x%"PRIxVALUE";", operands[0]);
+        fprintf(f, "    gid = (ID)0x%"PRIxVALUE";", operands[0]);
+        comment_id(f, (ID)operands[0]);
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -722,33 +781,33 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        struct rb_global_entry *gentry = (void *)entry;\n");
-        fprintf(f, "        rb_gvar_set(gentry, val);\n");
+        fprintf(f, "        rb_gvar_set(gid, val);\n");
         fprintf(f, "    }\n");
         fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_setglobal(entry));
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_setglobal(gid));
         if (!pc_moved_p) {
             fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
         }
         fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
         fprintf(f, "        goto cancel;\n");
         fprintf(f, "    }\n");
-        b->stack_size += attr_sp_inc_setglobal(entry);
+        b->stack_size += attr_sp_inc_setglobal(gid);
     }
     fprintf(f, "}\n");
     break;
-  case BIN(putnil):
+  }
+  case BIN(putnil): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
         }
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -763,18 +822,19 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(putself):
+  }
+  case BIN(putself): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
         }
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -789,10 +849,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(putobject):
+  }
+  case BIN(putobject): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(VALUE val) = (VALUE)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -802,9 +862,10 @@ switch (insn) {
         fprintf(f, "    val = (VALUE)0x%"PRIxVALUE";", operands[0]);
         if (SYMBOL_P((VALUE)operands[0])) comment_id(f, SYM2ID((VALUE)operands[0]));
         fprintf(f, "\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -819,10 +880,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(putspecialobject):
+  }
+  case BIN(putspecialobject): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(rb_num_t value_type) = (rb_num_t)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -832,9 +893,10 @@ switch (insn) {
 
         fprintf(f, "    value_type = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -852,10 +914,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(putstring):
+  }
+  case BIN(putstring): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(VALUE str) = (VALUE)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -865,9 +927,10 @@ switch (insn) {
         fprintf(f, "    str = (VALUE)0x%"PRIxVALUE";", operands[0]);
         if (SYMBOL_P((VALUE)operands[0])) comment_id(f, SYM2ID((VALUE)operands[0]));
         fprintf(f, "\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -875,17 +938,17 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        val = rb_str_resurrect(str);\n");
+        fprintf(f, "        val = rb_ec_str_resurrect(ec, str);\n");
         fprintf(f, "    }\n");
         fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_putstring(str) - 1);
         b->stack_size += attr_sp_inc_putstring(str);
     }
     fprintf(f, "}\n");
     break;
-  case BIN(concatstrings):
+  }
+  case BIN(concatstrings): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(rb_num_t num) = (rb_num_t)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -895,9 +958,10 @@ switch (insn) {
 
         fprintf(f, "    num = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -906,7 +970,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        val = rb_str_concat_literals(num, %s);\n",
-                (status->local_stack_p ? "stack + (stack_size - (num))" : "STACK_ADDR_FROM_TOP(num)"));
+                (status->local_stack_p ? "(stack + (stack_size - (num)))" : "STACK_ADDR_FROM_TOP(num)"));
         fprintf(f, "    }\n");
         fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_concatstrings(num) - 1);
         fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
@@ -921,10 +985,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(tostring):
+  }
+  case BIN(tostring): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
         }
@@ -932,9 +996,10 @@ switch (insn) {
 
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    str = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -949,41 +1014,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(freezestring):
+  }
+  case BIN(toregexp): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
-        MAYBE_UNUSED(VALUE debug_info) = (VALUE)operands[0];
-        if (status->local_stack_p) {
-            fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-        }
-        fprintf(f, "    MAYBE_UNUSED(VALUE) debug_info, str;\n");
-
-        fprintf(f, "    debug_info = (VALUE)0x%"PRIxVALUE";", operands[0]);
-        if (SYMBOL_P((VALUE)operands[0])) comment_id(f, SYM2ID((VALUE)operands[0]));
-        fprintf(f, "\n");
-        fprintf(f, "    str = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
-            fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
-        }
-        if (status->local_stack_p) {
-        }
-        else {
-            fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-        }
-        fprintf(f, "    {\n");
-        fprintf(f, "        vm_freezestring(str, debug_info);\n");
-        fprintf(f, "    }\n");
-        fprintf(f, "    stack[%d] = str;\n", b->stack_size + (int)attr_sp_inc_freezestring(debug_info) - 1);
-        b->stack_size += attr_sp_inc_freezestring(debug_info);
-    }
-    fprintf(f, "}\n");
-    break;
-  case BIN(toregexp):
-    fprintf(f, "{\n");
-    {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(rb_num_t opt) = (rb_num_t)operands[0];
         MAYBE_UNUSED(rb_num_t cnt) = (rb_num_t)operands[1];
         if (status->local_stack_p) {
@@ -996,9 +1030,10 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    cnt = (rb_num_t)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1007,7 +1042,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        const VALUE ary = rb_ary_tmp_new_from_values(0, cnt, %s);\n",
-                (status->local_stack_p ? "stack + (stack_size - (cnt))" : "STACK_ADDR_FROM_TOP(cnt)"));
+                (status->local_stack_p ? "(stack + (stack_size - (cnt)))" : "STACK_ADDR_FROM_TOP(cnt)"));
         fprintf(f, "        val = rb_reg_new_ary(ary, (int)opt);\n");
         fprintf(f, "        rb_ary_clear(ary);\n");
         fprintf(f, "    }\n");
@@ -1024,19 +1059,20 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(intern):
+  }
+  case BIN(intern): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
         }
         fprintf(f, "    MAYBE_UNUSED(VALUE) str, sym;\n");
 
         fprintf(f, "    str = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1051,10 +1087,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(newarray):
+  }
+  case BIN(newarray): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(rb_num_t num) = (rb_num_t)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -1064,9 +1100,10 @@ switch (insn) {
 
         fprintf(f, "    num = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1074,18 +1111,18 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        val = rb_ary_new4(num, %s);\n",
-                (status->local_stack_p ? "stack + (stack_size - (num))" : "STACK_ADDR_FROM_TOP(num)"));
+        fprintf(f, "        val = rb_ec_ary_new_from_values(ec, num, %s);\n",
+                (status->local_stack_p ? "(stack + (stack_size - (num)))" : "STACK_ADDR_FROM_TOP(num)"));
         fprintf(f, "    }\n");
         fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_newarray(num) - 1);
         b->stack_size += attr_sp_inc_newarray(num);
     }
     fprintf(f, "}\n");
     break;
-  case BIN(newarraykwsplat):
+  }
+  case BIN(newarraykwsplat): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(rb_num_t num) = (rb_num_t)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -1095,9 +1132,10 @@ switch (insn) {
 
         fprintf(f, "    num = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1106,13 +1144,13 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        if (RHASH_EMPTY_P(*%s)) {\n",
-                (status->local_stack_p ? "stack + (stack_size - (1))" : "STACK_ADDR_FROM_TOP(1)"));
+                (status->local_stack_p ? "(stack + (stack_size - (1)))" : "STACK_ADDR_FROM_TOP(1)"));
         fprintf(f, "            val = rb_ary_new4(num-1, %s);\n",
-                (status->local_stack_p ? "stack + (stack_size - (num))" : "STACK_ADDR_FROM_TOP(num)"));
+                (status->local_stack_p ? "(stack + (stack_size - (num)))" : "STACK_ADDR_FROM_TOP(num)"));
         fprintf(f, "        }\n");
         fprintf(f, "        else {\n");
         fprintf(f, "            val = rb_ary_new4(num, %s);\n",
-                (status->local_stack_p ? "stack + (stack_size - (num))" : "STACK_ADDR_FROM_TOP(num)"));
+                (status->local_stack_p ? "(stack + (stack_size - (num)))" : "STACK_ADDR_FROM_TOP(num)"));
         fprintf(f, "        }\n");
         fprintf(f, "    }\n");
         fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_newarraykwsplat(num) - 1);
@@ -1120,10 +1158,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(duparray):
+  }
+  case BIN(duparray): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(VALUE ary) = (VALUE)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -1133,9 +1171,10 @@ switch (insn) {
         fprintf(f, "    ary = (VALUE)0x%"PRIxVALUE";", operands[0]);
         if (SYMBOL_P((VALUE)operands[0])) comment_id(f, SYM2ID((VALUE)operands[0]));
         fprintf(f, "\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1151,10 +1190,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(duphash):
+  }
+  case BIN(duphash): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(VALUE hash) = (VALUE)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -1164,9 +1203,10 @@ switch (insn) {
         fprintf(f, "    hash = (VALUE)0x%"PRIxVALUE";", operands[0]);
         if (SYMBOL_P((VALUE)operands[0])) comment_id(f, SYM2ID((VALUE)operands[0]));
         fprintf(f, "\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1182,10 +1222,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(expandarray):
+  }
+  case BIN(expandarray): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(rb_num_t num) = (rb_num_t)operands[0];
         MAYBE_UNUSED(rb_num_t flag) = (rb_num_t)operands[1];
         if (status->local_stack_p) {
@@ -1199,9 +1239,10 @@ switch (insn) {
         fprintf(f, "    flag = (rb_num_t)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         fprintf(f, "    ary = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1223,10 +1264,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(concatarray):
+  }
+  case BIN(concatarray): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
         }
@@ -1234,9 +1275,10 @@ switch (insn) {
 
         fprintf(f, "    ary1 = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    ary2 = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1259,10 +1301,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(splatarray):
+  }
+  case BIN(splatarray): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(VALUE flag) = (VALUE)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -1273,9 +1315,10 @@ switch (insn) {
         if (SYMBOL_P((VALUE)operands[0])) comment_id(f, SYM2ID((VALUE)operands[0]));
         fprintf(f, "\n");
         fprintf(f, "    ary = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1298,10 +1341,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(newhash):
+  }
+  case BIN(newhash): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(rb_num_t num) = (rb_num_t)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -1311,9 +1354,10 @@ switch (insn) {
 
         fprintf(f, "    num = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1327,7 +1371,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "        if (num) {\n");
         fprintf(f, "            rb_hash_bulk_insert(num, %s, val);\n",
-                (status->local_stack_p ? "stack + (stack_size - (num))" : "STACK_ADDR_FROM_TOP(num)"));
+                (status->local_stack_p ? "(stack + (stack_size - (num)))" : "STACK_ADDR_FROM_TOP(num)"));
         fprintf(f, "        }\n");
         fprintf(f, "    }\n");
         fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_newhash(num) - 1);
@@ -1343,10 +1387,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(newrange):
+  }
+  case BIN(newrange): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(rb_num_t flag) = (rb_num_t)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -1358,9 +1402,10 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    low = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    high = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1383,19 +1428,20 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(pop):
+  }
+  case BIN(pop): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
         }
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1410,19 +1456,20 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(dup):
+  }
+  case BIN(dup): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
         }
         fprintf(f, "    MAYBE_UNUSED(VALUE) val, val1, val2;\n");
 
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1438,10 +1485,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(dupn):
+  }
+  case BIN(dupn): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(rb_num_t n) = (rb_num_t)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -1450,9 +1497,10 @@ switch (insn) {
 
         fprintf(f, "    n = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1462,7 +1510,7 @@ switch (insn) {
         fprintf(f, "    {\n");
         fprintf(f, "        void *dst = %s;\n", (status->local_stack_p ? "(stack + stack_size)" : "GET_SP()"));
         fprintf(f, "        void *src = %s;\n",
-                (status->local_stack_p ? "stack + (stack_size - (n))" : "STACK_ADDR_FROM_TOP(n)"));
+                (status->local_stack_p ? "(stack + (stack_size - (n)))" : "STACK_ADDR_FROM_TOP(n)"));
         fprintf(f, "\n");
         fprintf(f, "        MEMCPY(dst, src, VALUE, n);\n");
         fprintf(f, "    }\n");
@@ -1470,10 +1518,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(swap):
+  }
+  case BIN(swap): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
         }
@@ -1481,9 +1529,10 @@ switch (insn) {
 
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1499,10 +1548,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(reverse):
+  }
+  case BIN(reverse): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(rb_num_t n) = (rb_num_t)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -1511,9 +1560,10 @@ switch (insn) {
 
         fprintf(f, "    n = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1523,7 +1573,7 @@ switch (insn) {
         fprintf(f, "    {\n");
         fprintf(f, "        rb_num_t i;\n");
         fprintf(f, "        VALUE *sp = %s;\n",
-                (status->local_stack_p ? "stack + (stack_size - (n))" : "STACK_ADDR_FROM_TOP(n)"));
+                (status->local_stack_p ? "(stack + (stack_size - (n)))" : "STACK_ADDR_FROM_TOP(n)"));
         fprintf(f, "\n");
         fprintf(f, "        for (i=0; i<n/2; i++) {\n");
         fprintf(f, "            VALUE v0 = sp[i];\n");
@@ -1538,10 +1588,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(topn):
+  }
+  case BIN(topn): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(rb_num_t n) = (rb_num_t)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -1551,9 +1601,10 @@ switch (insn) {
 
         fprintf(f, "    n = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1569,10 +1620,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(setn):
+  }
+  case BIN(setn): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(rb_num_t n) = (rb_num_t)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -1583,9 +1634,10 @@ switch (insn) {
         fprintf(f, "    n = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1601,10 +1653,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(adjuststack):
+  }
+  case BIN(adjuststack): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(rb_num_t n) = (rb_num_t)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -1613,9 +1665,10 @@ switch (insn) {
 
         fprintf(f, "    n = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1629,10 +1682,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(defined):
+  }
+  case BIN(defined): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(rb_num_t op_type) = (rb_num_t)operands[0];
         MAYBE_UNUSED(VALUE obj) = (VALUE)operands[1];
         MAYBE_UNUSED(VALUE needstr) = (VALUE)operands[2];
@@ -1651,9 +1704,10 @@ switch (insn) {
         if (SYMBOL_P((VALUE)operands[2])) comment_id(f, SYM2ID((VALUE)operands[2]));
         fprintf(f, "\n");
         fprintf(f, "    v = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1676,10 +1730,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(checkmatch):
+  }
+  case BIN(checkmatch): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(rb_num_t flag) = (rb_num_t)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -1691,9 +1745,10 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    target = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    pattern = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1716,10 +1771,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(checkkeyword):
+  }
+  case BIN(checkkeyword): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(lindex_t kw_bits_index) = (lindex_t)operands[0];
         MAYBE_UNUSED(lindex_t keyword_index) = (lindex_t)operands[1];
         if (status->local_stack_p) {
@@ -1732,9 +1787,10 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    keyword_index = (lindex_t)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1749,10 +1805,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(checktype):
+  }
+  case BIN(checktype): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(rb_num_t type) = (rb_num_t)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -1763,9 +1819,10 @@ switch (insn) {
         fprintf(f, "    type = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -1780,10 +1837,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(definemethod):
+  }
+  case BIN(definemethod): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(ID id) = (ID)operands[0];
         MAYBE_UNUSED(ISEQ iseq) = (ISEQ)operands[1];
         if (status->local_stack_p) {
@@ -1797,9 +1854,10 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    iseq = (ISEQ)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -1829,10 +1887,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(definesmethod):
+  }
+  case BIN(definesmethod): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(ID id) = (ID)operands[0];
         MAYBE_UNUSED(ISEQ iseq) = (ISEQ)operands[1];
         if (status->local_stack_p) {
@@ -1848,9 +1906,10 @@ switch (insn) {
         fprintf(f, "    iseq = (ISEQ)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -1880,37 +1939,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(send):
+  }
+  case BIN(send): {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     MAYBE_UNUSED(ISEQ blockiseq) = (ISEQ)operands[1];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
-        argc += ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0); // simulate `vm_caller_setup_arg_block`'s `--reg_cfp->sp`
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -1926,60 +1992,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = vm_caller_setup_arg_block(ec, reg_cfp, (CALL_INFO)0x%"PRIxVALUE", (rb_iseq_t *)0x%"PRIxVALUE", FALSE);\n", (VALUE)ci, (VALUE)blockiseq);
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = vm_caller_setup_arg_block(ec, reg_cfp, (const struct rb_callinfo *)0x%"PRIxVALUE", (rb_iseq_t *)0x%"PRIxVALUE", FALSE);\n", (VALUE)ci, (VALUE)blockiseq);
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_send(cd, blockiseq));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_send(cd, blockiseq);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_send(cd, blockiseq));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_send(cd, blockiseq);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         MAYBE_UNUSED(ISEQ blockiseq) = (ISEQ)operands[1];
         if (status->local_stack_p) {
@@ -1990,13 +2058,14 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    blockiseq = (ISEQ)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -2012,8 +2081,8 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), &cd->ci, blockiseq, false);\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -2038,35 +2107,43 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_send_without_block):
+  }
+  case BIN(opt_send_without_block): {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -2082,60 +2159,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -2144,11 +2223,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -2165,7 +2245,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -2190,10 +2270,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_str_freeze):
+  }
+  case BIN(opt_str_freeze): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(VALUE str) = (VALUE)operands[0];
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[1];
         if (status->local_stack_p) {
@@ -2206,11 +2286,12 @@ switch (insn) {
         if (SYMBOL_P((VALUE)operands[0])) comment_id(f, SYM2ID((VALUE)operands[0]));
         fprintf(f, "\n");
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[1]);
-        comment_id(f, ((CALL_DATA)operands[1])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[1])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -2235,36 +2316,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_nil_p):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_nil_p): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_nil_p))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -2280,60 +2369,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -2342,11 +2433,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -2363,7 +2455,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -2387,11 +2479,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -2400,12 +2491,13 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) recv, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -2413,7 +2505,7 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        val = vm_opt_nil_p(cd, recv);\n");
+        fprintf(f, "        val = vm_opt_nil_p(GET_ISEQ(), cd, recv);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         if (status->local_stack_p) {
@@ -2429,10 +2521,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_str_uminus):
+  }
+  case BIN(opt_str_uminus): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(VALUE str) = (VALUE)operands[0];
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[1];
         if (status->local_stack_p) {
@@ -2445,11 +2537,12 @@ switch (insn) {
         if (SYMBOL_P((VALUE)operands[0])) comment_id(f, SYM2ID((VALUE)operands[0]));
         fprintf(f, "\n");
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[1]);
-        comment_id(f, ((CALL_DATA)operands[1])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[1])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -2474,10 +2567,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_newarray_max):
+  }
+  case BIN(opt_newarray_max): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(rb_num_t num) = (rb_num_t)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -2487,9 +2580,10 @@ switch (insn) {
 
         fprintf(f, "    num = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -2498,7 +2592,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        val = vm_opt_newarray_max(num, %s);\n",
-                (status->local_stack_p ? "stack + (stack_size - (num))" : "STACK_ADDR_FROM_TOP(num)"));
+                (status->local_stack_p ? "(stack + (stack_size - (num)))" : "STACK_ADDR_FROM_TOP(num)"));
         fprintf(f, "    }\n");
         fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_opt_newarray_max(num) - 1);
         fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
@@ -2513,10 +2607,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_newarray_min):
+  }
+  case BIN(opt_newarray_min): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(rb_num_t num) = (rb_num_t)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -2526,9 +2620,10 @@ switch (insn) {
 
         fprintf(f, "    num = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -2537,7 +2632,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        val = vm_opt_newarray_min(num, %s);\n",
-                (status->local_stack_p ? "stack + (stack_size - (num))" : "STACK_ADDR_FROM_TOP(num)"));
+                (status->local_stack_p ? "(stack + (stack_size - (num)))" : "STACK_ADDR_FROM_TOP(num)"));
         fprintf(f, "    }\n");
         fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_opt_newarray_min(num) - 1);
         fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
@@ -2552,10 +2647,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(invokesuper):
+  }
+  case BIN(invokesuper): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         MAYBE_UNUSED(ISEQ blockiseq) = (ISEQ)operands[1];
         if (status->local_stack_p) {
@@ -2566,13 +2661,14 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    blockiseq = (ISEQ)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -2588,8 +2684,8 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), &cd->ci, blockiseq, true);\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_super_method);\n");
+        fprintf(f, "        VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -2614,10 +2710,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(invokeblock):
+  }
+  case BIN(invokeblock): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -2626,11 +2722,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -2646,12 +2743,8 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        if (UNLIKELY(cd->cc.call != vm_invokeblock_i)) {\n");
-        fprintf(f, "            cd->cc.call = vm_invokeblock_i; // check before setting to avoid CoW\n");
-        fprintf(f, "        }\n");
-        fprintf(f, "\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_invokeblock);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_invokeblock);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -2676,29 +2769,37 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(leave):
-      if (b->stack_size != 1) {
-          if (mjit_opts.warnings || mjit_opts.verbose)
-              fprintf(stderr, "MJIT warning: Unexpected JIT stack_size on leave: %d\n", b->stack_size);
-          status->success = false;
-      }
-      if (status->inlined_iseqs == NULL) { // the current ISeq is being inlined
-          fprintf(f, "    return stack[0];\n");
-          b->stack_size += attr_sp_inc_leave();
-          break;
-      }
+  }
+  case BIN(leave): {
+    if (b->stack_size != 1) {
+        if (mjit_opts.warnings || mjit_opts.verbose)
+            fprintf(stderr, "MJIT warning: Unexpected JIT stack_size on leave: %d\n", b->stack_size);
+        status->success = false;
+    }
+    if (status->inlined_iseqs != NULL) { // the current ISeq is NOT being inlined
+        fprintf(f, "    if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {\n");
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);\n");
+        fprintf(f, "    }\n");
+        fprintf(f, "    ec->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(reg_cfp);\n"); // vm_pop_frame
+    }
+    fprintf(f, "    return stack[0];\n");
+    b->stack_size += attr_sp_inc_leave();
+    b->finish_p = TRUE;
+    break;
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
         }
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -2752,10 +2853,10 @@ switch (insn) {
     fprintf(f, "}\n");
     b->finish_p = TRUE;
     break;
-  case BIN(throw):
+  }
+  case BIN(throw): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(rb_num_t throw_state) = (rb_num_t)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -2766,9 +2867,10 @@ switch (insn) {
         fprintf(f, "    throw_state = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         fprintf(f, "    throwobj = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -2794,10 +2896,10 @@ switch (insn) {
     fprintf(f, "}\n");
     b->finish_p = TRUE;
     break;
-  case BIN(jump):
+  }
+  case BIN(jump): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(OFFSET dst) = (OFFSET)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -2806,9 +2908,10 @@ switch (insn) {
 
         fprintf(f, "    dst = (OFFSET)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -2816,26 +2919,26 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        RUBY_VM_CHECK_INTS(ec);\n");
+        fprintf(f, "            if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {\n");
+        fprintf(f, "                reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
+        fprintf(f, "                rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);\n");
+        fprintf(f, "                if (UNLIKELY(!mjit_call_p)) {\n");
+        fprintf(f, "                    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "                    RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+        fprintf(f, "                    goto cancel;\n");
+        fprintf(f, "                }\n");
+        fprintf(f, "            }\n");
         next_pos = pos + insn_len(insn) + (unsigned int)dst;
         fprintf(f, "            goto label_%d;\n", next_pos);
-        fprintf(f, "    }\n");
-        fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_jump(dst));
-        if (!pc_moved_p) {
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-        }
-        fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-        fprintf(f, "        goto cancel;\n");
         fprintf(f, "    }\n");
         b->stack_size += attr_sp_inc_jump(dst);
     }
     fprintf(f, "}\n");
     break;
-  case BIN(branchif):
+  }
+  case BIN(branchif): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(OFFSET dst) = (OFFSET)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -2846,9 +2949,10 @@ switch (insn) {
         fprintf(f, "    dst = (OFFSET)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -2857,18 +2961,18 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        if (RTEST(val)) {\n");
-        fprintf(f, "            RUBY_VM_CHECK_INTS(ec);\n");
+        fprintf(f, "            if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {\n");
+        fprintf(f, "                reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
+        fprintf(f, "                rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);\n");
+        fprintf(f, "                if (UNLIKELY(!mjit_call_p)) {\n");
+        fprintf(f, "                    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "                    RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+        fprintf(f, "                    goto cancel;\n");
+        fprintf(f, "                }\n");
+        fprintf(f, "            }\n");
         next_pos = pos + insn_len(insn) + (unsigned int)dst;
         fprintf(f, "            goto label_%d;\n", next_pos);
         fprintf(f, "        }\n");
-        fprintf(f, "    }\n");
-        fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_branchif(dst));
-        if (!pc_moved_p) {
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-        }
-        fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-        fprintf(f, "        goto cancel;\n");
         fprintf(f, "    }\n");
         b->stack_size += attr_sp_inc_branchif(dst);
     }
@@ -2880,10 +2984,10 @@ switch (insn) {
         compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
     }
     break;
-  case BIN(branchunless):
+  }
+  case BIN(branchunless): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(OFFSET dst) = (OFFSET)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -2894,9 +2998,10 @@ switch (insn) {
         fprintf(f, "    dst = (OFFSET)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -2905,18 +3010,18 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        if (!RTEST(val)) {\n");
-        fprintf(f, "            RUBY_VM_CHECK_INTS(ec);\n");
+        fprintf(f, "            if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {\n");
+        fprintf(f, "                reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
+        fprintf(f, "                rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);\n");
+        fprintf(f, "                if (UNLIKELY(!mjit_call_p)) {\n");
+        fprintf(f, "                    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "                    RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+        fprintf(f, "                    goto cancel;\n");
+        fprintf(f, "                }\n");
+        fprintf(f, "            }\n");
         next_pos = pos + insn_len(insn) + (unsigned int)dst;
         fprintf(f, "            goto label_%d;\n", next_pos);
         fprintf(f, "        }\n");
-        fprintf(f, "    }\n");
-        fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_branchunless(dst));
-        if (!pc_moved_p) {
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-        }
-        fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-        fprintf(f, "        goto cancel;\n");
         fprintf(f, "    }\n");
         b->stack_size += attr_sp_inc_branchunless(dst);
     }
@@ -2928,10 +3033,10 @@ switch (insn) {
         compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
     }
     break;
-  case BIN(branchnil):
+  }
+  case BIN(branchnil): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(OFFSET dst) = (OFFSET)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -2942,9 +3047,10 @@ switch (insn) {
         fprintf(f, "    dst = (OFFSET)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -2953,18 +3059,18 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        if (NIL_P(val)) {\n");
-        fprintf(f, "            RUBY_VM_CHECK_INTS(ec);\n");
+        fprintf(f, "            if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {\n");
+        fprintf(f, "                reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
+        fprintf(f, "                rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);\n");
+        fprintf(f, "                if (UNLIKELY(!mjit_call_p)) {\n");
+        fprintf(f, "                    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "                    RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+        fprintf(f, "                    goto cancel;\n");
+        fprintf(f, "                }\n");
+        fprintf(f, "            }\n");
         next_pos = pos + insn_len(insn) + (unsigned int)dst;
         fprintf(f, "            goto label_%d;\n", next_pos);
         fprintf(f, "        }\n");
-        fprintf(f, "    }\n");
-        fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_branchnil(dst));
-        if (!pc_moved_p) {
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-        }
-        fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-        fprintf(f, "        goto cancel;\n");
         fprintf(f, "    }\n");
         b->stack_size += attr_sp_inc_branchnil(dst);
     }
@@ -2976,10 +3082,28 @@ switch (insn) {
         compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
     }
     break;
-  case BIN(opt_getinlinecache):
+  }
+  case BIN(opt_getinlinecache): {
+    OFFSET dst = (OFFSET)operands[0];
+    IC ic = (IC)operands[1];
+
+    struct iseq_inline_constant_cache_entry *ice = ic->entry;
+    if (ice != NULL && ice->ic_serial && !status->compile_info->disable_const_cache) {
+        fprintf(f, "    if (vm_inlined_ic_hit_p(0x%"PRIxVALUE", 0x%"PRIxVALUE", (const rb_cref_t *)0x%"PRIxVALUE", %"PRI_SERIALT_PREFIX"u, reg_cfp->ep)) {", ice->flags, ice->value, (VALUE)ice->ic_cref, ice->ic_serial);
+        fprintf(f, "        stack[%d] = 0x%"PRIxVALUE";\n", b->stack_size, ice->value);
+        fprintf(f, "        goto label_%d;\n", pos + insn_len(insn) + (int)dst);
+        fprintf(f, "    }");
+        fprintf(f, "    else {");
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        goto const_cancel;\n");
+        fprintf(f, "    }");
+
+        b->stack_size += attr_sp_inc_opt_getinlinecache(dst, ic);
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(OFFSET dst) = (OFFSET)operands[0];
         MAYBE_UNUSED(IC ic) = (IC)operands[1];
         if (status->local_stack_p) {
@@ -2993,9 +3117,10 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    ic = (IC)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -3003,8 +3128,9 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        if (vm_ic_hit_p(ic, GET_EP())) {\n");
-        fprintf(f, "            val = ic->value;\n");
+        fprintf(f, "        struct iseq_inline_constant_cache_entry *ice = ic->entry;\n");
+        fprintf(f, "        if (ice && vm_ic_hit_p(ice, GET_EP())) {\n");
+        fprintf(f, "            val = ice->value;\n");
         fprintf(f, "            stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_opt_getinlinecache(dst, ic) - 1);
         next_pos = pos + insn_len(insn) + (unsigned int)dst;
         fprintf(f, "            goto label_%d;\n", next_pos);
@@ -3024,10 +3150,10 @@ switch (insn) {
         compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
     }
     break;
-  case BIN(opt_setinlinecache):
+  }
+  case BIN(opt_setinlinecache): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(IC ic) = (IC)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -3038,9 +3164,10 @@ switch (insn) {
         fprintf(f, "    ic = (IC)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -3048,17 +3175,17 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        vm_ic_update(ic, val, GET_EP());\n");
+        fprintf(f, "        vm_ic_update(GET_ISEQ(), ic, val, GET_EP());\n");
         fprintf(f, "    }\n");
         fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_opt_setinlinecache(ic) - 1);
         b->stack_size += attr_sp_inc_opt_setinlinecache(ic);
     }
     fprintf(f, "}\n");
     break;
-  case BIN(once):
+  }
+  case BIN(once): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(ISEQ iseq) = (ISEQ)operands[0];
         MAYBE_UNUSED(ISE ise) = (ISE)operands[1];
         if (status->local_stack_p) {
@@ -3072,9 +3199,10 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    ise = (ISE)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -3105,10 +3233,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_case_dispatch):
+  }
+  case BIN(opt_case_dispatch): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CDHASH hash) = (CDHASH)operands[0];
         MAYBE_UNUSED(OFFSET else_offset) = (OFFSET)operands[1];
         if (status->local_stack_p) {
@@ -3123,9 +3251,10 @@ switch (insn) {
         fprintf(f, "    else_offset = (OFFSET)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         fprintf(f, "    key = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -3160,36 +3289,44 @@ switch (insn) {
         compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
     }
     break;
-  case BIN(opt_plus):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_plus): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_plus))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -3205,60 +3342,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -3267,11 +3406,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -3288,7 +3428,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -3312,11 +3452,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -3325,13 +3464,14 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) obj, recv, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -3355,36 +3495,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_minus):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_minus): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_minus))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -3400,60 +3548,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -3462,11 +3612,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -3483,7 +3634,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -3507,11 +3658,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -3520,13 +3670,14 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) obj, recv, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -3550,36 +3701,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_mult):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_mult): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_mult))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -3595,60 +3754,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -3657,11 +3818,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -3678,7 +3840,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -3702,11 +3864,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -3715,13 +3876,14 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) obj, recv, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -3745,36 +3907,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_div):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_div): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_div))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -3790,60 +3960,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -3852,11 +4024,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -3873,7 +4046,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -3897,11 +4070,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -3910,13 +4082,14 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) obj, recv, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -3948,36 +4121,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_mod):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_mod): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_mod))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -3993,60 +4174,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -4055,11 +4238,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -4076,7 +4260,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -4100,11 +4284,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -4113,13 +4296,14 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) obj, recv, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -4151,36 +4335,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_eq):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_eq): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_eq))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -4196,60 +4388,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -4258,11 +4452,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -4279,7 +4474,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -4303,11 +4498,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -4316,13 +4510,14 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) obj, recv, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -4330,7 +4525,7 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        val = opt_eq_func(recv, obj, cd);\n");
+        fprintf(f, "        val = opt_equality(GET_ISEQ(), recv, obj, cd);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         if (status->local_stack_p) {
@@ -4346,10 +4541,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_neq):
+  }
+  case BIN(opt_neq): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd_eq) = (CALL_DATA)operands[0];
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[1];
         if (status->local_stack_p) {
@@ -4359,16 +4554,17 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) obj, recv, val;\n");
 
         fprintf(f, "    cd_eq = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[1]);
-        comment_id(f, ((CALL_DATA)operands[1])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[1])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -4376,7 +4572,7 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        val = vm_opt_neq(cd, cd_eq, recv, obj);\n");
+        fprintf(f, "        val = vm_opt_neq(GET_ISEQ(), cd, cd_eq, recv, obj);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         if (status->local_stack_p) {
@@ -4392,36 +4588,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_lt):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_lt): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_lt))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -4437,60 +4641,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -4499,11 +4705,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -4520,7 +4727,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -4544,11 +4751,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -4557,13 +4763,14 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) obj, recv, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -4587,36 +4794,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_le):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_le): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_le))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -4632,60 +4847,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -4694,11 +4911,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -4715,7 +4933,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -4739,11 +4957,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -4752,13 +4969,14 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) obj, recv, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -4782,36 +5000,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_gt):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_gt): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_gt))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -4827,60 +5053,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -4889,11 +5117,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -4910,7 +5139,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -4934,11 +5163,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -4947,13 +5175,14 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) obj, recv, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -4977,36 +5206,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_ge):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_ge): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_ge))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -5022,60 +5259,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -5084,11 +5323,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -5105,7 +5345,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -5129,11 +5369,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -5142,13 +5381,14 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) obj, recv, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -5172,36 +5412,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_ltlt):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_ltlt): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_ltlt))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -5217,60 +5465,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -5279,11 +5529,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -5300,7 +5551,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -5324,11 +5575,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -5337,13 +5587,14 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) obj, recv, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -5375,36 +5626,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_and):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_and): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_and))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -5420,60 +5679,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -5482,11 +5743,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -5503,7 +5765,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -5527,11 +5789,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -5540,13 +5801,14 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) obj, recv, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -5570,36 +5832,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_or):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_or): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_or))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -5615,60 +5885,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -5677,11 +5949,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -5698,7 +5971,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -5722,11 +5995,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -5735,13 +6007,14 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) obj, recv, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -5765,36 +6038,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_aref):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_aref): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_aref))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -5810,60 +6091,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -5872,11 +6155,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -5893,7 +6177,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -5917,11 +6201,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -5930,13 +6213,14 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) obj, recv, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -5968,36 +6252,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_aset):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_aset): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_aset))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -6013,60 +6305,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -6075,11 +6369,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -6096,7 +6391,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -6120,11 +6415,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -6133,14 +6427,15 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) obj, recv, set, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 3);
         fprintf(f, "    obj = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    set = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -6172,10 +6467,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_aset_with):
+  }
+  case BIN(opt_aset_with): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(VALUE key) = (VALUE)operands[0];
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[1];
         if (status->local_stack_p) {
@@ -6188,13 +6483,14 @@ switch (insn) {
         if (SYMBOL_P((VALUE)operands[0])) comment_id(f, SYM2ID((VALUE)operands[0]));
         fprintf(f, "\n");
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[1]);
-        comment_id(f, ((CALL_DATA)operands[1])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[1])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -6234,10 +6530,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_aref_with):
+  }
+  case BIN(opt_aref_with): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(VALUE key) = (VALUE)operands[0];
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[1];
         if (status->local_stack_p) {
@@ -6250,12 +6546,13 @@ switch (insn) {
         if (SYMBOL_P((VALUE)operands[0])) comment_id(f, SYM2ID((VALUE)operands[0]));
         fprintf(f, "\n");
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[1]);
-        comment_id(f, ((CALL_DATA)operands[1])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[1])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -6290,36 +6587,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_length):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_length): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_length))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -6335,60 +6640,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -6397,11 +6704,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -6418,7 +6726,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -6442,11 +6750,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -6455,12 +6762,13 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) recv, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -6484,36 +6792,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_size):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_size): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_size))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -6529,60 +6845,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -6591,11 +6909,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -6612,7 +6931,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -6636,11 +6955,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -6649,12 +6967,13 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) recv, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -6678,36 +6997,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_empty_p):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_empty_p): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_empty_p))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -6723,60 +7050,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -6785,11 +7114,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -6806,7 +7136,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -6830,11 +7160,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -6843,12 +7172,13 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) recv, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -6872,36 +7202,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_succ):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_succ): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_succ))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -6917,60 +7255,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -6979,11 +7319,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -7000,7 +7341,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -7024,11 +7365,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -7037,12 +7377,13 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) recv, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -7066,36 +7407,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_not):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_not): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_not))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -7111,60 +7460,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -7173,11 +7524,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -7194,7 +7546,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -7218,11 +7570,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -7231,12 +7582,13 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) recv, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    recv = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -7244,7 +7596,7 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        val = vm_opt_not(cd, recv);\n");
+        fprintf(f, "        val = vm_opt_not(GET_ISEQ(), cd, recv);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         if (status->local_stack_p) {
@@ -7260,36 +7612,44 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_regexpmatch2):
-      if (has_valid_method_type(status->cc_entries + call_data_index((CALL_DATA)operands[0], body))) {
+  }
+  case BIN(opt_regexpmatch2): {
+    if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_regexpmatch2))) {
 {
-    MAYBE_UNUSED(int pc_moved_p) = FALSE;
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
-    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
-        const rb_iseq_t *iseq;
-        const CALL_INFO ci = &cd->ci;
-        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
+    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    const rb_iseq_t *iseq = NULL;
+    const CALL_INFO ci = cd->ci;
+    int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
+    extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(captured_cc) && (
+        (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC
+         && !rb_splat_or_kwargs_p(ci) && !kw_splat)
+        || (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_ISEQ
+            && fastpath_applied_iseq_p(ci, captured_cc, iseq = def_iseq_ptr(vm_cc_cme(captured_cc)->def))
+            && !(vm_ci_flag(ci) & VM_CALL_TAILCALL))
+    )) {
+        const bool cfunc_debug = false; // Set true when you want to see inlined cfunc
+        if (cfunc_debug && vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC)
+            fprintf(stderr, "  * %s\n", rb_id2name(vm_ci_mid(ci)));
 
-        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
-                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && fastpath_applied_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
-            int param_size = iseq->body->param.size;
+        int sp_inc = (int)sp_inc_of_sendish(ci);
+        fprintf(f, "{\n");
 
-            fprintf(f, "{\n");
-            if (status->local_stack_p) {
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-            }
+        bool opt_class_of = !maybe_special_const_class_p(captured_cc->klass); // If true, use RBASIC_CLASS instead of CLASS_OF to reduce code size
+        fprintf(f, "    const struct rb_callcache *cc = (const struct rb_callcache *)0x%"PRIxVALUE";\n", (VALUE)captured_cc);
+        fprintf(f, "    const rb_callable_method_entry_t *cc_cme = (const rb_callable_method_entry_t *)0x%"PRIxVALUE";\n", (VALUE)vm_cc_cme(captured_cc));
+        fprintf(f, "    const VALUE recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+        fprintf(f, "    if (UNLIKELY(%s || !vm_cc_valid_p(cc, cc_cme, %s(recv)))) {\n", opt_class_of ? "RB_SPECIAL_CONST_P(recv)" : "false", opt_class_of ? "RBASIC_CLASS" : "CLASS_OF");
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto send_cancel;\n");
+        fprintf(f, "    }\n");
 
-            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
-            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial[0]);
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-            fprintf(f, "        goto send_cancel;\n");
-            fprintf(f, "    }\n");
-
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -7305,60 +7665,62 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size - 0); /* POPN(INSN_ATTR(popn)); */
         }
 
-            if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
-                fprintf(f, "    {\n");
-                fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
-                fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
-                fprintf(f, "        reg_cfp->self = orig_self;\n");
-                fprintf(f, "    }\n");
-            }
-            else {
-                fprintf(f, "    {\n");
-                fprintf(f, "        struct rb_calling_info calling;\n");
-                fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-                fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-                fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+            fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        stack[%d] = _mjit%d_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size + sp_inc - 1, status->compiled_id, pos);
+            fprintf(f, "        reg_cfp->self = orig_self;\n");
+            fprintf(f, "    }\n");
+        }
+        else {
+            fprintf(f, "    {\n");
+            fprintf(f, "        VALUE val;\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        calling.kw_splat = %d;\n", kw_splat);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "        calling.argc = %d;\n", vm_ci_argc(ci));
 
-                fprintf(f, "        {\n");
-                fprintf(f, "            VALUE v;\n");
-                fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                        (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); // fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
+            if (vm_cc_cme(captured_cc)->def->type == VM_METHOD_TYPE_CFUNC) {
+                fprintf(f, "        calling.ci = (CALL_INFO)0x%"PRIxVALUE";\n", (VALUE)ci); // creating local cd here because operand's cd->cc may not be the same as inlined cc.
+                fprintf(f, "        calling.cc = cc;");
+                fprintf(f, "        val = vm_call_cfunc_with_frame(ec, reg_cfp, &calling);\n");
+            }
+            else { // VM_METHOD_TYPE_ISEQ
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
                 if (iseq->body->catch_except_p) {
-                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-                    fprintf(f, "            v = vm_exec(ec, TRUE);\n");
+                    fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
+                    fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
-                    fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
-                    fprintf(f, "                v = vm_exec(ec, FALSE);\n");
-                    fprintf(f, "            }\n");
+                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
+                    fprintf(f, "            val = vm_exec(ec, false);\n");
+                    fprintf(f, "        }\n");
                 }
-                fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
-                fprintf(f, "        }\n");
-
-                fprintf(f, "    }\n");
-
-                fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-                fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
-                if (!pc_moved_p) {
-                    fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-                }
-                fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-                fprintf(f, "        goto cancel;\n");
-                fprintf(f, "    }\n");
             }
+            fprintf(f, "        stack[%d] = val;\n", b->stack_size + sp_inc - 1);
+            fprintf(f, "    }\n");
 
-            b->stack_size += attr_sp_inc_opt_send_without_block(cd);
-
-            fprintf(f, "}\n");
-            break;
+            fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_send_without_block(cd));
+            if (!pc_moved_p) {
+                fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+            }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
         }
+
+        b->stack_size += attr_sp_inc_opt_send_without_block(cd);
+
+        fprintf(f, "}\n");
+        break;
     }
 }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -7367,11 +7729,12 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
             {
@@ -7388,7 +7751,7 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        VALUE bh = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);\n");
+        fprintf(f, "        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);\n");
         fprintf(f, "\n");
         fprintf(f, "        if (val == Qundef) {\n");
         fprintf(f, "#if OPT_CALL_THREADED_CODE\n");
@@ -7412,11 +7775,10 @@ switch (insn) {
         b->stack_size += attr_sp_inc_opt_send_without_block(cd);
     }
     fprintf(f, "}\n");
-          break;
-      }
+        break;
+    }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -7425,13 +7787,14 @@ switch (insn) {
         fprintf(f, "    MAYBE_UNUSED(VALUE) obj1, obj2, val;\n");
 
         fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
-        comment_id(f, ((CALL_DATA)operands[0])->ci.mid);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
         fprintf(f, "\n");
         fprintf(f, "    obj2 = stack[%d];\n", b->stack_size - 2);
         fprintf(f, "    obj1 = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -7463,22 +7826,38 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(invokebuiltin):
+  }
+  case BIN(invokebuiltin): {
+        RB_BUILTIN bf = (RB_BUILTIN)operands[0];
+        rb_snum_t sp_inc = attr_sp_inc_invokebuiltin(bf);
+        unsigned sp = b->stack_size + (unsigned)sp_inc;
+        VM_ASSERT(b->stack_size > -sp_inc);
+        VM_ASSERT(sp_inc < UINT_MAX - b->stack_size);
+
+        if (bf->compiler) {
+            fprintf(f, "{\n");
+            fprintf(f, "    VALUE val;\n");
+            bf->compiler(f, -1, b->stack_size, body->builtin_inline_p);
+            fprintf(f, "    stack[%u] = val;\n", sp - 1);
+            fprintf(f, "}\n");
+            b->stack_size = sp;
+            break;
+        }
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(RB_BUILTIN bf) = (RB_BUILTIN)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
         }
         fprintf(f, "    MAYBE_UNUSED(RB_BUILTIN) bf;\n");
-        fprintf(f, "    MAYBE_UNUSED(VALUE) ret;\n");
+        fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    bf = (RB_BUILTIN)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -7486,10 +7865,10 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        ret = vm_invoke_builtin(ec, reg_cfp, bf, %s);\n",
-                (status->local_stack_p ? "stack + (stack_size - (bf->argc))" : "STACK_ADDR_FROM_TOP(bf->argc)"));
+        fprintf(f, "        val = vm_invoke_builtin(ec, reg_cfp, bf, %s);\n",
+                (status->local_stack_p ? "(stack + (stack_size - (bf->argc)))" : "STACK_ADDR_FROM_TOP(bf->argc)"));
         fprintf(f, "    }\n");
-        fprintf(f, "    stack[%d] = ret;\n", b->stack_size + (int)attr_sp_inc_invokebuiltin(bf) - 1);
+        fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_invokebuiltin(bf) - 1);
         fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
         fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_invokebuiltin(bf));
         if (!pc_moved_p) {
@@ -7502,52 +7881,26 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(opt_invokebuiltin_delegate):
-    fprintf(f, "{\n");
-    {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
-        MAYBE_UNUSED(RB_BUILTIN bf) = (RB_BUILTIN)operands[0];
-        MAYBE_UNUSED(rb_num_t index) = (rb_num_t)operands[1];
-        if (status->local_stack_p) {
-            fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-        }
-        fprintf(f, "    MAYBE_UNUSED(RB_BUILTIN) bf;\n");
-        fprintf(f, "    MAYBE_UNUSED(VALUE) ret;\n");
-        fprintf(f, "    MAYBE_UNUSED(rb_num_t) index;\n");
+  }
+  case BIN(opt_invokebuiltin_delegate): {
+        RB_BUILTIN bf = (RB_BUILTIN)operands[0];
+        rb_num_t index = (rb_num_t)operands[1];
+        rb_snum_t sp_inc = attr_sp_inc_opt_invokebuiltin_delegate(bf, index);
+        unsigned sp = b->stack_size + (unsigned)sp_inc;
+        VM_ASSERT(b->stack_size > -sp_inc);
+        VM_ASSERT(sp_inc < UINT_MAX - b->stack_size);
 
-        fprintf(f, "    bf = (RB_BUILTIN)0x%"PRIxVALUE";", operands[0]);
-        fprintf(f, "\n");
-        fprintf(f, "    index = (rb_num_t)0x%"PRIxVALUE";", operands[1]);
-        fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
-            fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+        if (bf->compiler) {
+            fprintf(f, "{\n");
+            fprintf(f, "    VALUE val;\n");
+            bf->compiler(f, (rb_num_t)operands[1], b->stack_size, body->builtin_inline_p);
+            fprintf(f, "    stack[%u] = val;\n", sp - 1);
+            fprintf(f, "}\n");
+            b->stack_size = sp;
+            break;
         }
-        if (status->local_stack_p) {
-        }
-        else {
-            fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-        }
-        fprintf(f, "    {\n");
-        fprintf(f, "        ret = vm_invoke_builtin_delegate(ec, reg_cfp, bf, (unsigned int)index);\n");
-        fprintf(f, "    }\n");
-        fprintf(f, "    stack[%d] = ret;\n", b->stack_size + (int)attr_sp_inc_opt_invokebuiltin_delegate(bf, index) - 1);
-        fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_invokebuiltin_delegate(bf, index));
-        if (!pc_moved_p) {
-            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
-        }
-        fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
-        fprintf(f, "        goto cancel;\n");
-        fprintf(f, "    }\n");
-        b->stack_size += attr_sp_inc_opt_invokebuiltin_delegate(bf, index);
-    }
-    fprintf(f, "}\n");
-    break;
-  case BIN(opt_invokebuiltin_delegate_leave):
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(RB_BUILTIN bf) = (RB_BUILTIN)operands[0];
         MAYBE_UNUSED(rb_num_t index) = (rb_num_t)operands[1];
         if (status->local_stack_p) {
@@ -7561,9 +7914,79 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    index = (rb_num_t)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
-        if (body->catch_except_p || TRUE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
+        }
+        if (status->local_stack_p) {
+        }
+        else {
+            fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        }
+        fprintf(f, "    {\n");
+        fprintf(f, "        val = vm_invoke_builtin_delegate(ec, reg_cfp, bf, (unsigned int)index);\n");
+        fprintf(f, "    }\n");
+        fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_opt_invokebuiltin_delegate(bf, index) - 1);
+        fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_invokebuiltin_delegate(bf, index));
+        if (!pc_moved_p) {
+            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+        }
+        fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+        fprintf(f, "        goto cancel;\n");
+        fprintf(f, "    }\n");
+        b->stack_size += attr_sp_inc_opt_invokebuiltin_delegate(bf, index);
+    }
+    fprintf(f, "}\n");
+    break;
+  }
+  case BIN(opt_invokebuiltin_delegate_leave): {
+        RB_BUILTIN bf = (RB_BUILTIN)operands[0];
+        rb_num_t index = (rb_num_t)operands[1];
+        rb_snum_t sp_inc = attr_sp_inc_opt_invokebuiltin_delegate_leave(bf, index);
+        unsigned sp = b->stack_size + (unsigned)sp_inc;
+        VM_ASSERT(b->stack_size > -sp_inc);
+        VM_ASSERT(sp_inc < UINT_MAX - b->stack_size);
+
+        if (bf->compiler) {
+            fprintf(f, "{\n");
+            fprintf(f, "    VALUE val;\n");
+            bf->compiler(f, (rb_num_t)operands[1], b->stack_size, body->builtin_inline_p);
+            fprintf(f, "    stack[%u] = val;\n", sp - 1);
+            fprintf(f, "}\n");
+        }
+    if (status->inlined_iseqs != NULL) { // the current ISeq is NOT being inlined
+        fprintf(f, "    if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {\n");
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "        rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);\n");
+        fprintf(f, "    }\n");
+        fprintf(f, "    ec->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(reg_cfp);\n"); // vm_pop_frame
+    }
+    fprintf(f, "    return stack[0];\n");
+    b->stack_size += attr_sp_inc_opt_invokebuiltin_delegate_leave(bf, index);
+    b->finish_p = TRUE;
+    break;
+    fprintf(f, "{\n");
+    {
+        MAYBE_UNUSED(RB_BUILTIN bf) = (RB_BUILTIN)operands[0];
+        MAYBE_UNUSED(rb_num_t index) = (rb_num_t)operands[1];
+        if (status->local_stack_p) {
+            fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
+        }
+        fprintf(f, "    MAYBE_UNUSED(RB_BUILTIN) bf;\n");
+        fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
+        fprintf(f, "    MAYBE_UNUSED(rb_num_t) index;\n");
+
+        fprintf(f, "    bf = (RB_BUILTIN)0x%"PRIxVALUE";", operands[0]);
+        fprintf(f, "\n");
+        fprintf(f, "    index = (rb_num_t)0x%"PRIxVALUE";", operands[1]);
+        fprintf(f, "\n");
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
+            fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -7606,10 +8029,10 @@ switch (insn) {
     fprintf(f, "}\n");
     b->finish_p = TRUE;
     break;
-  case BIN(getlocal_WC_0):
+  }
+  case BIN(getlocal_WC_0): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(lindex_t idx) = (lindex_t)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -7621,9 +8044,10 @@ switch (insn) {
         fprintf(f, "    level = 0;\n");
         fprintf(f, "    idx = (lindex_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -7640,10 +8064,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(getlocal_WC_1):
+  }
+  case BIN(getlocal_WC_1): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(lindex_t idx) = (lindex_t)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -7655,9 +8079,10 @@ switch (insn) {
         fprintf(f, "    level = 1;\n");
         fprintf(f, "    idx = (lindex_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -7674,10 +8099,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(setlocal_WC_0):
+  }
+  case BIN(setlocal_WC_0): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(lindex_t idx) = (lindex_t)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -7690,9 +8115,10 @@ switch (insn) {
         fprintf(f, "    idx = (lindex_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -7708,10 +8134,10 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(setlocal_WC_1):
+  }
+  case BIN(setlocal_WC_1): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         MAYBE_UNUSED(lindex_t idx) = (lindex_t)operands[0];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
@@ -7724,9 +8150,10 @@ switch (insn) {
         fprintf(f, "    idx = (lindex_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -7742,19 +8169,20 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(putobject_INT2FIX_0_):
+  }
+  case BIN(putobject_INT2FIX_0_): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
         }
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    val = INT2FIX(0);\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -7769,19 +8197,20 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
-  case BIN(putobject_INT2FIX_1_):
+  }
+  case BIN(putobject_INT2FIX_1_): {
     fprintf(f, "{\n");
     {
-        MAYBE_UNUSED(int pc_moved_p) = FALSE;
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
         }
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    val = INT2FIX(1);\n");
-        if (body->catch_except_p || FALSE) {
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (false) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = TRUE;
+            pc_moved_p = true;
         }
         if (status->local_stack_p) {
         }
@@ -7796,6 +8225,7 @@ switch (insn) {
     }
     fprintf(f, "}\n");
     break;
+  }
   default:
     if (mjit_opts.warnings || mjit_opts.verbose)
         fprintf(stderr, "MJIT warning: Skipped to compile unsupported instruction: %s\n", insn_name(insn));

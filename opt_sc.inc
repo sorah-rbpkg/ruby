@@ -73,7 +73,7 @@ static const VALUE sc_insn_info[][SC_STATE_SIZE] = {
     NO_SC, NO_SC, NO_SC, NO_SC, NO_SC, NO_SC, NO_SC, NO_SC,
     NO_SC, NO_SC, NO_SC, NO_SC, NO_SC, NO_SC, NO_SC, NO_SC,
     NO_SC, NO_SC, NO_SC, NO_SC, NO_SC, NO_SC, NO_SC, NO_SC,
-    NO_SC, NO_SC, NO_SC, NO_SC, NO_SC, NO_SC,
+    NO_SC, NO_SC,
 #undef NO_SC
 };
 
@@ -103,7 +103,7 @@ static const VALUE sc_insn_next[] = {
     SCS_XX, SCS_XX, SCS_XX, SCS_XX, SCS_XX, SCS_XX, SCS_XX, SCS_XX,
     SCS_XX, SCS_XX, SCS_XX, SCS_XX, SCS_XX, SCS_XX, SCS_XX, SCS_XX,
     SCS_XX, SCS_XX, SCS_XX, SCS_XX, SCS_XX, SCS_XX, SCS_XX, SCS_XX,
-    SCS_XX, SCS_XX, SCS_XX, SCS_XX, SCS_XX, SCS_XX,
+    SCS_XX, SCS_XX,
 };
 
 ASSERT_VM_INSTRUCTION_SIZE(sc_insn_next);

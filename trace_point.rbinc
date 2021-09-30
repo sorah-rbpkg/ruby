@@ -3,32 +3,238 @@
 // auto-generated file
 //   by ./tool/mk_builtin_loader.rb
 //   with trace_point.rb
+#include "internal/compilers.h"     /* for MAYBE_UNUSED */
+#include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
+#include "ruby/ruby.h"              /* for VALUE */
+#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
+struct rb_execution_context_struct; /* in vm_core.h */
 
-static void load_trace_point(void)
+static void
+mjit_compile_invokebuiltin_for_tracepoint_new_s(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    if (index == -1) {
+        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+    }
+    else {
+        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
+        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == tracepoint_new_s */\n", (intptr_t)tracepoint_new_s);
+    fprintf(f, "    val = f(ec, self, argv[0]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_inspect(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == tracepoint_inspect */\n", (intptr_t)tracepoint_inspect);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_stat_s(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == tracepoint_stat_s */\n", (intptr_t)tracepoint_stat_s);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_trace_s(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    if (index == -1) {
+        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+    }
+    else {
+        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
+        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == tracepoint_trace_s */\n", (intptr_t)tracepoint_trace_s);
+    fprintf(f, "    val = f(ec, self, argv[0]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_enable_m(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 3);
+    }
+    else {
+        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
+        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == tracepoint_enable_m */\n", (intptr_t)tracepoint_enable_m);
+    fprintf(f, "    val = f(ec, self, argv[0], argv[1], argv[2]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_disable_m(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == tracepoint_disable_m */\n", (intptr_t)tracepoint_disable_m);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_enabled_p(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == tracepoint_enabled_p */\n", (intptr_t)tracepoint_enabled_p);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_event(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == tracepoint_attr_event */\n", (intptr_t)tracepoint_attr_event);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_lineno(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == tracepoint_attr_lineno */\n", (intptr_t)tracepoint_attr_lineno);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_path(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == tracepoint_attr_path */\n", (intptr_t)tracepoint_attr_path);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_parameters(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == tracepoint_attr_parameters */\n", (intptr_t)tracepoint_attr_parameters);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_method_id(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == tracepoint_attr_method_id */\n", (intptr_t)tracepoint_attr_method_id);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_callee_id(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == tracepoint_attr_callee_id */\n", (intptr_t)tracepoint_attr_callee_id);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_defined_class(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == tracepoint_attr_defined_class */\n", (intptr_t)tracepoint_attr_defined_class);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_binding(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == tracepoint_attr_binding */\n", (intptr_t)tracepoint_attr_binding);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_self(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == tracepoint_attr_self */\n", (intptr_t)tracepoint_attr_self);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_return_value(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == tracepoint_attr_return_value */\n", (intptr_t)tracepoint_attr_return_value);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_raised_exception(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == tracepoint_attr_raised_exception */\n", (intptr_t)tracepoint_attr_raised_exception);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_eval_script(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == tracepoint_attr_eval_script */\n", (intptr_t)tracepoint_attr_eval_script);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_tracepoint_attr_instruction_sequence(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == tracepoint_attr_instruction_sequence */\n", (intptr_t)tracepoint_attr_instruction_sequence);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+void Init_builtin_trace_point(void)
 {
   // table definition
   static const struct rb_builtin_function trace_point_table[] = {
-    RB_BUILTIN_FUNCTION(0, tracepoint_new_s, tracepoint_new_s, 1),
-    RB_BUILTIN_FUNCTION(1, tracepoint_inspect, tracepoint_inspect, 0),
-    RB_BUILTIN_FUNCTION(2, tracepoint_stat_s, tracepoint_stat_s, 0),
-    RB_BUILTIN_FUNCTION(3, tracepoint_trace_s, tracepoint_trace_s, 1),
-    RB_BUILTIN_FUNCTION(4, tracepoint_enable_m, tracepoint_enable_m, 3),
-    RB_BUILTIN_FUNCTION(5, tracepoint_disable_m, tracepoint_disable_m, 0),
-    RB_BUILTIN_FUNCTION(6, tracepoint_enabled_p, tracepoint_enabled_p, 0),
-    RB_BUILTIN_FUNCTION(7, tracepoint_attr_event, tracepoint_attr_event, 0),
-    RB_BUILTIN_FUNCTION(8, tracepoint_attr_lineno, tracepoint_attr_lineno, 0),
-    RB_BUILTIN_FUNCTION(9, tracepoint_attr_path, tracepoint_attr_path, 0),
-    RB_BUILTIN_FUNCTION(10, tracepoint_attr_parameters, tracepoint_attr_parameters, 0),
-    RB_BUILTIN_FUNCTION(11, tracepoint_attr_method_id, tracepoint_attr_method_id, 0),
-    RB_BUILTIN_FUNCTION(12, tracepoint_attr_callee_id, tracepoint_attr_callee_id, 0),
-    RB_BUILTIN_FUNCTION(13, tracepoint_attr_defined_class, tracepoint_attr_defined_class, 0),
-    RB_BUILTIN_FUNCTION(14, tracepoint_attr_binding, tracepoint_attr_binding, 0),
-    RB_BUILTIN_FUNCTION(15, tracepoint_attr_self, tracepoint_attr_self, 0),
-    RB_BUILTIN_FUNCTION(16, tracepoint_attr_return_value, tracepoint_attr_return_value, 0),
-    RB_BUILTIN_FUNCTION(17, tracepoint_attr_raised_exception, tracepoint_attr_raised_exception, 0),
-    RB_BUILTIN_FUNCTION(18, tracepoint_attr_eval_script, tracepoint_attr_eval_script, 0),
-    RB_BUILTIN_FUNCTION(19, tracepoint_attr_instruction_sequence, tracepoint_attr_instruction_sequence, 0),
-    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
+    RB_BUILTIN_FUNCTION(0, tracepoint_new_s, tracepoint_new_s, 1, mjit_compile_invokebuiltin_for_tracepoint_new_s),
+    RB_BUILTIN_FUNCTION(1, tracepoint_inspect, tracepoint_inspect, 0, mjit_compile_invokebuiltin_for_tracepoint_inspect),
+    RB_BUILTIN_FUNCTION(2, tracepoint_stat_s, tracepoint_stat_s, 0, mjit_compile_invokebuiltin_for_tracepoint_stat_s),
+    RB_BUILTIN_FUNCTION(3, tracepoint_trace_s, tracepoint_trace_s, 1, mjit_compile_invokebuiltin_for_tracepoint_trace_s),
+    RB_BUILTIN_FUNCTION(4, tracepoint_enable_m, tracepoint_enable_m, 3, mjit_compile_invokebuiltin_for_tracepoint_enable_m),
+    RB_BUILTIN_FUNCTION(5, tracepoint_disable_m, tracepoint_disable_m, 0, mjit_compile_invokebuiltin_for_tracepoint_disable_m),
+    RB_BUILTIN_FUNCTION(6, tracepoint_enabled_p, tracepoint_enabled_p, 0, mjit_compile_invokebuiltin_for_tracepoint_enabled_p),
+    RB_BUILTIN_FUNCTION(7, tracepoint_attr_event, tracepoint_attr_event, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_event),
+    RB_BUILTIN_FUNCTION(8, tracepoint_attr_lineno, tracepoint_attr_lineno, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_lineno),
+    RB_BUILTIN_FUNCTION(9, tracepoint_attr_path, tracepoint_attr_path, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_path),
+    RB_BUILTIN_FUNCTION(10, tracepoint_attr_parameters, tracepoint_attr_parameters, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_parameters),
+    RB_BUILTIN_FUNCTION(11, tracepoint_attr_method_id, tracepoint_attr_method_id, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_method_id),
+    RB_BUILTIN_FUNCTION(12, tracepoint_attr_callee_id, tracepoint_attr_callee_id, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_callee_id),
+    RB_BUILTIN_FUNCTION(13, tracepoint_attr_defined_class, tracepoint_attr_defined_class, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_defined_class),
+    RB_BUILTIN_FUNCTION(14, tracepoint_attr_binding, tracepoint_attr_binding, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_binding),
+    RB_BUILTIN_FUNCTION(15, tracepoint_attr_self, tracepoint_attr_self, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_self),
+    RB_BUILTIN_FUNCTION(16, tracepoint_attr_return_value, tracepoint_attr_return_value, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_return_value),
+    RB_BUILTIN_FUNCTION(17, tracepoint_attr_raised_exception, tracepoint_attr_raised_exception, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_raised_exception),
+    RB_BUILTIN_FUNCTION(18, tracepoint_attr_eval_script, tracepoint_attr_eval_script, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_eval_script),
+    RB_BUILTIN_FUNCTION(19, tracepoint_attr_instruction_sequence, tracepoint_attr_instruction_sequence, 0, mjit_compile_invokebuiltin_for_tracepoint_attr_instruction_sequence),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),
   };
 
   // arity_check

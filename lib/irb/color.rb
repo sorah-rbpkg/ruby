@@ -17,7 +17,7 @@ module IRB # :nodoc:
     CYAN      = 36
 
     TOKEN_KEYWORDS = {
-      on_kw: ['nil', 'self', 'true', 'false', '__FILE__', '__LINE__'],
+      on_kw: ['nil', 'self', 'true', 'false', '__FILE__', '__LINE__', '__ENCODING__'],
       on_const: ['ENV'],
     }
     private_constant :TOKEN_KEYWORDS
@@ -60,12 +60,20 @@ module IRB # :nodoc:
         on_words_beg:       [[RED, BOLD],             ALL],
         on_parse_error:     [[RED, REVERSE],          ALL],
         compile_error:      [[RED, REVERSE],          ALL],
+        on_assign_error:    [[RED, REVERSE],          ALL],
+        on_alias_error:     [[RED, REVERSE],          ALL],
+        on_class_name_error:[[RED, REVERSE],          ALL],
+        on_param_error:     [[RED, REVERSE],          ALL],
+        on___end__:         [[GREEN],                 ALL],
       }
     rescue NameError
       # Give up highlighting Ripper-incompatible older Ruby
       TOKEN_SEQ_EXPRS = {}
     end
     private_constant :TOKEN_SEQ_EXPRS
+
+    ERROR_TOKENS = TOKEN_SEQ_EXPRS.keys.select { |k| k.to_s.end_with?('error') }
+    private_constant :ERROR_TOKENS
 
     class << self
       def colorable?
@@ -107,14 +115,20 @@ module IRB # :nodoc:
       # If `complete` is false (code is incomplete), this does not warn compile_error.
       # This option is needed to avoid warning a user when the compile_error is happening
       # because the input is not wrong but just incomplete.
-      def colorize_code(code, complete: true)
+      def colorize_code(code, complete: true, ignore_error: false)
         return code unless colorable?
 
         symbol_state = SymbolState.new
         colored = +''
         length = 0
+        end_seen = false
 
         scan(code, allow_last_error: !complete) do |token, str, expr|
+          # IRB::ColorPrinter skips colorizing fragments with any invalid token
+          if ignore_error && ERROR_TOKENS.include?(token)
+            return Reline::Unicode.escape_for_print(code)
+          end
+
           in_symbol = symbol_state.scan_token(token)
           str.each_line do |line|
             line = Reline::Unicode.escape_for_print(line)
@@ -126,10 +140,11 @@ module IRB # :nodoc:
             end
           end
           length += str.bytesize
+          end_seen = true if token == :on___end__
         end
 
         # give up colorizing incomplete Ripper tokens
-        if length != code.bytesize
+        unless end_seen or length == code.bytesize
           return Reline::Unicode.escape_for_print(code)
         end
 
@@ -180,11 +195,12 @@ module IRB # :nodoc:
             end
           end
         end
+      ensure
         $VERBOSE = verbose
       end
 
       def dispatch_seq(token, expr, str, in_symbol:)
-        if token == :on_parse_error or token == :compile_error
+        if ERROR_TOKENS.include?(token)
           TOKEN_SEQ_EXPRS[token][0]
         elsif in_symbol
           [YELLOW]

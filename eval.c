@@ -11,18 +11,32 @@
 
 **********************************************************************/
 
-#include "internal.h"
-#include "eval_intern.h"
-#include "iseq.h"
-#include "gc.h"
-#include "ruby/vm.h"
-#include "vm_core.h"
-#include "mjit.h"
-#include "probes.h"
-#include "probes_helper.h"
+#include "ruby/internal/config.h"
+
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
 #endif
+
+#include "eval_intern.h"
+#include "gc.h"
+#include "internal.h"
+#include "internal/class.h"
+#include "internal/error.h"
+#include "internal/eval.h"
+#include "internal/hash.h"
+#include "internal/inits.h"
+#include "internal/io.h"
+#include "internal/object.h"
+#include "internal/thread.h"
+#include "internal/variable.h"
+#include "internal/scheduler.h"
+#include "iseq.h"
+#include "mjit.h"
+#include "probes.h"
+#include "probes_helper.h"
+#include "ruby/vm.h"
+#include "vm_core.h"
+#include "ractor_core.h"
 
 NORETURN(void rb_raise_jump(VALUE, VALUE));
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
@@ -133,8 +147,26 @@ ruby_options(int argc, char **argv)
 }
 
 static void
+rb_ec_scheduler_finalize(rb_execution_context_t *ec)
+{
+    enum ruby_tag_type state;
+
+    EC_PUSH_TAG(ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        rb_scheduler_set(Qnil);
+    }
+    else {
+        state = error_handle(ec, state);
+    }
+    EC_POP_TAG();
+}
+
+static void
 rb_ec_teardown(rb_execution_context_t *ec)
 {
+    // If the user code defined a scheduler for the top level thread, run it:
+    rb_ec_scheduler_finalize(ec);
+
     EC_PUSH_TAG(ec);
     if (EC_EXEC_TAG() == TAG_NONE) {
         rb_vm_trap_exit(rb_ec_vm_ptr(ec));
@@ -196,6 +228,7 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
 
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
+
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         th = th0;
@@ -215,7 +248,7 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
 	th->status = THREAD_KILLED;
 
         errs[0] = ec->errinfo;
-	SAVE_ROOT_JMPBUF(th, rb_thread_terminate_all());
+	SAVE_ROOT_JMPBUF(th, rb_ractor_terminate_all());
     }
     else {
 	switch (step) {
@@ -231,6 +264,7 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
     state = 0;
     for (nerr = 0; nerr < numberof(errs); ++nerr) {
 	VALUE err = ATOMIC_VALUE_EXCHANGE(errs[nerr], Qnil);
+        VALUE sig;
 
 	if (!RTEST(err)) continue;
 
@@ -246,6 +280,11 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
 	    state = NUM2INT(sig);
 	    break;
 	}
+        else if (rb_obj_is_kind_of(err, rb_eSystemCallError) &&
+                 FIXNUM_P(sig = rb_attr_get(err, id_signo))) {
+	    state = NUM2INT(sig);
+	    break;
+        }
 	else if (sysex == EXIT_SUCCESS) {
 	    sysex = EXIT_FAILURE;
 	}
@@ -438,7 +477,6 @@ void
 rb_class_modify_check(VALUE klass)
 {
     if (SPECIAL_CONST_P(klass)) {
-      noclass:
 	Check_Type(klass, T_CLASS);
     }
     if (OBJ_FROZEN(klass)) {
@@ -456,6 +494,8 @@ rb_class_modify_check(VALUE klass)
 		  case T_CLASS:
 		    desc = "Class";
 		    break;
+                  default:
+                    break;
 		}
 	    }
 	}
@@ -469,7 +509,8 @@ rb_class_modify_check(VALUE klass)
 		desc = "class";
 		break;
 	      default:
-		goto noclass;
+                Check_Type(klass, T_CLASS);
+                UNREACHABLE;
 	    }
 	}
         rb_frozen_error_raise(klass, "can't modify frozen %s: %"PRIsVALUE, desc, klass);
@@ -622,16 +663,19 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
     }
 
     if (rb_ec_set_raised(ec)) {
-      fatal:
-	ec->errinfo = exception_error;
-	rb_ec_reset_raised(ec);
-	EC_JUMP_TAG(ec, TAG_FATAL);
+        goto fatal;
     }
 
     if (tag != TAG_FATAL) {
 	RUBY_DTRACE_HOOK(RAISE, rb_obj_classname(ec->errinfo));
 	EXEC_EVENT_HOOK(ec, RUBY_EVENT_RAISE, ec->cfp->self, 0, 0, 0, mesg);
     }
+    return;
+
+  fatal:
+    ec->errinfo = exception_error;
+    rb_ec_reset_raised(ec);
+    EC_JUMP_TAG(ec, TAG_FATAL);
 }
 
 /*! \private */
@@ -784,44 +828,37 @@ static VALUE
 make_exception(int argc, const VALUE *argv, int isstr)
 {
     VALUE mesg, exc;
-    int n;
 
     mesg = Qnil;
     switch (argc) {
       case 0:
-	break;
+        return Qnil;
       case 1:
 	exc = argv[0];
-	if (NIL_P(exc))
-	    break;
-	if (isstr) {
+        if (isstr &&! NIL_P(exc)) {
 	    mesg = rb_check_string_type(exc);
 	    if (!NIL_P(mesg)) {
-		mesg = rb_exc_new3(rb_eRuntimeError, mesg);
-		break;
+                return rb_exc_new3(rb_eRuntimeError, mesg);
 	    }
 	}
-	n = 0;
-	goto exception_call;
 
       case 2:
       case 3:
-	exc = argv[0];
-	n = 1;
-      exception_call:
-	mesg = rb_check_funcall(exc, idException, n, argv+1);
-	if (mesg == Qundef) {
-	    rb_raise(rb_eTypeError, "exception class/object expected");
-	}
 	break;
       default:
         rb_error_arity(argc, 0, 3);
     }
-    if (argc > 0) {
-	if (!rb_obj_is_kind_of(mesg, rb_eException))
-	    rb_raise(rb_eTypeError, "exception object expected");
-	if (argc > 2)
-	    set_backtrace(mesg, argv[2]);
+    if (NIL_P(mesg)) {
+        mesg = rb_check_funcall(argv[0], idException, argc != 1, &argv[1]);
+    }
+    if (mesg == Qundef) {
+        rb_raise(rb_eTypeError, "exception class/object expected");
+    }
+    if (!rb_obj_is_kind_of(mesg, rb_eException)) {
+        rb_raise(rb_eTypeError, "exception object expected");
+    }
+    if (argc == 3) {
+        set_backtrace(mesg, argv[2]);
     }
 
     return mesg;
@@ -913,14 +950,6 @@ rb_keyword_given_p(void)
     return rb_vm_cframe_keyword_p(GET_EC()->cfp);
 }
 
-/* -- Remove In 3.0 -- */
-int rb_vm_cframe_empty_keyword_p(const rb_control_frame_t *cfp);
-int
-rb_empty_keyword_given_p(void)
-{
-    return rb_vm_cframe_empty_keyword_p(GET_EC()->cfp);
-}
-
 VALUE rb_eThreadError;
 
 /*! Declares that the current method needs a block.
@@ -971,7 +1000,7 @@ rb_rescue2(VALUE (* b_proc) (VALUE), VALUE data1,
 
 /*!
  * \copydoc rb_rescue2
- * \param[in] args exception classes, terminated by 0.
+ * \param[in] args exception classes, terminated by (VALUE)0.
  */
 VALUE
 rb_vrescue2(VALUE (* b_proc) (VALUE), VALUE data1,
@@ -992,7 +1021,7 @@ rb_vrescue2(VALUE (* b_proc) (VALUE), VALUE data1,
     else if (result) {
 	/* escape from r_proc */
 	if (state == TAG_RETRY) {
-	    state = 0;
+	    state = TAG_NONE;
 	    ec->errinfo = Qnil;
 	    result = Qfalse;
 	    goto retry_entry;
@@ -1004,17 +1033,21 @@ rb_vrescue2(VALUE (* b_proc) (VALUE), VALUE data1,
 	if (state == TAG_RAISE) {
 	    int handle = FALSE;
 	    VALUE eclass;
+	    va_list ap;
 
-	    while ((eclass = va_arg(args, VALUE)) != 0) {
+	    result = Qnil;
+	    /* reuses args when raised again after retrying in r_proc */
+	    va_copy(ap, args);
+	    while ((eclass = va_arg(ap, VALUE)) != 0) {
 		if (rb_obj_is_kind_of(ec->errinfo, eclass)) {
 		    handle = TRUE;
 		    break;
 		}
 	    }
+	    va_end(ap);
 
 	    if (handle) {
-		result = Qnil;
-		state = 0;
+		state = TAG_NONE;
 		if (r_proc) {
 		    result = (*r_proc) (data2, ec->errinfo);
 		}
@@ -1370,7 +1403,7 @@ refinement_superclass(VALUE superclass)
 {
     if (RB_TYPE_P(superclass, T_MODULE)) {
 	/* FIXME: Should ancestors of superclass be used here? */
-	return rb_include_class_new(superclass, rb_cBasicObject);
+        return rb_include_class_new(RCLASS_ORIGIN(superclass), rb_cBasicObject);
     }
     else {
 	return superclass;
@@ -1412,8 +1445,7 @@ rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
     c = iclass = rb_include_class_new(module, superclass);
     RB_OBJ_WRITE(c, &RCLASS_REFINED_CLASS(c), klass);
 
-    RCLASS_M_TBL(OBJ_WB_UNPROTECT(c)) =
-      RCLASS_M_TBL(OBJ_WB_UNPROTECT(module)); /* TODO: check unprotecting */
+    RCLASS_M_TBL(c) = RCLASS_M_TBL(module);
 
     module = RCLASS_SUPER(module);
     while (module && module != klass) {
@@ -1473,7 +1505,7 @@ rb_using_module(const rb_cref_t *cref, VALUE module)
 {
     Check_Type(module, T_MODULE);
     using_module_recursive(cref, module);
-    rb_clear_method_cache_by_class(rb_cObject);
+    rb_clear_method_cache_all();
 }
 
 /*! \private */
@@ -1543,9 +1575,6 @@ rb_mod_refine(VALUE module, VALUE klass)
     }
 
     ensure_class_or_module(klass);
-    if (RB_TYPE_P(klass, T_MODULE)) {
-        FL_SET(klass, RCLASS_REFINED_BY_ANY);
-    }
     CONST_ID(id_refinements, "__refinements__");
     refinements = rb_attr_get(module, id_refinements);
     if (NIL_P(refinements)) {
@@ -1993,7 +2022,10 @@ f_current_dirname(VALUE _)
  *  call-seq:
  *     global_variables    -> array
  *
- *  Returns an array of the names of global variables.
+ *  Returns an array of the names of global variables. This includes
+ *  special regexp global variables such as <tt>$~</tt> and <tt>$+</tt>,
+ *  but does not include the numbered regexp global variables (<tt>$1</tt>,
+ *  <tt>$2</tt>, etc.).
  *
  *     global_variables.grep /std/   #=> [:$stdin, :$stdout, :$stderr]
  */
@@ -2054,6 +2086,9 @@ Init_eval(void)
 {
     rb_define_virtual_variable("$@", errat_getter, errat_setter);
     rb_define_virtual_variable("$!", errinfo_getter, 0);
+
+    rb_gvar_ractor_local("$@");
+    rb_gvar_ractor_local("$!");
 
     rb_define_global_function("raise", f_raise, -1);
     rb_define_global_function("fail", f_raise, -1);

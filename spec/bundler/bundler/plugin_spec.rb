@@ -107,11 +107,12 @@ RSpec.describe Bundler::Plugin do
   describe "evaluate gemfile for plugins" do
     let(:definition) { double("definition") }
     let(:builder) { double("builder") }
-    let(:gemfile) { bundled_app("Gemfile") }
+    let(:gemfile) { bundled_app_gemfile }
 
     before do
       allow(Plugin::DSL).to receive(:new) { builder }
       allow(builder).to receive(:eval_gemfile).with(gemfile)
+      allow(builder).to receive(:check_primary_source_safety)
       allow(builder).to receive(:to_definition) { definition }
       allow(builder).to receive(:inferred_plugins) { [] }
     end
@@ -237,7 +238,7 @@ RSpec.describe Bundler::Plugin do
   describe "#root" do
     context "in app dir" do
       before do
-        gemfile ""
+        allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
       end
 
       it "returns plugin dir in app .bundle path" do
@@ -246,8 +247,11 @@ RSpec.describe Bundler::Plugin do
     end
 
     context "outside app dir" do
+      before do
+        allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(nil)
+      end
+
       it "returns plugin dir in global bundle path" do
-        Dir.chdir tmp
         expect(subject.root).to eq(home.join(".bundle/plugin"))
       end
     end
