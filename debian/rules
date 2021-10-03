@@ -102,7 +102,7 @@ override_dh_auto_clean:
 	$(RM) -r .ext
 	$(RM) -r doc/capi
 	$(RM) .installed.list GNUmakefile Makefile builtin_binary.inc \
-		config.status enc.mk uncommon.mk verconf.h
+		config.status enc.mk uncommon.mk verconf.h config.log
 
 override_dh_auto_build-arch:
 	dh_auto_build -- main V=1
