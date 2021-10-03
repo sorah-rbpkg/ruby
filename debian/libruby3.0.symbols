@@ -21,7 +21,7 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  OnigSyntaxPosixExtended@Base 3.0.0~preview1
  OnigSyntaxPython@Base 3.0.0~preview1
  OnigSyntaxRuby@Base 3.0.0~preview1
- coroutine_transfer@Base 3.0.0~preview1
+#MISSING: 3.0.2-1# coroutine_transfer@Base 3.0.0~preview1
  dln_find_exe_r@Base 3.0.0~preview1
  dln_find_file_r@Base 3.0.0~preview1
  dln_load@Base 3.0.0~preview1
@@ -867,7 +867,7 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_init_iv_list@Base 3.0.0~preview2
 #MISSING: 3.0.0~preview1# rb_insecure_operation@Base 3.0.0~preview1
  rb_inspect@Base 3.0.0~preview1
- rb_int128t2big@Base 3.0.2
+#MISSING: 3.0.2-1# rb_int128t2big@Base 3.0.2
  rb_int2big@Base 3.0.0~preview1
  rb_int2inum@Base 3.0.0~preview1
  rb_int_abs@Base 3.0.0~preview1
