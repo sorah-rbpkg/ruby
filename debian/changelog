@@ -1,3 +1,14 @@
+ruby3.0 (3.0.2-2) unstable; urgency=medium
+
+  * debian/libruby3.0.symbols: update symbols,
+    Should fix the build on i386, mips64el, s390x, and others.
+  * debian/rules: remove config.log when cleaning
+  * debian/gbp.conf: set debian to master
+  * tool/m4/ruby_default_arch.m4: add suppor for 32-bit arm.
+    Fixes the build on armel and armhf
+
+ -- Antonio Terceiro <terceiro@debian.org>  Mon, 04 Oct 2021 11:19:46 -0300
+
 ruby3.0 (3.0.2-1) unstable; urgency=medium
 
   * New upstream release.
