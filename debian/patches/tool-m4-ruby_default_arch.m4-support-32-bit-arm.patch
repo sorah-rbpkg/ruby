@@ -1,0 +1,21 @@
+From: Antonio Terceiro <terceiro@debian.org>
+Date: Mon, 4 Oct 2021 14:02:15 +0000
+Subject: tool/m4/ruby_default_arch.m4: support 32-bit arm
+
+Not sure yet if this should be forwarded upstream or not.
+---
+ tool/m4/ruby_default_arch.m4 | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tool/m4/ruby_default_arch.m4 b/tool/m4/ruby_default_arch.m4
+index a53bb5f..9da14d0 100644
+--- a/tool/m4/ruby_default_arch.m4
++++ b/tool/m4/ruby_default_arch.m4
+@@ -2,6 +2,7 @@
+ AC_DEFUN([RUBY_DEFAULT_ARCH], [
+ AC_MSG_CHECKING([arch option])
+ AS_CASE([$1],
++	[arm],        [],
+ 	[*64],        [ARCH_FLAG=-m64],
+ 	[[i[3-6]86]], [ARCH_FLAG=-m32],
+ 	[AC_MSG_ERROR(unknown target architecture: $target_archs)]
