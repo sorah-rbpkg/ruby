@@ -9,3 +9,4 @@
 0011-don-t-try-to-download-stuff-in-configure.patch
 0012-Make-resolv-accept-dash-in-zone_id-of-IPv6-link-local-addresses.patch
 tool-m4-ruby_default_arch.m4-support-32-bit-arm.patch
+rand_init-fix-off-by-one-error.patch
