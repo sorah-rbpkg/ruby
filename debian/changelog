@@ -1,3 +1,13 @@
+ruby3.0 (3.0.2-3) unstable; urgency=medium
+
+  [ Lucas Kanashiro ]
+  * Exclude test which requires Internet access (Closes: #995716)
+
+  [ Antonio Terceiro ]
+  * Add patch to fix Bus error on mipsel
+
+ -- Antonio Terceiro <terceiro@debian.org>  Wed, 13 Oct 2021 20:19:14 -0300
+
 ruby3.0 (3.0.2-2) unstable; urgency=medium
 
   * debian/libruby3.0.symbols: update symbols,
