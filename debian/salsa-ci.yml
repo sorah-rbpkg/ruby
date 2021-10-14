@@ -5,3 +5,8 @@ include:
 
 variables:
   DEBIAN_RUBY_EXTRA_TEST_EXCLUDES: salsa
+
+reprotest:
+  extends: .test-reprotest
+  variables:
+    DEB_BUILD_OPTIONS: nocheck
