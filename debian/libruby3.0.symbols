@@ -21,14 +21,11 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  OnigSyntaxPosixExtended@Base 3.0.0~preview1
  OnigSyntaxPython@Base 3.0.0~preview1
  OnigSyntaxRuby@Base 3.0.0~preview1
-#MISSING: 3.0.2-1# coroutine_transfer@Base 3.0.0~preview1
  dln_find_exe_r@Base 3.0.0~preview1
  dln_find_file_r@Base 3.0.0~preview1
  dln_load@Base 3.0.0~preview1
  mjit_call_p@Base 3.0.0~preview1
  mjit_opts@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview2# nucomp_canonicalization@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview2# nurat_canonicalization@Base 3.0.0~preview1
  onig_add_end_call@Base 3.0.0~preview1
  onig_bbuf_init@Base 3.0.0~preview1
  onig_compile@Base 3.0.0~preview1
@@ -174,7 +171,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_add_event_hook2@Base 3.0.0~preview1
  rb_add_event_hook@Base 3.0.0~preview1
  rb_add_method_iseq@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview2# rb_adjust_argv_kw_splat@Base 3.0.0~preview2
  rb_alias@Base 3.0.0~preview1
  rb_alias_variable@Base 3.0.0~preview1
  rb_alloc_tmp_buffer@Base 3.0.0~preview1
@@ -313,7 +309,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_cBinding@Base 3.0.0~preview1
  rb_cClass@Base 3.0.0~preview1
  rb_cComplex@Base 3.0.0~preview1
-#MISSING: 3.0.0# rb_cData@Base 3.0.0~preview1
  rb_cDir@Base 3.0.0~preview1
  rb_cEncoding@Base 3.0.0~preview1
  rb_cEnumerator@Base 3.0.0~preview1
@@ -351,7 +346,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_callable_method_entry@Base 3.0.0~preview1
  rb_callable_method_entry_with_refinements@Base 3.0.0~preview1
  rb_callable_method_entry_without_refinements@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview2# rb_callable_receiver@Base 3.0.0~preview1
  rb_catch@Base 3.0.0~preview1
  rb_catch_obj@Base 3.0.0~preview1
  rb_category_compile_warn@Base 3.0.0~rc1
@@ -369,7 +363,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_check_id@Base 3.0.0~preview1
  rb_check_id_cstr@Base 3.0.0~preview1
  rb_check_inheritable@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview1# rb_check_safe_obj@Base 3.0.0~preview1
  rb_check_string_type@Base 3.0.0~preview1
  rb_check_symbol@Base 3.0.0~preview1
  rb_check_symbol_cstr@Base 3.0.0~preview1
@@ -400,7 +393,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_class_superclass@Base 3.0.0~preview1
  rb_clear_constant_cache@Base 3.0.0~preview1
  rb_clear_coverages@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview1# rb_clear_method_cache_by_class@Base 3.0.0~preview1
  rb_cloexec_dup2@Base 3.0.0~preview1
  rb_cloexec_dup@Base 3.0.0~preview1
  rb_cloexec_fcntl_dupfd@Base 3.0.0~preview1
@@ -568,7 +560,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_econv_str_convert@Base 3.0.0~preview1
  rb_econv_substr_append@Base 3.0.0~preview1
  rb_econv_substr_convert@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview2# rb_empty_keyword_given_p@Base 3.0.0~preview2
  rb_enc_alias@Base 3.0.0~preview1
  rb_enc_ascget@Base 3.0.0~preview1
  rb_enc_associate@Base 3.0.0~preview1
@@ -645,7 +636,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_error_frozen@Base 3.0.0~preview1
  rb_error_frozen_object@Base 3.0.0~preview1
  rb_error_untrusted@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview1# rb_eval_cmd@Base 3.0.0~preview1
  rb_eval_cmd_kw@Base 3.0.0~preview1
  rb_eval_string@Base 3.0.0~preview1
  rb_eval_string_protect@Base 3.0.0~preview1
@@ -725,8 +715,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_find_encoding@Base 3.0.0~preview1
  rb_find_file@Base 3.0.0~preview1
  rb_find_file_ext@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview1# rb_find_file_ext_safe@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview1# rb_find_file_safe@Base 3.0.0~preview1
  rb_fix2int@Base 3.0.0~preview1
  rb_fix2short@Base 3.0.0~preview1
  rb_fix2str@Base 3.0.0~preview1
@@ -764,7 +752,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_funcallv_kw@Base 3.0.0~preview1
  rb_funcallv_public@Base 3.0.0~preview1
  rb_funcallv_public_kw@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview2# rb_funcallv_with_cc@Base 3.0.0~preview2
  rb_gc@Base 3.0.0~preview1
  rb_gc_adjust_memory_usage@Base 3.0.0~preview1
  rb_gc_copy_finalizer@Base 3.0.0~preview1
@@ -807,7 +794,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_get_values_at@Base 3.0.0~preview1
  rb_gets@Base 3.0.0~preview1
  rb_glob@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview2# rb_global_entry@Base 3.0.0~preview2
  rb_global_variable@Base 3.0.0~preview1
  rb_grantpt@Base 3.0.0~preview1
  rb_gv_get@Base 3.0.0~preview1
@@ -865,9 +851,7 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_imemo_new@Base 3.0.0~preview1
  rb_include_module@Base 3.0.0~preview1
  rb_init_iv_list@Base 3.0.0~preview2
-#MISSING: 3.0.0~preview1# rb_insecure_operation@Base 3.0.0~preview1
  rb_inspect@Base 3.0.0~preview1
-#MISSING: 3.0.2-1# rb_int128t2big@Base 3.0.2
  rb_int2big@Base 3.0.0~preview1
  rb_int2inum@Base 3.0.0~preview1
  rb_int_abs@Base 3.0.0~preview1
@@ -907,7 +891,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_io_extract_modeenc@Base 3.0.0~preview1
  rb_io_fdopen@Base 3.0.0~preview1
  rb_io_flush@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview1# rb_io_fptr_finalize@Base 3.0.0~preview1
  rb_io_get_io@Base 3.0.0~preview1
  rb_io_get_write_io@Base 3.0.0~preview1
  rb_io_getbyte@Base 3.0.0~preview1
@@ -988,7 +971,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_ivar_count@Base 3.0.0~preview1
  rb_ivar_defined@Base 3.0.0~preview1
  rb_ivar_foreach@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview2# rb_ivar_generic_ivtbl@Base 3.0.0~preview1
  rb_ivar_generic_ivtbl_lookup@Base 3.0.0~preview2
  rb_ivar_generic_lookup_with_index@Base 3.0.0~rc1
  rb_ivar_get@Base 3.0.0~preview1
@@ -1076,7 +1058,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_mjit_recompile_const@Base 3.0.0~rc1
  rb_mjit_recompile_exivar@Base 3.0.0~preview1
  rb_mjit_recompile_inlining@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview2# rb_mjit_recompile_iseq@Base 3.0.0~preview2
  rb_mjit_recompile_ivar@Base 3.0.0~preview1
  rb_mjit_recompile_send@Base 3.0.0~preview1
  rb_mjit_wait_call@Base 3.0.0~preview1
@@ -1175,7 +1156,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_obj_is_kind_of@Base 3.0.0~preview1
  rb_obj_is_method@Base 3.0.0~preview1
  rb_obj_is_proc@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview2# rb_obj_iv_index_tbl@Base 3.0.0~preview1
  rb_obj_memsize_of@Base 3.0.0~preview1
  rb_obj_method@Base 3.0.0~preview1
  rb_obj_method_arity@Base 3.0.0~preview1
@@ -1337,7 +1317,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_remove_method@Base 3.0.0~preview1
  rb_remove_method_id@Base 3.0.0~preview1
  rb_require@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview1# rb_require_safe@Base 3.0.0~preview1
  rb_require_string@Base 3.0.0~preview1
  rb_rescue2@Base 3.0.0~preview1
  rb_rescue@Base 3.0.0~preview1
@@ -1351,18 +1330,13 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_rs@Base 3.0.0~preview1
  rb_ruby_debug_ptr@Base 3.0.0~preview1
  rb_ruby_verbose_ptr@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview1# rb_safe_level@Base 3.0.0~preview1
  rb_scan_args@Base 3.0.0~preview1
  rb_scan_args_kw@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview1# rb_secure@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview1# rb_secure_update@Base 3.0.0~preview1
  rb_set_class_path@Base 3.0.0~preview1
  rb_set_class_path_string@Base 3.0.0~preview1
  rb_set_coverages@Base 3.0.0~preview1
  rb_set_end_proc@Base 3.0.0~preview1
  rb_set_errinfo@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview1# rb_set_safe_level@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview1# rb_set_safe_level_force@Base 3.0.0~preview1
  rb_setup_fake_str@Base 3.0.0~preview1
  rb_singleton_class@Base 3.0.0~preview1
  rb_singleton_class_attached@Base 3.0.0~preview1
@@ -1579,7 +1553,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_time_nano_new@Base 3.0.0~preview1
  rb_time_new@Base 3.0.0~preview1
  rb_time_num_new@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview2# rb_time_succ@Base 3.0.0~preview1
  rb_time_timespec@Base 3.0.0~preview1
  rb_time_timespec_interval@Base 3.0.0~preview1
  rb_time_timespec_new@Base 3.0.0~preview1
@@ -1673,8 +1646,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  ruby_cleanup@Base 3.0.0~preview1
  ruby_copyright@Base 3.0.0~preview1
  ruby_current_ec@Base 3.0.0~preview2
-#MISSING: 3.0.0~preview2# ruby_current_ec_key@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview2# ruby_current_execution_context_ptr@Base 3.0.0~preview2
  ruby_current_vm_ptr@Base 3.0.0~preview1
  ruby_debug_breakpoint@Base 3.0.0~preview1
  ruby_debug_counter_get@Base 3.0.0~preview1
@@ -1694,7 +1665,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  ruby_engine@Base 3.0.0~preview1
  ruby_exec_node@Base 3.0.0~preview1
  ruby_executable_node@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview2# ruby_fill_random_bytes@Base 3.0.0~preview2
  ruby_finalize@Base 3.0.0~preview1
  ruby_float_mod@Base 3.0.0~preview1
  ruby_getcwd@Base 3.0.0~preview1
@@ -1708,7 +1678,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  ruby_init_setproctitle@Base 3.0.0~preview1
  ruby_init_stack@Base 3.0.0~preview1
  ruby_malloc_size_overflow@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview2# ruby_multi_ractor@Base 3.0.0~preview1
  ruby_native_thread_p@Base 3.0.0~preview1
  ruby_node_name@Base 3.0.0~preview1
  ruby_options@Base 3.0.0~preview1
@@ -1721,7 +1690,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  ruby_reset_leap_second_info@Base 3.0.0~preview1
  ruby_reset_timezone@Base 3.0.0~preview1
  ruby_run_node@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview1# ruby_safe_level_2_warning@Base 3.0.0~preview1
  ruby_scan_digits@Base 3.0.0~preview1
  ruby_scan_hex@Base 3.0.0~preview1
  ruby_scan_oct@Base 3.0.0~preview1
@@ -1758,7 +1726,6 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  ruby_vm_event_flags@Base 3.0.0~preview1
  ruby_vm_event_local_num@Base 3.0.0~preview1
  ruby_vm_global_constant_state@Base 3.0.0~preview1
-#MISSING: 3.0.0~preview2# ruby_vm_global_method_state@Base 3.0.0~preview1
  ruby_vsnprintf@Base 3.0.0~preview1
  ruby_xcalloc@Base 3.0.0~preview1
  ruby_xfree@Base 3.0.0~preview1
