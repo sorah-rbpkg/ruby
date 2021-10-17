@@ -8,12 +8,13 @@ Signed-off-by: Antonio Terceiro <terceiro@debian.org>
 Signed-off-by: Christian Hofstaedtler <zeha@debian.org>
 ---
  lib/rdoc/generator/json_index.rb | 4 ++--
- lib/rdoc/rdoc.rb                 | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/lib/rdoc/generator/json_index.rb b/lib/rdoc/generator/json_index.rb
+index 3a10000..f40bb37 100644
 --- a/lib/rdoc/generator/json_index.rb
 +++ b/lib/rdoc/generator/json_index.rb
-@@ -178,7 +178,7 @@
+@@ -178,7 +178,7 @@ class RDoc::Generator::JsonIndex
      debug_msg "Writing gzipped search index to %s" % outfile
  
      Zlib::GzipWriter.open(outfile) do |gz|
@@ -22,7 +23,7 @@ Signed-off-by: Christian Hofstaedtler <zeha@debian.org>
        gz.orig_name = search_index_file.basename.to_s
        gz.write search_index
        gz.close
-@@ -196,7 +196,7 @@
+@@ -196,7 +196,7 @@ class RDoc::Generator::JsonIndex
          debug_msg "Writing gzipped file to %s" % outfile
  
          Zlib::GzipWriter.open(outfile) do |gz|
