@@ -1,3 +1,14 @@
+ruby3.0 (3.0.2-4) unstable; urgency=medium
+
+  * salsa ci: don't run tests for reprotest check
+  * debian/source/lintian-overrides: ignore source-contains-prebuilt-ms-help-file
+  * debian/libruby3.0.symbols: drop MISSING entries
+  * debian/libruby3.0.symbols: mark optional and arch-specific symbols
+  * debian/tests/excludes/any: skip tests that fail on porter boxes
+  * salsa-ci: blhc: ignore false positives
+
+ -- Antonio Terceiro <terceiro@debian.org>  Sun, 17 Oct 2021 13:06:07 -0300
+
 ruby3.0 (3.0.2-3) unstable; urgency=medium
 
   [ Lucas Kanashiro ]
