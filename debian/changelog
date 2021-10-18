@@ -1,3 +1,11 @@
+ruby3.0 (3.0.2-5) unstable; urgency=medium
+
+  * Refresh patches with gbp pq
+  * Update patch for armhf to apply to all architectures
+  * ppc64el: skip some failing tests
+
+ -- Antonio Terceiro <terceiro@debian.org>  Mon, 18 Oct 2021 09:52:16 -0300
+
 ruby3.0 (3.0.2-4) unstable; urgency=medium
 
   * salsa ci: don't run tests for reprotest check
