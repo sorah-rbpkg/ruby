@@ -2,7 +2,7 @@ ruby3.0 (3.0.2-5) unstable; urgency=medium
 
   * Refresh patches with gbp pq
   * Update patch for armhf to apply to all architectures
-  * ppc64el: skip some failing tests
+  * ppc64el: skip some failing tests (Closes: #996724)
 
  -- Antonio Terceiro <terceiro@debian.org>  Mon, 18 Oct 2021 09:52:16 -0300
 
