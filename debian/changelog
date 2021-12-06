@@ -1,3 +1,31 @@
+ruby2.1 (2.1.5-2+deb8u13) jessie-security; urgency=high
+
+  * Add length limit option for methods that parses
+    date strings. (Fixes: CVE-2021-41817)
+  * When parsing cookies, only decode the values.
+    (Fixes: CVE-2021-41819)
+
+ -- Utkarsh Gupta <utkarsh@debian.org>  Mon, 06 Dec 2021 06:01:41 +0530
+
+ruby2.1 (2.1.5-2+deb8u12) jessie-security; urgency=high
+
+  * Add patch to use File.open to fix the OS Command
+    Injection vulnerability. (Fixes: CVE-2021-31799)
+  * Add patch to fix StartTLS stripping vulnerability.
+    (Fixes: CVE-2021-32066)
+  * Add patch to ignore IP addresses in PASV responses
+    by default. (Fixes: CVE-2021-31810)
+
+ -- Utkarsh Gupta <utkarsh@debian.org>  Sun, 10 Oct 2021 18:13:06 +0530
+
+ruby2.1 (2.1.5-2+deb8u11) jessie-security; urgency=high
+
+  * Non-maintainer upload by the ELTS team.
+  * Add patch to fix a potential HTTP request smuggling
+    vulnerability in WEBrick. (Fixes: CVE-2020-25613)
+
+ -- Utkarsh Gupta <utkarsh@debian.org>  Thu, 01 Oct 2020 18:13:06 +0530
+
 ruby2.1 (2.1.5-2+deb8u10) jessie-security; urgency=high
 
   * Non-maintainer upload by the LTS team.
