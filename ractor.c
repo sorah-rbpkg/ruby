@@ -34,7 +34,7 @@ ASSERT_ractor_unlocking(rb_ractor_t *r)
 {
 #if RACTOR_CHECK_MODE > 0
     // GET_EC is NULL in an MJIT worker
-    if (GET_EC() != NULL && r->sync.locked_by == rb_ractor_self(GET_RACTOR())) {
+    if (rb_current_execution_context(false) != NULL && r->sync.locked_by == rb_ractor_self(GET_RACTOR())) {
         rb_bug("recursive ractor locking");
     }
 #endif
@@ -45,7 +45,7 @@ ASSERT_ractor_locking(rb_ractor_t *r)
 {
 #if RACTOR_CHECK_MODE > 0
     // GET_EC is NULL in an MJIT worker
-    if (GET_EC() != NULL && r->sync.locked_by != rb_ractor_self(GET_RACTOR())) {
+    if (rb_current_execution_context(false) != NULL && r->sync.locked_by != rb_ractor_self(GET_RACTOR())) {
         rp(r->sync.locked_by);
         rb_bug("ractor lock is not acquired.");
     }
@@ -61,7 +61,7 @@ ractor_lock(rb_ractor_t *r, const char *file, int line)
     rb_native_mutex_lock(&r->sync.lock);
 
 #if RACTOR_CHECK_MODE > 0
-    if (GET_EC() != NULL) { // GET_EC is NULL in an MJIT worker
+    if (rb_current_execution_context(false) != NULL) { // GET_EC is NULL in an MJIT worker
         r->sync.locked_by = rb_ractor_self(GET_RACTOR());
     }
 #endif
@@ -1443,6 +1443,9 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
         }
         vm->ractor.cnt--;
 
+        /* Clear the cached freelist to prevent a memory leak. */
+        rb_gc_ractor_newobj_cache_clear(&cr->newobj_cache);
+
         ractor_status_set(cr, ractor_terminated);
     }
     RB_VM_UNLOCK();
@@ -2322,7 +2325,11 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
                 .stop = false,
                 .data = data,
             };
-            rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
+            RB_VM_LOCK_ENTER_NO_BARRIER();
+            {
+                rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
+            }
+            RB_VM_LOCK_LEAVE_NO_BARRIER();
             if (d.stop) return 1;
         }
         break;
@@ -2632,7 +2639,11 @@ static int
 obj_refer_only_shareables_p(VALUE obj)
 {
     int cnt = 0;
-    rb_objspace_reachable_objects_from(obj, obj_refer_only_shareables_p_i, &cnt);
+    RB_VM_LOCK_ENTER_NO_BARRIER();
+    {
+        rb_objspace_reachable_objects_from(obj, obj_refer_only_shareables_p_i, &cnt);
+    }
+    RB_VM_LOCK_LEAVE_NO_BARRIER();
     return cnt == 0;
 }
 

@@ -1713,45 +1713,34 @@ heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj
     gc_report(3, objspace, "heap_page_add_freeobj: add %p to freelist\n", (void *)obj);
 }
 
-static inline bool
+static inline void
 heap_add_freepage(rb_heap_t *heap, struct heap_page *page)
 {
     asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
     GC_ASSERT(page->free_slots != 0);
+    GC_ASSERT(page->freelist != NULL);
 
-    if (page->freelist) {
-        page->free_next = heap->free_pages;
-        heap->free_pages = page;
+    page->free_next = heap->free_pages;
+    heap->free_pages = page;
 
-        RUBY_DEBUG_LOG("page:%p freelist:%p", page, page->freelist);
+    RUBY_DEBUG_LOG("page:%p freelist:%p", page, page->freelist);
 
-        asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
-        return true;
-    }
-    else {
-        asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
-        return false;
-    }
+    asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
 }
 
 #if GC_ENABLE_INCREMENTAL_MARK
-static inline int
+static inline void
 heap_add_poolpage(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
 {
     asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
-    if (page->freelist) {
-	page->free_next = heap->pooled_pages;
-	heap->pooled_pages = page;
-	objspace->rincgc.pooled_slots += page->free_slots;
-        asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
+    GC_ASSERT(page->free_slots != 0);
+    GC_ASSERT(page->freelist != NULL);
 
-	return TRUE;
-    }
-    else {
-        asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
+    page->free_next = heap->pooled_pages;
+    heap->pooled_pages = page;
+    objspace->rincgc.pooled_slots += page->free_slots;
 
-	return FALSE;
-    }
+    asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
 }
 #endif
 
@@ -4647,7 +4636,7 @@ static void read_barrier_handler(intptr_t address)
 }
 
 #if defined(_WIN32)
-LPTOP_LEVEL_EXCEPTION_FILTER old_handler;
+static LPTOP_LEVEL_EXCEPTION_FILTER old_handler;
 typedef void (*signal_handler)(int);
 static signal_handler old_sigsegv_handler;
 
@@ -4666,13 +4655,15 @@ static LONG WINAPI read_barrier_signal(EXCEPTION_POINTERS * info)
     }
 }
 
-static void uninstall_handlers(void)
+static void
+uninstall_handlers(void)
 {
     signal(SIGSEGV, old_sigsegv_handler);
     SetUnhandledExceptionFilter(old_handler);
 }
 
-static void install_handlers(void)
+static void
+install_handlers(void)
 {
     /* Remove SEGV handler so that the Unhandled Exception Filter handles it */
     old_sigsegv_handler = signal(SIGSEGV, NULL);
@@ -4708,13 +4699,15 @@ read_barrier_signal(int sig, siginfo_t * info, void * data)
     sigprocmask(SIG_SETMASK, &prev_set, NULL);
 }
 
-static void uninstall_handlers(void)
+static void
+uninstall_handlers(void)
 {
     sigaction(SIGBUS, &old_sigbus_handler, NULL);
     sigaction(SIGSEGV, &old_sigsegv_handler, NULL);
 }
 
-static void install_handlers(void)
+static void
+install_handlers(void)
 {
     struct sigaction action;
     memset(&action, 0, sizeof(struct sigaction));
@@ -5060,20 +5053,7 @@ gc_sweep_start_heap(rb_objspace_t *objspace, rb_heap_t *heap)
 
     rb_ractor_t *r = NULL;
     list_for_each(&GET_VM()->ractor.set, r, vmlr_node) {
-        struct heap_page *page = r->newobj_cache.using_page;
-        RVALUE *freelist = r->newobj_cache.freelist;
-        RUBY_DEBUG_LOG("ractor using_page:%p freelist:%p", page, freelist);
-
-        if (page && freelist) {
-            RVALUE **p = &page->freelist;
-            while (*p) {
-                p = &(*p)->as.free.next;
-            }
-            *p = freelist;
-        }
-
-        r->newobj_cache.using_page = NULL;
-        r->newobj_cache.freelist = NULL;
+        rb_gc_ractor_newobj_cache_clear(&r->newobj_cache);
     }
 }
 
@@ -5146,21 +5126,18 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
 	else if (free_slots > 0) {
 #if GC_ENABLE_INCREMENTAL_MARK
 	    if (need_pool) {
-		if (heap_add_poolpage(objspace, heap, sweep_page)) {
-		    need_pool = FALSE;
-		}
+                heap_add_poolpage(objspace, heap, sweep_page);
+                need_pool = FALSE;
 	    }
 	    else {
-                if (heap_add_freepage(heap, sweep_page)) {
-                    swept_slots += free_slots;
-                    if (swept_slots > 2048) {
-                        break;
-                    }
+                heap_add_freepage(heap, sweep_page);
+                swept_slots += free_slots;
+                if (swept_slots > 2048) {
+                    break;
                 }
 	    }
 #else
-	    heap_add_freepage(heap, sweep_page);
-	    break;
+            heap_add_freepage(heap, sweep_page);
 #endif
 	}
 	else {
@@ -6187,12 +6164,16 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
       case imemo_env:
 	{
 	    const rb_env_t *env = (const rb_env_t *)obj;
-            GC_ASSERT(env->ep[VM_ENV_DATA_INDEX_ENV] == obj);
-	    GC_ASSERT(VM_ENV_ESCAPED_P(env->ep));
-            gc_mark_values(objspace, (long)env->env_size, env->env);
-	    VM_ENV_FLAGS_SET(env->ep, VM_ENV_FLAG_WB_REQUIRED);
-            gc_mark(objspace, (VALUE)rb_vm_env_prev_env(env));
-	    gc_mark(objspace, (VALUE)env->iseq);
+
+            if (LIKELY(env->ep)) {
+                // just after newobj() can be NULL here.
+                GC_ASSERT(env->ep[VM_ENV_DATA_INDEX_ENV] == obj);
+                GC_ASSERT(VM_ENV_ESCAPED_P(env->ep));
+                gc_mark_values(objspace, (long)env->env_size, env->env);
+                VM_ENV_FLAGS_SET(env->ep, VM_ENV_FLAG_WB_REQUIRED);
+                gc_mark(objspace, (VALUE)rb_vm_env_prev_env(env));
+                gc_mark(objspace, (VALUE)env->iseq);
+            }
 	}
 	return;
       case imemo_cref:
@@ -7975,6 +7956,37 @@ rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
 /* GC */
 
 void
+rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache)
+{
+    struct heap_page *page = newobj_cache->using_page;
+    RVALUE *freelist = newobj_cache->freelist;
+    RUBY_DEBUG_LOG("ractor using_page:%p freelist:%p", page, freelist);
+
+    if (page && freelist) {
+        asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
+        if (page->freelist) {
+            RVALUE *p = page->freelist;
+            asan_unpoison_object((VALUE)p, false);
+            while (p->as.free.next) {
+                RVALUE *prev = p;
+                p = p->as.free.next;
+                asan_poison_object((VALUE)prev);
+                asan_unpoison_object((VALUE)p, false);
+            }
+            p->as.free.next = freelist;
+            asan_poison_object((VALUE)p);
+        }
+        else {
+            page->freelist = freelist;
+        }
+        asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
+    }
+
+    newobj_cache->using_page = NULL;
+    newobj_cache->freelist = NULL;
+}
+
+void
 rb_gc_force_recycle(VALUE obj)
 {
     rb_objspace_t *objspace = &rb_objspace;
@@ -8003,7 +8015,7 @@ rb_gc_force_recycle(VALUE obj)
         }
         else {
 #endif
-            if (is_old || !GET_HEAP_PAGE(obj)->flags.before_sweep) {
+            if (is_old || GET_HEAP_PAGE(obj)->flags.before_sweep) {
                 CLEAR_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj);
             }
             CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj);

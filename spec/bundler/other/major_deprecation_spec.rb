@@ -92,6 +92,18 @@ RSpec.describe "major deprecations" do
     end
   end
 
+  describe "bundle exec --no-keep-file-descriptors" do
+    before do
+      bundle "exec --no-keep-file-descriptors -e 1", :raise_on_error => false
+    end
+
+    it "is deprecated", :bundler => "< 3" do
+      expect(deprecations).to include "The `--no-keep-file-descriptors` has been deprecated. `bundle exec` no longer mess with your file descriptors. Close them in the exec'd script if you need to"
+    end
+
+    pending "is removed and shows a helpful error message about it", :bundler => "3"
+  end
+
   describe "bundle update --quiet" do
     it "does not print any deprecations" do
       bundle :update, :quiet => true, :raise_on_error => false
@@ -159,6 +171,28 @@ RSpec.describe "major deprecations" do
         "remembered across bundler invocations, which bundler will no " \
         "longer do in future versions. Instead please use `bundle config set " \
         "cache_all true`, and stop using this flag"
+      )
+    end
+
+    pending "fails with a helpful error", :bundler => "3"
+  end
+
+  context "bundle cache --path" do
+    before do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      G
+
+      bundle "cache --path foo", :raise_on_error => false
+    end
+
+    it "should print a deprecation warning", :bundler => "< 3" do
+      expect(deprecations).to include(
+        "The `--path` flag is deprecated because its semantics are unclear. " \
+        "Use `bundle config cache_path` to configure the path of your cache of gems, " \
+        "and `bundle config path` to configure the path where your gems are installed, " \
+        "and stop using this flag"
       )
     end
 
@@ -311,7 +345,7 @@ RSpec.describe "major deprecations" do
     end
 
     it "should print a proper warning, and use gems.rb" do
-      create_file "gems.rb"
+      create_file "gems.rb", "source \"#{file_uri_for(gem_repo1)}\""
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
@@ -462,7 +496,7 @@ RSpec.describe "major deprecations" do
 
   context "when Bundler.setup is run in a ruby script" do
     before do
-      create_file "gems.rb"
+      create_file "gems.rb", "source \"#{file_uri_for(gem_repo1)}\""
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack", :group => :test
@@ -590,6 +624,25 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
     end
   end
 
+  context "bundle remove" do
+    before do
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      G
+    end
+
+    context "with --install" do
+      it "shows a deprecation warning", :bundler => "< 3" do
+        bundle "remove rack --install"
+
+        expect(err).to include "[DEPRECATED] The `--install` flag has been deprecated. `bundle install` is triggered by default."
+      end
+
+      pending "fails with a helpful message", :bundler => "3"
+    end
+  end
+
   context "bundle console" do
     before do
       bundle "console", :raise_on_error => false
@@ -607,14 +660,60 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
     before do
       graphviz_version = RUBY_VERSION >= "2.4" ? "1.2.5" : "1.2.4"
       realworld_system_gems "ruby-graphviz --version #{graphviz_version}"
-      create_file "gems.rb"
+      create_file "gems.rb", "source \"#{file_uri_for(gem_repo1)}\""
       bundle "viz"
     end
 
     it "prints a deprecation warning", :bundler => "< 3" do
-      expect(deprecations).to include "The `viz` command has been moved to the `bundle-viz` gem, see https://github.com/bundler/bundler-viz"
+      expect(deprecations).to include "The `viz` command has been renamed to `graph` and moved to a plugin. See https://github.com/rubygems/bundler-graph"
     end
 
     pending "fails with a helpful message", :bundler => "3"
+  end
+
+  describe "deprecating rubocop", :readline do
+    context "bundle gem --rubocop" do
+      before do
+        bundle "gem my_new_gem --rubocop", :raise_on_error => false
+      end
+
+      it "prints a deprecation warning", :bundler => "< 3" do
+        expect(deprecations).to include \
+          "--rubocop is deprecated, use --linter=rubocop"
+      end
+    end
+
+    context "bundle gem --no-rubocop" do
+      before do
+        bundle "gem my_new_gem --no-rubocop", :raise_on_error => false
+      end
+
+      it "prints a deprecation warning", :bundler => "< 3" do
+        expect(deprecations).to include \
+          "--no-rubocop is deprecated, use --linter"
+      end
+    end
+
+    context "bundle gem with gem.rubocop set to true" do
+      before do
+        bundle "gem my_new_gem", :env => { "BUNDLE_GEM__RUBOCOP" => "true" }, :raise_on_error => false
+      end
+
+      it "prints a deprecation warning", :bundler => "< 3" do
+        expect(deprecations).to include \
+          "config gem.rubocop is deprecated; we've updated your config to use gem.linter instead"
+      end
+    end
+
+    context "bundle gem with gem.rubocop set to false" do
+      before do
+        bundle "gem my_new_gem", :env => { "BUNDLE_GEM__RUBOCOP" => "false" }, :raise_on_error => false
+      end
+
+      it "prints a deprecation warning", :bundler => "< 3" do
+        expect(deprecations).to include \
+          "config gem.rubocop is deprecated; we've updated your config to use gem.linter instead"
+      end
+    end
   end
 end
