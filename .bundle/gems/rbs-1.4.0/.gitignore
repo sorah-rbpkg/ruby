@@ -1,0 +1,13 @@
+/.bundle/
+/steep/.bundle/
+/.yardoc
+/_yardoc/
+/coverage/
+/pkg/
+/spec/reports/
+/tmp/
+/.ruby-version
+/lib/rbs/parser.output
+/vendor/sigs
+/Gemfile.lock
+
