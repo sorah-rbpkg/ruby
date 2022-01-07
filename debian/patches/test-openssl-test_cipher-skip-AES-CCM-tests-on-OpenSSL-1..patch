@@ -1,0 +1,30 @@
+From: Kazuki Yamaguchi <k@rhe.jp>
+Date: Tue, 16 Mar 2021 22:05:04 +0900
+Subject: test/openssl/test_cipher: skip AES-CCM tests on OpenSSL <= 1.1.1b
+
+AES CCM mode in OpenSSL <= 1.1.1b was overly strict in the parameters
+assignment order. This has been relaxed by OpenSSL 1.1.1c.
+
+https://github.com/openssl/openssl/commit/b48e3be947ddc5da6b5a86db8341081c72b9a4ee
+
+The test case is failing on Ubuntu 18.04 because it still uses the
+initial 1.1.1 release and has the issue:
+
+http://rubyci.s3.amazonaws.com/graviton2/ruby-master/log/20210316T120003Z.fail.html.gz
+---
+ test/openssl/test_cipher.rb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/openssl/test_cipher.rb b/test/openssl/test_cipher.rb
+index 65b36dd..3652f9c 100644
+--- a/test/openssl/test_cipher.rb
++++ b/test/openssl/test_cipher.rb
+@@ -214,7 +214,7 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
+     assert_raise(OpenSSL::Cipher::CipherError) { cipher.update(ct2) }
+   end if has_cipher?("aes-128-ccm") &&
+          OpenSSL::Cipher.new("aes-128-ccm").authenticated? &&
+-         OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10101000  # version >= v1.1.1
++         OpenSSL::OPENSSL_VERSION_NUMBER >= 0x1010103f # version >= 1.1.1c
+ 
+   def test_aes_gcm
+     # GCM spec Appendix B Test Case 4
