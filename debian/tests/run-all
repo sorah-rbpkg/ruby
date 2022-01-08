@@ -41,4 +41,4 @@ for t in $tests; do
   fi
 done
 
-ruby3.0 test/runner.rb -v $excludes --name='!/memory_leak/' $run_tests
+ruby3.1 test/runner.rb -v $excludes --name='!/memory_leak/' $run_tests

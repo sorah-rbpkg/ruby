@@ -2,4 +2,4 @@ exclude :test_no_other_behavioral_changes_with_Kernel_warn, 'failure against rub
 exclude :test_no_other_behavioral_changes_with_warn, 'failure against ruby2.7, depends on source tree'
 exclude :test_no_kernel_require_in_warn_with_uplevel, 'failure against ruby2.7, depends on source tree'
 exclude :test_no_kernel_require_in_Kernel_warn_with_uplevel, 'failure against ruby2.7, depends on source tree'
-exclude :test_realworld_upgraded_default_gem, 'failure against ruby3.0, depends on source tree'
+exclude :test_realworld_upgraded_default_gem, 'failure against ruby3.1, depends on source tree'
