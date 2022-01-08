@@ -1,3 +1,9 @@
+ruby2.6 (2.6.9-0nkmi1~dist) unstable; urgency=medium
+
+  * 2.6.9
+
+ -- Sorah Fukumori <sorah@sumika>  Sat, 08 Jan 2022 10:14:49 +0900
+
 ruby2.6 (2.6.8-0nkmi1~dist) unstable; urgency=medium
 
   * 2.6.8
