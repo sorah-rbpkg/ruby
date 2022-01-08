@@ -739,7 +739,6 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_file_open@Base 3.1.0
  rb_file_open_str@Base 3.1.0
  rb_file_s_absolute_path@Base 3.1.0
- rb_file_s_birthtime@Base 3.1.0
  rb_file_s_expand_path@Base 3.1.0
  rb_file_size@Base 3.1.0
  rb_filesystem_encindex@Base 3.1.0
