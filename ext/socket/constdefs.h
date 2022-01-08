@@ -29,6 +29,16 @@
 #  define SOCK_PACKET SOCK_PACKET
 # endif
 #endif
+#if !defined(SOCK_NONBLOCK)
+# if defined(HAVE_CONST_SOCK_NONBLOCK)
+#  define SOCK_NONBLOCK SOCK_NONBLOCK
+# endif
+#endif
+#if !defined(SOCK_CLOEXEC)
+# if defined(HAVE_CONST_SOCK_CLOEXEC)
+#  define SOCK_CLOEXEC SOCK_CLOEXEC
+# endif
+#endif
 #if !defined(AF_UNSPEC)
 # if defined(HAVE_CONST_AF_UNSPEC)
 #  define AF_UNSPEC AF_UNSPEC
@@ -217,6 +227,16 @@
 #if !defined(PF_DEC)
 # if defined(HAVE_CONST_PF_DEC)
 #  define PF_DEC PF_DEC
+# endif
+#endif
+#if !defined(AF_DECnet)
+# if defined(HAVE_CONST_AF_DECNET)
+#  define AF_DECnet AF_DECnet
+# endif
+#endif
+#if !defined(PF_DECnet)
+# if defined(HAVE_CONST_PF_DECNET)
+#  define PF_DECnet PF_DECnet
 # endif
 #endif
 #if !defined(AF_DLI)
@@ -419,9 +439,144 @@
 #  define PF_PIP PF_PIP
 # endif
 #endif
+#if !defined(AF_KEY)
+# if defined(HAVE_CONST_AF_KEY)
+#  define AF_KEY AF_KEY
+# endif
+#endif
 #if !defined(PF_KEY)
 # if defined(HAVE_CONST_PF_KEY)
 #  define PF_KEY PF_KEY
+# endif
+#endif
+#if !defined(AF_NETLINK)
+# if defined(HAVE_CONST_AF_NETLINK)
+#  define AF_NETLINK AF_NETLINK
+# endif
+#endif
+#if !defined(PF_NETLINK)
+# if defined(HAVE_CONST_PF_NETLINK)
+#  define PF_NETLINK PF_NETLINK
+# endif
+#endif
+#if !defined(AF_RDS)
+# if defined(HAVE_CONST_AF_RDS)
+#  define AF_RDS AF_RDS
+# endif
+#endif
+#if !defined(PF_RDS)
+# if defined(HAVE_CONST_PF_RDS)
+#  define PF_RDS PF_RDS
+# endif
+#endif
+#if !defined(AF_PPPOX)
+# if defined(HAVE_CONST_AF_PPPOX)
+#  define AF_PPPOX AF_PPPOX
+# endif
+#endif
+#if !defined(PF_PPPOX)
+# if defined(HAVE_CONST_PF_PPPOX)
+#  define PF_PPPOX PF_PPPOX
+# endif
+#endif
+#if !defined(AF_LLC)
+# if defined(HAVE_CONST_AF_LLC)
+#  define AF_LLC AF_LLC
+# endif
+#endif
+#if !defined(PF_LLC)
+# if defined(HAVE_CONST_PF_LLC)
+#  define PF_LLC PF_LLC
+# endif
+#endif
+#if !defined(AF_IB)
+# if defined(HAVE_CONST_AF_IB)
+#  define AF_IB AF_IB
+# endif
+#endif
+#if !defined(PF_IB)
+# if defined(HAVE_CONST_PF_IB)
+#  define PF_IB PF_IB
+# endif
+#endif
+#if !defined(AF_MPLS)
+# if defined(HAVE_CONST_AF_MPLS)
+#  define AF_MPLS AF_MPLS
+# endif
+#endif
+#if !defined(PF_MPLS)
+# if defined(HAVE_CONST_PF_MPLS)
+#  define PF_MPLS PF_MPLS
+# endif
+#endif
+#if !defined(AF_CAN)
+# if defined(HAVE_CONST_AF_CAN)
+#  define AF_CAN AF_CAN
+# endif
+#endif
+#if !defined(PF_CAN)
+# if defined(HAVE_CONST_PF_CAN)
+#  define PF_CAN PF_CAN
+# endif
+#endif
+#if !defined(AF_TIPC)
+# if defined(HAVE_CONST_AF_TIPC)
+#  define AF_TIPC AF_TIPC
+# endif
+#endif
+#if !defined(PF_TIPC)
+# if defined(HAVE_CONST_PF_TIPC)
+#  define PF_TIPC PF_TIPC
+# endif
+#endif
+#if !defined(AF_BLUETOOTH)
+# if defined(HAVE_CONST_AF_BLUETOOTH)
+#  define AF_BLUETOOTH AF_BLUETOOTH
+# endif
+#endif
+#if !defined(PF_BLUETOOTH)
+# if defined(HAVE_CONST_PF_BLUETOOTH)
+#  define PF_BLUETOOTH PF_BLUETOOTH
+# endif
+#endif
+#if !defined(AF_ALG)
+# if defined(HAVE_CONST_AF_ALG)
+#  define AF_ALG AF_ALG
+# endif
+#endif
+#if !defined(PF_ALG)
+# if defined(HAVE_CONST_PF_ALG)
+#  define PF_ALG PF_ALG
+# endif
+#endif
+#if !defined(AF_VSOCK)
+# if defined(HAVE_CONST_AF_VSOCK)
+#  define AF_VSOCK AF_VSOCK
+# endif
+#endif
+#if !defined(PF_VSOCK)
+# if defined(HAVE_CONST_PF_VSOCK)
+#  define PF_VSOCK PF_VSOCK
+# endif
+#endif
+#if !defined(AF_KCM)
+# if defined(HAVE_CONST_AF_KCM)
+#  define AF_KCM AF_KCM
+# endif
+#endif
+#if !defined(PF_KCM)
+# if defined(HAVE_CONST_PF_KCM)
+#  define PF_KCM PF_KCM
+# endif
+#endif
+#if !defined(AF_XDP)
+# if defined(HAVE_CONST_AF_XDP)
+#  define AF_XDP AF_XDP
+# endif
+#endif
+#if !defined(PF_XDP)
+# if defined(HAVE_CONST_PF_XDP)
+#  define PF_XDP PF_XDP
 # endif
 #endif
 #if !defined(MSG_OOB)

@@ -16,6 +16,9 @@ else
   DLL_BASE_NAME := $(RUBY_SO_NAME)
   DLLWRAP += -mno-cygwin
   VPATH := $(VPATH):$(srcdir)/win32
+  ifneq ($(filter -flto%,$(LDFLAGS)),)
+    miniruby$(EXEEXT): XLDFLAGS += -Wno-maybe-uninitialized
+  endif
 endif
 
 ifneq ($(ENABLE_SHARED),yes)
@@ -33,9 +36,7 @@ endif
 
 WPROGRAM = $(RUBYW_INSTALL_NAME)$(EXEEXT)
 
--include uncommon.mk
-
-include $(srcdir)/defs/gmake.mk
+include $(srcdir)/template/GNUmakefile.in
 
 SOLIBS := $(DLL_BASE_NAME).res.@OBJEXT@ $(SOLIBS)
 override EXTOBJS += $(if $(filter-out $(RUBYW_INSTALL_NAME),$(@:$(EXEEXT)=)),$(RUBY_INSTALL_NAME),$(@:$(EXEEXT)=)).res.$(OBJEXT)

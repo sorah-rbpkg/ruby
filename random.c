@@ -42,15 +42,18 @@
 # include <winsock2.h>
 # include <windows.h>
 # include <wincrypt.h>
+# include <bcrypt.h>
 #endif
 
-#ifdef __OpenBSD__
-/* to define OpenBSD for version check */
+#if defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__)
+/* to define OpenBSD and FreeBSD for version check */
 # include <sys/param.h>
 #endif
 
-#if defined HAVE_GETRANDOM
-# include <sys/random.h>
+#if defined HAVE_GETRANDOM || defined HAVE_GETENTROPY
+# if defined(HAVE_SYS_RANDOM_H)
+#  include <sys/random.h>
+# endif
 #elif defined __linux__ && defined __NR_getrandom
 # include <linux/random.h>
 #endif
@@ -257,14 +260,7 @@ const rb_data_type_t rb_random_data_type = {
 };
 
 #define random_mt_mark rb_random_mark
-
-static void
-random_mt_free(void *ptr)
-{
-    rb_random_mt_t *rnd = rb_ractor_local_storage_ptr(default_rand_key);
-    if (ptr != rnd)
-	xfree(ptr);
-}
+#define random_mt_free RUBY_TYPED_DEFAULT_FREE
 
 static size_t
 random_mt_memsize(const void *ptr)
@@ -369,15 +365,12 @@ rand_init(const rb_random_interface_t *rng, rb_random_t *rnd, VALUE seed)
     int sign;
 
     len = rb_absint_numwords(seed, 32, NULL);
+    if (len == 0) len = 1;
     buf = ALLOCV_N(uint32_t, buf0, len);
     sign = rb_integer_pack(seed, buf, len, sizeof(uint32_t), 0,
         INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
     if (sign < 0)
         sign = -sign;
-    if (len == 0) {
-        buf[0] = 0;
-        len = 1;
-    }
     if (len > 1) {
         if (sign != 2 && buf[len-1] == 1) /* remove leading-zero-guard */
             len--;
@@ -426,7 +419,23 @@ random_init(int argc, VALUE *argv, VALUE obj)
 # define USE_DEV_URANDOM 0
 #endif
 
-#if USE_DEV_URANDOM
+#ifdef HAVE_GETENTROPY
+# define MAX_SEED_LEN_PER_READ 256
+static int
+fill_random_bytes_urandom(void *seed, size_t size)
+{
+     unsigned char *p = (unsigned char *)seed;
+     while (size) {
+	size_t len = size < MAX_SEED_LEN_PER_READ ? size : MAX_SEED_LEN_PER_READ;
+	if (getentropy(p, len) != 0) {
+            return -1;
+	}
+	p += len;
+	size -= len;
+     }
+     return 0;
+}
+#elif USE_DEV_URANDOM
 static int
 fill_random_bytes_urandom(void *seed, size_t size)
 {
@@ -477,20 +486,36 @@ fill_random_bytes_urandom(void *seed, size_t size)
 
 #if 0
 #elif defined MAC_OS_X_VERSION_10_7 && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
-#include <Security/Security.h>
+
+# if defined MAC_OS_X_VERSION_10_10 && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_10
+#   include <CommonCrypto/CommonCryptoError.h> /* for old Xcode */
+#   include <CommonCrypto/CommonRandom.h>
+#   define USE_COMMON_RANDOM 1
+# else
+#   include <Security/SecRandom.h>
+#   define USE_COMMON_RANDOM 0
+# endif
 
 static int
 fill_random_bytes_syscall(void *seed, size_t size, int unused)
 {
-    int status = SecRandomCopyBytes(kSecRandomDefault, size, seed);
+#if USE_COMMON_RANDOM
+    int failed = CCRandomGenerateBytes(seed, size) != kCCSuccess;
+#else
+    int failed = SecRandomCopyBytes(kSecRandomDefault, size, seed) != errSecSuccess;
+#endif
 
-    if (status != errSecSuccess) {
+    if (failed) {
 # if 0
+# if USE_COMMON_RANDOM
+        /* How to get the error message? */
+# else
         CFStringRef s = SecCopyErrorMessageString(status, NULL);
         const char *m = s ? CFStringGetCStringPtr(s, kCFStringEncodingUTF8) : NULL;
         fprintf(stderr, "SecRandomCopyBytes failed: %d: %s\n", status,
                 m ? m : "unknown");
         if (s) CFRelease(s);
+# endif
 # endif
         return -1;
     }
@@ -510,42 +535,83 @@ fill_random_bytes_syscall(void *buf, size_t size, int unused)
 #endif
 }
 #elif defined(_WIN32)
+
+#ifndef DWORD_MAX
+# define DWORD_MAX (~(DWORD)0UL)
+#endif
+
+# if defined(CRYPT_VERIFYCONTEXT)
+STATIC_ASSERT(sizeof_HCRYPTPROV, sizeof(HCRYPTPROV) == sizeof(size_t));
+
+/* Although HCRYPTPROV is not a HANDLE, it looks like
+ * INVALID_HANDLE_VALUE is not a valid value */
+static const HCRYPTPROV INVALID_HCRYPTPROV = (HCRYPTPROV)INVALID_HANDLE_VALUE;
+
 static void
 release_crypt(void *p)
 {
-    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_PTR_EXCHANGE(*(HCRYPTPROV *)p, INVALID_HANDLE_VALUE);
-    if (prov && prov != (HCRYPTPROV)INVALID_HANDLE_VALUE) {
+    HCRYPTPROV *ptr = p;
+    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_SIZE_EXCHANGE(*ptr, INVALID_HCRYPTPROV);
+    if (prov && prov != INVALID_HCRYPTPROV) {
 	CryptReleaseContext(prov, 0);
     }
 }
 
 static int
-fill_random_bytes_syscall(void *seed, size_t size, int unused)
+fill_random_bytes_crypt(void *seed, size_t size)
 {
     static HCRYPTPROV perm_prov;
     HCRYPTPROV prov = perm_prov, old_prov;
     if (!prov) {
 	if (!CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
-	    prov = (HCRYPTPROV)INVALID_HANDLE_VALUE;
+	    prov = INVALID_HCRYPTPROV;
 	}
-	old_prov = (HCRYPTPROV)ATOMIC_PTR_CAS(perm_prov, 0, prov);
+	old_prov = (HCRYPTPROV)ATOMIC_SIZE_CAS(perm_prov, 0, prov);
 	if (LIKELY(!old_prov)) { /* no other threads acquired */
-	    if (prov != (HCRYPTPROV)INVALID_HANDLE_VALUE) {
+	    if (prov != INVALID_HCRYPTPROV) {
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
 		rb_gc_register_mark_object(Data_Wrap_Struct(0, 0, release_crypt, &perm_prov));
 	    }
 	}
 	else {			/* another thread acquired */
-	    if (prov != (HCRYPTPROV)INVALID_HANDLE_VALUE) {
+	    if (prov != INVALID_HCRYPTPROV) {
 		CryptReleaseContext(prov, 0);
 	    }
 	    prov = old_prov;
 	}
     }
-    if (prov == (HCRYPTPROV)INVALID_HANDLE_VALUE) return -1;
-    CryptGenRandom(prov, size, seed);
+    if (prov == INVALID_HCRYPTPROV) return -1;
+    while (size > 0) {
+        DWORD n = (size > (size_t)DWORD_MAX) ? DWORD_MAX : (DWORD)size;
+        if (!CryptGenRandom(prov, n, seed)) return -1;
+        seed = (char *)seed + n;
+        size -= n;
+    }
     return 0;
+}
+# else
+#   define fill_random_bytes_crypt(seed, size) -1
+# endif
+
+static int
+fill_random_bytes_bcrypt(void *seed, size_t size)
+{
+    while (size > 0) {
+        ULONG n = (size > (size_t)ULONG_MAX) ? LONG_MAX : (ULONG)size;
+        if (BCryptGenRandom(NULL, seed, n, BCRYPT_USE_SYSTEM_PREFERRED_RNG))
+            return -1;
+        seed = (char *)seed + n;
+        size -= n;
+    }
+    return 0;
+}
+
+static int
+fill_random_bytes_syscall(void *seed, size_t size, int unused)
+{
+    if (fill_random_bytes_bcrypt(seed, size) == 0) return 0;
+    return fill_random_bytes_crypt(seed, size);
 }
 #elif defined HAVE_GETRANDOM
 static int
@@ -588,7 +654,7 @@ ruby_fill_random_bytes(void *seed, size_t size, int need_secure)
 static void
 fill_random_seed(uint32_t *seed, size_t cnt)
 {
-    static int n = 0;
+    static rb_atomic_t n = 0;
 #if defined HAVE_CLOCK_GETTIME
     struct timespec tv;
 #elif defined HAVE_GETTIMEOFDAY
@@ -611,7 +677,7 @@ fill_random_seed(uint32_t *seed, size_t cnt)
 #if SIZEOF_TIME_T > SIZEOF_INT
     seed[0] ^= (uint32_t)((time_t)tv.tv_sec >> SIZEOF_INT * CHAR_BIT);
 #endif
-    seed[2] ^= getpid() ^ (n++ << 16);
+    seed[2] ^= getpid() ^ (ATOMIC_FETCH_ADD(n, 1) << 16);
     seed[3] ^= (uint32_t)(VALUE)&seed;
 #if SIZEOF_VOIDP > SIZEOF_INT
     seed[2] ^= (uint32_t)((VALUE)&seed >> SIZEOF_INT * CHAR_BIT);
@@ -814,7 +880,7 @@ rand_mt_init(rb_random_t *rnd, const uint32_t *buf, size_t len)
 {
     struct MT *mt = &((rb_random_mt_t *)rnd)->mt;
     if (len <= 1) {
-        init_genrand(mt, buf[0]);
+        init_genrand(mt, len ? buf[0] : 0);
     }
     else {
         init_by_array(mt, buf, (int)len);
@@ -1162,7 +1228,7 @@ rand_bytes(const rb_random_interface_t *rng, rb_random_t *rnd, long n)
 
     bytes = rb_str_new(0, n);
     ptr = RSTRING_PTR(bytes);
-    rb_rand_bytes_int32(rng->get_int32, rnd, ptr, n);
+    rng->get_bytes(rnd, ptr, n);
     return bytes;
 }
 
@@ -1227,6 +1293,21 @@ random_s_bytes(VALUE obj, VALUE len)
     return rand_bytes(&random_mt_if, rnd, NUM2LONG(rb_to_int(len)));
 }
 
+/*
+ * call-seq: Random.seed -> integer
+ *
+ * Returns the seed value used to initialize the Ruby system PRNG.
+ * This may be used to initialize another generator with the same
+ * state at a later time, causing it to produce the same sequence of
+ * numbers.
+ *
+ *   Random.seed      #=> 1234
+ *   prng1 = Random.new(Random.seed)
+ *   prng1.seed       #=> 1234
+ *   prng1.rand(100)  #=> 47
+ *   Random.seed      #=> 1234
+ *   Random.rand(100) #=> 47
+ */
 static VALUE
 random_s_seed(VALUE obj)
 {
@@ -1314,7 +1395,7 @@ static inline double
 float_value(VALUE v)
 {
     double x = RFLOAT_VALUE(v);
-    if (isinf(x) || isnan(x)) {
+    if (!isfinite(x)) {
 	domain_error();
     }
     return x;
@@ -1329,7 +1410,7 @@ rand_range(VALUE obj, rb_random_t* rnd, VALUE range)
     if ((v = vmax = range_values(range, &beg, &end, &excl)) == Qfalse)
 	return Qfalse;
     if (NIL_P(v)) domain_error();
-    if (!RB_TYPE_P(vmax, T_FLOAT) && (v = rb_check_to_int(vmax), !NIL_P(v))) {
+    if (!RB_FLOAT_TYPE_P(vmax) && (v = rb_check_to_int(vmax), !NIL_P(v))) {
 	long max;
 	vmax = v;
 	v = Qnil;
@@ -1403,6 +1484,7 @@ static VALUE rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd);
  * call-seq:
  *   prng.rand -> float
  *   prng.rand(max) -> number
+ *   prng.rand(range) -> number
  *
  * When +max+ is an Integer, +rand+ returns a random integer greater than
  * or equal to zero and less than +max+. Unlike Kernel.rand, when +max+
@@ -1416,8 +1498,8 @@ static VALUE rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd);
  *
  *   prng.rand(1.5)       # => 1.4600282860034115
  *
- * When +max+ is a Range, +rand+ returns a random number where
- * range.member?(number) == true.
+ * When +range+ is a Range, +rand+ returns a random number where
+ * <code>range.member?(number) == true</code>.
  *
  *   prng.rand(5..9)      # => one of [5, 6, 7, 8, 9]
  *   prng.rand(5...9)     # => one of [5, 6, 7, 8]
@@ -1446,7 +1528,7 @@ rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd)
     }
     vmax = argv[0];
     if (NIL_P(vmax)) return Qnil;
-    if (!RB_TYPE_P(vmax, T_FLOAT)) {
+    if (!RB_FLOAT_TYPE_P(vmax)) {
 	v = rb_check_to_int(vmax);
 	if (!NIL_P(v)) return rand_int(obj, rnd, v, 1);
     }
@@ -1467,10 +1549,12 @@ rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd)
 
 /*
  * call-seq:
- *   prng.random_number      -> float
- *   prng.random_number(max) -> number
- *   prng.rand               -> float
- *   prng.rand(max)          -> number
+ *   prng.random_number        -> float
+ *   prng.random_number(max)   -> number
+ *   prng.random_number(range) -> number
+ *   prng.rand                 -> float
+ *   prng.rand(max)            -> number
+ *   prng.rand(range)          -> number
  *
  * Generates formatted random number from raw random bytes.
  * See Random#rand.
@@ -1575,8 +1659,12 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
  * call-seq:
  *   Random.rand -> float
  *   Random.rand(max) -> number
+ *   Random.rand(range) -> number
+ *
+ * Returns a random number using the Ruby system PRNG.
+ *
+ * See also Random#rand.
  */
-
 static VALUE
 random_s_rand(int argc, VALUE *argv, VALUE obj)
 {
@@ -1741,7 +1829,16 @@ InitVM_Random(void)
     rb_define_private_method(CLASS_OF(rb_cRandom), "left", random_s_left, 0);
 
     {
-	/* Format raw random number as Random does */
+	/*
+         * Generate a random number in the given range as Random does
+         *
+         *   prng.random_number       #=> 0.5816771641321361
+         *   prng.random_number(1000) #=> 485
+         *   prng.random_number(1..6) #=> 3
+         *   prng.rand                #=> 0.5816771641321361
+         *   prng.rand(1000)          #=> 485
+         *   prng.rand(1..6)          #=> 3
+         */
 	VALUE m = rb_define_module_under(rb_cRandom, "Formatter");
 	rb_include_module(base, m);
 	rb_extend_object(base, m);

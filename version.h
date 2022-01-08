@@ -1,7 +1,6 @@
 #ifndef RUBY_TOPLEVEL_VERSION_H                          /*-*-C-*-vi:se ft=c:*/
 #define RUBY_TOPLEVEL_VERSION_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -10,13 +9,13 @@
  */
 # define RUBY_VERSION_MAJOR RUBY_API_VERSION_MAJOR
 # define RUBY_VERSION_MINOR RUBY_API_VERSION_MINOR
-#define RUBY_VERSION_TEENY 3
+#define RUBY_VERSION_TEENY 0
 #define RUBY_RELEASE_DATE RUBY_RELEASE_YEAR_STR"-"RUBY_RELEASE_MONTH_STR"-"RUBY_RELEASE_DAY_STR
-#define RUBY_PATCHLEVEL 157
+#define RUBY_PATCHLEVEL 0
 
 #define RUBY_RELEASE_YEAR 2021
-#define RUBY_RELEASE_MONTH 11
-#define RUBY_RELEASE_DAY 24
+#define RUBY_RELEASE_MONTH 12
+#define RUBY_RELEASE_DAY 25
 
 #include "ruby/version.h"
 

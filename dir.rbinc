@@ -21,7 +21,7 @@ mjit_compile_invokebuiltin_for_dir_s_open(FILE *f, long index, unsigned stack_si
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == dir_s_open */\n", (intptr_t)dir_s_open);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == dir_s_open */\n", (VALUE)dir_s_open);
     fprintf(f, "    val = f(ec, self, argv[0], argv[1]);\n");
 }
 
@@ -37,7 +37,7 @@ mjit_compile_invokebuiltin_for_dir_s_close(FILE *f, long index, unsigned stack_s
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == dir_s_close */\n", (intptr_t)dir_s_close);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == dir_s_close */\n", (VALUE)dir_s_close);
     fprintf(f, "    val = f(ec, self, argv[0]);\n");
 }
 
@@ -53,7 +53,7 @@ mjit_compile_invokebuiltin_for_dir_initialize(FILE *f, long index, unsigned stac
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == dir_initialize */\n", (intptr_t)dir_initialize);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == dir_initialize */\n", (VALUE)dir_initialize);
     fprintf(f, "    val = f(ec, self, argv[0], argv[1]);\n");
 }
 
@@ -69,7 +69,7 @@ mjit_compile_invokebuiltin_for_dir_s_aref(FILE *f, long index, unsigned stack_si
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == dir_s_aref */\n", (intptr_t)dir_s_aref);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == dir_s_aref */\n", (VALUE)dir_s_aref);
     fprintf(f, "    val = f(ec, self, argv[0], argv[1], argv[2]);\n");
 }
 
@@ -85,7 +85,7 @@ mjit_compile_invokebuiltin_for_dir_s_glob(FILE *f, long index, unsigned stack_si
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == dir_s_glob */\n", (intptr_t)dir_s_glob);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == dir_s_glob */\n", (VALUE)dir_s_glob);
     fprintf(f, "    val = f(ec, self, argv[0], argv[1], argv[2], argv[3]);\n");
 }
 
@@ -103,7 +103,7 @@ void Init_builtin_dir(void)
 
   // arity_check
 COMPILER_WARNING_PUSH
-#if GCC_VERSION_SINCE(5, 1, 0) || __clang__
+#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
 COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
 #endif
   if (0) rb_builtin_function_check_arity2(dir_s_open);

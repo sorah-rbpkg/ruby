@@ -10,7 +10,6 @@ sha2.o: $(hdrdir)/ruby/backward.h
 sha2.o: $(hdrdir)/ruby/backward/2/assume.h
 sha2.o: $(hdrdir)/ruby/backward/2/attributes.h
 sha2.o: $(hdrdir)/ruby/backward/2/bool.h
-sha2.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 sha2.o: $(hdrdir)/ruby/backward/2/inttypes.h
 sha2.o: $(hdrdir)/ruby/backward/2/limits.h
 sha2.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -152,7 +151,6 @@ sha2.o: $(hdrdir)/ruby/internal/static_assert.h
 sha2.o: $(hdrdir)/ruby/internal/stdalign.h
 sha2.o: $(hdrdir)/ruby/internal/stdbool.h
 sha2.o: $(hdrdir)/ruby/internal/symbol.h
-sha2.o: $(hdrdir)/ruby/internal/token_paste.h
 sha2.o: $(hdrdir)/ruby/internal/value.h
 sha2.o: $(hdrdir)/ruby/internal/value_type.h
 sha2.o: $(hdrdir)/ruby/internal/variable.h
@@ -173,7 +171,6 @@ sha2init.o: $(hdrdir)/ruby/backward.h
 sha2init.o: $(hdrdir)/ruby/backward/2/assume.h
 sha2init.o: $(hdrdir)/ruby/backward/2/attributes.h
 sha2init.o: $(hdrdir)/ruby/backward/2/bool.h
-sha2init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 sha2init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 sha2init.o: $(hdrdir)/ruby/backward/2/limits.h
 sha2init.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -315,7 +312,6 @@ sha2init.o: $(hdrdir)/ruby/internal/static_assert.h
 sha2init.o: $(hdrdir)/ruby/internal/stdalign.h
 sha2init.o: $(hdrdir)/ruby/internal/stdbool.h
 sha2init.o: $(hdrdir)/ruby/internal/symbol.h
-sha2init.o: $(hdrdir)/ruby/internal/token_paste.h
 sha2init.o: $(hdrdir)/ruby/internal/value.h
 sha2init.o: $(hdrdir)/ruby/internal/value_type.h
 sha2init.o: $(hdrdir)/ruby/internal/variable.h

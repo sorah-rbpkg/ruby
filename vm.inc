@@ -47,7 +47,7 @@ INSN_ENTRY(nop)
 
     /* ###  Declare and assign variables. ### */
 #   define INSN_ATTR(x) attr_ ## x ## _nop()
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
@@ -74,7 +74,7 @@ INSN_ENTRY(getlocal)
     lindex_t idx = (lindex_t)GET_OPERAND(1);
     rb_num_t level = (rb_num_t)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _getlocal(idx, level)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -120,7 +120,7 @@ INSN_ENTRY(setlocal)
     lindex_t idx = (lindex_t)GET_OPERAND(1);
     rb_num_t level = (rb_num_t)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _setlocal(idx, level)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val = TOPN(0);
 
     /* ### Instruction preambles. ### */
@@ -163,7 +163,7 @@ INSN_ENTRY(getblockparam)
     lindex_t idx = (lindex_t)GET_OPERAND(1);
     rb_num_t level = (rb_num_t)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _getblockparam(idx, level)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -219,7 +219,7 @@ INSN_ENTRY(setblockparam)
     lindex_t idx = (lindex_t)GET_OPERAND(1);
     rb_num_t level = (rb_num_t)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _setblockparam(idx, level)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val = TOPN(0);
 
     /* ### Instruction preambles. ### */
@@ -267,7 +267,7 @@ INSN_ENTRY(getblockparamproxy)
     lindex_t idx = (lindex_t)GET_OPERAND(1);
     rb_num_t level = (rb_num_t)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _getblockparamproxy(idx, level)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -344,7 +344,7 @@ INSN_ENTRY(getspecial)
     rb_num_t key = (rb_num_t)GET_OPERAND(1);
     rb_num_t type = (rb_num_t)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _getspecial(key, type)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -387,7 +387,7 @@ INSN_ENTRY(setspecial)
     /* ###  Declare and assign variables. ### */
     rb_num_t key = (rb_num_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _setspecial(key)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE obj = TOPN(0);
 
     /* ### Instruction preambles. ### */
@@ -427,7 +427,7 @@ INSN_ENTRY(getinstancevariable)
     ID id = (ID)GET_OPERAND(1);
     IVC ic = (IVC)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _getinstancevariable(id, ic)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -471,7 +471,7 @@ INSN_ENTRY(setinstancevariable)
     ID id = (ID)GET_OPERAND(1);
     IVC ic = (IVC)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _setinstancevariable(id, ic)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val = TOPN(0);
 
     /* ### Instruction preambles. ### */
@@ -501,7 +501,7 @@ INSN_ENTRY(setinstancevariable)
     END_INSN(setinstancevariable);
 }
 
-/* insn getclassvariable(id)()(val) */
+/* insn getclassvariable(id, ic)()(val) */
 INSN_ENTRY(getclassvariable)
 {
     /* ###  Declare that we have just entered into an instruction. ### */
@@ -510,8 +510,9 @@ INSN_ENTRY(getclassvariable)
 
     /* ###  Declare and assign variables. ### */
     ID id = (ID)GET_OPERAND(1);
-#   define INSN_ATTR(x) attr_ ## x ## _getclassvariable(id)
-    bool leaf = INSN_ATTR(leaf);
+    IVC ic = (IVC)GET_OPERAND(2);
+#   define INSN_ATTR(x) attr_ ## x ## _getclassvariable(id, ic)
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -519,14 +520,16 @@ INSN_ENTRY(getclassvariable)
     SETUP_CANARY(leaf);
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, id);
+    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, ic);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN getclassvariable
 #   line 238 "insns.def"
 {
-    val = rb_cvar_get(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP(), 1), id);
+    rb_control_frame_t *cfp = GET_CFP();
+    val = vm_getclassvariable(GET_ISEQ(), cfp, id, (ICVARC)ic);
 }
-#   line 530 "vm.inc"
+#   line 533 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -543,7 +546,7 @@ INSN_ENTRY(getclassvariable)
     END_INSN(getclassvariable);
 }
 
-/* insn setclassvariable(id)(val)() */
+/* insn setclassvariable(id, ic)(val)() */
 INSN_ENTRY(setclassvariable)
 {
     /* ###  Declare that we have just entered into an instruction. ### */
@@ -552,8 +555,9 @@ INSN_ENTRY(setclassvariable)
 
     /* ###  Declare and assign variables. ### */
     ID id = (ID)GET_OPERAND(1);
-#   define INSN_ATTR(x) attr_ ## x ## _setclassvariable(id)
-    bool leaf = INSN_ATTR(leaf);
+    IVC ic = (IVC)GET_OPERAND(2);
+#   define INSN_ATTR(x) attr_ ## x ## _setclassvariable(id, ic)
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val = TOPN(0);
 
     /* ### Instruction preambles. ### */
@@ -561,15 +565,16 @@ INSN_ENTRY(setclassvariable)
     SETUP_CANARY(leaf);
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, id);
+    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, ic);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN setclassvariable
-#   line 250 "insns.def"
+#   line 251 "insns.def"
 {
     vm_ensure_not_refinement_module(GET_SELF());
-    rb_cvar_set(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP(), 1), id, val);
+    vm_setclassvariable(GET_ISEQ(), GET_CFP(), id,  val, (ICVARC)ic);
 }
-#   line 573 "vm.inc"
+#   line 578 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -593,7 +598,7 @@ INSN_ENTRY(getconstant)
     /* ###  Declare and assign variables. ### */
     ID id = (ID)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _getconstant(id)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE klass = TOPN(1);
     VALUE allow_nil = TOPN(0);
     VALUE val;
@@ -606,11 +611,11 @@ INSN_ENTRY(getconstant)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN getconstant
-#   line 266 "insns.def"
+#   line 267 "insns.def"
 {
     val = vm_get_ev_const(ec, klass, id, allow_nil == Qtrue, 0);
 }
-#   line 614 "vm.inc"
+#   line 619 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -637,7 +642,7 @@ INSN_ENTRY(setconstant)
     /* ###  Declare and assign variables. ### */
     ID id = (ID)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _setconstant(id)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val = TOPN(1);
     VALUE cbase = TOPN(0);
 
@@ -649,13 +654,13 @@ INSN_ENTRY(setconstant)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN setconstant
-#   line 282 "insns.def"
+#   line 283 "insns.def"
 {
     vm_check_if_namespace(cbase);
     vm_ensure_not_refinement_module(GET_SELF());
     rb_const_set(cbase, id, val);
 }
-#   line 659 "vm.inc"
+#   line 664 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -679,7 +684,7 @@ INSN_ENTRY(getglobal)
     /* ###  Declare and assign variables. ### */
     ID gid = (ID)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _getglobal(gid)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -690,11 +695,11 @@ INSN_ENTRY(getglobal)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN getglobal
-#   line 295 "insns.def"
+#   line 296 "insns.def"
 {
     val = rb_gvar_get(gid);
 }
-#   line 698 "vm.inc"
+#   line 703 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -721,7 +726,7 @@ INSN_ENTRY(setglobal)
     /* ###  Declare and assign variables. ### */
     ID gid = (ID)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _setglobal(gid)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val = TOPN(0);
 
     /* ### Instruction preambles. ### */
@@ -732,11 +737,11 @@ INSN_ENTRY(setglobal)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN setglobal
-#   line 306 "insns.def"
+#   line 307 "insns.def"
 {
     rb_gvar_set(gid, val);
 }
-#   line 740 "vm.inc"
+#   line 745 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -759,7 +764,7 @@ INSN_ENTRY(putnil)
 
     /* ###  Declare and assign variables. ### */
 #   define INSN_ATTR(x) attr_ ## x ## _putnil()
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -769,11 +774,11 @@ INSN_ENTRY(putnil)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN putnil
-#   line 320 "insns.def"
+#   line 321 "insns.def"
 {
     val = Qnil;
 }
-#   line 777 "vm.inc"
+#   line 782 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -799,7 +804,7 @@ INSN_ENTRY(putself)
 
     /* ###  Declare and assign variables. ### */
 #   define INSN_ATTR(x) attr_ ## x ## _putself()
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -809,11 +814,11 @@ INSN_ENTRY(putself)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN putself
-#   line 330 "insns.def"
+#   line 331 "insns.def"
 {
     val = GET_SELF();
 }
-#   line 817 "vm.inc"
+#   line 822 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -840,7 +845,7 @@ INSN_ENTRY(putobject)
     /* ###  Declare and assign variables. ### */
     VALUE val = (VALUE)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _putobject(val)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
@@ -870,7 +875,7 @@ INSN_ENTRY(putspecialobject)
     /* ###  Declare and assign variables. ### */
     rb_num_t value_type = (rb_num_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _putspecialobject(value_type)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -881,14 +886,14 @@ INSN_ENTRY(putspecialobject)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN putspecialobject
-#   line 352 "insns.def"
+#   line 354 "insns.def"
 {
     enum vm_special_object_type type;
 
     type = (enum vm_special_object_type)value_type;
     val = vm_get_special_object(GET_EP(), type);
 }
-#   line 892 "vm.inc"
+#   line 897 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -915,7 +920,7 @@ INSN_ENTRY(putstring)
     /* ###  Declare and assign variables. ### */
     VALUE str = (VALUE)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _putstring(str)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -926,11 +931,11 @@ INSN_ENTRY(putstring)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN putstring
-#   line 365 "insns.def"
+#   line 367 "insns.def"
 {
     val = rb_ec_str_resurrect(ec, str);
 }
-#   line 934 "vm.inc"
+#   line 939 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -957,7 +962,7 @@ INSN_ENTRY(concatstrings)
     /* ###  Declare and assign variables. ### */
     rb_num_t num = (rb_num_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _concatstrings(num)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -968,11 +973,11 @@ INSN_ENTRY(concatstrings)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN concatstrings
-#   line 379 "insns.def"
+#   line 381 "insns.def"
 {
     val = rb_str_concat_literals(num, STACK_ADDR_FROM_TOP(num));
 }
-#   line 976 "vm.inc"
+#   line 981 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -989,16 +994,16 @@ INSN_ENTRY(concatstrings)
     END_INSN(concatstrings);
 }
 
-/* insn tostring()(val, str)(val) */
-INSN_ENTRY(tostring)
+/* insn anytostring()(val, str)(val) */
+INSN_ENTRY(anytostring)
 {
     /* ###  Declare that we have just entered into an instruction. ### */
-    START_OF_ORIGINAL_INSN(tostring);
-    DEBUG_ENTER_INSN("tostring");
+    START_OF_ORIGINAL_INSN(anytostring);
+    DEBUG_ENTER_INSN("anytostring");
 
     /* ###  Declare and assign variables. ### */
-#   define INSN_ATTR(x) attr_ ## x ## _tostring()
-    bool leaf = INSN_ATTR(leaf);
+#   define INSN_ATTR(x) attr_ ## x ## _anytostring()
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val = TOPN(1);
     VALUE str = TOPN(0);
 
@@ -1008,12 +1013,12 @@ INSN_ENTRY(tostring)
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
 
     /* ### Here we do the instruction body. ### */
-#   define NAME_OF_CURRENT_INSN tostring
-#   line 389 "insns.def"
+#   define NAME_OF_CURRENT_INSN anytostring
+#   line 392 "insns.def"
 {
     val = rb_obj_as_string_result(str, val);
 }
-#   line 1017 "vm.inc"
+#   line 1022 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1027,7 +1032,7 @@ INSN_ENTRY(tostring)
 #   undef INSN_ATTR
 
     /* ### Leave the instruction. ### */
-    END_INSN(tostring);
+    END_INSN(anytostring);
 }
 
 /* insn toregexp(opt, cnt)(...)(val) */
@@ -1041,7 +1046,7 @@ INSN_ENTRY(toregexp)
     rb_num_t opt = (rb_num_t)GET_OPERAND(1);
     rb_num_t cnt = (rb_num_t)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _toregexp(opt, cnt)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -1053,13 +1058,13 @@ INSN_ENTRY(toregexp)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN toregexp
-#   line 405 "insns.def"
+#   line 408 "insns.def"
 {
     const VALUE ary = rb_ary_tmp_new_from_values(0, cnt, STACK_ADDR_FROM_TOP(cnt));
     val = rb_reg_new_ary(ary, (int)opt);
     rb_ary_clear(ary);
 }
-#   line 1063 "vm.inc"
+#   line 1068 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1085,7 +1090,7 @@ INSN_ENTRY(intern)
 
     /* ###  Declare and assign variables. ### */
 #   define INSN_ATTR(x) attr_ ## x ## _intern()
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE str = TOPN(0);
     VALUE sym;
 
@@ -1096,11 +1101,11 @@ INSN_ENTRY(intern)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN intern
-#   line 417 "insns.def"
+#   line 420 "insns.def"
 {
     sym = rb_str_intern(str);
 }
-#   line 1104 "vm.inc"
+#   line 1109 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1127,7 +1132,7 @@ INSN_ENTRY(newarray)
     /* ###  Declare and assign variables. ### */
     rb_num_t num = (rb_num_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _newarray(num)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -1138,11 +1143,11 @@ INSN_ENTRY(newarray)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN newarray
-#   line 428 "insns.def"
+#   line 431 "insns.def"
 {
     val = rb_ec_ary_new_from_values(ec, num, STACK_ADDR_FROM_TOP(num));
 }
-#   line 1146 "vm.inc"
+#   line 1151 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1169,7 +1174,7 @@ INSN_ENTRY(newarraykwsplat)
     /* ###  Declare and assign variables. ### */
     rb_num_t num = (rb_num_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _newarraykwsplat(num)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -1180,7 +1185,7 @@ INSN_ENTRY(newarraykwsplat)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN newarraykwsplat
-#   line 443 "insns.def"
+#   line 446 "insns.def"
 {
     if (RHASH_EMPTY_P(*STACK_ADDR_FROM_TOP(1))) {
         val = rb_ary_new4(num-1, STACK_ADDR_FROM_TOP(num));
@@ -1189,7 +1194,7 @@ INSN_ENTRY(newarraykwsplat)
         val = rb_ary_new4(num, STACK_ADDR_FROM_TOP(num));
     }
 }
-#   line 1193 "vm.inc"
+#   line 1198 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1216,7 +1221,7 @@ INSN_ENTRY(duparray)
     /* ###  Declare and assign variables. ### */
     VALUE ary = (VALUE)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _duparray(ary)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -1227,12 +1232,12 @@ INSN_ENTRY(duparray)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN duparray
-#   line 458 "insns.def"
+#   line 461 "insns.def"
 {
     RUBY_DTRACE_CREATE_HOOK(ARRAY, RARRAY_LEN(ary));
     val = rb_ary_resurrect(ary);
 }
-#   line 1236 "vm.inc"
+#   line 1241 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1259,7 +1264,7 @@ INSN_ENTRY(duphash)
     /* ###  Declare and assign variables. ### */
     VALUE hash = (VALUE)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _duphash(hash)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -1270,12 +1275,12 @@ INSN_ENTRY(duphash)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN duphash
-#   line 469 "insns.def"
+#   line 472 "insns.def"
 {
     RUBY_DTRACE_CREATE_HOOK(HASH, RHASH_SIZE(hash) << 1);
     val = rb_hash_resurrect(hash);
 }
-#   line 1279 "vm.inc"
+#   line 1284 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1303,7 +1308,7 @@ INSN_ENTRY(expandarray)
     rb_num_t num = (rb_num_t)GET_OPERAND(1);
     rb_num_t flag = (rb_num_t)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _expandarray(num, flag)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE ary = TOPN(0);
 
     /* ### Instruction preambles. ### */
@@ -1314,11 +1319,11 @@ INSN_ENTRY(expandarray)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN expandarray
-#   line 490 "insns.def"
+#   line 493 "insns.def"
 {
     vm_expandarray(GET_SP(), ary, num, (int)flag);
 }
-#   line 1322 "vm.inc"
+#   line 1327 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1340,7 +1345,7 @@ INSN_ENTRY(concatarray)
 
     /* ###  Declare and assign variables. ### */
 #   define INSN_ATTR(x) attr_ ## x ## _concatarray()
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE ary1 = TOPN(1);
     VALUE ary2 = TOPN(0);
     VALUE ary;
@@ -1352,11 +1357,11 @@ INSN_ENTRY(concatarray)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN concatarray
-#   line 501 "insns.def"
+#   line 504 "insns.def"
 {
     ary = vm_concat_array(ary1, ary2);
 }
-#   line 1360 "vm.inc"
+#   line 1365 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1383,7 +1388,7 @@ INSN_ENTRY(splatarray)
     /* ###  Declare and assign variables. ### */
     VALUE flag = (VALUE)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _splatarray(flag)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE ary = TOPN(0);
     VALUE obj;
 
@@ -1395,11 +1400,11 @@ INSN_ENTRY(splatarray)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN splatarray
-#   line 512 "insns.def"
+#   line 515 "insns.def"
 {
     obj = vm_splat_array(flag, ary);
 }
-#   line 1403 "vm.inc"
+#   line 1408 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1426,7 +1431,7 @@ INSN_ENTRY(newhash)
     /* ###  Declare and assign variables. ### */
     rb_num_t num = (rb_num_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _newhash(num)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -1437,17 +1442,19 @@ INSN_ENTRY(newhash)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN newhash
-#   line 524 "insns.def"
+#   line 527 "insns.def"
 {
     RUBY_DTRACE_CREATE_HOOK(HASH, num);
 
-    val = rb_hash_new_with_size(num / 2);
-
     if (num) {
+        val = rb_hash_new_with_size(num / 2);
         rb_hash_bulk_insert(num, STACK_ADDR_FROM_TOP(num), val);
     }
+    else {
+        val = rb_hash_new();
+    }
 }
-#   line 1451 "vm.inc"
+#   line 1458 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1474,7 +1481,7 @@ INSN_ENTRY(newrange)
     /* ###  Declare and assign variables. ### */
     rb_num_t flag = (rb_num_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _newrange(flag)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE low = TOPN(1);
     VALUE high = TOPN(0);
     VALUE val;
@@ -1487,11 +1494,11 @@ INSN_ENTRY(newrange)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN newrange
-#   line 542 "insns.def"
+#   line 547 "insns.def"
 {
     val = rb_range_new(low, high, (int)flag);
 }
-#   line 1495 "vm.inc"
+#   line 1502 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1517,7 +1524,7 @@ INSN_ENTRY(pop)
 
     /* ###  Declare and assign variables. ### */
 #   define INSN_ATTR(x) attr_ ## x ## _pop()
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val = TOPN(0);
 
     /* ### Instruction preambles. ### */
@@ -1527,12 +1534,12 @@ INSN_ENTRY(pop)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN pop
-#   line 556 "insns.def"
+#   line 561 "insns.def"
 {
     (void)val;
     /* none */
 }
-#   line 1536 "vm.inc"
+#   line 1543 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1555,7 +1562,7 @@ INSN_ENTRY(dup)
 
     /* ###  Declare and assign variables. ### */
 #   define INSN_ATTR(x) attr_ ## x ## _dup()
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val = TOPN(0);
     VALUE val1;
     VALUE val2;
@@ -1567,11 +1574,11 @@ INSN_ENTRY(dup)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN dup
-#   line 567 "insns.def"
+#   line 572 "insns.def"
 {
     val1 = val2 = val;
 }
-#   line 1575 "vm.inc"
+#   line 1582 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1601,7 +1608,7 @@ INSN_ENTRY(dupn)
     /* ###  Declare and assign variables. ### */
     rb_num_t n = (rb_num_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _dupn(n)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
@@ -1610,14 +1617,14 @@ INSN_ENTRY(dupn)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN dupn
-#   line 578 "insns.def"
+#   line 583 "insns.def"
 {
     void *dst = GET_SP();
     void *src = STACK_ADDR_FROM_TOP(n);
 
     MEMCPY(dst, src, VALUE, n);
 }
-#   line 1621 "vm.inc"
+#   line 1628 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1639,7 +1646,7 @@ INSN_ENTRY(swap)
 
     /* ###  Declare and assign variables. ### */
 #   define INSN_ATTR(x) attr_ ## x ## _swap()
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val = TOPN(1);
     VALUE obj = TOPN(0);
 
@@ -1663,50 +1670,6 @@ INSN_ENTRY(swap)
     END_INSN(swap);
 }
 
-/* insn reverse(n)(...)(...) */
-INSN_ENTRY(reverse)
-{
-    /* ###  Declare that we have just entered into an instruction. ### */
-    START_OF_ORIGINAL_INSN(reverse);
-    DEBUG_ENTER_INSN("reverse");
-
-    /* ###  Declare and assign variables. ### */
-    rb_num_t n = (rb_num_t)GET_OPERAND(1);
-#   define INSN_ATTR(x) attr_ ## x ## _reverse(n)
-    bool leaf = INSN_ATTR(leaf);
-
-    /* ### Instruction preambles. ### */
-    if (! leaf) ADD_PC(INSN_ATTR(width));
-    COLLECT_USAGE_INSN(INSN_ATTR(bin));
-    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, n);
-
-    /* ### Here we do the instruction body. ### */
-#   define NAME_OF_CURRENT_INSN reverse
-#   line 602 "insns.def"
-{
-    rb_num_t i;
-    VALUE *sp = STACK_ADDR_FROM_TOP(n);
-
-    for (i=0; i<n/2; i++) {
-	VALUE v0 = sp[i];
-	VALUE v1 = TOPN(i);
-	sp[i] = v1;
-	TOPN(i) = v0;
-    }
-}
-#   line 1698 "vm.inc"
-#   undef NAME_OF_CURRENT_INSN
-
-    /* ### Instruction trailers. ### */
-    CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-    INC_SP(INSN_ATTR(sp_inc));
-    if (leaf) ADD_PC(INSN_ATTR(width));
-#   undef INSN_ATTR
-
-    /* ### Leave the instruction. ### */
-    END_INSN(reverse);
-}
-
 /* insn topn(n)(...)(val) */
 INSN_ENTRY(topn)
 {
@@ -1717,7 +1680,7 @@ INSN_ENTRY(topn)
     /* ###  Declare and assign variables. ### */
     rb_num_t n = (rb_num_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _topn(n)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -1728,11 +1691,11 @@ INSN_ENTRY(topn)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN topn
-#   line 632 "insns.def"
+#   line 618 "insns.def"
 {
     val = TOPN(n);
 }
-#   line 1736 "vm.inc"
+#   line 1699 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1759,7 +1722,7 @@ INSN_ENTRY(setn)
     /* ###  Declare and assign variables. ### */
     rb_num_t n = (rb_num_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _setn(n)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val = TOPN(0);
 
     /* ### Instruction preambles. ### */
@@ -1770,11 +1733,11 @@ INSN_ENTRY(setn)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN setn
-#   line 643 "insns.def"
+#   line 629 "insns.def"
 {
     TOPN(n) = val;
 }
-#   line 1778 "vm.inc"
+#   line 1741 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1801,7 +1764,7 @@ INSN_ENTRY(adjuststack)
     /* ###  Declare and assign variables. ### */
     rb_num_t n = (rb_num_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _adjuststack(n)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
@@ -1818,7 +1781,7 @@ INSN_ENTRY(adjuststack)
     END_INSN(adjuststack);
 }
 
-/* insn defined(op_type, obj, needstr)(v)(val) */
+/* insn defined(op_type, obj, pushval)(v)(val) */
 INSN_ENTRY(defined)
 {
     /* ###  Declare that we have just entered into an instruction. ### */
@@ -1828,9 +1791,9 @@ INSN_ENTRY(defined)
     /* ###  Declare and assign variables. ### */
     rb_num_t op_type = (rb_num_t)GET_OPERAND(1);
     VALUE obj = (VALUE)GET_OPERAND(2);
-    VALUE needstr = (VALUE)GET_OPERAND(3);
-#   define INSN_ATTR(x) attr_ ## x ## _defined(op_type, obj, needstr)
-    bool leaf = INSN_ATTR(leaf);
+    VALUE pushval = (VALUE)GET_OPERAND(3);
+#   define INSN_ATTR(x) attr_ ## x ## _defined(op_type, obj, pushval)
+    const bool leaf = INSN_ATTR(leaf);
     VALUE v = TOPN(0);
     VALUE val;
 
@@ -1840,15 +1803,18 @@ INSN_ENTRY(defined)
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, op_type);
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, obj);
-    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 2, needstr);
+    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 2, pushval);
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN defined
-#   line 669 "insns.def"
+#   line 655 "insns.def"
 {
-    val = vm_defined(ec, GET_CFP(), op_type, obj, needstr, v);
+    val = Qnil;
+    if (vm_defined(ec, GET_CFP(), op_type, obj, v)) {
+      val = pushval;
+    }
 }
-#   line 1852 "vm.inc"
+#   line 1818 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1875,7 +1841,7 @@ INSN_ENTRY(checkmatch)
     /* ###  Declare and assign variables. ### */
     rb_num_t flag = (rb_num_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _checkmatch(flag)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE target = TOPN(1);
     VALUE pattern = TOPN(0);
     VALUE result;
@@ -1888,11 +1854,11 @@ INSN_ENTRY(checkmatch)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN checkmatch
-#   line 686 "insns.def"
+#   line 675 "insns.def"
 {
     result = vm_check_match(ec, target, pattern, flag);
 }
-#   line 1896 "vm.inc"
+#   line 1862 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1920,7 +1886,7 @@ INSN_ENTRY(checkkeyword)
     lindex_t kw_bits_index = (lindex_t)GET_OPERAND(1);
     lindex_t keyword_index = (lindex_t)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _checkkeyword(kw_bits_index, keyword_index)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE ret;
 
     /* ### Instruction preambles. ### */
@@ -1932,11 +1898,11 @@ INSN_ENTRY(checkkeyword)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN checkkeyword
-#   line 696 "insns.def"
+#   line 685 "insns.def"
 {
     ret = vm_check_keyword(kw_bits_index, keyword_index, GET_EP());
 }
-#   line 1940 "vm.inc"
+#   line 1906 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1963,7 +1929,7 @@ INSN_ENTRY(checktype)
     /* ###  Declare and assign variables. ### */
     rb_num_t type = (rb_num_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _checktype(type)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val = TOPN(0);
     VALUE ret;
 
@@ -1975,11 +1941,11 @@ INSN_ENTRY(checktype)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN checktype
-#   line 706 "insns.def"
+#   line 695 "insns.def"
 {
     ret = (TYPE(val) == (int)type) ? Qtrue : Qfalse;
 }
-#   line 1983 "vm.inc"
+#   line 1949 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2008,7 +1974,7 @@ INSN_ENTRY(defineclass)
     ISEQ class_iseq = (ISEQ)GET_OPERAND(2);
     rb_num_t flags = (rb_num_t)GET_OPERAND(3);
 #   define INSN_ATTR(x) attr_ ## x ## _defineclass(id, class_iseq, flags)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE cbase = TOPN(1);
     VALUE super = TOPN(0);
     VALUE val;
@@ -2024,7 +1990,7 @@ INSN_ENTRY(defineclass)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN defineclass
-#   line 722 "insns.def"
+#   line 711 "insns.def"
 {
     VALUE klass = vm_find_or_create_class_by_id(id, flags, cbase, super);
 
@@ -2033,14 +1999,14 @@ INSN_ENTRY(defineclass)
     /* enter scope */
     vm_push_frame(ec, class_iseq, VM_FRAME_MAGIC_CLASS | VM_ENV_FLAG_LOCAL, klass,
 		  GET_BLOCK_HANDLER(),
-		  (VALUE)vm_cref_push(ec, klass, NULL, FALSE),
+		  (VALUE)vm_cref_push(ec, klass, NULL, FALSE, FALSE),
 		  class_iseq->body->iseq_encoded, GET_SP(),
 		  class_iseq->body->local_table_size,
 		  class_iseq->body->stack_max);
     RESTORE_REGS();
     NEXT_INSN();
 }
-#   line 2044 "vm.inc"
+#   line 2010 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2065,7 +2031,7 @@ INSN_ENTRY(definemethod)
     ID id = (ID)GET_OPERAND(1);
     ISEQ iseq = (ISEQ)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _definemethod(id, iseq)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
@@ -2077,11 +2043,11 @@ INSN_ENTRY(definemethod)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN definemethod
-#   line 743 "insns.def"
+#   line 732 "insns.def"
 {
     vm_define_method(ec, Qnil, id, (VALUE)iseq, FALSE);
 }
-#   line 2085 "vm.inc"
+#   line 2051 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2105,7 +2071,7 @@ INSN_ENTRY(definesmethod)
     ID id = (ID)GET_OPERAND(1);
     ISEQ iseq = (ISEQ)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _definesmethod(id, iseq)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE obj = TOPN(0);
 
     /* ### Instruction preambles. ### */
@@ -2118,11 +2084,11 @@ INSN_ENTRY(definesmethod)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN definesmethod
-#   line 752 "insns.def"
+#   line 741 "insns.def"
 {
     vm_define_method(ec, obj, id, (VALUE)iseq, TRUE);
 }
-#   line 2126 "vm.inc"
+#   line 2092 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2146,7 +2112,7 @@ INSN_ENTRY(send)
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
     ISEQ blockiseq = (ISEQ)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _send(cd, blockiseq)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -2159,7 +2125,7 @@ INSN_ENTRY(send)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN send
-#   line 768 "insns.def"
+#   line 757 "insns.def"
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
@@ -2169,7 +2135,7 @@ INSN_ENTRY(send)
         NEXT_INSN();
     }
 }
-#   line 2173 "vm.inc"
+#   line 2139 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2193,7 +2159,7 @@ INSN_ENTRY(opt_send_without_block)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_send_without_block(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -2205,7 +2171,7 @@ INSN_ENTRY(opt_send_without_block)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_send_without_block
-#   line 787 "insns.def"
+#   line 776 "insns.def"
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
@@ -2215,7 +2181,7 @@ INSN_ENTRY(opt_send_without_block)
         NEXT_INSN();
     }
 }
-#   line 2219 "vm.inc"
+#   line 2185 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2229,6 +2195,53 @@ INSN_ENTRY(opt_send_without_block)
     END_INSN(opt_send_without_block);
 }
 
+/* insn objtostring(cd)(recv)(val) */
+INSN_ENTRY(objtostring)
+{
+    /* ###  Declare that we have just entered into an instruction. ### */
+    START_OF_ORIGINAL_INSN(objtostring);
+    DEBUG_ENTER_INSN("objtostring");
+
+    /* ###  Declare and assign variables. ### */
+    CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
+#   define INSN_ATTR(x) attr_ ## x ## _objtostring(cd)
+    const bool leaf = INSN_ATTR(leaf);
+    VALUE recv = TOPN(0);
+    VALUE val;
+
+    /* ### Instruction preambles. ### */
+    if (! leaf) ADD_PC(INSN_ATTR(width));
+    SETUP_CANARY(leaf);
+    COLLECT_USAGE_INSN(INSN_ATTR(bin));
+    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
+
+    /* ### Here we do the instruction body. ### */
+#   define NAME_OF_CURRENT_INSN objtostring
+#   line 793 "insns.def"
+{
+    val = vm_objtostring(GET_ISEQ(), recv, cd);
+
+    if (val == Qundef) {
+        CALL_SIMPLE_METHOD();
+    }
+}
+#   line 2229 "vm.inc"
+#   undef NAME_OF_CURRENT_INSN
+
+    /* ### Instruction trailers. ### */
+    CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
+    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    INC_SP(INSN_ATTR(sp_inc));
+    TOPN(0) = val;
+    VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
+    VM_ASSERT(!RB_TYPE_P(TOPN(0), T_MOVED));
+    if (leaf) ADD_PC(INSN_ATTR(width));
+#   undef INSN_ATTR
+
+    /* ### Leave the instruction. ### */
+    END_INSN(objtostring);
+}
+
 /* insn opt_str_freeze(str, cd)()(val) */
 INSN_ENTRY(opt_str_freeze)
 {
@@ -2240,7 +2253,7 @@ INSN_ENTRY(opt_str_freeze)
     VALUE str = (VALUE)GET_OPERAND(1);
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_str_freeze(str, cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -2252,7 +2265,7 @@ INSN_ENTRY(opt_str_freeze)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_str_freeze
-#   line 802 "insns.def"
+#   line 806 "insns.def"
 {
     val = vm_opt_str_freeze(str, BOP_FREEZE, idFreeze);
 
@@ -2261,7 +2274,7 @@ INSN_ENTRY(opt_str_freeze)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 2265 "vm.inc"
+#   line 2278 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2288,7 +2301,7 @@ INSN_ENTRY(opt_nil_p)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_nil_p(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(0);
     VALUE val;
 
@@ -2300,7 +2313,7 @@ INSN_ENTRY(opt_nil_p)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_nil_p
-#   line 817 "insns.def"
+#   line 821 "insns.def"
 {
     val = vm_opt_nil_p(GET_ISEQ(), cd, recv);
 
@@ -2308,7 +2321,7 @@ INSN_ENTRY(opt_nil_p)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 2312 "vm.inc"
+#   line 2325 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2336,7 +2349,7 @@ INSN_ENTRY(opt_str_uminus)
     VALUE str = (VALUE)GET_OPERAND(1);
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_str_uminus(str, cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -2348,7 +2361,7 @@ INSN_ENTRY(opt_str_uminus)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_str_uminus
-#   line 830 "insns.def"
+#   line 834 "insns.def"
 {
     val = vm_opt_str_freeze(str, BOP_UMINUS, idUMinus);
 
@@ -2357,7 +2370,7 @@ INSN_ENTRY(opt_str_uminus)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 2361 "vm.inc"
+#   line 2374 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2384,7 +2397,7 @@ INSN_ENTRY(opt_newarray_max)
     /* ###  Declare and assign variables. ### */
     rb_num_t num = (rb_num_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_newarray_max(num)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -2395,11 +2408,11 @@ INSN_ENTRY(opt_newarray_max)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_newarray_max
-#   line 850 "insns.def"
+#   line 854 "insns.def"
 {
-    val = vm_opt_newarray_max(num, STACK_ADDR_FROM_TOP(num));
+    val = vm_opt_newarray_max(ec, num, STACK_ADDR_FROM_TOP(num));
 }
-#   line 2403 "vm.inc"
+#   line 2416 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2426,7 +2439,7 @@ INSN_ENTRY(opt_newarray_min)
     /* ###  Declare and assign variables. ### */
     rb_num_t num = (rb_num_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_newarray_min(num)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -2437,11 +2450,11 @@ INSN_ENTRY(opt_newarray_min)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_newarray_min
-#   line 862 "insns.def"
+#   line 866 "insns.def"
 {
-    val = vm_opt_newarray_min(num, STACK_ADDR_FROM_TOP(num));
+    val = vm_opt_newarray_min(ec, num, STACK_ADDR_FROM_TOP(num));
 }
-#   line 2445 "vm.inc"
+#   line 2458 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2469,7 +2482,7 @@ INSN_ENTRY(invokesuper)
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
     ISEQ blockiseq = (ISEQ)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _invokesuper(cd, blockiseq)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -2482,7 +2495,7 @@ INSN_ENTRY(invokesuper)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN invokesuper
-#   line 874 "insns.def"
+#   line 878 "insns.def"
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
@@ -2492,7 +2505,7 @@ INSN_ENTRY(invokesuper)
         NEXT_INSN();
     }
 }
-#   line 2496 "vm.inc"
+#   line 2509 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2516,7 +2529,7 @@ INSN_ENTRY(invokeblock)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _invokeblock(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -2528,7 +2541,7 @@ INSN_ENTRY(invokeblock)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN invokeblock
-#   line 893 "insns.def"
+#   line 897 "insns.def"
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_invokeblock);
@@ -2538,7 +2551,7 @@ INSN_ENTRY(invokeblock)
         NEXT_INSN();
     }
 }
-#   line 2542 "vm.inc"
+#   line 2555 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2561,7 +2574,7 @@ INSN_ENTRY(leave)
 
     /* ###  Declare and assign variables. ### */
 #   define INSN_ATTR(x) attr_ ## x ## _leave()
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val = TOPN(0);
 
     /* ### Instruction preambles. ### */
@@ -2572,7 +2585,7 @@ INSN_ENTRY(leave)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN leave
-#   line 914 "insns.def"
+#   line 918 "insns.def"
 {
     if (OPT_CHECKED_RUN) {
         const VALUE *const bp = vm_base_ptr(GET_CFP());
@@ -2593,7 +2606,7 @@ INSN_ENTRY(leave)
 	RESTORE_REGS();
     }
 }
-#   line 2597 "vm.inc"
+#   line 2610 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2617,7 +2630,7 @@ INSN_ENTRY(throw)
     /* ###  Declare and assign variables. ### */
     rb_num_t throw_state = (rb_num_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _throw(throw_state)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE throwobj = TOPN(0);
     VALUE val;
 
@@ -2629,13 +2642,13 @@ INSN_ENTRY(throw)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN throw
-#   line 947 "insns.def"
+#   line 951 "insns.def"
 {
     val = vm_throw(ec, GET_CFP(), throw_state, throwobj);
     THROW_EXCEPTION(val);
     /* unreachable */
 }
-#   line 2639 "vm.inc"
+#   line 2652 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2662,7 +2675,7 @@ INSN_ENTRY(jump)
     /* ###  Declare and assign variables. ### */
     OFFSET dst = (OFFSET)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _jump(dst)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
@@ -2672,12 +2685,12 @@ INSN_ENTRY(jump)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN jump
-#   line 965 "insns.def"
+#   line 969 "insns.def"
 {
     RUBY_VM_CHECK_INTS(ec);
     JUMP(dst);
 }
-#   line 2681 "vm.inc"
+#   line 2694 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2701,7 +2714,7 @@ INSN_ENTRY(branchif)
     /* ###  Declare and assign variables. ### */
     OFFSET dst = (OFFSET)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _branchif(dst)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val = TOPN(0);
 
     /* ### Instruction preambles. ### */
@@ -2712,14 +2725,14 @@ INSN_ENTRY(branchif)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN branchif
-#   line 978 "insns.def"
+#   line 982 "insns.def"
 {
     if (RTEST(val)) {
 	RUBY_VM_CHECK_INTS(ec);
 	JUMP(dst);
     }
 }
-#   line 2723 "vm.inc"
+#   line 2736 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2743,7 +2756,7 @@ INSN_ENTRY(branchunless)
     /* ###  Declare and assign variables. ### */
     OFFSET dst = (OFFSET)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _branchunless(dst)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val = TOPN(0);
 
     /* ### Instruction preambles. ### */
@@ -2754,14 +2767,14 @@ INSN_ENTRY(branchunless)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN branchunless
-#   line 993 "insns.def"
+#   line 997 "insns.def"
 {
     if (!RTEST(val)) {
 	RUBY_VM_CHECK_INTS(ec);
 	JUMP(dst);
     }
 }
-#   line 2765 "vm.inc"
+#   line 2778 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2785,7 +2798,7 @@ INSN_ENTRY(branchnil)
     /* ###  Declare and assign variables. ### */
     OFFSET dst = (OFFSET)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _branchnil(dst)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val = TOPN(0);
 
     /* ### Instruction preambles. ### */
@@ -2796,14 +2809,14 @@ INSN_ENTRY(branchnil)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN branchnil
-#   line 1008 "insns.def"
+#   line 1012 "insns.def"
 {
     if (NIL_P(val)) {
 	RUBY_VM_CHECK_INTS(ec);
 	JUMP(dst);
     }
 }
-#   line 2807 "vm.inc"
+#   line 2820 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2828,7 +2841,7 @@ INSN_ENTRY(opt_getinlinecache)
     OFFSET dst = (OFFSET)GET_OPERAND(1);
     IC ic = (IC)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_getinlinecache(dst, ic)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -2840,7 +2853,7 @@ INSN_ENTRY(opt_getinlinecache)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_getinlinecache
-#   line 1025 "insns.def"
+#   line 1029 "insns.def"
 {
     struct iseq_inline_constant_cache_entry *ice = ic->entry;
     if (ice && vm_ic_hit_p(ice, GET_EP())) {
@@ -2851,7 +2864,7 @@ INSN_ENTRY(opt_getinlinecache)
 	val = Qnil;
     }
 }
-#   line 2855 "vm.inc"
+#   line 2868 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2878,7 +2891,7 @@ INSN_ENTRY(opt_setinlinecache)
     /* ###  Declare and assign variables. ### */
     IC ic = (IC)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_setinlinecache(ic)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val = TOPN(0);
 
     /* ### Instruction preambles. ### */
@@ -2889,11 +2902,11 @@ INSN_ENTRY(opt_setinlinecache)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_setinlinecache
-#   line 1042 "insns.def"
+#   line 1047 "insns.def"
 {
     vm_ic_update(GET_ISEQ(), ic, val, GET_EP());
 }
-#   line 2897 "vm.inc"
+#   line 2910 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2921,7 +2934,7 @@ INSN_ENTRY(once)
     ISEQ iseq = (ISEQ)GET_OPERAND(1);
     ISE ise = (ISE)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _once(iseq, ise)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -2934,11 +2947,11 @@ INSN_ENTRY(once)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN once
-#   line 1052 "insns.def"
+#   line 1057 "insns.def"
 {
     val = vm_once_dispatch(ec, iseq, ise);
 }
-#   line 2942 "vm.inc"
+#   line 2955 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2963,7 +2976,7 @@ INSN_ENTRY(opt_case_dispatch)
     CDHASH hash = (CDHASH)GET_OPERAND(1);
     OFFSET else_offset = (OFFSET)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_case_dispatch(hash, else_offset)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE key = TOPN(0);
 
     /* ### Instruction preambles. ### */
@@ -2975,7 +2988,7 @@ INSN_ENTRY(opt_case_dispatch)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_case_dispatch
-#   line 1063 "insns.def"
+#   line 1068 "insns.def"
 {
     OFFSET dst = vm_case_dispatch(hash, else_offset, key);
 
@@ -2983,7 +2996,7 @@ INSN_ENTRY(opt_case_dispatch)
 	JUMP(dst);
     }
 }
-#   line 2987 "vm.inc"
+#   line 3000 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3007,7 +3020,7 @@ INSN_ENTRY(opt_plus)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_plus(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(1);
     VALUE obj = TOPN(0);
     VALUE val;
@@ -3020,7 +3033,7 @@ INSN_ENTRY(opt_plus)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_plus
-#   line 1079 "insns.def"
+#   line 1084 "insns.def"
 {
     val = vm_opt_plus(recv, obj);
 
@@ -3028,7 +3041,7 @@ INSN_ENTRY(opt_plus)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3032 "vm.inc"
+#   line 3045 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3055,7 +3068,7 @@ INSN_ENTRY(opt_minus)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_minus(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(1);
     VALUE obj = TOPN(0);
     VALUE val;
@@ -3068,7 +3081,7 @@ INSN_ENTRY(opt_minus)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_minus
-#   line 1093 "insns.def"
+#   line 1098 "insns.def"
 {
     val = vm_opt_minus(recv, obj);
 
@@ -3076,7 +3089,7 @@ INSN_ENTRY(opt_minus)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3080 "vm.inc"
+#   line 3093 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3103,7 +3116,7 @@ INSN_ENTRY(opt_mult)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_mult(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(1);
     VALUE obj = TOPN(0);
     VALUE val;
@@ -3116,7 +3129,7 @@ INSN_ENTRY(opt_mult)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_mult
-#   line 1107 "insns.def"
+#   line 1112 "insns.def"
 {
     val = vm_opt_mult(recv, obj);
 
@@ -3124,7 +3137,7 @@ INSN_ENTRY(opt_mult)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3128 "vm.inc"
+#   line 3141 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3151,7 +3164,7 @@ INSN_ENTRY(opt_div)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_div(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(1);
     VALUE obj = TOPN(0);
     VALUE val;
@@ -3164,7 +3177,7 @@ INSN_ENTRY(opt_div)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_div
-#   line 1124 "insns.def"
+#   line 1129 "insns.def"
 {
     val = vm_opt_div(recv, obj);
 
@@ -3172,7 +3185,7 @@ INSN_ENTRY(opt_div)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3176 "vm.inc"
+#   line 3189 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3199,7 +3212,7 @@ INSN_ENTRY(opt_mod)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_mod(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(1);
     VALUE obj = TOPN(0);
     VALUE val;
@@ -3212,7 +3225,7 @@ INSN_ENTRY(opt_mod)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_mod
-#   line 1140 "insns.def"
+#   line 1145 "insns.def"
 {
     val = vm_opt_mod(recv, obj);
 
@@ -3220,7 +3233,7 @@ INSN_ENTRY(opt_mod)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3224 "vm.inc"
+#   line 3237 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3247,7 +3260,7 @@ INSN_ENTRY(opt_eq)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_eq(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(1);
     VALUE obj = TOPN(0);
     VALUE val;
@@ -3260,7 +3273,7 @@ INSN_ENTRY(opt_eq)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_eq
-#   line 1154 "insns.def"
+#   line 1159 "insns.def"
 {
     val = opt_equality(GET_ISEQ(), recv, obj, cd);
 
@@ -3268,7 +3281,7 @@ INSN_ENTRY(opt_eq)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3272 "vm.inc"
+#   line 3285 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3296,7 +3309,7 @@ INSN_ENTRY(opt_neq)
     CALL_DATA cd_eq = (CALL_DATA)GET_OPERAND(1);
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_neq(cd_eq, cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(1);
     VALUE obj = TOPN(0);
     VALUE val;
@@ -3310,7 +3323,7 @@ INSN_ENTRY(opt_neq)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_neq
-#   line 1168 "insns.def"
+#   line 1173 "insns.def"
 {
     val = vm_opt_neq(GET_ISEQ(), cd, cd_eq, recv, obj);
 
@@ -3318,7 +3331,7 @@ INSN_ENTRY(opt_neq)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3322 "vm.inc"
+#   line 3335 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3345,7 +3358,7 @@ INSN_ENTRY(opt_lt)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_lt(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(1);
     VALUE obj = TOPN(0);
     VALUE val;
@@ -3358,7 +3371,7 @@ INSN_ENTRY(opt_lt)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_lt
-#   line 1182 "insns.def"
+#   line 1187 "insns.def"
 {
     val = vm_opt_lt(recv, obj);
 
@@ -3366,7 +3379,7 @@ INSN_ENTRY(opt_lt)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3370 "vm.inc"
+#   line 3383 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3393,7 +3406,7 @@ INSN_ENTRY(opt_le)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_le(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(1);
     VALUE obj = TOPN(0);
     VALUE val;
@@ -3406,7 +3419,7 @@ INSN_ENTRY(opt_le)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_le
-#   line 1196 "insns.def"
+#   line 1201 "insns.def"
 {
     val = vm_opt_le(recv, obj);
 
@@ -3414,7 +3427,7 @@ INSN_ENTRY(opt_le)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3418 "vm.inc"
+#   line 3431 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3441,7 +3454,7 @@ INSN_ENTRY(opt_gt)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_gt(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(1);
     VALUE obj = TOPN(0);
     VALUE val;
@@ -3454,7 +3467,7 @@ INSN_ENTRY(opt_gt)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_gt
-#   line 1210 "insns.def"
+#   line 1215 "insns.def"
 {
     val = vm_opt_gt(recv, obj);
 
@@ -3462,7 +3475,7 @@ INSN_ENTRY(opt_gt)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3466 "vm.inc"
+#   line 3479 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3489,7 +3502,7 @@ INSN_ENTRY(opt_ge)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_ge(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(1);
     VALUE obj = TOPN(0);
     VALUE val;
@@ -3502,7 +3515,7 @@ INSN_ENTRY(opt_ge)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_ge
-#   line 1224 "insns.def"
+#   line 1229 "insns.def"
 {
     val = vm_opt_ge(recv, obj);
 
@@ -3510,7 +3523,7 @@ INSN_ENTRY(opt_ge)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3514 "vm.inc"
+#   line 3527 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3537,7 +3550,7 @@ INSN_ENTRY(opt_ltlt)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_ltlt(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(1);
     VALUE obj = TOPN(0);
     VALUE val;
@@ -3550,7 +3563,7 @@ INSN_ENTRY(opt_ltlt)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_ltlt
-#   line 1242 "insns.def"
+#   line 1247 "insns.def"
 {
     val = vm_opt_ltlt(recv, obj);
 
@@ -3558,7 +3571,7 @@ INSN_ENTRY(opt_ltlt)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3562 "vm.inc"
+#   line 3575 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3585,7 +3598,7 @@ INSN_ENTRY(opt_and)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_and(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(1);
     VALUE obj = TOPN(0);
     VALUE val;
@@ -3598,7 +3611,7 @@ INSN_ENTRY(opt_and)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_and
-#   line 1256 "insns.def"
+#   line 1261 "insns.def"
 {
     val = vm_opt_and(recv, obj);
 
@@ -3606,7 +3619,7 @@ INSN_ENTRY(opt_and)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3610 "vm.inc"
+#   line 3623 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3633,7 +3646,7 @@ INSN_ENTRY(opt_or)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_or(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(1);
     VALUE obj = TOPN(0);
     VALUE val;
@@ -3646,7 +3659,7 @@ INSN_ENTRY(opt_or)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_or
-#   line 1270 "insns.def"
+#   line 1275 "insns.def"
 {
     val = vm_opt_or(recv, obj);
 
@@ -3654,7 +3667,7 @@ INSN_ENTRY(opt_or)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3658 "vm.inc"
+#   line 3671 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3681,7 +3694,7 @@ INSN_ENTRY(opt_aref)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_aref(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(1);
     VALUE obj = TOPN(0);
     VALUE val;
@@ -3694,7 +3707,7 @@ INSN_ENTRY(opt_aref)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_aref
-#   line 1289 "insns.def"
+#   line 1294 "insns.def"
 {
     val = vm_opt_aref(recv, obj);
 
@@ -3702,7 +3715,7 @@ INSN_ENTRY(opt_aref)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3706 "vm.inc"
+#   line 3719 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3729,7 +3742,7 @@ INSN_ENTRY(opt_aset)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_aset(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(2);
     VALUE obj = TOPN(1);
     VALUE set = TOPN(0);
@@ -3743,7 +3756,7 @@ INSN_ENTRY(opt_aset)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_aset
-#   line 1306 "insns.def"
+#   line 1311 "insns.def"
 {
     val = vm_opt_aset(recv, obj, set);
 
@@ -3751,7 +3764,7 @@ INSN_ENTRY(opt_aset)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3755 "vm.inc"
+#   line 3768 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3779,7 +3792,7 @@ INSN_ENTRY(opt_aset_with)
     VALUE key = (VALUE)GET_OPERAND(1);
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_aset_with(key, cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(1);
     VALUE val = TOPN(0);
 
@@ -3792,7 +3805,7 @@ INSN_ENTRY(opt_aset_with)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_aset_with
-#   line 1322 "insns.def"
+#   line 1327 "insns.def"
 {
     VALUE tmp = vm_opt_aset_with(recv, key, val);
 
@@ -3807,7 +3820,7 @@ INSN_ENTRY(opt_aset_with)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3811 "vm.inc"
+#   line 3824 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3835,7 +3848,7 @@ INSN_ENTRY(opt_aref_with)
     VALUE key = (VALUE)GET_OPERAND(1);
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_aref_with(key, cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(0);
     VALUE val;
 
@@ -3848,7 +3861,7 @@ INSN_ENTRY(opt_aref_with)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_aref_with
-#   line 1345 "insns.def"
+#   line 1350 "insns.def"
 {
     val = vm_opt_aref_with(recv, key);
 
@@ -3859,7 +3872,7 @@ INSN_ENTRY(opt_aref_with)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3863 "vm.inc"
+#   line 3876 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3886,7 +3899,7 @@ INSN_ENTRY(opt_length)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_length(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(0);
     VALUE val;
 
@@ -3898,7 +3911,7 @@ INSN_ENTRY(opt_length)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_length
-#   line 1362 "insns.def"
+#   line 1367 "insns.def"
 {
     val = vm_opt_length(recv, BOP_LENGTH);
 
@@ -3906,7 +3919,7 @@ INSN_ENTRY(opt_length)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3910 "vm.inc"
+#   line 3923 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3933,7 +3946,7 @@ INSN_ENTRY(opt_size)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_size(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(0);
     VALUE val;
 
@@ -3945,7 +3958,7 @@ INSN_ENTRY(opt_size)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_size
-#   line 1376 "insns.def"
+#   line 1381 "insns.def"
 {
     val = vm_opt_length(recv, BOP_SIZE);
 
@@ -3953,7 +3966,7 @@ INSN_ENTRY(opt_size)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3957 "vm.inc"
+#   line 3970 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3980,7 +3993,7 @@ INSN_ENTRY(opt_empty_p)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_empty_p(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(0);
     VALUE val;
 
@@ -3992,7 +4005,7 @@ INSN_ENTRY(opt_empty_p)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_empty_p
-#   line 1390 "insns.def"
+#   line 1395 "insns.def"
 {
     val = vm_opt_empty_p(recv);
 
@@ -4000,7 +4013,7 @@ INSN_ENTRY(opt_empty_p)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 4004 "vm.inc"
+#   line 4017 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4027,7 +4040,7 @@ INSN_ENTRY(opt_succ)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_succ(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(0);
     VALUE val;
 
@@ -4039,7 +4052,7 @@ INSN_ENTRY(opt_succ)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_succ
-#   line 1404 "insns.def"
+#   line 1409 "insns.def"
 {
     val = vm_opt_succ(recv);
 
@@ -4047,7 +4060,7 @@ INSN_ENTRY(opt_succ)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 4051 "vm.inc"
+#   line 4064 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4074,7 +4087,7 @@ INSN_ENTRY(opt_not)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_not(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE recv = TOPN(0);
     VALUE val;
 
@@ -4086,7 +4099,7 @@ INSN_ENTRY(opt_not)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_not
-#   line 1418 "insns.def"
+#   line 1423 "insns.def"
 {
     val = vm_opt_not(GET_ISEQ(), cd, recv);
 
@@ -4094,7 +4107,7 @@ INSN_ENTRY(opt_not)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 4098 "vm.inc"
+#   line 4111 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4121,7 +4134,7 @@ INSN_ENTRY(opt_regexpmatch2)
     /* ###  Declare and assign variables. ### */
     CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_regexpmatch2(cd)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE obj2 = TOPN(1);
     VALUE obj1 = TOPN(0);
     VALUE val;
@@ -4134,7 +4147,7 @@ INSN_ENTRY(opt_regexpmatch2)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_regexpmatch2
-#   line 1433 "insns.def"
+#   line 1438 "insns.def"
 {
     val = vm_opt_regexpmatch2(obj2, obj1);
 
@@ -4142,7 +4155,7 @@ INSN_ENTRY(opt_regexpmatch2)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 4146 "vm.inc"
+#   line 4159 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4169,7 +4182,7 @@ INSN_ENTRY(invokebuiltin)
     /* ###  Declare and assign variables. ### */
     RB_BUILTIN bf = (RB_BUILTIN)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _invokebuiltin(bf)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -4180,11 +4193,11 @@ INSN_ENTRY(invokebuiltin)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN invokebuiltin
-#   line 1470 "insns.def"
+#   line 1475 "insns.def"
 {
     val = vm_invoke_builtin(ec, reg_cfp, bf, STACK_ADDR_FROM_TOP(bf->argc));
 }
-#   line 4188 "vm.inc"
+#   line 4201 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4212,7 +4225,7 @@ INSN_ENTRY(opt_invokebuiltin_delegate)
     RB_BUILTIN bf = (RB_BUILTIN)GET_OPERAND(1);
     rb_num_t index = (rb_num_t)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_invokebuiltin_delegate(bf, index)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -4224,11 +4237,11 @@ INSN_ENTRY(opt_invokebuiltin_delegate)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_invokebuiltin_delegate
-#   line 1481 "insns.def"
+#   line 1486 "insns.def"
 {
     val = vm_invoke_builtin_delegate(ec, reg_cfp, bf, (unsigned int)index);
 }
-#   line 4232 "vm.inc"
+#   line 4245 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4256,7 +4269,7 @@ INSN_ENTRY(opt_invokebuiltin_delegate_leave)
     RB_BUILTIN bf = (RB_BUILTIN)GET_OPERAND(1);
     rb_num_t index = (rb_num_t)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_invokebuiltin_delegate_leave(bf, index)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -4268,7 +4281,7 @@ INSN_ENTRY(opt_invokebuiltin_delegate_leave)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_invokebuiltin_delegate_leave
-#   line 1492 "insns.def"
+#   line 1497 "insns.def"
 {
     val = vm_invoke_builtin_delegate(ec, reg_cfp, bf, (unsigned int)index);
 
@@ -4286,7 +4299,7 @@ INSN_ENTRY(opt_invokebuiltin_delegate_leave)
         RESTORE_REGS();
     }
 }
-#   line 4290 "vm.inc"
+#   line 4303 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4313,10 +4326,10 @@ INSN_ENTRY(getlocal_WC_0)
     /* ###  Declare and assign variables. ### */
 #line 10 "defs/opt_operand.def"
     const rb_num_t level = 0;
-#line 4317 "vm.inc"
+#line 4330 "vm.inc"
     lindex_t idx = (lindex_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _getlocal_WC_0(idx)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -4333,7 +4346,7 @@ INSN_ENTRY(getlocal_WC_0)
     RB_DEBUG_COUNTER_INC(lvar_get);
     (void)RB_DEBUG_COUNTER_INC_IF(lvar_get_dynamic, level > 0);
 }
-#   line 4337 "vm.inc"
+#   line 4350 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4360,10 +4373,10 @@ INSN_ENTRY(getlocal_WC_1)
     /* ###  Declare and assign variables. ### */
 #line 11 "defs/opt_operand.def"
     const rb_num_t level = 1;
-#line 4364 "vm.inc"
+#line 4377 "vm.inc"
     lindex_t idx = (lindex_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _getlocal_WC_1(idx)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val;
 
     /* ### Instruction preambles. ### */
@@ -4380,7 +4393,7 @@ INSN_ENTRY(getlocal_WC_1)
     RB_DEBUG_COUNTER_INC(lvar_get);
     (void)RB_DEBUG_COUNTER_INC_IF(lvar_get_dynamic, level > 0);
 }
-#   line 4384 "vm.inc"
+#   line 4397 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4407,10 +4420,10 @@ INSN_ENTRY(setlocal_WC_0)
     /* ###  Declare and assign variables. ### */
 #line 12 "defs/opt_operand.def"
     const rb_num_t level = 0;
-#line 4411 "vm.inc"
+#line 4424 "vm.inc"
     lindex_t idx = (lindex_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _setlocal_WC_0(idx)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val = TOPN(0);
 
     /* ### Instruction preambles. ### */
@@ -4427,7 +4440,7 @@ INSN_ENTRY(setlocal_WC_0)
     RB_DEBUG_COUNTER_INC(lvar_set);
     (void)RB_DEBUG_COUNTER_INC_IF(lvar_set_dynamic, level > 0);
 }
-#   line 4431 "vm.inc"
+#   line 4444 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4451,10 +4464,10 @@ INSN_ENTRY(setlocal_WC_1)
     /* ###  Declare and assign variables. ### */
 #line 13 "defs/opt_operand.def"
     const rb_num_t level = 1;
-#line 4455 "vm.inc"
+#line 4468 "vm.inc"
     lindex_t idx = (lindex_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _setlocal_WC_1(idx)
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
     VALUE val = TOPN(0);
 
     /* ### Instruction preambles. ### */
@@ -4471,7 +4484,7 @@ INSN_ENTRY(setlocal_WC_1)
     RB_DEBUG_COUNTER_INC(lvar_set);
     (void)RB_DEBUG_COUNTER_INC_IF(lvar_set_dynamic, level > 0);
 }
-#   line 4475 "vm.inc"
+#   line 4488 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4495,9 +4508,9 @@ INSN_ENTRY(putobject_INT2FIX_0_)
     /* ###  Declare and assign variables. ### */
 #line 15 "defs/opt_operand.def"
     const VALUE val = INT2FIX(0);
-#line 4499 "vm.inc"
+#line 4512 "vm.inc"
 #   define INSN_ATTR(x) attr_ ## x ## _putobject_INT2FIX_0_()
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
@@ -4526,9 +4539,9 @@ INSN_ENTRY(putobject_INT2FIX_1_)
     /* ###  Declare and assign variables. ### */
 #line 16 "defs/opt_operand.def"
     const VALUE val = INT2FIX(1);
-#line 4530 "vm.inc"
+#line 4543 "vm.inc"
 #   define INSN_ATTR(x) attr_ ## x ## _putobject_INT2FIX_1_()
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
@@ -4551,6 +4564,7 @@ INSN_ENTRY(putobject_INT2FIX_1_)
 INSN_ENTRY(trace_nop)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(nop);
     END_INSN(trace_nop);
 }
@@ -4559,6 +4573,7 @@ INSN_ENTRY(trace_nop)
 INSN_ENTRY(trace_getlocal)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(getlocal);
     END_INSN(trace_getlocal);
 }
@@ -4567,6 +4582,7 @@ INSN_ENTRY(trace_getlocal)
 INSN_ENTRY(trace_setlocal)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(setlocal);
     END_INSN(trace_setlocal);
 }
@@ -4575,6 +4591,7 @@ INSN_ENTRY(trace_setlocal)
 INSN_ENTRY(trace_getblockparam)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(getblockparam);
     END_INSN(trace_getblockparam);
 }
@@ -4583,6 +4600,7 @@ INSN_ENTRY(trace_getblockparam)
 INSN_ENTRY(trace_setblockparam)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(setblockparam);
     END_INSN(trace_setblockparam);
 }
@@ -4591,6 +4609,7 @@ INSN_ENTRY(trace_setblockparam)
 INSN_ENTRY(trace_getblockparamproxy)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(getblockparamproxy);
     END_INSN(trace_getblockparamproxy);
 }
@@ -4599,6 +4618,7 @@ INSN_ENTRY(trace_getblockparamproxy)
 INSN_ENTRY(trace_getspecial)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(getspecial);
     END_INSN(trace_getspecial);
 }
@@ -4607,6 +4627,7 @@ INSN_ENTRY(trace_getspecial)
 INSN_ENTRY(trace_setspecial)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(setspecial);
     END_INSN(trace_setspecial);
 }
@@ -4615,6 +4636,7 @@ INSN_ENTRY(trace_setspecial)
 INSN_ENTRY(trace_getinstancevariable)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(getinstancevariable);
     END_INSN(trace_getinstancevariable);
 }
@@ -4623,6 +4645,7 @@ INSN_ENTRY(trace_getinstancevariable)
 INSN_ENTRY(trace_setinstancevariable)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(setinstancevariable);
     END_INSN(trace_setinstancevariable);
 }
@@ -4631,6 +4654,7 @@ INSN_ENTRY(trace_setinstancevariable)
 INSN_ENTRY(trace_getclassvariable)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(getclassvariable);
     END_INSN(trace_getclassvariable);
 }
@@ -4639,6 +4663,7 @@ INSN_ENTRY(trace_getclassvariable)
 INSN_ENTRY(trace_setclassvariable)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(setclassvariable);
     END_INSN(trace_setclassvariable);
 }
@@ -4647,6 +4672,7 @@ INSN_ENTRY(trace_setclassvariable)
 INSN_ENTRY(trace_getconstant)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(getconstant);
     END_INSN(trace_getconstant);
 }
@@ -4655,6 +4681,7 @@ INSN_ENTRY(trace_getconstant)
 INSN_ENTRY(trace_setconstant)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(setconstant);
     END_INSN(trace_setconstant);
 }
@@ -4663,6 +4690,7 @@ INSN_ENTRY(trace_setconstant)
 INSN_ENTRY(trace_getglobal)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(getglobal);
     END_INSN(trace_getglobal);
 }
@@ -4671,6 +4699,7 @@ INSN_ENTRY(trace_getglobal)
 INSN_ENTRY(trace_setglobal)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(setglobal);
     END_INSN(trace_setglobal);
 }
@@ -4679,6 +4708,7 @@ INSN_ENTRY(trace_setglobal)
 INSN_ENTRY(trace_putnil)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(putnil);
     END_INSN(trace_putnil);
 }
@@ -4687,6 +4717,7 @@ INSN_ENTRY(trace_putnil)
 INSN_ENTRY(trace_putself)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(putself);
     END_INSN(trace_putself);
 }
@@ -4695,6 +4726,7 @@ INSN_ENTRY(trace_putself)
 INSN_ENTRY(trace_putobject)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(putobject);
     END_INSN(trace_putobject);
 }
@@ -4703,6 +4735,7 @@ INSN_ENTRY(trace_putobject)
 INSN_ENTRY(trace_putspecialobject)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(putspecialobject);
     END_INSN(trace_putspecialobject);
 }
@@ -4711,6 +4744,7 @@ INSN_ENTRY(trace_putspecialobject)
 INSN_ENTRY(trace_putstring)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(putstring);
     END_INSN(trace_putstring);
 }
@@ -4719,22 +4753,25 @@ INSN_ENTRY(trace_putstring)
 INSN_ENTRY(trace_concatstrings)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(concatstrings);
     END_INSN(trace_concatstrings);
 }
 
-/* insn trace_tostring(...)(...)(...) */
-INSN_ENTRY(trace_tostring)
+/* insn trace_anytostring(...)(...)(...) */
+INSN_ENTRY(trace_anytostring)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(tostring);
-    END_INSN(trace_tostring);
+    
+    DISPATCH_ORIGINAL_INSN(anytostring);
+    END_INSN(trace_anytostring);
 }
 
 /* insn trace_toregexp(...)(...)(...) */
 INSN_ENTRY(trace_toregexp)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(toregexp);
     END_INSN(trace_toregexp);
 }
@@ -4743,6 +4780,7 @@ INSN_ENTRY(trace_toregexp)
 INSN_ENTRY(trace_intern)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(intern);
     END_INSN(trace_intern);
 }
@@ -4751,6 +4789,7 @@ INSN_ENTRY(trace_intern)
 INSN_ENTRY(trace_newarray)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(newarray);
     END_INSN(trace_newarray);
 }
@@ -4759,6 +4798,7 @@ INSN_ENTRY(trace_newarray)
 INSN_ENTRY(trace_newarraykwsplat)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(newarraykwsplat);
     END_INSN(trace_newarraykwsplat);
 }
@@ -4767,6 +4807,7 @@ INSN_ENTRY(trace_newarraykwsplat)
 INSN_ENTRY(trace_duparray)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(duparray);
     END_INSN(trace_duparray);
 }
@@ -4775,6 +4816,7 @@ INSN_ENTRY(trace_duparray)
 INSN_ENTRY(trace_duphash)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(duphash);
     END_INSN(trace_duphash);
 }
@@ -4783,6 +4825,7 @@ INSN_ENTRY(trace_duphash)
 INSN_ENTRY(trace_expandarray)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(expandarray);
     END_INSN(trace_expandarray);
 }
@@ -4791,6 +4834,7 @@ INSN_ENTRY(trace_expandarray)
 INSN_ENTRY(trace_concatarray)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(concatarray);
     END_INSN(trace_concatarray);
 }
@@ -4799,6 +4843,7 @@ INSN_ENTRY(trace_concatarray)
 INSN_ENTRY(trace_splatarray)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(splatarray);
     END_INSN(trace_splatarray);
 }
@@ -4807,6 +4852,7 @@ INSN_ENTRY(trace_splatarray)
 INSN_ENTRY(trace_newhash)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(newhash);
     END_INSN(trace_newhash);
 }
@@ -4815,6 +4861,7 @@ INSN_ENTRY(trace_newhash)
 INSN_ENTRY(trace_newrange)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(newrange);
     END_INSN(trace_newrange);
 }
@@ -4823,6 +4870,7 @@ INSN_ENTRY(trace_newrange)
 INSN_ENTRY(trace_pop)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(pop);
     END_INSN(trace_pop);
 }
@@ -4831,6 +4879,7 @@ INSN_ENTRY(trace_pop)
 INSN_ENTRY(trace_dup)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(dup);
     END_INSN(trace_dup);
 }
@@ -4839,6 +4888,7 @@ INSN_ENTRY(trace_dup)
 INSN_ENTRY(trace_dupn)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(dupn);
     END_INSN(trace_dupn);
 }
@@ -4847,22 +4897,16 @@ INSN_ENTRY(trace_dupn)
 INSN_ENTRY(trace_swap)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(swap);
     END_INSN(trace_swap);
-}
-
-/* insn trace_reverse(...)(...)(...) */
-INSN_ENTRY(trace_reverse)
-{
-    vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(reverse);
-    END_INSN(trace_reverse);
 }
 
 /* insn trace_topn(...)(...)(...) */
 INSN_ENTRY(trace_topn)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(topn);
     END_INSN(trace_topn);
 }
@@ -4871,6 +4915,7 @@ INSN_ENTRY(trace_topn)
 INSN_ENTRY(trace_setn)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(setn);
     END_INSN(trace_setn);
 }
@@ -4879,6 +4924,7 @@ INSN_ENTRY(trace_setn)
 INSN_ENTRY(trace_adjuststack)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(adjuststack);
     END_INSN(trace_adjuststack);
 }
@@ -4887,6 +4933,7 @@ INSN_ENTRY(trace_adjuststack)
 INSN_ENTRY(trace_defined)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(defined);
     END_INSN(trace_defined);
 }
@@ -4895,6 +4942,7 @@ INSN_ENTRY(trace_defined)
 INSN_ENTRY(trace_checkmatch)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(checkmatch);
     END_INSN(trace_checkmatch);
 }
@@ -4903,6 +4951,7 @@ INSN_ENTRY(trace_checkmatch)
 INSN_ENTRY(trace_checkkeyword)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(checkkeyword);
     END_INSN(trace_checkkeyword);
 }
@@ -4911,6 +4960,7 @@ INSN_ENTRY(trace_checkkeyword)
 INSN_ENTRY(trace_checktype)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(checktype);
     END_INSN(trace_checktype);
 }
@@ -4919,6 +4969,7 @@ INSN_ENTRY(trace_checktype)
 INSN_ENTRY(trace_defineclass)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(defineclass);
     END_INSN(trace_defineclass);
 }
@@ -4927,6 +4978,7 @@ INSN_ENTRY(trace_defineclass)
 INSN_ENTRY(trace_definemethod)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(definemethod);
     END_INSN(trace_definemethod);
 }
@@ -4935,6 +4987,7 @@ INSN_ENTRY(trace_definemethod)
 INSN_ENTRY(trace_definesmethod)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(definesmethod);
     END_INSN(trace_definesmethod);
 }
@@ -4943,6 +4996,7 @@ INSN_ENTRY(trace_definesmethod)
 INSN_ENTRY(trace_send)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(send);
     END_INSN(trace_send);
 }
@@ -4951,14 +5005,25 @@ INSN_ENTRY(trace_send)
 INSN_ENTRY(trace_opt_send_without_block)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_send_without_block);
+}
+
+/* insn trace_objtostring(...)(...)(...) */
+INSN_ENTRY(trace_objtostring)
+{
+    vm_trace(ec, GET_CFP());
+    
+    DISPATCH_ORIGINAL_INSN(objtostring);
+    END_INSN(trace_objtostring);
 }
 
 /* insn trace_opt_str_freeze(...)(...)(...) */
 INSN_ENTRY(trace_opt_str_freeze)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(opt_str_freeze);
     END_INSN(trace_opt_str_freeze);
 }
@@ -4967,7 +5032,8 @@ INSN_ENTRY(trace_opt_str_freeze)
 INSN_ENTRY(trace_opt_nil_p)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_nil_p);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_nil_p);
 }
 
@@ -4975,6 +5041,7 @@ INSN_ENTRY(trace_opt_nil_p)
 INSN_ENTRY(trace_opt_str_uminus)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(opt_str_uminus);
     END_INSN(trace_opt_str_uminus);
 }
@@ -4983,6 +5050,7 @@ INSN_ENTRY(trace_opt_str_uminus)
 INSN_ENTRY(trace_opt_newarray_max)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(opt_newarray_max);
     END_INSN(trace_opt_newarray_max);
 }
@@ -4991,6 +5059,7 @@ INSN_ENTRY(trace_opt_newarray_max)
 INSN_ENTRY(trace_opt_newarray_min)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(opt_newarray_min);
     END_INSN(trace_opt_newarray_min);
 }
@@ -4999,6 +5068,7 @@ INSN_ENTRY(trace_opt_newarray_min)
 INSN_ENTRY(trace_invokesuper)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(invokesuper);
     END_INSN(trace_invokesuper);
 }
@@ -5007,6 +5077,7 @@ INSN_ENTRY(trace_invokesuper)
 INSN_ENTRY(trace_invokeblock)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(invokeblock);
     END_INSN(trace_invokeblock);
 }
@@ -5015,6 +5086,7 @@ INSN_ENTRY(trace_invokeblock)
 INSN_ENTRY(trace_leave)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(leave);
     END_INSN(trace_leave);
 }
@@ -5023,6 +5095,7 @@ INSN_ENTRY(trace_leave)
 INSN_ENTRY(trace_throw)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(throw);
     END_INSN(trace_throw);
 }
@@ -5031,6 +5104,7 @@ INSN_ENTRY(trace_throw)
 INSN_ENTRY(trace_jump)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(jump);
     END_INSN(trace_jump);
 }
@@ -5039,6 +5113,7 @@ INSN_ENTRY(trace_jump)
 INSN_ENTRY(trace_branchif)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(branchif);
     END_INSN(trace_branchif);
 }
@@ -5047,6 +5122,7 @@ INSN_ENTRY(trace_branchif)
 INSN_ENTRY(trace_branchunless)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(branchunless);
     END_INSN(trace_branchunless);
 }
@@ -5055,6 +5131,7 @@ INSN_ENTRY(trace_branchunless)
 INSN_ENTRY(trace_branchnil)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(branchnil);
     END_INSN(trace_branchnil);
 }
@@ -5063,6 +5140,7 @@ INSN_ENTRY(trace_branchnil)
 INSN_ENTRY(trace_opt_getinlinecache)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(opt_getinlinecache);
     END_INSN(trace_opt_getinlinecache);
 }
@@ -5071,6 +5149,7 @@ INSN_ENTRY(trace_opt_getinlinecache)
 INSN_ENTRY(trace_opt_setinlinecache)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(opt_setinlinecache);
     END_INSN(trace_opt_setinlinecache);
 }
@@ -5079,6 +5158,7 @@ INSN_ENTRY(trace_opt_setinlinecache)
 INSN_ENTRY(trace_once)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(once);
     END_INSN(trace_once);
 }
@@ -5087,6 +5167,7 @@ INSN_ENTRY(trace_once)
 INSN_ENTRY(trace_opt_case_dispatch)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(opt_case_dispatch);
     END_INSN(trace_opt_case_dispatch);
 }
@@ -5095,7 +5176,8 @@ INSN_ENTRY(trace_opt_case_dispatch)
 INSN_ENTRY(trace_opt_plus)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_plus);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_plus);
 }
 
@@ -5103,7 +5185,8 @@ INSN_ENTRY(trace_opt_plus)
 INSN_ENTRY(trace_opt_minus)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_minus);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_minus);
 }
 
@@ -5111,7 +5194,8 @@ INSN_ENTRY(trace_opt_minus)
 INSN_ENTRY(trace_opt_mult)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_mult);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_mult);
 }
 
@@ -5119,7 +5203,8 @@ INSN_ENTRY(trace_opt_mult)
 INSN_ENTRY(trace_opt_div)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_div);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_div);
 }
 
@@ -5127,7 +5212,8 @@ INSN_ENTRY(trace_opt_div)
 INSN_ENTRY(trace_opt_mod)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_mod);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_mod);
 }
 
@@ -5135,7 +5221,8 @@ INSN_ENTRY(trace_opt_mod)
 INSN_ENTRY(trace_opt_eq)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_eq);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_eq);
 }
 
@@ -5143,7 +5230,8 @@ INSN_ENTRY(trace_opt_eq)
 INSN_ENTRY(trace_opt_neq)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_neq);
+    ADD_PC(1);
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_neq);
 }
 
@@ -5151,7 +5239,8 @@ INSN_ENTRY(trace_opt_neq)
 INSN_ENTRY(trace_opt_lt)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_lt);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_lt);
 }
 
@@ -5159,7 +5248,8 @@ INSN_ENTRY(trace_opt_lt)
 INSN_ENTRY(trace_opt_le)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_le);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_le);
 }
 
@@ -5167,7 +5257,8 @@ INSN_ENTRY(trace_opt_le)
 INSN_ENTRY(trace_opt_gt)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_gt);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_gt);
 }
 
@@ -5175,7 +5266,8 @@ INSN_ENTRY(trace_opt_gt)
 INSN_ENTRY(trace_opt_ge)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_ge);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_ge);
 }
 
@@ -5183,7 +5275,8 @@ INSN_ENTRY(trace_opt_ge)
 INSN_ENTRY(trace_opt_ltlt)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_ltlt);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_ltlt);
 }
 
@@ -5191,7 +5284,8 @@ INSN_ENTRY(trace_opt_ltlt)
 INSN_ENTRY(trace_opt_and)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_and);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_and);
 }
 
@@ -5199,7 +5293,8 @@ INSN_ENTRY(trace_opt_and)
 INSN_ENTRY(trace_opt_or)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_or);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_or);
 }
 
@@ -5207,7 +5302,8 @@ INSN_ENTRY(trace_opt_or)
 INSN_ENTRY(trace_opt_aref)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_aref);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_aref);
 }
 
@@ -5215,7 +5311,8 @@ INSN_ENTRY(trace_opt_aref)
 INSN_ENTRY(trace_opt_aset)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_aset);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_aset);
 }
 
@@ -5223,6 +5320,7 @@ INSN_ENTRY(trace_opt_aset)
 INSN_ENTRY(trace_opt_aset_with)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(opt_aset_with);
     END_INSN(trace_opt_aset_with);
 }
@@ -5231,6 +5329,7 @@ INSN_ENTRY(trace_opt_aset_with)
 INSN_ENTRY(trace_opt_aref_with)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(opt_aref_with);
     END_INSN(trace_opt_aref_with);
 }
@@ -5239,7 +5338,8 @@ INSN_ENTRY(trace_opt_aref_with)
 INSN_ENTRY(trace_opt_length)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_length);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_length);
 }
 
@@ -5247,7 +5347,8 @@ INSN_ENTRY(trace_opt_length)
 INSN_ENTRY(trace_opt_size)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_size);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_size);
 }
 
@@ -5255,7 +5356,8 @@ INSN_ENTRY(trace_opt_size)
 INSN_ENTRY(trace_opt_empty_p)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_empty_p);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_empty_p);
 }
 
@@ -5263,7 +5365,8 @@ INSN_ENTRY(trace_opt_empty_p)
 INSN_ENTRY(trace_opt_succ)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_succ);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_succ);
 }
 
@@ -5271,7 +5374,8 @@ INSN_ENTRY(trace_opt_succ)
 INSN_ENTRY(trace_opt_not)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_not);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_not);
 }
 
@@ -5279,7 +5383,8 @@ INSN_ENTRY(trace_opt_not)
 INSN_ENTRY(trace_opt_regexpmatch2)
 {
     vm_trace(ec, GET_CFP());
-    DISPATCH_ORIGINAL_INSN(opt_regexpmatch2);
+    
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     END_INSN(trace_opt_regexpmatch2);
 }
 
@@ -5287,6 +5392,7 @@ INSN_ENTRY(trace_opt_regexpmatch2)
 INSN_ENTRY(trace_invokebuiltin)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(invokebuiltin);
     END_INSN(trace_invokebuiltin);
 }
@@ -5295,6 +5401,7 @@ INSN_ENTRY(trace_invokebuiltin)
 INSN_ENTRY(trace_opt_invokebuiltin_delegate)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(opt_invokebuiltin_delegate);
     END_INSN(trace_opt_invokebuiltin_delegate);
 }
@@ -5303,6 +5410,7 @@ INSN_ENTRY(trace_opt_invokebuiltin_delegate)
 INSN_ENTRY(trace_opt_invokebuiltin_delegate_leave)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(opt_invokebuiltin_delegate_leave);
     END_INSN(trace_opt_invokebuiltin_delegate_leave);
 }
@@ -5311,6 +5419,7 @@ INSN_ENTRY(trace_opt_invokebuiltin_delegate_leave)
 INSN_ENTRY(trace_getlocal_WC_0)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(getlocal_WC_0);
     END_INSN(trace_getlocal_WC_0);
 }
@@ -5319,6 +5428,7 @@ INSN_ENTRY(trace_getlocal_WC_0)
 INSN_ENTRY(trace_getlocal_WC_1)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(getlocal_WC_1);
     END_INSN(trace_getlocal_WC_1);
 }
@@ -5327,6 +5437,7 @@ INSN_ENTRY(trace_getlocal_WC_1)
 INSN_ENTRY(trace_setlocal_WC_0)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(setlocal_WC_0);
     END_INSN(trace_setlocal_WC_0);
 }
@@ -5335,6 +5446,7 @@ INSN_ENTRY(trace_setlocal_WC_0)
 INSN_ENTRY(trace_setlocal_WC_1)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(setlocal_WC_1);
     END_INSN(trace_setlocal_WC_1);
 }
@@ -5343,6 +5455,7 @@ INSN_ENTRY(trace_setlocal_WC_1)
 INSN_ENTRY(trace_putobject_INT2FIX_0_)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(putobject_INT2FIX_0_);
     END_INSN(trace_putobject_INT2FIX_0_);
 }
@@ -5351,6 +5464,7 @@ INSN_ENTRY(trace_putobject_INT2FIX_0_)
 INSN_ENTRY(trace_putobject_INT2FIX_1_)
 {
     vm_trace(ec, GET_CFP());
+    
     DISPATCH_ORIGINAL_INSN(putobject_INT2FIX_1_);
     END_INSN(trace_putobject_INT2FIX_1_);
 }

@@ -78,6 +78,18 @@ init_constants(void)
     /* Device-level packet access */
     rb_define_const(rb_mSockConst, "SOCK_PACKET", INTEGER2NUM(SOCK_PACKET));
 #endif
+#if defined(SOCK_NONBLOCK)
+    /* Set the O_NONBLOCK file status flag on the open file description (see open(2)) referred to by the new file descriptor. */
+    rb_define_const(rb_cSocket, "SOCK_NONBLOCK", INTEGER2NUM(SOCK_NONBLOCK));
+    /* Set the O_NONBLOCK file status flag on the open file description (see open(2)) referred to by the new file descriptor. */
+    rb_define_const(rb_mSockConst, "SOCK_NONBLOCK", INTEGER2NUM(SOCK_NONBLOCK));
+#endif
+#if defined(SOCK_CLOEXEC)
+    /* Set the close-on-exec (FD_CLOEXEC) flag on the new file  descriptor. */
+    rb_define_const(rb_cSocket, "SOCK_CLOEXEC", INTEGER2NUM(SOCK_CLOEXEC));
+    /* Set the close-on-exec (FD_CLOEXEC) flag on the new file  descriptor. */
+    rb_define_const(rb_mSockConst, "SOCK_CLOEXEC", INTEGER2NUM(SOCK_CLOEXEC));
+#endif
 #if defined(AF_UNSPEC)
     /* Unspecified protocol, any supported address family */
     rb_define_const(rb_cSocket, "AF_UNSPEC", INTEGER2NUM(AF_UNSPEC));
@@ -309,6 +321,18 @@ init_constants(void)
     rb_define_const(rb_cSocket, "PF_DEC", INTEGER2NUM(PF_DEC));
     /* DECnet protocol */
     rb_define_const(rb_mSockConst, "PF_DEC", INTEGER2NUM(PF_DEC));
+#endif
+#if defined(AF_DECnet)
+    /* DECnet protocol */
+    rb_define_const(rb_cSocket, "AF_DECnet", INTEGER2NUM(AF_DECnet));
+    /* DECnet protocol */
+    rb_define_const(rb_mSockConst, "AF_DECnet", INTEGER2NUM(AF_DECnet));
+#endif
+#if defined(PF_DECnet)
+    /* DECnet protocol */
+    rb_define_const(rb_cSocket, "PF_DECnet", INTEGER2NUM(PF_DECnet));
+    /* DECnet protocol */
+    rb_define_const(rb_mSockConst, "PF_DECnet", INTEGER2NUM(PF_DECnet));
 #endif
 #if defined(AF_DLI)
     /* DEC Direct Data Link Interface protocol */
@@ -550,11 +574,173 @@ init_constants(void)
     /*  */
     rb_define_const(rb_mSockConst, "PF_PIP", INTEGER2NUM(PF_PIP));
 #endif
+#if defined(AF_KEY)
+    /* Key management protocol, originally developed for usage with IPsec */
+    rb_define_const(rb_cSocket, "AF_KEY", INTEGER2NUM(AF_KEY));
+    /* Key management protocol, originally developed for usage with IPsec */
+    rb_define_const(rb_mSockConst, "AF_KEY", INTEGER2NUM(AF_KEY));
+#endif
 #if defined(PF_KEY)
-    /*  */
+    /* Key management protocol, originally developed for usage with IPsec */
     rb_define_const(rb_cSocket, "PF_KEY", INTEGER2NUM(PF_KEY));
-    /*  */
+    /* Key management protocol, originally developed for usage with IPsec */
     rb_define_const(rb_mSockConst, "PF_KEY", INTEGER2NUM(PF_KEY));
+#endif
+#if defined(AF_NETLINK)
+    /* Kernel user interface device */
+    rb_define_const(rb_cSocket, "AF_NETLINK", INTEGER2NUM(AF_NETLINK));
+    /* Kernel user interface device */
+    rb_define_const(rb_mSockConst, "AF_NETLINK", INTEGER2NUM(AF_NETLINK));
+#endif
+#if defined(PF_NETLINK)
+    /* Kernel user interface device */
+    rb_define_const(rb_cSocket, "PF_NETLINK", INTEGER2NUM(PF_NETLINK));
+    /* Kernel user interface device */
+    rb_define_const(rb_mSockConst, "PF_NETLINK", INTEGER2NUM(PF_NETLINK));
+#endif
+#if defined(AF_RDS)
+    /* Reliable Datagram Sockets (RDS) protocol */
+    rb_define_const(rb_cSocket, "AF_RDS", INTEGER2NUM(AF_RDS));
+    /* Reliable Datagram Sockets (RDS) protocol */
+    rb_define_const(rb_mSockConst, "AF_RDS", INTEGER2NUM(AF_RDS));
+#endif
+#if defined(PF_RDS)
+    /* Reliable Datagram Sockets (RDS) protocol */
+    rb_define_const(rb_cSocket, "PF_RDS", INTEGER2NUM(PF_RDS));
+    /* Reliable Datagram Sockets (RDS) protocol */
+    rb_define_const(rb_mSockConst, "PF_RDS", INTEGER2NUM(PF_RDS));
+#endif
+#if defined(AF_PPPOX)
+    /* Generic PPP transport layer, for setting up L2 tunnels (L2TP and PPPoE) */
+    rb_define_const(rb_cSocket, "AF_PPPOX", INTEGER2NUM(AF_PPPOX));
+    /* Generic PPP transport layer, for setting up L2 tunnels (L2TP and PPPoE) */
+    rb_define_const(rb_mSockConst, "AF_PPPOX", INTEGER2NUM(AF_PPPOX));
+#endif
+#if defined(PF_PPPOX)
+    /* Generic PPP transport layer, for setting up L2 tunnels (L2TP and PPPoE) */
+    rb_define_const(rb_cSocket, "PF_PPPOX", INTEGER2NUM(PF_PPPOX));
+    /* Generic PPP transport layer, for setting up L2 tunnels (L2TP and PPPoE) */
+    rb_define_const(rb_mSockConst, "PF_PPPOX", INTEGER2NUM(PF_PPPOX));
+#endif
+#if defined(AF_LLC)
+    /* Logical  link control (IEEE 802.2 LLC) protocol */
+    rb_define_const(rb_cSocket, "AF_LLC", INTEGER2NUM(AF_LLC));
+    /* Logical  link control (IEEE 802.2 LLC) protocol */
+    rb_define_const(rb_mSockConst, "AF_LLC", INTEGER2NUM(AF_LLC));
+#endif
+#if defined(PF_LLC)
+    /* Logical  link control (IEEE 802.2 LLC) protocol */
+    rb_define_const(rb_cSocket, "PF_LLC", INTEGER2NUM(PF_LLC));
+    /* Logical  link control (IEEE 802.2 LLC) protocol */
+    rb_define_const(rb_mSockConst, "PF_LLC", INTEGER2NUM(PF_LLC));
+#endif
+#if defined(AF_IB)
+    /* InfiniBand native addressing */
+    rb_define_const(rb_cSocket, "AF_IB", INTEGER2NUM(AF_IB));
+    /* InfiniBand native addressing */
+    rb_define_const(rb_mSockConst, "AF_IB", INTEGER2NUM(AF_IB));
+#endif
+#if defined(PF_IB)
+    /* InfiniBand native addressing */
+    rb_define_const(rb_cSocket, "PF_IB", INTEGER2NUM(PF_IB));
+    /* InfiniBand native addressing */
+    rb_define_const(rb_mSockConst, "PF_IB", INTEGER2NUM(PF_IB));
+#endif
+#if defined(AF_MPLS)
+    /* Multiprotocol Label Switching */
+    rb_define_const(rb_cSocket, "AF_MPLS", INTEGER2NUM(AF_MPLS));
+    /* Multiprotocol Label Switching */
+    rb_define_const(rb_mSockConst, "AF_MPLS", INTEGER2NUM(AF_MPLS));
+#endif
+#if defined(PF_MPLS)
+    /* Multiprotocol Label Switching */
+    rb_define_const(rb_cSocket, "PF_MPLS", INTEGER2NUM(PF_MPLS));
+    /* Multiprotocol Label Switching */
+    rb_define_const(rb_mSockConst, "PF_MPLS", INTEGER2NUM(PF_MPLS));
+#endif
+#if defined(AF_CAN)
+    /* Controller Area Network automotive bus protocol */
+    rb_define_const(rb_cSocket, "AF_CAN", INTEGER2NUM(AF_CAN));
+    /* Controller Area Network automotive bus protocol */
+    rb_define_const(rb_mSockConst, "AF_CAN", INTEGER2NUM(AF_CAN));
+#endif
+#if defined(PF_CAN)
+    /* Controller Area Network automotive bus protocol */
+    rb_define_const(rb_cSocket, "PF_CAN", INTEGER2NUM(PF_CAN));
+    /* Controller Area Network automotive bus protocol */
+    rb_define_const(rb_mSockConst, "PF_CAN", INTEGER2NUM(PF_CAN));
+#endif
+#if defined(AF_TIPC)
+    /* TIPC, "cluster domain sockets" protocol */
+    rb_define_const(rb_cSocket, "AF_TIPC", INTEGER2NUM(AF_TIPC));
+    /* TIPC, "cluster domain sockets" protocol */
+    rb_define_const(rb_mSockConst, "AF_TIPC", INTEGER2NUM(AF_TIPC));
+#endif
+#if defined(PF_TIPC)
+    /* TIPC, "cluster domain sockets" protocol */
+    rb_define_const(rb_cSocket, "PF_TIPC", INTEGER2NUM(PF_TIPC));
+    /* TIPC, "cluster domain sockets" protocol */
+    rb_define_const(rb_mSockConst, "PF_TIPC", INTEGER2NUM(PF_TIPC));
+#endif
+#if defined(AF_BLUETOOTH)
+    /* Bluetooth low-level socket protocol */
+    rb_define_const(rb_cSocket, "AF_BLUETOOTH", INTEGER2NUM(AF_BLUETOOTH));
+    /* Bluetooth low-level socket protocol */
+    rb_define_const(rb_mSockConst, "AF_BLUETOOTH", INTEGER2NUM(AF_BLUETOOTH));
+#endif
+#if defined(PF_BLUETOOTH)
+    /* Bluetooth low-level socket protocol */
+    rb_define_const(rb_cSocket, "PF_BLUETOOTH", INTEGER2NUM(PF_BLUETOOTH));
+    /* Bluetooth low-level socket protocol */
+    rb_define_const(rb_mSockConst, "PF_BLUETOOTH", INTEGER2NUM(PF_BLUETOOTH));
+#endif
+#if defined(AF_ALG)
+    /* Interface to kernel crypto API */
+    rb_define_const(rb_cSocket, "AF_ALG", INTEGER2NUM(AF_ALG));
+    /* Interface to kernel crypto API */
+    rb_define_const(rb_mSockConst, "AF_ALG", INTEGER2NUM(AF_ALG));
+#endif
+#if defined(PF_ALG)
+    /* Interface to kernel crypto API */
+    rb_define_const(rb_cSocket, "PF_ALG", INTEGER2NUM(PF_ALG));
+    /* Interface to kernel crypto API */
+    rb_define_const(rb_mSockConst, "PF_ALG", INTEGER2NUM(PF_ALG));
+#endif
+#if defined(AF_VSOCK)
+    /* VSOCK (originally "VMWare VSockets") protocol for hypervisor-guest communication */
+    rb_define_const(rb_cSocket, "AF_VSOCK", INTEGER2NUM(AF_VSOCK));
+    /* VSOCK (originally "VMWare VSockets") protocol for hypervisor-guest communication */
+    rb_define_const(rb_mSockConst, "AF_VSOCK", INTEGER2NUM(AF_VSOCK));
+#endif
+#if defined(PF_VSOCK)
+    /* VSOCK (originally "VMWare VSockets") protocol for hypervisor-guest communication */
+    rb_define_const(rb_cSocket, "PF_VSOCK", INTEGER2NUM(PF_VSOCK));
+    /* VSOCK (originally "VMWare VSockets") protocol for hypervisor-guest communication */
+    rb_define_const(rb_mSockConst, "PF_VSOCK", INTEGER2NUM(PF_VSOCK));
+#endif
+#if defined(AF_KCM)
+    /* KCM (kernel connection multiplexor) interface */
+    rb_define_const(rb_cSocket, "AF_KCM", INTEGER2NUM(AF_KCM));
+    /* KCM (kernel connection multiplexor) interface */
+    rb_define_const(rb_mSockConst, "AF_KCM", INTEGER2NUM(AF_KCM));
+#endif
+#if defined(PF_KCM)
+    /* KCM (kernel connection multiplexor) interface */
+    rb_define_const(rb_cSocket, "PF_KCM", INTEGER2NUM(PF_KCM));
+    /* KCM (kernel connection multiplexor) interface */
+    rb_define_const(rb_mSockConst, "PF_KCM", INTEGER2NUM(PF_KCM));
+#endif
+#if defined(AF_XDP)
+    /* XDP (express data path) interface */
+    rb_define_const(rb_cSocket, "AF_XDP", INTEGER2NUM(AF_XDP));
+    /* XDP (express data path) interface */
+    rb_define_const(rb_mSockConst, "AF_XDP", INTEGER2NUM(AF_XDP));
+#endif
+#if defined(PF_XDP)
+    /* XDP (express data path) interface */
+    rb_define_const(rb_cSocket, "PF_XDP", INTEGER2NUM(PF_XDP));
+    /* XDP (express data path) interface */
+    rb_define_const(rb_mSockConst, "PF_XDP", INTEGER2NUM(PF_XDP));
 #endif
 #if defined(MSG_OOB)
     /* Process out-of-band data */
@@ -2694,6 +2880,48 @@ init_constants(void)
 #endif
 
     rsock_intern_family_hash = st_init_numtable();
+#ifdef AF_XDP
+    st_insert(rsock_intern_family_hash, (st_data_t)AF_XDP, (st_data_t)rb_intern2("AF_XDP", 6));
+#endif
+#ifdef AF_KCM
+    st_insert(rsock_intern_family_hash, (st_data_t)AF_KCM, (st_data_t)rb_intern2("AF_KCM", 6));
+#endif
+#ifdef AF_VSOCK
+    st_insert(rsock_intern_family_hash, (st_data_t)AF_VSOCK, (st_data_t)rb_intern2("AF_VSOCK", 8));
+#endif
+#ifdef AF_ALG
+    st_insert(rsock_intern_family_hash, (st_data_t)AF_ALG, (st_data_t)rb_intern2("AF_ALG", 6));
+#endif
+#ifdef AF_BLUETOOTH
+    st_insert(rsock_intern_family_hash, (st_data_t)AF_BLUETOOTH, (st_data_t)rb_intern2("AF_BLUETOOTH", 12));
+#endif
+#ifdef AF_TIPC
+    st_insert(rsock_intern_family_hash, (st_data_t)AF_TIPC, (st_data_t)rb_intern2("AF_TIPC", 7));
+#endif
+#ifdef AF_CAN
+    st_insert(rsock_intern_family_hash, (st_data_t)AF_CAN, (st_data_t)rb_intern2("AF_CAN", 6));
+#endif
+#ifdef AF_MPLS
+    st_insert(rsock_intern_family_hash, (st_data_t)AF_MPLS, (st_data_t)rb_intern2("AF_MPLS", 7));
+#endif
+#ifdef AF_IB
+    st_insert(rsock_intern_family_hash, (st_data_t)AF_IB, (st_data_t)rb_intern2("AF_IB", 5));
+#endif
+#ifdef AF_LLC
+    st_insert(rsock_intern_family_hash, (st_data_t)AF_LLC, (st_data_t)rb_intern2("AF_LLC", 6));
+#endif
+#ifdef AF_PPPOX
+    st_insert(rsock_intern_family_hash, (st_data_t)AF_PPPOX, (st_data_t)rb_intern2("AF_PPPOX", 8));
+#endif
+#ifdef AF_RDS
+    st_insert(rsock_intern_family_hash, (st_data_t)AF_RDS, (st_data_t)rb_intern2("AF_RDS", 6));
+#endif
+#ifdef AF_NETLINK
+    st_insert(rsock_intern_family_hash, (st_data_t)AF_NETLINK, (st_data_t)rb_intern2("AF_NETLINK", 10));
+#endif
+#ifdef AF_KEY
+    st_insert(rsock_intern_family_hash, (st_data_t)AF_KEY, (st_data_t)rb_intern2("AF_KEY", 6));
+#endif
 #ifdef AF_E164
     st_insert(rsock_intern_family_hash, (st_data_t)AF_E164, (st_data_t)rb_intern2("AF_E164", 7));
 #endif
@@ -2750,6 +2978,9 @@ init_constants(void)
 #endif
 #ifdef AF_DLI
     st_insert(rsock_intern_family_hash, (st_data_t)AF_DLI, (st_data_t)rb_intern2("AF_DLI", 6));
+#endif
+#ifdef AF_DECnet
+    st_insert(rsock_intern_family_hash, (st_data_t)AF_DECnet, (st_data_t)rb_intern2("AF_DECnet", 9));
 #endif
 #ifdef AF_DEC
     st_insert(rsock_intern_family_hash, (st_data_t)AF_DEC, (st_data_t)rb_intern2("AF_DEC", 6));
@@ -2810,6 +3041,48 @@ init_constants(void)
 #endif
 
     rsock_intern_family_noprefix_hash = st_init_numtable();
+#ifdef AF_XDP
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_XDP, (st_data_t)rb_intern2("AF_XDP", 6));
+#endif
+#ifdef AF_KCM
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_KCM, (st_data_t)rb_intern2("AF_KCM", 6));
+#endif
+#ifdef AF_VSOCK
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_VSOCK, (st_data_t)rb_intern2("AF_VSOCK", 8));
+#endif
+#ifdef AF_ALG
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_ALG, (st_data_t)rb_intern2("AF_ALG", 6));
+#endif
+#ifdef AF_BLUETOOTH
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_BLUETOOTH, (st_data_t)rb_intern2("AF_BLUETOOTH", 12));
+#endif
+#ifdef AF_TIPC
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_TIPC, (st_data_t)rb_intern2("AF_TIPC", 7));
+#endif
+#ifdef AF_CAN
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_CAN, (st_data_t)rb_intern2("AF_CAN", 6));
+#endif
+#ifdef AF_MPLS
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_MPLS, (st_data_t)rb_intern2("AF_MPLS", 7));
+#endif
+#ifdef AF_IB
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_IB, (st_data_t)rb_intern2("AF_IB", 5));
+#endif
+#ifdef AF_LLC
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_LLC, (st_data_t)rb_intern2("AF_LLC", 6));
+#endif
+#ifdef AF_PPPOX
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_PPPOX, (st_data_t)rb_intern2("AF_PPPOX", 8));
+#endif
+#ifdef AF_RDS
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_RDS, (st_data_t)rb_intern2("AF_RDS", 6));
+#endif
+#ifdef AF_NETLINK
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_NETLINK, (st_data_t)rb_intern2("AF_NETLINK", 10));
+#endif
+#ifdef AF_KEY
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_KEY, (st_data_t)rb_intern2("AF_KEY", 6));
+#endif
 #ifdef AF_E164
     st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_E164, (st_data_t)rb_intern2("AF_E164", 7));
 #endif
@@ -2866,6 +3139,9 @@ init_constants(void)
 #endif
 #ifdef AF_DLI
     st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_DLI, (st_data_t)rb_intern2("AF_DLI", 6));
+#endif
+#ifdef AF_DECnet
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_DECnet, (st_data_t)rb_intern2("AF_DECnet", 9));
 #endif
 #ifdef AF_DEC
     st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_DEC, (st_data_t)rb_intern2("AF_DEC", 6));
@@ -2924,6 +3200,48 @@ init_constants(void)
 #ifdef AF_UNSPEC
     st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_UNSPEC, (st_data_t)rb_intern2("AF_UNSPEC", 9));
 #endif
+#ifdef AF_XDP
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_XDP, (st_data_t)rb_intern2("XDP", 3));
+#endif
+#ifdef AF_KCM
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_KCM, (st_data_t)rb_intern2("KCM", 3));
+#endif
+#ifdef AF_VSOCK
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_VSOCK, (st_data_t)rb_intern2("VSOCK", 5));
+#endif
+#ifdef AF_ALG
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_ALG, (st_data_t)rb_intern2("ALG", 3));
+#endif
+#ifdef AF_BLUETOOTH
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_BLUETOOTH, (st_data_t)rb_intern2("BLUETOOTH", 9));
+#endif
+#ifdef AF_TIPC
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_TIPC, (st_data_t)rb_intern2("TIPC", 4));
+#endif
+#ifdef AF_CAN
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_CAN, (st_data_t)rb_intern2("CAN", 3));
+#endif
+#ifdef AF_MPLS
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_MPLS, (st_data_t)rb_intern2("MPLS", 4));
+#endif
+#ifdef AF_IB
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_IB, (st_data_t)rb_intern2("IB", 2));
+#endif
+#ifdef AF_LLC
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_LLC, (st_data_t)rb_intern2("LLC", 3));
+#endif
+#ifdef AF_PPPOX
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_PPPOX, (st_data_t)rb_intern2("PPPOX", 5));
+#endif
+#ifdef AF_RDS
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_RDS, (st_data_t)rb_intern2("RDS", 3));
+#endif
+#ifdef AF_NETLINK
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_NETLINK, (st_data_t)rb_intern2("NETLINK", 7));
+#endif
+#ifdef AF_KEY
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_KEY, (st_data_t)rb_intern2("KEY", 3));
+#endif
 #ifdef AF_E164
     st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_E164, (st_data_t)rb_intern2("E164", 4));
 #endif
@@ -2980,6 +3298,9 @@ init_constants(void)
 #endif
 #ifdef AF_DLI
     st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_DLI, (st_data_t)rb_intern2("DLI", 3));
+#endif
+#ifdef AF_DECnet
+    st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_DECnet, (st_data_t)rb_intern2("DECnet", 6));
 #endif
 #ifdef AF_DEC
     st_insert(rsock_intern_family_noprefix_hash, (st_data_t)AF_DEC, (st_data_t)rb_intern2("DEC", 3));
@@ -3040,6 +3361,45 @@ init_constants(void)
 #endif
 
     rsock_intern_protocol_family_hash = st_init_numtable();
+#ifdef PF_XDP
+    st_insert(rsock_intern_protocol_family_hash, (st_data_t)PF_XDP, (st_data_t)rb_intern2("PF_XDP", 6));
+#endif
+#ifdef PF_KCM
+    st_insert(rsock_intern_protocol_family_hash, (st_data_t)PF_KCM, (st_data_t)rb_intern2("PF_KCM", 6));
+#endif
+#ifdef PF_VSOCK
+    st_insert(rsock_intern_protocol_family_hash, (st_data_t)PF_VSOCK, (st_data_t)rb_intern2("PF_VSOCK", 8));
+#endif
+#ifdef PF_ALG
+    st_insert(rsock_intern_protocol_family_hash, (st_data_t)PF_ALG, (st_data_t)rb_intern2("PF_ALG", 6));
+#endif
+#ifdef PF_BLUETOOTH
+    st_insert(rsock_intern_protocol_family_hash, (st_data_t)PF_BLUETOOTH, (st_data_t)rb_intern2("PF_BLUETOOTH", 12));
+#endif
+#ifdef PF_TIPC
+    st_insert(rsock_intern_protocol_family_hash, (st_data_t)PF_TIPC, (st_data_t)rb_intern2("PF_TIPC", 7));
+#endif
+#ifdef PF_CAN
+    st_insert(rsock_intern_protocol_family_hash, (st_data_t)PF_CAN, (st_data_t)rb_intern2("PF_CAN", 6));
+#endif
+#ifdef PF_MPLS
+    st_insert(rsock_intern_protocol_family_hash, (st_data_t)PF_MPLS, (st_data_t)rb_intern2("PF_MPLS", 7));
+#endif
+#ifdef PF_IB
+    st_insert(rsock_intern_protocol_family_hash, (st_data_t)PF_IB, (st_data_t)rb_intern2("PF_IB", 5));
+#endif
+#ifdef PF_LLC
+    st_insert(rsock_intern_protocol_family_hash, (st_data_t)PF_LLC, (st_data_t)rb_intern2("PF_LLC", 6));
+#endif
+#ifdef PF_PPPOX
+    st_insert(rsock_intern_protocol_family_hash, (st_data_t)PF_PPPOX, (st_data_t)rb_intern2("PF_PPPOX", 8));
+#endif
+#ifdef PF_RDS
+    st_insert(rsock_intern_protocol_family_hash, (st_data_t)PF_RDS, (st_data_t)rb_intern2("PF_RDS", 6));
+#endif
+#ifdef PF_NETLINK
+    st_insert(rsock_intern_protocol_family_hash, (st_data_t)PF_NETLINK, (st_data_t)rb_intern2("PF_NETLINK", 10));
+#endif
 #ifdef PF_KEY
     st_insert(rsock_intern_protocol_family_hash, (st_data_t)PF_KEY, (st_data_t)rb_intern2("PF_KEY", 6));
 #endif
@@ -3106,6 +3466,9 @@ init_constants(void)
 #ifdef PF_DLI
     st_insert(rsock_intern_protocol_family_hash, (st_data_t)PF_DLI, (st_data_t)rb_intern2("PF_DLI", 6));
 #endif
+#ifdef PF_DECnet
+    st_insert(rsock_intern_protocol_family_hash, (st_data_t)PF_DECnet, (st_data_t)rb_intern2("PF_DECnet", 9));
+#endif
 #ifdef PF_DEC
     st_insert(rsock_intern_protocol_family_hash, (st_data_t)PF_DEC, (st_data_t)rb_intern2("PF_DEC", 6));
 #endif
@@ -3165,6 +3528,12 @@ init_constants(void)
 #endif
 
     rsock_intern_socktype_hash = st_init_numtable();
+#ifdef SOCK_CLOEXEC
+    st_insert(rsock_intern_socktype_hash, (st_data_t)SOCK_CLOEXEC, (st_data_t)rb_intern2("SOCK_CLOEXEC", 12));
+#endif
+#ifdef SOCK_NONBLOCK
+    st_insert(rsock_intern_socktype_hash, (st_data_t)SOCK_NONBLOCK, (st_data_t)rb_intern2("SOCK_NONBLOCK", 13));
+#endif
 #ifdef SOCK_PACKET
     st_insert(rsock_intern_socktype_hash, (st_data_t)SOCK_PACKET, (st_data_t)rb_intern2("SOCK_PACKET", 11));
 #endif
@@ -4472,6 +4841,9 @@ rsock_family_to_int(const char *str, long len, int *valp)
 #ifdef AF_NS
         if (memcmp(str, "NS", 2) == 0) { *valp = AF_NS; return 0; }
 #endif
+#ifdef AF_IB
+        if (memcmp(str, "IB", 2) == 0) { *valp = AF_IB; return 0; }
+#endif
         return -1;
 
       case 3:
@@ -4514,6 +4886,27 @@ rsock_family_to_int(const char *str, long len, int *valp)
 #ifdef AF_MAX
         if (memcmp(str, "MAX", 3) == 0) { *valp = AF_MAX; return 0; }
 #endif
+#ifdef AF_KEY
+        if (memcmp(str, "KEY", 3) == 0) { *valp = AF_KEY; return 0; }
+#endif
+#ifdef AF_RDS
+        if (memcmp(str, "RDS", 3) == 0) { *valp = AF_RDS; return 0; }
+#endif
+#ifdef AF_LLC
+        if (memcmp(str, "LLC", 3) == 0) { *valp = AF_LLC; return 0; }
+#endif
+#ifdef AF_CAN
+        if (memcmp(str, "CAN", 3) == 0) { *valp = AF_CAN; return 0; }
+#endif
+#ifdef AF_ALG
+        if (memcmp(str, "ALG", 3) == 0) { *valp = AF_ALG; return 0; }
+#endif
+#ifdef AF_KCM
+        if (memcmp(str, "KCM", 3) == 0) { *valp = AF_KCM; return 0; }
+#endif
+#ifdef AF_XDP
+        if (memcmp(str, "XDP", 3) == 0) { *valp = AF_XDP; return 0; }
+#endif
         return -1;
 
       case 4:
@@ -4547,6 +4940,12 @@ rsock_family_to_int(const char *str, long len, int *valp)
 #ifdef AF_E164
         if (memcmp(str, "E164", 4) == 0) { *valp = AF_E164; return 0; }
 #endif
+#ifdef AF_MPLS
+        if (memcmp(str, "MPLS", 4) == 0) { *valp = AF_MPLS; return 0; }
+#endif
+#ifdef AF_TIPC
+        if (memcmp(str, "TIPC", 4) == 0) { *valp = AF_TIPC; return 0; }
+#endif
         return -1;
 
       case 5:
@@ -4555,6 +4954,12 @@ rsock_family_to_int(const char *str, long len, int *valp)
 #endif
 #ifdef PF_NS
         if (memcmp(str, "PF_NS", 5) == 0) { *valp = PF_NS; return 0; }
+#endif
+#ifdef AF_IB
+        if (memcmp(str, "AF_IB", 5) == 0) { *valp = AF_IB; return 0; }
+#endif
+#ifdef PF_IB
+        if (memcmp(str, "PF_IB", 5) == 0) { *valp = PF_IB; return 0; }
 #endif
 #ifdef AF_INET6
         if (memcmp(str, "INET6", 5) == 0) { *valp = AF_INET6; return 0; }
@@ -4570,6 +4975,12 @@ rsock_family_to_int(const char *str, long len, int *valp)
 #endif
 #ifdef AF_ROUTE
         if (memcmp(str, "ROUTE", 5) == 0) { *valp = AF_ROUTE; return 0; }
+#endif
+#ifdef AF_PPPOX
+        if (memcmp(str, "PPPOX", 5) == 0) { *valp = AF_PPPOX; return 0; }
+#endif
+#ifdef AF_VSOCK
+        if (memcmp(str, "VSOCK", 5) == 0) { *valp = AF_VSOCK; return 0; }
 #endif
         return -1;
 
@@ -4658,11 +5069,53 @@ rsock_family_to_int(const char *str, long len, int *valp)
 #ifdef PF_PIP
         if (memcmp(str, "PF_PIP", 6) == 0) { *valp = PF_PIP; return 0; }
 #endif
+#ifdef AF_KEY
+        if (memcmp(str, "AF_KEY", 6) == 0) { *valp = AF_KEY; return 0; }
+#endif
 #ifdef PF_KEY
         if (memcmp(str, "PF_KEY", 6) == 0) { *valp = PF_KEY; return 0; }
 #endif
+#ifdef AF_RDS
+        if (memcmp(str, "AF_RDS", 6) == 0) { *valp = AF_RDS; return 0; }
+#endif
+#ifdef PF_RDS
+        if (memcmp(str, "PF_RDS", 6) == 0) { *valp = PF_RDS; return 0; }
+#endif
+#ifdef AF_LLC
+        if (memcmp(str, "AF_LLC", 6) == 0) { *valp = AF_LLC; return 0; }
+#endif
+#ifdef PF_LLC
+        if (memcmp(str, "PF_LLC", 6) == 0) { *valp = PF_LLC; return 0; }
+#endif
+#ifdef AF_CAN
+        if (memcmp(str, "AF_CAN", 6) == 0) { *valp = AF_CAN; return 0; }
+#endif
+#ifdef PF_CAN
+        if (memcmp(str, "PF_CAN", 6) == 0) { *valp = PF_CAN; return 0; }
+#endif
+#ifdef AF_ALG
+        if (memcmp(str, "AF_ALG", 6) == 0) { *valp = AF_ALG; return 0; }
+#endif
+#ifdef PF_ALG
+        if (memcmp(str, "PF_ALG", 6) == 0) { *valp = PF_ALG; return 0; }
+#endif
+#ifdef AF_KCM
+        if (memcmp(str, "AF_KCM", 6) == 0) { *valp = AF_KCM; return 0; }
+#endif
+#ifdef PF_KCM
+        if (memcmp(str, "PF_KCM", 6) == 0) { *valp = PF_KCM; return 0; }
+#endif
+#ifdef AF_XDP
+        if (memcmp(str, "AF_XDP", 6) == 0) { *valp = AF_XDP; return 0; }
+#endif
+#ifdef PF_XDP
+        if (memcmp(str, "PF_XDP", 6) == 0) { *valp = PF_XDP; return 0; }
+#endif
 #ifdef AF_UNSPEC
         if (memcmp(str, "UNSPEC", 6) == 0) { *valp = AF_UNSPEC; return 0; }
+#endif
+#ifdef AF_DECnet
+        if (memcmp(str, "DECnet", 6) == 0) { *valp = AF_DECnet; return 0; }
 #endif
 #ifdef AF_HYLINK
         if (memcmp(str, "HYLINK", 6) == 0) { *valp = AF_HYLINK; return 0; }
@@ -4736,6 +5189,18 @@ rsock_family_to_int(const char *str, long len, int *valp)
 #ifdef PF_RTIP
         if (memcmp(str, "PF_RTIP", 7) == 0) { *valp = PF_RTIP; return 0; }
 #endif
+#ifdef AF_MPLS
+        if (memcmp(str, "AF_MPLS", 7) == 0) { *valp = AF_MPLS; return 0; }
+#endif
+#ifdef PF_MPLS
+        if (memcmp(str, "PF_MPLS", 7) == 0) { *valp = PF_MPLS; return 0; }
+#endif
+#ifdef AF_TIPC
+        if (memcmp(str, "AF_TIPC", 7) == 0) { *valp = AF_TIPC; return 0; }
+#endif
+#ifdef PF_TIPC
+        if (memcmp(str, "PF_TIPC", 7) == 0) { *valp = PF_TIPC; return 0; }
+#endif
 #ifdef AF_IMPLINK
         if (memcmp(str, "IMPLINK", 7) == 0) { *valp = AF_IMPLINK; return 0; }
 #endif
@@ -4744,6 +5209,9 @@ rsock_family_to_int(const char *str, long len, int *valp)
 #endif
 #ifdef AF_NETBIOS
         if (memcmp(str, "NETBIOS", 7) == 0) { *valp = AF_NETBIOS; return 0; }
+#endif
+#ifdef AF_NETLINK
+        if (memcmp(str, "NETLINK", 7) == 0) { *valp = AF_NETLINK; return 0; }
 #endif
         return -1;
 
@@ -4778,6 +5246,18 @@ rsock_family_to_int(const char *str, long len, int *valp)
 #ifdef PF_ROUTE
         if (memcmp(str, "PF_ROUTE", 8) == 0) { *valp = PF_ROUTE; return 0; }
 #endif
+#ifdef AF_PPPOX
+        if (memcmp(str, "AF_PPPOX", 8) == 0) { *valp = AF_PPPOX; return 0; }
+#endif
+#ifdef PF_PPPOX
+        if (memcmp(str, "PF_PPPOX", 8) == 0) { *valp = PF_PPPOX; return 0; }
+#endif
+#ifdef AF_VSOCK
+        if (memcmp(str, "AF_VSOCK", 8) == 0) { *valp = AF_VSOCK; return 0; }
+#endif
+#ifdef PF_VSOCK
+        if (memcmp(str, "PF_VSOCK", 8) == 0) { *valp = PF_VSOCK; return 0; }
+#endif
 #ifdef AF_NETGRAPH
         if (memcmp(str, "NETGRAPH", 8) == 0) { *valp = AF_NETGRAPH; return 0; }
 #endif
@@ -4789,6 +5269,12 @@ rsock_family_to_int(const char *str, long len, int *valp)
 #endif
 #ifdef PF_UNSPEC
         if (memcmp(str, "PF_UNSPEC", 9) == 0) { *valp = PF_UNSPEC; return 0; }
+#endif
+#ifdef AF_DECnet
+        if (memcmp(str, "AF_DECnet", 9) == 0) { *valp = AF_DECnet; return 0; }
+#endif
+#ifdef PF_DECnet
+        if (memcmp(str, "PF_DECnet", 9) == 0) { *valp = PF_DECnet; return 0; }
 #endif
 #ifdef AF_HYLINK
         if (memcmp(str, "AF_HYLINK", 9) == 0) { *valp = AF_HYLINK; return 0; }
@@ -4811,6 +5297,9 @@ rsock_family_to_int(const char *str, long len, int *valp)
 #ifdef AF_APPLETALK
         if (memcmp(str, "APPLETALK", 9) == 0) { *valp = AF_APPLETALK; return 0; }
 #endif
+#ifdef AF_BLUETOOTH
+        if (memcmp(str, "BLUETOOTH", 9) == 0) { *valp = AF_BLUETOOTH; return 0; }
+#endif
         return -1;
 
       case 10:
@@ -4832,6 +5321,12 @@ rsock_family_to_int(const char *str, long len, int *valp)
 #ifdef PF_NETBIOS
         if (memcmp(str, "PF_NETBIOS", 10) == 0) { *valp = PF_NETBIOS; return 0; }
 #endif
+#ifdef AF_NETLINK
+        if (memcmp(str, "AF_NETLINK", 10) == 0) { *valp = AF_NETLINK; return 0; }
+#endif
+#ifdef PF_NETLINK
+        if (memcmp(str, "PF_NETLINK", 10) == 0) { *valp = PF_NETLINK; return 0; }
+#endif
         return -1;
 
       case 11:
@@ -4849,6 +5344,12 @@ rsock_family_to_int(const char *str, long len, int *valp)
 #endif
 #ifdef PF_APPLETALK
         if (memcmp(str, "PF_APPLETALK", 12) == 0) { *valp = PF_APPLETALK; return 0; }
+#endif
+#ifdef AF_BLUETOOTH
+        if (memcmp(str, "AF_BLUETOOTH", 12) == 0) { *valp = AF_BLUETOOTH; return 0; }
+#endif
+#ifdef PF_BLUETOOTH
+        if (memcmp(str, "PF_BLUETOOTH", 12) == 0) { *valp = PF_BLUETOOTH; return 0; }
 #endif
         return -1;
 
@@ -4887,12 +5388,21 @@ rsock_socktype_to_int(const char *str, long len, int *valp)
 #endif
         return -1;
 
+      case 7:
+#ifdef SOCK_CLOEXEC
+        if (memcmp(str, "CLOEXEC", 7) == 0) { *valp = SOCK_CLOEXEC; return 0; }
+#endif
+        return -1;
+
       case 8:
 #ifdef SOCK_RAW
         if (memcmp(str, "SOCK_RAW", 8) == 0) { *valp = SOCK_RAW; return 0; }
 #endif
 #ifdef SOCK_RDM
         if (memcmp(str, "SOCK_RDM", 8) == 0) { *valp = SOCK_RDM; return 0; }
+#endif
+#ifdef SOCK_NONBLOCK
+        if (memcmp(str, "NONBLOCK", 8) == 0) { *valp = SOCK_NONBLOCK; return 0; }
 #endif
         return -1;
 
@@ -4914,6 +5424,18 @@ rsock_socktype_to_int(const char *str, long len, int *valp)
 #endif
 #ifdef SOCK_PACKET
         if (memcmp(str, "SOCK_PACKET", 11) == 0) { *valp = SOCK_PACKET; return 0; }
+#endif
+        return -1;
+
+      case 12:
+#ifdef SOCK_CLOEXEC
+        if (memcmp(str, "SOCK_CLOEXEC", 12) == 0) { *valp = SOCK_CLOEXEC; return 0; }
+#endif
+        return -1;
+
+      case 13:
+#ifdef SOCK_NONBLOCK
+        if (memcmp(str, "SOCK_NONBLOCK", 13) == 0) { *valp = SOCK_NONBLOCK; return 0; }
 #endif
         return -1;
 

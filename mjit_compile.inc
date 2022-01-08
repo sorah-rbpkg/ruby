@@ -554,14 +554,18 @@ switch (insn) {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(ID id) = (ID)operands[0];
+        MAYBE_UNUSED(IVC ic) = (IVC)operands[1];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
         }
         fprintf(f, "    MAYBE_UNUSED(ID) id;\n");
+        fprintf(f, "    MAYBE_UNUSED(IVC) ic;\n");
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    id = (ID)0x%"PRIxVALUE";", operands[0]);
         comment_id(f, (ID)operands[0]);
+        fprintf(f, "\n");
+        fprintf(f, "    ic = (IVC)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
         if (true) {
@@ -574,18 +578,19 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        val = rb_cvar_get(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP(), 1), id);\n");
+        fprintf(f, "        rb_control_frame_t *cfp = GET_CFP();\n");
+        fprintf(f, "        val = vm_getclassvariable(GET_ISEQ(), cfp, id, (ICVARC)ic);\n");
         fprintf(f, "    }\n");
-        fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_getclassvariable(id) - 1);
+        fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_getclassvariable(id, ic) - 1);
         fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_getclassvariable(id));
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_getclassvariable(id, ic));
         if (!pc_moved_p) {
             fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
         }
         fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
         fprintf(f, "        goto cancel;\n");
         fprintf(f, "    }\n");
-        b->stack_size += attr_sp_inc_getclassvariable(id);
+        b->stack_size += attr_sp_inc_getclassvariable(id, ic);
     }
     fprintf(f, "}\n");
     break;
@@ -594,14 +599,18 @@ switch (insn) {
     fprintf(f, "{\n");
     {
         MAYBE_UNUSED(ID id) = (ID)operands[0];
+        MAYBE_UNUSED(IVC ic) = (IVC)operands[1];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
         }
         fprintf(f, "    MAYBE_UNUSED(ID) id;\n");
+        fprintf(f, "    MAYBE_UNUSED(IVC) ic;\n");
         fprintf(f, "    MAYBE_UNUSED(VALUE) val;\n");
 
         fprintf(f, "    id = (ID)0x%"PRIxVALUE";", operands[0]);
         comment_id(f, (ID)operands[0]);
+        fprintf(f, "\n");
+        fprintf(f, "    ic = (IVC)0x%"PRIxVALUE";", operands[1]);
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
@@ -616,17 +625,17 @@ switch (insn) {
         }
         fprintf(f, "    {\n");
         fprintf(f, "        vm_ensure_not_refinement_module(GET_SELF());\n");
-        fprintf(f, "        rb_cvar_set(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP(), 1), id, val);\n");
+        fprintf(f, "        vm_setclassvariable(GET_ISEQ(), GET_CFP(), id,  val, (ICVARC)ic);\n");
         fprintf(f, "    }\n");
         fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_setclassvariable(id));
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_setclassvariable(id, ic));
         if (!pc_moved_p) {
             fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
         }
         fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
         fprintf(f, "        goto cancel;\n");
         fprintf(f, "    }\n");
-        b->stack_size += attr_sp_inc_setclassvariable(id);
+        b->stack_size += attr_sp_inc_setclassvariable(id, ic);
     }
     fprintf(f, "}\n");
     break;
@@ -894,7 +903,7 @@ switch (insn) {
         fprintf(f, "    value_type = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
         fprintf(f, "\n");
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (false) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -910,6 +919,14 @@ switch (insn) {
         fprintf(f, "        val = vm_get_special_object(GET_EP(), type);\n");
         fprintf(f, "    }\n");
         fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_putspecialobject(value_type) - 1);
+        fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_putspecialobject(value_type));
+        if (!pc_moved_p) {
+            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+        }
+        fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+        fprintf(f, "        goto cancel;\n");
+        fprintf(f, "    }\n");
         b->stack_size += attr_sp_inc_putspecialobject(value_type);
     }
     fprintf(f, "}\n");
@@ -986,7 +1003,7 @@ switch (insn) {
     fprintf(f, "}\n");
     break;
   }
-  case BIN(tostring): {
+  case BIN(anytostring): {
     fprintf(f, "{\n");
     {
         if (status->local_stack_p) {
@@ -1009,8 +1026,8 @@ switch (insn) {
         fprintf(f, "    {\n");
         fprintf(f, "        val = rb_obj_as_string_result(str, val);\n");
         fprintf(f, "    }\n");
-        fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_tostring() - 1);
-        b->stack_size += attr_sp_inc_tostring();
+        fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_anytostring() - 1);
+        b->stack_size += attr_sp_inc_anytostring();
     }
     fprintf(f, "}\n");
     break;
@@ -1367,11 +1384,13 @@ switch (insn) {
         fprintf(f, "    {\n");
         fprintf(f, "        RUBY_DTRACE_CREATE_HOOK(HASH, num);\n");
         fprintf(f, "\n");
-        fprintf(f, "        val = rb_hash_new_with_size(num / 2);\n");
-        fprintf(f, "\n");
         fprintf(f, "        if (num) {\n");
+        fprintf(f, "            val = rb_hash_new_with_size(num / 2);\n");
         fprintf(f, "            rb_hash_bulk_insert(num, %s, val);\n",
                 (status->local_stack_p ? "(stack + (stack_size - (num)))" : "STACK_ADDR_FROM_TOP(num)"));
+        fprintf(f, "        }\n");
+        fprintf(f, "        else {\n");
+        fprintf(f, "            val = rb_hash_new();\n");
         fprintf(f, "        }\n");
         fprintf(f, "    }\n");
         fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_newhash(num) - 1);
@@ -1549,46 +1568,6 @@ switch (insn) {
     fprintf(f, "}\n");
     break;
   }
-  case BIN(reverse): {
-    fprintf(f, "{\n");
-    {
-        MAYBE_UNUSED(rb_num_t n) = (rb_num_t)operands[0];
-        if (status->local_stack_p) {
-            fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
-        }
-        fprintf(f, "    MAYBE_UNUSED(rb_num_t) n;\n");
-
-        fprintf(f, "    n = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
-        fprintf(f, "\n");
-        MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (false) {
-            fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            pc_moved_p = true;
-        }
-        if (status->local_stack_p) {
-        }
-        else {
-            fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
-        }
-        fprintf(f, "    {\n");
-        fprintf(f, "        rb_num_t i;\n");
-        fprintf(f, "        VALUE *sp = %s;\n",
-                (status->local_stack_p ? "(stack + (stack_size - (n)))" : "STACK_ADDR_FROM_TOP(n)"));
-        fprintf(f, "\n");
-        fprintf(f, "        for (i=0; i<n/2; i++) {\n");
-        fprintf(f, "            VALUE v0 = sp[i];\n");
-        fprintf(f, "            VALUE v1 = %s;\n",
-              (status->local_stack_p ? "*(stack + (stack_size - (i) - 1))" : "TOPN(i)"));
-        fprintf(f, "            sp[i] = v1;\n");
-        fprintf(f, "            %s = v0;\n",
-              (status->local_stack_p ? "*(stack + (stack_size - (i) - 1))" : "TOPN(i)"));
-        fprintf(f, "        }\n");
-        fprintf(f, "    }\n");
-        b->stack_size += attr_sp_inc_reverse(n);
-    }
-    fprintf(f, "}\n");
-    break;
-  }
   case BIN(topn): {
     fprintf(f, "{\n");
     {
@@ -1688,11 +1667,11 @@ switch (insn) {
     {
         MAYBE_UNUSED(rb_num_t op_type) = (rb_num_t)operands[0];
         MAYBE_UNUSED(VALUE obj) = (VALUE)operands[1];
-        MAYBE_UNUSED(VALUE needstr) = (VALUE)operands[2];
+        MAYBE_UNUSED(VALUE pushval) = (VALUE)operands[2];
         if (status->local_stack_p) {
             fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
         }
-        fprintf(f, "    MAYBE_UNUSED(VALUE) needstr, obj, v, val;\n");
+        fprintf(f, "    MAYBE_UNUSED(VALUE) obj, pushval, v, val;\n");
         fprintf(f, "    MAYBE_UNUSED(rb_num_t) op_type;\n");
 
         fprintf(f, "    op_type = (rb_num_t)0x%"PRIxVALUE";", operands[0]);
@@ -1700,7 +1679,7 @@ switch (insn) {
         fprintf(f, "    obj = (VALUE)0x%"PRIxVALUE";", operands[1]);
         if (SYMBOL_P((VALUE)operands[1])) comment_id(f, SYM2ID((VALUE)operands[1]));
         fprintf(f, "\n");
-        fprintf(f, "    needstr = (VALUE)0x%"PRIxVALUE";", operands[2]);
+        fprintf(f, "    pushval = (VALUE)0x%"PRIxVALUE";", operands[2]);
         if (SYMBOL_P((VALUE)operands[2])) comment_id(f, SYM2ID((VALUE)operands[2]));
         fprintf(f, "\n");
         fprintf(f, "    v = stack[%d];\n", b->stack_size - 1);
@@ -1715,18 +1694,21 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        val = vm_defined(ec, GET_CFP(), op_type, obj, needstr, v);\n");
+        fprintf(f, "        val = Qnil;\n");
+        fprintf(f, "        if (vm_defined(ec, GET_CFP(), op_type, obj, v)) {\n");
+        fprintf(f, "          val = pushval;\n");
+        fprintf(f, "        }\n");
         fprintf(f, "    }\n");
-        fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_defined(op_type, obj, needstr) - 1);
+        fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_defined(op_type, obj, pushval) - 1);
         fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
-        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_defined(op_type, obj, needstr));
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_defined(op_type, obj, pushval));
         if (!pc_moved_p) {
             fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
         }
         fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
         fprintf(f, "        goto cancel;\n");
         fprintf(f, "    }\n");
-        b->stack_size += attr_sp_inc_defined(op_type, obj, needstr);
+        b->stack_size += attr_sp_inc_defined(op_type, obj, pushval);
     }
     fprintf(f, "}\n");
     break;
@@ -1944,7 +1926,9 @@ switch (insn) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
     MAYBE_UNUSED(ISEQ blockiseq) = (ISEQ)operands[1];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -2111,7 +2095,9 @@ switch (insn) {
   case BIN(opt_send_without_block): {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -2271,6 +2257,56 @@ switch (insn) {
     fprintf(f, "}\n");
     break;
   }
+  case BIN(objtostring): {
+    fprintf(f, "{\n");
+    {
+        MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
+        if (status->local_stack_p) {
+            fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
+        }
+        fprintf(f, "    MAYBE_UNUSED(CALL_DATA) cd;\n");
+        fprintf(f, "    MAYBE_UNUSED(VALUE) recv, val;\n");
+
+        fprintf(f, "    cd = (CALL_DATA)0x%"PRIxVALUE";", operands[0]);
+        comment_id(f, vm_ci_mid(((CALL_DATA)operands[0])->ci));
+        fprintf(f, "\n");
+        fprintf(f, "    recv = stack[%d];\n", b->stack_size - 1);
+        MAYBE_UNUSED(bool pc_moved_p) = false;
+        if (true) {
+            fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
+            pc_moved_p = true;
+        }
+        if (status->local_stack_p) {
+        }
+        else {
+            fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        }
+        fprintf(f, "    {\n");
+        fprintf(f, "        val = vm_objtostring(GET_ISEQ(), recv, cd);\n");
+        fprintf(f, "\n");
+        fprintf(f, "        if (val == Qundef) {\n");
+        if (status->local_stack_p) {
+            fprintf(f, "            reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        }
+        fprintf(f, "            reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "            RB_DEBUG_COUNTER_INC(mjit_cancel_opt_insn);\n");
+        fprintf(f, "            goto cancel;\n");
+        fprintf(f, "        }\n");
+        fprintf(f, "    }\n");
+        fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_objtostring(cd) - 1);
+        fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_objtostring(cd));
+        if (!pc_moved_p) {
+            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+        }
+        fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+        fprintf(f, "        goto cancel;\n");
+        fprintf(f, "    }\n");
+        b->stack_size += attr_sp_inc_objtostring(cd);
+    }
+    fprintf(f, "}\n");
+    break;
+  }
   case BIN(opt_str_freeze): {
     fprintf(f, "{\n");
     {
@@ -2321,7 +2357,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_nil_p))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -2591,7 +2629,7 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        val = vm_opt_newarray_max(num, %s);\n",
+        fprintf(f, "        val = vm_opt_newarray_max(ec, num, %s);\n",
                 (status->local_stack_p ? "(stack + (stack_size - (num)))" : "STACK_ADDR_FROM_TOP(num)"));
         fprintf(f, "    }\n");
         fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_opt_newarray_max(num) - 1);
@@ -2631,7 +2669,7 @@ switch (insn) {
             fprintf(f, "    reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "    {\n");
-        fprintf(f, "        val = vm_opt_newarray_min(num, %s);\n",
+        fprintf(f, "        val = vm_opt_newarray_min(ec, num, %s);\n",
                 (status->local_stack_p ? "(stack + (stack_size - (num)))" : "STACK_ADDR_FROM_TOP(num)"));
         fprintf(f, "    }\n");
         fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_opt_newarray_min(num) - 1);
@@ -3088,8 +3126,8 @@ switch (insn) {
     IC ic = (IC)operands[1];
 
     struct iseq_inline_constant_cache_entry *ice = ic->entry;
-    if (ice != NULL && ice->ic_serial && !status->compile_info->disable_const_cache) {
-        fprintf(f, "    if (vm_inlined_ic_hit_p(0x%"PRIxVALUE", 0x%"PRIxVALUE", (const rb_cref_t *)0x%"PRIxVALUE", %"PRI_SERIALT_PREFIX"u, reg_cfp->ep)) {", ice->flags, ice->value, (VALUE)ice->ic_cref, ice->ic_serial);
+    if (ice != NULL && GET_IC_SERIAL(ice) && !status->compile_info->disable_const_cache) {
+        fprintf(f, "    if (vm_inlined_ic_hit_p(0x%"PRIxVALUE", 0x%"PRIxVALUE", (const rb_cref_t *)0x%"PRIxVALUE", %"PRI_SERIALT_PREFIX"u, reg_cfp->ep)) {", ice->flags, ice->value, (VALUE)ice->ic_cref, GET_IC_SERIAL(ice));
         fprintf(f, "        stack[%d] = 0x%"PRIxVALUE";\n", b->stack_size, ice->value);
         fprintf(f, "        goto label_%d;\n", pos + insn_len(insn) + (int)dst);
         fprintf(f, "    }");
@@ -3165,7 +3203,7 @@ switch (insn) {
         fprintf(f, "\n");
         fprintf(f, "    val = stack[%d];\n", b->stack_size - 1);
         MAYBE_UNUSED(bool pc_moved_p) = false;
-        if (false) {
+        if (true) {
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
             pc_moved_p = true;
         }
@@ -3178,6 +3216,14 @@ switch (insn) {
         fprintf(f, "        vm_ic_update(GET_ISEQ(), ic, val, GET_EP());\n");
         fprintf(f, "    }\n");
         fprintf(f, "    stack[%d] = val;\n", b->stack_size + (int)attr_sp_inc_opt_setinlinecache(ic) - 1);
+        fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)attr_sp_inc_opt_setinlinecache(ic));
+        if (!pc_moved_p) {
+            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
+        }
+        fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
+        fprintf(f, "        goto cancel;\n");
+        fprintf(f, "    }\n");
         b->stack_size += attr_sp_inc_opt_setinlinecache(ic);
     }
     fprintf(f, "}\n");
@@ -3294,7 +3340,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_plus))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -3500,7 +3548,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_minus))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -3706,7 +3756,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_mult))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -3912,7 +3964,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_div))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -4126,7 +4180,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_mod))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -4340,7 +4396,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_eq))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -4593,7 +4651,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_lt))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -4799,7 +4859,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_le))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -5005,7 +5067,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_gt))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -5211,7 +5275,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_ge))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -5417,7 +5483,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_ltlt))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -5631,7 +5699,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_and))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -5837,7 +5907,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_or))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -6043,7 +6115,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_aref))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -6257,7 +6331,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_aset))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -6592,7 +6668,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_length))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -6797,7 +6875,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_size))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -7002,7 +7082,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_empty_p))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -7207,7 +7289,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_succ))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -7412,7 +7496,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_not))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
@@ -7617,7 +7703,9 @@ switch (insn) {
     if (has_cache_for_send(captured_cc_entries(status)[call_data_index((CALL_DATA)operands[0], body)], BIN(opt_regexpmatch2))) {
 {
     MAYBE_UNUSED(CALL_DATA cd) = (CALL_DATA)operands[0];
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
     const rb_iseq_t *iseq = NULL;
     const CALL_INFO ci = cd->ci;
     int kw_splat = IS_ARGS_KW_SPLAT(ci) > 0;
