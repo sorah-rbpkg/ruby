@@ -12,7 +12,7 @@ Signed-off-by: Christian Hofstaedtler <zeha@debian.org>
  1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/lib/rubygems/specification.rb b/lib/rubygems/specification.rb
-index 2b3792e..a612bf7 100644
+index 031a37f..a216f3d 100644
 --- a/lib/rubygems/specification.rb
 +++ b/lib/rubygems/specification.rb
 @@ -1692,7 +1692,9 @@ class Gem::Specification < Gem::BasicSpecification

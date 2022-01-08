@@ -9,16 +9,16 @@ Bug: #954293
  1 file changed, 3 insertions(+)
 
 diff --git a/configure.ac b/configure.ac
-index 2dcebdd..abd1c59 100644
+index 5a6b074..403b965 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -2433,6 +2433,9 @@ AS_CASE([$rb_cv_coroutine], [yes|''], [
+@@ -2524,6 +2524,9 @@ AS_CASE([$coroutine_type], [yes|''], [
          [arm64-darwin*], [
-             rb_cv_coroutine=arm64
+             coroutine_type=arm64
          ],
 +        [x86_64-linux-gnux32], [
 +            rb_cv_coroutine=ucontext
 +        ],
          [x*64-linux*], [
              AS_CASE(["$ac_cv_sizeof_voidp"],
-                 [8], [ rb_cv_coroutine=amd64 ],
+                 [8], [ coroutine_type=amd64 ],
