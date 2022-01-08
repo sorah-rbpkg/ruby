@@ -81,6 +81,7 @@ module DirSpecs
         special/}
 
         special/test{1}/file[1]
+        special/{}/special
       ]
 
       platform_is_not :windows do
@@ -91,6 +92,7 @@ module DirSpecs
           special/|
 
           special/こんにちは.txt
+          special/\a
         ]
       end
     end
@@ -168,5 +170,15 @@ module DirSpecs
       subdir_one
       subdir_two
     ]
+  end
+
+  if RUBY_VERSION > '3.1'
+    def self.expected_glob_paths
+      expected_paths - ['..']
+    end
+  else
+    def self.expected_glob_paths
+      expected_paths
+    end
   end
 end

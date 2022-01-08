@@ -18,7 +18,7 @@ void Init_builtin_prelude(void)
 
   // arity_check
 COMPILER_WARNING_PUSH
-#if GCC_VERSION_SINCE(5, 1, 0) || __clang__
+#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
 COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
 #endif
 COMPILER_WARNING_POP

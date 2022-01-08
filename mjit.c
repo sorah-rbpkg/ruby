@@ -23,6 +23,7 @@
 #include "internal/file.h"
 #include "internal/hash.h"
 #include "internal/warnings.h"
+#include "vm_sync.h"
 
 #include "mjit_worker.c"
 
@@ -82,6 +83,19 @@ mjit_gc_exit_hook(void)
     CRITICAL_SECTION_FINISH(4, "mjit_gc_exit_hook");
 }
 
+// Prohibit calling JIT-ed code and let existing JIT-ed frames exit before the next insn.
+void
+mjit_cancel_all(const char *reason)
+{
+    if (!mjit_enabled)
+        return;
+
+    mjit_call_p = false;
+    if (mjit_opts.warnings || mjit_opts.verbose) {
+        fprintf(stderr, "JIT cancel: Disabled JIT-ed code because %s\n", reason);
+    }
+}
+
 // Deal with ISeq movement from compactor
 void
 mjit_update_references(const rb_iseq_t *iseq)
@@ -95,7 +109,7 @@ mjit_update_references(const rb_iseq_t *iseq)
         // We need to invalidate JIT-ed code for the ISeq because it embeds pointer addresses.
         // To efficiently do that, we use the same thing as TracePoint and thus everything is cancelled for now.
         // See mjit.h and tool/ruby_vm/views/_mjit_compile_insn.erb for how `mjit_call_p` is used.
-        mjit_call_p = false; // TODO: instead of cancelling all, invalidate only this one and recompile it with some threshold.
+        mjit_cancel_all("GC.compact is used"); // TODO: instead of cancelling all, invalidate only this one and recompile it with some threshold.
     }
 
     // Units in stale_units (list of over-speculated and invalidated code) are not referenced from
@@ -245,12 +259,35 @@ create_unit(const rb_iseq_t *iseq)
     iseq->body->jit_unit = unit;
 }
 
-// This is called from an MJIT worker when worker_p is true.
+// Return true if given ISeq body should be compiled by MJIT
+static inline int
+mjit_target_iseq_p(struct rb_iseq_constant_body *body)
+{
+    return (body->type == ISEQ_TYPE_METHOD || body->type == ISEQ_TYPE_BLOCK)
+        && !body->builtin_inline_p;
+}
+
+// If recompile_p is true, the call is initiated by mjit_recompile.
+// This assumes the caller holds CRITICAL_SECTION when recompile_p is true.
 static void
-mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info, bool worker_p)
+mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info, bool recompile_p)
 {
     if (!mjit_enabled || pch_status == PCH_FAILED)
         return;
+    if (!mjit_target_iseq_p(iseq->body)) {
+        iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // skip mjit_wait
+        return;
+    }
+
+    if (!recompile_p) {
+        CRITICAL_SECTION_START(3, "in add_iseq_to_process");
+
+        // This prevents multiple Ractors from enqueueing the same ISeq twice.
+        if (rb_multi_ractor_p() && (uintptr_t)iseq->body->jit_func != NOT_ADDED_JIT_ISEQ_FUNC) {
+            CRITICAL_SECTION_FINISH(3, "in add_iseq_to_process");
+            return;
+        }
+    }
 
     RB_DEBUG_COUNTER_INC(mjit_add_iseq_to_process);
     iseq->body->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
@@ -260,15 +297,12 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
         return;
     if (compile_info != NULL)
         iseq->body->jit_unit->compile_info = *compile_info;
-
-    if (!worker_p) {
-        CRITICAL_SECTION_START(3, "in add_iseq_to_process");
-    }
     add_to_list(iseq->body->jit_unit, &unit_queue);
     if (active_units.length >= mjit_opts.max_cache_size) {
         unload_requests++;
     }
-    if (!worker_p) {
+
+    if (!recompile_p) {
         verbose(3, "Sending wakeup signal to workers in mjit_add_iseq_to_process");
         rb_native_cond_broadcast(&mjit_worker_wakeup);
         CRITICAL_SECTION_FINISH(3, "in add_iseq_to_process");
@@ -315,6 +349,9 @@ mjit_wait(struct rb_iseq_constant_body *body)
 VALUE
 rb_mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body)
 {
+    if (worker_stopped)
+        return Qundef;
+
     mjit_wait(body);
     if ((uintptr_t)body->jit_func <= (uintptr_t)LAST_JIT_ISEQ_FUNC) {
         return Qundef;
@@ -340,9 +377,11 @@ mjit_recompile(const rb_iseq_t *iseq)
     assert(iseq->body->jit_unit != NULL);
 
     if (UNLIKELY(mjit_opts.wait)) {
+        CRITICAL_SECTION_START(3, "in rb_mjit_recompile_iseq");
         remove_from_list(iseq->body->jit_unit, &active_units);
         add_to_list(iseq->body->jit_unit, &stale_units);
-        mjit_add_iseq_to_process(iseq, &iseq->body->jit_unit->compile_info, false);
+        mjit_add_iseq_to_process(iseq, &iseq->body->jit_unit->compile_info, true);
+        CRITICAL_SECTION_FINISH(3, "in rb_mjit_recompile_iseq");
         mjit_wait(iseq->body);
     }
     else {
@@ -351,7 +390,7 @@ mjit_recompile(const rb_iseq_t *iseq)
         // It's good to avoid a race condition between mjit_add_iseq_to_process and mjit_compile around jit_unit as well.
         CRITICAL_SECTION_START(3, "in rb_mjit_recompile_iseq");
         iseq->body->jit_unit->stale_p = true;
-        iseq->body->jit_func = (mjit_func_t)NOT_ADDED_JIT_ISEQ_FUNC;
+        iseq->body->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
         pending_stale_p = true;
         CRITICAL_SECTION_FINISH(3, "in rb_mjit_recompile_iseq");
     }
@@ -513,19 +552,6 @@ init_header_filename(void)
     return true;
 }
 
-static enum rb_id_table_iterator_result
-valid_class_serials_add_i(ID key, VALUE v, void *unused)
-{
-    rb_const_entry_t *ce = (rb_const_entry_t *)v;
-    VALUE value = ce->value;
-
-    if (!rb_is_const_id(key)) return ID_TABLE_CONTINUE;
-    if (RB_TYPE_P(value, T_MODULE) || RB_TYPE_P(value, T_CLASS)) {
-        mjit_add_class_serial(RCLASS_SERIAL(value));
-    }
-    return ID_TABLE_CONTINUE;
-}
-
 #ifdef _WIN32
 UINT rb_w32_system_tmpdir(WCHAR *path, UINT len);
 #endif
@@ -605,7 +631,7 @@ system_tmpdir(void)
 // Minimum value for JIT cache size.
 #define MIN_CACHE_SIZE 10
 // Default permitted number of units with a JIT code kept in memory.
-#define DEFAULT_MAX_CACHE_SIZE 100
+#define DEFAULT_MAX_CACHE_SIZE 10000
 // A default threshold used to add iseq to JIT.
 #define DEFAULT_MIN_CALLS_TO_ADD 10000
 
@@ -729,16 +755,6 @@ mjit_init(const struct mjit_options *opts)
     // meaning mjit_cont_new is skipped for the root_fiber. Therefore we need to call
     // rb_fiber_init_mjit_cont again with mjit_enabled=true to set the root_fiber's mjit_cont.
     rb_fiber_init_mjit_cont(GET_EC()->fiber_ptr);
-
-    // Initialize class_serials cache for compilation
-    valid_class_serials = rb_hash_new();
-    rb_obj_hide(valid_class_serials);
-    rb_gc_register_mark_object(valid_class_serials);
-    mjit_add_class_serial(RCLASS_SERIAL(rb_cObject));
-    mjit_add_class_serial(RCLASS_SERIAL(CLASS_OF(rb_vm_top_self())));
-    if (RCLASS_CONST_TBL(rb_cObject)) {
-        rb_id_table_foreach(RCLASS_CONST_TBL(rb_cObject), valid_class_serials_add_i, NULL);
-    }
 
     // Initialize worker thread
     start_worker();
@@ -996,28 +1012,4 @@ mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body)
     }
 }
 
-// A hook to update valid_class_serials.
-void
-mjit_add_class_serial(rb_serial_t class_serial)
-{
-    if (!mjit_enabled)
-        return;
-
-    // Do not wrap CRITICAL_SECTION here. This function is only called in main thread
-    // and guarded by GVL, and `rb_hash_aset` may cause GC and deadlock in it.
-    rb_hash_aset(valid_class_serials, LONG2FIX(class_serial), Qtrue);
-}
-
-// A hook to update valid_class_serials.
-void
-mjit_remove_class_serial(rb_serial_t class_serial)
-{
-    if (!mjit_enabled)
-        return;
-
-    CRITICAL_SECTION_START(3, "in mjit_remove_class_serial");
-    rb_hash_delete_entry(valid_class_serials, LONG2FIX(class_serial));
-    CRITICAL_SECTION_FINISH(3, "in mjit_remove_class_serial");
-}
-
-#endif
+#endif // USE_MJIT

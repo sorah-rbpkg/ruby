@@ -138,6 +138,8 @@ module Gem
     class Requirement
       module OrderIndependentComparison
         def ==(other)
+          return unless Gem::Requirement === other
+
           if _requirements_sorted? && other._requirements_sorted?
             super
           else

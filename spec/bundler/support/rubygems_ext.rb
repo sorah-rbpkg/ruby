@@ -59,17 +59,35 @@ module Spec
       Gem.clear_paths
 
       ENV["BUNDLE_PATH"] = nil
-      ENV["GEM_HOME"] = ENV["GEM_PATH"] = Path.base_system_gems.to_s
+      ENV["GEM_HOME"] = ENV["GEM_PATH"] = Path.base_system_gem_path.to_s
       ENV["PATH"] = [Path.system_gem_path.join("bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
       ENV["PATH"] = [Path.bindir, ENV["PATH"]].join(File::PATH_SEPARATOR) if Path.ruby_core?
     end
 
     def install_test_deps
-      setup_test_paths
-
-      install_gems(test_gemfile)
+      install_gems(test_gemfile, Path.base_system_gems.to_s)
       install_gems(rubocop_gemfile, Path.rubocop_gems.to_s)
       install_gems(standard_gemfile, Path.standard_gems.to_s)
+    end
+
+    def check_source_control_changes(success_message:, error_message:)
+      require "open3"
+
+      output, status = Open3.capture2e("git status --porcelain")
+
+      if status.success? && output.empty?
+        puts
+        puts success_message
+        puts
+      else
+        system("git status --porcelain")
+
+        puts
+        puts error_message
+        puts
+
+        exit(1)
+      end
     end
 
     private
@@ -89,7 +107,9 @@ module Spec
 
     def install_gems(gemfile, path = nil)
       old_gemfile = ENV["BUNDLE_GEMFILE"]
+      old_orig_gemfile = ENV["BUNDLER_ORIG_BUNDLE_GEMFILE"]
       ENV["BUNDLE_GEMFILE"] = gemfile.to_s
+      ENV["BUNDLER_ORIG_BUNDLE_GEMFILE"] = nil
 
       if path
         old_path = ENV["BUNDLE_PATH"]
@@ -108,6 +128,7 @@ module Spec
         ENV["BUNDLE_PATH__SYSTEM"] = old_path__system
       end
 
+      ENV["BUNDLER_ORIG_BUNDLE_GEMFILE"] = old_orig_gemfile
       ENV["BUNDLE_GEMFILE"] = old_gemfile
     end
 

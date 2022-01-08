@@ -3755,10 +3755,8 @@ setup_comb_exp_check(Node* node, int state, ScanEnv* env)
   switch (type) {
   case NT_LIST:
     {
-      Node* prev = NULL_NODE;
       do {
 	r = setup_comb_exp_check(NCAR(node), r, env);
-	prev = NCAR(node);
       } while (r >= 0 && IS_NOT_NULL(node = NCDR(node)));
     }
     break;
@@ -5036,7 +5034,7 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
 
 	if (NSTRING_IS_DONT_GET_OPT_INFO(node)) {
 	  int n = onigenc_strlen(env->enc, sn->s, sn->end);
-	  max = ONIGENC_MBC_MAXLEN_DIST(env->enc) * n;
+	  max = ONIGENC_MBC_MAXLEN_DIST(env->enc) * (OnigDistance)n;
 	}
 	else {
 	  concat_opt_exact_info_str(&opt->exb, sn->s, sn->end,

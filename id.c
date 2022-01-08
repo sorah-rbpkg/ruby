@@ -89,6 +89,7 @@ Init_id(void)
     REGISTER_SYMID(idSend, "send");
     REGISTER_SYMID(id__send__, "__send__");
     REGISTER_SYMID(id__attached__, "__attached__");
+    REGISTER_SYMID(id__recursive_key__, "__recursive_key__");
     REGISTER_SYMID(idInitialize, "initialize");
     REGISTER_SYMID(idInitialize_copy, "initialize_copy");
     REGISTER_SYMID(idInitialize_clone, "initialize_clone");
@@ -146,6 +147,7 @@ Init_id(void)
     REGISTER_SYMID(id_core_hash_merge_ptr, "core#hash_merge_ptr");
     REGISTER_SYMID(id_core_hash_merge_kwd, "core#hash_merge_kwd");
     REGISTER_SYMID(id_core_raise, "core#raise");
+    REGISTER_SYMID(id_core_sprintf, "core#sprintf");
     REGISTER_SYMID(idLASTLINE, "$_");
     REGISTER_SYMID(idBACKREF, "$~");
     REGISTER_SYMID(idERROR_INFO, "$!");

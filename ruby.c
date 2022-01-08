@@ -59,6 +59,7 @@
 #include "internal/process.h"
 #include "internal/variable.h"
 #include "mjit.h"
+#include "yjit.h"
 #include "ruby/encoding.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
@@ -94,13 +95,17 @@ void rb_warning_category_update(unsigned int mask, unsigned int bits);
 #define EACH_FEATURES(X, SEP) \
     X(gems) \
     SEP \
+    X(error_highlight) \
+    SEP \
     X(did_you_mean) \
     SEP \
     X(rubyopt) \
     SEP \
     X(frozen_string_literal) \
     SEP \
-    X(jit) \
+    X(mjit) \
+    SEP \
+    X(yjit)
     /* END OF FEATURES */
 #define EACH_DEBUG_FEATURES(X, SEP) \
     X(frozen_string_literal) \
@@ -138,13 +143,15 @@ enum feature_flag_bits {
     X(parsetree_with_comment) \
     SEP \
     X(insns) \
+    SEP \
+    X(insns_without_opt) \
     /* END OF DUMPS */
 enum dump_flag_bits {
     dump_version_v,
     EACH_DUMPS(DEFINE_DUMP, COMMA),
     dump_exit_bits = (DUMP_BIT(yydebug) | DUMP_BIT(syntax) |
 		      DUMP_BIT(parsetree) | DUMP_BIT(parsetree_with_comment) |
-		      DUMP_BIT(insns))
+		      DUMP_BIT(insns) | DUMP_BIT(insns_without_opt))
 };
 
 typedef struct ruby_cmdline_options ruby_cmdline_options_t;
@@ -184,6 +191,8 @@ struct ruby_cmdline_options {
 #if USE_MJIT
     struct mjit_options mjit;
 #endif
+    struct rb_yjit_options yjit;
+
     int sflag, xflag;
     unsigned int warning: 1;
     unsigned int verbose: 1;
@@ -211,7 +220,8 @@ enum {
 	& ~FEATURE_BIT(gems)
 #endif
 	& ~FEATURE_BIT(frozen_string_literal)
-        & ~FEATURE_BIT(jit)
+        & ~FEATURE_BIT(mjit)
+        & ~FEATURE_BIT(yjit)
 	)
 };
 
@@ -225,8 +235,15 @@ cmdline_options_init(ruby_cmdline_options_t *opt)
     opt->intern.enc.index = -1;
     opt->features.set = DEFAULT_FEATURES;
 #ifdef MJIT_FORCE_ENABLE /* to use with: ./configure cppflags="-DMJIT_FORCE_ENABLE" */
-    opt->features.set |= FEATURE_BIT(jit);
+    opt->features.set |= FEATURE_BIT(mjit);
+#elif defined(YJIT_FORCE_ENABLE)
+    opt->features.set |= FEATURE_BIT(yjit);
 #endif
+
+    if (getenv("RUBY_YJIT_ENABLE")) {
+        opt->features.set |= FEATURE_BIT(yjit);
+    }
+
     return opt;
 }
 
@@ -274,6 +291,11 @@ usage(const char *name, int help, int highlight, int columns)
     (unsigned short)sizeof(shortopt), \
     (unsigned short)sizeof(longopt), \
 }
+#if YJIT_SUPPORTED_P
+# define PLATFORM_JIT_OPTION "--yjit"
+#else
+# define PLATFORM_JIT_OPTION "--mjit"
+#endif
     static const struct message usage_msg[] = {
 	M("-0[octal]",	   "",			   "specify record separator (\\0, if no argument)"),
 	M("-a",		   "",			   "autosplit mode with -n or -p (splits $_ into $F)"),
@@ -295,48 +317,61 @@ usage(const char *name, int help, int highlight, int columns)
 	M("-w",		   "",			   "turn warnings on for your script"),
 	M("-W[level=2|:category]",   "",	   "set warning level; 0=silence, 1=medium, 2=verbose"),
 	M("-x[directory]", "",			   "strip off text before #!ruby line and perhaps cd to directory"),
-        M("--jit",         "",                     "enable JIT with default options (experimental)"),
-        M("--jit-[option]","",                     "enable JIT with an option (experimental)"),
+        M("--jit",         "",                     "enable JIT for the platform, same as " PLATFORM_JIT_OPTION " (experimental)"),
+        M("--mjit",        "",                     "enable C compiler-based JIT compiler (experimental)"),
+        M("--yjit",        "",                     "enable in-process JIT compiler (experimental)"),
 	M("-h",		   "",			   "show this message, --help for more info"),
     };
     static const struct message help_msg[] = {
 	M("--copyright",                            "", "print the copyright"),
 	M("--dump={insns|parsetree|...}[,...]",     "",
           "dump debug information. see below for available dump list"),
-	M("--enable={gems|rubyopt|...}[,...]", ", --disable={gems|rubyopt|...}[,...]",
+	M("--enable={mjit|rubyopt|...}[,...]", ", --disable={mjit|rubyopt|...}[,...]",
 	  "enable or disable features. see below for available features"),
 	M("--external-encoding=encoding",           ", --internal-encoding=encoding",
 	  "specify the default external or internal character encoding"),
+	M("--backtrace-limit=num",                  "", "limit the maximum length of backtrace"),
 	M("--verbose",                              "", "turn on verbose mode and disable script from stdin"),
 	M("--version",                              "", "print the version number, then exit"),
 	M("--help",			            "", "show this message, -h for short message"),
-	M("--backtrace-limit=num",                  "", "limit the maximum length of backtrace"),
     };
     static const struct message dumps[] = {
 	M("insns",                  "", "instruction sequences"),
+	M("insns_without_opt",      "", "instruction sequences compiled with no optimization"),
 	M("yydebug",                "", "yydebug of yacc parser generator"),
 	M("parsetree",              "", "AST"),
 	M("parsetree_with_comment", "", "AST with comments"),
     };
     static const struct message features[] = {
-	M("gems",    "",        "rubygems (default: "DEFAULT_RUBYGEMS_ENABLED")"),
+	M("gems",    "",        "rubygems (only for debugging, default: "DEFAULT_RUBYGEMS_ENABLED")"),
+	M("error_highlight", "", "error_highlight (default: "DEFAULT_RUBYGEMS_ENABLED")"),
 	M("did_you_mean", "",   "did_you_mean (default: "DEFAULT_RUBYGEMS_ENABLED")"),
 	M("rubyopt", "",        "RUBYOPT environment variable (default: enabled)"),
 	M("frozen-string-literal", "", "freeze all string literals (default: disabled)"),
-        M("jit", "",            "JIT compiler (default: disabled)"),
+        M("mjit", "",           "C compiler-based JIT compiler (default: disabled)"),
+        M("yjit", "",           "in-process JIT compiler (default: disabled)"),
     };
     static const struct message warn_categories[] = {
         M("deprecated", "",       "deprecated features"),
         M("experimental", "",     "experimental features"),
     };
     static const struct message mjit_options[] = {
-        M("--jit-warnings",      "", "Enable printing JIT warnings"),
-        M("--jit-debug",         "", "Enable JIT debugging (very slow), or add cflags if specified"),
-        M("--jit-wait",          "", "Wait until JIT compilation finishes every time (for testing)"),
-        M("--jit-save-temps",    "", "Save JIT temporary files in $TMP or /tmp (for testing)"),
-        M("--jit-verbose=num",   "", "Print JIT logs of level num or less to stderr (default: 0)"),
-        M("--jit-max-cache=num", "", "Max number of methods to be JIT-ed in a cache (default: 100)"),
-        M("--jit-min-calls=num", "", "Number of calls to trigger JIT (for testing, default: 10000)"),
+        M("--mjit-warnings",      "", "Enable printing JIT warnings"),
+        M("--mjit-debug",         "", "Enable JIT debugging (very slow), or add cflags if specified"),
+        M("--mjit-wait",          "", "Wait until JIT compilation finishes every time (for testing)"),
+        M("--mjit-save-temps",    "", "Save JIT temporary files in $TMP or /tmp (for testing)"),
+        M("--mjit-verbose=num",   "", "Print JIT logs of level num or less to stderr (default: 0)"),
+        M("--mjit-max-cache=num", "", "Max number of methods to be JIT-ed in a cache (default: 100)"),
+        M("--mjit-min-calls=num", "", "Number of calls to trigger JIT (for testing, default: 10000)"),
+    };
+    static const struct message yjit_options[] = {
+#if YJIT_STATS
+        M("--yjit-stats",             "", "Enable collecting YJIT statistics"),
+#endif
+        M("--yjit-exec-mem-size=num", "", "Size of executable memory block in MiB (default: 256)"),
+        M("--yjit-call-threshold",    "", "Number of calls to trigger JIT (default: 10)"),
+        M("--yjit-max-versions",      "", "Maximum number of versions per basic block (default: 4)"),
+        M("--yjit-greedy-versioning", "", "Greedy versioning mode (default: disabled)"),
     };
     int i;
     const char *sb = highlight ? esc_standout+1 : esc_none;
@@ -364,9 +399,12 @@ usage(const char *name, int help, int highlight, int columns)
     printf("%s""Warning categories:%s\n", sb, se);
     for (i = 0; i < numberof(warn_categories); ++i)
 	SHOW(warn_categories[i]);
-    printf("%s""JIT options (experimental):%s\n", sb, se);
+    printf("%s""MJIT options (experimental):%s\n", sb, se);
     for (i = 0; i < numberof(mjit_options); ++i)
 	SHOW(mjit_options[i]);
+    printf("%s""YJIT options (experimental):%s\n", sb, se);
+    for (i = 0; i < numberof(yjit_options); ++i)
+        SHOW(yjit_options[i]);
 }
 
 #define rubylib_path_new rb_str_new
@@ -536,7 +574,12 @@ static VALUE
 runtime_libruby_path(void)
 {
 #if defined _WIN32 || defined __CYGWIN__
-    DWORD len = RSTRING_EMBED_LEN_MAX, ret;
+    DWORD len, ret;
+#if USE_RVARGC
+    len = 32;
+#else
+    len = RSTRING_EMBED_LEN_MAX;
+#endif
     VALUE path;
     VALUE wsopath = rb_str_new(0, len*sizeof(WCHAR));
     WCHAR *wlibpath;
@@ -671,8 +714,11 @@ ruby_init_loadpath(void)
 	    p = p2;
 	}
 #endif
+        baselen = p - libpath;
     }
-    baselen = p - libpath;
+    else {
+        baselen = 0;
+    }
     rb_str_resize(sopath, baselen);
     libpath = RSTRING_PTR(sopath);
 #define PREFIX_PATH() sopath
@@ -911,7 +957,21 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
 #define SET_FEATURE(bit) \
     if (NAME_MATCH_P(#bit, str, len)) {set |= mask = FEATURE_BIT(bit); FEATURE_FOUND;}
     EACH_FEATURES(SET_FEATURE, ;);
+    if (NAME_MATCH_P("jit", str, len)) { // This allows you to cancel --jit
+#if defined(MJIT_FORCE_ENABLE) || !YJIT_SUPPORTED_P
+        set |= mask = FEATURE_BIT(mjit);
+#else
+        set |= mask = FEATURE_BIT(yjit);
+#endif
+        goto found;
+    }
     if (NAME_MATCH_P("all", str, len)) {
+        // YJIT and MJIT cannot be enabled at the same time. We enable only YJIT for --enable=all.
+#if defined(MJIT_FORCE_ENABLE) || !YJIT_SUPPORTED_P
+        mask &= ~(FEATURE_BIT(yjit));
+#else
+        mask &= ~(FEATURE_BIT(mjit));
+#endif
         goto found;
     }
 #if AMBIGUOUS_FEATURE_NAMES
@@ -928,6 +988,8 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
 	rb_exc_raise(rb_exc_new_str(rb_eRuntimeError, mesg));
 #undef ADD_FEATURE_NAME
     }
+#else
+    (void)set;
 #endif
     rb_warn("unknown argument for --%s: `%.*s'",
 	    enable ? "enable" : "disable", len, str);
@@ -1005,10 +1067,6 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen
 #define set_source_encoding_once(opt, e, elen) \
     set_option_encoding_once("source", &(opt)->src.enc.name, (e), (elen))
 
-#if USE_MJIT
-static void
-setup_mjit_options(const char *s, struct mjit_options *mjit_opt)
-{
 #define opt_match(s, l, name) \
     ((((l) > rb_strlen_lit(name)) ? (s)[rb_strlen_lit(name)] == '=' : \
       (l) == rb_strlen_lit(name)) && \
@@ -1018,6 +1076,54 @@ setup_mjit_options(const char *s, struct mjit_options *mjit_opt)
     opt_match(s, l, name) && (*(s) ? (rb_warn("argument to --jit-" name " is ignored"), 1) : 1)
 #define opt_match_arg(s, l, name) \
     opt_match(s, l, name) && (*(s) ? 1 : (rb_raise(rb_eRuntimeError, "--jit-" name " needs an argument"), 0))
+
+#define yjit_opt_match_noarg(s, l, name) \
+    opt_match(s, l, name) && (*(s) ? (rb_warn("argument to --yjit-" name " is ignored"), 1) : 1)
+#define yjit_opt_match_arg(s, l, name) \
+    opt_match(s, l, name) && (*(s) && *(s+1) ? 1 : (rb_raise(rb_eRuntimeError, "--yjit-" name " needs an argument"), 0))
+
+static bool
+setup_yjit_options(const char *s, struct rb_yjit_options *yjit_opt)
+{
+    const char prefix[] = "yjit-";
+    if (strncmp(prefix, s, sizeof(prefix)-1) != 0) {
+        return false;
+    }
+    s += sizeof(prefix)-1;
+    const size_t l = strlen(s);
+    if (l == 0) {
+        return false;
+    }
+
+    if (yjit_opt_match_arg(s, l, "exec-mem-size")) {
+        yjit_opt->exec_mem_size = atoi(s + 1);
+    }
+    else if (yjit_opt_match_arg(s, l, "call-threshold")) {
+        yjit_opt->call_threshold = atoi(s + 1);
+    }
+    else if (yjit_opt_match_arg(s, l, "max-versions")) {
+        yjit_opt->max_versions = atoi(s + 1);
+    }
+    else if (yjit_opt_match_noarg(s, l, "greedy-versioning")) {
+        yjit_opt->greedy_versioning = true;
+    }
+    else if (yjit_opt_match_noarg(s, l, "no-type-prop")) {
+        yjit_opt->no_type_prop = true;
+    }
+    else if (yjit_opt_match_noarg(s, l, "stats")) {
+        yjit_opt->gen_stats = true;
+    }
+    else {
+        rb_raise(rb_eRuntimeError,
+                 "invalid yjit option `%s' (--help will show valid yjit options)", s);
+    }
+    return true;
+}
+
+#if USE_MJIT
+static void
+setup_mjit_options(const char *s, struct mjit_options *mjit_opt)
+{
     if (*s != '-') return;
     const size_t l = strlen(++s);
     if (*s == 0) return;
@@ -1419,12 +1525,28 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		opt->verbose = 1;
 		ruby_verbose = Qtrue;
 	    }
-            else if (strncmp("jit", s, 3) == 0) {
+            else if (strcmp("jit", s) == 0) {
+#if !USE_MJIT
+                rb_warn("Ruby was built without JIT support");
+#elif defined(MJIT_FORCE_ENABLE) || !YJIT_SUPPORTED_P
+                FEATURE_SET(opt->features, FEATURE_BIT(mjit));
+#else
+                FEATURE_SET(opt->features, FEATURE_BIT(yjit));
+#endif
+            }
+            else if (strncmp("mjit", s, 4) == 0) {
 #if USE_MJIT
-                FEATURE_SET(opt->features, FEATURE_BIT(jit));
-                setup_mjit_options(s + 3, &opt->mjit);
+                FEATURE_SET(opt->features, FEATURE_BIT(mjit));
+                setup_mjit_options(s + 4, &opt->mjit);
 #else
                 rb_warn("MJIT support is disabled.");
+#endif
+            }
+            else if (strcmp("yjit", s) == 0 || setup_yjit_options(s, &opt->yjit)) {
+#if USE_MJIT
+                FEATURE_SET(opt->features, FEATURE_BIT(yjit));
+#else
+                rb_warn("Ruby was built without JIT support");
 #endif
             }
 	    else if (strcmp("yydebug", s) == 0) {
@@ -1505,6 +1627,9 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     if (opt->features.set & FEATURE_BIT(gems)) {
         rb_define_module("Gem");
+        if (opt->features.set & FEATURE_BIT(error_highlight)) {
+            rb_define_module("ErrorHighlight");
+        }
         if (opt->features.set & FEATURE_BIT(did_you_mean)) {
             rb_define_module("DidYouMean");
         }
@@ -1785,10 +1910,19 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
 #if USE_MJIT
-    if (opt->features.set & FEATURE_BIT(jit)) {
+    if (opt->features.set & FEATURE_BIT(mjit)) {
         opt->mjit.on = TRUE; /* set mjit.on for ruby_show_version() API and check to call mjit_init() */
     }
 #endif
+    if (opt->features.set & FEATURE_BIT(yjit)) {
+#if USE_MJIT
+        if (opt->mjit.on) {
+            rb_warn("MJIT and YJIT cannot both be enabled at the same time. Exiting");
+            exit(1);
+        }
+#endif
+        rb_yjit_init(&opt->yjit);
+    }
     if (opt->dump & (DUMP_BIT(version) | DUMP_BIT(version_v))) {
 #if USE_MJIT
         mjit_opts.on = opt->mjit.on; /* used by ruby_show_version(). mjit_init() still can't be called here. */
@@ -1813,7 +1947,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 		opt->script = "-";
 	    }
 	    else if (opt->do_search) {
-		char *path = getenv("RUBYPATH");
+		const char *path = getenv("RUBYPATH");
 
 		opt->script = 0;
 		if (path) {
@@ -1836,7 +1970,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     opt->script_name = rb_str_new_cstr(opt->script);
     opt->script = RSTRING_PTR(opt->script_name);
 
-#if _WIN32
+#ifdef _WIN32
     translit_char_bin(RSTRING_PTR(opt->script_name), '\\', '/');
 #elif defined DOSISH
     translit_char(RSTRING_PTR(opt->script_name), '\\', '/');
@@ -1940,7 +2074,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	VALUE option = rb_hash_new();
 #define SET_COMPILE_OPTION(h, o, name) \
 	rb_hash_aset((h), ID2SYM(rb_intern_const(#name)),		\
-                     (FEATURE_SET_P(o->features, FEATURE_BIT(name)) ? Qtrue : Qfalse));
+                     RBOOL(FEATURE_SET_P(o->features, FEATURE_BIT(name))));
 	SET_COMPILE_OPTION(option, opt, frozen_string_literal);
 	SET_COMPILE_OPTION(option, opt, debug_frozen_string_literal);
 	rb_funcallv(rb_cISeq, rb_intern_const("compile_option="), 1, &option);
@@ -2052,11 +2186,11 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         GetBindingPtr(rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING")),
                       toplevel_binding);
         const struct rb_block *base_block = toplevel_context(toplevel_binding);
-	iseq = rb_iseq_new_main(&ast->body, opt->script_name, path, vm_block_iseq(base_block));
+	iseq = rb_iseq_new_main(&ast->body, opt->script_name, path, vm_block_iseq(base_block), !(dump & DUMP_BIT(insns_without_opt)));
 	rb_ast_dispose(ast);
     }
 
-    if (dump & DUMP_BIT(insns)) {
+    if (dump & (DUMP_BIT(insns) | DUMP_BIT(insns_without_opt))) {
 	rb_io_write(rb_stdout, rb_iseq_disasm((const rb_iseq_t *)iseq));
 	rb_io_flush(rb_stdout);
 	dump &= ~DUMP_BIT(insns);
@@ -2073,6 +2207,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     rb_gvar_ractor_local("$-a");
 
     if ((rb_e_script = opt->e_script) != 0) {
+        rb_str_freeze(rb_e_script);
         rb_gc_register_mark_object(opt->e_script);
     }
 
@@ -2239,6 +2374,26 @@ load_file_internal(VALUE argp_v)
     return (VALUE)ast;
 }
 
+/* disabling O_NONBLOCK, and returns 0 on success, otherwise errno */
+static inline int
+disable_nonblock(int fd)
+{
+#if defined(HAVE_FCNTL) && defined(F_SETFL)
+    if (fcntl(fd, F_SETFL, 0) < 0) {
+        const int e = errno;
+        ASSUME(e != 0);
+# if defined ENOTSUP
+        if (e == ENOTSUP) return 0;
+# endif
+# if defined B_UNSUPPORTED
+        if (e == B_UNSUPPORTED) return 0;
+# endif
+        return e;
+    }
+#endif
+    return 0;
+}
+
 static VALUE
 open_load_file(VALUE fname_v, int *xflag)
 {
@@ -2288,18 +2443,10 @@ open_load_file(VALUE fname_v, int *xflag)
 	}
 	rb_update_max_fd(fd);
 
-#if defined HAVE_FCNTL && MODE_TO_LOAD != O_RDONLY
-# ifdef ENOTSUP
-#   define IS_SUPPORTED_OP(e) ((e) != ENOTSUP)
-# else
-#   define IS_SUPPORTED_OP(e) ((void)(e), 1)
-# endif
-	/* disabling O_NONBLOCK */
-	if (fcntl(fd, F_SETFL, 0) < 0 && IS_SUPPORTED_OP(e = errno)) {
+	if (MODE_TO_LOAD != O_RDONLY && (e = disable_nonblock(fd)) != 0) {
 	    (void)close(fd);
 	    rb_load_fail(fname_v, strerror(e));
 	}
-#endif
 
 	e = ruby_is_fd_loadable(fd);
 	if (!e) {
@@ -2314,7 +2461,7 @@ open_load_file(VALUE fname_v, int *xflag)
 	      We need to wait if FIFO is empty. It's FIFO's semantics.
 	      rb_thread_wait_fd() release GVL. So, it's safe.
 	    */
-	    rb_thread_wait_fd(fd);
+	    rb_io_wait(f, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
 	}
     }
     return f;
@@ -2437,11 +2584,6 @@ external_str_new_cstr(const char *p)
 #endif
 }
 
-/*! Sets the current script name to this value.
- *
- * This is similar to <code>$0 = name</code> in Ruby level but also affects
- * <code>Method#location</code> and others.
- */
 void
 ruby_script(const char *name)
 {
@@ -2525,7 +2667,6 @@ debug_setter(VALUE val, ID id, VALUE *dmy)
     *rb_ruby_debug_ptr() = val;
 }
 
-/*! Defines built-in variables */
 void
 ruby_prog_init(void)
 {
@@ -2564,12 +2705,6 @@ ruby_set_argv(int argc, char **argv)
     int i;
     VALUE av = rb_argv;
 
-#if defined(USE_DLN_A_OUT)
-    if (origarg.argc > 0 && origarg.argv)
-	dln_argv0 = origarg.argv[0];
-    else if (argc > 0 && argv)
-	dln_argv0 = argv[0];
-#endif
     rb_ary_clear(av);
     for (i = 0; i < argc; i++) {
 	VALUE arg = external_str_new_cstr(argv[i]);
@@ -2632,13 +2767,6 @@ fill_standard_fds(void)
     }
 }
 
-/*! Initializes the process for libruby.
- *
- * This function assumes this process is ruby(1) and it has just started.
- * Usually programs that embed CRuby interpreter may not call this function,
- * and may do their own initialization.
- * argc and argv cannot be NULL.
- */
 void
 ruby_sysinit(int *argc, char ***argv)
 {
@@ -2648,9 +2776,6 @@ ruby_sysinit(int *argc, char ***argv)
     if (*argc >= 0 && *argv) {
 	origarg.argc = *argc;
 	origarg.argv = *argv;
-#if defined(USE_DLN_A_OUT)
-	dln_argv0 = origarg.argv[0];
-#endif
     }
     fill_standard_fds();
 }

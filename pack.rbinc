@@ -21,7 +21,7 @@ mjit_compile_invokebuiltin_for_pack_pack(FILE *f, long index, unsigned stack_siz
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == pack_pack */\n", (intptr_t)pack_pack);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == pack_pack */\n", (VALUE)pack_pack);
     fprintf(f, "    val = f(ec, self, argv[0], argv[1]);\n");
 }
 
@@ -29,32 +29,32 @@ static void
 mjit_compile_invokebuiltin_for_pack_unpack(FILE *f, long index, unsigned stack_size, bool inlinable_p)
 {
     fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
     if (index == -1) {
-        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
     }
     else {
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == pack_unpack */\n", (intptr_t)pack_unpack);
-    fprintf(f, "    val = f(ec, self, argv[0]);\n");
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == pack_unpack */\n", (VALUE)pack_unpack);
+    fprintf(f, "    val = f(ec, self, argv[0], argv[1]);\n");
 }
 
 static void
 mjit_compile_invokebuiltin_for_pack_unpack1(FILE *f, long index, unsigned stack_size, bool inlinable_p)
 {
     fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
     if (index == -1) {
-        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
     }
     else {
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == pack_unpack1 */\n", (intptr_t)pack_unpack1);
-    fprintf(f, "    val = f(ec, self, argv[0]);\n");
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == pack_unpack1 */\n", (VALUE)pack_unpack1);
+    fprintf(f, "    val = f(ec, self, argv[0], argv[1]);\n");
 }
 
 void Init_builtin_pack(void)
@@ -62,19 +62,19 @@ void Init_builtin_pack(void)
   // table definition
   static const struct rb_builtin_function pack_table[] = {
     RB_BUILTIN_FUNCTION(0, pack_pack, pack_pack, 2, mjit_compile_invokebuiltin_for_pack_pack),
-    RB_BUILTIN_FUNCTION(1, pack_unpack, pack_unpack, 1, mjit_compile_invokebuiltin_for_pack_unpack),
-    RB_BUILTIN_FUNCTION(2, pack_unpack1, pack_unpack1, 1, mjit_compile_invokebuiltin_for_pack_unpack1),
+    RB_BUILTIN_FUNCTION(1, pack_unpack, pack_unpack, 2, mjit_compile_invokebuiltin_for_pack_unpack),
+    RB_BUILTIN_FUNCTION(2, pack_unpack1, pack_unpack1, 2, mjit_compile_invokebuiltin_for_pack_unpack1),
     RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),
   };
 
   // arity_check
 COMPILER_WARNING_PUSH
-#if GCC_VERSION_SINCE(5, 1, 0) || __clang__
+#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
 COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
 #endif
   if (0) rb_builtin_function_check_arity2(pack_pack);
-  if (0) rb_builtin_function_check_arity1(pack_unpack);
-  if (0) rb_builtin_function_check_arity1(pack_unpack1);
+  if (0) rb_builtin_function_check_arity2(pack_unpack);
+  if (0) rb_builtin_function_check_arity2(pack_unpack1);
 COMPILER_WARNING_POP
 
   // load

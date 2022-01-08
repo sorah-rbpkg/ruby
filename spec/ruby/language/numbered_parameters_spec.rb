@@ -29,7 +29,7 @@ ruby_version_is "2.7" do
     it "can not be used in both outer and nested blocks at the same time" do
       -> {
         eval("-> { _1; -> { _2 } }")
-      }.should raise_error(SyntaxError, /numbered parameter is already used in.+ outer block here/m)
+      }.should raise_error(SyntaxError, /numbered parameter is already used in/m)
     end
 
     ruby_version_is '2.7'...'3.0' do
@@ -78,6 +78,20 @@ ruby_version_is "2.7" do
 
       -> { eval("['a'].map { || _1 }")  }.should raise_error(SyntaxError, /ordinary parameter is defined/)
       -> { eval("['a'].map { |x| _1 }") }.should raise_error(SyntaxError, /ordinary parameter is defined/)
+    end
+
+    describe "assigning to a numbered parameter" do
+      ruby_version_is '2.7'...'3.0' do
+        it "warns" do
+          -> { eval("proc { _1 = 0 }") }.should complain(/warning: `_1' is reserved for numbered parameter; consider another name/)
+        end
+      end
+
+      ruby_version_is '3.0' do
+        it "raises SyntaxError" do
+          -> { eval("proc { _1 = 0 }") }.should raise_error(SyntaxError, /_1 is reserved for numbered parameter/)
+        end
+      end
     end
 
     it "affects block arity" do

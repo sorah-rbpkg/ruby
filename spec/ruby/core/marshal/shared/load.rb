@@ -19,6 +19,100 @@ describe :marshal_load, shared: true do
     -> { Marshal.send(@method, kaboom) }.should raise_error(ArgumentError)
   end
 
+  ruby_version_is "3.1" do
+    describe "when called with freeze: true" do
+      it "returns frozen strings" do
+        string = Marshal.send(@method, Marshal.dump("foo"), freeze: true)
+        string.should == "foo"
+        string.should.frozen?
+
+        utf8_string = "foo".encode(Encoding::UTF_8)
+        string = Marshal.send(@method, Marshal.dump(utf8_string), freeze: true)
+        string.should == utf8_string
+        string.should.frozen?
+      end
+
+      it "returns frozen arrays" do
+        array = Marshal.send(@method, Marshal.dump([1, 2, 3]), freeze: true)
+        array.should == [1, 2, 3]
+        array.should.frozen?
+      end
+
+      it "returns frozen hashes" do
+        hash = Marshal.send(@method, Marshal.dump({foo: 42}), freeze: true)
+        hash.should == {foo: 42}
+        hash.should.frozen?
+      end
+
+      it "returns frozen regexps" do
+        regexp = Marshal.send(@method, Marshal.dump(/foo/), freeze: true)
+        regexp.should == /foo/
+        regexp.should.frozen?
+      end
+
+      it "returns frozen objects" do
+        source_object = Object.new
+        source_object.instance_variable_set(:@foo, "bar")
+
+        object = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
+        object.should.frozen?
+        object.instance_variable_get(:@foo).should.frozen?
+      end
+
+      it "does not freeze modules" do
+        Marshal.send(@method, Marshal.dump(Kernel), freeze: true)
+        Kernel.should_not.frozen?
+      end
+
+      it "does not freeze classes" do
+        Marshal.send(@method, Marshal.dump(Object), freeze: true)
+        Object.should_not.frozen?
+      end
+
+      describe "when called with a proc" do
+        it "call the proc with frozen objects" do
+          arr = []
+          s = 'hi'
+          s.instance_variable_set(:@foo, 5)
+          st = Struct.new("Brittle", :a).new
+          st.instance_variable_set(:@clue, 'none')
+          st.a = 0.0
+          h = Hash.new('def')
+          h['nine'] = 9
+          a = [:a, :b, :c]
+          a.instance_variable_set(:@two, 2)
+          obj = [s, 10, s, s, st, a]
+          obj.instance_variable_set(:@zoo, 'ant')
+          proc = Proc.new { |o| arr << o; o}
+
+          Marshal.send(
+            @method,
+            "\x04\bI[\vI\"\ahi\a:\x06EF:\t@fooi\ni\x0F@\x06@\x06IS:\x14Struct::Brittle\x06:\x06af\x060\x06:\n@clueI\"\tnone\x06;\x00FI[\b;\b:\x06b:\x06c\x06:\t@twoi\a\x06:\t@zooI\"\bant\x06;\x00F",
+            proc,
+            freeze: true,
+          )
+
+          arr.should == [
+            false, 5, "hi", 10, "hi", "hi", 0.0, false, "none", st,
+            :b, :c, 2, a, false, "ant", ["hi", 10, "hi", "hi", st, [:a, :b, :c]],
+          ]
+
+          arr.each do |v|
+            v.should.frozen?
+          end
+
+          Struct.send(:remove_const, :Brittle)
+        end
+
+        it "does not freeze the object returned by the proc" do
+          string = Marshal.send(@method, Marshal.dump("foo"), proc { |o| o.upcase }, freeze: true)
+          string.should == "FOO"
+          string.should_not.frozen?
+        end
+      end
+    end
+  end
+
   describe "when called with a proc" do
     ruby_bug "#18141", ""..."3.1" do
       it "call the proc with fully initialized strings" do
@@ -242,14 +336,14 @@ describe :marshal_load, shared: true do
         y.first.tainted?.should be_false
       end
 
-      it "does not taint Integers" do
+      it "does not taint Fixnums" do
         x = [1]
         y = Marshal.send(@method, Marshal.dump(x).taint)
         y.tainted?.should be_true
         y.first.tainted?.should be_false
       end
 
-      it "does not taint Integers" do
+      it "does not taint Bignums" do
         x = [bignum_value]
         y = Marshal.send(@method, Marshal.dump(x).taint)
         y.tainted?.should be_true
@@ -340,7 +434,8 @@ describe :marshal_load, shared: true do
 
     it "loads an extended Array object containing a user-marshaled object" do
       obj = [UserMarshal.new, UserMarshal.new].extend(Meths)
-      new_obj = Marshal.send(@method, "\x04\be:\nMeths[\ao:\x10UserMarshal\x06:\n@dataI\"\nstuff\x06:\x06ETo;\x06\x06;\aI\"\nstuff\x06;\bT")
+      dump = "\x04\be:\nMeths[\ao:\x10UserMarshal\x06:\n@dataI\"\nstuff\x06:\x06ETo;\x06\x06;\aI\"\nstuff\x06;\bT"
+      new_obj = Marshal.send(@method, dump)
 
       new_obj.should == obj
       obj_ancestors = class << obj; ancestors[1..-1]; end
@@ -430,6 +525,24 @@ describe :marshal_load, shared: true do
       sym.should == s
       sym.encoding.should == Encoding::BINARY
     end
+
+    it "loads multiple Symbols sharing the same encoding" do
+      # Note that the encoding is a link for the second Symbol
+      symbol1 = "I:\t\xE2\x82\xACa\x06:\x06ET"
+      symbol2 = "I:\t\xE2\x82\xACb\x06;\x06T"
+      dump = "\x04\b[\a#{symbol1}#{symbol2}"
+      value = Marshal.send(@method, dump)
+      value.map(&:encoding).should == [Encoding::UTF_8, Encoding::UTF_8]
+      expected = [
+        "€a".force_encoding(Encoding::UTF_8).to_sym,
+        "€b".force_encoding(Encoding::UTF_8).to_sym
+      ]
+      value.should == expected
+
+      value = Marshal.send(@method, "\x04\b[\b#{symbol1}#{symbol2};\x00")
+      value.map(&:encoding).should == [Encoding::UTF_8, Encoding::UTF_8, Encoding::UTF_8]
+      value.should == [*expected, expected[0]]
+    end
   end
 
   describe "for a String" do
@@ -491,20 +604,23 @@ describe :marshal_load, shared: true do
   describe "for a Struct" do
     it "loads a extended_struct having fields with same objects" do
       s = 'hi'
-      obj = Struct.new("Ure2", :a, :b).new.extend(Meths)
+      obj = Struct.new("Extended", :a, :b).new.extend(Meths)
+      dump = "\004\be:\nMethsS:\025Struct::Extended\a:\006a0:\006b0"
+      Marshal.send(@method, dump).should == obj
+
       obj.a = [:a, s]
       obj.b = [:Meths, s]
-
-      Marshal.send(@method,
-        "\004\be:\nMethsS:\021Struct::Ure2\a:\006a[\a;\a\"\ahi:\006b[\a;\000@\a"
-        ).should == obj
-      Struct.send(:remove_const, :Ure2)
+      dump = "\004\be:\nMethsS:\025Struct::Extended\a:\006a[\a;\a\"\ahi:\006b[\a;\000@\a"
+      Marshal.send(@method, dump).should == obj
+      Struct.send(:remove_const, :Extended)
     end
 
     it "loads a struct having ivar" do
       obj = Struct.new("Thick").new
       obj.instance_variable_set(:@foo, 5)
-      Marshal.send(@method, "\004\bIS:\022Struct::Thick\000\006:\t@fooi\n").should == obj
+      reloaded = Marshal.send(@method, "\004\bIS:\022Struct::Thick\000\006:\t@fooi\n")
+      reloaded.should == obj
+      reloaded.instance_variable_get(:@foo).should == 5
       Struct.send(:remove_const, :Thick)
     end
 
@@ -616,6 +732,18 @@ describe :marshal_load, shared: true do
       -> do
         Marshal.send(@method, "\x04\bo:\tFile\001\001:\001\005@path\"\x10/etc/passwd")
       end.should raise_error(ArgumentError)
+    end
+  end
+
+  describe "for an object responding to #marshal_dump and #marshal_load" do
+    it "loads a user-marshaled object" do
+      obj = UserMarshal.new
+      obj.data = :data
+      value = [obj, :data]
+      dump = Marshal.dump(value)
+      dump.should == "\x04\b[\aU:\x10UserMarshal:\tdata;\x06"
+      reloaded = Marshal.load(dump)
+      reloaded.should == value
     end
   end
 
@@ -771,16 +899,16 @@ describe :marshal_load, shared: true do
     end
   end
 
-  describe "for an Integer" do
+  describe "for a Bignum" do
     platform_is wordsize: 64 do
-      context "that is Integer on 32-bit platforms but Integer on 64-bit" do
-        it "dumps an Integer" do
+      context "that is Bignum on 32-bit platforms but Fixnum on 64-bit" do
+        it "dumps a Fixnum" do
           val = Marshal.send(@method, "\004\bl+\ab:wU")
           val.should == 1433877090
           val.class.should == Integer
         end
 
-        it "dumps an array containing multiple references to the Integer as an array of Integer" do
+        it "dumps an array containing multiple references to the Bignum as an array of Fixnum" do
           arr = Marshal.send(@method, "\004\b[\al+\a\223BwU@\006")
           arr.should == [1433879187, 1433879187]
           arr.each { |v| v.class.should == Integer }
