@@ -1,3 +1,20 @@
+ruby2.5 (2.5.5-3+deb10u4) buster-security; urgency=high
+
+  * Add patch to use File.open to fix the OS Command
+    Injection vulnerability. (Fixes: CVE-2021-31799)
+  * Add patch to fix StartTLS stripping vulnerability.
+    (Fixes: CVE-2021-32066)
+  * Add patch to ignore IP addresses in PASV responses
+    by default. (Fixes: CVE-2021-31810)
+  * Add length limit option for methods that parses
+    date strings. (Fixes: CVE-2021-41817)
+  * When parsing cookies, only decode the values.
+    (Fixes: CVE-2021-41819)
+  * Add patch to backport rexml upstream bug fixes.
+    (Fixes: CVE-2021-28965)
+
+ -- Utkarsh Gupta <utkarsh@debian.org>  Sun, 16 Jan 2022 19:56:28 +0530
+
 ruby2.5 (2.5.5-3+deb10u3) buster; urgency=high
 
   * Add patch to fix a potential HTTP request smuggling
