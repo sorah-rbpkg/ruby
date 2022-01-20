@@ -1,4 +1,4 @@
-ruby3.0 (3.0.2-6) UNRELEASED; urgency=medium
+ruby3.0 (3.0.2-6) unstable; urgency=medium
 
   [ Antonio Terceiro ]
   * debian/rules: normalize LC_ALL
