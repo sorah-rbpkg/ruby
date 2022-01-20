@@ -1,3 +1,19 @@
+ruby3.0 (3.0.2-6) UNRELEASED; urgency=medium
+
+  [ Antonio Terceiro ]
+  * debian/rules: normalize LC_ALL
+  * debian/salsa-ci.yml: don't skip tests on reprotest
+
+  [ Lucas Kanashiro ]
+  * Add patch to update ruby/openssl to version 3.0.0 (LP: #1946190)
+  * d/rules: disable LTO, it causes a segfault
+  * Add patch to update rubygems to version 3.3.3
+  * d/rules: create needed empty file to run openssl tests
+  * d/rules: build with -O1 on alpha (Closes: #999351)
+  * Skip tests failing on x32 architecture (Closes: #999350)
+
+ -- Lucas Kanashiro <kanashiro@debian.org>  Thu, 20 Jan 2022 17:35:26 -0300
+
 ruby3.0 (3.0.2-5) unstable; urgency=medium
 
   * Refresh patches with gbp pq
