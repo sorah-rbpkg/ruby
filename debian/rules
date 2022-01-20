@@ -64,6 +64,11 @@ configure_options += --with-compress-debug-sections=no
 export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow optimize=-lto
 configure_options += $(shell dpkg-buildflags --export=configure)
 
+# For more info see #999351
+ifneq (,$(filter $(DEB_HOST_ARCH),alpha))
+export DEB_CFLAGS_MAINT_APPEND += -O1
+endif
+
 # See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93808
 ifneq (,$(filter $(DEB_HOST_ARCH),sh3 sh4))
 export DEB_CFLAGS_MAINT_APPEND += -fno-crossjumping
