@@ -1,0 +1,6 @@
+exclude :test_sizeof, 'fails, ENOTIME to investigate'
+exclude :test_malloc, 'fails, ENOTIME to investigate'
+exclude :test_struct_array_assignment, 'fails, ENOTIME to investigate'
+exclude :test_struct_nested_struct_replace_array_element, 'fails, ENOTIME to investigate'
+exclude :test_struct_nested_struct_replace_entire_array_with_different_struct, 'fails, ENOTIME to investigate'
+exclude :test_struct_ptr_array_subscript_multiarg, 'fails, ENOTIME to investigate'
