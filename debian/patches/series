@@ -9,3 +9,8 @@
 0011-Dont-use-relative-path.patch
 0012-Fix-getcwd-ENOENT.patch
 0011-Revert-Make-host_-values-consistent-with-target_.patch
+CVE-2021-41819.patch
+CVE-2021-41816.patch
+CVE-2021-41817-1.patch
+CVE-2021-41817-2.patch
+CVE-2021-41817-3.patch
