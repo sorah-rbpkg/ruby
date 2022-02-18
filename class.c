@@ -913,6 +913,7 @@ rb_module_s_alloc(VALUE klass)
     VALUE mod = class_alloc(T_MODULE, klass);
     RCLASS_M_TBL_INIT(mod);
     FL_SET(mod, RMODULE_ALLOCATED_BUT_NOT_INITIALIZED);
+    RB_OBJ_WRITE(mod, &RCLASS(mod)->super, 0);
     return mod;
 }
 
@@ -1052,8 +1053,7 @@ rb_include_module(VALUE klass, VALUE module)
     if (RB_TYPE_P(klass, T_MODULE)) {
         rb_subclass_entry_t *iclass = RCLASS_SUBCLASSES(klass);
         // skip the placeholder subclass entry at the head of the list
-        if (iclass && iclass->next) {
-            RUBY_ASSERT(!iclass->klass);
+        if (iclass && !iclass->klass) {
             iclass = iclass->next;
         }
 
