@@ -1,5 +1,490 @@
 -*- coding: utf-8 -*-
 
+commit 53f5fc4236a754ddf94b20dbb70ab63bd5109b18
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-02-18 18:42:25 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-02-18 18:42:25 +0900
+
+    teenyup
+
+commit 7fe0ebc4e7abd78501094cbb2d47918c8ff29f60
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-02-17 12:19:17 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-02-17 12:19:17 +0900
+
+    merge revision(s) 496591de96b261b8789332c7f8b2bfbd17658955: [Backport #18578]
+
+            st.c: Do not clear entries_bound when calling Hash#shift for empty
+             hash
+
+            tab->entries_bound is used to check if the bins are full in
+            rebuild_table_if_necessary.
+
+            Hash#shift against an empty hash assigned 0 to tab->entries_bound, but
+            didn't clear the bins. Thus, the table is not rebuilt even when the bins
+            are full. Attempting to add a new element into full-bin hash gets stuck.
+
+            This change stops clearing tab->entries_bound in Hash#shift.
+            [Bug #18578]
+            ---
+             st.c                   |  1 -
+             test/ruby/test_hash.rb | 13 +++++++++++++
+             2 files changed, 13 insertions(+), 1 deletion(-)
+
+commit 8a0dfd4a4ddd63c130298e97a4e04284d0743ff9
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2022-02-14 13:57:02 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2022-02-14 13:57:02 +0900
+
+    * 2022-02-14 [ci skip]
+
+commit c8b5d7031ebd6bbc0f51582d51a4b47ccd9b0138
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2022-02-14 13:56:43 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2022-02-14 13:56:43 +0900
+
+    Merge RubyGems-3.3.7 and Bundler-2.3.7 (#5543)
+
+commit 36fa57fca0d5ecb317de8dba616a2225f3cac27a
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2022-02-08 15:53:29 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2022-02-08 15:53:29 +0900
+
+    Fixed path for ipaddr.rb (#5533)
+
+commit bb4d9f82499bf252345e47498d32a2b280342b9f
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2022-02-08 00:14:44 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2022-02-08 00:14:44 +0900
+
+    * 2022-02-08 [ci skip]
+
+commit 73159727ed88a8f739038984c847bb7313336450
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2022-02-08 00:14:27 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2022-02-08 00:14:27 +0900
+
+    Merge ipaddr-1.2.4 (#5526)
+
+    [Bug #18570]
+
+commit 807dd0479267a067e8208a2053b446fa13a2e66f
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-02-07 20:08:50 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-02-07 20:08:50 +0900
+
+    merge revision(s) c79d2e54748f52c5023b0a1ee441561df9826c17: [Backport #18562]
+
+            Fix TAG_THROW through require [Bug #18562]
+
+            Previously this was being incorrectly swapped with TAG_RAISE in the next
+            line. This would end up checking the T_IMEMO throw_data to the exception
+            handling (which calls Module#===). This happened to not break existing
+            tests because Module#=== returned false when klass is NULL.
+
+            This commit handles throw from require correctly by jumping to the tag
+            retaining the TAG_THROW state.
+            ---
+             load.c                      |  2 +-
+             test/ruby/test_exception.rb | 21 +++++++++++++++++++++
+             2 files changed, 22 insertions(+), 1 deletion(-)
+
+commit 86c8e15170484fe23b311e567717053f147ffd9c
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-02-07 19:58:46 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-02-07 19:58:46 +0900
+
+    merge revision(s) 2a76440fac62b: [Backport #18501]
+
+            [Bug #18501] Fire write barrier after hash has been written
+
+            Before this change the write barrier was executed before the key and
+            value were actually reachable via the Hash.  This could cause
+            inconsistencies in object coloration which would lead to accidental
+            collection of dup'd keys.
+
+            Example:
+
+            1. Object O is grey, Object P is white.
+            2. Write barrier fires O -> P
+            3. Write barrier does nothing
+            4. Malloc happens, which starts GC
+            5. GC colors O black
+            6. P is written in to O (now we have O -> P reference)
+            7. P is now accidentally treated as garbage
+            ---
+             hash.c | 20 +++++++++++++++-----
+             1 file changed, 15 insertions(+), 5 deletions(-)
+
+commit e54289bb632047b750f9c9371410d1adff2a740a
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-02-07 19:55:44 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-02-07 19:55:44 +0900
+
+    merge revision(s) 67f4729: [Backport #18556]
+
+            [Bug#18556] Fallback `MAP_ ANONYMOUS`
+
+            Define `MAP_ANONYMOUS` to `MAP_ANON` if undefined on old systems.
+            ---
+             gc.c | 4 ++++
+             1 file changed, 4 insertions(+)
+
+commit 6728f692e027ff8ffcfdfb144a54ebf59df8e05f
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2022-02-03 08:05:20 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2022-02-03 08:05:20 +0900
+
+    * 2022-02-03 [ci skip]
+
+commit 42c9ef769f210d88241a114395dd5ffc27b2fb87
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-02-03 08:04:57 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-02-03 08:04:57 +0900
+
+    merge revision(s) 7ff1bf317887c0d7b21e91ad548d07b9f05c540c,e89d80702bd98a8276243a7fcaa2a158b3bfb659: [Backport #18516]
+
+            An alias can suppress method redefinition warning
+
+            ---
+             test/ruby/test_alias.rb | 11 +++++++++++
+             1 file changed, 11 insertions(+)
+
+            Fix memory leak at the same named alias [Bug #18516]
+
+            When aliasing a method to the same name method, set a separate bit
+            flag on that method definition, instead of the reference count
+            increment.  Although this kind of alias has no actual effect at
+            runtime, is used as the hack to suppress the method re-definition
+            warning.
+            ---
+             method.h                |  1 +
+             test/ruby/test_alias.rb | 18 ++++++++++++++++++
+             vm_method.c             |  9 ++++++++-
+             3 files changed, 27 insertions(+), 1 deletion(-)
+
+commit 7bef8ed183a336b040f051d7c2133b93364920c6
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2022-02-02 17:53:26 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2022-02-02 17:53:26 +0900
+
+    Update bundled gems list at 2022-02-02
+
+commit 6794f8cf928ab8c009b301ec49a5a81e97e6eb2f
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2022-02-02 16:57:34 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2022-02-02 16:57:34 +0900
+
+    Merge pull request #5482 from hsbt/rubygems-3-3-bundler-2-3
+
+    Merge RubyGems 3.3.x and Bundler 2.3.x
+
+commit 69463805f0722d90a2049f43e852539b4532bf2e
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2022-02-02 13:30:02 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2022-02-02 13:30:02 +0900
+
+    * 2022-02-02 [ci skip]
+
+commit 270462103f7885e17d3c9d928d8fcabb4480bcbb
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-02-02 13:29:21 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-02-02 13:29:21 +0900
+
+    Remove "Miscellaneous checks" from CI
+
+    It is expected to use on master branch
+
+commit cd4aae430da8303dac9f1be2d1e1b7ce1bc8a458
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-02-01 21:56:08 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-02-01 21:56:08 +0900
+
+    merge revision(s) f27eb8148f5a72bbacfebfecc7de9305471bb5c9,d75f7078c831d45ab5ba2fae4fbb308d01a21e46,d5836db1b398a7936b0461b3011db66f6cc8c490: [Backport #18443]
+
+            Sync io-console gem.
+
+            ---
+             ext/io/console/console.c           | 8 ++++++--
+             test/io/console/test_io_console.rb | 8 ++++++++
+             2 files changed, 14 insertions(+), 2 deletions(-)
+
+            [ruby/io-console] bump up to 0.5.11
+
+            https://github.com/ruby/io-console/commit/ad3805200c
+            ---
+             ext/io/console/io-console.gemspec | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+            Fix `Leaked file descriptor: TestIO_Console#test_console_kw`
+
+            ```
+            Leaked file descriptor: TestIO_Console#test_console_kw: 10 : #<File:/dev/tty>
+            ```
+            ---
+             test/io/console/test_io_console.rb | 4 +++-
+             1 file changed, 3 insertions(+), 1 deletion(-)
+
+commit 8177e3b8d323c3e5d897a8c8239be5f1e9f8f11d
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-02-01 21:53:43 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-02-01 21:53:43 +0900
+
+    Revert "Fix console.c usage of `rb_io_wait`."
+
+    This reverts commit aa3b2c81c8de2e70bd100e92436f15c03523eaf7.
+
+commit 1f17463dec2ab1535096cb56005a840eae4fea5b
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-02-01 21:41:56 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-02-01 21:41:56 +0900
+
+    merge revision(s) 6a6227e0168b059c3ed34c9f0ace2e5dc2364221: [Backport #18517]
+
+            Shifting zero always results in zero [Bug #18517]
+
+            ---
+             numeric.c | 2 ++
+             1 file changed, 2 insertions(+)
+
+commit 1c426ddb25e2ccb169720e4f9894605596fe594d
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-01-31 19:22:28 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-01-31 19:22:28 +0900
+
+    merge revision(s) 5c7af72304d0ad33cd3f21b24a4bc44e8acd5b2c,d650b17686d49c2ce8e6a87039861154e93d4621: [Backport #18497]
+
+            Assuming EXIT_SUCCESS equals 0 is not portable
+
+            ---
+             test/ruby/test_fiber.rb | 6 +++---
+             1 file changed, 3 insertions(+), 3 deletions(-)
+
+            `rb_fiber_terminate` must not return [Bug #18497]
+
+            In a forked process from a fiber, the fiber becomes the only
+            fiber, `fiber_switch` does nothing as there is no other fibers,
+            `rb_fiber_terminate` does not terminate the fiber.  In that case,
+            reaches the end of `fiber_entry` finaly, which is declared as
+            "COROUTINE" and should never return.
+            ---
+             cont.c                     |  3 ++-
+             eval_intern.h              |  2 +-
+             test/fiber/test_process.rb | 15 +++++++++++++++
+             test/ruby/test_fiber.rb    |  5 +++++
+             4 files changed, 23 insertions(+), 2 deletions(-)
+
+commit 629b9da7dbdcaff04d6dde70f2431396f66e03e5
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-01-31 18:15:30 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-01-31 18:15:30 +0900
+
+    merge revision(s) f3c77bd480834f2835fe6fef5c0475336248dbde: [Backport #18489]
+
+            Fix the placeholder subclass entry skipping [Bug #18489]
+
+            ---
+             class.c                  | 3 +--
+             test/ruby/test_module.rb | 9 +++++++++
+             2 files changed, 10 insertions(+), 2 deletions(-)
+
+commit 5b0c7b4ad00cd2ada282ea1aa03f0c1a75b0df77
+  Author:     Samuel Williams <samuel.williams@oriontransfer.co.nz>
+  AuthorDate: 2021-12-27 13:08:35 +0900
+  Commit:     NARUSE, Yui <nurse@users.noreply.github.com>
+  CommitDate: 2022-01-31 15:35:55 +0900
+
+    Prefer `wait_readable` rather than `IO.select`.
+
+commit bdd3cf00370c0e56187f81159565f555c5eb9b6a
+  Author:     Samuel Williams <samuel.williams@oriontransfer.co.nz>
+  AuthorDate: 2021-12-27 13:06:00 +0900
+  Commit:     NARUSE, Yui <nurse@users.noreply.github.com>
+  CommitDate: 2022-01-31 15:35:55 +0900
+
+    Fix incorrect minimum read length.
+
+commit aa3b2c81c8de2e70bd100e92436f15c03523eaf7
+  Author:     Samuel Williams <samuel.williams@oriontransfer.co.nz>
+  AuthorDate: 2021-12-27 13:05:42 +0900
+  Commit:     NARUSE, Yui <nurse@users.noreply.github.com>
+  CommitDate: 2022-01-31 15:35:55 +0900
+
+    Fix console.c usage of `rb_io_wait`.
+
+commit 8e3bce0841497fc00ccdaf45f6583c25720a2d3f
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-01-31 11:16:52 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-01-31 11:16:52 +0900
+
+    merge revision(s) ae5458f228a5477383e9c00425d85d50a3867817: [Backport #18475]
+
+            thread.c: Convert TAG_BREAK to a normal exception at thread top-level
+
+            [Bug #18475]
+            ---
+             test/ruby/test_enum.rb | 11 +++++++++++
+             thread.c               |  3 +++
+             2 files changed, 14 insertions(+)
+
+commit abdd655afd6f3f36553e6bb0d6b3e3eac09ae977
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-01-31 11:15:50 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-01-31 11:15:50 +0900
+
+    merge revision(s) 92630e2346a221fdfeaa484632938a06765bc6e5: [Backport #18468]
+
+            [ruby/optparse] Fix links to the page directory files [Bug #18468]
+
+            https://github.com/ruby/optparse/commit/dab72c543d
+            ---
+             doc/optparse/creates_option.rdoc | 4 ++--
+             doc/optparse/option_params.rdoc  | 2 +-
+             doc/optparse/tutorial.rdoc       | 4 ++--
+             lib/optparse.rb                  | 4 ++--
+             4 files changed, 7 insertions(+), 7 deletions(-)
+
+commit 28ec24db4a8201fa624692cdc1cbef9b00489412
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-01-30 19:08:49 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-01-30 19:08:49 +0900
+
+    merge revision(s) a79c59472df38297c246b27713c277f2edaefa7a: [Backport #18292]
+
+            Allow include before calling Module#initialize
+
+            This is to allow Module subclasses that include modules before
+            calling super in the subclass's initialize.
+
+            Remove rb_module_check_initializable from Module#initialize.
+            Module#initialize only calls module_exec if a block is passed,
+            it doesn't have other issues that would cause problems if
+            called multiple times or with an already initialized module.
+
+            Move initialization of super to Module#allocate, though I'm not
+            sure it is required there.  However, it's needed to be removed
+            from Module#initialize for this to work.
+
+            Fixes [Bug #18292]
+            ---
+             class.c                  |  1 +
+             object.c                 |  1 -
+             test/ruby/test_module.rb | 10 ++++++++++
+             3 files changed, 11 insertions(+), 1 deletion(-)
+
+commit 1a1737530bff683041b8f45e7acac8c5c85c4163
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-01-30 19:07:47 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-01-30 19:07:47 +0900
+
+    merge revision(s) c764e368bd9c0487e6cc97f8a62e0e0e99a0d7c5: [Backport #18469]
+
+            Fix default --jit-max-cache in `ruby --help`
+
+            changed at 028f1887c2bfa50dcfc1b623470d6ab1b880fdde
+            ---
+             ruby.c | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit e75246c287436621658bc2b8a5f999d8991e7d1d
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-01-30 19:06:55 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-01-30 19:06:55 +0900
+
+    merge revision(s) 5917f49ad03cd3b2c13d3eea85c969a113b83bf8: [Backport #18436]
+
+            Fix documentation for Dir.glob
+
+            Dir.glob("*", File::FNM_DOTMATCH) no longer includes ".." in the
+            returned array as of Ruby 3.1.
+
+            Fixes [Bug #18436]
+            ---
+             dir.rb | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit d3a2a3c5420fecfee54cbf3fbdd9287bc6c58f03
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-01-30 19:02:23 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-01-30 19:02:23 +0900
+
+    merge revision(s) 9e0a91d0640600f2dfd7fc1d5fae6667019c9ca5: [Backport #18458]
+
+            Don't segfault if Warning.warn is undefined
+
+            Check that there is a method entry for the method before passing
+            it to rb_method_entry_arity.
+
+            Fixes [Bug #18458]
+            ---
+             error.c                     | 3 ++-
+             test/ruby/test_exception.rb | 8 ++++++++
+             2 files changed, 10 insertions(+), 1 deletion(-)
+
+commit 2640161df5cf18d08ec86a0c1b913d4ee99e102a
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-01-30 19:01:49 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-01-30 19:01:49 +0900
+
+    merge revision(s) 5414de4b6e4372af832e338f8eb7a9fe8de17c84: [Backport #18453]
+
+            YJIT: Fix SP index with optarg and unordered kwarg
+
+            Previously when we were calling a method with an optional argument and
+            multiple keywords arguments which weren't in the order the receiver
+            expected we would use the wrong SP index to rearrange them.
+
+            Fixes Bug #18453
+            ---
+             bootstraptest/test_yjit.rb | 16 ++++++++++++++++
+             yjit_codegen.c             |  7 +++++--
+             2 files changed, 21 insertions(+), 2 deletions(-)
+
+commit 20091ccad34904cb5ded13a8787f6662a8e2df68
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-01-30 18:57:52 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-01-30 19:01:11 +0900
+
+    merge revision(s) 0dc7816c4350683ccd020f5759eee4914de0085d: [Backport #18434]
+
+            Make RubyVM::AST.of work with code written in `-e` command-line
+             option
+
+            [Bug #18434]
+            ---
+             ast.c                 | 11 +++++++----
+             test/ruby/test_ast.rb |  5 +++++
+             2 files changed, 12 insertions(+), 4 deletions(-)
+
 commit fb4df44d1670e9d25aef6b235a7281199a177edb
   Author:     NARUSE, Yui <naruse@airemix.jp>
   AuthorDate: 2021-12-25 21:22:02 +0900
