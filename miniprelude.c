@@ -428,7 +428,7 @@ static const struct {
 "\n"/*    Dir.glob("*.[^r]*")                 #=> ["config.h"] */
 "\n"/*    Dir.glob("*.{rb,h}")                #=> ["main.rb", "config.h"] */
 "\n"/*    Dir.glob("*")                       #=> ["config.h", "main.rb"] */
-"\n"/*    Dir.glob("*", File::FNM_DOTMATCH)   #=> [".", "..", "config.h", "main.rb"] */
+"\n"/*    Dir.glob("*", File::FNM_DOTMATCH)   #=> [".", "config.h", "main.rb"] */
 "\n"/*    Dir.glob(["*.rb", "*.h"])           #=> ["main.rb", "config.h"] */
 "\n"/*  */
 "\n"/*    Dir.glob("**\/\*.rb")                 #=> ["main.rb", */
