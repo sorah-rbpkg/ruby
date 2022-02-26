@@ -118,6 +118,7 @@ override_dh_auto_clean:
 
 override_dh_auto_build-arch:
 	dh_auto_build -- main V=1
+	sed -i -e "s,$(CURDIR),BUILDDIR,g" ./rbconfig.rb
 
 # see full list in common.mk (search for /^check:/)
 TEST_TARGETS := test test-tool test-all # missing test-spec
