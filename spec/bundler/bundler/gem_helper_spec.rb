@@ -9,7 +9,7 @@ RSpec.describe Bundler::GemHelper do
   let(:app_gemspec_path) { app_path.join("#{app_name}.gemspec") }
 
   before(:each) do
-    global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false", "BUNDLE_GEM__RUBOCOP" => "false",
+    global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false", "BUNDLE_GEM__LINTER" => "false",
                   "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__CHANGELOG" => "false"
     bundle "gem #{app_name}"
     prepare_gemspec(app_gemspec_path)
@@ -219,7 +219,7 @@ RSpec.describe Bundler::GemHelper do
             FileUtils.touch app_gem_path
             app_gem_path
           end
-          expect { subject.install_gem }.to raise_error(/Couldn't install gem/)
+          expect { subject.install_gem }.to raise_error(/Running `#{gem_bin} install #{app_gem_path}` failed/)
         end
       end
     end

@@ -730,7 +730,7 @@ tp_memsize(const void *ptr)
 
 static const rb_data_type_t tp_data_type = {
     "tracepoint",
-    {tp_mark, RUBY_TYPED_NEVER_FREE, tp_memsize,},
+    {tp_mark, RUBY_TYPED_DEFAULT_FREE, tp_memsize,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
@@ -1592,6 +1592,14 @@ postponed_job_register(rb_execution_context_t *ec, rb_vm_t *vm,
     return PJRR_SUCCESS;
 }
 
+static rb_execution_context_t *
+get_valid_ec(rb_vm_t *vm)
+{
+    rb_execution_context_t *ec = rb_current_execution_context(false);
+    if (ec == NULL) ec = rb_vm_main_ractor_ec(vm);
+    return ec;
+}
+
 /*
  * return 0 if job buffer is full
  * Async-signal-safe
@@ -1599,8 +1607,8 @@ postponed_job_register(rb_execution_context_t *ec, rb_vm_t *vm,
 int
 rb_postponed_job_register(unsigned int flags, rb_postponed_job_func_t func, void *data)
 {
-    rb_execution_context_t *ec = GET_EC();
-    rb_vm_t *vm = rb_ec_vm_ptr(ec);
+    rb_vm_t *vm = GET_VM();
+    rb_execution_context_t *ec = get_valid_ec(vm);
 
   begin:
     switch (postponed_job_register(ec, vm, flags, func, data, MAX_POSTPONED_JOB, vm->postponed_job_index)) {
@@ -1618,8 +1626,8 @@ rb_postponed_job_register(unsigned int flags, rb_postponed_job_func_t func, void
 int
 rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, void *data)
 {
-    rb_execution_context_t *ec = GET_EC();
-    rb_vm_t *vm = rb_ec_vm_ptr(ec);
+    rb_vm_t *vm = GET_VM();
+    rb_execution_context_t *ec = get_valid_ec(vm);
     rb_postponed_job_t *pjob;
     rb_atomic_t i, index;
 
