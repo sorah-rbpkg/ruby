@@ -1,11 +1,11 @@
 From: Lucas Kanashiro <lucas.kanashiro@canonical.com>
-Date: Wed, 19 Jan 2022 15:42:58 -0300
+Date: Sun, 27 Feb 2022 20:22:52 -0300
 Subject: Update openssl to version 3.0.0
 
 Add support for OpenSSL 3
 ---
- ext/openssl/History.md                     |  155 ++++
- ext/openssl/extconf.rb                     |   81 +-
+ ext/openssl/History.md                     |  104 ++-
+ ext/openssl/extconf.rb                     |   50 +-
  ext/openssl/lib/openssl.rb                 |    1 -
  ext/openssl/lib/openssl/buffering.rb       |    9 +
  ext/openssl/lib/openssl/hmac.rb            |   65 ++
@@ -13,17 +13,17 @@ Add support for OpenSSL 3
  ext/openssl/lib/openssl/ssl.rb             |   14 +-
  ext/openssl/lib/openssl/version.rb         |    2 +-
  ext/openssl/lib/openssl/x509.rb            |   22 +
- ext/openssl/openssl.gemspec                |    9 +-
+ ext/openssl/openssl.gemspec                |   10 +-
  ext/openssl/openssl_missing.c              |   66 --
  ext/openssl/openssl_missing.h              |   71 +-
  ext/openssl/ossl.c                         |  105 ++-
  ext/openssl/ossl.h                         |   26 +-
  ext/openssl/ossl_asn1.c                    |   20 +-
- ext/openssl/ossl_bn.c                      |  344 +++++---
- ext/openssl/ossl_cipher.c                  |   48 +-
+ ext/openssl/ossl_bn.c                      |  314 ++++---
+ ext/openssl/ossl_cipher.c                  |   22 +-
  ext/openssl/ossl_config.c                  |  453 +++++++++-
  ext/openssl/ossl_config.h                  |   11 +-
- ext/openssl/ossl_digest.c                  |   26 +-
+ ext/openssl/ossl_digest.c                  |   18 +-
  ext/openssl/ossl_engine.c                  |   31 +-
  ext/openssl/ossl_hmac.c                    |  183 ++--
  ext/openssl/ossl_kdf.c                     |    8 +
@@ -36,16 +36,16 @@ Add support for OpenSSL 3
  ext/openssl/ossl_pkey_dsa.c                |  491 ++---------
  ext/openssl/ossl_pkey_ec.c                 |  444 +++-------
  ext/openssl/ossl_pkey_rsa.c                |  587 +++----------
- ext/openssl/ossl_ssl.c                     |  635 +++++++-------
+ ext/openssl/ossl_ssl.c                     |  611 ++++++-------
  ext/openssl/ossl_ssl_session.c             |   53 +-
- ext/openssl/ossl_ts.c                      |   71 +-
+ ext/openssl/ossl_ts.c                      |   55 +-
  ext/openssl/ossl_x509.c                    |    6 -
  ext/openssl/ossl_x509cert.c                |  172 +++-
  ext/openssl/ossl_x509crl.c                 |   17 +-
  ext/openssl/ossl_x509ext.c                 |    3 +-
  ext/openssl/ossl_x509name.c                |   11 +-
  ext/openssl/ossl_x509req.c                 |   17 +-
- ext/openssl/ossl_x509store.c               |  283 ++++--
+ ext/openssl/ossl_x509store.c               |  224 +++--
  test/openssl/fixtures/pkey/certificate.der |  Bin 0 -> 1325 bytes
  test/openssl/fixtures/pkey/empty.der       |    0
  test/openssl/fixtures/pkey/empty.pem       |    0
@@ -53,8 +53,8 @@ Add support for OpenSSL 3
  test/openssl/fixtures/pkey/garbage.txt     |    1 +
  test/openssl/test_asn1.rb                  |    9 +-
  test/openssl/test_bn.rb                    |  114 ++-
- test/openssl/test_cipher.rb                |   63 +-
- test/openssl/test_config.rb                |  166 +---
+ test/openssl/test_cipher.rb                |   23 +-
+ test/openssl/test_config.rb                |  150 +---
  test/openssl/test_digest.rb                |    2 +-
  test/openssl/test_hmac.rb                  |   14 +
  test/openssl/test_ocsp.rb                  |    9 +-
@@ -66,14 +66,13 @@ Add support for OpenSSL 3
  test/openssl/test_pkey_dsa.rb              |   71 +-
  test/openssl/test_pkey_ec.rb               |  165 ++--
  test/openssl/test_pkey_rsa.rb              |  299 ++++---
- test/openssl/test_ssl.rb                   |  535 ++++++------
- test/openssl/test_ssl_session.rb           |    9 +-
- test/openssl/test_ts.rb                    |   18 +
+ test/openssl/test_ssl.rb                   |  495 ++++++-----
+ test/openssl/test_ssl_session.rb           |    8 -
  test/openssl/test_x509cert.rb              |   44 +
  test/openssl/test_x509store.rb             |  412 ++++++---
  test/openssl/ut_eof.rb                     |    4 +
- test/openssl/utils.rb                      |   50 +-
- 69 files changed, 5619 insertions(+), 3978 deletions(-)
+ test/openssl/utils.rb                      |   52 +-
+ 68 files changed, 5304 insertions(+), 3936 deletions(-)
  create mode 100644 test/openssl/fixtures/pkey/certificate.der
  create mode 100644 test/openssl/fixtures/pkey/empty.der
  create mode 100644 test/openssl/fixtures/pkey/empty.pem
@@ -81,10 +80,10 @@ Add support for OpenSSL 3
  create mode 100644 test/openssl/fixtures/pkey/garbage.txt
 
 diff --git a/ext/openssl/History.md b/ext/openssl/History.md
-index a4a82a1..479ec3b 100644
+index 46435f9..479ec3b 100644
 --- a/ext/openssl/History.md
 +++ b/ext/openssl/History.md
-@@ -1,3 +1,122 @@
+@@ -1,3 +1,105 @@
 +Version 3.0.0
 +=============
 +
@@ -187,71 +186,20 @@ index a4a82a1..479ec3b 100644
 +    [[GitHub #342]](https://github.com/ruby/openssl/issues/342)
 +
 +
-+Version 2.2.1
-+=============
-+
-+Merged changes in 2.1.3. Additionally, the following issues are fixed by this
-+release.
-+
-+Bug fixes
-+---------
-+
-+* Fix crash in `OpenSSL::Timestamp::{Request,Response,TokenInfo}.new` when
-+  invalid arguments are given.
-+  [[GitHub #407]](https://github.com/ruby/openssl/pull/407)
-+* Fix `OpenSSL::Timestamp::Factory#create_timestamp` with LibreSSL on platforms
-+  where `time_t` has a different size from `long`.
-+  [[GitHub #454]](https://github.com/ruby/openssl/pull/454)
-+
-+
- Version 2.2.0
+ Version 2.2.1
  =============
  
-@@ -75,6 +194,42 @@ Notable changes
-   [[GitHub #297]](https://github.com/ruby/openssl/pull/297)
- 
- 
-+Version 2.1.3
-+=============
-+
-+Bug fixes
-+---------
-+
-+* Fix deprecation warnings on Ruby 3.0.
-+* Add ".include" directive support in `OpenSSL::Config`.
-+  [[GitHub #216]](https://github.com/ruby/openssl/pull/216)
-+* Fix handling of IPv6 address SANs.
-+  [[GitHub #185]](https://github.com/ruby/openssl/pull/185)
-+* Hostname verification failure with `OpenSSL::SSL::SSLContext#verify_hostname=`
-+  sets a proper error code.
-+  [[GitHub #350]](https://github.com/ruby/openssl/pull/350)
-+* Fix crash with `OpenSSL::BN.new(nil, 2)`.
-+  [[Bug #15760]](https://bugs.ruby-lang.org/issues/15760)
-+* `OpenSSL::SSL::SSLSocket#sys{read,write}` prevent internal string buffers from
-+  being modified by another thread.
-+  [[GitHub #453]](https://github.com/ruby/openssl/pull/453)
-+* Fix misuse of input record separator in `OpenSSL::Buffering` where it was
-+  for output.
+@@ -113,7 +215,7 @@ Bug fixes
+   [[GitHub #453]](https://github.com/ruby/openssl/pull/453)
+ * Fix misuse of input record separator in `OpenSSL::Buffering` where it was
+   for output.
+-* Fix wrong interger casting in `OpenSSL::PKey::EC#dsa_verify_asn1`.
 +* Fix wrong integer casting in `OpenSSL::PKey::EC#dsa_verify_asn1`.
-+  [[GitHub #460]](https://github.com/ruby/openssl/pull/460)
-+* `extconf.rb` explicitly checks that OpenSSL's version number is 1.0.1 or
-+  newer but also less than 3.0. Ruby/OpenSSL v2.1.x and v2.2.x will not support
-+  OpenSSL 3.0 API.
-+  [[GitHub #458]](https://github.com/ruby/openssl/pull/458)
-+* Activate `digest` gem correctly. `digest` library could go into an
-+  inconsistent state if there are multiple versions of `digest` is installed
-+  and `openssl` is `require`d before `digest`.
-+  [[GitHub #463]](https://github.com/ruby/openssl/pull/463)
-+* Fix GC.compact compatibility.
-+  [[GitHub #464]](https://github.com/ruby/openssl/issues/464)
-+  [[GitHub #465]](https://github.com/ruby/openssl/pull/465)
-+
-+
- Version 2.1.2
- =============
- 
+   [[GitHub #460]](https://github.com/ruby/openssl/pull/460)
+ * `extconf.rb` explicitly checks that OpenSSL's version number is 1.0.1 or
+   newer but also less than 3.0. Ruby/OpenSSL v2.1.x and v2.2.x will not support
 diff --git a/ext/openssl/extconf.rb b/ext/openssl/extconf.rb
-index 693e55c..fedcb93 100644
+index e13595c..fedcb93 100644
 --- a/ext/openssl/extconf.rb
 +++ b/ext/openssl/extconf.rb
 @@ -26,6 +26,8 @@ if with_config("debug") or enable_config("debug")
@@ -263,68 +211,31 @@ index 693e55c..fedcb93 100644
  Logging::message "=== Checking for system dependent stuff... ===\n"
  have_library("nsl", "t_open")
  have_library("socket", "socket")
-@@ -33,9 +35,6 @@ if $mswin || $mingw
-   have_library("ws2_32")
- end
+@@ -102,15 +104,14 @@ end
  
--Logging::message "=== Checking for required stuff... ===\n"
--result = pkg_config("openssl") && have_header("openssl/ssl.h")
--
- if $mingw
-   append_cflags '-D_FORTIFY_SOURCE=2'
-   append_ldflags '-fstack-protector'
-@@ -92,19 +91,32 @@ def find_openssl_library
-   return false
- end
- 
--unless result
--  unless find_openssl_library
--    Logging::message "=== Checking for required stuff failed. ===\n"
--    Logging::message "Makefile wasn't created. Fix the errors above.\n"
--    raise "OpenSSL library could not be found. You might want to use " \
--      "--with-openssl-dir=<dir> option to specify the prefix where OpenSSL " \
--      "is installed."
--  end
-+Logging::message "=== Checking for required stuff... ===\n"
-+pkg_config_found = pkg_config("openssl") && have_header("openssl/ssl.h")
-+
-+if !pkg_config_found && !find_openssl_library
-+  Logging::message "=== Checking for required stuff failed. ===\n"
-+  Logging::message "Makefile wasn't created. Fix the errors above.\n"
-+  raise "OpenSSL library could not be found. You might want to use " \
-+    "--with-openssl-dir=<dir> option to specify the prefix where OpenSSL " \
-+    "is installed."
-+end
-+
-+version_ok = if have_macro("LIBRESSL_VERSION_NUMBER", "openssl/opensslv.h")
-+  is_libressl = true
+ version_ok = if have_macro("LIBRESSL_VERSION_NUMBER", "openssl/opensslv.h")
+   is_libressl = true
+-  checking_for("LibreSSL version >= 2.5.0") {
+-    try_static_assert("LIBRESSL_VERSION_NUMBER >= 0x20500000L", "openssl/opensslv.h") }
 +  checking_for("LibreSSL version >= 3.1.0") {
 +    try_static_assert("LIBRESSL_VERSION_NUMBER >= 0x30100000L", "openssl/opensslv.h") }
-+else
+ else
+-  checking_for("OpenSSL version >= 1.0.1 and < 3.0.0") {
+-    try_static_assert("OPENSSL_VERSION_NUMBER >= 0x10001000L", "openssl/opensslv.h") &&
+-    !try_static_assert("OPENSSL_VERSION_MAJOR >= 3", "openssl/opensslv.h") }
 +  checking_for("OpenSSL version >= 1.0.2") {
 +    try_static_assert("OPENSSL_VERSION_NUMBER >= 0x10002000L", "openssl/opensslv.h") }
-+end
-+unless version_ok
+ end
+ unless version_ok
+-  raise "OpenSSL >= 1.0.1, < 3.0.0 or LibreSSL >= 2.5.0 is required"
 +  raise "OpenSSL >= 1.0.2 or LibreSSL >= 3.1.0 is required"
  end
  
--unless checking_for("OpenSSL version is 1.0.1 or later") {
--    try_static_assert("OPENSSL_VERSION_NUMBER >= 0x10001000L", "openssl/opensslv.h") }
--  raise "OpenSSL >= 1.0.1 or LibreSSL is required"
-+# Prevent wincrypt.h from being included, which defines conflicting macro with openssl/x509.h
-+if is_libressl && ($mswin || $mingw)
-+  $defs.push("-DNOCRYPT")
- end
- 
- Logging::message "=== Checking for OpenSSL features... ===\n"
-@@ -116,33 +128,13 @@ engines.each { |name|
+ # Prevent wincrypt.h from being included, which defines conflicting macro with openssl/x509.h
+@@ -127,29 +128,13 @@ engines.each { |name|
    have_func("ENGINE_load_#{name}()", "openssl/engine.h")
  }
  
--if ($mswin || $mingw) && have_macro("LIBRESSL_VERSION_NUMBER", "openssl/opensslv.h")
--  $defs.push("-DNOCRYPT")
--end
--
 -# added in 1.0.2
 -have_func("EC_curve_nist2nid")
 -have_func("X509_REVOKED_dup")
@@ -353,7 +264,7 @@ index 693e55c..fedcb93 100644
  have_func("X509_STORE_get_ex_data")
  have_func("X509_STORE_set_ex_data")
  have_func("X509_STORE_get_ex_new_index")
-@@ -161,7 +153,6 @@ have_func("X509_CRL_up_ref")
+@@ -168,7 +153,6 @@ have_func("X509_CRL_up_ref")
  have_func("X509_STORE_up_ref")
  have_func("SSL_SESSION_up_ref")
  have_func("EVP_PKEY_up_ref")
@@ -361,7 +272,7 @@ index 693e55c..fedcb93 100644
  have_func("SSL_CTX_set_min_proto_version(NULL, 0)", "openssl/ssl.h")
  have_func("SSL_CTX_get_security_level")
  have_func("X509_get0_notBefore")
-@@ -169,13 +160,27 @@ have_func("SSL_SESSION_get_protocol_version")
+@@ -176,13 +160,27 @@ have_func("SSL_SESSION_get_protocol_version")
  have_func("TS_STATUS_INFO_get0_status")
  have_func("TS_STATUS_INFO_get0_text")
  have_func("TS_STATUS_INFO_get0_failure_info")
@@ -987,14 +898,14 @@ index 8e12007..a9103ec 100644
          @context.session_new_cb
        end
 diff --git a/ext/openssl/lib/openssl/version.rb b/ext/openssl/lib/openssl/version.rb
-index 9c7515b..5e60604 100644
+index d541cbf..5e60604 100644
 --- a/ext/openssl/lib/openssl/version.rb
 +++ b/ext/openssl/lib/openssl/version.rb
 @@ -1,5 +1,5 @@
  # frozen_string_literal: true
  
  module OpenSSL
--  VERSION = "2.2.0"
+-  VERSION = "2.2.1"
 +  VERSION = "3.0.0"
  end
 diff --git a/ext/openssl/lib/openssl/x509.rb b/ext/openssl/lib/openssl/x509.rb
@@ -1043,23 +954,24 @@ index 6771b90..f973f4f 100644
  
      class CRL
 diff --git a/ext/openssl/openssl.gemspec b/ext/openssl/openssl.gemspec
-index 471a3c4..c6cd818 100644
+index ebbd092..c6cd818 100644
 --- a/ext/openssl/openssl.gemspec
 +++ b/ext/openssl/openssl.gemspec
 @@ -1,6 +1,6 @@
  Gem::Specification.new do |spec|
    spec.name          = "openssl"
--  spec.version       = "2.2.0"
+-  spec.version       = "2.2.1"
 +  spec.version       = "3.0.0"
    spec.authors       = ["Martin Bosslet", "SHIBATA Hiroshi", "Zachary Scott", "Kazuki Yamaguchi"]
    spec.email         = ["ruby-core@ruby-lang.org"]
    spec.summary       = %q{OpenSSL provides SSL, TLS and general purpose cryptography.}
-@@ -15,12 +15,7 @@ Gem::Specification.new do |spec|
+@@ -15,13 +15,7 @@ Gem::Specification.new do |spec|
    spec.extra_rdoc_files = Dir["*.md"]
    spec.rdoc_options = ["--main", "README.md"]
  
 -  spec.required_ruby_version = ">= 2.3.0"
 -
+-  spec.add_runtime_dependency "ipaddr"
 -  spec.add_development_dependency "rake"
 -  spec.add_development_dependency "rake-compiler"
 -  spec.add_development_dependency "test-unit", "~> 3.0"
@@ -1628,7 +1540,7 @@ index 9eb1826..a61d3ee 100644
       * == Example usage
       *
 diff --git a/ext/openssl/ossl_bn.c b/ext/openssl/ossl_bn.c
-index d94b8e3..56fa0ec 100644
+index bec3729..56fa0ec 100644
 --- a/ext/openssl/ossl_bn.c
 +++ b/ext/openssl/ossl_bn.c
 @@ -10,7 +10,7 @@
@@ -1666,10 +1578,10 @@ index d94b8e3..56fa0ec 100644
 + * If +bn+ is an Integer or OpenSSL::BN, a new instance of OpenSSL::BN
 + * representing the same value is returned. See also Integer#to_bn for the
 + * short-hand.
-+ *
-+ * If a String is given, the content will be parsed according to +base+.
   *
 - * Construct a new OpenSSL BIGNUM object.
++ * If a String is given, the content will be parsed according to +base+.
++ *
 + * +string+::
 + *   The string to be parsed.
 + * +base+::
@@ -1715,95 +1627,7 @@ index d94b8e3..56fa0ec 100644
   */
  static VALUE
  ossl_bn_to_s(int argc, VALUE *argv, VALUE self)
-@@ -453,7 +475,7 @@ ossl_bn_is_negative(VALUE self)
- 	if (!(result = BN_new())) {			\
- 	    ossl_raise(eBNError, NULL);			\
- 	}						\
--	if (!BN_##func(result, bn, ossl_bn_ctx)) {	\
-+	if (BN_##func(result, bn, ossl_bn_ctx) <= 0) {	\
- 	    BN_free(result);				\
- 	    ossl_raise(eBNError, NULL);			\
- 	}						\
-@@ -479,7 +501,7 @@ BIGNUM_1c(sqr)
- 	if (!(result = BN_new())) {			\
- 	    ossl_raise(eBNError, NULL);			\
- 	}						\
--	if (!BN_##func(result, bn1, bn2)) {		\
-+	if (BN_##func(result, bn1, bn2) <= 0) {		\
- 	    BN_free(result);				\
- 	    ossl_raise(eBNError, NULL);			\
- 	}						\
-@@ -512,7 +534,7 @@ BIGNUM_2(sub)
- 	if (!(result = BN_new())) {				\
- 	    ossl_raise(eBNError, NULL);				\
- 	}							\
--	if (!BN_##func(result, bn1, bn2, ossl_bn_ctx)) {	\
-+	if (BN_##func(result, bn1, bn2, ossl_bn_ctx) <= 0) {	\
- 	    BN_free(result);					\
- 	    ossl_raise(eBNError, NULL);				\
- 	}							\
-@@ -556,11 +578,21 @@ BIGNUM_2c(gcd)
- BIGNUM_2c(mod_sqr)
- 
- /*
-- * Document-method: OpenSSL::BN#mod_inverse
-  * call-seq:
-- *   bn.mod_inverse(bn2) => aBN
-+ *    bn.mod_inverse(bn2) => aBN
-  */
--BIGNUM_2c(mod_inverse)
-+static VALUE
-+ossl_bn_mod_inverse(VALUE self, VALUE other)
-+{
-+    BIGNUM *bn1, *bn2 = GetBNPtr(other), *result;
-+    VALUE obj;
-+    GetBN(self, bn1);
-+    obj = NewBN(rb_obj_class(self));
-+    if (!(result = BN_mod_inverse(NULL, bn1, bn2, ossl_bn_ctx)))
-+        ossl_raise(eBNError, "BN_mod_inverse");
-+    SetBN(obj, result);
-+    return obj;
-+}
- 
- /*
-  * call-seq:
-@@ -609,7 +641,7 @@ ossl_bn_div(VALUE self, VALUE other)
- 	if (!(result = BN_new())) {				\
- 	    ossl_raise(eBNError, NULL);				\
- 	}							\
--	if (!BN_##func(result, bn1, bn2, bn3, ossl_bn_ctx)) {	\
-+	if (BN_##func(result, bn1, bn2, bn3, ossl_bn_ctx) <= 0) { \
- 	    BN_free(result);					\
- 	    ossl_raise(eBNError, NULL);				\
- 	}							\
-@@ -651,7 +683,7 @@ BIGNUM_3c(mod_exp)
-     {							\
- 	BIGNUM *bn;					\
- 	GetBN(self, bn);				\
--	if (!BN_##func(bn, NUM2INT(bit))) {		\
-+	if (BN_##func(bn, NUM2INT(bit)) <= 0) {		\
- 	    ossl_raise(eBNError, NULL);			\
- 	}						\
- 	return self;					\
-@@ -711,7 +743,7 @@ ossl_bn_is_bit_set(VALUE self, VALUE bit)
- 	if (!(result = BN_new())) {			\
- 		ossl_raise(eBNError, NULL);		\
- 	}						\
--	if (!BN_##func(result, bn, b)) {		\
-+	if (BN_##func(result, bn, b) <= 0) {		\
- 		BN_free(result);			\
- 		ossl_raise(eBNError, NULL);		\
- 	}						\
-@@ -741,7 +773,7 @@ BIGNUM_SHIFT(rshift)
- 	int b;						\
- 	b = NUM2INT(bits);				\
- 	GetBN(self, bn);				\
--	if (!BN_##func(bn, bn, b))			\
-+	if (BN_##func(bn, bn, b) <= 0)			\
- 		ossl_raise(eBNError, NULL);		\
- 	return self;					\
-     }
-@@ -760,78 +792,64 @@ BIGNUM_SELF_SHIFT(lshift)
+@@ -770,78 +792,64 @@ BIGNUM_SELF_SHIFT(lshift)
   */
  BIGNUM_SELF_SHIFT(rshift)
  
@@ -1827,7 +1651,7 @@ index d94b8e3..56fa0ec 100644
 -	if (!(result = BN_new())) {				\
 -	    ossl_raise(eBNError, NULL);				\
 -	}							\
--	if (!BN_##func(result, b, top, bottom)) {		\
+-	if (BN_##func(result, b, top, bottom) <= 0) {		\
 -	    BN_free(result);					\
 -	    ossl_raise(eBNError, NULL);				\
 -	}							\
@@ -1856,7 +1680,7 @@ index d94b8e3..56fa0ec 100644
 -	if (!(result = BN_new())) {				\
 -	    ossl_raise(eBNError, NULL);				\
 -	}							\
--	if (!BN_##func##_range(result, bn)) {			\
+-	if (BN_##func##_range(result, bn) <= 0) {		\
 -	    BN_free(result);					\
 -	    ossl_raise(eBNError, NULL);				\
 -	}							\
@@ -1907,10 +1731,10 @@ index d94b8e3..56fa0ec 100644
   * call-seq:
 - *   BN.pseudo_rand_range(range) -> aBN
 + *    BN.rand_range(range) -> aBN
-+ *
+  *
 + * Generates a cryptographically strong pseudo-random number in the range
 + * 0...+range+.
-  *
++ *
 + * See also the man page BN_rand_range(3).
   */
 -BIGNUM_RAND_RANGE(pseudo_rand)
@@ -1931,7 +1755,7 @@ index d94b8e3..56fa0ec 100644
  
  /*
   * call-seq:
-@@ -926,7 +944,17 @@ ossl_bn_copy(VALUE self, VALUE other)
+@@ -936,7 +944,17 @@ ossl_bn_copy(VALUE self, VALUE other)
  static VALUE
  ossl_bn_uplus(VALUE self)
  {
@@ -1950,7 +1774,7 @@ index d94b8e3..56fa0ec 100644
  }
  
  /*
-@@ -950,6 +978,24 @@ ossl_bn_uminus(VALUE self)
+@@ -960,6 +978,24 @@ ossl_bn_uminus(VALUE self)
      return obj;
  }
  
@@ -1975,7 +1799,7 @@ index d94b8e3..56fa0ec 100644
  #define BIGNUM_CMP(func)				\
      static VALUE					\
      ossl_bn_##func(VALUE self, VALUE other)		\
-@@ -1058,34 +1104,29 @@ ossl_bn_hash(VALUE self)
+@@ -1068,34 +1104,29 @@ ossl_bn_hash(VALUE self)
   *    bn.prime? => true | false
   *    bn.prime?(checks) => true | false
   *
@@ -2025,7 +1849,7 @@ index d94b8e3..56fa0ec 100644
  }
  
  /*
-@@ -1094,39 +1135,52 @@ ossl_bn_is_prime(int argc, VALUE *argv, VALUE self)
+@@ -1104,39 +1135,52 @@ ossl_bn_is_prime(int argc, VALUE *argv, VALUE self)
   *    bn.prime_fasttest?(checks) => true | false
   *    bn.prime_fasttest?(checks, trial_div) => true | false
   *
@@ -2102,7 +1926,7 @@ index d94b8e3..56fa0ec 100644
      return Qnil;
  }
  
-@@ -1166,6 +1220,7 @@ Init_ossl_bn(void)
+@@ -1176,6 +1220,7 @@ Init_ossl_bn(void)
  
      rb_define_method(cBN, "+@", ossl_bn_uplus, 0);
      rb_define_method(cBN, "-@", ossl_bn_uminus, 0);
@@ -2110,7 +1934,7 @@ index d94b8e3..56fa0ec 100644
  
      rb_define_method(cBN, "+", ossl_bn_add, 1);
      rb_define_method(cBN, "-", ossl_bn_sub, 1);
-@@ -1209,9 +1264,9 @@ Init_ossl_bn(void)
+@@ -1219,9 +1264,9 @@ Init_ossl_bn(void)
       * get_word */
  
      rb_define_singleton_method(cBN, "rand", ossl_bn_s_rand, -1);
@@ -2122,7 +1946,7 @@ index d94b8e3..56fa0ec 100644
  
      rb_define_singleton_method(cBN, "generate_prime", ossl_bn_s_generate_prime, -1);
      rb_define_method(cBN, "prime?", ossl_bn_is_prime, -1);
-@@ -1228,6 +1283,23 @@ Init_ossl_bn(void)
+@@ -1238,6 +1283,23 @@ Init_ossl_bn(void)
      /* lshift1 - DON'T IMPL. */
      /* rshift1 - DON'T IMPL. */
  
@@ -2147,7 +1971,7 @@ index d94b8e3..56fa0ec 100644
       * bn2bin
       * bin2bn
 diff --git a/ext/openssl/ossl_cipher.c b/ext/openssl/ossl_cipher.c
-index 0b78f40..d9c7891 100644
+index 5b92fc3..d9c7891 100644
 --- a/ext/openssl/ossl_cipher.c
 +++ b/ext/openssl/ossl_cipher.c
 @@ -104,7 +104,7 @@ ossl_cipher_alloc(VALUE klass)
@@ -2183,39 +2007,7 @@ index 0b78f40..d9c7891 100644
                      (void*)ary);
  
      return ary;
-@@ -813,6 +813,31 @@ ossl_cipher_block_size(VALUE self)
-     return INT2NUM(EVP_CIPHER_CTX_block_size(ctx));
- }
- 
-+/*
-+ *  call-seq:
-+ *     cipher.ccm_data_len = integer -> integer
-+ *
-+ *  Sets the length of the plaintext / ciphertext message that will be
-+ *  processed in CCM mode. Make sure to call this method after #key= and
-+ *  #iv= have been set, and before #auth_data=.
-+ *
-+ *  Only call this method after calling Cipher#encrypt or Cipher#decrypt.
-+ */
-+static VALUE
-+ossl_cipher_set_ccm_data_len(VALUE self, VALUE data_len)
-+{
-+    int in_len, out_len;
-+    EVP_CIPHER_CTX *ctx;
-+
-+    in_len = NUM2INT(data_len);
-+
-+    GetCipher(self, ctx);
-+    if (EVP_CipherUpdate(ctx, NULL, &out_len, NULL, in_len) != 1)
-+        ossl_raise(eCipherError, NULL);
-+
-+    return data_len;
-+}
-+
- /*
-  * INIT
-  */
-@@ -849,7 +874,7 @@ Init_ossl_cipher(void)
+@@ -874,7 +874,7 @@ Init_ossl_cipher(void)
       * individual components name, key length and mode. Either all uppercase
       * or all lowercase strings may be used, for example:
       *
@@ -2224,7 +2016,7 @@ index 0b78f40..d9c7891 100644
       *
       * === Choosing either encryption or decryption mode
       *
-@@ -879,7 +904,7 @@ Init_ossl_cipher(void)
+@@ -904,7 +904,7 @@ Init_ossl_cipher(void)
       * without processing the password further. A simple and secure way to
       * create a key for a particular Cipher is
       *
@@ -2233,7 +2025,7 @@ index 0b78f40..d9c7891 100644
       *  cipher.encrypt
       *  key = cipher.random_key # also sets the generated key on the Cipher
       *
-@@ -947,14 +972,14 @@ Init_ossl_cipher(void)
+@@ -972,14 +972,14 @@ Init_ossl_cipher(void)
       *
       *   data = "Very, very confidential data"
       *
@@ -2250,7 +2042,7 @@ index 0b78f40..d9c7891 100644
       *   decipher.decrypt
       *   decipher.key = key
       *   decipher.iv = iv
-@@ -990,7 +1015,7 @@ Init_ossl_cipher(void)
+@@ -1015,7 +1015,7 @@ Init_ossl_cipher(void)
       * not to reuse the _key_ and _nonce_ pair. Reusing an nonce ruins the
       * security guarantees of GCM mode.
       *
@@ -2259,7 +2051,7 @@ index 0b78f40..d9c7891 100644
       *   cipher.key = key
       *   cipher.iv = nonce
       *   cipher.auth_data = auth_data
-@@ -1006,7 +1031,7 @@ Init_ossl_cipher(void)
+@@ -1031,7 +1031,7 @@ Init_ossl_cipher(void)
       * ciphertext with a probability of 1/256.
       *
       *   raise "tag is truncated!" unless tag.bytesize == 16
@@ -2268,14 +2060,6 @@ index 0b78f40..d9c7891 100644
       *   decipher.key = key
       *   decipher.iv = nonce
       *   decipher.auth_tag = tag
-@@ -1043,6 +1068,7 @@ Init_ossl_cipher(void)
-     rb_define_method(cCipher, "iv_len", ossl_cipher_iv_length, 0);
-     rb_define_method(cCipher, "block_size", ossl_cipher_block_size, 0);
-     rb_define_method(cCipher, "padding=", ossl_cipher_set_padding, 1);
-+    rb_define_method(cCipher, "ccm_data_len=", ossl_cipher_set_ccm_data_len, 1);
- 
-     id_auth_tag_len = rb_intern_const("auth_tag_len");
-     id_key_set = rb_intern_const("key_set");
 diff --git a/ext/openssl/ossl_config.c b/ext/openssl/ossl_config.c
 index 28392e2..0bac027 100644
 --- a/ext/openssl/ossl_config.c
@@ -2797,7 +2581,7 @@ index 627d297..4e604f1 100644
 -#endif /* _OSSL_CONFIG_H_ */
 +#endif /* OSSL_CONFIG_H */
 diff --git a/ext/openssl/ossl_digest.c b/ext/openssl/ossl_digest.c
-index e2157cb..fc326ec 100644
+index 6294fa2..fc326ec 100644
 --- a/ext/openssl/ossl_digest.c
 +++ b/ext/openssl/ossl_digest.c
 @@ -63,7 +63,7 @@ ossl_evp_get_digestbyname(VALUE obj)
@@ -2827,16 +2611,7 @@ index e2157cb..fc326ec 100644
  }
  
  /*
-@@ -313,8 +313,6 @@ ossl_digest_block_length(VALUE self)
- void
- Init_ossl_digest(void)
- {
--    rb_require("digest");
--
- #if 0
-     mOSSL = rb_define_module("OpenSSL");
-     eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
-@@ -372,15 +370,15 @@ Init_ossl_digest(void)
+@@ -370,15 +370,15 @@ Init_ossl_digest(void)
       *
       * === Hashing a file
       *
@@ -2856,7 +2631,7 @@ index e2157cb..fc326ec 100644
       *   sha256 = OpenSSL::Digest.new('SHA256')
       *   sha256 << data1
       *   sha256 << data2
-@@ -389,15 +387,21 @@ Init_ossl_digest(void)
+@@ -387,11 +387,11 @@ Init_ossl_digest(void)
       *
       * === Reuse a Digest instance
       *
@@ -2869,16 +2644,6 @@ index e2157cb..fc326ec 100644
 +     *   data2 = File.binread('file2')
       *   sha256.reset
       *   digest2 = sha256.digest(data2)
-      *
-      */
-+
-+    /*
-+     * Digest::Class is defined by the digest library. rb_require() cannot be
-+     * used here because it bypasses RubyGems.
-+     */
-+    rb_funcall(Qnil, rb_intern_const("require"), 1, rb_str_new_cstr("digest"));
-     cDigest = rb_define_class_under(mOSSL, "Digest", rb_path2class("Digest::Class"));
-     /* Document-class: OpenSSL::Digest::DigestError
       *
 diff --git a/ext/openssl/ossl_engine.c b/ext/openssl/ossl_engine.c
 index 9054693..1abde7f 100644
@@ -6417,7 +6182,7 @@ index 431c20e..25404aa 100644
      DEF_OSSL_PKEY_BN(cDSA, dsa, p);
      DEF_OSSL_PKEY_BN(cDSA, dsa, q);
 diff --git a/ext/openssl/ossl_pkey_ec.c b/ext/openssl/ossl_pkey_ec.c
-index fc2bc6c..dee2154 100644
+index 1d105ab..dee2154 100644
 --- a/ext/openssl/ossl_pkey_ec.c
 +++ b/ext/openssl/ossl_pkey_ec.c
 @@ -47,12 +47,7 @@ VALUE eEC_GROUP;
@@ -6959,15 +6724,15 @@ index fc2bc6c..dee2154 100644
 -    StringValue(data);
 -    StringValue(sig);
 -
--    switch (ECDSA_verify(0, (unsigned char *) RSTRING_PTR(data), RSTRING_LENINT(data), (unsigned char *) RSTRING_PTR(sig), (int)RSTRING_LEN(sig), ec)) {
--    case 1:	return Qtrue;
--    case 0:	return Qfalse;
--    default:	break;
+-    switch (ECDSA_verify(0, (unsigned char *)RSTRING_PTR(data), RSTRING_LENINT(data),
+-                         (unsigned char *)RSTRING_PTR(sig), RSTRING_LENINT(sig), ec)) {
+-      case 1:
+-        return Qtrue;
+-      case 0:
+-        return Qfalse;
+-      default:
+-        ossl_raise(eECError, "ECDSA_verify");
 -    }
--
--    ossl_raise(eECError, "ECDSA_verify");
--
--    UNREACHABLE;
 -}
 -
  /*
@@ -7841,30 +7606,16 @@ index 761866c..4d66010 100644
   * TODO: Test it
      rb_define_method(cRSA, "blinding_on!", ossl_rsa_blinding_on, 0);
 diff --git a/ext/openssl/ossl_ssl.c b/ext/openssl/ossl_ssl.c
-index 4b7efa3..9a0682a 100644
+index 7654be1..9a0682a 100644
 --- a/ext/openssl/ossl_ssl.c
 +++ b/ext/openssl/ossl_ssl.c
-@@ -13,6 +13,12 @@
- 
- #define numberof(ary) (int)(sizeof(ary)/sizeof((ary)[0]))
- 
-+#if !defined(TLS1_3_VERSION) && \
-+    defined(LIBRESSL_VERSION_NUMBER) && \
-+    LIBRESSL_VERSION_NUMBER >= 0x3020000fL
-+#  define TLS1_3_VERSION 0x0304
-+#endif
-+
- #ifdef _WIN32
- #  define TO_SOCKET(s) _get_osfhandle(s)
- #else
-@@ -32,14 +38,14 @@ VALUE cSSLSocket;
+@@ -38,14 +38,14 @@ VALUE cSSLSocket;
  static VALUE eSSLErrorWaitReadable;
  static VALUE eSSLErrorWaitWritable;
  
 -static ID id_call, ID_callback_state, id_tmp_dh_callback, id_tmp_ecdh_callback,
--	  id_npn_protocols_encoded;
 +static ID id_call, ID_callback_state, id_tmp_dh_callback,
-+	  id_npn_protocols_encoded, id_each;
+ 	  id_npn_protocols_encoded, id_each;
  static VALUE sym_exception, sym_wait_readable, sym_wait_writable;
  
  static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
@@ -7875,7 +7626,7 @@ index 4b7efa3..9a0682a 100644
  	  id_i_session_id_context, id_i_session_get_cb, id_i_session_new_cb,
  	  id_i_session_remove_cb, id_i_npn_select_cb, id_i_npn_protocols,
  	  id_i_alpn_select_cb, id_i_alpn_protocols, id_i_servername_cb,
-@@ -49,25 +55,24 @@ static ID id_i_io, id_i_context, id_i_hostname;
+@@ -55,9 +55,6 @@ static ID id_i_io, id_i_context, id_i_hostname;
  static int ossl_ssl_ex_vcb_idx;
  static int ossl_ssl_ex_ptr_idx;
  static int ossl_sslctx_ex_ptr_idx;
@@ -7884,33 +7635,22 @@ index 4b7efa3..9a0682a 100644
 -#endif
  
  static void
--ossl_sslctx_free(void *ptr)
-+ossl_sslctx_mark(void *ptr)
+ ossl_sslctx_mark(void *ptr)
+@@ -69,12 +66,7 @@ ossl_sslctx_mark(void *ptr)
+ static void
+ ossl_sslctx_free(void *ptr)
  {
-     SSL_CTX *ctx = ptr;
+-    SSL_CTX *ctx = ptr;
 -#if !defined(HAVE_X509_STORE_UP_REF)
 -    if (ctx && SSL_CTX_get_ex_data(ctx, ossl_sslctx_ex_store_p))
 -	ctx->cert_store = NULL;
 -#endif
 -    SSL_CTX_free(ctx);
-+    rb_gc_mark((VALUE)SSL_CTX_get_ex_data(ctx, ossl_sslctx_ex_ptr_idx));
-+}
-+
-+static void
-+ossl_sslctx_free(void *ptr)
-+{
 +    SSL_CTX_free(ptr);
  }
  
  static const rb_data_type_t ossl_sslctx_type = {
-     "OpenSSL/SSL/CTX",
-     {
--	0, ossl_sslctx_free,
-+        ossl_sslctx_mark, ossl_sslctx_free,
-     },
-     0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
- };
-@@ -83,7 +88,7 @@ ossl_sslctx_s_alloc(VALUE klass)
+@@ -96,7 +88,7 @@ ossl_sslctx_s_alloc(VALUE klass)
      VALUE obj;
  
      obj = TypedData_Wrap_Struct(klass, &ossl_sslctx_type, 0);
@@ -7919,7 +7659,7 @@ index 4b7efa3..9a0682a 100644
      ctx = SSL_CTX_new(TLS_method());
  #else
      ctx = SSL_CTX_new(SSLv23_method());
-@@ -95,14 +100,15 @@ ossl_sslctx_s_alloc(VALUE klass)
+@@ -108,14 +100,15 @@ ossl_sslctx_s_alloc(VALUE klass)
      RTYPEDDATA_DATA(obj) = ctx;
      SSL_CTX_set_ex_data(ctx, ossl_sslctx_ex_ptr_idx, (void *)obj);
  
@@ -7940,7 +7680,7 @@ index 4b7efa3..9a0682a 100644
      if (!SSL_CTX_set_ecdh_auto(ctx, 1))
  	ossl_raise(eSSLError, "SSL_CTX_set_ecdh_auto");
  #endif
-@@ -231,8 +237,7 @@ ossl_client_cert_cb(SSL *ssl, X509 **x509, EVP_PKEY **pkey)
+@@ -244,8 +237,7 @@ ossl_client_cert_cb(SSL *ssl, X509 **x509, EVP_PKEY **pkey)
      return 1;
  }
  
@@ -7950,7 +7690,7 @@ index 4b7efa3..9a0682a 100644
  struct tmp_dh_callback_args {
      VALUE ssl_obj;
      ID id;
-@@ -241,22 +246,23 @@ struct tmp_dh_callback_args {
+@@ -254,22 +246,23 @@ struct tmp_dh_callback_args {
      int keylength;
  };
  
@@ -7979,7 +7719,7 @@ index 4b7efa3..9a0682a 100644
  }
  #endif
  
-@@ -276,7 +282,7 @@ ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
+@@ -289,7 +282,7 @@ ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
      args.keylength = keylength;
      args.type = EVP_PKEY_DH;
  
@@ -7988,7 +7728,7 @@ index 4b7efa3..9a0682a 100644
  				  (VALUE)&args, &state);
      if (state) {
  	rb_ivar_set(rb_ssl, ID_callback_state, INT2NUM(state));
-@@ -289,35 +295,6 @@ ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
+@@ -302,35 +295,6 @@ ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
  }
  #endif /* OPENSSL_NO_DH */
  
@@ -8024,7 +7764,7 @@ index 4b7efa3..9a0682a 100644
  static VALUE
  call_verify_certificate_identity(VALUE ctx_v)
  {
-@@ -387,7 +364,7 @@ ossl_call_session_get_cb(VALUE ary)
+@@ -400,7 +364,7 @@ ossl_call_session_get_cb(VALUE ary)
  }
  
  static SSL_SESSION *
@@ -8033,7 +7773,7 @@ index 4b7efa3..9a0682a 100644
  ossl_sslctx_session_get_cb(SSL *ssl, const unsigned char *buf, int len, int *copy)
  #else
  ossl_sslctx_session_get_cb(SSL *ssl, unsigned char *buf, int len, int *copy)
-@@ -596,8 +573,6 @@ ssl_renegotiation_cb(const SSL *ssl)
+@@ -609,8 +573,6 @@ ssl_renegotiation_cb(const SSL *ssl)
      rb_funcallv(cb, id_call, 1, &ssl_obj);
  }
  
@@ -8042,16 +7782,7 @@ index 4b7efa3..9a0682a 100644
  static VALUE
  ssl_npn_encode_protocol_i(RB_BLOCK_CALL_FUNC_ARGLIST(cur, encoded))
  {
-@@ -616,7 +591,7 @@ static VALUE
- ssl_encode_npn_protocols(VALUE protocols)
- {
-     VALUE encoded = rb_str_new(NULL, 0);
--    rb_iterate(rb_each, protocols, ssl_npn_encode_protocol_i, encoded);
-+    rb_block_call(protocols, id_each, 0, 0, ssl_npn_encode_protocol_i, encoded);
-     return encoded;
- }
- 
-@@ -679,14 +654,13 @@ ssl_npn_select_cb_common(SSL *ssl, VALUE cb, const unsigned char **out,
+@@ -692,7 +654,6 @@ ssl_npn_select_cb_common(SSL *ssl, VALUE cb, const unsigned char **out,
  
      return SSL_TLSEXT_ERR_OK;
  }
@@ -8059,15 +7790,7 @@ index 4b7efa3..9a0682a 100644
  
  #ifndef OPENSSL_NO_NEXTPROTONEG
  static int
- ssl_npn_advertise_cb(SSL *ssl, const unsigned char **out, unsigned int *outlen,
- 		     void *arg)
- {
--    VALUE protocols = (VALUE)arg;
-+    VALUE protocols = rb_attr_get((VALUE)arg, id_npn_protocols_encoded);
- 
-     *out = (const unsigned char *) RSTRING_PTR(protocols);
-     *outlen = RSTRING_LENINT(protocols);
-@@ -708,7 +682,6 @@ ssl_npn_select_cb(SSL *ssl, unsigned char **out, unsigned char *outlen,
+@@ -721,7 +682,6 @@ ssl_npn_select_cb(SSL *ssl, unsigned char **out, unsigned char *outlen,
  }
  #endif
  
@@ -8075,7 +7798,7 @@ index 4b7efa3..9a0682a 100644
  static int
  ssl_alpn_select_cb(SSL *ssl, const unsigned char **out, unsigned char *outlen,
  		   const unsigned char *in, unsigned int inlen, void *arg)
-@@ -720,7 +693,6 @@ ssl_alpn_select_cb(SSL *ssl, const unsigned char **out, unsigned char *outlen,
+@@ -733,7 +693,6 @@ ssl_alpn_select_cb(SSL *ssl, const unsigned char **out, unsigned char *outlen,
  
      return ssl_npn_select_cb_common(ssl, cb, out, outlen, in, inlen);
  }
@@ -8083,7 +7806,7 @@ index 4b7efa3..9a0682a 100644
  
  /* This function may serve as the entry point to support further callbacks. */
  static void
-@@ -797,26 +769,6 @@ ossl_sslctx_setup(VALUE self)
+@@ -810,26 +769,6 @@ ossl_sslctx_setup(VALUE self)
      SSL_CTX_set_tmp_dh_callback(ctx, ossl_tmp_dh_callback);
  #endif
  
@@ -8110,7 +7833,7 @@ index 4b7efa3..9a0682a 100644
  #ifdef HAVE_SSL_CTX_SET_POST_HANDSHAKE_AUTH
      SSL_CTX_set_post_handshake_auth(ctx, 1);
  #endif
-@@ -825,17 +777,7 @@ ossl_sslctx_setup(VALUE self)
+@@ -838,17 +777,7 @@ ossl_sslctx_setup(VALUE self)
      if (!NIL_P(val)) {
  	X509_STORE *store = GetX509StorePtr(val); /* NO NEED TO DUP */
  	SSL_CTX_set_cert_store(ctx, store);
@@ -8128,7 +7851,7 @@ index 4b7efa3..9a0682a 100644
      }
  
      val = rb_attr_get(self, id_i_extra_chain_cert);
-@@ -886,10 +828,17 @@ ossl_sslctx_setup(VALUE self)
+@@ -899,10 +828,17 @@ ossl_sslctx_setup(VALUE self)
      ca_file = NIL_P(val) ? NULL : StringValueCStr(val);
      val = rb_attr_get(self, id_i_ca_path);
      ca_path = NIL_P(val) ? NULL : StringValueCStr(val);
@@ -8146,16 +7869,7 @@ index 4b7efa3..9a0682a 100644
  
      val = rb_attr_get(self, id_i_verify_mode);
      verify_mode = NIL_P(val) ? SSL_VERIFY_NONE : NUM2INT(val);
-@@ -908,7 +857,7 @@ ossl_sslctx_setup(VALUE self)
-     if (!NIL_P(val)) {
- 	VALUE encoded = ssl_encode_npn_protocols(val);
- 	rb_ivar_set(self, id_npn_protocols_encoded, encoded);
--	SSL_CTX_set_next_protos_advertised_cb(ctx, ssl_npn_advertise_cb, (void *)encoded);
-+	SSL_CTX_set_next_protos_advertised_cb(ctx, ssl_npn_advertise_cb, (void *)self);
- 	OSSL_Debug("SSL NPN advertise callback added");
-     }
-     if (RTEST(rb_attr_get(self, id_i_npn_select_cb))) {
-@@ -917,7 +866,6 @@ ossl_sslctx_setup(VALUE self)
+@@ -930,7 +866,6 @@ ossl_sslctx_setup(VALUE self)
      }
  #endif
  
@@ -8163,7 +7877,7 @@ index 4b7efa3..9a0682a 100644
      val = rb_attr_get(self, id_i_alpn_protocols);
      if (!NIL_P(val)) {
  	VALUE rprotos = ssl_encode_npn_protocols(val);
-@@ -932,7 +880,6 @@ ossl_sslctx_setup(VALUE self)
+@@ -945,7 +880,6 @@ ossl_sslctx_setup(VALUE self)
  	SSL_CTX_set_alpn_select_cb(ctx, ssl_alpn_select_cb, (void *) self);
  	OSSL_Debug("SSL ALPN select callback added");
      }
@@ -8171,7 +7885,7 @@ index 4b7efa3..9a0682a 100644
  
      rb_obj_freeze(self);
  
-@@ -1054,6 +1001,52 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
+@@ -1067,6 +1001,52 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
      return v;
  }
  
@@ -8224,7 +7938,7 @@ index 4b7efa3..9a0682a 100644
  #if !defined(OPENSSL_NO_EC)
  /*
   * call-seq:
-@@ -1065,9 +1058,6 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
+@@ -1078,9 +1058,6 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
   * Extension. For a server, the list is used by OpenSSL to determine the set of
   * shared curves. OpenSSL will pick the most appropriate one from it.
   *
@@ -8234,7 +7948,7 @@ index 4b7efa3..9a0682a 100644
   * === Example
   *   ctx1 = OpenSSL::SSL::SSLContext.new
   *   ctx1.ecdh_curves = "X25519:P-256:P-224"
-@@ -1091,48 +1081,8 @@ ossl_sslctx_set_ecdh_curves(VALUE self, VALUE arg)
+@@ -1104,48 +1081,8 @@ ossl_sslctx_set_ecdh_curves(VALUE self, VALUE arg)
      GetSSLCTX(self, ctx);
      StringValueCStr(arg);
  
@@ -8283,7 +7997,7 @@ index 4b7efa3..9a0682a 100644
      return arg;
  }
  #else
-@@ -1223,7 +1173,7 @@ ossl_sslctx_enable_fallback_scsv(VALUE self)
+@@ -1236,7 +1173,7 @@ ossl_sslctx_enable_fallback_scsv(VALUE self)
  
  /*
   * call-seq:
@@ -8292,7 +8006,7 @@ index 4b7efa3..9a0682a 100644
   *
   * Adds a certificate to the context. _pkey_ must be a corresponding private
   * key with _certificate_.
-@@ -1255,10 +1205,6 @@ ossl_sslctx_enable_fallback_scsv(VALUE self)
+@@ -1268,10 +1205,6 @@ ossl_sslctx_enable_fallback_scsv(VALUE self)
   *   ecdsa_pkey = ...
   *   another_ca_cert = ...
   *   ctx.add_certificate(ecdsa_cert, ecdsa_pkey, [another_ca_cert])
@@ -8303,7 +8017,7 @@ index 4b7efa3..9a0682a 100644
   */
  static VALUE
  ossl_sslctx_add_certificate(int argc, VALUE *argv, VALUE self)
-@@ -1283,7 +1229,7 @@ ossl_sslctx_add_certificate(int argc, VALUE *argv, VALUE self)
+@@ -1296,7 +1229,7 @@ ossl_sslctx_add_certificate(int argc, VALUE *argv, VALUE self)
      EVP_PKEY_free(pub_pkey);
      if (!pub_pkey)
  	rb_raise(rb_eArgError, "certificate does not contain public key");
@@ -8312,7 +8026,7 @@ index 4b7efa3..9a0682a 100644
  	rb_raise(rb_eArgError, "public key mismatch");
  
      if (argc >= 3)
-@@ -1297,34 +1243,9 @@ ossl_sslctx_add_certificate(int argc, VALUE *argv, VALUE self)
+@@ -1310,34 +1243,9 @@ ossl_sslctx_add_certificate(int argc, VALUE *argv, VALUE self)
  	sk_X509_pop_free(extra_chain, X509_free);
  	ossl_raise(eSSLError, "SSL_CTX_use_PrivateKey");
      }
@@ -8350,7 +8064,7 @@ index 4b7efa3..9a0682a 100644
      }
      return self;
  }
-@@ -1522,8 +1443,16 @@ ossl_sslctx_flush_sessions(int argc, VALUE *argv, VALUE self)
+@@ -1535,8 +1443,8 @@ ossl_sslctx_flush_sessions(int argc, VALUE *argv, VALUE self)
  static inline int
  ssl_started(SSL *ssl)
  {
@@ -8358,27 +8072,10 @@ index 4b7efa3..9a0682a 100644
 -    return SSL_get_fd(ssl) >= 0;
 +    /* BIO is created through ossl_ssl_setup(), called by #connect or #accept */
 +    return SSL_get_rbio(ssl) != NULL;
-+}
-+
-+static void
-+ossl_ssl_mark(void *ptr)
-+{
-+    SSL *ssl = ptr;
-+    rb_gc_mark((VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx));
-+    rb_gc_mark((VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_vcb_idx));
  }
  
  static void
-@@ -1535,7 +1464,7 @@ ossl_ssl_free(void *ssl)
- const rb_data_type_t ossl_ssl_type = {
-     "OpenSSL/SSL",
-     {
--	0, ossl_ssl_free,
-+        ossl_ssl_mark, ossl_ssl_free,
-     },
-     0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
- };
-@@ -1546,6 +1475,29 @@ ossl_ssl_s_alloc(VALUE klass)
+@@ -1567,6 +1475,29 @@ ossl_ssl_s_alloc(VALUE klass)
      return TypedData_Wrap_Struct(klass, &ossl_ssl_type, NULL);
  }
  
@@ -8408,7 +8105,7 @@ index 4b7efa3..9a0682a 100644
  /*
   * call-seq:
   *    SSLSocket.new(io) => aSSLSocket
-@@ -1582,6 +1534,7 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
+@@ -1603,6 +1534,7 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
  
      if (rb_respond_to(io, rb_intern("nonblock=")))
  	rb_funcall(io, rb_intern("nonblock="), 1, Qtrue);
@@ -8416,7 +8113,7 @@ index 4b7efa3..9a0682a 100644
      rb_ivar_set(self, id_i_io, io);
  
      ssl = SSL_new(ctx);
-@@ -1649,6 +1602,26 @@ no_exception_p(VALUE opts)
+@@ -1670,6 +1602,26 @@ no_exception_p(VALUE opts)
      return 0;
  }
  
@@ -8443,7 +8140,7 @@ index 4b7efa3..9a0682a 100644
  static VALUE
  ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
  {
-@@ -1683,16 +1656,23 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
+@@ -1704,12 +1656,12 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
  	case SSL_ERROR_WANT_WRITE:
              if (no_exception_p(opts)) { return sym_wait_writable; }
              write_would_block(nonblock);
@@ -8457,11 +8154,10 @@ index 4b7efa3..9a0682a 100644
 +            io_wait_readable(fptr);
              continue;
  	case SSL_ERROR_SYSCALL:
-+#ifdef __APPLE__
-+            /* See ossl_ssl_write_internal() */
-+            if (errno == EPROTOTYPE)
-+                continue;
-+#endif
+ #ifdef __APPLE__
+@@ -1718,7 +1670,9 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
+                 continue;
+ #endif
  	    if (errno) rb_sys_fail(funcname);
 -	    ossl_raise(eSSLError, "%s SYSCALL returned=%d errno=%d state=%s", funcname, ret2, errno, SSL_state_string_long(ssl));
 +	    ossl_raise(eSSLError, "%s SYSCALL returned=%d errno=%d peeraddr=%"PRIsVALUE" state=%s",
@@ -8470,7 +8166,7 @@ index 4b7efa3..9a0682a 100644
  #if defined(SSL_R_CERTIFICATE_VERIFY_FAILED)
  	case SSL_ERROR_SSL:
  	    err = ERR_peek_last_error();
-@@ -1705,13 +1685,15 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
+@@ -1731,13 +1685,15 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
  		if (!verify_msg)
  		    verify_msg = "(null)";
  		ossl_clear_error(); /* let ossl_raise() not append message */
@@ -8489,7 +8185,7 @@ index 4b7efa3..9a0682a 100644
  	}
      }
  
-@@ -1722,8 +1704,7 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
+@@ -1748,8 +1704,7 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
   * call-seq:
   *    ssl.connect => self
   *
@@ -8499,7 +8195,7 @@ index 4b7efa3..9a0682a 100644
   */
  static VALUE
  ossl_ssl_connect(VALUE self)
-@@ -1770,8 +1751,7 @@ ossl_ssl_connect_nonblock(int argc, VALUE *argv, VALUE self)
+@@ -1796,8 +1751,7 @@ ossl_ssl_connect_nonblock(int argc, VALUE *argv, VALUE self)
   * call-seq:
   *    ssl.accept => self
   *
@@ -8509,7 +8205,7 @@ index 4b7efa3..9a0682a 100644
   */
  static VALUE
  ossl_ssl_accept(VALUE self)
-@@ -1818,7 +1798,7 @@ static VALUE
+@@ -1844,7 +1798,7 @@ static VALUE
  ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
  {
      SSL *ssl;
@@ -8518,7 +8214,7 @@ index 4b7efa3..9a0682a 100644
      VALUE len, str;
      rb_io_t *fptr;
      VALUE io, opts = Qnil;
-@@ -1828,6 +1808,9 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
+@@ -1854,6 +1808,9 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
      } else {
  	rb_scan_args(argc, argv, "11", &len, &str);
      }
@@ -8528,7 +8224,7 @@ index 4b7efa3..9a0682a 100644
  
      ilen = NUM2INT(len);
      if (NIL_P(str))
-@@ -1843,74 +1826,60 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
+@@ -1869,85 +1826,60 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
      if (ilen == 0)
  	return str;
  
@@ -8536,16 +8232,11 @@ index 4b7efa3..9a0682a 100644
      io = rb_attr_get(self, id_i_io);
      GetOpenFile(io, fptr);
 -    if (ssl_started(ssl)) {
--	for (;;){
+-        rb_str_locktmp(str);
+-        for (;;) {
 -	    nread = SSL_read(ssl, RSTRING_PTR(str), ilen);
 -	    switch(ssl_get_error(ssl, nread)){
 -	    case SSL_ERROR_NONE:
--		goto end;
--	    case SSL_ERROR_ZERO_RETURN:
--		if (no_exception_p(opts)) { return Qnil; }
--		rb_eof_error();
--	    case SSL_ERROR_WANT_WRITE:
--		if (no_exception_p(opts)) { return sym_wait_writable; }
 +
 +    rb_str_locktmp(str);
 +    for (;;) {
@@ -8561,25 +8252,38 @@ index 4b7efa3..9a0682a 100644
 +            rb_eof_error();
 +          case SSL_ERROR_WANT_WRITE:
 +            if (nonblock) {
-+                rb_str_unlocktmp(str);
+                 rb_str_unlocktmp(str);
+-		goto end;
+-	    case SSL_ERROR_ZERO_RETURN:
 +                if (no_exception_p(opts)) { return sym_wait_writable; }
-                 write_would_block(nonblock);
--                rb_io_wait_writable(fptr->fd);
--                continue;
--	    case SSL_ERROR_WANT_READ:
--		if (no_exception_p(opts)) { return sym_wait_readable; }
++                write_would_block(nonblock);
 +            }
 +            io_wait_writable(fptr);
 +            continue;
 +          case SSL_ERROR_WANT_READ:
 +            if (nonblock) {
-+                rb_str_unlocktmp(str);
-+                if (no_exception_p(opts)) { return sym_wait_readable; }
-                 read_would_block(nonblock);
+                 rb_str_unlocktmp(str);
+-		if (no_exception_p(opts)) { return Qnil; }
+-		rb_eof_error();
+-	    case SSL_ERROR_WANT_WRITE:
+-                if (nonblock) {
+-                    rb_str_unlocktmp(str);
+-                    if (no_exception_p(opts)) { return sym_wait_writable; }
+-                    write_would_block(nonblock);
+-                }
+-                rb_io_wait_writable(fptr->fd);
+-                continue;
+-	    case SSL_ERROR_WANT_READ:
+-                if (nonblock) {
+-                    rb_str_unlocktmp(str);
+-                    if (no_exception_p(opts)) { return sym_wait_readable; }
+-                    read_would_block(nonblock);
+-                }
 -                rb_io_wait_readable(fptr->fd);
 -		continue;
 -	    case SSL_ERROR_SYSCALL:
 -		if (!ERR_peek_error()) {
+-                    rb_str_unlocktmp(str);
 -		    if (errno)
 -			rb_sys_fail(0);
 -		    else {
@@ -8596,6 +8300,14 @@ index 4b7efa3..9a0682a 100644
 -		}
 -                /* fall through */
 -	    default:
++                if (no_exception_p(opts)) { return sym_wait_readable; }
++                read_would_block(nonblock);
++            }
++            io_wait_readable(fptr);
++            continue;
++          case SSL_ERROR_SYSCALL:
++            if (!ERR_peek_error()) {
+                 rb_str_unlocktmp(str);
 -		ossl_raise(eSSLError, "SSL_read");
 -	    }
 -        }
@@ -8615,12 +8327,6 @@ index 4b7efa3..9a0682a 100644
 -#else
 -        if (nonblock) {
 -            return rb_funcall(io, meth, 3, len, str, opts);
-+            }
-+            io_wait_readable(fptr);
-+            continue;
-+          case SSL_ERROR_SYSCALL:
-+            if (!ERR_peek_error()) {
-+                rb_str_unlocktmp(str);
 +                if (errno)
 +                    rb_sys_fail(0);
 +                else {
@@ -8651,18 +8357,17 @@ index 4b7efa3..9a0682a 100644
  }
  
  /*
-@@ -1950,67 +1919,55 @@ static VALUE
+@@ -1987,77 +1919,55 @@ static VALUE
  ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
  {
      SSL *ssl;
 -    int nwrite = 0;
      rb_io_t *fptr;
 -    int nonblock = opts != Qfalse;
--    VALUE io;
 +    int num, nonblock = opts != Qfalse;
-+    VALUE tmp, io;
+     VALUE tmp, io;
  
--    StringValue(str);
+-    tmp = rb_str_new_frozen(StringValue(str));
      GetSSL(self, ssl);
 +    if (!ssl_started(ssl))
 +        rb_raise(eSSLError, "SSL session is not started yet");
@@ -8671,14 +8376,14 @@ index 4b7efa3..9a0682a 100644
      io = rb_attr_get(self, id_i_io);
      GetOpenFile(io, fptr);
 -    if (ssl_started(ssl)) {
--	for (;;){
--	    int num = RSTRING_LENINT(str);
+-	for (;;) {
+-	    int num = RSTRING_LENINT(tmp);
 -
 -	    /* SSL_write(3ssl) manpage states num == 0 is undefined */
 -	    if (num == 0)
 -		goto end;
 -
--	    nwrite = SSL_write(ssl, RSTRING_PTR(str), num);
+-	    nwrite = SSL_write(ssl, RSTRING_PTR(tmp), num);
 -	    switch(ssl_get_error(ssl, nwrite)){
 -	    case SSL_ERROR_NONE:
 -		goto end;
@@ -8691,6 +8396,8 @@ index 4b7efa3..9a0682a 100644
 -		if (no_exception_p(opts)) { return sym_wait_readable; }
 -                read_would_block(nonblock);
 -                rb_io_wait_readable(fptr->fd);
+-                continue;
+-	    case SSL_ERROR_SYSCALL:
 +
 +    /* SSL_write(3ssl) manpage states num == 0 is undefined */
 +    num = RSTRING_LENINT(tmp);
@@ -8713,7 +8420,15 @@ index 4b7efa3..9a0682a 100644
 +            io_wait_readable(fptr);
 +            continue;
 +          case SSL_ERROR_SYSCALL:
-+#ifdef __APPLE__
+ #ifdef __APPLE__
+-                /*
+-                 * It appears that send syscall can return EPROTOTYPE if the
+-                 * socket is being torn down. Retry to get a proper errno to
+-                 * make the error handling in line with the socket library.
+-                 * [Bug #14713] https://bugs.ruby-lang.org/issues/14713
+-                 */
+-                if (errno == EPROTOTYPE)
+-                    continue;
 +            /*
 +             * It appears that send syscall can return EPROTOTYPE if the
 +             * socket is being torn down. Retry to get a proper errno to
@@ -8721,14 +8436,18 @@ index 4b7efa3..9a0682a 100644
 +             * [Bug #14713] https://bugs.ruby-lang.org/issues/14713
 +             */
 +            if (errno == EPROTOTYPE)
-                 continue;
--	    case SSL_ERROR_SYSCALL:
++                continue;
+ #endif
 -		if (errno) rb_sys_fail(0);
 -	    default:
 -		ossl_raise(eSSLError, "SSL_write");
 -	    }
--        }
--    }
++            if (errno) rb_sys_fail(0);
++            /* fallthrough */
++          default:
++            ossl_raise(eSSLError, "SSL_write");
+         }
+     }
 -    else {
 -	ID meth = nonblock ?
 -	    rb_intern("write_nonblock") : rb_intern("syswrite");
@@ -8745,22 +8464,17 @@ index 4b7efa3..9a0682a 100644
 -        if (nonblock) {
 -            return rb_funcall(io, meth, 2, str, opts);
 -        }
- #endif
+-#endif
 -        else
 -            return rb_funcall(io, meth, 1, str);
-+            if (errno) rb_sys_fail(0);
-+            /* fallthrough */
-+          default:
-+            ossl_raise(eSSLError, "SSL_write");
-+        }
-     }
+-    }
 -
 -  end:
 -    return INT2NUM(nwrite);
  }
  
  /*
-@@ -2410,7 +2367,6 @@ ossl_ssl_npn_protocol(VALUE self)
+@@ -2457,7 +2367,6 @@ ossl_ssl_npn_protocol(VALUE self)
  }
  # endif
  
@@ -8768,7 +8482,7 @@ index 4b7efa3..9a0682a 100644
  /*
   * call-seq:
   *    ssl.alpn_protocol => String | nil
-@@ -2433,9 +2389,7 @@ ossl_ssl_alpn_protocol(VALUE self)
+@@ -2480,9 +2389,7 @@ ossl_ssl_alpn_protocol(VALUE self)
      else
  	return rb_str_new((const char *) out, outlen);
  }
@@ -8778,7 +8492,7 @@ index 4b7efa3..9a0682a 100644
  /*
   * call-seq:
   *    ssl.tmp_key => PKey or nil
-@@ -2453,7 +2407,6 @@ ossl_ssl_tmp_key(VALUE self)
+@@ -2500,7 +2407,6 @@ ossl_ssl_tmp_key(VALUE self)
  	return Qnil;
      return ossl_pkey_new(key);
  }
@@ -8786,7 +8500,7 @@ index 4b7efa3..9a0682a 100644
  #endif /* !defined(OPENSSL_NO_SOCK) */
  
  void
-@@ -2478,11 +2431,6 @@ Init_ossl_ssl(void)
+@@ -2525,11 +2431,6 @@ Init_ossl_ssl(void)
      ossl_sslctx_ex_ptr_idx = SSL_CTX_get_ex_new_index(0, (void *)"ossl_sslctx_ex_ptr_idx", 0, 0, 0);
      if (ossl_sslctx_ex_ptr_idx < 0)
  	ossl_raise(rb_eRuntimeError, "SSL_CTX_get_ex_new_index");
@@ -8798,7 +8512,7 @@ index 4b7efa3..9a0682a 100644
  
      /* Document-module: OpenSSL::SSL
       *
-@@ -2630,20 +2578,6 @@ Init_ossl_ssl(void)
+@@ -2677,20 +2578,6 @@ Init_ossl_ssl(void)
       */
      rb_attr(cSSLContext, rb_intern_const("client_cert_cb"), 1, 1, Qfalse);
  
@@ -8819,7 +8533,7 @@ index 4b7efa3..9a0682a 100644
      /*
       * Sets the context in which a session can be reused.  This allows
       * sessions for multiple applications to be distinguished, for example, by
-@@ -2733,7 +2667,6 @@ Init_ossl_ssl(void)
+@@ -2780,7 +2667,6 @@ Init_ossl_ssl(void)
      rb_attr(cSSLContext, rb_intern_const("npn_select_cb"), 1, 1, Qfalse);
  #endif
  
@@ -8827,7 +8541,7 @@ index 4b7efa3..9a0682a 100644
      /*
       * An Enumerable of Strings. Each String represents a protocol to be
       * advertised as the list of supported protocols for Application-Layer
-@@ -2763,7 +2696,6 @@ Init_ossl_ssl(void)
+@@ -2810,7 +2696,6 @@ Init_ossl_ssl(void)
       *   end
       */
      rb_attr(cSSLContext, rb_intern_const("alpn_select_cb"), 1, 1, Qfalse);
@@ -8835,7 +8549,7 @@ index 4b7efa3..9a0682a 100644
  
      rb_define_alias(cSSLContext, "ssl_timeout", "timeout");
      rb_define_alias(cSSLContext, "ssl_timeout=", "timeout=");
-@@ -2771,6 +2703,9 @@ Init_ossl_ssl(void)
+@@ -2818,6 +2703,9 @@ Init_ossl_ssl(void)
  			     ossl_sslctx_set_minmax_proto_version, 2);
      rb_define_method(cSSLContext, "ciphers",     ossl_sslctx_get_ciphers, 0);
      rb_define_method(cSSLContext, "ciphers=",    ossl_sslctx_set_ciphers, 1);
@@ -8845,7 +8559,7 @@ index 4b7efa3..9a0682a 100644
      rb_define_method(cSSLContext, "ecdh_curves=", ossl_sslctx_set_ecdh_curves, 1);
      rb_define_method(cSSLContext, "security_level", ossl_sslctx_get_security_level, 0);
      rb_define_method(cSSLContext, "security_level=", ossl_sslctx_set_security_level, 1);
-@@ -2877,12 +2812,8 @@ Init_ossl_ssl(void)
+@@ -2924,12 +2812,8 @@ Init_ossl_ssl(void)
      rb_define_method(cSSLSocket, "hostname=", ossl_ssl_set_hostname, 1);
      rb_define_method(cSSLSocket, "finished_message", ossl_ssl_get_finished, 0);
      rb_define_method(cSSLSocket, "peer_finished_message", ossl_ssl_get_peer_finished, 0);
@@ -8858,7 +8572,7 @@ index 4b7efa3..9a0682a 100644
  # ifndef OPENSSL_NO_NEXTPROTONEG
      rb_define_method(cSSLSocket, "npn_protocol", ossl_ssl_npn_protocol, 0);
  # endif
-@@ -2894,12 +2825,23 @@ Init_ossl_ssl(void)
+@@ -2941,12 +2825,23 @@ Init_ossl_ssl(void)
      rb_define_const(mSSL, "VERIFY_CLIENT_ONCE", INT2NUM(SSL_VERIFY_CLIENT_ONCE));
  
      rb_define_const(mSSL, "OP_ALL", ULONG2NUM(SSL_OP_ALL));
@@ -8885,7 +8599,7 @@ index 4b7efa3..9a0682a 100644
  #endif
  #ifdef SSL_OP_ALLOW_NO_DHE_KEX /* OpenSSL 1.1.1 */
      rb_define_const(mSSL, "OP_ALLOW_NO_DHE_KEX", ULONG2NUM(SSL_OP_ALLOW_NO_DHE_KEX));
-@@ -2912,13 +2854,15 @@ Init_ossl_ssl(void)
+@@ -2959,13 +2854,15 @@ Init_ossl_ssl(void)
  #ifdef SSL_OP_NO_ENCRYPT_THEN_MAC /* OpenSSL 1.1.1 */
      rb_define_const(mSSL, "OP_NO_ENCRYPT_THEN_MAC", ULONG2NUM(SSL_OP_NO_ENCRYPT_THEN_MAC));
  #endif
@@ -8907,7 +8621,7 @@ index 4b7efa3..9a0682a 100644
      rb_define_const(mSSL, "OP_NO_SSLv3", ULONG2NUM(SSL_OP_NO_SSLv3));
      rb_define_const(mSSL, "OP_NO_TLSv1", ULONG2NUM(SSL_OP_NO_TLSv1));
      rb_define_const(mSSL, "OP_NO_TLSv1_1", ULONG2NUM(SSL_OP_NO_TLSv1_1));
-@@ -2926,6 +2870,12 @@ Init_ossl_ssl(void)
+@@ -2973,6 +2870,12 @@ Init_ossl_ssl(void)
  #ifdef SSL_OP_NO_TLSv1_3 /* OpenSSL 1.1.1 */
      rb_define_const(mSSL, "OP_NO_TLSv1_3", ULONG2NUM(SSL_OP_NO_TLSv1_3));
  #endif
@@ -8920,17 +8634,15 @@ index 4b7efa3..9a0682a 100644
  
      /* SSL_OP_* flags for DTLS */
  #if 0
-@@ -2995,8 +2945,8 @@ Init_ossl_ssl(void)
+@@ -3042,7 +2945,6 @@ Init_ossl_ssl(void)
      sym_wait_writable = ID2SYM(rb_intern_const("wait_writable"));
  
      id_tmp_dh_callback = rb_intern_const("tmp_dh_callback");
 -    id_tmp_ecdh_callback = rb_intern_const("tmp_ecdh_callback");
      id_npn_protocols_encoded = rb_intern_const("npn_protocols_encoded");
-+    id_each = rb_intern_const("each");
+     id_each = rb_intern_const("each");
  
- #define DefIVarID(name) do \
-     id_i_##name = rb_intern_const("@"#name); while (0)
-@@ -3013,7 +2963,6 @@ Init_ossl_ssl(void)
+@@ -3061,7 +2963,6 @@ Init_ossl_ssl(void)
      DefIVarID(key);
      DefIVarID(extra_chain_cert);
      DefIVarID(client_cert_cb);
@@ -9011,7 +8723,7 @@ index 5514087..92eb136 100644
  
  static VALUE
 diff --git a/ext/openssl/ossl_ts.c b/ext/openssl/ossl_ts.c
-index 692c0d6..b33ff10 100644
+index cff9b7b..b33ff10 100644
 --- a/ext/openssl/ossl_ts.c
 +++ b/ext/openssl/ossl_ts.c
 @@ -145,6 +145,12 @@ obj_to_asn1obj(VALUE obj)
@@ -9027,31 +8739,7 @@ index 692c0d6..b33ff10 100644
  static VALUE
  get_asn1obj(ASN1_OBJECT *obj)
  {
-@@ -205,8 +211,10 @@ ossl_ts_req_initialize(int argc, VALUE *argv, VALUE self)
-     in = ossl_obj2bio(&arg);
-     ts_req = d2i_TS_REQ_bio(in, &ts_req);
-     BIO_free(in);
--    if (!ts_req)
-+    if (!ts_req) {
-+        DATA_PTR(self) = NULL;
-         ossl_raise(eTimestampError, "Error when decoding the timestamp request");
-+    }
-     DATA_PTR(self) = ts_req;
- 
-     return self;
-@@ -529,8 +537,10 @@ ossl_ts_resp_initialize(VALUE self, VALUE der)
-     in  = ossl_obj2bio(&der);
-     ts_resp = d2i_TS_RESP_bio(in, &ts_resp);
-     BIO_free(in);
--    if (!ts_resp)
-+    if (!ts_resp) {
-+        DATA_PTR(self) = NULL;
-         ossl_raise(eTimestampError, "Error when decoding the timestamp response");
-+    }
-     DATA_PTR(self) = ts_resp;
- 
-     return self;
-@@ -816,17 +826,14 @@ ossl_ts_resp_verify(int argc, VALUE *argv, VALUE self)
+@@ -820,17 +826,14 @@ ossl_ts_resp_verify(int argc, VALUE *argv, VALUE self)
          X509_up_ref(cert);
      }
  
@@ -9073,30 +8761,7 @@ index 692c0d6..b33ff10 100644
       */
      TS_VERIFY_CTX_set_store(ctx, NULL);
      TS_VERIFY_CTX_free(ctx);
-@@ -871,8 +878,10 @@ ossl_ts_token_info_initialize(VALUE self, VALUE der)
-     in  = ossl_obj2bio(&der);
-     info = d2i_TS_TST_INFO_bio(in, &info);
-     BIO_free(in);
--    if (!info)
-+    if (!info) {
-+        DATA_PTR(self) = NULL;
-         ossl_raise(eTimestampError, "Error when decoding the timestamp token info");
-+    }
-     DATA_PTR(self) = info;
- 
-     return self;
-@@ -1074,13 +1083,29 @@ ossl_tsfac_serial_cb(struct TS_resp_ctx *ctx, void *data)
- }
- 
- static int
-+#if !defined(LIBRESSL_VERSION_NUMBER)
- ossl_tsfac_time_cb(struct TS_resp_ctx *ctx, void *data, long *sec, long *usec)
-+#else
-+ossl_tsfac_time_cb(struct TS_resp_ctx *ctx, void *data, time_t *sec, long *usec)
-+#endif
- {
-     *sec = *((long *)data);
-     *usec = 0;
+@@ -1091,6 +1094,18 @@ ossl_tsfac_time_cb(struct TS_resp_ctx *ctx, void *data, time_t *sec, long *usec)
      return 1;
  }
  
@@ -9115,7 +8780,7 @@ index 692c0d6..b33ff10 100644
  /*
   * Creates a Response with the help of an OpenSSL::PKey, an
   * OpenSSL::X509::Certificate and a Request.
-@@ -1149,7 +1174,7 @@ ossl_tsfac_create_ts(VALUE self, VALUE key, VALUE certificate, VALUE request)
+@@ -1159,7 +1174,7 @@ ossl_tsfac_create_ts(VALUE self, VALUE key, VALUE certificate, VALUE request)
          goto end;
      }
      if (!NIL_P(def_policy_id) && !TS_REQ_get_policy_id(req)) {
@@ -9124,7 +8789,7 @@ index 692c0d6..b33ff10 100644
          if (status)
              goto end;
      }
-@@ -1191,7 +1216,7 @@ ossl_tsfac_create_ts(VALUE self, VALUE key, VALUE certificate, VALUE request)
+@@ -1201,7 +1216,7 @@ ossl_tsfac_create_ts(VALUE self, VALUE key, VALUE certificate, VALUE request)
  
          for (i = 0; i < RARRAY_LEN(allowed_digests); i++) {
              rbmd = rb_ary_entry(allowed_digests, i);
@@ -9133,7 +8798,7 @@ index 692c0d6..b33ff10 100644
              if (status)
                  goto end;
              TS_RESP_CTX_add_md(ctx, md);
-@@ -1202,7 +1227,7 @@ ossl_tsfac_create_ts(VALUE self, VALUE key, VALUE certificate, VALUE request)
+@@ -1212,7 +1227,7 @@ ossl_tsfac_create_ts(VALUE self, VALUE key, VALUE certificate, VALUE request)
      if (status)
          goto end;
  
@@ -9142,7 +8807,7 @@ index 692c0d6..b33ff10 100644
      if (status)
          goto end;
  
-@@ -1226,7 +1251,7 @@ end:
+@@ -1236,7 +1251,7 @@ end:
      ASN1_OBJECT_free(def_policy_id_obj);
      TS_RESP_CTX_free(ctx);
      if (err_msg)
@@ -9151,7 +8816,7 @@ index 692c0d6..b33ff10 100644
      if (status)
          rb_jump_tag(status);
      return ret;
-@@ -1280,7 +1305,7 @@ Init_ossl_ts(void)
+@@ -1290,7 +1305,7 @@ Init_ossl_ts(void)
       * ===Create a Response:
       *      #Assumes ts.p12 is a PKCS#12-compatible file with a private key
       *      #and a certificate that has an extended key usage of 'timeStamping'
@@ -9160,7 +8825,7 @@ index 692c0d6..b33ff10 100644
       *      md = OpenSSL::Digest.new('SHA1')
       *      hash = md.digest(data) #some binary data to be timestamped
       *      req = OpenSSL::Timestamp::Request.new
-@@ -1295,16 +1320,16 @@ Init_ossl_ts(void)
+@@ -1305,16 +1320,16 @@ Init_ossl_ts(void)
       *
       * ===Verify a timestamp response:
       *      #Assume we have a timestamp token in a file called ts.der
@@ -9182,7 +8847,7 @@ index 692c0d6..b33ff10 100644
       *      ts.verify(req, root, inter1, inter2) -> ts or raises an exception if validation fails
       *
       */
-@@ -1437,9 +1462,9 @@ Init_ossl_ts(void)
+@@ -1447,9 +1462,9 @@ Init_ossl_ts(void)
       * timestamping certificate.
       *
       *      req = OpenSSL::Timestamp::Request.new(raw_bytes)
@@ -9574,7 +9239,7 @@ index 2c20042..6eb91e9 100644
      return self;
  }
 diff --git a/ext/openssl/ossl_x509store.c b/ext/openssl/ossl_x509store.c
-index 61543d4..7c54618 100644
+index 9035a70..7c54618 100644
 --- a/ext/openssl/ossl_x509store.c
 +++ b/ext/openssl/ossl_x509store.c
 @@ -52,8 +52,15 @@ struct ossl_verify_cb_args {
@@ -9612,30 +9277,7 @@ index 61543d4..7c54618 100644
  	if (state) {
  	    rb_set_errinfo(Qnil);
  	    rb_warn("exception in verify_callback is ignored");
-@@ -105,6 +112,13 @@ VALUE cX509Store;
- VALUE cX509StoreContext;
- VALUE eX509StoreError;
- 
-+static void
-+ossl_x509store_mark(void *ptr)
-+{
-+    X509_STORE *store = ptr;
-+    rb_gc_mark((VALUE)X509_STORE_get_ex_data(store, store_ex_verify_cb_idx));
-+}
-+
- static void
- ossl_x509store_free(void *ptr)
- {
-@@ -114,7 +128,7 @@ ossl_x509store_free(void *ptr)
- static const rb_data_type_t ossl_x509store_type = {
-     "OpenSSL/X509/STORE",
-     {
--	0, ossl_x509store_free,
-+        ossl_x509store_mark, ossl_x509store_free,
-     },
-     0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
- };
-@@ -157,9 +171,8 @@ ossl_x509store_alloc(VALUE klass)
+@@ -164,9 +171,8 @@ ossl_x509store_alloc(VALUE klass)
      VALUE obj;
  
      obj = NewX509Store(klass);
@@ -9647,7 +9289,7 @@ index 61543d4..7c54618 100644
      SetX509Store(obj, store);
  
      return obj;
-@@ -192,8 +205,9 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
+@@ -199,8 +205,9 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
  {
      X509_STORE *store;
  
@@ -9658,7 +9300,7 @@ index 61543d4..7c54618 100644
  #if !defined(HAVE_OPAQUE_OPENSSL)
      /* [Bug #405] [Bug #1678] [Bug #3000]; already fixed? */
      store->ex_data.sk = NULL;
-@@ -214,8 +228,16 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
+@@ -221,8 +228,16 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
   * call-seq:
   *   store.flags = flags
   *
@@ -9677,7 +9319,7 @@ index 61543d4..7c54618 100644
   */
  static VALUE
  ossl_x509store_set_flags(VALUE self, VALUE flags)
-@@ -233,9 +255,9 @@ ossl_x509store_set_flags(VALUE self, VALUE flags)
+@@ -240,9 +255,9 @@ ossl_x509store_set_flags(VALUE self, VALUE flags)
   * call-seq:
   *   store.purpose = purpose
   *
@@ -9690,7 +9332,7 @@ index 61543d4..7c54618 100644
   *
   * * X509::PURPOSE_SSL_CLIENT
   * * X509::PURPOSE_SSL_SERVER
-@@ -246,6 +268,11 @@ ossl_x509store_set_flags(VALUE self, VALUE flags)
+@@ -253,6 +268,11 @@ ossl_x509store_set_flags(VALUE self, VALUE flags)
   * * X509::PURPOSE_ANY
   * * X509::PURPOSE_OCSP_HELPER
   * * X509::PURPOSE_TIMESTAMP_SIGN
@@ -9702,7 +9344,7 @@ index 61543d4..7c54618 100644
   */
  static VALUE
  ossl_x509store_set_purpose(VALUE self, VALUE purpose)
-@@ -262,6 +289,14 @@ ossl_x509store_set_purpose(VALUE self, VALUE purpose)
+@@ -269,6 +289,14 @@ ossl_x509store_set_purpose(VALUE self, VALUE purpose)
  /*
   * call-seq:
   *   store.trust = trust
@@ -9717,7 +9359,7 @@ index 61543d4..7c54618 100644
   */
  static VALUE
  ossl_x509store_set_trust(VALUE self, VALUE trust)
-@@ -279,7 +314,13 @@ ossl_x509store_set_trust(VALUE self, VALUE trust)
+@@ -286,7 +314,13 @@ ossl_x509store_set_trust(VALUE self, VALUE trust)
   * call-seq:
   *   store.time = time
   *
@@ -9732,7 +9374,7 @@ index 61543d4..7c54618 100644
   */
  static VALUE
  ossl_x509store_set_time(VALUE self, VALUE time)
-@@ -295,23 +336,23 @@ ossl_x509store_set_time(VALUE self, VALUE time)
+@@ -302,23 +336,23 @@ ossl_x509store_set_time(VALUE self, VALUE time)
   * Adds the certificates in _file_ to the certificate store. _file_ is the path
   * to the file, and the file contains one or more certificates in PEM format
   * concatenated together.
@@ -9764,7 +9406,7 @@ index 61543d4..7c54618 100644
  #if OPENSSL_VERSION_NUMBER < 0x10101000 || defined(LIBRESSL_VERSION_NUMBER)
      /*
       * X509_load_cert_crl_file() which is called from X509_LOOKUP_load_file()
-@@ -330,23 +371,23 @@ ossl_x509store_add_file(VALUE self, VALUE file)
+@@ -337,23 +371,23 @@ ossl_x509store_add_file(VALUE self, VALUE file)
   *   store.add_path(path) -> self
   *
   * Adds _path_ as the hash dir to be looked up by the store.
@@ -9796,7 +9438,7 @@ index 61543d4..7c54618 100644
  
      return self;
  }
-@@ -361,6 +402,8 @@ ossl_x509store_add_path(VALUE self, VALUE dir)
+@@ -368,6 +402,8 @@ ossl_x509store_add_path(VALUE self, VALUE dir)
   *
   * * OpenSSL::X509::DEFAULT_CERT_FILE
   * * OpenSSL::X509::DEFAULT_CERT_DIR
@@ -9805,7 +9447,7 @@ index 61543d4..7c54618 100644
   */
  static VALUE
  ossl_x509store_set_default_paths(VALUE self)
-@@ -368,18 +411,19 @@ ossl_x509store_set_default_paths(VALUE self)
+@@ -375,18 +411,19 @@ ossl_x509store_set_default_paths(VALUE self)
      X509_STORE *store;
  
      GetX509Store(self, store);
@@ -9829,7 +9471,7 @@ index 61543d4..7c54618 100644
   */
  static VALUE
  ossl_x509store_add_cert(VALUE self, VALUE arg)
-@@ -389,9 +433,8 @@ ossl_x509store_add_cert(VALUE self, VALUE arg)
+@@ -396,9 +433,8 @@ ossl_x509store_add_cert(VALUE self, VALUE arg)
  
      cert = GetX509CertPtr(arg); /* NO NEED TO DUP */
      GetX509Store(self, store);
@@ -9841,7 +9483,7 @@ index 61543d4..7c54618 100644
  
      return self;
  }
-@@ -401,6 +444,8 @@ ossl_x509store_add_cert(VALUE self, VALUE arg)
+@@ -408,6 +444,8 @@ ossl_x509store_add_cert(VALUE self, VALUE arg)
   *   store.add_crl(crl) -> self
   *
   * Adds the OpenSSL::X509::CRL _crl_ to the store.
@@ -9850,7 +9492,7 @@ index 61543d4..7c54618 100644
   */
  static VALUE
  ossl_x509store_add_crl(VALUE self, VALUE arg)
-@@ -410,9 +455,8 @@ ossl_x509store_add_crl(VALUE self, VALUE arg)
+@@ -417,9 +455,8 @@ ossl_x509store_add_crl(VALUE self, VALUE arg)
  
      crl = GetX509CRLPtr(arg); /* NO NEED TO DUP */
      GetX509Store(self, store);
@@ -9862,53 +9504,7 @@ index 61543d4..7c54618 100644
  
      return self;
  }
-@@ -456,23 +500,16 @@ ossl_x509store_verify(int argc, VALUE *argv, VALUE self)
-     return result;
- }
- 
--/*
-- * Public Functions
-- */
--static void ossl_x509stctx_free(void*);
--
--
--static const rb_data_type_t ossl_x509stctx_type = {
--    "OpenSSL/X509/STORE_CTX",
--    {
--	0, ossl_x509stctx_free,
--    },
--    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
--};
--
- /*
-  * Private functions
-  */
-+static void
-+ossl_x509stctx_mark(void *ptr)
-+{
-+    X509_STORE_CTX *ctx = ptr;
-+    rb_gc_mark((VALUE)X509_STORE_CTX_get_ex_data(ctx, stctx_ex_verify_cb_idx));
-+}
-+
- static void
- ossl_x509stctx_free(void *ptr)
- {
-@@ -484,6 +521,14 @@ ossl_x509stctx_free(void *ptr)
-     X509_STORE_CTX_free(ctx);
- }
- 
-+static const rb_data_type_t ossl_x509stctx_type = {
-+    "OpenSSL/X509/STORE_CTX",
-+    {
-+        ossl_x509stctx_mark, ossl_x509stctx_free,
-+    },
-+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
-+};
-+
- static VALUE
- ossl_x509stctx_alloc(VALUE klass)
- {
-@@ -491,9 +536,8 @@ ossl_x509stctx_alloc(VALUE klass)
+@@ -499,9 +536,8 @@ ossl_x509stctx_alloc(VALUE klass)
      VALUE obj;
  
      obj = NewX509StCtx(klass);
@@ -9920,47 +9516,7 @@ index 61543d4..7c54618 100644
      SetX509StCtx(obj, ctx);
  
      return obj;
-@@ -517,7 +561,9 @@ static VALUE ossl_x509stctx_set_time(VALUE, VALUE);
- 
- /*
-  * call-seq:
-- *   StoreContext.new(store, cert = nil, chain = nil)
-+ *   StoreContext.new(store, cert = nil, untrusted = nil)
-+ *
-+ * Sets up a StoreContext for a verification of the X.509 certificate _cert_.
-  */
- static VALUE
- ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
-@@ -527,15 +573,24 @@ ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
-     X509_STORE *x509st;
-     X509 *x509 = NULL;
-     STACK_OF(X509) *x509s = NULL;
-+    int state;
- 
-     rb_scan_args(argc, argv, "12", &store, &cert, &chain);
-     GetX509StCtx(self, ctx);
-     GetX509Store(store, x509st);
--    if(!NIL_P(cert)) x509 = DupX509CertPtr(cert); /* NEED TO DUP */
--    if(!NIL_P(chain)) x509s = ossl_x509_ary2sk(chain);
--    if(X509_STORE_CTX_init(ctx, x509st, x509, x509s) != 1){
-+    if (!NIL_P(cert))
-+        x509 = DupX509CertPtr(cert); /* NEED TO DUP */
-+    if (!NIL_P(chain)) {
-+        x509s = ossl_protect_x509_ary2sk(chain, &state);
-+        if (state) {
-+            X509_free(x509);
-+            rb_jump_tag(state);
-+        }
-+    }
-+    if (X509_STORE_CTX_init(ctx, x509st, x509, x509s) != 1){
-+        X509_free(x509);
-         sk_X509_pop_free(x509s, X509_free);
--        ossl_raise(eX509StoreError, NULL);
-+        ossl_raise(eX509StoreError, "X509_STORE_CTX_init");
-     }
-     if (!NIL_P(t = rb_iv_get(store, "@time")))
- 	ossl_x509stctx_set_time(self, t);
-@@ -548,6 +603,10 @@ ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
+@@ -567,6 +603,10 @@ ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
  /*
   * call-seq:
   *   stctx.verify -> true | false
@@ -9971,7 +9527,7 @@ index 61543d4..7c54618 100644
   */
  static VALUE
  ossl_x509stctx_verify(VALUE self)
-@@ -560,48 +619,45 @@ ossl_x509stctx_verify(VALUE self)
+@@ -579,48 +619,45 @@ ossl_x509stctx_verify(VALUE self)
  
      switch (X509_verify_cert(ctx)) {
        case 1:
@@ -10040,7 +9596,7 @@ index 61543d4..7c54618 100644
   */
  static VALUE
  ossl_x509stctx_get_err(VALUE self)
-@@ -616,6 +672,11 @@ ossl_x509stctx_get_err(VALUE self)
+@@ -635,6 +672,11 @@ ossl_x509stctx_get_err(VALUE self)
  /*
   * call-seq:
   *   stctx.error = error_code
@@ -10052,7 +9608,7 @@ index 61543d4..7c54618 100644
   */
  static VALUE
  ossl_x509stctx_set_error(VALUE self, VALUE err)
-@@ -632,7 +693,10 @@ ossl_x509stctx_set_error(VALUE self, VALUE err)
+@@ -651,7 +693,10 @@ ossl_x509stctx_set_error(VALUE self, VALUE err)
   * call-seq:
   *   stctx.error_string -> String
   *
@@ -10064,7 +9620,7 @@ index 61543d4..7c54618 100644
   */
  static VALUE
  ossl_x509stctx_get_err_string(VALUE self)
-@@ -649,6 +713,10 @@ ossl_x509stctx_get_err_string(VALUE self)
+@@ -668,6 +713,10 @@ ossl_x509stctx_get_err_string(VALUE self)
  /*
   * call-seq:
   *   stctx.error_depth -> Integer
@@ -10075,7 +9631,7 @@ index 61543d4..7c54618 100644
   */
  static VALUE
  ossl_x509stctx_get_err_depth(VALUE self)
-@@ -663,6 +731,10 @@ ossl_x509stctx_get_err_depth(VALUE self)
+@@ -682,6 +731,10 @@ ossl_x509stctx_get_err_depth(VALUE self)
  /*
   * call-seq:
   *   stctx.current_cert -> X509::Certificate
@@ -10086,7 +9642,7 @@ index 61543d4..7c54618 100644
   */
  static VALUE
  ossl_x509stctx_get_curr_cert(VALUE self)
-@@ -677,6 +749,10 @@ ossl_x509stctx_get_curr_cert(VALUE self)
+@@ -696,6 +749,10 @@ ossl_x509stctx_get_curr_cert(VALUE self)
  /*
   * call-seq:
   *   stctx.current_crl -> X509::CRL
@@ -10097,7 +9653,7 @@ index 61543d4..7c54618 100644
   */
  static VALUE
  ossl_x509stctx_get_curr_crl(VALUE self)
-@@ -696,7 +772,10 @@ ossl_x509stctx_get_curr_crl(VALUE self)
+@@ -715,7 +772,10 @@ ossl_x509stctx_get_curr_crl(VALUE self)
   * call-seq:
   *   stctx.flags = flags
   *
@@ -10109,7 +9665,7 @@ index 61543d4..7c54618 100644
   */
  static VALUE
  ossl_x509stctx_set_flags(VALUE self, VALUE flags)
-@@ -714,7 +793,10 @@ ossl_x509stctx_set_flags(VALUE self, VALUE flags)
+@@ -733,7 +793,10 @@ ossl_x509stctx_set_flags(VALUE self, VALUE flags)
   * call-seq:
   *   stctx.purpose = purpose
   *
@@ -10121,7 +9677,7 @@ index 61543d4..7c54618 100644
   */
  static VALUE
  ossl_x509stctx_set_purpose(VALUE self, VALUE purpose)
-@@ -731,6 +813,11 @@ ossl_x509stctx_set_purpose(VALUE self, VALUE purpose)
+@@ -750,6 +813,11 @@ ossl_x509stctx_set_purpose(VALUE self, VALUE purpose)
  /*
   * call-seq:
   *   stctx.trust = trust
@@ -10133,7 +9689,7 @@ index 61543d4..7c54618 100644
   */
  static VALUE
  ossl_x509stctx_set_trust(VALUE self, VALUE trust)
-@@ -749,6 +836,8 @@ ossl_x509stctx_set_trust(VALUE self, VALUE trust)
+@@ -768,6 +836,8 @@ ossl_x509stctx_set_trust(VALUE self, VALUE trust)
   *   stctx.time = time
   *
   * Sets the time used in the verification. If not set, the current time is used.
@@ -10142,7 +9698,7 @@ index 61543d4..7c54618 100644
   */
  static VALUE
  ossl_x509stctx_set_time(VALUE self, VALUE time)
-@@ -824,23 +913,37 @@ Init_ossl_x509store(void)
+@@ -843,23 +913,37 @@ Init_ossl_x509store(void)
      cX509Store = rb_define_class_under(mX509, "Store", rb_cObject);
      /*
       * The callback for additional certificate verification. It is invoked for
@@ -10448,7 +10004,7 @@ index 547d334..346602d 100644
  
  end
 diff --git a/test/openssl/test_cipher.rb b/test/openssl/test_cipher.rb
-index 178f5ab..b5fdf0b 100644
+index 65b36dd..b5fdf0b 100644
 --- a/test/openssl/test_cipher.rb
 +++ b/test/openssl/test_cipher.rb
 @@ -135,25 +135,22 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
@@ -10494,95 +10050,19 @@ index 178f5ab..b5fdf0b 100644
      end
    end
  
-@@ -174,6 +171,48 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
-     assert_not_predicate(cipher, :authenticated?)
-   end
- 
-+  def test_aes_ccm
-+    # RFC 3610 Section 8, Test Case 1
-+    key = ["c0c1c2c3c4c5c6c7c8c9cacbcccdcecf"].pack("H*")
-+    iv =  ["00000003020100a0a1a2a3a4a5"].pack("H*")
-+    aad = ["0001020304050607"].pack("H*")
-+    pt =  ["08090a0b0c0d0e0f101112131415161718191a1b1c1d1e"].pack("H*")
-+    ct =  ["588c979a61c663d2f066d0c2c0f989806d5f6b61dac384"].pack("H*")
-+    tag = ["17e8d12cfdf926e0"].pack("H*")
-+
-+    kwargs = {auth_tag_len: 8, iv_len: 13, key: key, iv: iv}
-+    cipher = new_encryptor("aes-128-ccm", **kwargs, ccm_data_len: pt.length, auth_data: aad)
-+    assert_equal ct, cipher.update(pt) << cipher.final
-+    assert_equal tag, cipher.auth_tag
-+    cipher = new_decryptor("aes-128-ccm", **kwargs, ccm_data_len: ct.length, auth_tag: tag, auth_data: aad)
-+    assert_equal pt, cipher.update(ct) << cipher.final
-+
-+    # truncated tag is accepted
-+    cipher = new_encryptor("aes-128-ccm", **kwargs, ccm_data_len: pt.length, auth_data: aad)
-+    assert_equal ct, cipher.update(pt) << cipher.final
-+    assert_equal tag[0, 8], cipher.auth_tag(8)
-+    cipher = new_decryptor("aes-128-ccm", **kwargs, ccm_data_len: ct.length, auth_tag: tag[0, 8], auth_data: aad)
-+    assert_equal pt, cipher.update(ct) << cipher.final
-+
-+    # wrong tag is rejected
-+    tag2 = tag.dup
-+    tag2.setbyte(-1, (tag2.getbyte(-1) + 1) & 0xff)
-+    cipher = new_decryptor("aes-128-ccm", **kwargs, ccm_data_len: ct.length, auth_tag: tag2, auth_data: aad)
-+    assert_raise(OpenSSL::Cipher::CipherError) { cipher.update(ct) }
-+
-+    # wrong aad is rejected
-+    aad2 = aad[0..-2] << aad[-1].succ
-+    cipher = new_decryptor("aes-128-ccm", **kwargs, ccm_data_len: ct.length, auth_tag: tag, auth_data: aad2)
-+    assert_raise(OpenSSL::Cipher::CipherError) { cipher.update(ct) }
-+
-+    # wrong ciphertext is rejected
-+    ct2 = ct[0..-2] << ct[-1].succ
-+    cipher = new_decryptor("aes-128-ccm", **kwargs, ccm_data_len: ct2.length, auth_tag: tag, auth_data: aad)
-+    assert_raise(OpenSSL::Cipher::CipherError) { cipher.update(ct2) }
-+  end if has_cipher?("aes-128-ccm") &&
-+         OpenSSL::Cipher.new("aes-128-ccm").authenticated? &&
+@@ -214,7 +211,7 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
+     assert_raise(OpenSSL::Cipher::CipherError) { cipher.update(ct2) }
+   end if has_cipher?("aes-128-ccm") &&
+          OpenSSL::Cipher.new("aes-128-ccm").authenticated? &&
+-         OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10101000  # version >= v1.1.1
 +         OpenSSL::OPENSSL_VERSION_NUMBER >= 0x1010103f # version >= 1.1.1c
-+
+ 
    def test_aes_gcm
      # GCM spec Appendix B Test Case 4
-     key = ["feffe9928665731c6d6a8f9467308308"].pack("H*")
 diff --git a/test/openssl/test_config.rb b/test/openssl/test_config.rb
-index f65392c..24a215a 100644
+index e041c1a..24a215a 100644
 --- a/test/openssl/test_config.rb
 +++ b/test/openssl/test_config.rb
-@@ -61,14 +61,14 @@ foo\\bar::foo\\bar = baz
- [default1  default2]\t\t  # space is allowed in section name
-           fo =b  ar       # space allowed in value
- [emptysection]
-- [doller ]
-+ [dollar ]
- foo=bar
- bar = $(foo)
- baz = 123$(default::bar)456${foo}798
- qux = ${baz}
- quxx = $qux.$qux
- __EOC__
--    assert_equal(['default', 'default1  default2', 'doller', 'emptysection', 'foo', 'foo\\bar'], c.sections.sort)
-+    assert_equal(['default', 'default1  default2', 'dollar', 'emptysection', 'foo', 'foo\\bar'], c.sections.sort)
-     assert_equal(['', 'a', 'bar', 'baz', 'd', 'dq', 'dq2', 'esc', 'foo\\bar', 'sq'], c['default'].keys.sort)
-     assert_equal('c', c['default'][''])
-     assert_equal('', c['default']['a'])
-@@ -84,12 +84,12 @@ __EOC__
-     assert_equal('baz', c['foo\\bar']['foo\\bar'])
-     assert_equal('b  ar', c['default1  default2']['fo'])
- 
--    # dolloer
--    assert_equal('bar', c['doller']['foo'])
--    assert_equal('bar', c['doller']['bar'])
--    assert_equal('123baz456bar798', c['doller']['baz'])
--    assert_equal('123baz456bar798', c['doller']['qux'])
--    assert_equal('123baz456bar798.123baz456bar798', c['doller']['quxx'])
-+    # dollar
-+    assert_equal('bar', c['dollar']['foo'])
-+    assert_equal('bar', c['dollar']['bar'])
-+    assert_equal('123baz456bar798', c['dollar']['baz'])
-+    assert_equal('123baz456bar798', c['dollar']['qux'])
-+    assert_equal('123baz456bar798.123baz456bar798', c['dollar']['quxx'])
- 
-     excn = assert_raise(OpenSSL::ConfigError) do
-       OpenSSL::Config.parse("foo = $bar")
 @@ -121,6 +121,11 @@ __EOC__
    end
  
@@ -12481,7 +11961,7 @@ index 88164c3..4bb39ed 100644
  
    def test_marshal
 diff --git a/test/openssl/test_ssl.rb b/test/openssl/test_ssl.rb
-index 6095d54..a7607da 100644
+index 2d9ee7b..a7607da 100644
 --- a/test/openssl/test_ssl.rb
 +++ b/test/openssl/test_ssl.rb
 @@ -4,6 +4,17 @@ require_relative "utils"
@@ -12646,19 +12126,7 @@ index 6095d54..a7607da 100644
      vflag = OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
      start_server(verify_mode: vflag, ignore_listener_error: true) { |port|
        assert_handshake_error {
-@@ -257,7 +307,10 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
- 
-   def test_client_auth_success
-     vflag = OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
--    start_server(verify_mode: vflag) { |port|
-+    start_server(verify_mode: vflag,
-+      ctx_proc: proc { |ctx|
-+        ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION if libressl?(3, 2, 0)
-+    }) { |port|
-       ctx = OpenSSL::SSL::SSLContext.new
-       ctx.key = @cli_key
-       ctx.cert = @cli_cert
-@@ -282,20 +335,16 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
+@@ -285,20 +335,16 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
      }
    end
  
@@ -12685,16 +12153,7 @@ index 6095d54..a7607da 100644
        assert_handshake_error {
          server_connect(port, ctx) { |ssl| ssl.puts("abc"); ssl.gets }
        }
-@@ -303,6 +352,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
-   end
- 
-   def test_client_ca
-+    pend "LibreSSL 3.2 has broken client CA support" if libressl?(3, 2, 0)
-+
-     ctx_proc = Proc.new do |ctx|
-       ctx.client_ca = [@ca_cert]
-     end
-@@ -322,59 +373,20 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
+@@ -327,59 +373,20 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
      }
    end
  
@@ -12766,7 +12225,7 @@ index 6095d54..a7607da 100644
      end
    end
  
-@@ -478,9 +490,12 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
+@@ -483,6 +490,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
      start_server(accept_proc: proc { |server|
        server_finished = server.finished_message
        server_peer_finished = server.peer_finished_message
@@ -12775,11 +12234,7 @@ index 6095d54..a7607da 100644
      }) { |port|
        ctx = OpenSSL::SSL::SSLContext.new
        ctx.verify_mode = OpenSSL::SSL::VERIFY_NONE
-+      ctx.max_version = :TLS1_2 if libressl?(3, 2, 0) && !libressl?(3, 3, 0)
-       server_connect(port, ctx) { |ssl|
-         ssl.puts "abc"; ssl.gets
- 
-@@ -508,11 +523,10 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
+@@ -514,11 +523,10 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
    end
  
    def test_post_connect_check_with_anon_ciphers
@@ -12792,7 +12247,7 @@ index 6095d54..a7607da 100644
        ctx.security_level = 0
      }
  
-@@ -551,8 +565,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
+@@ -557,8 +565,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
  
      exts = [
        ["keyUsage","keyEncipherment,digitalSignature",true],
@@ -12802,7 +12257,7 @@ index 6095d54..a7607da 100644
      ]
      @svr_cert = issue_cert(@svr, @svr_key, 4, exts, @ca_cert, @ca_key)
      start_server { |port|
-@@ -787,7 +800,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
+@@ -793,7 +800,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
  
    def test_tlsext_hostname
      fooctx = OpenSSL::SSL::SSLContext.new
@@ -12810,7 +12265,7 @@ index 6095d54..a7607da 100644
      fooctx.cert = @cli_cert
      fooctx.key = @cli_key
  
-@@ -839,7 +851,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
+@@ -845,7 +851,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
      ctx2 = OpenSSL::SSL::SSLContext.new
      ctx2.cert = @svr_cert
      ctx2.key = @svr_key
@@ -12818,7 +12273,7 @@ index 6095d54..a7607da 100644
      ctx2.servername_cb = lambda { |args| Object.new }
  
      sock1, sock2 = socketpair
-@@ -866,19 +877,47 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
+@@ -872,6 +877,31 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
      sock2.close if sock2
    end
  
@@ -12849,18 +12304,8 @@ index 6095d54..a7607da 100644
 +
    def test_verify_hostname_on_connect
      ctx_proc = proc { |ctx|
-+      san = "DNS:a.example.com,DNS:*.b.example.com"
-+      san += ",DNS:c*.example.com,DNS:d.*.example.com" unless libressl?(3, 2, 2)
-       exts = [
-         ["keyUsage", "keyEncipherment,digitalSignature", true],
--        ["subjectAltName", "DNS:a.example.com,DNS:*.b.example.com," \
--                           "DNS:c*.example.com,DNS:d.*.example.com"],
-+        ["subjectAltName", san],
-       ]
-+
-       ctx.cert = issue_cert(@svr, @svr_key, 4, exts, @ca_cert, @ca_key)
-       ctx.key = @svr_key
-     }
+       san = "DNS:a.example.com,DNS:*.b.example.com"
+@@ -887,6 +917,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
  
      start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
        ctx = OpenSSL::SSL::SSLContext.new
@@ -12868,15 +12313,7 @@ index 6095d54..a7607da 100644
        ctx.verify_hostname = true
        ctx.cert_store = OpenSSL::X509::Store.new
        ctx.cert_store.add_cert(@ca_cert)
-@@ -893,6 +932,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
-         ["cx.example.com", true],
-         ["d.x.example.com", false],
-       ].each do |name, expected_ok|
-+        next if name.start_with?('cx') if libressl?(3, 2, 2)
-         begin
-           sock = TCPSocket.new("127.0.0.1", port)
-           ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
-@@ -941,10 +981,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
+@@ -950,10 +981,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
          ssl.hostname = "b.example.com"
          assert_handshake_error { ssl.connect }
          assert_equal false, verify_callback_ok
@@ -12888,7 +12325,7 @@ index 6095d54..a7607da 100644
        ensure
          sock&.close
        end
-@@ -955,14 +992,17 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
+@@ -964,14 +992,17 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
      start_server(ignore_listener_error: true) { |port|
        ctx = OpenSSL::SSL::SSLContext.new
        ctx.set_params
@@ -12908,7 +12345,7 @@ index 6095d54..a7607da 100644
      }
      start_server(ignore_listener_error: true, ctx_proc: ctx_proc) { |port|
        store = OpenSSL::X509::Store.new
-@@ -1169,46 +1209,51 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
+@@ -1178,46 +1209,51 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
    end
  
    def test_options_disable_versions
@@ -12995,7 +12432,7 @@ index 6095d54..a7607da 100644
    end
  
    def test_ssl_methods_constant
-@@ -1234,7 +1279,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
+@@ -1243,7 +1279,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
      }
    end
  
@@ -13003,7 +12440,7 @@ index 6095d54..a7607da 100644
    def test_alpn_protocol_selection_ary
      advertised = ["http/1.1", "spdy/2"]
      ctx_proc = Proc.new { |ctx|
-@@ -1259,7 +1303,6 @@ if openssl?(1, 0, 2) || libressl?
+@@ -1268,7 +1303,6 @@ if openssl?(1, 0, 2) || libressl?
      ctx1 = OpenSSL::SSL::SSLContext.new
      ctx1.cert = @svr_cert
      ctx1.key = @svr_key
@@ -13011,7 +12448,7 @@ index 6095d54..a7607da 100644
      ctx1.alpn_select_cb = -> (protocols) { nil }
      ssl1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
  
-@@ -1280,10 +1323,8 @@ if openssl?(1, 0, 2) || libressl?
+@@ -1289,10 +1323,8 @@ if openssl?(1, 0, 2) || libressl?
      t&.kill
      t&.join
    end
@@ -13022,7 +12459,7 @@ index 6095d54..a7607da 100644
      pend "NPN is not supported" unless \
        OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
      pend "LibreSSL 2.6 has broken NPN functions" if libressl?(2, 6, 1)
-@@ -1304,7 +1345,6 @@ end
+@@ -1313,7 +1345,6 @@ end
    end
  
    def test_npn_protocol_selection_enum
@@ -13030,7 +12467,7 @@ index 6095d54..a7607da 100644
      pend "NPN is not supported" unless \
        OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
      pend "LibreSSL 2.6 has broken NPN functions" if libressl?(2, 6, 1)
-@@ -1329,7 +1369,6 @@ end
+@@ -1338,7 +1369,6 @@ end
    end
  
    def test_npn_protocol_selection_cancel
@@ -13038,7 +12475,7 @@ index 6095d54..a7607da 100644
      pend "NPN is not supported" unless \
        OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
      pend "LibreSSL 2.6 has broken NPN functions" if libressl?(2, 6, 1)
-@@ -1343,7 +1382,6 @@ end
+@@ -1352,7 +1382,6 @@ end
    end
  
    def test_npn_advertised_protocol_too_long
@@ -13046,7 +12483,7 @@ index 6095d54..a7607da 100644
      pend "NPN is not supported" unless \
        OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
      pend "LibreSSL 2.6 has broken NPN functions" if libressl?(2, 6, 1)
-@@ -1357,7 +1395,6 @@ end
+@@ -1366,7 +1395,6 @@ end
    end
  
    def test_npn_selected_protocol_too_long
@@ -13054,7 +12491,7 @@ index 6095d54..a7607da 100644
      pend "NPN is not supported" unless \
        OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
      pend "LibreSSL 2.6 has broken NPN functions" if libressl?(2, 6, 1)
-@@ -1398,61 +1435,51 @@ end
+@@ -1407,61 +1435,51 @@ end
    end
  
    def test_get_ephemeral_key
@@ -13154,7 +12591,7 @@ index 6095d54..a7607da 100644
      end
    end
  
-@@ -1517,13 +1544,11 @@ end
+@@ -1526,13 +1544,11 @@ end
      end
    end
  
@@ -13170,7 +12607,7 @@ index 6095d54..a7607da 100644
        ctx.ciphers = "DH:!NULL"
        ctx.tmp_dh_callback = ->(*args) {
          called = true
-@@ -1533,18 +1558,14 @@ end
+@@ -1542,18 +1558,14 @@ end
      start_server(ctx_proc: ctx_proc) do |port|
        server_connect(port) { |ssl|
          assert called, "dh callback should be called"
@@ -13191,7 +12628,7 @@ index 6095d54..a7607da 100644
        ctx.ciphers = "DH:!NULL" # use DH
        ctx.tmp_dh_callback = nil
      }
-@@ -1557,71 +1578,71 @@ end
+@@ -1566,33 +1578,21 @@ end
      end
    end
  
@@ -13229,15 +12666,13 @@ index 6095d54..a7607da 100644
      end
    end
  
--  def test_ecdh_curves
+   def test_ecdh_curves_tls12
 -    pend "EC is disabled" unless defined?(OpenSSL::PKey::EC)
 -
-+  def test_ecdh_curves_tls12
      ctx_proc = -> ctx {
        # Enable both ECDHE (~ TLS 1.2) cipher suites and TLS 1.3
--      ctx.ciphers = "DEFAULT:!kRSA:!kEDH"
-+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
-+      ctx.ciphers = "kEECDH"
+       ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+@@ -1600,39 +1600,34 @@ end
        ctx.ecdh_curves = "P-384:P-521"
      }
      start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
@@ -13248,15 +12683,10 @@ index 6095d54..a7607da 100644
 +      ctx.ecdh_curves = "P-256:P-384"
        server_connect(port, ctx) { |ssl|
          cs = ssl.cipher[0]
--        if /\ATLS/ =~ cs # Is TLS 1.3 is used?
+         assert_match (/\AECDH/), cs
+-        if ssl.respond_to?(:tmp_key)
 -          assert_equal "secp384r1", ssl.tmp_key.group.curve_name
--        else
--          assert_match (/\AECDH/), cs
--          if ssl.respond_to?(:tmp_key)
--            assert_equal "secp384r1", ssl.tmp_key.group.curve_name
--          end
 -        end
-+        assert_match (/\AECDH/), cs
 +        assert_equal "secp384r1", ssl.tmp_key.group.curve_name
          ssl.puts "abc"; assert_equal "abc\n", ssl.gets
        }
@@ -13264,6 +12694,13 @@ index 6095d54..a7607da 100644
 -      if openssl?(1, 0, 2) || libressl?(2, 5, 1)
 -        ctx = OpenSSL::SSL::SSLContext.new
 -        ctx.ecdh_curves = "P-256"
+-
+-        assert_raise(OpenSSL::SSL::SSLError) {
+-          server_connect(port, ctx) { }
+-        }
+-
+-        ctx = OpenSSL::SSL::SSLContext.new
+-        ctx.ecdh_curves = "P-521:P-384"
 +      # Test 2: Client=P-256, Server=P-521:P-384 --> Fail
 +      ctx = OpenSSL::SSL::SSLContext.new
 +      ctx.ecdh_curves = "P-256"
@@ -13271,9 +12708,11 @@ index 6095d54..a7607da 100644
 +        server_connect(port, ctx) { }
 +      }
  
--        assert_raise(OpenSSL::SSL::SSLError) {
--          server_connect(port, ctx) { }
+-        server_connect(port, ctx) { |ssl|
+-          assert_equal "secp521r1", ssl.tmp_key.group.curve_name
+-          ssl.puts "abc"; assert_equal "abc\n", ssl.gets
 -        }
+-      end
 +      # Test 3: Client=P-521:P-384, Server=P-521:P-384 --> P-521
 +      ctx = OpenSSL::SSL::SSLContext.new
 +      ctx.ecdh_curves = "P-521:P-384"
@@ -13281,37 +12720,16 @@ index 6095d54..a7607da 100644
 +        assert_equal "secp521r1", ssl.tmp_key.group.curve_name
 +        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
 +      }
-+    end
-+  end
- 
--        ctx = OpenSSL::SSL::SSLContext.new
--        ctx.ecdh_curves = "P-521:P-384"
-+  def test_ecdh_curves_tls13
-+    pend "TLS 1.3 not supported" unless tls13_supported?
- 
--        server_connect(port, ctx) { |ssl|
--          assert_equal "secp521r1", ssl.tmp_key.group.curve_name
--          ssl.puts "abc"; assert_equal "abc\n", ssl.gets
--        }
--      end
-+    ctx_proc = -> ctx {
-+      # Assume TLS 1.3 is enabled and chosen by default
-+      ctx.ecdh_curves = "P-384:P-521"
-+    }
-+    start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
-+      ctx = OpenSSL::SSL::SSLContext.new
-+      ctx.ecdh_curves = "P-256:P-384" # disable P-521
-+
-+      server_connect(port, ctx) { |ssl|
-+        assert_equal "TLSv1.3", ssl.ssl_version
-+        assert_equal "secp384r1", ssl.tmp_key.group.curve_name
-+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
-+      }
      end
    end
  
+   def test_ecdh_curves_tls13
+-    pend "EC is disabled" unless defined?(OpenSSL::PKey::EC)
+     pend "TLS 1.3 not supported" unless tls13_supported?
+ 
+     ctx_proc = -> ctx {
 diff --git a/test/openssl/test_ssl_session.rb b/test/openssl/test_ssl_session.rb
-index 89726d4..b72b10d 100644
+index a98efda..b72b10d 100644
 --- a/test/openssl/test_ssl_session.rb
 +++ b/test/openssl/test_ssl_session.rb
 @@ -5,8 +5,6 @@ if defined?(OpenSSL)
@@ -13323,15 +12741,7 @@ index 89726d4..b72b10d 100644
      ctx_proc = proc { |ctx| ctx.ssl_version = :TLSv1_2 }
      start_server(ctx_proc: ctx_proc) do |port|
        server_connect_with_session(port, nil, nil) { |ssl|
-@@ -122,6 +120,7 @@ __EOS__
-       ctx.options &= ~OpenSSL::SSL::OP_NO_TICKET
-       # Disable server-side session cache which is enabled by default
-       ctx.session_cache_mode = OpenSSL::SSL::SSLContext::SESSION_CACHE_OFF
-+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION if libressl?(3, 2, 0)
-     }
-     start_server(ctx_proc: ctx_proc) do |port|
-       sess1 = server_connect_with_session(port, nil, nil) { |ssl|
-@@ -143,8 +142,6 @@ __EOS__
+@@ -144,8 +142,6 @@ __EOS__
    end
  
    def test_server_session_cache
@@ -13340,7 +12750,7 @@ index 89726d4..b72b10d 100644
      ctx_proc = Proc.new do |ctx|
        ctx.ssl_version = :TLSv1_2
        ctx.options |= OpenSSL::SSL::OP_NO_TICKET
-@@ -223,8 +220,6 @@ __EOS__
+@@ -224,8 +220,6 @@ __EOS__
    TEST_SESSION_REMOVE_CB = ENV["OSSL_TEST_ALL"] == "1"
  
    def test_ctx_client_session_cb
@@ -13349,7 +12759,7 @@ index 89726d4..b72b10d 100644
      ctx_proc = proc { |ctx| ctx.ssl_version = :TLSv1_2 }
      start_server(ctx_proc: ctx_proc) do |port|
        called = {}
-@@ -256,8 +251,6 @@ __EOS__
+@@ -257,8 +251,6 @@ __EOS__
    end
  
    def test_ctx_server_session_cb
@@ -13358,49 +12768,6 @@ index 89726d4..b72b10d 100644
      connections = nil
      called = {}
      cctx = OpenSSL::SSL::SSLContext.new
-diff --git a/test/openssl/test_ts.rb b/test/openssl/test_ts.rb
-index 8e31a7d..7cb1a1f 100644
---- a/test/openssl/test_ts.rb
-+++ b/test/openssl/test_ts.rb
-@@ -181,6 +181,12 @@ _end_of_pem_
-     assert_equal(42, qer2.nonce)
-   end
- 
-+  def test_request_invalid_asn1
-+    assert_raise(OpenSSL::Timestamp::TimestampError) do
-+      OpenSSL::Timestamp::Request.new("*" * 44)
-+    end
-+  end
-+
-   def test_response_constants
-     assert_equal(0, OpenSSL::Timestamp::Response::GRANTED)
-     assert_equal(1, OpenSSL::Timestamp::Response::GRANTED_WITH_MODS)
-@@ -338,6 +344,12 @@ _end_of_pem_
-     end
-   end
- 
-+  def test_response_invalid_asn1
-+    assert_raise(OpenSSL::Timestamp::TimestampError) do
-+      OpenSSL::Timestamp::Response.new("*" * 44)
-+    end
-+  end
-+
-   def test_no_cert_requested
-     req = OpenSSL::Timestamp::Request.new
-     req.algorithm = "SHA1"
-@@ -590,6 +602,12 @@ _end_of_pem_
-     assert_equal(123, info.nonce)
-   end
- 
-+  def test_token_info_invalid_asn1
-+    assert_raise(OpenSSL::Timestamp::TimestampError) do
-+      OpenSSL::Timestamp::TokenInfo.new("*" * 44)
-+    end
-+  end
-+
-   private
- 
-   def assert_cert expected, actual
 diff --git a/test/openssl/test_x509cert.rb b/test/openssl/test_x509cert.rb
 index 848a314..d696b98 100644
 --- a/test/openssl/test_x509cert.rb
@@ -13464,7 +12831,7 @@ index 848a314..d696b98 100644
  
    def certificate_error_returns_false
 diff --git a/test/openssl/test_x509store.rb b/test/openssl/test_x509store.rb
-index 1cbc73d..d6c0e70 100644
+index e9602e3..d6c0e70 100644
 --- a/test/openssl/test_x509store.rb
 +++ b/test/openssl/test_x509store.rb
 @@ -4,37 +4,27 @@ require_relative "utils"
@@ -13572,7 +12939,7 @@ index 1cbc73d..d6c0e70 100644
 -    ee1_cert = issue_cert(@ee1, @dsa256, 10, ee_exts, ca2_cert, @rsa1024)
 -    ee2_cert = issue_cert(@ee2, @dsa512, 20, ee_exts, ca2_cert, @rsa1024)
 -    ee3_cert = issue_cert(@ee2, @dsa512, 30,  ee_exts, ca2_cert, @rsa1024,
--                          not_before: now-100, not_after: now-50)
+-                          not_before: now-100, not_after: now-1)
 -    ee4_cert = issue_cert(@ee2, @dsa512, 40, ee_exts, ca2_cert, @rsa1024,
 -                          not_before: now+1000, not_after: now+2000,)
 +    ee1 = OpenSSL::X509::Name.parse_rfc2253("CN=EE 1")
@@ -13636,14 +13003,14 @@ index 1cbc73d..d6c0e70 100644
 +    ca2 = OpenSSL::X509::Name.parse_rfc2253("CN=Intermediate CA")
 +    ca2_key = Fixtures.pkey("rsa-2")
 +    ca2_cert = issue_cert(ca2, ca2_key, 2, ca_exts, ca1_cert, ca1_key)
-+
+ 
 +    ee_exts = [
 +      ["keyUsage", "keyEncipherment,digitalSignature", true],
 +    ]
 +    ee1 = OpenSSL::X509::Name.parse_rfc2253("CN=EE 1")
 +    ee1_key = Fixtures.pkey("rsa-3")
 +    ee1_cert = issue_cert(ee1, ee1_key, 10, ee_exts, ca2_cert, ca2_key)
- 
++
 +    # verify_callback on X509::Store is called with proper arguments
 +    cb_calls = []
 +    store = OpenSSL::X509::Store.new
@@ -13705,7 +13072,7 @@ index 1cbc73d..d6c0e70 100644
 -    assert_equal(@ee2.to_der, chain[0].subject.to_der)
 -    assert_equal(@ca2.to_der, chain[1].subject.to_der)
 -    assert_equal(@ca1.to_der, chain[2].subject.to_der)
--    assert_equal(false, store.verify(ee3_cert), "now=#{now.inspect} Time.now=#{Time.now.inspect} store=#{store.inspect} ee3_cert=#{ee3_cert.inspect}")
+-    assert_equal(false, store.verify(ee3_cert))
 -    assert_equal(OpenSSL::X509::V_ERR_CERT_HAS_EXPIRED, store.error)
 -    assert_match(/expire/i, store.error_string)
 -    assert_equal(false, store.verify(ee4_cert))
@@ -13729,14 +13096,14 @@ index 1cbc73d..d6c0e70 100644
 +    ca1 = OpenSSL::X509::Name.parse_rfc2253("CN=Root CA")
 +    ca1_key = Fixtures.pkey("rsa-1")
 +    ca1_cert = issue_cert(ca1, ca1_key, 1, ca_exts, nil, nil)
- 
++
 +    ee_exts = [
 +      ["keyUsage", "keyEncipherment,digitalSignature", true],
 +    ]
 +    ee1 = OpenSSL::X509::Name.parse_rfc2253("CN=EE 1")
 +    ee1_key = Fixtures.pkey("rsa-3")
 +    ee1_cert = issue_cert(ee1, ee1_key, 10, ee_exts, ca1_cert, ca1_key)
-+
+ 
 +    # Purpose not set
      store = OpenSSL::X509::Store.new
      store.add_cert(ca1_cert)
@@ -13763,7 +13130,12 @@ index 1cbc73d..d6c0e70 100644
 -    assert_equal(false, store.verify(ee4_cert))
 -    assert_equal(OpenSSL::X509::V_ERR_CERT_HAS_EXPIRED, store.error)
 +  end
-+
+ 
+-    # the underlying X509 struct caches the result of the last
+-    # verification for signature and not-before. so the following code
+-    # rebuilds new objects to avoid site effect.
+-    store.time = Time.now - 4000
+-    assert_equal(false, store.verify(OpenSSL::X509::Certificate.new(ca2_cert)))
 +  def test_verify_validity_period
 +    # Creating test certificates with validity periods:
 +    #
@@ -13781,12 +13153,7 @@ index 1cbc73d..d6c0e70 100644
 +    ca1_key = Fixtures.pkey("rsa-1")
 +    ca1_cert = issue_cert(ca1, ca1_key, 1, ca_exts, nil, nil,
 +                          not_before: now - 5000, not_after: now + 5000)
- 
--    # the underlying X509 struct caches the result of the last
--    # verification for signature and not-before. so the following code
--    # rebuilds new objects to avoid site effect.
--    store.time = Time.now - 4000
--    assert_equal(false, store.verify(OpenSSL::X509::Certificate.new(ca2_cert)))
++
 +    ee_exts = [
 +      ["keyUsage", "keyEncipherment,digitalSignature", true],
 +    ]
@@ -13844,7 +13211,7 @@ index 1cbc73d..d6c0e70 100644
 +    ee2 = OpenSSL::X509::Name.parse_rfc2253("CN=EE 2")
 +    ee2_key = Fixtures.pkey("rsa-3")
 +    ee2_cert = issue_cert(ee2, ee2_key, 20, ee_exts, ca2_cert, ca2_key)
- 
++
 +    # OpenSSL uses time(2) while Time.now uses clock_gettime(CLOCK_REALTIME),
 +    # and there may be difference, so giving 50 seconds margin.
 +    now = Time.now - 50
@@ -13857,7 +13224,7 @@ index 1cbc73d..d6c0e70 100644
 +    ca2_crl1 = issue_crl(revoke_info, 1, now, now+1800, [], ca2_cert, ca2_key, "sha256")
 +    revoke_info = []
 +    ca2_crl2 = issue_crl(revoke_info, 2, now-100, now-1, [], ca2_cert, ca2_key, "sha256")
-+
+ 
 +    # CRL check required, but no CRL supplied
      store = OpenSSL::X509::Store.new
 -    store.purpose = OpenSSL::X509::PURPOSE_ANY
@@ -13989,7 +13356,7 @@ index cf1f2d4..7b18f43 100644
      open_file("") {|f|
        assert_equal("", f.read(0))
 diff --git a/test/openssl/utils.rb b/test/openssl/utils.rb
-index 3776fba..4ebcb98 100644
+index ee734d9..4ebcb98 100644
 --- a/test/openssl/utils.rb
 +++ b/test/openssl/utils.rb
 @@ -42,9 +42,6 @@ module OpenSSL::TestUtils
@@ -14002,20 +13369,21 @@ index 3776fba..4ebcb98 100644
      end
  
      def read_file(category, name)
-@@ -192,9 +189,10 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
+@@ -192,13 +189,6 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
      @server = nil
    end
  
 -  def tls12_supported?
-+  def tls13_supported?
-+    return false unless defined?(OpenSSL::SSL::TLS1_3_VERSION)
-     ctx = OpenSSL::SSL::SSLContext.new
+-    ctx = OpenSSL::SSL::SSLContext.new
 -    ctx.min_version = ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
-+    ctx.min_version = ctx.max_version = OpenSSL::SSL::TLS1_3_VERSION
-     true
-   rescue
-   end
-@@ -217,7 +215,6 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
+-    true
+-  rescue
+-  end
+-
+   def tls13_supported?
+     return false unless defined?(OpenSSL::SSL::TLS1_3_VERSION)
+     ctx = OpenSSL::SSL::SSLContext.new
+@@ -225,7 +215,6 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
        ctx.cert_store = store
        ctx.cert = @svr_cert
        ctx.key = @svr_key
@@ -14023,7 +13391,7 @@ index 3776fba..4ebcb98 100644
        ctx.verify_mode = verify_mode
        ctx_proc.call(ctx) if ctx_proc
  
-@@ -231,9 +228,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
+@@ -239,9 +228,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
        threads = []
        begin
          server_thread = Thread.new do
@@ -14034,7 +13402,7 @@ index 3776fba..4ebcb98 100644
  
            begin
              loop do
-@@ -249,9 +244,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
+@@ -257,9 +244,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
                end
  
                th = Thread.new do
@@ -14045,7 +13413,7 @@ index 3776fba..4ebcb98 100644
  
                  begin
                    server_proc.call(ctx, ssl)
-@@ -268,9 +261,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
+@@ -276,9 +261,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
          end
  
          client_thread = Thread.new do
@@ -14056,7 +13424,7 @@ index 3776fba..4ebcb98 100644
  
            begin
              block.call(port)
-@@ -289,8 +280,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
+@@ -297,8 +280,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
              timeout = EnvUtil.apply_timeout_scale(30)
              th.join(timeout) or
                th.raise(RuntimeError, "[start_server] thread did not exit in #{timeout} secs")
@@ -14066,7 +13434,7 @@ index 3776fba..4ebcb98 100644
              pend = $!
            rescue Exception
            end
-@@ -308,32 +298,6 @@ class OpenSSL::PKeyTestCase < OpenSSL::TestCase
+@@ -316,32 +298,6 @@ class OpenSSL::PKeyTestCase < OpenSSL::TestCase
        assert_equal base.send(comp), test.send(comp)
      }
    end
