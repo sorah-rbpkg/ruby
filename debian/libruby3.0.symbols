@@ -769,6 +769,7 @@ libruby-3.0.so.3.0 libruby3.0 #MINVER#
  rb_gc_mark_movable@Base 3.0.0~preview1
  rb_gc_mark_values@Base 3.0.0~preview1
  rb_gc_mark_vm_stack_values@Base 3.0.0~preview1
+ rb_gc_ractor_newobj_cache_clear@Base 3.0.3-1
  rb_gc_register_address@Base 3.0.0~preview1
  rb_gc_register_mark_object@Base 3.0.0~preview1
  rb_gc_start@Base 3.0.0~preview1
