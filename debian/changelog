@@ -1,8 +1,17 @@
-ruby3.0 (3.0.3-1) UNRELEASED; urgency=medium
+ruby3.0 (3.0.3-1) unstable; urgency=medium
 
-  * New upstream version 3.0.3
+  * New upstream version 3.0.3.  Includes fixes for the following security
+    issues (Closes: #1002995):
+    - CVE-2021-41816: Buffer Overrun in CGI.escape_html
+    - CVE-2021-41817: regular expression Denial of Service in Date.parse
+    - CVE-2021-41819: mishandling of security prefixes in CGI::Cookie.parse
+  * Refresh patches
+  * autopkgtest: builtin-extensions: check openssl version
+  * debian/libruby3.0.symbols: update
+  * Fix generation of Provides:
+  * Exclude some tests from TestGemServer
 
- -- Antonio Terceiro <terceiro@debian.org>  Sun, 27 Feb 2022 12:51:42 -0300
+ -- Antonio Terceiro <terceiro@debian.org>  Sun, 13 Mar 2022 21:02:08 -0300
 
 ruby3.0 (3.0.2-7) unstable; urgency=medium
 
