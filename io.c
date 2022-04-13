@@ -2822,8 +2822,10 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
 
-    if (len == 0)
+    if (len == 0) {
+	io_set_read_length(str, 0, shrinkable);
 	return str;
+    }
 
     if (!nonblock)
         READ_CHECK(fptr);
@@ -2965,8 +2967,10 @@ io_read_nonblock(rb_execution_context_t *ec, VALUE io, VALUE length, VALUE str, 
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
 
-    if (len == 0)
+    if (len == 0) {
+	io_set_read_length(str, 0, shrinkable);
 	return str;
+    }
 
     n = read_buffered_data(RSTRING_PTR(str), len, fptr);
     if (n <= 0) {
@@ -11018,6 +11022,13 @@ nogvl_fcopyfile(struct copy_stream_struct *stp)
         return 0;
     if (lseek(stp->dst_fd, 0, SEEK_CUR) > (off_t)0) /* if dst IO was already written */
         return 0;
+    if (fcntl(stp->dst_fd, F_GETFL) & O_APPEND) {
+        /* fcopyfile(3) appends src IO to dst IO and then truncates
+         * dst IO to src IO's original size. */
+        off_t end = lseek(stp->dst_fd, 0, SEEK_END);
+        lseek(stp->dst_fd, 0, SEEK_SET);
+        if (end > (off_t)0) return 0;
+    }
 
     if (src_offset > (off_t)0) {
         off_t r;
