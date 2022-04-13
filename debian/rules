@@ -81,6 +81,7 @@ configure_options += --with-out-ext=win32api
 # Some tests rely on $HOME
 export HOME := $(shell mktemp -d)
 export LANG := C.UTF-8
+export LC_ALL := $(LANG)
 
 %:
 	dh $@ --parallel
@@ -102,7 +103,7 @@ override_dh_auto_clean:
 	$(RM) -r .ext
 	$(RM) -r doc/capi
 	$(RM) .installed.list GNUmakefile Makefile builtin_binary.inc \
-		config.status enc.mk uncommon.mk verconf.h
+		config.status enc.mk uncommon.mk verconf.h config.log
 
 override_dh_auto_build-arch:
 	dh_auto_build -- main V=1
@@ -159,6 +160,6 @@ override_dh_install-arch:
 	dh_install
 
 override_dh_gencontrol:
-	./debian/genprovides $(CURDIR)/debian/libruby3.0/usr/lib/ruby/gems/3.0.0/specifications/default/ \
-		>> debian/libruby3.0.substvars
+	./debian/genprovides $(CURDIR)/debian/libruby$(RUBY_VERSION)/usr/lib/ruby/gems/$(RUBY_API_VERSION)/specifications/default/ \
+		>> debian/libruby$(RUBY_VERSION).substvars
 	dh_gencontrol

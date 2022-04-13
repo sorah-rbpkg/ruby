@@ -9,3 +9,4 @@ exclude :test_install_creates_binstub_that_dont_trust_encoding, 'depends on sour
 exclude :test_default_gem_without_wrappers, 'failure against ruby2.7, expects path /var/lib/gems/2.7.0/specifications/default to exist'
 exclude :test_default_gem_with_exe_as_bindir, 'failure against ruby2.7, expects path /var/lib/gems/2.7.0/specifications/default to exist'
 exclude :test_install_creates_binstub_that_prefers_user_installed_gem_to_default, 'failure against ruby2.7, needs further investigation'
+exclude :test_app_script_text, 'failure against ruby-rubygems, version mismatch'

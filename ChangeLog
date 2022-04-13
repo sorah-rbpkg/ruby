@@ -1,5 +1,1109 @@
 -*- coding: utf-8 -*-
 
+commit 3fa771ddedac25560be57f4055f1767e6c810f58
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-04-12 20:08:08 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-04-12 20:48:55 +0900
+
+    Fix dtoa buffer overrun
+
+commit 052ec6d2585c3ace95671013d336f5543624ef3d
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-04-12 20:07:08 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-04-12 20:48:55 +0900
+
+    Just free compiled pattern if no space is used
+
+commit 47c3f31fd93fc5bb60bf401b666b94e667ec717e
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2022-04-12 14:07:39 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2022-04-12 14:07:39 +0900
+
+    * 2022-04-12 [ci skip]
+
+commit a6d990892c1d5496468bbacdd4cba99e8f0bd675
+  Author:     David Rodríguez <deivid.rodriguez@riseup.net>
+  AuthorDate: 2022-01-25 20:48:16 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-04-12 14:07:25 +0900
+
+    Fix spec to not touch the network
+
+    And not depend on the state of rack's master branch, in particular, on
+    their Ruby support range.
+
+commit 5758c6487de1cdc6df33dfabdd59de23d3fd55f4
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2022-01-31 09:42:40 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-04-12 14:07:25 +0900
+
+    Expect to receive a non-keywords hash
+
+    `RSpec::Mocks::ArgumentListMatcher#args_match?` fails when a
+    non-keywords hash is passed while a keyword hash is expected.
+
+    This is a change in `rspec-mocks` 3.10.3, so we need to adapt to it.
+
+commit cdec8a29c5e2e3fedc2e7726d409121d5e2890da
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2022-04-11 19:45:59 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-04-12 14:07:25 +0900
+
+    Merge Bundler-2.2.33
+
+commit 48be8051ef26dd93e714846d94a2c3794c5b101b
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2022-04-11 19:45:23 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-04-12 14:07:25 +0900
+
+    Merge RubyGems-3.2.33
+
+commit e73165c4cd3876435040100b8acab6ffc84f8fa8
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-04-02 14:24:20 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-04-02 14:24:20 +0900
+
+    merge revision(s) 035b75c8f4097a48cde3cebc5db5e2efddc21546:
+
+            Update zlib version to 1.2.12
+
+            ---
+             .appveyor.yml | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 74b42fe78154ff5e5a63342b17d005d6c4fa7761
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-04-02 14:20:08 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-04-02 14:20:08 +0900
+
+    remove bundled zlib patch file for mswin platform. It's already applied at zlib-1.2.12.
+
+commit b364e23d76ccc232c06cc691b467f17e303caa67
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-04-02 14:16:13 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-04-02 14:16:13 +0900
+
+    remove bundled zlib patch file for mswin platform. It's already applied at zlib-1.2.12.
+
+commit 6a022fb22dac7dcc9d68e339230f8b3cc2749842
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-04-02 14:08:11 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-04-02 14:08:11 +0900
+
+    rename filepath in patch for zlib.
+
+commit 2802f0628c67fd09890fd269c1ce818322455264
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-04-02 14:03:21 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-04-02 14:03:37 +0900
+
+    rename bundled zlib patch file for mswin platform.
+
+commit 45ee8ad921df53ac6598e4b4c927422664db938a
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2022-04-02 13:58:40 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2022-04-02 13:58:40 +0900
+
+    * 2022-04-02 [ci skip]
+
+commit 5fafd801fb2db9206097e352bbed02b1055e205a
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-04-02 13:58:13 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-04-02 13:58:13 +0900
+
+    bundle zlib-1.2.12 instead of 1.2.11.
+
+commit a72b7b898c69a116d754d599e8bb061761015255
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-03-21 16:23:30 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-03-21 16:52:05 +0900
+
+    merge revision(s) d0d6227a0da5925acf946a09191f172daf53baf2,fff1edf23ba28267bf57097c269f7fa87530e3fa: [Backport #17529]
+
+            alen should be actions number on ractor_select()
+
+            alen was number of rs, but it should be actions number
+            (taking ractors + receiving + yielding).
+            ---
+             ractor.c | 13 ++++++-------
+             1 file changed, 6 insertions(+), 7 deletions(-)
+
+            fix Ractor.yield(obj, move: true)
+
+            Ractor.yield(obj, move: true) and
+            Ractor.select(..., yield_value: obj, move: true) tried to yield a
+            value with move semantices, but if the trial is faild, the obj
+            should not become a moved object.
+
+            To keep this rule, `wait_moving` wait status is introduced.
+
+            New yield/take process:
+            (1) If a ractor tried to yield (move:true), make taking racotr's
+                wait status `wait_moving` and make a moved object by
+                `ractor_move(obj)` and wakeup taking ractor.
+            (2) If a ractor tried to take a message from a ractor waiting fo
+                yielding (move:true), wakeup the ractor and wait for (1).
+            ---
+             bootstraptest/test_ractor.rb | 25 +++++++++++++++
+             ractor.c                     | 73 +++++++++++++++++++++++++++++++++++---------
+             ractor_core.h                |  1 +
+             3 files changed, 84 insertions(+), 15 deletions(-)
+
+commit 1ea12cf590603dbc800314c98099eca9eeca1128
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-03-21 16:46:58 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-03-21 16:46:58 +0900
+
+    update common.mk dependency to follow up the previous commit.
+
+commit 1a1701c0c3d86c35019f2edf23c35ec6110d1bac
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-03-21 16:32:26 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-03-21 16:32:26 +0900
+
+    class.c: include gc.h to suppress 'implicit declaration of function' on some environments.
+
+commit e0146e6cc8f3578b02ad5f228f86bf1aef566d16
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-03-21 15:35:07 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-03-21 15:35:07 +0900
+
+    merge revision(s) 97426e15d721119738a548ecfa7232b1d027cd34: [Backport #18627]
+
+            [Bug #18627] Fix crash when including module
+
+            During lazy sweeping, the iclass could be a dead object that has not yet
+            been swept. However, the chain of superclasses of the iclass could
+            already have been swept (and become a new object), which would cause a
+            crash when trying to read the object.
+            ---
+             class.c | 48 ++++++++++++++++++++++++++++++------------------
+             1 file changed, 30 insertions(+), 18 deletions(-)
+
+commit f404b21f849af06fb8bbd4b87fdfb585e904d6c3
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-03-13 15:42:14 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-03-13 15:42:14 +0900
+
+    merge revision(s) 496591de96b261b8789332c7f8b2bfbd17658955: [Backport #18578]
+
+            st.c: Do not clear entries_bound when calling Hash#shift for empty
+             hash
+
+            tab->entries_bound is used to check if the bins are full in
+            rebuild_table_if_necessary.
+
+            Hash#shift against an empty hash assigned 0 to tab->entries_bound, but
+            didn't clear the bins. Thus, the table is not rebuilt even when the bins
+            are full. Attempting to add a new element into full-bin hash gets stuck.
+
+            This change stops clearing tab->entries_bound in Hash#shift.
+            [Bug #18578]
+            ---
+             st.c                   |  1 -
+             test/ruby/test_hash.rb | 13 +++++++++++++
+             2 files changed, 13 insertions(+), 1 deletion(-)
+
+commit 2bb5fa495bf9d366d3c1fefc6b093dc4830f27bf
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-03-13 15:20:35 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-03-13 15:20:35 +0900
+
+    merge revision(s) 29f6f79e7396018962eb25c5f5e409f5fe28a73b: [Backport #17788] [Backport #18574]
+
+            Get `ruby_nonempty_memcpy` to have C linkage
+
+            Fixes [Bug #17788]
+            ---
+             include/ruby/internal/memory.h | 2 ++
+             1 file changed, 2 insertions(+)
+
+commit 0bd3e436e27c048933133bc19f863c954ed3e3a6
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-03-13 15:16:29 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-03-13 15:16:29 +0900
+
+    merge revision(s) c79d2e54748f52c5023b0a1ee441561df9826c17: [Backport #18562]
+
+            Fix TAG_THROW through require [Bug #18562]
+
+            Previously this was being incorrectly swapped with TAG_RAISE in the next
+            line. This would end up checking the T_IMEMO throw_data to the exception
+            handling (which calls Module#===). This happened to not break existing
+            tests because Module#=== returned false when klass is NULL.
+
+            This commit handles throw from require correctly by jumping to the tag
+            retaining the TAG_THROW state.
+            ---
+             load.c                      |  2 +-
+             test/ruby/test_exception.rb | 21 +++++++++++++++++++++
+             2 files changed, 22 insertions(+), 1 deletion(-)
+
+commit f4f0c793f6eb427b0a85445bff49fdc6b73447ae
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-03-13 15:10:34 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-03-13 15:10:34 +0900
+
+    merge revision(s) b555e659c4974acc423083b71b1bd5ec6a926046: [Backport #18388]
+
+            Do not use `fcopyfile` if appending to non-empty file [Bug #18388]
+
+            `fcopyfile` appends `src` to `to` and then truncates `to` to it's
+            original size.
+            ---
+             io.c                 |  7 +++++++
+             test/ruby/test_io.rb | 12 ++++++++++++
+             2 files changed, 19 insertions(+)
+
+commit 6175823bab28b5d12f66371d67d006df37751fbc
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-03-13 11:52:53 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-03-13 11:52:53 +0900
+
+    merge revision(s) 7ff1bf317887c0d7b21e91ad548d07b9f05c540c,e89d80702bd98a8276243a7fcaa2a158b3bfb659: [Backport #18516]
+
+            An alias can suppress method redefinition warning
+
+            ---
+             test/ruby/test_alias.rb | 11 +++++++++++
+             1 file changed, 11 insertions(+)
+
+            Fix memory leak at the same named alias [Bug #18516]
+
+            When aliasing a method to the same name method, set a separate bit
+            flag on that method definition, instead of the reference count
+            increment.  Although this kind of alias has no actual effect at
+            runtime, is used as the hack to suppress the method re-definition
+            warning.
+            ---
+             method.h                |  1 +
+             test/ruby/test_alias.rb | 18 ++++++++++++++++++
+             vm_method.c             |  9 ++++++++-
+             3 files changed, 27 insertions(+), 1 deletion(-)
+
+commit 9c2213f6695a16917dbe7b5a3a334116d6d8bbf6
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-03-13 11:49:15 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-03-13 11:49:15 +0900
+
+    merge revision(s) 6a6227e0168b059c3ed34c9f0ace2e5dc2364221: [Backport #18517]
+
+            Shifting zero always results in zero [Bug #18517]
+
+            ---
+             numeric.c | 2 ++
+             1 file changed, 2 insertions(+)
+
+commit 6a8c166498b856ca1dcb53248f0be5fc138f1af3
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-03-13 11:47:39 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-03-13 11:47:39 +0900
+
+    merge revision(s) 5c7af72304d0ad33cd3f21b24a4bc44e8acd5b2c,d650b17686d49c2ce8e6a87039861154e93d4621: [Backport #18497]
+
+            Assuming EXIT_SUCCESS equals 0 is not portable
+
+            ---
+             test/ruby/test_fiber.rb | 6 +++---
+             1 file changed, 3 insertions(+), 3 deletions(-)
+
+            `rb_fiber_terminate` must not return [Bug #18497]
+
+            In a forked process from a fiber, the fiber becomes the only
+            fiber, `fiber_switch` does nothing as there is no other fibers,
+            `rb_fiber_terminate` does not terminate the fiber.  In that case,
+            reaches the end of `fiber_entry` finaly, which is declared as
+            "COROUTINE" and should never return.
+            ---
+             cont.c                     |  3 ++-
+             eval_intern.h              |  2 +-
+             test/fiber/test_process.rb | 15 +++++++++++++++
+             test/ruby/test_fiber.rb    |  5 +++++
+             4 files changed, 23 insertions(+), 2 deletions(-)
+
+commit 42b1e87ba7856f92973924985a63a60b5fa750c8
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-03-13 11:37:03 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-03-13 11:37:03 +0900
+
+    merge revision(s) ae5458f228a5477383e9c00425d85d50a3867817: [Backport #18475]
+
+            thread.c: Convert TAG_BREAK to a normal exception at thread top-level
+
+            [Bug #18475]
+            ---
+             test/ruby/test_enum.rb | 11 +++++++++++
+             thread.c               |  3 +++
+             2 files changed, 14 insertions(+)
+
+commit e18e6af604786be481115c7340c1450332615b57
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-03-12 16:53:37 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-03-12 16:53:37 +0900
+
+    merge revision(s) 9e0a91d0640600f2dfd7fc1d5fae6667019c9ca5: [Backport #18458]
+
+            Don't segfault if Warning.warn is undefined
+
+            Check that there is a method entry for the method before passing
+            it to rb_method_entry_arity.
+
+            Fixes [Bug #18458]
+            ---
+             error.c                     | 3 ++-
+             test/ruby/test_exception.rb | 8 ++++++++
+             2 files changed, 10 insertions(+), 1 deletion(-)
+
+commit bac99c5175bf58815846f9987093a6d944d07fd3
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-03-12 16:36:40 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-03-12 16:36:40 +0900
+
+    merge revision(s) bcc2bb28b04054106f4a36e8fd69b2af6ecb033a: [Backport #18500]
+
+            Fix stack buffer overflow
+
+            https://hackerone.com/reports/1306859
+            ---
+             include/ruby/internal/memory.h | 6 +++---
+             random.c                       | 7 ++-----
+             2 files changed, 5 insertions(+), 8 deletions(-)
+
+commit 7c0537906314f0c2a317b37661ccdec8dddc6277
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-03-12 16:30:52 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-03-12 16:30:52 +0900
+
+    merge revision(s) fdf39963490cf2cf95b30d91bb9b35964c2c2350: [Backport #18421]
+
+            Empty and return the buffer if zero size is given [Bug #18421]
+
+            In `IO#readpartial` and `IO#read_nonblock`, as well as `IO#read`.
+            ---
+             io.c                 |  8 ++++++--
+             test/ruby/test_io.rb | 21 +++++++++++++++++++++
+             2 files changed, 27 insertions(+), 2 deletions(-)
+
+commit f2d996dcff56057b48ae41ab6f23e7654848ea4b
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-03-12 16:28:26 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-03-12 16:28:26 +0900
+
+    merge revision(s) d6c5a30cfdf658280338dbb8c8b17fab3190b928,a2d4e1cda68a49980a4f9f353f400efbde7e7884: [Backport #18392]
+
+            ObjectSpace::WeakMap#inspect: check if living object [Bug #18392]
+
+            ---
+             gc.c                      | 29 +++++++++++++++++++++++------
+             test/ruby/test_weakmap.rb |  9 +++++++++
+             2 files changed, 32 insertions(+), 6 deletions(-)
+
+            Fixed the check order in wmap_live_p [Bug #18392]
+
+            Check if the object is a pointer to heap before check the flag in
+            that object.
+            ---
+             gc.c | 35 ++++++++++++++++++++++-------------
+             1 file changed, 22 insertions(+), 13 deletions(-)
+
+commit 09b27ec6a984ec1b660d5b7b48f2ff4d5a0065bc
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-03-12 16:01:47 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-03-12 16:01:47 +0900
+
+    merge revision(s) 737e4432b978eb4b9f5b10fb6cc6d9c883a5d17a: [Backport #18409]
+
+            configure: add -Wl,--no-as-needed
+
+            It is reported that combination of `--enable-shared --with-jemalloc`
+            breaks on Debian bullseye (testig).  Deeper investigation revealed that
+            this system's `ld(1)` is patched, to turn `ld --as-needed` on by
+            default.
+
+            This linker flag strips "unnecessary" library dependencies from an
+            executable.  In case of `ruby(1)` (of `--enable-shared`), because
+            everything is in `libruby.so`, the binary itself doesn't include any
+            calls to `malloc(3)` at all.  So in spite of our explicit `-ljemalloc`
+            flag, it is ignored.  Libc's one is chosen instead.
+
+            This is not what we want.  Let's force our `ruby(1)` link what we want.
+
+            Fixes https://github.com/ruby/ruby/pull/4627
+
+            The author would like to acknowledge
+            Akihiko Odaki <akihiko.odaki@gmail.com> for their contributions.
+            ---
+             configure.ac | 5 +++++
+             1 file changed, 5 insertions(+)
+
+commit 4b1cee1431b44e923611c65a8ec5cc61d4025641
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-03-12 16:00:02 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-03-12 16:00:02 +0900
+
+    merge revision(s) e2ec97c4b823a0b2e0c31e7a6d77b1dcdc0dfada: [Backport #18415]
+
+            [DOC] How to get the longest last match [Bug #18415]
+
+            ---
+             string.c | 32 +++++++++++++++++++++++++++++++-
+             1 file changed, 31 insertions(+), 1 deletion(-)
+
+commit 3ce60f44b8de3aabb31c37d2afd2a622a64a3e6f
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-03-12 15:58:42 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-03-12 15:58:42 +0900
+
+    merge revision(s) 0130e17a410d60a10e7041ce98748b8de6946971,32b7dcfb56a417c1d1c354102351fc1825d653bf,79cc566ab4cdf75f125ecf413a27d353a9756c08: [Backport #18394]
+
+            Always enabled read barrier even on GC.compact
+
+            Some objects can survive the GC before compaction, but get collected in
+            the second compaction.  This means we could have objects reference
+            T_MOVED during "free" in the second, compacting GC.  If that is the
+            case, we need to invalidate those "moved" addresses.  Invalidation is
+            done via read barrier, so we need to make sure the read barrier is
+            active even during `GC.compact`.
+
+            This also means we don't actually need to do one GC before compaction,
+            we can just do the compaction and GC in one step.
+            ---
+             gc.c | 20 +++-----------------
+             1 file changed, 3 insertions(+), 17 deletions(-)
+
+            Fix more assumptions about the read barrier
+
+            This is a continuation of 0130e17a410d60a10e7041ce98748b8de6946971.  We
+            need to always use the read barrier
+            ---
+             gc.c | 10 ----------
+             1 file changed, 10 deletions(-)
+
+            Make during_compacting flag in GC one bit
+
+            Commit c32218de1ba094223420a4ea017707f48d0009c5 turned during_compacting
+            flag to 2 bits to support the case when there is no write barrier. But
+            commit 32b7dcfb56a417c1d1c354102351fc1825d653bf changed compaction to
+            always enable the write barrier. This commit cleans up some of the
+            leftover code.
+            ---
+             gc.c | 4 ++--
+             1 file changed, 2 insertions(+), 2 deletions(-)
+
+commit e413a8ff970fc7692e6c0050a23678605ade884e
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-03-12 15:52:46 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-03-12 15:52:46 +0900
+
+    merge revision(s) ecb2ff60507a41c624f59cb9da6a008ab3ec36e1: [Backport #18403]
+
+            intern/select/posix.h: remove unused parameter from rb_fd_dup
+
+            This unused parameter seems to be accidently introduced by https://github.com/ruby/ruby/commit/9e6e39c
+            ---
+             include/ruby/internal/intern/select/posix.h | 3 +--
+             1 file changed, 1 insertion(+), 2 deletions(-)
+
+commit 2ec864d9b7a2c79b5bd9136665aa6f705fa76e53
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-03-12 14:43:41 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-03-12 14:43:41 +0900
+
+    merge revision(s) 9f0c6f20c58067923864575b60af730d191b8f6c: [Backport #18382]
+
+            [Bug #18382] Fix crash in compaction for
+             ObjectSpace.trace_object_allocations
+
+            ObjectSpace.trace_object_allocations can crash when auto-compaction is
+            enabled.
+            ---
+             ext/objspace/object_tracing.c | 3 ++-
+             1 file changed, 2 insertions(+), 1 deletion(-)
+
+commit 951e1377c18f84b52fbd3aab048da8536a3bbdb0
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-02-19 15:15:04 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-02-19 15:15:04 +0900
+
+    merge revision(s) c51b92c18deb850d2cea3a7c9020db23b364ab72: [Backport #18358]
+
+            [ruby/zlib] [Bug #18358] Fix crash in zlib when in progress
+
+            When Zlib::Inflate#inflate or Zlib::Deflate#deflate is called
+            recursively inside the block, a crash can occur because of an
+            use-after-free bug.
+
+            https://github.com/ruby/zlib/commit/50fb8a0338
+            ---
+             ext/zlib/zlib.c        | 117 ++++++++++++++++++++++++++++++++-----------------
+             test/zlib/test_zlib.rb |  10 ++++-
+             2 files changed, 85 insertions(+), 42 deletions(-)
+
+commit 49ed412060f48d3b9343b8b90d73e6fcb02b3354
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-02-19 14:36:41 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-02-19 14:36:41 +0900
+
+    merge revision(s) b3d62a77d928eff01268ca7fa1c1c0966702926d: [Backport #17803]
+
+            [ruby/zlib] Synchronize access to zstream to prevent segfault in
+             multithreaded use
+
+            I'm not sure whether this handles all multithreaded use cases,
+            but this handles the example that crashes almost immediately
+            and does 10,000,000 total deflates using 100 separate threads.
+
+            To prevent the tests from taking forever, the committed test
+            for this uses only 10,000 deflates across 10 separate threads,
+            which still causes a segfault in the previous implementation
+            almost immediately.
+
+            Fixes [Bug #17803]
+
+            https://github.com/ruby/zlib/commit/4b1023b3f2
+            ---
+             ext/zlib/zlib.c        | 33 ++++++++++++++++++++++++++-
+             test/zlib/test_zlib.rb | 61 ++++++++++++++++++++++++++++++++++++++++++++++++++
+             2 files changed, 93 insertions(+), 1 deletion(-)
+
+commit ebbe2fc9233c929ebd5a243fb82aaa7c0115d39b
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-02-19 14:33:05 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-02-19 14:33:05 +0900
+
+    merge revision(s) cf831f49189c4a890da6845e39199a5dfaf4fb48,3260602fa3d905ba310b9afbc5365ee52cb53d62:
+
+            zlib: fix Gzip{Writer,Reader}.new fails with a O_TMPFILE file
+
+            ---
+             ext/zlib/zlib.c        | 18 ++++++++++++++----
+             test/zlib/test_zlib.rb | 21 +++++++++++++++++++++
+             2 files changed, 35 insertions(+), 4 deletions(-)
+
+            Adjusted indents [ci skip]
+
+            ---
+             ext/zlib/zlib.c | 10 +++++-----
+             1 file changed, 5 insertions(+), 5 deletions(-)
+
+commit 4868d4b439123a7ce2b24770833d2a575b81e3a5
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-02-19 14:25:50 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-02-19 14:25:50 +0900
+
+    merge revision(s) fa7a712d460dc904f8a836bb22b54d457d95ba8e:
+
+            Fix -Wundef warnings for HAVE_RB_EXT_RACTOR_SAFE
+
+            * See [Feature #17752]
+            ---
+             ext/cgi/escape/escape.c  | 2 +-
+             ext/monitor/monitor.c    | 2 +-
+             ext/racc/cparse/cparse.c | 2 +-
+             ext/zlib/zlib.c          | 2 +-
+             4 files changed, 4 insertions(+), 4 deletions(-)
+
+commit 5c15cecfbfe61f9d46f45c949829c79cb7f162a9
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-02-19 14:19:22 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-02-19 14:19:22 +0900
+
+    merge revision(s) 0c5f8c62766afe4605172800063e63fe36996658: [Backport #10961]
+
+            [ruby/zlib] Resume zstream if available [Bug #10961]
+
+            ---
+             ext/zlib/zlib.c | 6 ++++++
+             1 file changed, 6 insertions(+)
+
+commit 7cd359261e2427dbed1e721e982043a1ebc2cdbc
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-02-13 17:02:39 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-02-13 17:02:39 +0900
+
+    skip some test using openssl to cease failure on GitHub Actions for MinGW.
+
+commit b61b456391703b530428b96c148c610cee794bce
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-02-13 16:09:00 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-02-13 16:09:00 +0900
+
+    skip some tests of rdoc temporary.
+
+commit 6c70a32918738a183d65fcca6bb2b4010ed4536a
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-02-13 16:05:27 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-02-13 16:05:27 +0900
+
+    merge revision(s) f18a0b7654d471101b207e7fe553e12a25398e45,77e1b477297a48e285d34b21e8d30ab4b46bf90c,c483aa8394fc26e341666db66938b1d6fc2cbb8e,f2e39e5fed498b51ae914ed42ec51ae578330583,6aaa1c4d09249baae93d5bb7fba585be420c4fee,923b3652247aa17ac99dc45cb1cd0654fa08d976,950c7a12efa19d73bed10d377368a50664cae32c,69ce9e4187589335124077029496ee293d4e9189,ddb87396349fa4699153d5c4c7569c2e0186adfc,09e7a0c4a4fba18e3308e4f8cb4b8b5b52b41d20,298d65b1e4f3019af7fc9b905390b56736f5fd0e,2f3edf28f3a251bac2cf3b47b46b372faac71e8e:
+
+            [ruby/rdoc] Follow-up rubygems
+
+            Use test-unit assertions instead of minitest.
+
+            https://github.com/ruby/rdoc/commit/d6a6209d7f
+            ---
+             test/rdoc/test_rdoc_rubygems_hook.rb | 18 ++++++++++++------
+             1 file changed, 12 insertions(+), 6 deletions(-)
+
+            [ruby/rdoc] Add an alias for test-unit with older versions of
+             RubyGems
+
+            https://github.com/ruby/rdoc/commit/b8d68fdd87
+            ---
+             test/rdoc/test_rdoc_rubygems_hook.rb | 3 +++
+             1 file changed, 3 insertions(+)
+
+            [ruby/rdoc] Rwrite test-case for rubygems_hook without Gem::TestCase
+
+            https://github.com/ruby/rdoc/commit/f8d1087ce5
+            ---
+             test/rdoc/test_rdoc_rubygems_hook.rb | 38 +++++++++++++++++++-----------------
+             1 file changed, 20 insertions(+), 18 deletions(-)
+
+            [ruby/rdoc] Update test/rdoc/test_rdoc_rubygems_hook.rb
+
+            https://github.com/ruby/rdoc/commit/fb264c4cc4
+
+            Co-authored-by: Nobuyoshi Nakada <nobu@ruby-lang.org>
+            ---
+             test/rdoc/test_rdoc_rubygems_hook.rb | 4 ++++
+             1 file changed, 4 insertions(+)
+
+            [ruby/rdoc] Use pend instead of skip
+
+            https://github.com/ruby/rdoc/commit/8460a36d84
+            ---
+             test/rdoc/test_rdoc_rubygems_hook.rb | 10 +++++-----
+             1 file changed, 5 insertions(+), 5 deletions(-)
+
+            Close UserInteraction for tests to fix leaked file descriptors
+
+            ---
+             test/rdoc/test_rdoc_rubygems_hook.rb | 2 ++
+             1 file changed, 2 insertions(+)
+
+            Make temporary directory under the regular location
+
+            ---
+             test/rdoc/test_rdoc_rubygems_hook.rb | 6 ++----
+             1 file changed, 2 insertions(+), 4 deletions(-)
+
+            Clear default configurations
+
+            Remove environment variables which can affect the default
+            configurations.
+            ---
+             test/rdoc/test_rdoc_rubygems_hook.rb | 13 +++++++++++++
+             1 file changed, 13 insertions(+)
+
+            Clear rdoc options in the global rubygems configuration
+
+            ---
+             test/rdoc/test_rdoc_rubygems_hook.rb | 2 ++
+             1 file changed, 2 insertions(+)
+
+            Dispose the global rubygems configuration wholely
+
+            ---
+             test/rdoc/test_rdoc_rubygems_hook.rb | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+            Discard RDOCOPT environment variable to make tests stable
+
+            ---
+             test/rdoc/test_rdoc_rubygems_hook.rb | 1 +
+             1 file changed, 1 insertion(+)
+
+            [ruby/rdoc] Prefer omit to pend
+
+            These conditions are not temporary, rather platform dependent.
+
+            https://github.com/ruby/rdoc/pull/815#discussion_r654660411
+
+            https://github.com/ruby/rdoc/commit/92545fa250
+            ---
+             test/rdoc/test_rdoc_rubygems_hook.rb | 10 +++++-----
+             1 file changed, 5 insertions(+), 5 deletions(-)
+
+commit 18bd117955479bb0b84d5f5b2d4e4defdb7e7868
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-02-13 14:30:07 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-02-13 14:30:15 +0900
+
+    Revert 207fb8e6d82c5018c958243de8bfaac3fa5ddfb3 partially.
+
+    Bacause the GitHub Actions workflow for MinGW failed on 'where check'
+
+commit 207fb8e6d82c5018c958243de8bfaac3fa5ddfb3
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-02-13 14:27:20 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-02-13 14:27:20 +0900
+
+    merge revision(s) 49cc7709cb762594aa8ea1b98a1fdf41662a5cf6:
+
+            [Actions] mingw - use ruby/setup-ruby@v1 again
+
+            ---
+             .github/workflows/mingw.yml | 4 +++-
+             1 file changed, 3 insertions(+), 1 deletion(-)
+
+commit 0f755a143ea640a3971a125c8f777ec399082db7
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-02-13 14:21:08 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-02-13 14:21:08 +0900
+
+    merge revision(s) bab862334313c08ec4f218cb1de1774c9909e3be:
+
+            The `include`d set should be expanded values [ci skip]
+
+            While the `matrix` level values are expanded from the production
+            of each arrays, `include`d set should be consist from expanded
+            single values.
+            ---
+             .github/workflows/mingw.yml | 6 +++---
+             1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit 0b45ce2ad03614339e691826c0e65ca3bf2a1970
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-02-13 14:20:41 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-02-13 14:20:41 +0900
+
+    merge revision(s) 63358581bca80c7a885228ac841b0ae9c4ca11b5:
+
+            Fix weird MinGW failure notifications
+
+            It's been "MinGW / Array", but it will be "MinGW MINGW64 / check" or
+            "MinGW UCRT64 / check" by this.
+            ---
+             .github/workflows/mingw.yml | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 62c2414bd94b895d231a7766d7b0a8b29eb7f80e
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-02-13 14:20:20 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-02-13 14:20:20 +0900
+
+    merge revision(s) e0a5c3d2b71dfad038d7562fdd33f02ffd79232d,7d55f1b6b6b9777a8bd665f6c5ed6a64c7fa2e9b:
+
+            [MinGW] Set job names
+
+            ---
+             .github/workflows/mingw.yml | 1 +
+             1 file changed, 1 insertion(+)
+
+            [Actions] use windows-2022 for mingw
+
+            MSP-Greg/ruby-setup-ruby@win-ucrt-1
+            ---
+             .github/workflows/mingw.yml | 9 +++------
+             1 file changed, 3 insertions(+), 6 deletions(-)
+
+commit e7f212651ebb500ed07025b94ed64c896d785386
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-02-13 14:11:35 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-02-13 14:11:35 +0900
+
+    merge revision(s) ec032e86faf9ac128ac51e3394d9b4001a374b38,8acb2a9b4069f55f71a80c747fc7c6bcb686abb7:
+
+            [MinGW] Clear prefix and move the directory to DESTDIR
+
+            Also the destination will be created at the installation.
+            ---
+             .github/workflows/mingw.yml | 5 ++---
+             1 file changed, 2 insertions(+), 3 deletions(-)
+
+            [MinGW] Use autogen
+
+            ---
+             .github/workflows/mingw.yml | 10 +++++-----
+             1 file changed, 5 insertions(+), 5 deletions(-)
+
+commit ea04e3fff7401cbf0a45f39351c7eb9c9dd6030e
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-02-12 16:55:40 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-02-12 17:12:32 +0900
+
+    Fix bundler test failures.
+
+    These failures are caused by the incompatibility in keyword argument
+    treatment in rspec-mocks.
+    I fix the expectations in the bundler/rubygems_integration_spec.rb.
+    These tests are not touched in the master branch.
+    It seems that the following patch also fix the failures.
+    But I believe the expectations in these tests are wrong. We should pass a Hash literal explicitly.
+
+    --- a/common.mk
+    +++ b/common.mk
+    @@ -1365,7 +1365,7 @@ yes-test-bundler-precheck: main
+     no-test-bundler-prepare: no-test-bundler-precheck
+     yes-test-bundler-prepare: yes-test-bundler-precheck
+            $(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
+    -               --install-dir .bundle --conservative "rspec:~> 3.8" "rake:~> 13.0" "parallel_tests:~> 2.29"
+    +               --install-dir .bundle --conservative "rspec-core:= 3.10.1" "rspec-expectations:= 3.10.1" "rspec-mocks:= 3.10.2" "rake:~> 13.0" "parallel_tests:~> 2.29"
+
+     RSPECOPTS =
+     BUNDLER_SPECS =
+
+commit 034872d6a66916fb2859f41d380ce503c84a65e8
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-02-12 16:52:38 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-02-12 16:52:38 +0900
+
+    merge revision(s) 342e7a094a70d6f90b96262c88177dae32976c85:
+
+            [rubygems/rubygems] Fix spec to not touch the network
+
+            And not depend on the state of rack's master branch, in particular, on
+            their Ruby support range.
+
+            https://github.com/rubygems/rubygems/commit/9ea4baffac
+            ---
+             spec/bundler/commands/remove_spec.rb | 4 +++-
+             1 file changed, 3 insertions(+), 1 deletion(-)
+
+commit 545d6820715a48a17d6182128c0db4198dfa76c1
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-12-24 17:47:44 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-12-24 17:47:44 +0900
+
+    merge revision(s) fb4cf204a662a8cd9dafef6f31f2bd0db9129abe,fa0279d947c3962c3f8c32852278d3ebb964cb19: [Backport #17725]
+
+            use me->def instead of me for opt_table
+
+            `vm_opt_method_table` is me=>bop table to manage the optimized
+            methods (by specialized instruction). However, `me` can be invalidated
+            to invalidate the method cache entry.
+            [Bug #17725]
+
+            To solve the issue, use `me-def` instead of `me` which simply copied
+            at invalidation timing.
+
+            A test by @jeremyevans https://github.com/ruby/ruby/pull/4376
+            ---
+             test/ruby/test_method.rb | 15 +++++++++++++++
+             vm.c                     | 11 +++++------
+             2 files changed, 20 insertions(+), 6 deletions(-)
+
+            should not share same `def` for specialized method
+
+            Because the key of redefine table is `def`, `def` should be
+            unique for each optimized method (`alias` is not allowed).
+            ---
+             array.c | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 1d29740c1b101db4bd8fc2d05f929a9e37471a0f
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-12-24 14:41:08 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-12-24 14:41:08 +0900
+
+    merge revision(s) 5086c25f6015558877f85c3f1c014780b08fd3ce,3ff0a0b40c2e1fbdad2286f1dafe837f822d0e0d: [Backport #16936]
+
+            Properly exclude test cases.
+
+            Lets consider the following scenario:
+
+            ~~~
+            irb(#<Test::Unit::AutoRunner::Runner:0x0000560f68afc3c8>):001:0> p suite
+            OpenSSL::TestEC
+            => OpenSSL::TestEC
+
+            irb(#<Test::Unit::AutoRunner::Runner:0x0000560f68afc3c8>):002:0> p all_test_methods
+            ["test_ECPrivateKey", "test_ECPrivateKey_encrypted", "test_PUBKEY", "test_check_key", "test_derive_key", "test_dh_compute_key", "test_dsa_sign_asn1_FIPS186_3", "test_ec_group", "test_ec_key", "test_ec_point", "test_ec_point_add", "test_ec_point_mul", "test_generate", "test_marshal", "test_sign_verify", "test_sign_verify_raw"]
+            =>
+            ["test_ECPrivateKey",
+             "test_ECPrivateKey_encrypted",
+             "test_PUBKEY",
+             "test_check_key",
+             "test_derive_key",
+             "test_dh_compute_key",
+             "test_dsa_sign_asn1_FIPS186_3",
+             "test_ec_group",
+             "test_ec_key",
+             "test_ec_point",
+             "test_ec_point_add",
+             "test_ec_point_mul",
+             "test_generate",
+             "test_marshal",
+             "test_sign_verify",
+             "test_sign_verify_raw"]
+
+            irb(#<Test::Unit::AutoRunner::Runner:0x0000560f68afc3c8>):003:0> p filter
+            /\A(?=.*)(?!.*(?-mix:(?-mix:memory_leak)|(?-mix:OpenSSL::TestEC.test_check_key)))/
+            => /\A(?=.*)(?!.*(?-mix:(?-mix:memory_leak)|(?-mix:OpenSSL::TestEC.test_check_key)))/
+
+            irb(#<Test::Unit::AutoRunner::Runner:0x0000560f68afc3c8>):004:0> method = "test_check_key"
+            => "test_check_key"
+            ~~~
+
+            The intention here is to exclude the `test_check_key` test case.
+            Unfortunately this does not work as expected, because the negative filter
+            is never checked:
+
+            ~~~
+            irb(#<Test::Unit::AutoRunner::Runner:0x0000560f68afc3c8>):005:0> filter === method
+            => true
+
+            irb(#<Test::Unit::AutoRunner::Runner:0x0000560f68afc3c8>):006:0> filter === "#{suite}##{method}"
+            => false
+
+            irb(#<Test::Unit::AutoRunner::Runner:0x0000560f68afc3c8>):007:0> filter === method || filter === "#{suite}##{method}"
+            => true
+            ~~~
+
+            Therefore always filter against the fully qualified method name
+            `#{suite}##{method}`, which should provide the expected result.
+
+            However, if plain string filter is used, keep checking also only the
+            method name.
+
+            This resolves [Bug #16936].
+            ---
+             tool/lib/test/unit.rb | 12 +++++++++---
+             1 file changed, 9 insertions(+), 3 deletions(-)
+
+            Filter method names only if filtering method name only
+
+            If sole `filter` option doesn't seem including test case name,
+            match with method name only.
+            And if the filter is a Regexp or String, it never matches method
+            name symbols.
+            ---
+             tool/lib/test/unit.rb | 15 ++++++---------
+             1 file changed, 6 insertions(+), 9 deletions(-)
+
+commit 62a33dfa168504f8ee77d493979e66616ebe1da8
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-12-24 14:36:45 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-12-24 14:36:45 +0900
+
+    merge revision(s) c6706f15af123bdbb3b39a21903d85c78462d047: [Backport #18241]
+
+            Fix documentation for String#{<<,concat,prepend}
+
+            These methods mutate and return the receiver, they don't create
+            and return a new string.
+
+            Fixes [Bug #18241]
+            ---
+             string.c | 19 ++++++++++---------
+             1 file changed, 10 insertions(+), 9 deletions(-)
+
+commit badffc7bee32251e2bea5897dc502b887e7ffa9b
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-12-24 14:35:34 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-12-24 14:35:34 +0900
+
+    merge revision(s) 7f4e86804d426d79807cc038fe4444f7c65f5c4a: [Backport #18163]
+
+            Fix documentation of #<=> and #casecmp [ci skip]
+
+            Descriptions for return values of -1 and 1 were reversed.
+            ---
+             string.c | 8 ++++----
+             1 file changed, 4 insertions(+), 4 deletions(-)
+
+commit 69272c74a3f675373fc6c6f32b685620da8a85ee
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-12-02 08:05:08 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-12-02 08:05:08 +0900
+
+    merge revision(s) 9f8a50723f8a84b3e4755b418570148f422d1b28: [Backport #17836]
+
+            Specify -c to emit pch with clang (#4423)
+
+            [Bug #17836]
+            ---
+             mjit_worker.c | 1 +
+             1 file changed, 1 insertion(+)
+
+commit 5c5974dbd00e1e0a827baed5290517208878355d
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-12-02 08:03:28 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-12-02 08:03:28 +0900
+
+    merge revision(s) 44d67128a827c65d1a3867c5d8fd190d10aa1dd2:
+
+            test/openssl/test_cipher: skip AES-CCM tests on OpenSSL <= 1.1.1b
+
+            AES CCM mode in OpenSSL <= 1.1.1b was overly strict in the parameters
+            assignment order. This has been relaxed by OpenSSL 1.1.1c.
+
+            https://github.com/openssl/openssl/commit/b48e3be947ddc5da6b5a86db8341081c72b9a4ee
+
+            The test case is failing on Ubuntu 18.04 because it still uses the
+            initial 1.1.1 release and has the issue:
+
+            http://rubyci.s3.amazonaws.com/graviton2/ruby-master/log/20210316T120003Z.fail.html.gz
+            ---
+             test/openssl/test_cipher.rb | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 8cfddb68702a1320953c520c77b81176e3269ec7
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2021-11-24 22:25:22 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2021-11-24 22:25:22 +0900
+
+    bump teeny version to 3.0.4.
+
 commit 3fb7d2cadc18472ec107b14234933b017a33c14d
   Author:     nagachika <nagachika@ruby-lang.org>
   AuthorDate: 2021-11-24 20:12:15 +0900
