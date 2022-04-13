@@ -1,5 +1,328 @@
 -*- coding: utf-8 -*-
 
+commit c9c2245c0a25176072e02db9254f0e0c84c805cd
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2022-04-12 20:25:48 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2022-04-12 20:25:48 +0900
+
+    Fix dtoa buffer overrun
+
+commit 389723d85433df0b487f02c94ca6a243d39a189e
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2022-04-07 22:52:52 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2022-04-07 22:52:52 +0900
+
+    * 2022-04-07 [ci skip]
+
+commit 334ca2dc06931ec7da93787635a00ec0f1aad086
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2022-03-19 22:50:51 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2022-03-19 22:50:51 +0900
+
+    merge revision(s) 496591de96b261b8789332c7f8b2bfbd17658955: [Backport #18578]
+
+        st.c: Do not clear entries_bound when calling Hash#shift for empty
+         hash
+
+        tab->entries_bound is used to check if the bins are full in
+        rebuild_table_if_necessary.
+
+        Hash#shift against an empty hash assigned 0 to tab->entries_bound, but
+        didn't clear the bins. Thus, the table is not rebuilt even when the bins
+        are full. Attempting to add a new element into full-bin hash gets stuck.
+
+        This change stops clearing tab->entries_bound in Hash#shift.
+        [Bug #18578]
+        ---
+         st.c                   |  1 -
+         test/ruby/test_hash.rb | 13 +++++++++++++
+         2 files changed, 13 insertions(+), 1 deletion(-)
+
+commit 19fec939a6fed650135c6ce8b567fcb7b001b068
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2022-03-19 22:45:51 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2022-03-19 22:45:51 +0900
+
+    merge revision(s) c79d2e54748f52c5023b0a1ee441561df9826c17: [Backport #18562]
+
+        Fix TAG_THROW through require [Bug #18562]
+
+        Previously this was being incorrectly swapped with TAG_RAISE in the next
+        line. This would end up checking the T_IMEMO throw_data to the exception
+        handling (which calls Module#===). This happened to not break existing
+        tests because Module#=== returned false when klass is NULL.
+
+        This commit handles throw from require correctly by jumping to the tag
+        retaining the TAG_THROW state.
+        ---
+         load.c                      |  2 +-
+         test/ruby/test_exception.rb | 21 +++++++++++++++++++++
+         2 files changed, 22 insertions(+), 1 deletion(-)
+
+commit 7eaec9a6b355a685a3a9503a005b91f4b3cb4f39
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2022-03-19 22:41:16 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2022-03-19 22:41:16 +0900
+
+    merge revision(s) b555e659c4974acc423083b71b1bd5ec6a926046: [Backport #18388]
+
+        Do not use `fcopyfile` if appending to non-empty file [Bug #18388]
+
+        `fcopyfile` appends `src` to `to` and then truncates `to` to it's
+        original size.
+        ---
+         io.c                 |  7 +++++++
+         test/ruby/test_io.rb | 12 ++++++++++++
+         2 files changed, 19 insertions(+)
+
+commit 5da2a3e31699570ae1a951c8bbc489040051d19e
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2022-03-19 22:34:37 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2022-03-19 22:34:37 +0900
+
+    merge revision(s) 7ff1bf317887c0d7b21e91ad548d07b9f05c540c,e89d80702bd98a8276243a7fcaa2a158b3bfb659: [Backport #18516]
+
+        An alias can suppress method redefinition warning
+
+        ---
+         test/ruby/test_alias.rb | 11 +++++++++++
+         1 file changed, 11 insertions(+)
+
+        Fix memory leak at the same named alias [Bug #18516]
+
+        When aliasing a method to the same name method, set a separate bit
+        flag on that method definition, instead of the reference count
+        increment.  Although this kind of alias has no actual effect at
+        runtime, is used as the hack to suppress the method re-definition
+        warning.
+        ---
+         method.h                |  1 +
+         test/ruby/test_alias.rb | 18 ++++++++++++++++++
+         vm_method.c             |  9 ++++++++-
+         3 files changed, 27 insertions(+), 1 deletion(-)
+
+commit 2d886af0a55a99bf3c12ec82c1b7a804bec9d395
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2022-03-19 22:27:18 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2022-03-19 22:27:18 +0900
+
+    merge revision(s) 6a6227e0168b059c3ed34c9f0ace2e5dc2364221: [Backport #18517]
+
+            Shifting zero always results in zero [Bug #18517]
+
+            ---
+             numeric.c | 2 ++
+             1 file changed, 2 insertions(+)
+
+commit 81f5453bd831e6f09e660fdf7e72d3d2da8753e7
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2022-03-19 22:23:08 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2022-03-19 22:23:08 +0900
+
+    merge revision(s) 5c7af72304d0ad33cd3f21b24a4bc44e8acd5b2c,d650b17686d49c2ce8e6a87039861154e93d4621: [Backport #18497]
+
+        Assuming EXIT_SUCCESS equals 0 is not portable
+
+        ---
+         test/ruby/test_fiber.rb | 6 +++---
+         1 file changed, 3 insertions(+), 3 deletions(-)
+
+        `rb_fiber_terminate` must not return [Bug #18497]
+
+        In a forked process from a fiber, the fiber becomes the only
+        fiber, `fiber_switch` does nothing as there is no other fibers,
+        `rb_fiber_terminate` does not terminate the fiber.  In that case,
+        reaches the end of `fiber_entry` finaly, which is declared as
+        "COROUTINE" and should never return.
+        ---
+         cont.c                     |  3 ++-
+         eval_intern.h              |  2 +-
+         test/fiber/test_process.rb | 15 +++++++++++++++
+         test/ruby/test_fiber.rb    |  5 +++++
+         4 files changed, 23 insertions(+), 2 deletions(-)
+
+        note that only backported a part of above patch because of incompatibility
+        of ruby_2_7.
+
+commit ea9b0fe5d30efaa7dad1be4da79c1ee58f4f963b
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2022-03-19 22:15:40 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2022-03-19 22:15:40 +0900
+
+    merge revision(s) ae5458f228a5477383e9c00425d85d50a3867817: [Backport #18475]
+
+        thread.c: Convert TAG_BREAK to a normal exception at thread top-level
+
+        [Bug #18475]
+        ---
+         test/ruby/test_enum.rb | 11 +++++++++++
+         thread.c               |  3 +++
+         2 files changed, 14 insertions(+)
+
+commit 83de7133876ec392eb4b3b69c2220d7b49685444
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2022-03-05 22:01:07 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2022-03-05 22:01:07 +0900
+
+    merge revision(s) c51b92c18deb850d2cea3a7c9020db23b364ab72: [Backport #18358]
+
+        [ruby/zlib] [Bug #18358] Fix crash in zlib when in progress
+
+        When Zlib::Inflate#inflate or Zlib::Deflate#deflate is called
+        recursively inside the block, a crash can occur because of an
+        use-after-free bug.
+
+        https://github.com/ruby/zlib/commit/50fb8a0338
+        ---
+         ext/zlib/zlib.c        | 117 ++++++++++++++++++++++++++++++++-----------------
+         test/zlib/test_zlib.rb |  10 ++++-
+         2 files changed, 85 insertions(+), 42 deletions(-)
+
+commit f740ffb81f3ef11526add528583b0cbfce28af67
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2022-03-05 21:38:48 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2022-03-05 21:38:48 +0900
+
+    merge revision(s) b3d62a77d928eff01268ca7fa1c1c0966702926d [Backport #17803]
+
+        [ruby/zlib] Synchronize access to zstream to prevent segfault in
+         multithreaded use
+
+        I'm not sure whether this handles all multithreaded use cases,
+        but this handles the example that crashes almost immediately
+        and does 10,000,000 total deflates using 100 separate threads.
+
+        To prevent the tests from taking forever, the committed test
+        for this uses only 10,000 deflates across 10 separate threads,
+        which still causes a segfault in the previous implementation
+        almost immediately.
+
+        Fixes [Bug #17803]
+
+        https://github.com/ruby/zlib/commit/4b1023b3f2
+        ---
+         ext/zlib/zlib.c        | 33 ++++++++++++++++++++++++++-
+         test/zlib/test_zlib.rb | 61 ++++++++++++++++++++++++++++++++++++++++++++++++++
+         2 files changed, 93 insertions(+), 1 deletion(-)
+
+commit 1034b6e7ba9442320e16c260d634d4c64d5e62bf
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2021-12-31 19:48:36 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2021-12-31 19:48:36 +0900
+
+    merge revision(s) 0c5f8c62766afe4605172800063e63fe36996658: [Backport #10961]
+
+            [ruby/zlib] Resume zstream if available [Bug #10961]
+
+            ---
+             ext/zlib/zlib.c | 6 ++++++
+             1 file changed, 6 insertions(+)
+
+commit 1cc5567b46249e6b4bd2dd3cfdd348ab885f59e3
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2021-12-31 19:48:29 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2021-12-31 19:48:29 +0900
+
+    merge revision(s) 0846c2da457e7523819236ac7da492029b3ef73d,6c7cb00c094332a208cf36e5cd723a9ba60c41b8: [Backport #16376]
+
+            Check backref number buffer overrun [Bug #16376]
+
+            ---
+             regcomp.c                | 21 ++++++++++++---------
+             test/ruby/test_regexp.rb |  6 ++++++
+             2 files changed, 18 insertions(+), 9 deletions(-)
+
+            test/ruby/test_regexp.rb: Avoid "ambiguity between regexp and two
+             divisions"
+
+            ---
+             test/ruby/test_regexp.rb | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 426266af2cbfba8d42a82abcce1bb3ca6c039e87
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2021-12-31 19:48:24 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2021-12-31 19:48:24 +0900
+
+    merge revision(s) fdf39963490cf2cf95b30d91bb9b35964c2c2350: [Backport #18421]
+
+            Empty and return the buffer if zero size is given [Bug #18421]
+
+            In `IO#readpartial` and `IO#read_nonblock`, as well as `IO#read`.
+            ---
+             io.c                 |  8 ++++++--
+             test/ruby/test_io.rb | 21 +++++++++++++++++++++
+             2 files changed, 27 insertions(+), 2 deletions(-)
+
+commit 7d3cff6e41d73a00f3d0fdb337743f654e42f1a8
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2021-12-31 19:48:17 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2021-12-31 19:48:17 +0900
+
+    merge revision(s) a2d4e1cda68a49980a4f9f353f400efbde7e7884,d6c5a30cfdf658280338dbb8c8b17fab3190b928: [Backport #18392]
+
+            Fixed the check order in wmap_live_p [Bug #18392]
+
+            Check if the object is a pointer to heap before check the flag in
+            that object.
+            ---
+             gc.c | 35 ++++++++++++++++++++++-------------
+             1 file changed, 22 insertions(+), 13 deletions(-)
+
+            ObjectSpace::WeakMap#inspect: check if living object [Bug #18392]
+
+            ---
+             gc.c                      | 29 +++++++++++++++++++++++------
+             test/ruby/test_weakmap.rb |  9 +++++++++
+             2 files changed, 32 insertions(+), 6 deletions(-)
+
+commit b829811131ec7741ce701ff8a8b101604fb0d595
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2021-12-31 19:48:13 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2021-12-31 19:48:13 +0900
+
+    merge revision(s) 43a3c88187dcd54ba008834a865e50eb28a78de9: [Backport #18372]
+
+            [win32] get rid of redefinition of reserved macro
+
+            ```
+            warning C4117: macro name '_INTEGRAL_MAX_BITS' is reserved, '#define' ignored
+            ```
+            ---
+             win32/Makefile.sub | 2 ++
+             1 file changed, 2 insertions(+)
+
+commit c24f436c2a4b343f9cb4950260376546f5ff0d06
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2021-12-31 19:47:57 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2021-12-31 19:47:57 +0900
+
+    merge revision(s) 9f8a50723f8a84b3e4755b418570148f422d1b28: [Backport #17836]
+
+            Specify -c to emit pch with clang (#4423)
+
+            [Bug #17836]
+            ---
+             mjit_worker.c | 1 +
+             1 file changed, 1 insertion(+)
+
 commit f69aeb83146be640995753667fdd6c6f157527f5
   Author:     NAKAMURA Usaku <usa@ruby-lang.org>
   AuthorDate: 2021-11-24 20:21:17 +0900
