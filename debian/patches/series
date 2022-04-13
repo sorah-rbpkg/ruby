@@ -5,4 +5,5 @@ Make-gemspecs-reproducible.patch
 exclude-several-tests-unstable-in-Docker.patch
 Fix-FTBFS-on-x32-misdetected-as-i386-or-amd64.patch
 TestProcess-disable-gems-to-disable-rubygems_integration.patch
-test-openssl-test_cipher-skip-AES-CCM-tests-on-OpenSSL-1..patch
+ruby_default_arch.m4-don-t-require-arhitectures-to-be-kno.patch
+test-zlib-test_zlib.rb-stop-a-failure-on-armv7l.patch

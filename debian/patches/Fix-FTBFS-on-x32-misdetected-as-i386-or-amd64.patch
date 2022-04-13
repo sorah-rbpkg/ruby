@@ -9,7 +9,7 @@ Bug: #954293
  1 file changed, 3 insertions(+)
 
 diff --git a/configure.ac b/configure.ac
-index 2dcebdd..abd1c59 100644
+index 49e0c79..5fb8282 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -2433,6 +2433,9 @@ AS_CASE([$rb_cv_coroutine], [yes|''], [

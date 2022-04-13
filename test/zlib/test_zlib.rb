@@ -3,6 +3,8 @@
 require 'test/unit'
 require 'stringio'
 require 'tempfile'
+require 'tmpdir'
+require 'securerandom'
 
 begin
   require 'zlib'
@@ -502,6 +504,72 @@ if defined? Zlib
       assert_raise(Zlib::StreamError) { z.set_dictionary("foo") }
       z.close
     end
+
+    def test_multithread_deflate
+      zd = Zlib::Deflate.new
+
+      s = "x" * 10000
+      (0...10).map do |x|
+        Thread.new do
+          1000.times { zd.deflate(s) }
+        end
+      end.each do |th|
+        th.join
+      end
+    ensure
+      zd&.finish
+      zd&.close
+    end
+
+    def test_multithread_inflate
+      zi = Zlib::Inflate.new
+
+      s = Zlib.deflate("x" * 10000)
+      (0...10).map do |x|
+        Thread.new do
+          1000.times { zi.inflate(s) }
+        end
+      end.each do |th|
+        th.join
+      end
+    ensure
+      zi&.finish
+      zi&.close
+    end
+
+    def test_recursive_deflate
+      original_gc_stress = GC.stress
+      GC.stress = true
+      zd = Zlib::Deflate.new
+
+      s = SecureRandom.random_bytes(1024**2)
+      assert_raise(Zlib::InProgressError) do
+        zd.deflate(s) do
+          zd.deflate(s)
+        end
+      end
+    ensure
+      GC.stress = original_gc_stress
+      zd&.finish
+      zd&.close
+    end
+
+    def test_recursive_inflate
+      original_gc_stress = GC.stress
+      GC.stress = true
+      zi = Zlib::Inflate.new
+
+      s = Zlib.deflate(SecureRandom.random_bytes(1024**2))
+
+      assert_raise(Zlib::InProgressError) do
+        zi.inflate(s) do
+          zi.inflate(s)
+        end
+      end
+    ensure
+      GC.stress = original_gc_stress
+      zi&.close
+    end
   end
 
   class TestZlibGzipFile < Test::Unit::TestCase
@@ -719,6 +787,26 @@ if defined? Zlib
         assert_raise(NoMethodError) { gz.path }
         gz.close
       }
+    end
+
+    if defined? File::TMPFILE
+      def test_path_tmpfile
+        sio = StringIO.new("".dup, 'w')
+        gz = Zlib::GzipWriter.new(sio)
+        gz.write "hi"
+        gz.close
+
+        File.open(Dir.mktmpdir, File::RDWR | File::TMPFILE) do |io|
+          io.write sio.string
+          io.rewind
+
+          gz = Zlib::GzipWriter.new(io)
+          assert_raise(NoMethodError) { gz.path }
+
+          gz = Zlib::GzipReader.new(io)
+          assert_raise(NoMethodError) { gz.path }
+        end
+      end
     end
   end
 
