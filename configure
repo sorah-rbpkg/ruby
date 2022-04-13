@@ -29710,6 +29710,77 @@ _ACEOF
 
   libdir_basename="${libdir_basename}"${multiarch+'/${arch}'}
 
+
+    save_LDFLAGS="$LDFLAGS"
+    LDFLAGS="$LDFLAGS ${linker_flag}--no-as-needed"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${linker_flag}--no-as-needed is accepted as LDFLAGS" >&5
+$as_echo_n "checking whether ${linker_flag}--no-as-needed is accepted as LDFLAGS... " >&6; }
+    save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS $rb_cv_warnflags"
+if test "${ac_c_werror_flag+set}"; then :
+
+  rb_c_werror_flag="$ac_c_werror_flag"
+
+else
+
+  unset rb_c_werror_flag
+
+fi
+ac_c_werror_flag=yes
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  no_as_needed=yes
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+    $as_echo "${msg_result_yes}yes${msg_reset}" >&6 ; }
+else
+  no_as_needed=no
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+    $as_echo "${msg_result_no}no${msg_reset}" >&6 ; }
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+CFLAGS="$save_CFLAGS"
+save_CFLAGS=
+if test "${rb_c_werror_flag+set}"; then :
+
+  ac_c_werror_flag="$rb_c_werror_flag"
+
+else
+
+  unset ac_c_werror_flag
+
+fi
+    LDFLAGS="$save_LDFLAGS"
+    save_LDFLAGS=
+
+  if test "$no_as_needed" = yes; then :
+
+      # RUBY_APPEND_OPTIONS(LDFLAGS)
+	for rb_opt in ${linker_flag}--no-as-needed; do
+	case " ${LDFLAGS-} " in #(
+  *" ${rb_opt} "*) :
+     ;; #(
+  '  ') :
+     LDFLAGS="${rb_opt}" ;; #(
+  *) :
+     LDFLAGS="$LDFLAGS ${rb_opt}" ;;
+esac
+	done
+
+fi
+
   case "$target_os" in #(
   freebsd*|dragonfly*) :
      ;; #(
