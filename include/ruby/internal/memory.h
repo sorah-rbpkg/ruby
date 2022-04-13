@@ -110,18 +110,18 @@ extern void *alloca();
     ((var) = RBIMPL_CAST((type *)ruby_xrealloc2((void *)(var), (n), sizeof(type))))
 
 #define ALLOCA_N(type,n) \
-    RBIMPL_CAST((type *)alloca(rbimpl_size_mul_or_raise(sizeof(type), (n))))
+    RBIMPL_CAST((type *)(!(n) ? NULL : alloca(rbimpl_size_mul_or_raise(sizeof(type), (n)))))
 
 /* allocates _n_ bytes temporary buffer and stores VALUE including it
  * in _v_.  _n_ may be evaluated twice. */
 #define RB_ALLOCV(v, n)        \
     ((n) < RUBY_ALLOCV_LIMIT ? \
-     ((v) = 0, alloca(n)) :    \
+     ((v) = 0, !(n) ? NULL : alloca(n)) : \
      rb_alloc_tmp_buffer(&(v), (n)))
 #define RB_ALLOCV_N(type, v, n)                             \
     RBIMPL_CAST((type *)                                     \
         (((size_t)(n) < RUBY_ALLOCV_LIMIT / sizeof(type)) ? \
-         ((v) = 0, alloca((n) * sizeof(type))) :            \
+         ((v) = 0, !(n) ? NULL : alloca((n) * sizeof(type))) : \
          rb_alloc_tmp_buffer2(&(v), (n), sizeof(type))))
 #define RB_ALLOCV_END(v) rb_free_tmp_buffer(&(v))
 
@@ -256,6 +256,7 @@ rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
 }
 
 #ifndef __MINGW32__
+RBIMPL_SYMBOL_EXPORT_BEGIN()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 RBIMPL_ATTR_RETURNS_NONNULL()
@@ -272,6 +273,7 @@ ruby_nonempty_memcpy(void *dest, const void *src, size_t n)
         return dest;
     }
 }
+RBIMPL_SYMBOL_EXPORT_END()
 #undef memcpy
 #define memcpy ruby_nonempty_memcpy
 #endif

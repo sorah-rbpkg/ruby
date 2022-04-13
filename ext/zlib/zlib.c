@@ -288,6 +288,7 @@ static VALUE rb_gzreader_readlines(int, VALUE*, VALUE);
  *   - Zlib::MemError
  *   - Zlib::BufError
  *   - Zlib::VersionError
+ *   - Zlib::InProgressError
  *
  * (if you have GZIP_SUPPORT)
  * - Zlib::GzipReader
@@ -304,7 +305,7 @@ void Init_zlib(void);
 /*--------- Exceptions --------*/
 
 static VALUE cZError, cStreamEnd, cNeedDict;
-static VALUE cStreamError, cDataError, cMemError, cBufError, cVersionError;
+static VALUE cStreamError, cDataError, cMemError, cBufError, cVersionError, cInProgressError;
 
 static void
 raise_zlib_error(int err, const char *msg)
@@ -546,6 +547,7 @@ struct zstream {
     unsigned long flags;
     VALUE buf;
     VALUE input;
+    VALUE mutex;
     z_stream stream;
     const struct zstream_funcs {
 	int (*reset)(z_streamp);
@@ -554,14 +556,15 @@ struct zstream {
     } *func;
 };
 
-#define ZSTREAM_FLAG_READY      0x1
-#define ZSTREAM_FLAG_IN_STREAM  0x2
-#define ZSTREAM_FLAG_FINISHED   0x4
-#define ZSTREAM_FLAG_CLOSING    0x8
-#define ZSTREAM_FLAG_GZFILE     0x10 /* disallows yield from expand_buffer for
+#define ZSTREAM_FLAG_READY      (1 << 0)
+#define ZSTREAM_FLAG_IN_STREAM  (1 << 1)
+#define ZSTREAM_FLAG_FINISHED   (1 << 2)
+#define ZSTREAM_FLAG_CLOSING    (1 << 3)
+#define ZSTREAM_FLAG_GZFILE     (1 << 4) /* disallows yield from expand_buffer for
                                         gzip*/
-#define ZSTREAM_REUSE_BUFFER    0x20
-#define ZSTREAM_FLAG_UNUSED     0x40
+#define ZSTREAM_REUSE_BUFFER    (1 << 5)
+#define ZSTREAM_IN_PROGRESS     (1 << 6)
+#define ZSTREAM_FLAG_UNUSED     (1 << 7)
 
 #define ZSTREAM_READY(z)       ((z)->flags |= ZSTREAM_FLAG_READY)
 #define ZSTREAM_IS_READY(z)    ((z)->flags & ZSTREAM_FLAG_READY)
@@ -590,7 +593,9 @@ static const struct zstream_funcs inflate_funcs = {
 };
 
 struct zstream_run_args {
-    struct zstream * z;
+    struct zstream *const z;
+    Bytef *src;
+    long len;
     int flush;         /* stream flush value for inflate() or deflate() */
     int interrupt;     /* stop processing the stream and return to ruby */
     int jump_state;    /* for buffer expansion block break or exception */
@@ -621,6 +626,7 @@ zstream_init(struct zstream *z, const struct zstream_funcs *func)
     z->flags = 0;
     z->buf = Qnil;
     z->input = Qnil;
+    z->mutex = rb_mutex_new();
     z->stream.zalloc = zlib_mem_alloc;
     z->stream.zfree = zlib_mem_free;
     z->stream.opaque = Z_NULL;
@@ -652,7 +658,9 @@ zstream_expand_buffer(struct zstream *z)
 	        rb_obj_reveal(z->buf, rb_cString);
             }
 
+            rb_mutex_unlock(z->mutex);
 	    rb_protect(rb_yield, z->buf, &state);
+            rb_mutex_lock(z->mutex);
 
             if (ZSTREAM_REUSE_BUFFER_P(z)) {
                 rb_str_modify(z->buf);
@@ -1053,18 +1061,17 @@ zstream_unblock_func(void *ptr)
     args->interrupt = 1;
 }
 
-static void
-zstream_run(struct zstream *z, Bytef *src, long len, int flush)
+static VALUE
+zstream_run_try(VALUE value_arg)
 {
-    struct zstream_run_args args;
+    struct zstream_run_args *args = (struct zstream_run_args *)value_arg;
+    struct zstream *z = args->z;
+    Bytef *src = args->src;
+    long len = args->len;
+    int flush = args->flush;
+
     int err;
     VALUE old_input = Qnil;
-
-    args.z = z;
-    args.flush = flush;
-    args.interrupt = 0;
-    args.jump_state = 0;
-    args.stream_output = !ZSTREAM_IS_GZFILE(z) && rb_block_given_p();
 
     if (NIL_P(z->input) && len == 0) {
 	z->stream.next_in = (Bytef*)"";
@@ -1087,13 +1094,19 @@ zstream_run(struct zstream *z, Bytef *src, long len, int flush)
 
 loop:
 #ifndef RB_NOGVL_UBF_ASYNC_SAFE
-    err = (int)(VALUE)rb_thread_call_without_gvl(zstream_run_func, (void *)&args,
-						 zstream_unblock_func, (void *)&args);
+    err = (int)(VALUE)rb_thread_call_without_gvl(zstream_run_func, (void *)args,
+						 zstream_unblock_func, (void *)args);
 #else
-    err = (int)(VALUE)rb_nogvl(zstream_run_func, (void *)&args,
-                               zstream_unblock_func, (void *)&args,
+    err = (int)(VALUE)rb_nogvl(zstream_run_func, (void *)args,
+                               zstream_unblock_func, (void *)args,
                                RB_NOGVL_UBF_ASYNC_SAFE);
 #endif
+
+    /* retry if no exception is thrown */
+    if (err == Z_OK && args->interrupt) {
+       args->interrupt = 0;
+       goto loop;
+    }
 
     if (flush != Z_FINISH && err == Z_BUF_ERROR
 	    && z->stream.avail_out > 0) {
@@ -1128,8 +1141,52 @@ loop:
 	rb_gc_force_recycle(old_input);
     }
 
-    if (args.jump_state)
-	rb_jump_tag(args.jump_state);
+    if (args->jump_state)
+	rb_jump_tag(args->jump_state);
+
+    return Qnil;
+}
+
+static VALUE
+zstream_run_ensure(VALUE value_arg)
+{
+    struct zstream_run_args *args = (struct zstream_run_args *)value_arg;
+
+    /* Remove ZSTREAM_IN_PROGRESS flag to signal that this zstream is not in use. */
+    args->z->flags &= ~ZSTREAM_IN_PROGRESS;
+
+    return Qnil;
+}
+
+static VALUE
+zstream_run_synchronized(VALUE value_arg)
+{
+    struct zstream_run_args *args = (struct zstream_run_args *)value_arg;
+
+    /* Cannot start zstream while it is in progress. */
+    if (args->z->flags & ZSTREAM_IN_PROGRESS) {
+        rb_raise(cInProgressError, "zlib stream is in progress");
+    }
+    args->z->flags |= ZSTREAM_IN_PROGRESS;
+
+    rb_ensure(zstream_run_try, value_arg, zstream_run_ensure, value_arg);
+
+    return Qnil;
+}
+
+static void
+zstream_run(struct zstream *z, Bytef *src, long len, int flush)
+{
+    struct zstream_run_args args = {
+        .z = z,
+        .src = src,
+        .len = len,
+        .flush = flush,
+        .interrupt = 0,
+        .jump_state = 0,
+        .stream_output = !ZSTREAM_IS_GZFILE(z) && rb_block_given_p(),
+    };
+    rb_mutex_synchronize(z->mutex, zstream_run_synchronized, (VALUE)&args);
 }
 
 static VALUE
@@ -1177,6 +1234,7 @@ zstream_mark(void *p)
     struct zstream *z = p;
     rb_gc_mark(z->buf);
     rb_gc_mark(z->input);
+    rb_gc_mark(z->mutex);
 }
 
 static void
@@ -3514,6 +3572,16 @@ rb_gzfile_path(VALUE obj)
     return gz->path;
 }
 
+static VALUE
+gzfile_initialize_path_partial(VALUE obj)
+{
+    struct gzfile* gz;
+    TypedData_Get_Struct(obj, struct gzfile, &gzfile_data_type, gz);
+    gz->path = rb_funcall(gz->io, id_path, 0);
+    rb_define_singleton_method(obj, "path", rb_gzfile_path, 0);
+    return Qnil;
+}
+
 static void
 rb_gzfile_ecopts(struct gzfile *gz, VALUE opts)
 {
@@ -3622,8 +3690,8 @@ rb_gzwriter_initialize(int argc, VALUE *argv, VALUE obj)
     rb_gzfile_ecopts(gz, opt);
 
     if (rb_respond_to(io, id_path)) {
-	gz->path = rb_funcall(gz->io, id_path, 0);
-	rb_define_singleton_method(obj, "path", rb_gzfile_path, 0);
+	/* File#path may raise IOError in case when a path is unavailable */
+	rb_rescue2(gzfile_initialize_path_partial, obj, NULL, Qnil, rb_eIOError, (VALUE)0);
     }
 
     return obj;
@@ -3884,8 +3952,8 @@ rb_gzreader_initialize(int argc, VALUE *argv, VALUE obj)
     rb_gzfile_ecopts(gz, opt);
 
     if (rb_respond_to(io, id_path)) {
-	gz->path = rb_funcall(gz->io, id_path, 0);
-	rb_define_singleton_method(obj, "path", rb_gzfile_path, 0);
+	/* File#path may raise IOError in case when a path is unavailable */
+	rb_rescue2(gzfile_initialize_path_partial, obj, NULL, Qnil, rb_eIOError, (VALUE)0);
     }
 
     return obj;
@@ -4548,7 +4616,7 @@ zlib_gunzip_run(VALUE arg)
 void
 Init_zlib(void)
 {
-#if HAVE_RB_EXT_RACTOR_SAFE
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
     rb_ext_ractor_safe(true);
 #endif
 
@@ -4570,6 +4638,7 @@ Init_zlib(void)
     cMemError     = rb_define_class_under(mZlib, "MemError", cZError);
     cBufError     = rb_define_class_under(mZlib, "BufError", cZError);
     cVersionError = rb_define_class_under(mZlib, "VersionError", cZError);
+    cInProgressError = rb_define_class_under(mZlib, "InProgressError", cZError);
 
     rb_define_module_function(mZlib, "zlib_version", rb_zlib_version, 0);
     rb_define_module_function(mZlib, "adler32", rb_zlib_adler32, -1);
@@ -4877,6 +4946,7 @@ Init_zlib(void)
  * - Zlib::MemError
  * - Zlib::BufError
  * - Zlib::VersionError
+ * - Zlib::InProgressError
  *
  */
 
@@ -4949,6 +5019,20 @@ Init_zlib(void)
  *
  * Usually if a stream was prematurely freed.
  *
+ */
+
+/*
+ * Document-class: Zlib::InProgressError
+ *
+ * Subclass of Zlib::Error. This error is raised when the zlib
+ * stream is currently in progress.
+ *
+ * For example:
+ *
+ *   inflater = Zlib::Inflate.new
+ *   inflater.inflate(compressed) do
+ *     inflater.inflate(compressed) # Raises Zlib::InProgressError
+ *   end
  */
 
 /*
