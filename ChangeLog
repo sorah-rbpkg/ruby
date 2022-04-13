@@ -1,5 +1,29 @@
 -*- coding: utf-8 -*-
 
+commit 4491bb740a9506d76391ac44bb2fe6e483fec952
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-04-12 20:11:15 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-04-12 20:11:15 +0900
+
+    teenyup
+
+commit 8d142ecff9af7d60728b8cfa9138e8623985c428
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-04-12 19:54:07 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-04-12 19:54:07 +0900
+
+    Fix dtoa buffer overrun
+
+commit 73f45e5e96ccc13a131f7c0122cf8600ce5b930f
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-04-12 19:53:43 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-04-12 19:53:43 +0900
+
+    Just free compiled pattern if no space is used
+
 commit 53f5fc4236a754ddf94b20dbb70ab63bd5109b18
   Author:     NARUSE, Yui <naruse@airemix.jp>
   AuthorDate: 2022-02-18 18:42:25 +0900
