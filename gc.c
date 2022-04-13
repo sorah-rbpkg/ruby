@@ -679,7 +679,7 @@ typedef struct rb_objspace {
 	unsigned int dont_gc : 1;
 	unsigned int dont_incremental : 1;
 	unsigned int during_gc : 1;
-        unsigned int during_compacting : 2;
+        unsigned int during_compacting : 1;
 	unsigned int gc_stressful: 1;
 	unsigned int has_hook: 1;
 	unsigned int during_minor_gc : 1;
@@ -1201,6 +1201,14 @@ tick(void)
 #else /* USE_TICK_T */
 #define MEASURE_LINE(expr) expr
 #endif /* USE_TICK_T */
+
+static inline void *
+asan_unpoison_object_temporary(VALUE obj)
+{
+    void *ptr = asan_poisoned_object_p(obj);
+    asan_unpoison_object(obj, false);
+    return ptr;
+}
 
 #define FL_CHECK2(name, x, pred) \
     ((RGENGC_CHECK_MODE && SPECIAL_CONST_P(x)) ? \
@@ -3853,16 +3861,6 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     ATOMIC_SET(finalizing, 0);
 }
 
-PUREFUNC(static inline int is_id_value(rb_objspace_t *objspace, VALUE ptr));
-static inline int
-is_id_value(rb_objspace_t *objspace, VALUE ptr)
-{
-    if (!is_pointer_to_heap(objspace, (void *)ptr)) return FALSE;
-    if (BUILTIN_TYPE(ptr) > T_FIXNUM) return FALSE;
-    if (BUILTIN_TYPE(ptr) == T_ICLASS) return FALSE;
-    return TRUE;
-}
-
 static inline int
 heap_is_swept_object(rb_objspace_t *objspace, rb_heap_t *heap, VALUE ptr)
 {
@@ -4479,11 +4477,6 @@ static VALUE gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free);
 static void
 lock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 {
-    /* If this is an explicit compaction (GC.compact), we don't need a read
-     * barrier, so just return early. */
-    if (objspace->flags.during_compacting >> 1) {
-        return;
-    }
 #if defined(_WIN32)
     DWORD old_protect;
 
@@ -4500,11 +4493,6 @@ lock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 static void
 unlock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 {
-    /* If this is an explicit compaction (GC.compact), we don't need a read
-     * barrier, so just return early. */
-    if (objspace->flags.during_compacting >> 1) {
-        return;
-    }
 #if defined(_WIN32)
     DWORD old_protect;
 
@@ -4746,12 +4734,8 @@ gc_compact_finish(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     GC_ASSERT(heap->sweeping_page == heap->compact_cursor);
 
-    /* If this is an explicit compaction (GC.compact), no read barrier was set
-     * so we don't need to unprotect pages or uninstall the SEGV handler */
-    if (!(objspace->flags.during_compacting >> 1)) {
-        gc_unprotect_pages(objspace, heap);
-        uninstall_handlers();
-    }
+    gc_unprotect_pages(objspace, heap);
+    uninstall_handlers();
 
     /* The mutator is allowed to run during incremental sweeping. T_MOVED
      * objects can get pushed on the stack and when the compaction process
@@ -5254,12 +5238,6 @@ gc_compact_start(rb_objspace_t *objspace, rb_heap_t *heap)
 
     memset(objspace->rcompactor.considered_count_table, 0, T_MASK * sizeof(size_t));
     memset(objspace->rcompactor.moved_count_table, 0, T_MASK * sizeof(size_t));
-
-    /* If this is an explicit compaction (GC.compact), we don't need a read
-     * barrier, so just return early. */
-    if (objspace->flags.during_compacting >> 1) {
-        return;
-    }
 
     /* Set up read barrier for pages containing MOVED objects */
     install_handlers();
@@ -8236,7 +8214,7 @@ gc_start(rb_objspace_t *objspace, int reason)
     objspace->flags.immediate_sweep = !!((unsigned)reason & GPR_FLAG_IMMEDIATE_SWEEP);
 
     /* Explicitly enable compaction (GC.compact) */
-    objspace->flags.during_compacting = (!!((unsigned)reason & GPR_FLAG_COMPACT) << 1);
+    objspace->flags.during_compacting = !!(reason & GPR_FLAG_COMPACT);
 
     if (!heap_allocated_pages) return FALSE; /* heap is not ready */
     if (!(reason & GPR_FLAG_METHOD) && !ready_to_gc(objspace)) return TRUE; /* GC is not allowed */
@@ -9472,11 +9450,7 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
 static VALUE
 gc_compact(rb_execution_context_t *ec, VALUE self)
 {
-    /* Clear the heap. */
-    gc_start_internal(ec, self, Qtrue, Qtrue, Qtrue, Qfalse);
-
-    /* At this point, all references are live and the mutator is not allowed
-     * to run, so we don't need a read barrier. */
+    /* Run GC with compaction enabled */
     gc_start_internal(ec, self, Qtrue, Qtrue, Qtrue, Qtrue);
 
     return gc_compact_stats(ec, self);
@@ -11202,9 +11176,20 @@ wmap_allocate(VALUE klass)
 static int
 wmap_live_p(rb_objspace_t *objspace, VALUE obj)
 {
-    if (!FL_ABLE(obj)) return TRUE;
-    if (!is_id_value(objspace, obj)) return FALSE;
-    if (!is_live_object(objspace, obj)) return FALSE;
+    if (SPECIAL_CONST_P(obj)) return TRUE;
+    if (is_pointer_to_heap(objspace, (void *)obj)) {
+        void *poisoned = asan_unpoison_object_temporary(obj);
+
+        enum ruby_value_type t = BUILTIN_TYPE(obj);
+        int ret = (!(t == T_NONE || t >= T_FIXNUM || t == T_ICLASS) &&
+                   is_live_object(objspace, obj));
+
+        if (poisoned) {
+            asan_poison_object(obj);
+        }
+
+        return ret;
+    }
     return TRUE;
 }
 
@@ -11270,10 +11255,26 @@ struct wmap_iter_arg {
     VALUE value;
 };
 
+static VALUE
+wmap_inspect_append(rb_objspace_t *objspace, VALUE str, VALUE obj)
+{
+    if (SPECIAL_CONST_P(obj)) {
+        return rb_str_append(str, rb_inspect(obj));
+    }
+    else if (wmap_live_p(objspace, obj)) {
+        return rb_str_append(str, rb_any_to_s(obj));
+    }
+    else {
+        return rb_str_catf(str, "#<collected:%p>", (void*)obj);
+    }
+}
+
 static int
 wmap_inspect_i(st_data_t key, st_data_t val, st_data_t arg)
 {
-    VALUE str = (VALUE)arg;
+    struct wmap_iter_arg *argp = (struct wmap_iter_arg *)arg;
+    rb_objspace_t *objspace = argp->objspace;
+    VALUE str = argp->value;
     VALUE k = (VALUE)key, v = (VALUE)val;
 
     if (RSTRING_PTR(str)[0] == '#') {
@@ -11283,11 +11284,9 @@ wmap_inspect_i(st_data_t key, st_data_t val, st_data_t arg)
 	rb_str_cat2(str, ": ");
 	RSTRING_PTR(str)[0] = '#';
     }
-    k = SPECIAL_CONST_P(k) ? rb_inspect(k) : rb_any_to_s(k);
-    rb_str_append(str, k);
+    wmap_inspect_append(objspace, str, k);
     rb_str_cat2(str, " => ");
-    v = SPECIAL_CONST_P(v) ? rb_inspect(v) : rb_any_to_s(v);
-    rb_str_append(str, v);
+    wmap_inspect_append(objspace, str, v);
 
     return ST_CONTINUE;
 }
@@ -11298,11 +11297,14 @@ wmap_inspect(VALUE self)
     VALUE str;
     VALUE c = rb_class_name(CLASS_OF(self));
     struct weakmap *w;
+    struct wmap_iter_arg args;
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
     str = rb_sprintf("-<%"PRIsVALUE":%p", c, (void *)self);
     if (w->wmap2obj) {
-	st_foreach(w->wmap2obj, wmap_inspect_i, str);
+	args.objspace = &rb_objspace;
+	args.value = str;
+	st_foreach(w->wmap2obj, wmap_inspect_i, (st_data_t)&args);
     }
     RSTRING_PTR(str)[0] = '#';
     rb_str_cat2(str, ">");
