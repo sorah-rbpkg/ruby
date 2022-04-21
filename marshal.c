@@ -30,12 +30,14 @@
 #include "internal/hash.h"
 #include "internal/object.h"
 #include "internal/struct.h"
+#include "internal/symbol.h"
 #include "internal/util.h"
 #include "internal/vm.h"
 #include "ruby/io.h"
 #include "ruby/ruby.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
+#include "builtin.h"
 
 #define BITSPERSHORT (2*CHAR_BIT)
 #define SHORTMASK ((1<<BITSPERSHORT)-1)
@@ -122,7 +124,7 @@ typedef struct {
 static st_table *compat_allocator_tbl;
 static VALUE compat_allocator_tbl_wrapper;
 static VALUE rb_marshal_dump_limited(VALUE obj, VALUE port, int limit);
-static VALUE rb_marshal_load_with_proc(VALUE port, VALUE proc);
+static VALUE rb_marshal_load_with_proc(VALUE port, VALUE proc, bool freeze);
 
 static int
 mark_marshal_compat_i(st_data_t key, st_data_t value, st_data_t _)
@@ -573,7 +575,26 @@ w_uclass(VALUE obj, VALUE super, struct dump_arg *arg)
     }
 }
 
-#define to_be_skipped_id(id) (id == rb_id_encoding() || id == s_encoding_short || id == s_ruby2_keywords_flag || !rb_id2str(id))
+static bool
+rb_hash_ruby2_keywords_p(VALUE obj)
+{
+    return (RHASH(obj)->basic.flags & RHASH_PASS_AS_KEYWORDS) != 0;
+}
+
+static void
+rb_hash_ruby2_keywords(VALUE obj)
+{
+    RHASH(obj)->basic.flags |= RHASH_PASS_AS_KEYWORDS;
+}
+
+static inline bool
+to_be_skipped_id(const ID id)
+{
+    if (id == s_encoding_short) return true;
+    if (id == s_ruby2_keywords_flag) return true;
+    if (id == rb_id_encoding()) return true;
+    return !rb_id2str(id);
+}
 
 struct w_ivar_arg {
     struct dump_call_arg *dump;
@@ -613,7 +634,9 @@ static int
 obj_count_ivars(st_data_t key, st_data_t val, st_data_t a)
 {
     ID id = (ID)key;
-    if (!to_be_skipped_id(id)) ++*(st_index_t *)a;
+    if (!to_be_skipped_id(id) && UNLIKELY(!++*(st_index_t *)a)) {
+        rb_raise(rb_eRuntimeError, "too many instance variables");
+    }
     return ST_CONTINUE;
 }
 
@@ -672,9 +695,7 @@ w_encoding(VALUE encname, struct dump_call_arg *arg)
 static st_index_t
 has_ivars(VALUE obj, VALUE encname, VALUE *ivobj)
 {
-    st_index_t enc = !NIL_P(encname);
-    st_index_t num = 0;
-    st_index_t ruby2_keywords_flag = 0;
+    st_index_t num = !NIL_P(encname);
 
     if (SPECIAL_CONST_P(obj)) goto generic;
     switch (BUILTIN_TYPE(obj)) {
@@ -683,15 +704,15 @@ has_ivars(VALUE obj, VALUE encname, VALUE *ivobj)
       case T_MODULE:
 	break; /* counted elsewhere */
       case T_HASH:
-        ruby2_keywords_flag = RHASH(obj)->basic.flags & RHASH_PASS_AS_KEYWORDS ? 1 : 0;
+        if (rb_hash_ruby2_keywords_p(obj)) ++num;
         /* fall through */
       default:
       generic:
 	rb_ivar_foreach(obj, obj_count_ivars, (st_data_t)&num);
-	if (ruby2_keywords_flag || num) *ivobj = obj;
+	if (num) *ivobj = obj;
     }
 
-    return num + enc + ruby2_keywords_flag;
+    return num;
 }
 
 static void
@@ -711,7 +732,7 @@ w_ivar(st_index_t num, VALUE ivobj, VALUE encname, struct dump_call_arg *arg)
 {
     w_long(num, arg->arg);
     num -= w_encoding(encname, arg);
-    if (RB_TYPE_P(ivobj, T_HASH) && (RHASH(ivobj)->basic.flags & RHASH_PASS_AS_KEYWORDS)) {
+    if (RB_TYPE_P(ivobj, T_HASH) && rb_hash_ruby2_keywords_p(ivobj)) {
         int limit = arg->limit;
         if (limit >= 0) ++limit;
         w_symbol(ID2SYM(s_ruby2_keywords_flag), arg->arg);
@@ -757,7 +778,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	return;
     }
 
-    if (obj == Qnil) {
+    if (NIL_P(obj)) {
 	w_byte(TYPE_NIL, arg);
     }
     else if (obj == Qtrue) {
@@ -947,6 +968,10 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 
 	  case T_HASH:
 	    w_uclass(obj, rb_cHash, arg);
+	    if (rb_hash_compare_by_id_p(obj)) {
+		w_byte(TYPE_UCLASS, arg);
+		w_symbol(rb_sym_intern_ascii_cstr("Hash"), arg);
+	    }
 	    if (NIL_P(RHASH_IFNONE(obj))) {
 		w_byte(TYPE_HASH, arg);
 	    }
@@ -1140,6 +1165,7 @@ struct load_arg {
     st_table *partial_objects;
     VALUE proc;
     st_table *compat_tbl;
+    bool freeze;
 };
 
 static VALUE
@@ -1188,10 +1214,8 @@ static const rb_data_type_t load_arg_data = {
 };
 
 #define r_entry(v, arg) r_entry0((v), (arg)->data->num_entries, (arg))
-static VALUE r_entry0(VALUE v, st_index_t num, struct load_arg *arg);
 static VALUE r_object(struct load_arg *arg);
 static VALUE r_symbol(struct load_arg *arg);
-static VALUE path2class(VALUE path);
 
 NORETURN(static void too_short(void));
 static void
@@ -1422,18 +1446,20 @@ sym2encidx(VALUE sym, VALUE val)
 }
 
 static int
-ruby2_keywords_flag_check(VALUE sym)
+symname_equal(VALUE sym, const char *name, size_t nlen)
 {
     const char *p;
     long l;
     if (rb_enc_get_index(sym) != ENCINDEX_US_ASCII) return 0;
     RSTRING_GETMEM(sym, p, l);
-    if (l <= 0) return 0;
-    if (name_equal(name_s_ruby2_keywords_flag, rb_strlen_lit(name_s_ruby2_keywords_flag), p, l)) {
-        return 1;
-    }
-    return 0;
+    return name_equal(name, nlen, p, l);
 }
+
+#define BUILD_ASSERT_POSITIVE(n) \
+    /* make 0 negative to workaround the "zero size array" GCC extension, */ \
+    ((sizeof(char [2*(ssize_t)(n)-1])+1)/2) /* assuming no overflow */
+#define symname_equal_lit(sym, sym_name) \
+    symname_equal(sym, sym_name, BUILD_ASSERT_POSITIVE(rb_strlen_lit(sym_name)))
 
 static VALUE
 r_symlink(struct load_arg *arg)
@@ -1556,6 +1582,17 @@ r_leave(VALUE v, struct load_arg *arg, bool partial)
 	st_data_t data;
 	st_data_t key = (st_data_t)v;
 	st_delete(arg->partial_objects, &key, &data);
+	if (arg->freeze) {
+	    if (RB_TYPE_P(v, T_MODULE) || RB_TYPE_P(v, T_CLASS)) {
+		// noop
+	    }
+	    else if (RB_TYPE_P(v, T_STRING)) {
+		v = rb_str_to_interned_str(v);
+	    }
+	    else {
+		OBJ_FREEZE(v);
+	    }
+        }
 	v = r_post_proc(v, arg);
     }
     return v;
@@ -1599,9 +1636,9 @@ r_ivar(VALUE obj, int *has_encoding, struct load_arg *arg)
                 }
 		if (has_encoding) *has_encoding = TRUE;
 	    }
-	    else if (ruby2_keywords_flag_check(sym)) {
+	    else if (symname_equal_lit(sym, name_s_ruby2_keywords_flag)) {
                 if (RB_TYPE_P(obj, T_HASH)) {
-                    RHASH(obj)->basic.flags |= RHASH_PASS_AS_KEYWORDS;
+                    rb_hash_ruby2_keywords(obj);
                 }
                 else {
                     rb_raise(rb_eArgError, "ruby2_keywords flag is given but %"PRIsVALUE" is not a Hash", obj);
@@ -1683,11 +1720,20 @@ append_extmod(VALUE obj, VALUE extmod)
 		 (str)); \
     } while (0)
 
+static VALUE r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int type);
+
 static VALUE
 r_object0(struct load_arg *arg, bool partial, int *ivp, VALUE extmod)
 {
-    VALUE v = Qnil;
     int type = r_byte(arg);
+    return r_object_for(arg, partial, ivp, extmod, type);
+}
+
+static VALUE
+r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int type)
+{
+    VALUE (*hash_new_with_size)(st_index_t) = rb_hash_new_with_size;
+    VALUE v = Qnil;
     long id;
     st_data_t link;
 
@@ -1755,7 +1801,14 @@ r_object0(struct load_arg *arg, bool partial, int *ivp, VALUE extmod)
 	    if (FL_TEST(c, FL_SINGLETON)) {
 		rb_raise(rb_eTypeError, "singleton can't be loaded");
 	    }
-	    v = r_object0(arg, partial, 0, extmod);
+	    type = r_byte(arg);
+	    if ((c == rb_cHash) &&
+		/* Hack for compare_by_identify */
+		(type == TYPE_HASH || type == TYPE_HASH_DEF)) {
+		hash_new_with_size = rb_ident_hash_new_with_size;
+		goto type_hash;
+	    }
+	    v = r_object_for(arg, partial, 0, extmod, type);
 	    if (rb_special_const_p(v) || RB_TYPE_P(v, T_OBJECT) || RB_TYPE_P(v, T_CLASS)) {
                 goto format_error;
 	    }
@@ -1896,10 +1949,11 @@ r_object0(struct load_arg *arg, bool partial, int *ivp, VALUE extmod)
 
       case TYPE_HASH:
       case TYPE_HASH_DEF:
+      type_hash:
 	{
 	    long len = r_long(arg);
 
-	    v = rb_hash_new_with_size(len);
+	    v = hash_new_with_size(len);
 	    v = r_entry(v, arg);
 	    arg->readable += (len - 1) * 2;
 	    while (len--) {
@@ -2150,33 +2204,8 @@ clear_load_arg(struct load_arg *arg)
     }
 }
 
-/*
- * call-seq:
- *     load( source [, proc] ) -> obj
- *     restore( source [, proc] ) -> obj
- *
- * Returns the result of converting the serialized data in source into a
- * Ruby object (possibly with associated subordinate objects). source
- * may be either an instance of IO or an object that responds to
- * to_str. If proc is specified, each object will be passed to the proc, as the object
- * is being deserialized.
- *
- * Never pass untrusted data (including user supplied input) to this method.
- * Please see the overview for further details.
- */
-static VALUE
-marshal_load(int argc, VALUE *argv, VALUE _)
-{
-    VALUE port, proc;
-
-    rb_check_arity(argc, 1, 2);
-    port = argv[0];
-    proc = argc > 1 ? argv[1] : Qnil;
-    return rb_marshal_load_with_proc(port, proc);
-}
-
 VALUE
-rb_marshal_load_with_proc(VALUE port, VALUE proc)
+rb_marshal_load_with_proc(VALUE port, VALUE proc, bool freeze)
 {
     int major, minor;
     VALUE v;
@@ -2202,6 +2231,7 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc)
     arg->compat_tbl = 0;
     arg->proc = 0;
     arg->readable = 0;
+    arg->freeze = freeze;
 
     if (NIL_P(v))
 	arg->buf = xmalloc(BUFSIZ);
@@ -2229,6 +2259,13 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc)
 
     return v;
 }
+
+static VALUE marshal_load(rb_execution_context_t *ec, VALUE mod, VALUE source, VALUE proc, VALUE freeze)
+{
+    return rb_marshal_load_with_proc(source, proc, RTEST(freeze));
+}
+
+#include "marshal.rbinc"
 
 /*
  * The marshaling library converts collections of Ruby objects into a
@@ -2362,8 +2399,6 @@ Init_marshal(void)
     set_id(s_ruby2_keywords_flag);
 
     rb_define_module_function(rb_mMarshal, "dump", marshal_dump, -1);
-    rb_define_module_function(rb_mMarshal, "load", marshal_load, -1);
-    rb_define_module_function(rb_mMarshal, "restore", marshal_load, -1);
 
     /* major version */
     rb_define_const(rb_mMarshal, "MAJOR_VERSION", INT2FIX(MARSHAL_MAJOR));
@@ -2393,5 +2428,5 @@ rb_marshal_dump(VALUE obj, VALUE port)
 VALUE
 rb_marshal_load(VALUE port)
 {
-    return rb_marshal_load_with_proc(port, Qnil);
+    return rb_marshal_load_with_proc(port, Qnil, false);
 }

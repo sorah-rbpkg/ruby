@@ -1,11 +1,10 @@
-
 #ifndef RUBY_VM_SYNC_H
 #define RUBY_VM_SYNC_H
 
 #include "vm_debug.h"
 #include "debug_counter.h"
 
-#if USE_RUBY_DEBUG_LOG
+#if defined(USE_RUBY_DEBUG_LOG) && USE_RUBY_DEBUG_LOG
 #define LOCATION_ARGS const char *file, int line
 #define LOCATION_PARAMS file, line
 #define APPEND_LOCATION_ARGS , const char *file, int line
@@ -91,7 +90,7 @@ static inline void
 rb_vm_lock_leave(unsigned int *lev, const char *file, int line)
 {
     if (rb_multi_ractor_p()) {
-      rb_vm_lock_leave_body(lev APPEND_LOCATION_PARAMS);
+        rb_vm_lock_leave_body(lev APPEND_LOCATION_PARAMS);
     }
 }
 

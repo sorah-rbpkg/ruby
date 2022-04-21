@@ -60,7 +60,6 @@ closure.o: $(hdrdir)/ruby/backward.h
 closure.o: $(hdrdir)/ruby/backward/2/assume.h
 closure.o: $(hdrdir)/ruby/backward/2/attributes.h
 closure.o: $(hdrdir)/ruby/backward/2/bool.h
-closure.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 closure.o: $(hdrdir)/ruby/backward/2/inttypes.h
 closure.o: $(hdrdir)/ruby/backward/2/limits.h
 closure.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -202,7 +201,6 @@ closure.o: $(hdrdir)/ruby/internal/static_assert.h
 closure.o: $(hdrdir)/ruby/internal/stdalign.h
 closure.o: $(hdrdir)/ruby/internal/stdbool.h
 closure.o: $(hdrdir)/ruby/internal/symbol.h
-closure.o: $(hdrdir)/ruby/internal/token_paste.h
 closure.o: $(hdrdir)/ruby/internal/value.h
 closure.o: $(hdrdir)/ruby/internal/value_type.h
 closure.o: $(hdrdir)/ruby/internal/variable.h
@@ -226,7 +224,6 @@ conversions.o: $(hdrdir)/ruby/backward.h
 conversions.o: $(hdrdir)/ruby/backward/2/assume.h
 conversions.o: $(hdrdir)/ruby/backward/2/attributes.h
 conversions.o: $(hdrdir)/ruby/backward/2/bool.h
-conversions.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 conversions.o: $(hdrdir)/ruby/backward/2/inttypes.h
 conversions.o: $(hdrdir)/ruby/backward/2/limits.h
 conversions.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -368,7 +365,6 @@ conversions.o: $(hdrdir)/ruby/internal/static_assert.h
 conversions.o: $(hdrdir)/ruby/internal/stdalign.h
 conversions.o: $(hdrdir)/ruby/internal/stdbool.h
 conversions.o: $(hdrdir)/ruby/internal/symbol.h
-conversions.o: $(hdrdir)/ruby/internal/token_paste.h
 conversions.o: $(hdrdir)/ruby/internal/value.h
 conversions.o: $(hdrdir)/ruby/internal/value_type.h
 conversions.o: $(hdrdir)/ruby/internal/variable.h
@@ -391,7 +387,6 @@ fiddle.o: $(hdrdir)/ruby/backward.h
 fiddle.o: $(hdrdir)/ruby/backward/2/assume.h
 fiddle.o: $(hdrdir)/ruby/backward/2/attributes.h
 fiddle.o: $(hdrdir)/ruby/backward/2/bool.h
-fiddle.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 fiddle.o: $(hdrdir)/ruby/backward/2/inttypes.h
 fiddle.o: $(hdrdir)/ruby/backward/2/limits.h
 fiddle.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -533,7 +528,6 @@ fiddle.o: $(hdrdir)/ruby/internal/static_assert.h
 fiddle.o: $(hdrdir)/ruby/internal/stdalign.h
 fiddle.o: $(hdrdir)/ruby/internal/stdbool.h
 fiddle.o: $(hdrdir)/ruby/internal/symbol.h
-fiddle.o: $(hdrdir)/ruby/internal/token_paste.h
 fiddle.o: $(hdrdir)/ruby/internal/value.h
 fiddle.o: $(hdrdir)/ruby/internal/value_type.h
 fiddle.o: $(hdrdir)/ruby/internal/variable.h
@@ -556,7 +550,6 @@ function.o: $(hdrdir)/ruby/backward.h
 function.o: $(hdrdir)/ruby/backward/2/assume.h
 function.o: $(hdrdir)/ruby/backward/2/attributes.h
 function.o: $(hdrdir)/ruby/backward/2/bool.h
-function.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 function.o: $(hdrdir)/ruby/backward/2/inttypes.h
 function.o: $(hdrdir)/ruby/backward/2/limits.h
 function.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -698,7 +691,6 @@ function.o: $(hdrdir)/ruby/internal/static_assert.h
 function.o: $(hdrdir)/ruby/internal/stdalign.h
 function.o: $(hdrdir)/ruby/internal/stdbool.h
 function.o: $(hdrdir)/ruby/internal/symbol.h
-function.o: $(hdrdir)/ruby/internal/token_paste.h
 function.o: $(hdrdir)/ruby/internal/value.h
 function.o: $(hdrdir)/ruby/internal/value_type.h
 function.o: $(hdrdir)/ruby/internal/variable.h
@@ -722,7 +714,6 @@ handle.o: $(hdrdir)/ruby/backward.h
 handle.o: $(hdrdir)/ruby/backward/2/assume.h
 handle.o: $(hdrdir)/ruby/backward/2/attributes.h
 handle.o: $(hdrdir)/ruby/backward/2/bool.h
-handle.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 handle.o: $(hdrdir)/ruby/backward/2/inttypes.h
 handle.o: $(hdrdir)/ruby/backward/2/limits.h
 handle.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -864,7 +855,6 @@ handle.o: $(hdrdir)/ruby/internal/static_assert.h
 handle.o: $(hdrdir)/ruby/internal/stdalign.h
 handle.o: $(hdrdir)/ruby/internal/stdbool.h
 handle.o: $(hdrdir)/ruby/internal/symbol.h
-handle.o: $(hdrdir)/ruby/internal/token_paste.h
 handle.o: $(hdrdir)/ruby/internal/value.h
 handle.o: $(hdrdir)/ruby/internal/value_type.h
 handle.o: $(hdrdir)/ruby/internal/variable.h
@@ -887,13 +877,13 @@ memory_view.o: $(hdrdir)/ruby/backward.h
 memory_view.o: $(hdrdir)/ruby/backward/2/assume.h
 memory_view.o: $(hdrdir)/ruby/backward/2/attributes.h
 memory_view.o: $(hdrdir)/ruby/backward/2/bool.h
-memory_view.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 memory_view.o: $(hdrdir)/ruby/backward/2/inttypes.h
 memory_view.o: $(hdrdir)/ruby/backward/2/limits.h
 memory_view.o: $(hdrdir)/ruby/backward/2/long_long.h
 memory_view.o: $(hdrdir)/ruby/backward/2/stdalign.h
 memory_view.o: $(hdrdir)/ruby/backward/2/stdarg.h
 memory_view.o: $(hdrdir)/ruby/defines.h
+memory_view.o: $(hdrdir)/ruby/encoding.h
 memory_view.o: $(hdrdir)/ruby/intern.h
 memory_view.o: $(hdrdir)/ruby/internal/anyargs.h
 memory_view.o: $(hdrdir)/ruby/internal/arithmetic.h
@@ -964,6 +954,15 @@ memory_view.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 memory_view.o: $(hdrdir)/ruby/internal/ctype.h
 memory_view.o: $(hdrdir)/ruby/internal/dllexport.h
 memory_view.o: $(hdrdir)/ruby/internal/dosish.h
+memory_view.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+memory_view.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+memory_view.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+memory_view.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+memory_view.o: $(hdrdir)/ruby/internal/encoding/re.h
+memory_view.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+memory_view.o: $(hdrdir)/ruby/internal/encoding/string.h
+memory_view.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+memory_view.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 memory_view.o: $(hdrdir)/ruby/internal/error.h
 memory_view.o: $(hdrdir)/ruby/internal/eval.h
 memory_view.o: $(hdrdir)/ruby/internal/event.h
@@ -1029,7 +1028,6 @@ memory_view.o: $(hdrdir)/ruby/internal/static_assert.h
 memory_view.o: $(hdrdir)/ruby/internal/stdalign.h
 memory_view.o: $(hdrdir)/ruby/internal/stdbool.h
 memory_view.o: $(hdrdir)/ruby/internal/symbol.h
-memory_view.o: $(hdrdir)/ruby/internal/token_paste.h
 memory_view.o: $(hdrdir)/ruby/internal/value.h
 memory_view.o: $(hdrdir)/ruby/internal/value_type.h
 memory_view.o: $(hdrdir)/ruby/internal/variable.h
@@ -1037,6 +1035,8 @@ memory_view.o: $(hdrdir)/ruby/internal/warning_push.h
 memory_view.o: $(hdrdir)/ruby/internal/xmalloc.h
 memory_view.o: $(hdrdir)/ruby/memory_view.h
 memory_view.o: $(hdrdir)/ruby/missing.h
+memory_view.o: $(hdrdir)/ruby/onigmo.h
+memory_view.o: $(hdrdir)/ruby/oniguruma.h
 memory_view.o: $(hdrdir)/ruby/ruby.h
 memory_view.o: $(hdrdir)/ruby/st.h
 memory_view.o: $(hdrdir)/ruby/subst.h
@@ -1053,7 +1053,6 @@ pinned.o: $(hdrdir)/ruby/backward.h
 pinned.o: $(hdrdir)/ruby/backward/2/assume.h
 pinned.o: $(hdrdir)/ruby/backward/2/attributes.h
 pinned.o: $(hdrdir)/ruby/backward/2/bool.h
-pinned.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 pinned.o: $(hdrdir)/ruby/backward/2/inttypes.h
 pinned.o: $(hdrdir)/ruby/backward/2/limits.h
 pinned.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -1195,7 +1194,6 @@ pinned.o: $(hdrdir)/ruby/internal/static_assert.h
 pinned.o: $(hdrdir)/ruby/internal/stdalign.h
 pinned.o: $(hdrdir)/ruby/internal/stdbool.h
 pinned.o: $(hdrdir)/ruby/internal/symbol.h
-pinned.o: $(hdrdir)/ruby/internal/token_paste.h
 pinned.o: $(hdrdir)/ruby/internal/value.h
 pinned.o: $(hdrdir)/ruby/internal/value_type.h
 pinned.o: $(hdrdir)/ruby/internal/variable.h
@@ -1218,7 +1216,6 @@ pointer.o: $(hdrdir)/ruby/backward.h
 pointer.o: $(hdrdir)/ruby/backward/2/assume.h
 pointer.o: $(hdrdir)/ruby/backward/2/attributes.h
 pointer.o: $(hdrdir)/ruby/backward/2/bool.h
-pointer.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 pointer.o: $(hdrdir)/ruby/backward/2/inttypes.h
 pointer.o: $(hdrdir)/ruby/backward/2/limits.h
 pointer.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -1296,6 +1293,15 @@ pointer.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 pointer.o: $(hdrdir)/ruby/internal/ctype.h
 pointer.o: $(hdrdir)/ruby/internal/dllexport.h
 pointer.o: $(hdrdir)/ruby/internal/dosish.h
+pointer.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+pointer.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+pointer.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+pointer.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+pointer.o: $(hdrdir)/ruby/internal/encoding/re.h
+pointer.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+pointer.o: $(hdrdir)/ruby/internal/encoding/string.h
+pointer.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+pointer.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 pointer.o: $(hdrdir)/ruby/internal/error.h
 pointer.o: $(hdrdir)/ruby/internal/eval.h
 pointer.o: $(hdrdir)/ruby/internal/event.h
@@ -1361,7 +1367,6 @@ pointer.o: $(hdrdir)/ruby/internal/static_assert.h
 pointer.o: $(hdrdir)/ruby/internal/stdalign.h
 pointer.o: $(hdrdir)/ruby/internal/stdbool.h
 pointer.o: $(hdrdir)/ruby/internal/symbol.h
-pointer.o: $(hdrdir)/ruby/internal/token_paste.h
 pointer.o: $(hdrdir)/ruby/internal/value.h
 pointer.o: $(hdrdir)/ruby/internal/value_type.h
 pointer.o: $(hdrdir)/ruby/internal/variable.h

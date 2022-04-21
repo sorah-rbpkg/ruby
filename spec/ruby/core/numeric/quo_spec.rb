@@ -11,7 +11,7 @@ describe "Numeric#quo" do
     2.quo(2.5).should eql(0.8)
   end
 
-  it "returns the result of self divided by the given Integer as a Float" do
+  it "returns the result of self divided by the given Bignum as a Float" do
     45.quo(bignum_value).should be_close(1.04773789668636e-08, TOLERANCE)
   end
 
@@ -51,5 +51,14 @@ describe "Numeric#quo" do
     obj.should_receive(:to_r).and_return(19.quo(20))
 
     obj.quo(19).should == 1.quo(20)
+  end
+
+  it "raises a ZeroDivisionError if the given argument is zero and not a Float" do
+    -> { 1.quo(0) }.should raise_error(ZeroDivisionError)
+  end
+
+  it "returns infinity if the given argument is zero and is a Float" do
+    (1.quo(0.0)).to_s.should == 'Infinity'
+    (-1.quo(0.0)).to_s.should == '-Infinity'
   end
 end

@@ -21,7 +21,7 @@ mjit_compile_invokebuiltin_for_rb_ary_shuffle_bang(FILE *f, long index, unsigned
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == rb_ary_shuffle_bang */\n", (intptr_t)rb_ary_shuffle_bang);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == rb_ary_shuffle_bang */\n", (VALUE)rb_ary_shuffle_bang);
     fprintf(f, "    val = f(ec, self, argv[0]);\n");
 }
 
@@ -37,12 +37,21 @@ mjit_compile_invokebuiltin_for_rb_ary_shuffle(FILE *f, long index, unsigned stac
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == rb_ary_shuffle */\n", (intptr_t)rb_ary_shuffle);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == rb_ary_shuffle */\n", (VALUE)rb_ary_shuffle);
     fprintf(f, "    val = f(ec, self, argv[0]);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_rb_ary_sample(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_ary_sample0(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == ary_sample0 */\n", (VALUE)ary_sample0);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_ary_sample(FILE *f, long index, unsigned stack_size, bool inlinable_p)
 {
     fprintf(f, "    VALUE self = GET_SELF();\n");
     fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE);\n");
@@ -53,7 +62,7 @@ mjit_compile_invokebuiltin_for_rb_ary_sample(FILE *f, long index, unsigned stack
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == rb_ary_sample */\n", (intptr_t)rb_ary_sample);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == ary_sample */\n", (VALUE)ary_sample);
     fprintf(f, "    val = f(ec, self, argv[0], argv[1], argv[2]);\n");
 }
 
@@ -63,18 +72,20 @@ void Init_builtin_array(void)
   static const struct rb_builtin_function array_table[] = {
     RB_BUILTIN_FUNCTION(0, rb_ary_shuffle_bang, rb_ary_shuffle_bang, 1, mjit_compile_invokebuiltin_for_rb_ary_shuffle_bang),
     RB_BUILTIN_FUNCTION(1, rb_ary_shuffle, rb_ary_shuffle, 1, mjit_compile_invokebuiltin_for_rb_ary_shuffle),
-    RB_BUILTIN_FUNCTION(2, rb_ary_sample, rb_ary_sample, 3, mjit_compile_invokebuiltin_for_rb_ary_sample),
+    RB_BUILTIN_FUNCTION(2, ary_sample0, ary_sample0, 0, mjit_compile_invokebuiltin_for_ary_sample0),
+    RB_BUILTIN_FUNCTION(3, ary_sample, ary_sample, 3, mjit_compile_invokebuiltin_for_ary_sample),
     RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),
   };
 
   // arity_check
 COMPILER_WARNING_PUSH
-#if GCC_VERSION_SINCE(5, 1, 0) || __clang__
+#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
 COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
 #endif
   if (0) rb_builtin_function_check_arity1(rb_ary_shuffle_bang);
   if (0) rb_builtin_function_check_arity1(rb_ary_shuffle);
-  if (0) rb_builtin_function_check_arity3(rb_ary_sample);
+  if (0) rb_builtin_function_check_arity0(ary_sample0);
+  if (0) rb_builtin_function_check_arity3(ary_sample);
 COMPILER_WARNING_POP
 
   // load

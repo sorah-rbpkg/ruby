@@ -9,6 +9,32 @@
 #include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
 struct rb_execution_context_struct; /* in vm_core.h */
 
+static VALUE builtin_inline_class_277(struct rb_execution_context_struct *ec, const VALUE self)
+{
+MAYBE_UNUSED(const VALUE) flag = rb_vm_lvar(ec, -3);
+#line 277 "gc.rb"
+
+      rb_objspace.flags.measure_gc = RTEST(flag) ? TRUE : FALSE;
+      return flag;
+#line 20 "gc.rbinc"
+}
+
+static VALUE builtin_inline_class_289(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 289 "gc.rb"
+return 
+      RBOOL(rb_objspace.flags.measure_gc);
+#line 28 "gc.rbinc"
+}
+
+static VALUE builtin_inline_class_299(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 299 "gc.rb"
+return 
+      ULL2NUM(rb_objspace.profile.total_time_ns);
+#line 36 "gc.rbinc"
+}
+
 static void
 mjit_compile_invokebuiltin_for_gc_start_internal(FILE *f, long index, unsigned stack_size, bool inlinable_p)
 {
@@ -21,7 +47,7 @@ mjit_compile_invokebuiltin_for_gc_start_internal(FILE *f, long index, unsigned s
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_start_internal */\n", (intptr_t)gc_start_internal);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == gc_start_internal */\n", (VALUE)gc_start_internal);
     fprintf(f, "    val = f(ec, self, argv[0], argv[1], argv[2], argv[3]);\n");
 }
 
@@ -30,7 +56,7 @@ mjit_compile_invokebuiltin_for_gc_get_auto_compact(FILE *f, long index, unsigned
 {
     fprintf(f, "    VALUE self = GET_SELF();\n");
     fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_get_auto_compact */\n", (intptr_t)gc_get_auto_compact);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == gc_get_auto_compact */\n", (VALUE)gc_get_auto_compact);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -46,7 +72,7 @@ mjit_compile_invokebuiltin_for_gc_set_auto_compact(FILE *f, long index, unsigned
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_set_auto_compact */\n", (intptr_t)gc_set_auto_compact);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == gc_set_auto_compact */\n", (VALUE)gc_set_auto_compact);
     fprintf(f, "    val = f(ec, self, argv[0]);\n");
 }
 
@@ -55,7 +81,7 @@ mjit_compile_invokebuiltin_for_gc_enable(FILE *f, long index, unsigned stack_siz
 {
     fprintf(f, "    VALUE self = GET_SELF();\n");
     fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_enable */\n", (intptr_t)gc_enable);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == gc_enable */\n", (VALUE)gc_enable);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -64,7 +90,7 @@ mjit_compile_invokebuiltin_for_gc_disable(FILE *f, long index, unsigned stack_si
 {
     fprintf(f, "    VALUE self = GET_SELF();\n");
     fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_disable */\n", (intptr_t)gc_disable);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == gc_disable */\n", (VALUE)gc_disable);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -73,7 +99,7 @@ mjit_compile_invokebuiltin_for_gc_stress_get(FILE *f, long index, unsigned stack
 {
     fprintf(f, "    VALUE self = GET_SELF();\n");
     fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_stress_get */\n", (intptr_t)gc_stress_get);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == gc_stress_get */\n", (VALUE)gc_stress_get);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -89,7 +115,7 @@ mjit_compile_invokebuiltin_for_gc_stress_set_m(FILE *f, long index, unsigned sta
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_stress_set_m */\n", (intptr_t)gc_stress_set_m);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == gc_stress_set_m */\n", (VALUE)gc_stress_set_m);
     fprintf(f, "    val = f(ec, self, argv[0]);\n");
 }
 
@@ -98,7 +124,7 @@ mjit_compile_invokebuiltin_for_gc_count(FILE *f, long index, unsigned stack_size
 {
     fprintf(f, "    VALUE self = GET_SELF();\n");
     fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_count */\n", (intptr_t)gc_count);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == gc_count */\n", (VALUE)gc_count);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -114,7 +140,7 @@ mjit_compile_invokebuiltin_for_gc_stat(FILE *f, long index, unsigned stack_size,
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_stat */\n", (intptr_t)gc_stat);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == gc_stat */\n", (VALUE)gc_stat);
     fprintf(f, "    val = f(ec, self, argv[0]);\n");
 }
 
@@ -130,7 +156,7 @@ mjit_compile_invokebuiltin_for_gc_latest_gc_info(FILE *f, long index, unsigned s
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_latest_gc_info */\n", (intptr_t)gc_latest_gc_info);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == gc_latest_gc_info */\n", (VALUE)gc_latest_gc_info);
     fprintf(f, "    val = f(ec, self, argv[0]);\n");
 }
 
@@ -139,7 +165,7 @@ mjit_compile_invokebuiltin_for_gc_compact_stats(FILE *f, long index, unsigned st
 {
     fprintf(f, "    VALUE self = GET_SELF();\n");
     fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_compact_stats */\n", (intptr_t)gc_compact_stats);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == gc_compact_stats */\n", (VALUE)gc_compact_stats);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -148,7 +174,7 @@ mjit_compile_invokebuiltin_for_gc_compact(FILE *f, long index, unsigned stack_si
 {
     fprintf(f, "    VALUE self = GET_SELF();\n");
     fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_compact */\n", (intptr_t)gc_compact);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == gc_compact */\n", (VALUE)gc_compact);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -164,8 +190,67 @@ mjit_compile_invokebuiltin_for_gc_verify_compaction_references(FILE *f, long ind
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == gc_verify_compaction_references */\n", (intptr_t)gc_verify_compaction_references);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == gc_verify_compaction_references */\n", (VALUE)gc_verify_compaction_references);
     fprintf(f, "    val = f(ec, self, argv[0], argv[1]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi0(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        fprintf(f, "%s", "    {\n");
+        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) flag = rb_vm_lvar(ec, -3);\n");
+        fprintf(f, "%s", "#line 277 \"gc.rb\"\n");
+        fprintf(f, "%s", "    \n");
+        fprintf(f, "%s", "          rb_objspace.flags.measure_gc = RTEST(flag) ? TRUE : FALSE;\n");
+        fprintf(f, "%s", "          return flag;\n");
+        fprintf(f, "%s", "#line 45 \"gc.rbinc\"\n");
+        fprintf(f, "%s", "    }\n");
+        fprintf(f, "%s", "    \n");
+        return;
+    }
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_277 */\n", (VALUE)builtin_inline_class_277);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi1(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        fprintf(f, "%s", "    {\n");
+        fprintf(f, "%s", "#line 289 \"gc.rb\"\n");
+        fprintf(f, "%s", "    return \n");
+        fprintf(f, "%s", "          RBOOL(rb_objspace.flags.measure_gc);\n");
+        fprintf(f, "%s", "#line 52 \"gc.rbinc\"\n");
+        fprintf(f, "%s", "    }\n");
+        fprintf(f, "%s", "    \n");
+        return;
+    }
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_289 */\n", (VALUE)builtin_inline_class_289);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi2(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        fprintf(f, "%s", "    {\n");
+        fprintf(f, "%s", "#line 299 \"gc.rb\"\n");
+        fprintf(f, "%s", "    return \n");
+        fprintf(f, "%s", "          ULL2NUM(rb_objspace.profile.total_time_ns);\n");
+        fprintf(f, "%s", "#line 59 \"gc.rbinc\"\n");
+        fprintf(f, "%s", "    }\n");
+        fprintf(f, "%s", "    \n");
+        return;
+    }
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_299 */\n", (VALUE)builtin_inline_class_299);
+    fprintf(f, "    val = f(ec, self);\n");
 }
 
 void Init_builtin_gc(void)
@@ -185,12 +270,15 @@ void Init_builtin_gc(void)
     RB_BUILTIN_FUNCTION(10, gc_compact_stats, gc_compact_stats, 0, mjit_compile_invokebuiltin_for_gc_compact_stats),
     RB_BUILTIN_FUNCTION(11, gc_compact, gc_compact, 0, mjit_compile_invokebuiltin_for_gc_compact),
     RB_BUILTIN_FUNCTION(12, gc_verify_compaction_references, gc_verify_compaction_references, 2, mjit_compile_invokebuiltin_for_gc_verify_compaction_references),
+    RB_BUILTIN_FUNCTION(13, _bi0, builtin_inline_class_277, 0, mjit_compile_invokebuiltin_for__bi0),
+    RB_BUILTIN_FUNCTION(14, _bi1, builtin_inline_class_289, 0, mjit_compile_invokebuiltin_for__bi1),
+    RB_BUILTIN_FUNCTION(15, _bi2, builtin_inline_class_299, 0, mjit_compile_invokebuiltin_for__bi2),
     RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),
   };
 
   // arity_check
 COMPILER_WARNING_PUSH
-#if GCC_VERSION_SINCE(5, 1, 0) || __clang__
+#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
 COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
 #endif
   if (0) rb_builtin_function_check_arity4(gc_start_internal);
@@ -206,6 +294,9 @@ COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
   if (0) rb_builtin_function_check_arity0(gc_compact_stats);
   if (0) rb_builtin_function_check_arity0(gc_compact);
   if (0) rb_builtin_function_check_arity2(gc_verify_compaction_references);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_277);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_289);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_299);
 COMPILER_WARNING_POP
 
   // load

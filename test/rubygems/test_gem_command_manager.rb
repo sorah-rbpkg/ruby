@@ -62,11 +62,25 @@ class TestGemCommandManager < Gem::TestCase
   end
 
   def test_find_command_unknown
-    e = assert_raise Gem::CommandLineError do
+    e = assert_raise Gem::UnknownCommandError do
       @command_manager.find_command 'xyz'
     end
 
     assert_equal 'Unknown command xyz', e.message
+  end
+
+  def test_find_command_unknown_suggestions
+    e = assert_raise Gem::UnknownCommandError do
+      @command_manager.find_command 'pish'
+    end
+
+    message = 'Unknown command pish'.dup
+
+    if RUBY_VERSION >= "2.4" && defined?(DidYouMean::SPELL_CHECKERS) && defined?(DidYouMean::Correctable)
+      message << "\nDid you mean?  \"push\""
+    end
+
+    assert_equal message, e.message
   end
 
   def test_run_interrupt
@@ -238,7 +252,7 @@ class TestGemCommandManager < Gem::TestCase
     Gem::Deprecate.skip_during do
       @command_manager.process_args %w[query]
     end
-    assert_equal(//, check_options[:name])
+    assert_nil(check_options[:name])
     assert_equal :local, check_options[:domain]
     assert_equal false, check_options[:details]
 
@@ -277,7 +291,7 @@ class TestGemCommandManager < Gem::TestCase
 
     #check defaults
     @command_manager.process_args %w[update]
-    assert_includes check_options[:document], 'rdoc'
+    assert_includes check_options[:document], 'ri'
 
     #check settings
     check_options = nil

@@ -52,8 +52,6 @@
 	return "NODE_LASGN";
       case NODE_DASGN:
 	return "NODE_DASGN";
-      case NODE_DASGN_CURR:
-	return "NODE_DASGN_CURR";
       case NODE_GASGN:
 	return "NODE_GASGN";
       case NODE_IASGN:
