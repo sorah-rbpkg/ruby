@@ -1,12 +1,24 @@
-ruby3.0 (3.0.4-1) UNRELEASED; urgency=medium
+ruby3.0 (3.0.4-1) unstable; urgency=medium
 
   [ John Paul Adrian Glaubitz ]
   * Disable some tests on powerpc (Closes: #999349)
+  * Disable some tests on alpha (Closes: #999444)
+  * Fix filenames for glibc SO files on alpha and ia64
+    (Closes: #1007925)
 
   [ Antonio Terceiro ]
   * New upstream version 3.0.4
+  * Includes fixes for the following security issues:
+    - CVE-2022-28739: Buffer overrun in String-to-Float conversion
+      (Closes: #1009956)
+    - CVE-2022-28738: Double free in Regexp compilation
+      (Closes: #1009958)
+  * Refresh patches.
+    The fix in rand_init-fix-off-by-one-error.patch has been done upstream
+    differently; drop the patch.
+  * TestZlibGzipFile: skip test unsupported on overlay filesystems
 
- -- Antonio Terceiro <terceiro@debian.org>  Thu, 21 Apr 2022 13:36:10 -0300
+ -- Antonio Terceiro <terceiro@debian.org>  Thu, 21 Apr 2022 13:52:50 -0300
 
 ruby3.0 (3.0.3-1) unstable; urgency=medium
 
