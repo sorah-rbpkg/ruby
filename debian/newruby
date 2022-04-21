@@ -21,9 +21,15 @@ sed -i -e "s/${old_source}/${new_source}/g; s/${old_version}.\[0-9]/${new_api_ve
 
 rename "s/${old_source}/${new_source}/" debian/*${old_source}*
 
+sed -i -e "s/${old_version}/${new_version}/g" debian/watch
+
 # manpages
 sed -i -e "s/\(gem\|rdoc\)${old_version}/\1${new_version}/gi" \
 	debian/manpages/* debian/*.manpages
 rename "s/${old_version}/${new_version}/g" debian/manpages/*
 
 dch --package "${new_source}" --newversion "${new_version}.0-1" "Ruby $new_version"
+git add .
+git commit -a -m "Switch to ${new_source}"
+gbp import-orig --pristine-tar --uscan
+gbp dch
