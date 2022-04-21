@@ -1,11 +1,11 @@
-#!/usr/bin/ruby3.0
+#!/usr/bin/ruby3.1
 
 
 extensions = [
   ["dbm"],
   ["fiddle"],
   ["gdbm"],
-  ["openssl", '>= 3.0.0'],
+  ["openssl", '>= 3.1.0'],
   ["psych"],
   ["zlib"],
 ]
