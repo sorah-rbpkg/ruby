@@ -59,7 +59,9 @@
 
                                           /*  K      M */
 #define TRANSIENT_HEAP_BLOCK_SIZE  (1024 *   32       ) /* 32KB int16_t */
+#ifndef TRANSIENT_HEAP_TOTAL_SIZE
 #define TRANSIENT_HEAP_TOTAL_SIZE  (1024 * 1024 *   32) /* 32 MB */
+#endif
 #define TRANSIENT_HEAP_ALLOC_MAX   (1024 *    2       ) /* 2 KB */
 #define TRANSIENT_HEAP_BLOCK_NUM   (TRANSIENT_HEAP_TOTAL_SIZE / TRANSIENT_HEAP_BLOCK_SIZE)
 #define TRANSIENT_HEAP_USABLE_SIZE (TRANSIENT_HEAP_BLOCK_SIZE - sizeof(struct transient_heap_block_header))
@@ -746,7 +748,7 @@ transient_heap_block_evacuate(struct transient_heap* theap, struct transient_hea
     }
 }
 
-#if USE_RUBY_DEBUG_LOG
+#if defined(USE_RUBY_DEBUG_LOG) && USE_RUBY_DEBUG_LOG
 static const char *
 transient_heap_status_cstr(enum transient_heap_status status)
 {
@@ -825,7 +827,7 @@ transient_heap_evacuate(void *dmy)
             transient_heap_update_status(theap, transient_heap_none);
         }
         if (gc_disabled != Qtrue) rb_gc_enable();
-        RUBY_DEBUG_LOG("finish", 0);
+        RUBY_DEBUG_LOG("finish");
     }
 }
 
@@ -962,7 +964,7 @@ void
 rb_transient_heap_finish_marking(void)
 {
     ASSERT_vm_locking();
-    RUBY_DEBUG_LOG("", 0);
+    RUBY_DEBUG_LOG("");
 
     struct transient_heap* theap = transient_heap_get();
 

@@ -575,25 +575,28 @@ if defined? Zlib
   class TestZlibGzipFile < Test::Unit::TestCase
     def test_gzip_reader_zcat
       Tempfile.create("test_zlib_gzip_file_to_io") {|t|
+        t.binmode
         gz = Zlib::GzipWriter.new(t)
         gz.print("foo")
         gz.close
-        t = File.open(t.path, 'ab')
-        gz = Zlib::GzipWriter.new(t)
-        gz.print("bar")
-        gz.close
+        File.open(t.path, 'ab') do |f|
+          gz = Zlib::GzipWriter.new(f)
+          gz.print("bar")
+          gz.close
+        end
 
         results = []
-        t = File.open(t.path)
-        Zlib::GzipReader.zcat(t) do |str|
-          results << str
+        File.open(t.path, 'rb') do |f|
+          Zlib::GzipReader.zcat(f) do |str|
+            results << str
+          end
         end
         assert_equal(["foo", "bar"], results)
-        t.close
 
-        t = File.open(t.path)
-        assert_equal("foobar", Zlib::GzipReader.zcat(t))
-        t.close
+        results = File.open(t.path, 'rb') do |f|
+          Zlib::GzipReader.zcat(f)
+        end
+        assert_equal("foobar", results)
       }
     end
 
@@ -800,12 +803,20 @@ if defined? Zlib
           io.write sio.string
           io.rewind
 
-          gz = Zlib::GzipWriter.new(io)
-          assert_raise(NoMethodError) { gz.path }
+          gz0 = Zlib::GzipWriter.new(io)
+          assert_raise(NoMethodError) { gz0.path }
 
-          gz = Zlib::GzipReader.new(io)
-          assert_raise(NoMethodError) { gz.path }
+          gz1 = Zlib::GzipReader.new(io)
+          assert_raise(NoMethodError) { gz1.path }
+          gz0.close
+          gz1.close
         end
+      rescue Errno::EINVAL
+        skip 'O_TMPFILE not supported (EINVAL)'
+      rescue Errno::EISDIR
+        skip 'O_TMPFILE not supported (EISDIR)'
+      rescue Errno::EOPNOTSUPP
+        skip 'O_TMPFILE not supported (EOPNOTSUPP)'
       end
     end
   end
@@ -1314,7 +1325,7 @@ if defined? Zlib
         assert_equal(0x02820145, Zlib.adler32_combine(one, two, 1))
       rescue NotImplementedError
         skip "adler32_combine is not implemented"
-      rescue Minitest::Assertion
+      rescue Test::Unit::AssertionFailedError
         if /aix/ =~ RUBY_PLATFORM
           skip "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
         end
@@ -1349,7 +1360,7 @@ if defined? Zlib
         assert_equal(0x8c736521, Zlib.crc32_combine(one, two, 1))
       rescue NotImplementedError
         skip "crc32_combine is not implemented"
-      rescue Minitest::Assertion
+      rescue Test::Unit::AssertionFailedError
         if /aix/ =~ RUBY_PLATFORM
           skip "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
         end
@@ -1364,11 +1375,20 @@ if defined? Zlib
     end
 
     def test_inflate
-      TestZlibInflate.new(__name__).test_inflate
+      s = Zlib::Deflate.deflate("foo")
+      z = Zlib::Inflate.new
+      s = z.inflate(s)
+      s << z.inflate(nil)
+      assert_equal("foo", s)
+      z.inflate("foo") # ???
+      z << "foo" # ???
     end
 
     def test_deflate
-      TestZlibDeflate.new(__name__).test_deflate
+      s = Zlib::Deflate.deflate("foo")
+      assert_equal("foo", Zlib::Inflate.inflate(s))
+
+      assert_raise(Zlib::StreamError) { Zlib::Deflate.deflate("foo", 10000) }
     end
 
     def test_deflate_stream

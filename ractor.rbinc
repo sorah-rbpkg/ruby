@@ -159,7 +159,7 @@ static VALUE builtin_inline_class_770(struct rb_execution_context_struct *ec, co
 MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -3);
 #line 770 "ractor.rb"
 return 
-      rb_ractor_shareable_p(obj) ? Qtrue : Qfalse;;
+      RBOOL(rb_ractor_shareable_p(obj));;
 #line 164 "ractor.rbinc"
 }
 
@@ -203,7 +203,7 @@ mjit_compile_invokebuiltin_for_ractor_create(FILE *f, long index, unsigned stack
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == ractor_create */\n", (intptr_t)ractor_create);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == ractor_create */\n", (VALUE)ractor_create);
     fprintf(f, "    val = f(ec, self, argv[0], argv[1], argv[2], argv[3]);\n");
 }
 
@@ -222,7 +222,7 @@ mjit_compile_invokebuiltin_for__bi0(FILE *f, long index, unsigned stack_size, bo
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_274 */\n", (intptr_t)builtin_inline_class_274);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_274 */\n", (VALUE)builtin_inline_class_274);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -241,7 +241,7 @@ mjit_compile_invokebuiltin_for__bi1(FILE *f, long index, unsigned stack_size, bo
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_288 */\n", (intptr_t)builtin_inline_class_288);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_288 */\n", (VALUE)builtin_inline_class_288);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -269,7 +269,7 @@ mjit_compile_invokebuiltin_for__bi2(FILE *f, long index, unsigned stack_size, bo
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_345 */\n", (intptr_t)builtin_inline_class_345);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_345 */\n", (VALUE)builtin_inline_class_345);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -288,7 +288,7 @@ mjit_compile_invokebuiltin_for__bi3(FILE *f, long index, unsigned stack_size, bo
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_416 */\n", (intptr_t)builtin_inline_class_416);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_416 */\n", (VALUE)builtin_inline_class_416);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -307,7 +307,7 @@ mjit_compile_invokebuiltin_for__bi4(FILE *f, long index, unsigned stack_size, bo
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_427 */\n", (intptr_t)builtin_inline_class_427);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_427 */\n", (VALUE)builtin_inline_class_427);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -323,7 +323,7 @@ mjit_compile_invokebuiltin_for_ractor_receive_if(FILE *f, long index, unsigned s
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == ractor_receive_if */\n", (intptr_t)ractor_receive_if);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == ractor_receive_if */\n", (VALUE)ractor_receive_if);
     fprintf(f, "    val = f(ec, self, argv[0]);\n");
 }
 
@@ -344,7 +344,7 @@ mjit_compile_invokebuiltin_for__bi5(FILE *f, long index, unsigned stack_size, bo
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_583 */\n", (intptr_t)builtin_inline_class_583);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_583 */\n", (VALUE)builtin_inline_class_583);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -365,7 +365,7 @@ mjit_compile_invokebuiltin_for__bi6(FILE *f, long index, unsigned stack_size, bo
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_627 */\n", (intptr_t)builtin_inline_class_627);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_627 */\n", (VALUE)builtin_inline_class_627);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -384,7 +384,7 @@ mjit_compile_invokebuiltin_for__bi7(FILE *f, long index, unsigned stack_size, bo
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_694 */\n", (intptr_t)builtin_inline_class_694);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_694 */\n", (VALUE)builtin_inline_class_694);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -406,7 +406,7 @@ mjit_compile_invokebuiltin_for__bi8(FILE *f, long index, unsigned stack_size, bo
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_700 */\n", (intptr_t)builtin_inline_class_700);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_700 */\n", (VALUE)builtin_inline_class_700);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -428,7 +428,7 @@ mjit_compile_invokebuiltin_for__bi9(FILE *f, long index, unsigned stack_size, bo
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_701 */\n", (intptr_t)builtin_inline_class_701);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_701 */\n", (VALUE)builtin_inline_class_701);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -450,7 +450,7 @@ mjit_compile_invokebuiltin_for__bi10(FILE *f, long index, unsigned stack_size, b
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_702 */\n", (intptr_t)builtin_inline_class_702);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_702 */\n", (VALUE)builtin_inline_class_702);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -473,7 +473,7 @@ mjit_compile_invokebuiltin_for__bi11(FILE *f, long index, unsigned stack_size, b
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_703 */\n", (intptr_t)builtin_inline_class_703);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_703 */\n", (VALUE)builtin_inline_class_703);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -491,7 +491,7 @@ mjit_compile_invokebuiltin_for__bi12(FILE *f, long index, unsigned stack_size, b
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_713 */\n", (intptr_t)builtin_inline_class_713);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_713 */\n", (VALUE)builtin_inline_class_713);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -510,7 +510,7 @@ mjit_compile_invokebuiltin_for__bi13(FILE *f, long index, unsigned stack_size, b
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_734 */\n", (intptr_t)builtin_inline_class_734);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_734 */\n", (VALUE)builtin_inline_class_734);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -529,7 +529,7 @@ mjit_compile_invokebuiltin_for__bi14(FILE *f, long index, unsigned stack_size, b
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_753 */\n", (intptr_t)builtin_inline_class_753);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_753 */\n", (VALUE)builtin_inline_class_753);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -543,13 +543,13 @@ mjit_compile_invokebuiltin_for__bi15(FILE *f, long index, unsigned stack_size, b
         fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -3);\n");
         fprintf(f, "%s", "#line 770 \"ractor.rb\"\n");
         fprintf(f, "%s", "    return \n");
-        fprintf(f, "%s", "          rb_ractor_shareable_p(obj) ? Qtrue : Qfalse;;\n");
+        fprintf(f, "%s", "          RBOOL(rb_ractor_shareable_p(obj));;\n");
         fprintf(f, "%s", "#line 330 \"ractor.rbinc\"\n");
         fprintf(f, "%s", "    }\n");
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_770 */\n", (intptr_t)builtin_inline_class_770);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_770 */\n", (VALUE)builtin_inline_class_770);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -570,7 +570,7 @@ mjit_compile_invokebuiltin_for__bi16(FILE *f, long index, unsigned stack_size, b
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_812 */\n", (intptr_t)builtin_inline_class_812);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_812 */\n", (VALUE)builtin_inline_class_812);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -591,7 +591,7 @@ mjit_compile_invokebuiltin_for__bi17(FILE *f, long index, unsigned stack_size, b
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_816 */\n", (intptr_t)builtin_inline_class_816);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_816 */\n", (VALUE)builtin_inline_class_816);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -607,7 +607,7 @@ mjit_compile_invokebuiltin_for_ractor_local_value(FILE *f, long index, unsigned 
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == ractor_local_value */\n", (intptr_t)ractor_local_value);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == ractor_local_value */\n", (VALUE)ractor_local_value);
     fprintf(f, "    val = f(ec, self, argv[0]);\n");
 }
 
@@ -623,7 +623,7 @@ mjit_compile_invokebuiltin_for_ractor_local_value_set(FILE *f, long index, unsig
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == ractor_local_value_set */\n", (intptr_t)ractor_local_value_set);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == ractor_local_value_set */\n", (VALUE)ractor_local_value_set);
     fprintf(f, "    val = f(ec, self, argv[0], argv[1]);\n");
 }
 
@@ -642,7 +642,7 @@ mjit_compile_invokebuiltin_for__bi18(FILE *f, long index, unsigned stack_size, b
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_834 */\n", (intptr_t)builtin_inline_class_834);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_834 */\n", (VALUE)builtin_inline_class_834);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -678,7 +678,7 @@ void Init_builtin_ractor(void)
 
   // arity_check
 COMPILER_WARNING_PUSH
-#if GCC_VERSION_SINCE(5, 1, 0) || __clang__
+#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
 COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
 #endif
   if (0) rb_builtin_function_check_arity4(ractor_create);

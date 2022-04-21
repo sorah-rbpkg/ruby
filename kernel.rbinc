@@ -51,7 +51,7 @@ mjit_compile_invokebuiltin_for__bi0(FILE *f, long index, unsigned stack_size, bo
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_20 */\n", (intptr_t)builtin_inline_class_20);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_20 */\n", (VALUE)builtin_inline_class_20);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -67,7 +67,7 @@ mjit_compile_invokebuiltin_for_rb_obj_clone2(FILE *f, long index, unsigned stack
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == rb_obj_clone2 */\n", (intptr_t)rb_obj_clone2);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == rb_obj_clone2 */\n", (VALUE)rb_obj_clone2);
     fprintf(f, "    val = f(ec, self, argv[0]);\n");
 }
 
@@ -85,7 +85,7 @@ mjit_compile_invokebuiltin_for__bi1(FILE *f, long index, unsigned stack_size, bo
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_69 */\n", (intptr_t)builtin_inline_class_69);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_69 */\n", (VALUE)builtin_inline_class_69);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -94,7 +94,7 @@ mjit_compile_invokebuiltin_for_block_given_p(FILE *f, long index, unsigned stack
 {
     fprintf(f, "    VALUE self = GET_SELF();\n");
     fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == block_given_p */\n", (intptr_t)block_given_p);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == block_given_p */\n", (VALUE)block_given_p);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -112,7 +112,7 @@ mjit_compile_invokebuiltin_for__bi2(FILE *f, long index, unsigned stack_size, bo
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_122 */\n", (intptr_t)builtin_inline_class_122);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_122 */\n", (VALUE)builtin_inline_class_122);
     fprintf(f, "    val = f(ec, self);\n");
 }
 
@@ -130,8 +130,24 @@ mjit_compile_invokebuiltin_for__bi3(FILE *f, long index, unsigned stack_size, bo
         fprintf(f, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == builtin_inline_class_146 */\n", (intptr_t)builtin_inline_class_146);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_146 */\n", (VALUE)builtin_inline_class_146);
     fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_rb_f_float1(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    if (index == -1) {
+        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+    }
+    else {
+        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
+        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == rb_f_float1 */\n", (VALUE)rb_f_float1);
+    fprintf(f, "    val = f(ec, self, argv[0]);\n");
 }
 
 static void
@@ -146,7 +162,7 @@ mjit_compile_invokebuiltin_for_rb_f_float(FILE *f, long index, unsigned stack_si
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == rb_f_float */\n", (intptr_t)rb_f_float);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == rb_f_float */\n", (VALUE)rb_f_float);
     fprintf(f, "    val = f(ec, self, argv[0], argv[1]);\n");
 }
 
@@ -160,13 +176,14 @@ void Init_builtin_kernel(void)
     RB_BUILTIN_FUNCTION(3, block_given_p, block_given_p, 0, mjit_compile_invokebuiltin_for_block_given_p),
     RB_BUILTIN_FUNCTION(4, _bi2, builtin_inline_class_122, 0, mjit_compile_invokebuiltin_for__bi2),
     RB_BUILTIN_FUNCTION(5, _bi3, builtin_inline_class_146, 0, mjit_compile_invokebuiltin_for__bi3),
-    RB_BUILTIN_FUNCTION(6, rb_f_float, rb_f_float, 2, mjit_compile_invokebuiltin_for_rb_f_float),
+    RB_BUILTIN_FUNCTION(6, rb_f_float1, rb_f_float1, 1, mjit_compile_invokebuiltin_for_rb_f_float1),
+    RB_BUILTIN_FUNCTION(7, rb_f_float, rb_f_float, 2, mjit_compile_invokebuiltin_for_rb_f_float),
     RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),
   };
 
   // arity_check
 COMPILER_WARNING_PUSH
-#if GCC_VERSION_SINCE(5, 1, 0) || __clang__
+#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
 COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
 #endif
   if (0) rb_builtin_function_check_arity0(builtin_inline_class_20);
@@ -175,6 +192,7 @@ COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
   if (0) rb_builtin_function_check_arity0(block_given_p);
   if (0) rb_builtin_function_check_arity0(builtin_inline_class_122);
   if (0) rb_builtin_function_check_arity0(builtin_inline_class_146);
+  if (0) rb_builtin_function_check_arity1(rb_f_float1);
   if (0) rb_builtin_function_check_arity2(rb_f_float);
 COMPILER_WARNING_POP
 

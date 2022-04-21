@@ -50,13 +50,13 @@
 # define dirent direct
 # define NAMLEN(dirent) (dirent)->d_namlen
 # define HAVE_DIRENT_NAMLEN 1
-# if HAVE_SYS_NDIR_H
+# ifdef HAVE_SYS_NDIR_H
 #  include <sys/ndir.h>
 # endif
-# if HAVE_SYS_DIR_H
+# ifdef HAVE_SYS_DIR_H
 #  include <sys/dir.h>
 # endif
-# if HAVE_NDIR_H
+# ifdef HAVE_NDIR_H
 #  include <ndir.h>
 # endif
 # ifdef _WIN32
@@ -112,6 +112,7 @@ char *strchr(char*,char);
 #include "internal/file.h"
 #include "internal/gc.h"
 #include "internal/io.h"
+#include "internal/object.h"
 #include "internal/vm.h"
 #include "ruby/encoding.h"
 #include "ruby/ruby.h"
@@ -216,12 +217,13 @@ typedef enum {
 #else
 #define FNM_SYSCASE	0
 #endif
-#if _WIN32
+#ifdef _WIN32
 #define FNM_SHORTNAME	0x20
 #else
 #define FNM_SHORTNAME	0
 #endif
 #define FNM_GLOB_NOSORT 0x40
+#define FNM_GLOB_SKIPDOT 0x80
 
 #define FNM_NOMATCH	1
 #define FNM_ERROR	2
@@ -988,7 +990,7 @@ chdir_yield(VALUE v)
     dir_chdir(args->new_path);
     args->done = TRUE;
     chdir_blocking++;
-    if (chdir_thread == Qnil)
+    if (NIL_P(chdir_thread))
 	chdir_thread = rb_thread_current();
     return rb_yield(args->new_path);
 }
@@ -1428,7 +1430,7 @@ with_gvl_gc_for_fd(void *ptr)
 {
     int *e = ptr;
 
-    return (void *)(rb_gc_for_fd(*e) ? Qtrue : Qfalse);
+    return (void *)RBOOL(rb_gc_for_fd(*e));
 }
 
 static int
@@ -1437,7 +1439,7 @@ gc_for_fd_with_gvl(int e)
     if (vm_initialized)
 	return (int)(VALUE)rb_thread_call_with_gvl(with_gvl_gc_for_fd, &e);
     else
-	return rb_gc_for_fd(e) ? Qtrue : Qfalse;
+	return RBOOL(rb_gc_for_fd(e));
 }
 
 static void *
@@ -2415,6 +2417,10 @@ glob_helper(
             }
             return status;
         }
+
+	int skipdot = (flags & FNM_GLOB_SKIPDOT);
+	flags |= FNM_GLOB_SKIPDOT;
+
 	while ((dp = glob_getent(&globent, flags, enc)) != NULL) {
 	    char *buf;
 	    rb_pathtype_t new_pathtype = path_unknown;
@@ -2425,11 +2431,12 @@ glob_helper(
 
 	    name = dp->d_name;
 	    namlen = dp->d_namlen;
-	    if (recursive && name[0] == '.') {
+	    if (name[0] == '.') {
 		++dotfile;
 		if (namlen == 1) {
 		    /* unless DOTMATCH, skip current directories not to recurse infinitely */
-		    if (!(flags & FNM_DOTMATCH)) continue;
+		    if (recursive && !(flags & FNM_DOTMATCH)) continue;
+		    if (skipdot) continue;
 		    ++dotfile;
 		    new_pathtype = path_directory; /* force to skip stat/lstat */
 		}
@@ -2931,7 +2938,7 @@ dir_glob_option_base(VALUE base)
 static int
 dir_glob_option_sort(VALUE sort)
 {
-    return (sort ? 0 : FNM_GLOB_NOSORT);
+    return (rb_bool_expected(sort, "sort") ? 0 : FNM_GLOB_NOSORT);
 }
 
 static VALUE
@@ -2949,7 +2956,7 @@ static VALUE
 dir_s_glob(rb_execution_context_t *ec, VALUE obj, VALUE str, VALUE rflags, VALUE base, VALUE sort)
 {
     VALUE ary = rb_check_array_type(str);
-    const int flags = NUM2INT(rflags) | dir_glob_option_sort(sort);
+    const int flags = (NUM2INT(rflags) | dir_glob_option_sort(sort)) & ~FNM_CASEFOLD;
     base = dir_glob_option_base(base);
     if (NIL_P(ary)) {
 	ary = rb_push_glob(str, base, flags);
@@ -3174,100 +3181,7 @@ fnmatch_brace(const char *pattern, VALUE val, void *enc)
     return (fnmatch(pattern, enc, RSTRING_PTR(path), arg->flags) == 0);
 }
 
-/*
- *  call-seq:
- *     File.fnmatch( pattern, path, [flags] ) -> (true or false)
- *     File.fnmatch?( pattern, path, [flags] ) -> (true or false)
- *
- *  Returns true if +path+ matches against +pattern+.  The pattern is not a
- *  regular expression; instead it follows rules similar to shell filename
- *  globbing.  It may contain the following metacharacters:
- *
- *  <code>*</code>::
- *    Matches any file. Can be restricted by other values in the glob.
- *    Equivalent to <code>/ .* /x</code> in regexp.
- *
- *    <code>*</code>::    Matches all files regular files
- *    <code>c*</code>::   Matches all files beginning with <code>c</code>
- *    <code>*c</code>::   Matches all files ending with <code>c</code>
- *    <code>\*c*</code>:: Matches all files that have <code>c</code> in them
- *                        (including at the beginning or end).
- *
- *    To match hidden files (that start with a <code>.</code> set the
- *    File::FNM_DOTMATCH flag.
- *
- *  <code>**</code>::
- *    Matches directories recursively or files expansively.
- *
- *  <code>?</code>::
- *    Matches any one character. Equivalent to <code>/.{1}/</code> in regexp.
- *
- *  <code>[set]</code>::
- *    Matches any one character in +set+.  Behaves exactly like character sets
- *    in Regexp, including set negation (<code>[^a-z]</code>).
- *
- *  <code> \ </code>::
- *    Escapes the next metacharacter.
- *
- *  <code>{a,b}</code>::
- *    Matches pattern a and pattern b if File::FNM_EXTGLOB flag is enabled.
- *    Behaves like a Regexp union (<code>(?:a|b)</code>).
- *
- *  +flags+ is a bitwise OR of the <code>FNM_XXX</code> constants. The same
- *  glob pattern and flags are used by Dir::glob.
- *
- *  Examples:
- *
- *     File.fnmatch('cat',       'cat')        #=> true  # match entire string
- *     File.fnmatch('cat',       'category')   #=> false # only match partial string
- *
- *     File.fnmatch('c{at,ub}s', 'cats')                    #=> false # { } isn't supported by default
- *     File.fnmatch('c{at,ub}s', 'cats', File::FNM_EXTGLOB) #=> true  # { } is supported on FNM_EXTGLOB
- *
- *     File.fnmatch('c?t',     'cat')          #=> true  # '?' match only 1 character
- *     File.fnmatch('c??t',    'cat')          #=> false # ditto
- *     File.fnmatch('c*',      'cats')         #=> true  # '*' match 0 or more characters
- *     File.fnmatch('c*t',     'c/a/b/t')      #=> true  # ditto
- *     File.fnmatch('ca[a-z]', 'cat')          #=> true  # inclusive bracket expression
- *     File.fnmatch('ca[^t]',  'cat')          #=> false # exclusive bracket expression ('^' or '!')
- *
- *     File.fnmatch('cat', 'CAT')                     #=> false # case sensitive
- *     File.fnmatch('cat', 'CAT', File::FNM_CASEFOLD) #=> true  # case insensitive
- *     File.fnmatch('cat', 'CAT', File::FNM_SYSCASE)  #=> true or false # depends on the system default
- *
- *     File.fnmatch('?',   '/', File::FNM_PATHNAME)  #=> false # wildcard doesn't match '/' on FNM_PATHNAME
- *     File.fnmatch('*',   '/', File::FNM_PATHNAME)  #=> false # ditto
- *     File.fnmatch('[/]', '/', File::FNM_PATHNAME)  #=> false # ditto
- *
- *     File.fnmatch('\?',   '?')                       #=> true  # escaped wildcard becomes ordinary
- *     File.fnmatch('\a',   'a')                       #=> true  # escaped ordinary remains ordinary
- *     File.fnmatch('\a',   '\a', File::FNM_NOESCAPE)  #=> true  # FNM_NOESCAPE makes '\' ordinary
- *     File.fnmatch('[\?]', '?')                       #=> true  # can escape inside bracket expression
- *
- *     File.fnmatch('*',   '.profile')                      #=> false # wildcard doesn't match leading
- *     File.fnmatch('*',   '.profile', File::FNM_DOTMATCH)  #=> true  # period by default.
- *     File.fnmatch('.*',  '.profile')                      #=> true
- *
- *     rbfiles = '**' '/' '*.rb' # you don't have to do like this. just write in single string.
- *     File.fnmatch(rbfiles, 'main.rb')                    #=> false
- *     File.fnmatch(rbfiles, './main.rb')                  #=> false
- *     File.fnmatch(rbfiles, 'lib/song.rb')                #=> true
- *     File.fnmatch('**.rb', 'main.rb')                    #=> true
- *     File.fnmatch('**.rb', './main.rb')                  #=> false
- *     File.fnmatch('**.rb', 'lib/song.rb')                #=> true
- *     File.fnmatch('*',           'dave/.profile')                      #=> true
- *
- *     pattern = '*' '/' '*'
- *     File.fnmatch(pattern, 'dave/.profile', File::FNM_PATHNAME)  #=> false
- *     File.fnmatch(pattern, 'dave/.profile', File::FNM_PATHNAME | File::FNM_DOTMATCH) #=> true
- *
- *     pattern = '**' '/' 'foo'
- *     File.fnmatch(pattern, 'a/b/c/foo', File::FNM_PATHNAME)     #=> true
- *     File.fnmatch(pattern, '/a/b/c/foo', File::FNM_PATHNAME)    #=> true
- *     File.fnmatch(pattern, 'c:/a/b/c/foo', File::FNM_PATHNAME)  #=> true
- *     File.fnmatch(pattern, 'a/.b/c/foo', File::FNM_PATHNAME)    #=> false
- *     File.fnmatch(pattern, 'a/.b/c/foo', File::FNM_PATHNAME | File::FNM_DOTMATCH) #=> true
- */
+/* :nodoc: */
 static VALUE
 file_s_fnmatch(int argc, VALUE *argv, VALUE obj)
 {
@@ -3433,16 +3347,6 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
     return result;
 }
 
-/*
- *  Objects of class Dir are directory streams representing
- *  directories in the underlying file system. They provide a variety
- *  of ways to list directories and their contents. See also File.
- *
- *  The directory used in these examples contains the two regular files
- *  (<code>config.h</code> and <code>main.rb</code>), the parent
- *  directory (<code>..</code>), and the directory itself
- *  (<code>.</code>).
- */
 void
 Init_Dir(void)
 {

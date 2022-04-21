@@ -20,8 +20,6 @@
 #include <gmp.h>
 #endif
 
-#undef NDEBUG
-#define NDEBUG
 #include "id.h"
 #include "internal.h"
 #include "internal/array.h"
@@ -48,7 +46,6 @@ static ID id_abs, id_integer_p,
 #define id_idiv idDiv
 #define id_to_i idTo_i
 
-#define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 #define f_inspect rb_inspect
 #define f_to_s rb_obj_as_string
 
@@ -131,7 +128,7 @@ f_abs(VALUE x)
 }
 
 
-inline static VALUE
+inline static int
 f_integer_p(VALUE x)
 {
     return RB_INTEGER_TYPE_P(x);
@@ -202,7 +199,7 @@ f_minus_one_p(VALUE x)
     if (RB_INTEGER_TYPE_P(x)) {
 	return x == LONG2FIX(-1);
     }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(x)) {
 	return Qfalse;
     }
     else if (RB_TYPE_P(x, T_RATIONAL)) {
@@ -368,7 +365,7 @@ inline static VALUE
 f_gcd(VALUE x, VALUE y)
 {
 #ifdef USE_GMP
-    if (RB_TYPE_P(x, T_BIGNUM) && RB_TYPE_P(y, T_BIGNUM)) {
+    if (RB_BIGNUM_TYPE_P(x) && RB_BIGNUM_TYPE_P(y)) {
         size_t xn = BIGNUM_LEN(x);
         size_t yn = BIGNUM_LEN(y);
         if (GMP_GCD_DIGITS <= xn || GMP_GCD_DIGITS <= yn)
@@ -1037,7 +1034,7 @@ rb_rational_pow(VALUE self, VALUE other)
 	    return f_rational_new2(CLASS_OF(self), num, den);
 	}
     }
-    else if (RB_TYPE_P(other, T_BIGNUM)) {
+    else if (RB_BIGNUM_TYPE_P(other)) {
 	rb_warn("in a**b, b may be too big");
 	return rb_float_pow(nurat_to_f(self), other);
     }
@@ -1045,7 +1042,7 @@ rb_rational_pow(VALUE self, VALUE other)
 	return rb_float_pow(nurat_to_f(self), other);
     }
     else {
-	return rb_num_coerce_bin(self, other, rb_intern("**"));
+	return rb_num_coerce_bin(self, other, idPow);
     }
 }
 #define nurat_expt rb_rational_pow
@@ -1104,7 +1101,7 @@ rb_rational_cmp(VALUE self, VALUE other)
         return rb_dbl_cmp(nurat_to_double(self), RFLOAT_VALUE(other));
 
       default:
-	return rb_num_coerce_cmp(self, other, rb_intern("<=>"));
+	return rb_num_coerce_cmp(self, other, idCmp);
     }
 }
 
@@ -1138,12 +1135,12 @@ nurat_eqeq_p(VALUE self, VALUE other)
 	}
         else {
             const double d = nurat_to_double(self);
-            return f_boolcast(FIXNUM_ZERO_P(rb_dbl_cmp(d, NUM2DBL(other))));
+            return RBOOL(FIXNUM_ZERO_P(rb_dbl_cmp(d, NUM2DBL(other))));
         }
     }
     else if (RB_FLOAT_TYPE_P(other)) {
 	const double d = nurat_to_double(self);
-	return f_boolcast(FIXNUM_ZERO_P(rb_dbl_cmp(d, RFLOAT_VALUE(other))));
+	return RBOOL(FIXNUM_ZERO_P(rb_dbl_cmp(d, RFLOAT_VALUE(other))));
     }
     else if (RB_TYPE_P(other, T_RATIONAL)) {
 	{
@@ -1152,7 +1149,7 @@ nurat_eqeq_p(VALUE self, VALUE other)
 	    if (INT_ZERO_P(adat->num) && INT_ZERO_P(bdat->num))
 		return Qtrue;
 
-	    return f_boolcast(rb_int_equal(adat->num, bdat->num) &&
+	    return RBOOL(rb_int_equal(adat->num, bdat->num) &&
 			      rb_int_equal(adat->den, bdat->den));
 	}
     }
@@ -1203,7 +1200,7 @@ static VALUE
 nurat_positive_p(VALUE self)
 {
     get_dat1(self);
-    return f_boolcast(INT_POSITIVE_P(dat->num));
+    return RBOOL(INT_POSITIVE_P(dat->num));
 }
 
 /*
@@ -1216,7 +1213,7 @@ static VALUE
 nurat_negative_p(VALUE self)
 {
     get_dat1(self);
-    return f_boolcast(INT_NEGATIVE_P(dat->num));
+    return RBOOL(INT_NEGATIVE_P(dat->num));
 }
 
 /*
@@ -1540,6 +1537,12 @@ nurat_round_n(int argc, VALUE *argv, VALUE self)
 	rb_num_get_rounding_option(opt));
     VALUE (*round_func)(VALUE) = ROUND_FUNC(mode, nurat_round);
     return f_round_common(argc, argv, self, round_func);
+}
+
+VALUE
+rb_flo_round_by_rational(int argc, VALUE *argv, VALUE num)
+{
+    return nurat_to_f(nurat_round_n(argc, argv, float_to_r(num)));
 }
 
 static double
@@ -1878,8 +1881,6 @@ nurat_marshal_load(VALUE self, VALUE a)
     return self;
 }
 
-/* --- */
-
 VALUE
 rb_rational_reciprocal(VALUE x)
 {
@@ -2093,7 +2094,7 @@ rb_float_numerator(VALUE self)
 {
     double d = RFLOAT_VALUE(self);
     VALUE r;
-    if (isinf(d) || isnan(d))
+    if (!isfinite(d))
 	return self;
     r = float_to_r(self);
     return nurat_numerator(r);
@@ -2113,7 +2114,7 @@ rb_float_denominator(VALUE self)
 {
     double d = RFLOAT_VALUE(self);
     VALUE r;
-    if (isinf(d) || isnan(d))
+    if (!isfinite(d))
 	return INT2FIX(1);
     r = float_to_r(self);
     return nurat_denominator(r);
@@ -2714,13 +2715,19 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
  * a/b (b>0), where a is the numerator and b is the denominator.
  * Integer a equals rational a/1 mathematically.
  *
- * In Ruby, you can create rational objects with the Kernel#Rational,
- * to_r, or rationalize methods or by suffixing +r+ to a literal.
- * The return values will be irreducible fractions.
+ * You can create a \Rational object explicitly with:
+ *
+ * - A {rational literal}[doc/syntax/literals_rdoc.html#label-Rational+Literals].
+ *
+ * You can convert certain objects to Rationals with:
+ *
+ * - \Method {Rational}[Kernel.html#method-i-Rational].
+ *
+ * Examples
  *
  *    Rational(1)      #=> (1/1)
  *    Rational(2, 3)   #=> (2/3)
- *    Rational(4, -6)  #=> (-2/3)
+ *    Rational(4, -6)  #=> (-2/3) # Reduced.
  *    3.to_r           #=> (3/1)
  *    2/3r             #=> (2/3)
  *
@@ -2810,8 +2817,6 @@ Init_Rational(void)
     compat = rb_define_class_under(rb_cRational, "compatible", rb_cObject);
     rb_define_private_method(compat, "marshal_load", nurat_marshal_load, 1);
     rb_marshal_define_compat(rb_cRational, compat, nurat_dumper, nurat_loader);
-
-    /* --- */
 
     rb_define_method(rb_cInteger, "gcd", rb_gcd, 1);
     rb_define_method(rb_cInteger, "lcm", rb_lcm, 1);

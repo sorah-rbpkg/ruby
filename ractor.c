@@ -16,6 +16,7 @@
 #include "variable.h"
 #include "gc.h"
 #include "transient_heap.h"
+#include "yjit.h"
 
 VALUE rb_cRactor;
 
@@ -290,7 +291,7 @@ RACTOR_PTR(VALUE self)
     return r;
 }
 
-static uint32_t ractor_last_id;
+static rb_atomic_t ractor_last_id;
 
 #if RACTOR_CHECK_MODE > 0
 MJIT_FUNC_EXPORTED uint32_t
@@ -413,7 +414,7 @@ ractor_queue_enq(rb_ractor_t *r, struct rb_ractor_queue *rq, struct rb_ractor_ba
         rq->size *= 2;
     }
     rq->baskets[(rq->start + rq->cnt++) % rq->size] = *basket;
-    // fprintf(stderr, "%s %p->cnt:%d\n", __func__, rq, rq->cnt);
+    // fprintf(stderr, "%s %p->cnt:%d\n", RUBY_FUNCTION_NAME_STRING, (void *)rq, rq->cnt);
 }
 
 static void
@@ -491,6 +492,31 @@ ractor_try_receive(rb_execution_context_t *ec, rb_ractor_t *r)
     return ractor_basket_accept(&basket);
 }
 
+static bool
+ractor_sleeping_by(const rb_ractor_t *r, enum ractor_wait_status wait_status)
+{
+    return (r->sync.wait.status & wait_status) && r->sync.wait.wakeup_status == wakeup_none;
+}
+
+static bool
+ractor_wakeup(rb_ractor_t *r, enum ractor_wait_status wait_status, enum ractor_wakeup_status wakeup_status)
+{
+    ASSERT_ractor_locking(r);
+
+    // fprintf(stderr, "%s r:%p status:%s/%s wakeup_status:%s/%s\n", RUBY_FUNCTION_NAME_STRING, (void *)r,
+    //         wait_status_str(r->sync.wait.status), wait_status_str(wait_status),
+    //         wakeup_status_str(r->sync.wait.wakeup_status), wakeup_status_str(wakeup_status));
+
+    if (ractor_sleeping_by(r, wait_status)) {
+        r->sync.wait.wakeup_status = wakeup_status;
+        rb_native_cond_signal(&r->sync.cond);
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 static void *
 ractor_sleep_wo_gvl(void *ptr)
 {
@@ -513,14 +539,13 @@ ractor_sleep_interrupt(void *ptr)
     rb_ractor_t *r = ptr;
 
     RACTOR_LOCK(r);
-    if (r->sync.wait.wakeup_status == wakeup_none) {
-        r->sync.wait.wakeup_status = wakeup_by_interrupt;
-        rb_native_cond_signal(&r->sync.cond);
+    {
+        ractor_wakeup(r, wait_receiving | wait_taking | wait_yielding, wakeup_by_interrupt);
     }
     RACTOR_UNLOCK(r);
 }
 
-#if USE_RUBY_DEBUG_LOG
+#if defined(USE_RUBY_DEBUG_LOG) && USE_RUBY_DEBUG_LOG
 static const char *
 wait_status_str(enum ractor_wait_status wait_status)
 {
@@ -534,7 +559,7 @@ wait_status_str(enum ractor_wait_status wait_status)
       case wait_taking|wait_yielding: return "taking|yielding";
       case wait_receiving|wait_taking|wait_yielding: return "receiving|taking|yielding";
     }
-    rb_bug("unrechable");
+    rb_bug("unreachable");
 }
 
 static const char *
@@ -549,7 +574,7 @@ wakeup_status_str(enum ractor_wakeup_status wakeup_status)
       case wakeup_by_interrupt: return "by_interrupt";
       case wakeup_by_retry: return "by_retry";
     }
-    rb_bug("unrechable");
+    rb_bug("unreachable");
 }
 #endif // USE_RUBY_DEBUG_LOG
 
@@ -558,7 +583,7 @@ ractor_sleep(rb_execution_context_t *ec, rb_ractor_t *cr)
 {
     VM_ASSERT(GET_RACTOR() == cr);
     VM_ASSERT(cr->sync.wait.status != wait_none);
-    // fprintf(stderr, "%s  r:%p status:%s, wakeup_status:%s\n", __func__, cr,
+    // fprintf(stderr, "%s  r:%p status:%s, wakeup_status:%s\n", RUBY_FUNCTION_NAME_STRING, (void *)cr,
     //                 wait_status_str(cr->sync.wait.status), wakeup_status_str(cr->sync.wait.wakeup_status));
 
     RACTOR_UNLOCK(cr);
@@ -577,31 +602,6 @@ ractor_sleep(rb_execution_context_t *ec, rb_ractor_t *cr)
         RACTOR_UNLOCK(cr);
         rb_thread_check_ints();
         RACTOR_LOCK(cr); // reachable?
-    }
-}
-
-static bool
-ractor_sleeping_by(const rb_ractor_t *r, enum ractor_wait_status wait_status)
-{
-    return (r->sync.wait.status & wait_status) && r->sync.wait.wakeup_status == wakeup_none;
-}
-
-static bool
-ractor_wakeup(rb_ractor_t *r, enum ractor_wait_status wait_status, enum ractor_wakeup_status wakeup_status)
-{
-    ASSERT_ractor_locking(r);
-
-    // fprintf(stderr, "%s r:%p status:%s/%s wakeup_status:%s/%s\n", __func__, r,
-    //         wait_status_str(r->sync.wait.status), wait_status_str(wait_status),
-    //         wakeup_status_str(r->sync.wait.wakeup_status), wakeup_status_str(wakeup_status));
-
-    if (ractor_sleeping_by(r, wait_status)) {
-        r->sync.wait.wakeup_status = wakeup_status;
-        rb_native_cond_signal(&r->sync.cond);
-        return true;
-    }
-    else {
-        return false;
     }
 }
 
@@ -755,7 +755,8 @@ rq_dump(struct rb_ractor_queue *rq)
     bool bug = false;
     for (int i=0; i<rq->cnt; i++) {
         struct rb_ractor_basket *b = ractor_queue_at(rq, i);
-        fprintf(stderr, "%d (start:%d) type:%s %p %s\n", i, rq->start, basket_type_name(b->type), b, RSTRING_PTR(RARRAY_AREF(b->v, 1)));
+        fprintf(stderr, "%d (start:%d) type:%s %p %s\n", i, rq->start, basket_type_name(b->type),
+                (void *)b, RSTRING_PTR(RARRAY_AREF(b->v, 1)));
         if (b->type == basket_type_reserved) bug = true;
     }
     if (bug) rb_bug("!!");
@@ -902,7 +903,7 @@ ractor_send_basket(rb_execution_context_t *ec, rb_ractor_t *r, struct rb_ractor_
         else {
             ractor_queue_enq(r, rq, b);
             if (ractor_wakeup(r, wait_receiving, wakeup_by_send)) {
-                RUBY_DEBUG_LOG("wakeup", 0);
+                RUBY_DEBUG_LOG("wakeup");
             }
         }
     }
@@ -1349,7 +1350,7 @@ ractor_close_incoming(rb_execution_context_t *ec, rb_ractor_t *r)
             r->sync.incoming_port_closed = true;
             if (ractor_wakeup(r, wait_receiving, wakeup_by_close)) {
                 VM_ASSERT(r->sync.incoming_queue.cnt == 0);
-                RUBY_DEBUG_LOG("cancel receiving", 0);
+                RUBY_DEBUG_LOG("cancel receiving");
             }
         }
         else {
@@ -1386,7 +1387,7 @@ ractor_close_outgoing(rb_execution_context_t *ec, rb_ractor_t *r)
         // raising yielding Ractor
         if (!r->yield_atexit &&
             ractor_wakeup(r, wait_yielding, wakeup_by_close)) {
-            RUBY_DEBUG_LOG("cancel yielding", 0);
+            RUBY_DEBUG_LOG("cancel yielding");
         }
     }
     RACTOR_UNLOCK(r);
@@ -1400,11 +1401,7 @@ ractor_next_id(void)
 {
     uint32_t id;
 
-    RB_VM_LOCK();
-    {
-        id = ++ractor_last_id;
-    }
-    RB_VM_UNLOCK();
+    id = (uint32_t)(RUBY_ATOMIC_FETCH_ADD(ractor_last_id, 1) + 1);
 
     return id;
 }
@@ -1423,10 +1420,16 @@ static void
 cancel_single_ractor_mode(void)
 {
     // enable multi-ractor mode
-    RUBY_DEBUG_LOG("enable multi-ractor mode", 0);
+    RUBY_DEBUG_LOG("enable multi-ractor mode");
+
+    VALUE was_disabled = rb_gc_enable();
 
     rb_gc_start();
     rb_transient_heap_evacuate();
+
+    if (was_disabled) {
+        rb_gc_disable();
+    }
 
     ruby_single_main_ractor = NULL;
 
@@ -1602,6 +1605,7 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
     r->verbose = cr->verbose;
     r->debug = cr->debug;
 
+    rb_yjit_before_ractor_spawn();
     rb_thread_create_ractor(r, args, block);
 
     RB_GC_GUARD(rv);
@@ -1921,7 +1925,7 @@ rb_ractor_terminate_interrupt_main_thread(rb_ractor_t *r)
             rb_threadptr_interrupt(main_th);
         }
         else {
-            RUBY_DEBUG_LOG("killed (%p)", main_th);
+            RUBY_DEBUG_LOG("killed (%p)", (void *)main_th);
         }
     }
 }

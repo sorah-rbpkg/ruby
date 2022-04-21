@@ -1,0 +1,117 @@
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file
+//   by ./tool/mk_builtin_loader.rb
+//   with yjit.rb
+#include "internal/compilers.h"     /* for MAYBE_UNUSED */
+#include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
+#include "ruby/ruby.h"              /* for VALUE */
+#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
+struct rb_execution_context_struct; /* in vm_core.h */
+
+static VALUE builtin_inline_class_152(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 152 "yjit.rb"
+return rb_yjit_enabled_p() ? Qtrue : Qfalse;
+#line 17 "yjit.rbinc"
+}
+
+static void
+mjit_compile_invokebuiltin_for_comments_for(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
+    if (index == -1) {
+        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
+    }
+    else {
+        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
+        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+    }
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == comments_for */\n", (VALUE)comments_for);
+    fprintf(f, "    val = f(ec, self, argv[0], argv[1]);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_get_yjit_stats(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == get_yjit_stats */\n", (VALUE)get_yjit_stats);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_reset_stats_bang(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == reset_stats_bang */\n", (VALUE)reset_stats_bang);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_yjit_stats_enabled_p(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == yjit_stats_enabled_p */\n", (VALUE)yjit_stats_enabled_p);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for__bi0(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    if (inlinable_p) {
+        fprintf(f, "%s", "    {\n");
+        fprintf(f, "%s", "#line 152 \"yjit.rb\"\n");
+        fprintf(f, "%s", "    return rb_yjit_enabled_p() ? Qtrue : Qfalse;\n");
+        fprintf(f, "%s", "#line 23 \"yjit.rbinc\"\n");
+        fprintf(f, "%s", "    }\n");
+        fprintf(f, "%s", "    \n");
+        return;
+    }
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_152 */\n", (VALUE)builtin_inline_class_152);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+static void
+mjit_compile_invokebuiltin_for_simulate_oom_bang(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+{
+    fprintf(f, "    VALUE self = GET_SELF();\n");
+    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == simulate_oom_bang */\n", (VALUE)simulate_oom_bang);
+    fprintf(f, "    val = f(ec, self);\n");
+}
+
+void Init_builtin_yjit(void)
+{
+  // table definition
+  static const struct rb_builtin_function yjit_table[] = {
+    RB_BUILTIN_FUNCTION(0, comments_for, comments_for, 2, mjit_compile_invokebuiltin_for_comments_for),
+    RB_BUILTIN_FUNCTION(1, get_yjit_stats, get_yjit_stats, 0, mjit_compile_invokebuiltin_for_get_yjit_stats),
+    RB_BUILTIN_FUNCTION(2, reset_stats_bang, reset_stats_bang, 0, mjit_compile_invokebuiltin_for_reset_stats_bang),
+    RB_BUILTIN_FUNCTION(3, yjit_stats_enabled_p, yjit_stats_enabled_p, 0, mjit_compile_invokebuiltin_for_yjit_stats_enabled_p),
+    RB_BUILTIN_FUNCTION(4, _bi0, builtin_inline_class_152, 0, mjit_compile_invokebuiltin_for__bi0),
+    RB_BUILTIN_FUNCTION(5, simulate_oom_bang, simulate_oom_bang, 0, mjit_compile_invokebuiltin_for_simulate_oom_bang),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),
+  };
+
+  // arity_check
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
+COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
+#endif
+  if (0) rb_builtin_function_check_arity2(comments_for);
+  if (0) rb_builtin_function_check_arity0(get_yjit_stats);
+  if (0) rb_builtin_function_check_arity0(reset_stats_bang);
+  if (0) rb_builtin_function_check_arity0(yjit_stats_enabled_p);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_152);
+  if (0) rb_builtin_function_check_arity0(simulate_oom_bang);
+COMPILER_WARNING_POP
+
+  // load
+  rb_load_with_builtin_functions("yjit", yjit_table);
+}

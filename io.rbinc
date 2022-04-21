@@ -21,7 +21,7 @@ mjit_compile_invokebuiltin_for_io_read_nonblock(FILE *f, long index, unsigned st
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == io_read_nonblock */\n", (intptr_t)io_read_nonblock);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == io_read_nonblock */\n", (VALUE)io_read_nonblock);
     fprintf(f, "    val = f(ec, self, argv[0], argv[1], argv[2]);\n");
 }
 
@@ -37,7 +37,7 @@ mjit_compile_invokebuiltin_for_io_write_nonblock(FILE *f, long index, unsigned s
         fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
         fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == io_write_nonblock */\n", (intptr_t)io_write_nonblock);
+    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == io_write_nonblock */\n", (VALUE)io_write_nonblock);
     fprintf(f, "    val = f(ec, self, argv[0], argv[1]);\n");
 }
 
@@ -52,7 +52,7 @@ void Init_builtin_io(void)
 
   // arity_check
 COMPILER_WARNING_PUSH
-#if GCC_VERSION_SINCE(5, 1, 0) || __clang__
+#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
 COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
 #endif
   if (0) rb_builtin_function_check_arity3(io_read_nonblock);

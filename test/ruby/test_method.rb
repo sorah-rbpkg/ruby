@@ -578,7 +578,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], method(:mk8).parameters)
     assert_equal([[:nokey]], method(:mnk).parameters)
     # pending
-    assert_equal([[:rest, :*], [:block, :&]], method(:mf).parameters)
+    assert_equal([[:rest, :*], [:keyrest, :**], [:block, :&]], method(:mf).parameters)
   end
 
   def test_unbound_parameters
@@ -604,7 +604,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], self.class.instance_method(:mk8).parameters)
     assert_equal([[:nokey]], self.class.instance_method(:mnk).parameters)
     # pending
-    assert_equal([[:rest, :*], [:block, :&]], self.class.instance_method(:mf).parameters)
+    assert_equal([[:rest, :*], [:keyrest, :**], [:block, :&]], self.class.instance_method(:mf).parameters)
   end
 
   def test_bmethod_bound_parameters
@@ -1179,6 +1179,25 @@ class TestMethod < Test::Unit::TestCase
     method = m.instance_method(:f)
     super_method = method.super_method
     assert_nil(super_method)
+  end
+
+  def test_method_visibility_predicates
+    v = Visibility.new
+    assert_equal(true, v.method(:mv1).public?)
+    assert_equal(true, v.method(:mv2).private?)
+    assert_equal(true, v.method(:mv3).protected?)
+    assert_equal(false, v.method(:mv2).public?)
+    assert_equal(false, v.method(:mv3).private?)
+    assert_equal(false, v.method(:mv1).protected?)
+  end
+
+  def test_unbound_method_visibility_predicates
+    assert_equal(true, Visibility.instance_method(:mv1).public?)
+    assert_equal(true, Visibility.instance_method(:mv2).private?)
+    assert_equal(true, Visibility.instance_method(:mv3).protected?)
+    assert_equal(false, Visibility.instance_method(:mv2).public?)
+    assert_equal(false, Visibility.instance_method(:mv3).private?)
+    assert_equal(false, Visibility.instance_method(:mv1).protected?)
   end
 
   def rest_parameter(*rest)

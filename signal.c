@@ -29,7 +29,7 @@
 # include <ucontext.h>
 #endif
 
-#if HAVE_PTHREAD_H
+#ifdef HAVE_PTHREAD_H
 # include <pthread.h>
 #endif
 
@@ -726,7 +726,7 @@ sighandler(int sig)
         rb_vm_t *vm = GET_VM();
         ATOMIC_EXCHANGE(sigchld_hit, 1);
 
-        /* avoid spurious wakeup in main thread iff nobody uses trap(:CHLD) */
+        /* avoid spurious wakeup in main thread if and only if nobody uses trap(:CHLD) */
         if (vm && ACCESS_ONCE(VALUE, vm->trap_list.cmd[sig])) {
             signal_enque(sig);
         }
@@ -881,12 +881,13 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
         (sp_page <= fault_page && fault_page <= bp_page)) {
 	rb_execution_context_t *ec = GET_EC();
 	int crit = FALSE;
-	if ((uintptr_t)ec->tag->buf / pagesize <= fault_page + 1) {
+	int uplevel = roomof(pagesize, sizeof(*ec->tag)) / 2; /* XXX: heuristic */
+	while ((uintptr_t)ec->tag->buf / pagesize <= fault_page + 1) {
 	    /* drop the last tag if it is close to the fault,
 	     * otherwise it can cause stack overflow again at the same
 	     * place. */
+	    if ((crit = (!ec->tag->prev || !--uplevel)) != FALSE) break;
 	    ec->tag = ec->tag->prev;
-	    crit = TRUE;
 	}
 	reset_sigmask(sig);
 	rb_ec_stack_overflow(ec, crit);
@@ -973,7 +974,7 @@ static void
 sigill(int sig SIGINFO_ARG)
 {
     check_reserved_signal("ILL");
-#if defined __APPLE__
+#if defined __APPLE__ || defined __linux__
     CHECK_STACK_OVERFLOW();
 #endif
     rb_bug_for_fatal_signal(default_sigill_handler, sig, SIGINFO_CTX, "Illegal instruction" MESSAGE_FAULT_ADDRESS);

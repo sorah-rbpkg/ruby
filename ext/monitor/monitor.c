@@ -149,8 +149,8 @@ monitor_wait_for_cond_body(VALUE v)
     struct wait_for_cond_data *data = (struct wait_for_cond_data *)v;
     struct rb_monitor *mc = monitor_ptr(data->monitor);
     // cond.wait(monitor.mutex, timeout)
-    rb_funcall(data->cond, rb_intern("wait"), 2, mc->mutex, data->timeout);
-    return Qtrue;
+    VALUE signaled = rb_funcall(data->cond, rb_intern("wait"), 2, mc->mutex, data->timeout);
+    return RTEST(signaled) ? Qtrue : Qfalse;
 }
 
 static VALUE
@@ -220,6 +220,6 @@ Init_monitor(void)
     rb_define_method(rb_cMonitor, "mon_check_owner", monitor_check_owner, 0);
     rb_define_method(rb_cMonitor, "mon_owned?", monitor_owned_p, 0);
 
-    /* internal methods for MonitorMixin::ConditionalVariable */
+    /* internal methods for MonitorMixin::ConditionVariable */
     rb_define_method(rb_cMonitor, "wait_for_cond", monitor_wait_for_cond, 2);
 }

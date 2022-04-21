@@ -240,19 +240,16 @@ static int total_unloads = 0;
 // Set to true to stop worker.
 static bool stop_worker_p;
 // Set to true if worker is stopped.
-static bool worker_stopped;
+static bool worker_stopped = true;
 
 // Path of "/tmp", which can be changed to $TMP in MinGW.
 static char *tmp_dir;
-// Hash like { 1 => true, 2 => true, ... } whose keys are valid `class_serial`s.
-// This is used to invalidate obsoleted CALL_CACHE.
-static VALUE valid_class_serials;
 
 // Used C compiler path.
 static const char *cc_path;
 // Used C compiler flags.
 static const char **cc_common_args;
-// Used C compiler flags added by --jit-debug=...
+// Used C compiler flags added by --mjit-debug=...
 static char **cc_added_args;
 // Name of the precompiled header file.
 static char *pch_file;
@@ -492,16 +489,6 @@ real_ms_time(void)
 }
 #endif
 
-// Return true if class_serial is not obsoleted. This is used by mjit_compile.c.
-bool
-mjit_valid_class_serial_p(rb_serial_t class_serial)
-{
-    CRITICAL_SECTION_START(3, "in valid_class_serial_p");
-    bool found_p = rb_hash_stlike_lookup(valid_class_serials, LONG2FIX(class_serial), NULL);
-    CRITICAL_SECTION_FINISH(3, "in valid_class_serial_p");
-    return found_p;
-}
-
 // Return the best unit from list.  The best is the first
 // high priority unit or the unit whose iseq has the biggest number
 // of calls so far.
@@ -699,7 +686,7 @@ remove_so_file(const char *so_file, struct rb_mjit_unit *unit)
 #endif
 }
 
-// Print _mjitX, but make a human-readable funcname when --jit-debug is used
+// Print _mjitX, but make a human-readable funcname when --mjit-debug is used
 static void
 sprint_funcname(char *funcname, const struct rb_mjit_unit *unit)
 {
@@ -747,12 +734,8 @@ set_compiling_iseqs(const rb_iseq_t *iseq)
 
     unsigned int pos = 0;
     while (pos < iseq->body->iseq_size) {
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-        int insn = rb_vm_insn_addr2insn((void *)iseq->body->iseq_encoded[pos]);
-#else
-        int insn = (int)iseq->body->iseq_encoded[pos];
-#endif
-        if (insn == BIN(opt_send_without_block)) {
+        int insn = rb_vm_insn_decode(iseq->body->iseq_encoded[pos]);
+        if (insn == BIN(opt_send_without_block) || insn == BIN(opt_size)) {
             CALL_DATA cd = (CALL_DATA)iseq->body->iseq_encoded[pos + 1];
             extern const rb_iseq_t *rb_mjit_inlinable_iseq(const struct rb_callinfo *ci, const struct rb_callcache *cc);
             const rb_iseq_t *iseq = rb_mjit_inlinable_iseq(cd->ci, cd->cc);
@@ -764,6 +747,18 @@ set_compiling_iseqs(const rb_iseq_t *iseq)
         pos += insn_len(insn);
     }
     return true;
+}
+
+static void
+free_compiling_iseqs(void)
+{
+    RBIMPL_WARNING_PUSH();
+#ifdef _MSC_VER
+    RBIMPL_WARNING_IGNORED(4090); /* suppress false warning by MSVC */
+#endif
+    free(compiling_iseqs);
+    RBIMPL_WARNING_POP();
+    compiling_iseqs = NULL;
 }
 
 bool
@@ -793,7 +788,7 @@ static const int c_file_access_mode =
 static bool
 compile_c_to_so(const char *c_file, const char *so_file)
 {
-    const char *files[] = { NULL, NULL, NULL, NULL, NULL, NULL, "-link", libruby_pathflag, NULL };
+    const char *files[] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, "-link", libruby_pathflag, NULL };
     char *p;
 
     // files[0] = "-Fe*.dll"
@@ -829,10 +824,17 @@ compile_c_to_so(const char *c_file, const char *so_file)
     *p = '\0';
 
     // files[5] = "-Fd*.pdb"
-    files[5] = p = alloca(sizeof(char) * (rb_strlen_lit("-Fd") + strlen(pch_file) + 1));
+    // Generate .pdb file in temporary directory instead of cwd.
+    files[5] = p = alloca(sizeof(char) * (rb_strlen_lit("-Fd") + strlen(so_file) - rb_strlen_lit(DLEXT) + rb_strlen_lit(".pdb") + 1));
     p = append_lit(p, "-Fd");
-    p = append_str2(p, pch_file, strlen(pch_file) - rb_strlen_lit(".pch"));
+    p = append_str2(p, so_file, strlen(so_file) - rb_strlen_lit(DLEXT));
     p = append_lit(p, ".pdb");
+    *p = '\0';
+
+    // files[6] = "-Z7"
+    // Put this last to override any debug options that came previously.
+    files[6] = p = alloca(sizeof(char) * rb_strlen_lit("-Z7") + 1);
+    p = append_lit(p, "-Z7");
     *p = '\0';
 
     char **args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
@@ -1021,8 +1023,7 @@ compile_compact_jit_code(char* c_file)
         success &= mjit_compile(f, child_unit->iseq, funcname, child_unit->id);
 
         CRITICAL_SECTION_START(3, "before compiling_iseqs free");
-        free(compiling_iseqs);
-        compiling_iseqs = NULL;
+        free_compiling_iseqs();
         CRITICAL_SECTION_FINISH(3, "after compiling_iseqs free");
     }
 
@@ -1112,7 +1113,7 @@ load_func_from_so(const char *so_file, const char *funcname, struct rb_mjit_unit
     handle = dlopen(so_file, RTLD_NOW);
     if (handle == NULL) {
         mjit_warning("failure in loading code from '%s': %s", so_file, dlerror());
-        return (void *)NOT_ADDED_JIT_ISEQ_FUNC;
+        return (void *)NOT_COMPILED_JIT_ISEQ_FUNC;
     }
 
     func = dlsym(handle, funcname);
@@ -1148,7 +1149,7 @@ compile_prelude(FILE *f)
     fprintf(f, "#include \"");
     // print pch_file except .gch for gcc, but keep .pch for mswin
     for (; s < e; s++) {
-        switch(*s) {
+        switch (*s) {
           case '\\': case '"':
             fputc('\\', f);
         }
@@ -1222,8 +1223,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 
     // release blocking mjit_gc_start_hook
     CRITICAL_SECTION_START(3, "after mjit_compile to wakeup client for GC");
-    free(compiling_iseqs);
-    compiling_iseqs = NULL;
+    free_compiling_iseqs();
     in_jit = false;
     verbose(3, "Sending wakeup signal to client in a mjit-worker for GC");
     rb_native_cond_signal(&mjit_client_wakeup);
@@ -1411,9 +1411,9 @@ static void mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit
 void
 mjit_worker(void)
 {
-    // Allow only `max_cache_size / 10` times (default: 10) of compaction.
+    // Allow only `max_cache_size / 100` times (default: 100) of compaction.
     // Note: GC of compacted code has not been implemented yet.
-    int max_compact_size = mjit_opts.max_cache_size / 10;
+    int max_compact_size = mjit_opts.max_cache_size / 100;
     if (max_compact_size < 10) max_compact_size = 10;
 
     // Run unload_units after it's requested `max_cache_size / 10` (default: 10) times.
