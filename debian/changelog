@@ -1,3 +1,13 @@
+ruby3.0 (3.0.4-1) UNRELEASED; urgency=medium
+
+  [ John Paul Adrian Glaubitz ]
+  * Disable some tests on powerpc (Closes: #999349)
+
+  [ Antonio Terceiro ]
+  * New upstream version 3.0.4
+
+ -- Antonio Terceiro <terceiro@debian.org>  Thu, 21 Apr 2022 13:36:10 -0300
+
 ruby3.0 (3.0.3-1) unstable; urgency=medium
 
   * New upstream version 3.0.3.  Includes fixes for the following security
