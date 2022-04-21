@@ -32,4 +32,6 @@ dch --package "${new_source}" --newversion "${new_version}.0-1" "Ruby $new_versi
 git add .
 git commit -a -m "Switch to ${new_source}"
 gbp import-orig --pristine-tar --uscan
-gbp dch
+new_upstream_version=$(git describe upstream | sed -e 's#upstream/##')
+gbp dch --new-version=${new_upstream_version}-1
+git commit -a -m "New upstream version: ${new_upstream_version}"
