@@ -26,10 +26,10 @@ index 4b33b3f..d068292 100644
      defined(__APPLE__) || \
      defined(_WIN32) || \
 diff --git a/ext/socket/raddrinfo.c b/ext/socket/raddrinfo.c
-index d99edfe..a19b6db 100644
+index d94e96a..e584e8e 100644
 --- a/ext/socket/raddrinfo.c
 +++ b/ext/socket/raddrinfo.c
-@@ -1670,10 +1670,21 @@ addrinfo_mload(VALUE self, VALUE ary)
+@@ -1723,10 +1723,21 @@ addrinfo_mload(VALUE self, VALUE ary)
          INIT_SOCKADDR_UN(&uaddr, sizeof(struct sockaddr_un));
  
          StringValue(v);
@@ -51,7 +51,7 @@ index d99edfe..a19b6db 100644
          memcpy(uaddr.sun_path, RSTRING_PTR(v), RSTRING_LEN(v));
          len = (socklen_t)sizeof(uaddr);
          memcpy(&ss, &uaddr, len);
-@@ -2317,10 +2328,21 @@ addrinfo_unix_path(VALUE self)
+@@ -2370,10 +2381,21 @@ addrinfo_unix_path(VALUE self)
      if (n < 0)
          rb_raise(rb_eSocket, "too short AF_UNIX address: %"PRIuSIZE" bytes given for minimum %"PRIuSIZE" bytes.",
                   (size_t)rai->sockaddr_len, offsetof(struct sockaddr_un, sun_path));
@@ -74,10 +74,10 @@ index d99edfe..a19b6db 100644
  }
  #endif
 diff --git a/test/fiddle/test_handle.rb b/test/fiddle/test_handle.rb
-index 17f9c92..2862585 100644
+index 7e3ff9d..3799347 100644
 --- a/test/fiddle/test_handle.rb
 +++ b/test/fiddle/test_handle.rb
-@@ -150,6 +150,7 @@ module Fiddle
+@@ -174,6 +174,7 @@ module Fiddle
      end unless /mswin|mingw/ =~ RUBY_PLATFORM
  
      def test_dlerror
@@ -85,7 +85,7 @@ index 17f9c92..2862585 100644
        # FreeBSD (at least 7.2 to 7.2) calls nsdispatch(3) when it calls
        # getaddrinfo(3). And nsdispatch(3) doesn't call dlerror(3) even if
        # it calls _nss_cache_cycle_prevention_function with dlsym(3).
-@@ -158,7 +159,7 @@ module Fiddle
+@@ -182,7 +183,7 @@ module Fiddle
        require 'socket'
        Socket.gethostbyname("localhost")
        Fiddle.dlopen("/lib/libc.so.7").sym('strcpy')
@@ -93,12 +93,12 @@ index 17f9c92..2862585 100644
 +    end if /freebsd/ =~ RUBY_PLATFORM
  
      def test_no_memory_leak
-       assert_no_memory_leak(%w[-W0 -rfiddle.so], '', '100_000.times {Fiddle::Handle.allocate}; GC.start', rss: true)
+       if respond_to?(:assert_nothing_leaked_memory)
 diff --git a/test/socket/test_socket.rb b/test/socket/test_socket.rb
-index b5be0c7..b0fe707 100644
+index 7e596f0..930bb61 100644
 --- a/test/socket/test_socket.rb
 +++ b/test/socket/test_socket.rb
-@@ -530,7 +530,7 @@ class TestSocket < Test::Unit::TestCase
+@@ -541,7 +541,7 @@ class TestSocket < Test::Unit::TestCase
    end
  
    def test_bintime

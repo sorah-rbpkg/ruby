@@ -9,6 +9,4 @@
 0011-don-t-try-to-download-stuff-in-configure.patch
 0012-Make-resolv-accept-dash-in-zone_id-of-IPv6-link-local-addresses.patch
 ruby_default_arch.m4-don-t-require-arhitectures-to-be-kno.patch
-Update-openssl-to-version-3.0.0.patch
-Update-rubygems-to-version-3.3.3.patch
 Fix-filenames-for-glibc-SO-files-on-alpha-and-ia64.patch

@@ -9,15 +9,15 @@ Not sure yet if this should be forwarded upstream or not.
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/tool/m4/ruby_default_arch.m4 b/tool/m4/ruby_default_arch.m4
-index a53bb5f..080ee07 100644
+index 03e52f7..1a6c5a5 100644
 --- a/tool/m4/ruby_default_arch.m4
 +++ b/tool/m4/ruby_default_arch.m4
-@@ -4,7 +4,7 @@ AC_MSG_CHECKING([arch option])
- AS_CASE([$1],
+@@ -5,7 +5,7 @@ AS_CASE([$1],
+ 	[arm64],      [],
  	[*64],        [ARCH_FLAG=-m64],
  	[[i[3-6]86]], [ARCH_FLAG=-m32],
 -	[AC_MSG_ERROR(unknown target architecture: $target_archs)]
 +	[*],          []
  	)
  AC_MSG_RESULT([$ARCH_FLAG])
- ])
+ ])dnl

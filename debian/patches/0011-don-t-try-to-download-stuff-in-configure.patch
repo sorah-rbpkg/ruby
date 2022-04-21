@@ -7,10 +7,10 @@ Subject: don't try to download stuff in configure
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/defs/gmake.mk b/defs/gmake.mk
-index f093fd4..82df5d2 100644
+index dd7da5f..9d59f22 100644
 --- a/defs/gmake.mk
 +++ b/defs/gmake.mk
-@@ -250,7 +250,7 @@ extract-gems: $(HAVE_BASERUBY:yes=update-gems)
+@@ -265,7 +265,7 @@ extract-gems: $(HAVE_BASERUBY:yes=update-gems)
  
  bundled-gems := $(shell sed '/^[ 	]*\#/d;/^[ 	]*$$/d;s/[ 	][ 	]*/-/;s/[ 	].*//' $(srcdir)/gems/bundled_gems)
  
