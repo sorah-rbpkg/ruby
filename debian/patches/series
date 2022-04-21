@@ -11,3 +11,4 @@
 ruby_default_arch.m4-don-t-require-arhitectures-to-be-kno.patch
 Update-openssl-to-version-3.0.0.patch
 Update-rubygems-to-version-3.3.3.patch
+Fix-filenames-for-glibc-SO-files-on-alpha-and-ia64.patch

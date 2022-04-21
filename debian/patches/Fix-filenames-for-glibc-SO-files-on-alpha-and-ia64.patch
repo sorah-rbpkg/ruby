@@ -1,0 +1,30 @@
+From: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+Date: Fri, 18 Mar 2022 16:36:16 +0100
+Subject: Fix filenames for glibc SO files on alpha and ia64
+
+Fixes [Bug #18645]
+---
+ test/fiddle/helper.rb | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/test/fiddle/helper.rb b/test/fiddle/helper.rb
+index a6e2019..6b4a5aa 100644
+--- a/test/fiddle/helper.rb
++++ b/test/fiddle/helper.rb
+@@ -47,8 +47,14 @@ when /linux/
+     libm_so = libc_so
+   else
+     # glibc
+-    libc_so = "libc.so.6"
+-    libm_so = "libm.so.6"
++    case RUBY_PLATFORM
++    when /alpha-linux/, /ia64-linux/
++      libc_so = "libc.so.6.1"
++      libm_so = "libm.so.6.1"
++    else
++      libc_so = "libc.so.6"
++      libm_so = "libm.so.6"
++    end
+   end
+ when /mingw/, /mswin/
+   require "rbconfig"
