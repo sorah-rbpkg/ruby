@@ -3,24 +3,22 @@ Date: Sun, 27 Feb 2022 20:23:37 -0300
 Subject: Update rubygems to version 3.3.3
 
 ---
- lib/rubygems.rb                                    | 111 ++++++++++---------
+ lib/rubygems.rb                                    | 109 +++++++++---------
  lib/rubygems/bundler_version_finder.rb             |  52 ++-------
- lib/rubygems/command_manager.rb                    |   6 +-
+ lib/rubygems/command_manager.rb                    |   2 +-
  lib/rubygems/commands/install_command.rb           |   7 +-
- lib/rubygems/commands/pristine_command.rb          |  10 +-
  lib/rubygems/commands/server_command.rb            |  91 +++------------
- lib/rubygems/commands/setup_command.rb             |  43 ++++----
+ lib/rubygems/commands/setup_command.rb             |  20 +---
  lib/rubygems/commands/update_command.rb            |  13 ++-
  lib/rubygems/defaults.rb                           |  22 +---
  lib/rubygems/dependency.rb                         |  14 +--
  lib/rubygems/deprecate.rb                          |  59 +++++++++-
  lib/rubygems/errors.rb                             |   3 -
- lib/rubygems/exceptions.rb                         |  32 +++++-
+ lib/rubygems/exceptions.rb                         |  31 +++++-
  lib/rubygems/ext/builder.rb                        |   8 +-
  lib/rubygems/install_update_options.rb             |  13 ++-
- lib/rubygems/installer.rb                          |  26 +++--
+ lib/rubygems/installer.rb                          |  12 +-
  lib/rubygems/name_tuple.rb                         |   5 +-
- lib/rubygems/optparse/.document                    |   1 +
  lib/rubygems/path_support.rb                       |   7 +-
  lib/rubygems/platform.rb                           |   4 +
  lib/rubygems/remote_fetcher.rb                     |   2 +-
@@ -30,10 +28,9 @@ Subject: Update rubygems to version 3.3.3
  lib/rubygems/security/policy.rb                    |   4 +-
  lib/rubygems/source.rb                             |   4 +-
  lib/rubygems/spec_fetcher.rb                       |   2 +-
- lib/rubygems/specification.rb                      |  46 ++++----
+ lib/rubygems/specification.rb                      |  32 +++---
  lib/rubygems/stub_specification.rb                 |   2 +-
  lib/rubygems/text.rb                               |  41 +++----
- lib/rubygems/tsort/.document                       |   1 +
  lib/rubygems/uninstaller.rb                        |   5 +-
  lib/rubygems/unknown_command_spell_checker.rb      |  21 ++++
  lib/rubygems/version.rb                            |   2 +
@@ -42,14 +39,12 @@ Subject: Update rubygems to version 3.3.3
  test/rubygems/test_exit.rb                         |  11 ++
  test/rubygems/test_gem.rb                          | 122 ++++++++-------------
  test/rubygems/test_gem_bundler_version_finder.rb   |  65 ++++-------
- test/rubygems/test_gem_command_manager.rb          |  30 ++++-
+ test/rubygems/test_gem_command_manager.rb          |  18 ++-
  test/rubygems/test_gem_commands_install_command.rb |  33 ++++++
  test/rubygems/test_gem_commands_open_command.rb    |   2 +-
  test/rubygems/test_gem_commands_server_command.rb  |  50 +--------
- test/rubygems/test_gem_commands_setup_command.rb   |  17 +++
  test/rubygems/test_gem_commands_update_command.rb  |   4 +-
  test/rubygems/test_gem_dependency.rb               |  12 +-
- test/rubygems/test_gem_installer.rb                |  15 ++-
  test/rubygems/test_gem_path_support.rb             |   8 +-
  test/rubygems/test_gem_remote_fetcher.rb           |  15 +++
  test/rubygems/test_gem_requirement.rb              |   1 -
@@ -59,23 +54,21 @@ Subject: Update rubygems to version 3.3.3
  test/rubygems/test_gem_text.rb                     |   6 +
  test/rubygems/test_kernel.rb                       |  14 +--
  test/rubygems/test_project_sanity.rb               |   2 +-
- test/rubygems/test_require.rb                      |  62 +----------
+ test/rubygems/test_require.rb                      |  32 ------
  test/rubygems/test_rubygems.rb                     |  23 ++++
- 58 files changed, 621 insertions(+), 628 deletions(-)
- create mode 100644 lib/rubygems/optparse/.document
- create mode 100644 lib/rubygems/tsort/.document
+ 53 files changed, 534 insertions(+), 571 deletions(-)
  create mode 100644 lib/rubygems/unknown_command_spell_checker.rb
  create mode 100644 test/rubygems/test_exit.rb
 
 diff --git a/lib/rubygems.rb b/lib/rubygems.rb
-index 79857b8..e24580c 100644
+index 6a7e56f..e24580c 100644
 --- a/lib/rubygems.rb
 +++ b/lib/rubygems.rb
 @@ -8,7 +8,7 @@
  require 'rbconfig'
  
  module Gem
--  VERSION = "3.2.32".freeze
+-  VERSION = "3.2.33".freeze
 +  VERSION = "3.3.3".freeze
  end
  
@@ -114,13 +107,13 @@ index 79857b8..e24580c 100644
 -    File.open path, 'rb+' do |f|
 -      f.flock(File::LOCK_EX)
 -      f.read
--    end
--  rescue *READ_BINARY_ERRORS
--    File.open path, 'rb' do |f|
--      f.read
 +    open_with_flock(path, 'rb+') do |io|
 +      io.read
      end
+-  rescue *READ_BINARY_ERRORS
+-    File.open path, 'rb' do |f|
+-      f.read
+-    end
 -  rescue Errno::ENOLCK # NFS
 -    if Thread.main != Thread.current
 -      raise
@@ -137,14 +130,13 @@ index 79857b8..e24580c 100644
    ##
    # Safely write a file in binary mode on all platforms.
    def self.write_binary(path, data)
--    File.open(path, 'wb') do |io|
--      begin
--        io.flock(File::LOCK_EX)
--      rescue *WRITE_BINARY_ERRORS
--      end
+-    File.open(path, File::RDWR | File::CREAT | File::BINARY | File::LOCK_EX) do |io|
 +    open_with_flock(path, 'wb') do |io|
        io.write data
      end
+-  rescue *WRITE_BINARY_ERRORS
+-    File.open(path, 'wb') do |io|
+-      io.write data
 +  end
 +
 +  ##
@@ -159,7 +151,7 @@ index 79857b8..e24580c 100644
 +        end
 +      end
 +      yield io
-+    end
+     end
    rescue Errno::ENOLCK # NFS
      if Thread.main != Thread.current
        raise
@@ -352,21 +344,10 @@ index 9ce0a23..14179ae 100644
    private_class_method :lockfile_contents
  end
 diff --git a/lib/rubygems/command_manager.rb b/lib/rubygems/command_manager.rb
-index 3f4cd4b..03cdd6a 100644
+index cb07757..03cdd6a 100644
 --- a/lib/rubygems/command_manager.rb
 +++ b/lib/rubygems/command_manager.rb
-@@ -73,7 +73,9 @@ class Gem::CommandManager
-   ].freeze
- 
-   ALIAS_COMMANDS = {
--    'i' => 'install',
-+    'i'      => 'install',
-+    'login'  => 'signin',
-+    'logout' => 'signout',
-   }.freeze
- 
-   ##
-@@ -188,7 +190,7 @@ class Gem::CommandManager
+@@ -190,7 +190,7 @@ class Gem::CommandManager
        raise Gem::CommandLineError,
              "Ambiguous command #{cmd_name} matches [#{possibilities.join(', ')}]"
      elsif possibilities.empty?
@@ -400,45 +381,6 @@ index 7af5060..adf2cdb 100644
    end
  
    def description # :nodoc:
-diff --git a/lib/rubygems/commands/pristine_command.rb b/lib/rubygems/commands/pristine_command.rb
-index 41547ce..13979b0 100644
---- a/lib/rubygems/commands/pristine_command.rb
-+++ b/lib/rubygems/commands/pristine_command.rb
-@@ -50,6 +50,11 @@ class Gem::Commands::PristineCommand < Gem::Command
-       options[:env_shebang] = value
-     end
- 
-+    add_option('-i', '--install-dir DIR',
-+               'Gem repository to get binstubs and plugins installed') do |value, options|
-+      options[:install_dir] = File.expand_path(value)
-+    end
-+
-     add_option('-n', '--bindir DIR',
-                'Directory where executables are',
-                'located') do |value, options|
-@@ -163,11 +168,12 @@ extensions will be restored.
-         end
- 
-       bin_dir = options[:bin_dir] if options[:bin_dir]
-+      install_dir = options[:install_dir] if options[:install_dir]
- 
-       installer_options = {
-         :wrappers => true,
-         :force => true,
--        :install_dir => spec.base_dir,
-+        :install_dir => install_dir || spec.base_dir,
-         :env_shebang => env_shebang,
-         :build_args => spec.build_args,
-         :bin_dir => bin_dir,
-@@ -177,7 +183,7 @@ extensions will be restored.
-         installer = Gem::Installer.for_spec(spec, installer_options)
-         installer.generate_bin
-       elsif options[:only_plugins]
--        installer = Gem::Installer.for_spec(spec)
-+        installer = Gem::Installer.for_spec(spec, installer_options)
-         installer.generate_plugins
-       else
-         installer = Gem::Installer.at(gem, installer_options)
 diff --git a/lib/rubygems/commands/server_command.rb b/lib/rubygems/commands/server_command.rb
 index 79c682e..f8cad3b 100644
 --- a/lib/rubygems/commands/server_command.rb
@@ -547,7 +489,7 @@ index 79c682e..f8cad3b 100644
    end
  end
 diff --git a/lib/rubygems/commands/setup_command.rb b/lib/rubygems/commands/setup_command.rb
-index 0424736..0601dcc 100644
+index 894f94b..0601dcc 100644
 --- a/lib/rubygems/commands/setup_command.rb
 +++ b/lib/rubygems/commands/setup_command.rb
 @@ -12,8 +12,6 @@ class Gem::Commands::SetupCommand < Gem::Command
@@ -559,17 +501,6 @@ index 0424736..0601dcc 100644
      super 'setup', 'Install RubyGems',
            :format_executable => false, :document => %w[ri],
            :force => true,
-@@ -182,8 +180,8 @@ By default, this RubyGems will install gem as:
- 
-     say "RubyGems #{Gem::VERSION} installed"
- 
--    regenerate_binstubs if options[:regenerate_binstubs]
--    regenerate_plugins if options[:regenerate_plugins]
-+    regenerate_binstubs(bin_dir) if options[:regenerate_binstubs]
-+    regenerate_plugins(bin_dir) if options[:regenerate_plugins]
- 
-     uninstall_old_gemcutter
- 
 @@ -253,6 +251,8 @@ By default, this RubyGems will install gem as:
        Dir.chdir path do
          bin_file = "gem"
@@ -579,26 +510,7 @@ index 0424736..0601dcc 100644
          dest_file = target_bin_path(bin_dir, bin_file)
          bin_tmp_file = File.join Dir.tmpdir, "#{bin_file}.#{$$}"
  
-@@ -411,8 +411,16 @@ By default, this RubyGems will install gem as:
-     Dir.chdir("bundler") do
-       built_gem = Gem::Package.build(bundler_spec)
-       begin
--        installer = Gem::Installer.at(built_gem, env_shebang: options[:env_shebang], format_executable: options[:format_executable], force: options[:force], install_as_default: true, bin_dir: bin_dir, wrappers: true)
--        installer.install
-+        Gem::Installer.at(
-+          built_gem,
-+          env_shebang: options[:env_shebang],
-+          format_executable: options[:format_executable],
-+          force: options[:force],
-+          install_as_default: true,
-+          bin_dir: bin_dir,
-+          install_dir: default_dir,
-+          wrappers: true
-+        ).install
-       ensure
-         FileUtils.rm_f built_gem
-       end
-@@ -457,20 +465,8 @@ By default, this RubyGems will install gem as:
+@@ -465,20 +465,8 @@ By default, this RubyGems will install gem as:
        lib_dir = RbConfig::CONFIG[site_or_vendor]
        bin_dir = RbConfig::CONFIG['bindir']
      else
@@ -621,35 +533,6 @@ index 0424736..0601dcc 100644
      end
  
      [prepend_destdir_if_present(lib_dir), prepend_destdir_if_present(bin_dir)]
-@@ -594,11 +590,12 @@ abort "#{deprecation_message}"
-   rescue Gem::InstallError
-   end
- 
--  def regenerate_binstubs
-+  def regenerate_binstubs(bindir)
-     require_relative "pristine_command"
-     say "Regenerating binstubs"
- 
-     args = %w[--all --only-executables --silent]
-+    args << "--bindir=#{bindir}"
-     if options[:env_shebang]
-       args << "--env-shebang"
-     end
-@@ -607,11 +604,13 @@ abort "#{deprecation_message}"
-     command.invoke(*args)
-   end
- 
--  def regenerate_plugins
-+  def regenerate_plugins(bindir)
-     require_relative "pristine_command"
-     say "Regenerating plugins"
- 
-     args = %w[--all --only-plugins --silent]
-+    args << "--bindir=#{bindir}"
-+    args << "--install-dir=#{default_dir}"
- 
-     command = Gem::Commands::PristineCommand.new
-     command.invoke(*args)
 diff --git a/lib/rubygems/commands/update_command.rb b/lib/rubygems/commands/update_command.rb
 index bb356fd..513351d 100644
 --- a/lib/rubygems/commands/update_command.rb
@@ -856,7 +739,7 @@ index 86f0d1d..f115ce2 100644
        "Could not find '#{name}' (#{requirement}) - did find: [#{names.join ','}]\n"
      end
 diff --git a/lib/rubygems/exceptions.rb b/lib/rubygems/exceptions.rb
-index ca485de..1806869 100644
+index 5f20dfa..1806869 100644
 --- a/lib/rubygems/exceptions.rb
 +++ b/lib/rubygems/exceptions.rb
 @@ -1,6 +1,7 @@
@@ -911,11 +794,6 @@ index ca485de..1806869 100644
    end
  end
  
-@@ -259,3 +288,4 @@ end
- # Backwards compatible typo'd exception class for early RubyGems 2.0.x
- 
- Gem::UnsatisfiableDepedencyError = Gem::UnsatisfiableDependencyError # :nodoc:
-+Gem.deprecate_constant :UnsatisfiableDepedencyError
 diff --git a/lib/rubygems/ext/builder.rb b/lib/rubygems/ext/builder.rb
 index c1a1bc9..6d32be6 100644
 --- a/lib/rubygems/ext/builder.rb
@@ -967,46 +845,10 @@ index d890c52..2203b17 100644
  
  end
 diff --git a/lib/rubygems/installer.rb b/lib/rubygems/installer.rb
-index 10341a9..ab09c18 100644
+index 8e3965e..ab09c18 100644
 --- a/lib/rubygems/installer.rb
 +++ b/lib/rubygems/installer.rb
-@@ -293,8 +293,6 @@ class Gem::Installer
-   def install
-     pre_install_checks
- 
--    FileUtils.rm_f File.join gem_home, 'specifications', spec.spec_name
--
-     run_pre_install_hooks
- 
-     # Set loaded_from to ensure extension_dir is correct
-@@ -448,13 +446,9 @@ class Gem::Installer
-   # specifications directory.
- 
-   def write_spec
--    File.open spec_file, 'w' do |file|
--      spec.installed_by_version = Gem.rubygems_version
--
--      file.puts spec.to_ruby_for_cache
-+    spec.installed_by_version = Gem.rubygems_version
- 
--      file.fsync rescue nil # for filesystems without fsync(2)
--    end
-+    Gem.write_binary(spec_file, spec.to_ruby_for_cache)
-   end
- 
-   ##
-@@ -462,9 +456,7 @@ class Gem::Installer
-   # specifications/default directory.
- 
-   def write_default_spec
--    File.open(default_spec_file, "w") do |file|
--      file.puts spec.to_ruby
--    end
-+    Gem.write_binary(default_spec_file, spec.to_ruby)
-   end
- 
-   ##
-@@ -776,7 +768,7 @@ str = ARGV.first
+@@ -768,7 +768,7 @@ str = ARGV.first
  if str
    str = str.b[/\\A_(.*)_\\z/, 1]
    if str and Gem::Version.correct?(str)
@@ -1015,7 +857,7 @@ index 10341a9..ab09c18 100644
      ARGV.shift
    end
  end
-@@ -799,6 +791,16 @@ Gem.use_gemdeps
+@@ -791,6 +791,16 @@ Gem.use_gemdeps
  TEXT
    end
  
@@ -1048,13 +890,6 @@ index 3d0afa3..c732d7f 100644
    end
  
    include Comparable
-diff --git a/lib/rubygems/optparse/.document b/lib/rubygems/optparse/.document
-new file mode 100644
-index 0000000..0c43bbd
---- /dev/null
-+++ b/lib/rubygems/optparse/.document
-@@ -0,0 +1 @@
-+# Vendored files do not need to be documented
 diff --git a/lib/rubygems/path_support.rb b/lib/rubygems/path_support.rb
 index 8103caf..d601e65 100644
 --- a/lib/rubygems/path_support.rb
@@ -1231,7 +1066,7 @@ index 68ff605..b97bd49 100644
      return [tuples, errors]
    end
 diff --git a/lib/rubygems/specification.rb b/lib/rubygems/specification.rb
-index a612bf7..031a37f 100644
+index 776eff9..031a37f 100644
 --- a/lib/rubygems/specification.rb
 +++ b/lib/rubygems/specification.rb
 @@ -9,6 +9,8 @@
@@ -1267,35 +1102,7 @@ index a612bf7..031a37f 100644
    clear_specs
  
    # Sentinel object to represent "not found" stubs
-@@ -287,6 +285,15 @@ class Gem::Specification < Gem::BasicSpecification
-   ######################################################################
-   # :section: Recommended gemspec attributes
- 
-+  ##
-+  # The version of Ruby required by this gem
-+  #
-+  # Usage:
-+  #
-+  #   spec.required_ruby_version = '>= 2.7.0'
-+
-+  attr_reader :required_ruby_version
-+
-   ##
-   # A long description of this gem
-   #
-@@ -522,11 +529,6 @@ class Gem::Specification < Gem::BasicSpecification
-     @require_paths = Array(val)
-   end
- 
--  ##
--  # The version of Ruby required by this gem
--
--  attr_reader :required_ruby_version
--
-   ##
-   # The RubyGems version required by this gem
- 
-@@ -754,7 +756,7 @@ class Gem::Specification < Gem::BasicSpecification
+@@ -758,7 +756,7 @@ class Gem::Specification < Gem::BasicSpecification
    attr_accessor :specification_version
  
    def self._all # :nodoc:
@@ -1304,7 +1111,7 @@ index a612bf7..031a37f 100644
    end
  
    def self.clear_load_cache # :nodoc:
-@@ -857,7 +859,7 @@ class Gem::Specification < Gem::BasicSpecification
+@@ -861,7 +859,7 @@ class Gem::Specification < Gem::BasicSpecification
        next names if names.nonzero?
        versions = b.version <=> a.version
        next versions if versions.nonzero?
@@ -1313,7 +1120,7 @@ index a612bf7..031a37f 100644
      end
    end
  
-@@ -993,7 +995,6 @@ class Gem::Specification < Gem::BasicSpecification
+@@ -997,7 +995,6 @@ class Gem::Specification < Gem::BasicSpecification
    def self.find_by_path(path)
      path = path.dup.freeze
      spec = @@spec_with_requirable_file[path] ||= (stubs.find do |s|
@@ -1321,7 +1128,7 @@ index a612bf7..031a37f 100644
        s.contains_requirable_file? path
      end || NOT_FOUND)
      spec.to_spec
-@@ -1006,7 +1007,6 @@ class Gem::Specification < Gem::BasicSpecification
+@@ -1010,7 +1007,6 @@ class Gem::Specification < Gem::BasicSpecification
    def self.find_inactive_by_path(path)
      stub = stubs.find do |s|
        next if s.activated?
@@ -1329,7 +1136,7 @@ index a612bf7..031a37f 100644
        s.contains_requirable_file? path
      end
      stub && stub.to_spec
-@@ -1082,7 +1082,7 @@ class Gem::Specification < Gem::BasicSpecification
+@@ -1086,7 +1082,7 @@ class Gem::Specification < Gem::BasicSpecification
    # +prerelease+ is true.
  
    def self.latest_specs(prerelease = false)
@@ -1338,7 +1145,7 @@ index a612bf7..031a37f 100644
    end
  
    ##
-@@ -1116,7 +1116,7 @@ class Gem::Specification < Gem::BasicSpecification
+@@ -1120,7 +1116,7 @@ class Gem::Specification < Gem::BasicSpecification
      file = file.dup.tap(&Gem::UNTAINT)
      return unless File.file?(file)
  
@@ -1347,7 +1154,7 @@ index a612bf7..031a37f 100644
  
      code.tap(&Gem::UNTAINT)
  
-@@ -1692,9 +1692,7 @@ class Gem::Specification < Gem::BasicSpecification
+@@ -1696,9 +1692,7 @@ class Gem::Specification < Gem::BasicSpecification
                  raise(Gem::InvalidSpecificationException,
                        "invalid date format in specification: #{date.inspect}")
                end
@@ -1358,7 +1165,7 @@ index a612bf7..031a37f 100644
                Time.utc(date.year, date.month, date.day)
              else
                TODAY
-@@ -2333,7 +2331,7 @@ class Gem::Specification < Gem::BasicSpecification
+@@ -2337,7 +2331,7 @@ class Gem::Specification < Gem::BasicSpecification
    # Returns an object you can use to sort specifications in #sort_by.
  
    def sort_obj
@@ -1443,13 +1250,6 @@ index 6678111..acf25a0 100644
 +    x
    end
  end
-diff --git a/lib/rubygems/tsort/.document b/lib/rubygems/tsort/.document
-new file mode 100644
-index 0000000..0c43bbd
---- /dev/null
-+++ b/lib/rubygems/tsort/.document
-@@ -0,0 +1 @@
-+# Vendored files do not need to be documented
 diff --git a/lib/rubygems/uninstaller.rb b/lib/rubygems/uninstaller.rb
 index 1c3bf26..11fb611 100644
 --- a/lib/rubygems/uninstaller.rb
@@ -1886,29 +1686,10 @@ index e971e6a..7494a94 100644
    end
  end
 diff --git a/test/rubygems/test_gem_command_manager.rb b/test/rubygems/test_gem_command_manager.rb
-index 6225576..c2e11d2 100644
+index ee71fc7..c2e11d2 100644
 --- a/test/rubygems/test_gem_command_manager.rb
 +++ b/test/rubygems/test_gem_command_manager.rb
-@@ -36,6 +36,18 @@ class TestGemCommandManager < Gem::TestCase
-     assert_kind_of Gem::Commands::InstallCommand, command
-   end
- 
-+  def test_find_login_alias_command
-+    command = @command_manager.find_command 'login'
-+
-+    assert_kind_of Gem::Commands::SigninCommand, command
-+  end
-+
-+  def test_find_logout_alias_comamnd
-+    command = @command_manager.find_command 'logout'
-+
-+    assert_kind_of Gem::Commands::SignoutCommand, command
-+  end
-+
-   def test_find_command_ambiguous_exact
-     ins_command = Class.new
-     Gem::Commands.send :const_set, :InsCommand, ins_command
-@@ -50,13 +62,27 @@ class TestGemCommandManager < Gem::TestCase
+@@ -62,13 +62,27 @@ class TestGemCommandManager < Gem::TestCase
    end
  
    def test_find_command_unknown
@@ -1937,7 +1718,7 @@ index 6225576..c2e11d2 100644
    def test_run_interrupt
      old_load_path = $:.dup
      $: << File.expand_path("test/rubygems", PROJECT_DIR)
-@@ -265,7 +291,7 @@ class TestGemCommandManager < Gem::TestCase
+@@ -277,7 +291,7 @@ class TestGemCommandManager < Gem::TestCase
  
      #check defaults
      @command_manager.process_args %w[update]
@@ -2065,41 +1846,6 @@ index d5cd4d1..96c328f 100644
 +    assert_match %r{Install the rubygems-server}i, @ui.error
    end
  end
-diff --git a/test/rubygems/test_gem_commands_setup_command.rb b/test/rubygems/test_gem_commands_setup_command.rb
-index 50f99bc..5cf94a1 100644
---- a/test/rubygems/test_gem_commands_setup_command.rb
-+++ b/test/rubygems/test_gem_commands_setup_command.rb
-@@ -156,6 +156,21 @@ class TestGemCommandsSetupCommand < Gem::TestCase
-     assert_match %r{\A#!\s*#{bin_env}#{ruby_exec}}, File.read(gem_bin_path)
-   end
- 
-+  def test_destdir_flag_does_not_try_to_write_to_the_default_gem_home
-+    FileUtils.chmod "-w", File.join(@gemhome, "plugins")
-+
-+    destdir = File.join(@tempdir, 'foo')
-+
-+    @cmd.options[:destdir] = destdir
-+    @cmd.execute
-+
-+    spec = Gem::Specification.load("bundler/bundler.gemspec")
-+
-+    spec.executables.each do |e|
-+      assert_path_exist File.join destdir, @gemhome.gsub(/^[a-zA-Z]:/, ''), 'gems', spec.full_name, spec.bindir, e
-+    end
-+  end
-+
-   def test_files_in
-     assert_equal %w[rubygems.rb rubygems/requirement.rb rubygems/ssl_certs/rubygems.org/foo.pem],
-                  @cmd.files_in('lib').sort
-@@ -245,6 +260,8 @@ class TestGemCommandsSetupCommand < Gem::TestCase
-   def test_install_default_bundler_gem_with_destdir_flag
-     @cmd.extend FileUtils
- 
-+    FileUtils.chmod "-w", @gemhome
-+
-     destdir = File.join(@tempdir, 'foo')
-     bin_dir = File.join(destdir, 'bin')
- 
 diff --git a/test/rubygems/test_gem_commands_update_command.rb b/test/rubygems/test_gem_commands_update_command.rb
 index a7ddddf..e9264f6 100644
 --- a/test/rubygems/test_gem_commands_update_command.rb
@@ -2147,58 +1893,6 @@ index 1ca0fc3..5551966 100644
      end
    end
  
-diff --git a/test/rubygems/test_gem_installer.rb b/test/rubygems/test_gem_installer.rb
-index 988f141..8874577 100644
---- a/test/rubygems/test_gem_installer.rb
-+++ b/test/rubygems/test_gem_installer.rb
-@@ -948,7 +948,6 @@ gem 'other', version
- 
-     Gem.pre_install do
-       assert_path_not_exist cache_file, 'cache file must not exist yet'
--      assert_path_not_exist spec_file,  'spec file must not exist yet'
-       true
-     end
- 
-@@ -956,13 +955,11 @@ gem 'other', version
-       assert_path_exist gemdir, 'gem install dir must exist'
-       assert_path_exist rakefile, 'gem executable must exist'
-       assert_path_not_exist stub_exe, 'gem executable must not exist'
--      assert_path_not_exist spec_file, 'spec file must not exist yet'
-       true
-     end
- 
-     Gem.post_install do
-       assert_path_exist cache_file, 'cache file must exist'
--      assert_path_exist spec_file,  'spec file must exist'
-     end
- 
-     @newspec = nil
-@@ -1237,7 +1234,11 @@ gem 'other', version
-   end
- 
-   def test_install_post_build_false
--    installer = setup_base_installer
-+    @spec = util_spec 'a'
-+
-+    util_build_gem @spec
-+
-+    installer = util_installer @spec, @gemhome
- 
-     Gem.post_build do
-       false
-@@ -1279,7 +1280,11 @@ gem 'other', version
-   end
- 
-   def test_install_pre_install_false
--    installer = setup_base_installer
-+    @spec = util_spec 'a'
-+
-+    util_build_gem @spec
-+
-+    installer = util_installer @spec, @gemhome
- 
-     Gem.pre_install do
-       false
 diff --git a/test/rubygems/test_gem_path_support.rb b/test/rubygems/test_gem_path_support.rb
 index 88a3cc2..394cba2 100644
 --- a/test/rubygems/test_gem_path_support.rb
@@ -2434,82 +2128,10 @@ index e9e3bfd..38c2541 100644
      assert status.success?, err
    end
 diff --git a/test/rubygems/test_require.rb b/test/rubygems/test_require.rb
-index 4d03017..5b826d0 100644
+index 5677411..5b826d0 100644
 --- a/test/rubygems/test_require.rb
 +++ b/test/rubygems/test_require.rb
-@@ -24,16 +24,6 @@ class TestGemRequire < Gem::TestCase
-     end
-   end
- 
--  def setup
--    super
--
--    @old_loaded_features = $LOADED_FEATURES.dup
--    assert_raise LoadError do
--      require 'test_gem_require_a'
--    end
--    $LOADED_FEATURES.replace @old_loaded_features
--  end
--
-   def assert_require(path)
-     assert require(path), "'#{path}' was already required"
-   end
-@@ -88,8 +78,6 @@ class TestGemRequire < Gem::TestCase
-     FileUtils.mkdir_p File.dirname c_rb
-     File.open(c_rb, 'w') {|f| f.write "class Object; HELLO = 'world' end" }
- 
--    lp = $LOAD_PATH.dup
--
-     # Pretend to provide a commandline argument that overrides a file in gem b
-     $LOAD_PATH.unshift dash_i_arg
- 
-@@ -98,7 +86,6 @@ class TestGemRequire < Gem::TestCase
-     assert_equal "world", ::Object::HELLO
-     assert_equal %w[a-1 b-1], loaded_spec_names
-   ensure
--    $LOAD_PATH.replace lp
-     Object.send :remove_const, :HELLO if Object.const_defined? :HELLO
-   end
- 
-@@ -132,8 +119,6 @@ class TestGemRequire < Gem::TestCase
- 
-     assert_require 'test_gem_require_a'
- 
--    lp = $LOAD_PATH.dup
--
-     # Pretend to provide a commandline argument that overrides a file in gem b
-     $LOAD_PATH.unshift dash_i_arg
- 
-@@ -142,7 +127,6 @@ class TestGemRequire < Gem::TestCase
-     assert_equal "world", ::Object::HELLO
-     assert_equal %w[a-1 b-1], loaded_spec_names
-   ensure
--    $LOAD_PATH.replace lp
-     Object.send :remove_const, :HELLO if Object.const_defined? :HELLO
-   end
- 
-@@ -153,16 +137,10 @@ class TestGemRequire < Gem::TestCase
-     dash_i_ext_arg = util_install_extension_file('a')
-     dash_i_lib_arg = util_install_ruby_file('a')
- 
--    lp = $LOAD_PATH.dup
--
--    begin
--      $LOAD_PATH.unshift dash_i_lib_arg
--      $LOAD_PATH.unshift dash_i_ext_arg
--      assert_require 'a'
--      assert_match(/a\.rb$/, $LOADED_FEATURES.last)
--    ensure
--      $LOAD_PATH.replace lp
--    end
-+    $LOAD_PATH.unshift dash_i_lib_arg
-+    $LOAD_PATH.unshift dash_i_ext_arg
-+    assert_require 'a'
-+    assert_match(/a\.rb$/, $LOADED_FEATURES.last)
-   end
- 
-   def test_concurrent_require
-@@ -618,31 +596,6 @@ class TestGemRequire < Gem::TestCase
+@@ -596,31 +596,6 @@ class TestGemRequire < Gem::TestCase
      assert_empty unresolved_names
    end
  
@@ -2541,7 +2163,7 @@ index 4d03017..5b826d0 100644
    # uplevel is 2.5+ only
    if RUBY_VERSION >= "2.5"
      ["", "Kernel."].each do |prefix|
-@@ -722,13 +675,6 @@ class TestGemRequire < Gem::TestCase
+@@ -700,13 +675,6 @@ class TestGemRequire < Gem::TestCase
      !ENV["GEM_COMMAND"].nil?
    end
  

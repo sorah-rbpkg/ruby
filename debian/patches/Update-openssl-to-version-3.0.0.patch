@@ -53,7 +53,7 @@ Add support for OpenSSL 3
  test/openssl/fixtures/pkey/garbage.txt     |    1 +
  test/openssl/test_asn1.rb                  |    9 +-
  test/openssl/test_bn.rb                    |  114 ++-
- test/openssl/test_cipher.rb                |   23 +-
+ test/openssl/test_cipher.rb                |   21 +-
  test/openssl/test_config.rb                |  150 +---
  test/openssl/test_digest.rb                |    2 +-
  test/openssl/test_hmac.rb                  |   14 +
@@ -72,7 +72,7 @@ Add support for OpenSSL 3
  test/openssl/test_x509store.rb             |  412 ++++++---
  test/openssl/ut_eof.rb                     |    4 +
  test/openssl/utils.rb                      |   52 +-
- 68 files changed, 5304 insertions(+), 3936 deletions(-)
+ 68 files changed, 5303 insertions(+), 3935 deletions(-)
  create mode 100644 test/openssl/fixtures/pkey/certificate.der
  create mode 100644 test/openssl/fixtures/pkey/empty.der
  create mode 100644 test/openssl/fixtures/pkey/empty.pem
@@ -10004,7 +10004,7 @@ index 547d334..346602d 100644
  
  end
 diff --git a/test/openssl/test_cipher.rb b/test/openssl/test_cipher.rb
-index 65b36dd..b5fdf0b 100644
+index ef8c4f3..125ea11 100644
 --- a/test/openssl/test_cipher.rb
 +++ b/test/openssl/test_cipher.rb
 @@ -135,25 +135,22 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
@@ -10050,15 +10050,6 @@ index 65b36dd..b5fdf0b 100644
      end
    end
  
-@@ -214,7 +211,7 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
-     assert_raise(OpenSSL::Cipher::CipherError) { cipher.update(ct2) }
-   end if has_cipher?("aes-128-ccm") &&
-          OpenSSL::Cipher.new("aes-128-ccm").authenticated? &&
--         OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10101000  # version >= v1.1.1
-+         OpenSSL::OPENSSL_VERSION_NUMBER >= 0x1010103f # version >= 1.1.1c
- 
-   def test_aes_gcm
-     # GCM spec Appendix B Test Case 4
 diff --git a/test/openssl/test_config.rb b/test/openssl/test_config.rb
 index e041c1a..24a215a 100644
 --- a/test/openssl/test_config.rb
