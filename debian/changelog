@@ -8,6 +8,8 @@ ruby3.1 (3.1.2-1) unstable; urgency=medium
     - Update-rubygems-to-version-3.3.3.patch: dropped, not necessary anymore
   * Exclude new tests for "gem update --system"
   * Update debian/libruby3.1.symbols for new upstream release
+  * Exclude test TestRelineAsReadline#test_without_tty, as it assumes `ruby`
+    is available on PATH.
 
  -- Antonio Terceiro <terceiro@debian.org>  Fri, 22 Apr 2022 09:43:42 -0300
 
