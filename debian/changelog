@@ -1,3 +1,9 @@
+ruby3.0 (3.0.4-3) unstable; urgency=medium
+
+  * ppc64el: exclude TestGCCompact tests as they segfault
+
+ -- Antonio Terceiro <terceiro@debian.org>  Sat, 23 Apr 2022 08:31:14 -0300
+
 ruby3.0 (3.0.4-2) unstable; urgency=medium
 
   * Exclude test TestGemInstaller#test_ensure_no_race_conditions_between_installing_and_loading_gemspecs
