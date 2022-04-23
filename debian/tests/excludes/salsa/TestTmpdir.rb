@@ -1,1 +1,1 @@
-exclude :TestTmpdir#test_world_writable, "fails on salsa"
+exclude :test_world_writable, "fails on salsa"
