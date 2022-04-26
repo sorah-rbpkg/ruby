@@ -9,6 +9,8 @@
 require_relative 'deprecate'
 require_relative 'basic_specification'
 require_relative 'stub_specification'
+require_relative 'platform'
+require_relative 'requirement'
 require_relative 'specification_policy'
 require_relative 'util/list'
 
@@ -179,17 +181,13 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   def self.clear_specs # :nodoc:
-    @@all_specs_mutex.synchronize do
-      @@all = nil
-      @@stubs = nil
-      @@stubs_by_name = {}
-      @@spec_with_requirable_file = {}
-      @@active_stub_with_requirable_file = {}
-    end
+    @@all = nil
+    @@stubs = nil
+    @@stubs_by_name = {}
+    @@spec_with_requirable_file = {}
+    @@active_stub_with_requirable_file = {}
   end
   private_class_method :clear_specs
-
-  @@all_specs_mutex = Thread::Mutex.new
 
   clear_specs
 
@@ -758,7 +756,7 @@ class Gem::Specification < Gem::BasicSpecification
   attr_accessor :specification_version
 
   def self._all # :nodoc:
-    @@all_specs_mutex.synchronize { @@all ||= Gem.loaded_specs.values | stubs.map(&:to_spec) }
+    @@all ||= Gem.loaded_specs.values | stubs.map(&:to_spec)
   end
 
   def self.clear_load_cache # :nodoc:
@@ -861,7 +859,7 @@ class Gem::Specification < Gem::BasicSpecification
       next names if names.nonzero?
       versions = b.version <=> a.version
       next versions if versions.nonzero?
-      b.platform == Gem::Platform::RUBY ? -1 : 1
+      Gem::Platform.sort_priority(b.platform)
     end
   end
 
@@ -997,7 +995,6 @@ class Gem::Specification < Gem::BasicSpecification
   def self.find_by_path(path)
     path = path.dup.freeze
     spec = @@spec_with_requirable_file[path] ||= (stubs.find do |s|
-      next unless Gem::BundlerVersionFinder.compatible?(s)
       s.contains_requirable_file? path
     end || NOT_FOUND)
     spec.to_spec
@@ -1010,7 +1007,6 @@ class Gem::Specification < Gem::BasicSpecification
   def self.find_inactive_by_path(path)
     stub = stubs.find do |s|
       next if s.activated?
-      next unless Gem::BundlerVersionFinder.compatible?(s)
       s.contains_requirable_file? path
     end
     stub && stub.to_spec
@@ -1086,7 +1082,7 @@ class Gem::Specification < Gem::BasicSpecification
   # +prerelease+ is true.
 
   def self.latest_specs(prerelease = false)
-    _latest_specs Gem::Specification._all, prerelease
+    _latest_specs Gem::Specification.stubs, prerelease
   end
 
   ##
@@ -1120,7 +1116,7 @@ class Gem::Specification < Gem::BasicSpecification
     file = file.dup.tap(&Gem::UNTAINT)
     return unless File.file?(file)
 
-    code = File.read file, :mode => 'r:UTF-8:-'
+    code = Gem.open_with_flock(file, 'r:UTF-8:-', &:read)
 
     code.tap(&Gem::UNTAINT)
 
@@ -1696,9 +1692,7 @@ class Gem::Specification < Gem::BasicSpecification
                 raise(Gem::InvalidSpecificationException,
                       "invalid date format in specification: #{date.inspect}")
               end
-            when Time then
-              Time.utc(date.utc.year, date.utc.month, date.utc.day)
-            when DateLike then
+            when Time, DateLike then
               Time.utc(date.year, date.month, date.day)
             else
               TODAY
@@ -2337,7 +2331,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Returns an object you can use to sort specifications in #sort_by.
 
   def sort_obj
-    [@name, @version, @new_platform == Gem::Platform::RUBY ? -1 : 1]
+    [@name, @version, Gem::Platform.sort_priority(@new_platform)]
   end
 
   ##
