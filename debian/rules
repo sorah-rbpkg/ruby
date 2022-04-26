@@ -118,6 +118,9 @@ ifneq (,$(DEBIAN_RUBY_EXTRA_TEST_EXCLUDES))
 endif
 override_dh_auto_test-arch:
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
+	# dpkg-source does not allow empty file creation via patch file.
+	# This is needed by openssl 3.0.0
+	touch $(CURDIR)/test/openssl/fixtures/pkey/empty.pem
 	$(MAKE) $(TEST_TARGETS) V=1 RUBY_TESTOPTS="-v -j4" TESTS="$(excludes)" OPENSSL_CONF=$(CURDIR)/debian/openssl.cnf
 endif
 
