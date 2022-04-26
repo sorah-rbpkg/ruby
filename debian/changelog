@@ -1,8 +1,12 @@
 ruby2.7 (2.7.6-0nkmi1~dist) unstable; urgency=medium
 
   * 2.7.6
+  * Port on Ubuntu 22.04. Following original Ubuntu package; Backported
+    openssl-3.0.0 gem and disabled LTO which is enabled by default on 22.04
+    debuild environment
+    https://git.launchpad.net/ubuntu/+source/ruby3.0/commit/?id=c7a9c455c43eebf5cb534e2f22747a0e2b2fed1e
 
- -- Sorah Fukumori <sorah@cookpad.com>  Thu, 14 Apr 2022 06:13:12 +0900
+ -- Sorah Fukumori <sorah@cookpad.com>  Tue, 26 Apr 2022 10:34:12 +0900
 
 ruby2.7 (2.7.5-0nkmi1~dist) unstable; urgency=medium
 
