@@ -60,7 +60,9 @@ configure_options += --with-dbm-type=gdbm_compat
 configure_options += --with-compress-debug-sections=no
 
 # hardening and other standard Debian build flags
-export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow
+# TODO: remove optimize=-lto once we import ruby 3.1.0 where
+# https://bugs.ruby-lang.org/issues/18062 is apparently fixed
+export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow optimize=-lto
 configure_options += $(shell dpkg-buildflags --export=configure)
 
 # See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93808
