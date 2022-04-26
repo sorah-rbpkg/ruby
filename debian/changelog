@@ -1,8 +1,12 @@
 ruby3.0 (3.0.4-0nkmi1~dist) unstable; urgency=medium
 
   * Ruby 3.0.4
+  * Following changes on ruby3.0 package on Ubuntu 22.04;
+    This includes backport of openssl-3.0.0 and rubygems-3.3.3 for OpenSSL 3
+    support. Also, disabled LTO which is enabled by default on 22.04 debuilds
+    to avoid segfaults.
 
- -- Sorah Fukumori <sorah@sumika>  Thu, 14 Apr 2022 03:32:50 +0900
+ -- Sorah Fukumori <sorah@cookpad.com>  Tue, 26 Apr 2022 11:06:12 +0900
 
 ruby3.0 (3.0.3-0nkmi1~dist) unstable; urgency=medium
 
