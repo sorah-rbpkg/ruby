@@ -1,0 +1,3775 @@
+From: Sorah Fukumori <her@sorah.jp>
+Date: Tue, 26 Apr 2022 11:05:37 +0900
+Subject: Roll rubygems-3.3.3 for openssl-3.0.0
+
+---
+ lib/rubygems.rb                                    | 109 ++-
+ lib/rubygems/bundler_version_finder.rb             |  52 +-
+ lib/rubygems/command_manager.rb                    |   2 +-
+ lib/rubygems/commands/install_command.rb           |   7 +-
+ lib/rubygems/commands/server_command.rb            |  91 +--
+ lib/rubygems/commands/setup_command.rb             |  20 +-
+ lib/rubygems/commands/update_command.rb            |  13 +-
+ lib/rubygems/defaults.rb                           |  22 +-
+ lib/rubygems/dependency.rb                         |  14 +-
+ lib/rubygems/deprecate.rb                          |  59 +-
+ lib/rubygems/errors.rb                             |   3 -
+ lib/rubygems/exceptions.rb                         |  31 +-
+ lib/rubygems/ext/builder.rb                        |   8 +-
+ lib/rubygems/install_update_options.rb             |  13 +-
+ lib/rubygems/installer.rb                          |  12 +-
+ lib/rubygems/name_tuple.rb                         |   5 +-
+ lib/rubygems/path_support.rb                       |   7 +-
+ lib/rubygems/platform.rb                           |   4 +
+ lib/rubygems/remote_fetcher.rb                     |   2 +-
+ lib/rubygems/requirement.rb                        |   2 +-
+ lib/rubygems/resolver/installer_set.rb             |   2 +-
+ lib/rubygems/security.rb                           |  21 +-
+ lib/rubygems/security/policy.rb                    |   4 +-
+ lib/rubygems/server.rb                             | 882 ---------------------
+ lib/rubygems/source.rb                             |   4 +-
+ lib/rubygems/spec_fetcher.rb                       |   2 +-
+ lib/rubygems/specification.rb                      |  32 +-
+ lib/rubygems/stub_specification.rb                 |   2 +-
+ lib/rubygems/text.rb                               |  41 +-
+ lib/rubygems/uninstaller.rb                        |   5 +-
+ lib/rubygems/unknown_command_spell_checker.rb      |  21 +
+ lib/rubygems/version.rb                            |   2 +
+ test/rubygems/bogussources.rb                      |   9 -
+ test/rubygems/helper.rb                            |  26 +-
+ test/rubygems/test_config.rb                       |   4 +-
+ test/rubygems/test_exit.rb                         |  11 +
+ test/rubygems/test_gem.rb                          | 122 ++-
+ test/rubygems/test_gem_bundler_version_finder.rb   |  65 +-
+ test/rubygems/test_gem_command_manager.rb          |  18 +-
+ test/rubygems/test_gem_commands_install_command.rb |  33 +
+ test/rubygems/test_gem_commands_open_command.rb    |   2 +-
+ test/rubygems/test_gem_commands_server_command.rb  |  50 +-
+ test/rubygems/test_gem_commands_update_command.rb  |   4 +-
+ test/rubygems/test_gem_dependency.rb               |  12 +-
+ test/rubygems/test_gem_installer.rb                |  27 -
+ test/rubygems/test_gem_path_support.rb             |   8 +-
+ test/rubygems/test_gem_remote_fetcher.rb           |  15 +
+ test/rubygems/test_gem_requirement.rb              |   1 -
+ test/rubygems/test_gem_security.rb                 |   2 +-
+ test/rubygems/test_gem_server.rb                   | 608 --------------
+ test/rubygems/test_gem_specification.rb            |  41 +-
+ test/rubygems/test_gem_stream_ui.rb                |   2 +-
+ test/rubygems/test_gem_text.rb                     |   6 +
+ test/rubygems/test_kernel.rb                       |  14 +-
+ test/rubygems/test_project_sanity.rb               |   2 +-
+ test/rubygems/test_require.rb                      |  32 -
+ test/rubygems/test_rubygems.rb                     |  23 +
+ 57 files changed, 534 insertions(+), 2097 deletions(-)
+ delete mode 100644 lib/rubygems/server.rb
+ create mode 100644 lib/rubygems/unknown_command_spell_checker.rb
+ delete mode 100644 test/rubygems/bogussources.rb
+ create mode 100644 test/rubygems/test_exit.rb
+ delete mode 100644 test/rubygems/test_gem_server.rb
+
+diff --git a/lib/rubygems.rb b/lib/rubygems.rb
+index 6a7e56f..e24580c 100644
+--- a/lib/rubygems.rb
++++ b/lib/rubygems.rb
+@@ -8,7 +8,7 @@
+ require 'rbconfig'
+ 
+ module Gem
+-  VERSION = "3.2.33".freeze
++  VERSION = "3.3.3".freeze
+ end
+ 
+ # Must be first since it unloads the prelude from 1.9.2
+@@ -163,16 +163,6 @@ module Gem
+     specifications/default
+   ].freeze
+ 
+-  ##
+-  # Exception classes used in a Gem.read_binary +rescue+ statement
+-
+-  READ_BINARY_ERRORS = [Errno::EACCES, Errno::EROFS, Errno::ENOSYS, Errno::ENOTSUP].freeze
+-
+-  ##
+-  # Exception classes used in Gem.write_binary +rescue+ statement
+-
+-  WRITE_BINARY_ERRORS = [Errno::ENOSYS, Errno::ENOTSUP].freeze
+-
+   @@win_platform = nil
+ 
+   @configuration = nil
+@@ -272,9 +262,6 @@ module Gem
+ 
+     unless spec = specs.first
+       msg = "can't find gem #{dep} with executable #{exec_name}"
+-      if dep.filters_bundler? && bundler_message = Gem::BundlerVersionFinder.missing_version_message
+-        msg = bundler_message
+-      end
+       raise Gem::GemNotFoundException, msg
+     end
+ 
+@@ -779,40 +766,42 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
+   # Safely read a file in binary mode on all platforms.
+ 
+   def self.read_binary(path)
+-    File.open path, 'rb+' do |f|
+-      f.flock(File::LOCK_EX)
+-      f.read
++    open_with_flock(path, 'rb+') do |io|
++      io.read
+     end
+-  rescue *READ_BINARY_ERRORS
+-    File.open path, 'rb' do |f|
+-      f.read
+-    end
+-  rescue Errno::ENOLCK # NFS
+-    if Thread.main != Thread.current
+-      raise
+-    else
+-      File.open path, 'rb' do |f|
+-        f.read
+-      end
++  rescue Errno::EACCES, Errno::EROFS
++    open_with_flock(path, 'rb') do |io|
++      io.read
+     end
+   end
+ 
+   ##
+   # Safely write a file in binary mode on all platforms.
+   def self.write_binary(path, data)
+-    File.open(path, File::RDWR | File::CREAT | File::BINARY | File::LOCK_EX) do |io|
++    open_with_flock(path, 'wb') do |io|
+       io.write data
+     end
+-  rescue *WRITE_BINARY_ERRORS
+-    File.open(path, 'wb') do |io|
+-      io.write data
++  end
++
++  ##
++  # Open a file with given flags, and protect access with flock
++
++  def self.open_with_flock(path, flags, &block)
++    File.open(path, flags) do |io|
++      if !java_platform? && !solaris_platform?
++        begin
++          io.flock(File::LOCK_EX)
++        rescue Errno::ENOSYS, Errno::ENOTSUP
++        end
++      end
++      yield io
+     end
+   rescue Errno::ENOLCK # NFS
+     if Thread.main != Thread.current
+       raise
+     else
+-      File.open(path, 'wb') do |io|
+-        io.write data
++      File.open(path, flags) do |io|
++        yield io
+       end
+     end
+   end
+@@ -854,7 +843,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
+     fetcher      = Gem::SpecFetcher.fetcher
+     spec_tuples, = fetcher.spec_for_dependency dependency
+ 
+-    spec, = spec_tuples.first
++    spec, = spec_tuples.last
+ 
+     spec
+   end
+@@ -1026,6 +1015,13 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
+     RUBY_PLATFORM == "java"
+   end
+ 
++  ##
++  # Is this platform Solaris?
++
++  def self.solaris_platform?
++    RUBY_PLATFORM =~ /solaris/
++  end
++
+   ##
+   # Load +plugins+ as Ruby files
+ 
+@@ -1293,7 +1289,12 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
+     end
+ 
+     def default_gem_load_paths
+-      @default_gem_load_paths ||= $LOAD_PATH[load_path_insert_index..-1]
++      @default_gem_load_paths ||= $LOAD_PATH[load_path_insert_index..-1].map do |lp|
++        expanded = File.expand_path(lp)
++        next expanded unless File.exist?(expanded)
++
++        File.realpath(expanded)
++      end
+     end
+   end
+ 
+@@ -1310,37 +1311,19 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
+   autoload :Licenses,           File.expand_path('rubygems/util/licenses', __dir__)
+   autoload :NameTuple,          File.expand_path('rubygems/name_tuple', __dir__)
+   autoload :PathSupport,        File.expand_path('rubygems/path_support', __dir__)
+-  autoload :Platform,           File.expand_path('rubygems/platform', __dir__)
+   autoload :RequestSet,         File.expand_path('rubygems/request_set', __dir__)
+-  autoload :Requirement,        File.expand_path('rubygems/requirement', __dir__)
+   autoload :Resolver,           File.expand_path('rubygems/resolver', __dir__)
+   autoload :Source,             File.expand_path('rubygems/source', __dir__)
+   autoload :SourceList,         File.expand_path('rubygems/source_list', __dir__)
+   autoload :SpecFetcher,        File.expand_path('rubygems/spec_fetcher', __dir__)
+-  autoload :Specification,      File.expand_path('rubygems/specification', __dir__)
+   autoload :Util,               File.expand_path('rubygems/util', __dir__)
+   autoload :Version,            File.expand_path('rubygems/version', __dir__)
+ end
+ 
+ require_relative 'rubygems/exceptions'
++require_relative 'rubygems/specification'
+ 
+ # REFACTOR: This should be pulled out into some kind of hacks file.
+-begin
+-  ##
+-  # Defaults the Ruby implementation wants to provide for RubyGems
+-
+-  require "rubygems/defaults/#{RUBY_ENGINE}"
+-rescue LoadError
+-end
+-
+-##
+-# Loads the default specs.
+-Gem::Specification.load_defaults
+-
+-require_relative 'rubygems/core_ext/kernel_gem'
+-require_relative 'rubygems/core_ext/kernel_require'
+-require_relative 'rubygems/core_ext/kernel_warn'
+-
+ begin
+   ##
+   # Defaults the operating system (or packager) wants to provide for RubyGems.
+@@ -1356,3 +1339,19 @@ rescue StandardError => e
+     "the problem and ask for help."
+   raise e.class, msg
+ end
++
++begin
++  ##
++  # Defaults the Ruby implementation wants to provide for RubyGems
++
++  require "rubygems/defaults/#{RUBY_ENGINE}"
++rescue LoadError
++end
++
++##
++# Loads the default specs.
++Gem::Specification.load_defaults
++
++require_relative 'rubygems/core_ext/kernel_gem'
++require_relative 'rubygems/core_ext/kernel_require'
++require_relative 'rubygems/core_ext/kernel_warn'
+diff --git a/lib/rubygems/bundler_version_finder.rb b/lib/rubygems/bundler_version_finder.rb
+index 9ce0a23..14179ae 100644
+--- a/lib/rubygems/bundler_version_finder.rb
++++ b/lib/rubygems/bundler_version_finder.rb
+@@ -2,48 +2,18 @@
+ 
+ module Gem::BundlerVersionFinder
+   def self.bundler_version
+-    version, _ = bundler_version_with_reason
++    v = ENV["BUNDLER_VERSION"]
+ 
+-    return unless version
++    v ||= bundle_update_bundler_version
++    return if v == true
+ 
+-    Gem::Version.new(version)
+-  end
+-
+-  def self.bundler_version_with_reason
+-    if v = ENV["BUNDLER_VERSION"]
+-      return [v, "`$BUNDLER_VERSION`"]
+-    end
+-    if v = bundle_update_bundler_version
+-      return if v == true
+-      return [v, "`bundle update --bundler`"]
+-    end
+-    v, lockfile = lockfile_version
+-    if v
+-      return [v, "your #{lockfile}"]
+-    end
+-  end
++    v ||= lockfile_version
++    return unless v
+ 
+-  def self.missing_version_message
+-    return unless vr = bundler_version_with_reason
+-    <<-EOS
+-Could not find 'bundler' (#{vr.first}) required by #{vr.last}.
+-To update to the latest version installed on your system, run `bundle update --bundler`.
+-To install the missing version, run `gem install bundler:#{vr.first}`
+-    EOS
++    Gem::Version.new(v)
+   end
+ 
+-  def self.compatible?(spec)
+-    return true unless spec.name == "bundler".freeze
+-    return true unless bundler_version = self.bundler_version
+-
+-    spec.version.segments.first == bundler_version.segments.first
+-  end
+-
+-  def self.filter!(specs)
+-    return unless bundler_version = self.bundler_version
+-
+-    specs.reject! {|spec| spec.version.segments.first != bundler_version.segments.first }
+-
++  def self.prioritize!(specs)
+     exact_match_index = specs.find_index {|spec| spec.version == bundler_version }
+     return unless exact_match_index
+ 
+@@ -68,12 +38,10 @@ To install the missing version, run `gem install bundler:#{vr.first}`
+   private_class_method :bundle_update_bundler_version
+ 
+   def self.lockfile_version
+-    return unless lockfile = lockfile_contents
+-    lockfile, contents = lockfile
+-    lockfile ||= "lockfile"
++    return unless contents = lockfile_contents
+     regexp = /\n\nBUNDLED WITH\n\s{2,}(#{Gem::Version::VERSION_PATTERN})\n/
+     return unless contents =~ regexp
+-    [$1, lockfile]
++    $1
+   end
+   private_class_method :lockfile_version
+ 
+@@ -103,7 +71,7 @@ To install the missing version, run `gem install bundler:#{vr.first}`
+ 
+     return unless File.file?(lockfile)
+ 
+-    [lockfile, File.read(lockfile)]
++    File.read(lockfile)
+   end
+   private_class_method :lockfile_contents
+ end
+diff --git a/lib/rubygems/command_manager.rb b/lib/rubygems/command_manager.rb
+index cb07757..03cdd6a 100644
+--- a/lib/rubygems/command_manager.rb
++++ b/lib/rubygems/command_manager.rb
+@@ -190,7 +190,7 @@ class Gem::CommandManager
+       raise Gem::CommandLineError,
+             "Ambiguous command #{cmd_name} matches [#{possibilities.join(', ')}]"
+     elsif possibilities.empty?
+-      raise Gem::CommandLineError, "Unknown command #{cmd_name}"
++      raise Gem::UnknownCommandError.new(cmd_name)
+     end
+ 
+     self[possibilities.first]
+diff --git a/lib/rubygems/commands/install_command.rb b/lib/rubygems/commands/install_command.rb
+index 7af5060..adf2cdb 100644
+--- a/lib/rubygems/commands/install_command.rb
++++ b/lib/rubygems/commands/install_command.rb
+@@ -27,6 +27,8 @@ class Gem::Commands::InstallCommand < Gem::Command
+       :without_groups    => [],
+     })
+ 
++    defaults.merge!(install_update_options)
++
+     super 'install', 'Install a gem into the local repository', defaults
+ 
+     add_install_update_options
+@@ -43,8 +45,9 @@ class Gem::Commands::InstallCommand < Gem::Command
+   end
+ 
+   def defaults_str # :nodoc:
+-    "--both --version '#{Gem::Requirement.default}' --document --no-force\n" +
+-    "--install-dir #{Gem.dir} --lock"
++    "--both --version '#{Gem::Requirement.default}' --no-force\n" +
++    "--install-dir #{Gem.dir} --lock\n" +
++    install_update_defaults_str
+   end
+ 
+   def description # :nodoc:
+diff --git a/lib/rubygems/commands/server_command.rb b/lib/rubygems/commands/server_command.rb
+index 79c682e..f8cad3b 100644
+--- a/lib/rubygems/commands/server_command.rb
++++ b/lib/rubygems/commands/server_command.rb
+@@ -1,88 +1,25 @@
+ # frozen_string_literal: true
+ require_relative '../command'
+-require_relative '../server'
+-require_relative '../deprecate'
+ 
+-class Gem::Commands::ServerCommand < Gem::Command
+-  extend Gem::Deprecate
+-  rubygems_deprecate_command
+-
+-  def initialize
+-    super 'server', 'Documentation and gem repository HTTP server',
+-          :port => 8808, :gemdir => [], :daemon => false
+-
+-    Gem::OptionParser.accept :Port do |port|
+-      if port =~ /\A\d+\z/
+-        port = Integer port
+-        raise Gem::OptionParser::InvalidArgument, "#{port}: not a port number" if
+-          port > 65535
+-
+-        port
+-      else
+-        begin
+-          Socket.getservbyname port
+-        rescue SocketError
+-          raise Gem::OptionParser::InvalidArgument, "#{port}: no such named service"
+-        end
++unless defined? Gem::Commands::ServerCommand
++  class Gem::Commands::ServerCommand < Gem::Command
++    def initialize
++      super('server', 'Starts up a web server that hosts the RDoc (requires rubygems-server)')
++      begin
++        Gem::Specification.find_by_name('rubygems-server').activate
++      rescue Gem::LoadError
++        # no-op
+       end
+     end
+ 
+-    add_option '-p', '--port=PORT', :Port,
+-               'port to listen on' do |port, options|
+-      options[:port] = port
+-    end
+-
+-    add_option '-d', '--dir=GEMDIR',
+-               'directories from which to serve gems',
+-               'multiple directories may be provided' do |gemdir, options|
+-      options[:gemdir] << File.expand_path(gemdir)
++    def description # :nodoc:
++      <<-EOF
++The server command has been moved to the rubygems-server gem.
++      EOF
+     end
+ 
+-    add_option '--[no-]daemon', 'run as a daemon' do |daemon, options|
+-      options[:daemon] = daemon
++    def execute
++      alert_error "Install the rubygems-server gem for the server command"
+     end
+-
+-    add_option '-b', '--bind=HOST,HOST',
+-               'addresses to bind', Array do |address, options|
+-      options[:addresses] ||= []
+-      options[:addresses].push(*address)
+-    end
+-
+-    add_option '-l', '--launch[=COMMAND]',
+-               'launches a browser window',
+-               "COMMAND defaults to 'start' on Windows",
+-               "and 'open' on all other platforms" do |launch, options|
+-      launch ||= Gem.win_platform? ? 'start' : 'open'
+-      options[:launch] = launch
+-    end
+-  end
+-
+-  def defaults_str # :nodoc:
+-    "--port 8808 --dir #{Gem.dir} --no-daemon"
+-  end
+-
+-  def description # :nodoc:
+-    <<-EOF
+-The server command starts up a web server that hosts the RDoc for your
+-installed gems and can operate as a server for installation of gems on other
+-machines.
+-
+-The cache files for installed gems must exist to use the server as a source
+-for gem installation.
+-
+-To install gems from a running server, use `gem install GEMNAME --source
+-http://gem_server_host:8808`
+-
+-You can set up a shortcut to gem server documentation using the URL:
+-
+-  http://localhost:8808/rdoc?q=%s - Firefox
+-  http://localhost:8808/rdoc?q=* - LaunchBar
+-
+-    EOF
+-  end
+-
+-  def execute
+-    options[:gemdir] = Gem.path if options[:gemdir].empty?
+-    Gem::Server.run options
+   end
+ end
+diff --git a/lib/rubygems/commands/setup_command.rb b/lib/rubygems/commands/setup_command.rb
+index 894f94b..0601dcc 100644
+--- a/lib/rubygems/commands/setup_command.rb
++++ b/lib/rubygems/commands/setup_command.rb
+@@ -12,8 +12,6 @@ class Gem::Commands::SetupCommand < Gem::Command
+   ENV_PATHS = %w[/usr/bin/env /bin/env].freeze
+ 
+   def initialize
+-    require 'tmpdir'
+-
+     super 'setup', 'Install RubyGems',
+           :format_executable => false, :document => %w[ri],
+           :force => true,
+@@ -253,6 +251,8 @@ By default, this RubyGems will install gem as:
+       Dir.chdir path do
+         bin_file = "gem"
+ 
++        require 'tmpdir'
++
+         dest_file = target_bin_path(bin_dir, bin_file)
+         bin_tmp_file = File.join Dir.tmpdir, "#{bin_file}.#{$$}"
+ 
+@@ -465,20 +465,8 @@ By default, this RubyGems will install gem as:
+       lib_dir = RbConfig::CONFIG[site_or_vendor]
+       bin_dir = RbConfig::CONFIG['bindir']
+     else
+-      # Apple installed RubyGems into libdir, and RubyGems <= 1.1.0 gets
+-      # confused about installation location, so switch back to
+-      # sitelibdir/vendorlibdir.
+-      if defined?(APPLE_GEM_HOME) and
+-        # just in case Apple and RubyGems don't get this patched up proper.
+-        (prefix == RbConfig::CONFIG['libdir'] or
+-         # this one is important
+-         prefix == File.join(RbConfig::CONFIG['libdir'], 'ruby'))
+-        lib_dir = RbConfig::CONFIG[site_or_vendor]
+-        bin_dir = RbConfig::CONFIG['bindir']
+-      else
+-        lib_dir = File.join prefix, 'lib'
+-        bin_dir = File.join prefix, 'bin'
+-      end
++      lib_dir = File.join prefix, 'lib'
++      bin_dir = File.join prefix, 'bin'
+     end
+ 
+     [prepend_destdir_if_present(lib_dir), prepend_destdir_if_present(bin_dir)]
+diff --git a/lib/rubygems/commands/update_command.rb b/lib/rubygems/commands/update_command.rb
+index bb356fd..513351d 100644
+--- a/lib/rubygems/commands/update_command.rb
++++ b/lib/rubygems/commands/update_command.rb
+@@ -19,9 +19,13 @@ class Gem::Commands::UpdateCommand < Gem::Command
+   attr_reader :updated # :nodoc:
+ 
+   def initialize
+-    super 'update', 'Update installed gems to the latest version',
+-      :document => %w[rdoc ri],
+-      :force    => false
++    options = {
++      :force => false,
++    }
++
++    options.merge!(install_update_options)
++
++    super 'update', 'Update installed gems to the latest version', options
+ 
+     add_install_update_options
+ 
+@@ -51,7 +55,8 @@ class Gem::Commands::UpdateCommand < Gem::Command
+   end
+ 
+   def defaults_str # :nodoc:
+-    "--document --no-force --install-dir #{Gem.dir}"
++    "--no-force --install-dir #{Gem.dir}\n" +
++    install_update_defaults_str
+   end
+ 
+   def description # :nodoc:
+diff --git a/lib/rubygems/defaults.rb b/lib/rubygems/defaults.rb
+index 923b60f..39b69dd 100644
+--- a/lib/rubygems/defaults.rb
++++ b/lib/rubygems/defaults.rb
+@@ -34,21 +34,7 @@ module Gem
+   # specified in the environment
+ 
+   def self.default_dir
+-    path = if defined? RUBY_FRAMEWORK_VERSION
+-             [
+-               File.dirname(RbConfig::CONFIG['sitedir']),
+-               'Gems',
+-               RbConfig::CONFIG['ruby_version'],
+-             ]
+-           else
+-             [
+-               RbConfig::CONFIG['rubylibprefix'],
+-               'gems',
+-               RbConfig::CONFIG['ruby_version'],
+-             ]
+-           end
+-
+-    @default_dir ||= File.join(*path)
++    @default_dir ||= File.join(RbConfig::CONFIG['rubylibprefix'], 'gems', RbConfig::CONFIG['ruby_version'])
+   end
+ 
+   ##
+@@ -197,11 +183,7 @@ module Gem
+   # The default directory for binaries
+ 
+   def self.default_bindir
+-    if defined? RUBY_FRAMEWORK_VERSION # mac framework support
+-      '/usr/local/bin'
+-    else # generic install
+-      RbConfig::CONFIG['bindir']
+-    end
++    RbConfig::CONFIG['bindir']
+   end
+ 
+   def self.ruby_engine
+diff --git a/lib/rubygems/dependency.rb b/lib/rubygems/dependency.rb
+index 3721204..3640362 100644
+--- a/lib/rubygems/dependency.rb
++++ b/lib/rubygems/dependency.rb
+@@ -277,7 +277,7 @@ class Gem::Dependency
+       requirement.satisfied_by?(spec.version) && env_req.satisfied_by?(spec.version)
+     end.map(&:to_spec)
+ 
+-    Gem::BundlerVersionFinder.filter!(matches) if filters_bundler?
++    Gem::BundlerVersionFinder.prioritize!(matches) if prioritizes_bundler?
+ 
+     if platform_only
+       matches.reject! do |spec|
+@@ -295,7 +295,7 @@ class Gem::Dependency
+     @requirement.specific?
+   end
+ 
+-  def filters_bundler?
++  def prioritizes_bundler?
+     name == "bundler".freeze && !specific?
+   end
+ 
+@@ -325,11 +325,11 @@ class Gem::Dependency
+     active = matches.find {|spec| spec.activated? }
+     return active if active
+ 
+-    return matches.first if prerelease?
+-
+-    # Move prereleases to the end of the list for >= 0 requirements
+-    pre, matches = matches.partition {|spec| spec.version.prerelease? }
+-    matches += pre if requirement == Gem::Requirement.default
++    unless prerelease?
++      # Move prereleases to the end of the list for >= 0 requirements
++      pre, matches = matches.partition {|spec| spec.version.prerelease? }
++      matches += pre if requirement == Gem::Requirement.default
++    end
+ 
+     matches.first
+   end
+diff --git a/lib/rubygems/deprecate.rb b/lib/rubygems/deprecate.rb
+index 8c822cd..5fe0afb 100644
+--- a/lib/rubygems/deprecate.rb
++++ b/lib/rubygems/deprecate.rb
+@@ -1,23 +1,70 @@
+ # frozen_string_literal: true
+ ##
+-# Provides a single method +deprecate+ to be used to declare when
+-# something is going away.
++# Provides 3 methods for declaring when something is going away.
++#
++# +deprecate(name, repl, year, month)+:
++#     Indicate something may be removed on/after a certain date.
++#
++# +rubygems_deprecate(name, replacement=:none)+:
++#     Indicate something will be removed in the next major RubyGems version,
++#     and (optionally) a replacement for it.
++#
++# +rubygems_deprecate_command+:
++#     Indicate a RubyGems command (in +lib/rubygems/commands/*.rb+) will be
++#     removed in the next RubyGems version.
++#
++# Also provides +skip_during+ for temporarily turning off deprecation warnings.
++# This is intended to be used in the test suite, so deprecation warnings
++# don't cause test failures if you need to make sure stderr is otherwise empty.
++#
++#
++# Example usage of +deprecate+ and +rubygems_deprecate+:
+ #
+ #     class Legacy
+-#       def self.klass_method
++#       def self.some_class_method
+ #         # ...
+ #       end
+ #
+-#       def instance_method
++#       def some_instance_method
++#         # ...
++#       end
++#
++#       def some_old_method
+ #         # ...
+ #       end
+ #
+ #       extend Gem::Deprecate
+-#       deprecate :instance_method, "X.z", 2011, 4
++#       deprecate :some_instance_method, "X.z", 2011, 4
++#       rubygems_deprecate :some_old_method, "Modern#some_new_method"
+ #
+ #       class << self
+ #         extend Gem::Deprecate
+-#         deprecate :klass_method, :none, 2011, 4
++#         deprecate :some_class_method, :none, 2011, 4
++#       end
++#     end
++#
++#
++# Example usage of +rubygems_deprecate_command+:
++#
++#     class Gem::Commands::QueryCommand < Gem::Command
++#       extend Gem::Deprecate
++#       rubygems_deprecate_command
++#
++#       # ...
++#     end
++#
++#
++# Example usage of +skip_during+:
++#
++#     class TestSomething < Gem::Testcase
++#       def test_some_thing_with_deprecations
++#         Gem::Deprecate.skip_during do
++#           actual_stdout, actual_stderr = capture_output do
++#             Gem.something_deprecated
++#           end
++#           assert_empty actual_stdout
++#           assert_equal(expected, actual_stderr)
++#         end
+ #       end
+ #     end
+ 
+diff --git a/lib/rubygems/errors.rb b/lib/rubygems/errors.rb
+index 86f0d1d..f115ce2 100644
+--- a/lib/rubygems/errors.rb
++++ b/lib/rubygems/errors.rb
+@@ -59,9 +59,6 @@ module Gem
+     private
+ 
+     def build_message
+-      if name == "bundler" && message = Gem::BundlerVersionFinder.missing_version_message
+-        return message
+-      end
+       names = specs.map(&:full_name)
+       "Could not find '#{name}' (#{requirement}) - did find: [#{names.join ','}]\n"
+     end
+diff --git a/lib/rubygems/exceptions.rb b/lib/rubygems/exceptions.rb
+index 5f20dfa..1806869 100644
+--- a/lib/rubygems/exceptions.rb
++++ b/lib/rubygems/exceptions.rb
+@@ -1,6 +1,7 @@
+ # frozen_string_literal: true
+ 
+ require_relative 'deprecate'
++require_relative 'unknown_command_spell_checker'
+ 
+ ##
+ # Base exception class for RubyGems.  All exception raised by RubyGems are a
+@@ -9,6 +10,34 @@ class Gem::Exception < RuntimeError; end
+ 
+ class Gem::CommandLineError < Gem::Exception; end
+ 
++class Gem::UnknownCommandError < Gem::Exception
++  attr_reader :unknown_command
++
++  def initialize(unknown_command)
++    self.class.attach_correctable
++
++    @unknown_command = unknown_command
++    super("Unknown command #{unknown_command}")
++  end
++
++  def self.attach_correctable
++    return if defined?(@attached)
++
++    if defined?(DidYouMean::SPELL_CHECKERS) && defined?(DidYouMean::Correctable)
++      if DidYouMean.respond_to?(:correct_error)
++        DidYouMean.correct_error(Gem::UnknownCommandError, Gem::UnknownCommandSpellChecker)
++      else
++        DidYouMean::SPELL_CHECKERS['Gem::UnknownCommandError'] =
++          Gem::UnknownCommandSpellChecker
++
++        prepend DidYouMean::Correctable
++      end
++    end
++
++    @attached = true
++  end
++end
++
+ class Gem::DependencyError < Gem::Exception; end
+ 
+ class Gem::DependencyRemovalException < Gem::Exception; end
+@@ -200,7 +229,7 @@ class Gem::SystemExitException < SystemExit
+   def initialize(exit_code)
+     @exit_code = exit_code
+ 
+-    super "Exiting RubyGems with exit_code #{exit_code}"
++    super exit_code, "Exiting RubyGems with exit_code #{exit_code}"
+   end
+ end
+ 
+diff --git a/lib/rubygems/ext/builder.rb b/lib/rubygems/ext/builder.rb
+index c1a1bc9..6d32be6 100644
+--- a/lib/rubygems/ext/builder.rb
++++ b/lib/rubygems/ext/builder.rb
+@@ -64,14 +64,16 @@ class Gem::Ext::Builder
+       require "open3"
+       # Set $SOURCE_DATE_EPOCH for the subprocess.
+       env = {'SOURCE_DATE_EPOCH' => Gem.source_date_epoch_string}
+-      output, status = Open3.capture2e(env, *command, :chdir => dir)
++      output, status = begin
++                         Open3.capture2e(env, *command, :chdir => dir)
++                       rescue => error
++                         raise Gem::InstallError, "#{command_name || class_name} failed#{error.message}"
++                       end
+       if verbose
+         puts output
+       else
+         results << output
+       end
+-    rescue => error
+-      raise Gem::InstallError, "#{command_name || class_name} failed#{error.message}"
+     ensure
+       ENV['RUBYGEMS_GEMDEPS'] = rubygems_gemdeps
+     end
+diff --git a/lib/rubygems/install_update_options.rb b/lib/rubygems/install_update_options.rb
+index d890c52..2203b17 100644
+--- a/lib/rubygems/install_update_options.rb
++++ b/lib/rubygems/install_update_options.rb
+@@ -181,10 +181,19 @@ module Gem::InstallUpdateOptions
+   end
+ 
+   ##
+-  # Default options for the gem install command.
++  # Default options for the gem install and update commands.
++
++  def install_update_options
++    {
++      :document => %w[ri],
++    }
++  end
++
++  ##
++  # Default description for the gem install and update commands.
+ 
+   def install_update_defaults_str
+-    '--document=rdoc,ri --wrappers'
++    '--document=ri'
+   end
+ 
+ end
+diff --git a/lib/rubygems/installer.rb b/lib/rubygems/installer.rb
+index 8e3965e..ab09c18 100644
+--- a/lib/rubygems/installer.rb
++++ b/lib/rubygems/installer.rb
+@@ -768,7 +768,7 @@ str = ARGV.first
+ if str
+   str = str.b[/\\A_(.*)_\\z/, 1]
+   if str and Gem::Version.correct?(str)
+-    version = str
++    #{explicit_version_requirement(spec.name)}
+     ARGV.shift
+   end
+ end
+@@ -791,6 +791,16 @@ Gem.use_gemdeps
+ TEXT
+   end
+ 
++  def explicit_version_requirement(name)
++    code = "version = str"
++    return code unless name == "bundler"
++
++    code += <<-TEXT
++
++    ENV['BUNDLER_VERSION'] = str
++TEXT
++  end
++
+   ##
+   # return the stub script text used to launch the true Ruby script
+ 
+diff --git a/lib/rubygems/name_tuple.rb b/lib/rubygems/name_tuple.rb
+index 3d0afa3..c732d7f 100644
+--- a/lib/rubygems/name_tuple.rb
++++ b/lib/rubygems/name_tuple.rb
+@@ -89,9 +89,8 @@ class Gem::NameTuple
+   alias to_s inspect # :nodoc:
+ 
+   def <=>(other)
+-    [@name, @version, @platform == Gem::Platform::RUBY ? -1 : 1] <=>
+-      [other.name, other.version,
+-       other.platform == Gem::Platform::RUBY ? -1 : 1]
++    [@name, @version, Gem::Platform.sort_priority(@platform)] <=>
++      [other.name, other.version, Gem::Platform.sort_priority(other.platform)]
+   end
+ 
+   include Comparable
+diff --git a/lib/rubygems/path_support.rb b/lib/rubygems/path_support.rb
+index 8103caf..d601e65 100644
+--- a/lib/rubygems/path_support.rb
++++ b/lib/rubygems/path_support.rb
+@@ -72,12 +72,7 @@ class Gem::PathSupport
+ 
+   # Return the default Gem path
+   def default_path
+-    gem_path = Gem.default_path + [@home]
+-
+-    if defined?(APPLE_GEM_HOME)
+-      gem_path << APPLE_GEM_HOME
+-    end
+-    gem_path
++    Gem.default_path + [@home]
+   end
+ 
+   def expand(path)
+diff --git a/lib/rubygems/platform.rb b/lib/rubygems/platform.rb
+index efb046c..a5e65f9 100644
+--- a/lib/rubygems/platform.rb
++++ b/lib/rubygems/platform.rb
+@@ -40,6 +40,10 @@ class Gem::Platform
+     match_platforms?(platform, Gem.platforms)
+   end
+ 
++  def self.sort_priority(platform)
++    platform == Gem::Platform::RUBY ? -1 : 1
++  end
++
+   def self.installable?(spec)
+     if spec.respond_to? :installable_platform?
+       spec.installable_platform?
+diff --git a/lib/rubygems/remote_fetcher.rb b/lib/rubygems/remote_fetcher.rb
+index de6f88f..bd8165e 100644
+--- a/lib/rubygems/remote_fetcher.rb
++++ b/lib/rubygems/remote_fetcher.rb
+@@ -284,7 +284,7 @@ class Gem::RemoteFetcher
+ 
+     data = fetch_path(uri, mtime)
+ 
+-    if data == nil # indicates the server returned 304 Not Modified
++    if data.nil? # indicates the server returned 304 Not Modified
+       return Gem.read_binary(path)
+     end
+ 
+diff --git a/lib/rubygems/requirement.rb b/lib/rubygems/requirement.rb
+index d2e28fa..9edd6aa 100644
+--- a/lib/rubygems/requirement.rb
++++ b/lib/rubygems/requirement.rb
+@@ -1,5 +1,5 @@
+ # frozen_string_literal: true
+-require_relative "deprecate"
++require_relative "version"
+ 
+ ##
+ # A Requirement is a set of one or more version restrictions. It supports a
+diff --git a/lib/rubygems/resolver/installer_set.rb b/lib/rubygems/resolver/installer_set.rb
+index f4fee35..237bc3f 100644
+--- a/lib/rubygems/resolver/installer_set.rb
++++ b/lib/rubygems/resolver/installer_set.rb
+@@ -71,7 +71,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
+     end
+ 
+     found = found.sort_by do |s|
+-      [s.version, s.platform == Gem::Platform::RUBY ? -1 : 1]
++      [s.version, Gem::Platform.sort_priority(s.platform)]
+     end
+ 
+     newest = found.last
+diff --git a/lib/rubygems/security.rb b/lib/rubygems/security.rb
+index 8240a1a..f21c175 100644
+--- a/lib/rubygems/security.rb
++++ b/lib/rubygems/security.rb
+@@ -424,6 +424,8 @@ module Gem::Security
+   # Gets the right public key from a PKey instance
+ 
+   def self.get_public_key(key)
++    # Ruby 3.0 (Ruby/OpenSSL 2.2) or later
++    return OpenSSL::PKey.read(key.public_to_der) if key.respond_to?(:public_to_der)
+     return key.public_key unless key.is_a?(OpenSSL::PKey::EC)
+ 
+     ec_key = OpenSSL::PKey::EC.new(key.group.curve_name)
+@@ -490,9 +492,13 @@ module Gem::Security
+       when 'rsa'
+         OpenSSL::PKey::RSA.new(RSA_DSA_KEY_LENGTH)
+       when 'ec'
+-        domain_key = OpenSSL::PKey::EC.new(EC_NAME)
+-        domain_key.generate_key
+-        domain_key
++        if RUBY_VERSION >= "2.4.0"
++          OpenSSL::PKey::EC.generate(EC_NAME)
++        else
++          domain_key = OpenSSL::PKey::EC.new(EC_NAME)
++          domain_key.generate_key
++          domain_key
++        end
+       else
+         raise Gem::Security::Exception,
+         "#{algorithm} algorithm not found. RSA, DSA, and EC algorithms are supported."
+@@ -510,9 +516,10 @@ module Gem::Security
+ 
+     dcs = dcs.split '.'
+ 
+-    name = "CN=#{cn}/#{dcs.map {|dc| "DC=#{dc}" }.join '/'}"
+-
+-    OpenSSL::X509::Name.parse name
++    OpenSSL::X509::Name.new([
++      ["CN", cn],
++      *dcs.map {|dc| ["DC", dc] },
++    ])
+   end
+ 
+   ##
+@@ -526,7 +533,7 @@ module Gem::Security
+     raise Gem::Security::Exception,
+           "incorrect signing key for re-signing " +
+           "#{expired_certificate.subject}" unless
+-      expired_certificate.public_key.to_pem == get_public_key(private_key).to_pem
++      expired_certificate.check_private_key(private_key)
+ 
+     unless expired_certificate.subject.to_s ==
+            expired_certificate.issuer.to_s
+diff --git a/lib/rubygems/security/policy.rb b/lib/rubygems/security/policy.rb
+index 3c3cb64..06eae07 100644
+--- a/lib/rubygems/security/policy.rb
++++ b/lib/rubygems/security/policy.rb
+@@ -115,11 +115,9 @@ class Gem::Security::Policy
+       raise Gem::Security::Exception, 'missing key or signature'
+     end
+ 
+-    public_key = Gem::Security.get_public_key(key)
+-
+     raise Gem::Security::Exception,
+       "certificate #{signer.subject} does not match the signing key" unless
+-        signer.public_key.to_pem == public_key.to_pem
++        signer.check_private_key(key)
+ 
+     true
+   end
+diff --git a/lib/rubygems/server.rb b/lib/rubygems/server.rb
+deleted file mode 100644
+index 45be05b..0000000
+--- a/lib/rubygems/server.rb
++++ /dev/null
+@@ -1,882 +0,0 @@
+-# frozen_string_literal: true
+-require 'zlib'
+-require 'erb'
+-require 'uri'
+-
+-require_relative '../rubygems'
+-require_relative 'rdoc'
+-
+-##
+-# Gem::Server and allows users to serve gems for consumption by
+-# `gem --remote-install`.
+-#
+-# gem_server starts an HTTP server on the given port and serves the following:
+-# * "/" - Browsing of gem spec files for installed gems
+-# * "/specs.#{Gem.marshal_version}.gz" - specs name/version/platform index
+-# * "/latest_specs.#{Gem.marshal_version}.gz" - latest specs
+-#   name/version/platform index
+-# * "/quick/" - Individual gemspecs
+-# * "/gems" - Direct access to download the installable gems
+-# * "/rdoc?q=" - Search for installed rdoc documentation
+-#
+-# == Usage
+-#
+-#   gem_server = Gem::Server.new Gem.dir, 8089, false
+-#   gem_server.run
+-#
+-#--
+-# TODO Refactor into a real WEBrick servlet to remove code duplication.
+-
+-class Gem::Server
+-  attr_reader :spec_dirs
+-
+-  include ERB::Util
+-  include Gem::UserInteraction
+-
+-  SEARCH = <<-ERB.freeze
+-      <form class="headerSearch" name="headerSearchForm" method="get" action="/rdoc">
+-        <div id="search" style="float:right">
+-          <label for="q">Filter/Search</label>
+-          <input id="q" type="text" style="width:10em" name="q">
+-          <button type="submit" style="display:none"></button>
+-        </div>
+-      </form>
+-  ERB
+-
+-  DOC_TEMPLATE = <<-'ERB'.freeze
+-  <?xml version="1.0" encoding="iso-8859-1"?>
+-  <!DOCTYPE html
+-       PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+-       "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+-
+-  <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+-  <head>
+-    <title>RubyGems Documentation Index</title>
+-    <link rel="stylesheet" href="gem-server-rdoc-style.css" type="text/css" media="screen" />
+-  </head>
+-  <body>
+-    <div id="fileHeader">
+-<%= SEARCH %>
+-      <h1>RubyGems Documentation Index</h1>
+-    </div>
+-    <!-- banner header -->
+-
+-  <div id="bodyContent">
+-    <div id="contextContent">
+-      <div id="description">
+-        <h1>Summary</h1>
+-  <p>There are <%=values["gem_count"]%> gems installed:</p>
+-  <p>
+-  <%= values["specs"].map { |v| "<a href=\"##{u v["name"]}\">#{h v["name"]}</a>" }.join ', ' %>.
+-  <h1>Gems</h1>
+-
+-  <dl>
+-  <% values["specs"].each do |spec| %>
+-    <dt>
+-    <% if spec["first_name_entry"] then %>
+-      <a name="<%=h spec["name"]%>"></a>
+-    <% end %>
+-
+-    <b><%=h spec["name"]%> <%=h spec["version"]%></b>
+-
+-    <% if spec["ri_installed"] || spec["rdoc_installed"] then %>
+-      <a href="<%=spec["doc_path"]%>">[rdoc]</a>
+-    <% else %>
+-      <span title="rdoc not installed">[rdoc]</span>
+-    <% end %>
+-
+-    <% if spec["homepage"] then %>
+-      <a href="<%=uri_encode spec["homepage"]%>" title="<%=h spec["homepage"]%>">[www]</a>
+-    <% else %>
+-      <span title="no homepage available">[www]</span>
+-    <% end %>
+-
+-    <% if spec["has_deps"] then %>
+-     - depends on
+-      <%= spec["dependencies"].map { |v| "<a href=\"##{u v["name"]}\">#{h v["name"]}</a>" }.join ', ' %>.
+-    <% end %>
+-    </dt>
+-    <dd>
+-    <%=spec["summary"]%>
+-    <% if spec["executables"] then %>
+-      <br/>
+-
+-      <% if spec["only_one_executable"] then %>
+-          Executable is
+-      <% else %>
+-          Executables are
+-      <%end%>
+-
+-      <%= spec["executables"].map { |v| "<span class=\"context-item-name\">#{h v["executable"]}</span>"}.join ', ' %>.
+-
+-    <%end%>
+-    <br/>
+-    <br/>
+-    </dd>
+-  <% end %>
+-  </dl>
+-
+-      </div>
+-     </div>
+-    </div>
+-  <div id="validator-badges">
+-    <p><small><a href="http://validator.w3.org/check/referer">[Validate]</a></small></p>
+-  </div>
+-  </body>
+-  </html>
+-  ERB
+-
+-  # CSS is copy & paste from rdoc-style.css, RDoc V1.0.1 - 20041108
+-  RDOC_CSS = <<-CSS.freeze
+-body {
+-    font-family: Verdana,Arial,Helvetica,sans-serif;
+-    font-size:   90%;
+-    margin: 0;
+-    margin-left: 40px;
+-    padding: 0;
+-    background: white;
+-}
+-
+-h1,h2,h3,h4 { margin: 0; color: #efefef; background: transparent; }
+-h1 { font-size: 150%; }
+-h2,h3,h4 { margin-top: 1em; }
+-
+-a { background: #eef; color: #039; text-decoration: none; }
+-a:hover { background: #039; color: #eef; }
+-
+-/* Override the base stylesheets Anchor inside a table cell */
+-td > a {
+-  background: transparent;
+-  color: #039;
+-  text-decoration: none;
+-}
+-
+-/* and inside a section title */
+-.section-title > a {
+-  background: transparent;
+-  color: #eee;
+-  text-decoration: none;
+-}
+-
+-/* === Structural elements =================================== */
+-
+-div#index {
+-    margin: 0;
+-    margin-left: -40px;
+-    padding: 0;
+-    font-size: 90%;
+-}
+-
+-
+-div#index a {
+-    margin-left: 0.7em;
+-}
+-
+-div#index .section-bar {
+-   margin-left: 0px;
+-   padding-left: 0.7em;
+-   background: #ccc;
+-   font-size: small;
+-}
+-
+-
+-div#classHeader, div#fileHeader {
+-    width: auto;
+-    color: white;
+-    padding: 0.5em 1.5em 0.5em 1.5em;
+-    margin: 0;
+-    margin-left: -40px;
+-    border-bottom: 3px solid #006;
+-}
+-
+-div#classHeader a, div#fileHeader a {
+-    background: inherit;
+-    color: white;
+-}
+-
+-div#classHeader td, div#fileHeader td {
+-    background: inherit;
+-    color: white;
+-}
+-
+-
+-div#fileHeader {
+-    background: #057;
+-}
+-
+-div#classHeader {
+-    background: #048;
+-}
+-
+-
+-.class-name-in-header {
+-  font-size:  180%;
+-  font-weight: bold;
+-}
+-
+-
+-div#bodyContent {
+-    padding: 0 1.5em 0 1.5em;
+-}
+-
+-div#description {
+-    padding: 0.5em 1.5em;
+-    background: #efefef;
+-    border: 1px dotted #999;
+-}
+-
+-div#description h1,h2,h3,h4,h5,h6 {
+-    color: #125;;
+-    background: transparent;
+-}
+-
+-div#validator-badges {
+-    text-align: center;
+-}
+-div#validator-badges img { border: 0; }
+-
+-div#copyright {
+-    color: #333;
+-    background: #efefef;
+-    font: 0.75em sans-serif;
+-    margin-top: 5em;
+-    margin-bottom: 0;
+-    padding: 0.5em 2em;
+-}
+-
+-
+-/* === Classes =================================== */
+-
+-table.header-table {
+-    color: white;
+-    font-size: small;
+-}
+-
+-.type-note {
+-    font-size: small;
+-    color: #DEDEDE;
+-}
+-
+-.xxsection-bar {
+-    background: #eee;
+-    color: #333;
+-    padding: 3px;
+-}
+-
+-.section-bar {
+-   color: #333;
+-   border-bottom: 1px solid #999;
+-    margin-left: -20px;
+-}
+-
+-
+-.section-title {
+-    background: #79a;
+-    color: #eee;
+-    padding: 3px;
+-    margin-top: 2em;
+-    margin-left: -30px;
+-    border: 1px solid #999;
+-}
+-
+-.top-aligned-row {  vertical-align: top }
+-.bottom-aligned-row { vertical-align: bottom }
+-
+-/* --- Context section classes ----------------------- */
+-
+-.context-row { }
+-.context-item-name { font-family: monospace; font-weight: bold; color: black; }
+-.context-item-value { font-size: small; color: #448; }
+-.context-item-desc { color: #333; padding-left: 2em; }
+-
+-/* --- Method classes -------------------------- */
+-.method-detail {
+-    background: #efefef;
+-    padding: 0;
+-    margin-top: 0.5em;
+-    margin-bottom: 1em;
+-    border: 1px dotted #ccc;
+-}
+-.method-heading {
+-  color: black;
+-  background: #ccc;
+-  border-bottom: 1px solid #666;
+-  padding: 0.2em 0.5em 0 0.5em;
+-}
+-.method-signature { color: black; background: inherit; }
+-.method-name { font-weight: bold; }
+-.method-args { font-style: italic; }
+-.method-description { padding: 0 0.5em 0 0.5em; }
+-
+-/* --- Source code sections -------------------- */
+-
+-a.source-toggle { font-size: 90%; }
+-div.method-source-code {
+-    background: #262626;
+-    color: #ffdead;
+-    margin: 1em;
+-    padding: 0.5em;
+-    border: 1px dashed #999;
+-    overflow: hidden;
+-}
+-
+-div.method-source-code pre { color: #ffdead; overflow: hidden; }
+-
+-/* --- Ruby keyword styles --------------------- */
+-
+-.standalone-code { background: #221111; color: #ffdead; overflow: hidden; }
+-
+-.ruby-constant  { color: #7fffd4; background: transparent; }
+-.ruby-keyword { color: #00ffff; background: transparent; }
+-.ruby-ivar    { color: #eedd82; background: transparent; }
+-.ruby-operator  { color: #00ffee; background: transparent; }
+-.ruby-identifier { color: #ffdead; background: transparent; }
+-.ruby-node    { color: #ffa07a; background: transparent; }
+-.ruby-comment { color: #b22222; font-weight: bold; background: transparent; }
+-.ruby-regexp  { color: #ffa07a; background: transparent; }
+-.ruby-value   { color: #7fffd4; background: transparent; }
+-  CSS
+-
+-  RDOC_NO_DOCUMENTATION = <<-'ERB'.freeze
+-<?xml version="1.0" encoding="iso-8859-1"?>
+-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+-          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+-  <head>
+-    <title>Found documentation</title>
+-    <link rel="stylesheet" href="gem-server-rdoc-style.css" type="text/css" media="screen" />
+-  </head>
+-  <body>
+-    <div id="fileHeader">
+-<%= SEARCH %>
+-      <h1>No documentation found</h1>
+-    </div>
+-
+-    <div id="bodyContent">
+-      <div id="contextContent">
+-        <div id="description">
+-          <p>No gems matched <%= h query.inspect %></p>
+-
+-          <p>
+-            Back to <a href="/">complete gem index</a>
+-          </p>
+-
+-        </div>
+-      </div>
+-    </div>
+-    <div id="validator-badges">
+-      <p><small><a href="http://validator.w3.org/check/referer">[Validate]</a></small></p>
+-    </div>
+-  </body>
+-</html>
+-  ERB
+-
+-  RDOC_SEARCH_TEMPLATE = <<-'ERB'.freeze
+-<?xml version="1.0" encoding="iso-8859-1"?>
+-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+-          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+-  <head>
+-    <title>Found documentation</title>
+-    <link rel="stylesheet" href="gem-server-rdoc-style.css" type="text/css" media="screen" />
+-  </head>
+-  <body>
+-    <div id="fileHeader">
+-<%= SEARCH %>
+-      <h1>Found documentation</h1>
+-    </div>
+-    <!-- banner header -->
+-
+-    <div id="bodyContent">
+-      <div id="contextContent">
+-        <div id="description">
+-          <h1>Summary</h1>
+-          <p><%=doc_items.length%> documentation topics found.</p>
+-          <h1>Topics</h1>
+-
+-          <dl>
+-          <% doc_items.each do |doc_item| %>
+-            <dt>
+-              <b><%=doc_item[:name]%></b>
+-              <a href="<%=u doc_item[:url]%>">[rdoc]</a>
+-            </dt>
+-            <dd>
+-              <%=h doc_item[:summary]%>
+-              <br/>
+-              <br/>
+-            </dd>
+-          <% end %>
+-          </dl>
+-
+-          <p>
+-            Back to <a href="/">complete gem index</a>
+-          </p>
+-
+-        </div>
+-      </div>
+-    </div>
+-    <div id="validator-badges">
+-      <p><small><a href="http://validator.w3.org/check/referer">[Validate]</a></small></p>
+-    </div>
+-  </body>
+-</html>
+-  ERB
+-
+-  def self.run(options)
+-    new(options[:gemdir], options[:port], options[:daemon],
+-        options[:launch], options[:addresses]).run
+-  end
+-
+-  def initialize(gem_dirs, port, daemon, launch = nil, addresses = nil)
+-    begin
+-      require 'webrick'
+-    rescue LoadError
+-      abort "webrick is not found. You may need to `gem install webrick` to install webrick."
+-    end
+-
+-    Gem::RDoc.load_rdoc
+-    Socket.do_not_reverse_lookup = true
+-
+-    @gem_dirs  = Array gem_dirs
+-    @port      = port
+-    @daemon    = daemon
+-    @launch    = launch
+-    @addresses = addresses
+-
+-    logger  = WEBrick::Log.new nil, WEBrick::BasicLog::FATAL
+-    @server = WEBrick::HTTPServer.new :DoNotListen => true, :Logger => logger
+-
+-    @spec_dirs = @gem_dirs.map {|gem_dir| File.join gem_dir, 'specifications' }
+-    @spec_dirs.reject! {|spec_dir| !File.directory? spec_dir }
+-
+-    reset_gems
+-
+-    @have_rdoc_4_plus = nil
+-  end
+-
+-  def add_date(res)
+-    res['date'] = @spec_dirs.map do |spec_dir|
+-      File.stat(spec_dir).mtime
+-    end.max
+-  end
+-
+-  def uri_encode(str)
+-    str.gsub(URI::UNSAFE) do |match|
+-      match.each_byte.map {|c| sprintf('%%%02X', c.ord) }.join
+-    end
+-  end
+-
+-  def doc_root(gem_name)
+-    if have_rdoc_4_plus?
+-      "/doc_root/#{u gem_name}/"
+-    else
+-      "/doc_root/#{u gem_name}/rdoc/index.html"
+-    end
+-  end
+-
+-  def have_rdoc_4_plus?
+-    @have_rdoc_4_plus ||=
+-      Gem::Requirement.new('>= 4.0.0.preview2').satisfied_by? Gem::RDoc.rdoc_version
+-  end
+-
+-  def latest_specs(req, res)
+-    reset_gems
+-
+-    res['content-type'] = 'application/x-gzip'
+-
+-    add_date res
+-
+-    latest_specs = Gem::Specification.latest_specs
+-
+-    specs = latest_specs.sort.map do |spec|
+-      platform = spec.original_platform || Gem::Platform::RUBY
+-      [spec.name, spec.version, platform]
+-    end
+-
+-    specs = Marshal.dump specs
+-
+-    if req.path =~ /\.gz$/
+-      specs = Gem::Util.gzip specs
+-      res['content-type'] = 'application/x-gzip'
+-    else
+-      res['content-type'] = 'application/octet-stream'
+-    end
+-
+-    if req.request_method == 'HEAD'
+-      res['content-length'] = specs.length
+-    else
+-      res.body << specs
+-    end
+-  end
+-
+-  ##
+-  # Creates server sockets based on the addresses option.  If no addresses
+-  # were given a server socket for all interfaces is created.
+-
+-  def listen(addresses = @addresses)
+-    addresses = [nil] unless addresses
+-
+-    listeners = 0
+-
+-    addresses.each do |address|
+-      begin
+-        @server.listen address, @port
+-        @server.listeners[listeners..-1].each do |listener|
+-          host, port = listener.addr.values_at 2, 1
+-          host = "[#{host}]" if host =~ /:/ # we don't reverse lookup
+-          say "Server started at http://#{host}:#{port}"
+-        end
+-
+-        listeners = @server.listeners.length
+-      rescue SystemCallError
+-        next
+-      end
+-    end
+-
+-    if @server.listeners.empty?
+-      say "Unable to start a server."
+-      say "Check for running servers or your --bind and --port arguments"
+-      terminate_interaction 1
+-    end
+-  end
+-
+-  def prerelease_specs(req, res)
+-    reset_gems
+-
+-    res['content-type'] = 'application/x-gzip'
+-
+-    add_date res
+-
+-    specs = Gem::Specification.select do |spec|
+-      spec.version.prerelease?
+-    end.sort.map do |spec|
+-      platform = spec.original_platform || Gem::Platform::RUBY
+-      [spec.name, spec.version, platform]
+-    end
+-
+-    specs = Marshal.dump specs
+-
+-    if req.path =~ /\.gz$/
+-      specs = Gem::Util.gzip specs
+-      res['content-type'] = 'application/x-gzip'
+-    else
+-      res['content-type'] = 'application/octet-stream'
+-    end
+-
+-    if req.request_method == 'HEAD'
+-      res['content-length'] = specs.length
+-    else
+-      res.body << specs
+-    end
+-  end
+-
+-  def quick(req, res)
+-    reset_gems
+-
+-    res['content-type'] = 'text/plain'
+-    add_date res
+-
+-    case req.request_uri.path
+-    when %r{^/quick/(Marshal.#{Regexp.escape Gem.marshal_version}/)?(.*?)\.gemspec\.rz$} then
+-      marshal_format, full_name = $1, $2
+-      specs = Gem::Specification.find_all_by_full_name(full_name)
+-
+-      selector = full_name.inspect
+-
+-      if specs.empty?
+-        res.status = 404
+-        res.body = "No gems found matching #{selector}"
+-      elsif specs.length > 1
+-        res.status = 500
+-        res.body = "Multiple gems found matching #{selector}"
+-      elsif marshal_format
+-        res['content-type'] = 'application/x-deflate'
+-        res.body << Gem.deflate(Marshal.dump(specs.first))
+-      end
+-    else
+-      raise WEBrick::HTTPStatus::NotFound, "`#{req.path}' not found."
+-    end
+-  end
+-
+-  def root(req, res)
+-    reset_gems
+-
+-    add_date res
+-
+-    raise WEBrick::HTTPStatus::NotFound, "`#{req.path}' not found." unless
+-      req.path == '/'
+-
+-    specs = []
+-    total_file_count = 0
+-
+-    Gem::Specification.each do |spec|
+-      total_file_count += spec.files.size
+-      deps = spec.dependencies.map do |dep|
+-        {
+-          "name"    => dep.name,
+-          "type"    => dep.type,
+-          "version" => dep.requirement.to_s,
+-        }
+-      end
+-
+-      deps = deps.sort_by {|dep| [dep["name"].downcase, dep["version"]] }
+-      deps.last["is_last"] = true unless deps.empty?
+-
+-      # executables
+-      executables = spec.executables.sort.collect {|exec| {"executable" => exec} }
+-      executables = nil if executables.empty?
+-      executables.last["is_last"] = true if executables
+-
+-      # Pre-process spec homepage for safety reasons
+-      begin
+-        homepage_uri = URI.parse(spec.homepage)
+-        if [URI::HTTP, URI::HTTPS].member? homepage_uri.class
+-          homepage_uri = spec.homepage
+-        else
+-          homepage_uri = "."
+-        end
+-      rescue URI::InvalidURIError
+-        homepage_uri = "."
+-      end
+-
+-      specs << {
+-        "authors"             => spec.authors.sort.join(", "),
+-        "date"                => spec.date.to_s,
+-        "dependencies"        => deps,
+-        "doc_path"            => doc_root(spec.full_name),
+-        "executables"         => executables,
+-        "only_one_executable" => (executables && executables.size == 1),
+-        "full_name"           => spec.full_name,
+-        "has_deps"            => !deps.empty?,
+-        "homepage"            => homepage_uri,
+-        "name"                => spec.name,
+-        "rdoc_installed"      => Gem::RDoc.new(spec).rdoc_installed?,
+-        "ri_installed"        => Gem::RDoc.new(spec).ri_installed?,
+-        "summary"             => spec.summary,
+-        "version"             => spec.version.to_s,
+-      }
+-    end
+-
+-    specs << {
+-      "authors" => "Chad Fowler, Rich Kilmer, Jim Weirich, Eric Hodel and others",
+-      "dependencies" => [],
+-      "doc_path" => doc_root("rubygems-#{Gem::VERSION}"),
+-      "executables" => [{"executable" => 'gem', "is_last" => true}],
+-      "only_one_executable" => true,
+-      "full_name" => "rubygems-#{Gem::VERSION}",
+-      "has_deps" => false,
+-      "homepage" => "https://guides.rubygems.org/",
+-      "name" => 'rubygems',
+-      "ri_installed" => true,
+-      "summary" => "RubyGems itself",
+-      "version" => Gem::VERSION,
+-    }
+-
+-    specs = specs.sort_by {|spec| [spec["name"].downcase, spec["version"]] }
+-    specs.last["is_last"] = true
+-
+-    # tag all specs with first_name_entry
+-    last_spec = nil
+-    specs.each do |spec|
+-      is_first = last_spec.nil? || (last_spec["name"].downcase != spec["name"].downcase)
+-      spec["first_name_entry"] = is_first
+-      last_spec = spec
+-    end
+-
+-    # create page from template
+-    template = ERB.new(DOC_TEMPLATE)
+-    res['content-type'] = 'text/html'
+-
+-    values = { "gem_count" => specs.size.to_s, "specs" => specs,
+-               "total_file_count" => total_file_count.to_s }
+-
+-    # suppress 1.9.3dev warning about unused variable
+-    values = values
+-
+-    result = template.result binding
+-    res.body = result
+-  end
+-
+-  ##
+-  # Can be used for quick navigation to the rdoc documentation.  You can then
+-  # define a search shortcut for your browser.  E.g. in Firefox connect
+-  # 'shortcut:rdoc' to http://localhost:8808/rdoc?q=%s template. Then you can
+-  # directly open the ActionPack documentation by typing 'rdoc actionp'. If
+-  # there are multiple hits for the search term, they are presented as a list
+-  # with links.
+-  #
+-  # Search algorithm aims for an intuitive search:
+-  # 1. first try to find the gems and documentation folders which name
+-  #    starts with the search term
+-  # 2. search for entries, that *contain* the search term
+-  # 3. show all the gems
+-  #
+-  # If there is only one search hit, user is immediately redirected to the
+-  # documentation for the particular gem, otherwise a list with results is
+-  # shown.
+-  #
+-  # === Additional trick - install documentation for Ruby core
+-  #
+-  # Note: please adjust paths accordingly use for example 'locate yaml.rb' and
+-  # 'gem environment' to identify directories, that are specific for your
+-  # local installation
+-  #
+-  # 1. install Ruby sources
+-  #      cd /usr/src
+-  #      sudo apt-get source ruby
+-  #
+-  # 2. generate documentation
+-  #      rdoc -o /usr/lib/ruby/gems/1.8/doc/core/rdoc \
+-  #        /usr/lib/ruby/1.8 ruby1.8-1.8.7.72
+-  #
+-  # By typing 'rdoc core' you can now access the core documentation
+-
+-  def rdoc(req, res)
+-    query = req.query['q']
+-    show_rdoc_for_pattern("#{query}*", res) && return
+-    show_rdoc_for_pattern("*#{query}*", res) && return
+-
+-    template = ERB.new RDOC_NO_DOCUMENTATION
+-
+-    res['content-type'] = 'text/html'
+-    res.body = template.result binding
+-  end
+-
+-  ##
+-  # Updates the server to use the latest installed gems.
+-
+-  def reset_gems # :nodoc:
+-    Gem::Specification.dirs = @gem_dirs
+-  end
+-
+-  ##
+-  # Returns true and prepares http response, if rdoc for the requested gem
+-  # name pattern was found.
+-  #
+-  # The search is based on the file system content, not on the gems metadata.
+-  # This allows additional documentation folders like 'core' for the Ruby core
+-  # documentation - just put it underneath the main doc folder.
+-
+-  def show_rdoc_for_pattern(pattern, res)
+-    found_gems = Dir.glob("{#{@gem_dirs.join ','}}/doc/#{pattern}").select do |path|
+-      File.exist? File.join(path, 'rdoc/index.html')
+-    end
+-    case found_gems.length
+-    when 0
+-      return false
+-    when 1
+-      new_path = File.basename(found_gems[0])
+-      res.status = 302
+-      res['Location'] = doc_root new_path
+-      return true
+-    else
+-      doc_items = []
+-      found_gems.each do |file_name|
+-        base_name = File.basename(file_name)
+-        doc_items << {
+-          :name    => base_name,
+-          :url     => doc_root(new_path),
+-          :summary => '',
+-        }
+-      end
+-
+-      template = ERB.new(RDOC_SEARCH_TEMPLATE)
+-      res['content-type'] = 'text/html'
+-      result = template.result binding
+-      res.body = result
+-      return true
+-    end
+-  end
+-
+-  def run
+-    listen
+-
+-    WEBrick::Daemon.start if @daemon
+-
+-    @server.mount_proc "/specs.#{Gem.marshal_version}", method(:specs)
+-    @server.mount_proc "/specs.#{Gem.marshal_version}.gz", method(:specs)
+-
+-    @server.mount_proc "/latest_specs.#{Gem.marshal_version}",
+-                       method(:latest_specs)
+-    @server.mount_proc "/latest_specs.#{Gem.marshal_version}.gz",
+-                       method(:latest_specs)
+-
+-    @server.mount_proc "/prerelease_specs.#{Gem.marshal_version}",
+-                       method(:prerelease_specs)
+-    @server.mount_proc "/prerelease_specs.#{Gem.marshal_version}.gz",
+-                       method(:prerelease_specs)
+-
+-    @server.mount_proc "/quick/", method(:quick)
+-
+-    @server.mount_proc("/gem-server-rdoc-style.css") do |req, res|
+-      res['content-type'] = 'text/css'
+-      add_date res
+-      res.body << RDOC_CSS
+-    end
+-
+-    @server.mount_proc "/", method(:root)
+-
+-    @server.mount_proc "/rdoc", method(:rdoc)
+-
+-    file_handlers = {
+-      '/gems' => '/cache/',
+-    }
+-
+-    if have_rdoc_4_plus?
+-      @server.mount '/doc_root', RDoc::Servlet, '/doc_root'
+-    else
+-      file_handlers['/doc_root'] = '/doc/'
+-    end
+-
+-    @gem_dirs.each do |gem_dir|
+-      file_handlers.each do |mount_point, mount_dir|
+-        @server.mount(mount_point, WEBrick::HTTPServlet::FileHandler,
+-                      File.join(gem_dir, mount_dir), true)
+-      end
+-    end
+-
+-    trap("INT") { @server.shutdown; exit! }
+-    trap("TERM") { @server.shutdown; exit! }
+-
+-    launch if @launch
+-
+-    @server.start
+-  end
+-
+-  def specs(req, res)
+-    reset_gems
+-
+-    add_date res
+-
+-    specs = Gem::Specification.sort_by(&:sort_obj).map do |spec|
+-      platform = spec.original_platform || Gem::Platform::RUBY
+-      [spec.name, spec.version, platform]
+-    end
+-
+-    specs = Marshal.dump specs
+-
+-    if req.path =~ /\.gz$/
+-      specs = Gem::Util.gzip specs
+-      res['content-type'] = 'application/x-gzip'
+-    else
+-      res['content-type'] = 'application/octet-stream'
+-    end
+-
+-    if req.request_method == 'HEAD'
+-      res['content-length'] = specs.length
+-    else
+-      res.body << specs
+-    end
+-  end
+-
+-  def launch
+-    listeners = @server.listeners.map{|l| l.addr[2] }
+-
+-    # TODO: 0.0.0.0 == any, not localhost.
+-    host = listeners.any?{|l| l == '0.0.0.0' } ? 'localhost' : listeners.first
+-
+-    say "Launching browser to http://#{host}:#{@port}"
+-
+-    system("#{@launch} http://#{host}:#{@port}")
+-  end
+-end
+diff --git a/lib/rubygems/source.rb b/lib/rubygems/source.rb
+index b5bd6b8..f03e098 100644
+--- a/lib/rubygems/source.rb
++++ b/lib/rubygems/source.rb
+@@ -35,6 +35,7 @@ class Gem::Source
+     end
+ 
+     @uri = uri
++    @update_cache = nil
+   end
+ 
+   ##
+@@ -118,7 +119,8 @@ class Gem::Source
+   # Returns true when it is possible and safe to update the cache directory.
+ 
+   def update_cache?
+-    @update_cache ||=
++    return @update_cache unless @update_cache.nil?
++    @update_cache =
+       begin
+         File.stat(Gem.user_home).uid == Process.uid
+       rescue Errno::ENOENT
+diff --git a/lib/rubygems/spec_fetcher.rb b/lib/rubygems/spec_fetcher.rb
+index 68ff605..b97bd49 100644
+--- a/lib/rubygems/spec_fetcher.rb
++++ b/lib/rubygems/spec_fetcher.rb
+@@ -121,7 +121,7 @@ class Gem::SpecFetcher
+       end
+     end
+ 
+-    tuples = tuples.sort_by {|x| x[0] }
++    tuples = tuples.sort_by {|x| x[0].version }
+ 
+     return [tuples, errors]
+   end
+diff --git a/lib/rubygems/specification.rb b/lib/rubygems/specification.rb
+index 776eff9..031a37f 100644
+--- a/lib/rubygems/specification.rb
++++ b/lib/rubygems/specification.rb
+@@ -9,6 +9,8 @@
+ require_relative 'deprecate'
+ require_relative 'basic_specification'
+ require_relative 'stub_specification'
++require_relative 'platform'
++require_relative 'requirement'
+ require_relative 'specification_policy'
+ require_relative 'util/list'
+ 
+@@ -179,18 +181,14 @@ class Gem::Specification < Gem::BasicSpecification
+   end
+ 
+   def self.clear_specs # :nodoc:
+-    @@all_specs_mutex.synchronize do
+-      @@all = nil
+-      @@stubs = nil
+-      @@stubs_by_name = {}
+-      @@spec_with_requirable_file = {}
+-      @@active_stub_with_requirable_file = {}
+-    end
++    @@all = nil
++    @@stubs = nil
++    @@stubs_by_name = {}
++    @@spec_with_requirable_file = {}
++    @@active_stub_with_requirable_file = {}
+   end
+   private_class_method :clear_specs
+ 
+-  @@all_specs_mutex = Thread::Mutex.new
+-
+   clear_specs
+ 
+   # Sentinel object to represent "not found" stubs
+@@ -758,7 +756,7 @@ class Gem::Specification < Gem::BasicSpecification
+   attr_accessor :specification_version
+ 
+   def self._all # :nodoc:
+-    @@all_specs_mutex.synchronize { @@all ||= Gem.loaded_specs.values | stubs.map(&:to_spec) }
++    @@all ||= Gem.loaded_specs.values | stubs.map(&:to_spec)
+   end
+ 
+   def self.clear_load_cache # :nodoc:
+@@ -861,7 +859,7 @@ class Gem::Specification < Gem::BasicSpecification
+       next names if names.nonzero?
+       versions = b.version <=> a.version
+       next versions if versions.nonzero?
+-      b.platform == Gem::Platform::RUBY ? -1 : 1
++      Gem::Platform.sort_priority(b.platform)
+     end
+   end
+ 
+@@ -997,7 +995,6 @@ class Gem::Specification < Gem::BasicSpecification
+   def self.find_by_path(path)
+     path = path.dup.freeze
+     spec = @@spec_with_requirable_file[path] ||= (stubs.find do |s|
+-      next unless Gem::BundlerVersionFinder.compatible?(s)
+       s.contains_requirable_file? path
+     end || NOT_FOUND)
+     spec.to_spec
+@@ -1010,7 +1007,6 @@ class Gem::Specification < Gem::BasicSpecification
+   def self.find_inactive_by_path(path)
+     stub = stubs.find do |s|
+       next if s.activated?
+-      next unless Gem::BundlerVersionFinder.compatible?(s)
+       s.contains_requirable_file? path
+     end
+     stub && stub.to_spec
+@@ -1086,7 +1082,7 @@ class Gem::Specification < Gem::BasicSpecification
+   # +prerelease+ is true.
+ 
+   def self.latest_specs(prerelease = false)
+-    _latest_specs Gem::Specification._all, prerelease
++    _latest_specs Gem::Specification.stubs, prerelease
+   end
+ 
+   ##
+@@ -1120,7 +1116,7 @@ class Gem::Specification < Gem::BasicSpecification
+     file = file.dup.tap(&Gem::UNTAINT)
+     return unless File.file?(file)
+ 
+-    code = File.read file, :mode => 'r:UTF-8:-'
++    code = Gem.open_with_flock(file, 'r:UTF-8:-', &:read)
+ 
+     code.tap(&Gem::UNTAINT)
+ 
+@@ -1696,9 +1692,7 @@ class Gem::Specification < Gem::BasicSpecification
+                 raise(Gem::InvalidSpecificationException,
+                       "invalid date format in specification: #{date.inspect}")
+               end
+-            when Time then
+-              Time.utc(date.utc.year, date.utc.month, date.utc.day)
+-            when DateLike then
++            when Time, DateLike then
+               Time.utc(date.year, date.month, date.day)
+             else
+               TODAY
+@@ -2337,7 +2331,7 @@ class Gem::Specification < Gem::BasicSpecification
+   # Returns an object you can use to sort specifications in #sort_by.
+ 
+   def sort_obj
+-    [@name, @version, @new_platform == Gem::Platform::RUBY ? -1 : 1]
++    [@name, @version, Gem::Platform.sort_priority(@new_platform)]
+   end
+ 
+   ##
+diff --git a/lib/rubygems/stub_specification.rb b/lib/rubygems/stub_specification.rb
+index 4246f9d..47fe7da 100644
+--- a/lib/rubygems/stub_specification.rb
++++ b/lib/rubygems/stub_specification.rb
+@@ -110,7 +110,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
+       begin
+         saved_lineno = $.
+ 
+-        File.open loaded_from, OPEN_MODE do |file|
++        Gem.open_with_flock loaded_from, OPEN_MODE do |file|
+           begin
+             file.readline # discard encoding line
+             stubline = file.readline.chomp
+diff --git a/lib/rubygems/text.rb b/lib/rubygems/text.rb
+index 6678111..acf25a0 100644
+--- a/lib/rubygems/text.rb
++++ b/lib/rubygems/text.rb
+@@ -49,37 +49,38 @@ module Gem::Text
+     end
+   end
+ 
+-  # This code is based directly on the Text gem implementation
+   # Returns a value representing the "cost" of transforming str1 into str2
++  # Vendored version of DidYouMean::Levenshtein.distance from the ruby/did_you_mean gem @ 1.4.0
++  # https://git.io/JJgZI
+   def levenshtein_distance(str1, str2)
+-    s = str1
+-    t = str2
+-    n = s.length
+-    m = t.length
+-
+-    return m if (0 == n)
+-    return n if (0 == m)
++    n = str1.length
++    m = str2.length
++    return m if n.zero?
++    return n if m.zero?
+ 
+     d = (0..m).to_a
+     x = nil
+ 
+-    str1.each_char.each_with_index do |char1,i|
+-      e = i + 1
++    # to avoid duplicating an enumerable object, create it outside of the loop
++    str2_codepoints = str2.codepoints
+ 
+-      str2.each_char.each_with_index do |char2,j|
+-        cost = (char1 == char2) ? 0 : 1
++    str1.each_codepoint.with_index(1) do |char1, i|
++      j = 0
++      while j < m
++        cost = (char1 == str2_codepoints[j]) ? 0 : 1
+         x = min3(
+-             d[j + 1] + 1, # insertion
+-             e + 1,      # deletion
+-             d[j] + cost # substitution
+-           )
+-        d[j] = e
+-        e = x
++          d[j + 1] + 1, # insertion
++          i + 1,      # deletion
++          d[j] + cost # substitution
++        )
++        d[j] = i
++        i = x
++
++        j += 1
+       end
+-
+       d[m] = x
+     end
+ 
+-    return x
++    x
+   end
+ end
+diff --git a/lib/rubygems/uninstaller.rb b/lib/rubygems/uninstaller.rb
+index 1c3bf26..11fb611 100644
+--- a/lib/rubygems/uninstaller.rb
++++ b/lib/rubygems/uninstaller.rb
+@@ -262,7 +262,10 @@ class Gem::Uninstaller
+ 
+     safe_delete { FileUtils.rm_r gem }
+ 
+-    Gem::RDoc.new(spec).remove
++    begin
++      Gem::RDoc.new(spec).remove
++    rescue NameError
++    end
+ 
+     gemspec = spec.spec_file
+ 
+diff --git a/lib/rubygems/unknown_command_spell_checker.rb b/lib/rubygems/unknown_command_spell_checker.rb
+new file mode 100644
+index 0000000..ee5c2fb
+--- /dev/null
++++ b/lib/rubygems/unknown_command_spell_checker.rb
+@@ -0,0 +1,21 @@
++# frozen_string_literal: true
++
++class Gem::UnknownCommandSpellChecker
++  attr_reader :error
++
++  def initialize(error)
++    @error = error
++  end
++
++  def corrections
++    @corrections ||=
++      spell_checker.correct(error.unknown_command).map(&:inspect)
++  end
++
++  private
++
++  def spell_checker
++    dictionary = Gem::CommandManager.instance.command_names
++    DidYouMean::SpellChecker.new(dictionary: dictionary)
++  end
++end
+diff --git a/lib/rubygems/version.rb b/lib/rubygems/version.rb
+index 20bbff4..42e0f23 100644
+--- a/lib/rubygems/version.rb
++++ b/lib/rubygems/version.rb
+@@ -149,6 +149,8 @@
+ # For the last example, single-digit versions are automatically extended with
+ # a zero to give a sensible result.
+ 
++require_relative "deprecate"
++
+ class Gem::Version
+   autoload :Requirement, File.expand_path('requirement', __dir__)
+ 
+diff --git a/test/rubygems/bogussources.rb b/test/rubygems/bogussources.rb
+deleted file mode 100644
+index 4f783c3..0000000
+--- a/test/rubygems/bogussources.rb
++++ /dev/null
+@@ -1,9 +0,0 @@
+-# frozen_string_literal: true
+-#--
+-# Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
+-# All rights reserved.
+-# See LICENSE.txt for permissions.
+-#++
+-
+-require 'rubygems'
+-Gem.use_paths("test/mock/gems")
+diff --git a/test/rubygems/helper.rb b/test/rubygems/helper.rb
+index a09d078..f321b02 100644
+--- a/test/rubygems/helper.rb
++++ b/test/rubygems/helper.rb
+@@ -143,15 +143,13 @@ class Gem::TestCase < Test::Unit::TestCase
+ 
+         return captured_stdout.read, captured_stderr.read
+       ensure
+-        captured_stdout.unlink
+-        captured_stderr.unlink
+         $stdout.reopen orig_stdout
+         $stderr.reopen orig_stderr
+ 
+         orig_stdout.close
+         orig_stderr.close
+-        captured_stdout.close
+-        captured_stderr.close
++        captured_stdout.close!
++        captured_stderr.close!
+       end
+     end
+   end
+@@ -591,7 +589,7 @@ class Gem::TestCase < Test::Unit::TestCase
+   def have_git?
+     return if in_path? @git
+ 
+-    skip 'cannot find git executable, use GIT environment variable to set'
++    pend 'cannot find git executable, use GIT environment variable to set'
+   end
+ 
+   def in_path?(executable) # :nodoc:
+@@ -1302,6 +1300,22 @@ Also, a list:
+     Gem.instance_variable_set :@ruby, orig_ruby
+   end
+ 
++  def with_internal_encoding(encoding)
++    int_enc = Encoding.default_internal
++    silence_warnings { Encoding.default_internal = encoding }
++
++    yield
++  ensure
++    silence_warnings { Encoding.default_internal = int_enc }
++  end
++
++  def silence_warnings
++    old_verbose, $VERBOSE = $VERBOSE, false
++    yield
++  ensure
++    $VERBOSE = old_verbose
++  end
++
+   class << self
+     # :nodoc:
+     ##
+@@ -1589,7 +1603,7 @@ class Object
+     metaclass.send :undef_method, name
+     metaclass.send :alias_method, name, new_name
+     metaclass.send :undef_method, new_name
+-  end
++  end unless method_defined?(:stub) # lib/resolv/test_dns.rb also has the same method definition
+ end
+ 
+ require_relative 'utilities'
+diff --git a/test/rubygems/test_config.rb b/test/rubygems/test_config.rb
+index 4d64f16..fff539c 100644
+--- a/test/rubygems/test_config.rb
++++ b/test/rubygems/test_config.rb
+@@ -12,14 +12,14 @@ class TestConfig < Gem::TestCase
+   end
+ 
+   def test_good_rake_path_is_escaped
+-    path = Gem::TestCase.class_eval('@@good_rake')
++    path = Gem::TestCase.class_variable_get(:@@good_rake)
+     ruby, rake = path.shellsplit
+     assert_equal(Gem.ruby, ruby)
+     assert_match(/\/good_rake.rb\z/, rake)
+   end
+ 
+   def test_bad_rake_path_is_escaped
+-    path = Gem::TestCase.class_eval('@@bad_rake')
++    path = Gem::TestCase.class_variable_get(:@@bad_rake)
+     ruby, rake = path.shellsplit
+     assert_equal(Gem.ruby, ruby)
+     assert_match(/\/bad_rake.rb\z/, rake)
+diff --git a/test/rubygems/test_exit.rb b/test/rubygems/test_exit.rb
+new file mode 100644
+index 0000000..9557fe5
+--- /dev/null
++++ b/test/rubygems/test_exit.rb
+@@ -0,0 +1,11 @@
++# frozen_string_literal: true
++
++require_relative 'helper'
++require 'rubygems'
++
++class TestExit < Gem::TestCase
++  def test_exit
++    system(*ruby_with_rubygems_in_load_path, "-e", "raise Gem::SystemExitException.new(2)")
++    assert_equal 2, $?.exitstatus
++  end
++end
+diff --git a/test/rubygems/test_gem.rb b/test/rubygems/test_gem.rb
+index 832701a..970b3b7 100644
+--- a/test/rubygems/test_gem.rb
++++ b/test/rubygems/test_gem.rb
+@@ -354,41 +354,6 @@ class TestGem < Gem::TestCase
+     assert status.success?, output
+   end
+ 
+-  def test_activate_bin_path_gives_proper_error_for_bundler
+-    bundler = util_spec 'bundler', '2' do |s|
+-      s.executables = ['bundle']
+-    end
+-
+-    install_specs bundler
+-
+-    File.open("Gemfile.lock", "w") do |f|
+-      f.write <<-L.gsub(/ {8}/, "")
+-        GEM
+-          remote: https://rubygems.org/
+-          specs:
+-
+-        PLATFORMS
+-          ruby
+-
+-        DEPENDENCIES
+-
+-        BUNDLED WITH
+-          9999
+-      L
+-    end
+-
+-    File.open("Gemfile", "w") {|f| f.puts('source "https://rubygems.org"') }
+-
+-    e = assert_raise Gem::GemNotFoundException do
+-      load Gem.activate_bin_path("bundler", "bundle", ">= 0.a")
+-    end
+-
+-    assert_includes e.message, "Could not find 'bundler' (9999) required by your #{File.expand_path("Gemfile.lock")}."
+-    assert_includes e.message, "To update to the latest version installed on your system, run `bundle update --bundler`."
+-    assert_includes e.message, "To install the missing version, run `gem install bundler:9999`"
+-    refute_includes e.message, "can't find gem bundler (>= 0.a) with executable bundle"
+-  end
+-
+   def test_activate_bin_path_selects_exact_bundler_version_if_present
+     bundler_latest = util_spec 'bundler', '2.0.1' do |s|
+       s.executables = ['bundle']
+@@ -888,6 +853,27 @@ class TestGem < Gem::TestCase
+     assert_equal gems['a-2'], spec
+   end
+ 
++  def test_self_latest_spec_for_multiple_sources
++    uri = 'https://example.sample.com/'
++    source = Gem::Source.new(uri)
++    source_list = Gem::SourceList.new
++    source_list << Gem::Source.new(@uri)
++    source_list << source
++    Gem.sources.replace source_list
++
++    spec_fetcher(uri) do |fetcher|
++      fetcher.spec 'a', 1.1
++    end
++
++    gems = spec_fetcher do |fetcher|
++      fetcher.spec 'a', 1
++      fetcher.spec 'a', '3.a'
++      fetcher.spec 'a', 2
++    end
++    spec = Gem.latest_spec_for 'a'
++    assert_equal gems['a-2'], spec
++  end
++
+   def test_self_latest_rubygems_version
+     spec_fetcher do |fetcher|
+       fetcher.spec 'rubygems-update', '1.8.23'
+@@ -912,6 +898,29 @@ class TestGem < Gem::TestCase
+     assert_equal Gem::Version.new(2), version
+   end
+ 
++  def test_self_latest_version_for_multiple_sources
++    uri = 'https://example.sample.com/'
++    source = Gem::Source.new(uri)
++    source_list = Gem::SourceList.new
++    source_list << Gem::Source.new(@uri)
++    source_list << source
++    Gem.sources.replace source_list
++
++    spec_fetcher(uri) do |fetcher|
++      fetcher.spec 'a', 1.1
++    end
++
++    spec_fetcher do |fetcher|
++      fetcher.spec 'a', 1
++      fetcher.spec 'a', 2
++      fetcher.spec 'a', '3.a'
++    end
++
++    version = Gem.latest_version_for 'a'
++
++    assert_equal Gem::Version.new(2), version
++  end
++
+   def test_self_loaded_specs
+     foo = util_spec 'foo'
+     install_gem foo
+@@ -921,56 +930,17 @@ class TestGem < Gem::TestCase
+     assert_equal true, Gem.loaded_specs.keys.include?('foo')
+   end
+ 
+-  def util_path
+-    ENV.delete "GEM_HOME"
+-    ENV.delete "GEM_PATH"
+-  end
+-
+   def test_self_path
+     assert_equal [Gem.dir], Gem.path
+   end
+ 
+   def test_self_path_default
+-    util_path
+-
+-    if defined?(APPLE_GEM_HOME)
+-      orig_APPLE_GEM_HOME = APPLE_GEM_HOME
+-      Object.send :remove_const, :APPLE_GEM_HOME
+-    end
++    ENV.delete "GEM_HOME"
++    ENV.delete "GEM_PATH"
+ 
+     Gem.instance_variable_set :@paths, nil
+ 
+     assert_equal [Gem.default_path, Gem.dir].flatten.uniq, Gem.path
+-  ensure
+-    Object.const_set :APPLE_GEM_HOME, orig_APPLE_GEM_HOME if orig_APPLE_GEM_HOME
+-  end
+-
+-  unless win_platform?
+-    def test_self_path_APPLE_GEM_HOME
+-      util_path
+-
+-      Gem.clear_paths
+-      apple_gem_home = File.join @tempdir, 'apple_gem_home'
+-
+-      old, $-w = $-w, nil
+-      Object.const_set :APPLE_GEM_HOME, apple_gem_home
+-      $-w = old
+-
+-      assert_includes Gem.path, apple_gem_home
+-    ensure
+-      Object.send :remove_const, :APPLE_GEM_HOME
+-    end
+-
+-    def test_self_path_APPLE_GEM_HOME_GEM_PATH
+-      Gem.clear_paths
+-      ENV['GEM_PATH'] = @gemhome
+-      apple_gem_home = File.join @tempdir, 'apple_gem_home'
+-      Gem.const_set :APPLE_GEM_HOME, apple_gem_home
+-
+-      refute Gem.path.include?(apple_gem_home)
+-    ensure
+-      Gem.send :remove_const, :APPLE_GEM_HOME
+-    end
+   end
+ 
+   def test_self_path_ENV_PATH
+diff --git a/test/rubygems/test_gem_bundler_version_finder.rb b/test/rubygems/test_gem_bundler_version_finder.rb
+index e971e6a..7494a94 100644
+--- a/test/rubygems/test_gem_bundler_version_finder.rb
++++ b/test/rubygems/test_gem_bundler_version_finder.rb
+@@ -48,30 +48,31 @@ class TestGemBundlerVersionFinder < Gem::TestCase
+   end
+ 
+   def test_bundler_version_with_lockfile
+-    bvf.stub(:lockfile_contents, [nil, ""]) do
++    bvf.stub(:lockfile_contents, "") do
+       assert_nil bvf.bundler_version
+     end
+-    bvf.stub(:lockfile_contents, [nil, "\n\nBUNDLED WITH\n   1.1.1.1\n"]) do
++    bvf.stub(:lockfile_contents, "\n\nBUNDLED WITH\n   1.1.1.1\n") do
+       assert_equal v("1.1.1.1"), bvf.bundler_version
+     end
+-    bvf.stub(:lockfile_contents, [nil, "\n\nBUNDLED WITH\n   fjdkslfjdkslfjsldk\n"]) do
++    bvf.stub(:lockfile_contents, "\n\nBUNDLED WITH\n   fjdkslfjdkslfjsldk\n") do
+       assert_nil bvf.bundler_version
+     end
+   end
+ 
+-  def test_bundler_version_with_reason
+-    assert_nil bvf.bundler_version_with_reason
+-    bvf.stub(:lockfile_contents, [nil, "\n\nBUNDLED WITH\n   1.1.1.1\n"]) do
+-      assert_equal ["1.1.1.1", "your lockfile"], bvf.bundler_version_with_reason
++  def test_bundler_version
++    assert_nil bvf.bundler_version
++    bvf.stub(:lockfile_contents, "\n\nBUNDLED WITH\n   1.1.1.1\n") do
++      assert_equal "1.1.1.1", bvf.bundler_version.to_s
+ 
+       $0 = "bundle"
+       ARGV.replace %w[update --bundler]
+-      assert_nil bvf.bundler_version_with_reason
++      assert_nil bvf.bundler_version
++
+       ARGV.replace %w[update --bundler=1.1.1.2]
+-      assert_equal ["1.1.1.2", "`bundle update --bundler`"], bvf.bundler_version_with_reason
++      assert_equal "1.1.1.2",  bvf.bundler_version.to_s
+ 
+       ENV["BUNDLER_VERSION"] = "1.1.1.3"
+-      assert_equal ["1.1.1.3", "`$BUNDLER_VERSION`"], bvf.bundler_version_with_reason
++      assert_equal "1.1.1.3", bvf.bundler_version.to_s
+     end
+   end
+ 
+@@ -90,57 +91,35 @@ class TestGemBundlerVersionFinder < Gem::TestCase
+       Dir.chdir(orig_dir)
+     end
+ 
+-    assert_nil bvf.bundler_version_with_reason
+-  end
+-
+-  def test_compatible
+-    assert bvf.compatible?(util_spec("foo"))
+-    assert bvf.compatible?(util_spec("bundler", 1.1))
+-
+-    bvf.stub(:bundler_version, v("1.1.1.1")) do
+-      assert bvf.compatible?(util_spec("foo"))
+-      assert bvf.compatible?(util_spec("bundler", "1.1.1.1"))
+-      assert bvf.compatible?(util_spec("bundler", "1.1.1.a"))
+-      assert bvf.compatible?(util_spec("bundler", "1.999"))
+-      refute bvf.compatible?(util_spec("bundler", "2.999"))
+-    end
+-
+-    bvf.stub(:bundler_version, v("2.1.1.1")) do
+-      assert bvf.compatible?(util_spec("foo"))
+-      assert bvf.compatible?(util_spec("bundler", "2.1.1.1"))
+-      assert bvf.compatible?(util_spec("bundler", "2.1.1.a"))
+-      assert bvf.compatible?(util_spec("bundler", "2.999"))
+-      refute bvf.compatible?(util_spec("bundler", "1.999"))
+-      refute bvf.compatible?(util_spec("bundler", "3.0.0"))
+-    end
++    assert_nil bvf.bundler_version
+   end
+ 
+-  def test_filter
++  def test_prioritize
+     versions = %w[1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3 3.a 3.0 3.1.1]
+     specs = versions.map {|v| util_spec("bundler", v) }
+ 
+-    assert_equal %w[1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3 3.a 3.0 3.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
++    assert_equal %w[1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3 3.a 3.0 3.1.1], util_prioritize_specs(specs)
+ 
+     bvf.stub(:bundler_version, v("2.1.1.1")) do
+-      assert_equal %w[2 2.a 2.0 2.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
++      assert_equal %w[1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3 3.a 3.0 3.1.1], util_prioritize_specs(specs)
+     end
+     bvf.stub(:bundler_version, v("1.1.1.1")) do
+-      assert_equal %w[1 1.0 1.0.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
++      assert_equal %w[1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3 3.a 3.0 3.1.1], util_prioritize_specs(specs)
+     end
+     bvf.stub(:bundler_version, v("1")) do
+-      assert_equal %w[1 1.0 1.0.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
++      assert_equal %w[1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3 3.a 3.0 3.1.1], util_prioritize_specs(specs)
+     end
+     bvf.stub(:bundler_version, v("2.a")) do
+-      assert_equal %w[2.a 2 2.0 2.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
++      assert_equal %w[2.a 1 1.0 1.0.1.1 2 2.0 2.1.1 3 3.a 3.0 3.1.1], util_prioritize_specs(specs)
+     end
+     bvf.stub(:bundler_version, v("3")) do
+-      assert_equal %w[3 3.a 3.0 3.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
++      assert_equal %w[3 1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3.a 3.0 3.1.1], util_prioritize_specs(specs)
+     end
+   end
+ 
+-  def util_filter_specs(specs)
++  def util_prioritize_specs(specs)
+     specs = specs.dup
+-    bvf.filter!(specs)
+-    specs
++    bvf.prioritize!(specs)
++    specs.map(&:version).map(&:to_s)
+   end
+ end
+diff --git a/test/rubygems/test_gem_command_manager.rb b/test/rubygems/test_gem_command_manager.rb
+index ee71fc7..c2e11d2 100644
+--- a/test/rubygems/test_gem_command_manager.rb
++++ b/test/rubygems/test_gem_command_manager.rb
+@@ -62,13 +62,27 @@ class TestGemCommandManager < Gem::TestCase
+   end
+ 
+   def test_find_command_unknown
+-    e = assert_raise Gem::CommandLineError do
++    e = assert_raise Gem::UnknownCommandError do
+       @command_manager.find_command 'xyz'
+     end
+ 
+     assert_equal 'Unknown command xyz', e.message
+   end
+ 
++  def test_find_command_unknown_suggestions
++    e = assert_raise Gem::UnknownCommandError do
++      @command_manager.find_command 'pish'
++    end
++
++    message = 'Unknown command pish'.dup
++
++    if RUBY_VERSION >= "2.4" && defined?(DidYouMean::SPELL_CHECKERS) && defined?(DidYouMean::Correctable)
++      message << "\nDid you mean?  \"push\""
++    end
++
++    assert_equal message, e.message
++  end
++
+   def test_run_interrupt
+     old_load_path = $:.dup
+     $: << File.expand_path("test/rubygems", PROJECT_DIR)
+@@ -277,7 +291,7 @@ class TestGemCommandManager < Gem::TestCase
+ 
+     #check defaults
+     @command_manager.process_args %w[update]
+-    assert_includes check_options[:document], 'rdoc'
++    assert_includes check_options[:document], 'ri'
+ 
+     #check settings
+     check_options = nil
+diff --git a/test/rubygems/test_gem_commands_install_command.rb b/test/rubygems/test_gem_commands_install_command.rb
+index 5351809..0365b2c 100644
+--- a/test/rubygems/test_gem_commands_install_command.rb
++++ b/test/rubygems/test_gem_commands_install_command.rb
+@@ -782,6 +782,39 @@ ERROR:  Possible alternatives: non_existent_with_hint
+     assert_match "1 gem installed", @ui.output
+   end
+ 
++  def test_execute_remote_truncates_existing_gemspecs
++    spec_fetcher do |fetcher|
++      fetcher.gem 'a', 1
++    end
++
++    @cmd.options[:domain] = :remote
++
++    @cmd.options[:args] = %w[a]
++
++    use_ui @ui do
++      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
++        @cmd.execute
++      end
++    end
++
++    assert_equal %w[a-1], @cmd.installed_specs.map {|spec| spec.full_name }
++    assert_match "1 gem installed", @ui.output
++
++    a1_gemspec = File.join(@gemhome, 'specifications', "a-1.gemspec")
++
++    initial_a1_gemspec_content = File.read(a1_gemspec)
++    modified_a1_gemspec_content = initial_a1_gemspec_content + "\n  # AAAAAAA\n"
++    File.write(a1_gemspec, modified_a1_gemspec_content)
++
++    use_ui @ui do
++      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
++        @cmd.execute
++      end
++    end
++
++    assert_equal initial_a1_gemspec_content, File.read(a1_gemspec)
++  end
++
+   def test_execute_remote_ignores_files
+     specs = spec_fetcher do |fetcher|
+       fetcher.gem 'a', 1
+diff --git a/test/rubygems/test_gem_commands_open_command.rb b/test/rubygems/test_gem_commands_open_command.rb
+index 8447f7e..29cff1e 100644
+--- a/test/rubygems/test_gem_commands_open_command.rb
++++ b/test/rubygems/test_gem_commands_open_command.rb
+@@ -21,7 +21,7 @@ class TestGemCommandsOpenCommand < Gem::TestCase
+ 
+   def test_execute
+     @cmd.options[:args] = %w[foo]
+-    @cmd.options[:editor] = "#{Gem.ruby} -e0 --"
++    @cmd.options[:editor] = "#{ruby_with_rubygems_in_load_path} -eexit --"
+ 
+     gem 'foo', '1.0.0'
+     spec = gem 'foo', '1.0.1'
+diff --git a/test/rubygems/test_gem_commands_server_command.rb b/test/rubygems/test_gem_commands_server_command.rb
+index d5cd4d1..96c328f 100644
+--- a/test/rubygems/test_gem_commands_server_command.rb
++++ b/test/rubygems/test_gem_commands_server_command.rb
+@@ -9,53 +9,11 @@ class TestGemCommandsServerCommand < Gem::TestCase
+     @cmd = Gem::Commands::ServerCommand.new
+   end
+ 
+-  def test_handle_options
+-    @cmd.send :handle_options, %w[-p 8808 --no-daemon]
+-
+-    assert_equal false, @cmd.options[:daemon]
+-    assert_equal [], @cmd.options[:gemdir]
+-    assert_equal 8808, @cmd.options[:port]
+-
+-    @cmd.send :handle_options, %w[-p 9999 -d /nonexistent --daemon]
+-
+-    assert_equal true, @cmd.options[:daemon]
+-    assert_equal [File.expand_path('/nonexistent')], @cmd.options[:gemdir]
+-    assert_equal 9999, @cmd.options[:port]
+-  end
+-
+-  def test_handle_options_gemdir
+-    @cmd.send :handle_options, %w[--dir a --dir b]
+-
+-    assert_equal [File.expand_path('a'), File.expand_path('b')],
+-                 @cmd.options[:gemdir]
+-  end
+-
+-  def test_handle_options_port
+-    @cmd.send :handle_options, %w[-p 0]
+-    assert_equal 0, @cmd.options[:port]
+-
+-    @cmd.send :handle_options, %w[-p 65535]
+-    assert_equal 65535, @cmd.options[:port]
+-
+-    begin
+-      @cmd.send :handle_options, %w[-p discard]
+-      assert_equal 9, @cmd.options[:port]
+-    rescue Gem::OptionParser::InvalidArgument
+-      # for container environment on GitHub Actions
+-    end
+-
+-    e = assert_raise Gem::OptionParser::InvalidArgument do
+-      @cmd.send :handle_options, %w[-p nonexistent]
+-    end
+-
+-    assert_equal 'invalid argument: -p nonexistent: no such named service',
+-                 e.message
+-
+-    e = assert_raise Gem::OptionParser::InvalidArgument do
+-      @cmd.send :handle_options, %w[-p 65536]
++  def test_execute
++    use_ui @ui do
++      @cmd.execute
+     end
+ 
+-    assert_equal 'invalid argument: -p 65536: not a port number',
+-                 e.message
++    assert_match %r{Install the rubygems-server}i, @ui.error
+   end
+ end
+diff --git a/test/rubygems/test_gem_commands_update_command.rb b/test/rubygems/test_gem_commands_update_command.rb
+index a7ddddf..e9264f6 100644
+--- a/test/rubygems/test_gem_commands_update_command.rb
++++ b/test/rubygems/test_gem_commands_update_command.rb
+@@ -579,7 +579,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
+ 
+     expected = {
+       :args     => [],
+-      :document => %w[rdoc ri],
++      :document => %w[ri],
+       :force    => false,
+       :system   => true,
+     }
+@@ -598,7 +598,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
+ 
+     expected = {
+       :args     => [],
+-      :document => %w[rdoc ri],
++      :document => %w[ri],
+       :force    => false,
+       :system   => "1.3.7",
+     }
+diff --git a/test/rubygems/test_gem_dependency.rb b/test/rubygems/test_gem_dependency.rb
+index 1ca0fc3..5551966 100644
+--- a/test/rubygems/test_gem_dependency.rb
++++ b/test/rubygems/test_gem_dependency.rb
+@@ -358,16 +358,12 @@ class TestGemDependency < Gem::TestCase
+ 
+     assert_equal [b, b_1], dep.to_specs
+ 
+-    Gem::BundlerVersionFinder.stub(:bundler_version_with_reason, ["3.5", "reason"]) do
+-      e = assert_raise Gem::MissingSpecVersionError do
+-        dep.to_specs
+-      end
+-
+-      assert_match "Could not find 'bundler' (3.5) required by reason.\nTo update to the latest version installed on your system, run `bundle update --bundler`.\nTo install the missing version, run `gem install bundler:3.5`\n", e.message
++    Gem::BundlerVersionFinder.stub(:bundler_version, Gem::Version.new("1")) do
++      assert_equal [b_1, b], dep.to_specs
+     end
+ 
+-    Gem::BundlerVersionFinder.stub(:bundler_version_with_reason, ["2.0.0.pre.1", "reason"]) do
+-      assert_equal [b], dep.to_specs
++    Gem::BundlerVersionFinder.stub(:bundler_version, Gem::Version.new("2.0.0.pre.1")) do
++      assert_equal [b, b_1], dep.to_specs
+     end
+   end
+ 
+diff --git a/test/rubygems/test_gem_installer.rb b/test/rubygems/test_gem_installer.rb
+index dae2b07..8874577 100644
+--- a/test/rubygems/test_gem_installer.rb
++++ b/test/rubygems/test_gem_installer.rb
+@@ -288,33 +288,6 @@ gem 'other', version
+                  "(SyntaxError)", e.message
+   end
+ 
+-  def test_ensure_no_race_conditions_between_installing_and_loading_gemspecs
+-    a, a_gem = util_gem 'a', 2
+-
+-    Gem::Installer.at(a_gem).install
+-
+-    t1 = Thread.new do
+-      5.times do
+-        Gem::Installer.at(a_gem).install
+-        sleep 0.1
+-      end
+-    end
+-
+-    t2 = Thread.new do
+-      _, err = capture_output do
+-        20.times do
+-          Gem::Specification.load(a.spec_file)
+-          Gem::Specification.send(:clear_load_cache)
+-        end
+-      end
+-
+-      assert_empty err
+-    end
+-
+-    t1.join
+-    t2.join
+-  end
+-
+   def test_ensure_loadable_spec_security_policy
+     pend 'openssl is missing' unless Gem::HAVE_OPENSSL
+ 
+diff --git a/test/rubygems/test_gem_path_support.rb b/test/rubygems/test_gem_path_support.rb
+index 88a3cc2..394cba2 100644
+--- a/test/rubygems/test_gem_path_support.rb
++++ b/test/rubygems/test_gem_path_support.rb
+@@ -16,7 +16,7 @@ class TestGemPathSupport < Gem::TestCase
+ 
+     assert_equal ENV["GEM_HOME"], ps.home
+ 
+-    expected = util_path
++    expected = ENV["GEM_PATH"].split(File::PATH_SEPARATOR)
+     assert_equal expected, ps.path, "defaults to GEM_PATH"
+   end
+ 
+@@ -25,7 +25,7 @@ class TestGemPathSupport < Gem::TestCase
+ 
+     assert_equal File.join(@tempdir, "foo"), ps.home
+ 
+-    expected = util_path + [File.join(@tempdir, 'foo')]
++    expected = ENV["GEM_PATH"].split(File::PATH_SEPARATOR) + [File.join(@tempdir, 'foo')]
+     assert_equal expected, ps.path
+   end
+ 
+@@ -102,10 +102,6 @@ class TestGemPathSupport < Gem::TestCase
+     end
+   end
+ 
+-  def util_path
+-    ENV["GEM_PATH"].split(File::PATH_SEPARATOR)
+-  end
+-
+   def test_initialize_spec
+     ENV["GEM_SPEC_CACHE"] = nil
+ 
+diff --git a/test/rubygems/test_gem_remote_fetcher.rb b/test/rubygems/test_gem_remote_fetcher.rb
+index 5ce420b..3ce9be7 100644
+--- a/test/rubygems/test_gem_remote_fetcher.rb
++++ b/test/rubygems/test_gem_remote_fetcher.rb
+@@ -173,6 +173,21 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
+     assert_equal 'hello', File.read(path)
+   end
+ 
++  def test_cache_update_path_with_utf8_internal_encoding
++    with_internal_encoding('UTF-8') do
++      uri = URI 'http://example/file'
++      path = File.join @tempdir, 'file'
++      data = String.new("\xC8").force_encoding(Encoding::BINARY)
++
++      fetcher = util_fuck_with_fetcher data
++
++      written_data = fetcher.cache_update_path uri, path
++
++      assert_equal data, written_data
++      assert_equal data, File.binread(path)
++    end
++  end
++
+   def test_cache_update_path_no_update
+     uri = URI 'http://example/file'
+     path = File.join @tempdir, 'file'
+diff --git a/test/rubygems/test_gem_requirement.rb b/test/rubygems/test_gem_requirement.rb
+index b20b3cc..b436768 100644
+--- a/test/rubygems/test_gem_requirement.rb
++++ b/test/rubygems/test_gem_requirement.rb
+@@ -253,7 +253,6 @@ class TestGemRequirement < Gem::TestCase
+     assert_satisfied_by "1.0.0.0",     "= 1.0"
+     assert_satisfied_by "10.3.2",      "!= 9.3.4"
+     assert_satisfied_by "10.3.2",      "> 9.3.2"
+-    assert_satisfied_by "10.3.2",      "> 9.3.2"
+     assert_satisfied_by " 9.3.2",      ">= 9.3.2"
+     assert_satisfied_by "9.3.2 ",      ">= 9.3.2"
+     assert_satisfied_by "",            "= 0"
+diff --git a/test/rubygems/test_gem_security.rb b/test/rubygems/test_gem_security.rb
+index d04bd4a..415ec2b 100644
+--- a/test/rubygems/test_gem_security.rb
++++ b/test/rubygems/test_gem_security.rb
+@@ -196,7 +196,7 @@ class TestGemSecurity < Gem::TestCase
+ 
+   def test_class_sign
+     issuer = PUBLIC_CERT.subject
+-    signee = OpenSSL::X509::Name.parse "/CN=signee/DC=example"
++    signee = OpenSSL::X509::Name.new([["CN", "signee"], ["DC", "example"]])
+ 
+     key  = PRIVATE_KEY
+     cert = OpenSSL::X509::Certificate.new
+diff --git a/test/rubygems/test_gem_server.rb b/test/rubygems/test_gem_server.rb
+deleted file mode 100644
+index f6aa99f..0000000
+--- a/test/rubygems/test_gem_server.rb
++++ /dev/null
+@@ -1,608 +0,0 @@
+-# frozen_string_literal: true
+-require_relative 'helper'
+-require 'rubygems/server'
+-require 'stringio'
+-
+-class Gem::Server
+-  attr_reader :server
+-end
+-
+-class TestGemServer < Gem::TestCase
+-  def process_based_port
+-    0
+-  end
+-
+-  def setup
+-    super
+-
+-    @a1   = quick_gem 'a', '1'
+-    @a2   = quick_gem 'a', '2'
+-    @a3_p = quick_gem 'a', '3.a'
+-
+-    @server = Gem::Server.new Gem.dir, process_based_port, false
+-    @req = WEBrick::HTTPRequest.new :Logger => nil
+-    @res = WEBrick::HTTPResponse.new :HTTPVersion => '1.0'
+-  end
+-
+-  def test_doc_root_3
+-    orig_rdoc_version = Gem::RDoc.rdoc_version
+-    Gem::RDoc.instance_variable_set :@rdoc_version, Gem::Version.new('3.12')
+-
+-    assert_equal '/doc_root/X-1/rdoc/index.html', @server.doc_root('X-1')
+-
+-  ensure
+-    Gem::RDoc.instance_variable_set :@rdoc_version, orig_rdoc_version
+-  end
+-
+-  def test_doc_root_4
+-    orig_rdoc_version = Gem::RDoc.rdoc_version
+-    Gem::RDoc.instance_variable_set :@rdoc_version, Gem::Version.new('4.0')
+-
+-    assert_equal '/doc_root/X-1/', @server.doc_root('X-1')
+-
+-  ensure
+-    Gem::RDoc.instance_variable_set :@rdoc_version, orig_rdoc_version
+-  end
+-
+-  def test_have_rdoc_4_plus_eh
+-    orig_rdoc_version = Gem::RDoc.rdoc_version
+-    Gem::RDoc.instance_variable_set(:@rdoc_version, Gem::Version.new('4.0'))
+-
+-    server = Gem::Server.new Gem.dir, 0, false
+-    assert server.have_rdoc_4_plus?
+-
+-    Gem::RDoc.instance_variable_set :@rdoc_version, Gem::Version.new('3.12')
+-
+-    server = Gem::Server.new Gem.dir, 0, false
+-    refute server.have_rdoc_4_plus?
+-
+-    Gem::RDoc.instance_variable_set(:@rdoc_version,
+-                                    Gem::Version.new('4.0.0.preview2'))
+-
+-    server = Gem::Server.new Gem.dir, 0, false
+-    assert server.have_rdoc_4_plus?
+-  ensure
+-    Gem::RDoc.instance_variable_set :@rdoc_version, orig_rdoc_version
+-  end
+-
+-  def test_spec_dirs
+-    s = Gem::Server.new Gem.dir, process_based_port, false
+-
+-    assert_equal [File.join(Gem.dir, 'specifications')], s.spec_dirs
+-
+-    s = Gem::Server.new [Gem.dir, Gem.dir], process_based_port, false
+-
+-    assert_equal [File.join(Gem.dir, 'specifications'),
+-                  File.join(Gem.dir, 'specifications')], s.spec_dirs
+-  end
+-
+-  def test_latest_specs
+-    data = StringIO.new "GET /latest_specs.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
+-    @req.parse data
+-
+-    Gem::Deprecate.skip_during do
+-      @server.latest_specs @req, @res
+-    end
+-
+-    assert_equal 200, @res.status, @res.body
+-    assert_match %r{ \d\d:\d\d:\d\d }, @res['date']
+-    assert_equal 'application/octet-stream', @res['content-type']
+-    assert_equal [['a', Gem::Version.new(2), Gem::Platform::RUBY]],
+-    Marshal.load(@res.body)
+-  end
+-
+-  def test_latest_specs_gemdirs
+-    data = StringIO.new "GET /latest_specs.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
+-    dir = "#{@gemhome}2"
+-
+-    spec = util_spec 'z', 9
+-
+-    specs_dir = File.join dir, 'specifications'
+-    FileUtils.mkdir_p specs_dir
+-
+-    File.open File.join(specs_dir, spec.spec_name), 'w' do |io|
+-      io.write spec.to_ruby
+-    end
+-
+-    server = Gem::Server.new dir, process_based_port, false
+-
+-    @req.parse data
+-
+-    server.latest_specs @req, @res
+-
+-    assert_equal 200, @res.status
+-
+-    assert_equal [['z', v(9), Gem::Platform::RUBY]], Marshal.load(@res.body)
+-  end
+-
+-  def test_latest_specs_gz
+-    data = StringIO.new "GET /latest_specs.#{Gem.marshal_version}.gz HTTP/1.0\r\n\r\n"
+-    @req.parse data
+-
+-    Gem::Deprecate.skip_during do
+-      @server.latest_specs @req, @res
+-    end
+-
+-    assert_equal 200, @res.status, @res.body
+-    assert_match %r{ \d\d:\d\d:\d\d }, @res['date']
+-    assert_equal 'application/x-gzip', @res['content-type']
+-    assert_equal [['a', Gem::Version.new(2), Gem::Platform::RUBY]],
+-                 Marshal.load(Gem::Util.gunzip(@res.body))
+-  end
+-
+-  def test_listen
+-    util_listen
+-
+-    capture_output do
+-      @server.listen
+-    end
+-
+-    assert_equal 1, @server.server.listeners.length
+-  end
+-
+-  def test_listen_addresses
+-    util_listen
+-
+-    capture_output do
+-      @server.listen %w[a b]
+-    end
+-
+-    assert_equal 2, @server.server.listeners.length
+-  end
+-
+-  def test_prerelease_specs
+-    data = StringIO.new "GET /prerelease_specs.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
+-    @req.parse data
+-
+-    Gem::Deprecate.skip_during do
+-      @server.prerelease_specs @req, @res
+-    end
+-
+-    assert_equal 200, @res.status, @res.body
+-    assert_match %r{ \d\d:\d\d:\d\d }, @res['date']
+-    assert_equal 'application/octet-stream', @res['content-type']
+-    assert_equal [['a', v('3.a'), Gem::Platform::RUBY]],
+-                 Marshal.load(@res.body)
+-  end
+-
+-  def test_prerelease_specs_gz
+-    data = StringIO.new "GET /prerelease_specs.#{Gem.marshal_version}.gz HTTP/1.0\r\n\r\n"
+-    @req.parse data
+-
+-    Gem::Deprecate.skip_during do
+-      @server.prerelease_specs @req, @res
+-    end
+-
+-    assert_equal 200, @res.status, @res.body
+-    assert_match %r{ \d\d:\d\d:\d\d }, @res['date']
+-    assert_equal 'application/x-gzip', @res['content-type']
+-    assert_equal [['a', v('3.a'), Gem::Platform::RUBY]],
+-                 Marshal.load(Gem::Util.gunzip(@res.body))
+-  end
+-
+-  def test_quick_gemdirs
+-    data = StringIO.new "GET /quick/Marshal.4.8/z-9.gemspec.rz HTTP/1.0\r\n\r\n"
+-    dir = "#{@gemhome}2"
+-
+-    server = Gem::Server.new dir, process_based_port, false
+-
+-    @req.parse data
+-
+-    server.quick @req, @res
+-
+-    assert_equal 404, @res.status
+-
+-    spec = util_spec 'z', 9
+-
+-    specs_dir = File.join dir, 'specifications'
+-
+-    FileUtils.mkdir_p specs_dir
+-
+-    File.open File.join(specs_dir, spec.spec_name), 'w' do |io|
+-      io.write spec.to_ruby
+-    end
+-
+-    data.rewind
+-
+-    req = WEBrick::HTTPRequest.new :Logger => nil
+-    res = WEBrick::HTTPResponse.new :HTTPVersion => '1.0'
+-    req.parse data
+-
+-    server.quick req, res
+-
+-    assert_equal 200, res.status
+-  end
+-
+-  def test_quick_missing
+-    data = StringIO.new "GET /quick/Marshal.4.8/z-9.gemspec.rz HTTP/1.0\r\n\r\n"
+-    @req.parse data
+-
+-    @server.quick @req, @res
+-
+-    assert_equal 404, @res.status, @res.body
+-    assert_match %r{ \d\d:\d\d:\d\d }, @res['date']
+-    assert_equal 'text/plain', @res['content-type']
+-    assert_equal 'No gems found matching "z-9"', @res.body
+-    assert_equal 404, @res.status
+-  end
+-
+-  def test_quick_marshal_a_1_gemspec_rz
+-    data = StringIO.new "GET /quick/Marshal.#{Gem.marshal_version}/a-1.gemspec.rz HTTP/1.0\r\n\r\n"
+-    @req.parse data
+-
+-    @server.quick @req, @res
+-
+-    assert_equal 200, @res.status, @res.body
+-    assert @res['date']
+-    assert_equal 'application/x-deflate', @res['content-type']
+-
+-    spec = Marshal.load Gem::Util.inflate(@res.body)
+-    assert_equal 'a', spec.name
+-    assert_equal Gem::Version.new(1), spec.version
+-  end
+-
+-  def test_quick_marshal_a_1_mswin32_gemspec_rz
+-    quick_gem 'a', '1' do |s|
+-      s.platform = Gem::Platform.local
+-    end
+-
+-    data = StringIO.new "GET /quick/Marshal.#{Gem.marshal_version}/a-1-#{Gem::Platform.local}.gemspec.rz HTTP/1.0\r\n\r\n"
+-    @req.parse data
+-
+-    @server.quick @req, @res
+-
+-    assert_equal 200, @res.status, @res.body
+-    assert @res['date']
+-    assert_equal 'application/x-deflate', @res['content-type']
+-
+-    spec = Marshal.load Gem::Util.inflate(@res.body)
+-    assert_equal 'a', spec.name
+-    assert_equal Gem::Version.new(1), spec.version
+-    assert_equal Gem::Platform.local, spec.platform
+-  end
+-
+-  def test_quick_marshal_a_3_a_gemspec_rz
+-    data = StringIO.new "GET /quick/Marshal.#{Gem.marshal_version}/a-3.a.gemspec.rz HTTP/1.0\r\n\r\n"
+-    @req.parse data
+-
+-    @server.quick @req, @res
+-
+-    assert_equal 200, @res.status, @res.body
+-    assert @res['date']
+-    assert_equal 'application/x-deflate', @res['content-type']
+-
+-    spec = Marshal.load Gem::Util.inflate(@res.body)
+-    assert_equal 'a', spec.name
+-    assert_equal v('3.a'), spec.version
+-  end
+-
+-  def test_quick_marshal_a_b_3_a_gemspec_rz
+-    quick_gem 'a-b', '3.a'
+-
+-    data = StringIO.new "GET /quick/Marshal.#{Gem.marshal_version}/a-b-3.a.gemspec.rz HTTP/1.0\r\n\r\n"
+-    @req.parse data
+-
+-    @server.quick @req, @res
+-
+-    assert_equal 200, @res.status, @res.body
+-    assert @res['date']
+-    assert_equal 'application/x-deflate', @res['content-type']
+-
+-    spec = Marshal.load Gem::Util.inflate(@res.body)
+-    assert_equal 'a-b', spec.name
+-    assert_equal v('3.a'), spec.version
+-  end
+-
+-  def test_quick_marshal_a_b_1_3_a_gemspec_rz
+-    quick_gem 'a-b-1', '3.a'
+-
+-    data = StringIO.new "GET /quick/Marshal.#{Gem.marshal_version}/a-b-1-3.a.gemspec.rz HTTP/1.0\r\n\r\n"
+-    @req.parse data
+-
+-    @server.quick @req, @res
+-
+-    assert_equal 200, @res.status, @res.body
+-    assert @res['date']
+-    assert_equal 'application/x-deflate', @res['content-type']
+-
+-    spec = Marshal.load Gem::Util.inflate(@res.body)
+-    assert_equal 'a-b-1', spec.name
+-    assert_equal v('3.a'), spec.version
+-  end
+-
+-  def test_rdoc
+-    data = StringIO.new "GET /rdoc?q=a HTTP/1.0\r\n\r\n"
+-    @req.parse data
+-
+-    @server.rdoc @req, @res
+-
+-    assert_equal 200, @res.status, @res.body
+-    assert_match %r{No documentation found}, @res.body
+-    assert_equal 'text/html', @res['content-type']
+-  end
+-
+-  def test_root
+-    data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
+-    @req.parse data
+-
+-    @server.root @req, @res
+-
+-    assert_equal 200, @res.status, @res.body
+-    assert_match %r{ \d\d:\d\d:\d\d }, @res['date']
+-    assert_equal 'text/html', @res['content-type']
+-  end
+-
+-  def test_root_gemdirs
+-    data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
+-    dir = "#{@gemhome}2"
+-
+-    spec = util_spec 'z', 9
+-
+-    specs_dir = File.join dir, 'specifications'
+-    FileUtils.mkdir_p specs_dir
+-
+-    File.open File.join(specs_dir, spec.spec_name), 'w' do |io|
+-      io.write spec.to_ruby
+-    end
+-
+-    server = Gem::Server.new dir, process_based_port, false
+-
+-    @req.parse data
+-
+-    server.root @req, @res
+-
+-    assert_equal 200, @res.status
+-    assert_match 'z 9', @res.body
+-  end
+-
+-  def test_xss_homepage_fix_289313
+-    data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
+-    dir = "#{@gemhome}2"
+-
+-    spec = util_spec 'xsshomepagegem', 1
+-    spec.homepage = "javascript:confirm(document.domain)"
+-
+-    specs_dir = File.join dir, 'specifications'
+-    FileUtils.mkdir_p specs_dir
+-
+-    File.open File.join(specs_dir, spec.spec_name), 'w' do |io|
+-      io.write spec.to_ruby
+-    end
+-
+-    server = Gem::Server.new dir, process_based_port, false
+-
+-    @req.parse data
+-
+-    server.root @req, @res
+-
+-    assert_equal 200, @res.status
+-    assert_match 'xsshomepagegem 1', @res.body
+-
+-    # This verifies that the homepage for this spec is not displayed and is set to ".", because it's not a
+-    # valid HTTP/HTTPS URL and could be unsafe in an HTML context.  We would prefer to throw an exception here,
+-    # but spec.homepage is currently free form and not currently required to be a URL, this behavior may be
+-    # validated in future versions of Gem::Specification.
+-    #
+-    # There are two variant we're checking here, one where rdoc is not present, and one where rdoc is present in the same regex:
+-    #
+-    # Variant #1 - rdoc not installed
+-    #
+-    #   <b>xsshomepagegem 1</b>
+-    #
+-    #
+-    #  <span title="rdoc not installed">[rdoc]</span>
+-    #
+-    #
+-    #
+-    #  <a href="." title=".">[www]</a>
+-    #
+-    # Variant #2 - rdoc installed
+-    #
+-    #   <b>xsshomepagegem 1</b>
+-    #
+-    #
+-    #  <a href="\/doc_root\/xsshomepagegem-1\/">\[rdoc\]<\/a>
+-    #
+-    #
+-    #
+-    #  <a href="." title=".">[www]</a>
+-    regex_match = /xsshomepagegem 1<\/b>\s+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/xsshomepagegem-1\/">\[rdoc\]<\/a>)\s+<a href="\." title="\.">\[www\]<\/a>/
+-    assert_match regex_match, @res.body
+-  end
+-
+-  def test_invalid_homepage
+-    data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
+-    dir = "#{@gemhome}2"
+-
+-    spec = util_spec 'invalidhomepagegem', 1
+-    spec.homepage = "notavalidhomepageurl"
+-
+-    specs_dir = File.join dir, 'specifications'
+-    FileUtils.mkdir_p specs_dir
+-
+-    File.open File.join(specs_dir, spec.spec_name), 'w' do |io|
+-      io.write spec.to_ruby
+-    end
+-
+-    server = Gem::Server.new dir, process_based_port, false
+-
+-    @req.parse data
+-
+-    server.root @req, @res
+-
+-    assert_equal 200, @res.status
+-    assert_match 'invalidhomepagegem 1', @res.body
+-
+-    # This verifies that the homepage for this spec is not displayed and is set to ".", because it's not a
+-    # valid HTTP/HTTPS URL and could be unsafe in an HTML context.  We would prefer to throw an exception here,
+-    # but spec.homepage is currently free form and not currently required to be a URL, this behavior may be
+-    # validated in future versions of Gem::Specification.
+-    #
+-    # There are two variant we're checking here, one where rdoc is not present, and one where rdoc is present in the same regex:
+-    #
+-    # Variant #1 - rdoc not installed
+-    #
+-    #   <b>invalidhomepagegem 1</b>
+-    #
+-    #
+-    #  <span title="rdoc not installed">[rdoc]</span>
+-    #
+-    #
+-    #
+-    #  <a href="." title=".">[www]</a>
+-    #
+-    # Variant #2 - rdoc installed
+-    #
+-    #   <b>invalidhomepagegem 1</b>
+-    #
+-    #
+-    #  <a href="\/doc_root\/invalidhomepagegem-1\/">\[rdoc\]<\/a>
+-    #
+-    #
+-    #
+-    #  <a href="." title=".">[www]</a>
+-    regex_match = /invalidhomepagegem 1<\/b>\s+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/invalidhomepagegem-1\/">\[rdoc\]<\/a>)\s+<a href="\." title="\.">\[www\]<\/a>/
+-    assert_match regex_match, @res.body
+-  end
+-
+-  def test_valid_homepage_http
+-    data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
+-    dir = "#{@gemhome}2"
+-
+-    spec = util_spec 'validhomepagegemhttp', 1
+-    spec.homepage = "http://rubygems.org"
+-
+-    specs_dir = File.join dir, 'specifications'
+-    FileUtils.mkdir_p specs_dir
+-
+-    File.open File.join(specs_dir, spec.spec_name), 'w' do |io|
+-      io.write spec.to_ruby
+-    end
+-
+-    server = Gem::Server.new dir, process_based_port, false
+-
+-    @req.parse data
+-
+-    server.root @req, @res
+-
+-    assert_equal 200, @res.status
+-    assert_match 'validhomepagegemhttp 1', @res.body
+-
+-    regex_match = /validhomepagegemhttp 1<\/b>\s+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/validhomepagegemhttp-1\/">\[rdoc\]<\/a>)\s+<a href="http:\/\/rubygems\.org" title="http:\/\/rubygems\.org">\[www\]<\/a>/
+-    assert_match regex_match, @res.body
+-  end
+-
+-  def test_valid_homepage_https
+-    data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
+-    dir = "#{@gemhome}2"
+-
+-    spec = util_spec 'validhomepagegemhttps', 1
+-    spec.homepage = "https://rubygems.org"
+-
+-    specs_dir = File.join dir, 'specifications'
+-    FileUtils.mkdir_p specs_dir
+-
+-    File.open File.join(specs_dir, spec.spec_name), 'w' do |io|
+-      io.write spec.to_ruby
+-    end
+-
+-    server = Gem::Server.new dir, process_based_port, false
+-
+-    @req.parse data
+-
+-    server.root @req, @res
+-
+-    assert_equal 200, @res.status
+-    assert_match 'validhomepagegemhttps 1', @res.body
+-
+-    regex_match = /validhomepagegemhttps 1<\/b>\s+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/validhomepagegemhttps-1\/">\[rdoc\]<\/a>)\s+<a href="https:\/\/rubygems\.org" title="https:\/\/rubygems\.org">\[www\]<\/a>/
+-    assert_match regex_match, @res.body
+-  end
+-
+-  def test_specs
+-    data = StringIO.new "GET /specs.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
+-    @req.parse data
+-
+-    @server.specs @req, @res
+-
+-    assert_equal 200, @res.status, @res.body
+-    assert_match %r{ \d\d:\d\d:\d\d }, @res['date']
+-    assert_equal 'application/octet-stream', @res['content-type']
+-
+-    assert_equal [['a', Gem::Version.new(1), Gem::Platform::RUBY],
+-                  ['a', Gem::Version.new(2), Gem::Platform::RUBY],
+-                  ['a', v('3.a'), Gem::Platform::RUBY]],
+-                 Marshal.load(@res.body)
+-  end
+-
+-  def test_specs_gemdirs
+-    data = StringIO.new "GET /specs.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
+-    dir = "#{@gemhome}2"
+-
+-    spec = util_spec 'z', 9
+-
+-    specs_dir = File.join dir, 'specifications'
+-    FileUtils.mkdir_p specs_dir
+-
+-    File.open File.join(specs_dir, spec.spec_name), 'w' do |io|
+-      io.write spec.to_ruby
+-    end
+-
+-    server = Gem::Server.new dir, process_based_port, false
+-
+-    @req.parse data
+-
+-    server.specs @req, @res
+-
+-    assert_equal 200, @res.status
+-
+-    assert_equal [['z', v(9), Gem::Platform::RUBY]], Marshal.load(@res.body)
+-  end
+-
+-  def test_specs_gz
+-    data = StringIO.new "GET /specs.#{Gem.marshal_version}.gz HTTP/1.0\r\n\r\n"
+-    @req.parse data
+-
+-    @server.specs @req, @res
+-
+-    assert_equal 200, @res.status, @res.body
+-    assert_match %r{ \d\d:\d\d:\d\d }, @res['date']
+-    assert_equal 'application/x-gzip', @res['content-type']
+-
+-    assert_equal [['a', Gem::Version.new(1), Gem::Platform::RUBY],
+-                  ['a', Gem::Version.new(2), Gem::Platform::RUBY],
+-                  ['a', v('3.a'), Gem::Platform::RUBY]],
+-                 Marshal.load(Gem::Util.gunzip(@res.body))
+-  end
+-
+-  def test_uri_encode
+-    url_safe = @server.uri_encode 'http://rubyonrails.org/">malicious_content</a>'
+-    assert_equal url_safe, 'http://rubyonrails.org/%22%3Emalicious_content%3C/a%3E'
+-  end
+-
+-  # Regression test for issue #1793: incorrect URL encoding.
+-  # Checking that no URLs have had '://' incorrectly encoded
+-  def test_regression_1793
+-    data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
+-    @req.parse data
+-
+-    @server.root @req, @res
+-
+-    refute_match %r{%3A%2F%2F}, @res.body
+-  end
+-
+-  def util_listen
+-    webrick = Object.new
+-    webrick.instance_variable_set :@listeners, []
+-    def webrick.listeners() @listeners end
+-    def webrick.listen(host, port)
+-      socket = Object.new
+-      socket.instance_variable_set :@host, host
+-      socket.instance_variable_set :@port, port
+-      def socket.addr() [nil, @port, @host] end
+-      @listeners << socket
+-    end
+-
+-    @server.instance_variable_set :@server, webrick
+-  end
+-end
+diff --git a/test/rubygems/test_gem_specification.rb b/test/rubygems/test_gem_specification.rb
+index bfd0db3..8b4a07d 100644
+--- a/test/rubygems/test_gem_specification.rb
++++ b/test/rubygems/test_gem_specification.rb
+@@ -147,6 +147,7 @@ end
+   end
+ 
+   def test_find_in_unresolved_tree_is_not_exponentiental
++    pend "currently slower in CI on TruffleRuby" if RUBY_ENGINE == 'truffleruby'
+     num_of_pkg = 7
+     num_of_version_per_pkg = 3
+     packages = (0..num_of_pkg).map do |pkgi|
+@@ -873,24 +874,21 @@ dependencies: []
+   end
+ 
+   def test_self_load_utf8_with_ascii_encoding
+-    int_enc = Encoding.default_internal
+-    silence_warnings { Encoding.default_internal = 'US-ASCII' }
+-
+-    spec2 = @a2.dup
+-    bin = "\u5678".dup
+-    spec2.authors = [bin]
+-    full_path = spec2.spec_file
+-    write_file full_path do |io|
+-      io.write spec2.to_ruby_for_cache.force_encoding('BINARY').sub("\\u{5678}", bin.force_encoding('BINARY'))
+-    end
++    with_internal_encoding('US-ASCII') do
++      spec2 = @a2.dup
++      bin = "\u5678".dup
++      spec2.authors = [bin]
++      full_path = spec2.spec_file
++      write_file full_path do |io|
++        io.write spec2.to_ruby_for_cache.force_encoding('BINARY').sub("\\u{5678}", bin.force_encoding('BINARY'))
++      end
+ 
+-    spec = Gem::Specification.load full_path
++      spec = Gem::Specification.load full_path
+ 
+-    spec2.files.clear
++      spec2.files.clear
+ 
+-    assert_equal spec2, spec
+-  ensure
+-    silence_warnings { Encoding.default_internal = int_enc }
++      assert_equal spec2, spec
++    end
+   end
+ 
+   def test_self_load_legacy_ruby
+@@ -944,7 +942,7 @@ dependencies: []
+   end
+ 
+   def test_self_outdated_and_latest_remotes
+-    specs = spec_fetcher do |fetcher|
++    spec_fetcher do |fetcher|
+       fetcher.download 'a', 4
+       fetcher.download 'b', 3
+ 
+@@ -953,8 +951,8 @@ dependencies: []
+     end
+ 
+     expected = [
+-      [specs['a-3.a'], v(4)],
+-      [specs['b-2'],   v(3)],
++      [Gem::Specification.stubs.find {|s| s.full_name == 'a-3.a' }, v(4)],
++      [Gem::Specification.stubs.find {|s| s.full_name == 'b-2' }, v(3)],
+     ]
+ 
+     assert_equal expected, Gem::Specification.outdated_and_latest_version.to_a
+@@ -3745,11 +3743,4 @@ end
+       end
+     end
+   end
+-
+-  def silence_warnings
+-    old_verbose, $VERBOSE = $VERBOSE, false
+-    yield
+-  ensure
+-    $VERBOSE = old_verbose
+-  end
+ end
+diff --git a/test/rubygems/test_gem_stream_ui.rb b/test/rubygems/test_gem_stream_ui.rb
+index dc245c3..2071526 100644
+--- a/test/rubygems/test_gem_stream_ui.rb
++++ b/test/rubygems/test_gem_stream_ui.rb
+@@ -5,7 +5,7 @@ require 'timeout'
+ 
+ class TestGemStreamUI < Gem::TestCase
+   # increase timeout with MJIT for --jit-wait testing
+-  mjit_enabled = defined?(RubyVM::JIT) ? RubyVM::JIT.enabled? : defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
++  mjit_enabled = defined?(RubyVM::MJIT) ? RubyVM::MJIT.enabled? : defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+   SHORT_TIMEOUT = (RUBY_ENGINE == "ruby" && !mjit_enabled) ? 0.1 : 1.0
+ 
+   module IsTty
+diff --git a/test/rubygems/test_gem_text.rb b/test/rubygems/test_gem_text.rb
+index 069cfdc..f170fbf 100644
+--- a/test/rubygems/test_gem_text.rb
++++ b/test/rubygems/test_gem_text.rb
+@@ -83,6 +83,12 @@ Without the wrapping, the text might not look good in the RSS feed.
+     assert_equal 7, levenshtein_distance("zentest", "xxxxxxx")
+   end
+ 
++  def test_levenshtein_distance_all
++    assert_equal 6, levenshtein_distance("algorithm", "altruistic")
++    assert_equal 3, levenshtein_distance("saturday", "sunday")
++    assert_equal 3, levenshtein_distance("kitten", "sitting")
++  end
++
+   def test_truncate_text
+     assert_equal "abc", truncate_text("abc", "desc")
+     assert_equal "Truncating desc to 2 characters:\nab", truncate_text("abc", "desc", 2)
+diff --git a/test/rubygems/test_kernel.rb b/test/rubygems/test_kernel.rb
+index dee36d0..4efa7e0 100644
+--- a/test/rubygems/test_kernel.rb
++++ b/test/rubygems/test_kernel.rb
+@@ -117,20 +117,8 @@ class TestKernel < Gem::TestCase
+     assert $:.any? {|p| %r{bundler-1/lib} =~ p }
+   end
+ 
+-  def test_gem_bundler_missing_bundler_version
+-    Gem::BundlerVersionFinder.stub(:bundler_version_with_reason, ["55", "reason"]) do
+-      quick_gem 'bundler', '1'
+-      quick_gem 'bundler', '2.a'
+-
+-      e = assert_raise Gem::MissingSpecVersionError do
+-        gem('bundler')
+-      end
+-      assert_match "Could not find 'bundler' (55) required by reason.", e.message
+-    end
+-  end
+-
+   def test_gem_bundler_inferred_bundler_version
+-    Gem::BundlerVersionFinder.stub(:bundler_version_with_reason, ["1", "reason"]) do
++    Gem::BundlerVersionFinder.stub(:bundler_version, Gem::Version.new("1")) do
+       quick_gem 'bundler', '1'
+       quick_gem 'bundler', '2.a'
+ 
+diff --git a/test/rubygems/test_project_sanity.rb b/test/rubygems/test_project_sanity.rb
+index e9e3bfd..38c2541 100644
+--- a/test/rubygems/test_project_sanity.rb
++++ b/test/rubygems/test_project_sanity.rb
+@@ -13,7 +13,7 @@ class TestProjectSanity < Gem::TestCase
+   end
+ 
+   def test_require_rubygems_package
+-    err, status = Open3.capture2e(*ruby_with_rubygems_in_load_path, "--disable-gems", "-e", "'require \"rubygems/package\"'")
++    err, status = Open3.capture2e(*ruby_with_rubygems_in_load_path, "--disable-gems", "-e", "require \"rubygems/package\"")
+ 
+     assert status.success?, err
+   end
+diff --git a/test/rubygems/test_require.rb b/test/rubygems/test_require.rb
+index 5677411..5b826d0 100644
+--- a/test/rubygems/test_require.rb
++++ b/test/rubygems/test_require.rb
+@@ -596,31 +596,6 @@ class TestGemRequire < Gem::TestCase
+     assert_empty unresolved_names
+   end
+ 
+-  def test_require_bundler_missing_bundler_version
+-    Gem::BundlerVersionFinder.stub(:bundler_version_with_reason, ["55", "reason"]) do
+-      b1 = util_spec('bundler', '1.999999999', nil, "lib/bundler/setup.rb")
+-      b2a = util_spec('bundler', '2.a', nil, "lib/bundler/setup.rb")
+-      install_specs b1, b2a
+-
+-      e = assert_raise Gem::MissingSpecVersionError do
+-        gem('bundler')
+-      end
+-      assert_match "Could not find 'bundler' (55) required by reason.", e.message
+-    end
+-  end
+-
+-  def test_require_bundler_with_bundler_version
+-    Gem::BundlerVersionFinder.stub(:bundler_version_with_reason, ["1", "reason"]) do
+-      b1 = util_spec('bundler', '1.999999999', nil, "lib/bundler/setup.rb")
+-      b2 = util_spec('bundler', '2', nil, "lib/bundler/setup.rb")
+-      install_specs b1, b2
+-
+-      $:.clear
+-      assert_require 'bundler/setup'
+-      assert_equal %w[bundler-1.999999999], loaded_spec_names
+-    end
+-  end
+-
+   # uplevel is 2.5+ only
+   if RUBY_VERSION >= "2.5"
+     ["", "Kernel."].each do |prefix|
+@@ -700,13 +675,6 @@ class TestGemRequire < Gem::TestCase
+     !ENV["GEM_COMMAND"].nil?
+   end
+ 
+-  def silence_warnings
+-    old_verbose, $VERBOSE = $VERBOSE, false
+-    yield
+-  ensure
+-    $VERBOSE = old_verbose
+-  end
+-
+   def util_install_extension_file(name)
+     spec = quick_gem name
+     util_build_gem spec
+diff --git a/test/rubygems/test_rubygems.rb b/test/rubygems/test_rubygems.rb
+index 493b9fd..fa77a29 100644
+--- a/test/rubygems/test_rubygems.rb
++++ b/test/rubygems/test_rubygems.rb
+@@ -22,6 +22,29 @@ class GemTest < Gem::TestCase
+     "the problem and ask for help."
+   end
+ 
++  def test_operating_system_customizing_default_dir
++    pend "does not apply to truffleruby" if RUBY_ENGINE == 'truffleruby'
++    pend "loads a custom defaults/jruby file that gets in the middle" if RUBY_ENGINE == 'jruby'
++
++    # On a non existing default dir, there should be no gems
++
++    path = util_install_operating_system_rb <<-RUBY
++      module Gem
++        def self.default_dir
++          File.expand_path("foo")
++        end
++      end
++    RUBY
++
++    output = Gem::Util.popen(
++      *ruby_with_rubygems_and_fake_operating_system_in_load_path(path),
++      '-e',
++      "require \"rubygems\"; puts Gem::Specification.stubs.map(&:full_name)",
++      {:err => [:child, :out]}
++    ).strip
++    assert_empty output
++  end
++
+   private
+ 
+   def util_install_operating_system_rb(content)
