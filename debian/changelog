@@ -1,3 +1,10 @@
+ruby3.0 (3.0.4-4) unstable; urgency=medium
+
+  * Disable GC compaction on platforms that can't support it.
+    This should fix some crashes hapenning on ppc64el
+
+ -- Antonio Terceiro <terceiro@debian.org>  Wed, 27 Apr 2022 12:55:10 -0300
+
 ruby3.0 (3.0.4-3) unstable; urgency=medium
 
   * ppc64el: exclude TestGCCompact tests as they segfault
