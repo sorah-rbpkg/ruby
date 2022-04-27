@@ -9,17 +9,57 @@ even manual compaction on platforms that don't support mprotect.
 
 Backported-by: Antonio Terceiro <terceiro@debian.org>
 
-Also backported definition of USE_MMAP_ALIGNED_ALLOC as of ruby 3.1
+Also need to backport the following from ruby3.1:
+
+- gc.c: definition of USE_MMAP_ALIGNED_ALLOC
+- gc.c: intialization of use_mmap_aligned_alloc in Init_heap
+- configure.ac: check for mmap, i.e. the definition of HAVE_MMAP
+- configure.ac: definition of HAVE_CONST_PAGE_SIZE
 
 Notes:
     Merged: https://github.com/ruby/ruby/pull/4528
 ---
- gc.c                         | 35 +++++++++++++++++++++++++++++++++++
- test/ruby/test_gc_compact.rb | 41 ++++++++++++++++++++++++++---------------
- 2 files changed, 61 insertions(+), 15 deletions(-)
+ configure.ac                 | 16 +++++++++++++
+ gc.c                         | 56 +++++++++++++++++++++++++++++++++++++-------
+ test/ruby/test_gc_compact.rb | 41 ++++++++++++++++++++------------
+ 3 files changed, 89 insertions(+), 24 deletions(-)
 
+diff --git a/configure.ac b/configure.ac
+index 5fb8282..d807098 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1944,6 +1944,7 @@ AC_CHECK_FUNCS(memmem)
+ AC_CHECK_FUNCS(mkfifo)
+ AC_CHECK_FUNCS(mknod)
+ AC_CHECK_FUNCS(mktime)
++AC_CHECK_FUNCS(mmap)
+ AC_CHECK_FUNCS(openat)
+ AC_CHECK_FUNCS(pipe2)
+ AC_CHECK_FUNCS(poll)
+@@ -2671,6 +2672,21 @@ main(int argc, char *argv[])
+ ])
+ }
+ 
++AC_CHECK_HEADERS([sys/user.h])
++AS_IF([test "x$ac_cv_func_mmap" = xyes], [
++    AC_CACHE_CHECK([whether PAGE_SIZE is compile-time const], rb_cv_const_page_size,
++       [malloc_headers=`sed -n '/MALLOC_HEADERS_BEGIN/,/MALLOC_HEADERS_END/p' ${srcdir}/gc.c`
++       AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[$malloc_headers
++            typedef char conftest_page[PAGE_SIZE];
++        ]], [[]])],
++        [rb_cv_const_page_size=yes],
++        [rb_cv_const_page_size=no])])
++])
++AS_IF([test "x$rb_cv_const_page_size" = xyes],
++    [AC_DEFINE(HAVE_CONST_PAGE_SIZE, 1)],
++    [AC_DEFINE(HAVE_CONST_PAGE_SIZE, 0)]
++)
++
+ : "runtime section" && {
+ dnl wheather use dln_a_out or not
+ AC_ARG_WITH(dln-a-out,
 diff --git a/gc.c b/gc.c
-index 5d0c342..8a6eab7 100644
+index 5d0c342..f8ceb0a 100644
 --- a/gc.c
 +++ b/gc.c
 @@ -822,6 +822,23 @@ enum {
@@ -46,7 +86,35 @@ index 5d0c342..8a6eab7 100644
  struct heap_page {
      short total_slots;
      short free_slots;
-@@ -9450,6 +9467,24 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
+@@ -3159,15 +3176,18 @@ Init_heap(void)
+ {
+     rb_objspace_t *objspace = &rb_objspace;
+ 
+-#if defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
+-    /* If Ruby's heap pages are not a multiple of the system page size, we
+-     * cannot use mprotect for the read barrier, so we must disable automatic
+-     * compaction. */
+-    int pagesize;
+-    pagesize = (int)sysconf(_SC_PAGE_SIZE);
+-    if ((HEAP_PAGE_SIZE % pagesize) != 0) {
+-        ruby_enable_autocompact = 0;
+-    }
++#if defined(HAVE_MMAP) && !HAVE_CONST_PAGE_SIZE && !defined(PAGE_MAX_SIZE)
++    /* Need to determine if we can use mmap at runtime. */
++# ifdef PAGE_SIZE
++    /* If the PAGE_SIZE macro can be used. */
++    use_mmap_aligned_alloc = PAGE_SIZE <= HEAP_PAGE_SIZE;
++# elif defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
++    /* If we can use sysconf to determine the page size. */
++    use_mmap_aligned_alloc = sysconf(_SC_PAGE_SIZE) <= HEAP_PAGE_SIZE;
++# else
++    /* Otherwise we can't determine the system page size, so don't use mmap. */
++    use_mmap_aligned_alloc = FALSE;
++# endif
+ #endif
+ 
+     objspace->next_object_id = INT2FIX(OBJ_ID_INITIAL);
+@@ -9450,6 +9470,24 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
  static VALUE
  gc_compact(rb_execution_context_t *ec, VALUE self)
  {
