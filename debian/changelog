@@ -1,3 +1,9 @@
+ruby3.0 (3.0.4-6) unstable; urgency=medium
+
+  * Exclude TestGCCompact on s390x
+
+ -- Antonio Terceiro <terceiro@debian.org>  Thu, 28 Apr 2022 10:56:40 -0300
+
 ruby3.0 (3.0.4-5) unstable; urgency=medium
 
   * Fix disabling compaction on platforms that can't support it.
