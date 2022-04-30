@@ -13,6 +13,8 @@ Also need to backport the following from ruby3.1:
 
 - gc.c: definition of USE_MMAP_ALIGNED_ALLOC
 - gc.c: intialization of use_mmap_aligned_alloc in Init_heap
+- gc.c: check for USE_MMAP_ALIGNED_ALLOC in gc_start_internal
+- gc.c: check for USE_MMAP_ALIGNED_ALLOC in gc_set_auto_compact
 - configure.ac: check for mmap, i.e. the definition of HAVE_MMAP
 - configure.ac: definition of HAVE_CONST_PAGE_SIZE
 
@@ -20,9 +22,9 @@ Notes:
     Merged: https://github.com/ruby/ruby/pull/4528
 ---
  configure.ac                 | 16 +++++++++++++
- gc.c                         | 56 +++++++++++++++++++++++++++++++++++++-------
+ gc.c                         | 56 +++++++++++++++++++++++++++++++-------------
  test/ruby/test_gc_compact.rb | 41 ++++++++++++++++++++------------
- 3 files changed, 89 insertions(+), 24 deletions(-)
+ 3 files changed, 82 insertions(+), 31 deletions(-)
 
 diff --git a/configure.ac b/configure.ac
 index 5fb8282..d807098 100644
@@ -59,7 +61,7 @@ index 5fb8282..d807098 100644
  dnl wheather use dln_a_out or not
  AC_ARG_WITH(dln-a-out,
 diff --git a/gc.c b/gc.c
-index 5d0c342..f8ceb0a 100644
+index 5d0c342..c6dba28 100644
 --- a/gc.c
 +++ b/gc.c
 @@ -822,6 +822,23 @@ enum {
@@ -114,31 +116,41 @@ index 5d0c342..f8ceb0a 100644
  #endif
  
      objspace->next_object_id = INT2FIX(OBJ_ID_INITIAL);
-@@ -9450,6 +9470,24 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
- static VALUE
- gc_compact(rb_execution_context_t *ec, VALUE self)
- {
-+#if defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
-+    /* If Ruby's heap pages are not a multiple of the system page size, we
-+     * cannot use mprotect for the read barrier, so we must disable compaction. */
-+    int pagesize;
-+    pagesize = (int)sysconf(_SC_PAGE_SIZE);
-+    if ((HEAP_PAGE_SIZE % pagesize) != 0) {
-+        rb_raise(rb_eNotImpError, "Compaction isn't available on this platform");
-+    }
+@@ -8533,6 +8553,12 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
+ 
+     /* For now, compact implies full mark / sweep, so ignore other flags */
+     if (RTEST(compact)) {
++#if !defined(__MINGW32__) && !defined(_WIN32)
++        if (!USE_MMAP_ALIGNED_ALLOC) {
++            rb_raise(rb_eNotImpError, "Compaction isn't available on this platform");
++        }
 +#endif
 +
+         reason |= GPR_FLAG_COMPACT;
+     } else {
+         if (!RTEST(full_mark))       reason &= ~GPR_FLAG_FULL_MARK;
+@@ -9944,16 +9970,14 @@ gc_disable(rb_execution_context_t *ec, VALUE _)
+ static VALUE
+ gc_set_auto_compact(rb_execution_context_t *ec, VALUE _, VALUE v)
+ {
+-#if defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
+-    /* If Ruby's heap pages are not a multiple of the system page size, we
+-     * cannot use mprotect for the read barrier, so we must disable automatic
+-     * compaction. */
+-    int pagesize;
+-    pagesize = (int)sysconf(_SC_PAGE_SIZE);
+-    if ((HEAP_PAGE_SIZE % pagesize) != 0) {
 +    /* If not MinGW, Windows, or does not have mmap, we cannot use mprotect for
-+     * the read barrier, so we must disable compaction. */
++     * the read barrier, so we must disable automatic compaction. */
 +#if !defined(__MINGW32__) && !defined(_WIN32)
 +    if (!USE_MMAP_ALIGNED_ALLOC) {
-+        rb_raise(rb_eNotImpError, "Compaction isn't available on this platform");
-+    }
-+#endif
+         rb_raise(rb_eNotImpError, "Automatic compaction isn't available on this platform");
+     }
+ #endif
 +
-     /* Run GC with compaction enabled */
-     gc_start_internal(ec, self, Qtrue, Qtrue, Qtrue, Qtrue);
- 
+     ruby_enable_autocompact = RTEST(v);
+     return v;
+ }
 diff --git a/test/ruby/test_gc_compact.rb b/test/ruby/test_gc_compact.rb
 index 4a8cff3..f5cab55 100644
 --- a/test/ruby/test_gc_compact.rb
