@@ -1,3 +1,9 @@
+ruby3.0 (3.0.4-7) unstable; urgency=medium
+
+  * Complete the patch to disable compaction on architectures where it can't work.
+
+ -- Antonio Terceiro <terceiro@debian.org>  Sun, 01 May 2022 09:56:20 -0300
+
 ruby3.0 (3.0.4-6) unstable; urgency=medium
 
   * Exclude TestGCCompact on s390x
