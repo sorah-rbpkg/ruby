@@ -1,3 +1,42 @@
+ruby3.1 (3.1.2-2) unstable; urgency=medium
+
+  [ Antonio Terceiro ]
+  * debian/rules: delete build artifacts from default gems
+  * Drop ppc64el-specific test exclusions
+  * debian/genprovides: don't generate ruby-rake
+  * Stop providing ruby-ruby2-keywords for now
+    ruby-ruby2-keywords is its own packages, and is now included in Ruby
+    itself. If libruby3.1 Provides: ruby-ruby2-keywords, the actual binary
+    will not be installed, and builds and tests will fail on ruby3.0 after
+    ruby3.1 is added as a supported version: build dependency resolution
+    will assume ruby-ruby2-keywords is provided by libruby3.1, and ruby3.0
+    will not actually have access to it.
+    This can be reverted after ruby3.1 becomes the default Ruby and support
+    for ruby3.0 is removed.
+  * debian/tests/builtin-extensions: fix openssl version
+  * debian/tests/builtin-extensions: output errors
+  * debian/tests/builtin-extensions: drop *dbm extensions
+  * autopkgtest: exclude TestJITDebug and TestRubyVMJIT.
+    TestRubyVMJIT used to be called TestRubyVMMJIT (a typo), and that typo
+    has been fixed in the latest upstream release.
+  * autopkgtest: exclude TestTRICK{2013,2015,2018}
+    Those tests don't work under autopkgtest because they look for files in
+    the source directory.
+  * autopkgtest: don't even load mkmf tests
+    mkmf is broken when running under autopkgtest. The 100+ Ruby extensions
+    in C in the archive are propably enough testing for mkmf.
+  * debian/rules: fix erroneous pkg-config entry for LIBPATH
+  * debian/libruby3.1.symbols: drop Debian revision from symbols versions
+
+  [ John Paul Adrian Glaubitz ]
+  * update x32 patch to current upstream coroutine detection (Closes: #1012247)
+
+  [ Vagrant Cascadian ]
+  * debian/rules: ensure rbconfig.rb is reproducible regardless of usr-merge
+    (Closes: #1016110)
+
+ -- Antonio Terceiro <terceiro@debian.org>  Wed, 27 Jul 2022 15:08:57 -0300
+
 ruby3.1 (3.1.2-1) unstable; urgency=medium
 
   * Ruby 3.1
