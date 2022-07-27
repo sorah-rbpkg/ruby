@@ -26,7 +26,7 @@ cd $AUTOPKGTEST_TMP
 if [ -z "$tests" ]; then
   # FIXME for now, we are excluding the tests for C extensions; couldn't figure
   # out how to properly build them without building everything else
-  tests=$(find 'test/' -name 'test_*.rb' -and -not -path '*-ext-*' | sort)
+  tests=$(find 'test/' -name 'test_*.rb' -and -not -path '*-ext-*' -and -not -path '*/mkmf/*' | sort)
 fi
 
 excludes="--excludes-dir=test/excludes/"
