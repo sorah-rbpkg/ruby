@@ -2,9 +2,10 @@
 
 set -eu
 
+# FIXME after ruby3.0 is gone ruby2_keywords can be added to provides again
 printf 'libruby:Provides='
 find "$@" -name \*.gemspec \
 	| xargs -n 1 basename \
 	| sort \
-	| grep -v 'bundler\|rake' \
+	| grep -v 'bundler\|rake\|ruby2_keywords' \
 	| sed -e 's/_/-/g; s/\(.*\)-\([0-9.]\+\)\.gemspec/ruby-\1 (= \2), /' | xargs echo
