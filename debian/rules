@@ -154,7 +154,7 @@ override_dh_auto_install-arch:
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/gems/$(RUBY_API_VERSION)
 	# fix pkg-config
 	# FIXME there is probably less brutal way of doing this
-	sed -i -e 's/^DLDFLAGS=.*/DLDFLAGS=/' \
+	sed -i -e 's/^DLDFLAGS=.*/DLDFLAGS=/; s/LIBPATH=.*/LIBPATH=/' \
 		$(CURDIR)/debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/pkgconfig/ruby-$(RUBY_VERSION).pc
 	# sanity check
 	debian/sanity_check
