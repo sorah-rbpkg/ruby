@@ -5,7 +5,7 @@ extensions = [
   ["dbm"],
   ["fiddle"],
   ["gdbm"],
-  ["openssl", '>= 3.1.0'],
+  ["openssl", '>= 3.0.0'],
   ["psych"],
   ["zlib"],
 ]
