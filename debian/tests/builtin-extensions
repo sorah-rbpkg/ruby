@@ -15,7 +15,9 @@ extensions.each do |ext|
   begin
     gem *ext
     puts "Extension #{ext.join(" ")}: OK"
-  rescue LoadError
+  rescue LoadError => ex
+    puts "Extension #{ext.join(" ")}: FAIL"
+    puts ex
     failed += 1
   end
 end
