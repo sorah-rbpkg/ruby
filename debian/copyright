@@ -118,11 +118,20 @@ Copyright:
 License: 3C-BSD
 
 Files:
- st.c missing/alloca.c missing/dup2.c missing/erf.c
- missing/finite.c missing/hypot.c missing/isinf.c missing/isnan.c
- missing/lgamma_r.c missing/memcmp.c missing/memmove.c missing/strchr.c
- missing/strstr.c missing/tgamma.c
- ext/digest/sha1/sha1.c ext/digest/sha1/sha1.h
+ missing/acosh.c
+ missing/alloca.c
+ missing/erf.c
+ missing/hypot.c
+ missing/lgamma_r.c
+ missing/memcmp.c
+ missing/memmove.c
+ missing/strchr.c
+ missing/strerror.c
+ missing/strstr.c
+ missing/tgamma.c
+ st.c
+ ext/digest/sha1/sha1.c
+ ext/digest/sha1/sha1.h
 Copyright: (none)
 License: PublicDomain
  Thise files have been placed in the Public Domain.

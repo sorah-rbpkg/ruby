@@ -21,8 +21,8 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  OnigSyntaxPosixExtended@Base 3.1.0~preview1
  OnigSyntaxPython@Base 3.1.0~preview1
  OnigSyntaxRuby@Base 3.1.0~preview1
- RUBY_IO_BUFFER_DEFAULT_SIZE@Base 3.1.2-1
- RUBY_IO_BUFFER_PAGE_SIZE@Base 3.1.2-1
+ RUBY_IO_BUFFER_DEFAULT_SIZE@Base 3.1.2
+ RUBY_IO_BUFFER_PAGE_SIZE@Base 3.1.2
  (optional)coroutine_transfer@Base 3.1.2
  dln_find_exe_r@Base 3.1.0~preview1
  dln_find_file_r@Base 3.1.0~preview1
@@ -241,10 +241,10 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_ast_mark@Base 3.1.0~preview1
  rb_ast_memsize@Base 3.1.0~preview1
  rb_ast_new@Base 3.1.0~preview1
- rb_ast_new_local_table@Base 3.1.2-1
+ rb_ast_new_local_table@Base 3.1.2
  rb_ast_newnode@Base 3.1.0~preview1
  rb_ast_node_type_change@Base 3.1.2
- rb_ast_resize_latest_local_table@Base 3.1.2-1
+ rb_ast_resize_latest_local_table@Base 3.1.2
  rb_ast_update_references@Base 3.1.0~preview1
  rb_attr@Base 3.1.0~preview1
  rb_attr_get@Base 3.1.0~preview1
@@ -321,7 +321,7 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_cFloat@Base 3.1.0~preview1
  rb_cHash@Base 3.1.0~preview1
  rb_cIO@Base 3.1.0~preview1
- rb_cIOBuffer@Base 3.1.2-1
+ rb_cIOBuffer@Base 3.1.2
  rb_cISeq@Base 3.1.0~preview1
  rb_cInteger@Base 3.1.0~preview1
  rb_cMatch@Base 3.1.0~preview1
@@ -336,7 +336,7 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_cRandom@Base 3.1.0~preview1
  rb_cRange@Base 3.1.0~preview1
  rb_cRational@Base 3.1.0~preview1
- rb_cRefinement@Base 3.1.2-1
+ rb_cRefinement@Base 3.1.2
  rb_cRegexp@Base 3.1.0~preview1
  rb_cRubyVM@Base 3.1.0~preview1
  rb_cStat@Base 3.1.0~preview1
@@ -396,7 +396,7 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_class_protected_instance_methods@Base 3.1.0~preview1
  rb_class_public_instance_methods@Base 3.1.0~preview1
  rb_class_real@Base 3.1.0~preview1
- rb_class_subclasses@Base 3.1.2-1
+ rb_class_subclasses@Base 3.1.2
  rb_class_superclass@Base 3.1.0~preview1
  rb_clear_constant_cache@Base 3.1.0~preview1
  rb_clear_coverages@Base 3.1.0~preview1
@@ -448,7 +448,7 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_cv_get@Base 3.1.0~preview1
  rb_cv_set@Base 3.1.0~preview1
  rb_cvar_defined@Base 3.1.0~preview1
- rb_cvar_find@Base 3.1.2-1
+ rb_cvar_find@Base 3.1.2
  rb_cvar_get@Base 3.1.0~preview1
  rb_cvar_set@Base 3.1.0~preview1
  rb_data_object_wrap@Base 3.1.0~preview1
@@ -464,7 +464,7 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_debug_inspector_frame_iseq_get@Base 3.1.0~preview1
  rb_debug_inspector_frame_self_get@Base 3.1.0~preview1
  rb_debug_inspector_open@Base 3.1.0~preview1
- rb_debug_rstring_null_ptr@Base 3.1.2-1
+ rb_debug_rstring_null_ptr@Base 3.1.2
  rb_declare_transcoder@Base 3.1.0~preview1
  rb_default_external_encoding@Base 3.1.0~preview1
  rb_default_internal_encoding@Base 3.1.0~preview1
@@ -518,7 +518,7 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_eMathDomainError@Base 3.1.0~preview1
  rb_eNameError@Base 3.1.0~preview1
  rb_eNoMatchingPatternError@Base 3.1.0~preview1
- rb_eNoMatchingPatternKeyError@Base 3.1.2-1
+ rb_eNoMatchingPatternKeyError@Base 3.1.2
  rb_eNoMemError@Base 3.1.0~preview1
  rb_eNoMethodError@Base 3.1.0~preview1
  rb_eNotImpError@Base 3.1.0~preview1
@@ -686,7 +686,7 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_f_trace_var@Base 3.1.0~preview1
  rb_f_untrace_var@Base 3.1.0~preview1
  rb_false@Base 3.1.0~preview1
- rb_false_to_s@Base 3.1.2-1
+ rb_false_to_s@Base 3.1.2
  rb_fatal@Base 3.1.0~preview1
  rb_fd_clr@Base 3.1.0~preview1
  rb_fd_copy@Base 3.1.0~preview1
@@ -703,33 +703,33 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_fiber_alive_p@Base 3.1.0~preview1
  rb_fiber_current@Base 3.1.0~preview1
  rb_fiber_new@Base 3.1.0~preview1
- rb_fiber_raise@Base 3.1.2-1
+ rb_fiber_raise@Base 3.1.2
  rb_fiber_resume@Base 3.1.0~preview1
  rb_fiber_resume_kw@Base 3.1.0~preview1
- rb_fiber_scheduler_address_resolve@Base 3.1.2-1
- rb_fiber_scheduler_block@Base 3.1.2-1
- rb_fiber_scheduler_close@Base 3.1.2-1
- rb_fiber_scheduler_current@Base 3.1.2-1
- rb_fiber_scheduler_current_for_thread@Base 3.1.2-1
- rb_fiber_scheduler_get@Base 3.1.2-1
- rb_fiber_scheduler_io_close@Base 3.1.2-1
- rb_fiber_scheduler_io_pread@Base 3.1.2-1
- rb_fiber_scheduler_io_pwrite@Base 3.1.2-1
- rb_fiber_scheduler_io_read@Base 3.1.2-1
- rb_fiber_scheduler_io_read_memory@Base 3.1.2-1
- rb_fiber_scheduler_io_wait@Base 3.1.2-1
- rb_fiber_scheduler_io_wait_readable@Base 3.1.2-1
- rb_fiber_scheduler_io_wait_writable@Base 3.1.2-1
- rb_fiber_scheduler_io_write@Base 3.1.2-1
- rb_fiber_scheduler_io_write_memory@Base 3.1.2-1
- rb_fiber_scheduler_kernel_sleep@Base 3.1.2-1
- rb_fiber_scheduler_kernel_sleepv@Base 3.1.2-1
- rb_fiber_scheduler_make_timeout@Base 3.1.2-1
- rb_fiber_scheduler_process_wait@Base 3.1.2-1
- rb_fiber_scheduler_set@Base 3.1.2-1
- rb_fiber_scheduler_unblock@Base 3.1.2-1
- rb_fiber_transfer@Base 3.1.2-1
- rb_fiber_transfer_kw@Base 3.1.2-1
+ rb_fiber_scheduler_address_resolve@Base 3.1.2
+ rb_fiber_scheduler_block@Base 3.1.2
+ rb_fiber_scheduler_close@Base 3.1.2
+ rb_fiber_scheduler_current@Base 3.1.2
+ rb_fiber_scheduler_current_for_thread@Base 3.1.2
+ rb_fiber_scheduler_get@Base 3.1.2
+ rb_fiber_scheduler_io_close@Base 3.1.2
+ rb_fiber_scheduler_io_pread@Base 3.1.2
+ rb_fiber_scheduler_io_pwrite@Base 3.1.2
+ rb_fiber_scheduler_io_read@Base 3.1.2
+ rb_fiber_scheduler_io_read_memory@Base 3.1.2
+ rb_fiber_scheduler_io_wait@Base 3.1.2
+ rb_fiber_scheduler_io_wait_readable@Base 3.1.2
+ rb_fiber_scheduler_io_wait_writable@Base 3.1.2
+ rb_fiber_scheduler_io_write@Base 3.1.2
+ rb_fiber_scheduler_io_write_memory@Base 3.1.2
+ rb_fiber_scheduler_kernel_sleep@Base 3.1.2
+ rb_fiber_scheduler_kernel_sleepv@Base 3.1.2
+ rb_fiber_scheduler_make_timeout@Base 3.1.2
+ rb_fiber_scheduler_process_wait@Base 3.1.2
+ rb_fiber_scheduler_set@Base 3.1.2
+ rb_fiber_scheduler_unblock@Base 3.1.2
+ rb_fiber_transfer@Base 3.1.2
+ rb_fiber_transfer_kw@Base 3.1.2
  rb_fiber_yield@Base 3.1.0~preview1
  rb_fiber_yield_kw@Base 3.1.0~preview1
  rb_file_absolute_path@Base 3.1.0~preview1
@@ -741,7 +741,7 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_file_s_absolute_path@Base 3.1.0~preview1
  rb_file_s_birthtime@Base 3.1.0~preview1
  rb_file_s_expand_path@Base 3.1.0~preview1
- rb_file_size@Base 3.1.2-1
+ rb_file_size@Base 3.1.2
  rb_filesystem_encindex@Base 3.1.0~preview1
  rb_filesystem_encoding@Base 3.1.0~preview1
  rb_filesystem_str_new@Base 3.1.0~preview1
@@ -756,15 +756,15 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_fix2uint@Base 3.1.0~preview1
  rb_fix2ushort@Base 3.1.0~preview1
  rb_fix_aref@Base 3.1.0~preview1
- rb_fix_to_s@Base 3.1.2-1
+ rb_fix_to_s@Base 3.1.2
  rb_flo_div_flo@Base 3.1.0~preview1
- rb_float_abs@Base 3.1.2-1
+ rb_float_abs@Base 3.1.2
  rb_float_cmp@Base 3.1.0~preview1
  rb_float_eql@Base 3.1.0~preview1
  rb_float_equal@Base 3.1.0~preview1
  rb_float_new@Base 3.1.0~preview1
  rb_float_new_in_heap@Base 3.1.0~preview1
- rb_float_uminus@Base 3.1.2-1
+ rb_float_uminus@Base 3.1.2
  rb_float_value@Base 3.1.0~preview1
  rb_flt_rationalize@Base 3.1.0~preview1
  rb_flt_rationalize_with_prec@Base 3.1.0~preview1
@@ -827,7 +827,7 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_get_alloc_func@Base 3.1.0~preview1
  rb_get_argv@Base 3.1.0~preview1
  rb_get_coverages@Base 3.1.0~preview1
- rb_get_freeze_opt@Base 3.1.2-1
+ rb_get_freeze_opt@Base 3.1.2
  rb_get_kwargs@Base 3.1.0~preview1
  rb_get_path@Base 3.1.0~preview1
  rb_get_path_no_checksafe@Base 3.1.0~preview1
@@ -886,9 +886,9 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_id2sym@Base 3.1.0~preview1
  rb_id_attrset@Base 3.1.0~preview1
  rb_id_quote_unprintable@Base 3.1.0~preview1
- rb_id_table_create@Base 3.1.2-1
- rb_id_table_insert@Base 3.1.2-1
- rb_id_table_lookup@Base 3.1.2-1
+ rb_id_table_create@Base 3.1.2
+ rb_id_table_insert@Base 3.1.2
+ rb_id_table_lookup@Base 3.1.2
  rb_ident_hash_new@Base 3.1.0~preview1
  rb_imemo_name@Base 3.1.0~preview1
  rb_imemo_new@Base 3.1.0~preview1
@@ -906,8 +906,8 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_int_pair_to_real@Base 3.1.0~preview1
  rb_int_parse_cstr@Base 3.1.0~preview1
  rb_int_positive_pow@Base 3.1.0~preview1
- rb_int_size@Base 3.1.2-1
- rb_int_to_s@Base 3.1.2-1
+ rb_int_size@Base 3.1.2
+ rb_int_to_s@Base 3.1.2
  rb_int_uminus@Base 3.1.0
  rb_int_zero_p@Base 3.1.0~preview1
  rb_integer_pack@Base 3.1.0~preview1
@@ -923,22 +923,22 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_io_addstr@Base 3.1.0~preview1
  rb_io_ascii8bit_binmode@Base 3.1.0~preview1
  rb_io_binmode@Base 3.1.0~preview1
- rb_io_buffer_clear@Base 3.1.2-1
- rb_io_buffer_free@Base 3.1.2-1
- rb_io_buffer_get_bytes@Base 3.1.2-1
- rb_io_buffer_get_bytes_for_reading@Base 3.1.2-1
- rb_io_buffer_get_bytes_for_writing@Base 3.1.2-1
- rb_io_buffer_lock@Base 3.1.2-1
- rb_io_buffer_map@Base 3.1.2-1
- rb_io_buffer_new@Base 3.1.2-1
- rb_io_buffer_pread@Base 3.1.2-1
- rb_io_buffer_pwrite@Base 3.1.2-1
- rb_io_buffer_read@Base 3.1.2-1
- rb_io_buffer_resize@Base 3.1.2-1
- rb_io_buffer_transfer@Base 3.1.2-1
- rb_io_buffer_try_unlock@Base 3.1.2-1
- rb_io_buffer_unlock@Base 3.1.2-1
- rb_io_buffer_write@Base 3.1.2-1
+ rb_io_buffer_clear@Base 3.1.2
+ rb_io_buffer_free@Base 3.1.2
+ rb_io_buffer_get_bytes@Base 3.1.2
+ rb_io_buffer_get_bytes_for_reading@Base 3.1.2
+ rb_io_buffer_get_bytes_for_writing@Base 3.1.2
+ rb_io_buffer_lock@Base 3.1.2
+ rb_io_buffer_map@Base 3.1.2
+ rb_io_buffer_new@Base 3.1.2
+ rb_io_buffer_pread@Base 3.1.2
+ rb_io_buffer_pwrite@Base 3.1.2
+ rb_io_buffer_read@Base 3.1.2
+ rb_io_buffer_resize@Base 3.1.2
+ rb_io_buffer_transfer@Base 3.1.2
+ rb_io_buffer_try_unlock@Base 3.1.2
+ rb_io_buffer_unlock@Base 3.1.2
+ rb_io_buffer_write@Base 3.1.2
  rb_io_bufwrite@Base 3.1.0~preview1
  rb_io_check_byte_readable@Base 3.1.0~preview1
  rb_io_check_char_readable@Base 3.1.0~preview1
@@ -948,7 +948,7 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_io_check_readable@Base 3.1.0~preview1
  rb_io_check_writable@Base 3.1.0~preview1
  rb_io_close@Base 3.1.0~preview1
- rb_io_descriptor@Base 3.1.2-1
+ rb_io_descriptor@Base 3.1.2
  rb_io_eof@Base 3.1.0~preview1
  rb_io_extract_encoding_option@Base 3.1.0~preview1
  rb_io_extract_modeenc@Base 3.1.0~preview1
@@ -959,9 +959,9 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_io_getbyte@Base 3.1.0~preview1
  rb_io_gets@Base 3.1.0~preview1
  rb_io_make_open_file@Base 3.1.0~preview1
- rb_io_maybe_wait@Base 3.1.2-1
- rb_io_maybe_wait_readable@Base 3.1.2-1
- rb_io_maybe_wait_writable@Base 3.1.2-1
+ rb_io_maybe_wait@Base 3.1.2
+ rb_io_maybe_wait_readable@Base 3.1.2
+ rb_io_maybe_wait_writable@Base 3.1.2
  rb_io_memsize@Base 3.1.0~preview1
  rb_io_modestr_fmode@Base 3.1.0~preview1
  rb_io_modestr_oflags@Base 3.1.0~preview1
@@ -1005,7 +1005,7 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_iseq_eval_main@Base 3.1.0~preview1
  rb_iseq_event_flags@Base 3.1.0~preview1
  rb_iseq_first_lineno@Base 3.1.0~preview1
- rb_iseq_from_eval_p@Base 3.1.2-1
+ rb_iseq_from_eval_p@Base 3.1.2
  rb_iseq_insns_info_encode_positions@Base 3.1.0~preview1
  rb_iseq_label@Base 3.1.0~preview1
  rb_iseq_line_no@Base 3.1.0~preview1
@@ -1020,9 +1020,9 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_iseq_new_top@Base 3.1.0~preview1
  rb_iseq_new_with_callback@Base 3.1.0~preview1
  rb_iseq_new_with_opt@Base 3.1.0~preview1
- rb_iseq_node_id@Base 3.1.2-1
- rb_iseq_only_kwparam_p@Base 3.1.2-1
- rb_iseq_only_optparam_p@Base 3.1.2-1
+ rb_iseq_node_id@Base 3.1.2
+ rb_iseq_only_kwparam_p@Base 3.1.2
+ rb_iseq_only_optparam_p@Base 3.1.2
  rb_iseq_original_iseq@Base 3.1.0~preview1
  rb_iseq_parameters@Base 3.1.0~preview1
  rb_iseq_path@Base 3.1.0~preview1
@@ -1030,7 +1030,7 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_iseq_remove_coverage_all@Base 3.1.0~preview1
  rb_iseq_trace_set@Base 3.1.0~preview1
  rb_iseq_trace_set_all@Base 3.1.0~preview1
- rb_iseq_type@Base 3.1.2-1
+ rb_iseq_type@Base 3.1.2
  rb_iseqw_new@Base 3.1.0~preview1
  rb_iseqw_to_iseq@Base 3.1.0~preview1
  rb_iter_break@Base 3.1.0~preview1
@@ -1150,7 +1150,7 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_mod_sys_fail_str@Base 3.1.0~preview1
  rb_mod_syserr_fail@Base 3.1.0~preview1
  rb_mod_syserr_fail_str@Base 3.1.0~preview1
- rb_mod_to_s@Base 3.1.2-1
+ rb_mod_to_s@Base 3.1.2
  rb_module_new@Base 3.1.0~preview1
  rb_must_asciicompat@Base 3.1.0~preview1
  rb_mutex_lock@Base 3.1.0~preview1
@@ -1182,7 +1182,7 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_need_block@Base 3.1.0~preview1
  rb_newobj@Base 3.1.0~preview1
  rb_newobj_of@Base 3.1.0~preview1
- rb_nil_to_s@Base 3.1.2-1
+ rb_nil_to_s@Base 3.1.2
  rb_node_init@Base 3.1.0~preview1
  rb_nogvl@Base 3.1.0~preview1
  rb_notimplement@Base 3.1.0~preview1
@@ -1225,7 +1225,7 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_obj_instance_eval@Base 3.1.0~preview1
  rb_obj_instance_exec@Base 3.1.0~preview1
  rb_obj_instance_variables@Base 3.1.0~preview1
- rb_obj_is_fiber@Base 3.1.2-1
+ rb_obj_is_fiber@Base 3.1.2
  rb_obj_is_instance_of@Base 3.1.0~preview1
  rb_obj_is_kind_of@Base 3.1.0~preview1
  rb_obj_is_method@Base 3.1.0~preview1
@@ -1361,7 +1361,7 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_readlink@Base 3.1.0~preview1
  rb_readwrite_sys_fail@Base 3.1.0~preview1
  rb_readwrite_syserr_fail@Base 3.1.0~preview1
- rb_refinement_new@Base 3.1.2-1
+ rb_refinement_new@Base 3.1.2
  rb_reg_adjust_startpos@Base 3.1.0~preview1
  rb_reg_alloc@Base 3.1.0~preview1
  rb_reg_backref_number@Base 3.1.0~preview1
@@ -1401,7 +1401,7 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_resolve_me_location@Base 3.1.0~preview1
  rb_resolve_refined_method_callable@Base 3.1.0~preview1
  rb_respond_to@Base 3.1.0~preview1
- rb_resume_coverages@Base 3.1.2-1
+ rb_resume_coverages@Base 3.1.2
  rb_rs@Base 3.1.0~preview1
  rb_ruby_debug_ptr@Base 3.1.0~preview1
  rb_ruby_verbose_ptr@Base 3.1.0~preview1
@@ -1567,7 +1567,7 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_struct_new@Base 3.1.0~preview1
  rb_struct_s_members@Base 3.1.0~preview1
  rb_struct_size@Base 3.1.0~preview1
- rb_suspend_coverages@Base 3.1.2-1
+ rb_suspend_coverages@Base 3.1.2
  rb_sym2id@Base 3.1.0~preview1
  rb_sym2str@Base 3.1.0~preview1
  rb_sym_all_symbols@Base 3.1.0~preview1
@@ -1659,7 +1659,7 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_tracepoint_enable@Base 3.1.0~preview1
  rb_tracepoint_enabled_p@Base 3.1.0~preview1
  rb_tracepoint_new@Base 3.1.0~preview1
- rb_true_to_s@Base 3.1.2-1
+ rb_true_to_s@Base 3.1.2
  rb_typeddata_inherited_p@Base 3.1.0~preview1
  rb_typeddata_is_kind_of@Base 3.1.0~preview1
  rb_uint2big@Base 3.1.0~preview1
@@ -1684,16 +1684,16 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_uv_to_utf8@Base 3.1.0~preview1
  rb_vm_call0@Base 3.1.0~preview1
  rb_vm_call_kw@Base 3.1.0~preview1
- rb_vm_call_with_refinements@Base 3.1.2-1
+ rb_vm_call_with_refinements@Base 3.1.2
  rb_vm_empty_cc@Base 3.1.0~preview1
- rb_vm_empty_cc_for_super@Base 3.1.2-1
+ rb_vm_empty_cc_for_super@Base 3.1.2
  rb_vm_exec@Base 3.1.0~preview1
  rb_vm_get_ruby_level_next_cfp@Base 3.1.0~preview1
- rb_vm_insn_len_info@Base 3.1.2-1
- rb_vm_insn_name_base@Base 3.1.2-1
- rb_vm_insn_name_offset@Base 3.1.2-1
- rb_vm_insn_op_base@Base 3.1.2-1
- rb_vm_insn_op_offset@Base 3.1.2-1
+ rb_vm_insn_len_info@Base 3.1.2
+ rb_vm_insn_name_base@Base 3.1.2
+ rb_vm_insn_name_offset@Base 3.1.2
+ rb_vm_insn_op_base@Base 3.1.2
+ rb_vm_insn_op_offset@Base 3.1.2
  rb_vm_invoke_bmethod@Base 3.1.0~preview1
  rb_vm_invoke_proc@Base 3.1.0~preview1
  rb_vm_localjump_error@Base 3.1.0~preview1
@@ -1702,7 +1702,7 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  rb_vm_lock_enter_body_nb@Base 3.1.0~preview2
  rb_vm_lock_leave_body@Base 3.1.0~preview2
  rb_vm_make_proc_lambda@Base 3.1.0~preview1
- rb_vm_max_insn_name_size@Base 3.1.2-1
+ rb_vm_max_insn_name_size@Base 3.1.2
  rb_vm_search_method_slowpath@Base 3.1.0~preview1
  rb_vrescue2@Base 3.1.0~preview1
  rb_vsprintf@Base 3.1.0~preview1
@@ -1810,7 +1810,7 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  ruby_vm_event_flags@Base 3.1.0~preview1
  ruby_vm_event_local_num@Base 3.1.0~preview1
  ruby_vm_global_constant_state@Base 3.1.0~preview1
- ruby_vm_global_cvar_state@Base 3.1.2-1
+ ruby_vm_global_cvar_state@Base 3.1.2
  ruby_vsnprintf@Base 3.1.0~preview1
  ruby_xcalloc@Base 3.1.0~preview1
  ruby_xfree@Base 3.1.0~preview1
