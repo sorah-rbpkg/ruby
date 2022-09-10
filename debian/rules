@@ -48,7 +48,7 @@ configure_options += --build=$(DEB_BUILD_GNU_TYPE)
 configure_options += --host=$(DEB_HOST_GNU_TYPE)
 endif
 ifneq ($(filter cross,$(DEB_BUILD_PROFILES)),)
-configure_options += --with-baseruby=/usr/bin/ruby
+configure_options += --with-baseruby=/usr/bin/$(DEB_SOURCE)
 endif
 
 # the following are ignored by ./configure, but used by some extconf.rb scripts
