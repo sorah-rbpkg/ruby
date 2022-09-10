@@ -1,3 +1,20 @@
+ruby3.0 (3.0.4-8) unstable; urgency=medium
+
+  [ Vagrant Cascadian ]
+  * debian/rules: ensure rbconfig.rb is reproducible regardless of usr-merge
+    (Closes: #1006471)
+  * debian/rules: Strip the build path from rbconfig.rb (Closes: #1006476)
+
+  [ Antonio Terceiro ]
+  * libruby3.0: depend on packages that used to be provided by ruby2.7.
+    This allows *ruby2.7 to be removed after upgrades from bullseye where
+    the user has installed packages that depend on either ruby-webrick or
+    ruby-sdbm.
+  * rbconfig, mkmf: call foreign pkg-config when cross compiling
+    (Closes: #1018230)
+
+ -- Antonio Terceiro <terceiro@debian.org>  Sat, 10 Sep 2022 23:02:54 -0300
+
 ruby3.0 (3.0.4-7) unstable; urgency=medium
 
   * Complete the patch to disable compaction on architectures where it can't work.
