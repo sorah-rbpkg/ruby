@@ -58,6 +58,8 @@ Depends: rake (>= 10.4.2),
          ruby-net-telnet (>= 0.1.1),
          ruby-test-unit (>= 3.0.8~),
          ruby-xmlrpc (>= 0.3.0~),
+         ruby-webrick (>= 1.7.0-4~),
+         ruby-sdbm (>= 1.0.0-3~),
          ${misc:Depends},
          ${shlibs:Depends}
 Provides: ${libruby:Provides}
