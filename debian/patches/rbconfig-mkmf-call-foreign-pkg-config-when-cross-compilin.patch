@@ -19,6 +19,7 @@ architecture we are compiling for, which is the same mechanism used when
 we are cross compiling Ruby itself.
 
 Link: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1018230
+Forwarded: https://github.com/ruby/ruby/pull/6355
 ---
  lib/mkmf.rb      | 2 +-
  tool/mkconfig.rb | 2 +-
