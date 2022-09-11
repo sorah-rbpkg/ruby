@@ -1,3 +1,25 @@
+ruby3.1 (3.1.2-3) unstable; urgency=medium
+
+  [ Antonio Terceiro ]
+  * Use current Ruby version as baseruby for crossbuilding.
+    This fixes crossbuilding Ruby when it's not the default Ruby version.
+  * rbconfig, mkmf: call foreign pkg-config when cross compiling
+    (Closes: #1019520)
+  * libruby3.1: depend on packages that used to be provided by ruby2.7.
+    This allows *ruby2.7 to be removed after upgrades from bullseye where
+    the user has installed packages that depend on either ruby-webrick or
+    ruby-sdbm.
+  * debian/rules: remove extension build directories.
+    This should make libruby3.1 cross-installable, because those directories
+    contains files that are architecture-dependent. Also, installing source
+    files and build scripts for extensions makes no sense (and we already
+    remove them for individual Ruby packages).
+
+  [ Vagrant Cascadian ]
+  * debian/rules: Strip the build path from rbconfig.rb
+
+ -- Antonio Terceiro <terceiro@debian.org>  Sun, 11 Sep 2022 07:42:05 -0300
+
 ruby3.1 (3.1.2-2) unstable; urgency=medium
 
   [ Antonio Terceiro ]
