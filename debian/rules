@@ -151,6 +151,8 @@ override_dh_auto_install-arch:
 	# remove embedded SSL certificates (replaced using ca-certificates via rubygems-integration)
 	$(RM) -r $(CURDIR)/debian/tmp/usr/lib/ruby/$(RUBY_API_VERSION)/rubygems/ssl_certs/*
 	$(RM) -r $(CURDIR)/debian/tmp/usr/lib/ruby/$(RUBY_API_VERSION)/bundler/ssl_certs/*
+	# remove extension build directories
+	$(RM) -r $(CURDIR)/debian/tmp/usr/lib/ruby/gems/$(RUBY_API_VERSION)/gems/*/ext/
 	# ship rubygems system install directory
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/gems/$(RUBY_API_VERSION)
 	# fix pkg-config
