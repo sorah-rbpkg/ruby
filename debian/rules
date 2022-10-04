@@ -70,6 +70,7 @@ configure_options += GREP='/bin/grep'
 configure_options += MAKEDIRS='/bin/mkdir -p'
 configure_options += MKDIR_P='/bin/mkdir -p'
 configure_options += SHELL='/bin/sh'
+configure_options += PKG_CONFIG=$(DEB_HOST_GNU_TYPE)-pkg-config
 
 # For more info see #999351
 ifneq (,$(filter $(DEB_HOST_ARCH),alpha))

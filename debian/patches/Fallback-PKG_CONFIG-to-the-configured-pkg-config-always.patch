@@ -1,0 +1,21 @@
+From: Nobuyoshi Nakada <nobu@ruby-lang.org>
+Date: Sun, 11 Sep 2022 16:06:35 +0900
+Subject: Fallback PKG_CONFIG to the configured pkg-config always
+
+---
+ lib/mkmf.rb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/mkmf.rb b/lib/mkmf.rb
+index 8241494..3014c2a 100644
+--- a/lib/mkmf.rb
++++ b/lib/mkmf.rb
+@@ -1867,7 +1867,7 @@ SRC
+     if pkgconfig = with_config("#{pkg}-config") and find_executable0(pkgconfig)
+       # if and only if package specific config command is given
+     elsif ($PKGCONFIG ||=
+-           (pkgconfig = with_config("pkg-config", ("pkg-config" unless CROSS_COMPILING))) &&
++           (pkgconfig = with_config("pkg-config", RbConfig::CONFIG["PKG_CONFIG"])) &&
+            find_executable0(pkgconfig) && pkgconfig) and
+         xsystem([*envs, $PKGCONFIG, "--exists", pkg])
+       # default to pkg-config command
