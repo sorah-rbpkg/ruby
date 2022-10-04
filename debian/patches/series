@@ -10,4 +10,5 @@
 0012-Make-resolv-accept-dash-in-zone_id-of-IPv6-link-local-addresses.patch
 ruby_default_arch.m4-don-t-require-arhitectures-to-be-kno.patch
 Fix-filenames-for-glibc-SO-files-on-alpha-and-ia64.patch
-rbconfig-mkmf-call-foreign-pkg-config-when-cross-compilin.patch
+Fallback-PKG_CONFIG-to-the-configured-pkg-config-always.patch
+Honor-the-tool-prefix-against-pkg-config.patch
