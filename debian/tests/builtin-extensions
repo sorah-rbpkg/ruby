@@ -6,12 +6,15 @@ extensions = [
   ["openssl", '>= 3.0.0'],
   ["psych"],
   ["zlib"],
+  ["debug"],
+  ["rbs"],
 ]
 
 failed = 0
 extensions.each do |ext|
   begin
     gem *ext
+    require ext.first
     puts "Extension #{ext.join(" ")}: OK"
   rescue LoadError => ex
     puts "Extension #{ext.join(" ")}: FAIL"
