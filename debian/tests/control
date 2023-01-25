@@ -1,2 +1,3 @@
-Tests: run-all bundled-gems builtin-extensions
-Depends: @
+Tests: run-all bundled-gems builtin-extensions rubyconfig pkg-config
+Depends: @, libffi-dev
+Restrictions: allow-stderr
