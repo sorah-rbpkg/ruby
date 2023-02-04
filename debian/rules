@@ -49,7 +49,7 @@ configure_options += --build=$(DEB_BUILD_GNU_TYPE)
 configure_options += --host=$(DEB_HOST_GNU_TYPE)
 endif
 ifneq ($(filter cross,$(DEB_BUILD_PROFILES)),)
-configure_options += --with-baseruby=/usr/bin/ruby
+configure_options += --with-baseruby=/usr/bin/$(DEB_SOURCE)
 endif
 
 # the following are ignored by ./configure, but used by some extconf.rb scripts
@@ -65,13 +65,24 @@ configure_options += --with-compress-debug-sections=no
 export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow optimize=-lto
 configure_options += $(shell dpkg-buildflags --export=configure)
 
+# Pass variables to ensure consistent values when built on a usrmerge
+# or non-usrmerge system.
+configure_options += EGREP='/bin/grep -E'
+configure_options += GREP='/bin/grep'
+configure_options += MAKEDIRS='/bin/mkdir -p'
+configure_options += MKDIR_P='/bin/mkdir -p'
+configure_options += SHELL='/bin/sh'
+configure_options += PKG_CONFIG=$(DEB_HOST_GNU_TYPE)-pkg-config
+
+# For more info see #999351
+ifneq (,$(filter $(DEB_HOST_ARCH),alpha))
+export DEB_CFLAGS_MAINT_APPEND += -O1
+endif
+
 # See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93808
 ifneq (,$(filter $(DEB_HOST_ARCH),sh3 sh4))
 export DEB_CFLAGS_MAINT_APPEND += -fno-crossjumping
 endif
-
-# Always build with /bin/bash, to get consistent rbconfig.rb (which embeds SHELL).
-export SHELL := /bin/bash
 
 configure_options += --with-out-ext=tcl
 configure_options += --with-out-ext=tk
@@ -109,6 +120,7 @@ override_dh_auto_clean:
 
 override_dh_auto_build-arch:
 	dh_auto_build -- main V=1
+	sed -i -e "s,$(CURDIR),BUILDDIR,g" ./rbconfig.rb
 
 # see full list in common.mk (search for /^check:/)
 TEST_TARGETS := test test-tool test-all # missing test-spec
@@ -143,7 +155,7 @@ override_dh_auto_install-arch:
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/gems/$(RUBY_API_VERSION)
 	# fix pkg-config
 	# FIXME there is probably less brutal way of doing this
-	sed -i -e 's/^DLDFLAGS=.*/DLDFLAGS=/' \
+	sed -i -e 's/^DLDFLAGS=.*/DLDFLAGS=/; s/LIBPATH=.*/LIBPATH=/' \
 		$(CURDIR)/debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/pkgconfig/ruby-$(RUBY_VERSION).pc
 	# sanity check
 	debian/sanity_check
@@ -160,8 +172,11 @@ override_dh_install-arch:
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/systemtap/tapset
 	sed 's|@LIBRARY_PATH@|/usr/lib/$(DEB_HOST_MULTIARCH)/libruby-$(RUBY_VERSION).so|g' $(CURDIR)/debian/libruby.stp > $(CURDIR)/debian/tmp/usr/share/systemtap/tapset/libruby$(RUBY_VERSION)-$(DEB_HOST_MULTIARCH).stp
 	dh_install
+	find $(CURDIR)/debian/libruby$(RUBY_VERSION)/usr/lib/ruby/gems/$(RUBY_API_VERSION)/gems/ \
+		'(' -name \*.so -or -name \*.o ')' \
+		-delete
 
 override_dh_gencontrol:
-	./debian/genprovides $(CURDIR)/debian/libruby$(RUBY_VERSION)/usr/lib/ruby/gems/$(RUBY_API_VERSION)/specifications/default/ \
+	./debian/genprovides $(CURDIR)/debian/libruby$(RUBY_VERSION)/usr/lib/ruby/gems/$(RUBY_API_VERSION)/specifications/ \
 		>> debian/libruby$(RUBY_VERSION).substvars
 	dh_gencontrol

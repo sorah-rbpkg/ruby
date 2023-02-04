@@ -1,3 +1,10 @@
+ruby3.0 (3.0.5-0nkmi1~dist) unstable; urgency=medium
+
+  * Ruby 3.0.5
+  * Port Debian (salsa/ruby-team/ruby) 13f2ba85a7..aeebfd7dd5
+
+ -- Sorah Fukumori <sorah@cookpad.com>  Sun, 05 Feb 2023 08:10:38 +0900
+
 ruby3.0 (3.0.4-0nkmi1~dist) unstable; urgency=medium
 
   * Ruby 3.0.4
