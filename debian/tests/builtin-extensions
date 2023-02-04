@@ -1,21 +1,23 @@
-#!/bin/sh
+#!/usr/bin/ruby3.1
 
-set -e
 
-extensions='
-dbm
-fiddle
-gdbm
-openssl
-psych
-zlib
-'
+extensions = [
+  ["dbm"],
+  ["fiddle"],
+  ["gdbm"],
+  ["openssl", '>= 3.0.0'],
+  ["psych"],
+  ["zlib"],
+]
 
-rc=0
-for ext in $extensions; do
-  if ! ruby3.1 -r"$ext" -e "puts 'Extension $ext: OK'"; then
-    rc=1
-  fi
-done
+failed = 0
+extensions.each do |ext|
+  begin
+    gem *ext
+    puts "Extension #{ext.join(" ")}: OK"
+  rescue LoadError
+    failed += 1
+  end
+end
 
-exit "$rc"
+exit(failed == 0 ? 0 : 1)
