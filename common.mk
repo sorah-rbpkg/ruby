@@ -1367,7 +1367,7 @@ update-gems$(gnumake:yes=-sequential): PHONY
 
 extract-gems$(gnumake:yes=-sequential): PHONY
 	$(ECHO) Extracting bundled gem files...
-	$(Q) $(BASERUBY) -C "$(srcdir)" \
+	$(Q) $(RUNRUBY) -C "$(srcdir)" \
 	    -Itool/lib -rfileutils -rbundled_gem -answ \
 	    -e 'BEGIN {FileUtils.mkdir_p(d = ".bundle/gems")}' \
 	    -e 'gem, ver, _, rev = *$$F' \
