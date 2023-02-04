@@ -1505,7 +1505,7 @@ update-gems$(sequential): PHONY
 
 extract-gems$(sequential): PHONY
 	$(ECHO) Extracting bundled gem files...
-	$(Q) $(BASERUBY) -C "$(srcdir)" \
+	$(Q) $(RUNRUBY) -C "$(srcdir)" \
 	    -Itool/lib -rfileutils -rbundled_gem $(split_option) -answ \
 	    -e 'BEGIN {d = ".bundle/gems"}' \
 	    -e 'gem, ver, _, rev = *$$F' \
@@ -1519,7 +1519,17 @@ extract-gems$(sequential): PHONY
 	    -e 'end' \
 	    gems/bundled_gems
 
-extract-gems$(sequential): $(HAVE_GIT:yes=clone-bundled-gems-src)
+clone-bundled-gems-src: PHONY
+	$(Q) $(BASERUBY) -C "$(srcdir)" \
+	    -Itool/lib -rbundled_gem -answ \
+	    -e 'BEGIN {git = $$git}' \
+	    -e 'gem, _, repo, rev = *$$F' \
+	    -e 'next if !rev or /^#/=~gem' \
+	    -e 'gemdir = "gems/src/#{gem}"' \
+	    -e 'BundledGem.checkout(gemdir, repo, rev, git: git)' \
+	    -e 'BundledGem.dummy_gemspec("#{gemdir}/#{gem}.gemspec")' \
+	    -- -git="$(GIT)" \
+	    gems/bundled_gems
 
 flush-gems: outdate-bundled-gems
 outdate-bundled-gems: PHONY
