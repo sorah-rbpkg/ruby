@@ -2443,14 +2443,14 @@ static const struct {
 
 static const char prelude_name11[] = "<internal:ractor>";
 static const struct {
-    char L0[508]; /* 1..293 */
-    char L293[485]; /* 294..349 */
-    char L349[508]; /* 350..473 */
-    char L473[466]; /* 474..627 */
-    char L627[454]; /* 628..703 */
-    char L703[478]; /* 704..753 */
-    char L753[508]; /* 754..827 */
-    char L827[184]; /* 828..839 */
+    char L0[502]; /* 1..270 */
+    char L270[502]; /* 271..348 */
+    char L348[477]; /* 349..420 */
+    char L420[508]; /* 421..582 */
+    char L582[467]; /* 583..703 */
+    char L703[486]; /* 704..720 */
+    char L720[483]; /* 721..815 */
+    char L815[422]; /* 816..843 */
 } prelude_code11 = {
 #line 1 "ractor.rb"
 ""/* Ractor is a Actor-model abstraction for Ruby that provides thread-safe parallel execution. */
@@ -2717,8 +2717,14 @@ static const struct {
 "  def self.new(*args, name: nil, &block)\n"
 "    b = block\n"/* TODO: builtin bug */
 "    raise ArgumentError, \"must be called with a block\" unless block\n"
+"    if __builtin_cexpr!(\"RBOOL(ruby_single_main_ractor)\")\n"
+"      warn(\"Ractor is experimental, and the behavior may change in future versions of Ruby! \" \\\n"
+"           \"Also there are many implementation issues.\", uplevel: 0, category: :experimental)\n"
+"    end\n"
 "    loc = caller_locations(1, 1).first\n"
 "    loc = \"#{loc.path}:#{loc.lineno}\"\n"
+,
+#line 271 "ractor.rb"
 "    __builtin_ractor_create(loc, name, args, b)\n"
 "  end\n"
 "\n"
@@ -2746,8 +2752,6 @@ static const struct {
 "  end\n"
 "\n"
 "\n"/*  */
-,
-#line 294 "ractor.rb"
 "\n"/* call-seq: */
 "\n"/*    Ractor.select(*ractors, [yield_value:, move: false]) -> [ractor or symbol, obj] */
 "\n"/*  */
@@ -2799,13 +2803,13 @@ static const struct {
 "  def self.select(*ractors, yield_value: yield_unspecified = true, move: false)\n"
 "    raise ArgumentError, 'specify at least one ractor or `yield_value`' if yield_unspecified && ractors.empty?\n"
 "\n"
+,
+#line 349 "ractor.rb"
 "    __builtin_cstmt! %q{\n"
 "      const VALUE *rs = RARRAY_CONST_PTR_TRANSIENT(ractors);\n"
 "      VALUE rv;\n"
 "      VALUE v = ractor_select(ec, rs, RARRAY_LENINT(ractors),\n"
 "                              yield_unspecified == Qtrue ? Qundef : yield_value,\n"
-,
-#line 350 "ractor.rb"
 "                              (bool)RTEST(move) ? true : false, &rv);\n"
 "      return rb_ary_new_from_args(2, rv, v);\n"
 "    }\n"
@@ -2873,6 +2877,8 @@ static const struct {
 "\n"/*  */
 "  def self.receive\n"
 "    __builtin_cexpr! %q{\n"
+,
+#line 421 "ractor.rb"
 "      ractor_receive(ec, rb_ec_ractor_ptr(ec))\n"
 "    }\n"
 "  end\n"
@@ -2930,8 +2936,6 @@ static const struct {
 "\n"/*       puts "Received successfully: #{val}" */
 "\n"/*     end */
 "\n"/*  */
-,
-#line 474 "ractor.rb"
 "\n"/*     r.send(1) */
 "\n"/*     r.send('test') */
 "\n"/*     wait */
@@ -3037,6 +3041,8 @@ static const struct {
 "\n"/*  */
 "\n"/*    r = Ractor.new {puts "Received: #{receive}"} */
 "\n"/*    s = 'message'.freeze */
+,
+#line 583 "ractor.rb"
 "\n"/*    r.send(s, move: true) */
 "\n"/*    s.inspect #=> "message", still available */
 "\n"/*  */
@@ -3086,8 +3092,6 @@ static const struct {
 "\n"/* The meaning of +move+ argument is the same as for #send. */
 "  def self.yield(obj, move: false)\n"
 "    __builtin_cexpr! %q{\n"
-,
-#line 628 "ractor.rb"
 "      ractor_yield(ec, rb_ec_ractor_ptr(ec), obj, move)\n"
 "    }\n"
 "  end\n"
@@ -3160,12 +3164,12 @@ static const struct {
 "  end\n"
 "\n"
 "  def inspect\n"
+,
+#line 704 "ractor.rb"
 "    loc  = __builtin_cexpr! %q{ RACTOR_PTR(self)->loc }\n"
 "    name = __builtin_cexpr! %q{ RACTOR_PTR(self)->name }\n"
 "    id   = __builtin_cexpr! %q{ INT2FIX(rb_ractor_id(RACTOR_PTR(self))) }\n"
 "    status = __builtin_cexpr! %q{\n"
-,
-#line 704 "ractor.rb"
 "      rb_str_new2(ractor_status_str(RACTOR_PTR(self)->status_))\n"
 "    }\n"
 "    \"#<Ractor:##{id}#{name ? ' '+name : ''}#{loc ? \" \" + loc : ''} #{status}>\"\n"
@@ -3179,6 +3183,8 @@ static const struct {
 "  end\n"
 "\n"
 "  class RemoteError\n"
+,
+#line 721 "ractor.rb"
 "    attr_reader :ractor\n"
 "  end\n"
 "\n"
@@ -3216,8 +3222,6 @@ static const struct {
 "\n"/*   # Ractor::ClosedError (The outgoing-port is already closed) */
 "  def close_outgoing\n"
 "    __builtin_cexpr! %q{\n"
-,
-#line 754 "ractor.rb"
 "      ractor_close_outgoing(ec, RACTOR_PTR(self));\n"
 "    }\n"
 "  end\n"
@@ -3276,6 +3280,8 @@ static const struct {
 "\n"/* See also the "Shareable and unshareable objects" section in the Ractor class docs. */
 "  def self.make_shareable obj, copy: false\n"
 "    if copy\n"
+,
+#line 816 "ractor.rb"
 "      __builtin_cexpr! %q{\n"
 "        rb_ractor_make_shareable_copy(obj);\n"
 "      }\n"
@@ -3292,8 +3298,6 @@ static const struct {
 "  end\n"
 "\n"
 "\n"/* set a value in ractor-local storage */
-,
-#line 828 "ractor.rb"
 "  def []=(sym, val)\n"
 "    Primitive.ractor_local_value_set(sym, val)\n"
 "  end\n"
@@ -3305,7 +3309,7 @@ static const struct {
 "    }\n"
 "  end\n"
 "end\n"
-#line 3309 "miniprelude.c"
+#line 3313 "miniprelude.c"
 };
 
 static const char prelude_name12[] = "<internal:timev>";
@@ -3628,7 +3632,7 @@ static const struct {
 "    Primitive.time_init_args(year, mon, mday, hour, min, sec, zone)\n"
 "  end\n"
 "end\n"
-#line 3632 "miniprelude.c"
+#line 3636 "miniprelude.c"
 };
 
 static const char prelude_name13[] = "<internal:nilclass>";
@@ -3661,7 +3665,7 @@ static const struct {
 "    return 0.0\n"
 "  end\n"
 "end\n"
-#line 3665 "miniprelude.c"
+#line 3669 "miniprelude.c"
 };
 
 static const char prelude_name14[] = "<internal:prelude>";
@@ -3691,7 +3695,7 @@ static const struct {
 "\n"
 "  private :pp\n"
 "end\n"
-#line 3695 "miniprelude.c"
+#line 3699 "miniprelude.c"
 };
 
 static const char prelude_name15[] = "<internal:gem_prelude>";
@@ -3718,7 +3722,7 @@ static const struct {
 "rescue LoadError\n"
 "  warn \"`did_you_mean' was not loaded.\"\n"
 "end if defined?(DidYouMean)\n"
-#line 3722 "miniprelude.c"
+#line 3726 "miniprelude.c"
 };
 
 static const char prelude_name16[] = "<internal:yjit>";
@@ -4059,7 +4063,7 @@ static const struct {
 "    end\n"
 "  end\n"
 "end\n"
-#line 4063 "miniprelude.c"
+#line 4067 "miniprelude.c"
 };
 
 COMPILER_WARNING_POP

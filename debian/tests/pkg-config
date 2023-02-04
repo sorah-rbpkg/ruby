@@ -1,0 +1,9 @@
+#!/bin/sh
+
+set -eu
+
+ruby="${1:-ruby3.1}"
+cd "${AUTOPKGTEST_TMP:-/tmp}"
+
+set -x
+$ruby -rmkmf -e 'pkg_config("libffi") or raise "pkg_config does not work"'
