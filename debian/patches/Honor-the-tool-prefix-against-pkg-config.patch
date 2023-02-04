@@ -7,10 +7,10 @@ Subject: Honor the tool prefix against pkg-config
  1 file changed, 8 insertions(+), 5 deletions(-)
 
 diff --git a/configure.ac b/configure.ac
-index 49897ad..e7c00ce 100644
+index 1368961..8d90b4c 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -488,11 +488,14 @@ AS_IF([test "$cross_compiling:$ac_cv_prog_DTRACE" = no: -a -n "$ac_tool_prefix"]
+@@ -470,11 +470,14 @@ AS_IF([test "$cross_compiling:$ac_cv_prog_DTRACE" = no: -a -n "$ac_tool_prefix"]
  AC_CHECK_PROGS(DOT, dot)
  AC_CHECK_PROGS(DOXYGEN, doxygen)
  
