@@ -7,3 +7,5 @@ Fix-FTBFS-on-x32-misdetected-as-i386-or-amd64.patch
 TestProcess-disable-gems-to-disable-rubygems_integration.patch
 ruby_default_arch.m4-don-t-require-arhitectures-to-be-kno.patch
 test-zlib-test_zlib.rb-stop-a-failure-on-armv7l.patch
+Fallback-PKG_CONFIG-to-the-configured-pkg-config-always.patch
+Honor-the-tool-prefix-against-pkg-config.patch
