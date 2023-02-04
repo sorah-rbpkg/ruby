@@ -163,6 +163,25 @@ The checksum of /versions does not match the checksum provided by the server! So
     expect(the_bundle).to include_gems "rack 1.0.0"
   end
 
+  it "shows proper path when permission errors happen", :permissions do
+    gemfile <<-G
+      source "#{source_uri}"
+      gem "rack"
+    G
+
+    versions = File.join(Bundler.rubygems.user_home, ".bundle", "cache", "compact_index",
+      "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "versions")
+    FileUtils.mkdir_p(File.dirname(versions))
+    FileUtils.touch(versions)
+    FileUtils.chmod("-r", versions)
+
+    bundle :install, :artifice => "compact_index", :raise_on_error => false
+
+    expect(err).to include(
+      "There was an error while trying to read from `#{versions}`. It is likely that you need to grant read permissions for that path."
+    )
+  end
+
   it "falls back when the user's home directory does not exist or is not writable" do
     ENV["HOME"] = tmp("missing_home").to_s
 
@@ -258,7 +277,7 @@ The checksum of /versions does not match the checksum provided by the server! So
         s.extensions << "Rakefile"
         s.write "Rakefile", <<-RUBY
           task :default do
-            path = File.expand_path("../lib", __FILE__)
+            path = File.expand_path("lib", __dir__)
             FileUtils.mkdir_p(path)
             File.open("\#{path}/net_build_extensions.rb", "w") do |f|
               f.puts "NET_BUILD_EXTENSIONS = 'YES'"
@@ -761,8 +780,6 @@ The checksum of /versions does not match the checksum provided by the server! So
   end
 
   it "performs partial update with a non-empty range" do
-    skip "HTTP_RANGE not set" if Gem.win_platform?
-
     gemfile <<-G
       source "#{source_uri}"
       gem 'rack', '0.9.1'

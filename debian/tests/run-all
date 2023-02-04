@@ -34,6 +34,14 @@ excludes="$excludes --excludes-dir=${excludedir}/any/"
 excludes="$excludes --excludes-dir=${excludedir}/$(dpkg-architecture -qDEB_HOST_ARCH)/"
 excludes="$excludes --excludes-dir=${excludedir}/autopkgtest/"
 
+# dpkg-source does not allow empty file creatian via a patch, the files below
+# are created during build time to run tests, we need to do the same for
+# autopkgtest.
+empty_files="$AUTOPKGTEST_TMP/test/openssl/fixtures/pkey/empty.pem"
+for f in $empty_files; do
+  touch $f
+done
+
 run_tests=''
 for t in $tests; do
   if ! grep -q "^$t$" "$skiplist"; then

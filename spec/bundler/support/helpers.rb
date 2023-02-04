@@ -437,6 +437,14 @@ module Spec
       pristine_system_gems :bundler
     end
 
+    def simulate_ruby_platform(ruby_platform)
+      old = ENV["BUNDLER_SPEC_RUBY_PLATFORM"]
+      ENV["BUNDLER_SPEC_RUBY_PLATFORM"] = ruby_platform.to_s
+      yield
+    ensure
+      ENV["BUNDLER_SPEC_RUBY_PLATFORM"] = old
+    end
+
     def simulate_platform(platform)
       old = ENV["BUNDLER_SPEC_PLATFORM"]
       ENV["BUNDLER_SPEC_PLATFORM"] = platform.to_s
@@ -445,12 +453,16 @@ module Spec
       ENV["BUNDLER_SPEC_PLATFORM"] = old if block_given?
     end
 
-    def simulate_windows(platform = mswin)
+    def simulate_windows(platform = x86_mswin32)
+      old = ENV["BUNDLER_SPEC_WINDOWS"]
+      ENV["BUNDLER_SPEC_WINDOWS"] = "true"
       simulate_platform platform do
         simulate_bundler_version_when_missing_prerelease_default_gem_activation do
           yield
         end
       end
+    ensure
+      ENV["BUNDLER_SPEC_WINDOWS"] = old
     end
 
     def simulate_bundler_version_when_missing_prerelease_default_gem_activation
@@ -469,6 +481,14 @@ module Spec
       else
         {}
       end
+    end
+
+    def current_ruby_minor
+      Gem.ruby_version.segments.tap {|s| s.delete_at(2) }.join(".")
+    end
+
+    def next_ruby_minor
+      Gem.ruby_version.segments[0..1].map.with_index {|s, i| i == 1 ? s + 1 : s }.join(".")
     end
 
     # versions providing a bundler version finder but not including

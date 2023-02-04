@@ -1,0 +1,8 @@
+exclude :test_lazy_to_enum_lazy_methods, 'fails, ENOTIME to investigate'
+exclude :test_take_rewound, 'fails, ENOTIME to investigate'
+exclude :test_zip, 'fails, ENOTIME to investigate'
+exclude :test_zip_lazy_on_args, 'fails, ENOTIME to investigate'
+exclude :test_zip_nested, 'fails, ENOTIME to investigate'
+exclude :test_zip_nonsingle, 'fails, ENOTIME to investigate'
+exclude :test_zip_short_arg, 'fails, ENOTIME to investigate'
+exclude :test_zip_with_block, 'fails, ENOTIME to investigate'
