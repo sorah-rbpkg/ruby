@@ -1,0 +1,25 @@
+From: Sorah Fukumori <her@sorah.jp>
+Date: Sun, 5 Feb 2023 06:25:03 +0900
+Subject: extract-gems-sequential: Keep using RUNRUBY
+
+sorah-rbpkg's special rubyN.M-gems requires to kick
+extract-gems and our build environment has no BASERUBY.
+
+Partially reverts https://github.com/ruby/ruby/pull/6203
+---
+ common.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/common.mk b/common.mk
+index 6ca2841..a8522ee 100644
+--- a/common.mk
++++ b/common.mk
+@@ -1367,7 +1367,7 @@ update-gems$(gnumake:yes=-sequential): PHONY
+ 
+ extract-gems$(gnumake:yes=-sequential): PHONY
+ 	$(ECHO) Extracting bundled gem files...
+-	$(Q) $(BASERUBY) -C "$(srcdir)" \
++	$(Q) $(RUNRUBY) -C "$(srcdir)" \
+ 	    -Itool/lib -rfileutils -rbundled_gem -answ \
+ 	    -e 'BEGIN {FileUtils.mkdir_p(d = ".bundle/gems")}' \
+ 	    -e 'gem, ver, _, rev = *$$F' \

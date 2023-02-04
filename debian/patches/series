@@ -10,3 +10,4 @@ test_readline-test_without_tty-Use-EnvUtil.rubybin.patch
 Fix-filenames-for-glibc-SO-files-on-alpha-and-ia64.patch
 Honor-the-tool-prefix-against-pkg-config.patch
 Fix-for-tzdata-2022g.patch
+extract-gems-sequential-Keep-using-RUNRUBY.patch

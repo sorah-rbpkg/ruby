@@ -138,7 +138,7 @@ ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
 endif
 
 override_dh_auto_install-arch:
-	$(MAKE) extract-gems
+	$(MAKE) extract-gems-sequential
 	$(MAKE) install-nodoc V=1 DESTDIR=$(CURDIR)/debian/tmp
 	# handle embedded copy of Lato (font)
 	$(RM) $(CURDIR)/debian/tmp/usr/lib/ruby/$(RUBY_API_VERSION)/rdoc/generator/template/darkfish/fonts/Lato-Regular.ttf

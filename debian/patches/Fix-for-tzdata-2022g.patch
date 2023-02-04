@@ -7,7 +7,7 @@ Subject: Fix for tzdata-2022g
  1 file changed, 15 insertions(+), 6 deletions(-)
 
 diff --git a/test/ruby/test_time_tz.rb b/test/ruby/test_time_tz.rb
-index fdc9e11..6973b02 100644
+index b6785f3..939f218 100644
 --- a/test/ruby/test_time_tz.rb
 +++ b/test/ruby/test_time_tz.rb
 @@ -7,9 +7,9 @@ class TestTimeTZ < Test::Unit::TestCase
