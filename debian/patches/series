@@ -8,5 +8,4 @@ TestProcess-disable-gems-to-disable-rubygems_integration.patch
 ruby_default_arch.m4-don-t-require-arhitectures-to-be-kno.patch
 test_readline-test_without_tty-Use-EnvUtil.rubybin.patch
 Fix-filenames-for-glibc-SO-files-on-alpha-and-ia64.patch
-Fallback-PKG_CONFIG-to-the-configured-pkg-config-always.patch
 Honor-the-tool-prefix-against-pkg-config.patch
