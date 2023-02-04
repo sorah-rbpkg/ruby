@@ -4,20 +4,23 @@ Subject: Fix FTBFS on x32: misdetected as i386 or amd64
 
 Author: Thorsten Glaser <t.glaser@tarent.de>
 Bug: #954293
+
+Updated by John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de> on
+2022-06-02, s/rb_cv_coroutine/coroutine_type/.
 ---
  configure.ac | 3 +++
  1 file changed, 3 insertions(+)
 
 diff --git a/configure.ac b/configure.ac
-index 5a6b074..403b965 100644
+index fcae66f..3f454e5 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -2524,6 +2524,9 @@ AS_CASE([$coroutine_type], [yes|''], [
+@@ -2550,6 +2550,9 @@ AS_CASE([$coroutine_type], [yes|''], [
          [arm64-darwin*], [
              coroutine_type=arm64
          ],
 +        [x86_64-linux-gnux32], [
-+            rb_cv_coroutine=ucontext
++            coroutine_type=ucontext
 +        ],
          [x*64-linux*], [
              AS_CASE(["$ac_cv_sizeof_voidp"],

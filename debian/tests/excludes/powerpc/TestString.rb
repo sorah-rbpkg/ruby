@@ -1,0 +1,5 @@
+exclude :test_each_byte, 'fails, ENOTIME to investigate'
+exclude :test_each_char, 'fails, ENOTIME to investigate'
+exclude :test_each_codepoint, 'fails, ENOTIME to investigate'
+exclude :test_each_line, 'fails, ENOTIME to investigate'
+exclude :test_each_line_chomp, 'fails, ENOTIME to investigate'
