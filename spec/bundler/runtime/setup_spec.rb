@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "tmpdir"
-require "tempfile"
 
 RSpec.describe "Bundler.setup" do
   describe "with no arguments" do
@@ -516,7 +515,7 @@ RSpec.describe "Bundler.setup" do
 
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
@@ -534,7 +533,7 @@ RSpec.describe "Bundler.setup" do
 
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
@@ -556,7 +555,7 @@ RSpec.describe "Bundler.setup" do
 
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
@@ -568,7 +567,7 @@ RSpec.describe "Bundler.setup" do
       G
 
       run "require 'rack'", :raise_on_error => false
-      expect(err).to match(/is using branch master but Gemfile specifies changed/)
+      expect(err).to match(/is using branch main but Gemfile specifies changed/)
     end
 
     it "explodes on refs with different branches on runtime" do
@@ -578,17 +577,17 @@ RSpec.describe "Bundler.setup" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :ref => "master", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :ref => "main", :branch => "main"
       G
 
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :ref => "master", :branch => "nonexistant"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :ref => "main", :branch => "nonexistant"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
       run "require 'rack'", :raise_on_error => false
-      expect(err).to match(/is using branch master but Gemfile specifies nonexistant/)
+      expect(err).to match(/is using branch main but Gemfile specifies nonexistant/)
     end
   end
 
@@ -661,6 +660,23 @@ RSpec.describe "Bundler.setup" do
 
       ruby "require '#{system_gem_path("gems/bundler-9.99.9.beta1/lib/bundler.rb")}'; Bundler.setup", :env => { "DEBUG" => "1" }
       expect(out).to include("Found no changes, using resolution from the lockfile")
+      expect(out).not_to include("lockfile does not have all gems needed for the current platform")
+      expect(err).to be_empty
+    end
+
+    it "doesn't re-resolve when deleting dependencies" do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+        gem "actionpack"
+      G
+
+      install_gemfile <<-G, :verbose => true
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      G
+
+      expect(out).to include("Some dependencies were deleted, using a subset of the resolution from the lockfile")
       expect(err).to be_empty
     end
 
@@ -800,7 +816,7 @@ end
       run <<~RUBY
         puts ENV['MANPATH']
         require "open3"
-        puts Open3.capture2e("man", "ls")[0]
+        puts Open3.capture2e({ "LC_ALL" => "C" }, "man", "ls")[0]
       RUBY
 
       lines = out.split("\n")
@@ -828,7 +844,7 @@ end
     expect(out).to eq("yay")
   end
 
-  it "should clean $LOAD_PATH properly", :ruby_repo do
+  it "should clean $LOAD_PATH properly" do
     gem_name = "very_simple_binary"
     full_gem_name = gem_name + "-1.0"
     ext_dir = File.join(tmp("extensions", full_gem_name))
@@ -861,19 +877,17 @@ end
 
   context "with bundler is located in symlinked GEM_HOME" do
     let(:gem_home) { Dir.mktmpdir }
-    let(:symlinked_gem_home) { Tempfile.new("gem_home").path }
+    let(:symlinked_gem_home) { tmp("gem_home-symlink").to_s }
     let(:full_name) { "bundler-#{Bundler::VERSION}" }
 
     before do
-      skip "symlink destination exists" if Gem.win_platform?
-
-      FileUtils.ln_sf(gem_home, symlinked_gem_home)
+      File.symlink(gem_home, symlinked_gem_home)
       gems_dir = File.join(gem_home, "gems")
       specifications_dir = File.join(gem_home, "specifications")
       Dir.mkdir(gems_dir)
       Dir.mkdir(specifications_dir)
 
-      FileUtils.ln_s(source_root, File.join(gems_dir, full_name))
+      File.symlink(source_root, File.join(gems_dir, full_name))
 
       gemspec_content = File.binread(gemspec).
                 sub("Bundler::VERSION", %("#{Bundler::VERSION}")).
@@ -1321,7 +1335,6 @@ end
         else
           %w[io-console openssl]
         end << "bundler"
-        exempts << "fiddle" if Gem.win_platform? && Gem.rubygems_version >= Gem::Version.new("2.7")
         exempts << "uri" if Gem.ruby_version >= Gem::Version.new("2.7")
         exempts << "pathname" if Gem.ruby_version >= Gem::Version.new("3.0")
         exempts << "set" unless Gem.rubygems_version >= Gem::Version.new("3.2.6")
