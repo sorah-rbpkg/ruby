@@ -9,5 +9,6 @@ ruby_default_arch.m4-don-t-require-arhitectures-to-be-kno.patch
 test-zlib-test_zlib.rb-stop-a-failure-on-armv7l.patch
 Fallback-PKG_CONFIG-to-the-configured-pkg-config-always.patch
 Honor-the-tool-prefix-against-pkg-config.patch
+Fix-for-tzdata-2022g.patch
 Update-openssl-to-version-3.0.0.patch
 Update-rubygems-to-version-3.3.3.patch
