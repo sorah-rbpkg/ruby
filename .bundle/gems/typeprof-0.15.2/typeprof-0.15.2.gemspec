@@ -18,7 +18,7 @@ Gem::Specification.new do |s|
   s.homepage = "https://github.com/ruby/typeprof".freeze
   s.licenses = ["MIT".freeze]
   s.required_ruby_version = Gem::Requirement.new(">= 2.7".freeze)
-  s.rubygems_version = "3.1.2".freeze
+  s.rubygems_version = "3.3.5".freeze
   s.summary = "TypeProf is a type analysis tool for Ruby code based on abstract interpretation".freeze
 
   if s.respond_to? :specification_version then

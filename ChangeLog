@@ -1,5 +1,248 @@
 -*- coding: utf-8 -*-
 
+commit ba5cf0f7c52d4d35cc6a173c89eda98ceffa2dcf
+  Author:     Kazuki Yamaguchi <k@rhe.jp>
+  AuthorDate: 2022-09-08 23:00:01 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-11-24 20:04:56 +0900
+
+    Merge openssl-2.2.2
+
+    The changes can be found at:
+
+      https://github.com/ruby/openssl/compare/v2.2.1...v2.2.2
+
+commit 5fb3cf463c2d78a161fba6a4486bd48e0cbd96c9
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2021-03-09 16:29:50 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-11-24 20:01:26 +0900
+
+    Keep GC disabled until VM bootstrap has done [Bug #17583]
+
+commit 22ace33a78583d92e08f556dcf8c3433118d0408
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2022-11-24 11:21:39 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2022-11-24 11:21:39 +0900
+
+    * 2022-11-24 [ci skip]
+
+commit bdb8980f01fb119074ccb8c82447cd0dd061d640
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-10-20 20:30:28 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-11-24 11:21:28 +0900
+
+    merge revision(s) 4f1e0bfacd93c28bff549e2f3603c3b4942429a3:
+
+            Followed up CVE-2022-39253 for bundler examples
+
+            ---
+             spec/bundler/cache/git_spec.rb           | 3 +++
+             spec/bundler/install/gemfile/git_spec.rb | 9 +++++++++
+             spec/bundler/update/git_spec.rb          | 3 +++
+             3 files changed, 15 insertions(+)
+
+commit 3b231086cb3e4347ec025aed3a5c10f9e577bef5
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-11-22 20:55:17 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-11-24 11:21:28 +0900
+
+    merge revision(s) 36f297e62108072b9377d927321928b994f66a93:
+
+            Use valid tokens as cookie names
+
+            ---
+             spec/ruby/library/cgi/cookie/name_spec.rb  | 12 ++++++------
+             spec/ruby/library/cgi/cookie/parse_spec.rb | 10 +++++-----
+             2 files changed, 11 insertions(+), 11 deletions(-)
+
+commit 3ff3855be22543b78ddf789f520414eaee912f0d
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-10-20 20:30:06 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-11-24 11:21:28 +0900
+
+    merge revision(s) dae843f6b7502f921a7e66f39e3714a39d860181,86096a91d55f72620e0f8ca8634da5fa342dc35b:
+
+            Bypass git submodule add/update with git config
+             protocol.file.allow=always option.
+
+            Co-authored-by: Nobuyoshi Nakada <nobu@ruby-lang.org>
+            ---
+             test/rubygems/test_gem_source_git.rb | 5 +++++
+             1 file changed, 5 insertions(+)
+
+            [rubygems/rubygems] Use [] instead of double-quotes
+
+            ---
+             test/rubygems/test_gem_source_git.rb | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit cbe2c0cd0908981dde1a1289403ac8468e3e06b9
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2022-11-22 13:49:18 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-11-24 11:21:28 +0900
+
+    Merge CGI-0.2.2
+
+commit 9944ff540d12c7d18f758c4545176519e733dfef
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2022-10-15 23:09:31 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2022-10-15 23:09:31 +0900
+
+    * 2022-10-15 [ci skip]
+
+commit 6ea1a4771d0fed63f3374fa799c038967b6c1f7b
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2022-10-14 08:28:16 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-10-15 23:09:20 +0900
+
+    Upgrade zlib_version on AppVeyor
+
+    They removed https://zlib.net/zlib1212.zip because
+    https://zlib.net/zlib1213.zip was released :thinking_face:
+
+    Fix CI failures like:
+    https://ci.appveyor.com/project/ruby/ruby/builds/45064876/job/bb9biogolh0u2595
+
+commit 1407149f7bf10168375a1fc40d6748fcfd4616e4
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2022-10-15 12:56:38 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-10-15 23:09:20 +0900
+
+    Update zlib version
+
+commit fb120ee041f0c2348e64f8ee683dc831310233b3
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2022-10-01 15:58:37 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2022-10-01 15:58:37 +0900
+
+    * 2022-10-01 [ci skip]
+
+commit 7f2c548255c2e9cf5c7089823153a8a06940f174
+  Author:     Yuta Saito <kateinoigakukun@gmail.com>
+  AuthorDate: 2022-09-24 03:36:04 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-10-01 15:58:25 +0900
+
+    Initialize Objective-C classes before fork() for macOS 13
+
+    Since macOS 13, CFString family API used in
+    `rb_str_append_normalized_ospath` may internally use Objective-C classes
+    (`NSTaggedPointerString` and `NSPlaceholderMutableString`) for small strings.
+
+    On the other hand, Objective-C classes should not be used for the first
+    time in a `fork()`'ed but not `exec()`'ed process. Violations for this rule
+    can result deadlock during class initialization, so Objective-C runtime
+    conservatively crashes on such cases by default.
+
+    Therefore, we need to use CFString API to initialize Objective-C classes
+    used internally *before* `fork()`.
+
+    For more details, see https://bugs.ruby-lang.org/issues/18912
+
+commit 2ae567acab101b4b89522084898fdae0302bb527
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2022-09-17 12:09:34 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-10-01 15:58:25 +0900
+
+    [Bug #19005] dynamic_lookup linker option in external libraries
+
+    The warning against `-undefined dynamic_lookup` is just a warning yet,
+    and many gems seem to pay no attention to warnings.  Until it fails
+    actually, keep it as a migration path, except for standard extension
+    libraries and bundled extension gems.
+
+commit 45c2fd9e3e93b88f84cb559d3bdc3a3b9f62f0b3
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2022-09-13 23:56:34 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-10-01 15:58:25 +0900
+
+    -undefined dynamic_lookup is obsolete
+
+commit b5fdd17c16b188fa5290cf48101736967a9a14bc
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2022-09-20 16:50:16 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2022-09-20 16:50:16 +0900
+
+    * 2022-09-20 [ci skip]
+
+commit 15615566931d645f19cb65d859fd113abab29204
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2022-08-17 00:45:27 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-09-20 16:50:02 +0900
+
+    The tzdata 2022c removed Amsterdam Mean Time
+
+commit 6be430ef7319fe86c451487008c380db7f0b0bf5
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2022-09-16 15:13:00 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2022-09-16 15:13:00 +0900
+
+    * 2022-09-16 [ci skip]
+
+commit 7900a9bd388cff65ba98e4fa09b296eb1f4f815e
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2022-08-29 17:42:49 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-09-16 15:12:47 +0900
+
+    Backport https://github.com/ruby/ruby/pull/6193
+
+    Co-authored-by: Yuta Saito <kateinoigakukun@gmail.com>
+
+commit 9733f4d0f00a38b5f77ee2e2fffdff866828cd66
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2022-07-25 20:39:12 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2022-07-25 20:39:12 +0900
+
+    merge revision(s) edf01d4e82d8e44ee30ec41fbcb7f802bc8b8c5d: [Backport #18772]
+
+            Treat NULL fake string as an empty string
+
+            And the NULL string must be of size 0.
+            ---
+             string.c | 5 +++++
+             1 file changed, 5 insertions(+)
+
+commit 6ac4449fce6257ffe653a743880cead2e43167e8
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2022-06-18 23:00:21 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2022-06-18 23:00:21 +0900
+
+    merge revision(s) 7f81f335478a3ca873f34e3bc0af6927819d3e84: [Backport #18734]
+
+            Return `false` where sticky-bit is not provided [Bug #18734]
+
+            ---
+             file.c | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 28b238f2cbcbf9993c4ce8031cbe19bd2accbfbf
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2022-06-18 22:54:12 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2022-06-18 22:54:12 +0900
+
+    merge revision(s): a0040af6715d85f416f1282588974e151a8164eb
+
+            [Win32] Fix mode of character/pipe device stat [Bug #18732]
+
 commit 3fa771ddedac25560be57f4055f1767e6c810f58
   Author:     nagachika <nagachika@ruby-lang.org>
   AuthorDate: 2022-04-12 20:08:08 +0900
@@ -4229,7 +4472,7 @@ commit cafa7904e7233d1a4b8ae7e738f6bd35ed67d642
   Commit:     GitHub <noreply@github.com>
   CommitDate: 2021-04-03 18:26:46 +0900
 
-    Backport lib/reline, and lib/irb for 3.0.1 4th (#4349)
+    Backport lib/reline, and lib/irb for 3.0.1 4th (https://github.com/ruby/reline/pull/4349)
 
     * [ruby/irb] Update help message for next context-mode of 4
 
@@ -4727,7 +4970,7 @@ commit b20e2c3f2a3ce227b9cf32d2bf02db0ac67eccb5
   Commit:     GitHub <noreply@github.com>
   CommitDate: 2021-03-13 17:55:49 +0900
 
-    Backport io-console 0.5.7 to Ruby 3.0 (#4252)
+    Backport io-console 0.5.7 to Ruby 3.0 (https://github.com/ruby/io-console/pull/4252)
 
     * [ruby/io-console] [DOC] Note that IO#getpass returns a chomped string
 
@@ -5188,7 +5431,7 @@ commit 46825a7462e3106599c034bd77dcd3646a181539
   Commit:     GitHub <noreply@github.com>
   CommitDate: 2021-02-26 10:32:34 +0900
 
-    Backport lib/reline, and lib/irb for 3.0.1 3rd (#4228)
+    Backport lib/reline, and lib/irb for 3.0.1 3rd (https://github.com/ruby/reline/pull/4228)
 
     * [ruby/irb] Suppress error when File::ALT_SEPARATOR is nil
 
@@ -5356,7 +5599,7 @@ commit 77700bf023a963af810bcc49184428a75cd23bb1
   Commit:     GitHub <noreply@github.com>
   CommitDate: 2021-02-07 21:04:32 +0900
 
-    Backport lib/reline, and lib/irb for 3.0.1 2nd (#4157)
+    Backport lib/reline, and lib/irb for 3.0.1 2nd (https://github.com/ruby/reline/pull/4157)
 
     * [ruby/irb] Stub a screen size for tests
 
@@ -6046,7 +6289,7 @@ commit 58509767d17f7d4c6002f1159cefc0e038bbd629
   Commit:     GitHub <noreply@github.com>
   CommitDate: 2021-01-19 13:01:31 +0900
 
-    Backport lib/reline, ext/readline, and lib/irb for 3.0.1 (#4085)
+    Backport lib/reline, ext/readline, and lib/irb for 3.0.1 (https://github.com/ruby/irb/pull/4085)
 
     * Get rid of inconsistent dll linkages against vcpkg readline
 
@@ -6062,7 +6305,7 @@ commit 58509767d17f7d4c6002f1159cefc0e038bbd629
 
     https://github.com/ruby/irb/commit/7723ade899
 
-    * irb: add more syntax errors colorizing support (#3967)
+    * irb: add more syntax errors colorizing support (https://github.com/ruby/irb/pull/3967)
 
     * [ruby/irb] Do not colorize partially-correct inspect
 
@@ -10131,7 +10374,7 @@ commit 985f0af2576c4b4f9f4e75dce7299ba9d55d9419
   Commit:     Kenta Murata <mrkn@mrkn.jp>
   CommitDate: 2020-12-18 14:25:41 +0900
 
-    [strscan] Make strscan Ractor safe (#17)
+    [strscan] Make strscan Ractor safe (https://github.com/ruby/strscan/pull/17)
 
     * Make strscan Ractor safe
 
@@ -16681,7 +16924,7 @@ commit f9d6d762dc5f86511e349e7f0a59ebb89a7b0764
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] Removed needless editorconfig file (#192)
+    [ruby/csv] Removed needless editorconfig file (https://github.com/ruby/csv/pull/192)
 
 
     https://github.com/ruby/csv/commit/5623dee00e
@@ -16695,7 +16938,7 @@ commit 20a9131270c3bbb2216fedc6d5e4467b75cf560b
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] RDoc recipes for RFC-compliant generation (#187)
+    [ruby/csv] RDoc recipes for RFC-compliant generation (https://github.com/ruby/csv/pull/187)
 
 
     https://github.com/ruby/csv/commit/5adeaff91f
@@ -16709,7 +16952,7 @@ commit d48e688f64b8a1913ff9bf44202395bb453de291
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] RDoc recipes for diagnostics (#186)
+    [ruby/csv] RDoc recipes for diagnostics (https://github.com/ruby/csv/pull/186)
 
 
     https://github.com/ruby/csv/commit/d9e67918e2
@@ -16723,7 +16966,7 @@ commit 9266410c7afbc1b43ff9b2cab31ebd5f0ad14866
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] RDoc Recipes for write converters and RFC 4180 compliance (#185)
+    [ruby/csv] RDoc Recipes for write converters and RFC 4180 compliance (https://github.com/ruby/csv/pull/185)
 
 
     https://github.com/ruby/csv/commit/bee48b04c4
@@ -16737,7 +16980,7 @@ commit c5fcafd2fd82ddbae38739a874bf84a19b4ef402
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] Split recipes into three pages: parsing, generating, filtering (#184)
+    [ruby/csv] Split recipes into three pages: parsing, generating, filtering (https://github.com/ruby/csv/pull/184)
 
     Co-authored-by: Sutou Kouhei <kou@clear-code.com>
 
@@ -16752,7 +16995,7 @@ commit 3cfb63fcd864e6114138a9ba4e972bd616034bc2
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] More on Recipes headers (#183)
+    [ruby/csv] More on Recipes headers (https://github.com/ruby/csv/pull/183)
 
 
     https://github.com/ruby/csv/commit/d7ae3df801
@@ -16766,7 +17009,7 @@ commit 15e457d6a39c146f9bfa9813fd1c8ab7f2a37f16
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] Refine RDoc for headers recipes (#182)
+    [ruby/csv] Refine RDoc for headers recipes (https://github.com/ruby/csv/pull/182)
 
 
     https://github.com/ruby/csv/commit/bd8085e126
@@ -16780,7 +17023,7 @@ commit 6e28ec06c15acd5427629873b9d129c37ecadd51
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] RDoc recipes: add introductory texts to code recipes (#181)
+    [ruby/csv] RDoc recipes: add introductory texts to code recipes (https://github.com/ruby/csv/pull/181)
 
 
     https://github.com/ruby/csv/commit/c52d53761e
@@ -16794,7 +17037,7 @@ commit 4641a9a92b449e2e9d4cbc91a93de27f98396a96
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] Emphasize with-headers over without-headers in recipes (#180)
+    [ruby/csv] Emphasize with-headers over without-headers in recipes (https://github.com/ruby/csv/pull/180)
 
 
     https://github.com/ruby/csv/commit/c7bbedd28a
@@ -16808,7 +17051,7 @@ commit 76e5e5aaec9eb0ec83eb32831a4df4203c24a0a9
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] More RDoc for field converters (#179)
+    [ruby/csv] More RDoc for field converters (https://github.com/ruby/csv/pull/179)
 
 
     https://github.com/ruby/csv/commit/2a4ef5d86a
@@ -16822,7 +17065,7 @@ commit 5a0c8068c8b370c2ce2ba411c146a80194eb3516
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] Clarify and correct RDoc for converters (#178)
+    [ruby/csv] Clarify and correct RDoc for converters (https://github.com/ruby/csv/pull/178)
 
 
     https://github.com/ruby/csv/commit/f3e9586b34
@@ -16836,7 +17079,7 @@ commit 4be336b1b70168285455bb65f36268555dd5cc20
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] Recipes for field converters (#177)
+    [ruby/csv] Recipes for field converters (https://github.com/ruby/csv/pull/177)
 
 
     https://github.com/ruby/csv/commit/aea896f030
@@ -16850,7 +17093,7 @@ commit 98d52d873ef17414a83b3bc27f8d7e10163ccba2
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] Organize page Recipes better (#176)
+    [ruby/csv] Organize page Recipes better (https://github.com/ruby/csv/pull/176)
 
 
     https://github.com/ruby/csv/commit/338b7f0d57
@@ -16864,7 +17107,7 @@ commit 8ea293b79c63d76443dd1fb352818c133302584d
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] Experimenting with recipes in CSV RDoc (#175)
+    [ruby/csv] Experimenting with recipes in CSV RDoc (https://github.com/ruby/csv/pull/175)
 
 
     https://github.com/ruby/csv/commit/01ffd0d2de
@@ -16878,7 +17121,7 @@ commit 614afb1647d9c9eb170262c8b033f000c5beb6f0
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] Fix CSV.filter to preserve headers (#174)
+    [ruby/csv] Fix CSV.filter to preserve headers (https://github.com/ruby/csv/pull/174)
 
     Co-authored-by: Sutou Kouhei <kou@clear-code.com>
 
@@ -16893,7 +17136,7 @@ commit 207f2acc1355dea1fc1f483e4d8ff3e571a0ad89
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] Enhanced RDoc for CSV::Row (#173)
+    [ruby/csv] Enhanced RDoc for CSV::Row (https://github.com/ruby/csv/pull/173)
 
 
     https://github.com/ruby/csv/commit/99956c671d
@@ -16907,7 +17150,7 @@ commit e8954fa13b3d2cf11f425897f9d12397fc4a9ecb
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] Enhanced RDoc for CSV::Row (#171)
+    [ruby/csv] Enhanced RDoc for CSV::Row (https://github.com/ruby/csv/pull/171)
 
 
     https://github.com/ruby/csv/commit/cced8d8de9
@@ -16921,7 +17164,7 @@ commit 31ccc233b1789f97dbf741c9e84b674af4a452d5
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] Enhanced RDoc for Row#[]= (#170)
+    [ruby/csv] Enhanced RDoc for Row#[]= (https://github.com/ruby/csv/pull/170)
 
 
     https://github.com/ruby/csv/commit/744e83043f
@@ -16935,7 +17178,7 @@ commit d99bca9012dfa9ed0a18d4e36e1adfe27f499d93
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] Enhanced RDoc for Table::Row (#169)
+    [ruby/csv] Enhanced RDoc for Table::Row (https://github.com/ruby/csv/pull/169)
 
 
     https://github.com/ruby/csv/commit/70ed12c1aa
@@ -16962,7 +17205,7 @@ commit d2913f912fbcfd2265ce18b942a9600c86f43273
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] Add link to Wikipedia article Table (#167)
+    [ruby/csv] Add link to Wikipedia article Table (https://github.com/ruby/csv/pull/167)
 
 
     https://github.com/ruby/csv/commit/fe975c41d2
@@ -16976,7 +17219,7 @@ commit 7deff8880f21250d7d89ded2cdc2f820cfac4aca
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] Enhanced RDoc for CSV::Table (#165)
+    [ruby/csv] Enhanced RDoc for CSV::Table (https://github.com/ruby/csv/pull/165)
 
 
     https://github.com/ruby/csv/commit/bce4b696a7
@@ -16990,7 +17233,7 @@ commit 72997f48672648d65ffad44607b9471814156253
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] Enhanced RDoc for values_at, <<, and push (#164)
+    [ruby/csv] Enhanced RDoc for values_at, <<, and push (https://github.com/ruby/csv/pull/164)
 
 
     https://github.com/ruby/csv/commit/bb3eb242f2
@@ -17004,7 +17247,7 @@ commit 3283ef1a7e7b1e2f7063c3078be0a868a37aa710
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-24 09:33:55 +0900
 
-    [ruby/csv] Enhanced RDoc for Table#[] (#162)
+    [ruby/csv] Enhanced RDoc for Table#[] (https://github.com/ruby/csv/pull/162)
 
     * Enhanced RDoc for Table#[]
 
@@ -17971,7 +18214,7 @@ commit 307388ea19f5c9d1c8c417d1979c40d970b420a2
   Commit:     Sutou Kouhei <kou@cozmixng.org>
   CommitDate: 2020-11-18 09:05:13 +0900
 
-    [ruby/fiddle] Add a "pinning" reference (#44)
+    [ruby/fiddle] Add a "pinning" reference (https://github.com/ruby/fiddle/pull/44)
 
     * Add a "pinning" reference
 
@@ -21897,7 +22140,7 @@ commit a79966743c346bfc588022db29229b79bee51d45
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-10-11 02:00:24 +0900
 
-    [ruby/io-console] Fix timeout type error (#18)
+    [ruby/io-console] Fix timeout type error (https://github.com/ruby/io-console/pull/18)
 
     Fixed TypeError when IO#getch timed out
 
@@ -24239,7 +24482,7 @@ commit 71f64e15b9e23f08b8c31500efb971a61b8b2b18
   Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
   CommitDate: 2020-09-25 17:28:42 +0900
 
-    [flori/json] Enhanced RDoc for JSON.dump (#443)
+    [flori/json] Enhanced RDoc for JSON.dump (https://github.com/flori/json/pull/443)
 
     * Enhanced RDoc for JSON.dump
     https://github.com/flori/json/commit/03f1699ec4
@@ -33753,7 +33996,7 @@ commit a8eecceaef16e76a29face4d817f12e41a1de3dd
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-21 09:17:56 +0900
 
-    [ruby/csv] Bump minimum ruby version to 2.5.0 (#159)
+    [ruby/csv] Bump minimum ruby version to 2.5.0 (https://github.com/ruby/csv/pull/159)
 
     A dependency to stringio was added to csv, which requires Ruby version
     >= 2.5. Bump the gemspec version accordingly.
@@ -33775,7 +34018,7 @@ commit 935d0b3d05dfc8b30bba505792129bf0e33ebe3b
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 15:39:31 +0900
 
-    [ruby/csv] Enhanced RDoc for several methods (#158)
+    [ruby/csv] Enhanced RDoc for several methods (https://github.com/ruby/csv/pull/158)
 
     * Enhanced RDoc for several methods
 
@@ -34024,7 +34267,7 @@ commit d9749b4715168ccce020dd43b4815e365881f73e
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:54 +0900
 
-    [ruby/csv] RDoc for converters (#157)
+    [ruby/csv] RDoc for converters (https://github.com/ruby/csv/pull/157)
 
     * More on RDoc for converters
 
@@ -34044,7 +34287,7 @@ commit d7c42df0b103fb24d39d5f52b792f21afa71daa7
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:54 +0900
 
-    [ruby/csv] Adding call-seq to methods RDoc (#155)
+    [ruby/csv] Adding call-seq to methods RDoc (https://github.com/ruby/csv/pull/155)
 
     * Adding call-seq to methods RDoc
 
@@ -34062,7 +34305,7 @@ commit 544d82f49b4b1486ae2791a35b6e5cce3e1abed1
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:54 +0900
 
-    [ruby/csv] RDoc: summary lists for options (#154)
+    [ruby/csv] RDoc: summary lists for options (https://github.com/ruby/csv/pull/154)
 
     * RDoc: summary lists for options
 
@@ -34084,7 +34327,7 @@ commit 40c50236291e39ceb2159439295137f194d0dbc2
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:54 +0900
 
-    [ruby/csv] RDoc remark about instance methods (#152)
+    [ruby/csv] RDoc remark about instance methods (https://github.com/ruby/csv/pull/152)
 
 
     https://github.com/ruby/csv/commit/76379bbe62
@@ -34098,7 +34341,7 @@ commit a0bee2bbd6f85bb6c8de5d109eb60ab0ee39cdbb
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:54 +0900
 
-    [ruby/csv] Revised introductory RDoc (#151)
+    [ruby/csv] Revised introductory RDoc (https://github.com/ruby/csv/pull/151)
 
 
     https://github.com/ruby/csv/commit/60f6f1c28f
@@ -34112,7 +34355,7 @@ commit da83401ba4813cd55d7d462ebfd78f0575ec4ce9
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:54 +0900
 
-    [ruby/csv] Enhanced RDoc for filter (#149)
+    [ruby/csv] Enhanced RDoc for filter (https://github.com/ruby/csv/pull/149)
 
     * Enhanced RDoc for filter
 
@@ -34134,7 +34377,7 @@ commit 66b5cedc29de49c564839011c2bcb61552d26b88
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:53 +0900
 
-    [ruby/csv] Enhancements for RDoc (#148)
+    [ruby/csv] Enhancements for RDoc (https://github.com/ruby/csv/pull/148)
 
     Co-authored-by: Sutou Kouhei <kou@cozmixng.org>
     https://github.com/ruby/csv/commit/25dd4cddbb
@@ -34148,7 +34391,7 @@ commit 7bf13c51838a4a71fc55712079c5b243c517021c
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:53 +0900
 
-    [ruby/csv] Improve RDoc for common options (#146)
+    [ruby/csv] Improve RDoc for common options (https://github.com/ruby/csv/pull/146)
 
 
     https://github.com/ruby/csv/commit/223cbee35d
@@ -34162,7 +34405,7 @@ commit d9eff306f5806c6a1b79019ec44395e4cc816218
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:53 +0900
 
-    [ruby/csv] Organize files in doc/ (#145)
+    [ruby/csv] Organize files in doc/ (https://github.com/ruby/csv/pull/145)
 
     https://github.com/ruby/csv/commit/bc9ea859b0
 
@@ -34175,7 +34418,7 @@ commit 920a16893ad5b76bcb357d45f2c0b9d91d09268e
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:53 +0900
 
-    [ruby/csv] RDoc for parse_line (adds headers examples) (#143)
+    [ruby/csv] RDoc for parse_line (adds headers examples) (https://github.com/ruby/csv/pull/143)
 
     * RDoc for parse_line (adds headers examples)
 
@@ -34191,7 +34434,7 @@ commit 6106b7badd7a8f71549caf72e7824ba55a0cab51
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:53 +0900
 
-    [ruby/csv] Added headers to RDoc for CSV.foreach (#142)
+    [ruby/csv] Added headers to RDoc for CSV.foreach (https://github.com/ruby/csv/pull/142)
 
     * Added headers: to RDoc for CSV.foreach
 
@@ -34209,7 +34452,7 @@ commit e4742fec64ed555a8b879481679d4fb9a1c8368a
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:53 +0900
 
-    [ruby/csv] Add headers cases to CSV.parse (#141)
+    [ruby/csv] Add headers cases to CSV.parse (https://github.com/ruby/csv/pull/141)
 
     * Add headers cases to CSV.parse
 
@@ -34227,7 +34470,7 @@ commit 9901bb4c73131ca80a1924d45425d8011a591cbd
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:52 +0900
 
-    [ruby/csv] Add missing file doc/argument_io.rdoc (#140)
+    [ruby/csv] Add missing file doc/argument_io.rdoc (https://github.com/ruby/csv/pull/140)
 
 
     https://github.com/ruby/csv/commit/e37f04aa5c
@@ -34241,7 +34484,7 @@ commit 013cca1f9a87eebba61e11ebcf97109dde009d37
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:52 +0900
 
-    [ruby/csv] doc: fix return value of open {} and use File.open {} (#139)
+    [ruby/csv] doc: fix return value of open {} and use File.open {} (https://github.com/ruby/csv/pull/139)
 
     * Enhanced RDoc for CSV
 
@@ -34257,7 +34500,7 @@ commit 7c55c961475619126cfb45331ac7a0724f99a536
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:52 +0900
 
-    [ruby/csv] Rdoc (#137)
+    [ruby/csv] Rdoc (https://github.com/ruby/csv/pull/137)
 
     Enhancements for open, parse, minor tweaks.
     https://github.com/ruby/csv/commit/35392f4e45
@@ -34271,7 +34514,7 @@ commit f89186aebb3efb7c0111a3db44f542c858b7f6e3
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:52 +0900
 
-    [ruby/csv] Add document for CSV.instance (#136)
+    [ruby/csv] Add document for CSV.instance (https://github.com/ruby/csv/pull/136)
 
     Co-authored-by: Sutou Kouhei <kou@cozmixng.org>
     https://github.com/ruby/csv/commit/85e293c1ba
@@ -34285,7 +34528,7 @@ commit 1ac702cd29786085d5bfe618eef9e9d9817e76f3
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:52 +0900
 
-    [ruby/csv] Add RDoc links for delegated methods (#135)
+    [ruby/csv] Add RDoc links for delegated methods (https://github.com/ruby/csv/pull/135)
 
 
     https://github.com/ruby/csv/commit/1a4b96b418
@@ -34299,7 +34542,7 @@ commit 08e70126aeca4edcdeab7dc292acda2f50cc41a1
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:52 +0900
 
-    [ruby/csv] Add `invalid: :replace` for `CSV.open` (#130)
+    [ruby/csv] Add `invalid: :replace` for `CSV.open` (https://github.com/ruby/csv/pull/130)
 
     This PR adds `invalid: :replace` for `CSV.open`. It is a PR similar to #129.
     https://github.com/ruby/csv/commit/5bf687341c
@@ -34313,7 +34556,7 @@ commit cee10c1b7033f4682b3f4c76220c0c190e70aa1a
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:52 +0900
 
-    [ruby/csv] Fix an error for `CSV.open` (#131)
+    [ruby/csv] Fix an error for `CSV.open` (https://github.com/ruby/csv/pull/131)
 
     Follow up to https://github.com/ruby/csv/pull/130/files#r434885191.
 
@@ -34330,7 +34573,7 @@ commit 4e33a878793a5ced47a4f14b8a73cbc2795d97b7
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:51 +0900
 
-    [ruby/csv] Add `undef: :replace` for `CSV.open` (#129)
+    [ruby/csv] Add `undef: :replace` for `CSV.open` (https://github.com/ruby/csv/pull/129)
 
     This PR adds `undef: :replace` option for `CSV.open`.
 
@@ -34348,7 +34591,7 @@ commit cf8157e0016dd0eb60fe6f03bef168261f729b83
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:51 +0900
 
-    [ruby/csv] RDoc for foreach, generate (#127)
+    [ruby/csv] RDoc for foreach, generate (https://github.com/ruby/csv/pull/127)
 
     * Rdoc for foreach
 
@@ -34377,7 +34620,7 @@ commit 9e6d54a501fc1864515274a2e45058584e32fe3f
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:51 +0900
 
-    [ruby/csv] Enhanced Rdoc (#124)
+    [ruby/csv] Enhanced Rdoc (https://github.com/ruby/csv/pull/124)
 
     * Enhanced Rdoc for ::new
 
@@ -34510,7 +34753,7 @@ commit 6ba1abd40c4610506a638246431660a32a9b1798
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:50 +0900
 
-    [ruby/csv] Enhanced Rdoc for CSV (#122)
+    [ruby/csv] Enhanced Rdoc for CSV (https://github.com/ruby/csv/pull/122)
 
     https://github.com/ruby/csv/commit/cd670595d5
 
@@ -34553,7 +34796,7 @@ commit aeac7db8236ad43d8c8992fd1b9d120d567754ec
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:49 +0900
 
-    [ruby/csv] Fix docs for :strip option (#114)
+    [ruby/csv] Fix docs for :strip option (https://github.com/ruby/csv/pull/114)
 
 
     https://github.com/ruby/csv/commit/fb10925271
@@ -34567,7 +34810,7 @@ commit 3c5b67e0db22ec9a15cef6c4961abf6f91373dd3
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:49 +0900
 
-    [ruby/csv] Ensuring StringIO's encoding in CSV.generate (#111)
+    [ruby/csv] Ensuring StringIO's encoding in CSV.generate (https://github.com/ruby/csv/pull/111)
 
 
     https://github.com/ruby/csv/commit/dbf55ef008
@@ -34581,7 +34824,7 @@ commit d57bc03ba98649661c7dedbb46ec2f2bb6bee9be
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:49 +0900
 
-    [ruby/csv] Do not loop forever when skip_lines regexp matches zero length with anchors (#110)
+    [ruby/csv] Do not loop forever when skip_lines regexp matches zero length with anchors (https://github.com/ruby/csv/pull/110)
 
     * Do not loop forever when skip_lines regexp matches zero length with anchors
 
@@ -34602,7 +34845,7 @@ commit b219cd5ac36ffb733e3eccd98d53ecf660dee5bf
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-07-20 02:32:49 +0900
 
-    [ruby/csv] Make CSV::Row#dup return a usable Row (#108)
+    [ruby/csv] Make CSV::Row#dup return a usable Row (https://github.com/ruby/csv/pull/108)
 
     * Make CSV::Row#dup return a usable Row
 
@@ -38784,7 +39027,7 @@ commit f2bcdc7283f2137e0916e251df3a52c40b1f6151
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-06-27 23:54:09 +0900
 
-    [ruby/fiddle] Support MSWIN (#43)
+    [ruby/fiddle] Support MSWIN (https://github.com/ruby/fiddle/pull/43)
 
     https://github.com/ruby/fiddle/commit/f16e7ff6e0
 
@@ -47489,7 +47732,7 @@ commit 3015a7aae7ddc9b63149df34b1f12366e07a9563
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-05-23 14:34:07 +0900
 
-    [ruby/fiddle] Improve documentation on how to correctly free memory and free memory in tests (#33)
+    [ruby/fiddle] Improve documentation on how to correctly free memory and free memory in tests (https://github.com/ruby/fiddle/pull/33)
 
 
     https://github.com/ruby/fiddle/commit/e59cfd708a
@@ -47578,7 +47821,7 @@ commit 77cc13943cd9ec908d75133d7ac0b89c9ab57deb
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-05-23 14:29:16 +0900
 
-    [ruby/fiddle] Fix assignment to array within struct (#26)
+    [ruby/fiddle] Fix assignment to array within struct (https://github.com/ruby/fiddle/pull/26)
 
     * Allow access to a struct's underlying memory with `struct[offset, length]`.
 
@@ -47593,7 +47836,7 @@ commit 4a835621ced099316850a16f2a13534dea62a0b8
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-05-23 14:29:16 +0900
 
-    [ruby/fiddle] Make array access override compatible with base class (#25)
+    [ruby/fiddle] Make array access override compatible with base class (https://github.com/ruby/fiddle/pull/25)
 
     * Allow access to a struct's underlying memory with `struct[offset, length]`.
 
@@ -47613,7 +47856,7 @@ commit aa1d3c7d2c020ec927acaa487e8593172fb64bb0
   Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   CommitDate: 2020-05-23 14:29:16 +0900
 
-    [ruby/fiddle] Initialize memory to 0 when calling Fiddle.malloc(). (#24)
+    [ruby/fiddle] Initialize memory to 0 when calling Fiddle.malloc(). (https://github.com/ruby/fiddle/pull/24)
 
 
     https://github.com/ruby/fiddle/commit/8414239ca3
@@ -59403,7 +59646,7 @@ commit f236f6082cf2d95c913c2d16c9a9a0ad554f627f
   Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
   CommitDate: 2020-03-06 20:54:38 +0900
 
-    [ruby/prime] Improve docs for Prime.include? (#7)
+    [ruby/prime] Improve docs for Prime.include? (https://github.com/ruby/prime/pull/7)
 
 
     https://github.com/ruby/prime/commit/230a5af325
