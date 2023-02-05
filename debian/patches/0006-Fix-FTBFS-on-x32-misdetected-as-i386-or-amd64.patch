@@ -9,10 +9,10 @@ Bug: #954293
  1 file changed, 3 insertions(+)
 
 diff --git a/configure.ac b/configure.ac
-index af170ef..da22ab6 100644
+index 4395a2b..9d1ae4b 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -2322,6 +2322,9 @@ AS_CASE([$rb_cv_coroutine], [yes|''], [
+@@ -2329,6 +2329,9 @@ AS_CASE([$rb_cv_coroutine], [yes|''], [
          [arm64-darwin*], [
              rb_cv_coroutine=arm64
          ],
