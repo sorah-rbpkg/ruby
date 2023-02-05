@@ -75,7 +75,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   SPECIFICATION_VERSION_HISTORY = { # :nodoc:
     -1 => ["(RubyGems versions up to and including 0.7 did not have versioned specifications)"],
-    1  => [
+    1 => [
       'Deprecated "test_suite_file" in favor of the new, but equivalent, "test_files"',
       '"test_file=x" is a shortcut for "test_files=[x]"',
     ],
@@ -93,10 +93,10 @@ class Gem::Specification < Gem::BasicSpecification
 
   MARSHAL_FIELDS = { # :nodoc:
     -1 => 16,
-     1 => 16,
-     2 => 16,
-     3 => 17,
-     4 => 18,
+    1 => 16,
+    2 => 16,
+    3 => 17,
+    4 => 18,
   }.freeze
 
   today = Time.now.utc
@@ -124,35 +124,35 @@ class Gem::Specification < Gem::BasicSpecification
   # Map of attribute names to default values.
 
   @@default_value = {
-    :authors                   => [],
-    :autorequire               => nil,
-    :bindir                    => "bin",
-    :cert_chain                => [],
-    :date                      => nil,
-    :dependencies              => [],
-    :description               => nil,
-    :email                     => nil,
-    :executables               => [],
-    :extensions                => [],
-    :extra_rdoc_files          => [],
-    :files                     => [],
-    :homepage                  => nil,
-    :licenses                  => [],
-    :metadata                  => {},
-    :name                      => nil,
-    :platform                  => Gem::Platform::RUBY,
-    :post_install_message      => nil,
-    :rdoc_options              => [],
-    :require_paths             => ["lib"],
-    :required_ruby_version     => Gem::Requirement.default,
+    :authors => [],
+    :autorequire => nil,
+    :bindir => "bin",
+    :cert_chain => [],
+    :date => nil,
+    :dependencies => [],
+    :description => nil,
+    :email => nil,
+    :executables => [],
+    :extensions => [],
+    :extra_rdoc_files => [],
+    :files => [],
+    :homepage => nil,
+    :licenses => [],
+    :metadata => {},
+    :name => nil,
+    :platform => Gem::Platform::RUBY,
+    :post_install_message => nil,
+    :rdoc_options => [],
+    :require_paths => ["lib"],
+    :required_ruby_version => Gem::Requirement.default,
     :required_rubygems_version => Gem::Requirement.default,
-    :requirements              => [],
-    :rubygems_version          => Gem::VERSION,
-    :signing_key               => nil,
-    :specification_version     => CURRENT_SPECIFICATION_VERSION,
-    :summary                   => nil,
-    :test_files                => [],
-    :version                   => nil,
+    :requirements => [],
+    :rubygems_version => Gem::VERSION,
+    :signing_key => nil,
+    :specification_version => CURRENT_SPECIFICATION_VERSION,
+    :summary => nil,
+    :test_files => [],
+    :version => nil,
   }.freeze
 
   # rubocop:disable Style/MutableConstant
@@ -1265,8 +1265,7 @@ class Gem::Specification < Gem::BasicSpecification
     clear_load_cache
     unresolved = unresolved_deps
     unless unresolved.empty?
-      w = "W" + "ARN"
-      warn "#{w}: Unresolved or ambiguous specs during Gem::Specification.reset:"
+      warn "WARN: Unresolved or ambiguous specs during Gem::Specification.reset:"
       unresolved.values.each do |dep|
         warn "      #{dep}"
 
@@ -1276,7 +1275,7 @@ class Gem::Specification < Gem::BasicSpecification
           versions.each {|s| warn "      - #{s.version}" }
         end
       end
-      warn "#{w}: Clearing out unresolved specs. Try 'gem cleanup <gem>'"
+      warn "WARN: Clearing out unresolved specs. Try 'gem cleanup <gem>'"
       warn "Please report a bug if this causes problems."
       unresolved.clear
     end
@@ -2519,25 +2518,14 @@ class Gem::Specification < Gem::BasicSpecification
 
     unless dependencies.empty?
       result << nil
-      result << "  if s.respond_to? :specification_version then"
-      result << "    s.specification_version = #{specification_version}"
-      result << "  end"
+      result << "  s.specification_version = #{specification_version}"
       result << nil
-
-      result << "  if s.respond_to? :add_runtime_dependency then"
 
       dependencies.each do |dep|
         req = dep.requirements_list.inspect
         dep.instance_variable_set :@type, :runtime if dep.type.nil? # HACK
-        result << "    s.add_#{dep.type}_dependency(%q<#{dep.name}>.freeze, #{req})"
+        result << "  s.add_#{dep.type}_dependency(%q<#{dep.name}>.freeze, #{req})"
       end
-
-      result << "  else"
-      dependencies.each do |dep|
-        version_reqs_param = dep.requirements_list.inspect
-        result << "    s.add_dependency(%q<#{dep.name}>.freeze, #{version_reqs_param})"
-      end
-      result << "  end"
     end
 
     result << "end"

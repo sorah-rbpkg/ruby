@@ -10,213 +10,213 @@
 struct rb_execution_context_struct; /* in vm_core.h */
 
 static void
-mjit_compile_invokebuiltin_for_tracepoint_new_s(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_tracepoint_new_s(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
     if (index == -1) {
-        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
     }
     else {
-        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
-        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_new_s */\n", (VALUE)tracepoint_new_s);
-    fprintf(f, "    val = f(ec, self, argv[0]);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_new_s */\n", (VALUE)tracepoint_new_s);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0]);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_tracepoint_inspect(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_tracepoint_inspect(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_inspect */\n", (VALUE)tracepoint_inspect);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_inspect */\n", (VALUE)tracepoint_inspect);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_tracepoint_stat_s(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_tracepoint_stat_s(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_stat_s */\n", (VALUE)tracepoint_stat_s);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_stat_s */\n", (VALUE)tracepoint_stat_s);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_tracepoint_trace_s(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_tracepoint_trace_s(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
     if (index == -1) {
-        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
     }
     else {
-        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
-        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_trace_s */\n", (VALUE)tracepoint_trace_s);
-    fprintf(f, "    val = f(ec, self, argv[0]);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_trace_s */\n", (VALUE)tracepoint_trace_s);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0]);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_tracepoint_allow_reentry(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_tracepoint_allow_reentry(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_allow_reentry */\n", (VALUE)tracepoint_allow_reentry);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_allow_reentry */\n", (VALUE)tracepoint_allow_reentry);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_tracepoint_enable_m(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_tracepoint_enable_m(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE);\n");
     if (index == -1) {
-        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 3);
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 3);
     }
     else {
-        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
-        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_enable_m */\n", (VALUE)tracepoint_enable_m);
-    fprintf(f, "    val = f(ec, self, argv[0], argv[1], argv[2]);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_enable_m */\n", (VALUE)tracepoint_enable_m);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1], argv[2]);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_tracepoint_disable_m(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_tracepoint_disable_m(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_disable_m */\n", (VALUE)tracepoint_disable_m);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_disable_m */\n", (VALUE)tracepoint_disable_m);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_tracepoint_enabled_p(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_tracepoint_enabled_p(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_enabled_p */\n", (VALUE)tracepoint_enabled_p);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_enabled_p */\n", (VALUE)tracepoint_enabled_p);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_tracepoint_attr_event(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_tracepoint_attr_event(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_event */\n", (VALUE)tracepoint_attr_event);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_event */\n", (VALUE)tracepoint_attr_event);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_tracepoint_attr_lineno(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_tracepoint_attr_lineno(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_lineno */\n", (VALUE)tracepoint_attr_lineno);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_lineno */\n", (VALUE)tracepoint_attr_lineno);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_tracepoint_attr_path(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_tracepoint_attr_path(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_path */\n", (VALUE)tracepoint_attr_path);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_path */\n", (VALUE)tracepoint_attr_path);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_tracepoint_attr_parameters(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_tracepoint_attr_parameters(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_parameters */\n", (VALUE)tracepoint_attr_parameters);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_parameters */\n", (VALUE)tracepoint_attr_parameters);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_tracepoint_attr_method_id(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_tracepoint_attr_method_id(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_method_id */\n", (VALUE)tracepoint_attr_method_id);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_method_id */\n", (VALUE)tracepoint_attr_method_id);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_tracepoint_attr_callee_id(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_tracepoint_attr_callee_id(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_callee_id */\n", (VALUE)tracepoint_attr_callee_id);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_callee_id */\n", (VALUE)tracepoint_attr_callee_id);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_tracepoint_attr_defined_class(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_tracepoint_attr_defined_class(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_defined_class */\n", (VALUE)tracepoint_attr_defined_class);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_defined_class */\n", (VALUE)tracepoint_attr_defined_class);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_tracepoint_attr_binding(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_tracepoint_attr_binding(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_binding */\n", (VALUE)tracepoint_attr_binding);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_binding */\n", (VALUE)tracepoint_attr_binding);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_tracepoint_attr_self(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_tracepoint_attr_self(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_self */\n", (VALUE)tracepoint_attr_self);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_self */\n", (VALUE)tracepoint_attr_self);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_tracepoint_attr_return_value(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_tracepoint_attr_return_value(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_return_value */\n", (VALUE)tracepoint_attr_return_value);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_return_value */\n", (VALUE)tracepoint_attr_return_value);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_tracepoint_attr_raised_exception(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_tracepoint_attr_raised_exception(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_raised_exception */\n", (VALUE)tracepoint_attr_raised_exception);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_raised_exception */\n", (VALUE)tracepoint_attr_raised_exception);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_tracepoint_attr_eval_script(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_tracepoint_attr_eval_script(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_eval_script */\n", (VALUE)tracepoint_attr_eval_script);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_eval_script */\n", (VALUE)tracepoint_attr_eval_script);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_tracepoint_attr_instruction_sequence(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_tracepoint_attr_instruction_sequence(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_instruction_sequence */\n", (VALUE)tracepoint_attr_instruction_sequence);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == tracepoint_attr_instruction_sequence */\n", (VALUE)tracepoint_attr_instruction_sequence);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 void Init_builtin_trace_point(void)

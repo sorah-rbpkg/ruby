@@ -67,11 +67,15 @@ struct rb_objspace; /* in vm_core.h */
     rb_obj_write((VALUE)(a), UNALIGNED_MEMBER_ACCESS((VALUE *)(slot)), \
                  (VALUE)(b), __FILE__, __LINE__)
 
-#if USE_RVARGC
-# define SIZE_POOL_COUNT 4
+// We use SIZE_POOL_COUNT number of shape IDs for transitions out of different size pools
+// The next available shapd ID will be the SPECIAL_CONST_SHAPE_ID
+#if USE_RVARGC && (SIZEOF_UINT64_T == SIZEOF_VALUE)
+# define SIZE_POOL_COUNT 5
 #else
 # define SIZE_POOL_COUNT 1
 #endif
+
+#define RCLASS_EXT_EMBEDDED (SIZE_POOL_COUNT > 1)
 
 typedef struct ractor_newobj_size_pool_cache {
     struct RVALUE *freelist;
@@ -79,6 +83,7 @@ typedef struct ractor_newobj_size_pool_cache {
 } rb_ractor_newobj_size_pool_cache_t;
 
 typedef struct ractor_newobj_cache {
+    size_t incremental_mark_step_allocated_slots;
     rb_ractor_newobj_size_pool_cache_t size_pool_caches[SIZE_POOL_COUNT];
 } rb_ractor_newobj_cache_t;
 
@@ -99,6 +104,7 @@ RUBY_ATTR_MALLOC void *rb_aligned_malloc(size_t, size_t) RUBY_ATTR_ALLOC_SIZE((2
 size_t rb_size_mul_or_raise(size_t, size_t, VALUE); /* used in compile.c */
 size_t rb_size_mul_add_or_raise(size_t, size_t, size_t, VALUE); /* used in iseq.h */
 RUBY_ATTR_MALLOC void *rb_xmalloc_mul_add(size_t, size_t, size_t);
+RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add(size_t, size_t, size_t);
 void *rb_xrealloc_mul_add(const void *, size_t, size_t, size_t);
 RUBY_ATTR_MALLOC void *rb_xmalloc_mul_add_mul(size_t, size_t, size_t, size_t);
 RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add_mul(size_t, size_t, size_t, size_t);

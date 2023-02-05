@@ -1,4 +1,4 @@
-# Ractor is a Actor-model abstraction for Ruby that provides thread-safe parallel execution.
+# Ractor is an Actor-model abstraction for Ruby that provides thread-safe parallel execution.
 #
 # Ractor.new can make a new Ractor, and it will run in parallel.
 #
@@ -703,7 +703,7 @@ class Ractor
   def inspect
     loc  = __builtin_cexpr! %q{ RACTOR_PTR(self)->loc }
     name = __builtin_cexpr! %q{ RACTOR_PTR(self)->name }
-    id   = __builtin_cexpr! %q{ INT2FIX(rb_ractor_id(RACTOR_PTR(self))) }
+    id   = __builtin_cexpr! %q{ UINT2NUM(rb_ractor_id(RACTOR_PTR(self))) }
     status = __builtin_cexpr! %q{
       rb_str_new2(ractor_status_str(RACTOR_PTR(self)->status_))
     }

@@ -127,7 +127,7 @@ MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -4);
 MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -5);
 MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -6);
 #line 706 "ractor.rb"
-return  INT2FIX(rb_ractor_id(RACTOR_PTR(self)));
+return  UINT2NUM(rb_ractor_id(RACTOR_PTR(self)));
 #line 132 "ractor.rbinc"
 }
 
@@ -204,481 +204,481 @@ return
 }
 
 static void
-mjit_compile_invokebuiltin_for__bi0(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for__bi0(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
-        fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -3);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) b = rb_vm_lvar(ec, -4);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) block = rb_vm_lvar(ec, -5);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -7);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) args = rb_vm_lvar(ec, -8);\n");
-        fprintf(f, "%s", "#line 265 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return RBOOL(ruby_single_main_ractor);\n");
-        fprintf(f, "%s", "#line 215 \"ractor.rbinc\"\n");
-        fprintf(f, "%s", "    }\n");
-        fprintf(f, "%s", "    \n");
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -3);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) b = rb_vm_lvar(ec, -4);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) block = rb_vm_lvar(ec, -5);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -7);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) args = rb_vm_lvar(ec, -8);\n");
+        rb_str_catf(buf, "%s", "#line 265 \"ractor.rb\"\n");
+        rb_str_catf(buf, "%s", "    return RBOOL(ruby_single_main_ractor);\n");
+        rb_str_catf(buf, "%s", "#line 215 \"ractor.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_265 */\n", (VALUE)builtin_inline_class_265);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_265 */\n", (VALUE)builtin_inline_class_265);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_ractor_create(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_ractor_create(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE, VALUE);\n");
     if (index == -1) {
-        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 4);
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 4);
     }
     else {
-        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
-        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == ractor_create */\n", (VALUE)ractor_create);
-    fprintf(f, "    val = f(ec, self, argv[0], argv[1], argv[2], argv[3]);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == ractor_create */\n", (VALUE)ractor_create);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1], argv[2], argv[3]);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for__bi1(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for__bi1(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
-        fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "#line 278 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return \n");
-        fprintf(f, "%s", "          rb_ractor_self(rb_ec_ractor_ptr(ec));;\n");
-        fprintf(f, "%s", "#line 222 \"ractor.rbinc\"\n");
-        fprintf(f, "%s", "    }\n");
-        fprintf(f, "%s", "    \n");
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 278 \"ractor.rb\"\n");
+        rb_str_catf(buf, "%s", "    return \n");
+        rb_str_catf(buf, "%s", "          rb_ractor_self(rb_ec_ractor_ptr(ec));;\n");
+        rb_str_catf(buf, "%s", "#line 222 \"ractor.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_278 */\n", (VALUE)builtin_inline_class_278);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_278 */\n", (VALUE)builtin_inline_class_278);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for__bi2(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for__bi2(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
-        fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "#line 292 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return \n");
-        fprintf(f, "%s", "          ULONG2NUM(GET_VM()->ractor.cnt);;\n");
-        fprintf(f, "%s", "#line 229 \"ractor.rbinc\"\n");
-        fprintf(f, "%s", "    }\n");
-        fprintf(f, "%s", "    \n");
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 292 \"ractor.rb\"\n");
+        rb_str_catf(buf, "%s", "    return \n");
+        rb_str_catf(buf, "%s", "          ULONG2NUM(GET_VM()->ractor.cnt);;\n");
+        rb_str_catf(buf, "%s", "#line 229 \"ractor.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_292 */\n", (VALUE)builtin_inline_class_292);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_292 */\n", (VALUE)builtin_inline_class_292);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for__bi3(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for__bi3(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
-        fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) yield_unspecified = rb_vm_lvar(ec, -3);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) move = rb_vm_lvar(ec, -5);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) yield_value = rb_vm_lvar(ec, -6);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) ractors = rb_vm_lvar(ec, -7);\n");
-        fprintf(f, "%s", "#line 349 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    \n");
-        fprintf(f, "%s", "          const VALUE *rs = RARRAY_CONST_PTR_TRANSIENT(ractors);\n");
-        fprintf(f, "%s", "          VALUE rv;\n");
-        fprintf(f, "%s", "          VALUE v = ractor_select(ec, rs, RARRAY_LENINT(ractors),\n");
-        fprintf(f, "%s", "                                  yield_unspecified == Qtrue ? Qundef : yield_value,\n");
-        fprintf(f, "%s", "                                  (bool)RTEST(move) ? true : false, &rv);\n");
-        fprintf(f, "%s", "          return rb_ary_new_from_args(2, rv, v);\n");
-        fprintf(f, "%s", "#line 245 \"ractor.rbinc\"\n");
-        fprintf(f, "%s", "    }\n");
-        fprintf(f, "%s", "    \n");
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) yield_unspecified = rb_vm_lvar(ec, -3);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) move = rb_vm_lvar(ec, -5);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) yield_value = rb_vm_lvar(ec, -6);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) ractors = rb_vm_lvar(ec, -7);\n");
+        rb_str_catf(buf, "%s", "#line 349 \"ractor.rb\"\n");
+        rb_str_catf(buf, "%s", "    \n");
+        rb_str_catf(buf, "%s", "          const VALUE *rs = RARRAY_CONST_PTR_TRANSIENT(ractors);\n");
+        rb_str_catf(buf, "%s", "          VALUE rv;\n");
+        rb_str_catf(buf, "%s", "          VALUE v = ractor_select(ec, rs, RARRAY_LENINT(ractors),\n");
+        rb_str_catf(buf, "%s", "                                  yield_unspecified == Qtrue ? Qundef : yield_value,\n");
+        rb_str_catf(buf, "%s", "                                  (bool)RTEST(move) ? true : false, &rv);\n");
+        rb_str_catf(buf, "%s", "          return rb_ary_new_from_args(2, rv, v);\n");
+        rb_str_catf(buf, "%s", "#line 245 \"ractor.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_349 */\n", (VALUE)builtin_inline_class_349);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_349 */\n", (VALUE)builtin_inline_class_349);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for__bi4(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for__bi4(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
-        fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "#line 420 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return \n");
-        fprintf(f, "%s", "          ractor_receive(ec, rb_ec_ractor_ptr(ec));\n");
-        fprintf(f, "%s", "#line 252 \"ractor.rbinc\"\n");
-        fprintf(f, "%s", "    }\n");
-        fprintf(f, "%s", "    \n");
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 420 \"ractor.rb\"\n");
+        rb_str_catf(buf, "%s", "    return \n");
+        rb_str_catf(buf, "%s", "          ractor_receive(ec, rb_ec_ractor_ptr(ec));\n");
+        rb_str_catf(buf, "%s", "#line 252 \"ractor.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_420 */\n", (VALUE)builtin_inline_class_420);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_420 */\n", (VALUE)builtin_inline_class_420);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for__bi5(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for__bi5(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
-        fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "#line 431 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return \n");
-        fprintf(f, "%s", "          ractor_receive(ec, rb_ec_ractor_ptr(ec));\n");
-        fprintf(f, "%s", "#line 259 \"ractor.rbinc\"\n");
-        fprintf(f, "%s", "    }\n");
-        fprintf(f, "%s", "    \n");
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 431 \"ractor.rb\"\n");
+        rb_str_catf(buf, "%s", "    return \n");
+        rb_str_catf(buf, "%s", "          ractor_receive(ec, rb_ec_ractor_ptr(ec));\n");
+        rb_str_catf(buf, "%s", "#line 259 \"ractor.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_431 */\n", (VALUE)builtin_inline_class_431);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_431 */\n", (VALUE)builtin_inline_class_431);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_ractor_receive_if(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_ractor_receive_if(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
     if (index == -1) {
-        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
     }
     else {
-        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
-        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == ractor_receive_if */\n", (VALUE)ractor_receive_if);
-    fprintf(f, "    val = f(ec, self, argv[0]);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == ractor_receive_if */\n", (VALUE)ractor_receive_if);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0]);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for__bi6(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for__bi6(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
-        fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) move = rb_vm_lvar(ec, -4);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -5);\n");
-        fprintf(f, "%s", "#line 587 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return \n");
-        fprintf(f, "%s", "          ractor_send(ec, RACTOR_PTR(self), obj, move);\n");
-        fprintf(f, "%s", "#line 268 \"ractor.rbinc\"\n");
-        fprintf(f, "%s", "    }\n");
-        fprintf(f, "%s", "    \n");
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) move = rb_vm_lvar(ec, -4);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -5);\n");
+        rb_str_catf(buf, "%s", "#line 587 \"ractor.rb\"\n");
+        rb_str_catf(buf, "%s", "    return \n");
+        rb_str_catf(buf, "%s", "          ractor_send(ec, RACTOR_PTR(self), obj, move);\n");
+        rb_str_catf(buf, "%s", "#line 268 \"ractor.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_587 */\n", (VALUE)builtin_inline_class_587);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_587 */\n", (VALUE)builtin_inline_class_587);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for__bi7(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for__bi7(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
-        fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) move = rb_vm_lvar(ec, -4);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -5);\n");
-        fprintf(f, "%s", "#line 631 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return \n");
-        fprintf(f, "%s", "          ractor_yield(ec, rb_ec_ractor_ptr(ec), obj, move);\n");
-        fprintf(f, "%s", "#line 277 \"ractor.rbinc\"\n");
-        fprintf(f, "%s", "    }\n");
-        fprintf(f, "%s", "    \n");
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) move = rb_vm_lvar(ec, -4);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -5);\n");
+        rb_str_catf(buf, "%s", "#line 631 \"ractor.rb\"\n");
+        rb_str_catf(buf, "%s", "    return \n");
+        rb_str_catf(buf, "%s", "          ractor_yield(ec, rb_ec_ractor_ptr(ec), obj, move);\n");
+        rb_str_catf(buf, "%s", "#line 277 \"ractor.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_631 */\n", (VALUE)builtin_inline_class_631);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_631 */\n", (VALUE)builtin_inline_class_631);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for__bi8(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for__bi8(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
-        fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "#line 698 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return \n");
-        fprintf(f, "%s", "          ractor_take(ec, RACTOR_PTR(self));\n");
-        fprintf(f, "%s", "#line 284 \"ractor.rbinc\"\n");
-        fprintf(f, "%s", "    }\n");
-        fprintf(f, "%s", "    \n");
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 698 \"ractor.rb\"\n");
+        rb_str_catf(buf, "%s", "    return \n");
+        rb_str_catf(buf, "%s", "          ractor_take(ec, RACTOR_PTR(self));\n");
+        rb_str_catf(buf, "%s", "#line 284 \"ractor.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_698 */\n", (VALUE)builtin_inline_class_698);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_698 */\n", (VALUE)builtin_inline_class_698);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for__bi9(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for__bi9(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
-        fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) status = rb_vm_lvar(ec, -3);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -4);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -5);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -6);\n");
-        fprintf(f, "%s", "#line 704 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return  RACTOR_PTR(self)->loc;\n");
-        fprintf(f, "%s", "#line 294 \"ractor.rbinc\"\n");
-        fprintf(f, "%s", "    }\n");
-        fprintf(f, "%s", "    \n");
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) status = rb_vm_lvar(ec, -3);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -4);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -5);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -6);\n");
+        rb_str_catf(buf, "%s", "#line 704 \"ractor.rb\"\n");
+        rb_str_catf(buf, "%s", "    return  RACTOR_PTR(self)->loc;\n");
+        rb_str_catf(buf, "%s", "#line 294 \"ractor.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_704 */\n", (VALUE)builtin_inline_class_704);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_704 */\n", (VALUE)builtin_inline_class_704);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for__bi10(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for__bi10(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
-        fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) status = rb_vm_lvar(ec, -3);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -4);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -5);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -6);\n");
-        fprintf(f, "%s", "#line 705 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return  RACTOR_PTR(self)->name;\n");
-        fprintf(f, "%s", "#line 304 \"ractor.rbinc\"\n");
-        fprintf(f, "%s", "    }\n");
-        fprintf(f, "%s", "    \n");
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) status = rb_vm_lvar(ec, -3);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -4);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -5);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -6);\n");
+        rb_str_catf(buf, "%s", "#line 705 \"ractor.rb\"\n");
+        rb_str_catf(buf, "%s", "    return  RACTOR_PTR(self)->name;\n");
+        rb_str_catf(buf, "%s", "#line 304 \"ractor.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_705 */\n", (VALUE)builtin_inline_class_705);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_705 */\n", (VALUE)builtin_inline_class_705);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for__bi11(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for__bi11(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
-        fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) status = rb_vm_lvar(ec, -3);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -4);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -5);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -6);\n");
-        fprintf(f, "%s", "#line 706 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return  INT2FIX(rb_ractor_id(RACTOR_PTR(self)));\n");
-        fprintf(f, "%s", "#line 314 \"ractor.rbinc\"\n");
-        fprintf(f, "%s", "    }\n");
-        fprintf(f, "%s", "    \n");
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) status = rb_vm_lvar(ec, -3);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -4);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -5);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -6);\n");
+        rb_str_catf(buf, "%s", "#line 706 \"ractor.rb\"\n");
+        rb_str_catf(buf, "%s", "    return  UINT2NUM(rb_ractor_id(RACTOR_PTR(self)));\n");
+        rb_str_catf(buf, "%s", "#line 314 \"ractor.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_706 */\n", (VALUE)builtin_inline_class_706);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_706 */\n", (VALUE)builtin_inline_class_706);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for__bi12(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for__bi12(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
-        fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) status = rb_vm_lvar(ec, -3);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -4);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -5);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -6);\n");
-        fprintf(f, "%s", "#line 707 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return \n");
-        fprintf(f, "%s", "          rb_str_new2(ractor_status_str(RACTOR_PTR(self)->status_));\n");
-        fprintf(f, "%s", "#line 325 \"ractor.rbinc\"\n");
-        fprintf(f, "%s", "    }\n");
-        fprintf(f, "%s", "    \n");
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) status = rb_vm_lvar(ec, -3);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -4);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -5);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -6);\n");
+        rb_str_catf(buf, "%s", "#line 707 \"ractor.rb\"\n");
+        rb_str_catf(buf, "%s", "    return \n");
+        rb_str_catf(buf, "%s", "          rb_str_new2(ractor_status_str(RACTOR_PTR(self)->status_));\n");
+        rb_str_catf(buf, "%s", "#line 325 \"ractor.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_707 */\n", (VALUE)builtin_inline_class_707);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_707 */\n", (VALUE)builtin_inline_class_707);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for__bi13(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for__bi13(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
-        fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "#line 717 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return RACTOR_PTR(self)->name;\n");
-        fprintf(f, "%s", "#line 331 \"ractor.rbinc\"\n");
-        fprintf(f, "%s", "    }\n");
-        fprintf(f, "%s", "    \n");
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 717 \"ractor.rb\"\n");
+        rb_str_catf(buf, "%s", "    return RACTOR_PTR(self)->name;\n");
+        rb_str_catf(buf, "%s", "#line 331 \"ractor.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_717 */\n", (VALUE)builtin_inline_class_717);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_717 */\n", (VALUE)builtin_inline_class_717);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for__bi14(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for__bi14(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
-        fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "#line 738 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return \n");
-        fprintf(f, "%s", "          ractor_close_incoming(ec, RACTOR_PTR(self));;\n");
-        fprintf(f, "%s", "#line 338 \"ractor.rbinc\"\n");
-        fprintf(f, "%s", "    }\n");
-        fprintf(f, "%s", "    \n");
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 738 \"ractor.rb\"\n");
+        rb_str_catf(buf, "%s", "    return \n");
+        rb_str_catf(buf, "%s", "          ractor_close_incoming(ec, RACTOR_PTR(self));;\n");
+        rb_str_catf(buf, "%s", "#line 338 \"ractor.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_738 */\n", (VALUE)builtin_inline_class_738);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_738 */\n", (VALUE)builtin_inline_class_738);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for__bi15(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for__bi15(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
-        fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "#line 757 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return \n");
-        fprintf(f, "%s", "          ractor_close_outgoing(ec, RACTOR_PTR(self));;\n");
-        fprintf(f, "%s", "#line 345 \"ractor.rbinc\"\n");
-        fprintf(f, "%s", "    }\n");
-        fprintf(f, "%s", "    \n");
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 757 \"ractor.rb\"\n");
+        rb_str_catf(buf, "%s", "    return \n");
+        rb_str_catf(buf, "%s", "          ractor_close_outgoing(ec, RACTOR_PTR(self));;\n");
+        rb_str_catf(buf, "%s", "#line 345 \"ractor.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_757 */\n", (VALUE)builtin_inline_class_757);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_757 */\n", (VALUE)builtin_inline_class_757);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for__bi16(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for__bi16(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
-        fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -3);\n");
-        fprintf(f, "%s", "#line 774 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return \n");
-        fprintf(f, "%s", "          RBOOL(rb_ractor_shareable_p(obj));;\n");
-        fprintf(f, "%s", "#line 353 \"ractor.rbinc\"\n");
-        fprintf(f, "%s", "    }\n");
-        fprintf(f, "%s", "    \n");
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -3);\n");
+        rb_str_catf(buf, "%s", "#line 774 \"ractor.rb\"\n");
+        rb_str_catf(buf, "%s", "    return \n");
+        rb_str_catf(buf, "%s", "          RBOOL(rb_ractor_shareable_p(obj));;\n");
+        rb_str_catf(buf, "%s", "#line 353 \"ractor.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_774 */\n", (VALUE)builtin_inline_class_774);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_774 */\n", (VALUE)builtin_inline_class_774);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for__bi17(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for__bi17(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
-        fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) copy = rb_vm_lvar(ec, -4);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -5);\n");
-        fprintf(f, "%s", "#line 816 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return \n");
-        fprintf(f, "%s", "            rb_ractor_make_shareable_copy(obj);;\n");
-        fprintf(f, "%s", "#line 362 \"ractor.rbinc\"\n");
-        fprintf(f, "%s", "    }\n");
-        fprintf(f, "%s", "    \n");
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) copy = rb_vm_lvar(ec, -4);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -5);\n");
+        rb_str_catf(buf, "%s", "#line 816 \"ractor.rb\"\n");
+        rb_str_catf(buf, "%s", "    return \n");
+        rb_str_catf(buf, "%s", "            rb_ractor_make_shareable_copy(obj);;\n");
+        rb_str_catf(buf, "%s", "#line 362 \"ractor.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_816 */\n", (VALUE)builtin_inline_class_816);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_816 */\n", (VALUE)builtin_inline_class_816);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for__bi18(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for__bi18(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
-        fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) copy = rb_vm_lvar(ec, -4);\n");
-        fprintf(f, "%s", "    MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -5);\n");
-        fprintf(f, "%s", "#line 820 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return \n");
-        fprintf(f, "%s", "            rb_ractor_make_shareable(obj);;\n");
-        fprintf(f, "%s", "#line 371 \"ractor.rbinc\"\n");
-        fprintf(f, "%s", "    }\n");
-        fprintf(f, "%s", "    \n");
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) copy = rb_vm_lvar(ec, -4);\n");
+        rb_str_catf(buf, "%s", "    MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -5);\n");
+        rb_str_catf(buf, "%s", "#line 820 \"ractor.rb\"\n");
+        rb_str_catf(buf, "%s", "    return \n");
+        rb_str_catf(buf, "%s", "            rb_ractor_make_shareable(obj);;\n");
+        rb_str_catf(buf, "%s", "#line 371 \"ractor.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_820 */\n", (VALUE)builtin_inline_class_820);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_820 */\n", (VALUE)builtin_inline_class_820);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_ractor_local_value(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_ractor_local_value(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
     if (index == -1) {
-        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
     }
     else {
-        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
-        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == ractor_local_value */\n", (VALUE)ractor_local_value);
-    fprintf(f, "    val = f(ec, self, argv[0]);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == ractor_local_value */\n", (VALUE)ractor_local_value);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0]);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_ractor_local_value_set(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_ractor_local_value_set(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
     if (index == -1) {
-        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
     }
     else {
-        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
-        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == ractor_local_value_set */\n", (VALUE)ractor_local_value_set);
-    fprintf(f, "    val = f(ec, self, argv[0], argv[1]);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == ractor_local_value_set */\n", (VALUE)ractor_local_value_set);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1]);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for__bi19(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for__bi19(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
     if (inlinable_p) {
-        fprintf(f, "%s", "    {\n");
-        fprintf(f, "%s", "#line 838 \"ractor.rb\"\n");
-        fprintf(f, "%s", "    return \n");
-        fprintf(f, "%s", "          rb_ractor_self(GET_VM()->ractor.main_ractor);;\n");
-        fprintf(f, "%s", "#line 378 \"ractor.rbinc\"\n");
-        fprintf(f, "%s", "    }\n");
-        fprintf(f, "%s", "    \n");
+        rb_str_catf(buf, "%s", "    {\n");
+        rb_str_catf(buf, "%s", "#line 838 \"ractor.rb\"\n");
+        rb_str_catf(buf, "%s", "    return \n");
+        rb_str_catf(buf, "%s", "          rb_ractor_self(GET_VM()->ractor.main_ractor);;\n");
+        rb_str_catf(buf, "%s", "#line 378 \"ractor.rbinc\"\n");
+        rb_str_catf(buf, "%s", "    }\n");
+        rb_str_catf(buf, "%s", "    \n");
         return;
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_838 */\n", (VALUE)builtin_inline_class_838);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == builtin_inline_class_838 */\n", (VALUE)builtin_inline_class_838);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 void Init_builtin_ractor(void)

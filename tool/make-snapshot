@@ -22,6 +22,7 @@ $keep_temp ||= nil
 $patch_file ||= nil
 $packages ||= nil
 $digests ||= nil
+$no7z ||= nil
 $tooldir = File.expand_path("..", __FILE__)
 $unicode_version = nil if ($unicode_version ||= nil) == ""
 $colorize = Colorize.new
@@ -146,7 +147,7 @@ unless destdir = ARGV.shift
 end
 revisions = ARGV.empty? ? [nil] : ARGV
 
-if $exported
+if defined?($exported)
   abort "#{File.basename $0}: -exported option is deprecated; use -srcdir instead"
 end
 
@@ -294,7 +295,7 @@ def package(vcs, rev, destdir, tmp = nil)
   if info = vcs.get_revisions(url)
     modified = info[2]
   else
-    modified = Time.now - 10
+    _, _, modified = VCS::Null.new(nil).get_revisions(url)
   end
   if !revision and info
     revision = info
@@ -332,6 +333,10 @@ def package(vcs, rev, destdir, tmp = nil)
     end
   end
 
+  Dir.glob("#{exported}/.*.yml") do |file|
+    FileUtils.rm(file, verbose: $VERBOSE)
+  end
+
   status = IO.read(File.dirname(__FILE__) + "/prereq.status")
   Dir.chdir(tmp) if tmp
 
@@ -342,11 +347,7 @@ def package(vcs, rev, destdir, tmp = nil)
   end
 
   File.open("#{v}/revision.h", "wb") {|f|
-    short = vcs.short_revision(revision)
-    f.puts "#define RUBY_REVISION #{short.inspect}"
-    unless short == revision
-      f.puts "#define RUBY_FULL_REVISION #{revision.inspect}"
-    end
+    f.puts vcs.revision_header(revision, modified)
   }
   version ||= (versionhdr = IO.read("#{v}/version.h"))[RUBY_VERSION_PATTERN, 1]
   version ||=
@@ -416,6 +417,7 @@ def package(vcs, rev, destdir, tmp = nil)
       f.puts "Object.__send__(:remove_const, :RUBY_VERSION)"
       f.puts "RUBY_VERSION='#{version}'"
     end
+    puts "cross.rb:", File.read("cross.rb").gsub(/^/, "> "), "" if $VERBOSE
     unless File.exist?("configure")
       print "creating configure..."
       unless system([ENV["AUTOCONF"]]*2)

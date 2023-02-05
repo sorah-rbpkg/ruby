@@ -1606,6 +1606,12 @@ init_constants(void)
     /* There is an accept filter */
     rb_define_const(rb_mSockConst, "SO_ACCEPTFILTER", INTEGER2NUM(SO_ACCEPTFILTER));
 #endif
+#if defined(SO_USER_COOKIE)
+    /* Setting an identifier for ipfw purpose mainly */
+    rb_define_const(rb_cSocket, "SO_USER_COOKIE", INTEGER2NUM(SO_USER_COOKIE));
+    /* Setting an identifier for ipfw purpose mainly */
+    rb_define_const(rb_mSockConst, "SO_USER_COOKIE", INTEGER2NUM(SO_USER_COOKIE));
+#endif
 #if defined(SO_DONTTRUNC)
     /* Retain unread data */
     rb_define_const(rb_cSocket, "SO_DONTTRUNC", INTEGER2NUM(SO_DONTTRUNC));
@@ -1816,6 +1822,30 @@ init_constants(void)
     /* Query supported BPF extensions (Linux 3.14) */
     rb_define_const(rb_mSockConst, "SO_BPF_EXTENSIONS", INTEGER2NUM(SO_BPF_EXTENSIONS));
 #endif
+#if defined(SO_SETFIB)
+    /* Set the associated routing table for the socket (FreeBSD) */
+    rb_define_const(rb_cSocket, "SO_SETFIB", INTEGER2NUM(SO_SETFIB));
+    /* Set the associated routing table for the socket (FreeBSD) */
+    rb_define_const(rb_mSockConst, "SO_SETFIB", INTEGER2NUM(SO_SETFIB));
+#endif
+#if defined(SO_RTABLE)
+    /* Set the routing table for this socket (OpenBSD) */
+    rb_define_const(rb_cSocket, "SO_RTABLE", INTEGER2NUM(SO_RTABLE));
+    /* Set the routing table for this socket (OpenBSD) */
+    rb_define_const(rb_mSockConst, "SO_RTABLE", INTEGER2NUM(SO_RTABLE));
+#endif
+#if defined(SO_INCOMING_CPU)
+    /* Receive the cpu attached to the socket (Linux 3.19) */
+    rb_define_const(rb_cSocket, "SO_INCOMING_CPU", INTEGER2NUM(SO_INCOMING_CPU));
+    /* Receive the cpu attached to the socket (Linux 3.19) */
+    rb_define_const(rb_mSockConst, "SO_INCOMING_CPU", INTEGER2NUM(SO_INCOMING_CPU));
+#endif
+#if defined(SO_INCOMING_NAPI_ID)
+    /* Receive the napi ID attached to a RX queue (Linux 4.12) */
+    rb_define_const(rb_cSocket, "SO_INCOMING_NAPI_ID", INTEGER2NUM(SO_INCOMING_NAPI_ID));
+    /* Receive the napi ID attached to a RX queue (Linux 4.12) */
+    rb_define_const(rb_mSockConst, "SO_INCOMING_NAPI_ID", INTEGER2NUM(SO_INCOMING_NAPI_ID));
+#endif
 #if defined(SOPRI_INTERACTIVE)
     /* Interactive socket priority */
     rb_define_const(rb_cSocket, "SOPRI_INTERACTIVE", INTEGER2NUM(SOPRI_INTERACTIVE));
@@ -1852,6 +1882,12 @@ init_constants(void)
     /* Set maximum segment size */
     rb_define_const(rb_mSockConst, "TCP_MAXSEG", INTEGER2NUM(TCP_MAXSEG));
 #endif
+#if defined(TCP_CONNECTION_INFO)
+    /* Retrieve information about this socket (macOS) */
+    rb_define_const(rb_cSocket, "TCP_CONNECTION_INFO", INTEGER2NUM(TCP_CONNECTION_INFO));
+    /* Retrieve information about this socket (macOS) */
+    rb_define_const(rb_mSockConst, "TCP_CONNECTION_INFO", INTEGER2NUM(TCP_CONNECTION_INFO));
+#endif
 #if defined(TCP_CORK)
     /* Don't send partial frames (Linux 2.2, glibc 2.2) */
     rb_define_const(rb_cSocket, "TCP_CORK", INTEGER2NUM(TCP_CORK));
@@ -1869,6 +1905,12 @@ init_constants(void)
     rb_define_const(rb_cSocket, "TCP_INFO", INTEGER2NUM(TCP_INFO));
     /* Retrieve information about this socket (Linux 2.4, glibc 2.2) */
     rb_define_const(rb_mSockConst, "TCP_INFO", INTEGER2NUM(TCP_INFO));
+#endif
+#if defined(TCP_KEEPALIVE)
+    /* Idle time before keepalive probes are sent (macOS) */
+    rb_define_const(rb_cSocket, "TCP_KEEPALIVE", INTEGER2NUM(TCP_KEEPALIVE));
+    /* Idle time before keepalive probes are sent (macOS) */
+    rb_define_const(rb_mSockConst, "TCP_KEEPALIVE", INTEGER2NUM(TCP_KEEPALIVE));
 #endif
 #if defined(TCP_KEEPCNT)
     /* Maximum number of keepalive probes allowed before dropping a connection (Linux 2.4, glibc 2.2) */
@@ -3798,6 +3840,18 @@ init_constants(void)
 #endif
 
     rsock_intern_so_optname_hash = st_init_numtable();
+#ifdef SO_INCOMING_NAPI_ID
+    st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_INCOMING_NAPI_ID, (st_data_t)rb_intern2("SO_INCOMING_NAPI_ID", 19));
+#endif
+#ifdef SO_INCOMING_CPU
+    st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_INCOMING_CPU, (st_data_t)rb_intern2("SO_INCOMING_CPU", 15));
+#endif
+#ifdef SO_RTABLE
+    st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_RTABLE, (st_data_t)rb_intern2("SO_RTABLE", 9));
+#endif
+#ifdef SO_SETFIB
+    st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_SETFIB, (st_data_t)rb_intern2("SO_SETFIB", 9));
+#endif
 #ifdef SO_BPF_EXTENSIONS
     st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_BPF_EXTENSIONS, (st_data_t)rb_intern2("SO_BPF_EXTENSIONS", 17));
 #endif
@@ -3903,6 +3957,9 @@ init_constants(void)
 #ifdef SO_DONTTRUNC
     st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_DONTTRUNC, (st_data_t)rb_intern2("SO_DONTTRUNC", 12));
 #endif
+#ifdef SO_USER_COOKIE
+    st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_USER_COOKIE, (st_data_t)rb_intern2("SO_USER_COOKIE", 14));
+#endif
 #ifdef SO_ACCEPTFILTER
     st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_ACCEPTFILTER, (st_data_t)rb_intern2("SO_ACCEPTFILTER", 15));
 #endif
@@ -3977,6 +4034,18 @@ init_constants(void)
 #endif
 #ifdef SO_DEBUG
     st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_DEBUG, (st_data_t)rb_intern2("SO_DEBUG", 8));
+#endif
+#ifdef SO_INCOMING_NAPI_ID
+    st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_INCOMING_NAPI_ID, (st_data_t)rb_intern2("INCOMING_NAPI_ID", 16));
+#endif
+#ifdef SO_INCOMING_CPU
+    st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_INCOMING_CPU, (st_data_t)rb_intern2("INCOMING_CPU", 12));
+#endif
+#ifdef SO_RTABLE
+    st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_RTABLE, (st_data_t)rb_intern2("RTABLE", 6));
+#endif
+#ifdef SO_SETFIB
+    st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_SETFIB, (st_data_t)rb_intern2("SETFIB", 6));
 #endif
 #ifdef SO_BPF_EXTENSIONS
     st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_BPF_EXTENSIONS, (st_data_t)rb_intern2("BPF_EXTENSIONS", 14));
@@ -4082,6 +4151,9 @@ init_constants(void)
 #endif
 #ifdef SO_DONTTRUNC
     st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_DONTTRUNC, (st_data_t)rb_intern2("DONTTRUNC", 9));
+#endif
+#ifdef SO_USER_COOKIE
+    st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_USER_COOKIE, (st_data_t)rb_intern2("USER_COOKIE", 11));
 #endif
 #ifdef SO_ACCEPTFILTER
     st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_ACCEPTFILTER, (st_data_t)rb_intern2("ACCEPTFILTER", 12));
@@ -4653,6 +4725,9 @@ init_constants(void)
 #ifdef TCP_KEEPCNT
     st_insert(rsock_intern_tcp_optname_hash, (st_data_t)TCP_KEEPCNT, (st_data_t)rb_intern2("TCP_KEEPCNT", 11));
 #endif
+#ifdef TCP_KEEPALIVE
+    st_insert(rsock_intern_tcp_optname_hash, (st_data_t)TCP_KEEPALIVE, (st_data_t)rb_intern2("TCP_KEEPALIVE", 13));
+#endif
 #ifdef TCP_INFO
     st_insert(rsock_intern_tcp_optname_hash, (st_data_t)TCP_INFO, (st_data_t)rb_intern2("TCP_INFO", 8));
 #endif
@@ -4661,6 +4736,9 @@ init_constants(void)
 #endif
 #ifdef TCP_CORK
     st_insert(rsock_intern_tcp_optname_hash, (st_data_t)TCP_CORK, (st_data_t)rb_intern2("TCP_CORK", 8));
+#endif
+#ifdef TCP_CONNECTION_INFO
+    st_insert(rsock_intern_tcp_optname_hash, (st_data_t)TCP_CONNECTION_INFO, (st_data_t)rb_intern2("TCP_CONNECTION_INFO", 19));
 #endif
 #ifdef TCP_MAXSEG
     st_insert(rsock_intern_tcp_optname_hash, (st_data_t)TCP_MAXSEG, (st_data_t)rb_intern2("TCP_MAXSEG", 10));
@@ -4731,6 +4809,9 @@ init_constants(void)
 #ifdef TCP_KEEPCNT
     st_insert(rsock_intern_tcp_optname_hash, (st_data_t)TCP_KEEPCNT, (st_data_t)rb_intern2("KEEPCNT", 7));
 #endif
+#ifdef TCP_KEEPALIVE
+    st_insert(rsock_intern_tcp_optname_hash, (st_data_t)TCP_KEEPALIVE, (st_data_t)rb_intern2("KEEPALIVE", 9));
+#endif
 #ifdef TCP_INFO
     st_insert(rsock_intern_tcp_optname_hash, (st_data_t)TCP_INFO, (st_data_t)rb_intern2("INFO", 4));
 #endif
@@ -4739,6 +4820,9 @@ init_constants(void)
 #endif
 #ifdef TCP_CORK
     st_insert(rsock_intern_tcp_optname_hash, (st_data_t)TCP_CORK, (st_data_t)rb_intern2("CORK", 4));
+#endif
+#ifdef TCP_CONNECTION_INFO
+    st_insert(rsock_intern_tcp_optname_hash, (st_data_t)TCP_CONNECTION_INFO, (st_data_t)rb_intern2("CONNECTION_INFO", 15));
 #endif
 #ifdef TCP_MAXSEG
     st_insert(rsock_intern_tcp_optname_hash, (st_data_t)TCP_MAXSEG, (st_data_t)rb_intern2("MAXSEG", 6));
@@ -5949,6 +6033,12 @@ rsock_so_optname_to_int(const char *str, long len, int *valp)
 #ifdef SO_DOMAIN
         if (memcmp(str, "DOMAIN", 6) == 0) { *valp = SO_DOMAIN; return 0; }
 #endif
+#ifdef SO_SETFIB
+        if (memcmp(str, "SETFIB", 6) == 0) { *valp = SO_SETFIB; return 0; }
+#endif
+#ifdef SO_RTABLE
+        if (memcmp(str, "RTABLE", 6) == 0) { *valp = SO_RTABLE; return 0; }
+#endif
         return -1;
 
       case 7:
@@ -6038,6 +6128,12 @@ rsock_so_optname_to_int(const char *str, long len, int *valp)
 #endif
 #ifdef SO_DOMAIN
         if (memcmp(str, "SO_DOMAIN", 9) == 0) { *valp = SO_DOMAIN; return 0; }
+#endif
+#ifdef SO_SETFIB
+        if (memcmp(str, "SO_SETFIB", 9) == 0) { *valp = SO_SETFIB; return 0; }
+#endif
+#ifdef SO_RTABLE
+        if (memcmp(str, "SO_RTABLE", 9) == 0) { *valp = SO_RTABLE; return 0; }
 #endif
 #ifdef SO_REUSEADDR
         if (memcmp(str, "REUSEADDR", 9) == 0) { *valp = SO_REUSEADDR; return 0; }
@@ -6147,6 +6243,9 @@ rsock_so_optname_to_int(const char *str, long len, int *valp)
 #ifdef SO_USELOOPBACK
         if (memcmp(str, "USELOOPBACK", 11) == 0) { *valp = SO_USELOOPBACK; return 0; }
 #endif
+#ifdef SO_USER_COOKIE
+        if (memcmp(str, "USER_COOKIE", 11) == 0) { *valp = SO_USER_COOKIE; return 0; }
+#endif
 #ifdef SO_WANTOOBFLAG
         if (memcmp(str, "WANTOOBFLAG", 11) == 0) { *valp = SO_WANTOOBFLAG; return 0; }
 #endif
@@ -6204,6 +6303,9 @@ rsock_so_optname_to_int(const char *str, long len, int *valp)
 #ifdef SO_TIMESTAMPING
         if (memcmp(str, "TIMESTAMPING", 12) == 0) { *valp = SO_TIMESTAMPING; return 0; }
 #endif
+#ifdef SO_INCOMING_CPU
+        if (memcmp(str, "INCOMING_CPU", 12) == 0) { *valp = SO_INCOMING_CPU; return 0; }
+#endif
         return -1;
 
       case 13:
@@ -6234,6 +6336,9 @@ rsock_so_optname_to_int(const char *str, long len, int *valp)
 #ifdef SO_USELOOPBACK
         if (memcmp(str, "SO_USELOOPBACK", 14) == 0) { *valp = SO_USELOOPBACK; return 0; }
 #endif
+#ifdef SO_USER_COOKIE
+        if (memcmp(str, "SO_USER_COOKIE", 14) == 0) { *valp = SO_USER_COOKIE; return 0; }
+#endif
 #ifdef SO_WANTOOBFLAG
         if (memcmp(str, "SO_WANTOOBFLAG", 14) == 0) { *valp = SO_WANTOOBFLAG; return 0; }
 #endif
@@ -6261,6 +6366,9 @@ rsock_so_optname_to_int(const char *str, long len, int *valp)
 #ifdef SO_TIMESTAMPING
         if (memcmp(str, "SO_TIMESTAMPING", 15) == 0) { *valp = SO_TIMESTAMPING; return 0; }
 #endif
+#ifdef SO_INCOMING_CPU
+        if (memcmp(str, "SO_INCOMING_CPU", 15) == 0) { *valp = SO_INCOMING_CPU; return 0; }
+#endif
 #ifdef SO_MAX_PACING_RATE
         if (memcmp(str, "MAX_PACING_RATE", 15) == 0) { *valp = SO_MAX_PACING_RATE; return 0; }
 #endif
@@ -6275,6 +6383,9 @@ rsock_so_optname_to_int(const char *str, long len, int *valp)
 #endif
 #ifdef SO_SELECT_ERR_QUEUE
         if (memcmp(str, "SELECT_ERR_QUEUE", 16) == 0) { *valp = SO_SELECT_ERR_QUEUE; return 0; }
+#endif
+#ifdef SO_INCOMING_NAPI_ID
+        if (memcmp(str, "INCOMING_NAPI_ID", 16) == 0) { *valp = SO_INCOMING_NAPI_ID; return 0; }
 #endif
         return -1;
 
@@ -6293,6 +6404,9 @@ rsock_so_optname_to_int(const char *str, long len, int *valp)
       case 19:
 #ifdef SO_SELECT_ERR_QUEUE
         if (memcmp(str, "SO_SELECT_ERR_QUEUE", 19) == 0) { *valp = SO_SELECT_ERR_QUEUE; return 0; }
+#endif
+#ifdef SO_INCOMING_NAPI_ID
+        if (memcmp(str, "SO_INCOMING_NAPI_ID", 19) == 0) { *valp = SO_INCOMING_NAPI_ID; return 0; }
 #endif
         return -1;
 
@@ -6956,6 +7070,9 @@ rsock_tcp_optname_to_int(const char *str, long len, int *valp)
 #ifdef TCP_NOOPT
         if (memcmp(str, "TCP_NOOPT", 9) == 0) { *valp = TCP_NOOPT; return 0; }
 #endif
+#ifdef TCP_KEEPALIVE
+        if (memcmp(str, "KEEPALIVE", 9) == 0) { *valp = TCP_KEEPALIVE; return 0; }
+#endif
 #ifdef TCP_KEEPINTVL
         if (memcmp(str, "KEEPINTVL", 9) == 0) { *valp = TCP_KEEPINTVL; return 0; }
 #endif
@@ -7028,6 +7145,9 @@ rsock_tcp_optname_to_int(const char *str, long len, int *valp)
         return -1;
 
       case 13:
+#ifdef TCP_KEEPALIVE
+        if (memcmp(str, "TCP_KEEPALIVE", 13) == 0) { *valp = TCP_KEEPALIVE; return 0; }
+#endif
 #ifdef TCP_KEEPINTVL
         if (memcmp(str, "TCP_KEEPINTVL", 13) == 0) { *valp = TCP_KEEPINTVL; return 0; }
 #endif
@@ -7051,6 +7171,9 @@ rsock_tcp_optname_to_int(const char *str, long len, int *valp)
       case 15:
 #ifdef TCP_THIN_DUPACK
         if (memcmp(str, "TCP_THIN_DUPACK", 15) == 0) { *valp = TCP_THIN_DUPACK; return 0; }
+#endif
+#ifdef TCP_CONNECTION_INFO
+        if (memcmp(str, "CONNECTION_INFO", 15) == 0) { *valp = TCP_CONNECTION_INFO; return 0; }
 #endif
         return -1;
 
@@ -7076,6 +7199,9 @@ rsock_tcp_optname_to_int(const char *str, long len, int *valp)
         return -1;
 
       case 19:
+#ifdef TCP_CONNECTION_INFO
+        if (memcmp(str, "TCP_CONNECTION_INFO", 19) == 0) { *valp = TCP_CONNECTION_INFO; return 0; }
+#endif
 #ifdef TCP_COOKIE_TRANSACTIONS
         if (memcmp(str, "COOKIE_TRANSACTIONS", 19) == 0) { *valp = TCP_COOKIE_TRANSACTIONS; return 0; }
 #endif

@@ -11,11 +11,15 @@ override ACTIONS_GROUP = @echo "\#\#[group]$(patsubst yes-%,%,$@)"
 override ACTIONS_ENDGROUP = @echo "\#\#[endgroup]"
 endif
 
-ifneq ($(filter %darwin%,$(arch)),)
-INSTRUBY_ENV += SDKROOT=/
+ifneq ($(filter darwin%,$(target_os)),)
+# Remove debug option not to generate thousands of .dSYM
+MJIT_DEBUGFLAGS := $(filter-out -g%,$(MJIT_DEBUGFLAGS))
+
+INSTRUBY_ENV += SDKROOT=
 endif
 INSTRUBY_ARGS += --gnumake
 
+ifeq ($(DOT_WAIT),)
 CHECK_TARGETS := great exam love check test check% test% btest%
 # expand test targets, and those dependents
 TEST_TARGETS := $(filter $(CHECK_TARGETS),$(MAKECMDGOALS))
@@ -23,7 +27,7 @@ TEST_DEPENDS := $(filter-out commit $(TEST_TARGETS),$(MAKECMDGOALS))
 TEST_TARGETS := $(patsubst great,exam,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out great $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst exam,check,$(TEST_TARGETS))
-TEST_TARGETS := $(patsubst check,test-spec test-all test-tool test-short,$(TEST_TARGETS))
+TEST_TARGETS := $(patsubst check,test-syntax-suggest test-spec test-all test-tool test-short,$(TEST_TARGETS))
 TEST_TARGETS := $(patsubst test-rubyspec,test-spec,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out exam check test-spec $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst love,check,$(TEST_TARGETS))
@@ -36,14 +40,12 @@ TEST_TARGETS := $(patsubst test-short,btest-ruby test-knownbug test-basic,$(TEST
 TEST_TARGETS := $(patsubst test-bundled-gems,test-bundled-gems-run,$(TEST_TARGETS))
 TEST_TARGETS := $(patsubst test-bundled-gems-run,test-bundled-gems-run $(PREPARE_BUNDLED_GEMS),$(TEST_TARGETS))
 TEST_TARGETS := $(patsubst test-bundled-gems-prepare,test-bundled-gems-prepare $(PRECHECK_BUNDLED_GEMS) test-bundled-gems-fetch,$(TEST_TARGETS))
+TEST_TARGETS := $(patsubst test-syntax-suggest,test-syntax-suggest $(PREPARE_SYNTAX_SUGGEST),$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out test-short $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_DEPENDS += $(if $(filter great exam love check,$(MAKECMDGOALS)),all exts)
+endif
 
 in-srcdir := $(if $(filter-out .,$(srcdir)),$(CHDIR) $(srcdir) &&)
-
-ifneq ($(filter -O0 -Od,$(optflags)),)
-override XCFLAGS := $(filter-out -D_FORTIFY_SOURCE=%,$(XCFLAGS))
-endif
 
 ifeq ($(if $(filter all main exts enc trans libencs libenc libtrans \
 		    prog program ruby ruby$(EXEEXT) \
@@ -72,6 +74,7 @@ $(foreach arch,$(arch_flags),\
 	$(eval $(call archcmd,$(patsubst -arch=%,%,$(value arch)),$(patsubst -arch=%,-arch %,$(value arch)))))
 endif
 
+ifeq ($(DOT_WAIT),)
 .PHONY: $(addprefix yes-,$(TEST_TARGETS))
 
 ifneq ($(filter-out btest%,$(TEST_TARGETS)),)
@@ -81,7 +84,8 @@ endif
 ORDERED_TEST_TARGETS := $(filter $(TEST_TARGETS), \
 	btest-ruby test-knownbug test-basic \
 	test-testframework test-tool test-ruby test-all \
-	test-spec test-bundler-prepare test-bundler test-bundler-parallel \
+	test-spec test-syntax-suggest-prepare test-syntax-suggest \
+	test-bundler-prepare test-bundler test-bundler-parallel \
 	test-bundled-gems-precheck test-bundled-gems-fetch \
 	test-bundled-gems-prepare test-bundled-gems-run \
 	)
@@ -89,6 +93,7 @@ prev_test := $(if $(filter test-spec,$(ORDERED_TEST_TARGETS)),test-spec-precheck
 $(foreach test,$(ORDERED_TEST_TARGETS), \
 	$(eval yes-$(value test) no-$(value test): $(value prev_test)); \
 	$(eval prev_test := $(value test)))
+endif
 
 ifneq ($(if $(filter install,$(MAKECMDGOALS)),$(filter uninstall,$(MAKECMDGOALS))),)
 install-targets := $(filter install uninstall,$(MAKECMDGOALS))
@@ -134,7 +139,7 @@ config.status: $(wildcard config.cache)
 STUBPROGRAM = rubystub$(EXEEXT)
 IGNOREDPATTERNS = %~ .% %.orig %.rej \#%\#
 SCRIPTBINDIR := $(if $(EXEEXT),,exec/)
-SCRIPTPROGRAMS = $(addprefix $(SCRIPTBINDIR),$(addsuffix $(EXEEXT),$(filter-out $(IGNOREDPATTERNS),$(notdir $(wildcard $(srcdir)/libexec/*)))))
+SCRIPTPROGRAMS = $(addprefix $(SCRIPTBINDIR),$(addsuffix $(EXEEXT),$(filter-out $(IGNOREDPATTERNS),$(notdir $(wildcard $(srcdir)/bin/*)))))
 
 stub: $(STUBPROGRAM)
 scriptbin: $(SCRIPTPROGRAMS)
@@ -160,9 +165,8 @@ $(SCRIPTBINDIR)%$(EXEEXT): bin/% $(STUBPROGRAM) \
 	$(Q) chmod +x $@
 	$(Q) $(POSTLINK)
 
-$(TIMESTAMPDIR)/.exec.time:
-	$(Q) mkdir exec
-	$(Q) exit > $@
+$(SCRIPTBINDIR):
+	$(Q) mkdir $@
 
 .PHONY: commit
 commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS))) up
@@ -261,16 +265,39 @@ pr-% pull-github-%: fetch-github-%
 	$(call pull-github,$*)
 
 HELP_EXTRA_TASKS = \
-	"  checkout-github:     checkout GitHub Pull Request [PR=1234]" \
-	"  pull-github:         rebase GitHub Pull Request to new worktree [PR=1234]" \
-	"  update-github:       merge master branch and push it to Pull Request [PR=1234]" \
+	"  checkout-github:       checkout GitHub Pull Request [PR=1234]" \
+	"  pull-github:           rebase GitHub Pull Request to new worktree [PR=1234]" \
+	"  update-github:         merge master branch and push it to Pull Request [PR=1234]" \
 	""
 
-extract-gems: $(HAVE_BASERUBY:yes=update-gems)
+# 1. squeeze spaces
+# 2. strip and skip comment/empty lines
+# 3. "gem x.y.z URL xxxxxx" -> "gem|x.y.z|xxxxxx|URL"
+# 4. "gem x.y.z URL" -> "gem-x.y.z"
+bundled-gems := $(shell sed \
+	-e 's/[ 	][ 	]*/ /g' \
+	-e 's/^ //;/\#/d;s/ *$$//;/^$$/d' \
+	$(if $(filter yes,$(HAVE_GIT)), \
+	-e 's/^\(.*\) \(.*\) \(.*\) \(.*\)/\1|\2|\4|\3/' \
+	) \
+	-e 's/ /-/;s/ .*//' \
+	 $(srcdir)/gems/bundled_gems)
 
-bundled-gems := $(shell sed '/^[ 	]*\#/d;/^[ 	]*$$/d;s/[ 	][ 	]*/-/;s/[ 	].*//' $(srcdir)/gems/bundled_gems)
+bundled-gems-rev := $(filter-out $(subst |,,$(bundled-gems)),$(bundled-gems))
+bundled-gems := $(filter-out $(bundled-gems-rev),$(bundled-gems))
 
-update-gems: | $(patsubst %,gems/%.gem,$(bundled-gems))
+# calls $(1) with name, version, revision, URL
+foreach-bundled-gems-rev = \
+    $(foreach g,$(bundled-gems-rev),$(call foreach-bundled-gems-rev-0,$(1),$(subst |, ,$(value g))))
+foreach-bundled-gems-rev-0 = \
+    $(call $(1),$(word 1,$(2)),$(word 2,$(2)),$(word 3,$(2)),$(word 4,$(2)))
+bundled-gem-gemfile = $(srcdir)/gems/$(1)-$(2).gem
+bundled-gem-srcdir = $(srcdir)/gems/src/$(1)
+bundled-gem-extracted = $(srcdir)/.bundle/gems/$(1)-$(2)
+
+update-gems: | $(patsubst %,$(srcdir)/gems/%.gem,$(bundled-gems))
+update-gems: | $(call foreach-bundled-gems-rev,bundled-gem-gemfile)
+update-gems: | $(call foreach-bundled-gems-rev,bundled-gem-srcdir)
 
 test-bundler-precheck: | $(srcdir)/.bundle/cache
 
@@ -278,7 +305,7 @@ $(srcdir)/.bundle/cache:
 	$(MAKEDIRS) $(@D) $(CACHE_DIR)
 	$(LN_S) ../.downloaded-cache $@
 
-gems/%.gem:
+$(srcdir)/gems/%.gem:
 	$(ECHO) Downloading bundled gem $*...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -I./tool -rdownloader \
@@ -289,21 +316,42 @@ gems/%.gem:
 	    -e 'File.unlink(*old) and' \
 	    -e 'FileUtils.rm_rf(old.map{'"|n|"'n.chomp(".gem")})'
 
-ifeq (,)
-extract-gems: extract-gems-sequential
-else
-extract-gems: | $(patsubst %,.bundle/gems/%,$(bundled-gems))
+extract-gems: | $(patsubst %,$(srcdir)/.bundle/gems/%,$(bundled-gems))
+extract-gems: | $(call foreach-bundled-gems-rev,bundled-gem-extracted)
 
-.bundle/gems/%: gems/%.gem | .bundle/gems
+$(srcdir)/.bundle/gems/%: $(srcdir)/gems/%.gem | .bundle/gems
 	$(ECHO) Extracting bundle gem $*...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -Itool/lib -rbundled_gem \
 	    -e 'BundledGem.unpack("gems/$(@F).gem", ".bundle")'
-	$(RMALL) "$(srcdir)/$(@:.gem=)/".git*
+
+define copy-gem
+$(srcdir)/gems/src/$(1): | $(srcdir)/gems/src
+	$(ECHO) Cloning $(4)
+	$(Q) $(GIT) clone $(4) $$(@)
+
+$(srcdir)/.bundle/gems/$(1)-$(2): | $(srcdir)/gems/src/$(1) .bundle/gems
+	$(ECHO) Copying $(1)@$(3) to $$(@F)
+	$(Q) $(CHDIR) "$(srcdir)/gems/src/$(1)" && \
+	    $(GIT) fetch origin $(3) && \
+	    $(GIT) checkout --detach $(3) && \
+	:
+	$(Q) $(BASERUBY) -C "$(srcdir)" \
+	    -Itool/lib -rbundled_gem \
+	    -e 'BundledGem.copy("gems/src/$(1)/$(1).gemspec", ".bundle")'
+
+endef
+define copy-gem-0
+$(eval $(call copy-gem,$(1),$(2),$(3),$(4)))
+endef
+
+$(call foreach-bundled-gems-rev,copy-gem-0)
+
+$(srcdir)/gems/src:
+	$(MAKEDIRS) $@
 
 $(srcdir)/.bundle/gems:
 	$(MAKEDIRS) $@
-endif
 
 ifneq ($(filter update-bundled_gems refresh-gems,$(MAKECMDGOALS)),)
 update-gems: update-bundled_gems
@@ -337,29 +385,25 @@ $(MJIT_MIN_HEADER): $(mjit_min_headers) $(PREP)
 
 endif
 
-ifeq ($(if $(wildcard $(filter-out .,$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES))),,\
-	   $(wildcard $(srcdir)/lib/unicode_normalize/tables.rb)),)
-# Needs the dependency when any Unicode data file exists, or
-# normalization tables script doesn't.  Otherwise, when the target
-# only exists, use it as-is.
-.PHONY: $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time
-UNICODE_TABLES_TIMESTAMP =
-$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: \
-	$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
-endif
+.SECONDARY: update-unicode-files
+.SECONDARY: update-unicode-auxiliary-files
+.SECONDARY: update-unicode-ucd-emoji-files
+.SECONDARY: update-unicode-emoji-files
 
-ifeq ($(wildcard $(srcdir)/revision.h),)
-REVISION_IN_HEADER := none
-REVISION_LATEST := update
-else
-REVISION_IN_HEADER := $(shell sed -n 's/^\#define RUBY_FULL_REVISION "\(.*\)"/\1/p' $(srcdir)/revision.h 2>/dev/null)
+ifeq ($(HAVE_GIT),yes)
 REVISION_LATEST := $(shell $(CHDIR) $(srcdir) && $(GIT) log -1 --format=%H 2>/dev/null)
+else
+REVISION_LATEST := update
+endif
+REVISION_IN_HEADER := $(shell sed -n 's/^\#define RUBY_FULL_REVISION "\(.*\)"/\1/p' $(wildcard $(srcdir)/revision.h revision.h) /dev/null 2>/dev/null)
+ifeq ($(REVISION_IN_HEADER),)
+REVISION_IN_HEADER := none
 endif
 ifneq ($(REVISION_IN_HEADER),$(REVISION_LATEST))
-# GNU make treat the target as unmodified when its dependents get
-# updated but it is not updated, while others may not.
-$(srcdir)/revision.h: $(REVISION_H)
+$(REVISION_H): PHONY
 endif
+
+include $(top_srcdir)/yjit/yjit.mk
 
 # Query on the generated rdoc
 #

@@ -1,8 +1,11 @@
 # frozen_string_literal: true
 
+require_relative "force_platform"
+
 module Bundler
   class LazySpecification
     include MatchPlatform
+    include ForcePlatform
 
     attr_reader :name, :version, :dependencies, :platform
     attr_accessor :source, :remote, :force_ruby_platform
@@ -14,6 +17,7 @@ module Bundler
       @platform      = platform || Gem::Platform::RUBY
       @source        = source
       @specification = nil
+      @force_ruby_platform = default_force_ruby_platform
     end
 
     def full_name
@@ -79,7 +83,7 @@ module Bundler
       candidates = if source.is_a?(Source::Path) || !ruby_platform_materializes_to_ruby_platform?
         target_platform = ruby_platform_materializes_to_ruby_platform? ? platform : local_platform
 
-        GemHelpers.select_best_platform_match(source.specs.search(Dependency.new(name, version)), target_platform)
+        GemHelpers.select_best_platform_match(source.specs.search([name, version]), target_platform)
       else
         source.specs.search(self)
       end

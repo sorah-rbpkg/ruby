@@ -170,7 +170,7 @@ Tue Dec 22 14:31:28 2015  Toru Iwase  <tietew@tietew.net>
 	  should return unfrozen new string.
 	  [ruby-core:72426] [Bug #11858]
 
-Tue Dec 22 05:39:58 2015  Takashi Kokubun  <takashikkbn@gmail.com>
+Tue Dec 22 05:39:58 2015  Takashi Kokubun  <k0kubun@ruby-lang.org>
 
 	* ext/cgi/escape/escape.c (preserve_original_state): Preserve
 	  original state for tainted and frozen.  [Fix GH-1166]
@@ -208,7 +208,7 @@ Mon Dec 21 09:33:17 2015  Karol Bucek  <kares@users.noreply.github.com>
 	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLSocket): fix
 	  NotImplementedError typo.  [Fix GH-1165]
 
-Sun Dec 20 20:54:51 2015  Takashi Kokubun  <takashikkbn@gmail.com>
+Sun Dec 20 20:54:51 2015  Takashi Kokubun  <k0kubun@ruby-lang.org>
 
 	* cgi/escape/escape.c: Optimize CGI.escapeHTML for
 	  ASCII-compatible encodings.  [Fix GH-1164]
@@ -476,7 +476,7 @@ Tue Dec 15 17:57:57 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 	  to the correct one in the IANA registry (IBM037)
 	  and added an alias (ebcdic-cp-us)
 
-Tue Dec 15 16:19:26 2015  Takashi Kokubun  <takashikkbn@gmail.com>
+Tue Dec 15 16:19:26 2015  Takashi Kokubun  <k0kubun@ruby-lang.org>
 
 	* lib/erb.rb: Render erb with array buffer for function call optimization.
 	  [fix GH-1143]
@@ -488,7 +488,7 @@ Tue Dec 15 13:50:05 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* string.c (rb_str_oct): [DOC] mention radix indicators.
 	  [ruby-core:71310] [Bug #11648]
 
-Tue Dec 15 12:20:30 2015  Takashi Kokubun  <takashikkbn@gmail.com>
+Tue Dec 15 12:20:30 2015  Takashi Kokubun  <k0kubun@ruby-lang.org>
 
 	* lib/erb.rb: Simplify regexp to optimize erb scanner.
 	  [fix GH-1144]
@@ -2670,7 +2670,7 @@ Sat Nov  7 09:51:38 2015  Koichi Sasada  <ko1@atdot.net>
 	* vm_trace.c (rb_threadptr_exec_event_hooks_orig):
 	  maintain trace_running counter on internal events.
 
-	  This patch is made by Takashi Kokubun <takashikkbn@gmail.com>.
+	  This patch is made by Takashi Kokubun <k0kubun@ruby-lang.org>.
 	  [Bug #11603] https://github.com/ruby/ruby/pull/1059
 
 Sat Nov  7 03:32:27 2015  Koichi Sasada  <ko1@atdot.net>
@@ -5283,7 +5283,7 @@ Sat Aug  1 06:54:36 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (Init_ossl_ssl): OpenSSL declares these
 	  constants as longs, so we should follow that and use LONG2NUM.
-	  http://git.io/vOqxD
+	  https://github.com/openssl/openssl/blob/34750dc25d74e3db4c1ba43cd219d3f4825e4c65/include/openssl/ssl.h#L391
 
 Sat Aug  1 04:06:29 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
@@ -6754,7 +6754,8 @@ Thu Jul  2 09:51:44 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 Thu Jul  2 06:49:44 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rubygems: Update to RubyGems HEAD(c202db2).
-	  this version contains many enhancements see http://git.io/vtNwF
+	  this version contains many enhancements see
+	  https://github.com/rubygems/rubygems/blob/c202db2d681eb3c3a02f187d346fbb2e8d733b26/History.txt#L3
 	* test/rubygems: ditto.
 
 Wed Jul  1 23:50:34 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>

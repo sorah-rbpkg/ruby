@@ -1358,8 +1358,8 @@ class TestGem < Gem::TestCase
 
   def test_setting_paths_does_not_warn_about_unknown_keys
     stdout, stderr = capture_output do
-      Gem.paths = { "foo"      => [],
-                    "bar"      => Object.new,
+      Gem.paths = { "foo" => [],
+                    "bar" => Object.new,
                     "GEM_HOME" => Gem.paths.home,
                     "GEM_PATH" => "foo" }
     end
@@ -2061,13 +2061,8 @@ You may need to `bundle install` to install missing gems
   end
 
   def redefine_method(base, method, new_result)
-    if RUBY_VERSION >= "2.5"
-      base.alias_method(method, method)
-      base.define_method(method) { new_result }
-    else
-      base.send(:alias_method, method, method)
-      base.send(:define_method, method) { new_result }
-    end
+    base.alias_method(method, method)
+    base.define_method(method) { new_result }
   end
 
   def with_plugin(path)

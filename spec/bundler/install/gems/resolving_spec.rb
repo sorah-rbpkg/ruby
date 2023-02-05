@@ -159,7 +159,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
         bundle :install, :env => { "BUNDLER_DEBUG_RESOLVER" => "1", "DEBUG" => "1" }
 
-        expect(out).to include("BUNDLER: Starting resolution")
+        expect(out).to include("Resolving dependencies...")
       end
     end
 
@@ -173,7 +173,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
         bundle :install, :env => { "DEBUG_RESOLVER" => "1", "DEBUG" => "1" }
 
-        expect(out).to include("BUNDLER: Starting resolution")
+        expect(out).to include("Resolving dependencies...")
       end
     end
 
@@ -187,12 +187,10 @@ RSpec.describe "bundle install with install-time dependencies" do
 
         bundle :install, :env => { "DEBUG_RESOLVER_TREE" => "1", "DEBUG" => "1" }
 
-        activated_groups = "net_b (1.0) (ruby)"
-
         expect(out).to include(" net_b").
-          and include("BUNDLER: Starting resolution").
-          and include("BUNDLER: Finished resolution").
-          and include("Attempting to activate [#{activated_groups}]")
+          and include("Resolving dependencies...").
+          and include("Solution found after 1 attempts:").
+          and include("selecting net_b 1.0")
       end
     end
   end
@@ -376,15 +374,66 @@ RSpec.describe "bundle install with install-time dependencies" do
         end
       end
 
+      context "with a Gemfile and lock file that don't resolve under the current platform" do
+        before do
+          build_repo4 do
+            build_gem "sorbet", "0.5.10554" do |s|
+              s.add_dependency "sorbet-static", "0.5.10554"
+            end
+
+            build_gem "sorbet-static", "0.5.10554" do |s|
+              s.platform = "universal-darwin-21"
+            end
+          end
+
+          gemfile <<~G
+            source "#{file_uri_for(gem_repo4)}"
+            gem 'sorbet', '= 0.5.10554'
+          G
+
+          lockfile <<~L
+            GEM
+              remote: #{file_uri_for(gem_repo4)}/
+              specs:
+                sorbet (0.5.10554)
+                  sorbet-static (= 0.5.10554)
+                sorbet-static (0.5.10554-universal-darwin-21)
+
+            PLATFORMS
+              arm64-darwin-21
+
+            DEPENDENCIES
+              sorbet (= 0.5.10554)
+
+            BUNDLED WITH
+               #{Bundler::VERSION}
+          L
+        end
+
+        it "raises a proper error" do
+          simulate_platform "aarch64-linux" do
+            bundle "install", :raise_on_error => false
+          end
+
+          nice_error = strip_whitespace(<<-E).strip
+            Could not find gem 'sorbet-static (= 0.5.10554)' with platforms 'arm64-darwin-21', 'aarch64-linux' in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally.
+
+            The source contains the following gems matching 'sorbet-static (= 0.5.10554)':
+              * sorbet-static-0.5.10554-universal-darwin-21
+          E
+          expect(err).to end_with(nice_error)
+        end
+      end
+
       it "gives a meaningful error on ruby version mismatches between dependencies" do
         build_repo4 do
           build_gem "requires-old-ruby" do |s|
-            s.required_ruby_version = "< #{RUBY_VERSION}"
+            s.required_ruby_version = "< #{Gem.ruby_version}"
           end
         end
 
         build_lib("foo", :path => bundled_app) do |s|
-          s.required_ruby_version = ">= #{RUBY_VERSION}"
+          s.required_ruby_version = ">= #{Gem.ruby_version}"
 
           s.add_dependency "requires-old-ruby"
         end
@@ -394,7 +443,16 @@ RSpec.describe "bundle install with install-time dependencies" do
           gemspec
         G
 
-        expect(err).to include("Bundler found conflicting requirements for the Ruby\0 version:")
+        expect(err).to end_with <<~E.strip
+          Could not find compatible versions
+
+          Because every version of foo depends on requires-old-ruby >= 0
+            and every version of requires-old-ruby depends on Ruby < #{Gem.ruby_version},
+            every version of foo requires Ruby < #{Gem.ruby_version}.
+          So, because Gemfile depends on foo >= 0
+            and current Ruby version is = #{Gem.ruby_version},
+            version solving has failed.
+        E
       end
 
       it "installs the older version under rate limiting conditions" do
@@ -464,14 +522,13 @@ RSpec.describe "bundle install with install-time dependencies" do
         expect(out).to_not include("Gem::InstallError: require_ruby requires Ruby version > 9000")
 
         nice_error = strip_whitespace(<<-E).strip
-          Bundler found conflicting requirements for the Ruby\0 version:
-            In Gemfile:
-              require_ruby was resolved to 1.0, which depends on
-                Ruby\0 (> 9000)
+          Could not find compatible versions
 
-            Current Ruby\0 version:
-              Ruby\0 (#{error_message_requirement})
-
+          Because every version of require_ruby depends on Ruby > 9000
+            and Gemfile depends on require_ruby >= 0,
+            Ruby > 9000 is required.
+          So, because current Ruby version is #{error_message_requirement},
+            version solving has failed.
         E
         expect(err).to end_with(nice_error)
       end
@@ -487,14 +544,13 @@ RSpec.describe "bundle install with install-time dependencies" do
           expect(out).to_not include("Gem::InstallError: require_ruby requires Ruby version > 9000")
 
           nice_error = strip_whitespace(<<-E).strip
-            Bundler found conflicting requirements for the Ruby\0 version:
-              In Gemfile:
-                require_ruby was resolved to 1.0, which depends on
-                  Ruby\0 (> 9000)
+            Could not find compatible versions
 
-              Current Ruby\0 version:
-                Ruby\0 (#{error_message_requirement})
-
+            Because every version of require_ruby depends on Ruby > 9000
+              and Gemfile depends on require_ruby >= 0,
+              Ruby > 9000 is required.
+            So, because current Ruby version is #{error_message_requirement},
+              version solving has failed.
           E
           expect(err).to end_with(nice_error)
         end
@@ -532,14 +588,11 @@ RSpec.describe "bundle install with install-time dependencies" do
 
       expect(err).to_not include("Gem::InstallError: require_rubygems requires RubyGems version > 9000")
       nice_error = strip_whitespace(<<-E).strip
-        Bundler found conflicting requirements for the RubyGems\0 version:
-          In Gemfile:
-            require_rubygems was resolved to 1.0, which depends on
-              RubyGems\0 (> 9000)
-
-          Current RubyGems\0 version:
-            RubyGems\0 (= #{Gem::VERSION})
-
+        Because every version of require_rubygems depends on RubyGems > 9000
+          and Gemfile depends on require_rubygems >= 0,
+          RubyGems > 9000 is required.
+        So, because current RubyGems version is = #{Gem::VERSION},
+          version solving has failed.
       E
       expect(err).to end_with(nice_error)
     end
