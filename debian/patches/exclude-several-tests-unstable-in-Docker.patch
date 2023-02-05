@@ -7,7 +7,7 @@ Subject: exclude several tests unstable in Docker
  1 file changed, 4 insertions(+)
 
 diff --git a/test/dtrace/helper.rb b/test/dtrace/helper.rb
-index ce73080..3ac1aa6 100644
+index 7fa1696..10f13b2 100644
 --- a/test/dtrace/helper.rb
 +++ b/test/dtrace/helper.rb
 @@ -34,6 +34,10 @@ if ok
