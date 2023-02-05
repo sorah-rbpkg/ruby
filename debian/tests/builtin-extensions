@@ -1,4 +1,4 @@
-#!/usr/bin/ruby3.1
+#!/usr/bin/ruby3.2
 
 
 extensions = [
