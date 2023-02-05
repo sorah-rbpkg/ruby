@@ -35,7 +35,7 @@ index 3a10000..f40bb37 100644
            gz.write data
            gz.close
 diff --git a/lib/rdoc/rdoc.rb b/lib/rdoc/rdoc.rb
-index c60e017..368c9dc 100644
+index f356c36..605172a 100644
 --- a/lib/rdoc/rdoc.rb
 +++ b/lib/rdoc/rdoc.rb
 @@ -312,7 +312,7 @@ option)
