@@ -31,6 +31,7 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  mjit_opts@Base 3.2.0
  onig_add_end_call@Base 3.2.0
  onig_bbuf_init@Base 3.2.0
+ onig_check_linear_time@Base 3.2.0
  onig_compile@Base 3.2.0
  onig_compile_ruby@Base 3.2.0
  onig_copy_encoding@Base 3.2.0
@@ -134,7 +135,7 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  onigenc_mb4_code_to_mbc@Base 3.2.0
  onigenc_mb4_code_to_mbclen@Base 3.2.0
  onigenc_mb4_is_code_ctype@Base 3.2.0
- onigenc_mbclen_approximate@Base 3.2.0
+ onigenc_mbclen@Base 3.2.0
  onigenc_mbn_mbc_case_fold@Base 3.2.0
  onigenc_mbn_mbc_to_code@Base 3.2.0
  onigenc_minimum_property_name_to_ctype@Base 3.2.0
@@ -200,6 +201,7 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_ary_entry@Base 3.2.0
  rb_ary_free@Base 3.2.0
  rb_ary_freeze@Base 3.2.0
+ rb_ary_hidden_new@Base 3.2.0
  rb_ary_includes@Base 3.2.0
  rb_ary_join@Base 3.2.0
  rb_ary_memsize@Base 3.2.0
@@ -225,7 +227,6 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_ary_sort_bang@Base 3.2.0
  rb_ary_store@Base 3.2.0
  rb_ary_subseq@Base 3.2.0
- rb_ary_tmp_new@Base 3.2.0
  rb_ary_tmp_new_from_values@Base 3.2.0
  rb_ary_to_ary@Base 3.2.0
  rb_ary_to_s@Base 3.2.0
@@ -245,6 +246,8 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_ast_newnode@Base 3.2.0
  rb_ast_node_type_change@Base 3.2.0
  rb_ast_resize_latest_local_table@Base 3.2.0
+ rb_ast_set_tokens@Base 3.2.0
+ rb_ast_tokens@Base 3.2.0
  rb_ast_update_references@Base 3.2.0
  rb_attr@Base 3.2.0
  rb_attr_get@Base 3.2.0
@@ -376,10 +379,11 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_check_to_float@Base 3.2.0
  rb_check_to_int@Base 3.2.0
  rb_check_to_integer@Base 3.2.0
- rb_check_trusted@Base 3.2.0
  rb_check_type@Base 3.2.0
  rb_check_typeddata@Base 3.2.0
  rb_class2name@Base 3.2.0
+ rb_class_allocate_instance@Base 3.2.0
+ rb_class_attached_object@Base 3.2.0
  rb_class_get_superclass@Base 3.2.0
  rb_class_inherited@Base 3.2.0
  rb_class_inherited_p@Base 3.2.0
@@ -398,7 +402,7 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_class_real@Base 3.2.0
  rb_class_subclasses@Base 3.2.0
  rb_class_superclass@Base 3.2.0
- rb_clear_constant_cache@Base 3.2.0
+ rb_clear_constant_cache_for_id@Base 3.2.0
  rb_clear_coverages@Base 3.2.0
  rb_cloexec_dup2@Base 3.2.0
  rb_cloexec_dup@Base 3.2.0
@@ -459,8 +463,10 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_dbl_cmp@Base 3.2.0
  rb_dbl_complex_new@Base 3.2.0
  rb_debug_inspector_backtrace_locations@Base 3.2.0
+ rb_debug_inspector_current_depth@Base 3.2.0
  rb_debug_inspector_frame_binding_get@Base 3.2.0
  rb_debug_inspector_frame_class_get@Base 3.2.0
+ rb_debug_inspector_frame_depth@Base 3.2.0
  rb_debug_inspector_frame_iseq_get@Base 3.2.0
  rb_debug_inspector_frame_self_get@Base 3.2.0
  rb_debug_inspector_open@Base 3.2.0
@@ -510,6 +516,7 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_eFloatDomainError@Base 3.2.0
  rb_eFrozenError@Base 3.2.0
  rb_eIOError@Base 3.2.0
+ rb_eIOTimeoutError@Base 3.2.0
  rb_eIndexError@Base 3.2.0
  rb_eInterrupt@Base 3.2.0
  rb_eKeyError@Base 3.2.0
@@ -628,14 +635,14 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_encdb_declare@Base 3.2.0
  rb_encdb_dummy@Base 3.2.0
  rb_encdb_replicate@Base 3.2.0
- rb_encdb_set_unicode@Base 3.2.0
  rb_ensure@Base 3.2.0
+ rb_ensure_generic_iv_list_size@Base 3.2.0
+ rb_ensure_iv_list_size@Base 3.2.0
  rb_enum_values_pack@Base 3.2.0
  rb_enumeratorize@Base 3.2.0
  rb_enumeratorize_with_size@Base 3.2.0
  rb_enumeratorize_with_size_kw@Base 3.2.0
  rb_env_clear@Base 3.2.0
- rb_env_path_tainted@Base 3.2.0
  rb_eof_error@Base 3.2.0
  rb_eql@Base 3.2.0
  rb_equal@Base 3.2.0
@@ -643,7 +650,7 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_error_arity@Base 3.2.0
  rb_error_frozen@Base 3.2.0
  rb_error_frozen_object@Base 3.2.0
- rb_error_untrusted@Base 3.2.0
+ rb_estimate_iv_count@Base 3.2.0
  rb_eval_cmd_kw@Base 3.2.0
  rb_eval_string@Base 3.2.0
  rb_eval_string_protect@Base 3.2.0
@@ -703,6 +710,7 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_fiber_alive_p@Base 3.2.0
  rb_fiber_current@Base 3.2.0
  rb_fiber_new@Base 3.2.0
+ rb_fiber_new_storage@Base 3.2.0
  rb_fiber_raise@Base 3.2.0
  rb_fiber_resume@Base 3.2.0
  rb_fiber_resume_kw@Base 3.2.0
@@ -711,12 +719,15 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_fiber_scheduler_close@Base 3.2.0
  rb_fiber_scheduler_current@Base 3.2.0
  rb_fiber_scheduler_current_for_thread@Base 3.2.0
+ rb_fiber_scheduler_fiber@Base 3.2.0
  rb_fiber_scheduler_get@Base 3.2.0
  rb_fiber_scheduler_io_close@Base 3.2.0
  rb_fiber_scheduler_io_pread@Base 3.2.0
  rb_fiber_scheduler_io_pwrite@Base 3.2.0
  rb_fiber_scheduler_io_read@Base 3.2.0
  rb_fiber_scheduler_io_read_memory@Base 3.2.0
+ rb_fiber_scheduler_io_select@Base 3.2.0
+ rb_fiber_scheduler_io_selectv@Base 3.2.0
  rb_fiber_scheduler_io_wait@Base 3.2.0
  rb_fiber_scheduler_io_wait_readable@Base 3.2.0
  rb_fiber_scheduler_io_wait_writable@Base 3.2.0
@@ -806,6 +817,7 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_gc_mark_movable@Base 3.2.0
  rb_gc_mark_values@Base 3.2.0
  rb_gc_mark_vm_stack_values@Base 3.2.0
+ rb_gc_obj_slot_size@Base 3.2.0
  rb_gc_register_address@Base 3.2.0
  rb_gc_register_mark_object@Base 3.2.0
  rb_gc_start@Base 3.2.0
@@ -819,6 +831,7 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_gcd@Base 3.2.0
  rb_gcd_gmp@Base 3.2.0
  rb_gcd_normal@Base 3.2.0
+ rb_gen_ivtbl_get@Base 3.2.0
  rb_generic_ivar_memsize@Base 3.2.0
  rb_genrand_int32@Base 3.2.0
  rb_genrand_real@Base 3.2.0
@@ -835,6 +848,7 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_glob@Base 3.2.0
  rb_global_variable@Base 3.2.0
  rb_grantpt@Base 3.2.0
+ rb_grow_iv_list@Base 3.2.0
  rb_gv_get@Base 3.2.0
  rb_gv_set@Base 3.2.0
  rb_gvar_defined@Base 3.2.0
@@ -869,6 +883,7 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_hash_lookup2@Base 3.2.0
  rb_hash_lookup@Base 3.2.0
  rb_hash_new@Base 3.2.0
+ rb_hash_new_capa@Base 3.2.0
  rb_hash_new_with_size@Base 3.2.0
  rb_hash_resurrect@Base 3.2.0
  rb_hash_set_ifnone@Base 3.2.0
@@ -888,11 +903,11 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_id_table_create@Base 3.2.0
  rb_id_table_insert@Base 3.2.0
  rb_id_table_lookup@Base 3.2.0
+ rb_id_table_size@Base 3.2.0
  rb_ident_hash_new@Base 3.2.0
  rb_imemo_name@Base 3.2.0
  rb_imemo_new@Base 3.2.0
  rb_include_module@Base 3.2.0
- rb_init_iv_list@Base 3.2.0~preview2
  rb_inspect@Base 3.2.0
  rb_int128t2big@Base 3.2.0~preview2
  rb_int2big@Base 3.2.0
@@ -915,6 +930,8 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_intern3@Base 3.2.0
  rb_intern@Base 3.2.0
  rb_intern_str@Base 3.2.0
+ rb_internal_thread_add_event_hook@Base 3.2.0
+ rb_internal_thread_remove_event_hook@Base 3.2.0
  rb_interned_str@Base 3.2.0~preview2
  rb_interned_str_cstr@Base 3.2.0~preview2
  rb_interrupt@Base 3.2.0
@@ -971,10 +988,12 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_io_read_check@Base 3.2.0
  rb_io_read_pending@Base 3.2.0
  rb_io_set_nonblock@Base 3.2.0
+ rb_io_set_timeout@Base 3.2.0
  rb_io_set_write_io@Base 3.2.0
  rb_io_stdio_file@Base 3.2.0
  rb_io_synchronized@Base 3.2.0
  rb_io_taint_check@Base 3.2.0
+ rb_io_timeout@Base 3.2.0
  rb_io_ungetbyte@Base 3.2.0
  rb_io_ungetc@Base 3.2.0
  rb_io_wait@Base 3.2.0
@@ -1042,8 +1061,8 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_ivar_defined@Base 3.2.0
  rb_ivar_foreach@Base 3.2.0
  rb_ivar_generic_ivtbl_lookup@Base 3.2.0~preview2
- rb_ivar_generic_lookup_with_index@Base 3.2.0~rc1
  rb_ivar_get@Base 3.2.0
+ rb_ivar_lookup@Base 3.2.0
  rb_ivar_set@Base 3.2.0
  rb_jump_tag@Base 3.2.0
  rb_keyword_error_new@Base 3.2.0
@@ -1124,13 +1143,17 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_method_entry_with_refinements@Base 3.2.0
  rb_method_iseq@Base 3.2.0
  rb_mjit_add_iseq_to_process@Base 3.2.0
+ rb_mjit_bop_redefined@Base 3.2.0
+ rb_mjit_cme_invalidate@Base 3.2.0
+ rb_mjit_constant_ic_update@Base 3.2.0
+ rb_mjit_constant_state_changed@Base 3.2.0
  rb_mjit_iseq_compile_info@Base 3.2.0
  rb_mjit_recompile_const@Base 3.2.0~rc1
  rb_mjit_recompile_exivar@Base 3.2.0
  rb_mjit_recompile_inlining@Base 3.2.0
  rb_mjit_recompile_ivar@Base 3.2.0
  rb_mjit_recompile_send@Base 3.2.0
- rb_mjit_wait_call@Base 3.2.0
+ rb_mjit_tracing_invalidate_all@Base 3.2.0
  rb_mod_ancestors@Base 3.2.0
  rb_mod_class_variables@Base 3.2.0
  rb_mod_const_at@Base 3.2.0
@@ -1213,11 +1236,11 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_obj_encoding@Base 3.2.0
  rb_obj_equal@Base 3.2.0
  rb_obj_freeze@Base 3.2.0
+ rb_obj_freeze_inline@Base 3.2.0
  rb_obj_frozen_p@Base 3.2.0
  rb_obj_gc_flags@Base 3.2.0
  rb_obj_hide@Base 3.2.0
  rb_obj_id@Base 3.2.0
- rb_obj_infect@Base 3.2.0
  rb_obj_info@Base 3.2.0
  rb_obj_info_dump_loc@Base 3.2.0
  rb_obj_init_copy@Base 3.2.0
@@ -1229,6 +1252,7 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_obj_is_kind_of@Base 3.2.0
  rb_obj_is_method@Base 3.2.0
  rb_obj_is_proc@Base 3.2.0
+ rb_obj_ivar_set@Base 3.2.0
  rb_obj_memsize_of@Base 3.2.0
  rb_obj_method@Base 3.2.0
  rb_obj_method_arity@Base 3.2.0
@@ -1240,12 +1264,6 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_obj_setup@Base 3.2.0
  rb_obj_singleton_methods@Base 3.2.0
  rb_obj_size@Base 3.2.0
- rb_obj_taint@Base 3.2.0
- rb_obj_tainted@Base 3.2.0
- rb_obj_trust@Base 3.2.0
- rb_obj_untaint@Base 3.2.0
- rb_obj_untrust@Base 3.2.0
- rb_obj_untrusted@Base 3.2.0
  rb_objspace_data_type_memsize@Base 3.2.0
  rb_objspace_data_type_name@Base 3.2.0
  rb_objspace_each_objects@Base 3.2.0
@@ -1279,6 +1297,9 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_parser_set_context@Base 3.2.0
  rb_parser_set_location@Base 3.2.0
  rb_parser_set_location_from_strterm_heredoc@Base 3.2.0
+ rb_parser_set_location_of_delayed_token@Base 3.2.0
+ rb_parser_set_location_of_dummy_end@Base 3.2.0
+ rb_parser_set_location_of_heredoc_end@Base 3.2.0
  rb_parser_set_location_of_none@Base 3.2.0
  rb_parser_set_options@Base 3.2.0
  rb_parser_set_yydebug@Base 3.2.0
@@ -1345,7 +1366,7 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_rand_bytes_int32@Base 3.2.0
  rb_random_base_init@Base 3.2.0
  rb_random_bytes@Base 3.2.0
- rb_random_data_type@Base 3.2.0
+ rb_random_data_type_1_0@Base 3.2.0
  rb_random_int32@Base 3.2.0
  rb_random_mark@Base 3.2.0
  rb_random_real@Base 3.2.0
@@ -1364,6 +1385,7 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_reg_adjust_startpos@Base 3.2.0
  rb_reg_alloc@Base 3.2.0
  rb_reg_backref_number@Base 3.2.0
+ rb_reg_check_timeout@Base 3.2.0
  rb_reg_fragment_setenc@Base 3.2.0
  rb_reg_init_str@Base 3.2.0
  rb_reg_last_match@Base 3.2.0
@@ -1412,6 +1434,18 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_set_end_proc@Base 3.2.0
  rb_set_errinfo@Base 3.2.0
  rb_setup_fake_str@Base 3.2.0
+ rb_shape_depth@Base 3.2.0
+ rb_shape_each_shape@Base 3.2.0
+ rb_shape_edges_count@Base 3.2.0
+ rb_shape_frozen_shape_p@Base 3.2.0
+ rb_shape_get_iv_index@Base 3.2.0
+ rb_shape_get_next_iv_shape@Base 3.2.0
+ rb_shape_get_shape_by_id@Base 3.2.0
+ rb_shape_get_shape_id@Base 3.2.0
+ rb_shape_id@Base 3.2.0
+ rb_shape_memsize@Base 3.2.0
+ rb_shape_obj_too_complex@Base 3.2.0
+ rb_shape_set_shape@Base 3.2.0
  rb_singleton_class@Base 3.2.0
  rb_singleton_class_attached@Base 3.2.0
  rb_singleton_class_clone@Base 3.2.0
@@ -1510,6 +1544,7 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_str_length@Base 3.2.0
  rb_str_locktmp@Base 3.2.0
  rb_str_locktmp_ensure@Base 3.2.0
+ rb_str_make_embedded@Base 3.2.0
  rb_str_memsize@Base 3.2.0
  rb_str_modify@Base 3.2.0
  rb_str_modify_expand@Base 3.2.0
@@ -1522,6 +1557,7 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_str_offset@Base 3.2.0
  rb_str_opt_plus@Base 3.2.0
  rb_str_plus@Base 3.2.0
+ rb_str_reembeddable_p@Base 3.2.0
  rb_str_replace@Base 3.2.0
  rb_str_resize@Base 3.2.0
  rb_str_resurrect@Base 3.2.0
@@ -1529,6 +1565,7 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_str_set_len@Base 3.2.0
  rb_str_setter@Base 3.2.0
  rb_str_shared_replace@Base 3.2.0
+ rb_str_size_as_embedded@Base 3.2.0
  rb_str_split@Base 3.2.0
  rb_str_strlen@Base 3.2.0
  rb_str_sublen@Base 3.2.0
@@ -1546,6 +1583,7 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_str_to_str@Base 3.2.0
  rb_str_unlocktmp@Base 3.2.0
  rb_str_update@Base 3.2.0
+ rb_str_update_shared_ary@Base 3.2.0
  rb_str_upto_each@Base 3.2.0
  rb_str_upto_endless_each@Base 3.2.0
  rb_str_vcatf@Base 3.2.0
@@ -1586,8 +1624,6 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  rb_syserr_new_path_in@Base 3.2.0
  rb_syserr_new_str@Base 3.2.0
  rb_syswait@Base 3.2.0
- rb_tainted_str_new@Base 3.2.0
- rb_tainted_str_new_cstr@Base 3.2.0
  rb_thread_add_event_hook2@Base 3.2.0
  rb_thread_add_event_hook@Base 3.2.0
  rb_thread_alone@Base 3.2.0
@@ -1756,7 +1792,6 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  ruby_hexdigits@Base 3.2.0
  ruby_incpush@Base 3.2.0
  ruby_init@Base 3.2.0
- ruby_init_ext@Base 3.2.0
  ruby_init_loadpath@Base 3.2.0
  ruby_init_setproctitle@Base 3.2.0
  ruby_init_stack@Base 3.2.0
@@ -1802,14 +1837,15 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  ruby_unsetenv@Base 3.2.0
  ruby_version@Base 3.2.0
  ruby_vm_at_exit@Base 3.2.0
- ruby_vm_class_serial@Base 3.2.0
  ruby_vm_const_missing_count@Base 3.2.0
+ ruby_vm_constant_cache_invalidations@Base 3.2.0
+ ruby_vm_constant_cache_misses@Base 3.2.0
  ruby_vm_destruct@Base 3.2.0
  ruby_vm_event_enabled_global_flags@Base 3.2.0
  ruby_vm_event_flags@Base 3.2.0
  ruby_vm_event_local_num@Base 3.2.0
- ruby_vm_global_constant_state@Base 3.2.0
  ruby_vm_global_cvar_state@Base 3.2.0
+ ruby_vm_redefined_flag@Base 3.2.0
  ruby_vsnprintf@Base 3.2.0
  ruby_xcalloc@Base 3.2.0
  ruby_xfree@Base 3.2.0
