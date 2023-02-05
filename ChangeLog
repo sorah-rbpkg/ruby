@@ -1,5 +1,254 @@
 -*- coding: utf-8 -*-
 
+commit 168ec2b1e5ad0e4688e963d9de019557c78feed9
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2022-11-24 21:42:08 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2022-11-24 21:42:08 +0900
+
+    Use %printer directive for Bison 3.8 (used release flow)
+
+    This is backport of fa05697e4832fbd67a4f91b9bb362471902faab3
+
+commit ee8dc8a2f3ee7983d18339ea31444a981e63a874
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2022-11-24 20:43:04 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2022-11-24 20:43:04 +0900
+
+    Fix GitHub Actions error
+
+commit 9308e32aa64b3d7da909356c6a225dcc55857bcf
+  Author:     Kazuki Yamaguchi <k@rhe.jp>
+  AuthorDate: 2022-09-08 23:02:44 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-11-24 20:06:00 +0900
+
+    Merge openssl-2.1.4
+
+    The changes can be found at:
+
+      https://github.com/ruby/openssl/compare/v2.1.3...v2.1.4
+
+commit 9eee81bcd0c83594c4c3314b2fec3fc94953322f
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2022-11-24 19:42:05 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2022-11-24 19:42:05 +0900
+
+    Bump version
+
+commit ca07082a76640af6594af2d1941c8a82f55ade4d
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2022-11-24 11:21:03 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2022-11-24 11:21:03 +0900
+
+    * 2022-11-24 [ci skip]
+
+commit fa7fab95b9a2a3d2481ba803c1db31393c940bf7
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2020-04-28 23:36:16 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-11-24 11:20:51 +0900
+
+    Removed unnecessary RLIMIT_AS
+
+    Even without this limit, these assertions almost certainly cause a
+    NoMemoryError by removing the fix in 72ad8595f20.
+
+commit 233634fbdcb1f2f8979603feb8ba9865ab30c823
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-10-20 20:30:28 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-11-24 11:20:51 +0900
+
+    merge revision(s) 4f1e0bfacd93c28bff549e2f3603c3b4942429a3:
+
+            Followed up CVE-2022-39253 for bundler examples
+
+            ---
+             spec/bundler/cache/git_spec.rb           | 3 +++
+             spec/bundler/install/gemfile/git_spec.rb | 9 +++++++++
+             spec/bundler/update/git_spec.rb          | 3 +++
+             3 files changed, 15 insertions(+)
+
+commit 7f1163e9a564f88075ce53389165d9aef9593e66
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2022-11-23 10:43:44 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-11-24 11:20:51 +0900
+
+    Use ubuntu-20.04 instead of latest, because Ruby 2.7 didn't support openssl3 on Ubuntu 22.04
+
+commit 39f6a33e2399d8dfe88ae0a1c5b38843ffea9e71
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-11-22 20:55:17 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-11-24 11:20:51 +0900
+
+    merge revision(s) 36f297e62108072b9377d927321928b994f66a93:
+
+            Use valid tokens as cookie names
+
+            ---
+             spec/ruby/library/cgi/cookie/name_spec.rb  | 12 ++++++------
+             spec/ruby/library/cgi/cookie/parse_spec.rb | 10 +++++-----
+             2 files changed, 11 insertions(+), 11 deletions(-)
+
+commit 25df68ae91ce0f6e8b78aa42e840e785e5e191ed
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-10-20 20:30:06 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-11-24 11:20:51 +0900
+
+    merge revision(s) dae843f6b7502f921a7e66f39e3714a39d860181,86096a91d55f72620e0f8ca8634da5fa342dc35b:
+
+            Bypass git submodule add/update with git config
+             protocol.file.allow=always option.
+
+            Co-authored-by: Nobuyoshi Nakada <nobu@ruby-lang.org>
+            ---
+             test/rubygems/test_gem_source_git.rb | 5 +++++
+             1 file changed, 5 insertions(+)
+
+            [rubygems/rubygems] Use [] instead of double-quotes
+
+            ---
+             test/rubygems/test_gem_source_git.rb | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit f33522baac8320883c0acac226d8fab29c9df400
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2022-10-14 08:28:16 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-11-24 11:20:51 +0900
+
+    Upgrade zlib_version on AppVeyor
+
+    They removed https://zlib.net/zlib1212.zip because
+    https://zlib.net/zlib1213.zip was released :thinking_face:
+
+    Fix CI failures like:
+    https://ci.appveyor.com/project/ruby/ruby/builds/45064876/job/bb9biogolh0u2595
+
+commit 7cf697179dab52b0d024543304f4d3ab5fa5e847
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2022-11-22 13:48:18 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-11-24 11:20:51 +0900
+
+    Merge CGI-0.1.0.2
+
+commit 7b413c1db3e65909c6899e1d3be4d16c3e76149c
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2022-10-01 15:59:05 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2022-10-01 15:59:05 +0900
+
+    * 2022-10-01 [ci skip]
+
+commit 022aefb4500bfb8f6812a5e729d06f3f2fe21cea
+  Author:     Yuta Saito <kateinoigakukun@gmail.com>
+  AuthorDate: 2022-09-24 03:36:04 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-10-01 15:58:54 +0900
+
+    Initialize Objective-C classes before fork() for macOS 13
+
+    Since macOS 13, CFString family API used in
+    `rb_str_append_normalized_ospath` may internally use Objective-C classes
+    (`NSTaggedPointerString` and `NSPlaceholderMutableString`) for small strings.
+
+    On the other hand, Objective-C classes should not be used for the first
+    time in a `fork()`'ed but not `exec()`'ed process. Violations for this rule
+    can result deadlock during class initialization, so Objective-C runtime
+    conservatively crashes on such cases by default.
+
+    Therefore, we need to use CFString API to initialize Objective-C classes
+    used internally *before* `fork()`.
+
+    For more details, see https://bugs.ruby-lang.org/issues/18912
+
+commit 99735a8b296cfda272f8dce6bd07af50cd97034e
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2022-09-17 12:09:34 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-10-01 15:58:54 +0900
+
+    [Bug #19005] dynamic_lookup linker option in external libraries
+
+    The warning against `-undefined dynamic_lookup` is just a warning yet,
+    and many gems seem to pay no attention to warnings.  Until it fails
+    actually, keep it as a migration path, except for standard extension
+    libraries and bundled extension gems.
+
+commit 9188c5dd6d8d8c411ea698fff747643845e92f64
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2022-09-13 23:56:34 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-10-01 15:58:54 +0900
+
+    -undefined dynamic_lookup is obsolete
+
+commit 6b099328af2ae2d04cbfd06fedc36a19cdecd30d
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2022-09-20 18:46:48 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2022-09-20 18:46:48 +0900
+
+    * 2022-09-20 [ci skip]
+
+commit 6ff627e57ee19eeab29ae411f442fa3f6a801a5a
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2022-09-20 17:11:51 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-09-20 18:46:34 +0900
+
+    update ubuntu 18.04 for github actions
+
+commit 13354c02a6a070bd63443397f7dfed5d7c15d2cb
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2022-09-16 19:40:21 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-09-20 18:46:34 +0900
+
+    zlib-1.2.11 is removed at zlib.net
+
+commit 302e366800e491009013288e10a96c4866f9900b
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2022-08-17 00:45:27 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-09-20 18:46:34 +0900
+
+    The tzdata 2022c removed Amsterdam Mean Time
+
+commit 4c7ae840818f995ef776ef99c3ee275d14bd3869
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2022-09-16 18:33:25 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-09-20 18:46:34 +0900
+
+    Use autoreconf -i instead of autoconf
+
+commit a62cfce75f2617d8e85883be1fdfafea50c1b72c
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2022-09-16 15:11:21 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2022-09-16 15:11:21 +0900
+
+    * 2022-09-16 [ci skip]
+
+commit 31bc55dc90aa18222d5ed968e62fea4d46554d8c
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2022-08-29 17:42:49 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2022-09-16 15:11:08 +0900
+
+    Backport https://github.com/ruby/ruby/pull/6193
+
+    Co-authored-by: Yuta Saito <kateinoigakukun@gmail.com>
+
 commit c9c2245c0a25176072e02db9254f0e0c84c805cd
   Author:     NAKAMURA Usaku <usa@ruby-lang.org>
   AuthorDate: 2022-04-12 20:25:48 +0900
@@ -17217,7 +17466,7 @@ commit b809784817649817c3e53fa000f57504446caef9
   Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
   CommitDate: 2019-10-24 19:34:49 +0900
 
-    [ruby/fiddle] Remove taint support (#21)
+    [ruby/fiddle] Remove taint support (https://github.com/ruby/fiddle/pull/21)
 
     Ruby 2.7 deprecates taint and it no longer has an effect.
     The lack of taint support should not cause a problem in
@@ -17230,7 +17479,7 @@ commit ce6caade7c57a505f73086ccd7b33c14f7715f22
   Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
   CommitDate: 2019-10-24 19:34:43 +0900
 
-    [ruby/fiddle] Use ffi_closure_free by default. (#20)
+    [ruby/fiddle] Use ffi_closure_free by default. (https://github.com/ruby/fiddle/pull/20)
 
     * Use ffi_closure_free unconditionally.
 
@@ -17257,7 +17506,7 @@ commit 30d46966a97968d166f2f1440f227c2b52483780
   Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
   CommitDate: 2019-10-24 19:34:36 +0900
 
-    [ruby/fiddle] Use RbConfig::SIZEOF (#19)
+    [ruby/fiddle] Use RbConfig::SIZEOF (https://github.com/ruby/fiddle/pull/19)
 
 
     https://github.com/ruby/fiddle/commit/ea06b28db8
@@ -17278,7 +17527,7 @@ commit 5ebb0d50f6560b35bc03deb79341a115c5f782ee
   Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
   CommitDate: 2019-10-24 19:34:22 +0900
 
-    [ruby/fiddle] Fix a failing test (#13)
+    [ruby/fiddle] Fix a failing test (https://github.com/ruby/fiddle/pull/13)
 
     * Fix a failing test
 
@@ -37019,7 +37268,7 @@ commit f85caf40a69d322bde80a547e4b17568604746ff
   Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
   CommitDate: 2019-08-04 11:55:03 +0900
 
-    [ruby/rexml] Message less confusing error to human (#16)
+    [ruby/rexml] Message less confusing error to human (https://github.com/ruby/rexml/pull/16)
 
     * Message less confusing error to human
 
@@ -37059,7 +37308,7 @@ commit ee8985ef0e35183d606af3a7360cd4713069e9b2
   Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
   CommitDate: 2019-08-04 11:54:50 +0900
 
-    [ruby/rexml] Fix crash with nil XPath variables (#13)
+    [ruby/rexml] Fix crash with nil XPath variables (https://github.com/ruby/rexml/pull/13)
 
     Patch by Alyssa Ross. Thanks!!!
     https://github.com/ruby/rexml/commit/2a53c54f58
@@ -43802,7 +44051,7 @@ commit 8c0edbd79d59789b9543d00322d6bde72f86bfda
   Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
   CommitDate: 2019-07-14 23:07:31 +0900
 
-    [ruby/csv] add options doc :quote_empty (#89)
+    [ruby/csv] add options doc :quote_empty (https://github.com/ruby/csv/pull/89)
 
 
     https://github.com/ruby/csv/commit/5ca8d79f60
@@ -43813,7 +44062,7 @@ commit 75620c804ea47de040016ccf9766c016f2934df2
   Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
   CommitDate: 2019-07-14 23:07:31 +0900
 
-    [ruby/csv] Add options doc: :write_converters, :write_nil_value, :write_empty_value (#87)
+    [ruby/csv] Add options doc: :write_converters, :write_nil_value, :write_empty_value (https://github.com/ruby/csv/pull/87)
 
 
     https://github.com/ruby/csv/commit/5923ee08b7
@@ -43824,7 +44073,7 @@ commit fe40841bfb031d278daea5b05fb13084f887fec5
   Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
   CommitDate: 2019-07-14 23:07:31 +0900
 
-    [ruby/csv] add document of strip (#88)
+    [ruby/csv] add document of strip (https://github.com/ruby/csv/pull/88)
 
     * add document of strip
 
@@ -43862,7 +44111,7 @@ commit 9171f833054cd47842e12fc0fd3cc1df704a9192
   Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
   CommitDate: 2019-07-14 23:07:31 +0900
 
-    [ruby/csv] Refactor range in delete_suffix (#85)
+    [ruby/csv] Refactor range in delete_suffix (https://github.com/ruby/csv/pull/85)
 
 
     https://github.com/ruby/csv/commit/7ff57a50e8
