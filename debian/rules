@@ -89,6 +89,9 @@ configure_options += --with-out-ext=tk
 configure_options += --with-out-ext=win32ole
 configure_options += --with-out-ext=win32api
 
+# YJIT
+configure_options += --enable-yjit
+
 # Some tests rely on $HOME
 export HOME := $(shell mktemp -d)
 export LANG := C.UTF-8
