@@ -11,7 +11,8 @@ RSpec.describe "real world edgecases", :realworld => true do
         source = Bundler::Source::Rubygems::Remote.new(Bundler::URI("https://rubygems.org"))
         fetcher = Bundler::Fetcher.new(source)
         index = fetcher.specs([#{name.dump}], nil)
-        index.search(Gem::Dependency.new(#{name.dump}, #{requirement.dump})).last
+        requirement = Gem::Requirement.create(#{requirement.dump})
+        index.search(#{name.dump}).select {|spec| requirement.satisfied_by?(spec.version) }.last
       end
       if rubygem.nil?
         raise "Could not find #{name} (#{requirement}) on rubygems.org!\n" \
@@ -218,7 +219,7 @@ RSpec.describe "real world edgecases", :realworld => true do
   end
 
   it "doesn't hang on big gemfile" do
-    skip "Only for ruby 2.7.3" if RUBY_VERSION != "2.7.3" || RUBY_PLATFORM =~ /darwin/
+    skip "Only for ruby 2.7.3" if RUBY_VERSION != "2.7.3" || RUBY_PLATFORM.include?("darwin")
 
     gemfile <<~G
       # frozen_string_literal: true
@@ -330,7 +331,7 @@ RSpec.describe "real world edgecases", :realworld => true do
   end
 
   it "doesn't hang on tricky gemfile" do
-    skip "Only for ruby 2.7.3" if RUBY_VERSION != "2.7.3" || RUBY_PLATFORM =~ /darwin/
+    skip "Only for ruby 2.7.3" if RUBY_VERSION != "2.7.3" || RUBY_PLATFORM.include?("darwin")
 
     gemfile <<~G
       source 'https://rubygems.org'
@@ -356,7 +357,7 @@ RSpec.describe "real world edgecases", :realworld => true do
   end
 
   it "doesn't hang on nix gemfile" do
-    skip "Only for ruby 3.0.1" if RUBY_VERSION != "3.0.1" || RUBY_PLATFORM =~ /darwin/
+    skip "Only for ruby 3.0.1" if RUBY_VERSION != "3.0.1" || RUBY_PLATFORM.include?("darwin")
 
     gemfile <<~G
       source "https://rubygems.org" do

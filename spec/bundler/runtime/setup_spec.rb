@@ -340,19 +340,6 @@ RSpec.describe "Bundler.setup" do
         expect(out).to eq("WIN")
       end
 
-      it "version_requirement is now deprecated in rubygems 1.4.0+ when gem is missing" do
-        run <<-R
-          begin
-            gem "activesupport"
-            puts "FAIL"
-          rescue LoadError
-            puts "WIN"
-          end
-        R
-
-        expect(err).to be_empty
-      end
-
       it "replaces #gem but raises when the version is wrong" do
         run <<-R
           begin
@@ -364,19 +351,6 @@ RSpec.describe "Bundler.setup" do
         R
 
         expect(out).to eq("WIN")
-      end
-
-      it "version_requirement is now deprecated in rubygems 1.4.0+ when the version is wrong" do
-        run <<-R
-          begin
-            gem "rack", "1.0.0"
-            puts "FAIL"
-          rescue LoadError
-            puts "WIN"
-          end
-        R
-
-        expect(err).to be_empty
       end
     end
 
@@ -396,7 +370,7 @@ RSpec.describe "Bundler.setup" do
 
       context "when the ruby stdlib is a substring of Gem.path" do
         it "does not reject the stdlib from $LOAD_PATH" do
-          substring = "/" + $LOAD_PATH.find {|p| p =~ /vendor_ruby/ }.split("/")[2]
+          substring = "/" + $LOAD_PATH.find {|p| p.include?("vendor_ruby") }.split("/")[2]
           run "puts 'worked!'", :env => { "GEM_PATH" => substring }
           expect(out).to eq("worked!")
         end
@@ -891,7 +865,7 @@ end
 
       gemspec_content = File.binread(gemspec).
                 sub("Bundler::VERSION", %("#{Bundler::VERSION}")).
-                lines.reject {|line| line =~ %r{lib/bundler/version} }.join
+                lines.reject {|line| line.include?("lib/bundler/version") }.join
 
       File.open(File.join(specifications_dir, "#{full_name}.gemspec"), "wb") do |f|
         f.write(gemspec_content)
@@ -1330,17 +1304,14 @@ end
 
     describe "default gem activation" do
       let(:exemptions) do
-        exempts = if Gem.rubygems_version >= Gem::Version.new("2.7")
-          %w[did_you_mean]
-        else
-          %w[io-console openssl]
-        end << "bundler"
+        exempts = %w[did_you_mean bundler]
         exempts << "uri" if Gem.ruby_version >= Gem::Version.new("2.7")
         exempts << "pathname" if Gem.ruby_version >= Gem::Version.new("3.0")
         exempts << "set" unless Gem.rubygems_version >= Gem::Version.new("3.2.6")
         exempts << "tsort" unless Gem.rubygems_version >= Gem::Version.new("3.2.31")
         exempts << "error_highlight" # added in Ruby 3.1 as a default gem
         exempts << "ruby2_keywords" # added in Ruby 3.1 as a default gem
+        exempts << "syntax_suggest" # added in Ruby 3.2 as a default gem
         exempts
       end
 

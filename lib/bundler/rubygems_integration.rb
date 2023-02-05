@@ -272,11 +272,7 @@ module Bundler
 
           e = Gem::LoadError.new(message)
           e.name = dep.name
-          if e.respond_to?(:requirement=)
-            e.requirement = dep.requirement
-          elsif e.respond_to?(:version_requirement=)
-            e.version_requirement = dep.requirement
-          end
+          e.requirement = dep.requirement
           raise e
         end
 
@@ -506,10 +502,6 @@ module Bundler
     def build(spec, skip_validation = false)
       require "rubygems/package"
       Gem::Package.build(spec, skip_validation)
-    end
-
-    def repository_subdirectories
-      Gem::REPOSITORY_SUBDIRECTORIES
     end
 
     def path_separator

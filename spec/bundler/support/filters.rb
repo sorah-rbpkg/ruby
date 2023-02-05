@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "sudo"
-
 class RequirementChecker < Proc
   def self.against(present)
     provided = Gem::Version.new(present)
@@ -21,10 +19,9 @@ class RequirementChecker < Proc
 end
 
 RSpec.configure do |config|
-  config.filter_run_excluding :sudo => true
   config.filter_run_excluding :realworld => true
 
-  git_version = Bundler::Source::Git::GitProxy.new(nil, nil, nil).version
+  git_version = Bundler::Source::Git::GitProxy.new(nil, nil).version
 
   config.filter_run_excluding :git => RequirementChecker.against(git_version)
   config.filter_run_excluding :bundler => RequirementChecker.against(Bundler::VERSION.split(".")[0])
