@@ -18,7 +18,7 @@ Gem::Specification.new do |s|
   s.licenses = ["MIT".freeze]
   s.rdoc_options = ["--main".freeze, "README.rdoc".freeze]
   s.required_ruby_version = Gem::Requirement.new("~> 2.2".freeze)
-  s.rubygems_version = "3.1.2".freeze
+  s.rubygems_version = "3.3.5".freeze
   s.summary = "minitest provides a complete suite of testing facilities supporting TDD, BDD, mocking, and benchmarking".freeze
 
   if s.respond_to? :specification_version then
