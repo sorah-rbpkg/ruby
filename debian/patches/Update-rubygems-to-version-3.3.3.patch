@@ -1,6 +1,6 @@
 From: Sorah Fukumori <her@sorah.jp>
 Date: Tue, 26 Apr 2022 11:05:37 +0900
-Subject: Roll rubygems-3.3.3 for openssl-3.0.0
+Subject: Update rubygems to version 3.3.3
 
 ---
  lib/rubygems.rb                                    | 109 ++-
