@@ -1,5 +1,869 @@
 -*- coding: utf-8 -*-
 
+commit 31819e82c88c6f8ecfaeb162519bfa26a14b21fd
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-02-08 13:02:20 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-02-08 13:02:20 +0900
+
+    v3.2.1
+
+commit 88e0862267cec6764ab9888f7522a40f2996e2c7
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-02-08 01:31:22 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-02-08 01:31:22 +0900
+
+    Remove wrong file
+
+commit 3decf7df6f678ff6386c5c1888642d76f49dc147
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-02-07 15:15:17 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-02-07 15:15:17 +0900
+
+    merge revision(s) 3a7367ccc319499127ead147e5a08f769e44208e: [Backport #19403]
+
+            mkconfig: Map `includedir` only for system ruby
+
+            Only when installing to the system path on macOS, prepend '$(SDKROOT)'
+            and remap `includedir`.
+            Fix https://github.com/rbenv/ruby-build/discussions/2123
+            ---
+             test/mkmf/test_config.rb | 4 ++--
+             test/test_rbconfig.rb    | 9 ---------
+             tool/mkconfig.rb         | 4 +++-
+             3 files changed, 5 insertions(+), 12 deletions(-)
+
+commit 7246cd0081ec845e1407484fca10439e7868880b
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-02-07 13:46:36 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-02-07 13:46:36 +0900
+
+    merge revision(s) fad48fefe19cc282a5b209944244a3713359b47f: [Backport #19399]
+
+            [Bug #19399] Parsing invalid heredoc inside block parameter
+
+            Although this is of course invalid as Ruby code, allow to just parse
+            and tokenize.
+            ---
+             ext/ripper/lib/ripper/lexer.rb |  2 +-
+             test/ripper/test_lexer.rb      | 12 ++++++++++++
+             2 files changed, 13 insertions(+), 1 deletion(-)
+
+commit 3426ebd0489654f951a8b92efaf5e72b9f43efab
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-02-06 16:41:23 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-02-06 16:41:23 +0900
+
+    merge revision(s) c6f84e918943a0bf8db6fee556fc53180d257510: [Backport #19398]
+
+            [Bug #19398] Memory leak in WeakMap
+
+            There's a memory leak in ObjectSpace::WeakMap due to not freeing
+            the `struct weakmap`. It can be seen in the following script:
+
+            ```
+            100.times do
+              10000.times do
+                ObjectSpace::WeakMap.new
+              end
+
+              # Output the Resident Set Size (memory usage, in KB) of the current Ruby process
+              puts `ps -o rss= -p #{$$}`
+            end
+            ```
+            ---
+             gc.c                      | 1 +
+             test/ruby/test_weakmap.rb | 9 +++++++++
+             2 files changed, 10 insertions(+)
+
+commit 3a88589399f7f1059be245f766809c49790ad939
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-02-06 14:00:47 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-02-06 14:00:47 +0900
+
+    merge revision(s) 3b83b265f11965582d4b9b439eff8a501792ab68: [Backport #19404]
+
+            YJIT: Crash with rb_bug() when panicking
+
+            Helps with getting good bug reports in the wild. Intended to be
+            backported to the 3.2.x series.
+            ---
+             yjit/bindgen/src/main.rs       |  3 +++
+             yjit/src/cruby_bindings.inc.rs |  1 +
+             yjit/src/yjit.rs               | 29 +++++++++++++++++++++++++++--
+             3 files changed, 31 insertions(+), 2 deletions(-)
+
+commit 535d863f34e6c36a2378683e7c2d3b7369e3d076
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-02-03 14:13:02 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-02-03 14:13:09 +0900
+
+    merge revision(s) 188688a53e7708d25ab80e14d05e70ffcf792e13: [Backport #19385]
+
+            [PATCH 1/4] YJIT: Move CodegenGlobals::freed_pages into an Rc
+
+            This allows for supplying a freed_pages vec in Rust tests. We need it so we
+            can test scenarios that occur after code GC.
+            ---
+             yjit/src/asm/mod.rs | 48 +++++++++++++++++++++++++++++++++------------
+             yjit/src/codegen.rs | 16 ++++-----------
+             2 files changed, 39 insertions(+), 25 deletions(-)
+
+            Subject: [PATCH 2/4] YJIT: other_cb is None in tests
+
+            Since the other cb is in CodegenGlobals, and we want Rust tests to be
+            self-contained.
+            ---
+             yjit/src/asm/mod.rs | 1 +
+             1 file changed, 1 insertion(+)
+
+            Subject: [PATCH 3/4] YJIT: ARM64: Move functions out of arm64_emit()
+
+            ---
+             yjit/src/backend/arm64/mod.rs | 180 +++++++++++++++++-----------------
+             1 file changed, 90 insertions(+), 90 deletions(-)
+
+            Subject: [PATCH 4/4] YJIT: ARM64: Fix long jumps to labels
+
+            Previously, with Code GC, YJIT panicked while trying to emit a B.cond
+            instruction with an offset that is not encodable in 19 bits. This only
+            happens when the code in an assembler instance straddles two pages.
+
+            To fix this, when we detect that a jump to a label can land on a
+            different page, we switch to a fresh new page and regenerate all the
+            code in the assembler there. We still assume that no one assembler has
+            so much code that it wouldn't fit inside a fresh new page.
+
+            [Bug #19385]
+            ---
+             yjit/src/backend/arm64/mod.rs | 65 ++++++++++++++++++++++++++++++++---
+             1 file changed, 60 insertions(+), 5 deletions(-)
+
+commit f4e6e78410136100ef5f285136a66df8d6004a61
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-02-01 12:05:19 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2023-02-01 12:05:19 +0900
+
+    Merge RubyGems 3.4.6 and Bundler 2.4.6 (#7214)
+
+    Merge RubyGems-3.4.6 and Bundler-2.4.6
+
+commit 40e0b1e123503805c16a2a9aafae0a5c302c20d1
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-31 23:46:50 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-31 23:46:50 +0900
+
+    merge revision(s) 9726736006b3f74635fd8af05814fe0908e2cf84: [Backport #19327]
+
+            Set STR_SHARED_ROOT flag on root of string
+
+            ---
+             string.c | 1 +
+             1 file changed, 1 insertion(+)
+
+commit 22bfad0ec9968be4c99c8c68f2c809b833069ea7
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-31 18:27:44 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-31 18:27:44 +0900
+
+    Remove "Miscellaneous checks" from CI
+
+    It is expected to use on master branch
+
+commit ca75332f46c39804e06cd37c2608cbdef0aebf05
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-31 15:28:01 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-31 15:28:01 +0900
+
+    merge revision(s) eccfc978fd6f65332eb70c9a46fbb4d5110bbe0a: [Backport #19379]
+
+            Fix parsing of regexps that toggle extended mode on/off inside regexp
+
+            This was broken in ec3542229b29ec93062e9d90e877ea29d3c19472. That commit
+            didn't handle cases where extended mode was turned on/off inside the
+            regexp.  There are two ways to turn extended mode on/off:
+
+            ```
+            /(?-x:#y)#z
+            /x =~ '#y'
+
+            /(?-x)#y(?x)#z
+            /x =~ '#y'
+            ```
+
+            These can be nested inside the same regexp:
+
+            ```
+            /(?-x:(?x)#x
+            (?-x)#y)#z
+            /x =~ '#y'
+            ```
+
+            As you can probably imagine, this makes handling these regexps
+            somewhat complex. Due to the nesting inside portions of regexps,
+            the unassign_nonascii function needs to be recursive.  In
+            recursive mode, it needs to track both opening and closing
+            parentheses, similar to how it already tracked opening and
+            closing brackets for character classes.
+
+            When scanning the regexp and coming to `(?` not followed by `#`,
+            scan for options, and use `x` and `i` to determine whether to
+            turn on or off extended mode.  For `:`, indicting only the
+            current regexp section should have the extended mode
+            switched, recurse with the extended mode set or unset. For `)`,
+            indicating the remainder of the regexp (or current regexp portion
+            if already recursing) should turn extended mode on or off, just
+            change the extended mode flag and keep scanning.
+
+            While testing this, I noticed that `a`, `d`, and `u` are accepted
+            as options, in addition to `i`, `m`, and `x`, but I can't see
+            where those options are documented.  I'm not sure whether or not
+            handling  `a`, `d`, and `u` as options is a bug.
+
+            Fixes [Bug #19379]
+            ---
+             re.c                     | 153 +++++++++++++++++++++++++++++++++++++----------
+             test/ruby/test_regexp.rb |  56 +++++++++++++++++
+             2 files changed, 176 insertions(+), 33 deletions(-)
+
+commit 5a2b28909ece2e1310250180f097bfcb7b0203dc
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-31 13:39:13 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-31 13:39:13 +0900
+
+    merge revision(s) 3f54d09a5b8b6e4fd734abc8911e170d5967b5b0: [Backport #19390]
+
+            bignum.c: rb_int_parse_cstr handle `0` strings
+
+            [Bug #19390]
+
+            We shouldn't check the string length when skipping zeros, as the
+            string might only contains zero characters, resulting in an empty string.
+            ---
+             bignum.c               | 1 -
+             test/ruby/test_time.rb | 4 ++++
+             2 files changed, 4 insertions(+), 1 deletion(-)
+
+commit 1689d8bb4843f92c1805e4a4bdd94049569198f4
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-31 11:08:50 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-31 11:08:50 +0900
+
+    merge revision(s) 21dced8b01823a991829b66ffdc8ffc635965c76: [Backport #19389]
+
+            [ruby/stringio] [Bug #19389] Fix chomping with longer separator
+
+            https://github.com/ruby/stringio/commit/eb322a9716
+            ---
+             ext/stringio/stringio.c        | 5 +++--
+             test/stringio/test_stringio.rb | 2 ++
+             2 files changed, 5 insertions(+), 2 deletions(-)
+
+commit a22eca82314ae36668d8c1a591ffbbfa8f93147c
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-01-25 23:32:01 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2023-01-25 23:32:01 +0900
+
+    Merge the latest stable versions of RubyGems and Bundler to Ruby 3.2.x (#7061)
+
+    [Bug #19350]
+
+    * Merge RubyGems-3.4.2 and Bundler-2.4.2
+
+    * Merge RubyGems-3.4.3 and Bundler-2.4.3
+
+    * Generate parser-text.rb of racc when sync it
+
+    * Ignore LICENSE files of libraries vendored in rubygems [ci skip]
+
+    * Adjust spec of bundler like as `sync_default_gems` [ci skip]
+
+    * Fixed a typo
+
+    * Removed vendored LICENSE file.
+
+    * Update LEGAL sections for pub_grub
+
+    * Merge RubyGems-3.4.4 and Bundler-2.4.4
+
+    * Merge RubyGems-3.4.5 and Bundler-2.4.5
+
+    Co-authored-by: Nobuyoshi Nakada <nobu@ruby-lang.org>
+
+commit fee5b8f263211faef10ed9f3e43c1e8b34548bbd
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-25 16:34:24 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-25 16:34:24 +0900
+
+    merge revision(s) 2c93c554019ebdc394d3c51c6d925620d3005f84,f5ea43a2e61789357e9c4b374b4bc6756abeae17: [Backport #19360]
+
+            Ensure main file has default coverage if required. (#7169)
+
+            * Extract common code for coverage setup.
+            ---
+             iseq.c | 13 +++++++++++--
+             1 file changed, 11 insertions(+), 2 deletions(-)
+
+            More coverage tests & specs. (#7171)
+
+            * Add spec for eval and line coverage.
+
+            * Add test for main file coverage.
+            ---
+             spec/ruby/library/coverage/start_spec.rb | 8 +++++++-
+             test/coverage/autostart.rb               | 2 ++
+             test/coverage/main.rb                    | 1 +
+             test/coverage/test_coverage.rb           | 7 +++++++
+             4 files changed, 17 insertions(+), 1 deletion(-)
+             create mode 100644 test/coverage/autostart.rb
+             create mode 100644 test/coverage/main.rb
+
+commit 4110137fcfd805de03a8f5569c3d6926959b9363
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-25 13:26:25 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-25 13:26:25 +0900
+
+    merge revision(s) 6f3aff3961a4c5ce87e05096a1a9dcf1055b7647: [Backport #19289]
+
+            [Bug #19289] Retain `ruby_abi_version` function
+
+            A few extension libraries, to hide all symbols except for necessary to
+            load, hardcode the symbols to be exported in symbol list files for
+            linker without even checking by `have_func`.  As a workaround for such
+            libraries, retain `ruby_abi_version` symbol always even in released
+            versions for now.
+            ---
+             include/ruby/internal/abi.h | 7 +++++--
+             1 file changed, 5 insertions(+), 2 deletions(-)
+
+commit 0090cb82b0bf477c29a659e34cf4427a3b1ceb27
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-25 10:23:38 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-25 10:23:38 +0900
+
+    merge revision(s) df6b72b8ff7af16a56fa48f3b4abb1d8850f4d1c: [Backport #19348]
+
+            Avoid checking interrupt when loading iseq
+            MIME-Version: 1.0
+            Content-Type: text/plain; charset=UTF-8
+            Content-Transfer-Encoding: 8bit
+
+            The interrupt check will unintentionally release the VM lock when loading an iseq.
+            And this will cause issues with the `debug` gem's
+            [`ObjectSpace.each_iseq` method](https://github.com/ruby/debug/blob/0fcfc28acae33ec1c08068fb7c33703cfa681fa7/ext/debug/iseq_collector.c#L61-L67),
+            which wraps iseqs with a wrapper and exposes their internal states when they're actually not ready to be used.
+
+            And when that happens, errors like this would occur and kill the `debug` gem's thread:
+
+            ```
+             DEBUGGER: ReaderThreadError: uninitialized InstructionSequence
+            ┃ DEBUGGER: Disconnected.
+            ┃ ["/opt/rubies/ruby-3.2.0/lib/ruby/gems/3.2.0/gems/debug-1.7.1/lib/debug/breakpoint.rb:247:in `absolute_path'",
+            ┃  "/opt/rubies/ruby-3.2.0/lib/ruby/gems/3.2.0/gems/debug-1.7.1/lib/debug/breakpoint.rb:247:in `block in iterate_iseq'",
+            ┃  "/opt/rubies/ruby-3.2.0/lib/ruby/gems/3.2.0/gems/debug-1.7.1/lib/debug/breakpoint.rb:246:in `each_iseq'",
+            ...
+            ```
+
+            A way to reproduce the issue is to satisfy these conditions at the same time:
+
+            1. `debug` gem calling `ObjectSpace.each_iseq` (e.g. [activating a `LineBreakpoint`](https://github.com/ruby/debug/blob/0fcfc28acae33ec1c08068fb7c33703cfa681fa7/lib/debug/breakpoint.rb#L246)).
+            2. A large amount of iseq being loaded from another thread (possibly through the `bootsnap` gem).
+            3. 1 and 2 iterating through the same iseq(s) at the same time.
+
+            Because this issue requires external dependencies and a rather complicated timing setup to reproduce, I wasn't able to write a test case for it.
+            But here's some pseudo code to help reproduce it:
+
+            ```rb
+            require "debug/session"
+
+            Thread.new do
+              100.times do
+                ObjectSpace.each_iseq do |iseq|
+                  iseq.absolute_path
+                end
+              end
+            end
+
+            sleep 0.1
+
+            load_a_bunch_of_iseq
+            possibly_through_bootsnap
+            ```
+
+            [Bug #19348]
+
+            Co-authored-by: Peter Zhu <peter@peterzhu.ca>
+            ---
+             compile.c       |  2 +-
+             vm_core.h       |  1 +
+             vm_insnhelper.c | 11 +++++++++++
+             3 files changed, 13 insertions(+), 1 deletion(-)
+
+commit a20061cb1aa34b73bdbdfa7cba6cfc575a05ca38
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-24 17:41:17 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-24 17:41:35 +0900
+
+    merge revision(s) 72eb33066fa9e7dacb7470cd140b219abe37667e: [Backport #19320]
+
+            Fix off-by-one error in rb_vm_each_stack_value
+
+            Applying the following patch to test/erb/test_erb.rb and running that
+            file will cause Ruby to crash on my machine (macOS 13.1 on M1 Pro):
+
+            ```
+            --- a/test/erb/test_erb.rb
+            +++ b/test/erb/test_erb.rb
+            @@ -7,6 +7,12 @@
+             class TestERB < Test::Unit::TestCase
+               class MyError < RuntimeError ; end
+
+            +  def setup
+            +    GC.auto_compact = true
+            +    GC.stress = true
+            +    GC.verify_compaction_references(expand_heap: true, toward: :empty)
+            +  end
+            +
+            ```
+
+            It crashes with the following log:
+
+            ```
+            /Users/peter/src/ruby/lib/erb/compiler.rb:276: [BUG] Segmentation fault at 0x00000001083a8690
+            ...
+            -- C level backtrace information -------------------------------------------
+            ...
+            /Users/peter/src/ruby/build/ruby(rb_vm_each_stack_value+0xa8) [0x104cc3a44] ../vm.c:2737
+            /Users/peter/src/ruby/build/ruby(rb_vm_each_stack_value+0xa8) [0x104cc3a44] ../vm.c:2737
+            /Users/peter/src/ruby/build/ruby(check_stack_for_moved+0x2c) [0x104b272a4] ../gc.c:5512
+            /Users/peter/src/ruby/build/ruby(gc_compact_finish) ../gc.c:5534
+            /Users/peter/src/ruby/build/ruby(gc_sweep_compact) ../gc.c:8653
+            /Users/peter/src/ruby/build/ruby(gc_sweep) ../gc.c:6196
+            /Users/peter/src/ruby/build/ruby(has_sweeping_pages+0x0) [0x104b19c54] ../gc.c:9568
+            /Users/peter/src/ruby/build/ruby(gc_rest) ../gc.c:9570
+            ```
+
+            This crash happens because it's reading the VALUE at sp. But since
+            sp points to the top of the stack, it's reading the VALUE above the
+            top of the stack, which is causing this segfault.
+
+            Fixes [Bug #19320]
+            ---
+             vm.c | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit c0df0a85dec77a09308caddb1e1efd4d38fbf7b8
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-20 17:01:47 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-20 17:01:47 +0900
+
+    merge revision(s) ed6fbb79e19bf401db0e85447fee955fd10a25c7: [Backport #19339]
+
+            Fix crash when defining ivars on special constants
+
+            [Bug #19339]
+            ---
+             test/ruby/test_variable.rb | 6 ++++++
+             vm_insnhelper.c            | 5 +++++
+             2 files changed, 11 insertions(+)
+
+commit 373e62248c9dceb660e95f1cf05fa2a4a469cd64
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-20 12:24:24 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-20 12:24:24 +0900
+
+    merge revision(s) f7b72462aa27716370c6bea1f2c240983aca9a55: [Backport #19356]
+
+            String#bytesplice should return self
+
+            In Feature #19314, we concluded that the return value of String#bytesplice
+            should be changed from the source string to the receiver, because the source
+            string is useless and confusing when extra arguments are added.
+
+            This change should be included in Ruby 3.2.1.
+            ---
+             string.c                 | 4 ++--
+             test/ruby/test_string.rb | 2 +-
+             2 files changed, 3 insertions(+), 3 deletions(-)
+
+commit 6a8fcb50210f8414d76968298576e39b9fa82562
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-19 21:52:47 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-19 21:52:47 +0900
+
+    merge revision(s) 3be2acfafd3b3c6168e2266c7c6561d143d7ae5c: [Backport #19327]
+
+            Fix re-embedding of strings during compaction
+
+            The reference updating code for strings is not re-embedding strings
+            because the code is incorrectly wrapped inside of a
+            `if (STR_SHARED_P(obj))` clause. Shared strings can't be re-embedded
+            so this ends up being a no-op. This means that strings can be moved to a
+            large size pool during compaction, but won't be re-embedded, which would
+            waste the space.
+            ---
+             gc.c                         | 16 +++++++++-------
+             string.c                     | 12 ++++++++----
+             test/ruby/test_gc_compact.rb |  8 ++++----
+             3 files changed, 21 insertions(+), 15 deletions(-)
+
+commit 98abe4a0be09e0571104f4ca1b5655e353910aa0
+  Author:     Peter Zhu <peter@peterzhu.ca>
+  AuthorDate: 2022-12-31 00:31:50 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-19 15:50:58 +0900
+
+    Fix test when Ruby is verbose
+
+    The test added in 90a80eb0 fails if Ruby is verbose, it outputs the
+    following line to stderr:
+
+        RUBY_GC_HEAP_INIT_SLOTS=100 (default value: 10000)
+
+commit 686b38f83e70b3e1796092c71dd0b7dc2206b118
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-19 11:59:43 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-19 11:59:43 +0900
+
+    merge revision(s) d8ef0a98c670449b20436947f5ebbd327ed5ab0d: [Backport #19319]
+
+            [Bug #19319] Fix crash in rb_str_casemap
+
+            The following code crashes on my machine:
+
+            ```
+            GC.stress = true
+
+            str = "testing testing testing"
+
+            puts str.capitalize
+            ```
+
+            We need to ensure that the object `buffer_anchor` remains on the stack
+            so it does not get GC'd.
+            ---
+             string.c | 2 ++
+             1 file changed, 2 insertions(+)
+
+commit 1a2447ac9925e7794a7c5aa07960ad4de08e6aca
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-19 11:05:29 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-19 11:05:29 +0900
+
+    merge revision(s) 979dd02e2f0a70f3f30d47c6115780d8fac6147e: [Backport #19262]
+
+            Check if the argument is Thread::Backtrace::Location object
+
+            [Bug #19262]
+            ---
+             ast.c                 | 5 +++++
+             test/ruby/test_ast.rb | 6 ++++++
+             2 files changed, 11 insertions(+)
+
+commit 08ae7f64dc52c2b61e451d6e79ebdae73d482677
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-19 09:31:47 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-19 09:31:47 +0900
+
+    merge revision(s) 273dca3aed7989120d57f80c789733d4bc870ffe: [Backport #19248]
+
+            Fix undefined behavior in shape.c
+
+            Under strict aliasing, writing to the memory location of a different
+            type is not allowed and will result in undefined behavior. This was
+            happening in shape.c due to `rb_id_table_lookup` writing to the memory
+            location of `VALUE *` that was casted from a `rb_shape_t **`.
+
+            This was causing test failures when compiled with LTO.
+
+            Fixes [Bug #19248]
+
+            Co-Authored-By: Alan Wu <alanwu@ruby-lang.org>
+            ---
+             shape.c | 13 +++++++++++--
+             1 file changed, 11 insertions(+), 2 deletions(-)
+
+commit d7fb4629b4058eb86be03760e6b9f1f272e44147
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-18 20:15:28 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-18 20:15:28 +0900
+
+    merge revision(s) 837ef8911c638c3e2bdb6af710de7c1fac7b5f90: [Backport #19305]
+
+            Fix crash in TracePoint c_call for removed method
+
+            trace_arg->id is the ID of the original method of an aliased method. If
+            the original method is removed, then the lookup will fail. We should use
+            trace_arg->called_id instead, which is the ID of the aliased method.
+
+            Fixes [Bug #19305]
+            ---
+             test/ruby/test_settracefunc.rb | 23 +++++++++++++++++++++++
+             vm_trace.c                     |  2 +-
+             2 files changed, 24 insertions(+), 1 deletion(-)
+
+commit 44a3043d1182acf3147935d9c1564028b5538417
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-18 20:14:43 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-18 20:14:43 +0900
+
+    merge revision(s) 2bbf63dd867fe3d349b1758805ad4421f2d772ab: [Backport #19298]
+
+            Remove lib/mjit/instruction.rb
+
+            This was accidentally re-introduced in f6620037ba1477d2c337d7b511f094d6d0fbb69c.
+
+            [Bug #19298]
+            ---
+             lib/mjit/instruction.rb | 2162 -----------------------------------------------
+             1 file changed, 2162 deletions(-)
+             delete mode 100644 lib/mjit/instruction.rb
+
+commit 1fb5eb5740d4c4f1fc34a4a50bc0482eac27b545
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-18 18:56:51 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-18 18:56:51 +0900
+
+    merge revision(s) aeddc19340c7116d48fac3080553fbb823857d16: [Backport #19316]
+
+            YJIT: Save PC and SP before calling leaf builtins (#7090)
+
+            Previously, we did not update `cfp->sp` before calling the C function of
+            ISEQs marked with `Primitive.attr! "inline"` (leaf builtins). This
+            caused the GC to miss temporary values on the stack in case the function
+            allocates and triggers a GC run. Right now, there is only a few leaf
+            builtins in numeric.rb on Integer methods such as `Integer#~`. Since
+            these methods only allocate when operating on big numbers, we missed
+            this issue.
+
+            Fix by saving PC and SP before calling the functions -- our usual
+            protocol for calling C functions that may allocate on the GC heap.
+
+            [Bug #19316]
+            ---
+             test/ruby/test_yjit.rb | 16 ++++++++++++++++
+             yjit/src/codegen.rs    |  4 ++++
+             2 files changed, 20 insertions(+)
+
+commit f7e9b79f815e08e0a29fff11f77466f4ffb92520
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-18 18:56:09 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-18 18:56:09 +0900
+
+    merge revision(s) 4959e01932cf6c4d3e5e90d3e0b4fa780f754fa6: [Backport #19271]
+
+            common.mk: Do not invoke outdate-bundled-gems by default
+
+            If baseruby is available (and its version is different from one being
+            built) when compiling ruby, tool/outdate-bundled-gems.rb (which is
+            invoked by `make install`) wrongly deletes debug.so and rbs_extension.so
+            in .bundle/extension/*.
+
+            This leads to a broken installation of ruby which lacks the libraries,
+            which may make rubygems show the following warnings (in some additional
+            complex conditions):
+
+            ```
+            $ irb
+            Ignoring debug-1.7.1 because its extensions are not built. Try: gem pristine debug --version 1.7.1
+            Ignoring rbs-2.8.2 because its extensions are not built. Try: gem pristine rbs --version 2.8.2
+            irb(main):001:0>
+            ```
+
+            According to some committers, tool/outdate-bundled-gems.rb is introduced
+            for fixing a build issue, but the detail is not recorded. The issue
+            seems to occur only when debug gem or rbs gem is updated, so it is
+            difficult to fix the script so soon.
+
+            Tentatively, this change stops invoking the script by default.
+            This should be backported to ruby_3_2.
+
+            Fixes [Bug #19271]
+            ---
+             common.mk | 1 -
+             1 file changed, 1 deletion(-)
+
+commit 97c32b49e2fe4de8b57ce05146e63b2aa64c7a44
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-18 17:18:44 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-18 17:18:44 +0900
+
+    merge revision(s) 43ff0c2c488c80aaf83b486d45bcd4a92ebe3848: [Backport #19299]
+
+            YJIT: Fix `yield` into block with >=30 locals on ARM
+
+            It's a register spill issue. Fix by moving the Qnil fill snippet to
+            after registers are released.
+
+            [Bug #19299]
+            ---
+             test/ruby/test_yjit.rb | 14 ++++++++++++++
+             yjit/src/codegen.rs    | 29 ++++++++++++++---------------
+             2 files changed, 28 insertions(+), 15 deletions(-)
+
+commit 52ea5ea9906c3a96c60a68e01b303672602a6832
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-18 17:17:27 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-18 17:17:27 +0900
+
+    merge revision(s) 291a4098cf649c027cb50c16b872455f26ad1dfb,5be0d42d2c4dc765230c76738289560f9ee37f09: [Backport #19296]
+
+            Add missing assertion
+
+            ---
+             test/ruby/test_time.rb | 3 +++
+             1 file changed, 3 insertions(+)
+
+            [Bug #19296] Precheck bits of time components
+
+            ---
+             test/ruby/test_time.rb | 15 +++++++++++++++
+             time.c                 | 14 ++++++++------
+             2 files changed, 23 insertions(+), 6 deletions(-)
+
+commit 057eff7663a0a4bc95a4799336a2bc14ca2480f0
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-18 17:08:23 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-18 17:08:23 +0900
+
+    merge revision(s) eab7f4623fbf0488e828b75843d70c8e02dc8aa5: [Backport #19336]
+
+            Return 0 if there is no CFP on the EC yet
+
+            StackProf uses a signal handler to call `rb_profile_frames`.  Signals
+            are delivered to threads randomly, and can be delivered after the thread
+            has been created but before the CFP has been established on the EC.
+
+            This commit returns early if there is no CFP to use.
+
+            Here is some info from the core files we are seeing.  Here you can see
+            the CFP on the current EC is 0x0:
+
+            ```
+            (gdb) p ruby_current_ec
+            $20 = (struct rb_execution_context_struct *) 0x7f3481301b50
+            (gdb) p ruby_current_ec->cfp
+            $21 = (rb_control_frame_t *) 0x0
+            ```
+
+            Here is where VM_FRAME_CFRAME_P gets a 0x0 CFP:
+
+            ```
+            6  VM_FRAME_CFRAME_P (cfp=0x0) at vm_core.h:1350
+            7  VM_FRAME_RUBYFRAME_P (cfp=<optimized out>) at vm_core.h:1350
+            8  rb_profile_frames (start=0, limit=2048, buff=0x7f3493809590, lines=0x7f349380d590) at vm_backtrace.c:1587
+            ```
+
+            Down the stack we can see this is happening after thread creation:
+
+            ```
+            19 0x00007f3495bf9420 in <signal handler called> () at /lib/x86_64-linux-gnu/libpthread.so.0
+            20 0x000055d531574e55 in thread_start_func_2 (th=<optimized out>, stack_start=<optimized out>) at thread.c:676
+            21 0x000055d531575b31 in thread_start_func_1 (th_ptr=<optimized out>) at thread_pthread.c:1170
+            22 0x00007f3495bed609 in start_thread (arg=<optimized out>) at pthread_create.c:477
+            23 0x00007f3495b12133 in clone () at ../sysdeps/unix/sysv/linux/x86_64/clone.S:95
+            ```
+            ---
+             vm_backtrace.c | 9 +++++++++
+             1 file changed, 9 insertions(+)
+
+commit 89cd61890fe78e0491708f87a5df678b03fda8a3
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-17 11:21:00 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-17 11:21:00 +0900
+
+    merge revision(s) 542e984d82fa25098eb15398d716d907acc52b93: [Backport #19292]
+
+            [Bug #19292] Re-initialize tm when wday or yday is not set
+
+            ---
+             test/ruby/test_time.rb |  3 ++-
+             time.c                 | 31 ++++++++++++++++++++++---------
+             2 files changed, 24 insertions(+), 10 deletions(-)
+
+commit 49cf0896a2934547c0764aadaec021fb37a2e96f
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-01-17 11:20:40 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-01-17 11:20:40 +0900
+
+    merge revision(s) 90a80eb076429978e720e11fb17a3cbb96de3454: [Backport #19284]
+
+            Fix integer underflow when using HEAP_INIT_SLOTS
+
+            There is an integer underflow when the environment variable
+            RUBY_GC_HEAP_INIT_SLOTS is less than the number of slots currently
+            in the Ruby heap.
+
+            [Bug #19284]
+            ---
+             gc.c                 | 25 +++++++++++++------------
+             test/ruby/test_gc.rb |  5 +++++
+             2 files changed, 18 insertions(+), 12 deletions(-)
+
+commit a7d467a792c644a7260d6560ea2002fdb8ff6de3
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-12-29 15:59:52 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-12-29 15:59:52 +0900
+
+    merge revision(s) b726d60c986bf951d13e7a2ab5f5e58f58657b03: [Backport #19273]
+
+            Fix [Bug 19273], set correct value to `outer_repeat` on `OP_REPEAT`
+             (#7035)
+
+            ---
+             regexec.c                | 2 +-
+             test/ruby/test_regexp.rb | 5 +++++
+             2 files changed, 6 insertions(+), 1 deletion(-)
+
+commit 5c551ac59f9620901394a46dffda5a1833b9c4b0
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2022-12-27 14:56:51 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2022-12-27 14:56:51 +0900
+
+    merge revision(s) fc03ba50f1ff6c30f7c654f564b4dffbed0844ef: [Backport #19263]
+
+            MJIT: Fix JIT code for multiple values in a single case
+
+            [Bug #19263]
+            ---
+             lib/ruby_vm/mjit/compiler.rb |  2 +-
+             test/ruby/test_mjit.rb       | 10 ++++++++++
+             2 files changed, 11 insertions(+), 1 deletion(-)
+
 commit a528908271c678360d2d8ca232c178e7cdd340b4
   Author:     NARUSE, Yui <naruse@airemix.jp>
   AuthorDate: 2022-12-25 15:55:25 +0900
