@@ -4455,19 +4455,6 @@ fn gen_push_frame(
     };
     asm.store(Opnd::mem(64, sp, SIZEOF_VALUE_I32 * -2), specval);
 
-    // Arm requires another register to load the immediate value of Qnil before storing it.
-    // So doing this after releasing the register for specval to avoid register spill.
-    let num_locals = frame.local_size;
-    if num_locals > 0 {
-        asm.comment("initialize locals");
-
-        // Initialize local variables to Qnil
-        for i in 0..num_locals {
-            let offs = (SIZEOF_VALUE as i32) * (i - num_locals - 3);
-            asm.store(Opnd::mem(64, sp, offs), Qnil.into());
-        }
-    }
-
     // Write env flags at sp[-1]
     // sp[-1] = frame_type;
     asm.store(Opnd::mem(64, sp, SIZEOF_VALUE_I32 * -1), frame.frame_type.into());
@@ -4504,6 +4491,20 @@ fn gen_push_frame(
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), iseq);
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SELF), frame.recv);
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
+
+    // This Qnil fill snippet potentially requires 2 more registers on Arm, one for Qnil and
+    // another for calculating the address in case there are a lot of local variables. So doing
+    // this after releasing the register for specval and the receiver to avoid register spill.
+    let num_locals = frame.local_size;
+    if num_locals > 0 {
+        asm.comment("initialize locals");
+
+        // Initialize local variables to Qnil
+        for i in 0..num_locals {
+            let offs = (SIZEOF_VALUE as i32) * (i - num_locals - 3);
+            asm.store(Opnd::mem(64, sp, offs), Qnil.into());
+        }
+    }
 
     if set_sp_cfp {
         // Saving SP before calculating ep avoids a dependency on a register
@@ -4777,8 +4778,6 @@ fn gen_return_branch(
         }
     }
 }
-
-
 
 /// Pushes arguments from an array to the stack that are passed with a splat (i.e. *args)
 /// It optimistically compiles to a static size that is the exact number of arguments
@@ -5181,6 +5180,10 @@ fn gen_send_iseq(
         let builtin_argc = unsafe { (*builtin_info).argc };
         if builtin_argc + 1 < (C_ARG_OPNDS.len() as i32) {
             asm.comment("inlined leaf builtin");
+
+            // Save the PC and SP because the callee may allocate
+            // e.g. Integer#abs on a bignum
+            jit_prepare_routine_call(jit, ctx, asm);
 
             // Call the builtin func (ec, recv, arg1, arg2, ...)
             let mut args = vec![EC];
@@ -7173,9 +7176,6 @@ pub struct CodegenGlobals {
     /// Page indexes for outlined code that are not associated to any ISEQ.
     ocb_pages: Vec<usize>,
 
-    /// Freed page indexes. None if code GC has not been used.
-    freed_pages: Option<Vec<usize>>,
-
     /// How many times code GC has been executed.
     code_gc_count: usize,
 }
@@ -7229,8 +7229,9 @@ impl CodegenGlobals {
             );
             let mem_block = Rc::new(RefCell::new(mem_block));
 
-            let cb = CodeBlock::new(mem_block.clone(), false);
-            let ocb = OutlinedCb::wrap(CodeBlock::new(mem_block, true));
+            let freed_pages = Rc::new(None);
+            let cb = CodeBlock::new(mem_block.clone(), false, freed_pages.clone());
+            let ocb = OutlinedCb::wrap(CodeBlock::new(mem_block, true, freed_pages));
 
             assert_eq!(cb.page_size() % page_size.as_usize(), 0, "code page size is not page-aligned");
 
@@ -7272,7 +7273,6 @@ impl CodegenGlobals {
             inline_frozen_bytes: 0,
             method_codegen_table: HashMap::new(),
             ocb_pages,
-            freed_pages: None,
             code_gc_count: 0,
         };
 
@@ -7420,12 +7420,7 @@ impl CodegenGlobals {
         &CodegenGlobals::get_instance().ocb_pages
     }
 
-    pub fn get_freed_pages() -> &'static mut Option<Vec<usize>> {
-        &mut CodegenGlobals::get_instance().freed_pages
-    }
-
-    pub fn set_freed_pages(freed_pages: Vec<usize>) {
-        CodegenGlobals::get_instance().freed_pages = Some(freed_pages);
+    pub fn incr_code_gc_count() {
         CodegenGlobals::get_instance().code_gc_count += 1;
     }
 
