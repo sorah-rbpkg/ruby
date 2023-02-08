@@ -312,14 +312,18 @@ rb_str_make_embedded(VALUE str)
     RUBY_ASSERT(rb_str_reembeddable_p(str));
     RUBY_ASSERT(!STR_EMBED_P(str));
 
-    char *buf = RSTRING_PTR(str);
-    long len = RSTRING_LEN(str);
+    char *buf = RSTRING(str)->as.heap.ptr;
+    long len = RSTRING(str)->as.heap.len;
 
     STR_SET_EMBED(str);
     STR_SET_EMBED_LEN(str, len);
 
-    memmove(RSTRING_PTR(str), buf, len);
-    ruby_xfree(buf);
+    if (len > 0) {
+        memcpy(RSTRING_PTR(str), buf, len);
+        ruby_xfree(buf);
+    }
+
+    TERM_FILL(RSTRING(str)->as.embed.ary + len, TERM_LEN(str));
 }
 
 void
@@ -1783,6 +1787,7 @@ str_duplicate_setup(VALUE klass, VALUE str, VALUE dup)
         else {
             RSTRING(dup)->as.heap.len = RSTRING_LEN(str);
             RSTRING(dup)->as.heap.ptr = RSTRING_PTR(str);
+            FL_SET(root, STR_SHARED_ROOT);
             RB_OBJ_WRITE(dup, &RSTRING(dup)->as.heap.aux.shared, root);
             flags |= RSTRING_NOEMBED | STR_SHARED;
         }
@@ -6258,7 +6263,7 @@ rb_str_byteslice(int argc, VALUE *argv, VALUE str)
  *    bytesplice(index, length, str) -> string
  *    bytesplice(range, str)         -> string
  *
- *  Replaces some or all of the content of +self+ with +str+, and returns +str+.
+ *  Replaces some or all of the content of +self+ with +str+, and returns +self+.
  *  The portion of the string affected is determined using
  *  the same criteria as String#byteslice, except that +length+ cannot be omitted.
  *  If the replacement string is not the same length as the text it is replacing,
@@ -6320,7 +6325,7 @@ rb_str_bytesplice(int argc, VALUE *argv, VALUE str)
     cr = ENC_CODERANGE_AND(ENC_CODERANGE(str), ENC_CODERANGE(val));
     if (cr != ENC_CODERANGE_BROKEN)
         ENC_CODERANGE_SET(str, cr);
-    return val;
+    return str;
 }
 
 /*
@@ -7328,6 +7333,8 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     current_buffer = DATA_PTR(buffer_anchor);
     DATA_PTR(buffer_anchor) = 0;
     mapping_buffer_free(current_buffer);
+
+    RB_GC_GUARD(buffer_anchor);
 
     /* TODO: check about string terminator character */
     str_enc_copy(target, source);

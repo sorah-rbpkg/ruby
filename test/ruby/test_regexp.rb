@@ -144,6 +144,62 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(SyntaxError) {eval "/# \\users/"}
   end
 
+  def test_nonextended_section_of_extended_regexp_bug_19379
+    assert_separately([], <<-'RUBY')
+      re = /(?-x:#)/x
+      assert_match(re, '#')
+      assert_not_match(re, '-')
+
+      re = /(?xi:#
+      y)/
+      assert_match(re, 'Y')
+      assert_not_match(re, '-')
+
+      re = /(?mix:#
+      y)/
+      assert_match(re, 'Y')
+      assert_not_match(re, '-')
+
+      re = /(?x-im:#
+      y)/i
+      assert_match(re, 'y')
+      assert_not_match(re, 'Y')
+
+      re = /(?-imx:(?xim:#
+      y))/x
+      assert_match(re, 'y')
+      assert_not_match(re, '-')
+
+      re = /(?x)#
+      y/
+      assert_match(re, 'y')
+      assert_not_match(re, 'Y')
+
+      re = /(?mx-i)#
+      y/i
+      assert_match(re, 'y')
+      assert_not_match(re, 'Y')
+
+      re = /(?-imx:(?xim:#
+      (?-x)y#))/x
+      assert_match(re, 'Y#')
+      assert_not_match(re, '-#')
+
+      re = /(?imx:#
+      (?-xim:#(?im)#(?x)#
+      )#
+      (?x)#
+      y)/
+      assert_match(re, '###Y')
+      assert_not_match(re, '###-')
+
+      re = %r{#c-\w+/comment/[\w-]+}
+      re = %r{https?://[^/]+#{re}}x
+      assert_match(re, 'http://foo#c-x/comment/bar')
+      assert_not_match(re, 'http://foo#cx/comment/bar')
+    RUBY
+  end
+
   def test_union
     assert_equal :ok, begin
       Regexp.union(
@@ -1719,6 +1775,11 @@ class TestRegexp < Test::Unit::TestCase
 
       assert_nil(/^a*b?a*$/ =~ "a" * 1000000 + "x")
     end;
+  end
+
+  def test_bug_19273 # [Bug #19273]
+    pattern = /(?:(?:-?b)|(?:-?(?:1_?(?:0_?)*)?0))(?::(?:(?:-?b)|(?:-?(?:1_?(?:0_?)*)?0))){0,3}/
+    assert_equal("10:0:0".match(pattern)[0], "10:0:0")
   end
 
   def test_linear_time_p
