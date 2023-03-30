@@ -713,6 +713,11 @@ class TestRegexp < Test::Unit::TestCase
       assert_equal(//n, Regexp.new("", Regexp::NOENCODING, timeout: 1))
 
       assert_equal(arg_encoding_none, Regexp.new("", Regexp::NOENCODING).options)
+
+      assert_nil(Regexp.new("").timeout)
+      assert_equal(1.0, Regexp.new("", timeout: 1.0).timeout)
+      assert_nil(Regexp.compile("").timeout)
+      assert_equal(1.0, Regexp.compile("", timeout: 1.0).timeout)
     end
 
     assert_deprecated_warning(/3\.3/) do
@@ -1780,6 +1785,21 @@ class TestRegexp < Test::Unit::TestCase
   def test_bug_19273 # [Bug #19273]
     pattern = /(?:(?:-?b)|(?:-?(?:1_?(?:0_?)*)?0))(?::(?:(?:-?b)|(?:-?(?:1_?(?:0_?)*)?0))){0,3}/
     assert_equal("10:0:0".match(pattern)[0], "10:0:0")
+  end
+
+  def test_bug_19467
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+      timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
+    begin;
+      Regexp.timeout = timeout
+
+      assert_nil(/\A.*a.*z\z/ =~ "a" * 1000000 + "y")
+    end;
+  end
+
+  def test_bug_19476 # [Bug #19476]
+    assert_equal("123456789".match(/(?:x?\dx?){2,10}/)[0], "123456789")
+    assert_equal("123456789".match(/(?:x?\dx?){2,}/)[0], "123456789")
   end
 
   def test_linear_time_p

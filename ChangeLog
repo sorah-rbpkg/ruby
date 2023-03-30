@@ -1,5 +1,549 @@
 -*- coding: utf-8 -*-
 
+commit e51014f9c05aa65cbf203442d37fef7c12390015
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-03-30 20:06:29 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-30 20:06:29 +0900
+
+    v3.2.2p53
+
+commit 936b705d7839f78d88a1dde5ba4ca309848dd792
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-03-30 19:55:41 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-30 20:05:11 +0900
+
+    v3.2.1p53
+
+commit 34d5d10517825a51bea6bcb13ead1484c7182b42
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-03-30 19:54:12 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2023-03-30 19:54:12 +0900
+
+    Merge Time-0.2.2 (#7623)
+
+commit 250ff4ff45f1257b395260fe42d914cbb0720a41
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-03-29 00:47:10 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-29 00:48:11 +0900
+
+    gem related automation must run only on master
+
+commit 00041131e25699136179a7de06794527eaaabfd6
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2023-02-22 22:14:26 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-28 22:47:23 +0900
+
+    Skip failing test on MSWin
+
+commit 18d3223563cc74b07e53e79c44d45dc50a6004c7
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-03-28 21:01:44 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-28 21:04:02 +0900
+
+    Use merge_group
+
+commit c3c461c4ff1b998ac49ed1a3ad411d2f0a9123b8
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-03-28 20:36:47 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2023-03-28 20:36:47 +0900
+
+    Merge RubyGems-3.4.10 and Bundler-2.4.10 (#7479)
+
+    * Merge RubyGems-3.4.7 and Bundler-2.4.7
+
+    * Merge RubyGems-3.4.8 and Bundler-2.4.8
+
+    * Skip failing test on MSWin
+
+    * Merge RubyGems-3.4.9 and Bundler-2.4.9
+
+    * Merge RubyGems-3.4.10 and Bundler-2.4.10
+
+    ---------
+
+    Co-authored-by: Nobuyoshi Nakada <nobu@ruby-lang.org>
+
+commit f8c775cb413724a45bb5641de94f4f9210044116
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-03-28 20:36:36 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2023-03-28 20:36:36 +0900
+
+    Use URI-0.12.1 for Ruby 3.2 (#7603)
+
+    * Merge URI-0.12.1
+
+    * Use URI-0.12.1
+
+    * Update core_assertions for using assert_linear_performance
+
+commit 582aadb3905eac131591f4c7884f441c036c49fb
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-03-28 17:02:53 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-28 17:02:53 +0900
+
+    merge revision(s) 2f916812a9b818b432ee7c299e021ec62d4727fb,ac458f6bc3c520c9f23364c85bfb033acda907a6:
+
+            Skip test_europe_lisbon on macOS
+
+            until we figure out why it's failing.
+            ---
+             test/ruby/test_time_tz.rb | 1 +
+             1 file changed, 1 insertion(+)
+
+            Historical timezones of Lisbon in tzdata are unstable
+
+            ---
+             test/ruby/test_time_tz.rb | 3 +--
+             1 file changed, 1 insertion(+), 2 deletions(-)
+
+commit fb4ffce0dd8cae3b7d0141d3b1ea3f0ab710a45a
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-03-28 14:25:13 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-28 14:25:13 +0900
+
+    merge revision(s) 680bd9027f8cb7977bbc216609db2f4e3cf199a8: [Backport #19471]
+
+            [Bug #19471] `Regexp.compile` should handle keyword arguments
+
+            As well as `Regexp.new`, it should pass keyword arguments to the
+            `Regexp#initialize` method.
+            ---
+             re.c                     | 2 +-
+             test/ruby/test_regexp.rb | 5 +++++
+             2 files changed, 6 insertions(+), 1 deletion(-)
+
+commit b93e2223300bc54dfa387ffb9fa3d48ecbe670f0
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-03-23 12:04:46 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-23 12:04:46 +0900
+
+    merge revision(s) e7342e76dfd26237c604e42f9a59a1eaa578c94e: [Backport #19485]
+
+            [Bug #19485] [DOC] Mention tabs in indentation of heredoc identifier
+
+            Co-Authored-By: sawa (Tsuyoshi Sawada) <sawadatsuyoshi@gmail.com>
+            ---
+             doc/syntax/literals.rdoc | 6 ++++++
+             1 file changed, 6 insertions(+)
+
+commit 400ccb16eefe4e21c4e3eacab4fd0f208fc5e151
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-03-23 08:11:23 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-23 08:11:23 +0900
+
+    merge revision(s) cb22d78354e201ca74eba68a8b4edefb593e6754: [Backport #19536]
+
+            Fix frozen status loss when moving objects
+
+            [Bug #19536]
+
+            When objects are moved between size pools, their frozen status is lost
+            in the shape. This will cause the frozen check to be bypassed when there
+            is an inline cache. For example, the following script should raise a
+            FrozenError, but doesn't on Ruby 3.2 and master.
+
+                class A
+                  def add_ivars
+                    @a = @b = @c = @d = 1
+                  end
+
+                  def set_a
+                    @a = 10
+                  end
+                end
+
+                a = A.new
+                a.add_ivars
+                a.freeze
+
+                b = A.new
+                b.add_ivars
+                b.set_a # Set the inline cache in set_a
+
+                GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+                a.set_a
+            ---
+             shape.c                      |  2 +-
+             test/ruby/test_gc_compact.rb | 28 ++++++++++++++++++++++++++++
+             2 files changed, 29 insertions(+), 1 deletion(-)
+
+commit ad6fe84dfa6935bd6e2c3ef3ee36bed4e8627d0b
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-03-22 10:34:12 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-22 10:34:12 +0900
+
+    merge revision(s) dddc542e9b61b292d80a96d0d0efbbf58719e3be: [Backport #19476]
+
+            [Bug #19476]: correct cache index computation for repetition (#7457)
+
+            ---
+             regexec.c                | 4 ++--
+             test/ruby/test_regexp.rb | 5 +++++
+             2 files changed, 7 insertions(+), 2 deletions(-)
+
+commit 4b4087dce318570f9f9c05e14900325b499fb632
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-03-20 15:06:34 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-20 15:06:34 +0900
+
+    merge revision(s) e22c4e8877677ff90805e4a4dcbdef80f4220136: [Backport #19467]
+
+            [Bug #19467] correct cache points and counting failure on
+             `OP_ANYCHAR_STAR_PEEK_NEXT` (#7454)
+
+            ---
+             regexec.c                | 20 ++++++++++++++++----
+             test/ruby/test_regexp.rb | 10 ++++++++++
+             2 files changed, 26 insertions(+), 4 deletions(-)
+
+commit 0555303464f3595223ec8093146041f96595865d
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-03-18 15:02:04 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-18 15:02:04 +0900
+
+    merge revision(s) 96d1acfdf6c6b42f2029f44d5b5920961d6efa92: [Backport #19161]
+
+            [Bug #19161] Check for TLS usability
+
+            On all platforms using GCC, even other than darwin.
+            ---
+             configure.ac | 13 +++++++------
+             1 file changed, 7 insertions(+), 6 deletions(-)
+
+commit f3abe5ba645839fb2a686aee18d3466b59256af0
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-03-17 13:40:04 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-17 13:40:04 +0900
+
+    merge revision(s) 0700d0fd1c77b4fddf803dea3c10be654df600ff,62c2082f1f726cb90d8c332fbedbecf41d5d82ec: [Backport #19469]
+
+            Fix indentation in vm_setivar_default
+
+            ---
+             vm_insnhelper.c | 6 +++---
+             1 file changed, 3 insertions(+), 3 deletions(-)
+
+            [Bug #19469] Fix crash when resizing generic iv list
+
+            The following script can sometimes trigger a crash:
+
+            ```ruby
+            GC.stress = true
+
+            class Array
+              def foo(bool)
+                if bool
+                  @a = 1
+                  @b = 2
+                  @c = 1
+                else
+                  @c = 1
+                end
+              end
+            end
+
+            obj = []
+            obj.foo(true)
+
+            obj2 = []
+            obj2.foo(false)
+
+            obj3 = []
+            obj3.foo(true)
+            ```
+
+            This is because vm_setivar_default calls rb_ensure_generic_iv_list_size
+            to resize the iv list. However, the call to gen_ivtbl_resize reallocs
+            the iv list, and then inserts into the generic iv table. If the
+            st_insert triggers a GC then the old iv list will be read during
+            marking, causing a use-after-free bug.
+
+            Co-Authored-By: Jemma Issroff <jemmaissroff@gmail.com>
+            ---
+             internal/variable.h |  2 +-
+             variable.c          | 23 ++++++++++++++++++-----
+             vm_insnhelper.c     |  4 ++--
+             3 files changed, 21 insertions(+), 8 deletions(-)
+
+commit b309c246ee70926d593d3857e1625202e2d0f67b
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-03-17 10:56:18 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-17 10:56:18 +0900
+
+    merge revision(s) d78ae78fd76e556e281a743c75bea4c0bb81ed8c: [Backport #19468]
+
+            rb_str_modify_expand: clear the string coderange
+
+            [Bug #19468]
+
+            b0b9f7201acab05c2a3ad92c3043a1f01df3e17f errornously stopped
+            clearing the coderange.
+
+            Since `rb_str_modify` clears it, `rb_str_modify_expand`
+            should too.
+            ---
+             string.c | 1 +
+             1 file changed, 1 insertion(+)
+
+commit b73a07359758a9034996752e981e09ddaffe8d87
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-03-15 16:36:32 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-15 16:36:32 +0900
+
+    merge revision(s) 0eb634ae73cb327ede833b72492f912792a4a9d5: [Backport #19464]
+
+            YJIT: Detect and reject `send(:alias_for_send, :foo)`
+
+            Previously, YJIT failed to put the stack into the correct shape when
+            `BasicObject#send` calls an alias method for the send method itself.
+            This can manifest as strange `NoMethodError`s in the final non-send
+            receiver, as [seen][1] with the kt-paperclip gem. I also found a case
+            where it makes YJIT fail the stack size assertion while compiling
+            `leave`.
+
+            YJIT's `BasicObject#__send__` implementation already rejects sends to
+            `send`, but didn't detect sends to aliases of `send`. Adjust the
+            detection and reject these cases.
+
+            Fixes [Bug #19464]
+
+            [1]: https://github.com/Shopify/yjit/issues/306
+            ---
+             test/ruby/test_yjit.rb | 20 ++++++++++++++++++++
+             yjit/src/codegen.rs    | 25 ++++++++++---------------
+             2 files changed, 30 insertions(+), 15 deletions(-)
+
+commit db28f7003f7d49cfa13871c38d10c1967282ca6b
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-03-09 09:35:39 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-09 09:35:39 +0900
+
+    merge revision(s) 3b567eb491e460e00a66fdea8054eeb083b5dafd: [Backport #19459]
+
+            [Bug #19459] Remove unnecessary always-true checks (#7362)
+
+            `length` is a required argument for `IO::Buffer#read` and
+            `IO::Buffer#write` methods, and `argc` is already checked with
+            `rb_check_arity`.  Also fix the call-seq of `IO::Buffer#read`.
+            ---
+             io_buffer.c | 24 +++++++-----------------
+             1 file changed, 7 insertions(+), 17 deletions(-)
+
+commit 4e4a4e42b284d9309a7e51c97058093539e7a843
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-03-08 14:46:30 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-08 14:46:30 +0900
+
+    merge revision(s) d2520b7b76759118071a16e6bca22726a5de9fb4: [Backport #19439]
+
+            Marshal.load: restore instance variables on Regexp
+
+            [Bug #19439]
+
+            The instance variables were restore on the Regexp source,
+            not the regexp itself.
+
+            Unfortunately we have a bit of a chicken and egg problem.
+
+            The source holds the encoding, and the encoding need to be set on
+            the source to be able to instantiate the Regexp.
+
+            So the instance variables have to be read on the `source`.
+            To correct this we transfert the instance variables after
+            instantiating the Regexp.
+
+            The only way to avoid this would be to read the instance variable
+            twice and rewind.
+            ---
+             marshal.c                             | 20 ++++++++++++++++++--
+             spec/ruby/core/marshal/shared/load.rb | 11 +++++++++++
+             2 files changed, 29 insertions(+), 2 deletions(-)
+
+commit 59eb18037ff92839be48fb6c46ff0acc179b4f4c
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-03-08 12:02:22 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-08 12:02:22 +0900
+
+    merge revision(s) dd28c55a7cd6780dad637b4d6a20507fbfc6af4a: [Backport #19445]
+
+            [Bug#19445] Fix keyword splat in enumerator
+
+            Extracted arguments do not have keyword hash to splat.
+            ---
+             numeric.c                 | 2 +-
+             test/ruby/test_numeric.rb | 3 +++
+             2 files changed, 4 insertions(+), 1 deletion(-)
+
+commit 4d75035e1762a23d38c5192b30bb47f40b752bee
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-03-07 19:48:32 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-07 19:48:32 +0900
+
+    merge revision(s) c178926fbe879045fa711444a1fd9e906af23e3b,a4b7ec12298c78392797e5ba7704076550e4f100: [Backport #19444]
+
+            YJIT: jit_prepare_routine_call() for String#+@ missing
+
+            We saw SEGVs due to this when running with StackProf, which needs a
+            correct PC for RUBY_INTERNAL_EVENT_NEWOBJ, the same event used for
+            ObjectSpace allocation tracing.
+
+            [Bug #19444]
+            ---
+             test/ruby/test_yjit.rb | 27 +++++++++++++++++++++++++++
+             yjit/src/codegen.rs    |  5 ++++-
+             2 files changed, 31 insertions(+), 1 deletion(-)
+
+            YJIT: Fix false assumption that String#+@ => ::String
+
+            Could return a subclass.
+
+            [Bug #19444]
+            ---
+             test/ruby/test_yjit.rb | 17 +++++++++++++++++
+             yjit/src/codegen.rs    | 10 +++++++---
+             2 files changed, 24 insertions(+), 3 deletions(-)
+
+commit f1cde05d99898f491c8e302ae74029468fdb6eb9
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-03-07 10:11:43 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-07 10:11:43 +0900
+
+    merge revision(s) 86de48e9f69b665ba9ffb5bdc5a181a3adb1a7b8: [Backport #19419]
+
+            Remove ibf_dumper's WB_PROTECTED status
+
+            It doesn't have the right write barriers in place. For example, there is
+
+                rb_mark_set(dump->global_buffer.obj_table);
+
+            in the mark function, but there is no corresponding write barrier when
+            adding to the table in the
+            `ibf_dump_object() -> ibf_table_find_or_insert() -> st_insert()` code path.
+
+            To insert write barrier correctly, we need to store the T_STRUCT VALUE
+            inside `struct ibf_dump`. Instead of doing that, let's just demote it
+            to WB unproected for correctness. These dumper object are ephemeral so
+            there is not a huge benefit for having them WB protected.
+
+            Users of the bootsnap gem ran into crashes due to this issue:
+            https://github.com/Shopify/bootsnap/issues/436
+
+            Fixes [Bug #19419]
+            ---
+             compile.c | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit f93c7b9f58966fd04496bfeb2538fb1ff41f788e
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-03-04 15:39:47 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-04 15:39:47 +0900
+
+    merge revision(s) b78f871d838c168789648738e5c67b071beb8a19,ecd0cdaf820af789f355f1a18c31d6adfe8aad94: [Backport #19400]
+
+            YJIT: Use the system page size when the code page size is too small
+             (#7267)
+
+            Previously on ARM64 Linux systems that use 64 KiB pages
+            (`CONFIG_ARM64_64K_PAGES=y`), YJIT was panicking on boot due to a failed
+            assertion.
+
+            The assertion was making sure that code GC can free the last code page
+            that YJIT manages without freeing unrelated memory. YJIT prefers picking
+            16 KiB as the granularity at which to free code memory, but when the
+            system can only free at 64 KiB granularity, that is not possible.
+
+            The fix is to use the system page size as the code page size when the
+            system page size is 64 KiB. Continue to use 16 KiB as the code page size
+            on common systems that use 16/4 KiB pages.
+
+            Add asserts to code_gc() and free_page() about code GC's assumptions.
+
+            Fixes [Bug #19400]
+            ---
+             yjit/src/asm/mod.rs    | 78 ++++++++++++++++++++++++++++++++------------------
+             yjit/src/codegen.rs    |  2 --
+             yjit/src/virtualmem.rs | 13 +++++++++
+             3 files changed, 63 insertions(+), 30 deletions(-)
+
+            YJIT: Fix assertion for partially mapped last pages (#7337)
+
+            Follows up [Bug #19400]
+            ---
+             test/ruby/test_yjit.rb | 19 +++++++++++++++++++
+             yjit/src/asm/mod.rs    |  2 +-
+             yjit/src/virtualmem.rs | 18 +++++++++++++-----
+             3 files changed, 33 insertions(+), 6 deletions(-)
+
+commit 53f6173cfc085a7422b4a76c85e6c35969209327
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2023-03-02 09:28:58 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2023-03-02 09:29:38 +0900
+
+    merge revision(s) 8ce2fb9bbbaea14737c84385b1573f743a30f773,3a0f6ce1d31eefd8af01b50f3632a64d64e8f8c1: [Backport #19415]
+
+            Only emit circular dependency warning for owned thread shields [Bug
+             #19415]
+
+            If multiple threads attemps to load the same file concurrently
+            it's not a circular dependency issue.
+
+            So we check that the existing ThreadShield is owner by the current
+            fiber before warning about circular dependencies.
+            ---
+             internal/thread.h                                     |  1 +
+             load.c                                                |  3 ++-
+             spec/ruby/core/kernel/shared/require.rb               | 11 +++++++++++
+             spec/ruby/fixtures/code/concurrent_require_fixture.rb |  4 ++++
+             test/ruby/test_require.rb                             |  3 ---
+             thread.c                                              | 11 +++++++++++
+             6 files changed, 29 insertions(+), 4 deletions(-)
+             create mode 100644 spec/ruby/fixtures/code/concurrent_require_fixture.rb
+
+            Use Thread.pass until thread.stop? to wait for thread to block
+
+            [Bug #19415]
+
+            It should be more reliable
+            ---
+             spec/ruby/fixtures/code/concurrent_require_fixture.rb | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 65ab2c1ef23bd4a02120a27c371dce12ea9024d4
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-02-22 19:00:00 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2023-02-22 19:00:00 +0900
+
+    Backport [Bug #19158] for Ruby 3.2 (#7356)
+
+    Backport https://github.com/ruby/ruby/pull/7321
+
 commit 31819e82c88c6f8ecfaeb162519bfa26a14b21fd
   Author:     NARUSE, Yui <naruse@airemix.jp>
   AuthorDate: 2023-02-08 13:02:20 +0900
