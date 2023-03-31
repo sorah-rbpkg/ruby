@@ -1,5 +1,835 @@
 -*- coding: utf-8 -*-
 
+commit 957bb7cb81995f26c671afce0ee50a5c660e540e
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-03-29 13:28:25 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-30 19:53:51 +0900
+
+    Merge Time-0.2.2
+
+commit 535426828fe57e041d1f07dd317905f0efd12712
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-30 18:19:33 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-30 18:19:33 +0900
+
+    bump patchlevel
+
+commit bfbf43b9e7f62ea411ca94c5f208b09b67c141b2
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2023-03-29 15:27:21 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2023-03-29 15:27:21 +0900
+
+    * 2023-03-29 [ci skip]
+
+commit 66ad6e533e968cb6a8f54674b1c3a3fd0a316893
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-03-28 18:00:13 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-29 15:27:07 +0900
+
+    Added assert_linear_performance for URI tests
+
+commit 8db69f684b425bf65be3ac13a3d415be0e5dc5df
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-03-28 16:56:56 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-29 15:27:07 +0900
+
+    Merge URI-0.10.2 for bundler
+
+commit 8ce4ab146498879b65e22f1be951b25eebb79300
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-03-28 16:50:53 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-29 15:27:07 +0900
+
+    Merge URI-0.12.1
+
+commit d9d95540e0f4a580b9bc58afac229162138926e6
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-27 20:20:28 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-27 20:20:28 +0900
+
+    merge revision(s) 2f916812a9b818b432ee7c299e021ec62d4727fb,ac458f6bc3c520c9f23364c85bfb033acda907a6:
+
+            Skip test_europe_lisbon on macOS
+
+            until we figure out why it's failing.
+            ---
+             test/ruby/test_time_tz.rb | 1 +
+             1 file changed, 1 insertion(+)
+
+            Historical timezones of Lisbon in tzdata are unstable
+
+            ---
+             test/ruby/test_time_tz.rb | 3 +--
+             1 file changed, 1 insertion(+), 2 deletions(-)
+
+commit da27583cf364c0d69c085db4abf358c334a8eca1
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-02-07 16:22:16 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-26 14:22:38 +0900
+
+    Merge URI-0.12.0
+
+commit 19af12ff195aba64bdca7a83f564f2c0e46061c0
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-26 13:12:36 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-26 13:12:36 +0900
+
+    merge revision(s) e7342e76dfd26237c604e42f9a59a1eaa578c94e: [Backport #19485]
+
+            [Bug #19485] [DOC] Mention tabs in indentation of heredoc identifier
+
+            Co-Authored-By: sawa (Tsuyoshi Sawada) <sawadatsuyoshi@gmail.com>
+            ---
+             doc/syntax/literals.rdoc | 6 ++++++
+             1 file changed, 6 insertions(+)
+
+commit e66b7917d79d87121d9ee7b3d3048319e9faefb8
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-25 16:06:44 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-25 16:06:44 +0900
+
+    merge revision(s) 195e32977f181c8af9233a12cfc2c98e0f7957f6:
+
+            Skip test_udp_server on s390x RHEL 7.1
+
+            It seems like it never succeeds on this CI.
+            ---
+             test/socket/test_socket.rb | 4 ++++
+             1 file changed, 4 insertions(+)
+
+commit c8ca169d68519f6193ddd98960d5e1e699c74ad2
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-25 16:04:53 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-25 16:04:53 +0900
+
+    merge revision(s) 8d1109c03bacc952b6218af2e4ae9b74c9855273:
+
+            Added assertion values for Amazon Linux 2023
+
+            ---
+             spec/ruby/core/file/utime_spec.rb | 8 +++++---
+             1 file changed, 5 insertions(+), 3 deletions(-)
+
+commit cd4a997e53a02e5a8b24e38a10ba5525c176980e
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-25 15:03:14 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-25 15:03:14 +0900
+
+    merge revision(s) 548086b34e3dd125edabf5dc1e46b891fad3ea9c,3dc8cde70078ccb38f5f4b0818ad5eecded01bd5,e0cf80d666d4b5df3229f030a16d10d21323508e: [Backport #19529]
+
+            ObjectSpace::WeakMap: fix compaction support
+
+            [Bug #19529]
+
+            `rb_gc_update_tbl_refs` can't be used on `w->obj2wmap` because it's
+            not a `VALUE -> VALUE` table, but a `VALUE -> VALUE *` table, so
+            we need some dedicated iterator.
+            ---
+             test/ruby/test_weakmap.rb |  8 ++++++++
+             weakmap.c                 | 37 ++++++++++++++++++++++++++++++++++++-
+             2 files changed, 44 insertions(+), 1 deletion(-)
+
+            Fix crash during compaction
+
+            [Bug #19529]
+
+            The fix for [Bug #19529] in commit 548086b contained a bug that crashes
+            on the following script:
+
+            ```
+            wm = ObjectSpace::WeakMap.new
+            obj = Object.new
+            100.times do
+              wm[Object.new] = obj
+              GC.start
+            end
+            GC.compact
+            ```
+            ---
+             test/ruby/test_weakmap.rb | 10 ++++++++++
+             weakmap.c                 |  2 +-
+             2 files changed, 11 insertions(+), 1 deletion(-)
+
+            Fix incorrect size of WeakMap buffer
+
+            In wmap_final_func, j is the number of elements + 1 (since j also
+            includes the length at the 0th index), so we should resize the buffer
+            to size j and the new length is j - 1.
+            ---
+             weakmap.c | 4 ++--
+             1 file changed, 2 insertions(+), 2 deletions(-)
+
+commit bdbe6053853c11ffe9b8737eb4da50ed84c9dbd6
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-25 14:35:55 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-25 14:35:55 +0900
+
+    merge revision(s) 7bd7aee02e303de27d2cddfc5ef47e612d6782cb: [Backport #18464]
+
+            Fix interpreter crash caused by RUBY_INTERNAL_EVENT_NEWOBJ + Ractors
+
+            When a Ractor is created whilst a tracepoint for
+            RUBY_INTERNAL_EVENT_NEWOBJ is active, the interpreter crashes. This is
+            because during the early setup of the Ractor, the stdio objects are
+            created, which allocates Ruby objects, which fires the tracepoint.
+            However, the tracepoint machinery tries to dereference the control frame
+            (ec->cfp->pc), which isn't set up yet and so crashes with a null pointer
+            dereference.
+
+            Fix this by not firing GC tracepoints if cfp isn't yet set up.
+            ---
+             gc.c                         |  1 +
+             test/objspace/test_ractor.rb | 17 +++++++++++++++++
+             2 files changed, 18 insertions(+)
+             create mode 100644 test/objspace/test_ractor.rb
+
+commit 5c5a1135b2e688eca7dbc7ce085f37a4d9fa3fd1
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-25 14:25:37 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-25 14:25:37 +0900
+
+    merge revision(s) 790cf4b6d0475614afb127b416e87cfa39044d67: [Backport #19115]
+
+            Fix autoload status of statically linked extensions
+
+            Previously, for statically-linked extensions, we used
+            `vm->loading_table` to delay calling the init function until the
+            extensions are required. This caused the extensions to look like they
+            are in the middle of being loaded even before they're required.
+            (`rb_feature_p()` returned true with a loading path output.) Combined
+            with autoload, queries like `defined?(CONST)` and `Module#autoload?`
+            were confused by this and returned nil incorrectly. RubyGems uses
+            `defined?` to detect if OpenSSL is available and failed when OpenSSL was
+            available in builds using `--with-static-linked-ext`.
+
+            Use a dedicated table for the init functions instead of adding them to
+            the loading table. This lets us remove some logic from non-EXTSTATIC
+            builds.
+
+            [Bug #19115]
+            ---
+             load.c                     | 55 +++++++++++++++++++++++++++++++++++-----------
+             test/ruby/test_autoload.rb | 18 +++++++++++++++
+             vm.c                       |  3 +++
+             vm_core.h                  |  9 ++++++++
+             4 files changed, 72 insertions(+), 13 deletions(-)
+
+commit a308900b74ff897de50dc9c212c03daaf642f003
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-25 11:30:36 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-25 11:30:36 +0900
+
+    fixup for 823835499539aa53128a025ab72eb00c288dfb09.
+
+commit 823835499539aa53128a025ab72eb00c288dfb09
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-25 11:07:09 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-25 11:07:09 +0900
+
+    merge revision(s) d6ce4180a5b4dacbac895c9911031a6df6c61136: [Backport #19243]
+
+            Windows: Fix encoding of Dir.home
+
+            Dir.home returns an UTF-8 string since ruby-3.0, but the actual
+            encoding of the bytes was CP_ACP or CP_OEMCP.
+            That led to invalid bytes when calling Dir.home with an unicode
+            username.
+            ---
+             spec/ruby/core/dir/home_spec.rb | 11 +++++++++++
+             win32/file.c                    |  3 ++-
+             2 files changed, 13 insertions(+), 1 deletion(-)
+
+commit 810ae06c06312908fc1a7284773d8a9101ee145b
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-25 11:04:33 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-25 11:04:33 +0900
+
+    merge revision(s) 2e7e153a2af1456515d43b6381e38534b069b1c2: [Backport #19242]
+
+            [Bug #19242] Prohibit circular causes to be loaded
+
+            ---
+             error.c                     |  4 ++++
+             eval.c                      |  4 ++++
+             eval_error.c                | 11 +++++++++++
+             test/ruby/test_exception.rb | 12 ++++++++++++
+             4 files changed, 31 insertions(+)
+
+commit 8c99882dad0b6fedbd656889829a3780366bd8b6
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-25 10:33:20 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-25 10:33:20 +0900
+
+    merge revision(s) cd5cafa4a380e2459862b6e99ff0c381362ef1be: [Backport #18827]
+
+            Respect the encoding of the source [Bug #18827]
+
+            Do not override the input string encoding at the time of preparation,
+            the source encoding is not determined from the input yet.
+            ---
+             parse.y                  | 26 ++++++++++++++++----------
+             test/ruby/test_ast.rb    | 13 +++++++++++++
+             test/ruby/test_syntax.rb |  9 +++++++++
+             3 files changed, 38 insertions(+), 10 deletions(-)
+
+commit 477ab3f6c7f14c79e13f694463aa06a59206dda1
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-25 10:31:31 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-25 10:31:31 +0900
+
+    merge revision(s) c5475f42694eff35465c3332e0182c0611ca5918: [Backport #18748]
+
+            Fix Range#cover? returning true for beginless ranges of different
+             types
+
+            Previously `(2..).cover?("2"..)` was false, but
+            `(..2).cover?(.."2")` was true.  This changes it so both are false,
+            treating beginless ranges the same as endless ranges in regards to
+            type checks.
+
+            This also adds documentation to #cover? to describe behavior with
+            beginless and endless ranges, testing each documentation example,
+            which is how this bug was found.
+
+            Fixes [Bug #18155]
+            ---
+             range.c                 | 54 ++++++++++++++++++++++++++++++++++++++++++++++++-
+             test/ruby/test_range.rb | 29 ++++++++++++++++++++++++++
+             2 files changed, 82 insertions(+), 1 deletion(-)
+
+commit 02bee9d4d404b5134d19b16bc489c20459cce4ac
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-25 10:12:02 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-25 10:12:02 +0900
+
+    merge revision(s) f229b36087f1b387d77af8f3fa50f9bffd2fd44e: [Backport #18989]
+
+            Fix test fail with assert_ractor outside of ruby/ruby repo
+
+              Revert 806583c093ecc2d67830f0a8f0d94decf0ed71e5
+            ---
+             tool/lib/core_assertions.rb | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 6ee749a52817fc463bbc2e93e5c3874a8c9aacf9
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-25 09:50:40 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-25 09:50:40 +0900
+
+    Revert "Skip the test for [Bug #19316] for a while."
+
+    This reverts commit 82d763c94ad693a2af8086df8e0455b7de2d2ce3,
+    and add exit: :any to assert_compile.
+
+    Co-authored-by: Alan Wu <alansi.xingwu@shopify.com>
+
+commit bc04b38f72ba1f261fbb3e881e6ae65c4bc77797
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-21 16:08:47 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-21 16:25:25 +0900
+
+    merge revision(s) 96d1acfdf6c6b42f2029f44d5b5920961d6efa92: [Backport #19161]
+
+            [Bug #19161] Check for TLS usability
+
+            On all platforms using GCC, even other than darwin.
+            ---
+             configure.ac | 13 +++++++------
+             1 file changed, 7 insertions(+), 6 deletions(-)
+
+commit 5428bdc1daed12d1e142a854fc037a1a4eb647c9
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-21 15:34:59 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-21 15:34:59 +0900
+
+    merge revision(s) dd28c55a7cd6780dad637b4d6a20507fbfc6af4a: [Backport #19445]
+
+            [Bug#19445] Fix keyword splat in enumerator
+
+            Extracted arguments do not have keyword hash to splat.
+            ---
+             numeric.c                 | 2 +-
+             test/ruby/test_numeric.rb | 3 +++
+             2 files changed, 4 insertions(+), 1 deletion(-)
+
+commit caedcf3ee8e445f90df88ccf2f745c9d9f7ccc35
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-21 15:33:33 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-21 15:33:33 +0900
+
+    merge revision(s) 86de48e9f69b665ba9ffb5bdc5a181a3adb1a7b8: [Backport #19419]
+
+            Remove ibf_dumper's WB_PROTECTED status
+
+            It doesn't have the right write barriers in place. For example, there is
+
+                rb_mark_set(dump->global_buffer.obj_table);
+
+            in the mark function, but there is no corresponding write barrier when
+            adding to the table in the
+            `ibf_dump_object() -> ibf_table_find_or_insert() -> st_insert()` code path.
+
+            To insert write barrier correctly, we need to store the T_STRUCT VALUE
+            inside `struct ibf_dump`. Instead of doing that, let's just demote it
+            to WB unproected for correctness. These dumper object are ephemeral so
+            there is not a huge benefit for having them WB protected.
+
+            Users of the bootsnap gem ran into crashes due to this issue:
+            https://github.com/Shopify/bootsnap/issues/436
+
+            Fixes [Bug #19419]
+            ---
+             compile.c | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 26b3f0b6a9489860e1d312369d784495b080daa3
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-21 15:32:44 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-21 15:32:44 +0900
+
+    merge revision(s) 8ce2fb9bbbaea14737c84385b1573f743a30f773,3a0f6ce1d31eefd8af01b50f3632a64d64e8f8c1: [Backport #19415]
+
+            Only emit circular dependency warning for owned thread shields [Bug
+             #19415]
+
+            If multiple threads attemps to load the same file concurrently
+            it's not a circular dependency issue.
+
+            So we check that the existing ThreadShield is owner by the current
+            fiber before warning about circular dependencies.
+            ---
+             internal/thread.h                                     |  1 +
+             load.c                                                |  3 ++-
+             spec/ruby/core/kernel/shared/require.rb               | 11 +++++++++++
+             spec/ruby/fixtures/code/concurrent_require_fixture.rb |  4 ++++
+             test/ruby/test_require.rb                             |  3 ---
+             thread.c                                              | 11 +++++++++++
+             6 files changed, 29 insertions(+), 4 deletions(-)
+             create mode 100644 spec/ruby/fixtures/code/concurrent_require_fixture.rb
+
+            Use Thread.pass until thread.stop? to wait for thread to block
+
+            [Bug #19415]
+
+            It should be more reliable
+            ---
+             spec/ruby/fixtures/code/concurrent_require_fixture.rb | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 485e0e46a58ff1a28eecd63b804b3dbea4b95b98
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-21 15:25:32 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-21 15:25:32 +0900
+
+    merge revision(s) 3a7367ccc319499127ead147e5a08f769e44208e: [Backport #19403]
+
+            mkconfig: Map `includedir` only for system ruby
+
+            Only when installing to the system path on macOS, prepend '$(SDKROOT)'
+            and remap `includedir`.
+            Fix https://github.com/rbenv/ruby-build/discussions/2123
+            ---
+             test/mkmf/test_config.rb | 4 ++--
+             test/test_rbconfig.rb    | 9 ---------
+             tool/mkconfig.rb         | 4 +++-
+             3 files changed, 5 insertions(+), 12 deletions(-)
+
+commit 0d00732d39de1e5ecce738260a1e49d8af52e12a
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-21 15:22:57 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-21 15:22:57 +0900
+
+    merge revision(s) c6f84e918943a0bf8db6fee556fc53180d257510: [Backport #19398]
+
+            [Bug #19398] Memory leak in WeakMap
+
+            There's a memory leak in ObjectSpace::WeakMap due to not freeing
+            the `struct weakmap`. It can be seen in the following script:
+
+            ```
+            100.times do
+              10000.times do
+                ObjectSpace::WeakMap.new
+              end
+
+              # Output the Resident Set Size (memory usage, in KB) of the current Ruby process
+              puts `ps -o rss= -p #{$$}`
+            end
+            ```
+            ---
+             gc.c                      | 1 +
+             test/ruby/test_weakmap.rb | 9 +++++++++
+             2 files changed, 10 insertions(+)
+
+commit 82d763c94ad693a2af8086df8e0455b7de2d2ce3
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-21 14:16:28 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-21 14:16:28 +0900
+
+    Skip the test for [Bug #19316] for a while.
+
+commit d28464c4ae968a180e80e3f9261bcfec08ae7702
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-21 13:59:41 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-21 13:59:41 +0900
+
+    merge revision(s) 0bb07e5ba40cdc45d55743dd1ebaadd7e7363e7f: [Backport #19284]
+
+            Fix test when Ruby is verbose
+
+            The test added in 90a80eb0 fails if Ruby is verbose, it outputs the
+            following line to stderr:
+
+                RUBY_GC_HEAP_INIT_SLOTS=100 (default value: 10000)
+            ---
+             test/ruby/test_gc.rb | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 1d24a931c458c93463da1d5885f33edef3677cc2
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-21 13:56:55 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-21 13:56:55 +0900
+
+    merge revision(s) 21dced8b01823a991829b66ffdc8ffc635965c76: [Backport #19389]
+
+            [ruby/stringio] [Bug #19389] Fix chomping with longer separator
+
+            https://github.com/ruby/stringio/commit/eb322a9716
+            ---
+             ext/stringio/stringio.c        | 5 +++--
+             test/stringio/test_stringio.rb | 2 ++
+             2 files changed, 5 insertions(+), 2 deletions(-)
+
+commit 8322413e58bdce11136c33aec3e0611b2b135cd8
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-21 12:25:31 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-21 12:25:31 +0900
+
+    merge revision(s) 72eb33066fa9e7dacb7470cd140b219abe37667e: [Backport #19320]
+
+            Fix off-by-one error in rb_vm_each_stack_value
+
+            Applying the following patch to test/erb/test_erb.rb and running that
+            file will cause Ruby to crash on my machine (macOS 13.1 on M1 Pro):
+
+            ```
+            --- a/test/erb/test_erb.rb
+            +++ b/test/erb/test_erb.rb
+            @@ -7,6 +7,12 @@
+             class TestERB < Test::Unit::TestCase
+               class MyError < RuntimeError ; end
+
+            +  def setup
+            +    GC.auto_compact = true
+            +    GC.stress = true
+            +    GC.verify_compaction_references(expand_heap: true, toward: :empty)
+            +  end
+            +
+            ```
+
+            It crashes with the following log:
+
+            ```
+            /Users/peter/src/ruby/lib/erb/compiler.rb:276: [BUG] Segmentation fault at 0x00000001083a8690
+            ...
+            -- C level backtrace information -------------------------------------------
+            ...
+            /Users/peter/src/ruby/build/ruby(rb_vm_each_stack_value+0xa8) [0x104cc3a44] ../vm.c:2737
+            /Users/peter/src/ruby/build/ruby(rb_vm_each_stack_value+0xa8) [0x104cc3a44] ../vm.c:2737
+            /Users/peter/src/ruby/build/ruby(check_stack_for_moved+0x2c) [0x104b272a4] ../gc.c:5512
+            /Users/peter/src/ruby/build/ruby(gc_compact_finish) ../gc.c:5534
+            /Users/peter/src/ruby/build/ruby(gc_sweep_compact) ../gc.c:8653
+            /Users/peter/src/ruby/build/ruby(gc_sweep) ../gc.c:6196
+            /Users/peter/src/ruby/build/ruby(has_sweeping_pages+0x0) [0x104b19c54] ../gc.c:9568
+            /Users/peter/src/ruby/build/ruby(gc_rest) ../gc.c:9570
+            ```
+
+            This crash happens because it's reading the VALUE at sp. But since
+            sp points to the top of the stack, it's reading the VALUE above the
+            top of the stack, which is causing this segfault.
+
+            Fixes [Bug #19320]
+            ---
+             vm.c | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 782a9c2ddfcc84c3bd3a1fa153f7ac1f3e92a2e1
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-21 12:23:37 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-21 12:23:37 +0900
+
+    merge revision(s) 90a80eb076429978e720e11fb17a3cbb96de3454: [Backport #19284]
+
+            Fix integer underflow when using HEAP_INIT_SLOTS
+
+            There is an integer underflow when the environment variable
+            RUBY_GC_HEAP_INIT_SLOTS is less than the number of slots currently
+            in the Ruby heap.
+
+            [Bug #19284]
+            ---
+             gc.c                 | 25 +++++++++++++------------
+             test/ruby/test_gc.rb |  5 +++++
+             2 files changed, 18 insertions(+), 12 deletions(-)
+
+commit c660aaf439dcd609e4e23253372c8ec6d567ce10
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-21 12:10:35 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-21 12:10:35 +0900
+
+    merge revision(s) aeddc19340c7116d48fac3080553fbb823857d16: [Backport #19316]
+
+            YJIT: Save PC and SP before calling leaf builtins (#7090)
+
+            Previously, we did not update `cfp->sp` before calling the C function of
+            ISEQs marked with `Primitive.attr! "inline"` (leaf builtins). This
+            caused the GC to miss temporary values on the stack in case the function
+            allocates and triggers a GC run. Right now, there is only a few leaf
+            builtins in numeric.rb on Integer methods such as `Integer#~`. Since
+            these methods only allocate when operating on big numbers, we missed
+            this issue.
+
+            Fix by saving PC and SP before calling the functions -- our usual
+            protocol for calling C functions that may allocate on the GC heap.
+
+            [Bug #19316]
+            ---
+             test/ruby/test_yjit.rb | 16 ++++++++++++++++
+             yjit/src/codegen.rs    |  4 ++++
+             2 files changed, 20 insertions(+)
+
+commit 159930b7857bd3fe603840f686edffb54693d2a7
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-21 12:02:04 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-21 12:02:04 +0900
+
+    merge revision(s) d8ef0a98c670449b20436947f5ebbd327ed5ab0d: [Backport #19319]
+
+            [Bug #19319] Fix crash in rb_str_casemap
+
+            The following code crashes on my machine:
+
+            ```
+            GC.stress = true
+
+            str = "testing testing testing"
+
+            puts str.capitalize
+            ```
+
+            We need to ensure that the object `buffer_anchor` remains on the stack
+            so it does not get GC'd.
+            ---
+             string.c | 2 ++
+             1 file changed, 2 insertions(+)
+
+commit eba3f787cbd38acf60fff6bdb450aacfc2e9c3a1
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-21 12:00:17 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-21 12:00:17 +0900
+
+    merge revision(s) 837ef8911c638c3e2bdb6af710de7c1fac7b5f90: [Backport #19305]
+
+            Fix crash in TracePoint c_call for removed method
+
+            trace_arg->id is the ID of the original method of an aliased method. If
+            the original method is removed, then the lookup will fail. We should use
+            trace_arg->called_id instead, which is the ID of the aliased method.
+
+            Fixes [Bug #19305]
+            ---
+             test/ruby/test_settracefunc.rb | 23 +++++++++++++++++++++++
+             vm_trace.c                     |  2 +-
+             2 files changed, 24 insertions(+), 1 deletion(-)
+
+commit 3efc43aace4e051f618b10e82bd82e93076dc757
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-03-21 11:54:37 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-03-21 11:54:37 +0900
+
+    merge revision(s) 542e984d82fa25098eb15398d716d907acc52b93: [Backport #19292]
+
+            [Bug #19292] Re-initialize tm when wday or yday is not set
+
+            ---
+             test/ruby/test_time.rb |  3 ++-
+             time.c                 | 31 ++++++++++++++++++++++---------
+             2 files changed, 24 insertions(+), 10 deletions(-)
+
+commit 0602df301cd76a3f1b444c4742b288bc6aed80ac
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-02-23 15:14:27 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-02-23 15:14:27 +0900
+
+    merge revision(s) 613fca01486e47dee9364a2fd86b5f5e77fe23c8: [Backport #19189]
+
+            [Bug #19189] Fallback to the default "pkg-config"
+
+            ---
+             lib/mkmf.rb | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 9f072e9ae1bae2d76334c9e97a47280779768859
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-02-23 15:10:50 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-02-23 15:10:50 +0900
+
+    merge revision(s) 8038d5e40a079d60dfcf7cab1155528959760c28: [Backport #18765]
+
+            Revert flawed doc for slice_after, slice_when, and chunk_while
+             (#5952)
+
+            Restores doc for the methods that were cited in https://bugs.ruby-lang.org/issues/18765.
+            ---
+             enum.c | 162 +++++++++++++++++++++++++++++++++++++++++++----------------------
+             1 file changed, 107 insertions(+), 55 deletions(-)
+
+commit 536f5ba0d48c033e63398d1751aebd0a11bcc6ff
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-02-23 14:36:37 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-02-23 14:36:37 +0900
+
+    merge revision(s) 3ddf6ad4d2f6dae4caa00b8c407768c7062099a0: [Backport #18629]
+
+            Private local variables should shadow outer variables [Bug #18629]
+
+            ---
+             parse.y                 | 3 ++-
+             test/ruby/test_parse.rb | 4 ++++
+             2 files changed, 6 insertions(+), 1 deletion(-)
+
+commit d485a5dc783e23de28fb9eab7fc6c12ae5c35a23
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-02-23 12:46:42 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-02-23 12:46:42 +0900
+
+    bump patchlevel
+
+commit 76c61c9993e59af0b4c400b44f169f4af99c3efa
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-02-16 17:54:09 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-02-23 12:45:16 +0900
+
+    Backport https://github.com/ruby/ruby/pull/7321
+
+commit 4141989b2aef2993bb19140a4be355d1c68b8be1
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2023-02-23 12:41:50 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2023-02-23 12:41:50 +0900
+
+    merge revision(s) 656f25987cf2885104d5b13c8d3f5b7d32f1b333,98074a57ca9f3169fe9da9af6c49b636d37db16f,745dcf5326ea2c8e2047a3bddeb0fbb7e7d07649,b335d899fff3cc22b022c9ee2ceb636d714bf1a7: [Backport #19153]
+
+            [ruby/cgi] Fix test_cgi_cookie_new_with_domain to pass on older
+             rubies
+
+            https://github.com/ruby/cgi/commit/05f0c58048
+            ---
+             test/cgi/test_cgi_cookie.rb | 8 ++++----
+             1 file changed, 4 insertions(+), 4 deletions(-)
+
+            [ruby/cgi] Prepare to release 0.3.6
+
+            https://github.com/ruby/cgi/commit/710a647855
+            ---
+             lib/cgi.rb | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+            [ruby/cgi] Loosen the domain regex to accept '.'
+             (https://github.com/ruby/cgi/pull/29)
+
+            * Loosen the domain regex to accept '.'
+
+            Co-authored-by: Nobuyoshi Nakada <nobu@ruby-lang.org>
+
+            https://github.com/ruby/cgi/commit/5e09d632f3
+            Co-authored-by: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+            ---
+             lib/cgi/cookie.rb           | 2 +-
+             test/cgi/test_cgi_cookie.rb | 3 +++
+             2 files changed, 4 insertions(+), 1 deletion(-)
+
+            [ruby/cgi] Bump up 0.3.6
+
+            https://github.com/ruby/cgi/commit/827b7d43cc
+            ---
+             lib/cgi.rb | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit a4ab9921a15fccca606e5f1ec741f802d39392b1
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-12-17 14:25:12 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-12-17 14:25:12 +0900
+
+    common.mk: test-bundled-gems-prepare: pin-down hoe version.
+
+    hoe-4.0.0 causes test failure in minitest.
+    https://github.com/ruby/actions/actions/runs/3715629538
+
+commit a1124dc162810f86cb0bff58cde24064cfc561bc
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-12-09 21:11:47 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-12-09 21:11:47 +0900
+
+    merge revision(s) 58cc3c9f387dcf8f820b43e043b540fa06248da3: [Backport #19187]
+
+            [Bug #19187] Fix for tzdata-2022g
+
+            ---
+             test/ruby/test_time_tz.rb | 21 +++++++++++++++------
+             1 file changed, 15 insertions(+), 6 deletions(-)
+
+commit 6dfa45c47bf58e5382c3e556b220c2cc8fd506e6
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2022-11-24 22:52:45 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2022-11-24 22:52:45 +0900
+
+    bump teeny version to 3.1.4.
+
 commit 1a6b16756e0ba6b95ab71a441357ed5484e33498
   Author:     nagachika <nagachika@ruby-lang.org>
   AuthorDate: 2022-11-24 19:20:31 +0900
