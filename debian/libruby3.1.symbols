@@ -1756,7 +1756,6 @@ libruby-3.1.so.3.1 libruby3.1 #MINVER#
  ruby_hexdigits@Base 3.1.0
  ruby_incpush@Base 3.1.0
  ruby_init@Base 3.1.0
- ruby_init_ext@Base 3.1.0
  ruby_init_loadpath@Base 3.1.0
  ruby_init_setproctitle@Base 3.1.0
  ruby_init_stack@Base 3.1.0
