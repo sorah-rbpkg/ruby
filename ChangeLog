@@ -1,5 +1,170 @@
 -*- coding: utf-8 -*-
 
+commit 1f4d4558484b370999954f3ede7e3aa3a3a01ef3
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2023-03-30 21:34:08 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2023-03-30 21:34:08 +0900
+
+    Fix previous commit
+
+commit 153bdddfc2461ba0731e1d03982fee41d5e2b2aa
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2023-03-30 20:08:27 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2023-03-30 20:08:27 +0900
+
+    Limit header length
+
+commit 6439ebc47669b6e8b4409e4073a4348939994b7b
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2023-03-30 19:48:39 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2023-03-30 19:48:39 +0900
+
+    * 2023-03-30 [ci skip]
+
+commit e3f18f7d2e034f20053d7bf2fc7a50f8b7e1a27a
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2022-12-30 14:32:05 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-30 19:48:27 +0900
+
+    Make RFC2822 regexp linear
+
+    https://hackerone.com/reports/1485501
+
+commit be9026a7b4d2c3a6bd7f109334149f4da08cf43f
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2022-11-29 16:22:15 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-30 19:48:27 +0900
+
+    Test for quadratic backtracking on invalid time
+
+    https://hackerone.com/reports/1485501
+
+commit 2cb830602f52e7e76c6781115e7938b21f881c4f
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2022-11-29 16:22:15 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-30 19:48:27 +0900
+
+    Fix quadratic backtracking on invalid time
+
+    https://hackerone.com/reports/1485501
+
+commit 332135b9a9138aee05d0fdbdc6ae8bb9788b222d
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-03-28 18:09:32 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-29 10:57:28 +0900
+
+    Ubuntu 18.04 in GHA is retired
+
+commit 33c0889ca39469eb233f8011a76254049fcc702c
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2023-03-26 23:10:50 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-29 10:57:28 +0900
+
+    Historical timezones of Lisbon in tzdata are unstable
+
+commit ab2fabf34d09444b95ae1a2dcf4214a9841da66a
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2023-03-26 15:23:10 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-29 10:57:28 +0900
+
+    Skip test_europe_lisbon on macOS
+
+    until we figure out why it's failing.
+
+commit cc705648a71260caa773c0d29fcaf2789c910142
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2020-06-04 07:58:49 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-29 10:57:28 +0900
+
+    Removed fetch-depth
+
+    Only the last commit is used, unless creating the ChangeLog file.
+
+commit a57ffec6c01a994e27776e0494adeb0eca149d2d
+  Author:     卜部昌平 <shyouhei@ruby-lang.org>
+  AuthorDate: 2020-05-11 18:37:08 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-29 10:57:28 +0900
+
+    .github: use actions/checkout@v2 again
+
+commit c942a3cffefa1b35f4b0b06536c6f3a6bf312588
+  Author:     Kazuhiro NISHIYAMA <zn@mbf.nifty.com>
+  AuthorDate: 2020-03-30 17:35:49 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-29 10:57:28 +0900
+
+    Use `--depth` on pull request
+
+    `--shallow-since=yesterday` for COMMIT_NUMBER_OF_DAY of `tool/actions-commit-info.sh`.
+    COMMIT_NUMBER_OF_DAY is mainly for master branch.
+    And `--shallow-since=yesterday` may fail on pull request.
+    So this revert to `--depth` on pull request.
+
+commit f95f5fda8ae9b6a88cbd90096fa10b26bbc1932a
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2023-03-29 10:17:36 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2023-03-29 10:17:36 +0900
+
+    * 2023-03-29 [ci skip]
+
+commit 6fa7e5e05b5f62cd97af0f35627377c053d552af
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-03-28 18:00:13 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-29 10:17:23 +0900
+
+    Added assert_linear_performance for URI tests
+
+commit 14f025a738b5c5d5bea5ef159af6169c14008f13
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-03-28 17:37:48 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-29 10:17:23 +0900
+
+    Merge URI-0.10.0.2 for bundler
+
+commit 6855779d580358a6a0b4c9ee06f20e7cae72955a
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-03-28 17:33:19 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-29 10:17:23 +0900
+
+    Merge URI-0.10.0.2
+
+commit 36cadad6434bc31bc2d60697698cd5b930c097ce
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2022-12-08 12:33:58 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2022-12-08 12:33:58 +0900
+
+    merge revision(s) 58cc3c9f: [Backport #19187]
+
+            [Bug #19187] Fix for tzdata-2022g
+
+            ---
+             test/ruby/test_time_tz.rb | 21 +++++++++++++++------
+             1 file changed, 15 insertions(+), 6 deletions(-)
+
+commit d21f98531f118df39c4876424d53e4f8c3acc3e0
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2022-12-08 12:33:42 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2022-12-08 12:33:42 +0900
+
+    Bump teeny
+
 commit 168ec2b1e5ad0e4688e963d9de019557c78feed9
   Author:     NAKAMURA Usaku <usa@ruby-lang.org>
   AuthorDate: 2022-11-24 21:42:08 +0900

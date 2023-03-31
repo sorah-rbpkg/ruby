@@ -1,3 +1,9 @@
+ruby2.7 (2.7.8-0nkmi1~dist) unstable; urgency=medium
+
+  * Ruby 2.7.8
+
+ -- Sorah Fukumori <sorah@cookpad.com>  Fri, 31 Mar 2023 18:58:22 +0900
+
 ruby2.7 (2.7.7-0nkmi1~dist) unstable; urgency=medium
 
   * 2.7.7
