@@ -1,5 +1,219 @@
 -*- coding: utf-8 -*-
 
+commit 23a532679b406cb53c0edfc00c91c32a5ccd335a
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2023-03-30 21:41:03 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2023-03-30 21:41:03 +0900
+
+    Fix previous commit
+
+commit 4ec0bac2d9bd29541442709e6c2b62dee688c1ac
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2023-03-30 20:10:01 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2023-03-30 20:10:01 +0900
+
+    Limit header length
+
+commit b427e3570d16c7b68cfa0e5e05be84ba8e3eac36
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2023-03-30 19:59:19 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2023-03-30 19:59:19 +0900
+
+    [Backport #19161] merge part of 96d1acfdf6c6b42f2029f44d5b5920961d6efa92
+
+    Check for TLS usability
+
+    On all platforms using GCC, even other than darwin.
+
+commit 69f0cafa5ef6ef9c86b374531e757e885198b390
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2023-03-30 19:49:20 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2023-03-30 19:49:20 +0900
+
+    * 2023-03-30 [ci skip]
+
+commit 53a7cee6850bd0d5999fcb56471f0a507222f486
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-03-29 13:29:08 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-30 19:49:08 +0900
+
+    Merge Time-0.1.1
+
+commit 2d99ef4f74e13de352ffd867ffe7308f78d7418e
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-03-29 14:54:14 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2023-03-29 14:54:14 +0900
+
+    Merge URI-0.10.2 for Ruby 3.0 (#7607)
+
+    * Merge URI-0.10.2
+
+    * Merge URI-0.10.0.2 for bundler
+
+    * Added assert_linear_performance for URI tests
+
+commit 57e7caeac133cc3b42031ee487e4d7a0cd2487f4
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2023-03-29 10:58:10 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2023-03-29 10:58:10 +0900
+
+    * 2023-03-29 [ci skip]
+
+commit 998fe8ace4621b7337fcd88c78eec02588d0bc57
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2023-03-26 23:10:50 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-29 10:57:57 +0900
+
+    Historical timezones of Lisbon in tzdata are unstable
+
+commit 4527440b5242b7e26cce2500177e989853d7fb16
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2023-03-26 15:23:10 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-29 10:57:57 +0900
+
+    Skip test_europe_lisbon on macOS
+
+    until we figure out why it's failing.
+
+commit 78c2e2827ef8a87da801a612b7a9418db703b2d6
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-02-03 15:55:33 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-29 10:57:57 +0900
+
+    Bump up CodeQL v2
+
+commit 408d2dbede5da0063da0cc71007bf897991e6ca1
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-02-03 15:41:16 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-29 10:57:57 +0900
+
+    Skip test-bundler-prallel with macOS. It mixed system bundler path.
+
+      https://github.com/ruby/ruby/actions/runs/4061314416/jobs/7033111867
+
+commit 57703ba1ec421c938181f49e8127c6e4ae83c281
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-01-06 09:58:25 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-29 10:57:57 +0900
+
+    Pin Ubuntu 20.04 because Ruby 3.0 didn't support OpenSSL 3
+
+commit 6ca5d3cfed45a8c42f6dbf8126e509792576cbe1
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-01-06 09:36:07 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-29 10:57:57 +0900
+
+    Ruby 3.0 only supports `--jit-*` options
+
+commit 9cb6b7d14571c93c5ddb4c5fbf18908b6f756b04
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2022-11-28 06:32:39 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-29 10:57:57 +0900
+
+    Disable test-all on MJIT CI for now
+
+    https://github.com/ruby/ruby/actions/runs/3560006749/jobs/5979749144
+
+commit 54d0a2af33c7a43ad3bc7d54da8a68d0d31e1c0a
+  Author:     卜部昌平 <shyouhei@ruby-lang.org>
+  AuthorDate: 2021-10-22 11:15:10 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-29 10:57:57 +0900
+
+    .github: use GNUMAKEFLAGS instead of JOBS
+
+    A bit readable to me.
+    See also https://github.com/ruby/ruby/pull/4880
+
+commit fcab8cf702a529301568aa605774ebb470febe97
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2022-11-28 06:12:29 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-29 10:57:57 +0900
+
+    Test only --mjit-wait for now
+
+    We've disabled MJIT CI on GitHub Actions for a while. It's convenient
+    that fork repositories need to see failures or disable it.
+
+    We should remove unused CI by default instead of silently disabling it.
+    Since I saw --mjit-wait passed on my fork, I'd like to try running
+    --mjit-wait one.
+
+commit d8b1279d3bf4c80ad461ed393e6e4839f3f6e1ca
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2021-12-14 09:08:01 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-03-29 10:57:57 +0900
+
+    Rename --jit to --mjit (#5248)
+
+    * Rename --jit to --mjit
+
+    [Feature #18349]
+
+    * Fix a few more --jit references
+
+    * Fix MJIT Actions
+
+    * More s/jit/mjit/ and re-introduce --disable-jit
+
+    * Update NEWS.md
+
+    * Fix test_bug_reporter_add
+
+commit f84638273a51aa56513e8f64660411151b64a4f4
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2023-02-07 17:26:49 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2023-02-07 17:26:49 +0900
+
+    * 2023-02-07 [ci skip]
+
+commit 72beb9f868880a97c769d38b9aab99201300ece8
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2022-10-15 01:03:47 +0900
+  Commit:     usa <usa@garbagecollect.jp>
+  CommitDate: 2023-02-07 17:26:37 +0900
+
+    Remove wrong dollar
+
+commit a0a99185577794b1915eba0dc5154f09cc95e81d
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2022-12-08 12:31:20 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2022-12-08 12:31:20 +0900
+
+    merge revision(s) 58cc3c9f: [Backport #19187]
+
+            [Bug #19187] Fix for tzdata-2022g
+
+            ---
+             test/ruby/test_time_tz.rb | 21 +++++++++++++++------
+             1 file changed, 15 insertions(+), 6 deletions(-)
+
+commit 9de654cb74daaa8918ca6b04fbce211c3ccd4209
+  Author:     NAKAMURA Usaku <usa@ruby-lang.org>
+  AuthorDate: 2022-12-08 12:30:36 +0900
+  Commit:     NAKAMURA Usaku <usa@ruby-lang.org>
+  CommitDate: 2022-12-08 12:30:36 +0900
+
+    Bump teeny
+
 commit ba5cf0f7c52d4d35cc6a173c89eda98ceffa2dcf
   Author:     Kazuki Yamaguchi <k@rhe.jp>
   AuthorDate: 2022-09-08 23:00:01 +0900
