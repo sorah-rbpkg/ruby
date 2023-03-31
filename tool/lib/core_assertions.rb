@@ -264,7 +264,7 @@ module Test
         src = <<eom
 # -*- coding: #{line += __LINE__; src.encoding}; -*-
 BEGIN {
-  require "test/unit";include Test::Unit::Assertions;include Test::Unit::CoreAssertions;require #{__FILE__.dump}
+  require "test/unit";include Test::Unit::Assertions;require #{__FILE__.dump};include Test::Unit::CoreAssertions
   separated_runner #{token_dump}, #{res_c&.fileno || 'nil'}
 }
 #{line -= __LINE__; src}
@@ -725,6 +725,39 @@ eom
         assert(all.pass?, message(msg) {all.message.chomp(".")})
       end
       alias all_assertions_foreach assert_all_assertions_foreach
+
+      # Expect +seq+ to respond to +first+ and +each+ methods, e.g.,
+      # Array, Range, Enumerator::ArithmeticSequence and other
+      # Enumerable-s, and each elements should be size factors.
+      #
+      # :yield: each elements of +seq+.
+      def assert_linear_performance(seq, rehearsal: nil, pre: ->(n) {n})
+        first = seq.first
+        *arg = pre.call(first)
+        times = (0..(rehearsal || (2 * first))).map do
+          st = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          yield(*arg)
+          t = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - st)
+          assert_operator 0, :<=, t
+          t.nonzero?
+        end
+        times.compact!
+        tmin, tmax = times.minmax
+        tmax *= tmax / tmin
+        tmax = 10**Math.log10(tmax).ceil
+
+        seq.each do |i|
+          next if i == first
+          t = tmax * i.fdiv(first)
+          *arg = pre.call(i)
+          message = "[#{i}]: in #{t}s"
+          Timeout.timeout(t, Timeout::Error, message) do
+            st = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+            yield(*arg)
+            assert_operator (Process.clock_gettime(Process::CLOCK_MONOTONIC) - st), :<=, t, message
+          end
+        end
+      end
 
       def diff(exp, act)
         require 'pp'
