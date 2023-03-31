@@ -8980,6 +8980,41 @@ then :
 
 fi
 
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if thread-local storage is supported" >&5
+printf %s "checking if thread-local storage is supported... " >&6; }
+if test ${rb_cv_tls_supported+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+int __thread conftest;
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  rb_cv_tls_supported=yes
+else $as_nop
+  rb_cv_tls_supported=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $rb_cv_tls_supported" >&5
+    colorize_result "$rb_cv_tls_supported" ; }
+if test x"$rb_cv_tls_supported" != xyes
+then :
+  printf "%s\n" "#define RB_THREAD_LOCAL_SPECIFIER_IS_UNSUPPORTED 1" >>confdefs.h
+
+fi
+
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the linker is GNU ld" >&5
 printf %s "checking whether the linker is GNU ld... " >&6; }
 if test ${rb_cv_prog_gnu_ld+y}
@@ -29803,7 +29838,7 @@ then :
 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
     printf "%s\n" "${msg_result_yes}yes${msg_reset}" >&6 ; }
 else $as_nop
-  $flag=
+  flag=
 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
     printf "%s\n" "${msg_result_no}no${msg_reset}" >&6 ; }
 fi
