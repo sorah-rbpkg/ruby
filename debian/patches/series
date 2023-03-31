@@ -7,4 +7,3 @@
 0007-Make-lib-and-test-more-independent-from-each-other.patch
 0008-Rescue-getcwd-ENOENT-error.patch
 0009-TestProcess-disable-gems-to-disable-rubygems_integra.patch
-Fix-for-tzdata-2022g.patch
