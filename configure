@@ -8235,39 +8235,6 @@ else $as_nop
 	as_fn_error $? "Unsupported OS X version is required" "$LINENO" 5
 fi
 rm -f conftest.err conftest.i conftest.$ac_ext
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if thread-local storage is supported" >&5
-printf %s "checking if thread-local storage is supported... " >&6; }
-if test ${rb_cv_tls_supported+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-int __thread conftest;
-int
-main (void)
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  rb_cv_tls_supported=yes
-else $as_nop
-  rb_cv_tls_supported=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $rb_cv_tls_supported" >&5
-    colorize_result "$rb_cv_tls_supported" ; }
-    if test x"$rb_cv_tls_supported" != xyes
-then :
-  printf "%s\n" "#define RB_THREAD_LOCAL_SPECIFIER_IS_UNSUPPORTED 1" >>confdefs.h
-
-fi
  ;; #(
   *) :
      ;;
@@ -8349,6 +8316,40 @@ then :
 then :
 
         as_fn_error $? "too old GCC: $gcc_major.$gcc_minor" "$LINENO" 5
+
+fi
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if thread-local storage is supported" >&5
+printf %s "checking if thread-local storage is supported... " >&6; }
+if test ${rb_cv_tls_supported+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+int __thread conftest;
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  rb_cv_tls_supported=yes
+else $as_nop
+  rb_cv_tls_supported=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $rb_cv_tls_supported" >&5
+    colorize_result "$rb_cv_tls_supported" ; }
+    if test x"$rb_cv_tls_supported" != xyes
+then :
+  printf "%s\n" "#define RB_THREAD_LOCAL_SPECIFIER_IS_UNSUPPORTED 1" >>confdefs.h
 
 fi
 
