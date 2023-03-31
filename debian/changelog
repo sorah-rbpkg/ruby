@@ -1,3 +1,9 @@
+ruby3.0 (3.0.6-0nkmi1~dist) unstable; urgency=medium
+
+  * Ruby 3.0.6
+
+ -- Sorah Fukumori <sorah@cookpad.com>  Fri, 31 Mar 2023 16:09:54 +0900
+
 ruby3.0 (3.0.5-0nkmi1~dist) unstable; urgency=medium
 
   * Ruby 3.0.5
