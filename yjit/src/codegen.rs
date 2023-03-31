@@ -4047,17 +4047,24 @@ fn jit_rb_int_equal(
 
 /// If string is frozen, duplicate it to get a non-frozen string. Otherwise, return it.
 fn jit_rb_str_uplus(
-    _jit: &mut JITState,
+    jit: &mut JITState,
     ctx: &mut Context,
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
     _block: Option<IseqPtr>,
-    _argc: i32,
+    argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool
 {
+    if argc != 0 {
+        return false;
+    }
+
+    // We allocate when we dup the string
+    jit_prepare_routine_call(jit, ctx, asm);
+
     asm.comment("Unary plus on string");
     let recv_opnd = asm.load(ctx.stack_pop(1));
     let flags_opnd = asm.load(Opnd::mem(64, recv_opnd, RUBY_OFFSET_RBASIC_FLAGS));
@@ -4065,8 +4072,8 @@ fn jit_rb_str_uplus(
 
     let ret_label = asm.new_label("stack_ret");
 
-    // We guard for the receiver being a ::String, so the return value is too
-    let stack_ret = ctx.stack_push(Type::CString);
+    // String#+@ can only exist on T_STRING
+    let stack_ret = ctx.stack_push(Type::TString);
 
     // If the string isn't frozen, we just return it.
     asm.mov(stack_ret, recv_opnd);
@@ -5815,13 +5822,22 @@ fn gen_send_general(
                 let opt_type = unsafe { get_cme_def_body_optimized_type(cme) };
                 match opt_type {
                     OPTIMIZED_METHOD_TYPE_SEND => {
-
                         // This is for method calls like `foo.send(:bar)`
                         // The `send` method does not get its own stack frame.
                         // instead we look up the method and call it,
                         // doing some stack shifting based on the VM_CALL_OPT_SEND flag
 
                         let starting_context = ctx.clone();
+
+                        // Reject nested cases such as `send(:send, :alias_for_send, :foo))`.
+                        // We would need to do some stack manipulation here or keep track of how
+                        // many levels deep we need to stack manipulate. Because of how exits
+                        // currently work, we can't do stack manipulation until we will no longer
+                        // side exit.
+                        if flags & VM_CALL_OPT_SEND != 0 {
+                            gen_counter_incr!(asm, send_send_nested);
+                            return CantCompile;
+                        }
 
                         if argc == 0 {
                             gen_counter_incr!(asm, send_send_wrong_args);
@@ -5847,20 +5863,6 @@ fn gen_send_general(
                         if cme.is_null() {
                             gen_counter_incr!(asm, send_send_null_cme);
                             return CantCompile;
-                        }
-
-                        // We aren't going to handle `send(send(:foo))`. We would need to
-                        // do some stack manipulation here or keep track of how many levels
-                        // deep we need to stack manipulate
-                        // Because of how exits currently work, we can't do stack manipulation
-                        // until we will no longer side exit.
-                        let def_type = unsafe { get_cme_def_type(cme) };
-                        if let VM_METHOD_TYPE_OPTIMIZED = def_type {
-                            let opt_type = unsafe { get_cme_def_body_optimized_type(cme) };
-                            if let OPTIMIZED_METHOD_TYPE_SEND = opt_type {
-                                gen_counter_incr!(asm, send_send_nested);
-                                return CantCompile;
-                            }
                         }
 
                         flags |= VM_CALL_FCALL | VM_CALL_OPT_SEND;
@@ -7232,8 +7234,6 @@ impl CodegenGlobals {
             let freed_pages = Rc::new(None);
             let cb = CodeBlock::new(mem_block.clone(), false, freed_pages.clone());
             let ocb = OutlinedCb::wrap(CodeBlock::new(mem_block, true, freed_pages));
-
-            assert_eq!(cb.page_size() % page_size.as_usize(), 0, "code page size is not page-aligned");
 
             (cb, ocb)
         };
