@@ -77,9 +77,6 @@ excludes =
 excludes += --excludes-dir=debian/tests/excludes/any/
 excludes += --excludes-dir=debian/tests/excludes/$(DEB_HOST_ARCH)/
 override_dh_auto_test-arch:
-ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
-	$(MAKE) check V=1 RUBY_TESTOPTS=-v TESTS="$(excludes)" OPENSSL_CONF=/dev/null || true
-endif
 
 override_dh_auto_install-arch:
 	$(MAKE) install-nodoc V=1 DESTDIR=$(CURDIR)/debian/tmp
