@@ -1,3 +1,15 @@
+ruby2.5 (2.5.5-3+deb10u5) buster-security; urgency=high
+
+  * Non-maintainer upload by the Debian LTS team.
+  * CVE-2023-28755 & CVE-2023-28756: Two regular expression Denial of Service
+    (ReDoS) issues were discovered: the first in the URI component, and the
+    second in the Time module. Each of these issues could have resulted in a
+    dramatic increase in execution time given malicious input.
+  * Add "test/rubygems/test_gem_remote_fetcher.rb" to the known-to-fail
+    autopkgtests, as it relies on a now-expired SSL certificate.
+
+ -- Chris Lamb <lamby@debian.org>  Tue, 06 Jun 2023 13:18:31 -0700
+
 ruby2.5 (2.5.5-3+deb10u4) buster-security; urgency=high
 
   * Add patch to use File.open to fix the OS Command
