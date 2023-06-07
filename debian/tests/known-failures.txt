@@ -23,7 +23,6 @@ test/rubygems/test_gem_installer.rb
 test/rubygems/test_gem_package.rb
 test/rubygems/test_gem_package_tar_writer.rb
 test/rubygems/test_gem.rb
-test/rubygems/test_gem_remote_fetcher.rb
 test/rubygems/test_gem_request.rb
 test/rubygems/test_gem_security_policy.rb
 test/rubygems/test_gem_security.rb
