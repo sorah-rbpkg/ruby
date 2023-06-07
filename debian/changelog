@@ -8,6 +8,9 @@ ruby2.5 (2.5.5-3+deb10u6) buster-security; urgency=high
     and cookie fields for invalid characters. (Fixes: CVE-2021-33621)
   * d/p/CVE-2022-28739.patch: fix dtoa buffer overrun in missing/dtoa.c,
     test/ruby/test_float.rb. (Fixes: CVE-2022-28739)
+  * d/p/CVE-2023-28756*.patch: re-do the CVE-2023-28756 patch(es).
+    Last update backported the tests which weren't working, et al.
+  * d/p/certs_up_fix.patch : add patch to refresh expired SSL certs.
 
  -- Utkarsh Gupta <utkarsh@ubuntu.com>  Wed, 07 Jun 2023 18:36:12 +0530
 
