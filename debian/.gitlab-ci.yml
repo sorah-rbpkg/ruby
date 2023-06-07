@@ -1,0 +1,14 @@
+include:
+- https://salsa.debian.org/lts-team/pipeline/raw/master/recipes/buster.yml
+
+variables:
+  SALSA_CI_DISABLE_CROSSBUILD_ARM64: 1
+
+autopkgtest:
+  allow_failure: true
+
+blhc:
+  allow_failure: true
+
+piuparts:
+  allow_failure: true
