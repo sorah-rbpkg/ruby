@@ -1,3 +1,11 @@
+ruby2.5 (2.5.5-3+deb10u6) buster-security; urgency=high
+
+  * Non-maintainer upload by the Debian LTS team.
+  * Fix CVE-2023-28755's regex which caused regression.
+    (Closes: #1037178)
+
+ -- Utkarsh Gupta <utkarsh@ubuntu.com>  Wed, 07 Jun 2023 18:36:12 +0530
+
 ruby2.5 (2.5.5-3+deb10u5) buster-security; urgency=high
 
   * Non-maintainer upload by the Debian LTS team.
