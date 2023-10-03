@@ -109,19 +109,19 @@ rb_insn_unified_local_var_level(VALUE insn)
     /* optimize rule */
     switch (insn) {
       default:
-	return -1; /* do nothing */;
+        return -1; /* do nothing */;
       case BIN(getlocal_WC_0):
-	return 0;
+        return 0;
       case BIN(getlocal_WC_1):
-	return 1;
+        return 1;
       case BIN(setlocal_WC_0):
-	return 0;
+        return 0;
       case BIN(setlocal_WC_1):
-	return 1;
+        return 1;
       case BIN(putobject_INT2FIX_0_):
-	return INT2FIX(0);
+        return INT2FIX(0);
       case BIN(putobject_INT2FIX_1_):
-	return INT2FIX(1);
+        return INT2FIX(1);
     }
 #endif
     return -1;

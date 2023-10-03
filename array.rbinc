@@ -10,60 +10,60 @@
 struct rb_execution_context_struct; /* in vm_core.h */
 
 static void
-mjit_compile_invokebuiltin_for_rb_ary_shuffle_bang(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_rb_ary_shuffle_bang(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
     if (index == -1) {
-        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
     }
     else {
-        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
-        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == rb_ary_shuffle_bang */\n", (VALUE)rb_ary_shuffle_bang);
-    fprintf(f, "    val = f(ec, self, argv[0]);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == rb_ary_shuffle_bang */\n", (VALUE)rb_ary_shuffle_bang);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0]);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_rb_ary_shuffle(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_rb_ary_shuffle(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
     if (index == -1) {
-        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
     }
     else {
-        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
-        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == rb_ary_shuffle */\n", (VALUE)rb_ary_shuffle);
-    fprintf(f, "    val = f(ec, self, argv[0]);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == rb_ary_shuffle */\n", (VALUE)rb_ary_shuffle);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0]);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_ary_sample0(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_ary_sample0(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == ary_sample0 */\n", (VALUE)ary_sample0);
-    fprintf(f, "    val = f(ec, self);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == ary_sample0 */\n", (VALUE)ary_sample0);
+    rb_str_catf(buf, "    val = f(ec, self);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_ary_sample(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_ary_sample(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE);\n");
     if (index == -1) {
-        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 3);
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 3);
     }
     else {
-        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
-        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == ary_sample */\n", (VALUE)ary_sample);
-    fprintf(f, "    val = f(ec, self, argv[0], argv[1], argv[2]);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == ary_sample */\n", (VALUE)ary_sample);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1], argv[2]);\n");
 }
 
 void Init_builtin_array(void)

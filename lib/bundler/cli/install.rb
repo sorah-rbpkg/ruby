@@ -94,9 +94,8 @@ module Bundler
 
     def warn_if_root
       return if Bundler.settings[:silence_root_warning] || Gem.win_platform? || !Process.uid.zero?
-      Bundler.ui.warn "Don't run Bundler as root. Bundler can ask for sudo " \
-        "if it is needed, and installing your bundle as root will break this " \
-        "application for all non-root users on this machine.", :wrap => true
+      Bundler.ui.warn "Don't run Bundler as root. Installing your bundle as root " \
+                      "will break this application for all non-root users on this machine.", :wrap => true
     end
 
     def dependencies_count_for(definition)
@@ -147,8 +146,11 @@ module Bundler
     def normalize_settings
       Bundler.settings.set_command_option :path, nil if options[:system]
       Bundler.settings.set_command_option_if_given :path, options[:path]
-      Bundler.settings.temporary(:path_relative_to_cwd => false) do
-        Bundler.settings.set_command_option :path, "bundle" if options["standalone"] && Bundler.settings[:path].nil?
+
+      if options["standalone"] && Bundler.settings[:path].nil? && !options["local"]
+        Bundler.settings.temporary(:path_relative_to_cwd => false) do
+          Bundler.settings.set_command_option :path, "bundle"
+        end
       end
 
       bin_option = options["binstubs"]

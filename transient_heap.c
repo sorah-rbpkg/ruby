@@ -9,6 +9,7 @@
 #include "debug_counter.h"
 #include "gc.h"
 #include "internal.h"
+#include "internal/array.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/sanitizers.h"
@@ -168,7 +169,7 @@ ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(static void transient_heap_ptr_check(struct
 static void
 transient_heap_ptr_check(struct transient_heap *theap, VALUE obj)
 {
-    if (obj != Qundef) {
+    if (!UNDEF_P(obj)) {
         const void *ptr = transient_heap_ptr(obj, FALSE);
         TH_ASSERT(ptr == NULL || transient_header_managed_ptr_p(theap, ptr));
     }
@@ -592,12 +593,13 @@ transient_heap_ptr(VALUE obj, int error)
     switch (BUILTIN_TYPE(obj)) {
       case T_ARRAY:
         if (RARRAY_TRANSIENT_P(obj)) {
-            TH_ASSERT(!FL_TEST_RAW(obj, RARRAY_EMBED_FLAG));
+            TH_ASSERT(!ARY_EMBED_P(obj));
             ptr = RARRAY(obj)->as.heap.ptr;
         }
         break;
       case T_OBJECT:
         if (ROBJ_TRANSIENT_P(obj)) {
+            RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
             ptr = ROBJECT_IVPTR(obj);
         }
         break;
@@ -748,7 +750,7 @@ transient_heap_block_evacuate(struct transient_heap* theap, struct transient_hea
     }
 }
 
-#if defined(USE_RUBY_DEBUG_LOG) && USE_RUBY_DEBUG_LOG
+#if USE_RUBY_DEBUG_LOG
 static const char *
 transient_heap_status_cstr(enum transient_heap_status status)
 {
@@ -964,8 +966,6 @@ void
 rb_transient_heap_finish_marking(void)
 {
     ASSERT_vm_locking();
-    RUBY_DEBUG_LOG("");
-
     struct transient_heap* theap = transient_heap_get();
 
     RUBY_DEBUG_LOG("objects:%d, marked:%d",

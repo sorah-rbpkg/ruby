@@ -177,8 +177,8 @@ prelude_ast(VALUE name, VALUE code, int line)
 {
     rb_ast_t *ast = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
     if (!ast->body.root) {
-	rb_ast_dispose(ast);
-	rb_exc_raise(rb_errinfo());
+        rb_ast_dispose(ast);
+        rb_exc_raise(rb_errinfo());
     }
     return ast;
 }
@@ -191,22 +191,22 @@ static void
 prelude_eval(VALUE code, VALUE name, int line)
 {
     static const rb_compile_option_t optimization = {
-	TRUE, /* int inline_const_cache; */
-	TRUE, /* int peephole_optimization; */
-	FALSE,/* int tailcall_optimization; */
-	TRUE, /* int specialized_instruction; */
-	TRUE, /* int operands_unification; */
-	TRUE, /* int instructions_unification; */
-	TRUE, /* int stack_caching; */
-	TRUE, /* int frozen_string_literal; */
-	FALSE, /* int debug_frozen_string_literal; */
-	FALSE, /* unsigned int coverage_enabled; */
-	0, /* int debug_level; */
+        TRUE, /* int inline_const_cache; */
+        TRUE, /* int peephole_optimization; */
+        FALSE,/* int tailcall_optimization; */
+        TRUE, /* int specialized_instruction; */
+        TRUE, /* int operands_unification; */
+        TRUE, /* int instructions_unification; */
+        TRUE, /* int stack_caching; */
+        TRUE, /* int frozen_string_literal; */
+        FALSE, /* int debug_frozen_string_literal; */
+        FALSE, /* unsigned int coverage_enabled; */
+        0, /* int debug_level; */
     };
 
     rb_ast_t *ast = prelude_ast(name, code, line);
-    rb_iseq_eval(rb_iseq_new_with_opt(&ast->body, name, name, Qnil, INT2FIX(line),
-				      NULL, 0, ISEQ_TYPE_TOP, &optimization));
+    rb_iseq_eval(rb_iseq_new_with_opt(&ast->body, name, name, Qnil, line,
+                                      NULL, 0, ISEQ_TYPE_TOP, &optimization));
     rb_ast_dispose(ast);
 }
 COMPILER_WARNING_POP

@@ -10,19 +10,19 @@
 struct rb_execution_context_struct; /* in vm_core.h */
 
 static void
-mjit_compile_invokebuiltin_for_rb_warn_m(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_rb_warn_m(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE);\n");
     if (index == -1) {
-        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 3);
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 3);
     }
     else {
-        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
-        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == rb_warn_m */\n", (VALUE)rb_warn_m);
-    fprintf(f, "    val = f(ec, self, argv[0], argv[1], argv[2]);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == rb_warn_m */\n", (VALUE)rb_warn_m);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1], argv[2]);\n");
 }
 
 void Init_builtin_warning(void)

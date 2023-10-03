@@ -95,7 +95,7 @@ class Reline::Windows
   end
 
   VK_RETURN = 0x0D
-  VK_MENU = 0x12
+  VK_MENU = 0x12 # ALT key
   VK_LMENU = 0xA4
   VK_CONTROL = 0x11
   VK_SHIFT = 0x10
@@ -249,7 +249,7 @@ class Reline::Windows
     # no char, only control keys
     return if key.char_code == 0 and key.control_keys.any?
 
-    @@output_buf.push("\e".ord) if key.control_keys.include?(:ALT)
+    @@output_buf.push("\e".ord) if key.control_keys.include?(:ALT) and !key.control_keys.include?(:CTRL)
 
     @@output_buf.concat(key.char.bytes)
   end
@@ -386,7 +386,7 @@ class Reline::Windows
   def self.scroll_down(val)
     return if val < 0
     return unless csbi = get_console_screen_buffer_info
-    buffer_width, x, y, buffer_lines, attributes, window_left, window_top, window_bottom = csbi.unpack('ssssSssx2s')
+    buffer_width, buffer_lines, x, y, attributes, window_left, window_top, window_bottom = csbi.unpack('ssssSssx2s')
     screen_height = window_bottom - window_top + 1
     val = screen_height if val > screen_height
 
