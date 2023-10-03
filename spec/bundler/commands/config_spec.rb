@@ -143,17 +143,15 @@ RSpec.describe ".bundle/config" do
     end
 
     it "has lower precedence than env" do
-      begin
-        ENV["BUNDLE_FOO"] = "env"
+      ENV["BUNDLE_FOO"] = "env"
 
-        bundle "config set --global foo global"
-        expect(out).to match(/You have a bundler environment variable for foo set to "env"/)
+      bundle "config set --global foo global"
+      expect(out).to match(/You have a bundler environment variable for foo set to "env"/)
 
-        run "puts Bundler.settings[:foo]"
-        expect(out).to eq("env")
-      ensure
-        ENV.delete("BUNDLE_FOO")
-      end
+      run "puts Bundler.settings[:foo]"
+      expect(out).to eq("env")
+    ensure
+      ENV.delete("BUNDLE_FOO")
     end
 
     it "can be deleted" do
@@ -221,15 +219,13 @@ RSpec.describe ".bundle/config" do
     end
 
     it "has higher precedence than env" do
-      begin
-        ENV["BUNDLE_FOO"] = "env"
-        bundle "config set --local foo local"
+      ENV["BUNDLE_FOO"] = "env"
+      bundle "config set --local foo local"
 
-        run "puts Bundler.settings[:foo]"
-        expect(out).to eq("local")
-      ensure
-        ENV.delete("BUNDLE_FOO")
-      end
+      run "puts Bundler.settings[:foo]"
+      expect(out).to eq("local")
+    ensure
+      ENV.delete("BUNDLE_FOO")
     end
 
     it "can be deleted" do
@@ -432,6 +428,34 @@ E
       bundle "config set foo #{long_string_without_special_characters}"
       run "puts Bundler.settings[:foo]"
       expect(out).to match(long_string_without_special_characters)
+    end
+  end
+
+  describe "commented out settings with urls" do
+    before do
+      bundle "config set #mirror.https://rails-assets.org http://localhost:9292"
+    end
+
+    it "does not make bundler crash and ignores the configuration" do
+      bundle "config list --parseable"
+
+      expect(out).to eq("#mirror.https://rails-assets.org/=http://localhost:9292")
+      expect(err).to be_empty
+
+      ruby(<<~RUBY)
+        require "#{entrypoint}"
+        print Bundler.settings.mirror_for("https://rails-assets.org")
+      RUBY
+      expect(out).to eq("https://rails-assets.org/")
+      expect(err).to be_empty
+
+      bundle "config set mirror.all http://localhost:9293"
+      ruby(<<~RUBY)
+        require "#{entrypoint}"
+        print Bundler.settings.mirror_for("https://rails-assets.org")
+      RUBY
+      expect(out).to eq("http://localhost:9293/")
+      expect(err).to be_empty
     end
   end
 

@@ -1,4 +1,4 @@
-require_relative 'user_interaction'
+require_relative "user_interaction"
 
 class Gem::SpecificationPolicy
   include Gem::UserInteraction
@@ -120,7 +120,7 @@ class Gem::SpecificationPolicy
     metadata = @specification.metadata
 
     unless Hash === metadata
-      error 'metadata must be a hash'
+      error "metadata must be a hash"
     end
 
     metadata.each do |key, value|
@@ -154,7 +154,7 @@ class Gem::SpecificationPolicy
 
   def validate_duplicate_dependencies # :nodoc:
     # NOTE: see REFACTOR note in Gem::Dependency about types - this might be brittle
-    seen = Gem::Dependency::TYPES.inject({}) {|types, type| types.merge({ type => {}}) }
+    seen = Gem::Dependency::TYPES.inject({}) {|types, type| types.merge({ type => {} }) }
 
     error_messages = []
     @specification.dependencies.each do |dep|
@@ -173,6 +173,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   end
 
   ##
+  # Checks that the gem does not depend on itself.
   # Checks that dependencies use requirements as we recommend.  Warnings are
   # issued when dependencies are open-ended or overly strict for semantic
   # versioning.
@@ -180,6 +181,10 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   def validate_dependencies # :nodoc:
     warning_messages = []
     @specification.dependencies.each do |dep|
+      if dep.name == @specification.name # warn on self reference
+        warning_messages << "Self referencing dependency is unnecessary and strongly discouraged."
+      end
+
       prerelease_dep = dep.requirements_list.any? do |req|
         Gem::Requirement.new(req).prerelease?
       end
@@ -188,7 +193,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
           prerelease_dep && !@specification.version.prerelease?
 
       open_ended = dep.requirement.requirements.all? do |op, version|
-        not version.prerelease? and (op == '>' or op == '>=')
+        !version.prerelease? && (op == ">" || op == ">=")
       end
 
       if open_ended
@@ -198,12 +203,12 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
 
         base = segments.first 2
 
-        recommendation = if (op == '>' || op == '>=') && segments == [0]
+        recommendation = if (op == ">" || op == ">=") && segments == [0]
           "  use a bounded requirement, such as '~> x.y'"
         else
-          bugfix = if op == '>'
+          bugfix = if op == ">"
             ", '> #{dep_version}'"
-          elsif op == '>=' and base != segments
+          elsif op == ">=" && base != segments
             ", '>= #{dep_version}'"
           end
 
@@ -286,7 +291,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   def validate_require_paths
     return unless @specification.raw_require_paths.empty?
 
-    error 'specification must have at least one require_path'
+    error "specification must have at least one require_path"
   end
 
   def validate_non_files
@@ -310,7 +315,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   def validate_specification_version
     return if @specification.specification_version.is_a?(Integer)
 
-    error 'specification_version must be an Integer (did you mean version?)'
+    error "specification_version must be an Integer (did you mean version?)"
   end
 
   def validate_platform
@@ -338,7 +343,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
       String
     end
 
-    unless Array === val and val.all? {|x| x.kind_of?(klass) }
+    unless Array === val && val.all? {|x| x.kind_of?(klass) }
       error "#{field} must be an Array of #{klass}"
     end
   end
@@ -380,7 +385,7 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
     WARNING
   end
 
-  LAZY = '"FIxxxXME" or "TOxxxDO"'.gsub(/xxx/, '')
+  LAZY = '"FIxxxXME" or "TOxxxDO"'.gsub(/xxx/, "")
   LAZY_PATTERN = /\AFI XME|\ATO DO/x.freeze
   HOMEPAGE_URI_PATTERN = /\A[a-z][a-z\d+.-]*:/i.freeze
 
@@ -404,8 +409,8 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
     homepage = @specification.homepage
 
     # Make sure a homepage is valid HTTP/HTTPS URI
-    if homepage and not homepage.empty?
-      require 'uri'
+    if homepage && !homepage.empty?
+      require "uri"
       begin
         homepage_uri = URI.parse(homepage)
         unless [URI::HTTP, URI::HTTPS].member? homepage_uri.class
@@ -445,7 +450,7 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
 
   def validate_shebang_line_in(executable)
     executable_path = File.join(@specification.bindir, executable)
-    return if File.read(executable_path, 2) == '#!'
+    return if File.read(executable_path, 2) == "#!"
 
     warning "#{executable_path} is missing #! line"
   end
@@ -457,11 +462,25 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
   end
 
   def validate_extensions # :nodoc:
-    require_relative 'ext'
+    require_relative "ext"
     builder = Gem::Ext::Builder.new(@specification)
 
+    validate_rake_extensions(builder)
+    validate_rust_extensions(builder)
+  end
+
+  def validate_rust_extensions(builder) # :nodoc:
+    rust_extension = @specification.extensions.any? {|s| builder.builder_for(s).is_a? Gem::Ext::CargoBuilder }
+    missing_cargo_lock = !@specification.files.any? {|f| f.end_with?("Cargo.lock") }
+
+    error <<-ERROR if rust_extension && missing_cargo_lock
+You have specified rust based extension, but Cargo.lock is not part of the gem files. Please run `cargo generate-lockfile` or any other command to generate Cargo.lock and ensure it is added to your gem files section in gemspec.
+    ERROR
+  end
+
+  def validate_rake_extensions(builder) # :nodoc:
     rake_extension = @specification.extensions.any? {|s| builder.builder_for(s) == Gem::Ext::RakeBuilder }
-    rake_dependency = @specification.dependencies.any? {|d| d.name == 'rake' }
+    rake_dependency = @specification.dependencies.any? {|d| d.name == "rake" }
 
     warning <<-WARNING if rake_extension && !rake_dependency
 You have specified rake based extension, but rake is not added as dependency. It is recommended to add rake as a dependency in gemspec since there's no guarantee rake will be already installed.

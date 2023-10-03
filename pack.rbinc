@@ -10,51 +10,51 @@
 struct rb_execution_context_struct; /* in vm_core.h */
 
 static void
-mjit_compile_invokebuiltin_for_pack_pack(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_pack_pack(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
     if (index == -1) {
-        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
     }
     else {
-        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
-        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == pack_pack */\n", (VALUE)pack_pack);
-    fprintf(f, "    val = f(ec, self, argv[0], argv[1]);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == pack_pack */\n", (VALUE)pack_pack);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1]);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_pack_unpack(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_pack_unpack(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
     if (index == -1) {
-        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
     }
     else {
-        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
-        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == pack_unpack */\n", (VALUE)pack_unpack);
-    fprintf(f, "    val = f(ec, self, argv[0], argv[1]);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == pack_unpack */\n", (VALUE)pack_unpack);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1]);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_pack_unpack1(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_pack_unpack1(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
     if (index == -1) {
-        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
     }
     else {
-        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
-        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == pack_unpack1 */\n", (VALUE)pack_unpack1);
-    fprintf(f, "    val = f(ec, self, argv[0], argv[1]);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == pack_unpack1 */\n", (VALUE)pack_unpack1);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1]);\n");
 }
 
 void Init_builtin_pack(void)

@@ -306,89 +306,6 @@ describe :marshal_load, shared: true do
     end
   end
 
-  ruby_version_is ''...'2.7' do
-    it "returns an untainted object if source is untainted" do
-      x = Object.new
-      y = Marshal.send(@method, Marshal.dump(x))
-      y.tainted?.should be_false
-    end
-
-    describe "when source is tainted" do
-      it "returns a tainted object" do
-        x = Object.new
-        x.taint
-        s = Marshal.dump(x)
-        y = Marshal.send(@method, s)
-        y.tainted?.should be_true
-
-        # note that round-trip via Marshal does not preserve
-        # the taintedness at each level of the nested structure
-        y = Marshal.send(@method, Marshal.dump([[x]]))
-        y.tainted?.should be_true
-        y.first.tainted?.should be_true
-        y.first.first.tainted?.should be_true
-      end
-
-      it "does not taint Symbols" do
-        x = [:x]
-        y = Marshal.send(@method, Marshal.dump(x).taint)
-        y.tainted?.should be_true
-        y.first.tainted?.should be_false
-      end
-
-      it "does not taint Fixnums" do
-        x = [1]
-        y = Marshal.send(@method, Marshal.dump(x).taint)
-        y.tainted?.should be_true
-        y.first.tainted?.should be_false
-      end
-
-      it "does not taint Bignums" do
-        x = [bignum_value]
-        y = Marshal.send(@method, Marshal.dump(x).taint)
-        y.tainted?.should be_true
-        y.first.tainted?.should be_false
-      end
-
-      it "does not taint Floats" do
-        x = [1.2]
-        y = Marshal.send(@method, Marshal.dump(x).taint)
-        y.tainted?.should be_true
-        y.first.tainted?.should be_false
-      end
-    end
-
-    it "preserves taintedness of nested structure" do
-      x = Object.new
-      a = [[x]]
-      x.taint
-      y = Marshal.send(@method, Marshal.dump(a))
-      y.tainted?.should be_true
-      y.first.tainted?.should be_true
-      y.first.first.tainted?.should be_true
-    end
-
-    it "returns a trusted object if source is trusted" do
-      x = Object.new
-      y = Marshal.send(@method, Marshal.dump(x))
-      y.untrusted?.should be_false
-    end
-
-    it "returns an untrusted object if source is untrusted" do
-      x = Object.new
-      x.untrust
-      y = Marshal.send(@method, Marshal.dump(x))
-      y.untrusted?.should be_true
-
-      # note that round-trip via Marshal does not preserve
-      # the untrustedness at each level of the nested structure
-      y = Marshal.send(@method, Marshal.dump([[x]]))
-      y.untrusted?.should be_true
-      y.first.untrusted?.should be_true
-      y.first.first.untrusted?.should be_true
-    end
-  end
-
   # Note: Ruby 1.9 should be compatible with older marshal format
   MarshalSpec::DATA.each do |description, (object, marshal, attributes)|
     it "loads a #{description}" do
@@ -802,6 +719,17 @@ describe :marshal_load, shared: true do
       new_obj_metaclass_ancestors = class << new_obj; ancestors; end
       new_obj_metaclass_ancestors[@num_self_class, 3].should ==
         [Meths, UserRegexp, Regexp]
+    end
+
+    ruby_bug "#19439", ""..."3.3" do
+      it "restore the regexp instance variables" do
+        obj = Regexp.new("hello")
+        obj.instance_variable_set(:@regexp_ivar, [42])
+
+        new_obj = Marshal.send(@method, "\x04\bI/\nhello\x00\a:\x06EF:\x11@regexp_ivar[\x06i/")
+        new_obj.instance_variables.should == [:@regexp_ivar]
+        new_obj.instance_variable_get(:@regexp_ivar).should == [42]
+      end
     end
   end
 

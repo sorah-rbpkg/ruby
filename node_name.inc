@@ -206,3 +206,5 @@
 	return "NODE_HSHPTN";
       case NODE_FNDPTN:
 	return "NODE_FNDPTN";
+      case NODE_ERROR:
+	return "NODE_ERROR";

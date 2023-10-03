@@ -10,83 +10,83 @@
 struct rb_execution_context_struct; /* in vm_core.h */
 
 static void
-mjit_compile_invokebuiltin_for_dir_s_open(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_dir_s_open(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
     if (index == -1) {
-        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
     }
     else {
-        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
-        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == dir_s_open */\n", (VALUE)dir_s_open);
-    fprintf(f, "    val = f(ec, self, argv[0], argv[1]);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == dir_s_open */\n", (VALUE)dir_s_open);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1]);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_dir_s_close(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_dir_s_close(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE);\n");
     if (index == -1) {
-        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 1);
     }
     else {
-        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
-        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == dir_s_close */\n", (VALUE)dir_s_close);
-    fprintf(f, "    val = f(ec, self, argv[0]);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == dir_s_close */\n", (VALUE)dir_s_close);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0]);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_dir_initialize(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_dir_initialize(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE);\n");
     if (index == -1) {
-        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 2);
     }
     else {
-        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
-        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == dir_initialize */\n", (VALUE)dir_initialize);
-    fprintf(f, "    val = f(ec, self, argv[0], argv[1]);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == dir_initialize */\n", (VALUE)dir_initialize);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1]);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_dir_s_aref(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_dir_s_aref(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE);\n");
     if (index == -1) {
-        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 3);
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 3);
     }
     else {
-        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
-        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == dir_s_aref */\n", (VALUE)dir_s_aref);
-    fprintf(f, "    val = f(ec, self, argv[0], argv[1], argv[2]);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == dir_s_aref */\n", (VALUE)dir_s_aref);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1], argv[2]);\n");
 }
 
 static void
-mjit_compile_invokebuiltin_for_dir_s_glob(FILE *f, long index, unsigned stack_size, bool inlinable_p)
+mjit_compile_invokebuiltin_for_dir_s_glob(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
 {
-    fprintf(f, "    VALUE self = GET_SELF();\n");
-    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE, VALUE);\n");
+    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
+    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE, VALUE, VALUE, VALUE, VALUE);\n");
     if (index == -1) {
-        fprintf(f, "    const VALUE *argv = &stack[%d];\n", stack_size - 4);
+        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\n", stack_size - 4);
     }
     else {
-        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\n");
-        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
+        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\n");
+        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\n", index);
     }
-    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == dir_s_glob */\n", (VALUE)dir_s_glob);
-    fprintf(f, "    val = f(ec, self, argv[0], argv[1], argv[2], argv[3]);\n");
+    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == dir_s_glob */\n", (VALUE)dir_s_glob);
+    rb_str_catf(buf, "    val = f(ec, self, argv[0], argv[1], argv[2], argv[3]);\n");
 }
 
 void Init_builtin_dir(void)

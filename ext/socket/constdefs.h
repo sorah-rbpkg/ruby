@@ -1327,6 +1327,11 @@
 #  define SO_ACCEPTFILTER SO_ACCEPTFILTER
 # endif
 #endif
+#if !defined(SO_USER_COOKIE)
+# if defined(HAVE_CONST_SO_USER_COOKIE)
+#  define SO_USER_COOKIE SO_USER_COOKIE
+# endif
+#endif
 #if !defined(SO_DONTTRUNC)
 # if defined(HAVE_CONST_SO_DONTTRUNC)
 #  define SO_DONTTRUNC SO_DONTTRUNC
@@ -1502,6 +1507,26 @@
 #  define SO_BPF_EXTENSIONS SO_BPF_EXTENSIONS
 # endif
 #endif
+#if !defined(SO_SETFIB)
+# if defined(HAVE_CONST_SO_SETFIB)
+#  define SO_SETFIB SO_SETFIB
+# endif
+#endif
+#if !defined(SO_RTABLE)
+# if defined(HAVE_CONST_SO_RTABLE)
+#  define SO_RTABLE SO_RTABLE
+# endif
+#endif
+#if !defined(SO_INCOMING_CPU)
+# if defined(HAVE_CONST_SO_INCOMING_CPU)
+#  define SO_INCOMING_CPU SO_INCOMING_CPU
+# endif
+#endif
+#if !defined(SO_INCOMING_NAPI_ID)
+# if defined(HAVE_CONST_SO_INCOMING_NAPI_ID)
+#  define SO_INCOMING_NAPI_ID SO_INCOMING_NAPI_ID
+# endif
+#endif
 #if !defined(SOPRI_INTERACTIVE)
 # if defined(HAVE_CONST_SOPRI_INTERACTIVE)
 #  define SOPRI_INTERACTIVE SOPRI_INTERACTIVE
@@ -1532,6 +1557,11 @@
 #  define TCP_MAXSEG TCP_MAXSEG
 # endif
 #endif
+#if !defined(TCP_CONNECTION_INFO)
+# if defined(HAVE_CONST_TCP_CONNECTION_INFO)
+#  define TCP_CONNECTION_INFO TCP_CONNECTION_INFO
+# endif
+#endif
 #if !defined(TCP_CORK)
 # if defined(HAVE_CONST_TCP_CORK)
 #  define TCP_CORK TCP_CORK
@@ -1545,6 +1575,11 @@
 #if !defined(TCP_INFO)
 # if defined(HAVE_CONST_TCP_INFO)
 #  define TCP_INFO TCP_INFO
+# endif
+#endif
+#if !defined(TCP_KEEPALIVE)
+# if defined(HAVE_CONST_TCP_KEEPALIVE)
+#  define TCP_KEEPALIVE TCP_KEEPALIVE
 # endif
 #endif
 #if !defined(TCP_KEEPCNT)
