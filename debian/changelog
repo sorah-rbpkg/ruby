@@ -1,6 +1,7 @@
-ruby3.2 (3.2.0-1) UNRELEASED; urgency=medium
+ruby3.2 (3.2.2-1) UNRELEASED; urgency=medium
 
   * Ruby 3.2
+  * New upstream version 3.2.2
 
  -- Lucas Kanashiro <kanashiro@ubuntu.com>  Thu, 12 Dec 2023 18:04:26 -0300
 
