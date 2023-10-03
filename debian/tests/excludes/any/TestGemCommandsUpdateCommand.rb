@@ -10,3 +10,4 @@ exclude :test_execute_system_specific_older_than_3_2_removes_plugins_dir, "gem u
 exclude :test_execute_system_specifically_to_latest_version, "gem update --system was disabled by rubygems-integration"
 exclude :test_execute_system_when_latest_does_not_support_your_ruby, "gem update --system was disabled by rubygems-integration"
 exclude :test_execute_system_update_installed, "gem update --system was disabled by rubygems-integration"
+exclude :test_execute_system_update_installed_in_non_default_gem_path, "gem update --system was disabled by rubygems-integration"
