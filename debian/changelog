@@ -2,6 +2,11 @@ ruby3.2 (3.2.2-1) UNRELEASED; urgency=medium
 
   * Ruby 3.2
   * New upstream version 3.2.2
+  * Remove patches applied by upstream
+  * Refresh patches
+  * Skip some new tests
+  * Update symbols file
+  * Skip some tests failing during autopkgtest time
 
  -- Lucas Kanashiro <kanashiro@ubuntu.com>  Thu, 12 Dec 2023 18:04:26 -0300
 
