@@ -11,13 +11,11 @@ Updated by John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de> on
  configure.ac | 3 +++
  1 file changed, 3 insertions(+)
 
-diff --git a/configure.ac b/configure.ac
-index 5a6b074..49897ad 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -2524,6 +2524,9 @@ AS_CASE([$coroutine_type], [yes|''], [
-         [arm64-darwin*], [
-             coroutine_type=arm64
+@@ -2597,6 +2597,9 @@
+         [powerpc64-darwin*|ppc64-darwin*], [
+             coroutine_type=ppc64
          ],
 +        [x86_64-linux-gnux32], [
 +            coroutine_type=ucontext
