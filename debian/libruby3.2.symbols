@@ -1854,5 +1854,5 @@ libruby-3.2.so.3.2 libruby3.2 #MINVER#
  ruby_xrealloc2@Base 3.2.0~preview1
  ruby_xrealloc@Base 3.2.0~preview1
  setproctitle@Base 3.2.0~preview1
- strlcat@Base 3.2.0~preview1
- strlcpy@Base 3.2.0~preview1
+ (optional)strlcat@Base 3.2.0~preview1
+ (optional)strlcpy@Base 3.2.0~preview1
