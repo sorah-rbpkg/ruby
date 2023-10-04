@@ -7,6 +7,8 @@ ruby3.2 (3.2.2-1) UNRELEASED; urgency=medium
   * Skip some new tests
   * Update symbols file
   * Skip some tests failing during autopkgtest time
+  * d/libruby3.2.symbols: mark strlcat strlcpy as optional, since they are now
+    part of glibc.
 
  -- Lucas Kanashiro <kanashiro@ubuntu.com>  Thu, 12 Dec 2023 18:04:26 -0300
 
