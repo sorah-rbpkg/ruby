@@ -1,4 +1,4 @@
-ruby3.2 (3.2.2-1) UNRELEASED; urgency=medium
+ruby3.2 (3.2.2-1~exp1) experimental; urgency=medium
 
   * Ruby 3.2
   * New upstream version 3.2.2
