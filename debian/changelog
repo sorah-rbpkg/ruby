@@ -9,6 +9,8 @@ ruby3.2 (3.2.2-1~exp1) experimental; urgency=medium
   * Skip some tests failing during autopkgtest time
   * d/libruby3.2.symbols: mark strlcat strlcpy as optional, since they are now
     part of glibc.
+  * d/s/lintian-overrides: add license-problem-non-free-RFC error in inet-imap
+    gem. This seems to be a false positive.
 
  -- Lucas Kanashiro <kanashiro@ubuntu.com>  Thu, 12 Dec 2023 18:04:26 -0300
 
