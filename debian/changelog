@@ -1,3 +1,12 @@
+ruby3.1 (3.1.2-8) UNRELEASED; urgency=medium
+
+  * d/p/Fix-splitting-relative-URI.patch: import upstream patch to fix URI
+    splitting.
+  * d/libruby3.1.symbols: Mark strlcat strlcpy as optional, they are now part
+    of glibc.
+
+ -- Lucas Kanashiro <kanashiro@debian.org>  Fri, 08 Dec 2023 16:42:15 -0300
+
 ruby3.1 (3.1.2-7) unstable; urgency=medium
 
   * Upload to unstable
