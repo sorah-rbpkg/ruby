@@ -2,16 +2,20 @@ From: Sorah Fukumori <her@sorah.jp>
 Date: Sun, 5 Feb 2023 06:25:03 +0900
 Subject: extract-gems-sequential: Keep using RUNRUBY
 
-sorah-rbpkg's special rubyN.M-gems requires to kick
-extract-gems and our build environment has no BASERUBY.
+1. sorah-rbpkg's modified rubyN.M-gems requires to kick
+   extract-gems and our build environment has no BASERUBY.
 
-Partially reverts https://github.com/ruby/ruby/pull/6203
+   Partially reverts https://github.com/ruby/ruby/pull/6203
+
+2. For the same reason, partially reverting
+   https://github.com/ruby/ruby/pull/7347
+   to avoid calling git for extracting gems.
 ---
- common.mk | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ common.mk | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
 diff --git a/common.mk b/common.mk
-index 83f10f7..5ba19da 100644
+index 83f10f7..b5a54dc 100644
 --- a/common.mk
 +++ b/common.mk
 @@ -1503,7 +1503,7 @@ update-gems$(gnumake:yes=-sequential): PHONY
@@ -23,3 +27,12 @@ index 83f10f7..5ba19da 100644
  	    -Itool/lib -rfileutils -rbundled_gem -answ \
  	    -e 'BEGIN {d = ".bundle/gems"}' \
  	    -e 'gem, ver, _, rev = *$$F' \
+@@ -1517,8 +1517,6 @@ extract-gems$(gnumake:yes=-sequential): PHONY
+ 	    -e 'end' \
+ 	    gems/bundled_gems
+ 
+-extract-gems$(gnumake:yes=-sequential): $(HAVE_GIT:yes=clone-bundled-gems-src)
+-
+ clone-bundled-gems-src: PHONY
+ 	$(Q) $(BASERUBY) -C "$(srcdir)" \
+ 	    -Itool/lib -rbundled_gem -answ \
