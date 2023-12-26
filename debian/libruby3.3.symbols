@@ -1804,5 +1804,5 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  ruby_xrealloc2@Base 3.3.0-0nkmi1
  ruby_xrealloc@Base 3.3.0-0nkmi1
  setproctitle@Base 3.3.0-0nkmi1
- strlcat@Base 3.3.0-0nkmi1
- strlcpy@Base 3.3.0-0nkmi1
+ (optional)strlcat@Base 3.3.0-0nkmi1
+ (optional)strlcpy@Base 3.3.0-0nkmi1
