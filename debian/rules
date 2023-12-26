@@ -103,6 +103,8 @@ export LC_ALL := $(LANG)
 override_dh_auto_configure:
 	cp /usr/share/misc/config.guess tool
 	cp /usr/share/misc/config.sub tool
+	# doesn't work with older git version
+	rm tool/test/test_sync_default_gems.rb
 ifeq (riscv64,$(DEB_HOST_ARCH))
 	LIBS="-latomic" ./configure $(configure_options)
 else
