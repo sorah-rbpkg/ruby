@@ -7,6 +7,7 @@
 /usr/lib/ruby/gems/*.0/specifications/net-smtp-*
 /usr/lib/ruby/gems/*.0/specifications/power_assert-*
 /usr/lib/ruby/gems/*.0/specifications/prime-*
+/usr/lib/ruby/gems/*.0/specifications/racc-*
 /usr/lib/ruby/gems/*.0/specifications/rake-*
 /usr/lib/ruby/gems/*.0/specifications/rbs-*
 /usr/lib/ruby/gems/*.0/specifications/rexml-*
@@ -15,6 +16,7 @@
 /usr/lib/ruby/gems/*.0/specifications/typeprof-*
 /usr/lib/ruby/gems/*.0/cache/*
 /usr/lib/ruby/gems/*.0/extensions/*/*.0/debug-*
+/usr/lib/ruby/gems/*.0/extensions/*/*.0/racc-*
 /usr/lib/ruby/gems/*.0/extensions/*/*.0/rbs-*
 /usr/lib/ruby/gems/*.0/gems/debug-*
 /usr/lib/ruby/gems/*.0/gems/matrix-*
