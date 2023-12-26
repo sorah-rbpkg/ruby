@@ -726,7 +726,7 @@ module SyncDefaultGems
         system(*%w"git cherry-pick --skip")
         return false
       else
-        system(*%w"git cherry-pick --continue --no-edit")
+        system({'GIT_EDITOR' => 'true'}, *%w"git cherry-pick --continue")
         return nil unless $?.success?
       end
     end
