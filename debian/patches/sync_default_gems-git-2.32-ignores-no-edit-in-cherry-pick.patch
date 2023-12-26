@@ -1,0 +1,22 @@
+From: Sorah Fukumori <her@sorah.jp>
+Date: Wed, 27 Dec 2023 06:25:02 +0900
+Subject: sync_default_gems: git <2.32 ignores --no-edit in cherry-pick
+
+https://github.com/git/git/commit/39edfd5cbc4d168db19ec1bc867d78ec7211ec39
+---
+ tool/sync_default_gems.rb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tool/sync_default_gems.rb b/tool/sync_default_gems.rb
+index f4774ba..8151751 100755
+--- a/tool/sync_default_gems.rb
++++ b/tool/sync_default_gems.rb
+@@ -651,7 +651,7 @@ module SyncDefaultGems
+     if picked
+       system(*%w"git commit --amend --no-edit")
+     else
+-      system(*%w"git cherry-pick --continue --no-edit")
++      system({'GIT_EDITOR' => 'true'}, *%w"git cherry-pick --continue")
+     end or return nil
+ 
+     # Amend the commit if RDoc references need to be replaced
