@@ -7,5 +7,6 @@
 /usr/lib/ruby/gems/*.0/gems/irb-*
 /usr/lib/ruby/gems/*.0/gems/bundler-*
 /usr/lib/ruby/gems/*.0/gems/erb-*
+/usr/lib/ruby/gems/*.0/gems/syntax_suggest-*
 /usr/lib/ruby/gems/*.0/specifications/default
 /usr/share/systemtap/tapset/libruby*.stp
