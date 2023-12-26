@@ -682,7 +682,7 @@ module SyncDefaultGems
     if picked
       system(*%w"git commit --amend --no-edit")
     else
-      system(*%w"git cherry-pick --continue --no-edit")
+      system({'GIT_EDITOR' => 'true'}, *%w"git cherry-pick --continue")
     end or return nil
 
     # Amend the commit if RDoc references need to be replaced
