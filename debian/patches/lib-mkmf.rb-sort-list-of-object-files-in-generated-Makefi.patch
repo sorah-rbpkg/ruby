@@ -14,10 +14,10 @@ Signed-off-by: Reiner Herrmann <reiner@reiner-h.de>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/lib/mkmf.rb b/lib/mkmf.rb
-index 0fbc1cc..8283d37 100644
+index 6da7dde..3af30a9 100644
 --- a/lib/mkmf.rb
 +++ b/lib/mkmf.rb
-@@ -2362,7 +2362,7 @@ LOCAL_LIBS = #{$LOCAL_LIBS}
+@@ -2368,7 +2368,7 @@ LOCAL_LIBS = #{$LOCAL_LIBS}
  LIBS = #{$LIBRUBYARG} #{$libs} #{$LIBS}
  ORIG_SRCS = #{orig_srcs.collect(&File.method(:basename)).join(' ')}
  SRCS = $(ORIG_SRCS) #{(srcs - orig_srcs).collect(&File.method(:basename)).join(' ')}

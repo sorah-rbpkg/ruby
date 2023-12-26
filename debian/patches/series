@@ -5,6 +5,4 @@ Make-gemspecs-reproducible.patch
 exclude-several-tests-unstable-in-Docker.patch
 Fix-FTBFS-on-x32-misdetected-as-i386-or-amd64.patch
 TestProcess-disable-gems-to-disable-rubygems_integration.patch
-ruby_default_arch.m4-don-t-require-arhitectures-to-be-kno.patch
 extract-gems-sequential-Keep-using-RUNRUBY.patch
-test_dumb_terminal-ruby-command-is-not-always-available.patch
