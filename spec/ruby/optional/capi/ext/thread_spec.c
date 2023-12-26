@@ -8,7 +8,10 @@
 #include <unistd.h>
 #endif
 #if defined(_WIN32)
-#define pipe(p) rb_w32_pipe(p)
+#include "ruby/win32.h"
+#define read rb_w32_read
+#define write rb_w32_write
+#define pipe rb_w32_pipe
 #endif
 
 #ifndef _WIN32
@@ -22,10 +25,6 @@ extern "C" {
 static VALUE thread_spec_rb_thread_alone(VALUE self) {
   return rb_thread_alone() ? Qtrue : Qfalse;
 }
-
-#if defined(__GNUC__)
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
 
 /* This is unblocked by unblock_func(). */
 static void* blocking_gvl_func(void* data) {

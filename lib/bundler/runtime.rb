@@ -28,11 +28,11 @@ module Bundler
         spec.load_paths.reject {|path| $LOAD_PATH.include?(path) }
       end.reverse.flatten
 
-      Bundler.rubygems.add_to_load_path(load_paths)
+      Gem.add_to_load_path(*load_paths)
 
       setup_manpath
 
-      lock(:preserve_unknown_sections => true)
+      lock(preserve_unknown_sections: true)
 
       self
     end
@@ -94,7 +94,7 @@ module Bundler
     definition_method :requires
 
     def lock(opts = {})
-      return if @definition.nothing_changed? && !@definition.unlocking?
+      return if @definition.no_resolve_needed?
       @definition.lock(Bundler.default_lockfile, opts[:preserve_unknown_sections])
     end
 

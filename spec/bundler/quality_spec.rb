@@ -40,16 +40,14 @@ RSpec.describe "The library itself" do
     "#{filename} has spaces on the EOL on lines #{failing_lines.join(", ")}"
   end
 
-  def check_for_straneous_quotes(filename)
-    return if File.expand_path(filename) == __FILE__
-
+  def check_for_extraneous_quotes(filename)
     failing_lines = []
     each_line(filename) do |line, number|
-      failing_lines << number + 1 if /’/.match?(line)
+      failing_lines << number + 1 if /\u{2019}/.match?(line)
     end
 
     return if failing_lines.empty?
-    "#{filename} has an straneous quote on lines #{failing_lines.join(", ")}"
+    "#{filename} has an extraneous quote on lines #{failing_lines.join(", ")}"
   end
 
   def check_for_expendable_words(filename)
@@ -96,12 +94,12 @@ RSpec.describe "The library itself" do
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "has no estraneous quotes" do
+  it "has no extraneous quotes" do
     exempt = /vendor|vcr_cassettes|LICENSE|rbreadline\.diff/
     error_messages = []
     tracked_files.each do |filename|
       next if filename&.match?(exempt)
-      error_messages << check_for_straneous_quotes(filename)
+      error_messages << check_for_extraneous_quotes(filename)
     end
     expect(error_messages.compact).to be_well_formed
   end
@@ -193,9 +191,10 @@ RSpec.describe "The library itself" do
   end
 
   it "ships the correct set of files" do
-    git_list = git_ls_files(ruby_core? ? "lib/bundler lib/bundler.rb libexec/bundle*" : "lib exe CHANGELOG.md LICENSE.md README.md bundler.gemspec")
+    git_list = tracked_files.reject {|f| f.start_with?("spec/") }
 
     gem_list = loaded_gemspec.files
+    gem_list.map! {|f| f.sub(%r{\Aexe/}, "libexec/") } if ruby_core?
 
     expect(git_list).to match_array(gem_list)
   end
@@ -240,6 +239,6 @@ RSpec.describe "The library itself" do
   private
 
   def each_line(filename, &block)
-    File.readlines(filename, :encoding => "UTF-8").each_with_index(&block)
+    File.readlines(filename, encoding: "UTF-8").each_with_index(&block)
   end
 end

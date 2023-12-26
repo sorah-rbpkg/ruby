@@ -173,7 +173,7 @@ struct dump_arg {
     st_table *data;
     st_table *compat_tbl;
     st_table *encodings;
-    unsigned long num_entries;
+    st_index_t num_entries;
 };
 
 struct dump_call_arg {
@@ -228,19 +228,24 @@ static void
 free_dump_arg(void *ptr)
 {
     clear_dump_arg(ptr);
-    xfree(ptr);
 }
 
 static size_t
 memsize_dump_arg(const void *ptr)
 {
-    return sizeof(struct dump_arg);
+    const struct dump_arg *p = (struct dump_arg *)ptr;
+    size_t memsize = 0;
+    if (p->symbols) memsize += rb_st_memsize(p->symbols);
+    if (p->data) memsize += rb_st_memsize(p->data);
+    if (p->compat_tbl) memsize += rb_st_memsize(p->compat_tbl);
+    if (p->encodings) memsize += rb_st_memsize(p->encodings);
+    return memsize;
 }
 
 static const rb_data_type_t dump_arg_data = {
     "dump_arg",
     {mark_dump_arg, free_dump_arg, memsize_dump_arg,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE
@@ -461,7 +466,7 @@ w_float(double d, struct dump_arg *arg)
             memcpy(buf + len, p, digs);
             len += digs;
         }
-        xfree(p);
+        free(p);
         w_bytes(buf, len, arg);
     }
 }
@@ -523,7 +528,7 @@ hash_each(VALUE key, VALUE value, VALUE v)
 
 #define SINGLETON_DUMP_UNABLE_P(klass) \
     (rb_id_table_size(RCLASS_M_TBL(klass)) > 0 || \
-     rb_ivar_count(klass) > 1)
+     rb_ivar_count(klass) > 0)
 
 static void
 w_extended(VALUE klass, struct dump_arg *arg, int check)
@@ -605,10 +610,8 @@ struct w_ivar_arg {
 };
 
 static int
-w_obj_each(st_data_t key, st_data_t val, st_data_t a)
+w_obj_each(ID id, VALUE value, st_data_t a)
 {
-    ID id = (ID)key;
-    VALUE value = (VALUE)val;
     struct w_ivar_arg *ivarg = (struct w_ivar_arg *)a;
     struct dump_call_arg *arg = ivarg->dump;
 
@@ -630,9 +633,8 @@ w_obj_each(st_data_t key, st_data_t val, st_data_t a)
 }
 
 static int
-obj_count_ivars(st_data_t key, st_data_t val, st_data_t a)
+obj_count_ivars(ID id, VALUE val, st_data_t a)
 {
-    ID id = (ID)key;
     if (!to_be_skipped_id(id) && UNLIKELY(!++*(st_index_t *)a)) {
         rb_raise(rb_eRuntimeError, "too many instance variables");
     }
@@ -1272,19 +1274,24 @@ static void
 free_load_arg(void *ptr)
 {
     clear_load_arg(ptr);
-    xfree(ptr);
 }
 
 static size_t
 memsize_load_arg(const void *ptr)
 {
-    return sizeof(struct load_arg);
+    const struct load_arg *p = (struct load_arg *)ptr;
+    size_t memsize = 0;
+    if (p->symbols) memsize += rb_st_memsize(p->symbols);
+    if (p->data) memsize += rb_st_memsize(p->data);
+    if (p->partial_objects) memsize += rb_st_memsize(p->partial_objects);
+    if (p->compat_tbl) memsize += rb_st_memsize(p->compat_tbl);
+    return memsize;
 }
 
 static const rb_data_type_t load_arg_data = {
     "load_arg",
     {mark_load_arg, free_load_arg, memsize_load_arg,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
 #define r_entry(v, arg) r_entry0((v), (arg)->data->num_entries, (arg))
@@ -1673,10 +1680,9 @@ r_leave(VALUE v, struct load_arg *arg, bool partial)
 }
 
 static int
-copy_ivar_i(st_data_t key, st_data_t val, st_data_t arg)
+copy_ivar_i(ID vid, VALUE value, st_data_t arg)
 {
-    VALUE obj = (VALUE)arg, value = (VALUE)val;
-    ID vid = (ID)key;
+    VALUE obj = (VALUE)arg;
 
     if (!rb_ivar_defined(obj, vid))
         rb_ivar_set(obj, vid, value);
@@ -1803,20 +1809,6 @@ r_object0(struct load_arg *arg, bool partial, int *ivp, VALUE extmod)
     return r_object_for(arg, partial, ivp, extmod, type);
 }
 
-static int
-r_move_ivar(st_data_t k, st_data_t v, st_data_t d)
-{
-    ID key = (ID)k;
-    VALUE value = (VALUE)v;
-    VALUE dest = (VALUE)d;
-
-    if (rb_is_instance_id(key)) {
-        rb_ivar_set(dest, key, value);
-        return ST_DELETE;
-    }
-    return ST_CONTINUE;
-}
-
 static VALUE
 r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int type)
 {
@@ -1878,6 +1870,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
                     rb_extend_object(v, m);
                 }
             }
+            v = r_leave(v, arg, partial);
         }
         break;
 
@@ -2033,7 +2026,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
                 rb_str_set_len(str, dst - ptr);
             }
             VALUE regexp = rb_reg_new_str(str, options);
-            rb_ivar_foreach(str, r_move_ivar, regexp);
+            r_copy_ivar(regexp, str);
 
             v = r_entry0(regexp, idx, arg);
             v = r_leave(v, arg, partial);
@@ -2154,7 +2147,12 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
                 marshal_compat_t *compat = (marshal_compat_t*)d;
                 v = compat->loader(klass, v);
             }
-            if (!partial) v = r_post_proc(v, arg);
+            if (!partial) {
+                if (arg->freeze) {
+                    OBJ_FREEZE(v);
+                }
+                v = r_post_proc(v, arg);
+            }
         }
         break;
 
@@ -2179,6 +2177,9 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
             load_funcall(arg, v, s_mload, 1, &data);
             v = r_fixup_compat(v, arg);
             v = r_copy_ivar(v, data);
+            if (arg->freeze) {
+                OBJ_FREEZE(v);
+            }
             v = r_post_proc(v, arg);
             if (!NIL_P(extmod)) {
                 if (oldclass) append_extmod(v, extmod);
@@ -2516,6 +2517,20 @@ Init_marshal(void)
     rb_define_const(rb_mMarshal, "MINOR_VERSION", INT2FIX(MARSHAL_MINOR));
 }
 
+static int
+free_compat_i(st_data_t key, st_data_t value, st_data_t _)
+{
+    xfree((marshal_compat_t *)value);
+    return ST_CONTINUE;
+}
+
+static void
+free_compat_allocator_table(void *data)
+{
+    st_foreach(data, free_compat_i, 0);
+    st_free_table(data);
+}
+
 static st_table *
 compat_allocator_table(void)
 {
@@ -2524,7 +2539,7 @@ compat_allocator_table(void)
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
     compat_allocator_tbl_wrapper =
-        Data_Wrap_Struct(0, mark_marshal_compat_t, 0, compat_allocator_tbl);
+        Data_Wrap_Struct(0, mark_marshal_compat_t, free_compat_allocator_table, compat_allocator_tbl);
     rb_gc_register_mark_object(compat_allocator_tbl_wrapper);
     return compat_allocator_tbl;
 }

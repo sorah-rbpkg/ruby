@@ -735,6 +735,7 @@ ridir
 rubysitearchprefix
 rubyarchprefix
 MAKEFILES
+USE_LLVM_WINDRES
 PLATFORM_DIR
 COROUTINE_TYPE
 THREAD_MODEL
@@ -774,14 +775,15 @@ optflags
 NULLCMD
 ENABLE_DEBUG_ENV
 DLNOBJ
-INSTALL_STATIC_LIBRARY
+XSYMBOLS_IN_EMPTYLIB
+RJIT_SUPPORT
 YJIT_OBJ
 YJIT_LIBS
 CARGO_BUILD_ARGS
 YJIT_SUPPORT
 CARGO
 RUSTC
-MJIT_SUPPORT
+INSTALL_STATIC_LIBRARY
 INSTALLDOC
 CAPITARGET
 RDOCTARGET
@@ -827,25 +829,20 @@ LDSHAREDXX
 LDSHARED
 CCDLFLAGS
 STATIC
-MJIT_LDSHARED
-MJIT_DEBUGFLAGS
-MJIT_OPTFLAGS
-MJIT_CFLAGS
-MJIT_HEADER_INSTALL_DIR
-MJIT_HEADER_FLAGS
 ARCH_FLAG
 DLDFLAGS
-MJIT_TABS
 X_COROUTINE_SRC
 X_COROUTINE_H
 ALLOCA
 EGREP
 GREP
+X_BUILTIN_BINARY
 LIBOBJS
 dsymutil
 codesign
 cleanlibs
 POSTLINK
+incflags
 WERRORFLAG
 RUBY_DEVEL
 CHDIR
@@ -871,7 +868,6 @@ ARFLAGS
 try_header
 CC_VERSION_MESSAGE
 CC_VERSION
-MJIT_CC
 CSRCFLAG
 COUTFLAG
 OUTFLAG
@@ -998,7 +994,6 @@ enable_mathn
 enable_setreuid
 with_coroutine
 with_dln_a_out
-with_mjit_tabs
 with_static_linked_ext
 with_valgrind
 with_ext
@@ -1016,9 +1011,9 @@ enable_install_doc
 with_rdoc
 enable_install_rdoc
 enable_install_capi
-enable_jit_support
-enable_yjit
 enable_install_static_library
+enable_yjit
+enable_rjit
 enable_dln
 enable_debug_env
 with_rubyarchprefix
@@ -1715,12 +1710,13 @@ Optional Features:
                           documents during install
   --disable-install-rdoc  do not install rdoc indexes during install
   --disable-install-capi  do not install C API documents during install
-  --disable-jit-support   disable JIT features
+  --disable-install-static-library
+                          do not install static ruby library
   --enable-yjit           enable in-process JIT compiler that requires Rust
                           build tools. enabled by default on supported
                           platforms if rustc 1.58.0+ is available
-  --disable-install-static-library
-                          do not install static ruby library
+  --enable-rjit           enable pure-Ruby JIT compiler. enabled by default on
+                          Unix x86_64 platforms
   --disable-dln           disable dynamic link feature
   --enable-debug-env      enable RUBY_DEBUG environment variable
   --enable-mkmf-verbose   enable verbose in mkmf
@@ -1753,7 +1749,6 @@ Optional Packages:
   --with-coroutine=IMPLEMENTATION
                           specify the coroutine implementation to use
   --with-dln-a-out        dln_a_out is deprecated
-  --without-mjit-tabs     expand tabs in mjit header
   --with-static-linked-ext
                           link external modules statically
   --without-valgrind      disable valgrind memcheck support
@@ -3627,10 +3622,6 @@ tooldir="$srcdir/tool"
 
 
 
-: "environment section" && {
-HAVE_BASERUBY=yes
-BASERUBY_VERSION=
-
     msg_checking= msg_result_yes= msg_result_no= msg_result_other= msg_reset=
     case "x${CONFIGURE_TTY}" in #(
   xyes|xalways) :
@@ -3678,6 +3669,21 @@ esac
 fi
 
 
+if test "x${GITHUB_ACTIONS}" = xtrue
+then :
+      begin_group() { printf "%s\n" "::group::[93m$1[m";}
+    end_group() { printf "%s\n" "::endgroup::";}
+
+else $as_nop
+      begin_group() { :;}
+    end_group() { :;}
+
+fi
+
+
+begin_group "environment section" && {
+HAVE_BASERUBY=yes
+BASERUBY_VERSION=
 
 # Check whether --with-baseruby was given.
 if test ${with_baseruby+y}
@@ -3742,8 +3748,8 @@ fi
 
 fi
 
-# BASERUBY must be >= 2.2.0. Note that `"2.2.0" > "2.2"` is true.
-if test "$HAVE_BASERUBY" != no -a "`RUBYOPT=- $BASERUBY --disable=gems -e 'print 42 if RUBY_VERSION > "2.2"' 2>/dev/null`" = 42
+# BASERUBY must be >= 2.5.0. Note that `"2.5.0" > "2.5"` is true.
+if test "$HAVE_BASERUBY" != no -a "`RUBYOPT=- $BASERUBY --disable=gems -e 'print 42 if RUBY_VERSION > "2.5"' 2>/dev/null`" = 42
 then :
 
     case "$build_os" in #(
@@ -3755,7 +3761,15 @@ then :
   *) :
      ;;
 esac
-    BASERUBY="$BASERUBY --disable=gems"
+    # RUBY_APPEND_OPTION(BASERUBY)
+	case " ${BASERUBY-} " in #(
+  *" "--disable=gems" "*) :
+     ;; #(
+  '  ') :
+     BASERUBY=""--disable=gems"" ;; #(
+  *) :
+     BASERUBY="$BASERUBY "--disable=gems"" ;;
+esac
     BASERUBY_VERSION=`$BASERUBY -v`
     $BASERUBY -C "$srcdir" tool/downloader.rb -d tool -e gnu config.guess config.sub >&6
 
@@ -3771,7 +3785,7 @@ then :
 then :
   as_fn_error $? "executable host ruby is required for cross-compiling" "$LINENO" 5
 fi
-    BASERUBY="echo executable host ruby is required.  use --with-baseruby option.; false"
+    BASERUBY=$srcdir/tool/missing-baseruby.bat
 
 fi
 
@@ -4948,7 +4962,51 @@ fi
 
     # Ditto for LLVM.  Note however that llvm-as is a LLVM-IR to LLVM bitcode
     # assembler that does not target your machine native binary.
-    : ${LD:="${CC}"}         # ... try -fuse-ld=lld ?
+
+    rb_prog=`echo "${rb_CC}" | sed "s/clang/ld/"`
+    # Extract the first word of "$rb_prog", so it can be a program name with args.
+set dummy $rb_prog; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_prog_LD+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  if test -n "$LD"; then
+  ac_cv_prog_LD="$LD" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_prog_LD="$rb_prog"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+LD=$ac_cv_prog_LD
+if test -n "$LD"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LD" >&5
+    colorize_result "$LD" ; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+    printf "%s\n" "${msg_result_no}no${msg_reset}" >&6 ; }
+fi
+
+
+ # ... maybe try lld ?
 
     rb_prog=`echo "${rb_CC}" | sed "s/clang/llvm-ar/"`
     # Extract the first word of "$rb_prog", so it can be a program name with args.
@@ -5499,11 +5557,18 @@ else
 fi
 
  ;; #(
+  darwin*) :
+
+    # For Apple clang version 14.0.3 (clang-1403.0.22.14.1)
+    ac_cv_prog_ac_ct_AR=`$CC -print-prog-name=ar`
+    ac_cv_prog_ac_ct_LD=`$CC -print-prog-name=ld`
+    ac_cv_prog_ac_ct_NM=`$CC -print-prog-name=nm`
+ ;; #(
   *) :
      ;;
 esac
 case "${target_os}" in #(
-  cygwin*|msys*|mingw*) :
+  cygwin*|msys*|mingw*|darwin*) :
 
     ac_cv_prog_ac_ct_OBJCOPY=":"
  ;; #(
@@ -7659,7 +7724,7 @@ fi
 done
 
   if test "x$ac_ct_OBJCOPY" = x; then
-    OBJCOPY=""
+    OBJCOPY=":"
   else
     case $cross_compiling:$ac_tool_warned in
 yes:)
@@ -7891,6 +7956,13 @@ esac
   fi
 fi
 
+
+# nm errors with Rust's LLVM bitcode when Rust uses a newer LLVM version than nm.
+# In case we're working with llvm-nm, tell it to not worry about the bitcode.
+if ${NM} --help | grep -q 'llvm-bc'
+then :
+  NM="$NM --no-llvm-bc"
+fi
 
 if test ! $rb_test_CFLAGS
 then :
@@ -8319,40 +8391,6 @@ then :
 
 fi
 
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if thread-local storage is supported" >&5
-printf %s "checking if thread-local storage is supported... " >&6; }
-if test ${rb_cv_tls_supported+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-int __thread conftest;
-int
-main (void)
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  rb_cv_tls_supported=yes
-else $as_nop
-  rb_cv_tls_supported=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $rb_cv_tls_supported" >&5
-    colorize_result "$rb_cv_tls_supported" ; }
-    if test x"$rb_cv_tls_supported" != xyes
-then :
-  printf "%s\n" "#define RB_THREAD_LOCAL_SPECIFIER_IS_UNSUPPORTED 1" >>confdefs.h
-
-fi
-
 else $as_nop
 
     linker_flag=
@@ -8428,84 +8466,18 @@ fi
 
 
 
-: ${MJIT_CC=$CC}
-if test "x$cross_compiling" = xno
-then :
-
-    # Extract the first word of "${MJIT_CC}", so it can be a program name with args.
-set dummy ${MJIT_CC}; ac_word=$2
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-printf %s "checking for $ac_word... " >&6; }
-if test ${ac_cv_path_MJIT_CC+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  case $MJIT_CC in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_MJIT_CC="$MJIT_CC" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  case $as_dir in #(((
-    '') as_dir=./ ;;
-    */) ;;
-    *) as_dir=$as_dir/ ;;
-  esac
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
-    ac_cv_path_MJIT_CC="$as_dir$ac_word$ac_exec_ext"
-    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-MJIT_CC=$ac_cv_path_MJIT_CC
-if test -n "$MJIT_CC"; then
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $MJIT_CC" >&5
-    colorize_result "$MJIT_CC" ; }
-else
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-    printf "%s\n" "${msg_result_no}no${msg_reset}" >&6 ; }
-fi
-
-
-
-    # if $CC is in /usr/lib/ccache/$CC, search original $CC (disable ccache)
-    if echo $RUBY_DEBUG | grep ci > /dev/null &&
-           echo $MJIT_CC | grep ^/usr/lib/ccache > /dev/null
-then :
-
-           PATH=`echo $PATH | sed "s/\/usr\/lib\/ccache://"` MJIT_CC=`which $CC`
-fi
-
-    case $target_os in #(
-  *mingw*) :
-    command -v cygpath > /dev/null && MJIT_CC=`cygpath -ma $MJIT_CC` ;; #(
-  *) :
-     ;;
-esac
-    shift 2
-    MJIT_CC="$MJIT_CC${1+ }$*"
-
-fi
-
 case "$build_os" in #(
-  darwin1*.*) :
+  darwin*) :
 
+    # gcc 13 warns duplicate -l options, which are added by the
+    # default spec.
     # Xcode linker warns for deprecated architecture and wrongly
     # installed TBD files.
-    CC_WRAPPER=""
+    CC_WRAPPER="" CC_NO_WRAPPER="$CC"
     echo 'int main(void) {return 0;}' > conftest.c
     if $CC -framework Foundation -o conftest conftest.c 2>&1 |
-	   grep '^ld: warning: text-based stub file' >/dev/null
+	   grep -e '^ld: warning: ignoring duplicate libraries:' \
+	        -e '^ld: warning: text-based stub file' >/dev/null
 then :
 
 	CC_WRAPPER=`cd -P "${tooldir}" && pwd`/darwin-cc
@@ -8582,7 +8554,7 @@ printf %s "checking target architectures... " >&6; }
 	    cpu=$archs
 	    cpu=`echo $cpu | sed 's/-.*-.*//'`
 	    universal_binary="${universal_binary+$universal_binary,}$cpu"
-	    universal_archnames="${universal_archnames} ${archs}=${cpu}"
+	    universal_archnames="${universal_archnames:+$universal_archnames }${archs}=${cpu}"
 	    ARCH_FLAG="${ARCH_FLAG+$ARCH_FLAG }-arch $archs"
 	     ;;
 esac
@@ -8623,20 +8595,33 @@ elif test -z "$ARCH_FLAG"
 then :
 
 
+# Set ARCH_FLAG for different width but family CPU
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking arch option" >&5
 printf %s "checking arch option... " >&6; }
-case "$target_archs" in #(
-  arm64) :
-     ;; #(
-  *64) :
+case "$target_archs":"$host_cpu" in #(
+  arm64:arm*) :
     ARCH_FLAG=-m64 ;; #(
-  i[3-6]86) :
+  arm*:arm*) :
     ARCH_FLAG=-m32 ;; #(
-  ppc) :
+  x86_64:i[3-6]86) :
+    ARCH_FLAG=-m64 ;; #(
+  x64:x86_64) :
+     ;; #(
+  i[3-6]86:x86_64) :
+    ARCH_FLAG=-m32 ;; #(
+  ppc64:ppc*) :
+    ARCH_FLAG=-m64 ;; #(
+  ppc*:ppc64) :
     ARCH_FLAG=-m32 ;; #(
   *) :
-    as_fn_error $? "unknown target architecture: $target_archs" "$LINENO" 5
-	 ;;
+    case $build_os in #(
+  darwin*) :
+    ARCH_FLAG="-arch ""$target_archs" ;; #(
+  *) :
+    ARCH_FLAG=-march="$target_archs"
+     ;;
+esac
+ ;;
 esac
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ARCH_FLAG" >&5
     colorize_result "$ARCH_FLAG" ; }
@@ -8693,7 +8678,7 @@ EOF
 	    target="$target_cpu${target}"
 	    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $target_cpu" >&5
     colorize_result "$target_cpu" ; }
-	     ;; #(
+	 ;; #(
   *) :
      ;;
 esac
@@ -8721,24 +8706,37 @@ then :
 fi
 # RUBY_UNIVERSAL_ARCH end
 
-if test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" = no -a "${universal_binary:-no}" = no
+if test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "${universal_binary:-no}" = no
 then :
 
 
+# Set ARCH_FLAG for different width but family CPU
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking arch option" >&5
 printf %s "checking arch option... " >&6; }
-case "$target_cpu" in #(
-  arm64) :
-     ;; #(
-  *64) :
+case "$target_cpu":"$host_cpu" in #(
+  arm64:arm*) :
     ARCH_FLAG=-m64 ;; #(
-  i[3-6]86) :
+  arm*:arm*) :
     ARCH_FLAG=-m32 ;; #(
-  ppc) :
+  x86_64:i[3-6]86) :
+    ARCH_FLAG=-m64 ;; #(
+  x64:x86_64) :
+     ;; #(
+  i[3-6]86:x86_64) :
+    ARCH_FLAG=-m32 ;; #(
+  ppc64:ppc*) :
+    ARCH_FLAG=-m64 ;; #(
+  ppc*:ppc64) :
     ARCH_FLAG=-m32 ;; #(
   *) :
-    as_fn_error $? "unknown target architecture: $target_archs" "$LINENO" 5
-	 ;;
+    case $build_os in #(
+  darwin*) :
+    ARCH_FLAG="-arch ""$target_cpu" ;; #(
+  *) :
+    ARCH_FLAG=-march="$target_cpu"
+     ;;
+esac
+ ;;
 esac
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ARCH_FLAG" >&5
     colorize_result "$ARCH_FLAG" ; }
@@ -9043,6 +9041,12 @@ fi
 esac
     rb_cv_binary_elf=no
     : ${enable_shared=yes}
+    if $WINDRES --version | grep LLVM > /dev/null
+then :
+  USE_LLVM_WINDRES=yes
+else $as_nop
+  USE_LLVM_WINDRES=no
+fi
      ;; #(
   hiuxmpp*) :
     printf "%s\n" "#define __HIUX_MPP__ 1" >>confdefs.h
@@ -9659,7 +9663,7 @@ rm -fr conf$$.dir
 
 }
 
-: "compiler section" && {
+begin_group "compiler section" && {
 save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $rb_cv_warnflags"
 if test "${ac_c_werror_flag+set}"
@@ -10116,6 +10120,15 @@ then :
 	extra_warnflags="$extra_warnflags -Wno-maybe-uninitialized"
 
 fi
+    case  $CFLAGS  in #(
+  *" -save-temps="*|*" -save-temps "*) :
+     ;; #(
+  *) :
+
+	extra_warnflags="$extra_warnflags -Werror=misleading-indentation"
+     ;;
+esac
+
     # ICC doesn't support -Werror=
     if test $icc_version -gt 0
 then :
@@ -10130,7 +10143,6 @@ fi
 		 -Werror=duplicated-cond \
 		 -Werror=implicit-function-declaration \
 		 -Werror=implicit-int \
-		 -Werror=misleading-indentation \
 		 -Werror=pointer-arith \
 		 -Werror=shorten-64-to-32 \
 		 -Werror=write-strings \
@@ -10711,8 +10723,6 @@ fi
 
 
 fi
-
-    : ${MJIT_HEADER_FLAGS='-P -dD'}
 
     # -fstack-protector
     case "$target_os" in #(
@@ -11510,7 +11520,6 @@ fi
 
 
 fi
-    test "$visibility_option" = no || OBJCOPY=:
 
 fi
 
@@ -11883,10 +11892,12 @@ then :
     LDFLAGS="${LDFLAGS:+$LDFLAGS }$val"
     DLDFLAGS="${DLDFLAGS:+$DLDFLAGS }$val"
     LDFLAGS_OPTDIR="$val"
-    CPPFLAGS="${CPPFLAGS:+$CPPFLAGS }"`echo "$OPT_DIR" | tr "${PATH_SEPARATOR}" '\012' |
+    INCFLAGS="${INCFLAGS:+$INCFLAGS }"`echo "$OPT_DIR" | tr "${PATH_SEPARATOR}" '\012' |
         sed '/^$/d;s|^|-I|;s|$|/include|' | tr '\012' ' ' | sed 's/ *$//'`
 
 fi
+incflags="$INCFLAGS"
+
 
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
 test -z "${ac_env_CXXFLAGS_set}" -a -n "${cxxflags+set}" && eval CXXFLAGS="\"$cxxflags $ARCH_FLAG\""
@@ -11927,7 +11938,7 @@ then :
 
 fi
 
-: "header and library section" && {
+begin_group "header and library section" && {
 
 # Check whether --with-winnt-ver was given.
 if test ${with_winnt_ver+y}
@@ -12417,7 +12428,18 @@ fi
   test -n "$codesign" && break
 done
 
-		for ac_prog in dsymutil
+		dsymutils=
+		case "$CC_NO_WRAPPER" in #(
+  gcc*-1[3-9]) :
+
+		    dsymutils=${CC_NO_WRAPPER#gcc}
+		    dsymutils=dsymutil${dsymutils%-1*}
+		    dsymutils="$dsymutils-19 $dsymutils-18 $dsymutils-17"
+		 ;; #(
+  *) :
+     ;;
+esac
+		for ac_prog in $dsymutils dsymutil
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -12473,7 +12495,7 @@ fi
 		if test -n "$dsymutil"
 then :
 
-		    POSTLINK="$dsymutil \$@${POSTLINK:+; $POSTLINK}"
+		    POSTLINK="$dsymutil \$@ 2>/dev/null${POSTLINK:+; $POSTLINK}"
 
 fi
 		if test -n "${POSTLINK}"
@@ -12851,7 +12873,7 @@ esac
   *) :
      ;;
 esac
-		# With gcc-8's -fcf-protection, MJIT's __builtin_longjmp fails.
+		# With gcc-8's -fcf-protection, RJIT's __builtin_longjmp fails.
 		case "$CC $CFLAGS " in #(
   *" -fcf-protection "*) :
     cf_protection=yes ;; #(
@@ -13830,6 +13852,21 @@ then :
   printf "%s\n" "#define HAVE_UTIME_H 1" >>confdefs.h
 
 fi
+
+ac_fn_c_check_header_compile "$LINENO" "sys/epoll.h" "ac_cv_header_sys_epoll_h" "$ac_includes_default"
+if test "x$ac_cv_header_sys_epoll_h" = xyes
+then :
+  printf "%s\n" "#define HAVE_SYS_EPOLL_H 1" >>confdefs.h
+
+fi
+
+ac_fn_c_check_header_compile "$LINENO" "sys/event.h" "ac_cv_header_sys_event_h" "$ac_includes_default"
+if test "x$ac_cv_header_sys_event_h" = xyes
+then :
+  printf "%s\n" "#define HAVE_SYS_EVENT_H 1" >>confdefs.h
+
+fi
+
 
 case "$target_cpu" in #(
   x64|x86_64|i3-686*) :
@@ -16888,6 +16925,56 @@ printf "%s\n" "#define SIZEOF_CLOCK_T $ac_cv_sizeof_clock_t" >>confdefs.h
 
 fi
 
+X_BUILTIN_BINARY=yes
+
+if test "$cross_compiling" = yes
+then :
+      X_BUILTIN_BINARY=no
+
+else $as_nop
+
+    case ac_cv_sizeof_voidp in #(
+  1-9*) :
+         ;; #(
+  *) :
+
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking word size" >&5
+printf %s "checking word size... " >&6; }
+if test ${rb_cv_word_size+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for w in 4 8; do
+                cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#if SIZEOF_VOIDP != ${w}
+                #error SIZEOF_VOIDP
+                #endif
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  rb_cv_word_size=${w}; break
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+            done
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $rb_cv_word_size" >&5
+    colorize_result "$rb_cv_word_size" ; }
+        if test -z $rb_cv_word_size
+then :
+  X_BUILTIN_BINARY=no
+fi
+     ;;
+esac
+
+fi
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking packed struct attribute" >&5
 printf %s "checking packed struct attribute... " >&6; }
@@ -16924,7 +17011,13 @@ fi
 if test "$rb_cv_packed_struct" != no
 then :
 
-    printf "%s\n" "#define PACKED_STRUCT(x) $rb_cv_packed_struct" >>confdefs.h
+    cat >>confdefs.h <<_ACEOF
+#define RBIMPL_ATTR_PACKED_STRUCT_BEGIN() `echo " $rb_cv_packed_struct " | sed 's/ x .*//;s/^ *//'`
+_ACEOF
+
+    cat >>confdefs.h <<_ACEOF
+#define RBIMPL_ATTR_PACKED_STRUCT_END() `echo " $rb_cv_packed_struct " | sed 's/.* x //;s/ *$//'`
+_ACEOF
 
 
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether -Wno-address-of-packed-member is accepted as CFLAGS" >&5
@@ -16980,11 +17073,6 @@ else $as_nop
   unset ac_c_werror_flag
 
 fi
-
-
-else $as_nop
-
-    printf "%s\n" "#define PACKED_STRUCT(x) x" >>confdefs.h
 
 
 fi
@@ -26342,6 +26430,13 @@ then :
 
 fi
 
+ac_fn_c_check_func "$LINENO" "fchdir" "ac_cv_func_fchdir"
+if test "x$ac_cv_func_fchdir" = xyes
+then :
+  printf "%s\n" "#define HAVE_FCHDIR 1" >>confdefs.h
+
+fi
+
 ac_fn_c_check_func "$LINENO" "fchmod" "ac_cv_func_fchmod"
 if test "x$ac_cv_func_fchmod" = xyes
 then :
@@ -26741,6 +26836,13 @@ then :
 
 fi
 
+ac_fn_c_check_func "$LINENO" "malloc_trim" "ac_cv_func_malloc_trim"
+if test "x$ac_cv_func_malloc_trim" = xyes
+then :
+  printf "%s\n" "#define HAVE_MALLOC_TRIM 1" >>confdefs.h
+
+fi
+
 ac_fn_c_check_func "$LINENO" "mblen" "ac_cv_func_mblen"
 if test "x$ac_cv_func_mblen" = xyes
 then :
@@ -27112,6 +27214,13 @@ then :
 
 fi
 
+ac_fn_c_check_func "$LINENO" "snprintf" "ac_cv_func_snprintf"
+if test "x$ac_cv_func_snprintf" = xyes
+then :
+  printf "%s\n" "#define HAVE_SNPRINTF 1" >>confdefs.h
+
+fi
+
 ac_fn_c_check_func "$LINENO" "spawnv" "ac_cv_func_spawnv"
 if test "x$ac_cv_func_spawnv" = xyes
 then :
@@ -27263,16 +27372,6 @@ then :
 fi
 
 fi
-
-case "$ac_cv_func_memset_s:$ac_cv_func_qsort_s" in #(
-  *yes*) :
-        test "X!defined __STDC_WANT_LIB_EXT1__" = X || printf "#if %s\n" "!defined __STDC_WANT_LIB_EXT1__" >>confdefs.h
-printf "%s\n" "#define __STDC_WANT_LIB_EXT1__ 1" >>confdefs.h
-    test "X!defined __STDC_WANT_LIB_EXT1__" = X || printf "#endif /* %s */\n" "!defined __STDC_WANT_LIB_EXT1__" >>confdefs.h
- ;; #(
-  *) :
-     ;;
-esac
 
 if test "$ac_cv_func_getcwd" = yes
 then :
@@ -28139,6 +28238,52 @@ if test "${rb_cv_builtin___builtin_expect}" != no
 then :
 
   printf "%s\n" "#define HAVE_BUILTIN___BUILTIN_EXPECT 1" >>confdefs.h
+
+
+fi
+
+if test "$rb_cv_builtin___builtin_mul_overflow" != no
+then :
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __builtin_mul_overflow with long long arguments" >&5
+printf %s "checking for __builtin_mul_overflow with long long arguments... " >&6; }
+if test ${rb_cv_use___builtin_mul_overflow_long_long+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#pragma clang optimize off
+
+int
+main(void)
+{
+    long long x = 0, y;
+    __builtin_mul_overflow(x, x, &y);
+
+    return 0;
+}
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  rb_cv_use___builtin_mul_overflow_long_long=yes
+else $as_nop
+  rb_cv_use___builtin_mul_overflow_long_long=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $rb_cv_use___builtin_mul_overflow_long_long" >&5
+    colorize_result "$rb_cv_use___builtin_mul_overflow_long_long" ; }
+
+fi
+if test "$rb_cv_use___builtin_mul_overflow_long_long" = yes
+then :
+
+  printf "%s\n" "#define USE___BUILTIN_MUL_OVERFLOW_LONG_LONG 1" >>confdefs.h
 
 
 fi
@@ -29217,7 +29362,7 @@ then :
 else $as_nop
 
 case "$archs" in #(
-  m68*|x86*|x64|i?86|ppc*|sparc*|alpha*) :
+  m68*|x86*|x64|i?86|ppc*|sparc*|alpha*|arm*|aarch*) :
      dir=-1 ;; #(
   hppa*) :
      dir=+1 ;; #(
@@ -29312,7 +29457,7 @@ then :
 else $as_nop
 
 case "$target_cpu" in #(
-  m68*|x86*|x64|i?86|ppc*|sparc*|alpha*) :
+  m68*|x86*|x64|i?86|ppc*|sparc*|alpha*|arm*|aarch*) :
      dir=-1 ;; #(
   hppa*) :
      dir=+1 ;; #(
@@ -29427,6 +29572,10 @@ esac
 
             coroutine_type=win32
          ;; #(
+  aarch64-mingw*) :
+
+            coroutine_type=arm64
+         ;; #(
   arm*-linux*) :
 
             coroutine_type=arm32
@@ -29442,6 +29591,10 @@ esac
   riscv64-linux*) :
 
             coroutine_type=riscv64
+         ;; #(
+  loongarch64-linux*) :
+
+            coroutine_type=loongarch64
          ;; #(
   x86_64-freebsd*) :
 
@@ -29474,6 +29627,10 @@ esac
   i386-openbsd*) :
 
             coroutine_type=x86
+         ;; #(
+  aarch64-openbsd*) :
+
+            coroutine_type=arm64
          ;; #(
   *-openbsd*) :
 
@@ -29770,6 +29927,73 @@ then :
   *) :
      ;;
 esac
+
+fi
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for thread-local storage sepcifier" >&5
+printf %s "checking for thread-local storage sepcifier... " >&6; }
+if test ${rb_cv_tls_specifier+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  rb_cv_tls_specifier=none
+        save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS $rb_cv_warnflags"
+if test "${ac_c_werror_flag+set}"
+then :
+
+  rb_c_werror_flag="$ac_c_werror_flag"
+
+else $as_nop
+
+  unset rb_c_werror_flag
+
+fi
+ac_c_werror_flag=yes
+
+            for attr in \
+                _Thread_local \
+                __thread \
+                ; do
+                cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$attr int conftest;
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  rb_cv_tls_specifier=$attr; break
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+            done
+
+CFLAGS="$save_CFLAGS"
+save_CFLAGS=
+if test "${rb_c_werror_flag+set}"
+then :
+
+  ac_c_werror_flag="$rb_c_werror_flag"
+
+else $as_nop
+
+  unset ac_c_werror_flag
+
+fi
+
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $rb_cv_tls_specifier" >&5
+    colorize_result "$rb_cv_tls_specifier" ; }
+    if test x"${rb_cv_tls_specifier}" != xnone
+then :
+  printf "%s\n" "#define RB_THREAD_LOCAL_SPECIFIER ${rb_cv_tls_specifier}" >>confdefs.h
+
 
 fi
 
@@ -30114,7 +30338,7 @@ fi
 
 }
 
-: "runtime section" && {
+begin_group "runtime section" && {
 
 # Check whether --with-dln-a-out was given.
 if test ${with_dln_a_out+y}
@@ -30244,25 +30468,6 @@ fi ;; #(
 esac
 LIBEXT=a
 
-
-# Check whether --with-mjit-tabs was given.
-if test ${with_mjit_tabs+y}
-then :
-  withval=$with_mjit_tabs; if test $withval = no
-then :
-  MJIT_TABS=false
-fi
-fi
-
-case "$GCC:$target_os" in #(
-  yes:aix*) :
-    mjit_std_cflag="-std=gnu99" ;; #(
-  *) :
-    mjit_std_cflag= ;;
-esac
-MJIT_CFLAGS=${MJIT_CFLAGS-"-w ${mjit_std_cflag} ${orig_cflags}"}
-MJIT_OPTFLAGS=${MJIT_OPTFLAGS-'$(optflags)'}
-MJIT_DEBUGFLAGS=${MJIT_DEBUGFLAGS-'$(debugflags)'}
 
 ASMEXT=S
 
@@ -30459,13 +30664,12 @@ fi
     	: ${LDSHARED='$(CC) -dynamic -bundle'}
 			: ${DLDSHARED='$(CC) -dynamiclib'}
 			: ${LDFLAGS=""}
-			: ${LIBPATHENV=DYLD_FALLBACK_LIBRARY_PATH}
+			: ${LIBPATHENV=DYLD_LIBRARY_PATH}
 			: ${PRELOADENV=DYLD_INSERT_LIBRARIES}
                         if test x"$enable_shared" = xyes
 then :
 
-                            # Resolve symbols from libruby.dylib when --enable-shared
-                            EXTDLDFLAGS='$(LIBRUBYARG_SHARED)'
+                            # Resolve symbols from libruby.dylib in $(LIBS) when --enable-shared
 
 elif test "x$EXTSTATIC" = x
 then :
@@ -31355,11 +31559,6 @@ then :
 
    printf "%s\n" "#define ENABLE_MULTIARCH 1" >>confdefs.h
 
-   MJIT_HEADER_INSTALL_DIR=include/'${arch}/${RUBY_VERSION_NAME}'
-
-else $as_nop
-
-   MJIT_HEADER_INSTALL_DIR=include/'${RUBY_VERSION_NAME}/${arch}'
 
 fi
 
@@ -32510,7 +32709,7 @@ fi
 
 }
 
-: "build section" && {
+begin_group "installation section" && {
 RDOCTARGET=""
 CAPITARGET=""
 # Check whether --enable-install-doc was given.
@@ -32598,32 +32797,27 @@ case "$RDOCTARGET:$CAPITARGET" in #(
 esac
 
 
-# Check whether --enable-jit-support was given.
-if test ${enable_jit_support+y}
+# Check whether --enable-install-static-library was given.
+if test ${enable_install_static_library+y}
 then :
-  enableval=$enable_jit_support; MJIT_SUPPORT=$enableval
+  enableval=$enable_install_static_library; INSTALL_STATIC_LIBRARY=$enableval
+         if test x"$enable_shared" = xno -a x"$INSTALL_STATIC_LIBRARY" = xno
+then :
+  as_fn_error $? "must install either static or shared library" "$LINENO" 5
+fi
 else $as_nop
-  case "$target_os" in #(
-  wasi | mingw* | solaris*) :
-    MJIT_SUPPORT=no ;; #(
-  *) :
-    MJIT_SUPPORT=yes
-     ;;
-esac
+  if test x"$enable_shared" = xyes
+then :
+  INSTALL_STATIC_LIBRARY=no
+else $as_nop
+  INSTALL_STATIC_LIBRARY=yes
+fi
 fi
 
 
-if test x"$MJIT_SUPPORT" = "xyes"
-then :
-  printf "%s\n" "#define USE_MJIT 1" >>confdefs.h
+}
 
-else $as_nop
-  printf "%s\n" "#define USE_MJIT 0" >>confdefs.h
-
-fi
-
-
-
+begin_group "JIT section" && {
 # Extract the first word of "rustc", so it can be a program name with args.
 set dummy rustc; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -32724,8 +32918,8 @@ if test ${enable_yjit+y}
 then :
   enableval=$enable_yjit; YJIT_SUPPORT=$enableval
 else $as_nop
-  case "$enable_jit_support:$YJIT_TARGET_OK:$YJIT_RUSTC_OK" in #(
-  yes:yes:yes|:yes:yes) :
+  case "$YJIT_TARGET_OK:$YJIT_RUSTC_OK" in #(
+  yes:yes) :
 
             YJIT_SUPPORT=yes
          ;; #(
@@ -32743,11 +32937,6 @@ YJIT_LIBS=
 case "${YJIT_SUPPORT}" in #(
   yes|dev|stats|dev_nodebug) :
 
-    if test x"$enable_jit_support" = "xno"
-then :
-  as_fn_error $? "--disable-jit-support but --enable-yjit. YJIT requires JIT support" "$LINENO" 5
-
-fi
     if test x"$RUSTC" = "xno"
 then :
   as_fn_error $? "rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install" "$LINENO" 5
@@ -32770,6 +32959,8 @@ fi
 
 	rb_rust_target_subdir=dev_nodebug
 	CARGO_BUILD_ARGS='--profile dev_nodebug --features stats,disasm'
+	printf "%s\n" "#define YJIT_STATS 1" >>confdefs.h
+
      ;; #(
   stats) :
 
@@ -32916,30 +33107,125 @@ fi
 
  ;; #(
   *) :
+
     printf "%s\n" "#define USE_YJIT 0" >>confdefs.h
+
  ;;
 esac
 
 
-# Check whether --enable-install-static-library was given.
-if test ${enable_install_static_library+y}
+RJIT_TARGET_OK=no
+if test "$cross_compiling" = no
 then :
-  enableval=$enable_install_static_library; INSTALL_STATIC_LIBRARY=$enableval
-         if test x"$enable_shared" = xno -a x"$INSTALL_STATIC_LIBRARY" = xno
-then :
-  as_fn_error $? "must install either static or shared library" "$LINENO" 5
+  case "$target_cpu-$target_os" in #(
+  *android*) :
+
+            RJIT_TARGET_OK=no
+         ;; #(
+  arm64-darwin*|aarch64-darwin*|x86_64-darwin*) :
+
+            RJIT_TARGET_OK=yes
+         ;; #(
+  arm64-*linux*|aarch64-*linux*|x86_64-*linux*) :
+
+            RJIT_TARGET_OK=yes
+         ;; #(
+  arm64-*bsd*|aarch64-*bsd*|x86_64-*bsd*) :
+
+            RJIT_TARGET_OK=yes
+
+     ;; #(
+  *) :
+     ;;
+esac
+
 fi
+
+# Check whether --enable-rjit was given.
+if test ${enable_rjit+y}
+then :
+  enableval=$enable_rjit; RJIT_SUPPORT=$enableval
 else $as_nop
-  if test x"$enable_shared" = xyes
+  case "$RJIT_TARGET_OK" in #(
+  yes) :
+    RJIT_SUPPORT=yes ;; #(
+  *) :
+    RJIT_SUPPORT=no
+     ;;
+esac
+
+fi
+
+
+case "$RJIT_SUPPORT" in #(
+  yes|dev) :
+
+    case "$RJIT_SUPPORT" in #(
+  dev) :
+
+        # Link libcapstone for --rjit-dump-disasm
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for cs_disasm in -lcapstone" >&5
+printf %s "checking for cs_disasm in -lcapstone... " >&6; }
+if test ${ac_cv_lib_capstone_cs_disasm+y}
 then :
-  INSTALL_STATIC_LIBRARY=no
+  printf %s "(cached) " >&6
 else $as_nop
-  INSTALL_STATIC_LIBRARY=yes
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lcapstone  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char cs_disasm ();
+int
+main (void)
+{
+return cs_disasm ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_lib_capstone_cs_disasm=yes
+else $as_nop
+  ac_cv_lib_capstone_cs_disasm=no
 fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_capstone_cs_disasm" >&5
+    colorize_result "$ac_cv_lib_capstone_cs_disasm" ; }
+if test "x$ac_cv_lib_capstone_cs_disasm" = xyes
+then :
+  printf "%s\n" "#define HAVE_LIBCAPSTONE 1" >>confdefs.h
+
+  LIBS="-lcapstone $LIBS"
+
 fi
 
+     ;; #(
+  *) :
+     ;;
+esac
+
+    printf "%s\n" "#define USE_RJIT 1" >>confdefs.h
+
+ ;; #(
+  *) :
+
+    printf "%s\n" "#define USE_RJIT 0" >>confdefs.h
+
+ ;;
+esac
 
 
+}
+
+begin_group "build section" && {
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for prefix of external symbols" >&5
 printf %s "checking for prefix of external symbols... " >&6; }
 if test ${rb_cv_symbol_prefix+y}
@@ -32975,6 +33261,52 @@ fi
     colorize_result "$rb_cv_symbol_prefix" ; }
 SYMBOL_PREFIX="$rb_cv_symbol_prefix"
 test "x$SYMBOL_PREFIX" = xNONE && SYMBOL_PREFIX=''
+
+if test x"$enable_shared" = xyes
+then :
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for default symbols in empty shared library" >&5
+printf %s "checking for default symbols in empty shared library... " >&6; }
+if test ${rb_cv_symbols_in_emptylib+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+
+        save_CC="$CC"
+        eval CC=\"`printf "%s" "${DLDSHARED}" | sed 's/\$(CC)/${CC}/'`\"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+
+            rb_cv_symbols_in_emptylib=`$NM -Pgp conftest$ac_exeext |
+                sed "/ [A-TV-Z] .*/!d;s///;s/^${SYMBOL_PREFIX}//;/^main$/d"`
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+        set dummy ${rb_cv_symbols_in_emptylib}
+        shift
+        rb_cv_symbols_in_emptylib="$*"
+        CC="$save_CC"
+
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $rb_cv_symbols_in_emptylib" >&5
+    colorize_result "$rb_cv_symbols_in_emptylib" ; }
+
+fi
+XSYMBOLS_IN_EMPTYLIB="${rb_cv_symbols_in_emptylib}"
+
+
 DLNOBJ=dln.o
 # Check whether --enable-dln was given.
 if test ${enable_dln+y}
@@ -33395,8 +33727,9 @@ fi
     colorize_result "$rb_cv_architecture_available" ; }
 
 fi
+}
 
-: ${MJIT_LDSHARED=`echo "$LDSHARED" | sed 's|\$(LD)|'"${LD}"'|g;s|\$(CC)|$(MJIT_CC)|g'`}
+end_group
 
 MAINLIBS="$LIBS"
 LIBS=$ORIG_LIBS
@@ -33463,6 +33796,7 @@ cflags="${orig_cflags:+$orig_cflags }"'${optflags} ${debugflags} ${warnflags}'
 
 
 COROUTINE_TYPE=${coroutine_type}
+
 
 
 
@@ -33681,6 +34015,14 @@ fi
     printf "%s\n" "#define RUBY_PLATFORM \"$arch\"" >>confdefs.h
 
 
+    if test "$arch" = "s390x-linux"
+then :
+
+       printf "%s\n" "#define USE_MN_THREADS 0" >>confdefs.h
+
+
+fi
+
 fi
 
 unset sitearch
@@ -33880,7 +34222,7 @@ guard=INCLUDE_RUBY_CONFIG_H
 {
   echo "#ifndef $guard"
   echo "#define $guard 1"
-  grep -v "^#define PACKAGE_" confdefs.h
+  sed "/^#define PACKAGE_/d;s/  *$//" confdefs.h
   echo "#endif /* $guard */"
 } | tr -d '\015' |
 (
@@ -35236,7 +35578,6 @@ printf "%s\n" "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2
 fi
 
 }
-}
 
 if test "$silent" = yes
 then :
@@ -35292,8 +35633,8 @@ config_summary "debugflags"          "$debugflags"
 config_summary "warnflags"           "$warnflags"
 config_summary "strip command"       "$STRIP"
 config_summary "install doc"         "$DOCTARGETS"
-config_summary "MJIT support"        "$MJIT_SUPPORT"
 config_summary "YJIT support"        "$YJIT_SUPPORT"
+config_summary "RJIT support"        "$RJIT_SUPPORT"
 config_summary "man page type"       "$MANTYPE"
 config_summary "search path"         "$search_path"
 config_summary "static-linked-ext"   ${EXTSTATIC:+"yes"}

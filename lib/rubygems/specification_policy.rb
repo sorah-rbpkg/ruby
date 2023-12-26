@@ -1,22 +1,25 @@
+# frozen_string_literal: true
+
 require_relative "user_interaction"
 
 class Gem::SpecificationPolicy
   include Gem::UserInteraction
 
-  VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/.freeze # :nodoc:
+  VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/ # :nodoc:
 
-  SPECIAL_CHARACTERS = /\A[#{Regexp.escape('.-_')}]+/.freeze # :nodoc:
+  SPECIAL_CHARACTERS = /\A[#{Regexp.escape('.-_')}]+/ # :nodoc:
 
-  VALID_URI_PATTERN = %r{\Ahttps?:\/\/([^\s:@]+:[^\s:@]*@)?[A-Za-z\d\-]+(\.[A-Za-z\d\-]+)+\.?(:\d{1,5})?([\/?]\S*)?\z}.freeze # :nodoc:
+  VALID_URI_PATTERN = %r{\Ahttps?:\/\/([^\s:@]+:[^\s:@]*@)?[A-Za-z\d\-]+(\.[A-Za-z\d\-]+)+\.?(:\d{1,5})?([\/?]\S*)?\z} # :nodoc:
 
   METADATA_LINK_KEYS = %w[
-    bug_tracker_uri
-    changelog_uri
-    documentation_uri
     homepage_uri
-    mailing_list_uri
+    changelog_uri
     source_code_uri
+    documentation_uri
     wiki_uri
+    mailing_list_uri
+    bug_tracker_uri
+    download_uri
     funding_uri
   ].freeze # :nodoc:
 
@@ -104,6 +107,8 @@ class Gem::SpecificationPolicy
 
     validate_removed_attributes
 
+    validate_unique_links
+
     if @warnings > 0
       if strict
         error "specification has warnings"
@@ -125,7 +130,7 @@ class Gem::SpecificationPolicy
 
     metadata.each do |key, value|
       entry = "metadata['#{key}']"
-      if !key.kind_of?(String)
+      unless key.is_a?(String)
         error "metadata keys must be a String"
       end
 
@@ -133,7 +138,7 @@ class Gem::SpecificationPolicy
         error "metadata key is too large (#{key.size} > 128)"
       end
 
-      if !value.kind_of?(String)
+      unless value.is_a?(String)
         error "#{entry} value must be a String"
       end
 
@@ -141,10 +146,9 @@ class Gem::SpecificationPolicy
         error "#{entry} value is too large (#{value.size} > 1024)"
       end
 
-      if METADATA_LINK_KEYS.include? key
-        if value !~ VALID_URI_PATTERN
-          error "#{entry} has invalid link: #{value.inspect}"
-        end
+      next unless METADATA_LINK_KEYS.include? key
+      unless VALID_URI_PATTERN.match?(value)
+        error "#{entry} has invalid link: #{value.inspect}"
       end
     end
   end
@@ -161,7 +165,7 @@ class Gem::SpecificationPolicy
       if prev = seen[dep.type][dep.name]
         error_messages << <<-MESSAGE
 duplicate dependency on #{dep}, (#{prev.requirement}) use:
-    add_#{dep.type}_dependency '#{dep.name}', '#{dep.requirement}', '#{prev.requirement}'
+    add_#{dep.type}_dependency \"#{dep.name}\", \"#{dep.requirement}\", \"#{prev.requirement}\"
         MESSAGE
       end
 
@@ -193,31 +197,30 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
           prerelease_dep && !@specification.version.prerelease?
 
       open_ended = dep.requirement.requirements.all? do |op, version|
-        !version.prerelease? && (op == ">" || op == ">=")
+        !version.prerelease? && [">", ">="].include?(op)
       end
 
-      if open_ended
-        op, dep_version = dep.requirement.requirements.first
+      next unless open_ended
+      op, dep_version = dep.requirement.requirements.first
 
-        segments = dep_version.segments
+      segments = dep_version.segments
 
-        base = segments.first 2
+      base = segments.first 2
 
-        recommendation = if (op == ">" || op == ">=") && segments == [0]
-          "  use a bounded requirement, such as '~> x.y'"
-        else
-          bugfix = if op == ">"
-            ", '> #{dep_version}'"
-          elsif op == ">=" && base != segments
-            ", '>= #{dep_version}'"
-          end
-
-          "  if #{dep.name} is semantically versioned, use:\n" \
-          "    add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join '.'}'#{bugfix}"
+      recommendation = if [">", ">="].include?(op) && segments == [0]
+        "  use a bounded requirement, such as \"~> x.y\""
+      else
+        bugfix = if op == ">"
+          ", \"> #{dep_version}\""
+        elsif op == ">=" && base != segments
+          ", \">= #{dep_version}\""
         end
 
-        warning_messages << ["open-ended dependency on #{dep} is not recommended", recommendation].join("\n") + "\n"
+        "  if #{dep.name} is semantically versioned, use:\n" \
+        "    add_#{dep.type}_dependency \"#{dep.name}\", \"~> #{base.join "."}\"#{bugfix}"
       end
+
+      warning_messages << ["open-ended dependency on #{dep} is not recommended", recommendation].join("\n") + "\n"
     end
     if warning_messages.any?
       warning_messages.each {|warning_message| warning warning_message }
@@ -234,7 +237,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
 
     @specification.files.each do |file|
       next unless File.file?(file)
-      next if File.stat(file).mode & 0444 == 0444
+      next if File.stat(file).mode & 0o444 == 0o444
       warning "#{file} is not world-readable"
     end
 
@@ -253,7 +256,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
       @specification.instance_variable_get("@#{attrname}").nil?
     end
     return if nil_attributes.empty?
-    error "#{nil_attributes.join ', '} must not be nil"
+    error "#{nil_attributes.join ", "} must not be nil"
   end
 
   def validate_rubygems_version
@@ -279,11 +282,11 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
 
     if !name.is_a?(String)
       error "invalid value for attribute name: \"#{name.inspect}\" must be a string"
-    elsif name !~ /[a-zA-Z]/
+    elsif !/[a-zA-Z]/.match?(name)
       error "invalid value for attribute name: #{name.dump} must include at least one letter"
-    elsif name !~ VALID_NAME_PATTERN
+    elsif !VALID_NAME_PATTERN.match?(name)
       error "invalid value for attribute name: #{name.dump} can only include letters, numbers, dashes, and underscores"
-    elsif name =~ SPECIAL_CHARACTERS
+    elsif SPECIAL_CHARACTERS.match?(name)
       error "invalid value for attribute name: #{name.dump} can not begin with a period, dash, or underscore"
     end
   end
@@ -337,13 +340,13 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   def validate_array_attribute(field)
     val = @specification.send(field)
     klass = case field
-    when :dependencies then
-      Gem::Dependency
-    else
-      String
+            when :dependencies then
+              Gem::Dependency
+            else
+              String
     end
 
-    unless Array === val && val.all? {|x| x.kind_of?(klass) }
+    unless Array === val && val.all? {|x| x.is_a?(klass) || (field == :licenses && x.nil?) }
       error "#{field} must be an Array of #{klass}"
     end
   end
@@ -358,6 +361,8 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
     licenses = @specification.licenses
 
     licenses.each do |license|
+      next if license.nil?
+
       if license.length > 64
         error "each license must be 64 characters or less"
       end
@@ -368,26 +373,38 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
     licenses = @specification.licenses
 
     licenses.each do |license|
-      if !Gem::Licenses.match?(license)
-        suggestions = Gem::Licenses.suggestions(license)
-        message = <<-WARNING
-license value '#{license}' is invalid.  Use a license identifier from
-http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license.
-        WARNING
-        message += "Did you mean #{suggestions.map {|s| "'#{s}'" }.join(', ')}?\n" unless suggestions.nil?
-        warning(message)
+      next if Gem::Licenses.match?(license) || license.nil?
+      license_id_deprecated = Gem::Licenses.deprecated_license_id?(license)
+      exception_id_deprecated = Gem::Licenses.deprecated_exception_id?(license)
+      suggestions = Gem::Licenses.suggestions(license)
+
+      if license_id_deprecated
+        main_message = "License identifier '#{license}' is deprecated"
+      elsif exception_id_deprecated
+        main_message = "Exception identifier at '#{license}' is deprecated"
+      else
+        main_message = "License identifier '#{license}' is invalid"
       end
+
+      message = <<-WARNING
+#{main_message}. Use an identifier from
+https://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license,
+or set it to nil if you don't want to specify a license.
+      WARNING
+      message += "Did you mean #{suggestions.map {|s| "'#{s}'" }.join(", ")}?\n" unless suggestions.nil?
+      warning(message)
     end
 
     warning <<-WARNING if licenses.empty?
-licenses is empty, but is recommended.  Use a license identifier from
-http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license.
+licenses is empty, but is recommended. Use an license identifier from
+https://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license,
+or set it to nil if you don't want to specify a license.
     WARNING
   end
 
   LAZY = '"FIxxxXME" or "TOxxxDO"'.gsub(/xxx/, "")
-  LAZY_PATTERN = /\AFI XME|\ATO DO/x.freeze
-  HOMEPAGE_URI_PATTERN = /\A[a-z][a-z\d+.-]*:/i.freeze
+  LAZY_PATTERN = /\AFI XME|\ATO DO/x
+  HOMEPAGE_URI_PATTERN = /\A[a-z][a-z\d+.-]*:/i
 
   def validate_lazy_metadata
     unless @specification.authors.grep(LAZY_PATTERN).empty?
@@ -398,11 +415,11 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
       error "#{LAZY} is not an email"
     end
 
-    if @specification.description =~ LAZY_PATTERN
+    if LAZY_PATTERN.match?(@specification.description)
       error "#{LAZY} is not a description"
     end
 
-    if @specification.summary =~ LAZY_PATTERN
+    if LAZY_PATTERN.match?(@specification.summary)
       error "#{LAZY} is not a summary"
     end
 
@@ -485,6 +502,22 @@ You have specified rust based extension, but Cargo.lock is not part of the gem f
     warning <<-WARNING if rake_extension && !rake_dependency
 You have specified rake based extension, but rake is not added as dependency. It is recommended to add rake as a dependency in gemspec since there's no guarantee rake will be already installed.
     WARNING
+  end
+
+  def validate_unique_links
+    links = @specification.metadata.slice(*METADATA_LINK_KEYS)
+    grouped = links.group_by {|_key, uri| uri }
+    grouped.each do |uri, copies|
+      next unless copies.length > 1
+      keys = copies.map(&:first).join("\n  ")
+      warning <<~WARNING
+        You have specified the uri:
+          #{uri}
+        for all of the following keys:
+          #{keys}
+        Only the first one will be shown on rubygems.org
+      WARNING
+    end
   end
 
   def warning(statement) # :nodoc:

@@ -24,7 +24,7 @@ module Bundler
 
           name = dep.name
 
-          @packages[name] = Package.new(name, dep_platforms, **options.merge(:dependency => dep))
+          @packages[name] = Package.new(name, dep_platforms, **options.merge(dependency: dep))
 
           dep
         end.compact
@@ -35,9 +35,7 @@ module Bundler
       end
 
       def delete(specs)
-        specs.each do |spec|
-          @base.delete(spec)
-        end
+        @base.delete(specs)
       end
 
       def get_package(name)

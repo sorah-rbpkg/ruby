@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 require_relative "../local_remote_options"
 require_relative "../version_option"
@@ -9,8 +10,8 @@ class Gem::Commands::FetchCommand < Gem::Command
 
   def initialize
     defaults = {
-      :suggest_alternate => true,
-      :version => Gem::Requirement.default,
+      suggest_alternate: true,
+      version: Gem::Requirement.default,
     }
 
     super "fetch", "Download a gem and place it in the current directory", defaults

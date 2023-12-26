@@ -2,7 +2,7 @@
 /* src="transcode-tblgen.rb", len=30823, checksum=59589 */
 /* src="big5.trans", len=1184, checksum=25497 */
 /* src="big5-hkscs-tbl.rb", len=712033, checksum=34107 */
-/* src="big5-uao-tbl.rb", len=375883, checksum=11045 */
+/* src="big5-uao-tbl.rb", len=375884, checksum=11055 */
 
 #include "transcode_data.h"
 

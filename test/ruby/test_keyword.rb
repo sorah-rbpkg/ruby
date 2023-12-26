@@ -237,15 +237,15 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(true, Hash.ruby2_keywords_hash?(marked))
   end
 
+  def assert_equal_not_same(kw, res)
+    assert_instance_of(Hash, res)
+    assert_equal(kw, res)
+    assert_not_same(kw, res)
+  end
+
   def test_keyword_splat_new
     kw = {}
     h = {a: 1}
-
-    def self.assert_equal_not_same(kw, res)
-      assert_instance_of(Hash, res)
-      assert_equal(kw, res)
-      assert_not_same(kw, res)
-    end
 
     def self.yo(**kw) kw end
     m = method(:yo)
@@ -447,6 +447,30 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(false, public_send(:yo, **{}).frozen?)
     assert_equal_not_same(kw, public_send(:yo, **kw))
     assert_equal_not_same(h, public_send(:yo, **h))
+
+    def self.yo(*a, **kw) = kw
+    assert_equal_not_same kw, yo(**kw)
+    assert_equal_not_same kw, yo(**kw, **kw)
+
+    singleton_class.send(:remove_method, :yo)
+    def self.yo(opts) = opts
+    assert_equal_not_same h, yo(*[], **h)
+    a = []
+    assert_equal_not_same h, yo(*a, **h)
+  end
+
+  def test_keyword_splat_to_non_keyword_method
+    h = {a: 1}.freeze
+
+    def self.yo(kw) kw end
+    assert_equal_not_same(h, yo(**h))
+    assert_equal_not_same(h, method(:yo).(**h))
+    assert_equal_not_same(h, :yo.to_proc.(self, **h))
+
+    def self.yoa(*kw) kw[0] end
+    assert_equal_not_same(h, yoa(**h))
+    assert_equal_not_same(h, method(:yoa).(**h))
+    assert_equal_not_same(h, :yoa.to_proc.(self, **h))
   end
 
   def test_regular_kwsplat

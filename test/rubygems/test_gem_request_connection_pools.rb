@@ -1,7 +1,8 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/request"
-require "timeout"
+require "rubygems/timeout"
 
 class TestGemRequestConnectionPool < Gem::TestCase
   class FakeHttp
@@ -120,14 +121,14 @@ class TestGemRequestConnectionPool < Gem::TestCase
   end
 
   def test_net_http_args_no_proxy
-    orig_no_proxy, ENV["no_proxy"] = ENV["no_proxy"], "example"
+    orig_no_proxy = ENV["no_proxy"]
+    ENV["no_proxy"] = "example"
 
     pools = Gem::Request::ConnectionPools.new nil, []
 
     net_http_args = pools.send :net_http_args, URI("http://example"), @proxy
 
     assert_equal ["example", 80, nil, nil], net_http_args
-
   ensure
     ENV["no_proxy"] = orig_no_proxy
   end
@@ -140,8 +141,8 @@ class TestGemRequestConnectionPool < Gem::TestCase
     pool.checkout
 
     Thread.new do
-      assert_raise(Timeout::Error) do
-        Timeout.timeout(1) do
+      assert_raise(Gem::Timeout::Error) do
+        Gem::Timeout.timeout(1) do
           pool.checkout
         end
       end

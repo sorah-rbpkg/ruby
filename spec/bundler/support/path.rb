@@ -71,10 +71,6 @@ module Spec
       @spec_dir ||= source_root.join(ruby_core? ? "spec/bundler" : "spec")
     end
 
-    def api_request_limit_hack_file
-      spec_dir.join("support/api_request_limit_hax.rb")
-    end
-
     def man_dir
       @man_dir ||= lib_dir.join("bundler/man")
     end
@@ -84,7 +80,13 @@ module Spec
     end
 
     def shipped_files
-      @shipped_files ||= loaded_gemspec.files
+      @shipped_files ||= if ruby_core_tarball?
+        loaded_gemspec.files.map {|f| f.gsub(%r{^exe/}, "libexec/") }
+      elsif ruby_core?
+        tracked_files
+      else
+        loaded_gemspec.files
+      end
     end
 
     def lib_tracked_files
@@ -229,13 +231,6 @@ module Spec
       root.join("lib")
     end
 
-    # Sometimes rubygems version under test does not include
-    # https://github.com/rubygems/rubygems/pull/2728 and will not always end up
-    # activating the current bundler. In that case, require bundler absolutely.
-    def entrypoint
-      Gem.rubygems_version < Gem::Version.new("3.1.a") ? "#{lib_dir}/bundler" : "bundler"
-    end
-
     def global_plugin_gem(*args)
       home ".bundle", "plugin", "gems", *args
     end
@@ -253,6 +248,13 @@ module Spec
       contents = File.read(version_file)
       contents.sub!(/(^\s+VERSION\s*=\s*)"#{Gem::Version::VERSION_PATTERN}"/, %(\\1"#{version}"))
       File.open(version_file, "w") {|f| f << contents }
+    end
+
+    def replace_required_ruby_version(version, dir:)
+      gemspec_file = File.expand_path("bundler.gemspec", dir)
+      contents = File.read(gemspec_file)
+      contents.sub!(/(^\s+s\.required_ruby_version\s*=\s*)"[^"]+"/, %(\\1"#{version}"))
+      File.open(gemspec_file, "w") {|f| f << contents }
     end
 
     def ruby_core?
@@ -275,11 +277,11 @@ module Spec
     def git_ls_files(glob)
       skip "Not running on a git context, since running tests from a tarball" if ruby_core_tarball?
 
-      sys_exec("git ls-files -z -- #{glob}", :dir => source_root).split("\x0")
+      sys_exec("git ls-files -z -- #{glob}", dir: source_root).split("\x0")
     end
 
     def tracked_files_glob
-      ruby_core? ? "lib/bundler lib/bundler.rb spec/bundler man/bundle*" : ""
+      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb spec/bundler man/bundle*" : "lib exe spec CHANGELOG.md LICENSE.md README.md bundler.gemspec"
     end
 
     def lib_tracked_files_glob
@@ -295,15 +297,15 @@ module Spec
     end
 
     def rubocop_gemfile_basename
-      source_root.join("tool/bundler/rubocop_gems.rb")
+      tool_dir.join("rubocop_gems.rb")
     end
 
     def standard_gemfile_basename
-      source_root.join("tool/bundler/standard_gems.rb")
+      tool_dir.join("standard_gems.rb")
     end
 
     def tool_dir
-      source_root.join("tool/bundler")
+      ruby_core? ? source_root.join("tool/bundler") : source_root.join("../tool/bundler")
     end
 
     def templates_dir

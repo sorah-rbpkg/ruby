@@ -39,7 +39,7 @@ RSpec.describe "bundle install with force_ruby_platform DSL option", :jruby do
     end
 
     it "still respects a global `force_ruby_platform` config" do
-      install_gemfile <<-G, :env => { "BUNDLE_FORCE_RUBY_PLATFORM" => "true" }
+      install_gemfile <<-G, env: { "BUNDLE_FORCE_RUBY_PLATFORM" => "true" }
         source "#{file_uri_for(gem_repo4)}"
 
         gem "platform_specific_forced", :force_ruby_platform => true
@@ -105,7 +105,7 @@ RSpec.describe "bundle install with force_ruby_platform DSL option", :jruby do
     end
 
     it "ignores ruby variants for the transitive dependencies" do
-      install_gemfile <<-G, :env => { "DEBUG_RESOLVER" => "true" }
+      install_gemfile <<-G, env: { "DEBUG_RESOLVER" => "true" }
         source "#{file_uri_for(gem_repo4)}"
 
         gem "depends_on_platform_specific", :force_ruby_platform => true
@@ -113,6 +113,34 @@ RSpec.describe "bundle install with force_ruby_platform DSL option", :jruby do
 
       expect(the_bundle).to include_gems "depends_on_platform_specific 1.0.0 RUBY"
       expect(the_bundle).to include_gems "platform_specific 1.0.0 #{Bundler.local_platform}"
+    end
+
+    it "reinstalls the ruby variant when a platform specific variant is already installed, the lockile has only RUBY platform, and :force_ruby_platform is used in the Gemfile" do
+      lockfile <<-L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}
+          specs:
+            platform_specific (1.0)
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          platform_specific
+
+        BUNDLED WITH
+            #{Bundler::VERSION}
+      L
+
+      system_gems "platform_specific-1.0-#{Gem::Platform.local}", path: default_bundle_path
+
+      install_gemfile <<-G, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }, artifice: "compact_index"
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "platform_specific", :force_ruby_platform => true
+      G
+
+      expect(the_bundle).to include_gems "platform_specific 1.0.0 RUBY"
     end
   end
 end

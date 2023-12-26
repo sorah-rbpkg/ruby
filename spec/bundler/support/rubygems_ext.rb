@@ -24,9 +24,9 @@ module Spec
       gem_load_activate_and_possibly_install(gem_name, bin_container)
     end
 
-    def gem_require(gem_name)
+    def gem_require(gem_name, entrypoint)
       gem_activate(gem_name)
-      require gem_name
+      require entrypoint
     end
 
     def test_setup
@@ -118,6 +118,7 @@ module Spec
     end
 
     def gem_activate(gem_name)
+      require_relative "activate"
       require "bundler"
       gem_requirement = Bundler::LockfileParser.new(File.read(dev_lockfile)).specs.find {|spec| spec.name == gem_name }.version
       gem gem_name, gem_requirement
