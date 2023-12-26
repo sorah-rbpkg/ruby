@@ -13,9 +13,9 @@ module Bundler
         undef_method(method_name)
         define_method(method_name) do |*args, &blk|
           method.bind(self).call(*args, &blk)
-        rescue NetworkDownError, CompactIndexClient::Updater::MisMatchedChecksumError => e
+        rescue NetworkDownError, CompactIndexClient::Updater::MismatchedChecksumError => e
           raise HTTPError, e.message
-        rescue AuthenticationRequiredError
+        rescue AuthenticationRequiredError, BadAuthenticationError
           # Fail since we got a 401 from the server.
           raise
         rescue HTTPError => e
@@ -35,21 +35,21 @@ module Bundler
         remaining_gems = gem_names.dup
 
         until remaining_gems.empty?
-          log_specs "Looking up gems #{remaining_gems.inspect}"
+          log_specs { "Looking up gems #{remaining_gems.inspect}" }
 
           deps = begin
                    parallel_compact_index_client.dependencies(remaining_gems)
                  rescue TooManyRequestsError
-                   @bundle_worker.stop if @bundle_worker
+                   @bundle_worker&.stop
                    @bundle_worker = nil # reset it.  Not sure if necessary
                    serial_compact_index_client.dependencies(remaining_gems)
                  end
-          next_gems = deps.map {|d| d[3].map(&:first).flatten(1) }.flatten(1).uniq
+          next_gems = deps.flat_map {|d| d[3].flat_map(&:first) }.uniq
           deps.each {|dep| gem_info << dep }
           complete_gems.concat(deps.map(&:first)).uniq!
           remaining_gems = next_gems - complete_gems
         end
-        @bundle_worker.stop if @bundle_worker
+        @bundle_worker&.stop
         @bundle_worker = nil # reset it.  Not sure if necessary
 
         gem_info
@@ -60,13 +60,9 @@ module Bundler
           Bundler.ui.debug("FIPS mode is enabled, bundler can't use the CompactIndex API")
           return nil
         end
-        if fetch_uri.scheme == "file"
-          Bundler.ui.debug("Using a local server, bundler won't use the CompactIndex API")
-          return false
-        end
         # Read info file checksums out of /versions, so we can know if gems are up to date
         compact_index_client.update_and_parse_checksums!
-      rescue CompactIndexClient::Updater::MisMatchedChecksumError => e
+      rescue CompactIndexClient::Updater::MismatchedChecksumError => e
         Bundler.ui.debug(e.message)
         nil
       end
@@ -125,7 +121,7 @@ module Bundler
         rescue NetworkDownError => e
           raise unless Bundler.feature_flag.allow_offline_install? && headers["If-None-Match"]
           ui.warn "Using the cached data for the new index because of a network error: #{e}"
-          Net::HTTPNotModified.new(nil, nil, nil)
+          Gem::Net::HTTPNotModified.new(nil, nil, nil)
         end
       end
     end

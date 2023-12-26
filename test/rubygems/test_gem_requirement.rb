@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/requirement"
 
@@ -83,7 +84,7 @@ class TestGemRequirement < Gem::TestCase
       Gem::Requirement.parse(Gem::Version.new("2"))
   end
 
-  if !(Gem.java_platform? && ENV["JRUBY_OPTS"].to_s.include?("--debug"))
+  unless Gem.java_platform? && ENV["JRUBY_OPTS"].to_s.include?("--debug")
     def test_parse_deduplication
       assert_same "~>", Gem::Requirement.parse("~> 1").first
     end
@@ -286,7 +287,7 @@ class TestGemRequirement < Gem::TestCase
   end
 
   def test_illformed_requirements
-    [ ">>> 1.3.5", "> blah" ].each do |rq|
+    [">>> 1.3.5", "> blah"].each do |rq|
       assert_raise Gem::Requirement::BadRequirementError, "req [#{rq}] should fail" do
         Gem::Requirement.new rq
       end
@@ -436,19 +437,19 @@ class TestGemRequirement < Gem::TestCase
   end
 
   def test_marshal_load_attack
-    wa = Net::WriteAdapter.allocate
+    wa = Gem::Net::WriteAdapter.allocate
     wa.instance_variable_set(:@socket, self.class)
     wa.instance_variable_set(:@method_id, :exploit)
     request_set = Gem::RequestSet.allocate
     request_set.instance_variable_set(:@git_set, "id")
     request_set.instance_variable_set(:@sets, wa)
-    wa = Net::WriteAdapter.allocate
+    wa = Gem::Net::WriteAdapter.allocate
     wa.instance_variable_set(:@socket, request_set)
     wa.instance_variable_set(:@method_id, :resolve)
     ent = Gem::Package::TarReader::Entry.allocate
     ent.instance_variable_set(:@read, 0)
     ent.instance_variable_set(:@header, "aaa")
-    io = Net::BufferedIO.allocate
+    io = Gem::Net::BufferedIO.allocate
     io.instance_variable_set(:@io, ent)
     io.instance_variable_set(:@debug_output, wa)
     reader = Gem::Package::TarReader.allocate

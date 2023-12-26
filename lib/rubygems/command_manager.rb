@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -83,7 +84,7 @@ class Gem::CommandManager
   # Return the authoritative instance of the command manager.
 
   def self.instance
-    @command_manager ||= new
+    @instance ||= new
   end
 
   ##
@@ -98,14 +99,14 @@ class Gem::CommandManager
   # Reset the authoritative instance of the command manager.
 
   def self.reset
-    @command_manager = nil
+    @instance = nil
   end
 
   ##
   # Register all the subcommands supported by the gem command.
 
   def initialize
-    require "timeout"
+    require_relative "timeout"
     @commands = {}
 
     BUILTIN_COMMANDS.each do |name|
@@ -140,7 +141,7 @@ class Gem::CommandManager
   # Return a sorted list of all command names as strings.
 
   def command_names
-    @commands.keys.collect {|key| key.to_s }.sort
+    @commands.keys.collect(&:to_s).sort
   end
 
   ##
@@ -148,7 +149,7 @@ class Gem::CommandManager
 
   def run(args, build_args=nil)
     process_args(args, build_args)
-  rescue StandardError, Timeout::Error => ex
+  rescue StandardError, Gem::Timeout::Error => ex
     if ex.respond_to?(:detailed_message)
       msg = ex.detailed_message(highlight: false).sub(/\A(.*?)(?: \(.+?\))/) { $1 }
     else
@@ -200,7 +201,7 @@ class Gem::CommandManager
 
     if possibilities.size > 1
       raise Gem::CommandLineError,
-            "Ambiguous command #{cmd_name} matches [#{possibilities.join(', ')}]"
+            "Ambiguous command #{cmd_name} matches [#{possibilities.join(", ")}]"
     elsif possibilities.empty?
       raise Gem::UnknownCommandError.new(cmd_name)
     end
@@ -237,7 +238,7 @@ class Gem::CommandManager
         load_error = e
       end
       Gem::Commands.const_get(const_name).new
-    rescue Exception => e
+    rescue StandardError => e
       e = load_error if load_error
 
       alert_error clean_text("Loading command: #{command_name} (#{e.class})\n\t#{e}")
@@ -248,6 +249,7 @@ class Gem::CommandManager
   def invoke_command(args, build_args)
     cmd_name = args.shift.downcase
     cmd = find_command cmd_name
+    terminate_interaction 1 unless cmd
     cmd.deprecation_warning if cmd.deprecated?
     cmd.invoke_with_build_args args, build_args
   end

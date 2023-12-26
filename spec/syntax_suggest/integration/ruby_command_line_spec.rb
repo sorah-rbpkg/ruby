@@ -9,7 +9,7 @@ module SyntaxSuggest
       Dir.mktmpdir do |dir|
         tmpdir = Pathname(dir)
         script = tmpdir.join("script.rb")
-        script.write <<~'EOM'
+        script.write <<~EOM
           puts Kernel.private_methods
         EOM
 
@@ -43,6 +43,24 @@ module SyntaxSuggest
 
         methods = (api_only_methods_array - kernel_methods_array).sort
         expect(methods).to eq([])
+      end
+    end
+
+    # Since Ruby 3.2 includes syntax_suggest as a default gem, we might accidentally
+    # be requiring the default gem instead of this library under test. Assert that's
+    # not the case
+    it "tests current version of syntax_suggest" do
+      Dir.mktmpdir do |dir|
+        tmpdir = Pathname(dir)
+        script = tmpdir.join("script.rb")
+        contents = <<~'EOM'
+          puts "suggest_version is #{SyntaxSuggest::VERSION}"
+        EOM
+        script.write(contents)
+
+        out = `#{ruby} -I#{lib_dir} -rsyntax_suggest/version #{script} 2>&1`
+
+        expect(out).to include("suggest_version is #{SyntaxSuggest::VERSION}").once
       end
     end
 
@@ -141,7 +159,7 @@ module SyntaxSuggest
       Dir.mktmpdir do |dir|
         tmpdir = Pathname(dir)
         script = tmpdir.join("script.rb")
-        script.write <<~'EOM'
+        script.write <<~EOM
           $stderr = STDOUT
           eval("def lol")
         EOM
@@ -149,7 +167,7 @@ module SyntaxSuggest
         out = `#{ruby} -I#{lib_dir} -rsyntax_suggest #{script} 2>&1`
 
         expect($?.success?).to be_falsey
-        expect(out).to include("(eval):1")
+        expect(out).to match(/\(eval.*\):1/)
 
         expect(out).to_not include("SyntaxSuggest")
         expect(out).to_not include("Could not find filename")
@@ -160,7 +178,7 @@ module SyntaxSuggest
       Dir.mktmpdir do |dir|
         tmpdir = Pathname(dir)
         script = tmpdir.join("script.rb")
-        script.write <<~'EOM'
+        script.write <<~EOM
           break
         EOM
 
