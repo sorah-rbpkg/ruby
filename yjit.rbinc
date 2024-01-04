@@ -3,6 +3,7 @@
 // auto-generated file
 //   by ./tool/mk_builtin_loader.rb
 //   with yjit.rb
+// + empty update from debian/patches to avoid regeneration attempt on debuild
 #include "internal/compilers.h"     /* for MAYBE_UNUSED */
 #include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
 #include "ruby/ruby.h"              /* for VALUE */
