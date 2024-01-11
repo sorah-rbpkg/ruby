@@ -1,7 +1,7 @@
 // -*- c -*-
 // DO NOT MODIFY THIS FILE DIRECTLY.
 // auto-generated file
-//   by ./tool/mk_builtin_loader.rb
+//   by tool/mk_builtin_loader.rb
 //   with array.rb
 #include "internal/compilers.h"     /* for MAYBE_UNUSED */
 #include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
@@ -11,56 +11,46 @@ struct rb_execution_context_struct; /* in vm_core.h */
 
 static VALUE builtin_inline_class_104(struct rb_execution_context_struct *ec, const VALUE self)
 {
-MAYBE_UNUSED(const VALUE) unspecified = rb_vm_lvar(ec, -3);
-MAYBE_UNUSED(const VALUE) n = rb_vm_lvar(ec, -4);
 #line 104 "array.rb"
 return  ary_first(self);
-#line 19 "array.rbinc"
+#line 17 "array.rbinc"
 }
 
 static VALUE builtin_inline_class_107(struct rb_execution_context_struct *ec, const VALUE self)
 {
-MAYBE_UNUSED(const VALUE) unspecified = rb_vm_lvar(ec, -3);
-MAYBE_UNUSED(const VALUE) n = rb_vm_lvar(ec, -4);
 #line 107 "array.rb"
 return  ary_first(self);
-#line 28 "array.rbinc"
+#line 24 "array.rbinc"
 }
 
 static VALUE builtin_inline_class_109(struct rb_execution_context_struct *ec, const VALUE self)
 {
-MAYBE_UNUSED(const VALUE) unspecified = rb_vm_lvar(ec, -3);
 MAYBE_UNUSED(const VALUE) n = rb_vm_lvar(ec, -4);
 #line 109 "array.rb"
 return   ary_take_first_or_last_n(self, NUM2LONG(n), ARY_TAKE_FIRST);
-#line 37 "array.rbinc"
+#line 32 "array.rbinc"
 }
 
 static VALUE builtin_inline_class_148(struct rb_execution_context_struct *ec, const VALUE self)
 {
-MAYBE_UNUSED(const VALUE) unspecified = rb_vm_lvar(ec, -3);
-MAYBE_UNUSED(const VALUE) n = rb_vm_lvar(ec, -4);
 #line 148 "array.rb"
 return  ary_last(self);
-#line 46 "array.rbinc"
+#line 39 "array.rbinc"
 }
 
 static VALUE builtin_inline_class_151(struct rb_execution_context_struct *ec, const VALUE self)
 {
-MAYBE_UNUSED(const VALUE) unspecified = rb_vm_lvar(ec, -3);
-MAYBE_UNUSED(const VALUE) n = rb_vm_lvar(ec, -4);
 #line 151 "array.rb"
 return  ary_last(self);
-#line 55 "array.rbinc"
+#line 46 "array.rbinc"
 }
 
 static VALUE builtin_inline_class_153(struct rb_execution_context_struct *ec, const VALUE self)
 {
-MAYBE_UNUSED(const VALUE) unspecified = rb_vm_lvar(ec, -3);
 MAYBE_UNUSED(const VALUE) n = rb_vm_lvar(ec, -4);
 #line 153 "array.rb"
 return  ary_take_first_or_last_n(self, NUM2LONG(n), ARY_TAKE_LAST);
-#line 64 "array.rbinc"
+#line 54 "array.rbinc"
 }
 
 void Init_builtin_array(void)

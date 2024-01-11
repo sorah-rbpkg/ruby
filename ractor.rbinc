@@ -1,7 +1,7 @@
 // -*- c -*-
 // DO NOT MODIFY THIS FILE DIRECTLY.
 // auto-generated file
-//   by ./tool/mk_builtin_loader.rb
+//   by tool/mk_builtin_loader.rb
 //   with ractor.rb
 #include "internal/compilers.h"     /* for MAYBE_UNUSED */
 #include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
@@ -11,14 +11,9 @@ struct rb_execution_context_struct; /* in vm_core.h */
 
 static VALUE builtin_inline_class_276(struct rb_execution_context_struct *ec, const VALUE self)
 {
-MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -3);
-MAYBE_UNUSED(const VALUE) b = rb_vm_lvar(ec, -4);
-MAYBE_UNUSED(const VALUE) block = rb_vm_lvar(ec, -5);
-MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -7);
-MAYBE_UNUSED(const VALUE) args = rb_vm_lvar(ec, -8);
 #line 276 "ractor.rb"
 return RBOOL(ruby_single_main_ractor);
-#line 22 "ractor.rbinc"
+#line 17 "ractor.rbinc"
 }
 
 static VALUE builtin_inline_class_289(struct rb_execution_context_struct *ec, const VALUE self)
@@ -26,7 +21,7 @@ static VALUE builtin_inline_class_289(struct rb_execution_context_struct *ec, co
 #line 289 "ractor.rb"
 return 
       rb_ractor_self(rb_ec_ractor_ptr(ec));;
-#line 30 "ractor.rbinc"
+#line 25 "ractor.rbinc"
 }
 
 static VALUE builtin_inline_class_303(struct rb_execution_context_struct *ec, const VALUE self)
@@ -34,7 +29,7 @@ static VALUE builtin_inline_class_303(struct rb_execution_context_struct *ec, co
 #line 303 "ractor.rb"
 return 
       ULONG2NUM(GET_VM()->ractor.cnt);;
-#line 38 "ractor.rbinc"
+#line 33 "ractor.rbinc"
 }
 
 static VALUE builtin_inline_class_431(struct rb_execution_context_struct *ec, const VALUE self)
@@ -42,7 +37,7 @@ static VALUE builtin_inline_class_431(struct rb_execution_context_struct *ec, co
 #line 431 "ractor.rb"
 return 
       ractor_receive(ec, rb_ec_ractor_ptr(ec));
-#line 46 "ractor.rbinc"
+#line 41 "ractor.rbinc"
 }
 
 static VALUE builtin_inline_class_442(struct rb_execution_context_struct *ec, const VALUE self)
@@ -50,7 +45,7 @@ static VALUE builtin_inline_class_442(struct rb_execution_context_struct *ec, co
 #line 442 "ractor.rb"
 return 
       ractor_receive(ec, rb_ec_ractor_ptr(ec));
-#line 54 "ractor.rbinc"
+#line 49 "ractor.rbinc"
 }
 
 static VALUE builtin_inline_class_600(struct rb_execution_context_struct *ec, const VALUE self)
@@ -60,7 +55,7 @@ MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -5);
 #line 600 "ractor.rb"
 return 
       ractor_send(ec, RACTOR_PTR(self), obj, move);
-#line 64 "ractor.rbinc"
+#line 59 "ractor.rbinc"
 }
 
 static VALUE builtin_inline_class_644(struct rb_execution_context_struct *ec, const VALUE self)
@@ -70,7 +65,7 @@ MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -5);
 #line 644 "ractor.rb"
 return 
       ractor_yield(ec, rb_ec_ractor_ptr(ec), obj, move);
-#line 74 "ractor.rbinc"
+#line 69 "ractor.rbinc"
 }
 
 static VALUE builtin_inline_class_711(struct rb_execution_context_struct *ec, const VALUE self)
@@ -78,59 +73,45 @@ static VALUE builtin_inline_class_711(struct rb_execution_context_struct *ec, co
 #line 711 "ractor.rb"
 return 
       ractor_take(ec, RACTOR_PTR(self));
-#line 82 "ractor.rbinc"
+#line 77 "ractor.rbinc"
 }
 
 static VALUE builtin_inline_class_717(struct rb_execution_context_struct *ec, const VALUE self)
 {
-MAYBE_UNUSED(const VALUE) status = rb_vm_lvar(ec, -3);
-MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -4);
-MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -5);
 MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -6);
 #line 717 "ractor.rb"
 return  RACTOR_PTR(self)->loc;
-#line 93 "ractor.rbinc"
+#line 85 "ractor.rbinc"
 }
 
 static VALUE builtin_inline_class_718(struct rb_execution_context_struct *ec, const VALUE self)
 {
-MAYBE_UNUSED(const VALUE) status = rb_vm_lvar(ec, -3);
-MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -4);
 MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -5);
-MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -6);
 #line 718 "ractor.rb"
 return  RACTOR_PTR(self)->name;
-#line 104 "ractor.rbinc"
+#line 93 "ractor.rbinc"
 }
 
 static VALUE builtin_inline_class_719(struct rb_execution_context_struct *ec, const VALUE self)
 {
-MAYBE_UNUSED(const VALUE) status = rb_vm_lvar(ec, -3);
-MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -4);
-MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -5);
-MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -6);
 #line 719 "ractor.rb"
 return  UINT2NUM(rb_ractor_id(RACTOR_PTR(self)));
-#line 115 "ractor.rbinc"
+#line 100 "ractor.rbinc"
 }
 
 static VALUE builtin_inline_class_720(struct rb_execution_context_struct *ec, const VALUE self)
 {
-MAYBE_UNUSED(const VALUE) status = rb_vm_lvar(ec, -3);
-MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -4);
-MAYBE_UNUSED(const VALUE) name = rb_vm_lvar(ec, -5);
-MAYBE_UNUSED(const VALUE) loc = rb_vm_lvar(ec, -6);
 #line 720 "ractor.rb"
 return 
       rb_str_new2(ractor_status_str(RACTOR_PTR(self)->status_));
-#line 127 "ractor.rbinc"
+#line 108 "ractor.rbinc"
 }
 
 static VALUE builtin_inline_class_730(struct rb_execution_context_struct *ec, const VALUE self)
 {
 #line 730 "ractor.rb"
 return RACTOR_PTR(self)->name;
-#line 134 "ractor.rbinc"
+#line 115 "ractor.rbinc"
 }
 
 static VALUE builtin_inline_class_750(struct rb_execution_context_struct *ec, const VALUE self)
@@ -138,7 +119,7 @@ static VALUE builtin_inline_class_750(struct rb_execution_context_struct *ec, co
 #line 750 "ractor.rb"
 return 
       ractor_close_incoming(ec, RACTOR_PTR(self));;
-#line 142 "ractor.rbinc"
+#line 123 "ractor.rbinc"
 }
 
 static VALUE builtin_inline_class_768(struct rb_execution_context_struct *ec, const VALUE self)
@@ -146,7 +127,7 @@ static VALUE builtin_inline_class_768(struct rb_execution_context_struct *ec, co
 #line 768 "ractor.rb"
 return 
       ractor_close_outgoing(ec, RACTOR_PTR(self));;
-#line 150 "ractor.rbinc"
+#line 131 "ractor.rbinc"
 }
 
 static VALUE builtin_inline_class_785(struct rb_execution_context_struct *ec, const VALUE self)
@@ -155,27 +136,25 @@ MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -3);
 #line 785 "ractor.rb"
 return 
       RBOOL(rb_ractor_shareable_p(obj));;
-#line 159 "ractor.rbinc"
+#line 140 "ractor.rbinc"
 }
 
 static VALUE builtin_inline_class_827(struct rb_execution_context_struct *ec, const VALUE self)
 {
-MAYBE_UNUSED(const VALUE) copy = rb_vm_lvar(ec, -4);
 MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -5);
 #line 827 "ractor.rb"
 return 
         rb_ractor_make_shareable_copy(obj);;
-#line 169 "ractor.rbinc"
+#line 149 "ractor.rbinc"
 }
 
 static VALUE builtin_inline_class_831(struct rb_execution_context_struct *ec, const VALUE self)
 {
-MAYBE_UNUSED(const VALUE) copy = rb_vm_lvar(ec, -4);
 MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -5);
 #line 831 "ractor.rb"
 return 
         rb_ractor_make_shareable(obj);;
-#line 179 "ractor.rbinc"
+#line 158 "ractor.rbinc"
 }
 
 static VALUE builtin_inline_class_849(struct rb_execution_context_struct *ec, const VALUE self)
@@ -183,7 +162,7 @@ static VALUE builtin_inline_class_849(struct rb_execution_context_struct *ec, co
 #line 849 "ractor.rb"
 return 
       rb_ractor_self(GET_VM()->ractor.main_ractor);;
-#line 187 "ractor.rbinc"
+#line 166 "ractor.rbinc"
 }
 
 void Init_builtin_ractor(void)

@@ -1,7 +1,7 @@
 // -*- c -*-
 // DO NOT MODIFY THIS FILE DIRECTLY.
 // auto-generated file
-//   by ./tool/mk_builtin_loader.rb
+//   by tool/mk_builtin_loader.rb
 //   with dir.rb
 #include "internal/compilers.h"     /* for MAYBE_UNUSED */
 #include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
