@@ -1,0 +1,71 @@
+From: Takashi Kokubun <takashikkbn@gmail.com>
+Date: Thu, 4 Jan 2024 14:53:44 -0800
+Subject: YJIT: Let RubyVM::YJIT.enable respect --yjit-stats
+
+---
+ test/ruby/test_yjit.rb | 14 +++++++++++++-
+ yjit.rb                |  6 +++++-
+ yjit/src/yjit.rs       |  8 +++++---
+ 3 files changed, 23 insertions(+), 5 deletions(-)
+
+diff --git a/test/ruby/test_yjit.rb b/test/ruby/test_yjit.rb
+index 9d3ec2f..55b86be 100644
+--- a/test/ruby/test_yjit.rb
++++ b/test/ruby/test_yjit.rb
+@@ -67,7 +67,19 @@ class TestYJIT < Test::Unit::TestCase
+     RUBY
+   end
+ 
+-  def test_yjit_enable_stats
++  def test_yjit_enable_stats_false
++    assert_separately(["--yjit-disable", "--yjit-stats"], <<~RUBY, ignore_stderr: true)
++      assert_false RubyVM::YJIT.enabled?
++      assert_nil RubyVM::YJIT.runtime_stats
++
++      RubyVM::YJIT.enable
++
++      assert_true RubyVM::YJIT.enabled?
++      assert_true RubyVM::YJIT.runtime_stats[:all_stats]
++    RUBY
++  end
++
++  def test_yjit_enable_stats_true
+     args = []
+     args << "--disable=yjit" if RubyVM::YJIT.enabled?
+     assert_separately(args, <<~RUBY, ignore_stderr: true)
+diff --git a/yjit.rb b/yjit.rb
+index 0365e16..a228611 100644
+--- a/yjit.rb
++++ b/yjit.rb
+@@ -28,7 +28,11 @@ module RubyVM::YJIT
+     Primitive.rb_yjit_reset_stats_bang
+   end
+ 
+-  # Enable \YJIT compilation.
++  # Enable \YJIT compilation. `stats` option decides whether to enable \YJIT stats or not.
++  #
++  # * `false`: Disable stats.
++  # * `true`: Enable stats. Print stats at exit.
++  # * `:quiet`: Enable stats. Do not print stats at exit.
+   def self.enable(stats: false)
+     return false if enabled?
+     at_exit { print_and_dump_stats } if stats
+diff --git a/yjit/src/yjit.rs b/yjit/src/yjit.rs
+index cd51ed0..50335a7 100644
+--- a/yjit/src/yjit.rs
++++ b/yjit/src/yjit.rs
+@@ -171,9 +171,11 @@ pub extern "C" fn rb_yjit_code_gc(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
+ pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE, print_stats: VALUE) -> VALUE {
+     with_vm_lock(src_loc!(), || {
+         // Initialize and enable YJIT
+-        unsafe {
+-            OPTIONS.gen_stats = gen_stats.test();
+-            OPTIONS.print_stats = print_stats.test();
++        if gen_stats.test() {
++            unsafe {
++                OPTIONS.gen_stats = gen_stats.test();
++                OPTIONS.print_stats = print_stats.test();
++            }
+         }
+         yjit_init();
+ 
