@@ -164,6 +164,12 @@ get_loaded_features_realpaths(rb_vm_t *vm)
 }
 
 static VALUE
+get_loaded_features_realpath_map(rb_vm_t *vm)
+{
+    return vm->loaded_features_realpath_map;
+}
+
+static VALUE
 get_LOADED_FEATURES(ID _x, VALUE *_y)
 {
     return get_loaded_features(GET_VM());
@@ -361,7 +367,10 @@ get_loaded_features_index(rb_vm_t *vm)
         st_foreach(vm->loaded_features_index, loaded_features_index_clear_i, 0);
 
         VALUE realpaths = vm->loaded_features_realpaths;
+        VALUE realpath_map = vm->loaded_features_realpath_map;
+        VALUE previous_realpath_map = rb_hash_dup(realpath_map);
         rb_hash_clear(realpaths);
+        rb_hash_clear(realpath_map);
         features = vm->loaded_features;
         for (i = 0; i < RARRAY_LEN(features); i++) {
             VALUE entry, as_str;
@@ -378,9 +387,14 @@ get_loaded_features_index(rb_vm_t *vm)
         long j = RARRAY_LEN(features);
         for (i = 0; i < j; i++) {
             VALUE as_str = rb_ary_entry(features, i);
-            VALUE realpath = rb_check_realpath(Qnil, as_str, NULL);
-            if (NIL_P(realpath)) realpath = as_str;
-            rb_hash_aset(realpaths, rb_fstring(realpath), Qtrue);
+            VALUE realpath = rb_hash_aref(previous_realpath_map, as_str);
+            if (NIL_P(realpath)) {
+                realpath = rb_check_realpath(Qnil, as_str, NULL);
+                if (NIL_P(realpath)) realpath = as_str;
+                realpath = rb_fstring(realpath);
+            }
+            rb_hash_aset(realpaths, realpath, Qtrue);
+            rb_hash_aset(realpath_map, as_str, realpath);
         }
     }
     return vm->loaded_features_index;
@@ -893,6 +907,7 @@ load_unlock(rb_vm_t *vm, const char *ftptr, int done)
     }
 }
 
+static VALUE rb_require_string_internal(VALUE fname);
 
 /*
  *  call-seq:
@@ -955,7 +970,7 @@ rb_f_require_relative(VALUE obj, VALUE fname)
         rb_loaderror("cannot infer basepath");
     }
     base = rb_file_dirname(base);
-    return rb_require_string(rb_file_absolute_path(fname, base));
+    return rb_require_string_internal(rb_file_absolute_path(fname, base));
 }
 
 typedef int (*feature_func)(rb_vm_t *vm, const char *feature, const char *ext, int rb, int expanded, const char **fn);
@@ -1161,10 +1176,10 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     volatile VALUE saved_path;
     volatile VALUE realpath = 0;
     VALUE realpaths = get_loaded_features_realpaths(th->vm);
+    VALUE realpath_map = get_loaded_features_realpath_map(th->vm);
     volatile bool reset_ext_config = false;
     struct rb_ext_config prev_ext_config;
 
-    fname = rb_get_path(fname);
     path = rb_str_encode_ospath(fname);
     RUBY_DTRACE_HOOK(REQUIRE_ENTRY, RSTRING_PTR(fname));
     saved_path = path;
@@ -1252,7 +1267,9 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
         rb_provide_feature(th2->vm, path);
         VALUE real = realpath;
         if (real) {
-            rb_hash_aset(realpaths, rb_fstring(real), Qtrue);
+            real = rb_fstring(real);
+            rb_hash_aset(realpaths, real, Qtrue);
+            rb_hash_aset(realpath_map, path, real);
         }
     }
     ec->errinfo = saved.errinfo;
@@ -1290,6 +1307,12 @@ ruby_require_internal(const char *fname, unsigned int len)
 VALUE
 rb_require_string(VALUE fname)
 {
+    return rb_require_string_internal(FilePathValue(fname));
+}
+
+static VALUE
+rb_require_string_internal(VALUE fname)
+{
     rb_execution_context_t *ec = GET_EC();
     int result = require_internal(ec, fname, 1, RTEST(ruby_verbose));
 
@@ -1306,7 +1329,9 @@ rb_require_string(VALUE fname)
 VALUE
 rb_require(const char *fname)
 {
-    return rb_require_string(rb_str_new_cstr(fname));
+    struct RString fake;
+    VALUE str = rb_setup_fake_str(&fake, fname, strlen(fname), 0);
+    return rb_require_string_internal(str);
 }
 
 #if EXTSTATIC
@@ -1473,6 +1498,8 @@ Init_load(void)
     vm->loaded_features_index = st_init_numtable();
     vm->loaded_features_realpaths = rb_hash_new();
     rb_obj_hide(vm->loaded_features_realpaths);
+    vm->loaded_features_realpath_map = rb_hash_new();
+    rb_obj_hide(vm->loaded_features_realpath_map);
 
     rb_define_global_function("load", rb_f_load, -1);
     rb_define_global_function("require", rb_f_require, 1);

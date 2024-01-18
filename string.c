@@ -3029,6 +3029,33 @@ rb_str_set_len(VALUE str, long len)
     if (len > (capa = (long)str_capacity(str, termlen)) || len < 0) {
         rb_bug("probable buffer overflow: %ld for %ld", len, capa);
     }
+
+    int cr = ENC_CODERANGE(str);
+    if (cr == ENC_CODERANGE_UNKNOWN) {
+        /* Leave unknown. */
+    }
+    else if (len > RSTRING_LEN(str)) {
+        if (ENC_CODERANGE_CLEAN_P(cr)) {
+            /* Update the coderange regarding the extended part. */
+            const char *const prev_end = RSTRING_END(str);
+            const char *const new_end = RSTRING_PTR(str) + len;
+            rb_encoding *enc = rb_enc_get(str);
+            rb_str_coderange_scan_restartable(prev_end, new_end, enc, &cr);
+            ENC_CODERANGE_SET(str, cr);
+        }
+        else if (cr == ENC_CODERANGE_BROKEN) {
+            /* May be valid now, by appended part. */
+            ENC_CODERANGE_SET(str, ENC_CODERANGE_UNKNOWN);
+        }
+    }
+    else if (len < RSTRING_LEN(str)) {
+        if (cr != ENC_CODERANGE_7BIT) {
+            /* ASCII-only string is keeping after truncated.  Valid
+             * and broken may be invalid or valid, leave unknown. */
+            ENC_CODERANGE_SET(str, ENC_CODERANGE_UNKNOWN);
+        }
+    }
+
     STR_SET_LEN(str, len);
     TERM_FILL(&RSTRING_PTR(str)[len], termlen);
 }
@@ -3298,6 +3325,7 @@ rb_str_buf_append(VALUE str, VALUE str2)
           case ENC_CODERANGE_7BIT:
             // If RHS is 7bit we can do simple concatenation
             str_buf_cat4(str, RSTRING_PTR(str2), RSTRING_LEN(str2), true);
+            RB_GC_GUARD(str2);
             return str;
           case ENC_CODERANGE_VALID:
             // If RHS is valid, we can do simple concatenation if encodings are the same
@@ -3307,6 +3335,7 @@ rb_str_buf_append(VALUE str, VALUE str2)
                 if (UNLIKELY(str_cr != ENC_CODERANGE_VALID)) {
                     ENC_CODERANGE_SET(str, RB_ENC_CODERANGE_AND(str_cr, str2_cr));
                 }
+                RB_GC_GUARD(str2);
                 return str;
             }
         }
@@ -4048,19 +4077,20 @@ rb_str_byteindex_m(int argc, VALUE *argv, VALUE str)
     long pos;
 
     if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
+        long slen = RSTRING_LEN(str);
         pos = NUM2LONG(initpos);
-    }
-    else {
-        pos = 0;
-    }
-    if (pos < 0) {
-        pos += RSTRING_LEN(str);
         if (pos < 0) {
+            pos += slen;
+        }
+        if (pos < 0 || pos > slen) {
             if (RB_TYPE_P(sub, T_REGEXP)) {
                 rb_backref_set(Qnil);
             }
             return Qnil;
         }
+    }
+    else {
+        pos = 0;
     }
 
     if (!str_check_byte_pos(str, pos)) {
@@ -4069,8 +4099,6 @@ rb_str_byteindex_m(int argc, VALUE *argv, VALUE str)
     }
 
     if (RB_TYPE_P(sub, T_REGEXP)) {
-        if (pos > RSTRING_LEN(str))
-            return Qnil;
         if (rb_reg_search(sub, str, pos, 0) < 0) {
             return Qnil;
         }
@@ -9269,56 +9297,65 @@ static regex_t *
 get_reg_grapheme_cluster(rb_encoding *enc)
 {
     int encidx = rb_enc_to_index(enc);
-    regex_t *reg_grapheme_cluster = NULL;
-    static regex_t *reg_grapheme_cluster_utf8 = NULL;
 
-    /* synchronize */
-    if (encidx == rb_utf8_encindex() && reg_grapheme_cluster_utf8) {
-        reg_grapheme_cluster = reg_grapheme_cluster_utf8;
-    }
-    if (!reg_grapheme_cluster) {
-        const OnigUChar source_ascii[] = "\\X";
-        OnigErrorInfo einfo;
-        const OnigUChar *source = source_ascii;
-        size_t source_len = sizeof(source_ascii) - 1;
-        switch (encidx) {
+    const OnigUChar source_ascii[] = "\\X";
+    const OnigUChar *source = source_ascii;
+    size_t source_len = sizeof(source_ascii) - 1;
+
+    switch (encidx) {
 #define CHARS_16BE(x) (OnigUChar)((x)>>8), (OnigUChar)(x)
 #define CHARS_16LE(x) (OnigUChar)(x), (OnigUChar)((x)>>8)
 #define CHARS_32BE(x) CHARS_16BE((x)>>16), CHARS_16BE(x)
 #define CHARS_32LE(x) CHARS_16LE(x), CHARS_16LE((x)>>16)
 #define CASE_UTF(e) \
-          case ENCINDEX_UTF_##e: { \
-            static const OnigUChar source_UTF_##e[] = {CHARS_##e('\\'), CHARS_##e('X')}; \
-            source = source_UTF_##e; \
-            source_len = sizeof(source_UTF_##e); \
-            break; \
-          }
-            CASE_UTF(16BE); CASE_UTF(16LE); CASE_UTF(32BE); CASE_UTF(32LE);
+      case ENCINDEX_UTF_##e: { \
+        static const OnigUChar source_UTF_##e[] = {CHARS_##e('\\'), CHARS_##e('X')}; \
+        source = source_UTF_##e; \
+        source_len = sizeof(source_UTF_##e); \
+        break; \
+      }
+        CASE_UTF(16BE); CASE_UTF(16LE); CASE_UTF(32BE); CASE_UTF(32LE);
 #undef CASE_UTF
 #undef CHARS_16BE
 #undef CHARS_16LE
 #undef CHARS_32BE
 #undef CHARS_32LE
-        }
-        int r = onig_new(&reg_grapheme_cluster, source, source + source_len,
-                         ONIG_OPTION_DEFAULT, enc, OnigDefaultSyntax, &einfo);
-        if (r) {
-            UChar message[ONIG_MAX_ERROR_MESSAGE_LEN];
-            onig_error_code_to_str(message, r, &einfo);
-            rb_fatal("cannot compile grapheme cluster regexp: %s", (char *)message);
-        }
-        if (encidx == rb_utf8_encindex()) {
-            reg_grapheme_cluster_utf8 = reg_grapheme_cluster;
-        }
     }
+
+    regex_t *reg_grapheme_cluster;
+    OnigErrorInfo einfo;
+    int r = onig_new(&reg_grapheme_cluster, source, source + source_len,
+                        ONIG_OPTION_DEFAULT, enc, OnigDefaultSyntax, &einfo);
+    if (r) {
+        UChar message[ONIG_MAX_ERROR_MESSAGE_LEN];
+        onig_error_code_to_str(message, r, &einfo);
+        rb_fatal("cannot compile grapheme cluster regexp: %s", (char *)message);
+    }
+
     return reg_grapheme_cluster;
+}
+
+static regex_t *
+get_cached_reg_grapheme_cluster(rb_encoding *enc)
+{
+    int encidx = rb_enc_to_index(enc);
+    static regex_t *reg_grapheme_cluster_utf8 = NULL;
+
+    if (encidx == rb_utf8_encindex()) {
+        if (!reg_grapheme_cluster_utf8) {
+            reg_grapheme_cluster_utf8 = get_reg_grapheme_cluster(enc);
+        }
+
+        return reg_grapheme_cluster_utf8;
+    }
+
+    return NULL;
 }
 
 static VALUE
 rb_str_each_grapheme_cluster_size(VALUE str, VALUE args, VALUE eobj)
 {
     size_t grapheme_cluster_count = 0;
-    regex_t *reg_grapheme_cluster = NULL;
     rb_encoding *enc = get_encoding(str);
     const char *ptr, *end;
 
@@ -9326,7 +9363,13 @@ rb_str_each_grapheme_cluster_size(VALUE str, VALUE args, VALUE eobj)
         return rb_str_length(str);
     }
 
-    reg_grapheme_cluster = get_reg_grapheme_cluster(enc);
+    bool cached_reg_grapheme_cluster = true;
+    regex_t *reg_grapheme_cluster = get_cached_reg_grapheme_cluster(enc);
+    if (!reg_grapheme_cluster) {
+        reg_grapheme_cluster = get_reg_grapheme_cluster(enc);
+        cached_reg_grapheme_cluster = false;
+    }
+
     ptr = RSTRING_PTR(str);
     end = RSTRING_END(str);
 
@@ -9339,6 +9382,10 @@ rb_str_each_grapheme_cluster_size(VALUE str, VALUE args, VALUE eobj)
         ptr += len;
     }
 
+    if (!cached_reg_grapheme_cluster) {
+        onig_free(reg_grapheme_cluster);
+    }
+
     return SIZET2NUM(grapheme_cluster_count);
 }
 
@@ -9346,7 +9393,6 @@ static VALUE
 rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
 {
     VALUE orig = str;
-    regex_t *reg_grapheme_cluster = NULL;
     rb_encoding *enc = get_encoding(str);
     const char *ptr0, *ptr, *end;
 
@@ -9355,7 +9401,14 @@ rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
     }
 
     if (!ary) str = rb_str_new_frozen(str);
-    reg_grapheme_cluster = get_reg_grapheme_cluster(enc);
+
+    bool cached_reg_grapheme_cluster = true;
+    regex_t *reg_grapheme_cluster = get_cached_reg_grapheme_cluster(enc);
+    if (!reg_grapheme_cluster) {
+        reg_grapheme_cluster = get_reg_grapheme_cluster(enc);
+        cached_reg_grapheme_cluster = false;
+    }
+
     ptr0 = ptr = RSTRING_PTR(str);
     end = RSTRING_END(str);
 
@@ -9367,6 +9420,11 @@ rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
         ENUM_ELEM(ary, rb_str_subseq(str, ptr-ptr0, len));
         ptr += len;
     }
+
+    if (!cached_reg_grapheme_cluster) {
+        onig_free(reg_grapheme_cluster);
+    }
+
     RB_GC_GUARD(str);
     if (ary)
         return ary;
