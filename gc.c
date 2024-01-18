@@ -2474,6 +2474,7 @@ rb_objspace_set_event_hook(const rb_event_flag_t event)
 static void
 gc_event_hook_body(rb_execution_context_t *ec, rb_objspace_t *objspace, const rb_event_flag_t event, VALUE data)
 {
+    if (UNLIKELY(!ec->cfp)) return;
     const VALUE *pc = ec->cfp->pc;
     if (pc && VM_FRAME_RUBYFRAME_P(ec->cfp)) {
         /* increment PC because source line is calculated with PC-1 */
@@ -2795,6 +2796,12 @@ newobj_alloc(rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_pool_idx, boo
     return obj;
 }
 
+static void
+newobj_zero_slot(VALUE obj)
+{
+    memset((char *)obj + sizeof(struct RBasic), 0, rb_gc_obj_slot_size(obj) - sizeof(struct RBasic));
+}
+
 ALWAYS_INLINE(static VALUE newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, int wb_protected, size_t size_pool_idx));
 
 static inline VALUE
@@ -2825,7 +2832,7 @@ newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *
 #endif
         newobj_init(klass, flags, wb_protected, objspace, obj);
 
-        gc_event_hook_prep(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj, newobj_fill(obj, 0, 0, 0));
+        gc_event_hook_prep(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj, newobj_zero_slot(obj));
     }
     RB_VM_LOCK_LEAVE_CR_LEV(cr, &lev);
 
@@ -3455,7 +3462,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_OBJECT:
         if (rb_shape_obj_too_complex(obj)) {
             RB_DEBUG_COUNTER_INC(obj_obj_too_complex);
-            rb_id_table_free(ROBJECT_IV_HASH(obj));
+            st_free_table(ROBJECT_IV_HASH(obj));
         }
         else if (RANY(obj)->as.basic.flags & ROBJECT_EMBED) {
             RB_DEBUG_COUNTER_INC(obj_obj_embed);
@@ -3655,7 +3662,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         cc_table_free(objspace, obj, FALSE);
         rb_class_remove_from_module_subclasses(obj);
         rb_class_remove_from_super_subclasses(obj);
-#if !USE_RVARGC
+#if !RCLASS_EXT_EMBEDDED
         xfree(RCLASS_EXT(obj));
 #endif
 
@@ -4351,16 +4358,20 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
         VALUE objid;
         VALUE final;
         rb_control_frame_t *cfp;
+        VALUE *sp;
         long finished;
     } saved;
+
     rb_execution_context_t * volatile ec = GET_EC();
 #define RESTORE_FINALIZER() (\
         ec->cfp = saved.cfp, \
+        ec->cfp->sp = saved.sp, \
         ec->errinfo = saved.errinfo)
 
     saved.errinfo = ec->errinfo;
     saved.objid = rb_obj_id(obj);
     saved.cfp = ec->cfp;
+    saved.sp = ec->cfp->sp;
     saved.finished = 0;
     saved.final = Qundef;
 
@@ -4882,7 +4893,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         if (rb_shape_obj_too_complex(obj)) {
-            size += rb_id_table_memsize(ROBJECT_IV_HASH(obj));
+            size += rb_st_memsize(ROBJECT_IV_HASH(obj));
         }
         else if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
             size += ROBJECT_IV_CAPACITY(obj) * sizeof(VALUE);
@@ -7208,6 +7219,8 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
     }
 }
 
+static void mark_cvc_tbl(rb_objspace_t *objspace, VALUE klass);
+
 static void
 gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 {
@@ -7254,6 +7267,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         if (!RCLASS_EXT(obj)) break;
 
         mark_m_tbl(objspace, RCLASS_M_TBL(obj));
+        mark_cvc_tbl(objspace, obj);
         cc_table_mark(objspace, obj);
         for (attr_index_t i = 0; i < RCLASS_IV_COUNT(obj); i++) {
             gc_mark(objspace, RCLASS_IVPTR(obj)[i]);
@@ -7323,7 +7337,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         {
             rb_shape_t *shape = rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj));
             if (rb_shape_obj_too_complex(obj)) {
-                mark_m_tbl(objspace, ROBJECT_IV_HASH(obj));
+                mark_tbl_no_pin(objspace, ROBJECT_IV_HASH(obj));
             }
             else {
                 const VALUE * const ptr = ROBJECT_IVPTR(obj);
@@ -10111,15 +10125,13 @@ gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
     }
 }
 
-static void update_m_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl);
-
 static void
 gc_ref_update_object(rb_objspace_t *objspace, VALUE v)
 {
     VALUE *ptr = ROBJECT_IVPTR(v);
 
     if (rb_shape_obj_too_complex(v)) {
-        update_m_tbl(objspace, ROBJECT_IV_HASH(v));
+        rb_gc_update_tbl_refs(ROBJECT_IV_HASH(v));
         return;
     }
 
@@ -10467,8 +10479,13 @@ static enum rb_id_table_iterator_result
 update_cvc_tbl_i(VALUE cvc_entry, void *data)
 {
     struct rb_cvar_class_tbl_entry *entry;
+    rb_objspace_t * objspace = (rb_objspace_t *)data;
 
     entry = (struct rb_cvar_class_tbl_entry *)cvc_entry;
+
+    if (entry->cref) {
+        TYPED_UPDATE_IF_MOVED(objspace, rb_cref_t *, entry->cref);
+    }
 
     entry->class_value = rb_gc_location(entry->class_value);
 
@@ -10481,6 +10498,28 @@ update_cvc_tbl(rb_objspace_t *objspace, VALUE klass)
     struct rb_id_table *tbl = RCLASS_CVC_TBL(klass);
     if (tbl) {
         rb_id_table_foreach_values(tbl, update_cvc_tbl_i, objspace);
+    }
+}
+
+static enum rb_id_table_iterator_result
+mark_cvc_tbl_i(VALUE cvc_entry, void *data)
+{
+    struct rb_cvar_class_tbl_entry *entry;
+
+    entry = (struct rb_cvar_class_tbl_entry *)cvc_entry;
+
+    RUBY_ASSERT(entry->cref == 0 || (BUILTIN_TYPE((VALUE)entry->cref) == T_IMEMO && IMEMO_TYPE_P(entry->cref, imemo_cref)));
+    rb_gc_mark((VALUE) entry->cref);
+
+    return ID_TABLE_CONTINUE;
+}
+
+static void
+mark_cvc_tbl(rb_objspace_t *objspace, VALUE klass)
+{
+    struct rb_id_table *tbl = RCLASS_CVC_TBL(klass);
+    if (tbl) {
+        rb_id_table_foreach_values(tbl, mark_cvc_tbl_i, objspace);
     }
 }
 
@@ -12614,8 +12653,16 @@ ruby_xrealloc2_body(void *ptr, size_t n, size_t size)
 void
 ruby_sized_xfree(void *x, size_t size)
 {
-    if (x) {
-        objspace_xfree(&rb_objspace, x, size);
+    if (LIKELY(x)) {
+        /* It's possible for a C extension's pthread destructor function set by pthread_key_create
+         * to be called after ruby_vm_destruct and attempt to free memory. Fall back to mimfree in
+         * that case. */
+        if (LIKELY(GET_VM())) {
+            objspace_xfree(&rb_objspace, x, size);
+        }
+        else {
+            ruby_mimfree(x);
+        }
     }
 }
 
@@ -12809,12 +12856,47 @@ wmap_mark_map(st_data_t key, st_data_t val, st_data_t arg)
 }
 #endif
 
+static int
+wmap_replace_ref(st_data_t *key, st_data_t *value, st_data_t _argp, int existing)
+{
+    *key = rb_gc_location((VALUE)*key);
+
+    VALUE *values = (VALUE *)*value;
+    VALUE size = values[0];
+
+    for (VALUE index = 1; index <= size; index++) {
+        values[index] = rb_gc_location(values[index]);
+    }
+
+    return ST_CONTINUE;
+}
+
+static int
+wmap_foreach_replace(st_data_t key, st_data_t value, st_data_t _argp, int error)
+{
+    if (rb_gc_location((VALUE)key) != (VALUE)key) {
+        return ST_REPLACE;
+    }
+
+    VALUE *values = (VALUE *)value;
+    VALUE size = values[0];
+
+    for (VALUE index = 1; index <= size; index++) {
+        VALUE val = values[index];
+        if (rb_gc_location(val) != val) {
+            return ST_REPLACE;
+        }
+    }
+
+    return ST_CONTINUE;
+}
+
 static void
 wmap_compact(void *ptr)
 {
     struct weakmap *w = ptr;
     if (w->wmap2obj) rb_gc_update_tbl_refs(w->wmap2obj);
-    if (w->obj2wmap) rb_gc_update_tbl_refs(w->obj2wmap);
+    if (w->obj2wmap) st_foreach_with_replace(w->obj2wmap, wmap_foreach_replace, wmap_replace_ref, (st_data_t)NULL);
     w->final = rb_gc_location(w->final);
 }
 
@@ -12912,25 +12994,40 @@ wmap_live_p(rb_objspace_t *objspace, VALUE obj)
 }
 
 static int
-wmap_final_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+wmap_remove_inverse_ref(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
 {
-    VALUE wmap, *ptr, size, i, j;
     if (!existing) return ST_STOP;
-    wmap = (VALUE)arg, ptr = (VALUE *)*value;
-    for (i = j = 1, size = ptr[0]; i <= size; ++i) {
-        if (ptr[i] != wmap) {
-            ptr[j++] = ptr[i];
-        }
-    }
-    if (j == 1) {
-        ruby_sized_xfree(ptr, i * sizeof(VALUE));
+
+    VALUE old_ref = (VALUE)arg;
+
+    VALUE *values = (VALUE *)*val;
+    VALUE size = values[0];
+
+    if (size == 1) {
+        // fast path, we only had one backref
+        RUBY_ASSERT(values[1] == old_ref);
+        ruby_sized_xfree(values, 2 * sizeof(VALUE));
         return ST_DELETE;
     }
-    if (j < i) {
-        SIZED_REALLOC_N(ptr, VALUE, j + 1, i);
-        ptr[0] = j;
-        *value = (st_data_t)ptr;
+
+    bool found = false;
+    VALUE index = 1;
+    for (; index <= size; index++) {
+        if (values[index] == old_ref) {
+            found = true;
+            break;
+        }
     }
+    if (!found) return ST_STOP;
+
+    if (size > index) {
+        MEMMOVE(&values[index], &values[index + 1], VALUE, size - index);
+    }
+
+    size -= 1;
+    values[0] = size;
+    SIZED_REALLOC_N(values, VALUE, size + 1, size + 2);
+    *val = (st_data_t)values;
     return ST_CONTINUE;
 }
 
@@ -12963,7 +13060,7 @@ wmap_finalize(RB_BLOCK_CALL_FUNC_ARGLIST(objid, self))
     wmap = (st_data_t)obj;
     if (st_delete(w->wmap2obj, &wmap, &orig)) {
         wmap = (st_data_t)obj;
-        st_update(w->obj2wmap, orig, wmap_final_func, wmap);
+        st_update(w->obj2wmap, orig, wmap_remove_inverse_ref, wmap);
     }
     return self;
 }
@@ -13179,6 +13276,14 @@ wmap_aset_update(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
     VALUE size, *ptr, *optr;
     if (existing) {
         size = (ptr = optr = (VALUE *)*val)[0];
+
+        for (VALUE index = 1; index <= size; index++) {
+            if (ptr[index] == (VALUE)arg) {
+                // The reference was already registered.
+                return ST_STOP;
+            }
+        }
+
         ++size;
         SIZED_REALLOC_N(ptr, VALUE, size + 1, size);
     }
@@ -13191,6 +13296,23 @@ wmap_aset_update(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
     ptr[size] = (VALUE)arg;
     if (ptr == optr) return ST_STOP;
     *val = (st_data_t)ptr;
+    return ST_CONTINUE;
+}
+
+struct wmap_aset_replace_args {
+    VALUE new_value;
+    VALUE old_value;
+};
+
+static int
+wmap_aset_replace_value(st_data_t *key, st_data_t *val, st_data_t _args, int existing)
+{
+    struct wmap_aset_replace_args *args = (struct wmap_aset_replace_args *)_args;
+
+    if (existing) {
+        args->old_value = *val;
+    }
+    *val = (st_data_t)args->new_value;
     return ST_CONTINUE;
 }
 
@@ -13208,8 +13330,25 @@ wmap_aset(VALUE self, VALUE key, VALUE value)
         define_final0(key, w->final);
     }
 
-    st_update(w->obj2wmap, (st_data_t)value, wmap_aset_update, key);
-    st_insert(w->wmap2obj, (st_data_t)key, (st_data_t)value);
+    struct wmap_aset_replace_args aset_args = {
+        .new_value = value,
+        .old_value = Qundef,
+    };
+    st_update(w->wmap2obj, (st_data_t)key, wmap_aset_replace_value, (st_data_t)&aset_args);
+
+    // If the value is unchanged, we have nothing to do.
+    if (value != aset_args.old_value) {
+        if (!UNDEF_P(aset_args.old_value) && FL_ABLE(aset_args.old_value)) {
+            // That key existed and had an inverse reference, we need to clear the outdated inverse reference.
+            st_update(w->obj2wmap, (st_data_t)aset_args.old_value, wmap_remove_inverse_ref, key);
+        }
+
+        if (FL_ABLE(value)) {
+            // If the value has no finalizer, we don't need to keep the inverse reference
+            st_update(w->obj2wmap, (st_data_t)value, wmap_aset_update, key);
+        }
+    }
+
     return nonspecial_obj_id(value);
 }
 
@@ -14159,7 +14298,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                 {
                     const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
 
-                    APPEND_F(":%s (%s%s%s%s) type:%s alias:%d owner:%p defined_class:%p",
+                    APPEND_F(":%s (%s%s%s%s) type:%s aliased:%d owner:%p defined_class:%p",
                              rb_id2name(me->called_id),
                              METHOD_ENTRY_VISI(me) == METHOD_VISI_PUBLIC ?  "pub" :
                              METHOD_ENTRY_VISI(me) == METHOD_VISI_PRIVATE ? "pri" : "pro",
@@ -14167,7 +14306,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                              METHOD_ENTRY_CACHED(me) ? ",cc" : "",
                              METHOD_ENTRY_INVALIDATED(me) ? ",inv" : "",
                              me->def ? rb_method_type_name(me->def->type) : "NULL",
-                             me->def ? me->def->alias_count : -1,
+                             me->def ? me->def->aliased : -1,
                              (void *)me->owner, // obj_info(me->owner),
                              (void *)me->defined_class); //obj_info(me->defined_class)));
 

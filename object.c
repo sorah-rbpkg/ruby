@@ -275,7 +275,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     rb_shape_t * src_shape = rb_shape_get_shape(obj);
 
     if (rb_shape_id(src_shape) == OBJ_TOO_COMPLEX_SHAPE_ID) {
-        struct rb_id_table * table = rb_id_table_create(rb_id_table_size(ROBJECT_IV_HASH(obj)));
+        st_table * table = rb_st_init_numtable_with_size(rb_st_table_size(ROBJECT_IV_HASH(obj)));
 
         rb_ivar_foreach(obj, rb_obj_evacuate_ivs_to_hash_table, (st_data_t)table);
         rb_shape_set_too_complex(dest);
@@ -2078,6 +2078,10 @@ rb_class_superclass(VALUE klass)
     if (!super) {
         if (klass == rb_cBasicObject) return Qnil;
         rb_raise(rb_eTypeError, "uninitialized class");
+    }
+
+    if (!RCLASS_SUPERCLASS_DEPTH(klass)) {
+        return Qnil;
     }
     else {
         super = RCLASS_SUPERCLASSES(klass)[RCLASS_SUPERCLASS_DEPTH(klass) - 1];

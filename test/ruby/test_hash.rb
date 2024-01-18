@@ -1556,6 +1556,17 @@ class TestHash < Test::Unit::TestCase
     end
   end
 
+  def hash_iter_recursion(h, level)
+    return if level == 0
+    h.each_key {}
+    h.each_value { hash_iter_recursion(h, level - 1) }
+  end
+
+  def test_iterlevel_in_ivar_bug19589
+    h = { a: nil }
+    hash_iter_recursion(h, 200)
+  end
+
   def test_threaded_iter_level
     bug9105 = '[ruby-dev:47807] [Bug #9105]'
     h = @cls[1=>2]
@@ -1745,6 +1756,15 @@ class TestHash < Test::Unit::TestCase
     EOS
 
     assert_no_memory_leak([], prepare, code, bug9187)
+  end
+
+  def test_memory_size_after_delete
+    require 'objspace'
+    h = {}
+    1000.times {|i| h[i] = true}
+    big = ObjectSpace.memsize_of(h)
+    1000.times {|i| h.delete(i)}
+    assert_operator ObjectSpace.memsize_of(h), :<, big/10
   end
 
   def test_wrapper

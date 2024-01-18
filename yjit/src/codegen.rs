@@ -484,8 +484,8 @@ pub fn jit_ensure_block_entry_exit(jit: &mut JITState, ocb: &mut OutlinedCb) {
         // Generate the exit with the cache in jitstate.
         block.entry_exit = Some(get_side_exit(jit, ocb, &block_ctx));
     } else {
-        let _pc = unsafe { rb_iseq_pc_at_idx(blockid.iseq, blockid.idx) };
-        block.entry_exit = Some(gen_outlined_exit(jit.pc, &block_ctx, ocb));
+        let block_entry_pc = unsafe { rb_iseq_pc_at_idx(blockid.iseq, blockid.idx) };
+        block.entry_exit = Some(gen_outlined_exit(block_entry_pc, &block_ctx, ocb));
     }
 }
 
@@ -2329,6 +2329,11 @@ fn gen_setinstancevariable(
                 if needs_extension {
                     // Generate the C call so that runtime code will increase
                     // the capacity and set the buffer.
+                    asm.comment("call rb_ensure_iv_list_size");
+
+                    // It allocates so can trigger GC, which takes the VM lock
+                    // so could yield to a different ractor.
+                    jit_prepare_routine_call(jit, ctx, asm);
                     asm.ccall(rb_ensure_iv_list_size as *const u8,
                               vec![
                                   recv,
@@ -4163,6 +4168,11 @@ fn jit_rb_str_concat(
     // Guard that the argument is of class String at runtime.
     let arg_type = ctx.get_opnd_type(StackOpnd(0));
 
+    // Guard buffers from GC since rb_str_buf_append may allocate. During the VM lock on GC,
+    // other Ractors may trigger global invalidation, so we need ctx.clear_local_types().
+    // PC is used on errors like Encoding::CompatibilityError raised by rb_str_buf_append.
+    jit_prepare_routine_call(jit, ctx, asm);
+
     let concat_arg = ctx.stack_pop(1);
     let recv = ctx.stack_pop(1);
 
@@ -4575,10 +4585,12 @@ fn gen_send_cfunc(
     }
 
     // Delegate to codegen for C methods if we have it.
-    if kw_arg.is_null() && flags & VM_CALL_OPT_SEND == 0 {
+    if kw_arg.is_null() && flags & VM_CALL_OPT_SEND == 0 && flags & VM_CALL_ARGS_SPLAT == 0 && (cfunc_argc == -1 || argc == cfunc_argc) {
         let codegen_p = lookup_cfunc_codegen(unsafe { (*cme).def });
+        let expected_stack_after = ctx.get_stack_size() as i32 - argc;
         if let Some(known_cfunc_codegen) = codegen_p {
             if known_cfunc_codegen(jit, ctx, asm, ocb, ci, cme, block, argc, recv_known_klass) {
+                assert_eq!(expected_stack_after, ctx.get_stack_size() as i32);
                 // cfunc codegen generated code. Terminate the block so
                 // there isn't multiple calls in the same block.
                 jump_to_next_insn(jit, ctx, asm, ocb);
@@ -6117,7 +6129,9 @@ fn gen_invokeblock(
         // Not supporting vm_callee_setup_block_arg_arg0_splat for now
         let comptime_captured = unsafe { ((comptime_handler.0 & !0x3) as *const rb_captured_block).as_ref().unwrap() };
         let comptime_iseq = unsafe { *comptime_captured.code.iseq.as_ref() };
-        if argc == 1 && unsafe { get_iseq_flags_has_lead(comptime_iseq) && !get_iseq_flags_ambiguous_param0(comptime_iseq) } {
+        if argc == 1 && unsafe {
+                (get_iseq_flags_has_lead(comptime_iseq) || get_iseq_body_param_opt_num(comptime_iseq) > 1) &&
+                !get_iseq_flags_ambiguous_param0(comptime_iseq) } {
             gen_counter_incr!(asm, invokeblock_iseq_arg0_splat);
             return CantCompile;
         }
