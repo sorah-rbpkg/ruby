@@ -1256,7 +1256,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
 
         if (shape_id == OBJ_TOO_COMPLEX_SHAPE_ID) {
-            if (!rb_id_table_lookup(ROBJECT_IV_HASH(obj), id, &val)) {
+            if (!st_lookup(ROBJECT_IV_HASH(obj), id, &val)) {
                 val = Qnil;
             }
         }
@@ -1484,7 +1484,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
 }
 
 static VALUE
-update_classvariable_cache(const rb_iseq_t *iseq, VALUE klass, ID id, ICVARC ic)
+update_classvariable_cache(const rb_iseq_t *iseq, VALUE klass, ID id, const rb_cref_t * cref, ICVARC ic)
 {
     VALUE defined_class = 0;
     VALUE cvar_value = rb_cvar_find(klass, id, &defined_class);
@@ -1504,10 +1504,15 @@ update_classvariable_cache(const rb_iseq_t *iseq, VALUE klass, ID id, ICVARC ic)
     }
 
     struct rb_cvar_class_tbl_entry *ent = (void *)ent_data;
-    ent->global_cvar_state = GET_GLOBAL_CVAR_STATE();
 
+    ent->global_cvar_state = GET_GLOBAL_CVAR_STATE();
+    ent->cref = cref;
     ic->entry = ent;
+
+    RUBY_ASSERT(BUILTIN_TYPE((VALUE)cref) == T_IMEMO && IMEMO_TYPE_P(cref, imemo_cref));
+    RB_OBJ_WRITTEN(iseq, Qundef, ent->cref);
     RB_OBJ_WRITTEN(iseq, Qundef, ent->class_value);
+    RB_OBJ_WRITTEN(ent->class_value, Qundef, ent->cref);
 
     return cvar_value;
 }
@@ -1516,8 +1521,9 @@ static inline VALUE
 vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID id, ICVARC ic)
 {
     const rb_cref_t *cref;
+    cref = vm_get_cref(GET_EP());
 
-    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && LIKELY(rb_ractor_main_p())) {
+    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && ic->entry->cref == cref && LIKELY(rb_ractor_main_p())) {
         RB_DEBUG_COUNTER_INC(cvar_read_inline_hit);
 
         VALUE v = rb_ivar_lookup(ic->entry->class_value, id, Qundef);
@@ -1526,10 +1532,9 @@ vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID
         return v;
     }
 
-    cref = vm_get_cref(GET_EP());
     VALUE klass = vm_get_cvar_base(cref, reg_cfp, 1);
 
-    return update_classvariable_cache(iseq, klass, id, ic);
+    return update_classvariable_cache(iseq, klass, id, cref, ic);
 }
 
 VALUE
@@ -1542,20 +1547,20 @@ static inline void
 vm_setclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID id, VALUE val, ICVARC ic)
 {
     const rb_cref_t *cref;
+    cref = vm_get_cref(GET_EP());
 
-    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE()) {
+    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && ic->entry->cref == cref && LIKELY(rb_ractor_main_p())) {
         RB_DEBUG_COUNTER_INC(cvar_write_inline_hit);
 
         rb_class_ivar_set(ic->entry->class_value, id, val);
         return;
     }
 
-    cref = vm_get_cref(GET_EP());
     VALUE klass = vm_get_cvar_base(cref, reg_cfp, 1);
 
     rb_cvar_set(klass, id, val);
 
-    update_classvariable_cache(iseq, klass, id, ic);
+    update_classvariable_cache(iseq, klass, id, cref, ic);
 }
 
 void
@@ -1887,7 +1892,7 @@ static VALUE vm_call_general(rb_execution_context_t *ec, rb_control_frame_t *reg
 static VALUE vm_mtbl_dump(VALUE klass, ID target_mid);
 
 static struct rb_class_cc_entries *
-vm_ccs_create(VALUE klass, const rb_callable_method_entry_t *cme)
+vm_ccs_create(VALUE klass, struct rb_id_table *cc_tbl, ID mid, const rb_callable_method_entry_t *cme)
 {
     struct rb_class_cc_entries *ccs = ALLOC(struct rb_class_cc_entries);
 #if VM_CHECK_MODE > 0
@@ -1895,9 +1900,12 @@ vm_ccs_create(VALUE klass, const rb_callable_method_entry_t *cme)
 #endif
     ccs->capa = 0;
     ccs->len = 0;
-    RB_OBJ_WRITE(klass, &ccs->cme, cme);
+    ccs->cme = cme;
     METHOD_ENTRY_CACHED_SET((rb_callable_method_entry_t *)cme);
     ccs->entries = NULL;
+
+    rb_id_table_insert(cc_tbl, mid, (VALUE)ccs);
+    RB_OBJ_WRITTEN(klass, Qundef, cme);
     return ccs;
 }
 
@@ -2048,8 +2056,7 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
         }
         else {
             // TODO: required?
-            ccs = vm_ccs_create(klass, cme);
-            rb_id_table_insert(cc_tbl, mid, (VALUE)ccs);
+            ccs = vm_ccs_create(klass, cc_tbl, mid, cme);
         }
     }
 
@@ -3413,7 +3420,7 @@ aliased_callable_method_entry(const rb_callable_method_entry_t *me)
         VM_ASSERT(RB_TYPE_P(orig_me->owner, T_MODULE));
         cme = rb_method_entry_complement_defined_class(orig_me, me->called_id, defined_class);
 
-        if (me->def->alias_count + me->def->complemented_count == 0) {
+        if (me->def->reference_count == 1) {
             RB_OBJ_WRITE(me, &me->def->body.alias.original_me, cme);
         }
         else {

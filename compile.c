@@ -1243,6 +1243,32 @@ new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line)
     return adjust;
 }
 
+static void
+iseq_insn_each_markable_object(INSN *insn, void (*func)(VALUE *, VALUE), VALUE data)
+{
+    const char *types = insn_op_types(insn->insn_id);
+    for (int j = 0; types[j]; j++) {
+        char type = types[j];
+        switch (type) {
+          case TS_CDHASH:
+          case TS_ISEQ:
+          case TS_VALUE:
+          case TS_IC: // constant path array
+          case TS_CALLDATA: // ci is stored.
+            func(&OPERAND_AT(insn, j), data);
+            break;
+          default:
+            break;
+        }
+    }
+}
+
+static void
+iseq_insn_each_object_write_barrier(VALUE *obj_ptr, VALUE iseq)
+{
+    RB_OBJ_WRITTEN(iseq, Qundef, *obj_ptr);
+}
+
 static INSN *
 new_insn_core(rb_iseq_t *iseq, const NODE *line_node,
               int insn_id, int argc, VALUE *argv)
@@ -1260,6 +1286,9 @@ new_insn_core(rb_iseq_t *iseq, const NODE *line_node,
     iobj->operands = argv;
     iobj->operand_size = argc;
     iobj->sc_state = 0;
+
+    iseq_insn_each_markable_object(iobj, iseq_insn_each_object_write_barrier, (VALUE)iseq);
+
     return iobj;
 }
 
@@ -2631,9 +2660,11 @@ iseq_set_exception_table(rb_iseq_t *iseq)
     struct iseq_catch_table_entry *entry;
 
     ISEQ_BODY(iseq)->catch_table = NULL;
-    if (NIL_P(ISEQ_COMPILE_DATA(iseq)->catch_table_ary)) return COMPILE_OK;
-    tlen = (int)RARRAY_LEN(ISEQ_COMPILE_DATA(iseq)->catch_table_ary);
-    tptr = RARRAY_CONST_PTR_TRANSIENT(ISEQ_COMPILE_DATA(iseq)->catch_table_ary);
+
+    VALUE catch_table_ary = ISEQ_COMPILE_DATA(iseq)->catch_table_ary;
+    if (NIL_P(catch_table_ary)) return COMPILE_OK;
+    tlen = (int)RARRAY_LEN(catch_table_ary);
+    tptr = RARRAY_CONST_PTR_TRANSIENT(catch_table_ary);
 
     if (tlen > 0) {
         struct iseq_catch_table *table = xmalloc(iseq_catch_table_bytes(tlen));
@@ -2668,6 +2699,8 @@ iseq_set_exception_table(rb_iseq_t *iseq)
         ISEQ_BODY(iseq)->catch_table = table;
         RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->catch_table_ary, 0); /* free */
     }
+
+    RB_GC_GUARD(catch_table_ary);
 
     return COMPILE_OK;
 }
@@ -10735,6 +10768,12 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
     return keyword;
 }
 
+static void
+iseq_insn_each_object_mark(VALUE *obj_ptr, VALUE _)
+{
+    rb_gc_mark(*obj_ptr);
+}
+
 void
 rb_iseq_mark_insn_storage(struct iseq_compile_data_storage *storage)
 {
@@ -10761,29 +10800,7 @@ rb_iseq_mark_insn_storage(struct iseq_compile_data_storage *storage)
             iobj = (INSN *)&storage->buff[pos];
 
             if (iobj->operands) {
-                int j;
-                const char *types = insn_op_types(iobj->insn_id);
-
-                for (j = 0; types[j]; j++) {
-                    char type = types[j];
-                    switch (type) {
-                      case TS_CDHASH:
-                      case TS_ISEQ:
-                      case TS_VALUE:
-                      case TS_IC: // constant path array
-                      case TS_CALLDATA: // ci is stored.
-                        {
-                            VALUE op = OPERAND_AT(iobj, j);
-
-                            if (!SPECIAL_CONST_P(op)) {
-                                rb_gc_mark(op);
-                            }
-                        }
-                        break;
-                      default:
-                        break;
-                    }
-                }
+                iseq_insn_each_markable_object(iobj, iseq_insn_each_object_mark, (VALUE)0);
             }
             pos += (int)size;
         }
