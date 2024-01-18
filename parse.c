@@ -12747,9 +12747,9 @@ yyreduce:
 #line 3801 "parse.y"
                   {
                     /*%%%*/
-                        (yyval.node) = rest_arg_append(p, (yyval.node), (yyvsp[0].node), &(yyloc));
+                        (yyval.node) = rest_arg_append(p, (yyvsp[-2].node), (yyvsp[0].node), &(yyloc));
                     /*% %*/
-                    /*% ripper: args_add_star!($args, $arg_splat) %*/
+                    /*% ripper: args_add_star!($1, $3) %*/
                     }
 #line 12755 "parse.c"
     break;
