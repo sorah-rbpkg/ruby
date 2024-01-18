@@ -1074,6 +1074,17 @@ CODE
     assert_equal("C", res[2])
   end
 
+  def test_grapheme_clusters_memory_leak
+    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", "[Bug #todo]", rss: true)
+    begin;
+      str = "hello world".encode(Encoding::UTF_32LE)
+
+      10_000.times do
+        str.grapheme_clusters
+      end
+    end;
+  end
+
   def test_each_line
     verbose, $VERBOSE = $VERBOSE, nil
 
@@ -3376,6 +3387,9 @@ CODE
     assert_equal(6, S("にんにちは").byteindex(S("に"), 6))
     assert_equal(6, S("にんにちは").byteindex(/に./, 6))
     assert_raise(IndexError) { S("にんにちは").byteindex(?に, 7) }
+
+    s = S("foobarbarbaz")
+    assert !1000.times.any? {s.byteindex("", 100_000_000)}
   end
 
   def test_byterindex

@@ -297,24 +297,27 @@ RSpec.describe "bundle lock" do
     end
   end
 
-  it "updates the bundler version in the lockfile without re-resolving", :rubygems => ">= 3.3.0.dev" do
+  it "updates the bundler version in the lockfile to the latest bundler version" do
     build_repo4 do
-      build_gem "rack", "1.0"
+      build_gem "bundler", "55"
     end
 
-    install_gemfile <<-G
-      source "#{file_uri_for(gem_repo4)}"
-      gem "rack"
+    system_gems "bundler-55", :gem_repo => gem_repo4
+
+    install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      source "https://gems.repo4"
     G
     lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, '\11.0.0\2')
 
-    FileUtils.rm_r gem_repo4
+    bundle "lock --update --bundler --verbose", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    expect(lockfile).to end_with("BUNDLED WITH\n   55\n")
 
-    bundle "lock --update --bundler"
-    expect(the_bundle).to include_gem "rack 1.0"
+    update_repo4 do
+      build_gem "bundler", "99"
+    end
 
-    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-    expect(the_bundle.locked_gems.bundler_version).to eq v(Bundler::VERSION)
+    bundle "lock --update --bundler --verbose", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    expect(lockfile).to end_with("BUNDLED WITH\n   99\n")
   end
 
   it "supports adding new platforms" do
@@ -1007,6 +1010,29 @@ RSpec.describe "bundle lock" do
             rails >= 7.0.2.3 cannot be used.
           So, because Gemfile depends on rails >= 7.0.2.3,
             version solving has failed.
+    ERR
+
+    lockfile lockfile.gsub(/PLATFORMS\n  #{lockfile_platforms}/m, "PLATFORMS\n  #{lockfile_platforms("ruby")}")
+
+    bundle "lock", :raise_on_error => false
+
+    expect(err).to eq <<~ERR.strip
+      Could not find compatible versions
+
+      Because rails >= 7.0.3.1, < 7.0.4 depends on activemodel = 7.0.3.1
+        and rails >= 7.0.2.3, < 7.0.3.1 depends on activemodel = 7.0.2.3,
+        rails >= 7.0.2.3, < 7.0.4 requires activemodel = 7.0.2.3 OR = 7.0.3.1.
+      And because every version of activemodel depends on activesupport = 6.0.4,
+        rails >= 7.0.2.3, < 7.0.4 requires activesupport = 6.0.4.
+      Because rails >= 7.0.3.1, < 7.0.4 depends on activesupport = 7.0.3.1
+        and rails >= 7.0.2.3, < 7.0.3.1 depends on activesupport = 7.0.2.3,
+        rails >= 7.0.2.3, < 7.0.4 requires activesupport = 7.0.2.3 OR = 7.0.3.1.
+      Thus, rails >= 7.0.2.3, < 7.0.4 cannot be used.
+      And because rails >= 7.0.4 depends on activemodel = 7.0.4,
+        rails >= 7.0.2.3 requires activemodel = 7.0.4.
+      So, because activemodel = 7.0.4 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally
+        and Gemfile depends on rails >= 7.0.2.3,
+        version solving has failed.
     ERR
   end
 

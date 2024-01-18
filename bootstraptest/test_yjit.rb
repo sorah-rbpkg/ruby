@@ -1,3 +1,33 @@
+# Regression test for yielding with autosplat to block with
+# optional parameters. https://github.com/Shopify/yjit/issues/313
+assert_equal '[:a, :b, :a, :b]', %q{
+  def yielder(arg) = yield(arg) + yield(arg)
+
+  yielder([:a, :b]) do |c = :c, d = :d|
+    [c, d]
+  end
+}
+
+# Regression test for GC mishap while doing shape transition
+assert_equal '[:ok]', %q{
+  # [Bug #19601]
+  class RegressionTest
+    def initialize
+      @a = @b = @fourth_ivar_does_shape_transition = nil
+    end
+
+    def extender
+      @first_extended_ivar = [:ok]
+    end
+  end
+
+  GC.stress = true
+
+  # Used to crash due to GC run in rb_ensure_iv_list_size()
+  # not marking the newly allocated [:ok].
+  RegressionTest.new.extender.itself
+}
+
 assert_equal 'true', %q{
   # regression test for tracking type of locals for too long
   def local_setting_cmp(five)
@@ -1139,6 +1169,38 @@ assert_equal '42', %q{
 
   run
   run
+}
+
+# splatting an empty array on a specialized method
+assert_equal 'ok', %q{
+  def run
+    "ok".to_s(*[])
+  end
+
+  run
+  run
+}
+
+# splatting an single element array on a specialized method
+assert_equal '[1]', %q{
+  def run
+    [].<<(*[1])
+  end
+
+  run
+  run
+}
+
+# specialized method with wrong args
+assert_equal 'ok', %q{
+  def run(x)
+    "bad".to_s(123) if x
+  rescue
+    :ok
+  end
+
+  run(false)
+  run(true)
 }
 
 # getinstancevariable on Symbol

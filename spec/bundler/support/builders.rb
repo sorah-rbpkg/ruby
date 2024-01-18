@@ -17,18 +17,6 @@ module Spec
       Gem::Platform.new(platform)
     end
 
-    # Returns a number smaller than the size of the index. Useful for specs that
-    # need the API request limit to be reached for some reason.
-    def low_api_request_limit_for(gem_repo)
-      all_gems = Dir[gem_repo.join("gems/*.gem")]
-
-      all_gem_names = all_gems.map do |file|
-        File.basename(file, ".gem").match(/\A(?<gem_name>[^-]+)-.*\z/)[:gem_name]
-      end.uniq
-
-      (all_gem_names - ["bundler"]).size
-    end
-
     def build_repo1
       rake_path = Dir["#{Path.base_system_gems}/**/rake*.gem"].first
 
@@ -220,10 +208,8 @@ module Spec
       update_repo(gem_repo4, &blk)
     end
 
-    def update_repo2
-      update_repo gem_repo2 do
-        yield if block_given?
-      end
+    def update_repo2(&blk)
+      update_repo(gem_repo2, &blk)
     end
 
     def build_security_repo
