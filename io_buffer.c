@@ -299,20 +299,22 @@ rb_io_buffer_type_allocate(VALUE self)
     return instance;
 }
 
-static VALUE
-io_buffer_for_make_instance(VALUE klass, VALUE string)
+static VALUE io_buffer_for_make_instance(VALUE klass, VALUE string, enum rb_io_buffer_flags flags)
 {
     VALUE instance = rb_io_buffer_type_allocate(klass);
 
-    struct rb_io_buffer *data = NULL;
-    TypedData_Get_Struct(instance, struct rb_io_buffer, &rb_io_buffer_type, data);
+    struct rb_io_buffer *buffer = NULL;
+    TypedData_Get_Struct(instance, struct rb_io_buffer, &rb_io_buffer_type, buffer);
 
-    enum rb_io_buffer_flags flags = RB_IO_BUFFER_EXTERNAL;
+    flags |= RB_IO_BUFFER_EXTERNAL;
 
     if (RB_OBJ_FROZEN(string))
         flags |= RB_IO_BUFFER_READONLY;
 
-    io_buffer_initialize(data, RSTRING_PTR(string), RSTRING_LEN(string), flags, string);
+    if (!(flags & RB_IO_BUFFER_READONLY))
+        rb_str_modify(string);
+
+    io_buffer_initialize(buffer, RSTRING_PTR(string), RSTRING_LEN(string), flags, string);
 
     return instance;
 }
@@ -321,6 +323,7 @@ struct io_buffer_for_yield_instance_arguments {
     VALUE klass;
     VALUE string;
     VALUE instance;
+    enum rb_io_buffer_flags flags;
 };
 
 static VALUE
@@ -328,9 +331,9 @@ io_buffer_for_yield_instance(VALUE _arguments)
 {
     struct io_buffer_for_yield_instance_arguments *arguments = (struct io_buffer_for_yield_instance_arguments *)_arguments;
 
-    rb_str_locktmp(arguments->string);
+    arguments->instance = io_buffer_for_make_instance(arguments->klass, arguments->string, arguments->flags);
 
-    arguments->instance = io_buffer_for_make_instance(arguments->klass, arguments->string);
+    rb_str_locktmp(arguments->string);
 
     return rb_yield(arguments->instance);
 }
@@ -364,7 +367,8 @@ io_buffer_for_yield_instance_ensure(VALUE _arguments)
  *  collector, the source string will be locked and cannot be modified.
  *
  *  If the string is frozen, it will create a read-only buffer which cannot be
- *  modified.
+ *  modified. If the string is shared, it may trigger a copy-on-write when
+ *  using the block form.
  *
  *    string = 'test'
  *    buffer = IO::Buffer.for(string)
@@ -396,6 +400,7 @@ rb_io_buffer_type_for(VALUE klass, VALUE string)
             .klass = klass,
             .string = string,
             .instance = Qnil,
+            .flags = 0,
         };
 
         return rb_ensure(io_buffer_for_yield_instance, (VALUE)&arguments, io_buffer_for_yield_instance_ensure, (VALUE)&arguments);
@@ -403,7 +408,7 @@ rb_io_buffer_type_for(VALUE klass, VALUE string)
     else {
         // This internally returns the source string if it's already frozen.
         string = rb_str_tmp_frozen_acquire(string);
-        return io_buffer_for_make_instance(klass, string);
+        return io_buffer_for_make_instance(klass, string, RB_IO_BUFFER_READONLY);
     }
 }
 
@@ -1098,8 +1103,11 @@ rb_io_buffer_free(VALUE self)
 static inline void
 io_buffer_validate_range(struct rb_io_buffer *data, size_t offset, size_t length)
 {
+    if (offset > data->size) {
+        rb_raise(rb_eArgError, "Specified offset exceeds buffer size!");
+    }
     if (offset + length > data->size) {
-        rb_raise(rb_eArgError, "Specified offset+length exceeds data size!");
+        rb_raise(rb_eArgError, "Specified offset+length exceeds buffer size!");
     }
 }
 
@@ -1391,6 +1399,11 @@ rb_io_buffer_resize(VALUE self, size_t size)
 #endif
 
     if (data->flags & RB_IO_BUFFER_INTERNAL) {
+        if (size == 0) {
+            io_buffer_free(data);
+            return;
+        }
+
         void *base = realloc(data->base, size);
 
         if (!base) {
@@ -2385,7 +2398,7 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
 {
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_read(scheduler, io, self, SIZET2NUM(length), SIZET2NUM(offset));
+        VALUE result = rb_fiber_scheduler_io_read(scheduler, io, self, length, offset);
 
         if (!UNDEF_P(result)) {
             return result;
@@ -2499,7 +2512,7 @@ rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t of
 {
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_pread(scheduler, io, OFFT2NUM(from), self, SIZET2NUM(length), SIZET2NUM(offset));
+        VALUE result = rb_fiber_scheduler_io_pread(scheduler, io, from, self, length, offset);
 
         if (!UNDEF_P(result)) {
             return result;
@@ -2604,7 +2617,7 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
 {
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_write(scheduler, io, self, SIZET2NUM(length), SIZET2NUM(offset));
+        VALUE result = rb_fiber_scheduler_io_write(scheduler, io, self, length, offset);
 
         if (!UNDEF_P(result)) {
             return result;
@@ -2708,7 +2721,7 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t o
 {
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_pwrite(scheduler, io, OFFT2NUM(from), self, SIZET2NUM(length), SIZET2NUM(offset));
+        VALUE result = rb_fiber_scheduler_io_pwrite(scheduler, io, from, self, length, offset);
 
         if (!UNDEF_P(result)) {
             return result;
