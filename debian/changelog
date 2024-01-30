@@ -1,3 +1,11 @@
+ruby3.2 (3.2.3-1) UNRELEASED; urgency=medium
+
+  * New upstream version 3.2.3
+  * d/rules: add DEB_BUILD_OPTIONS=abi=time64
+  * d/s/lintian-overrides: update version of net-imap
+
+ -- Lucas Kanashiro <kanashiro@debian.org>  Tue, 30 Jan 2024 19:28:07 -0300
+
 ruby3.2 (3.2.2-1~exp1) experimental; urgency=medium
 
   * Ruby 3.2
