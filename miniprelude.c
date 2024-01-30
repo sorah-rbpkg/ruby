@@ -1675,7 +1675,7 @@ static const struct {
     char L558[449]; /* 559..563 */
     char L563[476]; /* 564..570 */
     char L570[499]; /* 571..578 */
-    char L578[466]; /* 579..589 */
+    char L578[457]; /* 579..589 */
     char L589[465]; /* 590..599 */
     char L599[454]; /* 600..607 */
     char L607[489]; /* 608..618 */
@@ -2428,11 +2428,11 @@ static const struct {
 "      \"rb_method_definition_struct\", Primitive.cexpr!(\"SIZEOF(struct rb_method_definition_struct)\"),\n"
 "      type: [CType::BitField.new(4, 0), 0],\n"
 "      iseq_overload: [CType::BitField.new(1, 4), 4],\n"
-"      alias_count: [CType::BitField.new(27, 5), 5],\n"
-"      complemented_count: [CType::BitField.new(28, 0), 32],\n"
+"      no_redef_warning: [CType::BitField.new(1, 5), 5],\n"
+"      aliased: [CType::BitField.new(1, 6), 6],\n"
 ,
 #line 590 "mjit_c.rb"
-"      no_redef_warning: [CType::BitField.new(1, 4), 60],\n"
+"      reference_count: [CType::BitField.new(28, 0), 32],\n"
 "      body: [CType::Union.new(\n"
 "        \"\", Primitive.cexpr!(\"SIZEOF(((struct rb_method_definition_struct *)NULL)->body)\"),\n"
 "        iseq: self.rb_method_iseq_t,\n"
