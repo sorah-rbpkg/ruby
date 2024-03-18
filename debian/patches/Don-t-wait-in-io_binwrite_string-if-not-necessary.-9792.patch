@@ -1,0 +1,29 @@
+From: Samuel Williams <samuel.williams@oriontransfer.co.nz>
+Date: Thu, 1 Feb 2024 15:27:44 +1300
+Subject: Don't wait in `io_binwrite_string` if not necessary. (#9792)
+
+---
+ io.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/io.c b/io.c
+index a34c457..ca2cb90 100644
+--- a/io.c
++++ b/io.c
+@@ -1795,13 +1795,11 @@ io_binwrite_string(VALUE arg)
+         // Write as much as possible:
+         ssize_t result = io_binwrite_string_internal(p->fptr, ptr, remaining);
+ 
+-        // If only the internal buffer is written, result will be zero [bytes of given data written]. This means we
+-        // should try again.
+         if (result == 0) {
+-            errno = EWOULDBLOCK;
++            // If only the internal buffer is written, result will be zero [bytes of given data written]. This means we
++            // should try again immediately.
+         }
+-
+-        if (result > 0) {
++        else if (result > 0) {
+             if ((size_t)result == remaining) break;
+             ptr += result;
+             remaining -= result;
