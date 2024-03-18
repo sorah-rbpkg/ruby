@@ -1,0 +1,42 @@
+From: Hiroya Fujinami <make.just.on@gmail.com>
+Date: Thu, 28 Dec 2023 23:20:03 +0900
+Subject: Fix [Bug #20083]: correct a cache point size for atomic groups
+ (#9367)
+
+---
+ regexec.c                | 2 +-
+ test/ruby/test_regexp.rb | 8 ++++++++
+ 2 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/regexec.c b/regexec.c
+index 4b02e7f..8638013 100644
+--- a/regexec.c
++++ b/regexec.c
+@@ -542,7 +542,7 @@ init_cache_opcodes(const regex_t* reg, OnigCacheOpcode* cache_opcodes, long* num
+     cache_opcodes->num_cache_points_at_outer_repeat = num_cache_points_at_repeat;\
+     cache_opcodes->num_cache_points_in_outer_repeat = 0;\
+     cache_opcodes->lookaround_nesting = lookaround_nesting;\
+-    cache_point += lookaround_nesting > 0 ? 2 : 1;\
++    cache_point += lookaround_nesting != 0 ? 2 : 1;\
+     cache_opcodes++;\
+   } while (0)
+ 
+diff --git a/test/ruby/test_regexp.rb b/test/ruby/test_regexp.rb
+index d4aae16..b889b1a 100644
+--- a/test/ruby/test_regexp.rb
++++ b/test/ruby/test_regexp.rb
+@@ -1979,6 +1979,14 @@ class TestRegexp < Test::Unit::TestCase
+     end
+   end
+ 
++  def test_bug_20083 # [Bug #20083]
++    re = /([\s]*ABC)$/i
++    (1..100).each do |n|
++      text = "#{"0" * n}ABC"
++      assert text.match?(re)
++    end
++  end
++
+   def test_linear_time_p
+     assert_send [Regexp, :linear_time?, /a/]
+     assert_send [Regexp, :linear_time?, 'a']
