@@ -1,3 +1,28 @@
+ruby3.3 (3.3.0-0nkmi3~dist) unstable; urgency=medium
+
+  * Early backport: https://github.com/ruby/ruby/commit/d8702ddbfbe8cc7fc601a9a4d19842ef9c2b76c1
+  * Early backport: https://github.com/ruby/ruby/commit/3d19409637de1462b6790d2a92344bf0a10d8c52
+  * Early backport: https://github.com/ruby/ruby/commit/e12d4c654e3cb7a4473014610bc3bae41aaf811e
+  * Early backport: https://github.com/ruby/ruby/commit/6c252912af4981f016a9abdb4c1689307a4f1d2f
+  * Early backport: https://github.com/ruby/ruby/commit/6aacbd690ccde53f9b97c6673482cb11df3f2955
+  * Early backport: https://github.com/ruby/ruby/commit/920c17dc94239baae05b513046b27967f11a3569
+  * Early backport: https://github.com/ruby/ruby/commit/597955aae8b35c8955e292f589ef43b72d23f852
+  * Early backport: https://github.com/ruby/ruby/commit/82b57d7bfeefd717c10f7a5a3484aca6b3e708a3
+  * Early backport: https://github.com/ruby/ruby/commit/1bd98c820da46a05328d2d53b8f748f28e7ee8f7
+  * Early backport: https://github.com/ruby/ruby/commit/18573b8d054f655e3e8b24902985bf4028f88810
+  * Early backport: https://github.com/ruby/ruby/commit/ba16b340981942eda82d6328800b8098c452c0ca
+  * Early backport: https://github.com/ruby/ruby/commit/c5cf4d4e129f64cb69aaf0a829aed068ef1943c4
+  * Early backport: https://github.com/ruby/ruby/commit/2554c5d3b8738a248cedb2fea96dfab9fbe19417
+  * Early backport: https://github.com/ruby/ruby/commit/3f0e3ede02f7d4b31c9073c9eb912f11aa4349cd
+  * Early backport: https://github.com/ruby/ruby/commit/051a874325c177e040301878069c2b28f5d06ce6
+  * Early backport: https://github.com/ruby/ruby/commit/37ed86fd3c798e298fad9db6e7df1f3f45e1e03b
+  * Early backport: https://github.com/ruby/ruby/commit/a889304fed63c3206f27d614ab75219271fb4ca9
+  * Early backport: https://github.com/ruby/ruby/commit/b3d612804946e841e47d14e09b6839224a79c1a4
+  * Early backport: https://github.com/ruby/ruby/commit/cdcabd8a44ee2f4a2b549a3460a5c77c2dffca36
+  * Early backport: https://github.com/ruby/ruby/commit/606dd03e9b0d4cf65ef56e52fab063e3ed5ef797
+
+ -- Sorah Fukumori <her@sorah.jp>  Mon, 18 Mar 2024 23:21:25 +0900
+
 ruby3.3 (3.3.0-0nkmi2~dist) unstable; urgency=medium
 
   * Early backport: https://github.com/ruby/ruby/pull/9457
