@@ -1,0 +1,50 @@
+From: Hiroya Fujinami <make.just.on@gmail.com>
+Date: Wed, 10 Jan 2024 11:22:23 +0900
+Subject: Fix to work match cache with peek next optimization (#9459)
+
+---
+ regexec.c                | 3 ++-
+ test/ruby/test_regexp.rb | 9 +++++++++
+ 2 files changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/regexec.c b/regexec.c
+index 8638013..741fb41 100644
+--- a/regexec.c
++++ b/regexec.c
+@@ -3756,14 +3756,15 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
+ 
+     CASE(OP_PUSH_IF_PEEK_NEXT)  MOP_IN(OP_PUSH_IF_PEEK_NEXT);
+       GET_RELADDR_INC(addr, p);
++      CHECK_MATCH_CACHE;
+       if (*p == *s) {
+ 	p++;
+-	CHECK_MATCH_CACHE;
+ 	STACK_PUSH_ALT(p + addr, s, sprev, pkeep);
+ 	MOP_OUT;
+ 	JUMP;
+       }
+       p++;
++      INC_NUM_FAILS;
+       MOP_OUT;
+       JUMP;
+ 
+diff --git a/test/ruby/test_regexp.rb b/test/ruby/test_regexp.rb
+index 43357b0..d82619d 100644
+--- a/test/ruby/test_regexp.rb
++++ b/test/ruby/test_regexp.rb
+@@ -1945,6 +1945,15 @@ class TestRegexp < Test::Unit::TestCase
+     end;
+   end
+ 
++  def test_match_cache_with_peek_optimization
++    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
++    timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
++    begin;
++      Regexp.timeout = timeout
++      assert_nil(/a*z/ =~ "a" * 1000000 + "x")
++    end;
++  end
++
+   def test_cache_opcodes_initialize
+     str = 'test1-test2-test3-test4-test_5'
+     re = '^([0-9a-zA-Z\-/]*){1,256}$'
