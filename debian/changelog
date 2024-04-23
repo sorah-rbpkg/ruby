@@ -1,3 +1,10 @@
+ruby3.3 (3.3.1-0nkmi1~dist) unstable; urgency=medium
+
+  * 3.3.1
+  * Drop early backport patches
+
+ -- Sorah Fukumori <her@sorah.jp>  Wed, 24 Apr 2024 02:30:35 +0900
+
 ruby3.3 (3.3.0-0nkmi3~dist) unstable; urgency=medium
 
   * Early backport: https://github.com/ruby/ruby/commit/d8702ddbfbe8cc7fc601a9a4d19842ef9c2b76c1

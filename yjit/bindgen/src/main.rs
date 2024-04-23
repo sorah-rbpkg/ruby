@@ -119,6 +119,7 @@ fn main() {
         .allowlist_function("rb_hash_new_with_size")
         .allowlist_function("rb_hash_resurrect")
         .allowlist_function("rb_hash_stlike_foreach")
+        .allowlist_function("rb_to_hash_type")
 
         // From include/ruby/st.h
         .allowlist_type("st_retval")
@@ -446,6 +447,7 @@ fn main() {
         .allowlist_function("rb_obj_is_proc")
         .allowlist_function("rb_vm_base_ptr")
         .allowlist_function("rb_ec_stack_check")
+        .allowlist_function("rb_vm_top_self")
 
         // We define VALUE manually, don't import it
         .blocklist_type("VALUE")

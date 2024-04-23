@@ -3800,9 +3800,9 @@ args		: arg_value
                 | args ',' arg_splat
                     {
 #if 0
-                        $$ = rest_arg_append(p, $args, $arg_splat, &@$);
+                        $$ = rest_arg_append(p, $1, $3, &@$);
 #endif
-			{VALUE v1,v2,v3;v1=$args;v2=$arg_splat;v3=dispatch2(args_add_star,v1,v2);$$=v3;}
+			{VALUE v1,v2,v3;v1=$1;v2=$3;v3=dispatch2(args_add_star,v1,v2);$$=v3;}
                     }
                 ;
 
@@ -15017,13 +15017,13 @@ forwarding_arg_check(struct parser_params *p, ID arg, ID all, const char *var)
     args = p->lvtbl->args;
 
     while (vars && !DVARS_TERMINAL_P(vars->prev)) {
+        conflict |= (vtable_included(args, arg) && !(all && vtable_included(args, all)));
         vars = vars->prev;
         args = args->prev;
-        conflict |= (vtable_included(args, arg) && !(all && vtable_included(args, all)));
     }
 
     bool found = false;
-    if (vars && vars->prev == DVARS_INHERIT) {
+    if (vars && vars->prev == DVARS_INHERIT && !found) {
         found = (rb_local_defined(arg, p->parent_iseq) &&
                  !(all && rb_local_defined(all, p->parent_iseq)));
     }

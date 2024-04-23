@@ -1334,7 +1334,6 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_reg_adjust_startpos@Base 3.3.0-0nkmi1
  rb_reg_alloc@Base 3.3.0-0nkmi1
  rb_reg_backref_number@Base 3.3.0-0nkmi1
- rb_reg_check_timeout@Base 3.3.0-0nkmi1
  rb_reg_fragment_setenc@Base 3.3.0-0nkmi1
  rb_reg_init_str@Base 3.3.0-0nkmi1
  rb_reg_last_match@Base 3.3.0-0nkmi1
@@ -1351,10 +1350,12 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_reg_options@Base 3.3.0-0nkmi1
  rb_reg_prepare_re@Base 3.3.0-0nkmi1
  rb_reg_quote@Base 3.3.0-0nkmi1
+ rb_reg_raise_timeout@Base 3.3.1-0nkmi1
  rb_reg_regcomp@Base 3.3.0-0nkmi1
  rb_reg_region_copy@Base 3.3.0-0nkmi1
  rb_reg_regsub@Base 3.3.0-0nkmi1
  rb_reg_search@Base 3.3.0-0nkmi1
+ rb_reg_timeout_p@Base 3.3.1-0nkmi1
  rb_register_transcoder@Base 3.3.0-0nkmi1
  rb_remove_event_hook@Base 3.3.0-0nkmi1
  rb_remove_event_hook_with_data@Base 3.3.0-0nkmi1
