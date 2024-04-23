@@ -14462,9 +14462,9 @@ yyreduce:
 #line 3801 "ripper.y"
                   {
 #if 0
-                        (yyval.val) = rest_arg_append(p, (yyval.val), (yyvsp[0].val), &(yyloc));
+                        (yyval.val) = rest_arg_append(p, (yyvsp[-2].val), (yyvsp[0].val), &(yyloc));
 #endif
-			{VALUE v1,v2,v3;v1=(yyval.val);v2=(yyvsp[0].val);v3=dispatch2(args_add_star,v1,v2);(yyval.val)=v3;}
+			{VALUE v1,v2,v3;v1=(yyvsp[-2].val);v2=(yyvsp[0].val);v3=dispatch2(args_add_star,v1,v2);(yyval.val)=v3;}
                     }
 #line 14470 "ripper.c"
     break;
@@ -26854,13 +26854,13 @@ forwarding_arg_check(struct parser_params *p, ID arg, ID all, const char *var)
     args = p->lvtbl->args;
 
     while (vars && !DVARS_TERMINAL_P(vars->prev)) {
+        conflict |= (vtable_included(args, arg) && !(all && vtable_included(args, all)));
         vars = vars->prev;
         args = args->prev;
-        conflict |= (vtable_included(args, arg) && !(all && vtable_included(args, all)));
     }
 
     bool found = false;
-    if (vars && vars->prev == DVARS_INHERIT) {
+    if (vars && vars->prev == DVARS_INHERIT && !found) {
         found = (rb_local_defined(arg, p->parent_iseq) &&
                  !(all && rb_local_defined(all, p->parent_iseq)));
     }

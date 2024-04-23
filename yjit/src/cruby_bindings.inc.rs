@@ -956,6 +956,7 @@ extern "C" {
         n: ::std::os::raw::c_long,
         elts: *const VALUE,
     ) -> VALUE;
+    pub fn rb_vm_top_self() -> VALUE;
     pub static mut rb_vm_insns_count: u64;
     pub fn rb_method_entry_at(obj: VALUE, id: ID) -> *const rb_method_entry_t;
     pub fn rb_callable_method_entry(klass: VALUE, id: ID) -> *const rb_callable_method_entry_t;
@@ -989,6 +990,7 @@ extern "C" {
     pub fn rb_obj_as_string_result(str_: VALUE, obj: VALUE) -> VALUE;
     pub fn rb_str_concat_literals(num: usize, strary: *const VALUE) -> VALUE;
     pub fn rb_ec_str_resurrect(ec: *mut rb_execution_context_struct, str_: VALUE) -> VALUE;
+    pub fn rb_to_hash_type(obj: VALUE) -> VALUE;
     pub fn rb_hash_stlike_foreach(
         hash: VALUE,
         func: st_foreach_callback_func,
