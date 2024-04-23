@@ -12747,9 +12747,9 @@ yyreduce:
 #line 3801 "parse.y"
                   {
                     /*%%%*/
-                        (yyval.node) = rest_arg_append(p, (yyval.node), (yyvsp[0].node), &(yyloc));
+                        (yyval.node) = rest_arg_append(p, (yyvsp[-2].node), (yyvsp[0].node), &(yyloc));
                     /*% %*/
-                    /*% ripper: args_add_star!($args, $arg_splat) %*/
+                    /*% ripper: args_add_star!($1, $3) %*/
                     }
 #line 12755 "parse.c"
     break;
@@ -25097,13 +25097,13 @@ forwarding_arg_check(struct parser_params *p, ID arg, ID all, const char *var)
     args = p->lvtbl->args;
 
     while (vars && !DVARS_TERMINAL_P(vars->prev)) {
+        conflict |= (vtable_included(args, arg) && !(all && vtable_included(args, all)));
         vars = vars->prev;
         args = args->prev;
-        conflict |= (vtable_included(args, arg) && !(all && vtable_included(args, all)));
     }
 
     bool found = false;
-    if (vars && vars->prev == DVARS_INHERIT) {
+    if (vars && vars->prev == DVARS_INHERIT && !found) {
         found = (rb_local_defined(arg, p->parent_iseq) &&
                  !(all && rb_local_defined(all, p->parent_iseq)));
     }

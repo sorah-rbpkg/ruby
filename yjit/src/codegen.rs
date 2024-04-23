@@ -1435,6 +1435,33 @@ fn gen_splatarray(
     Some(KeepCompiling)
 }
 
+// call to_hash on hash to keyword splat before converting block
+// e.g. foo(**object, &block)
+fn gen_splatkw(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+) -> Option<CodegenStatus> {
+    // Save the PC and SP because the callee may allocate
+    jit_prepare_routine_call(jit, asm);
+
+    // Get the operands from the stack
+    let block_opnd = asm.stack_opnd(0);
+    let block_type = asm.ctx.get_opnd_type(block_opnd.into());
+    let hash_opnd = asm.stack_opnd(1);
+
+    let hash = asm.ccall(rb_to_hash_type as *const u8, vec![hash_opnd]);
+    asm.stack_pop(2); // Keep it on stack during ccall for GC
+
+    let stack_ret = asm.stack_push(Type::Hash);
+    asm.mov(stack_ret, hash);
+    asm.stack_push(block_type);
+    // Leave block_opnd spilled by ccall as is
+    asm.ctx.dealloc_temp_reg(asm.ctx.get_stack_size() - 1);
+
+    Some(KeepCompiling)
+}
+
 // concat two arrays
 fn gen_concatarray(
     jit: &mut JITState,
@@ -7105,6 +7132,17 @@ fn gen_send_general(
     assert_eq!(RUBY_T_CLASS, comptime_recv_klass.builtin_type(),
         "objects visible to ruby code should have a T_CLASS in their klass field");
 
+    // Don't compile calls through singleton classes to avoid retaining the receiver.
+    // Make an exception for class methods since classes tend to be retained anyways.
+    // Also compile calls on top_self to help tests.
+    if VALUE(0) != unsafe { FL_TEST(comptime_recv_klass, VALUE(RUBY_FL_SINGLETON as usize)) }
+        && comptime_recv != unsafe { rb_vm_top_self() }
+        && !unsafe { RB_TYPE_P(comptime_recv, RUBY_T_CLASS) }
+        && !unsafe { RB_TYPE_P(comptime_recv, RUBY_T_MODULE) } {
+        gen_counter_incr(asm, Counter::send_singleton_class);
+        return None;
+    }
+
     // Points to the receiver operand on the stack
     let recv = asm.stack_opnd(recv_idx);
     let recv_opnd: YARVOpnd = recv.into();
@@ -7857,6 +7895,12 @@ fn gen_invokesuper_specialized(
     let comptime_recv = jit.peek_at_stack(&asm.ctx, argc as isize);
     if unsafe { rb_obj_is_kind_of(comptime_recv, current_defined_class) } == VALUE(0) {
         gen_counter_incr(asm, Counter::invokesuper_defined_class_mismatch);
+        return None;
+    }
+
+    // Don't compile `super` on objects with singleton class to avoid retaining the receiver.
+    if VALUE(0) != unsafe { FL_TEST(comptime_recv.class_of(), VALUE(RUBY_FL_SINGLETON as usize)) } {
+        gen_counter_incr(asm, Counter::invokesuper_singleton_class);
         return None;
     }
 
@@ -8706,6 +8750,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_str_uminus => Some(gen_opt_str_uminus),
         YARVINSN_opt_newarray_send => Some(gen_opt_newarray_send),
         YARVINSN_splatarray => Some(gen_splatarray),
+        YARVINSN_splatkw => Some(gen_splatkw),
         YARVINSN_concatarray => Some(gen_concatarray),
         YARVINSN_newrange => Some(gen_newrange),
         YARVINSN_putstring => Some(gen_putstring),

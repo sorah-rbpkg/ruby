@@ -17,7 +17,7 @@ require "pp"
 require "rubygems/package"
 require "shellwords"
 require "tmpdir"
-require "uri"
+require "rubygems/vendor/uri/lib/uri"
 require "zlib"
 require "benchmark" # stdlib
 require_relative "mock_gem_ui"
@@ -105,39 +105,32 @@ class Gem::TestCase < Test::Unit::TestCase
     refute File.directory?(path), msg
   end
 
-  # https://github.com/seattlerb/minitest/blob/21d9e804b63c619f602f3f4ece6c71b48974707a/lib/minitest/assertions.rb#L188
-  def _synchronize
-    yield
-  end
-
-  # https://github.com/seattlerb/minitest/blob/21d9e804b63c619f602f3f4ece6c71b48974707a/lib/minitest/assertions.rb#L546
+  # Originally copied from minitest/assertions.rb
   def capture_subprocess_io
-    _synchronize do
-      require "tempfile"
+    require "tempfile"
 
-      captured_stdout = Tempfile.new("out")
-      captured_stderr = Tempfile.new("err")
+    captured_stdout = Tempfile.new("out")
+    captured_stderr = Tempfile.new("err")
 
-      orig_stdout = $stdout.dup
-      orig_stderr = $stderr.dup
-      $stdout.reopen captured_stdout
-      $stderr.reopen captured_stderr
+    orig_stdout = $stdout.dup
+    orig_stderr = $stderr.dup
+    $stdout.reopen captured_stdout
+    $stderr.reopen captured_stderr
 
-      yield
+    yield
 
-      $stdout.rewind
-      $stderr.rewind
+    $stdout.rewind
+    $stderr.rewind
 
-      return captured_stdout.read, captured_stderr.read
-    ensure
-      $stdout.reopen orig_stdout
-      $stderr.reopen orig_stderr
+    [captured_stdout.read, captured_stderr.read]
+  ensure
+    $stdout.reopen orig_stdout
+    $stderr.reopen orig_stderr
 
-      orig_stdout.close
-      orig_stderr.close
-      captured_stdout.close!
-      captured_stderr.close!
-    end
+    orig_stdout.close
+    orig_stderr.close
+    captured_stdout.close!
+    captured_stderr.close!
   end
 
   ##
@@ -356,6 +349,10 @@ class Gem::TestCase < Test::Unit::TestCase
     Dir.chdir @tempdir
 
     ENV["HOME"] = @userhome
+    # Remove "RUBY_CODESIGN", which is used by mkmf-generated Makefile to
+    # sign extension bundles on macOS, to avoid trying to find the specified key
+    # from the fake $HOME/Library/Keychains directory.
+    ENV.delete "RUBY_CODESIGN"
     Gem.instance_variable_set :@config_file, nil
     Gem.instance_variable_set :@user_home, nil
     Gem.instance_variable_set :@config_home, nil
@@ -402,7 +399,7 @@ class Gem::TestCase < Test::Unit::TestCase
     Gem::RemoteFetcher.fetcher = Gem::FakeFetcher.new
 
     @gem_repo = "http://gems.example.com/"
-    @uri = URI.parse @gem_repo
+    @uri = Gem::URI.parse @gem_repo
     Gem.sources.replace [@gem_repo]
 
     Gem.searcher = nil
@@ -1360,12 +1357,12 @@ Also, a list:
   #
   # Yields the +specification+ to the block, if given
 
-  def vendor_gem(name = "a", version = 1)
+  def vendor_gem(name = "a", version = 1, &block)
     directory = File.join "vendor", name
 
     FileUtils.mkdir_p directory
 
-    save_gemspec name, version, directory
+    save_gemspec name, version, directory, &block
   end
 
   ##
