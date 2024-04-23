@@ -30466,7 +30466,7 @@ fi
     	: ${LDSHARED='$(CC) -dynamic -bundle'}
 			: ${DLDSHARED='$(CC) -dynamiclib'}
 			: ${LDFLAGS=""}
-			: ${LIBPATHENV=DYLD_FALLBACK_LIBRARY_PATH}
+			: ${LIBPATHENV=DYLD_LIBRARY_PATH}
 			: ${PRELOADENV=DYLD_INSERT_LIBRARIES}
                         if test x"$enable_shared" = xyes
 then :
