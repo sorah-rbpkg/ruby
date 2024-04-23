@@ -6677,41 +6677,41 @@ static const struct {
 
 static const char prelude_name20[] = "<internal:yjit>";
 static const struct {
-    char L0[508]; /* 1..36 */
-    char L36[500]; /* 37..56 */
-    char L56[496]; /* 57..86 */
-    char L86[500]; /* 87..103 */
-    char L103[459]; /* 104..148 */
-    char L148[488]; /* 149..168 */
-    char L168[488]; /* 169..188 */
-    char L188[494]; /* 189..220 */
-    char L220[474]; /* 221..247 */
-    char L247[460]; /* 248..257 */
-    char L257[411]; /* 258..261 */
-    char L261[504]; /* 262..279 */
-    char L279[493]; /* 280..293 */
-    char L293[409]; /* 294..305 */
-    char L305[444]; /* 306..309 */
-    char L309[449]; /* 310..313 */
-    char L313[457]; /* 314..319 */
-    char L319[500]; /* 320..325 */
-    char L325[505]; /* 326..331 */
-    char L331[431]; /* 332..335 */
-    char L335[471]; /* 336..341 */
-    char L341[452]; /* 342..347 */
-    char L347[476]; /* 348..353 */
-    char L353[463]; /* 354..359 */
-    char L359[468]; /* 360..364 */
-    char L364[432]; /* 365..369 */
-    char L369[491]; /* 370..377 */
-    char L377[505]; /* 378..397 */
-    char L397[440]; /* 398..409 */
-    char L409[476]; /* 410..423 */
-    char L423[505]; /* 424..433 */
-    char L433[477]; /* 434..450 */
-    char L450[461]; /* 451..465 */
-    char L465[472]; /* 466..483 */
-    char L483[244]; /* 484..492 */
+    char L0[506]; /* 1..39 */
+    char L39[506]; /* 40..60 */
+    char L60[496]; /* 61..90 */
+    char L90[500]; /* 91..107 */
+    char L107[459]; /* 108..152 */
+    char L152[488]; /* 153..172 */
+    char L172[488]; /* 173..192 */
+    char L192[494]; /* 193..224 */
+    char L224[474]; /* 225..251 */
+    char L251[460]; /* 252..261 */
+    char L261[411]; /* 262..265 */
+    char L265[504]; /* 266..283 */
+    char L283[493]; /* 284..297 */
+    char L297[409]; /* 298..309 */
+    char L309[444]; /* 310..313 */
+    char L313[449]; /* 314..317 */
+    char L317[457]; /* 318..323 */
+    char L323[500]; /* 324..329 */
+    char L329[505]; /* 330..335 */
+    char L335[431]; /* 336..339 */
+    char L339[471]; /* 340..345 */
+    char L345[452]; /* 346..351 */
+    char L351[476]; /* 352..357 */
+    char L357[463]; /* 358..363 */
+    char L363[468]; /* 364..368 */
+    char L368[432]; /* 369..373 */
+    char L373[491]; /* 374..381 */
+    char L381[505]; /* 382..401 */
+    char L401[440]; /* 402..413 */
+    char L413[476]; /* 414..427 */
+    char L427[505]; /* 428..437 */
+    char L437[477]; /* 438..454 */
+    char L454[461]; /* 455..469 */
+    char L469[472]; /* 470..487 */
+    char L487[244]; /* 488..496 */
 } prelude_code20 = {
 #line 1 "yjit.rb"
 ""/* frozen_string_literal: true */
@@ -6744,14 +6744,18 @@ static const struct {
 "    Primitive.rb_yjit_reset_stats_bang\n"
 "  end\n"
 "\n"
-"\n"/* Enable \\YJIT compilation. */
+"\n"/* Enable \\YJIT compilation. `stats` option decides whether to enable \\YJIT stats or not. */
+"\n"/*  */
+"\n"/* * `false`: Disable stats. */
+"\n"/* * `true`: Enable stats. Print stats at exit. */
+"\n"/* * `:quiet`: Enable stats. Do not print stats at exit. */
 "  def self.enable(stats: false)\n"
 "    return false if enabled?\n"
 "    at_exit { print_and_dump_stats } if stats\n"
 "    Primitive.rb_yjit_enable(stats, stats != :quiet)\n"
-"  end\n"
 ,
-#line 37 "yjit.rb"
+#line 40 "yjit.rb"
+"  end\n"
 "\n"
 "\n"/* If --yjit-trace-exits is enabled parse the hashes from */
 "\n"/* Primitive.rb_yjit_get_exit_locations into a format readable */
@@ -6773,7 +6777,7 @@ static const struct {
 "      frame_hash = { samples: 0, total_samples: 0, edges: {}, name: name, file: \"nonexistent.def\", line: nil, lines: {} }\n"
 "      results[:frames][frame_id] = frame_hash\n"
 ,
-#line 57 "yjit.rb"
+#line 61 "yjit.rb"
 "      frames[frame_id] = frame_hash\n"
 "    end\n"
 "\n"
@@ -6805,7 +6809,7 @@ static const struct {
 "        end\n"
 "\n"
 ,
-#line 87 "yjit.rb"
+#line 91 "yjit.rb"
 "        frame_info = frames[frame_id]\n"
 "        frame_info[:total_samples] += sample_count\n"
 "\n"
@@ -6824,7 +6828,7 @@ static const struct {
 "      frames[top_frame_id][:lines] ||= {}\n"
 "      frames[top_frame_id][:lines][top_frame_line] ||= [0, 0]\n"
 ,
-#line 104 "yjit.rb"
+#line 108 "yjit.rb"
 "      frames[top_frame_id][:lines][top_frame_line][1] += sample_count\n"
 "\n"
 "      samples_count += sample_count\n"
@@ -6871,7 +6875,7 @@ static const struct {
 "    end\n"
 "\n"
 ,
-#line 149 "yjit.rb"
+#line 153 "yjit.rb"
 "    File.binwrite(filename, Marshal.dump(RubyVM::YJIT.exit_locations))\n"
 "  end\n"
 "\n"
@@ -6893,7 +6897,7 @@ static const struct {
 "\n"
 "\n"/* Average length of instruction sequences executed by YJIT */
 ,
-#line 169 "yjit.rb"
+#line 173 "yjit.rb"
 "    avg_len_in_yjit = total_exits > 0 ? retired_in_yjit.to_f / total_exits : 0\n"
 "\n"
 "\n"/* Proportion of instructions that retire in YJIT */
@@ -6915,7 +6919,7 @@ static const struct {
 "  def self.stats_string\n"
 "\n"/* Lazily require StringIO to avoid breaking miniruby */
 ,
-#line 189 "yjit.rb"
+#line 193 "yjit.rb"
 "    require 'stringio'\n"
 "    strio = StringIO.new\n"
 "    _print_stats(out: strio)\n"
@@ -6949,7 +6953,7 @@ static const struct {
 "\n"/* and allow for recompilations in the future. */
 "  def self.code_gc\n"
 ,
-#line 221 "yjit.rb"
+#line 225 "yjit.rb"
 "    Primitive.rb_yjit_code_gc\n"
 "  end\n"
 "\n"
@@ -6978,7 +6982,7 @@ static const struct {
 "\n"
 "      filename = \"yjit_exit_locations.dump\"\n"
 ,
-#line 248 "yjit.rb"
+#line 252 "yjit.rb"
 "      dump_exit_locations(filename)\n"
 "\n"
 "      $stderr.puts(\"YJIT exit locations dumped to `#{filename}`.\")\n"
@@ -6990,13 +6994,13 @@ static const struct {
 "      print_counters(stats, out: out, prefix: 'invokeblock_', prompt: 'invokeblock fallback reasons: ')\n"
 "      print_counters(stats, out: out, prefix: 'invokesuper_', prompt: 'invokesuper fallback reasons: ')\n"
 ,
-#line 258 "yjit.rb"
+#line 262 "yjit.rb"
 "      print_counters(stats, out: out, prefix: 'guard_send_', prompt: 'method call exit reasons: ')\n"
 "      print_counters(stats, out: out, prefix: 'guard_invokeblock_', prompt: 'invokeblock exit reasons: ')\n"
 "      print_counters(stats, out: out, prefix: 'guard_invokesuper_', prompt: 'invokesuper exit reasons: ')\n"
 "      print_counters(stats, out: out, prefix: 'gbpp_', prompt: 'getblockparamproxy exit reasons: ')\n"
 ,
-#line 262 "yjit.rb"
+#line 266 "yjit.rb"
 "      print_counters(stats, out: out, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons:')\n"
 "      print_counters(stats, out: out, prefix: 'setivar_', prompt: 'setinstancevariable exit reasons:')\n"
 "      %w[\n"
@@ -7016,7 +7020,7 @@ static const struct {
 "        opt_getconstant_path\n"
 "        opt_minus\n"
 ,
-#line 280 "yjit.rb"
+#line 284 "yjit.rb"
 "        opt_mod\n"
 "        opt_mult\n"
 "        opt_plus\n"
@@ -7032,7 +7036,7 @@ static const struct {
 "    def _print_stats(out: $stderr)\n"/* :nodoc: */
 "      stats = runtime_stats(context: true)\n"
 ,
-#line 294 "yjit.rb"
+#line 298 "yjit.rb"
 "      return unless Primitive.rb_yjit_stats_enabled_p\n"
 "\n"
 "      out.puts(\"***YJIT: Printing YJIT statistics on exit***\")\n"
@@ -7046,19 +7050,19 @@ static const struct {
 "\n"
 "      out.puts \"num_send:              \" + format_number(13, stats[:num_send])\n"
 ,
-#line 306 "yjit.rb"
+#line 310 "yjit.rb"
 "      out.puts \"num_send_known_class:  \" + format_number_pct(13, stats[:num_send_known_class], stats[:num_send])\n"
 "      out.puts \"num_send_polymorphic:  \" + format_number_pct(13, stats[:num_send_polymorphic], stats[:num_send])\n"
 "      out.puts \"num_send_megamorphic:  \" + format_number_pct(13, stats[:send_megamorphic], stats[:num_send])\n"
 "      out.puts \"num_send_dynamic:      \" + format_number_pct(13, stats[:num_send_dynamic], stats[:num_send])\n"
 ,
-#line 310 "yjit.rb"
+#line 314 "yjit.rb"
 "      out.puts \"num_send_inline:       \" + format_number_pct(13, stats[:num_send_inline], stats[:num_send])\n"
 "      out.puts \"num_send_leaf_builtin: \" + format_number_pct(13, stats[:num_send_leaf_builtin], stats[:num_send])\n"
 "      out.puts \"num_send_cfunc:        \" + format_number_pct(13, stats[:num_send_cfunc], stats[:num_send])\n"
 "      out.puts \"num_send_cfunc_inline: \" + format_number_pct(13, stats[:num_send_cfunc_inline], stats[:num_send_cfunc])\n"
 ,
-#line 314 "yjit.rb"
+#line 318 "yjit.rb"
 "      if stats[:num_send_x86_rel32] != 0 || stats[:num_send_x86_reg] != 0\n"
 "        out.puts \"num_send_x86_rel32:    \" + format_number(13,  stats[:num_send_x86_rel32])\n"
 "        out.puts \"num_send_x86_reg:      \" + format_number(13, stats[:num_send_x86_reg])\n"
@@ -7066,7 +7070,7 @@ static const struct {
 "      out.puts \"num_getivar_megamorphic: \" + format_number(13, stats[:num_getivar_megamorphic])\n"
 "      out.puts \"num_setivar_megamorphic: \" + format_number(13, stats[:num_setivar_megamorphic])\n"
 ,
-#line 320 "yjit.rb"
+#line 324 "yjit.rb"
 "      out.puts \"num_throw:             \" + format_number(13, stats[:num_throw])\n"
 "      out.puts \"num_throw_break:       \" + format_number_pct(13, stats[:num_throw_break], stats[:num_throw])\n"
 "      out.puts \"num_throw_retry:       \" + format_number_pct(13, stats[:num_throw_retry], stats[:num_throw])\n"
@@ -7074,7 +7078,7 @@ static const struct {
 "\n"
 "      out.puts \"iseq_stack_too_large:  \" + format_number(13, stats[:iseq_stack_too_large])\n"
 ,
-#line 326 "yjit.rb"
+#line 330 "yjit.rb"
 "      out.puts \"iseq_too_long:         \" + format_number(13, stats[:iseq_too_long])\n"
 "      out.puts \"temp_reg_opnd:         \" + format_number(13, stats[:temp_reg_opnd])\n"
 "      out.puts \"temp_mem_opnd:         \" + format_number(13, stats[:temp_mem_opnd])\n"
@@ -7082,13 +7086,13 @@ static const struct {
 "      out.puts \"bindings_allocations:  \" + format_number(13, stats[:binding_allocations])\n"
 "      out.puts \"bindings_set:          \" + format_number(13, stats[:binding_set])\n"
 ,
-#line 332 "yjit.rb"
+#line 336 "yjit.rb"
 "      out.puts \"compilation_failure:   \" + format_number(13, compilation_failure) if compilation_failure != 0\n"
 "      out.puts \"live_iseq_count:       \" + format_number(13, stats[:live_iseq_count])\n"
 "      out.puts \"compiled_iseq_entry:   \" + format_number(13, stats[:compiled_iseq_entry])\n"
 "      out.puts \"cold_iseq_entry:       \" + format_number_pct(13, stats[:cold_iseq_entry], stats[:compiled_iseq_entry] + stats[:cold_iseq_entry])\n"
 ,
-#line 336 "yjit.rb"
+#line 340 "yjit.rb"
 "      out.puts \"compiled_iseq_count:   \" + format_number(13, stats[:compiled_iseq_count])\n"
 "      out.puts \"compiled_blockid_count:\" + format_number(13, stats[:compiled_blockid_count])\n"
 "      out.puts \"compiled_block_count:  \" + format_number(13, stats[:compiled_block_count])\n"
@@ -7096,7 +7100,7 @@ static const struct {
 "        out.puts \"versions_per_block:    \" + format_number(13, \"%4.3f\" % (stats[:compiled_block_count].fdiv(stats[:compiled_blockid_count])))\n"
 "      end\n"
 ,
-#line 342 "yjit.rb"
+#line 346 "yjit.rb"
 "      out.puts \"compiled_branch_count: \" + format_number(13, stats[:compiled_branch_count])\n"
 "      out.puts \"compile_time_ms:       \" + format_number(13, stats[:compile_time_ns] / (1000 * 1000))\n"
 "      out.puts \"block_next_count:      \" + format_number(13, stats[:block_next_count])\n"
@@ -7104,7 +7108,7 @@ static const struct {
 "      out.puts \"defer_empty_count:     \" + format_number(13, stats[:defer_empty_count])\n"
 "\n"
 ,
-#line 348 "yjit.rb"
+#line 352 "yjit.rb"
 "      out.puts \"branch_insn_count:     \" + format_number(13, stats[:branch_insn_count])\n"
 "      out.puts \"branch_known_count:    \" + format_number_pct(13, stats[:branch_known_count], stats[:branch_insn_count])\n"
 "\n"
@@ -7112,7 +7116,7 @@ static const struct {
 "      out.puts \"invalidation_count:    \" + format_number(13, stats[:invalidation_count])\n"
 "      out.puts \"constant_state_bumps:  \" + format_number(13, stats[:constant_state_bumps])\n"
 ,
-#line 354 "yjit.rb"
+#line 358 "yjit.rb"
 "      out.puts \"inline_code_size:      \" + format_number(13, stats[:inline_code_size])\n"
 "      out.puts \"outlined_code_size:    \" + format_number(13, stats[:outlined_code_size])\n"
 "      out.puts \"code_region_size:      \" + format_number(13, stats[:code_region_size])\n"
@@ -7120,21 +7124,21 @@ static const struct {
 "\n"
 "      out.puts \"freed_code_size:       \" + format_number(13, stats[:freed_code_size])\n"
 ,
-#line 360 "yjit.rb"
+#line 364 "yjit.rb"
 "      out.puts \"yjit_alloc_size:       \" + format_number(13, stats[:yjit_alloc_size]) if stats.key?(:yjit_alloc_size)\n"
 "      out.puts \"live_context_size:     \" + format_number(13, stats[:live_context_size])\n"
 "      out.puts \"live_context_count:    \" + format_number(13, stats[:live_context_count])\n"
 "      out.puts \"live_page_count:       \" + format_number(13, stats[:live_page_count])\n"
 "      out.puts \"freed_page_count:      \" + format_number(13, stats[:freed_page_count])\n"
 ,
-#line 365 "yjit.rb"
+#line 369 "yjit.rb"
 "      out.puts \"code_gc_count:         \" + format_number(13, stats[:code_gc_count])\n"
 "      out.puts \"num_gc_obj_refs:       \" + format_number(13, stats[:num_gc_obj_refs])\n"
 "      out.puts \"object_shape_count:    \" + format_number(13, stats[:object_shape_count])\n"
 "      out.puts \"side_exit_count:       \" + format_number(13, stats[:side_exit_count])\n"
 "      out.puts \"total_exit_count:      \" + format_number(13, stats[:total_exit_count])\n"
 ,
-#line 370 "yjit.rb"
+#line 374 "yjit.rb"
 "      out.puts \"total_insns_count:     \" + format_number(13, stats[:total_insns_count])\n"
 "      out.puts \"vm_insns_count:        \" + format_number(13, stats[:vm_insns_count])\n"
 "      out.puts \"yjit_insns_count:      \" + format_number(13, stats[:yjit_insns_count])\n"
@@ -7144,7 +7148,7 @@ static const struct {
 "      print_sorted_exit_counts(stats, out: out, prefix: \"exit_\")\n"
 "\n"
 ,
-#line 378 "yjit.rb"
+#line 382 "yjit.rb"
 "      print_sorted_cfunc_calls(stats, out:out)\n"
 "    end\n"
 "\n"
@@ -7166,7 +7170,7 @@ static const struct {
 "      top_n_total = pairs.sum { |name, count| count }\n"
 "      top_n_pct = 100.0 * top_n_total / num_send_cfunc\n"
 ,
-#line 398 "yjit.rb"
+#line 402 "yjit.rb"
 "      longest_name_len = pairs.max_by { |name, count| name.length }.first.length\n"
 "\n"
 "      out.puts \"Top-#{pairs.size} most frequent C calls (#{\"%.1f\" % top_n_pct}% of C calls):\"\n"
@@ -7180,7 +7184,7 @@ static const struct {
 "    end\n"
 "\n"
 ,
-#line 410 "yjit.rb"
+#line 414 "yjit.rb"
 "    def print_sorted_exit_counts(stats, out:, prefix:, how_many: 20, left_pad: 4)\n"/* :nodoc: */
 "      total_exits = total_exit_count(stats)\n"
 "\n"
@@ -7196,7 +7200,7 @@ static const struct {
 "\n"
 "        top_n_total = exits.sum { |name, count| count }\n"
 ,
-#line 424 "yjit.rb"
+#line 428 "yjit.rb"
 "        top_n_exit_pct = 100.0 * top_n_total / total_exits\n"
 "\n"
 "        out.puts \"Top-#{exits.size} most frequent exit ops (#{\"%.1f\" % top_n_exit_pct}% of exits):\"\n"
@@ -7208,7 +7212,7 @@ static const struct {
 "          padded_count = format_number_pct(10, count, total_exits)\n"
 "          out.puts(\"#{padded_name}: #{padded_count}\")\n"
 ,
-#line 434 "yjit.rb"
+#line 438 "yjit.rb"
 "        end\n"
 "      else\n"
 "        out.puts \"total_exits:           \" + format_number(10, total_exits)\n"
@@ -7227,7 +7231,7 @@ static const struct {
 "      counters = counters.filter { |key, _| key.start_with?(prefix) }\n"
 "      counters.filter! { |_, value| value != 0 }\n"
 ,
-#line 451 "yjit.rb"
+#line 455 "yjit.rb"
 "      counters.transform_keys! { |key| key.to_s.delete_prefix(prefix) }\n"
 "\n"
 "      if counters.empty?\n"
@@ -7244,7 +7248,7 @@ static const struct {
 "      counters.sort_by! { |(_, counter_value)| counter_value }\n"
 "      longest_name_length = counters.max_by { |(name, _)| name.length }.first.length\n"
 ,
-#line 466 "yjit.rb"
+#line 470 "yjit.rb"
 "      total = counters.sum { |(_, counter_value)| counter_value }\n"
 "\n"
 "      counters.reverse_each do |(name, value)|\n"
@@ -7264,7 +7268,7 @@ static const struct {
 "\n"
 "\n"/* Format a number along with a percentage over a total value */
 ,
-#line 484 "yjit.rb"
+#line 488 "yjit.rb"
 "    def format_number_pct(pad, number, total)\n"
 "      padded_count = format_number(pad, number)\n"
 "      percentage = number.fdiv(total) * 100\n"
@@ -7273,7 +7277,7 @@ static const struct {
 "    end\n"
 "  end\n"
 "end\n"
-#line 7277 "miniprelude.c"
+#line 7281 "miniprelude.c"
 };
 
 COMPILER_WARNING_POP

@@ -10967,6 +10967,8 @@ fi
             if test "x$branch_protection" = xyes
 then :
 
+                # C compiler and assembler must be consistent for -mbranch-protection
+                # since they both check `__ARM_FEATURE_PAC_DEFAULT` definition.
                 # RUBY_APPEND_OPTION(XCFLAGS)
 	case " ${XCFLAGS-} " in #(
   *" $opt "*) :
@@ -10975,6 +10977,15 @@ then :
      XCFLAGS="$opt" ;; #(
   *) :
      XCFLAGS="$XCFLAGS $opt" ;;
+esac
+                # RUBY_APPEND_OPTION(ASFLAGS)
+	case " ${ASFLAGS-} " in #(
+  *" $opt "*) :
+     ;; #(
+  '  ') :
+     ASFLAGS="$opt" ;; #(
+  *) :
+     ASFLAGS="$ASFLAGS $opt" ;;
 esac
                 break
 
