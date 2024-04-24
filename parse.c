@@ -7608,7 +7608,7 @@ yyreduce:
 		    /*%%%*/
 			(yyval.node) = new_attr_op_assign(p, (yyvsp[-5].node), ID2VAL(idCOLON2), (yyvsp[-3].id), (yyvsp[-2].id), (yyvsp[0].node), &(yyloc));
 		    /*% %*/
-		    /*% ripper: opassign!(field!($1, ID2VAL(idCOLON2), $3), $4, $6) %*/
+		    /*% ripper: opassign!(field!($1, $2, $3), $4, $6) %*/
 		    }
 #line 7609 "parse.c"
     break;
@@ -7990,7 +7990,7 @@ yyreduce:
 		    /*%%%*/
 			(yyval.node) = new_command_qcall(p, ID2VAL(idCOLON2), (yyvsp[-3].node), (yyvsp[-1].id), (yyvsp[0].node), Qnull, &(yylsp[-1]), &(yyloc));
 		    /*% %*/
-		    /*% ripper: command_call!($1, ID2VAL(idCOLON2), $3, $4) %*/
+		    /*% ripper: command_call!($1, $2, $3, $4) %*/
 		    }
 #line 7991 "parse.c"
     break;
@@ -8001,7 +8001,7 @@ yyreduce:
 		    /*%%%*/
 			(yyval.node) = new_command_qcall(p, ID2VAL(idCOLON2), (yyvsp[-4].node), (yyvsp[-2].id), (yyvsp[-1].node), (yyvsp[0].node), &(yylsp[-2]), &(yyloc));
 		    /*% %*/
-		    /*% ripper: method_add_block!(command_call!($1, ID2VAL(idCOLON2), $3, $4), $5) %*/
+		    /*% ripper: method_add_block!(command_call!($1, $2, $3, $4), $5) %*/
 		   }
 #line 8002 "parse.c"
     break;
@@ -8406,7 +8406,7 @@ yyreduce:
 		    /*%%%*/
 			(yyval.node) = attrset(p, (yyvsp[-2].node), idCOLON2, (yyvsp[0].id), &(yyloc));
 		    /*% %*/
-		    /*% ripper: field!($1, ID2VAL(idCOLON2), $3) %*/
+		    /*% ripper: field!($1, idCOLON2, $3) %*/
 		    }
 #line 8407 "parse.c"
     break;
@@ -8791,7 +8791,7 @@ yyreduce:
 		    /*%%%*/
 			(yyval.node) = new_attr_op_assign(p, (yyvsp[-5].node), ID2VAL(idCOLON2), (yyvsp[-3].id), (yyvsp[-2].id), (yyvsp[0].node), &(yyloc));
 		    /*% %*/
-		    /*% ripper: opassign!(field!($1, ID2VAL(idCOLON2), $3), $4, $6) %*/
+		    /*% ripper: opassign!(field!($1, $2, $3), $4, $6) %*/
 		    }
 #line 8792 "parse.c"
     break;
@@ -10926,7 +10926,7 @@ yyreduce:
 			(yyval.node) = new_qcall(p, ID2VAL(idCOLON2), (yyvsp[-3].node), (yyvsp[-1].id), (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
 			nd_set_line((yyval.node), (yylsp[-1]).end_pos.lineno);
 		    /*% %*/
-		    /*% ripper: method_add_arg!(call!($1, ID2VAL(idCOLON2), $3), $4) %*/
+		    /*% ripper: method_add_arg!(call!($1, $2, $3), $4) %*/
 		    }
 #line 10927 "parse.c"
     break;
@@ -10937,7 +10937,7 @@ yyreduce:
 		    /*%%%*/
 			(yyval.node) = new_qcall(p, ID2VAL(idCOLON2), (yyvsp[-2].node), (yyvsp[0].id), Qnull, &(yylsp[0]), &(yyloc));
 		    /*% %*/
-		    /*% ripper: call!($1, ID2VAL(idCOLON2), $3) %*/
+		    /*% ripper: call!($1, $2, $3) %*/
 		    }
 #line 10938 "parse.c"
     break;
@@ -10961,7 +10961,7 @@ yyreduce:
 			(yyval.node) = new_qcall(p, ID2VAL(idCOLON2), (yyvsp[-2].node), ID2VAL(idCall), (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
 			nd_set_line((yyval.node), (yylsp[-1]).end_pos.lineno);
 		    /*% %*/
-		    /*% ripper: method_add_arg!(call!($1, ID2VAL(idCOLON2), ID2VAL(idCall)), $3) %*/
+		    /*% ripper: method_add_arg!(call!($1, $2, ID2VAL(idCall)), $3) %*/
 		    }
 #line 10962 "parse.c"
     break;
