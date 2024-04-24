@@ -1245,6 +1245,31 @@ new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line)
     return adjust;
 }
 
+static void
+iseq_insn_each_markable_object(INSN *insn, void (*func)(VALUE *, VALUE), VALUE data)
+{
+    const char *types = insn_op_types(insn->insn_id);
+    for (int j = 0; types[j]; j++) {
+        char type = types[j];
+        switch (type) {
+          case TS_CDHASH:
+          case TS_ISEQ:
+          case TS_VALUE:
+          case TS_CALLDATA: // ci is stored.
+            func(&OPERAND_AT(insn, j), data);
+            break;
+          default:
+            break;
+        }
+    }
+}
+
+static void
+iseq_insn_each_object_write_barrier(VALUE *obj_ptr, VALUE iseq)
+{
+    RB_OBJ_WRITTEN(iseq, Qundef, *obj_ptr);
+}
+
 static INSN *
 new_insn_core(rb_iseq_t *iseq, const NODE *line_node,
 	      int insn_id, int argc, VALUE *argv)
@@ -1262,6 +1287,9 @@ new_insn_core(rb_iseq_t *iseq, const NODE *line_node,
     iobj->operands = argv;
     iobj->operand_size = argc;
     iobj->sc_state = 0;
+
+    iseq_insn_each_markable_object(iobj, iseq_insn_each_object_write_barrier, (VALUE)iseq);
+
     return iobj;
 }
 
@@ -7188,7 +7216,30 @@ compile_iter(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 			   ISEQ_TYPE_BLOCK, line);
 	CHECK(COMPILE(ret, "iter caller", node->nd_iter));
     }
-    ADD_LABEL(ret, retry_end_l);
+
+    {
+        // We need to put the label "retry_end_l" immediately after the last "send" instruction.
+        // This because vm_throw checks if the break cont is equal to the index of next insn of the "send".
+        // (Otherwise, it is considered "break from proc-closure". See "TAG_BREAK" handling in "vm_throw_start".)
+        //
+        // Normally, "send" instruction is at the last.
+        // However, qcall under branch coverage measurement adds some instructions after the "send".
+        //
+        // Note that "invokesuper" appears instead of "send".
+        INSN *iobj;
+        LINK_ELEMENT *last_elem = LAST_ELEMENT(ret);
+        iobj = IS_INSN(last_elem) ? (INSN*) last_elem : (INSN*) get_prev_insn((INSN*) last_elem);
+        while (INSN_OF(iobj) != BIN(send) && INSN_OF(iobj) != BIN(invokesuper)) {
+            iobj = (INSN*) get_prev_insn(iobj);
+        }
+        ELEM_INSERT_NEXT(&iobj->link, (LINK_ELEMENT*) retry_end_l);
+
+        // LINK_ANCHOR has a pointer to the last element, but ELEM_INSERT_NEXT does not update it
+        // even if we add an insn to the last of LINK_ANCHOR. So this updates it manually.
+        if (&iobj->link == LAST_ELEMENT(ret)) {
+            ret->last = (LINK_ELEMENT*) retry_end_l;
+        }
+    }
 
     if (popped) {
 	ADD_INSN(ret, line_node, pop);
@@ -10402,6 +10453,12 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
     return keyword;
 }
 
+static void
+iseq_insn_each_object_mark(VALUE *obj_ptr, VALUE _)
+{
+    rb_gc_mark(*obj_ptr);
+}
+
 void
 rb_iseq_mark_insn_storage(struct iseq_compile_data_storage *storage)
 {
@@ -10428,28 +10485,7 @@ rb_iseq_mark_insn_storage(struct iseq_compile_data_storage *storage)
             iobj = (INSN *)&storage->buff[pos];
 
             if (iobj->operands) {
-                int j;
-                const char *types = insn_op_types(iobj->insn_id);
-
-                for (j = 0; types[j]; j++) {
-                    char type = types[j];
-                    switch (type) {
-                      case TS_CDHASH:
-                      case TS_ISEQ:
-                      case TS_VALUE:
-                      case TS_CALLDATA: // ci is stored.
-                        {
-                            VALUE op = OPERAND_AT(iobj, j);
-
-                            if (!SPECIAL_CONST_P(op)) {
-                                rb_gc_mark(op);
-                            }
-                        }
-                        break;
-                      default:
-                        break;
-                    }
-                }
+                iseq_insn_each_markable_object(iobj, iseq_insn_each_object_mark, (VALUE)0);
             }
             pos += (int)size;
         }
