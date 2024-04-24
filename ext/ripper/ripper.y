@@ -1657,7 +1657,7 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
 #if 0
 			$$ = new_attr_op_assign(p, $1, ID2VAL(idCOLON2), $3, $4, $6, &@$);
 #endif
-			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=$1;v2=ID2VAL(idCOLON2);v3=$3;v4=dispatch3(field,v1,v2,v3);v5=v4;v6=$4;v7=$6;v8=dispatch3(opassign,v5,v6,v7);$$=v8;}
+			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=$1;v2=$2;v3=$3;v4=dispatch3(field,v1,v2,v3);v5=v4;v6=$4;v7=$6;v8=dispatch3(opassign,v5,v6,v7);$$=v8;}
 		    }
 		| defn_head f_opt_paren_args '=' command
 		    {
@@ -1931,14 +1931,14 @@ command		: fcall command_args       %prec tLOWEST
 #if 0
 			$$ = new_command_qcall(p, ID2VAL(idCOLON2), $1, $3, $4, Qnull, &@3, &@$);
 #endif
-			{VALUE v1,v2,v3,v4,v5;v1=$1;v2=ID2VAL(idCOLON2);v3=$3;v4=$4;v5=dispatch4(command_call,v1,v2,v3,v4);$$=v5;}
+			{VALUE v1,v2,v3,v4,v5;v1=$1;v2=$2;v3=$3;v4=$4;v5=dispatch4(command_call,v1,v2,v3,v4);$$=v5;}
 		    }
 		| primary_value tCOLON2 operation2 command_args cmd_brace_block
 		    {
 #if 0
 			$$ = new_command_qcall(p, ID2VAL(idCOLON2), $1, $3, $4, $5, &@3, &@$);
 #endif
-			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=$1;v2=ID2VAL(idCOLON2);v3=$3;v4=$4;v5=dispatch4(command_call,v1,v2,v3,v4);v6=v5;v7=$5;v8=dispatch2(method_add_block,v6,v7);$$=v8;}
+			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=$1;v2=$2;v3=$3;v4=$4;v5=dispatch4(command_call,v1,v2,v3,v4);v6=v5;v7=$5;v8=dispatch2(method_add_block,v6,v7);$$=v8;}
 		   }
 		| keyword_super command_args
 		    {
@@ -2218,7 +2218,7 @@ lhs		: user_variable
 #if 0
 			$$ = attrset(p, $1, idCOLON2, $3, &@$);
 #endif
-			{VALUE v1,v2,v3,v4;v1=$1;v2=ID2VAL(idCOLON2);v3=$3;v4=dispatch3(field,v1,v2,v3);$$=v4;}
+			{VALUE v1,v2,v3,v4;v1=$1;v2=idCOLON2;v3=$3;v4=dispatch3(field,v1,v2,v3);$$=v4;}
 		    }
 		| primary_value call_op tCONSTANT
 		    {
@@ -2409,7 +2409,7 @@ arg		: lhs '=' lex_ctxt arg_rhs
 #if 0
 			$$ = new_attr_op_assign(p, $1, ID2VAL(idCOLON2), $3, $4, $6, &@$);
 #endif
-			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=$1;v2=ID2VAL(idCOLON2);v3=$3;v4=dispatch3(field,v1,v2,v3);v5=v4;v6=$4;v7=$6;v8=dispatch3(opassign,v5,v6,v7);$$=v8;}
+			{VALUE v1,v2,v3,v4,v5,v6,v7,v8;v1=$1;v2=$2;v3=$3;v4=dispatch3(field,v1,v2,v3);v5=v4;v6=$4;v7=$6;v8=dispatch3(opassign,v5,v6,v7);$$=v8;}
 		    }
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN lex_ctxt arg_rhs
 		    {
@@ -3910,14 +3910,14 @@ method_call	: fcall paren_args
 			$$ = new_qcall(p, ID2VAL(idCOLON2), $1, $3, $4, &@3, &@$);
 			nd_set_line($$, @3.end_pos.lineno);
 #endif
-			{VALUE v1,v2,v3,v4,v5,v6,v7;v1=$1;v2=ID2VAL(idCOLON2);v3=$3;v4=dispatch3(call,v1,v2,v3);v5=v4;v6=$4;v7=dispatch2(method_add_arg,v5,v6);$$=v7;}
+			{VALUE v1,v2,v3,v4,v5,v6,v7;v1=$1;v2=$2;v3=$3;v4=dispatch3(call,v1,v2,v3);v5=v4;v6=$4;v7=dispatch2(method_add_arg,v5,v6);$$=v7;}
 		    }
 		| primary_value tCOLON2 operation3
 		    {
 #if 0
 			$$ = new_qcall(p, ID2VAL(idCOLON2), $1, $3, Qnull, &@3, &@$);
 #endif
-			{VALUE v1,v2,v3,v4;v1=$1;v2=ID2VAL(idCOLON2);v3=$3;v4=dispatch3(call,v1,v2,v3);$$=v4;}
+			{VALUE v1,v2,v3,v4;v1=$1;v2=$2;v3=$3;v4=dispatch3(call,v1,v2,v3);$$=v4;}
 		    }
 		| primary_value call_op paren_args
 		    {
@@ -3933,7 +3933,7 @@ method_call	: fcall paren_args
 			$$ = new_qcall(p, ID2VAL(idCOLON2), $1, ID2VAL(idCall), $3, &@2, &@$);
 			nd_set_line($$, @2.end_pos.lineno);
 #endif
-			{VALUE v1,v2,v3,v4,v5,v6,v7;v1=$1;v2=ID2VAL(idCOLON2);v3=ID2VAL(idCall);v4=dispatch3(call,v1,v2,v3);v5=v4;v6=$3;v7=dispatch2(method_add_arg,v5,v6);$$=v7;}
+			{VALUE v1,v2,v3,v4,v5,v6,v7;v1=$1;v2=$2;v3=ID2VAL(idCall);v4=dispatch3(call,v1,v2,v3);v5=v4;v6=$3;v7=dispatch2(method_add_arg,v5,v6);$$=v7;}
 		    }
 		| keyword_super paren_args
 		    {
