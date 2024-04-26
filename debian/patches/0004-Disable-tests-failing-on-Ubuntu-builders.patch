@@ -1,25 +1,16 @@
 From: Chris Hofstaedtler <zeha@debian.org>
-Date: Sat, 6 Oct 2018 11:43:33 -0300
-Subject: Disable tests failing on Ubuntu builders
+Date: Fri, 15 Mar 2024 18:13:07 +0100
+Subject: Disable some problematic tests
 
----
- test/excludes/TestFileUtils.rb | 1 +
- test/excludes/TestProcess.rb   | 1 +
- 2 files changed, 2 insertions(+)
- create mode 100644 test/excludes/TestFileUtils.rb
- create mode 100644 test/excludes/TestProcess.rb
-
-diff --git a/test/excludes/TestFileUtils.rb b/test/excludes/TestFileUtils.rb
-new file mode 100644
-index 0000000..ee8b15c
 --- /dev/null
-+++ b/test/excludes/TestFileUtils.rb
++++ ruby3.1-3.1.2/test/excludes/TestFileUtils.rb
 @@ -0,0 +1 @@
 +exclude :test_chown, "fails on Launchpad builders"
-diff --git a/test/excludes/TestProcess.rb b/test/excludes/TestProcess.rb
-new file mode 100644
-index 0000000..37b406e
 --- /dev/null
-+++ b/test/excludes/TestProcess.rb
++++ ruby3.1-3.1.2/test/excludes/TestProcess.rb
 @@ -0,0 +1 @@
 +exclude :test_execopts_gid, "fails on Launchpad builders"
+--- /dev/null	2024-03-15 17:16:31.668000000 +0100
++++ ruby3.1-3.1.2/test/excludes/TestAddressResolve.rb	2024-03-15 18:12:06.000000000 +0100
+@@ -0,0 +1 @@
++exclude :test_socket_getnameinfo_domain_blocking, "No internet in buildd" 

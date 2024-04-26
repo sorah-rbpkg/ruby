@@ -1,3 +1,12 @@
+ruby3.1 (3.1.2-7+deb12u1) bookworm-security; urgency=medium
+
+  * CVE-2024-27280 / CVE-2024-27281 / CVE-2024-27282
+  * Cherrypick changes from 3.1.2-8.2 upload to sid:
+    * Update test certificates from ruby 3.2.3. (Closes: #1064034)
+    * Disable test needing a working DNS resolver.
+
+ -- Moritz Mühlenhoff <jmm@debian.org>  Fri, 26 Apr 2024 09:47:47 +0200
+
 ruby3.1 (3.1.2-7) unstable; urgency=medium
 
   * Upload to unstable
