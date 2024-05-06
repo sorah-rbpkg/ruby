@@ -6,10 +6,15 @@ Closes: #896509
 
 Signed-off-by: Antonio Terceiro <terceiro@debian.org>
 Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
+---
+ io.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
+diff --git a/io.c b/io.c
+index ca2cb90..581ac5e 100644
 --- a/io.c
 +++ b/io.c
-@@ -2207,7 +2207,11 @@
+@@ -2212,7 +2212,11 @@ io_writev(int argc, const VALUE *argv, VALUE io)
  
      for (i = 0; i < argc; i += cnt) {
  #ifdef HAVE_WRITEV

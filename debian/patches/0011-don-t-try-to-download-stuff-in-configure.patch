@@ -4,16 +4,21 @@ Subject: don't try to download stuff in configure
 
 Reviewed-By: Lucas Kanashiro <kanashiro@debian.org>
 Last-Update: 2023-10-03
+---
+ defs/gmake.mk | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
+diff --git a/defs/gmake.mk b/defs/gmake.mk
+index 5489b01..86fcb5c 100644
 --- a/defs/gmake.mk
 +++ b/defs/gmake.mk
-@@ -295,9 +295,7 @@
- bundled-gem-srcdir = $(srcdir)/gems/src/$(1)
+@@ -328,9 +328,7 @@ bundled-gem-gemspec = $(srcdir)/gems/src/$(1)/$(1).gemspec
  bundled-gem-extracted = $(srcdir)/.bundle/gems/$(1)-$(2)
+ bundled-gem-revision = $(srcdir)/.bundle/.timestamp/$(1).revision
  
 -update-gems: | $(patsubst %,$(srcdir)/gems/%.gem,$(bundled-gems))
 -update-gems: | $(call foreach-bundled-gems-rev,bundled-gem-gemfile)
--update-gems: | $(call foreach-bundled-gems-rev,bundled-gem-srcdir)
+-update-gems: | $(call foreach-bundled-gems-rev,bundled-gem-gemspec)
 +update-gems:
  
  test-bundler-precheck: | $(srcdir)/.bundle/cache

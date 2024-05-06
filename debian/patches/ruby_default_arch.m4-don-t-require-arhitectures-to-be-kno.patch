@@ -7,15 +7,19 @@ Not sure yet if this should be forwarded upstream or not.
 
 Reviewed-By: Lucas Kanashiro <kanashiro@debian.org>
 Last-Update: 2023-10-03
+---
+ tool/m4/ruby_default_arch.m4 | 1 +
+ 1 file changed, 1 insertion(+)
 
+diff --git a/tool/m4/ruby_default_arch.m4 b/tool/m4/ruby_default_arch.m4
+index a0f7c6f..5819f8f 100644
 --- a/tool/m4/ruby_default_arch.m4
 +++ b/tool/m4/ruby_default_arch.m4
-@@ -6,7 +6,7 @@
- 	[*64],        [ARCH_FLAG=-m64],
- 	[[i[3-6]86]], [ARCH_FLAG=-m32],
- 	[ppc],        [ARCH_FLAG=-m32],
--	[AC_MSG_ERROR(unknown target architecture: $target_archs)]
-+	[*],      [],
- 	)
- AC_MSG_RESULT([$ARCH_FLAG])
- ])dnl
+@@ -10,6 +10,7 @@ AS_CASE([$1:"$host_cpu"],
+     [[i[3-6]86]:x86_64], [ARCH_FLAG=-m32],
+     [ppc64:ppc*],        [ARCH_FLAG=-m64],
+     [ppc*:ppc64],        [ARCH_FLAG=-m32],
++    [*],                 [],
+     AS_CASE([$build_os],
+         [darwin*], [ARCH_FLAG="-arch "$1],
+         [ARCH_FLAG=-march=$1]
