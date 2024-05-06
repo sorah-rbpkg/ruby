@@ -153,7 +153,6 @@ typedef struct rb_method_alias_struct {
 
 typedef struct rb_method_refined_struct {
     struct rb_method_entry_struct * orig_me;
-    VALUE owner;
 } rb_method_refined_t;
 
 typedef struct rb_method_bmethod_struct {
@@ -200,7 +199,7 @@ struct rb_method_definition_struct {
 struct rb_id_table;
 
 typedef struct rb_method_definition_struct rb_method_definition_t;
-STATIC_ASSERT(sizeof_method_def, offsetof(rb_method_definition_t, body)==8);
+STATIC_ASSERT(sizeof_method_def, offsetof(rb_method_definition_t, body) <= 8);
 
 #define UNDEFINED_METHOD_ENTRY_P(me) (!(me) || !(me)->def || (me)->def->type == VM_METHOD_TYPE_UNDEF)
 #define UNDEFINED_REFINED_METHOD_P(def) \
@@ -250,6 +249,6 @@ void rb_scope_visibility_set(rb_method_visibility_t);
 VALUE rb_unnamed_parameters(int arity);
 
 void rb_clear_method_cache(VALUE klass_or_module, ID mid);
-void rb_clear_method_cache_all(void);
+void rb_clear_all_refinement_method_cache(void);
 
 #endif /* RUBY_METHOD_H */

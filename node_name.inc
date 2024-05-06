@@ -88,8 +88,6 @@
 	return "NODE_LIST";
       case NODE_ZLIST:
 	return "NODE_ZLIST";
-      case NODE_VALUES:
-	return "NODE_VALUES";
       case NODE_HASH:
 	return "NODE_HASH";
       case NODE_RETURN:
@@ -208,3 +206,7 @@
 	return "NODE_FNDPTN";
       case NODE_ERROR:
 	return "NODE_ERROR";
+      case NODE_RIPPER:
+	return "NODE_RIPPER";
+      case NODE_RIPPER_VALUES:
+	return "NODE_RIPPER_VALUES";

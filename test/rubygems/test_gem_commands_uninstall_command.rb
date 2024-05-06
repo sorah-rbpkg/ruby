@@ -21,7 +21,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     gemhome2 = "#{@gemhome}2"
 
     a_4, = util_gem "a", 4
-    install_gem a_4, :install_dir => gemhome2
+    install_gem a_4, install_dir: gemhome2
 
     assert_gems_presence "a-1", "a-4", "b-2", "default-1", dirs: [@gemhome, gemhome2]
 
@@ -114,7 +114,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
   def test_execute_removes_executable
     initial_install
 
-    if win_platform?
+    if Gem.win_platform?
       assert File.exist?(@executable)
     else
       assert File.symlink?(@executable)
@@ -158,7 +158,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     @cmd.execute
 
     assert_equal false, File.exist?(formatted_executable)
-  rescue
+  rescue StandardError
     Gem::Installer.exec_format = nil
   end
 
@@ -227,6 +227,26 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     assert_equal 2, Gem::Specification.find_all_by_name("a").length
 
     assert File.exist? File.join(@gemhome, "bin", "executable")
+  end
+
+  def test_execute_with_multiple_version_specified_as_colon
+    initial_install
+
+    ui = Gem::MockGemUi.new "y\n"
+
+    util_make_gems
+
+    assert_equal 3, Gem::Specification.find_all_by_name("a").length
+
+    @cmd.options[:force] = true
+    @cmd.options[:args] = ["a:1", "a:2"]
+
+    use_ui ui do
+      @cmd.execute
+    end
+
+    assert_equal 1, Gem::Specification.find_all_by_name("a").length
+    assert_equal Gem::Version.new("3.a"), Gem::Specification.find_by_name("a").version
   end
 
   def test_uninstall_selection
@@ -361,7 +381,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     gemhome2 = "#{@gemhome}2"
 
     a_4, = util_gem "a", 4
-    install_gem a_4 , :install_dir => gemhome2
+    install_gem a_4, install_dir: gemhome2
 
     assert_gems_presence "a-4", dirs: [@gemhome, gemhome2]
 
@@ -380,7 +400,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     gemhome2 = "#{@gemhome}2"
 
     a_4, = util_gem "a", 4
-    install_gem a_4 , :install_dir => gemhome2
+    install_gem a_4, install_dir: gemhome2
 
     assert_gems_presence "a-4", dirs: [@gemhome, gemhome2]
 
@@ -496,7 +516,7 @@ WARNING:  Use your OS package manager to uninstall vendor gems
     end
 
     assert_empty @ui.output
-    assert_match %r{Error: unable to successfully uninstall '#{@spec.name}'}, @ui.error
+    assert_match(/Error: unable to successfully uninstall '#{@spec.name}'/, @ui.error)
   end
 
   private

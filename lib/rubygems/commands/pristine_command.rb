@@ -11,10 +11,10 @@ class Gem::Commands::PristineCommand < Gem::Command
   def initialize
     super "pristine",
           "Restores installed gems to pristine condition from files located in the gem cache",
-          :version => Gem::Requirement.default,
-          :extensions => true,
-          :extensions_set => false,
-          :all => false
+          version: Gem::Requirement.default,
+          extensions: true,
+          extensions_set: false,
+          all: false
 
     add_option("--all",
                "Restore all installed gems to pristine",
@@ -114,16 +114,14 @@ extensions will be restored.
         spec.extensions && !spec.extensions.empty?
       end
     elsif options[:only_missing_extensions]
-      Gem::Specification.select do |spec|
-        spec.missing_extensions?
-      end
+      Gem::Specification.select(&:missing_extensions?)
     else
       get_all_gem_names.sort.map do |gem_name|
         Gem::Specification.find_all_by_name(gem_name, options[:version]).reverse
       end.flatten
     end
 
-    specs = specs.select {|spec| RUBY_ENGINE == spec.platform || Gem::Platform.local === spec.platform || spec.platform == Gem::Platform::RUBY }
+    specs = specs.select {|spec| spec.platform == RUBY_ENGINE || Gem::Platform.local === spec.platform || spec.platform == Gem::Platform::RUBY }
 
     if specs.to_a.empty?
       raise Gem::Exception,
@@ -138,7 +136,7 @@ extensions will be restored.
         next
       end
 
-      if options.has_key? :skip
+      if options.key? :skip
         if options[:skip].include? spec.name
           say "Skipped #{spec.full_name}, it was given through options"
           next
@@ -181,12 +179,12 @@ extensions will be restored.
       install_dir = options[:install_dir] if options[:install_dir]
 
       installer_options = {
-        :wrappers => true,
-        :force => true,
-        :install_dir => install_dir || spec.base_dir,
-        :env_shebang => env_shebang,
-        :build_args => spec.build_args,
-        :bin_dir => bin_dir,
+        wrappers: true,
+        force: true,
+        install_dir: install_dir || spec.base_dir,
+        env_shebang: env_shebang,
+        build_args: spec.build_args,
+        bin_dir: bin_dir,
       }
 
       if options[:only_executables]

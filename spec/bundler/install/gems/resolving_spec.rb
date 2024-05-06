@@ -106,7 +106,7 @@ RSpec.describe "bundle install with install-time dependencies" do
     path = "#{gem_repo2}/#{Gem::MARSHAL_SPEC_DIR}/actionpack-2.3.2.gemspec.rz"
     spec = Marshal.load(Bundler.rubygems.inflate(File.binread(path)))
     spec.dependencies.each do |d|
-      d.instance_variable_set(:@type, :fail)
+      d.instance_variable_set(:@type, "fail")
     end
     File.open(path, "wb") do |f|
       f.write Gem.deflate(Marshal.dump(spec))
@@ -131,7 +131,7 @@ RSpec.describe "bundle install with install-time dependencies" do
     end
 
     it "installs plugins depended on by other plugins" do
-      install_gemfile <<-G, :env => { "DEBUG" => "1" }
+      install_gemfile <<-G, env: { "DEBUG" => "1" }
         source "#{file_uri_for(gem_repo2)}"
         gem "net_a"
       G
@@ -140,7 +140,7 @@ RSpec.describe "bundle install with install-time dependencies" do
     end
 
     it "installs multiple levels of dependencies" do
-      install_gemfile <<-G, :env => { "DEBUG" => "1" }
+      install_gemfile <<-G, env: { "DEBUG" => "1" }
         source "#{file_uri_for(gem_repo2)}"
         gem "net_c"
         gem "net_e"
@@ -157,7 +157,7 @@ RSpec.describe "bundle install with install-time dependencies" do
           gem "net_e"
         G
 
-        bundle :install, :env => { "BUNDLER_DEBUG_RESOLVER" => "1", "DEBUG" => "1" }
+        bundle :install, env: { "BUNDLER_DEBUG_RESOLVER" => "1", "DEBUG" => "1" }
 
         expect(out).to include("Resolving dependencies...")
       end
@@ -171,7 +171,7 @@ RSpec.describe "bundle install with install-time dependencies" do
           gem "net_e"
         G
 
-        bundle :install, :env => { "DEBUG_RESOLVER" => "1", "DEBUG" => "1" }
+        bundle :install, env: { "DEBUG_RESOLVER" => "1", "DEBUG" => "1" }
 
         expect(out).to include("Resolving dependencies...")
       end
@@ -185,7 +185,7 @@ RSpec.describe "bundle install with install-time dependencies" do
           gem "net_e"
         G
 
-        bundle :install, :env => { "DEBUG_RESOLVER_TREE" => "1", "DEBUG" => "1" }
+        bundle :install, env: { "DEBUG_RESOLVER_TREE" => "1", "DEBUG" => "1" }
 
         expect(out).to include(" net_b").
           and include("Resolving dependencies...").
@@ -208,7 +208,7 @@ RSpec.describe "bundle install with install-time dependencies" do
           end
         end
 
-        install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+        install_gemfile <<-G, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
           ruby "#{Gem.ruby_version}"
           source "http://localgemserver.test/"
           gem 'rack'
@@ -229,7 +229,7 @@ RSpec.describe "bundle install with install-time dependencies" do
           end
         end
 
-        install_gemfile <<-G, :artifice => "endpoint", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+        install_gemfile <<-G, artifice: "endpoint", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
           ruby "#{Gem.ruby_version}"
           source "http://localgemserver.test/"
           gem 'rack'
@@ -256,6 +256,10 @@ RSpec.describe "bundle install with install-time dependencies" do
             gem 'parallel_tests'
           G
 
+          checksums = checksums_section do |c|
+            c.checksum gem_repo2, "parallel_tests", "3.8.0"
+          end
+
           lockfile <<~L
             GEM
               remote: http://localgemserver.test/
@@ -267,14 +271,18 @@ RSpec.describe "bundle install with install-time dependencies" do
 
             DEPENDENCIES
               parallel_tests
-
+            #{checksums}
             BUNDLED WITH
                #{Bundler::VERSION}
           L
         end
 
         it "automatically updates lockfile to use the older version" do
-          bundle "install --verbose", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+          bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+
+          checksums = checksums_section_when_existing do |c|
+            c.checksum gem_repo2, "parallel_tests", "3.7.0"
+          end
 
           expect(lockfile).to eq <<~L
             GEM
@@ -287,7 +295,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
             DEPENDENCIES
               parallel_tests
-
+            #{checksums}
             BUNDLED WITH
                #{Bundler::VERSION}
           L
@@ -295,7 +303,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
         it "gives a meaningful error if we're in frozen mode" do
           expect do
-            bundle "install --verbose", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s, "BUNDLE_FROZEN" => "true" }, :raise_on_error => false
+            bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s, "BUNDLE_FROZEN" => "true" }, raise_on_error: false
           end.not_to change { lockfile }
 
           expect(err).to include("parallel_tests-3.8.0 requires ruby version >= #{next_ruby_minor}")
@@ -332,6 +340,11 @@ RSpec.describe "bundle install with install-time dependencies" do
             gem 'rubocop'
           G
 
+          checksums = checksums_section do |c|
+            c.checksum gem_repo2, "rubocop", "1.35.0"
+            c.checksum gem_repo2, "rubocop-ast", "1.21.0"
+          end
+
           lockfile <<~L
             GEM
               remote: http://localgemserver.test/
@@ -345,14 +358,19 @@ RSpec.describe "bundle install with install-time dependencies" do
 
             DEPENDENCIES
               parallel_tests
-
+            #{checksums}
             BUNDLED WITH
                #{Bundler::VERSION}
           L
         end
 
         it "automatically updates lockfile to use the older compatible versions" do
-          bundle "install --verbose", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+          bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+
+          checksums = checksums_section_when_existing do |c|
+            c.checksum gem_repo2, "rubocop", "1.28.2"
+            c.checksum gem_repo2, "rubocop-ast", "1.17.0"
+          end
 
           expect(lockfile).to eq <<~L
             GEM
@@ -367,7 +385,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
             DEPENDENCIES
               rubocop
-
+            #{checksums}
             BUNDLED WITH
                #{Bundler::VERSION}
           L
@@ -412,14 +430,70 @@ RSpec.describe "bundle install with install-time dependencies" do
 
         it "raises a proper error" do
           simulate_platform "aarch64-linux" do
-            bundle "install", :raise_on_error => false
+            bundle "install", raise_on_error: false
           end
 
-          nice_error = strip_whitespace(<<-E).strip
-            Could not find gem 'sorbet-static (= 0.5.10554)' with platforms 'arm64-darwin-21', 'aarch64-linux' in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally.
+          nice_error = <<~E.strip
+            Could not find gems matching 'sorbet-static (= 0.5.10554)' valid for all resolution platforms (arm64-darwin-21, aarch64-linux) in rubygems repository #{file_uri_for(gem_repo4)}/, cached gems or installed locally.
 
             The source contains the following gems matching 'sorbet-static (= 0.5.10554)':
               * sorbet-static-0.5.10554-universal-darwin-21
+          E
+          expect(err).to end_with(nice_error)
+        end
+      end
+
+      context "when adding a new gem that does not resolve under all locked platforms" do
+        before do
+          simulate_platform "x86_64-linux" do
+            build_repo4 do
+              build_gem "nokogiri", "1.14.0" do |s|
+                s.platform = "x86_64-linux"
+              end
+              build_gem "nokogiri", "1.14.0" do |s|
+                s.platform = "arm-linux"
+              end
+
+              build_gem "sorbet-static", "0.5.10696" do |s|
+                s.platform = "x86_64-linux"
+              end
+            end
+
+            lockfile <<~L
+              GEM
+                remote: #{file_uri_for(gem_repo4)}/
+                specs:
+                  nokogiri (1.14.0-arm-linux)
+                  nokogiri (1.14.0-x86_64-linux)
+
+              PLATFORMS
+                arm-linux
+                x86_64-linux
+
+              DEPENDENCIES
+                nokogiri
+
+              BUNDLED WITH
+                 #{Bundler::VERSION}
+            L
+
+            gemfile <<~G
+              source "#{file_uri_for(gem_repo4)}"
+
+              gem "nokogiri"
+              gem "sorbet-static"
+            G
+
+            bundle "lock", raise_on_error: false
+          end
+        end
+
+        it "raises a proper error" do
+          nice_error = <<~E.strip
+            Could not find gems matching 'sorbet-static' valid for all resolution platforms (arm-linux, x86_64-linux) in rubygems repository #{file_uri_for(gem_repo4)}/, cached gems or installed locally.
+
+            The source contains the following gems matching 'sorbet-static':
+              * sorbet-static-0.5.10696-x86_64-linux
           E
           expect(err).to end_with(nice_error)
         end
@@ -432,13 +506,13 @@ RSpec.describe "bundle install with install-time dependencies" do
           end
         end
 
-        build_lib("foo", :path => bundled_app) do |s|
+        build_lib("foo", path: bundled_app) do |s|
           s.required_ruby_version = ">= #{Gem.ruby_version}"
 
           s.add_dependency "requires-old-ruby"
         end
 
-        install_gemfile <<-G, :raise_on_error => false
+        install_gemfile <<-G, raise_on_error: false
           source "#{file_uri_for(gem_repo4)}"
           gemspec
         G
@@ -464,7 +538,7 @@ RSpec.describe "bundle install with install-time dependencies" do
           build_gem "foo1", "1.0"
         end
 
-        install_gemfile <<-G, :artifice => "compact_index_rate_limited", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+        install_gemfile <<-G, artifice: "compact_index_rate_limited", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
           ruby "#{Gem.ruby_version}"
           source "http://localgemserver.test/"
           gem 'rack'
@@ -488,7 +562,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         end
 
         simulate_platform x86_mingw32 do
-          install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+          install_gemfile <<-G, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
             ruby "#{Gem.ruby_version}"
             source "http://localgemserver.test/"
             gem 'rack'
@@ -514,14 +588,14 @@ RSpec.describe "bundle install with install-time dependencies" do
       let(:error_message_requirement) { "= #{Gem.ruby_version}" }
 
       it "raises a proper error that mentions the current Ruby version during resolution" do
-        install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }, :raise_on_error => false
+        install_gemfile <<-G, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }, raise_on_error: false
           source "http://localgemserver.test/"
           gem 'require_ruby'
         G
 
         expect(out).to_not include("Gem::InstallError: require_ruby requires Ruby version > 9000")
 
-        nice_error = strip_whitespace(<<-E).strip
+        nice_error = <<~E.strip
           Could not find compatible versions
 
           Because every version of require_ruby depends on Ruby > 9000
@@ -535,7 +609,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
       shared_examples_for "ruby version conflicts" do
         it "raises an error during resolution" do
-          install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }, :raise_on_error => false
+          install_gemfile <<-G, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }, raise_on_error: false
             source "http://localgemserver.test/"
             ruby #{ruby_requirement}
             gem 'require_ruby'
@@ -543,7 +617,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
           expect(out).to_not include("Gem::InstallError: require_ruby requires Ruby version > 9000")
 
-          nice_error = strip_whitespace(<<-E).strip
+          nice_error = <<~E.strip
             Could not find compatible versions
 
             Because every version of require_ruby depends on Ruby > 9000
@@ -581,13 +655,13 @@ RSpec.describe "bundle install with install-time dependencies" do
         end
       end
 
-      install_gemfile <<-G, :raise_on_error => false
+      install_gemfile <<-G, raise_on_error: false
         source "#{file_uri_for(gem_repo2)}"
         gem 'require_rubygems'
       G
 
       expect(err).to_not include("Gem::InstallError: require_rubygems requires RubyGems version > 9000")
-      nice_error = strip_whitespace(<<-E).strip
+      nice_error = <<~E.strip
         Because every version of require_rubygems depends on RubyGems > 9000
           and Gemfile depends on require_rubygems >= 0,
           RubyGems > 9000 is required.

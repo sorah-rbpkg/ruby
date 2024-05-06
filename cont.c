@@ -26,15 +26,16 @@ extern int madvise(caddr_t, size_t, int);
 #include COROUTINE_H
 
 #include "eval_intern.h"
-#include "gc.h"
 #include "internal.h"
 #include "internal/cont.h"
+#include "internal/thread.h"
 #include "internal/error.h"
+#include "internal/gc.h"
 #include "internal/proc.h"
 #include "internal/sanitizers.h"
 #include "internal/warnings.h"
 #include "ruby/fiber/scheduler.h"
-#include "mjit.h"
+#include "rjit.h"
 #include "yjit.h"
 #include "vm_core.h"
 #include "vm_sync.h"
@@ -69,8 +70,6 @@ static VALUE rb_cFiberPool;
 #ifdef RB_EXPERIMENTAL_FIBER_POOL
 #define FIBER_POOL_ALLOCATION_FREE
 #endif
-
-#define jit_cont_enabled (mjit_enabled || rb_yjit_enabled_p())
 
 enum context_type {
     CONTINUATION_CONTEXT = 0,
@@ -178,7 +177,7 @@ struct fiber_pool {
     // A singly-linked list of allocations which contain 1 or more stacks each.
     struct fiber_pool_allocation * allocations;
 
-    // Provides O(1) stack "allocation":
+    // Free list that provides O(1) stack "allocation".
     struct fiber_pool_vacancy * vacancies;
 
     // The size of the stack allocations (excluding any guard page).
@@ -190,13 +189,15 @@ struct fiber_pool {
     // The initial number of stacks to allocate.
     size_t initial_count;
 
-    // Whether to madvise(free) the stack or not:
+    // Whether to madvise(free) the stack or not.
+    // If this value is set to 1, the stack will be madvise(free)ed
+    // (or equivalent), where possible, when it is returned to the pool.
     int free_stacks;
 
     // The number of stacks that have been used in this pool.
     size_t used;
 
-    // The amount to allocate for the vm_stack:
+    // The amount to allocate for the vm_stack.
     size_t vm_stack_size;
 };
 
@@ -229,18 +230,18 @@ typedef struct rb_context_struct {
     struct rb_jit_cont *jit_cont; // Continuation contexts for JITs
 } rb_context_t;
 
-
 /*
  * Fiber status:
- *    [Fiber.new] ------> FIBER_CREATED
- *                        | [Fiber#resume]
- *                        v
- *                   +--> FIBER_RESUMED ----+
- *    [Fiber#resume] |    | [Fiber.yield]   |
- *                   |    v                 |
- *                   +-- FIBER_SUSPENDED    | [Terminate]
- *                                          |
- *                       FIBER_TERMINATED <-+
+ *    [Fiber.new] ------> FIBER_CREATED ----> [Fiber#kill] --> |
+ *                        | [Fiber#resume]                     |
+ *                        v                                    |
+ *                   +--> FIBER_RESUMED ----> [return] ------> |
+ *    [Fiber#resume] |    | [Fiber.yield/transfer]             |
+ *  [Fiber#transfer] |    v                                    |
+ *                   +--- FIBER_SUSPENDED --> [Fiber#kill] --> |
+ *                                                             |
+ *                                                             |
+ *                        FIBER_TERMINATED <-------------------+
  */
 enum fiber_status {
     FIBER_CREATED,
@@ -266,11 +267,19 @@ struct rb_fiber_struct {
     unsigned int yielding : 1;
     unsigned int blocking : 1;
 
+    unsigned int killed : 1;
+
     struct coroutine_context context;
     struct fiber_pool_stack stack;
 };
 
 static struct fiber_pool shared_fiber_pool = {NULL, NULL, 0, 0, 0, 0};
+
+void
+rb_free_shared_fiber_pool(void)
+{
+    xfree(shared_fiber_pool.allocations);
+}
 
 static ID fiber_initialize_keywords[3] = {0};
 
@@ -692,7 +701,9 @@ fiber_pool_stack_free(struct fiber_pool_stack * stack)
     // If this is not true, the vacancy information will almost certainly be destroyed:
     VM_ASSERT(size <= (stack->size - RB_PAGE_SIZE));
 
-    if (DEBUG) fprintf(stderr, "fiber_pool_stack_free: %p+%"PRIuSIZE" [base=%p, size=%"PRIuSIZE"]\n", base, size, stack->base, stack->size);
+    int advice = stack->pool->free_stacks >> 1;
+
+    if (DEBUG) fprintf(stderr, "fiber_pool_stack_free: %p+%"PRIuSIZE" [base=%p, size=%"PRIuSIZE"] advice=%d\n", base, size, stack->base, stack->size, advice);
 
     // The pages being used by the stack can be returned back to the system.
     // That doesn't change the page mapping, but it does allow the system to
@@ -706,24 +717,29 @@ fiber_pool_stack_free(struct fiber_pool_stack * stack)
 #ifdef __wasi__
     // WebAssembly doesn't support madvise, so we just don't do anything.
 #elif VM_CHECK_MODE > 0 && defined(MADV_DONTNEED)
+    if (!advice) advice = MADV_DONTNEED;
     // This immediately discards the pages and the memory is reset to zero.
-    madvise(base, size, MADV_DONTNEED);
+    madvise(base, size, advice);
 #elif defined(MADV_FREE_REUSABLE)
+    if (!advice) advice = MADV_FREE_REUSABLE;
     // Darwin / macOS / iOS.
     // Acknowledge the kernel down to the task info api we make this
     // page reusable for future use.
-    // As for MADV_FREE_REUSE below we ensure in the rare occasions the task was not
+    // As for MADV_FREE_REUSABLE below we ensure in the rare occasions the task was not
     // completed at the time of the call to re-iterate.
-    while (madvise(base, size, MADV_FREE_REUSABLE) == -1 && errno == EAGAIN);
+    while (madvise(base, size, advice) == -1 && errno == EAGAIN);
 #elif defined(MADV_FREE)
+    if (!advice) advice = MADV_FREE;
     // Recent Linux.
-    madvise(base, size, MADV_FREE);
+    madvise(base, size, advice);
 #elif defined(MADV_DONTNEED)
+    if (!advice) advice = MADV_DONTNEED;
     // Old Linux.
-    madvise(base, size, MADV_DONTNEED);
+    madvise(base, size, advice);
 #elif defined(POSIX_MADV_DONTNEED)
+    if (!advice) advice = POSIX_MADV_DONTNEED;
     // Solaris?
-    posix_madvise(base, size, POSIX_MADV_DONTNEED);
+    posix_madvise(base, size, advice);
 #elif defined(_WIN32)
     VirtualAlloc(base, size, MEM_RESET, PAGE_READWRITE);
     // Not available in all versions of Windows.
@@ -1050,10 +1066,8 @@ cont_free(void *ptr)
 
     RUBY_FREE_UNLESS_NULL(cont->saved_vm_stack.ptr);
 
-    if (jit_cont_enabled) {
-        VM_ASSERT(cont->jit_cont != NULL);
-        jit_cont_free(cont->jit_cont);
-    }
+    VM_ASSERT(cont->jit_cont != NULL);
+    jit_cont_free(cont->jit_cont);
     /* free rb_cont_t or rb_fiber_t */
     ruby_xfree(ptr);
     RUBY_FREE_LEAVE("cont");
@@ -1282,26 +1296,42 @@ rb_jit_cont_each_iseq(rb_iseq_callback callback, void *data)
         if (cont->ec->vm_stack == NULL)
             continue;
 
-        const rb_control_frame_t *cfp;
-        for (cfp = RUBY_VM_END_CONTROL_FRAME(cont->ec) - 1; ; cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
-            const rb_iseq_t *iseq;
-            if (cfp->pc && (iseq = cfp->iseq) != NULL && imemo_type((VALUE)iseq) == imemo_iseq) {
-                callback(iseq, data);
+        const rb_control_frame_t *cfp = cont->ec->cfp;
+        while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(cont->ec, cfp)) {
+            if (cfp->pc && cfp->iseq && imemo_type((VALUE)cfp->iseq) == imemo_iseq) {
+                callback(cfp->iseq, data);
             }
-
-            if (cfp == cont->ec->cfp)
-                break; // reached the most recent cfp
+            cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
         }
     }
 }
+
+#if USE_YJIT
+// Update the jit_return of all CFPs to leave_exit unless it's leave_exception or not set.
+// This prevents jit_exec_exception from jumping to the caller after invalidation.
+void
+rb_yjit_cancel_jit_return(void *leave_exit, void *leave_exception)
+{
+    struct rb_jit_cont *cont;
+    for (cont = first_jit_cont; cont != NULL; cont = cont->next) {
+        if (cont->ec->vm_stack == NULL)
+            continue;
+
+        const rb_control_frame_t *cfp = cont->ec->cfp;
+        while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(cont->ec, cfp)) {
+            if (cfp->jit_return && cfp->jit_return != leave_exception) {
+                ((rb_control_frame_t *)cfp)->jit_return = leave_exit;
+            }
+            cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+        }
+    }
+}
+#endif
 
 // Finish working with jit_cont.
 void
 rb_jit_cont_finish(void)
 {
-    if (!jit_cont_enabled)
-        return;
-
     struct rb_jit_cont *cont, *next;
     for (cont = first_jit_cont; cont != NULL; cont = next) {
         next = cont->next;
@@ -1314,9 +1344,8 @@ static void
 cont_init_jit_cont(rb_context_t *cont)
 {
     VM_ASSERT(cont->jit_cont == NULL);
-    if (jit_cont_enabled) {
-        cont->jit_cont = jit_cont_new(&(cont->saved_ec));
-    }
+    // We always allocate this since YJIT may be enabled later
+    cont->jit_cont = jit_cont_new(&(cont->saved_ec));
 }
 
 struct rb_execution_context_struct *
@@ -1363,15 +1392,11 @@ rb_fiberptr_blocking(struct rb_fiber_struct *fiber)
     return fiber->blocking;
 }
 
-// Start working with jit_cont.
+// Initialize the jit_cont_lock
 void
 rb_jit_cont_init(void)
 {
-    if (!jit_cont_enabled)
-        return;
-
     rb_native_mutex_initialize(&jit_cont_lock);
-    cont_init_jit_cont(&GET_EC()->fiber_ptr->cont);
 }
 
 #if 0
@@ -1996,6 +2021,7 @@ fiber_t_alloc(VALUE fiber_value, unsigned int blocking)
     fiber->cont.self = fiber_value;
     fiber->cont.type = FIBER_CONTEXT;
     fiber->blocking = blocking;
+    fiber->killed = 0;
     cont_init(&fiber->cont, th);
 
     fiber->cont.saved_ec.fiber_ptr = fiber;
@@ -2061,10 +2087,10 @@ fiber_storage_set(struct rb_fiber_struct *fiber, VALUE storage)
 }
 
 static inline VALUE
-fiber_storage_get(rb_fiber_t *fiber)
+fiber_storage_get(rb_fiber_t *fiber, int allocate)
 {
     VALUE storage = fiber->cont.saved_ec.storage;
-    if (storage == Qnil) {
+    if (storage == Qnil && allocate) {
         storage = rb_hash_new();
         fiber_storage_set(fiber, storage);
     }
@@ -2091,7 +2117,15 @@ static VALUE
 rb_fiber_storage_get(VALUE self)
 {
     storage_access_must_be_from_same_fiber(self);
-    return rb_obj_dup(fiber_storage_get(fiber_ptr(self)));
+
+    VALUE storage = fiber_storage_get(fiber_ptr(self), FALSE);
+
+    if (storage == Qnil) {
+        return Qnil;
+    }
+    else {
+        return rb_obj_dup(storage);
+    }
 }
 
 static int
@@ -2171,8 +2205,7 @@ rb_fiber_storage_aref(VALUE class, VALUE key)
 {
     Check_Type(key, T_SYMBOL);
 
-    VALUE storage = fiber_storage_get(fiber_current());
-
+    VALUE storage = fiber_storage_get(fiber_current(), FALSE);
     if (storage == Qnil) return Qnil;
 
     return rb_hash_aref(storage, key);
@@ -2193,9 +2226,15 @@ rb_fiber_storage_aset(VALUE class, VALUE key, VALUE value)
 {
     Check_Type(key, T_SYMBOL);
 
-    VALUE storage = fiber_storage_get(fiber_current());
+    VALUE storage = fiber_storage_get(fiber_current(), value != Qnil);
+    if (storage == Qnil) return Qnil;
 
-    return rb_hash_aset(storage, key, value);
+    if (value == Qnil) {
+        return rb_hash_delete(storage, key);
+    }
+    else {
+        return rb_hash_aset(storage, key, value);
+    }
 }
 
 static VALUE
@@ -2473,7 +2512,6 @@ rb_fiber_start(rb_fiber_t *fiber)
 
     rb_proc_t *proc;
     enum ruby_tag_type state;
-    int need_interrupt = TRUE;
 
     VM_ASSERT(th->ec == GET_EC());
     VM_ASSERT(FIBER_RESUMED_P(fiber));
@@ -2499,6 +2537,7 @@ rb_fiber_start(rb_fiber_t *fiber)
     }
     EC_POP_TAG();
 
+    int need_interrupt = TRUE;
     VALUE err = Qfalse;
     if (state) {
         err = th->ec->errinfo;
@@ -2507,13 +2546,16 @@ rb_fiber_start(rb_fiber_t *fiber)
         if (state == TAG_RAISE) {
             // noop...
         }
+        else if (state == TAG_FATAL && err == RUBY_FATAL_FIBER_KILLED) {
+            need_interrupt = FALSE;
+            err = Qfalse;
+        }
         else if (state == TAG_FATAL) {
             rb_threadptr_pending_interrupt_enque(th, err);
         }
         else {
             err = rb_vm_make_jump_tag_but_local_jump(state, err);
         }
-        need_interrupt = TRUE;
     }
 
     rb_fiber_terminate(fiber, need_interrupt, err);
@@ -2532,12 +2574,9 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     fiber->cont.saved_ec.fiber_ptr = fiber;
     fiber->cont.saved_ec.thread_ptr = th;
     fiber->blocking = 1;
+    fiber->killed = 0;
     fiber_status_set(fiber, FIBER_RESUMED); /* skip CREATED */
     th->ec = &fiber->cont.saved_ec;
-    // When rb_threadptr_root_fiber_setup is called for the first time, mjit_enabled and
-    // rb_yjit_enabled_p() are still false. So this does nothing and rb_jit_cont_init() that is
-    // called later will take care of it. However, you still have to call cont_init_jit_cont()
-    // here for other Ractors, which are not initialized by rb_jit_cont_init().
     cont_init_jit_cont(&fiber->cont);
 }
 
@@ -2548,12 +2587,12 @@ rb_threadptr_root_fiber_release(rb_thread_t *th)
         /* ignore. A root fiber object will free th->ec */
     }
     else {
-        rb_execution_context_t *ec = GET_EC();
+        rb_execution_context_t *ec = rb_current_execution_context(false);
 
         VM_ASSERT(th->ec->fiber_ptr->cont.type == FIBER_CONTEXT);
         VM_ASSERT(th->ec->fiber_ptr->cont.self == 0);
 
-        if (th->ec == ec) {
+        if (ec && th->ec == ec) {
             rb_ractor_set_current_ec(th->ractor, NULL);
         }
         fiber_free(th->ec->fiber_ptr);
@@ -2632,6 +2671,19 @@ fiber_store(rb_fiber_t *next_fiber, rb_thread_t *th)
 
     fiber_status_set(next_fiber, FIBER_RESUMED);
     fiber_setcontext(next_fiber, fiber);
+}
+
+static void
+fiber_check_killed(rb_fiber_t *fiber)
+{
+    VM_ASSERT(fiber == fiber_current());
+
+    if (fiber->killed) {
+        rb_thread_t *thread = fiber->cont.saved_ec.thread_ptr;
+
+        thread->ec->errinfo = RUBY_FATAL_FIBER_KILLED;
+        EC_JUMP_TAG(thread->ec, RUBY_TAG_FATAL);
+    }
 }
 
 static inline VALUE
@@ -2722,7 +2774,14 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, rb_fi
 
     current_fiber = th->ec->fiber_ptr;
     value = current_fiber->cont.value;
-    if (current_fiber->cont.argc == -1) rb_exc_raise(value);
+
+    fiber_check_killed(current_fiber);
+
+    if (current_fiber->cont.argc == -1) {
+        // Fiber#raise will trigger this path.
+        rb_exc_raise(value);
+    }
+
     return value;
 }
 
@@ -2757,6 +2816,8 @@ fiber_blocking_yield(VALUE fiber_value)
 {
     rb_fiber_t *fiber = fiber_ptr(fiber_value);
     rb_thread_t * volatile th = fiber->cont.saved_ec.thread_ptr;
+
+    VM_ASSERT(fiber->blocking == 0);
 
     // fiber->blocking is `unsigned int : 1`, so we use it as a boolean:
     fiber->blocking = 1;
@@ -2799,7 +2860,8 @@ rb_fiber_blocking(VALUE class)
     // If we are already blocking, this is essentially a no-op:
     if (fiber->blocking) {
         return rb_yield(fiber_value);
-    } else {
+    }
+    else {
         return rb_ensure(fiber_blocking_yield, fiber_value, fiber_blocking_ensure, fiber_value);
     }
 }
@@ -3159,14 +3221,9 @@ rb_fiber_s_yield(int argc, VALUE *argv, VALUE klass)
 }
 
 static VALUE
-fiber_raise(rb_fiber_t *fiber, int argc, const VALUE *argv)
+fiber_raise(rb_fiber_t *fiber, VALUE exception)
 {
-    VALUE exception = rb_make_exception(argc, argv);
-
-    if (fiber->resuming_fiber) {
-        rb_raise(rb_eFiberError, "attempt to raise a resuming fiber");
-    }
-    else if (FIBER_SUSPENDED_P(fiber) && !fiber->yielding) {
+    if (FIBER_SUSPENDED_P(fiber) && !fiber->yielding) {
         return fiber_transfer_kw(fiber, -1, &exception, RB_NO_KEYWORDS);
     }
     else {
@@ -3177,7 +3234,9 @@ fiber_raise(rb_fiber_t *fiber, int argc, const VALUE *argv)
 VALUE
 rb_fiber_raise(VALUE fiber, int argc, const VALUE *argv)
 {
-    return fiber_raise(fiber_ptr(fiber), argc, argv);
+    VALUE exception = rb_make_exception(argc, argv);
+
+    return fiber_raise(fiber_ptr(fiber), exception);
 }
 
 /*
@@ -3200,11 +3259,52 @@ rb_fiber_raise(VALUE fiber, int argc, const VALUE *argv)
  *  the exception, and the third parameter is an array of callback information.
  *  Exceptions are caught by the +rescue+ clause of <code>begin...end</code>
  *  blocks.
+ *
+ *  Raises +FiberError+ if called on a Fiber belonging to another +Thread+.
  */
 static VALUE
 rb_fiber_m_raise(int argc, VALUE *argv, VALUE self)
 {
     return rb_fiber_raise(self, argc, argv);
+}
+
+/*
+ *  call-seq:
+ *     fiber.kill -> nil
+ *
+ *  Terminates the fiber by raising an uncatchable exception.
+ *  It only terminates the given fiber and no other fiber, returning +nil+ to
+ *  another fiber if that fiber was calling #resume or #transfer.
+ *
+ *  <tt>Fiber#kill</tt> only interrupts another fiber when it is in Fiber.yield.
+ *  If called on the current fiber then it raises that exception at the <tt>Fiber#kill</tt> call site.
+ *
+ *  If the fiber has not been started, transition directly to the terminated state.
+ *
+ *  If the fiber is already terminated, does nothing.
+ *
+ *  Raises FiberError if called on a fiber belonging to another thread.
+ */
+static VALUE
+rb_fiber_m_kill(VALUE self)
+{
+    rb_fiber_t *fiber = fiber_ptr(self);
+
+    if (fiber->killed) return Qfalse;
+    fiber->killed = 1;
+
+    if (fiber->status == FIBER_CREATED) {
+        fiber->status = FIBER_TERMINATED;
+    }
+    else if (fiber->status != FIBER_TERMINATED) {
+        if (fiber_current() == fiber) {
+            fiber_check_killed(fiber);
+        } else {
+            fiber_raise(fiber_ptr(self), Qnil);
+        }
+    }
+
+    return self;
 }
 
 /*
@@ -3365,6 +3465,15 @@ Init_Cont(void)
     const char *fiber_shared_fiber_pool_free_stacks = getenv("RUBY_SHARED_FIBER_POOL_FREE_STACKS");
     if (fiber_shared_fiber_pool_free_stacks) {
         shared_fiber_pool.free_stacks = atoi(fiber_shared_fiber_pool_free_stacks);
+
+        if (shared_fiber_pool.free_stacks < 0) {
+            rb_warn("Setting RUBY_SHARED_FIBER_POOL_FREE_STACKS to a negative value is not allowed.");
+            shared_fiber_pool.free_stacks = 0;
+        }
+
+        if (shared_fiber_pool.free_stacks > 1) {
+            rb_warn("Setting RUBY_SHARED_FIBER_POOL_FREE_STACKS to a value greater than 1 is operating system specific, and may cause crashes.");
+        }
     }
 
     rb_cFiber = rb_define_class("Fiber", rb_cObject);
@@ -3382,6 +3491,7 @@ Init_Cont(void)
     rb_define_method(rb_cFiber, "storage=", rb_fiber_storage_set, 1);
     rb_define_method(rb_cFiber, "resume", rb_fiber_m_resume, -1);
     rb_define_method(rb_cFiber, "raise", rb_fiber_m_raise, -1);
+    rb_define_method(rb_cFiber, "kill", rb_fiber_m_kill, 0);
     rb_define_method(rb_cFiber, "backtrace", rb_fiber_backtrace, -1);
     rb_define_method(rb_cFiber, "backtrace_locations", rb_fiber_backtrace_locations, -1);
     rb_define_method(rb_cFiber, "to_s", fiber_to_s, 0);

@@ -29,7 +29,7 @@ module Bundler
       end
 
       # temporarily unfreeze
-      Bundler.settings.temporary(:deployment => false, :frozen => false) do
+      Bundler.settings.temporary(deployment: false, frozen: false) do
         # evaluate the Gemfile we have now
         builder = Dsl.new
         builder.eval_gemfile(gemfile_path)
@@ -50,7 +50,7 @@ module Bundler
         append_to(gemfile_path, build_gem_lines(@options[:conservative_versioning])) if @deps.any?
 
         # since we resolved successfully, write out the lockfile
-        @definition.lock(Bundler.default_lockfile)
+        @definition.lock
 
         # invalidate the cached Bundler.definition
         Bundler.reset_paths!
@@ -86,7 +86,7 @@ module Bundler
       segments = version.segments
       seg_end_index = version >= Gem::Version.new("1.0") ? 1 : 2
 
-      prerelease_suffix = version.to_s.gsub(version.release.to_s, "") if version.prerelease?
+      prerelease_suffix = version.to_s.delete_prefix(version.release.to_s) if version.prerelease?
       "#{version_prefix}#{segments[0..seg_end_index].join(".")}#{prerelease_suffix}"
     end
 

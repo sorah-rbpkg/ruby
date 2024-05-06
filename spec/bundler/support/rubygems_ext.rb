@@ -24,9 +24,9 @@ module Spec
       gem_load_activate_and_possibly_install(gem_name, bin_container)
     end
 
-    def gem_require(gem_name)
+    def gem_require(gem_name, entrypoint)
       gem_activate(gem_name)
-      require gem_name
+      require entrypoint
     end
 
     def test_setup
@@ -38,6 +38,10 @@ module Spec
       FileUtils.mkdir_p(Path.tmpdir)
 
       ENV["HOME"] = Path.home.to_s
+      # Remove "RUBY_CODESIGN", which is used by mkmf-generated Makefile to
+      # sign extension bundles on macOS, to avoid trying to find the specified key
+      # from the fake $HOME/Library/Keychains directory.
+      ENV.delete "RUBY_CODESIGN"
       ENV["TMPDIR"] = Path.tmpdir.to_s
 
       require "rubygems/user_interaction"
@@ -86,7 +90,7 @@ module Spec
         puts success_message
         puts
       else
-        system("git status --porcelain")
+        system("git diff")
 
         puts
         puts error_message
@@ -118,6 +122,7 @@ module Spec
     end
 
     def gem_activate(gem_name)
+      require_relative "activate"
       require "bundler"
       gem_requirement = Bundler::LockfileParser.new(File.read(dev_lockfile)).specs.find {|spec| spec.name == gem_name }.version
       gem gem_name, gem_requirement

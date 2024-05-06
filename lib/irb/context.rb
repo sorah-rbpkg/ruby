@@ -1,14 +1,9 @@
 # frozen_string_literal: false
 #
 #   irb/context.rb - irb context
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
+
 require_relative "workspace"
 require_relative "inspector"
 require_relative "input-method"
@@ -91,14 +86,14 @@ module IRB
         when nil
           if STDIN.tty? && IRB.conf[:PROMPT_MODE] != :INF_RUBY && !use_singleline?
             # Both of multiline mode and singleline mode aren't specified.
-            @io = RelineInputMethod.new
+            @io = RelineInputMethod.new(build_completor)
           else
             @io = nil
           end
         when false
           @io = nil
         when true
-          @io = RelineInputMethod.new
+          @io = RelineInputMethod.new(build_completor)
         end
         unless @io
           case use_singleline?
@@ -134,8 +129,6 @@ module IRB
       else
         @io = input_method
       end
-      self.save_history = IRB.conf[:SAVE_HISTORY] if IRB.conf[:SAVE_HISTORY]
-
       @extra_doc_dirs = IRB.conf[:EXTRA_DOC_DIRS]
 
       @echo = IRB.conf[:ECHO]
@@ -153,7 +146,70 @@ module IRB
         @newline_before_multiline_output = true
       end
 
-      @command_aliases = IRB.conf[:COMMAND_ALIASES]
+      @user_aliases = IRB.conf[:COMMAND_ALIASES].dup
+      @command_aliases = @user_aliases.merge(KEYWORD_ALIASES)
+    end
+
+    # because all input will eventually be evaluated as Ruby code,
+    # command names that conflict with Ruby keywords need special workaround
+    # we can remove them once we implemented a better command system for IRB
+    KEYWORD_ALIASES = {
+      :break => :irb_break,
+      :catch => :irb_catch,
+      :next => :irb_next,
+    }.freeze
+
+    private_constant :KEYWORD_ALIASES
+
+    private def build_completor
+      completor_type = IRB.conf[:COMPLETOR]
+      case completor_type
+      when :regexp
+        return RegexpCompletor.new
+      when :type
+        completor = build_type_completor
+        return completor if completor
+      else
+        warn "Invalid value for IRB.conf[:COMPLETOR]: #{completor_type}"
+      end
+      # Fallback to RegexpCompletor
+      RegexpCompletor.new
+    end
+
+    private def build_type_completor
+      if RUBY_ENGINE == 'truffleruby'
+        # Avoid SynatxError. truffleruby does not support endless method definition yet.
+        warn 'TypeCompletor is not supported on TruffleRuby yet'
+        return
+      end
+
+      begin
+        require 'repl_type_completor'
+      rescue LoadError => e
+        warn "TypeCompletor requires `gem repl_type_completor`: #{e.message}"
+        return
+      end
+
+      ReplTypeCompletor.preload_rbs
+      TypeCompletor.new(self)
+    end
+
+    def save_history=(val)
+      IRB.conf[:SAVE_HISTORY] = val
+    end
+
+    def save_history
+      IRB.conf[:SAVE_HISTORY]
+    end
+
+    # A copy of the default <code>IRB.conf[:HISTORY_FILE]</code>
+    def history_file
+      IRB.conf[:HISTORY_FILE]
+    end
+
+    # Set <code>IRB.conf[:HISTORY_FILE]</code> to the given +hist+.
+    def history_file=(hist)
+      IRB.conf[:HISTORY_FILE] = hist
     end
 
     # The top-level workspace, see WorkSpace#main
@@ -208,18 +264,29 @@ module IRB
     attr_reader :prompt_mode
     # Standard IRB prompt.
     #
-    # See IRB@Customizing+the+IRB+Prompt for more information.
+    # See {Custom Prompts}[rdoc-ref:IRB@Custom+Prompts] for more information.
     attr_accessor :prompt_i
     # IRB prompt for continuated strings.
     #
-    # See IRB@Customizing+the+IRB+Prompt for more information.
+    # See {Custom Prompts}[rdoc-ref:IRB@Custom+Prompts] for more information.
     attr_accessor :prompt_s
     # IRB prompt for continuated statement. (e.g. immediately after an +if+)
     #
-    # See IRB@Customizing+the+IRB+Prompt for more information.
+    # See {Custom Prompts}[rdoc-ref:IRB@Custom+Prompts] for more information.
     attr_accessor :prompt_c
-    # See IRB@Customizing+the+IRB+Prompt for more information.
-    attr_accessor :prompt_n
+
+    # TODO: Remove this when developing v2.0
+    def prompt_n
+      warn "IRB::Context#prompt_n is deprecated and will be removed in the next major release."
+      ""
+    end
+
+    # TODO: Remove this when developing v2.0
+    def prompt_n=(_)
+      warn "IRB::Context#prompt_n= is deprecated and will be removed in the next major release."
+      ""
+    end
+
     # Can be either the default <code>IRB.conf[:AUTO_INDENT]</code>, or the
     # mode set by #prompt_mode=
     #
@@ -327,12 +394,12 @@ module IRB
     # The default value is 16.
     #
     # Can also be set using the +--back-trace-limit+ command line option.
-    #
-    # See IRB@Command+line+options for more command line options.
     attr_accessor :back_trace_limit
 
     # User-defined IRB command aliases
     attr_accessor :command_aliases
+
+    attr_accessor :with_debugger
 
     # Alias for #use_multiline
     alias use_multiline? use_multiline
@@ -394,14 +461,13 @@ module IRB
 
     # Sets the +mode+ of the prompt in this context.
     #
-    # See IRB@Customizing+the+IRB+Prompt for more information.
+    # See {Custom Prompts}[rdoc-ref:IRB@Custom+Prompts] for more information.
     def prompt_mode=(mode)
       @prompt_mode = mode
       pconf = IRB.conf[:PROMPT][mode]
       @prompt_i = pconf[:PROMPT_I]
       @prompt_s = pconf[:PROMPT_S]
       @prompt_c = pconf[:PROMPT_C]
-      @prompt_n = pconf[:PROMPT_N]
       @return_format = pconf[:RETURN]
       @return_format = "%s\n" if @return_format == nil
       if ai = pconf.include?(:AUTO_INDENT)
@@ -433,8 +499,6 @@ module IRB
     #
     # Can also be set using the +--inspect+ and +--noinspect+ command line
     # options.
-    #
-    # See IRB@Command+line+options for more command line options.
     def inspect_mode=(opt)
 
       if i = Inspector::INSPECTORS[opt]
@@ -478,28 +542,31 @@ module IRB
       @inspect_mode
     end
 
-    def evaluate(line, line_no, exception: nil) # :nodoc:
+    def evaluate(line, line_no) # :nodoc:
       @line_no = line_no
-      if exception
-        line_no -= 1
-        line = "begin ::Kernel.raise _; rescue _.class\n#{line}\n""end"
-        @workspace.local_variable_set(:_, exception)
+      result = nil
+
+      if IRB.conf[:MEASURE] && IRB.conf[:MEASURE_CALLBACKS].empty?
+        IRB.set_measure_callback
       end
 
-      # Transform a non-identifier alias (@, $) or keywords (next, break)
-      command, args = line.split(/\s/, 2)
-      if original = command_aliases[command.to_sym]
-        line = line.gsub(/\A#{Regexp.escape(command)}/, original.to_s)
-        command = original
+      if IRB.conf[:MEASURE] && !IRB.conf[:MEASURE_CALLBACKS].empty?
+        last_proc = proc do
+          result = @workspace.evaluate(line, irb_path, line_no)
+        end
+        IRB.conf[:MEASURE_CALLBACKS].inject(last_proc) do |chain, item|
+          _name, callback, arg = item
+          proc do
+            callback.(self, line, line_no, arg) do
+              chain.call
+            end
+          end
+        end.call
+      else
+        result = @workspace.evaluate(line, irb_path, line_no)
       end
 
-      # Hook command-specific transformation
-      command_class = ExtendCommandBundle.load_command(command)
-      if command_class&.respond_to?(:transform_args)
-        line = "#{command} #{command_class.transform_args(args)}"
-      end
-
-      set_last_value(@workspace.evaluate(self, line, irb_path, line_no))
+      set_last_value(result)
     end
 
     def inspect_last_value # :nodoc:

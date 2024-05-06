@@ -14,10 +14,10 @@ module Spec
 
     alias_method :platforms, :platform
 
-    def resolve(args = [])
+    def resolve(args = [], dependency_api_available: true)
       @platforms ||= ["ruby"]
-      default_source = instance_double("Bundler::Source::Rubygems", :specs => @index, :to_s => "locally install gems")
-      source_requirements = { :default => default_source }
+      default_source = instance_double("Bundler::Source::Rubygems", specs: @index, to_s: "locally install gems", dependency_api_available?: dependency_api_available)
+      source_requirements = { default: default_source }
       base = args[0] || Bundler::SpecSet.new([])
       base.each {|ls| ls.source = default_source }
       gem_version_promoter = args[1] || Bundler::GemVersionPromoter.new
@@ -27,7 +27,7 @@ module Spec
         name = d.name
         source_requirements[name] = d.source = default_source
       end
-      packages = Bundler::Resolver::Base.new(source_requirements, @deps, base, @platforms, :locked_specs => originally_locked, :unlock => unlock)
+      packages = Bundler::Resolver::Base.new(source_requirements, @deps, base, @platforms, locked_specs: originally_locked, unlock: unlock)
       Bundler::Resolver.new(packages, gem_version_promoter).start
     end
 
@@ -37,6 +37,12 @@ module Spec
 
     def should_resolve_as(specs)
       got = resolve
+      got = got.map(&:full_name).sort
+      expect(got).to eq(specs.sort)
+    end
+
+    def should_resolve_without_dependency_api(specs)
+      got = resolve(dependency_api_available: false)
       got = got.map(&:full_name).sort
       expect(got).to eq(specs.sort)
     end
@@ -298,7 +304,7 @@ module Spec
       end
     end
 
-    def a_unresovable_child_index
+    def a_unresolvable_child_index
       build_index do
         gem "json", %w[1.8.0]
 

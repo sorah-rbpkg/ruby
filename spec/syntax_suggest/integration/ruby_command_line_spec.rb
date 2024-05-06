@@ -9,7 +9,7 @@ module SyntaxSuggest
       Dir.mktmpdir do |dir|
         tmpdir = Pathname(dir)
         script = tmpdir.join("script.rb")
-        script.write <<~'EOM'
+        script.write <<~EOM
           puts Kernel.private_methods
         EOM
 
@@ -159,7 +159,7 @@ module SyntaxSuggest
       Dir.mktmpdir do |dir|
         tmpdir = Pathname(dir)
         script = tmpdir.join("script.rb")
-        script.write <<~'EOM'
+        script.write <<~EOM
           $stderr = STDOUT
           eval("def lol")
         EOM
@@ -167,7 +167,7 @@ module SyntaxSuggest
         out = `#{ruby} -I#{lib_dir} -rsyntax_suggest #{script} 2>&1`
 
         expect($?.success?).to be_falsey
-        expect(out).to include("(eval):1")
+        expect(out).to match(/\(eval.*\):1/)
 
         expect(out).to_not include("SyntaxSuggest")
         expect(out).to_not include("Could not find filename")
@@ -178,7 +178,7 @@ module SyntaxSuggest
       Dir.mktmpdir do |dir|
         tmpdir = Pathname(dir)
         script = tmpdir.join("script.rb")
-        script.write <<~'EOM'
+        script.write <<~EOM
           break
         EOM
 
