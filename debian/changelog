@@ -1,8 +1,11 @@
-ruby3.3 (3.3.0-1) UNRELEASED; urgency=medium
+ruby3.3 (3.3.1-1) UNRELEASED; urgency=medium
 
   * Ruby 3.3
+  * New upstream version 3.2.2
+  * New upstream version 3.2.3
+  * New upstream version 3.3.1
 
- -- Lucas Kanashiro <kanashiro@ubuntu.com>  Mon, 06 May 2024 17:58:25 -0300
+ -- Lucas Kanashiro <kanashiro@ubuntu.com>  Mon, 06 May 2024 17:59:58 -0300
 
 ruby3.2 (3.2.3-1) unstable; urgency=medium
 
