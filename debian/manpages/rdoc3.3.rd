@@ -1,11 +1,11 @@
 =begin
 = NAME
 
-rdoc3.2 - Generate documentation from Ruby script files
+rdoc3.3 - Generate documentation from Ruby script files
 
 = SYNOPSIS
 
-rdoc3.2 [options]  [names...]
+rdoc3.3 [options]  [names...]
 
 = DESCRIPTION
 

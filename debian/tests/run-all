@@ -56,4 +56,4 @@ for t in $tests; do
   run_tests="$run_tests $t"
 done
 
-ruby3.2 test/runner.rb -v $excludes --name='!/memory_leak/' $run_tests
+ruby3.3 test/runner.rb -v $excludes --name='!/memory_leak/' $run_tests

@@ -2,7 +2,7 @@
 
 set -eu
 
-ruby="${1:-ruby3.2}"
+ruby="${1:-ruby3.3}"
 apiversion="${ruby##ruby}.0"
 arch=$(dpkg-architecture -qDEB_HOST_MULTIARCH)
 
