@@ -35,19 +35,15 @@
 /* #define ONIG_DEBUG_COMPILE */
 /* #define ONIG_DEBUG_SEARCH */
 /* #define ONIG_DEBUG_MATCH */
+/* #define ONIG_DEBUG_MATCH_CACHE */
 /* #define ONIG_DEBUG_MEMLEAK */
 /* #define ONIG_DONT_OPTIMIZE */
 
 /* for byte-code statistical data. */
 /* #define ONIG_DEBUG_STATISTICS */
 
-/* enable matching optimization by using cache. */
-#define USE_CACHE_MATCH_OPT
-
-#ifdef USE_CACHE_MATCH_OPT
-#  define NUM_CACHE_OPCODE_FAIL -1
-#  define NUM_CACHE_OPCODE_UNINIT -2
-#endif
+/* enable the match optimization by using a cache. */
+#define USE_MATCH_CACHE
 
 #if defined(ONIG_DEBUG_PARSE_TREE) || defined(ONIG_DEBUG_MATCH) || \
     defined(ONIG_DEBUG_SEARCH) || defined(ONIG_DEBUG_COMPILE) || \
@@ -158,13 +154,18 @@
 #ifdef RUBY
 
 # define CHECK_INTERRUPT_IN_MATCH_AT do { \
-  msa->counter++;                         \
-  if (msa->counter >= 128) {              \
-    msa->counter = 0;                     \
-    rb_reg_check_timeout(reg, &msa->end_time);  \
-    rb_thread_check_ints();               \
-  }                                       \
+  msa->counter++; \
+  if (msa->counter >= 128) { \
+    msa->counter = 0; \
+    if (rb_reg_timeout_p(reg, &msa->end_time)) { \
+      goto timeout; \
+    } \
+    rb_thread_check_ints(); \
+  } \
 } while(0)
+# define HANDLE_REG_TIMEOUT_IN_MATCH_AT do { \
+  rb_reg_raise_timeout(); \
+} while (0)
 # define onig_st_init_table                  st_init_table
 # define onig_st_init_table_with_size        st_init_table_with_size
 # define onig_st_init_numtable               st_init_numtable
@@ -877,15 +878,25 @@ typedef struct _OnigStackType {
       UChar *abs_pstr;        /* absent start position */
       const UChar *end_pstr;  /* end position */
     } absent_pos;
+#ifdef USE_MATCH_CACHE
+    struct {
+      long    index;      /* index of the match cache buffer */
+      uint8_t mask;       /* bit-mask for the match cache buffer */
+    } match_cache_point;
+#endif
   } u;
 } OnigStackType;
 
-#ifdef USE_CACHE_MATCH_OPT
+#ifdef USE_MATCH_CACHE
 typedef struct {
   UChar *addr;
-  long num;
-  int outer_repeat;
-} OnigCacheIndex;
+  long cache_point;
+  int outer_repeat_mem;
+  long num_cache_points_at_outer_repeat;
+  long num_cache_points_in_outer_repeat;
+  int lookaround_nesting;
+  UChar *match_addr;
+} OnigCacheOpcode;
 #endif
 
 typedef struct {
@@ -910,16 +921,23 @@ typedef struct {
 #else
   uint64_t end_time;
 #endif
-#ifdef USE_CACHE_MATCH_OPT
-  long            num_fail;
-  int             enable_cache_match_opt;
-  long            num_cache_opcode;
-  long            num_cache_table;
-  OnigCacheIndex* cache_index_table;
-  uint8_t*        match_cache;
+#ifdef USE_MATCH_CACHE
+  int              match_cache_status;
+  long             num_fails;
+  long             num_cache_opcodes;
+  OnigCacheOpcode* cache_opcodes;
+  long             num_cache_points;
+  uint8_t*         match_cache_buf;
 #endif
 } OnigMatchArg;
 
+#define NUM_CACHE_OPCODES_UNINIT      1
+#define NUM_CACHE_OPCODES_IMPOSSIBLE -1
+
+#define MATCH_CACHE_STATUS_UNINIT    1
+#define MATCH_CACHE_STATUS_INIT      2
+#define MATCH_CACHE_STATUS_DISABLED -1
+#define MATCH_CACHE_STATUS_ENABLED   0
 
 #define IS_CODE_SB_WORD(enc,code) \
   (ONIGENC_IS_CODE_ASCII(code) && ONIGENC_IS_CODE_WORD(enc,code))
@@ -983,7 +1001,8 @@ extern int onig_st_insert_strend(hash_table_type* table, const UChar* str_key, c
 #ifdef RUBY
 extern size_t onig_memsize(const regex_t *reg);
 extern size_t onig_region_memsize(const struct re_registers *regs);
-void rb_reg_check_timeout(regex_t *reg, void *end_time);
+bool rb_reg_timeout_p(regex_t *reg, void *end_time);
+NORETURN(void rb_reg_raise_timeout(void));
 #endif
 
 RUBY_SYMBOL_EXPORT_END

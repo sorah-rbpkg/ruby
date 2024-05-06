@@ -2,7 +2,7 @@
 
 require_relative "../../path"
 
-$LOAD_PATH.unshift(*Dir[Spec::Path.base_system_gem_path.join("gems/{mustermann,rack,tilt,sinatra,ruby2_keywords}-*/lib")].map(&:to_s))
+$LOAD_PATH.unshift(*Dir[Spec::Path.base_system_gem_path.join("gems/{mustermann,rack,tilt,sinatra,ruby2_keywords,base64}-*/lib")].map(&:to_s))
 
 require "sinatra/base"
 
@@ -69,10 +69,10 @@ class Endpoint < Sinatra::Base
         spec = load_spec(name, version, platform, gem_repo)
         next unless gem_names.include?(spec.name)
         {
-          :name => spec.name,
-          :number => spec.version.version,
-          :platform => spec.platform.to_s,
-          :dependencies => spec.dependencies.select {|dep| dep.type == :runtime }.map do |dep|
+          name: spec.name,
+          number: spec.version.version,
+          platform: spec.platform.to_s,
+          dependencies: spec.runtime_dependencies.map do |dep|
             [dep.name, dep.requirement.requirements.map {|a| a.join(" ") }.join(", ")]
           end,
         }

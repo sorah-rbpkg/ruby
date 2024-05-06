@@ -1,5 +1,9 @@
 gnumake = yes
 
+ifneq ($(filter notintermediate,$(.FEATURES)),)
+DOT_WAIT = .WAIT
+endif
+
 ifeq ($(filter Makefile,$(MAKEFILE_LIST)),)
 include Makefile
 
@@ -14,10 +18,6 @@ endif
 
 override order_only := |
 
-ifneq ($(filter notintermediate,$(.FEATURES)),)
-DOT_WAIT = .WAIT
-endif
-
 # Needs the dependency when any Unicode tables data files exist.
 override UNICODE_TABLES_DEPENDENTS = \
 	$(if $(or \
@@ -27,7 +27,6 @@ override UNICODE_TABLES_DEPENDENTS = \
 		    $(UNICODE_TABLES_DATA_FILES)))),\
 	    force,none)
 
-include $(srcdir)/defs/universal.mk
 -include uncommon.mk
 include $(srcdir)/defs/gmake.mk
 

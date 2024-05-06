@@ -66,6 +66,7 @@ Init_id(void)
 
     REGISTER_SYMID(idMax, "max");
     REGISTER_SYMID(idMin, "min");
+    REGISTER_SYMID(idHash, "hash");
     REGISTER_SYMID(idFreeze, "freeze");
     REGISTER_SYMID(idNilP, "nil?");
     REGISTER_SYMID(idInspect, "inspect");
@@ -89,7 +90,6 @@ Init_id(void)
     REGISTER_SYMID(idLambda, "lambda");
     REGISTER_SYMID(idSend, "send");
     REGISTER_SYMID(id__send__, "__send__");
-    REGISTER_SYMID(id__attached__, "__attached__");
     REGISTER_SYMID(id__recursive_key__, "__recursive_key__");
     REGISTER_SYMID(idInitialize, "initialize");
     REGISTER_SYMID(idInitialize_copy, "initialize_copy");

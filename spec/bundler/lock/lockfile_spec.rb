@@ -6,6 +6,10 @@ RSpec.describe "the lockfile format" do
   end
 
   it "generates a simple lockfile for a single source, gem" do
+    checksums = checksums_section_when_existing do |c|
+      c.checksum(gem_repo2, "rack", "1.0.0")
+    end
+
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}"
 
@@ -23,7 +27,7 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         rack
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -54,7 +58,7 @@ RSpec.describe "the lockfile format" do
          1.8.2
     L
 
-    install_gemfile <<-G, :verbose => true, :env => { "BUNDLER_VERSION" => Bundler::VERSION }
+    install_gemfile <<-G, verbose: true, env: { "BUNDLER_VERSION" => Bundler::VERSION }
       source "#{file_uri_for(gem_repo2)}"
 
       gem "rack"
@@ -80,7 +84,7 @@ RSpec.describe "the lockfile format" do
     G
   end
 
-  it "does not update the lockfile's bundler version if nothing changed during bundle install, but uses the locked version", :rubygems => ">= 3.3.0.a", :realworld => true do
+  it "does not update the lockfile's bundler version if nothing changed during bundle install, but uses the locked version", rubygems: ">= 3.3.0.a", realworld: true do
     version = "2.3.0"
 
     lockfile <<-L
@@ -99,7 +103,7 @@ RSpec.describe "the lockfile format" do
          #{version}
     L
 
-    install_gemfile <<-G, :verbose => true, :artifice => "vcr"
+    install_gemfile <<-G, verbose: true, artifice: "vcr"
       source "#{file_uri_for(gem_repo2)}"
 
       gem "rack"
@@ -125,8 +129,12 @@ RSpec.describe "the lockfile format" do
     G
   end
 
-  it "does not update the lockfile's bundler version if nothing changed during bundle install, and uses the latest version", :rubygems => "< 3.3.0.a" do
+  it "does not update the lockfile's bundler version if nothing changed during bundle install, and uses the latest version", rubygems: "< 3.3.0.a" do
     version = "#{Bundler::VERSION.split(".").first}.0.0.a"
+
+    checksums = checksums_section do |c|
+      c.checksum(gem_repo2, "rack", "1.0.0")
+    end
 
     lockfile <<-L
       GEM
@@ -139,12 +147,12 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         rack
-
+      #{checksums}
       BUNDLED WITH
          #{version}
     L
 
-    install_gemfile <<-G, :verbose => true
+    install_gemfile <<-G, verbose: true
       source "#{file_uri_for(gem_repo2)}"
 
       gem "rack"
@@ -164,7 +172,7 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         rack
-
+      #{checksums}
       BUNDLED WITH
          #{version}
     G
@@ -229,7 +237,7 @@ RSpec.describe "the lockfile format" do
          #{older_major}
     L
 
-    install_gemfile <<-G, :env => { "BUNDLER_VERSION" => Bundler::VERSION }
+    install_gemfile <<-G, env: { "BUNDLER_VERSION" => Bundler::VERSION }
       source "#{file_uri_for(gem_repo2)}/"
 
       gem "rack"
@@ -261,6 +269,11 @@ RSpec.describe "the lockfile format" do
       gem "rack-obama"
     G
 
+    checksums = checksums_section_when_existing do |c|
+      c.checksum gem_repo2, "rack", "1.0.0"
+      c.checksum gem_repo2, "rack-obama", "1.0"
+    end
+
     expect(lockfile).to eq <<~G
       GEM
         remote: #{file_uri_for(gem_repo2)}/
@@ -274,7 +287,7 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         rack-obama
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -286,6 +299,11 @@ RSpec.describe "the lockfile format" do
 
       gem "rack-obama", ">= 1.0"
     G
+
+    checksums = checksums_section_when_existing do |c|
+      c.checksum gem_repo2, "rack", "1.0.0"
+      c.checksum gem_repo2, "rack-obama", "1.0"
+    end
 
     expect(lockfile).to eq <<~G
       GEM
@@ -300,7 +318,7 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         rack-obama (>= 1.0)
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -309,7 +327,7 @@ RSpec.describe "the lockfile format" do
   it "generates a lockfile without credentials for a configured source" do
     bundle "config set http://localgemserver.test/ user:pass"
 
-    install_gemfile(<<-G, :artifice => "endpoint_strict_basic_authentication", :quiet => true)
+    install_gemfile(<<-G, artifice: "endpoint_strict_basic_authentication", quiet: true)
       source "#{file_uri_for(gem_repo1)}"
 
       source "http://localgemserver.test/" do
@@ -320,6 +338,11 @@ RSpec.describe "the lockfile format" do
         gem "rack-obama", ">= 1.0"
       end
     G
+
+    checksums = checksums_section_when_existing do |c|
+      c.checksum gem_repo2, "rack", "1.0.0"
+      c.checksum gem_repo2, "rack-obama", "1.0"
+    end
 
     expect(lockfile).to eq <<~G
       GEM
@@ -342,7 +365,7 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         rack-obama (>= 1.0)!
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -353,6 +376,11 @@ RSpec.describe "the lockfile format" do
       source "#{file_uri_for(gem_repo2)}/"
       gem "net-sftp"
     G
+
+    checksums = checksums_section_when_existing do |c|
+      c.checksum gem_repo2, "net-sftp", "1.1.1"
+      c.checksum gem_repo2, "net-ssh", "1.0"
+    end
 
     expect(lockfile).to eq <<~G
       GEM
@@ -367,7 +395,7 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         net-sftp
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -382,6 +410,10 @@ RSpec.describe "the lockfile format" do
       source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => "#{lib_path("foo-1.0")}"
     G
+
+    checksums = checksums_section_when_existing do |c|
+      c.no_checksum "foo", "1.0"
+    end
 
     expect(lockfile).to eq <<~G
       GIT
@@ -399,14 +431,14 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         foo!
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
   end
 
   it "does not asplode when a platform specific dependency is present and the Gemfile has not been resolved on that platform" do
-    build_lib "omg", :path => lib_path("omg")
+    build_lib "omg", path: lib_path("omg")
 
     gemfile <<-G
       source "#{file_uri_for(gem_repo2)}/"
@@ -447,6 +479,10 @@ RSpec.describe "the lockfile format" do
   it "serializes global git sources" do
     git = build_git "foo"
 
+    checksums = checksums_section_when_existing do |c|
+      c.no_checksum "foo", "1.0"
+    end
+
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       git "#{lib_path("foo-1.0")}" do
@@ -470,7 +506,7 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         foo!
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -478,7 +514,11 @@ RSpec.describe "the lockfile format" do
 
   it "generates a lockfile with a ref for a single pinned source, git gem with a branch requirement" do
     git = build_git "foo"
-    update_git "foo", :branch => "omg"
+    update_git "foo", branch: "omg"
+
+    checksums = checksums_section_when_existing do |c|
+      c.no_checksum "foo", "1.0"
+    end
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -502,7 +542,7 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         foo!
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -510,7 +550,11 @@ RSpec.describe "the lockfile format" do
 
   it "generates a lockfile with a ref for a single pinned source, git gem with a tag requirement" do
     git = build_git "foo"
-    update_git "foo", :tag => "omg"
+    update_git "foo", tag: "omg"
+
+    checksums = checksums_section_when_existing do |c|
+      c.no_checksum "foo", "1.0"
+    end
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -534,7 +578,7 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         foo!
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -548,26 +592,26 @@ RSpec.describe "the lockfile format" do
 
     FileUtils.mkdir_p lib_path("ckeditor/lib")
 
-    @remote = build_git("ckeditor_remote", :bare => true)
+    @remote = build_git("ckeditor_remote", bare: true)
 
-    build_git "ckeditor", :path => lib_path("ckeditor") do |s|
+    build_git "ckeditor", path: lib_path("ckeditor") do |s|
       s.write "lib/ckeditor.rb", "CKEDITOR = '4.0.7'"
       s.version = "4.0.7"
       s.add_dependency "orm_adapter"
     end
 
-    update_git "ckeditor", :path => lib_path("ckeditor"), :remote => file_uri_for(@remote.path)
-    update_git "ckeditor", :path => lib_path("ckeditor"), :tag => "v4.0.7"
-    old_git = update_git "ckeditor", :path => lib_path("ckeditor"), :push => "v4.0.7"
+    update_git "ckeditor", path: lib_path("ckeditor"), remote: file_uri_for(@remote.path)
+    update_git "ckeditor", path: lib_path("ckeditor"), tag: "v4.0.7"
+    old_git = update_git "ckeditor", path: lib_path("ckeditor"), push: "v4.0.7"
 
-    update_git "ckeditor", :path => lib_path("ckeditor"), :gemspec => true do |s|
+    update_git "ckeditor", path: lib_path("ckeditor"), gemspec: true do |s|
       s.write "lib/ckeditor.rb", "CKEDITOR = '4.0.8'"
       s.version = "4.0.8"
       s.add_dependency "orm_adapter"
     end
-    update_git "ckeditor", :path => lib_path("ckeditor"), :tag => "v4.0.8"
+    update_git "ckeditor", path: lib_path("ckeditor"), tag: "v4.0.8"
 
-    new_git = update_git "ckeditor", :path => lib_path("ckeditor"), :push => "v4.0.8"
+    new_git = update_git "ckeditor", path: lib_path("ckeditor"), push: "v4.0.8"
 
     gemfile <<-G
       source "#{file_uri_for(gem_repo4)}"
@@ -629,6 +673,10 @@ RSpec.describe "the lockfile format" do
   it "serializes pinned path sources to the lockfile" do
     build_lib "foo"
 
+    checksums = checksums_section_when_existing do |c|
+      c.no_checksum "foo", "1.0"
+    end
+
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "foo", :path => "#{lib_path("foo-1.0")}"
@@ -649,7 +697,7 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         foo!
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -658,6 +706,10 @@ RSpec.describe "the lockfile format" do
   it "serializes pinned path sources to the lockfile even when packaging" do
     build_lib "foo"
 
+    checksums = checksums_section_when_existing do |c|
+      c.no_checksum "foo", "1.0"
+    end
+
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "foo", :path => "#{lib_path("foo-1.0")}"
@@ -665,7 +717,7 @@ RSpec.describe "the lockfile format" do
 
     bundle "config set cache_all true"
     bundle :cache
-    bundle :install, :local => true
+    bundle :install, local: true
 
     expect(lockfile).to eq <<~G
       PATH
@@ -682,7 +734,7 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         foo!
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -691,6 +743,12 @@ RSpec.describe "the lockfile format" do
   it "sorts serialized sources by type" do
     build_lib "foo"
     bar = build_git "bar"
+
+    checksums = checksums_section_when_existing do |c|
+      c.no_checksum "foo", "1.0"
+      c.no_checksum "bar", "1.0"
+      c.checksum gem_repo2, "rack", "1.0.0"
+    end
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}/"
@@ -724,7 +782,7 @@ RSpec.describe "the lockfile format" do
         bar!
         foo!
         rack
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -737,6 +795,10 @@ RSpec.describe "the lockfile format" do
       gem "rack", :source => "#{file_uri_for(gem_repo2)}/"
     G
 
+    checksums = checksums_section_when_existing do |c|
+      c.checksum gem_repo2, "rack", "1.0.0"
+    end
+
     expect(lockfile).to eq <<~G
       GEM
         remote: #{file_uri_for(gem_repo2)}/
@@ -748,7 +810,7 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         rack!
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -762,6 +824,14 @@ RSpec.describe "the lockfile format" do
       gem "actionpack"
       gem "rack-obama"
     G
+
+    checksums = checksums_section_when_existing do |c|
+      c.checksum gem_repo2, "actionpack", "2.3.2"
+      c.checksum gem_repo2, "activesupport", "2.3.2"
+      c.checksum gem_repo2, "rack", "1.0.0"
+      c.checksum gem_repo2, "rack-obama", "1.0"
+      c.checksum gem_repo2, "thin", "1.0"
+    end
 
     expect(lockfile).to eq <<~G
       GEM
@@ -783,7 +853,7 @@ RSpec.describe "the lockfile format" do
         actionpack
         rack-obama
         thin
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -795,6 +865,16 @@ RSpec.describe "the lockfile format" do
 
       gem "rails"
     G
+
+    checksums = checksums_section_when_existing do |c|
+      c.checksum gem_repo2, "actionmailer", "2.3.2"
+      c.checksum gem_repo2, "actionpack", "2.3.2"
+      c.checksum gem_repo2, "activerecord", "2.3.2"
+      c.checksum gem_repo2, "activeresource", "2.3.2"
+      c.checksum gem_repo2, "activesupport", "2.3.2"
+      c.checksum gem_repo2, "rails", "2.3.2"
+      c.checksum gem_repo2, "rake", rake_version
+    end
 
     expect(lockfile).to eq <<~G
       GEM
@@ -814,15 +894,15 @@ RSpec.describe "the lockfile format" do
             actionpack (= 2.3.2)
             activerecord (= 2.3.2)
             activeresource (= 2.3.2)
-            rake (= 13.0.1)
-          rake (13.0.1)
+            rake (= #{rake_version})
+          rake (#{rake_version})
 
       PLATFORMS
         #{lockfile_platforms}
 
       DEPENDENCIES
         rails
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -833,7 +913,7 @@ RSpec.describe "the lockfile format" do
       # Capistrano did this (at least until version 2.5.10)
       # RubyGems 2.2 doesn't allow the specifying of a dependency twice
       # See https://github.com/rubygems/rubygems/commit/03dbac93a3396a80db258d9bc63500333c25bd2f
-      build_gem "double_deps", "1.0", :skip_validation => true do |s|
+      build_gem "double_deps", "1.0", skip_validation: true do |s|
         s.add_dependency "net-ssh", ">= 1.0.0"
         s.add_dependency "net-ssh"
       end
@@ -843,6 +923,11 @@ RSpec.describe "the lockfile format" do
       source "#{file_uri_for(gem_repo2)}/"
       gem 'double_deps'
     G
+
+    checksums = checksums_section_when_existing do |c|
+      c.checksum gem_repo2, "double_deps", "1.0"
+      c.checksum gem_repo2, "net-ssh", "1.0"
+    end
 
     expect(lockfile).to eq <<~G
       GEM
@@ -858,7 +943,7 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         double_deps
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -871,6 +956,11 @@ RSpec.describe "the lockfile format" do
       gem "rack-obama", ">= 1.0", :require => "rack/obama"
     G
 
+    checksums = checksums_section_when_existing do |c|
+      c.checksum gem_repo2, "rack", "1.0.0"
+      c.checksum gem_repo2, "rack-obama", "1.0"
+    end
+
     expect(lockfile).to eq <<~G
       GEM
         remote: #{file_uri_for(gem_repo2)}/
@@ -884,7 +974,7 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         rack-obama (>= 1.0)
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -897,6 +987,11 @@ RSpec.describe "the lockfile format" do
       gem "rack-obama", ">= 1.0", :group => :test
     G
 
+    checksums = checksums_section_when_existing do |c|
+      c.checksum gem_repo2, "rack", "1.0.0"
+      c.checksum gem_repo2, "rack-obama", "1.0"
+    end
+
     expect(lockfile).to eq <<~G
       GEM
         remote: #{file_uri_for(gem_repo2)}/
@@ -910,14 +1005,18 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         rack-obama (>= 1.0)
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
   end
 
   it "stores relative paths when the path is provided in a relative fashion and in Gemfile dir" do
-    build_lib "foo", :path => bundled_app("foo")
+    build_lib "foo", path: bundled_app("foo")
+
+    checksums = checksums_section_when_existing do |c|
+      c.no_checksum "foo", "1.0"
+    end
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -941,14 +1040,18 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         foo!
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
   end
 
   it "stores relative paths when the path is provided in a relative fashion and is above Gemfile dir" do
-    build_lib "foo", :path => bundled_app(File.join("..", "foo"))
+    build_lib "foo", path: bundled_app(File.join("..", "foo"))
+
+    checksums = checksums_section_when_existing do |c|
+      c.no_checksum "foo", "1.0"
+    end
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -972,14 +1075,18 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         foo!
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
   end
 
   it "stores relative paths when the path is provided in an absolute fashion but is relative" do
-    build_lib "foo", :path => bundled_app("foo")
+    build_lib "foo", path: bundled_app("foo")
+
+    checksums = checksums_section_when_existing do |c|
+      c.no_checksum "foo", "1.0"
+    end
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -1003,14 +1110,18 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         foo!
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
   end
 
   it "stores relative paths when the path is provided for gemspec" do
-    build_lib("foo", :path => tmp.join("foo"))
+    build_lib("foo", path: tmp.join("foo"))
+
+    checksums = checksums_section_when_existing do |c|
+      c.no_checksum "foo", "1.0"
+    end
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -1032,13 +1143,17 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         foo!
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
   end
 
   it "keeps existing platforms in the lockfile" do
+    checksums = checksums_section_when_existing do |c|
+      c.no_checksum "rack", "1.0.0"
+    end
+
     lockfile <<-G
       GEM
         remote: #{file_uri_for(gem_repo2)}/
@@ -1050,7 +1165,7 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         rack
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -1061,6 +1176,8 @@ RSpec.describe "the lockfile format" do
       gem "rack"
     G
 
+    checksums.checksum(gem_repo2, "rack", "1.0.0")
+
     expect(lockfile).to eq <<~G
       GEM
         remote: #{file_uri_for(gem_repo2)}/
@@ -1068,14 +1185,54 @@ RSpec.describe "the lockfile format" do
           rack (1.0.0)
 
       PLATFORMS
-        #{lockfile_platforms("java")}
+        #{lockfile_platforms("java", local_platform, defaults: [])}
 
       DEPENDENCIES
         rack
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
+  end
+
+  it "adds compatible platform specific variants to the lockfile, even if resolution fallback to RUBY due to some other incompatible platform specific variant" do
+    simulate_platform "arm64-darwin-23" do
+      build_repo4 do
+        build_gem "google-protobuf", "3.25.1"
+        build_gem "google-protobuf", "3.25.1" do |s|
+          s.platform = "arm64-darwin-23"
+        end
+        build_gem "google-protobuf", "3.25.1" do |s|
+          s.platform = "x64-mingw-ucrt"
+          s.required_ruby_version = "> #{Gem.ruby_version}"
+        end
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "google-protobuf"
+      G
+      bundle "lock --add-platform x64-mingw-ucrt"
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            google-protobuf (3.25.1)
+            google-protobuf (3.25.1-arm64-darwin-23)
+
+        PLATFORMS
+          arm64-darwin-23
+          ruby
+          x64-mingw-ucrt
+
+        DEPENDENCIES
+          google-protobuf
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
   end
 
   it "persists the spec's specific platform to the lockfile" do
@@ -1092,6 +1249,10 @@ RSpec.describe "the lockfile format" do
       gem "platform_specific"
     G
 
+    checksums = checksums_section_when_existing do |c|
+      c.checksum gem_repo2, "platform_specific", "1.0", "universal-java-16"
+    end
+
     expect(lockfile).to eq <<~G
       GEM
         remote: #{file_uri_for(gem_repo2)}/
@@ -1103,13 +1264,18 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         platform_specific
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
   end
 
   it "does not add duplicate gems" do
+    checksums = checksums_section_when_existing do |c|
+      c.checksum(gem_repo2, "activesupport", "2.3.5")
+      c.checksum(gem_repo2, "rack", "1.0.0")
+    end
+
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}/"
       gem "rack"
@@ -1134,13 +1300,17 @@ RSpec.describe "the lockfile format" do
       DEPENDENCIES
         activesupport
         rack
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
   end
 
   it "does not add duplicate dependencies" do
+    checksums = checksums_section_when_existing do |c|
+      c.checksum(gem_repo2, "rack", "1.0.0")
+    end
+
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}/"
       gem "rack"
@@ -1158,13 +1328,17 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         rack
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
   end
 
   it "does not add duplicate dependencies with versions" do
+    checksums = checksums_section_when_existing do |c|
+      c.checksum(gem_repo2, "rack", "1.0.0")
+    end
+
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}/"
       gem "rack", "1.0"
@@ -1182,13 +1356,17 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         rack (= 1.0)
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
   end
 
   it "does not add duplicate dependencies in different groups" do
+    checksums = checksums_section_when_existing do |c|
+      c.checksum(gem_repo2, "rack", "1.0.0")
+    end
+
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}/"
       gem "rack", "1.0", :group => :one
@@ -1206,14 +1384,14 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         rack (= 1.0)
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
   end
 
   it "raises if two different versions are used" do
-    install_gemfile <<-G, :raise_on_error => false
+    install_gemfile <<-G, raise_on_error: false
       source "#{file_uri_for(gem_repo2)}/"
       gem "rack", "1.0"
       gem "rack", "1.1"
@@ -1224,7 +1402,7 @@ RSpec.describe "the lockfile format" do
   end
 
   it "raises if two different sources are used" do
-    install_gemfile <<-G, :raise_on_error => false
+    install_gemfile <<-G, raise_on_error: false
       source "#{file_uri_for(gem_repo2)}/"
       gem "rack"
       gem "rack", :git => "git://hubz.com"
@@ -1235,6 +1413,10 @@ RSpec.describe "the lockfile format" do
   end
 
   it "works correctly with multiple version dependencies" do
+    checksums = checksums_section_when_existing do |c|
+      c.checksum(gem_repo2, "rack", "0.9.1")
+    end
+
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}/"
       gem "rack", "> 0.9", "< 1.0"
@@ -1251,13 +1433,17 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         rack (> 0.9, < 1.0)
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
   end
 
   it "captures the Ruby version in the lockfile" do
+    checksums = checksums_section_when_existing do |c|
+      c.checksum(gem_repo2, "rack", "0.9.1")
+    end
+
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}/"
       ruby '#{Gem.ruby_version}'
@@ -1275,7 +1461,7 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         rack (> 0.9, < 1.0)
-
+      #{checksums}
       RUBY VERSION
          #{Bundler::RubyVersion.system}
 
@@ -1298,7 +1484,7 @@ RSpec.describe "the lockfile format" do
         rack_middleware
     L
 
-    install_gemfile <<-G, :raise_on_error => false
+    install_gemfile <<-G, raise_on_error: false
       source "#{file_uri_for(gem_repo2)}"
       gem "rack_middleware"
     G
@@ -1348,7 +1534,7 @@ RSpec.describe "the lockfile format" do
           indirect_dependency (1.2.3)
 
       PLATFORMS
-        #{formatted_lockfile_platforms(*["ruby", generic_local_platform].uniq)}
+        #{lockfile_platforms("ruby", generic_local_platform, defaults: [])}
 
       DEPENDENCIES
         direct_dependency
@@ -1390,7 +1576,7 @@ RSpec.describe "the lockfile format" do
            #{Bundler::VERSION}
       L
 
-      cache_gems "minitest-bisect-1.6.0", "path_expander-1.1.1", :gem_repo => gem_repo4
+      cache_gems "minitest-bisect-1.6.0", "path_expander-1.1.1", gem_repo: gem_repo4
       bundle :install
 
       expect(lockfile).to eq <<~L
@@ -1457,7 +1643,7 @@ RSpec.describe "the lockfile format" do
     L
 
     bundle "install --verbose"
-    expect(out).to include("re-resolving dependencies because your lock file is missing \"minitest-bisect\"")
+    expect(out).to include("re-resolving dependencies because your lock file includes \"minitest-bisect\" but not some of its dependencies")
 
     expect(lockfile).to eq <<~L
       GEM
@@ -1506,7 +1692,7 @@ RSpec.describe "the lockfile format" do
           end
         end
 
-        expect { bundle "update", :all => true }.to change { File.mtime(bundled_app_lock) }
+        expect { bundle "update", all: true }.to change { File.mtime(bundled_app_lock) }
         expect(File.read(bundled_app_lock)).not_to match("\r\n")
         expect(the_bundle).to include_gems "rack 1.2"
       end
@@ -1524,12 +1710,10 @@ RSpec.describe "the lockfile format" do
         File.open(bundled_app_lock, "wb") {|f| f.puts(win_lock) }
         set_lockfile_mtime_to_known_value
 
-        expect { bundle "update", :all => true }.to change { File.mtime(bundled_app_lock) }
+        expect { bundle "update", all: true }.to change { File.mtime(bundled_app_lock) }
         expect(File.read(bundled_app_lock)).to match("\r\n")
 
-        simulate_bundler_version_when_missing_prerelease_default_gem_activation do
-          expect(the_bundle).to include_gems "rack 1.2"
-        end
+        expect(the_bundle).to include_gems "rack 1.2"
       end
     end
 
@@ -1550,7 +1734,7 @@ RSpec.describe "the lockfile format" do
 
         expect do
           ruby <<-RUBY
-                   require '#{entrypoint}'
+                   require 'bundler'
                    Bundler.setup
                  RUBY
         end.not_to change { File.mtime(bundled_app_lock) }
@@ -1579,7 +1763,7 @@ RSpec.describe "the lockfile format" do
          #{Bundler::VERSION}
     L
 
-    install_gemfile <<-G, :raise_on_error => false
+    install_gemfile <<-G, raise_on_error: false
       source "#{file_uri_for(gem_repo2)}/"
       gem "rack"
     G

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "bundle viz", :bundler => "< 3", :if => Bundler.which("dot"), :realworld => true do
+RSpec.describe "bundle viz", bundler: "< 3", if: Bundler.which("dot"), realworld: true do
   before do
     realworld_system_gems "ruby-graphviz --version 1.2.5"
   end
@@ -15,8 +15,8 @@ RSpec.describe "bundle viz", :bundler => "< 3", :if => Bundler.which("dot"), :re
     bundle "viz"
     expect(out).to include("gem_graph.png")
 
-    bundle "viz", :format => "debug"
-    expect(out).to eq(strip_whitespace(<<-DOT).strip)
+    bundle "viz", format: "debug"
+    expect(out).to eq(<<~DOT.strip)
       digraph Gemfile {
       concentrate = "true";
       normalize = "true";
@@ -49,8 +49,8 @@ RSpec.describe "bundle viz", :bundler => "< 3", :if => Bundler.which("dot"), :re
     bundle "viz"
     expect(out).to include("gem_graph.png")
 
-    bundle "viz", :format => :debug, :version => true
-    expect(out).to eq(strip_whitespace(<<-EOS).strip)
+    bundle "viz", format: :debug, version: true
+    expect(out).to eq(<<~EOS.strip)
       digraph Gemfile {
       concentrate = "true";
       normalize = "true";
@@ -77,7 +77,7 @@ RSpec.describe "bundle viz", :bundler => "< 3", :if => Bundler.which("dot"), :re
         end
       end
 
-      system_gems "graphviz-999", :gem_repo => gem_repo4
+      system_gems "graphviz-999", gem_repo: gem_repo4
     end
 
     it "loads the correct ruby-graphviz gem" do
@@ -87,8 +87,8 @@ RSpec.describe "bundle viz", :bundler => "< 3", :if => Bundler.which("dot"), :re
         gem "rack-obama"
       G
 
-      bundle "viz", :format => "debug"
-      expect(out).to eq(strip_whitespace(<<-DOT).strip)
+      bundle "viz", format: "debug"
+      expect(out).to eq(<<~DOT.strip)
         digraph Gemfile {
         concentrate = "true";
         normalize = "true";

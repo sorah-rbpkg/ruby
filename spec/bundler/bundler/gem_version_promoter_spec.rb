@@ -21,7 +21,7 @@ RSpec.describe Bundler::GemVersionPromoter do
     end
 
     def build_package(name, version, locked = [])
-      Bundler::Resolver::Package.new(name, [], :locked_specs => Bundler::SpecSet.new(build_spec(name, version)), :unlock => locked)
+      Bundler::Resolver::Package.new(name, [], locked_specs: Bundler::SpecSet.new(build_spec(name, version)), unlock: locked)
     end
 
     def sorted_versions(candidates:, current:, name: "foo", locked: [])
@@ -32,14 +32,14 @@ RSpec.describe Bundler::GemVersionPromoter do
     end
 
     it "numerically sorts versions" do
-      versions = sorted_versions(:candidates => %w[1.7.7 1.7.8 1.7.9 1.7.15 1.8.0], :current => "1.7.8")
-      expect(versions).to eq %w[1.7.7 1.7.8 1.7.9 1.7.15 1.8.0]
+      versions = sorted_versions(candidates: %w[1.7.7 1.7.8 1.7.9 1.7.15 1.8.0], current: "1.7.8")
+      expect(versions).to eq %w[1.8.0 1.7.15 1.7.9 1.7.8 1.7.7]
     end
 
     context "with no options" do
       it "defaults to level=:major, strict=false, pre=false" do
-        versions = sorted_versions(:candidates => %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.1 2.1.0], :current => "0.3.0")
-        expect(versions).to eq %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.1 2.1.0]
+        versions = sorted_versions(candidates: %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.1 2.1.0], current: "0.3.0")
+        expect(versions).to eq %w[2.1.0 2.0.1 1.0.0 0.9.0 0.3.1 0.3.0 0.2.0]
       end
     end
 
@@ -50,26 +50,26 @@ RSpec.describe Bundler::GemVersionPromoter do
         before { gvp.level = :major }
 
         it "keeps downgrades" do
-          versions = sorted_versions(:candidates => %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.1 2.1.0], :current => "0.3.0")
-          expect(versions).to eq %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.1 2.1.0]
+          versions = sorted_versions(candidates: %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.1 2.1.0], current: "0.3.0")
+          expect(versions).to eq %w[2.1.0 2.0.1 1.0.0 0.9.0 0.3.1 0.3.0 0.2.0]
         end
       end
 
       context "when level is minor" do
         before { gvp.level = :minor }
 
-        it "removes downgrades and major upgrades" do
-          versions = sorted_versions(:candidates => %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.1 2.1.0], :current => "0.3.0")
-          expect(versions).to eq %w[0.3.0 0.3.1 0.9.0]
+        it "sorts highest minor within same major in first position" do
+          versions = sorted_versions(candidates: %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.1 2.1.0], current: "0.3.0")
+          expect(versions).to eq %w[0.9.0 0.3.1 0.3.0 1.0.0 2.1.0 2.0.1 0.2.0]
         end
       end
 
       context "when level is patch" do
         before { gvp.level = :patch }
 
-        it "removes downgrades and major and minor upgrades" do
-          versions = sorted_versions(:candidates => %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.1 2.1.0], :current => "0.3.0")
-          expect(versions).to eq %w[0.3.0 0.3.1]
+        it "sorts highest patch within same minor in first position" do
+          versions = sorted_versions(candidates: %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.1 2.1.0], current: "0.3.0")
+          expect(versions).to eq %w[0.3.1 0.3.0 0.9.0 1.0.0 2.0.1 2.1.0 0.2.0]
         end
       end
     end
@@ -81,26 +81,26 @@ RSpec.describe Bundler::GemVersionPromoter do
         before { gvp.level = :major }
 
         it "orders by version" do
-          versions = sorted_versions(:candidates => %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.1 2.1.0], :current => "0.3.0")
-          expect(versions).to eq %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.1 2.1.0]
+          versions = sorted_versions(candidates: %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.1 2.1.0], current: "0.3.0")
+          expect(versions).to eq %w[2.1.0 2.0.1 1.0.0 0.9.0 0.3.1 0.3.0 0.2.0]
         end
       end
 
       context "when level is minor" do
         before { gvp.level = :minor }
 
-        it "favors downgrades, then upgrades by major descending, minor ascending, patch ascending" do
-          versions = sorted_versions(:candidates => %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.1 2.1.0], :current => "0.3.0")
-          expect(versions).to eq %w[0.2.0 2.0.1 2.1.0 1.0.0 0.3.0 0.3.1 0.9.0]
+        it "favors minor upgrades, then patch upgrades, then major upgrades, then downgrades" do
+          versions = sorted_versions(candidates: %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.1 2.1.0], current: "0.3.0")
+          expect(versions).to eq %w[0.9.0 0.3.1 0.3.0 1.0.0 2.1.0 2.0.1 0.2.0]
         end
       end
 
       context "when level is patch" do
         before { gvp.level = :patch }
 
-        it "favors downgrades, then upgrades by major descending, minor descending, patch ascending" do
-          versions = sorted_versions(:candidates => %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.1 2.1.0], :current => "0.3.0")
-          expect(versions).to eq %w[0.2.0 2.1.0 2.0.1 1.0.0 0.9.0 0.3.0 0.3.1]
+        it "favors patch upgrades, then minor upgrades, then major upgrades, then downgrades" do
+          versions = sorted_versions(candidates: %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.1 2.1.0], current: "0.3.0")
+          expect(versions).to eq %w[0.3.1 0.3.0 0.9.0 1.0.0 2.0.1 2.1.0 0.2.0]
         end
       end
     end
@@ -109,8 +109,8 @@ RSpec.describe Bundler::GemVersionPromoter do
       before { gvp.pre = true }
 
       it "sorts regardless of prerelease status" do
-        versions = sorted_versions(:candidates => %w[1.7.7.pre 1.8.0 1.8.1.pre 1.8.1 2.0.0.pre 2.0.0], :current => "1.8.0")
-        expect(versions).to eq %w[1.7.7.pre 1.8.0 1.8.1.pre 1.8.1 2.0.0.pre 2.0.0]
+        versions = sorted_versions(candidates: %w[1.7.7.pre 1.8.0 1.8.1.pre 1.8.1 2.0.0.pre 2.0.0], current: "1.8.0")
+        expect(versions).to eq %w[2.0.0 2.0.0.pre 1.8.1 1.8.1.pre 1.8.0 1.7.7.pre]
       end
     end
 
@@ -118,17 +118,17 @@ RSpec.describe Bundler::GemVersionPromoter do
       before { gvp.pre = false }
 
       it "deprioritizes prerelease gems" do
-        versions = sorted_versions(:candidates => %w[1.7.7.pre 1.8.0 1.8.1.pre 1.8.1 2.0.0.pre 2.0.0], :current => "1.8.0")
-        expect(versions).to eq %w[1.7.7.pre 1.8.1.pre 2.0.0.pre 1.8.0 1.8.1 2.0.0]
+        versions = sorted_versions(candidates: %w[1.7.7.pre 1.8.0 1.8.1.pre 1.8.1 2.0.0.pre 2.0.0], current: "1.8.0")
+        expect(versions).to eq %w[2.0.0 1.8.1 1.8.0 2.0.0.pre 1.8.1.pre 1.7.7.pre]
       end
     end
 
     context "when locking and not major" do
       before { gvp.level = :minor }
 
-      it "keeps the current version last" do
-        versions = sorted_versions(:candidates => %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.1.0 2.0.1], :current => "0.3.0", :locked => ["bar"])
-        expect(versions.last).to eq("0.3.0")
+      it "keeps the current version first" do
+        versions = sorted_versions(candidates: %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.1.0 2.0.1], current: "0.3.0", locked: ["bar"])
+        expect(versions.first).to eq("0.3.0")
       end
     end
   end

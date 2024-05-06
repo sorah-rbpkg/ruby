@@ -79,15 +79,15 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "SOCK_PACKET", INTEGER2NUM(SOCK_PACKET));
 #endif
 #if defined(SOCK_NONBLOCK)
-    /* Set the O_NONBLOCK file status flag on the open file description (see open(2)) referred to by the new file descriptor. */
+    /* \Set the O_NONBLOCK file status flag on the open file description (see open(2)) referred to by the new file descriptor. */
     rb_define_const(rb_cSocket, "SOCK_NONBLOCK", INTEGER2NUM(SOCK_NONBLOCK));
-    /* Set the O_NONBLOCK file status flag on the open file description (see open(2)) referred to by the new file descriptor. */
+    /* \Set the O_NONBLOCK file status flag on the open file description (see open(2)) referred to by the new file descriptor. */
     rb_define_const(rb_mSockConst, "SOCK_NONBLOCK", INTEGER2NUM(SOCK_NONBLOCK));
 #endif
 #if defined(SOCK_CLOEXEC)
-    /* Set the close-on-exec (FD_CLOEXEC) flag on the new file  descriptor. */
+    /* \Set the close-on-exec (FD_CLOEXEC) flag on the new file  descriptor. */
     rb_define_const(rb_cSocket, "SOCK_CLOEXEC", INTEGER2NUM(SOCK_CLOEXEC));
-    /* Set the close-on-exec (FD_CLOEXEC) flag on the new file  descriptor. */
+    /* \Set the close-on-exec (FD_CLOEXEC) flag on the new file  descriptor. */
     rb_define_const(rb_mSockConst, "SOCK_CLOEXEC", INTEGER2NUM(SOCK_CLOEXEC));
 #endif
 #if defined(AF_UNSPEC)
@@ -335,15 +335,15 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "PF_DECnet", INTEGER2NUM(PF_DECnet));
 #endif
 #if defined(AF_DLI)
-    /* DEC Direct Data Link Interface protocol */
+    /* DEC Direct \Data Link Interface protocol */
     rb_define_const(rb_cSocket, "AF_DLI", INTEGER2NUM(AF_DLI));
-    /* DEC Direct Data Link Interface protocol */
+    /* DEC Direct \Data Link Interface protocol */
     rb_define_const(rb_mSockConst, "AF_DLI", INTEGER2NUM(AF_DLI));
 #endif
 #if defined(PF_DLI)
-    /* DEC Direct Data Link Interface protocol */
+    /* DEC Direct \Data Link Interface protocol */
     rb_define_const(rb_cSocket, "PF_DLI", INTEGER2NUM(PF_DLI));
-    /* DEC Direct Data Link Interface protocol */
+    /* DEC Direct \Data Link Interface protocol */
     rb_define_const(rb_mSockConst, "PF_DLI", INTEGER2NUM(PF_DLI));
 #endif
 #if defined(AF_LAT)
@@ -467,15 +467,15 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "PF_NATM", INTEGER2NUM(PF_NATM));
 #endif
 #if defined(AF_SYSTEM)
-    /*  */
+    /* \Kernel event messages */
     rb_define_const(rb_cSocket, "AF_SYSTEM", INTEGER2NUM(AF_SYSTEM));
-    /*  */
+    /* \Kernel event messages */
     rb_define_const(rb_mSockConst, "AF_SYSTEM", INTEGER2NUM(AF_SYSTEM));
 #endif
 #if defined(PF_SYSTEM)
-    /*  */
+    /* \Kernel event messages */
     rb_define_const(rb_cSocket, "PF_SYSTEM", INTEGER2NUM(PF_SYSTEM));
-    /*  */
+    /* \Kernel event messages */
     rb_define_const(rb_mSockConst, "PF_SYSTEM", INTEGER2NUM(PF_SYSTEM));
 #endif
 #if defined(AF_NETBIOS)
@@ -563,15 +563,15 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "PF_XTP", INTEGER2NUM(PF_XTP));
 #endif
 #if defined(PF_RTIP)
-    /*  */
+    /* Help Identify RTIP packets */
     rb_define_const(rb_cSocket, "PF_RTIP", INTEGER2NUM(PF_RTIP));
-    /*  */
+    /* Help Identify RTIP packets */
     rb_define_const(rb_mSockConst, "PF_RTIP", INTEGER2NUM(PF_RTIP));
 #endif
 #if defined(PF_PIP)
-    /*  */
+    /* Help Identify PIP packets */
     rb_define_const(rb_cSocket, "PF_PIP", INTEGER2NUM(PF_PIP));
-    /*  */
+    /* Help Identify PIP packets */
     rb_define_const(rb_mSockConst, "PF_PIP", INTEGER2NUM(PF_PIP));
 #endif
 #if defined(AF_KEY)
@@ -587,15 +587,15 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "PF_KEY", INTEGER2NUM(PF_KEY));
 #endif
 #if defined(AF_NETLINK)
-    /* Kernel user interface device */
+    /* \Kernel user interface device */
     rb_define_const(rb_cSocket, "AF_NETLINK", INTEGER2NUM(AF_NETLINK));
-    /* Kernel user interface device */
+    /* \Kernel user interface device */
     rb_define_const(rb_mSockConst, "AF_NETLINK", INTEGER2NUM(AF_NETLINK));
 #endif
 #if defined(PF_NETLINK)
-    /* Kernel user interface device */
+    /* \Kernel user interface device */
     rb_define_const(rb_cSocket, "PF_NETLINK", INTEGER2NUM(PF_NETLINK));
-    /* Kernel user interface device */
+    /* \Kernel user interface device */
     rb_define_const(rb_mSockConst, "PF_NETLINK", INTEGER2NUM(PF_NETLINK));
 #endif
 #if defined(AF_RDS)
@@ -743,9 +743,9 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "PF_XDP", INTEGER2NUM(PF_XDP));
 #endif
 #if defined(MSG_OOB)
-    /* Process out-of-band data */
+    /* \Process out-of-band data */
     rb_define_const(rb_cSocket, "MSG_OOB", INTEGER2NUM(MSG_OOB));
-    /* Process out-of-band data */
+    /* \Process out-of-band data */
     rb_define_const(rb_mSockConst, "MSG_OOB", INTEGER2NUM(MSG_OOB));
 #endif
 #if defined(MSG_PEEK)
@@ -761,15 +761,15 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "MSG_DONTROUTE", INTEGER2NUM(MSG_DONTROUTE));
 #endif
 #if defined(MSG_EOR)
-    /* Data completes record */
+    /* \Data completes record */
     rb_define_const(rb_cSocket, "MSG_EOR", INTEGER2NUM(MSG_EOR));
-    /* Data completes record */
+    /* \Data completes record */
     rb_define_const(rb_mSockConst, "MSG_EOR", INTEGER2NUM(MSG_EOR));
 #endif
 #if defined(MSG_TRUNC)
-    /* Data discarded before delivery */
+    /* \Data discarded before delivery */
     rb_define_const(rb_cSocket, "MSG_TRUNC", INTEGER2NUM(MSG_TRUNC));
-    /* Data discarded before delivery */
+    /* \Data discarded before delivery */
     rb_define_const(rb_mSockConst, "MSG_TRUNC", INTEGER2NUM(MSG_TRUNC));
 #endif
 #if defined(MSG_CTRUNC)
@@ -791,9 +791,9 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "MSG_DONTWAIT", INTEGER2NUM(MSG_DONTWAIT));
 #endif
 #if defined(MSG_EOF)
-    /* Data completes connection */
+    /* \Data completes connection */
     rb_define_const(rb_cSocket, "MSG_EOF", INTEGER2NUM(MSG_EOF));
-    /* Data completes connection */
+    /* \Data completes connection */
     rb_define_const(rb_mSockConst, "MSG_EOF", INTEGER2NUM(MSG_EOF));
 #endif
 #if defined(MSG_FLUSH)
@@ -815,15 +815,15 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "MSG_SEND", INTEGER2NUM(MSG_SEND));
 #endif
 #if defined(MSG_HAVEMORE)
-    /* Data ready to be read */
+    /* \Data ready to be read */
     rb_define_const(rb_cSocket, "MSG_HAVEMORE", INTEGER2NUM(MSG_HAVEMORE));
-    /* Data ready to be read */
+    /* \Data ready to be read */
     rb_define_const(rb_mSockConst, "MSG_HAVEMORE", INTEGER2NUM(MSG_HAVEMORE));
 #endif
 #if defined(MSG_RCVMORE)
-    /* Data remains in the current packet */
+    /* \Data remains in the current packet */
     rb_define_const(rb_cSocket, "MSG_RCVMORE", INTEGER2NUM(MSG_RCVMORE));
-    /* Data remains in the current packet */
+    /* \Data remains in the current packet */
     rb_define_const(rb_mSockConst, "MSG_RCVMORE", INTEGER2NUM(MSG_RCVMORE));
 #endif
 #if defined(MSG_COMPAT)
@@ -839,15 +839,15 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "MSG_PROXY", INTEGER2NUM(MSG_PROXY));
 #endif
 #if defined(MSG_FIN)
-    /*  */
+    /* MSG_FIN */
     rb_define_const(rb_cSocket, "MSG_FIN", INTEGER2NUM(MSG_FIN));
-    /*  */
+    /* MSG_FIN */
     rb_define_const(rb_mSockConst, "MSG_FIN", INTEGER2NUM(MSG_FIN));
 #endif
 #if defined(MSG_SYN)
-    /*  */
+    /* MSG_SYN */
     rb_define_const(rb_cSocket, "MSG_SYN", INTEGER2NUM(MSG_SYN));
-    /*  */
+    /* MSG_SYN */
     rb_define_const(rb_mSockConst, "MSG_SYN", INTEGER2NUM(MSG_SYN));
 #endif
 #if defined(MSG_CONFIRM)
@@ -857,9 +857,9 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "MSG_CONFIRM", INTEGER2NUM(MSG_CONFIRM));
 #endif
 #if defined(MSG_RST)
-    /*  */
+    /* MSG_RST */
     rb_define_const(rb_cSocket, "MSG_RST", INTEGER2NUM(MSG_RST));
-    /*  */
+    /* MSG_RST */
     rb_define_const(rb_mSockConst, "MSG_RST", INTEGER2NUM(MSG_RST));
 #endif
 #if defined(MSG_ERRQUEUE)
@@ -887,9 +887,9 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "MSG_FASTOPEN", INTEGER2NUM(MSG_FASTOPEN));
 #endif
 #if defined(SOL_SOCKET)
-    /* Socket-level options */
+    /* \Socket-level options */
     rb_define_const(rb_cSocket, "SOL_SOCKET", INTEGER2NUM(SOL_SOCKET));
-    /* Socket-level options */
+    /* \Socket-level options */
     rb_define_const(rb_mSockConst, "SOL_SOCKET", INTEGER2NUM(SOL_SOCKET));
 #endif
 #if defined(SOL_IP)
@@ -1013,9 +1013,9 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "IPPROTO_EON", INTEGER2NUM(IPPROTO_EON));
 #endif
 #if defined(IPPROTO_BIP)
-    /*  */
+    /* IPPROTO_BIP */
     rb_define_const(rb_cSocket, "IPPROTO_BIP", INTEGER2NUM(IPPROTO_BIP));
-    /*  */
+    /* IPPROTO_BIP */
     rb_define_const(rb_mSockConst, "IPPROTO_BIP", INTEGER2NUM(IPPROTO_BIP));
 #endif
 #if defined(IPPROTO_AH)
@@ -1229,9 +1229,9 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "IP_RECVSLLA", INTEGER2NUM(IP_RECVSLLA));
 #endif
 #if defined(IP_PORTRANGE)
-    /* Set the port range for sockets with unspecified port numbers */
+    /* \Set the port range for sockets with unspecified port numbers */
     rb_define_const(rb_cSocket, "IP_PORTRANGE", INTEGER2NUM(IP_PORTRANGE));
-    /* Set the port range for sockets with unspecified port numbers */
+    /* \Set the port range for sockets with unspecified port numbers */
     rb_define_const(rb_mSockConst, "IP_PORTRANGE", INTEGER2NUM(IP_PORTRANGE));
 #endif
 #if defined(IP_MULTICAST_IF)
@@ -1337,9 +1337,9 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "IP_IPSEC_POLICY", INTEGER2NUM(IP_IPSEC_POLICY));
 #endif
 #if defined(IP_XFRM_POLICY)
-    /*  */
+    /* IP_XFRM_POLICY */
     rb_define_const(rb_cSocket, "IP_XFRM_POLICY", INTEGER2NUM(IP_XFRM_POLICY));
-    /*  */
+    /* IP_XFRM_POLICY */
     rb_define_const(rb_mSockConst, "IP_XFRM_POLICY", INTEGER2NUM(IP_XFRM_POLICY));
 #endif
 #if defined(IP_PASSSEC)
@@ -1589,9 +1589,9 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "SO_SNDTIMEO", INTEGER2NUM(SO_SNDTIMEO));
 #endif
 #if defined(SO_ACCEPTCONN)
-    /* Socket has had listen() called on it */
+    /* \Socket has had listen() called on it */
     rb_define_const(rb_cSocket, "SO_ACCEPTCONN", INTEGER2NUM(SO_ACCEPTCONN));
-    /* Socket has had listen() called on it */
+    /* \Socket has had listen() called on it */
     rb_define_const(rb_mSockConst, "SO_ACCEPTCONN", INTEGER2NUM(SO_ACCEPTCONN));
 #endif
 #if defined(SO_USELOOPBACK)
@@ -1637,9 +1637,9 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "SO_NREAD", INTEGER2NUM(SO_NREAD));
 #endif
 #if defined(SO_NKE)
-    /* Install socket-level Network Kernel Extension */
+    /* Install socket-level Network \Kernel Extension */
     rb_define_const(rb_cSocket, "SO_NKE", INTEGER2NUM(SO_NKE));
-    /* Install socket-level Network Kernel Extension */
+    /* Install socket-level Network \Kernel Extension */
     rb_define_const(rb_mSockConst, "SO_NKE", INTEGER2NUM(SO_NKE));
 #endif
 #if defined(SO_NOSIGPIPE)
@@ -1649,21 +1649,21 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "SO_NOSIGPIPE", INTEGER2NUM(SO_NOSIGPIPE));
 #endif
 #if defined(SO_SECURITY_AUTHENTICATION)
-    /*  */
+    /* SO_SECURITY_AUTHENTICATION */
     rb_define_const(rb_cSocket, "SO_SECURITY_AUTHENTICATION", INTEGER2NUM(SO_SECURITY_AUTHENTICATION));
-    /*  */
+    /* SO_SECURITY_AUTHENTICATION */
     rb_define_const(rb_mSockConst, "SO_SECURITY_AUTHENTICATION", INTEGER2NUM(SO_SECURITY_AUTHENTICATION));
 #endif
 #if defined(SO_SECURITY_ENCRYPTION_TRANSPORT)
-    /*  */
+    /* SO_SECURITY_ENCRYPTION_TRANSPORT */
     rb_define_const(rb_cSocket, "SO_SECURITY_ENCRYPTION_TRANSPORT", INTEGER2NUM(SO_SECURITY_ENCRYPTION_TRANSPORT));
-    /*  */
+    /* SO_SECURITY_ENCRYPTION_TRANSPORT */
     rb_define_const(rb_mSockConst, "SO_SECURITY_ENCRYPTION_TRANSPORT", INTEGER2NUM(SO_SECURITY_ENCRYPTION_TRANSPORT));
 #endif
 #if defined(SO_SECURITY_ENCRYPTION_NETWORK)
-    /*  */
+    /* SO_SECURITY_ENCRYPTION_NETWORK */
     rb_define_const(rb_cSocket, "SO_SECURITY_ENCRYPTION_NETWORK", INTEGER2NUM(SO_SECURITY_ENCRYPTION_NETWORK));
-    /*  */
+    /* SO_SECURITY_ENCRYPTION_NETWORK */
     rb_define_const(rb_mSockConst, "SO_SECURITY_ENCRYPTION_NETWORK", INTEGER2NUM(SO_SECURITY_ENCRYPTION_NETWORK));
 #endif
 #if defined(SO_BINDTODEVICE)
@@ -1745,15 +1745,15 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "SO_PASSSEC", INTEGER2NUM(SO_PASSSEC));
 #endif
 #if defined(SO_MARK)
-    /* Set the mark for mark-based routing (Linux 2.6.25) */
+    /* \Set the mark for mark-based routing (Linux 2.6.25) */
     rb_define_const(rb_cSocket, "SO_MARK", INTEGER2NUM(SO_MARK));
-    /* Set the mark for mark-based routing (Linux 2.6.25) */
+    /* \Set the mark for mark-based routing (Linux 2.6.25) */
     rb_define_const(rb_mSockConst, "SO_MARK", INTEGER2NUM(SO_MARK));
 #endif
 #if defined(SO_TIMESTAMPING)
-    /* Time stamping of incoming and outgoing packets (Linux 2.6.30) */
+    /* \Time stamping of incoming and outgoing packets (Linux 2.6.30) */
     rb_define_const(rb_cSocket, "SO_TIMESTAMPING", INTEGER2NUM(SO_TIMESTAMPING));
-    /* Time stamping of incoming and outgoing packets (Linux 2.6.30) */
+    /* \Time stamping of incoming and outgoing packets (Linux 2.6.30) */
     rb_define_const(rb_mSockConst, "SO_TIMESTAMPING", INTEGER2NUM(SO_TIMESTAMPING));
 #endif
 #if defined(SO_PROTOCOL)
@@ -1781,15 +1781,15 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "SO_WIFI_STATUS", INTEGER2NUM(SO_WIFI_STATUS));
 #endif
 #if defined(SO_PEEK_OFF)
-    /* Set the peek offset (Linux 3.4) */
+    /* \Set the peek offset (Linux 3.4) */
     rb_define_const(rb_cSocket, "SO_PEEK_OFF", INTEGER2NUM(SO_PEEK_OFF));
-    /* Set the peek offset (Linux 3.4) */
+    /* \Set the peek offset (Linux 3.4) */
     rb_define_const(rb_mSockConst, "SO_PEEK_OFF", INTEGER2NUM(SO_PEEK_OFF));
 #endif
 #if defined(SO_NOFCS)
-    /* Set netns of a socket (Linux 3.4) */
+    /* \Set netns of a socket (Linux 3.4) */
     rb_define_const(rb_cSocket, "SO_NOFCS", INTEGER2NUM(SO_NOFCS));
-    /* Set netns of a socket (Linux 3.4) */
+    /* \Set netns of a socket (Linux 3.4) */
     rb_define_const(rb_mSockConst, "SO_NOFCS", INTEGER2NUM(SO_NOFCS));
 #endif
 #if defined(SO_LOCK_FILTER)
@@ -1805,9 +1805,9 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "SO_SELECT_ERR_QUEUE", INTEGER2NUM(SO_SELECT_ERR_QUEUE));
 #endif
 #if defined(SO_BUSY_POLL)
-    /* Set the threshold in microseconds for low latency polling (Linux 3.11) */
+    /* \Set the threshold in microseconds for low latency polling (Linux 3.11) */
     rb_define_const(rb_cSocket, "SO_BUSY_POLL", INTEGER2NUM(SO_BUSY_POLL));
-    /* Set the threshold in microseconds for low latency polling (Linux 3.11) */
+    /* \Set the threshold in microseconds for low latency polling (Linux 3.11) */
     rb_define_const(rb_mSockConst, "SO_BUSY_POLL", INTEGER2NUM(SO_BUSY_POLL));
 #endif
 #if defined(SO_MAX_PACING_RATE)
@@ -1823,15 +1823,15 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "SO_BPF_EXTENSIONS", INTEGER2NUM(SO_BPF_EXTENSIONS));
 #endif
 #if defined(SO_SETFIB)
-    /* Set the associated routing table for the socket (FreeBSD) */
+    /* \Set the associated routing table for the socket (FreeBSD) */
     rb_define_const(rb_cSocket, "SO_SETFIB", INTEGER2NUM(SO_SETFIB));
-    /* Set the associated routing table for the socket (FreeBSD) */
+    /* \Set the associated routing table for the socket (FreeBSD) */
     rb_define_const(rb_mSockConst, "SO_SETFIB", INTEGER2NUM(SO_SETFIB));
 #endif
 #if defined(SO_RTABLE)
-    /* Set the routing table for this socket (OpenBSD) */
+    /* \Set the routing table for this socket (OpenBSD) */
     rb_define_const(rb_cSocket, "SO_RTABLE", INTEGER2NUM(SO_RTABLE));
-    /* Set the routing table for this socket (OpenBSD) */
+    /* \Set the routing table for this socket (OpenBSD) */
     rb_define_const(rb_mSockConst, "SO_RTABLE", INTEGER2NUM(SO_RTABLE));
 #endif
 #if defined(SO_INCOMING_CPU)
@@ -1865,9 +1865,9 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "SOPRI_BACKGROUND", INTEGER2NUM(SOPRI_BACKGROUND));
 #endif
 #if defined(IPX_TYPE)
-    /*  */
+    /* IPX_TYPE */
     rb_define_const(rb_cSocket, "IPX_TYPE", INTEGER2NUM(IPX_TYPE));
-    /*  */
+    /* IPX_TYPE */
     rb_define_const(rb_mSockConst, "IPX_TYPE", INTEGER2NUM(IPX_TYPE));
 #endif
 #if defined(TCP_NODELAY)
@@ -1877,9 +1877,9 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "TCP_NODELAY", INTEGER2NUM(TCP_NODELAY));
 #endif
 #if defined(TCP_MAXSEG)
-    /* Set maximum segment size */
+    /* \Set maximum segment size */
     rb_define_const(rb_cSocket, "TCP_MAXSEG", INTEGER2NUM(TCP_MAXSEG));
-    /* Set maximum segment size */
+    /* \Set maximum segment size */
     rb_define_const(rb_mSockConst, "TCP_MAXSEG", INTEGER2NUM(TCP_MAXSEG));
 #endif
 #if defined(TCP_CONNECTION_INFO)
@@ -1925,9 +1925,9 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "TCP_KEEPIDLE", INTEGER2NUM(TCP_KEEPIDLE));
 #endif
 #if defined(TCP_KEEPINTVL)
-    /* Time between keepalive probes (Linux 2.4, glibc 2.2) */
+    /* \Time between keepalive probes (Linux 2.4, glibc 2.2) */
     rb_define_const(rb_cSocket, "TCP_KEEPINTVL", INTEGER2NUM(TCP_KEEPINTVL));
-    /* Time between keepalive probes (Linux 2.4, glibc 2.2) */
+    /* \Time between keepalive probes (Linux 2.4, glibc 2.2) */
     rb_define_const(rb_mSockConst, "TCP_KEEPINTVL", INTEGER2NUM(TCP_KEEPINTVL));
 #endif
 #if defined(TCP_LINGER2)
@@ -2105,9 +2105,9 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "EAI_SERVICE", INTEGER2NUM(EAI_SERVICE));
 #endif
 #if defined(EAI_SOCKTYPE)
-    /* Socket type not supported */
+    /* \Socket type not supported */
     rb_define_const(rb_cSocket, "EAI_SOCKTYPE", INTEGER2NUM(EAI_SOCKTYPE));
-    /* Socket type not supported */
+    /* \Socket type not supported */
     rb_define_const(rb_mSockConst, "EAI_SOCKTYPE", INTEGER2NUM(EAI_SOCKTYPE));
 #endif
 #if defined(EAI_SYSTEM)
@@ -2537,9 +2537,9 @@ init_constants(void)
     rb_define_const(rb_mSockConst, "SCM_CREDENTIALS", INTEGER2NUM(SCM_CREDENTIALS));
 #endif
 #if defined(SCM_CREDS)
-    /* Process credentials */
+    /* \Process credentials */
     rb_define_const(rb_cSocket, "SCM_CREDS", INTEGER2NUM(SCM_CREDS));
-    /* Process credentials */
+    /* \Process credentials */
     rb_define_const(rb_mSockConst, "SCM_CREDS", INTEGER2NUM(SCM_CREDS));
 #endif
 #if defined(SCM_UCRED)

@@ -52,7 +52,7 @@ module Gem::BundlerVersionFinder
     unless gemfile
       begin
         Gem::Util.traverse_parents(Dir.pwd) do |directory|
-          next unless gemfile = Gem::GEM_DEP_FILES.find {|f| File.file?(f.tap(&Gem::UNTAINT)) }
+          next unless gemfile = Gem::GEM_DEP_FILES.find {|f| File.file?(f) }
 
           gemfile = File.join directory, gemfile
           break
@@ -65,9 +65,9 @@ module Gem::BundlerVersionFinder
     return unless gemfile
 
     lockfile = case gemfile
-    when "gems.rb" then "gems.locked"
-    else "#{gemfile}.lock"
-    end.dup.tap(&Gem::UNTAINT)
+               when "gems.rb" then "gems.locked"
+               else "#{gemfile}.lock"
+    end
 
     return unless File.file?(lockfile)
 

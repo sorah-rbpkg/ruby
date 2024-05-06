@@ -30,7 +30,41 @@
 #include "ruby/st.h"
 #include "vm_core.h"
 
-#define id_attached id__attached__
+/* Flags of T_CLASS
+ *
+ * 2:     RCLASS_SUPERCLASSES_INCLUDE_SELF
+ *            The RCLASS_SUPERCLASSES contains the class as the last element.
+ *            This means that this class owns the RCLASS_SUPERCLASSES list.
+ * if !SHAPE_IN_BASIC_FLAGS
+ * 4-19: SHAPE_FLAG_MASK
+ *           Shape ID for the class.
+ * endif
+ */
+
+/* Flags of T_ICLASS
+ *
+ * 0:    RICLASS_IS_ORIGIN
+ * 3:    RICLASS_ORIGIN_SHARED_MTBL
+ *           The T_ICLASS does not own the method table.
+ * if !SHAPE_IN_BASIC_FLAGS
+ * 4-19: SHAPE_FLAG_MASK
+ *           Shape ID. This is set but not used.
+ * endif
+ */
+
+/* Flags of T_MODULE
+ *
+ * 1:    RMODULE_ALLOCATED_BUT_NOT_INITIALIZED
+ *           Module has not been initialized.
+ * 2:    RCLASS_SUPERCLASSES_INCLUDE_SELF
+ *           See RCLASS_SUPERCLASSES_INCLUDE_SELF in T_CLASS.
+ * 3:    RMODULE_IS_REFINEMENT
+ *           Module is used for refinements.
+ * if !SHAPE_IN_BASIC_FLAGS
+ * 4-19: SHAPE_FLAG_MASK
+ *           Shape ID for the module.
+ * endif
+ */
 
 #define METACLASS_OF(k) RBASIC(k)->klass
 #define SET_METACLASS_OF(k, cls) RBASIC_SET_CLASS(k, cls)
@@ -195,22 +229,13 @@ rb_class_detach_module_subclasses(VALUE klass)
 static VALUE
 class_alloc(VALUE flags, VALUE klass)
 {
-    size_t alloc_size = sizeof(struct RClass);
-
-#if RCLASS_EXT_EMBEDDED
-    alloc_size += sizeof(rb_classext_t);
-#endif
+    size_t alloc_size = sizeof(struct RClass) + sizeof(rb_classext_t);
 
     flags &= T_MASK;
-    flags |= FL_PROMOTED1 /* start from age == 2 */;
     if (RGENGC_WB_PROTECTED_CLASS) flags |= FL_WB_PROTECTED;
-    RVARGC_NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size);
+    NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size, 0);
 
-#if RCLASS_EXT_EMBEDDED
     memset(RCLASS_EXT(obj), 0, sizeof(rb_classext_t));
-#else
-    obj->ptr = ZALLOC(rb_classext_t);
-#endif
 
     /* ZALLOC
       RCLASS_CONST_TBL(obj) = 0;
@@ -223,7 +248,7 @@ class_alloc(VALUE flags, VALUE klass)
      */
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RB_OBJ_WRITE(obj, &RCLASS_REFINED_CLASS(obj), Qnil);
-    RCLASS_ALLOCATOR(obj) = 0;
+    RCLASS_SET_ALLOCATOR((VALUE)obj, 0);
 
     return (VALUE)obj;
 }
@@ -410,7 +435,8 @@ struct cvc_table_copy_ctx {
 };
 
 static enum rb_id_table_iterator_result
-cvc_table_copy(ID id, VALUE val, void *data) {
+cvc_table_copy(ID id, VALUE val, void *data)
+{
     struct cvc_table_copy_ctx *ctx = (struct cvc_table_copy_ctx *)data;
     struct rb_cvar_class_tbl_entry * orig_entry;
     orig_entry = (struct rb_cvar_class_tbl_entry *)val;
@@ -470,7 +496,7 @@ static bool ensure_origin(VALUE klass);
 /**
  * If this flag is set, that module is allocated but not initialized yet.
  */
-enum {RMODULE_ALLOCATED_BUT_NOT_INITIALIZED = RUBY_FL_USER5};
+enum {RMODULE_ALLOCATED_BUT_NOT_INITIALIZED = RUBY_FL_USER1};
 
 static inline bool
 RMODULE_UNINITIALIZED(VALUE module)
@@ -513,14 +539,14 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     /* cloned flag is refer at constant inline cache
      * see vm_get_const_key_cref() in vm_insnhelper.c
      */
-    FL_SET(clone, RCLASS_CLONED);
-    FL_SET(orig , RCLASS_CLONED);
+    RCLASS_EXT(clone)->cloned = true;
+    RCLASS_EXT(orig)->cloned = true;
 
     if (!FL_TEST(CLASS_OF(clone), FL_SINGLETON)) {
         RBASIC_SET_CLASS(clone, rb_singleton_class_clone(orig));
         rb_singleton_class_attached(METACLASS_OF(clone), (VALUE)clone);
     }
-    RCLASS_ALLOCATOR(clone) = RCLASS_ALLOCATOR(orig);
+    RCLASS_SET_ALLOCATOR(clone, RCLASS_ALLOCATOR(orig));
     copy_tables(clone, orig);
     if (RCLASS_M_TBL(orig)) {
         struct clone_method_arg arg;
@@ -552,11 +578,14 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
                 rb_bug("non iclass between module/class and origin");
             }
             clone_p = class_alloc(RBASIC(p)->flags, METACLASS_OF(p));
+            /* We should set the m_tbl right after allocation before anything
+             * that can trigger GC to avoid clone_p from becoming old and
+             * needing to fire write barriers. */
+            RCLASS_SET_M_TBL(clone_p, RCLASS_M_TBL(p));
             RCLASS_SET_SUPER(prev_clone_p, clone_p);
             prev_clone_p = clone_p;
-            RCLASS_M_TBL(clone_p) = RCLASS_M_TBL(p);
             RCLASS_CONST_TBL(clone_p) = RCLASS_CONST_TBL(p);
-            RCLASS_ALLOCATOR(clone_p) = RCLASS_ALLOCATOR(p);
+            RCLASS_SET_ALLOCATOR(clone_p, RCLASS_ALLOCATOR(p));
             if (RB_TYPE_P(clone, T_CLASS)) {
                 RCLASS_SET_INCLUDER(clone_p, clone);
             }
@@ -619,7 +648,7 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
     // attached to an object other than `obj`. In which case `obj` does not have
     // a material singleton class attached yet and there is no singleton class
     // to clone.
-    if (!(FL_TEST(klass, FL_SINGLETON) && rb_attr_get(klass, id_attached) == obj)) {
+    if (!(FL_TEST(klass, FL_SINGLETON) && RCLASS_ATTACHED_OBJECT(klass) == obj)) {
         // nothing to clone
         return klass;
     }
@@ -641,7 +670,6 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
         }
 
         RCLASS_SET_SUPER(clone, RCLASS_SUPER(klass));
-        RCLASS_ALLOCATOR(clone) = RCLASS_ALLOCATOR(klass);
         rb_iv_tbl_copy(clone, klass);
         if (RCLASS_CONST_TBL(klass)) {
             struct clone_const_arg arg;
@@ -672,7 +700,7 @@ void
 rb_singleton_class_attached(VALUE klass, VALUE obj)
 {
     if (FL_TEST(klass, FL_SINGLETON)) {
-        rb_class_ivar_set(klass, id_attached, obj);
+        RCLASS_SET_ATTACHED_OBJECT(klass, obj);
     }
 }
 
@@ -686,13 +714,13 @@ rb_singleton_class_attached(VALUE klass, VALUE obj)
 static int
 rb_singleton_class_has_metaclass_p(VALUE sklass)
 {
-    return rb_attr_get(METACLASS_OF(sklass), id_attached) == sklass;
+    return RCLASS_ATTACHED_OBJECT(METACLASS_OF(sklass)) == sklass;
 }
 
 int
 rb_singleton_class_internal_p(VALUE sklass)
 {
-    return (RB_TYPE_P(rb_attr_get(sklass, id_attached), T_CLASS) &&
+    return (RB_TYPE_P(RCLASS_ATTACHED_OBJECT(sklass), T_CLASS) &&
             !rb_singleton_class_has_metaclass_p(sklass));
 }
 
@@ -838,6 +866,27 @@ refinement_import_methods(int argc, VALUE *argv, VALUE refinement)
 }
 # endif
 
+/*!
+ *--
+ * \private
+ * Initializes the world of objects and classes.
+ *
+ * At first, the function bootstraps the class hierarchy.
+ * It initializes the most fundamental classes and their metaclasses.
+ * - \c BasicObject
+ * - \c Object
+ * - \c Module
+ * - \c Class
+ * After the bootstrap step, the class hierarchy becomes as the following
+ * diagram.
+ *
+ * \image html boottime-classes.png
+ *
+ * Then, the function defines classes, modules and methods as usual.
+ * \ingroup class
+ *++
+ */
+
 void
 Init_class_hierarchy(void)
 {
@@ -910,7 +959,7 @@ rb_define_class_id(ID id, VALUE super)
  * \return the value \c Class#inherited's returns
  * \pre Each of \a super and \a klass must be a \c Class object.
  */
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_class_inherited(VALUE super, VALUE klass)
 {
     ID inherited;
@@ -958,7 +1007,7 @@ rb_define_class_under(VALUE outer, const char *name, VALUE super)
 }
 
 VALUE
-rb_define_class_id_under(VALUE outer, ID id, VALUE super)
+rb_define_class_id_under_no_pin(VALUE outer, ID id, VALUE super)
 {
     VALUE klass;
 
@@ -975,8 +1024,6 @@ rb_define_class_id_under(VALUE outer, ID id, VALUE super)
                      " (%"PRIsVALUE" is given but was %"PRIsVALUE")",
                      outer, rb_id2str(id), RCLASS_SUPER(klass), super);
         }
-        /* Class may have been defined in Ruby and not pin-rooted */
-        rb_vm_add_root_module(klass);
 
         return klass;
     }
@@ -988,8 +1035,15 @@ rb_define_class_id_under(VALUE outer, ID id, VALUE super)
     rb_set_class_path_string(klass, outer, rb_id2str(id));
     rb_const_set(outer, id, klass);
     rb_class_inherited(super, klass);
-    rb_vm_add_root_module(klass);
 
+    return klass;
+}
+
+VALUE
+rb_define_class_id_under(VALUE outer, ID id, VALUE super)
+{
+    VALUE klass = rb_define_class_id_under_no_pin(outer, id, super);
+    rb_vm_add_root_module(klass);
     return klass;
 }
 
@@ -1088,7 +1142,7 @@ rb_include_class_new(VALUE module, VALUE super)
 {
     VALUE klass = class_alloc(T_ICLASS, rb_cClass);
 
-    RCLASS_M_TBL(klass) = RCLASS_M_TBL(module);
+    RCLASS_SET_M_TBL(klass, RCLASS_M_TBL(module));
 
     RCLASS_SET_ORIGIN(klass, klass);
     if (BUILTIN_TYPE(module) == T_ICLASS) {
@@ -1364,10 +1418,10 @@ ensure_origin(VALUE klass)
     VALUE origin = RCLASS_ORIGIN(klass);
     if (origin == klass) {
         origin = class_alloc(T_ICLASS, klass);
+        RCLASS_SET_M_TBL(origin, RCLASS_M_TBL(klass));
         RCLASS_SET_SUPER(origin, RCLASS_SUPER(klass));
         RCLASS_SET_SUPER(klass, origin);
         RCLASS_SET_ORIGIN(klass, origin);
-        RCLASS_M_TBL(origin) = RCLASS_M_TBL(klass);
         RCLASS_M_TBL_INIT(klass);
         rb_id_table_foreach(RCLASS_M_TBL(origin), cache_clear_refined_method, (void *)klass);
         rb_id_table_foreach(RCLASS_M_TBL(origin), move_refined_method, (void *)klass);
@@ -1660,7 +1714,7 @@ rb_class_attached_object(VALUE klass)
         rb_raise(rb_eTypeError, "`%"PRIsVALUE"' is not a singleton class", klass);
     }
 
-    return rb_attr_get(klass, id_attached);
+    return RCLASS_ATTACHED_OBJECT(klass);
 }
 
 static void
@@ -2189,7 +2243,7 @@ singleton_class_of(VALUE obj)
 
     klass = METACLASS_OF(obj);
     if (!(FL_TEST(klass, FL_SINGLETON) &&
-          rb_attr_get(klass, id_attached) == obj)) {
+          RCLASS_ATTACHED_OBJECT(klass) == obj)) {
         klass = rb_make_metaclass(obj, klass);
     }
 
@@ -2228,7 +2282,7 @@ rb_singleton_class_get(VALUE obj)
     }
     klass = METACLASS_OF(obj);
     if (!FL_TEST(klass, FL_SINGLETON)) return Qnil;
-    if (rb_attr_get(klass, id_attached) != obj) return Qnil;
+    if (RCLASS_ATTACHED_OBJECT(klass) != obj) return Qnil;
     return klass;
 }
 
@@ -2292,7 +2346,7 @@ rb_define_attr(VALUE klass, const char *name, int read, int write)
     rb_attr(klass, rb_intern(name), read, write, FALSE);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_keyword_error_new(const char *error, VALUE keys)
 {
     long i = 0, len = RARRAY_LEN(keys);

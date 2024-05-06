@@ -62,7 +62,7 @@ VALUE string_spec_rb_str_buf_new(VALUE self, VALUE len, VALUE str) {
 
   buf = rb_str_buf_new(NUM2LONG(len));
 
-  if(RTEST(str)) {
+  if (RTEST(str)) {
     snprintf(RSTRING_PTR(buf), NUM2LONG(len), "%s", RSTRING_PTR(str));
   }
 
@@ -129,7 +129,7 @@ VALUE string_spec_rb_str_conv_enc(VALUE self, VALUE str, VALUE from, VALUE to) {
 
   from_enc = rb_to_encoding(from);
 
-  if(NIL_P(to)) {
+  if (NIL_P(to)) {
     to_enc = 0;
   } else {
     to_enc = rb_to_encoding(to);
@@ -139,14 +139,13 @@ VALUE string_spec_rb_str_conv_enc(VALUE self, VALUE str, VALUE from, VALUE to) {
 }
 
 VALUE string_spec_rb_str_conv_enc_opts(VALUE self, VALUE str, VALUE from, VALUE to,
-                                       VALUE ecflags, VALUE ecopts)
-{
+                                       VALUE ecflags, VALUE ecopts) {
   rb_encoding* from_enc;
   rb_encoding* to_enc;
 
   from_enc = rb_to_encoding(from);
 
-  if(NIL_P(to)) {
+  if (NIL_P(to)) {
     to_enc = 0;
   } else {
     to_enc = rb_to_encoding(to);
@@ -200,7 +199,7 @@ VALUE string_spec_rb_str_new_offset(VALUE self, VALUE str, VALUE offset, VALUE l
 }
 
 VALUE string_spec_rb_str_new2(VALUE self, VALUE str) {
-  if(NIL_P(str)) {
+  if (NIL_P(str)) {
     return rb_str_new2("");
   } else {
     return rb_str_new2(RSTRING_PTR(str));
@@ -216,7 +215,7 @@ VALUE string_spec_rb_str_export_to_enc(VALUE self, VALUE str, VALUE enc) {
 }
 
 VALUE string_spec_rb_str_new_cstr(VALUE self, VALUE str) {
-  if(NIL_P(str)) {
+  if (NIL_P(str)) {
     return rb_str_new_cstr("");
   } else {
     return rb_str_new_cstr(RSTRING_PTR(str));
@@ -255,16 +254,6 @@ VALUE string_spec_rb_str_new5(VALUE self, VALUE str, VALUE ptr, VALUE len) {
   return rb_str_new5(str, RSTRING_PTR(ptr), FIX2INT(len));
 }
 
-#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
-# pragma GCC diagnostic push
-# pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#elif defined(__clang__) && defined(__has_warning)
-# if __has_warning("-Wdeprecated-declarations")
-#  pragma clang diagnostic push
-#  pragma clang diagnostic ignored "-Wdeprecated-declarations"
-# endif
-#endif
-
 #ifndef RUBY_VERSION_IS_3_2
 VALUE string_spec_rb_tainted_str_new(VALUE self, VALUE str, VALUE len) {
   return rb_tainted_str_new(RSTRING_PTR(str), FIX2INT(len));
@@ -273,14 +262,6 @@ VALUE string_spec_rb_tainted_str_new(VALUE self, VALUE str, VALUE len) {
 VALUE string_spec_rb_tainted_str_new2(VALUE self, VALUE str) {
   return rb_tainted_str_new2(RSTRING_PTR(str));
 }
-#endif
-
-#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
-# pragma GCC diagnostic pop
-#elif defined(__clang__) && defined(__has_warning)
-# if __has_warning("-Wdeprecated-declarations")
-#  pragma clang diagnostic pop
-# endif
 #endif
 
 VALUE string_spec_rb_str_plus(VALUE self, VALUE str1, VALUE str2) {
@@ -390,7 +371,7 @@ VALUE string_spec_RSTRING_PTR_set(VALUE self, VALUE str, VALUE i, VALUE chr) {
 
 VALUE string_spec_RSTRING_PTR_after_funcall(VALUE self, VALUE str, VALUE cb) {
   /* Silence gcc 4.3.2 warning about computed value not used */
-  if(RSTRING_PTR(str)) { /* force it out */
+  if (RSTRING_PTR(str)) { /* force it out */
     rb_funcall(cb, rb_intern("call"), 1, str);
   }
 
@@ -573,7 +554,7 @@ static VALUE string_spec_rb_utf8_str_new_cstr(VALUE self) {
 }
 
 PRINTF_ARGS(static VALUE call_rb_str_vcatf(VALUE mesg, const char *fmt, ...), 2, 3);
-static VALUE call_rb_str_vcatf(VALUE mesg, const char *fmt, ...){
+static VALUE call_rb_str_vcatf(VALUE mesg, const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
   VALUE result = rb_str_vcatf(mesg, fmt, ap);

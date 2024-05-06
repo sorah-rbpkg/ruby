@@ -198,8 +198,8 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
 
     output, status =
       begin
-        Open3.capture2e(cargo, "metadata", "--no-deps", "--format-version", "1", :chdir => cargo_dir)
-      rescue => error
+        Open3.capture2e(cargo, "metadata", "--no-deps", "--format-version", "1", chdir: cargo_dir)
+      rescue StandardError => error
         raise Gem::InstallError, "cargo metadata failed #{error.message}"
       end
 
@@ -246,10 +246,10 @@ EOF
   end
 
   def rustc_dynamic_linker_flags(dest_dir, crate_name)
-    split_flags("DLDFLAGS")
-      .map {|arg| maybe_resolve_ldflag_variable(arg, dest_dir, crate_name) }
-      .compact
-      .flat_map {|arg| ldflag_to_link_modifier(arg) }
+    split_flags("DLDFLAGS").
+      map {|arg| maybe_resolve_ldflag_variable(arg, dest_dir, crate_name) }.
+      compact.
+      flat_map {|arg| ldflag_to_link_modifier(arg) }
   end
 
   def rustc_lib_flags(dest_dir)
@@ -293,7 +293,7 @@ EOF
 
     case var_name
     # On windows, it is assumed that mkmf has setup an exports file for the
-    # extension, so we have to to create one ourselves.
+    # extension, so we have to create one ourselves.
     when "DEFFILE"
       write_deffile(dest_dir, crate_name)
     else
@@ -313,7 +313,7 @@ EOF
     deffile_path
   end
 
-  # We have to basically reimplement RbConfig::CONFIG['SOEXT'] here to support
+  # We have to basically reimplement <code>RbConfig::CONFIG['SOEXT']</code> here to support
   # Ruby < 2.5
   #
   # @see https://github.com/ruby/ruby/blob/c87c027f18c005460746a74c07cd80ee355b16e4/configure.ac#L3185

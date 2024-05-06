@@ -9,6 +9,7 @@ RSpec.describe "bundle add" do
       build_gem "bar", "0.12.3"
       build_gem "cat", "0.12.3.pre"
       build_gem "dog", "1.1.3.pre"
+      build_gem "lemur", "3.1.1.pre.2023.1.1"
     end
 
     build_git "foo", "2.0"
@@ -21,7 +22,7 @@ RSpec.describe "bundle add" do
 
   context "when no gems are specified" do
     it "shows error" do
-      bundle "add", :raise_on_error => false
+      bundle "add", raise_on_error: false
 
       expect(err).to include("Please specify gems to add")
     end
@@ -51,6 +52,13 @@ RSpec.describe "bundle add" do
       expect(bundled_app_gemfile.read).to match(/gem "dog", "~> 1.1.pre"/)
       expect(the_bundle).to include_gems "dog 1.1.3.pre"
     end
+
+    it "version requirement becomes ~> major.minor.pre.tail when resolved version has a very long tail pre version" do
+      bundle "add 'lemur'"
+      # the trailing pre purposely matches the release version to ensure that subbing the release doesn't change the pre.version"
+      expect(bundled_app_gemfile.read).to match(/gem "lemur", "~> 3.1.pre.2023.1.1"/)
+      expect(the_bundle).to include_gems "lemur 3.1.1.pre.2023.1.1"
+    end
   end
 
   describe "with --version" do
@@ -63,7 +71,7 @@ RSpec.describe "bundle add" do
     it "adds multiple version constraints when specified" do
       requirements = ["< 3.0", "> 1.0"]
       bundle "add 'foo' --version='#{requirements.join(", ")}'"
-      expect(bundled_app_gemfile.read).to match(/gem "foo", #{Gem::Requirement.new(requirements).as_list.map(&:dump).join(', ')}/)
+      expect(bundled_app_gemfile.read).to match(/gem "foo", #{Gem::Requirement.new(requirements).as_list.map(&:dump).join(", ")}/)
       expect(the_bundle).to include_gems "foo 2.0"
     end
   end
@@ -123,7 +131,7 @@ RSpec.describe "bundle add" do
 
   describe "with --git and --branch" do
     before do
-      update_git "foo", "2.0", :branch => "test"
+      update_git "foo", "2.0", branch: "test"
     end
 
     it "adds dependency with specified git source and branch" do
@@ -147,7 +155,7 @@ RSpec.describe "bundle add" do
     it "adds dependency with specified github source", :realworld do
       bundle "add rake --github=ruby/rake"
 
-      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.0", :github => "ruby\/rake"})
+      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.\d+", :github => "ruby\/rake"})
     end
   end
 
@@ -155,7 +163,7 @@ RSpec.describe "bundle add" do
     it "adds dependency with specified github source and branch", :realworld do
       bundle "add rake --github=ruby/rake --branch=master"
 
-      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.0", :github => "ruby\/rake", :branch => "master"})
+      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.\d+", :github => "ruby\/rake", :branch => "master"})
     end
   end
 
@@ -163,7 +171,7 @@ RSpec.describe "bundle add" do
     it "adds dependency with specified github source and ref", :realworld do
       bundle "add rake --github=ruby/rake --ref=5c60da8"
 
-      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.0", :github => "ruby\/rake", :ref => "5c60da8"})
+      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.\d+", :github => "ruby\/rake", :ref => "5c60da8"})
     end
   end
 
@@ -183,24 +191,24 @@ RSpec.describe "bundle add" do
   end
 
   it "shows error message when version is not formatted correctly" do
-    bundle "add 'foo' -v='~>1 . 0'", :raise_on_error => false
+    bundle "add 'foo' -v='~>1 . 0'", raise_on_error: false
     expect(err).to match("Invalid gem requirement pattern '~>1 . 0'")
   end
 
   it "shows error message when gem cannot be found" do
     bundle "config set force_ruby_platform true"
-    bundle "add 'werk_it'", :raise_on_error => false
+    bundle "add 'werk_it'", raise_on_error: false
     expect(err).to match("Could not find gem 'werk_it' in")
 
-    bundle "add 'werk_it' -s='#{file_uri_for(gem_repo2)}'", :raise_on_error => false
+    bundle "add 'werk_it' -s='#{file_uri_for(gem_repo2)}'", raise_on_error: false
     expect(err).to match("Could not find gem 'werk_it' in rubygems repository")
   end
 
   it "shows error message when source cannot be reached" do
-    bundle "add 'baz' --source='http://badhostasdf'", :raise_on_error => false
+    bundle "add 'baz' --source='http://badhostasdf'", raise_on_error: false
     expect(err).to include("Could not reach host badhostasdf. Check your network connection and try again.")
 
-    bundle "add 'baz' --source='file://does/not/exist'", :raise_on_error => false
+    bundle "add 'baz' --source='file://does/not/exist'", raise_on_error: false
     expect(err).to include("Could not fetch specs from file://does/not/exist/")
   end
 
@@ -230,7 +238,7 @@ RSpec.describe "bundle add" do
 
   describe "with --optimistic and --strict" do
     it "throws error" do
-      bundle "add 'foo' --strict --optimistic", :raise_on_error => false
+      bundle "add 'foo' --strict --optimistic", raise_on_error: false
 
       expect(err).to include("You can not specify `--strict` and `--optimistic` at the same time")
     end
@@ -245,7 +253,7 @@ RSpec.describe "bundle add" do
     end
 
     it "throws error if any of the specified gems are present in the gemfile with different version" do
-      bundle "add weakling bar", :raise_on_error => false
+      bundle "add weakling bar", raise_on_error: false
 
       expect(err).to include("You cannot specify the same gem twice with different version requirements")
       expect(err).to include("You specified: weakling (~> 0.0.1) and weakling (>= 0).")
@@ -259,7 +267,7 @@ RSpec.describe "bundle add" do
         gem "rack", "1.0"
       G
 
-      bundle "add 'rack' --version=1.1", :raise_on_error => false
+      bundle "add 'rack' --version=1.1", raise_on_error: false
 
       expect(err).to include("You cannot specify the same gem twice with different version requirements")
       expect(err).to include("If you want to update the gem version, run `bundle update rack`. You may also need to change the version requirement specified in the Gemfile if it's too restrictive")
@@ -271,7 +279,7 @@ RSpec.describe "bundle add" do
         gem "rack", "1.0"
       G
 
-      bundle "add 'rack'", :raise_on_error => false
+      bundle "add 'rack'", raise_on_error: false
 
       expect(err).to include("Gem already added.")
       expect(err).to include("You cannot specify the same gem twice with different version requirements")
@@ -286,7 +294,7 @@ RSpec.describe "bundle add" do
         gem "rack"
       G
 
-      bundle "add 'rack' --version=1.1", :raise_on_error => false
+      bundle "add 'rack' --version=1.1", raise_on_error: false
 
       expect(err).to include("You cannot specify the same gem twice with different version requirements")
       expect(err).to include("If you want to update the gem version, run `bundle update rack`.")
