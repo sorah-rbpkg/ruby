@@ -1,11 +1,15 @@
 ruby3.3 (3.3.1-1) UNRELEASED; urgency=medium
 
   * Ruby 3.3
-  * New upstream version 3.2.2
-  * New upstream version 3.2.3
-  * New upstream version 3.3.1
+  * New upstream version 3.3.1.
+  * d/patches: refresh patches and remove the ones applied by upstream.
+  * Declare compliance with Debian Policy 4.7.0.
+  * d/t/excludes/any/TestGemCommandsUpdateCommand.rb: skip new test trying
+    to execute system comamnds.
+  * d/libruby3.3.symbols: update to version 3.3.1.
+  * d/s/lintian-overrides: update it to new version of net-imap.
 
- -- Lucas Kanashiro <kanashiro@ubuntu.com>  Mon, 06 May 2024 17:59:58 -0300
+ -- Lucas Kanashiro <kanashiro@debian.org>  Mon, 06 May 2024 17:59:58 -0300
 
 ruby3.2 (3.2.3-1) unstable; urgency=medium
 
