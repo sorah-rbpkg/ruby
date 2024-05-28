@@ -1,4 +1,4 @@
 source-contains-prebuilt-ms-help-file
 # There is no RFC text
-license-problem-non-free-RFC .bundle/gems/net-imap-0.3.4.1/LICENSE.txt
-license-problem-non-free-RFC-BCP78 [.bundle/gems/net-imap-0.3.4.1/LICENSE.txt]
+license-problem-non-free-RFC .bundle/gems/net-imap-0.4.9.1/LICENSE.txt
+license-problem-non-free-RFC-BCP78 [.bundle/gems/net-imap-0.4.9.1/LICENSE.txt]
