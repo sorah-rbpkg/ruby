@@ -625,6 +625,10 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(true, BIGNUM_MIN.even?)
   end
 
+  def test_gmp_deb
+    assert_kind_of(String, Integer::GMP_VERSION) # https://github.com/ruby/ruby/pull/10875
+  end
+
   def test_interrupt_during_to_s
     if defined?(Integer::GMP_VERSION)
       return # GMP doesn't support interrupt during an operation.
