@@ -9,3 +9,5 @@ extract-gems-sequential-Keep-using-RUNRUBY.patch
 Test_SyncDefaultGems-Fail-when-editor-run.patch
 sync_default_gems-git-2.32-ignores-no-edit-in-cherry-pick.patch
 YJIT-Let-RubyVM-YJIT.enable-respect-yjit-stats.patch
+RUBY_CHECK_HEADER-didn-t-define-HAVE_-header-file.patch
+Ensure-Integer-GMP_VERSION-exists.patch
