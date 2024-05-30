@@ -12,10 +12,10 @@ Updated by John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de> on
  1 file changed, 3 insertions(+)
 
 diff --git a/configure.ac b/configure.ac
-index 0bc6a7a..d1bbd17 100644
+index 0eb94f6..a051708 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -2557,6 +2557,9 @@ AS_CASE([$coroutine_type], [yes|''], [
+@@ -2564,6 +2564,9 @@ AS_CASE([$coroutine_type], [yes|''], [
          [arm64-darwin*], [
              coroutine_type=arm64
          ],

@@ -11,7 +11,7 @@ Partially reverts https://github.com/ruby/ruby/pull/6203
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/common.mk b/common.mk
-index a3990a5..67aaebe 100644
+index 722c41f..e587832 100644
 --- a/common.mk
 +++ b/common.mk
 @@ -1367,7 +1367,7 @@ update-gems$(gnumake:yes=-sequential): PHONY
