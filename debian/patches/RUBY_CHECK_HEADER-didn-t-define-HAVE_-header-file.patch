@@ -1,0 +1,26 @@
+From: Sorah Fukumori <sorah@cookpad.com>
+Date: Fri, 31 May 2024 02:16:10 +0900
+Subject: RUBY_CHECK_HEADER didn't define HAVE_{header-file}
+
+--with-gmp is not working at all because HAVE_GMP_H
+was missing since 18eaf0be90. [Bug #20515]
+
+bug: https://bugs.ruby-lang.org/issues/20515
+follow-up: https://bugs.ruby-lang.org/issues/20494
+follow-up: 18eaf0be905e3e251423b42d6f4e56b7cae1bc3b
+---
+ tool/m4/ruby_check_header.m4 | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tool/m4/ruby_check_header.m4 b/tool/m4/ruby_check_header.m4
+index 1714555..6fec9d1 100644
+--- a/tool/m4/ruby_check_header.m4
++++ b/tool/m4/ruby_check_header.m4
+@@ -3,6 +3,6 @@ AC_DEFUN([RUBY_CHECK_HEADER],
+     [# RUBY_CHECK_HEADER($@)
+     save_CPPFLAGS="$CPPFLAGS"
+     CPPFLAGS="$CPPFLAGS m4_if([$5], [], [$INCFLAGS], [$5])"
+-    AC_CHECK_HEADER([$1], [$2], [$3], [$4])
++    AC_CHECK_HEADERS([$1], [$2], [$3], [$4])
+     CPPFLAGS="$save_CPPFLAGS"
+     unset save_CPPFLAGS])
