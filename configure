@@ -3622,6 +3622,7 @@ tooldir="$srcdir/tool"
 
 
 
+
     msg_checking= msg_result_yes= msg_result_no= msg_result_other= msg_reset=
     case "x${CONFIGURE_TTY}" in #(
   xyes|xalways) :
@@ -13984,13 +13985,17 @@ esac
 
 if test "x$with_gmp" != xno
 then :
-  ac_fn_c_check_header_compile "$LINENO" "gmp.h" "ac_cv_header_gmp_h" "$ac_includes_default"
+  # RUBY_CHECK_HEADER([gmp.h])
+    save_CPPFLAGS="$CPPFLAGS"
+    CPPFLAGS="$CPPFLAGS $INCFLAGS"
+    ac_fn_c_check_header_compile "$LINENO" "gmp.h" "ac_cv_header_gmp_h" "$ac_includes_default"
 if test "x$ac_cv_header_gmp_h" = xyes
 then :
-  printf "%s\n" "#define HAVE_GMP_H 1" >>confdefs.h
 
 fi
 
+    CPPFLAGS="$save_CPPFLAGS"
+    unset save_CPPFLAGS
    if test "x$ac_cv_header_gmp_h" != xno
 then :
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing __gmpz_init" >&5
@@ -14069,6 +14074,8 @@ if test "x$with_jemalloc" != xno
 then :
 
   # find jemalloc header first
+  save_CPPFLAGS="${CPPFLAGS}"
+  CPPFLAGS="${INCFLAGS} ${CPPFLAGS}"
   malloc_header=
   ac_fn_c_check_header_compile "$LINENO" "jemalloc/jemalloc.h" "ac_cv_header_jemalloc_jemalloc_h" "$ac_includes_default"
 if test "x$ac_cv_header_jemalloc_jemalloc_h" = xyes
@@ -14139,6 +14146,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $rb_cv_jemalloc_library" >&5
     colorize_result "$rb_cv_jemalloc_library" ; }
+  CPPFLAGS="${save_CPPFLAGS}"
+  unset save_CPPFLAGS
   with_jemalloc=${rb_cv_jemalloc_library}
   case "$with_jemalloc" in #(
   no) :
