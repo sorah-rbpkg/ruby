@@ -73,6 +73,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_to_s_under_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       str = "abcd\u3042"
       [:UTF_16BE, :UTF_16LE, :UTF_32BE, :UTF_32LE].each do |es|
@@ -470,6 +471,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_inspect_under_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       assert_equal('/(?-mix:\\/)|/', Regexp.union(/\//, "").inspect)
     end
@@ -891,6 +893,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_match_under_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       m = /(?<foo>.)(?<n>[^aeiou])?(?<bar>.+)/.match("hoge\u3042")
       assert_equal("h", m.match(:foo))
@@ -1824,6 +1827,17 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_bug_20453
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      Regexp.timeout = 0.001
+
+      assert_raise(Regexp::TimeoutError) do
+        /^(a*)x$/ =~ "a" * 1000000 + "x"
+      end
+    end;
+  end
+
   def per_instance_redos_test(global_timeout, per_instance_timeout, expected_timeout)
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
       global_timeout = #{ EnvUtil.apply_timeout_scale(global_timeout).inspect }
@@ -2039,7 +2053,7 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_bug_20212 # [Bug #20212]
     regex = Regexp.new(
-      /\A((?=.*?[a-z])(?!.*--)[a-z\d]+[a-z\d-]*[a-z\d]+).((?=.*?[a-z])(?!.*--)[a-z\d]+[a-z\d-]*[a-z\d]+).((?=.*?[a-z])(?!.*--)[a-zd]+[a-zd-]*[a-zd]+).((?=.*?[a-z])(?!.*--)[a-zd]+[a-zd-]*[a-zd]+)\Z/x
+      /\A((?=.*?[a-z])(?!.*--)[a-z\d]+[a-z\d-]*[a-z\d]+).((?=.*?[a-z])(?!.*--)[a-z\d]+[a-z\d-]*[a-z\d]+).((?=.*?[a-z])(?!.*--)[a-z]+[a-z-]*[a-z]+).((?=.*?[a-z])(?!.*--)[a-z]+[a-z-]*[a-z]+)\Z/x
     )
     string = "www.google.com"
     100.times.each { assert(regex.match?(string)) }

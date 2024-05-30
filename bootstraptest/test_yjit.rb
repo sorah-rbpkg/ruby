@@ -1,3 +1,77 @@
+# regression test for popping before side exit
+assert_equal "ok", %q{
+  def foo(a, *) = a
+
+  def call(args, &)
+    foo(1) # spill at where the block arg will be
+    foo(*args, &)
+  end
+
+  call([1, 2])
+
+  begin
+    call([])
+  rescue ArgumentError
+    :ok
+  end
+}
+
+# regression test for send processing before side exit
+assert_equal "ok", %q{
+  def foo(a, *) = :foo
+
+  def call(args)
+    send(:foo, *args)
+  end
+
+  call([1, 2])
+
+  begin
+    call([])
+  rescue ArgumentError
+    :ok
+  end
+}
+
+# test discarding extra yield arguments
+assert_equal "2210150001501015", %q{
+  def splat_kw(ary) = yield *ary, a: 1
+
+  def splat(ary) = yield *ary
+
+  def kw = yield 1, 2, a: 0
+
+  def simple = yield 0, 1
+
+  def calls
+    [
+      splat([1, 1, 2]) { |x, y| x + y },
+      splat([1, 1, 2]) { |y, opt = raise| opt + y},
+      splat_kw([0, 1]) { |a:| a },
+      kw { |a:| a },
+      kw { |a| a },
+      simple { 5.itself },
+      simple { |a| a },
+      simple { |opt = raise| opt },
+      simple { |*rest| rest },
+      simple { |opt_kw: 5| opt_kw },
+      # autosplat ineractions
+      [0, 1, 2].yield_self { |a, b| [a, b] },
+      [0, 1, 2].yield_self { |a, opt = raise| [a, opt] },
+      [1].yield_self { |a, opt = 4| a + opt },
+    ]
+  end
+
+  calls.join
+}
+
+# test autosplat with empty splat
+assert_equal "ok", %q{
+  def m(pos, splat) = yield pos, *splat
+
+  m([:ok], []) {|v0,| v0 }
+}
+
 # regression test for send stack shifting
 assert_normal_exit %q{
   def foo(a, b)
@@ -10,6 +84,13 @@ assert_normal_exit %q{
 
   call_foo
 }
+
+# regression test for keyword splat with yield
+assert_equal 'nil', %q{
+  def splat_kw(kwargs) = yield(**kwargs)
+
+  splat_kw({}) { _1 }.inspect
+} unless rjit_enabled? # Not yet working on RJIT
 
 # regression test for arity check with splat
 assert_equal '[:ae, :ae]', %q{
@@ -4341,4 +4422,35 @@ assert_equal '0', %q{
   end
 
   entry
+}
+
+# Integer succ and overflow
+assert_equal '[2, 4611686018427387904]', %q{
+  [1.succ, 4611686018427387903.succ]
+}
+
+# Integer right shift
+assert_equal '[0, 1, -4]', %q{
+  [0 >> 1, 2 >> 1, -7 >> 1]
+}
+
+assert_equal '[nil, "yield"]', %q{
+  def defined_yield = defined?(yield)
+  [defined_yield, defined_yield {}]
+}
+
+# splat with ruby2_keywords into rest parameter
+assert_equal '[[{:a=>1}], {}]', %q{
+  ruby2_keywords def foo(*args) = args
+
+  def bar(*args, **kw) = [args, kw]
+
+  def pass_bar(*args) = bar(*args)
+
+  def body
+    args = foo(a: 1)
+    pass_bar(*args)
+  end
+
+  body
 }
