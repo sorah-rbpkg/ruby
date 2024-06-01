@@ -1390,9 +1390,9 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_resolve_me_location@Base 3.3.0~preview1
  rb_respond_to@Base 3.3.0~preview1
  rb_resume_coverages@Base 3.3.1
- (arch=!ppc64el !s390x !riscv64)rb_rjit_call_p@Base 3.3.1
- (arch=!ppc64el !s390x !riscv64)rb_rjit_compile@Base 3.3.1
- (arch=!ppc64el !s390x !riscv64)rb_rjit_opts@Base 3.3.1
+ (arch=!ppc64el !s390x !riscv64 !i386 !mips64el)rb_rjit_call_p@Base 3.3.1
+ (arch=!ppc64el !s390x !riscv64 !i386 !mips64el)rb_rjit_compile@Base 3.3.1
+ (arch=!ppc64el !s390x !riscv64 !i386 !mips64el)rb_rjit_opts@Base 3.3.1
  rb_rs@Base 3.3.0~preview1
  rb_ruby_debug_ptr@Base 3.3.0~preview1
  rb_ruby_parser_compile_string@Base 3.3.1
