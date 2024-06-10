@@ -1,3 +1,10 @@
+ruby3.3 (3.3.1-2) UNRELEASED; urgency=medium
+
+  * d/libruby3.3.symbols: fix symbols for i386 and mips64el.
+  * d/p/Do-not-pass-m32-to-arm-32-bits.patch: fix FTBFS in armhf and armel.
+
+ -- Lucas Kanashiro <kanashiro@debian.org>  Mon, 10 Jun 2024 20:24:07 -0300
+
 ruby3.3 (3.3.1-1) unstable; urgency=medium
 
   * Ruby 3.3
