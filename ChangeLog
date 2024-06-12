@@ -1,5 +1,351 @@
 -*- coding: utf-8 -*-
 
+commit f1c7b6f435f1167a0514b39a5f72f55cec4d1426
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-06-12 08:54:24 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-06-12 08:54:24 +0900
+
+    v3.3.3
+
+commit 97b1bf9ac11848c2783264d22bf7cdb7f32a21cf
+  Author:     Peter Zhu <peter@peterzhu.ca>
+  AuthorDate: 2024-06-12 08:43:32 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-06-12 08:43:32 +0900
+
+    [Bug #20270] Fix --parser=prism (#10970)
+
+    Co-authored-by: Takashi Kokubun <takashikkbn@gmail.com>
+
+commit d1869cfb852cf95b5a51025c016437ab46b12104
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-06-12 03:28:03 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-06-12 03:29:27 +0900
+
+    redmine-backporter.rb: Prepend commit: to shorter revs
+
+    Some of the places in Redmine (e.g. Associated revisions) print
+    revisions using only 8 characters. Even when I copied a revision from
+    there, I want to prepend commit: in the message.
+
+commit 23f4b78ad8844ec81cb02fad25a6247a2d498582
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-06-12 03:17:32 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-06-12 03:17:32 +0900
+
+    merge revision(s) 27321290: [Backport #20521]
+
+            [Bug #20521] ripper: Clean up strterm
+
+commit d3b139821294f56e6b31e28608c534d9f0920fc2
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-06-12 03:11:23 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-06-12 03:11:23 +0900
+
+    merge revision(s) 1e08a9f0e9058186db18f29efc6458c00f10a856: [Backport #20499]
+
+            [Bug #20499] Use Xcode owned tools for Xcode clang
+
+            Xcode has its own version tools that may be incompatible with genuine
+            LLVM tools, use the tools in the same directory.
+
+commit 8951040aadca57fce633b0f714248de78a962c22
+  Author:     Jean byroot Boussier <jean.boussier+github@shopify.com>
+  AuthorDate: 2024-06-12 03:08:31 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-06-12 03:08:31 +0900
+
+    [3.3 backport] compile.c: use putspecialobject for RubyVM::FrozenCore (#10962)
+
+    compile.c: use putspecialobject for RubyVM::FrozenCore
+
+    [Bug #20569]
+
+    `putobject RubyVM::FrozenCore`, is not serializable, we
+    have to use `putspecialobject VM_SPECIAL_OBJECT_VMCORE`.
+
+    Co-authored-by: Jean Boussier <jean.boussier@gmail.com>
+
+commit 4c50d23245689761e04db450ced9fe9fa76997d0
+  Author:     Peter Zhu <peter@peterzhu.ca>
+  AuthorDate: 2024-06-12 03:01:29 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-06-12 03:01:29 +0900
+
+    Raise SyntaxError on invalid encoding symbol (#10967)
+
+    [Bug #20280]
+
+    Backport of #10014.
+
+commit 40251ed0dfe99bb09c2fa542fce603ade25e3729
+  Author:     Peter Zhu <peter@peterzhu.ca>
+  AuthorDate: 2024-06-11 08:05:58 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-06-11 08:05:58 +0900
+
+    Fix inconsistent evaluation of keyword splat (#10959)
+
+    [Bug #20180]
+
+    Backports #9624.
+
+commit d0327a7224d8d778a75c7554b287369895dc17be
+  Author:     Jean byroot Boussier <jean.boussier+github@shopify.com>
+  AuthorDate: 2024-06-06 06:54:24 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-06-06 06:54:24 +0900
+
+    Don't add `+YJIT` to `RUBY_DESCRIPTION` until it's actually enabled (#10920)
+
+    If you start Ruby with `--yjit-disable`, the `+YJIT` shouldn't be
+    added until `RubyVM::YJIT.enable` is actually called. Otherwise
+    it's confusing in crash reports etc.
+
+    Co-authored-by: Jean Boussier <jean.boussier@gmail.com>
+
+commit e0fe6f70170924397b957d6cfa84774592b1c809
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-06-05 16:28:47 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-06-05 16:29:17 +0900
+
+    merge revision(s) f8abd24b1f28998157da1230b231419ef7b81722: [Backport #20522]
+
+            Improve YJIT performance warning regression test
+
+            [Bug #20522]
+
+commit 06f470ce66be24f82d3720dd2bb08b18b16753ac
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-06-05 13:36:46 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-06-05 13:36:46 +0900
+
+    Merge RubyGems 3.5.11 and Bundler 2.5.11 for Ruby 3.3 (#10870)
+
+    Co-authored-by: Nobuyoshi Nakada <nobu@ruby-lang.org>
+
+commit 1ff55bb09dca302d42951059a73e6d237fd8c338
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-06-05 06:58:37 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-06-05 06:58:37 +0900
+
+    merge revision(s) 05553cf22d43dd78b8f30cc4591230b5c000c538: [Backport #20517]
+
+            [Bug #20517] Make a multibyte character one token at meta escape
+
+commit 4f00d98b327e3aa23564aa765488d15bc60c9e79
+  Author:     Jean byroot Boussier <jean.boussier+github@shopify.com>
+  AuthorDate: 2024-06-05 05:21:58 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-06-05 05:21:58 +0900
+
+    [3.3 backport] Do not emit shape transition warnings when YJIT is compiling (#10911)
+
+    Do not emit shape transition warnings when YJIT is compiling
+
+    [Bug #20522]
+
+    If `Warning.warn` is redefined in Ruby, emitting a warning would invoke
+    Ruby code, which can't safely be done when YJIT is compiling.
+
+    Co-authored-by: Jean Boussier <jean.boussier@gmail.com>
+    Co-authored-by: Takashi Kokubun <takashikkbn@gmail.com>
+
+commit b74f669e2fbe5c63409878e7a9f9d39c8554ff77
+  Author:     Alan Wu <XrXr@users.noreply.github.com>
+  AuthorDate: 2024-06-05 05:17:41 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-06-05 05:17:41 +0900
+
+    YJIT: Fix out of bounds access when splatting empty array (#10905)
+
+    This is a backport of 6c8ae44a388e5c03b7db90376af3652007b574e8 with a
+    test tailored to crash the 3.3.x branch (from GH-10904).
+
+        Previously, we read the last element array even when the array was
+        empty, doing an out-of-bounds access. This sometimes caused a SEGV.
+
+        [Bug #20496]
+
+commit 1df1538be4a494bbc5ef6e3504312a0284948709
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-06-05 05:14:09 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-06-05 05:14:09 +0900
+
+    merge revision(s) f54369830f83a65fb54916d762883fbe6eeb7d0b, 338eb0065bd81ba8ae8b9402abc94804a24594cc, ac636f5709feb1d9d7a0c46a86be153be765cf21: [Backport #20516]
+
+            Revert "Rollback to released version numbers of stringio and strscan"
+
+            This reverts commit 6a79e53823e328281b9e9eee53cd141af28f8548.
+
+            [ruby/strscan] StringScanner#captures: Return nil not "" for unmached capture (https://github.com/ruby/strscan/pull/72)
+
+            fix https://github.com/ruby/strscan/issues/70
+            If there is no substring matching the group (s[3]), the behavior is
+            different.
+
+            If there is no substring matching the group, the corresponding element
+            (s[3]) should be nil.
+
+            ```
+            s = StringScanner.new('foobarbaz') #=> #<StringScanner 0/9 @ "fooba...">
+            s.scan /(foo)(bar)(BAZ)?/  #=> "foobar"
+            s[0]           #=> "foobar"
+            s[1]           #=> "foo"
+            s[2]           #=> "bar"
+            s[3]           #=> nil
+            s.captures #=> ["foo", "bar", ""]
+            s.captures.compact #=> ["foo", "bar", ""]
+            ```
+
+            ```
+            s = StringScanner.new('foobarbaz') #=> #<StringScanner 0/9 @ "fooba...">
+            s.scan /(foo)(bar)(BAZ)?/  #=> "foobar"
+            s[0]           #=> "foobar"
+            s[1]           #=> "foo"
+            s[2]           #=> "bar"
+            s[3]           #=> nil
+            s.captures #=> ["foo", "bar", nil]
+            s.captures.compact #=> ["foo", "bar"]
+            ```
+
+            https://docs.ruby-lang.org/ja/latest/method/MatchData/i/captures.html
+            ```
+            /(foo)(bar)(BAZ)?/ =~ "foobarbaz" #=> 0
+            $~.to_a        #=> ["foobar", "foo", "bar", nil]
+            $~.captures #=> ["foo", "bar", nil]
+            $~.captures.compact #=> ["foo", "bar"]
+            ```
+
+            * StringScanner#captures is not yet documented.
+            https://docs.ruby-lang.org/ja/latest/class/StringScanner.html
+
+            https://github.com/ruby/strscan/commit/1fbfdd3c6f
+
+            [ruby/strscan] Bump version
+
+            https://github.com/ruby/strscan/commit/d6f97ec102
+
+commit 0a0338b06fcc3690346d5a3bec60bbcee85ec7ce
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-06-05 03:43:25 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-06-05 03:43:25 +0900
+
+    merge revision(s) 9f708d48f6df37ee9600db9d51b57a156609a13b, 0301473fb523c71d8cdc4966971f31f502001185, 874e9fc34d728f8e2444d15aa6759befd217c464, 7f0e26b7f99bf76408569892ce20318501f74729: [Backport #20516]
+
+            Clear runtime dependencies if default gems is specified.
+
+            The current build system uses runtime dependencies from only
+            `.bundle` directory. We shouldn't install runtime dependencies
+            from rubygems.org when `make test-bundled-gems` is invoked.
+
+            Fixed dependencies list format
+
+            Don't need to remove ruby2_keywords dependency from drb
+
+            Re-use strscan with ruby repo
+
+commit 12c806acc3923115f2c6590c885e43f2f24a17e3
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-06-05 03:31:00 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-06-05 03:32:28 +0900
+
+    merger.rb: Put spaces in between revisions
+
+    so that they are linked correctly on GitHub
+
+commit c9bec74b21f0e6cf05d9b200a1636bdb8069de8c
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-06-01 09:13:18 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-06-01 09:13:33 +0900
+
+    merge revision(s) 70ad58cb62b195ba86a5ef07a565b22b02a040ea: [Backport #20516]
+
+            Update bundled_gems
+
+commit ea196a3c9f181d368ed1d308201f44a88de69b42
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-05-31 06:53:54 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-05-31 06:53:54 +0900
+
+    merge revision(s) be7c91db44d6b8dba8fa11ff782965b4bfa0b3c8: [Backport #20515]
+
+            Do not pollute toplevel namespace
+
+commit 8f5b1bb64b6cdc09574390e7efb8cb5550762b78
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-05-31 05:05:32 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-05-31 05:05:32 +0900
+
+    merge revision(s) fd549b229b0822198ddc847703194263a2186ed1: [Backport #20515]
+
+            test_bignum: defined? returns String (#10880)
+            MIME-Version: 1.0
+            Content-Type: text/plain; charset=UTF-8
+            Content-Transfer-Encoding: 8bit
+
+            didn't verify the test is working properly due to mistaken auto-merge… [Bug #20515]
+
+            bug: https://bugs.ruby-lang.org/issues/20515
+            follow-up: 22e4eeda6561693367fc7a00b92b90f46b09cabd
+            follow-up: https://github.com/ruby/ruby/pull/10875
+
+commit 74ba1914dd120e0c9ea33d86eae7c5d3e5c730f1
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-05-31 03:54:34 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-05-31 03:54:34 +0900
+
+    merge revision(s) 22e4eeda6561693367fc7a00b92b90f46b09cabd,1ab7c412d2e3880a7ad233c32e93961888f8145c: [Backport #20515]
+
+            ci: Test whether GMP is working in compilers.yml (#10875)
+
+            Avoid reoccurence of [Bug #20515]
+
+            Requires https://github.com/ruby/ruby/pull/10876 since 18eaf0be905e3e251423b42d6f4e56b7cae1bc3b
+
+            bug: https://bugs.ruby-lang.org/issues/20515
+
+            RUBY_CHECK_HEADER didn't define HAVE_{header-file} (#10876)
+
+            --with-gmp is not working at all because HAVE_GMP_H
+            was missing since 18eaf0be90. [Bug #20515]
+
+            bug: https://bugs.ruby-lang.org/issues/20515
+            follow-up: https://bugs.ruby-lang.org/issues/20494
+            follow-up: 18eaf0be905e3e251423b42d6f4e56b7cae1bc3b
+            follow-up: https://github.com/ruby/ruby/pull/10805
+
+commit b13cf49036f0a454063cde25807785adc00f8995
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-05-31 03:13:15 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-05-31 03:13:15 +0900
+
+    merge revision(s) 055613fd868a8c94e43893f8c58a00cdd2a81f6d,127d7a35df10ee2bc99f44b888972b2c5361d84f,e2a9b87126d59e4766479a7aa12cf7a648f46506: [Backport #20447]
+
+            Fix pointer incompatiblity
+
+            Since the subsecond part is discarded, WIDEVAL to VALUE conversion is
+            needed.
+
+            Some functions are not used when `THREAD_MODEL=none`
+
+            `rb_thread_sched_destroy` is not used now at all
+
 commit e5a195edf62fe1bf7146a191da13fa1c4fecbd71
   Author:     Takashi Kokubun <takashikkbn@gmail.com>
   AuthorDate: 2024-05-30 09:23:11 +0900
