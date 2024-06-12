@@ -4826,7 +4826,12 @@ compile_array_1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node)
     }
     else {
         CHECK(COMPILE_(ret, "array element", node, FALSE));
-        ADD_INSN1(ret, node, newarray, INT2FIX(1));
+        if (keyword_node_p(node)) {
+            ADD_INSN1(ret, node, newarraykwsplat, INT2FIX(1));
+        }
+        else {
+            ADD_INSN1(ret, node, newarray, INT2FIX(1));
+        }
     }
 
     return 1;
@@ -10088,7 +10093,12 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       case NODE_LIT:{
         debugp_param("lit", RNODE_LIT(node)->nd_lit);
         if (!popped) {
-            ADD_INSN1(ret, node, putobject, RNODE_LIT(node)->nd_lit);
+            if (UNLIKELY(RNODE_LIT(node)->nd_lit == rb_mRubyVMFrozenCore)) {
+                ADD_INSN1(ret, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE)); // [Bug #20569]
+            }
+            else {
+                ADD_INSN1(ret, node, putobject, RNODE_LIT(node)->nd_lit);
+            }
             RB_OBJ_WRITTEN(iseq, Qundef, RNODE_LIT(node)->nd_lit);
         }
         break;
