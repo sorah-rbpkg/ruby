@@ -1826,8 +1826,8 @@ static const struct {
     char L109[488]; /* 110..124 */
     char L124[478]; /* 125..144 */
     char L144[499]; /* 145..160 */
-    char L160[462]; /* 161..175 */
-    char L175[463]; /* 176..189 */
+    char L160[474]; /* 161..175 */
+    char L175[475]; /* 176..189 */
     char L189[470]; /* 190..201 */
     char L201[502]; /* 202..215 */
     char L215[499]; /* 216..232 */
@@ -2212,11 +2212,11 @@ static const struct {
 "      me_addr == 0 ? nil : rb_method_entry_t.new(me_addr)\n"
 "    end\n"
 "\n"
-"    def rb_shape_get_next(shape, obj, id)\n"
+"    def rb_shape_get_next_no_warnings(shape, obj, id)\n"
 "      _shape = shape.to_i\n"
 ,
 #line 176 "rjit_c.rb"
-"      shape_addr = Primitive.cexpr! 'SIZET2NUM((size_t)rb_shape_get_next((rb_shape_t *)NUM2SIZET(_shape), obj, (ID)NUM2SIZET(id)))'\n"
+"      shape_addr = Primitive.cexpr! 'SIZET2NUM((size_t)rb_shape_get_next_no_warnings((rb_shape_t *)NUM2SIZET(_shape), obj, (ID)NUM2SIZET(id)))'\n"
 "      rb_shape_t.new(shape_addr)\n"
 "    end\n"
 "\n"
