@@ -264,7 +264,7 @@ MAYBE_UNUSED(const VALUE) _shape = rb_vm_lvar(ec, -4);
 MAYBE_UNUSED(const VALUE) id = rb_vm_lvar(ec, -5);
 MAYBE_UNUSED(const VALUE) obj = rb_vm_lvar(ec, -6);
 #line 176 "rjit_c.rb"
-return SIZET2NUM((size_t)rb_shape_get_next((rb_shape_t *)NUM2SIZET(_shape), obj, (ID)NUM2SIZET(id)));
+return SIZET2NUM((size_t)rb_shape_get_next_no_warnings((rb_shape_t *)NUM2SIZET(_shape), obj, (ID)NUM2SIZET(id)));
 #line 269 "rjit_c.rbinc"
 }
 
