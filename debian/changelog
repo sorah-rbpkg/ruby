@@ -1,3 +1,11 @@
+ruby3.3 (3.3.1-5) UNRELEASED; urgency=medium
+
+  * d/t/skiplist: add test files using require '-test-/*'.
+  * d/p/Fix-require-calls-falling-in-autopkgtest.patch: fix the run-all DEP-8
+    test.
+
+ -- Lucas Kanashiro <kanashiro@debian.org>  Tue, 02 Jul 2024 21:55:52 -0300
+
 ruby3.3 (3.3.1-4) unstable; urgency=medium
 
   * d/tests/excludes/autopkgtest/*: skip some tests for now.
