@@ -1,4 +1,4 @@
-ruby3.3 (3.3.1-5) UNRELEASED; urgency=medium
+ruby3.3 (3.3.1-5) unstable; urgency=medium
 
   * d/t/skiplist: add test files using require '-test-/*'.
   * d/p/Fix-require-calls-falling-in-autopkgtest.patch: fix the run-all DEP-8
