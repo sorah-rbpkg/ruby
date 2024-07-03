@@ -1,0 +1,109 @@
+From: Lucas Kanashiro <kanashiro@ubuntu.com>
+Date: Wed, 3 Jul 2024 00:40:33 -0300
+Subject: Fix require calls falling in autopkgtest
+
+---
+ test/did_you_mean/helper.rb          | 28 ++++++++++++++++------------
+ test/rdoc/support/test_case.rb       |  6 +++++-
+ test/rdoc/test_rdoc_markdown.rb      |  9 +++++++--
+ test/rdoc/test_rdoc_markdown_test.rb |  9 +++++++--
+ 4 files changed, 35 insertions(+), 17 deletions(-)
+
+diff --git a/test/did_you_mean/helper.rb b/test/did_you_mean/helper.rb
+index d40d58d..062548a 100644
+--- a/test/did_you_mean/helper.rb
++++ b/test/did_you_mean/helper.rb
+@@ -10,20 +10,24 @@ module DidYouMean
+       end
+     end
+ 
+-    if File.file?(File.expand_path('../lib/did_you_mean.rb', __dir__))
+-      # In this case we're being run from inside the gem, so we just want to
+-      # require the root of the library
+-
+-      @root = File.expand_path('../lib/did_you_mean', __dir__)
+-      require_relative @root
++    if ENV['AUTOPKGTEST_TMP']
++      require 'did_you_mean'
+     else
+-      # In this case we're being run from inside ruby core, and we want to
+-      # include the experimental features in the test suite
++      if File.file?(File.expand_path('../lib/did_you_mean.rb', __dir__))
++        # In this case we're being run from inside the gem, so we just want to
++        # require the root of the library
++
++        @root = File.expand_path('../lib/did_you_mean', __dir__)
++        require_relative @root
++      else
++        # In this case we're being run from inside ruby core, and we want to
++        # include the experimental features in the test suite
+ 
+-      @root = File.expand_path('../../lib/did_you_mean', __dir__)
+-      require_relative @root
+-      # We are excluding experimental features for now.
+-      # require_relative File.join(@root, 'experimental')
++        @root = File.expand_path('../../lib/did_you_mean', __dir__)
++        require_relative @root
++        # We are excluding experimental features for now.
++        # require_relative File.join(@root, 'experimental')
++      end
+     end
+ 
+     def assert_correction(expected, array)
+diff --git a/test/rdoc/support/test_case.rb b/test/rdoc/support/test_case.rb
+index d98dbe0..e8e546f 100644
+--- a/test/rdoc/support/test_case.rb
++++ b/test/rdoc/support/test_case.rb
+@@ -13,7 +13,11 @@ require 'tempfile'
+ require 'tmpdir'
+ require 'stringio'
+ 
+-require_relative '../../../lib/rdoc'
++if ENV['AUTOPKGTEST_TMP']
++  require 'rdoc'
++else
++  require_relative '../../../lib/rdoc'
++end
+ 
+ ##
+ # RDoc::TestCase is an abstract TestCase to provide common setup and teardown
+diff --git a/test/rdoc/test_rdoc_markdown.rb b/test/rdoc/test_rdoc_markdown.rb
+index dd6f312..b16780a 100644
+--- a/test/rdoc/test_rdoc_markdown.rb
++++ b/test/rdoc/test_rdoc_markdown.rb
+@@ -2,8 +2,13 @@
+ # frozen_string_literal: true
+ 
+ require_relative 'helper'
+-require_relative '../../lib/rdoc/markup/block_quote'
+-require_relative '../../lib/rdoc/markdown'
++if ENV['AUTOPKGTEST_TMP']
++  require 'rdoc/markup/block_quote'
++  require 'rdoc/markdown'
++else
++  require_relative '../../lib/rdoc/markup/block_quote'
++  require_relative '../../lib/rdoc/markdown'
++end
+ 
+ class TestRDocMarkdown < RDoc::TestCase
+ 
+diff --git a/test/rdoc/test_rdoc_markdown_test.rb b/test/rdoc/test_rdoc_markdown_test.rb
+index d4f894c..0d6758c 100644
+--- a/test/rdoc/test_rdoc_markdown_test.rb
++++ b/test/rdoc/test_rdoc_markdown_test.rb
+@@ -2,8 +2,13 @@
+ require_relative 'helper'
+ require 'pp'
+ 
+-require_relative '../../lib/rdoc'
+-require_relative '../../lib/rdoc/markdown'
++if ENV['AUTOPKGTEST_TMP']
++  require 'rdoc'
++  require 'rdoc/markdown'
++else
++  require_relative '../../lib/rdoc'
++  require_relative '../../lib/rdoc/markdown'
++end
+ 
+ class TestRDocMarkdownTest < RDoc::TestCase
+ 

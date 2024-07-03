@@ -9,3 +9,4 @@
 0011-don-t-try-to-download-stuff-in-configure.patch
 ruby_default_arch.m4-don-t-require-arhitectures-to-be-kno.patch
 Do-not-pass-m32-to-arm-32-bits.patch
+Fix-require-calls-falling-in-autopkgtest.patch
