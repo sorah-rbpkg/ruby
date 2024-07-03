@@ -20,3 +20,14 @@ test/rubygems/test_gem_security.rb
 test/rubygems/test_gem_security_policy.rb
 test/rubygems/test_gem_security_signer.rb
 test/rubygems/test_gem_security_trust_dir.rb
+test/ruby/test_memory_view.rb
+test/ruby/test_call.rb
+test/ruby/test_dir_m17n.rb
+test/ruby/test_keyword.rb
+test/ruby/test_time_tz.rb
+test/ruby/test_file.rb
+test/ruby/test_file_exhaustive.rb
+test/ruby/test_bignum.rb
+test/ruby/test_io.rb
+test/ruby/test_regexp.rb
+test/rdoc/test_rdoc_rubygems_hook.rb
