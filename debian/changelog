@@ -1,4 +1,4 @@
-ruby3.3 (3.3.1-6) UNRELEASED; urgency=medium
+ruby3.3 (3.3.1-6) unstable; urgency=medium
 
   * d/t/excludes/autopkgtest/TestISeq.rb: skip test_parent_iseq_mark, it is
     timing out in riscv64.
