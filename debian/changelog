@@ -1,3 +1,11 @@
+ruby3.3 (3.3.1-6) UNRELEASED; urgency=medium
+
+  * d/t/excludes/autopkgtest/TestISeq.rb: skip test_parent_iseq_mark, it is
+    timing out in riscv64.
+  * d/libruby3.3.symbols: fix FTBFS in mips64el and armhf.
+
+ -- Lucas Kanashiro <kanashiro@debian.org>  Sat, 06 Jul 2024 00:16:21 -0300
+
 ruby3.3 (3.3.1-5) unstable; urgency=medium
 
   * d/t/skiplist: add test files using require '-test-/*'.
