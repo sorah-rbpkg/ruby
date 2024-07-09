@@ -233,6 +233,7 @@ class TestSyntax < Test::Unit::TestCase
   def test_array_kwsplat_hash
     kw = {}
     h = {a: 1}
+    a = []
     assert_equal([], [**{}])
     assert_equal([], [**kw])
     assert_equal([h], [**h])
@@ -246,6 +247,20 @@ class TestSyntax < Test::Unit::TestCase
     assert_equal([1, {}], [1, {}])
     assert_equal([1, kw], [1, kw])
     assert_equal([1, h], [1, h])
+
+    assert_equal([], [*a, **{}])
+    assert_equal([], [*a, **kw])
+    assert_equal([h], [*a, **h])
+    assert_equal([{}], [*a, {}])
+    assert_equal([kw], [*a, kw])
+    assert_equal([h], [*a, h])
+
+    assert_equal([1], [1, *a, **{}])
+    assert_equal([1], [1, *a, **kw])
+    assert_equal([1, h], [1, *a, **h])
+    assert_equal([1, {}], [1, *a, {}])
+    assert_equal([1, kw], [1, *a, kw])
+    assert_equal([1, h], [1, *a, h])
 
     assert_equal([], [**kw, **kw])
     assert_equal([], [**kw, **{}, **kw])
@@ -1194,6 +1209,20 @@ eom
     assert_syntax_error("a&.x,=0", /multiple assignment destination/)
   end
 
+  def test_safe_call_in_for_variable
+    assert_valid_syntax("for x&.bar in []; end")
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      foo = nil
+      for foo&.bar in [1]; end
+      assert_nil(foo)
+
+      foo = Struct.new(:bar).new
+      for foo&.bar in [1]; end
+      assert_equal(1, foo.bar)
+    end;
+  end
+
   def test_no_warning_logop_literal
     assert_warning("") do
       eval("true||raise;nil")
@@ -1337,6 +1366,10 @@ eom
     assert_valid_syntax 'p :foo, {"a": proc do end, b: proc do end}', bug13073
     assert_valid_syntax 'p :foo, {** proc do end, b: proc do end}', bug13073
     assert_valid_syntax 'p :foo, {proc do end => proc do end, b: proc do end}', bug13073
+  end
+
+  def test_invalid_encoding_symbol
+    assert_syntax_error('{"\xC3": 1}', "invalid symbol")
   end
 
   def test_do_after_local_variable

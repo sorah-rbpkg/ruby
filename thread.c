@@ -146,7 +146,7 @@ static int rb_threadptr_pending_interrupt_empty_p(const rb_thread_t *th);
 static const char *thread_status_name(rb_thread_t *th, int detail);
 static int hrtime_update_expire(rb_hrtime_t *, const rb_hrtime_t);
 NORETURN(static void async_bug_fd(const char *mesg, int errno_arg, int fd));
-static int consume_communication_pipe(int fd);
+MAYBE_UNUSED(static int consume_communication_pipe(int fd));
 
 static volatile int system_working = 1;
 static rb_internal_thread_specific_key_t specific_key_count;
@@ -197,6 +197,10 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
     if (blocking_region_begin(th, &__region, (ubf), (ubfarg), fail_if_interrupted) || \
         /* always return true unless fail_if_interrupted */ \
         !only_if_constant(fail_if_interrupted, TRUE)) { \
+        /* Important that this is inlined into the macro, and not part of \
+         * blocking_region_begin - see bug #20493 */ \
+        RB_VM_SAVE_MACHINE_CONTEXT(th); \
+        thread_sched_to_waiting(TH_SCHED(th), th); \
         exec; \
         blocking_region_end(th, &__region); \
     }; \
@@ -259,6 +263,8 @@ timeout_prepare(rb_hrtime_t **to, rb_hrtime_t *rel, rb_hrtime_t *end,
 }
 
 MAYBE_UNUSED(NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *stack_start)));
+MAYBE_UNUSED(static bool th_has_dedicated_nt(const rb_thread_t *th));
+MAYBE_UNUSED(static int waitfd_to_waiting_flag(int wfd_event));
 
 #include THREAD_IMPL_SRC
 
@@ -598,13 +604,11 @@ thread_do_start_proc(rb_thread_t *th)
     }
 }
 
-static void
+static VALUE
 thread_do_start(rb_thread_t *th)
 {
     native_set_thread_name(th);
     VALUE result = Qundef;
-
-    EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
 
     switch (th->invoke_type) {
       case thread_invoke_type_proc:
@@ -624,11 +628,7 @@ thread_do_start(rb_thread_t *th)
         rb_bug("unreachable");
     }
 
-    rb_fiber_scheduler_set(Qnil);
-
-    th->value = result;
-
-    EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
+    return result;
 }
 
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
@@ -661,12 +661,31 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     // Ensure that we are not joinable.
     VM_ASSERT(UNDEF_P(th->value));
 
+    int fiber_scheduler_closed = 0, event_thread_end_hooked = 0;
+    VALUE result = Qundef;
+
     EC_PUSH_TAG(th->ec);
 
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        SAVE_ROOT_JMPBUF(th, thread_do_start(th));
+        EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
+
+        SAVE_ROOT_JMPBUF(th, result = thread_do_start(th));
     }
-    else {
+
+    if (!fiber_scheduler_closed) {
+        fiber_scheduler_closed = 1;
+        rb_fiber_scheduler_set(Qnil);
+    }
+
+    if (!event_thread_end_hooked) {
+        event_thread_end_hooked = 1;
+        EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
+    }
+
+    if (state == TAG_NONE) {
+        // This must be set AFTER doing all user-level code. At this point, the thread is effectively finished and calls to `Thread#join` will succeed.
+        th->value = result;
+    } else {
         errinfo = th->ec->errinfo;
 
         VALUE exc = rb_vm_make_jump_tag_but_local_jump(state, Qundef);
@@ -1469,9 +1488,6 @@ blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
         rb_ractor_blocking_threads_inc(th->ractor, __FILE__, __LINE__);
 
         RUBY_DEBUG_LOG("thread_id:%p", (void *)th->nt->thread_id);
-
-        RB_VM_SAVE_MACHINE_CONTEXT(th);
-        thread_sched_to_waiting(TH_SCHED(th), th);
         return TRUE;
     }
     else {
@@ -1844,6 +1860,8 @@ rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
     /* leave from Ruby world: You can not access Ruby values, etc. */
     int released = blocking_region_begin(th, brb, prev_unblock.func, prev_unblock.arg, FALSE);
     RUBY_ASSERT_ALWAYS(released);
+    RB_VM_SAVE_MACHINE_CONTEXT(th);
+    thread_sched_to_waiting(TH_SCHED(th), th);
     return r;
 }
 
@@ -4156,7 +4174,7 @@ rb_fd_set(int fd, rb_fdset_t *set)
 #endif
 
 static int
-wait_retryable(int *result, int errnum, rb_hrtime_t *rel, rb_hrtime_t end)
+wait_retryable(volatile int *result, int errnum, rb_hrtime_t *rel, rb_hrtime_t end)
 {
     if (*result < 0) {
         switch (errnum) {
@@ -4210,11 +4228,12 @@ static VALUE
 do_select(VALUE p)
 {
     struct select_set *set = (struct select_set *)p;
-    int result = 0;
+    volatile int result = 0;
     int lerrno;
     rb_hrtime_t *to, rel, end = 0;
 
     timeout_prepare(&to, &rel, &end, set->timeout);
+    volatile rb_hrtime_t endtime = end;
 #define restore_fdset(dst, src) \
     ((dst) ? rb_fd_dup(dst, src) : (void)0)
 #define do_select_update() \
@@ -4238,7 +4257,7 @@ do_select(VALUE p)
         }, ubf_select, set->th, TRUE);
 
         RUBY_VM_CHECK_INTS_BLOCKING(set->th->ec); /* may raise */
-    } while (wait_retryable(&result, lerrno, to, end) && do_select_update());
+    } while (wait_retryable(&result, lerrno, to, endtime) && do_select_update());
 
     if (result < 0) {
         errno = lerrno;
@@ -4307,7 +4326,7 @@ int
 rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 {
     struct pollfd fds[1];
-    int result = 0;
+    volatile int result = 0;
     nfds_t nfds;
     struct waiting_fd wfd;
     int state;
@@ -4327,6 +4346,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
         rb_hrtime_t *to, rel, end = 0;
         RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
         timeout_prepare(&to, &rel, &end, timeout);
+        volatile rb_hrtime_t endtime = end;
         fds[0].fd = fd;
         fds[0].events = (short)events;
         fds[0].revents = 0;
@@ -4344,7 +4364,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
             }, ubf_select, wfd.th, TRUE);
 
             RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
-        } while (wait_retryable(&result, lerrno, to, end));
+        } while (wait_retryable(&result, lerrno, to, endtime));
     }
     EC_POP_TAG();
 
@@ -4683,6 +4703,7 @@ void
 rb_thread_atfork(void)
 {
     rb_thread_t *th = GET_THREAD();
+    rb_threadptr_pending_interrupt_clear(th);
     rb_thread_atfork_internal(th, terminate_atfork_i);
     th->join_list = NULL;
     rb_fiber_atfork(th);

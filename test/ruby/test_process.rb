@@ -2771,14 +2771,37 @@ EOS
       # Disable GC so we can make sure GC only runs in Process.warmup
       GC.disable
 
-      total_pages_before = GC.stat(:heap_eden_pages) + GC.stat(:heap_allocatable_pages)
+      total_pages_before = GC.stat_heap.map { |_, v| v[:heap_eden_pages] + v[:heap_allocatable_pages] }
 
       Process.warmup
 
       # Number of pages freed should cause equal increase in number of allocatable pages.
-      assert_equal(total_pages_before, GC.stat(:heap_eden_pages) + GC.stat(:heap_allocatable_pages))
+      total_pages_before.each_with_index do |val, i|
+        assert_equal(val, GC.stat_heap(i, :heap_eden_pages) + GC.stat_heap(i, :heap_allocatable_pages), "size pool: #{i}")
+      end
       assert_equal(0, GC.stat(:heap_tomb_pages))
       assert_operator(GC.stat(:total_freed_pages), :>, 0)
     end;
   end
+
+  def test_handle_interrupt_with_fork
+    Thread.handle_interrupt(RuntimeError => :never) do
+      Thread.current.raise(RuntimeError, "Queued error")
+
+      assert_predicate Thread, :pending_interrupt?
+
+      pid = Process.fork do
+        if Thread.pending_interrupt?
+          exit 1
+        end
+      end
+
+      _, status = Process.waitpid2(pid)
+      assert_predicate status, :success?
+
+      assert_predicate Thread, :pending_interrupt?
+    end
+  rescue RuntimeError
+    # Ignore.
+  end if defined?(fork)
 end

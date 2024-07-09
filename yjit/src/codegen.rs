@@ -2484,7 +2484,7 @@ fn gen_setinstancevariable(
     // The current shape doesn't contain this iv, we need to transition to another shape.
     let new_shape = if !shape_too_complex && receiver_t_object && ivar_index.is_none() {
         let current_shape = comptime_receiver.shape_of();
-        let next_shape = unsafe { rb_shape_get_next(current_shape, comptime_receiver, ivar_name) };
+        let next_shape = unsafe { rb_shape_get_next_no_warnings(current_shape, comptime_receiver, ivar_name) };
         let next_shape_id = unsafe { rb_shape_id(next_shape) };
 
         // If the VM ran out of shapes, or this class generated too many leaf,
@@ -5413,18 +5413,6 @@ fn gen_send_cfunc(
         return None;
     }
 
-    // In order to handle backwards compatibility between ruby 3 and 2
-    // ruby2_keywords was introduced. It is called only on methods
-    // with splat and changes they way they handle them.
-    // We are just going to not compile these.
-    // https://docs.ruby-lang.org/en/3.2/Module.html#method-i-ruby2_keywords
-    if unsafe {
-        get_iseq_flags_ruby2_keywords(jit.iseq) && flags & VM_CALL_ARGS_SPLAT != 0
-    } {
-        gen_counter_incr(asm, Counter::send_args_splat_cfunc_ruby2_keywords);
-        return None;
-    }
-
     let kw_arg = unsafe { vm_ci_kwarg(ci) };
     let kw_arg_num = if kw_arg.is_null() {
         0
@@ -5751,12 +5739,6 @@ fn get_array_ptr(asm: &mut Assembler, array_reg: Opnd) -> Opnd {
 fn copy_splat_args_for_rest_callee(array: Opnd, num_args: u32, asm: &mut Assembler) {
     asm_comment!(asm, "copy_splat_args_for_rest_callee");
 
-    let array_len_opnd = get_array_len(asm, array);
-
-    asm_comment!(asm, "guard splat array large enough");
-    asm.cmp(array_len_opnd, num_args.into());
-    asm.jl(Target::side_exit(Counter::guard_send_iseq_has_rest_and_splat_too_few));
-
     // Unused operands cause the backend to panic
     if num_args == 0 {
         return;
@@ -5832,20 +5814,20 @@ fn push_splat_args(required_args: u32, asm: &mut Assembler) {
     asm.cmp(array_len_opnd, required_args.into());
     asm.jne(Target::side_exit(Counter::guard_send_splatarray_length_not_equal));
 
-    asm_comment!(asm, "Check last argument is not ruby2keyword hash");
+    // Check last element of array if present
+    if required_args > 0 {
+        asm_comment!(asm, "Check last argument is not ruby2keyword hash");
 
-    // Need to repeat this here to deal with register allocation
-    let array_reg = asm.load(asm.stack_opnd(0));
-
-    let ary_opnd = get_array_ptr(asm, array_reg);
-
-    let last_array_value = asm.load(Opnd::mem(64, ary_opnd, (required_args as i32 - 1) * (SIZEOF_VALUE as i32)));
-
-    guard_object_is_not_ruby2_keyword_hash(
-        asm,
-        last_array_value,
-        Counter::guard_send_splatarray_last_ruby_2_keywords,
-    );
+        // Need to repeat this here to deal with register allocation
+        let array_reg = asm.load(asm.stack_opnd(0));
+        let ary_opnd = get_array_ptr(asm, array_reg);
+        let last_array_value = asm.load(Opnd::mem(64, ary_opnd, (required_args as i32 - 1) * (SIZEOF_VALUE as i32)));
+        guard_object_is_not_ruby2_keyword_hash(
+            asm,
+            last_array_value,
+            Counter::guard_send_splatarray_last_ruby_2_keywords,
+        );
+    }
 
     asm_comment!(asm, "Push arguments from array");
     let array_opnd = asm.stack_pop(1);
@@ -6009,7 +5991,7 @@ fn gen_send_iseq(
     exit_if_tail_call(asm, ci)?;
     exit_if_has_post(asm, iseq)?;
     exit_if_has_kwrest(asm, iseq)?;
-    exit_if_splat_and_ruby2_keywords(asm, jit, flags)?;
+    exit_if_kw_splat(asm, flags)?;
     exit_if_has_rest_and_captured(asm, iseq_has_rest, captured_opnd)?;
     exit_if_has_rest_and_supplying_kws(asm, iseq_has_rest, iseq, supplying_kws)?;
     exit_if_supplying_kw_and_has_no_kw(asm, supplying_kws, iseq)?;
@@ -6139,6 +6121,9 @@ fn gen_send_iseq(
         let array = jit.peek_at_stack(&asm.ctx, if block_arg { 1 } else { 0 }) ;
         let array_length = if array == Qnil {
             0
+        } else if unsafe { !RB_TYPE_P(array, RUBY_T_ARRAY) } {
+            gen_counter_incr(asm, Counter::send_iseq_splat_not_array);
+            return None;
         } else {
             unsafe { rb_yjit_array_len(array) as u32}
         };
@@ -6283,6 +6268,37 @@ fn gen_send_iseq(
     asm.cmp(CFP, stack_limit);
     asm.jbe(Target::side_exit(Counter::guard_send_se_cf_overflow));
 
+    if iseq_has_rest && flags & VM_CALL_ARGS_SPLAT != 0 {
+        let splat_pos = i32::from(block_arg) + kw_arg_num;
+
+        // Insert length guard for a call to copy_splat_args_for_rest_callee()
+        // that will come later. We will have made changes to
+        // the stack by spilling or handling __send__ shifting
+        // by the time we get to that code, so we need the
+        // guard here where we can still side exit.
+        let non_rest_arg_count = argc - 1;
+        if non_rest_arg_count < required_num + opt_num {
+            let take_count: u32 = (required_num - non_rest_arg_count + opts_filled)
+                .try_into().unwrap();
+
+            if take_count > 0 {
+                asm_comment!(asm, "guard splat_array_length >= {take_count}");
+
+                let splat_array = asm.stack_opnd(splat_pos);
+                let array_len_opnd = get_array_len(asm, splat_array);
+                asm.cmp(array_len_opnd, take_count.into());
+                asm.jl(Target::side_exit(Counter::guard_send_iseq_has_rest_and_splat_too_few));
+            }
+        }
+
+        // All splats need to guard for ruby2_keywords hash. Check with a function call when
+        // splatting into a rest param since the index for the last item in the array is dynamic.
+        asm_comment!(asm, "guard no ruby2_keywords hash in splat");
+        let bad_splat = asm.ccall(rb_yjit_ruby2_keywords_splat_p as _, vec![asm.stack_opnd(splat_pos)]);
+        asm.cmp(bad_splat, 0.into());
+        asm.jnz(Target::side_exit(Counter::guard_send_splatarray_last_ruby_2_keywords));
+    }
+
     match block_arg_type {
         Some(Type::Nil) => {
             // We have a nil block arg, so let's pop it off the args
@@ -6393,14 +6409,14 @@ fn gen_send_iseq(
                 // from the array and move them to the stack.
                 asm_comment!(asm, "take items from splat array");
 
-                let diff: u32 = (required_num - non_rest_arg_count + opts_filled)
+                let take_count: u32 = (required_num - non_rest_arg_count + opts_filled)
                     .try_into().unwrap();
 
                 // Copy required arguments to the stack without modifying the array
-                copy_splat_args_for_rest_callee(array, diff, asm);
+                copy_splat_args_for_rest_callee(array, take_count, asm);
 
                 // We will now slice the array to give us a new array of the correct size
-                let sliced = asm.ccall(rb_yjit_rb_ary_subseq_length as *const u8, vec![array, Opnd::UImm(diff as u64)]);
+                let sliced = asm.ccall(rb_yjit_rb_ary_subseq_length as *const u8, vec![array, Opnd::UImm(take_count.into())]);
 
                 sliced
             } else {
@@ -6821,17 +6837,8 @@ fn exit_if_has_kwrest(asm: &mut Assembler, iseq: *const rb_iseq_t) -> Option<()>
 }
 
 #[must_use]
-fn exit_if_splat_and_ruby2_keywords(asm: &mut Assembler, jit: &mut JITState, flags: u32) -> Option<()> {
-    // In order to handle backwards compatibility between ruby 3 and 2
-    // ruby2_keywords was introduced. It is called only on methods
-    // with splat and changes they way they handle them.
-    // We are just going to not compile these.
-    // https://www.rubydoc.info/stdlib/core/Proc:ruby2_keywords
-    exit_if(
-        asm,
-        unsafe { get_iseq_flags_ruby2_keywords(jit.iseq) } && flags & VM_CALL_ARGS_SPLAT != 0,
-        Counter::send_iseq_ruby2_keywords,
-    )
+fn exit_if_kw_splat(asm: &mut Assembler, flags: u32) -> Option<()> {
+    exit_if(asm, flags & VM_CALL_KW_SPLAT != 0, Counter::send_iseq_kw_splat)
 }
 
 #[must_use]

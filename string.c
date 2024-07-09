@@ -1341,6 +1341,42 @@ rb_str_tmp_frozen_acquire(VALUE orig)
     return str_new_frozen_buffer(0, orig, FALSE);
 }
 
+VALUE
+rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
+{
+    if (OBJ_FROZEN_RAW(orig) && !STR_EMBED_P(orig) && !rb_str_reembeddable_p(orig)) return orig;
+    if (STR_SHARED_P(orig) && !STR_EMBED_P(RSTRING(orig)->as.heap.aux.shared)) return rb_str_tmp_frozen_acquire(orig);
+
+    VALUE str = str_alloc_heap(0);
+    OBJ_FREEZE(str);
+    /* Always set the STR_SHARED_ROOT to ensure it does not get re-embedded. */
+    FL_SET(str, STR_SHARED_ROOT);
+
+    size_t capa = str_capacity(orig, TERM_LEN(orig));
+
+    /* If the string is embedded then we want to create a copy that is heap
+     * allocated. If the string is shared then the shared root must be
+     * embedded, so we want to create a copy. If the string is a shared root
+     * then it must be embedded, so we want to create a copy. */
+    if (STR_EMBED_P(orig) || FL_TEST_RAW(orig, STR_SHARED | STR_SHARED_ROOT)) {
+        RSTRING(str)->as.heap.ptr = rb_xmalloc_mul_add_mul(sizeof(char), capa, sizeof(char), TERM_LEN(orig));
+        memcpy(RSTRING(str)->as.heap.ptr, RSTRING_PTR(orig), capa);
+    }
+    else {
+        /* orig must be heap allocated and not shared, so we can safely transfer
+         * the pointer to str. */
+        RSTRING(str)->as.heap.ptr = RSTRING(orig)->as.heap.ptr;
+        RBASIC(str)->flags |= RBASIC(orig)->flags & STR_NOFREE;
+        RBASIC(orig)->flags &= ~STR_NOFREE;
+        STR_SET_SHARED(orig, str);
+    }
+
+    RSTRING(str)->len = RSTRING(orig)->len;
+    RSTRING(str)->as.heap.aux.capa = capa;
+
+    return str;
+}
+
 void
 rb_str_tmp_frozen_release(VALUE orig, VALUE tmp)
 {
@@ -1824,17 +1860,13 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
                 if (orig == str) n = 0;
             }
             str_modifiable(str);
-            if (STR_EMBED_P(str)) { /* make noembed always */
-                char *new_ptr = ALLOC_N(char, (size_t)capa + termlen);
-                assert(RSTRING_LEN(str) + 1 <= str_embed_capa(str));
-                memcpy(new_ptr, RSTRING(str)->as.embed.ary, RSTRING_LEN(str) + 1);
-                RSTRING(str)->as.heap.ptr = new_ptr;
-            }
-            else if (FL_TEST(str, STR_SHARED|STR_NOFREE)) {
+            if (STR_EMBED_P(str) || FL_TEST(str, STR_SHARED|STR_NOFREE)) {
+                /* make noembed always */
                 const size_t size = (size_t)capa + termlen;
                 const char *const old_ptr = RSTRING_PTR(str);
                 const size_t osize = RSTRING_LEN(str) + TERM_LEN(str);
-                char *new_ptr = ALLOC_N(char, (size_t)capa + termlen);
+                char *new_ptr = ALLOC_N(char, size);
+                if (STR_EMBED_P(str)) RUBY_ASSERT(osize <= str_embed_capa(str));
                 memcpy(new_ptr, old_ptr, osize < size ? osize : size);
                 FL_UNSET_RAW(str, STR_SHARED|STR_NOFREE);
                 RSTRING(str)->as.heap.ptr = new_ptr;
@@ -1938,12 +1970,7 @@ rb_str_s_new(int argc, VALUE *argv, VALUE klass)
         }
     }
 
-    long fake_len = capa - termlen;
-    if (fake_len < 0) {
-        fake_len = 0;
-    }
-
-    VALUE str = str_new0(klass, NULL, fake_len, termlen);
+    VALUE str = str_new0(klass, NULL, capa, termlen);
     STR_SET_LEN(str, 0);
     TERM_FILL(RSTRING_PTR(str), termlen);
 
@@ -12060,7 +12087,7 @@ rb_interned_str_cstr(const char *ptr)
 VALUE
 rb_enc_interned_str(const char *ptr, long len, rb_encoding *enc)
 {
-    if (UNLIKELY(rb_enc_autoload_p(enc))) {
+    if (enc != NULL && UNLIKELY(rb_enc_autoload_p(enc))) {
         rb_enc_autoload(enc);
     }
 

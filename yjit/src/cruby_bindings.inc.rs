@@ -981,7 +981,11 @@ extern "C" {
     pub fn rb_shape_get_shape_id(obj: VALUE) -> shape_id_t;
     pub fn rb_shape_get_iv_index(shape: *mut rb_shape_t, id: ID, value: *mut attr_index_t) -> bool;
     pub fn rb_shape_obj_too_complex(obj: VALUE) -> bool;
-    pub fn rb_shape_get_next(shape: *mut rb_shape_t, obj: VALUE, id: ID) -> *mut rb_shape_t;
+    pub fn rb_shape_get_next_no_warnings(
+        shape: *mut rb_shape_t,
+        obj: VALUE,
+        id: ID,
+    ) -> *mut rb_shape_t;
     pub fn rb_shape_id(shape: *mut rb_shape_t) -> shape_id_t;
     pub fn rb_gvar_get(arg1: ID) -> VALUE;
     pub fn rb_gvar_set(arg1: ID, arg2: VALUE) -> VALUE;
@@ -1123,7 +1127,7 @@ extern "C" {
     pub fn rb_yjit_rb_ary_subseq_length(ary: VALUE, beg: ::std::os::raw::c_long) -> VALUE;
     pub fn rb_yjit_fix_div_fix(recv: VALUE, obj: VALUE) -> VALUE;
     pub fn rb_yjit_fix_mod_fix(recv: VALUE, obj: VALUE) -> VALUE;
-    pub fn rb_yjit_fix_mul_fix(recv: VALUE, obj: VALUE) -> VALUE;
+    pub fn rb_yjit_ruby2_keywords_splat_p(obj: VALUE) -> usize;
     pub fn rb_yjit_dump_iseq_loc(iseq: *const rb_iseq_t, insn_idx: u32);
     pub fn rb_FL_TEST(obj: VALUE, flags: VALUE) -> VALUE;
     pub fn rb_FL_TEST_RAW(obj: VALUE, flags: VALUE) -> VALUE;
