@@ -1,8 +1,10 @@
 ruby3.3 (3.3.4-1) UNRELEASED; urgency=medium
 
   * New upstream release.
+  * d/copyright: update Files-Excluded.
+  * d/libruby3.3.symbols: update for new version.
 
- -- Lucas Kanashiro <kanashiro@debian.org>  Mon, 08 Jul 2024 22:25:32 -0300
+ -- Lucas Kanashiro <kanashiro@debian.org>  Mon, 08 Jul 2024 23:15:51 -0300
 
 ruby3.3 (3.3.1-6) unstable; urgency=medium
 
