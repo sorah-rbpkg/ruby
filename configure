@@ -13884,6 +13884,13 @@ then :
 
 fi
 
+ac_fn_c_check_header_compile "$LINENO" "stdatomic.h" "ac_cv_header_stdatomic_h" "$ac_includes_default"
+if test "x$ac_cv_header_stdatomic_h" = xyes
+then :
+  printf "%s\n" "#define HAVE_STDATOMIC_H 1" >>confdefs.h
+
+fi
+
 
 case "$target_cpu" in #(
   x64|x86_64|i3-686*) :
@@ -26294,6 +26301,16 @@ then :
   printf "%s\n" "#define HAVE_ATAN2F 1" >>confdefs.h
 
 fi
+
+ac_fn_check_decl "$LINENO" "atomic_signal_fence" "ac_cv_have_decl_atomic_signal_fence" "#include <stdatomic.h>
+" "$ac_c_undeclared_builtin_options" "CFLAGS"
+if test "x$ac_cv_have_decl_atomic_signal_fence" = xyes
+then :
+  ac_have_decl=1
+else $as_nop
+  ac_have_decl=0
+fi
+printf "%s\n" "#define HAVE_DECL_ATOMIC_SIGNAL_FENCE $ac_have_decl" >>confdefs.h
 
 ac_fn_c_check_func "$LINENO" "chmod" "ac_cv_func_chmod"
 if test "x$ac_cv_func_chmod" = xyes

@@ -1,5 +1,298 @@
 -*- coding: utf-8 -*-
 
+commit be1089c8ec5ba40e09b1553e36b3174bf4014d9d
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-07-09 08:28:22 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-07-09 08:28:22 +0900
+
+    v3.3.4
+
+commit 17e21d815583ef7d6be03f29e90a219602497626
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-07-09 08:08:42 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-07-09 08:08:42 +0900
+
+    merge revision(s) fc33559c: [Backport #20570]
+
+            clear `kw_flag` if given hash is nil
+
+            https://bugs.ruby-lang.org/issues/20570 is caused I missed to
+            clear the `kw_flag` even if `keyword_hash` is nil.
+
+commit df8a08fb6a1f173a9c25db15fbe390096f39c2ff
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-07-09 08:04:30 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-07-09 08:04:30 +0900
+
+    merge revision(s) 75aaeb35b82da26359b9418d2963384d0c55839c: [Backport #20239]
+
+            [Bug #20239] Fix overflow at down-casting
+
+commit 9d583dd43a24354e8ae58c089cf091c1243e6e60
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-07-09 07:58:13 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-07-09 07:58:13 +0900
+
+    merge revision(s) fba8aff7, d8c6e91748871ab2287d7703347847fe18a292d2: [Backport #20592]
+
+            [Bug #20592] Fix segfault when sending NULL to freeaddrinfo
+
+            On alpine freeaddrinfo does not accept NULL pointer
+
+            Fix dangling `else`
+
+commit 8a2e41d34b135046957e1195a5d4f4967a82a965
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-07-09 07:55:17 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-07-09 07:55:17 +0900
+
+    merge revision(s) 2dd46bb82ffc4dff01d7ea70922f0e407acafb4e: [Backport #20468]
+
+            [Bug #20468] Fix safe navigation in `for` variable
+
+commit a40645e115e6cd6328bb302dfc78b16f6ad45938
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-07-09 07:42:06 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-07-09 07:42:06 +0900
+
+    merge revision(s) 01b13886: [Backport #20562]
+
+            [Bug #20562] Categorize `RUBY_FREE_AT_EXIT` warning as experimental
+
+commit 9a8454ea5ca2bb4d6540d5c43b8e91e199ed1a8a
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-07-09 07:40:26 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-07-09 07:40:28 +0900
+
+    Fix malformed JSON in macOS CI
+
+commit f811f79b3aa5d1fba3a9a631a802aa1d41fa5dc4
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-07-06 00:13:11 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-07-06 00:13:11 +0900
+
+    Refine macOS CI (#11107)
+
+    Update macos runners with latest environments.
+
+    * Use macos-14 instead of macos-arm-oss
+    * Removed macos-11 and added macos-13
+
+commit b2be36ef3349ebdab5423ea3337c03bcc3319b60
+  Author:     Ivo Anjo <ivo.anjo@datadoghq.com>
+  AuthorDate: 2024-07-04 01:56:00 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-07-04 01:56:00 +0900
+
+    [Backport #11036] Add explicit compiler fence when pushing frames to ensure safe profiling (#11090)
+
+    **What does this PR do?**
+
+    This PR tweaks the `vm_push_frame` function to add an explicit compiler
+    fence (`atomic_signal_fence`) to ensure profilers that use signals
+    to interrupt applications (stackprof, vernier, pf2, Datadog profiler)
+    can safely sample from the signal handler.
+
+    This is a backport of #11036 to Ruby 3.3 .
+
+    **Motivation:**
+
+    The `vm_push_frame` was specifically tweaked in
+    https://github.com/ruby/ruby/pull/3296 to initialize the a frame
+    before updating the `cfp` pointer.
+
+    But since there's nothing stopping the compiler from reordering
+    the initialization of a frame (`*cfp =`) with the update of the cfp
+    pointer (`ec->cfp = cfp`) we've been hesitant to rely on this on
+    the Datadog profiler.
+
+    In practice, after some experimentation + talking to folks, this
+    reordering does not seem to happen.
+
+    But since modern compilers have a way for us to exactly tell them
+    not to do the reordering (`atomic_signal_fence`), this seems even
+    better.
+
+    I've actually extracted `vm_push_frame` into the "Compiler Explorer"
+    website, which you can use to see the assembly output of this function
+    across many compilers and architectures: https://godbolt.org/z/3oxd1446K
+
+    On that link you can observe two things across many compilers:
+    1. The compilers are not reordering the writes
+    2. The barrier does not change the generated assembly output
+       (== has no cost in practice)
+
+    **Additional Notes:**
+
+    The checks added in `configure.ac` define two new macros:
+    * `HAVE_STDATOMIC_H`
+    * `HAVE_DECL_ATOMIC_SIGNAL_FENCE`
+
+    Since Ruby generates an arch-specific `config.h` header with
+    these macros upon installation, this can be used by profilers
+    and other libraries to test if Ruby was compiled with the fence enabled.
+
+    **How to test the change?**
+
+    As I mentioned above, you can check https://godbolt.org/z/3oxd1446K
+    to confirm the compiled output of `vm_push_frame` does not change
+    in most compilers (at least all that I've checked on that site).
+
+commit 291cc913503475a204c93a53a2f470c8cc6bfca2
+  Author:     Peter Zhu <peter@peterzhu.ca>
+  AuthorDate: 2024-06-29 05:04:49 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-06-29 05:04:49 +0900
+
+    [Bug #20598] Fix corruption of internal encoding string (#11069)
+
+    Fix corruption of internal encoding string
+
+    [Bug #20598]
+
+    Just like [Bug #20595], Encoding#name_list and Encoding#aliases can have
+    their strings corrupted when Encoding.default_internal is set to nil.
+
+    Co-authored-by: Matthew Valentine-House <matt@eightbitraptor.com>
+
+commit 7a780a3ef766e0622ade4a5fbf2518f73c38282b
+  Author:     Peter Zhu <peter@peterzhu.ca>
+  AuthorDate: 2024-06-27 23:46:53 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-06-27 23:46:53 +0900
+
+    [Bug #20595] Fix corruption of encoding name string (#11063)
+
+    Fix corruption of encoding name string
+
+    [Bug #20595]
+
+    enc_set_default_encoding will free the C string if the encoding is nil,
+    but the C string can be used by the encoding name string. This will cause
+    the encoding name string to be corrupted.
+
+    Consider the following code:
+
+        Encoding.default_internal = Encoding::ASCII_8BIT
+        names = Encoding.default_internal.names
+        p names
+        Encoding.default_internal = nil
+        p names
+
+    It outputs:
+
+        ["ASCII-8BIT", "BINARY", "internal"]
+        ["ASCII-8BIT", "BINARY", "\x00\x00\x00\x00\x00\x00\x00\x00"]
+
+    Co-authored-by: Matthew Valentine-House <matt@eightbitraptor.com>
+
+commit 01762837b7f98934e402c6888e15de32a673b0fd
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-06-21 02:57:19 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-06-21 02:57:19 +0900
+
+    [Bug #20581][3.3] Fix unintentional truncation for dependencies of bundled gems (#11006)
+
+    * Try to load original gemspec from `.bundle/gems/foo-x.y.z/foo.gemspec`.
+
+    `.bundle/specification/foo-x.y.z.gemspec` may be changed our toolchain
+
+    * Try to find gemspec from `.bundle/specifications
+
+    * Adjust indent
+
+commit 3160434c506fe2c7c9c69965dceb6e8fd7357c28
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-06-21 02:41:13 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-06-21 02:41:13 +0900
+
+    Add k0kubun to ruby_3_3 CODEOWNERS
+
+commit d1ffd5ecfa62a049b7c508f30b6912a890de1b32
+  Author:     Jean byroot Boussier <jean.boussier+github@shopify.com>
+  AuthorDate: 2024-06-21 02:39:20 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-06-21 02:39:20 +0900
+
+    String.new(capacity:) don't substract termlen (#11027)
+
+    [Bug #20585]
+
+    This was changed in 36a06efdd9f0604093dccbaf96d4e2cb17874dc8 because
+    `String.new(1024)` would end up allocating `1025` bytes, but the problem
+    with this change is that the caller may be trying to right size a String.
+
+    So instead, we should just better document the behavior of `capacity:`.
+
+    Co-authored-by: Jean Boussier <jean.boussier@gmail.com>
+
+commit a3eb5e5c70eaee12964cdd807b8f19950003141f
+  Author:     Aaron Patterson <tenderlove@ruby-lang.org>
+  AuthorDate: 2024-06-14 02:02:32 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-06-14 02:02:32 +0900
+
+    Don't call `Warning.warn` unless the category is enabled (#10981)
+
+    Don't call `Warning.warn` unless the category is enabled
+
+    The warning category should be enabled if we want to call
+    `Warning.warn`.
+
+    This commit speeds up the following benchmark:
+
+    ```ruby
+    eval "def test; " +
+      1000.times.map { "'  '.chomp!" }.join(";") + "; end"
+
+    def run_benchmark count
+      i = 0
+      while i < count
+        start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        yield
+        ms = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
+        puts "itr ##{i}: #{(ms * 1000).to_i}ms"
+        i += 1
+      end
+    end
+
+    run_benchmark(25) do
+      250.times do
+        test
+      end
+    end
+    ```
+
+    On `master` this runs at about 92ms per iteration. With this patch, it
+    is 7ms per iteration.
+
+    [Bug #20573]
+
+commit aa957546fa553abadd888ba18675c099df1178e0
+  Author:     Alan Wu <XrXr@users.noreply.github.com>
+  AuthorDate: 2024-06-14 02:02:02 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-06-14 02:02:02 +0900
+
+    Bump shlex from 1.1.0 to 1.3.0 in /yjit/bindgen (#10985)
+
+    `yjit-bindgen` isn't run to build Ruby releases at all, but people might
+    be running security scanners on the source tarball. Upgrade this
+    dependency to calm the scanners.
+
+    Backport of <https://github.com/ruby/ruby/pull/9652>.
+    See: <https://github.com/ruby/ruby/pull/10980>
+
 commit f1c7b6f435f1167a0514b39a5f72f55cec4d1426
   Author:     Takashi Kokubun <takashikkbn@gmail.com>
   AuthorDate: 2024-06-12 08:54:24 +0900
