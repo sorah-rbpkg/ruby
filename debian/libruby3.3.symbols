@@ -242,7 +242,6 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_ast_new@Base 3.3.0~preview1
  rb_ast_new_local_table@Base 3.3.1
  rb_ast_newnode@Base 3.3.0~preview1
- rb_ast_node_type_change@Base 3.3.2
  rb_ast_resize_latest_local_table@Base 3.3.1
  rb_ast_set_tokens@Base 3.3.1
  rb_ast_tokens@Base 3.3.1
@@ -615,8 +614,6 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_encdb_dummy@Base 3.3.0~preview1
  rb_encdb_replicate@Base 3.3.0~preview1
  rb_ensure@Base 3.3.0~preview1
- rb_ensure_generic_iv_list_size@Base 3.3.2
- rb_ensure_iv_list_size@Base 3.3.2
  rb_enum_values_pack@Base 3.3.0~preview1
  rb_enumeratorize@Base 3.3.0~preview1
  rb_enumeratorize_with_size@Base 3.3.0~preview1
@@ -802,7 +799,6 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_gcd@Base 3.3.0~preview1
  rb_gcd_gmp@Base 3.3.0~preview1
  rb_gcd_normal@Base 3.3.0~preview1
- rb_gen_ivtbl_get@Base 3.3.2
  rb_generic_ivar_memsize@Base 3.3.0~preview1
  rb_genrand_int32@Base 3.3.0~preview1
  rb_genrand_real@Base 3.3.0~preview1
@@ -810,7 +806,6 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_get_alloc_func@Base 3.3.0~preview1
  rb_get_argv@Base 3.3.0~preview1
  rb_get_coverages@Base 3.3.0~preview1
- rb_get_freeze_opt@Base 3.3.2
  rb_get_kwargs@Base 3.3.0~preview1
  rb_get_path@Base 3.3.0~preview1
  rb_get_path_no_checksafe@Base 3.3.0~preview1
@@ -819,7 +814,6 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_glob@Base 3.3.0~preview1
  rb_global_variable@Base 3.3.0~preview1
  rb_grantpt@Base 3.3.0~preview1
- rb_grow_iv_list@Base 3.3.2
  rb_gv_get@Base 3.3.0~preview1
  rb_gv_set@Base 3.3.0~preview1
  rb_gvar_readonly_setter@Base 3.3.0~preview1
@@ -868,7 +862,6 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_include_module@Base 3.3.0~preview1
  rb_init_ractor_selector@Base 3.3.1
  rb_inspect@Base 3.3.0~preview1
- (arch-bits=64)rb_int128t2big@Base 3.3.2
  rb_int2big@Base 3.3.0~preview1
  rb_int2inum@Base 3.3.0~preview1
  rb_int_pair_to_real@Base 3.3.0~preview1
@@ -1015,7 +1008,6 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_ivar_defined@Base 3.3.0~preview1
  rb_ivar_foreach@Base 3.3.0~preview1
  rb_ivar_get@Base 3.3.0~preview1
- rb_ivar_lookup@Base 3.3.2
  rb_ivar_set@Base 3.3.0~preview1
  rb_jump_tag@Base 3.3.0~preview1
  rb_keyword_given_p@Base 3.3.0~preview1
@@ -1087,11 +1079,6 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_method_call_with_block@Base 3.3.0~preview1
  rb_method_call_with_block_kw@Base 3.3.0~preview1
  rb_method_iseq@Base 3.3.0~preview1
- rb_mjit_bop_redefined@Base 3.3.2
- rb_mjit_cme_invalidate@Base 3.3.2
- rb_mjit_constant_ic_update@Base 3.3.2
- rb_mjit_constant_state_changed@Base 3.3.2
- rb_mjit_tracing_invalidate_all@Base 3.3.2
  rb_mod_ancestors@Base 3.3.0~preview1
  rb_mod_class_variables@Base 3.3.0~preview1
  rb_mod_const_at@Base 3.3.0~preview1
@@ -1110,7 +1097,6 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_mod_sys_fail_str@Base 3.3.0~preview1
  rb_mod_syserr_fail@Base 3.3.0~preview1
  rb_mod_syserr_fail_str@Base 3.3.0~preview1
- rb_mod_to_s@Base 3.3.2
  rb_module_new@Base 3.3.0~preview1
  rb_must_asciicompat@Base 3.3.0~preview1
  rb_mutex_lock@Base 3.3.0~preview1
@@ -1142,7 +1128,6 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_need_block@Base 3.3.0~preview1
  rb_newobj@Base 3.3.0~preview1
  rb_newobj_of@Base 3.3.0~preview1
- rb_nil_to_s@Base 3.3.2
  rb_node_init@Base 3.3.0~preview1
  rb_node_set_type@Base 3.3.1
  rb_nogvl@Base 3.3.0~preview1
@@ -1186,7 +1171,6 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_obj_is_kind_of@Base 3.3.0~preview1
  rb_obj_is_method@Base 3.3.0~preview1
  rb_obj_is_proc@Base 3.3.0~preview1
- rb_obj_ivar_set@Base 3.3.2
  rb_obj_memsize_of@Base 3.3.0~preview1
  rb_obj_method@Base 3.3.0~preview1
  rb_obj_method_arity@Base 3.3.0~preview1
@@ -1351,7 +1335,6 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_reg_adjust_startpos@Base 3.3.0~preview1
  rb_reg_alloc@Base 3.3.0~preview1
  rb_reg_backref_number@Base 3.3.0~preview1
- rb_reg_check_timeout@Base 3.3.2
  rb_reg_fragment_setenc@Base 3.3.0~preview1
  rb_reg_init_str@Base 3.3.0~preview1
  rb_reg_last_match@Base 3.3.0~preview1
@@ -1545,6 +1528,7 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_str_succ@Base 3.3.0~preview1
  rb_str_times@Base 3.3.0~preview1
  rb_str_tmp_frozen_acquire@Base 3.3.0~preview1
+ rb_str_tmp_frozen_no_embed_acquire@Base 3.3.4
  rb_str_tmp_frozen_release@Base 3.3.0~preview1
  rb_str_tmp_new@Base 3.3.0~preview1
  rb_str_to_dbl@Base 3.3.0~preview1
@@ -1553,7 +1537,6 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_str_to_str@Base 3.3.0~preview1
  rb_str_unlocktmp@Base 3.3.0~preview1
  rb_str_update@Base 3.3.0~preview1
- rb_str_update_shared_ary@Base 3.3.2
  rb_str_upto_each@Base 3.3.0~preview1
  rb_str_upto_endless_each@Base 3.3.0~preview1
  rb_str_vcatf@Base 3.3.0~preview1
@@ -1661,7 +1644,6 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_tracepoint_enable@Base 3.3.0~preview1
  rb_tracepoint_enabled_p@Base 3.3.0~preview1
  rb_tracepoint_new@Base 3.3.0~preview1
- rb_true_to_s@Base 3.3.2
  rb_typeddata_inherited_p@Base 3.3.0~preview1
  rb_typeddata_is_kind_of@Base 3.3.0~preview1
  rb_uint2big@Base 3.3.0~preview1
@@ -1782,11 +1764,7 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  ruby_unsetenv@Base 3.3.0~preview1
  ruby_version@Base 3.3.0~preview1
  ruby_vm_at_exit@Base 3.3.0~preview1
- ruby_vm_constant_cache_invalidations@Base 3.3.2
- ruby_vm_constant_cache_misses@Base 3.3.2
  ruby_vm_destruct@Base 3.3.0~preview1
- ruby_vm_global_cvar_state@Base 3.3.2
- ruby_vm_redefined_flag@Base 3.3.2
  ruby_vsnprintf@Base 3.3.0~preview1
  ruby_xcalloc@Base 3.3.0~preview1
  ruby_xfree@Base 3.3.0~preview1
