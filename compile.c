@@ -4826,7 +4826,12 @@ compile_array_1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node)
     }
     else {
         CHECK(COMPILE_(ret, "array element", node, FALSE));
-        ADD_INSN1(ret, node, newarray, INT2FIX(1));
+        if (keyword_node_p(node)) {
+            ADD_INSN1(ret, node, newarraykwsplat, INT2FIX(1));
+        }
+        else {
+            ADD_INSN1(ret, node, newarray, INT2FIX(1));
+        }
     }
 
     return 1;
@@ -5277,12 +5282,17 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const 
 
         CHECK(COMPILE_POPPED(pre, "masgn lhs (NODE_ATTRASGN)", node));
 
+        bool safenav_call = false;
         LINK_ELEMENT *insn_element = LAST_ELEMENT(pre);
         iobj = (INSN *)get_prev_insn((INSN *)insn_element); /* send insn */
         ASSUME(iobj);
-        ELEM_REMOVE(LAST_ELEMENT(pre));
-        ELEM_REMOVE((LINK_ELEMENT *)iobj);
-        pre->last = iobj->link.prev;
+        ELEM_REMOVE(insn_element);
+        if (!IS_INSN_ID(iobj, send)) {
+            safenav_call = true;
+            iobj = (INSN *)get_prev_insn(iobj);
+            ELEM_INSERT_NEXT(&iobj->link, insn_element);
+        }
+        (pre->last = iobj->link.prev)->next = 0;
 
         const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT(iobj, 0);
         int argc = vm_ci_argc(ci) + 1;
@@ -5301,7 +5311,9 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const 
             return COMPILE_NG;
         }
 
-        ADD_ELEM(lhs, (LINK_ELEMENT *)iobj);
+        iobj->link.prev = lhs->last;
+        lhs->last->next = &iobj->link;
+        for (lhs->last = &iobj->link; lhs->last->next; lhs->last = lhs->last->next);
         if (vm_ci_flag(ci) & VM_CALL_ARGS_SPLAT) {
             int argc = vm_ci_argc(ci);
             ci = ci_argc_set(iseq, ci, argc - 1);
@@ -5310,9 +5322,11 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const 
             INSERT_BEFORE_INSN1(iobj, line_node, newarray, INT2FIX(1));
             INSERT_BEFORE_INSN(iobj, line_node, concatarray);
         }
-        ADD_INSN(lhs, line_node, pop);
-        if (argc != 1) {
+        if (!safenav_call) {
             ADD_INSN(lhs, line_node, pop);
+            if (argc != 1) {
+                ADD_INSN(lhs, line_node, pop);
+            }
         }
         for (int i=0; i < argc; i++) {
             ADD_INSN(post, line_node, pop);
@@ -7097,6 +7111,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
       case NODE_COLON2:
       case NODE_COLON3:
       case NODE_BEGIN:
+      case NODE_BLOCK:
         CHECK(COMPILE(ret, "case in literal", node)); // (1)
         if (in_single_pattern) {
             ADD_INSN1(ret, line_node, dupn, INT2FIX(2));
@@ -10087,7 +10102,12 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       case NODE_LIT:{
         debugp_param("lit", RNODE_LIT(node)->nd_lit);
         if (!popped) {
-            ADD_INSN1(ret, node, putobject, RNODE_LIT(node)->nd_lit);
+            if (UNLIKELY(RNODE_LIT(node)->nd_lit == rb_mRubyVMFrozenCore)) {
+                ADD_INSN1(ret, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE)); // [Bug #20569]
+            }
+            else {
+                ADD_INSN1(ret, node, putobject, RNODE_LIT(node)->nd_lit);
+            }
             RB_OBJ_WRITTEN(iseq, Qundef, RNODE_LIT(node)->nd_lit);
         }
         break;

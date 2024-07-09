@@ -1703,6 +1703,7 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_slice_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress { assert_equal([1, 2, 3, 4, 5], (0..10).to_a[1, 5]) }
     EnvUtil.under_gc_compact_stress do
       a = [0, 1, 2, 3, 4, 5]
@@ -3553,6 +3554,15 @@ class TestArray < Test::Unit::TestCase
     lit << "**{}]"
 
     assert_equal(10000, eval(lit).size)
+  end
+
+  def test_array_safely_modified_by_sort_block
+    var_0 = (1..70).to_a
+    var_0.sort! do |var_0_block_129, var_1_block_129|
+      var_0.pop
+      var_1_block_129 <=> var_0_block_129
+    end.shift(3)
+    assert_equal((1..67).to_a.reverse, var_0)
   end
 
   private
