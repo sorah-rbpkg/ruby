@@ -1,3 +1,9 @@
+ruby3.3 (3.3.4-2) UNRELEASED; urgency=medium
+
+  * d/libruby3.3.symbols: fix FTBFS in armel and loong64 (Closes: #1074300).
+
+ -- Lucas Kanashiro <kanashiro@debian.org>  Tue, 09 Jul 2024 21:52:32 -0300
+
 ruby3.3 (3.3.4-1) unstable; urgency=medium
 
   * New upstream release.
