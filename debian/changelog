@@ -1,4 +1,4 @@
-ruby3.3 (3.3.4-2) UNRELEASED; urgency=medium
+ruby3.3 (3.3.4-2) unstable; urgency=medium
 
   * d/libruby3.3.symbols: fix FTBFS in armel and loong64 (Closes: #1074300).
 
