@@ -1,0 +1,211 @@
+Origin: https://github.com/ruby/ruby/commit/b7aceaaacf84a3a32b9c5a7963f3aa98590f348f
+Origin: https://github.com/ruby/ruby/commit/8602707d1a9c7601f53f86c9de9e7f8d954f7e6a
+Origin: https://github.com/ruby/ruby/commit/e71ca6cdcf108e6a2fa47ec9fadefe7554717908
+Origin: https://github.com/ruby/ruby/commit/a0e6607a8172f9eaf9a15f03065736deb2035771
+Origin: https://github.com/ruby/ruby/commit/36cadad6434bc31bc2d60697698cd5b930c097ce
+Reviewed-by: Sylvain Beucler <beuc@debian.org>
+Last-Update: 2024-07-16
+
+From b7aceaaacf84a3a32b9c5a7963f3aa98590f348f Mon Sep 17 00:00:00 2001
+From: nagachika <nagachika@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
+Date: Fri, 22 Apr 2016 14:38:18 +0000
+Subject: [PATCH] merge revision(s) 54706:
+
+	* test/ruby/test_time_tz.rb: Tests depends on Europe/Moscow removed
+	  to avoid test failures due to the tzdata change.
+	  https://github.com/eggert/tz/commit/8ee11a301cf173afb0c76e0315b9f9ec8ebb9d95
+	  Found by naruse.
+
+
+git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/branches/ruby_2_3@54707 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+---
+ ChangeLog                 |  7 +++++++
+ test/ruby/test_time_tz.rb | 13 -------------
+ version.h                 |  6 +++---
+ 3 files changed, 10 insertions(+), 16 deletions(-)
+
+From 8602707d1a9c7601f53f86c9de9e7f8d954f7e6a Mon Sep 17 00:00:00 2001
+From: usa <usa@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
+Date: Sun, 18 Mar 2018 13:56:55 +0000
+Subject: [PATCH] merge revision(s) 62506,62508: [Backport #14438]
+
+	test_time_tz.rb: past Japanese DST tzdata fix
+
+	* test/ruby/test_time_tz.rb (TestTimeTZ#test_asia_tokyo): follow
+	  the tzdata 2018 fix of Japanese DST transitions (1948-1951).
+	  [ruby-core:85373] [Bug #14438]
+
+	test_time_tz.rb: past Japanese DST tzdata fix
+
+	* test/ruby/test_time_tz.rb (TestTimeTZ#test_asia_tokyo): fix
+	  the expected data at the end of DST.  [Bug #14438]
+
+git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/branches/ruby_2_3@62808 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+---
+ test/ruby/test_time_tz.rb | 19 +++++++++++++++++--
+ version.h                 |  8 ++++----
+ 2 files changed, 21 insertions(+), 6 deletions(-)
+
+From e71ca6cdcf108e6a2fa47ec9fadefe7554717908 Mon Sep 17 00:00:00 2001
+From: nobu <nobu@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
+Date: Fri, 26 Oct 2018 01:47:09 +0000
+Subject: [PATCH] Update for tzdata-2018f
+
+git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/trunk@65365 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+---
+ test/ruby/test_time_tz.rb | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+From a0e6607a8172f9eaf9a15f03065736deb2035771 Mon Sep 17 00:00:00 2001
+From: nobu <nobu@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
+Date: Sun, 1 Apr 2018 13:16:14 +0000
+Subject: [PATCH] test_time_tz.rb: Lisbon tzdata fix
+
+* test/ruby/test_time_tz.rb (gen_variational_zdump_test): Update
+  Lisbon zdump data, which fixed the 1912-01-01 transition for
+  Portugual and its colonies.  [Bug #14655]
+
+git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/trunk@63056 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+---
+ test/ruby/test_time_tz.rb | 1 +
+ 1 file changed, 1 insertion(+)
+
+From 36cadad6434bc31bc2d60697698cd5b930c097ce Mon Sep 17 00:00:00 2001
+From: NAKAMURA Usaku <usa@ruby-lang.org>
+Date: Thu, 8 Dec 2022 12:33:58 +0900
+Subject: [PATCH] merge revision(s) 58cc3c9f: [Backport #19187]
+
+	[Bug #19187] Fix for tzdata-2022g
+
+	---
+	 test/ruby/test_time_tz.rb | 21 +++++++++++++++------
+	 1 file changed, 15 insertions(+), 6 deletions(-)
+---
+ test/ruby/test_time_tz.rb | 21 +++++++++++++++------
+ version.h                 |  2 +-
+ 2 files changed, 16 insertions(+), 7 deletions(-)
+
+Index: ruby/test/ruby/test_time_tz.rb
+===================================================================
+--- ruby.orig/test/ruby/test_time_tz.rb
++++ ruby/test/ruby/test_time_tz.rb
+@@ -5,9 +5,9 @@ class TestTimeTZ < Test::Unit::TestCase
+   has_lisbon_tz = true
+   force_tz_test = ENV["RUBY_FORCE_TIME_TZ_TEST"] == "yes"
+   case RUBY_PLATFORM
+-  when /linux/
++  when /darwin|linux/
+     force_tz_test = true
+-  when /darwin|freebsd/
++  when /freebsd|openbsd/
+     has_lisbon_tz = false
+     force_tz_test = true
+   end
+@@ -83,6 +83,16 @@ class TestTimeTZ < Test::Unit::TestCase
+ 
+   has_right_tz &&= have_tz_offset?("right/America/Los_Angeles")
+   has_lisbon_tz &&= have_tz_offset?("Europe/Lisbon")
++  CORRECT_TOKYO_DST_1951 = with_tz("Asia/Tokyo") {
++    if Time.local(1951, 5, 6, 12, 0, 0).dst? # noon, DST
++      if Time.local(1951, 5, 6, 1, 0, 0).dst? # DST with fixed tzdata
++        Time.local(1951, 9, 8, 23, 0, 0).dst? ? "2018f" : "2018e"
++      end
++    end
++  }
++  CORRECT_SINGAPORE_1982 = with_tz("Asia/Singapore") {
++    "2022g" if Time.local(1981, 12, 31, 23, 59, 59).utc_offset == 8*3600
++  }
+ 
+   def time_to_s(t)
+     t.to_s
+@@ -116,17 +126,21 @@ class TestTimeTZ < Test::Unit::TestCase
+ 
+   def test_asia_singapore
+     with_tz(tz="Asia/Singapore") {
+-      assert_time_constructor(tz, "1981-12-31 23:59:59 +0730", :local, [1981,12,31,23,59,59])
+-      assert_time_constructor(tz, "1982-01-01 00:30:00 +0800", :local, [1982,1,1,0,0,0])
+-      assert_time_constructor(tz, "1982-01-01 00:59:59 +0800", :local, [1982,1,1,0,29,59])
++      assert_time_constructor(tz, "1981-12-31 23:29:59 +0730", :local, [1981,12,31,23,29,59])
++      if CORRECT_SINGAPORE_1982
++        assert_time_constructor(tz, "1982-01-01 00:00:00 +0800", :local, [1981,12,31,23,30,00])
++        assert_time_constructor(tz, "1982-01-01 00:00:00 +0800", :local, [1982,1,1,0,0,0])
++        assert_time_constructor(tz, "1982-01-01 00:29:59 +0800", :local, [1982,1,1,0,29,59])
++      end
+       assert_time_constructor(tz, "1982-01-01 00:30:00 +0800", :local, [1982,1,1,0,30,0])
+     }
+   end
+ 
+   def test_asia_tokyo
+     with_tz(tz="Asia/Tokyo") {
+-      assert_time_constructor(tz, "1951-05-06 03:00:00 +1000", :local, [1951,5,6,2,0,0])
+-      assert_time_constructor(tz, "1951-05-06 03:59:59 +1000", :local, [1951,5,6,2,59,59])
++      h = CORRECT_TOKYO_DST_1951 ? 0 : 2
++      assert_time_constructor(tz, "1951-05-06 0#{h+1}:00:00 +1000", :local, [1951,5,6,h,0,0])
++      assert_time_constructor(tz, "1951-05-06 0#{h+1}:59:59 +1000", :local, [1951,5,6,h,59,59])
+       assert_time_constructor(tz, "2010-06-10 06:13:28 +0900", :local, [2010,6,10,6,13,28])
+     }
+   end
+@@ -161,13 +175,6 @@ class TestTimeTZ < Test::Unit::TestCase
+     }
+   end if has_lisbon_tz
+ 
+-  def test_europe_moscow
+-    with_tz(tz="Europe/Moscow") {
+-      assert_time_constructor(tz, "1992-03-29 00:00:00 +0400", :local, [1992,3,28,23,0,0])
+-      assert_time_constructor(tz, "1992-03-29 00:59:59 +0400", :local, [1992,3,28,23,59,59])
+-    }
+-  end
+-
+   def test_pacific_kiritimati
+     with_tz(tz="Pacific/Kiritimati") {
+       assert_time_constructor(tz, "1994-12-31 23:59:59 -1000", :local, [1994,12,31,23,59,59])
+@@ -324,12 +331,28 @@ America/Managua  Fri Jan  1 06:00:00 199
+ America/Managua  Wed Jan  1 04:59:59 1997 UTC = Tue Dec 31 23:59:59 1996 EST isdst=0 gmtoff=-18000
+ America/Managua  Wed Jan  1 05:00:00 1997 UTC = Tue Dec 31 23:00:00 1996 CST isdst=0 gmtoff=-21600
+ Asia/Singapore  Sun Aug  8 16:30:00 1965 UTC = Mon Aug  9 00:00:00 1965 SGT isdst=0 gmtoff=27000
+-Asia/Singapore  Thu Dec 31 16:29:59 1981 UTC = Thu Dec 31 23:59:59 1981 SGT isdst=0 gmtoff=27000
++Asia/Singapore  Thu Dec 31 15:59:59 1981 UTC = Thu Dec 31 23:29:59 1981 SGT isdst=0 gmtoff=27000
+ Asia/Singapore  Thu Dec 31 16:30:00 1981 UTC = Fri Jan  1 00:30:00 1982 SGT isdst=0 gmtoff=28800
++End
++  gen_zdump_test <<'End' if CORRECT_SINGAPORE_1982
++Asia/Singapore  Thu Dec 31 16:00:00 1981 UTC = Fri Jan  1 00:00:00 1982 SGT isdst=0 gmtoff=28800
++End
++  gen_zdump_test CORRECT_TOKYO_DST_1951 ? <<'End' + (CORRECT_TOKYO_DST_1951 < "2018f" ? <<'2018e' : <<'2018f') : <<'End'
++Asia/Tokyo  Sat May  5 14:59:59 1951 UTC = Sat May  5 23:59:59 1951 JST isdst=0 gmtoff=32400
++Asia/Tokyo  Sat May  5 15:00:00 1951 UTC = Sun May  6 01:00:00 1951 JDT isdst=1 gmtoff=36000
++End
++Asia/Tokyo  Sat Sep  8 13:59:59 1951 UTC = Sat Sep  8 23:59:59 1951 JDT isdst=1 gmtoff=36000
++Asia/Tokyo  Sat Sep  8 14:00:00 1951 UTC = Sat Sep  8 23:00:00 1951 JST isdst=0 gmtoff=32400
++2018e
++Asia/Tokyo  Sat Sep  8 14:59:59 1951 UTC = Sun Sep  9 00:59:59 1951 JDT isdst=1 gmtoff=36000
++Asia/Tokyo  Sat Sep  8 15:00:00 1951 UTC = Sun Sep  9 00:00:00 1951 JST isdst=0 gmtoff=32400
++2018f
+ Asia/Tokyo  Sat May  5 16:59:59 1951 UTC = Sun May  6 01:59:59 1951 JST isdst=0 gmtoff=32400
+ Asia/Tokyo  Sat May  5 17:00:00 1951 UTC = Sun May  6 03:00:00 1951 JDT isdst=1 gmtoff=36000
+ Asia/Tokyo  Fri Sep  7 15:59:59 1951 UTC = Sat Sep  8 01:59:59 1951 JDT isdst=1 gmtoff=36000
+ Asia/Tokyo  Fri Sep  7 16:00:00 1951 UTC = Sat Sep  8 01:00:00 1951 JST isdst=0 gmtoff=32400
++End
++  gen_zdump_test <<'End'
+ America/St_Johns  Sun Mar 11 03:30:59 2007 UTC = Sun Mar 11 00:00:59 2007 NST isdst=0 gmtoff=-12600
+ America/St_Johns  Sun Mar 11 03:31:00 2007 UTC = Sun Mar 11 01:01:00 2007 NDT isdst=1 gmtoff=-9000
+ America/St_Johns  Sun Nov  4 02:30:59 2007 UTC = Sun Nov  4 00:00:59 2007 NDT isdst=1 gmtoff=-9000
+@@ -346,12 +369,6 @@ Europe/London  Sun Aug 10 00:59:59 1947
+ Europe/London  Sun Aug 10 01:00:00 1947 UTC = Sun Aug 10 02:00:00 1947 BST isdst=1 gmtoff=3600
+ Europe/London  Sun Nov  2 01:59:59 1947 UTC = Sun Nov  2 02:59:59 1947 BST isdst=1 gmtoff=3600
+ Europe/London  Sun Nov  2 02:00:00 1947 UTC = Sun Nov  2 02:00:00 1947 GMT isdst=0 gmtoff=0
+-Europe/Moscow  Sat Jan 18 23:59:59 1992 UTC = Sun Jan 19 01:59:59 1992 MSK isdst=0 gmtoff=7200
+-Europe/Moscow  Sun Jan 19 00:00:00 1992 UTC = Sun Jan 19 03:00:00 1992 MSK isdst=0 gmtoff=10800
+-Europe/Moscow  Sat Mar 28 19:59:59 1992 UTC = Sat Mar 28 22:59:59 1992 MSK isdst=0 gmtoff=10800
+-Europe/Moscow  Sat Mar 28 20:00:00 1992 UTC = Sun Mar 29 00:00:00 1992 MSD isdst=1 gmtoff=14400
+-Europe/Moscow  Sat Sep 26 18:59:59 1992 UTC = Sat Sep 26 22:59:59 1992 MSD isdst=1 gmtoff=14400
+-Europe/Moscow  Sat Sep 26 19:00:00 1992 UTC = Sat Sep 26 22:00:00 1992 MSK isdst=0 gmtoff=10800
+ Pacific/Kiritimati  Sun Jan  1 09:59:59 1995 UTC = Sat Dec 31 23:59:59 1994 LINT isdst=0 gmtoff=-36000
+ Pacific/Kiritimati  Sun Jan  1 10:00:00 1995 UTC = Mon Jan  2 00:00:00 1995 LINT isdst=0 gmtoff=50400
+ End
+@@ -402,5 +419,6 @@ End
+   gen_variational_zdump_test "lisbon", <<'End' if has_lisbon_tz
+ Europe/Lisbon  Mon Jan  1 00:36:31 1912 UTC = Sun Dec 31 23:59:59 1911 LMT isdst=0 gmtoff=-2192
+ Europe/Lisbon  Mon Jan  1 00:36:44 1912 UT = Sun Dec 31 23:59:59 1911 LMT isdst=0 gmtoff=-2205
++Europe/Lisbon  Sun Dec 31 23:59:59 1911 UT = Sun Dec 31 23:23:14 1911 LMT isdst=0 gmtoff=-2205
+ End
+ end

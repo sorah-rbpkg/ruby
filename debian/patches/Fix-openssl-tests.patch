@@ -1,0 +1,155 @@
+Origin: https://github.com/ruby/openssl/commit/18603949d3161e109803b7c379936c3a487ef8d0
+Origin: https://github.com/ruby/openssl/commit/8108e0a6db133f3375608303fdd2083eb5115062
+Origin: https://github.com/ruby/openssl/commit/315b65090a15261f79b8c251f60f3621957fdb20
+Origin: https://github.com/ruby/openssl/commit/e3a30506367508790494f9242f7392deeb1b3c9c
+Reviewed-by: Sylvain Beucler <beuc@debian.org>
+Last-Update: 2024-07-16
+
+From 18603949d3161e109803b7c379936c3a487ef8d0 Mon Sep 17 00:00:00 2001
+From: Kazuki Yamaguchi <k@rhe.jp>
+Date: Sun, 19 Jun 2016 23:22:24 +0900
+Subject: [PATCH] ssl: add SSLContext#min_version= and #max_version=
+
+Add methods that set the minimum and maximum supported protocol versions
+for the SSL context. If the OpenSSL library supports, use
+SSL_CTX_set_{min,max}_proto_version() that do the exact thing.
+Otherwise, simulate by combining SSL_OP_NO_{SSL,TLS}v* flags.
+
+The new methods are meant to replace the deprecated #ssl_version= that
+cannot support multiple protocol versions.
+
+SSLContext::DEFAULT_PARAMS is also updated to use the new
+SSLContext#min_version=.
+---
+ ext/openssl/ossl_ssl.c | 107 ++++++++++++++++++
+ lib/openssl/ssl.rb     |  52 ++++++++-
+ test/test_ssl.rb       | 251 ++++++++++++++++++++++++++++-------------
+ test/utils.rb          |   5 +-
+ 4 files changed, 332 insertions(+), 83 deletions(-)
+
+From 8108e0a6db133f3375608303fdd2083eb5115062 Mon Sep 17 00:00:00 2001
+From: Kazuki Yamaguchi <k@rhe.jp>
+Date: Tue, 20 Sep 2016 21:27:28 +0900
+Subject: [PATCH] cipher: don't set dummy encryption key in Cipher#initialize
+
+Remove the encryption key initialization from Cipher#initialize. This
+is effectively a revert of r32723 ("Avoid possible SEGV from AES
+encryption/decryption", 2011-07-28).
+
+From 315b65090a15261f79b8c251f60f3621957fdb20 Mon Sep 17 00:00:00 2001
+From: Kazuki Yamaguchi <k@rhe.jp>
+Date: Wed, 23 Aug 2017 11:35:24 +0900
+Subject: [PATCH] test/test_ssl_session: rearrange tests
+
+Use TLS 1.2 explicitly where needed, since TLS 1.3 will remove session
+ID based session resumption.
+---
+ test/test_ssl_session.rb | 397 +++++++++++++++++++--------------------
+ 1 file changed, 196 insertions(+), 201 deletions(-)
+
+From e3a30506367508790494f9242f7392deeb1b3c9c Mon Sep 17 00:00:00 2001
+From: Kazuki Yamaguchi <k@rhe.jp>
+Date: Wed, 23 Aug 2017 11:37:57 +0900
+Subject: [PATCH] test/test_pair, test/test_ssl: fix for TLS 1.3
+
+Fix test cases failing with TLS 1.3-enabled OpenSSL master.
+---
+ test/test_pair.rb | 102 ++++++++++------------
+ test/test_ssl.rb  | 209 ++++++++++++++++++++--------------------------
+ 2 files changed, 135 insertions(+), 176 deletions(-)
+
+Index: ruby/test/openssl/test_cipher.rb
+===================================================================
+--- ruby.orig/test/openssl/test_cipher.rb
++++ ruby/test/openssl/test_cipher.rb
+@@ -80,6 +80,7 @@ class OpenSSL::TestCipher < Test::Unit::
+ 
+   def test_empty_data
+     @c1.encrypt
++    @c1.random_key
+     assert_raise(ArgumentError){ @c1.update("") }
+   end
+ 
+@@ -123,12 +124,10 @@ class OpenSSL::TestCipher < Test::Unit::
+       }
+     end
+ 
+-    def test_AES_crush
+-      500.times do
+-        assert_nothing_raised("[Bug #2768]") do
+-          # it caused OpenSSL SEGV by uninitialized key
+-          OpenSSL::Cipher::AES128.new("ECB").update "." * 17
+-        end
++    def test_update_raise_if_key_not_set
++      assert_raise(OpenSSL::Cipher::CipherError) do
++        # it caused OpenSSL SEGV by uninitialized key [Bug #2768]
++        OpenSSL::Cipher::AES128.new("ECB").update "." * 17
+       end
+     end
+   end
+Index: ruby/test/openssl/test_ssl.rb
+===================================================================
+--- ruby.orig/test/openssl/test_ssl.rb
++++ ruby/test/openssl/test_ssl.rb
+@@ -714,9 +714,12 @@ end
+     }
+   end
+ 
+-if OpenSSL::OPENSSL_VERSION_NUMBER > 0x10001000
++if OpenSSL::OPENSSL_VERSION_NUMBER > 0x10001000 &&
++        OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
++  # NPN may be disabled by OpenSSL configure option
+ 
+   def test_npn_protocol_selection_ary
++    skip "TLS 1.2 is not supported" unless tls12_supported?
+     advertised = ["http/1.1", "spdy/2"]
+     ctx_proc = Proc.new { |ctx| ctx.npn_protocols = advertised }
+     start_server_version(:SSLv23, ctx_proc) { |server, port|
+@@ -733,6 +736,7 @@ if OpenSSL::OPENSSL_VERSION_NUMBER > 0x1
+   end
+ 
+   def test_npn_protocol_selection_enum
++    skip "TLS 1.2 is not supported" unless tls12_supported?
+     advertised = Object.new
+     def advertised.each
+       yield "http/1.1"
+Index: ruby/test/openssl/utils.rb
+===================================================================
+--- ruby.orig/test/openssl/utils.rb
++++ ruby/test/openssl/utils.rb
+@@ -226,6 +226,13 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOP
+       OpenSSL::TestUtils.issue_crl(*arg)
+     end
+ 
++    def tls12_supported?
++      ctx = OpenSSL::SSL::SSLContext.new
++      ctx.min_version = ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
++      true
++    rescue
++    end
++
+     def readwrite_loop(ctx, ssl)
+       while line = ssl.gets
+         if line =~ /^STARTTLS$/
+Index: ruby/test/openssl/test_ssl_session.rb
+===================================================================
+--- ruby.orig/test/openssl/test_ssl_session.rb
++++ ruby/test/openssl/test_ssl_session.rb
+@@ -272,6 +272,8 @@ __EOS__
+   end
+ 
+   def test_ctx_client_session_cb
++    skip "TLS 1.2 is not supported" unless tls12_supported?
++
+     called = {}
+     ctx = OpenSSL::SSL::SSLContext.new("SSLv3")
+     ctx.session_cache_mode = OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT
+@@ -303,6 +305,8 @@ __EOS__
+   end
+ 
+   def test_ctx_server_session_cb
++    skip "TLS 1.2 is not supported" unless tls12_supported?
++
+     called = {}
+ 
+     ctx_proc = Proc.new { |ctx, ssl|

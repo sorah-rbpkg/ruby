@@ -1,3 +1,17 @@
+ruby2.1 (2.1.5-2+deb8u14) UNRELEASED; urgency=high
+
+  * Non-maintainer upload by the ELTS Security Team.
+  * Update test certificates.
+  * Update tests for new tzdata.
+  * Rework CVE 2017-17405 patch to drop extra failing copy/pasted test cases.
+  * Fix CVE 2021-32066 test.
+  * Fix CVE 2015-9096 test.
+  * Fix openssl tests for jessie's openssl.
+  * CVE-2016-2338: full fix.
+  * Fix crash from CVE 2021-41817 incorrect fix.
+
+ -- Sylvain Beucler <beuc@debian.org>  Tue, 16 Jul 2024 21:20:05 +0200
+
 ruby2.1 (2.1.5-2+deb8u13) jessie-security; urgency=high
 
   * Add length limit option for methods that parses
