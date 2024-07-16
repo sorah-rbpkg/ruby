@@ -1,3 +1,13 @@
+ruby2.3 (2.3.3-1+deb9u12) UNRELEASED; urgency=high
+
+  * Non-maintainer upload by the ELTS Security Team.
+  * Update test certificates.
+  * Update tests for new tzdata.
+  * Update tests for Git CVE 2022-39253.
+  * Fix flaky test TestRipper::Generic#test_parse_files.
+
+ -- Sylvain Beucler <beuc@debian.org>  Tue, 16 Jul 2024 22:28:58 +0200
+
 ruby2.3 (2.3.3-1+deb9u11) stretch-security; urgency=high
 
   * Add length limit option for methods that parses

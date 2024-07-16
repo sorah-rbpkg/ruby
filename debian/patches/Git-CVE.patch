@@ -1,0 +1,44 @@
+Origin: https://github.com/ruby/ruby/commit/fbf4bec4bcb39a6f1c4a0d0008876c6ec813c2ce
+Reviewed-by: Sylvain Beucler <beuc@debian.org>
+Last-Update: 2024-07-15
+
+From fbf4bec4bcb39a6f1c4a0d0008876c6ec813c2ce Mon Sep 17 00:00:00 2001
+From: nagachika <nagachika@ruby-lang.org>
+Date: Thu, 20 Oct 2022 20:30:06 +0900
+Subject: [PATCH] merge revision(s)
+ dae843f6b7502f921a7e66f39e3714a39d860181,86096a91d55f72620e0f8ca8634da5fa342dc35b:
+
+	Bypass git submodule add/update with git config
+	 protocol.file.allow=always option.
+
+	Co-authored-by: Nobuyoshi Nakada <nobu@ruby-lang.org>
+	---
+	 test/rubygems/test_gem_source_git.rb | 5 +++++
+	 1 file changed, 5 insertions(+)
+
+	[rubygems/rubygems] Use [] instead of double-quotes
+
+	---
+	 test/rubygems/test_gem_source_git.rb | 2 +-
+	 1 file changed, 1 insertion(+), 1 deletion(-)
+---
+ test/rubygems/test_gem_source_git.rb | 5 +++++
+ version.h                            | 4 ++--
+ 2 files changed, 7 insertions(+), 2 deletions(-)
+
+Index: ruby/test/rubygems/test_gem_source_git.rb
+===================================================================
+--- ruby.orig/test/rubygems/test_gem_source_git.rb
++++ ruby/test/rubygems/test_gem_source_git.rb
+@@ -64,6 +64,11 @@ class TestGemSourceGit < Gem::TestCase
+   end
+ 
+   def test_checkout_submodules
++    # We need to allow to checkout submodules with file:// protocol
++    # CVE-2022-39253
++    # https://lore.kernel.org/lkml/xmqq4jw1uku5.fsf@gitster.g/
++    system(@git, *%W[config --global protocol.file.allow always])
++
+     source = Gem::Source::Git.new @name, @repository, 'master', true
+ 
+     git_gem 'b'

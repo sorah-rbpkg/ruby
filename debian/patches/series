@@ -12,3 +12,9 @@ CVE-2021-31810.patch
 CVE-2021-41817.patch
 CVE-2021-41817-followup.patch
 CVE-2021-41819.patch
+
+Update-the-certificate-files.patch
+Update-test-certificates.patch
+Fix-for-tzdata.patch
+Git-CVE.patch
+fix-regexp-literal-warning.patch
