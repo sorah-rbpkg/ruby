@@ -1,3 +1,11 @@
+ruby2.7 (2.7.4-1+deb11u2) UNRELEASED; urgency=high
+
+  * Non-maintainer upload by the LTS Security Team.
+  * Update test certificates.
+  * Update tests for new tzdata.
+
+ -- Sylvain Beucler <beuc@debian.org>  Tue, 16 Jul 2024 09:27:41 +0200
+
 ruby2.7 (2.7.4-1+deb11u1) bullseye-security; urgency=high
 
   * Add length limit option for methods that parses
