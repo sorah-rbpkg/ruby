@@ -34,3 +34,7 @@ CVE-2021-33621-pre.patch
 CVE-2021-33621-1.patch
 CVE-2021-33621-2.patch
 CVE-2021-33621-3.patch
+
+Update-test-certificates.patch
+Fix-for-tzdata-2022g.patch
+Git-CVE.patch

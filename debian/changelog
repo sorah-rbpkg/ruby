@@ -1,3 +1,12 @@
+ruby2.5 (2.5.5-3+deb10u7) UNRELEASED; urgency=high
+
+  * Non-maintainer upload by the ELTS Security Team.
+  * Update test certificates.
+  * Update tests for new tzdata.
+  * Update tests for Git CVE 2022-39253.
+
+ -- Sylvain Beucler <beuc@debian.org>  Tue, 16 Jul 2024 22:22:43 +0200
+
 ruby2.5 (2.5.5-3+deb10u6) buster-security; urgency=high
 
   * Non-maintainer upload by the Debian LTS team.
