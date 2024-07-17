@@ -18,3 +18,4 @@ Update-test-certificates.patch
 Fix-for-tzdata.patch
 Git-CVE.patch
 fix-regexp-literal-warning.patch
+Exclude-tests-that-fail-on-Debian-builds.patch

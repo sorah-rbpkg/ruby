@@ -1,0 +1,9 @@
+Index: ruby/test/excludes/TestProcess.rb
+===================================================================
+--- ruby.orig/test/excludes/TestProcess.rb
++++ ruby/test/excludes/TestProcess.rb
+@@ -3,3 +3,4 @@
+ # may point to an issue in the Array implementation.
+ # https://bugs.ruby-lang.org/issues/12500
+ exclude :test_aspawn_too_long_path, "RAM and time consuming test"
++exclude :test_popen_exit, "kills the wrong cgroup (top-level 'timeout') under salsa-ci, and the build"

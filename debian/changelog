@@ -5,6 +5,7 @@ ruby2.3 (2.3.3-1+deb9u12) UNRELEASED; urgency=high
   * Update tests for new tzdata.
   * Update tests for Git CVE 2022-39253.
   * Fix flaky test TestRipper::Generic#test_parse_files.
+  * autopkgtest: make use of the text exclusion rules under test/excludes/
 
  -- Sylvain Beucler <beuc@debian.org>  Tue, 16 Jul 2024 22:28:58 +0200
 
