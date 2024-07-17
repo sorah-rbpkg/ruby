@@ -2,7 +2,7 @@
 # LTS/ELTS CI
 
 include:
-# Not ready yet 2024-07-17:
+# bullseye-lts recipe not ready yet 2024-07-25, but we may not fork:
 # - https://salsa.debian.org/lts-team/pipeline/raw/master/recipes/bullseye.yml
   - https://salsa.debian.org/salsa-ci-team/pipeline/raw/master/salsa-ci.yml
   - https://salsa.debian.org/salsa-ci-team/pipeline/raw/master/pipeline-jobs.yml

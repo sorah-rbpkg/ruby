@@ -16,4 +16,5 @@ CVE-2021-41817-2.patch
 CVE-2021-41817-3.patch
 
 Update-test-certificates.patch
-Fix-for-tzdata-2022g.patch
+Fix-tests-tzdata.patch
+Fix-tests-git.patch

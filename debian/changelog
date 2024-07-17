@@ -1,10 +1,12 @@
 ruby2.7 (2.7.4-1+deb11u2) UNRELEASED; urgency=high
 
   * Non-maintainer upload by the LTS Security Team.
-  * Update test certificates.
-  * Update tests for new tzdata.
+  * Fix testsuite
+    * Update test certificates.
+    * Update tests for new tzdata.
+    * Update tests for Git CVE 2022-39253.
 
- -- Sylvain Beucler <beuc@debian.org>  Tue, 16 Jul 2024 09:27:41 +0200
+ -- Sylvain Beucler <beuc@debian.org>  Thu, 25 Jul 2024 10:58:47 +0200
 
 ruby2.7 (2.7.4-1+deb11u1) bullseye-security; urgency=high
 
