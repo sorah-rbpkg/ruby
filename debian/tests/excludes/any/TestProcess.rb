@@ -1,4 +1,5 @@
 exclude :test_exec_wordsplit, "fails under sbuild"
+exclude :test_popen_exit, "kills the wrong cgroup (top-level 'timeout') under salsa-ci, and the build"
 exclude :test_popen_wordsplit, "fails under sbuild"
 exclude :test_popen_wordsplit_beginning_and_trailing_spaces, "fails under sbuild"
 exclude :test_spawn_wordsplit, "fails under sbuild"
