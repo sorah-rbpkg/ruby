@@ -18,3 +18,4 @@ CVE-2021-41817-3.patch
 Update-test-certificates.patch
 Fix-tests-tzdata.patch
 Fix-tests-git.patch
+CVE-2024-27280.patch

@@ -5,8 +5,12 @@ ruby2.7 (2.7.4-1+deb11u2) UNRELEASED; urgency=high
     * Update test certificates.
     * Update tests for new tzdata.
     * Update tests for Git CVE 2022-39253.
+  * CVE-2024-27280: a buffer-overread issue was discovered in
+    StringIO. The ungetbyte and ungetc methods on a StringIO can read past
+    the end of a string, and a subsequent call to StringIO.gets may return
+    the memory value.
 
- -- Sylvain Beucler <beuc@debian.org>  Thu, 25 Jul 2024 10:58:47 +0200
+ -- Sylvain Beucler <beuc@debian.org>  Sat, 27 Jul 2024 13:02:36 +0200
 
 ruby2.7 (2.7.4-1+deb11u1) bullseye-security; urgency=high
 
