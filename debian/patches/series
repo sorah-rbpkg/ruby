@@ -19,3 +19,4 @@ Update-test-certificates.patch
 Fix-tests-tzdata.patch
 Fix-tests-git.patch
 CVE-2024-27280.patch
+CVE-2024-27281.patch
