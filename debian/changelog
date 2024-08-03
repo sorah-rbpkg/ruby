@@ -9,32 +9,34 @@ ruby2.7 (2.7.4-1+deb11u2) UNRELEASED; urgency=high
   * CVE-2021-33621: the cgi gem allows HTTP response splitting. This is
     relevant to applications that use untrusted user input either to
     generate an HTTP response or to create a CGI::Cookie object.
+    (Closes: #1024799)
   * CVE-2022-28739: buffer over-read occurs in String-to-Float conversion,
-    including Kernel#Float and String#to_f.
+    including Kernel#Float and String#to_f. (Closes: #1009957)
   * CVE-2023-28755: a ReDoS issue was discovered in the URI component. The
     URI parser mishandles invalid URLs that have specific characters. It
     causes an increase in execution time for parsing strings to URI
-    objects.
+    objects. (Closes: #1038408)
   * CVE-2023-36617: follow-up fix for CVE-2023-28755.
   * CVE-2023-28756: a ReDoS issue was discovered in the Time
     component. The Time parser mishandles invalid URLs that have specific
     characters. It causes an increase in execution time for parsing
-    strings to Time objects.
+    strings to Time objects. (Closes: #1038408)
   * CVE-2024-27280: a buffer-overread issue was discovered in
     StringIO. The ungetbyte and ungetc methods on a StringIO can read past
     the end of a string, and a subsequent call to StringIO.gets may return
-    the memory value.
+    the memory value. (Closes: #1069966)
   * CVE-2024-27281: when parsing .rdoc_options (used for configuration in
     RDoc) as a YAML file, object injection and resultant remote code
     execution are possible because there are no restrictions on the
     classes that can be restored. (When loading the documentation cache,
     object injection and resultant remote code execution are also possible
-    if there were a crafted cache.)
+    if there were a crafted cache.) (Closes: #1067802)
   * CVE-2024-27282: if attacker-supplied data is provided to the Ruby
     regex compiler, it is possible to extract arbitrary heap data relative
     to the start of the text, including pointers and sensitive strings.
+    (Closes: #1069968)
 
- -- Sylvain Beucler <beuc@debian.org>  Sat, 03 Aug 2024 15:02:50 +0200
+ -- Sylvain Beucler <beuc@debian.org>  Sat, 03 Aug 2024 15:45:53 +0200
 
 ruby2.7 (2.7.4-1+deb11u1) bullseye-security; urgency=high
 
