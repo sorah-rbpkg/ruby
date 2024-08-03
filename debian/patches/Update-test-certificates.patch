@@ -5,7 +5,7 @@ Last-Update: 2024-07-16
 From d3933fc753187a055a4904af82f5f3794c88c416 Mon Sep 17 00:00:00 2001
 From: Sorah Fukumori <her@sorah.jp>
 Date: Mon, 1 Jan 2024 20:45:54 +0900
-Subject: [PATCH] [ruby/net-http] Renew test certificates
+Subject: [ruby/net-http] Renew test certificates
 
 The private key is replaced with a public known test key published at
 [RFC 9500].

@@ -5,7 +5,7 @@ Last-Update: 2024-07-16
 From 36cadad6434bc31bc2d60697698cd5b930c097ce Mon Sep 17 00:00:00 2001
 From: NAKAMURA Usaku <usa@ruby-lang.org>
 Date: Thu, 8 Dec 2022 12:33:58 +0900
-Subject: [PATCH] merge revision(s) 58cc3c9f: [Backport #19187]
+Subject: merge revision(s) 58cc3c9f: [Backport #19187]
 
 	[Bug #19187] Fix for tzdata-2022g
 

@@ -7,7 +7,7 @@ Work-around Git changes from CVE-2022-39253.
 From 25df68ae91ce0f6e8b78aa42e840e785e5e191ed Mon Sep 17 00:00:00 2001
 From: nagachika <nagachika@ruby-lang.org>
 Date: Thu, 20 Oct 2022 20:30:06 +0900
-Subject: [PATCH] merge revision(s)
+Subject: merge revision(s)
  dae843f6b7502f921a7e66f39e3714a39d860181,86096a91d55f72620e0f8ca8634da5fa342dc35b:
 
 	Bypass git submodule add/update with git config

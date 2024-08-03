@@ -10,6 +10,11 @@ ruby2.7 (2.7.4-1+deb11u2) UNRELEASED; urgency=high
     generate an HTTP response or to create a CGI::Cookie object.
   * CVE-2022-28739: buffer over-read occurs in String-to-Float conversion,
     including Kernel#Float and String#to_f.
+  * CVE-2023-28755: a ReDoS issue was discovered in the URI component. The
+    URI parser mishandles invalid URLs that have specific characters. It
+    causes an increase in execution time for parsing strings to URI
+    objects.
+  * CVE-2023-36617: follow-up fix for CVE-2023-28755.
   * CVE-2023-28756: a ReDoS issue was discovered in the Time
     component. The Time parser mishandles invalid URLs that have specific
     characters. It causes an increase in execution time for parsing
