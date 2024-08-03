@@ -5,6 +5,8 @@ ruby2.7 (2.7.4-1+deb11u2) UNRELEASED; urgency=high
     * Update test certificates.
     * Update tests for new tzdata.
     * Update tests for Git CVE 2022-39253.
+  * CVE-2022-28739: buffer over-read occurs in String-to-Float conversion,
+    including Kernel#Float and String#to_f.
   * CVE-2024-27280: a buffer-overread issue was discovered in
     StringIO. The ungetbyte and ungetc methods on a StringIO can read past
     the end of a string, and a subsequent call to StringIO.gets may return
@@ -16,7 +18,7 @@ ruby2.7 (2.7.4-1+deb11u2) UNRELEASED; urgency=high
     object injection and resultant remote code execution are also possible
     if there were a crafted cache.)
 
- -- Sylvain Beucler <beuc@debian.org>  Tue, 30 Jul 2024 09:17:04 +0200
+ -- Sylvain Beucler <beuc@debian.org>  Sat, 03 Aug 2024 12:45:31 +0200
 
 ruby2.7 (2.7.4-1+deb11u1) bullseye-security; urgency=high
 
