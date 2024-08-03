@@ -5,6 +5,7 @@ ruby2.7 (2.7.4-1+deb11u2) UNRELEASED; urgency=high
     * Update test certificates.
     * Update tests for new tzdata.
     * Update tests for Git CVE 2022-39253.
+    * Backport assert_linear_performance.
   * CVE-2021-33621: the cgi gem allows HTTP response splitting. This is
     relevant to applications that use untrusted user input either to
     generate an HTTP response or to create a CGI::Cookie object.
@@ -29,8 +30,11 @@ ruby2.7 (2.7.4-1+deb11u2) UNRELEASED; urgency=high
     classes that can be restored. (When loading the documentation cache,
     object injection and resultant remote code execution are also possible
     if there were a crafted cache.)
+  * CVE-2024-27282: if attacker-supplied data is provided to the Ruby
+    regex compiler, it is possible to extract arbitrary heap data relative
+    to the start of the text, including pointers and sensitive strings.
 
- -- Sylvain Beucler <beuc@debian.org>  Sat, 03 Aug 2024 12:45:31 +0200
+ -- Sylvain Beucler <beuc@debian.org>  Sat, 03 Aug 2024 15:02:50 +0200
 
 ruby2.7 (2.7.4-1+deb11u1) bullseye-security; urgency=high
 
