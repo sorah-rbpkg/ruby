@@ -1,0 +1,58 @@
+Origin: https://github.com/ruby/openssl/commit/6f8d3709dac0cd20c01d46cf6e890e07eaf081a2
+Reviewed-by: Sylvain Beucler <beuc@debian.org>
+Last-Update: 2024-07-24
+
+From 6f8d3709dac0cd20c01d46cf6e890e07eaf081a2 Mon Sep 17 00:00:00 2001
+From: ngoto <ngoto@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
+Date: Fri, 24 Jul 2015 11:29:49 +0000
+Subject: * test/rinda/test_rinda.rb (RingIPv6#prepare_ipv6): prevent
+ to use   IPv6 loopback interface for  
+ Rinda::TestRingFinger#test_make_socket_ipv6_multicast and  
+ Rinda::TestRingFinger#test_make_socket_ipv6_multicast_hops.   The tests are
+ skipped if there are no IPv6 devices other than the   loopback device. [Bug
+ #11394] [ruby-dev:49199]
+
+* test/rinda/test_rinda.rb (test_make_socket_ipv6_multicast): ditto
+  for Rinda::TestRingServer#test_make_socket_ipv6_multicast.
+
+* test/rinda/test_rinda.rb (test_ring_server_ipv6_multicast): ditto
+  for Rinda::TestRingServer#test_ring_server_ipv6_multicast.
+
+
+git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/trunk@51362 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+---
+ ChangeLog                | 15 +++++++++++++++
+ test/rinda/test_rinda.rb |  6 +++---
+ 2 files changed, 18 insertions(+), 3 deletions(-)
+
+Index: ruby/test/rinda/test_rinda.rb
+===================================================================
+--- ruby.orig/test/rinda/test_rinda.rb
++++ ruby/test/rinda/test_rinda.rb
+@@ -538,7 +538,7 @@ module RingIPv6
+     rescue NotImplementedError
+       # ifindex() function may not be implemented on Windows.
+       return if
+-        Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? }
++        Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? && !addrinfo.ipv6_loopback? }
+     end
+     skip 'IPv6 not available'
+   end
+@@ -622,7 +622,7 @@ class TestRingServer < Test::Unit::TestC
+ 
+   def test_make_socket_ipv6_multicast
+     skip 'IPv6 not available' unless
+-      Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? }
++      Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? && !addrinfo.ipv6_loopback? }
+ 
+     begin
+       v6mc = @rs.make_socket('ff02::1')
+@@ -656,7 +656,7 @@ class TestRingServer < Test::Unit::TestC
+ 
+   def test_ring_server_ipv6_multicast
+     skip 'IPv6 not available' unless
+-      Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? }
++      Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? && !addrinfo.ipv6_loopback? }
+ 
+     begin
+       @rs = Rinda::RingServer.new(@ts, [['ff02::1', '::1', 0]], @port)

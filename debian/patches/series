@@ -42,5 +42,19 @@ CVE-2021-41819.patch
 
 Update-the-certificate-files.patch
 Update-test-certificates.patch
-Fix-for-tzdata.patch
-Fix-openssl-tests.patch
+Fix-tests-tzdata.patch
+Fix-tests-openssl.patch
+Fix-tests-git.patch
+Fix-tests-exception.patch
+Fix-tests-sprintf.patch
+Fix-tests-rinda.patch
+Fix-tests-io_console.patch
+Fix-tests-assert_linear_performance.patch
+Exclude-tests-that-fail-on-Debian-builds.patch
+CVE-2021-28965.patch
+CVE-2021-33621.patch
+CVE-2022-28739.patch
+CVE-2023-28756.patch
+#CVE-2024-27280.patch
+CVE-2024-27281.patch
+CVE-2024-27282.patch

@@ -1,0 +1,32 @@
+Origin: https://github.com/ruby/openssl/commit/b2a128fa7cabcce182e7360db70b3e50bb39242d
+Reviewed-by: Sylvain Beucler <beuc@debian.org>
+Last-Update: 2024-07-24
+
+Fix failure on i386.
+
+From b2a128fa7cabcce182e7360db70b3e50bb39242d Mon Sep 17 00:00:00 2001
+From: naruse <naruse@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
+Date: Mon, 15 Dec 2014 06:17:58 +0000
+Subject: comment out for x86 extended precision
+
+git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/trunk@48844 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+---
+ test/ruby/test_sprintf.rb | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+Index: ruby/test/ruby/test_sprintf.rb
+===================================================================
+--- ruby.orig/test/ruby/test_sprintf.rb
++++ ruby/test/ruby/test_sprintf.rb
+@@ -246,8 +246,9 @@ class TestSprintf < Test::Unit::TestCase
+                  sprintf("%20.0f", 36893488147419107329.0))
+     assert_equal(" Inf", sprintf("% 0e", 1.0/0.0), "moved from btest/knownbug")
+     assert_equal("       -0.", sprintf("%#10.0f", -0.5), "[ruby-dev:42552]")
+-    assert_equal("0x1p+2",   sprintf('%.0a', Float('0x1.fp+1')),   "[ruby-dev:42551]")
+-    assert_equal("-0x1.0p+2", sprintf('%.1a', Float('-0x1.ffp+1')), "[ruby-dev:42551]")
++    # out of spec
++    #assert_equal("0x1p+2",   sprintf('%.0a', Float('0x1.fp+1')),   "[ruby-dev:42551]")
++    #assert_equal("-0x1.0p+2", sprintf('%.1a', Float('-0x1.ffp+1')), "[ruby-dev:42551]")
+   end
+ 
+   def test_float_hex

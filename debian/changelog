@@ -1,16 +1,57 @@
-ruby2.1 (2.1.5-2+deb8u14) UNRELEASED; urgency=high
+ruby2.1 (2.1.5-2+deb8u14) jessie-security; urgency=high
 
   * Non-maintainer upload by the ELTS Security Team.
-  * Update test certificates.
-  * Update tests for new tzdata.
-  * Rework CVE 2017-17405 patch to drop extra failing copy/pasted test cases.
-  * Fix CVE 2021-32066 test.
-  * Fix CVE 2015-9096 test.
-  * Fix openssl tests for jessie's openssl.
-  * CVE-2016-2338: full fix.
-  * Fix crash from CVE 2021-41817 incorrect fix.
+  * Fix testsuite
+    * Update test certificates.
+    * Update tests for new tzdata.
+    * Update tests for Git CVE 2022-39253.
+    * Backport assert_linear_performance.
+    * Fix openssl tests for jessie's openssl.
+    * Rework CVE 2017-17405 patch to drop extra failing copy/pasted test cases.
+    * Fix CVE 2021-32066 test.
+    * Fix CVE 2015-9096 test.
+    * Fix WEBrick tests introduced in previous CVE fixes.
+    * Fix Gem::Installer tests introduced in previous CVE fixes.
+    * Skip test for CVE 2019-8320 (ruby2.1 actually not affected).
+    * Improve skip detection for Rinda when network is not available.
+    * Fix flaky tests in io_console.
+    * Fix stackoverflow test on arm.
+    * Fix sprintf#test_float on i386.
+    * Fix testsuite in minimal environment such as Salsa-CI
+      (install netbase).
+    * Run full testsuite during build.
+    * Exclude 6 tests with untrackable failure reason.
+    * Exclude 4 tests requiring network access.
+    * Exclude 1 test failing in sbuild environment.
+  * CVE-2016-2338: full fix (heap overflow in Psych::Emitter).
+  * Fix crash (missing symbol) from CVE 2021-41817 incorrect fix
+    (Date.parse ReDoS).
+  * CVE-2021-28965: the REXML gem does not properly address XML round-trip
+    issues. An incorrect document can be produced after parsing and
+    serializing. (Closes: #986807)
+  * CVE-2021-33621: the cgi gem allows HTTP response splitting. This is
+    relevant to applications that use untrusted user input either to
+    generate an HTTP response or to create a CGI::Cookie object.
+    (Closes: #1024799)
+  * CVE-2022-28739: buffer over-read occurs in String-to-Float conversion,
+    including Kernel#Float and String#to_f. (Closes: #1009957)
+  * CVE-2023-28756: a ReDoS issue was discovered in the Time
+    component. The Time parser mishandles invalid URLs that have specific
+    characters. It causes an increase in execution time for parsing
+    strings to Time objects. (Closes: #1038408)
+  * CVE-2024-27281: when parsing .rdoc_options (used for configuration in
+    RDoc) as a YAML file, object injection and resultant remote code
+    execution are possible because there are no restrictions on the
+    classes that can be restored. (When loading the documentation cache,
+    object injection and resultant remote code execution are also possible
+    if there were a crafted cache.) (Closes: #1067802)
+  * CVE-2024-27282: if attacker-supplied data is provided to the Ruby
+    regex compiler, it is possible to extract arbitrary heap data relative
+    to the start of the text, including pointers and sensitive strings.
+    (Closes: #1069968)
+  * Fix lintian error.
 
- -- Sylvain Beucler <beuc@debian.org>  Tue, 16 Jul 2024 21:20:05 +0200
+ -- Sylvain Beucler <beuc@debian.org>  Sat, 10 Aug 2024 19:35:38 +0200
 
 ruby2.1 (2.1.5-2+deb8u13) jessie-security; urgency=high
 

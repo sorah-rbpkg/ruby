@@ -6,7 +6,7 @@ Last-Update: 2024-07-16
 From 6f9b40ea53d8f3fb2a5b1c7ac55c207d42c77ef4 Mon Sep 17 00:00:00 2001
 From: nagachika <nagachika@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
 Date: Wed, 2 Jan 2019 06:44:14 +0000
-Subject: [PATCH] merge revision(s) 66685,66686: [Backport #15495]
+Subject: merge revision(s) 66685,66686: [Backport #15495]
 
 	Try to update cert
 
@@ -23,7 +23,7 @@ git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/branches/ruby_2_5@66689 b2dd03c8-39d
 From d3933fc753187a055a4904af82f5f3794c88c416 Mon Sep 17 00:00:00 2001
 From: Sorah Fukumori <her@sorah.jp>
 Date: Mon, 1 Jan 2024 20:45:54 +0900
-Subject: [PATCH] [ruby/net-http] Renew test certificates
+Subject: [ruby/net-http] Renew test certificates
 
 The private key is replaced with a public known test key published at
 [RFC 9500].

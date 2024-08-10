@@ -65,8 +65,11 @@ override_dh_auto_clean:
 
 override_dh_auto_build-arch:
 	dh_auto_build -- main V=1
-	# run complete test suite (some tests like ssl do not pass anymore) 
-	# $(MAKE) check
+
+override_dh_auto_test-arch:
+ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
+	$(MAKE) check V=1
+endif
 
 override_dh_auto_install-arch:
 	$(MAKE) install-nodoc DESTDIR=$(CURDIR)/debian/tmp

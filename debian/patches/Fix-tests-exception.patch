@@ -1,0 +1,39 @@
+Origin: https://github.com/ruby/openssl/commit/e5acaa03136ddd6ee01814112d5fec976d262fa6
+Reviewed-by: Sylvain Beucler <beuc@debian.org>
+Last-Update: 2024-07-24
+
+Fails on armhf:
+pid 74432 killed by SIGSEGV (signal 11) (core dumped)
+
+From e5acaa03136ddd6ee01814112d5fec976d262fa6 Mon Sep 17 00:00:00 2001
+From: naruse <naruse@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
+Date: Fri, 30 May 2014 15:06:07 +0000
+Subject: add --disable-gem
+
+git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/trunk@46263 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+---
+ test/ruby/test_exception.rb | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Index: ruby/test/ruby/test_exception.rb
+===================================================================
+--- ruby.orig/test/ruby/test_exception.rb
++++ ruby/test/ruby/test_exception.rb
+@@ -501,7 +501,7 @@ end.join
+ 
+   def test_machine_stackoverflow
+     bug9109 = '[ruby-dev:47804] [Bug #9109]'
+-    assert_separately([], <<-SRC)
++    assert_separately(%w[--disable-gem], <<-SRC)
+     assert_raise(SystemStackError, #{bug9109.dump}) {
+       h = {a: ->{h[:a].call}}
+       h[:a].call
+@@ -512,7 +512,7 @@ end.join
+ 
+   def test_machine_stackoverflow_by_define_method
+     bug9454 = '[ruby-core:60113] [Bug #9454]'
+-    assert_separately([], <<-SRC)
++    assert_separately(%w[--disable-gem], <<-SRC)
+     assert_raise(SystemStackError, #{bug9454.dump}) {
+       define_method(:foo) {self.foo}
+       self.foo

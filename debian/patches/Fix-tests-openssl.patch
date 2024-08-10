@@ -2,13 +2,14 @@ Origin: https://github.com/ruby/openssl/commit/18603949d3161e109803b7c379936c3a4
 Origin: https://github.com/ruby/openssl/commit/8108e0a6db133f3375608303fdd2083eb5115062
 Origin: https://github.com/ruby/openssl/commit/315b65090a15261f79b8c251f60f3621957fdb20
 Origin: https://github.com/ruby/openssl/commit/e3a30506367508790494f9242f7392deeb1b3c9c
+Origin: https://github.com/ruby/openssl/commit/e25bb03ee94d125612c50d868e7895deeb043b1b
 Reviewed-by: Sylvain Beucler <beuc@debian.org>
 Last-Update: 2024-07-16
 
 From 18603949d3161e109803b7c379936c3a487ef8d0 Mon Sep 17 00:00:00 2001
 From: Kazuki Yamaguchi <k@rhe.jp>
 Date: Sun, 19 Jun 2016 23:22:24 +0900
-Subject: [PATCH] ssl: add SSLContext#min_version= and #max_version=
+Subject: ssl: add SSLContext#min_version= and #max_version=
 
 Add methods that set the minimum and maximum supported protocol versions
 for the SSL context. If the OpenSSL library supports, use
@@ -30,7 +31,7 @@ SSLContext#min_version=.
 From 8108e0a6db133f3375608303fdd2083eb5115062 Mon Sep 17 00:00:00 2001
 From: Kazuki Yamaguchi <k@rhe.jp>
 Date: Tue, 20 Sep 2016 21:27:28 +0900
-Subject: [PATCH] cipher: don't set dummy encryption key in Cipher#initialize
+Subject: cipher: don't set dummy encryption key in Cipher#initialize
 
 Remove the encryption key initialization from Cipher#initialize. This
 is effectively a revert of r32723 ("Avoid possible SEGV from AES
@@ -39,7 +40,7 @@ encryption/decryption", 2011-07-28).
 From 315b65090a15261f79b8c251f60f3621957fdb20 Mon Sep 17 00:00:00 2001
 From: Kazuki Yamaguchi <k@rhe.jp>
 Date: Wed, 23 Aug 2017 11:35:24 +0900
-Subject: [PATCH] test/test_ssl_session: rearrange tests
+Subject: test/test_ssl_session: rearrange tests
 
 Use TLS 1.2 explicitly where needed, since TLS 1.3 will remove session
 ID based session resumption.
@@ -50,13 +51,30 @@ ID based session resumption.
 From e3a30506367508790494f9242f7392deeb1b3c9c Mon Sep 17 00:00:00 2001
 From: Kazuki Yamaguchi <k@rhe.jp>
 Date: Wed, 23 Aug 2017 11:37:57 +0900
-Subject: [PATCH] test/test_pair, test/test_ssl: fix for TLS 1.3
+Subject: test/test_pair, test/test_ssl: fix for TLS 1.3
 
 Fix test cases failing with TLS 1.3-enabled OpenSSL master.
 ---
  test/test_pair.rb | 102 ++++++++++------------
  test/test_ssl.rb  | 209 ++++++++++++++++++++--------------------------
  2 files changed, 135 insertions(+), 176 deletions(-)
+
+From e25bb03ee94d125612c50d868e7895deeb043b1b Mon Sep 17 00:00:00 2001
+From: usa <usa@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
+Date: Tue, 7 Jul 2015 04:24:10 +0000
+Subject: merge revision(s) 50972:
+
+	test_gem_remote_fetcher.rb: get rid of errors
+
+	* test/rubygems/test_gem_remote_fetcher.rb (start_ssl_server):
+  temporary measure for "dh key too small" error of OpenSSL
+  1.0.2c+.
+
+git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/branches/ruby_2_1@51176 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+---
+ test/rubygems/test_gem_remote_fetcher.rb | 2 +-
+ version.h                                | 6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
 Index: ruby/test/openssl/test_cipher.rb
 ===================================================================
@@ -153,3 +171,16 @@ Index: ruby/test/openssl/test_ssl_session.rb
      called = {}
  
      ctx_proc = Proc.new { |ctx, ssl|
+Index: ruby/test/rubygems/test_gem_remote_fetcher.rb
+===================================================================
+--- ruby.orig/test/rubygems/test_gem_remote_fetcher.rb
++++ ruby/test/rubygems/test_gem_remote_fetcher.rb
+@@ -804,7 +804,7 @@ gems:
+       server.mount_proc("/insecure_redirect") { |req, res|
+         res.set_redirect(WEBrick::HTTPStatus::MovedPermanently, req.query['to'])
+       }
+-      server.ssl_context.tmp_dh_callback = proc { OpenSSL::PKey::DH.new 128 }
++      server.ssl_context.tmp_dh_callback = proc {|_, _, k| OpenSSL::PKey::DH.new(k) }
+       t = Thread.new do
+         begin
+           server.start
