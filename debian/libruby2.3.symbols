@@ -249,6 +249,7 @@ libruby-2.3.so.2.3 libruby2.3 #MINVER#
  rb_big_eq@Base 2.3.0~preview2
  rb_big_eql@Base 2.3.0~preview2
  rb_big_idiv@Base 2.3.0~preview2
+ rb_big_hash@Base 2.3.2-1
  rb_big_lshift@Base 2.3.0~preview2
  rb_big_minus@Base 2.3.0~preview2
  rb_big_modulo@Base 2.3.0~preview2

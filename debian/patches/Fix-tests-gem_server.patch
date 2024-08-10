@@ -15,7 +15,7 @@ This fixes the following flaky failure:
 From d8d19683b62cc8e9254e651acd89a6cdfa3a0f54 Mon Sep 17 00:00:00 2001
 From: nagachika <nagachika@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
 Date: Fri, 16 Feb 2018 16:04:21 +0000
-Subject: [PATCH] fix regexp literal warning.
+Subject: fix regexp literal warning.
 
 test/rubygems/test_gem_server.rb: eliminate duplicated character class warning.
 [Bug #14481]

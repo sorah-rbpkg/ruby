@@ -6,7 +6,7 @@ Last-Update: 2024-07-15
 From a0e6607a8172f9eaf9a15f03065736deb2035771 Mon Sep 17 00:00:00 2001
 From: nobu <nobu@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
 Date: Sun, 1 Apr 2018 13:16:14 +0000
-Subject: [PATCH] test_time_tz.rb: Lisbon tzdata fix
+Subject: test_time_tz.rb: Lisbon tzdata fix
 
 * test/ruby/test_time_tz.rb (gen_variational_zdump_test): Update
   Lisbon zdump data, which fixed the 1912-01-01 transition for
@@ -20,7 +20,7 @@ git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/trunk@63056 b2dd03c8-39d4-4d8f-98ff-
 From 36cadad6434bc31bc2d60697698cd5b930c097ce Mon Sep 17 00:00:00 2001
 From: NAKAMURA Usaku <usa@ruby-lang.org>
 Date: Thu, 8 Dec 2022 12:33:58 +0900
-Subject: [PATCH] merge revision(s) 58cc3c9f: [Backport #19187]
+Subject: merge revision(s) 58cc3c9f: [Backport #19187]
 
 	[Bug #19187] Fix for tzdata-2022g
 

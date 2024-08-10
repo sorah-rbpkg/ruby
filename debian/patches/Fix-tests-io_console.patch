@@ -1,0 +1,80 @@
+Origin: https://github.com/ruby/ruby/commit/140daa521228ce3520a75cdc4a26808f8fa3acdb
+Origin: https://github.com/ruby/ruby/commit/ac40fc997b6b27c4f61084d9f6fae83ea251d614
+Origin: https://github.com/ruby/ruby/commit/0efd8bbd34117437f0e1584fe1c1f2177ed09d0d
+Reviewed-by: Sylvain Beucler <beuc@debian.org>
+Last-Update: 2024-07-24
+
+From 140daa521228ce3520a75cdc4a26808f8fa3acdb Mon Sep 17 00:00:00 2001
+From: nobu <nobu@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
+Date: Thu, 28 Sep 2017 02:51:41 +0000
+Subject: test_io_console.rb: flush
+
+* test/io/console/test_io_console.rb: flush to ensure the second
+  data is sent.
+
+git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/trunk@60049 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+---
+ test/io/console/test_io_console.rb | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+From ac40fc997b6b27c4f61084d9f6fae83ea251d614 Mon Sep 17 00:00:00 2001
+From: nobu <nobu@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
+Date: Sat, 23 Dec 2017 14:31:56 +0000
+Subject: test_io_console.rb: get rid of sporadic failures
+
+* test/io/console/test_io_console.rb (test_getpass): try to get
+  rid of timing issues.
+
+* test/io/console/test_io_console.rb (test_ioflush2): ditto.
+
+git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/trunk@61426 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+---
+ test/io/console/test_io_console.rb | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+From 0efd8bbd34117437f0e1584fe1c1f2177ed09d0d Mon Sep 17 00:00:00 2001
+From: mame <mame@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
+Date: Thu, 15 Feb 2018 05:34:20 +0000
+Subject: test/io/console/test_io_console.rb (test_oflush): Avoid race
+ condition
+
+Add a ad-hoc wait.  Follows test_ioflush2.
+
+Index: ruby/test/io/console/test_io_console.rb
+===================================================================
+--- ruby.orig/test/io/console/test_io_console.rb
++++ ruby/test/io/console/test_io_console.rb
+@@ -197,6 +197,7 @@ class TestIO_Console < Test::Unit::TestC
+       m.print "a"
+       s.iflush
+       m.print "b\n"
++      m.flush
+       assert_equal("b\n", s.readpartial(10))
+     }
+   end
+@@ -206,6 +207,8 @@ class TestIO_Console < Test::Unit::TestC
+       s.print "a"
+       s.oflush # oflush may be issued after "a" is already sent.
+       s.print "b"
++      s.flush
++      sleep 0.1
+       assert_include(["b", "ab"], m.readpartial(10))
+     }
+   end
+@@ -215,6 +218,7 @@ class TestIO_Console < Test::Unit::TestC
+       m.print "a"
+       s.ioflush
+       m.print "b\n"
++      m.flush
+       assert_equal("b\n", s.readpartial(10))
+     }
+   end
+@@ -224,6 +228,8 @@ class TestIO_Console < Test::Unit::TestC
+       s.print "a"
+       s.ioflush # ioflush may be issued after "a" is already sent.
+       s.print "b"
++      s.flush
++      sleep 0.1
+       assert_include(["b", "ab"], m.readpartial(10))
+     }
+   end

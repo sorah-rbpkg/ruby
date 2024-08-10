@@ -1,13 +1,47 @@
-ruby2.3 (2.3.3-1+deb9u12) UNRELEASED; urgency=high
+ruby2.3 (2.3.3-1+deb9u12) stretch-security; urgency=high
 
   * Non-maintainer upload by the ELTS Security Team.
-  * Update test certificates.
-  * Update tests for new tzdata.
-  * Update tests for Git CVE 2022-39253.
-  * Fix flaky test TestRipper::Generic#test_parse_files.
-  * autopkgtest: make use of the text exclusion rules under test/excludes/
+  * Fix testsuite
+    * Update test certificates.
+    * Update tests for new tzdata.
+    * Update tests for Git CVE 2022-39253.
+    * Backport assert_linear_performance.
+    * Fix flaky test TestRipper::Generic#test_parse_files.
+    * Fix flaky tests in io_console.
+    * autopkgtest: make use of the text exclusion rules under test/excludes/
+  * CVE-2021-28965: the REXML gem does not properly address XML round-trip
+    issues. An incorrect document can be produced after parsing and
+    serializing. (Closes: #986807)
+  * CVE-2021-33621: the cgi gem allows HTTP response splitting. This is
+    relevant to applications that use untrusted user input either to
+    generate an HTTP response or to create a CGI::Cookie object.
+    (Closes: #1024799)
+  * CVE-2022-28739: buffer over-read occurs in String-to-Float conversion,
+    including Kernel#Float and String#to_f. (Closes: #1009957)
+  * CVE-2023-28755: a ReDoS issue was discovered in the URI component. The
+    URI parser mishandles invalid URLs that have specific characters. It
+    causes an increase in execution time for parsing strings to URI
+    objects. (Closes: #1038408)
+  * CVE-2023-28756: a ReDoS issue was discovered in the Time
+    component. The Time parser mishandles invalid URLs that have specific
+    characters. It causes an increase in execution time for parsing
+    strings to Time objects. (Closes: #1038408)
+  * CVE-2023-36617: follow-up fix for CVE-2023-28755.
+  * CVE-2024-27281: when parsing .rdoc_options (used for configuration in
+    RDoc) as a YAML file, object injection and resultant remote code
+    execution are possible because there are no restrictions on the
+    classes that can be restored. (When loading the documentation cache,
+    object injection and resultant remote code execution are also possible
+    if there were a crafted cache.) (Closes: #1067802)
+  * CVE-2024-27282: if attacker-supplied data is provided to the Ruby
+    regex compiler, it is possible to extract arbitrary heap data relative
+    to the start of the text, including pointers and sensitive strings.
+    (Closes: #1069968)
+  * Reference missing symbols rb_big_hash@Base (fixes:
+    symbols-file-contains-current-version-with-debian-revision)
+  * Fix lintian error: drop obsolete override.
 
- -- Sylvain Beucler <beuc@debian.org>  Tue, 16 Jul 2024 22:28:58 +0200
+ -- Sylvain Beucler <beuc@debian.org>  Sat, 10 Aug 2024 11:36:41 +0200
 
 ruby2.3 (2.3.3-1+deb9u11) stretch-security; urgency=high
 

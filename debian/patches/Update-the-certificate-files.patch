@@ -5,7 +5,7 @@ Last-Update: 2024-07-16
 From 2b97b8e09028be1d03ed03980f2ad34db6349b9f Mon Sep 17 00:00:00 2001
 From: usa <usa@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
 Date: Mon, 26 Aug 2019 16:12:14 +0000
-Subject: [PATCH] merge revision(s)
+Subject: merge revision(s)
  ae2a904ce9bffedee7d110dc60fd51c0a2879a5b,165ddfda20f6db8a3149d14c4f431fc242ddab70,fa7a768fdfe5223a29db4fa71b3e6101fb02ad51:
  [Backport #16051]
 

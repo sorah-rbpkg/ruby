@@ -15,7 +15,17 @@ CVE-2021-41819.patch
 
 Update-the-certificate-files.patch
 Update-test-certificates.patch
-Fix-for-tzdata.patch
-Git-CVE.patch
-fix-regexp-literal-warning.patch
+Fix-tests-tzdata.patch
+Fix-tests-git.patch
+Fix-tests-gem_server.patch
+Fix-tests-io_console.patch
+Fix-tests-assert_linear_performance.patch
 Exclude-tests-that-fail-on-Debian-builds.patch
+CVE-2021-28965.patch
+CVE-2021-33621.patch
+CVE-2022-28739.patch
+CVE-2023-28755.patch
+CVE-2023-28756.patch
+CVE-2023-36617.patch
+CVE-2024-27281.patch
+CVE-2024-27282.patch
