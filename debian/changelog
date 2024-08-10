@@ -1,4 +1,4 @@
-ruby2.7 (2.7.4-1+deb11u2) UNRELEASED; urgency=high
+ruby2.7 (2.7.4-1+deb11u2) bullseye-security; urgency=high
 
   * Non-maintainer upload by the LTS Security Team.
   * Fix testsuite
@@ -36,7 +36,7 @@ ruby2.7 (2.7.4-1+deb11u2) UNRELEASED; urgency=high
     to the start of the text, including pointers and sensitive strings.
     (Closes: #1069968)
 
- -- Sylvain Beucler <beuc@debian.org>  Sat, 03 Aug 2024 15:45:53 +0200
+ -- Sylvain Beucler <beuc@debian.org>  Sat, 10 Aug 2024 11:18:44 +0200
 
 ruby2.7 (2.7.4-1+deb11u1) bullseye-security; urgency=high
 
