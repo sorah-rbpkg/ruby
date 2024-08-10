@@ -1,11 +1,12 @@
 Origin: https://github.com/ruby/ruby/commit/d3933fc753187a055a4904af82f5f3794c88c416
+Origin: https://github.com/ruby/ruby/commit/eb91b22ed0b3f7ecf969a459a289a49098d2d9c4
 Reviewed-by: Sylvain Beucler <beuc@debian.org>
-Last-Update: 2024-07-09
+Last-Update: 2024-07-17
 
 From d3933fc753187a055a4904af82f5f3794c88c416 Mon Sep 17 00:00:00 2001
 From: Sorah Fukumori <her@sorah.jp>
 Date: Mon, 1 Jan 2024 20:45:54 +0900
-Subject: [PATCH] [ruby/net-http] Renew test certificates
+Subject: [ruby/net-http] Renew test certificates
 
 The private key is replaced with a public known test key published at
 [RFC 9500].
@@ -22,10 +23,30 @@ https://github.com/ruby/net-http/commit/4ab6c4a500
  test/net/fixtures/server.key | 55 ++++++++++----------
  4 files changed, 71 insertions(+), 133 deletions(-)
 
-Index: ruby2.5-2.5.5/test/net/fixtures/cacert.pem
+From eb91b22ed0b3f7ecf969a459a289a49098d2d9c4 Mon Sep 17 00:00:00 2001
+From: usa <usa@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
+Date: Wed, 9 Dec 2020 13:55:29 +0000
+Subject: [Backport #17381] repalce the old certs in RubyGems
+
+git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/branches/ruby_2_5@67889 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+---
+ lib/rubygems.rb                               |  2 +-
+ .../DigiCertHighAssuranceEVRootCA.pem         | 23 -----------------
+ .../rubygems.org/AddTrustExternalCARoot.pem   | 25 -------------------
+ .../GlobalSignRootCA.pem                      |  0
+ .../rubygems.org/GlobalSignRootCA_R3.pem      | 21 ++++++++++++++++
+ test/rubygems/test_bundled_ca.rb              | 11 +++++---
+ version.h                                     |  8 +++---
+ 7 files changed, 33 insertions(+), 57 deletions(-)
+ delete mode 100644 lib/rubygems/ssl_certs/rubygems.global.ssl.fastly.net/DigiCertHighAssuranceEVRootCA.pem
+ delete mode 100644 lib/rubygems/ssl_certs/rubygems.org/AddTrustExternalCARoot.pem
+ rename lib/rubygems/ssl_certs/{index.rubygems.org => rubygems.org}/GlobalSignRootCA.pem (100%)
+ create mode 100644 lib/rubygems/ssl_certs/rubygems.org/GlobalSignRootCA_R3.pem
+
+Index: ruby/test/net/fixtures/cacert.pem
 ===================================================================
---- ruby2.5-2.5.5.orig/test/net/fixtures/cacert.pem
-+++ ruby2.5-2.5.5/test/net/fixtures/cacert.pem
+--- ruby.orig/test/net/fixtures/cacert.pem
++++ ruby/test/net/fixtures/cacert.pem
 @@ -1,24 +1,24 @@
  -----BEGIN CERTIFICATE-----
 -MIID7TCCAtWgAwIBAgIJAIltvxrFAuSnMA0GCSqGSIb3DQEBCwUAMIGMMQswCQYD
@@ -73,10 +94,10 @@ Index: ruby2.5-2.5.5/test/net/fixtures/cacert.pem
 +AZR35SToHCZeTZD12YBvLBdaTPLZN7O/Q/aAO9ZiJaZ7SbFOjz813B2hxXab4Fob
 +2uJX6eMWTVxYK5D4M9lm
  -----END CERTIFICATE-----
-Index: ruby2.5-2.5.5/test/net/fixtures/server.crt
+Index: ruby/test/net/fixtures/server.crt
 ===================================================================
---- ruby2.5-2.5.5.orig/test/net/fixtures/server.crt
-+++ ruby2.5-2.5.5/test/net/fixtures/server.crt
+--- ruby.orig/test/net/fixtures/server.crt
++++ ruby/test/net/fixtures/server.crt
 @@ -1,82 +1,21 @@
 -Certificate:
 -    Data:
@@ -179,10 +200,10 @@ Index: ruby2.5-2.5.5/test/net/fixtures/server.crt
 +kAmFNu2KKPVrpMWaBID49QwQTDyhetNLaVVFM88iUdA9JDoVMEuP1mm39JqyzHTu
 +uBrdP4Q=
  -----END CERTIFICATE-----
-Index: ruby2.5-2.5.5/test/net/fixtures/server.key
+Index: ruby/test/net/fixtures/server.key
 ===================================================================
---- ruby2.5-2.5.5.orig/test/net/fixtures/server.key
-+++ ruby2.5-2.5.5/test/net/fixtures/server.key
+--- ruby.orig/test/net/fixtures/server.key
++++ ruby/test/net/fixtures/server.key
 @@ -1,28 +1,27 @@
 ------BEGIN PRIVATE KEY-----
 -MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDo2pwBLisQ7EnN
@@ -239,3 +260,177 @@ Index: ruby2.5-2.5.5/test/net/fixtures/server.key
 +2riO4p6BaAdvzXjKeRrGNEKoHNBpOSfYCOM16NjL8hIZB1CaV3WbT5oY+jp7Mzd5
 +7d56RZOE+ERK2uz/7JX9VSsM/LbH9pJibd4e8mikDS9ntciqOH/3
 +-----END RSA PRIVATE KEY-----
+Index: ruby/lib/rubygems.rb
+===================================================================
+--- ruby.orig/lib/rubygems.rb
++++ ruby/lib/rubygems.rb
+@@ -10,7 +10,7 @@ require 'rbconfig'
+ require 'thread'
+ 
+ module Gem
+-  VERSION = "2.7.6.2"
++  VERSION = "2.7.6.3"
+ end
+ 
+ # Must be first since it unloads the prelude from 1.9.2
+Index: ruby/lib/rubygems/ssl_certs/rubygems.global.ssl.fastly.net/DigiCertHighAssuranceEVRootCA.pem
+===================================================================
+--- ruby.orig/lib/rubygems/ssl_certs/rubygems.global.ssl.fastly.net/DigiCertHighAssuranceEVRootCA.pem
++++ /dev/null
+@@ -1,23 +0,0 @@
+------BEGIN CERTIFICATE-----
+-MIIDxTCCAq2gAwIBAgIQAqxcJmoLQJuPC3nyrkYldzANBgkqhkiG9w0BAQUFADBs
+-MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
+-d3cuZGlnaWNlcnQuY29tMSswKQYDVQQDEyJEaWdpQ2VydCBIaWdoIEFzc3VyYW5j
+-ZSBFViBSb290IENBMB4XDTA2MTExMDAwMDAwMFoXDTMxMTExMDAwMDAwMFowbDEL
+-MAkGA1UEBhMCVVMxFTATBgNVBAoTDERpZ2lDZXJ0IEluYzEZMBcGA1UECxMQd3d3
+-LmRpZ2ljZXJ0LmNvbTErMCkGA1UEAxMiRGlnaUNlcnQgSGlnaCBBc3N1cmFuY2Ug
+-RVYgUm9vdCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMbM5XPm
+-+9S75S0tMqbf5YE/yc0lSbZxKsPVlDRnogocsF9ppkCxxLeyj9CYpKlBWTrT3JTW
+-PNt0OKRKzE0lgvdKpVMSOO7zSW1xkX5jtqumX8OkhPhPYlG++MXs2ziS4wblCJEM
+-xChBVfvLWokVfnHoNb9Ncgk9vjo4UFt3MRuNs8ckRZqnrG0AFFoEt7oT61EKmEFB
+-Ik5lYYeBQVCmeVyJ3hlKV9Uu5l0cUyx+mM0aBhakaHPQNAQTXKFx01p8VdteZOE3
+-hzBWBOURtCmAEvF5OYiiAhF8J2a3iLd48soKqDirCmTCv2ZdlYTBoSUeh10aUAsg
+-EsxBu24LUTi4S8sCAwEAAaNjMGEwDgYDVR0PAQH/BAQDAgGGMA8GA1UdEwEB/wQF
+-MAMBAf8wHQYDVR0OBBYEFLE+w2kD+L9HAdSYJhoIAu9jZCvDMB8GA1UdIwQYMBaA
+-FLE+w2kD+L9HAdSYJhoIAu9jZCvDMA0GCSqGSIb3DQEBBQUAA4IBAQAcGgaX3Nec
+-nzyIZgYIVyHbIUf4KmeqvxgydkAQV8GK83rZEWWONfqe/EW1ntlMMUu4kehDLI6z
+-eM7b41N5cdblIZQB2lWHmiRk9opmzN6cN82oNLFpmyPInngiK3BD41VHMWEZ71jF
+-hS9OMPagMRYjyOfiZRYzy78aG6A9+MpeizGLYAiJLQwGXFK3xPkKmNEVX58Svnw2
+-Yzi9RKR/5CYrCsSXaQ3pjOLAEFe4yHYSkVXySGnYvCoCWw9E1CAx2/S6cCZdkGCe
+-vEsXCS+0yx5DaMkHJ8HSXPfqIbloEpw8nL+e/IBcm2PN7EeqJSdnoDfzAIJ9VNep
+-+OkuE6N36B9K
+------END CERTIFICATE-----
+Index: ruby/lib/rubygems/ssl_certs/rubygems.org/AddTrustExternalCARoot.pem
+===================================================================
+--- ruby.orig/lib/rubygems/ssl_certs/rubygems.org/AddTrustExternalCARoot.pem
++++ /dev/null
+@@ -1,25 +0,0 @@
+------BEGIN CERTIFICATE-----
+-MIIENjCCAx6gAwIBAgIBATANBgkqhkiG9w0BAQUFADBvMQswCQYDVQQGEwJTRTEU
+-MBIGA1UEChMLQWRkVHJ1c3QgQUIxJjAkBgNVBAsTHUFkZFRydXN0IEV4dGVybmFs
+-IFRUUCBOZXR3b3JrMSIwIAYDVQQDExlBZGRUcnVzdCBFeHRlcm5hbCBDQSBSb290
+-MB4XDTAwMDUzMDEwNDgzOFoXDTIwMDUzMDEwNDgzOFowbzELMAkGA1UEBhMCU0Ux
+-FDASBgNVBAoTC0FkZFRydXN0IEFCMSYwJAYDVQQLEx1BZGRUcnVzdCBFeHRlcm5h
+-bCBUVFAgTmV0d29yazEiMCAGA1UEAxMZQWRkVHJ1c3QgRXh0ZXJuYWwgQ0EgUm9v
+-dDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALf3GjPm8gAELTngTlvt
+-H7xsD821+iO2zt6bETOXpClMfZOfvUq8k+0DGuOPz+VtUFrWlymUWoCwSXrbLpX9
+-uMq/NzgtHj6RQa1wVsfwTz/oMp50ysiQVOnGXw94nZpAPA6sYapeFI+eh6FqUNzX
+-mk6vBbOmcZSccbNQYArHE504B4YCqOmoaSYYkKtMsE8jqzpPhNjfzp/haW+710LX
+-a0Tkx63ubUFfclpxCDezeWWkWaCUN/cALw3CknLa0Dhy2xSoRcRdKn23tNbE7qzN
+-E0S3ySvdQwAl+mG5aWpYIxG3pzOPVnVZ9c0p10a3CitlttNCbxWyuHv77+ldU9U0
+-WicCAwEAAaOB3DCB2TAdBgNVHQ4EFgQUrb2YejS0Jvf6xCZU7wO94CTLVBowCwYD
+-VR0PBAQDAgEGMA8GA1UdEwEB/wQFMAMBAf8wgZkGA1UdIwSBkTCBjoAUrb2YejS0
+-Jvf6xCZU7wO94CTLVBqhc6RxMG8xCzAJBgNVBAYTAlNFMRQwEgYDVQQKEwtBZGRU
+-cnVzdCBBQjEmMCQGA1UECxMdQWRkVHJ1c3QgRXh0ZXJuYWwgVFRQIE5ldHdvcmsx
+-IjAgBgNVBAMTGUFkZFRydXN0IEV4dGVybmFsIENBIFJvb3SCAQEwDQYJKoZIhvcN
+-AQEFBQADggEBALCb4IUlwtYj4g+WBpKdQZic2YR5gdkeWxQHIzZlj7DYd7usQWxH
+-YINRsPkyPef89iYTx4AWpb9a/IfPeHmJIZriTAcKhjW88t5RxNKWt9x+Tu5w/Rw5
+-6wwCURQtjr0W4MHfRnXnJK3s9EK0hZNwEGe6nQY1ShjTK3rMUUKhemPR5ruhxSvC
+-Nr4TDea9Y355e6cJDUCrat2PisP29owaQgVR1EX1n6diIWgVIEM8med8vSTYqZEX
+-c4g/VhsxOBi0cQ+azcgOno4uG+GMmIPLHzHxREzGBHNJdmAPx/i9F4BrLunMTA5a
+-mnkPIAou1Z5jJh5VkpTYghdae9C8x49OhgQ=
+------END CERTIFICATE-----
+Index: ruby/lib/rubygems/ssl_certs/rubygems.org/GlobalSignRootCA_R3.pem
+===================================================================
+--- /dev/null
++++ ruby/lib/rubygems/ssl_certs/rubygems.org/GlobalSignRootCA_R3.pem
+@@ -0,0 +1,21 @@
++-----BEGIN CERTIFICATE-----
++MIIDXzCCAkegAwIBAgILBAAAAAABIVhTCKIwDQYJKoZIhvcNAQELBQAwTDEgMB4G
++A1UECxMXR2xvYmFsU2lnbiBSb290IENBIC0gUjMxEzARBgNVBAoTCkdsb2JhbFNp
++Z24xEzARBgNVBAMTCkdsb2JhbFNpZ24wHhcNMDkwMzE4MTAwMDAwWhcNMjkwMzE4
++MTAwMDAwWjBMMSAwHgYDVQQLExdHbG9iYWxTaWduIFJvb3QgQ0EgLSBSMzETMBEG
++A1UEChMKR2xvYmFsU2lnbjETMBEGA1UEAxMKR2xvYmFsU2lnbjCCASIwDQYJKoZI
++hvcNAQEBBQADggEPADCCAQoCggEBAMwldpB5BngiFvXAg7aEyiie/QV2EcWtiHL8
++RgJDx7KKnQRfJMsuS+FggkbhUqsMgUdwbN1k0ev1LKMPgj0MK66X17YUhhB5uzsT
++gHeMCOFJ0mpiLx9e+pZo34knlTifBtc+ycsmWQ1z3rDI6SYOgxXG71uL0gRgykmm
++KPZpO/bLyCiR5Z2KYVc3rHQU3HTgOu5yLy6c+9C7v/U9AOEGM+iCK65TpjoWc4zd
++QQ4gOsC0p6Hpsk+QLjJg6VfLuQSSaGjlOCZgdbKfd/+RFO+uIEn8rUAVSNECMWEZ
++XriX7613t2Saer9fwRPvm2L7DWzgVGkWqQPabumDk3F2xmmFghcCAwEAAaNCMEAw
++DgYDVR0PAQH/BAQDAgEGMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFI/wS3+o
++LkUkrk1Q+mOai97i3Ru8MA0GCSqGSIb3DQEBCwUAA4IBAQBLQNvAUKr+yAzv95ZU
++RUm7lgAJQayzE4aGKAczymvmdLm6AC2upArT9fHxD4q/c2dKg8dEe3jgr25sbwMp
++jjM5RcOO5LlXbKr8EpbsU8Yt5CRsuZRj+9xTaGdWPoO4zzUhw8lo/s7awlOqzJCK
++6fBdRoyV3XpYKBovHd7NADdBj+1EbddTKJd+82cEHhXXipa0095MJ6RMG3NzdvQX
++mcIfeg7jLQitChws/zyrVQ4PkX4268NXSb7hLi18YIvDQVETI53O9zJrlAGomecs
++Mx86OyXShkDOOyyGeMlhLxS67ttVb9+E7gUJTb0o2HLO02JQZR7rkpeDMdmztcpH
++WD9f
++-----END CERTIFICATE-----
+Index: ruby/test/rubygems/test_bundled_ca.rb
+===================================================================
+--- ruby.orig/test/rubygems/test_bundled_ca.rb
++++ ruby/test/rubygems/test_bundled_ca.rb
+@@ -51,13 +51,16 @@ if ENV["CI"] || ENV["TEST_SSL"]
+       assert_https('rubygems.org')
+     end
+ 
+-    def test_accessing_fastly
+-      assert_https('rubygems.global.ssl.fastly.net')
++    def test_accessing_www_rubygems
++      assert_https('www.rubygems.org')
+     end
+ 
+-    def test_accessing_new_index
+-      assert_https('fastly.rubygems.org')
++    def test_accessing_staging
++      assert_https('staging.rubygems.org')
+     end
+ 
++    def test_accessing_new_index
++      assert_https('index.rubygems.org')
++    end
+   end
+ end
+Index: ruby/lib/rubygems/ssl_certs/index.rubygems.org/GlobalSignRootCA.pem
+===================================================================
+--- ruby.orig/lib/rubygems/ssl_certs/index.rubygems.org/GlobalSignRootCA.pem
++++ /dev/null
+@@ -1,21 +0,0 @@
+------BEGIN CERTIFICATE-----
+-MIIDdTCCAl2gAwIBAgILBAAAAAABFUtaw5QwDQYJKoZIhvcNAQEFBQAwVzELMAkG
+-A1UEBhMCQkUxGTAXBgNVBAoTEEdsb2JhbFNpZ24gbnYtc2ExEDAOBgNVBAsTB1Jv
+-b3QgQ0ExGzAZBgNVBAMTEkdsb2JhbFNpZ24gUm9vdCBDQTAeFw05ODA5MDExMjAw
+-MDBaFw0yODAxMjgxMjAwMDBaMFcxCzAJBgNVBAYTAkJFMRkwFwYDVQQKExBHbG9i
+-YWxTaWduIG52LXNhMRAwDgYDVQQLEwdSb290IENBMRswGQYDVQQDExJHbG9iYWxT
+-aWduIFJvb3QgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDaDuaZ
+-jc6j40+Kfvvxi4Mla+pIH/EqsLmVEQS98GPR4mdmzxzdzxtIK+6NiY6arymAZavp
+-xy0Sy6scTHAHoT0KMM0VjU/43dSMUBUc71DuxC73/OlS8pF94G3VNTCOXkNz8kHp
+-1Wrjsok6Vjk4bwY8iGlbKk3Fp1S4bInMm/k8yuX9ifUSPJJ4ltbcdG6TRGHRjcdG
+-snUOhugZitVtbNV4FpWi6cgKOOvyJBNPc1STE4U6G7weNLWLBYy5d4ux2x8gkasJ
+-U26Qzns3dLlwR5EiUWMWea6xrkEmCMgZK9FGqkjWZCrXgzT/LCrBbBlDSgeF59N8
+-9iFo7+ryUp9/k5DPAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNVHRMBAf8E
+-BTADAQH/MB0GA1UdDgQWBBRge2YaRQ2XyolQL30EzTSo//z9SzANBgkqhkiG9w0B
+-AQUFAAOCAQEA1nPnfE920I2/7LqivjTFKDK1fPxsnCwrvQmeU79rXqoRSLblCKOz
+-yj1hTdNGCbM+w6DjY1Ub8rrvrTnhQ7k4o+YviiY776BQVvnGCv04zcQLcFGUl5gE
+-38NflNUVyRRBnMRddWQVDf9VMOyGj/8N7yy5Y0b2qvzfvGn9LhJIZJrglfCm7ymP
+-AbEVtQwdpf5pLGkkeB6zpxxxYu7KyJesF12KwvhHhm4qxFYxldBniYUr+WymXUad
+-DKqC5JlR3XC321Y9YeRq4VzW9v493kHMB65jUr9TU/Qr6cf9tveCX4XSQRjbgbME
+-HMUfpIBvFSDJ3gyICh3WZlXi/EjJKSZp4A==
+------END CERTIFICATE-----
+Index: ruby/lib/rubygems/ssl_certs/rubygems.org/GlobalSignRootCA.pem
+===================================================================
+--- /dev/null
++++ ruby/lib/rubygems/ssl_certs/rubygems.org/GlobalSignRootCA.pem
+@@ -0,0 +1,21 @@
++-----BEGIN CERTIFICATE-----
++MIIDdTCCAl2gAwIBAgILBAAAAAABFUtaw5QwDQYJKoZIhvcNAQEFBQAwVzELMAkG
++A1UEBhMCQkUxGTAXBgNVBAoTEEdsb2JhbFNpZ24gbnYtc2ExEDAOBgNVBAsTB1Jv
++b3QgQ0ExGzAZBgNVBAMTEkdsb2JhbFNpZ24gUm9vdCBDQTAeFw05ODA5MDExMjAw
++MDBaFw0yODAxMjgxMjAwMDBaMFcxCzAJBgNVBAYTAkJFMRkwFwYDVQQKExBHbG9i
++YWxTaWduIG52LXNhMRAwDgYDVQQLEwdSb290IENBMRswGQYDVQQDExJHbG9iYWxT
++aWduIFJvb3QgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDaDuaZ
++jc6j40+Kfvvxi4Mla+pIH/EqsLmVEQS98GPR4mdmzxzdzxtIK+6NiY6arymAZavp
++xy0Sy6scTHAHoT0KMM0VjU/43dSMUBUc71DuxC73/OlS8pF94G3VNTCOXkNz8kHp
++1Wrjsok6Vjk4bwY8iGlbKk3Fp1S4bInMm/k8yuX9ifUSPJJ4ltbcdG6TRGHRjcdG
++snUOhugZitVtbNV4FpWi6cgKOOvyJBNPc1STE4U6G7weNLWLBYy5d4ux2x8gkasJ
++U26Qzns3dLlwR5EiUWMWea6xrkEmCMgZK9FGqkjWZCrXgzT/LCrBbBlDSgeF59N8
++9iFo7+ryUp9/k5DPAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNVHRMBAf8E
++BTADAQH/MB0GA1UdDgQWBBRge2YaRQ2XyolQL30EzTSo//z9SzANBgkqhkiG9w0B
++AQUFAAOCAQEA1nPnfE920I2/7LqivjTFKDK1fPxsnCwrvQmeU79rXqoRSLblCKOz
++yj1hTdNGCbM+w6DjY1Ub8rrvrTnhQ7k4o+YviiY776BQVvnGCv04zcQLcFGUl5gE
++38NflNUVyRRBnMRddWQVDf9VMOyGj/8N7yy5Y0b2qvzfvGn9LhJIZJrglfCm7ymP
++AbEVtQwdpf5pLGkkeB6zpxxxYu7KyJesF12KwvhHhm4qxFYxldBniYUr+WymXUad
++DKqC5JlR3XC321Y9YeRq4VzW9v493kHMB65jUr9TU/Qr6cf9tveCX4XSQRjbgbME
++HMUfpIBvFSDJ3gyICh3WZlXi/EjJKSZp4A==
++-----END CERTIFICATE-----

@@ -27,6 +27,7 @@ CVE-2021-28965.patch
 CVE-2023-28755.patch
 CVE-2023-28756-1.patch
 CVE-2023-28756-2.patch
+CVE-2023-28756-3.patch
 CVE-2022-28739.patch
 
 certs_up_fix.patch
@@ -36,5 +37,11 @@ CVE-2021-33621-2.patch
 CVE-2021-33621-3.patch
 
 Update-test-certificates.patch
-Fix-for-tzdata-2022g.patch
-Git-CVE.patch
+Fix-tests-tzdata.patch
+Fix-tests-git.patch
+Fix-tests-io_console.patch
+Fix-tests-assert_linear_performance.patch
+CVE-2023-36617.patch
+CVE-2024-27280.patch
+CVE-2024-27281.patch
+CVE-2024-27282.patch

@@ -1,0 +1,29 @@
+Origin: https://github.com/ruby/ruby/commit/0efd8bbd34117437f0e1584fe1c1f2177ed09d0d
+Reviewed-by: Sylvain Beucler <beuc@debian.org>
+Last-Update: 2024-08-05
+
+From 0efd8bbd34117437f0e1584fe1c1f2177ed09d0d Mon Sep 17 00:00:00 2001
+From: mame <mame@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
+Date: Thu, 15 Feb 2018 05:34:20 +0000
+Subject: test/io/console/test_io_console.rb (test_oflush): Avoid race
+ condition
+
+Add a ad-hoc wait.  Follows test_ioflush2.
+
+git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/trunk@62411 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
+---
+ test/io/console/test_io_console.rb | 1 +
+ 1 file changed, 1 insertion(+)
+
+Index: ruby/test/io/console/test_io_console.rb
+===================================================================
+--- ruby.orig/test/io/console/test_io_console.rb
++++ ruby/test/io/console/test_io_console.rb
+@@ -212,6 +212,7 @@ defined?(PTY) and defined?(IO.console) a
+       s.oflush # oflush may be issued after "a" is already sent.
+       s.print "b"
+       s.flush
++      sleep 0.1
+       assert_include(["b", "ab"], m.readpartial(10))
+     }
+   end

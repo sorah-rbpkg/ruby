@@ -7,5 +7,3 @@ include:
 # These didn't work before LTS, not attempting to fix after freeze
 blhc:
   allow_failure: true
-piuparts:
-  allow_failure: true
