@@ -7,8 +7,3 @@ include:
 # These didn't work before LTS, not attempting to fix after freeze
 blhc:
   allow_failure: true
-
-variables:
-  # Fix "Insecure world writable dir" testsuite errors due to umask 0
-  # https://salsa.debian.org/salsa-ci-team/pipeline/-/issues/362
-  FF_DISABLE_UMASK_FOR_DOCKER_EXECUTOR: 1
