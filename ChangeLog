@@ -1,5 +1,308 @@
 -*- coding: utf-8 -*-
 
+commit a777087be612b7675fe012560bf0d8fddff20f55
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-05-29 12:54:36 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-29 12:54:36 +0900
+
+    Bump up 3.1.6
+
+commit 7da01370d51e3a2e5c2c6092b2cc0da793176843
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-05-24 16:23:02 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-24 16:59:42 +0900
+
+    Revert "[ruby/openssl] Use EVP_Digest{Sign,Verify} when available"
+
+    This reverts commit 63f40a5be59ac898e87528630568b7890ffcf5fb.
+
+commit dc969b3a9c8bc1c860ecfd9306b3a5872e36579a
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-05-24 16:22:55 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-24 16:59:42 +0900
+
+    Revert "[ruby/openssl] Enable HKDF support for LibreSSL 3.6 and later"
+
+    This reverts commit b6da54c7219197eacdbfdca53739686f0bb2d06a.
+
+commit b6da54c7219197eacdbfdca53739686f0bb2d06a
+  Author:     Theo Buehler <tb@openbsd.org>
+  AuthorDate: 2022-11-24 01:09:50 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-24 13:02:00 +0900
+
+    [ruby/openssl] Enable HKDF support for LibreSSL 3.6 and later
+
+    LibreSSL 3.6 added support for HKDF in EVP. Enable this in ossl_kdf.c.
+
+    https://github.com/ruby/openssl/commit/9bdd39a7e2
+
+commit 63f40a5be59ac898e87528630568b7890ffcf5fb
+  Author:     Theo Buehler <tb@openbsd.org>
+  AuthorDate: 2022-11-10 22:50:22 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-24 13:02:00 +0900
+
+    [ruby/openssl] Use EVP_Digest{Sign,Verify} when available
+
+    LibreSSL 3.4 added EVP_DigestSign() and EVP_DigestVerify(). Use them
+    when available to prepare for the addition of Ed25519 support in
+    LibreSSL 3.7.
+
+    https://github.com/ruby/openssl/commit/475b2bf766
+
+commit 5f641517689719fb9cf1aa76d2834644ad639010
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-05-24 12:05:24 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-24 13:02:00 +0900
+
+    LibreSSL 3.5 and later provide and need to use PEM_write_bio_PrivateKey_traditional()
+
+    Co-authored-by: "Jeremy Evans" <code@jeremyevans.net>
+
+commit 0a671907355d806f1701ab5f677e1582f834a925
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-05-23 13:26:29 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-23 14:12:53 +0900
+
+    merge revision(s) ae8990aef098410ecc2b5f48fea9d7d171a3c5f6:
+
+            Alias init functions
+
+            The extension library has each initialization function named "Init_" +
+            basename. If multiple extensions have the same base name (such as
+            cgi/escape and erb/escape), the same function will be registered for
+            both names.
+
+            To fix this conflict, rename the initialization functions under sub
+            directories using using parent names, when statically linking.
+            ---
+             ext/extmk.rb            | 16 +++++++++++++++-
+             template/extinit.c.tmpl |  2 +-
+             2 files changed, 16 insertions(+), 2 deletions(-)
+
+commit 60fb6d485944ea9dc07900a566cd5bd6ba5e083f
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-05-23 12:49:30 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-23 13:24:36 +0900
+
+    merge revision(s) 7f87ad9fc4bc45faf8cd33602a025f27c094b2fd:
+
+            Refer autoconfigured endian macro (#10572)
+
+            Remove the case `RB_IO_BUFFER_HOST_ENDIAN` is not defined.
+            ---
+             include/ruby/io/buffer.h | 8 ++------
+             1 file changed, 2 insertions(+), 6 deletions(-)
+
+commit c54f52fb4da10aae50a74badf85994e9264e1cc4
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-05-23 12:49:24 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-23 13:24:36 +0900
+
+    merge revision(s) 1faeb44dfcf777ace28321e80d0ebf942161a0a7:
+
+            Check if macros are defined before using
+
+            Assume macros with the same prefix would be defined together.
+            ---
+             include/ruby/io/buffer.h | 8 ++++----
+             1 file changed, 4 insertions(+), 4 deletions(-)
+
+commit 7256dfd4a127abfd22c6ed0b6196666ec273e08f
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2023-07-25 16:07:33 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-23 12:45:59 +0900
+
+    [Bug #19751] Remove linemarkers in middle
+
+commit c884de63c8c9833ee6a054b6363e23cfc2cbd74e
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-05-23 11:19:52 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-23 11:58:26 +0900
+
+    merge revision(s) 48644e71096c70132be9dfdcbfb414ec2e68d18b:
+
+            tool/runruby.rb: remove LD_PRELOAD-like env-var options from
+             runruby.rb
+
+            LD_PRELOAD sometimes forces loading libraries into unrelated
+            executables. For example, macOS on recent Apple Silicon can execute
+            arm64 and arm64e binaries by default, and /usr/bin/clang is built as
+            arm64e. If Ruby is built as arm64, and mkmf launched through runruby.rb
+            spawns /usr/bin/clang, dynamic loader tries to load libruby (arm64e)
+            into clang (arm64). This force-load causes library load failure.
+            In theory, we don't need both LD_PRELOAD and LD_LIBRARY_PATH at the same
+            time, because executables requiring libruby already have libruby
+            dependency, so LD_LIBRARY_PATH is enough for this case.
+            ---
+             tool/runruby.rb | 9 ---------
+             1 file changed, 9 deletions(-)
+
+commit 5979e4118dfae7f68f12d25429183bdeccf889df
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-05-23 10:20:09 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-23 10:57:56 +0900
+
+    macos-11 will be retired at Jun, 2024
+
+commit 80b11b216d5ca9338b2384c0215bc652e826412d
+  Author:     Sutou Kouhei <kou@clear-code.com>
+  AuthorDate: 2022-09-15 07:08:20 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-23 10:57:56 +0900
+
+    merge revision(s) a4ad6bd9aac564e93219284c912b26a72f9e82fc:
+
+            [ruby/fiddle] closure: free resources when an exception is raised in
+             Closure.new
+
+            GitHub: GH-102
+
+            https://github.com/ruby/fiddle/commit/81a8a56239
+            ---
+             ext/fiddle/closure.c | 56 ++++++++++++++++++++++++++++++++++++++++------------
+             1 file changed, 43 insertions(+), 13 deletions(-)
+
+commit 07c11226a058c61296ad75a9c266b5a0f159b600
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-05-21 13:29:34 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-21 14:06:43 +0900
+
+    merge revision(s) cfc564ac40496a392f463658ea33954ea76d6b11:
+
+            Include headers for `ruby_qsort` only if needed
+
+            If GNU `qsort_r` is available, we use the function and these headers
+            are not used.
+            ---
+             util.c | 4 ++--
+             1 file changed, 2 insertions(+), 2 deletions(-)
+
+commit 24d7a1c6e73fa2d8e9f8996c16dcf2a31ce5c751
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-05-21 13:29:08 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-21 14:06:43 +0900
+
+    merge revision(s) ed3d8f74ec2eee43d50f9826e2f11ceea279823e:
+
+            Delete a macro that has never been used, probably added by mistake
+
+            ---
+             util.c | 7 -------
+             1 file changed, 7 deletions(-)
+
+commit 122b510b94f815473cc5cc1d47701a06a0bc44a0
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-05-21 13:25:08 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-21 14:06:43 +0900
+
+    merge revision(s) 7400628cb054a9a9651d69411a100fc9d518099f:
+
+            [Bug #18997] Don't define ruby_qsort when POSIX qsort_r is available
+
+            The current code would define ruby_qsort as a wrapper of qsort_s
+            when it is available. When both qsort_s and POSIX (GNU) qsort_r
+            are available, we should call qsort_r directly instead, and
+            the qsort_s wrapper is redundant.
+            ---
+             util.c | 6 ++++--
+             1 file changed, 4 insertions(+), 2 deletions(-)
+
+commit a131d2391f5a46d7cf7838e79ddfe4cf8018b365
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-05-17 11:52:12 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-17 17:25:59 +0900
+
+    AppVeyor is retired at 2024
+
+commit 5db59cd50f7164f462289952d59bf8eac3a018f6
+  Author:     Jun Aruga <jaruga@redhat.com>
+  AuthorDate: 2024-03-12 22:39:05 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-17 17:25:59 +0900
+
+    [ruby/openssl] test_asn1.rb: Remove the assertions of the time string format without second.
+
+    This commit fixes the following errors in the tests.
+    Because the OpenSSL project changed the code to make the time string format
+    without second invalid. So, we drop the assertions.
+
+    ```
+    1) Error: test_generalizedtime(OpenSSL::TestASN1): OpenSSL::ASN1::ASN1Error: generalizedtime is too short
+    /home/runner/work/ruby-openssl/ruby-openssl/test/openssl/test_asn1.rb:698:in `decode'
+    /home/runner/work/ruby-openssl/ruby-openssl/test/openssl/test_asn1.rb:698:in `decode_test'
+    /home/runner/work/ruby-openssl/ruby-openssl/test/openssl/test_asn1.rb:433:in `test_generalizedtime'
+         430:       OpenSSL::ASN1::GeneralizedTime.new(Time.utc(9999, 9, 8, 23, 43, 39))
+         431:     # LibreSSL 3.6.0 requires the seconds element
+         432:     return if libressl?
+      => 433:     decode_test B(%w{ 18 0D }) + "201612081934Z".b,
+         434:       OpenSSL::ASN1::GeneralizedTime.new(Time.utc(2016, 12, 8, 19, 34, 0))
+         435:     # not implemented
+         436:     # decode_test B(%w{ 18 13 }) + "https://github.com/ruby/openssl/commit/201612081934+0930".b,
+
+    2) Error: test_utctime(OpenSSL::TestASN1): OpenSSL::ASN1::ASN1Error: utctime is too short
+    /home/runner/work/ruby-openssl/ruby-openssl/test/openssl/test_asn1.rb:698:in `decode'
+    /home/runner/work/ruby-openssl/ruby-openssl/test/openssl/test_asn1.rb:698:in `decode_test'
+    /home/runner/work/ruby-openssl/ruby-openssl/test/openssl/test_asn1.rb:411:in `test_utctime'
+         408:     end
+         409:     # Seconds is omitted. LibreSSL 3.6.0 requires it
+         410:     return if libressl?
+      => 411:     decode_test B(%w{ 17 0B }) + "1609082343Z".b,
+         412:       OpenSSL::ASN1::UTCTime.new(Time.utc(2016, 9, 8, 23, 43, 0))
+         413:     # not implemented
+         414:     # decode_test B(%w{ 17 11 }) + "https://github.com/ruby/openssl/commit/500908234339+0930".b,
+    ```
+
+    https://github.com/ruby/openssl/commit/2e826d5715
+
+commit 89574f02e1abc58e4459d734424b430bcd4c6f17
+  Author:     Kazuki Yamaguchi <k@rhe.jp>
+  AuthorDate: 2022-10-17 16:50:01 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-17 17:25:59 +0900
+
+    [ruby/openssl] test/openssl/test_asn1.rb: skip failing tests on LibreSSL 3.6.0
+
+    LibreSSL 3.6.0 expects the seconds part in UTCTime and GeneralizedTime
+    to be always present. LibreSSL 3.6.0 release note [1] says:
+
+    > - The ASN.1 time parser has been refactored and rewritten using CBS.
+    >   It has been made stricter in that it now enforces the rules from
+    >   RFC 5280.
+
+    [1] https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-3.6.0-relnotes.txt
+
+    https://github.com/ruby/openssl/commit/bbc540fe83
+
+commit 10f4e4d936ece813ff3bc061a0ecff85804447cc
+  Author:     Xi Ruoyao <xry111@xry111.site>
+  AuthorDate: 2024-04-24 14:42:09 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-17 17:25:59 +0900
+
+    [ruby/net-http] Skip test_session_reuse_but_expire with OpenSSL 3.3
+
+    OpenSSL 3.3.0 9 Apr 2024 is also broken.
+
+    Signed-off-by: Xi Ruoyao <xry111@xry111.site>
+
+    https://github.com/ruby/net-http/commit/ab525c956d
+
 commit 1945f8dc0ea71f536931364fa3605b7507807bb5
   Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
   AuthorDate: 2024-04-23 19:20:59 +0900
