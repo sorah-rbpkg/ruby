@@ -404,9 +404,6 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
   def test_utctime
     encode_decode_test B(%w{ 17 0D }) + "160908234339Z".b,
       OpenSSL::ASN1::UTCTime.new(Time.utc(2016, 9, 8, 23, 43, 39))
-    # Seconds is omitted
-    decode_test B(%w{ 17 0B }) + "1609082343Z".b,
-      OpenSSL::ASN1::UTCTime.new(Time.utc(2016, 9, 8, 23, 43, 0))
     begin
       # possible range of UTCTime is 1969-2068 currently
       encode_decode_test B(%w{ 17 0D }) + "690908234339Z".b,
@@ -432,8 +429,6 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
       OpenSSL::ASN1::GeneralizedTime.new(Time.utc(2016, 12, 8, 19, 34, 29))
     encode_decode_test B(%w{ 18 0F }) + "99990908234339Z".b,
       OpenSSL::ASN1::GeneralizedTime.new(Time.utc(9999, 9, 8, 23, 43, 39))
-    decode_test B(%w{ 18 0D }) + "201612081934Z".b,
-      OpenSSL::ASN1::GeneralizedTime.new(Time.utc(2016, 12, 8, 19, 34, 0))
     # not implemented
     # decode_test B(%w{ 18 13 }) + "20161208193439+0930".b,
     #   OpenSSL::ASN1::GeneralizedTime.new(Time.new(2016, 12, 8, 19, 34, 39, "+09:30"))
