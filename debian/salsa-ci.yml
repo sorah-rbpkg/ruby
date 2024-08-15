@@ -1,0 +1,9 @@
+---
+# LTS/ELTS CI
+
+include:
+- https://salsa.debian.org/lts-team/pipeline/raw/master/recipes/jessie.yml
+
+# These didn't work before LTS, not attempting to fix after freeze
+blhc:
+  allow_failure: true
