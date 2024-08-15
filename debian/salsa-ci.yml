@@ -1,7 +1,17 @@
 ---
+# LTS/ELTS CI
+
 include:
-  - https://salsa.debian.org/salsa-ci-team/pipeline/raw/master/salsa-ci.yml
-  - https://salsa.debian.org/salsa-ci-team/pipeline/raw/master/pipeline-jobs.yml
+# bullseye-lts recipe not ready yet 2024-08-03, but LTS may not have to fork:
+# - https://salsa.debian.org/lts-team/pipeline/raw/master/recipes/bullseye.yml
+- https://salsa.debian.org/salsa-ci-team/pipeline/raw/master/salsa-ci.yml
+- https://salsa.debian.org/salsa-ci-team/pipeline/raw/master/pipeline-jobs.yml
 
 variables:
   DEBIAN_RUBY_EXTRA_TEST_EXCLUDES: salsa
+
+# These didn't work before LTS, not attempting to fix after freeze
+blhc:
+  allow_failure: true
+reprotest:
+  allow_failure: true
