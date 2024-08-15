@@ -203,17 +203,11 @@ ruby_strtoul(const char *str, char **endptr, int base)
     }
 }
 
+#if !defined HAVE_GNU_QSORT_R
 #include <sys/types.h>
-#include <sys/stat.h>
+#include <stdint.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
-#if defined(HAVE_FCNTL_H)
-#include <fcntl.h>
-#endif
-
-#ifndef S_ISDIR
-#   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
 
 typedef int (cmpfunc_t)(const void*, const void*, void*);
@@ -263,7 +257,7 @@ ruby_qsort(void* base, const size_t nel, const size_t size, cmpfunc_t *cmp, void
     qsort_s(base, nel, size, cmp, d);
 }
 # define HAVE_GNU_QSORT_R 1
-#elif !defined HAVE_GNU_QSORT_R
+#else
 /* mm.c */
 
 #define mmtype long
@@ -530,7 +524,8 @@ ruby_qsort(void* base, const size_t nel, const size_t size, cmpfunc_t *cmp, void
     else goto nxt;                         /* need not to sort both sides */
   }
 }
-#endif /* HAVE_GNU_QSORT_R */
+#endif
+#endif /* !HAVE_GNU_QSORT_R */
 
 char *
 ruby_strdup(const char *str)
