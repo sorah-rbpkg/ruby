@@ -112,6 +112,14 @@ Index: ruby/test/ruby/test_exception.rb
      bug9109 = '[ruby-dev:47804] [Bug #9109]'
      assert_separately(%w[--disable-gem], <<-SRC)
      assert_raise(SystemStackError, #{bug9109.dump}) {
+@@ -511,6 +512,7 @@ end.join
+   end
+ 
+   def test_machine_stackoverflow_by_define_method
++    skip "[debian] flaky on armel, excluded in ruby2.3"
+     bug9454 = '[ruby-core:60113] [Bug #9454]'
+     assert_separately(%w[--disable-gem], <<-SRC)
+     assert_raise(SystemStackError, #{bug9454.dump}) {
 Index: ruby/test/ruby/test_file_exhaustive.rb
 ===================================================================
 --- ruby.orig/test/ruby/test_file_exhaustive.rb
