@@ -1350,7 +1350,6 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_reg_options@Base 3.3.0-0nkmi1
  rb_reg_prepare_re@Base 3.3.0-0nkmi1
  rb_reg_quote@Base 3.3.0-0nkmi1
- rb_reg_raise_timeout@Base 3.3.1-0nkmi1
  rb_reg_regcomp@Base 3.3.0-0nkmi1
  rb_reg_region_copy@Base 3.3.0-0nkmi1
  rb_reg_regsub@Base 3.3.0-0nkmi1
@@ -1527,6 +1526,7 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_str_succ@Base 3.3.0-0nkmi1
  rb_str_times@Base 3.3.0-0nkmi1
  rb_str_tmp_frozen_acquire@Base 3.3.0-0nkmi1
+ rb_str_tmp_frozen_no_embed_acquire@Base 3.3.5-0nkmi1
  rb_str_tmp_frozen_release@Base 3.3.0-0nkmi1
  rb_str_tmp_new@Base 3.3.0-0nkmi1
  rb_str_to_dbl@Base 3.3.0-0nkmi1
@@ -1712,6 +1712,7 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_yjit_iseq_mark@Base 3.3.0-0nkmi1
  rb_yjit_iseq_update_references@Base 3.3.0-0nkmi1
  rb_yjit_live_iseq_count@Base 3.3.0-0nkmi1
+ rb_yjit_option_disable@Base 3.3.5-0nkmi1
  rb_yjit_parse_option@Base 3.3.0-0nkmi1
  rb_yjit_print_stats_p@Base 3.3.0-0nkmi1
  rb_yjit_record_exit_stack@Base 3.3.0-0nkmi1
