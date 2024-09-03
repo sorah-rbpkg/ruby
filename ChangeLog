@@ -1,5 +1,743 @@
 -*- coding: utf-8 -*-
 
+commit ef084cc8f4958c1b6e4ead99136631bef6d8ddba
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-09-03 01:09:08 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-09-03 01:09:08 +0900
+
+    v3.3.5
+
+commit d3ab7be8ca034ea58da7d6ebc77ad66e192cba18
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-09-02 19:28:11 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-09-02 19:28:11 +0900
+
+    merge revision(s) 657f4b99f61: [Backport #20667]
+
+            Update bundled gems list as of 2024-08-02
+
+commit c69d59e9b2d3d8621e50670087d4e53b73580c75
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-09-02 19:25:22 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-09-02 19:25:23 +0900
+
+    Sync tool/lib/core_assertions.rb from master
+
+    It seems necessary to pass test-bundled-gems with REXML.
+
+commit cf9a6c2b63e6337a3f6ce76527446739e5aceb67
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-09-02 19:19:13 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-09-02 19:19:13 +0900
+
+    merge revision(s) a3562c2a0abf1c2bdd1d50377b4f929580782594: [Backport #20701]
+
+            Remove incorrect setting of KW_SPLAT_MUT flag
+
+            Fixes [Bug #20701]
+
+            Co-authored-by: Pablo Herrero <pablodherrero@gmail.com>
+
+commit d83b5633b16f4ddcece4ff924f21c5a5851470cf
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-09-02 19:10:19 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-09-02 19:10:19 +0900
+
+    merge revision(s) 992596fb7af18a7f472589a607d0eb3fbb03b49a: [Backport #20344]
+
+            Fix next inside block argument stack underflow
+
+            [Bug #20344]
+            Fix compile_next adding removable adjust label
+
+commit b210c86a0201f6a97c4da8266908260746f53ae0
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-09-02 19:07:09 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-09-02 19:07:09 +0900
+
+    merge revision(s) 97449338d6cb42d9dd7c9ca61550616e7e6b6ef6: [Backport #20649]
+
+            [Bug #20649] Allow `nil` as 2nd argument of `assign_error`
+
+            Fallback to the last token element in that case, for the backward
+            compatibilities.
+
+commit 6a4e79533b4454392f3afdfa0c4d35b763b68466
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-09-02 18:56:18 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-09-02 18:56:18 +0900
+
+    merge revision(s) 1870505f478cc75993b296b7144a45137ace6937: [Backport #20651]
+
+            Fix wrong unreachable chunk remove when jump destination label is unremovable
+
+commit e0e23e7d5eb4da42c490b1d3408bd6e5047e8f83
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-09-02 18:52:51 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-09-02 18:52:51 +0900
+
+    merge revision(s) 29500e30346: [Backport #20667]
+
+            Update bundled gems list as of 2024-08-22
+
+commit 7b954e7bc64e201af1dd65e264e5091310efd362
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-09-02 18:43:16 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-09-02 18:44:25 +0900
+
+    Allow failures in Travis ppc64le and s390x
+
+    Those jobs are way too unstable and provide very little benefit.
+
+    e.g.
+    https://app.travis-ci.com/github/ruby/ruby/jobs/624611955
+    https://app.travis-ci.com/github/ruby/ruby/jobs/625551620
+
+commit 937964f3467a6242bb4bf1431983e6847d529338
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-08-28 08:00:27 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-08-28 08:00:27 +0900
+
+    Merge URI-0.13.1 for Ruby 3.3 (#11466)
+
+    Merge URI-0.13.1
+
+commit ac8d50e52ebc2d2684914e56548a64a65830c16a
+  Author:     Peter Zhu <peter@peterzhu.ca>
+  AuthorDate: 2024-08-24 07:48:08 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-08-24 07:48:08 +0900
+
+    [Backport 3.3] [Bug #20691] Fix use-after-free in WeakKeyMap#clear (#11443)
+
+    Fix use-after-free in WeakKeyMap#clear
+
+    [Bug #20691]
+
+    If the WeakKeyMap has been marked but sweeping hasn't started yet and we
+    cann WeakKeyMap#clear, then there could be a use-after-free because we do
+    not call rb_gc_remove_weak to remove the key from the GC.
+
+    For example, the following code triggers use-after-free errors in Valgrind:
+
+        map = ObjectSpace::WeakKeyMap.new
+
+        1_000.times do
+          1_000.times do
+            map[Object.new] = nil
+          end
+
+          map.clear
+        end
+
+    Output from Valgrind:
+
+        ==61230== Invalid read of size 8
+        ==61230==    at 0x25CAF8: gc_update_weak_references (default.c:5593)
+        ==61230==    by 0x25CAF8: gc_marks_finish (default.c:5641)
+        ==61230==    by 0x26031C: gc_marks_continue (default.c:5987)
+        ==61230==    by 0x26031C: gc_continue (default.c:2255)
+        ==61230==    by 0x2605FC: newobj_cache_miss (default.c:2589)
+        ==61230==    by 0x26111F: newobj_alloc (default.c:2622)
+        ==61230==    by 0x26111F: rb_gc_impl_new_obj (default.c:2701)
+        ==61230==    by 0x26111F: newobj_of (gc.c:890)
+        ==61230==    by 0x26111F: rb_wb_protected_newobj_of (gc.c:917)
+        ==61230==    by 0x2DE218: rb_class_allocate_instance (object.c:131)
+        ==61230==    by 0x2E32A8: class_call_alloc_func (object.c:2141)
+        ==61230==    by 0x2E32A8: rb_class_alloc (object.c:2113)
+        ==61230==    by 0x2E32A8: rb_class_new_instance_pass_kw (object.c:2172)
+        ==61230==    by 0x4296BC: vm_call_cfunc_with_frame_ (vm_insnhelper.c:3788)
+        ==61230==    by 0x44A9CD: vm_sendish (vm_insnhelper.c:5955)
+        ==61230==    by 0x44A9CD: vm_exec_core (insns.def:898)
+        ==61230==    by 0x43A0E4: rb_vm_exec (vm.c:2564)
+        ==61230==    by 0x2341B4: rb_ec_exec_node (eval.c:281)
+        ==61230==    by 0x236258: ruby_run_node (eval.c:319)
+        ==61230==    by 0x15D665: rb_main (main.c:43)
+        ==61230==    by 0x15D665: main (main.c:62)
+        ==61230==  Address 0x2159cb00 is 0 bytes inside a block of size 8 free'd
+        ==61230==    at 0x4849B2C: free (vg_replace_malloc.c:989)
+        ==61230==    by 0x248EF1: rb_gc_impl_free (default.c:8512)
+        ==61230==    by 0x248EF1: rb_gc_impl_free (default.c:8493)
+        ==61230==    by 0x248EF1: ruby_sized_xfree.constprop.0 (gc.c:4178)
+        ==61230==    by 0x4627EC: wkmap_free_table_i (weakmap.c:652)
+        ==61230==    by 0x3A54AF: apply_functor (st.c:1633)
+        ==61230==    by 0x3A54AF: st_general_foreach (st.c:1543)
+        ==61230==    by 0x3A54AF: rb_st_foreach (st.c:1640)
+        ==61230==    by 0x46203C: wkmap_clear (weakmap.c:973)
+        ==61230==    by 0x4296BC: vm_call_cfunc_with_frame_ (vm_insnhelper.c:3788)
+        ==61230==    by 0x44A9CD: vm_sendish (vm_insnhelper.c:5955)
+        ==61230==    by 0x44A9CD: vm_exec_core (insns.def:898)
+        ==61230==    by 0x43A0E4: rb_vm_exec (vm.c:2564)
+        ==61230==    by 0x2341B4: rb_ec_exec_node (eval.c:281)
+        ==61230==    by 0x236258: ruby_run_node (eval.c:319)
+        ==61230==    by 0x15D665: rb_main (main.c:43)
+        ==61230==    by 0x15D665: main (main.c:62)
+        ==61230==  Block was alloc'd at
+        ==61230==    at 0x484680F: malloc (vg_replace_malloc.c:446)
+        ==61230==    by 0x25C68E: rb_gc_impl_malloc (default.c:8527)
+        ==61230==    by 0x4622E9: wkmap_aset_replace (weakmap.c:817)
+        ==61230==    by 0x3A4D02: rb_st_update (st.c:1487)
+        ==61230==    by 0x4623E4: wkmap_aset (weakmap.c:854)
+        ==61230==    by 0x4296BC: vm_call_cfunc_with_frame_ (vm_insnhelper.c:3788)
+        ==61230==    by 0x44A9CD: vm_sendish (vm_insnhelper.c:5955)
+        ==61230==    by 0x44A9CD: vm_exec_core (insns.def:898)
+        ==61230==    by 0x43A0E4: rb_vm_exec (vm.c:2564)
+        ==61230==    by 0x2341B4: rb_ec_exec_node (eval.c:281)
+        ==61230==    by 0x236258: ruby_run_node (eval.c:319)
+        ==61230==    by 0x15D665: rb_main (main.c:43)
+        ==61230==    by 0x15D665: main (main.c:62)
+        ==61230==
+        ==61230== Invalid write of size 8
+        ==61230==    at 0x25CB3B: gc_update_weak_references (default.c:5598)
+        ==61230==    by 0x25CB3B: gc_marks_finish (default.c:5641)
+        ==61230==    by 0x26031C: gc_marks_continue (default.c:5987)
+        ==61230==    by 0x26031C: gc_continue (default.c:2255)
+        ==61230==    by 0x2605FC: newobj_cache_miss (default.c:2589)
+        ==61230==    by 0x26111F: newobj_alloc (default.c:2622)
+        ==61230==    by 0x26111F: rb_gc_impl_new_obj (default.c:2701)
+        ==61230==    by 0x26111F: newobj_of (gc.c:890)
+        ==61230==    by 0x26111F: rb_wb_protected_newobj_of (gc.c:917)
+        ==61230==    by 0x2DE218: rb_class_allocate_instance (object.c:131)
+        ==61230==    by 0x2E32A8: class_call_alloc_func (object.c:2141)
+        ==61230==    by 0x2E32A8: rb_class_alloc (object.c:2113)
+        ==61230==    by 0x2E32A8: rb_class_new_instance_pass_kw (object.c:2172)
+        ==61230==    by 0x4296BC: vm_call_cfunc_with_frame_ (vm_insnhelper.c:3788)
+        ==61230==    by 0x44A9CD: vm_sendish (vm_insnhelper.c:5955)
+        ==61230==    by 0x44A9CD: vm_exec_core (insns.def:898)
+        ==61230==    by 0x43A0E4: rb_vm_exec (vm.c:2564)
+        ==61230==    by 0x2341B4: rb_ec_exec_node (eval.c:281)
+        ==61230==    by 0x236258: ruby_run_node (eval.c:319)
+        ==61230==    by 0x15D665: rb_main (main.c:43)
+        ==61230==    by 0x15D665: main (main.c:62)
+        ==61230==  Address 0x2159cb00 is 0 bytes inside a block of size 8 free'd
+        ==61230==    at 0x4849B2C: free (vg_replace_malloc.c:989)
+        ==61230==    by 0x248EF1: rb_gc_impl_free (default.c:8512)
+        ==61230==    by 0x248EF1: rb_gc_impl_free (default.c:8493)
+        ==61230==    by 0x248EF1: ruby_sized_xfree.constprop.0 (gc.c:4178)
+        ==61230==    by 0x4627EC: wkmap_free_table_i (weakmap.c:652)
+        ==61230==    by 0x3A54AF: apply_functor (st.c:1633)
+        ==61230==    by 0x3A54AF: st_general_foreach (st.c:1543)
+        ==61230==    by 0x3A54AF: rb_st_foreach (st.c:1640)
+        ==61230==    by 0x46203C: wkmap_clear (weakmap.c:973)
+        ==61230==    by 0x4296BC: vm_call_cfunc_with_frame_ (vm_insnhelper.c:3788)
+        ==61230==    by 0x44A9CD: vm_sendish (vm_insnhelper.c:5955)
+        ==61230==    by 0x44A9CD: vm_exec_core (insns.def:898)
+        ==61230==    by 0x43A0E4: rb_vm_exec (vm.c:2564)
+        ==61230==    by 0x2341B4: rb_ec_exec_node (eval.c:281)
+        ==61230==    by 0x236258: ruby_run_node (eval.c:319)
+        ==61230==    by 0x15D665: rb_main (main.c:43)
+        ==61230==    by 0x15D665: main (main.c:62)
+        ==61230==  Block was alloc'd at
+        ==61230==    at 0x484680F: malloc (vg_replace_malloc.c:446)
+        ==61230==    by 0x25C68E: rb_gc_impl_malloc (default.c:8527)
+        ==61230==    by 0x4622E9: wkmap_aset_replace (weakmap.c:817)
+        ==61230==    by 0x3A4D02: rb_st_update (st.c:1487)
+        ==61230==    by 0x4623E4: wkmap_aset (weakmap.c:854)
+        ==61230==    by 0x4296BC: vm_call_cfunc_with_frame_ (vm_insnhelper.c:3788)
+        ==61230==    by 0x44A9CD: vm_sendish (vm_insnhelper.c:5955)
+        ==61230==    by 0x44A9CD: vm_exec_core (insns.def:898)
+        ==61230==    by 0x43A0E4: rb_vm_exec (vm.c:2564)
+        ==61230==    by 0x2341B4: rb_ec_exec_node (eval.c:281)
+        ==61230==    by 0x236258: ruby_run_node (eval.c:319)
+        ==61230==    by 0x15D665: rb_main (main.c:43)
+        ==61230==    by 0x15D665: main (main.c:62)
+
+    Co-authored-by: Jean Boussier <byroot@ruby-lang.org>
+
+commit 8657de70aa9d16066f9761710a5a74211046dc67
+  Author:     Peter Zhu <peter@peterzhu.ca>
+  AuthorDate: 2024-08-23 07:54:55 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-08-23 07:54:55 +0900
+
+    [Backport 3.3] [Bug #20688] Fix use-after-free for WeakMap and WeakKeyMap (#11439)
+
+    * Add struct weakmap_entry for WeakMap entries
+
+    * Refactor wmap_foreach to pass weakmap_entry
+
+    * Use wmap_foreach for wmap_mark
+
+    * Refactor wmap_compact to use wmap_foreach
+
+    * Remove wmap_free_entry
+
+    * Fix WeakMap use-after-free
+
+    [Bug #20688]
+
+    We cannot free the weakmap_entry before the ST_DELETE because it could
+    hash the key which would read the weakmap_entry and would cause a
+    use-after-free. Instead, we store the entry and free it on the next
+    iteration.
+
+    For example, the following script triggers a use-after-free in Valgrind:
+
+        weakmap = ObjectSpace::WeakMap.new
+        10_000.times { weakmap[Object.new] = Object.new }
+
+        ==25795== Invalid read of size 8
+        ==25795==    at 0x462297: wmap_cmp (weakmap.c:165)
+        ==25795==    by 0x3A2B1C: find_table_bin_ind (st.c:930)
+        ==25795==    by 0x3A5EAA: st_general_foreach (st.c:1599)
+        ==25795==    by 0x3A5EAA: rb_st_foreach (st.c:1640)
+        ==25795==    by 0x25C991: gc_mark_children (default.c:4870)
+        ==25795==    by 0x25C991: gc_marks_wb_unprotected_objects_plane (default.c:5565)
+        ==25795==    by 0x25C991: rgengc_rememberset_mark_plane (default.c:5557)
+        ==25795==    by 0x25C991: rgengc_rememberset_mark (default.c:6233)
+        ==25795==    by 0x25C991: gc_marks_start (default.c:6057)
+        ==25795==    by 0x25C991: gc_marks (default.c:6077)
+        ==25795==    by 0x25C991: gc_start (default.c:6723)
+        ==25795==    by 0x260F96: heap_prepare (default.c:2282)
+        ==25795==    by 0x260F96: heap_next_free_page (default.c:2489)
+        ==25795==    by 0x260F96: newobj_cache_miss (default.c:2598)
+        ==25795==    by 0x26197F: newobj_alloc (default.c:2622)
+        ==25795==    by 0x26197F: rb_gc_impl_new_obj (default.c:2701)
+        ==25795==    by 0x26197F: newobj_of (gc.c:890)
+        ==25795==    by 0x26197F: rb_wb_protected_newobj_of (gc.c:917)
+        ==25795==    by 0x2DEA88: rb_class_allocate_instance (object.c:131)
+        ==25795==    by 0x2E3B18: class_call_alloc_func (object.c:2141)
+        ==25795==    by 0x2E3B18: rb_class_alloc (object.c:2113)
+        ==25795==    by 0x2E3B18: rb_class_new_instance_pass_kw (object.c:2172)
+        ==25795==    by 0x429DDC: vm_call_cfunc_with_frame_ (vm_insnhelper.c:3786)
+        ==25795==    by 0x44B08D: vm_sendish (vm_insnhelper.c:5953)
+        ==25795==    by 0x44B08D: vm_exec_core (insns.def:898)
+        ==25795==    by 0x43A7A4: rb_vm_exec (vm.c:2564)
+        ==25795==    by 0x234914: rb_ec_exec_node (eval.c:281)
+        ==25795==  Address 0x21603710 is 0 bytes inside a block of size 16 free'd
+        ==25795==    at 0x4849B2C: free (vg_replace_malloc.c:989)
+        ==25795==    by 0x249651: rb_gc_impl_free (default.c:8527)
+        ==25795==    by 0x249651: rb_gc_impl_free (default.c:8508)
+        ==25795==    by 0x249651: ruby_sized_xfree.constprop.0 (gc.c:4178)
+        ==25795==    by 0x4626EC: ruby_sized_xfree_inlined (gc.h:277)
+        ==25795==    by 0x4626EC: wmap_free_entry (weakmap.c:45)
+        ==25795==    by 0x4626EC: wmap_mark_weak_table_i (weakmap.c:61)
+        ==25795==    by 0x3A5CEF: apply_functor (st.c:1633)
+        ==25795==    by 0x3A5CEF: st_general_foreach (st.c:1543)
+        ==25795==    by 0x3A5CEF: rb_st_foreach (st.c:1640)
+        ==25795==    by 0x25C991: gc_mark_children (default.c:4870)
+        ==25795==    by 0x25C991: gc_marks_wb_unprotected_objects_plane (default.c:5565)
+        ==25795==    by 0x25C991: rgengc_rememberset_mark_plane (default.c:5557)
+        ==25795==    by 0x25C991: rgengc_rememberset_mark (default.c:6233)
+        ==25795==    by 0x25C991: gc_marks_start (default.c:6057)
+        ==25795==    by 0x25C991: gc_marks (default.c:6077)
+        ==25795==    by 0x25C991: gc_start (default.c:6723)
+        ==25795==    by 0x260F96: heap_prepare (default.c:2282)
+        ==25795==    by 0x260F96: heap_next_free_page (default.c:2489)
+        ==25795==    by 0x260F96: newobj_cache_miss (default.c:2598)
+        ==25795==    by 0x26197F: newobj_alloc (default.c:2622)
+        ==25795==    by 0x26197F: rb_gc_impl_new_obj (default.c:2701)
+        ==25795==    by 0x26197F: newobj_of (gc.c:890)
+        ==25795==    by 0x26197F: rb_wb_protected_newobj_of (gc.c:917)
+        ==25795==    by 0x2DEA88: rb_class_allocate_instance (object.c:131)
+        ==25795==    by 0x2E3B18: class_call_alloc_func (object.c:2141)
+        ==25795==    by 0x2E3B18: rb_class_alloc (object.c:2113)
+        ==25795==    by 0x2E3B18: rb_class_new_instance_pass_kw (object.c:2172)
+        ==25795==    by 0x429DDC: vm_call_cfunc_with_frame_ (vm_insnhelper.c:3786)
+        ==25795==    by 0x44B08D: vm_sendish (vm_insnhelper.c:5953)
+        ==25795==    by 0x44B08D: vm_exec_core (insns.def:898)
+        ==25795==    by 0x43A7A4: rb_vm_exec (vm.c:2564)
+        ==25795==  Block was alloc'd at
+        ==25795==    at 0x484680F: malloc (vg_replace_malloc.c:446)
+        ==25795==    by 0x25CE9E: rb_gc_impl_malloc (default.c:8542)
+        ==25795==    by 0x462A39: wmap_aset_replace (weakmap.c:423)
+        ==25795==    by 0x3A5542: rb_st_update (st.c:1487)
+        ==25795==    by 0x462B8E: wmap_aset (weakmap.c:452)
+        ==25795==    by 0x429DDC: vm_call_cfunc_with_frame_ (vm_insnhelper.c:3786)
+        ==25795==    by 0x44B08D: vm_sendish (vm_insnhelper.c:5953)
+        ==25795==    by 0x44B08D: vm_exec_core (insns.def:898)
+        ==25795==    by 0x43A7A4: rb_vm_exec (vm.c:2564)
+        ==25795==    by 0x234914: rb_ec_exec_node (eval.c:281)
+        ==25795==    by 0x2369B8: ruby_run_node (eval.c:319)
+        ==25795==    by 0x15D675: rb_main (main.c:43)
+        ==25795==    by 0x15D675: main (main.c:62)
+
+    * Fix use-after-free for WeakKeyMap
+
+    [Bug #20688]
+
+    We cannot free the key before the ST_DELETE because it could hash the
+    key which would read the key and would cause a use-after-free. Instead,
+    we store the key and free it on the next iteration.
+
+commit 9ae91eb2aa8a82315026e72fb58d89bc23432335
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-08-22 01:40:11 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-08-22 01:40:11 +0900
+
+    Backport warning feature for bundled gems from master (#11420)
+
+    * Make sure to always use the right `warn`
+
+    * lib/bundled_gems.rb: more reliable caller detection
+
+    The `2` skipped frames went out of sync and now it should be `3`.
+
+    Rather than just update the offset, we can implement a way that
+    is adaptative as long as all require decorators are also called require.
+
+    Also we should compute the corresponding `uplevel` otherwise the
+    warning will still point decorators.
+
+    Co-authored-by: "Hiroshi SHIBATA" <hsbt@ruby-lang.org>
+
+    * Warn ostruct for Ruby 3.5
+
+    * Warn pstore for Ruby 3.5
+
+    * Mark rdoc as bundled gems at Ruby 3.5
+
+    * Warn to use win32ole without Gemfile for Ruby 3.5
+
+    * EXACT list is mostly same as SINCE list on bundled gems.
+
+    * Mark to warn fiddle as bundled gems for Ruby 3.5
+
+    * Mark to warn logger as bundled gems for Ruby 3.5
+
+    * We should use uplevel:2 in another case.
+
+    Like the following scenario with bootsnap, that frames are same or smaller than frame_to_skip(=3).
+
+    ---
+    "/Users/hsbt/.local/share/rbenv/versions/3.3-dev/lib/ruby/3.3.0/bundled_gems.rb:69:in `block (2 levels) in replace_require'"
+    "/Users/hsbt/.local/share/gem/gems/bootsnap-1.18.4/lib/bootsnap/load_path_cache/core_ext/kernel_require.rb:30:in `require'"
+    "test_warn_bootsnap.rb:11:in `<main>'"
+    ---
+
+    * Delete unnecessary rubocop disable comment
+
+    * Show correct script name with sub-feature case
+
+    * Skip to show script name with using ruby -r option
+
+    * Don't show script name when bundle exec and call ruby script directly.
+
+    * Pick word fix from 34adc07372c10170b8ca36111d216cbd8e4699be
+
+    ---------
+
+    Co-authored-by: David Rodríguez <deivid.rodriguez@riseup.net>
+    Co-authored-by: Jean Boussier <jean.boussier@gmail.com>
+    Co-authored-by: Kentaro Takeyama <75117116+obregonia1@users.noreply.github.com>
+
+commit 66312ad913d67bfd3c2c83b174eabf537f5def84
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2024-08-15 02:19:53 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-08-15 02:19:53 +0900
+
+    Re-initialize vm->ractor.sched.lock after fork (#11372)
+
+    [Bug #20633] Re-initialize vm->ractor.sched.lock after fork
+
+    Previously under certain conditions it was possible to encounter a
+    deadlock in the forked child process if ractor.sched.lock was held.
+
+    Co-authored-by: Nathan Froyd <froydnj@gmail.com>
+
+commit 4d11a0960d1b9c88c4e85bfeffb83c5f08f7099b
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-08-08 16:41:41 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-08-08 18:00:50 +0900
+
+    Added bootstrap job for release workflow
+
+commit 65cca99b30c65d462aa67969e0f16f6e45db4705
+  Author:     Jean byroot Boussier <jean.boussier+github@shopify.com>
+  AuthorDate: 2024-08-07 02:34:39 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-08-07 02:34:39 +0900
+
+    parse.y: const_decl_path don't replace destination node by a literal (#11314)
+
+    [Bug #20668]
+
+    The `dest` node is assumed to be a `CDECL`, so overwriting it with
+    a `LIT` cause a crash on the next iteration.
+
+    Co-authored-by: Jean Boussier <jean.boussier@gmail.com>
+
+commit f85c7deacc25738bd83ba182370c283ba82b61d4
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-07-31 01:05:54 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-07-31 01:05:54 +0900
+
+    Update RubyGems 3.5.16 and Bundler 2.5.16 for Ruby 3.3 (#11252)
+
+    * Merge RubyGems-3.5.12 and Bundler-2.5.12
+
+    * Merge RubyGems-3.5.13 and Bundler-2.5.13
+
+    * Merge RubyGems-3.5.14 and Bundler-2.5.14
+
+    * Merge RubyGems-3.5.15 and Bundler-2.5.15
+
+    * Merge RubyGems-3.5.16 and Bundler-2.5.16
+
+commit 0922afa95b3e390876cbea7f78d3d93d979f27d4
+  Author:     Peter Zhu <peter@peterzhu.ca>
+  AuthorDate: 2024-07-31 01:05:09 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-07-31 01:05:09 +0900
+
+    [Bug #20654] Fix floor and ceil when ndigits is large (#11277)
+
+    * Fix floor when ndigits is large
+
+    [Bug #20654]
+
+    This commit fixes Integer#floor and Float#floor when the number is
+    negative and ndigits is large such that 10**ndigits is a bignum.
+
+    Previously, it would return 0 in such cases. However, this would cause
+    unexpected behaviour such as:
+
+        puts -1.floor(-5) # => -100000
+        puts -1.floor(-10) # => -10000000000
+        puts -1.floor(-20) # => 0
+
+    This commit changes the last result so that it will return
+    -100000000000000000000.
+
+    * Fix ceil when ndigits is large
+
+    [Bug #20654]
+
+    This commit fixes Integer#ceil and Float#ceil when the number is
+    negative and ndigits is large such that 10**ndigits is a bignum.
+
+    Previously, it would return 0 in such cases. However, this would cause
+    unexpected behaviour such as:
+
+        puts 1.ceil(-5) # => 100000
+        puts 1.ceil(-10) # => 10000000000
+        puts 1.ceil(-20) # => 0
+
+    This commit changes the last result so that it will return
+    100000000000000000000.
+
+commit ce565cd4b851977bf37a470bee54e441bb60486d
+  Author:     Peter Zhu <peter@peterzhu.ca>
+  AuthorDate: 2024-07-30 09:45:26 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-07-30 09:45:26 +0900
+
+    [Bug #20653] Fix memory leak in String#start_with? when regexp times out (#11255)
+
+    Fix memory leak in String#start_with? when regexp times out
+
+    [Bug #20653]
+
+    This commit refactors how Onigmo handles timeout. Instead of raising a
+    timeout error, onig_search will return a ONIGERR_TIMEOUT which the
+    caller can free memory, and then raise a timeout error.
+
+    This fixes a memory leak in String#start_with when the regexp times out.
+    For example:
+
+        regex = Regexp.new("^#{"(a*)" * 10_000}x$", timeout: 0.000001)
+        str = "a" * 1000000 + "x"
+
+        10.times do
+          100.times do
+            str.start_with?(regex)
+          rescue
+          end
+
+          puts `ps -o rss= -p #{$$}`
+        end
+
+    Before:
+
+        33216
+        51936
+        71152
+        81728
+        97152
+        103248
+        120384
+        133392
+        133520
+        133616
+
+    After:
+
+        14912
+        15376
+        15824
+        15824
+        16128
+        16128
+        16144
+        16144
+        16160
+        16160
+
+commit 6d744837abc3f7f71a1f10c7ca399201f6f05e43
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2023-12-27 12:37:21 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-07-29 11:55:48 +0900
+
+    [Bug #20088] Fix ARCH_FLAG for cross compiling
+
+commit 7571ad42f42939d172ec9a68dfe56aac724ee2ef
+  Author:     Peter Zhu <peter@peterzhu.ca>
+  AuthorDate: 2024-07-26 01:14:26 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-07-26 01:14:26 +0900
+
+    [Bug #20650] Fix memory leak in Regexp capture group when timeout (#11244)
+
+    Fix memory leak in Regexp capture group when timeout
+
+    [Bug #20650]
+
+    The capture group allocates memory that is leaked when it times out.
+
+    For example:
+
+        re = Regexp.new("^#{"(a*)" * 10_000}x$", timeout: 0.000001)
+        str = "a" * 1000000 + "x"
+
+        10.times do
+          100.times do
+            re =~ str
+          rescue Regexp::TimeoutError
+          end
+
+          puts `ps -o rss= -p #{$$}`
+        end
+
+    Before:
+
+        34688
+        56416
+        78288
+        100368
+        120784
+        140704
+        161904
+        183568
+        204320
+        224800
+
+    After:
+
+        16288
+        16288
+        16880
+        16896
+        16912
+        16928
+        16944
+        17184
+        17184
+        17200
+
+commit 4667f8ec10269b0b5deca459f098abbdf3bae4ec
+  Author:     Jean byroot Boussier <jean.boussier+github@shopify.com>
+  AuthorDate: 2024-07-23 08:35:22 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-07-23 08:35:22 +0900
+
+    bundled_gems.rb: Add a fast path (#11221)
+
+    bundled_gems.rb: Add a fast path
+
+    [Bug #20641] `Gem::BUNDLED_GEMS.warning?` adds a lot of extra
+    work on top of `require`. When the call end up atually loading code
+    the overhead is somewhat marginal.
+
+    However it's not uncommon for code to go some late `require` in some
+    paths, so it's expected that calling `require` with something already
+    required is somewhat fast, and `bundled_gems.rb` breaks this assumption.
+
+    To avoid this, we can have a fast path that in most case allow to
+    short-circuit all the heavy computations. If we extract the feature
+    basename and it doesn't match any of the bundled gems we care about
+    we can return very early.
+
+    With this change `require 'date'` is now only 1.33x slower on Ruby
+    3.3.3, than it was on Ruby 3.2.2, whereas before this change it
+    was at least 100x slower.
+
+    Co-authored-by: Jean Boussier <jean.boussier@gmail.com>
+
+commit 425e468d25a70740cef3ed676e9b82f7902e077a
+  Author:     Ivo Anjo <ivo.anjo@datadoghq.com>
+  AuthorDate: 2024-07-16 01:08:16 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-07-16 01:08:16 +0900
+
+    [Backport #20633] Fix the condition for `atomic_signal_fence` (#11166)
+
+    [Bug #20633] Fix the condition for `atomic_signal_fence`
+
+    `AC_CHECK_DECLS` defines `HAVE_DECL_SYMBOL` to 1 if declared, 0
+    otherwise, not undefined.
+
+    Co-authored-by: kimuraw (Wataru Kimura) <kimuraw@i.nifty.jp>
+
+commit 3427a1679a8ca30465c684ac28449f495bff8a22
+  Author:     Koichi Sasada <ko1@atdot.net>
+  AuthorDate: 2024-07-10 00:55:04 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-07-10 00:55:04 +0900
+
+    retry on cancelling of `getaddrinfo` (#11131)
+
+    When the registerred unblock function is called, it should retry
+    the cancelled blocking function if possible after checkints.
+
+    For example, `SIGCHLD` can cancel this method, but it should not
+    raise any exception if there is no trap handlers.
+
+    The following is repro-code:
+
+    ```ruby
+    require 'socket'
+    PN = 10_000
+
+    1000000.times{
+      p _1
+      PN.times{
+        fork{
+          sleep rand(0.3)
+        }
+      }
+      i = 0
+      while i<PN
+        cpid = Process.wait -1, Process::WNOHANG
+        if cpid
+          # p [i, cpid]
+          i += 1
+        end
+
+        begin
+          TCPServer.new(nil, 0).close
+        rescue
+          p $!
+          exit!
+        end
+      end
+    }
+    ```
+
 commit be1089c8ec5ba40e09b1553e36b3174bf4014d9d
   Author:     Takashi Kokubun <takashikkbn@gmail.com>
   AuthorDate: 2024-07-09 08:28:22 +0900
