@@ -1,3 +1,23 @@
+ruby3.3 (3.3.5-1) UNRELEASED; urgency=medium
+
+  * New upstream version 3.3.5
+  * debian/genprovides: move list of rejected provides to an external file
+  * Drop packages that are available standalone from Provides:
+    - base64
+    - csv
+    - did_you_mean
+    - ipaddr
+    - json
+    - minitest
+    - power_assert
+    - psych
+    - test-unit
+    Their files are still shipped, but as far as dependency resolution is
+    concerned, the versions bundled with the Ruby interpreter won't be used
+    anymore.
+
+ -- Antonio Terceiro <terceiro@debian.org>  Sat, 07 Sep 2024 17:21:07 -0300
+
 ruby3.3 (3.3.4-2) unstable; urgency=medium
 
   * d/libruby3.3.symbols: fix FTBFS in armel and loong64 (Closes: #1074300).
