@@ -1,5 +1,6 @@
-# list of gems to not be shipped with the binary as they are available through
-# standalone packages
+# list of gems to not be used for Provides: as they are available through
+# standalone packages. We prefer that dependency resolution uses those
+# packages.
 bundler
 rake
 ruby2_keywords
