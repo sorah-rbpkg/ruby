@@ -8604,7 +8604,7 @@ then :
 # Set ARCH_FLAG for different width but family CPU
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking arch option" >&5
 printf %s "checking arch option... " >&6; }
-case "$target_archs":"$host_cpu" in #(
+case $target_archs:"$host_cpu" in #(
   arm64:arm*) :
     ARCH_FLAG=-m64 ;; #(
   arm*:arm*) :
@@ -8620,17 +8620,60 @@ case "$target_archs":"$host_cpu" in #(
   ppc*:ppc64) :
     ARCH_FLAG=-m32 ;; #(
   *) :
-    case $build_os in #(
-  darwin*) :
-    ARCH_FLAG="-arch ""$target_archs" ;; #(
-  *) :
-    ARCH_FLAG=-march="$target_archs"
-     ;;
-esac
+
+    ARCH_FLAG=
+    for flag in "-arch "$target_archs -march=$target_archs; do
+
+    save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS $rb_cv_warnflags"
+if test "${ac_c_werror_flag+set}"
+then :
+
+  rb_c_werror_flag="$ac_c_werror_flag"
+
+else $as_nop
+
+  unset rb_c_werror_flag
+
+fi
+ac_c_werror_flag=yes
+
+    CFLAGS="$CFLAGS $flag"
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  ARCH_FLAG="$flag"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+CFLAGS="$save_CFLAGS"
+save_CFLAGS=
+if test "${rb_c_werror_flag+set}"
+then :
+
+  ac_c_werror_flag="$rb_c_werror_flag"
+
+else $as_nop
+
+  unset ac_c_werror_flag
+
+fi
+        test x"$ARCH_FLAG" = x || break
+    done
  ;;
 esac
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ARCH_FLAG" >&5
-    colorize_result "$ARCH_FLAG" ; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ARCH_FLAG:-'(none)'}" >&5
+    colorize_result "${ARCH_FLAG:-'(none)'}" ; }
 
 
 fi
@@ -8719,7 +8762,7 @@ then :
 # Set ARCH_FLAG for different width but family CPU
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking arch option" >&5
 printf %s "checking arch option... " >&6; }
-case "$target_cpu":"$host_cpu" in #(
+case $target_cpu:"$host_cpu" in #(
   arm64:arm*) :
     ARCH_FLAG=-m64 ;; #(
   arm*:arm*) :
@@ -8735,17 +8778,60 @@ case "$target_cpu":"$host_cpu" in #(
   ppc*:ppc64) :
     ARCH_FLAG=-m32 ;; #(
   *) :
-    case $build_os in #(
-  darwin*) :
-    ARCH_FLAG="-arch ""$target_cpu" ;; #(
-  *) :
-    ARCH_FLAG=-march="$target_cpu"
-     ;;
-esac
+
+    ARCH_FLAG=
+    for flag in "-arch "$target_cpu -march=$target_cpu; do
+
+    save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS $rb_cv_warnflags"
+if test "${ac_c_werror_flag+set}"
+then :
+
+  rb_c_werror_flag="$ac_c_werror_flag"
+
+else $as_nop
+
+  unset rb_c_werror_flag
+
+fi
+ac_c_werror_flag=yes
+
+    CFLAGS="$CFLAGS $flag"
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  ARCH_FLAG="$flag"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+CFLAGS="$save_CFLAGS"
+save_CFLAGS=
+if test "${rb_c_werror_flag+set}"
+then :
+
+  ac_c_werror_flag="$rb_c_werror_flag"
+
+else $as_nop
+
+  unset ac_c_werror_flag
+
+fi
+        test x"$ARCH_FLAG" = x || break
+    done
  ;;
 esac
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ARCH_FLAG" >&5
-    colorize_result "$ARCH_FLAG" ; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ARCH_FLAG:-'(none)'}" >&5
+    colorize_result "${ARCH_FLAG:-'(none)'}" ; }
 
 
 fi
