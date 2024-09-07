@@ -12,7 +12,7 @@ Last-Update: 2023-10-03
  1 file changed, 1 insertion(+)
 
 diff --git a/tool/m4/ruby_default_arch.m4 b/tool/m4/ruby_default_arch.m4
-index a0f7c6f..5819f8f 100644
+index 2f25ba8..30f5f9c 100644
 --- a/tool/m4/ruby_default_arch.m4
 +++ b/tool/m4/ruby_default_arch.m4
 @@ -10,6 +10,7 @@ AS_CASE([$1:"$host_cpu"],
@@ -20,6 +20,6 @@ index a0f7c6f..5819f8f 100644
      [ppc64:ppc*],        [ARCH_FLAG=-m64],
      [ppc*:ppc64],        [ARCH_FLAG=-m32],
 +    [*],                 [],
-     AS_CASE([$build_os],
-         [darwin*], [ARCH_FLAG="-arch "$1],
-         [ARCH_FLAG=-march=$1]
+     [
+     ARCH_FLAG=
+     for flag in "-arch "$1 -march=$1; do

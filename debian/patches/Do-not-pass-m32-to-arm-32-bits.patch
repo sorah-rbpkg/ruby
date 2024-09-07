@@ -14,7 +14,7 @@ arm-linux-gnueabi-gcc: error: unrecognized command-line option ‘-m32’; did y
  1 file changed, 1 deletion(-)
 
 diff --git a/tool/m4/ruby_default_arch.m4 b/tool/m4/ruby_default_arch.m4
-index 5819f8f..fcdb366 100644
+index 30f5f9c..4362b40 100644
 --- a/tool/m4/ruby_default_arch.m4
 +++ b/tool/m4/ruby_default_arch.m4
 @@ -4,7 +4,6 @@ AC_DEFUN([RUBY_DEFAULT_ARCH], [
