@@ -1,0 +1,5 @@
+# list of gems to not be shipped with the binary as they are available through
+# standalone packages
+bundler
+rake
+ruby2_keywords
