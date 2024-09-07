@@ -1,6 +1,9 @@
-ruby3.3 (3.3.5-1) UNRELEASED; urgency=medium
+ruby3.3 (3.3.5-1) unstable; urgency=medium
 
+  [ Antonio Terceiro ]
   * New upstream version 3.3.5
+    - Includes an updated rexml, fixing [CVE-2024-39908]
+      (Closes: #1076766)
   * debian/genprovides: move list of rejected provides to an external file
   * Drop packages that are available standalone from Provides:
     - base64
@@ -15,8 +18,18 @@ ruby3.3 (3.3.5-1) UNRELEASED; urgency=medium
     Their files are still shipped, but as far as dependency resolution is
     concerned, the versions bundled with the Ruby interpreter won't be used
     anymore.
+  * Refresh patches
+  * Update symbols file with new symbols
+  * debian/source/lintian-overrides: update override to match false-positive
+  * debian/rules: prevent installation of lock files into /usr/bin
 
- -- Antonio Terceiro <terceiro@debian.org>  Sat, 07 Sep 2024 17:21:07 -0300
+  [ Samuel Thibault ]
+  * Don't override DEB_BUILD_OPTIONS; append instead (Closes: #1079459)
+
+  [ Colin Watson ]
+  * Deduplicate results from getaddrinfo (Closes: #1077462)
+
+ -- Antonio Terceiro <terceiro@debian.org>  Sat, 07 Sep 2024 21:36:05 -0300
 
 ruby3.3 (3.3.4-2) unstable; urgency=medium
 
