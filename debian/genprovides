@@ -2,9 +2,12 @@
 
 set -eu
 
+standalone=$(sed -e '/^#/d' ${0}.reject | awk -v d='\\|' '{s=(NR==1?s:s d)$0}END{print s}' )
+
+# FIXME after ruby3.0 is gone ruby2_keywords can be added to provides again
 printf 'libruby:Provides='
 find "$@" -name \*.gemspec \
 	| xargs -n 1 basename \
 	| sort \
-	| grep -v 'bundler\|rake' \
+	| grep -v "${standalone}" \
 	| sed -e 's/_/-/g; s/\(.*\)-\([0-9.]\+\)\.gemspec/ruby-\1 (= \2), /' | xargs echo
