@@ -1351,7 +1351,6 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_reg_options@Base 3.3.0~preview1
  rb_reg_prepare_re@Base 3.3.0~preview1
  rb_reg_quote@Base 3.3.0~preview1
- rb_reg_raise_timeout@Base 3.3.1
  rb_reg_regcomp@Base 3.3.0~preview1
  rb_reg_region_copy@Base 3.3.0~preview1
  rb_reg_regsub@Base 3.3.0~preview1
@@ -1690,6 +1689,41 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_yield_values2@Base 3.3.0~preview1
  rb_yield_values@Base 3.3.0~preview1
  rb_yield_values_kw@Base 3.3.0~preview1
+ rb_yjit_before_ractor_spawn@Base 3.3.5
+ rb_yjit_bop_redefined@Base 3.3.5
+ rb_yjit_call_threshold@Base 3.3.5
+ rb_yjit_cme_invalidate@Base 3.3.5
+ rb_yjit_code_gc@Base 3.3.5
+ rb_yjit_cold_threshold@Base 3.3.5
+ rb_yjit_collect_binding_alloc@Base 3.3.5
+ rb_yjit_collect_binding_set@Base 3.3.5
+ rb_yjit_constant_ic_update@Base 3.3.5
+ rb_yjit_constant_state_changed@Base 3.3.5
+ rb_yjit_count_side_exit_op@Base 3.3.5
+ rb_yjit_disasm_iseq@Base 3.3.5
+ rb_yjit_enable@Base 3.3.5
+ rb_yjit_enabled_p@Base 3.3.5
+ rb_yjit_get_exit_locations@Base 3.3.5
+ rb_yjit_get_stats@Base 3.3.5
+ rb_yjit_incr_counter@Base 3.3.5
+ rb_yjit_init@Base 3.3.5
+ rb_yjit_insns_compiled@Base 3.3.5
+ rb_yjit_iseq_free@Base 3.3.5
+ rb_yjit_iseq_gen_entry_point@Base 3.3.5
+ rb_yjit_iseq_mark@Base 3.3.5
+ rb_yjit_iseq_update_references@Base 3.3.5
+ rb_yjit_live_iseq_count@Base 3.3.5
+ rb_yjit_option_disable@Base 3.3.5
+ rb_yjit_parse_option@Base 3.3.5
+ rb_yjit_print_stats_p@Base 3.3.5
+ rb_yjit_record_exit_stack@Base 3.3.5
+ rb_yjit_reset_stats_bang@Base 3.3.5
+ rb_yjit_root_mark@Base 3.3.5
+ rb_yjit_show_usage@Base 3.3.5
+ rb_yjit_simulate_oom_bang@Base 3.3.5
+ rb_yjit_stats_enabled_p@Base 3.3.5
+ rb_yjit_trace_exit_locations_enabled_p@Base 3.3.5
+ rb_yjit_tracing_invalidate_all@Base 3.3.5
  rb_yytnamerr@Base 3.3.0~preview1
  ruby_Init_Continuation_body@Base 3.3.0~preview1
  ruby_api_version@Base 3.3.0~preview1
