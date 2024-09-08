@@ -183,6 +183,7 @@ override_dh_install-arch:
 	find $(CURDIR)/debian/libruby$(RUBY_VERSION)/usr/lib/ruby/gems/$(RUBY_API_VERSION)/gems/ \
 		'(' -name \*.so -or -name \*.o ')' \
 		-delete
+	find $(CURDIR)/debian/ruby$(RUBY_VERSION)/usr/bin -name \*.lock -delete
 
 override_dh_gencontrol:
 	./debian/genprovides $(CURDIR)/debian/libruby$(RUBY_VERSION)/usr/lib/ruby/gems/$(RUBY_API_VERSION)/specifications/ \
