@@ -75,6 +75,9 @@ configure_options += MKDIR_P='/bin/mkdir -p'
 configure_options += SHELL='/bin/sh'
 configure_options += PKG_CONFIG=$(DEB_HOST_GNU_TYPE)-pkg-config
 
+# Requires Rust
+configure_options += --disable-yjit
+
 configure := ./configure
 ifeq (riscv64,$(DEB_HOST_ARCH))
 	configure := LIBS="-latomic" $(configure)
