@@ -5,4 +5,4 @@ include:
 
 variables:
   DEBIAN_RUBY_EXTRA_TEST_EXCLUDES: salsa
-  SALSA_CI_BLHC_ARGS: '--ignore-line=[[:blank:]]LD[[:blank:]]=.* --ignore-line=.*Context.S --ignore-line=.*transform_mjit_header.rb.*'
+  SALSA_CI_BLHC_ARGS: '--ignore-line=[[:blank:]]LD[[:blank:]]=.* --ignore-line=.*Context.S --ignore-line=.*transform_mjit_header.rb.* --ignore-line=./configure[[:blank:]].* '
