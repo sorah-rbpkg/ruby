@@ -9,3 +9,4 @@ library-not-linked-against-libc
 # path to the ruby interpreter, since they are not in the users' path those
 # lintian errors are ignored
 wrong-path-for-interpreter
+unstripped-binary-or-object [usr/lib/ruby/gems/*/extensions/*/*/debug-*/debug/debug.so]
