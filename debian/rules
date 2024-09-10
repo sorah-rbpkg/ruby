@@ -88,8 +88,6 @@ ifneq (,$(filter $(DEB_HOST_ARCH),sh3 sh4))
 export DEB_CFLAGS_MAINT_APPEND += -fno-crossjumping
 endif
 
-# Some tests rely on $HOME
-export HOME := $(shell mktemp -d)
 export LANG := C.UTF-8
 export LC_ALL := $(LANG)
 
