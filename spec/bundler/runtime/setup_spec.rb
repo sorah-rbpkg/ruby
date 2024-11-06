@@ -865,7 +865,6 @@ end
   it "should clean $LOAD_PATH properly" do
     gem_name = "very_simple_binary"
     full_gem_name = gem_name + "-1.0"
-    ext_dir = File.join(tmp("extensions", full_gem_name))
 
     system_gems full_gem_name
 
@@ -874,12 +873,6 @@ end
     G
 
     ruby <<-R
-      s = Gem::Specification.find_by_name '#{gem_name}'
-      s.extension_dir = '#{ext_dir}'
-
-      # Don't build extensions.
-      s.class.send(:define_method, :build_extensions) { nil }
-
       require 'bundler'
       gem '#{gem_name}'
 
@@ -1377,20 +1370,21 @@ end
     end
 
     it "activates default gems when they are part of the bundle, but not installed explicitly", :ruby_repo do
-      default_json_version = ruby "gem 'json'; require 'json'; puts JSON::VERSION"
+      default_delegate_version = ruby "gem 'delegate'; require 'delegate'; puts Delegator::VERSION"
 
       build_repo2 do
-        build_gem "json", default_json_version
+        build_gem "delegate", default_delegate_version
       end
 
-      gemfile "source \"https://gem.repo2\"; gem 'json'"
+      gemfile "source \"https://gem.repo2\"; gem 'delegate'"
 
       ruby <<-RUBY
         require "bundler/setup"
-        require "json"
-        puts defined?(::JSON) ? "JSON defined" : "JSON undefined"
+        require "delegate"
+        puts defined?(::Delegator) ? "Delegator defined" : "Delegator undefined"
       RUBY
 
+      expect(out).to eq("Delegator defined")
       expect(err).to be_empty
     end
 
