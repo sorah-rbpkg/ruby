@@ -76,9 +76,11 @@ module Spec
       requires = options.delete(:requires) || []
 
       dir = options.delete(:dir) || bundled_app
+      custom_load_path = options.delete(:load_path)
 
       load_path = []
       load_path << spec_dir
+      load_path << custom_load_path if custom_load_path
 
       build_ruby_options = { load_path: load_path, requires: requires, env: env }
       build_ruby_options.merge!(artifice: options.delete(:artifice)) if options.key?(:artifice)
@@ -170,12 +172,8 @@ module Spec
         requires << "#{Path.spec_dir}/support/artifice/#{artifice}.rb"
       end
 
-      hax_path = "#{Path.spec_dir}/support/hax.rb"
+      requires << "#{Path.spec_dir}/support/hax.rb"
 
-      # For specs that need to ignore the default Bundler gem, load hax before
-      # anything else since other stuff may actually load bundler and not skip
-      # the default version
-      env.include?("BUNDLER_IGNORE_DEFAULT_GEM") ? requires.prepend(hax_path) : requires.append(hax_path)
       require_option = requires.map {|r| "-r#{r}" }
 
       [env, [Gem.ruby, *lib_option, *require_option].compact.join(" ")]
@@ -190,7 +188,16 @@ module Spec
       env = options[:env] || {}
       env["RUBYOPT"] = opt_add(opt_add("-r#{spec_dir}/support/hax.rb", env["RUBYOPT"]), ENV["RUBYOPT"])
       options[:env] = env
-      sys_exec("#{Path.gem_bin} #{command}", options)
+
+      # Sometimes `gem install` commands hang at dns resolution, which has a
+      # default timeout of 60 seconds. When that happens, the timeout for a
+      # command is expired too. So give `gem install` commands a bit more time.
+      options[:timeout] = 120
+
+      output = sys_exec("#{Path.gem_bin} #{command}", options)
+      stderr = last_command.stderr
+      raise stderr if stderr.include?("WARNING") && !allowed_rubygems_warning?(stderr)
+      output
     end
 
     def rake
@@ -291,18 +298,16 @@ module Spec
       options = gems.last.is_a?(Hash) ? gems.pop : {}
       install_dir = options.fetch(:path, system_gem_path)
       default = options.fetch(:default, false)
-      with_gem_path_as(install_dir) do
-        gem_repo = options.fetch(:gem_repo, gem_repo1)
-        gems.each do |g|
-          gem_name = g.to_s
-          if gem_name.start_with?("bundler")
-            version = gem_name.match(/\Abundler-(?<version>.*)\z/)[:version] if gem_name != "bundler"
-            with_built_bundler(version) {|gem_path| install_gem(gem_path, install_dir, default) }
-          elsif %r{\A(?:[a-zA-Z]:)?/.*\.gem\z}.match?(gem_name)
-            install_gem(gem_name, install_dir, default)
-          else
-            install_gem("#{gem_repo}/gems/#{gem_name}.gem", install_dir, default)
-          end
+      gems.each do |g|
+        gem_name = g.to_s
+        if gem_name.start_with?("bundler")
+          version = gem_name.match(/\Abundler-(?<version>.*)\z/)[:version] if gem_name != "bundler"
+          with_built_bundler(version) {|gem_path| install_gem(gem_path, install_dir, default) }
+        elsif %r{\A(?:[a-zA-Z]:)?/.*\.gem\z}.match?(gem_name)
+          install_gem(gem_name, install_dir, default)
+        else
+          gem_repo = options.fetch(:gem_repo, gem_repo1)
+          install_gem("#{gem_repo}/gems/#{gem_name}.gem", install_dir, default)
         end
       end
     end
@@ -389,10 +394,8 @@ module Spec
       opts = gems.last.is_a?(Hash) ? gems.pop : {}
       path = opts.fetch(:path, system_gem_path)
 
-      with_gem_path_as(path) do
-        gems.each do |gem|
-          gem_command "install --no-document #{gem}"
-        end
+      gems.each do |gem|
+        gem_command "install --no-document --verbose --install-dir #{path} #{gem}"
       end
     end
 
@@ -425,7 +428,7 @@ module Spec
     def simulate_platform(platform)
       old = ENV["BUNDLER_SPEC_PLATFORM"]
       ENV["BUNDLER_SPEC_PLATFORM"] = platform.to_s
-      yield if block_given?
+      yield
     ensure
       ENV["BUNDLER_SPEC_PLATFORM"] = old if block_given?
     end
@@ -545,6 +548,10 @@ module Spec
     end
 
     private
+
+    def allowed_rubygems_warning?(text)
+      text.include?("open-ended") || text.include?("is a symlink") || text.include?("rake based") || text.include?("expected RubyGems version")
+    end
 
     def match_source(contents)
       match = /source ["']?(?<source>http[^"']+)["']?/.match(contents)

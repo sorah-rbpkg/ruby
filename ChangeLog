@@ -1,5 +1,319 @@
 -*- coding: utf-8 -*-
 
+commit 75015d4c1f6965b5e85e96fb309f1f2129f933c0
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-11-05 09:49:11 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-11-05 09:49:11 +0900
+
+    v3.3.6
+
+commit f72eb702f29574b85889d3ea6447efa29c8a8789
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-11-05 09:00:11 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-11-05 09:00:11 +0900
+
+    Skip tests that suddenly started failing for MinGW
+
+    These test failures first appeared on irrelevant changes. It probably
+    came from changes in GitHub Actions instead of CRuby's.
+
+    Until we figure out how to fix these tests, let's skip them to make the
+    CI usable.
+
+commit 7237ded95f3ad624edc122b14d0276daf554a96c
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-11-05 07:52:42 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-11-05 07:52:43 +0900
+
+    macos-12 is deprecated and fails on Mondays
+
+    https://github.com/actions/runner-images/issues/10721
+
+commit 6db39f4677ff50aacfe54bd9dda052c09e1c6ab0
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-11-05 07:43:39 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-11-05 07:43:39 +0900
+
+    merge revision(s) 29c480dd6fca993590c82078ba797e2c4e876ac7: [Backport #20853]
+
+            [Bug #20853] Fix Proc#hash to not change after compaction
+
+            The hash value of a Proc must remain constant after a compaction, otherwise
+            it may not work as the key in a hash table.
+
+commit edeb0319f7a95dfe3f9b895bcf32371dd8514726
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-11-05 07:42:47 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-11-05 07:42:47 +0900
+
+    merge revision(s) 6118e8a47394409b53164b60e79fadf348b97db3: [Backport #20716]
+
+            Fix method caching bug when including/prepend module A that prepends module B
+
+            Fix by always adding the generated iclass to the subclasses list,
+            otherwise the method cache for the iclass is not cleared when
+            the method in the module is overwritten.
+
+            Fixes [Bug #20716]
+
+commit 5ce0ba0d415deb99527c409cc5f1df16ce02ef3e
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-11-05 07:39:22 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-11-05 07:39:22 +0900
+
+    merge revision(s) 35e124832e29b65c84d4e0e4e434616859f9bdf5: [Backport #20755]
+
+            [Bug #20755] Frozen string should not be writable via IO::Buffer
+
+commit 12ea98e8c8af0ed6778aad26e7ec5f95e2c239e5
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-11-05 07:38:18 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-11-05 07:38:18 +0900
+
+    merge revision(s) 637067440f74043c6d79fc649ab8acf1afea25a5: [Backport #20752]
+
+            [Bug #20752] Slice of readonly `IO::Buffer` also should be readonly
+
+commit 34a0f41d0aaff190f1647a6fa0e905690d0eff98
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-11-05 07:37:14 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-11-05 07:37:14 +0900
+
+    merge revision(s) c1862cbb89a6bf42dcd07d92fe4f4bfeebca5775: [Backport #20719]
+
+            [Bug #20719] `Float` argument must be ASCII compatible
+
+commit 2b713dcb89c620daa55d672d2933ffde333ca5de
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-11-05 07:36:36 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-11-05 07:36:36 +0900
+
+    merge revision(s) d33e3d47b84a73b38644f2a3d41881ce9be6ef18: [Backport #20704]
+
+            [Bug #20704] Win32: Fix chdir to non-ASCII path
+
+            On Windows, `chdir` in compilers' runtime libraries uses the active
+            code page, but command line arguments in ruby are always UTF-8, since
+            commit:33ea2646b98adb49ae2e1781753bf22d33729ac0.
+
+commit e7c939aea1034a463226635e11117ade42cba4e4
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-11-05 07:29:25 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-11-05 07:29:25 +0900
+
+    merge revision(s) 76ea5cde2a0f4834a5228104249b6b3346ddfc94: [Backport #20777]
+
+            Refactor RUBY_DESCRIPTION assertions in test_rubyoptions
+
+commit 7446f7cdd103b129b8b750f577efd29e069176c0
+  Author:     Jonathan Calvert <athemeus@athemeus.com>
+  AuthorDate: 2024-09-07 12:19:47 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-11-05 07:26:25 +0900
+
+    merge revision(s) 0d16c36d0ab2afa2ec79b72b229e69c141ebdaba: [Backport #13831]
+
+            [win32/registry] Fallback to UTF-8 for unknown codepages
+
+            There are some codepages like cp708 for which no ruby encoding exists:
+
+                $ ruby -e "Encoding.find('cp708')"
+                Traceback (most recent call last):
+                    1: from -e:1:in `<main>'
+                -e:1:in `find': unknown encoding name - cp708 (ArgumentError)
+
+            win32/registry uses ENCODING to transcode error messages and expand environment
+            variables from UTF-16LE, so using UTF-8 seems like the best choice and is better
+            than a hard failure.
+
+            This should resolve [Bug #13831]
+
+commit 6b3a0b4ffd12cd7f80be224efa8744534fcf2b93
+  Author:     Alex Myers <myers3162002@gmail.com>
+  AuthorDate: 2024-11-02 00:42:18 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-11-02 00:42:18 +0900
+
+    Bump REXML to 3.3.9 for Ruby 3.3 (#11972)
+
+commit c4b6ce36758fbc8d851b8b6563d0cf64cf2417db
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-10-18 11:12:25 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-10-22 00:41:50 +0900
+
+    Merge syntax-suggest-2.0.1
+
+commit 494fcc507b3bc218beb6638d33476b647d55969e
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-10-17 16:12:09 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-10-18 00:55:01 +0900
+
+    Merge RubyGems-3.5.22 and Bundler-2.5.22
+
+commit d03e4228aaeb1bdd3432119e683aa259b028c5b2
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-10-17 16:11:25 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-10-18 00:55:01 +0900
+
+    Merge RubyGems-3.5.21 and Bundler-2.5.21
+
+commit af7656869ee714a7124c1c655bc905e456770bd2
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-09-09 17:25:22 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-10-01 01:16:44 +0900
+
+    Run just bignum related tests when gmp enabled
+
+commit 4608ef8d7b0e22d690b73dabc032e9dd43e9a446
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-09-30 12:03:02 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-10-01 01:16:44 +0900
+
+    -l option of 7z is unknown switch with the `ubuntu-latest`.
+
+    https://github.com/ruby/actions/actions/runs/11095032727/job/30823174026#step:3:349
+
+commit 77fb1bf434d7be9cf5d892404b04b20c18fa6f06
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-09-25 16:54:40 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-09-26 02:56:17 +0900
+
+    Merge RubyGems-3.5.20 and Bundler-2.5.20
+
+commit 3894841182c32de231b3998502bf1a9dba7cdb4f
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-09-25 16:54:19 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-09-26 02:56:17 +0900
+
+    Merge RubyGems-3.5.19 and Bundler-2.5.19
+
+commit ef3c4a7aa7c0a79a00f4daa50e0be1184d9fe536
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-09-25 16:53:56 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-09-26 02:56:17 +0900
+
+    Merge RubyGems-3.5.18 and Bundler-2.5.18
+
+commit 95f72a4a32396cae7475b39d7739fb534242b625
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-09-25 16:53:34 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-09-26 02:56:17 +0900
+
+    Merge RubyGems-3.5.17 and Bundler-2.5.17
+
+commit d8966416d010719ef8f1689137da31aa75e71198
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-09-25 02:50:33 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-09-25 02:50:33 +0900
+
+    Use `PRIuSIZE` instead of `%zu` for `size_t` (#9359)
+
+    Co-authored-by: Takashi Kokubun <takashikkbn@gmail.com>
+
+commit ec04de7512d512a2bcc623a72a4f17f43a01a5bf
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-09-24 00:47:15 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-09-24 01:25:10 +0900
+
+    Bump debug.gem to 1.9.2
+
+commit 5b6009870dff883a8e71a05e60f175cea1d00d55
+  Author:     KJ Tsanaktsidis <ktsanaktsidis@zendesk.com>
+  AuthorDate: 2024-09-13 16:40:30 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-09-24 01:25:10 +0900
+
+    Ensure fiber scheduler is woken up when close interrupts read
+
+    If one thread is reading and another closes that socket, the close
+    blocks waiting for the read to abort cleanly. This ensures that Ruby is
+    totally done with the file descriptor _BEFORE_ we tell the OS to close
+    and potentially re-use it.
+
+    When the read is correctly terminated, the close should be unblocked.
+    That currently works if closing is happening on a thread, but if it's
+    happening on a fiber with a fiber scheduler, it does NOT work.
+
+    This patch ensures that if the close happened in a fiber scheduled
+    thread, that the scheduler is notified that the fiber is unblocked.
+
+    [Bug #20723]
+
+commit 4e59e7d35fbd6ff87f63cd0aa5d6a2f923323fee
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-09-17 09:28:08 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-09-17 09:28:08 +0900
+
+    [Bug #20737] Do not warn default gems to be promoted in Ruby 3.5 (#11613)
+
+commit 55ddfd58dd6e67e88cf9a3e55bf99550affe8b3f
+  Author:     Jonathan Calvert <athemeus@athemeus.com>
+  AuthorDate: 2024-09-11 09:38:48 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-09-11 09:38:48 +0900
+
+    Fixes [Bug #20718] (#11576)
+
+    Fixes [Bug #20718]
+
+    Allow objects that are not of type `RTypedData` to use the default free function, as `RTYPEDDATA_EMBEDDED_P` can return a false positive when casting non-`RTypedData` objects
+
+commit 948ca04a76c0031d17798f79fe3bbc5fb8462e90
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-09-06 10:00:18 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2024-09-06 10:00:19 +0900
+
+    Allow failures for all Travis jobs
+
+    Every job on Travis is unstable now.
+
+commit c3f7041ab19fbf0e937126dc1b7397b97f768b9a
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-09-06 09:55:34 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-09-06 09:55:34 +0900
+
+    Merge reline-0.5.10 (#11558)
+
+    * Merge reline-0.5.8
+
+    * Merge reline-0.5.9
+
+    * Merge reline-0.5.10
+
+commit 4eb51dfc9e67683a1a03fdf302d5ddd95cad716a
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-09-05 00:47:06 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-09-05 00:47:06 +0900
+
+    Merge JSON 2.7.2 for Ruby 3.3 (#11541)
+
+    Merge JSON 2.7.2
+
 commit ef084cc8f4958c1b6e4ead99136631bef6d8ddba
   Author:     Takashi Kokubun <takashikkbn@gmail.com>
   AuthorDate: 2024-09-03 01:09:08 +0900

@@ -102,6 +102,8 @@ RSpec.describe "bundle install with force_ruby_platform DSL option", :jruby do
     end
 
     it "reinstalls the ruby variant when a platform specific variant is already installed, the lockile has only ruby platform, and :force_ruby_platform is used in the Gemfile" do
+      skip "Can't simulate platform reliably on JRuby, installing a platform specific gem fails to activate io-wait because only the -java version is present, and we're simulating a different platform" if RUBY_ENGINE == "jruby"
+
       lockfile <<-L
         GEM
           remote: https://gem.repo4
@@ -118,15 +120,17 @@ RSpec.describe "bundle install with force_ruby_platform DSL option", :jruby do
             #{Bundler::VERSION}
       L
 
-      system_gems "platform_specific-1.0-#{Gem::Platform.local}", path: default_bundle_path
+      simulate_platform "x86-darwin-100" do
+        system_gems "platform_specific-1.0-x86-darwin-100", path: default_bundle_path
 
-      install_gemfile <<-G, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }, artifice: "compact_index"
-        source "https://gem.repo4"
+        install_gemfile <<-G, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }, artifice: "compact_index"
+          source "https://gem.repo4"
 
-        gem "platform_specific", :force_ruby_platform => true
-      G
+          gem "platform_specific", :force_ruby_platform => true
+        G
 
-      expect(the_bundle).to include_gems "platform_specific 1.0 ruby"
+        expect(the_bundle).to include_gems "platform_specific 1.0 ruby"
+      end
     end
   end
 end
