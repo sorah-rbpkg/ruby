@@ -8,7 +8,17 @@ require_relative '../lib/jit_support'
 
 class TestRubyOptions < Test::Unit::TestCase
   def self.rjit_enabled? = defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
-  def self.yjit_enabled? = defined?(RubyVM::YJIT.enabled?) && RubyVM::YJIT.enabled?
+  def self.yjit_enabled? = defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
+
+  # Here we're defining our own RUBY_DESCRIPTION without "+PRISM". We do this
+  # here so that the various tests that reference RUBY_DESCRIPTION don't have to
+  # worry about it. The flag itself is tested in its own test.
+  RUBY_DESCRIPTION =
+    if EnvUtil.invoke_ruby(["-v"], "", true, false)[0].include?("+PRISM")
+      ::RUBY_DESCRIPTION
+    else
+      ::RUBY_DESCRIPTION.sub(/\+PRISM /, '')
+    end
 
   NO_JIT_DESCRIPTION =
     if rjit_enabled?
@@ -149,14 +159,14 @@ class TestRubyOptions < Test::Unit::TestCase
       /^jruby #{q[RUBY_ENGINE_VERSION]} \(#{q[RUBY_VERSION]}\).*? \[#{
         q[RbConfig::CONFIG["host_os"]]}-#{q[RbConfig::CONFIG["host_cpu"]]}\]$/
     else
-      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \[#{q[RUBY_PLATFORM]}\]$/
+      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? (\+PRISM )?\[#{q[RUBY_PLATFORM]}\]$/
     end
   private_constant :VERSION_PATTERN
 
   VERSION_PATTERN_WITH_RJIT =
     case RUBY_ENGINE
     when 'ruby'
-      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+RJIT (\+MN )?\[#{q[RUBY_PLATFORM]}\]$/
+      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+RJIT (\+MN )?(\+PRISM )?\[#{q[RUBY_PLATFORM]}\]$/
     else
       VERSION_PATTERN
     end
@@ -217,7 +227,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_kanji
     assert_in_out_err(%w(-KU), "p '\u3042'") do |r, e|
-      assert_equal("\"\u3042\"", r.join.force_encoding(Encoding::UTF_8))
+      assert_equal("\"\u3042\"", r.join('').force_encoding(Encoding::UTF_8))
     end
     line = '-eputs"\xc2\xa1".encoding'
     env = {'RUBYOPT' => nil}
@@ -337,14 +347,26 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_chdir
+    omit "not working on MinGW" if /mingw/ =~ RUBY_PLATFORM
     assert_in_out_err(%w(-C), "", [], /Can't chdir/)
 
     assert_in_out_err(%w(-C test_ruby_test_rubyoptions_foobarbazqux), "", [], /Can't chdir/)
 
     d = Dir.tmpdir
     assert_in_out_err(["-C", d, "-e", "puts Dir.pwd"]) do |r, e|
-      assert_file.identical?(r.join, d)
+      assert_file.identical?(r.join(''), d)
       assert_equal([], e)
+    end
+
+    Dir.mktmpdir(d) do |base|
+      # "test" in Japanese and N'Ko
+      test = base + "/\u{30c6 30b9 30c8}_\u{7e1 7ca 7dd 7cc 7df 7cd 7eb}"
+      Dir.mkdir(test)
+      assert_in_out_err(["-C", base, "-C", File.basename(test), "-e", "puts Dir.pwd"]) do |r, e|
+        assert_file.identical?(r.join(''), test)
+        assert_equal([], e)
+      end
+      Dir.rmdir(test)
     end
   end
 
@@ -1022,6 +1044,7 @@ class TestRubyOptions < Test::Unit::TestCase
     end
 
     def test_command_line_progname_nonascii
+      omit "not working on MinGW" if /mingw/ =~ RUBY_PLATFORM
       bug10555 = '[ruby-dev:48752] [Bug #10555]'
       name = expected = nil
       unless (0x80..0x10000).any? {|c|
@@ -1073,6 +1096,7 @@ class TestRubyOptions < Test::Unit::TestCase
     # Since the codepage is shared all processes per conhost.exe, do
     # not chcp, or parallel test may break.
     def test_locale_codepage
+      omit "not working on MinGW" if /mingw/ =~ RUBY_PLATFORM
       locale = Encoding.find("locale")
       list = %W"\u{c7} \u{452} \u{3066 3059 3068}"
       list.each do |s|
