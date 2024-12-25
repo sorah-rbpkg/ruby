@@ -999,6 +999,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
   end
 
   installed_gems = {}
+  skipped = {}
   options = {
     :install_dir => install_dir,
     :bin_dir => with_destdir(bindir),
@@ -1025,18 +1026,33 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
   File.foreach("#{srcdir}/gems/bundled_gems") do |name|
     next if /^\s*(?:#|$)/ =~ name
     next unless /^(\S+)\s+(\S+).*/ =~ name
+    gem = $1
     gem_name = "#$1-#$2"
-    # Try to find the gemspec file for C ext gems
-    # ex .bundle/gems/debug-1.7.1/debug-1.7.1.gemspec
-    # This gemspec keep the original dependencies
-    path = "#{srcdir}/.bundle/gems/#{gem_name}/#{gem_name}.gemspec"
+    # Try to find the original gemspec file
+    path = "#{srcdir}/.bundle/gems/#{gem_name}/#{gem}.gemspec"
     unless File.exist?(path)
-      path = "#{srcdir}/.bundle/specifications/#{gem_name}.gemspec"
-      next unless File.exist?(path)
+      # Try to find the gemspec file for C ext gems
+      # ex .bundle/gems/debug-1.7.1/debug-1.7.1.gemspec
+      # This gemspec keep the original dependencies
+      path = "#{srcdir}/.bundle/gems/#{gem_name}/#{gem_name}.gemspec"
+      unless File.exist?(path)
+        # Try to find the gemspec file for gems that hasn't own gemspec
+        path = "#{srcdir}/.bundle/specifications/#{gem_name}.gemspec"
+        unless File.exist?(path)
+          skipped[gem_name] = "gemspec not found"
+          next
+        end
+      end
     end
     spec = load_gemspec(path, "#{srcdir}/.bundle/gems/#{gem_name}")
-    next unless spec.platform == Gem::Platform::RUBY
-    next unless spec.full_name == gem_name
+    unless spec.platform == Gem::Platform::RUBY
+      skipped[gem_name] = "not ruby platform (#{spec.platform})"
+      next
+    end
+    unless spec.full_name == gem_name
+      skipped[gem_name] = "full name unmatch #{spec.full_name}"
+      next
+    end
     spec.extension_dir = "#{extensions_dir}/#{spec.full_name}"
     package = RbInstall::DirPackage.new spec
     ins = RbInstall::UnpackedInstaller.new(package, options)
@@ -1054,7 +1070,11 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     install installed_gems, gem_dir+"/cache"
   end
   unless gems.empty?
-    puts "skipped bundled gems: #{gems.join(' ')}"
+    skipped.default = "not found in bundled_gems"
+    puts "skipped bundled gems:"
+    gems.each do |gem|
+      printf "    %-32s%s\n", File.basename(gem), skipped[gem]
+    end
   end
 end
 
@@ -1074,6 +1094,7 @@ installs = $install.map do |inst|
 end
 installs.flatten!
 installs -= $exclude.map {|exc| $install_procs[exc]}.flatten
+puts "Installing to #$destdir" unless installs.empty?
 installs.each do |block|
   dir = Dir.pwd
   begin

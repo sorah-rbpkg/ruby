@@ -513,6 +513,10 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(TypeError) {1.0.floor(nil)}
     def (prec = Object.new).to_int; 2; end
     assert_equal(0.99, 0.998.floor(prec))
+
+    assert_equal(-10000000000, -1.0.floor(-10), "[Bug #20654]")
+    assert_equal(-100000000000000000000, -1.0.floor(-20), "[Bug #20654]")
+    assert_equal(-100000000000000000000000000000000000000000000000000, -1.0.floor(-50), "[Bug #20654]")
   end
 
   def test_ceil_with_precision
@@ -540,6 +544,10 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(TypeError) {1.0.ceil(nil)}
     def (prec = Object.new).to_int; 2; end
     assert_equal(0.99, 0.981.ceil(prec))
+
+    assert_equal(10000000000, 1.0.ceil(-10), "[Bug #20654]")
+    assert_equal(100000000000000000000, 1.0.ceil(-20), "[Bug #20654]")
+    assert_equal(100000000000000000000000000000000000000000000000000, 1.0.ceil(-50), "[Bug #20654]")
   end
 
   def test_truncate_with_precision
@@ -825,6 +833,12 @@ class TestFloat < Test::Unit::TestCase
     o = Object.new
     def o.to_f; inf = Float::INFINITY; inf/inf; end
     assert_predicate(Float(o), :nan?)
+
+    assert_raise(Encoding::CompatibilityError) {Float("0".encode("utf-16be"))}
+    assert_raise(Encoding::CompatibilityError) {Float("0".encode("utf-16le"))}
+    assert_raise(Encoding::CompatibilityError) {Float("0".encode("utf-32be"))}
+    assert_raise(Encoding::CompatibilityError) {Float("0".encode("utf-32le"))}
+    assert_raise(Encoding::CompatibilityError) {Float("0".encode("iso-2022-jp"))}
   end
 
   def test_invalid_str

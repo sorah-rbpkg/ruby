@@ -1,5 +1,547 @@
 -*- coding: utf-8 -*-
 
+commit 63aeb018eb1cc0f7b00f955980711fd1bd94af7f
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-10-30 18:47:11 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-10-30 18:47:11 +0900
+
+    bump teeny
+
+commit d09b47ddf569aeb443e3fb07b380062e825d47fc
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-10-28 13:31:57 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-10-28 13:31:57 +0900
+
+    merge revision(s) 70d20ce473952e3a2e5b0aa4a6884886517ee3cc:
+
+            Update bundled gems list
+
+commit e55b1af2573eb21db57a06e5509f9868f288b583
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-10-20 14:21:15 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-10-20 14:21:15 +0900
+
+    merge revision(s) ce20367a0e2f1fcfabebf3b6bea732fc71fa79f7: [Backport #20500]
+
+            Define `incflags` also on mswin
+
+commit 2fbae07c42f40ea43b4822e278cc92fb2415cb61
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-10-20 14:19:52 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-10-20 14:19:52 +0900
+
+    merge revision(s) bcb3247072e6973d0f6b50ca5fed238d5824bd28: [Backport #20500]
+
+            [Bug #19778] Pass additional include options to INCFLAGS in common.mk
+
+commit f70e3254e067663e72e6d410370d231e4245e4f4
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-10-20 13:56:22 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-10-20 13:56:22 +0900
+
+    merge revision(s) 5fa6ba9568e87e43e08a4daeba1572254c589fb1: [Backport #20500]
+
+            [Bug #20500] Search non-default directories for jemalloc
+
+            Co-Authored-by: lish82 (Hiroki Katagiri)
+
+commit cb75fcef6feb126a67874109ce1503976a6f90cc
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-10-18 13:10:46 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-10-18 13:57:08 +0900
+
+    merge revision(s) 6118e8a47394409b53164b60e79fadf348b97db3, dc64448202299633a235f310b8bf2192263f274f: [Backport #20716]
+
+            Fix method caching bug when including/prepend module A that prepends module B
+
+            Fix by always adding the generated iclass to the subclasses list,
+            otherwise the method cache for the iclass is not cleared when
+            the method in the module is overwritten.
+
+            Fixes [Bug #20716]
+
+            Remove an unused variable
+
+commit 087e4ed6cc9da9cfca1a107058905446ff474bd1
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-10-18 13:03:48 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-10-18 13:57:08 +0900
+
+    merge revision(s) 35e124832e29b65c84d4e0e4e434616859f9bdf5: [Backport #20755]
+
+            [Bug #20755] Frozen string should not be writable via IO::Buffer
+
+commit d85516eab59f932d65283572d0b9090005f60c20
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-10-01 11:39:25 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-10-18 12:59:30 +0900
+
+    Disabled annocheck same as f5b6b3dba7b32dcd1f15c150dd78dce6c0d92b1e
+
+commit 4873bbd6cc25311fb477bb8fe823d2ea16299717
+  Author:     Jun Aruga <jaruga@redhat.com>
+  AuthorDate: 2024-08-31 15:39:57 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-10-18 12:59:30 +0900
+
+    .travis.yml: Drop all the pipelines due to jobs not starting.
+
+    Remove `.travis.yml` as a temporary workaround.
+
+commit dcad0ad9097583f71eac2ece22ad527305dc7bee
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-09-30 12:03:02 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-10-18 12:59:30 +0900
+
+    -l option of 7z is unknown switch with the `ubuntu-latest`.
+
+    https://github.com/ruby/actions/actions/runs/11095032727/job/30823174026#step:3:349
+
+commit 5777fe5ab57d6479326bdb21ef9a6b88ea1516dc
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-10-18 11:30:05 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-10-18 11:30:05 +0900
+
+    merge revision(s) 637067440f74043c6d79fc649ab8acf1afea25a5: [Backport #20752]
+
+            [Bug #20752] Slice of readonly `IO::Buffer` also should be readonly
+
+commit 18074c508105244552678cf6afd4b23304cb4c8f
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-10-18 11:25:12 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-10-18 11:25:12 +0900
+
+    merge revision(s) c1862cbb89a6bf42dcd07d92fe4f4bfeebca5775: [Backport #20719]
+
+            [Bug #20719] `Float` argument must be ASCII compatible
+
+commit 48af30b068729058c2f45375e67fa76f6240a228
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-10-18 11:22:30 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-10-18 11:22:30 +0900
+
+    merge revision(s) d33e3d47b84a73b38644f2a3d41881ce9be6ef18: [Backport #20704]
+
+            [Bug #20704] Win32: Fix chdir to non-ASCII path
+
+            On Windows, `chdir` in compilers' runtime libraries uses the active
+            code page, but command line arguments in ruby are always UTF-8, since
+            commit:33ea2646b98adb49ae2e1781753bf22d33729ac0.
+
+commit 3d4d5c8d8cca0c290a234fb3c47c035822b18add
+  Author:     Samuel Williams <samuel.williams@oriontransfer.co.nz>
+  AuthorDate: 2024-10-03 20:11:36 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-10-04 10:09:39 +0900
+
+    Add `IO::Buffer` tests for read and write with length & offset.
+
+commit bc482e632c99f30db2e12aa51cc3b10b3b0f7886
+  Author:     Samuel Williams <samuel.williams@oriontransfer.co.nz>
+  AuthorDate: 2024-10-03 19:58:36 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-10-04 10:09:39 +0900
+
+    Fix size calcuation when offset is given + updated documentation.
+
+commit 2d62c5d3d9a565fe50a3582124e6d4a58d130084
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-09-26 13:00:19 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-09-26 13:00:19 +0900
+
+    merge revision(s) 0d16c36d0ab2afa2ec79b72b229e69c141ebdaba: [Backport #13831]
+
+            [win32/registry] Fallback to UTF-8 for unknown codepages
+
+            There are some codepages like cp708 for which no ruby encoding exists:
+
+                $ ruby -e "Encoding.find('cp708')"
+                Traceback (most recent call last):
+                    1: from -e:1:in `<main>'
+                -e:1:in `find': unknown encoding name - cp708 (ArgumentError)
+
+            win32/registry uses ENCODING to transcode error messages and expand environment
+            variables from UTF-16LE, so using UTF-8 seems like the best choice and is better
+            than a hard failure.
+
+            This should resolve [Bug #13831]
+
+commit b6f7d544851ee8e1f6e4d151cc915b40f8b8e4f6
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-08-25 12:12:51 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-31 19:10:29 +0900
+
+    merge revision(s) 29500e3034681a30045dea462d6bb653e8600738: [Backport #20698]
+
+            Update bundled gems list as of 2024-08-22
+
+commit 04fab1dfd956a536fa3683682f3e8f2707f6f8ce
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-08-31 19:09:13 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-31 19:09:13 +0900
+
+    merge revision(s) bb849ffdb18305f01457de4e9848c830eb83a2d7:
+
+            Added explicitly begin-end block for Ruby 2.4.
+
+              strscan, ipaddr and some default gems still support Ruby 2.4.
+
+              After this, I extract this CoreAssertions to their repositories.
+
+commit f095a085a43b609be6282fcc27ab7fe859259dfc
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-08-31 18:51:41 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-31 18:51:41 +0900
+
+    merge revision(s) 8a7e6f6852740e989ef8f679db5631306466a4ed:
+
+            Improve base time of assert_linear_performance (#11369)
+
+            Remove `.ceil` from base time calculation that makes 10x gap.
+            This will make the assertion more strict and also less flaky.
+
+commit f4847607ee52040fc62531f37001ea1a22acd856
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-08-31 18:49:58 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-31 18:49:58 +0900
+
+    merge revision(s) f1c78b23313e63eb31a213cc7277b1eb206a581b:
+
+            Suppress warning for shadowing outer local variable
+
+commit b5bb0ee64b24251f103311e56168b96f5334cc6f
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-08-31 18:49:27 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-31 18:49:27 +0900
+
+    merge revision(s) d23964360335ad561f252cb6fe8e90df7ebee90e:
+
+            core_assertions.rb: Support old rubies
+
+            Some symbol argument might not be accepted by Process.clock_gettime.
+
+commit bec6da392d26677194160cb4875f1bc491db27f5
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-08-31 18:49:12 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-31 18:49:12 +0900
+
+    merge revision(s) 533423ebe46ebfe3005198c12aa0d2c899c695ea:
+
+            core_assertions.rb: Prefer CPU time clocks
+
+            To prevent influence from other processes.
+
+commit 7c2cdca7f250d0b270df585f69f275f72c415348
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-08-31 18:48:57 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-31 18:48:57 +0900
+
+    merge revision(s) f9eb2515a3221cced611b4de971b72a78a7a566f:
+
+            core_assertions.rb: Extract common code block
+
+commit 07d7ffeb9c2c6537883a1ea7b180eb04ecbe47e6
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-08-31 18:48:17 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-31 18:48:17 +0900
+
+    merge revision(s) 3fe134759cc4904c74306e0832c22fa518a5bea2:
+
+            Skip assert_linear_performance for RJIT
+
+commit 00fada3890fe7bebbd660af3682eee6a8857b222
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-08-31 18:45:29 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-31 18:45:29 +0900
+
+    merge revision(s) f07c756494b0e473ff8e4ece6f04c7ababe93b01:
+
+            core_assertions.rb: Tweak timeout limit
+
+            Increase the timeout limit when variance at rehearsal is small.
+
+commit c96ba1fec4b4b80b60a08514bd9030258ba7f628
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-08-27 14:25:16 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-27 19:12:13 +0900
+
+    Merge URI-0.12.3
+
+commit 529b618235deb287be7c691064e11f942162f595
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-08-27 17:22:49 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-27 17:22:49 +0900
+
+    Revert "merge revision(s) 29500e3034681a30045dea462d6bb653e8600738: [Backport #20698]"
+
+    This reverts commit 3a3784a197383046537e66a9c567b96a52f0f86f.
+
+commit 3a3784a197383046537e66a9c567b96a52f0f86f
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-08-25 12:12:51 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-25 12:13:34 +0900
+
+    merge revision(s) 29500e3034681a30045dea462d6bb653e8600738: [Backport #20698]
+
+            Update bundled gems list as of 2024-08-22
+
+commit 21c708ee802e1a59901eccc6448e40e8f72189b8
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-08-18 18:07:14 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-18 18:07:14 +0900
+
+    merge revision(s) 992596fb7af18a7f472589a607d0eb3fbb03b49a: [Backport #20344]
+
+            Fix next inside block argument stack underflow
+
+            [Bug #20344]
+            Fix compile_next adding removable adjust label
+
+commit 65fed1c3e439bc47bcf6ec884431a86cb9ebd1dc
+  Author:     Stan Hu <stanhu@gmail.com>
+  AuthorDate: 2024-05-17 17:05:48 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-18 18:02:09 +0900
+
+    Allow waitpid(-1, Process::WNOHANG) to be woken if a waitpid(pid) is
+
+    ...pending
+
+    If two threads are running, with one calling waitpid(-1, Process::WNOHANG),
+    and another calling waitpid($some_pid), and then
+    $some_other_pid exits, we would expect the waitpid(-1,
+    Process::WNOHANG) call to retrieve that exit status. However, it
+    cannot actually do so until $some_pid _also_ exits.
+
+    This patch fixes the issue by calling do_waitpid unconditionally in
+    waitpid_wait; this will ensure that a waitpid -1 actually reaps
+    something (after first checking that no PID-directed call wants the
+    process).
+
+    [Bug #20490]
+
+commit 50399eebd96c76ce808ea4d84fe39693f585a531
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-08-18 11:18:49 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-18 11:19:09 +0900
+
+    merge revision(s) 1870505f478cc75993b296b7144a45137ace6937: [Backport #20651] [Backport #20571]
+
+            Fix wrong unreachable chunk remove when jump destination label is unremovable
+
+commit a8a25291447e3630d455e82851ca58fc8ac372ec
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-08-18 10:52:06 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-18 10:52:06 +0900
+
+    merge revision(s) 97449338d6cb42d9dd7c9ca61550616e7e6b6ef6: [Backport #20649]
+
+            [Bug #20649] Allow `nil` as 2nd argument of `assign_error`
+
+            Fallback to the last token element in that case, for the backward
+            compatibilities.
+
+commit 0f2f6b31aa6433fd800f0621b5bedbaf0da12a6f
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-08-17 21:41:24 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-17 21:41:24 +0900
+
+    merge revision(s) 2a7da0b6e76929c684cd948630a897c1d5b16c26: [Backport #20667]
+
+            Update bundled gems list as of 2024-08-12
+
+commit 6fd660e6179117a86304ef29ba0da71e5722be1a
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-08-10 16:27:40 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-10 16:27:40 +0900
+
+    merge revision(s) 657f4b99f61a15e21584b87f7b206933d116589b:
+
+            Update bundled gems list as of 2024-08-02
+
+commit c307c2b6a13bf11aef0c9ab8dea6e0ff77047c91
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-08-10 16:24:51 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-10 16:24:51 +0900
+
+    merge revision(s) 54d26221b4c4cfc46048f30892c626db69ce9244:
+
+            .travis.yml: Allow failures for ppc64le and s390x.
+
+            Because Travis ppc64le/s390x are unstable.
+
+            ppc64le:
+            * https://app.travis-ci.com/github/ruby/ruby/builds/269211469
+            * https://app.travis-ci.com/github/ruby/ruby/builds/269204073
+
+            s390x:
+            * https://app.travis-ci.com/github/ruby/ruby/builds/269201221
+
+commit 634db38b22f0e6c3397a3780863e6e0650a68c9b
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-08-08 16:44:02 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-08-08 18:00:44 +0900
+
+    Added bootstrap job for release workflow
+
+commit bbef31b7b4c715589392b215d4a40320221c9d2c
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-08-07 10:47:38 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-08-07 12:07:01 +0900
+
+    Fix installation failure of rss
+
+commit 116d95b476aed8c7dd525d521bf35f5f324096c0
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-08-01 13:31:55 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-06 18:59:52 +0900
+
+    Revert "skip bundled gem rss test for a while."
+
+    This reverts commit 0cc98ae353fd231bcd0e704c251198abc4406247.
+
+commit 16f795b5e9321088c1ba765e0dfe4a8300fc18ad
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-08-01 13:31:23 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-06 18:59:52 +0900
+
+    Reapply "merge revision(s) 9f708d48f6df37ee9600db9d51b57a156609a13b,0301473fb523c71d8cdc4966971f31f502001185,7f0e26b7f99bf76408569892ce20318501f74729: [Backport #20516]"
+
+    This reverts commit 367ad5055c3d5210c884d4611e08ffa32ec608ee.
+
+commit 06cfabd49a1be9c00f2cb7d477cde6d47c3b8d32
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-02-16 17:57:38 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-06 18:59:52 +0900
+
+    Adjust indent
+
+commit 84f2da297f325b1fcde887bc307a4719cd5d9dab
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-02-16 16:33:25 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-06 18:59:52 +0900
+
+    Try to find gemspec from `.bundle/specifications
+
+commit 6517f15f9f07d1a516532fb08c264c1a113e9993
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-02-16 15:39:36 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-06 18:59:52 +0900
+
+    Try to load original gemspec from `.bundle/gems/foo-x.y.z/foo.gemspec`.
+
+    `.bundle/specification/foo-x.y.z.gemspec` may be changed our toolchain
+
+commit 2e7949f006e4ab092b3749b89130e6888b6fdf48
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-02-16 17:23:19 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-06 18:59:52 +0900
+
+    Use gemspec that keeps original dependencies
+
+commit b62e1df3a1527c811f7fe857423023a479bc807f
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-08-01 13:19:17 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-06 18:59:52 +0900
+
+    Revert "Backport [Bug #19158] for Ruby 3.2 (#7356)"
+
+    This reverts commit 65ab2c1ef23bd4a02120a27c371dce12ea9024d4.
+
+commit 7fc6448ec7f7505ca5772af0a60ee780c321492c
+  Author:     Peter Zhu <peter@peterzhu.ca>
+  AuthorDate: 2024-07-27 00:10:53 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-02 18:26:26 +0900
+
+    Fix ceil when ndigits is large
+
+    [Bug #20654]
+
+    This commit fixes Integer#ceil and Float#ceil when the number is
+    negative and ndigits is large such that 10**ndigits is a bignum.
+
+    Previously, it would return 0 in such cases. However, this would cause
+    unexpected behaviour such as:
+
+        puts 1.ceil(-5) # => 100000
+        puts 1.ceil(-10) # => 10000000000
+        puts 1.ceil(-20) # => 0
+
+    This commit changes the last result so that it will return
+    100000000000000000000.
+
+commit 7048fbdf59509e4f52eff56d7c044ed28eb67727
+  Author:     Peter Zhu <peter@peterzhu.ca>
+  AuthorDate: 2024-07-27 00:10:39 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-08-02 18:26:26 +0900
+
+    Fix floor when ndigits is large
+
+    [Bug #20654]
+
+    This commit fixes Integer#floor and Float#floor when the number is
+    negative and ndigits is large such that 10**ndigits is a bignum.
+
+    Previously, it would return 0 in such cases. However, this would cause
+    unexpected behaviour such as:
+
+        puts -1.floor(-5) # => -100000
+        puts -1.floor(-10) # => -10000000000
+        puts -1.floor(-20) # => 0
+
+    This commit changes the last result so that it will return
+    -100000000000000000000.
+
+commit 0cc98ae353fd231bcd0e704c251198abc4406247
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-26 22:37:30 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-26 22:37:30 +0900
+
+    skip bundled gem rss test for a while.
+
 commit 31d0f1a2e7dbfb60731d1f05b868e1d578cda493
   Author:     nagachika <nagachika@ruby-lang.org>
   AuthorDate: 2024-07-26 20:54:27 +0900
