@@ -1,3 +1,11 @@
+ruby3.4 (3.4.1-0nkmi1~dist) unstable; urgency=medium
+
+  * Ruby 3.4
+  * 3.4.0 was skipped due to wrong RUBY_PATCHLEVEL and it causes deviations
+    from our expectation; e.g. ABI version (3.4.0+1, which has to be 3.4.0)
+
+ -- Sorah Fukumori <her@sorah.jp>  Thu, 26 Dec 2024 00:55:17 +0900
+
 ruby3.3 (3.3.6-0nkmi1~dist) unstable; urgency=medium
 
   * 3.3.6
