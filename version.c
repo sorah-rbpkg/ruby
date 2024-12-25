@@ -10,6 +10,8 @@
 **********************************************************************/
 
 #include "internal/cmdlineopt.h"
+#include "internal/parse.h"
+#include "internal/gc.h"
 #include "ruby/ruby.h"
 #include "version.h"
 #include "vm_core.h"
@@ -59,6 +61,11 @@ const int ruby_api_version[] = {
 #define YJIT_DESCRIPTION " +YJIT " STRINGIZE(YJIT_SUPPORT)
 #else
 #define YJIT_DESCRIPTION " +YJIT"
+#endif
+#if USE_MODULAR_GC
+#define GC_DESCRIPTION " +GC"
+#else
+#define GC_DESCRIPTION ""
 #endif
 const char ruby_version[] = RUBY_VERSION;
 const char ruby_revision[] = RUBY_FULL_REVISION;
@@ -141,7 +148,22 @@ Init_version(void)
 
 int ruby_mn_threads_enabled;
 
-bool * rb_ruby_prism_ptr(void);
+#ifndef RB_DEFAULT_PARSER
+#define RB_DEFAULT_PARSER RB_DEFAULT_PARSER_PRISM
+#endif
+static ruby_default_parser_enum default_parser = RB_DEFAULT_PARSER;
+
+ruby_default_parser_enum
+rb_ruby_default_parser(void)
+{
+    return default_parser;
+}
+
+void
+rb_ruby_default_parser_set(ruby_default_parser_enum parser)
+{
+    default_parser = parser;
+}
 
 static void
 define_ruby_description(const char *const jit_opt)
@@ -151,22 +173,33 @@ define_ruby_description(const char *const jit_opt)
         + rb_strlen_lit(YJIT_DESCRIPTION)
         + rb_strlen_lit(" +MN")
         + rb_strlen_lit(" +PRISM")
+#if USE_MODULAR_GC
+        + rb_strlen_lit(GC_DESCRIPTION)
+        // Assume the active GC name can not be longer than 20 chars
+        // so that we don't have to use strlen and remove the static
+        // qualifier from desc.
+        + RB_GC_MAX_NAME_LEN + 3
+#endif
+
     ];
 
-    const char *const threads_opt = ruby_mn_threads_enabled ? " +MN" : "";
-    const char *const parser_opt = (*rb_ruby_prism_ptr()) ? " +PRISM" : "";
-
-    int n = snprintf(desc, sizeof(desc),
-                     "%.*s"
-                     "%s" // jit_opt
-                     "%s" // threads_opts
-                     "%s" // parser_opt
-                     "%s",
-                     ruby_description_opt_point, ruby_description,
-                     jit_opt,
-                     threads_opt,
-                     parser_opt,
-                     ruby_description + ruby_description_opt_point);
+    int n = ruby_description_opt_point;
+    memcpy(desc, ruby_description, n);
+# define append(s) (n += (int)strlcpy(desc + n, s, sizeof(desc) - n))
+    if (*jit_opt) append(jit_opt);
+    RUBY_ASSERT(n <= ruby_description_opt_point + (int)rb_strlen_lit(YJIT_DESCRIPTION));
+    if (ruby_mn_threads_enabled) append(" +MN");
+    if (rb_ruby_prism_p()) append(" +PRISM");
+#if USE_MODULAR_GC
+    append(GC_DESCRIPTION);
+    if (rb_gc_modular_gc_loaded_p()) {
+        append("[");
+        append(rb_gc_active_gc_name());
+        append("]");
+    }
+#endif
+    append(ruby_description + ruby_description_opt_point);
+# undef append
 
     VALUE description = rb_obj_freeze(rb_usascii_str_new_static(desc, n));
     rb_dynamic_description = desc;

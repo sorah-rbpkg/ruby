@@ -9,122 +9,133 @@
 #include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
 struct rb_execution_context_struct; /* in vm_core.h */
 
-static VALUE builtin_inline_class_82(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_101(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 82 "numeric.rb"
+#line 101 "numeric.rb"
 return rb_int_uminus(self);
 #line 17 "numeric.rbinc"
 }
 
-static VALUE builtin_inline_class_101(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_120(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 101 "numeric.rb"
+#line 120 "numeric.rb"
 return rb_int_comp(self);
 #line 24 "numeric.rbinc"
 }
 
-static VALUE builtin_inline_class_115(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_134(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 115 "numeric.rb"
+#line 134 "numeric.rb"
 return rb_int_abs(self);
 #line 31 "numeric.rbinc"
 }
 
-static VALUE builtin_inline_class_162(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_181(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 162 "numeric.rb"
+#line 181 "numeric.rb"
 return rb_int_bit_length(self);
 #line 38 "numeric.rbinc"
-}
-
-static VALUE builtin_inline_class_171(struct rb_execution_context_struct *ec, const VALUE self)
-{
-#line 171 "numeric.rb"
-return rb_int_even_p(self);
-#line 45 "numeric.rbinc"
 }
 
 static VALUE builtin_inline_class_190(struct rb_execution_context_struct *ec, const VALUE self)
 {
 #line 190 "numeric.rb"
+return rb_int_even_p(self);
+#line 45 "numeric.rbinc"
+}
+
+static VALUE builtin_inline_class_209(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 209 "numeric.rb"
 return rb_int_odd_p(self);
 #line 52 "numeric.rbinc"
 }
 
-static VALUE builtin_inline_class_217(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_236(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 217 "numeric.rb"
+#line 236 "numeric.rb"
 return rb_int_size(self);
 #line 59 "numeric.rbinc"
 }
 
-static VALUE builtin_inline_class_265(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_253(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 265 "numeric.rb"
-return rb_int_zero_p(self);
+#line 253 "numeric.rb"
+return SIZED_ENUMERATOR(self, 0, 0, int_dotimes_size);
 #line 66 "numeric.rbinc"
 }
 
-static VALUE builtin_inline_class_327(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_285(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 327 "numeric.rb"
-return rb_float_abs(self);
+#line 285 "numeric.rb"
+return rb_int_zero_p(self);
 #line 73 "numeric.rbinc"
 }
 
-static VALUE builtin_inline_class_332(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_335(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 332 "numeric.rb"
+VALUE *const to__ptr = (VALUE *)&ec->cfp->ep[-4];
+MAYBE_UNUSED(const VALUE) to = *to__ptr;
+#line 335 "numeric.rb"
+return SIZED_ENUMERATOR(self, 1, &to, int_downto_size);
+#line 81 "numeric.rbinc"
+}
+
+static VALUE builtin_inline_class_370(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 370 "numeric.rb"
 return rb_float_abs(self);
-#line 80 "numeric.rbinc"
+#line 88 "numeric.rbinc"
 }
 
-static VALUE builtin_inline_class_342(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_382(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 342 "numeric.rb"
+#line 382 "numeric.rb"
 return rb_float_uminus(self);
-#line 87 "numeric.rbinc"
+#line 95 "numeric.rbinc"
 }
 
-static VALUE builtin_inline_class_351(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_391(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 351 "numeric.rb"
+#line 391 "numeric.rb"
 return RBOOL(FLOAT_ZERO_P(self));
-#line 94 "numeric.rbinc"
+#line 102 "numeric.rbinc"
 }
 
-static VALUE builtin_inline_class_360(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_400(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 360 "numeric.rb"
+#line 400 "numeric.rb"
 return RBOOL(RFLOAT_VALUE(self) > 0.0);
-#line 101 "numeric.rbinc"
+#line 109 "numeric.rbinc"
 }
 
-static VALUE builtin_inline_class_369(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_409(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 369 "numeric.rb"
+#line 409 "numeric.rb"
 return RBOOL(RFLOAT_VALUE(self) < 0.0);
-#line 108 "numeric.rbinc"
+#line 116 "numeric.rbinc"
 }
 
 void Init_builtin_numeric(void)
 {
   // table definition
   static const struct rb_builtin_function numeric_table[] = {
-    RB_BUILTIN_FUNCTION(0, _bi0, builtin_inline_class_82, 0),
-    RB_BUILTIN_FUNCTION(1, _bi1, builtin_inline_class_101, 0),
-    RB_BUILTIN_FUNCTION(2, _bi2, builtin_inline_class_115, 0),
-    RB_BUILTIN_FUNCTION(3, _bi3, builtin_inline_class_162, 0),
-    RB_BUILTIN_FUNCTION(4, _bi4, builtin_inline_class_171, 0),
-    RB_BUILTIN_FUNCTION(5, _bi5, builtin_inline_class_190, 0),
-    RB_BUILTIN_FUNCTION(6, _bi6, builtin_inline_class_217, 0),
-    RB_BUILTIN_FUNCTION(7, _bi7, builtin_inline_class_265, 0),
-    RB_BUILTIN_FUNCTION(8, _bi8, builtin_inline_class_327, 0),
-    RB_BUILTIN_FUNCTION(9, _bi9, builtin_inline_class_332, 0),
-    RB_BUILTIN_FUNCTION(10, _bi10, builtin_inline_class_342, 0),
-    RB_BUILTIN_FUNCTION(11, _bi11, builtin_inline_class_351, 0),
-    RB_BUILTIN_FUNCTION(12, _bi12, builtin_inline_class_360, 0),
-    RB_BUILTIN_FUNCTION(13, _bi13, builtin_inline_class_369, 0),
+    RB_BUILTIN_FUNCTION(0, _bi101, builtin_inline_class_101, 0),
+    RB_BUILTIN_FUNCTION(1, _bi120, builtin_inline_class_120, 0),
+    RB_BUILTIN_FUNCTION(2, _bi134, builtin_inline_class_134, 0),
+    RB_BUILTIN_FUNCTION(3, _bi181, builtin_inline_class_181, 0),
+    RB_BUILTIN_FUNCTION(4, _bi190, builtin_inline_class_190, 0),
+    RB_BUILTIN_FUNCTION(5, _bi209, builtin_inline_class_209, 0),
+    RB_BUILTIN_FUNCTION(6, _bi236, builtin_inline_class_236, 0),
+    RB_BUILTIN_FUNCTION(7, _bi253, builtin_inline_class_253, 0),
+    RB_BUILTIN_FUNCTION(8, _bi285, builtin_inline_class_285, 0),
+    RB_BUILTIN_FUNCTION(9, rb_builtin_basic_definition_p, rb_builtin_basic_definition_p, 1),
+    RB_BUILTIN_FUNCTION(10, _bi335, builtin_inline_class_335, 0),
+    RB_BUILTIN_FUNCTION(11, _bi370, builtin_inline_class_370, 0),
+    RB_BUILTIN_FUNCTION(12, _bi382, builtin_inline_class_382, 0),
+    RB_BUILTIN_FUNCTION(13, _bi391, builtin_inline_class_391, 0),
+    RB_BUILTIN_FUNCTION(14, _bi400, builtin_inline_class_400, 0),
+    RB_BUILTIN_FUNCTION(15, _bi409, builtin_inline_class_409, 0),
     RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
   };
 
@@ -133,20 +144,22 @@ COMPILER_WARNING_PUSH
 #if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
 COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
 #endif
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_82);
   if (0) rb_builtin_function_check_arity0(builtin_inline_class_101);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_115);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_162);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_171);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_120);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_134);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_181);
   if (0) rb_builtin_function_check_arity0(builtin_inline_class_190);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_217);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_265);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_327);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_332);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_342);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_351);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_360);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_369);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_209);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_236);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_253);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_285);
+  if (0) rb_builtin_function_check_arity1(rb_builtin_basic_definition_p);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_335);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_370);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_382);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_391);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_400);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_409);
 COMPILER_WARNING_POP
 
   // load

@@ -274,7 +274,7 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
         vsig = rb_str_subseq(vsig, prefix, len);
         prefix = signame_prefix_len;
     }
-    rb_raise(rb_eArgError, "unsupported signal `%.*s%"PRIsVALUE"'",
+    rb_raise(rb_eArgError, "unsupported signal '%.*s%"PRIsVALUE"'",
              prefix, signame_prefix, vsig);
     UNREACHABLE_RETURN(0);
 }
@@ -597,7 +597,7 @@ ruby_signal(int signum, sighandler_t handler)
 #endif
 
     sigemptyset(&sigact.sa_mask);
-#ifdef USE_SIGALTSTACK
+#if defined(USE_SIGALTSTACK) && !defined(__wasm__)
     if (handler == SIG_IGN || handler == SIG_DFL) {
         sigact.sa_handler = handler;
         sigact.sa_flags = 0;
@@ -751,7 +751,10 @@ rb_get_next_signal(void)
 
 #if defined SIGSEGV || defined SIGBUS || defined SIGILL || defined SIGFPE
 static const char *received_signal;
-# define clear_received_signal() (void)(ruby_disable_gc = 0, received_signal = 0)
+# define clear_received_signal() do { \
+    if (GET_VM() != NULL) rb_gc_enable(); \
+    received_signal = 0; \
+} while (0)
 #else
 # define clear_received_signal() ((void)0)
 #endif
@@ -803,7 +806,8 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
     const greg_t bp = mctx->gregs[REG_EBP];
 #   endif
 # elif defined __APPLE__
-#   if __DARWIN_UNIX03
+#   include <AvailabilityMacros.h>
+#   if defined(MAC_OS_X_VERSION_10_5) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5
 #     define MCTX_SS_REG(reg) __ss.__##reg
 #   else
 #     define MCTX_SS_REG(reg) ss.reg
@@ -867,16 +871,19 @@ check_stack_overflow(int sig, const void *addr)
     }
 }
 # endif
+
 # ifdef _WIN32
 #   define CHECK_STACK_OVERFLOW() check_stack_overflow(sig, 0)
 # else
 #   define FAULT_ADDRESS info->si_addr
 #   ifdef USE_UCONTEXT_REG
-#     define CHECK_STACK_OVERFLOW() check_stack_overflow(sig, (uintptr_t)FAULT_ADDRESS, ctx)
+#     define CHECK_STACK_OVERFLOW_() check_stack_overflow(sig, (uintptr_t)FAULT_ADDRESS, ctx)
 #   else
-#     define CHECK_STACK_OVERFLOW() check_stack_overflow(sig, FAULT_ADDRESS)
+#     define CHECK_STACK_OVERFLOW_() check_stack_overflow(sig, FAULT_ADDRESS)
 #   endif
 #   define MESSAGE_FAULT_ADDRESS " at %p", FAULT_ADDRESS
+#   define SIGNAL_FROM_USER_P() ((info)->si_code == SI_USER)
+#   define CHECK_STACK_OVERFLOW() (SIGNAL_FROM_USER_P() ? (void)0 : CHECK_STACK_OVERFLOW_())
 # endif
 #else
 # define CHECK_STACK_OVERFLOW() (void)0
@@ -997,7 +1004,9 @@ check_reserved_signal_(const char *name, size_t name_len, int signo)
         ruby_abort();
     }
 
-    ruby_disable_gc = 1;
+    if (GET_VM() != NULL) {
+        rb_gc_disable_no_rest();
+    }
 }
 #endif
 
@@ -1544,22 +1553,4 @@ Init_signal(void)
 #endif
 
     rb_enable_interrupt();
-}
-
-#if defined(HAVE_GRANTPT)
-extern int grantpt(int);
-#else
-static int
-fake_grantfd(int masterfd)
-{
-    errno = ENOSYS;
-    return -1;
-}
-#define grantpt(fd) fake_grantfd(fd)
-#endif
-
-int
-rb_grantpt(int masterfd)
-{
-    return grantpt(masterfd);
 }

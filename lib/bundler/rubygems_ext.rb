@@ -79,13 +79,17 @@ module Gem
     include ::Bundler::MatchMetadata
     include ::Bundler::MatchPlatform
 
-    attr_accessor :remote, :location, :relative_loaded_from
+    attr_accessor :remote, :relative_loaded_from
 
-    remove_method :source
-    attr_writer :source
-    def source
-      (defined?(@source) && @source) || Gem::Source::Installed.new
+    module AllowSettingSource
+      attr_writer :source
+
+      def source
+        (defined?(@source) && @source) || super
+      end
     end
+
+    prepend AllowSettingSource
 
     alias_method :rg_full_gem_path, :full_gem_path
     alias_method :rg_loaded_from,   :loaded_from
@@ -122,7 +126,9 @@ module Gem
       end
     end
 
-    remove_method :gem_dir
+    # Can be removed once RubyGems 3.5.21 support is dropped
+    remove_method :gem_dir if method_defined?(:gem_dir, false)
+
     def gem_dir
       full_gem_path
     end
@@ -142,6 +148,10 @@ module Gem
           end
         end
       end
+    end
+
+    def insecurely_materialized?
+      false
     end
 
     def groups
@@ -278,23 +288,6 @@ module Gem
     end
   end
 
-  # Requirements using lambda operator differentiate trailing zeros since rubygems 3.2.6
-  if Gem::Requirement.new("~> 2.0").hash == Gem::Requirement.new("~> 2.0.0").hash
-    class Requirement
-      module CorrectHashForLambdaOperator
-        def hash
-          if requirements.any? {|r| r.first == "~>" }
-            requirements.map {|r| r.first == "~>" ? [r[0], r[1].to_s] : r }.sort.hash
-          else
-            super
-          end
-        end
-      end
-
-      prepend CorrectHashForLambdaOperator
-    end
-  end
-
   require "rubygems/platform"
 
   class Platform
@@ -343,10 +336,6 @@ module Gem
 
         without_gnu_nor_abi_modifiers
       end
-    end
-
-    if RUBY_ENGINE == "truffleruby" && !defined?(REUSE_AS_BINARY_ON_TRUFFLERUBY)
-      REUSE_AS_BINARY_ON_TRUFFLERUBY = %w[libv8 libv8-node sorbet-static].freeze
     end
   end
 
@@ -449,6 +438,31 @@ module Gem
             s == this_spec && s.base_dir == this_spec.base_dir
           end
         end
+      end
+    end
+  end
+
+  if Gem.rubygems_version < Gem::Version.new("3.6.0")
+    class Package; end
+    require "rubygems/package/tar_reader"
+    require "rubygems/package/tar_reader/entry"
+
+    module FixFullNameEncoding
+      def full_name
+        super.force_encoding(Encoding::UTF_8)
+      end
+    end
+
+    Package::TarReader::Entry.prepend(FixFullNameEncoding)
+  end
+
+  require "rubygems/uri"
+
+  # Can be removed once RubyGems 3.3.15 support is dropped
+  unless Gem::Uri.respond_to?(:redact)
+    class Uri
+      def self.redact(uri)
+        new(uri).redacted
       end
     end
   end

@@ -23,17 +23,17 @@ return rb_obj_frozen_p(self);
 #line 24 "kernel.rbinc"
 }
 
-static VALUE builtin_inline_class_131(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_124(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 131 "kernel.rb"
+#line 124 "kernel.rb"
 return SIZED_ENUMERATOR(self, 0, 0, rb_obj_size);
 #line 31 "kernel.rbinc"
 }
 
-static VALUE builtin_inline_class_146(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_163(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 146 "kernel.rb"
-return SIZED_ENUMERATOR(self, 0, 0, rb_obj_size);
+#line 163 "kernel.rb"
+return SIZED_ENUMERATOR(self, 0, 0, rb_f_loop_size);
 #line 38 "kernel.rbinc"
 }
 
@@ -41,11 +41,11 @@ void Init_builtin_kernel(void)
 {
   // table definition
   static const struct rb_builtin_function kernel_table[] = {
-    RB_BUILTIN_FUNCTION(0, _bi0, builtin_inline_class_20, 0),
+    RB_BUILTIN_FUNCTION(0, _bi20, builtin_inline_class_20, 0),
     RB_BUILTIN_FUNCTION(1, rb_obj_clone2, rb_obj_clone2, 1),
-    RB_BUILTIN_FUNCTION(2, _bi1, builtin_inline_class_69, 0),
-    RB_BUILTIN_FUNCTION(3, _bi2, builtin_inline_class_131, 0),
-    RB_BUILTIN_FUNCTION(4, _bi3, builtin_inline_class_146, 0),
+    RB_BUILTIN_FUNCTION(2, _bi69, builtin_inline_class_69, 0),
+    RB_BUILTIN_FUNCTION(3, _bi124, builtin_inline_class_124, 0),
+    RB_BUILTIN_FUNCTION(4, _bi163, builtin_inline_class_163, 0),
     RB_BUILTIN_FUNCTION(5, rb_f_float1, rb_f_float1, 1),
     RB_BUILTIN_FUNCTION(6, rb_f_float, rb_f_float, 2),
     RB_BUILTIN_FUNCTION(7, rb_f_integer1, rb_f_integer1, 1),
@@ -61,8 +61,8 @@ COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
   if (0) rb_builtin_function_check_arity0(builtin_inline_class_20);
   if (0) rb_builtin_function_check_arity1(rb_obj_clone2);
   if (0) rb_builtin_function_check_arity0(builtin_inline_class_69);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_131);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_146);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_124);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_163);
   if (0) rb_builtin_function_check_arity1(rb_f_float1);
   if (0) rb_builtin_function_check_arity2(rb_f_float);
   if (0) rb_builtin_function_check_arity1(rb_f_integer1);

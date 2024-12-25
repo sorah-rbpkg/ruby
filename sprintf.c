@@ -67,7 +67,8 @@ sign_bits(int base, const char *p)
 
 #define CHECK(l) do {\
     int cr = ENC_CODERANGE(result);\
-    while ((l) >= bsiz - blen) {\
+    RUBY_ASSERT(bsiz >= blen); \
+    while ((l) > bsiz - blen) {\
         bsiz*=2;\
         if (bsiz<0) rb_raise(rb_eArgError, "too big specifier");\
     }\
@@ -247,8 +248,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     }
 
 #define update_coderange(partial) do { \
-        if (coderange != ENC_CODERANGE_BROKEN && scanned < blen \
-            && rb_enc_to_index(enc) /* != ENCINDEX_ASCII_8BIT */) { \
+        if (coderange != ENC_CODERANGE_BROKEN && scanned < blen) { \
             int cr = coderange; \
             scanned += rb_str_coderange_scan_restartable(buf+scanned, buf+blen, enc, &cr); \
             ENC_CODERANGE_SET(result, \
@@ -429,10 +429,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
             GETNUM(prec, precision);
             goto retry;
 
-          case '\n':
-          case '\0':
-            p--;
-            /* fall through */
           case '%':
             if (flags != FNONE) {
                 rb_raise(rb_eArgError, "invalid format character - %%");
@@ -812,7 +808,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                 if (FIXNUM_P(num)) {
                     if ((SIGNED_VALUE)num < 0) {
                         long n = -FIX2LONG(num);
-                        num = LONG2FIX(n);
+                        num = LONG2NUM(n);
                         sign = -1;
                     }
                 }
@@ -941,7 +937,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     rb_str_tmp_frozen_release(orig, fmt);
     /* XXX - We cannot validate the number of arguments if (digit)$ style used.
      */
-    if (posarg >= 0 && nextarg < argc) {
+    if (posarg >= 0 && nextarg < argc && !(argc == 2 && RB_TYPE_P(argv[1], T_HASH))) {
         const char *mesg = "too many arguments for format string";
         if (RTEST(ruby_debug)) rb_raise(rb_eArgError, "%s", mesg);
         if (RTEST(ruby_verbose)) rb_warn("%s", mesg);
@@ -1169,7 +1165,9 @@ ruby_vsprintf0(VALUE result, char *p, const char *fmt, va_list ap)
     RBASIC_SET_CLASS_RAW(result, klass);
     p = RSTRING_PTR(result);
     long blen = (char *)f._p - p;
-    if (scanned < blen) {
+
+    coderange = ENC_CODERANGE(result);
+    if (coderange != ENC_CODERANGE_UNKNOWN && scanned < blen) {
         rb_str_coderange_scan_restartable(p + scanned, p + blen, rb_enc_get(result), &coderange);
         ENC_CODERANGE_SET(result, coderange);
     }

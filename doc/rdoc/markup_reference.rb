@@ -7,72 +7,61 @@ require 'rdoc'
 # attributes, and constants -- are solely for illustrating \RDoc markup,
 # and have no other legitimate use.
 #
-# = \RDoc Markup Reference
-#
-# Notes:
+# == About the Examples
 #
 # - Examples in this reference are Ruby code and comments;
 #   certain differences from other sources
 #   (such as C code and comments) are noted.
+# - Almost all examples on this page are all RDoc-like;
+#   that is, they have no explicit comment markers like Ruby <tt>#</tt>
+#   or C <tt>/* ... */</tt>.
 # - An example that shows rendered HTML output
 #   displays that output in a blockquote:
 #
-#   Rendered HTML:
 #   >>>
 #     Some stuff
 #
-# \RDoc-generated documentation is derived from and controlled by:
+# == \RDoc Sources
 #
-# - Single-line or multi-line comments that precede certain definitions;
-#   see {Markup in Comments}[rdoc-ref:RDoc::MarkupReference@Markup+in+Comments].
-# - \RDoc directives in trailing comments (on the same line as code);
-#   see <tt>:nodoc:</tt>, <tt>:doc:</tt>, and <tt>:notnew:</tt>.
-# - \RDoc directives in single-line comments;
-#   see other {Directives}[rdoc-ref:RDoc::MarkupReference@Directives].
-# - The Ruby code itself (but not from C code);
-#   see {Documentation Derived from Ruby Code}[rdoc-ref:RDoc::MarkupReference@Documentation+Derived+from+Ruby+Code].
+# The sources of \RDoc documentation vary according to the type of file:
 #
-# == Markup in Comments
+# - <tt>.rb</tt> (Ruby code file):
 #
-# The treatment of markup in comments varies according to the type of file:
+#   - Markup may be found in Ruby comments:
+#     A comment that immediately precedes the definition
+#     of a Ruby class, module, method, alias, constant, or attribute
+#     becomes the documentation for that defined object.
+#   - An \RDoc directive may be found in:
 #
-# - <tt>.rb</tt> (Ruby code file): markup is parsed from Ruby comments.
+#     - A trailing comment (on the same line as code);
+#       see <tt>:nodoc:</tt>, <tt>:doc:</tt>, and <tt>:notnew:</tt>.
+#     - A single-line comment;
+#       see other {Directives}[rdoc-ref:RDoc::MarkupReference@Directives].
+#
+#   - Documentation may be derived from the Ruby code itself;
+#     see {Documentation Derived from Ruby Code}[rdoc-ref:RDoc::MarkupReference@Documentation+Derived+from+Ruby+Code].
+#
 # - <tt>.c</tt> (C code file): markup is parsed from C comments.
-# - <tt>.rdoc</tt> (RDoc text file): markup is parsed from the entire file.
+#   A comment that immediately precedes
+#   a function that implements a Ruby method,
+#   or otherwise immediately precedes the definition of a Ruby object,
+#   becomes the documentation for that object.
+# - <tt>.rdoc</tt> (\RDoc markup text file) or <tt>.md</tt> (\RDoc markdown text file):
+#   markup is parsed from the entire file.
+#   The text is not associated with any code object,
+#   but may (depending on how the documentation is built)
+#   become a separate page.
 #
-# The comment associated with
-# a Ruby class, module, method, alias, constant, or attribute
-# becomes the documentation for that defined object:
+# An <i>RDoc document</i>:
 #
-# - In a Ruby file, that comment immediately precedes
-#   the definition of the object.
-# - In a C file, that comment immediately precedes
-#   the function that implements a method,
-#   or otherwise immediately precedes the definition of the object.
-#
-# In either a Ruby or a C file,
-# \RDoc ignores comments that do not precede object definitions.
-#
-# In an \RDoc file, the text is not associated with any code object,
-# but may (depending on how the documentation is built),
-# become a separate page.
-#
-# Almost all examples on this page are all RDoc-like;
-# that is, they have no comment markers like Ruby <tt>#</tt>
-# or C <tt>/* ... */</tt>.
-#
-# === Margins
-#
-# In a multi-line comment,
-# \RDoc looks for the comment's natural left margin,
-# which becomes the <em>base margin</em> for the comment
-# and is the initial <em>current margin</em> for the comment.
-#
-# The current margin can change, and does so, for example in a list.
+# - A (possibly multi-line) comment in a Ruby or C file
+#   that generates \RDoc documentation (as above).
+# - The entire markup (<tt>.rdoc</tt>) file or markdown (<tt>.md</tt>) file
+#   (which is usually multi-line).
 #
 # === Blocks
 #
-# It's convenient to think of \RDoc markup input as a sequence of _blocks_
+# It's convenient to think of an \RDoc document as a sequence of _blocks_
 # of various types (details at the links):
 #
 # - {Paragraph}[rdoc-ref:RDoc::MarkupReference@Paragraphs]:
@@ -88,7 +77,7 @@ require 'rdoc'
 # - {List}[rdoc-ref:RDoc::MarkupReference@Lists]: items for
 #   a bullet list, numbered list, lettered list, or labeled list.
 # - {Heading}[rdoc-ref:RDoc::MarkupReference@Headings]:
-#   a section heading.
+#   a heading.
 # - {Horizontal rule}[rdoc-ref:RDoc::MarkupReference@Horizontal+Rules]:
 #   a line across the rendered page.
 # - {Directive}[rdoc-ref:RDoc::MarkupReference@Directives]:
@@ -103,6 +92,10 @@ require 'rdoc'
 # - Any block may appear independently
 #   (that is, not nested in another block);
 #   some blocks may be nested, as detailed below.
+# - In a multi-line block,
+#   \RDoc looks for the block's natural left margin,
+#   which becomes the <em>base margin</em> for the block
+#   and is the initial <em>current margin</em> for the block.
 #
 # ==== Paragraphs
 #
@@ -470,8 +463,8 @@ require 'rdoc'
 #
 #   - Specifies that the defined object should not be documented.
 #
-#   - For method definitions in C code, it must be placed before the
-#     implementation:
+#   - For a method definition in C code, it the directive must be in the comment line
+#     immediately preceding the definition:
 #
 #         /* :nodoc: */
 #         static VALUE
@@ -480,8 +473,8 @@ require 'rdoc'
 #             return self;
 #         }
 #
-#     Note that this directive has <em>no effect at all</em> at method
-#     definition places.  E.g.,
+#     Note that this directive has <em>no effect at all</em>
+#     when placed at the method declaration:
 #
 #         /* :nodoc: */
 #         rb_define_method(cMyClass, "do_something", something_func, 0);
@@ -490,8 +483,8 @@ require 'rdoc'
 #     Therefore, +do_something+ method will be reported as "undocumented"
 #     unless that method or function is documented elsewhere.
 #
-#   - For constant definitions in C code, this directive <em>can not work</em>
-#     because there is no "implementation" place for constants.
+#   - For a constant definition in C code, this directive <em>can not work</em>
+#     because there is no "implementation" place for a constant.
 #
 # - <tt># :nodoc: all</tt>:
 #
@@ -504,7 +497,7 @@ require 'rdoc'
 #
 #   - Appended to a line of code
 #     that defines a class, module, method, alias, constant, or attribute.
-#   - Specifies the defined object should be documented, even if otherwise
+#   - Specifies the defined object should be documented, even if it otherwise
 #     would not be documented.
 #
 # - <tt># :notnew:</tt> (aliased as <tt>:not_new:</tt> and <tt>:not-new:</tt>):
@@ -539,18 +532,8 @@ require 'rdoc'
 #
 #   - Appears on a line by itself.
 #   - Specifies the format for the \RDoc input;
-#     parameter +type+ is one of +markdown+, +rd+, +rdoc+, +tomdoc+.
-#
-# ===== Directives for HTML Output
-#
-# - <tt># :title: _text_</tt>:
-#
-#   - Appears on a line by itself.
-#   - Specifies the title for the HTML output.
-#
-# - <tt># :main: _filename_</tt>:
-#   - Appears on a line by itself.
-#   - Specifies the HTML file to be displayed first.
+#     parameter +type+ is one of: +rdoc+ (the default), +markdown+, +rd+, +tomdoc+.
+#     See {Markup Formats}[rdoc-ref:RDoc::Markup@Markup+Formats].
 #
 # ===== Directives for Method Documentation
 #
@@ -648,9 +631,9 @@ require 'rdoc'
 #     The file content is shifted to have the same indentation as the colon
 #     at the start of the directive.
 #
-#     The file is searched for in the directories
-#     given with the <tt>--include</tt> command-line option,
-#     or by default in the current directory.
+#     The file is searched for in the directory containing the current file,
+#     and then in each of the directories given with the <tt>--include</tt>
+#     command-line option.
 #
 #   For C code, the directive may appear in a stand-alone comment
 #
@@ -924,10 +907,6 @@ require 'rdoc'
 #
 #   - Linked: <tt>https://github.com</tt> links to https://github.com.
 #
-# [Protocol +www+]
-#
-#   - Linked: <tt>www.yahoo.com</tt> links to www.yahoo.com.
-#
 # [Protocol +ftp+]
 #
 #   - Linked: <tt>ftp://nosuch.site</tt> links to ftp://nosuch.site.
@@ -993,22 +972,22 @@ require 'rdoc'
 #   if that item exists.
 #   The referenced item may be a class, module, method, file, etc.
 #
-#   - Class: <tt>Alias[rdoc-ref:RDoc::Alias]</tt> links to Alias[rdoc-ref:RDoc::Alias].
-#   - Module: <tt>RDoc[rdoc-ref:RDoc]</tt> links to RDoc[rdoc-ref:RDoc].
-#   - Method: <tt>foo[rdoc-ref:RDoc::Markup::ToHtml#handle_regexp_RDOCLINK]</tt>
-#     links to foo[rdoc-ref:RDoc::Markup::ToHtml#handle_regexp_RDOCLINK].
-#   - Constant: <tt>bar[rdoc-ref:RDoc::Markup::ToHtml::LIST_TYPE_TO_HTML]</tt>
-#     links to bar[rdoc-ref:RDoc::Markup::ToHtml::LIST_TYPE_TO_HTML].
-#   - Attribute: <tt>baz[rdoc-ref:RDoc::Markup::ToHtml#code_object]</tt>
-#     links to baz[rdoc-ref:RDoc::Markup::ToHtml#code_object].
-#   - Alias: <tt>bad[rdoc-ref:RDoc::MarkupReference#dummy_instance_alias]</tt> links to
-#     bad[rdoc-ref:RDoc::MarkupReference#dummy_instance_alias].
+#   - Class: <tt>Alias[rdoc-ref:RDoc::Alias]</tt> generates Alias[rdoc-ref:RDoc::Alias].
+#   - Module: <tt>RDoc[rdoc-ref:RDoc]</tt> generates RDoc[rdoc-ref:RDoc].
+#   - Method: <tt>foo[rdoc-ref:RDoc::MarkupReference#dummy_instance_method]</tt>
+#     generates foo[rdoc-ref:RDoc::MarkupReference#dummy_instance_method].
+#   - Constant: <tt>bar[rdoc-ref:RDoc::MarkupReference::DUMMY_CONSTANT]</tt>
+#     generates bar[rdoc-ref:RDoc::MarkupReference::DUMMY_CONSTANT].
+#   - Attribute: <tt>baz[rdoc-ref:RDoc::MarkupReference#dummy_attribute]</tt>
+#     generates baz[rdoc-ref:RDoc::MarkupReference#dummy_attribute].
+#   - Alias: <tt>bad[rdoc-ref:RDoc::MarkupReference#dummy_instance_alias]</tt>
+#     generates bad[rdoc-ref:RDoc::MarkupReference#dummy_instance_alias].
 #
 #   If the referenced item does not exist, no link is generated
 #   and entire <tt>rdoc-ref:</tt> square-bracketed clause is removed
 #   from the resulting text.
 #
-#   - <tt>Nosuch[rdoc-ref:RDoc::Nosuch]</tt> is rendered as
+#   - <tt>Nosuch[rdoc-ref:RDoc::Nosuch]</tt> generates
 #     Nosuch[rdoc-ref:RDoc::Nosuch].
 #
 #
@@ -1216,26 +1195,26 @@ require 'rdoc'
 #
 class RDoc::MarkupReference
 
-  # example class
+  # Example class.
   class DummyClass; end
 
-  # example module
+  # Example module.
   module DummyModule; end
 
-  # example singleton method
+  # Example singleton method.
   def self.dummy_singleton_method(foo, bar); end
 
-  # example instance method
+  # Example instance method.
   def dummy_instance_method(foo, bar); end;
 
   alias dummy_instance_alias dummy_instance_method
 
-  # example attribute
+  # Example attribute.
   attr_accessor :dummy_attribute
 
   alias dummy_attribute_alias dummy_attribute
 
-  # example constant
+  # Example constant.
   DUMMY_CONSTANT = ''
 
   # :call-seq:

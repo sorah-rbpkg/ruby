@@ -58,12 +58,12 @@ mentioned below.
 
 [ccan/list/list.h]
 
-  This file is licensed under the {MIT License}[rdoc-label:label-MIT+License].
+  This file is licensed under the {MIT License}[rdoc-ref:@MIT+License].
 
 [coroutine]
 
   Unless otherwise specified, these files are licensed under the
-  {MIT License}[rdoc-label:label-MIT+License].
+  {MIT License}[rdoc-ref:@MIT+License].
 
 [include/ruby/onigmo.h]
 [include/ruby/oniguruma.h]
@@ -546,7 +546,7 @@ mentioned below.
 
 [vsnprintf.c]
 
-  This file is under the {old-style BSD license}[rdoc-label:label-Old-style+BSD+license].
+  This file is under the {old-style BSD license}[rdoc-ref:@Old-style+BSD+license].
 
   >>>
     Copyright (c) 1990, 1993::
@@ -577,7 +577,7 @@ mentioned below.
 
 [missing/crypt.c]
 
-  This file is under the {old-style BSD license}[rdoc-label:label-Old-style+BSD+license].
+  This file is under the {old-style BSD license}[rdoc-ref:@Old-style+BSD+license].
 
   >>>
     Copyright (c) 1989, 1993::
@@ -588,7 +588,7 @@ mentioned below.
 
 [missing/setproctitle.c]
 
-  This file is under the {old-style BSD license}[rdoc-label:label-Old-style+BSD+license].
+  This file is under the {old-style BSD license}[rdoc-ref:@Old-style+BSD+license].
 
   >>>
     Copyright 2003:: Damien Miller
@@ -701,49 +701,6 @@ mentioned below.
     LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
     OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
     SUCH DAMAGE.
-
-[ext/json/generator/generator.c]
-
-  The file contains the following copyright notice.
-
-  >>>
-    Copyright 2001-2004:: Unicode, Inc.
-
-    Disclaimer::
-
-      This source code is provided as is by Unicode, Inc. No claims are
-      made as to fitness for any particular purpose. No warranties of any
-      kind are expressed or implied. The recipient agrees to determine
-      applicability of information provided. If this file has been
-      purchased on magnetic or optical media from Unicode, Inc., the
-      sole remedy for any claim will be exchange of defective media
-      within 90 days of receipt.
-
-    Limitations on Rights to Redistribute This Code::
-
-      Unicode, Inc. hereby grants the right to freely use the information
-      supplied in this file in the creation of products supporting the
-      Unicode Standard, and to make copies of this file in any form
-      for internal or external distribution as long as this notice
-      remains attached.
-
-[ext/nkf/nkf-utf8/config.h]
-[ext/nkf/nkf-utf8/nkf.c]
-[ext/nkf/nkf-utf8/utf8tbl.c]
-
-  These files are under the following license.  So to speak, it is
-  copyrighted semi-public-domain software.
-
-  >>>
-    Copyright (C) 1987:: Fujitsu LTD. (Itaru ICHIKAWA)
-
-    Everyone is permitted to do anything on this program
-    including copying, modifying, improving,
-    as long as you don't try to pretend that you wrote it.
-    i.e., the above copyright notice has to appear in all copies.
-    Binary distribution requires original version messages.
-    You don't have to ask before copying, redistribution or publishing.
-    THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE.
 
 [ext/psych]
 [test/psych]
@@ -879,7 +836,7 @@ mentioned below.
   >>>
     RubyGems is copyrighted free software by Chad Fowler, Rich Kilmer, Jim
     Weirich and others.  You can redistribute it and/or modify it under
-    either the terms of the {MIT license}[rdoc-label:label-MIT+License], or the conditions
+    either the terms of the {MIT license}[rdoc-ref:@MIT+License], or the conditions
     below:
 
     1. You may make and give away verbatim copies of the source form of the
@@ -941,7 +898,7 @@ mentioned below.
     Portions copyright (c) 2010:: Andre Arko
     Portions copyright (c) 2009:: Engine Yard
 
-    {MIT License}[rdoc-label:label-MIT+License]
+    {MIT License}[rdoc-ref:@MIT+License]
 
 [lib/bundler/vendor/thor]
 
@@ -950,16 +907,16 @@ mentioned below.
   >>>
     Copyright (c) 2008 Yehuda Katz, Eric Hodel, et al.
 
-    {MIT License}[rdoc-label:label-MIT+License]
+    {MIT License}[rdoc-ref:@MIT+License]
 
-[lib/rubygems/resolver/molinillo]
+[lib/rubygems/vendor/molinillo]
 
   molinillo is under the following license.
 
   >>>
     Copyright (c) 2014 Samuel E. Giddins segiddins@segiddins.me
 
-    {MIT License}[rdoc-label:label-MIT+License]
+    {MIT License}[rdoc-ref:@MIT+License]
 
 [lib/bundler/vendor/pub_grub]
 
@@ -968,7 +925,7 @@ mentioned below.
   >>>
     Copyright (c) 2018 John Hawthorn
 
-    {MIT License}[rdoc-label:label-MIT+License]
+    {MIT License}[rdoc-ref:@MIT+License]
 
 [lib/bundler/vendor/connection_pool]
 
@@ -977,7 +934,7 @@ mentioned below.
   >>>
     Copyright (c) 2011 Mike Perham
 
-    {MIT License}[rdoc-label:label-MIT+License]
+    {MIT License}[rdoc-ref:@MIT+License]
 
 [lib/bundler/vendor/net-http-persistent]
 
@@ -986,7 +943,7 @@ mentioned below.
   >>>
     Copyright (c) Eric Hodel, Aaron Patterson
 
-    {MIT License}[rdoc-label:label-MIT+License]
+    {MIT License}[rdoc-ref:@MIT+License]
 
 [lib/did_you_mean]
 [lib/did_you_mean.rb]
@@ -997,7 +954,7 @@ mentioned below.
   >>>
     Copyright (c) 2014-2016 Yuki Nishijima
 
-    {MIT License}[rdoc-label:label-MIT+License]
+    {MIT License}[rdoc-ref:@MIT+License]
 
 [lib/error_highlight]
 [lib/error_highlight.rb]
@@ -1008,7 +965,7 @@ mentioned below.
   >>>
     Copyright (c) 2021 Yusuke Endoh
 
-    {MIT License}[rdoc-label:label-MIT+License]
+    {MIT License}[rdoc-ref:@MIT+License]
 
 [benchmark/so_ackermann.rb]
 [benchmark/so_array.rb]

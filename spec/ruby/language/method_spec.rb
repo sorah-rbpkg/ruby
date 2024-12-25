@@ -1335,6 +1335,7 @@ describe "An endless method definition" do
     end
   end
 
+  # tested more thoroughly in language/delegation_spec.rb
   context "with args forwarding" do
     evaluate <<-ruby do
         def mm(word, num:)
@@ -1458,7 +1459,7 @@ ruby_version_is "3.1" do
   describe "Inside 'endless' method definitions" do
     it "allows method calls without parenthesis" do
       eval <<-ruby
-        def greet(person) = "Hi, ".concat person
+        def greet(person) = "Hi, ".dup.concat person
       ruby
 
       greet("Homer").should == "Hi, Homer"

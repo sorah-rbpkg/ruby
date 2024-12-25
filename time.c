@@ -42,6 +42,7 @@
 #include "internal/time.h"
 #include "internal/variable.h"
 #include "ruby/encoding.h"
+#include "ruby/util.h"
 #include "timev.h"
 
 #include "builtin.h"
@@ -331,6 +332,8 @@ v2w(VALUE v)
     return WIDEVAL_WRAP(v);
 }
 
+#define NUM2WV(v) v2w(rb_Integer(v))
+
 static int
 weq(wideval_t wx, wideval_t wy)
 {
@@ -570,6 +573,9 @@ num_exact(VALUE v)
 
 /* time_t */
 
+/* TIME_SCALE should be 10000... */
+static const int TIME_SCALE_NUMDIGITS = rb_strlen_lit(STRINGIZE(TIME_SCALE)) - 1;
+
 static wideval_t
 rb_time_magnify(wideval_t w)
 {
@@ -650,13 +656,13 @@ wv2timet(wideval_t w)
         wideint_t wi = FIXWV2WINT(w);
         if (TIMET_MIN == 0) {
             if (wi < 0)
-                rb_raise(rb_eRangeError, "negative value to convert into `time_t'");
+                rb_raise(rb_eRangeError, "negative value to convert into 'time_t'");
             if (TIMET_MAX < (uwideint_t)wi)
-                rb_raise(rb_eRangeError, "too big to convert into `time_t'");
+                rb_raise(rb_eRangeError, "too big to convert into 'time_t'");
         }
         else {
             if (wi < TIMET_MIN || TIMET_MAX < wi)
-                rb_raise(rb_eRangeError, "too big to convert into `time_t'");
+                rb_raise(rb_eRangeError, "too big to convert into 'time_t'");
         }
         return (time_t)wi;
     }
@@ -1501,7 +1507,7 @@ guess_local_offset(struct vtm *vtm_utc, int *isdst_ret, VALUE *zone_ret)
             localtime_with_gmtoff_zone(&now, &tm, &now_gmtoff, &zone);
             now_isdst = tm.tm_isdst;
             zone = rb_fstring(zone);
-            rb_gc_register_mark_object(zone);
+            rb_vm_register_global_object(zone);
             now_zone = zone;
         }
         if (isdst_ret)
@@ -1958,6 +1964,10 @@ rb_timespec_now(struct timespec *ts)
 #endif
 }
 
+/*
+ * Sets the current time information into _time_.
+ * Returns _time_.
+ */
 static VALUE
 time_init_now(rb_execution_context_t *ec, VALUE time, VALUE zone)
 {
@@ -2145,6 +2155,9 @@ invalid_utc_offset(VALUE zone)
              zone);
 }
 
+#define have_2digits(ptr) (ISDIGIT((ptr)[0]) && ISDIGIT((ptr)[1]))
+#define num_from_2digits(ptr) ((ptr)[0] * 10 + (ptr)[1] - '0' * 11)
+
 static VALUE
 utc_offset_arg(VALUE arg)
 {
@@ -2199,18 +2212,19 @@ utc_offset_arg(VALUE arg)
             goto invalid_utc_offset;
         }
         if (sec) {
-            if (!ISDIGIT(sec[0]) || !ISDIGIT(sec[1])) goto invalid_utc_offset;
-            n += (sec[0] * 10 + sec[1] - '0' * 11);
+            if (!have_2digits(sec)) goto invalid_utc_offset;
+            if (sec[0] > '5') goto invalid_utc_offset;
+            n += num_from_2digits(sec);
             ASSUME(min);
         }
         if (min) {
-            if (!ISDIGIT(min[0]) || !ISDIGIT(min[1])) goto invalid_utc_offset;
+            if (!have_2digits(min)) goto invalid_utc_offset;
             if (min[0] > '5') goto invalid_utc_offset;
-            n += (min[0] * 10 + min[1] - '0' * 11) * 60;
+            n += num_from_2digits(min) * 60;
         }
         if (s[0] != '+' && s[0] != '-') goto invalid_utc_offset;
-        if (!ISDIGIT(s[1]) || !ISDIGIT(s[2])) goto invalid_utc_offset;
-        n += (s[1] * 10 + s[2] - '0' * 11) * 3600;
+        if (!have_2digits(s+1)) goto invalid_utc_offset;
+        n += num_from_2digits(s+1) * 3600;
         if (s[0] == '-') {
             if (n == 0) return UTC_ZONE;
             n = -n;
@@ -2244,7 +2258,7 @@ extract_time(VALUE time)
     const ID id_to_i = idTo_i;
 
 #define EXTRACT_TIME() do { \
-        t = v2w(rb_Integer(AREF(to_i))); \
+        t = NUM2WV(AREF(to_i)); \
     } while (0)
 
     if (rb_typeddata_is_kind_of(time, &time_data_type)) {
@@ -2287,7 +2301,7 @@ extract_vtm(VALUE time, VALUE orig_time, struct time_object *orig_tobj, VALUE su
         vtm->sec = obj2subsecx(AREF(sec), &subsecx); \
         vtm->isdst = RTEST(AREF(isdst));             \
         vtm->utc_offset = Qnil; \
-        t = v2w(rb_Integer(AREF(to_i))); \
+        t = NUM2WV(AREF(to_i)); \
     } while (0)
 
     if (rb_typeddata_is_kind_of(time, &time_data_type)) {
@@ -2408,6 +2422,10 @@ vtm_day_wraparound(struct vtm *vtm)
 
 static VALUE time_init_vtm(VALUE time, struct vtm vtm, VALUE zone);
 
+/*
+ * Sets the broken-out time information into _time_.
+ * Returns _time_.
+ */
 static VALUE
 time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VALUE mday,
                VALUE hour, VALUE min, VALUE sec, VALUE zone)
@@ -2516,17 +2534,16 @@ static int
 two_digits(const char *ptr, const char *end, const char **endp, const char *name)
 {
     ssize_t len = end - ptr;
-    if (len < 2 || (!ISDIGIT(ptr[0]) || !ISDIGIT(ptr[1])) ||
-        ((len > 2) && ISDIGIT(ptr[2]))) {
+    if (len < 2 || !have_2digits(ptr) || ((len > 2) && ISDIGIT(ptr[2]))) {
         VALUE mesg = rb_sprintf("two digits %s is expected", name);
         if (ptr[-1] == '-' || ptr[-1] == ':') {
-            rb_str_catf(mesg, " after `%c'", ptr[-1]);
+            rb_str_catf(mesg, " after '%c'", ptr[-1]);
         }
         rb_str_catf(mesg, ": %.*s", ((len > 10) ? 10 : (int)(end - ptr)) + 1, ptr - 1);
         rb_exc_raise(rb_exc_new_str(rb_eArgError, mesg));
     }
     *endp = ptr + 2;
-    return (ptr[0] - '0') * 10 + (ptr[1] - '0');
+    return num_from_2digits(ptr);
 }
 
 static VALUE
@@ -2537,8 +2554,12 @@ parse_int(const char *ptr, const char *end, const char **endp, size_t *ndigits, 
     return rb_int_parse_cstr(ptr, len, (char **)endp, ndigits, 10, flags);
 }
 
+/*
+ * Parses _str_ and sets the broken-out time information into _time_.
+ * If _str_ is not a String, returns +nil+, otherwise returns _time_.
+ */
 static VALUE
-time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, VALUE precision)
+time_init_parse(rb_execution_context_t *ec, VALUE time, VALUE str, VALUE zone, VALUE precision)
 {
     if (NIL_P(str = rb_check_string_type(str))) return Qnil;
     if (!rb_enc_str_asciicompat_p(str)) {
@@ -2631,15 +2652,11 @@ time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, 
     }
     if (!NIL_P(subsec)) {
         /* subseconds is the last using ndigits */
-        static const size_t TIME_SCALE_NUMDIGITS =
-            /* TIME_SCALE should be 10000... */
-            rb_strlen_lit(STRINGIZE(TIME_SCALE)) - 1;
-
-        if (ndigits < TIME_SCALE_NUMDIGITS) {
+        if (ndigits < (size_t)TIME_SCALE_NUMDIGITS) {
             VALUE mul = rb_int_positive_pow(10, TIME_SCALE_NUMDIGITS - ndigits);
             subsec = rb_int_mul(subsec, mul);
         }
-        else if (ndigits > TIME_SCALE_NUMDIGITS) {
+        else if (ndigits > (size_t)TIME_SCALE_NUMDIGITS) {
             VALUE num = rb_int_positive_pow(10, ndigits - TIME_SCALE_NUMDIGITS);
             subsec = rb_rational_new(subsec, num);
         }
@@ -2660,7 +2677,7 @@ only_year:
         .sec  = (sec < 0)  ? 0 : sec,
         .subsecx = NIL_P(subsec) ? INT2FIX(0) : subsec,
     };
-    return time_init_vtm(klass, vtm, zone);
+    return time_init_vtm(time, vtm, zone);
 }
 
 static void
@@ -5203,6 +5220,136 @@ time_strftime(VALUE time, VALUE format)
     }
 }
 
+/*
+ *  call-seq:
+ *    xmlschema(fraction_digits=0) -> string
+ *
+ *  Returns a string which represents the time as a dateTime defined by XML
+ *  Schema:
+ *
+ *    CCYY-MM-DDThh:mm:ssTZD
+ *    CCYY-MM-DDThh:mm:ss.sssTZD
+ *
+ *  where TZD is Z or [+-]hh:mm.
+ *
+ *  If self is a UTC time, Z is used as TZD.  [+-]hh:mm is used otherwise.
+ *
+ *  +fraction_digits+ specifies a number of digits to use for fractional
+ *  seconds.  Its default value is 0.
+ *
+ *      t = Time.now
+ *      t.xmlschema  # => "2011-10-05T22:26:12-04:00"
+ */
+
+static VALUE
+time_xmlschema(int argc, VALUE *argv, VALUE time)
+{
+    long fraction_digits = 0;
+    rb_check_arity(argc, 0, 1);
+    if (argc > 0) {
+        fraction_digits = NUM2LONG(argv[0]);
+        if (fraction_digits < 0) {
+            fraction_digits = 0;
+        }
+    }
+
+    struct time_object *tobj;
+
+    GetTimeval(time, tobj);
+    MAKE_TM(time, tobj);
+
+    const long size_after_year = sizeof("-MM-DDTHH:MM:SS+ZH:ZM") + fraction_digits
+        + (fraction_digits > 0);
+    VALUE str;
+    char *ptr;
+
+# define fill_digits_long(len, prec, n) \
+    for (int fill_it = 1, written = snprintf(ptr, len, "%0*ld", prec, n); \
+         fill_it; ptr += written, fill_it = 0)
+
+    if (FIXNUM_P(tobj->vtm.year)) {
+        long year = FIX2LONG(tobj->vtm.year);
+        int year_width = (year < 0) + rb_strlen_lit("YYYY");
+        int w = (year >= -9999 && year <= 9999 ? year_width : (year < 0) + (int)DECIMAL_SIZE_OF(year));
+        str = rb_usascii_str_new(0, w + size_after_year);
+        ptr = RSTRING_PTR(str);
+        fill_digits_long(w + 1, year_width, year) {
+            if (year >= -9999 && year <= 9999) {
+                RUBY_ASSERT(written == year_width);
+            }
+            else {
+                RUBY_ASSERT(written >= year_width);
+                RUBY_ASSERT(written <= w);
+            }
+        }
+    }
+    else {
+        str = rb_int2str(tobj->vtm.year, 10);
+        rb_str_modify_expand(str, size_after_year);
+        ptr = RSTRING_END(str);
+    }
+
+# define fill_2(c, n) (*ptr++ = c, *ptr++ = '0' + (n) / 10, *ptr++ = '0' + (n) % 10)
+    fill_2('-', tobj->vtm.mon);
+    fill_2('-', tobj->vtm.mday);
+    fill_2('T', tobj->vtm.hour);
+    fill_2(':', tobj->vtm.min);
+    fill_2(':', tobj->vtm.sec);
+
+    if (fraction_digits > 0) {
+        VALUE subsecx = tobj->vtm.subsecx;
+        long subsec;
+        int digits = -1;
+        *ptr++ = '.';
+        if (fraction_digits <= TIME_SCALE_NUMDIGITS) {
+            digits = TIME_SCALE_NUMDIGITS - (int)fraction_digits;
+        }
+        else {
+            long w = fraction_digits - TIME_SCALE_NUMDIGITS; /* > 0 */
+            subsecx = mulv(subsecx, rb_int_positive_pow(10, (unsigned long)w));
+            if (!RB_INTEGER_TYPE_P(subsecx)) { /* maybe Rational */
+                subsecx = rb_Integer(subsecx);
+            }
+            if (FIXNUM_P(subsecx)) digits = 0;
+        }
+        if (digits >= 0 && fraction_digits < INT_MAX) {
+            subsec = NUM2LONG(subsecx);
+            if (digits > 0) subsec /= (long)pow(10, digits);
+            fill_digits_long(fraction_digits + 1, (int)fraction_digits, subsec) {
+                RUBY_ASSERT(written == (int)fraction_digits);
+            }
+        }
+        else {
+            subsecx = rb_int2str(subsecx, 10);
+            long len = RSTRING_LEN(subsecx);
+            if (fraction_digits > len) {
+                memset(ptr, '0', fraction_digits - len);
+            }
+            else {
+                len = fraction_digits;
+            }
+            ptr += fraction_digits;
+            memcpy(ptr - len, RSTRING_PTR(subsecx), len);
+        }
+    }
+
+    if (TZMODE_UTC_P(tobj)) {
+        *ptr = 'Z';
+        ptr++;
+    }
+    else {
+        long offset = NUM2LONG(rb_time_utc_offset(time));
+        char sign = offset < 0 ? '-' : '+';
+        if (offset < 0) offset = -offset;
+        offset /= 60;
+        fill_2(sign, offset / 60);
+        fill_2(':', offset % 60);
+    }
+    const char *const start = RSTRING_PTR(str);
+    rb_str_set_len(str, ptr - start); // We could skip coderange scanning as we know it's full ASCII.
+    return str;
+}
+
 int ruby_marshal_write_long(long x, char *buf);
 
 enum {base_dump_size = 8};
@@ -5713,16 +5860,6 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
     return rb_obj_as_string(abbr);
 }
 
-/*  Internal Details:
- *
- *  Since Ruby 1.9.2, Time implementation uses a signed 63 bit integer or
- *  Integer(T_BIGNUM), Rational.
- *  The integer is a number of nanoseconds since the _Epoch_ which can
- *  represent 1823-11-12 to 2116-02-20.
- *  When Integer(T_BIGNUM) or Rational is used (before 1823, after 2116, under
- *  nanosecond), Time works slower than when integer is used.
- */
-
 //
 void
 Init_Time(void)
@@ -5761,9 +5898,9 @@ Init_Time(void)
     sym_zone = ID2SYM(rb_intern_const("zone"));
 
     str_utc = rb_fstring_lit("UTC");
-    rb_gc_register_mark_object(str_utc);
+    rb_vm_register_global_object(str_utc);
     str_empty = rb_fstring_lit("");
-    rb_gc_register_mark_object(str_empty);
+    rb_vm_register_global_object(str_empty);
 
     rb_cTime = rb_define_class("Time", rb_cObject);
     VALUE scTime = rb_singleton_class(rb_cTime);
@@ -5840,6 +5977,8 @@ Init_Time(void)
     rb_define_method(rb_cTime, "subsec", time_subsec, 0);
 
     rb_define_method(rb_cTime, "strftime", time_strftime, 1);
+    rb_define_method(rb_cTime, "xmlschema", time_xmlschema, -1);
+    rb_define_alias(rb_cTime, "iso8601", "xmlschema");
 
     /* methods for marshaling */
     rb_define_private_method(rb_cTime, "_dump", time_dump, -1);

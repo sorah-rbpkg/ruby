@@ -66,7 +66,7 @@ module Bundler
       development_group = opts[:development_group] || :development
       expanded_path     = gemfile_root.join(path)
 
-      gemspecs = Gem::Util.glob_files_in_dir("{,*}.gemspec", expanded_path).map {|g| Bundler.load_gemspec(g) }.compact
+      gemspecs = Gem::Util.glob_files_in_dir("{,*}.gemspec", expanded_path).filter_map {|g| Bundler.load_gemspec(g) }
       gemspecs.reject! {|s| s.name != name } if name
       specs_by_name_and_version = gemspecs.group_by {|s| [s.name, s.version] }
 
@@ -110,9 +110,23 @@ module Bundler
           if gemspec_dep
             gemfile_dep = [dep, current].find(&:runtime?)
 
-            unless current_requirement_open
+            if gemfile_dep && !current_requirement_open
               Bundler.ui.warn "A gemspec development dependency (#{gemspec_dep.name}, #{gemspec_dep.requirement}) is being overridden by a Gemfile dependency (#{gemfile_dep.name}, #{gemfile_dep.requirement}).\n" \
                               "This behaviour may change in the future. Please remove either of them, or make sure they both have the same requirement\n"
+            elsif gemfile_dep.nil?
+              require_relative "vendor/pub_grub/lib/pub_grub/version_range"
+              require_relative "vendor/pub_grub/lib/pub_grub/version_constraint"
+              require_relative "vendor/pub_grub/lib/pub_grub/version_union"
+              require_relative "vendor/pub_grub/lib/pub_grub/rubygems"
+
+              current_gemspec_range = PubGrub::RubyGems.requirement_to_range(current.requirement)
+              next_gemspec_range = PubGrub::RubyGems.requirement_to_range(dep.requirement)
+
+              if current_gemspec_range.intersects?(next_gemspec_range)
+                dep = Dependency.new(name, current.requirement.as_list + dep.requirement.as_list, options)
+              else
+                raise GemfileError, "Two gemspecs have conflicting requirements on the same gem: #{dep} and #{current}"
+              end
             end
           else
             update_prompt = ""
@@ -133,20 +147,22 @@ module Bundler
           end
         end
 
-        # Always prefer the dependency from the Gemfile
-        if current.gemspec_dev_dep?
-          @dependencies.delete(current)
-        elsif dep.gemspec_dev_dep?
-          return
-        elsif current.source != dep.source
-          raise GemfileError, "You cannot specify the same gem twice coming from different sources.\n" \
-                          "You specified that #{dep.name} (#{dep.requirement}) should come from " \
-                          "#{current.source || "an unspecified source"} and #{dep.source}\n"
-        else
-          Bundler.ui.warn "Your Gemfile lists the gem #{current.name} (#{current.requirement}) more than once.\n" \
-                          "You should probably keep only one of them.\n" \
-                          "Remove any duplicate entries and specify the gem only once.\n" \
-                          "While it's not a problem now, it could cause errors if you change the version of one of them later."
+        unless current.gemspec_dev_dep? && dep.gemspec_dev_dep?
+          # Always prefer the dependency from the Gemfile
+          if current.gemspec_dev_dep?
+            @dependencies.delete(current)
+          elsif dep.gemspec_dev_dep?
+            return
+          elsif current.source != dep.source
+            raise GemfileError, "You cannot specify the same gem twice coming from different sources.\n" \
+                            "You specified that #{dep.name} (#{dep.requirement}) should come from " \
+                            "#{current.source || "an unspecified source"} and #{dep.source}\n"
+          else
+            Bundler.ui.warn "Your Gemfile lists the gem #{current.name} (#{current.requirement}) more than once.\n" \
+                            "You should probably keep only one of them.\n" \
+                            "Remove any duplicate entries and specify the gem only once.\n" \
+                            "While it's not a problem now, it could cause errors if you change the version of one of them later."
+          end
         end
       end
 
@@ -487,18 +503,7 @@ module Bundler
     end
 
     def check_rubygems_source_safety
-      if @sources.implicit_global_source?
-        implicit_global_source_warning
-      elsif @sources.aggregate_global_source?
-        multiple_global_source_warning
-      end
-    end
-
-    def implicit_global_source_warning
-      Bundler::SharedHelpers.major_deprecation 2, "This Gemfile does not include an explicit global source. " \
-        "Not using an explicit global source may result in a different lockfile being generated depending on " \
-        "the gems you have installed locally before bundler is run. " \
-        "Instead, define a global source in your Gemfile like this: source \"https://rubygems.org\"."
+      multiple_global_source_warning if @sources.aggregate_global_source?
     end
 
     def multiple_global_source_warning

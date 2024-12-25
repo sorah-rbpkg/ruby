@@ -22,7 +22,7 @@ module TestParallel
       if @worker_pid && @worker_in
         begin
           begin
-            @worker_in.puts "quit"
+            @worker_in.puts "quit normal"
           rescue IOError, Errno::EPIPE
           end
           Timeout.timeout(2) do
@@ -119,7 +119,7 @@ module TestParallel
 
         result = Marshal.load($1.chomp.unpack1("m"))
         assert_equal(5, result[0])
-        pend "TODO: result[1] returns 17. We should investigate it" do
+        pend "TODO: result[1] returns 17. We should investigate it" do # TODO: misusage of pend (pend doens't use given block)
           assert_equal(12, result[1])
         end
         assert_kind_of(Array,result[2])
@@ -136,7 +136,7 @@ module TestParallel
 
     def test_quit
       Timeout.timeout(TIMEOUT) do
-        @worker_in.puts "quit"
+        @worker_in.puts "quit normal"
         assert_match(/^bye$/m,@worker_out.read)
       end
     end

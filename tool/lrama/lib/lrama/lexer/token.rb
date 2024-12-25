@@ -1,8 +1,10 @@
-require 'lrama/lexer/token/char'
-require 'lrama/lexer/token/ident'
-require 'lrama/lexer/token/parameterizing'
-require 'lrama/lexer/token/tag'
-require 'lrama/lexer/token/user_code'
+# frozen_string_literal: true
+
+require_relative 'token/char'
+require_relative 'token/ident'
+require_relative 'token/instantiate_rule'
+require_relative 'token/tag'
+require_relative 'token/user_code'
 
 module Lrama
   class Lexer
@@ -18,7 +20,7 @@ module Lrama
       end
 
       def to_s
-        "#{super} location: #{location}"
+        "value: `#{s_value}`, location: #{location}"
       end
 
       def referred_by?(string)
@@ -45,6 +47,11 @@ module Lrama
 
       def last_column
         location.last_column
+      end
+
+      def invalid_ref(ref, message)
+        location = self.location.partial_location(ref.first_column, ref.last_column)
+        raise location.generate_error_message(message)
       end
     end
   end

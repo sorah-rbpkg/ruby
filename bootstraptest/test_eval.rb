@@ -217,7 +217,7 @@ assert_equal %q{[10, main]}, %q{
 }
 
 %w[break next redo].each do |keyword|
-  assert_match %r"Can't escape from eval with #{keyword}\b", %{
+  assert_match %r"Invalid #{keyword}\b", %{
     $stderr = STDOUT
     begin
       eval "0 rescue #{keyword}"
@@ -364,3 +364,34 @@ assert_normal_exit %q{
   end
 }, 'check escaping the internal value th->base_block'
 
+assert_equal "false", <<~RUBY, "literal strings are mutable", "--disable-frozen-string-literal"
+  eval("'test'").frozen?
+RUBY
+
+assert_equal "false", <<~RUBY, "literal strings are mutable", "--disable-frozen-string-literal", frozen_string_literal: true
+  eval("'test'").frozen?
+RUBY
+
+assert_equal "true", <<~RUBY, "literal strings are frozen", "--enable-frozen-string-literal"
+  eval("'test'").frozen?
+RUBY
+
+assert_equal "true", <<~RUBY, "literal strings are frozen", "--enable-frozen-string-literal", frozen_string_literal: false
+  eval("'test'").frozen?
+RUBY
+
+assert_equal "false", <<~RUBY, "__FILE__ is mutable", "--disable-frozen-string-literal"
+  eval("__FILE__").frozen?
+RUBY
+
+assert_equal "false", <<~RUBY, "__FILE__ is mutable", "--disable-frozen-string-literal", frozen_string_literal: true
+  eval("__FILE__").frozen?
+RUBY
+
+assert_equal "true", <<~RUBY, "__FILE__ is frozen", "--enable-frozen-string-literal"
+  eval("__FILE__").frozen?
+RUBY
+
+assert_equal "true", <<~RUBY, "__FILE__ is frozen", "--enable-frozen-string-literal", frozen_string_literal: false
+  eval("__FILE__").frozen?
+RUBY

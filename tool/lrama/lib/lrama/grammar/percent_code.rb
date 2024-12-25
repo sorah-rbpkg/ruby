@@ -1,10 +1,12 @@
+# frozen_string_literal: true
+
 module Lrama
   class Grammar
     class PercentCode
-      attr_reader :id, :code
+      attr_reader :name, :code
 
-      def initialize(id, code)
-        @id = id
+      def initialize(name, code)
+        @name = name
         @code = code
       end
     end

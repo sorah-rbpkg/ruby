@@ -322,16 +322,32 @@ enum_count(int argc, VALUE *argv, VALUE obj)
     return imemo_count_value(memo);
 }
 
+NORETURN(static void found(VALUE i, VALUE memop));
+static void
+found(VALUE i, VALUE memop) {
+    struct MEMO *memo = MEMO_CAST(memop);
+    MEMO_V1_SET(memo, i);
+    memo->u3.cnt = 1;
+    rb_iter_break();
+}
+
+static VALUE
+find_i_fast(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
+{
+    if (RTEST(rb_yield_values2(argc, argv))) {
+        ENUM_WANT_SVALUE();
+        found(i, memop);
+    }
+    return Qnil;
+}
+
 static VALUE
 find_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 {
     ENUM_WANT_SVALUE();
 
     if (RTEST(enum_yield(argc, i))) {
-        struct MEMO *memo = MEMO_CAST(memop);
-        MEMO_V1_SET(memo, i);
-        memo->u3.cnt = 1;
-        rb_iter_break();
+        found(i, memop);
     }
     return Qnil;
 }
@@ -366,7 +382,10 @@ enum_find(int argc, VALUE *argv, VALUE obj)
     if_none = rb_check_arity(argc, 0, 1) ? argv[0] : Qnil;
     RETURN_ENUMERATOR(obj, argc, argv);
     memo = MEMO_NEW(Qundef, 0, 0);
-    rb_block_call(obj, id_each, 0, 0, find_i, (VALUE)memo);
+    if (rb_block_pair_yield_optimizable())
+        rb_block_call2(obj, id_each, 0, 0, find_i_fast, (VALUE)memo, RB_BLOCK_NO_USE_PACKED_ARGS);
+    else
+        rb_block_call2(obj, id_each, 0, 0, find_i, (VALUE)memo, RB_BLOCK_NO_USE_PACKED_ARGS);
     if (memo->u3.cnt) {
         return memo->v1;
     }
@@ -870,134 +889,151 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
 
 /*
  *  call-seq:
- *    inject(symbol) -> object
- *    inject(initial_operand, symbol) -> object
- *    inject {|memo, operand| ... } -> object
- *    inject(initial_operand) {|memo, operand| ... } -> object
+ *    inject(symbol)                -> object
+ *    inject(initial_value, symbol) -> object
+ *    inject {|memo, value| ... }   -> object
+ *    inject(initial_value) {|memo, value| ... } -> object
  *
- *  Returns an object formed from operands via either:
+ *  Returns the result of applying a reducer to an initial value and
+ *  the first element of the Enumerable. It then takes the result and applies the
+ *  function to it and the second element of the collection, and so on. The
+ *  return value is the result returned by the final call to the function.
  *
- *  - A method named by +symbol+.
- *  - A block to which each operand is passed.
+ *  You can think of
  *
- *  With method-name argument +symbol+,
- *  combines operands using the method:
+ *      [ a, b, c, d ].inject(i) { |r, v| fn(r, v) }
  *
- *    # Sum, without initial_operand.
- *    (1..4).inject(:+)     # => 10
- *    # Sum, with initial_operand.
- *    (1..4).inject(10, :+) # => 20
+ *  as being
  *
- *  With a block, passes each operand to the block:
+ *      fn(fn(fn(fn(i, a), b), c), d)
  *
- *    # Sum of squares, without initial_operand.
- *    (1..4).inject {|sum, n| sum + n*n }    # => 30
- *    # Sum of squares, with initial_operand.
- *    (1..4).inject(2) {|sum, n| sum + n*n } # => 32
+ *  In a way the +inject+ function _injects_ the function
+ *  between the elements of the enumerable.
  *
- *  <b>Operands</b>
+ *  +inject+ is aliased as +reduce+. You use it when you want to
+ *  _reduce_ a collection to a single value.
  *
- *  If argument +initial_operand+ is not given,
- *  the operands for +inject+ are simply the elements of +self+.
- *  Example calls and their operands:
+ *  <b>The Calling Sequences</b>
  *
- *  - <tt>(1..4).inject(:+)</tt>:: <tt>[1, 2, 3, 4]</tt>.
- *  - <tt>(1...4).inject(:+)</tt>:: <tt>[1, 2, 3]</tt>.
- *  - <tt>('a'..'d').inject(:+)</tt>:: <tt>['a', 'b', 'c', 'd']</tt>.
- *  - <tt>('a'...'d').inject(:+)</tt>:: <tt>['a', 'b', 'c']</tt>.
+ *  Let's start with the most verbose:
  *
- *  Examples with first operand (which is <tt>self.first</tt>) of various types:
+ *      enum.inject(initial_value) do |result, next_value|
+ *        # do something with +result+ and +next_value+
+ *        # the value returned by the block becomes the
+ *        # value passed in to the next iteration
+ *        # as +result+
+ *      end
  *
- *    # Integer.
- *    (1..4).inject(:+)                # => 10
- *    # Float.
- *    [1.0, 2, 3, 4].inject(:+)        # => 10.0
- *    # Character.
- *    ('a'..'d').inject(:+)            # => "abcd"
- *    # Complex.
- *    [Complex(1, 2), 3, 4].inject(:+) # => (8+2i)
+ *  For example:
  *
- *  If argument +initial_operand+ is given,
- *  the operands for +inject+ are that value plus the elements of +self+.
- *  Example calls their operands:
+ *      product = [ 2, 3, 4 ].inject(1) do |result, next_value|
+ *        result * next_value
+ *      end
+ *      product #=> 24
  *
- *  - <tt>(1..4).inject(10, :+)</tt>:: <tt>[10, 1, 2, 3, 4]</tt>.
- *  - <tt>(1...4).inject(10, :+)</tt>:: <tt>[10, 1, 2, 3]</tt>.
- *  - <tt>('a'..'d').inject('e', :+)</tt>:: <tt>['e', 'a', 'b', 'c', 'd']</tt>.
- *  - <tt>('a'...'d').inject('e', :+)</tt>:: <tt>['e', 'a', 'b', 'c']</tt>.
+ *  When this runs, the block is first called with +1+ (the initial value) and
+ *  +2+ (the first element of the array). The block returns <tt>1*2</tt>, so on
+ *  the next iteration the block is called with +2+ (the previous result) and
+ *  +3+. The block returns +6+, and is called one last time with +6+ and +4+.
+ *  The result of the block, +24+ becomes the value returned by +inject+. This
+ *  code returns the product of the elements in the enumerable.
  *
- *  Examples with +initial_operand+ of various types:
+ *  <b>First Shortcut: Default Initial value</b>
  *
- *    # Integer.
- *    (1..4).inject(2, :+)               # => 12
- *    # Float.
- *    (1..4).inject(2.0, :+)             # => 12.0
- *    # String.
- *    ('a'..'d').inject('foo', :+)       # => "fooabcd"
- *    # Array.
- *    %w[a b c].inject(['x'], :push)     # => ["x", "a", "b", "c"]
- *    # Complex.
- *    (1..4).inject(Complex(2, 2), :+)   # => (12+2i)
+ *  In the case of the previous example, the initial value, +1+, wasn't really
+ *  necessary: the calculation of the product of a list of numbers is self-contained.
  *
- *  <b>Combination by Given \Method</b>
+ *  In these circumstances, you can omit the +initial_value+ parameter. +inject+
+ *  will then initially call the block with the first element of the collection
+ *  as the +result+ parameter and the second element as the +next_value+.
  *
- *  If the method-name argument +symbol+ is given,
- *  the operands are combined by that method:
+ *      [ 2, 3, 4 ].inject do |result, next_value|
+ *        result * next_value
+ *      end
  *
- *  - The first and second operands are combined.
- *  - That result is combined with the third operand.
- *  - That result is combined with the fourth operand.
- *  - And so on.
+ *  This shortcut is convenient, but can only be used when the block produces a result
+ *  which can be passed back to it as a first parameter.
  *
- *  The return value from +inject+ is the result of the last combination.
+ *  Here's an example where that's not the case: it returns a hash where the keys are words
+ *  and the values are the number of occurrences of that word in the enumerable.
  *
- *  This call to +inject+ computes the sum of the operands:
+ *    freqs = File.read("README.md")
+ *      .scan(/\w{2,}/)
+ *      .reduce(Hash.new(0)) do |counts, word|
+ *        counts[word] += 1
+ *        counts
+ *      end
+ *    freqs #=> {"Actions"=>4,
+ *               "Status"=>5,
+ *               "MinGW"=>3,
+ *               "https"=>27,
+ *               "github"=>10,
+ *               "com"=>15, ...
  *
- *    (1..4).inject(:+) # => 10
+ *  Note that the last line of the block is just the word +counts+. This ensures the
+ *  return value of the block is the result that's being calculated.
  *
- *  Examples with various methods:
+ *  <b>Second Shortcut: a Reducer function</b>
  *
- *    # Integer addition.
- *    (1..4).inject(:+)                # => 10
- *    # Integer multiplication.
- *    (1..4).inject(:*)                # => 24
- *    # Character range concatenation.
- *    ('a'..'d').inject('', :+)        # => "abcd"
- *    # String array concatenation.
- *    %w[foo bar baz].inject('', :+)   # => "foobarbaz"
- *    # Hash update.
- *    h = [{foo: 0, bar: 1}, {baz: 2}, {bat: 3}].inject(:update)
- *    h # => {:foo=>0, :bar=>1, :baz=>2, :bat=>3}
- *    # Hash conversion to nested arrays.
- *    h = {foo: 0, bar: 1}.inject([], :push)
- *    h # => [[:foo, 0], [:bar, 1]]
+ *  A <i>reducer function</i> is a function that takes a partial result and the next value,
+ *  returning the next partial result. The block that is given to +inject+ is a reducer.
  *
- *  <b>Combination by Given Block</b>
+ *  You can also write a reducer as a function and pass the name of that function
+ *  (as a symbol) to +inject+. However, for this to work, the function
  *
- *  If a block is given, the operands are passed to the block:
+ *  1. Must be defined on the type of the result value
+ *  2. Must accept a single parameter, the next value in the collection, and
+ *  3. Must return an updated result which will also implement the function.
  *
- *  - The first call passes the first and second operands.
- *  - The second call passes the result of the first call,
- *    along with the third operand.
- *  - The third call passes the result of the second call,
- *    along with the fourth operand.
- *  - And so on.
+ *  Here's an example that adds elements to a string. The two calls invoke the functions
+ *  String#concat and String#+ on the result so far, passing it the next value.
  *
- *  The return value from +inject+ is the return value from the last block call.
+ *      s = [ "cat", " ", "dog" ].inject("", :concat)
+ *      s #=> "cat dog"
+ *      s = [ "cat", " ", "dog" ].inject("The result is:", :+)
+ *      s #=> "The result is: cat dog"
  *
- *  This call to +inject+ gives a block
- *  that writes the memo and element, and also sums the elements:
+ *  Here's a more complex example when the result object maintains
+ *  state of a different type to the enumerable elements.
  *
- *    (1..4).inject do |memo, element|
- *      p "Memo: #{memo}; element: #{element}"
- *      memo + element
- *    end # => 10
+ *      class Turtle
  *
- *  Output:
+ *        def initialize
+ *          @x = @y = 0
+ *        end
  *
- *    "Memo: 1; element: 2"
- *    "Memo: 3; element: 3"
- *    "Memo: 6; element: 4"
+ *        def move(dir)
+ *          case dir
+ *          when "n" then @y += 1
+ *          when "s" then @y -= 1
+ *          when "e" then @x += 1
+ *          when "w" then @x -= 1
+ *          end
+ *          self
+ *        end
+ *      end
+ *
+ *      position = "nnneesw".chars.reduce(Turtle.new, :move)
+ *      position  #=>> #<Turtle:0x00000001052f4698 @y=2, @x=1>
+ *
+ *  <b>Third Shortcut: Reducer With no Initial Value</b>
+ *
+ *  If your reducer returns a value that it can accept as a parameter, then you
+ *  don't have to pass in an initial value. Here <tt>:*</tt> is the name of the
+ *  _times_ function:
+ *
+ *      product = [ 2, 3, 4 ].inject(:*)
+ *      product # => 24
+ *
+ *  String concatenation again:
+ *
+ *      s = [ "cat", " ", "dog" ].inject(:+)
+ *      s #=> "cat dog"
+ *
+ *  And an example that converts a hash to an array of two-element subarrays.
+ *
+ *      nested = {foo: 0, bar: 1}.inject([], :push)
+ *      nested # => [[:foo, 0], [:bar, 1]]
  *
  *
  */
@@ -1199,29 +1235,47 @@ tally_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
 /*
  *  call-seq:
- *    tally -> new_hash
- *    tally(hash) -> hash
+ *    tally(hash = {}) -> hash
  *
- *  Returns a hash containing the counts of equal elements:
- *
- *  - Each key is an element of +self+.
- *  - Each value is the number elements equal to that key.
- *
- *  With no argument:
+ *  When argument +hash+ is not given,
+ *  returns a new hash whose keys are the distinct elements in +self+;
+ *  each integer value is the count of occurrences of each element:
  *
  *    %w[a b c b c a c b].tally # => {"a"=>2, "b"=>3, "c"=>3}
  *
- *  With a hash argument, that hash is used for the tally (instead of a new hash),
- *  and is returned;
- *  this may be useful for accumulating tallies across multiple enumerables:
+ *  When argument +hash+ is given,
+ *  returns +hash+, possibly augmented; for each element +ele+ in +self+:
  *
- *    hash = {}
- *    hash = %w[a c d b c a].tally(hash)
- *    hash # => {"a"=>2, "c"=>2, "d"=>1, "b"=>1}
- *    hash = %w[b a z].tally(hash)
- *    hash # => {"a"=>3, "c"=>2, "d"=>1, "b"=>2, "z"=>1}
- *    hash = %w[b a m].tally(hash)
- *    hash # => {"a"=>4, "c"=>2, "d"=>1, "b"=>3, "z"=>1, "m"=> 1}
+ *  - Adds it as a key with a zero value if that key does not already exist:
+ *
+ *      hash[ele] = 0 unless hash.include?(ele)
+ *
+ *  - Increments the value of key +ele+:
+ *
+ *      hash[ele] += 1
+ *
+ *  This is useful for accumulating tallies across multiple enumerables:
+ *
+ *    h = {}                   # => {}
+ *    %w[a c d b c a].tally(h) # => {"a"=>2, "c"=>2, "d"=>1, "b"=>1}
+ *    %w[b a z].tally(h)       # => {"a"=>3, "c"=>2, "d"=>1, "b"=>2, "z"=>1}
+ *    %w[b a m].tally(h)       # => {"a"=>4, "c"=>2, "d"=>1, "b"=>3, "z"=>1, "m"=>1}
+ *
+ *  The key to be added or found for an element depends on the class of +self+;
+ *  see {Enumerable in Ruby Classes}[rdoc-ref:Enumerable@Enumerable+in+Ruby+Classes].
+ *
+ *  Examples:
+ *
+ *  - Array (and certain array-like classes):
+ *    the key is the element (as above).
+ *  - Hash (and certain hash-like classes):
+ *    the key is the 2-element array formed from the key-value pair:
+ *
+ *      h = {}                        # => {}
+ *      {foo: 'a', bar: 'b'}.tally(h) # => {[:foo, "a"]=>1, [:bar, "b"]=>1}
+ *      {foo: 'c', bar: 'd'}.tally(h) # => {[:foo, "a"]=>1, [:bar, "b"]=>1, [:foo, "c"]=>1, [:bar, "d"]=>1}
+ *      {foo: 'a', bar: 'b'}.tally(h) # => {[:foo, "a"]=>2, [:bar, "b"]=>2, [:foo, "c"]=>1, [:bar, "d"]=>1}
+ *      {foo: 'c', bar: 'd'}.tally(h) # => {[:foo, "a"]=>2, [:bar, "b"]=>2, [:foo, "c"]=>2, [:bar, "d"]=>2}
  *
  */
 
@@ -1304,7 +1358,7 @@ enum_first(int argc, VALUE *argv, VALUE obj)
  *  The ordering of equal elements is indeterminate and may be unstable.
  *
  *  With no block given, the sort compares
- *  using the elements' own method <tt><=></tt>:
+ *  using the elements' own method <tt>#<=></tt>:
  *
  *    %w[b c a d].sort              # => ["a", "b", "c", "d"]
  *    {foo: 0, bar: 1, baz: 2}.sort # => [[:bar, 1], [:baz, 2], [:foo, 0]]
@@ -1707,6 +1761,9 @@ enum_sort_by(VALUE obj)
 
 #define ENUMFUNC(name) argc ? name##_eqq : rb_block_given_p() ? name##_iter_i : name##_i
 
+#define ENUM_BLOCK_CALL(name) \
+    rb_block_call2(obj, id_each, 0, 0, ENUMFUNC(name), (VALUE)memo, rb_block_given_p() && rb_block_pair_yield_optimizable() ? RB_BLOCK_NO_USE_PACKED_ARGS : 0);
+
 #define MEMO_ENUM_NEW(v1) (rb_check_arity(argc, 0, 1), MEMO_NEW((v1), (argc ? *argv : 0), 0))
 
 #define DEFINE_ENUMFUNCS(name) \
@@ -1800,7 +1857,7 @@ enum_all(int argc, VALUE *argv, VALUE obj)
 {
     struct MEMO *memo = MEMO_ENUM_NEW(Qtrue);
     WARN_UNUSED_BLOCK(argc);
-    rb_block_call(obj, id_each, 0, 0, ENUMFUNC(all), (VALUE)memo);
+    ENUM_BLOCK_CALL(all);
     return memo->v1;
 }
 
@@ -1862,7 +1919,7 @@ enum_any(int argc, VALUE *argv, VALUE obj)
 {
     struct MEMO *memo = MEMO_ENUM_NEW(Qfalse);
     WARN_UNUSED_BLOCK(argc);
-    rb_block_call(obj, id_each, 0, 0, ENUMFUNC(any), (VALUE)memo);
+    ENUM_BLOCK_CALL(any);
     return memo->v1;
 }
 
@@ -2151,7 +2208,7 @@ enum_one(int argc, VALUE *argv, VALUE obj)
     VALUE result;
 
     WARN_UNUSED_BLOCK(argc);
-    rb_block_call(obj, id_each, 0, 0, ENUMFUNC(one), (VALUE)memo);
+    ENUM_BLOCK_CALL(one);
     result = memo->v1;
     if (UNDEF_P(result)) return Qfalse;
     return result;
@@ -2212,7 +2269,7 @@ enum_none(int argc, VALUE *argv, VALUE obj)
     struct MEMO *memo = MEMO_ENUM_NEW(Qtrue);
 
     WARN_UNUSED_BLOCK(argc);
-    rb_block_call(obj, id_each, 0, 0, ENUMFUNC(none), (VALUE)memo);
+    ENUM_BLOCK_CALL(none);
     return memo->v1;
 }
 
@@ -2270,7 +2327,7 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  The ordering of equal elements is indeterminate and may be unstable.
  *
  *  With no argument and no block, returns the minimum element,
- *  using the elements' own method <tt><=></tt> for comparison:
+ *  using the elements' own method <tt>#<=></tt> for comparison:
  *
  *    (1..4).min                   # => 1
  *    (-4..-1).min                 # => -4
@@ -2392,7 +2449,7 @@ max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  The ordering of equal elements is indeterminate and may be unstable.
  *
  *  With no argument and no block, returns the maximum element,
- *  using the elements' own method <tt><=></tt> for comparison:
+ *  using the elements' own method <tt>#<=></tt> for comparison:
  *
  *    (1..4).max                   # => 4
  *    (-4..-1).max                 # => -1
@@ -2581,7 +2638,7 @@ minmax_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
  *  The ordering of equal elements is indeterminate and may be unstable.
  *
  *  With no argument and no block, returns the minimum and maximum elements,
- *  using the elements' own method <tt><=></tt> for comparison:
+ *  using the elements' own method <tt>#<=></tt> for comparison:
  *
  *    (1..4).minmax                   # => [1, 4]
  *    (-4..-1).minmax                 # => [-4, -1]
@@ -2927,13 +2984,12 @@ enum_member(VALUE obj, VALUE val)
 }
 
 static VALUE
-each_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
+each_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(_, index))
 {
-    struct MEMO *m = MEMO_CAST(memo);
-    VALUE n = imemo_count_value(m);
+    struct vm_ifunc *ifunc = rb_current_ifunc();
+    ifunc->data = (const void *)rb_int_succ(index);
 
-    imemo_count_up(m);
-    return rb_yield_values(2, rb_enum_values_pack(argc, argv), n);
+    return rb_yield_values(2, rb_enum_values_pack(argc, argv), index);
 }
 
 /*
@@ -2941,7 +2997,8 @@ each_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
  *    each_with_index(*args) {|element, i| ..... } -> self
  *    each_with_index(*args)                       -> enumerator
  *
- *  With a block given, calls the block with each element and its index;
+ *  Invoke <tt>self.each</tt> with <tt>*args</tt>.
+ *  With a block given, the block receives each element and its index;
  *  returns +self+:
  *
  *    h = {}
@@ -2966,12 +3023,9 @@ each_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
 static VALUE
 enum_each_with_index(int argc, VALUE *argv, VALUE obj)
 {
-    struct MEMO *memo;
-
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_size);
 
-    memo = MEMO_NEW(0, 0, 0);
-    rb_block_call(obj, id_each, argc, argv, each_with_index_i, (VALUE)memo);
+    rb_block_call(obj, id_each, argc, argv, each_with_index_i, INT2FIX(0));
     return obj;
 }
 
@@ -4538,7 +4592,7 @@ struct enum_sum_memo {
 static void
 sum_iter_normalize_memo(struct enum_sum_memo *memo)
 {
-    assert(FIXABLE(memo->n));
+    RUBY_ASSERT(FIXABLE(memo->n));
     memo->v = rb_fix_plus(LONG2FIX(memo->n), memo->v);
     memo->n = 0;
 
@@ -4640,7 +4694,7 @@ sum_iter_Kahan_Babuska(VALUE i, struct enum_sum_memo *memo)
 static void
 sum_iter(VALUE i, struct enum_sum_memo *memo)
 {
-    assert(memo != NULL);
+    RUBY_ASSERT(memo != NULL);
     if (memo->block_given) {
         i = rb_yield(i);
     }
@@ -4691,8 +4745,8 @@ hash_sum_i(VALUE key, VALUE value, VALUE arg)
 static void
 hash_sum(VALUE hash, struct enum_sum_memo *memo)
 {
-    assert(RB_TYPE_P(hash, T_HASH));
-    assert(memo != NULL);
+    RUBY_ASSERT(RB_TYPE_P(hash, T_HASH));
+    RUBY_ASSERT(memo != NULL);
 
     rb_hash_foreach(hash, hash_sum_i, (VALUE)memo);
 }
@@ -4898,7 +4952,7 @@ enum_compact(VALUE obj)
  *
  * These methods return information about the \Enumerable other than the elements themselves:
  *
- * - #include?, #member?: Returns +true+ if <tt>self == object</tt>, +false+ otherwise.
+ * - #member? (aliased as #include?): Returns +true+ if <tt>self == object</tt>, +false+ otherwise.
  * - #all?: Returns +true+ if all elements meet a specified criterion; +false+ otherwise.
  * - #any?: Returns +true+ if any element meets a specified criterion; +false+ otherwise.
  * - #none?: Returns +true+ if no element meets a specified criterion; +false+ otherwise.
@@ -4913,7 +4967,7 @@ enum_compact(VALUE obj)
  *
  * <i>Leading, trailing, or all elements</i>:
  *
- * - #entries, #to_a: Returns all elements.
+ * - #to_a (aliased as #entries): Returns all elements.
  * - #first: Returns the first element or leading elements.
  * - #take: Returns a specified number of leading elements.
  * - #drop: Returns a specified number of trailing elements.
@@ -4923,9 +4977,9 @@ enum_compact(VALUE obj)
  * <i>Minimum and maximum value elements</i>:
  *
  * - #min: Returns the elements whose values are smallest among the elements,
- *   as determined by <tt><=></tt> or a given block.
+ *   as determined by <tt>#<=></tt> or a given block.
  * - #max: Returns the elements whose values are largest among the elements,
- *   as determined by <tt><=></tt> or a given block.
+ *   as determined by <tt>#<=></tt> or a given block.
  * - #minmax: Returns a 2-element Array containing the smallest and largest elements.
  * - #min_by: Returns the smallest element, as determined by the given block.
  * - #max_by: Returns the largest element, as determined by the given block.
@@ -4948,8 +5002,8 @@ enum_compact(VALUE obj)
  *
  * These methods return elements that meet a specified criterion:
  *
- * - #find, #detect: Returns an element selected by the block.
- * - #find_all, #filter, #select: Returns elements selected by the block.
+ * - #find (aliased as #detect): Returns an element selected by the block.
+ * - #find_all (aliased as #filter, #select): Returns elements selected by the block.
  * - #find_index: Returns the index of an element selected by a given object or block.
  * - #reject: Returns elements not rejected by the block.
  * - #uniq: Returns elements that are not duplicates.
@@ -4958,7 +5012,7 @@ enum_compact(VALUE obj)
  *
  * These methods return elements in sorted order:
  *
- * - #sort: Returns the elements, sorted by <tt><=></tt> or the given block.
+ * - #sort: Returns the elements, sorted by <tt>#<=></tt> or the given block.
  * - #sort_by: Returns the elements, sorted by the given block.
  *
  * === Methods for Iterating
@@ -4974,14 +5028,14 @@ enum_compact(VALUE obj)
  *
  * === Other Methods
  *
- * - #map, #collect: Returns objects returned by the block.
+ * - #collect (aliased as #map): Returns objects returned by the block.
  * - #filter_map: Returns truthy objects returned by the block.
- * - #flat_map, #collect_concat: Returns flattened objects returned by the block.
+ * - #flat_map (aliased as #collect_concat): Returns flattened objects returned by the block.
  * - #grep: Returns elements selected by a given object
  *   or objects returned by a given block.
  * - #grep_v: Returns elements selected by a given object
  *   or objects returned by a given block.
- * - #reduce, #inject: Returns the object formed by combining all elements.
+ * - #inject (aliased as #reduce): Returns the object formed by combining all elements.
  * - #sum: Returns the sum of the elements, using method <tt>+</tt>.
  * - #zip: Combines each element with elements from other enumerables;
  *   returns the n-tuples or calls the block with each.

@@ -145,11 +145,19 @@ class RDoc::Markup::ToRdoc < RDoc::Markup::Formatter
 
     case type
     when :NOTE, :LABEL then
-      bullets = Array(list_item.label).map do |label|
+      stripped_labels = Array(list_item.label).map do |label|
         attributes(label).strip
-      end.join "\n"
+      end
 
-      bullets << ":\n" unless bullets.empty?
+      bullets = case type
+      when :NOTE
+        stripped_labels.map { |b| "#{b}::" }
+      when :LABEL
+        stripped_labels.map { |b| "[#{b}]" }
+      end
+
+      bullets = bullets.join("\n")
+      bullets << "\n" unless stripped_labels.empty?
 
       @prefix = ' ' * @indent
       @indent += 2
@@ -241,12 +249,12 @@ class RDoc::Markup::ToRdoc < RDoc::Markup::Formatter
   # Adds +table+ to the output
 
   def accept_table header, body, aligns
-    widths = header.zip(body) do |h, b|
-      [h.size, b.size].max
+    widths = header.zip(*body).map do |cols|
+      cols.map(&:size).max
     end
     aligns = aligns.map do |a|
       case a
-      when nil
+      when nil, :center
         :center
       when :left
         :ljust
@@ -254,12 +262,12 @@ class RDoc::Markup::ToRdoc < RDoc::Markup::Formatter
         :rjust
       end
     end
-    @res << header.zip(widths, aligns) do |h, w, a|
+    @res << header.zip(widths, aligns).map do |h, w, a|
       h.__send__(a, w)
     end.join("|").rstrip << "\n"
     @res << widths.map {|w| "-" * w }.join("|") << "\n"
     body.each do |row|
-      @res << row.zip(widths, aligns) do |t, w, a|
+      @res << row.zip(widths, aligns).map do |t, w, a|
         t.__send__(a, w)
       end.join("|").rstrip << "\n"
     end

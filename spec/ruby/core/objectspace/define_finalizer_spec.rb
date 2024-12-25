@@ -52,7 +52,7 @@ describe "ObjectSpace.define_finalizer" do
         Proc.new { puts "finalizer run" }
       end
       handler = scoped
-      obj = "Test"
+      obj = +"Test"
       ObjectSpace.define_finalizer(obj, handler)
       exit 0
     RUBY
@@ -111,7 +111,7 @@ describe "ObjectSpace.define_finalizer" do
 
   it "calls a finalizer at exit even if it is self-referencing" do
     code = <<-RUBY
-      obj = "Test"
+      obj = +"Test"
       handler = Proc.new { puts "finalizer run" }
       ObjectSpace.define_finalizer(obj, handler)
       exit 0
@@ -141,9 +141,9 @@ describe "ObjectSpace.define_finalizer" do
 
   it "calls a finalizer defined in a finalizer running at exit" do
     code = <<-RUBY
-      obj = "Test"
+      obj = +"Test"
       handler = Proc.new do
-        obj2 = "Test"
+        obj2 = +"Test"
         handler2 = Proc.new { puts "finalizer 2 run" }
         ObjectSpace.define_finalizer(obj2, handler2)
         exit 0
@@ -166,6 +166,31 @@ describe "ObjectSpace.define_finalizer" do
     RUBY
 
     ruby_exe(code).lines.sort.should == ["finalized1\n", "finalized2\n"]
+  end
+
+  it "defines same finalizer only once" do
+    code = <<~RUBY
+      obj = Object.new
+      p = proc { |id| print "ok" }
+      ObjectSpace.define_finalizer(obj, p.dup)
+      ObjectSpace.define_finalizer(obj, p.dup)
+    RUBY
+
+    ruby_exe(code).should == "ok"
+  end
+
+  it "returns the defined finalizer" do
+    obj = Object.new
+    p = proc { |id| }
+    p2 = p.dup
+
+    ret = ObjectSpace.define_finalizer(obj, p)
+    ret.should == [0, p]
+    ret[1].should.equal?(p)
+
+    ret = ObjectSpace.define_finalizer(obj, p2)
+    ret.should == [0, p]
+    ret[1].should.equal?(p)
   end
 
   ruby_version_is "3.1" do

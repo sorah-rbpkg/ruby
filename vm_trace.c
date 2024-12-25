@@ -435,7 +435,7 @@ rb_exec_event_hooks(rb_trace_arg_t *trace_arg, rb_hook_list_t *hooks, int pop_p)
             trace_arg->self != rb_mRubyVMFrozenCore /* skip special methods. TODO: remove it. */) {
             const VALUE errinfo = ec->errinfo;
             const VALUE old_recursive = ec->local_storage_recursive_hash;
-            int state = 0;
+            enum ruby_tag_type state = 0;
 
             /* setup */
             ec->local_storage_recursive_hash = ec->local_storage_recursive_hash_for_trace;
@@ -734,7 +734,7 @@ call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
         if (RB_TYPE_P(klass, T_ICLASS)) {
             klass = RBASIC(klass)->klass;
         }
-        else if (FL_TEST(klass, FL_SINGLETON)) {
+        else if (RCLASS_SINGLETON_P(klass)) {
             klass = RCLASS_ATTACHED_OBJECT(klass);
         }
     }
@@ -937,6 +937,9 @@ rb_tracearg_parameters(rb_trace_arg_t *trace_arg)
             const rb_method_entry_t *me;
             VALUE iclass = Qnil;
             me = rb_method_entry_without_refinements(trace_arg->klass, trace_arg->called_id, &iclass);
+            if (!me) {
+                me = rb_method_entry_without_refinements(trace_arg->klass, trace_arg->id, &iclass);
+            }
             return rb_unnamed_parameters(rb_method_entry_arity(me));
         }
         break;
@@ -1274,7 +1277,7 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
     rb_hash_aset(tp->local_target_set, (VALUE)iseq, Qtrue);
 
     if ((tp->events & (RUBY_EVENT_CALL | RUBY_EVENT_RETURN)) &&
-        iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_INLINE) {
+        iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) {
         rb_clear_bf_ccs();
     }
 
@@ -1342,7 +1345,7 @@ void
 rb_hook_list_connect_tracepoint(VALUE target, rb_hook_list_t *list, VALUE tpval, unsigned int target_line)
 {
     rb_tp_t *tp = tpptr(tpval);
-    rb_event_hook_t *hook = alloc_event_hook((rb_event_hook_func_t)tp_call_trace, tp->events, tpval,
+    rb_event_hook_t *hook = alloc_event_hook((rb_event_hook_func_t)tp_call_trace, tp->events & ISEQ_TRACE_EVENTS, tpval,
                                              RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
     hook->filter.target_line = target_line;
     hook_list_connect(target, list, hook, FALSE);
@@ -1527,7 +1530,7 @@ tracepoint_inspect(rb_execution_context_t *ec, VALUE self)
                 VALUE sym = rb_tracearg_method_id(trace_arg);
                 if (NIL_P(sym))
                     break;
-                return rb_sprintf("#<TracePoint:%"PRIsVALUE" %"PRIsVALUE":%d in `%"PRIsVALUE"'>",
+                return rb_sprintf("#<TracePoint:%"PRIsVALUE" %"PRIsVALUE":%d in '%"PRIsVALUE"'>",
                                   rb_tracearg_event(trace_arg),
                                   rb_tracearg_path(trace_arg),
                                   FIX2INT(rb_tracearg_lineno(trace_arg)),
@@ -1537,7 +1540,7 @@ tracepoint_inspect(rb_execution_context_t *ec, VALUE self)
           case RUBY_EVENT_C_CALL:
           case RUBY_EVENT_RETURN:
           case RUBY_EVENT_C_RETURN:
-            return rb_sprintf("#<TracePoint:%"PRIsVALUE" `%"PRIsVALUE"' %"PRIsVALUE":%d>",
+            return rb_sprintf("#<TracePoint:%"PRIsVALUE" '%"PRIsVALUE"' %"PRIsVALUE":%d>",
                               rb_tracearg_event(trace_arg),
                               rb_tracearg_method_id(trace_arg),
                               rb_tracearg_path(trace_arg),
@@ -1760,7 +1763,7 @@ rb_postponed_job_preregister(unsigned int flags, rb_postponed_job_func_t func, v
     rb_postponed_job_queues_t *pjq = GET_VM()->postponed_job_queue;
     for (unsigned int i = 0; i < PJOB_TABLE_SIZE; i++) {
         /* Try and set this slot to equal `func` */
-        rb_postponed_job_func_t existing_func = (rb_postponed_job_func_t)RUBY_ATOMIC_PTR_CAS(pjq->table[i], NULL, (void *)func);
+        rb_postponed_job_func_t existing_func = (rb_postponed_job_func_t)(uintptr_t)RUBY_ATOMIC_PTR_CAS(pjq->table[i].func, NULL, (void *)(uintptr_t)func);
         if (existing_func == NULL || existing_func == func) {
             /* Either this slot was NULL, and we set it to func, or, this slot was already equal to func.
              * In either case, clobber the data with our data. Note that concurrent calls to
@@ -1768,7 +1771,8 @@ rb_postponed_job_preregister(unsigned int flags, rb_postponed_job_func_t func, v
              * datas being written */
             RUBY_ATOMIC_PTR_EXCHANGE(pjq->table[i].data, data);
             return (rb_postponed_job_handle_t)i;
-        } else {
+        }
+        else {
             /* Try the next slot if this one already has a func in it */
             continue;
         }

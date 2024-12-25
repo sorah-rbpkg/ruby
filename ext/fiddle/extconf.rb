@@ -1,4 +1,17 @@
 # frozen_string_literal: true
+
+require "rbconfig"
+
+unless RUBY_ENGINE == "ruby"
+  File.write('Makefile', <<-MAKEFILE)
+all install clean:
+	#{RbConfig::CONFIG["NULLCMD"]}
+
+.PHONY: all install clean
+  MAKEFILE
+  return
+end
+
 require 'mkmf'
 
 # :stopdoc:
@@ -63,11 +76,6 @@ unless bundle
   end
   if have_ffi_header && (have_library('ffi') || have_library('libffi'))
     have_libffi = true
-    checking_for("undefined FFI_GO_CLOSURES is used") do
-      if egrep_cpp(/warning: 'FFI_GO_CLOSURES' is not defined/, cpp_include(ffi_header), "2>&1")
-        $defs.push('-DFFI_GO_CLOSURES=0')
-      end
-    end
   end
 end
 
@@ -218,6 +226,8 @@ if libffi
   $LOCAL_LIBS.prepend("#{libffi.a} ").strip! # to exts.mk
   $INCFLAGS.gsub!(/-I#{libffi.dir}/, '-I$(LIBFFI_DIR)')
 end
+
+have_func("rb_str_to_interned_str")
 create_makefile 'fiddle' do |conf|
   if !libffi
     next conf << "LIBFFI_CLEAN = none\n"

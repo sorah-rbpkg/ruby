@@ -34,6 +34,7 @@ static ID id_beg, id_end, id_excl;
 #define id_succ idSucc
 #define id_min idMin
 #define id_max idMax
+#define id_plus  '+'
 
 static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 
@@ -78,7 +79,7 @@ range_modify(VALUE range)
     rb_check_frozen(range);
     /* Ranges are immutable, so that they should be initialized only once. */
     if (RANGE_EXCL(range) != Qnil) {
-        rb_name_err_raise("`initialize' called twice", range, ID2SYM(idInitialize));
+        rb_name_err_raise("'initialize' called twice", range, ID2SYM(idInitialize));
     }
 }
 
@@ -224,8 +225,8 @@ recursive_eql(VALUE range, VALUE obj, int recur)
  *  Returns +true+ if and only if:
  *
  *  - +other+ is a range.
- *  - <tt>other.begin eql? self.begin</tt>.
- *  - <tt>other.end eql? self.end</tt>.
+ *  - <tt>other.begin.eql?(self.begin)</tt>.
+ *  - <tt>other.end.eql?(self.end)</tt>.
  *  - <tt>other.exclude_end? == self.exclude_end?</tt>.
  *
  *  Otherwise returns +false+.
@@ -308,6 +309,9 @@ range_each_func(VALUE range, int (*func)(VALUE, VALUE), VALUE arg)
     }
 }
 
+// NB: Two functions below (step_i_iter, sym_step_i and step_i) are used only to maintain the
+// backward-compatible behavior for string and symbol ranges with integer steps. If that branch
+// will be removed from range_step, these two can go, too.
 static bool
 step_i_iter(VALUE arg)
 {
@@ -400,72 +404,137 @@ range_step_size(VALUE range, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *    step(n = 1) {|element| ... } -> self
- *    step(n = 1)                  -> enumerator
+ *    step(s = 1) {|element| ... } -> self
+ *    step(s = 1)                  -> enumerator/arithmetic_sequence
  *
- *  Iterates over the elements of +self+.
+ *  Iterates over the elements of range in steps of +s+. The iteration is performed
+ *  by <tt>+</tt> operator:
  *
- *  With a block given and no argument,
- *  calls the block each element of the range; returns +self+:
+ *    (0..6).step(2) { puts _1 } #=> 1..5
+ *    # Prints: 0, 2, 4, 6
  *
- *    a = []
- *    (1..5).step {|element| a.push(element) } # => 1..5
- *    a # => [1, 2, 3, 4, 5]
- *    a = []
- *    ('a'..'e').step {|element| a.push(element) } # => "a".."e"
- *    a # => ["a", "b", "c", "d", "e"]
+ *    # Iterate between two dates in step of 1 day (24 hours)
+ *    (Time.utc(2022, 2, 24)..Time.utc(2022, 3, 1)).step(24*60*60) { puts _1 }
+ *    # Prints:
+ *    #   2022-02-24 00:00:00 UTC
+ *    #   2022-02-25 00:00:00 UTC
+ *    #   2022-02-26 00:00:00 UTC
+ *    #   2022-02-27 00:00:00 UTC
+ *    #   2022-02-28 00:00:00 UTC
+ *    #   2022-03-01 00:00:00 UTC
  *
- *  With a block given and a positive integer argument +n+ given,
- *  calls the block with element +0+, element +n+, element <tt>2n</tt>, and so on:
+ *  If <tt> + step</tt> decreases the value, iteration is still performed when
+ *  step +begin+ is higher than the +end+:
  *
- *    a = []
- *    (1..5).step(2) {|element| a.push(element) } # => 1..5
- *    a # => [1, 3, 5]
- *    a = []
- *    ('a'..'e').step(2) {|element| a.push(element) } # => "a".."e"
- *    a # => ["a", "c", "e"]
+ *    (0..6).step(-2) { puts _1 }
+ *    # Prints nothing
  *
- *  With no block given, returns an enumerator,
- *  which will be of class Enumerator::ArithmeticSequence if +self+ is numeric;
- *  otherwise of class Enumerator:
+ *    (6..0).step(-2) { puts _1 }
+ *    # Prints: 6, 4, 2, 0
  *
- *    e = (1..5).step(2) # => ((1..5).step(2))
- *    e.class            # => Enumerator::ArithmeticSequence
- *    ('a'..'e').step # => #<Enumerator: ...>
+ *    (Time.utc(2022, 3, 1)..Time.utc(2022, 2, 24)).step(-24*60*60) { puts _1 }
+ *    # Prints:
+ *    #   2022-03-01 00:00:00 UTC
+ *    #   2022-02-28 00:00:00 UTC
+ *    #   2022-02-27 00:00:00 UTC
+ *    #   2022-02-26 00:00:00 UTC
+ *    #   2022-02-25 00:00:00 UTC
+ *    #   2022-02-24 00:00:00 UTC
  *
- *  Related: Range#%.
+ *  When the block is not provided, and range boundaries and step are Numeric,
+ *  the method returns Enumerator::ArithmeticSequence.
+ *
+ *    (1..5).step(2) # => ((1..5).step(2))
+ *    (1.0..).step(1.5) #=> ((1.0..).step(1.5))
+ *    (..3r).step(1/3r) #=> ((..3/1).step((1/3)))
+ *
+ *  Enumerator::ArithmeticSequence can be further used as a value object for iteration
+ *  or slicing of collections (see Array#[]). There is a convenience method #% with
+ *  behavior similar to +step+ to produce arithmetic sequences more expressively:
+ *
+ *    # Same as (1..5).step(2)
+ *    (1..5) % 2 # => ((1..5).%(2))
+ *
+ *  In a generic case, when the block is not provided, Enumerator is returned:
+ *
+ *    ('a'..).step('b')         #=> #<Enumerator: "a"..:step("b")>
+ *    ('a'..).step('b').take(3) #=> ["a", "ab", "abb"]
+ *
+ *  If +s+ is not provided, it is considered +1+ for ranges with numeric +begin+:
+ *
+ *    (1..5).step { p _1 }
+ *    # Prints: 1, 2, 3, 4, 5
+ *
+ *  For non-Numeric ranges, step absence is an error:
+ *
+ *    (Time.utc(2022, 3, 1)..Time.utc(2022, 2, 24)).step { p _1 }
+ *    # raises: step is required for non-numeric ranges (ArgumentError)
+ *
+ *  For backward compatibility reasons, String ranges support the iteration both with
+ *  string step and with integer step. In the latter case, the iteration is performed
+ *  by calculating the next values with String#succ:
+ *
+ *    ('a'..'e').step(2) { p _1 }
+ *    # Prints: a, c, e
+ *    ('a'..'e').step { p _1 }
+ *    # Default step 1; prints: a, b, c, d, e
+ *
  */
 static VALUE
 range_step(int argc, VALUE *argv, VALUE range)
 {
-    VALUE b, e, step, tmp;
+    VALUE b, e, v, step;
+    int c, dir;
 
     b = RANGE_BEG(range);
     e = RANGE_END(range);
-    step = (!rb_check_arity(argc, 0, 1) ? INT2FIX(1) : argv[0]);
+
+    const VALUE b_num_p = rb_obj_is_kind_of(b, rb_cNumeric);
+    const VALUE e_num_p = rb_obj_is_kind_of(e, rb_cNumeric);
+    // For backward compatibility reasons (conforming to behavior before 3.4), String/Symbol
+    // supports both old behavior ('a'..).step(1) and new behavior ('a'..).step('a')
+    // Hence the additional conversion/additional checks.
+    const VALUE str_b = rb_check_string_type(b);
+    const VALUE sym_b = SYMBOL_P(b) ? rb_sym2str(b) : Qnil;
+
+    if (rb_check_arity(argc, 0, 1))
+        step = argv[0];
+    else {
+        if (b_num_p || !NIL_P(str_b) || !NIL_P(sym_b) || (NIL_P(b) && e_num_p))
+            step = INT2FIX(1);
+        else
+            rb_raise(rb_eArgError, "step is required for non-numeric ranges");
+    }
+
+    const VALUE step_num_p = rb_obj_is_kind_of(step, rb_cNumeric);
+
+    if (step_num_p && b_num_p && rb_equal(step, INT2FIX(0))) {
+        rb_raise(rb_eArgError, "step can't be 0");
+    }
 
     if (!rb_block_given_p()) {
-        if (!rb_obj_is_kind_of(step, rb_cNumeric)) {
-            step = rb_to_int(step);
-        }
-        if (rb_equal(step, INT2FIX(0))) {
-            rb_raise(rb_eArgError, "step can't be 0");
-        }
-
-        const VALUE b_num_p = rb_obj_is_kind_of(b, rb_cNumeric);
-        const VALUE e_num_p = rb_obj_is_kind_of(e, rb_cNumeric);
-        if ((b_num_p && (NIL_P(e) || e_num_p)) || (NIL_P(b) && e_num_p)) {
+        // This code is allowed to create even beginless ArithmeticSequence, which can be useful,
+        // e.g., for array slicing:
+        //   ary[(..-1) % 3]
+        if (step_num_p && ((b_num_p && (NIL_P(e) || e_num_p)) || (NIL_P(b) && e_num_p))) {
             return rb_arith_seq_new(range, ID2SYM(rb_frame_this_func()), argc, argv,
                     range_step_size, b, e, step, EXCL(range));
         }
 
-        RETURN_SIZED_ENUMERATOR(range, argc, argv, range_step_size);
+        // ...but generic Enumerator from beginless range is useless and probably an error.
+        if (NIL_P(b)) {
+            rb_raise(rb_eArgError, "#step for non-numeric beginless ranges is meaningless");
+        }
+
+        RETURN_SIZED_ENUMERATOR(range, argc, argv, 0);
     }
 
-    step = check_step_domain(step);
-    VALUE iter[2] = {INT2FIX(1), step};
+    if (NIL_P(b)) {
+        rb_raise(rb_eArgError, "#step iteration for beginless ranges is meaningless");
+    }
 
     if (FIXNUM_P(b) && NIL_P(e) && FIXNUM_P(step)) {
+        /* perform summation of numbers in C until their reach Fixnum limit */
         long i = FIX2LONG(b), unit = FIX2LONG(step);
         do {
             rb_yield(LONG2FIX(i));
@@ -473,71 +542,99 @@ range_step(int argc, VALUE *argv, VALUE range)
         } while (FIXABLE(i));
         b = LONG2NUM(i);
 
+        /* then switch to Bignum API */
         for (;; b = rb_big_plus(b, step))
             rb_yield(b);
     }
-    else if (FIXNUM_P(b) && FIXNUM_P(e) && FIXNUM_P(step)) { /* fixnums are special */
+    else if (FIXNUM_P(b) && FIXNUM_P(e) && FIXNUM_P(step)) {
+        /* fixnums are special: summation is performed in C for performance */
         long end = FIX2LONG(e);
         long i, unit = FIX2LONG(step);
 
-        if (!EXCL(range))
-            end += 1;
-        i = FIX2LONG(b);
-        while (i < end) {
-            rb_yield(LONG2NUM(i));
-            if (i + unit < i) break;
-            i += unit;
+        if (unit < 0) {
+            if (!EXCL(range))
+                end -= 1;
+            i = FIX2LONG(b);
+            while (i > end) {
+                rb_yield(LONG2NUM(i));
+                i += unit;
+            }
+        } else {
+            if (!EXCL(range))
+                end += 1;
+            i = FIX2LONG(b);
+            while (i < end) {
+                rb_yield(LONG2NUM(i));
+                i += unit;
+            }
         }
-
     }
-    else if (SYMBOL_P(b) && (NIL_P(e) || SYMBOL_P(e))) { /* symbols are special */
-        b = rb_sym2str(b);
-        if (NIL_P(e)) {
-            rb_str_upto_endless_each(b, sym_step_i, (VALUE)iter);
-        }
-        else {
-            rb_str_upto_each(b, rb_sym2str(e), EXCL(range), sym_step_i, (VALUE)iter);
-        }
-    }
-    else if (ruby_float_step(b, e, step, EXCL(range), TRUE)) {
+    else if (b_num_p && step_num_p && ruby_float_step(b, e, step, EXCL(range), TRUE)) {
         /* done */
-    }
-    else if (rb_obj_is_kind_of(b, rb_cNumeric) ||
-             !NIL_P(rb_check_to_integer(b, "to_int")) ||
-             !NIL_P(rb_check_to_integer(e, "to_int"))) {
-        ID op = EXCL(range) ? '<' : idLE;
-        VALUE v = b;
-        int i = 0;
+    } else if (!NIL_P(str_b) && FIXNUM_P(step)) {
+        // backwards compatibility behavior for String only, when no step/Integer step is passed
+        // See discussion in https://bugs.ruby-lang.org/issues/18368
 
-        while (NIL_P(e) || RTEST(rb_funcall(v, op, 1, e))) {
-            rb_yield(v);
-            i++;
-            v = rb_funcall(b, '+', 1, rb_funcall(INT2NUM(i), '*', 1, step));
-        }
-    }
-    else {
-        tmp = rb_check_string_type(b);
+        VALUE iter[2] = {INT2FIX(1), step};
 
-        if (!NIL_P(tmp)) {
-            b = tmp;
-            if (NIL_P(e)) {
-                rb_str_upto_endless_each(b, step_i, (VALUE)iter);
-            }
-            else {
-                rb_str_upto_each(b, e, EXCL(range), step_i, (VALUE)iter);
-            }
+        if (NIL_P(e)) {
+            rb_str_upto_endless_each(str_b, step_i, (VALUE)iter);
         }
         else {
-            if (!discrete_object_p(b)) {
-                rb_raise(rb_eTypeError, "can't iterate from %s",
-                         rb_obj_classname(b));
-            }
-            if (!NIL_P(e))
-                range_each_func(range, step_i, (VALUE)iter);
-            else
-                for (;; b = rb_funcallv(b, id_succ, 0, 0))
-                    step_i(b, (VALUE)iter);
+            rb_str_upto_each(str_b, e, EXCL(range), step_i, (VALUE)iter);
         }
+    } else if (!NIL_P(sym_b) && FIXNUM_P(step)) {
+        // same as above: backward compatibility for symbols
+
+        VALUE iter[2] = {INT2FIX(1), step};
+
+        if (NIL_P(e)) {
+            rb_str_upto_endless_each(sym_b, sym_step_i, (VALUE)iter);
+        }
+        else {
+            rb_str_upto_each(sym_b, rb_sym2str(e), EXCL(range), sym_step_i, (VALUE)iter);
+        }
+    } else {
+        v = b;
+        if (!NIL_P(e)) {
+            if (b_num_p && step_num_p && r_less(step, INT2FIX(0)) < 0) {
+                // iterate backwards, for consistency with ArithmeticSequence
+                if (EXCL(range)) {
+                    for (; r_less(e, v) < 0; v = rb_funcall(v, id_plus, 1, step))
+                        rb_yield(v);
+                }
+                else {
+                    for (; (c = r_less(e, v)) <= 0; v = rb_funcall(v, id_plus, 1, step)) {
+                        rb_yield(v);
+                        if (!c) break;
+                    }
+                }
+
+            } else {
+                // Direction of the comparison. We use it as a comparison operator in cycle:
+                // if begin < end, the cycle performs while value < end (iterating forward)
+                // if begin > end, the cycle performs while value > end (iterating backward with
+                // a negative step)
+                dir = r_less(b, e);
+                // One preliminary addition to check the step moves iteration in the same direction as
+                // from begin to end; otherwise, the iteration should be empty.
+                if (r_less(b, rb_funcall(b, id_plus, 1, step)) == dir) {
+                    if (EXCL(range)) {
+                        for (; r_less(v, e) == dir; v = rb_funcall(v, id_plus, 1, step))
+                            rb_yield(v);
+                    }
+                    else {
+                        for (; (c = r_less(v, e)) == dir || c == 0; v = rb_funcall(v, id_plus, 1, step)) {
+                            rb_yield(v);
+                            if (!c) break;
+                        }
+                    }
+                }
+            }
+        }
+        else
+            for (;; v = rb_funcall(v, id_plus, 1, step))
+                rb_yield(v);
     }
     return range;
 }
@@ -545,29 +642,24 @@ range_step(int argc, VALUE *argv, VALUE range)
 /*
  *  call-seq:
  *    %(n) {|element| ... } -> self
- *    %(n)                  -> enumerator
+ *    %(n)                  -> enumerator or arithmetic_sequence
  *
- *  Iterates over the elements of +self+.
+ *  Same as #step (but doesn't provide default value for +n+).
+ *  The method is convenient for experssive producing of Enumerator::ArithmeticSequence.
  *
- *  With a block given, calls the block with selected elements of the range;
- *  returns +self+:
+ *    array = [0, 1, 2, 3, 4, 5, 6]
  *
- *    a = []
- *    (1..5).%(2) {|element| a.push(element) } # => 1..5
- *    a # => [1, 3, 5]
- *    a = []
- *    ('a'..'e').%(2) {|element| a.push(element) } # => "a".."e"
- *    a # => ["a", "c", "e"]
+ *    # slice each second element:
+ *    seq = (0..) % 2 #=> ((0..).%(2))
+ *    array[seq] #=> [0, 2, 4, 6]
+ *    # or just
+ *    array[(0..) % 2] #=> [0, 2, 4, 6]
  *
- *  With no block given, returns an enumerator,
- *  which will be of class Enumerator::ArithmeticSequence if +self+ is numeric;
- *  otherwise of class Enumerator:
+ *  Note that due to operator precedence in Ruby, parentheses are mandatory around range
+ *  in this case:
  *
- *    e = (1..5) % 2 # => ((1..5).%(2))
- *    e.class        # => Enumerator::ArithmeticSequence
- *    ('a'..'e') % 2 # =>  #<Enumerator: ...>
- *
- *  Related: Range#step.
+ *      (0..7) % 2 #=> ((0..7).%(2)) -- as expected
+ *      0..7 % 2 #=> 0..1 -- parsed as 0..(7 % 2)
  */
 static VALUE
 range_percent_step(VALUE range, VALUE step)
@@ -816,6 +908,10 @@ sym_each_i(VALUE v, VALUE arg)
     return each_i(rb_str_intern(v), arg);
 }
 
+#define CANT_ITERATE_FROM(x) \
+    rb_raise(rb_eTypeError, "can't iterate from %s", \
+             rb_obj_classname(x))
+
 /*
  *  call-seq:
  *    size -> non_negative_integer or Infinity or nil
@@ -827,7 +923,12 @@ sym_each_i(VALUE v, VALUE arg)
  *    (1..4).size      # => 4
  *    (1...4).size     # => 3
  *    (1..).size       # => Infinity
- *    ('a'..'z').size  #=> nil
+ *    ('a'..'z').size  # => nil
+ *
+ *  If +self+ is not iterable, raises an exception:
+ *
+ *    (0.5..2.5).size  # TypeError
+ *    (..1).size       # TypeError
  *
  *  Related: Range#count.
  */
@@ -836,7 +937,8 @@ static VALUE
 range_size(VALUE range)
 {
     VALUE b = RANGE_BEG(range), e = RANGE_END(range);
-    if (rb_obj_is_kind_of(b, rb_cNumeric)) {
+
+    if (RB_INTEGER_TYPE_P(b)) {
         if (rb_obj_is_kind_of(e, rb_cNumeric)) {
             return ruby_num_interval_step_size(b, e, INT2FIX(1), EXCL(range));
         }
@@ -844,14 +946,49 @@ range_size(VALUE range)
             return DBL2NUM(HUGE_VAL);
         }
     }
-    else if (NIL_P(b)) {
-        if (rb_obj_is_kind_of(e, rb_cNumeric)) {
-            return DBL2NUM(HUGE_VAL);
-        }
+
+    if (!discrete_object_p(b)) {
+        CANT_ITERATE_FROM(b);
     }
 
     return Qnil;
 }
+
+static VALUE
+range_reverse_size(VALUE range)
+{
+    VALUE b = RANGE_BEG(range), e = RANGE_END(range);
+
+    if (NIL_P(e)) {
+        CANT_ITERATE_FROM(e);
+    }
+
+    if (RB_INTEGER_TYPE_P(b)) {
+        if (rb_obj_is_kind_of(e, rb_cNumeric)) {
+            return ruby_num_interval_step_size(b, e, INT2FIX(1), EXCL(range));
+        }
+        else {
+            CANT_ITERATE_FROM(e);
+        }
+    }
+
+    if (NIL_P(b)) {
+        if (RB_INTEGER_TYPE_P(e)) {
+            return DBL2NUM(HUGE_VAL);
+        }
+        else {
+            CANT_ITERATE_FROM(e);
+        }
+    }
+
+    if (!discrete_object_p(b)) {
+        CANT_ITERATE_FROM(e);
+    }
+
+    return Qnil;
+}
+
+#undef CANT_ITERATE_FROM
 
 /*
  *  call-seq:
@@ -879,6 +1016,12 @@ static VALUE
 range_enum_size(VALUE range, VALUE args, VALUE eobj)
 {
     return range_size(range);
+}
+
+static VALUE
+range_enum_reverse_size(VALUE range, VALUE args, VALUE eobj)
+{
+    return range_reverse_size(range);
 }
 
 RBIMPL_ATTR_NORETURN()
@@ -1127,7 +1270,7 @@ range_reverse_each_negative_bignum_section(VALUE beg, VALUE end)
 static VALUE
 range_reverse_each(VALUE range)
 {
-    RETURN_SIZED_ENUMERATOR(range, 0, 0, range_enum_size);
+    RETURN_SIZED_ENUMERATOR(range, 0, 0, range_enum_reverse_size);
 
     VALUE beg = RANGE_BEG(range);
     VALUE end = RANGE_END(range);
@@ -1266,11 +1409,11 @@ rb_int_range_last(int argc, VALUE *argv, VALUE range)
     int x;
     long n;
 
-    assert(argc > 0);
+    RUBY_ASSERT(argc > 0);
 
     b = RANGE_BEG(range);
     e = RANGE_END(range);
-    assert(RB_INTEGER_TYPE_P(b) && RB_INTEGER_TYPE_P(e));
+    RUBY_ASSERT(RB_INTEGER_TYPE_P(b) && RB_INTEGER_TYPE_P(e));
 
     x = EXCL(range);
 
@@ -1373,7 +1516,7 @@ range_last(int argc, VALUE *argv, VALUE range)
  *    min(n) {|a, b| ... } -> array
  *
  *  Returns the minimum value in +self+,
- *  using method <tt><=></tt> or a given block for comparison.
+ *  using method <tt>#<=></tt> or a given block for comparison.
  *
  *  With no argument and no block given,
  *  returns the minimum-valued element of +self+.
@@ -1481,7 +1624,7 @@ range_min(int argc, VALUE *argv, VALUE range)
  *    max(n) {|a, b| ... } -> array
  *
  *  Returns the maximum value in +self+,
- *  using method <tt><=></tt> or a given block for comparison.
+ *  using method <tt>#<=></tt> or a given block for comparison.
  *
  *  With no argument and no block given,
  *  returns the maximum-valued element of +self+.
@@ -1600,10 +1743,10 @@ range_max(int argc, VALUE *argv, VALUE range)
  *    minmax {|a, b| ... } -> [object, object]
  *
  *  Returns a 2-element array containing the minimum and maximum value in +self+,
- *  either according to comparison method <tt><=></tt> or a given block.
+ *  either according to comparison method <tt>#<=></tt> or a given block.
  *
  *  With no block given, returns the minimum and maximum values,
- *  using <tt><=></tt> for comparison:
+ *  using <tt>#<=></tt> for comparison:
  *
  *    (1..4).minmax     # => [1, 4]
  *    (1...4).minmax    # => [1, 3]
@@ -2053,7 +2196,7 @@ static int r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val);
  *  Returns +false+ if either:
  *
  *  - The begin value of +self+ is larger than its end value.
- *  - An internal call to <tt><=></tt> returns +nil+;
+ *  - An internal call to <tt>#<=></tt> returns +nil+;
  *    that is, the operands are not comparable.
  *
  *  Beginless ranges cover all values of the same type before the end,
@@ -2301,7 +2444,7 @@ empty_region_p(VALUE beg, VALUE end, int excl)
  *
  *    (1..3).overlap?(1)         # TypeError
  *
- *  Returns +false+ if an internal call to <tt><=></tt> returns +nil+;
+ *  Returns +false+ if an internal call to <tt>#<=></tt> returns +nil+;
  *  that is, the operands are not comparable.
  *
  *    (1..3).overlap?('a'..'d')  # => false
@@ -2379,7 +2522,7 @@ range_overlap(VALUE range, VALUE other)
         /* if both begin values are equal, no more comparisons needed */
         if (rb_cmpint(cmp, self_beg, other_beg) == 0) return Qtrue;
     }
-    else if (NIL_P(self_beg) && NIL_P(other_beg)) {
+    else if (NIL_P(self_beg) && !NIL_P(self_end) && NIL_P(other_beg)) {
         VALUE cmp = rb_funcall(self_end, id_cmp, 1, other_end);
         return RBOOL(!NIL_P(cmp));
     }
@@ -2404,7 +2547,7 @@ range_overlap(VALUE range, VALUE other)
  *     (1...4).to_a     # => [1, 2, 3]
  *     ('a'...'d').to_a # => ["a", "b", "c"]
  *
- * A range may be created using method Range.new:
+ * - Method Range.new:
  *
  *   # Ranges that by default include the given end value.
  *   Range.new(1, 4).to_a     # => [1, 2, 3, 4]
@@ -2432,8 +2575,12 @@ range_overlap(VALUE range, VALUE other)
  * A beginless range may be used to slice an array:
  *
  *  a = [1, 2, 3, 4]
- *  r = (..2) # => nil...2
- *  a[r]      # => [1, 2]
+ *  # Include the third array element in the slice
+ *  r = (..2)  # => nil..2
+ *  a[r]       # => [1, 2, 3]
+ *  # Exclude the third array element from the slice
+ *  r = (...2) # => nil...2
+ *  a[r]       # => [1, 2]
  *
  * \Method +each+ for a beginless range raises an exception.
  *
@@ -2487,7 +2634,7 @@ range_overlap(VALUE range, VALUE other)
  * == Ranges and Other Classes
  *
  * An object may be put into a range if its class implements
- * instance method <tt><=></tt>.
+ * instance method <tt>#<=></tt>.
  * Ruby core classes that do so include Array, Complex, File::Stat,
  * Float, Integer, Kernel, Module, Numeric, Rational, String, Symbol, and Time.
  *
@@ -2519,15 +2666,15 @@ range_overlap(VALUE range, VALUE other)
  * == Ranges and User-Defined Classes
  *
  * A user-defined class that is to be used in a range
- * must implement instance <tt><=></tt>;
+ * must implement instance method <tt>#<=></tt>;
  * see Integer#<=>.
  * To make iteration available, it must also implement
  * instance method +succ+; see Integer#succ.
  *
- * The class below implements both <tt><=></tt> and +succ+,
+ * The class below implements both <tt>#<=></tt> and +succ+,
  * and so can be used both to construct ranges and to iterate over them.
  * Note that the Comparable module is included
- * so the <tt>==</tt> method is defined in terms of <tt><=></tt>.
+ * so the <tt>==</tt> method is defined in terms of <tt>#<=></tt>.
  *
  *   # Represent a string of 'X' characters.
  *   class Xs

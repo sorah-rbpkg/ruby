@@ -13,9 +13,8 @@
 # access children nodes by name, etc.
 #
 # If you are looking for a stable API or an API working under multiple Ruby
-# implementations, consider using the _parser_ gem or Ripper. If you would
-# like to make RubyVM::AbstractSyntaxTree stable, please join the discussion
-# at https://bugs.ruby-lang.org/issues/14844.
+# implementations, consider using the _prism_ gem, which is the official
+# Ruby API to parse Ruby code.
 #
 module RubyVM::AbstractSyntaxTree
 
@@ -271,6 +270,63 @@ module RubyVM::AbstractSyntaxTree
       else
         nil
       end
+    end
+
+    #  call-seq:
+    #     node.locations -> array
+    #
+    #  Returns location objects associated with the AST node.
+    #  The returned array contains RubyVM::AbstractSyntaxTree::Location.
+    def locations
+      Primitive.ast_node_locations
+    end
+  end
+
+  # RubyVM::AbstractSyntaxTree::Location instances are created by
+  # RubyVM::AbstractSyntaxTree::Node#locations.
+  #
+  # This class is MRI specific.
+  #
+  class Location
+
+    #  call-seq:
+    #     location.first_lineno -> integer
+    #
+    #  The line number in the source code where this AST's text began.
+    def first_lineno
+      Primitive.ast_location_first_lineno
+    end
+
+    #  call-seq:
+    #     location.first_column -> integer
+    #
+    #  The column number in the source code where this AST's text began.
+    def first_column
+      Primitive.ast_location_first_column
+    end
+
+    #  call-seq:
+    #     location.last_lineno -> integer
+    #
+    #  The line number in the source code where this AST's text ended.
+    def last_lineno
+      Primitive.ast_location_last_lineno
+    end
+
+    #  call-seq:
+    #     location.last_column -> integer
+    #
+    #  The column number in the source code where this AST's text ended.
+    def last_column
+      Primitive.ast_location_last_column
+    end
+
+    #  call-seq:
+    #     location.inspect -> string
+    #
+    #  Returns debugging information about this location as a string.
+    def inspect
+      Primitive.ast_location_inspect
     end
   end
 end

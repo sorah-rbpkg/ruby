@@ -366,7 +366,8 @@ RSpec.describe "Bundler.setup" do
 
       it "removes system gems from Gem.source_index" do
         run "require 'yard'"
-        expect(out).to eq("bundler-#{Bundler::VERSION}\nyard-1.0")
+        expect(out).to include("bundler-#{Bundler::VERSION}").and include("yard-1.0")
+        expect(out).not_to include("activesupport-2.3.5")
       end
 
       context "when the ruby stdlib is a substring of Gem.path" do
@@ -704,6 +705,21 @@ RSpec.describe "Bundler.setup" do
     R
 
     expect(out).to be_empty
+  end
+
+  it "has gem_dir pointing to local repo" do
+    build_lib "foo", "1.0", path: bundled_app
+
+    install_gemfile <<-G
+      source "https://gem.repo1"
+      gemspec
+    G
+
+    run <<-R
+      puts Gem.loaded_specs['foo'].gem_dir
+    R
+
+    expect(out).to eq(bundled_app.to_s)
   end
 
   it "does not load all gemspecs" do
@@ -1392,8 +1408,6 @@ end
       let(:exemptions) do
         exempts = %w[did_you_mean bundler uri pathname]
         exempts << "etc" if (Gem.ruby_version < Gem::Version.new("3.2") || Gem.ruby_version >= Gem::Version.new("3.3.2")) && Gem.win_platform?
-        exempts << "set" unless Gem.rubygems_version >= Gem::Version.new("3.2.6")
-        exempts << "tsort" unless Gem.rubygems_version >= Gem::Version.new("3.2.31")
         exempts << "error_highlight" # added in Ruby 3.1 as a default gem
         exempts << "ruby2_keywords" # added in Ruby 3.1 as a default gem
         exempts << "syntax_suggest" # added in Ruby 3.2 as a default gem
@@ -1540,7 +1554,7 @@ end
       RUBY
 
       expect(last_command.stdboth).not_to include "FAIL"
-      expect(err).to include "private method `gem'"
+      expect(err).to match(/private method [`']gem'/)
     end
 
     it "keeps Kernel#require private" do

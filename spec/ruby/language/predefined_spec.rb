@@ -133,7 +133,7 @@ describe "Predefined global $&" do
   end
 
   it "sets the encoding to the encoding of the source String" do
-    "abc".force_encoding(Encoding::EUC_JP) =~ /b/
+    "abc".dup.force_encoding(Encoding::EUC_JP) =~ /b/
     $&.encoding.should equal(Encoding::EUC_JP)
   end
 end
@@ -146,12 +146,12 @@ describe "Predefined global $`" do
   end
 
   it "sets the encoding to the encoding of the source String" do
-    "abc".force_encoding(Encoding::EUC_JP) =~ /b/
+    "abc".dup.force_encoding(Encoding::EUC_JP) =~ /b/
     $`.encoding.should equal(Encoding::EUC_JP)
   end
 
   it "sets an empty result to the encoding of the source String" do
-    "abc".force_encoding(Encoding::ISO_8859_1) =~ /a/
+    "abc".dup.force_encoding(Encoding::ISO_8859_1) =~ /a/
     $`.encoding.should equal(Encoding::ISO_8859_1)
   end
 end
@@ -164,12 +164,12 @@ describe "Predefined global $'" do
   end
 
   it "sets the encoding to the encoding of the source String" do
-    "abc".force_encoding(Encoding::EUC_JP) =~ /b/
+    "abc".dup.force_encoding(Encoding::EUC_JP) =~ /b/
     $'.encoding.should equal(Encoding::EUC_JP)
   end
 
   it "sets an empty result to the encoding of the source String" do
-    "abc".force_encoding(Encoding::ISO_8859_1) =~ /c/
+    "abc".dup.force_encoding(Encoding::ISO_8859_1) =~ /c/
     $'.encoding.should equal(Encoding::ISO_8859_1)
   end
 end
@@ -187,7 +187,7 @@ describe "Predefined global $+" do
   end
 
   it "sets the encoding to the encoding of the source String" do
-    "abc".force_encoding(Encoding::EUC_JP) =~ /(b)/
+    "abc".dup.force_encoding(Encoding::EUC_JP) =~ /(b)/
     $+.encoding.should equal(Encoding::EUC_JP)
   end
 end
@@ -214,7 +214,7 @@ describe "Predefined globals $1..N" do
   end
 
   it "sets the encoding to the encoding of the source String" do
-    "abc".force_encoding(Encoding::EUC_JP) =~ /(b)/
+    "abc".dup.force_encoding(Encoding::EUC_JP) =~ /(b)/
     $1.encoding.should equal(Encoding::EUC_JP)
   end
 end
@@ -243,6 +243,16 @@ describe "Predefined global $stdout" do
 end
 
 describe "Predefined global $!" do
+  it "is Fiber-local" do
+    Fiber.new do
+      raise "hi"
+    rescue
+      Fiber.yield
+    end.resume
+
+    $!.should == nil
+  end
+
   # See http://jira.codehaus.org/browse/JRUBY-5550
   it "remains nil after a failed core class \"checked\" coercion against a class that defines method_missing" do
     $!.should == nil
@@ -687,7 +697,7 @@ describe "Predefined global $," do
   end
 
   it "warns if assigned non-nil" do
-    -> { $, = "_" }.should complain(/warning: `\$,' is deprecated/)
+    -> { $, = "_" }.should complain(/warning: [`']\$,' is deprecated/)
   end
 end
 
@@ -724,7 +734,7 @@ describe "Predefined global $;" do
   end
 
   it "warns if assigned non-nil" do
-    -> { $; = "_" }.should complain(/warning: `\$;' is deprecated/)
+    -> { $; = "_" }.should complain(/warning: [`']\$;' is deprecated/)
   end
 end
 
@@ -887,7 +897,7 @@ describe "Execution variable $:" do
 
     $:[idx..-1].all? { |p| p.instance_variable_defined?(:@gem_prelude_index) }.should be_true
     $:[0...idx].all? { |p| !p.instance_variable_defined?(:@gem_prelude_index) }.should be_true
-  end if false # no sense in ruby itself. skip is not working for rhel_zlinux for some reason
+  end
 end
 
 describe "Global variable $\"" do

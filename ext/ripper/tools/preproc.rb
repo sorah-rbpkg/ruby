@@ -51,27 +51,26 @@ def process(f, out, path, template)
   usercode f, out, path, template
 end
 
+require_relative 'dsl'
+
+def generate_line(f, out)
+  while line = f.gets
+    case
+    when gen = DSL.line?(line, f.lineno)
+      out << gen.generate << "\n"
+    when line.start_with?("%%")
+      out << "%%\n"
+      break
+    else
+      out << yield(line)
+    end
+  end
+end
+
 def prelude(f, out)
   @exprs = {}
-  lex_state_def = false
-  while line = f.gets
-    case line
-    when /\A%%/
-      out << "%%\n"
-      return
-    when /\A%token/, /\A%type/, /\A} <node(?>_\w+)?>/
-      # types in %union which have corresponding set_yylval_* macro.
-      out << line.sub(/<(?:node(?>_\w+)?|num|id)>/, '<val>')
-    when /^enum lex_state_(?:bits|e) \{/
-      lex_state_def = true
-      out << line
-    when /^\}/
-      lex_state_def = false
-      out << line
-    else
-      out << line
-    end
-    if lex_state_def
+  generate_line(f, out) do |line|
+    if (/^enum lex_state_(?:bits|e) \{/ =~ line)..(/^\}/ =~ line)
       case line
       when /^\s*(EXPR_\w+),\s+\/\*(.+)\*\//
         @exprs[$1.chomp("_bit")] = $2.strip
@@ -81,27 +80,21 @@ def prelude(f, out)
         @exprs[name] = "equals to " + (val.start_with?("(") ? "<tt>#{val}</tt>" : "+#{val}+")
       end
     end
+    line
   end
 end
 
-require_relative "dsl"
-
 def grammar(f, out)
-  while line = f.gets
+  generate_line(f, out) do |line|
     case line
-    when %r</\*% *ripper(?:\[(.*?)\])?: *(.*?) *%\*/>
-      out << DSL.new($2, ($1 || "").split(",")).generate << "\n"
     when %r</\*%%%\*/>
-      out << "#if 0\n"
+      "#if 0\n"
     when %r</\*%>
-      out << "#endif\n"
+      "#endif\n"
     when %r<%\*/>
-      out << "\n"
-    when /\A%%/
-      out << "%%\n"
-      return
+      "\n"
     else
-      out << line
+      line
     end
   end
 end

@@ -36,9 +36,10 @@ RUBY_EXTERN const char ruby_hexdigits[];
 #define BUFFER_CAPACITY 4096
 
 struct dump_config {
-    VALUE type;
-    VALUE stream;
+    VALUE given_output;
+    VALUE output_io;
     VALUE string;
+    FILE *stream;
     const char *root_category;
     VALUE cur_obj;
     VALUE cur_obj_klass;
@@ -58,7 +59,7 @@ dump_flush(struct dump_config *dc)
 {
     if (dc->buffer_len) {
         if (dc->stream) {
-            size_t written = rb_io_bufwrite(dc->stream, dc->buffer, dc->buffer_len);
+            size_t written = fwrite(dc->buffer, sizeof(dc->buffer[0]), dc->buffer_len, dc->stream);
             if (written < dc->buffer_len) {
                 MEMMOVE(dc->buffer, dc->buffer + written, char, dc->buffer_len - written);
                 dc->buffer_len -= written;
@@ -476,6 +477,8 @@ dump_object(VALUE obj, struct dump_config *dc)
             dump_append(dc, ", \"embedded\":true");
         if (FL_TEST(obj, RSTRING_FSTR))
             dump_append(dc, ", \"fstring\":true");
+        if (CHILLED_STRING_P(obj))
+            dump_append(dc, ", \"chilled\":true");
         if (STR_SHARED_P(obj))
             dump_append(dc, ", \"shared\":true");
         else
@@ -547,9 +550,8 @@ dump_object(VALUE obj, struct dump_config *dc)
         if (dc->cur_obj_klass) {
             VALUE mod_name = rb_mod_name(obj);
             if (!NIL_P(mod_name)) {
-                dump_append(dc, ", \"name\":\"");
-                dump_append(dc, RSTRING_PTR(mod_name));
-                dump_append(dc, "\"");
+                dump_append(dc, ", \"name\":");
+                dump_append_string_value(dc, mod_name);
             }
             else {
                 VALUE real_mod_name = rb_mod_name(rb_class_real(obj));
@@ -560,7 +562,7 @@ dump_object(VALUE obj, struct dump_config *dc)
                 }
             }
 
-            if (FL_TEST(obj, FL_SINGLETON)) {
+            if (RCLASS_SINGLETON_P(obj)) {
                 dump_append(dc, ", \"singleton\":true");
             }
         }
@@ -656,15 +658,15 @@ heap_i(void *vstart, void *vend, size_t stride, void *data)
     struct dump_config *dc = (struct dump_config *)data;
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
-        void *ptr = asan_poisoned_object_p(v);
-        asan_unpoison_object(v, false);
+        void *ptr = rb_asan_poisoned_object_p(v);
+        rb_asan_unpoison_object(v, false);
         dc->cur_page_slot_size = stride;
 
         if (dc->full_heap || RBASIC(v)->flags)
             dump_object(v, dc);
 
         if (ptr) {
-            asan_poison_object(v);
+            rb_asan_poison_object(v);
         }
     }
     return 0;
@@ -695,16 +697,34 @@ root_obj_i(const char *category, VALUE obj, void *data)
 static void
 dump_output(struct dump_config *dc, VALUE output, VALUE full, VALUE since, VALUE shapes)
 {
-
+    dc->given_output = output;
     dc->full_heap = 0;
     dc->buffer_len = 0;
 
     if (TYPE(output) == T_STRING) {
-        dc->stream = Qfalse;
+        dc->stream = NULL;
         dc->string = output;
     }
     else {
-        dc->stream = output;
+        rb_io_t *fptr;
+        // Output should be an IO, typecheck and get a FILE* for writing.
+        // We cannot write with the usual IO code here because writes
+        // interleave with calls to rb_gc_mark(). The usual IO code can
+        // cause a thread switch, raise exceptions, and even run arbitrary
+        // ruby code through the fiber scheduler.
+        //
+        // Mark functions generally can't handle these possibilities so
+        // the usual IO code is unsafe in this context. (For example,
+        // there are many ways to crash when ruby code runs and mutates
+        // the execution context while rb_execution_context_mark() is in
+        // progress.)
+        //
+        // Using FILE* isn't perfect, but it avoids the most acute problems.
+        output = rb_io_get_io(output);
+        dc->output_io = rb_io_get_write_io(output);
+        rb_io_flush(dc->output_io);
+        GetOpenFile(dc->output_io, fptr);
+        dc->stream = rb_io_stdio_file(fptr);
         dc->string = Qfalse;
     }
 
@@ -728,13 +748,13 @@ dump_result(struct dump_config *dc)
 {
     dump_flush(dc);
 
+    if (dc->stream) {
+        fflush(dc->stream);
+    }
     if (dc->string) {
         return dc->string;
     }
-    else {
-        rb_io_flush(dc->stream);
-        return dc->stream;
-    }
+    return dc->given_output;
 }
 
 /* :nodoc: */

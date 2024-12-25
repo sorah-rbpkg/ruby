@@ -56,12 +56,13 @@
 #define RVALUE_SIZE (sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]))
 
 #if VM_CHECK_MODE > 0
-#define VM_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(VM_CHECK_MODE > 0, expr, #expr)
+#define VM_ASSERT(expr, ...) \
+    RUBY_ASSERT_MESG_WHEN(VM_CHECK_MODE > 0, expr, #expr RBIMPL_VA_OPT_ARGS(__VA_ARGS__))
 #define VM_UNREACHABLE(func) rb_bug(#func ": unreachable")
 #define RUBY_ASSERT_CRITICAL_SECTION
 #define RUBY_DEBUG_THREAD_SCHEDULE() rb_thread_schedule()
 #else
-#define VM_ASSERT(expr) ((void)0)
+#define VM_ASSERT(/*expr, */...) ((void)0)
 #define VM_UNREACHABLE(func) UNREACHABLE
 #define RUBY_DEBUG_THREAD_SCHEDULE()
 #endif
@@ -69,7 +70,30 @@
 #define RUBY_ASSERT_MUTEX_OWNED(mutex) VM_ASSERT(rb_mutex_owned_p(mutex))
 
 #if defined(RUBY_ASSERT_CRITICAL_SECTION)
-// TODO add documentation
+/*
+# Critical Section Assertions
+
+These assertions are used to ensure that context switching does not occur between two points in the code. In theory,
+such code should already be protected by a mutex, but these assertions are used to ensure that the mutex is held.
+
+The specific case where it can be useful is where a mutex is held further up the call stack, and the code in question
+may not directly hold the mutex. In this case, the critical section assertions can be used to ensure that the mutex is
+held by someone else.
+
+These assertions are only enabled when RUBY_ASSERT_CRITICAL_SECTION is defined, which is only defined if VM_CHECK_MODE
+is set.
+
+## Example Usage
+
+```c
+RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+// ... some code which does not invoke rb_vm_check_ints() ...
+RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
+```
+
+If `rb_vm_check_ints()` is called between the `RUBY_ASSERT_CRITICAL_SECTION_ENTER()` and
+`RUBY_ASSERT_CRITICAL_SECTION_LEAVE()`, a failed assertion will result.
+*/
 extern int ruby_assert_critical_section_entered;
 #define RUBY_ASSERT_CRITICAL_SECTION_ENTER() do{ruby_assert_critical_section_entered += 1;}while(false)
 #define RUBY_ASSERT_CRITICAL_SECTION_LEAVE() do{VM_ASSERT(ruby_assert_critical_section_entered > 0);ruby_assert_critical_section_entered -= 1;}while(false)
@@ -94,6 +118,7 @@ extern int ruby_assert_critical_section_entered;
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/basic_operators.h"
+#include "internal/sanitizers.h"
 #include "internal/serial.h"
 #include "internal/vm.h"
 #include "method.h"
@@ -104,7 +129,6 @@ extern int ruby_assert_critical_section_entered;
 #include "vm_opts.h"
 
 #include "ruby/thread_native.h"
-
 /*
  * implementation selector of get_insn_info algorithm
  *   0: linear search
@@ -228,6 +252,8 @@ union ic_serial_entry {
     rb_serial_t raw;
     VALUE data[2];
 };
+
+#define IMEMO_CONST_CACHE_SHAREABLE IMEMO_FL_USER0
 
 // imemo_constcache
 struct iseq_inline_constant_cache_entry {
@@ -365,10 +391,12 @@ enum rb_iseq_type {
 enum rb_builtin_attr {
     // The iseq does not call methods.
     BUILTIN_ATTR_LEAF = 0x01,
-    // The iseq does not allocate objects.
-    BUILTIN_ATTR_NO_GC = 0x02,
     // This iseq only contains single `opt_invokebuiltin_delegate_leave` instruction with 0 arguments.
-    BUILTIN_ATTR_SINGLE_NOARG_INLINE = 0x04,
+    BUILTIN_ATTR_SINGLE_NOARG_LEAF = 0x02,
+    // This attribute signals JIT to duplicate the iseq for each block iseq so that its `yield` will be monomorphic.
+    BUILTIN_ATTR_INLINE_BLOCK = 0x04,
+    // The iseq acts like a C method in backtraces.
+    BUILTIN_ATTR_C_TRACE = 0x08,
 };
 
 typedef VALUE (*rb_jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
@@ -415,6 +443,10 @@ struct rb_iseq_constant_body {
             unsigned int ambiguous_param0 : 1; /* {|a|} */
             unsigned int accepts_no_kwarg : 1;
             unsigned int ruby2_keywords: 1;
+            unsigned int anon_rest: 1;
+            unsigned int anon_kwrest: 1;
+            unsigned int use_block: 1;
+            unsigned int forwardable: 1;
         } flags;
 
         unsigned int size;
@@ -492,6 +524,8 @@ struct rb_iseq_constant_body {
     unsigned int stack_max; /* for stack overflow check */
 
     unsigned int builtin_attrs; // Union of rb_builtin_attr
+
+    bool prism; // ISEQ was generated from prism compiler
 
     union {
         iseq_bits_t * list; /* Find references for GC */
@@ -572,6 +606,12 @@ rb_iseq_check(const rb_iseq_t *iseq)
     return iseq;
 }
 
+static inline bool
+rb_iseq_attr_p(const rb_iseq_t *iseq, enum rb_builtin_attr attr)
+{
+    return (ISEQ_BODY(iseq)->builtin_attrs & attr) == attr;
+}
+
 static inline const rb_iseq_t *
 def_iseq_ptr(rb_method_definition_t *def)
 {
@@ -602,10 +642,9 @@ typedef struct rb_at_exit_list {
     struct rb_at_exit_list *next;
 } rb_at_exit_list;
 
-struct rb_objspace;
-struct rb_objspace *rb_objspace_alloc(void);
-void rb_objspace_free(struct rb_objspace *);
-void rb_objspace_call_finalizer(struct rb_objspace *);
+void *rb_objspace_alloc(void);
+void rb_objspace_free(void *objspace);
+void rb_objspace_call_finalizer(void);
 
 typedef struct rb_hook_list_struct {
     struct rb_event_hook_struct *hooks;
@@ -618,6 +657,11 @@ typedef struct rb_hook_list_struct {
 
 // see builtin.h for definition
 typedef const struct rb_builtin_function *RB_BUILTIN;
+
+struct global_object_list {
+    VALUE *varptr;
+    struct global_object_list *next;
+};
 
 typedef struct rb_vm_struct {
     VALUE self;
@@ -700,6 +744,7 @@ typedef struct rb_vm_struct {
 
     /* object management */
     VALUE mark_object_ary;
+    struct global_object_list *global_object_list;
     const VALUE special_exceptions[ruby_special_error_count];
 
     /* load */
@@ -723,9 +768,6 @@ typedef struct rb_vm_struct {
         VALUE cmd[RUBY_NSIG];
     } trap_list;
 
-    /* relation table of ensure - rollback for callcc */
-    struct st_table *ensure_rollback_table;
-
     /* postponed_job (async-signal-safe, and thread-safe) */
     struct rb_postponed_job_queue *postponed_job_queue;
 
@@ -739,26 +781,31 @@ typedef struct rb_vm_struct {
     VALUE coverages, me2counter;
     int coverage_mode;
 
-    st_table * defined_module_hash;
-
-    struct rb_objspace *objspace;
+    struct {
+        struct rb_objspace *objspace;
+        struct gc_mark_func_data_struct {
+            void *data;
+            void (*mark_func)(VALUE v, void *data);
+        } *mark_func_data;
+    } gc;
 
     rb_at_exit_list *at_exit;
 
     st_table *frozen_strings;
 
     const struct rb_builtin_function *builtin_function_table;
-    int builtin_inline_index;
 
     st_table *ci_table;
     struct rb_id_table *negative_cme_table;
     st_table *overloaded_cme_table; // cme -> overloaded_cme
+    st_table *unused_block_warning_table;
 
     // This id table contains a mapping from ID to ICs. It does this with ID
     // keys and nested st_tables as values. The nested tables have ICs as keys
     // and Qtrue as values. It is used when inline constant caches need to be
     // invalidated or ISEQs are being freed.
     struct rb_id_table *constant_cache;
+    ID inserting_constant_cache_id;
 
 #ifndef VM_GLOBAL_CC_CACHE_TABLE_SIZE
 #define VM_GLOBAL_CC_CACHE_TABLE_SIZE 1023
@@ -964,17 +1011,6 @@ struct rb_unblock_callback {
 
 struct rb_mutex_struct;
 
-typedef struct rb_ensure_entry {
-    VALUE marker;
-    VALUE (*e_proc)(VALUE);
-    VALUE data2;
-} rb_ensure_entry_t;
-
-typedef struct rb_ensure_list {
-    struct rb_ensure_list *next;
-    struct rb_ensure_entry entry;
-} rb_ensure_list_t;
-
 typedef struct rb_fiber_struct rb_fiber_t;
 
 struct rb_waiting_list {
@@ -1013,9 +1049,6 @@ struct rb_execution_context_struct {
     const VALUE *root_lep;
     VALUE root_svar;
 
-    /* ensure & callcc */
-    rb_ensure_list_t *ensure_list;
-
     /* trace information */
     struct rb_trace_arg_struct *trace_arg;
 
@@ -1036,6 +1069,10 @@ struct rb_execution_context_struct {
         VALUE *stack_end;
         size_t stack_maxsize;
         RUBY_ALIGNAS(SIZEOF_VALUE) jmp_buf regs;
+
+#ifdef RUBY_ASAN_ENABLED
+        void *asan_fake_stack_handle;
+#endif
     } machine;
 };
 
@@ -1077,6 +1114,7 @@ typedef struct rb_thread_struct {
     rb_execution_context_t *ec;
 
     struct rb_thread_sched_item sched;
+    bool mn_schedulable;
     rb_atomic_t serial; // only for RUBY_DEBUG_LOG()
 
     VALUE last_status; /* $? */
@@ -1119,6 +1157,7 @@ typedef struct rb_thread_struct {
     struct rb_unblock_callback unblock;
     VALUE locking_mutex;
     struct rb_mutex_struct *keeping_mutexes;
+    struct ccan_list_head interrupt_exec_tasks;
 
     struct rb_waiting_list *join_list;
 
@@ -1182,12 +1221,13 @@ typedef enum {
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /* node -> iseq */
-rb_iseq_t *rb_iseq_new         (const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath,                     const rb_iseq_t *parent, enum rb_iseq_type);
-rb_iseq_t *rb_iseq_new_top     (const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath,                     const rb_iseq_t *parent);
-rb_iseq_t *rb_iseq_new_main    (const rb_ast_body_t *ast,             VALUE path, VALUE realpath,                     const rb_iseq_t *parent, int opt);
-rb_iseq_t *rb_iseq_new_eval    (const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth);
-rb_iseq_t *rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth,
-                                enum rb_iseq_type, const rb_compile_option_t*);
+rb_iseq_t *rb_iseq_new         (const VALUE ast_value, VALUE name, VALUE path, VALUE realpath,                   const rb_iseq_t *parent, enum rb_iseq_type);
+rb_iseq_t *rb_iseq_new_top     (const VALUE ast_value, VALUE name, VALUE path, VALUE realpath,                   const rb_iseq_t *parent);
+rb_iseq_t *rb_iseq_new_main    (const VALUE ast_value,             VALUE path, VALUE realpath,                   const rb_iseq_t *parent, int opt);
+rb_iseq_t *rb_iseq_new_eval    (const VALUE ast_value, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth);
+rb_iseq_t *rb_iseq_new_with_opt(      VALUE ast_value, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth,
+                                enum rb_iseq_type, const rb_compile_option_t*,
+                                VALUE script_lines);
 
 struct iseq_link_anchor;
 struct rb_iseq_new_with_callback_callback_func {
@@ -1200,8 +1240,12 @@ static inline struct rb_iseq_new_with_callback_callback_func *
 rb_iseq_new_with_callback_new_callback(
     void (*func)(rb_iseq_t *, struct iseq_link_anchor *, const void *), const void *ptr)
 {
-    VALUE memo = rb_imemo_new(imemo_ifunc, (VALUE)func, (VALUE)ptr, Qundef, Qfalse);
-    return (struct rb_iseq_new_with_callback_callback_func *)memo;
+    struct rb_iseq_new_with_callback_callback_func *memo =
+        IMEMO_NEW(struct rb_iseq_new_with_callback_callback_func, imemo_ifunc, Qfalse);
+    memo->func = func;
+    memo->data = ptr;
+
+    return memo;
 }
 rb_iseq_t *rb_iseq_new_with_callback(const struct rb_iseq_new_with_callback_callback_func * ifunc,
     VALUE name, VALUE path, VALUE realpath, int first_lineno,
@@ -1263,6 +1307,15 @@ enum vm_check_match_type {
 
 #define VM_CHECKMATCH_TYPE_MASK   0x03
 #define VM_CHECKMATCH_ARRAY       0x04
+
+enum vm_opt_newarray_send_type {
+    VM_OPT_NEWARRAY_SEND_MAX = 1,
+    VM_OPT_NEWARRAY_SEND_MIN = 2,
+    VM_OPT_NEWARRAY_SEND_HASH = 3,
+    VM_OPT_NEWARRAY_SEND_PACK = 4,
+    VM_OPT_NEWARRAY_SEND_PACK_BUFFER = 5,
+    VM_OPT_NEWARRAY_SEND_INCLUDE_P = 6,
+};
 
 enum vm_special_object_type {
     VM_SPECIAL_OBJECT_VMCORE = 1,
@@ -1469,22 +1522,13 @@ VM_ENV_ESCAPED_P(const VALUE *ep)
     return VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) ? 1 : 0;
 }
 
-#if VM_CHECK_MODE > 0
-static inline int
-vm_assert_env(VALUE obj)
-{
-    VM_ASSERT(imemo_type_p(obj, imemo_env));
-    return 1;
-}
-#endif
-
 RBIMPL_ATTR_NONNULL((1))
 static inline VALUE
 VM_ENV_ENVVAL(const VALUE *ep)
 {
     VALUE envval = ep[VM_ENV_DATA_INDEX_ENV];
     VM_ASSERT(VM_ENV_ESCAPED_P(ep));
-    VM_ASSERT(vm_assert_env(envval));
+    VM_ASSERT(envval == Qundef || imemo_type_p(envval, imemo_env));
     return envval;
 }
 
@@ -1498,7 +1542,9 @@ VM_ENV_ENVVAL_PTR(const VALUE *ep)
 static inline const rb_env_t *
 vm_env_new(VALUE *env_ep, VALUE *env_body, unsigned int env_size, const rb_iseq_t *iseq)
 {
-    rb_env_t *env = (rb_env_t *)rb_imemo_new(imemo_env, (VALUE)env_ep, (VALUE)env_body, 0, (VALUE)iseq);
+    rb_env_t *env = IMEMO_NEW(rb_env_t, imemo_env, (VALUE)iseq);
+    env->ep = env_ep;
+    env->env = env_body;
     env->env_size = env_size;
     env_ep[VM_ENV_DATA_INDEX_ENV] = (VALUE)env;
     return env;
@@ -1842,7 +1888,7 @@ rb_control_frame_t *rb_vm_get_binding_creatable_next_cfp(const rb_execution_cont
 VALUE *rb_vm_svar_lep(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);
 int rb_vm_get_sourceline(const rb_control_frame_t *);
 void rb_vm_stack_to_heap(rb_execution_context_t *ec);
-void ruby_thread_init_stack(rb_thread_t *th);
+void ruby_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame);
 rb_thread_t * ruby_thread_from_native(void);
 int ruby_thread_set_native(rb_thread_t *th);
 int rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, ID *called_idp, VALUE *klassp);
@@ -1855,7 +1901,7 @@ void rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE
 #define rb_vm_register_special_exception(sp, e, m) \
     rb_vm_register_special_exception_str(sp, e, rb_usascii_str_new_static((m), (long)rb_strlen_lit(m)))
 
-void rb_gc_mark_machine_stack(const rb_execution_context_t *ec);
+void rb_gc_mark_machine_context(const rb_execution_context_t *ec);
 
 void rb_vm_rewrite_cref(rb_cref_t *node, VALUE old_klass, VALUE new_klass, rb_cref_t **new_cref_ptr);
 
@@ -1924,6 +1970,8 @@ rb_ec_vm_ptr(const rb_execution_context_t *ec)
         return NULL;
     }
 }
+
+NOINLINE(struct rb_execution_context_struct *rb_current_ec_noinline(void));
 
 static inline rb_execution_context_t *
 rb_current_execution_context(bool expect_ec)

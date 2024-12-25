@@ -27,6 +27,12 @@ void Init_builtin_ast(void)
     RB_BUILTIN_FUNCTION(11, ast_node_inspect, ast_node_inspect, 0),
     RB_BUILTIN_FUNCTION(12, ast_node_node_id, ast_node_node_id, 0),
     RB_BUILTIN_FUNCTION(13, ast_node_script_lines, ast_node_script_lines, 0),
+    RB_BUILTIN_FUNCTION(14, ast_node_locations, ast_node_locations, 0),
+    RB_BUILTIN_FUNCTION(15, ast_location_first_lineno, ast_location_first_lineno, 0),
+    RB_BUILTIN_FUNCTION(16, ast_location_first_column, ast_location_first_column, 0),
+    RB_BUILTIN_FUNCTION(17, ast_location_last_lineno, ast_location_last_lineno, 0),
+    RB_BUILTIN_FUNCTION(18, ast_location_last_column, ast_location_last_column, 0),
+    RB_BUILTIN_FUNCTION(19, ast_location_inspect, ast_location_inspect, 0),
     RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
   };
 
@@ -49,6 +55,12 @@ COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
   if (0) rb_builtin_function_check_arity0(ast_node_inspect);
   if (0) rb_builtin_function_check_arity0(ast_node_node_id);
   if (0) rb_builtin_function_check_arity0(ast_node_script_lines);
+  if (0) rb_builtin_function_check_arity0(ast_node_locations);
+  if (0) rb_builtin_function_check_arity0(ast_location_first_lineno);
+  if (0) rb_builtin_function_check_arity0(ast_location_first_column);
+  if (0) rb_builtin_function_check_arity0(ast_location_last_lineno);
+  if (0) rb_builtin_function_check_arity0(ast_location_last_column);
+  if (0) rb_builtin_function_check_arity0(ast_location_inspect);
 COMPILER_WARNING_POP
 
   // load

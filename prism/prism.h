@@ -9,6 +9,7 @@
 #include "prism/defines.h"
 #include "prism/util/pm_buffer.h"
 #include "prism/util/pm_char.h"
+#include "prism/util/pm_integer.h"
 #include "prism/util/pm_memchr.h"
 #include "prism/util/pm_strncasecmp.h"
 #include "prism/util/pm_strpbrk.h"
@@ -20,10 +21,13 @@
 #include "prism/parser.h"
 #include "prism/prettyprint.h"
 #include "prism/regexp.h"
+#include "prism/static_literals.h"
 #include "prism/version.h"
 
 #include <assert.h>
 #include <errno.h>
+#include <locale.h>
+#include <math.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -75,6 +79,41 @@ PRISM_EXPORTED_FUNCTION void pm_parser_free(pm_parser_t *parser);
  * @return The AST representing the source.
  */
 PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse(pm_parser_t *parser);
+
+/**
+ * This function is used in pm_parse_stream to retrieve a line of input from a
+ * stream. It closely mirrors that of fgets so that fgets can be used as the
+ * default implementation.
+ */
+typedef char * (pm_parse_stream_fgets_t)(char *string, int size, void *stream);
+
+/**
+ * Parse a stream of Ruby source and return the tree.
+ *
+ * @param parser The parser to use.
+ * @param buffer The buffer to use.
+ * @param stream The stream to parse.
+ * @param fgets The function to use to read from the stream.
+ * @param options The optional options to use when parsing.
+ * @return The AST representing the source.
+ */
+PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *fgets, const pm_options_t *options);
+
+// We optionally support serializing to a binary string. For systems that don't
+// want or need this functionality, it can be turned off with the
+// PRISM_EXCLUDE_SERIALIZATION define.
+#ifndef PRISM_EXCLUDE_SERIALIZATION
+
+/**
+ * Parse and serialize the AST represented by the source that is read out of the
+ * given stream into to the given buffer.
+ *
+ * @param buffer The buffer to serialize to.
+ * @param stream The stream to parse.
+ * @param fgets The function to use to read from the stream.
+ * @param data The optional data to pass to the parser.
+ */
+PRISM_EXPORTED_FUNCTION void pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *fgets, const char *data);
 
 /**
  * Serialize the given list of comments to the given buffer.
@@ -152,6 +191,8 @@ PRISM_EXPORTED_FUNCTION void pm_serialize_lex(pm_buffer_t *buffer, const uint8_t
  */
 PRISM_EXPORTED_FUNCTION void pm_serialize_parse_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data);
 
+#endif
+
 /**
  * Parse the source and return true if it parses without errors or warnings.
  *
@@ -168,7 +209,77 @@ PRISM_EXPORTED_FUNCTION bool pm_parse_success_p(const uint8_t *source, size_t si
  * @param token_type The token type to convert to a string.
  * @return A string representation of the given token type.
  */
-PRISM_EXPORTED_FUNCTION const char * pm_token_type_to_str(pm_token_type_t token_type);
+PRISM_EXPORTED_FUNCTION const char * pm_token_type_name(pm_token_type_t token_type);
+
+/**
+ * Returns the human name of the given token type.
+ *
+ * @param token_type The token type to convert to a human name.
+ * @return The human name of the given token type.
+ */
+const char * pm_token_type_human(pm_token_type_t token_type);
+
+// We optionally support dumping to JSON. For systems that don't want or need
+// this functionality, it can be turned off with the PRISM_EXCLUDE_JSON define.
+#ifndef PRISM_EXCLUDE_JSON
+
+/**
+ * Dump JSON to the given buffer.
+ *
+ * @param buffer The buffer to serialize to.
+ * @param parser The parser that parsed the node.
+ * @param node The node to serialize.
+ */
+PRISM_EXPORTED_FUNCTION void pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *node);
+
+#endif
+
+/**
+ * Represents the results of a slice query.
+ */
+typedef enum {
+    /** Returned if the encoding given to a slice query was invalid. */
+    PM_STRING_QUERY_ERROR = -1,
+
+    /** Returned if the result of the slice query is false. */
+    PM_STRING_QUERY_FALSE,
+
+    /** Returned if the result of the slice query is true. */
+    PM_STRING_QUERY_TRUE
+} pm_string_query_t;
+
+/**
+ * Check that the slice is a valid local variable name.
+ *
+ * @param source The source to check.
+ * @param length The length of the source.
+ * @param encoding_name The name of the encoding of the source.
+ * @return PM_STRING_QUERY_TRUE if the query is true, PM_STRING_QUERY_FALSE if
+ *   the query is false, and PM_STRING_QUERY_ERROR if the encoding was invalid.
+ */
+PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_local(const uint8_t *source, size_t length, const char *encoding_name);
+
+/**
+ * Check that the slice is a valid constant name.
+ *
+ * @param source The source to check.
+ * @param length The length of the source.
+ * @param encoding_name The name of the encoding of the source.
+ * @return PM_STRING_QUERY_TRUE if the query is true, PM_STRING_QUERY_FALSE if
+ *   the query is false, and PM_STRING_QUERY_ERROR if the encoding was invalid.
+ */
+PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_constant(const uint8_t *source, size_t length, const char *encoding_name);
+
+/**
+ * Check that the slice is a valid method name.
+ *
+ * @param source The source to check.
+ * @param length The length of the source.
+ * @param encoding_name The name of the encoding of the source.
+ * @return PM_STRING_QUERY_TRUE if the query is true, PM_STRING_QUERY_FALSE if
+ *   the query is false, and PM_STRING_QUERY_ERROR if the encoding was invalid.
+ */
+PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint8_t *source, size_t length, const char *encoding_name);
 
 /**
  * @mainpage
@@ -260,7 +371,7 @@ PRISM_EXPORTED_FUNCTION const char * pm_token_type_to_str(pm_token_type_t token_
  *     pm_buffer_t buffer = { 0 };
  *
  *     pm_prettyprint(&buffer, &parser, root);
- *     printf("*.s%\n", (int) buffer.length, buffer.value);
+ *     printf("%*.s\n", (int) buffer.length, buffer.value);
  *
  *     pm_buffer_free(&buffer);
  *     pm_node_destroy(&parser, root);

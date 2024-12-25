@@ -72,11 +72,11 @@ Init_var_tables(void)
 
     autoload_mutex = rb_mutex_new();
     rb_obj_hide(autoload_mutex);
-    rb_gc_register_mark_object(autoload_mutex);
+    rb_vm_register_global_object(autoload_mutex);
 
     autoload_features = rb_ident_hash_new();
     rb_obj_hide(autoload_features);
-    rb_gc_register_mark_object(autoload_features);
+    rb_vm_register_global_object(autoload_features);
 }
 
 static inline bool
@@ -97,6 +97,8 @@ rb_namespace_p(VALUE obj)
  * to not be anonymous. <code>*permanent</code> is set to 1
  * if +classpath+ has no anonymous components. There is no builtin
  * Ruby level APIs that can change a permanent +classpath+.
+ *
+ * YJIT needs this function to not allocate.
  */
 static VALUE
 classname(VALUE klass, bool *permanent)
@@ -111,21 +113,28 @@ classname(VALUE klass, bool *permanent)
     return classpath;
 }
 
+VALUE
+rb_mod_name0(VALUE klass, bool *permanent)
+{
+    return classname(klass, permanent);
+}
+
 /*
  *  call-seq:
- *     mod.name    -> string
+ *     mod.name    -> string or nil
  *
- *  Returns the name of the module <i>mod</i>.  Returns nil for anonymous modules.
+ *  Returns the name of the module <i>mod</i>.  Returns +nil+ for anonymous modules.
  */
 
 VALUE
 rb_mod_name(VALUE mod)
 {
+    // YJIT needs this function to not allocate.
     bool permanent;
     return classname(mod, &permanent);
 }
 
-// Similar to logic in rb_mod_const_get()
+// Similar to logic in rb_mod_const_get().
 static bool
 is_constant_path(VALUE name)
 {
@@ -166,8 +175,8 @@ is_constant_path(VALUE name)
  *  introspection of the module and the values that are related to it, such
  *  as instances, constants, and methods.
  *
- *  The name should be +nil+ or non-empty string that is not a valid constant
- *  name (to avoid confusing between permanent and temporary names).
+ *  The name should be +nil+ or a non-empty string that is not a valid constant
+ *  path (to avoid confusing between permanent and temporary names).
  *
  *  The method can be useful to distinguish dynamically generated classes and
  *  modules without assigning them to constants.
@@ -216,7 +225,8 @@ rb_mod_set_temporary_name(VALUE mod, VALUE name)
     if (NIL_P(name)) {
         // Set the temporary classpath to NULL (anonymous):
         RCLASS_SET_CLASSPATH(mod, 0, FALSE);
-    } else {
+    }
+    else {
         // Ensure the name is a string:
         StringValue(name);
 
@@ -264,19 +274,19 @@ rb_tmp_class_path(VALUE klass, bool *permanent, fallback_func fallback)
     if (!NIL_P(path)) {
         return path;
     }
-    else {
-        if (RB_TYPE_P(klass, T_MODULE)) {
-            if (rb_obj_class(klass) == rb_cModule) {
-                path = Qfalse;
-            }
-            else {
-                bool perm;
-                path = rb_tmp_class_path(RBASIC(klass)->klass, &perm, fallback);
-            }
+
+    if (RB_TYPE_P(klass, T_MODULE)) {
+        if (rb_obj_class(klass) == rb_cModule) {
+            path = Qfalse;
         }
-        *permanent = false;
-        return fallback(klass, path);
+        else {
+            bool perm;
+            path = rb_tmp_class_path(RBASIC(klass)->klass, &perm, fallback);
+        }
     }
+
+    *permanent = false;
+    return fallback(klass, path);
 }
 
 VALUE
@@ -443,15 +453,27 @@ struct rb_global_entry {
     bool ractor_local;
 };
 
+static void
+free_global_variable(struct rb_global_variable *var)
+{
+    RUBY_ASSERT(var->counter == 0);
+
+    struct trace_var *trace = var->trace;
+    while (trace) {
+        struct trace_var *next = trace->next;
+        xfree(trace);
+        trace = next;
+    }
+    xfree(var);
+}
+
 static enum rb_id_table_iterator_result
-free_global_entry_i(ID key, VALUE val, void *arg)
+free_global_entry_i(VALUE val, void *arg)
 {
     struct rb_global_entry *entry = (struct rb_global_entry *)val;
-    if (entry->var->counter == 1) {
-        ruby_xfree(entry->var);
-    }
-    else {
-        entry->var->counter--;
+    entry->var->counter--;
+    if (entry->var->counter == 0) {
+        free_global_variable(entry->var);
     }
     ruby_xfree(entry);
     return ID_TABLE_DELETE;
@@ -460,7 +482,7 @@ free_global_entry_i(ID key, VALUE val, void *arg)
 void
 rb_free_rb_global_tbl(void)
 {
-    rb_id_table_foreach(rb_global_tbl, free_global_entry_i, 0);
+    rb_id_table_foreach_values(rb_global_tbl, free_global_entry_i, 0);
     rb_id_table_free(rb_global_tbl);
 }
 
@@ -531,7 +553,7 @@ rb_global_entry(ID id)
 VALUE
 rb_gvar_undef_getter(ID id, VALUE *_)
 {
-    rb_warning("global variable `%"PRIsVALUE"' not initialized", QUOTE_ID(id));
+    rb_warning("global variable '%"PRIsVALUE"' not initialized", QUOTE_ID(id));
 
     return Qnil;
 }
@@ -905,7 +927,7 @@ rb_gv_get(const char *name)
     ID id = find_global_id(name);
 
     if (!id) {
-        rb_warning("global variable `%s' not initialized", name);
+        rb_warning("global variable '%s' not initialized", name);
         return Qnil;
     }
 
@@ -997,13 +1019,7 @@ rb_alias_variable(ID name1, ID name2)
         }
         var->counter--;
         if (var->counter == 0) {
-            struct trace_var *trace = var->trace;
-            while (trace) {
-                struct trace_var *next = trace->next;
-                xfree(trace);
-                trace = next;
-            }
-            xfree(var);
+            free_global_variable(var);
         }
     }
     else {
@@ -1047,6 +1063,12 @@ static inline struct st_table *
 generic_ivtbl_no_ractor_check(VALUE obj)
 {
     return generic_ivtbl(obj, 0, false);
+}
+
+struct st_table *
+rb_generic_ivtbl_get(void)
+{
+    return generic_iv_tbl_;
 }
 
 int
@@ -1100,9 +1122,9 @@ gen_ivtbl_resize(struct gen_ivtbl *old, uint32_t n)
 void
 rb_mark_generic_ivar(VALUE obj)
 {
-    struct gen_ivtbl *ivtbl;
-
-    if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
+    st_data_t data;
+    if (st_lookup(generic_ivtbl_no_ractor_check(obj), (st_data_t)obj, &data)) {
+        struct gen_ivtbl *ivtbl = (struct gen_ivtbl *)data;
         if (rb_shape_obj_too_complex(obj)) {
             rb_mark_tbl_no_pin(ivtbl->as.complex.table);
         }
@@ -1159,7 +1181,7 @@ rb_free_generic_ivar(VALUE obj)
     }
 }
 
-RUBY_FUNC_EXPORTED size_t
+size_t
 rb_generic_ivar_memsize(VALUE obj)
 {
     struct gen_ivtbl *ivtbl;
@@ -1435,7 +1457,7 @@ rb_obj_convert_to_too_complex(VALUE obj, st_table *table)
             if (old_ivtbl) {
                 /* We need to modify old_ivtbl to have the too complex shape
                  * and hold the table because the xmalloc could trigger a GC
-                 * compaction. We want the table to be updated rather than than
+                 * compaction. We want the table to be updated rather than
                  * the original ivptr. */
 #if SHAPE_IN_BASIC_FLAGS
                 rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
@@ -1458,9 +1480,7 @@ rb_obj_convert_to_too_complex(VALUE obj, st_table *table)
         RB_VM_LOCK_LEAVE();
     }
 
-    if (old_ivptr) {
-        xfree(old_ivptr);
-    }
+    xfree(old_ivptr);
 }
 
 void
@@ -1756,7 +1776,7 @@ rb_obj_ivar_set(VALUE obj, ID id, VALUE val)
 VALUE
 rb_vm_set_ivar_id(VALUE obj, ID id, VALUE val)
 {
-    rb_check_frozen_internal(obj);
+    rb_check_frozen(obj);
     rb_obj_ivar_set(obj, id, val);
     return val;
 }
@@ -1801,16 +1821,13 @@ rb_shape_set_shape_id(VALUE obj, shape_id_t shape_id)
     return true;
 }
 
-/**
- * Prevents further modifications to the given object.  ::rb_eFrozenError shall
- * be raised if modification is attempted.
- *
- * @param[out]  x  Object in question.
- */
 void rb_obj_freeze_inline(VALUE x)
 {
     if (RB_FL_ABLE(x)) {
-        RB_OBJ_FREEZE_RAW(x);
+        RB_FL_SET_RAW(x, RUBY_FL_FREEZE);
+        if (TYPE(x) == T_STRING) {
+            RB_FL_UNSET_RAW(x, FL_USER2 | FL_USER3); // STR_CHILLED
+        }
 
         rb_shape_t * next_shape = rb_shape_transition_shape_frozen(x);
 
@@ -1821,7 +1838,7 @@ void rb_obj_freeze_inline(VALUE x)
         }
         rb_shape_set_shape(x, next_shape);
 
-        if (RBASIC_CLASS(x) && !(RBASIC(x)->flags & RUBY_FL_SINGLETON)) {
+        if (RBASIC_CLASS(x)) {
             rb_freeze_singleton_class(x);
         }
     }
@@ -1924,6 +1941,7 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
 {
     switch ((enum shape_type)shape->type) {
       case SHAPE_ROOT:
+      case SHAPE_T_OBJECT:
         return false;
       case SHAPE_IVAR:
         ASSUME(callback);
@@ -1957,7 +1975,6 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
         }
         return false;
       case SHAPE_FROZEN:
-      case SHAPE_T_OBJECT:
         return iterate_over_shapes_with_callback(rb_shape_get_parent(shape), callback, itr_data);
       case SHAPE_OBJ_TOO_COMPLEX:
       default:
@@ -2199,7 +2216,7 @@ rb_obj_instance_variables(VALUE obj)
 #define rb_is_constant_id rb_is_const_id
 #define rb_is_constant_name rb_is_const_name
 #define id_for_var(obj, name, part, type) \
-    id_for_var_message(obj, name, type, "`%1$s' is not allowed as "#part" "#type" variable name")
+    id_for_var_message(obj, name, type, "'%1$s' is not allowed as "#part" "#type" variable name")
 #define id_for_var_message(obj, name, type, message) \
     check_id_type(obj, &(name), rb_is_##type##_id, rb_is_##type##_name, message, strlen(message))
 static ID
@@ -2223,8 +2240,7 @@ check_id_type(VALUE obj, VALUE *pname,
  *     obj.remove_instance_variable(string)    -> obj
  *
  *  Removes the named instance variable from <i>obj</i>, returning that
- *  variable's value.
- *  String arguments are converted to symbols.
+ *  variable's value. The name can be passed as a symbol or as a string.
  *
  *     class Dummy
  *       attr_reader :var
@@ -2253,7 +2269,7 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
     if (id) {
         VALUE val = rb_ivar_delete(obj, id, Qundef);
 
-        if (val != Qundef) return val;
+        if (!UNDEF_P(val)) return val;
     }
 
     rb_name_err_raise("instance variable %1$s not defined",
@@ -2288,8 +2304,7 @@ rb_const_missing(VALUE klass, VALUE name)
  *
  * Invoked when a reference is made to an undefined constant in
  * <i>mod</i>. It is passed a symbol for the undefined constant, and
- * returns a value to be used for that constant. The
- * following code is an example of the same:
+ * returns a value to be used for that constant. For example, consider:
  *
  *   def Foo.const_missing(name)
  *     name # return the constant name as Symbol
@@ -2297,23 +2312,28 @@ rb_const_missing(VALUE klass, VALUE name)
  *
  *   Foo::UNDEFINED_CONST    #=> :UNDEFINED_CONST: symbol returned
  *
- * In the next example when a reference is made to an undefined constant,
- * it attempts to load a file whose name is the lowercase version of the
- * constant (thus class <code>Fred</code> is assumed to be in file
- * <code>fred.rb</code>).  If found, it returns the loaded class. It
- * therefore implements an autoload feature similar to Kernel#autoload and
- * Module#autoload.
+ * As the example above shows, +const_missing+ is not required to create the
+ * missing constant in <i>mod</i>, though that is often a side-effect. The
+ * caller gets its return value when triggered. If the constant is also defined,
+ * further lookups won't hit +const_missing+ and will return the value stored in
+ * the constant as usual. Otherwise, +const_missing+ will be invoked again.
+ *
+ * In the next example, when a reference is made to an undefined constant,
+ * +const_missing+ attempts to load a file whose path is the lowercase version
+ * of the constant name (thus class <code>Fred</code> is assumed to be in file
+ * <code>fred.rb</code>). If defined as a side-effect of loading the file, the
+ * method returns the value stored in the constant. This implements an autoload
+ * feature similar to Kernel#autoload and Module#autoload, though it differs in
+ * important ways.
  *
  *   def Object.const_missing(name)
  *     @looked_for ||= {}
  *     str_name = name.to_s
- *     raise "Class not found: #{name}" if @looked_for[str_name]
+ *     raise "Constant not found: #{name}" if @looked_for[str_name]
  *     @looked_for[str_name] = 1
  *     file = str_name.downcase
  *     require file
- *     klass = const_get(name)
- *     return klass if klass
- *     raise "Class not found: #{name}"
+ *     const_get(name, false)
  *   end
  *
  */
@@ -2355,7 +2375,7 @@ autoload_table_memsize(const void *ptr)
 static void
 autoload_table_compact(void *ptr)
 {
-    rb_gc_update_tbl_refs((st_table *)ptr);
+    rb_gc_ref_update_table_values_only((st_table *)ptr);
 }
 
 static const rb_data_type_t autoload_table_type = {
@@ -2459,10 +2479,12 @@ autoload_data_free(void *ptr)
 {
     struct autoload_data *p = ptr;
 
-    // We may leak some memory at VM shutdown time, no big deal...?
-    if (ccan_list_empty(&p->constants)) {
-        ruby_xfree(p);
+    struct autoload_const *autoload_const, *next;
+    ccan_list_for_each_safe(&p->constants, autoload_const, next, cnode) {
+        ccan_list_del_init(&autoload_const->cnode);
     }
+
+    ruby_xfree(p);
 }
 
 static size_t
@@ -2539,7 +2561,7 @@ get_autoload_data(VALUE autoload_const_value, struct autoload_const **autoload_c
     return autoload_data;
 }
 
-RUBY_FUNC_EXPORTED void
+void
 rb_autoload(VALUE module, ID name, const char *feature)
 {
     if (!feature || !*feature) {
@@ -2984,7 +3006,7 @@ rb_autoload_load(VALUE module, ID name)
 
     // At this point, we assume there might be autoloading, so fail if it's ractor:
     if (UNLIKELY(!rb_ractor_main_p())) {
-        rb_raise(rb_eRactorUnsafeError, "require by autoload on non-main Ractor is not supported (%s)", rb_id2name(name));
+        return rb_ractor_autoload_load(module, name);
     }
 
     // This state is stored on the stack and is used during the autoload process.
@@ -3182,6 +3204,19 @@ rb_const_location_from(VALUE klass, ID id, int exclude, int recurse, int visibil
             if (exclude && klass == rb_cObject) {
                 goto not_found;
             }
+
+            if (UNDEF_P(ce->value)) { // autoload
+                VALUE autoload_const_value = autoload_data(klass, id);
+                if (RTEST(autoload_const_value)) {
+                    struct autoload_const *autoload_const;
+                    struct autoload_data *autoload_data = get_autoload_data(autoload_const_value, &autoload_const);
+
+                    if (!UNDEF_P(autoload_const->value) && RTEST(rb_mutex_owned_p(autoload_data->mutex))) {
+                        return rb_assoc_new(autoload_const->file, INT2NUM(autoload_const->line));
+                    }
+                }
+            }
+
             if (NIL_P(ce->file)) return rb_ary_new();
             return rb_assoc_new(ce->file, INT2NUM(ce->line));
         }
@@ -3257,6 +3292,7 @@ rb_const_remove(VALUE mod, ID id)
         undefined_constant(mod, ID2SYM(id));
     }
 
+    rb_const_warn_if_deprecated(ce, mod, id);
     rb_clear_constant_cache_for_id(id);
 
     val = ce->value;
@@ -3590,6 +3626,9 @@ const_set(VALUE klass, ID id, VALUE val)
             }
         }
     }
+    if (klass == rb_cObject && id == idRuby) {
+        rb_warn_reserved_name_at(3.5, "::Ruby");
+    }
 }
 
 void
@@ -3692,9 +3731,11 @@ rb_define_const(VALUE klass, const char *name, VALUE val)
     ID id = rb_intern(name);
 
     if (!rb_is_const_id(id)) {
-        rb_warn("rb_define_const: invalid name `%s' for constant", name);
+        rb_warn("rb_define_const: invalid name '%s' for constant", name);
     }
-    rb_gc_register_mark_object(val);
+    if (!RB_SPECIAL_CONST_P(val)) {
+        rb_vm_register_global_object(val);
+    }
     rb_const_set(klass, id, val);
 }
 
@@ -3848,7 +3889,7 @@ cvar_lookup_at(VALUE klass, ID id, st_data_t *v)
 static VALUE
 cvar_front_klass(VALUE klass)
 {
-    if (FL_TEST(klass, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(klass)) {
         VALUE obj = RCLASS_ATTACHED_OBJECT(klass);
         if (rb_namespace_p(obj)) {
             return obj;
@@ -4057,7 +4098,7 @@ static void*
 mod_cvar_of(VALUE mod, void *data)
 {
     VALUE tmp = mod;
-    if (FL_TEST(mod, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(mod)) {
         if (rb_namespace_p(RCLASS_ATTACHED_OBJECT(mod))) {
             data = mod_cvar_at(tmp, data);
             tmp = cvar_front_klass(tmp);

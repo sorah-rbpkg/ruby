@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require_relative 'helper'
 
-class TestRDocMarkupToRDoc < RDoc::Markup::TextFormatterTestCase
+class RDocMarkupToRDocTest < RDoc::Markup::TextFormatterTestCase
 
   add_visitor_tests
   add_text_tests
@@ -69,7 +69,7 @@ class TestRDocMarkupToRDoc < RDoc::Markup::TextFormatterTestCase
   end
 
   def accept_list_item_end_label
-    assert_equal "cat:\n", @to.res.join
+    assert_equal "[cat]\n", @to.res.join
     assert_equal 0, @to.indent, 'indent'
   end
 
@@ -79,7 +79,7 @@ class TestRDocMarkupToRDoc < RDoc::Markup::TextFormatterTestCase
   end
 
   def accept_list_item_end_note
-    assert_equal "cat:\n", @to.res.join
+    assert_equal "cat::\n", @to.res.join
     assert_equal 0, @to.indent, 'indent'
   end
 
@@ -100,7 +100,7 @@ class TestRDocMarkupToRDoc < RDoc::Markup::TextFormatterTestCase
 
   def accept_list_item_start_label
     assert_equal [""], @to.res
-    assert_equal "cat:\n  ", @to.prefix
+    assert_equal "[cat]\n  ", @to.prefix
 
     assert_equal 2, @to.indent
   end
@@ -115,7 +115,7 @@ class TestRDocMarkupToRDoc < RDoc::Markup::TextFormatterTestCase
 
   def accept_list_item_start_note
     assert_equal [""], @to.res
-    assert_equal "cat:\n  ", @to.prefix
+    assert_equal "cat::\n  ", @to.prefix
 
     assert_equal 2, @to.indent
   end
@@ -243,16 +243,16 @@ class TestRDocMarkupToRDoc < RDoc::Markup::TextFormatterTestCase
   end
 
   def accept_list_item_start_note_2
-    assert_equal "<tt>teletype</tt>:\n  teletype description\n\n", @to.res.join
+    assert_equal "<tt>teletype</tt>::\n  teletype description\n\n", @to.res.join
   end
 
   def accept_list_item_start_note_multi_description
-    assert_equal "label:\n  description one\n\n  description two\n\n",
+    assert_equal "label::\n  description one\n\n  description two\n\n",
                  @to.res.join
   end
 
   def accept_list_item_start_note_multi_label
-    assert_equal "one\ntwo:\n  two headers\n\n", @to.res.join
+    assert_equal "one::\ntwo::\n  two headers\n\n", @to.res.join
   end
 
   def accept_paragraph_b
@@ -346,6 +346,17 @@ words words words words
     assert_equal expected, @to.end_accepting
   end
 
+  def accept_table_align
+    expected = <<-EXPECTED
+ AA |BB |CCCCC|DDDDD
+----|---|-----|-----
+    |bbb|    c|
+aaaa|b  |     | dd
+ a  |   |   cc| dd
+    EXPECTED
+    assert_equal expected, @to.end_accepting
+  end
+
   # functional test
   def test_convert_list_note
     note_list = <<-NOTE_LIST
@@ -355,8 +366,8 @@ bar ::
     NOTE_LIST
 
     expected = <<-EXPECTED
-foo
-bar:
+foo::
+bar::
   hi
 
     EXPECTED

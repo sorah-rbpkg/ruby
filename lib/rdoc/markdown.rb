@@ -6,7 +6,7 @@
 # RDoc::Markdown as described by the [markdown syntax][syntax].
 #
 # To choose Markdown as your only default format see
-# RDoc::Options@Saved+Options for instructions on setting up a `.doc_options`
+# RDoc::Options@Saved+Options for instructions on setting up a `.rdoc_options`
 # file to store your project default.
 #
 # ## Usage
@@ -1158,7 +1158,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # AtxHeading = AtxStart:s @Sp AtxInline+:a (@Sp /#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }
+  # AtxHeading = AtxStart:s @Spacechar+ AtxInline+:a (@Sp /#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }
   def _AtxHeading
 
     _save = self.pos
@@ -1169,12 +1169,22 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = _Sp()
+      _save1 = self.pos
+      _tmp = _Spacechar()
+      if _tmp
+        while true
+          _tmp = _Spacechar()
+          break unless _tmp
+        end
+        _tmp = true
+      else
+        self.pos = _save1
+      end
       unless _tmp
         self.pos = _save
         break
       end
-      _save1 = self.pos
+      _save2 = self.pos
       _ary = []
       _tmp = apply(:_AtxInline)
       if _tmp
@@ -1187,37 +1197,37 @@ class RDoc::Markdown
         _tmp = true
         @result = _ary
       else
-        self.pos = _save1
+        self.pos = _save2
       end
       a = @result
       unless _tmp
         self.pos = _save
         break
       end
-      _save2 = self.pos
-
       _save3 = self.pos
+
+      _save4 = self.pos
       while true # sequence
         _tmp = _Sp()
         unless _tmp
-          self.pos = _save3
+          self.pos = _save4
           break
         end
         _tmp = scan(/\G(?-mix:#*)/)
         unless _tmp
-          self.pos = _save3
+          self.pos = _save4
           break
         end
         _tmp = _Sp()
         unless _tmp
-          self.pos = _save3
+          self.pos = _save4
         end
         break
       end # end sequence
 
       unless _tmp
         _tmp = true
-        self.pos = _save2
+        self.pos = _save3
       end
       unless _tmp
         self.pos = _save
@@ -16445,12 +16455,12 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # DefinitionListLabel = StrChunk:label @Sp @Newline { label }
+  # DefinitionListLabel = Inline:label @Sp @Newline { label }
   def _DefinitionListLabel
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_StrChunk)
+      _tmp = apply(:_Inline)
       label = @result
       unless _tmp
         self.pos = _save
@@ -16539,7 +16549,7 @@ class RDoc::Markdown
   Rules[:_Plain] = rule_info("Plain", "Inlines:a { paragraph a }")
   Rules[:_AtxInline] = rule_info("AtxInline", "!@Newline !(@Sp /\#*/ @Sp @Newline) Inline")
   Rules[:_AtxStart] = rule_info("AtxStart", "< /\\\#{1,6}/ > { text.length }")
-  Rules[:_AtxHeading] = rule_info("AtxHeading", "AtxStart:s @Sp AtxInline+:a (@Sp /\#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }")
+  Rules[:_AtxHeading] = rule_info("AtxHeading", "AtxStart:s @Spacechar+ AtxInline+:a (@Sp /\#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }")
   Rules[:_SetextHeading] = rule_info("SetextHeading", "(SetextHeading1 | SetextHeading2)")
   Rules[:_SetextBottom1] = rule_info("SetextBottom1", "/={1,}/ @Newline")
   Rules[:_SetextBottom2] = rule_info("SetextBottom2", "/-{1,}/ @Newline")
@@ -16777,7 +16787,7 @@ class RDoc::Markdown
   Rules[:_TableAlign] = rule_info("TableAlign", "< /:?-+:?/ > @Sp {                 text.start_with?(\":\") ?                 (text.end_with?(\":\") ? :center : :left) :                 (text.end_with?(\":\") ? :right : nil)               }")
   Rules[:_DefinitionList] = rule_info("DefinitionList", "&{ definition_lists? } DefinitionListItem+:list { RDoc::Markup::List.new :NOTE, *list.flatten }")
   Rules[:_DefinitionListItem] = rule_info("DefinitionListItem", "DefinitionListLabel+:label DefinitionListDefinition+:defns { list_items = []                        list_items <<                          RDoc::Markup::ListItem.new(label, defns.shift)                         list_items.concat defns.map { |defn|                          RDoc::Markup::ListItem.new nil, defn                        } unless list_items.empty?                         list_items                      }")
-  Rules[:_DefinitionListLabel] = rule_info("DefinitionListLabel", "StrChunk:label @Sp @Newline { label }")
+  Rules[:_DefinitionListLabel] = rule_info("DefinitionListLabel", "Inline:label @Sp @Newline { label }")
   Rules[:_DefinitionListDefinition] = rule_info("DefinitionListDefinition", "@NonindentSpace \":\" @Space Inlines:a @BlankLine+ { paragraph a }")
   # :startdoc:
 end

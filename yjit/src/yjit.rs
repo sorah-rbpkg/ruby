@@ -7,7 +7,9 @@ use crate::stats::YjitExitLocations;
 use crate::stats::incr_counter;
 use crate::stats::with_compile_time;
 
-use std::os::raw;
+use std::os::raw::{c_char, c_int};
+use std::time::Instant;
+use crate::log::Log;
 
 /// Is YJIT on? The interpreter uses this variable to decide whether to trigger
 /// compilation. See jit_exec() and jit_compile().
@@ -15,10 +17,13 @@ use std::os::raw;
 #[no_mangle]
 pub static mut rb_yjit_enabled_p: bool = false;
 
+// Time when YJIT was yjit was initialized (see yjit_init)
+pub static mut YJIT_INIT_TIME: Option<Instant> = None;
+
 /// Parse one command-line option.
 /// This is called from ruby.c
 #[no_mangle]
-pub extern "C" fn rb_yjit_parse_option(str_ptr: *const raw::c_char) -> bool {
+pub extern "C" fn rb_yjit_parse_option(str_ptr: *const c_char) -> bool {
     return parse_option(str_ptr).is_some();
 }
 
@@ -70,17 +75,21 @@ fn yjit_init() {
     }
 
     // Make sure --yjit-perf doesn't append symbols to an old file
-    if get_option!(perf_map) {
+    if get_option!(perf_map).is_some() {
         let perf_map = format!("/tmp/perf-{}.map", std::process::id());
         let _ = std::fs::remove_file(&perf_map);
         println!("YJIT perf map: {perf_map}");
     }
 
-    // Initialize the GC hooks. Do this at last as some code depend on Rust initialization.
-    extern "C" {
-        fn rb_yjit_init_gc_hooks();
+    // Note the time when YJIT was initialized
+    unsafe {
+        YJIT_INIT_TIME = Some(Instant::now());
     }
-    unsafe { rb_yjit_init_gc_hooks() }
+}
+
+#[no_mangle]
+pub extern "C" fn rb_yjit_free_at_exit() {
+    yjit_shutdown_free_codegen_table();
 }
 
 /// At the moment, we abort in all cases we panic.
@@ -107,14 +116,17 @@ fn rb_bug_panic_hook() {
         env::set_var("RUST_BACKTRACE", "1");
         previous_hook(panic_info);
 
-        unsafe { rb_bug(b"YJIT panicked\0".as_ref().as_ptr() as *const raw::c_char); }
+        // Abort with rb_bug(). It has a length limit on the message.
+        let panic_message = &format!("{}", panic_info)[..];
+        let len = std::cmp::min(0x100, panic_message.len()) as c_int;
+        unsafe { rb_bug(b"YJIT: %*s\0".as_ref().as_ptr() as *const c_char, len, panic_message.as_ptr()); }
     }));
 }
 
 /// Called from C code to begin compiling a function
 /// NOTE: this should be wrapped in RB_VM_LOCK_ENTER(), rb_vm_barrier() on the C side
 /// If jit_exception is true, compile JIT code for handling exceptions.
-/// See [jit_compile_exception] for details.
+/// See jit_compile_exception() for details.
 #[no_mangle]
 pub extern "C" fn rb_yjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exception: bool) -> *const u8 {
     // Don't compile when there is insufficient native stack space
@@ -173,7 +185,7 @@ pub extern "C" fn rb_yjit_code_gc(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
 
 /// Enable YJIT compilation, returning true if YJIT was previously disabled
 #[no_mangle]
-pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE, print_stats: VALUE) -> VALUE {
+pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE, print_stats: VALUE, gen_log: VALUE, print_log: VALUE) -> VALUE {
     with_vm_lock(src_loc!(), || {
         // Initialize and enable YJIT
         if gen_stats.test() {
@@ -182,6 +194,19 @@ pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE
                 OPTIONS.print_stats = print_stats.test();
             }
         }
+
+        if gen_log.test() {
+            unsafe {
+                if print_log.test() {
+                    OPTIONS.log = Some(LogOutput::Stderr);
+                } else {
+                    OPTIONS.log = Some(LogOutput::MemoryOnly);
+                }
+
+                Log::init();
+            }
+        }
+
         yjit_init();
 
         // Add "+YJIT" to RUBY_DESCRIPTION
@@ -211,4 +236,20 @@ pub extern "C" fn rb_yjit_simulate_oom_bang(_ec: EcPtr, _ruby_self: VALUE) -> VA
     }
 
     return Qnil;
+}
+
+/// Push a C method frame if the given PC is supposed to lazily push one.
+/// This is called from rb_raise() (at rb_exc_new_str()) and other functions
+/// that may make a method call (e.g. rb_to_int()).
+#[no_mangle]
+pub extern "C" fn rb_yjit_lazy_push_frame(pc: *mut VALUE) {
+    if !yjit_enabled_p() {
+        return;
+    }
+
+    incr_counter!(num_lazy_frame_check);
+    if let Some(&(cme, recv_idx)) = CodegenGlobals::get_pc_to_cfunc().get(&pc) {
+        incr_counter!(num_lazy_frame_push);
+        unsafe { rb_vm_push_cfunc_frame(cme, recv_idx as i32) }
+    }
 }

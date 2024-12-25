@@ -577,14 +577,44 @@ Multiline comment goes here because this comment spans multiple lines.
     assert constants.empty?, constants.inspect
   end
 
+  def test_do_constants_global
+    content = <<-'EOF'
+#include <ruby.h>
+
+void Init_foo(){
+
+   /* Toplevel const */
+   rb_define_global_const("ANSWER", INT2FIX(42));
+
+}
+    EOF
+
+    @parser = util_parser content
+
+    @parser.do_classes_and_modules
+    @parser.do_constants
+
+    klass = @parser.classes['rb_cObject']
+    assert klass
+
+    constants = klass.constants
+    assert !klass.constants.empty?
+
+    assert_equal @top_level, constants.first.file
+
+    constants = constants.map { |c| [c.name, c.value, c.comment.text] }
+    assert_equal ['ANSWER', 'INT2FIX(42)', "Toplevel const   "],
+                 constants.shift
+
+    assert constants.empty?, constants.inspect
+  end
+
   def test_do_constants_curses
     content = <<-EOF
 void Init_curses(){
   mCurses = rb_define_module("Curses");
 
   /*
-   * Document-const: Curses::COLOR_BLACK
-   *
    * Value of the color black
    */
   rb_curses_define_const(COLOR_BLACK);
@@ -609,8 +639,7 @@ void Init_curses(){
   def test_do_constants_file
     content = <<-EOF
 void Init_File(void) {
-  /*  Document-const: LOCK_SH
-   *
+  /*
    *  Shared lock
    */
   rb_file_const("LOCK_SH", INT2FIX(LOCK_SH));
@@ -1031,6 +1060,21 @@ Init_Foo(void) {
  * A comment
  */
 rb_define_const(cFoo, "CONST", value);
+    EOF
+
+    parser = util_parser content
+
+    comment = parser.find_const_comment 'const', 'CONST'
+
+    assert_equal "/*\n * A comment\n */\n", comment.text
+  end
+
+  def test_find_const_comment_rb_define_global
+    content = <<-EOF
+/*
+ * A comment
+ */
+rb_define_global_const("CONST", value);
     EOF
 
     parser = util_parser content

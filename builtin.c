@@ -7,7 +7,7 @@
 
 #ifndef BUILTIN_BINARY_SIZE
 
-#define INCLUDED_BY_BUILTIN_C 1
+#define BUILTIN_LOADED(feature_name, iseq) ((void)0)
 #include "mini_builtin.c"
 
 #else
@@ -46,7 +46,6 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
     rb_vm_t *vm = GET_VM();
     if (vm->builtin_function_table != NULL) rb_bug("vm->builtin_function_table should be NULL.");
     vm->builtin_function_table = table;
-    vm->builtin_inline_index = 0;
     const rb_iseq_t *iseq = rb_iseq_ibf_load_bytes((const char *)bin, size);
     ASSUME(iseq); // otherwise an exception should have raised
     vm->builtin_function_table = NULL;
