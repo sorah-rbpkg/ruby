@@ -1298,6 +1298,54 @@ match_byteoffset(VALUE match, VALUE n)
 
 /*
  *  call-seq:
+ *    bytebegin(n) -> integer
+ *    bytebegin(name) -> integer
+ *
+ *  :include: doc/matchdata/bytebegin.rdoc
+ *
+ */
+
+static VALUE
+match_bytebegin(VALUE match, VALUE n)
+{
+    int i = match_backref_number(match, n);
+    struct re_registers *regs = RMATCH_REGS(match);
+
+    match_check(match);
+    backref_number_check(regs, i);
+
+    if (BEG(i) < 0)
+        return Qnil;
+    return LONG2NUM(BEG(i));
+}
+
+
+/*
+ *  call-seq:
+ *    byteend(n) -> integer
+ *    byteend(name) -> integer
+ *
+ *  :include: doc/matchdata/byteend.rdoc
+ *
+ */
+
+static VALUE
+match_byteend(VALUE match, VALUE n)
+{
+    int i = match_backref_number(match, n);
+    struct re_registers *regs = RMATCH_REGS(match);
+
+    match_check(match);
+    backref_number_check(regs, i);
+
+    if (BEG(i) < 0)
+        return Qnil;
+    return LONG2NUM(END(i));
+}
+
+
+/*
+ *  call-seq:
  *    begin(n) -> integer
  *    begin(name) -> integer
  *
@@ -1530,8 +1578,8 @@ reg_enc_error(VALUE re, VALUE str)
 {
     rb_raise(rb_eEncCompatError,
              "incompatible encoding regexp match (%s regexp with %s string)",
-             rb_enc_name(rb_enc_get(re)),
-             rb_enc_name(rb_enc_get(str)));
+             rb_enc_inspect_name(rb_enc_get(re)),
+             rb_enc_inspect_name(rb_enc_get(str)));
 }
 
 static inline int
@@ -3049,55 +3097,55 @@ escape_asis:
                         parens++;
                     }
 
-                    for(s = p+1; s < end; s++) {
+                    for (s = p+1; s < end; s++) {
                         switch(*s) {
-                            case 'x':
-                                local_extend = invert ? -1 : 1;
-                                break;
-                            case '-':
-                                invert = 1;
-                                break;
-                            case ':':
-                            case ')':
-                                if (local_extend == 0 ||
-                                    (local_extend == -1 && !extended_mode) ||
-                                    (local_extend == 1 && extended_mode)) {
-                                    /* no changes to extended flag */
-                                    goto fallthrough;
-                                }
+                          case 'x':
+                            local_extend = invert ? -1 : 1;
+                            break;
+                          case '-':
+                            invert = 1;
+                            break;
+                          case ':':
+                          case ')':
+                            if (local_extend == 0 ||
+                                (local_extend == -1 && !extended_mode) ||
+                                (local_extend == 1 && extended_mode)) {
+                                /* no changes to extended flag */
+                                goto fallthrough;
+                            }
 
-                                if (*s == ':') {
-                                    /* change extended flag until ')' */
-                                    int local_options = options;
-                                    if (local_extend == 1) {
-                                         local_options |= ONIG_OPTION_EXTEND;
-                                    }
-                                    else {
-                                         local_options &= ~ONIG_OPTION_EXTEND;
-                                    }
-
-                                    rb_str_buf_cat(buf, (char *)&c, 1);
-                                    int ret = unescape_nonascii0(&p, end, enc, buf, encp,
-                                                                has_property, err,
-                                                                local_options, 1);
-                                    if (ret < 0) return ret;
-                                    goto begin_scan;
+                            if (*s == ':') {
+                                /* change extended flag until ')' */
+                                int local_options = options;
+                                if (local_extend == 1) {
+                                    local_options |= ONIG_OPTION_EXTEND;
                                 }
                                 else {
-                                    /* change extended flag for rest of expression */
-                                    extended_mode = local_extend == 1;
-                                    goto fallthrough;
+                                    local_options &= ~ONIG_OPTION_EXTEND;
                                 }
-                            case 'i':
-                            case 'm':
-                            case 'a':
-                            case 'd':
-                            case 'u':
-                                /* other option flags, ignored during scanning */
-                                break;
-                            default:
-                                /* other character, no extended flag change*/
+
+                                rb_str_buf_cat(buf, (char *)&c, 1);
+                                int ret = unescape_nonascii0(&p, end, enc, buf, encp,
+                                                             has_property, err,
+                                                             local_options, 1);
+                                if (ret < 0) return ret;
+                                goto begin_scan;
+                            }
+                            else {
+                                /* change extended flag for rest of expression */
+                                extended_mode = local_extend == 1;
                                 goto fallthrough;
+                            }
+                          case 'i':
+                          case 'm':
+                          case 'a':
+                          case 'd':
+                          case 'u':
+                            /* other option flags, ignored during scanning */
+                            break;
+                          default:
+                            /* other character, no extended flag change*/
+                            goto fallthrough;
                         }
                     }
                 }
@@ -3605,7 +3653,7 @@ reg_match_pos(VALUE re, VALUE *strp, long pos, VALUE* set_match)
  *  if and only if +self+:
  *
  *  - Is a regexp literal;
- *    see {Regexp Literals}[rdoc-ref:literals.rdoc@Regexp+Literals].
+ *    see {Regexp Literals}[rdoc-ref:syntax/literals.rdoc@Regexp+Literals].
  *  - Does not contain interpolations;
  *    see {Regexp interpolation}[rdoc-ref:Regexp@Interpolation+Mode].
  *  - Is at the left of the expression.
@@ -4559,7 +4607,7 @@ match_setter(VALUE val, ID _x, VALUE *_y)
  *    Regexp.last_match(n) -> string or nil
  *    Regexp.last_match(name) -> string or nil
  *
- *  With no argument, returns the value of <tt>$!</tt>,
+ *  With no argument, returns the value of <tt>$~</tt>,
  *  which is the result of the most recent pattern match
  *  (see {Regexp global variables}[rdoc-ref:Regexp@Global+Variables]):
  *
@@ -4809,6 +4857,8 @@ Init_Regexp(void)
     rb_define_method(rb_cMatch, "length", match_size, 0);
     rb_define_method(rb_cMatch, "offset", match_offset, 1);
     rb_define_method(rb_cMatch, "byteoffset", match_byteoffset, 1);
+    rb_define_method(rb_cMatch, "bytebegin", match_bytebegin, 1);
+    rb_define_method(rb_cMatch, "byteend", match_byteend, 1);
     rb_define_method(rb_cMatch, "begin", match_begin, 1);
     rb_define_method(rb_cMatch, "end", match_end, 1);
     rb_define_method(rb_cMatch, "match", match_nth, 1);

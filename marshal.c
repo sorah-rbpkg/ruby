@@ -128,22 +128,6 @@ static VALUE compat_allocator_tbl_wrapper;
 static VALUE rb_marshal_dump_limited(VALUE obj, VALUE port, int limit);
 static VALUE rb_marshal_load_with_proc(VALUE port, VALUE proc, bool freeze);
 
-static int
-mark_marshal_compat_i(st_data_t key, st_data_t value, st_data_t _)
-{
-    marshal_compat_t *p = (marshal_compat_t *)value;
-    rb_gc_mark(p->newclass);
-    rb_gc_mark(p->oldclass);
-    return ST_CONTINUE;
-}
-
-static void
-mark_marshal_compat_t(void *tbl)
-{
-    if (!tbl) return;
-    st_foreach(tbl, mark_marshal_compat_i, 0);
-}
-
 static st_table *compat_allocator_table(void);
 
 void
@@ -156,11 +140,10 @@ rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE),
         rb_raise(rb_eTypeError, "no allocator");
     }
 
+    compat_allocator_table();
     compat = ALLOC(marshal_compat_t);
-    compat->newclass = Qnil;
-    compat->oldclass = Qnil;
-    compat->newclass = newclass;
-    compat->oldclass = oldclass;
+    RB_OBJ_WRITE(compat_allocator_tbl_wrapper, &compat->newclass, newclass);
+    RB_OBJ_WRITE(compat_allocator_tbl_wrapper, &compat->oldclass, oldclass);
     compat->dumper = dumper;
     compat->loader = loader;
 
@@ -533,7 +516,7 @@ hash_each(VALUE key, VALUE value, VALUE v)
 static void
 w_extended(VALUE klass, struct dump_arg *arg, int check)
 {
-    if (check && FL_TEST(klass, FL_SINGLETON)) {
+    if (check && RCLASS_SINGLETON_P(klass)) {
         VALUE origin = RCLASS_ORIGIN(klass);
         if (SINGLETON_DUMP_UNABLE_P(klass) ||
             (origin != klass && SINGLETON_DUMP_UNABLE_P(origin))) {
@@ -617,11 +600,11 @@ w_obj_each(ID id, VALUE value, st_data_t a)
 
     if (to_be_skipped_id(id)) {
         if (id == s_encoding_short) {
-            rb_warn("instance variable `"name_s_encoding_short"' on class %"PRIsVALUE" is not dumped",
+            rb_warn("instance variable '"name_s_encoding_short"' on class %"PRIsVALUE" is not dumped",
                     CLASS_OF(arg->obj));
         }
         if (id == s_ruby2_keywords_flag) {
-            rb_warn("instance variable `"name_s_ruby2_keywords_flag"' on class %"PRIsVALUE" is not dumped",
+            rb_warn("instance variable '"name_s_ruby2_keywords_flag"' on class %"PRIsVALUE" is not dumped",
                     CLASS_OF(arg->obj));
         }
         return ST_CONTINUE;
@@ -1696,6 +1679,11 @@ r_copy_ivar(VALUE v, VALUE data)
     return v;
 }
 
+#define override_ivar_error(type, str) \
+        rb_raise(rb_eTypeError, \
+                 "can't override instance variable of "type" '%"PRIsVALUE"'", \
+                 (str))
+
 static void
 r_ivar(VALUE obj, int *has_encoding, struct load_arg *arg)
 {
@@ -1703,6 +1691,12 @@ r_ivar(VALUE obj, int *has_encoding, struct load_arg *arg)
 
     len = r_long(arg);
     if (len > 0) {
+        if (RB_TYPE_P(obj, T_MODULE)) {
+            override_ivar_error("module", rb_mod_name(obj));
+        }
+        else if (RB_TYPE_P(obj, T_CLASS)) {
+            override_ivar_error("class", rb_class_name(obj));
+        }
         do {
             VALUE sym = r_symbol(arg);
             VALUE val = r_object(arg);
@@ -1795,9 +1789,7 @@ append_extmod(VALUE obj, VALUE extmod)
 
 #define prohibit_ivar(type, str) do { \
         if (!ivp || !*ivp) break; \
-        rb_raise(rb_eTypeError, \
-                 "can't override instance variable of "type" `%"PRIsVALUE"'", \
-                 (str)); \
+        override_ivar_error(type, str); \
     } while (0)
 
 static VALUE r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int type);
@@ -1889,7 +1881,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
                 goto type_hash;
             }
             v = r_object_for(arg, partial, 0, extmod, type);
-            if (rb_special_const_p(v) || RB_TYPE_P(v, T_OBJECT) || RB_TYPE_P(v, T_CLASS)) {
+            if (RB_SPECIAL_CONST_P(v) || RB_TYPE_P(v, T_OBJECT) || RB_TYPE_P(v, T_CLASS)) {
                 goto format_error;
             }
             if (RB_TYPE_P(v, T_MODULE) || !RTEST(rb_class_inherited_p(c, RBASIC(v)->klass))) {
@@ -2133,7 +2125,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
             st_data_t d;
 
             if (!rb_obj_respond_to(klass, s_load, TRUE)) {
-                rb_raise(rb_eTypeError, "class %"PRIsVALUE" needs to have method `_load'",
+                rb_raise(rb_eTypeError, "class %"PRIsVALUE" needs to have method '_load'",
                          name);
             }
             data = r_string(arg);
@@ -2169,7 +2161,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
                 append_extmod(v, extmod);
             }
             if (!rb_obj_respond_to(v, s_mload, TRUE)) {
-                rb_raise(rb_eTypeError, "instance of %"PRIsVALUE" needs to have method `marshal_load'",
+                rb_raise(rb_eTypeError, "instance of %"PRIsVALUE" needs to have method 'marshal_load'",
                          name);
             }
             v = r_entry(v, arg);
@@ -2215,7 +2207,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
             v = r_entry(v, arg);
             if (!rb_obj_respond_to(v, s_load_data, TRUE)) {
                 rb_raise(rb_eTypeError,
-                         "class %"PRIsVALUE" needs to have instance method `_load_data'",
+                         "class %"PRIsVALUE" needs to have instance method '_load_data'",
                          name);
             }
             r = r_object0(arg, partial, 0, extmod);
@@ -2294,10 +2286,8 @@ r_object(struct load_arg *arg)
 static void
 clear_load_arg(struct load_arg *arg)
 {
-    if (arg->buf) {
-        xfree(arg->buf);
-        arg->buf = 0;
-    }
+    xfree(arg->buf);
+    arg->buf = NULL;
     arg->buflen = 0;
     arg->offset = 0;
     arg->readable = 0;
@@ -2518,29 +2508,76 @@ Init_marshal(void)
 }
 
 static int
-free_compat_i(st_data_t key, st_data_t value, st_data_t _)
+marshal_compat_table_mark_i(st_data_t key, st_data_t value, st_data_t _)
+{
+    marshal_compat_t *p = (marshal_compat_t *)value;
+    rb_gc_mark_movable(p->newclass);
+    rb_gc_mark_movable(p->oldclass);
+    return ST_CONTINUE;
+}
+
+static void
+marshal_compat_table_mark(void *tbl)
+{
+    if (!tbl) return;
+    st_foreach(tbl, marshal_compat_table_mark_i, 0);
+}
+
+static int
+marshal_compat_table_free_i(st_data_t key, st_data_t value, st_data_t _)
 {
     xfree((marshal_compat_t *)value);
     return ST_CONTINUE;
 }
 
 static void
-free_compat_allocator_table(void *data)
+marshal_compat_table_free(void *data)
 {
-    st_foreach(data, free_compat_i, 0);
+    st_foreach(data, marshal_compat_table_free_i, 0);
     st_free_table(data);
 }
+
+static size_t
+marshal_compat_table_memsize(const void *data)
+{
+    return st_memsize(data) + sizeof(marshal_compat_t) * st_table_size(data);
+}
+
+static int
+marshal_compat_table_compact_i(st_data_t key, st_data_t value, st_data_t _)
+{
+    marshal_compat_t *p = (marshal_compat_t *)value;
+    p->newclass = rb_gc_location(p->newclass);
+    p->oldclass = rb_gc_location(p->oldclass);
+    return ST_CONTINUE;
+}
+
+static void
+marshal_compat_table_compact(void *tbl)
+{
+    if (!tbl) return;
+    st_foreach(tbl, marshal_compat_table_compact_i, 0);
+}
+
+static const rb_data_type_t marshal_compat_type = {
+    .wrap_struct_name = "marshal_compat_table",
+    .function = {
+        .dmark = marshal_compat_table_mark,
+        .dfree = marshal_compat_table_free,
+        .dsize = marshal_compat_table_memsize,
+        .dcompact = marshal_compat_table_compact,
+    },
+    .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 static st_table *
 compat_allocator_table(void)
 {
     if (compat_allocator_tbl) return compat_allocator_tbl;
     compat_allocator_tbl = st_init_numtable();
-#undef RUBY_UNTYPED_DATA_WARNING
-#define RUBY_UNTYPED_DATA_WARNING 0
     compat_allocator_tbl_wrapper =
-        Data_Wrap_Struct(0, mark_marshal_compat_t, free_compat_allocator_table, compat_allocator_tbl);
-    rb_gc_register_mark_object(compat_allocator_tbl_wrapper);
+        TypedData_Wrap_Struct(0, &marshal_compat_type, compat_allocator_tbl);
+    rb_vm_register_global_object(compat_allocator_tbl_wrapper);
     return compat_allocator_tbl;
 }
 

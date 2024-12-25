@@ -16,6 +16,10 @@
 #include "ruby/ruby.h"          /* for rb_event_flag_t */
 #include "vm_core.h"            /* for GET_EC() */
 
+#ifndef USE_MODULAR_GC
+# define USE_MODULAR_GC 0
+#endif
+
 #if defined(__x86_64__) && !defined(_ILP32) && defined(__GNUC__)
 #define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("movq\t%%rsp, %0" : "=r" (*(p)))
 #elif defined(__i386) && defined(__GNUC__)
@@ -79,14 +83,6 @@ rb_gc_debug_body(const char *mode, const char *msg, int st, void *ptr)
 #define RUBY_GC_INFO if(0)printf
 #endif
 
-#define RUBY_MARK_MOVABLE_UNLESS_NULL(ptr) do { \
-    VALUE markobj = (ptr); \
-    if (RTEST(markobj)) {rb_gc_mark_movable(markobj);} \
-} while (0)
-#define RUBY_MARK_UNLESS_NULL(ptr) do { \
-    VALUE markobj = (ptr); \
-    if (RTEST(markobj)) {rb_gc_mark(markobj);} \
-} while (0)
 #define RUBY_FREE_UNLESS_NULL(ptr) if(ptr){ruby_xfree(ptr);(ptr)=NULL;}
 
 #if STACK_GROW_DIRECTION > 0
@@ -123,29 +119,13 @@ int ruby_get_stack_grow_direction(volatile VALUE *addr);
 const char *rb_obj_info(VALUE obj);
 const char *rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj);
 
-size_t rb_size_pool_slot_size(unsigned char pool_id);
-
 struct rb_execution_context_struct; /* in vm_core.h */
 struct rb_objspace; /* in vm_core.h */
 
-#ifdef NEWOBJ_OF
-# undef NEWOBJ_OF
-# undef RB_NEWOBJ_OF
-#endif
-
-#define NEWOBJ_OF_0(var, T, c, f, s, ec) \
-    T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
-            rb_wb_protected_newobj_of(GET_EC(), (c), (f) & ~FL_WB_PROTECTED, s) : \
-            rb_wb_unprotected_newobj_of((c), (f), s))
-#define NEWOBJ_OF_ec(var, T, c, f, s, ec) \
-    T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
-            rb_wb_protected_newobj_of((ec), (c), (f) & ~FL_WB_PROTECTED, s) : \
-            rb_wb_unprotected_newobj_of((c), (f), s))
-
 #define NEWOBJ_OF(var, T, c, f, s, ec) \
-        NEWOBJ_OF_HELPER(ec)(var, T, c, f, s, ec)
-
-#define NEWOBJ_OF_HELPER(ec) NEWOBJ_OF_ ## ec
+    T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
+            rb_wb_protected_newobj_of((ec ? ec : GET_EC()), (c), (f) & ~FL_WB_PROTECTED, s) : \
+            rb_wb_unprotected_newobj_of((c), (f), s))
 
 #define RB_OBJ_GC_FLAGS_MAX 6   /* used in ext/objspace */
 
@@ -183,12 +163,6 @@ struct rb_objspace; /* in vm_core.h */
     RB_OBJ_WRITE(old, _slot, young); \
 } while (0)
 
-// We use SIZE_POOL_COUNT number of shape IDs for transitions out of different size pools
-// The next available shape ID will be the SPECIAL_CONST_SHAPE_ID
-#ifndef SIZE_POOL_COUNT
-# define SIZE_POOL_COUNT 5
-#endif
-
 /* Used in places that could malloc during, which can cause the GC to run. We
  * need to temporarily disable the GC to allow the malloc to happen.
  * Allocating memory during GC is a bad idea, so use this only when absolutely
@@ -200,31 +174,16 @@ struct rb_objspace; /* in vm_core.h */
 #define DURING_GC_COULD_MALLOC_REGION_END() \
     if (_already_disabled == Qfalse) rb_gc_enable()
 
-typedef struct ractor_newobj_size_pool_cache {
-    struct RVALUE *freelist;
-    struct heap_page *using_page;
-} rb_ractor_newobj_size_pool_cache_t;
-
-typedef struct ractor_newobj_cache {
-    size_t incremental_mark_step_allocated_slots;
-    rb_ractor_newobj_size_pool_cache_t size_pool_caches[SIZE_POOL_COUNT];
-} rb_ractor_newobj_cache_t;
-
 /* gc.c */
-extern VALUE *ruby_initial_gc_stress_ptr;
-extern int ruby_disable_gc;
 RUBY_ATTR_MALLOC void *ruby_mimmalloc(size_t size);
+RUBY_ATTR_MALLOC void *ruby_mimcalloc(size_t num, size_t size);
 void ruby_mimfree(void *ptr);
 void rb_gc_prepare_heap(void);
 void rb_objspace_set_event_hook(const rb_event_flag_t event);
-VALUE rb_objspace_gc_enable(struct rb_objspace *);
-VALUE rb_objspace_gc_disable(struct rb_objspace *);
+VALUE rb_objspace_gc_enable(void *objspace);
+VALUE rb_objspace_gc_disable(void *objspace);
 void ruby_gc_set_params(void);
-void rb_copy_wb_protected_attribute(VALUE dest, VALUE obj);
-#if __has_attribute(alloc_align)
-__attribute__((__alloc_align__(1)))
-#endif
-RUBY_ATTR_MALLOC void *rb_aligned_malloc(size_t, size_t) RUBY_ATTR_ALLOC_SIZE((2));
+void rb_gc_copy_attributes(VALUE dest, VALUE obj);
 size_t rb_size_mul_or_raise(size_t, size_t, VALUE); /* used in compile.c */
 size_t rb_size_mul_add_or_raise(size_t, size_t, size_t, VALUE); /* used in iseq.h */
 size_t rb_malloc_grow_capa(size_t current_capacity, size_t type_size);
@@ -236,14 +195,13 @@ RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add_mul(size_t, size_t, size_t, size_t);
 static inline void *ruby_sized_xrealloc_inlined(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
 static inline void *ruby_sized_xrealloc2_inlined(void *ptr, size_t new_count, size_t elemsiz, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
 static inline void ruby_sized_xfree_inlined(void *ptr, size_t size);
-VALUE rb_class_allocate_instance(VALUE klass);
-void rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache);
-size_t rb_gc_obj_slot_size(VALUE obj);
+
+void *rb_gc_ractor_cache_alloc(rb_ractor_t *ractor);
+void rb_gc_ractor_cache_free(void *cache);
+
 bool rb_gc_size_allocatable_p(size_t size);
-int rb_objspace_garbage_object_p(VALUE obj);
-bool rb_gc_is_ptr_to_obj(void *ptr);
-VALUE rb_gc_id2ref_obj_tbl(VALUE objid);
-VALUE rb_define_finalizer_no_check(VALUE obj, VALUE block);
+size_t *rb_gc_heap_sizes(void);
+size_t rb_gc_heap_id_for_size(size_t size);
 
 void rb_gc_mark_and_move(VALUE *ptr);
 
@@ -251,6 +209,11 @@ void rb_gc_mark_weak(VALUE *ptr);
 void rb_gc_remove_weak(VALUE parent_obj, VALUE *ptr);
 
 void rb_gc_ref_update_table_values_only(st_table *tbl);
+
+void rb_gc_initial_stress_set(VALUE flag);
+
+void rb_gc_before_fork(void);
+void rb_gc_after_fork(rb_pid_t pid);
 
 #define rb_gc_mark_and_move_ptr(ptr) do { \
     VALUE _obj = (VALUE)*(ptr); \
@@ -260,32 +223,27 @@ void rb_gc_ref_update_table_values_only(st_table *tbl);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* exports for objspace module */
-size_t rb_objspace_data_type_memsize(VALUE obj);
 void rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data);
 void rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE, void *), void *data);
-int rb_objspace_markable_object_p(VALUE obj);
 int rb_objspace_internal_object_p(VALUE obj);
-int rb_objspace_marked_object_p(VALUE obj);
+int rb_objspace_garbage_object_p(VALUE obj);
+bool rb_gc_pointer_to_heap_p(VALUE obj);
 
 void rb_objspace_each_objects(
     int (*callback)(void *start, void *end, size_t stride, void *data),
-    void *data);
-
-void rb_objspace_each_objects_without_setup(
-    int (*callback)(void *, void *, size_t, void *),
     void *data);
 
 size_t rb_gc_obj_slot_size(VALUE obj);
 
 VALUE rb_gc_disable_no_rest(void);
 
+#define RB_GC_MAX_NAME_LEN 20
 
 /* gc.c (export) */
 const char *rb_objspace_data_type_name(VALUE obj);
 VALUE rb_wb_protected_newobj_of(struct rb_execution_context_struct *, VALUE, VALUE, size_t);
 VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE, size_t);
 size_t rb_obj_memsize_of(VALUE);
-void rb_gc_verify_internal_consistency(void);
 size_t rb_obj_gc_flags(VALUE, ID[], size_t);
 void rb_gc_mark_values(long n, const VALUE *values);
 void rb_gc_mark_vm_stack_values(long n, const VALUE *values);
@@ -293,11 +251,19 @@ void rb_gc_update_values(long n, VALUE *values);
 void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
 void *ruby_sized_xrealloc2(void *ptr, size_t new_count, size_t element_size, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
 void ruby_sized_xfree(void *x, size_t size);
+
+const char *rb_gc_active_gc_name(void);
+int rb_gc_modular_gc_loaded_p(void);
+
+#if USE_MODULAR_GC
+void ruby_load_modular_gc_from_argv(int argc, char **argv);
+#endif
 RUBY_SYMBOL_EXPORT_END
 
 int rb_ec_stack_check(struct rb_execution_context_struct *ec);
 void rb_gc_writebarrier_remember(VALUE obj);
 const char *rb_obj_info(VALUE obj);
+void ruby_annotate_mmap(const void *addr, unsigned long size, const char *name);
 
 #if defined(HAVE_MALLOC_USABLE_SIZE) || defined(HAVE_MALLOC_SIZE) || defined(_WIN32)
 

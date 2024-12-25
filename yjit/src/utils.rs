@@ -3,6 +3,7 @@
 use crate::backend::ir::*;
 use crate::cruby::*;
 use std::slice;
+use std::os::raw::c_int;
 
 /// Trait for casting to [usize] that allows you to say `.as_usize()`.
 /// Implementation conditional on the cast preserving the numeric value on
@@ -51,7 +52,7 @@ impl IntoUsize for u8 {
     }
 }
 
-/// The [Into<u64>] Rust does not provide.
+/// The `Into<u64>` Rust does not provide.
 /// Convert to u64 with assurance that the value is preserved.
 /// Currently, `usize::BITS == 64` holds for all platforms we support.
 pub(crate) trait IntoU64 {
@@ -239,6 +240,14 @@ pub fn print_str(asm: &mut Assembler, str: &str) {
     asm.cpop_all();
 }
 
+pub fn stdout_supports_colors() -> bool {
+    // TODO(max): Use std::io::IsTerminal after upgrading Rust to 1.70
+    extern "C" { fn isatty(fd: c_int) -> c_int; }
+    let stdout = 1;
+    let is_terminal = unsafe { isatty(stdout) } == 1;
+    is_terminal
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -273,7 +282,7 @@ mod tests {
 
     #[test]
     fn test_print_int() {
-        let mut asm = Assembler::new();
+        let mut asm = Assembler::new_without_iseq();
         let mut cb = CodeBlock::new_dummy(1024);
 
         print_int(&mut asm, Opnd::Imm(42));
@@ -282,7 +291,7 @@ mod tests {
 
     #[test]
     fn test_print_str() {
-        let mut asm = Assembler::new();
+        let mut asm = Assembler::new_without_iseq();
         let mut cb = CodeBlock::new_dummy(1024);
 
         print_str(&mut asm, "Hello, world!");

@@ -217,6 +217,8 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `jobs` (`BUNDLE_JOBS`):
    The number of gems Bundler can install in parallel. Defaults to the number of
    available processors.
+* `lockfile_checksums` (`BUNDLE_LOCKFILE_CHECKSUMS`):
+   Whether Bundler should include a checksums section in new lockfiles, to protect from compromised gem sources.
 * `no_install` (`BUNDLE_NO_INSTALL`):
    Whether `bundle package` should skip installing gems.
 * `no_prune` (`BUNDLE_NO_PRUNE`):
@@ -281,13 +283,6 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    A `:`-separated list of groups whose gems bundler should install.
 * `without` (`BUNDLE_WITHOUT`):
    A `:`-separated list of groups whose gems bundler should not install.
-
-In general, you should set these settings per-application by using the applicable
-flag to the [bundle install(1)](bundle-install.1.html) or [bundle cache(1)](bundle-cache.1.html) command.
-
-You can set them globally either via environment variables or `bundle config`,
-whichever is preferable for your setup. If you use both, environment variables
-will take preference over global settings.
 
 ## LOCAL GIT REPOS
 

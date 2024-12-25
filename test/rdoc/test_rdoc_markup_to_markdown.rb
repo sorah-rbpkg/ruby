@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require_relative 'helper'
 
-class TestRDocMarkupToMarkdown < RDoc::Markup::TextFormatterTestCase
+class RDocMarkupToMarkdownTest < RDoc::Markup::TextFormatterTestCase
 
   add_visitor_tests
   add_text_tests
@@ -69,7 +69,7 @@ class TestRDocMarkupToMarkdown < RDoc::Markup::TextFormatterTestCase
   end
 
   def accept_list_item_end_label
-    assert_equal "cat\n:   ", @to.res.join
+    assert_equal "cat\n:   \n", @to.res.join
     assert_equal 0, @to.indent, 'indent'
   end
 
@@ -79,7 +79,7 @@ class TestRDocMarkupToMarkdown < RDoc::Markup::TextFormatterTestCase
   end
 
   def accept_list_item_end_note
-    assert_equal "cat\n:   ", @to.res.join
+    assert_equal "cat\n:   \n", @to.res.join
     assert_equal 0, @to.indent, 'indent'
   end
 
@@ -319,9 +319,7 @@ words words words words
     expected = <<-EXPECTED
 *   l1
     *   l1.1
-
 *   l2
-
     EXPECTED
 
     assert_equal expected, @to.end_accepting
@@ -343,9 +341,19 @@ words words words words
 
         * second
 
-
     EXPECTED
 
+    assert_equal expected, @to.end_accepting
+  end
+
+  def accept_table_align
+    expected = <<-EXPECTED
+ AA |BB |CCCCC|DDDDD
+----|---|-----|-----
+    |bbb|    c|
+aaaa|b  |     | dd
+ a  |   |   cc| dd
+    EXPECTED
     assert_equal expected, @to.end_accepting
   end
 

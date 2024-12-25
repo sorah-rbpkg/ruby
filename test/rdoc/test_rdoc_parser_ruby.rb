@@ -2,6 +2,8 @@
 
 require_relative 'helper'
 
+return if ENV['RDOC_USE_PRISM_PARSER']
+
 class TestRDocParserRuby < RDoc::TestCase
 
   def setup
@@ -3063,6 +3065,28 @@ RUBY
     assert_equal 'my method', b.comment.text
 
     assert_nil m.params, 'Module parameter not removed'
+  end
+
+  def test_parse_statements_nodoc_identifier_alias
+    klass = @top_level.add_class RDoc::NormalClass, 'Foo'
+
+    util_parser "\nalias :old :new # :nodoc:"
+
+    @parser.parse_statements klass, RDoc::Parser::Ruby::NORMAL, nil
+
+    assert_empty klass.aliases
+    assert_empty klass.unmatched_alias_lists
+  end
+
+  def test_parse_statements_nodoc_identifier_alias_method
+    klass = @top_level.add_class RDoc::NormalClass, 'Foo'
+
+    util_parser "\nalias_method :old :new # :nodoc:"
+
+    @parser.parse_statements klass, RDoc::Parser::Ruby::NORMAL, nil
+
+    assert_empty klass.aliases
+    assert_empty klass.unmatched_alias_lists
   end
 
   def test_parse_statements_stopdoc_alias

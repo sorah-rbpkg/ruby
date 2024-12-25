@@ -1,2 +1,2 @@
 #!ruby
-load File.realpath("../gems/debug-1.9.2/exe/rdbg", __dir__)
+load File.realpath("../gems/debug-1.10.0/exe/rdbg", __dir__)

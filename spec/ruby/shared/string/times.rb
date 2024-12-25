@@ -39,18 +39,18 @@ describe :string_times, shared: true do
   end
 
   it "returns a String in the same encoding as self" do
-    str = "\xE3\x81\x82".force_encoding Encoding::UTF_8
+    str = "\xE3\x81\x82".dup.force_encoding Encoding::UTF_8
     result = @object.call(str, 2)
     result.encoding.should equal(Encoding::UTF_8)
   end
 
-  platform_is wordsize: 32 do
+  platform_is c_long_size: 32 do
     it "raises an ArgumentError if the length of the resulting string doesn't fit into a long" do
       -> { @object.call("abc", (2 ** 31) - 1) }.should raise_error(ArgumentError)
     end
   end
 
-  platform_is wordsize: 64 do
+  platform_is c_long_size: 64 do
     it "raises an ArgumentError if the length of the resulting string doesn't fit into a long" do
       -> { @object.call("abc", (2 ** 63) - 1) }.should raise_error(ArgumentError)
     end

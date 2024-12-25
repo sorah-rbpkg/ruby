@@ -136,8 +136,9 @@ typedef struct rb_method_iseq_struct {
     rb_cref_t * cref;          /*!< class reference, should be marked */
 } rb_method_iseq_t; /* check rb_add_method_iseq() when modify the fields */
 
+typedef VALUE (*rb_cfunc_t)(ANYARGS);
 typedef struct rb_method_cfunc_struct {
-    VALUE (*func)(ANYARGS);
+    rb_cfunc_t func;
     VALUE (*invoker)(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS));
     int argc;
 } rb_method_cfunc_t;
@@ -236,6 +237,7 @@ st_index_t rb_hash_method_entry(st_index_t hash, const rb_method_entry_t *me);
 
 VALUE rb_method_entry_location(const rb_method_entry_t *me);
 
+void rb_free_method_entry_vm_weak_references(const rb_method_entry_t *me);
 void rb_free_method_entry(const rb_method_entry_t *me);
 
 const rb_method_entry_t *rb_method_entry_clone(const rb_method_entry_t *me);

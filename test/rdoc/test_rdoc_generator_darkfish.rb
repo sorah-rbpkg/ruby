@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require_relative 'helper'
 
-class TestRDocGeneratorDarkfish < RDoc::TestCase
+class RDocGeneratorDarkfishTest < RDoc::TestCase
 
   def setup
     super
@@ -115,7 +115,7 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     assert_match(%r[Klass/Inner\.html".*>Inner<], summary)
 
     klass = File.binread('Klass.html')
-    klassnav = klass[%r[<div class="nav-section">.*<div id="class-metadata">]m]
+    klassnav = klass[%r[<div class="nav-section">.*]m]
     assert_match(
       %r[<li>\s*<details open>\s*<summary>\s*<a href=\S+>Heading 1</a>\s*</summary>\s*<ul]m,
       klassnav
@@ -320,6 +320,97 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     @g.generate
 
     assert_main_title(File.binread('index.html'), title)
+  end
+
+  def test_meta_tags_for_index
+    @options.title = "My awesome Ruby project"
+    @g.generate
+
+    content = File.binread("index.html")
+
+    assert_include(content, '<meta name="keywords" content="ruby,documentation,My awesome Ruby project">')
+    assert_include(content, '<meta name="description" content="Documentation for My awesome Ruby project">')
+  end
+
+  def test_meta_tags_for_classes
+    top_level = @store.add_file("file.rb")
+    top_level.add_class(@klass.class, @klass.name)
+    inner = @klass.add_class(RDoc::NormalClass, "Inner")
+    inner.add_comment("This is a normal class. It is fully documented.", top_level)
+
+    @g.generate
+
+    content = File.binread("Klass/Inner.html")
+    assert_include(content, '<meta name="keywords" content="ruby,class,Klass::Inner">')
+    assert_include(
+      content,
+      '<meta name="description" content="class Klass::Inner: This is a normal class. It is fully documented.">',
+    )
+  end
+
+  def test_meta_tags_for_rdoc_files
+    top_level = @store.add_file("CONTRIBUTING.rdoc", parser: RDoc::Parser::Simple)
+    top_level.comment = <<~RDOC
+      = Contributing
+
+      Here are the instructions for contributing. Begin by installing Ruby.
+    RDOC
+
+    @g.generate
+
+    content = File.binread("CONTRIBUTING_rdoc.html")
+    assert_include(content, '<meta name="keywords" content="ruby,documentation,CONTRIBUTING">')
+    assert_include(
+      content,
+      "<meta name=\"description\" content=\"CONTRIBUTING: Contributing Here are the instructions for contributing." \
+      " Begin by installing Ruby.\">",
+    )
+  end
+
+  def test_meta_tags_for_markdown_files
+    top_level = @store.add_file("MyPage.md", parser: RDoc::Parser::Markdown)
+    top_level.comment = <<~MARKDOWN
+      # MyPage
+
+      This is a comment
+    MARKDOWN
+
+    @g.generate
+
+    content = File.binread("MyPage_md.html")
+    assert_include(content, '<meta name="keywords" content="ruby,documentation,MyPage">')
+    assert_include(
+      content,
+      '<meta name="description" content="MyPage: # MyPage This is a comment">',
+    )
+  end
+
+  def test_meta_tags_for_raw_pages
+    top_level = @store.add_file("MyPage", parser: RDoc::Parser::Simple)
+    top_level.comment = RDoc::Markup::Document.new(RDoc::Markup::Paragraph.new('this is a comment'))
+
+    @g.generate
+
+    content = File.binread("MyPage.html")
+    assert_include(content, '<meta name="keywords" content="ruby,documentation,MyPage">')
+    assert_include(
+      content,
+      '<meta name="description" content="MyPage: this is a comment ">',
+    )
+  end
+
+  def test_meta_tags_for_empty_document
+    top_level = @store.add_file("MyPage", parser: RDoc::Parser::Simple)
+    top_level.comment = RDoc::Markup::Document.new
+
+    @g.generate
+
+    content = File.binread("MyPage.html")
+    assert_include(content, '<meta name="keywords" content="ruby,documentation,MyPage">')
+    assert_include(
+      content,
+      '<meta name="description" content="MyPage: ">',
+    )
   end
 
   ##

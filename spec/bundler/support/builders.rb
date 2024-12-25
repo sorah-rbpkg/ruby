@@ -3,6 +3,8 @@
 require "bundler/shared_helpers"
 require "shellwords"
 
+require_relative "build_metadata"
+
 module Spec
   module Builders
     def self.extended(mod)
@@ -236,9 +238,7 @@ module Spec
         Spec::Rubygems.install_test_deps
       end
 
-      if rake_path.nil?
-        abort "Your test gems are missing! Run `rm -rf #{tmp}` and try again."
-      end
+      Helpers.install_dev_bundler unless pristine_system_gem_path.exist?
     end
 
     def update_repo(path, build_compact_index: true)

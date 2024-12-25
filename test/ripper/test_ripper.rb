@@ -88,7 +88,7 @@ class TestRipper::Ripper < Test::Unit::TestCase
     ripper.yydebug = true
     ripper.debug_output = out
     ripper.parse
-    assert_include out.string[/.*"literal content".*/], 'woot'
+    assert_include out.string[/.*"literal content".*/], '1.1-1.5'
   end
 
   def test_regexp_with_option
@@ -148,6 +148,13 @@ end
     assert_nothing_raised { Ripper.lex src }
   end
 
+  def test_assignable_in_regexp
+    assert_separately(%w(-rripper), "", "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_nil(Ripper.parse('/(?<_1>)/ =~ s'))
+    end;
+  end
+
   def test_no_memory_leak
     assert_no_memory_leak(%w(-rripper), "", "#{<<~'end;'}", rss: true)
       2_000_000.times do
@@ -166,6 +173,14 @@ end
     assert_no_memory_leak(%w(-rripper), "", "#{<<~'end;'}", rss: true)
       1_000_000.times do
         Ripper.parse("-> {")
+      end
+    end;
+  end
+
+  def test_sexp_no_memory_leak
+    assert_no_memory_leak(%w(-rripper), "", "#{<<~'end;'}", rss: true)
+      1_000_000.times do
+        Ripper.sexp("")
       end
     end;
   end

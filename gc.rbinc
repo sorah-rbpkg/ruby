@@ -9,30 +9,59 @@
 #include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
 struct rb_execution_context_struct; /* in vm_core.h */
 
-static VALUE builtin_inline_class_297(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_321(struct rb_execution_context_struct *ec, const VALUE self)
 {
-MAYBE_UNUSED(const VALUE) flag = rb_vm_lvar(ec, -3);
-#line 297 "gc.rb"
+VALUE *const hash__ptr = (VALUE *)&ec->cfp->ep[-3];
+MAYBE_UNUSED(const VALUE) hash = *hash__ptr;
+#line 321 "gc.rb"
+return RBOOL(RB_TYPE_P(hash, T_HASH));
+#line 18 "gc.rbinc"
+}
 
-      rb_objspace.flags.measure_gc = RTEST(flag) ? TRUE : FALSE;
+static VALUE builtin_inline_class_349(struct rb_execution_context_struct *ec, const VALUE self)
+{
+VALUE *const hash_or_key__ptr = (VALUE *)&ec->cfp->ep[-3];
+MAYBE_UNUSED(const VALUE) hash_or_key = *hash_or_key__ptr;
+#line 349 "gc.rb"
+return RBOOL(!SYMBOL_P(hash_or_key) && !RB_TYPE_P(hash_or_key, T_HASH));
+#line 26 "gc.rbinc"
+}
+
+static VALUE builtin_inline_class_353(struct rb_execution_context_struct *ec, const VALUE self)
+{
+VALUE *const hash_or_key__ptr = (VALUE *)&ec->cfp->ep[-3];
+MAYBE_UNUSED(const VALUE) hash_or_key = *hash_or_key__ptr;
+#line 353 "gc.rb"
+
+      return rb_gc_latest_gc_info(hash_or_key);
+#line 35 "gc.rbinc"
+}
+
+static VALUE builtin_inline_class_365(struct rb_execution_context_struct *ec, const VALUE self)
+{
+VALUE *const flag__ptr = (VALUE *)&ec->cfp->ep[-3];
+MAYBE_UNUSED(const VALUE) flag = *flag__ptr;
+#line 365 "gc.rb"
+
+      rb_gc_impl_set_measure_total_time(rb_gc_get_objspace(), flag);
       return flag;
-#line 20 "gc.rbinc"
+#line 45 "gc.rbinc"
 }
 
-static VALUE builtin_inline_class_309(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_377(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 309 "gc.rb"
+#line 377 "gc.rb"
 return 
-      RBOOL(rb_objspace.flags.measure_gc);
-#line 28 "gc.rbinc"
+      RBOOL(rb_gc_impl_get_measure_total_time(rb_gc_get_objspace()));
+#line 53 "gc.rbinc"
 }
 
-static VALUE builtin_inline_class_319(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_387(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 319 "gc.rb"
+#line 387 "gc.rb"
 return 
-      ULL2NUM(rb_objspace.profile.marking_time_ns + rb_objspace.profile.sweeping_time_ns);
-#line 36 "gc.rbinc"
+      ULL2NUM(rb_gc_impl_get_total_time(rb_gc_get_objspace()));
+#line 61 "gc.rbinc"
 }
 
 void Init_builtin_gc(void)
@@ -47,11 +76,14 @@ void Init_builtin_gc(void)
     RB_BUILTIN_FUNCTION(5, gc_count, gc_count, 0),
     RB_BUILTIN_FUNCTION(6, gc_stat, gc_stat, 1),
     RB_BUILTIN_FUNCTION(7, gc_stat_heap, gc_stat_heap, 2),
-    RB_BUILTIN_FUNCTION(8, gc_latest_gc_info, gc_latest_gc_info, 1),
-    RB_BUILTIN_FUNCTION(9, gc_verify_compaction_references, gc_verify_compaction_references, 3),
-    RB_BUILTIN_FUNCTION(10, _bi0, builtin_inline_class_297, 0),
-    RB_BUILTIN_FUNCTION(11, _bi1, builtin_inline_class_309, 0),
-    RB_BUILTIN_FUNCTION(12, _bi2, builtin_inline_class_319, 0),
+    RB_BUILTIN_FUNCTION(8, gc_config_get, gc_config_get, 0),
+    RB_BUILTIN_FUNCTION(9, _bi321, builtin_inline_class_321, 0),
+    RB_BUILTIN_FUNCTION(10, gc_config_set, gc_config_set, 1),
+    RB_BUILTIN_FUNCTION(11, _bi349, builtin_inline_class_349, 0),
+    RB_BUILTIN_FUNCTION(12, _bi353, builtin_inline_class_353, 0),
+    RB_BUILTIN_FUNCTION(13, _bi365, builtin_inline_class_365, 0),
+    RB_BUILTIN_FUNCTION(14, _bi377, builtin_inline_class_377, 0),
+    RB_BUILTIN_FUNCTION(15, _bi387, builtin_inline_class_387, 0),
     RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
   };
 
@@ -68,11 +100,14 @@ COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
   if (0) rb_builtin_function_check_arity0(gc_count);
   if (0) rb_builtin_function_check_arity1(gc_stat);
   if (0) rb_builtin_function_check_arity2(gc_stat_heap);
-  if (0) rb_builtin_function_check_arity1(gc_latest_gc_info);
-  if (0) rb_builtin_function_check_arity3(gc_verify_compaction_references);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_297);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_309);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_319);
+  if (0) rb_builtin_function_check_arity0(gc_config_get);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_321);
+  if (0) rb_builtin_function_check_arity1(gc_config_set);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_349);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_353);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_365);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_377);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_387);
 COMPILER_WARNING_POP
 
   // load

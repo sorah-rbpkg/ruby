@@ -1,3 +1,6 @@
+# To run the tests in this file only, with YJIT enabled:
+# make btest BTESTS=bootstraptest/test_yjit.rb RUN_OPTS="--yjit-call-threshold=1"
+
 # regression test for popping before side exit
 assert_equal "ok", %q{
   def foo(a, *) = a
@@ -90,7 +93,7 @@ assert_equal 'nil', %q{
   def splat_kw(kwargs) = yield(**kwargs)
 
   splat_kw({}) { _1 }.inspect
-} unless rjit_enabled? # Not yet working on RJIT
+}
 
 # regression test for arity check with splat
 assert_equal '[:ae, :ae]', %q{
@@ -120,6 +123,7 @@ assert_equal '[:ae, :ae]', %q{
 
 # regression test for GC marking stubs in invalidated code
 assert_normal_exit %q{
+  skip true unless GC.respond_to?(:compact)
   garbage = Array.new(10_000) { [] } # create garbage to cause iseq movement
   eval(<<~RUBY)
   def foo(n, garbage)
@@ -154,7 +158,7 @@ assert_equal '0', "0.abs(&nil)"
 
 # regression test for invokeblock iseq guard
 assert_equal 'ok', %q{
-  return :ok unless defined?(GC.compact)
+  skip :ok unless GC.respond_to?(:compact)
   def foo = yield
   10.times do |i|
     ret = eval("foo { #{i} }")
@@ -182,7 +186,7 @@ assert_equal '[0, :sum, 0, :sum]', %q{
   end
 
   def cstring(iter)
-    string = ""
+    string = "".dup
     string.sum(iter.times { def string.sum(_) = :sum })
   end
 
@@ -206,6 +210,15 @@ assert_equal 'Sub', %q{
   class Sub < String; end
 
   call(Sub.new('o')).class
+}
+
+# String#dup with FL_EXIVAR
+assert_equal '["str", "ivar"]', %q{
+  def str_dup(str) = str.dup
+  str = "str"
+  str.instance_variable_set(:@ivar, "ivar")
+  str = str_dup(str)
+  [str, str.instance_variable_get(:@ivar)]
 }
 
 # test splat filling required and feeding rest
@@ -1226,6 +1239,7 @@ assert_equal 'special', %q{
 
 # Test that object references in generated code get marked and moved
 assert_equal "good", %q{
+  skip :good unless GC.respond_to?(:compact)
   def bar
     "good"
   end
@@ -1249,7 +1263,7 @@ assert_equal "good", %q{
 # Test polymorphic getinstancevariable. T_OBJECT -> T_STRING
 assert_equal 'ok', %q{
   @hello = @h1 = @h2 = @h3 = @h4 = 'ok'
-  str = ""
+  str = +""
   str.instance_variable_set(:@hello, 'ok')
 
   public def get
@@ -1394,7 +1408,7 @@ assert_equal '[42, :default]', %q{
 }
 
 # Test default value block for Hash with opt_aref_with
-assert_equal "false", %q{
+assert_equal "false", <<~RUBY, frozen_string_literal: false
   def index_with_string(h)
     h["foo"]
   end
@@ -1403,7 +1417,7 @@ assert_equal "false", %q{
 
   index_with_string(h)
   index_with_string(h)
-}
+RUBY
 
 # A regression test for making sure cfp->sp is proper when
 # hitting stubs. See :stub-sp-flush:
@@ -1793,7 +1807,7 @@ assert_equal '{}', %q{
 }
 
 # test building hash with values
-assert_equal '{:foo=>:bar}', %q{
+assert_equal '{foo: :bar}', %q{
   def build_hash(val)
     { foo: val }
   end
@@ -1903,7 +1917,7 @@ assert_equal 'foo', %q{
 }
 
 # Test that String unary plus returns the same object ID for an unfrozen string.
-assert_equal 'true', %q{
+assert_equal 'true', <<~RUBY, frozen_string_literal: false
   def jittable_method
     str = "bar"
 
@@ -1913,7 +1927,7 @@ assert_equal 'true', %q{
     uplus_str.object_id == old_obj_id
   end
   jittable_method
-}
+RUBY
 
 # Test that String unary plus returns a different unfrozen string when given a frozen string
 assert_equal 'false', %q{
@@ -2044,6 +2058,67 @@ assert_equal '[97, :nil, 97, :nil, :raised]', %q{
 
   [getbyte("a", 0), getbyte("a", 1), getbyte("a", -1), getbyte("a", -2), getbyte("a", "a")]
 } unless rjit_enabled? # Not yet working on RJIT
+
+# Basic test for String#setbyte
+assert_equal 'AoZ', %q{
+  s = +"foo"
+  s.setbyte(0, 65)
+  s.setbyte(-1, 90)
+  s
+}
+
+# String#setbyte IndexError
+assert_equal 'String#setbyte', %q{
+  def ccall = "".setbyte(1, 0)
+  begin
+    ccall
+  rescue => e
+    e.backtrace.first.split("'").last
+  end
+}
+
+# String#setbyte TypeError
+assert_equal 'String#setbyte', %q{
+  def ccall = "".setbyte(nil, 0)
+  begin
+    ccall
+  rescue => e
+    e.backtrace.first.split("'").last
+  end
+}
+
+# String#setbyte FrozenError
+assert_equal 'String#setbyte', %q{
+  def ccall = "a".freeze.setbyte(0, 0)
+  begin
+    ccall
+  rescue => e
+    e.backtrace.first.split("'").last
+  end
+}
+
+# non-leaf String#setbyte
+assert_equal 'String#setbyte', %q{
+  def to_int
+    @caller = caller
+    0
+  end
+
+  def ccall = "a".dup.setbyte(self, 98)
+  ccall
+
+  @caller.first.split("'").last
+}
+
+# non-leaf String#byteslice
+assert_equal 'TypeError', %q{
+  def ccall = "".byteslice(nil, nil)
+  begin
+    ccall
+  rescue => e
+    e.class
+  end
+}
 
 # Test << operator on string subclass
 assert_equal 'abab', %q{
@@ -2190,6 +2265,34 @@ assert_equal '7', %q{
   foo(5,2)
 }
 
+# regression test for argument registers with invalidation
+assert_equal '[0, 1, 2]', %q{
+  def test(n)
+    ret = n
+    binding
+    ret
+  end
+
+  [0, 1, 2].map do |n|
+    test(n)
+  end
+}
+
+# regression test for argument registers
+assert_equal 'true', %q{
+  class Foo
+    def ==(other)
+      other == nil
+    end
+  end
+
+  def test
+    [Foo.new].include?(Foo.new)
+  end
+
+  test
+}
+
 # test pattern matching
 assert_equal '[:ok, :ok]', %q{
   class C
@@ -2253,6 +2356,20 @@ assert_equal '123', %q{
 
   foo(Foo)
   foo(Foo)
+}
+
+# Test EP == BP invalidation with moving ISEQs
+assert_equal 'ok', %q{
+  skip :ok unless GC.respond_to?(:compact)
+  def entry
+    ok = proc { :ok } # set #entry as an EP-escaping ISEQ
+    [nil].reverse_each do # avoid exiting the JIT frame on the constant
+      GC.compact # move #entry ISEQ
+    end
+    ok # should be read off of escaped EP
+  end
+
+  entry.call
 }
 
 # invokesuper edge case
@@ -2443,6 +2560,18 @@ assert_equal '[0, 2]', %q{
   B.new.foo
 }
 
+# invokesuper zsuper in a bmethod
+assert_equal 'ok', %q{
+  class Foo
+    define_method(:itself) { super }
+  end
+  begin
+    Foo.new.itself
+  rescue RuntimeError
+    :ok
+  end
+}
+
 # Call to fixnum
 assert_equal '[true, false]', %q{
   def is_odd(obj)
@@ -2481,6 +2610,16 @@ assert_equal '[true, false, true, false]', %q{
   is_odd(123)
 
   [is_odd(123), is_odd(456), is_odd(bignum), is_odd(bignum+1)]
+}
+
+# Flonum and Flonum
+assert_equal '[2.0, 0.0, 1.0, 4.0]', %q{
+  [1.0 + 1.0, 1.0 - 1.0, 1.0 * 1.0, 8.0 / 2.0]
+}
+
+# Flonum and Fixnum
+assert_equal '[2.0, 0.0, 1.0, 4.0]', %q{
+  [1.0 + 1, 1.0 - 1, 1.0 * 1, 8.0 / 2]
 }
 
 # Call to static and dynamic symbol
@@ -2533,6 +2672,18 @@ assert_equal '[1, 2]', %q{
   end
 
   entry { 2 }
+}
+assert_equal '[1, 2]', %q{
+  def foo(a:) = [a, yield]
+
+  def entry(obj, &block)
+    foo(**obj, &block)
+  end
+
+  entry({ a: 3 }) { 2 }
+  obj = Object.new
+  def obj.to_hash = { a: 1 }
+  entry(obj) { 2 }
 }
 
 assert_equal '[1, 1, 2, 1, 2, 3]', %q{
@@ -2588,6 +2739,23 @@ assert_equal '[:not_array, nil, nil]', %q{
   expandarray_not_array(obj)
   expandarray_not_array(obj)
 }
+
+assert_equal '[1, 2]', %q{
+  class NilClass
+    private
+    def to_ary
+      [1, 2]
+    end
+  end
+
+  def expandarray_redefined_nilclass
+    a, b = nil
+    [a, b]
+  end
+
+  expandarray_redefined_nilclass
+  expandarray_redefined_nilclass
+} unless rjit_enabled?
 
 assert_equal '[1, 2, nil]', %q{
   def expandarray_rhs_too_small
@@ -3216,7 +3384,7 @@ assert_equal '[[1, 2, 3, 4]]', %q{
 }
 
 # cfunc kwargs
-assert_equal '{:foo=>123}', %q{
+assert_equal '{foo: 123}', %q{
   def foo(bar)
     bar.store(:value, foo: 123)
     bar[:value]
@@ -3227,7 +3395,7 @@ assert_equal '{:foo=>123}', %q{
 }
 
 # cfunc kwargs
-assert_equal '{:foo=>123}', %q{
+assert_equal '{foo: 123}', %q{
   def foo(bar)
     bar.replace(foo: 123)
   end
@@ -3237,7 +3405,7 @@ assert_equal '{:foo=>123}', %q{
 }
 
 # cfunc kwargs
-assert_equal '{:foo=>123, :bar=>456}', %q{
+assert_equal '{foo: 123, bar: 456}', %q{
   def foo(bar)
     bar.replace(foo: 123, bar: 456)
   end
@@ -3247,7 +3415,7 @@ assert_equal '{:foo=>123, :bar=>456}', %q{
 }
 
 # variadic cfunc kwargs
-assert_equal '{:foo=>123}', %q{
+assert_equal '{foo: 123}', %q{
   def foo(bar)
     bar.merge(foo: 123)
   end
@@ -3371,7 +3539,7 @@ assert_equal "true", %q{
 }
 
 # duphash
-assert_equal '{:foo=>123}', %q{
+assert_equal '{foo: 123}', %q{
   def foo
     {foo: 123}
   end
@@ -3381,7 +3549,7 @@ assert_equal '{:foo=>123}', %q{
 }
 
 # newhash
-assert_equal '{:foo=>2}', %q{
+assert_equal '{foo: 2}', %q{
   def foo
     {foo: 1+1}
   end
@@ -4054,7 +4222,7 @@ assert_equal '2', %q{
 assert_equal 'Hello World', %q{
   def bar
     args = ["Hello "]
-    greeting = "World"
+    greeting = +"World"
     greeting.insert(0, *args)
     greeting
   end
@@ -4190,7 +4358,7 @@ assert_equal "ArgumentError", %q{
 
 # Rest with block
 # Simplified code from railsbench
-assert_equal '[{"/a"=>"b", :as=>:c, :via=>:post}, [], nil]', %q{
+assert_equal '[{"/a" => "b", as: :c, via: :post}, [], nil]', %q{
   def match(path, *rest, &block)
     [path, rest, block]
   end
@@ -4400,6 +4568,10 @@ assert_equal 'true', %q{
   def entry = yield
   entry { true }
 }
+assert_equal 'sym', %q{
+  def entry = :sym.to_sym
+  entry
+}
 
 assert_normal_exit %q{
   ivars = 1024.times.map { |i| "@iv_#{i} = #{i}\n" }.join
@@ -4431,9 +4603,19 @@ assert_equal '[2, 4611686018427387904]', %q{
   [1.succ, 4611686018427387903.succ]
 }
 
+# Integer pred and overflow
+assert_equal '[0, -4611686018427387905]', %q{
+  [1.pred, -4611686018427387904.pred]
+}
+
 # Integer right shift
 assert_equal '[0, 1, -4]', %q{
   [0 >> 1, 2 >> 1, -7 >> 1]
+}
+
+# Integer XOR
+assert_equal '[0, 0, 4]', %q{
+  [0 ^ 0, 1 ^ 1, 7 ^ 3]
 }
 
 assert_equal '[nil, "yield"]', %q{
@@ -4442,7 +4624,7 @@ assert_equal '[nil, "yield"]', %q{
 }
 
 # splat with ruby2_keywords into rest parameter
-assert_equal '[[{:a=>1}], {}]', %q{
+assert_equal '[[{a: 1}], {}]', %q{
   ruby2_keywords def foo(*args) = args
 
   def bar(*args, **kw) = [args, kw]
@@ -4457,9 +4639,480 @@ assert_equal '[[{:a=>1}], {}]', %q{
   body
 }
 
+# concatarray
+assert_equal '[1, 2]', %q{
+  def foo(a, b) = [a, b]
+  arr = [2]
+  foo(*[1], *arr)
+}
+
+# pushtoarray
+assert_equal '[1, 2]', %q{
+  def foo(a, b) = [a, b]
+  arr = [1]
+  foo(*arr, 2)
+}
+
+# pop before fallback
+assert_normal_exit %q{
+  class Foo
+    attr_reader :foo
+
+    def try = foo(0, &nil)
+  end
+
+  Foo.new.try
+}
+
+# a kwrest case
+assert_equal '[1, 2, {complete: false}]', %q{
+  def rest(foo: 1, bar: 2, **kwrest)
+    [foo, bar, kwrest]
+  end
+
+  def callsite = rest(complete: false)
+
+  callsite
+}
+
+# splat+kw_splat+opt+rest
+assert_equal '[1, []]', %q{
+  def opt_rest(a = 0, *rest) = [a, rest]
+
+  def call_site(args) = opt_rest(*args, **nil)
+
+  call_site([1])
+}
+
+# splat and nil kw_splat
+assert_equal 'ok', %q{
+  def identity(x) = x
+
+  def splat_nil_kw_splat(args) = identity(*args, **nil)
+
+  splat_nil_kw_splat([:ok])
+}
+
+# empty splat and kwsplat into leaf builtins
+assert_equal '[1, 1, 1]', %q{
+  empty = []
+  [1.abs(*empty), 1.abs(**nil), 1.bit_length(*empty, **nil)]
+}
+
+# splat into C methods with -1 arity
+assert_equal '[[1, 2, 3], [0, 2, 3], [1, 2, 3], [2, 2, 3], [], [], [{}]]', %q{
+  class Foo < Array
+    def push(args) = super(1, *args)
+  end
+
+  def test_cfunc_vargs_splat(sub_instance, array_class, empty_kw_hash)
+    splat = [2, 3]
+    kw_splat = [empty_kw_hash]
+    [
+      sub_instance.push(splat),
+      array_class[0, *splat, **nil],
+      array_class[1, *splat, &nil],
+      array_class[2, *splat, **nil, &nil],
+      array_class.send(:[], *kw_splat),
+      # kw_splat disables keywords hash handling
+      array_class[*kw_splat],
+      array_class[*kw_splat, **nil],
+    ]
+  end
+
+  test_cfunc_vargs_splat(Foo.new, Array, Hash.ruby2_keywords_hash({}))
+}
+
+# Class#new (arity=-1), splat, and ruby2_keywords
+assert_equal '[0, {1 => 1}]', %q{
+  class KwInit
+    attr_reader :init_args
+    def initialize(x = 0, **kw)
+      @init_args = [x, kw]
+    end
+  end
+
+  def test(klass, args)
+    klass.new(*args).init_args
+  end
+
+  test(KwInit, [Hash.ruby2_keywords_hash({1 => 1})])
+}
+
+# Chilled string setivar trigger warning
+assert_match(/literal string will be frozen in the future/, %q{
+  Warning[:deprecated] = true
+  $VERBOSE = true
+  $warning = "no-warning"
+  module ::Warning
+    def self.warn(message)
+      $warning = message.split("warning: ").last.strip
+    end
+  end
+
+  class String
+    def setivar!
+      @ivar = 42
+    end
+  end
+
+  def setivar!(str)
+    str.setivar!
+  end
+
+  10.times { setivar!("mutable".dup) }
+  10.times do
+    setivar!("frozen".freeze)
+  rescue FrozenError
+  end
+
+  setivar!("chilled") # Emit warning
+  $warning
+})
+
+# arity=-2 cfuncs
+assert_equal '["", "1/2", [0, [:ok, 1]]]', %q{
+  def test_cases(file, chain)
+    new_chain = chain.allocate # to call initialize directly
+    new_chain.send(:initialize, [0], ok: 1)
+
+    [
+      file.join,
+      file.join("1", "2"),
+      new_chain.to_a,
+    ]
+  end
+
+  test_cases(File, Enumerator::Chain)
+}
+
+# singleton class should invalidate Type::CString assumption
+assert_equal 'foo', %q{
+  def define_singleton(str, define)
+    if define
+      # Wrap a C method frame to avoid exiting JIT code on defineclass
+      [nil].reverse_each do
+        class << str
+          def +(_)
+            "foo"
+          end
+        end
+      end
+    end
+    "bar"
+  end
+
+  def entry(define)
+    str = ""
+    # When `define` is false, #+ compiles to rb_str_plus() without a class guard.
+    # When the code is reused with `define` is true, the class of `str` is changed
+    # to a singleton class, so the block should be invalidated.
+    str + define_singleton(str, define)
+  end
+
+  entry(false)
+  entry(true)
+}
+
+assert_equal 'ok', %q{
+  def ok
+    :ok
+  end
+
+  def delegator(...)
+    ok(...)
+  end
+
+  def caller
+    send(:delegator)
+  end
+
+  caller
+}
+
+# test inlining of simple iseqs
+assert_equal '[:ok, :ok, :ok]', %q{
+  def identity(x) = x
+  def foo(x, _) = x
+  def bar(_, _, _, _, x) = x
+
+  def tests
+    [
+      identity(:ok),
+      foo(:ok, 2),
+      bar(1, 2, 3, 4, :ok),
+    ]
+  end
+
+  tests
+}
+
+# test inlining of simple iseqs with kwargs
+assert_equal '[:ok, :ok, :ok, :ok, :ok]', %q{
+  def optional_unused(x, opt: :not_ok) = x
+  def optional_used(x, opt: :ok) = opt
+  def required_unused(x, req:) = x
+  def required_used(x, req:) = req
+  def unknown(x) = x
+
+  def tests
+    [
+      optional_unused(:ok),
+      optional_used(:not_ok),
+      required_unused(:ok, req: :not_ok),
+      required_used(:not_ok, req: :ok),
+      begin unknown(:not_ok, unknown_kwarg: :not_ok) rescue ArgumentError; :ok end,
+    ]
+  end
+
+  tests
+}
+
+# test simple iseqs not eligible for inlining
+assert_equal '[:ok, :ok, :ok, :ok, :ok]', %q{
+  def identity(x) = x
+  def arg_splat(x, *args) = x
+  def kwarg_splat(x, **kwargs) = x
+  def block_arg(x, &blk) = x
+  def block_iseq(x) = x
+  def call_forwarding(...) = identity(...)
+
+  def tests
+    [
+      arg_splat(:ok),
+      kwarg_splat(:ok),
+      block_arg(:ok, &proc { :not_ok }),
+      block_iseq(:ok) { :not_ok },
+      call_forwarding(:ok),
+    ]
+  end
+
+  tests
+}
+
+# regression test for invalidating an empty block
+assert_equal '0', %q{
+  def foo = (* = 1).pred
+
+  foo # compile it
+
+  class Integer
+    def to_ary = [] # invalidate
+  end
+
+  foo # try again
+} unless rjit_enabled? # doesn't work on RJIT
+
+# test integer left shift with constant rhs
+assert_equal [0x80000000000, 'a+', :ok].inspect, %q{
+  def shift(val) = val << 43
+
+  def tests
+    int = shift(1)
+    str = shift("a")
+
+    Integer.define_method(:<<) { |_| :ok }
+    redef = shift(1)
+
+    [int, str, redef]
+  end
+
+  tests
+}
+
+# test integer left shift fusion followed by opt_getconstant_path
+assert_equal '33', %q{
+  def test(a)
+    (a << 5) | (Object; a)
+  end
+
+  test(1)
+}
+
+# test String#stebyte with arguments that need conversion
+assert_equal "abc", %q{
+  str = +"a00"
+  def change_bytes(str, one, two)
+    str.setbyte(one, "b".ord)
+    str.setbyte(2, two)
+  end
+
+  to_int_1 = Object.new
+  to_int_99 = Object.new
+  def to_int_1.to_int = 1
+  def to_int_99.to_int = 99
+
+  change_bytes(str, to_int_1, to_int_99)
+  str
+}
+
+# test --yjit-verify-ctx for arrays with a singleton class
+assert_equal "ok", %q{
+  class Array
+    def foo
+      self.singleton_class.define_method(:first) { :ok }
+      first
+    end
+  end
+
+  def test = [].foo
+
+  test
+}
+
+assert_equal '["raised", "Module", "Object"]', %q{
+  def foo(obj)
+    obj.superclass.name
+  end
+
+  ret = []
+
+  begin
+    foo(Class.allocate)
+  rescue TypeError
+    ret << 'raised'
+  end
+
+  ret += [foo(Class), foo(Class.new)]
+}
+
+# test TrueClass#=== before and after redefining TrueClass#==
+assert_equal '[[true, false, false], [true, true, false], [true, :error, :error]]', %q{
+  def true_eqq(x)
+    true === x
+  rescue NoMethodError
+    :error
+  end
+
+  def test
+    [
+      # first one is always true because rb_equal does object comparison before calling #==
+      true_eqq(true),
+      # these will use TrueClass#==
+      true_eqq(false),
+      true_eqq(:truthy),
+    ]
+  end
+
+  results = [test]
+
+  class TrueClass
+    def ==(x)
+      !x
+    end
+  end
+
+  results << test
+
+  class TrueClass
+    undef_method :==
+  end
+
+  results << test
+} unless rjit_enabled? # Not yet working on RJIT
+
+# test FalseClass#=== before and after redefining FalseClass#==
+assert_equal '[[true, false, false], [true, false, true], [true, :error, :error]]', %q{
+  def case_equal(x, y)
+    x === y
+  rescue NoMethodError
+    :error
+  end
+
+  def test
+    [
+      # first one is always true because rb_equal does object comparison before calling #==
+      case_equal(false, false),
+      # these will use #==
+      case_equal(false, true),
+      case_equal(false, nil),
+    ]
+  end
+
+  results = [test]
+
+  class FalseClass
+    def ==(x)
+      !x
+    end
+  end
+
+  results << test
+
+  class FalseClass
+    undef_method :==
+  end
+
+  results << test
+} unless rjit_enabled? # Not yet working on RJIT
+
+# test NilClass#=== before and after redefining NilClass#==
+assert_equal '[[true, false, false], [true, false, true], [true, :error, :error]]', %q{
+  def case_equal(x, y)
+    x === y
+  rescue NoMethodError
+    :error
+  end
+
+  def test
+    [
+      # first one is always true because rb_equal does object comparison before calling #==
+      case_equal(nil, nil),
+      # these will use #==
+      case_equal(nil, true),
+      case_equal(nil, false),
+    ]
+  end
+
+  results = [test]
+
+  class NilClass
+    def ==(x)
+      !x
+    end
+  end
+
+  results << test
+
+  class NilClass
+    undef_method :==
+  end
+
+  results << test
+} unless rjit_enabled? # Not yet working on RJIT
+
+# test struct accessors fire c_call events
+assert_equal '[[:c_call, :x=], [:c_call, :x]]', %q{
+  c = Struct.new(:x)
+  obj = c.new
+
+  events = []
+  TracePoint.new(:c_call) do
+    events << [_1.event, _1.method_id]
+  end.enable do
+    obj.x = 100
+    obj.x
+  end
+
+  events
+}
+
+# regression test for splatting empty array
+assert_equal '1', %q{
+  def callee(foo) = foo
+
+  def test_body(args) = callee(1, *args)
+
+  test_body([])
+  array = Array.new(100)
+  array.clear
+  test_body(array)
+}
+
 # regression test for splatting empty array to cfunc
 assert_normal_exit %q{
   def test_body(args) = Array(1, *args)
+
   test_body([])
   0x100.times do
     array = Array.new(100)
@@ -4509,4 +5162,180 @@ assert_equal 'ok', <<~'RUBY'
   end
 
   :ok
+RUBY
+
+assert_equal 'ok', <<~'RUBY'
+  class MyRelation
+    def callee(...)
+      :ok
+    end
+
+    def uncached(...)
+      callee(...)
+    end
+
+    def takes_block(&block)
+      # push blockhandler
+      uncached(&block) # CI1
+    end
+  end
+
+  relation = MyRelation.new
+  relation.takes_block { }
+RUBY
+
+assert_equal 'ok', <<~'RUBY'
+  def _exec_scope(...)
+    instance_exec(...)
+  end
+
+  def ok args, body
+    _exec_scope(*args, &body)
+  end
+
+  ok([], -> { "ok" })
+RUBY
+
+assert_equal 'ok', <<~'RUBY'
+  def _exec_scope(...)
+    instance_exec(...)
+  end
+
+  def ok args, body
+    _exec_scope(*args, &body)
+  end
+
+  ok(["ok"], ->(x) { x })
+RUBY
+
+assert_equal 'ok', <<~'RUBY'
+def baz(a, b)
+  a + b
+end
+
+def bar(...)
+  baz(...)
+end
+
+def foo(a, ...)
+  bar(a, ...)
+end
+
+def test
+  foo("o", "k")
+end
+
+test
+RUBY
+
+# opt_newarray_send pack/buffer
+assert_equal '[true, true]', <<~'RUBY'
+  def pack
+    v = 1.23
+    [v, v*2, v*3].pack("E*").unpack("E*") == [v, v*2, v*3]
+  end
+
+  def with_buffer
+    v = 4.56
+    b = +"x"
+    [v, v*2, v*3].pack("E*", buffer: b)
+    b[1..].unpack("E*") == [v, v*2, v*3]
+  end
+
+  [pack, with_buffer]
+RUBY
+
+# String#[] / String#slice
+assert_equal 'ok', <<~'RUBY'
+  def error(klass)
+    yield
+  rescue klass
+    true
+  end
+
+  def test
+    str = "こんにちは"
+    substr = "にち"
+    failures = []
+
+    # Use many small statements to keep context for each slice call smaller than MAX_CTX_TEMPS
+
+    str[1] == "ん" && str.slice(4) == "は" || failures << :index
+    str[5].nil? && str.slice(5).nil? || failures << :index_end
+
+    str[1, 2] == "んに" && str.slice(2, 1) == "に" || failures << :beg_len
+    str[5, 1] == "" && str.slice(5, 1) == "" || failures << :beg_len_end
+
+    str[1..2] == "んに" && str.slice(2..2) == "に" || failures << :range
+
+    str[/に./] == "にち" && str.slice(/に./) == "にち" || failures << :regexp
+
+    str[/に./, 0] == "にち" && str.slice(/に./, 0) == "にち" || failures << :regexp_cap0
+
+    str[/に(.)/, 1] == "ち" && str.slice(/に(.)/, 1) == "ち" || failures << :regexp_cap1
+
+    str[substr] == substr && str.slice(substr) == substr || failures << :substr
+
+    error(TypeError) { str[Object.new] } && error(TypeError) { str.slice(Object.new, 1) } || failures << :type_error
+    error(RangeError) { str[Float::INFINITY] } && error(RangeError) { str.slice(Float::INFINITY) } || failures << :range_error
+
+    return "ok" if failures.empty?
+    {failures: failures}
+  end
+
+  test
+RUBY
+
+# opt_duparray_send :include?
+assert_equal '[true, false]', <<~'RUBY'
+  def test(x)
+    [:a, :b].include?(x)
+  end
+
+  [
+    test(:b),
+    test(:c),
+  ]
+RUBY
+
+# opt_newarray_send :include?
+assert_equal '[true, false]', <<~'RUBY'
+  def test(x)
+    [Object.new, :a, :b].include?(x.to_sym)
+  end
+
+  [
+    test("b"),
+    test("c"),
+  ]
+RUBY
+
+# YARV: swap and opt_reverse
+assert_equal '["x", "Y", "c", "A", "t", "A", "b", "C", "d"]', <<~'RUBY'
+  class Swap
+    def initialize(s)
+      @a, @b, @c, @d = s.split("")
+    end
+
+    def swap
+      a, b = @a, @b
+      b = b.upcase
+      @a, @b = a, b
+    end
+
+    def reverse_odd
+      a, b, c = @a, @b, @c
+      b = b.upcase
+      @a, @b, @c = a, b, c
+    end
+
+    def reverse_even
+      a, b, c, d = @a, @b, @c, @d
+      a = a.upcase
+      c = c.upcase
+      @a, @b, @c, @d = a, b, c, d
+    end
+  end
+
+  Swap.new("xy").swap + Swap.new("cat").reverse_odd + Swap.new("abcd").reverse_even
 RUBY

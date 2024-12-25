@@ -1,5 +1,13 @@
 # -*- ruby -*-
-_VERSION = "0.7.1"
+_VERSION = ["", "ext/io/console/"].find do |dir|
+  begin
+    break File.open(File.join(__dir__, "#{dir}console.c")) {|f|
+      f.gets("\nIO_CONSOLE_VERSION ")
+      f.gets[/"(.+)"/, 1]
+    }
+  rescue Errno::ENOENT
+  end
+end
 
 Gem::Specification.new do |s|
   s.name = "io-console"
@@ -10,11 +18,13 @@ Gem::Specification.new do |s|
   s.required_ruby_version = ">= 2.6.0"
   s.homepage = "https://github.com/ruby/io-console"
   s.metadata["source_code_url"] = s.homepage
+  s.metadata["changelog_uri"] = s.homepage + "/releases"
   s.authors = ["Nobu Nakada"]
   s.require_path = %[lib]
   s.files = %w[
     .document
-    LICENSE.txt
+    BSDL
+    COPYING
     README.md
     ext/io/console/console.c
     ext/io/console/extconf.rb

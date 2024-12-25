@@ -30,7 +30,7 @@ struct coroutine_context
 
 typedef void(* coroutine_start)(struct coroutine_context *from, struct coroutine_context *self);
 
-void coroutine_trampoline();
+void coroutine_trampoline(void);
 
 static inline void coroutine_initialize_main(struct coroutine_context * context) {
     context->stack_pointer = NULL;
@@ -53,7 +53,7 @@ static inline void coroutine_initialize(
 
     /* Return address */
     *--context->stack_pointer = 0;
-    *--context->stack_pointer = (void*)start;
+    *--context->stack_pointer = (void*)(uintptr_t)start;
     *--context->stack_pointer = (void*)coroutine_trampoline;
 
     /* Windows Thread Information Block */

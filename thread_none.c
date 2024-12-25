@@ -19,10 +19,6 @@
 # include "wasm/machine.h"
 #endif
 
-#define TIME_QUANTUM_MSEC (100)
-#define TIME_QUANTUM_USEC (TIME_QUANTUM_MSEC * 1000)
-#define TIME_QUANTUM_NSEC (TIME_QUANTUM_USEC * 1000)
-
 // Do nothing for GVL
 static void
 thread_sched_to_running(struct rb_thread_sched *sched, rb_thread_t *th)
@@ -141,13 +137,8 @@ ruby_mn_threads_params(void)
 {
 }
 
-void
-ruby_init_stack(volatile VALUE *addr)
-{
-}
-
 static int
-native_thread_init_stack(rb_thread_t *th)
+native_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
 {
 #if defined(__wasm__) && !defined(__EMSCRIPTEN__)
     th->ec->machine.stack_start = (VALUE *)rb_wasm_stack_get_base();
@@ -323,6 +314,18 @@ void
 rb_thread_sched_mark_zombies(rb_vm_t *vm)
 {
     // do nothing
+}
+
+bool
+rb_thread_lock_native_thread(void)
+{
+    return false;
+}
+
+void *
+rb_thread_prevent_fork(void *(*func)(void *), void *data)
+{
+    return func(data);
 }
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

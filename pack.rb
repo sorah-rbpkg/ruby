@@ -11,12 +11,17 @@ end
 
 class String
   # call-seq:
-  #   unpack(template, offset: 0) -> array
+  #   unpack(template, offset: 0, &block) -> array
   #
-  #  Extracts data from +self+, forming objects that become the elements of a new array;
-  #  returns that array.
+  #  Extracts data from +self+.
+  #
+  #  If +block+ is not given, forming objects that become the elements
+  #  of a new array, and returns that array.  Otherwise, yields each
+  #  object.
+  #
   #  See {Packed Data}[rdoc-ref:packed_data.rdoc].
   def unpack(fmt, offset: 0)
+    Primitive.attr! :use_block
     Primitive.pack_unpack(fmt, offset)
   end
 

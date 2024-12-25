@@ -41,12 +41,17 @@ module Bundler
       groups.map!(&:to_sym)
       groups = [:default] if groups.empty?
 
-      @definition.dependencies.each do |dep|
-        # Skip the dependency if it is not in any of the requested groups, or
-        # not for the current platform, or doesn't match the gem constraints.
-        next unless (dep.groups & groups).any? && dep.should_include?
+      dependencies = @definition.dependencies.select do |dep|
+        # Select the dependency if it is in any of the requested groups, and
+        # for the current platform, and matches the gem constraints.
+        (dep.groups & groups).any? && dep.should_include?
+      end
 
+      Plugin.hook(Plugin::Events::GEM_BEFORE_REQUIRE_ALL, dependencies)
+
+      dependencies.each do |dep|
         required_file = nil
+        Plugin.hook(Plugin::Events::GEM_BEFORE_REQUIRE, dep)
 
         begin
           # Loop through all the specified autorequires for the
@@ -76,7 +81,13 @@ module Bundler
             end
           end
         end
+
+        Plugin.hook(Plugin::Events::GEM_AFTER_REQUIRE, dep)
       end
+
+      Plugin.hook(Plugin::Events::GEM_AFTER_REQUIRE_ALL, dependencies)
+
+      dependencies
     end
 
     def self.definition_method(meth)
@@ -125,7 +136,16 @@ module Bundler
       specs_to_cache.each do |spec|
         next if spec.name == "bundler"
         next if spec.source.is_a?(Source::Gemspec)
-        spec.source.cache(spec, custom_path) if spec.source.respond_to?(:cache)
+        if spec.source.respond_to?(:migrate_cache)
+          spec.source.migrate_cache(custom_path, local: local)
+        elsif spec.source.respond_to?(:cache)
+          spec.source.cache(spec, custom_path)
+        end
+      end
+
+      Dir[cache_path.join("*/.git")].each do |git_dir|
+        FileUtils.rm_rf(git_dir)
+        FileUtils.touch(File.expand_path("../.bundlecache", git_dir))
       end
 
       prune_cache(cache_path) unless Bundler.settings[:no_prune]
@@ -252,10 +272,10 @@ module Bundler
 
     def setup_manpath
       # Add man/ subdirectories from activated bundles to MANPATH for man(1)
-      manuals = $LOAD_PATH.map do |path|
+      manuals = $LOAD_PATH.filter_map do |path|
         man_subdir = path.sub(/lib$/, "man")
         man_subdir unless Dir[man_subdir + "/man?/"].empty?
-      end.compact
+      end
 
       return if manuals.empty?
       Bundler::SharedHelpers.set_env "MANPATH", manuals.concat(

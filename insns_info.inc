@@ -107,16 +107,19 @@ const char rb_vm_insn_name_base[] =
     "putobject" "\0"
     "putspecialobject" "\0"
     "putstring" "\0"
+    "putchilledstring" "\0"
     "concatstrings" "\0"
     "anytostring" "\0"
     "toregexp" "\0"
     "intern" "\0"
     "newarray" "\0"
-    "newarraykwsplat" "\0"
+    "pushtoarraykwsplat" "\0"
     "duparray" "\0"
     "duphash" "\0"
     "expandarray" "\0"
     "concatarray" "\0"
+    "concattoarray" "\0"
+    "pushtoarray" "\0"
     "splatarray" "\0"
     "splatkw" "\0"
     "newhash" "\0"
@@ -138,13 +141,18 @@ const char rb_vm_insn_name_base[] =
     "definemethod" "\0"
     "definesmethod" "\0"
     "send" "\0"
+    "sendforward" "\0"
     "opt_send_without_block" "\0"
     "objtostring" "\0"
+    "opt_ary_freeze" "\0"
+    "opt_hash_freeze" "\0"
     "opt_str_freeze" "\0"
     "opt_nil_p" "\0"
     "opt_str_uminus" "\0"
+    "opt_duparray_send" "\0"
     "opt_newarray_send" "\0"
     "invokesuper" "\0"
+    "invokesuperforward" "\0"
     "invokeblock" "\0"
     "leave" "\0"
     "throw" "\0"
@@ -209,16 +217,19 @@ const char rb_vm_insn_name_base[] =
     "trace_putobject" "\0"
     "trace_putspecialobject" "\0"
     "trace_putstring" "\0"
+    "trace_putchilledstring" "\0"
     "trace_concatstrings" "\0"
     "trace_anytostring" "\0"
     "trace_toregexp" "\0"
     "trace_intern" "\0"
     "trace_newarray" "\0"
-    "trace_newarraykwsplat" "\0"
+    "trace_pushtoarraykwsplat" "\0"
     "trace_duparray" "\0"
     "trace_duphash" "\0"
     "trace_expandarray" "\0"
     "trace_concatarray" "\0"
+    "trace_concattoarray" "\0"
+    "trace_pushtoarray" "\0"
     "trace_splatarray" "\0"
     "trace_splatkw" "\0"
     "trace_newhash" "\0"
@@ -240,13 +251,18 @@ const char rb_vm_insn_name_base[] =
     "trace_definemethod" "\0"
     "trace_definesmethod" "\0"
     "trace_send" "\0"
+    "trace_sendforward" "\0"
     "trace_opt_send_without_block" "\0"
     "trace_objtostring" "\0"
+    "trace_opt_ary_freeze" "\0"
+    "trace_opt_hash_freeze" "\0"
     "trace_opt_str_freeze" "\0"
     "trace_opt_nil_p" "\0"
     "trace_opt_str_uminus" "\0"
+    "trace_opt_duparray_send" "\0"
     "trace_opt_newarray_send" "\0"
     "trace_invokesuper" "\0"
+    "trace_invokesuperforward" "\0"
     "trace_invokeblock" "\0"
     "trace_leave" "\0"
     "trace_throw" "\0"
@@ -293,22 +309,24 @@ const char rb_vm_insn_name_base[] =
 
 const unsigned short rb_vm_insn_name_offset[] = {
        0,    4,   13,   22,   36,   50,   69,   80,   91,  111,  131,  148,
-     165,  186,  198,  210,  220,  230,  237,  245,  255,  272,  282,  296,
-     308,  317,  324,  333,  349,  358,  366,  378,  390,  401,  409,  417,
-     426,  430,  434,  439,  444,  456,  461,  466,  478,  486,  498,  509,
-     522,  532,  544,  557,  571,  576,  599,  611,  626,  636,  651,  669,
-     681,  693,  699,  705,  710,  719,  732,  742,  747,  765,  774,  784,
-     793,  801,  809,  816,  824,  831,  838,  845,  852,  861,  869,  876,
-     885,  894,  908,  922,  933,  942,  954,  963,  971,  988, 1002, 1029,
-    1062, 1076, 1090, 1104, 1118, 1139, 1160, 1170, 1185, 1200, 1220, 1240,
-    1265, 1282, 1299, 1325, 1351, 1374, 1397, 1424, 1442, 1460, 1476, 1492,
-    1505, 1519, 1535, 1558, 1574, 1594, 1612, 1627, 1640, 1655, 1677, 1692,
-    1706, 1724, 1742, 1759, 1773, 1787, 1802, 1812, 1822, 1833, 1844, 1862,
-    1873, 1884, 1902, 1916, 1934, 1951, 1970, 1986, 2004, 2023, 2043, 2054,
-    2083, 2101, 2122, 2138, 2159, 2183, 2201, 2219, 2231, 2243, 2254, 2269,
-    2288, 2304, 2315, 2339, 2354, 2370, 2385, 2399, 2413, 2426, 2440, 2453,
-    2466, 2479, 2492, 2507, 2521, 2534, 2549, 2564, 2584, 2604, 2621, 2636,
-    2654, 2669, 2683, 2706, 2726, 2759, 2798, 2818, 2838, 2858, 2878, 2905,
+     165,  186,  198,  210,  220,  230,  237,  245,  255,  272,  282,  299,
+     313,  325,  334,  341,  350,  369,  378,  386,  398,  410,  424,  436,
+     447,  455,  463,  472,  476,  480,  485,  490,  502,  507,  512,  524,
+     532,  544,  555,  568,  578,  590,  603,  617,  622,  634,  657,  669,
+     684,  700,  715,  725,  740,  758,  776,  788,  807,  819,  825,  831,
+     836,  845,  858,  868,  873,  891,  900,  910,  919,  927,  935,  942,
+     950,  957,  964,  971,  978,  987,  995, 1002, 1011, 1020, 1034, 1048,
+    1059, 1068, 1080, 1089, 1097, 1114, 1128, 1155, 1188, 1202, 1216, 1230,
+    1244, 1265, 1286, 1296, 1311, 1326, 1346, 1366, 1391, 1408, 1425, 1451,
+    1477, 1500, 1523, 1550, 1568, 1586, 1602, 1618, 1631, 1645, 1661, 1684,
+    1700, 1723, 1743, 1761, 1776, 1789, 1804, 1829, 1844, 1858, 1876, 1894,
+    1914, 1932, 1949, 1963, 1977, 1992, 2002, 2012, 2023, 2034, 2052, 2063,
+    2074, 2092, 2106, 2124, 2141, 2160, 2176, 2194, 2213, 2233, 2244, 2262,
+    2291, 2309, 2330, 2352, 2373, 2389, 2410, 2434, 2458, 2476, 2501, 2519,
+    2531, 2543, 2554, 2569, 2588, 2604, 2615, 2639, 2654, 2670, 2685, 2699,
+    2713, 2726, 2740, 2753, 2766, 2779, 2792, 2807, 2821, 2834, 2849, 2864,
+    2884, 2904, 2921, 2936, 2954, 2969, 2983, 3006, 3026, 3059, 3098, 3118,
+    3138, 3158, 3178, 3205,
 };
 
 ASSERT_VM_INSTRUCTION_SIZE(rb_vm_insn_name_offset);
@@ -329,14 +347,15 @@ RUBY_SYMBOL_EXPORT_END
 #ifdef RUBY_VM_INSNS_INFO
 const uint8_t rb_vm_insn_len_info[] = {
     1, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2,
-    1, 3, 1, 2, 2, 2, 2, 3, 1, 2, 1, 2, 2, 1, 1, 2, 1, 2, 2, 2, 2, 4, 4,
-    2, 3, 2, 4, 3, 3, 3, 2, 2, 3, 2, 3, 3, 3, 2, 1, 2, 2, 2, 2, 2, 3, 3,
-    2, 2, 2, 2, 2, 2, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 2, 2, 2, 2, 2,
-    2, 2, 3, 3, 2, 2, 2, 2, 1, 1, 1, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 2,
-    2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 3, 1, 2, 2, 2, 2, 3, 1, 2, 1, 2, 2,
-    1, 1, 2, 1, 2, 2, 2, 2, 4, 4, 2, 3, 2, 4, 3, 3, 3, 2, 2, 3, 2, 3, 3,
-    3, 2, 1, 2, 2, 2, 2, 2, 3, 3, 2, 2, 2, 2, 2, 2, 3, 2, 2, 2, 2, 2, 2,
-    2, 2, 2, 3, 3, 2, 2, 2, 2, 2, 2, 2, 3, 3, 2, 2, 2, 2, 1, 1,
+    2, 1, 3, 1, 2, 1, 2, 2, 3, 1, 1, 2, 2, 1, 2, 2, 1, 1, 2, 1, 2, 2, 2,
+    2, 4, 4, 2, 3, 2, 4, 3, 3, 3, 3, 2, 2, 3, 3, 3, 2, 3, 4, 3, 3, 3, 2,
+    1, 2, 2, 2, 2, 2, 3, 3, 2, 2, 2, 2, 2, 2, 3, 2, 2, 2, 2, 2, 2, 2, 2,
+    2, 3, 3, 2, 2, 2, 2, 2, 2, 2, 3, 3, 2, 2, 2, 2, 1, 1, 1, 3, 3, 3, 3,
+    3, 3, 2, 3, 3, 3, 3, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 1, 3, 1, 2,
+    1, 2, 2, 3, 1, 1, 2, 2, 1, 2, 2, 1, 1, 2, 1, 2, 2, 2, 2, 4, 4, 2, 3,
+    2, 4, 3, 3, 3, 3, 2, 2, 3, 3, 3, 2, 3, 4, 3, 3, 3, 2, 1, 2, 2, 2, 2,
+    2, 3, 3, 2, 2, 2, 2, 2, 2, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 2, 2,
+    2, 2, 2, 2, 2, 3, 3, 2, 2, 2, 2, 1, 1,
 };
 
 ASSERT_VM_INSTRUCTION_SIZE(rb_vm_insn_len_info);
@@ -362,63 +381,68 @@ const char rb_vm_insn_op_base[] =
     "LN"   "\0" "NN"   "\0" "N"    "\0" "IA"   "\0" "IA"   "\0"
     "IJ"   "\0" "IJ"   "\0" "K"    "\0" "I"    "\0" "I"    "\0"
     "I"    "\0" "I"    "\0" ""     "\0" ""     "\0" "V"    "\0"
-    "N"    "\0" "V"    "\0" "N"    "\0" ""     "\0" "NN"   "\0"
-    ""     "\0" "N"    "\0" "N"    "\0" "V"    "\0" "V"    "\0"
-    "NN"   "\0" ""     "\0" "V"    "\0" ""     "\0" "N"    "\0"
-    "N"    "\0" ""     "\0" ""     "\0" "N"    "\0" ""     "\0"
-    "N"    "\0" "N"    "\0" "N"    "\0" "N"    "\0" "NVV"  "\0"
-    "IAV"  "\0" "N"    "\0" "LL"   "\0" "N"    "\0" "ISN"  "\0"
-    "IS"   "\0" "IS"   "\0" "CS"   "\0" "C"    "\0" "C"    "\0"
-    "VC"   "\0" "C"    "\0" "VC"   "\0" "NI"   "\0" "CS"   "\0"
-    "C"    "\0" ""     "\0" "N"    "\0" "O"    "\0" "O"    "\0"
-    "O"    "\0" "O"    "\0" "ST"   "\0" "HO"   "\0" "C"    "\0"
+    "N"    "\0" "V"    "\0" "V"    "\0" "N"    "\0" ""     "\0"
+    "NN"   "\0" ""     "\0" "N"    "\0" ""     "\0" "V"    "\0"
+    "V"    "\0" "NN"   "\0" ""     "\0" ""     "\0" "N"    "\0"
+    "V"    "\0" ""     "\0" "N"    "\0" "N"    "\0" ""     "\0"
+    ""     "\0" "N"    "\0" ""     "\0" "N"    "\0" "N"    "\0"
+    "N"    "\0" "N"    "\0" "NVV"  "\0" "IAV"  "\0" "N"    "\0"
+    "LL"   "\0" "N"    "\0" "ISN"  "\0" "IS"   "\0" "IS"   "\0"
+    "CS"   "\0" "CS"   "\0" "C"    "\0" "C"    "\0" "VC"   "\0"
+    "VC"   "\0" "VC"   "\0" "C"    "\0" "VC"   "\0" "VIN"  "\0"
+    "NN"   "\0" "CS"   "\0" "CS"   "\0" "C"    "\0" ""     "\0"
+    "N"    "\0" "O"    "\0" "O"    "\0" "O"    "\0" "O"    "\0"
+    "ST"   "\0" "HO"   "\0" "C"    "\0" "C"    "\0" "C"    "\0"
+    "C"    "\0" "C"    "\0" "C"    "\0" "CC"   "\0" "C"    "\0"
     "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0"
-    "CC"   "\0" "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0"
+    "C"    "\0" "C"    "\0" "C"    "\0" "VC"   "\0" "VC"   "\0"
     "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0"
-    "VC"   "\0" "VC"   "\0" "C"    "\0" "C"    "\0" "C"    "\0"
-    "C"    "\0" "C"    "\0" "C"    "\0" "R"    "\0" "RN"   "\0"
-    "RN"   "\0" "L"    "\0" "L"    "\0" "L"    "\0" "L"    "\0"
-    ""     "\0" ""     "\0" ""     "\0" "LN"   "\0" "LN"   "\0"
-    "LN"   "\0" "LN"   "\0" "LN"   "\0" "NN"   "\0" "N"    "\0"
-    "IA"   "\0" "IA"   "\0" "IJ"   "\0" "IJ"   "\0" "K"    "\0"
-    "I"    "\0" "I"    "\0" "I"    "\0" "I"    "\0" ""     "\0"
-    ""     "\0" "V"    "\0" "N"    "\0" "V"    "\0" "N"    "\0"
-    ""     "\0" "NN"   "\0" ""     "\0" "N"    "\0" "N"    "\0"
-    "V"    "\0" "V"    "\0" "NN"   "\0" ""     "\0" "V"    "\0"
-    ""     "\0" "N"    "\0" "N"    "\0" ""     "\0" ""     "\0"
-    "N"    "\0" ""     "\0" "N"    "\0" "N"    "\0" "N"    "\0"
-    "N"    "\0" "NVV"  "\0" "IAV"  "\0" "N"    "\0" "LL"   "\0"
-    "N"    "\0" "ISN"  "\0" "IS"   "\0" "IS"   "\0" "CS"   "\0"
-    "C"    "\0" "C"    "\0" "VC"   "\0" "C"    "\0" "VC"   "\0"
-    "NI"   "\0" "CS"   "\0" "C"    "\0" ""     "\0" "N"    "\0"
-    "O"    "\0" "O"    "\0" "O"    "\0" "O"    "\0" "ST"   "\0"
-    "HO"   "\0" "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0"
-    "C"    "\0" "C"    "\0" "CC"   "\0" "C"    "\0" "C"    "\0"
+    "C"    "\0" "R"    "\0" "RN"   "\0" "RN"   "\0" "L"    "\0"
+    "L"    "\0" "L"    "\0" "L"    "\0" ""     "\0" ""     "\0"
+    ""     "\0" "LN"   "\0" "LN"   "\0" "LN"   "\0" "LN"   "\0"
+    "LN"   "\0" "NN"   "\0" "N"    "\0" "IA"   "\0" "IA"   "\0"
+    "IJ"   "\0" "IJ"   "\0" "K"    "\0" "I"    "\0" "I"    "\0"
+    "I"    "\0" "I"    "\0" ""     "\0" ""     "\0" "V"    "\0"
+    "N"    "\0" "V"    "\0" "V"    "\0" "N"    "\0" ""     "\0"
+    "NN"   "\0" ""     "\0" "N"    "\0" ""     "\0" "V"    "\0"
+    "V"    "\0" "NN"   "\0" ""     "\0" ""     "\0" "N"    "\0"
+    "V"    "\0" ""     "\0" "N"    "\0" "N"    "\0" ""     "\0"
+    ""     "\0" "N"    "\0" ""     "\0" "N"    "\0" "N"    "\0"
+    "N"    "\0" "N"    "\0" "NVV"  "\0" "IAV"  "\0" "N"    "\0"
+    "LL"   "\0" "N"    "\0" "ISN"  "\0" "IS"   "\0" "IS"   "\0"
+    "CS"   "\0" "CS"   "\0" "C"    "\0" "C"    "\0" "VC"   "\0"
+    "VC"   "\0" "VC"   "\0" "C"    "\0" "VC"   "\0" "VIN"  "\0"
+    "NN"   "\0" "CS"   "\0" "CS"   "\0" "C"    "\0" ""     "\0"
+    "N"    "\0" "O"    "\0" "O"    "\0" "O"    "\0" "O"    "\0"
+    "ST"   "\0" "HO"   "\0" "C"    "\0" "C"    "\0" "C"    "\0"
+    "C"    "\0" "C"    "\0" "C"    "\0" "CC"   "\0" "C"    "\0"
     "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0"
-    "C"    "\0" "C"    "\0" "VC"   "\0" "VC"   "\0" "C"    "\0"
+    "C"    "\0" "C"    "\0" "C"    "\0" "VC"   "\0" "VC"   "\0"
     "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0"
-    "R"    "\0" "RN"   "\0" "RN"   "\0" "L"    "\0" "L"    "\0"
-    "L"    "\0" "L"    "\0" ""     "\0" ""     "\0"
+    "C"    "\0" "R"    "\0" "RN"   "\0" "RN"   "\0" "L"    "\0"
+    "L"    "\0" "L"    "\0" "L"    "\0" ""     "\0" ""     "\0"
     ;
 
 const unsigned short rb_vm_insn_op_offset[] = {
       0,   1,   4,   7,  10,  13,  16,  19,  21,  24,  27,  30,
      33,  35,  37,  39,  41,  43,  44,  45,  47,  49,  51,  53,
-     54,  57,  58,  60,  62,  64,  66,  69,  70,  72,  73,  75,
-     77,  78,  79,  81,  82,  84,  86,  88,  90,  94,  98, 100,
-    103, 105, 109, 112, 115, 118, 120, 122, 125, 127, 130, 133,
-    136, 138, 139, 141, 143, 145, 147, 149, 152, 155, 157, 159,
-    161, 163, 165, 167, 170, 172, 174, 176, 178, 180, 182, 184,
-    186, 188, 191, 194, 196, 198, 200, 202, 204, 206, 208, 211,
-    214, 216, 218, 220, 222, 223, 224, 225, 228, 231, 234, 237,
-    240, 243, 245, 248, 251, 254, 257, 259, 261, 263, 265, 267,
-    268, 269, 271, 273, 275, 277, 278, 281, 282, 284, 286, 288,
-    290, 293, 294, 296, 297, 299, 301, 302, 303, 305, 306, 308,
-    310, 312, 314, 318, 322, 324, 327, 329, 333, 336, 339, 342,
-    344, 346, 349, 351, 354, 357, 360, 362, 363, 365, 367, 369,
-    371, 373, 376, 379, 381, 383, 385, 387, 389, 391, 394, 396,
-    398, 400, 402, 404, 406, 408, 410, 412, 415, 418, 420, 422,
-    424, 426, 428, 430, 432, 435, 438, 440, 442, 444, 446, 447,
+     55,  56,  59,  60,  62,  63,  65,  67,  70,  71,  72,  74,
+     76,  77,  79,  81,  82,  83,  85,  86,  88,  90,  92,  94,
+     98, 102, 104, 107, 109, 113, 116, 119, 122, 125, 127, 129,
+    132, 135, 138, 140, 143, 147, 150, 153, 156, 158, 159, 161,
+    163, 165, 167, 169, 172, 175, 177, 179, 181, 183, 185, 187,
+    190, 192, 194, 196, 198, 200, 202, 204, 206, 208, 211, 214,
+    216, 218, 220, 222, 224, 226, 228, 231, 234, 236, 238, 240,
+    242, 243, 244, 245, 248, 251, 254, 257, 260, 263, 265, 268,
+    271, 274, 277, 279, 281, 283, 285, 287, 288, 289, 291, 293,
+    295, 297, 299, 300, 303, 304, 306, 307, 309, 311, 314, 315,
+    316, 318, 320, 321, 323, 325, 326, 327, 329, 330, 332, 334,
+    336, 338, 342, 346, 348, 351, 353, 357, 360, 363, 366, 369,
+    371, 373, 376, 379, 382, 384, 387, 391, 394, 397, 400, 402,
+    403, 405, 407, 409, 411, 413, 416, 419, 421, 423, 425, 427,
+    429, 431, 434, 436, 438, 440, 442, 444, 446, 448, 450, 452,
+    455, 458, 460, 462, 464, 466, 468, 470, 472, 475, 478, 480,
+    482, 484, 486, 487,
 };
 
 ASSERT_VM_INSTRUCTION_SIZE(rb_vm_insn_op_offset);
@@ -486,7 +510,7 @@ leafness_of_checkmatch(rb_num_t flag)
         return false;
     }
 }
-#line 490 "insns_info.inc"
+#line 514 "insns_info.inc"
 
 #line 10 "tool/ruby_vm/views/_sp_inc_helpers.erb"
 
@@ -500,7 +524,7 @@ sp_inc_of_sendish(const struct rb_callinfo *ci)
      * 3. Pop receiver.
      * 4. Push return value.
      */
-    const int argb = (vm_ci_flag(ci) & VM_CALL_ARGS_BLOCKARG) ? 1 : 0;
+    const int argb = (vm_ci_flag(ci) & (VM_CALL_ARGS_BLOCKARG | VM_CALL_FORWARDING)) ? 1 : 0;
     const int argc = vm_ci_argc(ci);
     const int recv = 1;
     const int retn = 1;
@@ -516,7 +540,7 @@ sp_inc_of_invokeblock(const struct rb_callinfo *ci)
      * instructions, except that it does not pop receiver. */
     return sp_inc_of_sendish(ci) + 1;
 }
-#line 520 "insns_info.inc"
+#line 544 "insns_info.inc"
 
 #ifndef RUBY_VM_EXEC_H
 /* can't #include "vm_exec.h" here... */
@@ -724,6 +748,15 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_putstring(VALUE str)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_putstring(VALUE str)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_putstring(VALUE str)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_putstring(VALUE str)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_putchilledstring(VALUE str)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_putchilledstring(VALUE str)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_putchilledstring(VALUE str)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_putchilledstring(VALUE str)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_putchilledstring(VALUE str)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_putchilledstring(VALUE str)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_putchilledstring(VALUE str)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_putchilledstring(VALUE str)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_putchilledstring(VALUE str)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_concatstrings(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_concatstrings(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_concatstrings(rb_num_t num)));
@@ -769,15 +802,15 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_newarray(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_newarray(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_newarray(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_newarray(rb_num_t num)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_newarraykwsplat(rb_num_t num)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_newarraykwsplat(rb_num_t num)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_newarraykwsplat(rb_num_t num)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_newarraykwsplat(rb_num_t num)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_newarraykwsplat(rb_num_t num)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_newarraykwsplat(rb_num_t num)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_newarraykwsplat(rb_num_t num)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_newarraykwsplat(rb_num_t num)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_newarraykwsplat(rb_num_t num)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_pushtoarraykwsplat(void)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_pushtoarraykwsplat(void)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_pushtoarraykwsplat(void)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_pushtoarraykwsplat(void)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_pushtoarraykwsplat(void)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_pushtoarraykwsplat(void)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_pushtoarraykwsplat(void)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_pushtoarraykwsplat(void)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_pushtoarraykwsplat(void)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_duparray(VALUE ary)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_duparray(VALUE ary)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_duparray(VALUE ary)));
@@ -814,6 +847,24 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_concatarray(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_concatarray(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_concatarray(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_concatarray(void)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_concattoarray(void)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_concattoarray(void)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_concattoarray(void)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_concattoarray(void)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_concattoarray(void)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_concattoarray(void)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_concattoarray(void)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_concattoarray(void)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_concattoarray(void)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_pushtoarray(rb_num_t num)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_pushtoarray(rb_num_t num)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_pushtoarray(rb_num_t num)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_pushtoarray(rb_num_t num)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_pushtoarray(rb_num_t num)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_pushtoarray(rb_num_t num)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_pushtoarray(rb_num_t num)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_pushtoarray(rb_num_t num)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_pushtoarray(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_splatarray(VALUE flag)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_splatarray(VALUE flag)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_splatarray(VALUE flag)));
@@ -1004,6 +1055,16 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_send(CALL_DATA cd, ISEQ blockise
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_send(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_send(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_send(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_sendforward(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_comptime_sp_inc_sendforward(CALL_INFO ci, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_sendforward(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_sendforward(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_sendforward(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_sendforward(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_sendforward(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_sendforward(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_sendforward(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_sendforward(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_send_without_block(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_comptime_sp_inc_opt_send_without_block(CALL_INFO ci)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_send_without_block(CALL_DATA cd)));
@@ -1023,6 +1084,24 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_objtostring(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_objtostring(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_objtostring(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_objtostring(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_ary_freeze(VALUE ary, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_ary_freeze(VALUE ary, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_ary_freeze(VALUE ary, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_ary_freeze(VALUE ary, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_ary_freeze(VALUE ary, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_ary_freeze(VALUE ary, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_ary_freeze(VALUE ary, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_ary_freeze(VALUE ary, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_ary_freeze(VALUE ary, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_hash_freeze(VALUE hash, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_hash_freeze(VALUE hash, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_hash_freeze(VALUE hash, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_hash_freeze(VALUE hash, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_hash_freeze(VALUE hash, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_hash_freeze(VALUE hash, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_hash_freeze(VALUE hash, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_hash_freeze(VALUE hash, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_hash_freeze(VALUE hash, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_str_freeze(VALUE str, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_str_freeze(VALUE str, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_str_freeze(VALUE str, CALL_DATA cd)));
@@ -1050,16 +1129,26 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_str_uminus(VALUE str, CALL_D
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_str_uminus(VALUE str, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_str_uminus(VALUE str, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_str_uminus(VALUE str, CALL_DATA cd)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_newarray_send(rb_num_t num, ID method)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_comptime_sp_inc_opt_newarray_send(rb_num_t num, ID method)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_newarray_send(rb_num_t num, ID method)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_newarray_send(rb_num_t num, ID method)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_newarray_send(rb_num_t num, ID method)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_newarray_send(rb_num_t num, ID method)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_newarray_send(rb_num_t num, ID method)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_newarray_send(rb_num_t num, ID method)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_newarray_send(rb_num_t num, ID method)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_newarray_send(rb_num_t num, ID method)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_duparray_send(VALUE ary, ID method, rb_num_t argc)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_comptime_sp_inc_opt_duparray_send(VALUE ary, ID method, rb_num_t argc)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_duparray_send(VALUE ary, ID method, rb_num_t argc)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_duparray_send(VALUE ary, ID method, rb_num_t argc)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_duparray_send(VALUE ary, ID method, rb_num_t argc)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_duparray_send(VALUE ary, ID method, rb_num_t argc)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_duparray_send(VALUE ary, ID method, rb_num_t argc)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_duparray_send(VALUE ary, ID method, rb_num_t argc)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_duparray_send(VALUE ary, ID method, rb_num_t argc)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_duparray_send(VALUE ary, ID method, rb_num_t argc)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_newarray_send(rb_num_t num, rb_num_t method)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_comptime_sp_inc_opt_newarray_send(rb_num_t num, rb_num_t method)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_newarray_send(rb_num_t num, rb_num_t method)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_newarray_send(rb_num_t num, rb_num_t method)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_newarray_send(rb_num_t num, rb_num_t method)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_newarray_send(rb_num_t num, rb_num_t method)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_newarray_send(rb_num_t num, rb_num_t method)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_newarray_send(rb_num_t num, rb_num_t method)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_newarray_send(rb_num_t num, rb_num_t method)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_newarray_send(rb_num_t num, rb_num_t method)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_invokesuper(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_comptime_sp_inc_invokesuper(CALL_INFO ci, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_invokesuper(CALL_DATA cd, ISEQ blockiseq)));
@@ -1070,6 +1159,16 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_invokesuper(CALL_DATA cd, ISEQ b
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_invokesuper(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_invokesuper(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_invokesuper(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_invokesuperforward(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_comptime_sp_inc_invokesuperforward(CALL_INFO ci, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_invokesuperforward(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_invokesuperforward(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_invokesuperforward(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_invokesuperforward(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_invokesuperforward(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_invokesuperforward(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_invokesuperforward(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_invokesuperforward(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_invokeblock(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_comptime_sp_inc_invokeblock(CALL_INFO ci)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_invokeblock(CALL_DATA cd)));
@@ -1993,7 +2092,7 @@ attr_leaf_getspecial(
     return
 #line 192 "insns.def"
 (type == 0) ? true : false;
-#line 1997 "insns_info.inc"
+#line 2096 "insns_info.inc"
 }
 
 /* attr const char* name @ getspecial(key, type)()(val) */
@@ -2149,7 +2248,7 @@ attr_leaf_getinstancevariable(
     return
 #line 214 "insns.def"
 false;
-#line 2153 "insns_info.inc"
+#line 2252 "insns_info.inc"
 }
 
 /* attr const char* name @ getinstancevariable(id, ic)()(val) */
@@ -2242,7 +2341,7 @@ attr_leaf_setinstancevariable(
     return
 #line 225 "insns.def"
 false;
-#line 2246 "insns_info.inc"
+#line 2345 "insns_info.inc"
 }
 
 /* attr const char* name @ setinstancevariable(id, ic)(val)() */
@@ -2335,7 +2434,7 @@ attr_leaf_getclassvariable(
     return
 #line 237 "insns.def"
 false;
-#line 2339 "insns_info.inc"
+#line 2438 "insns_info.inc"
 }
 
 /* attr const char* name @ getclassvariable(id, ic)()(val) */
@@ -2428,7 +2527,7 @@ attr_leaf_setclassvariable(
     return
 #line 250 "insns.def"
 false;
-#line 2432 "insns_info.inc"
+#line 2531 "insns_info.inc"
 }
 
 /* attr const char* name @ setclassvariable(id, ic)(val)() */
@@ -2512,7 +2611,7 @@ attr_leaf_opt_getconstant_path(MAYBE_UNUSED(IC ic))
     return
 #line 261 "insns.def"
 false;
-#line 2516 "insns_info.inc"
+#line 2615 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_getconstant_path(ic)()(val) */
@@ -2578,7 +2677,7 @@ attr_leaf_getconstant(MAYBE_UNUSED(ID id))
     return
 #line 276 "insns.def"
 false;
-#line 2582 "insns_info.inc"
+#line 2681 "insns_info.inc"
 }
 
 /* attr const char* name @ getconstant(id)(klass, allow_nil)(val) */
@@ -2644,7 +2743,7 @@ attr_leaf_setconstant(MAYBE_UNUSED(ID id))
     return
 #line 292 "insns.def"
 false;
-#line 2648 "insns_info.inc"
+#line 2747 "insns_info.inc"
 }
 
 /* attr const char* name @ setconstant(id)(val, cbase)() */
@@ -2710,7 +2809,7 @@ attr_leaf_getglobal(MAYBE_UNUSED(ID gid))
     return
 #line 305 "insns.def"
 false;
-#line 2714 "insns_info.inc"
+#line 2813 "insns_info.inc"
 }
 
 /* attr const char* name @ getglobal(gid)()(val) */
@@ -2776,7 +2875,7 @@ attr_leaf_setglobal(MAYBE_UNUSED(ID gid))
     return
 #line 316 "insns.def"
 false;
-#line 2780 "insns_info.inc"
+#line 2879 "insns_info.inc"
 }
 
 /* attr const char* name @ setglobal(gid)(val)() */
@@ -3031,7 +3130,7 @@ attr_leaf_putspecialobject(MAYBE_UNUSED(rb_num_t value_type))
     return
 #line 363 "insns.def"
 (value_type == VM_SPECIAL_OBJECT_VMCORE);
-#line 3035 "insns_info.inc"
+#line 3134 "insns_info.inc"
 }
 
 /* attr const char* name @ putspecialobject(value_type)()(val) */
@@ -3139,6 +3238,69 @@ attr_width_putstring(MAYBE_UNUSED(VALUE str))
     return 2;
 }
 
+/* attr enum ruby_vminsn_type bin @ putchilledstring(str)()(val) */
+enum ruby_vminsn_type
+attr_bin_putchilledstring(MAYBE_UNUSED(VALUE str))
+{
+    return BIN(putchilledstring);
+}
+
+/* attr bool handles_sp @ putchilledstring(str)()(val) */
+bool
+attr_handles_sp_putchilledstring(MAYBE_UNUSED(VALUE str))
+{
+    return false;
+}
+
+/* attr bool leaf @ putchilledstring(str)()(val) */
+bool
+attr_leaf_putchilledstring(MAYBE_UNUSED(VALUE str))
+{
+    return true;
+}
+
+/* attr const char* name @ putchilledstring(str)()(val) */
+const char*
+attr_name_putchilledstring(MAYBE_UNUSED(VALUE str))
+{
+    return insn_name(BIN(putchilledstring));
+}
+
+/* attr rb_num_t open @ putchilledstring(str)()(val) */
+rb_num_t
+attr_open_putchilledstring(MAYBE_UNUSED(VALUE str))
+{
+    return 1;
+}
+
+/* attr rb_num_t popn @ putchilledstring(str)()(val) */
+rb_num_t
+attr_popn_putchilledstring(MAYBE_UNUSED(VALUE str))
+{
+    return 0;
+}
+
+/* attr rb_num_t retn @ putchilledstring(str)()(val) */
+rb_num_t
+attr_retn_putchilledstring(MAYBE_UNUSED(VALUE str))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ putchilledstring(str)()(val) */
+rb_snum_t
+attr_sp_inc_putchilledstring(MAYBE_UNUSED(VALUE str))
+{
+    return 1;
+}
+
+/* attr rb_num_t width @ putchilledstring(str)()(val) */
+rb_num_t
+attr_width_putchilledstring(MAYBE_UNUSED(VALUE str))
+{
+    return 2;
+}
+
 /* attr enum ruby_vminsn_type bin @ concatstrings(num)(...)(val) */
 enum ruby_vminsn_type
 attr_bin_concatstrings(MAYBE_UNUSED(rb_num_t num))
@@ -3158,9 +3320,9 @@ bool
 attr_leaf_concatstrings(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 389 "insns.def"
+#line 399 "insns.def"
 false;
-#line 3164 "insns_info.inc"
+#line 3326 "insns_info.inc"
 }
 
 /* attr const char* name @ concatstrings(num)(...)(val) */
@@ -3196,9 +3358,9 @@ rb_snum_t
 attr_sp_inc_concatstrings(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 390 "insns.def"
+#line 400 "insns.def"
 1 - (rb_snum_t)num;
-#line 3202 "insns_info.inc"
+#line 3364 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ concatstrings(num)(...)(val) */
@@ -3299,9 +3461,9 @@ attr_leaf_toregexp(
 )
 {
     return
-#line 416 "insns.def"
+#line 426 "insns.def"
 false;
-#line 3305 "insns_info.inc"
+#line 3467 "insns_info.inc"
 }
 
 /* attr const char* name @ toregexp(opt, cnt)(...)(val) */
@@ -3352,9 +3514,9 @@ attr_sp_inc_toregexp(
 )
 {
     return
-#line 417 "insns.def"
+#line 427 "insns.def"
 1 - (rb_snum_t)cnt;
-#line 3358 "insns_info.inc"
+#line 3520 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ toregexp(opt, cnt)(...)(val) */
@@ -3484,9 +3646,9 @@ rb_snum_t
 attr_sp_inc_newarray(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 440 "insns.def"
+#line 450 "insns.def"
 1 - (rb_snum_t)num;
-#line 3490 "insns_info.inc"
+#line 3652 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ newarray(num)(...)(val) */
@@ -3496,70 +3658,67 @@ attr_width_newarray(MAYBE_UNUSED(rb_num_t num))
     return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ newarraykwsplat(num)(...)(val) */
+/* attr enum ruby_vminsn_type bin @ pushtoarraykwsplat()(ary, hash)(ary) */
 enum ruby_vminsn_type
-attr_bin_newarraykwsplat(MAYBE_UNUSED(rb_num_t num))
+attr_bin_pushtoarraykwsplat(void)
 {
-    return BIN(newarraykwsplat);
+    return BIN(pushtoarraykwsplat);
 }
 
-/* attr bool handles_sp @ newarraykwsplat(num)(...)(val) */
+/* attr bool handles_sp @ pushtoarraykwsplat()(ary, hash)(ary) */
 bool
-attr_handles_sp_newarraykwsplat(MAYBE_UNUSED(rb_num_t num))
+attr_handles_sp_pushtoarraykwsplat(void)
 {
     return false;
 }
 
-/* attr bool leaf @ newarraykwsplat(num)(...)(val) */
+/* attr bool leaf @ pushtoarraykwsplat()(ary, hash)(ary) */
 bool
-attr_leaf_newarraykwsplat(MAYBE_UNUSED(rb_num_t num))
+attr_leaf_pushtoarraykwsplat(void)
 {
     return true;
 }
 
-/* attr const char* name @ newarraykwsplat(num)(...)(val) */
+/* attr const char* name @ pushtoarraykwsplat()(ary, hash)(ary) */
 const char*
-attr_name_newarraykwsplat(MAYBE_UNUSED(rb_num_t num))
+attr_name_pushtoarraykwsplat(void)
 {
-    return insn_name(BIN(newarraykwsplat));
+    return insn_name(BIN(pushtoarraykwsplat));
 }
 
-/* attr rb_num_t open @ newarraykwsplat(num)(...)(val) */
+/* attr rb_num_t open @ pushtoarraykwsplat()(ary, hash)(ary) */
 rb_num_t
-attr_open_newarraykwsplat(MAYBE_UNUSED(rb_num_t num))
-{
-    return 1;
-}
-
-/* attr rb_num_t popn @ newarraykwsplat(num)(...)(val) */
-rb_num_t
-attr_popn_newarraykwsplat(MAYBE_UNUSED(rb_num_t num))
+attr_open_pushtoarraykwsplat(void)
 {
     return 0;
 }
 
-/* attr rb_num_t retn @ newarraykwsplat(num)(...)(val) */
+/* attr rb_num_t popn @ pushtoarraykwsplat()(ary, hash)(ary) */
 rb_num_t
-attr_retn_newarraykwsplat(MAYBE_UNUSED(rb_num_t num))
+attr_popn_pushtoarraykwsplat(void)
+{
+    return 2;
+}
+
+/* attr rb_num_t retn @ pushtoarraykwsplat()(ary, hash)(ary) */
+rb_num_t
+attr_retn_pushtoarraykwsplat(void)
 {
     return 1;
 }
 
-/* attr rb_snum_t sp_inc @ newarraykwsplat(num)(...)(val) */
+/* attr rb_snum_t sp_inc @ pushtoarraykwsplat()(ary, hash)(ary) */
 rb_snum_t
-attr_sp_inc_newarraykwsplat(MAYBE_UNUSED(rb_num_t num))
+attr_sp_inc_pushtoarraykwsplat(void)
 {
-    return
-#line 455 "insns.def"
-1 - (rb_snum_t)num;
-#line 3556 "insns_info.inc"
+    return -1;
 }
 
-/* attr rb_num_t width @ newarraykwsplat(num)(...)(val) */
+/* attr rb_num_t width @ pushtoarraykwsplat()(ary, hash)(ary) */
 rb_num_t
-attr_width_newarraykwsplat(MAYBE_UNUSED(rb_num_t num))
+attr_width_pushtoarraykwsplat(void)
 {
-    return 2;
+    return 1;
 }
 
 /* attr enum ruby_vminsn_type bin @ duparray(ary)()(val) */
@@ -3706,9 +3865,9 @@ attr_handles_sp_expandarray(
 )
 {
     return
-#line 501 "insns.def"
+#line 505 "insns.def"
 true;
-#line 3712 "insns_info.inc"
+#line 3871 "insns_info.inc"
 }
 
 /* attr bool leaf @ expandarray(num, flag)(..., ary)(...) */
@@ -3719,9 +3878,9 @@ attr_leaf_expandarray(
 )
 {
     return
-#line 502 "insns.def"
+#line 506 "insns.def"
 false;
-#line 3725 "insns_info.inc"
+#line 3884 "insns_info.inc"
 }
 
 /* attr const char* name @ expandarray(num, flag)(..., ary)(...) */
@@ -3772,9 +3931,9 @@ attr_sp_inc_expandarray(
 )
 {
     return
-#line 503 "insns.def"
+#line 507 "insns.def"
 (rb_snum_t)num - 1 + (flag & 1 ? 1 : 0);
-#line 3778 "insns_info.inc"
+#line 3937 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ expandarray(num, flag)(..., ary)(...) */
@@ -3806,9 +3965,9 @@ bool
 attr_leaf_concatarray(void)
 {
     return
-#line 514 "insns.def"
+#line 520 "insns.def"
 false;
-#line 3812 "insns_info.inc"
+#line 3971 "insns_info.inc"
 }
 
 /* attr const char* name @ concatarray()(ary1, ary2)(ary) */
@@ -3853,6 +4012,138 @@ attr_width_concatarray(void)
     return 1;
 }
 
+/* attr enum ruby_vminsn_type bin @ concattoarray()(ary1, ary2)(ary) */
+enum ruby_vminsn_type
+attr_bin_concattoarray(void)
+{
+    return BIN(concattoarray);
+}
+
+/* attr bool handles_sp @ concattoarray()(ary1, ary2)(ary) */
+bool
+attr_handles_sp_concattoarray(void)
+{
+    return false;
+}
+
+/* attr bool leaf @ concattoarray()(ary1, ary2)(ary) */
+bool
+attr_leaf_concattoarray(void)
+{
+    return
+#line 534 "insns.def"
+false;
+#line 4037 "insns_info.inc"
+}
+
+/* attr const char* name @ concattoarray()(ary1, ary2)(ary) */
+const char*
+attr_name_concattoarray(void)
+{
+    return insn_name(BIN(concattoarray));
+}
+
+/* attr rb_num_t open @ concattoarray()(ary1, ary2)(ary) */
+rb_num_t
+attr_open_concattoarray(void)
+{
+    return 0;
+}
+
+/* attr rb_num_t popn @ concattoarray()(ary1, ary2)(ary) */
+rb_num_t
+attr_popn_concattoarray(void)
+{
+    return 2;
+}
+
+/* attr rb_num_t retn @ concattoarray()(ary1, ary2)(ary) */
+rb_num_t
+attr_retn_concattoarray(void)
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ concattoarray()(ary1, ary2)(ary) */
+rb_snum_t
+attr_sp_inc_concattoarray(void)
+{
+    return -1;
+}
+
+/* attr rb_num_t width @ concattoarray()(ary1, ary2)(ary) */
+rb_num_t
+attr_width_concattoarray(void)
+{
+    return 1;
+}
+
+/* attr enum ruby_vminsn_type bin @ pushtoarray(num)(...)(val) */
+enum ruby_vminsn_type
+attr_bin_pushtoarray(MAYBE_UNUSED(rb_num_t num))
+{
+    return BIN(pushtoarray);
+}
+
+/* attr bool handles_sp @ pushtoarray(num)(...)(val) */
+bool
+attr_handles_sp_pushtoarray(MAYBE_UNUSED(rb_num_t num))
+{
+    return false;
+}
+
+/* attr bool leaf @ pushtoarray(num)(...)(val) */
+bool
+attr_leaf_pushtoarray(MAYBE_UNUSED(rb_num_t num))
+{
+    return true;
+}
+
+/* attr const char* name @ pushtoarray(num)(...)(val) */
+const char*
+attr_name_pushtoarray(MAYBE_UNUSED(rb_num_t num))
+{
+    return insn_name(BIN(pushtoarray));
+}
+
+/* attr rb_num_t open @ pushtoarray(num)(...)(val) */
+rb_num_t
+attr_open_pushtoarray(MAYBE_UNUSED(rb_num_t num))
+{
+    return 1;
+}
+
+/* attr rb_num_t popn @ pushtoarray(num)(...)(val) */
+rb_num_t
+attr_popn_pushtoarray(MAYBE_UNUSED(rb_num_t num))
+{
+    return 0;
+}
+
+/* attr rb_num_t retn @ pushtoarray(num)(...)(val) */
+rb_num_t
+attr_retn_pushtoarray(MAYBE_UNUSED(rb_num_t num))
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ pushtoarray(num)(...)(val) */
+rb_snum_t
+attr_sp_inc_pushtoarray(MAYBE_UNUSED(rb_num_t num))
+{
+    return
+#line 545 "insns.def"
+-(rb_snum_t)num;
+#line 4138 "insns_info.inc"
+}
+
+/* attr rb_num_t width @ pushtoarray(num)(...)(val) */
+rb_num_t
+attr_width_pushtoarray(MAYBE_UNUSED(rb_num_t num))
+{
+    return 2;
+}
+
 /* attr enum ruby_vminsn_type bin @ splatarray(flag)(ary)(obj) */
 enum ruby_vminsn_type
 attr_bin_splatarray(MAYBE_UNUSED(VALUE flag))
@@ -3872,9 +4163,9 @@ bool
 attr_leaf_splatarray(MAYBE_UNUSED(VALUE flag))
 {
     return
-#line 525 "insns.def"
+#line 557 "insns.def"
 false;
-#line 3878 "insns_info.inc"
+#line 4169 "insns_info.inc"
 }
 
 /* attr const char* name @ splatarray(flag)(ary)(obj) */
@@ -3938,9 +4229,9 @@ bool
 attr_leaf_splatkw(void)
 {
     return
-#line 536 "insns.def"
+#line 568 "insns.def"
 false;
-#line 3944 "insns_info.inc"
+#line 4235 "insns_info.inc"
 }
 
 /* attr const char* name @ splatkw()(hash, block)(obj, block) */
@@ -4004,9 +4295,9 @@ bool
 attr_leaf_newhash(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 547 "insns.def"
+#line 584 "insns.def"
 false;
-#line 4010 "insns_info.inc"
+#line 4301 "insns_info.inc"
 }
 
 /* attr const char* name @ newhash(num)(...)(val) */
@@ -4042,9 +4333,9 @@ rb_snum_t
 attr_sp_inc_newhash(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 548 "insns.def"
+#line 585 "insns.def"
 1 - (rb_snum_t)num;
-#line 4048 "insns_info.inc"
+#line 4339 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ newhash(num)(...)(val) */
@@ -4073,9 +4364,9 @@ bool
 attr_leaf_newrange(MAYBE_UNUSED(rb_num_t flag))
 {
     return
-#line 568 "insns.def"
+#line 605 "insns.def"
 false;
-#line 4079 "insns_info.inc"
+#line 4370 "insns_info.inc"
 }
 
 /* attr const char* name @ newrange(flag)(low, high)(val) */
@@ -4300,9 +4591,9 @@ rb_snum_t
 attr_sp_inc_dupn(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 604 "insns.def"
+#line 641 "insns.def"
 n;
-#line 4306 "insns_info.inc"
+#line 4597 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ dupn(n)(...)(...) */
@@ -4429,9 +4720,9 @@ rb_snum_t
 attr_sp_inc_opt_reverse(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 628 "insns.def"
+#line 665 "insns.def"
 0;
-#line 4435 "insns_info.inc"
+#line 4726 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_reverse(n)(...)(...) */
@@ -4495,9 +4786,9 @@ rb_snum_t
 attr_sp_inc_topn(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 658 "insns.def"
+#line 695 "insns.def"
 1;
-#line 4501 "insns_info.inc"
+#line 4792 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ topn(n)(...)(val) */
@@ -4561,9 +4852,9 @@ rb_snum_t
 attr_sp_inc_setn(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 669 "insns.def"
+#line 706 "insns.def"
 0;
-#line 4567 "insns_info.inc"
+#line 4858 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ setn(n)(..., val)(val) */
@@ -4627,9 +4918,9 @@ rb_snum_t
 attr_sp_inc_adjuststack(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 680 "insns.def"
+#line 717 "insns.def"
 -(rb_snum_t)n;
-#line 4633 "insns_info.inc"
+#line 4924 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ adjuststack(n)(...)(...) */
@@ -4670,9 +4961,9 @@ attr_leaf_defined(
 )
 {
     return
-#line 695 "insns.def"
+#line 732 "insns.def"
 leafness_of_defined(op_type);
-#line 4676 "insns_info.inc"
+#line 4967 "insns_info.inc"
 }
 
 /* attr const char* name @ defined(op_type, obj, pushval)(v)(val) */
@@ -4772,9 +5063,9 @@ attr_leaf_definedivar(
 )
 {
     return
-#line 709 "insns.def"
+#line 746 "insns.def"
 false;
-#line 4778 "insns_info.inc"
+#line 5069 "insns_info.inc"
 }
 
 /* attr const char* name @ definedivar(id, ic, pushval)()(val) */
@@ -4862,9 +5153,9 @@ bool
 attr_leaf_checkmatch(MAYBE_UNUSED(rb_num_t flag))
 {
     return
-#line 729 "insns.def"
+#line 766 "insns.def"
 leafness_of_checkmatch(flag);
-#line 4868 "insns_info.inc"
+#line 5159 "insns_info.inc"
 }
 
 /* attr const char* name @ checkmatch(flag)(target, pattern)(result) */
@@ -5359,9 +5650,9 @@ attr_comptime_sp_inc_send(
 )
 {
     return
-#line 811 "insns.def"
+#line 848 "insns.def"
 sp_inc_of_sendish(ci);
-#line 5365 "insns_info.inc"
+#line 5656 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ send(cd, blockiseq)(...)(val) */
@@ -5432,14 +5723,120 @@ attr_sp_inc_send(
 )
 {
     return
-#line 810 "insns.def"
+#line 847 "insns.def"
 sp_inc_of_sendish(cd->ci);
-#line 5438 "insns_info.inc"
+#line 5729 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ send(cd, blockiseq)(...)(val) */
 rb_num_t
 attr_width_send(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return 3;
+}
+
+/* attr enum ruby_vminsn_type bin @ sendforward(cd, blockiseq)(...)(val) */
+enum ruby_vminsn_type
+attr_bin_sendforward(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return BIN(sendforward);
+}
+
+/* attr rb_snum_t comptime_sp_inc @ sendforward(cd, blockiseq)(...)(val) */
+rb_snum_t
+attr_comptime_sp_inc_sendforward(
+    MAYBE_UNUSED(CALL_INFO ci),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return
+#line 867 "insns.def"
+sp_inc_of_sendish(ci);
+#line 5762 "insns_info.inc"
+}
+
+/* attr bool handles_sp @ sendforward(cd, blockiseq)(...)(val) */
+bool
+attr_handles_sp_sendforward(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return true;
+}
+
+/* attr bool leaf @ sendforward(cd, blockiseq)(...)(val) */
+bool
+attr_leaf_sendforward(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return false;
+}
+
+/* attr const char* name @ sendforward(cd, blockiseq)(...)(val) */
+const char*
+attr_name_sendforward(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return insn_name(BIN(sendforward));
+}
+
+/* attr rb_num_t open @ sendforward(cd, blockiseq)(...)(val) */
+rb_num_t
+attr_open_sendforward(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return 2;
+}
+
+/* attr rb_num_t popn @ sendforward(cd, blockiseq)(...)(val) */
+rb_num_t
+attr_popn_sendforward(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return 0;
+}
+
+/* attr rb_num_t retn @ sendforward(cd, blockiseq)(...)(val) */
+rb_num_t
+attr_retn_sendforward(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ sendforward(cd, blockiseq)(...)(val) */
+rb_snum_t
+attr_sp_inc_sendforward(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return
+#line 866 "insns.def"
+sp_inc_of_sendish(cd->ci);
+#line 5835 "insns_info.inc"
+}
+
+/* attr rb_num_t width @ sendforward(cd, blockiseq)(...)(val) */
+rb_num_t
+attr_width_sendforward(
     MAYBE_UNUSED(CALL_DATA cd),
     MAYBE_UNUSED(ISEQ blockiseq)
 )
@@ -5459,9 +5856,9 @@ rb_snum_t
 attr_comptime_sp_inc_opt_send_without_block(MAYBE_UNUSED(CALL_INFO ci))
 {
     return
-#line 831 "insns.def"
+#line 895 "insns.def"
 sp_inc_of_sendish(ci);
-#line 5465 "insns_info.inc"
+#line 5862 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ opt_send_without_block(cd)(...)(val) */
@@ -5469,9 +5866,9 @@ bool
 attr_handles_sp_opt_send_without_block(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 829 "insns.def"
+#line 893 "insns.def"
 true;
-#line 5475 "insns_info.inc"
+#line 5872 "insns_info.inc"
 }
 
 /* attr bool leaf @ opt_send_without_block(cd)(...)(val) */
@@ -5514,9 +5911,9 @@ rb_snum_t
 attr_sp_inc_opt_send_without_block(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 830 "insns.def"
+#line 894 "insns.def"
 sp_inc_of_sendish(cd->ci);
-#line 5520 "insns_info.inc"
+#line 5917 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_send_without_block(cd)(...)(val) */
@@ -5545,9 +5942,9 @@ bool
 attr_leaf_objtostring(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 849 "insns.def"
+#line 913 "insns.def"
 false;
-#line 5551 "insns_info.inc"
+#line 5948 "insns_info.inc"
 }
 
 /* attr const char* name @ objtostring(cd)(recv)(val) */
@@ -5590,6 +5987,186 @@ rb_num_t
 attr_width_objtostring(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 2;
+}
+
+/* attr enum ruby_vminsn_type bin @ opt_ary_freeze(ary, cd)()(val) */
+enum ruby_vminsn_type
+attr_bin_opt_ary_freeze(
+    MAYBE_UNUSED(VALUE ary),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return BIN(opt_ary_freeze);
+}
+
+/* attr bool handles_sp @ opt_ary_freeze(ary, cd)()(val) */
+bool
+attr_handles_sp_opt_ary_freeze(
+    MAYBE_UNUSED(VALUE ary),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return false;
+}
+
+/* attr bool leaf @ opt_ary_freeze(ary, cd)()(val) */
+bool
+attr_leaf_opt_ary_freeze(
+    MAYBE_UNUSED(VALUE ary),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return true;
+}
+
+/* attr const char* name @ opt_ary_freeze(ary, cd)()(val) */
+const char*
+attr_name_opt_ary_freeze(
+    MAYBE_UNUSED(VALUE ary),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return insn_name(BIN(opt_ary_freeze));
+}
+
+/* attr rb_num_t open @ opt_ary_freeze(ary, cd)()(val) */
+rb_num_t
+attr_open_opt_ary_freeze(
+    MAYBE_UNUSED(VALUE ary),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return 2;
+}
+
+/* attr rb_num_t popn @ opt_ary_freeze(ary, cd)()(val) */
+rb_num_t
+attr_popn_opt_ary_freeze(
+    MAYBE_UNUSED(VALUE ary),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return 0;
+}
+
+/* attr rb_num_t retn @ opt_ary_freeze(ary, cd)()(val) */
+rb_num_t
+attr_retn_opt_ary_freeze(
+    MAYBE_UNUSED(VALUE ary),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_ary_freeze(ary, cd)()(val) */
+rb_snum_t
+attr_sp_inc_opt_ary_freeze(
+    MAYBE_UNUSED(VALUE ary),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return 1;
+}
+
+/* attr rb_num_t width @ opt_ary_freeze(ary, cd)()(val) */
+rb_num_t
+attr_width_opt_ary_freeze(
+    MAYBE_UNUSED(VALUE ary),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return 3;
+}
+
+/* attr enum ruby_vminsn_type bin @ opt_hash_freeze(hash, cd)()(val) */
+enum ruby_vminsn_type
+attr_bin_opt_hash_freeze(
+    MAYBE_UNUSED(VALUE hash),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return BIN(opt_hash_freeze);
+}
+
+/* attr bool handles_sp @ opt_hash_freeze(hash, cd)()(val) */
+bool
+attr_handles_sp_opt_hash_freeze(
+    MAYBE_UNUSED(VALUE hash),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return false;
+}
+
+/* attr bool leaf @ opt_hash_freeze(hash, cd)()(val) */
+bool
+attr_leaf_opt_hash_freeze(
+    MAYBE_UNUSED(VALUE hash),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return true;
+}
+
+/* attr const char* name @ opt_hash_freeze(hash, cd)()(val) */
+const char*
+attr_name_opt_hash_freeze(
+    MAYBE_UNUSED(VALUE hash),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return insn_name(BIN(opt_hash_freeze));
+}
+
+/* attr rb_num_t open @ opt_hash_freeze(hash, cd)()(val) */
+rb_num_t
+attr_open_opt_hash_freeze(
+    MAYBE_UNUSED(VALUE hash),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return 2;
+}
+
+/* attr rb_num_t popn @ opt_hash_freeze(hash, cd)()(val) */
+rb_num_t
+attr_popn_opt_hash_freeze(
+    MAYBE_UNUSED(VALUE hash),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return 0;
+}
+
+/* attr rb_num_t retn @ opt_hash_freeze(hash, cd)()(val) */
+rb_num_t
+attr_retn_opt_hash_freeze(
+    MAYBE_UNUSED(VALUE hash),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_hash_freeze(hash, cd)()(val) */
+rb_snum_t
+attr_sp_inc_opt_hash_freeze(
+    MAYBE_UNUSED(VALUE hash),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return 1;
+}
+
+/* attr rb_num_t width @ opt_hash_freeze(hash, cd)()(val) */
+rb_num_t
+attr_width_opt_hash_freeze(
+    MAYBE_UNUSED(VALUE hash),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return 3;
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_str_freeze(str, cd)()(val) */
@@ -5835,11 +6412,130 @@ attr_width_opt_str_uminus(
     return 3;
 }
 
+/* attr enum ruby_vminsn_type bin @ opt_duparray_send(ary, method, argc)(...)(val) */
+enum ruby_vminsn_type
+attr_bin_opt_duparray_send(
+    MAYBE_UNUSED(VALUE ary),
+    MAYBE_UNUSED(ID method),
+    MAYBE_UNUSED(rb_num_t argc)
+)
+{
+    return BIN(opt_duparray_send);
+}
+
+/* attr rb_snum_t comptime_sp_inc @ opt_duparray_send(ary, method, argc)(...)(val) */
+rb_snum_t
+attr_comptime_sp_inc_opt_duparray_send(
+    MAYBE_UNUSED(VALUE ary),
+    MAYBE_UNUSED(ID method),
+    MAYBE_UNUSED(rb_num_t argc)
+)
+{
+    return
+#line 1005 "insns.def"
+1 - (rb_snum_t)argc;
+#line 6438 "insns_info.inc"
+}
+
+/* attr bool handles_sp @ opt_duparray_send(ary, method, argc)(...)(val) */
+bool
+attr_handles_sp_opt_duparray_send(
+    MAYBE_UNUSED(VALUE ary),
+    MAYBE_UNUSED(ID method),
+    MAYBE_UNUSED(rb_num_t argc)
+)
+{
+    return false;
+}
+
+/* attr bool leaf @ opt_duparray_send(ary, method, argc)(...)(val) */
+bool
+attr_leaf_opt_duparray_send(
+    MAYBE_UNUSED(VALUE ary),
+    MAYBE_UNUSED(ID method),
+    MAYBE_UNUSED(rb_num_t argc)
+)
+{
+    return
+#line 1003 "insns.def"
+false;
+#line 6463 "insns_info.inc"
+}
+
+/* attr const char* name @ opt_duparray_send(ary, method, argc)(...)(val) */
+const char*
+attr_name_opt_duparray_send(
+    MAYBE_UNUSED(VALUE ary),
+    MAYBE_UNUSED(ID method),
+    MAYBE_UNUSED(rb_num_t argc)
+)
+{
+    return insn_name(BIN(opt_duparray_send));
+}
+
+/* attr rb_num_t open @ opt_duparray_send(ary, method, argc)(...)(val) */
+rb_num_t
+attr_open_opt_duparray_send(
+    MAYBE_UNUSED(VALUE ary),
+    MAYBE_UNUSED(ID method),
+    MAYBE_UNUSED(rb_num_t argc)
+)
+{
+    return 3;
+}
+
+/* attr rb_num_t popn @ opt_duparray_send(ary, method, argc)(...)(val) */
+rb_num_t
+attr_popn_opt_duparray_send(
+    MAYBE_UNUSED(VALUE ary),
+    MAYBE_UNUSED(ID method),
+    MAYBE_UNUSED(rb_num_t argc)
+)
+{
+    return 0;
+}
+
+/* attr rb_num_t retn @ opt_duparray_send(ary, method, argc)(...)(val) */
+rb_num_t
+attr_retn_opt_duparray_send(
+    MAYBE_UNUSED(VALUE ary),
+    MAYBE_UNUSED(ID method),
+    MAYBE_UNUSED(rb_num_t argc)
+)
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ opt_duparray_send(ary, method, argc)(...)(val) */
+rb_snum_t
+attr_sp_inc_opt_duparray_send(
+    MAYBE_UNUSED(VALUE ary),
+    MAYBE_UNUSED(ID method),
+    MAYBE_UNUSED(rb_num_t argc)
+)
+{
+    return
+#line 1004 "insns.def"
+1 - (rb_snum_t)argc;
+#line 6521 "insns_info.inc"
+}
+
+/* attr rb_num_t width @ opt_duparray_send(ary, method, argc)(...)(val) */
+rb_num_t
+attr_width_opt_duparray_send(
+    MAYBE_UNUSED(VALUE ary),
+    MAYBE_UNUSED(ID method),
+    MAYBE_UNUSED(rb_num_t argc)
+)
+{
+    return 4;
+}
+
 /* attr enum ruby_vminsn_type bin @ opt_newarray_send(num, method)(...)(val) */
 enum ruby_vminsn_type
 attr_bin_opt_newarray_send(
     MAYBE_UNUSED(rb_num_t num),
-    MAYBE_UNUSED(ID method)
+    MAYBE_UNUSED(rb_num_t method)
 )
 {
     return BIN(opt_newarray_send);
@@ -5849,20 +6545,20 @@ attr_bin_opt_newarray_send(
 rb_snum_t
 attr_comptime_sp_inc_opt_newarray_send(
     MAYBE_UNUSED(rb_num_t num),
-    MAYBE_UNUSED(ID method)
+    MAYBE_UNUSED(rb_num_t method)
 )
 {
     return
-#line 911 "insns.def"
+#line 1027 "insns.def"
 1 - (rb_snum_t)num;
-#line 5859 "insns_info.inc"
+#line 6555 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ opt_newarray_send(num, method)(...)(val) */
 bool
 attr_handles_sp_opt_newarray_send(
     MAYBE_UNUSED(rb_num_t num),
-    MAYBE_UNUSED(ID method)
+    MAYBE_UNUSED(rb_num_t method)
 )
 {
     return false;
@@ -5872,20 +6568,20 @@ attr_handles_sp_opt_newarray_send(
 bool
 attr_leaf_opt_newarray_send(
     MAYBE_UNUSED(rb_num_t num),
-    MAYBE_UNUSED(ID method)
+    MAYBE_UNUSED(rb_num_t method)
 )
 {
     return
-#line 909 "insns.def"
+#line 1025 "insns.def"
 false;
-#line 5882 "insns_info.inc"
+#line 6578 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_newarray_send(num, method)(...)(val) */
 const char*
 attr_name_opt_newarray_send(
     MAYBE_UNUSED(rb_num_t num),
-    MAYBE_UNUSED(ID method)
+    MAYBE_UNUSED(rb_num_t method)
 )
 {
     return insn_name(BIN(opt_newarray_send));
@@ -5895,7 +6591,7 @@ attr_name_opt_newarray_send(
 rb_num_t
 attr_open_opt_newarray_send(
     MAYBE_UNUSED(rb_num_t num),
-    MAYBE_UNUSED(ID method)
+    MAYBE_UNUSED(rb_num_t method)
 )
 {
     return 2;
@@ -5905,7 +6601,7 @@ attr_open_opt_newarray_send(
 rb_num_t
 attr_popn_opt_newarray_send(
     MAYBE_UNUSED(rb_num_t num),
-    MAYBE_UNUSED(ID method)
+    MAYBE_UNUSED(rb_num_t method)
 )
 {
     return 0;
@@ -5915,7 +6611,7 @@ attr_popn_opt_newarray_send(
 rb_num_t
 attr_retn_opt_newarray_send(
     MAYBE_UNUSED(rb_num_t num),
-    MAYBE_UNUSED(ID method)
+    MAYBE_UNUSED(rb_num_t method)
 )
 {
     return 1;
@@ -5925,20 +6621,20 @@ attr_retn_opt_newarray_send(
 rb_snum_t
 attr_sp_inc_opt_newarray_send(
     MAYBE_UNUSED(rb_num_t num),
-    MAYBE_UNUSED(ID method)
+    MAYBE_UNUSED(rb_num_t method)
 )
 {
     return
-#line 910 "insns.def"
+#line 1026 "insns.def"
 1 - (rb_snum_t)num;
-#line 5935 "insns_info.inc"
+#line 6631 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_newarray_send(num, method)(...)(val) */
 rb_num_t
 attr_width_opt_newarray_send(
     MAYBE_UNUSED(rb_num_t num),
-    MAYBE_UNUSED(ID method)
+    MAYBE_UNUSED(rb_num_t method)
 )
 {
     return 3;
@@ -5962,9 +6658,9 @@ attr_comptime_sp_inc_invokesuper(
 )
 {
     return
-#line 935 "insns.def"
+#line 1060 "insns.def"
 sp_inc_of_sendish(ci);
-#line 5968 "insns_info.inc"
+#line 6664 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ invokesuper(cd, blockiseq)(...)(val) */
@@ -6035,14 +6731,120 @@ attr_sp_inc_invokesuper(
 )
 {
     return
-#line 934 "insns.def"
+#line 1059 "insns.def"
 sp_inc_of_sendish(cd->ci);
-#line 6041 "insns_info.inc"
+#line 6737 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ invokesuper(cd, blockiseq)(...)(val) */
 rb_num_t
 attr_width_invokesuper(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return 3;
+}
+
+/* attr enum ruby_vminsn_type bin @ invokesuperforward(cd, blockiseq)(...)(val) */
+enum ruby_vminsn_type
+attr_bin_invokesuperforward(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return BIN(invokesuperforward);
+}
+
+/* attr rb_snum_t comptime_sp_inc @ invokesuperforward(cd, blockiseq)(...)(val) */
+rb_snum_t
+attr_comptime_sp_inc_invokesuperforward(
+    MAYBE_UNUSED(CALL_INFO ci),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return
+#line 1079 "insns.def"
+sp_inc_of_sendish(ci);
+#line 6770 "insns_info.inc"
+}
+
+/* attr bool handles_sp @ invokesuperforward(cd, blockiseq)(...)(val) */
+bool
+attr_handles_sp_invokesuperforward(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return true;
+}
+
+/* attr bool leaf @ invokesuperforward(cd, blockiseq)(...)(val) */
+bool
+attr_leaf_invokesuperforward(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return false;
+}
+
+/* attr const char* name @ invokesuperforward(cd, blockiseq)(...)(val) */
+const char*
+attr_name_invokesuperforward(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return insn_name(BIN(invokesuperforward));
+}
+
+/* attr rb_num_t open @ invokesuperforward(cd, blockiseq)(...)(val) */
+rb_num_t
+attr_open_invokesuperforward(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return 2;
+}
+
+/* attr rb_num_t popn @ invokesuperforward(cd, blockiseq)(...)(val) */
+rb_num_t
+attr_popn_invokesuperforward(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return 0;
+}
+
+/* attr rb_num_t retn @ invokesuperforward(cd, blockiseq)(...)(val) */
+rb_num_t
+attr_retn_invokesuperforward(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return 1;
+}
+
+/* attr rb_snum_t sp_inc @ invokesuperforward(cd, blockiseq)(...)(val) */
+rb_snum_t
+attr_sp_inc_invokesuperforward(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return
+#line 1078 "insns.def"
+sp_inc_of_sendish(cd->ci);
+#line 6843 "insns_info.inc"
+}
+
+/* attr rb_num_t width @ invokesuperforward(cd, blockiseq)(...)(val) */
+rb_num_t
+attr_width_invokesuperforward(
     MAYBE_UNUSED(CALL_DATA cd),
     MAYBE_UNUSED(ISEQ blockiseq)
 )
@@ -6062,9 +6864,9 @@ rb_snum_t
 attr_comptime_sp_inc_invokeblock(MAYBE_UNUSED(CALL_INFO ci))
 {
     return
-#line 955 "insns.def"
+#line 1107 "insns.def"
 sp_inc_of_invokeblock(ci);
-#line 6068 "insns_info.inc"
+#line 6870 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ invokeblock(cd)(...)(val) */
@@ -6072,9 +6874,9 @@ bool
 attr_handles_sp_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 953 "insns.def"
+#line 1105 "insns.def"
 true;
-#line 6078 "insns_info.inc"
+#line 6880 "insns_info.inc"
 }
 
 /* attr bool leaf @ invokeblock(cd)(...)(val) */
@@ -6117,9 +6919,9 @@ rb_snum_t
 attr_sp_inc_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 954 "insns.def"
+#line 1106 "insns.def"
 sp_inc_of_invokeblock(cd->ci);
-#line 6123 "insns_info.inc"
+#line 6925 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ invokeblock(cd)(...)(val) */
@@ -6141,9 +6943,9 @@ bool
 attr_handles_sp_leave(void)
 {
     return
-#line 977 "insns.def"
+#line 1129 "insns.def"
 true;
-#line 6147 "insns_info.inc"
+#line 6949 "insns_info.inc"
 }
 
 /* attr bool leaf @ leave()(val)(val) */
@@ -6151,9 +6953,9 @@ bool
 attr_leaf_leave(void)
 {
     return
-#line 976 "insns.def"
+#line 1128 "insns.def"
 false;
-#line 6157 "insns_info.inc"
+#line 6959 "insns_info.inc"
 }
 
 /* attr const char* name @ leave()(val)(val) */
@@ -6217,9 +7019,9 @@ bool
 attr_leaf_throw(MAYBE_UNUSED(rb_num_t throw_state))
 {
     return
-#line 1010 "insns.def"
+#line 1162 "insns.def"
 false;
-#line 6223 "insns_info.inc"
+#line 7025 "insns_info.inc"
 }
 
 /* attr const char* name @ throw(throw_state)(throwobj)(val) */
@@ -6283,9 +7085,9 @@ bool
 attr_leaf_jump(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1028 "insns.def"
+#line 1180 "insns.def"
 leafness_of_check_ints;
-#line 6289 "insns_info.inc"
+#line 7091 "insns_info.inc"
 }
 
 /* attr const char* name @ jump(dst)()() */
@@ -6349,9 +7151,9 @@ bool
 attr_leaf_branchif(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1041 "insns.def"
+#line 1193 "insns.def"
 leafness_of_check_ints;
-#line 6355 "insns_info.inc"
+#line 7157 "insns_info.inc"
 }
 
 /* attr const char* name @ branchif(dst)(val)() */
@@ -6415,9 +7217,9 @@ bool
 attr_leaf_branchunless(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1056 "insns.def"
+#line 1208 "insns.def"
 leafness_of_check_ints;
-#line 6421 "insns_info.inc"
+#line 7223 "insns_info.inc"
 }
 
 /* attr const char* name @ branchunless(dst)(val)() */
@@ -6481,9 +7283,9 @@ bool
 attr_leaf_branchnil(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1071 "insns.def"
+#line 1223 "insns.def"
 leafness_of_check_ints;
-#line 6487 "insns_info.inc"
+#line 7289 "insns_info.inc"
 }
 
 /* attr const char* name @ branchnil(dst)(val)() */
@@ -6696,9 +7498,9 @@ attr_sp_inc_opt_case_dispatch(
 )
 {
     return
-#line 1099 "insns.def"
+#line 1251 "insns.def"
 -1;
-#line 6702 "insns_info.inc"
+#line 7504 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_case_dispatch(hash, else_offset)(..., key)() */
@@ -6919,9 +7721,9 @@ bool
 attr_leaf_opt_div(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1160 "insns.def"
+#line 1312 "insns.def"
 false;
-#line 6925 "insns_info.inc"
+#line 7727 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_div(cd)(recv, obj)(val) */
@@ -6985,9 +7787,9 @@ bool
 attr_leaf_opt_mod(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1176 "insns.def"
+#line 1328 "insns.def"
 false;
-#line 6991 "insns_info.inc"
+#line 7793 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_mod(cd)(recv, obj)(val) */
@@ -7456,9 +8258,9 @@ bool
 attr_leaf_opt_ltlt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1278 "insns.def"
+#line 1430 "insns.def"
 false;
-#line 7462 "insns_info.inc"
+#line 8264 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_ltlt(cd)(recv, obj)(val) */
@@ -7648,9 +8450,9 @@ bool
 attr_leaf_opt_aref(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1325 "insns.def"
+#line 1477 "insns.def"
 false;
-#line 7654 "insns_info.inc"
+#line 8456 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_aref(cd)(recv, obj)(val) */
@@ -7714,9 +8516,9 @@ bool
 attr_leaf_opt_aset(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1342 "insns.def"
+#line 1494 "insns.def"
 false;
-#line 7720 "insns_info.inc"
+#line 8522 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_aset(cd)(recv, obj, set)(val) */
@@ -7789,9 +8591,9 @@ attr_leaf_opt_aset_with(
 )
 {
     return
-#line 1358 "insns.def"
+#line 1510 "insns.def"
 false;
-#line 7795 "insns_info.inc"
+#line 8597 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_aset_with(key, cd)(recv, val)(val) */
@@ -7882,9 +8684,9 @@ attr_leaf_opt_aref_with(
 )
 {
     return
-#line 1379 "insns.def"
+#line 1531 "insns.def"
 false;
-#line 7888 "insns_info.inc"
+#line 8690 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_aref_with(key, cd)(recv)(val) */
@@ -8281,9 +9083,9 @@ bool
 attr_leaf_opt_regexpmatch2(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1465 "insns.def"
+#line 1617 "insns.def"
 false;
-#line 8287 "insns_info.inc"
+#line 9089 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_regexpmatch2(cd)(obj2, obj1)(val) */
@@ -8347,9 +9149,9 @@ bool
 attr_leaf_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
 {
     return
-#line 1480 "insns.def"
+#line 1632 "insns.def"
 false;
-#line 8353 "insns_info.inc"
+#line 9155 "insns_info.inc"
 }
 
 /* attr const char* name @ invokebuiltin(bf)(...)(val) */
@@ -8385,9 +9187,9 @@ rb_snum_t
 attr_sp_inc_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
 {
     return
-#line 1481 "insns.def"
+#line 1633 "insns.def"
 1 - bf->argc;
-#line 8391 "insns_info.inc"
+#line 9193 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ invokebuiltin(bf)(...)(val) */
@@ -8425,9 +9227,9 @@ attr_leaf_opt_invokebuiltin_delegate(
 )
 {
     return
-#line 1492 "insns.def"
+#line 1644 "insns.def"
 false;
-#line 8431 "insns_info.inc"
+#line 9233 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_invokebuiltin_delegate(bf, index)()(val) */
@@ -8518,9 +9320,9 @@ attr_leaf_opt_invokebuiltin_delegate_leave(
 )
 {
     return
-#line 1503 "insns.def"
+#line 1655 "insns.def"
 false;
-#line 8524 "insns_info.inc"
+#line 9326 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_invokebuiltin_delegate_leave(bf, index)()(val) */
@@ -8970,17 +9772,19 @@ comptime_insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *o
     static const signed char t[] = {
            0,    1,   -1,    1,   -1,    1,    1,   -1,
            1,   -1,    1,   -1,    1,   -1,   -2,    1,
-          -1,    1,    1,    1,    1,    1, -127,   -1,
-        -127,    0, -127, -127,    1,    1, -127,   -1,
-           0,    0, -127,   -1,   -1,    1, -127,    0,
-        -127, -127, -127, -127,    0,    1,   -1,    1,
-           0,   -1,    0,   -1, -127, -127,    0,    1,
-           0,    1, -127, -127, -127,    0,    0,    0,
+          -1,    1,    1,    1,    1,    1,    1, -127,
+          -1, -127,    0, -127,   -1,    1,    1, -127,
+          -1,   -1, -127,    0,    0, -127,   -1,   -1,
+           1, -127,    0, -127, -127, -127, -127,    0,
+           1,   -1,    1,    0,   -1,    0,   -1, -127,
+        -127, -127,    0,    1,    1,    1,    0,    1,
+        -127, -127, -127, -127, -127,    0,    0,    0,
           -1,   -1,   -1,    1, -127,   -1,   -1,   -1,
           -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
           -1,   -1,   -1,   -1,   -2,   -1,    0,    0,
            0,    0,    0,    0,   -1, -127,    1,    1,
            1,    1,   -1,   -1,    1,    1,    0,    0,
+           0,    0,    0,    0,    0,    0,    0,    0,
            0,    0,    0,    0,    0,    0,    0,    0,
            0,    0,    0,    0,    0,    0,    0,    0,
            0,    0,    0,    0,    0,    0,    0,    0,
@@ -9010,10 +9814,10 @@ comptime_insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *o
         return attr_sp_inc_toregexp(NUM2LONG(opes[0]), NUM2LONG(opes[1]));
     case BIN(newarray):
         return attr_sp_inc_newarray(NUM2LONG(opes[0]));
-    case BIN(newarraykwsplat):
-        return attr_sp_inc_newarraykwsplat(NUM2LONG(opes[0]));
     case BIN(expandarray):
         return attr_sp_inc_expandarray(NUM2LONG(opes[0]), NUM2LONG(opes[1]));
+    case BIN(pushtoarray):
+        return attr_sp_inc_pushtoarray(NUM2LONG(opes[0]));
     case BIN(newhash):
         return attr_sp_inc_newhash(NUM2LONG(opes[0]));
     case BIN(dupn):
@@ -9028,12 +9832,18 @@ comptime_insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *o
         return attr_sp_inc_adjuststack(NUM2LONG(opes[0]));
     case BIN(send):
         return attr_comptime_sp_inc_send((CALL_INFO)(opes[0]), (ISEQ)(opes[1]));
+    case BIN(sendforward):
+        return attr_comptime_sp_inc_sendforward((CALL_INFO)(opes[0]), (ISEQ)(opes[1]));
     case BIN(opt_send_without_block):
         return attr_comptime_sp_inc_opt_send_without_block((CALL_INFO)(opes[0]));
+    case BIN(opt_duparray_send):
+        return attr_comptime_sp_inc_opt_duparray_send(opes[0], SYM2ID(opes[1]), NUM2LONG(opes[2]));
     case BIN(opt_newarray_send):
-        return attr_comptime_sp_inc_opt_newarray_send(NUM2LONG(opes[0]), SYM2ID(opes[1]));
+        return attr_comptime_sp_inc_opt_newarray_send(NUM2LONG(opes[0]), NUM2LONG(opes[1]));
     case BIN(invokesuper):
         return attr_comptime_sp_inc_invokesuper((CALL_INFO)(opes[0]), (ISEQ)(opes[1]));
+    case BIN(invokesuperforward):
+        return attr_comptime_sp_inc_invokesuperforward((CALL_INFO)(opes[0]), (ISEQ)(opes[1]));
     case BIN(invokeblock):
         return attr_comptime_sp_inc_invokeblock((CALL_INFO)(opes[0]));
     case BIN(opt_case_dispatch):
@@ -9071,6 +9881,7 @@ insn_may_depend_on_sp_or_pc(int insn, const VALUE *opes)
       case BIN(toregexp):
       case BIN(expandarray):
       case BIN(concatarray):
+      case BIN(concattoarray):
       case BIN(splatarray):
       case BIN(splatkw):
       case BIN(newhash):
@@ -9082,10 +9893,13 @@ insn_may_depend_on_sp_or_pc(int insn, const VALUE *opes)
       case BIN(definemethod):
       case BIN(definesmethod):
       case BIN(send):
+      case BIN(sendforward):
       case BIN(opt_send_without_block):
       case BIN(objtostring):
+      case BIN(opt_duparray_send):
       case BIN(opt_newarray_send):
       case BIN(invokesuper):
+      case BIN(invokesuperforward):
       case BIN(invokeblock):
       case BIN(leave):
       case BIN(throw):
@@ -9127,16 +9941,19 @@ insn_may_depend_on_sp_or_pc(int insn, const VALUE *opes)
       case BIN(trace_putobject):
       case BIN(trace_putspecialobject):
       case BIN(trace_putstring):
+      case BIN(trace_putchilledstring):
       case BIN(trace_concatstrings):
       case BIN(trace_anytostring):
       case BIN(trace_toregexp):
       case BIN(trace_intern):
       case BIN(trace_newarray):
-      case BIN(trace_newarraykwsplat):
+      case BIN(trace_pushtoarraykwsplat):
       case BIN(trace_duparray):
       case BIN(trace_duphash):
       case BIN(trace_expandarray):
       case BIN(trace_concatarray):
+      case BIN(trace_concattoarray):
+      case BIN(trace_pushtoarray):
       case BIN(trace_splatarray):
       case BIN(trace_splatkw):
       case BIN(trace_newhash):
@@ -9158,13 +9975,18 @@ insn_may_depend_on_sp_or_pc(int insn, const VALUE *opes)
       case BIN(trace_definemethod):
       case BIN(trace_definesmethod):
       case BIN(trace_send):
+      case BIN(trace_sendforward):
       case BIN(trace_opt_send_without_block):
       case BIN(trace_objtostring):
+      case BIN(trace_opt_ary_freeze):
+      case BIN(trace_opt_hash_freeze):
       case BIN(trace_opt_str_freeze):
       case BIN(trace_opt_nil_p):
       case BIN(trace_opt_str_uminus):
+      case BIN(trace_opt_duparray_send):
       case BIN(trace_opt_newarray_send):
       case BIN(trace_invokesuper):
+      case BIN(trace_invokesuperforward):
       case BIN(trace_invokeblock):
       case BIN(trace_leave):
       case BIN(trace_throw):

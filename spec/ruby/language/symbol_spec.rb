@@ -96,8 +96,8 @@ describe "A Symbol literal" do
     %I{a b #{"c"}}.should == [:a, :b, :c]
   end
 
-  ruby_bug "#20280", ""..."3.3" do
-    it "raises a SyntaxError at parse time when Symbol with invalid bytes" do
+  ruby_bug "#20280", ""..."3.4" do
+    it "raises an SyntaxError at parse time when Symbol with invalid bytes" do
       ScratchPad.record []
       -> {
         eval 'ScratchPad << 1; :"\xC3"'

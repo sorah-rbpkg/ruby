@@ -72,6 +72,7 @@ Init_id(void)
     REGISTER_SYMID(idInspect, "inspect");
     REGISTER_SYMID(idIntern, "intern");
     REGISTER_SYMID(idObject_id, "object_id");
+    REGISTER_SYMID(id__id__, "__id__");
     REGISTER_SYMID(idConst_added, "const_added");
     REGISTER_SYMID(idConst_missing, "const_missing");
     REGISTER_SYMID(idMethodMissing, "method_missing");
@@ -123,6 +124,9 @@ Init_id(void)
     REGISTER_SYMID(idName, "name");
     REGISTER_SYMID(idNil, "nil");
     REGISTER_SYMID(idPath, "path");
+    REGISTER_SYMID(idPack, "pack");
+    REGISTER_SYMID(idBuffer, "buffer");
+    REGISTER_SYMID(idIncludeP, "include?");
     REGISTER_SYMID(idUScore, "_");
     REGISTER_SYMID(idNUMPARAM_1, "_1");
     REGISTER_SYMID(idNUMPARAM_2, "_2");
@@ -154,4 +158,5 @@ Init_id(void)
     REGISTER_SYMID(idLASTLINE, "$_");
     REGISTER_SYMID(idBACKREF, "$~");
     REGISTER_SYMID(idERROR_INFO, "$!");
+    REGISTER_SYMID(idRuby, "Ruby");
 }

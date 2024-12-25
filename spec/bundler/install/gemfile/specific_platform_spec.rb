@@ -19,16 +19,60 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
+  it "still installs the platform specific variant when locked only to ruby, and the platform specific variant has different dependencies" do
+    simulate_platform "x86_64-darwin-15" do
+      build_repo4 do
+        build_gem("sass-embedded", "1.72.0") do |s|
+          s.add_dependency "rake"
+        end
+
+        build_gem("sass-embedded", "1.72.0") do |s|
+          s.platform = "x86_64-darwin-15"
+        end
+
+        build_gem "rake"
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "sass-embedded"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            rake (1.0)
+            sass-embedded (1.72.0)
+              rake
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          sass-embedded
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "install --verbose"
+      expect(err).to include("The following platform specific gems are getting installed, yet the lockfile includes only their generic ruby version")
+      expect(out).to include("Installing sass-embedded 1.72.0 (x86_64-darwin-15)")
+
+      expect(the_bundle).to include_gem("sass-embedded 1.72.0 x86_64-darwin-15")
+    end
+  end
+
   it "understands that a non-platform specific gem in a old lockfile doesn't necessarily mean installing the non-specific variant" do
     simulate_platform "x86_64-darwin-15" do
       setup_multiplatform_gem
 
-      system_gems "bundler-2.1.4"
-
       # Consistent location to install and look for gems
-      bundle "config set --local path vendor/bundle", env: { "BUNDLER_VERSION" => "2.1.4" }
+      bundle "config set --local path vendor/bundle"
 
-      install_gemfile(google_protobuf, env: { "BUNDLER_VERSION" => "2.1.4" })
+      install_gemfile(google_protobuf)
 
       # simulate lockfile created with old bundler, which only locks for ruby platform
       lockfile <<-L
@@ -44,11 +88,11 @@ RSpec.describe "bundle install with specific platforms" do
           google-protobuf
 
         BUNDLED WITH
-           2.1.4
+           #{Bundler::VERSION}
       L
 
       # force strict usage of the lock file by setting frozen mode
-      bundle "config set --local frozen true", env: { "BUNDLER_VERSION" => "2.1.4" }
+      bundle "config set --local frozen true"
 
       # make sure the platform that got actually installed with the old bundler is used
       expect(the_bundle).to include_gem("google-protobuf 3.0.0.alpha.5.0.5.1 universal-darwin")
@@ -59,10 +103,8 @@ RSpec.describe "bundle install with specific platforms" do
     simulate_platform "x86_64-darwin-15" do
       setup_multiplatform_gem
 
-      system_gems "bundler-2.1.4"
-
       # Consistent location to install and look for gems
-      bundle "config set --local path vendor/bundle", env: { "BUNDLER_VERSION" => "2.1.4" }
+      bundle "config set --local path vendor/bundle"
 
       gemfile google_protobuf
 
@@ -84,10 +126,11 @@ RSpec.describe "bundle install with specific platforms" do
           google-protobuf
         #{checksums}
         BUNDLED WITH
-           2.1.4
+           #{Bundler::VERSION}
       L
 
-      bundle "update", env: { "BUNDLER_VERSION" => Bundler::VERSION }
+      bundle "update"
+      expect(err).to include("The following platform specific gems are getting installed, yet the lockfile includes only their generic ruby version")
 
       checksums.checksum gem_repo2, "google-protobuf", "3.0.0.alpha.5.0.5.1"
 
@@ -170,10 +213,8 @@ RSpec.describe "bundle install with specific platforms" do
         end
       end
 
-      system_gems "bundler-2.1.4"
-
       # Consistent location to install and look for gems
-      bundle "config set --local path vendor/bundle", env: { "BUNDLER_VERSION" => "2.1.4" }
+      bundle "config set --local path vendor/bundle"
 
       gemfile <<-G
         source "https://gem.repo2"
@@ -194,10 +235,11 @@ RSpec.describe "bundle install with specific platforms" do
           libv8
 
         BUNDLED WITH
-           2.1.4
+           #{Bundler::VERSION}
       L
 
-      bundle "install --verbose", env: { "BUNDLER_VERSION" => "2.1.4" }
+      bundle "install --verbose"
+      expect(err).to include("The following platform specific gems are getting installed, yet the lockfile includes only their generic ruby version")
       expect(out).to include("Installing libv8 8.4.255.0 (universal-darwin)")
 
       bundle "add mini_racer --verbose"
@@ -235,6 +277,7 @@ RSpec.describe "bundle install with specific platforms" do
       L
 
       bundle "install --verbose", artifice: "compact_index_precompiled_before"
+      expect(err).to include("The following platform specific gems are getting installed, yet the lockfile includes only their generic ruby version")
       expect(out).to include("Installing grpc 1.50.0 (universal-darwin)")
     end
   end
@@ -284,8 +327,7 @@ RSpec.describe "bundle install with specific platforms" do
         specs:
 
       PLATFORMS
-        java
-        #{lockfile_platforms}
+        #{lockfile_platforms("java")}
 
       DEPENDENCIES
         pg_array_parser!
@@ -842,7 +884,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
-  it "automatically fixes the lockfile if locked only to ruby, and some locked specs don't meed locked dependencies" do
+  it "automatically fixes the lockfile if locked only to ruby, and some locked specs don't meet locked dependencies" do
     simulate_platform "x86_64-linux" do
       build_repo4 do
         build_gem("ibandit", "0.7.0") do |s|

@@ -63,27 +63,28 @@ class TestRDocOptions < RDoc::TestCase
     encoding = 'UTF-8'
 
     expected = {
-      'charset'              => 'UTF-8',
-      'encoding'             => encoding,
-      'exclude'              => %w[~\z \.orig\z \.rej\z \.bak\z \.gemspec\z],
-      'hyperlink_all'        => false,
-      'line_numbers'         => false,
-      'locale'               => nil,
-      'locale_dir'           => 'locale',
-      'locale_name'          => nil,
-      'main_page'            => nil,
-      'markup'               => 'rdoc',
-      'output_decoration'    => true,
-      'page_dir'             => nil,
-      'rdoc_include'         => [],
-      'show_hash'            => false,
-      'static_path'          => [],
-      'tab_width'            => 8,
-      'template_stylesheets' => [],
-      'title'                => nil,
-      'visibility'           => :protected,
-      'webcvs'               => nil,
-      'skip_tests'           => true,
+      'charset'               => 'UTF-8',
+      'encoding'              => encoding,
+      'embed_mixins'          => false,
+      'exclude'               => %w[~\z \.orig\z \.rej\z \.bak\z \.gemspec\z],
+      'hyperlink_all'         => false,
+      'line_numbers'          => false,
+      'locale_dir'            => 'locale',
+      'locale_name'           => nil,
+      'main_page'             => nil,
+      'markup'                => 'rdoc',
+      'output_decoration'     => true,
+      'page_dir'              => nil,
+      'rdoc_include'          => [],
+      'show_hash'             => false,
+      'static_path'           => [],
+      'tab_width'             => 8,
+      'template_stylesheets'  => [],
+      'title'                 => nil,
+      'visibility'            => :protected,
+      'warn_missing_rdoc_ref' => false,
+      'webcvs'                => nil,
+      'skip_tests'            => true,
     }
 
     assert_equal expected, coder
@@ -590,6 +591,20 @@ rdoc_include:
     assert_includes @options.rdoc_include, @options.root.to_s
   end
 
+  def test_parse_embed_mixins
+    assert_false(@options.embed_mixins)
+
+    out, err = capture_output { @options.parse(["--embed-mixins"]) }
+    assert_empty(out)
+    assert_empty(err)
+    assert_true(@options.embed_mixins)
+
+    out, err = capture_output { @options.parse(["--no-embed-mixins"]) }
+    assert_empty(out)
+    assert_empty(err)
+    assert_false(@options.embed_mixins)
+  end
+
   def test_parse_tab_width
     @options.parse %w[--tab-width=1]
     assert_equal 1, @options.tab_width
@@ -718,6 +733,28 @@ rdoc_include:
 
     assert_empty out
     assert_empty err
+  end
+
+  def test_parse_locale_name_default
+    temp_dir do
+      @options.parse %w[]
+      assert_equal 'locale', @options.instance_variable_get(:@locale_dir)
+      assert_nil @options.instance_variable_get(:@locale_name)
+      assert_nil @options.locale
+      @options.finish
+      assert_nil @options.locale
+    end
+  end
+
+  def test_parse_locale_name
+    temp_dir do
+      @options.parse %w[--locale fr]
+      assert_equal 'locale', @options.instance_variable_get(:@locale_dir)
+      assert_equal 'fr', @options.instance_variable_get(:@locale_name)
+      assert_nil @options.locale
+      @options.finish
+      assert_equal 'fr', @options.locale.name
+    end
   end
 
   def test_setup_generator

@@ -1,7 +1,7 @@
 = Pre-Defined Global Variables
 
 Some of the pre-defined global variables have synonyms
-that are available via module Engish.
+that are available via module English.
 For each of those, the \English synonym is given.
 
 To use the module:
@@ -100,14 +100,6 @@ An input record separator, initially newline.
 English - <tt>$INPUT_RECORD_SEPARATOR</tt>, <tt>$RS</tt>.
 
 Aliased as <tt>$-0</tt>.
-
-=== <tt>$;</tt> (Input Field Separator)
-
-An input field separator, initially +nil+.
-
-English - <tt>$FIELD_SEPARATOR</tt>, <tt>$FS</tt>.
-
-Aliased as <tt>$-F</tt>.
 
 === <tt>$\\</tt> (Output Record Separator)
 
@@ -284,6 +276,8 @@ Whether command-line option <tt>-p</tt> was given; read-only.
 === <tt>$=</tt>
 
 === <tt>$,</tt>
+
+=== <tt>$;</tt>
 
 = Pre-Defined Global Constants
 

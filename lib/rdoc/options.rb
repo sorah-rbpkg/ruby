@@ -105,6 +105,7 @@ class RDoc::Options
     generator_name
     generator_options
     generators
+    locale
     op_dir
     page_dir
     option_parser
@@ -232,9 +233,9 @@ class RDoc::Options
   attr_accessor :main_page
 
   ##
-  # The default markup format.  The default is 'rdoc'.  'markdown', 'tomdoc'
-  # and 'rd' are also built-in.
-
+  # The markup format.
+  # One of: +rdoc+ (the default), +markdown+, +rd+, +tomdoc+.
+  # See {Markup Formats}[rdoc-ref:RDoc::Markup@Markup+Formats].
   attr_accessor :markup
 
   ##
@@ -325,6 +326,12 @@ class RDoc::Options
   attr_accessor :verbosity
 
   ##
+  # Warn if rdoc-ref links can't be resolved
+  # Default is +false+
+
+  attr_accessor :warn_missing_rdoc_ref
+
+  ##
   # URL of web cvs frontend
 
   attr_accessor :webcvs
@@ -343,6 +350,11 @@ class RDoc::Options
   # Indicates if files of test suites should be skipped
   attr_accessor :skip_tests
 
+  ##
+  # Embed mixin methods, attributes, and constants into class documentation. Set via
+  # +--[no-]embed-mixins+ (Default is +false+.)
+  attr_accessor :embed_mixins
+
   def initialize loaded_options = nil # :nodoc:
     init_ivars
     override loaded_options if loaded_options
@@ -350,6 +362,7 @@ class RDoc::Options
 
   def init_ivars # :nodoc:
     @dry_run = false
+    @embed_mixins = false
     @exclude = %w[
       ~\z \.orig\z \.rej\z \.bak\z
       \.gemspec\z
@@ -386,6 +399,7 @@ class RDoc::Options
     @update_output_dir = true
     @verbosity = 1
     @visibility = :protected
+    @warn_missing_rdoc_ref = false
     @webcvs = nil
     @write_options = false
     @encoding = Encoding::UTF_8
@@ -400,6 +414,7 @@ class RDoc::Options
     @encoding = encoding ? Encoding.find(encoding) : encoding
 
     @charset        = map['charset']
+    @embed_mixins   = map['embed_mixins']
     @exclude        = map['exclude']
     @generator_name = map['generator_name']
     @hyperlink_all  = map['hyperlink_all']
@@ -431,6 +446,7 @@ class RDoc::Options
     end
 
     @charset        = map['charset']        if map.has_key?('charset')
+    @embed_mixins   = map['embed_mixins']   if map.has_key?('embed_mixins')
     @exclude        = map['exclude']        if map.has_key?('exclude')
     @generator_name = map['generator_name'] if map.has_key?('generator_name')
     @hyperlink_all  = map['hyperlink_all']  if map.has_key?('hyperlink_all')
@@ -448,6 +464,8 @@ class RDoc::Options
     @visibility     = map['visibility']     if map.has_key?('visibility')
     @webcvs         = map['webcvs']         if map.has_key?('webcvs')
 
+    @warn_missing_rdoc_ref = map['warn_missing_rdoc_ref'] if map.has_key?('warn_missing_rdoc_ref')
+
     if map.has_key?('rdoc_include')
       @rdoc_include = sanitize_path map['rdoc_include']
     end
@@ -459,11 +477,12 @@ class RDoc::Options
   def == other # :nodoc:
     self.class === other and
       @encoding       == other.encoding       and
+      @embed_mixins   == other.embed_mixins   and
       @generator_name == other.generator_name and
       @hyperlink_all  == other.hyperlink_all  and
       @line_numbers   == other.line_numbers   and
       @locale         == other.locale         and
-      @locale_dir     == other.locale_dir and
+      @locale_dir     == other.locale_dir     and
       @main_page      == other.main_page      and
       @markup         == other.markup         and
       @op_dir         == other.op_dir         and
@@ -682,7 +701,7 @@ Usage: #{opt.program_name} [options] [names...]
 
       EOF
 
-      parsers = Hash.new { |h,parser| h[parser] = [] }
+      parsers = Hash.new { |h, parser| h[parser] = [] }
 
       RDoc::Parser.parsers.each do |regexp, parser|
         parsers[parser.name.sub('RDoc::Parser::', '')] << regexp.source
@@ -837,6 +856,14 @@ Usage: #{opt.program_name} [options] [names...]
              "One of 'public', 'protected' (the default),",
              "'private' or 'nodoc' (show everything)") do |value|
         @visibility = value
+      end
+
+      opt.separator nil
+
+      opt.on("--[no-]embed-mixins",
+             "Embed mixin methods, attributes, and constants",
+             "into class documentation. (default false)") do |value|
+        @embed_mixins = value
       end
 
       opt.separator nil
@@ -1082,6 +1109,13 @@ Usage: #{opt.program_name} [options] [names...]
       opt.on("-D", "--[no-]debug",
              "Displays lots on internal stuff.") do |value|
         $DEBUG_RDOC = value
+      end
+
+      opt.separator nil
+
+      opt.on("--warn-missing-rdoc-ref",
+             "Warn if rdoc-ref links can't be resolved") do |value|
+        @warn_missing_rdoc_ref = value
       end
 
       opt.separator nil

@@ -612,8 +612,8 @@ class TestEnv < Test::Unit::TestCase
     <<-"end;"
       envvars_to_check = [
         "foo\0bar",
-        "#{'\xa1\xa1'}".force_encoding(Encoding::UTF_16LE),
-        "foo".force_encoding(Encoding::ISO_2022_JP),
+        "#{'\xa1\xa1'}".dup.force_encoding(Encoding::UTF_16LE),
+        "foo".dup.force_encoding(Encoding::ISO_2022_JP),
       ]
       envvars_to_check.each do |#{var_name}|
         #{str_for_yielding_exception_class(code_str)}
@@ -1484,6 +1484,16 @@ class TestEnv < Test::Unit::TestCase
       assert_equal text, ENV["test"]
     ensure
       ENV["test"] = test
+    end
+
+    def test_utf8_empty
+      key = "VAR\u{e5 e1 e2 e4 e3 101 3042}"
+      ENV[key] = "x"
+      assert_equal "x", ENV[key]
+      ENV[key] = ""
+      assert_equal "", ENV[key]
+      ENV[key] = nil
+      assert_nil ENV[key]
     end
   end
 end

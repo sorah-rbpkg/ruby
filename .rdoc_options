@@ -1,4 +1,13 @@
 ---
 page_dir: doc
-main_page: README.md
+charset: UTF-8
+encoding: UTF-8
+main_page: index.md
 title: Documentation for Ruby development version
+visibility: :private
+rdoc_include:
+- doc
+
+exclude:
+- lib/irb
+- .gemspec

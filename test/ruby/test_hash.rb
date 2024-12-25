@@ -869,6 +869,35 @@ class TestHash < Test::Unit::TestCase
     $, = nil
   end
 
+  def test_inspect
+    no_quote = '{a: 1, a!: 1, a?: 1}'
+    quote0 = '{"": 1}'
+    quote1 = '{"0": 1, "!": 1, "%": 1, "&": 1, "*": 1, "+": 1, "-": 1, "/": 1, "<": 1, ">": 1, "^": 1, "`": 1, "|": 1, "~": 1}'
+    quote2 = '{"@a": 1, "$a": 1, "+@": 1, "a=": 1, "[]": 1}'
+    quote3 = '{"a\"b": 1, "@@a": 1, "<=>": 1, "===": 1, "[]=": 1}'
+    assert_equal(no_quote, eval(no_quote).inspect)
+    assert_equal(quote0, eval(quote0).inspect)
+    assert_equal(quote1, eval(quote1).inspect)
+    assert_equal(quote2, eval(quote2).inspect)
+    assert_equal(quote3, eval(quote3).inspect)
+    begin
+      verbose_bak, $VERBOSE = $VERBOSE, nil
+      enc = Encoding.default_external
+      Encoding.default_external = Encoding::ASCII
+      utf8_ascii_hash = '{"\\u3042": 1}'
+      assert_equal(eval(utf8_ascii_hash).inspect, utf8_ascii_hash)
+      Encoding.default_external = Encoding::UTF_8
+      utf8_hash = "{\u3042: 1}"
+      assert_equal(eval(utf8_hash).inspect, utf8_hash)
+      Encoding.default_external = Encoding::Windows_31J
+      sjis_hash = "{\x87]: 1}".force_encoding('sjis')
+      assert_equal(eval(sjis_hash).inspect, sjis_hash)
+    ensure
+      Encoding.default_external = enc
+      $VERBOSE = verbose_bak
+    end
+  end
+
   def test_update
     h1 = @cls[ 1 => 2, 2 => 3, 3 => 4 ]
     h2 = @cls[ 2 => 'two', 4 => 'four' ]
@@ -1368,6 +1397,8 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_callcc
+    omit 'requires callcc support' unless respond_to?(:callcc)
+
     h = @cls[1=>2]
     c = nil
     f = false
@@ -1388,6 +1419,8 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_callcc_iter_level
+    omit 'requires callcc support' unless respond_to?(:callcc)
+
     bug9105 = '[ruby-dev:47803] [Bug #9105]'
     h = @cls[1=>2, 3=>4]
     c = nil
@@ -1406,6 +1439,8 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_callcc_escape
+    omit 'requires callcc support' unless respond_to?(:callcc)
+
     bug9105 = '[ruby-dev:47803] [Bug #9105]'
     assert_nothing_raised(RuntimeError, bug9105) do
       h=@cls[]
@@ -1420,6 +1455,8 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_callcc_reenter
+    omit 'requires callcc support' unless respond_to?(:callcc)
+
     bug9105 = '[ruby-dev:47803] [Bug #9105]'
     assert_nothing_raised(RuntimeError, bug9105) do
       h = @cls[1=>2,3=>4]
@@ -1955,14 +1992,14 @@ class TestHashOnly < Test::Unit::TestCase
   end
 
   def test_AREF_fstring_key_default_proc
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_separately(['--disable-frozen-string-literal'], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       h = Hash.new do |h, k|
         k.frozen?
       end
 
       str = "foo"
-      refute str.frozen? # assumes this file is frozen_string_literal: false
+      refute str.frozen?
       refute h[str]
       refute h["foo"]
     end;
@@ -2260,7 +2297,7 @@ class TestHashOnly < Test::Unit::TestCase
     h = obj.h
 
     h[obj] = true
-    assert_equal '{0=>0, 1=>1, 2=>2, 3=>3, 4=>4, 5=>5, 6=>6, 7=>7, 8=>8, 9=>9, test=>true}', h.inspect
+    assert_equal '{0 => 0, 1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5, 6 => 6, 7 => 7, 8 => 8, 9 => 9, test => true}', h.inspect
   end
 
   def test_ar2st_delete
@@ -2274,7 +2311,7 @@ class TestHashOnly < Test::Unit::TestCase
 
     h[obj2] = true
     h.delete obj
-    assert_equal '{0=>0, 1=>1, 2=>2, 3=>3, 4=>4, 5=>5, 6=>6, 7=>7, 8=>8, 9=>9}', h.inspect
+    assert_equal '{0 => 0, 1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5, 6 => 6, 7 => 7, 8 => 8, 9 => 9}', h.inspect
   end
 
   def test_ar2st_lookup

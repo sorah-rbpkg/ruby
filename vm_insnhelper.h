@@ -58,6 +58,19 @@ RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
     VM_REG_CFP = ec->cfp; \
 } while (0)
 
+typedef enum call_type {
+    CALL_PUBLIC,
+    CALL_FCALL,
+    CALL_VCALL,
+    CALL_PUBLIC_KW,
+    CALL_FCALL_KW
+} call_type;
+
+struct rb_forwarding_call_data {
+    struct rb_call_data cd;
+    CALL_INFO caller_ci;
+};
+
 #if VM_COLLECT_USAGE_DETAILS
 enum vm_regan_regtype {
     VM_REGAN_PC = 0,
@@ -182,8 +195,11 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
 static inline struct vm_throw_data *
 THROW_DATA_NEW(VALUE val, const rb_control_frame_t *cf, int st)
 {
-    struct vm_throw_data *obj = (struct vm_throw_data *)rb_imemo_new(imemo_throw_data, val, (VALUE)cf, 0, 0);
+    struct vm_throw_data *obj = IMEMO_NEW(struct vm_throw_data, imemo_throw_data, 0);
+    *((VALUE *)&obj->throw_obj) = val;
+    *((struct rb_control_frame_struct **)&obj->catch_frame) = (struct rb_control_frame_struct *)cf;
     obj->throw_state = st;
+
     return obj;
 }
 
@@ -247,8 +263,8 @@ THROW_DATA_CONSUMED_SET(struct vm_throw_data *obj)
 static inline bool
 vm_call_cacheable(const struct rb_callinfo *ci, const struct rb_callcache *cc)
 {
-    return (vm_ci_flag(ci) & VM_CALL_FCALL) ||
-        METHOD_ENTRY_VISI(vm_cc_cme(cc)) != METHOD_VISI_PROTECTED;
+    return !(vm_ci_flag(ci) & VM_CALL_FORWARDING) && ((vm_ci_flag(ci) & VM_CALL_FCALL) ||
+        METHOD_ENTRY_VISI(vm_cc_cme(cc)) != METHOD_VISI_PROTECTED);
 }
 /* If this returns true, an optimized function returned by `vm_call_iseq_setup_func`
    can be used as a fastpath. */

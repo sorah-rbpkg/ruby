@@ -29,12 +29,18 @@
 #include "internal/variable.h"
 #include "ruby/st.h"
 #include "vm_core.h"
+#include "yjit.h"
 
 /* Flags of T_CLASS
  *
- * 2:     RCLASS_SUPERCLASSES_INCLUDE_SELF
- *            The RCLASS_SUPERCLASSES contains the class as the last element.
- *            This means that this class owns the RCLASS_SUPERCLASSES list.
+ * 0:    RCLASS_IS_ROOT
+ *           The class has been added to the VM roots. Will always be marked and pinned.
+ *           This is done for classes defined from C to allow storing them in global variables.
+ * 1:    RUBY_FL_SINGLETON
+ *           This class is a singleton class.
+ * 2:    RCLASS_SUPERCLASSES_INCLUDE_SELF
+ *           The RCLASS_SUPERCLASSES contains the class as the last element.
+ *           This means that this class owns the RCLASS_SUPERCLASSES list.
  * if !SHAPE_IN_BASIC_FLAGS
  * 4-19: SHAPE_FLAG_MASK
  *           Shape ID for the class.
@@ -54,6 +60,9 @@
 
 /* Flags of T_MODULE
  *
+ * 0:    RCLASS_IS_ROOT
+ *           The class has been added to the VM roots. Will always be marked and pinned.
+ *           This is done for classes defined from C to allow storing them in global variables.
  * 1:    RMODULE_ALLOCATED_BUT_NOT_INITIALIZED
  *           Module has not been initialized.
  * 2:    RCLASS_SUPERCLASSES_INCLUDE_SELF
@@ -217,14 +226,14 @@ rb_class_detach_module_subclasses(VALUE klass)
 /**
  * Allocates a struct RClass for a new class.
  *
- * \param flags     initial value for basic.flags of the returned class.
- * \param klass     the class of the returned class.
- * \return          an uninitialized Class object.
- * \pre  \p klass must refer \c Class class or an ancestor of Class.
- * \pre  \code (flags | T_CLASS) != 0  \endcode
- * \post the returned class can safely be \c #initialize 'd.
+ * @param flags     initial value for basic.flags of the returned class.
+ * @param klass     the class of the returned class.
+ * @return          an uninitialized Class object.
+ * @pre  `klass` must refer `Class` class or an ancestor of Class.
+ * @pre  `(flags | T_CLASS) != 0`
+ * @post the returned class can safely be `#initialize` 'd.
  *
- * \note this function is not Class#allocate.
+ * @note this function is not Class#allocate.
  */
 static VALUE
 class_alloc(VALUE flags, VALUE klass)
@@ -259,14 +268,14 @@ RCLASS_M_TBL_INIT(VALUE c)
     RCLASS_M_TBL(c) = rb_id_table_create(0);
 }
 
-/*!
+/**
  * A utility function that wraps class_alloc.
  *
  * allocates a class and initializes safely.
- * \param super     a class from which the new class derives.
- * \return          a class object.
- * \pre  \a super must be a class.
- * \post the metaclass of the new class is Class.
+ * @param super     a class from which the new class derives.
+ * @return          a class object.
+ * @pre  `super` must be a class.
+ * @post the metaclass of the new class is Class.
  */
 VALUE
 rb_class_boot(VALUE super)
@@ -338,7 +347,7 @@ rb_check_inheritable(VALUE super)
         rb_raise(rb_eTypeError, "superclass must be an instance of Class (given an instance of %"PRIsVALUE")",
                  rb_obj_class(super));
     }
-    if (RBASIC(super)->flags & FL_SINGLETON) {
+    if (RCLASS_SINGLETON_P(super)) {
         rb_raise(rb_eTypeError, "can't make subclass of singleton class");
     }
     if (super == rb_cClass) {
@@ -424,7 +433,7 @@ class_init_copy_check(VALUE clone, VALUE orig)
     if (RCLASS_SUPER(clone) != 0 || clone == rb_cBasicObject) {
         rb_raise(rb_eTypeError, "already initialized class");
     }
-    if (FL_TEST(orig, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(orig)) {
         rb_raise(rb_eTypeError, "can't copy singleton class");
     }
 }
@@ -542,7 +551,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     RCLASS_EXT(clone)->cloned = true;
     RCLASS_EXT(orig)->cloned = true;
 
-    if (!FL_TEST(CLASS_OF(clone), FL_SINGLETON)) {
+    if (!RCLASS_SINGLETON_P(CLASS_OF(clone))) {
         RBASIC_SET_CLASS(clone, rb_singleton_class_clone(orig));
         rb_singleton_class_attached(METACLASS_OF(clone), (VALUE)clone);
     }
@@ -648,7 +657,7 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
     // attached to an object other than `obj`. In which case `obj` does not have
     // a material singleton class attached yet and there is no singleton class
     // to clone.
-    if (!(FL_TEST(klass, FL_SINGLETON) && RCLASS_ATTACHED_OBJECT(klass) == obj)) {
+    if (!(RCLASS_SINGLETON_P(klass) && RCLASS_ATTACHED_OBJECT(klass) == obj)) {
         // nothing to clone
         return klass;
     }
@@ -699,7 +708,7 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
 void
 rb_singleton_class_attached(VALUE klass, VALUE obj)
 {
-    if (FL_TEST(klass, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(klass)) {
         RCLASS_SET_ATTACHED_OBJECT(klass, obj);
     }
 }
@@ -724,7 +733,7 @@ rb_singleton_class_internal_p(VALUE sklass)
             !rb_singleton_class_has_metaclass_p(sklass));
 }
 
-/*!
+/**
  * whether k has a metaclass
  * @retval 1 if \a k has a metaclass
  * @retval 0 otherwise
@@ -733,25 +742,25 @@ rb_singleton_class_internal_p(VALUE sklass)
     (FL_TEST(METACLASS_OF(k), FL_SINGLETON) && \
      rb_singleton_class_has_metaclass_p(k))
 
-/*!
- * ensures \a klass belongs to its own eigenclass.
- * @return the eigenclass of \a klass
- * @post \a klass belongs to the returned eigenclass.
- *       i.e. the attached object of the eigenclass is \a klass.
+/**
+ * ensures `klass` belongs to its own eigenclass.
+ * @return the eigenclass of `klass`
+ * @post `klass` belongs to the returned eigenclass.
+ *       i.e. the attached object of the eigenclass is `klass`.
  * @note this macro creates a new eigenclass if necessary.
  */
 #define ENSURE_EIGENCLASS(klass) \
     (HAVE_METACLASS_P(klass) ? METACLASS_OF(klass) : make_metaclass(klass))
 
 
-/*!
- * Creates a metaclass of \a klass
- * \param klass     a class
- * \return          created metaclass for the class
- * \pre \a klass is a Class object
- * \pre \a klass has no singleton class.
- * \post the class of \a klass is the returned class.
- * \post the returned class is meta^(n+1)-class when \a klass is a meta^(n)-klass for n >= 0
+/**
+ * Creates a metaclass of `klass`
+ * @param klass     a class
+ * @return          created metaclass for the class
+ * @pre `klass` is a Class object
+ * @pre `klass` has no singleton class.
+ * @post the class of `klass` is the returned class.
+ * @post the returned class is meta^(n+1)-class when `klass` is a meta^(n)-klass for n >= 0
  */
 static inline VALUE
 make_metaclass(VALUE klass)
@@ -782,11 +791,11 @@ make_metaclass(VALUE klass)
     return metaclass;
 }
 
-/*!
- * Creates a singleton class for \a obj.
- * \pre \a obj must not a immediate nor a special const.
- * \pre \a obj must not a Class object.
- * \pre \a obj has no singleton class.
+/**
+ * Creates a singleton class for `obj`.
+ * @pre `obj` must not be an immediate nor a special const.
+ * @pre `obj` must not be a Class object.
+ * @pre `obj` has no singleton class.
  */
 static inline VALUE
 make_singleton_class(VALUE obj)
@@ -797,6 +806,7 @@ make_singleton_class(VALUE obj)
     FL_SET(klass, FL_SINGLETON);
     RBASIC_SET_CLASS(obj, klass);
     rb_singleton_class_attached(klass, obj);
+    rb_yjit_invalidate_no_singleton_class(orig_class);
 
     SET_METACLASS_OF(klass, METACLASS_OF(rb_class_real(orig_class)));
     return klass;
@@ -810,7 +820,7 @@ boot_defclass(const char *name, VALUE super)
     ID id = rb_intern(name);
 
     rb_const_set((rb_cObject ? rb_cObject : obj), id, obj);
-    rb_vm_add_root_module(obj);
+    rb_vm_register_global_object(obj);
     return obj;
 }
 
@@ -892,7 +902,7 @@ Init_class_hierarchy(void)
 {
     rb_cBasicObject = boot_defclass("BasicObject", 0);
     rb_cObject = boot_defclass("Object", rb_cBasicObject);
-    rb_gc_register_mark_object(rb_cObject);
+    rb_vm_register_global_object(rb_cObject);
 
     /* resolve class name ASAP for order-independence */
     rb_set_class_path_string(rb_cObject, rb_cObject, rb_fstring_lit("Object"));
@@ -917,15 +927,15 @@ Init_class_hierarchy(void)
 }
 
 
-/*!
- * \internal
+/**
+ * @internal
  * Creates a new *singleton class* for an object.
  *
- * \pre \a obj has no singleton class.
- * \note DO NOT USE the function in an extension libraries. Use \ref rb_singleton_class.
- * \param obj     An object.
- * \param unused  ignored.
- * \return        The singleton class of the object.
+ * @pre `obj` has no singleton class.
+ * @note DO NOT USE the function in an extension libraries. Use @ref rb_singleton_class.
+ * @param obj     An object.
+ * @param unused  ignored.
+ * @return        The singleton class of the object.
  */
 VALUE
 rb_make_metaclass(VALUE obj, VALUE unused)
@@ -951,13 +961,13 @@ rb_define_class_id(ID id, VALUE super)
 }
 
 
-/*!
+/**
  * Calls Class#inherited.
- * \param super  A class which will be called #inherited.
+ * @param super  A class which will be called #inherited.
  *               NULL means Object class.
- * \param klass  A Class object which derived from \a super
- * \return the value \c Class#inherited's returns
- * \pre Each of \a super and \a klass must be a \c Class object.
+ * @param klass  A Class object which derived from `super`
+ * @return the value `Class#inherited` returns
+ * @pre Each of `super` and `klass` must be a `Class` object.
  */
 VALUE
 rb_class_inherited(VALUE super, VALUE klass)
@@ -986,14 +996,14 @@ rb_define_class(const char *name, VALUE super)
         }
 
         /* Class may have been defined in Ruby and not pin-rooted */
-        rb_vm_add_root_module(klass);
+        rb_vm_register_global_object(klass);
         return klass;
     }
     if (!super) {
-        rb_raise(rb_eArgError, "no super class for `%s'", name);
+        rb_raise(rb_eArgError, "no super class for '%s'", name);
     }
     klass = rb_define_class_id(id, super);
-    rb_vm_add_root_module(klass);
+    rb_vm_register_global_object(klass);
     rb_const_set(rb_cObject, id, klass);
     rb_class_inherited(super, klass);
 
@@ -1028,7 +1038,7 @@ rb_define_class_id_under_no_pin(VALUE outer, ID id, VALUE super)
         return klass;
     }
     if (!super) {
-        rb_raise(rb_eArgError, "no super class for `%"PRIsVALUE"::%"PRIsVALUE"'",
+        rb_raise(rb_eArgError, "no super class for '%"PRIsVALUE"::%"PRIsVALUE"'",
                  rb_class_path(outer), rb_id2str(id));
     }
     klass = rb_define_class_id(id, super);
@@ -1043,7 +1053,7 @@ VALUE
 rb_define_class_id_under(VALUE outer, ID id, VALUE super)
 {
     VALUE klass = rb_define_class_id_under_no_pin(outer, id, super);
-    rb_vm_add_root_module(klass);
+    rb_vm_register_global_object(klass);
     return klass;
 }
 
@@ -1097,11 +1107,11 @@ rb_define_module(const char *name)
                      name, rb_obj_class(module));
         }
         /* Module may have been defined in Ruby and not pin-rooted */
-        rb_vm_add_root_module(module);
+        rb_vm_register_global_object(module);
         return module;
     }
     module = rb_module_new();
-    rb_vm_add_root_module(module);
+    rb_vm_register_global_object(module);
     rb_const_set(rb_cObject, id, module);
 
     return module;
@@ -1126,13 +1136,13 @@ rb_define_module_id_under(VALUE outer, ID id)
                      outer, rb_id2str(id), rb_obj_class(module));
         }
         /* Module may have been defined in Ruby and not pin-rooted */
-        rb_gc_register_mark_object(module);
+        rb_vm_register_global_object(module);
         return module;
     }
     module = rb_module_new();
     rb_const_set(outer, id, module);
     rb_set_class_path_string(module, outer, rb_id2str(id));
-    rb_gc_register_mark_object(module);
+    rb_vm_register_global_object(module);
 
     return module;
 }
@@ -1194,8 +1204,8 @@ rb_include_module(VALUE klass, VALUE module)
             iclass = iclass->next;
         }
 
-        int do_include = 1;
         while (iclass) {
+            int do_include = 1;
             VALUE check_class = iclass->klass;
             /* During lazy sweeping, iclass->klass could be a dead object that
              * has not yet been swept. */
@@ -1262,7 +1272,7 @@ static int
 do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super, bool check_cyclic)
 {
     VALUE p, iclass, origin_stack = 0;
-    int method_changed = 0, add_subclass;
+    int method_changed = 0;
     long origin_len;
     VALUE klass_origin = RCLASS_ORIGIN(klass);
     VALUE original_klass = klass;
@@ -1601,7 +1611,7 @@ class_descendants_recursive(VALUE klass, VALUE v)
 {
     struct subclass_traverse_data *data = (struct subclass_traverse_data *) v;
 
-    if (BUILTIN_TYPE(klass) == T_CLASS && !FL_TEST(klass, FL_SINGLETON)) {
+    if (BUILTIN_TYPE(klass) == T_CLASS && !RCLASS_SINGLETON_P(klass)) {
         if (data->buffer && data->count < data->maxcount && !rb_objspace_garbage_object_p(klass)) {
             // assumes that this does not cause GC as long as the length does not exceed the capacity
             rb_ary_push(data->buffer, klass);
@@ -1706,8 +1716,8 @@ rb_class_subclasses(VALUE klass)
 VALUE
 rb_class_attached_object(VALUE klass)
 {
-    if (!FL_TEST(klass, FL_SINGLETON)) {
-        rb_raise(rb_eTypeError, "`%"PRIsVALUE"' is not a singleton class", klass);
+    if (!RCLASS_SINGLETON_P(klass)) {
+        rb_raise(rb_eTypeError, "'%"PRIsVALUE"' is not a singleton class", klass);
     }
 
     return RCLASS_ATTACHED_OBJECT(klass);
@@ -1809,7 +1819,7 @@ static bool
 particular_class_p(VALUE mod)
 {
     if (!mod) return false;
-    if (FL_TEST(mod, FL_SINGLETON)) return true;
+    if (RCLASS_SINGLETON_P(mod)) return true;
     if (BUILTIN_TYPE(mod) == T_ICLASS) return true;
     return false;
 }
@@ -2086,19 +2096,19 @@ rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
     int recur = TRUE;
 
     if (rb_check_arity(argc, 0, 1)) recur = RTEST(argv[0]);
-    if (RB_TYPE_P(obj, T_CLASS) && FL_TEST(obj, FL_SINGLETON)) {
+    if (RCLASS_SINGLETON_P(obj)) {
         rb_singleton_class(obj);
     }
     klass = CLASS_OF(obj);
     origin = RCLASS_ORIGIN(klass);
     me_arg.list = st_init_numtable();
     me_arg.recur = recur;
-    if (klass && FL_TEST(klass, FL_SINGLETON)) {
+    if (klass && RCLASS_SINGLETON_P(klass)) {
         if ((mtbl = RCLASS_M_TBL(origin)) != 0) rb_id_table_foreach(mtbl, method_entry_i, &me_arg);
         klass = RCLASS_SUPER(klass);
     }
     if (recur) {
-        while (klass && (FL_TEST(klass, FL_SINGLETON) || RB_TYPE_P(klass, T_ICLASS))) {
+        while (klass && (RCLASS_SINGLETON_P(klass) || RB_TYPE_P(klass, T_ICLASS))) {
             if (klass != origin && (mtbl = RCLASS_M_TBL(klass)) != 0) rb_id_table_foreach(mtbl, method_entry_i, &me_arg);
             klass = RCLASS_SUPER(klass);
         }
@@ -2202,13 +2212,13 @@ rb_special_singleton_class(VALUE obj)
     return special_singleton_class_of(obj);
 }
 
-/*!
- * \internal
- * Returns the singleton class of \a obj. Creates it if necessary.
+/**
+ * @internal
+ * Returns the singleton class of `obj`. Creates it if necessary.
  *
- * \note DO NOT expose the returned singleton class to
+ * @note DO NOT expose the returned singleton class to
  *       outside of class.c.
- *       Use \ref rb_singleton_class instead for
+ *       Use @ref rb_singleton_class instead for
  *       consistency of the metaclass hierarchy.
  */
 static VALUE
@@ -2232,13 +2242,16 @@ singleton_class_of(VALUE obj)
         return klass;
 
       case T_STRING:
-        if (FL_TEST_RAW(obj, RSTRING_FSTR)) {
+        if (CHILLED_STRING_P(obj)) {
+            CHILLED_STRING_MUTATED(obj);
+        }
+        else if (FL_TEST_RAW(obj, RSTRING_FSTR)) {
             rb_raise(rb_eTypeError, "can't define singleton");
         }
     }
 
     klass = METACLASS_OF(obj);
-    if (!(FL_TEST(klass, FL_SINGLETON) &&
+    if (!(RCLASS_SINGLETON_P(klass) &&
           RCLASS_ATTACHED_OBJECT(klass) == obj)) {
         klass = rb_make_metaclass(obj, klass);
     }
@@ -2252,21 +2265,21 @@ void
 rb_freeze_singleton_class(VALUE x)
 {
     /* should not propagate to meta-meta-class, and so on */
-    if (!(RBASIC(x)->flags & FL_SINGLETON)) {
+    if (!RCLASS_SINGLETON_P(x)) {
         VALUE klass = RBASIC_CLASS(x);
         if (klass && // no class when hidden from ObjectSpace
             FL_TEST(klass, (FL_SINGLETON|FL_FREEZE)) == FL_SINGLETON) {
-            OBJ_FREEZE_RAW(klass);
+            OBJ_FREEZE(klass);
         }
     }
 }
 
-/*!
- * Returns the singleton class of \a obj, or nil if obj is not a
+/**
+ * Returns the singleton class of `obj`, or nil if obj is not a
  * singleton object.
  *
- * \param obj an arbitrary object.
- * \return the singleton class or nil.
+ * @param obj an arbitrary object.
+ * @return the singleton class or nil.
  */
 VALUE
 rb_singleton_class_get(VALUE obj)
@@ -2277,7 +2290,7 @@ rb_singleton_class_get(VALUE obj)
         return rb_special_singleton_class(obj);
     }
     klass = METACLASS_OF(obj);
-    if (!FL_TEST(klass, FL_SINGLETON)) return Qnil;
+    if (!RCLASS_SINGLETON_P(klass)) return Qnil;
     if (RCLASS_ATTACHED_OBJECT(klass) != obj) return Qnil;
     return klass;
 }

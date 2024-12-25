@@ -271,6 +271,18 @@ rb_str_encode_ospath(VALUE path)
 # define NORMALIZE_UTF8PATH 1
 
 # ifdef HAVE_WORKING_FORK
+static CFMutableStringRef
+mutable_CFString_new(CFStringRef *s, const char *ptr, long len)
+{
+    const CFAllocatorRef alloc = kCFAllocatorDefault;
+    *s = CFStringCreateWithBytesNoCopy(alloc, (const UInt8 *)ptr, len,
+                                       kCFStringEncodingUTF8, FALSE,
+                                       kCFAllocatorNull);
+    return CFStringCreateMutableCopy(alloc, len, *s);
+}
+
+#   define mutable_CFString_release(m, s) (CFRelease(m), CFRelease(s))
+
 static void
 rb_CFString_class_initialize_before_fork(void)
 {
@@ -297,15 +309,17 @@ rb_CFString_class_initialize_before_fork(void)
     /* Enough small but non-empty ASCII string to fit in NSTaggedPointerString. */
     const char small_str[] = "/";
     long len = sizeof(small_str) - 1;
-
-    const CFAllocatorRef alloc = kCFAllocatorDefault;
-    CFStringRef s = CFStringCreateWithBytesNoCopy(alloc,
-                                                  (const UInt8 *)small_str,
-                                                  len, kCFStringEncodingUTF8,
-                                                  FALSE, kCFAllocatorNull);
-    CFMutableStringRef m = CFStringCreateMutableCopy(alloc, len, s);
-    CFRelease(m);
-    CFRelease(s);
+    CFStringRef s;
+    /*
+     * Touch `CFStringCreateWithBytesNoCopy` *twice* because the implementation
+     * shipped with macOS 15.0 24A5331b does not return `NSTaggedPointerString`
+     * instance for the first call (totally not sure why). CoreFoundation
+     * shipped with macOS 15.1 does not have this issue.
+     */
+    for (int i = 0; i < 2; i++) {
+        CFMutableStringRef m = mutable_CFString_new(&s, small_str, len);
+        mutable_CFString_release(m, s);
+    }
 }
 # endif /* HAVE_WORKING_FORK */
 
@@ -314,11 +328,8 @@ rb_str_append_normalized_ospath(VALUE str, const char *ptr, long len)
 {
     CFIndex buflen = 0;
     CFRange all;
-    CFStringRef s = CFStringCreateWithBytesNoCopy(kCFAllocatorDefault,
-                                                  (const UInt8 *)ptr, len,
-                                                  kCFStringEncodingUTF8, FALSE,
-                                                  kCFAllocatorNull);
-    CFMutableStringRef m = CFStringCreateMutableCopy(kCFAllocatorDefault, len, s);
+    CFStringRef s;
+    CFMutableStringRef m = mutable_CFString_new(&s, ptr, len);
     long oldlen = RSTRING_LEN(str);
 
     CFStringNormalize(m, kCFStringNormalizationFormC);
@@ -328,8 +339,7 @@ rb_str_append_normalized_ospath(VALUE str, const char *ptr, long len)
     CFStringGetBytes(m, all, kCFStringEncodingUTF8, '?', FALSE,
                      (UInt8 *)(RSTRING_PTR(str) + oldlen), buflen, &buflen);
     rb_str_set_len(str, oldlen + buflen);
-    CFRelease(m);
-    CFRelease(s);
+    mutable_CFString_release(m, s);
     return str;
 }
 
@@ -468,7 +478,7 @@ apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
         aa->fn[aa->i].path = path;
     }
 
-    rb_thread_call_without_gvl(no_gvl_apply2files, aa, RUBY_UBF_IO, 0);
+    IO_WITHOUT_GVL(no_gvl_apply2files, aa);
     if (aa->errnum) {
 #ifdef UTIME_EINVAL
         if (func == utime_internal) {
@@ -1143,14 +1153,14 @@ no_gvl_fstat(void *data)
 }
 
 static int
-fstat_without_gvl(int fd, struct stat *st)
+fstat_without_gvl(rb_io_t *fptr, struct stat *st)
 {
     no_gvl_stat_data data;
 
-    data.file.fd = fd;
+    data.file.fd = fptr->fd;
     data.st = st;
 
-    return (int)(VALUE)rb_thread_io_blocking_region(no_gvl_fstat, &data, fd);
+    return (int)rb_io_blocking_region(fptr, no_gvl_fstat, &data);
 }
 
 static void *
@@ -1168,8 +1178,7 @@ stat_without_gvl(const char *path, struct stat *st)
     data.file.path = path;
     data.st = st;
 
-    return (int)(VALUE)rb_thread_call_without_gvl(no_gvl_stat, &data,
-                                                  RUBY_UBF_IO, NULL);
+    return IO_WITHOUT_GVL_INT(no_gvl_stat, &data);
 }
 
 #if !defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) && \
@@ -1219,17 +1228,16 @@ statx_without_gvl(const char *path, struct statx *stx, unsigned int mask)
     no_gvl_statx_data data = {stx, AT_FDCWD, path, 0, mask};
 
     /* call statx(2) with pathname */
-    return (int)(VALUE)rb_thread_call_without_gvl(no_gvl_statx, &data,
-                                                  RUBY_UBF_IO, NULL);
+    return IO_WITHOUT_GVL_INT(no_gvl_statx, &data);
 }
 
 static int
-fstatx_without_gvl(int fd, struct statx *stx, unsigned int mask)
+fstatx_without_gvl(rb_io_t *fptr, struct statx *stx, unsigned int mask)
 {
-    no_gvl_statx_data data = {stx, fd, "", AT_EMPTY_PATH, mask};
+    no_gvl_statx_data data = {stx, fptr->fd, "", AT_EMPTY_PATH, mask};
 
     /* call statx(2) with fd */
-    return (int)rb_thread_io_blocking_region(io_blocking_statx, &data, fd);
+    return (int)rb_io_blocking_region(fptr, io_blocking_statx, &data);
 }
 
 static int
@@ -1242,7 +1250,7 @@ rb_statx(VALUE file, struct statx *stx, unsigned int mask)
     if (!NIL_P(tmp)) {
         rb_io_t *fptr;
         GetOpenFile(tmp, fptr);
-        result = fstatx_without_gvl(fptr->fd, stx, mask);
+        result = fstatx_without_gvl(fptr, stx, mask);
         file = tmp;
     }
     else {
@@ -1283,7 +1291,7 @@ typedef struct statx statx_data;
 
 #elif defined(HAVE_STAT_BIRTHTIME)
 # define statx_without_gvl(path, st, mask) stat_without_gvl(path, st)
-# define fstatx_without_gvl(fd, st, mask) fstat_without_gvl(fd, st)
+# define fstatx_without_gvl(fptr, st, mask) fstat_without_gvl(fptr, st)
 # define statx_birthtime(st, fname) stat_birthtime(st)
 # define statx_has_birthtime(st) 1
 # define rb_statx(file, st, mask) rb_stat(file, st)
@@ -1303,7 +1311,7 @@ rb_stat(VALUE file, struct stat *st)
         rb_io_t *fptr;
 
         GetOpenFile(tmp, fptr);
-        result = fstat_without_gvl(fptr->fd, st);
+        result = fstat_without_gvl(fptr, st);
         file = tmp;
     }
     else {
@@ -1382,8 +1390,7 @@ lstat_without_gvl(const char *path, struct stat *st)
     data.file.path = path;
     data.st = st;
 
-    return (int)(VALUE)rb_thread_call_without_gvl(no_gvl_lstat, &data,
-                                                    RUBY_UBF_IO, NULL);
+    return IO_WITHOUT_GVL_INT(no_gvl_lstat, &data);
 }
 #endif /* HAVE_LSTAT */
 
@@ -1557,8 +1564,7 @@ rb_eaccess(VALUE fname, int mode)
     aa.path = StringValueCStr(fname);
     aa.mode = mode;
 
-    return (int)(VALUE)rb_thread_call_without_gvl(nogvl_eaccess, &aa,
-                                                RUBY_UBF_IO, 0);
+    return IO_WITHOUT_GVL_INT(nogvl_eaccess, &aa);
 }
 
 static void *
@@ -1579,8 +1585,7 @@ rb_access(VALUE fname, int mode)
     aa.path = StringValueCStr(fname);
     aa.mode = mode;
 
-    return (int)(VALUE)rb_thread_call_without_gvl(nogvl_access, &aa,
-                                                RUBY_UBF_IO, 0);
+    return IO_WITHOUT_GVL_INT(nogvl_access, &aa);
 }
 
 /*
@@ -2468,7 +2473,7 @@ rb_file_ctime(VALUE obj)
  *
  */
 
-RUBY_FUNC_EXPORTED VALUE
+VALUE
 rb_file_s_birthtime(VALUE klass, VALUE fname)
 {
     statx_data st;
@@ -2504,7 +2509,7 @@ rb_file_birthtime(VALUE obj)
     statx_data st;
 
     GetOpenFile(obj, fptr);
-    if (fstatx_without_gvl(fptr->fd, &st, STATX_BTIME) == -1) {
+    if (fstatx_without_gvl(fptr, &st, STATX_BTIME) == -1) {
         rb_sys_fail_path(fptr->pathv);
     }
     return statx_birthtime(&st, fptr->pathv);
@@ -2552,6 +2557,29 @@ file_size(VALUE self)
     return OFFT2NUM(rb_file_size(self));
 }
 
+struct nogvl_chmod_data {
+    const char *path;
+    mode_t mode;
+};
+
+static void *
+nogvl_chmod(void *ptr)
+{
+    struct nogvl_chmod_data *data = ptr;
+    int ret = chmod(data->path, data->mode);
+    return (void *)(VALUE)ret;
+}
+
+static int
+rb_chmod(const char *path, mode_t mode)
+{
+    struct nogvl_chmod_data data = {
+        .path = path,
+        .mode = mode,
+    };
+    return IO_WITHOUT_GVL_INT(nogvl_chmod, &data);
+}
+
 static int
 chmod_internal(const char *path, void *mode)
 {
@@ -2582,6 +2610,29 @@ rb_file_s_chmod(int argc, VALUE *argv, VALUE _)
     return apply2files(chmod_internal, argc, argv, &mode);
 }
 
+#ifdef HAVE_FCHMOD
+struct nogvl_fchmod_data {
+    int fd;
+    mode_t mode;
+};
+
+static VALUE
+io_blocking_fchmod(void *ptr)
+{
+    struct nogvl_fchmod_data *data = ptr;
+    int ret = fchmod(data->fd, data->mode);
+    return (VALUE)ret;
+}
+
+static int
+rb_fchmod(int fd, mode_t mode)
+{
+    (void)rb_chmod; /* suppress unused-function warning when HAVE_FCHMOD */
+    struct nogvl_fchmod_data data = {.fd = fd, .mode = mode};
+    return (int)rb_thread_io_blocking_region(io_blocking_fchmod, &data, fd);
+}
+#endif
+
 /*
  *  call-seq:
  *     file.chmod(mode_int)   -> 0
@@ -2608,7 +2659,7 @@ rb_file_chmod(VALUE obj, VALUE vmode)
 
     GetOpenFile(obj, fptr);
 #ifdef HAVE_FCHMOD
-    if (fchmod(fptr->fd, mode) == -1) {
+    if (rb_fchmod(fptr->fd, mode) == -1) {
         if (HAVE_FCHMOD || errno != ENOSYS)
             rb_sys_fail_path(fptr->pathv);
     }
@@ -2619,7 +2670,7 @@ rb_file_chmod(VALUE obj, VALUE vmode)
 #if !defined HAVE_FCHMOD || !HAVE_FCHMOD
     if (NIL_P(fptr->pathv)) return Qnil;
     path = rb_str_encode_ospath(fptr->pathv);
-    if (chmod(RSTRING_PTR(path), mode) == -1)
+    if (rb_chmod(RSTRING_PTR(path), mode) == -1)
         rb_sys_fail_path(fptr->pathv);
 #endif
 
@@ -2714,6 +2765,51 @@ rb_file_s_chown(int argc, VALUE *argv, VALUE _)
     return apply2files(chown_internal, argc, argv, &arg);
 }
 
+struct nogvl_chown_data {
+    union {
+        const char *path;
+        int fd;
+    } as;
+    struct chown_args new;
+};
+
+static void *
+nogvl_chown(void *ptr)
+{
+    struct nogvl_chown_data *data = ptr;
+    return (void *)(VALUE)chown(data->as.path, data->new.owner, data->new.group);
+}
+
+static int
+rb_chown(const char *path, rb_uid_t owner, rb_gid_t group)
+{
+    struct nogvl_chown_data data = {
+        .as = {.path = path},
+        .new = {.owner = owner, .group = group},
+    };
+    return IO_WITHOUT_GVL_INT(nogvl_chown, &data);
+}
+
+#ifdef HAVE_FCHOWN
+static void *
+nogvl_fchown(void *ptr)
+{
+    struct nogvl_chown_data *data = ptr;
+    return (void *)(VALUE)fchown(data->as.fd, data->new.owner, data->new.group);
+}
+
+static int
+rb_fchown(int fd, rb_uid_t owner, rb_gid_t group)
+{
+    (void)rb_chown; /* suppress unused-function warning when HAVE_FCHMOD */
+    struct nogvl_chown_data data = {
+        .as = {.fd = fd},
+        .new = {.owner = owner, .group = group},
+    };
+    return IO_WITHOUT_GVL_INT(nogvl_fchown, &data);
+}
+#endif
+
 /*
  *  call-seq:
  *     file.chown(owner_int, group_int )   -> 0
@@ -2745,10 +2841,10 @@ rb_file_chown(VALUE obj, VALUE owner, VALUE group)
 #ifndef HAVE_FCHOWN
     if (NIL_P(fptr->pathv)) return Qnil;
     path = rb_str_encode_ospath(fptr->pathv);
-    if (chown(RSTRING_PTR(path), o, g) == -1)
+    if (rb_chown(RSTRING_PTR(path), o, g) == -1)
         rb_sys_fail_path(fptr->pathv);
 #else
-    if (fchown(fptr->fd, o, g) == -1)
+    if (rb_fchown(fptr->fd, o, g) == -1)
         rb_sys_fail_path(fptr->pathv);
 #endif
 
@@ -2844,7 +2940,7 @@ utime_failed(struct apply_arg *aa)
 # elif defined(__APPLE__) && \
     (!defined(MAC_OS_X_VERSION_13_0) || (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_13_0))
 
-#   if defined(__has_attribute) && __has_attribute(availability)
+#   if __has_attribute(availability) && __has_warning("-Wunguarded-availability-new")
 typedef int utimensat_func(int, const char *, const struct timespec [2], int);
 
 RBIMPL_WARNING_PUSH()
@@ -2859,7 +2955,7 @@ RBIMPL_WARNING_POP()
 #   define utimensat rb_utimensat()
 #   else /* __API_AVAILABLE macro does nothing on gcc */
 __attribute__((weak)) int utimensat(int, const char *, const struct timespec [2], int);
-#   endif /* defined(__has_attribute) && __has_attribute(availability) */
+#   endif /* utimesat availability */
 # endif /* __APPLE__ && < MAC_OS_X_VERSION_13_0 */
 
 static int
@@ -3140,8 +3236,7 @@ readlink_without_gvl(VALUE path, VALUE buf, size_t size)
     ra.buf = RSTRING_PTR(buf);
     ra.size = size;
 
-    return (ssize_t)rb_thread_call_without_gvl(nogvl_readlink, &ra,
-                                                RUBY_UBF_IO, 0);
+    return (ssize_t)IO_WITHOUT_GVL(nogvl_readlink, &ra);
 }
 
 VALUE
@@ -3242,8 +3337,7 @@ rb_file_s_rename(VALUE klass, VALUE from, VALUE to)
 #if defined __CYGWIN__
     errno = 0;
 #endif
-    if ((int)(VALUE)rb_thread_call_without_gvl(no_gvl_rename, &ra,
-                                         RUBY_UBF_IO, 0) < 0) {
+    if (IO_WITHOUT_GVL_INT(no_gvl_rename, &ra) < 0) {
         int e = errno;
 #if defined DOSISH
         switch (e) {
@@ -3610,12 +3704,16 @@ VALUE
 rb_home_dir_of(VALUE user, VALUE result)
 {
 #ifdef HAVE_PWD_H
-    struct passwd *pwPtr;
+    VALUE dirname = rb_getpwdirnam_for_login(user);
+    if (dirname == Qnil) {
+        rb_raise(rb_eArgError, "user %"PRIsVALUE" doesn't exist", user);
+    }
+    const char *dir = RSTRING_PTR(dirname);
 #else
     extern char *getlogin(void);
     const char *pwPtr = 0;
+    const char *login;
     # define endpwent() ((void)0)
-#endif
     const char *dir, *username = RSTRING_PTR(user);
     rb_encoding *enc = rb_enc_get(user);
 #if defined _WIN32
@@ -3627,21 +3725,13 @@ rb_home_dir_of(VALUE user, VALUE result)
         dir = username = RSTRING_PTR(rb_str_conv_enc(user, enc, fsenc));
     }
 
-#ifdef HAVE_PWD_H
-    pwPtr = getpwnam(username);
-#else
-    if (strcasecmp(username, getlogin()) == 0)
+    if ((login = getlogin()) && strcasecmp(username, login) == 0)
         dir = pwPtr = getenv("HOME");
-#endif
     if (!pwPtr) {
-        endpwent();
         rb_raise(rb_eArgError, "user %"PRIsVALUE" doesn't exist", user);
     }
-#ifdef HAVE_PWD_H
-    dir = pwPtr->pw_dir;
 #endif
     copy_home_path(result, dir);
-    endpwent();
     return result;
 }
 
@@ -3673,7 +3763,7 @@ rb_default_home_dir(VALUE result)
          * lookup by getuid() has a chance of succeeding.
          */
         if (NIL_P(login_name)) {
-            rb_raise(rb_eArgError, "couldn't find login name -- expanding `~'");
+            rb_raise(rb_eArgError, "couldn't find login name -- expanding '~'");
         }
 # endif /* !defined(HAVE_GETPWUID_R) && !defined(HAVE_GETPWUID) */
 
@@ -3681,7 +3771,7 @@ rb_default_home_dir(VALUE result)
         if (NIL_P(pw_dir)) {
             pw_dir = rb_getpwdiruid();
             if (NIL_P(pw_dir)) {
-                rb_raise(rb_eArgError, "couldn't find home for uid `%ld'", (long)getuid());
+                rb_raise(rb_eArgError, "couldn't find home for uid '%ld'", (long)getuid());
             }
         }
 
@@ -3692,7 +3782,7 @@ rb_default_home_dir(VALUE result)
     }
 #endif /* defined HAVE_PWD_H */
     if (!dir) {
-        rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
+        rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding '~'");
     }
     return copy_home_path(result, dir);
 }
@@ -3717,7 +3807,15 @@ append_fspath(VALUE result, VALUE fname, char *dir, rb_encoding **enc, rb_encodi
     size_t dirlen = strlen(dir), buflen = rb_str_capacity(result);
 
     if (NORMALIZE_UTF8PATH || *enc != fsenc) {
-        rb_encoding *direnc = fs_enc_check(fname, dirname = ospath_new(dir, dirlen, fsenc));
+        dirname = ospath_new(dir, dirlen, fsenc);
+        if (!rb_enc_compatible(fname, dirname)) {
+            xfree(dir);
+            /* rb_enc_check must raise because the two encodings are not
+             * compatible. */
+            rb_enc_check(fname, dirname);
+            rb_bug("unreachable");
+        }
+        rb_encoding *direnc = fs_enc_check(fname, dirname);
         if (direnc != fsenc) {
             dirname = rb_str_conv_enc(dirname, fsenc, direnc);
             RSTRING_GETMEM(dirname, cwdp, dirlen);
@@ -4445,6 +4543,11 @@ rb_check_realpath_emulate_rescue(VALUE arg, VALUE exc)
 {
     return Qnil;
 }
+#elif !defined(NEEDS_REALPATH_BUFFER) && defined(__APPLE__) && \
+    (!defined(MAC_OS_X_VERSION_10_6) || (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6))
+/* realpath() on OSX < 10.6 doesn't implement automatic allocation */
+# include <sys/syslimits.h>
+# define NEEDS_REALPATH_BUFFER 1
 #endif /* HAVE_REALPATH */
 
 static VALUE
@@ -4454,6 +4557,11 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
     VALUE unresolved_path;
     char *resolved_ptr = NULL;
     VALUE resolved;
+# if defined(NEEDS_REALPATH_BUFFER) && NEEDS_REALPATH_BUFFER
+    char resolved_buffer[PATH_MAX];
+# else
+    char *const resolved_buffer = NULL;
+# endif
 
     if (mode == RB_REALPATH_DIR) {
         return rb_check_realpath_emulate(basedir, path, origenc, mode);
@@ -4465,7 +4573,7 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
     }
     if (origenc) unresolved_path = TO_OSPATH(unresolved_path);
 
-    if ((resolved_ptr = realpath(RSTRING_PTR(unresolved_path), NULL)) == NULL) {
+    if ((resolved_ptr = realpath(RSTRING_PTR(unresolved_path), resolved_buffer)) == NULL) {
         /* glibc realpath(3) does not allow /path/to/file.rb/../other_file.rb,
            returning ENOTDIR in that case.
            glibc realpath(3) can also return ENOENT for paths that exist,
@@ -4482,7 +4590,9 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
         rb_sys_fail_path(unresolved_path);
     }
     resolved = ospath_new(resolved_ptr, strlen(resolved_ptr), rb_filesystem_encoding());
+# if !(defined(NEEDS_REALPATH_BUFFER) && NEEDS_REALPATH_BUFFER)
     free(resolved_ptr);
+# endif
 
 # if !defined(__LINUX__) && !defined(__APPLE__)
     /* As `resolved` is a String in the filesystem encoding, no
@@ -5128,8 +5238,7 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
     path = rb_str_encode_ospath(path);
     ta.path = StringValueCStr(path);
 
-    r = (int)(VALUE)rb_thread_call_without_gvl(nogvl_truncate, &ta,
-                                                RUBY_UBF_IO, NULL);
+    r = IO_WITHOUT_GVL_INT(nogvl_truncate, &ta);
     if (r < 0)
         rb_sys_fail_path(path);
     return INT2FIX(0);
@@ -5179,7 +5288,7 @@ rb_file_truncate(VALUE obj, VALUE len)
     }
     rb_io_flush_raw(obj, 0);
     fa.fd = fptr->fd;
-    if ((int)rb_thread_io_blocking_region(nogvl_ftruncate, &fa, fa.fd) < 0) {
+    if ((int)rb_io_blocking_region(fptr, nogvl_ftruncate, &fa) < 0) {
         rb_sys_fail_path(fptr->pathv);
     }
     return INT2FIX(0);
@@ -5227,50 +5336,21 @@ rb_thread_flock(void *data)
  *  call-seq:
  *    flock(locking_constant) -> 0 or false
  *
- *  Locks or unlocks a file according to the given `locking_constant`,
+ *  Locks or unlocks file +self+ according to the given `locking_constant`,
  *  a bitwise OR of the values in the table below.
  *
  *  Not available on all platforms.
  *
  *  Returns `false` if `File::LOCK_NB` is specified and the operation would have blocked;
  *  otherwise returns `0`.
- *  <br>
  *
- *  <table>
- *    <tr>
- *      <th colspan="3">Locking Constants</th>
- *    </tr>
- *    <tr>
- *      <th>Constant</th>
- *      <th>Lock</th>
- *      <th>Effect</th>
- *    </tr>
- *    <tr>
- *    <td><tt>File::LOCK_EX</tt></td>
- *    <td>Exclusive</td>
- *      <td>Only one process may hold an exclusive lock for <tt>self</tt> at a time.</td>
- *    </tr>
- *    <tr>
- *      <td><tt>File::LOCK_NB</tt></td>
- *      <td>Non-blocking</td>
- *      <td>
- *        No blocking; may be combined with other <tt>File::LOCK_SH</tt> or <tt>File::LOCK_EX</tt>
- *        using the bitwise OR operator <tt>|</tt>.
- *      </td>
- *    </tr>
- *    <tr>
- *      <td><tt>File::LOCK_SH</tt></td>
- *      <td>Shared</td>
- *      <td>Multiple processes may each hold a shared lock for <tt>self</tt> at the same time.</td>
- *    </tr>
- *    <tr>
- *      <td><tt>File::LOCK_UN</tt></td>
- *      <td>Unlock</td>
- *      <td>Remove an existing lock held by this process.</td>
- *    </tr>
- *  </table>
+ *  | Constant        | Lock         | Effect
+ *  |-----------------|--------------|-----------------------------------------------------------------------------------------------------------------|
+ *  | +File::LOCK_EX+ | Exclusive    | Only one process may hold an exclusive lock for +self+ at a time.                                               |
+ *  | +File::LOCK_NB+ | Non-blocking | No blocking; may be combined with +File::LOCK_SH+ or +File::LOCK_EX+ using the bitwise OR operator <tt>\|</tt>. |
+ *  | +File::LOCK_SH+ | Shared       | Multiple processes may each hold a shared lock for +self+ at the same time.                                     |
+ *  | +File::LOCK_UN+ | Unlock       | Remove an existing lock held by this process.                                                                   |
  *
- *  <br>
  *  Example:
  *
  *  ```ruby
@@ -5308,7 +5388,7 @@ rb_file_flock(VALUE obj, VALUE operation)
     if (fptr->mode & FMODE_WRITABLE) {
         rb_io_flush_raw(obj, 0);
     }
-    while ((int)rb_thread_io_blocking_region(rb_thread_flock, op, fptr->fd) < 0) {
+    while ((int)rb_io_blocking_region(fptr, rb_thread_flock, op) < 0) {
         int e = errno;
         switch (e) {
           case EAGAIN:
@@ -5354,60 +5434,83 @@ test_check(int n, int argc, VALUE *argv)
 #define CHECK(n) test_check((n), argc, argv)
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     test(cmd, file1 [, file2] ) -> obj
+ *    test(char, path0, path1 = nil) -> object
  *
- *  Uses the character +cmd+ to perform various tests on +file1+ (first
- *  table below) or on +file1+ and +file2+ (second table).
+ *  Performs a test on one or both of the <i>filesystem entities</i> at the given paths
+ *  `path0` and `path1`:
  *
- *  File tests on a single file:
+ *  - Each path `path0` or `path1` points to a file, directory, device, pipe, etc.
+ *  - Character `char` selects a specific test.
  *
- *    Cmd    Returns   Meaning
- *    "A"  | Time    | Last access time for file1
- *    "b"  | boolean | True if file1 is a block device
- *    "c"  | boolean | True if file1 is a character device
- *    "C"  | Time    | Last change time for file1
- *    "d"  | boolean | True if file1 exists and is a directory
- *    "e"  | boolean | True if file1 exists
- *    "f"  | boolean | True if file1 exists and is a regular file
- *    "g"  | boolean | True if file1 has the setgid bit set
- *    "G"  | boolean | True if file1 exists and has a group
- *         |         | ownership equal to the caller's group
- *    "k"  | boolean | True if file1 exists and has the sticky bit set
- *    "l"  | boolean | True if file1 exists and is a symbolic link
- *    "M"  | Time    | Last modification time for file1
- *    "o"  | boolean | True if file1 exists and is owned by
- *         |         | the caller's effective uid
- *    "O"  | boolean | True if file1 exists and is owned by
- *         |         | the caller's real uid
- *    "p"  | boolean | True if file1 exists and is a fifo
- *    "r"  | boolean | True if file1 is readable by the effective
- *         |         | uid/gid of the caller
- *    "R"  | boolean | True if file is readable by the real
- *         |         | uid/gid of the caller
- *    "s"  | int/nil | If file1 has nonzero size, return the size,
- *         |         | otherwise return nil
- *    "S"  | boolean | True if file1 exists and is a socket
- *    "u"  | boolean | True if file1 has the setuid bit set
- *    "w"  | boolean | True if file1 exists and is writable by
- *         |         | the effective uid/gid
- *    "W"  | boolean | True if file1 exists and is writable by
- *         |         | the real uid/gid
- *    "x"  | boolean | True if file1 exists and is executable by
- *         |         | the effective uid/gid
- *    "X"  | boolean | True if file1 exists and is executable by
- *         |         | the real uid/gid
- *    "z"  | boolean | True if file1 exists and has a zero length
+ *  The tests:
  *
- *  Tests that take two files:
+ *  - Each of these tests operates only on the entity at `path0`,
+ *    and returns `true` or `false`;
+ *    for a non-existent entity, returns `false` (does not raise exception):
  *
- *    "-"  | boolean | True if file1 and file2 are identical
- *    "="  | boolean | True if the modification times of file1
- *         |         | and file2 are equal
- *    "<"  | boolean | True if the modification time of file1
- *         |         | is prior to that of file2
- *    ">"  | boolean | True if the modification time of file1
- *         |         | is after that of file2
+ *      | Character    | Test                                                                      |
+ *      |:------------:|:--------------------------------------------------------------------------|
+ *      | <tt>'b'</tt> | Whether the entity is a block device.                                     |
+ *      | <tt>'c'</tt> | Whether the entity is a character device.                                 |
+ *      | <tt>'d'</tt> | Whether the entity is a directory.                                        |
+ *      | <tt>'e'</tt> | Whether the entity is an existing entity.                                 |
+ *      | <tt>'f'</tt> | Whether the entity is an existing regular file.                           |
+ *      | <tt>'g'</tt> | Whether the entity's setgid bit is set.                                   |
+ *      | <tt>'G'</tt> | Whether the entity's group ownership is equal to the caller's.            |
+ *      | <tt>'k'</tt> | Whether the entity's sticky bit is set.                                   |
+ *      | <tt>'l'</tt> | Whether the entity is a symbolic link.                                    |
+ *      | <tt>'o'</tt> | Whether the entity is owned by the caller's effective uid.                |
+ *      | <tt>'O'</tt> | Like <tt>'o'</tt>, but uses the real uid (not the effective uid).         |
+ *      | <tt>'p'</tt> | Whether the entity is a FIFO device (named pipe).                         |
+ *      | <tt>'r'</tt> | Whether the entity is readable by the caller's effective uid/gid.         |
+ *      | <tt>'R'</tt> | Like <tt>'r'</tt>, but uses the real uid/gid (not the effective uid/gid). |
+ *      | <tt>'S'</tt> | Whether the entity is a socket.                                           |
+ *      | <tt>'u'</tt> | Whether the entity's setuid bit is set.                                   |
+ *      | <tt>'w'</tt> | Whether the entity is writable by the caller's effective uid/gid.         |
+ *      | <tt>'W'</tt> | Like <tt>'w'</tt>, but uses the real uid/gid (not the effective uid/gid). |
+ *      | <tt>'x'</tt> | Whether the entity is executable by the caller's effective uid/gid.       |
+ *      | <tt>'X'</tt> | Like <tt>'x'</tt>, but uses the real uid/gid (not the effective uid/git). |
+ *      | <tt>'z'</tt> | Whether the entity exists and is of length zero.                          |
+ *
+ *  - This test operates only on the entity at `path0`,
+ *    and returns an integer size or +nil+:
+ *
+ *      | Character    | Test                                                                                         |
+ *      |:------------:|:---------------------------------------------------------------------------------------------|
+ *      | <tt>'s'</tt> | Returns positive integer size if the entity exists and has non-zero length, +nil+ otherwise. |
+ *
+ *  - Each of these tests operates only on the entity at `path0`,
+ *    and returns a Time object;
+ *    raises an exception if the entity does not exist:
+ *
+ *      | Character    | Test                                   |
+ *      |:------------:|:---------------------------------------|
+ *      | <tt>'A'</tt> | Last access time for the entity.       |
+ *      | <tt>'C'</tt> | Last change time for the entity.       |
+ *      | <tt>'M'</tt> | Last modification time for the entity. |
+ *
+ *  - Each of these tests operates on the modification time (`mtime`)
+ *    of each of the entities at `path0` and `path1`,
+ *    and returns a `true` or `false`;
+ *    returns `false` if either entity does not exist:
+ *
+ *      | Character    | Test                                                            |
+ *      |:------------:|:----------------------------------------------------------------|
+ *      | <tt>'<'</tt> | Whether the `mtime` at `path0` is less than that at `path1`.    |
+ *      | <tt>'='</tt> | Whether the `mtime` at `path0` is equal to that at `path1`.     |
+ *      | <tt>'>'</tt> | Whether the `mtime` at `path0` is greater than that at `path1`. |
+ *
+ *  - This test operates on the content of each of the entities at `path0` and `path1`,
+ *    and returns a `true` or `false`;
+ *    returns `false` if either entity does not exist:
+ *
+ *      | Character    | Test                                          |
+ *      |:------------:|:----------------------------------------------|
+ *      | <tt>'-'</tt> | Whether the entities exist and are identical. |
+ *
  */
 
 static VALUE
@@ -6226,7 +6329,7 @@ rb_file_s_mkfifo(int argc, VALUE *argv, VALUE _)
     FilePathValue(path);
     path = rb_str_encode_ospath(path);
     ma.path = RSTRING_PTR(path);
-    if (rb_thread_call_without_gvl(nogvl_mkfifo, &ma, RUBY_UBF_IO, 0)) {
+    if (IO_WITHOUT_GVL(nogvl_mkfifo, &ma)) {
         rb_sys_fail_path(path);
     }
     return INT2FIX(0);
@@ -6633,7 +6736,7 @@ const char ruby_null_device[] =
  *
  *  - <tt>'r'</tt>:
  *
- *    - File is not initially truncated:
+ *    - \File is not initially truncated:
  *
  *        f = File.new('t.txt') # => #<File:t.txt>
  *        f.size == 0           # => false
@@ -6642,7 +6745,7 @@ const char ruby_null_device[] =
  *
  *        f.pos # => 0
  *
- *    - File may be read anywhere; see IO#rewind, IO#pos=, IO#seek:
+ *    - \File may be read anywhere; see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.readline # => "First line\n"
  *        f.readline # => "Second line\n"
@@ -6662,7 +6765,7 @@ const char ruby_null_device[] =
  *
  *  - <tt>'w'</tt>:
  *
- *    - File is initially truncated:
+ *    - \File is initially truncated:
  *
  *        path = 't.tmp'
  *        File.write(path, text)
@@ -6673,7 +6776,7 @@ const char ruby_null_device[] =
  *
  *        f.pos # => 0
  *
- *    - File may be written anywhere (even past end-of-file);
+ *    - \File may be written anywhere (even past end-of-file);
  *      see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.write('foo')
@@ -6716,7 +6819,7 @@ const char ruby_null_device[] =
  *
  *  - <tt>'a'</tt>:
  *
- *    - File is not initially truncated:
+ *    - \File is not initially truncated:
  *
  *        path = 't.tmp'
  *        File.write(path, 'foo')
@@ -6727,7 +6830,7 @@ const char ruby_null_device[] =
  *
  *        f.pos # => 0
  *
- *    - File may be written only at end-of-file;
+ *    - \File may be written only at end-of-file;
  *      IO#rewind, IO#pos=, IO#seek do not affect writing:
  *
  *        f.write('bar')
@@ -6748,7 +6851,7 @@ const char ruby_null_device[] =
  *
  *  - <tt>'r+'</tt>:
  *
- *    - File is not initially truncated:
+ *    - \File is not initially truncated:
  *
  *        path = 't.tmp'
  *        File.write(path, text)
@@ -6759,7 +6862,7 @@ const char ruby_null_device[] =
  *
  *        f.pos # => 0
  *
- *    - File may be read or written anywhere (even past end-of-file);
+ *    - \File may be read or written anywhere (even past end-of-file);
  *      see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.readline # => "First line\n"
@@ -6804,7 +6907,7 @@ const char ruby_null_device[] =
  *
  *  - <tt>'a+'</tt>:
  *
- *    - File is not initially truncated:
+ *    - \File is not initially truncated:
  *
  *        path = 't.tmp'
  *        File.write(path, 'foo')
@@ -6815,7 +6918,7 @@ const char ruby_null_device[] =
  *
  *        f.pos # => 0
  *
- *    - File may be written only at end-of-file;
+ *    - \File may be written only at end-of-file;
  *      IO#rewind, IO#pos=, IO#seek do not affect writing:
  *
  *        f.write('bar')
@@ -6830,7 +6933,7 @@ const char ruby_null_device[] =
  *        f.flush
  *        File.read(path) # => "foobarbazbat"
  *
- *    - File may be read anywhere; see IO#rewind, IO#pos=, IO#seek:
+ *    - \File may be read anywhere; see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.rewind
  *        f.read # => "foobarbazbat"
@@ -6855,7 +6958,7 @@ const char ruby_null_device[] =
  *        f = File.new(path, 'w')
  *        f.pos # => 0
  *
- *    - File may be written anywhere (even past end-of-file);
+ *    - \File may be written anywhere (even past end-of-file);
  *      see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.write('foo')
@@ -6932,7 +7035,7 @@ const char ruby_null_device[] =
  *        f = File.new(path, 'w+')
  *        f.pos # => 0
  *
- *    - File may be written anywhere (even past end-of-file);
+ *    - \File may be written anywhere (even past end-of-file);
  *      see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.write('foo')
@@ -6969,7 +7072,7 @@ const char ruby_null_device[] =
  *        File.read(path) # => "bazbam\u0000\u0000bah"
  *        f.pos # => 11
  *
- *    - File may be read anywhere (even past end-of-file);
+ *    - \File may be read anywhere (even past end-of-file);
  *      see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.rewind
@@ -7010,7 +7113,7 @@ const char ruby_null_device[] =
  *        f.flush
  *        File.read(path) # => "foobarbaz"
  *
- *    - File may be read anywhere (even past end-of-file);
+ *    - \File may be read anywhere (even past end-of-file);
  *      see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.rewind
@@ -7493,7 +7596,7 @@ Init_File(void)
      *
      * ==== File::RDONLY
      *
-     * Flag File::RDONLY specifies the the stream should be opened for reading only:
+     * Flag File::RDONLY specifies the stream should be opened for reading only:
      *
      *   filepath = '/tmp/t.tmp'
      *   f = File.new(filepath, File::RDONLY)
@@ -7667,10 +7770,12 @@ Init_File(void)
      *
      * Flag File::BINARY specifies that the stream is to be accessed in binary mode.
      *
-     * ==== File::SHARE_DELETE (Windows Only)
+     * ==== File::SHARE_DELETE
      *
      * Flag File::SHARE_DELETE enables other processes to open the stream
      * with delete access.
+     *
+     * Windows only.
      *
      * If the stream is opened for (local) delete access without File::SHARE_DELETE,
      * and another process attempts to open it with delete access,
@@ -7746,9 +7851,11 @@ Init_File(void)
      * do not match the directory separator
      * (the value of constant File::SEPARATOR).
      *
-     * ==== File::FNM_SHORTNAME (Windows Only)
+     * ==== File::FNM_SHORTNAME
      *
-     * Flag File::FNM_SHORTNAME Allows patterns to match short names if they exist.
+     * Flag File::FNM_SHORTNAME allows patterns to match short names if they exist.
+     *
+     * Windows only.
      *
      * ==== File::FNM_SYSCASE
      *
@@ -7801,7 +7908,7 @@ Init_File(void)
 #ifndef O_SHARE_DELETE
 # define O_SHARE_DELETE 0
 #endif
-    /* {File::SHARE_DELETE}[rdoc-ref:File::Constants@File-3A-3ASHARE_DELETE+-28Windows+Only-29] */
+    /* {File::SHARE_DELETE}[rdoc-ref:File::Constants@File-3A-3ASHARE_DELETE] */
     rb_define_const(rb_mFConst, "SHARE_DELETE", INT2FIX(O_SHARE_DELETE));
 #ifdef O_SYNC
     /* {File::SYNC}[rdoc-ref:File::Constants@File-3A-3ASYNC-2C+File-3A-3ARSYNC-2C+and+File-3A-3ADSYNC] */
