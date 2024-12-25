@@ -1,3 +1,10 @@
+ruby3.2 (3.2.6-0nkmi1~dist) unstable; urgency=medium
+
+  * Ruby 3.2.6 (retrospective)
+  * Somehow, forgot to build.
+
+ -- Sorah Fukumori <her@sorah.jp>  Wed, 25 Dec 2024 22:39:56 +0900
+
 ruby3.2 (3.2.5-0nkmi1~dist) unstable; urgency=medium
 
   * Ruby 3.2.5 (retrospective)

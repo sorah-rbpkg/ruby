@@ -18,14 +18,4 @@ Gem::Specification.new do |s|
   s.required_ruby_version = Gem::Requirement.new(">= 2.6.0".freeze)
   s.rubygems_version = "3.3.5".freeze
   s.summary = "Simple Mail Transfer Protocol client library for Ruby.".freeze
-
-  if s.respond_to? :specification_version then
-    s.specification_version = 4
-  end
-
-  if s.respond_to? :add_runtime_dependency then
-    s.add_runtime_dependency(%q<net-protocol>.freeze, [">= 0"])
-  else
-    s.add_dependency(%q<net-protocol>.freeze, [">= 0"])
-  end
 end
