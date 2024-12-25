@@ -846,6 +846,7 @@ dsymutil
 codesign
 cleanlibs
 POSTLINK
+incflags
 WERRORFLAG
 RUBY_DEVEL
 CHDIR
@@ -11943,6 +11944,8 @@ then :
         sed '/^$/d;s|^|-I|;s|$|/include|' | tr '\012' ' ' | sed 's/ *$//'`
 
 fi
+incflags="$INCFLAGS"
+
 
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
 test -z "${ac_env_CXXFLAGS_set}" -a -n "${cxxflags+set}" && eval CXXFLAGS="\"$cxxflags $ARCH_FLAG\""
@@ -14085,6 +14088,8 @@ if test "x$with_jemalloc" != xno
 then :
 
   # find jemalloc header first
+  save_CPPFLAGS="${CPPFLAGS}"
+  CPPFLAGS="${INCFLAGS} ${CPPFLAGS}"
   malloc_header=
   ac_fn_c_check_header_compile "$LINENO" "jemalloc/jemalloc.h" "ac_cv_header_jemalloc_jemalloc_h" "$ac_includes_default"
 if test "x$ac_cv_header_jemalloc_jemalloc_h" = xyes
@@ -14155,6 +14160,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $rb_cv_jemalloc_library" >&5
     colorize_result "$rb_cv_jemalloc_library" ; }
+  CPPFLAGS="${save_CPPFLAGS}"
+  unset save_CPPFLAGS
   with_jemalloc=${rb_cv_jemalloc_library}
   case "$with_jemalloc" in #(
   no) :
