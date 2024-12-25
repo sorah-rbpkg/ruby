@@ -1,0 +1,25 @@
+From: Sorah Fukumori <her@sorah.jp>
+Date: Fri, 31 May 2024 03:15:36 +0900
+Subject: Ensure Integer::GMP_VERSION exists
+
+Do the same in https://github.com/ruby/ruby/pull/10875 for debian
+packaging
+---
+ test/ruby/test_bignum.rb | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/test/ruby/test_bignum.rb b/test/ruby/test_bignum.rb
+index 065a944..fe4bcfb 100644
+--- a/test/ruby/test_bignum.rb
++++ b/test/ruby/test_bignum.rb
+@@ -634,6 +634,10 @@ class TestBignum < Test::Unit::TestCase
+     assert_equal(true, BIGNUM_MIN.even?)
+   end
+ 
++  def test_gmp_deb
++    assert_kind_of(String, Integer::GMP_VERSION) # https://github.com/ruby/ruby/pull/10875
++  end
++
+   def test_interrupt_during_to_s
+     if defined?(Integer::GMP_VERSION)
+       return # GMP doesn't support interrupt during an operation.

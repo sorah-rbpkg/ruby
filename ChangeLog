@@ -1,5 +1,1097 @@
 -*- coding: utf-8 -*-
 
+commit 31d0f1a2e7dbfb60731d1f05b868e1d578cda493
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-26 20:54:27 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-26 20:54:27 +0900
+
+    bump patchlevel.
+
+commit 367ad5055c3d5210c884d4611e08ffa32ec608ee
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-26 20:53:32 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-26 20:53:32 +0900
+
+    Revert "merge revision(s) 9f708d48f6df37ee9600db9d51b57a156609a13b,0301473fb523c71d8cdc4966971f31f502001185,7f0e26b7f99bf76408569892ce20318501f74729: [Backport #20516]"
+
+    This reverts commit 56c311aa0b20dee13ab43309ae3386f57f8cb797.
+
+commit ae9a43512c6a6c8d4c60a0987137bc0a00a97d85
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-26 18:41:18 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-26 18:41:18 +0900
+
+    bump teeny
+
+commit 1dba48bb3a92bccc350508935ed0b59a249b674b
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-22 11:36:03 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-22 12:21:12 +0900
+
+    bump rexml version to 3.3.2.
+
+commit 483ad38c6968feb1990f36d48d14fd55988d2150
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-21 12:25:04 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-21 12:25:04 +0900
+
+    merge revision(s) b15e88e0fcccb03b9cc5e4c1478ec9b10e26c961: [Backport #19619]
+
+            [Bug #19619] Preserve numbered parameters context
+
+            Preserve numbered parameters context across method definitions
+
+commit 2ac8e2049bad37da38576b1ed263713c66eba2c9
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-20 15:12:36 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-20 15:12:36 +0900
+
+    merge revision(s) e1104017e3080fd432c0b5fdc3ae6e004ffd0834: [Backport #19781]
+
+            YJIT: Fix cfp inconsistency on tailcall (#8107)
+
+            [Bug #19781]
+
+commit 4f1e047f86b159528055d37ee0da2ad6e5a38c23
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-20 13:11:29 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-20 13:11:29 +0900
+
+    merge revision(s) a3eb5e5c70eaee12964cdd807b8f19950003141f: [Backport #20573]
+
+            Don't call `Warning.warn` unless the category is enabled (#10981)
+
+            Don't call `Warning.warn` unless the category is enabled
+
+            The warning category should be enabled if we want to call
+            `Warning.warn`.
+
+            This commit speeds up the following benchmark:
+
+            ```ruby
+            eval "def test; " +
+              1000.times.map { "'  '.chomp!" }.join(";") + "; end"
+
+            def run_benchmark count
+              i = 0
+              while i < count
+                start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+                yield
+                ms = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
+                puts "itr ##{i}: #{(ms * 1000).to_i}ms"
+                i += 1
+              end
+            end
+
+            run_benchmark(25) do
+              250.times do
+                test
+              end
+            end
+            ```
+
+            On `master` this runs at about 92ms per iteration. With this patch, it
+            is 7ms per iteration.
+
+            [Bug #20573]
+
+commit 3fe51aa26867159af574fac8eba7ae86a0b30971
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-20 13:00:32 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-20 13:05:33 +0900
+
+    merge revision(s) fba8aff7af450e476e97b62385427dfa51850955, d8c6e91748871ab2287d7703347847fe18a292d2: [Backport #20592]
+
+            [Bug #20592] Fix segfault when sending NULL to freeaddrinfo
+
+            On alpine freeaddrinfo does not accept NULL pointer
+
+            Fix dangling `else`
+
+commit c10c73fd16f1b7c9b658afee2b1b53ecfaed4fa4
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-20 12:53:25 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-20 12:53:25 +0900
+
+    merge revision(s) 2dd46bb82ffc4dff01d7ea70922f0e407acafb4e: [Backport #20468]
+
+            [Bug #20468] Fix safe navigation in `for` variable
+
+commit db5201ffd531d07747de03c55c4cb1c0e9e5c5bf
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-15 22:09:30 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-15 22:09:30 +0900
+
+    Revert "merge revision(s) 5fa6ba9568e87e43e08a4daeba1572254c589fb1: [Backport #20500]"
+
+    This reverts commit fc5b9ffad1b0710bd999521d0bf9631af6b762c2.
+
+commit 96a82418b2efe98a92f239a9a1cbf30dd396d335
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-15 22:01:57 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-15 22:01:57 +0900
+
+    merge revision(s) 05553cf22d43dd78b8f30cc4591230b5c000c538: [Backport #20517]
+
+            [Bug #20517] Make a multibyte character one token at meta escape
+
+commit a804d5514c7c0608b9fb52426ec3ec738420ad29
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-15 21:51:03 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-15 21:51:03 +0900
+
+    merge revision(s) d503e1b95a40e45d7767e0175de60092de4ba54e: [Backport #20030]
+
+            [Bug #20030] dispatch invalid escaped character without ignoring it
+
+commit fc5b9ffad1b0710bd999521d0bf9631af6b762c2
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-15 21:31:23 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-15 21:31:23 +0900
+
+    merge revision(s) 5fa6ba9568e87e43e08a4daeba1572254c589fb1: [Backport #20500]
+
+            [Bug #20500] Search non-default directories for jemalloc
+
+            Co-Authored-by: lish82 (Hiroki Katagiri)
+
+commit 958adb5b65f1edd0d4a204d299baf05f0b490c2c
+  Author:     kimuraw (Wataru Kimura) <kimuraw@i.nifty.jp>
+  AuthorDate: 2024-07-14 10:36:35 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-15 20:44:07 +0900
+
+    [Bug #20633] Fix the condition for `atomic_signal_fence`
+
+    `AC_CHECK_DECLS` defines `HAVE_DECL_SYMBOL` to 1 if declared, 0
+    otherwise, not undefined.
+
+commit c22398f96c29c2357bee50b291c358cc34837013
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-15 18:03:08 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-15 18:03:08 +0900
+
+    merge partially d292a9b98ce03c76dbe13138d20b9fbf613cc02d. Just add the test to ensure the issue doesn't exit in ruby_3_2 branch.
+
+commit b72deb7ca1198f8c799cd5e7e44635cf50abd7ec
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-15 17:56:01 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-15 17:56:01 +0900
+
+    merge revision(s) 58918788abd63901588e4aa1e39b5c057321c10a: [Backport #20342]
+
+            [Bug #20342] Consider wrapped load in `main` methods
+
+commit bfdb6d5a9dca32b41a2b22c108b46f9fc01fee35
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-15 16:47:41 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-15 16:47:41 +0900
+
+    update GitHub Action spec_guards workflow.
+
+commit 8200325e932e40e1ae7a959e588dae655bea9660
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-15 14:03:11 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-15 14:03:11 +0900
+
+    follow-up for a6b7aad954680e23e7db81d69a7e8e44583bf8b4. suppress compiler warning.
+
+commit a6b7aad954680e23e7db81d69a7e8e44583bf8b4
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-15 13:40:01 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-15 13:40:01 +0900
+
+    merge revision(s) 7e4b1f8e1935a10df3c41ee60ca0987d73281126: [Backport #20322]
+
+            [Bug #20322] Fix rb_enc_interned_str_cstr null encoding
+
+            The documentation for `rb_enc_interned_str_cstr` notes that `enc` can be
+            a null pointer, but this currently causes a segmentation fault when
+            trying to autoload the encoding. This commit fixes the issue by checking
+            for NULL before calling `rb_enc_autoload`.
+
+commit 519d164b6682a8b9fde2b1d5ab7d74f54c4f0224
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-15 13:24:57 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-15 13:24:57 +0900
+
+    merge revision(s) c7ce2f537f96ab2cf2f5fc2982d6147866ff5340: [Backport #20304]
+
+            Fix memory leak in setting encodings
+
+            There is a memory leak in Encoding.default_external= and
+            Encoding.default_internal= because the duplicated name is not freed
+            when overwriting.
+
+                10.times do
+                  1_000_000.times do
+                    Encoding.default_internal = nil
+                  end
+
+                  puts `ps -o rss= -p #{$$}`
+                end
+
+            Before:
+
+                 25664
+                 41504
+                 57360
+                 73232
+                 89168
+                105056
+                120944
+                136816
+                152720
+                168576
+
+            After:
+
+                9648
+                9648
+                9648
+                9680
+                9680
+                9680
+                9680
+                9680
+                9680
+                9680
+
+commit db45554fef4c8e1b0ba494965449db13068e6051
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-15 12:00:14 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-15 12:00:14 +0900
+
+    merge revision(s) 1faeb44dfcf777ace28321e80d0ebf942161a0a7, 7f87ad9fc4bc45faf8cd33602a025f27c094b2fd: [Backport #20431]
+
+            Check if macros are defined before using
+
+            Assume macros with the same prefix would be defined together.
+
+            Refer autoconfigured endian macro (#10572)
+
+            Remove the case `RB_IO_BUFFER_HOST_ENDIAN` is not defined.
+
+commit 0cb1e753cadb4cd1706ecf334e007bb246438577
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-15 11:55:41 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-15 11:55:41 +0900
+
+    Revert "merge revision(s) 5e0c17145131e073814c7e5b15227d0b4e73cabe: [Backport #20169]"
+
+    This reverts commit 6b73406833dd22e489114fa77c1c80c4b7af2ed0.
+
+commit b5e554d03a0bd34f260e783e84f4d8a16de39a61
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-15 11:08:50 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-15 11:08:50 +0900
+
+    Revert "merge revision(s) e04146129ec6898dd6a9739dad2983c6e9b68056, d5080f6e8b77364483ff6727b1065e45e180f05d: [Backport #20292]"
+
+    This reverts commit a54c717c7a74b91a3cdf20742c355e3ea42052d1.
+
+commit 8051a6d3854687c008d69d3d198a16d0d1c5dac1
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-15 11:07:31 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-15 11:07:31 +0900
+
+    Revert "follow-up for a54c717c7a74b91a3cdf20742c355e3ea42052d1."
+
+    This reverts commit 715633ba6e982dc5404abeafc5246c31af92ac10.
+
+commit 715633ba6e982dc5404abeafc5246c31af92ac10
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-15 10:41:21 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-15 10:41:21 +0900
+
+    follow-up for a54c717c7a74b91a3cdf20742c355e3ea42052d1.
+
+commit 90f4c5dc73af3fff76500dd4223792a6d9f58636
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-15 09:50:14 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-15 09:50:14 +0900
+
+    merge revision(s) dc146babf47a84bbd1f176d766637d4a40327019, f23d5028059078a346efc977287b669d494a5a3f, a0f7de814ae5c299d6ce99bed5fb308a05d50ba0: [Backport #20296]
+
+            [Bug #20296] Clear errinfo when `exception: false`
+
+            [Bug #20296] Refine the test
+
+            [Bug #20296] Fix the default assertion message
+
+commit a54c717c7a74b91a3cdf20742c355e3ea42052d1
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-15 09:26:25 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-15 09:26:25 +0900
+
+    merge revision(s) e04146129ec6898dd6a9739dad2983c6e9b68056, d5080f6e8b77364483ff6727b1065e45e180f05d: [Backport #20292]
+
+            [Bug #20292] Truncate embedded string to new capacity
+
+            Fix -Wsign-compare on String#initialize
+            MIME-Version: 1.0
+            Content-Type: text/plain; charset=UTF-8
+            Content-Transfer-Encoding: 8bit
+
+            ../string.c:1886:57: warning: comparison of integer expressions of different signedness: ‘size_t’ {aka ‘long unsigned int’} and ‘long int’ [-Wsign-compare]
+             1886 |                 if (STR_EMBED_P(str)) RUBY_ASSERT(osize <= str_embed_capa(str));
+                  |                                                         ^~
+
+commit 6b73406833dd22e489114fa77c1c80c4b7af2ed0
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-15 08:46:16 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-15 08:50:38 +0900
+
+    merge revision(s) 5e0c17145131e073814c7e5b15227d0b4e73cabe: [Backport #20169]
+
+            Make io_fwrite safe for compaction
+
+            [Bug #20169]
+
+            Embedded strings are not safe for system calls without the GVL because
+            compaction can cause pages to be locked causing the operation to fail
+            with EFAULT. This commit changes io_fwrite to use rb_str_tmp_frozen_no_embed_acquire,
+            which guarantees that the return string is not embedded.
+
+commit 9f1e18a138e5196c04c5231c6a799dc637f2e9af
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-13 18:48:18 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-13 18:48:18 +0900
+
+    follow-up for 3faef1d40dc1d6eea8ffcd624528f431ccaf0a5b.
+
+commit 90a44bcd39c569d851f73d167955c83f3ff2384f
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-13 15:43:23 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-13 15:43:23 +0900
+
+    merge revision(s) f36a71e26995b69ff72bc132bbcf40ad89571414: [Backport #20307]
+
+            [Bug #20307] Fix `Hash#update` to make frozen copy of string keys
+
+commit d802b6122b5e501cc0172376acb185160710454a
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-02-27 01:22:01 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-13 15:42:41 +0900
+
+    Extract `RHASH_STRING_KEY_P`
+
+commit 3faef1d40dc1d6eea8ffcd624528f431ccaf0a5b
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-02-26 23:47:45 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-13 15:40:01 +0900
+
+    Extract `RHASH_IDENTHASH_P`
+
+commit 584a02aaafda74c21d24dc4c5e223a2482c7fde3
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-13 15:17:51 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-13 15:17:51 +0900
+
+    merge revision(s) d19d683a354530a27b4cbb049223f8dc70c75849: [Backport #20250]
+
+            rb_obj_setup: do not copy RUBY_FL_SEEN_OBJ_ID
+
+            [Bug #20250]
+
+            We're seting up a new instance, so it never had an associated
+            object_id.
+
+commit c97a632363a170879b9755c5a123e92533908039
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-07 14:42:08 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-07 16:46:02 +0900
+
+    merge revision(s) 82b57d7bfeefd717c10f7a5a3484aca6b3e708a3: [Backport #20162]
+
+            Fix memory leak when duplicating too complex object
+
+            [Bug #20162]
+
+            Creating a ST table then calling st_replace leaks memory because the
+            st_replace overwrites the ST table without freeing any of the existing
+            memory. This commit changes it to use st_copy instead.
+
+            For example:
+
+                RubyVM::Shape.exhaust_shapes
+
+                o = Object.new
+                o.instance_variable_set(:@a, 0)
+
+                10.times do
+                  100_000.times { o.dup }
+
+                  puts `ps -o rss= -p #{$$}`
+                end
+
+            Before:
+
+                23264
+                33600
+                42672
+                52160
+                61600
+                71728
+                81056
+                90528
+                100560
+                109840
+
+            After:
+
+                14752
+                14816
+                15584
+                15584
+                15664
+                15664
+                15664
+                15664
+                15664
+                15664
+
+commit bd5df1693c89d389471d145fc19b487c708912b1
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-07 14:47:04 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-07 16:44:06 +0900
+
+    merge revision(s) e626da82eae3d437b84d4f9ead0164d436b08e1a, f3af5ae7e6c1c096bbfe46d69de825a02b1696cf: [Backport #20311]
+
+            Don't pin named structs defined in Ruby
+
+            [Bug #20311]
+
+            `rb_define_class_under` assumes it's called from C and that the
+            reference might be held in a C global variable, so it adds the
+            class to the VM root.
+
+            In the case of `Struct.new('Name')` it's wasteful and make
+            the struct immortal.
+
+            Make Struct memory leak test faster
+
+            [Bug #20311]
+
+            It times out on some platform, so we can reduce iterations.
+            On my machine it completes in 250ms and RSS grows 8X.
+
+commit 2a4469ea590e6719eb30e8b7aea7e147e3b82f75
+  Author:     Ivo Anjo <ivo.anjo@datadoghq.com>
+  AuthorDate: 2024-06-21 19:48:37 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-06 16:20:45 +0900
+
+    [Backport #11036 to 3.2] Add explicit compiler fence when pushing frames to ensure safe profiling
+
+    **What does this PR do?**
+
+    This PR tweaks the `vm_push_frame` function to add an explicit compiler
+    fence (`atomic_signal_fence`) to ensure profilers that use signals
+    to interrupt applications (stackprof, vernier, pf2, Datadog profiler)
+    can safely sample from the signal handler.
+
+    This is a backport of #11036 to Ruby 3.2 .
+
+    **Motivation:**
+
+    The `vm_push_frame` was specifically tweaked in
+    https://github.com/ruby/ruby/pull/3296 to initialize the a frame
+    before updating the `cfp` pointer.
+
+    But since there's nothing stopping the compiler from reordering
+    the initialization of a frame (`*cfp =`) with the update of the cfp
+    pointer (`ec->cfp = cfp`) we've been hesitant to rely on this on
+    the Datadog profiler.
+
+    In practice, after some experimentation + talking to folks, this
+    reordering does not seem to happen.
+
+    But since modern compilers have a way for us to exactly tell them
+    not to do the reordering (`atomic_signal_fence`), this seems even
+    better.
+
+    I've actually extracted `vm_push_frame` into the "Compiler Explorer"
+    website, which you can use to see the assembly output of this function
+    across many compilers and architectures: https://godbolt.org/z/3oxd1446K
+
+    On that link you can observe two things across many compilers:
+    1. The compilers are not reordering the writes
+    2. The barrier does not change the generated assembly output
+       (== has no cost in practice)
+
+    **Additional Notes:**
+
+    The checks added in `configure.ac` define two new macros:
+    * `HAVE_STDATOMIC_H`
+    * `HAVE_DECL_ATOMIC_SIGNAL_FENCE`
+
+    Since Ruby generates an arch-specific `config.h` header with
+    these macros upon installation, this can be used by profilers
+    and other libraries to test if Ruby was compiled with the fence enabled.
+
+    **How to test the change?**
+
+    As I mentioned above, you can check https://godbolt.org/z/3oxd1446K
+    to confirm the compiled output of `vm_push_frame` does not change
+    in most compilers (at least all that I've checked on that site).
+
+commit 2b35d80834f14011f7d313f8fac7855dc9949f70
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-06 15:55:04 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-06 15:55:04 +0900
+
+    merge revision(s) 75aaeb35b82da26359b9418d2963384d0c55839c: [Backport #20239]
+
+            [Bug #20239] Fix overflow at down-casting
+
+commit a67b43d99e24dc7c2a9e134a65f28f968fe124c1
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-06 15:54:03 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-06 15:54:03 +0900
+
+    merge revision(s) 3a04ea2d0379dd8c6623c2d5563e6b4e23986fae: [Backport #20305]
+
+            [Bug #20305] Fix matching against an incomplete character
+
+            When matching against an incomplete character, some `enclen` calls are
+            expected not to exceed the limit, and some are expected to return the
+            required length and then the results are checked if it exceeds.
+
+commit 89de66dbb0d8454c9d69faa331d6e35f8b315cce
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-06 13:33:24 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-06 13:35:22 +0900
+
+    merge revision(s) 78d9fe69479d32214a52ad7291c3973f1b6b7f6f, 04729fe68dceddab045be7324e26c2bb15aa62c7: [Backport #20286] [Backport #20286]
+
+            Ensure that exiting thread invokes end-of-life behaviour. (#10039)
+
+            Fix exception handling in `rb_fiber_scheduler_set`. (#10042)
+
+commit 5577e5d396cc8f062833b67d6280db6cc8501e7a
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-06 13:26:26 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-06 13:26:26 +0900
+
+    merge revision(s) a7ff264477105b5dc0ade6facad4176a1b73df0b: [Backport #20393]
+
+            Don't clear pending interrupts in the parent process. (#10365)
+
+commit 2f8f17e842666abb05ca522d6072c957fab0e12e
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-06 11:16:44 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-06 11:16:44 +0900
+
+    merge revision(s) 5d1702e01a36e11b183fe29ce10780a9b1a41cf0: [Backport #20414]
+
+            Enumerator should use a non-blocking fiber, change `rb_fiber_new` to be non-blocking by default. (#10481)
+
+commit 5141d72fde2528721663ddbc0554ac81ddc0656f
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-07-06 11:01:02 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-06 11:01:02 +0900
+
+    merge revision(s) 1e08a9f0e9058186db18f29efc6458c00f10a856: [Backport #20499]
+
+            [Bug #20499] Use Xcode owned tools for Xcode clang
+
+            Xcode has its own version tools that may be incompatible with genuine
+            LLVM tools, use the tools in the same directory.
+
+commit 2dfaa00e09ceb7f1dcee87acd56c47701fc8ca19
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-07-05 17:47:40 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-07-05 18:37:44 +0900
+
+    Added macos-13 and removed macos-11
+
+commit eca044a3870d4767d10c0ca8a51f1de4e5e2fdb0
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-06-19 06:13:54 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-19 06:13:54 +0900
+
+    bump patchlevel.
+
+commit 8e68752a5e48c5baf07114952d256efa360e3f4b
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-06-19 00:27:18 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-19 00:27:18 +0900
+
+    bump rexml version to 3.2.9.
+
+commit fa042a0f10f70347c1717c068d96e43e19f2171b
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-01-22 10:36:06 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-18 22:53:59 +0900
+
+    added redirect wrapper for envutil
+
+commit 963bb96e29204f351fa58a205a6eec075c0194ff
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-01-17 12:31:35 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-18 22:53:58 +0900
+
+    Load Rake::TaskLib when missing it
+
+commit 5a70a323904368987b79c59140bd2aca009da7a0
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2023-06-14 01:33:44 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-18 22:53:58 +0900
+
+    Show prerequisites for compile task
+
+commit 9542ef2798c6f555df5115da6881a5d50ed7034b
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2023-06-14 01:21:27 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-18 22:53:58 +0900
+
+    Allow test-unit-ruby-core files to be loaded from bundled gems
+
+    Separate the directly from the customized test-unit, since it may not
+    work with bundled gems.
+
+commit 56c311aa0b20dee13ab43309ae3386f57f8cb797
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-06-02 07:13:25 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-18 22:50:39 +0900
+
+    merge revision(s) 9f708d48f6df37ee9600db9d51b57a156609a13b,0301473fb523c71d8cdc4966971f31f502001185,7f0e26b7f99bf76408569892ce20318501f74729: [Backport #20516]
+
+            Clear runtime dependencies if default gems is specified.
+
+            The current build system uses runtime dependencies from only
+            `.bundle` directory. We shouldn't install runtime dependencies
+            from rubygems.org when `make test-bundled-gems` is invoked.
+
+            Fixed dependencies list format
+
+            Re-use strscan with ruby repo
+
+commit 8e7d5adb4a481e9b4050505ea88cdf64278cacb7
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-06-01 16:11:08 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-18 22:50:16 +0900
+
+    partially merge revision(s) 70ad58cb62b195ba86a5ef07a565b22b02a040ea: [Backport #20516]
+
+            Update bundled_gems
+
+commit e308f47888cfb5c85344d030098932340b57147d
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-06-18 22:47:12 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-18 22:47:12 +0900
+
+    Revert "merge revision(s) 18eaf0be905e3e251423b42d6f4e56b7cae1bc3b: [Backport #20494]"
+
+    This reverts commit ec30266267b2a063089b8ce7967203bcbadbdf4e.
+
+commit 478b21f63127f30fd1a9ee051a6c5593f41937ed
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-06-18 22:46:48 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-18 22:46:48 +0900
+
+    Revert "merge revision(s) 22e4eeda6561693367fc7a00b92b90f46b09cabd, 1ab7c412d2e3880a7ad233c32e93961888f8145c, fd549b229b0822198ddc847703194263a2186ed1: [Backport #20515]"
+
+    This reverts commit dc4ca25e0a01e072ba3cf1fc47612aff72c980af.
+
+commit dc4ca25e0a01e072ba3cf1fc47612aff72c980af
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-06-15 13:13:19 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-15 13:13:19 +0900
+
+    merge revision(s) 22e4eeda6561693367fc7a00b92b90f46b09cabd, 1ab7c412d2e3880a7ad233c32e93961888f8145c, fd549b229b0822198ddc847703194263a2186ed1: [Backport #20515]
+
+            ci: Test whether GMP is working in compilers.yml (#10875)
+
+            Avoid reoccurence of [Bug #20515]
+
+            Requires https://github.com/ruby/ruby/pull/10876 since 18eaf0be905e3e251423b42d6f4e56b7cae1bc3b
+
+            bug: https://bugs.ruby-lang.org/issues/20515
+
+            RUBY_CHECK_HEADER didn't define HAVE_{header-file} (#10876)
+
+            --with-gmp is not working at all because HAVE_GMP_H
+            was missing since 18eaf0be90. [Bug #20515]
+
+            bug: https://bugs.ruby-lang.org/issues/20515
+            follow-up: https://bugs.ruby-lang.org/issues/20494
+            follow-up: 18eaf0be905e3e251423b42d6f4e56b7cae1bc3b
+            follow-up: https://github.com/ruby/ruby/pull/10805
+
+            test_bignum: defined? returns String (#10880)
+            MIME-Version: 1.0
+            Content-Type: text/plain; charset=UTF-8
+            Content-Transfer-Encoding: 8bit
+
+            didn't verify the test is working properly due to mistaken auto-merge… [Bug #20515]
+
+            bug: https://bugs.ruby-lang.org/issues/20515
+            follow-up: 22e4eeda6561693367fc7a00b92b90f46b09cabd
+            follow-up: https://github.com/ruby/ruby/pull/10875
+
+commit ec30266267b2a063089b8ce7967203bcbadbdf4e
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-06-15 13:09:47 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-15 13:09:47 +0900
+
+    merge revision(s) 18eaf0be905e3e251423b42d6f4e56b7cae1bc3b: [Backport #20494]
+
+            [Bug #20494] Search non-default directories for GMP
+
+            Co-Authored-by: lish82 (Hiroki Katagiri)
+
+commit 2f010f31f1887ad0f429709a2906fc5a4dae8e87
+  Author:     KJ Tsanaktsidis <ktsanaktsidis@zendesk.com>
+  AuthorDate: 2024-05-18 18:37:49 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-15 13:05:25 +0900
+
+    Inline RB_VM_SAVE_MACHINE_CONTEXT into BLOCKING_REGION
+
+    There's an exhaustive explanation of this in the linked redmine bug, but
+    the short version is as follows:
+
+    blocking_region_begin can spill callee-saved registers to the stack for
+    its own use. That means they're not saved to ec->machine by the call to
+    setjmp, since by that point they're already on the stack and new,
+    different values are in the real registers. ec->machine's end-of-stack
+    pointer is also bumped to accomodate this, BUT, after
+    blocking_region_begin returns, that points past the end of the stack!
+
+    As far as C is concerned, that's fine; the callee-saved registers are
+    restored when blocking_region_begin returns. But, if another thread
+    triggers GC, it is relying on finding references to Ruby objects by
+    walking the stack region pointed to by ec->machine.
+
+    If the C code in exec; subsequently does things that use that stack
+    memory, then the value will be overwritten and the GC might prematurely
+    collect something it shouldn't.
+
+    [Bug #20493]
+
+commit b494ecfbc1b2a934d27233b7171c40adaa81e3c5
+  Author:     Peter Zhu <peter@peterzhu.ca>
+  AuthorDate: 2024-06-11 08:05:58 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-15 13:02:26 +0900
+
+    Fix inconsistent evaluation of keyword splat (#10959)
+
+    [Bug #20180]
+
+    Backports #9624.
+
+commit e0e1a0f502fe57e7e7e8cf643b8f141b4582d62d
+  Author:     Jean Boussier <jean.boussier@gmail.com>
+  AuthorDate: 2024-06-10 22:12:54 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-15 12:58:19 +0900
+
+    compile.c: use putspecialobject for RubyVM::FrozenCore
+
+    [Bug #20569]
+
+    `putobject RubyVM::FrozenCore`, is not serializable, we
+    have to use `putspecialobject VM_SPECIAL_OBJECT_VMCORE`.
+
+commit ab7dfa7ff270feb155d4715fb7ffcee3668ef38f
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-06-03 20:59:51 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-03 20:59:51 +0900
+
+    merge revision(s) 631449ac6b9336dfce577a786aff7eca0b8abcf1:
+
+            README.ja.md: Remove Cirrus CI badge image. folloup for 15ee9c7c1b693f29b6b2dbe7b47488bf154e481c.
+
+commit f9a9035b98526b8b50587ab7959cc1d2292f5b7f
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-06-03 19:57:28 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-03 19:57:28 +0900
+
+    merge revision(s) 15ee9c7c1b693f29b6b2dbe7b47488bf154e481c:
+
+            [DOC] README.md: Remove Cirrus CI badge image. (#8785)
+
+            We removed the `.cirrus.yml` at the commit
+            <01b5d1d2ff6ca91b2909dfa67295f59b53e6f065>.
+            Let's remove the badge image too.
+
+commit 5afdfbdd0924c2cede5626e9d762caa90ce656d9
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-06-03 19:57:19 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-03 19:57:19 +0900
+
+    merge revision(s) 01b5d1d2ff6ca91b2909dfa67295f59b53e6f065:
+
+            YJIT: Add a cargo job for Arm64 and remove .cirrus.yml (#8679)
+
+            * YJIT: Add a cargo job for Arm64
+
+            * YJIT: Use command names as job names
+
+            They look more consistent with jobs that use the command name as a job
+            name, such as `make (check)`, `make (test-bundled-gems)`, etc.
+
+            * Remove .cirrus.yml
+
+commit 3c04fd11a0a387d99d0e439b0e4147128beaa88d
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-06-03 12:22:51 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-03 12:22:51 +0900
+
+    Revert "partially merge revision(s) 70ad58cb62b195ba86a5ef07a565b22b02a040ea: [Backport #20516]"
+
+    This reverts commit 519ac9c5fd7bfa75655231188ac1da9589563618.
+
+commit c48b2312acf40371590ac2a9618f4cb39472ef0f
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-06-03 12:22:25 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-03 12:22:25 +0900
+
+    Revert "merge revision(s) 9f708d48f6df37ee9600db9d51b57a156609a13b,0301473fb523c71d8cdc4966971f31f502001185,7f0e26b7f99bf76408569892ce20318501f74729: [Backport #20516]"
+
+    This reverts commit 0de1ff12973ffc04bc9a8b0799e963922986d1eb.
+
+commit 0de1ff12973ffc04bc9a8b0799e963922986d1eb
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-06-02 07:13:25 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-02 07:13:25 +0900
+
+    merge revision(s) 9f708d48f6df37ee9600db9d51b57a156609a13b,0301473fb523c71d8cdc4966971f31f502001185,7f0e26b7f99bf76408569892ce20318501f74729: [Backport #20516]
+
+            Clear runtime dependencies if default gems is specified.
+
+            The current build system uses runtime dependencies from only
+            `.bundle` directory. We shouldn't install runtime dependencies
+            from rubygems.org when `make test-bundled-gems` is invoked.
+
+            Fixed dependencies list format
+
+            Re-use strscan with ruby repo
+
+commit 519ac9c5fd7bfa75655231188ac1da9589563618
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-06-01 16:11:08 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-06-01 16:11:08 +0900
+
+    partially merge revision(s) 70ad58cb62b195ba86a5ef07a565b22b02a040ea: [Backport #20516]
+
+            Update bundled_gems
+
+commit dd77934ca6e2e8b2b894f2460017323b33b619b6
+  Author:     matoro <matoro@users.noreply.github.com>
+  AuthorDate: 2024-05-24 05:10:32 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-28 09:26:37 +0900
+
+    [ruby/readline-ext] Skip test_interrupt_in_other_thread on arm32-linux
+
+    This is a combination of main Ruby commit
+    https://github.com/ruby/ruby/commit/aefc98891c42024039f19ef45bdfe93fbc590b7c
+    and my PR correcting the regex https://github.com/ruby/ruby/pull/10819.
+    Upstream Ruby requests that changes to this test go to readline-ext repo
+    before being backported to 3.2 branch.
+
+    https://github.com/ruby/readline-ext/commit/868f873a78
+
+commit 0e664ebcd36879591223d1ecbb181aa05d82a4d9
+  Author:     Samuel Williams <samuel.williams@oriontransfer.co.nz>
+  AuthorDate: 2023-09-14 17:37:43 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-05-18 20:09:56 +0900
+
+    Fix `io_buffer_get_string` default length computation. (#8427)
+
+    * Fix `io_buffer_get_string` default length computation.
+
+    When an offset bigger than the size is given, the resulting length will be
+    computed incorrectly. Raise an argument error in this case.
+
+    * Validate all arguments.
+
+commit 67d499a7646a4f2f5294b6c83ac9503fcd873270
+  Author:     Samuel Williams <samuel.williams@oriontransfer.co.nz>
+  AuthorDate: 2023-05-24 10:17:35 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-05-18 20:09:56 +0900
+
+    Improvements to `IO::Buffer` `read`/`write`/`pread`/`pwrite`. (#7826)
+
+    - Fix IO::Buffer `read`/`write` to use a minimum length.
+
+commit 359e40e3c9986b8a5d77359995f0e926d1c6eb72
+  Author:     Samuel Williams <samuel.williams@oriontransfer.co.nz>
+  AuthorDate: 2023-05-22 12:27:20 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-05-18 20:09:56 +0900
+
+    Rename `data` -> `buffer` for better readability. (#7836)
+
+commit 2d686e1019414f6bbb7ccbfa897b7b665250743d
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-05-16 11:36:47 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-05-16 11:36:47 +0900
+
+    merge revision(s) ae8990aef098410ecc2b5f48fea9d7d171a3c5f6: [Backport #20183]
+
+            Alias init functions
+
+            The extension library has each initialization function named "Init_" +
+            basename. If multiple extensions have the same base name (such as
+            cgi/escape and erb/escape), the same function will be registered for
+            both names.
+
+            To fix this conflict, rename the initialization functions under sub
+            directories using using parent names, when statically linking.
+
+commit 449899b38314d0ecbe61e42d34398bdf2561b8e9
+  Author:     Jean Boussier <jean.boussier@gmail.com>
+  AuthorDate: 2024-05-09 18:56:51 +0900
+  Commit:     Benoit Daloze <eregontp@gmail.com>
+  CommitDate: 2024-05-14 16:29:21 +0900
+
+    Fix `String#index` to clear MatchData when a regexp is passed
+
+    [Bug #20421]
+
+    The bug was fixed in Ruby 3.3 via 9dcdffb8bf8a3654fd78bf1a58b30c8e13888a7a
+
+commit a10a0d0c77826b97ec246274adcc80952049688b
+  Author:     Alan Wu <XrXr@users.noreply.github.com>
+  AuthorDate: 2023-01-17 05:30:18 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-08 20:12:13 +0900
+
+    CI: Pass -O2 for annocheck
+
+    Because `optflags` is pasted into the invocation line after `CC`, we were
+    building with -O1 unintentionally. You can see this in the configuration
+    summary: https://github.com/ruby/ruby/actions/runs/3933391169/jobs/6727044423#step:9:753
+
+    The check actually fails with -O2. To make it pass, upstream suggest
+    that we use the annocheck GCC plugin. Since it requires building from
+    source as the debian package for it isn't ready yet, punt on it for now
+    and use `--skip-gaps`.
+
+    Co-authored-by: Jun Aruga <jaruga@redhat.com>
+
+commit 8029ee41768cdc6b86cad90390f281185ab995e2
+  Author:     Jun Aruga <jaruga@redhat.com>
+  AuthorDate: 2024-03-12 22:39:05 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-08 20:12:13 +0900
+
+    [ruby/openssl] test_asn1.rb: Remove the assertions of the time string format without second.
+
+    This commit fixes the following errors in the tests.
+    Because the OpenSSL project changed the code to make the time string format
+    without second invalid. So, we drop the assertions.
+
+    ```
+    1) Error: test_generalizedtime(OpenSSL::TestASN1): OpenSSL::ASN1::ASN1Error: generalizedtime is too short
+    /home/runner/work/ruby-openssl/ruby-openssl/test/openssl/test_asn1.rb:698:in `decode'
+    /home/runner/work/ruby-openssl/ruby-openssl/test/openssl/test_asn1.rb:698:in `decode_test'
+    /home/runner/work/ruby-openssl/ruby-openssl/test/openssl/test_asn1.rb:433:in `test_generalizedtime'
+         430:       OpenSSL::ASN1::GeneralizedTime.new(Time.utc(9999, 9, 8, 23, 43, 39))
+         431:     # LibreSSL 3.6.0 requires the seconds element
+         432:     return if libressl?
+      => 433:     decode_test B(%w{ 18 0D }) + "201612081934Z".b,
+         434:       OpenSSL::ASN1::GeneralizedTime.new(Time.utc(2016, 12, 8, 19, 34, 0))
+         435:     # not implemented
+         436:     # decode_test B(%w{ 18 13 }) + "https://github.com/ruby/openssl/commit/201612081934+0930".b,
+
+    2) Error: test_utctime(OpenSSL::TestASN1): OpenSSL::ASN1::ASN1Error: utctime is too short
+    /home/runner/work/ruby-openssl/ruby-openssl/test/openssl/test_asn1.rb:698:in `decode'
+    /home/runner/work/ruby-openssl/ruby-openssl/test/openssl/test_asn1.rb:698:in `decode_test'
+    /home/runner/work/ruby-openssl/ruby-openssl/test/openssl/test_asn1.rb:411:in `test_utctime'
+         408:     end
+         409:     # Seconds is omitted. LibreSSL 3.6.0 requires it
+         410:     return if libressl?
+      => 411:     decode_test B(%w{ 17 0B }) + "1609082343Z".b,
+         412:       OpenSSL::ASN1::UTCTime.new(Time.utc(2016, 9, 8, 23, 43, 0))
+         413:     # not implemented
+         414:     # decode_test B(%w{ 17 11 }) + "https://github.com/ruby/openssl/commit/500908234339+0930".b,
+    ```
+
+    https://github.com/ruby/openssl/commit/2e826d5715
+
+commit 0ca642cd300ee2d7a8f5dbef512344467285b2ea
+  Author:     Xi Ruoyao <xry111@xry111.site>
+  AuthorDate: 2024-04-24 14:42:09 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-08 20:12:13 +0900
+
+    [ruby/net-http] Skip test_session_reuse_but_expire with OpenSSL 3.3
+
+    OpenSSL 3.3.0 9 Apr 2024 is also broken.
+
+    Signed-off-by: Xi Ruoyao <xry111@xry111.site>
+
+    https://github.com/ruby/net-http/commit/ab525c956d
+
 commit af471c0e0127eea0cafa6f308c0425bbfab0acf5
   Author:     nagachika <nagachika@ruby-lang.org>
   AuthorDate: 2024-04-23 19:20:09 +0900

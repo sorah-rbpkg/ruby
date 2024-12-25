@@ -238,12 +238,16 @@ class TestIOBuffer < Test::Unit::TestCase
     chunk = buffer.get_string(0, message.bytesize, Encoding::BINARY)
     assert_equal Encoding::BINARY, chunk.encoding
 
-    assert_raise_with_message(ArgumentError, /exceeds buffer size/) do
+    assert_raise_with_message(ArgumentError, /bigger than the buffer size/) do
       buffer.get_string(0, 129)
     end
 
-    assert_raise_with_message(ArgumentError, /exceeds buffer size/) do
+    assert_raise_with_message(ArgumentError, /bigger than the buffer size/) do
       buffer.get_string(129)
+    end
+
+    assert_raise_with_message(ArgumentError, /Offset can't be negative/) do
+      buffer.get_string(-1)
     end
   end
 
@@ -355,17 +359,38 @@ class TestIOBuffer < Test::Unit::TestCase
     input.close
   end
 
-  def test_read
+  def hello_world_tempfile
     io = Tempfile.new
     io.write("Hello World")
     io.seek(0)
 
-    buffer = IO::Buffer.new(128)
-    buffer.read(io, 5)
-
-    assert_equal "Hello", buffer.get_string(0, 5)
+    yield io
   ensure
-    io.close! if io
+    io&.close!
+  end
+
+  def test_read
+    hello_world_tempfile do |io|
+      buffer = IO::Buffer.new(128)
+      buffer.read(io)
+      assert_equal "Hello", buffer.get_string(0, 5)
+    end
+  end
+
+  def test_read_with_with_length
+    hello_world_tempfile do |io|
+      buffer = IO::Buffer.new(128)
+      buffer.read(io, 5)
+      assert_equal "Hello", buffer.get_string(0, 5)
+    end
+  end
+
+  def test_read_with_with_offset
+    hello_world_tempfile do |io|
+      buffer = IO::Buffer.new(128)
+      buffer.read(io, nil, 6)
+      assert_equal "Hello", buffer.get_string(6, 5)
+    end
   end
 
   def test_write
@@ -373,7 +398,7 @@ class TestIOBuffer < Test::Unit::TestCase
 
     buffer = IO::Buffer.new(128)
     buffer.set_string("Hello")
-    buffer.write(io, 5)
+    buffer.write(io)
 
     io.seek(0)
     assert_equal "Hello", io.read(5)
