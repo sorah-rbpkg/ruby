@@ -9,7 +9,7 @@ packaging
  1 file changed, 4 insertions(+)
 
 diff --git a/test/ruby/test_bignum.rb b/test/ruby/test_bignum.rb
-index 1b705b0..988de63 100644
+index beef33e..bb1c6ad 100644
 --- a/test/ruby/test_bignum.rb
 +++ b/test/ruby/test_bignum.rb
 @@ -634,6 +634,10 @@ class TestBignum < Test::Unit::TestCase

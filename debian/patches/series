@@ -6,7 +6,6 @@ exclude-several-tests-unstable-in-Docker.patch
 Fix-FTBFS-on-x32-misdetected-as-i386-or-amd64.patch
 TestProcess-disable-gems-to-disable-rubygems_integration.patch
 extract-gems-sequential-Keep-using-RUNRUBY.patch
-Test_SyncDefaultGems-Fail-when-editor-run.patch
 sync_default_gems-git-2.32-ignores-no-edit-in-cherry-pick.patch
 YJIT-Let-RubyVM-YJIT.enable-respect-yjit-stats.patch
 Ensure-Integer-GMP_VERSION-exists.patch

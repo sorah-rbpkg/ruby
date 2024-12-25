@@ -8,10 +8,10 @@ https://github.com/git/git/commit/39edfd5cbc4d168db19ec1bc867d78ec7211ec39
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/tool/sync_default_gems.rb b/tool/sync_default_gems.rb
-index f4774ba..8151751 100755
+index 9581922..1b27941 100755
 --- a/tool/sync_default_gems.rb
 +++ b/tool/sync_default_gems.rb
-@@ -651,7 +651,7 @@ module SyncDefaultGems
+@@ -682,7 +682,7 @@ module SyncDefaultGems
      if picked
        system(*%w"git commit --amend --no-edit")
      else

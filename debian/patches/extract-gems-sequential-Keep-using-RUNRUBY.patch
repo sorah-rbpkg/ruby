@@ -15,10 +15,10 @@ Subject: extract-gems-sequential: Keep using RUNRUBY
  1 file changed, 1 insertion(+), 3 deletions(-)
 
 diff --git a/common.mk b/common.mk
-index 83f10f7..b5a54dc 100644
+index 0ea360c..9b34859 100644
 --- a/common.mk
 +++ b/common.mk
-@@ -1503,7 +1503,7 @@ update-gems$(gnumake:yes=-sequential): PHONY
+@@ -1537,7 +1537,7 @@ update-gems$(gnumake:yes=-sequential): PHONY
  
  extract-gems$(gnumake:yes=-sequential): PHONY
  	$(ECHO) Extracting bundled gem files...
@@ -27,7 +27,7 @@ index 83f10f7..b5a54dc 100644
  	    -Itool/lib -rfileutils -rbundled_gem -answ \
  	    -e 'BEGIN {d = ".bundle/gems"}' \
  	    -e 'gem, ver, _, rev = *$$F' \
-@@ -1517,8 +1517,6 @@ extract-gems$(gnumake:yes=-sequential): PHONY
+@@ -1551,8 +1551,6 @@ extract-gems$(gnumake:yes=-sequential): PHONY
  	    -e 'end' \
  	    gems/bundled_gems
  

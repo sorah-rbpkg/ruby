@@ -7,7 +7,7 @@ Subject: YJIT: Let RubyVM::YJIT.enable respect --yjit-stats
  1 file changed, 1 insertion(+)
 
 diff --git a/yjit.rbinc b/yjit.rbinc
-index 7acfeb1..6f417f6 100644
+index a6d2a8e..85c3737 100644
 --- a/yjit.rbinc
 +++ b/yjit.rbinc
 @@ -3,6 +3,7 @@
