@@ -978,6 +978,7 @@ AS_IF([test "x$OPT_DIR" != x], [
     INCFLAGS="${INCFLAGS:+$INCFLAGS }"`echo "$OPT_DIR" | tr "${PATH_SEPARATOR}" '\012' |
         sed '/^$/d;s|^|-I|;s|$|/include|' | tr '\012' ' ' | sed 's/ *$//'`
 ])
+AC_SUBST(incflags, "$INCFLAGS")
 
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
 test -z "${ac_env_CXXFLAGS_set}" -a -n "${cxxflags+set}" && eval CXXFLAGS="\"$cxxflags $ARCH_FLAG\""
@@ -1367,6 +1368,8 @@ AC_ARG_WITH([jemalloc],
   [with_jemalloc=$withval], [with_jemalloc=no])
 AS_IF([test "x$with_jemalloc" != xno],[
   # find jemalloc header first
+  save_CPPFLAGS="${CPPFLAGS}"
+  CPPFLAGS="${INCFLAGS} ${CPPFLAGS}"
   malloc_header=
   AC_CHECK_HEADER(jemalloc/jemalloc.h, [malloc_header=jemalloc/jemalloc.h], [
     AC_CHECK_HEADER(jemalloc.h, [malloc_header=jemalloc.h])
@@ -1398,6 +1401,8 @@ AS_IF([test "x$with_jemalloc" != xno],[
       done
     done
   ])
+  CPPFLAGS="${save_CPPFLAGS}"
+  unset save_CPPFLAGS
   with_jemalloc=${rb_cv_jemalloc_library}
   AS_CASE(["$with_jemalloc"],
   [no],
