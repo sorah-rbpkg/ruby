@@ -2339,7 +2339,7 @@ rb_fiber_initialize(int argc, VALUE* argv, VALUE self)
 VALUE
 rb_fiber_new_storage(rb_block_call_func_t func, VALUE obj, VALUE storage)
 {
-    return fiber_initialize(fiber_alloc(rb_cFiber), rb_proc_new(func, obj), rb_fiber_pool_default(Qnil), 1, storage);
+    return fiber_initialize(fiber_alloc(rb_cFiber), rb_proc_new(func, obj), rb_fiber_pool_default(Qnil), 0, storage);
 }
 
 VALUE
@@ -2799,7 +2799,8 @@ rb_fiber_blocking(VALUE class)
     // If we are already blocking, this is essentially a no-op:
     if (fiber->blocking) {
         return rb_yield(fiber_value);
-    } else {
+    }
+    else {
         return rb_ensure(fiber_blocking_yield, fiber_value, fiber_blocking_ensure, fiber_value);
     }
 }

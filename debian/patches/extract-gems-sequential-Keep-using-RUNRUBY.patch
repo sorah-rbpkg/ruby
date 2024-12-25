@@ -11,10 +11,10 @@ Partially reverts https://github.com/ruby/ruby/pull/6203
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/common.mk b/common.mk
-index 3798f82..5375f52 100644
+index 1e863a6..47db170 100644
 --- a/common.mk
 +++ b/common.mk
-@@ -1393,7 +1393,7 @@ update-gems$(gnumake:yes=-sequential): PHONY
+@@ -1394,7 +1394,7 @@ update-gems$(gnumake:yes=-sequential): PHONY
  
  extract-gems$(gnumake:yes=-sequential): PHONY
  	$(ECHO) Extracting bundled gem files...
