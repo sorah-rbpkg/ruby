@@ -1,0 +1,25 @@
+From: Sorah Fukumori <her@sorah.jp>
+Date: Thu, 26 Dec 2024 03:47:50 +0900
+Subject: TestReline#test_tty_amibuous_width: use test_rubybin
+
+Same as https://github.com/ruby/reline/pull/510, 'ruby' command is not
+always available so don't rely on that specific name.
+
+https://github.com/ruby/reline/commit/f60199fed7
+---
+ test/reline/test_reline.rb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/reline/test_reline.rb b/test/reline/test_reline.rb
+index 0a4f389..691ed9f 100644
+--- a/test/reline/test_reline.rb
++++ b/test/reline/test_reline.rb
+@@ -446,7 +446,7 @@ class Reline::Test < Reline::TestCase
+     RUBY
+     ruby_file.close
+     lib = File.expand_path('../../lib', __dir__)
+-    cmd = [{ 'TERM' => 'xterm' }, 'ruby', '-I', lib, ruby_file.to_path]
++    cmd = [{ 'TERM' => 'xterm' }, Reline.test_rubybin, '-I', lib, ruby_file.to_path]
+ 
+     # Calculate ambiguous width from cursor position
+     [1, 2].each do |ambiguous_width|
