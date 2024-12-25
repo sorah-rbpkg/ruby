@@ -9,3 +9,4 @@ extract-gems-sequential-Keep-using-RUNRUBY.patch
 sync_default_gems-git-2.32-ignores-no-edit-in-cherry-pick.patch
 YJIT-Let-RubyVM-YJIT.enable-respect-yjit-stats.patch
 Ensure-Integer-GMP_VERSION-exists.patch
+gc-mmtk-keep-using-std-panic-PanicInfo-for-MSRV-1.74.patch

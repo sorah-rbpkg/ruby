@@ -1,0 +1,30 @@
+From: Sorah Fukumori <her@sorah.jp>
+Date: Thu, 26 Dec 2024 03:12:28 +0900
+Subject: gc/mmtk: keep using std::panic::PanicInfo for MSRV 1.74
+
+https://github.com/rust-lang/rust/pull/115974
+---
+ gc/mmtk/src/lib.rs | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/gc/mmtk/src/lib.rs b/gc/mmtk/src/lib.rs
+index 01497e9..6442392 100644
+--- a/gc/mmtk/src/lib.rs
++++ b/gc/mmtk/src/lib.rs
+@@ -5,7 +5,6 @@ extern crate log;
+ extern crate probe;
+ 
+ use std::collections::HashSet;
+-use std::panic::PanicHookInfo;
+ use std::sync::Mutex;
+ use std::thread::ThreadId;
+ 
+@@ -92,7 +91,7 @@ pub(crate) fn is_gc_thread(thread_id: ThreadId) -> bool {
+     gc_threads.contains(&thread_id)
+ }
+ 
+-fn handle_gc_thread_panic(panic_info: &PanicHookInfo) {
++fn handle_gc_thread_panic(panic_info: &std::panic::PanicInfo) {
+     eprintln!("ERROR: An MMTk GC thread panicked.  This is a bug.");
+     eprintln!("{panic_info}");
+ 
