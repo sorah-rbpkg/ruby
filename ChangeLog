@@ -1,5 +1,13 @@
 -*- coding: utf-8 -*-
 
+commit 48d4efcb85000e1ebae42004e963b5d0cedddcf2
+  Author:     NARUSE, Yui <naruse@airemix.jp>
+  AuthorDate: 2024-12-25 16:43:20 +0900
+  Commit:     NARUSE, Yui <naruse@airemix.jp>
+  CommitDate: 2024-12-25 16:43:20 +0900
+
+    v3.4.1
+
 commit f45010833071b953744658842369e3496dfacb48
   Author:     Takashi Kokubun <takashikkbn@gmail.com>
   AuthorDate: 2024-12-25 13:50:41 +0900
