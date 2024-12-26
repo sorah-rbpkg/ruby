@@ -367,7 +367,7 @@ goruby_install_name = "go" + ruby_install_name
 
 bindir = CONFIG["bindir", true]
 if CONFIG["libdirname"] == "archlibdir"
-  archbindir = bindir.sub(%r[/\K(?=[^/]+\z)]) {CONFIG["config_target"] + "/"}
+  archbindir = nil#bindir.sub(%r[/\K(?=[^/]+\z)]) {CONFIG["config_target"] + "/"}
 end
 libdir = CONFIG[CONFIG.fetch("libdirname", "libdir"), true]
 rubyhdrdir = CONFIG["rubyhdrdir", true]
@@ -898,11 +898,11 @@ install?(:local, :arch, :data) do
   if pc and File.file?(pc) and File.size?(pc)
     prepare "pkgconfig data", pkgconfigdir = File.join(libdir, "pkgconfig")
     install pc, pkgconfigdir, :mode => $data_mode
-    if (pkgconfig_base = CONFIG["libdir", true]) != libdir
-      prepare "pkgconfig data link", File.join(pkgconfig_base, "pkgconfig")
-      ln_sf(File.join("..", Path.relative(pkgconfigdir, pkgconfig_base), pc),
-            File.join(pkgconfig_base, "pkgconfig", pc))
-    end
+    #if (pkgconfig_base = CONFIG["libdir", true]) != libdir
+    #  prepare "pkgconfig data link", File.join(pkgconfig_base, "pkgconfig")
+    #  ln_sf(File.join("..", Path.relative(pkgconfigdir, pkgconfig_base), pc),
+    #        File.join(pkgconfig_base, "pkgconfig", pc))
+    #end
   end
 end
 
