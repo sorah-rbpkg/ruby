@@ -201,7 +201,6 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_ary_hidden_new@Base 3.4.0-0nkmi1
  rb_ary_includes@Base 3.4.0-0nkmi1
  rb_ary_join@Base 3.4.0-0nkmi1
- rb_ary_memsize@Base 3.4.0-0nkmi1
  rb_ary_modify@Base 3.4.0-0nkmi1
  rb_ary_new@Base 3.4.0-0nkmi1
  rb_ary_new_capa@Base 3.4.0-0nkmi1
@@ -227,27 +226,24 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_ary_to_ary@Base 3.4.0-0nkmi1
  rb_ary_to_s@Base 3.4.0-0nkmi1
  rb_ary_unshift@Base 3.4.0-0nkmi1
+ rb_asan_poison_object@Base 3.4.0-0nkmi1
+ rb_asan_poisoned_object_p@Base 3.4.0-0nkmi1
+ rb_asan_unpoison_object@Base 3.4.0-0nkmi1
  rb_ascii8bit_encindex@Base 3.4.0-0nkmi1
  rb_ascii8bit_encoding@Base 3.4.0-0nkmi1
  rb_assert_failure@Base 3.4.0-0nkmi1
+ rb_assert_failure_detail@Base 3.4.0-0nkmi1
  rb_assoc_new@Base 3.4.0-0nkmi1
- rb_ast_add_mark_object@Base 3.4.0-0nkmi1
- rb_ast_delete_mark_object@Base 3.4.0-0nkmi1
  rb_ast_delete_node@Base 3.4.0-0nkmi1
  rb_ast_dispose@Base 3.4.0-0nkmi1
  rb_ast_free@Base 3.4.0-0nkmi1
- rb_ast_mark@Base 3.4.0-0nkmi1
  rb_ast_memsize@Base 3.4.0-0nkmi1
  rb_ast_new@Base 3.4.0-0nkmi1
  rb_ast_new_local_table@Base 3.4.0-0nkmi1
  rb_ast_newnode@Base 3.4.0-0nkmi1
  rb_ast_resize_latest_local_table@Base 3.4.0-0nkmi1
- rb_ast_set_tokens@Base 3.4.0-0nkmi1
- rb_ast_tokens@Base 3.4.0-0nkmi1
- rb_ast_update_references@Base 3.4.0-0nkmi1
  rb_attr@Base 3.4.0-0nkmi1
  rb_attr_get@Base 3.4.0-0nkmi1
- rb_autoload@Base 3.4.0-0nkmi1
  rb_autoload_load@Base 3.4.0-0nkmi1
  rb_autoload_p@Base 3.4.0-0nkmi1
  rb_backref_get@Base 3.4.0-0nkmi1
@@ -691,6 +687,7 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_fiber_resume_kw@Base 3.4.0-0nkmi1
  rb_fiber_scheduler_address_resolve@Base 3.4.0-0nkmi1
  rb_fiber_scheduler_block@Base 3.4.0-0nkmi1
+ rb_fiber_scheduler_blocking_operation_wait@Base 3.4.0-0nkmi1
  rb_fiber_scheduler_close@Base 3.4.0-0nkmi1
  rb_fiber_scheduler_current@Base 3.4.0-0nkmi1
  rb_fiber_scheduler_current_for_thread@Base 3.4.0-0nkmi1
@@ -727,7 +724,6 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_file_open@Base 3.4.0-0nkmi1
  rb_file_open_str@Base 3.4.0-0nkmi1
  rb_file_s_absolute_path@Base 3.4.0-0nkmi1
- rb_file_s_birthtime@Base 3.4.0-0nkmi1
  rb_file_s_expand_path@Base 3.4.0-0nkmi1
  rb_file_size@Base 3.4.0-0nkmi1
  rb_filesystem_encindex@Base 3.4.0-0nkmi1
@@ -757,7 +753,6 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_freeze_singleton_class@Base 3.4.0-0nkmi1
  rb_frozen_error_raise@Base 3.4.0-0nkmi1
  rb_fs@Base 3.4.0-0nkmi1
- rb_fstring@Base 3.4.0-0nkmi1
  rb_funcall@Base 3.4.0-0nkmi1
  rb_funcall_passing_block@Base 3.4.0-0nkmi1
  rb_funcall_passing_block_kw@Base 3.4.0-0nkmi1
@@ -768,37 +763,70 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_funcallv_public@Base 3.4.0-0nkmi1
  rb_funcallv_public_kw@Base 3.4.0-0nkmi1
  rb_gc@Base 3.4.0-0nkmi1
+ rb_gc_active_gc_name@Base 3.4.0-0nkmi1
  rb_gc_adjust_memory_usage@Base 3.4.0-0nkmi1
  rb_gc_copy_finalizer@Base 3.4.0-0nkmi1
  rb_gc_count@Base 3.4.0-0nkmi1
+ rb_gc_cr_lock@Base 3.4.0-0nkmi1
+ rb_gc_cr_unlock@Base 3.4.0-0nkmi1
  rb_gc_disable@Base 3.4.0-0nkmi1
  rb_gc_disable_no_rest@Base 3.4.0-0nkmi1
  rb_gc_enable@Base 3.4.0-0nkmi1
+ rb_gc_event_hook@Base 3.4.0-0nkmi1
+ rb_gc_event_hook_required_p@Base 3.4.0-0nkmi1
  rb_gc_for_fd@Base 3.4.0-0nkmi1
- rb_gc_force_recycle@Base 3.4.0-0nkmi1
+ rb_gc_get_objspace@Base 3.4.0-0nkmi1
+ rb_gc_get_ractor_newobj_cache@Base 3.4.0-0nkmi1
+ rb_gc_get_shape@Base 3.4.0-0nkmi1
+ rb_gc_initialize_vm_context@Base 3.4.0-0nkmi1
  rb_gc_latest_gc_info@Base 3.4.0-0nkmi1
  rb_gc_location@Base 3.4.0-0nkmi1
  rb_gc_mark@Base 3.4.0-0nkmi1
+ rb_gc_mark_children@Base 3.4.0-0nkmi1
  rb_gc_mark_locations@Base 3.4.0-0nkmi1
  rb_gc_mark_maybe@Base 3.4.0-0nkmi1
  rb_gc_mark_movable@Base 3.4.0-0nkmi1
+ rb_gc_mark_roots@Base 3.4.0-0nkmi1
  rb_gc_mark_values@Base 3.4.0-0nkmi1
  rb_gc_mark_vm_stack_values@Base 3.4.0-0nkmi1
+ rb_gc_modular_gc_loaded_p@Base 3.4.0-0nkmi1
+ rb_gc_multi_ractor_p@Base 3.4.0-0nkmi1
+ rb_gc_obj_free@Base 3.4.0-0nkmi1
+ rb_gc_obj_free_vm_weak_references@Base 3.4.0-0nkmi1
+ rb_gc_obj_optimal_size@Base 3.4.0-0nkmi1
  rb_gc_obj_slot_size@Base 3.4.0-0nkmi1
+ rb_gc_pointer_to_heap_p@Base 3.4.0-0nkmi1
+ rb_gc_prepare_heap_process_object@Base 3.4.0-0nkmi1
+ rb_gc_ractor_newobj_cache_foreach@Base 3.4.0-0nkmi1
+ rb_gc_rebuild_shape@Base 3.4.0-0nkmi1
  rb_gc_register_address@Base 3.4.0-0nkmi1
  rb_gc_register_mark_object@Base 3.4.0-0nkmi1
+ rb_gc_run_obj_finalizer@Base 3.4.0-0nkmi1
+ rb_gc_save_machine_context@Base 3.4.0-0nkmi1
+ rb_gc_set_pending_interrupt@Base 3.4.0-0nkmi1
+ rb_gc_set_shape@Base 3.4.0-0nkmi1
+ rb_gc_shutdown_call_finalizer_p@Base 3.4.0-0nkmi1
  rb_gc_start@Base 3.4.0-0nkmi1
  rb_gc_stat@Base 3.4.0-0nkmi1
  rb_gc_unregister_address@Base 3.4.0-0nkmi1
+ rb_gc_unset_pending_interrupt@Base 3.4.0-0nkmi1
+ rb_gc_update_object_references@Base 3.4.0-0nkmi1
  rb_gc_update_tbl_refs@Base 3.4.0-0nkmi1
  rb_gc_update_values@Base 3.4.0-0nkmi1
- rb_gc_verify_internal_consistency@Base 3.4.0-0nkmi1
+ rb_gc_update_vm_references@Base 3.4.0-0nkmi1
+ rb_gc_vm_barrier@Base 3.4.0-0nkmi1
+ rb_gc_vm_lock@Base 3.4.0-0nkmi1
+ rb_gc_vm_lock_no_barrier@Base 3.4.0-0nkmi1
+ rb_gc_vm_unlock@Base 3.4.0-0nkmi1
+ rb_gc_vm_unlock_no_barrier@Base 3.4.0-0nkmi1
+ rb_gc_vm_weak_table_foreach@Base 3.4.0-0nkmi1
+ rb_gc_worker_thread_set_vm_context@Base 3.4.0-0nkmi1
+ rb_gc_worker_thread_unset_vm_context@Base 3.4.0-0nkmi1
  rb_gc_writebarrier@Base 3.4.0-0nkmi1
  rb_gc_writebarrier_unprotect@Base 3.4.0-0nkmi1
  rb_gcd@Base 3.4.0-0nkmi1
  rb_gcd_gmp@Base 3.4.0-0nkmi1
  rb_gcd_normal@Base 3.4.0-0nkmi1
- rb_generic_ivar_memsize@Base 3.4.0-0nkmi1
  rb_genrand_int32@Base 3.4.0-0nkmi1
  rb_genrand_real@Base 3.4.0-0nkmi1
  rb_genrand_ulong_limited@Base 3.4.0-0nkmi1
@@ -812,7 +840,6 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_gets@Base 3.4.0-0nkmi1
  rb_glob@Base 3.4.0-0nkmi1
  rb_global_variable@Base 3.4.0-0nkmi1
- rb_grantpt@Base 3.4.0-0nkmi1
  rb_gv_get@Base 3.4.0-0nkmi1
  rb_gv_set@Base 3.4.0-0nkmi1
  rb_gvar_readonly_setter@Base 3.4.0-0nkmi1
@@ -848,7 +875,6 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_hash_start@Base 3.4.0-0nkmi1
  rb_hash_stlike_foreach@Base 3.4.0-0nkmi1
  rb_hash_tbl@Base 3.4.0-0nkmi1
- rb_hash_tbl_raw@Base 3.4.0-0nkmi1
  rb_hash_update_by@Base 3.4.0-0nkmi1
  rb_id2name@Base 3.4.0-0nkmi1
  rb_id2str@Base 3.4.0-0nkmi1
@@ -884,6 +910,8 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_io_addstr@Base 3.4.0-0nkmi1
  rb_io_ascii8bit_binmode@Base 3.4.0-0nkmi1
  rb_io_binmode@Base 3.4.0-0nkmi1
+ rb_io_blocking_region@Base 3.4.0-0nkmi1
+ rb_io_blocking_region_wait@Base 3.4.0-0nkmi1
  rb_io_buffer_clear@Base 3.4.0-0nkmi1
  rb_io_buffer_free@Base 3.4.0-0nkmi1
  rb_io_buffer_free_locked@Base 3.4.0-0nkmi1
@@ -925,7 +953,6 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_io_maybe_wait@Base 3.4.0-0nkmi1
  rb_io_maybe_wait_readable@Base 3.4.0-0nkmi1
  rb_io_maybe_wait_writable@Base 3.4.0-0nkmi1
- rb_io_memsize@Base 3.4.0-0nkmi1
  rb_io_mode@Base 3.4.0-0nkmi1
  rb_io_modestr_fmode@Base 3.4.0-0nkmi1
  rb_io_modestr_oflags@Base 3.4.0-0nkmi1
@@ -1052,6 +1079,7 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_mem_clear@Base 3.4.0-0nkmi1
  rb_memcicmp@Base 3.4.0-0nkmi1
  rb_memerror@Base 3.4.0-0nkmi1
+ rb_memerror_reentered@Base 3.4.0-0nkmi1
  rb_memhash@Base 3.4.0-0nkmi1
  rb_memory_id@Base 3.4.0-0nkmi1
  rb_memory_view_available_p@Base 3.4.0-0nkmi1
@@ -1125,10 +1153,20 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_nativethread_lock_unlock@Base 3.4.0-0nkmi1
  rb_nativethread_self@Base 3.4.0-0nkmi1
  rb_need_block@Base 3.4.0-0nkmi1
- rb_newobj@Base 3.4.0-0nkmi1
- rb_newobj_of@Base 3.4.0-0nkmi1
+ rb_node_dregx_string_val@Base 3.4.0-0nkmi1
+ rb_node_dstr_string_val@Base 3.4.0-0nkmi1
+ rb_node_encoding_val@Base 3.4.0-0nkmi1
+ rb_node_file_path_val@Base 3.4.0-0nkmi1
+ rb_node_float_literal_val@Base 3.4.0-0nkmi1
+ rb_node_imaginary_literal_val@Base 3.4.0-0nkmi1
  rb_node_init@Base 3.4.0-0nkmi1
+ rb_node_integer_literal_val@Base 3.4.0-0nkmi1
+ rb_node_line_lineno_val@Base 3.4.0-0nkmi1
+ rb_node_rational_literal_val@Base 3.4.0-0nkmi1
+ rb_node_regx_string_val@Base 3.4.0-0nkmi1
  rb_node_set_type@Base 3.4.0-0nkmi1
+ rb_node_str_string_val@Base 3.4.0-0nkmi1
+ rb_node_sym_string_val@Base 3.4.0-0nkmi1
  rb_nogvl@Base 3.4.0-0nkmi1
  rb_notimplement@Base 3.4.0-0nkmi1
  rb_num2dbl@Base 3.4.0-0nkmi1
@@ -1161,6 +1199,8 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_obj_gc_flags@Base 3.4.0-0nkmi1
  rb_obj_hide@Base 3.4.0-0nkmi1
  rb_obj_id@Base 3.4.0-0nkmi1
+ rb_obj_info@Base 3.4.0-0nkmi1
+ rb_obj_info_dump@Base 3.4.0-0nkmi1
  rb_obj_init_copy@Base 3.4.0-0nkmi1
  rb_obj_instance_eval@Base 3.4.0-0nkmi1
  rb_obj_instance_exec@Base 3.4.0-0nkmi1
@@ -1178,13 +1218,10 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_obj_reveal@Base 3.4.0-0nkmi1
  rb_obj_setup@Base 3.4.0-0nkmi1
  rb_obj_singleton_methods@Base 3.4.0-0nkmi1
- rb_objspace_data_type_memsize@Base 3.4.0-0nkmi1
  rb_objspace_data_type_name@Base 3.4.0-0nkmi1
  rb_objspace_each_objects@Base 3.4.0-0nkmi1
- rb_objspace_each_objects_without_setup@Base 3.4.0-0nkmi1
+ rb_objspace_garbage_object_p@Base 3.4.0-0nkmi1
  rb_objspace_internal_object_p@Base 3.4.0-0nkmi1
- rb_objspace_markable_object_p@Base 3.4.0-0nkmi1
- rb_objspace_marked_object_p@Base 3.4.0-0nkmi1
  rb_objspace_reachable_objects_from@Base 3.4.0-0nkmi1
  rb_objspace_reachable_objects_from_root@Base 3.4.0-0nkmi1
  rb_opts_exception_p@Base 3.4.0-0nkmi1
@@ -1192,17 +1229,19 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_output_fs@Base 3.4.0-0nkmi1
  rb_output_rs@Base 3.4.0-0nkmi1
  rb_p@Base 3.4.0-0nkmi1
- rb_parser_calloc@Base 3.4.0-0nkmi1
+ rb_parser_assignable@Base 3.4.0-0nkmi1
  rb_parser_compile_string_path@Base 3.4.0-0nkmi1
  rb_parser_dump_tree@Base 3.4.0-0nkmi1
+ rb_parser_dvar_defined_ref@Base 3.4.0-0nkmi1
  rb_parser_fatal@Base 3.4.0-0nkmi1
- rb_parser_free@Base 3.4.0-0nkmi1
+ rb_parser_internal_id@Base 3.4.0-0nkmi1
+ rb_parser_lex_get_str@Base 3.4.0-0nkmi1
  rb_parser_lex_state_name@Base 3.4.0-0nkmi1
- rb_parser_malloc@Base 3.4.0-0nkmi1
+ rb_parser_local_defined@Base 3.4.0-0nkmi1
  rb_parser_new@Base 3.4.0-0nkmi1
  rb_parser_printf@Base 3.4.0-0nkmi1
- rb_parser_realloc@Base 3.4.0-0nkmi1
  rb_parser_reg_compile@Base 3.4.0-0nkmi1
+ rb_parser_reg_fragment_check@Base 3.4.0-0nkmi1
  rb_parser_set_context@Base 3.4.0-0nkmi1
  rb_parser_set_location@Base 3.4.0-0nkmi1
  rb_parser_set_location_from_strterm_heredoc@Base 3.4.0-0nkmi1
@@ -1252,6 +1291,7 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_parser_st_update@Base 3.4.0-0nkmi1
  rb_parser_st_values@Base 3.4.0-0nkmi1
  rb_parser_st_values_check@Base 3.4.0-0nkmi1
+ rb_parser_string_free@Base 3.4.0-0nkmi1
  rb_parser_trace_lex_state@Base 3.4.0-0nkmi1
  rb_path2class@Base 3.4.0-0nkmi1
  rb_path_check@Base 3.4.0-0nkmi1
@@ -1292,6 +1332,7 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_protect@Base 3.4.0-0nkmi1
  rb_provide@Base 3.4.0-0nkmi1
  rb_provided@Base 3.4.0-0nkmi1
+ rb_ractor_finish_marking@Base 3.4.0-0nkmi1
  rb_ractor_local_storage_delkey@Base 3.4.0-0nkmi1
  rb_ractor_local_storage_ptr@Base 3.4.0-0nkmi1
  rb_ractor_local_storage_ptr_newkey@Base 3.4.0-0nkmi1
@@ -1342,6 +1383,7 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_reg_match_last@Base 3.4.0-0nkmi1
  rb_reg_match_post@Base 3.4.0-0nkmi1
  rb_reg_match_pre@Base 3.4.0-0nkmi1
+ rb_reg_named_capture_assign_iter_impl@Base 3.4.0-0nkmi1
  rb_reg_new@Base 3.4.0-0nkmi1
  rb_reg_new_str@Base 3.4.0-0nkmi1
  rb_reg_nth_defined@Base 3.4.0-0nkmi1
@@ -1354,7 +1396,7 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_reg_region_copy@Base 3.4.0-0nkmi1
  rb_reg_regsub@Base 3.4.0-0nkmi1
  rb_reg_search@Base 3.4.0-0nkmi1
- rb_reg_timeout_p@Base 3.4.1-0nkmi1
+ rb_reg_timeout_p@Base 3.4.0-0nkmi1
  rb_register_transcoder@Base 3.4.0-0nkmi1
  rb_remove_event_hook@Base 3.4.0-0nkmi1
  rb_remove_event_hook_with_data@Base 3.4.0-0nkmi1
@@ -1376,7 +1418,6 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_rjit_opts@Base 3.4.0-0nkmi1
  rb_rs@Base 3.4.0-0nkmi1
  rb_ruby_debug_ptr@Base 3.4.0-0nkmi1
- rb_ruby_parser_compile_string@Base 3.4.0-0nkmi1
  rb_ruby_parser_encoding@Base 3.4.0-0nkmi1
  rb_ruby_parser_end_seen_p@Base 3.4.0-0nkmi1
  rb_ruby_parser_free@Base 3.4.0-0nkmi1
@@ -1401,6 +1442,7 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_singleton_class@Base 3.4.0-0nkmi1
  rb_singleton_class_attached@Base 3.4.0-0nkmi1
  rb_singleton_class_clone@Base 3.4.0-0nkmi1
+ rb_size_mul_or_raise@Base 3.4.0-0nkmi1
  rb_sourcefile@Base 3.4.0-0nkmi1
  rb_sourceline@Base 3.4.0-0nkmi1
  rb_spawn@Base 3.4.0-0nkmi1
@@ -1423,7 +1465,6 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_st_hash_start@Base 3.4.0-0nkmi1
  rb_st_hash_uint32@Base 3.4.0-0nkmi1
  rb_st_hash_uint@Base 3.4.0-0nkmi1
- rb_st_init_existing_table_with_size@Base 3.4.0-0nkmi1
  rb_st_init_numtable@Base 3.4.0-0nkmi1
  rb_st_init_numtable_with_size@Base 3.4.0-0nkmi1
  rb_st_init_strcasetable@Base 3.4.0-0nkmi1
@@ -1442,7 +1483,6 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_st_memsize@Base 3.4.0-0nkmi1
  rb_st_numcmp@Base 3.4.0-0nkmi1
  rb_st_numhash@Base 3.4.0-0nkmi1
- rb_st_replace@Base 3.4.0-0nkmi1
  rb_st_shift@Base 3.4.0-0nkmi1
  rb_st_table_size@Base 3.4.0-0nkmi1
  rb_st_update@Base 3.4.0-0nkmi1
@@ -1495,20 +1535,18 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_str_intern@Base 3.4.0-0nkmi1
  rb_str_length@Base 3.4.0-0nkmi1
  rb_str_locktmp@Base 3.4.0-0nkmi1
- rb_str_locktmp_ensure@Base 3.4.0-0nkmi1
- rb_str_make_embedded@Base 3.4.0-0nkmi1
- rb_str_memsize@Base 3.4.0-0nkmi1
  rb_str_modify@Base 3.4.0-0nkmi1
  rb_str_modify_expand@Base 3.4.0-0nkmi1
  rb_str_new@Base 3.4.0-0nkmi1
  rb_str_new_cstr@Base 3.4.0-0nkmi1
  rb_str_new_frozen@Base 3.4.0-0nkmi1
+ rb_str_new_mutable_parser_string@Base 3.4.0-0nkmi1
+ rb_str_new_parser_string@Base 3.4.0-0nkmi1
  rb_str_new_shared@Base 3.4.0-0nkmi1
  rb_str_new_static@Base 3.4.0-0nkmi1
  rb_str_new_with_class@Base 3.4.0-0nkmi1
  rb_str_offset@Base 3.4.0-0nkmi1
  rb_str_plus@Base 3.4.0-0nkmi1
- rb_str_reembeddable_p@Base 3.4.0-0nkmi1
  rb_str_replace@Base 3.4.0-0nkmi1
  rb_str_resize@Base 3.4.0-0nkmi1
  rb_str_resurrect@Base 3.4.0-0nkmi1
@@ -1516,7 +1554,6 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_str_set_len@Base 3.4.0-0nkmi1
  rb_str_setter@Base 3.4.0-0nkmi1
  rb_str_shared_replace@Base 3.4.0-0nkmi1
- rb_str_size_as_embedded@Base 3.4.0-0nkmi1
  rb_str_split@Base 3.4.0-0nkmi1
  rb_str_strlen@Base 3.4.0-0nkmi1
  rb_str_sublen@Base 3.4.0-0nkmi1
@@ -1532,11 +1569,10 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_str_to_dbl@Base 3.4.0-0nkmi1
  rb_str_to_interned_str@Base 3.4.0-0nkmi1
  rb_str_to_inum@Base 3.4.0-0nkmi1
+ rb_str_to_parser_string@Base 3.4.0-0nkmi1
  rb_str_to_str@Base 3.4.0-0nkmi1
  rb_str_unlocktmp@Base 3.4.0-0nkmi1
  rb_str_update@Base 3.4.0-0nkmi1
- rb_str_upto_each@Base 3.4.0-0nkmi1
- rb_str_upto_endless_each@Base 3.4.0-0nkmi1
  rb_str_vcatf@Base 3.4.0-0nkmi1
  rb_string_value@Base 3.4.0-0nkmi1
  rb_string_value_cstr@Base 3.4.0-0nkmi1
@@ -1594,7 +1630,9 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_thread_kill@Base 3.4.0-0nkmi1
  rb_thread_local_aref@Base 3.4.0-0nkmi1
  rb_thread_local_aset@Base 3.4.0-0nkmi1
+ rb_thread_lock_native_thread@Base 3.4.0-0nkmi1
  rb_thread_main@Base 3.4.0-0nkmi1
+ rb_thread_prevent_fork@Base 3.4.0-0nkmi1
  rb_thread_remove_event_hook@Base 3.4.0-0nkmi1
  rb_thread_remove_event_hook_with_data@Base 3.4.0-0nkmi1
  rb_thread_run@Base 3.4.0-0nkmi1
@@ -1650,7 +1688,6 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_undef@Base 3.4.0-0nkmi1
  rb_undef_alloc_func@Base 3.4.0-0nkmi1
  rb_undef_method@Base 3.4.0-0nkmi1
- rb_undefine_finalizer@Base 3.4.0-0nkmi1
  rb_unexpected_type@Base 3.4.0-0nkmi1
  rb_update_max_fd@Base 3.4.0-0nkmi1
  rb_usascii_encindex@Base 3.4.0-0nkmi1
@@ -1690,6 +1727,7 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_yield_values_kw@Base 3.4.0-0nkmi1
  rb_yjit_before_ractor_spawn@Base 3.4.0-0nkmi1
  rb_yjit_bop_redefined@Base 3.4.0-0nkmi1
+ rb_yjit_c_builtin_p@Base 3.4.0-0nkmi1
  rb_yjit_call_threshold@Base 3.4.0-0nkmi1
  rb_yjit_cme_invalidate@Base 3.4.0-0nkmi1
  rb_yjit_code_gc@Base 3.4.0-0nkmi1
@@ -1702,22 +1740,30 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_yjit_disasm_iseq@Base 3.4.0-0nkmi1
  rb_yjit_enable@Base 3.4.0-0nkmi1
  rb_yjit_enabled_p@Base 3.4.0-0nkmi1
+ rb_yjit_free_at_exit@Base 3.4.0-0nkmi1
  rb_yjit_get_exit_locations@Base 3.4.0-0nkmi1
+ rb_yjit_get_log@Base 3.4.0-0nkmi1
  rb_yjit_get_stats@Base 3.4.0-0nkmi1
  rb_yjit_incr_counter@Base 3.4.0-0nkmi1
  rb_yjit_init@Base 3.4.0-0nkmi1
  rb_yjit_insns_compiled@Base 3.4.0-0nkmi1
+ rb_yjit_invalidate_ep_is_bp@Base 3.4.0-0nkmi1
+ rb_yjit_invalidate_no_singleton_class@Base 3.4.0-0nkmi1
+ rb_yjit_iseq_alloc_count@Base 3.4.0-0nkmi1
  rb_yjit_iseq_free@Base 3.4.0-0nkmi1
  rb_yjit_iseq_gen_entry_point@Base 3.4.0-0nkmi1
  rb_yjit_iseq_mark@Base 3.4.0-0nkmi1
  rb_yjit_iseq_update_references@Base 3.4.0-0nkmi1
+ rb_yjit_lazy_push_frame@Base 3.4.0-0nkmi1
  rb_yjit_live_iseq_count@Base 3.4.0-0nkmi1
- rb_yjit_option_disable@Base 3.4.5-0nkmi1
+ rb_yjit_log_enabled_p@Base 3.4.0-0nkmi1
+ rb_yjit_option_disable@Base 3.4.0-0nkmi1
  rb_yjit_parse_option@Base 3.4.0-0nkmi1
  rb_yjit_print_stats_p@Base 3.4.0-0nkmi1
  rb_yjit_record_exit_stack@Base 3.4.0-0nkmi1
  rb_yjit_reset_stats_bang@Base 3.4.0-0nkmi1
  rb_yjit_root_mark@Base 3.4.0-0nkmi1
+ rb_yjit_root_update_references@Base 3.4.0-0nkmi1
  rb_yjit_show_usage@Base 3.4.0-0nkmi1
  rb_yjit_simulate_oom_bang@Base 3.4.0-0nkmi1
  rb_yjit_stats_enabled_p@Base 3.4.0-0nkmi1
@@ -1735,7 +1781,9 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  ruby_debug_counter_show_at_exit@Base 3.4.0-0nkmi1
  ruby_debug_print_id@Base 3.4.0-0nkmi1
  ruby_debug_print_indent@Base 3.4.0-0nkmi1
+ ruby_debug_print_n@Base 3.4.0-0nkmi1
  ruby_debug_print_node@Base 3.4.0-0nkmi1
+ ruby_debug_print_v@Base 3.4.0-0nkmi1
  ruby_debug_print_value@Base 3.4.0-0nkmi1
  ruby_debug_printf@Base 3.4.0-0nkmi1
  ruby_default_signal@Base 3.4.0-0nkmi1
@@ -1748,6 +1796,7 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  ruby_exec_node@Base 3.4.0-0nkmi1
  ruby_executable_node@Base 3.4.0-0nkmi1
  ruby_finalize@Base 3.4.0-0nkmi1
+ ruby_free_at_exit_p@Base 3.4.0-0nkmi1
  ruby_getcwd@Base 3.4.0-0nkmi1
  ruby_glob@Base 3.4.0-0nkmi1
  ruby_global_name_punct_bits@Base 3.4.0-0nkmi1
@@ -1779,6 +1828,7 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  ruby_setenv@Base 3.4.0-0nkmi1
  ruby_setup@Base 3.4.0-0nkmi1
  ruby_show_copyright@Base 3.4.0-0nkmi1
+ ruby_show_error_line@Base 3.4.0-0nkmi1
  ruby_show_version@Base 3.4.0-0nkmi1
  ruby_sig_finalize@Base 3.4.0-0nkmi1
  ruby_signal_name@Base 3.4.0-0nkmi1
