@@ -1,3 +1,21 @@
+ruby3.3 (3.3.6-1) UNRELEASED; urgency=medium
+
+  [ Sylvain Beucler ]
+  * Drop unused debian/source/local-options:single-debian-patch
+
+  [ Antonio Terceiro ]
+  * debian/rules: drop special case for riscv64
+  * debian/rules: stop explicitly setting HOME
+  * lintian: override error caused by limitation of dh_strip
+  * debian/source/lintian-overrides: use wildcards
+  * tests: exclude test that might fail on some timezones
+  * debian/source/lintian-overrides: re-add license-problem-non-free-RFC-BCP78
+
+  [ Lucas Kanashiro ]
+  * New upstream version 3.3.6
+
+ -- Lucas Kanashiro <kanashiro@debian.org>  Fri, 27 Dec 2024 17:16:27 -0300
+
 ruby3.3 (3.3.5-2) unstable; urgency=medium
 
   * debian/rules: Simplify special case for riscv64
