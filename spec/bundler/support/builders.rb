@@ -27,8 +27,6 @@ module Spec
     end
 
     def build_repo1
-      rake_path = Dir["#{base_system_gems}/**/rake*.gem"].first
-
       build_repo gem_repo1 do
         FileUtils.cp rake_path, "#{gem_repo1}/gems/"
 
@@ -88,10 +86,6 @@ module Spec
 
         build_gem "myrack-test", no_default: true do |s|
           s.write "lib/myrack/test.rb", "MYRACK_TEST = '1.0'"
-        end
-
-        build_gem "platform_specific" do |s|
-          s.platform = Gem::Platform.local
         end
 
         build_gem "platform_specific" do |s|
@@ -159,7 +153,7 @@ module Spec
 
         build_gem "bundler", "0.9" do |s|
           s.executables = "bundle"
-          s.write "bin/bundle", "puts 'FAIL'"
+          s.write "bin/bundle", "#!/usr/bin/env ruby\nputs 'FAIL'"
         end
 
         # The bundler 0.8 gem has a rubygems plugin that always loads :(
@@ -194,9 +188,15 @@ module Spec
 
     # A repo that has no pre-installed gems included. (The caller completely
     # determines the contents with the block.)
+    def build_repo3(**kwargs, &blk)
+      build_empty_repo gem_repo3, **kwargs, &blk
+    end
+
+    # Like build_repo3, this is a repo that has no pre-installed gems included.
+    # We have two different methods for situations where two different empty
+    # sources are needed.
     def build_repo4(**kwargs, &blk)
-      FileUtils.rm_rf gem_repo4
-      build_repo(gem_repo4, **kwargs, &blk)
+      build_empty_repo gem_repo4, **kwargs, &blk
     end
 
     def update_repo4(&blk)
@@ -231,12 +231,9 @@ module Spec
     end
 
     def check_test_gems!
-      rake_path = Dir["#{base_system_gems}/**/rake*.gem"].first
-
       if rake_path.nil?
         FileUtils.rm_rf(base_system_gems)
         Spec::Rubygems.install_test_deps
-        rake_path = Dir["#{base_system_gems}/**/rake*.gem"].first
       end
 
       if rake_path.nil?
@@ -315,6 +312,11 @@ module Spec
     end
 
     private
+
+    def build_empty_repo(gem_repo, **kwargs, &blk)
+      FileUtils.rm_rf gem_repo
+      build_repo(gem_repo, **kwargs, &blk)
+    end
 
     def build_with(builder, name, args, &blk)
       @_build_path ||= nil
@@ -454,6 +456,7 @@ module Spec
           s.email       = "foo@bar.baz"
           s.homepage    = "http://example.com"
           s.license     = "MIT"
+          s.required_ruby_version = ">= 3.0"
         end
         @files = {}
       end
@@ -470,11 +473,7 @@ module Spec
         @spec.executables = Array(val)
         @spec.executables.each do |file|
           executable = "#{@spec.bindir}/#{file}"
-          shebang = if Bundler.current_ruby.jruby?
-            "#!/usr/bin/env jruby\n"
-          else
-            "#!/usr/bin/env ruby\n"
-          end
+          shebang = "#!/usr/bin/env ruby\n"
           @spec.files << executable
           write executable, "#{shebang}require_relative '../lib/#{@name}' ; puts #{Builders.constantize(@name)}"
         end
@@ -498,7 +497,7 @@ module Spec
         write "ext/#{name}.c", <<-C
           #include "ruby.h"
 
-          void Init_#{name}_c() {
+          void Init_#{name}_c(void) {
             rb_define_module("#{Builders.constantize(name)}_IN_C");
           }
         C
@@ -535,10 +534,10 @@ module Spec
         end
 
         @files.each do |file, source|
-          file = Pathname.new(path).join(file)
-          FileUtils.mkdir_p(file.dirname)
-          File.open(file, "w") {|f| f.puts source }
-          File.chmod("+x", file) if @spec.executables.map {|exe| "#{@spec.bindir}/#{exe}" }.include?(file)
+          full_path = Pathname.new(path).join(file)
+          FileUtils.mkdir_p(full_path.dirname)
+          File.open(full_path, "w") {|f| f.puts source }
+          FileUtils.chmod("+x", full_path) if @spec.executables.map {|exe| "#{@spec.bindir}/#{exe}" }.include?(file)
         end
         path
       end
