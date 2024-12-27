@@ -1,4 +1,4 @@
-ruby3.3 (3.3.6-1) UNRELEASED; urgency=medium
+ruby3.3 (3.3.6-1) unstable; urgency=medium
 
   [ Sylvain Beucler ]
   * Drop unused debian/source/local-options:single-debian-patch
