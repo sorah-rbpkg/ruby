@@ -39,3 +39,5 @@ CVE-2024-35176_8.patch
 CVE-2024-41946_pre1.patch
 CVE-2024-41946.patch
 CVE-2024-49761.patch
+CVE-2024-43398_depend01.patch
+CVE-2024-43398.patch
