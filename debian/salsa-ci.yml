@@ -9,6 +9,7 @@ include:
 
 variables:
   DEBIAN_RUBY_EXTRA_TEST_EXCLUDES: salsa
+  RELEASE: 'bullseye'
 
 # These didn't work before LTS, not attempting to fix after freeze
 blhc:
