@@ -14,7 +14,6 @@ CVE-2021-41816.patch
 CVE-2021-41817-1.patch
 CVE-2021-41817-2.patch
 CVE-2021-41817-3.patch
-
 Update-test-certificates.patch
 Fix-tests-tzdata.patch
 Fix-tests-git.patch
@@ -27,3 +26,9 @@ CVE-2023-28756.patch
 CVE-2024-27280.patch
 CVE-2024-27281.patch
 CVE-2024-27282.patch
+CVE-2024-35176_1.patch
+CVE-2024-35176_2.patch
+CVE-2024-35176_3.patch
+CVE-2024-35176_4.patch
+CVE-2024-35176_5.patch
+CVE-2024-35176_6.patch

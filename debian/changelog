@@ -1,3 +1,14 @@
+ruby2.7 (2.7.4-1+deb11u3) bullseye-security; urgency=medium
+
+  * Non-maintainer upload by the LTS Security Team.
+  * Fix CVE-2024-35176: REXML is an XML toolkit for Ruby.
+    The REXML gem has a Denial of Service (DoS) vulnerability
+    when it parses an XML that has many `<`s in
+    an attribute value. Those who need to parse
+    untrusted XMLs may be impacted to this vulnerability
+
+ -- Bastien Roucariès <rouca@debian.org>  Sun, 05 Jan 2025 17:40:58 +0000
+
 ruby2.7 (2.7.4-1+deb11u2) bullseye-security; urgency=high
 
   * Non-maintainer upload by the LTS Security Team.
