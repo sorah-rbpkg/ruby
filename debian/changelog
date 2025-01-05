@@ -11,6 +11,10 @@ ruby2.1 (2.1.5-2+deb8u15) jessie-security; urgency=medium
     The REXML gem had a Denial of Service (DoS) vulnerability
     when it parses an XML that has many entity expansions
     with SAX2 or pull parser API.
+  * Fix CVE-2024-49761: REXML is an XML toolkit for Ruby.
+    The REXML gem before 3.3.9 has a ReDoS vulnerability
+    when it parses an XML that has many digits between
+    &# and x...; in a hex numeric character reference (&#x...;).
 
  -- Bastien Roucariès <rouca@debian.org>  Tue, 25 Feb 2025 21:12:20 +0000
 
