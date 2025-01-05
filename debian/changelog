@@ -6,6 +6,10 @@ ruby2.7 (2.7.4-1+deb11u3) bullseye-security; urgency=medium
     when it parses an XML that has many `<`s in
     an attribute value. Those who need to parse
     untrusted XMLs may be impacted to this vulnerability
+  * Fix CVE-2024-41946: REXML is an XML toolkit for Ruby.
+    The REXML gem had a Denial of Service (DoS) vulnerability
+    when it parses an XML that has many entity expansions
+    with SAX2 or pull parser API.
 
  -- Bastien Roucariès <rouca@debian.org>  Sun, 05 Jan 2025 17:40:58 +0000
 
