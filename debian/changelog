@@ -1,3 +1,11 @@
+ruby3.3 (3.3.6-1.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Fix test failures with OpenSSL 3.4 (Closes: #1087954).
+  * Skip test_bundled_ca, it access internet (Closes: #1091505).
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Fri, 10 Jan 2025 21:56:50 +0100
+
 ruby3.3 (3.3.6-1) unstable; urgency=medium
 
   [ Sylvain Beucler ]

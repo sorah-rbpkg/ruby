@@ -1,0 +1,65 @@
+From 4418ceb66e8c6564ddfea0fc76c3abde285d7531 Mon Sep 17 00:00:00 2001
+From: Job Snijders <job@sobornost.net>
+Date: Tue, 19 Nov 2024 20:49:31 +0000
+Subject: [PATCH] [ruby/openssl] Only CSR version 1 (encoded as 0) is allowed
+ by PKIX standards
+
+RFC 2986, section 4.1 only defines version 1 for CSRs. This version
+is encoded as a 0. Starting with OpenSSL 3.3, setting the CSR version
+to anything but 1 fails.
+
+Do not attempt to generate a CSR with invalid version (which now fails)
+and invalidate the CSR in test_sign_and_verify_rsa_sha1 by changing its
+subject rather than using an invalid version.
+
+This commit fixes the following error.
+
+```
+ 2) Error: test_version(OpenSSL::TestX509Request): OpenSSL::X509::RequestError:
+X509_REQ_set_version: passed invalid argument
+/home/runner/work/openssl/openssl/test/openssl/test_x509req.rb:18:in `version='
+/home/runner/work/openssl/openssl/test/openssl/test_x509req.rb:18:in `issue_csr'
+/home/runner/work/openssl/openssl/test/openssl/test_x509req.rb:43:in
+`test_version'
+     40:     req = OpenSSL::X509::Request.new(req.to_der)
+     41:     assert_equal(0, req.version)
+     42:
+  => 43:     req = issue_csr(1, @dn, @rsa1024, OpenSSL::Digest.new('SHA256'))
+     44:     assert_equal(1, req.version)
+     45:     req = OpenSSL::X509::Request.new(req.to_der)
+     46:     assert_equal(1, req.version)
+```
+
+https://github.com/ruby/openssl/commit/c06fdeb091
+---
+ test/openssl/test_x509req.rb | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
+
+diff --git a/test/openssl/test_x509req.rb b/test/openssl/test_x509req.rb
+index ff17c4116306..b98754b8c8e4 100644
+--- a/test/openssl/test_x509req.rb
++++ b/test/openssl/test_x509req.rb
+@@ -39,11 +39,6 @@ class OpenSSL::TestX509Request < OpenSSL::TestCase
+     assert_equal(0, req.version)
+     req = OpenSSL::X509::Request.new(req.to_der)
+     assert_equal(0, req.version)
+-
+-    req = issue_csr(1, @dn, @rsa1024, OpenSSL::Digest.new('SHA256'))
+-    assert_equal(1, req.version)
+-    req = OpenSSL::X509::Request.new(req.to_der)
+-    assert_equal(1, req.version)
+   end
+ 
+   def test_subject
+@@ -106,7 +101,7 @@ class OpenSSL::TestX509Request < OpenSSL::TestCase
+     assert_equal(false, req.verify(@rsa2048))
+     assert_equal(false, request_error_returns_false { req.verify(@dsa256) })
+     assert_equal(false, request_error_returns_false { req.verify(@dsa512) })
+-    req.version = 1
++    req.subject = OpenSSL::X509::Name.parse("/C=JP/CN=FooBarFooBar")
+     assert_equal(false, req.verify(@rsa1024))
+   rescue OpenSSL::X509::RequestError # RHEL 9 disables SHA1
+   end
+-- 
+2.45.2
+
