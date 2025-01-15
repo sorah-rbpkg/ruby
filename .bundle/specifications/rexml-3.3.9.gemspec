@@ -18,6 +18,6 @@ Gem::Specification.new do |s|
   s.licenses = ["BSD-2-Clause".freeze]
   s.rdoc_options = ["--main".freeze, "README.md".freeze]
   s.required_ruby_version = Gem::Requirement.new(">= 2.5.0".freeze)
-  s.rubygems_version = "3.3.5".freeze
+  s.rubygems_version = "3.4.20".freeze
   s.summary = "An XML toolkit for Ruby".freeze
 end
