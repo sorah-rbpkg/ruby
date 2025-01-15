@@ -20,6 +20,6 @@ Gem::Specification.new do |s|
   s.homepage = "https://github.com/ruby/debug".freeze
   s.licenses = ["Ruby".freeze, "BSD-2-Clause".freeze]
   s.required_ruby_version = Gem::Requirement.new(">= 2.7.0".freeze)
-  s.rubygems_version = "3.3.5".freeze
+  s.rubygems_version = "3.4.20".freeze
   s.summary = "Debugging functionality for Ruby".freeze
 end

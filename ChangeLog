@@ -1,5 +1,632 @@
 -*- coding: utf-8 -*-
 
+commit be31f993d7fa0219d85f7b3c694d454da4ecc10b
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-01-15 16:22:35 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-01-15 16:22:35 +0900
+
+    v3.3.7
+
+commit b6affbca88f5e0a70bda784d5195be5f0408b5ba
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-01-15 14:25:34 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-01-15 14:25:34 +0900
+
+    Skip an unstable test due to a Ractor assertion
+
+commit e9f479d8712f7ecd3802d4438cd44161088d9713
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-01-15 14:16:36 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-01-15 14:16:37 +0900
+
+    YJIT: Filter & calls from specialized C method codegen
+
+    Evident with the crash reported in [Bug #20997], the C replacement
+    codegen functions aren't authored to handle block arguments (nor
+    should they because the extra code from the complexity defeats
+    optimization). Filter sites with VM_CALL_ARGS_BLOCKARG.
+
+    Co-Authored-By: Alan Wu <alanwu@ruby-lang.org>
+
+commit 02bcfb42be7ca97fa40c6efa2f03ddff66c9257c
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-01-15 14:13:29 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-01-15 14:13:29 +0900
+
+    merge revision(s) 04ec07794657cd2444ecb001a522b9df2db1b90a: [Backport #21038]
+
+            Preserve `errno` in `rb_fiber_scheduler_unblock`. (#12576)
+
+            [Bug #21038]
+
+            Co-authored-by: Julian Scheid <julians37@gmail.com>
+
+commit 7b9caf19ba480d168ef4c5e93690735240975c91
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-01-15 11:00:02 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-01-15 11:00:02 +0900
+
+    merge revision(s) b176d4f52e4af67654814dab3e9c5f4bf9170e54: [Backport #21008]
+
+            [Bug #21008] Normalize before sum to float
+
+            After switching to `Float`-mode when summing `Numeric` objects,
+            normalization for `Float` is still needed.
+
+commit 12a0807965624a0be37dc79371a69b5d787cc8d1
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-01-15 10:59:12 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-01-15 10:59:12 +0900
+
+    merge revision(s) 8034e9c3d001ca3dff124ab42972684eac8af2ae: [Backport #20995]
+
+            [Bug #20995] Protect `IO.popen` block from exiting by exception
+
+commit 0d6459249d13e247cd0eae28f59ef51b862bce80
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-01-15 10:58:17 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-01-15 10:58:17 +0900
+
+    merge revision(s) 19c39e4cfaa467e69b9848c9c5496d7f50d39c7f: [Backport #20984]
+
+            [Bug #20984] ENV.inspect should be encoding aware
+
+commit 3a986b47cba80bdc081638d5f759a26c1beb8fad
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-01-15 10:56:25 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-01-15 10:56:25 +0900
+
+    merge revision(s) e0d600ec190c64aff76cfcbd6009cffb927da166: [Backport #21012]
+
+            Avoid opt_aset_with optimization inside multiple assignment
+
+            Previously, since the opt_aset_with optimization was introduced,
+            use of the opt_aset_with optimization inside multiple assignment
+            would result in a segfault or incorrect instructions.
+
+            Fixes [Bug #21012]
+
+            Co-authored-by: Nobuyoshi Nakada <nobu.nakada@gmail.com>
+
+commit 299455be9966c0a31dabe00014a4b8fae5093a7d
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-01-15 10:54:19 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-01-15 10:54:19 +0900
+
+    merge revision(s) 92dd9734a967c20e628c8f77c5ce700058dcd58c: [Backport #20950]
+
+            Fix use-after-free in ep in Proc#dup for ifunc procs
+
+            [Bug #20950]
+
+            ifunc proc has the ep allocated in the cfunc_proc_t which is the data of
+            the TypedData object. If an ifunc proc is duplicated, the ep points to
+            the ep of the source object. If the source object is freed, then the ep
+            of the duplicated object now points to a freed memory region. If we try
+            to use the ep we could crash.
+
+            For example, the following script crashes:
+
+                p = { a: 1 }.to_proc
+                100.times do
+                  p = p.dup
+                  GC.start
+                  p.call
+                rescue ArgumentError
+                end
+
+            This commit changes ifunc proc to also duplicate the ep when it is duplicated.
+
+commit 00147cbab567b05b8a4137875bbda341ef704760
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-01-15 10:53:38 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-01-15 10:53:38 +0900
+
+    merge revision(s) e90b447655dd39ad1eb645cdaae450efd605db00: [Backport #20924]
+
+            [Bug #20924] Fix reading with delimiter in wide character encodings
+
+commit 1b1c6e67588ef417847d36f4f4017bd18157a1d2
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-01-15 10:52:11 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-01-15 10:52:11 +0900
+
+    merge revision(s) f65a6c090c229de1665af49f2e51fc1d6397ab72: [Backport #20921]
+
+            Fix use-after-free in constant cache
+
+            [Bug #20921]
+
+            When we create a cache entry for a constant, the following sequence of
+            events could happen:
+
+            - vm_track_constant_cache is called to insert a constant cache.
+            - In vm_track_constant_cache, we first look up the ST table for the ID
+              of the constant. Assume the ST table exists because another iseq also
+              holds a cache entry for this ID.
+            - We then insert into this ST table with the iseq_inline_constant_cache.
+            - However, while inserting into this ST table, it allocates memory, which
+              could trigger a GC. Assume that it does trigger a GC.
+            - The GC frees the one and only other iseq that holds a cache entry for
+              this ID.
+            - In remove_from_constant_cache, it will appear that the ST table is now
+              empty because there are no more iseq with cache entries for this ID, so
+              we free the ST table.
+            - We complete GC and continue our st_insert. However, this ST table has
+              been freed so we now have a use-after-free.
+
+            This issue is very hard to reproduce, because it requires that the GC runs
+            at a very specific time. However, we can make it show up by applying this
+            patch which runs GC right before the st_insert to mimic the st_insert
+            triggering a GC:
+
+                diff --git a/vm_insnhelper.c b/vm_insnhelper.c
+                index 3cb23f06f0..a93998136a 100644
+                --- a/vm_insnhelper.c
+                +++ b/vm_insnhelper.c
+                @@ -6338,6 +6338,10 @@ vm_track_constant_cache(ID id, void *ic)
+                        rb_id_table_insert(const_cache, id, (VALUE)ics);
+                    }
+
+                +    if (id == rb_intern("MyConstant")) rb_gc();
+                +
+                    st_insert(ics, (st_data_t) ic, (st_data_t) Qtrue);
+                }
+
+            And if we run this script:
+
+                Object.const_set("MyConstant", "Hello!")
+
+                my_proc = eval("-> { MyConstant }")
+                my_proc.call
+
+                my_proc = eval("-> { MyConstant }")
+                my_proc.call
+
+            We can see that ASAN outputs a use-after-free error:
+
+                ==36540==ERROR: AddressSanitizer: heap-use-after-free on address 0x606000049528 at pc 0x000102f3ceac bp 0x00016d607a70 sp 0x00016d607a68
+                READ of size 8 at 0x606000049528 thread T0
+                    #0 0x102f3cea8 in do_hash st.c:321
+                    #1 0x102f3ddd0 in rb_st_insert st.c:1132
+                    #2 0x103140700 in vm_track_constant_cache vm_insnhelper.c:6345
+                    #3 0x1030b91d8 in vm_ic_track_const_chain vm_insnhelper.c:6356
+                    #4 0x1030b8cf8 in rb_vm_opt_getconstant_path vm_insnhelper.c:6424
+                    #5 0x1030bc1e0 in vm_exec_core insns.def:263
+                    #6 0x1030b55fc in rb_vm_exec vm.c:2585
+                    #7 0x1030fe0ac in rb_iseq_eval_main vm.c:2851
+                    #8 0x102a82588 in rb_ec_exec_node eval.c:281
+                    #9 0x102a81fe0 in ruby_run_node eval.c:319
+                    #10 0x1027f3db4 in rb_main main.c:43
+                    #11 0x1027f3bd4 in main main.c:68
+                    #12 0x183900270  (<unknown module>)
+
+                0x606000049528 is located 8 bytes inside of 56-byte region [0x606000049520,0x606000049558)
+                freed by thread T0 here:
+                    #0 0x104174d40 in free+0x98 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x54d40)
+                    #1 0x102ada89c in rb_gc_impl_free default.c:8183
+                    #2 0x102ada7dc in ruby_sized_xfree gc.c:4507
+                    #3 0x102ac4d34 in ruby_xfree gc.c:4518
+                    #4 0x102f3cb34 in rb_st_free_table st.c:663
+                    #5 0x102bd52d8 in remove_from_constant_cache iseq.c:119
+                    #6 0x102bbe2cc in iseq_clear_ic_references iseq.c:153
+                    #7 0x102bbd2a0 in rb_iseq_free iseq.c:166
+                    #8 0x102b32ed0 in rb_imemo_free imemo.c:564
+                    #9 0x102ac4b44 in rb_gc_obj_free gc.c:1407
+                    #10 0x102af4290 in gc_sweep_plane default.c:3546
+                    #11 0x102af3bdc in gc_sweep_page default.c:3634
+                    #12 0x102aeb140 in gc_sweep_step default.c:3906
+                    #13 0x102aeadf0 in gc_sweep_rest default.c:3978
+                    #14 0x102ae4714 in gc_sweep default.c:4155
+                    #15 0x102af8474 in gc_start default.c:6484
+                    #16 0x102afbe30 in garbage_collect default.c:6363
+                    #17 0x102ad37f0 in rb_gc_impl_start default.c:6816
+                    #18 0x102ad3634 in rb_gc gc.c:3624
+                    #19 0x1031406ec in vm_track_constant_cache vm_insnhelper.c:6342
+                    #20 0x1030b91d8 in vm_ic_track_const_chain vm_insnhelper.c:6356
+                    #21 0x1030b8cf8 in rb_vm_opt_getconstant_path vm_insnhelper.c:6424
+                    #22 0x1030bc1e0 in vm_exec_core insns.def:263
+                    #23 0x1030b55fc in rb_vm_exec vm.c:2585
+                    #24 0x1030fe0ac in rb_iseq_eval_main vm.c:2851
+                    #25 0x102a82588 in rb_ec_exec_node eval.c:281
+                    #26 0x102a81fe0 in ruby_run_node eval.c:319
+                    #27 0x1027f3db4 in rb_main main.c:43
+                    #28 0x1027f3bd4 in main main.c:68
+                    #29 0x183900270  (<unknown module>)
+
+                previously allocated by thread T0 here:
+                    #0 0x104174c04 in malloc+0x94 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x54c04)
+                    #1 0x102ada0ec in rb_gc_impl_malloc default.c:8198
+                    #2 0x102acee44 in ruby_xmalloc gc.c:4438
+                    #3 0x102f3c85c in rb_st_init_table_with_size st.c:571
+                    #4 0x102f3c900 in rb_st_init_table st.c:600
+                    #5 0x102f3c920 in rb_st_init_numtable st.c:608
+                    #6 0x103140698 in vm_track_constant_cache vm_insnhelper.c:6337
+                    #7 0x1030b91d8 in vm_ic_track_const_chain vm_insnhelper.c:6356
+                    #8 0x1030b8cf8 in rb_vm_opt_getconstant_path vm_insnhelper.c:6424
+                    #9 0x1030bc1e0 in vm_exec_core insns.def:263
+                    #10 0x1030b55fc in rb_vm_exec vm.c:2585
+                    #11 0x1030fe0ac in rb_iseq_eval_main vm.c:2851
+                    #12 0x102a82588 in rb_ec_exec_node eval.c:281
+                    #13 0x102a81fe0 in ruby_run_node eval.c:319
+                    #14 0x1027f3db4 in rb_main main.c:43
+                    #15 0x1027f3bd4 in main main.c:68
+                    #16 0x183900270  (<unknown module>)
+
+            This commit fixes this bug by adding a inserting_constant_cache_id field
+            to the VM, which stores the ID that is currently being inserted and, in
+            remove_from_constant_cache, we don't free the ST table for ID equal to
+            this one.
+
+            Co-Authored-By: Alan Wu <alanwu@ruby-lang.org>
+
+commit 745fe4cf7e0c297879b46045a4838b3e5e2dfeb9
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-01-15 10:51:27 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-01-15 10:51:27 +0900
+
+    merge revision(s) 660b995365f719fa59ed6f2809bb1527e6470d14: [Backport #20915]
+
+            [Bug #20915] Fix SEGV with `TracePoint#parameters` and aliased C method
+
+            The following snippet results with a SEGV:
+
+            ```ruby
+            C = Class.new do
+              alias_method :new_to_s, :to_s
+            end
+
+            TracePoint.new(:c_call, &:parameters).enable { C.new.new_to_s }
+            ```
+
+            at MRI 3.3.6 and ruby 3.4.0dev
+
+            The root cause of the issue lies in the `rb_tracearg_parameters` function
+            within the `RUBY_EVENT_C_RETURN` branch. Specifically, when the invoked
+            method is an alias for a C function,
+            `rb_method_entry_without_refinements(..., trace_arg->called_id, ...)`
+            may return NULL. In that case we can fallback to `trace_arg->id`.
+
+commit 1e48631e0f318a3b73cd39bdbda4619017383aac
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-01-15 10:50:24 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-01-15 10:50:24 +0900
+
+    merge revision(s) 02b70256b5171d4b85ea7eeab836d3d7cfb3dbfc, 6b4f8945d600168bf530d21395da8293fbd5e8ba: [Backport #20909]
+
+            Check negative integer underflow
+
+            Many of Oniguruma functions need valid encoding strings
+
+commit 8506fdfb4aca5262940b9c49827c2a839f6bb1fe
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-01-15 10:48:57 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-01-15 10:48:57 +0900
+
+    merge revision(s) 3b7892b6e4d1a1a5d6019987f9b46ed443dd104f: [Backport #20871]
+
+            Fix a bug in rb_include_module that stops nested inclusion into module subclasses
+
+            This bug was present since the code was originally added by me
+            in 3556a834a2847e52162d1d3302d4c64390df1694.
+
+            Fixes [Bug #20871]
+
+commit f19831a15d680fd995ceaecad1157282be7182dc
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-01-15 10:47:41 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-01-15 10:47:41 +0900
+
+    merge revision(s) a8c2d5e7bee5fad0965baeb58d312ddc5932ec26: [Backport #20907]
+
+            Ensure fiber scheduler re-acquires mutex when interrupted from sleep. (#12158)
+
+            [Bug #20907]
+
+commit 1ec258ab7002210670171f3f2f0c4b39657e24a4
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-01-15 10:42:54 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-01-15 10:42:54 +0900
+
+    merge revision(s) d71be7274bd2623bb521be72c245c08fc38d6ae4: [Backport #20873]
+
+            [Bug #20873] Consider `-FIXNUM_MIN` overflow
+
+            `-FIXNUM_MIN` is usually greater than `FIXNUM_MAX` on platforms using
+            two's complement representation.
+
+commit 42f043c1893b320b9d2a38ec3b1065dee71ce863
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-01-15 10:40:39 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-01-15 10:40:39 +0900
+
+    merge revision(s) 56ecc243e230e8e99761ec0ffc5116601f094bb0: [Backport #20868]
+
+            [Bug #20868] Fix Method#hash to not change after compaction
+
+            The hash value of a Method must remain constant after a compaction, otherwise
+            it may not work as the key in a hash table.
+
+            For example:
+
+                def a; end
+
+                # Need this method here because otherwise the iseq may be on the C stack
+                # which would get pinned and not move during compaction
+                def get_hash
+                  method(:a).hash
+                end
+
+                puts get_hash # => 2993401401091578131
+
+                GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+                puts get_hash # => -2162775864511574135
+
+commit 233014639793cb6c8650a9b17d37bc09c662d430
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-01-15 10:38:34 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-01-15 10:38:34 +0900
+
+    merge revision(s) 773d140f65c1c8b726e107915bc003c186f38677: [Backport #20787]
+
+            [Bug #20787] Check the separator in `IO#readline` as well as 3.2
+
+commit 732ee20a02bcfd92a473a7841f374ee9b8a7bbb0
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-12-03 10:28:04 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-12-03 11:08:37 +0900
+
+    Bump up actions/checkout-4.2.2
+
+commit 7ff601aea00265f12a4cef1fd6c6321d6215d844
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-12-03 10:01:10 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-12-03 11:08:37 +0900
+
+    Lock json-schema-5.1.0 for using pure ruby version
+
+commit c53d12ee708662ac4b231178b08bd8a75f21ffeb
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-11-19 16:39:59 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-20 10:18:27 +0900
+
+    Revert "Skip tests that suddenly started failing for MinGW"
+
+    This reverts commit f72eb702f29574b85889d3ea6447efa29c8a8789.
+
+commit da008169578b389039845c4f1008b03da249964f
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-11-17 22:49:16 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-20 10:18:27 +0900
+
+    Win32: Expose wchar main routine only
+
+    Warned if both of `main` and `wmain` are exposed:
+    ```
+    LINK : warning LNK4067: ambiguous entry point; selected 'mainCRTStartup'
+    ```
+
+commit 7e2789415b1189072b79a1144f0aa871216e6fd0
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-11-10 21:31:43 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-20 10:18:27 +0900
+
+    Make `MUNICODE_FLAG` simply expanded
+
+    It is not expected that `target_os` will change going forward.
+
+commit b4afc2b25fbe2c4112b273a5aab51f8371a4feb6
+  Author:     Daisuke Fujimura (fd0) <booleanlabel@gmail.com>
+  AuthorDate: 2024-11-06 21:28:19 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-20 10:18:27 +0900
+
+    `EXE_LDFLAGS` uses the same `MUNICODE_FLAG`
+
+commit b7475e2ac326701776f34d4f2cfeddb7a5dca428
+  Author:     Daisuke Fujimura (fd0) <booleanlabel@gmail.com>
+  AuthorDate: 2024-11-06 10:01:35 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-20 10:18:27 +0900
+
+    `-municode` is available for MinGW-w64 targets only
+
+commit b3a1fc146c9793c31ec59bb75f30c368dcc94aa7
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-11-04 09:39:15 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-20 10:18:27 +0900
+
+    Use wide character startup
+
+    Mingw crt-git 12.0.0.r369.g0d4221712-1 now prohibits "command line
+    contains characters that are not supported in the active code page".
+    https://sourceforge.net/p/mingw-w64/mingw-w64/ci/0d42217123d3aec0341b79f6d959c76e09648a1e/
+
+    Already Ruby builds `argv` in `rb_w32_sysinit`, instead of mswin- or
+    mingw-made `argv`.  Just bypass the conversion in mingw crt.
+
+commit 792826d5f4b77adf571d20b8752f5d93a1848092
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-11-17 19:56:02 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-20 10:18:27 +0900
+
+    Make `rb_ec_set_vm_stack` conformant to the C++11 requirement
+
+    Https://learn.microsoft.com/en-us/cpp/build/reference/zc-inline-remove-unreferenced-comdat?view=msvc-140
+    > If `/Zc:inline` is specified, the compiler enforces the C++11
+    > requirement that all functions declared inline must have a definition
+    > available in the same translation unit if they're used.
+
+commit d44061b91986a225dd4a9d0337853a45de9eef48
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-11-17 19:29:16 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-20 10:18:27 +0900
+
+    Win32: Remove unreferenced COMDAT from object files
+
+    Windows 11 SDK Version 10.0.26100.0 introduced a new internal inline
+    function in ucrt/corecrt_math.h.  Even it appears in object files and
+    will be included in the DEF file, it will be removed from the DLL and
+    result in a linker error.
+
+commit 5232e3ce3cdd69f9afaf5d34370f6ef3c84e4930
+  Author:     MSP-Greg <Greg.mpls@gmail.com>
+  AuthorDate: 2024-06-21 09:33:06 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-20 10:18:27 +0900
+
+    [ruby/net-http] test_https.rb - fix test_session_reuse_but_expire
+
+    https://github.com/ruby/net-http/commit/5544243c41
+
+commit c78721f718d1004182b36a6610d32b1a158808be
+  Author:     Job Snijders <job@sobornost.net>
+  AuthorDate: 2024-03-25 21:20:13 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-20 10:18:27 +0900
+
+    [ruby/openssl] Only CSR version 1 (encoded as 0) is allowed by PKIX standards
+
+    RFC 2986, section 4.1 only defines version 1 for CSRs. This version
+    is encoded as a 0. Starting with OpenSSL 3.3, setting the CSR version
+    to anything but 1 fails.
+
+    Do not attempt to generate a CSR with invalid version (which now fails)
+    and invalidate the CSR in test_sign_and_verify_rsa_sha1 by changing its
+    subject rather than using an invalid version.
+
+    This commit fixes the following error.
+
+    ```
+     2) Error: test_version(OpenSSL::TestX509Request): OpenSSL::X509::RequestError:
+    X509_REQ_set_version: passed invalid argument
+    /home/runner/work/openssl/openssl/test/openssl/test_x509req.rb:18:in `version='
+    /home/runner/work/openssl/openssl/test/openssl/test_x509req.rb:18:in `issue_csr'
+    /home/runner/work/openssl/openssl/test/openssl/test_x509req.rb:43:in
+    `test_version'
+         40:     req = OpenSSL::X509::Request.new(req.to_der)
+         41:     assert_equal(0, req.version)
+         42:
+      => 43:     req = issue_csr(1, @dn, @rsa1024, OpenSSL::Digest.new('SHA256'))
+         44:     assert_equal(1, req.version)
+         45:     req = OpenSSL::X509::Request.new(req.to_der)
+         46:     assert_equal(1, req.version)
+    ```
+
+    https://github.com/ruby/openssl/commit/c06fdeb091
+
+commit 068fb26c0862e10f892e89ad7b6bb31e548fde0c
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-11-19 15:42:45 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-20 10:18:27 +0900
+
+    Lock sinatra-4.0
+
+commit a97621ef3c7e026651d93460bbf04d3008c5676b
+  Author:     Yuta Saito <kateinoigakukun@gmail.com>
+  AuthorDate: 2024-11-16 07:05:28 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-11-16 07:05:28 +0900
+
+    wasm: align fiber stack pointer to 16 bytes (#12101)
+
+    wasm: align fiber stack pointer to 16 bytes
+
+    In WebAssembly C ABI, the linear stack pointer must be always aligned
+    to 16 bytes like other archs.
+    The misaligned stack pointer causes some weird memory corruption since
+    compiler assumes the aligned stack pointer.
+
+commit a24570a62a584478a7dde5dd716b5c88fe86e9e5
+  Author:     Jean byroot Boussier <jean.boussier+github@shopify.com>
+  AuthorDate: 2024-11-13 04:20:36 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-11-13 04:20:36 +0900
+
+    ObjectSpace.dump: handle Module#set_temporary_name (#12068)
+
+    ObjectSpace.dump: handle Module#set_temporary_name
+
+    [Bug #20892]
+
+    Until the introduction of that method, it was impossible for a
+    Module name not to be valid JSON, hence it wasn't going through
+    the slower escaping function.
+
+    This assumption no longer hold.
+
+    Co-authored-by: Jean Boussier <jean.boussier@gmail.com>
+
+commit f4258aaed02ee7be761f2499b0b6243a8f37b7cb
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2024-11-13 02:04:21 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-11-13 02:04:21 +0900
+
+    [Bug #20886] Avoid double-free in regex timeout after stack_double (#12063)
+
+    Fix regex timeout double-free after stack_double
+
+    As of 10574857ce167869524b97ee862b610928f6272f, it's possible to crash
+    on a double free due to `stk_alloc` AKA `msa->stack_p` being freed
+    twice, once at the end of match_at and a second time in `FREE_MATCH_ARG`
+    in the parent caller.
+
+    Fixes [Bug #20886]
+
+commit a51a6bf6926241704593b9439e91c06ee6f3ee61
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2024-11-09 18:00:13 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2024-11-09 18:00:13 +0900
+
+    [Bug #20883] Fix coderange for sprintf on binary strings (#12040)
+
+    Fix update_coderange for binary strings
+
+    Although a binary (aka ASCII-8BIT) string will never have a broken
+    coderange, it still has to differentiate between "valid" and "7bit".
+
+    On Ruby 3.4/trunk this problem is masked because we now clear the
+    coderange more agressively in rb_str_resize, and we happened to always
+    be strinking this string, but we should not assume that.
+
+    On Ruby 3.3 this created strings where `ascii_only?` was true in cases
+    it shouldn't be as well as other problems.
+
+    Fixes [Bug #20883]
+
+    Co-authored-by: Daniel Colson <danieljamescolson@gmail.com>
+    Co-authored-by: Matthew Draper <matthew@trebex.net>
+
 commit 75015d4c1f6965b5e85e96fb309f1f2129f933c0
   Author:     Takashi Kokubun <takashikkbn@gmail.com>
   AuthorDate: 2024-11-05 09:49:11 +0900
