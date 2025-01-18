@@ -1,3 +1,10 @@
+ruby2.5 (2.5.5-3+deb10u8) buster-security; urgency=medium
+
+  * Non-maintainer upload by the ELTS Security Team.
+  * Upgrade rexml gems from 3.1.7.3 to 3.2.3.1
+
+ -- Bastien Roucariès <rouca@debian.org>  Sat, 18 Jan 2025 23:00:10 +0000
+
 ruby2.5 (2.5.5-3+deb10u7) buster-security; urgency=high
 
   * Non-maintainer upload by the ELTS Security Team.
