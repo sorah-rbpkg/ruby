@@ -55,6 +55,9 @@ configure_options += $(shell dpkg-buildflags --export=configure)
 # Always build with /bin/bash, to get consistent rbconfig.rb (which embeds SHELL).
 export SHELL := /bin/bash
 
+# use UTF8 locale at least for test
+export LANG := C.UTF-8
+
 %:
 	dh $@
 
