@@ -24,7 +24,7 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  OnigSyntaxRuby@Base 3.3.0~preview1
  RUBY_IO_BUFFER_DEFAULT_SIZE@Base 3.3.1
  RUBY_IO_BUFFER_PAGE_SIZE@Base 3.3.1
- (arch=!s390x !mips64el)coroutine_transfer@Base 3.3.1
+ (arch=!s390x !mips64el !hurd-any)coroutine_transfer@Base 3.3.1
  dln_find_exe_r@Base 3.3.0~preview1
  dln_find_file_r@Base 3.3.0~preview1
  dln_load@Base 3.3.0~preview1
