@@ -12,3 +12,4 @@ Do-not-pass-m32-to-arm-32-bits.patch
 Fix-require-calls-falling-in-autopkgtest.patch
 Deduplicate-results-from-getaddrinfo.patch
 test-test_bundled_ca-Skip-test-because-it-requires-i.patch
+Fix-test-dlopen-for-.so-filename-with-more-than-one-digit.patch

@@ -1,0 +1,31 @@
+From: Lucas Kanashiro <kanashiro@debian.org>
+Date: Wed, 29 Jan 2025 11:59:15 -0300
+Subject: Fix test dlopen for .so filename with more than one digit
+
+In alpha architecture, we have libc.so.6.1 which causes a failure in
+this test:
+
+ 1) Failure:
+TestFiddle#test_dlopen_linker_script_group_linux [/<<PKGBUILDDIR>>/test/fiddle/test_fiddle.rb:52]:
+<"libc.so"> expected but was
+<"libc.so.6">.
+
+Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1085238
+Forwarded: https://github.com/ruby/fiddle/pull/171
+---
+ test/fiddle/test_fiddle.rb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/fiddle/test_fiddle.rb b/test/fiddle/test_fiddle.rb
+index 9bddb05..769a74d 100644
+--- a/test/fiddle/test_fiddle.rb
++++ b/test/fiddle/test_fiddle.rb
+@@ -50,7 +50,7 @@ class TestFiddle < Fiddle::TestCase
+     handle = Fiddle.dlopen("libc.so")
+     begin
+       assert_equal("libc.so",
+-                   File.basename(handle.file_name, ".*"))
++                   File.basename(handle.file_name, ".*").gsub(/\.so.\d+/,'.so'))
+     ensure
+       handle.close
+     end
