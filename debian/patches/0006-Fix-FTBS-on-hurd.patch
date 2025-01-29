@@ -11,7 +11,7 @@ Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
  1 file changed, 5 insertions(+), 1 deletion(-)
 
 diff --git a/io.c b/io.c
-index 9d651e0..e58f149 100644
+index 17f8d57..bef4137 100644
 --- a/io.c
 +++ b/io.c
 @@ -2212,7 +2212,11 @@ io_writev(int argc, const VALUE *argv, VALUE io)

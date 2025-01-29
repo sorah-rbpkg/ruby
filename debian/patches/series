@@ -11,5 +11,4 @@ ruby_default_arch.m4-don-t-require-arhitectures-to-be-kno.patch
 Do-not-pass-m32-to-arm-32-bits.patch
 Fix-require-calls-falling-in-autopkgtest.patch
 Deduplicate-results-from-getaddrinfo.patch
-ruby3.3-ruby-openssl-Only-CSR-version-1-encoded-as-0-is-allo.patch
 test-test_bundled_ca-Skip-test-because-it-requires-i.patch

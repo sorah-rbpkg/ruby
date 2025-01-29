@@ -1,7 +1,7 @@
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Date: Fri, 10 Jan 2025 21:15:18 +0100
-Subject: [PATCH] test: test_bundled_ca: Skip test because it requires internet
- access.
+Subject: [PATCH] test: test_bundled_ca: Skip test because it requires
+ internet access.
 
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  1 file changed, 1 insertion(+)
 
 diff --git a/test/rubygems/test_bundled_ca.rb b/test/rubygems/test_bundled_ca.rb
-index a737185681ee2..7baf8fd2c2ed0 100644
+index a737185..7baf8fd 100644
 --- a/test/rubygems/test_bundled_ca.rb
 +++ b/test/rubygems/test_bundled_ca.rb
 @@ -27,6 +27,7 @@ class TestGemBundledCA < Gem::TestCase
@@ -20,6 +20,3 @@ index a737185681ee2..7baf8fd2c2ed0 100644
      assert true
      http = Gem::Net::HTTP.new(host, 443)
      http.use_ssl = true
--- 
-2.47.1
-
