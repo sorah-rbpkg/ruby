@@ -1,3 +1,14 @@
+ruby3.3 (3.3.7-1) UNRELEASED; urgency=medium
+
+  * New upstream version 3.3.7
+  * d/control: move ruby-sdbm to Recommends to avoid circular dependency
+  * Update patches
+  * d/libruby3.3.symbols: fix symbold for hurd-any (Closes: #1094333)
+  * d/p/Fix-test-dlopen-for-.so-filename-with-more-than-one-digit.patch: fix
+    FTBFS in alpha (Closes: #1085238)
+
+ -- Lucas Kanashiro <kanashiro@debian.org>  Wed, 29 Jan 2025 12:07:55 -0300
+
 ruby3.3 (3.3.6-1.1) unstable; urgency=medium
 
   * Non-maintainer upload.
