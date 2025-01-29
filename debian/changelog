@@ -1,4 +1,4 @@
-ruby3.3 (3.3.7-1) UNRELEASED; urgency=medium
+ruby3.3 (3.3.7-1) unstable; urgency=medium
 
   * New upstream version 3.3.7
   * d/control: move ruby-sdbm to Recommends to avoid circular dependency
