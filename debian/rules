@@ -45,6 +45,9 @@ configure_options += --with-tcl-lib=/usr/lib/$(DEB_HOST_MULTIARCH)
 configure_options += --with-tk-lib=/usr/lib/$(DEB_HOST_MULTIARCH)
 export DEB_LDFLAGS_MAINT_APPEND = -L$(CURDIR)/debian/lib
 
+# use UTF8 locale at least for test
+export LANG := C.UTF-8
+
 %:
 	dh $@ --parallel --with autotools-dev --with autoreconf
 
