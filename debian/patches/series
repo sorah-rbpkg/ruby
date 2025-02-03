@@ -21,7 +21,7 @@ Fix-tests-gem_server.patch
 Fix-tests-io_console.patch
 Fix-tests-assert_linear_performance.patch
 Exclude-tests-that-fail-on-Debian-builds.patch
-CVE-2021-28965.patch
+#CVE-2021-28965.patch
 CVE-2021-33621.patch
 CVE-2022-28739.patch
 CVE-2023-28755.patch
