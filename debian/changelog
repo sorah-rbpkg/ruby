@@ -1,3 +1,11 @@
+ruby2.3 (2.3.3-1+deb9u13) stretch-security; urgency=medium
+
+   * Non-maintainer upload by the ELTS Security Team.
+   * Backport rexml gems from bullseye. Drop
+     patches from CVE-2021-28965 already included
+
+ -- Bastien Roucariès <rouca@debian.org>  Mon, 03 Feb 2025 20:58:25 +0000
+
 ruby2.3 (2.3.3-1+deb9u12) stretch-security; urgency=high
 
   * Non-maintainer upload by the ELTS Security Team.
