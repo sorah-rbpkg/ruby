@@ -905,15 +905,29 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
-  def test_popen_fork
-    IO.popen("-") {|io|
-      if !io
-        puts "fooo"
-      else
-        assert_equal("fooo\n", io.read)
+  if Process.respond_to?(:fork)
+    def test_popen_fork
+      IO.popen("-") do |io|
+        if !io
+          puts "fooo"
+        else
+          assert_equal("fooo\n", io.read)
+        end
       end
-    }
-  rescue NotImplementedError
+    end
+
+    def test_popen_fork_ensure
+      IO.popen("-") do |io|
+        if !io
+          STDERR.reopen(STDOUT)
+          raise "fooo"
+        else
+          assert_empty io.read
+        end
+      end
+    rescue RuntimeError
+      abort "[Bug #20995] should not reach here"
+    end
   end
 
   def test_fd_inheritance
@@ -1837,6 +1851,8 @@ class TestProcess < Test::Unit::TestCase
     end
 
     def test_daemon_noclose
+      pend "macOS 15 is not working with this test" if /darwin/ =~ RUBY_PLATFORM && /15/ =~ `sw_vers -productVersion`
+
       data = IO.popen("-", "r+") do |f|
         break f.read if f
         Process.daemon(false, true)
