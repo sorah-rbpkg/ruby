@@ -1,5 +1,735 @@
 -*- coding: utf-8 -*-
 
+commit 02ec31524440656c4e1d3f2d84dfbd15d2c63658
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-02-04 20:33:29 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-02-04 20:33:29 +0900
+
+    bump teeny
+
+commit 7c0c2df9b497dbf9c1376a995eebe6d43a00e21b
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-01-25 14:51:31 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-01-25 14:51:31 +0900
+
+    merge revision(s) dd80d9b089e35729d585bae2f8866c845c48f3b7: [Backport #20997]
+
+            YJIT: Filter `&` calls from specialized C method codegen
+
+            Evident with the crash reported in [Bug #20997], the C replacement
+            codegen functions aren't authored to handle block arguments (nor
+            should they because the extra code from the complexity defeats
+            optimization). Filter sites with VM_CALL_ARGS_BLOCKARG.
+
+commit 97243cc9c76b9cc2803cfd1c01165ab5bd432450
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-01-25 14:39:22 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-01-25 14:39:22 +0900
+
+    merge revision(s) 04ec07794657cd2444ecb001a522b9df2db1b90a: [Backport #21038]
+
+            Preserve `errno` in `rb_fiber_scheduler_unblock`. (#12576)
+
+            [Bug #21038]
+
+            Co-authored-by: Julian Scheid <julians37@gmail.com>
+
+commit f9adaab928dff8dd7ecd4c560c288300a3c74880
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-01-25 14:37:41 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-01-25 14:37:41 +0900
+
+    merge revision(s) e0d600ec190c64aff76cfcbd6009cffb927da166: [Backport #21012]
+
+            Avoid opt_aset_with optimization inside multiple assignment
+
+            Previously, since the opt_aset_with optimization was introduced,
+            use of the opt_aset_with optimization inside multiple assignment
+            would result in a segfault or incorrect instructions.
+
+            Fixes [Bug #21012]
+
+            Co-authored-by: Nobuyoshi Nakada <nobu.nakada@gmail.com>
+
+commit 845763fdf370846938b86a062827b237313c924f
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-01-11 15:32:49 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-01-11 15:32:49 +0900
+
+    merge revision(s) b176d4f52e4af67654814dab3e9c5f4bf9170e54: [Backport #21008]
+
+            [Bug #21008] Normalize before sum to float
+
+            After switching to `Float`-mode when summing `Numeric` objects,
+            normalization for `Float` is still needed.
+
+commit f150d67b7d389eb88e0cd13694d3529895d55579
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-01-11 15:30:06 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-01-11 15:30:06 +0900
+
+    merge revision(s) 8034e9c3d001ca3dff124ab42972684eac8af2ae: [Backport #20995]
+
+            [Bug #20995] Protect `IO.popen` block from exiting by exception
+
+commit 4e59c10646cf012d457da99ad258b0e6a3e42132
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-01-11 15:28:05 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-01-11 15:28:05 +0900
+
+    merge revision(s) 19c39e4cfaa467e69b9848c9c5496d7f50d39c7f, d78ff6a767ca813ac5fa178dd7611f20a993c191: [Backport #20984]
+
+            [Bug #20984] ENV.inspect should be encoding aware
+
+            [Bug #20984] Fix test with locale encoding
+
+commit 1d57924d693534b10699a375cb8400e57a67031c
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-12-21 13:31:11 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-12-21 13:31:11 +0900
+
+    merge revision(s) a1758fbd7fe7406601b0eb1617752db59b83586a:
+
+            Crash when malloc during GC
+
+            This feature was introduced in commit 2ccf6e5, but I realized that
+            using rb_warn is a bad idea because it allocates objects, which causes
+            a different crash ("object allocation during garbage collection phase").
+            We should just hard crash here instead.
+
+commit 3110d5c8abf8f710de42989fbc35870287a12f75
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-12-15 16:18:43 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-12-15 16:18:43 +0900
+
+    merge revision(s) e90b447655dd39ad1eb645cdaae450efd605db00: [Backport #20924]
+
+            [Bug #20924] Fix reading with delimiter in wide character encodings
+
+commit 59254caff0f39c87370d0c11793e3aae5c38d6e1
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-12-15 15:31:58 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-12-15 15:31:58 +0900
+
+    merge revision(s) 055613fd868a8c94e43893f8c58a00cdd2a81f6d: [Backport #20447]
+
+            Fix pointer incompatiblity
+
+            Since the subsecond part is discarded, WIDEVAL to VALUE conversion is
+            needed.
+
+commit 303a83d35c485db626c57415b344fdd4a8d0d5e5
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-12-15 15:28:25 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-12-15 15:28:25 +0900
+
+    merge revision(s) 660b995365f719fa59ed6f2809bb1527e6470d14: [Backport #20915]
+
+            [Bug #20915] Fix SEGV with `TracePoint#parameters` and aliased C method
+
+            The following snippet results with a SEGV:
+
+            ```ruby
+            C = Class.new do
+              alias_method :new_to_s, :to_s
+            end
+
+            TracePoint.new(:c_call, &:parameters).enable { C.new.new_to_s }
+            ```
+
+            at MRI 3.3.6 and ruby 3.4.0dev
+
+            The root cause of the issue lies in the `rb_tracearg_parameters` function
+            within the `RUBY_EVENT_C_RETURN` branch. Specifically, when the invoked
+            method is an alias for a C function,
+            `rb_method_entry_without_refinements(..., trace_arg->called_id, ...)`
+            may return NULL. In that case we can fallback to `trace_arg->id`.
+
+commit d78e1a413333bae4e70e662ac7eceb378b2a5369
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-12-15 15:26:55 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-12-15 15:26:55 +0900
+
+    merge revision(s) f65a6c090c229de1665af49f2e51fc1d6397ab72: [Backport #20921]
+
+            Fix use-after-free in constant cache
+
+            [Bug #20921]
+
+            When we create a cache entry for a constant, the following sequence of
+            events could happen:
+
+            - vm_track_constant_cache is called to insert a constant cache.
+            - In vm_track_constant_cache, we first look up the ST table for the ID
+              of the constant. Assume the ST table exists because another iseq also
+              holds a cache entry for this ID.
+            - We then insert into this ST table with the iseq_inline_constant_cache.
+            - However, while inserting into this ST table, it allocates memory, which
+              could trigger a GC. Assume that it does trigger a GC.
+            - The GC frees the one and only other iseq that holds a cache entry for
+              this ID.
+            - In remove_from_constant_cache, it will appear that the ST table is now
+              empty because there are no more iseq with cache entries for this ID, so
+              we free the ST table.
+            - We complete GC and continue our st_insert. However, this ST table has
+              been freed so we now have a use-after-free.
+
+            This issue is very hard to reproduce, because it requires that the GC runs
+            at a very specific time. However, we can make it show up by applying this
+            patch which runs GC right before the st_insert to mimic the st_insert
+            triggering a GC:
+
+                diff --git a/vm_insnhelper.c b/vm_insnhelper.c
+                index 3cb23f06f0..a93998136a 100644
+                --- a/vm_insnhelper.c
+                +++ b/vm_insnhelper.c
+                @@ -6338,6 +6338,10 @@ vm_track_constant_cache(ID id, void *ic)
+                        rb_id_table_insert(const_cache, id, (VALUE)ics);
+                    }
+
+                +    if (id == rb_intern("MyConstant")) rb_gc();
+                +
+                    st_insert(ics, (st_data_t) ic, (st_data_t) Qtrue);
+                }
+
+            And if we run this script:
+
+                Object.const_set("MyConstant", "Hello!")
+
+                my_proc = eval("-> { MyConstant }")
+                my_proc.call
+
+                my_proc = eval("-> { MyConstant }")
+                my_proc.call
+
+            We can see that ASAN outputs a use-after-free error:
+
+                ==36540==ERROR: AddressSanitizer: heap-use-after-free on address 0x606000049528 at pc 0x000102f3ceac bp 0x00016d607a70 sp 0x00016d607a68
+                READ of size 8 at 0x606000049528 thread T0
+                    #0 0x102f3cea8 in do_hash st.c:321
+                    #1 0x102f3ddd0 in rb_st_insert st.c:1132
+                    #2 0x103140700 in vm_track_constant_cache vm_insnhelper.c:6345
+                    #3 0x1030b91d8 in vm_ic_track_const_chain vm_insnhelper.c:6356
+                    #4 0x1030b8cf8 in rb_vm_opt_getconstant_path vm_insnhelper.c:6424
+                    #5 0x1030bc1e0 in vm_exec_core insns.def:263
+                    #6 0x1030b55fc in rb_vm_exec vm.c:2585
+                    #7 0x1030fe0ac in rb_iseq_eval_main vm.c:2851
+                    #8 0x102a82588 in rb_ec_exec_node eval.c:281
+                    #9 0x102a81fe0 in ruby_run_node eval.c:319
+                    #10 0x1027f3db4 in rb_main main.c:43
+                    #11 0x1027f3bd4 in main main.c:68
+                    #12 0x183900270  (<unknown module>)
+
+                0x606000049528 is located 8 bytes inside of 56-byte region [0x606000049520,0x606000049558)
+                freed by thread T0 here:
+                    #0 0x104174d40 in free+0x98 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x54d40)
+                    #1 0x102ada89c in rb_gc_impl_free default.c:8183
+                    #2 0x102ada7dc in ruby_sized_xfree gc.c:4507
+                    #3 0x102ac4d34 in ruby_xfree gc.c:4518
+                    #4 0x102f3cb34 in rb_st_free_table st.c:663
+                    #5 0x102bd52d8 in remove_from_constant_cache iseq.c:119
+                    #6 0x102bbe2cc in iseq_clear_ic_references iseq.c:153
+                    #7 0x102bbd2a0 in rb_iseq_free iseq.c:166
+                    #8 0x102b32ed0 in rb_imemo_free imemo.c:564
+                    #9 0x102ac4b44 in rb_gc_obj_free gc.c:1407
+                    #10 0x102af4290 in gc_sweep_plane default.c:3546
+                    #11 0x102af3bdc in gc_sweep_page default.c:3634
+                    #12 0x102aeb140 in gc_sweep_step default.c:3906
+                    #13 0x102aeadf0 in gc_sweep_rest default.c:3978
+                    #14 0x102ae4714 in gc_sweep default.c:4155
+                    #15 0x102af8474 in gc_start default.c:6484
+                    #16 0x102afbe30 in garbage_collect default.c:6363
+                    #17 0x102ad37f0 in rb_gc_impl_start default.c:6816
+                    #18 0x102ad3634 in rb_gc gc.c:3624
+                    #19 0x1031406ec in vm_track_constant_cache vm_insnhelper.c:6342
+                    #20 0x1030b91d8 in vm_ic_track_const_chain vm_insnhelper.c:6356
+                    #21 0x1030b8cf8 in rb_vm_opt_getconstant_path vm_insnhelper.c:6424
+                    #22 0x1030bc1e0 in vm_exec_core insns.def:263
+                    #23 0x1030b55fc in rb_vm_exec vm.c:2585
+                    #24 0x1030fe0ac in rb_iseq_eval_main vm.c:2851
+                    #25 0x102a82588 in rb_ec_exec_node eval.c:281
+                    #26 0x102a81fe0 in ruby_run_node eval.c:319
+                    #27 0x1027f3db4 in rb_main main.c:43
+                    #28 0x1027f3bd4 in main main.c:68
+                    #29 0x183900270  (<unknown module>)
+
+                previously allocated by thread T0 here:
+                    #0 0x104174c04 in malloc+0x94 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x54c04)
+                    #1 0x102ada0ec in rb_gc_impl_malloc default.c:8198
+                    #2 0x102acee44 in ruby_xmalloc gc.c:4438
+                    #3 0x102f3c85c in rb_st_init_table_with_size st.c:571
+                    #4 0x102f3c900 in rb_st_init_table st.c:600
+                    #5 0x102f3c920 in rb_st_init_numtable st.c:608
+                    #6 0x103140698 in vm_track_constant_cache vm_insnhelper.c:6337
+                    #7 0x1030b91d8 in vm_ic_track_const_chain vm_insnhelper.c:6356
+                    #8 0x1030b8cf8 in rb_vm_opt_getconstant_path vm_insnhelper.c:6424
+                    #9 0x1030bc1e0 in vm_exec_core insns.def:263
+                    #10 0x1030b55fc in rb_vm_exec vm.c:2585
+                    #11 0x1030fe0ac in rb_iseq_eval_main vm.c:2851
+                    #12 0x102a82588 in rb_ec_exec_node eval.c:281
+                    #13 0x102a81fe0 in ruby_run_node eval.c:319
+                    #14 0x1027f3db4 in rb_main main.c:43
+                    #15 0x1027f3bd4 in main main.c:68
+                    #16 0x183900270  (<unknown module>)
+
+            This commit fixes this bug by adding a inserting_constant_cache_id field
+            to the VM, which stores the ID that is currently being inserted and, in
+            remove_from_constant_cache, we don't free the ST table for ID equal to
+            this one.
+
+            Co-Authored-By: Alan Wu <alanwu@ruby-lang.org>
+
+commit 1ae2b16d0014018c99a37e3e18531cdfa5f27f06
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-12-03 10:02:17 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-12-03 11:04:23 +0900
+
+    Lock json-schema-5.1.0 for using pure ruby version
+
+commit 937319126af801016d410226eb0cefc2c0b5ed32
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-11-30 18:34:32 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-30 18:34:32 +0900
+
+    merge revision(s) 02b70256b5171d4b85ea7eeab836d3d7cfb3dbfc, 6b4f8945d600168bf530d21395da8293fbd5e8ba: [Backport #20909]
+
+            Check negative integer underflow
+
+            Many of Oniguruma functions need valid encoding strings
+
+commit 87249cbddb5dbac16cb7f0fa33958a42389759cb
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-11-30 14:31:31 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-30 14:31:31 +0900
+
+    merge revision(s) a8c2d5e7bee5fad0965baeb58d312ddc5932ec26: [Backport #20907]
+
+            Ensure fiber scheduler re-acquires mutex when interrupted from sleep. (#12158)
+
+            [Bug #20907]
+
+commit bb065f08441aab8f97b45bd3f1600202547c9532
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-11-30 14:29:18 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-30 14:29:18 +0900
+
+    merge revision(s) 3b7892b6e4d1a1a5d6019987f9b46ed443dd104f: [Backport #20871]
+
+            Fix a bug in rb_include_module that stops nested inclusion into module subclasses
+
+            This bug was present since the code was originally added by me
+            in 3556a834a2847e52162d1d3302d4c64390df1694.
+
+            Fixes [Bug #20871]
+
+commit 1fc0895971812d5287b23d8cbb00529e425041c0
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-11-30 14:25:56 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-30 14:25:56 +0900
+
+    merge revision(s) 0d4de0f4b1b9ac90be437bf1bac6851dd1d96fd0: [Backport #20898]
+
+            wasm: align fiber stack pointer to 16 bytes
+
+            In WebAssembly C ABI, the linear stack pointer must be always aligned
+            to 16 bytes like other archs.
+            The misaligned stack pointer causes some weird memory corruption since
+            compiler assumes the aligned stack pointer.
+
+commit d3098d2068770f8bdeca8fda06736cbebb8d3a5b
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-11-21 12:14:49 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-22 08:06:01 +0900
+
+    Removed extra assertions for Ruby 3.2
+
+commit 9e1a78059dc1c2bee1159f7626a15de689f4fc1c
+  Author:     KJ Tsanaktsidis <kj@kjtsanaktsidis.id.au>
+  AuthorDate: 2023-11-27 15:33:08 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-22 08:06:01 +0900
+
+    Fix flaky "Expected 499 to be >= 500" assertion in test_gc_compact.rb
+
+    There have been some sproradically flaky tests related to GC compaction,
+    which fail with:
+
+      1) Failure:
+    TestGCCompact#test_moving_hashes_down_size_pools [/test/ruby/test_gc_compact.rb:442]:
+    Expected 499 to be >= 500.
+
+    What's happening here, is that, _sometimes_, depending on very unlucky
+    combinations of machine things, one of the expected-to-be-moved hashes
+    might be found on the machine stack during GC, and thus pinned.
+
+    One factor which seems to make this _more_ likely is that GCC 11 on
+    Ubuntu 22.04 seems to want to allocate 440 bytes of stack space for
+    `gc_start`, which is much more than it actually uses on the common code
+    path. The result is that there are some 50-odd VALUE-sized cells "live"
+    on the stack which may well contain valid heap pointers from previous
+    function calls, and will need to be pinned.
+
+    This is, of course, totally normal and expected; Ruby's GC is
+    conservative and if there is the possibility that a VALUE might be live
+    on the machine stack, it can't be moved. However, it does make these
+    tests flaky.
+
+    This commit "fixes" the tests by performing the work in a fiber; the
+    fiber goes out of scope and should be collected by the call to
+    verify_compaction_references, so there should be no references to the
+    to-be-moved objects floating around on the machine stack.
+
+    Fixes [#20021]
+
+commit 9aa313f2f8ce2a437fe027a5d757f957b9aad5c8
+  Author:     Peter Zhu <peter@peterzhu.ca>
+  AuthorDate: 2023-07-31 23:26:43 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-22 08:06:01 +0900
+
+    Assert that at least one element has been embedded
+
+    It's not guaranteed that the first element will always be embedded.
+
+commit c692229197af9088538dfd8c1234807867326e35
+  Author:     Peter Zhu <peter@peterzhu.ca>
+  AuthorDate: 2023-01-06 23:14:30 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-22 08:06:01 +0900
+
+    Assert that resizing arrays will re-embed them
+
+commit 605592b9becf55dab7fd00adfc9f10b9e4fa58b8
+  Author:     Peter Zhu <peter@peterzhu.ca>
+  AuthorDate: 2023-01-06 23:11:42 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-22 08:06:01 +0900
+
+    Assert that resizing objects will re-embed them
+
+commit ed41225edd5e5488db13785aac7180e613c07915
+  Author:     Matt Valentine-House <matt@eightbitraptor.com>
+  AuthorDate: 2022-12-22 00:48:00 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-22 08:06:01 +0900
+
+    Fix Error in GC Compaction specs
+
+    Previously if any of the tests that move objects between size pools
+    failed to move anything, then the call to stats.dig would return `nil`
+    which would then cause assert_operator to error.
+
+    This should be a test Failure, rather than an Error so this commit uses
+    a default value of 0 if stats.dig fails to find a key.
+
+    Also refactor object movement tests to use stats.dig, rather than :[]
+
+commit 2861aa22d01a817d84842dec8cc7a57c01f96139
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-11-17 19:56:02 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-19 19:31:46 +0900
+
+    Make `rb_ec_set_vm_stack` conformant to the C++11 requirement
+
+    Https://learn.microsoft.com/en-us/cpp/build/reference/zc-inline-remove-unreferenced-comdat?view=msvc-140
+    > If `/Zc:inline` is specified, the compiler enforces the C++11
+    > requirement that all functions declared inline must have a definition
+    > available in the same translation unit if they're used.
+
+commit 0c8a3181c0ad21051a291d82cb24979bfa3bf2c4
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-11-17 19:29:16 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-19 19:31:46 +0900
+
+    Win32: Remove unreferenced COMDAT from object files
+
+    Windows 11 SDK Version 10.0.26100.0 introduced a new internal inline
+    function in ucrt/corecrt_math.h.  Even it appears in object files and
+    will be included in the DEF file, it will be removed from the DLL and
+    result in a linker error.
+
+commit 3d6fe67f4237b244361a01e35b7b294297839f7d
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-11-17 22:49:16 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-19 19:31:46 +0900
+
+    Win32: Expose wchar main routine only
+
+    Warned if both of `main` and `wmain` are exposed:
+    ```
+    LINK : warning LNK4067: ambiguous entry point; selected 'mainCRTStartup'
+    ```
+
+commit e5b29c89a0f797ffad29cf436e12273fe1817d5c
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-11-10 21:31:43 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-19 19:31:46 +0900
+
+    Make `MUNICODE_FLAG` simply expanded
+
+    It is not expected that `target_os` will change going forward.
+
+commit 104ba2edfb1ccfa382f2312e983d16206bd2a608
+  Author:     Daisuke Fujimura (fd0) <booleanlabel@gmail.com>
+  AuthorDate: 2024-11-06 21:28:19 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-19 19:31:46 +0900
+
+    `EXE_LDFLAGS` uses the same `MUNICODE_FLAG`
+
+commit fba0b48c8922d819b6b4e032ed34f08bd390fc65
+  Author:     Daisuke Fujimura (fd0) <booleanlabel@gmail.com>
+  AuthorDate: 2024-11-06 10:01:35 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-19 19:31:46 +0900
+
+    `-municode` is available for MinGW-w64 targets only
+
+commit c71f74c346f8727dd888c135ae06fe75dcabc4d4
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-11-04 09:39:15 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-19 19:31:46 +0900
+
+    Use wide character startup
+
+    Mingw crt-git 12.0.0.r369.g0d4221712-1 now prohibits "command line
+    contains characters that are not supported in the active code page".
+    https://sourceforge.net/p/mingw-w64/mingw-w64/ci/0d42217123d3aec0341b79f6d959c76e09648a1e/
+
+    Already Ruby builds `argv` in `rb_w32_sysinit`, instead of mswin- or
+    mingw-made `argv`.  Just bypass the conversion in mingw crt.
+
+commit 1e56c26ace1f9f5b8d2189ab00bee1cd8992795e
+  Author:     MSP-Greg <Greg.mpls@gmail.com>
+  AuthorDate: 2024-06-21 09:33:06 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-19 19:31:46 +0900
+
+    [ruby/net-http] test_https.rb - fix test_session_reuse_but_expire
+
+    https://github.com/ruby/net-http/commit/5544243c41
+
+commit 870e5b2b4fc786f8513ff91a623ef67a0d16f940
+  Author:     Job Snijders <job@sobornost.net>
+  AuthorDate: 2024-03-25 21:20:13 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-19 19:31:46 +0900
+
+    [ruby/openssl] Only CSR version 1 (encoded as 0) is allowed by PKIX standards
+
+    RFC 2986, section 4.1 only defines version 1 for CSRs. This version
+    is encoded as a 0. Starting with OpenSSL 3.3, setting the CSR version
+    to anything but 1 fails.
+
+    Do not attempt to generate a CSR with invalid version (which now fails)
+    and invalidate the CSR in test_sign_and_verify_rsa_sha1 by changing its
+    subject rather than using an invalid version.
+
+    This commit fixes the following error.
+
+    ```
+     2) Error: test_version(OpenSSL::TestX509Request): OpenSSL::X509::RequestError:
+    X509_REQ_set_version: passed invalid argument
+    /home/runner/work/openssl/openssl/test/openssl/test_x509req.rb:18:in `version='
+    /home/runner/work/openssl/openssl/test/openssl/test_x509req.rb:18:in `issue_csr'
+    /home/runner/work/openssl/openssl/test/openssl/test_x509req.rb:43:in
+    `test_version'
+         40:     req = OpenSSL::X509::Request.new(req.to_der)
+         41:     assert_equal(0, req.version)
+         42:
+      => 43:     req = issue_csr(1, @dn, @rsa1024, OpenSSL::Digest.new('SHA256'))
+         44:     assert_equal(1, req.version)
+         45:     req = OpenSSL::X509::Request.new(req.to_der)
+         46:     assert_equal(1, req.version)
+    ```
+
+    https://github.com/ruby/openssl/commit/c06fdeb091
+
+commit 910d10e4eefaf89d8e6605a4603cd3a938419aae
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-11-19 17:12:10 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-19 19:31:46 +0900
+
+    Update minitest-5.25.1
+
+    5.16.3 is flaky with `make test-bundled-gems`
+
+    https://github.com/ruby/actions/actions/runs/11898853810/job/33156475298
+
+commit a7b013b392ca0ba4930e579f4c9e40d99d871752
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-11-10 15:15:53 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-10 15:15:53 +0900
+
+    merge revision(s) d71be7274bd2623bb521be72c245c08fc38d6ae4: [Backport #20873]
+
+            [Bug #20873] Consider `-FIXNUM_MIN` overflow
+
+            `-FIXNUM_MIN` is usually greater than `FIXNUM_MAX` on platforms using
+            two's complement representation.
+
+commit 9bcc5c5fd9e8e4d15040eec6850b49d860eba621
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2024-10-23 11:22:37 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-10 15:13:24 +0900
+
+    Fix update_coderange for binary strings
+
+    Although a binary (aka ASCII-8BIT) string will never have a broken
+    coderange, it still has to differentiate between "valid" and "7bit".
+
+    On Ruby 3.4/trunk this problem is masked because we now clear the
+    coderange more agressively in rb_str_resize, and we happened to always
+    be strinking this string, but we should not assume that.
+
+    On Ruby 3.3 this created strings where `ascii_only?` was true in cases
+    it shouldn't be as well as other problems.
+
+    Fixes [Bug #20883]
+
+    Co-authored-by: Daniel Colson <danieljamescolson@gmail.com>
+    Co-authored-by: Matthew Draper <matthew@trebex.net>
+
+commit ee3428aa0e3a11ed1574b7d99222f6f08737f818
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-11-10 13:04:43 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-10 13:04:43 +0900
+
+    merge revision(s) 56ecc243e230e8e99761ec0ffc5116601f094bb0: [Backport #20868]
+
+            [Bug #20868] Fix Method#hash to not change after compaction
+
+            The hash value of a Method must remain constant after a compaction, otherwise
+            it may not work as the key in a hash table.
+
+            For example:
+
+                def a; end
+
+                # Need this method here because otherwise the iseq may be on the C stack
+                # which would get pinned and not move during compaction
+                def get_hash
+                  method(:a).hash
+                end
+
+                puts get_hash # => 2993401401091578131
+
+                GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+                puts get_hash # => -2162775864511574135
+
+commit 288e24b73ab20100b63ae7d30fb06a7d8a19de6e
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-11-10 12:31:36 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-10 12:55:34 +0900
+
+    merge revision(s) 29c480dd6fca993590c82078ba797e2c4e876ac7: [Backport #20853]
+
+            [Bug #20853] Fix Proc#hash to not change after compaction
+
+            The hash value of a Proc must remain constant after a compaction, otherwise
+            it may not work as the key in a hash table.
+
+commit 31b58f89c682e2568c1d7b3299a13a64fbc846de
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-11-10 12:51:12 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2024-11-10 12:51:34 +0900
+
+    backport 2a5354e59324cb296a423c73ec15ff9191086964 partially to make rb_any_hash() non-static.
+
+commit 86fc40edfcdc57f999c5c02106ef554d73065660
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-11-06 13:59:28 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-06 15:35:34 +0900
+
+    We should support ruby/spec with Ruby 3.1 and 3.2
+
+commit 35bd3d110fb2b41b107423c26042c8404e295214
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-11-06 13:18:52 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-06 15:35:34 +0900
+
+    Skip MinGW failure with GitHub Actions update
+
+    We should fix this later
+
+commit 2ad331acf6b7990361ead9d03382f4198206610a
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-11-06 12:36:38 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-06 15:35:34 +0900
+
+    Partly reverted from 449899b38314d0ecbe61e42d34398bdf2561b8e9
+
+commit e548ff67ea1a769d79aece363fe93ce113b3a07c
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-07-12 12:35:58 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-06 15:35:34 +0900
+
+    Pend some tests because these are not working with macOS 15 and Xcode 16
+
+commit 3bea0abd68172678ce9234e09a9604142d1a046b
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-11-06 11:26:06 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-06 15:35:34 +0900
+
+    Export homebrew's bison path to PATH environmental variable
+
+commit e6ff23ef5b2fdce0a8bcafc7d71dd80abd3e73ee
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-11-06 11:14:48 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-06 15:35:34 +0900
+
+    Retired macos-12 and added macos-14 and macos-15 on GitHub Actions
+
+commit 7be9f5a6e502e3d831ffb96cda345ef3db797a26
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-11-06 10:55:11 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-06 15:35:34 +0900
+
+    Fix test tail with mjit options for clang provided by Xcode 16
+
+    ```
+    clang: error: unknown argument '-emit-pch'; did you mean '-Xclang -emit-pch'?
+    MJIT warning: Making precompiled header failed on compilation. Stopping MJIT worker...
+    Successful MJIT finish
+    ```
+
 commit 63aeb018eb1cc0f7b00f955980711fd1bd94af7f
   Author:     nagachika <nagachika@ruby-lang.org>
   AuthorDate: 2024-10-30 18:47:11 +0900
