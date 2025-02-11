@@ -1,3 +1,14 @@
+ruby2.7 (2.7.4-1+deb11u4) bullseye-security; urgency=medium
+
+  [ Bastien Roucariès ]
+  * Non-maintainer upload by the LTS Security Team.
+
+  [ Nishit Majithia ]
+  * SECURITY REGRESSION: fix xml namespace issue (LP: #2097527)
+    - d/p/fix-lp2097527.patch: Fix handling with "xml:" prefixed namespace
+
+ -- Bastien Roucariès <rouca@debian.org>  Tue, 11 Feb 2025 20:18:15 +0000
+
 ruby2.7 (2.7.4-1+deb11u3) bullseye-security; urgency=medium
 
   * Non-maintainer upload by the LTS Security Team.

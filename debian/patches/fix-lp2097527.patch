@@ -1,0 +1,74 @@
+From 78f8712dccad773a51dc5eef31c02d523e994570 Mon Sep 17 00:00:00 2001
+From: KITAITI Makoto <KitaitiMakoto@gmail.com>
+Date: Sun, 29 Sep 2024 15:57:03 +0900
+Subject: [PATCH] Fix handling with "xml:" prefixed namespace (#208)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+I found parsing XHTML documents like below fails since v3.3.3:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>XHTML Document</title>
+  </head>
+  <body>
+    <h1>XHTML Document</h1>
+    <p xml:lang="ja" lang="ja">この段落は日本語です。</p>
+  </body>
+</html>
+```
+
+[XML namespace spec][spec] is a little bit ambiguous but document above
+is valid according to an [article W3C serves][article].
+
+I fixed the parsing algorithm. Can you review it?
+
+As an aside, `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+lang="en">` style language declaration is often used in XHTML files
+included in EPUB files because [sample EPUB files][samples] provided by
+IDPF, former EPUB spec authority, use the style.
+
+[spec]: https://www.w3.org/TR/REC-xml-names/#defaulting
+[article]:
+https://www.w3.org/International/questions/qa-html-language-declarations#attributes
+[samples]: https://github.com/IDPF/epub3-samples
+
+origin: backport, https://github.com/ruby/rexml/commit/78f8712dccad773a51dc5eef31c02d523e994570
+bug-ubuntu: https://bugs.launchpad.net/ubuntu/+source/ruby2.7/+bug/2097527
+---
+ lib/rexml/parsers/baseparser.rb |  5 +++--
+ test/parser/test_base_parser.rb | 35 +++++++++++++++++++++++++++++++++
+ 2 files changed, 38 insertions(+), 2 deletions(-)
+
+--- ruby2.7-2.7.0.orig/lib/rexml/parsers/baseparser.rb
++++ ruby2.7-2.7.0/lib/rexml/parsers/baseparser.rb
+@@ -131,6 +131,7 @@ module REXML
+         GEDECL_PATTERN = "\\s+#{NAME}\\s+#{ENTITYDEF}\\s*>"
+         PEDECL_PATTERN = "\\s+(%)\\s+#{NAME}\\s+#{PEDEF}\\s*>"
+         ENTITYDECL_PATTERN = /(?:#{GEDECL_PATTERN})|(?:#{PEDECL_PATTERN})/um
++        XML_PREFIXED_NAMESPACE = "http://www.w3.org/XML/1998/namespace"
+       end
+       private_constant :Private
+       include Private
+@@ -155,7 +156,7 @@ module REXML
+         @tags = []
+         @stack = []
+         @entities = []
+-        @namespaces = {}
++        @namespaces = {"xml" => Private::XML_PREFIXED_NAMESPACE}
+         @namespaces_restore_stack = []
+       end
+ 
+@@ -716,7 +717,7 @@ module REXML
+             @source.match(/\s*/um, true)
+             if prefix == "xmlns"
+               if local_part == "xml"
+-                if value != "http://www.w3.org/XML/1998/namespace"
++                if value != Private::XML_PREFIXED_NAMESPACE
+                   msg = "The 'xml' prefix must not be bound to any other namespace "+
+                     "(http://www.w3.org/TR/REC-xml-names/#ns-decl)"
+                   raise REXML::ParseException.new( msg, @source, self )
