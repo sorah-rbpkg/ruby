@@ -1,5 +1,662 @@
 -*- coding: utf-8 -*-
 
+commit d2930f8e7a5db8a7337fa43370940381b420cc3e
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-15 06:25:54 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-15 06:25:54 +0900
+
+    v3.4.2
+
+commit d5f42a07b26d4430c4c51ec3bb5bc482c68e9aca
+  Author:     Kevin Newton <kddnewton@gmail.com>
+  AuthorDate: 2025-02-15 04:20:11 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-15 04:41:55 +0900
+
+    Fix locals_test based on previous backports
+
+commit 62f736f23e9099c5aa29975dc7fbe2fe8c40b5b2
+  Author:     Kevin Newton <kddnewton@gmail.com>
+  AuthorDate: 2025-02-15 03:15:57 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-15 03:19:25 +0900
+
+    Backport Bug #21137
+
+commit eaa26b8c8c8de09daddbef131837a008963399dc
+  Author:     Kevin Newton <kddnewton@gmail.com>
+  AuthorDate: 2025-01-16 12:29:57 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-15 03:19:25 +0900
+
+    Backport Bug #21118 and Bug #21043
+
+commit 45fe3c137b6cc0b2546493e37d6334d8f39e076d
+  Author:     Kevin Newton <kddnewton@gmail.com>
+  AuthorDate: 2025-02-15 02:51:14 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-15 03:19:25 +0900
+
+    Backport Bug #21031
+
+commit 24f48c83e7e851a6ca712fc7b498634da9a24789
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-12-26 15:01:48 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 14:43:19 +0900
+
+    [Bug #20982] Put spaces in `ENV.inspect` results as well as `Hash`
+
+commit 80f2329f76b76ce7bd4fcd9a878b2bc5b0626b26
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-12-26 13:02:29 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 14:43:19 +0900
+
+    Refine ENV tests
+
+commit 270129fdcb923654d9741465ec26e179507e8c96
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 14:29:23 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 14:29:23 +0900
+
+    merge revision(s) 19c39e4cfaa467e69b9848c9c5496d7f50d39c7f, d78ff6a767ca813ac5fa178dd7611f20a993c191: [Backport #20984]
+
+            [Bug #20984] ENV.inspect should be encoding aware
+
+            [Bug #20984] Fix test with locale encoding
+
+commit de7a196bd4b22f6073e6cf6c2d7d6fd8171b6baa
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 14:20:21 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 14:20:27 +0900
+
+    Revert "merge revision(s) cb419e3912f0514b8151469b0a4a4b83cbbcce78: [Backport #21031]"
+
+    This reverts commit 7adf89d7ad30552d7e57709d24eec266f601d38b.
+
+commit d5666bbf9191bb990096faa159ee2fb8d7c86f92
+  Author:     Yuta Saito <kateinoigakukun@gmail.com>
+  AuthorDate: 2025-02-12 20:43:05 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 14:19:01 +0900
+
+    tool/downloader.rb: Stop caching already existing files
+
+    Previously, the script was caching any file already present in the
+    destination directory, regardless of its origin. This caused issues
+    when the directory contained files copied from external sources like
+    `autoreconf --install`.
+
+    For example:
+    1. `./autogen.sh --install` copies `config.guess` and `config.sub`
+       from the system to `./tool`.
+    2. `ruby tool/downloader.rb -d tool -e gnu config.guess config.sub`
+       treats those files as if they were downloaded and caches them.
+    3. Removing the files: `rm tool/config.guess tool/config.sub`.
+    4. Running the downloader again, it mistakenly restores the cached
+       files instead of downloading fresh versions.
+
+commit 18daf8326a370d674b9e8aa6d124eafe1b53b847
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-01-16 18:02:16 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 14:19:01 +0900
+
+    Use configu.guess with wasi compatible version
+
+commit 9a0984436888a59f4914c3035c53657baf62ce2b
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 14:17:41 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 14:17:41 +0900
+
+    merge revision(s) b21e1aed2ed5b22b50efc658289a403eeed581df: [Backport #21114]
+
+            [ruby/prism] Fix infinite loop in error recovery
+
+            When recovering from a depth error that occurs at the end of the
+            file, we need to break out of parsing statements.
+
+            Fixes [Bug #21114]
+
+            https://github.com/ruby/prism/commit/a32e268787
+
+commit d3fc56dcfa7b408cc3b6788efad36fd8df3e55da
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 14:17:04 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 14:17:04 +0900
+
+    merge revision(s) 127325a4bad409ee5da91084fac768934a8fd9e3: [Backport #21117]
+
+            [ruby/prism] No writing to numbered parameters
+
+            Fixes [Bug #21117]
+
+            https://github.com/ruby/prism/commit/19d4bab5a0
+
+commit e3b16320e6b39e81606771f507278bf14045fa13
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 14:14:14 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 14:14:14 +0900
+
+    merge revision(s) 91a10c07579f282a94e4b5830feaeca87f9a7dd3: [Backport #21112]
+
+            Fix a typo in WeakKeyMap argument error
+
+            [Bug #21112]
+
+commit 319c3c70385a63aaea3c1a68a79c70cfd533c6b6
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 14:13:47 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 14:13:47 +0900
+
+    merge revision(s) 1683dadb19876f0a64589bdbbcf6fff8143f78ff: [Backport #21088]
+
+            Do not save ResolutionError if resolution succeeds for any address family (#12678)
+
+            * Do not save ResolutionError if resolution succeeds for any address family
+
+            Socket with Happy Eyeballs Version 2 performs connection attempts and name resolution in parallel.
+
+            In the existing implementation, if a connection attempt failed for one address family while name resolution was still in progress for the other, and that name resolution later failed, the method would terminate with a name resolution error.
+            This behavior was intended to ensure that the final error reflected the most recent failure, potentially overriding an earlier error.
+
+            However, [Bug #21088](https://bugs.ruby-lang.org/issues/21088) made me realize that terminating with a name resolution error is unnatural when name resolution succeeded for at least one address family.
+
+            This PR modifies the behavior so that if name resolution succeeds for one address family, any name resolution error from the other is not saved.
+
+            This PR includes the following changes:
+
+            * Do not display select(2) as the system call that caused the raised error, as it is for internal processing
+
+            * Fix bug: Get errno with Socket::SO_ERROR in Windows environment with a workaround for tests not passing
+
+commit e5403bd137d57991d8788cd29bbb5916d75acb36
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 14:12:33 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 14:12:33 +0900
+
+    merge revision(s) db02a6b3ab4cabbdf492c26dcb1929b4ef0370a1: [Backport #21103]
+
+            [Bug #21103] Fix local variable index calculation with forwarding
+
+            Forwarding argument is optimized not to packed when no other arguments
+            and an internal object refers values before it.  This size is decided
+            at called time, calculate the local variable index from the fixed end
+            point.
+
+commit feb4a688a24a1966c8d08962a1104001234efcae
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 14:12:07 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 14:12:07 +0900
+
+    merge revision(s) 46b544c54955348ef1ea9692b837b061f59f91cd, d3abee739f4feb91bb9aaae33877d70c8c576db0: [Backport #21095]
+
+            Prefer `uname -n` over `hostname`. (#12647)
+
+            Add fallback for `hostname` if `uname` isn't available. (#12655)
+
+commit 2ee25f7b47a30b7515cdb4da341d28931d8b5810
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 14:11:06 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 14:11:06 +0900
+
+    merge revision(s) 2b6fc9ea7212543a1be26768403f59c7a759b5ea: [Backport #21092]
+
+            [Bug #21092] Fallback variables after execonf has done
+
+            When reading from a dummy makefile, the global variables initialized
+            in `init_mkmf` may not be overridden.
+
+commit ead3bbc2405ad1df2228c44133ee1c6574ef5973
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 14:09:41 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 14:09:41 +0900
+
+    merge revision(s) d4a1a2780c39bc648496ac92fc6e6ce2eb38ab47: [Backport #21032]
+
+            rb_feature_p: skip `get_expanded_load_path` for absolute paths
+
+            Ref: https://github.com/fxn/zeitwerk/pull/308
+
+            ```ruby
+            require 'benchmark'
+
+            $LOAD_PATH << 'relative-path'
+
+            autoload :FOO, '/tmp/foo.rb'
+
+            puts Benchmark.realtime {
+              500_000.times do
+                Object.autoload?(:FOO)
+              end
+            }
+            ```
+
+            The above script takes 2.5 seconds on `master`, and only
+            50ms on this branch.
+
+            When we're looking for a feature with an absolute path, we don't
+            need to call the expensive `get_expanded_load_path`.
+
+commit 2108ab2cb68e9d975e4dcf035a11243e1173336f
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 14:09:15 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 14:09:15 +0900
+
+    merge revision(s) 04ec07794657cd2444ecb001a522b9df2db1b90a: [Backport #21038]
+
+            Preserve `errno` in `rb_fiber_scheduler_unblock`. (#12576)
+
+            [Bug #21038]
+
+            Co-authored-by: Julian Scheid <julians37@gmail.com>
+
+commit 3fdf7279a0b1ac35fdf233464a93b3d268133d5a
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 14:08:44 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 14:08:44 +0900
+
+    merge revision(s) e0d600ec190c64aff76cfcbd6009cffb927da166: [Backport #21012]
+
+            Avoid opt_aset_with optimization inside multiple assignment
+
+            Previously, since the opt_aset_with optimization was introduced,
+            use of the opt_aset_with optimization inside multiple assignment
+            would result in a segfault or incorrect instructions.
+
+            Fixes [Bug #21012]
+
+            Co-authored-by: Nobuyoshi Nakada <nobu.nakada@gmail.com>
+
+commit 3db440f5a19ca8d46c2c5d5ec029dbae73cc34f9
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 14:08:20 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 14:08:20 +0900
+
+    merge revision(s) f7059af50a31a4d27a04ace0beadb60616f3f971: [Backport #21046]
+
+            Use no-inline version `rb_current_ec` on Arm64
+
+            The TLS across .so issue seems related to Arm64, but not Darwin.
+
+commit 04298f2d158fa860293d2ed2779cba69bc47f404
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 14:07:57 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 14:07:57 +0900
+
+    merge revision(s) c2908613368b2ae404d094a15df61d830fc46dc9: [Backport #21048]
+
+            [ruby/prism] Fix rescue modifier precedence
+
+            Fixes [Bug #21048]
+
+            https://github.com/ruby/prism/commit/07202005cb
+
+commit cd395232b0491f9c4463c5889bab8d2c050e75e2
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 14:07:25 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 14:07:25 +0900
+
+    merge revision(s) 241ada7b1ca4fd71dc47a83d912ee25162a555d9: [Backport #21085]
+
+            [ruby/prism] Do not put empty statements in while because of -n
+
+            Fixes [Bug #21085]
+
+            https://github.com/ruby/prism/commit/ebb9c36a10
+
+commit 7adf89d7ad30552d7e57709d24eec266f601d38b
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 14:06:50 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 14:06:50 +0900
+
+    merge revision(s) cb419e3912f0514b8151469b0a4a4b83cbbcce78: [Backport #21031]
+
+            [PRISM] Handle forwarding inside eval
+
+            Fixes [Bug #21031]
+
+commit 579b94ae61d123dfb06caa2499be4ef6879cbf1f
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 14:06:07 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 14:06:07 +0900
+
+    merge revision(s) 931a870606f4e286a1c7bacf022940994f3c431b: [Backport #21044]
+
+            [ruby/prism] Increase value of PRISM_DEPTH_MAXIMUM to 10000
+
+            The previous value of 1_000 was added with a reference to the Bison
+            parser[^1], but the value of YYMAXDEPTH in the Bison docs is 10_000,
+            not 1_000.
+
+            [^1]: https://www.gnu.org/software/bison/manual/html_node/Memory-Management.html
+
+            Fixes [Bug #21044]
+
+            https://github.com/ruby/prism/commit/e098533ab4
+
+            Co-authored-by: Nony Dutton <nonydutton@gmail.com>
+
+commit bc359b9971088ff921e26346f395c70640654e9e
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 11:01:42 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 11:01:42 +0900
+
+    merge revision(s) b176d4f52e4af67654814dab3e9c5f4bf9170e54: [Backport #21008]
+
+            [Bug #21008] Normalize before sum to float
+
+            After switching to `Float`-mode when summing `Numeric` objects,
+            normalization for `Float` is still needed.
+
+commit b65cea74295358265dfabc9e1f4d107b21e58e58
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 11:01:20 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 11:01:20 +0900
+
+    merge revision(s) 8034e9c3d001ca3dff124ab42972684eac8af2ae: [Backport #20995]
+
+            [Bug #20995] Protect `IO.popen` block from exiting by exception
+
+commit c989d90754edeefa4e692d2cd8c351394cb217e7
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 10:54:41 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 10:54:41 +0900
+
+    merge revision(s) 117d6e145a0270ab8fc9134403519ef13b9ebb24: [Backport #21027]
+
+            [ruby/prism] Fix `not` receiver
+
+            `not foo` should be `!foo`
+            `not()` should be `!nil`
+
+            Fixes [Bug #21027]
+
+            https://github.com/ruby/prism/commit/871ed4b462
+
+commit 9240f01b1fbe5ea4f6a2017d35f8f605f84f0039
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 10:54:21 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 10:54:21 +0900
+
+    merge revision(s) 63723c8d5908569918fb27e070ae5bc9de33c8bd: [Backport #21014]
+
+            Correctly set node_id on iseq location
+
+            The iseq location object has a slot for node ids.  parse.y was correctly
+            populating that field but Prism was not. This commit populates the field
+            with the ast node id for that iseq
+
+            [Bug #21014]
+
+commit c3d30e4dabb2b895c347e10221467dd1b1124ca4
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 10:53:47 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 10:53:47 +0900
+
+    merge revision(s) 051af9529b03c11aff8f6a09522c69983e3a9d72: [Backport #21017]
+
+            [Bug #21017] Fix `--with-parser` configure option
+
+commit 698f808cc78b01bc23ff893eaabcc09a454b56ee
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 10:53:11 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 10:53:11 +0900
+
+    merge revision(s) 5fec9308320e8b377681ef19b0cd46d53f94e8ac, 1a06bee027d5c5b65ed0aaee76ee0040554d4efd: [Backport #20992]
+
+            [Bug #20992] Test for local variable name encodings
+
+            Do not intern invalid symbols in eval parse
+
+            When the inner code cannot represent the name of the locals in the
+            outer code, do not bother putting them into the constant pool as
+            they will not be referenced.
+
+            Fixes [Bug #20992]
+
+            Co-authored-by: Nobuyoshi Nakada <nobu@ruby-lang.org>
+
+commit 82f7cb794109794f6ffa95ffb3be8e5149dd74bd
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 10:52:28 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 10:52:28 +0900
+
+    merge revision(s) ad96c5a72908042489357b73dc936c4bc38d919b, ca81142eff98cccb03ff523322aefe4e7346fd0e: [Backport #21010]
+
+            [ruby/prism] Throw syntax error for endless method with `[]=`
+
+            Prism shoudld throw a syntax error for endless methods when the method
+            name uses brackets. Previously it would not. This matches the behavior
+            of parse.y.
+
+            Fixes https://bugs.ruby-lang.org/issues/21010
+
+            https://github.com/ruby/prism/commit/43c16a89ef
+
+            [ruby/prism] [Bug #21010] Reject endless method definition of `[]=`
+
+            Fixes: https://bugs.ruby-lang.org/issues/20785
+
+            https://github.com/ruby/prism/commit/192960ce5d
+
+commit 68013d43a35a8368caa7b30c501e270333d04b35
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 10:52:03 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 10:52:03 +0900
+
+    merge revision(s) 31905d9e23ec6d1fa2a52f1ef2533f2056e7c9fb: [Backport #21001]
+
+            Allow escaping from ensures through next
+
+            Fixes [Bug #21001]
+
+commit 8a86e52fb5fc49367e79f8f49fb451ab74e089bb
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 10:51:38 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 10:51:38 +0900
+
+    merge revision(s) 668701cb0b42f27c5f54309a358c6fcbb24b5d85: [Backport #21002]
+
+            Added copyright for vendored turbo_tests.
+
+            [Bug #21002]
+
+commit d720ea59ca36f726b8484b3b66e3e2c40784ac89
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 10:51:03 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 10:51:03 +0900
+
+    merge revision(s) 2a1cff40f5e7875f69a7d0ed59eab92cc86c65ff: [Backport #21003]
+
+            Do not warn unused block when using forwarding
+
+            Fixes [Bug #21003]
+
+commit 5ba052675f0eefe77dd7ab30bb9ac186f8d82ccb
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 10:50:05 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 10:50:05 +0900
+
+    merge revision(s) fb18bb183c24ca82b8f114ed090d62bd69b5df84: [Backport #20989]
+
+            [Bug #20989] Ripper: Pass `compile_error`
+
+            For the universal parser, `rb_parser_reg_fragment_check` function is
+            shared between the parser and ripper.  However `parser_params` struct
+            is partially different, and `compile_error` function depends on that
+            part indirectly.
+
+commit 4bafaef0a55fdc45a7b8275a82ceb0f3e3419d00
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 10:47:24 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 10:47:24 +0900
+
+    merge revision(s) 7df5d65eac86940619f87da7e70bc0911097ae2f: [Backport #20981]
+
+            [Bug #20981] Bring back `rb_undefine_finalizer`
+
+commit 294aef53b8c988f605001e4555d9532cefe8806d
+  Author:     Alan Wu <XrXr@users.noreply.github.com>
+  AuthorDate: 2025-01-09 09:07:07 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 10:46:14 +0900
+
+    YJIT: Filter `&` calls from specialized C method codegen
+
+    Evident with the crash reported in [Bug #20997], the C replacement
+    codegen functions aren't authored to handle block arguments (nor
+    should they because the extra code from the complexity defeats
+    optimization). Filter sites with VM_CALL_ARGS_BLOCKARG.
+
+commit 706f1d0573f0b807bee4c0cc8937b8f5b9b24ebd
+  Author:     Alan Wu <XrXr@users.noreply.github.com>
+  AuthorDate: 2025-01-29 06:13:28 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 10:44:58 +0900
+
+    YJIT: Initialize locals in ISeqs defined with `...`
+
+    Backport of GH-12660:
+
+        Previously, callers of forwardable ISeqs moved the stack pointer up
+        without writing to the stack. If there happens to be a stale value in
+        the area skipped over, it could crash due to "try to mark T_NONE". Also,
+        the uninitialized local variables were observable through `binding`.
+
+        Initialize the locals to nil.
+
+        [Bug #21021]
+
+commit 12c716eea02f0efbb7dcd4ddb3a8b0523cdb99c2
+  Author:     nick evans <nick@rubinick.dev>
+  AuthorDate: 2025-02-11 23:03:02 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 10:44:25 +0900
+
+    Bump net-imap to v0.5.6 for Ruby 3.4 (CVE-2025-25186)
+
+    This update addresses CVE-2025-25186 (GHSA-7fc5-f82f-cx69).
+
+commit 787436cd1ae00616b88bc494baaaee7c361f31b9
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-02-07 11:02:42 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 10:42:41 +0900
+
+    Support `git ls-files ...`.split style for file list of gemspec
+
+commit 555373aec859413efd3237cf717931f4b7ac1cb1
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-02-05 14:49:14 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 10:42:41 +0900
+
+    Bump up net-smtp-0.5.1
+
+commit 3c9e65d370f43b8eec99debad606964f80a935c5
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-01-06 15:49:13 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 10:42:11 +0900
+
+    glibc and musl didn't provide A1-A7, FP and S3-S8 constants.
+
+    * https://sourceware.org/git/?p=glibc.git;a=blob;f=sysdeps/unix/sysv/linux/loongarch/sys/ucontext.h
+    * https://git.musl-libc.org/cgit/musl/tree/arch/loongarch64/bits/signal.h
+
+commit b5c921e01074891680b45353519a1e0bfe7c1036
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-01-14 19:11:33 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 10:40:19 +0900
+
+    [Bug #21024] <cstdbool> header has been useless
+
+    And finally deprecated at C++-17.
+    Patched by jprokop (Jarek Prokop).
+
+commit 73690b520da4c3ab680ddc477cacaeaeed75d558
+  Author:     Alan Wu <XrXr@users.noreply.github.com>
+  AuthorDate: 2025-01-05 01:41:00 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 10:37:38 +0900
+
+    YJIT: Fix crash when yielding keyword arguments
+
+    Previously, the code for dropping surplus arguments when yielding
+    into blocks erroneously attempted to drop keyword arguments when there
+    is in fact no surplus arguments. Fix the condition and test that
+    supplying the exact number of keyword arguments as require compiles
+    without fallback.
+
+commit cefa630bce3aea8317f09fe73c6439f67c42bb69
+  Author:     Nick Dower <nicholasdower@gmail.com>
+  AuthorDate: 2025-01-03 01:24:55 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 10:37:38 +0900
+
+    YJIT: Add crashing test for yielding keyword args
+
+    Code like the following is crashing for us on 3.4.1:
+
+    ```ruby
+    def a(&) = yield(x: 0)
+
+    1000.times { a { |x:| x } }
+    ```
+
+    Crash:
+
+    ```
+    ruby: YJIT has panicked. More info to follow...
+    thread '<unnamed>' panicked at ./yjit/src/codegen.rs:8018:13:
+    assertion `left == right` failed
+      left: 0
+     right: 1
+    ```
+
+    Co-authored-by: Dani Acherkan <dtl.117@gmail.com>
+
+commit 65f2a4beecd3017ced366e3957eef501f2860c1f
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 10:36:58 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 10:36:58 +0900
+
+    Add k0kubun as CODEOWNERS
+
 commit 48d4efcb85000e1ebae42004e963b5d0cedddcf2
   Author:     NARUSE, Yui <naruse@airemix.jp>
   AuthorDate: 2024-12-25 16:43:20 +0900
