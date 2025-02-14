@@ -1,6 +1,38 @@
 # To run the tests in this file only, with YJIT enabled:
 # make btest BTESTS=bootstraptest/test_yjit.rb RUN_OPTS="--yjit-call-threshold=1"
 
+# This used to trigger a "try to mark T_NONE"
+# due to an uninitialized local in foo.
+assert_normal_exit %{
+  def foo(...)
+    _local_that_should_nil_on_call = GC.start
+  end
+
+  def test_bug21021
+    puts [], [], [], [], [], []
+    foo []
+  end
+
+  GC.stress = true
+  test_bug21021
+}
+
+assert_equal 'nil', %{
+  def foo(...)
+    _a = _b = _c = binding.local_variable_get(:_c)
+
+    _c
+  end
+
+  # [Bug #21021]
+  def test_local_fill_in_forwardable
+    puts [], [], [], [], []
+    foo []
+  end
+
+  test_local_fill_in_forwardable.inspect
+}
+
 # regression test for popping before side exit
 assert_equal "ok", %q{
   def foo(a, *) = a
@@ -37,14 +69,18 @@ assert_equal "ok", %q{
 }
 
 # test discarding extra yield arguments
-assert_equal "2210150001501015", %q{
+assert_equal "22131300500015901015", %q{
   def splat_kw(ary) = yield *ary, a: 1
 
   def splat(ary) = yield *ary
 
-  def kw = yield 1, 2, a: 0
+  def kw = yield 1, 2, a: 3
+
+  def kw_only = yield a: 0
 
   def simple = yield 0, 1
+
+  def none = yield
 
   def calls
     [
@@ -52,12 +88,16 @@ assert_equal "2210150001501015", %q{
       splat([1, 1, 2]) { |y, opt = raise| opt + y},
       splat_kw([0, 1]) { |a:| a },
       kw { |a:| a },
-      kw { |a| a },
+      kw { |one| one },
+      kw { |one, a:| a },
+      kw_only { |a:| a },
+      kw_only { |a: 1| a },
       simple { 5.itself },
       simple { |a| a },
       simple { |opt = raise| opt },
       simple { |*rest| rest },
       simple { |opt_kw: 5| opt_kw },
+      none { |a: 9| a },
       # autosplat ineractions
       [0, 1, 2].yield_self { |a, b| [a, b] },
       [0, 1, 2].yield_self { |a, opt = raise| [a, opt] },
@@ -5339,3 +5379,11 @@ assert_equal '["x", "Y", "c", "A", "t", "A", "b", "C", "d"]', <<~'RUBY'
 
   Swap.new("xy").swap + Swap.new("cat").reverse_odd + Swap.new("abcd").reverse_even
 RUBY
+
+assert_normal_exit %{
+  class Bug20997
+    def foo(&) = self.class.name(&)
+
+    new.foo
+  end
+}
