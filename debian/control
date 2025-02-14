@@ -1,7 +1,7 @@
 Source: ruby3.4
 Section: ruby
 Priority: optional
-Maintainer: Sorah Fukumori <sorah@cookpad.com>
+Maintainer: Sorah Fukumori <her@sorah.jp>
 Build-Depends: bison,
                coreutils (>= 7.5),
                debhelper-compat (= 13),

@@ -34681,12 +34681,13 @@ fi
 
 
 
-with_parser=prism
 
 # Check whether --with-parser was given.
 if test ${with_parser+y}
 then :
   withval=$with_parser;
+else $as_nop
+  with_parser=prism
 fi
 
 case $with_parser in #(
