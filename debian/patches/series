@@ -21,11 +21,9 @@ CVE-2015-7551.patch
 CVE-2018-1000074.patch
 CVE-2018-1000073.patch
 CVE-2016-2337.patch
-
 CVE-2018-16396.patch
 CVE-2018-16395.patch
 CVE-2019-8320-25.patch
-
 CVE-2019-15845.patch
 CVE-2019-16201.patch
 CVE-2019-16254.patch
@@ -39,7 +37,6 @@ CVE-2021-31810.patch
 CVE-2021-41817.patch
 CVE-2021-41817-followup.patch
 CVE-2021-41819.patch
-
 Update-the-certificate-files.patch
 Update-test-certificates.patch
 Fix-tests-tzdata.patch
@@ -55,6 +52,7 @@ CVE-2021-28965.patch
 CVE-2021-33621.patch
 CVE-2022-28739.patch
 CVE-2023-28756.patch
-#CVE-2024-27280.patch
 CVE-2024-27281.patch
 CVE-2024-27282.patch
+rexml-backport.patch
+rexml-for-2.1.patch

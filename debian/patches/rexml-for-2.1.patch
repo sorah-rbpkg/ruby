@@ -1,0 +1,49 @@
+From: =?utf-8?q?Bastien_Roucari=C3=A8s?= <rouca@debian.org>
+Date: Tue, 25 Feb 2025 21:46:53 +0000
+Subject: Backport rexml to 2.1
+
+Fix negative?
+Fix gemspec
+
+forwarded: not-needed
+---
+ lib/rexml/functions.rb  |  2 +-
+ lib/rexml/rexml.gemspec | 10 +---------
+ 2 files changed, 2 insertions(+), 10 deletions(-)
+
+diff --git a/lib/rexml/functions.rb b/lib/rexml/functions.rb
+index 77926bf..0ed21bd 100644
+--- a/lib/rexml/functions.rb
++++ b/lib/rexml/functions.rb
+@@ -422,7 +422,7 @@ module REXML
+     def Functions::round( number )
+       number = number(number)
+       begin
+-        neg = number.negative?
++        neg = ( number < 0)
+         number = number.abs.round
+         neg ? -number : number
+       rescue FloatDomainError
+diff --git a/lib/rexml/rexml.gemspec b/lib/rexml/rexml.gemspec
+index 263f013..4c84a4d 100644
+--- a/lib/rexml/rexml.gemspec
++++ b/lib/rexml/rexml.gemspec
+@@ -1,9 +1,4 @@
+-begin
+-  require_relative "lib/rexml/rexml"
+-rescue LoadError
+-  # for Ruby core repository
+-  require_relative "rexml"
+-end
++require_relative "rexml"
+ 
+ Gem::Specification.new do |spec|
+   spec.name          = "rexml"
+@@ -78,7 +73,4 @@ Gem::Specification.new do |spec|
+   spec.bindir        = "exe"
+   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
+   spec.require_paths = ["lib"]
+-
+-  spec.add_development_dependency "bundler"
+-  spec.add_development_dependency "rake"
+ end
