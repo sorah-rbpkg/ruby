@@ -10,8 +10,13 @@ ruby2.7 (2.7.4-1+deb11u5) bullseye-security; urgency=medium
   * Fix CVE-2025-27220:
     In the CGI gem, a Regular Expression Denial of Service (ReDoS)
     vulnerability exists in the Util#escapeElement method.
+  * Fix CVE-2025-27221:
+    In the URI gem for Ruby, the URI handling methods
+    (URI.join, URI#merge, URI#+) have an inadvertent leakage of
+    authentication credentials because userinfo is retained even
+    after changing the host.
 
- -- Bastien Roucariès <rouca@debian.org>  Sun, 09 Mar 2025 17:05:00 +0000
+ -- Bastien Roucariès <rouca@debian.org>  Sun, 09 Mar 2025 18:12:00 +0000
 
 ruby2.7 (2.7.4-1+deb11u4) bullseye-security; urgency=medium
 
