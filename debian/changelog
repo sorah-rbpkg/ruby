@@ -1,3 +1,15 @@
+ruby2.3 (2.3.3-1+deb9u14) stretch-security; urgency=medium
+
+  * Non-maintainer upload by the LTS Security Team.
+  * Fix CVE-2025-27219:
+    The CGI::Cookie.parse method in the CGI library contains a
+    potential Denial of Service (DoS) vulnerability.
+    The method does not impose any limit on the length of the raw
+    cookie value it processes. This oversight can lead to excessive
+    resource consumption when parsing extremely large cookies.
+
+ -- Bastien Roucariès <rouca@debian.org>  Sun, 09 Mar 2025 17:05:00 +0000
+
 ruby2.3 (2.3.3-1+deb9u13) stretch-security; urgency=medium
 
   * Non-maintainer upload by the ELTS Security Team.
