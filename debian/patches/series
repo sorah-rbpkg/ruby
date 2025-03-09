@@ -72,3 +72,4 @@ CVE-2024-41123-1.patch
 CVE-2024-41123-prep3.patch
 CVE-2024-41123-2.patch
 fix-lp2097527.patch
+CVE-2025-27219.patch
