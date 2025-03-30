@@ -13095,6 +13095,7 @@ copy_stream_fallback_body(VALUE arg)
     while (1) {
         long numwrote;
         long l;
+        rb_str_make_independent(buf);
         if (stp->copy_length < (rb_off_t)0) {
             l = buflen;
         }
@@ -15546,13 +15547,12 @@ Init_IO(void)
     rb_gvar_ractor_local("$>");
     rb_gvar_ractor_local("$stderr");
 
-    rb_stdin  = rb_io_prep_stdin();
-    rb_stdout = rb_io_prep_stdout();
-    rb_stderr = rb_io_prep_stderr();
-
     rb_global_variable(&rb_stdin);
+    rb_stdin  = rb_io_prep_stdin();
     rb_global_variable(&rb_stdout);
+    rb_stdout = rb_io_prep_stdout();
     rb_global_variable(&rb_stderr);
+    rb_stderr = rb_io_prep_stderr();
 
     orig_stdout = rb_stdout;
     orig_stderr = rb_stderr;
