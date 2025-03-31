@@ -30,6 +30,12 @@
 # undef RUBY_DEBUG_ENV
 #endif
 
+#ifdef _WIN32
+#define main(argc, argv) w32_main(argc, argv)
+static int main(int argc, char **argv);
+int wmain(void) {return main(0, NULL);}
+#endif
+
 int
 main(int argc, char **argv)
 {
