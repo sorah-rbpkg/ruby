@@ -1,3 +1,9 @@
+ruby3.1 (3.1.7-0nkmi1~dist) unstable; urgency=medium
+
+  * 3.1.7
+
+ -- Sorah Fukumori <her@sorah.jp>  Mon, 31 Mar 2025 19:41:25 +0900
+
 ruby3.1 (3.1.6-0nkmi1~dist) unstable; urgency=medium
 
   * Ruby 3.1.6

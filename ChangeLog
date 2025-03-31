@@ -1,5 +1,593 @@
 -*- coding: utf-8 -*-
 
+commit 0a3704f218f0aec7f92f3a46a2293175b0a7d2b3
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-03-26 13:20:36 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-03-26 13:20:36 +0900
+
+    bump teeny
+
+commit c426ad1f62b39193bc03bea93418717562ef4479
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-03-06 09:56:06 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-03-06 13:06:30 +0900
+
+    Drop CODEOWNERS from ruby_3_1
+
+commit 18a84ad8e3e1ee20499a48ba596f159f17f4acfd
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-03-06 09:30:57 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-03-06 10:06:29 +0900
+
+    Use actions/checkout@v4
+
+commit 16b298a39a5ba6beaa79ca4ec397cf833612f267
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-02-28 15:55:57 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-02-28 16:43:37 +0900
+
+    Skip VS2022 17.13.x build
+
+    see https://github.com/ruby/ruby/pull/12830
+
+commit ca7cc093c46b62684eb9ca2cb60663be7a5e7211
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-02-26 18:09:36 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-02-26 18:49:41 +0900
+
+    Merge uri-0.12.4
+
+commit b97108a6466837d619598c7c3db00b357580e504
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-02-26 18:06:51 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-02-26 18:49:41 +0900
+
+    Merge cgi-0.3.7
+
+commit 69bdfc4c6da66e79c8c14aec1be96473a13ce4f3
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-02-15 07:11:05 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-02-15 08:26:16 +0900
+
+    Update vcpkg baseline
+
+commit 0ce2770e93c58f75654f0ae6f3daeda727892d6e
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-02-15 07:09:50 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-02-15 08:26:16 +0900
+
+    Revert "[ruby/openssl] Relax error message check for OpenSSL 3.1"
+
+    This reverts commit 2864f0696b9c1225272e3d5782b48d107a815aaa.
+
+commit 2864f0696b9c1225272e3d5782b48d107a815aaa
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2023-03-15 20:34:21 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-02-14 15:58:21 +0900
+
+    [ruby/openssl] Relax error message check for OpenSSL 3.1
+
+    A tentative measures fo https://github.com/ruby/openssl/issues/606.
+
+    With OpenSSL 3.1.0, the error message at connection using "self-signed
+    certificate" seems to return `SSL_R_TLSV1_ALERT_UNKNOWN_CA` instead of
+    `SSL_R_CERTIFICATE_VERIFY_FAILED`.
+
+    https://github.com/ruby/openssl/commit/fc4629d246
+
+commit 3e4289c24a30a4f48e978f648401cea85cae727c
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-02-14 14:28:01 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-02-14 15:58:21 +0900
+
+    Switch to use manifest mode of vcpkg.
+
+    We should avoid to accidentally upgrade of OpenSSL 3.4.x
+
+commit 62c113c437d68507c49ee44d463543326bc977ce
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-12-03 10:04:13 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-12-03 11:09:44 +0900
+
+    Lock json-schema-5.1.0 for using pure ruby version
+
+commit 72bad339e9004096e55f485cd5a3496d9031afc3
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2022-05-17 12:11:18 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-20 18:18:52 +0900
+
+    Set `target_os` for cf74c988d1cf8166daa017795b58b812adc137c1
+
+commit bd95287a0fdd317b10be311c52dbfbb5bcc8f411
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-11-17 22:49:16 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-20 18:18:52 +0900
+
+    Win32: Expose wchar main routine only
+
+    Warned if both of `main` and `wmain` are exposed:
+    ```
+    LINK : warning LNK4067: ambiguous entry point; selected 'mainCRTStartup'
+    ```
+
+commit b92a9905ae4a00bcb3005d2916dae985b7f90ed0
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-11-12 16:27:14 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-20 06:53:12 +0900
+
+    Revert "Skip tests that suddenly started failing for MinGW"
+
+    This reverts commit 279fb0083a9c9fd4423068cb738762c7a169c9cc.
+
+commit f6e272fb4a9427c401caabaf5a3effbf16a86e22
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-11-10 21:31:43 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-20 06:53:12 +0900
+
+    Make `MUNICODE_FLAG` simply expanded
+
+    It is not expected that `target_os` will change going forward.
+
+commit c03d788d7ef78c6d248f7381b9bc2e73aed26f1e
+  Author:     Daisuke Fujimura (fd0) <booleanlabel@gmail.com>
+  AuthorDate: 2024-11-06 21:28:19 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-20 06:53:12 +0900
+
+    `EXE_LDFLAGS` uses the same `MUNICODE_FLAG`
+
+commit cf74c988d1cf8166daa017795b58b812adc137c1
+  Author:     Daisuke Fujimura (fd0) <booleanlabel@gmail.com>
+  AuthorDate: 2024-11-06 10:01:35 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-20 06:53:12 +0900
+
+    `-municode` is available for MinGW-w64 targets only
+
+commit 92c6816039f69bf88688d8247d30888561b2fd9d
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-11-04 09:39:15 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-20 06:53:12 +0900
+
+    Use wide character startup
+
+    Mingw crt-git 12.0.0.r369.g0d4221712-1 now prohibits "command line
+    contains characters that are not supported in the active code page".
+    https://sourceforge.net/p/mingw-w64/mingw-w64/ci/0d42217123d3aec0341b79f6d959c76e09648a1e/
+
+    Already Ruby builds `argv` in `rb_w32_sysinit`, instead of mswin- or
+    mingw-made `argv`.  Just bypass the conversion in mingw crt.
+
+commit dcbec61efb35702d211ff263110c434ed5f77b85
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-11-19 18:34:20 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-19 19:16:08 +0900
+
+    Added configuration for vcpkg and system openssl libraries
+
+commit 0c40fe8aaed89feec3b32a924d44bbde89722d99
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-11-17 19:56:02 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-19 19:16:08 +0900
+
+    Make `rb_ec_set_vm_stack` conformant to the C++11 requirement
+
+    Https://learn.microsoft.com/en-us/cpp/build/reference/zc-inline-remove-unreferenced-comdat?view=msvc-140
+    > If `/Zc:inline` is specified, the compiler enforces the C++11
+    > requirement that all functions declared inline must have a definition
+    > available in the same translation unit if they're used.
+
+commit b34e440d3e0c6203d7ca2d3b44f3aa5cb9a1071a
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-11-17 19:29:16 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-19 19:16:08 +0900
+
+    Win32: Remove unreferenced COMDAT from object files
+
+    Windows 11 SDK Version 10.0.26100.0 introduced a new internal inline
+    function in ucrt/corecrt_math.h.  Even it appears in object files and
+    will be included in the DEF file, it will be removed from the DLL and
+    result in a linker error.
+
+commit 3722b18e8d717df11c7fc45c25fbfffd5ad2bad3
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-11-19 17:41:20 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-19 19:16:08 +0900
+
+    Enabled windows-2022 again
+
+commit 5f5d84aa0c4155b1b26ef81c2c1e0a0a61c9ffe5
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-11-11 13:44:21 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-11 13:44:21 +0900
+
+    Removed temporary workaround for MinGW
+
+commit fdb2bee0fe6624a348a120e786f9eb09a98d4a4b
+  Author:     MSP-Greg <Greg.mpls@gmail.com>
+  AuthorDate: 2024-06-21 09:33:06 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-11 13:43:58 +0900
+
+    [ruby/net-http] test_https.rb - fix test_session_reuse_but_expire
+
+    https://github.com/ruby/net-http/commit/5544243c41
+
+commit bcc3ad7ff0400308bc63b177ecc39efff9bbf3f4
+  Author:     Job Snijders <job@sobornost.net>
+  AuthorDate: 2024-03-25 21:20:13 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-11 13:43:58 +0900
+
+    [ruby/openssl] Only CSR version 1 (encoded as 0) is allowed by PKIX standards
+
+    RFC 2986, section 4.1 only defines version 1 for CSRs. This version
+    is encoded as a 0. Starting with OpenSSL 3.3, setting the CSR version
+    to anything but 1 fails.
+
+    Do not attempt to generate a CSR with invalid version (which now fails)
+    and invalidate the CSR in test_sign_and_verify_rsa_sha1 by changing its
+    subject rather than using an invalid version.
+
+    This commit fixes the following error.
+
+    ```
+     2) Error: test_version(OpenSSL::TestX509Request): OpenSSL::X509::RequestError:
+    X509_REQ_set_version: passed invalid argument
+    /home/runner/work/openssl/openssl/test/openssl/test_x509req.rb:18:in `version='
+    /home/runner/work/openssl/openssl/test/openssl/test_x509req.rb:18:in `issue_csr'
+    /home/runner/work/openssl/openssl/test/openssl/test_x509req.rb:43:in
+    `test_version'
+         40:     req = OpenSSL::X509::Request.new(req.to_der)
+         41:     assert_equal(0, req.version)
+         42:
+      => 43:     req = issue_csr(1, @dn, @rsa1024, OpenSSL::Digest.new('SHA256'))
+         44:     assert_equal(1, req.version)
+         45:     req = OpenSSL::X509::Request.new(req.to_der)
+         46:     assert_equal(1, req.version)
+    ```
+
+    https://github.com/ruby/openssl/commit/c06fdeb091
+
+commit 5d10d1f348145316fa0b84e5c458b41337c46789
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-11-06 14:00:19 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-06 15:44:06 +0900
+
+    Drop EOL versions and added Ruby 3.1 to ruby/spec
+
+commit 06926ffb652803bcd4659665c181f95a0a609b07
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-11-06 12:55:13 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-06 13:30:32 +0900
+
+    OpenSSL::TestX509Request#test_sign_and_verify_rsa_sha1 is also not working with MinGW
+
+commit 279fb0083a9c9fd4423068cb738762c7a169c9cc
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2024-11-05 09:00:11 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-06 13:30:32 +0900
+
+    Skip tests that suddenly started failing for MinGW
+
+    These test failures first appeared on irrelevant changes. It probably
+    came from changes in GitHub Actions instead of CRuby's.
+
+    Until we figure out how to fix these tests, let's skip them to make the
+    CI usable.
+
+commit e9cc29bb5db2099ceea43f6bb66914acd9d20f87
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-07-12 12:35:58 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-06 13:30:32 +0900
+
+    Pend some tests because these are not working with macOS 15 and Xcode 16
+
+commit ccbe0390fc62b468724d16d8e03e31bb8386dfdb
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-11-06 11:14:21 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-06 13:30:32 +0900
+
+    Retired macos-12 and added macos-14 and macos-15 on GitHub Actions
+
+commit b57d40d150bf3b0acd13ee06a8f65be9ecf903b5
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-11-06 10:55:11 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-06 13:30:32 +0900
+
+    Fix test tail with mjit options for clang provided by Xcode 16
+
+    ```
+    clang: error: unknown argument '-emit-pch'; did you mean '-Xclang -emit-pch'?
+    MJIT warning: Making precompiled header failed on compilation. Stopping MJIT worker...
+    Successful MJIT finish
+    ```
+
+commit 3713db9a24c4f4b69c59a0b28c41f861b5a14c97
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-11-01 09:19:55 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-11-01 10:16:00 +0900
+
+    Bump up REXML-3.3.9
+
+commit 165aeb87fadc2908322502d4ac0f1f811f230afd
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-09-30 12:03:02 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-09-30 16:01:48 +0900
+
+    -l option of 7z is unknown switch with the `ubuntu-latest`.
+
+    https://github.com/ruby/actions/actions/runs/11095032727/job/30823174026#step:3:349
+
+commit b33c331184179bdec33109d4618e2ec0ac59544d
+  Author:     tomoya ishida <tomoyapenguin@gmail.com>
+  AuthorDate: 2024-08-15 15:55:57 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-09-10 16:00:29 +0900
+
+    Improve base time of assert_linear_performance (#11369)
+
+    Remove `.ceil` from base time calculation that makes 10x gap.
+    This will make the assertion more strict and also less flaky.
+
+commit af17a34c883bbfc5cefcde91f37edbe2222fda97
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-10-20 14:34:08 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-09-10 16:00:29 +0900
+
+    Added explicitly begin-end block for Ruby 2.4.
+
+      strscan, ipaddr and some default gems still support Ruby 2.4.
+
+      After this, I extract this CoreAssertions to their repositories.
+
+commit ebd44ef57043eddabf8cd06e5348d3d4625063f0
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-09-12 13:33:22 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-09-10 16:00:29 +0900
+
+    Suppress warning for shadowing outer local variable
+
+commit bfa4073dc21cd313a0b8e8e008868dd913ef8e5f
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2023-04-29 02:09:55 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-09-10 16:00:29 +0900
+
+    core_assertions.rb: Support old rubies
+
+    Some symbol argument might not be accepted by Process.clock_gettime.
+
+commit e67ef294fe2f6f6778c063ac7f777e5605b52052
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2023-04-03 14:27:36 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-09-10 16:00:29 +0900
+
+    core_assertions.rb: Prefer CPU time clocks
+
+    To prevent influence from other processes.
+
+commit 7bb789bf99dfd9b44f92287bf93893e76d1bac28
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2023-04-03 14:22:24 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-09-10 16:00:29 +0900
+
+    core_assertions.rb: Extract common code block
+
+commit d86deaf3832a9cb4686a2f9bf540033d3546f4c7
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2023-04-03 14:10:16 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-09-10 16:00:29 +0900
+
+    core_assertions.rb: Tweak timeout limit
+
+    Increase the timeout limit when variance at rehearsal is small.
+
+commit afbae64f05e4d90037be3152a105632ceb80c1b4
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2023-04-03 04:23:22 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-09-10 16:00:29 +0900
+
+    Skip assert_linear_performance for RJIT
+
+commit 8562b665f3cbecfbbd05ca1e4ee7242c583a0898
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-09-10 13:55:04 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-09-10 16:00:29 +0900
+
+    Bump up REXML-3.3.7
+
+commit 08ff38f891eb7057fa569ba3ec2833225ff3c830
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-08-08 17:50:50 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-08-08 18:07:16 +0900
+
+    Added bootstrap job for release workflow for Ruby 3.1
+
+commit e3b4c86a3190b707c4fbddc01854385d14f52053
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-02-16 17:57:38 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-08-07 10:51:48 +0900
+
+    Adjust indent
+
+commit ca5a69199e231990349bfacaaffa0e6b0ddd234a
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-02-16 16:33:25 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-08-07 10:51:48 +0900
+
+    Try to find gemspec from `.bundle/specifications
+
+commit 0314bc4aad8ac13f2b6d25b30b1d24a6b22f884c
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-02-16 15:39:36 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-08-07 10:51:48 +0900
+
+    Try to load original gemspec from `.bundle/gems/foo-x.y.z/foo.gemspec`.
+
+    `.bundle/specification/foo-x.y.z.gemspec` may be changed our toolchain
+
+commit 8d80dad6bc235ca285c1fa4b6dbf8bee96c69d54
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2023-02-16 17:23:19 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-08-07 10:51:48 +0900
+
+    Use gemspec that keeps original dependencies
+
+commit 5b0616b25ba8501c08e9b7fead28206ffaa3ab60
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-08-06 12:40:49 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-08-07 10:51:48 +0900
+
+    Revert "Backport https://github.com/ruby/ruby/pull/7321"
+
+    This reverts commit 76c61c9993e59af0b4c400b44f169f4af99c3efa.
+
+commit b763a90fe1be5f335effcb285cc5d72d26629493
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-08-06 11:59:23 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-08-07 10:51:48 +0900
+
+    Bump up REXML-3.3.4 and rss-0.3.1
+
+commit 97c3ed787d42ffddd804a799d980c00e6a364f7d
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-07-16 13:53:54 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-07-16 19:02:31 +0900
+
+    Skip old compilers
+
+    https://github.com/ruby/ruby/actions/runs/9950835382/job/27489339598?pr=11172#step:6:31
+
+commit c168f0cd9b334b6c255ef60842e7487aaa2eb43d
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-07-16 13:37:04 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-07-16 19:02:31 +0900
+
+    Bump up REXML-3.3.2
+
+commit bbc71e68019134999a30b49e6fb13a45ede23c7b
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2024-06-02 07:13:25 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-06-19 13:34:45 +0900
+
+    merge revision(s) 9f708d48f6df37ee9600db9d51b57a156609a13b,0301473fb523c71d8cdc4966971f31f502001185,7f0e26b7f99bf76408569892ce20318501f74729: [Backport #20516]
+
+            Clear runtime dependencies if default gems is specified.
+
+            The current build system uses runtime dependencies from only
+            `.bundle` directory. We shouldn't install runtime dependencies
+            from rubygems.org when `make test-bundled-gems` is invoked.
+
+            Fixed dependencies list format
+
+            Re-use strscan with ruby repo
+
+commit 262582ee46d6ecffe1a8cf049e2c6a767d693339
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-01-22 10:36:06 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-06-19 13:34:45 +0900
+
+    added redirect wrapper for envutil
+
+commit dfbb2425b8fb5665e05546c90854b0a933ff8337
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-01-17 12:31:35 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-06-19 13:34:45 +0900
+
+    Load Rake::TaskLib when missing it
+
+commit f9b6e90c30b38271fde4233eb3e2f44ea0dd7b67
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2023-06-14 01:33:44 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-06-19 13:34:45 +0900
+
+    Show prerequisites for compile task
+
+commit 25ac45b76ab3965dbb039b5daf760b1a7494d476
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2023-06-14 01:21:27 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-06-19 13:34:45 +0900
+
+    Allow test-unit-ruby-core files to be loaded from bundled gems
+
+    Separate the directly from the customized test-unit, since it may not
+    work with bundled gems.
+
+commit cbd587b4963ca12ae4b383cec6ad83e22aaaa081
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-06-19 11:27:44 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-06-19 13:34:45 +0900
+
+    Bump up rexml-3.2.9
+
+commit 39595db2d68983e8486cacc8ed5e354e1ad0e836
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-06-03 15:31:37 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-06-19 13:34:45 +0900
+
+    Bump up rexml-3.2.8
+
+commit e96ba90fd68c5eefab0b8b9cdb591c9f17424dbc
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-05-30 10:34:29 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2024-05-30 10:34:29 +0900
+
+    Sync merger.rb and redmine-backporter.rb
+
 commit a777087be612b7675fe012560bf0d8fddff20f55
   Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
   AuthorDate: 2024-05-29 12:54:36 +0900
