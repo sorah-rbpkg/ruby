@@ -1,5 +1,304 @@
 -*- coding: utf-8 -*-
 
+commit 13f495dc2c98d0762d9af37e7143d2e2a07d9926
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-03-26 13:18:02 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-03-26 13:18:02 +0900
+
+    bump teeny
+
+commit a56c2fb37559bc2df39f9930d6174f8f82f65313
+  Author:     David Rodríguez <deivid.rodriguez@riseup.net>
+  AuthorDate: 2025-03-21 02:19:58 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-03-24 13:24:21 +0900
+
+    [rubygems/rubygems] Support git 2.49
+
+    One error message that we parse is now slightly different.
+
+    https://github.com/rubygems/rubygems/commit/758528791d
+
+commit 469a0a4a08dc4b3d3b6387b1f569108cc0750f17
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-03-13 13:34:24 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-03-13 14:27:06 +0900
+
+    merge revision(s) da4464b824857d7610f9865ceb452ce0ead49164: [Backport #19426]
+
+            [Bug #19426] Fix endless `Range#step` with `#succ` method
+
+commit 998c26cd28e225b701aee00ad8f91694ba7d383a
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-03-13 13:29:59 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-03-13 14:27:06 +0900
+
+    merge revision(s) 79eb75a8dd64848f23e9efc465f06326b5d4b680: [Backport #20025]
+
+            [Bug #20025] Check if upper/lower before fallback to case-folding
+
+commit 774e3f0003ac53d604fb5dd080faf9cb41c21bcd
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-03-13 13:28:51 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-03-13 14:27:06 +0900
+
+    merge revision(s) 08b3a45bc97c835b4677bf76dbce68fd51d81897: [Backport #21180]
+
+            Push a real iseq in rb_vm_push_frame_fname()
+
+            Previously, vm_make_env_each() (used during proc
+            creation and for the debug inspector C API) picked up the
+            non-GC-allocated iseq that rb_vm_push_frame_fname() creates,
+            which led to a SEGV when the GC tried to mark the non GC object.
+
+            Put a real iseq imemo instead. Speed should be about the same since
+            the old code also did a imemo allocation and a malloc allocation.
+
+            Real iseq allows ironing out the special-casing of dummy frames in
+            rb_execution_context_mark() and rb_execution_context_update(). A check
+            is added to RubyVM::ISeq#eval, though, to stop attempts to run dummy
+            iseqs.
+
+            [Bug #21180]
+
+            Co-authored-by: Aaron Patterson <tenderlove@ruby-lang.org>
+
+commit f89a334b555d9f91f0bb5a7c58b3097960dd7fb8
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-03-13 13:26:38 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-03-13 14:27:06 +0900
+
+    merge revision(s) bccec7fb468ad977be75e7e4c2644b4ea845ab0c, 5f8ebcada099351acbc22db264e7cd3773c2bdc4, e13575bb7938e9e5b6a79bfca1b3793123f479da, 4adcfc8cd7a17593a6590025da2b03eebf4fd63c: [Backport #19584]
+
+            Fix crash in rb_gc_register_address
+
+            [Bug #19584]
+
+            Some C extensions pass a pointer to a global variable to
+            rb_gc_register_address. However, if a GC is triggered inside of
+            rb_gc_register_address, then the object could get swept since it does
+            not exist on the stack.
+
+            [Bug #19584] Register global variable address before assignment
+
+            [Bug #19584] Register global variables before assignment
+
+            [Bug #19584] [DOC] Tweek description of `rb_gc_register_address`
+
+commit 2c4951329122143b5e0375caf1d4481173e403cb
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-03-12 18:35:40 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-03-13 14:27:06 +0900
+
+    it is not working with Ruby 3.2
+
+commit 64d93539e78fc3c8c4527dded8f7f4288f7ff1ae
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-03-12 18:15:12 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-03-13 14:27:06 +0900
+
+    Merge strscan-3.0.7
+
+commit 30379fa1e25c2dbc887e5ee80ddd601bfdd9f20b
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-03-12 18:14:58 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-03-13 14:27:06 +0900
+
+    Merge strscan-3.0.6
+
+commit 6dd8bd0d9090d0a347b90479d441884fcaa1629a
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-03-12 18:09:32 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-03-13 14:27:06 +0900
+
+    merge revision(s) f423f6e10c0c226dfed98e7cb7a5d489191dfa35: [Backport #21131]
+
+            Ensure IO.copy_stream buffer is an independent string
+
+            Otherwise, changes to the buffer by the destination write method
+            could result in data changing for supposedly independent strings.
+
+            Fixes [Bug #21131]
+
+commit 1c9af6c10f97c0b612492fa63842c78ea2b8da56
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-03-12 18:08:38 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-03-13 14:27:06 +0900
+
+    merge revision(s) d4a1a2780c39bc648496ac92fc6e6ce2eb38ab47: [Backport #21032]
+
+            rb_feature_p: skip `get_expanded_load_path` for absolute paths
+
+            Ref: https://github.com/fxn/zeitwerk/pull/308
+
+            ```ruby
+            require 'benchmark'
+
+            $LOAD_PATH << 'relative-path'
+
+            autoload :FOO, '/tmp/foo.rb'
+
+            puts Benchmark.realtime {
+              500_000.times do
+                Object.autoload?(:FOO)
+              end
+            }
+            ```
+
+            The above script takes 2.5 seconds on `master`, and only
+            50ms on this branch.
+
+            When we're looking for a feature with an absolute path, we don't
+            need to call the expensive `get_expanded_load_path`.
+
+commit 0ef3411b98823a1cd12fda5209f09b5242a41562
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-03-12 17:56:55 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-03-13 14:27:06 +0900
+
+    merge revision(s) 647390308239fbf82d159ecd83ed8df090af518d: [Backport #18257]
+
+            [Bug #18257] Register the class path of FrozenCore to mark
+
+            ICLASS does not have the path usually, so it needs to be registered
+            separately.
+
+commit f7ec9546ee07298f5d0aed6fc245e2405fe950bc
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-03-10 15:48:58 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-03-10 15:48:58 +0900
+
+    merge revision(s) 3f07bc76ff6a11232d9f18e5eaa31835c195e8f0, 34098b669c0cbc024cd08e686891f1dfe0a10aaf: [Backport #21144]
+
+            [Bug #21144] Win32: Use Windows time zone ID if TZ is not set
+
+            If the TZ environment variable is not set, the time zone names
+            retrieved from the system are localized for UI display and may vary
+            across editions and language packs for the same time zone.
+            Use the time zone IDs that are invariant across environments instead.
+
+            [Bug #21144] Win32: Convert the time zone name to the current locale
+
+            The Windows time zone IDs provided by Microsoft as of 24H1 are ASCII
+            only all, but the API itself is not impossible to set non-ASCII key
+            name.  Prefer the current locale encoding for now until we move to
+            UTF-8 including environment variables and command line arguments.
+
+commit d635eb5156e07101a62217d5f70d9d080fb96f1f
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-03-10 15:48:05 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-03-10 15:48:27 +0900
+
+    Update the latest version of redmine-backporter.rb and merger.rb
+
+commit bb6b3c98dc06b92c48928d8c7f942b3dfd990089
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-03-06 07:21:48 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-03-06 11:05:43 +0900
+
+    Replace tombstone when converting AR to ST hash
+
+    [Bug #21170]
+
+    st_table reserves -1 as a special hash value to indicate that an entry
+    has been deleted. So that that's a valid value to be returned from the
+    hash function, do_hash replaces -1 with 0 so that it is not mistaken for
+    the sentinel.
+
+    Previously, when upgrading an AR table to an ST table,
+    rb_st_add_direct_with_hash was used which did not perform the same
+    conversion, this could lead to a hash in a broken state where one if its
+    entries which was supposed to exist being marked as a tombstone.
+
+    The hash could then become further corrupted when the ST table required
+    resizing as the falsely tombstoned entry would be skipped but it would
+    be counted in num entries, leading to an uninitialized entry at index
+    15.
+
+    In most cases this will be really rare, unless using a very poorly
+    implemented custom hash function.
+
+    This also adds two debug assertions, one that st_add_direct_with_hash
+    does not receive the reserved hash value, and a second in
+    rebuild_table_with, which ensures that after we rebuild/compact a table
+    it contains the expected number of elements.
+
+    Co-authored-by: Alan Wu <alanwu@ruby-lang.org>
+
+commit 977d711ba103f1d6b9656e891461a1c0e5cb35f8
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-03-06 08:39:49 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-03-06 09:52:09 +0900
+
+    Update actions/checkout and actions/cache and others
+
+commit d6517a3ddee82a18bcf8917f8da1f56c549bcc69
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-02-28 15:54:12 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-02-28 17:02:07 +0900
+
+    Skip VS2022 17.13.x build
+
+    see https://github.com/ruby/ruby/pull/12830
+
+commit 98fc456891c0dbf3b4bccdb7a89d05d485cd0b2a
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-02-28 15:06:44 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-02-28 15:06:44 +0900
+
+    merge revision(s) 2b6fc9ea7212543a1be26768403f59c7a759b5ea: [Backport #21092]
+
+            [Bug #21092] Fallback variables after execonf has done
+
+            When reading from a dummy makefile, the global variables initialized
+            in `init_mkmf` may not be overridden.
+            ---
+             ext/extmk.rb | 6 +++---
+             1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit 9e5d68f03f6800b0ccde3bee32ac1789a1d0dc14
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-02-26 18:12:00 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-02-26 19:19:19 +0900
+
+    Merge cgi-0.3.7
+
+commit 946907f218e4bbef7f7a215962fcb7c97f94b7d3
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-02-26 18:11:46 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-02-26 19:19:19 +0900
+
+    Merge uri-0.12.4
+
+commit 164aaf6a47879db6c938fd388da8fcd83410b073
+  Author:     nick evans <nick@rubinick.dev>
+  AuthorDate: 2025-02-11 23:18:10 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-02-14 11:50:48 +0900
+
+    Bump net-imap to 0.3.8 for Ruby 3.2 (CVE-2025-25186)
+
+    This update addresses CVE-2025-25186 (GHSA-7fc5-f82f-cx69).
+
 commit 02ec31524440656c4e1d3f2d84dfbd15d2c63658
   Author:     nagachika <nagachika@ruby-lang.org>
   AuthorDate: 2025-02-04 20:33:29 +0900
