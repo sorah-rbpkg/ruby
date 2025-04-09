@@ -13,3 +13,5 @@ Fix-require-calls-falling-in-autopkgtest.patch
 Deduplicate-results-from-getaddrinfo.patch
 test-test_bundled_ca-Skip-test-because-it-requires-i.patch
 Fix-test-dlopen-for-.so-filename-with-more-than-one-digit.patch
+CVE-2025-27221_1.patch
+CVE-2025-27221_2.patch
