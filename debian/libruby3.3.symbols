@@ -24,7 +24,7 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  OnigSyntaxRuby@Base 3.3.0~preview1
  RUBY_IO_BUFFER_DEFAULT_SIZE@Base 3.3.1
  RUBY_IO_BUFFER_PAGE_SIZE@Base 3.3.1
- (arch=!s390x !mips64el !hurd-any)coroutine_transfer@Base 3.3.1
+ (arch=!s390x !mips64el !hurd-any !alpha !m68k !powerpc !ppc64 !sh4 !sparc64 !x32)coroutine_transfer@Base 3.3.1
  dln_find_exe_r@Base 3.3.0~preview1
  dln_find_file_r@Base 3.3.0~preview1
  dln_load@Base 3.3.0~preview1
@@ -1372,9 +1372,9 @@ libruby-3.3.so.3.3 libruby3.3 #MINVER#
  rb_resolve_me_location@Base 3.3.0~preview1
  rb_respond_to@Base 3.3.0~preview1
  rb_resume_coverages@Base 3.3.1
- (arch=amd64 arm64)rb_rjit_call_p@Base 3.3.1
- (arch=amd64 arm64)rb_rjit_compile@Base 3.3.1
- (arch=amd64 arm64)rb_rjit_opts@Base 3.3.1
+ (arch=amd64 arm64 x32)rb_rjit_call_p@Base 3.3.1
+ (arch=amd64 arm64 x32)rb_rjit_compile@Base 3.3.1
+ (arch=amd64 arm64 x32)rb_rjit_opts@Base 3.3.1
  rb_rs@Base 3.3.0~preview1
  rb_ruby_debug_ptr@Base 3.3.0~preview1
  rb_ruby_parser_compile_string@Base 3.3.1
