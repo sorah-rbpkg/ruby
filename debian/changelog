@@ -1,3 +1,26 @@
+ruby3.3 (3.3.7-2) UNRELEASED; urgency=medium
+
+  * Fix CVE-2025-27221.
+    The URI handling methods (URI.join, URI#merge, URI#+) have an
+    inadvertent leakage of authentication credentials because userinfo is
+    retained even after changing the host.
+      - d/p/CVE-2025-27221_*.patch
+  * Fix CVE-2025-27220.
+    In the CGI gem, a Regular Expression Denial of Service (ReDoS)
+    vulnerability exists in the Util#escapeElement method.
+      - d/p/CVE-2025-27220.patch
+  * Fix CVE-2025-27219.
+    In the CGI gem, the CGI::Cookie.parse method in the CGI library contains
+    a potential Denial of Service (DoS) vulnerability.  The method does not
+    impose any limit on the length of the raw cookie value it processes.
+    This oversight can lead to excessive resource consumption when parsing
+    extremely large cookies.
+      - d/p/CVE-2025-27219.patch
+  * d/libruby3.3.symbols: update symbols for multiple architectures
+   (Closes: #1093972). Thanks to John Paul Adrian Glaubitz!
+
+ -- Lucas Kanashiro <kanashiro@debian.org>  Wed, 09 Apr 2025 15:42:58 -0300
+
 ruby3.3 (3.3.7-1) unstable; urgency=medium
 
   * New upstream version 3.3.7
