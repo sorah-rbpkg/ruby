@@ -7,8 +7,15 @@ ruby3.3 (3.3.8-1) UNRELEASED; urgency=medium
         vendorized version in lib/{rubygems,bundler}.
     - Fix CVE-2025-27219 and CVE-2025-27220 in CGI.
       + d/p/CVE-2025-272{19,20}.patch: removed.
+  * d/control: make libruby3.3 depend on versioned ruby-{csv,ruby2-keywords}.
+    Those 2 gems used to have the same version in libruby3.1 and in their
+    own source packages, and when a user tried to upgrade from bookworm to
+    trixie the libruby3.1 was kept because it would satisfy the depedencies
+    without installing a new package.
+    Adding them with a version constraint to avoid keeping libruby3.1 around
+    after the upgrade to ruby3.3. (Closes: #1099067)
 
- -- Lucas Kanashiro <kanashiro@debian.org>  Thu, 10 Apr 2025 15:12:05 -0300
+ -- Lucas Kanashiro <kanashiro@debian.org>  Thu, 10 Apr 2025 15:59:06 -0300
 
 ruby3.3 (3.3.7-2) unstable; urgency=medium
 
