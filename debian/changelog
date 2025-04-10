@@ -2,6 +2,11 @@ ruby3.3 (3.3.8-1) UNRELEASED; urgency=medium
 
   * New upstream release.
     - Fix CVE-2025-25186 in net-imap.
+    - Fix CVE-2025-27221 in URI.
+      + d/p/CVE-2025-27221_*.patch: kept to fix the same issue in URI
+        vendorized version in lib/{rubygems,bundler}.
+    - Fix CVE-2025-27219 and CVE-2025-27220 in CGI.
+      + d/p/CVE-2025-272{19,20}.patch: removed.
 
  -- Lucas Kanashiro <kanashiro@debian.org>  Thu, 10 Apr 2025 15:12:05 -0300
 
