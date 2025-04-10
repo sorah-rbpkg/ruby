@@ -1,4 +1,4 @@
-ruby3.3 (3.3.8-1) UNRELEASED; urgency=medium
+ruby3.3 (3.3.8-1) unstable; urgency=medium
 
   * New upstream release.
     - Fix CVE-2025-25186 in net-imap.
