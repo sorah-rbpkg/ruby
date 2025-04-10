@@ -15,5 +15,3 @@ test-test_bundled_ca-Skip-test-because-it-requires-i.patch
 Fix-test-dlopen-for-.so-filename-with-more-than-one-digit.patch
 CVE-2025-27221_1.patch
 CVE-2025-27221_2.patch
-CVE-2025-27220.patch
-CVE-2025-27219.patch
