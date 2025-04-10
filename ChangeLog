@@ -1,5 +1,529 @@
 -*- coding: utf-8 -*-
 
+commit b200bad6cd40d08e9f33b93e1a85c270b337867c
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-04-09 18:23:04 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-04-09 18:23:04 +0900
+
+    bump teeny
+
+commit 4ca521e91342165ed35cb12c9868f10e2a6aa07c
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-04-09 17:27:37 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-04-09 17:27:37 +0900
+
+    merge revision(s) 06919949a60b42a8f30e8bd0cb075e17b05eebcd, 51bc992822f9108ad64de32d300e1cefd0e2da59, 42daa6c2a2b49b4e45f40736e25c7d182860f24a: [Backport #21141]
+
+            [Bug #21141] [DOC] Clarify what time is in UTC
+
+            [Bug #21141] [DOC] Refine description of `Time#utc?`
+
+            [Bug #21141] [DOC] Fix indentation
+
+commit a67e9e41846cdadad9bb2d9e9d10223c52253898
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-04-07 21:19:10 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-04-07 21:19:10 +0900
+
+    merge revision(s) 3a7b9ca93b91dcc086b9ac8b9957e59268f9493b: [Backport #21217]
+
+            Fix `Integer.sqrt` to never exceed actual value
+
+            `Integer.sqrt` uses `sqrt(3)` from libm for small values.
+            This method must return a value less than or equal to the actual integer
+            square root, but libm's sqrt does not always guarantee that.
+
+            This change corrects that by decrementing the result if necessary.
+
+            Fixes [Bug #21217]
+
+commit 5640fea8aada2380145375a7f9eac2b979fe1258
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-04-06 13:42:21 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-04-06 13:42:21 +0900
+
+    Update prism test snapshots.
+
+    This is follow-up for 7c315e23983a35d29108d9ba8c914d6320254d43.
+
+commit 7c315e23983a35d29108d9ba8c914d6320254d43
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-04-06 11:24:36 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-04-06 11:31:57 +0900
+
+    merge revision(s) 117d6e145a0270ab8fc9134403519ef13b9ebb24: [Backport #21027]
+
+            [ruby/prism] Fix `not` receiver
+
+            `not foo` should be `!foo`
+            `not()` should be `!nil`
+
+            Fixes [Bug #21027]
+
+            https://github.com/ruby/prism/commit/871ed4b462
+
+commit a1679f0d83845a35116d4e40bba4783346c8d7dc
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-04-03 19:30:24 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-04-04 07:38:52 +0900
+
+    Use EnvUtil.apply_timeout_scale
+
+commit f2ee22f32d3b4919b9a5b62a81b544019383ef3a
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-04-03 19:07:08 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-04-04 07:38:52 +0900
+
+    Extend open_timeout for test failure on s390x
+
+    https://rubyci.s3.amazonaws.com/s390x/ruby-master/log/20250403T060004Z.fail.html.gz
+
+commit 7065e60318c970655eb561829a2071c310b67e2d
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-04-03 14:18:55 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-04-03 19:41:48 +0900
+
+    Use IPv4 for test server because TestNetHTTPS is failing with s390x
+
+    https://rubyci.s3.amazonaws.com/s390x/ruby-3.2/log/20250403T005659Z.fail.html.gz
+
+commit c48219e2d738faa388e61361c0549f7addbfacfe
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-04-03 13:04:31 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-04-03 14:10:39 +0900
+
+    f7059af50a31 is also required at ractor_core.h
+
+commit 31c295ef28fc678d8416f1f35726ac43d470d1d3
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-04-03 09:40:11 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-04-03 12:54:11 +0900
+
+    Enforce to use CMake 3 because CMake 4 is not compatible to build libyaml via vcpkg
+
+commit 3d8a66568e8106b367665d716e0d3c8c8208aa07
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-04-02 21:16:22 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-04-02 21:16:47 +0900
+
+    merge revision(s) d78ff6a767ca813ac5fa178dd7611f20a993c191: [Backport #20984]
+
+            [Bug #20984] Fix test with locale encoding
+
+commit ca0238353dd594c1012b7263b83e0c7eeb882cf4
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-04-01 15:20:17 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-04-02 10:35:49 +0900
+
+    [rubygems/rubygems] Bump up minimum required version for cmake 4
+
+    https://github.com/rubygems/rubygems/commit/3e77caeddf
+
+commit 51dee044c1cb079a463118c5113ae9fdf96e463e
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-03-30 12:11:59 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-03-30 12:11:59 +0900
+
+    merge revision(s) 5f77f9bea61fb4cc8447a76e191fdfb28f076862: [Backport #21195]
+
+            Fix handling of `error`/`errno` in `io_internal_wait`. (#12961)
+
+            [Bug #21195]
+
+commit aac5c546cd35ff0aeab120e3724fbb1296892ae3
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-03-29 16:49:59 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-03-29 16:49:59 +0900
+
+    merge revision(s) f69ad0e810e1fdc18dc12f77bbecfa49999ef3bf: [Backport #21094]
+
+            [Bug #21094] Update nested module names when setting temporary name
+
+commit 770060f7662698ca74bc28428919a688b8fe06d2
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-03-29 15:25:02 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-03-29 15:32:49 +0900
+
+    merge revision(s) 1acfb29015dbc38fd345d8786aa78aad59f7dcd1: [Backport #21186]
+
+            [Bug #21186] multibyte char literal should be a single letter word
+
+commit d2eda78e4091a99c1a387d43967af5794d8eac70
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-03-29 15:21:40 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-03-29 15:21:40 +0900
+
+    merge revision(s) 9459bedd84d479bb1d7d3d40bada1cecb4701c37: [Backport #19841]
+
+            [Bug #19841] Refine error on marshaling recursive USERDEF
+
+commit c1319d7e406ddf3f0da487296f1c4c50d90496ad
+  Author:     David Rodríguez <deivid.rodriguez@riseup.net>
+  AuthorDate: 2025-03-21 02:19:58 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-03-24 13:24:18 +0900
+
+    [rubygems/rubygems] Support git 2.49
+
+    One error message that we parse is now slightly different.
+
+    https://github.com/rubygems/rubygems/commit/758528791d
+
+commit f85e5e01bafeca387e833b9d79cab43a8b22aa3d
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-03-16 20:10:00 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-03-16 20:35:27 +0900
+
+    merge revision(s) f423f6e10c0c226dfed98e7cb7a5d489191dfa35: [Backport #21131]
+
+            Ensure IO.copy_stream buffer is an independent string
+
+            Otherwise, changes to the buffer by the destination write method
+            could result in data changing for supposedly independent strings.
+
+            Fixes [Bug #21131]
+
+commit 2b2ab1a67c236eb0c47e63e8adcf877b0d20a38c
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-03-16 18:52:56 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-03-16 18:52:56 +0900
+
+    merge revision(s) 08b3a45bc97c835b4677bf76dbce68fd51d81897: [Backport #21180]
+
+            Push a real iseq in rb_vm_push_frame_fname()
+
+            Previously, vm_make_env_each() (used during proc
+            creation and for the debug inspector C API) picked up the
+            non-GC-allocated iseq that rb_vm_push_frame_fname() creates,
+            which led to a SEGV when the GC tried to mark the non GC object.
+
+            Put a real iseq imemo instead. Speed should be about the same since
+            the old code also did a imemo allocation and a malloc allocation.
+
+            Real iseq allows ironing out the special-casing of dummy frames in
+            rb_execution_context_mark() and rb_execution_context_update(). A check
+            is added to RubyVM::ISeq#eval, though, to stop attempts to run dummy
+            iseqs.
+
+            [Bug #21180]
+
+            Co-authored-by: Aaron Patterson <tenderlove@ruby-lang.org>
+
+commit d213eb7f453fa0bd6c476826c450d9726c3c8b15
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-03-16 18:46:04 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-03-16 18:46:29 +0900
+
+    merge revision(s) 3f07bc76ff6a11232d9f18e5eaa31835c195e8f0, 34098b669c0cbc024cd08e686891f1dfe0a10aaf: [Backport #21144]
+
+            [Bug #21144] Win32: Use Windows time zone ID if TZ is not set
+
+            If the TZ environment variable is not set, the time zone names
+            retrieved from the system are localized for UI display and may vary
+            across editions and language packs for the same time zone.
+            Use the time zone IDs that are invariant across environments instead.
+
+            [Bug #21144] Win32: Convert the time zone name to the current locale
+
+            The Windows time zone IDs provided by Microsoft as of 24H1 are ASCII
+            only all, but the API itself is not impossible to set non-ASCII key
+            name.  Prefer the current locale encoding for now until we move to
+            UTF-8 including environment variables and command line arguments.
+
+commit 726bff43b462d2a1b0bc93299cf031202f7fe7a1
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-03-16 18:02:45 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-03-16 18:02:45 +0900
+
+    merge revision(s) c224ca4feaff20cab03d76439bcbfb35d4e2f6b1: [Backport #21172]
+
+            Fix a race condition with interned strings sweeping.
+
+            [Bug #21172]
+
+            This fixes a rare CI failure.
+
+            The timeline of the race condition is:
+
+            - A `"foo" oid=1` string is interned.
+            - `"foo" oid=1` is no longer referenced and will be swept in the future.
+            - Another `"foo" oid=2` string is interned.
+            - `register_fstring` finds `"foo" oid=1`, but since it is about to be swept,
+              removes it from `fstring_table` and insert `"foo" oid=2` instead.
+            - `"foo" oid=1` is swept, since it has the `RSTRING_FSTR` flag,
+              a `st_delete` is issued in `fstring_table` which removes `"foo" oid=2`.
+
+            I don't know how to reproduce this bug consistently in a single test
+            case.
+
+commit 1d3c19871d7a0d05a0f0a80e78cfad843b7ef324
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-03-16 15:39:32 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-03-16 15:39:32 +0900
+
+    merge revision(s) 931ac960b6d11937364b6c4e847fdd575ee67980: [Backport #21159]
+
+            [Bug #21159] module names should not be modifiable
+
+commit da86a9959b4c5bbdefb6fd1000a0251a151ffbc1
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-03-16 15:25:20 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-03-16 15:25:20 +0900
+
+    merge revision(s) 2b6fc9ea7212543a1be26768403f59c7a759b5ea: [Backport #21092]
+
+            [Bug #21092] Fallback variables after execonf has done
+
+            When reading from a dummy makefile, the global variables initialized
+            in `init_mkmf` may not be overridden.
+
+commit ac3f355fb33f4ce41df864f2084028610b7b38d1
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-03-16 13:10:13 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-03-16 13:10:13 +0900
+
+    Silently ignore keyword args for attr-asign method to cease segmentation fault.
+
+commit e860cb2267cd17aef9a5e8e977d03410c213d6a2
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-03-08 18:21:16 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-03-08 18:21:16 +0900
+
+    merge revision(s) 91a10c07579f282a94e4b5830feaeca87f9a7dd3: [Backport #21112]
+
+            Fix a typo in WeakKeyMap argument error
+
+            [Bug #21112]
+
+commit fff5baf200572762a60c624bc7bea866992c2f30
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-03-08 18:19:14 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-03-08 18:19:14 +0900
+
+    merge revision(s) 46b544c54955348ef1ea9692b837b061f59f91cd, d3abee739f4feb91bb9aaae33877d70c8c576db0: [Backport #21095]
+
+            Prefer `uname -n` over `hostname`. (#12647)
+
+            Add fallback for `hostname` if `uname` isn't available. (#12655)
+
+commit 54dd27d89d2e6814114f1aff18836a987d5a4ab1
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-03-08 17:26:28 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-03-08 17:26:28 +0900
+
+    merge revision(s) d4a1a2780c39bc648496ac92fc6e6ce2eb38ab47: [Backport #21032]
+
+            rb_feature_p: skip `get_expanded_load_path` for absolute paths
+
+            Ref: https://github.com/fxn/zeitwerk/pull/308
+
+            ```ruby
+            require 'benchmark'
+
+            $LOAD_PATH << 'relative-path'
+
+            autoload :FOO, '/tmp/foo.rb'
+
+            puts Benchmark.realtime {
+              500_000.times do
+                Object.autoload?(:FOO)
+              end
+            }
+            ```
+
+            The above script takes 2.5 seconds on `master`, and only
+            50ms on this branch.
+
+            When we're looking for a feature with an absolute path, we don't
+            need to call the expensive `get_expanded_load_path`.
+
+commit 8274b8193e0a047d1edfff603dd2436276f906c4
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-03-08 17:23:15 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-03-08 17:23:15 +0900
+
+    merge revision(s) f7059af50a31a4d27a04ace0beadb60616f3f971: [Backport #21046]
+
+            Use no-inline version `rb_current_ec` on Arm64
+
+            The TLS across .so issue seems related to Arm64, but not Darwin.
+
+commit 56ba9041d9e338359b32ba0bfb3d816d57dc9d39
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-03-08 17:03:20 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-03-08 17:03:20 +0900
+
+    merge revision(s) ae6bd3b49ba252985b92416c24102ede3c0aac9b, 966458199d870b88b42898d4a063b487c1ef6b00, 966458199d870b88b42898d4a063b487c1ef6b00: [Backport #20951]
+
+            [DOC] Tweak "Timezone Objects"
+
+            - Make method descriptions plain pragraphs in each method.
+            - Make "Argument" and "Returns" note-lists.
+
+            [Bug #20951] [DOC] About UTC offset calculation after `utc_to_local`
+
+            [Bug #20951] [DOC] About UTC offset calculation after `utc_to_local`
+
+commit ef523984f0c16ec3ec1ea3b5b74ed24e6b03d561
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-03-06 07:21:48 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-03-08 16:43:58 +0900
+
+    Replace tombstone when converting AR to ST hash
+
+    [Bug #21170]
+
+    st_table reserves -1 as a special hash value to indicate that an entry
+    has been deleted. So that that's a valid value to be returned from the
+    hash function, do_hash replaces -1 with 0 so that it is not mistaken for
+    the sentinel.
+
+    Previously, when upgrading an AR table to an ST table,
+    rb_st_add_direct_with_hash was used which did not perform the same
+    conversion, this could lead to a hash in a broken state where one if its
+    entries which was supposed to exist being marked as a tombstone.
+
+    The hash could then become further corrupted when the ST table required
+    resizing as the falsely tombstoned entry would be skipped but it would
+    be counted in num entries, leading to an uninitialized entry at index
+    15.
+
+    In most cases this will be really rare, unless using a very poorly
+    implemented custom hash function.
+
+    This also adds two debug assertions, one that st_add_direct_with_hash
+    does not receive the reserved hash value, and a second in
+    rebuild_table_with, which ensures that after we rebuild/compact a table
+    it contains the expected number of elements.
+
+    Co-authored-by: Alan Wu <alanwu@ruby-lang.org>
+
+commit ecb9f7ef372c70c3e4fa81a5002533814a94aa86
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-02-26 18:14:54 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-03-08 16:27:22 +0900
+
+    Merge cgi-0.4.2
+
+commit e58827163002e816e49ed18007f4fa3481102b08
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-02-26 18:14:16 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-03-08 16:27:22 +0900
+
+    Merge uri-0.13.2
+
+commit 188ff4d4356b1a369e2204e5c45e1d168ffdf631
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-11-05 18:04:19 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-03-06 09:09:35 +0900
+
+    Name dependency checks job
+
+    And run on the latest ubuntu.
+
+commit 9472548aa1b8b82515602e543ec03872d0b139cb
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2024-08-22 09:47:13 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-03-06 09:09:35 +0900
+
+    automerge needs windows results
+
+commit c462deb48262eeb4dc08255d9b859eb73759eb95
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-03-06 08:34:37 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-03-06 08:36:55 +0900
+
+    Update actions/cache for ruby_3_3
+
+commit 2e7f65acbd52e9da57e7b2c44597106ca70aebd8
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-02-28 15:54:12 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-02-28 16:43:01 +0900
+
+    Skip VS2022 17.13.x build
+
+    see https://github.com/ruby/ruby/pull/12830
+
+commit 5eb08338ca318c3ea2e367f3b00f0d1fb36270e2
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-02-14 10:35:18 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-14 10:35:44 +0900
+
+    Drop k0kubun from CODEOWNERS
+
+    The maintainers have been shifted to newer versions.
+    https://bugs.ruby-lang.org/issues/21136
+
+commit f8b9e2c06f04ea3720d94b5268b6c62e30ad3b26
+  Author:     nicholas a. evans <nick@rubinick.dev>
+  AuthorDate: 2025-02-12 02:21:31 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2025-02-12 02:21:31 +0900
+
+    Bump net-imap to 0.4.19 for Ruby 3.3 (CVE-2025-25186) (#12732)
+
+    This update addresses CVE-2025-25186 (GHSA-7fc5-f82f-cx69).
+
+commit 5b226fdb8df4a954476d8ee1b855539adaf82091
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-02-07 11:02:42 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-11 01:29:08 +0900
+
+    Support `git ls-files ...`.split style for file list of gemspec
+
+commit 84b60a03cd908c1b2efdfee65d71ffc03418ea21
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-02-05 14:49:50 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-02-11 01:29:08 +0900
+
+    Bump up net-smtp-0.5.1
+
+commit da75893dbe4e6fbde84037a4e1730a95c685cdd9
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-02-05 14:58:35 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-02-06 09:49:44 +0900
+
+    Bump up actions/upload-artifact-4.4.1
+
 commit be31f993d7fa0219d85f7b3c694d454da4ecc10b
   Author:     Takashi Kokubun <takashikkbn@gmail.com>
   AuthorDate: 2025-01-15 16:22:35 +0900
