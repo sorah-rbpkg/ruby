@@ -55,11 +55,11 @@ Multi-Arch: same
 Architecture: any
 Depends: rake (>= 10.4.2),
          ruby-csv (>= 3.3.3),
-         ruby-did-you-mean (>= 1.0),
+         ruby-did-you-mean (>= 1.6.3-2~),
          ruby-net-telnet (>= 0.1.1),
          ruby-ruby2-keywords (>= 0.0.5-1~),
          ruby-xmlrpc (>= 0.3.3~),
-         ruby-webrick (>= 1.7.0-4~),
+         ruby-webrick (>= 1.9),
          ${misc:Depends},
          ${shlibs:Depends}
 Recommends: ruby-sdbm (>= 1.0.0-3~)
