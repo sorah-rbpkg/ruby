@@ -1116,6 +1116,34 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_copy_stream_dup_buffer
+    bug21131 = '[ruby-core:120961] [Bug #21131]'
+    mkcdtmpdir do
+      dst_class = Class.new do
+        def initialize(&block)
+          @block = block
+        end
+
+        def write(data)
+          @block.call(data.dup)
+          data.bytesize
+        end
+      end
+
+      rng = Random.new(42)
+      body = Tempfile.new("ruby-bug", binmode: true)
+      body.write(rng.bytes(16_385))
+      body.rewind
+
+      payload = []
+      IO.copy_stream(body, dst_class.new{|cls| payload << cls})
+      body.rewind
+      assert_equal(body.read, payload.join, bug21131)
+    ensure
+      body&.close
+    end
+  end
+
   def test_copy_stream_write_in_binmode
     bug8767 = '[ruby-core:56518] [Bug #8767]'
     mkcdtmpdir {
@@ -4268,5 +4296,31 @@ __END__
         assert_equal("PIPE", Signal.signame(status.termsig) || status.termsig)
       end
     end
+  end
+
+  def test_blocking_timeout
+    assert_separately([], <<~'RUBY')
+      IO.pipe do |r, w|
+        trap(:INT) do
+          w.puts "INT"
+        end
+
+        main = Thread.current
+        thread = Thread.new do
+          # Wait until the main thread has entered `$stdin.gets`:
+          Thread.pass until main.status == 'sleep'
+
+          # Cause an interrupt while handling `$stdin.gets`:
+          Process.kill :INT, $$
+        end
+
+        r.timeout = 1
+        assert_equal("INT", r.gets.chomp)
+      rescue IO::TimeoutError
+        # Ignore - some platforms don't support interrupting `gets`.
+      ensure
+        thread&.join
+      end
+    RUBY
   end
 end
