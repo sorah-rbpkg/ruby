@@ -8,7 +8,7 @@ Reverts https://github.com/ruby/ruby/pull/10010
  1 file changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/tool/rbinstall.rb b/tool/rbinstall.rb
-index ebd76dc..105f0e8 100755
+index b194f2c..62cf5be9 100755
 --- a/tool/rbinstall.rb
 +++ b/tool/rbinstall.rb
 @@ -367,7 +367,7 @@ goruby_install_name = "go" + ruby_install_name

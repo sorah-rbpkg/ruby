@@ -15,7 +15,7 @@ Subject: extract-gems-sequential: Keep using RUNRUBY
  1 file changed, 1 insertion(+), 3 deletions(-)
 
 diff --git a/common.mk b/common.mk
-index 0ea360c..9b34859 100644
+index 594b5da..0b2aa6a 100644
 --- a/common.mk
 +++ b/common.mk
 @@ -1537,7 +1537,7 @@ update-gems$(gnumake:yes=-sequential): PHONY

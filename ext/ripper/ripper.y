@@ -3272,6 +3272,12 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
                         $$ = new_attr_op_assign(p, $1, idCOLON2, $3, $4, $6, &@$, &@2, &@3, &@4);
                     {VALUE v1=get_value($:1), v2=get_value($:2), v3=get_value($:3), v4=get_value($:4), v5=get_value($:6), v6=dispatch3(field,v1,v2,v3), v7=dispatch3(opassign,v6,v4,v5); p->s_lvalue=v7;}
                     }
+                | tCOLON3 tCONSTANT tOP_ASGN lex_ctxt command_rhs
+                    {
+                        YYLTYPE loc = code_loc_gen(&@1, &@2);
+                        $$ = new_const_op_assign(p, NEW_COLON3($2, &loc), $3, $5, $4, &@$);
+                    {VALUE v1=get_value($:2), v2=get_value($:3), v3=get_value($:5), v4=dispatch1(top_const_field,v1), v5=dispatch3(opassign,v4,v2,v3); p->s_lvalue=v5;}
+                    }
                 | defn_head[head] f_opt_paren_args[args] '=' endless_command[bodystmt]
                     {
                         endless_method_name(p, $head->nd_mid, &@head);
@@ -10041,6 +10047,7 @@ parse_qmark(struct parser_params *p, int space_seen)
     rb_encoding *enc;
     register int c;
     rb_parser_string_t *lit;
+    const char *start = p->lex.pcur;
 
     if (IS_END()) {
         SET_LEX_STATE(EXPR_VALUE);
@@ -10065,13 +10072,11 @@ parse_qmark(struct parser_params *p, int space_seen)
     }
     newtok(p);
     enc = p->enc;
-    if (!parser_isascii(p)) {
-        if (tokadd_mbchar(p, c) == -1) return 0;
-    }
-    else if ((rb_enc_isalnum(c, p->enc) || c == '_') &&
-             !lex_eol_p(p) && is_identchar(p, p->lex.pcur, p->lex.pend, p->enc)) {
+    int w = parser_precise_mbclen(p, start);
+    if (is_identchar(p, start, p->lex.pend, p->enc) &&
+        !(lex_eol_ptr_n_p(p, start, w) || !is_identchar(p, start + w, p->lex.pend, p->enc))) {
         if (space_seen) {
-            const char *start = p->lex.pcur - 1, *ptr = start;
+            const char *ptr = start;
             do {
                 int n = parser_precise_mbclen(p, ptr);
                 if (n < 0) return -1;
@@ -10099,7 +10104,7 @@ parse_qmark(struct parser_params *p, int space_seen)
         }
     }
     else {
-        tokadd(p, c);
+        if (tokadd_mbchar(p, c) == -1) return 0;
     }
     tokfix(p);
     lit = STR_NEW3(tok(p), toklen(p), enc, 0);
