@@ -7241,7 +7241,7 @@ static const struct {
 "    Primitive.rb_yjit_reset_stats_bang\n"
 "  end\n"
 "\n"
-"\n"/* Enable \\YJIT compilation. `stats` option decides whether to enable \\YJIT stats or not. `compilation_log` decides */
+"\n"/* Enable \\YJIT compilation. `stats` option decides whether to enable \\YJIT stats or not. `log` decides */
 "\n"/* whether to enable \\YJIT compilation logging or not. */
 "\n"/*  */
 "\n"/* * `stats`: */
