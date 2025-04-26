@@ -153,6 +153,7 @@ impl ObjectClosure {
     ///
     /// Note that this function is not reentrant.  Don't call this function in either `callback` or
     /// `f`.
+    #[allow(unpredictable_function_pointer_comparisons)]
     pub fn set_temporarily_and_run_code<'env, T, F1, F2>(
         &mut self,
         mut visit_object: F1,
@@ -163,7 +164,7 @@ impl ObjectClosure {
         F2: 'env + FnOnce() -> T,
     {
         debug_assert!(
-            std::ptr::fn_addr_eq(self.c_function, THE_UNREGISTERED_CLOSURE_FUNC),
+            self.c_function == THE_UNREGISTERED_CLOSURE_FUNC,
             "set_temporarily_and_run_code is recursively called."
         );
         self.c_function = Self::c_function_registered::<F1>;
