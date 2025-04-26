@@ -47,8 +47,17 @@ module Bundler
       end.uniq
     end
 
+    def add_originally_invalid_platforms!(platforms, originally_invalid_platforms)
+      originally_invalid_platforms.each do |originally_invalid_platform|
+        platforms << originally_invalid_platform if complete_platform(originally_invalid_platform)
+      end
+    end
+
     def add_extra_platforms!(platforms)
-      return platforms.concat([Gem::Platform::RUBY]).uniq if @specs.empty?
+      if @specs.empty?
+        platforms.concat([Gem::Platform::RUBY]).uniq
+        return
+      end
 
       new_platforms = all_platforms.select do |platform|
         next if platforms.include?(platform)
@@ -56,14 +65,12 @@ module Bundler
 
         complete_platform(platform)
       end
-      return platforms if new_platforms.empty?
+      return if new_platforms.empty?
 
       platforms.concat(new_platforms)
 
       less_specific_platform = new_platforms.find {|platform| platform != Gem::Platform::RUBY && Bundler.local_platform === platform && platform === Bundler.local_platform }
       platforms.delete(Bundler.local_platform) if less_specific_platform
-
-      platforms
     end
 
     def validate_deps(s)
@@ -83,15 +90,13 @@ module Bundler
     end
 
     def []=(key, value)
-      @specs << value
+      delete_by_name(key)
 
-      reset!
+      add_spec(value)
     end
 
     def delete(specs)
-      Array(specs).each {|spec| @specs.delete(spec) }
-
-      reset!
+      Array(specs).each {|spec| remove_spec(spec) }
     end
 
     def sort!
@@ -117,8 +122,7 @@ module Bundler
     def materialized_for_all_platforms
       @specs.map do |s|
         next s unless s.is_a?(LazySpecification)
-        s.source.remote!
-        spec = s.materialize_strictly
+        spec = s.materialize_for_cache
         raise GemNotFound, "Could not find #{s.full_name} in any of the sources" unless spec
         spec
       end
@@ -133,8 +137,8 @@ module Bundler
       validation_set.incomplete_specs.any?
     end
 
-    def missing_specs_for(dependencies)
-      materialize_dependencies(dependencies)
+    def missing_specs_for(deps)
+      materialize_dependencies(deps)
 
       missing_specs
     end
@@ -163,10 +167,20 @@ module Bundler
       @specs.detect {|spec| spec.name == name && spec.match_platform(platform) }
     end
 
+    def specs_with_additional_variants_from(other)
+      sorted | additional_variants_from(other)
+    end
+
     def delete_by_name(name)
       @specs.reject! {|spec| spec.name == name }
+      @sorted&.reject! {|spec| spec.name == name }
+      return if @lookup.nil?
 
-      reset!
+      @lookup[name] = nil
+    end
+
+    def version_for(name)
+      self[name].first&.version
     end
 
     def what_required(spec)
@@ -204,6 +218,10 @@ module Bundler
       s.matches_current_metadata? && valid_dependencies?(s)
     end
 
+    def to_s
+      map(&:full_name).to_s
+    end
+
     private
 
     def materialize_dependencies(dependencies, platforms = [nil], skips: [])
@@ -237,11 +255,6 @@ module Bundler
       @materializations.filter_map(&:materialized_spec)
     end
 
-    def reset!
-      @sorted = nil
-      @lookup = nil
-    end
-
     def complete_platform(platform)
       new_specs = []
 
@@ -261,9 +274,7 @@ module Bundler
       end
 
       if valid_platform && new_specs.any?
-        @specs.concat(new_specs)
-
-        reset!
+        new_specs.each {|spec| add_spec(spec) }
       end
 
       valid_platform
@@ -273,20 +284,23 @@ module Bundler
       @specs.flat_map {|spec| spec.source.specs.search([spec.name, spec.version]).map(&:platform) }.uniq
     end
 
+    def additional_variants_from(other)
+      other.select do |spec|
+        version_for(spec.name) == spec.version && valid_dependencies?(spec)
+      end
+    end
+
     def valid_dependencies?(s)
       validate_deps(s) == :valid
     end
 
     def sorted
-      rake = @specs.find {|s| s.name == "rake" }
-      begin
-        @sorted ||= ([rake] + tsort).compact.uniq
-      rescue TSort::Cyclic => error
-        cgems = extract_circular_gems(error)
-        raise CyclicDependencyError, "Your bundle requires gems that depend" \
-          " on each other, creating an infinite loop. Please remove either" \
-          " gem '#{cgems[0]}' or gem '#{cgems[1]}' and try again."
-      end
+      @sorted ||= ([@specs.find {|s| s.name == "rake" }] + tsort).compact.uniq
+    rescue TSort::Cyclic => error
+      cgems = extract_circular_gems(error)
+      raise CyclicDependencyError, "Your bundle requires gems that depend" \
+        " on each other, creating an infinite loop. Please remove either" \
+        " gem '#{cgems[0]}' or gem '#{cgems[1]}' and try again."
     end
 
     def extract_circular_gems(error)
@@ -297,8 +311,7 @@ module Bundler
       @lookup ||= begin
         lookup = {}
         @specs.each do |s|
-          lookup[s.name] ||= []
-          lookup[s.name] << s
+          index_spec(lookup, s.name, s)
         end
         lookup
       end
@@ -318,6 +331,37 @@ module Bundler
 
         specs_for_name.each {|s2| yield s2 }
       end
+    end
+
+    def add_spec(spec)
+      @specs << spec
+
+      name = spec.name
+
+      @sorted&.insert(@sorted.bsearch_index {|s| s.name >= name } || @sorted.size, spec)
+      return if @lookup.nil?
+
+      index_spec(@lookup, name, spec)
+    end
+
+    def remove_spec(spec)
+      @specs.delete(spec)
+      @sorted&.delete(spec)
+      return if @lookup.nil?
+
+      indexed_specs = @lookup[spec.name]
+      return unless indexed_specs
+
+      if indexed_specs.size > 1
+        @lookup[spec.name].delete(spec)
+      else
+        @lookup[spec.name] = nil
+      end
+    end
+
+    def index_spec(hash, key, value)
+      hash[key] ||= []
+      hash[key] << value
     end
   end
 end

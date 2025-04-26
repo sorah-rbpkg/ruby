@@ -16,7 +16,7 @@ rubygems_version: "1.0"
 name: keyedlist
 version: !ruby/object:Gem::Version
   version: 0.4.0
-date: 2004-03-28 15:37:49.828000 +02:00
+date: 1980-01-02 00:00:00 UTC
 platform:
 summary: A Hash which automatically computes keys.
 require_paths:
@@ -75,7 +75,7 @@ end
   def assert_date(date)
     assert_kind_of Time, date
     assert_equal [0, 0, 0], [date.hour, date.min, date.sec]
-    assert_operator (Gem::Specification::TODAY..Time.now), :cover?, date
+    assert_equal Time.at(Gem::DEFAULT_SOURCE_DATE_EPOCH).utc, date
   end
 
   def setup
@@ -564,7 +564,6 @@ end
   #         [B] ~> 1.0
   #
   # and should resolve using b-1.0
-  # TODO: move these to specification
 
   def test_self_activate_over
     a = util_spec "a", "1.0", "b" => ">= 1.0", "c" => "= 1.0"
@@ -651,6 +650,17 @@ end
     assert_raise Gem::LoadError do
       gem "b", "= 2.0"
     end
+  end
+
+  def test_self_activate_missing_deps_does_not_raise_nested_exceptions
+    a = util_spec "a", "1.0", "b" => ">= 1.0"
+    install_specs a
+
+    e = assert_raise Gem::MissingSpecError do
+      a.activate
+    end
+
+    refute e.cause
   end
 
   def test_self_all_equals
