@@ -121,13 +121,10 @@ module Bundler
       out
     end
 
-    def materialize_strictly
-      source.local!
+    def materialize_for_cache
+      source.remote!
 
-      matching_specs = source.specs.search(self)
-      return self if matching_specs.empty?
-
-      __materialize__(matching_specs)
+      materialize(self, &:first)
     end
 
     def materialized_for_installation
@@ -140,32 +137,77 @@ module Bundler
       source.local!
 
       if use_exact_resolved_specifications?
-        materialize_strictly
-      else
-        matching_specs = source.specs.search([name, version])
-        return self if matching_specs.empty?
-
-        target_platform = source.is_a?(Source::Path) ? platform : local_platform
-
-        installable_candidates = GemHelpers.select_best_platform_match(matching_specs, target_platform)
-
-        specification = __materialize__(installable_candidates, fallback_to_non_installable: false)
-        return specification unless specification.nil?
-
-        if target_platform != platform
-          installable_candidates = GemHelpers.select_best_platform_match(matching_specs, platform)
+        materialize(self) do |matching_specs|
+          choose_compatible(matching_specs)
         end
+      else
+        materialize([name, version]) do |matching_specs|
+          target_platform = source.is_a?(Source::Path) ? platform : local_platform
 
-        __materialize__(installable_candidates)
+          installable_candidates = GemHelpers.select_best_platform_match(matching_specs, target_platform)
+
+          specification = choose_compatible(installable_candidates, fallback_to_non_installable: false)
+          return specification unless specification.nil?
+
+          if target_platform != platform
+            installable_candidates = GemHelpers.select_best_platform_match(matching_specs, platform)
+          end
+
+          choose_compatible(installable_candidates)
+        end
       end
+    end
+
+    def inspect
+      "#<#{self.class} @name=\"#{name}\" (#{full_name.delete_prefix("#{name}-")})>"
+    end
+
+    def to_s
+      lock_name
+    end
+
+    def git_version
+      return unless source.is_a?(Bundler::Source::Git)
+      " #{source.revision[0..6]}"
+    end
+
+    def force_ruby_platform!
+      @force_ruby_platform = true
+    end
+
+    def replace_source_with!(gemfile_source)
+      return unless gemfile_source.can_lock?(self)
+
+      @source = gemfile_source
+
+      true
+    end
+
+    private
+
+    def use_exact_resolved_specifications?
+      !source.is_a?(Source::Path) && ruby_platform_materializes_to_ruby_platform?
+    end
+
+    def ruby_platform_materializes_to_ruby_platform?
+      generic_platform = generic_local_platform == Gem::Platform::JAVA ? Gem::Platform::JAVA : Gem::Platform::RUBY
+
+      (most_specific_locked_platform != generic_platform) || force_ruby_platform || Bundler.settings[:force_ruby_platform]
+    end
+
+    def materialize(query)
+      matching_specs = source.specs.search(query)
+      return self if matching_specs.empty?
+
+      yield matching_specs
     end
 
     # If in frozen mode, we fallback to a non-installable candidate because by
     # doing this we avoid re-resolving and potentially end up changing the
-    # lock file, which is not allowed. In that case, we will give a proper error
+    # lockfile, which is not allowed. In that case, we will give a proper error
     # about the mismatch higher up the stack, right before trying to install the
     # bad gem.
-    def __materialize__(candidates, fallback_to_non_installable: Bundler.frozen_bundle?)
+    def choose_compatible(candidates, fallback_to_non_installable: Bundler.frozen_bundle?)
       search = candidates.reverse.find do |spec|
         spec.is_a?(StubSpecification) || spec.matches_current_metadata?
       end
@@ -187,35 +229,6 @@ module Bundler
         end
       end
       search
-    end
-
-    def inspect
-      "#<#{self.class} @name=\"#{name}\" (#{full_name.delete_prefix("#{name}-")})>"
-    end
-
-    def to_s
-      lock_name
-    end
-
-    def git_version
-      return unless source.is_a?(Bundler::Source::Git)
-      " #{source.revision[0..6]}"
-    end
-
-    def force_ruby_platform!
-      @force_ruby_platform = true
-    end
-
-    private
-
-    def use_exact_resolved_specifications?
-      !source.is_a?(Source::Path) && ruby_platform_materializes_to_ruby_platform?
-    end
-
-    def ruby_platform_materializes_to_ruby_platform?
-      generic_platform = generic_local_platform == Gem::Platform::JAVA ? Gem::Platform::JAVA : Gem::Platform::RUBY
-
-      (most_specific_locked_platform != generic_platform) || force_ruby_platform || Bundler.settings[:force_ruby_platform]
     end
   end
 end
