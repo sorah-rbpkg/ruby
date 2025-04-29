@@ -1,4 +1,4 @@
-ruby3.3 (3.3.8-2) UNRELEASED; urgency=medium
+ruby3.3 (3.3.8-2) unstable; urgency=medium
 
   [ Antonio Terceiro ]
   * libruby3.3: drop dependencies on ruby-test-unit and ruby-minitest
