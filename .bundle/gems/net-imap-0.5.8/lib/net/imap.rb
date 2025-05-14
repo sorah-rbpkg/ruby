@@ -43,9 +43,17 @@ module Net
   # To work on the messages within a mailbox, the client must
   # first select that mailbox, using either #select or #examine
   # (for read-only access).  Once the client has successfully
-  # selected a mailbox, they enter the "_selected_" state, and that
+  # selected a mailbox, they enter the +selected+ state, and that
   # mailbox becomes the _current_ mailbox, on which mail-item
   # related commands implicitly operate.
+  #
+  # === Connection state
+  #
+  # Once an IMAP connection is established, the connection is in one of four
+  # states: <tt>not authenticated</tt>, +authenticated+, +selected+, and
+  # +logout+.  Most commands are valid only in certain states.
+  #
+  # See #connection_state.
   #
   # === Sequence numbers and UIDs
   #
@@ -199,6 +207,42 @@ module Net
   #
   # This script invokes the FETCH command and the SEARCH command concurrently.
   #
+  # When running multiple commands, care must be taken to avoid ambiguity.  For
+  # example, SEARCH responses are ambiguous about which command they are
+  # responding to, so search commands should not run simultaneously, unless the
+  # server supports +ESEARCH+ {[RFC4731]}[https://rfc-editor.org/rfc/rfc4731] or
+  # IMAP4rev2[https://www.rfc-editor.org/rfc/rfc9051].  See {RFC9051
+  # §5.5}[https://www.rfc-editor.org/rfc/rfc9051.html#section-5.5] for
+  # other examples of command sequences which should not be pipelined.
+  #
+  # == Unbounded memory use
+  #
+  # Net::IMAP reads server responses in a separate receiver thread per client.
+  # Unhandled response data is saved to #responses, and response_handlers run
+  # inside the receiver thread.  See the list of methods for {handling server
+  # responses}[rdoc-ref:Net::IMAP@Handling+server+responses], below.
+  #
+  # Because the receiver thread continuously reads and saves new responses, some
+  # scenarios must be careful to avoid unbounded memory use:
+  #
+  # * Commands such as #list or #fetch can have an enormous number of responses.
+  # * Commands such as #fetch can result in an enormous size per response.
+  # * Long-lived connections will gradually accumulate unsolicited server
+  #   responses, especially +EXISTS+, +FETCH+, and +EXPUNGE+ responses.
+  # * A buggy or untrusted server could send inappropriate responses, which
+  #   could be very numerous, very large, and very rapid.
+  #
+  # Use paginated or limited versions of commands whenever possible.
+  #
+  # Use Config#max_response_size to impose a limit on incoming server responses
+  # as they are being read.  <em>This is especially important for untrusted
+  # servers.</em>
+  #
+  # Use #add_response_handler to handle responses after each one is received.
+  # Use the +response_handlers+ argument to ::new to assign response handlers
+  # before the receiver thread is started.  Use #extract_responses,
+  # #clear_responses, or #responses (with a block) to prune responses.
+  #
   # == Errors
   #
   # An \IMAP server can send three different types of responses to indicate
@@ -260,8 +304,9 @@ module Net
   #
   # - Net::IMAP.new: Creates a new \IMAP client which connects immediately and
   #   waits for a successful server greeting before the method returns.
+  # - #connection_state: Returns the connection state.
   # - #starttls: Asks the server to upgrade a clear-text connection to use TLS.
-  # - #logout: Tells the server to end the session. Enters the "_logout_" state.
+  # - #logout: Tells the server to end the session.  Enters the +logout+ state.
   # - #disconnect: Disconnects the connection (without sending #logout first).
   # - #disconnected?: True if the connection has been closed.
   #
@@ -317,37 +362,36 @@ module Net
   #   <em>In general, #capable? should be used rather than explicitly sending a
   #   +CAPABILITY+ command to the server.</em>
   # - #noop: Allows the server to send unsolicited untagged #responses.
-  # - #logout: Tells the server to end the session. Enters the "_logout_" state.
+  # - #logout: Tells the server to end the session. Enters the +logout+ state.
   #
   # ==== Not Authenticated state
   #
   # In addition to the commands for any state, the following commands are valid
-  # in the "<em>not authenticated</em>" state:
+  # in the +not_authenticated+ state:
   #
   # - #starttls: Upgrades a clear-text connection to use TLS.
   #
   #   <em>Requires the +STARTTLS+ capability.</em>
   # - #authenticate: Identifies the client to the server using the given
   #   {SASL mechanism}[https://www.iana.org/assignments/sasl-mechanisms/sasl-mechanisms.xhtml]
-  #   and credentials.  Enters the "_authenticated_" state.
+  #   and credentials.  Enters the +authenticated+ state.
   #
   #   <em>The server should list <tt>"AUTH=#{mechanism}"</tt> capabilities for
   #   supported mechanisms.</em>
   # - #login: Identifies the client to the server using a plain text password.
-  #   Using #authenticate is generally preferred.  Enters the "_authenticated_"
-  #   state.
+  #   Using #authenticate is preferred.  Enters the +authenticated+ state.
   #
   #   <em>The +LOGINDISABLED+ capability</em> <b>must NOT</b> <em>be listed.</em>
   #
   # ==== Authenticated state
   #
   # In addition to the commands for any state, the following commands are valid
-  # in the "_authenticated_" state:
+  # in the +authenticated+ state:
   #
   # - #enable: Enables backwards incompatible server extensions.
   #   <em>Requires the +ENABLE+ or +IMAP4rev2+ capability.</em>
-  # - #select:  Open a mailbox and enter the "_selected_" state.
-  # - #examine: Open a mailbox read-only, and enter the "_selected_" state.
+  # - #select:  Open a mailbox and enter the +selected+ state.
+  # - #examine: Open a mailbox read-only, and enter the +selected+ state.
   # - #create: Creates a new mailbox.
   # - #delete: Permanently remove a mailbox.
   # - #rename: Change the name of a mailbox.
@@ -369,12 +413,12 @@ module Net
   #
   # ==== Selected state
   #
-  # In addition to the commands for any state and the "_authenticated_"
-  # commands, the following commands are valid in the "_selected_" state:
+  # In addition to the commands for any state and the +authenticated+
+  # commands, the following commands are valid in the +selected+ state:
   #
-  # - #close: Closes the mailbox and returns to the "_authenticated_" state,
+  # - #close: Closes the mailbox and returns to the +authenticated+ state,
   #   expunging deleted messages, unless the mailbox was opened as read-only.
-  # - #unselect: Closes the mailbox and returns to the "_authenticated_" state,
+  # - #unselect: Closes the mailbox and returns to the +authenticated+ state,
   #   without expunging any messages.
   #   <em>Requires the +UNSELECT+ or +IMAP4rev2+ capability.</em>
   # - #expunge: Permanently removes messages which have the Deleted flag set.
@@ -395,7 +439,7 @@ module Net
   #
   # ==== Logout state
   #
-  # No \IMAP commands are valid in the "_logout_" state.  If the socket is still
+  # No \IMAP commands are valid in the +logout+ state.  If the socket is still
   # open, Net::IMAP will close it after receiving server confirmation.
   # Exceptions will be raised by \IMAP commands that have already started and
   # are waiting for a response, as well as any that are called after logout.
@@ -449,7 +493,7 @@ module Net
   # ==== RFC3691: +UNSELECT+
   # Folded into IMAP4rev2[https://www.rfc-editor.org/rfc/rfc9051] and also included
   # above with {Core IMAP commands}[rdoc-ref:Net::IMAP@Core+IMAP+commands].
-  # - #unselect: Closes the mailbox and returns to the "_authenticated_" state,
+  # - #unselect: Closes the mailbox and returns to the +authenticated+ state,
   #   without expunging any messages.
   #
   # ==== RFC4314: +ACL+
@@ -744,7 +788,7 @@ module Net
   # * {IMAP URLAUTH Authorization Mechanism Registry}[https://www.iana.org/assignments/urlauth-authorization-mechanism-registry/urlauth-authorization-mechanism-registry.xhtml]
   #
   class IMAP < Protocol
-    VERSION = "0.5.6"
+    VERSION = "0.5.8"
 
     # Aliases for supported capabilities, to be used with the #enable command.
     ENABLE_ALIASES = {
@@ -752,9 +796,12 @@ module Net
       "UTF8=ONLY" => "UTF8=ACCEPT",
     }.freeze
 
-    autoload :SASL,        File.expand_path("imap/sasl",         __dir__)
-    autoload :SASLAdapter, File.expand_path("imap/sasl_adapter", __dir__)
-    autoload :StringPrep,  File.expand_path("imap/stringprep",   __dir__)
+    dir = File.expand_path("imap", __dir__)
+    autoload :ConnectionState,        "#{dir}/connection_state"
+    autoload :ResponseReader,         "#{dir}/response_reader"
+    autoload :SASL,                   "#{dir}/sasl"
+    autoload :SASLAdapter,            "#{dir}/sasl_adapter"
+    autoload :StringPrep,             "#{dir}/stringprep"
 
     include MonitorMixin
     if defined?(OpenSSL::SSL)
@@ -766,9 +813,11 @@ module Net
     def self.config; Config.global end
 
     # Returns the global debug mode.
+    # Delegates to {Net::IMAP.config.debug}[rdoc-ref:Config#debug].
     def self.debug; config.debug end
 
     # Sets the global debug mode.
+    # Delegates to {Net::IMAP.config.debug=}[rdoc-ref:Config#debug=].
     def self.debug=(val)
       config.debug = val
     end
@@ -789,7 +838,7 @@ module Net
       alias default_ssl_port default_tls_port
     end
 
-    # Returns the initial greeting the server, an UntaggedResponse.
+    # Returns the initial greeting sent by the server, an UntaggedResponse.
     attr_reader :greeting
 
     # The client configuration.  See Net::IMAP::Config.
@@ -798,13 +847,28 @@ module Net
     # Net::IMAP.config.
     attr_reader :config
 
-    # Seconds to wait until a connection is opened.
-    # If the IMAP object cannot open a connection within this time,
-    # it raises a Net::OpenTimeout exception. The default value is 30 seconds.
-    def open_timeout; config.open_timeout end
+    ##
+    # :attr_reader: open_timeout
+    # Seconds to wait until a connection is opened.  Also used by #starttls.
+    # Delegates to {config.open_timeout}[rdoc-ref:Config#open_timeout].
 
+    ##
+    # :attr_reader: idle_response_timeout
     # Seconds to wait until an IDLE response is received.
-    def idle_response_timeout; config.idle_response_timeout end
+    # Delegates to {config.idle_response_timeout}[rdoc-ref:Config#idle_response_timeout].
+
+    ##
+    # :attr_accessor: max_response_size
+    #
+    # The maximum allowed server response size, in bytes.
+    # Delegates to {config.max_response_size}[rdoc-ref:Config#max_response_size].
+
+    # :stopdoc:
+    def open_timeout;           config.open_timeout            end
+    def idle_response_timeout;  config.idle_response_timeout   end
+    def max_response_size;      config.max_response_size       end
+    def max_response_size=(val) config.max_response_size = val end
+    # :startdoc:
 
     # The hostname this client connected to
     attr_reader :host
@@ -826,6 +890,67 @@ module Net
     #
     # Returns +false+ for a plaintext connection.
     attr_reader :ssl_ctx_params
+
+    # Returns the current connection state.
+    #
+    # Once an IMAP connection is established, the connection is in one of four
+    # states: +not_authenticated+, +authenticated+, +selected+, and +logout+.
+    # Most commands are valid only in certain states.
+    #
+    # The connection state object responds to +to_sym+ and +name+ with the name
+    # of the current connection state, as a Symbol or String.  Future versions
+    # of +net-imap+ may store additional information on the state object.
+    #
+    # From {RFC9051}[https://www.rfc-editor.org/rfc/rfc9051#section-3]:
+    #                    +----------------------+
+    #                    |connection established|
+    #                    +----------------------+
+    #                               ||
+    #                               \/
+    #             +--------------------------------------+
+    #             |          server greeting             |
+    #             +--------------------------------------+
+    #                       || (1)       || (2)        || (3)
+    #                       \/           ||            ||
+    #             +-----------------+    ||            ||
+    #             |Not Authenticated|    ||            ||
+    #             +-----------------+    ||            ||
+    #              || (7)   || (4)       ||            ||
+    #              ||       \/           \/            ||
+    #              ||     +----------------+           ||
+    #              ||     | Authenticated  |<=++       ||
+    #              ||     +----------------+  ||       ||
+    #              ||       || (7)   || (5)   || (6)   ||
+    #              ||       ||       \/       ||       ||
+    #              ||       ||    +--------+  ||       ||
+    #              ||       ||    |Selected|==++       ||
+    #              ||       ||    +--------+           ||
+    #              ||       ||       || (7)            ||
+    #              \/       \/       \/                \/
+    #             +--------------------------------------+
+    #             |               Logout                 |
+    #             +--------------------------------------+
+    #                               ||
+    #                               \/
+    #                 +-------------------------------+
+    #                 |both sides close the connection|
+    #                 +-------------------------------+
+    #
+    # >>>
+    #   Legend for the above diagram:
+    #
+    #   1. connection without pre-authentication (+OK+ #greeting)
+    #   2. pre-authenticated connection (+PREAUTH+ #greeting)
+    #   3. rejected connection (+BYE+ #greeting)
+    #   4. successful #login or #authenticate command
+    #   5. successful #select or #examine command
+    #   6. #close or #unselect command, unsolicited +CLOSED+ response code, or
+    #      failed #select or #examine command
+    #   7. #logout command, server shutdown, or connection closed
+    #
+    # Before the server greeting, the state is +not_authenticated+.
+    # After the connection closes, the state remains +logout+.
+    attr_reader :connection_state
 
     # Creates a new Net::IMAP object and connects it to the specified
     # +host+.
@@ -859,6 +984,12 @@ module Net
     #   See {OpenSSL::SSL::SSLContext}[https://docs.ruby-lang.org/en/master/OpenSSL/SSL/SSLContext.html] for other valid SSL context params.
     #
     #   See DeprecatedClientOptions.new for deprecated SSL arguments.
+    #
+    # [response_handlers]
+    #   A list of response handlers to be added before the receiver thread is
+    #   started.  This ensures every server response is handled, including the
+    #   #greeting.  Note that the greeting is handled in the current thread, but
+    #   all other responses are handled in the receiver thread.
     #
     # [config]
     #   A Net::IMAP::Config object to use as the basis for #config.  By default,
@@ -931,7 +1062,7 @@ module Net
     # [Net::IMAP::ByeResponseError]
     #   Connected to the host successfully, but it immediately said goodbye.
     #
-    def initialize(host, port: nil, ssl:  nil,
+    def initialize(host, port: nil, ssl: nil, response_handlers: nil,
                    config: Config.global, **config_options)
       super()
       # Config options
@@ -946,6 +1077,8 @@ module Net
       @exception = nil
       @greeting = nil
       @capabilities = nil
+      @tls_verified = false
+      @connection_state = ConnectionState::NotAuthenticated.new
 
       # Client Protocol Receiver
       @parser = ResponseParser.new(config: @config)
@@ -954,6 +1087,7 @@ module Net
       @receiver_thread = nil
       @receiver_thread_exception = nil
       @receiver_thread_terminating = false
+      response_handlers&.each do add_response_handler(_1) end
 
       # Client Protocol Sender (including state for currently running commands)
       @tag_prefix = "RUBY"
@@ -967,8 +1101,8 @@ module Net
       @logout_command_tag = nil
 
       # Connection
-      @tls_verified = false
       @sock = tcp_socket(@host, @port)
+      @reader = ResponseReader.new(self, @sock)
       start_tls_session if ssl_ctx
       start_imap_connection
     end
@@ -983,6 +1117,7 @@ module Net
     # Related: #logout, #logout!
     def disconnect
       return if disconnected?
+      state_logout!
       begin
         begin
           # try to call SSL::SSLSocket#io.
@@ -1221,6 +1356,10 @@ module Net
     # both successful.  Any error indicates that the connection has not been
     # secured.
     #
+    # After the server agrees to start a TLS connection, this method waits up to
+    # {config.open_timeout}[rdoc-ref:Config#open_timeout] before raising
+    # +Net::OpenTimeout+.
+    #
     # *Note:*
     # >>>
     #   Any #response_handlers added before STARTTLS should be aware that the
@@ -1368,7 +1507,7 @@ module Net
     # capabilities, they will be cached.
     def authenticate(*args, sasl_ir: config.sasl_ir, **props, &callback)
       sasl_adapter.authenticate(*args, sasl_ir: sasl_ir, **props, &callback)
-        .tap { @capabilities = capabilities_from_resp_code _1 }
+        .tap do state_authenticated! _1 end
     end
 
     # Sends a {LOGIN command [IMAP4rev1 §6.2.3]}[https://www.rfc-editor.org/rfc/rfc3501#section-6.2.3]
@@ -1402,7 +1541,7 @@ module Net
         raise LoginDisabledError
       end
       send_command("LOGIN", user, password)
-        .tap { @capabilities = capabilities_from_resp_code _1 }
+        .tap do state_authenticated! _1 end
     end
 
     # Sends a {SELECT command [IMAP4rev1 §6.3.1]}[https://www.rfc-editor.org/rfc/rfc3501#section-6.3.1]
@@ -1442,8 +1581,10 @@ module Net
       args = ["SELECT", mailbox]
       args << ["CONDSTORE"] if condstore
       synchronize do
+        state_unselected! # implicitly closes current mailbox
         @responses.clear
         send_command(*args)
+          .tap do state_selected! end
       end
     end
 
@@ -1460,8 +1601,10 @@ module Net
       args = ["EXAMINE", mailbox]
       args << ["CONDSTORE"] if condstore
       synchronize do
+        state_unselected! # implicitly closes current mailbox
         @responses.clear
         send_command(*args)
+          .tap do state_selected! end
       end
     end
 
@@ -1900,6 +2043,7 @@ module Net
     # Related: #unselect
     def close
       send_command("CLOSE")
+        .tap do state_authenticated! end
     end
 
     # Sends an {UNSELECT command [RFC3691 §2]}[https://www.rfc-editor.org/rfc/rfc3691#section-3]
@@ -1916,6 +2060,7 @@ module Net
     # [RFC3691[https://www.rfc-editor.org/rfc/rfc3691]].
     def unselect
       send_command("UNSELECT")
+        .tap do state_authenticated! end
     end
 
     # call-seq:
@@ -3146,6 +3291,10 @@ module Net
     #     end
     #   }
     #
+    # Response handlers can also be added when the client is created before the
+    # receiver thread is started, by the +response_handlers+ argument to ::new.
+    # This ensures every server response is handled, including the #greeting.
+    #
     # Related: #remove_response_handler, #response_handlers
     def add_response_handler(handler = nil, &block)
       raise ArgumentError, "two Procs are passed" if handler && block
@@ -3172,8 +3321,10 @@ module Net
     def start_imap_connection
       @greeting        = get_server_greeting
       @capabilities    = capabilities_from_resp_code @greeting
+      @response_handlers.each do |handler| handler.call(@greeting) end
       @receiver_thread = start_receiver_thread
     rescue Exception
+      state_logout!
       @sock.close
       raise
     end
@@ -3182,7 +3333,10 @@ module Net
       greeting = get_response
       raise Error, "No server greeting - connection closed" unless greeting
       record_untagged_response_code greeting
-      raise ByeResponseError, greeting if greeting.name == "BYE"
+      case greeting.name
+      when "PREAUTH" then state_authenticated!
+      when "BYE"     then state_logout!; raise ByeResponseError, greeting
+      end
       greeting
     end
 
@@ -3192,6 +3346,8 @@ module Net
       rescue Exception => ex
         @receiver_thread_exception = ex
         # don't exit the thread with an exception
+      ensure
+        state_logout!
       end
     end
 
@@ -3214,6 +3370,7 @@ module Net
           resp = get_response
         rescue Exception => e
           synchronize do
+            state_logout!
             @sock.close
             @exception = e
           end
@@ -3233,6 +3390,7 @@ module Net
               @tagged_response_arrival.broadcast
               case resp.tag
               when @logout_command_tag
+                state_logout!
                 return
               when @continued_command_tag
                 @continuation_request_exception =
@@ -3242,6 +3400,7 @@ module Net
             when UntaggedResponse
               record_untagged_response(resp)
               if resp.name == "BYE" && @logout_command_tag.nil?
+                state_logout!
                 @sock.close
                 @exception = ByeResponseError.new(resp)
                 connection_closed = true
@@ -3249,6 +3408,7 @@ module Net
             when ContinuationRequest
               @continuation_request_arrival.signal
             end
+            state_unselected! if resp in {data: {code: {name: "CLOSED"}}}
             @response_handlers.each do |handler|
               handler.call(resp)
             end
@@ -3300,23 +3460,10 @@ module Net
     end
 
     def get_response
-      buff = String.new
-      while true
-        s = @sock.gets(CRLF)
-        break unless s
-        buff.concat(s)
-        if /\{(\d+)\}\r\n/n =~ s
-          s = @sock.read($1.to_i)
-          buff.concat(s)
-        else
-          break
-        end
-      end
+      buff = @reader.read_response_buffer
       return nil if buff.length == 0
-      if config.debug?
-        $stderr.print(buff.gsub(/^/n, "S: "))
-      end
-      return @parser.parse(buff)
+      $stderr.print(buff.gsub(/^/n, "S: ")) if config.debug?
+      @parser.parse(buff)
     end
 
     #############################
@@ -3620,12 +3767,36 @@ module Net
       raise "already using SSL" if @sock.kind_of?(OpenSSL::SSL::SSLSocket)
       raise "cannot start TLS without SSLContext" unless ssl_ctx
       @sock = SSLSocket.new(@sock, ssl_ctx)
+      @reader = ResponseReader.new(self, @sock)
       @sock.sync_close = true
       @sock.hostname = @host if @sock.respond_to? :hostname=
       ssl_socket_connect(@sock, open_timeout)
       if ssl_ctx.verify_mode != VERIFY_NONE
         @sock.post_connection_check(@host)
         @tls_verified = true
+      end
+    end
+
+    def state_authenticated!(resp = nil)
+      synchronize do
+        @capabilities = capabilities_from_resp_code resp if resp
+        @connection_state = ConnectionState::Authenticated.new
+      end
+    end
+
+    def state_selected!
+      synchronize do
+        @connection_state = ConnectionState::Selected.new
+      end
+    end
+
+    def state_unselected!
+      state_authenticated! if connection_state.to_sym == :selected
+    end
+
+    def state_logout!
+      synchronize do
+        @connection_state = ConnectionState::Logout.new
       end
     end
 
