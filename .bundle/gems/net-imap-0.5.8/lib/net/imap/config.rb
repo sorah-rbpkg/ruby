@@ -131,8 +131,25 @@ module Net
       def self.global; @global if defined?(@global) end
 
       # A hash of hard-coded configurations, indexed by version number or name.
+      # Values can be accessed with any object that responds to +to_sym+ or
+      # +to_r+/+to_f+ with a non-zero number.
+      #
+      # Config::[] gets named or numbered versions from this hash.
+      #
+      # For example:
+      #     Net::IMAP::Config.version_defaults[0.5] == Net::IMAP::Config[0.5]
+      #     Net::IMAP::Config[0.5]       == Net::IMAP::Config[0.5r]     # => true
+      #     Net::IMAP::Config["current"] == Net::IMAP::Config[:current] # => true
+      #     Net::IMAP::Config["0.5.6"]   == Net::IMAP::Config[0.5r]     # => true
       def self.version_defaults; @version_defaults end
-      @version_defaults = {}
+      @version_defaults = Hash.new {|h, k|
+        # NOTE: String responds to both so the order is significant.
+        # And ignore non-numeric conversion to zero, because: "wat!?".to_r == 0
+        (h.fetch(k.to_r, nil) || h.fetch(k.to_f, nil) if k.is_a?(Numeric)) ||
+          (h.fetch(k.to_sym, nil) if k.respond_to?(:to_sym)) ||
+          (h.fetch(k.to_r,   nil) if k.respond_to?(:to_r) && k.to_r != 0r) ||
+          (h.fetch(k.to_f,   nil) if k.respond_to?(:to_f) && k.to_f != 0.0)
+      }
 
       # :call-seq:
       #  Net::IMAP::Config[number] -> versioned config
@@ -155,18 +172,17 @@ module Net
         elsif config.nil? && global.nil?   then nil
         elsif config.respond_to?(:to_hash) then new(global, **config).freeze
         else
-          version_defaults.fetch(config) do
+          version_defaults[config] or
             case config
             when Numeric
               raise RangeError, "unknown config version: %p" % [config]
-            when Symbol
+            when String, Symbol
               raise KeyError, "unknown config name: %p" % [config]
             else
               raise TypeError, "no implicit conversion of %s to %s" % [
                 config.class, Config
               ]
             end
-          end
         end
       end
 
@@ -193,10 +209,13 @@ module Net
 
       # Seconds to wait until a connection is opened.
       #
+      # Applied separately for establishing TCP connection and starting a TLS
+      # connection.
+      #
       # If the IMAP object cannot open a connection within this time,
       # it raises a Net::OpenTimeout exception.
       #
-      # See Net::IMAP.new.
+      # See Net::IMAP.new and Net::IMAP#starttls.
       #
       # The default value is +30+ seconds.
       attr_accessor :open_timeout, type: Integer
@@ -245,9 +264,43 @@ module Net
       #   present.  When capabilities are unknown, Net::IMAP will automatically
       #   send a +CAPABILITY+ command first before sending +LOGIN+.
       #
-      attr_accessor :enforce_logindisabled, type: [
+      attr_accessor :enforce_logindisabled, type: Enum[
         false, :when_capabilities_cached, true
       ]
+
+      # The maximum allowed server response size.  When +nil+, there is no limit
+      # on response size.
+      #
+      # The default value (512 MiB, since +v0.5.7+) is <em>very high</em> and
+      # unlikely to be reached.  A _much_ lower value should be used with
+      # untrusted servers (for example, when connecting to a user-provided
+      # hostname).  When using a lower limit, message bodies should be fetched
+      # in chunks rather than all at once.
+      #
+      # <em>Please Note:</em> this only limits the size per response.  It does
+      # not prevent a flood of individual responses and it does not limit how
+      # many unhandled responses may be stored on the responses hash.  See
+      # Net::IMAP@Unbounded+memory+use.
+      #
+      # Socket reads are limited to the maximum remaining bytes for the current
+      # response: max_response_size minus the bytes that have already been read.
+      # When the limit is reached, or reading a +literal+ _would_ go over the
+      # limit, ResponseTooLargeError is raised and the connection is closed.
+      #
+      # Note that changes will not take effect immediately, because the receiver
+      # thread may already be waiting for the next response using the previous
+      # value.  Net::IMAP#noop can force a response and enforce the new setting
+      # immediately.
+      #
+      # ==== Versioned Defaults
+      #
+      # Net::IMAP#max_response_size <em>was added in +v0.2.5+ and +v0.3.9+ as an
+      # attr_accessor, and in +v0.4.20+ and +v0.5.7+ as a delegator to this
+      # config attribute.</em>
+      #
+      # * original: +nil+ <em>(no limit)</em>
+      # * +0.5+: 512 MiB
+      attr_accessor :max_response_size, type: Integer?
 
       # Controls the behavior of Net::IMAP#responses when called without any
       # arguments (+type+ or +block+).
@@ -275,7 +328,7 @@ module Net
       #   Raise an ArgumentError with the deprecation warning.
       #
       # Note: #responses_without_args is an alias for #responses_without_block.
-      attr_accessor :responses_without_block, type: [
+      attr_accessor :responses_without_block, type: Enum[
         :silence_deprecation_warning, :warn, :frozen_dup, :raise,
       ]
 
@@ -320,7 +373,7 @@ module Net
       #
       # [+false+ <em>(planned default for +v0.6+)</em>]
       #    ResponseParser _only_ uses AppendUIDData and CopyUIDData.
-      attr_accessor :parser_use_deprecated_uidplus_data, type: [
+      attr_accessor :parser_use_deprecated_uidplus_data, type: Enum[
         true, :up_to_max_size, false
       ]
 
@@ -427,6 +480,7 @@ module Net
         idle_response_timeout: 5,
         sasl_ir: true,
         enforce_logindisabled: true,
+        max_response_size: 512 << 20, # 512 MiB
         responses_without_block: :warn,
         parser_use_deprecated_uidplus_data: :up_to_max_size,
         parser_max_deprecated_uidplus_data_size: 100,
@@ -435,36 +489,64 @@ module Net
       @global = default.new
 
       version_defaults[:default] = Config[default.send(:defaults_hash)]
-      version_defaults[:current] = Config[:default]
 
-      version_defaults[0] = Config[:current].dup.update(
+      version_defaults[0r] = Config[:default].dup.update(
         sasl_ir: false,
         responses_without_block: :silence_deprecation_warning,
         enforce_logindisabled: false,
+        max_response_size: nil,
         parser_use_deprecated_uidplus_data: true,
         parser_max_deprecated_uidplus_data_size: 10_000,
       ).freeze
-      version_defaults[0.0] = Config[0]
-      version_defaults[0.1] = Config[0]
-      version_defaults[0.2] = Config[0]
-      version_defaults[0.3] = Config[0]
+      version_defaults[0.0r] = Config[0r]
+      version_defaults[0.1r] = Config[0r]
+      version_defaults[0.2r] = Config[0r]
+      version_defaults[0.3r] = Config[0r]
 
-      version_defaults[0.4] = Config[0.3].dup.update(
+      version_defaults[0.4r] = Config[0.3r].dup.update(
         sasl_ir: true,
         parser_max_deprecated_uidplus_data_size: 1000,
       ).freeze
 
-      version_defaults[0.5] = Config[:current]
+      version_defaults[0.5r] = Config[0.4r].dup.update(
+        enforce_logindisabled: true,
+        max_response_size: 512 << 20, # 512 MiB
+        responses_without_block: :warn,
+        parser_use_deprecated_uidplus_data: :up_to_max_size,
+        parser_max_deprecated_uidplus_data_size: 100,
+      ).freeze
 
-      version_defaults[0.6] = Config[0.5].dup.update(
+      version_defaults[0.6r] = Config[0.5r].dup.update(
         responses_without_block: :frozen_dup,
         parser_use_deprecated_uidplus_data: false,
         parser_max_deprecated_uidplus_data_size: 0,
       ).freeze
-      version_defaults[:next] = Config[0.6]
-      version_defaults[:future] = Config[:next]
+
+      version_defaults[0.7r] = Config[0.6r].dup.update(
+      ).freeze
+
+      # Safe conversions one way only:
+      #   0.6r.to_f == 0.6  # => true
+      #   0.6 .to_r == 0.6r # => false
+      version_defaults.to_a.each do |k, v|
+        next unless k in Rational
+        version_defaults[k.to_f] = v
+      end
+
+      current = VERSION.to_r
+      version_defaults[:original] = Config[0]
+      version_defaults[:current]  = Config[current]
+      version_defaults[:next]     = Config[current + 0.1r]
+      version_defaults[:future]   = Config[current + 0.2r]
 
       version_defaults.freeze
+
+      if ($VERBOSE || $DEBUG) && self[:current].to_h != self[:default].to_h
+        warn "Misconfigured Net::IMAP::Config[:current] => %p,\n" \
+             " not equal to Net::IMAP::Config[:default] => %p" % [
+                self[:current].to_h, self[:default].to_h
+              ]
+      end
     end
   end
 end
