@@ -1,5 +1,242 @@
 -*- coding: utf-8 -*-
 
+commit a38531fd3f617bf734ef7d6c595325f69985ea1d
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-05-14 09:59:23 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-05-14 12:11:06 +0900
+
+    v3.4.4
+
+commit d8e7ab99a30f60620cccdff9e2e729968a4d84d1
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-05-14 12:10:15 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2025-05-14 12:10:15 +0900
+
+    YJIT: Split the block on optimized getlocal/setlocal (#13331)
+
+commit a21b88a6081edaa73549caa285d4f0d26d1f8462
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-05-14 10:37:59 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-05-14 12:01:10 +0900
+
+    [Bug #21331] Prohibit hash modification during stlike loop
+
+commit 22f2047a3d8b02018269b49dbcd23b8101314009
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-05-14 10:26:04 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-05-14 12:00:58 +0900
+
+    Remove unused retval assignments
+
+commit fbcb3271857115596d9a2760bb117d196d7f57a9
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-05-14 10:23:16 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-05-14 12:00:53 +0900
+
+    Revert "[Bug #21331] Prohibit modification during stlike loop"
+
+    This reverts commit bb180b87b43c45e17ff49735a26d7a188d5c8396, which
+    caused "malloc during GC" error on wasm.
+
+commit 65e02ab1a6e4482f417ec1d1cb4453958ad36ca3
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-05-14 09:18:43 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-05-14 09:18:43 +0900
+
+    merge revision(s) 3e47e7a499acd256be549935fcb559d3c82e556c, b48b841378f80e16378ceb83f3b78e52df9ae023, 2fe8b9cd3d308d754f3d33a948dfb1dd782a10dc: [Backport #21327]
+
+            Fix redefinition of `clock_gettime` and `clock_getres`
+
+            winpthreads-git 12.0.0.r720 provides `clock_gettime` and
+            `clock_getres` as inline functions.
+
+            digest.so needs ruby/digest.h which is installed by build-ext
+
+            Copy to path with the base name
+
+commit 862480a316c014d2b4659b22cd12e311c0810105
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-05-14 09:14:49 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-05-14 09:14:49 +0900
+
+    merge revision(s) bb180b87b43c45e17ff49735a26d7a188d5c8396: [Backport #21331]
+
+            [Bug #21331] Prohibit modification during stlike loop
+
+commit 7e44df91b6d01be68391a029997f5ccdabe80603
+  Author:     Alan Wu <XrXr@users.noreply.github.com>
+  AuthorDate: 2025-04-29 21:13:17 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-05-08 02:04:46 +0900
+
+    Fix C23 (GCC 15) WIN32 compatibility for rb_define_* functions
+
+    Backport [Bug #21286]
+
+commit 4aac15063094d30c3ed0c3639ffbf54a595731a5
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-05-07 07:35:58 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-05-07 07:35:58 +0900
+
+    Skip an unstable Ractor test
+
+commit 7afa08ce8d245c7d756ddaeb78daddb61fd0e271
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-05-06 05:35:28 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-05-07 07:34:58 +0900
+
+    YJIT: End the block after OPTIMIZE_METHOD_TYPE_CALL
+
+commit ac311437d3c4d60fe4ac100e9652b0cbc3e5f481
+  Author:     Daniel Colson <danieljamescolson@gmail.com>
+  AuthorDate: 2025-04-29 01:54:25 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-05-03 01:02:57 +0900
+
+    [Backport 3.4] Fix C level backtraces for USE_ELF
+
+    [Backport #21289]
+
+commit 3557739db95833454de34a4169212633dec8c76d
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-04-16 10:59:42 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 16:10:56 +0900
+
+    [rubygems/rubygems] Fixed rubocop issue: Layout/SpaceInsideBlockBraces
+
+    https://github.com/rubygems/rubygems/commit/77a52b011a
+
+commit 1a0a1690cdcda415879e28302d888a1dc1e3d74a
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-04-16 08:29:23 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 16:10:56 +0900
+
+    Run the proper version of `rake`
+
+commit 9e22d6fb1e546b4dde2a518cfc808e5d89044cff
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-01 13:31:18 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 16:10:56 +0900
+
+    Use windows-2022 image for test-bundled-gems
+
+    rake test is broken with system ruby
+
+    https://github.com/ruby/ruby/actions/runs/14768933827/job/41465573970?pr=13221
+
+commit b04f3995ea520d723de5507203abc63537ad8fd3
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-01 12:12:25 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 16:10:56 +0900
+
+    Bump up the latest version of actions
+
+commit 6e95400497b8cc6663fb417a53bf2d33b265bfb1
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-01 11:34:58 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 16:10:56 +0900
+
+    ubuntu-20.04 is retired
+
+commit 321fb434ff74bac551eb0fa548bb55ccd895e2ba
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-01 11:22:25 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 16:10:56 +0900
+
+    Rename matrix.vs to matrix.os. It's not Visual Studio version now
+
+commit c11836eceace1339d8b4388ed9625acac837241d
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-01 11:16:54 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 16:10:56 +0900
+
+    Use windows-2022 and windows-2025 because windows-2019 is EOL at June 2025
+
+commit 53549b3b1ff412daed3e8063329b4538373796cb
+  Author:     Alan Wu <XrXr@users.noreply.github.com>
+  AuthorDate: 2025-01-17 11:53:06 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-05-01 03:29:58 +0900
+
+    Supply LIBCLANG_PATH for clang-14 for yjit-bindgen
+
+    Or else it gets confused from all the different versions of LLVM in the
+    image.
+
+commit 84e7f671606ed504b37f5c6979184973955969b6
+  Author:     Alan Wu <XrXr@users.noreply.github.com>
+  AuthorDate: 2025-01-17 04:04:52 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-05-01 02:58:47 +0900
+
+    Use clang-14 to match the libclang version bindgen finds by default
+
+commit 4fc785b91bec95cf4bb7a604fcb302db4deece90
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-01-16 16:08:31 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-05-01 02:38:18 +0900
+
+    sd ubuntu-20.04 ubuntu-22.04 .github/workflows/*
+
+commit aed8b7ff54a8cd94ea9929d1df9bcfde07331af0
+  Author:     nick evans <nick@rubinick.dev>
+  AuthorDate: 2025-05-01 01:56:12 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-05-01 02:37:13 +0900
+
+    Bump net-imap to v0.5.8 for Ruby 3.4 (CVE-2025-43857)
+
+    v0.5.7 addresses CVE-2025-43857 (GHSA-j3g3-5qv5-52mj).
+
+    v0.5.8 fixes some bugs in `Net::IMAP::SequenceSet`.
+
+commit 50b1759be00713535c41f5650feb3967c533450a
+  Author:     Rian McGuire <rian@rian.id.au>
+  AuthorDate: 2025-04-28 21:50:29 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-04-29 01:23:33 +0900
+
+    YJIT: Fix potential infinite loop when OOM (GH-13186)
+
+    Avoid generating an infinite loop in the case where:
+    1. Block `first` is adjacent to block `second`, and the branch from `first` to
+       `second` is a fallthrough, and
+    2. Block `second` immediately exits to the interpreter, and
+    3. Block `second` is invalidated and YJIT is OOM
+
+    While pondering how to fix this, I think I've stumbled on another related edge case:
+    1. Block `incoming_one` and `incoming_two` both branch to block `second`. Block
+       `incoming_one` has a fallthrough
+    2. Block `second` immediately exits to the interpreter (so it starts with its exit)
+    3. When Block `second` is invalidated, the incoming fallthrough branch from
+       `incoming_one` might be rewritten first, which overwrites the start of block
+       `second` with a jump to a new branch stub.
+    4. YJIT runs of out memory
+    5. The incoming branch from `incoming_two` is then rewritten, but because we're
+       OOM we can't generate a new stub, so we use `second`'s exit as the branch
+       target. However `second`'s exit was already overwritten with a jump to the
+       branch stub for `incoming_one`, so `incoming_two` will end up jumping to
+       `incoming_one`'s branch stub.
+
+    Backport [Bug #21257]
+
 commit d0b7e5b6a04bde21ca483d20a1546b28b401c2d4
   Author:     Takashi Kokubun <takashikkbn@gmail.com>
   AuthorDate: 2025-04-14 16:33:49 +0900

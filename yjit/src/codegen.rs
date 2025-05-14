@@ -2445,6 +2445,11 @@ fn gen_getlocal_generic(
     ep_offset: u32,
     level: u32,
 ) -> Option<CodegenStatus> {
+    // Split the block if we need to invalidate this instruction when EP escapes
+    if level == 0 && !jit.escapes_ep() && !jit.at_compile_target() {
+        return jit.defer_compilation(asm);
+    }
+
     let local_opnd = if level == 0 && jit.assume_no_ep_escape(asm) {
         // Load the local using SP register
         asm.local_opnd(ep_offset)
@@ -2533,6 +2538,11 @@ fn gen_setlocal_generic(
         asm.stack_pop(1);
 
         return Some(KeepCompiling);
+    }
+
+    // Split the block if we need to invalidate this instruction when EP escapes
+    if level == 0 && !jit.escapes_ep() && !jit.at_compile_target() {
+        return jit.defer_compilation(asm);
     }
 
     let (flags_opnd, local_opnd) = if level == 0 && jit.assume_no_ep_escape(asm) {
@@ -9311,7 +9321,6 @@ fn gen_send_general(
 
                     }
                     OPTIMIZED_METHOD_TYPE_CALL => {
-
                         if block.is_some() {
                             gen_counter_incr(jit, asm, Counter::send_call_block);
                             return None;
@@ -9363,8 +9372,9 @@ fn gen_send_general(
 
                         let stack_ret = asm.stack_push(Type::Unknown);
                         asm.mov(stack_ret, ret);
-                        return Some(KeepCompiling);
 
+                        // End the block to allow invalidating the next instruction
+                        return jump_to_next_insn(jit, asm);
                     }
                     OPTIMIZED_METHOD_TYPE_BLOCK_CALL => {
                         gen_counter_incr(jit, asm, Counter::send_optimized_method_block_call);
