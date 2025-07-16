@@ -25,12 +25,8 @@ module Spec
       @relative_gemspec ||= ruby_core? ? "lib/bundler/bundler.gemspec" : "bundler.gemspec"
     end
 
-    def gemspec_dir
-      @gemspec_dir ||= gemspec.parent
-    end
-
     def loaded_gemspec
-      @loaded_gemspec ||= Gem::Specification.load(gemspec.to_s)
+      @loaded_gemspec ||= Dir.chdir(source_root) { Gem::Specification.load(gemspec.to_s) }
     end
 
     def test_gemfile
@@ -102,11 +98,11 @@ module Spec
     end
 
     def tmp(*path)
-      tmp_root(scope).join(*path)
+      tmp_root.join("#{test_env_version}.#{scope}").join(*path)
     end
 
-    def tmp_root(scope)
-      source_root.join("tmp", "#{test_env_version}.#{scope}")
+    def tmp_root
+      source_root.join("tmp")
     end
 
     # Bump this version whenever you make a breaking change to the spec setup
@@ -180,15 +176,15 @@ module Spec
     end
 
     def base_system_gems
-      tmp("gems/base")
+      tmp_root.join("gems/base")
     end
 
     def rubocop_gems
-      tmp("gems/rubocop")
+      tmp_root.join("gems/rubocop")
     end
 
     def standard_gems
-      tmp("gems/standard")
+      tmp_root.join("gems/standard")
     end
 
     def file_uri_for(path)
@@ -199,35 +195,35 @@ module Spec
     end
 
     def gem_repo1(*args)
-      tmp("gems/remote1", *args)
+      gem_path("remote1", *args)
     end
 
     def gem_repo_missing(*args)
-      tmp("gems/missing", *args)
+      gem_path("missing", *args)
     end
 
     def gem_repo2(*args)
-      tmp("gems/remote2", *args)
+      gem_path("remote2", *args)
     end
 
     def gem_repo3(*args)
-      tmp("gems/remote3", *args)
+      gem_path("remote3", *args)
     end
 
     def gem_repo4(*args)
-      tmp("gems/remote4", *args)
+      gem_path("remote4", *args)
     end
 
     def security_repo(*args)
-      tmp("gems/security_repo", *args)
+      gem_path("security_repo", *args)
     end
 
     def system_gem_path(*path)
-      tmp("gems/system", *path)
+      gem_path("system", *path)
     end
 
     def pristine_system_gem_path
-      tmp("gems/base_system")
+      tmp_root.join("gems/pristine_system")
     end
 
     def local_gem_path(*path, base: bundled_app)
@@ -236,6 +232,10 @@ module Spec
 
     def scoped_gem_path(base)
       base.join(Gem.ruby_engine, RbConfig::CONFIG["ruby_version"])
+    end
+
+    def gem_path(*args)
+      tmp("gems", *args)
     end
 
     def lib_path(*args)
@@ -281,7 +281,7 @@ module Spec
     end
 
     def rake_path
-      Dir["#{base_system_gems}/#{Bundler.ruby_scope}/**/rake*.gem"].first
+      Dir["#{base_system_gems}/*/*/**/rake*.gem"].first
     end
 
     def sinatra_dependency_paths
