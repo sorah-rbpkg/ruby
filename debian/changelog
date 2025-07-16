@@ -1,3 +1,10 @@
+ruby3.4 (3.4.5-0nkmi1~dist) unstable; urgency=medium
+
+  * 3.4.5
+  * Add early backport of https://github.com/ruby/prism/pull/3585
+
+ -- Sorah Fukumori <her@sorah.jp>  Wed, 16 Jul 2025 11:35:03 +0900
+
 ruby3.4 (3.4.4-0nkmi1~dist) unstable; urgency=medium
 
   * 3.4.4
