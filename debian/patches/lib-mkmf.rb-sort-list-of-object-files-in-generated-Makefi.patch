@@ -14,7 +14,7 @@ Signed-off-by: Reiner Herrmann <reiner@reiner-h.de>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/lib/mkmf.rb b/lib/mkmf.rb
-index 768a152..f16cdd8 100644
+index 99f3764..62377b6 100644
 --- a/lib/mkmf.rb
 +++ b/lib/mkmf.rb
 @@ -2480,7 +2480,7 @@ LOCAL_LIBS = #{$LOCAL_LIBS}
