@@ -1265,6 +1265,7 @@ pm_new_child_iseq(rb_iseq_t *iseq, pm_scope_node_t *node, VALUE name, const rb_i
             type, ISEQ_COMPILE_DATA(iseq)->option, &error_state);
 
     if (error_state) {
+        pm_scope_node_destroy(node);
         RUBY_ASSERT(ret_iseq == NULL);
         rb_jump_tag(error_state);
     }
@@ -1854,7 +1855,6 @@ pm_setup_args_dup_rest_p(const pm_node_t *node)
     switch (PM_NODE_TYPE(node)) {
       case PM_BACK_REFERENCE_READ_NODE:
       case PM_CLASS_VARIABLE_READ_NODE:
-      case PM_CONSTANT_PATH_NODE:
       case PM_CONSTANT_READ_NODE:
       case PM_FALSE_NODE:
       case PM_FLOAT_NODE:
@@ -1873,6 +1873,13 @@ pm_setup_args_dup_rest_p(const pm_node_t *node)
       case PM_SYMBOL_NODE:
       case PM_TRUE_NODE:
         return false;
+      case PM_CONSTANT_PATH_NODE: {
+        const pm_constant_path_node_t *cast = (const pm_constant_path_node_t *) node;
+        if (cast->parent != NULL) {
+            return pm_setup_args_dup_rest_p(cast->parent);
+        }
+        return false;
+      }
       case PM_IMPLICIT_NODE:
         return pm_setup_args_dup_rest_p(((const pm_implicit_node_t *) node)->value);
       default:
@@ -5119,6 +5126,20 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
 
         break;
       }
+      case PM_SPLAT_NODE: {
+        // Splat nodes capture all values into an array. They can be used
+        // as targets in assignments or for loops.
+        //
+        //     for *x in []; end
+        //
+        const pm_splat_node_t *cast = (const pm_splat_node_t *) node;
+
+        if (cast->expression != NULL) {
+            pm_compile_target_node(iseq, cast->expression, parents, writes, cleanup, scope_node, state);
+        }
+
+        break;
+      }
       default:
         rb_bug("Unexpected node type: %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
         break;
@@ -5232,7 +5253,8 @@ pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *c
       case PM_INSTANCE_VARIABLE_TARGET_NODE:
       case PM_CONSTANT_PATH_TARGET_NODE:
       case PM_CALL_TARGET_NODE:
-      case PM_INDEX_TARGET_NODE: {
+      case PM_INDEX_TARGET_NODE:
+      case PM_SPLAT_NODE: {
         // For other targets, we need to potentially compile the parent or
         // owning expression of this target, then retrieve the value, expand it,
         // and then compile the necessary writes.
