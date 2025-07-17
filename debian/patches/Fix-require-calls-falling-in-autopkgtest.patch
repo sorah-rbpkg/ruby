@@ -4,9 +4,9 @@ Subject: Fix require calls falling in autopkgtest
 
 ---
  test/did_you_mean/helper.rb          | 28 ++++++++++++++++------------
+ test/rdoc/rdoc_markdown_test.rb      |  9 +++++++--
+ test/rdoc/rdoc_markdown_test_test.rb |  9 +++++++--
  test/rdoc/support/test_case.rb       |  6 +++++-
- test/rdoc/test_rdoc_markdown.rb      |  9 +++++++--
- test/rdoc/test_rdoc_markdown_test.rb |  9 +++++++--
  4 files changed, 35 insertions(+), 17 deletions(-)
 
 diff --git a/test/did_you_mean/helper.rb b/test/did_you_mean/helper.rb
@@ -50,27 +50,10 @@ index d40d58d..062548a 100644
      end
  
      def assert_correction(expected, array)
-diff --git a/test/rdoc/support/test_case.rb b/test/rdoc/support/test_case.rb
-index d98dbe0..e8e546f 100644
---- a/test/rdoc/support/test_case.rb
-+++ b/test/rdoc/support/test_case.rb
-@@ -13,7 +13,11 @@ require 'tempfile'
- require 'tmpdir'
- require 'stringio'
- 
--require_relative '../../../lib/rdoc'
-+if ENV['AUTOPKGTEST_TMP']
-+  require 'rdoc'
-+else
-+  require_relative '../../../lib/rdoc'
-+end
- 
- ##
- # RDoc::TestCase is an abstract TestCase to provide common setup and teardown
-diff --git a/test/rdoc/test_rdoc_markdown.rb b/test/rdoc/test_rdoc_markdown.rb
-index dd6f312..b16780a 100644
---- a/test/rdoc/test_rdoc_markdown.rb
-+++ b/test/rdoc/test_rdoc_markdown.rb
+diff --git a/test/rdoc/rdoc_markdown_test.rb b/test/rdoc/rdoc_markdown_test.rb
+index 2764f94..fca6ee7 100644
+--- a/test/rdoc/rdoc_markdown_test.rb
++++ b/test/rdoc/rdoc_markdown_test.rb
 @@ -2,8 +2,13 @@
  # frozen_string_literal: true
  
@@ -85,12 +68,12 @@ index dd6f312..b16780a 100644
 +  require_relative '../../lib/rdoc/markdown'
 +end
  
- class TestRDocMarkdown < RDoc::TestCase
+ class RDocMarkdownTest < RDoc::TestCase
  
-diff --git a/test/rdoc/test_rdoc_markdown_test.rb b/test/rdoc/test_rdoc_markdown_test.rb
-index d4f894c..0d6758c 100644
---- a/test/rdoc/test_rdoc_markdown_test.rb
-+++ b/test/rdoc/test_rdoc_markdown_test.rb
+diff --git a/test/rdoc/rdoc_markdown_test_test.rb b/test/rdoc/rdoc_markdown_test_test.rb
+index c28fe6b..0480631 100644
+--- a/test/rdoc/rdoc_markdown_test_test.rb
++++ b/test/rdoc/rdoc_markdown_test_test.rb
 @@ -2,8 +2,13 @@
  require_relative 'helper'
  require 'pp'
@@ -105,5 +88,22 @@ index d4f894c..0d6758c 100644
 +  require_relative '../../lib/rdoc/markdown'
 +end
  
- class TestRDocMarkdownTest < RDoc::TestCase
+ class RDocMarkdownTestTest < RDoc::TestCase
  
+diff --git a/test/rdoc/support/test_case.rb b/test/rdoc/support/test_case.rb
+index cb1a3bd..1fff75d 100644
+--- a/test/rdoc/support/test_case.rb
++++ b/test/rdoc/support/test_case.rb
+@@ -17,7 +17,11 @@ begin
+   require_relative '../../lib/helper'
+ rescue LoadError
+ end
+-require_relative '../../../lib/rdoc'
++if ENV['AUTOPKGTEST_TMP']
++  require 'rdoc'
++else
++  require_relative '../../../lib/rdoc'
++end
+ 
+ ##
+ # RDoc::TestCase is an abstract TestCase to provide common setup and teardown

@@ -9,9 +9,9 @@ Signed-off-by: Svante Signell <svante.signell@gmail.com>
 ---
  ext/socket/option.c        |  1 +
  ext/socket/raddrinfo.c     | 22 ++++++++++++++++++++++
- test/fiddle/test_handle.rb |  3 ++-
+ test/fiddle/test_handle.rb |  1 +
  test/socket/test_socket.rb |  2 +-
- 4 files changed, 26 insertions(+), 2 deletions(-)
+ 4 files changed, 25 insertions(+), 1 deletion(-)
 
 diff --git a/ext/socket/option.c b/ext/socket/option.c
 index 0d818d0..b4467f3 100644
@@ -26,10 +26,10 @@ index 0d818d0..b4467f3 100644
      defined(__APPLE__) || \
      defined(_WIN32) || \
 diff --git a/ext/socket/raddrinfo.c b/ext/socket/raddrinfo.c
-index 909c027..ee68196 100644
+index 4ca3093..373cfe1 100644
 --- a/ext/socket/raddrinfo.c
 +++ b/ext/socket/raddrinfo.c
-@@ -2122,10 +2122,21 @@ addrinfo_mload(VALUE self, VALUE ary)
+@@ -2138,10 +2138,21 @@ addrinfo_mload(VALUE self, VALUE ary)
          INIT_SOCKADDR_UN(&uaddr, sizeof(struct sockaddr_un));
  
          StringValue(v);
@@ -51,7 +51,7 @@ index 909c027..ee68196 100644
          memcpy(uaddr.sun_path, RSTRING_PTR(v), RSTRING_LEN(v));
          len = (socklen_t)sizeof(uaddr);
          memcpy(&ss, &uaddr, len);
-@@ -2769,10 +2780,21 @@ addrinfo_unix_path(VALUE self)
+@@ -2785,10 +2796,21 @@ addrinfo_unix_path(VALUE self)
      if (n < 0)
          rb_raise(rb_eSocket, "too short AF_UNIX address: %"PRIuSIZE" bytes given for minimum %"PRIuSIZE" bytes.",
                   (size_t)rai->sockaddr_len, offsetof(struct sockaddr_un, sun_path));
@@ -74,28 +74,19 @@ index 909c027..ee68196 100644
  }
  #endif
 diff --git a/test/fiddle/test_handle.rb b/test/fiddle/test_handle.rb
-index c19bcc6..149914b 100644
+index ad8c45a..96cef53 100644
 --- a/test/fiddle/test_handle.rb
 +++ b/test/fiddle/test_handle.rb
-@@ -178,6 +178,7 @@ module Fiddle
-     end unless /mswin|mingw/ =~ RUBY_PLATFORM
+@@ -215,6 +215,7 @@ module Fiddle
+     end
  
      def test_dlerror
 +      return if /kfreebsd/ =~ RUBY_PLATFORM
        # FreeBSD (at least 7.2 to 7.2) calls nsdispatch(3) when it calls
        # getaddrinfo(3). And nsdispatch(3) doesn't call dlerror(3) even if
        # it calls _nss_cache_cycle_prevention_function with dlsym(3).
-@@ -186,7 +187,7 @@ module Fiddle
-       require 'socket'
-       Socket.gethostbyname("localhost")
-       Fiddle.dlopen("/lib/libc.so.7").sym('strcpy')
--    end if /freebsd/=~ RUBY_PLATFORM
-+    end if /freebsd/ =~ RUBY_PLATFORM
- 
-     def test_no_memory_leak
-       # https://github.com/ruby/fiddle/actions/runs/3202406059/jobs/5231356410
 diff --git a/test/socket/test_socket.rb b/test/socket/test_socket.rb
-index 598a05d..be16889 100644
+index 27e60b3..cfc3b1c 100644
 --- a/test/socket/test_socket.rb
 +++ b/test/socket/test_socket.rb
 @@ -549,7 +549,7 @@ class TestSocket < Test::Unit::TestCase

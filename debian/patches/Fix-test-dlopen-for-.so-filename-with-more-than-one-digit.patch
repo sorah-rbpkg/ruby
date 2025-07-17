@@ -17,10 +17,10 @@ Forwarded: https://github.com/ruby/fiddle/pull/171
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/test/fiddle/test_fiddle.rb b/test/fiddle/test_fiddle.rb
-index 9bddb05..769a74d 100644
+index 69d0c3d..4259c9a 100644
 --- a/test/fiddle/test_fiddle.rb
 +++ b/test/fiddle/test_fiddle.rb
-@@ -50,7 +50,7 @@ class TestFiddle < Fiddle::TestCase
+@@ -83,7 +83,7 @@ class TestFiddle < Fiddle::TestCase
      handle = Fiddle.dlopen("libc.so")
      begin
        assert_equal("libc.so",

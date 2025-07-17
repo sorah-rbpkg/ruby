@@ -25,10 +25,10 @@ It's easy enough to deduplicate these.
  1 file changed, 6 insertions(+)
 
 diff --git a/ext/socket/lib/socket.rb b/ext/socket/lib/socket.rb
-index de54222..12955e2 100644
+index acdfecb..125229f 100644
 --- a/ext/socket/lib/socket.rb
 +++ b/ext/socket/lib/socket.rb
-@@ -673,10 +673,16 @@ class Socket < BasicSocket
+@@ -1093,10 +1093,16 @@ class Socket < BasicSocket
    # :stopdoc:
    def self.ip_sockets_port0(ai_list, reuseaddr)
      sockets = []
