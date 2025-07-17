@@ -44,10 +44,10 @@ typedef struct {
  */
 typedef struct {
     /** The line number. */
-    size_t line;
+    int32_t line;
 
     /** The column number. */
-    size_t column;
+    uint32_t column;
 } pm_line_column_t;
 
 /**
@@ -62,6 +62,14 @@ typedef struct {
 bool pm_newline_list_init(pm_newline_list_t *list, const uint8_t *start, size_t capacity);
 
 /**
+ * Clear out the newlines that have been appended to the list.
+ *
+ * @param list The list to clear.
+ */
+void
+pm_newline_list_clear(pm_newline_list_t *list);
+
+/**
  * Append a new offset to the newline list. Returns true if the reallocation of
  * the offsets succeeds (if one was necessary), otherwise returns false.
  *
@@ -73,15 +81,15 @@ bool pm_newline_list_init(pm_newline_list_t *list, const uint8_t *start, size_t 
 bool pm_newline_list_append(pm_newline_list_t *list, const uint8_t *cursor);
 
 /**
- * Conditionally append a new offset to the newline list, if the value passed in
- * is a newline.
+ * Returns the line of the given offset. If the offset is not in the list, the
+ * line of the closest offset less than the given offset is returned.
  *
- * @param list The list to append to.
- * @param cursor A pointer to the offset to append.
- * @return True if the reallocation of the offsets succeeds (if one was
- *     necessary), otherwise false.
+ * @param list The list to search.
+ * @param cursor A pointer to the offset to search for.
+ * @param start_line The line to start counting from.
+ * @return The line of the given offset.
  */
-bool pm_newline_list_check_append(pm_newline_list_t *list, const uint8_t *cursor);
+int32_t pm_newline_list_line(const pm_newline_list_t *list, const uint8_t *cursor, int32_t start_line);
 
 /**
  * Returns the line and column of the given offset. If the offset is not in the
@@ -90,9 +98,10 @@ bool pm_newline_list_check_append(pm_newline_list_t *list, const uint8_t *cursor
  *
  * @param list The list to search.
  * @param cursor A pointer to the offset to search for.
+ * @param start_line The line to start counting from.
  * @return The line and column of the given offset.
  */
-pm_line_column_t pm_newline_list_line_column(const pm_newline_list_t *list, const uint8_t *cursor);
+pm_line_column_t pm_newline_list_line_column(const pm_newline_list_t *list, const uint8_t *cursor, int32_t start_line);
 
 /**
  * Free the internal memory allocated for the newline list.

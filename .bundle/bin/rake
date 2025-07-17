@@ -1,2 +1,2 @@
 #!ruby
-load File.realpath("../gems/rake-13.1.0/exe/rake", __dir__)
+load File.realpath("../gems/rake-13.2.1/exe/rake", __dir__)

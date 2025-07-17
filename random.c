@@ -73,7 +73,7 @@
 #include "ruby/random.h"
 #include "ruby/ractor.h"
 
-typedef int int_must_be_32bit_at_least[sizeof(int) * CHAR_BIT < 32 ? -1 : 1];
+STATIC_ASSERT(int_must_be_32bit_at_least, sizeof(int) * CHAR_BIT >= 32);
 
 #include "missing/mt19937.c"
 
@@ -131,8 +131,9 @@ typedef struct {
 
 static VALUE rand_init(const rb_random_interface_t *, rb_random_t *, VALUE);
 static VALUE random_seed(VALUE);
-static void fill_random_seed(uint32_t *seed, size_t cnt);
+static void fill_random_seed(uint32_t *seed, size_t cnt, bool try_bytes);
 static VALUE make_seed_value(uint32_t *ptr, size_t len);
+#define fill_random_bytes ruby_fill_random_bytes
 
 RB_RANDOM_INTERFACE_DECLARE(rand_mt);
 static const rb_random_interface_t random_mt_if = {
@@ -354,7 +355,7 @@ rand_init_default(const rb_random_interface_t *rng, rb_random_t *rnd)
     size_t len = roomof(rng->default_seed_bits, 32);
     uint32_t *buf = ALLOCV_N(uint32_t, buf0, len+1);
 
-    fill_random_seed(buf, len);
+    fill_random_seed(buf, len, true);
     rng->init(rnd, buf, len);
     seed = make_seed_value(buf, len);
     explicit_bzero(buf, len * sizeof(*buf));
@@ -377,8 +378,8 @@ rand_init(const rb_random_interface_t *rng, rb_random_t *rnd, VALUE seed)
         INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
     if (sign < 0)
         sign = -sign;
-    if (len <= 1) {
-        rng->init_int32(rnd, len ? buf[0] : 0);
+    if (len == 1) {
+        rng->init_int32(rnd, buf[0]);
     }
     else {
         if (sign != 2 && buf[len-1] == 1) /* remove leading-zero-guard */
@@ -437,23 +438,17 @@ random_init(int argc, VALUE *argv, VALUE obj)
 # define USE_DEV_URANDOM 0
 #endif
 
-#ifdef HAVE_GETENTROPY
-# define MAX_SEED_LEN_PER_READ 256
-static int
-fill_random_bytes_urandom(void *seed, size_t size)
-{
-     unsigned char *p = (unsigned char *)seed;
-     while (size) {
-        size_t len = size < MAX_SEED_LEN_PER_READ ? size : MAX_SEED_LEN_PER_READ;
-        if (getentropy(p, len) != 0) {
-            return -1;
-        }
-        p += len;
-        size -= len;
-     }
-     return 0;
-}
-#elif USE_DEV_URANDOM
+#if ! defined HAVE_GETRANDOM && defined __linux__ && defined __NR_getrandom
+# ifndef GRND_NONBLOCK
+#   define GRND_NONBLOCK 0x0001	/* not defined in musl libc */
+# endif
+# define getrandom(ptr, size, flags) \
+    (ssize_t)syscall(__NR_getrandom, (ptr), (size), (flags))
+# define HAVE_GETRANDOM 1
+#endif
+
+/* fill random bytes by reading random device directly */
+#if USE_DEV_URANDOM
 static int
 fill_random_bytes_urandom(void *seed, size_t size)
 {
@@ -493,15 +488,7 @@ fill_random_bytes_urandom(void *seed, size_t size)
 # define fill_random_bytes_urandom(seed, size) -1
 #endif
 
-#if ! defined HAVE_GETRANDOM && defined __linux__ && defined __NR_getrandom
-# ifndef GRND_NONBLOCK
-#   define GRND_NONBLOCK 0x0001	/* not defined in musl libc */
-# endif
-# define getrandom(ptr, size, flags) \
-    (ssize_t)syscall(__NR_getrandom, (ptr), (size), (flags))
-# define HAVE_GETRANDOM 1
-#endif
-
+/* fill random bytes by library */
 #if 0
 #elif defined MAC_OS_X_VERSION_10_7 && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
 
@@ -519,7 +506,7 @@ fill_random_bytes_urandom(void *seed, size_t size)
 # endif
 
 static int
-fill_random_bytes_syscall(void *seed, size_t size, int unused)
+fill_random_bytes_lib(void *seed, size_t size)
 {
 #if USE_COMMON_RANDOM
     CCRNGStatus status = CCRandomGenerateBytes(seed, size);
@@ -548,7 +535,7 @@ fill_random_bytes_syscall(void *seed, size_t size, int unused)
 }
 #elif defined(HAVE_ARC4RANDOM_BUF)
 static int
-fill_random_bytes_syscall(void *buf, size_t size, int unused)
+fill_random_bytes_lib(void *buf, size_t size)
 {
 #if (defined(__OpenBSD__) && OpenBSD >= 201411) || \
     (defined(__NetBSD__)  && __NetBSD_Version__ >= 700000000) || \
@@ -566,8 +553,6 @@ fill_random_bytes_syscall(void *buf, size_t size, int unused)
 #endif
 
 # if defined(CRYPT_VERIFYCONTEXT)
-STATIC_ASSERT(sizeof_HCRYPTPROV, sizeof(HCRYPTPROV) == sizeof(size_t));
-
 /* Although HCRYPTPROV is not a HANDLE, it looks like
  * INVALID_HANDLE_VALUE is not a valid value */
 static const HCRYPTPROV INVALID_HCRYPTPROV = (HCRYPTPROV)INVALID_HANDLE_VALUE;
@@ -576,11 +561,17 @@ static void
 release_crypt(void *p)
 {
     HCRYPTPROV *ptr = p;
-    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_SIZE_EXCHANGE(*ptr, INVALID_HCRYPTPROV);
+    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_PTR_EXCHANGE(*ptr, INVALID_HCRYPTPROV);
     if (prov && prov != INVALID_HCRYPTPROV) {
         CryptReleaseContext(prov, 0);
     }
 }
+
+static const rb_data_type_t crypt_prov_type = {
+    "HCRYPTPROV",
+    {0, release_crypt,},
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
+};
 
 static int
 fill_random_bytes_crypt(void *seed, size_t size)
@@ -588,15 +579,15 @@ fill_random_bytes_crypt(void *seed, size_t size)
     static HCRYPTPROV perm_prov;
     HCRYPTPROV prov = perm_prov, old_prov;
     if (!prov) {
+        VALUE wrapper = TypedData_Wrap_Struct(0, &crypt_prov_type, 0);
         if (!CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
             prov = INVALID_HCRYPTPROV;
         }
-        old_prov = (HCRYPTPROV)ATOMIC_SIZE_CAS(perm_prov, 0, prov);
+        old_prov = (HCRYPTPROV)ATOMIC_PTR_CAS(perm_prov, 0, prov);
         if (LIKELY(!old_prov)) { /* no other threads acquired */
             if (prov != INVALID_HCRYPTPROV) {
-#undef RUBY_UNTYPED_DATA_WARNING
-#define RUBY_UNTYPED_DATA_WARNING 0
-                rb_gc_register_mark_object(Data_Wrap_Struct(0, 0, release_crypt, &perm_prov));
+                DATA_PTR(wrapper) = (void *)prov;
+                rb_vm_register_global_object(wrapper);
             }
         }
         else {			/* another thread acquired */
@@ -633,11 +624,17 @@ fill_random_bytes_bcrypt(void *seed, size_t size)
 }
 
 static int
-fill_random_bytes_syscall(void *seed, size_t size, int unused)
+fill_random_bytes_lib(void *seed, size_t size)
 {
     if (fill_random_bytes_bcrypt(seed, size) == 0) return 0;
     return fill_random_bytes_crypt(seed, size);
 }
+#else
+# define fill_random_bytes_lib(seed, size) -1
+#endif
+
+/* fill random bytes by dedicated syscall */
+#if 0
 #elif defined HAVE_GETRANDOM
 static int
 fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
@@ -661,6 +658,31 @@ fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
     }
     return -1;
 }
+#elif defined(HAVE_GETENTROPY)
+/*
+ * The Open Group Base Specifications Issue 8 - IEEE Std 1003.1-2024
+ * https://pubs.opengroup.org/onlinepubs/9799919799/functions/getentropy.html
+ *
+ * NOTE: `getentropy`(3) on Linux is implemented using `getrandom`(2),
+ * prefer the latter over this if both are defined.
+ */
+#ifndef GETENTROPY_MAX
+# define GETENTROPY_MAX 256
+#endif
+static int
+fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
+{
+    unsigned char *p = (unsigned char *)seed;
+    while (size) {
+        size_t len = size < GETENTROPY_MAX ? size : GETENTROPY_MAX;
+        if (getentropy(p, len) != 0) {
+            return -1;
+        }
+        p += len;
+        size -= len;
+    }
+    return 0;
+}
 #else
 # define fill_random_bytes_syscall(seed, size, need_secure) -1
 #endif
@@ -670,14 +692,13 @@ ruby_fill_random_bytes(void *seed, size_t size, int need_secure)
 {
     int ret = fill_random_bytes_syscall(seed, size, need_secure);
     if (ret == 0) return ret;
+    if (fill_random_bytes_lib(seed, size) == 0) return 0;
     return fill_random_bytes_urandom(seed, size);
 }
 
-#define fill_random_bytes ruby_fill_random_bytes
-
 /* cnt must be 4 or more */
 static void
-fill_random_seed(uint32_t *seed, size_t cnt)
+fill_random_seed(uint32_t *seed, size_t cnt, bool try_bytes)
 {
     static rb_atomic_t n = 0;
 #if defined HAVE_CLOCK_GETTIME
@@ -687,10 +708,12 @@ fill_random_seed(uint32_t *seed, size_t cnt)
 #endif
     size_t len = cnt * sizeof(*seed);
 
+    if (try_bytes) {
+        fill_random_bytes(seed, len, FALSE);
+        return;
+    }
+
     memset(seed, 0, len);
-
-    fill_random_bytes(seed, len, FALSE);
-
 #if defined HAVE_CLOCK_GETTIME
     clock_gettime(CLOCK_REALTIME, &tv);
     seed[0] ^= tv.tv_nsec;
@@ -725,8 +748,8 @@ make_seed_value(uint32_t *ptr, size_t len)
     return seed;
 }
 
-#define with_random_seed(size, add) \
-    for (uint32_t seedbuf[(size)+(add)], loop = (fill_random_seed(seedbuf, (size)), 1); \
+#define with_random_seed(size, add, try_bytes) \
+    for (uint32_t seedbuf[(size)+(add)], loop = (fill_random_seed(seedbuf, (size), try_bytes), 1); \
          loop; explicit_bzero(seedbuf, (size)*sizeof(seedbuf[0])), loop = 0)
 
 /*
@@ -741,7 +764,7 @@ static VALUE
 random_seed(VALUE _)
 {
     VALUE v;
-    with_random_seed(DEFAULT_SEED_CNT, 1) {
+    with_random_seed(DEFAULT_SEED_CNT, 1, true) {
         v = make_seed_value(seedbuf, DEFAULT_SEED_CNT);
     }
     return v;
@@ -890,7 +913,7 @@ rand_mt_load(VALUE obj, VALUE dump)
         sizeof(*mt->state), 0,
         INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
     x = NUM2ULONG(left);
-    if (x > numberof(mt->state)) {
+    if (x > numberof(mt->state) || x == 0) {
         rb_raise(rb_eArgError, "wrong value");
     }
     mt->left = (unsigned int)x;
@@ -1770,7 +1793,7 @@ Init_RandomSeedCore(void)
     */
     struct MT mt;
 
-    with_random_seed(DEFAULT_SEED_CNT, 0) {
+    with_random_seed(DEFAULT_SEED_CNT, 0, false) {
         init_by_array(&mt, seedbuf, DEFAULT_SEED_CNT);
     }
 

@@ -938,556 +938,743 @@
 static void
 init_constants(VALUE mod)
 {
+#if 0
+    mod = rb_define_module("Etc");
+#endif
 #if defined(_SC_AIO_LISTIO_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_AIO_LISTIO_MAX", INTEGER2NUM(_SC_AIO_LISTIO_MAX));
 #endif
 #if defined(_SC_AIO_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_AIO_MAX", INTEGER2NUM(_SC_AIO_MAX));
 #endif
 #if defined(_SC_AIO_PRIO_DELTA_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_AIO_PRIO_DELTA_MAX", INTEGER2NUM(_SC_AIO_PRIO_DELTA_MAX));
 #endif
 #if defined(_SC_ARG_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_ARG_MAX", INTEGER2NUM(_SC_ARG_MAX));
 #endif
 #if defined(_SC_ATEXIT_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_ATEXIT_MAX", INTEGER2NUM(_SC_ATEXIT_MAX));
 #endif
 #if defined(_SC_BC_BASE_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_BC_BASE_MAX", INTEGER2NUM(_SC_BC_BASE_MAX));
 #endif
 #if defined(_SC_BC_DIM_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_BC_DIM_MAX", INTEGER2NUM(_SC_BC_DIM_MAX));
 #endif
 #if defined(_SC_BC_SCALE_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_BC_SCALE_MAX", INTEGER2NUM(_SC_BC_SCALE_MAX));
 #endif
 #if defined(_SC_BC_STRING_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_BC_STRING_MAX", INTEGER2NUM(_SC_BC_STRING_MAX));
 #endif
 #if defined(_SC_CHILD_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_CHILD_MAX", INTEGER2NUM(_SC_CHILD_MAX));
 #endif
 #if defined(_SC_CLK_TCK)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_CLK_TCK", INTEGER2NUM(_SC_CLK_TCK));
 #endif
 #if defined(_SC_COLL_WEIGHTS_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_COLL_WEIGHTS_MAX", INTEGER2NUM(_SC_COLL_WEIGHTS_MAX));
 #endif
 #if defined(_SC_DELAYTIMER_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_DELAYTIMER_MAX", INTEGER2NUM(_SC_DELAYTIMER_MAX));
 #endif
 #if defined(_SC_EXPR_NEST_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_EXPR_NEST_MAX", INTEGER2NUM(_SC_EXPR_NEST_MAX));
 #endif
 #if defined(_SC_HOST_NAME_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_HOST_NAME_MAX", INTEGER2NUM(_SC_HOST_NAME_MAX));
 #endif
 #if defined(_SC_IOV_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_IOV_MAX", INTEGER2NUM(_SC_IOV_MAX));
 #endif
 #if defined(_SC_LINE_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_LINE_MAX", INTEGER2NUM(_SC_LINE_MAX));
 #endif
 #if defined(_SC_LOGIN_NAME_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_LOGIN_NAME_MAX", INTEGER2NUM(_SC_LOGIN_NAME_MAX));
 #endif
 #if defined(_SC_NGROUPS_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_NGROUPS_MAX", INTEGER2NUM(_SC_NGROUPS_MAX));
 #endif
 #if defined(_SC_GETGR_R_SIZE_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_GETGR_R_SIZE_MAX", INTEGER2NUM(_SC_GETGR_R_SIZE_MAX));
 #endif
 #if defined(_SC_GETPW_R_SIZE_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_GETPW_R_SIZE_MAX", INTEGER2NUM(_SC_GETPW_R_SIZE_MAX));
 #endif
 #if defined(_SC_MQ_OPEN_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_MQ_OPEN_MAX", INTEGER2NUM(_SC_MQ_OPEN_MAX));
 #endif
 #if defined(_SC_MQ_PRIO_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_MQ_PRIO_MAX", INTEGER2NUM(_SC_MQ_PRIO_MAX));
 #endif
 #if defined(_SC_OPEN_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_OPEN_MAX", INTEGER2NUM(_SC_OPEN_MAX));
 #endif
 #if defined(_SC_ADVISORY_INFO)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_ADVISORY_INFO", INTEGER2NUM(_SC_ADVISORY_INFO));
 #endif
 #if defined(_SC_BARRIERS)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_BARRIERS", INTEGER2NUM(_SC_BARRIERS));
 #endif
 #if defined(_SC_ASYNCHRONOUS_IO)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_ASYNCHRONOUS_IO", INTEGER2NUM(_SC_ASYNCHRONOUS_IO));
 #endif
 #if defined(_SC_CLOCK_SELECTION)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_CLOCK_SELECTION", INTEGER2NUM(_SC_CLOCK_SELECTION));
 #endif
 #if defined(_SC_CPUTIME)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_CPUTIME", INTEGER2NUM(_SC_CPUTIME));
 #endif
 #if defined(_SC_FSYNC)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_FSYNC", INTEGER2NUM(_SC_FSYNC));
 #endif
 #if defined(_SC_IPV6)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_IPV6", INTEGER2NUM(_SC_IPV6));
 #endif
 #if defined(_SC_JOB_CONTROL)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_JOB_CONTROL", INTEGER2NUM(_SC_JOB_CONTROL));
 #endif
 #if defined(_SC_MAPPED_FILES)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_MAPPED_FILES", INTEGER2NUM(_SC_MAPPED_FILES));
 #endif
 #if defined(_SC_MEMLOCK)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_MEMLOCK", INTEGER2NUM(_SC_MEMLOCK));
 #endif
 #if defined(_SC_MEMLOCK_RANGE)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_MEMLOCK_RANGE", INTEGER2NUM(_SC_MEMLOCK_RANGE));
 #endif
 #if defined(_SC_MEMORY_PROTECTION)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_MEMORY_PROTECTION", INTEGER2NUM(_SC_MEMORY_PROTECTION));
 #endif
 #if defined(_SC_MESSAGE_PASSING)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_MESSAGE_PASSING", INTEGER2NUM(_SC_MESSAGE_PASSING));
 #endif
 #if defined(_SC_MONOTONIC_CLOCK)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_MONOTONIC_CLOCK", INTEGER2NUM(_SC_MONOTONIC_CLOCK));
 #endif
 #if defined(_SC_PRIORITIZED_IO)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_PRIORITIZED_IO", INTEGER2NUM(_SC_PRIORITIZED_IO));
 #endif
 #if defined(_SC_PRIORITY_SCHEDULING)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_PRIORITY_SCHEDULING", INTEGER2NUM(_SC_PRIORITY_SCHEDULING));
 #endif
 #if defined(_SC_RAW_SOCKETS)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_RAW_SOCKETS", INTEGER2NUM(_SC_RAW_SOCKETS));
 #endif
 #if defined(_SC_READER_WRITER_LOCKS)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_READER_WRITER_LOCKS", INTEGER2NUM(_SC_READER_WRITER_LOCKS));
 #endif
 #if defined(_SC_REALTIME_SIGNALS)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_REALTIME_SIGNALS", INTEGER2NUM(_SC_REALTIME_SIGNALS));
 #endif
 #if defined(_SC_REGEXP)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_REGEXP", INTEGER2NUM(_SC_REGEXP));
 #endif
 #if defined(_SC_SAVED_IDS)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_SAVED_IDS", INTEGER2NUM(_SC_SAVED_IDS));
 #endif
 #if defined(_SC_SEMAPHORES)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_SEMAPHORES", INTEGER2NUM(_SC_SEMAPHORES));
 #endif
 #if defined(_SC_SHARED_MEMORY_OBJECTS)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_SHARED_MEMORY_OBJECTS", INTEGER2NUM(_SC_SHARED_MEMORY_OBJECTS));
 #endif
 #if defined(_SC_SHELL)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_SHELL", INTEGER2NUM(_SC_SHELL));
 #endif
 #if defined(_SC_SPAWN)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_SPAWN", INTEGER2NUM(_SC_SPAWN));
 #endif
 #if defined(_SC_SPIN_LOCKS)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_SPIN_LOCKS", INTEGER2NUM(_SC_SPIN_LOCKS));
 #endif
 #if defined(_SC_SPORADIC_SERVER)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_SPORADIC_SERVER", INTEGER2NUM(_SC_SPORADIC_SERVER));
 #endif
 #if defined(_SC_SS_REPL_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_SS_REPL_MAX", INTEGER2NUM(_SC_SS_REPL_MAX));
 #endif
 #if defined(_SC_SYNCHRONIZED_IO)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_SYNCHRONIZED_IO", INTEGER2NUM(_SC_SYNCHRONIZED_IO));
 #endif
 #if defined(_SC_THREAD_ATTR_STACKADDR)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_THREAD_ATTR_STACKADDR", INTEGER2NUM(_SC_THREAD_ATTR_STACKADDR));
 #endif
 #if defined(_SC_THREAD_ATTR_STACKSIZE)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_THREAD_ATTR_STACKSIZE", INTEGER2NUM(_SC_THREAD_ATTR_STACKSIZE));
 #endif
 #if defined(_SC_THREAD_CPUTIME)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_THREAD_CPUTIME", INTEGER2NUM(_SC_THREAD_CPUTIME));
 #endif
 #if defined(_SC_THREAD_PRIO_INHERIT)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_THREAD_PRIO_INHERIT", INTEGER2NUM(_SC_THREAD_PRIO_INHERIT));
 #endif
 #if defined(_SC_THREAD_PRIO_PROTECT)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_THREAD_PRIO_PROTECT", INTEGER2NUM(_SC_THREAD_PRIO_PROTECT));
 #endif
 #if defined(_SC_THREAD_PRIORITY_SCHEDULING)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_THREAD_PRIORITY_SCHEDULING", INTEGER2NUM(_SC_THREAD_PRIORITY_SCHEDULING));
 #endif
 #if defined(_SC_THREAD_PROCESS_SHARED)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_THREAD_PROCESS_SHARED", INTEGER2NUM(_SC_THREAD_PROCESS_SHARED));
 #endif
 #if defined(_SC_THREAD_ROBUST_PRIO_INHERIT)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_THREAD_ROBUST_PRIO_INHERIT", INTEGER2NUM(_SC_THREAD_ROBUST_PRIO_INHERIT));
 #endif
 #if defined(_SC_THREAD_ROBUST_PRIO_PROTECT)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_THREAD_ROBUST_PRIO_PROTECT", INTEGER2NUM(_SC_THREAD_ROBUST_PRIO_PROTECT));
 #endif
 #if defined(_SC_THREAD_SAFE_FUNCTIONS)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_THREAD_SAFE_FUNCTIONS", INTEGER2NUM(_SC_THREAD_SAFE_FUNCTIONS));
 #endif
 #if defined(_SC_THREAD_SPORADIC_SERVER)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_THREAD_SPORADIC_SERVER", INTEGER2NUM(_SC_THREAD_SPORADIC_SERVER));
 #endif
 #if defined(_SC_THREADS)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_THREADS", INTEGER2NUM(_SC_THREADS));
 #endif
 #if defined(_SC_TIMEOUTS)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_TIMEOUTS", INTEGER2NUM(_SC_TIMEOUTS));
 #endif
 #if defined(_SC_TIMERS)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_TIMERS", INTEGER2NUM(_SC_TIMERS));
 #endif
 #if defined(_SC_TRACE)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_TRACE", INTEGER2NUM(_SC_TRACE));
 #endif
 #if defined(_SC_TRACE_EVENT_FILTER)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_TRACE_EVENT_FILTER", INTEGER2NUM(_SC_TRACE_EVENT_FILTER));
 #endif
 #if defined(_SC_TRACE_EVENT_NAME_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_TRACE_EVENT_NAME_MAX", INTEGER2NUM(_SC_TRACE_EVENT_NAME_MAX));
 #endif
 #if defined(_SC_TRACE_INHERIT)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_TRACE_INHERIT", INTEGER2NUM(_SC_TRACE_INHERIT));
 #endif
 #if defined(_SC_TRACE_LOG)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_TRACE_LOG", INTEGER2NUM(_SC_TRACE_LOG));
 #endif
 #if defined(_SC_TRACE_NAME_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_TRACE_NAME_MAX", INTEGER2NUM(_SC_TRACE_NAME_MAX));
 #endif
 #if defined(_SC_TRACE_SYS_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_TRACE_SYS_MAX", INTEGER2NUM(_SC_TRACE_SYS_MAX));
 #endif
 #if defined(_SC_TRACE_USER_EVENT_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_TRACE_USER_EVENT_MAX", INTEGER2NUM(_SC_TRACE_USER_EVENT_MAX));
 #endif
 #if defined(_SC_TYPED_MEMORY_OBJECTS)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_TYPED_MEMORY_OBJECTS", INTEGER2NUM(_SC_TYPED_MEMORY_OBJECTS));
 #endif
 #if defined(_SC_VERSION)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_VERSION", INTEGER2NUM(_SC_VERSION));
 #endif
 #if defined(_SC_V7_ILP32_OFF32)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_V7_ILP32_OFF32", INTEGER2NUM(_SC_V7_ILP32_OFF32));
 #endif
 #if defined(_SC_V7_ILP32_OFFBIG)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_V7_ILP32_OFFBIG", INTEGER2NUM(_SC_V7_ILP32_OFFBIG));
 #endif
 #if defined(_SC_V7_LP64_OFF64)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_V7_LP64_OFF64", INTEGER2NUM(_SC_V7_LP64_OFF64));
 #endif
 #if defined(_SC_V7_LPBIG_OFFBIG)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_V7_LPBIG_OFFBIG", INTEGER2NUM(_SC_V7_LPBIG_OFFBIG));
 #endif
 #if defined(_SC_V6_ILP32_OFF32)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_V6_ILP32_OFF32", INTEGER2NUM(_SC_V6_ILP32_OFF32));
 #endif
 #if defined(_SC_V6_ILP32_OFFBIG)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_V6_ILP32_OFFBIG", INTEGER2NUM(_SC_V6_ILP32_OFFBIG));
 #endif
 #if defined(_SC_V6_LP64_OFF64)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_V6_LP64_OFF64", INTEGER2NUM(_SC_V6_LP64_OFF64));
 #endif
 #if defined(_SC_V6_LPBIG_OFFBIG)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_V6_LPBIG_OFFBIG", INTEGER2NUM(_SC_V6_LPBIG_OFFBIG));
 #endif
 #if defined(_SC_2_C_BIND)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_2_C_BIND", INTEGER2NUM(_SC_2_C_BIND));
 #endif
 #if defined(_SC_2_C_DEV)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_2_C_DEV", INTEGER2NUM(_SC_2_C_DEV));
 #endif
 #if defined(_SC_2_CHAR_TERM)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_2_CHAR_TERM", INTEGER2NUM(_SC_2_CHAR_TERM));
 #endif
 #if defined(_SC_2_FORT_DEV)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_2_FORT_DEV", INTEGER2NUM(_SC_2_FORT_DEV));
 #endif
 #if defined(_SC_2_FORT_RUN)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_2_FORT_RUN", INTEGER2NUM(_SC_2_FORT_RUN));
 #endif
 #if defined(_SC_2_LOCALEDEF)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_2_LOCALEDEF", INTEGER2NUM(_SC_2_LOCALEDEF));
 #endif
 #if defined(_SC_2_PBS)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_2_PBS", INTEGER2NUM(_SC_2_PBS));
 #endif
 #if defined(_SC_2_PBS_ACCOUNTING)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_2_PBS_ACCOUNTING", INTEGER2NUM(_SC_2_PBS_ACCOUNTING));
 #endif
 #if defined(_SC_2_PBS_CHECKPOINT)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_2_PBS_CHECKPOINT", INTEGER2NUM(_SC_2_PBS_CHECKPOINT));
 #endif
 #if defined(_SC_2_PBS_LOCATE)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_2_PBS_LOCATE", INTEGER2NUM(_SC_2_PBS_LOCATE));
 #endif
 #if defined(_SC_2_PBS_MESSAGE)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_2_PBS_MESSAGE", INTEGER2NUM(_SC_2_PBS_MESSAGE));
 #endif
 #if defined(_SC_2_PBS_TRACK)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_2_PBS_TRACK", INTEGER2NUM(_SC_2_PBS_TRACK));
 #endif
 #if defined(_SC_2_SW_DEV)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_2_SW_DEV", INTEGER2NUM(_SC_2_SW_DEV));
 #endif
 #if defined(_SC_2_UPE)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_2_UPE", INTEGER2NUM(_SC_2_UPE));
 #endif
 #if defined(_SC_2_VERSION)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_2_VERSION", INTEGER2NUM(_SC_2_VERSION));
 #endif
 #if defined(_SC_PAGE_SIZE)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_PAGE_SIZE", INTEGER2NUM(_SC_PAGE_SIZE));
 #endif
 #if defined(_SC_PAGESIZE)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_PAGESIZE", INTEGER2NUM(_SC_PAGESIZE));
 #endif
 #if defined(_SC_THREAD_DESTRUCTOR_ITERATIONS)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_THREAD_DESTRUCTOR_ITERATIONS", INTEGER2NUM(_SC_THREAD_DESTRUCTOR_ITERATIONS));
 #endif
 #if defined(_SC_THREAD_KEYS_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_THREAD_KEYS_MAX", INTEGER2NUM(_SC_THREAD_KEYS_MAX));
 #endif
 #if defined(_SC_THREAD_STACK_MIN)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_THREAD_STACK_MIN", INTEGER2NUM(_SC_THREAD_STACK_MIN));
 #endif
 #if defined(_SC_THREAD_THREADS_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_THREAD_THREADS_MAX", INTEGER2NUM(_SC_THREAD_THREADS_MAX));
 #endif
 #if defined(_SC_RE_DUP_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_RE_DUP_MAX", INTEGER2NUM(_SC_RE_DUP_MAX));
 #endif
 #if defined(_SC_RTSIG_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_RTSIG_MAX", INTEGER2NUM(_SC_RTSIG_MAX));
 #endif
 #if defined(_SC_SEM_NSEMS_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_SEM_NSEMS_MAX", INTEGER2NUM(_SC_SEM_NSEMS_MAX));
 #endif
 #if defined(_SC_SEM_VALUE_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_SEM_VALUE_MAX", INTEGER2NUM(_SC_SEM_VALUE_MAX));
 #endif
 #if defined(_SC_SIGQUEUE_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_SIGQUEUE_MAX", INTEGER2NUM(_SC_SIGQUEUE_MAX));
 #endif
 #if defined(_SC_STREAM_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_STREAM_MAX", INTEGER2NUM(_SC_STREAM_MAX));
 #endif
 #if defined(_SC_SYMLOOP_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_SYMLOOP_MAX", INTEGER2NUM(_SC_SYMLOOP_MAX));
 #endif
 #if defined(_SC_TIMER_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_TIMER_MAX", INTEGER2NUM(_SC_TIMER_MAX));
 #endif
 #if defined(_SC_TTY_NAME_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_TTY_NAME_MAX", INTEGER2NUM(_SC_TTY_NAME_MAX));
 #endif
 #if defined(_SC_TZNAME_MAX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_TZNAME_MAX", INTEGER2NUM(_SC_TZNAME_MAX));
 #endif
 #if defined(_SC_XOPEN_CRYPT)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_XOPEN_CRYPT", INTEGER2NUM(_SC_XOPEN_CRYPT));
 #endif
 #if defined(_SC_XOPEN_ENH_I18N)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_XOPEN_ENH_I18N", INTEGER2NUM(_SC_XOPEN_ENH_I18N));
 #endif
 #if defined(_SC_XOPEN_REALTIME)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_XOPEN_REALTIME", INTEGER2NUM(_SC_XOPEN_REALTIME));
 #endif
 #if defined(_SC_XOPEN_REALTIME_THREADS)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_XOPEN_REALTIME_THREADS", INTEGER2NUM(_SC_XOPEN_REALTIME_THREADS));
 #endif
 #if defined(_SC_XOPEN_SHM)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_XOPEN_SHM", INTEGER2NUM(_SC_XOPEN_SHM));
 #endif
 #if defined(_SC_XOPEN_STREAMS)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_XOPEN_STREAMS", INTEGER2NUM(_SC_XOPEN_STREAMS));
 #endif
 #if defined(_SC_XOPEN_UNIX)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_XOPEN_UNIX", INTEGER2NUM(_SC_XOPEN_UNIX));
 #endif
 #if defined(_SC_XOPEN_UUCP)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_XOPEN_UUCP", INTEGER2NUM(_SC_XOPEN_UUCP));
 #endif
 #if defined(_SC_XOPEN_VERSION)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_XOPEN_VERSION", INTEGER2NUM(_SC_XOPEN_VERSION));
 #endif
 #if defined(_SC_PHYS_PAGES)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_PHYS_PAGES", INTEGER2NUM(_SC_PHYS_PAGES));
 #endif
 #if defined(_SC_AVPHYS_PAGES)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_AVPHYS_PAGES", INTEGER2NUM(_SC_AVPHYS_PAGES));
 #endif
 #if defined(_SC_NPROCESSORS_CONF)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_NPROCESSORS_CONF", INTEGER2NUM(_SC_NPROCESSORS_CONF));
 #endif
 #if defined(_SC_NPROCESSORS_ONLN)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_NPROCESSORS_ONLN", INTEGER2NUM(_SC_NPROCESSORS_ONLN));
 #endif
 #if defined(_SC_CPUSET_SIZE)
+    /*  For Etc.sysconf; See <tt>man sysconf</tt> */
     rb_define_const(mod, "SC_CPUSET_SIZE", INTEGER2NUM(_SC_CPUSET_SIZE));
 #endif
 #if defined(_CS_PATH)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_PATH", INTEGER2NUM(_CS_PATH));
 #endif
 #if defined(_CS_POSIX_V7_ILP32_OFF32_CFLAGS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V7_ILP32_OFF32_CFLAGS", INTEGER2NUM(_CS_POSIX_V7_ILP32_OFF32_CFLAGS));
 #endif
 #if defined(_CS_POSIX_V7_ILP32_OFF32_LDFLAGS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V7_ILP32_OFF32_LDFLAGS", INTEGER2NUM(_CS_POSIX_V7_ILP32_OFF32_LDFLAGS));
 #endif
 #if defined(_CS_POSIX_V7_ILP32_OFF32_LIBS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V7_ILP32_OFF32_LIBS", INTEGER2NUM(_CS_POSIX_V7_ILP32_OFF32_LIBS));
 #endif
 #if defined(_CS_POSIX_V7_ILP32_OFFBIG_CFLAGS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V7_ILP32_OFFBIG_CFLAGS", INTEGER2NUM(_CS_POSIX_V7_ILP32_OFFBIG_CFLAGS));
 #endif
 #if defined(_CS_POSIX_V7_ILP32_OFFBIG_LDFLAGS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V7_ILP32_OFFBIG_LDFLAGS", INTEGER2NUM(_CS_POSIX_V7_ILP32_OFFBIG_LDFLAGS));
 #endif
 #if defined(_CS_POSIX_V7_ILP32_OFFBIG_LIBS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V7_ILP32_OFFBIG_LIBS", INTEGER2NUM(_CS_POSIX_V7_ILP32_OFFBIG_LIBS));
 #endif
 #if defined(_CS_POSIX_V7_LP64_OFF64_CFLAGS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V7_LP64_OFF64_CFLAGS", INTEGER2NUM(_CS_POSIX_V7_LP64_OFF64_CFLAGS));
 #endif
 #if defined(_CS_POSIX_V7_LP64_OFF64_LDFLAGS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V7_LP64_OFF64_LDFLAGS", INTEGER2NUM(_CS_POSIX_V7_LP64_OFF64_LDFLAGS));
 #endif
 #if defined(_CS_POSIX_V7_LP64_OFF64_LIBS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V7_LP64_OFF64_LIBS", INTEGER2NUM(_CS_POSIX_V7_LP64_OFF64_LIBS));
 #endif
 #if defined(_CS_POSIX_V7_LPBIG_OFFBIG_CFLAGS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V7_LPBIG_OFFBIG_CFLAGS", INTEGER2NUM(_CS_POSIX_V7_LPBIG_OFFBIG_CFLAGS));
 #endif
 #if defined(_CS_POSIX_V7_LPBIG_OFFBIG_LDFLAGS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V7_LPBIG_OFFBIG_LDFLAGS", INTEGER2NUM(_CS_POSIX_V7_LPBIG_OFFBIG_LDFLAGS));
 #endif
 #if defined(_CS_POSIX_V7_LPBIG_OFFBIG_LIBS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V7_LPBIG_OFFBIG_LIBS", INTEGER2NUM(_CS_POSIX_V7_LPBIG_OFFBIG_LIBS));
 #endif
 #if defined(_CS_POSIX_V7_THREADS_CFLAGS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V7_THREADS_CFLAGS", INTEGER2NUM(_CS_POSIX_V7_THREADS_CFLAGS));
 #endif
 #if defined(_CS_POSIX_V7_THREADS_LDFLAGS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V7_THREADS_LDFLAGS", INTEGER2NUM(_CS_POSIX_V7_THREADS_LDFLAGS));
 #endif
 #if defined(_CS_POSIX_V7_WIDTH_RESTRICTED_ENVS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V7_WIDTH_RESTRICTED_ENVS", INTEGER2NUM(_CS_POSIX_V7_WIDTH_RESTRICTED_ENVS));
 #endif
 #if defined(_CS_V7_ENV)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_V7_ENV", INTEGER2NUM(_CS_V7_ENV));
 #endif
 #if defined(_CS_POSIX_V6_ILP32_OFF32_CFLAGS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V6_ILP32_OFF32_CFLAGS", INTEGER2NUM(_CS_POSIX_V6_ILP32_OFF32_CFLAGS));
 #endif
 #if defined(_CS_POSIX_V6_ILP32_OFF32_LDFLAGS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V6_ILP32_OFF32_LDFLAGS", INTEGER2NUM(_CS_POSIX_V6_ILP32_OFF32_LDFLAGS));
 #endif
 #if defined(_CS_POSIX_V6_ILP32_OFF32_LIBS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V6_ILP32_OFF32_LIBS", INTEGER2NUM(_CS_POSIX_V6_ILP32_OFF32_LIBS));
 #endif
 #if defined(_CS_POSIX_V6_ILP32_OFFBIG_CFLAGS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V6_ILP32_OFFBIG_CFLAGS", INTEGER2NUM(_CS_POSIX_V6_ILP32_OFFBIG_CFLAGS));
 #endif
 #if defined(_CS_POSIX_V6_ILP32_OFFBIG_LDFLAGS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V6_ILP32_OFFBIG_LDFLAGS", INTEGER2NUM(_CS_POSIX_V6_ILP32_OFFBIG_LDFLAGS));
 #endif
 #if defined(_CS_POSIX_V6_ILP32_OFFBIG_LIBS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V6_ILP32_OFFBIG_LIBS", INTEGER2NUM(_CS_POSIX_V6_ILP32_OFFBIG_LIBS));
 #endif
 #if defined(_CS_POSIX_V6_LP64_OFF64_CFLAGS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V6_LP64_OFF64_CFLAGS", INTEGER2NUM(_CS_POSIX_V6_LP64_OFF64_CFLAGS));
 #endif
 #if defined(_CS_POSIX_V6_LP64_OFF64_LDFLAGS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V6_LP64_OFF64_LDFLAGS", INTEGER2NUM(_CS_POSIX_V6_LP64_OFF64_LDFLAGS));
 #endif
 #if defined(_CS_POSIX_V6_LP64_OFF64_LIBS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V6_LP64_OFF64_LIBS", INTEGER2NUM(_CS_POSIX_V6_LP64_OFF64_LIBS));
 #endif
 #if defined(_CS_POSIX_V6_LPBIG_OFFBIG_CFLAGS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V6_LPBIG_OFFBIG_CFLAGS", INTEGER2NUM(_CS_POSIX_V6_LPBIG_OFFBIG_CFLAGS));
 #endif
 #if defined(_CS_POSIX_V6_LPBIG_OFFBIG_LDFLAGS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V6_LPBIG_OFFBIG_LDFLAGS", INTEGER2NUM(_CS_POSIX_V6_LPBIG_OFFBIG_LDFLAGS));
 #endif
 #if defined(_CS_POSIX_V6_LPBIG_OFFBIG_LIBS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V6_LPBIG_OFFBIG_LIBS", INTEGER2NUM(_CS_POSIX_V6_LPBIG_OFFBIG_LIBS));
 #endif
 #if defined(_CS_POSIX_V6_WIDTH_RESTRICTED_ENVS)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_POSIX_V6_WIDTH_RESTRICTED_ENVS", INTEGER2NUM(_CS_POSIX_V6_WIDTH_RESTRICTED_ENVS));
 #endif
 #if defined(_CS_V6_ENV)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_V6_ENV", INTEGER2NUM(_CS_V6_ENV));
 #endif
 #if defined(_CS_GNU_LIBC_VERSION)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_GNU_LIBC_VERSION", INTEGER2NUM(_CS_GNU_LIBC_VERSION));
 #endif
 #if defined(_CS_GNU_LIBPTHREAD_VERSION)
+    /*  For Etc.confstr; See <tt>man constr</tt> */
     rb_define_const(mod, "CS_GNU_LIBPTHREAD_VERSION", INTEGER2NUM(_CS_GNU_LIBPTHREAD_VERSION));
 #endif
 #if defined(_PC_FILESIZEBITS)
+    /*  For IO#pathconf; See <tt>man fpathconf</tt> */
     rb_define_const(mod, "PC_FILESIZEBITS", INTEGER2NUM(_PC_FILESIZEBITS));
 #endif
 #if defined(_PC_LINK_MAX)
+    /*  For IO#pathconf; See <tt>man fpathconf</tt> */
     rb_define_const(mod, "PC_LINK_MAX", INTEGER2NUM(_PC_LINK_MAX));
 #endif
 #if defined(_PC_MAX_CANON)
+    /*  For IO#pathconf; See <tt>man fpathconf</tt> */
     rb_define_const(mod, "PC_MAX_CANON", INTEGER2NUM(_PC_MAX_CANON));
 #endif
 #if defined(_PC_MAX_INPUT)
+    /*  For IO#pathconf; See <tt>man fpathconf</tt> */
     rb_define_const(mod, "PC_MAX_INPUT", INTEGER2NUM(_PC_MAX_INPUT));
 #endif
 #if defined(_PC_NAME_MAX)
+    /*  For IO#pathconf; See <tt>man fpathconf</tt> */
     rb_define_const(mod, "PC_NAME_MAX", INTEGER2NUM(_PC_NAME_MAX));
 #endif
 #if defined(_PC_PATH_MAX)
+    /*  For IO#pathconf; See <tt>man fpathconf</tt> */
     rb_define_const(mod, "PC_PATH_MAX", INTEGER2NUM(_PC_PATH_MAX));
 #endif
 #if defined(_PC_PIPE_BUF)
+    /*  For IO#pathconf; See <tt>man fpathconf</tt> */
     rb_define_const(mod, "PC_PIPE_BUF", INTEGER2NUM(_PC_PIPE_BUF));
 #endif
 #if defined(_PC_2_SYMLINKS)
+    /*  For IO#pathconf; See <tt>man fpathconf</tt> */
     rb_define_const(mod, "PC_2_SYMLINKS", INTEGER2NUM(_PC_2_SYMLINKS));
 #endif
 #if defined(_PC_ALLOC_SIZE_MIN)
+    /*  For IO#pathconf; See <tt>man fpathconf</tt> */
     rb_define_const(mod, "PC_ALLOC_SIZE_MIN", INTEGER2NUM(_PC_ALLOC_SIZE_MIN));
 #endif
 #if defined(_PC_REC_INCR_XFER_SIZE)
+    /*  For IO#pathconf; See <tt>man fpathconf</tt> */
     rb_define_const(mod, "PC_REC_INCR_XFER_SIZE", INTEGER2NUM(_PC_REC_INCR_XFER_SIZE));
 #endif
 #if defined(_PC_REC_MAX_XFER_SIZE)
+    /*  For IO#pathconf; See <tt>man fpathconf</tt> */
     rb_define_const(mod, "PC_REC_MAX_XFER_SIZE", INTEGER2NUM(_PC_REC_MAX_XFER_SIZE));
 #endif
 #if defined(_PC_REC_MIN_XFER_SIZE)
+    /*  For IO#pathconf; See <tt>man fpathconf</tt> */
     rb_define_const(mod, "PC_REC_MIN_XFER_SIZE", INTEGER2NUM(_PC_REC_MIN_XFER_SIZE));
 #endif
 #if defined(_PC_REC_XFER_ALIGN)
+    /*  For IO#pathconf; See <tt>man fpathconf</tt> */
     rb_define_const(mod, "PC_REC_XFER_ALIGN", INTEGER2NUM(_PC_REC_XFER_ALIGN));
 #endif
 #if defined(_PC_SYMLINK_MAX)
+    /*  For IO#pathconf; See <tt>man fpathconf</tt> */
     rb_define_const(mod, "PC_SYMLINK_MAX", INTEGER2NUM(_PC_SYMLINK_MAX));
 #endif
 #if defined(_PC_CHOWN_RESTRICTED)
+    /*  For IO#pathconf; See <tt>man fpathconf</tt> */
     rb_define_const(mod, "PC_CHOWN_RESTRICTED", INTEGER2NUM(_PC_CHOWN_RESTRICTED));
 #endif
 #if defined(_PC_NO_TRUNC)
+    /*  For IO#pathconf; See <tt>man fpathconf</tt> */
     rb_define_const(mod, "PC_NO_TRUNC", INTEGER2NUM(_PC_NO_TRUNC));
 #endif
 #if defined(_PC_VDISABLE)
+    /*  For IO#pathconf; See <tt>man fpathconf</tt> */
     rb_define_const(mod, "PC_VDISABLE", INTEGER2NUM(_PC_VDISABLE));
 #endif
 #if defined(_PC_ASYNC_IO)
+    /*  For IO#pathconf; See <tt>man fpathconf</tt> */
     rb_define_const(mod, "PC_ASYNC_IO", INTEGER2NUM(_PC_ASYNC_IO));
 #endif
 #if defined(_PC_PRIO_IO)
+    /*  For IO#pathconf; See <tt>man fpathconf</tt> */
     rb_define_const(mod, "PC_PRIO_IO", INTEGER2NUM(_PC_PRIO_IO));
 #endif
 #if defined(_PC_SYNC_IO)
+    /*  For IO#pathconf; See <tt>man fpathconf</tt> */
     rb_define_const(mod, "PC_SYNC_IO", INTEGER2NUM(_PC_SYNC_IO));
 #endif
 #if defined(_PC_TIMESTAMP_RESOLUTION)
+    /*  For IO#pathconf; See <tt>man fpathconf</tt> */
     rb_define_const(mod, "PC_TIMESTAMP_RESOLUTION", INTEGER2NUM(_PC_TIMESTAMP_RESOLUTION));
 #endif
 

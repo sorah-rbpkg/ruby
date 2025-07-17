@@ -18,6 +18,7 @@
 #include "darray.h"
 #include "ruby/encoding.h"
 #include "ruby/util.h"
+#include "ractor_core.h"
 
 static VALUE ruby_dln_libmap;
 
@@ -104,7 +105,7 @@ rb_construct_expanded_load_path(rb_vm_t *vm, enum expand_type type, int *has_rel
         if (NIL_P(expanded_path)) expanded_path = as_str;
         rb_ary_push(ary, rb_fstring(expanded_path));
     }
-    rb_obj_freeze(ary);
+    rb_ary_freeze(ary);
     vm->expanded_load_path = ary;
     rb_ary_replace(vm->load_path_snapshot, vm->load_path);
 }
@@ -253,9 +254,9 @@ features_index_add_single_callback(st_data_t *key, st_data_t *value, st_data_t r
             rb_darray_set(feature_indexes, top^0, FIX2LONG(this_feature_index));
             rb_darray_set(feature_indexes, top^1, FIX2LONG(offset));
 
-            assert(rb_darray_size(feature_indexes) == 2);
+            RUBY_ASSERT(rb_darray_size(feature_indexes) == 2);
             // assert feature_indexes does not look like a special const
-            assert(!SPECIAL_CONST_P((VALUE)feature_indexes));
+            RUBY_ASSERT(!SPECIAL_CONST_P((VALUE)feature_indexes));
 
             *value = (st_data_t)feature_indexes;
         }
@@ -737,38 +738,52 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
     const rb_iseq_t *iseq = rb_iseq_load_iseq(fname);
 
     if (!iseq) {
-        if (*rb_ruby_prism_ptr()) {
-            pm_string_t input;
-            pm_options_t options = { 0 };
+        rb_execution_context_t *ec = GET_EC();
+        VALUE v = rb_vm_push_frame_fname(ec, fname);
 
-            pm_string_mapped_init(&input, RSTRING_PTR(fname));
-            pm_options_filepath_set(&options, RSTRING_PTR(fname));
+        rb_thread_t *th = rb_ec_thread_ptr(ec);
+        VALUE realpath_map = get_loaded_features_realpath_map(th->vm);
 
-            pm_parser_t parser;
-            pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), &options);
+        if (rb_ruby_prism_p()) {
+            pm_parse_result_t result = { 0 };
+            result.options.line = 1;
+            result.node.coverage_enabled = 1;
 
-            iseq = rb_iseq_new_main_prism(&input, &options, fname);
+            VALUE error = pm_load_parse_file(&result, fname, NULL);
 
-            pm_string_free(&input);
-            pm_options_free(&options);
+            if (error == Qnil) {
+                int error_state;
+                iseq = pm_iseq_new_top(&result.node, rb_fstring_lit("<top (required)>"), fname, realpath_internal_cached(realpath_map, fname), NULL, &error_state);
+
+                pm_parse_result_free(&result);
+
+                if (error_state) {
+                    RUBY_ASSERT(iseq == NULL);
+                    rb_jump_tag(error_state);
+                }
+            }
+            else {
+                rb_vm_pop_frame(ec);
+                RB_GC_GUARD(v);
+                pm_parse_result_free(&result);
+                rb_exc_raise(error);
+            }
         }
         else {
-            rb_execution_context_t *ec = GET_EC();
-            VALUE v = rb_vm_push_frame_fname(ec, fname);
             rb_ast_t *ast;
+            VALUE ast_value;
             VALUE parser = rb_parser_new();
             rb_parser_set_context(parser, NULL, FALSE);
-            ast = (rb_ast_t *)rb_parser_load_file(parser, fname);
+            ast_value = rb_parser_load_file(parser, fname);
+            ast = rb_ruby_ast_data_get(ast_value);
 
-            rb_thread_t *th = rb_ec_thread_ptr(ec);
-            VALUE realpath_map = get_loaded_features_realpath_map(th->vm);
-
-            iseq = rb_iseq_new_top(&ast->body, rb_fstring_lit("<top (required)>"),
+            iseq = rb_iseq_new_top(ast_value, rb_fstring_lit("<top (required)>"),
                                    fname, realpath_internal_cached(realpath_map, fname), NULL);
             rb_ast_dispose(ast);
-            rb_vm_pop_frame(ec);
-            RB_GC_GUARD(v);
         }
+
+        rb_vm_pop_frame(ec);
+        RB_GC_GUARD(v);
     }
     rb_exec_event_hook_script_compiled(ec, iseq, Qnil);
     rb_iseq_eval(iseq);
@@ -883,9 +898,8 @@ rb_load_protect(VALUE fname, int wrap, int *pstate)
  *  LoadError will be raised.
  *
  *  If the optional _wrap_ parameter is +true+, the loaded script will
- *  be executed under an anonymous module, protecting the calling
- *  program's global namespace.  If the optional _wrap_ parameter is a
- *  module, the loaded script will be executed under the given module.
+ *  be executed under an anonymous module. If the optional _wrap_ parameter
+ *  is a module, the loaded script will be executed under the given module.
  *  In no circumstance will any local variables in the loaded file be
  *  propagated to the loading environment.
  */
@@ -1110,6 +1124,7 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
         ftptr = RSTRING_PTR(lookup_name);
         if (st_lookup(vm->static_ext_inits, (st_data_t)ftptr, NULL)) {
             *path = rb_filesystem_str_new_cstr(ftptr);
+            RB_GC_GUARD(lookup_name);
             return 's';
         }
     }
@@ -1278,7 +1293,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
             else {
                 switch (found) {
                   case 'r':
-                    load_iseq_eval(ec, path);
+                    load_iseq_eval(saved.ec, path);
                     break;
 
                   case 's':
@@ -1377,17 +1392,25 @@ static VALUE
 rb_require_string_internal(VALUE fname, bool resurrect)
 {
     rb_execution_context_t *ec = GET_EC();
-    int result = require_internal(ec, fname, 1, RTEST(ruby_verbose));
 
-    if (result > TAG_RETURN) {
-        EC_JUMP_TAG(ec, result);
-    }
-    if (result < 0) {
+    // main ractor check
+    if (!rb_ractor_main_p()) {
         if (resurrect) fname = rb_str_resurrect(fname);
-        load_failed(fname);
+        return rb_ractor_require(fname);
     }
+    else {
+        int result = require_internal(ec, fname, 1, RTEST(ruby_verbose));
 
-    return RBOOL(result);
+        if (result > TAG_RETURN) {
+            EC_JUMP_TAG(ec, result);
+        }
+        if (result < 0) {
+            if (resurrect) fname = rb_str_resurrect(fname);
+            load_failed(fname);
+        }
+
+        return RBOOL(result);
+    }
 }
 
 VALUE
@@ -1445,9 +1468,9 @@ ruby_init_ext(const char *name, void (*init)(void))
  *     A.autoload(:B, "b")
  *     A::B.doit            # autoloads "b"
  *
- * If _const_ in _mod_ is defined as autoload, the file name to be
- * loaded is replaced with _filename_.  If _const_ is defined but not
- * as autoload, does nothing.
+ *  If _const_ in _mod_ is defined as autoload, the file name to be
+ *  loaded is replaced with _filename_.  If _const_ is defined but not
+ *  as autoload, does nothing.
  */
 
 static VALUE
@@ -1509,9 +1532,9 @@ rb_mod_autoload_p(int argc, VALUE *argv, VALUE mod)
  *
  *     autoload(:MyModule, "/usr/local/lib/modules/my_module.rb")
  *
- * If _const_ is defined as autoload, the file name to be loaded is
- * replaced with _filename_.  If _const_ is defined but not as
- * autoload, does nothing.
+ *  If _const_ is defined as autoload, the file name to be loaded is
+ *  replaced with _filename_.  If _const_ is defined but not as
+ *  autoload, does nothing.
  */
 
 static VALUE
@@ -1529,10 +1552,22 @@ rb_f_autoload(VALUE obj, VALUE sym, VALUE file)
  *     autoload?(name, inherit=true)   -> String or nil
  *
  *  Returns _filename_ to be loaded if _name_ is registered as
- *  +autoload+.
+ *  +autoload+ in the current namespace or one of its ancestors.
  *
  *     autoload(:B, "b")
  *     autoload?(:B)            #=> "b"
+ *
+ *     module C
+ *       autoload(:D, "d")
+ *       autoload?(:D)          #=> "d"
+ *       autoload?(:B)          #=> nil
+ *     end
+ *
+ *     class E
+ *       autoload(:F, "f")
+ *       autoload?(:F)          #=> "f"
+ *       autoload?(:B)          #=> "b"
+ *     end
  */
 
 static VALUE
@@ -1612,5 +1647,5 @@ Init_load(void)
     rb_define_global_function("autoload?", rb_f_autoload_p, -1);
 
     ruby_dln_libmap = rb_hash_new_with_size(0);
-    rb_gc_register_mark_object(ruby_dln_libmap);
+    rb_vm_register_global_object(ruby_dln_libmap);
 }

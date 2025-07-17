@@ -1,23 +1,43 @@
+# frozen_string_literal: true
+
 require "forwardable"
+require_relative "code/destructor_code"
+require_relative "code/initial_action_code"
+require_relative "code/no_reference_code"
+require_relative "code/printer_code"
+require_relative "code/rule_action"
 
 module Lrama
   class Grammar
-    class Code < Struct.new(:type, :token_code, keyword_init: true)
+    class Code
       extend Forwardable
 
       def_delegators "token_code", :s_value, :line, :column, :references
+
+      attr_reader :type, :token_code
+
+      def initialize(type:, token_code:)
+        @type = type
+        @token_code = token_code
+      end
+
+      def ==(other)
+        self.class == other.class &&
+        self.type == other.type &&
+        self.token_code == other.token_code
+      end
 
       # $$, $n, @$, @n are translated to C code
       def translated_code
         t_code = s_value.dup
 
-        references.reverse.each do |ref|
+        references.reverse_each do |ref|
           first_column = ref.first_column
           last_column = ref.last_column
 
           str = reference_to_c(ref)
 
-          t_code[first_column..last_column] = str
+          t_code[first_column...last_column] = str
         end
 
         return t_code
@@ -31,8 +51,3 @@ module Lrama
     end
   end
 end
-
-require "lrama/grammar/code/initial_action_code"
-require "lrama/grammar/code/no_reference_code"
-require "lrama/grammar/code/printer_code"
-require "lrama/grammar/code/rule_action"

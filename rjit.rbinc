@@ -29,8 +29,8 @@ void Init_builtin_rjit(void)
 {
   // table definition
   static const struct rb_builtin_function rjit_table[] = {
-    RB_BUILTIN_FUNCTION(0, _bi0, builtin_inline_class_4, 0),
-    RB_BUILTIN_FUNCTION(1, _bi1, builtin_inline_class_9, 0),
+    RB_BUILTIN_FUNCTION(0, _bi4, builtin_inline_class_4, 0),
+    RB_BUILTIN_FUNCTION(1, _bi9, builtin_inline_class_9, 0),
     RB_BUILTIN_FUNCTION(2, rjit_stats_enabled_p, rjit_stats_enabled_p, 0),
     RB_BUILTIN_FUNCTION(3, rjit_stop_stats, rjit_stop_stats, 0),
     RB_BUILTIN_FUNCTION(4, rjit_trace_exits_enabled_p, rjit_trace_exits_enabled_p, 0),

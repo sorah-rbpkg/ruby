@@ -2,7 +2,13 @@
 # -*- mode: ruby; coding: us-ascii -*-
 # frozen_string_literal: false
 
-module Gem; end # only needs Gem::Platform
+module Gem
+  # Used by Gem::Platform.local
+  def self.target_rbconfig
+    RbConfig::CONFIG
+  end
+end
+# only needs Gem::Platform
 require 'rubygems/platform'
 
 # :stopdoc:
@@ -104,7 +110,7 @@ def extract_makefile(makefile, keep = true)
     end
     return false
   end
-  srcs = Dir[File.join($srcdir, "*.{#{SRC_EXT.join(%q{,})}}")].map {|fn| File.basename(fn)}.sort
+  srcs = Dir[*SRC_EXT.map {|e| "*.#{e}"}, base: $srcdir].map {|fn| File.basename(fn)}.sort
   if !srcs.empty?
     old_srcs = m[/^ORIG_SRCS[ \t]*=[ \t](.*)/, 1] or return false
     (old_srcs.split - srcs).empty? or return false
@@ -480,12 +486,13 @@ if exts = ARGV.shift
   $extension = [exts] if exts
   if ext_prefix.start_with?('.')
     @gemname = exts
-  elsif exts
-    $static_ext.delete_if {|t, *| !File.fnmatch(t, exts)}
+    exts = []
+  else
+    exts &&= $static_ext.select {|t, *| File.fnmatch(t, exts)}
   end
 end
-ext_prefix = "#{$top_srcdir}/#{ext_prefix || 'ext'}"
-exts = $static_ext.sort_by {|t, i| i}.collect {|t, i| t}
+ext_prefix ||= 'ext'
+exts = (exts || $static_ext).sort_by {|t, i| i}.collect {|t, i| t}
 default_exclude_exts =
   case
   when $cygwin
@@ -498,28 +505,30 @@ default_exclude_exts =
 mandatory_exts = {}
 withes, withouts = [["--with", nil], ["--without", default_exclude_exts]].collect {|w, d|
   if !(w = %w[-extensions -ext].collect {|o|arg_config(w+o)}).any?
-    d ? proc {|c1| d.any?(&c1)} : proc {true}
+    d ? proc {|&c1| d.any?(&c1)} : proc {true}
   elsif (w = w.grep(String)).empty?
     proc {true}
   else
     w = w.collect {|o| o.split(/,/)}.flatten
     w.collect! {|o| o == '+' ? d : o}.flatten!
-    proc {|c1| w.any?(&c1)}
+    proc {|&c1| w.any?(&c1)}
   end
 }
 cond = proc {|ext, *|
-  withes.call(proc {|n|
-                !n or (mandatory_exts[ext] = true if File.fnmatch(n, ext))
-              }) and
-    !withouts.call(proc {|n| File.fnmatch(n, ext)})
+  withes.call {|n| !n or (mandatory_exts[ext] = true if File.fnmatch(n, ext))} and
+    !withouts.call {|n| File.fnmatch(n, ext)}
 }
 ($extension || %w[*]).each do |e|
   e = e.sub(/\A(?:\.\/)+/, '')
-  incl, excl = Dir.glob("#{ext_prefix}/#{e}/**/extconf.rb").collect {|d|
-    d = File.dirname(d)
-    d.slice!(0, ext_prefix.length + 1)
-    d
+  incl, excl = Dir.glob("#{e}/**/extconf.rb", base: "#$top_srcdir/#{ext_prefix}").collect {|d|
+    File.dirname(d)
   }.partition {|ext|
+    if @gemname
+      ext = ext[%r[\A[^/]+]] # extract gem name
+      Dir.glob("*.gemspec", base: "#$top_srcdir/#{ext_prefix}/#{ext}") do |g|
+        break ext = g if ext.start_with?("#{g.chomp!(".gemspec")}-")
+      end
+    end
     with_config(ext, &cond)
   }
   incl.sort!
@@ -530,7 +539,7 @@ cond = proc {|ext, *|
     exts.delete_if {|d| File.fnmatch?("-*", d)}
   end
 end
-ext_prefix = ext_prefix[$top_srcdir.size+1..-2]
+ext_prefix.chomp!("/")
 
 @ext_prefix = ext_prefix
 @inplace = inplace
@@ -642,7 +651,9 @@ $hdrdir = ($top_srcdir = relative_from(srcdir, $topdir = "..")) + "/include"
 extso = []
 fails = []
 exts.each do |d|
-  $static = $force_static ? true : $static_ext[d]
+  $static = $force_static ? true : $static_ext.fetch(d) do
+    $static_ext.any? {|t, | File.fnmatch?(t, d)}
+  end
 
   if !$nodynamic or $static
     result = extmake(d, ext_prefix, !@gemname) or abort
@@ -768,7 +779,6 @@ begin
     end
     submakeopts << 'EXTLDFLAGS="$(EXTLDFLAGS)"'
     submakeopts << 'EXTINITS="$(EXTINITS)"'
-    submakeopts << 'UPDATE_LIBRARIES="$(UPDATE_LIBRARIES)"'
     submakeopts << 'SHOWFLAGS='
     mf.macro "SUBMAKEOPTS", submakeopts
     mf.macro "NOTE_MESG", %w[$(RUBY) $(top_srcdir)/tool/lib/colorize.rb skip]
@@ -824,7 +834,7 @@ begin
         end
         mf.puts "#{t}:#{pd}\n\t$(Q)#{submake} $(MFLAGS) V=$(V) $(@F)"
         if clean and clean.begin(1)
-          mf.puts "\t$(Q)$(RM) $(ext_build_dir)/exts.mk\n\t$(Q)$(RMDIRS) -p $(@D)"
+          mf.puts "\t$(Q)$(RM) $(ext_build_dir)/exts.mk\n\t$(Q)$(RMDIRS) $(@D)"
         end
       end
     end

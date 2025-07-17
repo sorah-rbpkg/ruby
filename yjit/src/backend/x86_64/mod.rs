@@ -79,7 +79,7 @@ impl From<&Opnd> for X86Opnd {
     }
 }
 
-/// List of registers that can be used for stack temps.
+/// List of registers that can be used for stack temps and locals.
 pub static TEMP_REGS: [Reg; 5] = [RSI_REG, RDI_REG, R8_REG, R9_REG, R10_REG];
 
 impl Assembler
@@ -112,7 +112,7 @@ impl Assembler
     fn x86_split(mut self) -> Assembler
     {
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits));
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits), self.num_locals);
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_unmapped() {
@@ -176,6 +176,23 @@ impl Assembler
                         // Merge this insn, e.g. `add REG, right -> out`, and `mov REG, out` if possible
                         (Opnd::Reg(_), Opnd::UImm(value), Some(Insn::Mov { dest, src }))
                         if out == src && left == dest && live_ranges[index] == index + 1 && uimm_num_bits(*value) <= 32 => {
+                            *out = *dest;
+                            asm.push_insn(insn);
+                            iterator.map_insn_index(&mut asm);
+                            iterator.next_unmapped(); // Pop merged Insn::Mov
+                        }
+                        (Opnd::Reg(_), Opnd::Reg(_), Some(Insn::Mov { dest, src }))
+                        if out == src && live_ranges[index] == index + 1 && {
+                            // We want to do `dest == left`, but `left` has already gone
+                            // through lower_stack_opnd() while `dest` has not. So we
+                            // lower `dest` before comparing.
+                            let lowered_dest = if let Opnd::Stack { .. } = dest {
+                                asm.lower_stack_opnd(dest)
+                            } else {
+                                *dest
+                            };
+                            lowered_dest == *left
+                        } => {
                             *out = *dest;
                             asm.push_insn(insn);
                             iterator.map_insn_index(&mut asm);
@@ -271,7 +288,11 @@ impl Assembler
                                 *truthy = asm.load(*truthy);
                             }
                         },
-                        Opnd::UImm(_) | Opnd::Imm(_) | Opnd::Value(_) => {
+                        Opnd::UImm(_) | Opnd::Imm(_) => {
+                            *truthy = asm.load(*truthy);
+                        },
+                        // Opnd::Value could have already been split
+                        Opnd::Value(_) if !matches!(truthy, Opnd::InsnOut { .. }) => {
                             *truthy = asm.load(*truthy);
                         },
                         _ => {}
@@ -471,9 +492,7 @@ impl Assembler
 
             match insn {
                 Insn::Comment(text) => {
-                    if cfg!(feature = "disasm") {
-                        cb.add_comment(text);
-                    }
+                    cb.add_comment(text);
                 },
 
                 // Write the label at the current position
@@ -726,6 +745,14 @@ impl Assembler
                     }
                 },
 
+                Insn::Jge(target) => {
+                    match compile_side_exit(*target, self, ocb)? {
+                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jge_ptr(cb, code_ptr),
+                        Target::Label(label_idx) => jge_label(cb, label_idx),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                    }
+                },
+
                 Insn::Jbe(target) => {
                     match compile_side_exit(*target, self, ocb)? {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jbe_ptr(cb, code_ptr),
@@ -766,6 +793,8 @@ impl Assembler
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 }
+
+                Insn::Joz(..) | Insn::Jonz(..) => unreachable!("Joz/Jonz should be unused for now"),
 
                 // Atomically increment a counter at a given memory location
                 Insn::IncrCounter { mem, value } => {
@@ -866,14 +895,14 @@ impl Assembler
 
 #[cfg(test)]
 mod tests {
-    use crate::disasm::{assert_disasm};
+    use crate::disasm::assert_disasm;
     #[cfg(feature = "disasm")]
     use crate::disasm::{unindent, disasm_addr_range};
 
     use super::*;
 
     fn setup_asm() -> (Assembler, CodeBlock) {
-        (Assembler::new(), CodeBlock::new_dummy(1024))
+        (Assembler::new(0), CodeBlock::new_dummy(1024))
     }
 
     #[test]
@@ -1268,6 +1297,24 @@ mod tests {
             0x5: mov eax, 4
             0xa: cmovg rax, qword ptr [rbx]
             0xe: mov qword ptr [rbx], rax
+        "});
+    }
+
+    #[test]
+    fn test_csel_split() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let stack_top = Opnd::mem(64, SP, 0);
+        let elem_opnd = asm.csel_ne(VALUE(0x7f22c88d1930).into(), Qnil.into());
+        asm.mov(stack_top, elem_opnd);
+
+        asm.compile_with_num_regs(&mut cb, 3);
+
+        assert_disasm!(cb, "48b830198dc8227f0000b904000000480f44c1488903", {"
+            0x0: movabs rax, 0x7f22c88d1930
+            0xa: mov ecx, 4
+            0xf: cmove rax, rcx
+            0x13: mov qword ptr [rbx], rax
         "});
     }
 }

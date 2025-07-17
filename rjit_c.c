@@ -66,7 +66,7 @@ rjit_reserve_addr_space(uint32_t mem_size)
     // On Linux
     #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
         uint32_t const page_size = (uint32_t)sysconf(_SC_PAGESIZE);
-        uint8_t *const cfunc_sample_addr = (void *)&rjit_reserve_addr_space;
+        uint8_t *const cfunc_sample_addr = (void *)(uintptr_t)&rjit_reserve_addr_space;
         uint8_t *const probe_region_end = cfunc_sample_addr + INT32_MAX;
         // Align the requested address to page size
         uint8_t *req_addr = align_ptr(cfunc_sample_addr, page_size);
@@ -85,6 +85,7 @@ rjit_reserve_addr_space(uint32_t mem_size)
 
             // If we succeeded, stop
             if (mem_block != MAP_FAILED) {
+                ruby_annotate_mmap(mem_block, mem_size, "Ruby:rjit_reserve_addr_space");
                 break;
             }
 
@@ -116,6 +117,10 @@ rjit_reserve_addr_space(uint32_t mem_size)
             -1,
             0
         );
+
+        if (mem_block != MAP_FAILED) {
+            ruby_annotate_mmap(mem_block, mem_size, "Ruby:rjit_reserve_addr_space:fallback");
+        }
     }
 
     // Check that the memory mapping was successful
@@ -488,8 +493,8 @@ for_each_iseq_i(void *vstart, void *vend, size_t stride, void *data)
     VALUE block = (VALUE)data;
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
-        void *ptr = asan_poisoned_object_p(v);
-        asan_unpoison_object(v, false);
+        void *ptr = rb_asan_poisoned_object_p(v);
+        rb_asan_unpoison_object(v, false);
 
         if (rb_obj_is_iseq(v)) {
             extern VALUE rb_rjit_iseq_new(rb_iseq_t *iseq);
@@ -519,6 +524,7 @@ extern VALUE rb_vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_fram
 extern VALUE rb_vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr);
 extern VALUE rb_vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr);
 extern VALUE rb_vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr);
+extern VALUE rb_vm_opt_newarray_pack(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE fmt);
 extern VALUE rb_vm_splat_array(VALUE flag, VALUE array);
 extern bool rb_simple_iseq_p(const rb_iseq_t *iseq);
 extern bool rb_vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE obj, VALUE v);

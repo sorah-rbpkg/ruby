@@ -14,7 +14,7 @@ require 'pathname.so'
 
 class Pathname
 
-  VERSION = "0.3.0"
+  VERSION = "0.4.0"
 
   # :stopdoc:
 
@@ -572,7 +572,7 @@ class Pathname    # * Find *
     return to_enum(__method__, ignore_error: ignore_error) unless block_given?
     require 'find'
     if @path == '.'
-      Find.find(@path, ignore_error: ignore_error) {|f| yield self.class.new(f.sub(%r{\A\./}, '')) }
+      Find.find(@path, ignore_error: ignore_error) {|f| yield self.class.new(f.delete_prefix('./')) }
     else
       Find.find(@path, ignore_error: ignore_error) {|f| yield self.class.new(f) }
     end
@@ -580,16 +580,15 @@ class Pathname    # * Find *
 end
 
 
-autoload(:FileUtils, 'fileutils')
-
 class Pathname    # * FileUtils *
   # Creates a full path, including any intermediate directories that don't yet
   # exist.
   #
   # See FileUtils.mkpath and FileUtils.mkdir_p
   def mkpath(mode: nil)
+    require 'fileutils'
     FileUtils.mkpath(@path, mode: mode)
-    nil
+    self
   end
 
   # Recursively deletes a directory, including all directories beneath it.
@@ -600,7 +599,23 @@ class Pathname    # * FileUtils *
     # File::Path provides "mkpath" and "rmtree".
     require 'fileutils'
     FileUtils.rm_rf(@path, noop: noop, verbose: verbose, secure: secure)
-    nil
+    self
   end
 end
 
+class Pathname    # * tmpdir *
+  # Creates a tmp directory and wraps the returned path in a Pathname object.
+  #
+  # See Dir.mktmpdir
+  def self.mktmpdir
+    require 'tmpdir' unless defined?(Dir.mktmpdir)
+    if block_given?
+      Dir.mktmpdir do |dir|
+        dir = self.new(dir)
+        yield dir
+      end
+    else
+      self.new(Dir.mktmpdir)
+    end
+  end
+end

@@ -75,6 +75,26 @@ describe "Module#prepend" do
     foo.call.should == 'm'
   end
 
+  it "updates the optimized method when a prepended module is updated" do
+    out = ruby_exe(<<~RUBY)
+    module M; end
+    class Integer
+      prepend M
+    end
+    l = -> { 1 + 2 }
+    p l.call
+    M.module_eval do
+      def +(o)
+        $called = true
+        super(o)
+      end
+    end
+    p l.call
+    p $called
+    RUBY
+    out.should == "3\n3\ntrue\n"
+  end
+
   it "updates the method when there is a base included method and the prepended module overrides it" do
     base_module = Module.new do
       def foo
@@ -415,6 +435,34 @@ describe "Module#prepend" do
     -> { ModuleSpecs::SubclassSpec.prepend(ModuleSpecs::Subclass.new) }.should_not raise_error(TypeError)
   end
 
+  ruby_version_is ""..."3.2" do
+    it "raises ArgumentError when the argument is a refinement" do
+      refinement = nil
+
+      Module.new do
+        refine String do
+          refinement = self
+        end
+      end
+
+      -> { ModuleSpecs::Basic.prepend(refinement) }.should raise_error(ArgumentError, "refinement module is not allowed")
+    end
+  end
+
+  ruby_version_is "3.2" do
+    it "raises a TypeError when the argument is a refinement" do
+      refinement = nil
+
+      Module.new do
+        refine String do
+          refinement = self
+        end
+      end
+
+      -> { ModuleSpecs::Basic.prepend(refinement) }.should raise_error(TypeError, "Cannot prepend refinement")
+    end
+  end
+
   it "imports constants" do
     m1 = Module.new
     m1::MY_CONSTANT = 1
@@ -724,6 +772,50 @@ describe "Module#prepend" do
     ary = []
     child_class.new.foo(ary)
     ary.should == [3, 2, 1]
+  end
+
+  it "does not prepend a second copy if the module already indirectly exists in the hierarchy" do
+    mod = Module.new do; end
+    submod = Module.new do; end
+    klass = Class.new do; end
+    klass.include(mod)
+    mod.prepend(submod)
+    klass.include(mod)
+
+    klass.ancestors.take(4).should == [klass, submod, mod, Object]
+  end
+
+  # https://bugs.ruby-lang.org/issues/17423
+  describe "when module already exists in ancestor chain" do
+    ruby_version_is ""..."3.1" do
+      it "does not modify the ancestor chain" do
+        m = Module.new do; end
+        a = Module.new do; end
+        b = Class.new do; end
+
+        b.include(a)
+        a.prepend(m)
+        b.ancestors.take(4).should == [b, m, a, Object]
+
+        b.prepend(m)
+        b.ancestors.take(4).should == [b, m, a, Object]
+      end
+    end
+
+    ruby_version_is "3.1" do
+      it "modifies the ancestor chain" do
+        m = Module.new do; end
+        a = Module.new do; end
+        b = Class.new do; end
+
+        b.include(a)
+        a.prepend(m)
+        b.ancestors.take(4).should == [b, m, a, Object]
+
+        b.prepend(m)
+        b.ancestors.take(5).should == [m, b, m, a, Object]
+      end
+    end
   end
 
   describe "called on a module" do

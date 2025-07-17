@@ -1,6 +1,16 @@
 #!ruby -an
 BEGIN {
   require 'fileutils'
+  require_relative 'lib/colorize'
+
+  color = Colorize.new
+
+  if ARGV.first.start_with?("BUNDLED_GEMS=")
+    bundled_gems = ARGV.shift[13..-1]
+    sep = bundled_gems.include?(",") ? "," : " "
+    bundled_gems = bundled_gems.split(sep)
+    bundled_gems = nil if bundled_gems.empty?
+  end
 
   dir = ARGV.shift
   ARGF.eof?
@@ -12,23 +22,26 @@ n, v, u, r = $F
 
 next unless n
 next if n =~ /^#/
+next if bundled_gems&.all? {|pat| !File.fnmatch?(pat, n)}
 
 if File.directory?(n)
-  puts "updating #{n} ..."
-  system("git", "fetch", chdir: n) or abort
+  puts "updating #{color.notice(n)} ..."
+  system("git", "fetch", "--all", chdir: n) or abort
 else
-  puts "retrieving #{n} ..."
+  puts "retrieving #{color.notice(n)} ..."
   system(*%W"git clone #{u} #{n}") or abort
 end
 
 if r
-  puts "fetching #{r} ..."
+  puts "fetching #{color.notice(r)} ..."
   system("git", "fetch", "origin", r, chdir: n) or abort
 end
 
 c = r || "v#{v}"
 checkout = %w"git -c advice.detachedHead=false checkout"
-puts "checking out #{c} (v=#{v}, r=#{r}) ..."
+print %[checking out #{color.notice(c)} (v=#{color.info(v)}]
+print %[, r=#{color.info(r)}] if r
+puts ") ..."
 unless system(*checkout, c, "--", chdir: n)
   abort if r or !system(*checkout, v, "--", chdir: n)
 end

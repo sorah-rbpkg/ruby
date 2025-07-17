@@ -158,6 +158,7 @@ console.o: $(hdrdir)/ruby/internal/special_consts.h
 console.o: $(hdrdir)/ruby/internal/static_assert.h
 console.o: $(hdrdir)/ruby/internal/stdalign.h
 console.o: $(hdrdir)/ruby/internal/stdbool.h
+console.o: $(hdrdir)/ruby/internal/stdckdint.h
 console.o: $(hdrdir)/ruby/internal/symbol.h
 console.o: $(hdrdir)/ruby/internal/value.h
 console.o: $(hdrdir)/ruby/internal/value_type.h
@@ -168,6 +169,7 @@ console.o: $(hdrdir)/ruby/io.h
 console.o: $(hdrdir)/ruby/missing.h
 console.o: $(hdrdir)/ruby/onigmo.h
 console.o: $(hdrdir)/ruby/oniguruma.h
+console.o: $(hdrdir)/ruby/ractor.h
 console.o: $(hdrdir)/ruby/ruby.h
 console.o: $(hdrdir)/ruby/st.h
 console.o: $(hdrdir)/ruby/subst.h
@@ -184,7 +186,7 @@ win32_vk.inc: win32_vk.list
 	-e 'n=$$F[1] and (n.strip!; /\AVK_/=~n) and' \
 	-e   'puts(%[#ifndef #{n}\n# define #{n} UNDEFINED_VK\n#endif])' \
 	$< && \
-	gperf --ignore-case -E -C -P -p -j1 -i 1 -g -o -t -K ofs -N console_win32_vk -k* $< \
+	gperf --ignore-case -L ANSI-C -E -C -P -p -j1 -i 1 -g -o -t -K ofs -N console_win32_vk -k* $< \
 	| sed -f $(top_srcdir)/tool/gperf.sed \
 	) > $(@F)
 

@@ -135,7 +135,7 @@ describe "Kernel#eval" do
   it "includes file and line information in syntax error" do
     expected = 'speccing.rb'
     -> {
-      eval('if true',TOPLEVEL_BINDING, expected)
+      eval('if true', TOPLEVEL_BINDING, expected)
     }.should raise_error(SyntaxError) { |e|
       e.message.should =~ /#{expected}:1:.+/
     }
@@ -144,7 +144,7 @@ describe "Kernel#eval" do
   it "evaluates string with given filename and negative linenumber" do
     expected_file = 'speccing.rb'
     -> {
-      eval('if true',TOPLEVEL_BINDING, expected_file, -100)
+      eval('if true', TOPLEVEL_BINDING, expected_file, -100)
     }.should raise_error(SyntaxError) { |e|
       e.message.should =~ /#{expected_file}:-100:.+/
     }
@@ -261,6 +261,39 @@ describe "Kernel#eval" do
     end
   end
 
+  it "makes flip-flop operator work correctly" do
+    ScratchPad.record []
+
+    eval "10.times { |i| ScratchPad << i if (i == 4)...(i == 4) }"
+    ScratchPad.recorded.should == [4, 5, 6, 7, 8, 9]
+
+    ScratchPad.clear
+  end
+
+  it "returns nil if given an empty string" do
+    eval("").should == nil
+  end
+
+  context "with shebang" do
+    it "ignores shebang with ruby interpreter" do
+      pid = eval(<<~CODE.b)
+        #!/usr/bin/env ruby
+        Process.pid
+      CODE
+
+      pid.should == Process.pid
+    end
+
+    it "ignores shebang with non-ruby interpreter" do
+      pid = eval(<<~CODE.b)
+        #!/usr/bin/env puma
+        Process.pid
+      CODE
+
+      pid.should == Process.pid
+    end
+  end
+
   # See language/magic_comment_spec.rb for more magic comments specs
   describe "with a magic encoding comment" do
     it "uses the magic comment encoding for the encoding of literal strings" do
@@ -337,12 +370,11 @@ CODE
     end
 
     it "allows a magic encoding comment and a subsequent frozen_string_literal magic comment" do
-      # Make sure frozen_string_literal is not default true
-      eval("'foo'".b).frozen?.should be_false
+      frozen_string_default = "test".frozen?
 
       code = <<CODE.b
 # encoding: UTF-8
-# frozen_string_literal: true
+# frozen_string_literal: #{!frozen_string_default}
 class EvalSpecs
   Vπstring = "frozen"
 end
@@ -352,7 +384,7 @@ CODE
       EvalSpecs.constants(false).should include(:"Vπstring")
       EvalSpecs::Vπstring.should == "frozen"
       EvalSpecs::Vπstring.encoding.should == Encoding::UTF_8
-      EvalSpecs::Vπstring.frozen?.should be_true
+      EvalSpecs::Vπstring.frozen?.should == !frozen_string_default
     end
 
     it "allows a magic encoding comment and a frozen_string_literal magic comment on the same line in emacs style" do
@@ -371,8 +403,9 @@ CODE
     end
 
     it "ignores the magic encoding comment if it is after a frozen_string_literal magic comment" do
+      frozen_string_default = "test".frozen?
       code = <<CODE.b
-# frozen_string_literal: true
+# frozen_string_literal: #{!frozen_string_default}
 # encoding: UTF-8
 class EvalSpecs
   Vπfrozen_first = "frozen"
@@ -386,23 +419,24 @@ CODE
       value = EvalSpecs.const_get(binary_constant)
       value.should == "frozen"
       value.encoding.should == Encoding::BINARY
-      value.frozen?.should be_true
+      value.frozen?.should == !frozen_string_default
     end
 
     it "ignores the frozen_string_literal magic comment if it appears after a token and warns if $VERBOSE is true" do
+      frozen_string_default = "test".frozen?
       code = <<CODE
 some_token_before_magic_comment = :anything
-# frozen_string_literal: true
+# frozen_string_literal: #{!frozen_string_default}
 class EvalSpecs
   Vπstring_not_frozen = "not frozen"
 end
 CODE
-      -> { eval(code) }.should complain(/warning: `frozen_string_literal' is ignored after any tokens/, verbose: true)
-      EvalSpecs::Vπstring_not_frozen.frozen?.should be_false
+      -> { eval(code) }.should complain(/warning: [`']frozen_string_literal' is ignored after any tokens/, verbose: true)
+      EvalSpecs::Vπstring_not_frozen.frozen?.should == frozen_string_default
       EvalSpecs.send :remove_const, :Vπstring_not_frozen
 
       -> { eval(code) }.should_not complain(verbose: false)
-      EvalSpecs::Vπstring_not_frozen.frozen?.should be_false
+      EvalSpecs::Vπstring_not_frozen.frozen?.should == frozen_string_default
       EvalSpecs.send :remove_const, :Vπstring_not_frozen
     end
   end

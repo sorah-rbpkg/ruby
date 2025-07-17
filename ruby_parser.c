@@ -1,4 +1,13 @@
 /* This is a wrapper for parse.y */
+
+#include "internal/parse.h"
+#include "internal/re.h"
+#include "internal/ruby_parser.h"
+
+#include "node.h"
+#include "rubyparser.h"
+#include "internal/error.h"
+
 #ifdef UNIVERSAL_PARSER
 
 #include "internal.h"
@@ -7,14 +16,11 @@
 #include "internal/compile.h"
 #include "internal/complex.h"
 #include "internal/encoding.h"
-#include "internal/error.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/io.h"
-#include "internal/parse.h"
 #include "internal/rational.h"
 #include "internal/re.h"
-#include "internal/ruby_parser.h"
 #include "internal/string.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
@@ -22,100 +28,18 @@
 #include "ruby/ractor.h"
 #include "ruby/ruby.h"
 #include "ruby/util.h"
-#include "node.h"
 #include "internal.h"
 #include "vm_core.h"
 #include "symbol.h"
 
-struct ruby_parser {
-    rb_parser_t *parser_params;
-};
-
-static void
-parser_mark(void *ptr)
-{
-    struct ruby_parser *parser = (struct ruby_parser*)ptr;
-    rb_ruby_parser_mark(parser->parser_params);
-}
-
-static void
-parser_free(void *ptr)
-{
-    struct ruby_parser *parser = (struct ruby_parser*)ptr;
-    rb_ruby_parser_free(parser->parser_params);
-}
-
-static size_t
-parser_memsize(const void *ptr)
-{
-    struct ruby_parser *parser = (struct ruby_parser*)ptr;
-    return rb_ruby_parser_memsize(parser->parser_params);
-}
-
-static const rb_data_type_t ruby_parser_data_type = {
-    "parser",
-    {
-        parser_mark,
-        parser_free,
-        parser_memsize,
-    },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
-};
-
-static void
-bignum_negate(VALUE b)
-{
-    BIGNUM_NEGATE(b);
-}
-
-static int
-is_ascii_string2(VALUE str)
-{
-    return is_ascii_string(str);
-}
-
-static void
-rational_set_num(VALUE r, VALUE n)
-{
-    RATIONAL_SET_NUM(r, n);
-}
-
-static VALUE
-rational_get_num(VALUE obj)
-{
-    return RRATIONAL(obj)->num;
-}
-
-static void
-rcomplex_set_real(VALUE cmp, VALUE r)
-{
-    RCOMPLEX_SET_REAL(cmp, r);
-}
-
-static void
-rcomplex_set_imag(VALUE cmp, VALUE i)
-{
-    RCOMPLEX_SET_IMAG(cmp, i);
-}
-
-static VALUE
-rcomplex_get_real(VALUE obj)
-{
-    return RCOMPLEX(obj)->real;
-}
-
-static VALUE
-rcomplex_get_imag(VALUE obj)
-{
-    return RCOMPLEX(obj)->imag;
-}
+#define parser_encoding const void
 
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 6, 0)
 static VALUE
 syntax_error_append(VALUE exc, VALUE file, int line, int column,
-                       void *enc, const char *fmt, va_list args)
+                    parser_encoding *enc, const char *fmt, va_list args)
 {
-    return rb_syntax_error_append(exc, file, line, column, (rb_encoding *)enc, fmt, args);
+    return rb_syntax_error_append(exc, file, line, column, enc, fmt, args);
 }
 
 static int
@@ -130,36 +54,10 @@ dvar_defined(ID id, const void *p)
     return rb_dvar_defined(id, (const rb_iseq_t *)p);
 }
 
-static bool
-hash_literal_key_p(VALUE k)
-{
-    switch (OBJ_BUILTIN_TYPE(k)) {
-      case T_NODE:
-        return false;
-      default:
-        return true;
-    }
-}
-
 static int
-literal_cmp(VALUE val, VALUE lit)
+is_usascii_enc(parser_encoding *enc)
 {
-    if (val == lit) return 0;
-    if (!hash_literal_key_p(val) || !hash_literal_key_p(lit)) return -1;
-    return rb_iseq_cdhash_cmp(val, lit);
-}
-
-static st_index_t
-literal_hash(VALUE a)
-{
-    if (!hash_literal_key_p(a)) return (st_index_t)a;
-    return rb_iseq_cdhash_hash(a);
-}
-
-static int
-is_usascii_enc(void *enc)
-{
-    return rb_is_usascii_enc((rb_encoding *)enc);
+    return rb_is_usascii_enc(enc);
 }
 
 static int
@@ -181,21 +79,21 @@ is_notop_id2(ID id)
 }
 
 static VALUE
-enc_str_new(const char *ptr, long len, void *enc)
+enc_str_new(const char *ptr, long len, parser_encoding *enc)
 {
-    return rb_enc_str_new(ptr, len, (rb_encoding *)enc);
+    return rb_enc_str_new(ptr, len, enc);
 }
 
 static int
-enc_isalnum(OnigCodePoint c, void *enc)
+enc_isalnum(OnigCodePoint c, parser_encoding *enc)
 {
-    return rb_enc_isalnum(c, (rb_encoding *)enc);
+    return rb_enc_isalnum(c, enc);
 }
 
 static int
-enc_precise_mbclen(const char *p, const char *e, void *enc)
+enc_precise_mbclen(const char *p, const char *e, parser_encoding *enc)
 {
-    return rb_enc_precise_mbclen(p, e, (rb_encoding *)enc);
+    return rb_enc_precise_mbclen(p, e, enc);
 }
 
 static int
@@ -204,124 +102,94 @@ mbclen_charfound_p(int len)
     return MBCLEN_CHARFOUND_P(len);
 }
 
-static const char *
-enc_name(void *enc)
+static int
+mbclen_charfound_len(int len)
 {
-    return rb_enc_name((rb_encoding *)enc);
+    return MBCLEN_CHARFOUND_LEN(len);
+}
+
+static const char *
+enc_name(parser_encoding *enc)
+{
+    return rb_enc_name(enc);
 }
 
 static char *
-enc_prev_char(const char *s, const char *p, const char *e, void *enc)
+enc_prev_char(const char *s, const char *p, const char *e, parser_encoding *enc)
 {
-    return rb_enc_prev_char(s, p, e, (rb_encoding *)enc);
+    return rb_enc_prev_char(s, p, e, enc);
 }
 
-static void *
+static parser_encoding *
 enc_get(VALUE obj)
 {
-    return (void *)rb_enc_get(obj);
+    return rb_enc_get(obj);
 }
 
 static int
-enc_asciicompat(void *enc)
+enc_asciicompat(parser_encoding *enc)
 {
-    return rb_enc_asciicompat((rb_encoding *)enc);
+    return rb_enc_asciicompat(enc);
 }
 
-static void *
+static parser_encoding *
 utf8_encoding(void)
 {
-    return (void *)rb_utf8_encoding();
+    return rb_utf8_encoding();
 }
 
 static VALUE
-enc_associate(VALUE obj, void *enc)
+enc_associate(VALUE obj, parser_encoding *enc)
 {
-    return rb_enc_associate(obj, (rb_encoding *)enc);
+    return rb_enc_associate(obj, enc);
 }
 
-static void *
+static parser_encoding *
 ascii8bit_encoding(void)
 {
-    return (void *)rb_ascii8bit_encoding();
+    return rb_ascii8bit_encoding();
 }
 
 static int
-enc_codelen(int c, void *enc)
+enc_codelen(int c, parser_encoding *enc)
 {
-    return rb_enc_codelen(c, (rb_encoding *)enc);
-}
-
-static VALUE
-enc_str_buf_cat(VALUE str, const char *ptr, long len, void *enc)
-{
-    return rb_enc_str_buf_cat(str, ptr, len, (rb_encoding *)enc);
+    return rb_enc_codelen(c, enc);
 }
 
 static int
-enc_mbcput(unsigned int c, void *buf, void *enc)
+enc_mbcput(unsigned int c, void *buf, parser_encoding *enc)
 {
-    return rb_enc_mbcput(c, buf, (rb_encoding *)enc);
+    return rb_enc_mbcput(c, buf, enc);
 }
 
-static void *
+static parser_encoding *
 enc_from_index(int idx)
 {
-    return (void *)rb_enc_from_index(idx);
+    return rb_enc_from_index(idx);
 }
 
 static int
-enc_isspace(OnigCodePoint c, void *enc)
+enc_isspace(OnigCodePoint c, parser_encoding *enc)
 {
-    return rb_enc_isspace(c, (rb_encoding *)enc);
+    return rb_enc_isspace(c, enc);
 }
 
 static ID
-intern3(const char *name, long len, void *enc)
+intern3(const char *name, long len, parser_encoding *enc)
 {
-    return rb_intern3(name, len, (rb_encoding *)enc);
+    return rb_intern3(name, len, enc);
 }
 
-static void *
-enc_compatible(VALUE str1, VALUE str2)
-{
-    return (void *)rb_enc_compatible(str1, str2);
-}
-
-static VALUE
-enc_from_encoding(void *enc)
-{
-    return rb_enc_from_encoding((rb_encoding *)enc);
-}
-
-static int
-encoding_get(VALUE obj)
-{
-    return ENCODING_GET(obj);
-}
-
-static void
-encoding_set(VALUE obj, int encindex)
-{
-    ENCODING_SET(obj, encindex);
-}
-
-static int
-encoding_is_ascii8bit(VALUE obj)
-{
-    return ENCODING_IS_ASCII8BIT(obj);
-}
-
-static void *
+static parser_encoding *
 usascii_encoding(void)
 {
-    return (void *)rb_usascii_encoding();
+    return rb_usascii_encoding();
 }
 
 static int
-enc_symname_type(const char *name, long len, void *enc, unsigned int allowed_attrset)
+enc_symname_type(const char *name, long len, parser_encoding *enc, unsigned int allowed_attrset)
 {
-    return rb_enc_symname_type(name, len, (rb_encoding *)enc, allowed_attrset);
+    return rb_enc_symname_type(name, len, enc, allowed_attrset);
 }
 
 typedef struct {
@@ -329,6 +197,7 @@ typedef struct {
     rb_encoding *enc;
     NODE *succ_block;
     const rb_code_location_t *loc;
+    rb_parser_assignable_func assignable;
 } reg_named_capture_assign_t;
 
 static int
@@ -342,11 +211,12 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
     long len = name_end - name;
     const char *s = (const char *)name;
 
-    return rb_reg_named_capture_assign_iter_impl(p, s, len, (void *)enc, &arg->succ_block, loc);
+    return rb_reg_named_capture_assign_iter_impl(p, s, len, enc, &arg->succ_block, loc, arg->assignable);
 }
 
 static NODE *
-reg_named_capture_assign(struct parser_params* p, VALUE regexp, const rb_code_location_t *loc)
+reg_named_capture_assign(struct parser_params* p, VALUE regexp, const rb_code_location_t *loc,
+                         rb_parser_assignable_func assignable)
 {
     reg_named_capture_assign_t arg;
 
@@ -354,22 +224,11 @@ reg_named_capture_assign(struct parser_params* p, VALUE regexp, const rb_code_lo
     arg.enc = rb_enc_get(regexp);
     arg.succ_block = 0;
     arg.loc = loc;
+    arg.assignable = assignable;
     onig_foreach_name(RREGEXP_PTR(regexp), reg_named_capture_assign_iter, &arg);
 
     if (!arg.succ_block) return 0;
     return RNODE_BLOCK(arg.succ_block)->nd_next;
-}
-
-static VALUE
-rbool(VALUE v)
-{
-    return RBOOL(v);
-}
-
-static int
-undef_p(VALUE v)
-{
-    return RB_UNDEF_P(v);
 }
 
 static int
@@ -384,52 +243,10 @@ nil_p(VALUE obj)
     return (int)NIL_P(obj);
 }
 
-static int
-flonum_p(VALUE obj)
-{
-    return (int)RB_FLONUM_P(obj);
-}
-
-static VALUE
-int2fix(long i)
-{
-    return INT2FIX(i);
-}
-
 static VALUE
 syntax_error_new(void)
 {
     return rb_class_new_instance(0, 0, rb_eSyntaxError);
-}
-
-static int
-obj_frozen(VALUE obj)
-{
-    return (int)RB_OBJ_FROZEN(obj);
-}
-
-static VALUE
-obj_write(VALUE old, VALUE *slot, VALUE young)
-{
-    return RB_OBJ_WRITE(old, slot, young);
-}
-
-static VALUE
-obj_written(VALUE old, VALUE slot, VALUE young)
-{
-    return RB_OBJ_WRITTEN(old, slot, young);
-}
-
-static VALUE
-default_rs(void)
-{
-    return rb_default_rs;
-}
-
-static VALUE
-rational_raw1(VALUE x)
-{
-    return rb_rational_raw1(x);
 }
 
 static void *
@@ -450,22 +267,10 @@ ruby_verbose2(void)
     return ruby_verbose;
 }
 
-static int
-type_p(VALUE obj, int t)
+static int *
+rb_errno_ptr2(void)
 {
-    return (int)RB_TYPE_P(obj, t);
-}
-
-static int
-fixnum_p(VALUE obj)
-{
-    return (int)RB_FIXNUM_P(obj);
-}
-
-static int
-symbol_p(VALUE obj)
-{
-    return (int)RB_SYMBOL_P(obj);
+    return rb_errno_ptr();
 }
 
 static void *
@@ -480,29 +285,10 @@ gc_guard(VALUE obj)
     RB_GC_GUARD(obj);
 }
 
-static rb_imemo_tmpbuf_t *
-tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt)
+static VALUE
+arg_error(void)
 {
-    return rb_imemo_tmpbuf_parser_heap(buf, old_heap, cnt);
-}
-
-static int
-special_const_p(VALUE obj)
-{
-    return (int)RB_SPECIAL_CONST_P(obj);
-}
-
-static int
-builtin_type(VALUE obj)
-{
-    return (int)RB_BUILTIN_TYPE(obj);
-}
-
-static rb_ast_t *
-ast_new(VALUE nb)
-{
-    rb_ast_t *ast = (rb_ast_t *)rb_imemo_new(imemo_ast, 0, 0, 0, nb);
-    return ast;
+    return rb_eArgError;
 }
 
 static VALUE
@@ -512,265 +298,269 @@ static_id2sym(ID id)
 }
 
 static long
-str_coderange_scan_restartable(const char *s, const char *e, void *enc, int *cr)
+str_coderange_scan_restartable(const char *s, const char *e, parser_encoding *enc, int *cr)
 {
-    return rb_str_coderange_scan_restartable(s, e, (rb_encoding *)enc, cr);
+    return rb_str_coderange_scan_restartable(s, e, enc, cr);
 }
 
-VALUE rb_io_gets_internal(VALUE io);
-extern VALUE rb_mRubyVMFrozenCore;
-VALUE rb_node_case_when_optimizable_literal(const NODE *const node);
-
-void
-rb_parser_config_initialize(rb_parser_config_t *config)
+static int
+enc_mbminlen(parser_encoding *enc)
 {
-    config->counter = 0;
+    return rb_enc_mbminlen(enc);
+}
 
-    config->malloc   = ruby_xmalloc;
-    config->calloc   = ruby_xcalloc;
-    config->realloc  = ruby_xrealloc;
-    config->free     = ruby_xfree;
-    config->alloc_n  = ruby_xmalloc2;
-    config->alloc    = ruby_xmalloc;
-    config->realloc_n = ruby_xrealloc2;
-    config->zalloc = zalloc;
-    config->rb_memmove = memmove2;
-    config->nonempty_memcpy = nonempty_memcpy;
-    config->xmalloc_mul_add = rb_xmalloc_mul_add;
+static bool
+enc_isascii(OnigCodePoint c, parser_encoding *enc)
+{
+    return rb_enc_isascii(c, enc);
+}
 
-    config->tmpbuf_parser_heap = tmpbuf_parser_heap;
-    config->ast_new = ast_new;
+static OnigCodePoint
+enc_mbc_to_codepoint(const char *p, const char *e, parser_encoding *enc)
+{
+    const OnigUChar *up = RBIMPL_CAST((const OnigUChar *)p);
+    const OnigUChar *ue = RBIMPL_CAST((const OnigUChar *)e);
 
-    config->compile_callback         = rb_suppress_tracing;
-    config->reg_named_capture_assign = reg_named_capture_assign;
+    return ONIGENC_MBC_TO_CODE((rb_encoding *)enc, up, ue);
+}
 
-    config->obj_freeze = rb_obj_freeze;
-    config->obj_hide = rb_obj_hide;
-    config->obj_frozen = obj_frozen;
-    config->type_p = type_p;
-    config->obj_freeze_raw = OBJ_FREEZE_RAW;
+extern VALUE rb_eArgError;
 
-    config->fixnum_p = fixnum_p;
-    config->symbol_p = symbol_p;
+static const rb_parser_config_t rb_global_parser_config = {
+    .malloc = ruby_xmalloc,
+    .calloc = ruby_xcalloc,
+    .realloc = ruby_xrealloc,
+    .free = ruby_xfree,
+    .alloc_n = ruby_xmalloc2,
+    .alloc = ruby_xmalloc,
+    .realloc_n = ruby_xrealloc2,
+    .zalloc = zalloc,
+    .rb_memmove = memmove2,
+    .nonempty_memcpy = nonempty_memcpy,
+    .xmalloc_mul_add = rb_xmalloc_mul_add,
 
-    config->attr_get = rb_attr_get;
+    .compile_callback = rb_suppress_tracing,
+    .reg_named_capture_assign = reg_named_capture_assign,
 
-    config->ary_new           = rb_ary_new;
-    config->ary_push          = rb_ary_push;
-    config->ary_new_from_args = rb_ary_new_from_args;
-    config->ary_pop           = rb_ary_pop;
-    config->ary_last          = rb_ary_last;
-    config->ary_unshift       = rb_ary_unshift;
-    config->ary_new2          = rb_ary_new2;
-    config->ary_entry         = rb_ary_entry;
-    config->ary_join          = rb_ary_join;
-    config->ary_reverse       = rb_ary_reverse;
-    config->ary_clear         = rb_ary_clear;
-    config->array_len         = rb_array_len;
-    config->array_aref        = RARRAY_AREF;
+    .attr_get = rb_attr_get,
 
-    config->sym_intern_ascii_cstr = rb_sym_intern_ascii_cstr;
-    config->make_temporary_id     = rb_make_temporary_id;
-    config->is_local_id           = is_local_id2;
-    config->is_attrset_id         = is_attrset_id2;
-    config->is_global_name_punct  = is_global_name_punct;
-    config->id_type               = id_type;
-    config->id_attrset            = rb_id_attrset;
-    config->intern                = rb_intern;
-    config->intern2               = rb_intern2;
-    config->intern3               = intern3;
-    config->intern_str            = rb_intern_str;
-    config->is_notop_id           = is_notop_id2;
-    config->enc_symname_type      = enc_symname_type;
-    config->str_intern            = rb_str_intern;
-    config->id2name               = rb_id2name;
-    config->id2str                = rb_id2str;
-    config->id2sym                = rb_id2sym;
-    config->sym2id                = rb_sym2id;
+    .ary_push = rb_ary_push,
+    .ary_new_from_args = rb_ary_new_from_args,
+    .ary_unshift = rb_ary_unshift,
 
-    config->str_catf        = rb_str_catf;
-    config->str_cat_cstr    = rb_str_cat_cstr;
-    config->str_subseq      = rb_str_subseq;
-    config->str_dup         = rb_str_dup;
-    config->str_new_frozen  = rb_str_new_frozen;
-    config->str_buf_new     = rb_str_buf_new;
-    config->str_buf_cat     = rb_str_buf_cat;
-    config->str_modify      = rb_str_modify;
-    config->str_set_len     = rb_str_set_len;
-    config->str_cat         = rb_str_cat;
-    config->str_resize      = rb_str_resize;
-    config->str_new         = rb_str_new;
-    config->str_new_cstr    = rb_str_new_cstr;
-    config->fstring         = rb_fstring;
-    config->is_ascii_string = is_ascii_string2;
-    config->enc_str_new     = enc_str_new;
-    config->enc_str_buf_cat = enc_str_buf_cat;
-    config->str_buf_append  = rb_str_buf_append;
-    config->str_vcatf       = rb_str_vcatf;
-    config->string_value_cstr = rb_string_value_cstr;
-    config->rb_sprintf      = rb_sprintf;
-    config->rstring_ptr     = RSTRING_PTR;
-    config->rstring_end     = RSTRING_END;
-    config->rstring_len     = RSTRING_LEN;
-    config->filesystem_str_new_cstr = rb_filesystem_str_new_cstr;
-    config->obj_as_string = rb_obj_as_string;
+    .make_temporary_id = rb_make_temporary_id,
+    .is_local_id = is_local_id2,
+    .is_attrset_id = is_attrset_id2,
+    .is_global_name_punct = is_global_name_punct,
+    .id_type = id_type,
+    .id_attrset = rb_id_attrset,
+    .intern = rb_intern,
+    .intern2 = rb_intern2,
+    .intern3 = intern3,
+    .intern_str = rb_intern_str,
+    .is_notop_id = is_notop_id2,
+    .enc_symname_type = enc_symname_type,
+    .id2name = rb_id2name,
+    .id2str = rb_id2str,
+    .id2sym = rb_id2sym,
+    .sym2id = rb_sym2id,
 
-    config->hash_clear     = rb_hash_clear;
-    config->hash_new       = rb_hash_new;
-    config->hash_aset      = rb_hash_aset;
-    config->hash_lookup    = rb_hash_lookup;
-    config->hash_delete    = rb_hash_delete;
-    config->ident_hash_new = rb_ident_hash_new;
+    .str_catf = rb_str_catf,
+    .str_cat_cstr = rb_str_cat_cstr,
+    .str_resize = rb_str_resize,
+    .str_new = rb_str_new,
+    .str_new_cstr = rb_str_new_cstr,
+    .str_to_interned_str = rb_str_to_interned_str,
+    .enc_str_new = enc_str_new,
+    .str_vcatf = rb_str_vcatf,
+    .rb_sprintf = rb_sprintf,
+    .rstring_ptr = RSTRING_PTR,
+    .rstring_len = RSTRING_LEN,
+    .obj_as_string = rb_obj_as_string,
 
-    config->int2fix = int2fix;
+    .int2num = rb_int2num_inline,
 
-    config->bignum_negate = bignum_negate;
-    config->big_norm      = rb_big_norm;
-    config->cstr_to_inum  = rb_cstr_to_inum;
+    .stderr_tty_p = rb_stderr_tty_p,
+    .write_error_str = rb_write_error_str,
+    .io_write = rb_io_write,
+    .io_flush = rb_io_flush,
+    .io_puts = rb_io_puts,
 
-    config->float_new   = rb_float_new;
-    config->float_value = rb_float_value;
+    .debug_output_stdout = rb_ractor_stdout,
+    .debug_output_stderr = rb_ractor_stderr,
 
-    config->num2int          = rb_num2int_inline;
-    config->int_positive_pow = rb_int_positive_pow;
-    config->int2num          = rb_int2num_inline;
-    config->fix2long         = rb_fix2long;
+    .is_usascii_enc = is_usascii_enc,
+    .enc_isalnum = enc_isalnum,
+    .enc_precise_mbclen = enc_precise_mbclen,
+    .mbclen_charfound_p = mbclen_charfound_p,
+    .mbclen_charfound_len = mbclen_charfound_len,
+    .enc_name = enc_name,
+    .enc_prev_char = enc_prev_char,
+    .enc_get = enc_get,
+    .enc_asciicompat = enc_asciicompat,
+    .utf8_encoding = utf8_encoding,
+    .enc_associate = enc_associate,
+    .ascii8bit_encoding = ascii8bit_encoding,
+    .enc_codelen = enc_codelen,
+    .enc_mbcput = enc_mbcput,
+    .enc_find_index = rb_enc_find_index,
+    .enc_from_index = enc_from_index,
+    .enc_isspace = enc_isspace,
+    .enc_coderange_7bit = ENC_CODERANGE_7BIT,
+    .enc_coderange_unknown = ENC_CODERANGE_UNKNOWN,
+    .usascii_encoding = usascii_encoding,
+    .enc_mbminlen = enc_mbminlen,
+    .enc_isascii = enc_isascii,
+    .enc_mbc_to_codepoint = enc_mbc_to_codepoint,
 
-    config->rational_new     = rb_rational_new;
-    config->rational_raw1    = rational_raw1;
-    config->rational_set_num = rational_set_num;
-    config->rational_get_num = rational_get_num;
+    .local_defined = local_defined,
+    .dvar_defined = dvar_defined,
 
-    config->complex_raw       = rb_complex_raw;
-    config->rcomplex_set_real = rcomplex_set_real;
-    config->rcomplex_set_imag = rcomplex_set_imag;
-    config->rcomplex_get_real = rcomplex_get_real;
-    config->rcomplex_get_imag = rcomplex_get_imag;
+    .syntax_error_append = syntax_error_append,
+    .raise = rb_raise,
+    .syntax_error_new = syntax_error_new,
 
-    config->stderr_tty_p    = rb_stderr_tty_p;
-    config->write_error_str = rb_write_error_str;
-    config->default_rs = default_rs;
-    config->io_write = rb_io_write;
-    config->io_flush = rb_io_flush;
-    config->io_puts = rb_io_puts;
-    config->io_gets_internal= rb_io_gets_internal;
+    .errinfo = rb_errinfo,
+    .set_errinfo = rb_set_errinfo,
+    .exc_raise = rb_exc_raise,
+    .make_exception = rb_make_exception,
 
-    config->debug_output_stdout = rb_ractor_stdout;
-    config->debug_output_stderr = rb_ractor_stderr;
+    .sized_xfree = ruby_sized_xfree,
+    .sized_realloc_n = ruby_sized_realloc_n,
+    .gc_guard = gc_guard,
+    .gc_mark = rb_gc_mark,
 
-    config->is_usascii_enc        = is_usascii_enc;
-    config->enc_isalnum           = enc_isalnum;
-    config->enc_precise_mbclen    = enc_precise_mbclen;
-    config->mbclen_charfound_p    = mbclen_charfound_p;
-    config->enc_name              = enc_name;
-    config->enc_prev_char         = enc_prev_char;
-    config->enc_get               = enc_get;
-    config->enc_asciicompat       = enc_asciicompat;
-    config->utf8_encoding         = utf8_encoding;
-    config->enc_associate         = enc_associate;
-    config->ascii8bit_encoding    = ascii8bit_encoding;
-    config->enc_codelen           = enc_codelen;
-    config->enc_mbcput            = enc_mbcput;
-    config->char_to_option_kcode  = rb_char_to_option_kcode;
-    config->ascii8bit_encindex    = rb_ascii8bit_encindex;
-    config->enc_find_index        = rb_enc_find_index;
-    config->enc_from_index        = enc_from_index;
-    config->enc_associate_index   = rb_enc_associate_index;
-    config->enc_isspace           = enc_isspace;
-    config->enc_coderange_7bit    = ENC_CODERANGE_7BIT;
-    config->enc_coderange_unknown = ENC_CODERANGE_UNKNOWN;
-    config->enc_coderange_broken  = ENC_CODERANGE_BROKEN;
-    config->enc_compatible        = enc_compatible;
-    config->enc_from_encoding     = enc_from_encoding;
-    config->encoding_get          = encoding_get;
-    config->encoding_set          = encoding_set;
-    config->encoding_is_ascii8bit = encoding_is_ascii8bit;
-    config->usascii_encoding      = usascii_encoding;
-    config->enc_str_coderange     = rb_enc_str_coderange;
+    .reg_compile = rb_reg_compile,
+    .reg_check_preprocess = rb_reg_check_preprocess,
+    .memcicmp = rb_memcicmp,
 
-    config->ractor_make_shareable = rb_ractor_make_shareable;
+    .compile_warn = rb_compile_warn,
+    .compile_warning = rb_compile_warning,
+    .bug = rb_bug,
+    .fatal = rb_fatal,
+    .verbose = ruby_verbose2,
+    .errno_ptr = rb_errno_ptr2,
 
-    config->local_defined        = local_defined;
-    config->dvar_defined         = dvar_defined;
+    .make_backtrace = rb_make_backtrace,
 
-    config->literal_cmp  = literal_cmp;
-    config->literal_hash = literal_hash;
+    .scan_hex = ruby_scan_hex,
+    .scan_oct = ruby_scan_oct,
+    .scan_digits = ruby_scan_digits,
+    .strtod = ruby_strtod,
 
-    config->builtin_class_name = rb_builtin_class_name;
-    config->syntax_error_append = syntax_error_append;
-    config->raise = rb_raise;
-    config->syntax_error_new = syntax_error_new;
-
-    config->errinfo = rb_errinfo;
-    config->set_errinfo = rb_set_errinfo;
-    config->exc_raise = rb_exc_raise;
-    config->make_exception = rb_make_exception;
-
-    config->sized_xfree = ruby_sized_xfree;
-    config->sized_realloc_n = ruby_sized_realloc_n;
-    config->obj_write = obj_write;
-    config->obj_written = obj_written;
-    config->gc_register_mark_object = rb_gc_register_mark_object;
-    config->gc_guard = gc_guard;
-    config->gc_mark = rb_gc_mark;
-    config->gc_mark_movable = rb_gc_mark_movable;
-    config->gc_location = rb_gc_location;
-
-    config->reg_compile = rb_reg_compile;
-    config->reg_check_preprocess = rb_reg_check_preprocess;
-    config->memcicmp = rb_memcicmp;
-
-    config->compile_warn    = rb_compile_warn;
-    config->compile_warning = rb_compile_warning;
-    config->bug             = rb_bug;
-    config->fatal           = rb_fatal;
-    config->verbose         = ruby_verbose2;
-
-    config->make_backtrace = rb_make_backtrace;
-
-    config->scan_hex    = ruby_scan_hex;
-    config->scan_oct    = ruby_scan_oct;
-    config->scan_digits = ruby_scan_digits;
-    config->strtod      = ruby_strtod;
-
-    config->rbool = rbool;
-    config->undef_p = undef_p;
-    config->rtest = rtest;
-    config->nil_p = nil_p;
-    config->flonum_p = flonum_p;
-    config->qnil  = Qnil;
-    config->qtrue = Qtrue;
-    config->qfalse = Qfalse;
-    config->qundef = Qundef;
-    config->eArgError = rb_eArgError;
-    config->mRubyVMFrozenCore = rb_mRubyVMFrozenCore;
-    config->long2int = rb_long2int;
-    config->special_const_p = special_const_p;
-    config->builtin_type = builtin_type;
-
-    config->node_case_when_optimizable_literal = rb_node_case_when_optimizable_literal;
+    .rtest = rtest,
+    .nil_p = nil_p,
+    .qnil = Qnil,
+    .qfalse = Qfalse,
+    .eArgError = arg_error,
+    .long2int = rb_long2int,
 
     /* For Ripper */
-    config->static_id2sym = static_id2sym;
-    config->str_coderange_scan_restartable = str_coderange_scan_restartable;
+    .static_id2sym = static_id2sym,
+    .str_coderange_scan_restartable = str_coderange_scan_restartable,
+};
+#endif
+
+enum lex_type {
+    lex_type_str,
+    lex_type_io,
+    lex_type_array,
+    lex_type_generic,
+};
+
+struct ruby_parser {
+    rb_parser_t *parser_params;
+    enum lex_type type;
+    union {
+        struct lex_pointer_string lex_str;
+        struct {
+            VALUE file;
+        } lex_io;
+        struct {
+            VALUE ary;
+        } lex_array;
+    } data;
+};
+
+static void
+parser_mark(void *ptr)
+{
+    struct ruby_parser *parser = (struct ruby_parser*)ptr;
+    rb_ruby_parser_mark(parser->parser_params);
+
+    switch (parser->type) {
+      case lex_type_str:
+        rb_gc_mark(parser->data.lex_str.str);
+        break;
+      case lex_type_io:
+        rb_gc_mark(parser->data.lex_io.file);
+        break;
+      case lex_type_array:
+        rb_gc_mark(parser->data.lex_array.ary);
+        break;
+      case lex_type_generic:
+        /* noop. Caller of rb_parser_compile_generic should mark the objects. */
+        break;
+    }
 }
+
+static void
+parser_free(void *ptr)
+{
+    struct ruby_parser *parser = (struct ruby_parser*)ptr;
+    rb_ruby_parser_free(parser->parser_params);
+    xfree(parser);
+}
+
+static size_t
+parser_memsize(const void *ptr)
+{
+    struct ruby_parser *parser = (struct ruby_parser*)ptr;
+    return rb_ruby_parser_memsize(parser->parser_params);
+}
+
+static const rb_data_type_t ruby_parser_data_type = {
+    "parser",
+    {
+        parser_mark,
+        parser_free,
+        parser_memsize,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+#ifdef UNIVERSAL_PARSER
+const rb_parser_config_t *
+rb_ruby_parser_config(void)
+{
+    return &rb_global_parser_config;
+}
+
+rb_parser_t *
+rb_parser_params_new(void)
+{
+    return rb_ruby_parser_new(&rb_global_parser_config);
+}
+#else
+rb_parser_t *
+rb_parser_params_new(void)
+{
+    return rb_ruby_parser_new();
+}
+#endif /* UNIVERSAL_PARSER */
 
 VALUE
 rb_parser_new(void)
 {
     struct ruby_parser *parser;
-    rb_parser_config_t *config;
     rb_parser_t *parser_params;
-
-    config = rb_ruby_parser_config_new(ruby_xmalloc);
-    rb_parser_config_initialize(config);
 
     /*
      * Create parser_params ahead of vparser because
      * rb_ruby_parser_new can run GC so if create vparser
      * first, parser_mark tries to mark not initialized parser_params.
      */
-    parser_params = rb_ruby_parser_new(config);
+    parser_params = rb_parser_params_new();
     VALUE vparser = TypedData_Make_Struct(0, struct ruby_parser,
                                          &ruby_parser_data_type, parser);
     parser->parser_params = parser_params;
@@ -798,12 +588,12 @@ rb_parser_set_context(VALUE vparser, const struct rb_iseq_struct *base, int main
 }
 
 void
-rb_parser_set_script_lines(VALUE vparser, VALUE lines)
+rb_parser_set_script_lines(VALUE vparser)
 {
     struct ruby_parser *parser;
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    rb_ruby_parser_set_script_lines(parser->parser_params, lines);
+    rb_ruby_parser_set_script_lines(parser->parser_params);
 }
 
 void
@@ -815,19 +605,6 @@ rb_parser_error_tolerant(VALUE vparser)
     rb_ruby_parser_error_tolerant(parser->parser_params);
 }
 
-rb_ast_t*
-rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE file, int start)
-{
-    struct ruby_parser *parser;
-    rb_ast_t *ast;
-
-    TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast = rb_ruby_parser_compile_file_path(parser->parser_params, fname, file, start);
-    RB_GC_GUARD(vparser);
-
-    return ast;
-}
-
 void
 rb_parser_keep_tokens(VALUE vparser)
 {
@@ -837,43 +614,218 @@ rb_parser_keep_tokens(VALUE vparser)
     rb_ruby_parser_keep_tokens(parser->parser_params);
 }
 
-rb_ast_t*
-rb_parser_compile_generic(VALUE vparser, VALUE (*lex_gets)(VALUE, int), VALUE fname, VALUE input, int start)
+rb_parser_string_t *
+rb_parser_lex_get_str(struct parser_params *p, struct lex_pointer_string *ptr_str)
 {
-    struct ruby_parser *parser;
-    rb_ast_t *ast;
+    char *beg, *end, *start;
+    long len;
+    VALUE s = ptr_str->str;
 
-    TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast = rb_ruby_parser_compile_generic(parser->parser_params, lex_gets, fname, input, start);
-    RB_GC_GUARD(vparser);
+    beg = RSTRING_PTR(s);
+    len = RSTRING_LEN(s);
+    start = beg;
+    if (ptr_str->ptr) {
+        if (len == ptr_str->ptr) return 0;
+        beg += ptr_str->ptr;
+        len -= ptr_str->ptr;
+    }
+    end = memchr(beg, '\n', len);
+    if (end) len = ++end - beg;
+    ptr_str->ptr += len;
+    return rb_str_to_parser_string(p, rb_str_subseq(s, beg - start, len));
+}
 
+static rb_parser_string_t *
+lex_get_str(struct parser_params *p, rb_parser_input_data input, int line_count)
+{
+    return rb_parser_lex_get_str(p, (struct lex_pointer_string *)input);
+}
+
+static void parser_aset_script_lines_for(VALUE path, rb_parser_ary_t *lines);
+
+static rb_ast_t*
+parser_compile(rb_parser_t *p, rb_parser_lex_gets_func *gets, VALUE fname, rb_parser_input_data input, int line)
+{
+    rb_ast_t *ast = rb_parser_compile(p, gets, fname, input, line);
+    parser_aset_script_lines_for(fname, ast->body.script_lines);
     return ast;
 }
 
-rb_ast_t*
+static rb_ast_t*
+parser_compile_string0(struct ruby_parser *parser, VALUE fname, VALUE s, int line)
+{
+    VALUE str = rb_str_new_frozen(s);
+
+    parser->type = lex_type_str;
+    parser->data.lex_str.str = str;
+    parser->data.lex_str.ptr = 0;
+
+    return parser_compile(parser->parser_params, lex_get_str, fname, (rb_parser_input_data)&parser->data, line);
+}
+
+static rb_encoding *
+must_be_ascii_compatible(VALUE s)
+{
+    rb_encoding *enc = rb_enc_get(s);
+    if (!rb_enc_asciicompat(enc)) {
+        rb_raise(rb_eArgError, "invalid source encoding");
+    }
+    return enc;
+}
+
+static rb_ast_t*
+parser_compile_string_path(struct ruby_parser *parser, VALUE f, VALUE s, int line)
+{
+    must_be_ascii_compatible(s);
+    return parser_compile_string0(parser, f, s, line);
+}
+
+static rb_ast_t*
+parser_compile_string(struct ruby_parser *parser, const char *f, VALUE s, int line)
+{
+    return parser_compile_string_path(parser, rb_filesystem_str_new_cstr(f), s, line);
+}
+
+VALUE rb_io_gets_internal(VALUE io);
+
+static rb_parser_string_t *
+lex_io_gets(struct parser_params *p, rb_parser_input_data input, int line_count)
+{
+    VALUE io = (VALUE)input;
+    VALUE line = rb_io_gets_internal(io);
+    if (NIL_P(line)) return 0;
+    return rb_str_to_parser_string(p, line);
+}
+
+static rb_parser_string_t *
+lex_gets_array(struct parser_params *p, rb_parser_input_data data, int index)
+{
+    VALUE array = (VALUE)data;
+    VALUE str = rb_ary_entry(array, index);
+    if (!NIL_P(str)) {
+        StringValue(str);
+        if (!rb_enc_asciicompat(rb_enc_get(str))) {
+            rb_raise(rb_eArgError, "invalid source encoding");
+        }
+        return rb_str_to_parser_string(p, str);
+    }
+    else {
+        return 0;
+    }
+}
+
+static rb_ast_t*
+parser_compile_file_path(struct ruby_parser *parser, VALUE fname, VALUE file, int start)
+{
+    parser->type = lex_type_io;
+    parser->data.lex_io.file = file;
+
+    return parser_compile(parser->parser_params, lex_io_gets, fname, (rb_parser_input_data)file, start);
+}
+
+static rb_ast_t*
+parser_compile_array(struct ruby_parser *parser, VALUE fname, VALUE array, int start)
+{
+    parser->type = lex_type_array;
+    parser->data.lex_array.ary = array;
+
+    return parser_compile(parser->parser_params, lex_gets_array, fname, (rb_parser_input_data)array, start);
+}
+
+static rb_ast_t*
+parser_compile_generic(struct ruby_parser *parser, rb_parser_lex_gets_func *lex_gets, VALUE fname, VALUE input, int start)
+{
+    parser->type = lex_type_generic;
+
+    return parser_compile(parser->parser_params, lex_gets, fname, (rb_parser_input_data)input, start);
+}
+
+static void
+ast_free(void *ptr)
+{
+    rb_ast_t *ast = (rb_ast_t *)ptr;
+    rb_ast_free(ast);
+}
+
+static const rb_data_type_t ast_data_type = {
+    "AST",
+    {
+        NULL,
+        ast_free,
+        NULL, // No dsize() because this object does not appear in ObjectSpace.
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+static VALUE
+ast_alloc(void)
+{
+    return TypedData_Wrap_Struct(0, &ast_data_type, NULL);
+}
+
+VALUE
+rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE file, int start)
+{
+    struct ruby_parser *parser;
+    VALUE ast_value = ast_alloc();
+
+    TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
+    DATA_PTR(ast_value) = parser_compile_file_path(parser, fname, file, start);
+    RB_GC_GUARD(vparser);
+
+    return ast_value;
+}
+
+VALUE
+rb_parser_compile_array(VALUE vparser, VALUE fname, VALUE array, int start)
+{
+    struct ruby_parser *parser;
+    VALUE ast_value = ast_alloc();
+
+    TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
+    DATA_PTR(ast_value) = parser_compile_array(parser, fname, array, start);
+    RB_GC_GUARD(vparser);
+
+    return ast_value;
+}
+
+VALUE
+rb_parser_compile_generic(VALUE vparser, rb_parser_lex_gets_func *lex_gets, VALUE fname, VALUE input, int start)
+{
+    struct ruby_parser *parser;
+    VALUE ast_value = ast_alloc();
+
+    TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
+    DATA_PTR(ast_value) = parser_compile_generic(parser, lex_gets, fname, input, start);
+    RB_GC_GUARD(vparser);
+
+    return ast_value;
+}
+
+VALUE
 rb_parser_compile_string(VALUE vparser, const char *f, VALUE s, int line)
 {
     struct ruby_parser *parser;
-    rb_ast_t *ast;
+    VALUE ast_value = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast = rb_ruby_parser_compile_string(parser->parser_params, f, s, line);
+    DATA_PTR(ast_value) = parser_compile_string(parser, f, s, line);
     RB_GC_GUARD(vparser);
 
-    return ast;
+    return ast_value;
 }
 
-rb_ast_t*
+VALUE
 rb_parser_compile_string_path(VALUE vparser, VALUE f, VALUE s, int line)
 {
     struct ruby_parser *parser;
-    rb_ast_t *ast;
+    VALUE ast_value = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast = rb_ruby_parser_compile_string_path(parser->parser_params, f, s, line);
+    DATA_PTR(ast_value) = parser_compile_string_path(parser, f, s, line);
     RB_GC_GUARD(vparser);
 
-    return ast;
+    return ast_value;
 }
 
 VALUE
@@ -882,7 +834,7 @@ rb_parser_encoding(VALUE vparser)
     struct ruby_parser *parser;
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    return rb_ruby_parser_encoding(parser->parser_params);
+    return rb_enc_from_encoding(rb_ruby_parser_encoding(parser->parser_params));
 }
 
 VALUE
@@ -904,10 +856,282 @@ rb_parser_set_yydebug(VALUE vparser, VALUE flag)
     return flag;
 }
 
-#else
-
-/* For "ISO C requires a translation unit to contain at least one declaration" */
 void
-rb_parser_dummy(void)
-{}
+rb_set_script_lines_for(VALUE vparser, VALUE path)
+{
+    struct ruby_parser *parser;
+    VALUE hash;
+    ID script_lines;
+    CONST_ID(script_lines, "SCRIPT_LINES__");
+    if (!rb_const_defined_at(rb_cObject, script_lines)) return;
+    hash = rb_const_get_at(rb_cObject, script_lines);
+    if (RB_TYPE_P(hash, T_HASH)) {
+        rb_hash_aset(hash, path, Qtrue);
+        TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
+        rb_ruby_parser_set_script_lines(parser->parser_params);
+    }
+}
+
+VALUE
+rb_parser_build_script_lines_from(rb_parser_ary_t *lines)
+{
+    int i;
+    if (!lines) return Qnil;
+    if (lines->data_type != PARSER_ARY_DATA_SCRIPT_LINE) {
+        rb_bug("unexpected rb_parser_ary_data_type (%d) for script lines", lines->data_type);
+    }
+    VALUE script_lines = rb_ary_new_capa(lines->len);
+    for (i = 0; i < lines->len; i++) {
+        rb_parser_string_t *str = (rb_parser_string_t *)lines->data[i];
+        rb_ary_push(script_lines, rb_enc_str_new(str->ptr, str->len, str->enc));
+    }
+    return script_lines;
+}
+
+VALUE
+rb_str_new_parser_string(rb_parser_string_t *str)
+{
+    VALUE string = rb_enc_literal_str(str->ptr, str->len, str->enc);
+    rb_enc_str_coderange(string);
+    return string;
+}
+
+VALUE
+rb_str_new_mutable_parser_string(rb_parser_string_t *str)
+{
+    return rb_enc_str_new(str->ptr, str->len, str->enc);
+}
+
+static VALUE
+negative_numeric(VALUE val)
+{
+    if (FIXNUM_P(val)) {
+        return LONG2FIX(-FIX2LONG(val));
+    }
+    if (SPECIAL_CONST_P(val)) {
+#if USE_FLONUM
+        if (FLONUM_P(val)) {
+            return DBL2NUM(-RFLOAT_VALUE(val));
+        }
 #endif
+        goto unknown;
+    }
+    switch (BUILTIN_TYPE(val)) {
+      case T_BIGNUM:
+        BIGNUM_NEGATE(val);
+        val = rb_big_norm(val);
+        break;
+      case T_RATIONAL:
+        RATIONAL_SET_NUM(val, negative_numeric(RRATIONAL(val)->num));
+        break;
+      case T_COMPLEX:
+        RCOMPLEX_SET_REAL(val, negative_numeric(RCOMPLEX(val)->real));
+        RCOMPLEX_SET_IMAG(val, negative_numeric(RCOMPLEX(val)->imag));
+        break;
+      case T_FLOAT:
+        val = DBL2NUM(-RFLOAT_VALUE(val));
+        break;
+      unknown:
+      default:
+        rb_bug("unknown literal type (%s) passed to negative_numeric",
+               rb_builtin_class_name(val));
+        break;
+    }
+    return val;
+}
+
+static VALUE
+integer_value(const char *val, int base)
+{
+    return rb_cstr_to_inum(val, base, FALSE);
+}
+
+static VALUE
+rational_value(const char *node_val, int base, int seen_point)
+{
+    VALUE lit;
+    char* val = strdup(node_val);
+    if (seen_point > 0) {
+        int len = (int)(strlen(val));
+        char *point = &val[seen_point];
+        size_t fraclen = len-seen_point-1;
+        memmove(point, point+1, fraclen+1);
+
+        lit = rb_rational_new(integer_value(val, base), rb_int_positive_pow(10, fraclen));
+    }
+    else {
+        lit = rb_rational_raw1(integer_value(val, base));
+    }
+
+    free(val);
+
+    return lit;
+}
+
+VALUE
+rb_node_integer_literal_val(const NODE *n)
+{
+    const rb_node_integer_t *node = RNODE_INTEGER(n);
+    VALUE val = integer_value(node->val, node->base);
+    if (node->minus) {
+        val = negative_numeric(val);
+    }
+    return val;
+}
+
+VALUE
+rb_node_float_literal_val(const NODE *n)
+{
+    const rb_node_float_t *node = RNODE_FLOAT(n);
+    double d = strtod(node->val, 0);
+    if (node->minus) {
+        d = -d;
+    }
+    VALUE val = DBL2NUM(d);
+    return val;
+}
+
+VALUE
+rb_node_rational_literal_val(const NODE *n)
+{
+    VALUE lit;
+    const rb_node_rational_t *node = RNODE_RATIONAL(n);
+
+    lit = rational_value(node->val, node->base, node->seen_point);
+
+    if (node->minus) {
+        lit = negative_numeric(lit);
+    }
+
+    return lit;
+}
+
+VALUE
+rb_node_imaginary_literal_val(const NODE *n)
+{
+    VALUE lit;
+    const rb_node_imaginary_t *node = RNODE_IMAGINARY(n);
+
+    enum rb_numeric_type type = node->type;
+
+    switch (type) {
+      case integer_literal:
+        lit = integer_value(node->val, node->base);
+        break;
+      case float_literal:{
+        double d = strtod(node->val, 0);
+        lit = DBL2NUM(d);
+        break;
+      }
+      case rational_literal:
+        lit = rational_value(node->val, node->base, node->seen_point);
+        break;
+      default:
+        rb_bug("unreachable");
+    }
+
+    lit = rb_complex_raw(INT2FIX(0), lit);
+
+    if (node->minus) {
+        lit = negative_numeric(lit);
+    }
+    return lit;
+}
+
+VALUE
+rb_node_str_string_val(const NODE *node)
+{
+    rb_parser_string_t *str = RNODE_STR(node)->string;
+    return rb_str_new_parser_string(str);
+}
+
+VALUE
+rb_node_sym_string_val(const NODE *node)
+{
+    rb_parser_string_t *str = RNODE_SYM(node)->string;
+    return ID2SYM(rb_intern3(str->ptr, str->len, str->enc));
+}
+
+VALUE
+rb_node_dstr_string_val(const NODE *node)
+{
+    rb_parser_string_t *str = RNODE_DSTR(node)->string;
+    return str ? rb_str_new_parser_string(str) : Qnil;
+}
+
+VALUE
+rb_node_dregx_string_val(const NODE *node)
+{
+    rb_parser_string_t *str = RNODE_DREGX(node)->string;
+    return rb_str_new_parser_string(str);
+}
+
+VALUE
+rb_node_regx_string_val(const NODE *node)
+{
+    rb_node_regx_t *node_reg = RNODE_REGX(node);
+    rb_parser_string_t *string = node_reg->string;
+    VALUE str = rb_enc_str_new(string->ptr, string->len, string->enc);
+
+    return rb_reg_compile(str, node_reg->options, NULL, 0);
+}
+
+VALUE
+rb_node_line_lineno_val(const NODE *node)
+{
+    return INT2FIX(node->nd_loc.beg_pos.lineno);
+}
+
+VALUE
+rb_node_file_path_val(const NODE *node)
+{
+    return rb_str_new_parser_string(RNODE_FILE(node)->path);
+}
+
+VALUE
+rb_node_encoding_val(const NODE *node)
+{
+    return rb_enc_from_encoding(RNODE_ENCODING(node)->enc);
+}
+
+static void
+parser_aset_script_lines_for(VALUE path, rb_parser_ary_t *lines)
+{
+    VALUE hash, script_lines;
+    ID script_lines_id;
+    if (NIL_P(path) || !lines) return;
+    CONST_ID(script_lines_id, "SCRIPT_LINES__");
+    if (!rb_const_defined_at(rb_cObject, script_lines_id)) return;
+    hash = rb_const_get_at(rb_cObject, script_lines_id);
+    if (!RB_TYPE_P(hash, T_HASH)) return;
+    if (rb_hash_lookup(hash, path) == Qnil) return;
+    script_lines = rb_parser_build_script_lines_from(lines);
+    rb_hash_aset(hash, path, script_lines);
+}
+
+VALUE
+rb_ruby_ast_new(const NODE *const root)
+{
+    rb_ast_t *ast;
+    VALUE ast_value = TypedData_Make_Struct(0, rb_ast_t, &ast_data_type, ast);
+#ifdef UNIVERSAL_PARSER
+    ast->config = &rb_global_parser_config;
+#endif
+    ast->body = (rb_ast_body_t){
+        .root = root,
+        .frozen_string_literal = -1,
+        .coverage_enabled = -1,
+        .script_lines = NULL,
+        .line_count = 0,
+    };
+    return ast_value;
+}
+
+rb_ast_t *
+rb_ruby_ast_data_get(VALUE ast_value)
+{
+    rb_ast_t *ast;
+    if (NIL_P(ast_value)) return NULL;
+    TypedData_Get_Struct(ast_value, rb_ast_t, &ast_data_type, ast);
+    return ast;
+}

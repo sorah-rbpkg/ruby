@@ -315,7 +315,11 @@ impl Assembler
             match opnd {
                 Opnd::Reg(_) | Opnd::CArg(_) | Opnd::InsnOut { .. } => opnd,
                 Opnd::Mem(_) => split_load_operand(asm, opnd),
-                Opnd::Imm(_) => asm.load(opnd),
+                Opnd::Imm(imm) => if ShiftedImmediate::try_from(imm as u64).is_ok() {
+                    opnd
+                } else {
+                    asm.load(opnd)
+                }
                 Opnd::UImm(uimm) => {
                     if ShiftedImmediate::try_from(uimm).is_ok() {
                         opnd
@@ -377,7 +381,7 @@ impl Assembler
         }
 
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
-        let mut asm_local = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits));
+        let mut asm_local = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits), self.num_locals);
         let asm = &mut asm_local;
         let mut iterator = self.into_draining_iter();
 
@@ -427,14 +431,62 @@ impl Assembler
                         }
                     }
                 },
-                Insn::And { left, right, .. } |
-                Insn::Or { left, right, .. } |
-                Insn::Xor { left, right, .. } => {
+                Insn::And { left, right, out } |
+                Insn::Or { left, right, out } |
+                Insn::Xor { left, right, out } => {
                     let (opnd0, opnd1) = split_boolean_operands(asm, *left, *right);
                     *left = opnd0;
                     *right = opnd1;
+
+                    // Since these instructions are lowered to an instruction that have 2 input
+                    // registers and an output register, look to merge with an `Insn::Mov` that
+                    // follows which puts the output in another register. For example:
+                    // `Add a, b => out` followed by `Mov c, out` becomes `Add a, b => c`.
+                    if let (Opnd::Reg(_), Opnd::Reg(_), Some(Insn::Mov { dest, src })) = (left, right, iterator.peek()) {
+                        if live_ranges[index] == index + 1 {
+                            // Check after potentially lowering a stack operand to a register operand
+                            let lowered_dest = if let Opnd::Stack { .. } = dest {
+                                asm.lower_stack_opnd(dest)
+                            } else {
+                                *dest
+                            };
+                            if out == src && matches!(lowered_dest, Opnd::Reg(_)) {
+                                *out = lowered_dest;
+                                iterator.map_insn_index(asm);
+                                iterator.next_unmapped(); // Pop merged Insn::Mov
+                            }
+                        }
+                    }
+
                     asm.push_insn(insn);
-                },
+                }
+                // Lower to Joz and Jonz for generating CBZ/CBNZ for compare-with-0-and-branch.
+                ref insn @ Insn::Cmp { ref left, right: ref right @ (Opnd::UImm(0) | Opnd::Imm(0)) } |
+                ref insn @ Insn::Test { ref left, right: ref right @ (Opnd::InsnOut { .. } | Opnd::Reg(_)) } if {
+                    let same_opnd_if_test = if let Insn::Test { .. } = insn {
+                        left == right
+                    } else {
+                        true
+                    };
+
+                    same_opnd_if_test && if let Some(
+                            Insn::Jz(target) | Insn::Je(target) | Insn::Jnz(target) | Insn::Jne(target)
+                        ) = iterator.peek() {
+                            matches!(target, Target::SideExit { .. })
+                        } else {
+                            false
+                        }
+                } => {
+                    let reg = split_load_operand(asm, *left);
+                    match iterator.peek() {
+                        Some(Insn::Jz(target) | Insn::Je(target))   => asm.push_insn(Insn::Joz(reg, *target)),
+                        Some(Insn::Jnz(target) | Insn::Jne(target)) => asm.push_insn(Insn::Jonz(reg, *target)),
+                        _ => ()
+                    }
+
+                    iterator.map_insn_index(asm);
+                    iterator.next_unmapped(); // Pop merged jump instruction
+                }
                 Insn::CCall { opnds, fptr, .. } => {
                     assert!(opnds.len() <= C_ARG_OPNDS.len());
 
@@ -655,7 +707,7 @@ impl Assembler
                 },
                 Insn::Mul { left, right, .. } => {
                     let opnd0 = split_load_operand(asm, *left);
-                    let opnd1 = split_shifted_immediate(asm, *right);
+                    let opnd1 = split_load_operand(asm, *right);
                     asm.mul(opnd0, opnd1);
                 },
                 Insn::Test { left, right } => {
@@ -787,6 +839,45 @@ impl Assembler
             };
         }
 
+        /// Emit a CBZ or CBNZ which branches when a register is zero or non-zero
+        fn emit_cmp_zero_jump(cb: &mut CodeBlock, reg: A64Opnd, branch_if_zero: bool, target: Target) {
+            if let Target::SideExitPtr(dst_ptr) = target {
+                let dst_addr = dst_ptr.as_offset();
+                let src_addr = cb.get_write_ptr().as_offset();
+
+                if cmp_branch_offset_fits_bits((dst_addr - src_addr) / 4) {
+                    // If the offset fits in one instruction, generate cbz or cbnz
+                    let bytes = (dst_addr - src_addr) as i32;
+                    if branch_if_zero {
+                        cbz(cb, reg, InstructionOffset::from_bytes(bytes));
+                    } else {
+                        cbnz(cb, reg, InstructionOffset::from_bytes(bytes));
+                    }
+                } else {
+                    // Otherwise, we load the address into a register and
+                    // use the branch register instruction. Note that because
+                    // side exits should always be close, this form should be
+                    // rare or impossible to see.
+                    let dst_addr = dst_ptr.raw_addr(cb) as u64;
+                    let load_insns: i32 = emit_load_size(dst_addr).into();
+
+                    // Write out the inverse condition so that if
+                    // it doesn't match it will skip over the
+                    // instructions used for branching.
+                    if branch_if_zero {
+                        cbnz(cb, reg, InstructionOffset::from_insns(load_insns + 2));
+                    } else {
+                        cbz(cb, reg, InstructionOffset::from_insns(load_insns + 2));
+                    }
+                    emit_load_value(cb, Assembler::SCRATCH0, dst_addr);
+                    br(cb, Assembler::SCRATCH0);
+
+                }
+            } else {
+                unreachable!("We should only generate Joz/Jonz with side-exit targets");
+            }
+        }
+
         /// Emit a push instruction for the given operand by adding to the stack
         /// pointer and then storing the given value.
         fn emit_push(cb: &mut CodeBlock, opnd: A64Opnd) {
@@ -833,9 +924,7 @@ impl Assembler
 
             match insn {
                 Insn::Comment(text) => {
-                    if cfg!(feature = "disasm") {
-                        cb.add_comment(text);
-                    }
+                    cb.add_comment(text);
                 },
                 Insn::Label(target) => {
                     cb.write_label(target.unwrap_label_idx());
@@ -1135,6 +1224,9 @@ impl Assembler
                 Insn::Jg(target) => {
                     emit_conditional_jump::<{Condition::GT}>(cb, compile_side_exit(*target, self, ocb)?);
                 },
+                Insn::Jge(target) => {
+                    emit_conditional_jump::<{Condition::GE}>(cb, compile_side_exit(*target, self, ocb)?);
+                },
                 Insn::Jbe(target) => {
                     emit_conditional_jump::<{Condition::LS}>(cb, compile_side_exit(*target, self, ocb)?);
                 },
@@ -1143,6 +1235,12 @@ impl Assembler
                 },
                 Insn::Jo(target) => {
                     emit_conditional_jump::<{Condition::VS}>(cb, compile_side_exit(*target, self, ocb)?);
+                },
+                Insn::Joz(opnd, target) => {
+                    emit_cmp_zero_jump(cb, opnd.into(), true, compile_side_exit(*target, self, ocb)?);
+                },
+                Insn::Jonz(opnd, target) => {
+                    emit_cmp_zero_jump(cb, opnd.into(), false, compile_side_exit(*target, self, ocb)?);
                 },
                 Insn::IncrCounter { mem, value } => {
                     let label = cb.new_label("incr_counter_loop".to_string());
@@ -1285,7 +1383,7 @@ mod tests {
     use crate::disasm::*;
 
     fn setup_asm() -> (Assembler, CodeBlock) {
-        (Assembler::new(), CodeBlock::new_dummy(1024))
+        (Assembler::new(0), CodeBlock::new_dummy(1024))
     }
 
     #[test]
@@ -1584,7 +1682,7 @@ mod tests {
     #[test]
     fn test_bcond_straddling_code_pages() {
         const LANDING_PAGE: usize = 65;
-        let mut asm = Assembler::new();
+        let mut asm = Assembler::new(0);
         let mut cb = CodeBlock::new_dummy_with_freed_pages(vec![0, LANDING_PAGE]);
 
         // Skip to near the end of the page. Room for two instructions.
@@ -1699,6 +1797,37 @@ mod tests {
             0x0: mov x11, #0x14
             0x4: mov x12, #0
             0x8: csel x1, x11, x12, lt
+        "});
+    }
+
+    #[test]
+    fn test_add_with_immediate() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let out = asm.add(Opnd::Reg(TEMP_REGS[1]), 1.into());
+        let out = asm.add(out, 1_usize.into());
+        asm.mov(Opnd::Reg(TEMP_REGS[0]), out);
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm!(cb, "2b0500b16b0500b1e1030baa", {"
+            0x0: adds x11, x9, #1
+            0x4: adds x11, x11, #1
+            0x8: mov x1, x11
+        "});
+    }
+
+    #[test]
+    fn test_mul_with_immediate() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let out = asm.mul(Opnd::Reg(TEMP_REGS[1]), 3.into());
+        asm.mov(Opnd::Reg(TEMP_REGS[0]), out);
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm!(cb, "6b0080d22b7d0b9be1030baa", {"
+            0x0: mov x11, #3
+            0x4: mul x11, x9, x11
+            0x8: mov x1, x11
         "});
     }
 }

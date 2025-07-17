@@ -212,7 +212,7 @@ Method Regexp.escape returns an escaped string:
 === Source Literals
 
 The source literal largely behaves like a double-quoted string;
-see {String Literals}[rdoc-ref:syntax/literals.rdoc@String+Literals].
+see {Double-Quoted String Literals}[rdoc-ref:syntax/literals.rdoc@Double-Quoted+String+Literals].
 
 In particular, a source literal may contain interpolated expressions:
 
@@ -836,8 +836,9 @@ Some commonly-used properties correspond to POSIX bracket expressions:
 These are also commonly used:
 
 - <tt>/\p{Emoji}/</tt>: Unicode emoji.
-- <tt>/\p{Graph}/</tt>: Non-blank character
-  (excludes spaces, control characters, and similar).
+- <tt>/\p{Graph}/</tt>: Characters excluding <tt>/\p{Cntrl}/</tt> and <tt>/\p{Space}/</tt>.
+  Note that invisible characters under the Unicode
+  {"Format"}[https://www.compart.com/en/unicode/category/Cf] category are included.
 - <tt>/\p{Word}/</tt>: A member in one of these Unicode character
   categories (see below) or having one of these Unicode properties:
 
@@ -897,7 +898,7 @@ Numbers:
 - {Nl, Letter_Number}[https://www.compart.com/en/unicode/category/Nl].
 - {No, Other_Number}[https://www.compart.com/en/unicode/category/No].
 
-Punctation:
+Punctuation:
 
 - +P+, +Punctuation+: +Pc+, +Pd+, +Pe+, +Pf+, +Pi+, +Po+, or +Ps+.
 - {Pc, Connector_Punctuation}[https://www.compart.com/en/unicode/category/Pc].
@@ -1050,7 +1051,7 @@ Example:
   re.match('TEst') # => #<MatchData "TEst">
   re.match('TEST') # => nil
   re.match('teST') # => nil
-  
+
   re = /t(?i:e)st/
   re.match('test') # => #<MatchData "test">
   re.match('tEst') # => #<MatchData "tEst">

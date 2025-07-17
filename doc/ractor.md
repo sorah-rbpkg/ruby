@@ -204,8 +204,8 @@ For message sending and receiving, there are two types of APIs: push type and pu
   * When a Ractor is terminated, the Ractor's ports are closed.
 * There are 3 ways to send an object as a message
   * (1) Send a reference: Sending a shareable object, send only a reference to the object (fast)
-  * (2) Copy an object: Sending an unshareable object by copying an object deeply (slow). Note that you can not send an object which does not support deep copy. Some `T_DATA` objects are not supported.
-  * (3) Move an object: Sending an unshareable object reference with a membership. Sender Ractor can not access moved objects anymore (raise an exception) after moving it. Current implementation makes new object as a moved object for receiver Ractor and copies references of sending object to moved object.
+  * (2) Copy an object: Sending an unshareable object by copying an object deeply (slow). Note that you can not send an object which does not support deep copy. Some `T_DATA` objects (objects whose class is defined in a C extension, such as `StringIO`) are not supported.
+  * (3) Move an object: Sending an unshareable object reference with a membership. Sender Ractor can not access moved objects anymore (raise an exception) after moving it. Current implementation makes new object as a moved object for receiver Ractor and copies references of sending object to moved object. `T_DATA` objects are not supported.
   * You can choose "Copy" and "Move" by the `move:` keyword, `Ractor#send(obj, move: true/false)` and `Ractor.yield(obj, move: true/false)` (default is `false` (COPY)).
 
 ### Sending/Receiving ports
@@ -259,7 +259,6 @@ r.take      # Receive from r's outgoing port
 The last example shows the following ractor network.
 
 ```
-
   +------+        +---+
   * main |------> * r *---+
   +------+        +---+   |
@@ -875,17 +874,17 @@ p Ractor.select(*rs, Ractor.current) #=> [:receive, "r0r10r9r8r7r6r5r4r3r2r1"]
 r.send "e0"
 p Ractor.select(*rs, Ractor.current)
 #=>
-#<Thread:0x000056262de28bd8 run> terminated with exception (report_on_exception is true):
-Traceback (most recent call last):
-        2: from /home/ko1/src/ruby/trunk/test.rb:7:in `block (2 levels) in <main>'
-        1: from /home/ko1/src/ruby/trunk/test.rb:7:in `loop'
-/home/ko1/src/ruby/trunk/test.rb:9:in `block (3 levels) in <main>': unhandled exception
-Traceback (most recent call last):
-        2: from /home/ko1/src/ruby/trunk/test.rb:7:in `block (2 levels) in <main>'
-        1: from /home/ko1/src/ruby/trunk/test.rb:7:in `loop'
-/home/ko1/src/ruby/trunk/test.rb:9:in `block (3 levels) in <main>': unhandled exception
-        1: from /home/ko1/src/ruby/trunk/test.rb:21:in `<main>'
-<internal:ractor>:69:in `select': thrown by remote Ractor. (Ractor::RemoteError)
+# <Thread:0x000056262de28bd8 run> terminated with exception (report_on_exception is true):
+# Traceback (most recent call last):
+#         2: from /home/ko1/src/ruby/trunk/test.rb:7:in `block (2 levels) in <main>'
+#         1: from /home/ko1/src/ruby/trunk/test.rb:7:in `loop'
+# /home/ko1/src/ruby/trunk/test.rb:9:in `block (3 levels) in <main>': unhandled exception
+# Traceback (most recent call last):
+#         2: from /home/ko1/src/ruby/trunk/test.rb:7:in `block (2 levels) in <main>'
+#         1: from /home/ko1/src/ruby/trunk/test.rb:7:in `loop'
+# /home/ko1/src/ruby/trunk/test.rb:9:in `block (3 levels) in <main>': unhandled exception
+#         1: from /home/ko1/src/ruby/trunk/test.rb:21:in `<main>'
+# <internal:ractor>:69:in `select': thrown by remote Ractor. (Ractor::RemoteError)
 ```
 
 ```ruby

@@ -1,18 +1,22 @@
+# frozen_string_literal: true
+
 require "strscan"
-require "lrama/lexer/location"
-require "lrama/lexer/token"
+
+require_relative "lexer/grammar_file"
+require_relative "lexer/location"
+require_relative "lexer/token"
 
 module Lrama
   class Lexer
-    attr_reader :head_line, :head_column
-    attr_accessor :status
-    attr_accessor :end_symbol
+    attr_reader :head_line, :head_column, :line
+    attr_accessor :status, :end_symbol
 
-    SYMBOLS = ['%{', '%}', '%%', '{', '}', '\[', '\]', '\(', '\)', '\,', ':', '\|', ';']
+    SYMBOLS = ['%{', '%}', '%%', '{', '}', '\[', '\]', '\(', '\)', '\,', ':', '\|', ';'].freeze
     PERCENT_TOKENS = %w(
       %union
       %token
       %type
+      %nterm
       %left
       %right
       %nonassoc
@@ -20,18 +24,29 @@ module Lrama
       %define
       %require
       %printer
+      %destructor
       %lex-param
       %parse-param
       %initial-action
       %precedence
       %prec
       %error-token
+      %before-reduce
+      %after-reduce
+      %after-shift-error-token
+      %after-shift
+      %after-pop-stack
       %empty
       %code
-    )
+      %rule
+      %no-stdlib
+      %inline
+      %locations
+    ).freeze
 
-    def initialize(text)
-      @scanner = StringScanner.new(text)
+    def initialize(grammar_file)
+      @grammar_file = grammar_file
+      @scanner = StringScanner.new(grammar_file.text)
       @head_column = @head = @scanner.pos
       @head_line = @line = 1
       @status = :initial
@@ -47,23 +62,20 @@ module Lrama
       end
     end
 
-    def line
-      @line
-    end
-
     def column
       @scanner.pos - @head
     end
 
     def location
       Location.new(
+        grammar_file: @grammar_file,
         first_line: @head_line, first_column: @head_column,
-        last_line: @line, last_column: column
+        last_line: line, last_column: column
       )
     end
 
     def lex_token
-      while !@scanner.eos? do
+      until @scanner.eos? do
         case
         when @scanner.scan(/\n/)
           newline
@@ -78,8 +90,7 @@ module Lrama
         end
       end
 
-      @head_line = line
-      @head_column = column
+      reset_first_position
 
       case
       when @scanner.eos?
@@ -117,7 +128,9 @@ module Lrama
     def lex_c_code
       nested = 0
       code = ''
-      while !@scanner.eos? do
+      reset_first_position
+
+      until @scanner.eos? do
         case
         when @scanner.scan(/{/)
           code += @scanner.matched
@@ -140,12 +153,12 @@ module Lrama
           @line += @scanner.matched.count("\n")
         when @scanner.scan(/'.*?'/)
           code += %Q(#{@scanner.matched})
+        when @scanner.scan(/[^\"'\{\}\n]+/)
+          code += @scanner.matched
+        when @scanner.scan(/#{Regexp.escape(@end_symbol)}/)
+          code += @scanner.matched
         else
-          if @scanner.scan(/[^\"'\{\}\n#{@end_symbol}]+/)
-            code += @scanner.matched
-          else
-            code += @scanner.getch
-          end
+          code += @scanner.getch
         end
       end
       raise ParseError, "Unexpected code: #{code}."
@@ -154,7 +167,7 @@ module Lrama
     private
 
     def lex_comment
-      while !@scanner.eos? do
+      until @scanner.eos? do
         case
         when @scanner.scan(/\n/)
           newline
@@ -166,9 +179,14 @@ module Lrama
       end
     end
 
+    def reset_first_position
+      @head_line = line
+      @head_column = column
+    end
+
     def newline
       @line += 1
-      @head = @scanner.pos + 1
+      @head = @scanner.pos
     end
   end
 end

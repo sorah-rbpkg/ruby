@@ -57,12 +57,12 @@ module RubyVM::RJIT
       when :putobject then putobject(jit, ctx, asm)
       when :putspecialobject then putspecialobject(jit, ctx, asm)
       when :putstring then putstring(jit, ctx, asm)
+      when :putchilledstring then putchilledstring(jit, ctx, asm)
       when :concatstrings then concatstrings(jit, ctx, asm)
       when :anytostring then anytostring(jit, ctx, asm)
       when :toregexp then toregexp(jit, ctx, asm)
       when :intern then intern(jit, ctx, asm)
       when :newarray then newarray(jit, ctx, asm)
-      # newarraykwsplat
       when :duparray then duparray(jit, ctx, asm)
       # duphash
       when :expandarray then expandarray(jit, ctx, asm)
@@ -90,6 +90,8 @@ module RubyVM::RJIT
       when :opt_send_without_block then opt_send_without_block(jit, ctx, asm)
       when :objtostring then objtostring(jit, ctx, asm)
       when :opt_str_freeze then opt_str_freeze(jit, ctx, asm)
+      when :opt_ary_freeze then opt_ary_freeze(jit, ctx, asm)
+      when :opt_hash_freeze then opt_hash_freeze(jit, ctx, asm)
       when :opt_nil_p then opt_nil_p(jit, ctx, asm)
       # opt_str_uminus
       when :opt_newarray_send then opt_newarray_send(jit, ctx, asm)
@@ -776,6 +778,27 @@ module RubyVM::RJIT
 
       asm.mov(C_ARGS[0], EC)
       asm.mov(C_ARGS[1], to_value(put_val))
+      asm.mov(C_ARGS[2], 0)
+      asm.call(C.rb_ec_str_resurrect)
+
+      stack_top = ctx.stack_push(Type::TString)
+      asm.mov(stack_top, C_RET)
+
+      KeepCompiling
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def putchilledstring(jit, ctx, asm)
+      put_val = jit.operand(0, ruby: true)
+
+      # Save the PC and SP because the callee will allocate
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      asm.mov(C_ARGS[0], EC)
+      asm.mov(C_ARGS[1], to_value(put_val))
+      asm.mov(C_ARGS[2], 1)
       asm.call(C.rb_ec_str_resurrect)
 
       stack_top = ctx.stack_push(Type::TString)
@@ -921,8 +944,6 @@ module RubyVM::RJIT
 
       KeepCompiling
     end
-
-    # newarraykwsplat
 
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
@@ -1413,6 +1434,10 @@ module RubyVM::RJIT
       mid = C.vm_ci_mid(cd.ci)
       calling = build_calling(ci: cd.ci, block_handler: blockiseq)
 
+      if calling.flags & C::VM_CALL_FORWARDING != 0
+        return CantCompile
+      end
+
       # vm_sendish
       cme, comptime_recv_klass = jit_search_method(jit, ctx, asm, mid, calling)
       if cme == CantCompile
@@ -1465,6 +1490,42 @@ module RubyVM::RJIT
         cd = C.rb_call_data.new(jit.operand(0))
         opt_send_without_block(jit, ctx, asm, cd:)
       end
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def opt_ary_freeze(jit, ctx, asm)
+      unless Invariants.assume_bop_not_redefined(jit, C::ARRAY_REDEFINED_OP_FLAG, C::BOP_FREEZE)
+        return CantCompile;
+      end
+
+      ary = jit.operand(0, ruby: true)
+
+      # Push the return value onto the stack
+      stack_ret = ctx.stack_push(Type::CArray)
+      asm.mov(:rax, to_value(ary))
+      asm.mov(stack_ret, :rax)
+
+      KeepCompiling
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def opt_hash_freeze(jit, ctx, asm)
+      unless Invariants.assume_bop_not_redefined(jit, C::HASH_REDEFINED_OP_FLAG, C::BOP_FREEZE)
+        return CantCompile;
+      end
+
+      hash = jit.operand(0, ruby: true)
+
+      # Push the return value onto the stack
+      stack_ret = ctx.stack_push(Type::CHash)
+      asm.mov(:rax, to_value(hash))
+      asm.mov(stack_ret, :rax)
+
+      KeepCompiling
     end
 
     # @param jit [RubyVM::RJIT::JITState]
@@ -3736,7 +3797,7 @@ module RubyVM::RJIT
 
           ctx.upgrade_opnd_type(insn_opnd, Type::Flonum)
         end
-      elsif C.FL_TEST(known_klass, C::RUBY_FL_SINGLETON) && comptime_obj == C.rb_class_attached_object(known_klass)
+      elsif C.RCLASS_SINGLETON_P(known_klass) && comptime_obj == C.rb_class_attached_object(known_klass)
         # Singleton classes are attached to one specific object, so we can
         # avoid one memory access (and potentially the is_heap check) by
         # looking for the expected object directly.
@@ -4452,6 +4513,11 @@ module RubyVM::RJIT
         return CantCompile
       end
 
+      if flags & C::VM_CALL_KW_SPLAT != 0
+        asm.incr_counter(:send_iseq_kw_splat)
+        return CantCompile
+      end
+
       if iseq_has_rest && opt_num != 0
         asm.incr_counter(:send_iseq_has_rest_and_optional)
         return CantCompile
@@ -4593,6 +4659,11 @@ module RubyVM::RJIT
           asm.incr_counter(:send_iseq_splat_arity_error)
           return CantCompile
         end
+      end
+
+      # Don't compile forwardable iseqs
+      if iseq.body.param.flags.forwardable
+        return CantCompile
       end
 
       # We will not have CantCompile from here.
@@ -4924,13 +4995,10 @@ module RubyVM::RJIT
 
       asm.comment('inlined leaf builtin')
 
-      # Skip this if it doesn't trigger GC
-      if iseq.body.builtin_attrs & C::BUILTIN_ATTR_NO_GC == 0
-        # The callee may allocate, e.g. Integer#abs on a Bignum.
-        # Save SP for GC, save PC for allocation tracing, and prepare
-        # for global invalidation after GC's VM lock contention.
-        jit_prepare_routine_call(jit, ctx, asm)
-      end
+      # The callee may allocate, e.g. Integer#abs on a Bignum.
+      # Save SP for GC, save PC for allocation tracing, and prepare
+      # for global invalidation after GC's VM lock contention.
+      jit_prepare_routine_call(jit, ctx, asm)
 
       # Call the builtin func (ec, recv, arg1, arg2, ...)
       asm.mov(C_ARGS[0], EC)
@@ -5434,6 +5502,12 @@ module RubyVM::RJIT
     def jit_call_opt_struct_aref(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
       if argc != 0
         asm.incr_counter(:send_optimized_struct_aref_error)
+        return CantCompile
+      end
+
+      if c_method_tracing_currently_enabled?
+        # Don't JIT if tracing c_call or c_return
+        asm.incr_counter(:send_cfunc_tracing)
         return CantCompile
       end
 

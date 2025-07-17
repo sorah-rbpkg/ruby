@@ -222,7 +222,7 @@ setinstancevariable
 (ID id, IVC ic)
 (VALUE val)
 ()
-// attr bool leaf = false; /* has rb_check_frozen_internal() */
+// attr bool leaf = false; /* has rb_check_frozen() */
 {
     vm_setinstancevariable(GET_ISEQ(), GET_SELF(), id, val, ic);
 }
@@ -375,7 +375,17 @@ putstring
 ()
 (VALUE val)
 {
-    val = rb_ec_str_resurrect(ec, str);
+    val = rb_ec_str_resurrect(ec, str, false);
+}
+
+/* put chilled string val. string will be copied but frozen in the future. */
+DEFINE_INSN
+putchilledstring
+(VALUE str)
+()
+(VALUE val)
+{
+    val = rb_ec_str_resurrect(ec, str, true);
 }
 
 /* put concatenate strings */
@@ -442,23 +452,17 @@ newarray
     val = rb_ec_ary_new_from_values(ec, num, STACK_ADDR_FROM_TOP(num));
 }
 
-/* put new array initialized with num values on the stack. There
-   should be at least one element on the stack, and the top element
-   should be a hash.  If the top element is empty, it is not
-   included in the array.
+/* push hash onto array unless the hash is empty (as empty keyword
+   splats should be ignored).
  */
 DEFINE_INSN
-newarraykwsplat
-(rb_num_t num)
-(...)
-(VALUE val)
-// attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
+pushtoarraykwsplat
+()
+(VALUE ary, VALUE hash)
+(VALUE ary)
 {
-    if (RHASH_EMPTY_P(*STACK_ADDR_FROM_TOP(1))) {
-        val = rb_ary_new4(num-1, STACK_ADDR_FROM_TOP(num));
-    }
-    else {
-        val = rb_ary_new4(num, STACK_ADDR_FROM_TOP(num));
+    if (!RHASH_EMPTY_P(hash)) {
+        rb_ary_push(ary, hash);
     }
 }
 
@@ -505,7 +509,9 @@ expandarray
     vm_expandarray(GET_CFP(), ary, num, (int)flag);
 }
 
-/* concat two arrays */
+/* concat two arrays, without modifying first array.
+ * attempts to convert both objects to arrays using to_a.
+ */
 DEFINE_INSN
 concatarray
 ()
@@ -514,6 +520,32 @@ concatarray
 // attr bool leaf = false; /* has rb_check_array_type() */
 {
     ary = vm_concat_array(ary1, ary2);
+}
+
+/* concat second array to first array.
+ * first argument must already be an array.
+ * attempts to convert second object to array using to_a.
+ */
+DEFINE_INSN
+concattoarray
+()
+(VALUE ary1, VALUE ary2)
+(VALUE ary)
+// attr bool leaf = false; /* has rb_check_array_type() */
+{
+    ary = vm_concat_to_array(ary1, ary2);
+}
+
+/* push given number of objects to array directly before. */
+DEFINE_INSN
+pushtoarray
+(rb_num_t num)
+(...)
+(VALUE val)
+// attr rb_snum_t sp_inc = -(rb_snum_t)num;
+{
+    const VALUE *objp = STACK_ADDR_FROM_TOP(num);
+    val = rb_ary_cat(*(objp-1), objp, num);
 }
 
 /* call to_a on array ary to splat */
@@ -535,7 +567,12 @@ splatkw
 (VALUE obj, VALUE block)
 // attr bool leaf = false; /* has rb_to_hash_type() */
 {
-    obj = rb_to_hash_type(hash);
+    if (NIL_P(hash)) {
+        obj = Qnil;
+    }
+    else {
+        obj = rb_to_hash_type(hash);
+    }
 }
 
 /* put new Hash from n elements. n must be an even number. */
@@ -709,7 +746,7 @@ definedivar
 // attr bool leaf  = false;
 {
     val = Qnil;
-    if (vm_getivar(GET_SELF(), id, GET_ISEQ(), ic, NULL, FALSE, Qundef) != Qundef) {
+    if (!UNDEF_P(vm_getivar(GET_SELF(), id, GET_ISEQ(), ic, NULL, FALSE, Qundef))) {
         val = pushval;
     }
 }
@@ -814,7 +851,34 @@ send
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
     JIT_EXEC(ec, val);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
+        RESTORE_REGS();
+        NEXT_INSN();
+    }
+}
+
+/* invoke forward method. */
+DEFINE_INSN
+sendforward
+(CALL_DATA cd, ISEQ blockiseq)
+(...)
+(VALUE val)
+// attr rb_snum_t sp_inc = sp_inc_of_sendish(cd->ci);
+// attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
+{
+    struct rb_forwarding_call_data adjusted_cd;
+    struct rb_callinfo adjusted_ci;
+
+    VALUE bh = vm_caller_setup_fwd_args(GET_EC(), GET_CFP(), cd, blockiseq, 0, &adjusted_cd, &adjusted_ci);
+
+    val = vm_sendish(ec, GET_CFP(), &adjusted_cd.cd, bh, mexp_search_method);
+    JIT_EXEC(ec, val);
+
+    if (cd->cc != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
+        RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, adjusted_cd.cd.cc);
+    }
+
+    if (UNDEF_P(val)) {
         RESTORE_REGS();
         NEXT_INSN();
     }
@@ -834,7 +898,7 @@ opt_send_without_block
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
     JIT_EXEC(ec, val);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         RESTORE_REGS();
         NEXT_INSN();
     }
@@ -850,7 +914,37 @@ objtostring
 {
     val = vm_objtostring(GET_ISEQ(), recv, cd);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
+        CALL_SIMPLE_METHOD();
+    }
+}
+
+DEFINE_INSN
+opt_ary_freeze
+(VALUE ary, CALL_DATA cd)
+()
+(VALUE val)
+{
+    val = vm_opt_ary_freeze(ary, BOP_FREEZE, idFreeze);
+
+    if (UNDEF_P(val)) {
+        RUBY_DTRACE_CREATE_HOOK(ARRAY, RARRAY_LEN(ary));
+        PUSH(rb_ary_resurrect(ary));
+        CALL_SIMPLE_METHOD();
+    }
+}
+
+DEFINE_INSN
+opt_hash_freeze
+(VALUE hash, CALL_DATA cd)
+()
+(VALUE val)
+{
+    val = vm_opt_hash_freeze(hash, BOP_FREEZE, idFreeze);
+
+    if (UNDEF_P(val)) {
+        RUBY_DTRACE_CREATE_HOOK(HASH, RHASH_SIZE(hash) << 1);
+        PUSH(rb_hash_resurrect(hash));
         CALL_SIMPLE_METHOD();
     }
 }
@@ -863,7 +957,7 @@ opt_str_freeze
 {
     val = vm_opt_str_freeze(str, BOP_FREEZE, idFreeze);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         PUSH(rb_str_resurrect(str));
         CALL_SIMPLE_METHOD();
     }
@@ -878,7 +972,7 @@ opt_nil_p
 {
     val = vm_opt_nil_p(GET_ISEQ(), cd, recv);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -891,15 +985,37 @@ opt_str_uminus
 {
     val = vm_opt_str_freeze(str, BOP_UMINUS, idUMinus);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         PUSH(rb_str_resurrect(str));
         CALL_SIMPLE_METHOD();
     }
 }
 
 DEFINE_INSN
+opt_duparray_send
+(VALUE ary, ID method, rb_num_t argc)
+(...)
+(VALUE val)
+/* This instruction typically has no funcalls.  But it may compare array
+ * contents to each other which may call methods when necessary.
+ * No way to detect such method calls beforehand.
+ * We must mark it as not leaf. */
+// attr bool leaf = false; /* has rb_funcall() */
+// attr rb_snum_t sp_inc = 1 - (rb_snum_t)argc;
+// attr rb_snum_t comptime_sp_inc = 1 - (rb_snum_t)argc;
+{
+    switch(method) {
+      case idIncludeP:
+        val = vm_opt_duparray_include_p(ec, ary, TOPN(0));
+        break;
+      default:
+        rb_bug("unreachable");
+    }
+}
+
+DEFINE_INSN
 opt_newarray_send
-(rb_num_t num, ID method)
+(rb_num_t num, rb_num_t method)
 (...)
 (VALUE val)
 /* This instruction typically has no funcalls.  But it compares array
@@ -911,14 +1027,23 @@ opt_newarray_send
 // attr rb_snum_t comptime_sp_inc = 1 - (rb_snum_t)num;
 {
     switch(method) {
-      case idHash:
+      case VM_OPT_NEWARRAY_SEND_HASH:
         val = vm_opt_newarray_hash(ec, num, STACK_ADDR_FROM_TOP(num));
         break;
-      case idMin:
+      case VM_OPT_NEWARRAY_SEND_MIN:
         val = vm_opt_newarray_min(ec, num, STACK_ADDR_FROM_TOP(num));
         break;
-      case idMax:
+      case VM_OPT_NEWARRAY_SEND_MAX:
         val = vm_opt_newarray_max(ec, num, STACK_ADDR_FROM_TOP(num));
+        break;
+      case VM_OPT_NEWARRAY_SEND_INCLUDE_P:
+        val = vm_opt_newarray_include_p(ec, (long)num-1, STACK_ADDR_FROM_TOP(num), TOPN(0));
+        break;
+      case VM_OPT_NEWARRAY_SEND_PACK:
+        val = vm_opt_newarray_pack_buffer(ec, (long)num-1, STACK_ADDR_FROM_TOP(num), TOPN(0), Qundef);
+        break;
+      case VM_OPT_NEWARRAY_SEND_PACK_BUFFER:
+        val = vm_opt_newarray_pack_buffer(ec, (long)num-2, STACK_ADDR_FROM_TOP(num), TOPN(1), TOPN(0));
         break;
       default:
         rb_bug("unreachable");
@@ -938,7 +1063,34 @@ invokesuper
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
     JIT_EXEC(ec, val);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
+        RESTORE_REGS();
+        NEXT_INSN();
+    }
+}
+
+/* super(args) # args.size => num */
+DEFINE_INSN
+invokesuperforward
+(CALL_DATA cd, ISEQ blockiseq)
+(...)
+(VALUE val)
+// attr rb_snum_t sp_inc = sp_inc_of_sendish(cd->ci);
+// attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
+{
+    struct rb_forwarding_call_data adjusted_cd;
+    struct rb_callinfo adjusted_ci;
+
+    VALUE bh = vm_caller_setup_fwd_args(GET_EC(), GET_CFP(), cd, blockiseq, 1, &adjusted_cd, &adjusted_ci);
+
+    val = vm_sendish(ec, GET_CFP(), &adjusted_cd.cd, bh, mexp_search_super);
+    JIT_EXEC(ec, val);
+
+    if (cd->cc != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
+        RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, adjusted_cd.cd.cc);
+    }
+
+    if (UNDEF_P(val)) {
         RESTORE_REGS();
         NEXT_INSN();
     }
@@ -958,7 +1110,7 @@ invokeblock
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_invokeblock);
     JIT_EXEC(ec, val);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         RESTORE_REGS();
         NEXT_INSN();
     }
@@ -1116,7 +1268,7 @@ opt_plus
 {
     val = vm_opt_plus(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1130,7 +1282,7 @@ opt_minus
 {
     val = vm_opt_minus(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1144,7 +1296,7 @@ opt_mult
 {
     val = vm_opt_mult(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1161,7 +1313,7 @@ opt_div
 {
     val = vm_opt_div(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1177,7 +1329,7 @@ opt_mod
 {
     val = vm_opt_mod(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1191,7 +1343,7 @@ opt_eq
 {
     val = opt_equality(GET_ISEQ(), recv, obj, cd);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1205,7 +1357,7 @@ opt_neq
 {
     val = vm_opt_neq(GET_ISEQ(), cd, cd_eq, recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1219,7 +1371,7 @@ opt_lt
 {
     val = vm_opt_lt(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1233,7 +1385,7 @@ opt_le
 {
     val = vm_opt_le(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1247,7 +1399,7 @@ opt_gt
 {
     val = vm_opt_gt(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1261,7 +1413,7 @@ opt_ge
 {
     val = vm_opt_ge(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1279,7 +1431,7 @@ opt_ltlt
 {
     val = vm_opt_ltlt(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1293,7 +1445,7 @@ opt_and
 {
     val = vm_opt_and(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1307,7 +1459,7 @@ opt_or
 {
     val = vm_opt_or(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1326,7 +1478,7 @@ opt_aref
 {
     val = vm_opt_aref(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1343,7 +1495,7 @@ opt_aset
 {
     val = vm_opt_aset(recv, obj, set);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1359,7 +1511,7 @@ opt_aset_with
 {
     VALUE tmp = vm_opt_aset_with(recv, key, val);
 
-    if (tmp != Qundef) {
+    if (!UNDEF_P(tmp)) {
         val = tmp;
     }
     else {
@@ -1380,7 +1532,7 @@ opt_aref_with
 {
     val = vm_opt_aref_with(recv, key);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         PUSH(rb_str_resurrect(key));
         CALL_SIMPLE_METHOD();
     }
@@ -1395,7 +1547,7 @@ opt_length
 {
     val = vm_opt_length(recv, BOP_LENGTH);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1409,7 +1561,7 @@ opt_size
 {
     val = vm_opt_length(recv, BOP_SIZE);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1423,7 +1575,7 @@ opt_empty_p
 {
     val = vm_opt_empty_p(recv);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1437,7 +1589,7 @@ opt_succ
 {
     val = vm_opt_succ(recv);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1451,7 +1603,7 @@ opt_not
 {
     val = vm_opt_not(GET_ISEQ(), cd, recv);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1466,7 +1618,7 @@ opt_regexpmatch2
 {
     val = vm_opt_regexpmatch2(obj2, obj1);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }

@@ -194,6 +194,8 @@ nt_alloc_thread_stack_chunk(void)
         return NULL;
     }
 
+    ruby_annotate_mmap(m, MSTACK_CHUNK_SIZE, "Ruby:nt_alloc_thread_stack_chunk");
+
     size_t msz = nt_thread_stack_size();
     int header_page_cnt = 1;
     int stack_count = ((MSTACK_CHUNK_PAGE_NUM - header_page_cnt) * MSTACK_PAGE_SIZE) / msz;
@@ -338,6 +340,30 @@ nt_alloc_stack(rb_vm_t *vm, void **vm_stack, void **machine_stack)
 }
 
 static void
+nt_madvise_free_or_dontneed(void *addr, size_t len)
+{
+    /* There is no real way to perform error handling here. Both MADV_FREE
+     * and MADV_DONTNEED are both documented to pretty much only return EINVAL
+     * for a huge variety of errors. It's indistinguishable if madvise fails
+     * because the parameters were bad, or because the kernel we're running on
+     * does not support the given advice. This kind of free-but-don't-unmap
+     * is best-effort anyway, so don't sweat it.
+     *
+     * n.b. A very common case of "the kernel doesn't support MADV_FREE and
+     * returns EINVAL" is running under the `rr` debugger; it makes all
+     * MADV_FREE calls return EINVAL. */
+
+#if defined(MADV_FREE)
+    int r = madvise(addr, len, MADV_FREE);
+    // Return on success, or else try MADV_DONTNEED
+    if (r == 0) return;
+#endif
+#if defined(MADV_DONTNEED)
+    madvise(addr, len, MADV_DONTNEED);
+#endif
+}
+
+static void
 nt_free_stack(void *mstack)
 {
     if (!mstack) return;
@@ -358,18 +384,11 @@ nt_free_stack(void *mstack)
         ch->free_stack[ch->free_stack_pos++] = idx;
 
         // clear the stack pages
-#if defined(MADV_FREE)
-        int r = madvise(stack, nt_thread_stack_size(), MADV_FREE);
-#elif defined(MADV_DONTNEED)
-        int r = madvise(stack, nt_thread_stack_size(), MADV_DONTNEED);
-#else
-        int r = 0;
-#endif
-
-        if (r != 0) rb_bug("madvise errno:%d", errno);
+        nt_madvise_free_or_dontneed(stack, nt_thread_stack_size());
     }
     rb_native_mutex_unlock(&nt_machine_stack_lock);
 }
+
 
 static int
 native_thread_check_and_create_shared(rb_vm_t *vm)
@@ -413,6 +432,11 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
 static COROUTINE
 co_start(struct coroutine_context *from, struct coroutine_context *self)
 {
+#ifdef RUBY_ASAN_ENABLED
+    __sanitizer_finish_switch_fiber(self->fake_stack,
+                                    (const void**)&from->stack_base, &from->stack_size);
+#endif
+
     rb_thread_t *th = (rb_thread_t *)self->argument;
     struct rb_thread_sched *sched = TH_SCHED(th);
     VM_ASSERT(th->nt != NULL);
@@ -434,27 +458,35 @@ co_start(struct coroutine_context *from, struct coroutine_context *self)
 
     // Thread is terminated
 
-    VM_ASSERT(!th_has_dedicated_nt(th));
-
-    rb_vm_t *vm = th->vm;
-    bool has_ready_ractor = vm->ractor.sched.grq_cnt > 0; // at least this ractor is not queued
-
-    rb_thread_t *next_th = sched->running;
     struct rb_native_thread *nt = th->nt;
+    bool is_dnt = th_has_dedicated_nt(th);
     native_thread_assign(NULL, th);
     rb_ractor_set_current_ec(th->ractor, NULL);
 
-    if (!has_ready_ractor && next_th && !next_th->nt) {
-        // switch to the next thread
-        thread_sched_set_lock_owner(sched, NULL);
-        thread_sched_switch0(th->sched.context, next_th, nt);
+    if (is_dnt) {
+        // SNT became DNT while running. Just return to the nt_context
+
         th->sched.finished = true;
+        coroutine_transfer0(self, nt->nt_context, true);
     }
     else {
-        // switch to the next Ractor
-        th->sched.finished = true;
-        coroutine_transfer(self, nt->nt_context);
+        rb_vm_t *vm = th->vm;
+        bool has_ready_ractor = vm->ractor.sched.grq_cnt > 0; // at least this ractor is not queued
+        rb_thread_t *next_th = sched->running;
+
+        if (!has_ready_ractor && next_th && !next_th->nt) {
+            // switch to the next thread
+            thread_sched_set_lock_owner(sched, NULL);
+            th->sched.finished = true;
+            thread_sched_switch0(th->sched.context, next_th, nt, true);
+        }
+        else {
+            // switch to the next Ractor
+            th->sched.finished = true;
+            coroutine_transfer0(self, nt->nt_context, true);
+        }
     }
+
     rb_bug("unreachable");
 }
 
@@ -533,15 +565,18 @@ static void
 verify_waiting_list(void)
 {
 #if VM_CHECK_MODE > 0
-    rb_thread_t *wth, *prev_wth = NULL;
-    ccan_list_for_each(&timer_th.waiting, wth, sched.waiting_reason.node) {
+    struct rb_thread_sched_waiting *w, *prev_w = NULL;
+
+    // waiting list's timeout order should be [1, 2, 3, ..., 0, 0, 0]
+
+    ccan_list_for_each(&timer_th.waiting, w, node) {
         // fprintf(stderr, "verify_waiting_list th:%u abs:%lu\n", rb_th_serial(wth), (unsigned long)wth->sched.waiting_reason.data.timeout);
-        if (prev_wth) {
-            rb_hrtime_t timeout = wth->sched.waiting_reason.data.timeout;
-            rb_hrtime_t prev_timeout = prev_wth->sched.waiting_reason.data.timeout;
+        if (prev_w) {
+            rb_hrtime_t timeout = w->data.timeout;
+            rb_hrtime_t prev_timeout = w->data.timeout;
             VM_ASSERT(timeout == 0 || prev_timeout <= timeout);
         }
-        prev_wth = wth;
+        prev_w = w;
     }
 #endif
 }
@@ -552,14 +587,14 @@ static enum thread_sched_waiting_flag
 kqueue_translate_filter_to_flags(int16_t filter)
 {
     switch (filter) {
-        case EVFILT_READ:
-            return thread_sched_waiting_io_read;
-        case EVFILT_WRITE:
-            return thread_sched_waiting_io_write;
-        case EVFILT_TIMER:
-            return thread_sched_waiting_timeout;
-        default:
-            rb_bug("kevent filter:%d not supported", filter);
+      case EVFILT_READ:
+        return thread_sched_waiting_io_read;
+      case EVFILT_WRITE:
+        return thread_sched_waiting_io_write;
+      case EVFILT_TIMER:
+        return thread_sched_waiting_timeout;
+      default:
+        rb_bug("kevent filter:%d not supported", filter);
     }
 }
 
@@ -619,16 +654,17 @@ kqueue_unregister_waiting(int fd, enum thread_sched_waiting_flag flags)
 static bool
 kqueue_already_registered(int fd)
 {
-    rb_thread_t *wth, *found_wth = NULL;
-    ccan_list_for_each(&timer_th.waiting, wth, sched.waiting_reason.node) {
+    struct rb_thread_sched_waiting *w, *found_w = NULL;
+
+    ccan_list_for_each(&timer_th.waiting, w, node) {
         // Similar to EEXIST in epoll_ctl, but more strict because it checks fd rather than flags
         //   for simplicity
-        if (wth->sched.waiting_reason.flags && wth->sched.waiting_reason.data.fd == fd) {
-            found_wth = wth;
+        if (w->flags && w->data.fd == fd) {
+            found_w = w;
             break;
         }
     }
-    return found_wth != NULL;
+    return found_w != NULL;
 }
 
 #endif // HAVE_SYS_EVENT_H
@@ -713,13 +749,13 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
                 RUBY_DEBUG_LOG("failed (%d)", errno);
 
                 switch (errno) {
-                    case EBADF:
-                        // the fd is closed?
-                    case EINTR:
-                        // signal received? is there a sensible way to handle this?
-                    default:
-                        perror("kevent");
-                        rb_bug("register/kevent failed(fd:%d, errno:%d)", fd, errno);
+                  case EBADF:
+                    // the fd is closed?
+                  case EINTR:
+                    // signal received? is there a sensible way to handle this?
+                  default:
+                    perror("kevent");
+                    rb_bug("register/kevent failed(fd:%d, errno:%d)", fd, errno);
                 }
             }
             RUBY_DEBUG_LOG("kevent(add, fd:%d) success", fd);
@@ -741,7 +777,7 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
                   case EPERM:
                     // the fd doesn't support epoll
                   case EEXIST:
-                    // the fd is already registerred by another thread
+                    // the fd is already registered by another thread
                     rb_native_mutex_unlock(&timer_th.waiting_lock);
                     return false;
                   default:
@@ -769,24 +805,24 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
                 ccan_list_add_tail(&timer_th.waiting, &th->sched.waiting_reason.node);
             }
             else {
-                RUBY_DEBUG_LOG("abs:%lu", abs);
+                RUBY_DEBUG_LOG("abs:%lu", (unsigned long)abs);
                 VM_ASSERT(flags & thread_sched_waiting_timeout);
 
                 // insert th to sorted list (TODO: O(n))
-                rb_thread_t *wth, *prev_wth = NULL;
+                struct rb_thread_sched_waiting *w, *prev_w = NULL;
 
-                ccan_list_for_each(&timer_th.waiting, wth, sched.waiting_reason.node) {
-                    if ((wth->sched.waiting_reason.flags & thread_sched_waiting_timeout) &&
-                        wth->sched.waiting_reason.data.timeout < abs) {
-                        prev_wth = wth;
+                ccan_list_for_each(&timer_th.waiting, w, node) {
+                    if ((w->flags & thread_sched_waiting_timeout) &&
+                        w->data.timeout < abs) {
+                        prev_w = w;
                     }
                     else {
                         break;
                     }
                 }
 
-                if (prev_wth) {
-                    ccan_list_add_after(&timer_th.waiting, &prev_wth->sched.waiting_reason.node, &th->sched.waiting_reason.node);
+                if (prev_w) {
+                    ccan_list_add_after(&timer_th.waiting, &prev_w->node, &th->sched.waiting_reason.node);
                 }
                 else {
                     ccan_list_add(&timer_th.waiting, &th->sched.waiting_reason.node);
@@ -921,7 +957,8 @@ timer_thread_polling(rb_vm_t *vm)
                 // wakeup timerthread
                 RUBY_DEBUG_LOG("comm from fd:%d", timer_th.comm_fds[1]);
                 consume_communication_pipe(timer_th.comm_fds[0]);
-            } else {
+            }
+            else {
                 // wakeup specific thread by IO
                 RUBY_DEBUG_LOG("io event. wakeup_th:%u event:%s%s",
                                 rb_th_serial(th),
@@ -940,7 +977,8 @@ timer_thread_polling(rb_vm_t *vm)
                         th->sched.waiting_reason.data.result = filter;
 
                         timer_thread_wakeup_thread(th);
-                    } else {
+                    }
+                    else {
                         // already released
                     }
                 }

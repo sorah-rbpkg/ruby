@@ -55,33 +55,48 @@ describe "String#%" do
     -> { ("foo%" % [])}.should raise_error(ArgumentError)
   end
 
-  it "formats single % character before a newline as literal %" do
-    ("%\n" % []).should == "%\n"
-    ("foo%\n" % []).should == "foo%\n"
-    ("%\n.3f" % 1.2).should == "%\n.3f"
+  ruby_version_is ""..."3.4" do
+    it "formats single % character before a newline as literal %" do
+      ("%\n" % []).should == "%\n"
+      ("foo%\n" % []).should == "foo%\n"
+      ("%\n.3f" % 1.2).should == "%\n.3f"
+    end
+
+    it "formats single % character before a NUL as literal %" do
+      ("%\0" % []).should == "%\0"
+      ("foo%\0" % []).should == "foo%\0"
+      ("%\0.3f" % 1.2).should == "%\0.3f"
+    end
+
+    it "raises an error if single % appears anywhere else" do
+      -> { (" % " % []) }.should raise_error(ArgumentError)
+      -> { ("foo%quux" % []) }.should raise_error(ArgumentError)
+    end
+
+    it "raises an error if NULL or \\n appear anywhere else in the format string" do
+      begin
+        old_debug, $DEBUG = $DEBUG, false
+
+        -> { "%.\n3f" % 1.2 }.should raise_error(ArgumentError)
+        -> { "%.3\nf" % 1.2 }.should raise_error(ArgumentError)
+        -> { "%.\03f" % 1.2 }.should raise_error(ArgumentError)
+        -> { "%.3\0f" % 1.2 }.should raise_error(ArgumentError)
+      ensure
+        $DEBUG = old_debug
+      end
+    end
   end
 
-  it "formats single % character before a NUL as literal %" do
-    ("%\0" % []).should == "%\0"
-    ("foo%\0" % []).should == "foo%\0"
-    ("%\0.3f" % 1.2).should == "%\0.3f"
-  end
-
-  it "raises an error if single % appears anywhere else" do
-    -> { (" % " % []) }.should raise_error(ArgumentError)
-    -> { ("foo%quux" % []) }.should raise_error(ArgumentError)
-  end
-
-  it "raises an error if NULL or \\n appear anywhere else in the format string" do
-    begin
-      old_debug, $DEBUG = $DEBUG, false
-
+  ruby_version_is "3.4" do
+    it "raises an ArgumentError if % is not followed by a conversion specifier" do
+      -> { "%" % [] }.should raise_error(ArgumentError)
+      -> { "%\n" % [] }.should raise_error(ArgumentError)
+      -> { "%\0" % [] }.should raise_error(ArgumentError)
+      -> { " % " % [] }.should raise_error(ArgumentError)
       -> { "%.\n3f" % 1.2 }.should raise_error(ArgumentError)
       -> { "%.3\nf" % 1.2 }.should raise_error(ArgumentError)
       -> { "%.\03f" % 1.2 }.should raise_error(ArgumentError)
       -> { "%.3\0f" % 1.2 }.should raise_error(ArgumentError)
-    ensure
-      $DEBUG = old_debug
     end
   end
 
@@ -125,8 +140,16 @@ describe "String#%" do
     end
   end
 
-  it "replaces trailing absolute argument specifier without type with percent sign" do
-    ("hello %1$" % "foo").should == "hello %"
+  ruby_version_is ""..."3.4" do
+    it "replaces trailing absolute argument specifier without type with percent sign" do
+      ("hello %1$" % "foo").should == "hello %"
+    end
+  end
+
+  ruby_version_is "3.4" do
+    it "raises an ArgumentError if absolute argument specifier is followed by a conversion specifier" do
+      -> { "hello %1$" % "foo" }.should raise_error(ArgumentError)
+    end
   end
 
   it "raises an ArgumentError when given invalid argument specifiers" do
@@ -547,7 +570,7 @@ describe "String#%" do
     ("%1$p" % [10, 5]).should == "10"
     ("%-22p" % 10).should == "10                    "
     ("%*p" % [10, 10]).should == "        10"
-    ("%p" % {capture: 1}).should == "{:capture=>1}"
+    ("%p" % {capture: 1}).should == {capture: 1}.inspect
     ("%p" % "str").should == "\"str\""
   end
 
@@ -726,6 +749,9 @@ describe "String#%" do
       (format % "-10.4e-20").should == (format % -10.4e-20)
       (format % ".5").should == (format % 0.5)
       (format % "-.5").should == (format % -0.5)
+      ruby_bug("#20705", ""..."3.4") do
+        (format % "10.").should == (format % 10)
+      end
       # Something's strange with this spec:
       # it works just fine in individual mode, but not when run as part of a group
       (format % "10_1_0.5_5_5").should == (format % 1010.555)
@@ -735,7 +761,6 @@ describe "String#%" do
       -> { format % "" }.should raise_error(ArgumentError)
       -> { format % "x" }.should raise_error(ArgumentError)
       -> { format % "." }.should raise_error(ArgumentError)
-      -> { format % "10." }.should raise_error(ArgumentError)
       -> { format % "5x" }.should raise_error(ArgumentError)
       -> { format % "0b1" }.should raise_error(ArgumentError)
       -> { format % "10e10.5" }.should raise_error(ArgumentError)

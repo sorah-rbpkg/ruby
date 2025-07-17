@@ -954,7 +954,7 @@ INSN_ENTRY(putstring)
 #   define NAME_OF_CURRENT_INSN putstring
 #   line 377 "insns.def"
 {
-    val = rb_ec_str_resurrect(ec, str);
+    val = rb_ec_str_resurrect(ec, str, false);
 }
 #   line 960 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
@@ -970,6 +970,47 @@ INSN_ENTRY(putstring)
 
     /* ### Leave the instruction. ### */
     END_INSN(putstring);
+}
+
+/* insn putchilledstring(str)()(val) */
+INSN_ENTRY(putchilledstring)
+{
+    /* ###  Declare that we have just entered into an instruction. ### */
+    START_OF_ORIGINAL_INSN(putchilledstring);
+    DEBUG_ENTER_INSN("putchilledstring");
+
+    /* ###  Declare and assign variables. ### */
+    VALUE str = (VALUE)GET_OPERAND(1);
+#   define INSN_ATTR(x) attr_ ## x ## _putchilledstring(str)
+    const bool MAYBE_UNUSED(leaf) = INSN_ATTR(leaf);
+    VALUE val;
+
+    /* ### Instruction preambles. ### */
+    ADD_PC(INSN_ATTR(width));
+    SETUP_CANARY(leaf);
+    COLLECT_USAGE_INSN(INSN_ATTR(bin));
+    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, str);
+
+    /* ### Here we do the instruction body. ### */
+#   define NAME_OF_CURRENT_INSN putchilledstring
+#   line 387 "insns.def"
+{
+    val = rb_ec_str_resurrect(ec, str, true);
+}
+#   line 1001 "vm.inc"
+#   undef NAME_OF_CURRENT_INSN
+
+    /* ### Instruction trailers. ### */
+    CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
+    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    INC_SP(INSN_ATTR(sp_inc));
+    TOPN(0) = val;
+    VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
+    VM_ASSERT(!RB_TYPE_P(TOPN(0), T_MOVED));
+#   undef INSN_ATTR
+
+    /* ### Leave the instruction. ### */
+    END_INSN(putchilledstring);
 }
 
 /* insn concatstrings(num)(...)(val) */
@@ -993,11 +1034,11 @@ INSN_ENTRY(concatstrings)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN concatstrings
-#   line 391 "insns.def"
+#   line 401 "insns.def"
 {
     val = rb_str_concat_literals(num, STACK_ADDR_FROM_TOP(num));
 }
-#   line 1001 "vm.inc"
+#   line 1042 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1033,11 +1074,11 @@ INSN_ENTRY(anytostring)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN anytostring
-#   line 402 "insns.def"
+#   line 412 "insns.def"
 {
     val = rb_obj_as_string_result(str, val);
 }
-#   line 1041 "vm.inc"
+#   line 1082 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1076,13 +1117,13 @@ INSN_ENTRY(toregexp)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN toregexp
-#   line 418 "insns.def"
+#   line 428 "insns.def"
 {
     const VALUE ary = rb_ary_tmp_new_from_values(0, cnt, STACK_ADDR_FROM_TOP(cnt));
     val = rb_reg_new_ary(ary, (int)opt);
     rb_ary_clear(ary);
 }
-#   line 1086 "vm.inc"
+#   line 1127 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1118,11 +1159,11 @@ INSN_ENTRY(intern)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN intern
-#   line 430 "insns.def"
+#   line 440 "insns.def"
 {
     sym = rb_str_intern(str);
 }
-#   line 1126 "vm.inc"
+#   line 1167 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1159,11 +1200,11 @@ INSN_ENTRY(newarray)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN newarray
-#   line 441 "insns.def"
+#   line 451 "insns.def"
 {
     val = rb_ec_ary_new_from_values(ec, num, STACK_ADDR_FROM_TOP(num));
 }
-#   line 1167 "vm.inc"
+#   line 1208 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1179,50 +1220,46 @@ INSN_ENTRY(newarray)
     END_INSN(newarray);
 }
 
-/* insn newarraykwsplat(num)(...)(val) */
-INSN_ENTRY(newarraykwsplat)
+/* insn pushtoarraykwsplat()(ary, hash)(ary) */
+INSN_ENTRY(pushtoarraykwsplat)
 {
     /* ###  Declare that we have just entered into an instruction. ### */
-    START_OF_ORIGINAL_INSN(newarraykwsplat);
-    DEBUG_ENTER_INSN("newarraykwsplat");
+    START_OF_ORIGINAL_INSN(pushtoarraykwsplat);
+    DEBUG_ENTER_INSN("pushtoarraykwsplat");
 
     /* ###  Declare and assign variables. ### */
-    rb_num_t num = (rb_num_t)GET_OPERAND(1);
-#   define INSN_ATTR(x) attr_ ## x ## _newarraykwsplat(num)
+#   define INSN_ATTR(x) attr_ ## x ## _pushtoarraykwsplat()
     const bool MAYBE_UNUSED(leaf) = INSN_ATTR(leaf);
-    VALUE val;
+    VALUE ary = TOPN(1);
+    VALUE hash = TOPN(0);
 
     /* ### Instruction preambles. ### */
     ADD_PC(INSN_ATTR(width));
     SETUP_CANARY(leaf);
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
-    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, num);
 
     /* ### Here we do the instruction body. ### */
-#   define NAME_OF_CURRENT_INSN newarraykwsplat
-#   line 456 "insns.def"
+#   define NAME_OF_CURRENT_INSN pushtoarraykwsplat
+#   line 463 "insns.def"
 {
-    if (RHASH_EMPTY_P(*STACK_ADDR_FROM_TOP(1))) {
-        val = rb_ary_new4(num-1, STACK_ADDR_FROM_TOP(num));
-    }
-    else {
-        val = rb_ary_new4(num, STACK_ADDR_FROM_TOP(num));
+    if (!RHASH_EMPTY_P(hash)) {
+        rb_ary_push(ary, hash);
     }
 }
-#   line 1213 "vm.inc"
+#   line 1250 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
     CHECK_CANARY(leaf, INSN_ATTR(bin));
     INC_SP(INSN_ATTR(sp_inc));
-    TOPN(0) = val;
+    TOPN(0) = ary;
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
     VM_ASSERT(!RB_TYPE_P(TOPN(0), T_MOVED));
 #   undef INSN_ATTR
 
     /* ### Leave the instruction. ### */
-    END_INSN(newarraykwsplat);
+    END_INSN(pushtoarraykwsplat);
 }
 
 /* insn duparray(ary)()(val) */
@@ -1246,12 +1283,12 @@ INSN_ENTRY(duparray)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN duparray
-#   line 471 "insns.def"
+#   line 475 "insns.def"
 {
     RUBY_DTRACE_CREATE_HOOK(ARRAY, RARRAY_LEN(ary));
     val = rb_ary_resurrect(ary);
 }
-#   line 1255 "vm.inc"
+#   line 1292 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1288,12 +1325,12 @@ INSN_ENTRY(duphash)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN duphash
-#   line 482 "insns.def"
+#   line 486 "insns.def"
 {
     RUBY_DTRACE_CREATE_HOOK(HASH, RHASH_SIZE(hash) << 1);
     val = rb_hash_resurrect(hash);
 }
-#   line 1297 "vm.inc"
+#   line 1334 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1332,11 +1369,11 @@ INSN_ENTRY(expandarray)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN expandarray
-#   line 504 "insns.def"
+#   line 508 "insns.def"
 {
     vm_expandarray(GET_CFP(), ary, num, (int)flag);
 }
-#   line 1340 "vm.inc"
+#   line 1377 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1368,11 +1405,11 @@ INSN_ENTRY(concatarray)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN concatarray
-#   line 515 "insns.def"
+#   line 521 "insns.def"
 {
     ary = vm_concat_array(ary1, ary2);
 }
-#   line 1376 "vm.inc"
+#   line 1413 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1386,6 +1423,89 @@ INSN_ENTRY(concatarray)
 
     /* ### Leave the instruction. ### */
     END_INSN(concatarray);
+}
+
+/* insn concattoarray()(ary1, ary2)(ary) */
+INSN_ENTRY(concattoarray)
+{
+    /* ###  Declare that we have just entered into an instruction. ### */
+    START_OF_ORIGINAL_INSN(concattoarray);
+    DEBUG_ENTER_INSN("concattoarray");
+
+    /* ###  Declare and assign variables. ### */
+#   define INSN_ATTR(x) attr_ ## x ## _concattoarray()
+    const bool MAYBE_UNUSED(leaf) = INSN_ATTR(leaf);
+    VALUE ary1 = TOPN(1);
+    VALUE ary2 = TOPN(0);
+    VALUE ary;
+
+    /* ### Instruction preambles. ### */
+    ADD_PC(INSN_ATTR(width));
+    SETUP_CANARY(leaf);
+    COLLECT_USAGE_INSN(INSN_ATTR(bin));
+
+    /* ### Here we do the instruction body. ### */
+#   define NAME_OF_CURRENT_INSN concattoarray
+#   line 535 "insns.def"
+{
+    ary = vm_concat_to_array(ary1, ary2);
+}
+#   line 1454 "vm.inc"
+#   undef NAME_OF_CURRENT_INSN
+
+    /* ### Instruction trailers. ### */
+    CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
+    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    INC_SP(INSN_ATTR(sp_inc));
+    TOPN(0) = ary;
+    VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
+    VM_ASSERT(!RB_TYPE_P(TOPN(0), T_MOVED));
+#   undef INSN_ATTR
+
+    /* ### Leave the instruction. ### */
+    END_INSN(concattoarray);
+}
+
+/* insn pushtoarray(num)(...)(val) */
+INSN_ENTRY(pushtoarray)
+{
+    /* ###  Declare that we have just entered into an instruction. ### */
+    START_OF_ORIGINAL_INSN(pushtoarray);
+    DEBUG_ENTER_INSN("pushtoarray");
+
+    /* ###  Declare and assign variables. ### */
+    rb_num_t num = (rb_num_t)GET_OPERAND(1);
+#   define INSN_ATTR(x) attr_ ## x ## _pushtoarray(num)
+    const bool MAYBE_UNUSED(leaf) = INSN_ATTR(leaf);
+    VALUE val;
+
+    /* ### Instruction preambles. ### */
+    ADD_PC(INSN_ATTR(width));
+    SETUP_CANARY(leaf);
+    COLLECT_USAGE_INSN(INSN_ATTR(bin));
+    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, num);
+
+    /* ### Here we do the instruction body. ### */
+#   define NAME_OF_CURRENT_INSN pushtoarray
+#   line 546 "insns.def"
+{
+    const VALUE *objp = STACK_ADDR_FROM_TOP(num);
+    val = rb_ary_cat(*(objp-1), objp, num);
+}
+#   line 1496 "vm.inc"
+#   undef NAME_OF_CURRENT_INSN
+
+    /* ### Instruction trailers. ### */
+    CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
+    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    INC_SP(INSN_ATTR(sp_inc));
+    TOPN(0) = val;
+    VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
+    VM_ASSERT(!RB_TYPE_P(TOPN(0), T_MOVED));
+#   undef INSN_ATTR
+
+    /* ### Leave the instruction. ### */
+    END_INSN(pushtoarray);
 }
 
 /* insn splatarray(flag)(ary)(obj) */
@@ -1410,11 +1530,11 @@ INSN_ENTRY(splatarray)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN splatarray
-#   line 526 "insns.def"
+#   line 558 "insns.def"
 {
     obj = vm_splat_array(flag, ary);
 }
-#   line 1418 "vm.inc"
+#   line 1538 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1451,11 +1571,16 @@ INSN_ENTRY(splatkw)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN splatkw
-#   line 537 "insns.def"
+#   line 569 "insns.def"
 {
-    obj = rb_to_hash_type(hash);
+    if (NIL_P(hash)) {
+        obj = Qnil;
+    }
+    else {
+        obj = rb_to_hash_type(hash);
+    }
 }
-#   line 1459 "vm.inc"
+#   line 1584 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1495,7 +1620,7 @@ INSN_ENTRY(newhash)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN newhash
-#   line 549 "insns.def"
+#   line 586 "insns.def"
 {
     RUBY_DTRACE_CREATE_HOOK(HASH, num);
 
@@ -1507,7 +1632,7 @@ INSN_ENTRY(newhash)
         val = rb_hash_new();
     }
 }
-#   line 1511 "vm.inc"
+#   line 1636 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1546,11 +1671,11 @@ INSN_ENTRY(newrange)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN newrange
-#   line 569 "insns.def"
+#   line 606 "insns.def"
 {
     val = rb_range_new(low, high, (int)flag);
 }
-#   line 1554 "vm.inc"
+#   line 1679 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1585,12 +1710,12 @@ INSN_ENTRY(pop)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN pop
-#   line 583 "insns.def"
+#   line 620 "insns.def"
 {
     (void)val;
     /* none */
 }
-#   line 1594 "vm.inc"
+#   line 1719 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1624,11 +1749,11 @@ INSN_ENTRY(dup)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN dup
-#   line 594 "insns.def"
+#   line 631 "insns.def"
 {
     val1 = val2 = val;
 }
-#   line 1632 "vm.inc"
+#   line 1757 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1666,14 +1791,14 @@ INSN_ENTRY(dupn)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN dupn
-#   line 605 "insns.def"
+#   line 642 "insns.def"
 {
     void *dst = GET_SP();
     void *src = STACK_ADDR_FROM_TOP(n);
 
     MEMCPY(dst, src, VALUE, n);
 }
-#   line 1677 "vm.inc"
+#   line 1802 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1736,7 +1861,7 @@ INSN_ENTRY(opt_reverse)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_reverse
-#   line 629 "insns.def"
+#   line 666 "insns.def"
 {
     rb_num_t i;
     VALUE *sp = STACK_ADDR_FROM_TOP(n);
@@ -1748,7 +1873,7 @@ INSN_ENTRY(opt_reverse)
 	TOPN(i) = v0;
     }
 }
-#   line 1752 "vm.inc"
+#   line 1877 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1781,11 +1906,11 @@ INSN_ENTRY(topn)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN topn
-#   line 659 "insns.def"
+#   line 696 "insns.def"
 {
     val = TOPN(n);
 }
-#   line 1789 "vm.inc"
+#   line 1914 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1822,11 +1947,11 @@ INSN_ENTRY(setn)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN setn
-#   line 670 "insns.def"
+#   line 707 "insns.def"
 {
     TOPN(n) = val;
 }
-#   line 1830 "vm.inc"
+#   line 1955 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1894,14 +2019,14 @@ INSN_ENTRY(defined)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN defined
-#   line 696 "insns.def"
+#   line 733 "insns.def"
 {
     val = Qnil;
     if (vm_defined(ec, GET_CFP(), op_type, obj, v)) {
         val = pushval;
     }
 }
-#   line 1905 "vm.inc"
+#   line 2030 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1942,14 +2067,14 @@ INSN_ENTRY(definedivar)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN definedivar
-#   line 710 "insns.def"
+#   line 747 "insns.def"
 {
     val = Qnil;
-    if (vm_getivar(GET_SELF(), id, GET_ISEQ(), ic, NULL, FALSE, Qundef) != Qundef) {
+    if (!UNDEF_P(vm_getivar(GET_SELF(), id, GET_ISEQ(), ic, NULL, FALSE, Qundef))) {
         val = pushval;
     }
 }
-#   line 1953 "vm.inc"
+#   line 2078 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -1988,11 +2113,11 @@ INSN_ENTRY(checkmatch)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN checkmatch
-#   line 730 "insns.def"
+#   line 767 "insns.def"
 {
     result = vm_check_match(ec, target, pattern, flag);
 }
-#   line 1996 "vm.inc"
+#   line 2121 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2031,11 +2156,11 @@ INSN_ENTRY(checkkeyword)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN checkkeyword
-#   line 740 "insns.def"
+#   line 777 "insns.def"
 {
     ret = vm_check_keyword(kw_bits_index, keyword_index, GET_EP());
 }
-#   line 2039 "vm.inc"
+#   line 2164 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2073,11 +2198,11 @@ INSN_ENTRY(checktype)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN checktype
-#   line 750 "insns.def"
+#   line 787 "insns.def"
 {
     ret = RBOOL(TYPE(val) == (int)type);
 }
-#   line 2081 "vm.inc"
+#   line 2206 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2121,7 +2246,7 @@ INSN_ENTRY(defineclass)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN defineclass
-#   line 766 "insns.def"
+#   line 803 "insns.def"
 {
     VALUE klass = vm_find_or_create_class_by_id(id, flags, cbase, super);
 
@@ -2137,7 +2262,7 @@ INSN_ENTRY(defineclass)
     RESTORE_REGS();
     NEXT_INSN();
 }
-#   line 2141 "vm.inc"
+#   line 2266 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2173,11 +2298,11 @@ INSN_ENTRY(definemethod)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN definemethod
-#   line 787 "insns.def"
+#   line 824 "insns.def"
 {
     vm_define_method(ec, Qnil, id, (VALUE)iseq, FALSE);
 }
-#   line 2181 "vm.inc"
+#   line 2306 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2213,11 +2338,11 @@ INSN_ENTRY(definesmethod)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN definesmethod
-#   line 796 "insns.def"
+#   line 833 "insns.def"
 {
     vm_define_method(ec, obj, id, (VALUE)iseq, TRUE);
 }
-#   line 2221 "vm.inc"
+#   line 2346 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2253,18 +2378,18 @@ INSN_ENTRY(send)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN send
-#   line 812 "insns.def"
+#   line 849 "insns.def"
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
     JIT_EXEC(ec, val);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         RESTORE_REGS();
         NEXT_INSN();
     }
 }
-#   line 2268 "vm.inc"
+#   line 2393 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2275,6 +2400,62 @@ INSN_ENTRY(send)
 
     /* ### Leave the instruction. ### */
     END_INSN(send);
+}
+
+/* insn sendforward(cd, blockiseq)(...)(val) */
+INSN_ENTRY(sendforward)
+{
+    /* ###  Declare that we have just entered into an instruction. ### */
+    START_OF_ORIGINAL_INSN(sendforward);
+    DEBUG_ENTER_INSN("sendforward");
+
+    /* ###  Declare and assign variables. ### */
+    CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
+    ISEQ blockiseq = (ISEQ)GET_OPERAND(2);
+#   define INSN_ATTR(x) attr_ ## x ## _sendforward(cd, blockiseq)
+    const bool MAYBE_UNUSED(leaf) = INSN_ATTR(leaf);
+    VALUE val;
+
+    /* ### Instruction preambles. ### */
+    ADD_PC(INSN_ATTR(width));
+    POPN(INSN_ATTR(popn));
+    SETUP_CANARY(leaf);
+    COLLECT_USAGE_INSN(INSN_ATTR(bin));
+    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
+    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, blockiseq);
+
+    /* ### Here we do the instruction body. ### */
+#   define NAME_OF_CURRENT_INSN sendforward
+#   line 868 "insns.def"
+{
+    struct rb_forwarding_call_data adjusted_cd;
+    struct rb_callinfo adjusted_ci;
+
+    VALUE bh = vm_caller_setup_fwd_args(GET_EC(), GET_CFP(), cd, blockiseq, 0, &adjusted_cd, &adjusted_ci);
+
+    val = vm_sendish(ec, GET_CFP(), &adjusted_cd.cd, bh, mexp_search_method);
+    JIT_EXEC(ec, val);
+
+    if (cd->cc != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
+        RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, adjusted_cd.cd.cc);
+    }
+
+    if (UNDEF_P(val)) {
+        RESTORE_REGS();
+        NEXT_INSN();
+    }
+}
+#   line 2449 "vm.inc"
+#   undef NAME_OF_CURRENT_INSN
+
+    /* ### Instruction trailers. ### */
+    CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
+    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    PUSH(val);
+#   undef INSN_ATTR
+
+    /* ### Leave the instruction. ### */
+    END_INSN(sendforward);
 }
 
 /* insn opt_send_without_block(cd)(...)(val) */
@@ -2299,18 +2480,18 @@ INSN_ENTRY(opt_send_without_block)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_send_without_block
-#   line 832 "insns.def"
+#   line 896 "insns.def"
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
     JIT_EXEC(ec, val);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         RESTORE_REGS();
         NEXT_INSN();
     }
 }
-#   line 2314 "vm.inc"
+#   line 2495 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2345,15 +2526,15 @@ INSN_ENTRY(objtostring)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN objtostring
-#   line 850 "insns.def"
+#   line 914 "insns.def"
 {
     val = vm_objtostring(GET_ISEQ(), recv, cd);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 2357 "vm.inc"
+#   line 2538 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2367,6 +2548,104 @@ INSN_ENTRY(objtostring)
 
     /* ### Leave the instruction. ### */
     END_INSN(objtostring);
+}
+
+/* insn opt_ary_freeze(ary, cd)()(val) */
+INSN_ENTRY(opt_ary_freeze)
+{
+    /* ###  Declare that we have just entered into an instruction. ### */
+    START_OF_ORIGINAL_INSN(opt_ary_freeze);
+    DEBUG_ENTER_INSN("opt_ary_freeze");
+
+    /* ###  Declare and assign variables. ### */
+    VALUE ary = (VALUE)GET_OPERAND(1);
+    CALL_DATA cd = (CALL_DATA)GET_OPERAND(2);
+#   define INSN_ATTR(x) attr_ ## x ## _opt_ary_freeze(ary, cd)
+    const bool MAYBE_UNUSED(leaf) = INSN_ATTR(leaf);
+    VALUE val;
+
+    /* ### Instruction preambles. ### */
+    ADD_PC(INSN_ATTR(width));
+    SETUP_CANARY(leaf);
+    COLLECT_USAGE_INSN(INSN_ATTR(bin));
+    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, ary);
+    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, cd);
+
+    /* ### Here we do the instruction body. ### */
+#   define NAME_OF_CURRENT_INSN opt_ary_freeze
+#   line 927 "insns.def"
+{
+    val = vm_opt_ary_freeze(ary, BOP_FREEZE, idFreeze);
+
+    if (UNDEF_P(val)) {
+        RUBY_DTRACE_CREATE_HOOK(ARRAY, RARRAY_LEN(ary));
+        PUSH(rb_ary_resurrect(ary));
+        CALL_SIMPLE_METHOD();
+    }
+}
+#   line 2587 "vm.inc"
+#   undef NAME_OF_CURRENT_INSN
+
+    /* ### Instruction trailers. ### */
+    CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
+    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    INC_SP(INSN_ATTR(sp_inc));
+    TOPN(0) = val;
+    VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
+    VM_ASSERT(!RB_TYPE_P(TOPN(0), T_MOVED));
+#   undef INSN_ATTR
+
+    /* ### Leave the instruction. ### */
+    END_INSN(opt_ary_freeze);
+}
+
+/* insn opt_hash_freeze(hash, cd)()(val) */
+INSN_ENTRY(opt_hash_freeze)
+{
+    /* ###  Declare that we have just entered into an instruction. ### */
+    START_OF_ORIGINAL_INSN(opt_hash_freeze);
+    DEBUG_ENTER_INSN("opt_hash_freeze");
+
+    /* ###  Declare and assign variables. ### */
+    VALUE hash = (VALUE)GET_OPERAND(1);
+    CALL_DATA cd = (CALL_DATA)GET_OPERAND(2);
+#   define INSN_ATTR(x) attr_ ## x ## _opt_hash_freeze(hash, cd)
+    const bool MAYBE_UNUSED(leaf) = INSN_ATTR(leaf);
+    VALUE val;
+
+    /* ### Instruction preambles. ### */
+    ADD_PC(INSN_ATTR(width));
+    SETUP_CANARY(leaf);
+    COLLECT_USAGE_INSN(INSN_ATTR(bin));
+    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, hash);
+    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, cd);
+
+    /* ### Here we do the instruction body. ### */
+#   define NAME_OF_CURRENT_INSN opt_hash_freeze
+#   line 942 "insns.def"
+{
+    val = vm_opt_hash_freeze(hash, BOP_FREEZE, idFreeze);
+
+    if (UNDEF_P(val)) {
+        RUBY_DTRACE_CREATE_HOOK(HASH, RHASH_SIZE(hash) << 1);
+        PUSH(rb_hash_resurrect(hash));
+        CALL_SIMPLE_METHOD();
+    }
+}
+#   line 2636 "vm.inc"
+#   undef NAME_OF_CURRENT_INSN
+
+    /* ### Instruction trailers. ### */
+    CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
+    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    INC_SP(INSN_ATTR(sp_inc));
+    TOPN(0) = val;
+    VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
+    VM_ASSERT(!RB_TYPE_P(TOPN(0), T_MOVED));
+#   undef INSN_ATTR
+
+    /* ### Leave the instruction. ### */
+    END_INSN(opt_hash_freeze);
 }
 
 /* insn opt_str_freeze(str, cd)()(val) */
@@ -2392,16 +2671,16 @@ INSN_ENTRY(opt_str_freeze)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_str_freeze
-#   line 863 "insns.def"
+#   line 957 "insns.def"
 {
     val = vm_opt_str_freeze(str, BOP_FREEZE, idFreeze);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         PUSH(rb_str_resurrect(str));
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 2405 "vm.inc"
+#   line 2684 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2439,15 +2718,15 @@ INSN_ENTRY(opt_nil_p)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_nil_p
-#   line 878 "insns.def"
+#   line 972 "insns.def"
 {
     val = vm_opt_nil_p(GET_ISEQ(), cd, recv);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 2451 "vm.inc"
+#   line 2730 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2486,16 +2765,16 @@ INSN_ENTRY(opt_str_uminus)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_str_uminus
-#   line 891 "insns.def"
+#   line 985 "insns.def"
 {
     val = vm_opt_str_freeze(str, BOP_UMINUS, idUMinus);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         PUSH(rb_str_resurrect(str));
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 2499 "vm.inc"
+#   line 2778 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2511,6 +2790,57 @@ INSN_ENTRY(opt_str_uminus)
     END_INSN(opt_str_uminus);
 }
 
+/* insn opt_duparray_send(ary, method, argc)(...)(val) */
+INSN_ENTRY(opt_duparray_send)
+{
+    /* ###  Declare that we have just entered into an instruction. ### */
+    START_OF_ORIGINAL_INSN(opt_duparray_send);
+    DEBUG_ENTER_INSN("opt_duparray_send");
+
+    /* ###  Declare and assign variables. ### */
+    VALUE ary = (VALUE)GET_OPERAND(1);
+    ID method = (ID)GET_OPERAND(2);
+    rb_num_t argc = (rb_num_t)GET_OPERAND(3);
+#   define INSN_ATTR(x) attr_ ## x ## _opt_duparray_send(ary, method, argc)
+    const bool MAYBE_UNUSED(leaf) = INSN_ATTR(leaf);
+    VALUE val;
+
+    /* ### Instruction preambles. ### */
+    ADD_PC(INSN_ATTR(width));
+    SETUP_CANARY(leaf);
+    COLLECT_USAGE_INSN(INSN_ATTR(bin));
+    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, ary);
+    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, method);
+    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 2, argc);
+
+    /* ### Here we do the instruction body. ### */
+#   define NAME_OF_CURRENT_INSN opt_duparray_send
+#   line 1006 "insns.def"
+{
+    switch(method) {
+      case idIncludeP:
+        val = vm_opt_duparray_include_p(ec, ary, TOPN(0));
+        break;
+      default:
+        rb_bug("unreachable");
+    }
+}
+#   line 2829 "vm.inc"
+#   undef NAME_OF_CURRENT_INSN
+
+    /* ### Instruction trailers. ### */
+    CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
+    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    INC_SP(INSN_ATTR(sp_inc));
+    TOPN(0) = val;
+    VM_ASSERT(!RB_TYPE_P(TOPN(0), T_NONE));
+    VM_ASSERT(!RB_TYPE_P(TOPN(0), T_MOVED));
+#   undef INSN_ATTR
+
+    /* ### Leave the instruction. ### */
+    END_INSN(opt_duparray_send);
+}
+
 /* insn opt_newarray_send(num, method)(...)(val) */
 INSN_ENTRY(opt_newarray_send)
 {
@@ -2520,7 +2850,7 @@ INSN_ENTRY(opt_newarray_send)
 
     /* ###  Declare and assign variables. ### */
     rb_num_t num = (rb_num_t)GET_OPERAND(1);
-    ID method = (ID)GET_OPERAND(2);
+    rb_num_t method = (rb_num_t)GET_OPERAND(2);
 #   define INSN_ATTR(x) attr_ ## x ## _opt_newarray_send(num, method)
     const bool MAYBE_UNUSED(leaf) = INSN_ATTR(leaf);
     VALUE val;
@@ -2534,23 +2864,32 @@ INSN_ENTRY(opt_newarray_send)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_newarray_send
-#   line 912 "insns.def"
+#   line 1028 "insns.def"
 {
     switch(method) {
-      case idHash:
+      case VM_OPT_NEWARRAY_SEND_HASH:
         val = vm_opt_newarray_hash(ec, num, STACK_ADDR_FROM_TOP(num));
         break;
-      case idMin:
+      case VM_OPT_NEWARRAY_SEND_MIN:
         val = vm_opt_newarray_min(ec, num, STACK_ADDR_FROM_TOP(num));
         break;
-      case idMax:
+      case VM_OPT_NEWARRAY_SEND_MAX:
         val = vm_opt_newarray_max(ec, num, STACK_ADDR_FROM_TOP(num));
+        break;
+      case VM_OPT_NEWARRAY_SEND_INCLUDE_P:
+        val = vm_opt_newarray_include_p(ec, (long)num-1, STACK_ADDR_FROM_TOP(num), TOPN(0));
+        break;
+      case VM_OPT_NEWARRAY_SEND_PACK:
+        val = vm_opt_newarray_pack_buffer(ec, (long)num-1, STACK_ADDR_FROM_TOP(num), TOPN(0), Qundef);
+        break;
+      case VM_OPT_NEWARRAY_SEND_PACK_BUFFER:
+        val = vm_opt_newarray_pack_buffer(ec, (long)num-2, STACK_ADDR_FROM_TOP(num), TOPN(1), TOPN(0));
         break;
       default:
         rb_bug("unreachable");
     }
 }
-#   line 2554 "vm.inc"
+#   line 2893 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2590,18 +2929,18 @@ INSN_ENTRY(invokesuper)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN invokesuper
-#   line 936 "insns.def"
+#   line 1061 "insns.def"
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
     JIT_EXEC(ec, val);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         RESTORE_REGS();
         NEXT_INSN();
     }
 }
-#   line 2605 "vm.inc"
+#   line 2944 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2612,6 +2951,62 @@ INSN_ENTRY(invokesuper)
 
     /* ### Leave the instruction. ### */
     END_INSN(invokesuper);
+}
+
+/* insn invokesuperforward(cd, blockiseq)(...)(val) */
+INSN_ENTRY(invokesuperforward)
+{
+    /* ###  Declare that we have just entered into an instruction. ### */
+    START_OF_ORIGINAL_INSN(invokesuperforward);
+    DEBUG_ENTER_INSN("invokesuperforward");
+
+    /* ###  Declare and assign variables. ### */
+    CALL_DATA cd = (CALL_DATA)GET_OPERAND(1);
+    ISEQ blockiseq = (ISEQ)GET_OPERAND(2);
+#   define INSN_ATTR(x) attr_ ## x ## _invokesuperforward(cd, blockiseq)
+    const bool MAYBE_UNUSED(leaf) = INSN_ATTR(leaf);
+    VALUE val;
+
+    /* ### Instruction preambles. ### */
+    ADD_PC(INSN_ATTR(width));
+    POPN(INSN_ATTR(popn));
+    SETUP_CANARY(leaf);
+    COLLECT_USAGE_INSN(INSN_ATTR(bin));
+    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 0, cd);
+    COLLECT_USAGE_OPERAND(INSN_ATTR(bin), 1, blockiseq);
+
+    /* ### Here we do the instruction body. ### */
+#   define NAME_OF_CURRENT_INSN invokesuperforward
+#   line 1080 "insns.def"
+{
+    struct rb_forwarding_call_data adjusted_cd;
+    struct rb_callinfo adjusted_ci;
+
+    VALUE bh = vm_caller_setup_fwd_args(GET_EC(), GET_CFP(), cd, blockiseq, 1, &adjusted_cd, &adjusted_ci);
+
+    val = vm_sendish(ec, GET_CFP(), &adjusted_cd.cd, bh, mexp_search_super);
+    JIT_EXEC(ec, val);
+
+    if (cd->cc != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
+        RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, adjusted_cd.cd.cc);
+    }
+
+    if (UNDEF_P(val)) {
+        RESTORE_REGS();
+        NEXT_INSN();
+    }
+}
+#   line 3000 "vm.inc"
+#   undef NAME_OF_CURRENT_INSN
+
+    /* ### Instruction trailers. ### */
+    CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
+    CHECK_CANARY(leaf, INSN_ATTR(bin));
+    PUSH(val);
+#   undef INSN_ATTR
+
+    /* ### Leave the instruction. ### */
+    END_INSN(invokesuperforward);
 }
 
 /* insn invokeblock(cd)(...)(val) */
@@ -2636,18 +3031,18 @@ INSN_ENTRY(invokeblock)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN invokeblock
-#   line 956 "insns.def"
+#   line 1108 "insns.def"
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_invokeblock);
     JIT_EXEC(ec, val);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         RESTORE_REGS();
         NEXT_INSN();
     }
 }
-#   line 2651 "vm.inc"
+#   line 3046 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2680,7 +3075,7 @@ INSN_ENTRY(leave)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN leave
-#   line 978 "insns.def"
+#   line 1130 "insns.def"
 {
     if (OPT_CHECKED_RUN) {
         const VALUE *const bp = vm_base_ptr(GET_CFP());
@@ -2701,7 +3096,7 @@ INSN_ENTRY(leave)
         RESTORE_REGS();
     }
 }
-#   line 2705 "vm.inc"
+#   line 3100 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2736,13 +3131,13 @@ INSN_ENTRY(throw)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN throw
-#   line 1011 "insns.def"
+#   line 1163 "insns.def"
 {
     val = vm_throw(ec, GET_CFP(), throw_state, throwobj);
     THROW_EXCEPTION(val);
     /* unreachable */
 }
-#   line 2746 "vm.inc"
+#   line 3141 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2778,12 +3173,12 @@ INSN_ENTRY(jump)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN jump
-#   line 1029 "insns.def"
+#   line 1181 "insns.def"
 {
     RUBY_VM_CHECK_INTS(ec);
     JUMP(dst);
 }
-#   line 2787 "vm.inc"
+#   line 3182 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2817,14 +3212,14 @@ INSN_ENTRY(branchif)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN branchif
-#   line 1042 "insns.def"
+#   line 1194 "insns.def"
 {
     if (RTEST(val)) {
         RUBY_VM_CHECK_INTS(ec);
         JUMP(dst);
     }
 }
-#   line 2828 "vm.inc"
+#   line 3223 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2858,14 +3253,14 @@ INSN_ENTRY(branchunless)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN branchunless
-#   line 1057 "insns.def"
+#   line 1209 "insns.def"
 {
     if (!RTEST(val)) {
         RUBY_VM_CHECK_INTS(ec);
         JUMP(dst);
     }
 }
-#   line 2869 "vm.inc"
+#   line 3264 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2899,14 +3294,14 @@ INSN_ENTRY(branchnil)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN branchnil
-#   line 1072 "insns.def"
+#   line 1224 "insns.def"
 {
     if (NIL_P(val)) {
         RUBY_VM_CHECK_INTS(ec);
         JUMP(dst);
     }
 }
-#   line 2910 "vm.inc"
+#   line 3305 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2943,11 +3338,11 @@ INSN_ENTRY(once)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN once
-#   line 1089 "insns.def"
+#   line 1241 "insns.def"
 {
     val = vm_once_dispatch(ec, iseq, ise);
 }
-#   line 2951 "vm.inc"
+#   line 3346 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -2983,7 +3378,7 @@ INSN_ENTRY(opt_case_dispatch)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_case_dispatch
-#   line 1100 "insns.def"
+#   line 1252 "insns.def"
 {
     OFFSET dst = vm_case_dispatch(hash, else_offset, key);
 
@@ -2991,7 +3386,7 @@ INSN_ENTRY(opt_case_dispatch)
         JUMP(dst);
     }
 }
-#   line 2995 "vm.inc"
+#   line 3390 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3027,15 +3422,15 @@ INSN_ENTRY(opt_plus)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_plus
-#   line 1116 "insns.def"
+#   line 1268 "insns.def"
 {
     val = vm_opt_plus(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3039 "vm.inc"
+#   line 3434 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3074,15 +3469,15 @@ INSN_ENTRY(opt_minus)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_minus
-#   line 1130 "insns.def"
+#   line 1282 "insns.def"
 {
     val = vm_opt_minus(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3086 "vm.inc"
+#   line 3481 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3121,15 +3516,15 @@ INSN_ENTRY(opt_mult)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_mult
-#   line 1144 "insns.def"
+#   line 1296 "insns.def"
 {
     val = vm_opt_mult(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3133 "vm.inc"
+#   line 3528 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3168,15 +3563,15 @@ INSN_ENTRY(opt_div)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_div
-#   line 1161 "insns.def"
+#   line 1313 "insns.def"
 {
     val = vm_opt_div(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3180 "vm.inc"
+#   line 3575 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3215,15 +3610,15 @@ INSN_ENTRY(opt_mod)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_mod
-#   line 1177 "insns.def"
+#   line 1329 "insns.def"
 {
     val = vm_opt_mod(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3227 "vm.inc"
+#   line 3622 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3262,15 +3657,15 @@ INSN_ENTRY(opt_eq)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_eq
-#   line 1191 "insns.def"
+#   line 1343 "insns.def"
 {
     val = opt_equality(GET_ISEQ(), recv, obj, cd);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3274 "vm.inc"
+#   line 3669 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3311,15 +3706,15 @@ INSN_ENTRY(opt_neq)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_neq
-#   line 1205 "insns.def"
+#   line 1357 "insns.def"
 {
     val = vm_opt_neq(GET_ISEQ(), cd, cd_eq, recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3323 "vm.inc"
+#   line 3718 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3358,15 +3753,15 @@ INSN_ENTRY(opt_lt)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_lt
-#   line 1219 "insns.def"
+#   line 1371 "insns.def"
 {
     val = vm_opt_lt(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3370 "vm.inc"
+#   line 3765 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3405,15 +3800,15 @@ INSN_ENTRY(opt_le)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_le
-#   line 1233 "insns.def"
+#   line 1385 "insns.def"
 {
     val = vm_opt_le(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3417 "vm.inc"
+#   line 3812 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3452,15 +3847,15 @@ INSN_ENTRY(opt_gt)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_gt
-#   line 1247 "insns.def"
+#   line 1399 "insns.def"
 {
     val = vm_opt_gt(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3464 "vm.inc"
+#   line 3859 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3499,15 +3894,15 @@ INSN_ENTRY(opt_ge)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_ge
-#   line 1261 "insns.def"
+#   line 1413 "insns.def"
 {
     val = vm_opt_ge(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3511 "vm.inc"
+#   line 3906 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3546,15 +3941,15 @@ INSN_ENTRY(opt_ltlt)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_ltlt
-#   line 1279 "insns.def"
+#   line 1431 "insns.def"
 {
     val = vm_opt_ltlt(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3558 "vm.inc"
+#   line 3953 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3593,15 +3988,15 @@ INSN_ENTRY(opt_and)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_and
-#   line 1293 "insns.def"
+#   line 1445 "insns.def"
 {
     val = vm_opt_and(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3605 "vm.inc"
+#   line 4000 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3640,15 +4035,15 @@ INSN_ENTRY(opt_or)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_or
-#   line 1307 "insns.def"
+#   line 1459 "insns.def"
 {
     val = vm_opt_or(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3652 "vm.inc"
+#   line 4047 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3687,15 +4082,15 @@ INSN_ENTRY(opt_aref)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_aref
-#   line 1326 "insns.def"
+#   line 1478 "insns.def"
 {
     val = vm_opt_aref(recv, obj);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3699 "vm.inc"
+#   line 4094 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3735,15 +4130,15 @@ INSN_ENTRY(opt_aset)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_aset
-#   line 1343 "insns.def"
+#   line 1495 "insns.def"
 {
     val = vm_opt_aset(recv, obj, set);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3747 "vm.inc"
+#   line 4142 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3783,11 +4178,11 @@ INSN_ENTRY(opt_aset_with)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_aset_with
-#   line 1359 "insns.def"
+#   line 1511 "insns.def"
 {
     VALUE tmp = vm_opt_aset_with(recv, key, val);
 
-    if (tmp != Qundef) {
+    if (!UNDEF_P(tmp)) {
         val = tmp;
     }
     else {
@@ -3796,7 +4191,7 @@ INSN_ENTRY(opt_aset_with)
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3800 "vm.inc"
+#   line 4195 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3836,16 +4231,16 @@ INSN_ENTRY(opt_aref_with)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_aref_with
-#   line 1380 "insns.def"
+#   line 1532 "insns.def"
 {
     val = vm_opt_aref_with(recv, key);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         PUSH(rb_str_resurrect(key));
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3849 "vm.inc"
+#   line 4244 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3883,15 +4278,15 @@ INSN_ENTRY(opt_length)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_length
-#   line 1395 "insns.def"
+#   line 1547 "insns.def"
 {
     val = vm_opt_length(recv, BOP_LENGTH);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3895 "vm.inc"
+#   line 4290 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3929,15 +4324,15 @@ INSN_ENTRY(opt_size)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_size
-#   line 1409 "insns.def"
+#   line 1561 "insns.def"
 {
     val = vm_opt_length(recv, BOP_SIZE);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3941 "vm.inc"
+#   line 4336 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -3975,15 +4370,15 @@ INSN_ENTRY(opt_empty_p)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_empty_p
-#   line 1423 "insns.def"
+#   line 1575 "insns.def"
 {
     val = vm_opt_empty_p(recv);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 3987 "vm.inc"
+#   line 4382 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4021,15 +4416,15 @@ INSN_ENTRY(opt_succ)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_succ
-#   line 1437 "insns.def"
+#   line 1589 "insns.def"
 {
     val = vm_opt_succ(recv);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 4033 "vm.inc"
+#   line 4428 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4067,15 +4462,15 @@ INSN_ENTRY(opt_not)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_not
-#   line 1451 "insns.def"
+#   line 1603 "insns.def"
 {
     val = vm_opt_not(GET_ISEQ(), cd, recv);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 4079 "vm.inc"
+#   line 4474 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4114,15 +4509,15 @@ INSN_ENTRY(opt_regexpmatch2)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_regexpmatch2
-#   line 1466 "insns.def"
+#   line 1618 "insns.def"
 {
     val = vm_opt_regexpmatch2(obj2, obj1);
 
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
     }
 }
-#   line 4126 "vm.inc"
+#   line 4521 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4159,11 +4554,11 @@ INSN_ENTRY(invokebuiltin)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN invokebuiltin
-#   line 1482 "insns.def"
+#   line 1634 "insns.def"
 {
     val = vm_invoke_builtin(ec, reg_cfp, bf, STACK_ADDR_FROM_TOP(bf->argc));
 }
-#   line 4167 "vm.inc"
+#   line 4562 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4202,11 +4597,11 @@ INSN_ENTRY(opt_invokebuiltin_delegate)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_invokebuiltin_delegate
-#   line 1493 "insns.def"
+#   line 1645 "insns.def"
 {
     val = vm_invoke_builtin_delegate(ec, reg_cfp, bf, (unsigned int)index);
 }
-#   line 4210 "vm.inc"
+#   line 4605 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4245,7 +4640,7 @@ INSN_ENTRY(opt_invokebuiltin_delegate_leave)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_invokebuiltin_delegate_leave
-#   line 1504 "insns.def"
+#   line 1656 "insns.def"
 {
     val = vm_invoke_builtin_delegate(ec, reg_cfp, bf, (unsigned int)index);
 
@@ -4263,7 +4658,7 @@ INSN_ENTRY(opt_invokebuiltin_delegate_leave)
         RESTORE_REGS();
     }
 }
-#   line 4267 "vm.inc"
+#   line 4662 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4289,7 +4684,7 @@ INSN_ENTRY(getlocal_WC_0)
     /* ###  Declare and assign variables. ### */
 #line 10 "defs/opt_operand.def"
     const rb_num_t level = 0;
-#line 4293 "vm.inc"
+#line 4688 "vm.inc"
     lindex_t idx = (lindex_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _getlocal_WC_0(idx)
     const bool MAYBE_UNUSED(leaf) = INSN_ATTR(leaf);
@@ -4309,7 +4704,7 @@ INSN_ENTRY(getlocal_WC_0)
     RB_DEBUG_COUNTER_INC(lvar_get);
     (void)RB_DEBUG_COUNTER_INC_IF(lvar_get_dynamic, level > 0);
 }
-#   line 4313 "vm.inc"
+#   line 4708 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4335,7 +4730,7 @@ INSN_ENTRY(getlocal_WC_1)
     /* ###  Declare and assign variables. ### */
 #line 11 "defs/opt_operand.def"
     const rb_num_t level = 1;
-#line 4339 "vm.inc"
+#line 4734 "vm.inc"
     lindex_t idx = (lindex_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _getlocal_WC_1(idx)
     const bool MAYBE_UNUSED(leaf) = INSN_ATTR(leaf);
@@ -4355,7 +4750,7 @@ INSN_ENTRY(getlocal_WC_1)
     RB_DEBUG_COUNTER_INC(lvar_get);
     (void)RB_DEBUG_COUNTER_INC_IF(lvar_get_dynamic, level > 0);
 }
-#   line 4359 "vm.inc"
+#   line 4754 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4381,7 +4776,7 @@ INSN_ENTRY(setlocal_WC_0)
     /* ###  Declare and assign variables. ### */
 #line 12 "defs/opt_operand.def"
     const rb_num_t level = 0;
-#line 4385 "vm.inc"
+#line 4780 "vm.inc"
     lindex_t idx = (lindex_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _setlocal_WC_0(idx)
     const bool MAYBE_UNUSED(leaf) = INSN_ATTR(leaf);
@@ -4401,7 +4796,7 @@ INSN_ENTRY(setlocal_WC_0)
     RB_DEBUG_COUNTER_INC(lvar_set);
     (void)RB_DEBUG_COUNTER_INC_IF(lvar_set_dynamic, level > 0);
 }
-#   line 4405 "vm.inc"
+#   line 4800 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4424,7 +4819,7 @@ INSN_ENTRY(setlocal_WC_1)
     /* ###  Declare and assign variables. ### */
 #line 13 "defs/opt_operand.def"
     const rb_num_t level = 1;
-#line 4428 "vm.inc"
+#line 4823 "vm.inc"
     lindex_t idx = (lindex_t)GET_OPERAND(1);
 #   define INSN_ATTR(x) attr_ ## x ## _setlocal_WC_1(idx)
     const bool MAYBE_UNUSED(leaf) = INSN_ATTR(leaf);
@@ -4444,7 +4839,7 @@ INSN_ENTRY(setlocal_WC_1)
     RB_DEBUG_COUNTER_INC(lvar_set);
     (void)RB_DEBUG_COUNTER_INC_IF(lvar_set_dynamic, level > 0);
 }
-#   line 4448 "vm.inc"
+#   line 4843 "vm.inc"
 #   undef NAME_OF_CURRENT_INSN
 
     /* ### Instruction trailers. ### */
@@ -4467,7 +4862,7 @@ INSN_ENTRY(putobject_INT2FIX_0_)
     /* ###  Declare and assign variables. ### */
 #line 15 "defs/opt_operand.def"
     const VALUE val = INT2FIX(0);
-#line 4471 "vm.inc"
+#line 4866 "vm.inc"
 #   define INSN_ATTR(x) attr_ ## x ## _putobject_INT2FIX_0_()
     const bool MAYBE_UNUSED(leaf) = INSN_ATTR(leaf);
 
@@ -4497,7 +4892,7 @@ INSN_ENTRY(putobject_INT2FIX_1_)
     /* ###  Declare and assign variables. ### */
 #line 16 "defs/opt_operand.def"
     const VALUE val = INT2FIX(1);
-#line 4501 "vm.inc"
+#line 4896 "vm.inc"
 #   define INSN_ATTR(x) attr_ ## x ## _putobject_INT2FIX_1_()
     const bool MAYBE_UNUSED(leaf) = INSN_ATTR(leaf);
 
@@ -4715,6 +5110,15 @@ INSN_ENTRY(trace_putstring)
     END_INSN(trace_putstring);
 }
 
+/* insn trace_putchilledstring(...)(...)(...) */
+INSN_ENTRY(trace_putchilledstring)
+{
+    vm_trace(ec, GET_CFP());
+    
+    DISPATCH_ORIGINAL_INSN(putchilledstring);
+    END_INSN(trace_putchilledstring);
+}
+
 /* insn trace_concatstrings(...)(...)(...) */
 INSN_ENTRY(trace_concatstrings)
 {
@@ -4760,13 +5164,13 @@ INSN_ENTRY(trace_newarray)
     END_INSN(trace_newarray);
 }
 
-/* insn trace_newarraykwsplat(...)(...)(...) */
-INSN_ENTRY(trace_newarraykwsplat)
+/* insn trace_pushtoarraykwsplat(...)(...)(...) */
+INSN_ENTRY(trace_pushtoarraykwsplat)
 {
     vm_trace(ec, GET_CFP());
     
-    DISPATCH_ORIGINAL_INSN(newarraykwsplat);
-    END_INSN(trace_newarraykwsplat);
+    DISPATCH_ORIGINAL_INSN(pushtoarraykwsplat);
+    END_INSN(trace_pushtoarraykwsplat);
 }
 
 /* insn trace_duparray(...)(...)(...) */
@@ -4803,6 +5207,24 @@ INSN_ENTRY(trace_concatarray)
     
     DISPATCH_ORIGINAL_INSN(concatarray);
     END_INSN(trace_concatarray);
+}
+
+/* insn trace_concattoarray(...)(...)(...) */
+INSN_ENTRY(trace_concattoarray)
+{
+    vm_trace(ec, GET_CFP());
+    
+    DISPATCH_ORIGINAL_INSN(concattoarray);
+    END_INSN(trace_concattoarray);
+}
+
+/* insn trace_pushtoarray(...)(...)(...) */
+INSN_ENTRY(trace_pushtoarray)
+{
+    vm_trace(ec, GET_CFP());
+    
+    DISPATCH_ORIGINAL_INSN(pushtoarray);
+    END_INSN(trace_pushtoarray);
 }
 
 /* insn trace_splatarray(...)(...)(...) */
@@ -4994,6 +5416,15 @@ INSN_ENTRY(trace_send)
     END_INSN(trace_send);
 }
 
+/* insn trace_sendforward(...)(...)(...) */
+INSN_ENTRY(trace_sendforward)
+{
+    vm_trace(ec, GET_CFP());
+    
+    DISPATCH_ORIGINAL_INSN(sendforward);
+    END_INSN(trace_sendforward);
+}
+
 /* insn trace_opt_send_without_block(...)(...)(...) */
 INSN_ENTRY(trace_opt_send_without_block)
 {
@@ -5010,6 +5441,24 @@ INSN_ENTRY(trace_objtostring)
     
     DISPATCH_ORIGINAL_INSN(objtostring);
     END_INSN(trace_objtostring);
+}
+
+/* insn trace_opt_ary_freeze(...)(...)(...) */
+INSN_ENTRY(trace_opt_ary_freeze)
+{
+    vm_trace(ec, GET_CFP());
+    
+    DISPATCH_ORIGINAL_INSN(opt_ary_freeze);
+    END_INSN(trace_opt_ary_freeze);
+}
+
+/* insn trace_opt_hash_freeze(...)(...)(...) */
+INSN_ENTRY(trace_opt_hash_freeze)
+{
+    vm_trace(ec, GET_CFP());
+    
+    DISPATCH_ORIGINAL_INSN(opt_hash_freeze);
+    END_INSN(trace_opt_hash_freeze);
 }
 
 /* insn trace_opt_str_freeze(...)(...)(...) */
@@ -5039,6 +5488,15 @@ INSN_ENTRY(trace_opt_str_uminus)
     END_INSN(trace_opt_str_uminus);
 }
 
+/* insn trace_opt_duparray_send(...)(...)(...) */
+INSN_ENTRY(trace_opt_duparray_send)
+{
+    vm_trace(ec, GET_CFP());
+    
+    DISPATCH_ORIGINAL_INSN(opt_duparray_send);
+    END_INSN(trace_opt_duparray_send);
+}
+
 /* insn trace_opt_newarray_send(...)(...)(...) */
 INSN_ENTRY(trace_opt_newarray_send)
 {
@@ -5055,6 +5513,15 @@ INSN_ENTRY(trace_invokesuper)
     
     DISPATCH_ORIGINAL_INSN(invokesuper);
     END_INSN(trace_invokesuper);
+}
+
+/* insn trace_invokesuperforward(...)(...)(...) */
+INSN_ENTRY(trace_invokesuperforward)
+{
+    vm_trace(ec, GET_CFP());
+    
+    DISPATCH_ORIGINAL_INSN(invokesuperforward);
+    END_INSN(trace_invokesuperforward);
 }
 
 /* insn trace_invokeblock(...)(...)(...) */

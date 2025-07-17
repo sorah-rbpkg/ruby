@@ -350,6 +350,19 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
+  def test_ungetc_with_seek
+    make_tempfile {|t|
+      t.open
+      t.write('0123456789')
+      t.rewind
+
+      t.ungetc('a')
+      t.seek(2, :SET)
+
+      assert_equal('2', t.getc)
+    }
+  end
+
   def test_ungetbyte
     make_tempfile {|t|
       t.open
@@ -370,6 +383,19 @@ class TestIO < Test::Unit::TestCase
       t.ungetbyte("\xe7\xb4\x85")
       assert_equal(-2, t.pos)
       assert_equal("\u7d05\u7389bar\n", t.gets)
+    }
+  end
+
+  def test_ungetbyte_with_seek
+    make_tempfile {|t|
+      t.open
+      t.write('0123456789')
+      t.rewind
+
+      t.ungetbyte('a'.ord)
+      t.seek(2, :SET)
+
+      assert_equal('2'.ord, t.getbyte)
     }
   end
 
@@ -1136,7 +1162,7 @@ class TestIO < Test::Unit::TestCase
       body.rewind
 
       payload = []
-      IO.copy_stream(body, dst_class.new{|cls| payload << cls})
+      IO.copy_stream(body, dst_class.new{payload << it})
       body.rewind
       assert_equal(body.read, payload.join, bug21131)
     ensure
@@ -2609,7 +2635,7 @@ class TestIO < Test::Unit::TestCase
     end
     assert_raise(Errno::ESPIPE) do
       assert_deprecated_warning(/IO process creation with a leading '\|'/) do # https://bugs.ruby-lang.org/issues/19630
-        IO.read("|echo foo", 1, 1)
+        IO.read("|#{EnvUtil.rubybin} -e 'puts :foo'", 1, 1)
       end
     end
   end
@@ -2713,6 +2739,17 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_reopen_binmode
+    f1 = File.open(__FILE__)
+    f2 = File.open(__FILE__)
+    f1.binmode
+    f1.reopen(f2)
+    assert_not_operator(f1, :binmode?)
+  ensure
+    f2.close
+    f1.close
+  end
+
   def make_tempfile_for_encoding
     t = make_tempfile
     open(t.path, "rb+:utf-8") {|f| f.puts "\u7d05\u7389bar\n"}
@@ -2741,6 +2778,16 @@ class TestIO < Test::Unit::TestCase
         assert_equal("\xB9\xC8\xB6\xCCbar\n".force_encoding(Encoding::EUC_JP), s)
       }
     }
+  end
+
+  def test_reopen_encoding_from_io
+    f1 = File.open(__FILE__, "rb:UTF-16LE")
+    f2 = File.open(__FILE__, "r:UTF-8")
+    f1.reopen(f2)
+    assert_equal(Encoding::UTF_8, f1.external_encoding)
+  ensure
+    f2.close
+    f1.close
   end
 
   def test_reopen_opt_encoding
@@ -2995,6 +3042,15 @@ class TestIO < Test::Unit::TestCase
       f.close
 
       assert_equal("FOO\n", File.read(t.path))
+
+      fd = IO.sysopen(t.path)
+      %w[w r+ w+ a+].each do |mode|
+        assert_raise(Errno::EINVAL, "#{mode} [ruby-dev:38571]") {IO.new(fd, mode)}
+      end
+      f = IO.new(fd, "r")
+      data = f.read
+      f.close
+      assert_equal("FOO\n", data)
     }
   end
 
@@ -3933,8 +3989,10 @@ __END__
   end
 
   def test_open_fifo_does_not_block_other_threads
-    mkcdtmpdir {
+    mkcdtmpdir do
       File.mkfifo("fifo")
+    rescue NotImplementedError
+    else
       assert_separately([], <<-'EOS')
         t1 = Thread.new {
           open("fifo", "r") {|r|
@@ -3949,8 +4007,32 @@ __END__
         t1_value, _ = assert_join_threads([t1, t2])
         assert_equal("foo", t1_value)
       EOS
-    }
-  end if /mswin|mingw|bccwin|cygwin/ !~ RUBY_PLATFORM
+    end
+  end
+
+  def test_open_fifo_restart_at_signal_intterupt
+    mkcdtmpdir do
+      File.mkfifo("fifo")
+    rescue NotImplementedError
+    else
+      wait = EnvUtil.apply_timeout_scale(0.1)
+      data = "writing to fifo"
+
+      # Do not use assert_separately, because reading from stdin
+      # prevents to reproduce [Bug #20708]
+      assert_in_out_err(["-e", "#{<<~"begin;"}\n#{<<~'end;'}"], [], [data])
+      wait, data = #{wait}, #{data.dump}
+      ;
+      begin;
+        trap(:USR1) {}
+        Thread.new do
+          sleep wait; Process.kill(:USR1, $$)
+          sleep wait; File.write("fifo", data)
+        end
+        puts File.read("fifo")
+      end;
+    end
+  end if Signal.list[:USR1] # Pointless on platforms without signal
 
   def test_open_flag
     make_tempfile do |t|

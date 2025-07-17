@@ -1,8 +1,10 @@
-require "lrama/state/reduce"
-require "lrama/state/reduce_reduce_conflict"
-require "lrama/state/resolved_conflict"
-require "lrama/state/shift"
-require "lrama/state/shift_reduce_conflict"
+# frozen_string_literal: true
+
+require_relative "state/reduce"
+require_relative "state/reduce_reduce_conflict"
+require_relative "state/resolved_conflict"
+require_relative "state/shift"
+require_relative "state/shift_reduce_conflict"
 
 module Lrama
   class State
@@ -29,8 +31,8 @@ module Lrama
     end
 
     def non_default_reduces
-      reduces.select do |reduce|
-        reduce.rule != @default_reduction_rule
+      reduces.reject do |reduce|
+        reduce.rule == @default_reduction_rule
       end
     end
 
@@ -70,43 +72,21 @@ module Lrama
       reduce.look_ahead = look_ahead
     end
 
-    # Returns array of [Shift, next_state]
     def nterm_transitions
-      return @nterm_transitions if @nterm_transitions
-
-      @nterm_transitions = []
-
-      shifts.each do |shift|
-        next if shift.next_sym.term?
-
-        @nterm_transitions << [shift, @items_to_state[shift.next_items]]
-      end
-
-      @nterm_transitions
+      @nterm_transitions ||= transitions.select {|shift, _| shift.next_sym.nterm? }
     end
 
-    # Returns array of [Shift, next_state]
     def term_transitions
-      return @term_transitions if @term_transitions
-
-      @term_transitions = []
-
-      shifts.each do |shift|
-        next if shift.next_sym.nterm?
-
-        @term_transitions << [shift, @items_to_state[shift.next_items]]
-      end
-
-      @term_transitions
+      @term_transitions ||= transitions.select {|shift, _| shift.next_sym.term? }
     end
 
     def transitions
-      term_transitions + nterm_transitions
+      @transitions ||= shifts.map {|shift| [shift, @items_to_state[shift.next_items]] }
     end
 
     def selected_term_transitions
-      term_transitions.select do |shift, next_state|
-        !shift.not_selected
+      term_transitions.reject do |shift, next_state|
+        shift.not_selected
       end
     end
 
