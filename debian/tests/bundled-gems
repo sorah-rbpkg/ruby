@@ -6,11 +6,11 @@ BUNDLED_GEMS_FILE=gems/bundled_gems
 rc=0
 # Skip the lines of $BUNDLED_GEMS_FILE with comments
 sed '/^#/d' $BUNDLED_GEMS_FILE | while read gem version repository; do
-  if ruby3.3 -e "gem '${gem}'" 2>/dev/null; then
-    if ruby3.3 -e "gem '${gem}', '>= ${version}'" 2>/dev/null; then
+  if ruby3.4 -e "gem '${gem}'" 2>/dev/null; then
+    if ruby3.4 -e "gem '${gem}', '>= ${version}'" 2>/dev/null; then
       echo "I: ${gem} (>= ${version}) OK"
     else
-      found=$(ruby3.3 -S gem list --exact "${gem}" | grep "^${gem}\s")
+      found=$(ruby3.4 -S gem list --exact "${gem}" | grep "^${gem}\s")
       echo "W: ${found} found, but not new enough (expected >= ${version})."
     fi
   else
