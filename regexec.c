@@ -240,11 +240,11 @@ Glossary for "match cache"
 The `Regexp#match` optimization by using a cache.
 
 "cache opcode"
-A cachable opcode (e.g. `OP_PUSH`, `OP_REPEAT`, etc).
+A cacheable opcode (e.g. `OP_PUSH`, `OP_REPEAT`, etc).
 It is corresponding to some cache points.
 
 "cache point"
-A cachable point on matching.
+A cacheable point on matching.
 Usually, one-to-one corresponding between a cache opcode and a cache point exists,
 but cache opcodes between `OP_REPEAT` and `OP_REPEAT_INC` have some corresponding
 cache points depending on repetition counts.
@@ -4158,7 +4158,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  size_t length = (end - str) + 1;
 	  size_t num_match_cache_points = (size_t)msa->num_cache_points * length;
 #ifdef ONIG_DEBUG_MATCH_CACHE
-	  fprintf(stderr, "MATCH CACHE: #match cache points = %"PRIuSIZE" (length = %"PRIuSIZE")\n", num_match_cache_points, length);
+	  fprintf(stderr, "MATCH CACHE: #match cache points = %zu (length = %zu)\n", num_match_cache_points, length);
 #endif
 	  /* Overflow check */
 	  if (num_match_cache_points / length != (size_t)msa->num_cache_points) {

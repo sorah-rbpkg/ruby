@@ -81,15 +81,15 @@ heap_iter(void *vstart, void *vend, size_t stride, void *ptr)
     VALUE v;
 
     for (v = (VALUE)vstart; v != (VALUE)vend; v += stride) {
-        void *poisoned = asan_poisoned_object_p(v);
-        asan_unpoison_object(v, false);
+        void *poisoned = rb_asan_poisoned_object_p(v);
+        rb_asan_unpoison_object(v, false);
 
         if (RBASIC(v)->flags) {
             (*ctx->cb)(v, ctx->data);
         }
 
         if (poisoned) {
-            asan_poison_object(v);
+            rb_asan_poison_object(v);
         }
     }
 
@@ -169,8 +169,7 @@ setup_hash(int argc, VALUE *argv)
         hash = rb_hash_new();
     }
     else if (!RHASH_EMPTY_P(hash)) {
-        /* WB: no new reference */
-        st_foreach(RHASH_TBL_RAW(hash), set_zero_i, hash);
+        rb_hash_foreach(hash, set_zero_i, (st_data_t)hash);
     }
 
     return hash;
@@ -578,7 +577,7 @@ reachable_object_from_i(VALUE obj, void *data_ptr)
     VALUE key = obj;
     VALUE val = obj;
 
-    if (rb_objspace_markable_object_p(obj)) {
+    if (!rb_objspace_garbage_object_p(obj)) {
         if (NIL_P(rb_hash_lookup(data->refs, key))) {
             rb_hash_aset(data->refs, key, Qtrue);
 
@@ -624,7 +623,7 @@ collect_values(st_data_t key, st_data_t value, st_data_t data)
  *
  *  With this method, you can find memory leaks.
  *
- *  This method is only expected to work except with C Ruby.
+ *  This method is only expected to work with C Ruby.
  *
  *  Example:
  *    ObjectSpace.reachable_objects_from(['a', 'b', 'c'])
@@ -644,7 +643,7 @@ collect_values(st_data_t key, st_data_t value, st_data_t data)
 static VALUE
 reachable_objects_from(VALUE self, VALUE obj)
 {
-    if (rb_objspace_markable_object_p(obj)) {
+    if (!RB_SPECIAL_CONST_P(obj)) {
         struct rof_data data;
 
         if (rb_typeddata_is_kind_of(obj, &iow_data_type)) {
@@ -691,7 +690,7 @@ reachable_object_from_root_i(const char *category, VALUE obj, void *ptr)
         rb_hash_aset(data->categories, category_str, category_objects);
     }
 
-    if (rb_objspace_markable_object_p(obj) &&
+    if (!rb_objspace_garbage_object_p(obj) &&
         obj != data->categories &&
         obj != data->last_category_objects) {
         if (rb_objspace_internal_object_p(obj)) {

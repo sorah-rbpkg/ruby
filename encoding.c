@@ -968,6 +968,21 @@ enc_set_index(VALUE obj, int idx)
 }
 
 void
+rb_enc_raw_set(VALUE obj, rb_encoding *enc)
+{
+    RUBY_ASSERT(enc_capable(obj));
+
+    int idx = enc ? ENC_TO_ENCINDEX(enc) : 0;
+
+    if (idx < ENCODING_INLINE_MAX) {
+        ENCODING_SET_INLINED(obj, idx);
+        return;
+    }
+    ENCODING_SET_INLINED(obj, ENCODING_INLINE_MAX);
+    rb_ivar_set(obj, rb_id_encoding(), INT2NUM(idx));
+}
+
+void
 rb_enc_set_index(VALUE obj, int idx)
 {
     rb_check_frozen(obj);
@@ -1015,13 +1030,22 @@ rb_enc_get(VALUE obj)
     return rb_enc_from_index(rb_enc_get_index(obj));
 }
 
+const char *
+rb_enc_inspect_name(rb_encoding *enc)
+{
+    if (enc == global_enc_ascii) {
+        return "BINARY (ASCII-8BIT)";
+    }
+    return enc->name;
+}
+
 static rb_encoding*
 rb_encoding_check(rb_encoding* enc, VALUE str1, VALUE str2)
 {
     if (!enc)
         rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
-                 rb_enc_name(rb_enc_get(str1)),
-                 rb_enc_name(rb_enc_get(str2)));
+                 rb_enc_inspect_name(rb_enc_get(str1)),
+                 rb_enc_inspect_name(rb_enc_get(str2)));
     return enc;
 }
 
@@ -1044,6 +1068,13 @@ rb_enc_check(VALUE str1, VALUE str2)
 static rb_encoding*
 enc_compatible_latter(VALUE str1, VALUE str2, int idx1, int idx2)
 {
+    if (idx1 < 0 || idx2 < 0)
+        return 0;
+
+    if (idx1 == idx2) {
+        return rb_enc_from_index(idx1);
+    }
+
     int isstr1, isstr2;
     rb_encoding *enc1 = rb_enc_from_index(idx1);
     rb_encoding *enc2 = rb_enc_from_index(idx2);
@@ -1102,15 +1133,7 @@ enc_compatible_str(VALUE str1, VALUE str2)
     int idx1 = enc_get_index_str(str1);
     int idx2 = enc_get_index_str(str2);
 
-    if (idx1 < 0 || idx2 < 0)
-        return 0;
-
-    if (idx1 == idx2) {
-        return rb_enc_from_index(idx1);
-    }
-    else {
-        return enc_compatible_latter(str1, str2, idx1, idx2);
-    }
+    return enc_compatible_latter(str1, str2, idx1, idx2);
 }
 
 rb_encoding*
@@ -1118,13 +1141,6 @@ rb_enc_compatible(VALUE str1, VALUE str2)
 {
     int idx1 = rb_enc_get_index(str1);
     int idx2 = rb_enc_get_index(str2);
-
-    if (idx1 < 0 || idx2 < 0)
-        return 0;
-
-    if (idx1 == idx2) {
-        return rb_enc_from_index(idx1);
-    }
 
     return enc_compatible_latter(str1, str2, idx1, idx2);
 }
@@ -1263,9 +1279,10 @@ enc_inspect(VALUE self)
     if (!(enc = DATA_PTR(self)) || rb_enc_from_index(rb_enc_to_index(enc)) != enc) {
         rb_raise(rb_eTypeError, "broken Encoding");
     }
+
     return rb_enc_sprintf(rb_usascii_encoding(),
                           "#<%"PRIsVALUE":%s%s%s>", rb_obj_class(self),
-                          rb_enc_name(enc),
+                          rb_enc_inspect_name(enc),
                           (ENC_DUMMY_P(enc) ? " (dummy)" : ""),
                           rb_enc_autoload_p(enc) ? " (autoload)" : "");
 }
@@ -1927,7 +1944,7 @@ Init_Encoding(void)
 
     list = rb_encoding_list = rb_ary_new2(ENCODING_LIST_CAPA);
     RBASIC_CLEAR_CLASS(list);
-    rb_gc_register_mark_object(list);
+    rb_vm_register_global_object(list);
 
     for (i = 0; i < enc_table->count; ++i) {
         rb_ary_push(list, enc_new(enc_table->list[i].enc));

@@ -201,8 +201,8 @@ RSpec.describe Bundler::Dsl do
   describe "#gem" do
     # rubocop:disable Naming/VariableNumber
     [:ruby, :ruby_18, :ruby_19, :ruby_20, :ruby_21, :ruby_22, :ruby_23, :ruby_24, :ruby_25, :ruby_26, :ruby_27,
-     :ruby_30, :ruby_31, :ruby_32, :ruby_33, :mri, :mri_18, :mri_19, :mri_20, :mri_21, :mri_22, :mri_23, :mri_24,
-     :mri_25, :mri_26, :mri_27, :mri_30, :mri_31, :mri_32, :mri_33, :jruby, :rbx, :truffleruby].each do |platform|
+     :ruby_30, :ruby_31, :ruby_32, :ruby_33, :ruby_34, :ruby_35, :mri, :mri_18, :mri_19, :mri_20, :mri_21, :mri_22, :mri_23, :mri_24,
+     :mri_25, :mri_26, :mri_27, :mri_30, :mri_31, :mri_32, :mri_33, :mri_34, :mri_35, :jruby, :rbx, :truffleruby].each do |platform|
       it "allows #{platform} as a valid platform" do
         subject.gem("foo", platform: platform)
       end
@@ -211,7 +211,9 @@ RSpec.describe Bundler::Dsl do
 
     it "allows platforms matching the running Ruby version" do
       platform = "ruby_#{RbConfig::CONFIG["MAJOR"]}#{RbConfig::CONFIG["MINOR"]}"
-      subject.gem("foo", platform: platform)
+
+      expect { subject.gem("foo", platform: platform) }.not_to raise_error
+      expect(Bundler.current_ruby.respond_to?("#{platform}?")).to be_truthy
     end
 
     it "rejects invalid platforms" do
@@ -347,23 +349,6 @@ RSpec.describe Bundler::Dsl do
         end
 
         expect(subject.dependencies.last.source).to eq(other_source)
-      end
-    end
-  end
-
-  describe "#check_primary_source_safety" do
-    context "when a global source is not defined implicitly" do
-      it "will raise a major deprecation warning" do
-        not_a_global_source = double("not-a-global-source", no_remotes?: true)
-        allow(Bundler::Source::Rubygems).to receive(:new).and_return(not_a_global_source)
-
-        warning = "This Gemfile does not include an explicit global source. " \
-          "Not using an explicit global source may result in a different lockfile being generated depending on " \
-          "the gems you have installed locally before bundler is run. " \
-          "Instead, define a global source in your Gemfile like this: source \"https://rubygems.org\"."
-        expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(2, warning)
-
-        subject.check_primary_source_safety
       end
     end
   end

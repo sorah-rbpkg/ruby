@@ -1,5 +1,7 @@
 # -*- makefile -*-
 
+!include $(config_make)
+
 !if "$(srcdir)" != ""
 WIN32DIR = $(srcdir)/win32
 !elseif "$(WIN32DIR)" == "win32"
@@ -40,46 +42,20 @@ x64-mswin64: -prologue- -x64- -epilogue-
 MAKE = nmake
 srcdir = $(srcdir:\=/)
 prefix = $(prefix:\=/)
-!if defined(libdir_basename)
-libdir_basename = $(libdir_basename)
-!endif
-EXTSTATIC = $(EXTSTATIC)
-!if defined(RDOCTARGET)
-RDOCTARGET = $(RDOCTARGET)
-!endif
-!if defined(EXTOUT) && "$(EXTOUT)" != ".ext"
-EXTOUT = $(EXTOUT)
-!endif
-!if defined(NTVER)
-NTVER = $(NTVER)
-!endif
-!if defined(USE_RUBYGEMS)
-USE_RUBYGEMS = $(USE_RUBYGEMS)
-!endif
-!if defined(ENABLE_DEBUG_ENV)
-ENABLE_DEBUG_ENV = $(ENABLE_DEBUG_ENV)
-!endif
-!if defined(RJIT_SUPPORT)
-RJIT_SUPPORT = $(RJIT_SUPPORT)
-!endif
 
-# TOOLS
 <<
+	@type $(config_make) >>$(MAKEFILE)
+	@del $(config_make) > nul
 !if defined(BASERUBY)
-	@echo BASERUBY = $(BASERUBY:/=\)>> $(MAKEFILE)
+	$(BASERUBY:/=\) "$(srcdir)/tool/missing-baseruby.bat"
 !endif
-!if "$(RUBY_DEVEL)" == "yes"
-	RUBY_DEVEL = yes
-!endif
-!if "$(GIT)" != ""
-	@echo GIT = $(GIT)>> $(MAKEFILE)
-!endif
-!if "$(HAVE_GIT)" != ""
-	@echo HAVE_GIT = $(HAVE_GIT)>> $(MAKEFILE)
-!endif
-
-!if "$(WITH_GMP)" == "yes"
-	@echo>>$(MAKEFILE) USE_GMP = 1
+!if "$(WITH_GMP)" != "no"
+	@($(CC) $(XINCFLAGS) <<conftest.c -link $(XLDFLAGS) gmp.lib > nul && (echo USE_GMP = yes) || exit /b 0) >>$(MAKEFILE)
+#include <gmp.h>
+mpz_t x;
+int main(void) {mpz_init(x); return 0;}
+<<
+	@$(WIN32DIR:/=\)\rm.bat conftest.*
 !endif
 
 -osname-section-:
@@ -118,7 +94,9 @@ int main(void) {FILE *volatile f = stdin; return 0;}
 
 -headers-: nul
 
+!ifdef VS2022_FP_BUG_CHECK # Fixed In: Visual Studio 2022 version 17.3
 -headers-: vs2022-fp-bug
+!endif
 
 # Check the bug reported at:
 # https://developercommunity.visualstudio.com/t/With-__assume-isnan-after-isinf/1515649
@@ -129,6 +107,7 @@ vs2022-fp-bug:
 /* compile with -O2 */
 #include <math.h>
 #include <float.h>
+#include <stdio.h>
 
 #define value_finite(d) 'f'
 #define value_infinity() 'i'
@@ -170,14 +149,26 @@ main(void)
 
 -version-: nul verconf.mk
 
+!if !(exist(revision.h) || exist($(srcdir)/revision.h))
+revision_opt = -DRUBY_REVISION=0
+!endif
+
 verconf.mk: nul
 	@findstr /R /C:"^#define RUBY_ABI_VERSION " $(srcdir:/=\)\include\ruby\internal\abi.h > $(@)
-	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(@)" > $(*F).bat && cmd /c $(*F).bat > $(@)
+	@$(CPP) -I$(srcdir) -I$(srcdir)/include $(revision_opt) <<"Creating $(@)" > $(*F).bat && cmd /c $(*F).bat > $(@)
 @echo off
-#define RUBY_REVISION 0
 #define STRINGIZE0(expr) #expr
 #define STRINGIZE(x) STRINGIZE0(x)
 #include "version.h"
+#ifndef RUBY_RELEASE_YEAR
+# define RUBY_RELEASE_YEAR 0000
+#endif
+#ifndef RUBY_RELEASE_MONTH
+# define RUBY_RELEASE_MONTH 00
+#endif
+#ifndef RUBY_RELEASE_DAY
+# define RUBY_RELEASE_DAY 00
+#endif
 set ruby_release_year=RUBY_RELEASE_YEAR
 set ruby_release_month=RUBY_RELEASE_MONTH
 set ruby_release_day=RUBY_RELEASE_DAY
@@ -208,27 +199,11 @@ set MSC_VER
 del %0 & exit
 <<
 
--program-name-:
-	@type << >>$(MAKEFILE)
-
-# PROGRAM-NAME
-!ifdef PROGRAM_PREFIX
-PROGRAM_PREFIX = $(PROGRAM_PREFIX)
-!endif
-!ifdef PROGRAM_SUFFIX
-PROGRAM_SUFFIX = $(PROGRAM_SUFFIX)
-!endif
-!ifdef RUBY_INSTALL_NAME
-RUBY_INSTALL_NAME = $(RUBY_INSTALL_NAME)
-!endif
-!ifdef RUBY_SO_NAME
-RUBY_SO_NAME = $(RUBY_SO_NAME)
-!endif
-<<
-
 -generic-: nul
 	@$(CPP) <<conftest.c 2>nul | findstr = >>$(MAKEFILE)
-#if defined _M_X64
+#if defined _M_ARM64
+MACHINE = arm64
+#elif defined _M_X64
 MACHINE = x64
 #else
 MACHINE = x86
@@ -244,6 +219,8 @@ MACHINE = x86
 	@echo MACHINE = x64>>$(MAKEFILE)
 -ix86-: -osname32-
 	@echo MACHINE = x86>>$(MAKEFILE)
+-arm64-: -osname64-
+	@echo MACHINE = arm64>>$(MAKEFILE)
 
 -i386-: -ix86-
 	@echo $(CPU) = 3>>$(MAKEFILE)
@@ -254,7 +231,7 @@ MACHINE = x86
 -i686-: -ix86-
 	@echo $(CPU) = 6>>$(MAKEFILE)
 
--epilogue-: -compiler- -program-name- -encs-
+-epilogue-: -compiler- -encs-
 
 -encs-: nul
 	@$(APPEND)
@@ -262,11 +239,6 @@ MACHINE = x86
 	@$(MAKE) -l -f $(srcdir)/win32/enc-setup.mak srcdir="$(srcdir)" MAKEFILE=$(MAKEFILE)
 
 -epilogue-: nul
-!if exist(confargs.c)
-	@$(APPEND)
-	@$(CPP) confargs.c 2>&1 | findstr "! =" >> $(MAKEFILE)
-	@del confargs.c
-!endif
 	@type << >>$(MAKEFILE)
 
 # RUBY_INSTALL_NAME = ruby
@@ -293,4 +265,4 @@ AS = $(AS) -nologo
 $(BANG)include $$(srcdir)/win32/Makefile.sub
 <<
 	@$(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat config.h config.status
-	@echo "type `nmake' to make ruby."
+	@echo type 'nmake' to make ruby.

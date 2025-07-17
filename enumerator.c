@@ -506,7 +506,7 @@ enumerator_init_copy(VALUE obj, VALUE orig)
     }
 
     RB_OBJ_WRITE(obj, &ptr1->obj, ptr0->obj);
-    RB_OBJ_WRITE(obj, &ptr1->meth, ptr0->meth);
+    ptr1->meth = ptr0->meth;
     RB_OBJ_WRITE(obj, &ptr1->args, ptr0->args);
     ptr1->fib  = 0;
     ptr1->lookahead  = Qundef;
@@ -2400,7 +2400,6 @@ lazy_zip_func(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_inde
         rb_ary_push(ary, v);
     }
     LAZY_MEMO_SET_VALUE(result, ary);
-    LAZY_MEMO_SET_PACKED(result);
     return result;
 }
 
@@ -3181,7 +3180,7 @@ enum_chain_initialize(VALUE obj, VALUE enums)
 
     if (!ptr) rb_raise(rb_eArgError, "unallocated chain");
 
-    ptr->enums = rb_obj_freeze(enums);
+    ptr->enums = rb_ary_freeze(enums);
     ptr->pos = -1;
 
     return obj;
@@ -3509,7 +3508,7 @@ enum_product_initialize(int argc, VALUE *argv, VALUE obj)
 
     if (!ptr) rb_raise(rb_eArgError, "unallocated product");
 
-    ptr->enums = rb_obj_freeze(enums);
+    ptr->enums = rb_ary_freeze(enums);
 
     return obj;
 }
@@ -3536,10 +3535,19 @@ static VALUE
 enum_product_total_size(VALUE enums)
 {
     VALUE total = INT2FIX(1);
+    VALUE sizes = rb_ary_hidden_new(RARRAY_LEN(enums));
     long i;
 
     for (i = 0; i < RARRAY_LEN(enums); i++) {
         VALUE size = enum_size(RARRAY_AREF(enums, i));
+        if (size == INT2FIX(0)) {
+            rb_ary_resize(sizes, 0);
+            return size;
+        }
+        rb_ary_push(sizes, size);
+    }
+    for (i = 0; i < RARRAY_LEN(sizes); i++) {
+        VALUE size = RARRAY_AREF(sizes, i);
 
         if (NIL_P(size) || (RB_TYPE_P(size, T_FLOAT) && isinf(NUM2DBL(size)))) {
             return size;
@@ -4562,7 +4570,7 @@ InitVM_Enumerator(void)
     rb_hash_aset(lazy_use_super_method, sym("uniq"), sym("_enumerable_uniq"));
     rb_hash_aset(lazy_use_super_method, sym("with_index"), sym("_enumerable_with_index"));
     rb_obj_freeze(lazy_use_super_method);
-    rb_gc_register_mark_object(lazy_use_super_method);
+    rb_vm_register_global_object(lazy_use_super_method);
 
 #if 0 /* for RDoc */
     rb_define_method(rb_cLazy, "to_a", lazy_to_a, 0);

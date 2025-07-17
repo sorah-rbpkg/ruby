@@ -70,7 +70,7 @@ describe "The super keyword" do
     SuperSpecs::S4::B.new.foo([],"test").should == ["B#foo(a,test)", "A#foo"]
   end
 
-  it "raises an error error when super method does not exist" do
+  it "raises an error when super method does not exist" do
     sup = Class.new
     sub_normal = Class.new(sup) do
       def foo
@@ -335,6 +335,13 @@ describe "The super keyword" do
 
   it "without explicit arguments that are '_'" do
     SuperSpecs::ZSuperWithUnderscores::B.new.m(1, 2).should == [1, 2]
+    SuperSpecs::ZSuperWithUnderscores::B.new.m3(1, 2, 3).should == [1, 2, 3]
+    SuperSpecs::ZSuperWithUnderscores::B.new.m4(1, 2, 3, 4).should == [1, 2, 3, 4]
+    SuperSpecs::ZSuperWithUnderscores::B.new.m_default(1).should == [1]
+    SuperSpecs::ZSuperWithUnderscores::B.new.m_default.should == [0]
+    SuperSpecs::ZSuperWithUnderscores::B.new.m_pre_default_rest_post(1, 2, 3, 4, 5, 6, 7).should == [1, 2, 3, 4, 5, 6, 7]
+    SuperSpecs::ZSuperWithUnderscores::B.new.m_rest(1, 2).should == [1, 2]
+    SuperSpecs::ZSuperWithUnderscores::B.new.m_kwrest(a: 1).should == {a: 1}
   end
 
   it "without explicit arguments that are '_' including any modifications" do

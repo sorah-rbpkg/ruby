@@ -1,2 +1,2 @@
 #!ruby
-load File.realpath("../gems/racc-1.7.3/bin/racc", __dir__)
+load File.realpath("../gems/racc-1.8.1/bin/racc", __dir__)

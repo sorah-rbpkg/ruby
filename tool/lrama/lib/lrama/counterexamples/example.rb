@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Lrama
   class Counterexamples
     class Example
@@ -36,11 +38,12 @@ module Lrama
       private
 
       def _derivations(paths)
-        derivation = nil
+        derivation = nil #: Derivation
         current = :production
-        lookahead_sym = paths.last.to.item.end_of_rule? ? @conflict_symbol : nil
+        last_path = paths.last #: Path
+        lookahead_sym = last_path.to.item.end_of_rule? ? @conflict_symbol : nil
 
-        paths.reverse.each do |path|
+        paths.reverse_each do |path|
           item = path.to.item
 
           case current
@@ -55,12 +58,14 @@ module Lrama
             when ProductionPath
               derivation = Derivation.new(item, derivation)
               current = :production
+            else
+              raise "Unexpected. #{path}"
             end
 
             if lookahead_sym && item.next_next_sym && item.next_next_sym.first_set.include?(lookahead_sym)
               state_item = @counterexamples.transitions[[path.to, item.next_sym]]
               derivation2 = find_derivation_for_symbol(state_item, lookahead_sym)
-              derivation.right = derivation2
+              derivation.right = derivation2 # steep:ignore
               lookahead_sym = nil
             end
 
@@ -87,7 +92,7 @@ module Lrama
       end
 
       def find_derivation_for_symbol(state_item, sym)
-        queue = []
+        queue = [] #: Array[Array[StateItem]]
         queue << [state_item]
 
         while (sis = queue.shift)
@@ -97,7 +102,7 @@ module Lrama
           if next_sym == sym
             derivation = nil
 
-            sis.reverse.each do |si|
+            sis.reverse_each do |si|
               derivation = Derivation.new(si.item, derivation)
             end
 

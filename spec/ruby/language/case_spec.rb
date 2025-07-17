@@ -399,6 +399,52 @@ describe "The 'case'-construct" do
       :called
     end.should == :called
   end
+
+  it "supports declaring variables in the case target expression" do
+    def test(v)
+      case new_variable_in_expression = v
+      when true
+        # This extra block is a test that `new_variable_in_expression` is declared outside of it and not inside
+        self.then { new_variable_in_expression }
+      else
+        # Same
+        self.then { new_variable_in_expression.casecmp?("foo") }
+      end
+    end
+
+    self.test("bar").should == false
+    self.test(true).should == true
+  end
+
+  ruby_version_is ""..."3.4" do
+    it "warns if there are identical when clauses" do
+      -> {
+        eval <<~RUBY
+          case 1
+          when 2
+            :foo
+          when 2
+            :bar
+          end
+        RUBY
+      }.should complain(/warning: (duplicated .when' clause with line \d+ is ignored|'when' clause on line \d+ duplicates 'when' clause on line \d+ and is ignored)/, verbose: true)
+    end
+  end
+
+  ruby_version_is "3.4" do
+    it "warns if there are identical when clauses" do
+      -> {
+        eval <<~RUBY
+          case 1
+          when 2
+            :foo
+          when 2
+            :bar
+          end
+        RUBY
+      }.should complain(/warning: 'when' clause on line \d+ duplicates 'when' clause on line \d+ and is ignored/, verbose: true)
+    end
+  end
 end
 
 describe "The 'case'-construct with no target expression" do

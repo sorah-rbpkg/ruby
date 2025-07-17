@@ -95,7 +95,7 @@ involving new files `doc/*.rdoc`:
 
     Example:
 
-    ```
+    ```c
     /*
      *  call-seq:
      *    each_byte {|byte| ... } -> self
@@ -170,34 +170,98 @@ Code that is a simple string should include the quote marks.
 
 ### Auto-Linking
 
-In general, \RDoc's auto-linking should not be suppressed.
-For example, we should write `Array`, not `\Array`.
-
-We might consider whether to suppress when:
-
-- The word in question does not refer to a Ruby entity
-  (e.g., some uses of _Class_ or _English_).
-- The reference is to the current class document
-  (e.g., _Array_ in the documentation for class `Array`).
-- The same reference is repeated many times
-  (e.g., _RDoc_ on this page).
-- The reference is to a class or module that users
-  usually don't deal with, including these:
-
-    - \Class.
-    - \Method.
-    - \Module.
-
 Most often, the name of a class, module, or method
-will be autolinked:
+is auto-linked:
 
-- Array.
+```rdoc
+- Float.
 - Enumerable.
 - File.new
 - File#read.
+```
 
-If not, or if you suppress autolinking, consider forcing
-[monofont](rdoc-ref:RDoc::MarkupReference@Monofont).
+renders as:
+
+> - Float.
+> - Enumerable.
+> - File.new
+> - File#read.
+
+In general, \RDoc's auto-linking should not be suppressed.
+For example, we should write just plain _Float_ (which is auto-linked):
+
+```rdoc
+Returns a Float.
+```
+
+which renders as:
+
+> Returns a Float.
+
+However, _do_ suppress auto-linking when the word in question
+does not refer to a Ruby entity (e.g., some uses of _Class_ or _English_):
+
+```rdoc
+\Class variables can be tricky.
+```
+
+renders as:
+
+> Class variables can be tricky.
+
+Also, _do_ suppress auto-linking when the word in question
+refers to the current document
+(e.g., _Float_ in the documentation for class Float).
+
+In this case you may consider forcing the name to
+[monofont](rdoc-ref:RDoc::MarkupReference@Monofont),
+which suppresses auto-linking, and also emphasizes that the word is a class name:
+
+```rdoc
+A +Float+ object represents ....
+```
+
+renders as:
+
+> A `Float` object represents ....
+
+For a _very_ few, _very_ often-discussed classes,
+you might consider avoiding the capitalized class name altogether.
+For example, for some mentions of arrays,
+you might write simply the lowercase _array_.
+
+Instead of:
+
+```rdoc
+For an empty Array, ....
+```
+
+which renders as:
+
+> For an empty Array, ....
+
+you might write:
+
+```rdoc
+For an empty array, ....
+```
+
+which renders as:
+
+> For an empty array, ....
+
+This more casual usage avoids both auto-linking and distracting font changes,
+and is unlikely to cause confusion.
+
+This principle may be usefully applied, in particular, for:
+
+- An array.
+- An integer.
+- A hash.
+- A string.
+
+However, it should be applied _only_ when referring to an _instance_ of the class,
+and _never_ when referring to the class itself.
 
 ### Explicit Links
 
@@ -319,6 +383,7 @@ The general structure of the method documentation should be:
 
 - Calling sequence (for methods written in C).
 - Synopsis (short description).
+- In-brief examples (optional)
 - Details and examples.
 - Argument description (if necessary).
 - Corner cases and exceptions.
@@ -334,13 +399,13 @@ the method accepts, so those need to be documented using \RDoc directive
 
 For a singleton method, use the form:
 
-```
+```rdoc
 class_name.method_name(method_args) {|block_args| ... } -> return_type
 ```
 
 Example:
 
-```
+```rdoc
 *  call-seq:
 *    Hash.new(default_value = nil) -> new_hash
 *    Hash.new {|hash, key| ... } -> new_hash
@@ -349,21 +414,30 @@ Example:
 For an instance method, use the form
 (omitting any prefix, just as RDoc does for a Ruby-coded method):
 
-```
+```rdoc
 method_name(method_args) {|block_args| ... } -> return_type
 ```
+
 For example, in Array, use:
 
-```
+```rdoc
 *  call-seq:
 *    count -> integer
 *    count(obj) -> integer
 *    count {|element| ... } -> integer
 ```
 
-```
-* call-seq:
+```rdoc
+*  call-seq:
 *    <=> other -> -1, 0, 1, or nil
+```
+
+For a binary-operator style method (e.g., Array#&),
+cite `self` in the call-seq (not, e.g., `array` or `receiver`):
+
+```rdoc
+*  call-seq:
+*    self & other_array -> new_array
 ```
 
 Arguments:
@@ -377,15 +451,17 @@ Arguments:
       or an explicit argument, use a `call-seq` with optional arguments.
       For example, use:
 
-        ```
-        respond_to?(symbol, include_all = false) -> true or false
+        ```rdoc
+        *  call-seq:
+        *    respond_to?(symbol, include_all = false) -> true or false
         ```
 
     - If the behavior is different with an omitted or an explicit argument,
       use a `call-seq` with separate lines.
       For example, in Enumerable, use:
 
-        ```
+        ```rdoc
+        *  call-seq:
         *    max    -> element
         *    max(n) -> array
         ```
@@ -395,6 +471,14 @@ Block:
 - If the method does not accept a block, omit the block.
 - If the method accepts a block, the `call-seq` should have `{|args| ... }`,
   not `{|args| block }` or `{|args| code }`.
+- If the method accepts a block, but returns an Enumerator when the block is omitted,
+  the `call-seq` should show both forms:
+
+    ```rdoc
+    *  call-seq:
+    *    array.select {|element| ... } -> new_array
+    *    array.select -> new_enumerator
+    ```
 
 Return types:
 
@@ -423,13 +507,21 @@ an entire paragraph.
 
 For `Array#count`, the synopsis is:
 
-```
-Returns a count of specified elements.
-```
+> Returns a count of specified elements.
 
 This is great as it is short and descriptive.  Avoid documenting
 too much in the synopsis, stick to the most important information
 for the benefit of the reader.
+
+### In-Brief Examples
+
+For a method whose documentation is lengthy,
+consider adding an "in-brief" passage,
+showing examples that summarize the method's uses.
+
+The passage may answer some users' questions
+(without their having to read long documentation);
+see Array#[] and Array#[]=.
 
 ### Details and Examples
 
@@ -452,6 +544,15 @@ Only add an example if it provides the user additional information,
 do not add an example if it provides the same information given
 in the synopsis or details.  The purpose of examples is not to prove
 what the details are stating.
+
+Many methods that can take an optional block call the block if it is given,
+but return a new Enumerator if the block is not given;
+in that case, do not provide an example,
+but do state the fact (with the auto-linking uppercase Enumerator):
+
+```rdoc
+*  With no block given, returns a new Enumerator.
+```
 
 ### Argument Description (if necessary)
 

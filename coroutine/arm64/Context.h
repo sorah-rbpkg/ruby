@@ -15,9 +15,21 @@
 #include <stdint.h>
 #include <string.h>
 
+#if defined __GNUC__
 #define COROUTINE __attribute__((noreturn)) void
+#define COROUTINE_DECL COROUTINE
+#elif defined _MSC_VER
+#define COROUTINE __declspec(noreturn) void
+#define COROUTINE_DECL void
+#endif
 
-enum {COROUTINE_REGISTERS = 0xa0 / 8};
+#if defined(_WIN32)
+#define TEB_OFFSET 0x20
+#else
+#define TEB_OFFSET 0x00
+#endif
+
+enum {COROUTINE_REGISTERS = (0xa0 + TEB_OFFSET) / 8};
 
 #if defined(__SANITIZE_ADDRESS__)
     #define COROUTINE_SANITIZE_ADDRESS
@@ -44,28 +56,25 @@ struct coroutine_context
 #endif
 };
 
-typedef COROUTINE(* coroutine_start)(struct coroutine_context *from, struct coroutine_context *self);
+typedef COROUTINE_DECL(* coroutine_start)(struct coroutine_context *from, struct coroutine_context *self);
 
 static inline void coroutine_initialize_main(struct coroutine_context * context) {
     context->stack_pointer = NULL;
 }
 
-#if defined(__ARM_FEATURE_PAC_DEFAULT) && __ARM_FEATURE_PAC_DEFAULT != 0
-// Sign the given instruction address with the given modifier and key A
 static inline void *ptrauth_sign_instruction_addr(void *addr, void *modifier) {
+#if defined(__ARM_FEATURE_PAC_DEFAULT) && __ARM_FEATURE_PAC_DEFAULT != 0
+    // Sign the given instruction address with the given modifier and key A
     register void *r17 __asm("r17") = addr;
     register void *r16 __asm("r16") = modifier;
     // Use HINT mnemonic instead of PACIA1716 for compatibility with older assemblers.
-    asm ("hint #8;" : "+r"(r17) : "r"(r16));
+    __asm ("hint #8;" : "+r"(r17) : "r"(r16));
     addr = r17;
-    return addr;
-}
 #else
-// No-op if PAC is not enabled
-static inline void *ptrauth_sign_instruction_addr(void *addr, void *modifier) {
+    // No-op if PAC is not enabled
+#endif
     return addr;
 }
-#endif
 
 static inline void coroutine_initialize(
     struct coroutine_context *context,
@@ -89,7 +98,15 @@ static inline void coroutine_initialize(
     context->stack_pointer -= COROUTINE_REGISTERS;
     memset(context->stack_pointer, 0, sizeof(void*) * COROUTINE_REGISTERS);
 
-    context->stack_pointer[0x98 / 8] = ptrauth_sign_instruction_addr((void*)start, (void*)top);
+    void *addr = (void*)(uintptr_t)start;
+    context->stack_pointer[(0x98 + TEB_OFFSET) / 8] = ptrauth_sign_instruction_addr(addr, (void*)top);
+#if defined(_WIN32)
+    // save top address of stack as base in TEB
+    context->stack_pointer[0x00 / 8] = (char*)stack + size;
+    // save botton address of stack as limit and deallocation stack in TEB
+    context->stack_pointer[0x08 / 8] = stack;
+    context->stack_pointer[0x10 / 8] = stack;
+#endif
 }
 
 struct coroutine_context * coroutine_transfer(struct coroutine_context * current, struct coroutine_context * target);

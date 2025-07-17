@@ -52,7 +52,8 @@ struct_ivar_get(VALUE c, ID id)
         RUBY_ASSERT(RB_TYPE_P(c, T_CLASS));
         ivar = rb_attr_get(c, id);
         if (!NIL_P(ivar)) {
-            return rb_ivar_set(orig, id, ivar);
+            if (!OBJ_FROZEN(orig)) rb_ivar_set(orig, id, ivar);
+            return ivar;
         }
     }
 }
@@ -136,7 +137,7 @@ struct_set_members(VALUE klass, VALUE /* frozen hidden array */ members)
                 j = struct_member_pos_probe(j, mask);
             }
         }
-        OBJ_FREEZE_RAW(back);
+        OBJ_FREEZE(back);
     }
     rb_ivar_set(klass, id_members, members);
     rb_ivar_set(klass, id_back_members, back);
@@ -236,7 +237,7 @@ rb_struct_getmember(VALUE obj, ID id)
     if (i != -1) {
         return RSTRUCT_GET(obj, i);
     }
-    rb_name_err_raise("`%1$s' is not a struct member", obj, ID2SYM(id));
+    rb_name_err_raise("'%1$s' is not a struct member", obj, ID2SYM(id));
 
     UNREACHABLE_RETURN(Qnil);
 }
@@ -422,7 +423,7 @@ struct_make_members_list(va_list ar)
     }
     ary = rb_hash_keys(list);
     RBASIC_CLEAR_CLASS(ary);
-    OBJ_FREEZE_RAW(ary);
+    OBJ_FREEZE(ary);
     return ary;
 }
 
@@ -496,7 +497,7 @@ rb_struct_define(const char *name, ...)
     }
     else {
         st = new_struct(rb_str_new2(name), rb_cStruct);
-        rb_vm_add_root_module(st);
+        rb_vm_register_global_object(st);
     }
     return setup_struct(st, ary);
 }
@@ -682,7 +683,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     }
     rest = rb_hash_keys(rest);
     RBASIC_CLEAR_CLASS(rest);
-    OBJ_FREEZE_RAW(rest);
+    OBJ_FREEZE(rest);
     if (NIL_P(name)) {
         st = anonymous_struct(klass);
     }
@@ -794,7 +795,7 @@ VALUE
 rb_struct_initialize(VALUE self, VALUE values)
 {
     rb_struct_initialize_m(RARRAY_LENINT(values), RARRAY_CONST_PTR(values), self);
-    if (rb_obj_is_kind_of(self, rb_cData)) OBJ_FREEZE_RAW(self);
+    if (rb_obj_is_kind_of(self, rb_cData)) OBJ_FREEZE(self);
     RB_GC_GUARD(values);
     return Qnil;
 }
@@ -1640,7 +1641,7 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
  *
  *
  *  Note that member-less \Data is acceptable and might be a useful technique
- *  for defining several homogenous data classes, like
+ *  for defining several homogeneous data classes, like
  *
  *     class HTTPFetcher
  *       Response = Data.define(:body)
@@ -1685,7 +1686,7 @@ rb_data_s_def(int argc, VALUE *argv, VALUE klass)
     }
     rest = rb_hash_keys(rest);
     RBASIC_CLEAR_CLASS(rest);
-    OBJ_FREEZE_RAW(rest);
+    OBJ_FREEZE(rest);
     data_class = anonymous_struct(klass);
     setup_data(data_class, rest);
     if (rb_block_given_p()) {
@@ -1705,7 +1706,7 @@ rb_data_define(VALUE super, ...)
     va_end(ar);
     if (!super) super = rb_cData;
     VALUE klass = setup_data(anonymous_struct(super), ary);
-    rb_vm_add_root_module(klass);
+    rb_vm_register_global_object(klass);
     return klass;
 }
 
@@ -1802,7 +1803,7 @@ rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
     rb_hash_foreach(argv[0], struct_hash_set_i, (VALUE)&arg);
     // Freeze early before potentially raising, so that we don't leave an
     // unfrozen copy on the heap, which could get exposed via ObjectSpace.
-    OBJ_FREEZE_RAW(self);
+    OBJ_FREEZE(self);
     if (arg.unknown_keywords != Qnil) {
         rb_exc_raise(rb_keyword_error_new("unknown", arg.unknown_keywords));
     }
@@ -1814,7 +1815,7 @@ static VALUE
 rb_data_init_copy(VALUE copy, VALUE s)
 {
     copy = rb_struct_init_copy(copy, s);
-    RB_OBJ_FREEZE_RAW(copy);
+    RB_OBJ_FREEZE(copy);
     return copy;
 }
 
@@ -2131,7 +2132,7 @@ rb_data_inspect(VALUE s)
  *  === Methods for Querying
  *
  *  - #hash: Returns the integer hash code.
- *  - #length, #size: Returns the number of members.
+ *  - #size (aliased as #length): Returns the number of members.
  *
  *  === Methods for Comparing
  *
@@ -2143,13 +2144,13 @@ rb_data_inspect(VALUE s)
  *  === Methods for Fetching
  *
  *  - #[]: Returns the value associated with a given member name.
- *  - #to_a, #values, #deconstruct: Returns the member values in +self+ as an array.
+ *  - #to_a (aliased as #values, #deconstruct): Returns the member values in +self+ as an array.
  *  - #deconstruct_keys: Returns a hash of the name/value pairs
  *    for given member names.
  *  - #dig: Returns the object in nested objects that is specified
  *    by a given member name and additional arguments.
  *  - #members: Returns an array of the member names.
- *  - #select, #filter: Returns an array of member values from +self+,
+ *  - #select (aliased as #filter): Returns an array of member values from +self+,
  *    as selected by the given block.
  *  - #values_at: Returns an array containing values for given member names.
  *
@@ -2164,7 +2165,7 @@ rb_data_inspect(VALUE s)
  *
  *  === Methods for Converting
  *
- *  - #inspect, #to_s: Returns a string representation of +self+.
+ *  - #inspect (aliased as #to_s): Returns a string representation of +self+.
  *  - #to_h: Returns a hash of the member name/value pairs in +self+.
  *
  */

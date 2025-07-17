@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Lrama
   module Bitmap
     def self.from_array(ary)
@@ -11,7 +13,7 @@ module Lrama
     end
 
     def self.to_array(int)
-      a = []
+      a = [] #: Array[Integer]
       i = 0
 
       while int > 0 do

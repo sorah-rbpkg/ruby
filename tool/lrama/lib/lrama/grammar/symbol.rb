@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Symbol is both of nterm and term
 # `number` is both for nterm and term
 # `token_id` is tokentype for term, internal sequence number for nterm
@@ -7,11 +9,12 @@
 module Lrama
   class Grammar
     class Symbol
-      attr_accessor :id, :alias_name, :tag, :number, :token_id, :nullable, :precedence, :printer, :error_token, :first_set, :first_set_bitmap
+      attr_accessor :id, :alias_name, :tag, :number, :token_id, :nullable, :precedence,
+                    :printer, :destructor, :error_token, :first_set, :first_set_bitmap
       attr_reader :term
       attr_writer :eof_symbol, :error_symbol, :undef_symbol, :accept_symbol
 
-      def initialize(id:, alias_name: nil, number: nil, tag: nil, term:, token_id: nil, nullable: nil, precedence: nil, printer: nil)
+      def initialize(id:, term:, alias_name: nil, number: nil, tag: nil, token_id: nil, nullable: nil, precedence: nil, printer: nil, destructor: nil)
         @id = id
         @alias_name = alias_name
         @number = number
@@ -21,6 +24,7 @@ module Lrama
         @nullable = nullable
         @precedence = precedence
         @printer = printer
+        @destructor = destructor
       end
 
       def term?

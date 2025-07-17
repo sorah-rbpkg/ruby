@@ -243,8 +243,8 @@ method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
     VALUE ncoverages = *(VALUE*)data, v;
 
     for (v = (VALUE)vstart; v != (VALUE)vend; v += stride) {
-        void *poisoned = asan_poisoned_object_p(v);
-        asan_unpoison_object(v, false);
+        void *poisoned = rb_asan_poisoned_object_p(v);
+        rb_asan_unpoison_object(v, false);
 
         if (RB_TYPE_P(v, T_IMEMO) && imemo_type(v) == imemo_ment) {
             const rb_method_entry_t *me = (rb_method_entry_t *) v;
@@ -287,7 +287,7 @@ method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
         }
 
         if (poisoned) {
-            asan_poison_object(v);
+            rb_asan_poison_object(v);
         }
     }
     return 0;
@@ -353,7 +353,8 @@ rb_coverage_peek_result(VALUE klass)
         rb_raise(rb_eRuntimeError, "coverage measurement is not enabled");
     }
     OBJ_WB_UNPROTECT(coverages);
-    st_foreach(RHASH_TBL_RAW(coverages), coverage_peek_result_i, ncoverages);
+
+    rb_hash_foreach(coverages, coverage_peek_result_i, ncoverages);
 
     if (current_mode & COVERAGE_TARGET_METHODS) {
         rb_objspace_each_objects(method_coverage_i, &ncoverages);

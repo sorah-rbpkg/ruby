@@ -147,10 +147,18 @@ NODE *
 ruby_debug_print_node(int level, int debug_level, const char *header, const NODE *node)
 {
     if (level < debug_level) {
-        fprintf(stderr, "DBG> %s: %s (%u)\n", header,
-                ruby_node_name(nd_type(node)), nd_line(node));
+        fprintf(stderr, "DBG> %s: %s (id: %d, line: %d, location: (%d,%d)-(%d,%d))\n",
+                header, ruby_node_name(nd_type(node)), nd_node_id(node), nd_line(node),
+                nd_first_lineno(node), nd_first_column(node),
+                nd_last_lineno(node), nd_last_column(node));
     }
     return (NODE *)node;
+}
+
+void
+ruby_debug_print_n(const NODE *node)
+{
+    ruby_debug_print_node(0, 1, "", node);
 }
 
 void
@@ -177,9 +185,9 @@ ruby_env_debug_option(const char *str, int len, void *arg)
     int ov;
     size_t retlen;
     unsigned long n;
+#define NAME_MATCH(name) (len == sizeof(name) - 1 && strncmp(str, (name), len) == 0)
 #define SET_WHEN(name, var, val) do {	    \
-        if (len == sizeof(name) - 1 &&	    \
-            strncmp(str, (name), len) == 0) { \
+        if (NAME_MATCH(name)) { \
             (var) = (val);		    \
             return 1;			    \
         }				    \
@@ -207,31 +215,31 @@ ruby_env_debug_option(const char *str, int len, void *arg)
             --len; \
         } \
         if (len > 0) { \
-            fprintf(stderr, "ignored "name" option: `%.*s'\n", len, str); \
+            fprintf(stderr, "ignored "name" option: '%.*s'\n", len, str); \
         } \
     } while (0)
 #define SET_WHEN_UINT(name, vals, num, req) \
-    if (NAME_MATCH_VALUE(name)) SET_UINT_LIST(name, vals, num);
+    if (NAME_MATCH_VALUE(name)) { \
+        if (!len) req; \
+        else SET_UINT_LIST(name, vals, num); \
+        return 1; \
+    }
 
-    SET_WHEN("gc_stress", *ruby_initial_gc_stress_ptr, Qtrue);
-    SET_WHEN("core", ruby_enable_coredump, 1);
-    SET_WHEN("ci", ruby_on_ci, 1);
-    if (NAME_MATCH_VALUE("rgengc")) {
-        if (!len) ruby_rgengc_debug = 1;
-        else SET_UINT_LIST("rgengc", &ruby_rgengc_debug, 1);
+    if (NAME_MATCH("gc_stress")) {
+        rb_gc_initial_stress_set(Qtrue);
         return 1;
     }
+    SET_WHEN("core", ruby_enable_coredump, 1);
+    SET_WHEN("ci", ruby_on_ci, 1);
+    SET_WHEN_UINT("rgengc", &ruby_rgengc_debug, 1, ruby_rgengc_debug = 1);
 #if defined _WIN32
 # if RUBY_MSVCRT_VERSION >= 80
     SET_WHEN("rtc_error", ruby_w32_rtc_error, 1);
 # endif
 #endif
 #if defined _WIN32 || defined __CYGWIN__
-    if (NAME_MATCH_VALUE("codepage")) {
-        if (!len) fprintf(stderr, "missing codepage argument");
-        else SET_UINT_LIST("codepage", ruby_w32_codepage, numberof(ruby_w32_codepage));
-        return 1;
-    }
+    SET_WHEN_UINT("codepage", ruby_w32_codepage, numberof(ruby_w32_codepage),
+                  fprintf(stderr, "missing codepage argument"));
 #endif
     return 0;
 }
@@ -675,7 +683,7 @@ debug_log_dump(FILE *out, unsigned int n)
             int index = current_index - size + i;
             if (index < 0) index += MAX_DEBUG_LOG;
             VM_ASSERT(index <= MAX_DEBUG_LOG);
-            const char *mesg = RUBY_DEBUG_LOG_MEM_ENTRY(index);;
+            const char *mesg = RUBY_DEBUG_LOG_MEM_ENTRY(index);
             fprintf(out, "%4u: %s\n", debug_log.cnt - size + i, mesg);
         }
     }

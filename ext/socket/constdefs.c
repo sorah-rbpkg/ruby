@@ -1846,6 +1846,12 @@ init_constants(void)
     /* Receive the napi ID attached to a RX queue (Linux 4.12) */
     rb_define_const(rb_mSockConst, "SO_INCOMING_NAPI_ID", INTEGER2NUM(SO_INCOMING_NAPI_ID));
 #endif
+#if defined(SO_CONNECT_TIME)
+    /* Returns the number of seconds a socket has been connected. This option is only valid for connection-oriented protocols (Windows) */
+    rb_define_const(rb_cSocket, "SO_CONNECT_TIME", INTEGER2NUM(SO_CONNECT_TIME));
+    /* Returns the number of seconds a socket has been connected. This option is only valid for connection-oriented protocols (Windows) */
+    rb_define_const(rb_mSockConst, "SO_CONNECT_TIME", INTEGER2NUM(SO_CONNECT_TIME));
+#endif
 #if defined(SOPRI_INTERACTIVE)
     /* Interactive socket priority */
     rb_define_const(rb_cSocket, "SOPRI_INTERACTIVE", INTEGER2NUM(SOPRI_INTERACTIVE));
@@ -2271,6 +2277,14 @@ init_constants(void)
 #endif
 #endif
 #if defined(INET6)
+#if defined(IPV6_MTU_DISCOVER)
+    /* Path MTU discovery */
+    rb_define_const(rb_cSocket, "IPV6_MTU_DISCOVER", INTEGER2NUM(IPV6_MTU_DISCOVER));
+    /* Path MTU discovery */
+    rb_define_const(rb_mSockConst, "IPV6_MTU_DISCOVER", INTEGER2NUM(IPV6_MTU_DISCOVER));
+#endif
+#endif
+#if defined(INET6)
 #if defined(IPV6_MULTICAST_HOPS)
     /* IP6 multicast hops */
     rb_define_const(rb_cSocket, "IPV6_MULTICAST_HOPS", INTEGER2NUM(IPV6_MULTICAST_HOPS));
@@ -2380,6 +2394,14 @@ init_constants(void)
     rb_define_const(rb_cSocket, "IPV6_RECVDSTOPTS", INTEGER2NUM(IPV6_RECVDSTOPTS));
     /* Receive all IP6 options for response */
     rb_define_const(rb_mSockConst, "IPV6_RECVDSTOPTS", INTEGER2NUM(IPV6_RECVDSTOPTS));
+#endif
+#endif
+#if defined(INET6)
+#if defined(IPV6_RECVERR)
+    /* Enable extended reliable error message passing */
+    rb_define_const(rb_cSocket, "IPV6_RECVERR", INTEGER2NUM(IPV6_RECVERR));
+    /* Enable extended reliable error message passing */
+    rb_define_const(rb_mSockConst, "IPV6_RECVERR", INTEGER2NUM(IPV6_RECVERR));
 #endif
 #endif
 #if defined(INET6)
@@ -3840,6 +3862,9 @@ init_constants(void)
 #endif
 
     rsock_intern_so_optname_hash = st_init_numtable();
+#ifdef SO_CONNECT_TIME
+    st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_CONNECT_TIME, (st_data_t)rb_intern2("SO_CONNECT_TIME", 15));
+#endif
 #ifdef SO_INCOMING_NAPI_ID
     st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_INCOMING_NAPI_ID, (st_data_t)rb_intern2("SO_INCOMING_NAPI_ID", 19));
 #endif
@@ -4034,6 +4059,9 @@ init_constants(void)
 #endif
 #ifdef SO_DEBUG
     st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_DEBUG, (st_data_t)rb_intern2("SO_DEBUG", 8));
+#endif
+#ifdef SO_CONNECT_TIME
+    st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_CONNECT_TIME, (st_data_t)rb_intern2("CONNECT_TIME", 12));
 #endif
 #ifdef SO_INCOMING_NAPI_ID
     st_insert(rsock_intern_so_optname_hash, (st_data_t)SO_INCOMING_NAPI_ID, (st_data_t)rb_intern2("INCOMING_NAPI_ID", 16));
@@ -4531,6 +4559,9 @@ init_constants(void)
 #ifdef IPV6_RECVHOPLIMIT
     st_insert(rsock_intern_ipv6_optname_hash, (st_data_t)IPV6_RECVHOPLIMIT, (st_data_t)rb_intern2("IPV6_RECVHOPLIMIT", 17));
 #endif
+#ifdef IPV6_RECVERR
+    st_insert(rsock_intern_ipv6_optname_hash, (st_data_t)IPV6_RECVERR, (st_data_t)rb_intern2("IPV6_RECVERR", 12));
+#endif
 #ifdef IPV6_RECVDSTOPTS
     st_insert(rsock_intern_ipv6_optname_hash, (st_data_t)IPV6_RECVDSTOPTS, (st_data_t)rb_intern2("IPV6_RECVDSTOPTS", 16));
 #endif
@@ -4573,6 +4604,9 @@ init_constants(void)
 #ifdef IPV6_MULTICAST_HOPS
     st_insert(rsock_intern_ipv6_optname_hash, (st_data_t)IPV6_MULTICAST_HOPS, (st_data_t)rb_intern2("IPV6_MULTICAST_HOPS", 19));
 #endif
+#ifdef IPV6_MTU_DISCOVER
+    st_insert(rsock_intern_ipv6_optname_hash, (st_data_t)IPV6_MTU_DISCOVER, (st_data_t)rb_intern2("IPV6_MTU_DISCOVER", 17));
+#endif
 #ifdef IPV6_LEAVE_GROUP
     st_insert(rsock_intern_ipv6_optname_hash, (st_data_t)IPV6_LEAVE_GROUP, (st_data_t)rb_intern2("IPV6_LEAVE_GROUP", 16));
 #endif
@@ -4611,6 +4645,9 @@ init_constants(void)
 #endif
 #ifdef IPV6_RECVHOPLIMIT
     st_insert(rsock_intern_ipv6_optname_hash, (st_data_t)IPV6_RECVHOPLIMIT, (st_data_t)rb_intern2("RECVHOPLIMIT", 12));
+#endif
+#ifdef IPV6_RECVERR
+    st_insert(rsock_intern_ipv6_optname_hash, (st_data_t)IPV6_RECVERR, (st_data_t)rb_intern2("RECVERR", 7));
 #endif
 #ifdef IPV6_RECVDSTOPTS
     st_insert(rsock_intern_ipv6_optname_hash, (st_data_t)IPV6_RECVDSTOPTS, (st_data_t)rb_intern2("RECVDSTOPTS", 11));
@@ -4653,6 +4690,9 @@ init_constants(void)
 #endif
 #ifdef IPV6_MULTICAST_HOPS
     st_insert(rsock_intern_ipv6_optname_hash, (st_data_t)IPV6_MULTICAST_HOPS, (st_data_t)rb_intern2("MULTICAST_HOPS", 14));
+#endif
+#ifdef IPV6_MTU_DISCOVER
+    st_insert(rsock_intern_ipv6_optname_hash, (st_data_t)IPV6_MTU_DISCOVER, (st_data_t)rb_intern2("MTU_DISCOVER", 12));
 #endif
 #ifdef IPV6_LEAVE_GROUP
     st_insert(rsock_intern_ipv6_optname_hash, (st_data_t)IPV6_LEAVE_GROUP, (st_data_t)rb_intern2("LEAVE_GROUP", 11));
@@ -6306,6 +6346,9 @@ rsock_so_optname_to_int(const char *str, long len, int *valp)
 #ifdef SO_INCOMING_CPU
         if (memcmp(str, "INCOMING_CPU", 12) == 0) { *valp = SO_INCOMING_CPU; return 0; }
 #endif
+#ifdef SO_CONNECT_TIME
+        if (memcmp(str, "CONNECT_TIME", 12) == 0) { *valp = SO_CONNECT_TIME; return 0; }
+#endif
         return -1;
 
       case 13:
@@ -6368,6 +6411,9 @@ rsock_so_optname_to_int(const char *str, long len, int *valp)
 #endif
 #ifdef SO_INCOMING_CPU
         if (memcmp(str, "SO_INCOMING_CPU", 15) == 0) { *valp = SO_INCOMING_CPU; return 0; }
+#endif
+#ifdef SO_CONNECT_TIME
+        if (memcmp(str, "SO_CONNECT_TIME", 15) == 0) { *valp = SO_CONNECT_TIME; return 0; }
 #endif
 #ifdef SO_MAX_PACING_RATE
         if (memcmp(str, "MAX_PACING_RATE", 15) == 0) { *valp = SO_MAX_PACING_RATE; return 0; }
@@ -6818,6 +6864,9 @@ rsock_ipv6_optname_to_int(const char *str, long len, int *valp)
 #ifdef IPV6_PKTINFO
         if (memcmp(str, "PKTINFO", 7) == 0) { *valp = IPV6_PKTINFO; return 0; }
 #endif
+#ifdef IPV6_RECVERR
+        if (memcmp(str, "RECVERR", 7) == 0) { *valp = IPV6_RECVERR; return 0; }
+#endif
         return -1;
 
       case 8:
@@ -6893,6 +6942,12 @@ rsock_ipv6_optname_to_int(const char *str, long len, int *valp)
 #ifdef IPV6_PKTINFO
         if (memcmp(str, "IPV6_PKTINFO", 12) == 0) { *valp = IPV6_PKTINFO; return 0; }
 #endif
+#ifdef IPV6_RECVERR
+        if (memcmp(str, "IPV6_RECVERR", 12) == 0) { *valp = IPV6_RECVERR; return 0; }
+#endif
+#ifdef IPV6_MTU_DISCOVER
+        if (memcmp(str, "MTU_DISCOVER", 12) == 0) { *valp = IPV6_MTU_DISCOVER; return 0; }
+#endif
 #ifdef IPV6_MULTICAST_IF
         if (memcmp(str, "MULTICAST_IF", 12) == 0) { *valp = IPV6_MULTICAST_IF; return 0; }
 #endif
@@ -6965,6 +7020,9 @@ rsock_ipv6_optname_to_int(const char *str, long len, int *valp)
         return -1;
 
       case 17:
+#ifdef IPV6_MTU_DISCOVER
+        if (memcmp(str, "IPV6_MTU_DISCOVER", 17) == 0) { *valp = IPV6_MTU_DISCOVER; return 0; }
+#endif
 #ifdef IPV6_MULTICAST_IF
         if (memcmp(str, "IPV6_MULTICAST_IF", 17) == 0) { *valp = IPV6_MULTICAST_IF; return 0; }
 #endif

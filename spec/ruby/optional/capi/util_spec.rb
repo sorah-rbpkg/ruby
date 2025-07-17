@@ -48,7 +48,7 @@ describe "C-API Util function" do
       ScratchPad.recorded.should == [1, 2, [3, 4]]
     end
 
-    it "assigns the required and optional arguments and and empty Array when there are no arguments to splat" do
+    it "assigns the required and optional arguments and empty Array when there are no arguments to splat" do
       @o.rb_scan_args([1, 2], "11*", 3, @acc).should == 2
       ScratchPad.recorded.should == [1, 2, []]
     end
@@ -209,7 +209,7 @@ describe "C-API Util function" do
     end
   end
 
-  platform_is wordsize: 64 do
+  platform_is c_long_size: 64 do
     describe "rb_long2int" do
       it "raises a RangeError if the value is outside the range of a C int" do
         -> { @o.rb_long2int(0xffff_ffff_ffff) }.should raise_error(RangeError)

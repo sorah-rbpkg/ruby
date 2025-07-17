@@ -45,13 +45,13 @@ VALUE rb_vm_push_frame_fname(struct rb_execution_context_struct *ec, VALUE fname
 /* vm.c */
 VALUE rb_obj_is_thread(VALUE obj);
 void rb_vm_mark(void *ptr);
+void rb_vm_register_global_object(VALUE obj);
 void rb_vm_each_stack_value(void *ptr, void (*cb)(VALUE, void*), void *ctx);
 PUREFUNC(VALUE rb_vm_top_self(void));
 const void **rb_vm_get_insns_address_table(void);
 VALUE rb_source_location(int *pline);
 const char *rb_source_location_cstr(int *pline);
 void rb_vm_pop_cfunc_frame(void);
-int rb_vm_add_root_module(VALUE module);
 void rb_vm_check_redefinition_by_prepend(VALUE klass);
 int rb_vm_check_optimizable_mid(VALUE mid);
 VALUE rb_yield_refine_block(VALUE refinement, VALUE refinements);
@@ -64,8 +64,6 @@ void rb_lastline_set_up(VALUE val, unsigned int up);
 VALUE rb_current_realfilepath(void);
 VALUE rb_check_block_call(VALUE, ID, int, const VALUE *, rb_block_call_func_t, VALUE);
 typedef void rb_check_funcall_hook(int, VALUE, ID, int, const VALUE *, VALUE);
-VALUE rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
-                                 rb_check_funcall_hook *hook, VALUE arg);
 VALUE rb_check_funcall_with_hook_kw(VALUE recv, ID mid, int argc, const VALUE *argv,
                                  rb_check_funcall_hook *hook, VALUE arg, int kw_splat);
 const char *rb_type_str(enum ruby_value_type type);
@@ -77,6 +75,9 @@ VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
                      rb_block_call_func_t bl_proc, int min_argc, int max_argc,
                      VALUE data2);
 void rb_check_stack_overflow(void);
+#define RB_BLOCK_NO_USE_PACKED_ARGS 2
+VALUE rb_block_call2(VALUE obj, ID mid, int argc, const VALUE *argv, rb_block_call_func_t bl_proc, VALUE data2, long flags);
+struct vm_ifunc *rb_current_ifunc(void);
 
 #if USE_YJIT
 /* vm_exec.c */
@@ -96,7 +97,6 @@ struct rb_iseq_struct;
 const struct rb_callcache *rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass);
 
 /* vm_method.c */
-struct rb_execution_context_struct;
 int rb_ec_obj_respond_to(struct rb_execution_context_struct *ec, VALUE obj, ID id, int priv);
 
 void rb_clear_constant_cache(void);
@@ -114,6 +114,7 @@ void rb_backtrace_print_as_bugreport(FILE*);
 int rb_backtrace_p(VALUE obj);
 VALUE rb_backtrace_to_str_ary(VALUE obj);
 VALUE rb_backtrace_to_location_ary(VALUE obj);
+VALUE rb_location_ary_to_backtrace(VALUE ary);
 void rb_backtrace_each(VALUE (*iter)(VALUE recv, VALUE str), VALUE output);
 int rb_frame_info_p(VALUE obj);
 int rb_get_node_id_from_frame_info(VALUE obj);

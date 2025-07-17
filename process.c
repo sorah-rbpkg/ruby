@@ -901,7 +901,7 @@ pst_bitand(VALUE st1, VALUE st2)
         rb_raise(rb_eArgError, "negative mask value: %d", mask);
     }
 #define WARN_SUGGEST(suggest) \
-    rb_warn_deprecated_to_remove_at(3.4, "Process::Status#&", suggest)
+    rb_warn_deprecated_to_remove_at(3.5, "Process::Status#&", suggest)
 
     switch (mask) {
       case 0x80:
@@ -956,7 +956,7 @@ pst_rshift(VALUE st1, VALUE st2)
         rb_raise(rb_eArgError, "negative shift value: %d", places);
     }
 #define WARN_SUGGEST(suggest) \
-    rb_warn_deprecated_to_remove_at(3.4, "Process::Status#>>", suggest)
+    rb_warn_deprecated_to_remove_at(3.5, "Process::Status#>>", suggest)
 
     switch (places) {
       case 7:
@@ -1200,8 +1200,10 @@ rb_process_status_wait(rb_pid_t pid, int flags)
     // We only enter the scheduler if we are "blocking":
     if (!(flags & WNOHANG)) {
         VALUE scheduler = rb_fiber_scheduler_current();
-        VALUE result = rb_fiber_scheduler_process_wait(scheduler, pid, flags);
-        if (!UNDEF_P(result)) return result;
+        if (scheduler != Qnil) {
+            VALUE result = rb_fiber_scheduler_process_wait(scheduler, pid, flags);
+            if (!UNDEF_P(result)) return result;
+        }
     }
 
     struct waitpid_state waitpid_state;
@@ -1452,7 +1454,7 @@ proc_wait(int argc, VALUE *argv)
  *  or as the logical OR of both:
  *
  *  - Process::WNOHANG: Does not block if no child process is available.
- *  - Process:WUNTRACED: May return a stopped child process, even if not yet reported.
+ *  - Process::WUNTRACED: May return a stopped child process, even if not yet reported.
  *
  *  Not all flags are available on all platforms.
  *
@@ -1479,7 +1481,7 @@ proc_m_wait(int c, VALUE *v, VALUE _)
  *    Process.wait2(pid)
  *    # => [309581, #<Process::Status: pid 309581 exit 13>]
  *
- *  Process.waitpid2 is an alias for Process.waitpid.
+ *  Process.waitpid2 is an alias for Process.wait2.
  */
 
 static VALUE
@@ -1676,12 +1678,15 @@ after_exec(void)
 static void
 before_fork_ruby(void)
 {
+    rb_gc_before_fork();
     before_exec();
 }
 
 static void
 after_fork_ruby(rb_pid_t pid)
 {
+    rb_gc_after_fork(pid);
+
     if (pid == 0) {
         // child
         clear_pid_cache();
@@ -2481,12 +2486,12 @@ rb_check_argv(int argc, VALUE *argv)
         }
         prog = RARRAY_AREF(tmp, 0);
         argv[0] = RARRAY_AREF(tmp, 1);
-        SafeStringValue(prog);
+        StringValue(prog);
         StringValueCStr(prog);
         prog = rb_str_new_frozen(prog);
     }
     for (i = 0; i < argc; i++) {
-        SafeStringValue(argv[i]);
+        StringValue(argv[i]);
         argv[i] = rb_str_new_frozen(argv[i]);
         StringValueCStr(argv[i]);
     }
@@ -3082,7 +3087,7 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *  or contain meta characters:
  *
  *    exec('if true; then echo "Foo"; fi') # Shell reserved word.
- *    exec('echo')                         # Built-in.
+ *    exec('exit')                         # Built-in.
  *    exec('date > date.tmp')              # Contains meta character.
  *
  *  The command line may also contain arguments and options for the command:
@@ -3113,7 +3118,9 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *
  *    Sat Aug 26 09:38:00 AM CDT 2023
  *
- *  Ruby invokes the executable directly, with no shell and no shell expansion:
+ *  Ruby invokes the executable directly.
+ *  This form does not use the shell;
+ *  see {Arguments args}[rdoc-ref:Process@Arguments+args] for caveats.
  *
  *    exec('doesnt_exist') # Raises Errno::ENOENT
  *
@@ -3138,9 +3145,13 @@ f_exec(int c, const VALUE *a, VALUE _)
     UNREACHABLE_RETURN(Qnil);
 }
 
-#define ERRMSG(str) do { if (errmsg && 0 < errmsg_buflen) strlcpy(errmsg, (str), errmsg_buflen); } while (0)
-#define ERRMSG1(str, a) do { if (errmsg && 0 < errmsg_buflen) snprintf(errmsg, errmsg_buflen, (str), (a)); } while (0)
-#define ERRMSG2(str, a, b) do { if (errmsg && 0 < errmsg_buflen) snprintf(errmsg, errmsg_buflen, (str), (a), (b)); } while (0)
+#define ERRMSG(str) \
+    ((errmsg && 0 < errmsg_buflen) ? \
+     (void)strlcpy(errmsg, (str), errmsg_buflen) : (void)0)
+
+#define ERRMSG_FMT(...) \
+    ((errmsg && 0 < errmsg_buflen) ? \
+     (void)snprintf(errmsg, errmsg_buflen, __VA_ARGS__) : (void)0)
 
 static int fd_get_cloexec(int fd, char *errmsg, size_t errmsg_buflen);
 static int fd_set_cloexec(int fd, char *errmsg, size_t errmsg_buflen);
@@ -3357,6 +3368,7 @@ run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *sargp, char *errmsg, s
             //   in #assert_close_on_exec because the FD_CLOEXEC is not dup'd by default
             if (fd_get_cloexec(pairs[i].oldfd, errmsg, errmsg_buflen)) {
                 if (fd_set_cloexec(extra_fd, errmsg, errmsg_buflen)) {
+                    close(extra_fd);
                     goto fail;
                 }
             }
@@ -4209,50 +4221,41 @@ rb_fork_async_signal_safe(int *status,
     return result;
 }
 
-static rb_pid_t
-rb_fork_ruby2(struct rb_process_status *status)
+rb_pid_t
+rb_fork_ruby(int *status)
 {
+    struct rb_process_status child = {.status = 0};
     rb_pid_t pid;
     int try_gc = 1, err;
     struct child_handler_disabler_state old;
 
-    if (status) status->status = 0;
-
-    while (1) {
+    do {
         prefork();
 
         before_fork_ruby();
+        rb_thread_acquire_fork_lock();
         disable_child_handler_before_fork(&old);
-        {
-            pid = rb_fork();
-            err = errno;
-            if (status) {
-                status->pid = pid;
-                status->error = err;
-            }
-        }
+
+        child.pid = pid = rb_fork();
+        child.error = err = errno;
+
         disable_child_handler_fork_parent(&old); /* yes, bad name */
+        if (
+#if defined(__FreeBSD__)
+            pid != 0 &&
+#endif
+            true) {
+            rb_thread_release_fork_lock();
+        }
+        if (pid == 0) {
+            rb_thread_reset_fork_lock();
+        }
         after_fork_ruby(pid);
 
-        if (pid >= 0) { /* fork succeed */
-            return pid;
-        }
+        /* repeat while fork failed but retryable */
+    } while (pid < 0 && handle_fork_error(err, &child, NULL, &try_gc) == 0);
 
-        /* fork failed */
-        if (handle_fork_error(err, status, NULL, &try_gc)) {
-            return -1;
-        }
-    }
-}
-
-rb_pid_t
-rb_fork_ruby(int *status)
-{
-    struct rb_process_status process_status = {0};
-
-    rb_pid_t pid = rb_fork_ruby2(&process_status);
-
-    if (status) *status = process_status.status;
+    if (status) *status = child.status;
 
     return pid;
 }
@@ -4771,14 +4774,14 @@ rb_spawn(int argc, const VALUE *argv)
  *  or contain meta characters:
  *
  *    system('if true; then echo "Foo"; fi')          # => true  # Shell reserved word.
- *    system('echo')                                  # => true  # Built-in.
+ *    system('exit')                                  # => true  # Built-in.
  *    system('date > /tmp/date.tmp')                  # => true  # Contains meta character.
  *    system('date > /nop/date.tmp')                  # => false
  *    system('date > /nop/date.tmp', exception: true) # Raises RuntimeError.
  *
  *  Assigns the command's error status to <tt>$?</tt>:
  *
- *    system('echo')                             # => true  # Built-in.
+ *    system('exit')                             # => true  # Built-in.
  *    $?                                         # => #<Process::Status: pid 640610 exit 0>
  *    system('date > /nop/date.tmp')             # => false
  *    $?                                         # => #<Process::Status: pid 640742 exit 2>
@@ -4819,7 +4822,9 @@ rb_spawn(int argc, const VALUE *argv)
  *    system('foo')           # => nil
  *    $?                      # => #<Process::Status: pid 645608 exit 127>
  *
- *  Ruby invokes the executable directly, with no shell and no shell expansion:
+ *  Ruby invokes the executable directly.
+ *  This form does not use the shell;
+ *  see {Arguments args}[rdoc-ref:Process@Arguments+args] for caveats.
  *
  *    system('doesnt_exist') # => nil
  *
@@ -4947,7 +4952,7 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *
  *    spawn('if true; then echo "Foo"; fi') # => 798847 # Shell reserved word.
  *    Process.wait                          # => 798847
- *    spawn('echo')                         # => 798848 # Built-in.
+ *    spawn('exit')                         # => 798848 # Built-in.
  *    Process.wait                          # => 798848
  *    spawn('date > /tmp/date.tmp')         # => 798879 # Contains meta character.
  *    Process.wait                          # => 798849
@@ -4971,26 +4976,20 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *
  *  Argument +exe_path+ is one of the following:
  *
- *  - The string path to an executable to be called:
+ *  - The string path to an executable to be called.
+ *  - A 2-element array containing the path to an executable to be called,
+ *    and the string to be used as the name of the executing process.
  *
  *      spawn('/usr/bin/date') # Path to date on Unix-style system.
  *      Process.wait
  *
  *    Output:
  *
- *      Thu Aug 31 10:06:48 AM CDT 2023
+ *      Mon Aug 28 11:43:10 AM CDT 2023
  *
- *  - A 2-element array containing the path to an executable
- *    and the string to be used as the name of the executing process:
- *
- *      pid = spawn(['sleep', 'Hello!'], '1') # 2-element array.
- *      p `ps -p #{pid} -o command=`
- *
- *    Output:
- *
- *      "Hello! 1\n"
- *
- *  Ruby invokes the executable directly, with no shell and no shell expansion.
+ *  Ruby invokes the executable directly.
+ *  This form does not use the shell;
+ *  see {Arguments args}[rdoc-ref:Process@Arguments+args] for caveats.
  *
  *  If one or more +args+ is given, each is an argument or option
  *  to be passed to the executable:
@@ -5256,7 +5255,7 @@ static rb_pid_t
 ruby_setsid(void)
 {
     rb_pid_t pid;
-    int ret;
+    int ret, fd;
 
     pid = getpid();
 #if defined(SETPGRP_VOID)
@@ -5718,6 +5717,12 @@ check_gid_switch(void)
 
 
 #if defined(HAVE_PWD_H)
+static inline bool
+login_not_found(int err)
+{
+    return (err == ENOTTY || err == ENXIO || err == ENOENT);
+}
+
 /**
  * Best-effort attempt to obtain the name of the login user, if any,
  * associated with the process. Processes not descended from login(1) (or
@@ -5726,18 +5731,18 @@ check_gid_switch(void)
 VALUE
 rb_getlogin(void)
 {
-#if ( !defined(USE_GETLOGIN_R) && !defined(USE_GETLOGIN) )
+# if !defined(USE_GETLOGIN_R) && !defined(USE_GETLOGIN)
     return Qnil;
-#else
+# else
     char MAYBE_UNUSED(*login) = NULL;
 
 # ifdef USE_GETLOGIN_R
 
-#if defined(__FreeBSD__)
+#   if defined(__FreeBSD__)
     typedef int getlogin_r_size_t;
-#else
+#   else
     typedef size_t getlogin_r_size_t;
-#endif
+#   endif
 
     long loginsize = GETLOGIN_R_SIZE_INIT;  /* maybe -1 */
 
@@ -5751,10 +5756,8 @@ rb_getlogin(void)
     rb_str_set_len(maybe_result, loginsize);
 
     int gle;
-    errno = 0;
     while ((gle = getlogin_r(login, (getlogin_r_size_t)loginsize)) != 0) {
-
-        if (gle == ENOTTY || gle == ENXIO || gle == ENOENT) {
+        if (login_not_found(gle)) {
             rb_str_resize(maybe_result, 0);
             return Qnil;
         }
@@ -5774,17 +5777,19 @@ rb_getlogin(void)
         return Qnil;
     }
 
+    rb_str_set_len(maybe_result, strlen(login));
     return maybe_result;
 
-# elif USE_GETLOGIN
+# elif defined(USE_GETLOGIN)
 
     errno = 0;
     login = getlogin();
-    if (errno) {
-        if (errno == ENOTTY || errno == ENXIO || errno == ENOENT) {
+    int err = errno;
+    if (err) {
+        if (login_not_found(err)) {
             return Qnil;
         }
-        rb_syserr_fail(errno, "getlogin");
+        rb_syserr_fail(err, "getlogin");
     }
 
     return login ? rb_str_new_cstr(login) : Qnil;
@@ -5793,10 +5798,46 @@ rb_getlogin(void)
 #endif
 }
 
+/* avoid treating as errors errno values that indicate "not found" */
+static inline bool
+pwd_not_found(int err)
+{
+    switch (err) {
+      case 0:
+      case ENOENT:
+      case ESRCH:
+      case EBADF:
+      case EPERM:
+        return true;
+      default:
+        return false;
+    }
+}
+
+# if defined(USE_GETPWNAM_R)
+struct getpwnam_r_args {
+    const char *login;
+    char *buf;
+    size_t bufsize;
+    struct passwd *result;
+    struct passwd pwstore;
+};
+
+# define GETPWNAM_R_ARGS(login_, buf_, bufsize_) (struct getpwnam_r_args) \
+    {.login = login_, .buf = buf_, .bufsize = bufsize_, .result = NULL}
+
+static void *
+nogvl_getpwnam_r(void *args)
+{
+    struct getpwnam_r_args *arg = args;
+    return (void *)(VALUE)getpwnam_r(arg->login, &arg->pwstore, arg->buf, arg->bufsize, &arg->result);
+}
+# endif
+
 VALUE
 rb_getpwdirnam_for_login(VALUE login_name)
 {
-#if ( !defined(USE_GETPWNAM_R) && !defined(USE_GETPWNAM) )
+#if !defined(USE_GETPWNAM_R) && !defined(USE_GETPWNAM)
     return Qnil;
 #else
 
@@ -5805,13 +5846,11 @@ rb_getpwdirnam_for_login(VALUE login_name)
         return Qnil;
     }
 
-    char *login = RSTRING_PTR(login_name);
+    const char *login = RSTRING_PTR(login_name);
 
-    struct passwd *pwptr;
 
 # ifdef USE_GETPWNAM_R
 
-    struct passwd pwdnm;
     char *bufnm;
     long bufsizenm = GETPW_R_SIZE_INIT;  /* maybe -1 */
 
@@ -5823,57 +5862,76 @@ rb_getpwdirnam_for_login(VALUE login_name)
     bufnm = RSTRING_PTR(getpwnm_tmp);
     bufsizenm = rb_str_capacity(getpwnm_tmp);
     rb_str_set_len(getpwnm_tmp, bufsizenm);
+    struct getpwnam_r_args args = GETPWNAM_R_ARGS(login, bufnm, (size_t)bufsizenm);
 
     int enm;
-    errno = 0;
-    while ((enm = getpwnam_r(login, &pwdnm, bufnm, bufsizenm, &pwptr)) != 0) {
-
-        if (enm == ENOENT || enm== ESRCH || enm == EBADF || enm == EPERM) {
-            /* not found; non-errors */
+    while ((enm = IO_WITHOUT_GVL_INT(nogvl_getpwnam_r, &args)) != 0) {
+        if (pwd_not_found(enm)) {
             rb_str_resize(getpwnm_tmp, 0);
             return Qnil;
         }
 
-        if (enm != ERANGE || bufsizenm >= GETPW_R_SIZE_LIMIT) {
+        if (enm != ERANGE || args.bufsize >= GETPW_R_SIZE_LIMIT) {
             rb_str_resize(getpwnm_tmp, 0);
             rb_syserr_fail(enm, "getpwnam_r");
         }
 
-        rb_str_modify_expand(getpwnm_tmp, bufsizenm);
-        bufnm = RSTRING_PTR(getpwnm_tmp);
-        bufsizenm = rb_str_capacity(getpwnm_tmp);
+        rb_str_modify_expand(getpwnm_tmp, (long)args.bufsize);
+        args.buf = RSTRING_PTR(getpwnm_tmp);
+        args.bufsize = (size_t)rb_str_capacity(getpwnm_tmp);
     }
 
-    if (pwptr == NULL) {
+    if (args.result == NULL) {
         /* no record in the password database for the login name */
         rb_str_resize(getpwnm_tmp, 0);
         return Qnil;
     }
 
     /* found it */
-    VALUE result = rb_str_new_cstr(pwptr->pw_dir);
+    VALUE result = rb_str_new_cstr(args.result->pw_dir);
     rb_str_resize(getpwnm_tmp, 0);
     return result;
 
-# elif USE_GETPWNAM
+# elif defined(USE_GETPWNAM)
 
+    struct passwd *pwptr;
     errno = 0;
-    pwptr = getpwnam(login);
-    if (pwptr) {
-        /* found it */
-        return rb_str_new_cstr(pwptr->pw_dir);
-    }
-    if (errno
-        /*   avoid treating as errors errno values that indicate "not found" */
-        && ( errno != ENOENT && errno != ESRCH && errno != EBADF && errno != EPERM)) {
-        rb_syserr_fail(errno, "getpwnam");
+    if (!(pwptr = getpwnam(login))) {
+        int err = errno;
+
+        if (pwd_not_found(err)) {
+            return Qnil;
+        }
+
+        rb_syserr_fail(err, "getpwnam");
     }
 
-    return Qnil;  /* not found */
+    /* found it */
+    return rb_str_new_cstr(pwptr->pw_dir);
 # endif
 
 #endif
 }
+
+# if defined(USE_GETPWUID_R)
+struct getpwuid_r_args {
+    uid_t uid;
+    char *buf;
+    size_t bufsize;
+    struct passwd *result;
+    struct passwd pwstore;
+};
+
+# define GETPWUID_R_ARGS(uid_, buf_, bufsize_) (struct getpwuid_r_args) \
+    {.uid = uid_, .buf = buf_, .bufsize = bufsize_, .result = NULL}
+
+static void *
+nogvl_getpwuid_r(void *args)
+{
+    struct getpwuid_r_args *arg = args;
+    return (void *)(VALUE)getpwuid_r(arg->uid, &arg->pwstore, arg->buf, arg->bufsize, &arg->result);
+}
+# endif
 
 /**
  * Look up the user's dflt home dir in the password db, by uid.
@@ -5887,11 +5945,8 @@ rb_getpwdiruid(void)
 # else
     uid_t ruid = getuid();
 
-    struct passwd *pwptr;
-
 # ifdef USE_GETPWUID_R
 
-    struct passwd pwdid;
     char *bufid;
     long bufsizeid = GETPW_R_SIZE_INIT;  /* maybe -1 */
 
@@ -5903,53 +5958,52 @@ rb_getpwdiruid(void)
     bufid = RSTRING_PTR(getpwid_tmp);
     bufsizeid = rb_str_capacity(getpwid_tmp);
     rb_str_set_len(getpwid_tmp, bufsizeid);
+    struct getpwuid_r_args args = GETPWUID_R_ARGS(ruid, bufid, (size_t)bufsizeid);
 
     int eid;
-    errno = 0;
-    while ((eid = getpwuid_r(ruid, &pwdid, bufid, bufsizeid, &pwptr)) != 0) {
-
-        if (eid == ENOENT || eid== ESRCH || eid == EBADF || eid == EPERM) {
-            /* not found; non-errors */
+    while ((eid = IO_WITHOUT_GVL_INT(nogvl_getpwuid_r, &args)) != 0) {
+        if (pwd_not_found(eid)) {
             rb_str_resize(getpwid_tmp, 0);
             return Qnil;
         }
 
-        if (eid != ERANGE || bufsizeid >= GETPW_R_SIZE_LIMIT) {
+        if (eid != ERANGE || args.bufsize >= GETPW_R_SIZE_LIMIT) {
             rb_str_resize(getpwid_tmp, 0);
             rb_syserr_fail(eid, "getpwuid_r");
         }
 
-        rb_str_modify_expand(getpwid_tmp, bufsizeid);
-        bufid = RSTRING_PTR(getpwid_tmp);
-        bufsizeid = rb_str_capacity(getpwid_tmp);
+        rb_str_modify_expand(getpwid_tmp, (long)args.bufsize);
+        args.buf = RSTRING_PTR(getpwid_tmp);
+        args.bufsize = (size_t)rb_str_capacity(getpwid_tmp);
     }
 
-    if (pwptr == NULL) {
+    if (args.result == NULL) {
         /* no record in the password database for the uid */
         rb_str_resize(getpwid_tmp, 0);
         return Qnil;
     }
 
     /* found it */
-    VALUE result = rb_str_new_cstr(pwptr->pw_dir);
+    VALUE result = rb_str_new_cstr(args.result->pw_dir);
     rb_str_resize(getpwid_tmp, 0);
     return result;
 
 # elif defined(USE_GETPWUID)
 
+    struct passwd *pwptr;
     errno = 0;
-    pwptr = getpwuid(ruid);
-    if (pwptr) {
-        /* found it */
-        return rb_str_new_cstr(pwptr->pw_dir);
-    }
-    if (errno
-        /*   avoid treating as errors errno values that indicate "not found" */
-        && ( errno == ENOENT || errno == ESRCH || errno == EBADF || errno == EPERM)) {
-        rb_syserr_fail(errno, "getpwuid");
+    if (!(pwptr = getpwuid(ruid))) {
+        int err = errno;
+
+        if (pwd_not_found(err)) {
+            return Qnil;
+        }
+
+        rb_syserr_fail(err, "getpwuid");
     }
 
-    return Qnil;  /* not found */
+    /* found it */
+    return rb_str_new_cstr(pwptr->pw_dir);
 # endif
 
 #endif /* !defined(USE_GETPWUID_R) && !defined(USE_GETPWUID) */
@@ -5985,7 +6039,6 @@ obj2uid(VALUE id
         const char *usrname = StringValueCStr(id);
         struct passwd *pwptr;
 #ifdef USE_GETPWNAM_R
-        struct passwd pwbuf;
         char *getpw_buf;
         long getpw_buf_len;
         int e;
@@ -5998,15 +6051,18 @@ obj2uid(VALUE id
         getpw_buf_len = rb_str_capacity(*getpw_tmp);
         rb_str_set_len(*getpw_tmp, getpw_buf_len);
         errno = 0;
-        while ((e = getpwnam_r(usrname, &pwbuf, getpw_buf, getpw_buf_len, &pwptr)) != 0) {
-            if (e != ERANGE || getpw_buf_len >= GETPW_R_SIZE_LIMIT) {
+        struct getpwnam_r_args args = GETPWNAM_R_ARGS((char *)usrname, getpw_buf, (size_t)getpw_buf_len);
+
+        while ((e = IO_WITHOUT_GVL_INT(nogvl_getpwnam_r, &args)) != 0) {
+            if (e != ERANGE || args.bufsize >= GETPW_R_SIZE_LIMIT) {
                 rb_str_resize(*getpw_tmp, 0);
                 rb_syserr_fail(e, "getpwnam_r");
             }
-            rb_str_modify_expand(*getpw_tmp, getpw_buf_len);
-            getpw_buf = RSTRING_PTR(*getpw_tmp);
-            getpw_buf_len = rb_str_capacity(*getpw_tmp);
+            rb_str_modify_expand(*getpw_tmp, (long)args.bufsize);
+            args.buf = RSTRING_PTR(*getpw_tmp);
+            args.bufsize = (size_t)rb_str_capacity(*getpw_tmp);
         }
+        pwptr = args.result;
 #else
         pwptr = getpwnam(usrname);
 #endif
@@ -6045,6 +6101,26 @@ p_uid_from_name(VALUE self, VALUE id)
 #endif
 
 #if defined(HAVE_GRP_H)
+# if defined(USE_GETGRNAM_R)
+struct getgrnam_r_args {
+    const char *name;
+    char *buf;
+    size_t bufsize;
+    struct group *result;
+    struct group grp;
+};
+
+# define GETGRNAM_R_ARGS(name_, buf_, bufsize_) (struct getgrnam_r_args) \
+    {.name  = name_, .buf = buf_, .bufsize = bufsize_, .result = NULL}
+
+static void *
+nogvl_getgrnam_r(void *args)
+{
+    struct getgrnam_r_args *arg = args;
+    return (void *)(VALUE)getgrnam_r(arg->name, &arg->grp, arg->buf, arg->bufsize, &arg->result);
+}
+# endif
+
 static rb_gid_t
 obj2gid(VALUE id
 # ifdef USE_GETGRNAM_R
@@ -6062,7 +6138,6 @@ obj2gid(VALUE id
         const char *grpname = StringValueCStr(id);
         struct group *grptr;
 #ifdef USE_GETGRNAM_R
-        struct group grbuf;
         char *getgr_buf;
         long getgr_buf_len;
         int e;
@@ -6075,15 +6150,18 @@ obj2gid(VALUE id
         getgr_buf_len = rb_str_capacity(*getgr_tmp);
         rb_str_set_len(*getgr_tmp, getgr_buf_len);
         errno = 0;
-        while ((e = getgrnam_r(grpname, &grbuf, getgr_buf, getgr_buf_len, &grptr)) != 0) {
-            if (e != ERANGE || getgr_buf_len >= GETGR_R_SIZE_LIMIT) {
+        struct getgrnam_r_args args = GETGRNAM_R_ARGS(grpname, getgr_buf, (size_t)getgr_buf_len);
+
+        while ((e = IO_WITHOUT_GVL_INT(nogvl_getgrnam_r, &args)) != 0) {
+            if (e != ERANGE || args.bufsize >= GETGR_R_SIZE_LIMIT) {
                 rb_str_resize(*getgr_tmp, 0);
                 rb_syserr_fail(e, "getgrnam_r");
             }
-            rb_str_modify_expand(*getgr_tmp, getgr_buf_len);
-            getgr_buf = RSTRING_PTR(*getgr_tmp);
-            getgr_buf_len = rb_str_capacity(*getgr_tmp);
+            rb_str_modify_expand(*getgr_tmp, (long)args.bufsize);
+            args.buf = RSTRING_PTR(*getgr_tmp);
+            args.bufsize = (size_t)rb_str_capacity(*getgr_tmp);
         }
+        grptr = args.result;
 #elif defined(HAVE_GETGRNAM)
         grptr = getgrnam(grpname);
 #else
@@ -8840,14 +8918,14 @@ proc_warmup(VALUE _)
  *   or if it contains one or more meta characters.
  * - +exe_path+ otherwise.
  *
- * <b>Argument +command_line+</b>
+ * ==== Argument +command_line+
  *
  * \String argument +command_line+ is a command line to be passed to a shell;
  * it must begin with a shell reserved word, begin with a special built-in,
  * or contain meta characters:
  *
  *   system('if true; then echo "Foo"; fi')          # => true  # Shell reserved word.
- *   system('echo')                                  # => true  # Built-in.
+ *   system('exit')                                  # => true  # Built-in.
  *   system('date > /tmp/date.tmp')                  # => true  # Contains meta character.
  *   system('date > /nop/date.tmp')                  # => false
  *   system('date > /nop/date.tmp', exception: true) # Raises RuntimeError.
@@ -8862,22 +8940,88 @@ proc_warmup(VALUE _)
  *
  * See {Execution Shell}[rdoc-ref:Process@Execution+Shell] for details about the shell.
  *
- * <b>Argument +exe_path+</b>
+ * ==== Argument +exe_path+
  *
  * Argument +exe_path+ is one of the following:
  *
- * - The string path to an executable to be called.
- * - A 2-element array containing the path to an executable to be called,
- *   and the string to be used as the name of the executing process.
+ * - The string path to an executable file to be called:
+ *
+ *   Example:
+ *
+ *     system('/usr/bin/date') # => true # Path to date on Unix-style system.
+ *     system('foo')           # => nil  # Command execlution failed.
+ *
+ *   Output:
+ *
+ *     Thu Aug 31 10:06:48 AM CDT 2023
+ *
+ *   A path or command name containing spaces without arguments cannot
+ *   be distinguished from +command_line+ above, so you must quote or
+ *   escape the entire command name using a shell in platform
+ *   dependent manner, or use the array form below.
+ *
+ *   If +exe_path+ does not contain any path separator, an executable
+ *   file is searched from directories specified with the +PATH+
+ *   environment variable.  What the word "executable" means here is
+ *   depending on platforms.
+ *
+ *   Even if the file considered "executable", its content may not be
+ *   in proper executable format.  In that case, Ruby tries to run it
+ *   by using <tt>/bin/sh</tt> on a Unix-like system, like system(3)
+ *   does.
+ *
+ *     File.write('shell_command', 'echo $SHELL', perm: 0o755)
+ *     system('./shell_command')        # prints "/bin/sh" or something.
+ *
+ * - A 2-element array containing the path to an executable
+ *   and the string to be used as the name of the executing process:
+ *
+ *   Example:
+ *
+ *     pid = spawn(['sleep', 'Hello!'], '1') # 2-element array.
+ *     p `ps -p #{pid} -o command=`
+ *
+ *   Output:
+ *
+ *     "Hello! 1\n"
+ *
+ * === Arguments +args+
+ *
+ * If +command_line+ does not contain shell meta characters except for
+ * spaces and tabs, or +exe_path+ is given, Ruby invokes the
+ * executable directly.  This form does not use the shell:
+ *
+ *   spawn("doesnt_exist")       # Raises Errno::ENOENT
+ *   spawn("doesnt_exist", "\n") # Raises Errno::ENOENT
+ *
+ *   spawn("doesnt_exist\n")     # => false
+ *   # sh: 1: doesnot_exist: not found
+ *
+ * The error message is from a shell and would vary depending on your
+ * system.
+ *
+ * If one or more +args+ is given after +exe_path+, each is an
+ * argument or option to be passed to the executable:
  *
  * Example:
  *
- *   system('/usr/bin/date') # => true # Path to date on Unix-style system.
- *   system('foo')           # => nil  # Command failed.
+ *   system('echo', '<', 'C*', '|', '$SHELL', '>')   # => true
  *
  * Output:
  *
- *   Mon Aug 28 11:43:10 AM CDT 2023
+ *   < C* | $SHELL >
+ *
+ * However, there are exceptions on Windows.  See {Execution Shell on
+ * Windows}[rdoc-ref:Process@Execution+Shell+on+Windows].
+ *
+ * If you want to invoke a path containing spaces with no arguments
+ * without shell, you will need to use a 2-element array +exe_path+.
+ *
+ * Example:
+ *
+ *   path = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+ *   spawn(path) # Raises Errno::ENOENT; No such file or directory - /Applications/Google
+ *   spawn([path] * 2)
  *
  * === Execution Options
  *
@@ -9012,21 +9156,48 @@ proc_warmup(VALUE _)
  * === Execution Shell
  *
  * On a Unix-like system, the shell invoked is <tt>/bin/sh</tt>;
- * otherwise the shell invoked is determined by environment variable
- * <tt>ENV['RUBYSHELL']</tt>, if defined, or <tt>ENV['COMSPEC']</tt> otherwise.
- *
- * Except for the +COMSPEC+ case,
  * the entire string +command_line+ is passed as an argument
  * to {shell option -c}[https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/sh.html].
  *
  * The shell performs normal shell expansion on the command line:
  *
- *   spawn('echo C*') # => 799139
- *   Process.wait     # => 799139
+ * Example:
+ *
+ *   system('echo $SHELL: C*') # => true
  *
  * Output:
  *
- *   CONTRIBUTING.md COPYING COPYING.ja
+ *   /bin/bash: CONTRIBUTING.md COPYING COPYING.ja
+ *
+ * ==== Execution Shell on Windows
+ *
+ * On Windows, the shell invoked is determined by environment variable
+ * +RUBYSHELL+, if defined, or +COMSPEC+ otherwise; the entire string
+ * +command_line+ is passed as an argument to <tt>-c</tt> option for
+ * +RUBYSHELL+, as well as <tt>/bin/sh</tt>, and {/c
+ * option}[https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/cmd]
+ * for +COMSPEC+.  The shell is invoked automatically in the following
+ * cases:
+ *
+ * - The command is a built-in of +cmd.exe+, such as +echo+.
+ * - The executable file is a batch file; its name ends with +.bat+ or
+ *   +.cmd+.
+ *
+ * Note that the command will still be invoked as +command_line+ form
+ * even when called in +exe_path+ form, because +cmd.exe+ does not
+ * accept a script name like <tt>/bin/sh</tt> does but only works with
+ * <tt>/c</tt> option.
+ *
+ * The standard shell +cmd.exe+ performs environment variable
+ * expansion but does not have globbing functionality:
+ *
+ * Example:
+ *
+ *   system("echo %COMSPEC%: C*")' # => true
+ *
+ * Output:
+ *
+ *   C:\WINDOWS\system32\cmd.exe: C*
  *
  * == What's Here
  *

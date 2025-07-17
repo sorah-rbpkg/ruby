@@ -40,9 +40,41 @@ describe "A block yielded a single" do
       m([1, 2]) { |a=5, b, c, d| [a, b, c, d] }.should == [5, 1, 2, nil]
     end
 
+    it "assigns elements to pre arguments" do
+      m([1, 2]) { |a, b, c, d=5| [a, b, c, d] }.should == [1, 2, nil, 5]
+    end
+
+    it "assigns elements to pre and post arguments" do
+      m([1               ]) { |a, b=5, c=6, d, e| [a, b, c, d, e] }.should == [1, 5, 6, nil, nil]
+      m([1, 2            ]) { |a, b=5, c=6, d, e| [a, b, c, d, e] }.should == [1, 5, 6, 2, nil]
+      m([1, 2, 3         ]) { |a, b=5, c=6, d, e| [a, b, c, d, e] }.should == [1, 5, 6, 2, 3]
+      m([1, 2, 3, 4      ]) { |a, b=5, c=6, d, e| [a, b, c, d, e] }.should == [1, 2, 6, 3, 4]
+      m([1, 2, 3, 4, 5   ]) { |a, b=5, c=6, d, e| [a, b, c, d, e] }.should == [1, 2, 3, 4, 5]
+      m([1, 2, 3, 4, 5, 6]) { |a, b=5, c=6, d, e| [a, b, c, d, e] }.should == [1, 2, 3, 4, 5]
+    end
+
+    it "assigns elements to pre and post arguments when *rest is present" do
+      m([1               ]) { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.should == [1, 5, 6, [], nil, nil]
+      m([1, 2            ]) { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.should == [1, 5, 6, [], 2, nil]
+      m([1, 2, 3         ]) { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.should == [1, 5, 6, [], 2, 3]
+      m([1, 2, 3, 4      ]) { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.should == [1, 2, 6, [], 3, 4]
+      m([1, 2, 3, 4, 5   ]) { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.should == [1, 2, 3, [], 4, 5]
+      m([1, 2, 3, 4, 5, 6]) { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.should == [1, 2, 3, [4], 5, 6]
+    end
+
     ruby_version_is "3.2" do
       it "does not autosplat single argument to required arguments when a keyword rest argument is present" do
         m([1, 2]) { |a, **k| [a, k] }.should == [[1, 2], {}]
+      end
+
+      it "does not autosplat single argument to required arguments when keyword arguments are present" do
+        m([1, 2]) { |a, b: :b, c: :c| [a, b, c] }.should == [[1, 2], :b, :c]
+      end
+
+      it "raises error when required keyword arguments are present" do
+        -> {
+          m([1, 2]) { |a, b:, c:| [a, b, c] }
+        }.should raise_error(ArgumentError, "missing keywords: :b, :c")
       end
     end
 
@@ -50,6 +82,16 @@ describe "A block yielded a single" do
       # https://bugs.ruby-lang.org/issues/18633
       it "autosplats single argument to required arguments when a keyword rest argument is present" do
         m([1, 2]) { |a, **k| [a, k] }.should == [1, {}]
+      end
+
+      it "autosplats single argument to required arguments when optional keyword arguments are present" do
+        m([1, 2]) { |a, b: :b, c: :c| [a, b, c] }.should == [1, :b, :c]
+      end
+
+      it "raises error when required keyword arguments are present" do
+        -> {
+          m([1, 2]) { |a, b:, c:| [a, b, c] }
+        }.should raise_error(ArgumentError, "missing keywords: :b, :c")
       end
     end
 
@@ -368,7 +410,6 @@ describe "A block" do
 
       -> { @y.s(obj) { |a, b| } }.should raise_error(ZeroDivisionError)
     end
-
   end
 
   describe "taking |a, *b| arguments" do
@@ -701,6 +742,42 @@ describe "A block" do
       eval("Proc.new { |_,_| }").should be_an_instance_of(Proc)
     end
   end
+
+  describe 'pre and post parameters' do
+    it "assigns nil to unassigned required arguments" do
+      proc { |a, *b, c, d| [a, b, c, d] }.call(1, 2).should == [1, [], 2, nil]
+    end
+
+    it "assigns elements to optional arguments" do
+      proc { |a=5, b=4, c=3| [a, b, c] }.call(1, 2).should == [1, 2, 3]
+    end
+
+    it "assigns elements to post arguments" do
+      proc { |a=5, b, c, d| [a, b, c, d] }.call(1, 2).should == [5, 1, 2, nil]
+    end
+
+    it "assigns elements to pre arguments" do
+      proc { |a, b, c, d=5| [a, b, c, d] }.call(1, 2).should == [1, 2, nil, 5]
+    end
+
+    it "assigns elements to pre and post arguments" do
+      proc { |a, b=5, c=6, d, e| [a, b, c, d, e] }.call(1               ).should == [1, 5, 6, nil, nil]
+      proc { |a, b=5, c=6, d, e| [a, b, c, d, e] }.call(1, 2            ).should == [1, 5, 6, 2, nil]
+      proc { |a, b=5, c=6, d, e| [a, b, c, d, e] }.call(1, 2, 3         ).should == [1, 5, 6, 2, 3]
+      proc { |a, b=5, c=6, d, e| [a, b, c, d, e] }.call(1, 2, 3, 4      ).should == [1, 2, 6, 3, 4]
+      proc { |a, b=5, c=6, d, e| [a, b, c, d, e] }.call(1, 2, 3, 4, 5   ).should == [1, 2, 3, 4, 5]
+      proc { |a, b=5, c=6, d, e| [a, b, c, d, e] }.call(1, 2, 3, 4, 5, 6).should == [1, 2, 3, 4, 5]
+    end
+
+    it "assigns elements to pre and post arguments when *rest is present" do
+      proc { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.call(1               ).should == [1, 5, 6, [], nil, nil]
+      proc { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.call(1, 2            ).should == [1, 5, 6, [], 2, nil]
+      proc { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.call(1, 2, 3         ).should == [1, 5, 6, [], 2, 3]
+      proc { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.call(1, 2, 3, 4      ).should == [1, 2, 6, [], 3, 4]
+      proc { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.call(1, 2, 3, 4, 5   ).should == [1, 2, 3, [], 4, 5]
+      proc { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.call(1, 2, 3, 4, 5, 6).should == [1, 2, 3, [4], 5, 6]
+    end
+  end
 end
 
 describe "Block-local variables" do
@@ -883,24 +960,27 @@ describe "Post-args" do
     end
 
     describe "with a circular argument reference" do
-      it "raises a SyntaxError if using an existing local with the same name as the argument" do
-        a = 1
-        -> {
-          @proc = eval "proc { |a=a| a }"
-        }.should raise_error(SyntaxError)
+      ruby_version_is ""..."3.4" do
+        it "raises a SyntaxError if using the argument in its default value" do
+          a = 1
+          -> {
+            eval "proc { |a=a| a }"
+          }.should raise_error(SyntaxError)
+        end
       end
 
-      it "raises a SyntaxError if there is an existing method with the same name as the argument" do
-        def a; 1; end
-        -> {
-          @proc = eval "proc { |a=a| a }"
-        }.should raise_error(SyntaxError)
+      ruby_version_is "3.4" do
+        it "is nil if using the argument in its default value" do
+          -> {
+            eval "proc { |a=a| a }.call"
+          }.call.should == nil
+        end
       end
+    end
 
-      it "calls an existing method with the same name as the argument if explicitly using ()" do
-        def a; 1; end
-        proc { |a=a()| a }.call.should == 1
-      end
+    it "calls an existing method with the same name as the argument if explicitly using ()" do
+      def a; 1; end
+      proc { |a=a()| a }.call.should == 1
     end
   end
 
@@ -919,9 +999,10 @@ describe "Post-args" do
   end
 end
 
+# tested more thoroughly in language/delegation_spec.rb
 describe "Anonymous block forwarding" do
   ruby_version_is "3.1" do
-    it "forwards blocks to other functions that formally declare anonymous blocks" do
+    it "forwards blocks to other method that formally declares anonymous block" do
       eval <<-EOF
           def b(&); c(&) end
           def c(&); yield :non_null end
@@ -989,6 +1070,35 @@ describe "Anonymous block forwarding" do
       pos_rkw(:a, kwarg1: 3) { 1 }.should == 1
       all(:a, :b, :c, :d, :e, okw1: 'x', okw2: 'y') { 1 }.should == 1
       all_kwrest(:a, :b, :c, :d, :e, okw1: 'x', okw2: 'y') { 1 }.should == 1
+    end
+  end
+end
+
+describe "`it` calls without arguments in a block with no ordinary parameters" do
+  ruby_version_is "3.3"..."3.4" do
+    it "emits a deprecation warning" do
+      -> {
+        eval "proc { it }"
+      }.should complain(/warning: `it` calls without arguments will refer to the first block param in Ruby 3.4; use it\(\) or self.it/)
+    end
+
+    it "does not emit a deprecation warning when a block has parameters" do
+      -> { eval "proc { |a, b| it }" }.should_not complain
+      -> { eval "proc { |*rest| it }" }.should_not complain
+      -> { eval "proc { |*| it }" }.should_not complain
+      -> { eval "proc { |a:, b:| it }" }.should_not complain
+      -> { eval "proc { |**kw| it }" }.should_not complain
+      -> { eval "proc { |**| it }" }.should_not complain
+      -> { eval "proc { |&block| it }" }.should_not complain
+      -> { eval "proc { |&| it }" }.should_not complain
+    end
+
+    it "does not emit a deprecation warning when `it` calls with arguments" do
+      -> { eval "proc { it(42) }" }.should_not complain
+    end
+
+    it "does not emit a deprecation warning when `it` calls with explicit empty arguments list" do
+      -> { eval "proc { it() }" }.should_not complain
     end
   end
 end

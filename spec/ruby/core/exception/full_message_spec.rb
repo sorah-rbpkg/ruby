@@ -42,7 +42,7 @@ describe "Exception#full_message" do
     e = RuntimeError.new("Some runtime error")
     e.backtrace.should == nil
     full_message = e.full_message(highlight: false, order: :top).lines
-    full_message[0].should.start_with?("#{__FILE__}:#{__LINE__-1}:in `")
+    full_message[0].should.start_with?("#{__FILE__}:#{__LINE__-1}:in ")
     full_message[0].should.end_with?("': Some runtime error (RuntimeError)\n")
   end
 
@@ -79,6 +79,24 @@ describe "Exception#full_message" do
         err.full_message(highlight: true).should !~ /unhandled exception/
         err.full_message(highlight: false).should !~ /unhandled exception/
       end
+
+      it "adds escape sequences to highlight some strings if the message is not specified and :highlight option is specified" do
+        e = RuntimeError.new("")
+
+        full_message = e.full_message(highlight: true, order: :top).lines
+        full_message[0].should.end_with? "\e[1;4munhandled exception\e[m\n"
+
+        full_message = e.full_message(highlight: true, order: :bottom).lines
+        full_message[0].should == "\e[1mTraceback\e[m (most recent call last):\n"
+        full_message[-1].should.end_with? "\e[1;4munhandled exception\e[m\n"
+
+        full_message = e.full_message(highlight: false, order: :top).lines
+        full_message[0].should.end_with? "unhandled exception\n"
+
+        full_message = e.full_message(highlight: false, order: :bottom).lines
+        full_message[0].should == "Traceback (most recent call last):\n"
+        full_message[-1].should.end_with? "unhandled exception\n"
+      end
     end
 
     describe "generic Error" do
@@ -94,7 +112,7 @@ describe "Exception#full_message" do
       line = __LINE__; raise "first line\nsecond line"
     rescue => e
       full_message = e.full_message(highlight: false, order: :top).lines
-      full_message[0].should.start_with?("#{__FILE__}:#{line}:in `")
+      full_message[0].should.start_with?("#{__FILE__}:#{line}:in ")
       full_message[0].should.end_with?(": first line (RuntimeError)\n")
       full_message[1].should == "second line\n"
     end
@@ -105,7 +123,7 @@ describe "Exception#full_message" do
       line = __LINE__; raise "first line\nsecond line\nthird line"
     rescue => e
       full_message = e.full_message(highlight: true, order: :top).lines
-      full_message[0].should.start_with?("#{__FILE__}:#{line}:in `")
+      full_message[0].should.start_with?("#{__FILE__}:#{line}:in ")
       full_message[0].should.end_with?(": \e[1mfirst line (\e[1;4mRuntimeError\e[m\e[1m)\e[m\n")
       full_message[1].should == "\e[1msecond line\e[m\n"
       full_message[2].should == "\e[1mthird line\e[m\n"
