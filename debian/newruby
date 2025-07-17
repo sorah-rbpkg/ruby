@@ -19,11 +19,11 @@ files_to_change=$(git grep -rl "${old_source}" debian/ | grep -v changelog)
 set -x
 sed -i -e "s/${old_source}/${new_source}/g; s/${old_version}.\[0-9]/${new_api_version}/g; s/${old_version}/${new_version}/g" $files_to_change
 
-rename "s/${old_source}/${new_source}/" debian/*${old_source}*
+file-rename "s/${old_source}/${new_source}/" debian/*${old_source}*
 
 # manpages
 sed -i -e "s/\(gem\|rdoc\)${old_version}/\1${new_version}/gi" \
 	debian/manpages/* debian/*.manpages
-rename "s/${old_version}/${new_version}/g" debian/manpages/*
+file-rename "s/${old_version}/${new_version}/g" debian/manpages/*
 
 dch --package "${new_source}" --newversion "${new_version}.0-1" "Ruby $new_version"
