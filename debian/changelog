@@ -1,8 +1,10 @@
-ruby3.4 (3.4.0-1) UNRELEASED; urgency=medium
+ruby3.4 (3.4.5-1) UNRELEASED; urgency=medium
 
   * Ruby 3.4
+  * New upstream version 3.4.5
+  * New upstream version 3.4.5
 
- -- Lucas Kanashiro <kanashiro@debian.org>  Thu, 17 Jul 2025 10:11:32 -0300
+ -- Lucas Kanashiro <kanashiro@debian.org>  Thu, 17 Jul 2025 10:12:28 -0300
 
 ruby3.3 (3.3.8-2) unstable; urgency=medium
 
