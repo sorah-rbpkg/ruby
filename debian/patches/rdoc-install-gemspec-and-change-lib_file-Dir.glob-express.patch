@@ -1,0 +1,25 @@
+From: =?utf-8?q?C=C3=A9dric_Boutillier?= <boutil@debian.org>
+Date: Thu, 17 Jul 2025 16:28:46 +0200
+Subject: rdoc: install gemspec and change lib_file Dir.glob expression
+
+Origin: https://github.com/ruby/rdoc/blob/a86891433eb39c4b056c9e42ccc899d3d53cd0ff/rdoc.gemspec
+---
+ lib/rdoc/rdoc.gemspec | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/lib/rdoc/rdoc.gemspec b/lib/rdoc/rdoc.gemspec
+index cf0b5f7..41abe70 100644
+--- a/lib/rdoc/rdoc.gemspec
++++ b/lib/rdoc/rdoc.gemspec
+@@ -52,9 +52,10 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
+     "exe/rdoc",
+     "exe/ri",
+     "man/ri.1",
++    "rdoc.gemspec",
+   ]
+   template_files = Dir.glob("lib/rdoc/generator/template/**/*")
+-  lib_files = Dir.glob("lib/**/*.{rb,kpeg,ry}")
++  lib_files = Dir.glob("lib/**/*.{rb,kpeg,ry}", base: File.expand_path('..', __FILE__))
+ 
+   s.files = (non_lib_files + template_files + lib_files).uniq
+ 
