@@ -14,3 +14,4 @@ Deduplicate-results-from-getaddrinfo.patch
 test-test_bundled_ca-Skip-test-because-it-requires-i.patch
 Fix-test-dlopen-for-.so-filename-with-more-than-one-digit.patch
 rdoc-install-gemspec-and-change-lib_file-Dir.glob-express.patch
+test_tty_ambiguous_width-Use-Reline.test_rubybin.patch
