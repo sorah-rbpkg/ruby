@@ -1,0 +1,24 @@
+From: =?utf-8?q?C=C3=A9dric_Boutillier?= <boutil@debian.org>
+Date: Tue, 29 Jul 2025 09:02:01 +0200
+Subject: no symlink to pkgconfig files in non arch-specific location
+
+---
+ tool/rbinstall.rb | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/tool/rbinstall.rb b/tool/rbinstall.rb
+index 6a20d56..872eb65 100755
+--- a/tool/rbinstall.rb
++++ b/tool/rbinstall.rb
+@@ -896,11 +896,6 @@ install?(:local, :arch, :data) do
+   if pc and File.file?(pc) and File.size?(pc)
+     prepare "pkgconfig data", pkgconfigdir = File.join(libdir, "pkgconfig")
+     install pc, pkgconfigdir, :mode => $data_mode
+-    if (pkgconfig_base = CONFIG["libdir", true]) != libdir
+-      prepare "pkgconfig data link", File.join(pkgconfig_base, "pkgconfig")
+-      ln_sf(File.join("..", Path.relative(pkgconfigdir, pkgconfig_base), pc),
+-            File.join(pkgconfig_base, "pkgconfig", pc))
+-    end
+   end
+ end
+ 

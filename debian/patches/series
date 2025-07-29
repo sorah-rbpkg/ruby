@@ -15,3 +15,5 @@ test-test_bundled_ca-Skip-test-because-it-requires-i.patch
 Fix-test-dlopen-for-.so-filename-with-more-than-one-digit.patch
 rdoc-install-gemspec-and-change-lib_file-Dir.glob-express.patch
 test_tty_ambiguous_width-Use-Reline.test_rubybin.patch
+put-ruby-interpreter-inside-usr-bin.patch
+no-symlink-to-pkgconfig-files-in-non-arch-specific-locati.patch

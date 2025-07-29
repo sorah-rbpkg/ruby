@@ -1,0 +1,58 @@
+From: =?utf-8?q?C=C3=A9dric_Boutillier?= <boutil@debian.org>
+Date: Tue, 29 Jul 2025 08:59:52 +0200
+Subject: put ruby interpreter inside /usr/bin
+
+This was the behaviour up to ruby3.3
+revert partially https://github.com/ruby/ruby/pull/10010
+see also https://bugs.ruby-lang.org/issues/20800
+---
+ tool/mkrunnable.rb | 11 ++---------
+ tool/rbinstall.rb  |  4 +---
+ 2 files changed, 3 insertions(+), 12 deletions(-)
+
+diff --git a/tool/mkrunnable.rb b/tool/mkrunnable.rb
+index ef358e2..890323a 100755
+--- a/tool/mkrunnable.rb
++++ b/tool/mkrunnable.rb
+@@ -34,16 +34,9 @@ vendordir = config["vendordir"]
+ rubylibdir = config["rubylibdir"]
+ rubyarchdir = config["rubyarchdir"]
+ archdir = "#{extout}/#{arch}"
+-exedir = bindir
+-if libdirname == "archlibdir"
+-  exedir = exedir.sub(%r[/\K(?=[^/]+\z)]) {extout+"/"}
+-end
+-[exedir, libdir, archdir].uniq.each do |dir|
++[bindir, libdir, archdir].uniq.each do |dir|
+   File.directory?(dir) or mkdir_p(dir)
+ end
+-unless exedir == bindir
+-  ln_dir_relative(exedir, bindir)
+-end
+ 
+ exeext = config["EXEEXT"]
+ ruby_install_name = config["ruby_install_name"]
+@@ -52,7 +45,7 @@ goruby_install_name = "go" + ruby_install_name
+ [ruby_install_name, rubyw_install_name, goruby_install_name].each do |ruby|
+   if ruby and !ruby.empty?
+     ruby += exeext
+-    ln_relative(ruby, "#{exedir}/#{ruby}", true)
++    ln_relative(ruby, "#{bindir}/#{ruby}", true)
+   end
+ end
+ so = config["LIBRUBY_SO"]
+diff --git a/tool/rbinstall.rb b/tool/rbinstall.rb
+index b194f2c..6a20d56 100755
+--- a/tool/rbinstall.rb
++++ b/tool/rbinstall.rb
+@@ -366,9 +366,7 @@ rubyw_install_name = CONFIG["rubyw_install_name"]
+ goruby_install_name = "go" + ruby_install_name
+ 
+ bindir = CONFIG["bindir", true]
+-if CONFIG["libdirname"] == "archlibdir"
+-  archbindir = bindir.sub(%r[/\K(?=[^/]+\z)]) {CONFIG["config_target"] + "/"}
+-end
++archbindir = nil
+ libdir = CONFIG[CONFIG.fetch("libdirname", "libdir"), true]
+ rubyhdrdir = CONFIG["rubyhdrdir", true]
+ archhdrdir = CONFIG["rubyarchhdrdir"] || (rubyhdrdir + "/" + CONFIG['arch'])
