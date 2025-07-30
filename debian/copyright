@@ -200,11 +200,6 @@ Files: ext/digest/sha2/sha2.c ext/digest/sha2/sha2.h
 Copyright: 2000 Aaron D. Gifford.  All rights reserved.
 License: BSD-3-clause
 
-Files: ext/nkf/nkf-utf8/config.h ext/nkf/nkf-utf8/nkf.c ext/nkf/nkf-utf8/utf8tbl.c
-Copyright: 1987, Fujitsu LTD. (Itaru ICHIKAWA)
- 1996-2013, The nkf Project.
-License: zlib/libpng
-
 Files: ext/socket/addrinfo.h ext/socket/getaddrinfo.c ext/socket/getnameinfo.c
 Copyright: 1995, 1996, 1997, 1998, and 1999 WIDE Project. All rights reserved.
 License: BSD-3-clause
