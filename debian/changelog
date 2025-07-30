@@ -1,4 +1,4 @@
-ruby3.4 (3.4.5-1) UNRELEASED; urgency=medium
+ruby3.4 (3.4.5-1~exp1) experimental; urgency=medium
 
   [ Lucas Kanashiro ]
   * Ruby 3.4
