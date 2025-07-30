@@ -54,11 +54,11 @@ Section: libs
 Multi-Arch: same
 Architecture: any
 Depends: rake (>= 10.4.2),
-         ruby-csv (>= 3.4.3),
+         ruby-csv (>= 3.3.3),
          ruby-did-you-mean (>= 1.6.3-2~),
          ruby-net-telnet (>= 0.1.1),
          ruby-ruby2-keywords (>= 0.0.5-1~),
-         ruby-xmlrpc (>= 0.3.4~),
+         ruby-xmlrpc (>= 0.3.3~),
          ruby-webrick (>= 1.9),
          ${misc:Depends},
          ${shlibs:Depends}
