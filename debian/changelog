@@ -1,10 +1,27 @@
 ruby3.4 (3.4.5-1) UNRELEASED; urgency=medium
 
+  [ Lucas Kanashiro ]
   * Ruby 3.4
   * New upstream version 3.4.5
   * New upstream version 3.4.5
+  * Refresh patches
+  * B-d on pkgconf instead of pkg-config
+  * d/s/lintian-overrides: remove duplicate entry
+  * d/t/excludes/autopkgtest: skip some new tests failing
 
- -- Lucas Kanashiro <kanashiro@debian.org>  Thu, 17 Jul 2025 10:12:28 -0300
+  [ Cédric Boutillier ]
+  * rdoc: install gemspec and change lib_file Dir.glob expression
+  * test_tty_ambiguous_width: Use Reline.test_rubybin
+  * Rediff patches
+  * Update symbols
+  * remove unused lintian override  library-not-linked-against-libc
+  * d/genprovides: remove obsolete comment
+  * Disable optimize=-lto option, apparently not needed since ruby3.1
+  * Remove unused lintian overrides license-problem-non-free-RFC-BCP78
+  * d/copyright: remove paragraph about ext/nkf, removed from source
+  * Restore versioned dependencies
+
+ -- Lucas Kanashiro <kanashiro@debian.org>  Wed, 30 Jul 2025 20:38:17 -0300
 
 ruby3.3 (3.3.8-2) unstable; urgency=medium
 
