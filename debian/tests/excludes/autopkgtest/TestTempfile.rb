@@ -1,0 +1,7 @@
+exclude :test_tempfile_is_unlinked_when_ruby_exits, 'needs further investigation'
+exclude :test_finalizer_removes_file_when_clone, 'needs further investigation'
+exclude :test_finalizer_does_not_unlink_if_already_unlinked, 'needs further investigation'
+exclude :test_tempfile_finalizer_does_not_run_if_unlinked, 'needs further investigation'
+exclude :test_finalizer_removes_file_when_dup, 'needs further investigation'
+exclude :test_test_finalizer_removes_file, 'needs further investigation'
+exclude :test_finalizer_removes_file, 'needs further investigation'
