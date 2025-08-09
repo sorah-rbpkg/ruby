@@ -46,7 +46,7 @@ RUN_OPTS      = --disable-gems
 # GITPULLOPTIONS = --no-tags
 
 PRISM_SRCDIR = $(srcdir)/prism
-INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(PRISM_SRCDIR) -I$(UNICODE_HDR_DIR) $(incflags)
+INCFLAGS = -I. -I$(arch_hdrdir) -I$(ext_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(PRISM_SRCDIR) -I$(UNICODE_HDR_DIR) $(incflags)
 
 GEM_HOME =
 GEM_PATH =
@@ -835,6 +835,12 @@ clean-platform distclean-platform realclean-platform:
 	-$(Q) $(RMDIR) $(PLATFORM_DIR) 2> $(NULL) || $(NULLCMD)
 
 RUBYSPEC_CAPIEXT = spec/ruby/optional/capi/ext
+RUBYSPEC_CAPIEXT_SRCDIR = $(srcdir)/$(RUBYSPEC_CAPIEXT)
+RUBYSPEC_CAPIEXT_DEPS = $(RUBYSPEC_CAPIEXT_SRCDIR)/rubyspec.h $(RUBY_H_INCLUDES) $(LIBRUBY)
+
+rubyspec-capiext: build-ext $(DOT_WAIT)
+# make-dependent rules should be included after this and built after build-ext.
+
 clean-spec: PHONY
 	-$(Q) $(RM) $(RUBYSPEC_CAPIEXT)/*.$(OBJEXT) $(RUBYSPEC_CAPIEXT)/*.$(DLEXT)
 	-$(Q) $(RMDIRS) $(RUBYSPEC_CAPIEXT) 2> $(NULL) || $(NULLCMD)
@@ -7503,6 +7509,7 @@ goruby.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+goruby.$(OBJEXT): {$(VPATH)}internal/attr/nonstring.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
@@ -9523,6 +9530,7 @@ marshal.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+marshal.$(OBJEXT): {$(VPATH)}internal/attr/nonstring.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
@@ -10132,6 +10140,7 @@ miniinit.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+miniinit.$(OBJEXT): {$(VPATH)}internal/attr/nonstring.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
@@ -12801,6 +12810,8 @@ proc.$(OBJEXT): {$(VPATH)}prism/ast.h
 proc.$(OBJEXT): {$(VPATH)}prism/version.h
 proc.$(OBJEXT): {$(VPATH)}prism_compile.h
 proc.$(OBJEXT): {$(VPATH)}proc.c
+proc.$(OBJEXT): {$(VPATH)}ractor.h
+proc.$(OBJEXT): {$(VPATH)}ractor_core.h
 proc.$(OBJEXT): {$(VPATH)}ruby_assert.h
 proc.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 proc.$(OBJEXT): {$(VPATH)}rubyparser.h
@@ -16467,6 +16478,7 @@ signal.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+signal.$(OBJEXT): {$(VPATH)}internal/attr/nonstring.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
@@ -17226,6 +17238,7 @@ string.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+string.$(OBJEXT): {$(VPATH)}internal/attr/nonstring.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
@@ -17684,6 +17697,7 @@ symbol.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+symbol.$(OBJEXT): {$(VPATH)}internal/attr/nonstring.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/pure.h

@@ -1,5 +1,802 @@
 -*- coding: utf-8 -*-
 
+commit f5c772fc7cbe9f5b58d962939fcb1c7e3fb1cfa6
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-07-24 19:04:28 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-24 19:04:28 +0900
+
+    bump teeny
+
+commit 361d14319b8944e6abf207cfda4904360321c861
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-07-24 17:15:54 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-24 17:15:54 +0900
+
+    merge revision(s) 5e5cec1b86837653b2106af377561045f4bbecef:
+
+            Fix bigand_int edgecase returning false (#13987)
+
+commit 83335453c245ab2e7c92a6ae28de08a649e844d9
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-07-24 16:44:37 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-24 16:44:37 +0900
+
+    Revert bump versions of default gems for extconf.rb changes.
+
+    This reverts commit 91263c7e523dd0345c35ac4b616676132aad09d1.
+
+commit 9a269b15f56bd082cd227b91ae1549058890f73b
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-07-01 17:38:25 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-20 18:32:03 +0900
+
+    [ruby/json] Run `have_func` with the header providing the declarations
+
+    https://github.com/ruby/json/commit/95fb084027
+
+commit dd84f059cb60ebd27763b6114a096843a682560f
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-07-01 17:38:25 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-20 18:32:03 +0900
+
+    [ruby/strscan] Run `have_func` with the header providing the declarations
+
+    https://github.com/ruby/strscan/commit/18c0a59b65
+
+commit 2af51ec4803a65481eadd862abc87ac516e08da3
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-06-12 10:32:49 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-20 18:32:03 +0900
+
+    [ruby/strscan] Update extconf.rb
+    (https://github.com/ruby/strscan/pull/158)
+
+    - `have_func` includes "ruby.h" by default.
+    - include "ruby/re.h" where `rb_reg_onig_match` is declared.
+
+    https://github.com/ruby/strscan/commit/1ac96f47e9
+
+commit bf08633e0f3d1b52c2ebb35d89591b6775ccb320
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-07-01 17:38:25 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-20 18:32:03 +0900
+
+    [ruby/openssl] Run `have_func` with the header providing the declarations
+
+    https://github.com/ruby/openssl/commit/b6f56c4540
+
+commit 280cf2ad813c65cdc9b78d9b20d68904c992e380
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-07-20 17:04:50 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-20 18:32:03 +0900
+
+    Bump io-nonblock to 0.3.0.1
+
+commit 2493ec4f5e0114d5442f6b8e0732f9e380f0b2fb
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-07-01 17:38:25 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-20 18:32:03 +0900
+
+    [ruby/io-nonblock] Run `have_func` with the header providing the declarations
+
+    https://github.com/ruby/io-nonblock/commit/70909f5362
+
+commit e997c7f26e2cc21c40a2bd27bfe807e69d091183
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-07-20 17:01:56 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-20 18:32:03 +0900
+
+    Bump io-wait to 0.3.1.1
+
+commit 8fab4f20a83eacc28d66c7ab6fe615386a7e987f
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-07-01 17:38:25 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-20 18:32:03 +0900
+
+    [ruby/io-wait] Run `have_func` with the header providing the declarations
+
+    https://github.com/ruby/io-wait/commit/48309d7877
+
+commit 1d275bfd390912dc68c6903c7ebf5b0214cd6fff
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-07-20 16:57:14 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-20 18:32:03 +0900
+
+    Bump io-console to 0.7.1.1
+
+commit fb42816c53295e7099f98c6039e5fd1d1bbebc7b
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-07-01 17:38:25 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-20 18:32:03 +0900
+
+    [ruby/io-console] Run `have_func` with the header providing the declarations
+
+    https://github.com/ruby/io-console/commit/dd013030dd
+
+commit 91263c7e523dd0345c35ac4b616676132aad09d1
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-07-20 16:54:16 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-20 18:32:03 +0900
+
+    bump etc-1.4.3.1
+
+commit fd6d582427f75eee2373bdcbaa598365c6eb76a9
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-07-01 17:38:25 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-20 18:32:03 +0900
+
+    [ruby/etc] Run `have_func` with the header providing the declarations
+
+    https://github.com/ruby/etc/commit/6668bfd42a
+
+commit 868bcf3807c25ddeb30838f6eee6670bad7bb313
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-07-20 16:22:30 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-20 18:32:03 +0900
+
+    Update dependency for goruby
+
+commit f0ec1ad8275c131644bc684e52748fff9b96bbe8
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-07-20 16:13:41 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-20 18:32:03 +0900
+
+    Add compilation with GCC 14,15 on GitHub workflow
+
+commit 407f6c9d0528fa6aa3f382eb1dce3a58baf5d571
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-07-20 16:10:41 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-20 18:32:03 +0900
+
+    merge revision(s) b42afa1dbcbb91e89852b3b3bc72484d7f0a5528, 67b91e780798b80038dbfb39a06831918a75259f, f1f0cc14cc7d3f9be35b203e5583f9224b1e2387, 543e3a1896ae2fe3b5b954f6497d261ab5663a15, ed2806117a0b76e4439ce1a061fae21d9e116d69, 46e4c8673747de96838d2c5dec37446d23d99d88: [Backport #21497]
+
+            Suppress gcc 15 unterminated-string-initialization warnings
+
+            Drop an ignored attribute
+            MIME-Version: 1.0
+            Content-Type: text/plain; charset=UTF-8
+            Content-Transfer-Encoding: 8bit
+
+            GCC 13.3.0 (Ubuntu 24.04) emits the following warning:
+
+            ../symbol.c: In function ‘rb_id_attrset’:
+            ../symbol.c:175:9: warning: ‘nonstring’ attribute ignored on objects of type ‘const char[][8]’ [-Wattributes]
+              175 |         RBIMPL_ATTR_NONSTRING() static const char id_types[][8] = {
+                  |         ^~~~~~~~~~~~~~~~~~~~~
+
+            Separate `__has_attribute` from `defined(__has_attribute)`
+
+            Fix Visual C warnings:
+            ```
+            regenc.h(121): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+            ```
+
+            Cast up `int` instruction code to `VALUE`
+
+            Fix Visual C warnings:
+            ```
+            iseq.c(3793): warning C4312: 'type cast': conversion from 'int' to 'void *' of greater size
+            iseq.c(3794): warning C4312: 'type cast': conversion from 'int' to 'void *' of greater size
+            ```
+
+            Do not let files depend on a phony target
+
+            Detect `clock_gettime` and `clock_getres` for winpthreads
+
+commit 1e37f34eaad715119d49c13e0bf6e6c54c5cbca6
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-07-20 15:49:08 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-20 15:49:08 +0900
+
+    merge revision(s) d77e02bd85ab7f841df8d473bac214b9a92a3506: [Backport #21497]
+
+            [Bug #21497] [ruby/socket]: add full prototype
+            MIME-Version: 1.0
+            Content-Type: text/plain; charset=UTF-8
+            Content-Transfer-Encoding: 8bit
+
+            otherwise, gcc 15 will complain:
+
+            > init.c:573:19: error: too many arguments to function ‘Rconnect’; expected 0, have 3
+            >   573 |     return (VALUE)Rconnect(arg->fd, arg->sockaddr, arg->len);
+            >       |                   ^~~~~~~~ ~~~~~~~
+            > In file included from init.c:11:
+            > rubysocket.h:294:5: note: declared here
+            >   294 | int Rconnect();
+            >       |     ^~~~~~~~
+
+            > sockssocket.c:33:9: error: too many arguments to function ‘SOCKSinit’; expected 0, have 1
+            >    33 |         SOCKSinit("ruby");
+            >       |         ^~~~~~~~~ ~~~~~~
+            > In file included from sockssocket.c:11:
+            > rubysocket.h:293:6: note: declared here
+            >   293 | void SOCKSinit();
+            >       |      ^~~~~~~~~
+
+            Signed-off-by: Z. Liu <zhixu.liu@gmail.com>
+
+commit 9b9f244b9837d2f3f1128591823eabe55f1a3204
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-07-20 15:43:31 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-20 15:43:31 +0900
+
+    merge revision(s) 1181a682a6c314c92686e3701defa1eb44068c4e, 0cec4a14fb832aed4b498a21ec0c19765642d408, d84a811f31a65821642b165d712f380c0cc060e0: [Backport #21448]
+
+            [Bug #21448] Use `getentropy(2)` only on macOS
+
+            If this is not a system call, then it is using getrandom (which would
+            have been tried already), and cannot be used as a replacement for the
+            random devices.
+
+            Restore getrandom(2) path for Linux with glibc 2.36 or later
+
+            This is a follow-up to commit b120f5e38d9c (avoid fork-unsafe arc4random
+            implementations, 2018-09-04).
+
+            Avoid defining a no-op fill_random_bytes_syscall() if arc4random_buf(3)
+            exists, but we are unsure if it is fork-safe. Check for other options
+            instead. IOW, see if getrandom(2) is available.
+
+            glibc 2.36, released in 2022, started to provide arc4random_buf(3) on
+            Linux. This causes fill_random_bytes_syscall() to use neither of them
+            and makes Random.urandom solely rely on getentropy(3) via
+            fill_random_bytes_urandom().
+
+            While the glibc implementation is safe, I did not add it to the list
+            because using getrandom(2) directly is preferable on Linux.
+
+            [Bug #21448] Reorder trials in `fill_random_bytes`
+
+            First try dedicated system calls, such as `getrandom` or `getentropy`,
+            next possible libraries, then fallback to `/dev/urandom`.
+
+commit f4de78f2b4bd5be3735de9ccbaa89a0f495b6f10
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-07-20 10:35:44 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-20 10:35:44 +0900
+
+    merge a revision partially 097d742a1ed53afb91e83aef01365d68b763357b: [Backport #20009]
+
+commit 581be2b79cca0cb977fc0d6745cec7dbbe29b134
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-07-19 11:16:49 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-19 11:16:49 +0900
+
+    merge revision(s) 097d742a1ed53afb91e83aef01365d68b763357b: [Backport #20009]
+
+            [Bug #20009] Support marshaling non-ASCII name class/module
+
+commit 3471ee0749be4bf9bfdd382ac0b6aedaf47a53b1
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-06-14 10:52:32 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-19 10:23:17 +0900
+
+    Fix generic_ivar_set_shape_ivptr for table rebuild
+
+    [Bug #21438]
+
+    Previously GC could trigger a table rebuild of the generic ivar
+    st_table in the middle of calling the st_update callback. This could
+    cause entries to be reallocated or rearranged and the update to be for
+    the wrong entry.
+
+    This commit adds an assertion to make that case easier to detect, and
+    replaces the st_update with a separate st_lookup and st_insert.
+
+    Also free after insert in generic_ivar_set_shape_ivptr
+
+    Previously we were performing a realloc and then inserting the new value
+    into the table. If the table was flagged as requiring a rebuild, this
+    could trigger GC work and marking within that GC could access the ivptr
+    freed by realloc.
+
+    Co-authored-by: Aaron Patterson <tenderlove@ruby-lang.org>
+    Co-authored-by: Jean Boussier <byroot@ruby-lang.org>
+
+commit 111a49e77e4b05a21bb37942ea2cfc254daa8d92
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-07-08 16:39:02 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-07-19 10:19:07 +0900
+
+    Bump up resolv-0.3.1 for Ruby 3.3
+
+commit 7fb19cf8035cb3e4209c93c70a224382e4c8ee6f
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-07-01 16:57:26 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-07-02 11:05:40 +0900
+
+    Partly picked from https://github.com/ruby/ruby/pull/10073
+
+commit a52a2e852a38fbf3c2b5184a4fa64951b47ae03a
+  Author:     Luke Gruber <luke.gruber@shopify.com>
+  AuthorDate: 2025-06-18 05:56:26 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-06-29 13:08:00 +0900
+
+    thread_cleanup: set CFP to NULL before clearing ec's stack
+
+    We clear the CFP first so that if a sampling profiler interrupts the current thread during `rb_ec_set_vm_stack`,
+    `thread_profile_frames` returns early instead of trying to walk the stack that's no longer set on the ec.
+
+    The early return in `thread_profile_frames` was introduced at eab7f4623fb.
+
+    Fixes [Bug #21441]
+
+commit 1fb5ab411f618f651926ecae9427605e03e19884
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-06-29 12:31:38 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-06-29 12:31:38 +0900
+
+    merge revision(s) c1877d431e76f4a782d51602fa8487e98d302956: [Backport #21437]
+
+            [ruby/date] [Bug #21437] Date#hash for large years
+
+            Addresses https://bugs.ruby-lang.org/issues/21437
+
+            Signed-off-by: Dmitry Dygalo <dmitry.dygalo@workato.com>
+
+            https://github.com/ruby/date/commit/31f07bc576
+
+commit a976792832887ee2ae1380ab0e2244067126f017
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-06-29 12:27:54 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-06-29 12:27:54 +0900
+
+    merge revision(s) 2e7e78cd590d20aa9d41422e96302f3edd73f623: [Backport #21440]
+
+            [Bug #21440] Stop caching member list in frozen Data/Struct class
+
+commit de512b7a3d392f8cbf95ac40504b2229e5fdf229
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-06-25 11:26:30 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-06-25 15:22:36 +0900
+
+    We don't need to specify winsdk version
+
+    a205407e165e4570b8b6d6e4b7a019b51962ecba fixed that workaround
+
+commit 8908cb07829628115f7455508c2d5885ac99c939
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-06-15 12:51:29 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-06-15 12:51:29 +0900
+
+    merge revision(s) fa85d23ff4a02985ebfe0716b0ff768f5b4fe13d: [Backport #21380]
+
+            [Bug #21380] Prohibit modification in String#split block
+
+            Reported at https://hackerone.com/reports/3163876
+
+commit a205407e165e4570b8b6d6e4b7a019b51962ecba
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-06-14 17:43:36 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-06-14 17:43:36 +0900
+
+    merge revision(s) 72bda0f981c7136f50254c433bbfb97a953f634b: [Backport #21255]
+
+            [Bug #21255] Win32: Do not export `__declspec(selectany)` symbols
+
+            ```
+            x64-vcruntime140-ruby350.def : error LNK2001: unresolved external symbol Avx2WmemEnabledWeakValue
+            ```
+
+commit dc88822c3eabbd3f5ac080b1ff1059b1f0066bd2
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-06-14 17:41:04 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-06-14 17:41:04 +0900
+
+    merge revision(s) e1adb6cb15129a54df0c55a337e98b92b2a55e3f: [Backport #21283]
+
+            Win: Suppress false warnings from Visual C 17.14.1
+
+            https://developercommunity.visualstudio.com/t/warning-C5287:-operands-are-different-e/10877942?
+
+            It is not able to silence "operands are different enum types"
+            warnings, even using an explicit cast, as the message says.
+
+commit 5de0c228a34dc919b663b547f933fb276333fdce
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-06-14 11:41:49 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-06-14 11:41:49 +0900
+
+    merge revision(s) 2297afda7ff3926c51fea700dfbf0f0eb4fea1e5: [Backport #21340]
+
+            Include stdbool.h without checking with autoconf
+
+            As reported in <https://bugs.ruby-lang.org/issues/21340>, older autoconf
+            have an AC_HEADER_STDBOOL that's incompatible with C23. Autoconf 2.72
+            fixed the macro, but also mentions that it's obsolescent since all
+            current compilers have this header.
+
+            Since we require C99 [1] and VS 2015 [2], we might actually be able take
+            that suggestion and include stdbool.h without a check. I want to try
+            this on rubyci.org and will revert if this cause any issues. Not
+            touching AC_HEADER_STDBOOL in configure.ac for now.
+
+            [1]: https://bugs.ruby-lang.org/issues/15347
+            [2]: https://bugs.ruby-lang.org/issues/19982
+
+commit d5c8fd2043f4425c3fe2a87558dfbd80ebff9911
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-06-14 11:39:08 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-06-14 11:39:08 +0900
+
+    merge revision(s) f6cbf499bc98b851034fffb49fcbb59d495f6f7b: [Backport #21354]
+
+            Fix Symbol#to_proc (rb_sym_to_proc) to be ractor safe
+
+            In non-main ractors, don't use `sym_proc_cache`. It is not thread-safe
+            to add to this array without a lock and also it leaks procs from one
+            ractor to another. Instead, we create a new proc each time. If this
+            results in poor performance we can come up with a solution later.
+
+            Fixes [Bug #21354]
+
+commit fb8248b3e8d099662b37b118bc7152aed82dfcc8
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-21 17:33:24 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-06-10 11:06:34 +0900
+
+    Disabled TRAP cache of CodeQL
+
+commit 6ca52090ed7e3d85d15ddd2093745512e055803f
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-06-03 08:43:18 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-06-03 10:12:43 +0900
+
+    Remove hardcoded version of rake from Bundler tests
+
+    The original commit is https://github.com/rubygems/rubygems/commit/85f73e42a563ac6848ba22aeae344a5bdc5a9ed7
+
+commit c1c068e43c80aeb2e711b64261323594eca66217
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-05-24 18:12:02 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-05-24 18:12:02 +0900
+
+    Follow up for 380938998415c22ba3ca9bc01f4035d5a73f274d. The type of jump_to_next_insn() is Option<()> on ruby_3_3.
+
+commit 7230a070e3dffc765fc6617436a2293c459c6c8d
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-05-24 17:27:33 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-05-24 17:27:33 +0900
+
+    Follow up for 380938998415c22ba3ca9bc01f4035d5a73f274d. jump_to_next_insn() require 3rd argument on ruby_3_3.
+
+commit 380938998415c22ba3ca9bc01f4035d5a73f274d
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-05-24 16:38:32 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-05-24 16:38:32 +0900
+
+    merge revision(s) cbf9c088f8005a49b6aa3f475c70041357774c61: [Backport #21310]
+
+            YJIT: End the block after OPTIMIZE_METHOD_TYPE_CALL (#13245)
+
+commit 24c994b91a67f0023e8fe22a5428581110564332
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-05-24 10:25:59 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-05-24 10:25:59 +0900
+
+    merge revision(s) 056497319658cbefe22351c6ec5c9fa6e4df72bd: [Backport #21357]
+
+            [Bug #21357] Fix crash in Hash#merge with block
+
+            Prior to https://github.com/ruby/ruby/commit/49b306ecb9e2e9e06e0b1590bacc5f4b38169c3c
+            the `optional_arg` passed from `rb_hash_update_block_i` to `tbl_update`
+            was a hash value (i.e. a VALUE). After that commit it changed to an
+            `update_call_args`.
+
+            If the block sets or changes the value, `tbl_update_modify` will set the
+            `arg.value` back to an actual value and we won't crash. But in the case
+            where the block returns the original value we end up calling
+            `RB_OBJ_WRITTEN` with the `update_call_args` which is not expected and
+            may crash.
+
+            `arg.value` appears to only be used to pass to `RB_OBJ_WRITTEN` (others
+            who need the `update_call_args` get it from `arg.arg`), so I don't think
+            it needs to be set to anything upfront. And `tbl_update_modify` will set
+            the `arg.value` in the cases we need the write barrier.
+
+commit 8f895758d9512466e9ec24ce8e588f059c16136c
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-05-24 10:24:22 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-05-24 10:24:22 +0900
+
+    merge revision(s) 49b306ecb9e2e9e06e0b1590bacc5f4b38169c3c: [Backport #21333]
+
+            [Bug #21333] Prohibit hash modification inside Hash#update block
+
+commit d15fdb5c7ff204ebed7e24da5a921bf200426202
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-05-22 15:29:01 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-05-22 21:10:17 +0900
+
+    Win32: Initialize the systemtime function before converting FILETIME
+
+commit ff1d6157460f69399e98d547cbfaadc22b6870a1
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-22 15:06:18 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-22 15:54:24 +0900
+
+    Don't need to store download cache of vcpkg
+
+    vcpkg can detect their cache from `vcpkg/installed`.
+
+commit f57dd4470b9ba1e2e0007e814f94e8bb4fd2ab6f
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-05-18 16:25:01 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-05-18 16:25:01 +0900
+
+    merge revision(s) 80a1a1bb8ae8435b916ae4f66a483e91ad31356a: [Backport #21257]
+
+            YJIT: Fix potential infinite loop when OOM (GH-13186)
+
+            Avoid generating an infinite loop in the case where:
+            1. Block `first` is adjacent to block `second`, and the branch from `first` to
+               `second` is a fallthrough, and
+            2. Block `second` immediately exits to the interpreter, and
+            3. Block `second` is invalidated and YJIT is OOM
+
+            While pondering how to fix this, I think I've stumbled on another related edge case:
+            1. Block `incoming_one` and `incoming_two` both branch to block `second`. Block
+               `incoming_one` has a fallthrough
+            2. Block `second` immediately exits to the interpreter (so it starts with its exit)
+            3. When Block `second` is invalidated, the incoming fallthrough branch from
+               `incoming_one` might be rewritten first, which overwrites the start of block
+               `second` with a jump to a new branch stub.
+            4. YJIT runs of out memory
+            5. The incoming branch from `incoming_two` is then rewritten, but because we're
+               OOM we can't generate a new stub, so we use `second`'s exit as the branch
+               target. However `second`'s exit was already overwritten with a jump to the
+               branch stub for `incoming_one`, so `incoming_two` will end up jumping to
+               `incoming_one`'s branch stub.
+
+            Fixes [Bug #21257]
+
+commit 1f226f1efeeae3a5091c60e2f51e027d0598f394
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-05-18 13:32:52 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-05-18 13:32:52 +0900
+
+    merge revision(s) b959263b58e26ef630c085f9f7ddc04373a998c7: [Backport #21344]
+
+            Fix Exception#detailed_message for GC compaction
+
+            Before this commit, the test fails with RGENGC_CHECK_MODE enabled:
+
+                TestException#test_detailed_message_under_gc_compact_stress [test/ruby/test_exception.rb:1466]:
+                <"\e[1mfoo (\e[1;4mRuntimeError\e[m\e[1m)\e[m\n" +
+                "\e[1mbar\e[m\n" +
+                "\e[1mbaz\e[m"> expected but was
+                <"\e[1mfoo (\e[1;4mRuntimeError\e[m\e[1m)\e[m\n" +
+                "\e[1m\x00\x00\x00\x00\x00\x00\x00\e[m">.
+
+commit 74f46982ebfbec4d21b6fc8aff47f2e290307d36
+  Author:     nick evans <nick@rubinick.dev>
+  AuthorDate: 2025-05-01 01:59:21 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-05-18 13:30:24 +0900
+
+    Bump net-imap to v0.4.21 for Ruby 3.3 (CVE-2025-43857)
+
+    v0.4.20 addresses CVE-2025-43857 (GHSA-j3g3-5qv5-52mj).
+
+    v0.4.21 fixes bugs in `Net::IMAP::SequenceSet`.
+
+commit 551c444f810df5d22f5045f2fb69477a9fe40845
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-05-18 12:00:23 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-05-18 12:00:23 +0900
+
+    merge revision(s) b48b841378f80e16378ceb83f3b78e52df9ae023, 2fe8b9cd3d308d754f3d33a948dfb1dd782a10dc: [Backport #21327]
+
+            digest.so needs ruby/digest.h which is installed by build-ext
+
+            Copy to path with the base name
+
+commit 8a1d738b80408db5713c6b83adb0e5ce354360e5
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-05-18 10:24:11 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-05-18 10:24:11 +0900
+
+    merge revision(s) 3113bc8d445c4c24ed3827adfc50bb88c99b6364:
+
+            stat command is not provided on Windows
+
+commit cb49400d680894d69534b0b4cd10b085de325e2a
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-05-17 15:57:05 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-05-17 15:57:05 +0900
+
+    merge revision(s) 7793b59c8d2a13c124fe276e11723db23facce04: [Backport #21331]
+
+            [Bug #21331] Prohibit hash modification during stlike loop
+
+commit b25bfd33e974e7f46199d5908969e6d52cec31e7
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-05-17 15:56:46 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-05-17 15:56:46 +0900
+
+    merge revision(s) 7f5b4fb26ea8c0a736a37101327905eebebee8bf:
+
+            Remove unused retval assignments
+
+commit a3adc05a4e1f5c5d1cd95eee92da9693b23360bf
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-05-17 15:41:00 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-05-17 15:41:00 +0900
+
+    merge revision(s) 3e47e7a499acd256be549935fcb559d3c82e556c, 46e4c8673747de96838d2c5dec37446d23d99d88:
+
+            Fix redefinition of `clock_gettime` and `clock_getres`
+
+            winpthreads-git 12.0.0.r720 provides `clock_gettime` and
+            `clock_getres` as inline functions.
+
+            Detect `clock_gettime` and `clock_getres` for winpthreads
+
+commit b1b6752fbeb2d23dbea639bd4b331c9e8b56f49c
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-05-17 15:21:08 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-05-17 15:21:08 +0900
+
+    merge revision(s) 0d6263bd416338a339651fb97fe4d62701704c4b: [Backport #21220]
+
+            Fix coverage measurement for negative line numbers
+
+            Fixes [Bug #21220]
+
+            Co-Authored-By: Mike Bourgeous <mike@mikebourgeous.com>
+            Co-Authored-By: Jean Boussier <jean.boussier@gmail.com>
+
+commit 1c68aae91f43685766ae21485e98e76bfa331857
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-02-26 11:13:41 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-05-06 14:06:40 +0900
+
+    Check LoadError first
+
+    The message from dlerror is not our concern.
+
+commit 54950b1f7c34db61cc922515b726a5d23426a53d
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-02-26 09:09:56 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-05-06 14:06:40 +0900
+
+    Added assertion strings with Xcode 16.3 beta
+
+commit ffd469bd6d06df10057325a5b8c773fca009af8d
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-05-06 11:29:37 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-05-06 11:29:37 +0900
+
+    merge revision(s) 719486a642f0e282b02b958069b8b39b85b3aa1e: [Backport #21286]
+
+            Fix C23 (GCC 15) WIN32 compatibility for rb_define_* functions
+
+            Fixes [Bug #21286]
+
+commit ccc576907a26db45f92b6898774f7159ef201205
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-01 14:11:38 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 16:10:59 +0900
+
+    Fixed step for cmake 3 installation
+
+commit ab1535553b9e4806d95ed217a95188ab971ea8df
+  Author:     Yuta Saito <kateinoigakukun@gmail.com>
+  AuthorDate: 2025-02-12 20:43:05 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 16:10:59 +0900
+
+    tool/downloader.rb: Stop caching already existing files
+
+    Previously, the script was caching any file already present in the
+    destination directory, regardless of its origin. This caused issues
+    when the directory contained files copied from external sources like
+    `autoreconf --install`.
+
+    For example:
+    1. `./autogen.sh --install` copies `config.guess` and `config.sub`
+       from the system to `./tool`.
+    2. `ruby tool/downloader.rb -d tool -e gnu config.guess config.sub`
+       treats those files as if they were downloaded and caches them.
+    3. Removing the files: `rm tool/config.guess tool/config.sub`.
+    4. Running the downloader again, it mistakenly restores the cached
+       files instead of downloading fresh versions.
+
+commit 00343f63652e217f4d57af342a696a3337e27d5b
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-01-16 18:02:16 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 16:10:59 +0900
+
+    Use configu.guess with wasi compatible version
+
+commit 2ac9b27ba35cf5fea5abd82e5af69cfa345abdc2
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-01 12:11:46 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 16:10:59 +0900
+
+    Bump up the latest version of actions
+
+commit bd5f39523b109df23e7583dab6e942a9cfb982d8
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-01 11:41:07 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 16:10:59 +0900
+
+    Bump up clang-14 with yjit-bindgen job
+
+commit 4db3d2b885cec25d6d15f7db3638e9bc511aa0e5
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-01 11:36:38 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 16:10:59 +0900
+
+    ubuntu-20.04 is retired
+
+commit 59ae1818fc9d45107121ec54406c5874c5a75b71
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-01 11:30:18 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 16:10:59 +0900
+
+    Use windows-2022 because windows-2019 is EOL at June 2025
+
 commit b200bad6cd40d08e9f33b93e1a85c270b337867c
   Author:     nagachika <nagachika@ruby-lang.org>
   AuthorDate: 2025-04-09 18:23:04 +0900
@@ -32102,14 +32899,6 @@ commit 20c561fe0c1194ad4dca265d79f7f8afc0469f3c
   CommitDate: 2023-09-28 22:48:26 +0900
 
     Add indentation to ignore revs
-
-commit 40b2c8e5e7e6e5f83cee9276dc9c1922a69292d6
-  Author:     Kevin Newton <kddnewton@gmail.com>
-  AuthorDate: 2023-09-28 22:47:46 +0900
-  Commit:     Kevin Newton <kddnewton@gmail.com>
-  CommitDate: 2023-09-28 22:47:46 +0900
-
-    Fix up indentation in prism_compile.c
 
 commit a213d2144827ab3151d3291794e87fbfb8523a2e
   Author:     Kevin Newton <kddnewton@gmail.com>
@@ -69028,17 +69817,6 @@ commit 1347d707cad8307b91df7e03e5347231ffafe40f
     Ignore parse.y expand tabs commit
 
     [Misc #19523]
-
-commit c5e9af9c9d890578182a21e7b71b50334cd5579e
-  Author:     Takashi Kokubun <takashikkbn@gmail.com>
-  AuthorDate: 2023-03-10 02:31:46 +0900
-  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
-  CommitDate: 2023-03-10 02:32:11 +0900
-
-    Expand tabs in parse.y
-
-    I used the same script as https://github.com/ruby/ruby/pull/6094 but
-    for a .y file.
 
 commit 74f44dae9696dfc570abaefc106a2515e3770ef1
   Author:     Takashi Kokubun <takashikkbn@gmail.com>
