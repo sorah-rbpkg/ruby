@@ -860,7 +860,7 @@ ar_general_foreach(VALUE hash, st_foreach_check_callback_func *func, st_update_c
                 if (replace) {
                     VALUE key = pair->key;
                     VALUE val = pair->val;
-                    retval = (*replace)(&key, &val, arg, TRUE);
+                    (*replace)(&key, &val, arg, TRUE);
 
                     // TODO: pair should be same as pair before.
                     ar_table_pair *pair = RHASH_AR_TABLE_REF(hash, i);
@@ -931,7 +931,7 @@ ar_foreach_check(VALUE hash, st_foreach_check_callback_func *func, st_data_t arg
                 if (pair->key == never) break;
                 ret = ar_find_entry_hint(hash, hint, key);
                 if (ret == RHASH_AR_TABLE_MAX_BOUND) {
-                    retval = (*func)(0, 0, arg, 1);
+                    (*func)(0, 0, arg, 1);
                     return 2;
                 }
               }
@@ -1391,6 +1391,7 @@ hash_foreach_ensure(VALUE hash)
     return 0;
 }
 
+/* This does not manage iteration level */
 int
 rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg)
 {
@@ -1402,6 +1403,7 @@ rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg
     }
 }
 
+/* This does not manage iteration level */
 int
 rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg)
 {
@@ -1708,14 +1710,14 @@ tbl_update(VALUE hash, VALUE key, tbl_update_func func, st_data_t optional_arg)
         .func = func,
         .hash = hash,
         .key  = key,
-        .value = (VALUE)optional_arg,
+        .value = 0
     };
 
     int ret = rb_hash_stlike_update(hash, key, tbl_update_modify, (st_data_t)&arg);
 
     /* write barrier */
     RB_OBJ_WRITTEN(hash, Qundef, arg.key);
-    RB_OBJ_WRITTEN(hash, Qundef, arg.value);
+    if (arg.value) RB_OBJ_WRITTEN(hash, Qundef, arg.value);
 
     return ret;
 }
@@ -3326,6 +3328,20 @@ transform_values_foreach_replace(st_data_t *key, st_data_t *value, st_data_t arg
     return ST_CONTINUE;
 }
 
+static VALUE
+transform_values_call(VALUE hash)
+{
+    rb_hash_stlike_foreach_with_replace(hash, transform_values_foreach_func, transform_values_foreach_replace, hash);
+    return hash;
+}
+
+static void
+transform_values(VALUE hash)
+{
+    hash_iter_lev_inc(hash);
+    rb_ensure(transform_values_call, hash, hash_foreach_ensure, hash);
+}
+
 /*
  *  call-seq:
  *    hash.transform_values {|value| ... } -> new_hash
@@ -3356,7 +3372,7 @@ rb_hash_transform_values(VALUE hash)
     SET_DEFAULT(result, Qnil);
 
     if (!RHASH_EMPTY_P(hash)) {
-        rb_hash_stlike_foreach_with_replace(result, transform_values_foreach_func, transform_values_foreach_replace, result);
+        transform_values(result);
         compact_after_delete(result);
     }
 
@@ -3385,7 +3401,7 @@ rb_hash_transform_values_bang(VALUE hash)
     rb_hash_modify_check(hash);
 
     if (!RHASH_TABLE_EMPTY_P(hash)) {
-        rb_hash_stlike_foreach_with_replace(hash, transform_values_foreach_func, transform_values_foreach_replace, hash);
+        transform_values(hash);
     }
 
     return hash;
@@ -3896,28 +3912,68 @@ rb_hash_update_i(VALUE key, VALUE value, VALUE hash)
     return ST_CONTINUE;
 }
 
+struct update_call_args {
+    VALUE hash, newvalue, *argv;
+    int argc;
+    bool block_given;
+    bool iterating;
+};
+
 static int
 rb_hash_update_block_callback(st_data_t *key, st_data_t *value, struct update_arg *arg, int existing)
 {
-    st_data_t newvalue = arg->arg;
+    VALUE k = (VALUE)*key, v = (VALUE)*value;
+    struct update_call_args *ua = (void *)arg->arg;
+    VALUE newvalue = ua->newvalue, hash = arg->hash;
 
     if (existing) {
-        newvalue = (st_data_t)rb_yield_values(3, (VALUE)*key, (VALUE)*value, (VALUE)newvalue);
+        hash_iter_lev_inc(hash);
+        ua->iterating = true;
+        newvalue = rb_yield_values(3, k, v, newvalue);
+        hash_iter_lev_dec(hash);
+        ua->iterating = false;
     }
-    else if (RHASH_STRING_KEY_P(arg->hash, *key) && !RB_OBJ_FROZEN(*key)) {
-        *key = rb_hash_key_str(*key);
+    else if (RHASH_STRING_KEY_P(hash, k) && !RB_OBJ_FROZEN(k)) {
+        *key = (st_data_t)rb_hash_key_str(k);
     }
-    *value = newvalue;
+    *value = (st_data_t)newvalue;
     return ST_CONTINUE;
 }
 
 NOINSERT_UPDATE_CALLBACK(rb_hash_update_block_callback)
 
 static int
-rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
+rb_hash_update_block_i(VALUE key, VALUE value, VALUE args)
 {
-    RHASH_UPDATE(hash, key, rb_hash_update_block_callback, value);
+    struct update_call_args *ua = (void *)args;
+    ua->newvalue = value;
+    RHASH_UPDATE(ua->hash, key, rb_hash_update_block_callback, args);
     return ST_CONTINUE;
+}
+
+static VALUE
+rb_hash_update_call(VALUE args)
+{
+    struct update_call_args *arg = (void *)args;
+
+    for (int i = 0; i < arg->argc; i++){
+        VALUE hash = to_hash(arg->argv[i]);
+        if (arg->block_given) {
+            rb_hash_foreach(hash, rb_hash_update_block_i, args);
+        }
+        else {
+            rb_hash_foreach(hash, rb_hash_update_i, arg->hash);
+        }
+    }
+    return arg->hash;
+}
+
+static VALUE
+rb_hash_update_ensure(VALUE args)
+{
+    struct update_call_args *ua = (void *)args;
+    if (ua->iterating) hash_iter_lev_dec(ua->hash);
+    return Qnil;
 }
 
 /*
@@ -3971,20 +4027,17 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
 static VALUE
 rb_hash_update(int argc, VALUE *argv, VALUE self)
 {
-    int i;
-    bool block_given = rb_block_given_p();
+    struct update_call_args args = {
+        .hash = self,
+        .argv = argv,
+        .argc = argc,
+        .block_given = rb_block_given_p(),
+        .iterating = false,
+    };
+    VALUE arg = (VALUE)&args;
 
     rb_hash_modify(self);
-    for (i = 0; i < argc; i++){
-        VALUE hash = to_hash(argv[i]);
-        if (block_given) {
-            rb_hash_foreach(hash, rb_hash_update_block_i, self);
-        }
-        else {
-            rb_hash_foreach(hash, rb_hash_update_i, self);
-        }
-    }
-    return self;
+    return rb_ensure(rb_hash_update_call, arg, rb_hash_update_ensure, arg);
 }
 
 struct update_func_arg {
