@@ -34,7 +34,8 @@
 
 static const struct {
     unsigned short token;
-    const char name[3], term;
+    RBIMPL_ATTR_NONSTRING() const char name[3];
+    const char term;
 } op_tbl[] = {
     {tDOT2, ".."},
     {tDOT3, "..."},

@@ -7080,6 +7080,7 @@ goruby.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+goruby.$(OBJEXT): {$(VPATH)}internal/attr/nonstring.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
@@ -9003,6 +9004,7 @@ marshal.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+marshal.$(OBJEXT): {$(VPATH)}internal/attr/nonstring.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
@@ -9557,6 +9559,7 @@ miniinit.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+miniinit.$(OBJEXT): {$(VPATH)}internal/attr/nonstring.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
@@ -14404,6 +14407,7 @@ signal.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+signal.$(OBJEXT): {$(VPATH)}internal/attr/nonstring.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
@@ -15160,6 +15164,7 @@ string.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+string.$(OBJEXT): {$(VPATH)}internal/attr/nonstring.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
@@ -15601,6 +15606,7 @@ symbol.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+symbol.$(OBJEXT): {$(VPATH)}internal/attr/nonstring.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
