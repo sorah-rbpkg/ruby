@@ -1,5 +1,385 @@
 -*- coding: utf-8 -*-
 
+commit 8f611e0c46012e321b39efd629eb5f4f53976863
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-07-24 17:24:13 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-07-24 17:27:18 +0900
+
+    bump teeny
+
+commit 2417ed9275eaea69fd52f83ec810d21d9486598b
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-07-24 13:11:55 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-07-24 14:39:20 +0900
+
+    Update dependencies
+
+commit b2cd6d71bbb7e66cdb8067259ec607f270700977
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-05-12 10:17:49 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-07-24 14:39:20 +0900
+
+    Cast up `int` instruction code to `VALUE`
+
+    Fix Visual C warnings:
+    ```
+    iseq.c(3793): warning C4312: 'type cast': conversion from 'int' to 'void *' of greater size
+    iseq.c(3794): warning C4312: 'type cast': conversion from 'int' to 'void *' of greater size
+    ```
+
+commit 2509297258b40f8b55bee252611efc28a12f2f67
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-05-12 10:16:11 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-07-24 14:39:20 +0900
+
+    Separate `__has_attribute` from `defined(__has_attribute)`
+
+    Fix Visual C warnings:
+    ```
+    regenc.h(121): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+    ```
+
+commit e26e8423b5b8a375a8fd6412a99eb6a8cc73cf2c
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-04-30 18:35:25 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-07-24 14:39:20 +0900
+
+    Suppress gcc 15 unterminated-string-initialization warnings
+
+commit 7e6bbc40c8781bff4d99f0ab2a363016bc5ffadd
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-07-01 17:38:25 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-07-24 12:21:34 +0900
+
+    [ruby/io-wait] Run `have_func` with the header providing the declarations
+
+    https://github.com/ruby/io-wait/commit/48309d7877
+
+commit 5c74f2a79bb1b184d5eea975178007e2da1816ed
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-07-01 17:38:25 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-07-24 12:21:34 +0900
+
+    [ruby/json] Run `have_func` with the header providing the declarations
+
+    https://github.com/ruby/json/commit/95fb084027
+
+commit f82b9d8d7b29130d27f5c13aa3bdd2ed3f9a57c8
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-07-01 17:38:25 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-07-24 12:21:34 +0900
+
+    [ruby/strscan] Run `have_func` with the header providing the declarations
+
+    https://github.com/ruby/strscan/commit/18c0a59b65
+
+commit eba9fa20b5421deda53961f09dadc04f3f92ff7e
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-06-12 10:32:49 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-07-24 12:21:34 +0900
+
+    [ruby/strscan] Update extconf.rb
+    (https://github.com/ruby/strscan/pull/158)
+
+    - `have_func` includes "ruby.h" by default.
+    - include "ruby/re.h" where `rb_reg_onig_match` is declared.
+
+    https://github.com/ruby/strscan/commit/1ac96f47e9
+
+commit 9f00b8872d3e294312c99150f1c34b6b3fa74985
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-07-08 16:36:33 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-07-09 06:18:51 +0900
+
+    Bump up resolv-0.2.3 for Ruby 3.2
+
+commit bd7d210d1c33d78a364d18f0c346bb63e69bb6ad
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-05-26 20:11:41 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-06-25 14:33:23 +0900
+
+    Win: Suppress false warnings from Visual C 17.14.1
+
+    https://developercommunity.visualstudio.com/t/warning-C5287:-operands-are-different-e/10877942?
+
+    It is not able to silence "operands are different enum types"
+    warnings, even using an explicit cast, as the message says.
+
+commit 8eadf30cf464e040f95f9d11b832b35a96afea99
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-06-25 12:29:06 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-06-25 13:28:38 +0900
+
+    Removed unnecessary winsdk version
+
+commit 051e5f54ccaef1721796252af259530b82c44211
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-05-26 20:37:14 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-06-25 13:28:38 +0900
+
+    [Bug #21255] Win32: Do not export `__declspec(selectany)` symbols
+
+    ```
+    x64-vcruntime140-ruby350.def : error LNK2001: unresolved external symbol Avx2WmemEnabledWeakValue
+    ```
+
+commit d946d65cea2468086932bb95d77ac2f93b9f67b9
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-05-12 14:16:06 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-06-06 08:33:30 +0900
+
+    Detect `clock_gettime` and `clock_getres` for winpthreads
+
+commit cce19c9c252f53a1c31c9b3962d773007e20891d
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-23 14:57:51 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-28 10:38:11 +0900
+
+    Fixed cache key of vcpkg installed artifacts
+
+commit 7e3c8174694f633bccb52132321b8ef7d6f83605
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-23 14:48:58 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-28 10:38:11 +0900
+
+    Don't store download cache of vcpkg
+
+commit 161aede142c8a10f7858f79549bf9d66ac107fcd
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-21 17:39:13 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-23 07:39:44 +0900
+
+    Disabled TRAP cache of CodeQL
+
+commit 5862be0e89260e597d3dd3d350e7ecb40ee62cce
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-22 15:27:34 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-22 18:32:10 +0900
+
+    Skip failing tests with mingw platform
+
+    https://github.com/ruby/ruby/actions/runs/15159221855/job/42621232822?pr=13397
+
+    ```
+      1)
+      File.atime returns the last access time for the named file with microseconds FAILED
+      Expected 0 == 123456
+      to be truthy but was false
+      D:/a/ruby/ruby/src/spec/ruby/core/file/atime_spec.rb:26:in `block (3 levels) in <top (required)>'
+      D:/a/ruby/ruby/src/spec/ruby/core/file/atime_spec.rb:3:in `<top (required)>'
+
+      2)
+      File.ctime returns the change time for the named file (the time at which directory information about the file was changed, not the file itself) with microseconds. FAILED
+      Expected 0 > 0
+      to be truthy but was false
+      D:/a/ruby/ruby/src/spec/ruby/core/file/ctime_spec.rb:21:in `block (3 levels) in <top (required)>'
+      D:/a/ruby/ruby/src/spec/ruby/core/file/ctime_spec.rb:3:in `<top (required)>'
+
+      3)
+      File.utime sets the access and modification time of each file FAILED
+      Expected 2025-05-21 10:30:54 +0000
+      to be within 2025-05-21 10:30:54 +0000 +/- 0.0001
+      D:/a/ruby/ruby/src/spec/ruby/core/file/utime_spec.rb:25:in `block (2 levels) in <top (required)>'
+      D:/a/ruby/ruby/src/spec/ruby/core/file/utime_spec.rb:3:in `<top (required)>'
+
+      4)
+      File.mtime returns the modification Time of the file with microseconds FAILED
+      Expected 0 == 123456
+      to be truthy but was false
+      D:/a/ruby/ruby/src/spec/ruby/core/file/mtime_spec.rb:25:in `block (3 levels) in <top (required)>'
+      D:/a/ruby/ruby/src/spec/ruby/core/file/mtime_spec.rb:3:in `<top (required)>'
+    ```
+
+    It may be fixed with https://github.com/ruby/ruby/commit/7aea269b89bd7024bcacb7fe7d4ddb0be2f215af.
+    But Ruby 3.2 is now security maintenance status. We can't backport it.
+
+commit b7aca78cee41f59d7724c9fff7805dcb4f9411e1
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2024-06-21 16:00:16 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-22 18:32:10 +0900
+
+    [ruby/io-console] Use gperf 3.1 to generate ANSI-C code
+
+    https://github.com/ruby/io-console/commit/3798aae42d
+
+commit c239069d07c860e5b01ca139cf322b7535405686
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-05-11 14:47:02 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-22 18:32:10 +0900
+
+    Fix redefinition of `clock_gettime` and `clock_getres`
+
+    winpthreads-git 12.0.0.r720 provides `clock_gettime` and
+    `clock_getres` as inline functions.
+
+commit 395e5de8d47fe61da470c45bc20be7bfe66e07c0
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-21 18:16:48 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-22 18:32:10 +0900
+
+    Update the latest version of ruby/setup-ruby
+
+commit f91480d7a671b1b114270a4b5e4d3c5aa6dabce9
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-13 11:20:43 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-13 11:22:38 +0900
+
+    merge revision(s) 719486a642f0e282b02b958069b8b39b85b3aa1e: [Backport #21286]
+
+            Fix C23 (GCC 15) WIN32 compatibility for rb_define_* functions
+
+            Fixes [Bug #21286]
+
+commit b133b39705a862cb14df216560e2babb680c6aa6
+  Author:     nick evans <nick@rubinick.dev>
+  AuthorDate: 2025-05-01 02:01:17 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 20:33:38 +0900
+
+    Bump net-imap to v0.3.9 for Ruby 3.2 (CVE-2025-43857)
+
+    This update addresses CVE-2025-43857 (GHSA-j3g3-5qv5-52mj).
+
+commit d274682728d68f06b16e638dec23452de30b833b
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-01 13:37:40 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 14:19:08 +0900
+
+    Use system vcpkg command for windows-2022 image
+
+commit 9597813f9dda4cbb12a7998bfcccff86dbf1d500
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-01 12:10:56 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 14:19:08 +0900
+
+    Bump up the latest version of actions
+
+commit 09a5f7a4f39cb3712084a7c2344b98ba28a914df
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-01-16 18:02:16 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 14:19:08 +0900
+
+    Use configu.guess with wasi compatible version
+
+commit 42a993a9b4fde86b9c664d28f83fdf5ce2c56d48
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-01 11:53:41 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 14:19:08 +0900
+
+    Bump up clang-14 with mjit-bindgen job
+
+commit ac91a472062a5e627a0f3a961408f66fd3f7cfb4
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-01 11:52:09 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 14:19:08 +0900
+
+    Removed unused auto_request_review
+
+commit 3ae7535a4e2a4ce8ca75fd025682cd2bf4f7b6f5
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-01 11:44:01 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 14:19:08 +0900
+
+    Use windows-2022 because windows-2019 is EOL at June 2025
+
+commit f274a4ea42fbee2c8d682edf5871f8dc4f30290e
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-01 11:42:12 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 14:19:08 +0900
+
+    Bump up clang-14 with yjit-bindgen job
+
+commit a4b4e86a19b7ef5ed2b327414f087261ef3bda3e
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-05-01 11:41:49 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-05-01 14:19:08 +0900
+
+    ubuntu-20.04 is retired
+
+commit 647e1ff938318615b69eb22f8eb8035510a20372
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-04-03 19:30:24 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-04-04 07:38:56 +0900
+
+    Use EnvUtil.apply_timeout_scale
+
+commit fa95d1b0b8f69625cfac0843d02b9cff6cae01dd
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-04-03 19:07:08 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-04-04 07:38:56 +0900
+
+    Extend open_timeout for test failure on s390x
+
+    https://rubyci.s3.amazonaws.com/s390x/ruby-master/log/20250403T060004Z.fail.html.gz
+
+commit b79909fc5ab0979eabb3d04c5d58388e760197c6
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-04-03 18:57:46 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-04-03 19:36:39 +0900
+
+    Followed up 7c400c66c9
+
+commit 7c400c66c9b30f5cbc40b37a7fb1feb7d2d31c63
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-04-03 14:18:55 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-04-03 14:44:09 +0900
+
+    Use IPv4 for test server because TestNetHTTPS is failing with s390x
+
+    https://rubyci.s3.amazonaws.com/s390x/ruby-3.2/log/20250403T005659Z.fail.html.gz
+
+commit 105d9da252669fd80803e40b0348edd0974ff502
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-04-03 09:40:11 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-04-03 14:10:36 +0900
+
+    Enforce to use CMake 3 because CMake 4 is not compatible to build libyaml via vcpkg
+
+commit d75d4275e421cecf2485fb110273592359336117
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-04-01 15:20:17 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-04-02 10:37:08 +0900
+
+    [rubygems/rubygems] Bump up minimum required version for cmake 4
+
+    https://github.com/rubygems/rubygems/commit/3e77caeddf
+
 commit 13f495dc2c98d0762d9af37e7143d2e2a07d9926
   Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
   AuthorDate: 2025-03-26 13:18:02 +0900
@@ -35838,16 +36218,6 @@ commit 8f4a53d0517a99e57060211a3efe2d7a9d5d06b2
 
     Ignore fc4acf8cae on git blame
 
-commit fc4acf8cae82e5196186d3278d831f2438479d91
-  Author:     Takashi Kokubun <takashikkbn@gmail.com>
-  AuthorDate: 2022-08-20 06:42:50 +0900
-  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
-  CommitDate: 2022-08-20 06:44:08 +0900
-
-    Make benchmark indentation consistent
-
-    Related to https://github.com/Shopify/yjit-bench/pull/109
-
 commit 1ef49de83483e6f78bfe9c795a473ccfb29db150
   Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   AuthorDate: 2022-08-20 01:04:02 +0900
@@ -38533,24 +38903,6 @@ commit 1a73a6cdd2068b815430b775fe25186dab693faa
   Notes:
     Merged: https://github.com/ruby/ruby/pull/6197
 
-commit f28287d34c03f472ffe90ea262bdde9affd4b965
-  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
-  AuthorDate: 2022-07-30 17:24:43 +0900
-  Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
-  CommitDate: 2022-07-30 17:24:43 +0900
-
-    [ruby/io-nonblock] Revert tab expansion
-
-commit 48b09aae7ec5632209229dcc294dd0d75a93a17f
-  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
-  AuthorDate: 2022-07-30 16:36:07 +0900
-  Commit:     git[bot] <svn-admin@ruby-lang.org>
-  CommitDate: 2022-07-30 16:41:19 +0900
-
-    [ruby/digest] Revert tab-expansion in external files
-
-    https://github.com/ruby/digest/commit/5ca2b5b91e
-
 commit af265d73fb2726fcd405d86d37d28bbf03de3b04
   Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
   AuthorDate: 2022-07-30 01:18:04 +0900
@@ -39690,16 +40042,6 @@ commit 5904895cf5923559186859ff2183dfb386577058
   CommitDate: 2022-07-22 12:09:04 +0900
 
     Add .git-blame-ignore-revs
-
-    Signed-off-by: Takuya Noguchi <takninnovationresearch@gmail.com>
-
-commit d7ffd3fea402239b16833cc434404a7af82d44f3
-  Author:     Takuya Noguchi <takninnovationresearch@gmail.com>
-  AuthorDate: 2022-07-17 17:08:51 +0900
-  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
-  CommitDate: 2022-07-22 12:07:23 +0900
-
-    RubyGems: Enable Style/StringLiterals cop
 
     Signed-off-by: Takuya Noguchi <takninnovationresearch@gmail.com>
 
