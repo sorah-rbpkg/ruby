@@ -45,9 +45,15 @@ module Net
   # To work on the messages within a mailbox, the client must
   # first select that mailbox, using either #select or #examine
   # (for read-only access).  Once the client has successfully
-  # selected a mailbox, they enter the "_selected_" state, and that
+  # selected a mailbox, they enter the +selected+ state, and that
   # mailbox becomes the _current_ mailbox, on which mail-item
   # related commands implicitly operate.
+  #
+  # === Connection state
+  #
+  # Once an IMAP connection is established, the connection is in one of four
+  # states: <tt>not authenticated</tt>, +authenticated+, +selected+, and
+  # +logout+.  Most commands are valid only in certain states.
   #
   # === Sequence numbers and UIDs
   #
@@ -126,6 +132,41 @@ module Net
   #
   # This script invokes the FETCH command and the SEARCH command concurrently.
   #
+  # When running multiple commands, care must be taken to avoid ambiguity.  For
+  # example, SEARCH responses are ambiguous about which command they are
+  # responding to, so search commands should not run simultaneously, unless the
+  # server supports +ESEARCH+ {[RFC4731]}[https://rfc-editor.org/rfc/rfc4731] or
+  # IMAP4rev2[https://www.rfc-editor.org/rfc/rfc9051].  See {RFC9051
+  # §5.5}[https://www.rfc-editor.org/rfc/rfc9051.html#section-5.5] for
+  # other examples of command sequences which should not be pipelined.
+  #
+  # == Unbounded memory use
+  #
+  # Net::IMAP reads server responses in a separate receiver thread per client.
+  # Unhandled response data is saved to #responses, and response_handlers run
+  # inside the receiver thread.  See the list of methods for {handling server
+  # responses}[rdoc-ref:Net::IMAP@Handling+server+responses], below.
+  #
+  # Because the receiver thread continuously reads and saves new responses, some
+  # scenarios must be careful to avoid unbounded memory use:
+  #
+  # * Commands such as #list or #fetch can have an enormous number of responses.
+  # * Commands such as #fetch can result in an enormous size per response.
+  # * Long-lived connections will gradually accumulate unsolicited server
+  #   responses, especially +EXISTS+, +FETCH+, and +EXPUNGE+ responses.
+  # * A buggy or untrusted server could send inappropriate responses, which
+  #   could be very numerous, very large, and very rapid.
+  #
+  # Use paginated or limited versions of commands whenever possible.
+  #
+  # Use #max_response_size to impose a limit on incoming server responses
+  # as they are being read.  <em>This is especially important for untrusted
+  # servers.</em>
+  #
+  # Use #add_response_handler to handle responses after each one is received.
+  # Use the +response_handlers+ argument to ::new to assign response handlers
+  # before the receiver thread is started.
+  #
   # == Errors
   #
   # An \IMAP server can send three different types of responses to indicate
@@ -187,7 +228,7 @@ module Net
   # - Net::IMAP.new: A new client connects immediately and waits for a
   #   successful server greeting before returning the new client object.
   # - #starttls: Asks the server to upgrade a clear-text connection to use TLS.
-  # - #logout: Tells the server to end the session. Enters the "_logout_" state.
+  # - #logout: Tells the server to end the session.  Enters the +logout+ state.
   # - #disconnect: Disconnects the connection (without sending #logout first).
   # - #disconnected?: True if the connection has been closed.
   #
@@ -230,40 +271,39 @@ module Net
   #   <em>Capabilities may change after</em> #starttls, #authenticate, or #login
   #   <em>and cached capabilities must be reloaded.</em>
   # - #noop: Allows the server to send unsolicited untagged #responses.
-  # - #logout: Tells the server to end the session. Enters the "_logout_" state.
+  # - #logout: Tells the server to end the session. Enters the +logout+ state.
   #
   # ==== \IMAP commands for the "Not Authenticated" state
   #
-  # In addition to the universal commands, the following commands are valid in
-  # the "<em>not authenticated</em>" state:
+  # In addition to the commands for any state, the following commands are valid
+  # in the +not_authenticated+ state:
   #
   # - #starttls: Upgrades a clear-text connection to use TLS.
   #
   #   <em>Requires the +STARTTLS+ capability.</em>
-  # - #authenticate: Identifies the client to the server using a {SASL
-  #   mechanism}[https://www.iana.org/assignments/sasl-mechanisms/sasl-mechanisms.xhtml].
-  #   Enters the "_authenticated_" state.
+  # - #authenticate: Identifies the client to the server using the given {SASL
+  #   mechanism}[https://www.iana.org/assignments/sasl-mechanisms/sasl-mechanisms.xhtml]
+  #   and credentials.  Enters the +authenticated+ state.
   #
   #   <em>Requires the <tt>AUTH=#{mechanism}</tt> capability for the chosen
   #   mechanism.</em>
   # - #login: Identifies the client to the server using a plain text password.
-  #   Using #authenticate is generally preferred.  Enters the "_authenticated_"
-  #   state.
+  #   Using #authenticate is preferred.  Enters the +authenticated+ state.
   #
   #   <em>The +LOGINDISABLED+ capability</em> <b>must NOT</b> <em>be listed.</em>
   #
   # ==== \IMAP commands for the "Authenticated" state
   #
-  # In addition to the universal commands, the following commands are valid in
-  # the "_authenticated_" state:
+  # In addition to the commands for any state, the following commands are valid
+  # in the +authenticated+ state:
   #
   #--
   # - #enable: <em>Not implemented by Net::IMAP, yet.</em>
   #
   #   <em>Requires the +ENABLE+ capability.</em>
   #++
-  # - #select:  Open a mailbox and enter the "_selected_" state.
-  # - #examine: Open a mailbox read-only, and enter the "_selected_" state.
+  # - #select:  Open a mailbox and enter the +selected+ state.
+  # - #examine: Open a mailbox read-only, and enter the +selected+ state.
   # - #create: Creates a new mailbox.
   # - #delete: Permanently remove a mailbox.
   # - #rename: Change the name of a mailbox.
@@ -289,12 +329,12 @@ module Net
   #
   # ==== \IMAP commands for the "Selected" state
   #
-  # In addition to the universal commands and the "authenticated" commands, the
-  # following commands are valid in the "_selected_" state:
+  # In addition to the commands for any state and the +authenticated+
+  # commands, the following commands are valid in the +selected+ state:
   #
-  # - #close: Closes the mailbox and returns to the "_authenticated_" state,
+  # - #close: Closes the mailbox and returns to the +authenticated+ state,
   #   expunging deleted messages, unless the mailbox was opened as read-only.
-  # - #unselect: Closes the mailbox and returns to the "_authenticated_" state,
+  # - #unselect: Closes the mailbox and returns to the +authenticated+ state,
   #   without expunging any messages.
   #
   #   <em>Requires the +UNSELECT+ capability.</em>
@@ -384,7 +424,7 @@ module Net
   # ==== RFC3691: +UNSELECT+
   # Folded into IMAP4rev2[https://tools.ietf.org/html/rfc9051], so it is also
   # listed with {Core IMAP commands}[rdoc-ref:Net::IMAP@Core+IMAP+commands].
-  # - #unselect: Closes the mailbox and returns to the "_authenticated_" state,
+  # - #unselect: Closes the mailbox and returns to the +authenticated+ state,
   #   without expunging any messages.
   #
   # ==== RFC4314: +ACL+
@@ -699,7 +739,9 @@ module Net
   # * {Character sets}[https://www.iana.org/assignments/character-sets/character-sets.xhtml]
   #
   class IMAP < Protocol
-    VERSION = "0.3.8"
+    VERSION = "0.3.9"
+
+    autoload :ResponseReader, File.expand_path("imap/response_reader", __dir__)
 
     include MonitorMixin
     if defined?(OpenSSL::SSL)
@@ -733,6 +775,40 @@ module Net
 
     # Seconds to wait until an IDLE response is received.
     attr_reader :idle_response_timeout
+
+    # The maximum allowed server response size.  When +nil+, there is no limit
+    # on response size.
+    #
+    # The default value is _unlimited_ (after +v0.5.8+, the default is 512 MiB).
+    # A _much_ lower value should be used with untrusted servers (for example,
+    # when connecting to a user-provided hostname).  When using a lower limit,
+    # message bodies should be fetched in chunks rather than all at once.
+    #
+    # <em>Please Note:</em> this only limits the size per response.  It does
+    # not prevent a flood of individual responses and it does not limit how
+    # many unhandled responses may be stored on the responses hash.  See
+    # Net::IMAP@Unbounded+memory+use.
+    #
+    # Socket reads are limited to the maximum remaining bytes for the current
+    # response: max_response_size minus the bytes that have already been read.
+    # When the limit is reached, or reading a +literal+ _would_ go over the
+    # limit, ResponseTooLargeError is raised and the connection is closed.
+    # See also #socket_read_limit.
+    #
+    # Note that changes will not take effect immediately, because the receiver
+    # thread may already be waiting for the next response using the previous
+    # value.  Net::IMAP#noop can force a response and enforce the new setting
+    # immediately.
+    #
+    # ==== Versioned Defaults
+    #
+    # Net::IMAP#max_response_size <em>was added in +v0.2.5+ and +v0.3.9+ as an
+    # attr_accessor, and in +v0.4.20+ and +v0.5.7+ as a delegator to a config
+    # attribute.</em>
+    #
+    # * original: +nil+ <em>(no limit)</em>
+    # * +0.5+: 512 MiB
+    attr_accessor :max_response_size
 
     attr_accessor :client_thread # :nodoc:
 
@@ -1960,6 +2036,11 @@ module Net
     #     end
     #   }
     #
+    # Response handlers can also be added when the client is created before the
+    # receiver thread is started, by the +response_handlers+ argument to ::new.
+    # This ensures every server response is handled, including the #greeting.
+    #
+    # Related: #remove_response_handler, #response_handlers
     def add_response_handler(handler = nil, &block)
       raise ArgumentError, "two Procs are passed" if handler && block
       @response_handlers.push(block || handler)
@@ -1995,6 +2076,13 @@ module Net
     #         OpenSSL::SSL::SSLContext#set_params as parameters.
     # open_timeout:: Seconds to wait until a connection is opened
     # idle_response_timeout:: Seconds to wait until an IDLE response is received
+    # response_handlers:: A list of response handlers to be added before the
+    #                     receiver thread is started.  This ensures every server
+    #                     response is handled, including the #greeting.  Note
+    #                     that the greeting is handled in the current thread,
+    #                     but all other responses are handled in the receiver
+    #                     thread.
+    # max_response_size:: See #max_response_size.
     #
     # The most common errors are:
     #
@@ -2025,8 +2113,10 @@ module Net
       @tagno = 0
       @open_timeout = options[:open_timeout] || 30
       @idle_response_timeout = options[:idle_response_timeout] || 5
+      @max_response_size     = options[:max_response_size]
       @parser = ResponseParser.new
       @sock = tcp_socket(@host, @port)
+      @reader = ResponseReader.new(self, @sock)
       begin
         if options[:ssl]
           start_tls_session(options[:ssl])
@@ -2037,6 +2127,7 @@ module Net
         @responses = Hash.new([].freeze)
         @tagged_responses = {}
         @response_handlers = []
+        options[:response_handlers]&.each do |h| add_response_handler(h) end
         @tagged_response_arrival = new_cond
         @continued_command_tag = nil
         @continuation_request_arrival = new_cond
@@ -2053,6 +2144,7 @@ module Net
         if @greeting.name == "BYE"
           raise ByeResponseError, @greeting
         end
+        @response_handlers.each do |handler| handler.call(@greeting) end
 
         @client_thread = Thread.current
         @receiver_thread = Thread.start {
@@ -2176,24 +2268,13 @@ module Net
     end
 
     def get_response
-      buff = String.new
-      while true
-        s = @sock.gets(CRLF)
-        break unless s
-        buff.concat(s)
-        if /\{(\d+)\}\r\n/n =~ s
-          s = @sock.read($1.to_i)
-          buff.concat(s)
-        else
-          break
-        end
-      end
+      buff = @reader.read_response_buffer
       return nil if buff.length == 0
-      if @@debug
-        $stderr.print(buff.gsub(/^/n, "S: "))
-      end
-      return @parser.parse(buff)
+      $stderr.print(buff.gsub(/^/n, "S: ")) if @@debug
+      @parser.parse(buff)
     end
+
+    #############################
 
     def record_response(name, data)
       unless @responses.has_key?(name)
@@ -2372,6 +2453,7 @@ module Net
         context.verify_callback = VerifyCallbackProc
       end
       @sock = SSLSocket.new(@sock, context)
+      @reader = ResponseReader.new(self, @sock)
       @sock.sync_close = true
       @sock.hostname = @host if @sock.respond_to? :hostname=
       ssl_socket_connect(@sock, @open_timeout)
