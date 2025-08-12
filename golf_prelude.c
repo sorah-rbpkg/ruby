@@ -6,6 +6,7 @@
 #include "internal.h"
 #include "internal/warnings.h"
 #include "iseq.h"
+#include "ruby/internal/attr/nonstring.h"
 #include "ruby/ruby.h"
 #include "vm_core.h"
 
@@ -16,12 +17,12 @@ COMPILER_WARNING_IGNORED(-Wstring-concatenation)
 
 static const char prelude_name0[] = "<internal:golf_prelude>";
 static const struct {
-    char L0[462]; /* 1..18 */
-    char L18[485]; /* 19..34 */
-    char L34[505]; /* 35..59 */
-    char L59[487]; /* 60..96 */
-    char L96[493]; /* 97..116 */
-    char L116[222]; /* 117..131 */
+    RBIMPL_ATTR_NONSTRING() char L0[462]; /* 1..18 */
+    RBIMPL_ATTR_NONSTRING() char L18[485]; /* 19..34 */
+    RBIMPL_ATTR_NONSTRING() char L34[505]; /* 35..59 */
+    RBIMPL_ATTR_NONSTRING() char L59[487]; /* 60..96 */
+    RBIMPL_ATTR_NONSTRING() char L96[493]; /* 97..116 */
+    RBIMPL_ATTR_NONSTRING() char L116[222]; /* 117..131 */
 } prelude_code0 = {
 #line 1 "golf_prelude.rb"
 "class Object\n"
@@ -164,7 +165,7 @@ static const struct {
 "    end\n"
 "  end\n"
 "end\n"
-#line 168 "golf_prelude.c"
+#line 169 "golf_prelude.c"
 };
 
 COMPILER_WARNING_POP

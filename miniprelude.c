@@ -6,6 +6,7 @@
 #include "internal.h"
 #include "internal/warnings.h"
 #include "iseq.h"
+#include "ruby/internal/attr/nonstring.h"
 #include "ruby/ruby.h"
 #include "vm_core.h"
 
@@ -16,11 +17,11 @@ COMPILER_WARNING_IGNORED(-Wstring-concatenation)
 
 static const char prelude_name0[] = "<internal:ast>";
 static const struct {
-    char L0[477]; /* 1..95 */
-    char L95[493]; /* 96..149 */
-    char L149[504]; /* 150..193 */
-    char L193[490]; /* 194..267 */
-    char L267[163]; /* 268..277 */
+    RBIMPL_ATTR_NONSTRING() char L0[477]; /* 1..95 */
+    RBIMPL_ATTR_NONSTRING() char L95[493]; /* 96..149 */
+    RBIMPL_ATTR_NONSTRING() char L149[504]; /* 150..193 */
+    RBIMPL_ATTR_NONSTRING() char L193[490]; /* 194..267 */
+    RBIMPL_ATTR_NONSTRING() char L267[163]; /* 268..277 */
 } prelude_code0 = {
 #line 1 "ast.rb"
 ""/* for ast.c */
@@ -307,13 +308,13 @@ static const struct {
 "    end\n"
 "  end\n"
 "end\n"
-#line 311 "miniprelude.c"
+#line 312 "miniprelude.c"
 };
 
 static const char prelude_name1[] = "<internal:dir>";
 static const struct {
-    char L0[508]; /* 1..191 */
-    char L191[350]; /* 192..315 */
+    RBIMPL_ATTR_NONSTRING() char L0[508]; /* 1..191 */
+    RBIMPL_ATTR_NONSTRING() char L191[350]; /* 192..315 */
 } prelude_code1 = {
 #line 1 "dir.rb"
 ""/* Objects of class Dir are directory streams representing */
@@ -632,15 +633,15 @@ static const struct {
 "  end\n"
 "  alias fnmatch? fnmatch\n"
 "end if false\n"
-#line 636 "miniprelude.c"
+#line 637 "miniprelude.c"
 };
 
 static const char prelude_name2[] = "<internal:gc>";
 static const struct {
-    char L0[492]; /* 1..70 */
-    char L70[495]; /* 71..230 */
-    char L230[507]; /* 231..272 */
-    char L272[455]; /* 273..297 */
+    RBIMPL_ATTR_NONSTRING() char L0[492]; /* 1..70 */
+    RBIMPL_ATTR_NONSTRING() char L70[495]; /* 71..230 */
+    RBIMPL_ATTR_NONSTRING() char L230[507]; /* 231..272 */
+    RBIMPL_ATTR_NONSTRING() char L272[455]; /* 273..297 */
 } prelude_code2 = {
 #line 1 "gc.rb"
 ""/* for gc.c */
@@ -945,16 +946,16 @@ static const struct {
 "\n"
 "  module_function :garbage_collect\n"
 "end\n"
-#line 949 "miniprelude.c"
+#line 950 "miniprelude.c"
 };
 
 static const char prelude_name3[] = "<internal:numeric>";
 static const struct {
-    char L0[477]; /* 1..105 */
-    char L105[490]; /* 106..191 */
-    char L191[508]; /* 192..287 */
-    char L287[504]; /* 288..368 */
-    char L368[385]; /* 369..406 */
+    RBIMPL_ATTR_NONSTRING() char L0[477]; /* 1..105 */
+    RBIMPL_ATTR_NONSTRING() char L105[490]; /* 106..191 */
+    RBIMPL_ATTR_NONSTRING() char L191[508]; /* 192..287 */
+    RBIMPL_ATTR_NONSTRING() char L287[504]; /* 288..368 */
+    RBIMPL_ATTR_NONSTRING() char L368[385]; /* 369..406 */
 } prelude_code3 = {
 #line 1 "numeric.rb"
 "class Numeric\n"
@@ -1370,12 +1371,12 @@ static const struct {
 "  end\n"
 "\n"
 "end\n"
-#line 1374 "miniprelude.c"
+#line 1375 "miniprelude.c"
 };
 
 static const char prelude_name4[] = "<internal:io>";
 static const struct {
-    char L0[336]; /* 1..124 */
+    RBIMPL_ATTR_NONSTRING() char L0[336]; /* 1..124 */
 } prelude_code4 = {
 #line 1 "io.rb"
 "class IO\n"
@@ -1501,12 +1502,12 @@ static const struct {
 "    Primitive.io_write_nonblock(buf, exception)\n"
 "  end\n"
 "end\n"
-#line 1505 "miniprelude.c"
+#line 1506 "miniprelude.c"
 };
 
 static const char prelude_name5[] = "<internal:marshal>";
 static const struct {
-    char L0[202]; /* 1..41 */
+    RBIMPL_ATTR_NONSTRING() char L0[202]; /* 1..41 */
 } prelude_code5 = {
 #line 1 "marshal.rb"
 "module Marshal\n"
@@ -1549,13 +1550,13 @@ static const struct {
 "    alias restore load\n"
 "  end\n"
 "end\n"
-#line 1553 "miniprelude.c"
+#line 1554 "miniprelude.c"
 };
 
 static const char prelude_name6[] = "<internal:mjit>";
 static const struct {
-    char L0[497]; /* 1..31 */
-    char L31[97]; /* 32..38 */
+    RBIMPL_ATTR_NONSTRING() char L0[497]; /* 1..31 */
+    RBIMPL_ATTR_NONSTRING() char L31[97]; /* 32..38 */
 } prelude_code6 = {
 #line 1 "mjit.rb"
 "module RubyVM::MJIT\n"
@@ -1597,102 +1598,102 @@ static const struct {
 "    private_constant(*constants)\n"
 "  end\n"
 "end\n"
-#line 1601 "miniprelude.c"
+#line 1602 "miniprelude.c"
 };
 
 static const char prelude_name7[] = "<internal:mjit_c>";
 static const struct {
-    char L0[484]; /* 1..21 */
-    char L21[495]; /* 22..34 */
-    char L34[489]; /* 35..49 */
-    char L49[503]; /* 50..67 */
-    char L67[464]; /* 68..81 */
-    char L81[465]; /* 82..87 */
-    char L87[450]; /* 88..102 */
-    char L102[501]; /* 103..108 */
-    char L108[479]; /* 109..130 */
-    char L130[466]; /* 131..152 */
-    char L152[452]; /* 153..172 */
-    char L172[501]; /* 173..195 */
-    char L195[496]; /* 196..219 */
-    char L219[474]; /* 220..244 */
-    char L244[467]; /* 245..266 */
-    char L266[502]; /* 267..275 */
-    char L275[425]; /* 276..278 */
-    char L278[438]; /* 279..281 */
-    char L281[489]; /* 282..289 */
-    char L289[503]; /* 290..293 */
-    char L293[508]; /* 294..302 */
-    char L302[456]; /* 303..309 */
-    char L309[500]; /* 310..317 */
-    char L317[457]; /* 318..325 */
-    char L325[507]; /* 326..331 */
-    char L331[444]; /* 332..341 */
-    char L341[451]; /* 342..345 */
-    char L345[498]; /* 346..349 */
-    char L349[428]; /* 350..357 */
-    char L357[392]; /* 358..360 */
-    char L360[400]; /* 361..368 */
-    char L368[461]; /* 369..376 */
-    char L376[413]; /* 377..379 */
-    char L379[459]; /* 380..388 */
-    char L388[478]; /* 389..394 */
-    char L394[450]; /* 395..405 */
-    char L405[417]; /* 406..409 */
-    char L409[401]; /* 410..417 */
-    char L417[493]; /* 418..421 */
-    char L421[489]; /* 422..428 */
-    char L428[441]; /* 429..433 */
-    char L433[462]; /* 434..441 */
-    char L441[438]; /* 442..444 */
-    char L444[410]; /* 445..447 */
-    char L447[464]; /* 448..450 */
-    char L450[455]; /* 451..453 */
-    char L453[422]; /* 454..456 */
-    char L456[418]; /* 457..459 */
-    char L459[427]; /* 460..463 */
-    char L463[467]; /* 464..466 */
-    char L466[495]; /* 467..478 */
-    char L478[442]; /* 479..483 */
-    char L483[459]; /* 484..491 */
-    char L491[413]; /* 492..496 */
-    char L496[416]; /* 497..499 */
-    char L499[424]; /* 500..502 */
-    char L502[390]; /* 503..505 */
-    char L505[391]; /* 506..508 */
-    char L508[453]; /* 509..511 */
-    char L511[431]; /* 512..515 */
-    char L515[382]; /* 516..518 */
-    char L518[382]; /* 519..521 */
-    char L521[437]; /* 522..524 */
-    char L524[427]; /* 525..527 */
-    char L527[433]; /* 528..531 */
-    char L531[430]; /* 532..536 */
-    char L536[445]; /* 537..539 */
-    char L539[444]; /* 540..547 */
-    char L547[388]; /* 548..550 */
-    char L550[424]; /* 551..558 */
-    char L558[449]; /* 559..563 */
-    char L563[476]; /* 564..570 */
-    char L570[499]; /* 571..578 */
-    char L578[457]; /* 579..589 */
-    char L589[465]; /* 590..599 */
-    char L599[454]; /* 600..607 */
-    char L607[489]; /* 608..618 */
-    char L618[404]; /* 619..622 */
-    char L622[469]; /* 623..630 */
-    char L630[397]; /* 631..634 */
-    char L634[360]; /* 635..637 */
-    char L637[450]; /* 638..640 */
-    char L640[456]; /* 641..652 */
-    char L652[455]; /* 653..656 */
-    char L656[471]; /* 657..670 */
-    char L670[507]; /* 671..695 */
-    char L695[492]; /* 696..726 */
-    char L726[476]; /* 727..754 */
-    char L754[484]; /* 755..781 */
-    char L781[449]; /* 782..806 */
-    char L806[64]; /* 807..808 */
+    RBIMPL_ATTR_NONSTRING() char L0[484]; /* 1..21 */
+    RBIMPL_ATTR_NONSTRING() char L21[495]; /* 22..34 */
+    RBIMPL_ATTR_NONSTRING() char L34[489]; /* 35..49 */
+    RBIMPL_ATTR_NONSTRING() char L49[503]; /* 50..67 */
+    RBIMPL_ATTR_NONSTRING() char L67[464]; /* 68..81 */
+    RBIMPL_ATTR_NONSTRING() char L81[465]; /* 82..87 */
+    RBIMPL_ATTR_NONSTRING() char L87[450]; /* 88..102 */
+    RBIMPL_ATTR_NONSTRING() char L102[501]; /* 103..108 */
+    RBIMPL_ATTR_NONSTRING() char L108[479]; /* 109..130 */
+    RBIMPL_ATTR_NONSTRING() char L130[466]; /* 131..152 */
+    RBIMPL_ATTR_NONSTRING() char L152[452]; /* 153..172 */
+    RBIMPL_ATTR_NONSTRING() char L172[501]; /* 173..195 */
+    RBIMPL_ATTR_NONSTRING() char L195[496]; /* 196..219 */
+    RBIMPL_ATTR_NONSTRING() char L219[474]; /* 220..244 */
+    RBIMPL_ATTR_NONSTRING() char L244[467]; /* 245..266 */
+    RBIMPL_ATTR_NONSTRING() char L266[502]; /* 267..275 */
+    RBIMPL_ATTR_NONSTRING() char L275[425]; /* 276..278 */
+    RBIMPL_ATTR_NONSTRING() char L278[438]; /* 279..281 */
+    RBIMPL_ATTR_NONSTRING() char L281[489]; /* 282..289 */
+    RBIMPL_ATTR_NONSTRING() char L289[503]; /* 290..293 */
+    RBIMPL_ATTR_NONSTRING() char L293[508]; /* 294..302 */
+    RBIMPL_ATTR_NONSTRING() char L302[456]; /* 303..309 */
+    RBIMPL_ATTR_NONSTRING() char L309[500]; /* 310..317 */
+    RBIMPL_ATTR_NONSTRING() char L317[457]; /* 318..325 */
+    RBIMPL_ATTR_NONSTRING() char L325[507]; /* 326..331 */
+    RBIMPL_ATTR_NONSTRING() char L331[444]; /* 332..341 */
+    RBIMPL_ATTR_NONSTRING() char L341[451]; /* 342..345 */
+    RBIMPL_ATTR_NONSTRING() char L345[498]; /* 346..349 */
+    RBIMPL_ATTR_NONSTRING() char L349[428]; /* 350..357 */
+    RBIMPL_ATTR_NONSTRING() char L357[392]; /* 358..360 */
+    RBIMPL_ATTR_NONSTRING() char L360[400]; /* 361..368 */
+    RBIMPL_ATTR_NONSTRING() char L368[461]; /* 369..376 */
+    RBIMPL_ATTR_NONSTRING() char L376[413]; /* 377..379 */
+    RBIMPL_ATTR_NONSTRING() char L379[459]; /* 380..388 */
+    RBIMPL_ATTR_NONSTRING() char L388[478]; /* 389..394 */
+    RBIMPL_ATTR_NONSTRING() char L394[450]; /* 395..405 */
+    RBIMPL_ATTR_NONSTRING() char L405[417]; /* 406..409 */
+    RBIMPL_ATTR_NONSTRING() char L409[401]; /* 410..417 */
+    RBIMPL_ATTR_NONSTRING() char L417[493]; /* 418..421 */
+    RBIMPL_ATTR_NONSTRING() char L421[489]; /* 422..428 */
+    RBIMPL_ATTR_NONSTRING() char L428[441]; /* 429..433 */
+    RBIMPL_ATTR_NONSTRING() char L433[462]; /* 434..441 */
+    RBIMPL_ATTR_NONSTRING() char L441[438]; /* 442..444 */
+    RBIMPL_ATTR_NONSTRING() char L444[410]; /* 445..447 */
+    RBIMPL_ATTR_NONSTRING() char L447[464]; /* 448..450 */
+    RBIMPL_ATTR_NONSTRING() char L450[455]; /* 451..453 */
+    RBIMPL_ATTR_NONSTRING() char L453[422]; /* 454..456 */
+    RBIMPL_ATTR_NONSTRING() char L456[418]; /* 457..459 */
+    RBIMPL_ATTR_NONSTRING() char L459[427]; /* 460..463 */
+    RBIMPL_ATTR_NONSTRING() char L463[467]; /* 464..466 */
+    RBIMPL_ATTR_NONSTRING() char L466[495]; /* 467..478 */
+    RBIMPL_ATTR_NONSTRING() char L478[442]; /* 479..483 */
+    RBIMPL_ATTR_NONSTRING() char L483[459]; /* 484..491 */
+    RBIMPL_ATTR_NONSTRING() char L491[413]; /* 492..496 */
+    RBIMPL_ATTR_NONSTRING() char L496[416]; /* 497..499 */
+    RBIMPL_ATTR_NONSTRING() char L499[424]; /* 500..502 */
+    RBIMPL_ATTR_NONSTRING() char L502[390]; /* 503..505 */
+    RBIMPL_ATTR_NONSTRING() char L505[391]; /* 506..508 */
+    RBIMPL_ATTR_NONSTRING() char L508[453]; /* 509..511 */
+    RBIMPL_ATTR_NONSTRING() char L511[431]; /* 512..515 */
+    RBIMPL_ATTR_NONSTRING() char L515[382]; /* 516..518 */
+    RBIMPL_ATTR_NONSTRING() char L518[382]; /* 519..521 */
+    RBIMPL_ATTR_NONSTRING() char L521[437]; /* 522..524 */
+    RBIMPL_ATTR_NONSTRING() char L524[427]; /* 525..527 */
+    RBIMPL_ATTR_NONSTRING() char L527[433]; /* 528..531 */
+    RBIMPL_ATTR_NONSTRING() char L531[430]; /* 532..536 */
+    RBIMPL_ATTR_NONSTRING() char L536[445]; /* 537..539 */
+    RBIMPL_ATTR_NONSTRING() char L539[444]; /* 540..547 */
+    RBIMPL_ATTR_NONSTRING() char L547[388]; /* 548..550 */
+    RBIMPL_ATTR_NONSTRING() char L550[424]; /* 551..558 */
+    RBIMPL_ATTR_NONSTRING() char L558[449]; /* 559..563 */
+    RBIMPL_ATTR_NONSTRING() char L563[476]; /* 564..570 */
+    RBIMPL_ATTR_NONSTRING() char L570[499]; /* 571..578 */
+    RBIMPL_ATTR_NONSTRING() char L578[457]; /* 579..589 */
+    RBIMPL_ATTR_NONSTRING() char L589[465]; /* 590..599 */
+    RBIMPL_ATTR_NONSTRING() char L599[454]; /* 600..607 */
+    RBIMPL_ATTR_NONSTRING() char L607[489]; /* 608..618 */
+    RBIMPL_ATTR_NONSTRING() char L618[404]; /* 619..622 */
+    RBIMPL_ATTR_NONSTRING() char L622[469]; /* 623..630 */
+    RBIMPL_ATTR_NONSTRING() char L630[397]; /* 631..634 */
+    RBIMPL_ATTR_NONSTRING() char L634[360]; /* 635..637 */
+    RBIMPL_ATTR_NONSTRING() char L637[450]; /* 638..640 */
+    RBIMPL_ATTR_NONSTRING() char L640[456]; /* 641..652 */
+    RBIMPL_ATTR_NONSTRING() char L652[455]; /* 653..656 */
+    RBIMPL_ATTR_NONSTRING() char L656[471]; /* 657..670 */
+    RBIMPL_ATTR_NONSTRING() char L670[507]; /* 671..695 */
+    RBIMPL_ATTR_NONSTRING() char L695[492]; /* 696..726 */
+    RBIMPL_ATTR_NONSTRING() char L726[476]; /* 727..754 */
+    RBIMPL_ATTR_NONSTRING() char L754[484]; /* 755..781 */
+    RBIMPL_ATTR_NONSTRING() char L781[449]; /* 782..806 */
+    RBIMPL_ATTR_NONSTRING() char L806[64]; /* 807..808 */
 } prelude_code7 = {
 #line 1 "mjit_c.rb"
 ""/* frozen_string_literal: true */
@@ -2682,12 +2683,12 @@ static const struct {
 ,
 #line 807 "mjit_c.rb"
 "end if RubyVM::MJIT.enabled? && RubyVM::MJIT.const_defined?(:C)\n"/* not defined for miniruby */
-#line 2686 "miniprelude.c"
+#line 2687 "miniprelude.c"
 };
 
 static const char prelude_name8[] = "<internal:pack>";
 static const struct {
-    char L0[273]; /* 1..32 */
+    RBIMPL_ATTR_NONSTRING() char L0[273]; /* 1..32 */
 } prelude_code8 = {
 #line 1 "pack.rb"
 "class Array\n"
@@ -2721,15 +2722,15 @@ static const struct {
 "    Primitive.pack_unpack1(fmt, offset)\n"
 "  end\n"
 "end\n"
-#line 2725 "miniprelude.c"
+#line 2726 "miniprelude.c"
 };
 
 static const char prelude_name9[] = "<internal:trace_point>";
 static const struct {
-    char L0[508]; /* 1..238 */
-    char L238[506]; /* 239..328 */
-    char L328[496]; /* 329..403 */
-    char L403[215]; /* 404..421 */
+    RBIMPL_ATTR_NONSTRING() char L0[508]; /* 1..238 */
+    RBIMPL_ATTR_NONSTRING() char L238[506]; /* 239..328 */
+    RBIMPL_ATTR_NONSTRING() char L328[496]; /* 329..403 */
+    RBIMPL_ATTR_NONSTRING() char L403[215]; /* 404..421 */
 } prelude_code9 = {
 #line 1 "trace_point.rb"
 ""/* loaded from vm_trace.c */
@@ -3158,12 +3159,12 @@ static const struct {
 "    Primitive.tracepoint_attr_instruction_sequence\n"
 "  end\n"
 "end\n"
-#line 3162 "miniprelude.c"
+#line 3163 "miniprelude.c"
 };
 
 static const char prelude_name10[] = "<internal:warning>";
 static const struct {
-    char L0[182]; /* 1..54 */
+    RBIMPL_ATTR_NONSTRING() char L0[182]; /* 1..54 */
 } prelude_code10 = {
 #line 1 "warning.rb"
 ""/* encoding: utf-8 */
@@ -3219,12 +3220,12 @@ static const struct {
 "    Primitive.rb_warn_m(msgs, uplevel, category)\n"
 "  end\n"
 "end\n"
-#line 3223 "miniprelude.c"
+#line 3224 "miniprelude.c"
 };
 
 static const char prelude_name11[] = "<internal:array>";
 static const struct {
-    char L0[397]; /* 1..70 */
+    RBIMPL_ATTR_NONSTRING() char L0[397]; /* 1..70 */
 } prelude_code11 = {
 #line 1 "array.rb"
 "class Array\n"
@@ -3296,13 +3297,13 @@ static const struct {
 "    end\n"
 "  end\n"
 "end\n"
-#line 3300 "miniprelude.c"
+#line 3301 "miniprelude.c"
 };
 
 static const char prelude_name12[] = "<internal:kernel>";
 static const struct {
-    char L0[454]; /* 1..121 */
-    char L121[486]; /* 122..179 */
+    RBIMPL_ATTR_NONSTRING() char L0[454]; /* 1..121 */
+    RBIMPL_ATTR_NONSTRING() char L121[486]; /* 122..179 */
 } prelude_code12 = {
 #line 1 "kernel.rb"
 "module Kernel\n"
@@ -3485,19 +3486,19 @@ static const struct {
 "    end\n"
 "  end\n"
 "end\n"
-#line 3489 "miniprelude.c"
+#line 3490 "miniprelude.c"
 };
 
 static const char prelude_name13[] = "<internal:ractor>";
 static const struct {
-    char L0[502]; /* 1..270 */
-    char L270[502]; /* 271..348 */
-    char L348[477]; /* 349..420 */
-    char L420[508]; /* 421..582 */
-    char L582[467]; /* 583..703 */
-    char L703[487]; /* 704..720 */
-    char L720[483]; /* 721..815 */
-    char L815[422]; /* 816..843 */
+    RBIMPL_ATTR_NONSTRING() char L0[502]; /* 1..270 */
+    RBIMPL_ATTR_NONSTRING() char L270[502]; /* 271..348 */
+    RBIMPL_ATTR_NONSTRING() char L348[477]; /* 349..420 */
+    RBIMPL_ATTR_NONSTRING() char L420[508]; /* 421..582 */
+    RBIMPL_ATTR_NONSTRING() char L582[467]; /* 583..703 */
+    RBIMPL_ATTR_NONSTRING() char L703[487]; /* 704..720 */
+    RBIMPL_ATTR_NONSTRING() char L720[483]; /* 721..815 */
+    RBIMPL_ATTR_NONSTRING() char L815[422]; /* 816..843 */
 } prelude_code13 = {
 #line 1 "ractor.rb"
 ""/* Ractor is an Actor-model abstraction for Ruby that provides thread-safe parallel execution. */
@@ -4356,12 +4357,12 @@ static const struct {
 "    }\n"
 "  end\n"
 "end\n"
-#line 4360 "miniprelude.c"
+#line 4361 "miniprelude.c"
 };
 
 static const char prelude_name14[] = "<internal:symbol>";
 static const struct {
-    char L0[76]; /* 1..16 */
+    RBIMPL_ATTR_NONSTRING() char L0[76]; /* 1..16 */
 } prelude_code14 = {
 #line 1 "symbol.rb"
 "class Symbol\n"
@@ -4379,14 +4380,14 @@ static const struct {
 "\n"
 "  alias intern to_sym\n"
 "end\n"
-#line 4383 "miniprelude.c"
+#line 4384 "miniprelude.c"
 };
 
 static const char prelude_name15[] = "<internal:timev>";
 static const struct {
-    char L0[468]; /* 1..383 */
-    char L383[507]; /* 384..401 */
-    char L401[78]; /* 402..405 */
+    RBIMPL_ATTR_NONSTRING() char L0[468]; /* 1..383 */
+    RBIMPL_ATTR_NONSTRING() char L383[507]; /* 384..401 */
+    RBIMPL_ATTR_NONSTRING() char L401[78]; /* 402..405 */
 } prelude_code15 = {
 #line 1 "timev.rb"
 ""/* A \Time object represents a date and time: */
@@ -4797,13 +4798,13 @@ static const struct {
 "    Primitive.time_init_args(year, mon, mday, hour, min, sec, zone)\n"
 "  end\n"
 "end\n"
-#line 4801 "miniprelude.c"
+#line 4802 "miniprelude.c"
 };
 
 static const char prelude_name16[] = "<internal:thread_sync>";
 static const struct {
-    char L0[500]; /* 1..38 */
-    char L38[446]; /* 39..69 */
+    RBIMPL_ATTR_NONSTRING() char L0[500]; /* 1..38 */
+    RBIMPL_ATTR_NONSTRING() char L38[446]; /* 39..69 */
 } prelude_code16 = {
 #line 1 "thread_sync.rb"
 "class Thread\n"
@@ -4876,12 +4877,12 @@ static const struct {
 "    alias_method :<<, :push\n"
 "  end\n"
 "end\n"
-#line 4880 "miniprelude.c"
+#line 4881 "miniprelude.c"
 };
 
 static const char prelude_name17[] = "<internal:nilclass>";
 static const struct {
-    char L0[98]; /* 1..26 */
+    RBIMPL_ATTR_NONSTRING() char L0[98]; /* 1..26 */
 } prelude_code17 = {
 #line 1 "nilclass.rb"
 "class NilClass\n"
@@ -4909,12 +4910,12 @@ static const struct {
 "    return 0.0\n"
 "  end\n"
 "end\n"
-#line 4913 "miniprelude.c"
+#line 4914 "miniprelude.c"
 };
 
 static const char prelude_name18[] = "<internal:prelude>";
 static const struct {
-    char L0[310]; /* 1..32 */
+    RBIMPL_ATTR_NONSTRING() char L0[310]; /* 1..32 */
 } prelude_code18 = {
 #line 1 "prelude.rb"
 "class Binding\n"
@@ -4948,13 +4949,13 @@ static const struct {
 "    klass.new(self, *args, &block)\n"
 "  end\n"
 "end\n"
-#line 4952 "miniprelude.c"
+#line 4953 "miniprelude.c"
 };
 
 static const char prelude_name19[] = "<internal:gem_prelude>";
 static const struct {
-    char L0[490]; /* 1..24 */
-    char L24[32]; /* 25..27 */
+    RBIMPL_ATTR_NONSTRING() char L0[490]; /* 1..24 */
+    RBIMPL_ATTR_NONSTRING() char L24[32]; /* 25..27 */
 } prelude_code19 = {
 #line 1 "gem_prelude.rb"
 "begin\n"
@@ -4985,33 +4986,33 @@ static const struct {
 #line 25 "gem_prelude.rb"
 "end if defined?(SyntaxSuggest)\n"
 "\n"
-#line 4989 "miniprelude.c"
+#line 4990 "miniprelude.c"
 };
 
 static const char prelude_name20[] = "<internal:yjit>";
 static const struct {
-    char L0[473]; /* 1..39 */
-    char L39[506]; /* 40..65 */
-    char L65[491]; /* 66..84 */
-    char L84[493]; /* 85..106 */
-    char L106[467]; /* 107..151 */
-    char L151[448]; /* 152..168 */
-    char L168[499]; /* 169..191 */
-    char L191[486]; /* 192..227 */
-    char L227[460]; /* 228..244 */
-    char L244[441]; /* 245..249 */
-    char L249[455]; /* 250..256 */
-    char L256[500]; /* 257..263 */
-    char L263[504]; /* 264..269 */
-    char L269[447]; /* 270..274 */
-    char L274[494]; /* 275..280 */
-    char L280[450]; /* 281..287 */
-    char L287[479]; /* 288..302 */
-    char L302[473]; /* 303..312 */
-    char L312[467]; /* 313..325 */
-    char L325[461]; /* 326..340 */
-    char L340[425]; /* 341..351 */
-    char L351[126]; /* 352..357 */
+    RBIMPL_ATTR_NONSTRING() char L0[473]; /* 1..39 */
+    RBIMPL_ATTR_NONSTRING() char L39[506]; /* 40..65 */
+    RBIMPL_ATTR_NONSTRING() char L65[491]; /* 66..84 */
+    RBIMPL_ATTR_NONSTRING() char L84[493]; /* 85..106 */
+    RBIMPL_ATTR_NONSTRING() char L106[467]; /* 107..151 */
+    RBIMPL_ATTR_NONSTRING() char L151[448]; /* 152..168 */
+    RBIMPL_ATTR_NONSTRING() char L168[499]; /* 169..191 */
+    RBIMPL_ATTR_NONSTRING() char L191[486]; /* 192..227 */
+    RBIMPL_ATTR_NONSTRING() char L227[460]; /* 228..244 */
+    RBIMPL_ATTR_NONSTRING() char L244[441]; /* 245..249 */
+    RBIMPL_ATTR_NONSTRING() char L249[455]; /* 250..256 */
+    RBIMPL_ATTR_NONSTRING() char L256[500]; /* 257..263 */
+    RBIMPL_ATTR_NONSTRING() char L263[504]; /* 264..269 */
+    RBIMPL_ATTR_NONSTRING() char L269[447]; /* 270..274 */
+    RBIMPL_ATTR_NONSTRING() char L274[494]; /* 275..280 */
+    RBIMPL_ATTR_NONSTRING() char L280[450]; /* 281..287 */
+    RBIMPL_ATTR_NONSTRING() char L287[479]; /* 288..302 */
+    RBIMPL_ATTR_NONSTRING() char L302[473]; /* 303..312 */
+    RBIMPL_ATTR_NONSTRING() char L312[467]; /* 313..325 */
+    RBIMPL_ATTR_NONSTRING() char L325[461]; /* 326..340 */
+    RBIMPL_ATTR_NONSTRING() char L340[425]; /* 341..351 */
+    RBIMPL_ATTR_NONSTRING() char L351[126]; /* 352..357 */
 } prelude_code20 = {
 #line 1 "yjit.rb"
 ""/* frozen_string_literal: true */
@@ -5412,7 +5413,7 @@ static const struct {
 "    end\n"
 "  end\n"
 "end\n"
-#line 5416 "miniprelude.c"
+#line 5417 "miniprelude.c"
 };
 
 COMPILER_WARNING_POP
