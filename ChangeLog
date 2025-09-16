@@ -1,5 +1,657 @@
 -*- coding: utf-8 -*-
 
+commit dbd83256b1cec76c69756ecb8758b9e1079833de
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-09-16 07:38:23 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-16 07:38:23 +0900
+
+    v3.4.6
+
+commit 9c65da014548a141137e7e692699b129e3bc655f
+  Author:     Takashi Kokubun <takashi.kokubun@shopify.com>
+  AuthorDate: 2025-09-14 12:53:54 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2025-09-14 12:53:54 +0900
+
+    Bump Prism version to 1.5.1 (#14549)
+
+commit 09c067014fa27ad91d310de6a64b7a4443d7da0c
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-09-13 07:22:44 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-13 07:24:16 +0900
+
+    Attempt to fix [Backport #21567]
+
+commit 21709a58682b9fef53e3e3dec97a0fe4498334e3
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-09-13 06:58:07 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-13 06:58:07 +0900
+
+    merge revision(s) 7a05dbc47831a655a1ef8a1635f88292acd325da: [Backport #21561]
+
+            File.dirname: return consistent encoding for `"."`
+
+            [Bug #21561]
+
+            It's preferable if the method is consistent in the encoding in
+            the returned string.
+
+commit 00fa53d0ba9ad3c70b634834ff4ca35c2923a894
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-09-13 06:56:47 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-13 06:56:47 +0900
+
+    merge revision(s) 928fea3bfa86053c0bc6f7a5bf7559b115a676b5: [Backport #21567]
+
+            Fix crash when $LOADED_FEATURES is modified during require
+
+            [Bug #21567]
+
+            When we require an object that is not a string, it will attempt to convert
+            it to a string by calling to_str on it. If we modify the $LOADED_FEATURES
+            array while it calls to_str, Ruby can crash because it can end up inserting
+            the string in the wrong index in the array.
+
+            For example, the following script crashes:
+
+                require "tempfile"
+
+                class MyString
+                  def initialize(path)
+                    @path = path
+                  end
+
+                  def to_str
+                    $LOADED_FEATURES.clear
+                    @path
+                  end
+
+                  def to_path = @path
+                end
+
+                def create_ruby_file = Tempfile.create(["test", ".rb"]).path
+
+                require MyString.new(create_ruby_file)
+                $LOADED_FEATURES.unshift(create_ruby_file)
+                $LOADED_FEATURES << MyString.new(create_ruby_file)
+                require create_ruby_file
+
+            Crash log:
+
+                test.rb:21: [BUG] Segmentation fault at 0x0000000000000004
+                ruby 3.5.0dev (2025-09-09T09:29:35Z master ce94add7fb) +PRISM [arm64-darwin24]
+
+                -- Crash Report log information --------------------------------------------
+                  See Crash Report log file in one of the following locations:
+                    * ~/Library/Logs/DiagnosticReports
+                    * /Library/Logs/DiagnosticReports
+                  for more details.
+                Don't forget to include the above Crash Report log file in bug reports.
+
+                -- Control frame information -----------------------------------------------
+                c:0003 p:---- s:0011 e:000010 CFUNC  :require
+                c:0002 p:0076 s:0006 e:000005 EVAL   test.rb:21 [FINISH]
+                c:0001 p:0000 s:0003 E:0001b0 DUMMY  [FINISH]
+
+                -- Ruby level backtrace information ----------------------------------------
+                test.rb:21:in '<main>'
+                test.rb:21:in 'require'
+
+                -- Threading information ---------------------------------------------------
+                Total ractor count: 1
+                Ruby thread count for this ractor: 1
+
+                -- Machine register context ------------------------------------------------
+                  x0: 0x0000000000000004  x1: 0x000000000000c800  x2: 0x0000000000000000
+                  x3: 0x0000000000000000  x4: 0x0000000000000205  x5: 0x0000000000000000
+                  x6: 0x0000000000000000  x7: 0x0000000000000001 x18: 0x0000000000000000
+                x19: 0x0000000209dfc0b0 x20: 0x0000000209dfc018 x21: 0x000000016ee8ab58
+                x22: 0x0fffffff0009d71d x23: 0x0000000209dfc018 x24: 0x0000000209dfc150
+                x25: 0x000000016ee8acc0 x26: 0x0000000000000000 x27: 0x0000000000000000
+                x28: 0x0000000000000000  lr: 0x0000000101244140  fp: 0x000000016ee887f0
+                  sp: 0x000000016ee887d0
+
+                -- C level backtrace information -------------------------------------------
+                miniruby(rb_print_backtrace+0x24) [0x101317b08] vm_dump.c:843
+                miniruby(rb_print_backtrace) (null):0
+                miniruby(rb_vm_bugreport+0x26c) [0x101317d94] vm_dump.c:1175
+                miniruby(rb_bug_for_fatal_signal+0xa4) [0x10105ddac] error.c:1130
+                miniruby(sig_do_nothing+0x0) [0x1012278c0] signal.c:948
+                miniruby(sigsegv) (null):0
+                /usr/lib/system/libsystem_platform.dylib(_sigtramp+0x38) [0x19c1216a4]
+                miniruby(rb_str_new_frozen+0x1c) [0x101244140] string.c:1495
+                miniruby(rb_check_realpath_internal+0x68) [0x101077804] file.c:4679
+                miniruby(rb_check_realpath+0x2c) [0x101077aa4] file.c:4765
+                miniruby(get_loaded_features_index+0x37c) [0x1010f9c94] load.c:467
+                miniruby(rb_feature_p+0xd0) [0x1010f8174] load.c:582
+                miniruby(search_required+0xac) [0x1010f6ad4] load.c:1193
+                miniruby(require_internal+0x274) [0x1010f7518] load.c:1424
+                miniruby(rb_require_string_internal+0x94) [0x1010f6830] load.c:1571
+                miniruby(rb_require_string+0x58) [0x1010f66e8] load.c:1557
+                miniruby(rb_f_require+0x1c) [0x1010f6684] load.c:1150
+                miniruby(ractor_safe_call_cfunc_1+0x38) [0x101306c28] vm_insnhelper.c:3696
+                miniruby(vm_call_cfunc_with_frame_+0x250) [0x1012f857c] vm_insnhelper.c:3873
+                miniruby(vm_call_cfunc_with_frame+0x6c) [0x1012f8834] vm_insnhelper.c:3919
+                miniruby(vm_sendish+0x1a8) [0x1012c990c] vm_insnhelper.c:6087
+                miniruby(vm_exec_core+0x4050) [0x1012cfb48] insns.def:900
+                miniruby(vm_exec_loop+0x80) [0x1012e5448] vm.c:2666
+                miniruby(rb_vm_exec+0x134) [0x1012c9b40] vm.c:2645
+                miniruby(rb_iseq_eval_main+0x34) [0x1012e5628] vm.c:2919
+                miniruby(rb_ec_exec_node+0xe4) [0x10106d094] eval.c:282
+                miniruby(ruby_run_node+0x94) [0x10106cf64] eval.c:320
+                miniruby(rb_main+0x40) [0x100f7499c] main.c:42
+                miniruby(main+0x60) [0x100f74928] main.c:62
+
+commit cdd1de636bfa7790c72949d01e4a083845781d87
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-07-22 09:06:02 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-13 06:30:16 +0900
+
+    Revert "[ruby/prism] Clear flags on interpolated strings"
+
+    This reverts commit a495e6a44ce8cff17461b250e32ab63e409a642d.
+
+    This break extension builds:
+
+    ```
+    /Users/hsbt/Documents/github.com/ruby/ruby/rbconfig.rb:321:in 'String#replace': can't modify frozen String: "$(SDKROOT)$(prefix)/include" (FrozenError)
+            from /Users/hsbt/Documents/github.com/ruby/ruby/rbconfig.rb:321:in 'RbConfig.expand'
+            from /Users/hsbt/Documents/github.com/ruby/ruby/rbconfig.rb:314:in 'block in RbConfig.expand'
+            from /Users/hsbt/Documents/github.com/ruby/ruby/rbconfig.rb:307:in 'String#gsub'
+            from /Users/hsbt/Documents/github.com/ruby/ruby/rbconfig.rb:307:in 'RbConfig.expand'
+            from /Users/hsbt/Documents/github.com/ruby/ruby/rbconfig.rb:314:in 'block in RbConfig.expand'
+            from /Users/hsbt/Documents/github.com/ruby/ruby/rbconfig.rb:307:in 'String#gsub'
+            from /Users/hsbt/Documents/github.com/ruby/ruby/rbconfig.rb:307:in 'RbConfig.expand'
+            from /Users/hsbt/Documents/github.com/ruby/ruby/rbconfig.rb:314:in 'block in RbConfig.expand'
+            from /Users/hsbt/Documents/github.com/ruby/ruby/rbconfig.rb:307:in 'String#gsub'
+            from /Users/hsbt/Documents/github.com/ruby/ruby/rbconfig.rb:307:in 'RbConfig.expand'
+            from /Users/hsbt/Documents/github.com/ruby/ruby/rbconfig.rb:325:in 'block in <module:RbConfig>'
+            from /Users/hsbt/Documents/github.com/ruby/ruby/rbconfig.rb:324:in 'Hash#each_value'
+            from /Users/hsbt/Documents/github.com/ruby/ruby/rbconfig.rb:324:in '<module:RbConfig>'
+            from /Users/hsbt/Documents/github.com/ruby/ruby/rbconfig.rb:11:in '<top (required)>'
+            from ./ext/extmk.rb:42:in 'Kernel#require'
+            from ./ext/extmk.rb:42:in '<main>'
+    make[1]: *** [ext/configure-ext.mk:70: ext/json/exts.mk] Error 1
+    ```
+
+commit c63d6bee7b1bba0308e72cb8d54538ff84af612a
+  Author:     Earlopain <14981592+Earlopain@users.noreply.github.com>
+  AuthorDate: 2025-09-13 05:49:35 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-13 06:30:16 +0900
+
+    Explicitly use a ruby version for prism to parse the code as
+
+    Prism can parse multiple versions of ruby. Because of that branch release managers are ok with simply
+    bumping prism to its latest version.
+
+    However, if no version is specified, it will parse as the latest known version, which can be ahead of the maintenance branch.
+    So we need to explicitly pass a version to not accidentally introduce new syntax to maintenance branches.
+
+commit 52b3f006cb31672c45b26f6a44a609fd1b8e2ee5
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-09-13 05:09:30 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-13 06:30:16 +0900
+
+    Bump Prism version to 1.5.0
+
+commit 9cd1ac404e72587952d019df167e7793924699d6
+  Author:     Alan Wu <XrXr@users.noreply.github.com>
+  AuthorDate: 2025-09-11 06:02:21 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-11 07:35:06 +0900
+
+    YJIT: Print more disassembly in release builds
+
+    These `#[cfg(feature = "disasm")]` were unnecessary and we can provide
+    the information like ruby source location regardless of the availability
+    of capstone.
+
+commit c866b9027b7429b402ed272ebaebb6c7831e3cb5
+  Author:     Alan Wu <XrXr@users.noreply.github.com>
+  AuthorDate: 2025-09-11 06:04:11 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-11 07:35:06 +0900
+
+    YJIT: Remove dead code: `asm_comment!` checks `--yjit-dump-disasm`
+
+commit ecebf1687dfd8defd44ff6514329224de4a598b1
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-09-09 05:30:57 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2025-09-09 05:30:57 +0900
+
+    YJIT: Add more information to an assert message (#14481)
+
+    YJIT: Add more information to an assert message in jit_guard_known_class (#14480)
+
+    ---------
+
+    Co-authored-by: Alan Wu <XrXr@users.noreply.github.com>
+
+commit 600dc9cf1f8f52ba673bb43a718f7f980ea82404
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-09-09 05:11:34 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-09 05:29:50 +0900
+
+    YJIT: Make the workflow names consistent with file names
+
+commit 6d338434e335b1d4164a10cf12c7243119fd32c7
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-06-14 16:07:01 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-06 01:05:06 +0900
+
+    Add missing write barrier for hash on iseq
+
+    Found by wbcheck
+
+commit 7de09550dad4f3921fba712009c1ec516a384fb2
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-06-13 07:06:38 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-06 01:05:06 +0900
+
+    Add write barrier to rb_cArray_empty_frozen
+
+    Found by wbcheck
+
+commit f6448d65846d374d5096f53170cc9148f42df583
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-06-14 16:20:18 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-06 01:05:06 +0900
+
+    Add write barrier to rb_cHash_empty_frozen
+
+    Found by wbcheck
+
+commit 4c0a2764b6634e6f2c11494fc015afd5c71537c2
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-06-10 02:09:10 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-06 01:05:06 +0900
+
+    More write barriers to local_iseq and parent_iseq
+
+    Found by wbcheck
+
+commit 3fb7c4f7e624de54fd18520585f3b294e83c2e20
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-06-08 12:10:05 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-06 01:05:06 +0900
+
+    Use write barriers when loading catch table
+
+    Found by wbcheck
+
+commit eb2f79ff60065fd33a472f8e16d91b69b7a3735d
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-06-08 12:05:18 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-06 01:05:06 +0900
+
+    Add missing write barriers to ibf_load
+
+    Found by wbcheck
+
+commit d2caeb1e70ea65a909bf2722706b2fd558982cc6
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-06-08 10:37:46 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-06 01:05:06 +0900
+
+    Fix a missing write barrier to mandatory_only_iseq
+
+    Found by wbcheck
+
+commit ffbccd45ce04c050ae8c05162eb697bccc948a3b
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-06-09 02:52:33 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-06 01:05:06 +0900
+
+    Add write barrier on tm_from_time->timew
+
+    We want to always use time_set_timew, as timew is 64-bit even on 32-bit
+    platforms so we need to be careful to both write that size, but still
+    trigger write barriers if we end up with a heap object.
+
+commit 34af4993bb57967d1ae3950472662667bce5d36c
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-06-09 02:59:13 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-06 01:05:06 +0900
+
+    Add missing write barrier to time_init_copy
+
+commit 6312c4000b1c2271141357b808e13e56c7bb3d6c
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-06-08 15:30:04 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-06 01:05:06 +0900
+
+    Write barrier for zone on time
+
+commit c2bda5c359fdf5bb9f1b813a066a3e47d445e620
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-06-10 10:13:38 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-06 01:05:06 +0900
+
+    Add write barrier for hash in obj_traverse_i
+
+    We are inserting directly into the st_table, so we need to issue a write
+    barrier from the hash.
+
+commit e1081f3b1aaf0766f4f01ce131b34b4b7ddbafa3
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-06-11 03:15:47 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-06 01:05:06 +0900
+
+    Fix early write barrier rb_marshal_define_compat
+
+    This write barrier occurred before the entry was added to the table, so
+    if GC occurred when inserting into the table, the write could be missed.
+
+commit ff124e9f93975e40ae91cff272a1c1d05273e615
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-06-15 17:18:22 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-06 01:05:06 +0900
+
+    Fix too early writebarrier in tally_up
+
+    After returning from the callback in st_update is the point that the
+    hash table may be resized, which could trigger a GC and mark the table
+    being used for the tally.
+
+        RUBY_GC_LIBRARY=wbcheck WBCHECK_VERIFY_AFTER_WB=1 ./miniruby -e '(0...100).map(&:to_s).tally'
+
+commit 38297e47945593daa3f395121c340260b9fae82d
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-08-16 21:38:03 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-08-28 09:34:34 +0900
+
+    CI: windows: Skip rebuilding vcpkg packages when cache restored
+
+commit 958bdafd8a2bd7f9247024753dbc540aa311094d
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-08-16 21:30:19 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-08-28 09:34:34 +0900
+
+    CI: windows: Use possibly faster device for TMP/TEMP
+
+commit ffc174470610eaa18e92254393f9b4a4c3ce54d8
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-07-31 10:36:23 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-08-28 09:34:34 +0900
+
+    Save vcpkg cache with master and stable branches
+
+commit 0d367ce65fe4e85f207a8ca5f1f331dd90c6992e
+  Author:     Luke Gruber <luke.gruber@shopify.com>
+  AuthorDate: 2025-08-27 22:26:57 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-08-28 07:19:58 +0900
+
+    Fix bad NameError raised using sendforward instruction through vcall
+
+    If you called a VCALL method and the method takes forwarding arguments
+    and then you forward those arguments along using the sendforward
+    instruction, the method_missing class was wrongly chosen as NameError
+    instead of NoMethodError. This is because the VM looked at the CallInfo
+    of the vcall and determined it needed to raise NameError. Now we detect
+    that case and raise NoMethodError.
+
+    [Backport #21535]
+
+commit 5a42d267bfabc86f86cae2e83de24b1b86bc316a
+  Author:     Janosch Müller <janosch84@gmail.com>
+  AuthorDate: 2023-04-14 03:43:06 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-08-28 07:17:15 +0900
+
+    Make word prop match join_control to conform to UTS 18
+
+    See <https://bugs.ruby-lang.org/issues/19417#note-3>.
+
+    https://unicode.org/reports/tr18/#word states word should match join_control chars.
+
+    It did not previously:
+
+    ```ruby
+    [*0x0..0xD799, *0xE000..0x10FFFF].map { |n| n.chr 'utf-8' } => all_chars
+    all_chars.grep(/\p{join_control}/) => jc
+    jc.count # => 2
+    jc.grep(/\p{word}/).count # => 0
+    ```
+    [Backport #19417]
+
+    ---
+
+    Backporting note: I regenerated `enc/unicode/15.0.0/name2ctype.h` using
+    `make update-unicode`.
+
+commit fd036dbc3f39e6bdce735edf9ca187a690fe2079
+  Author:     Jeremy Evans <code@jeremyevans.net>
+  AuthorDate: 2025-05-30 14:32:09 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-08-28 06:29:42 +0900
+
+    Do not respect ruby2_keywords on method/proc with post arguments
+
+    Previously, ruby2_keywords could be used on a method or proc with
+    post arguments, but I don't think the behavior is desired:
+
+    ```ruby
+    def a(*c, **kw) [c, kw] end
+    def b(*a, b) a(*a, b) end
+    ruby2_keywords(:b)
+
+    b({foo: 1}, bar: 1)
+    ```
+
+    This changes ruby2_keywords to emit a warning and not set the
+    flag on a method/proc with post arguments.
+
+    While here, fix the ruby2_keywords specs for warnings, since they
+    weren't testing what they should be testing.  They all warned
+    because the method didn't accept a rest argument, not because it
+    accepted a keyword or keyword rest argument.
+
+    [Backport #21402]
+
+commit d49c7d0661faa964099b8c28ac316e33ae641051
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-08-17 17:13:15 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-08-28 06:13:52 +0900
+
+    [Backport #21546] Make the generated pc file relocatable
+
+commit b97a159dd9d9843673b4b1de2b056a0868e7e0f9
+  Author:     Alan Wu <XrXr@users.noreply.github.com>
+  AuthorDate: 2025-08-27 09:35:11 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-08-28 01:07:32 +0900
+
+    Bump PRISM version number to avoid collision with RubyGems version
+
+commit 1f421d092bb8c290df5cfc9e95a01e279ebadc42
+  Author:     Aaron Patterson <tenderlove@ruby-lang.org>
+  AuthorDate: 2025-07-18 07:20:20 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-08-28 01:07:32 +0900
+
+    When reading from stdin, put a wrapper around the IO object
+
+    The purpose of this commit is to fix Bug #21188.  We need to detect when
+    stdin has run in to an EOF case.  Unfortunately we can't _call_ the eof
+    function on IO because it will block.
+
+    Here is a short script to demonstrate the issue:
+
+    ```ruby
+    x = STDIN.gets
+    puts x
+    puts x.eof?
+    ```
+
+    If you run the script, then type some characters (but _NOT_ a newline),
+    then hit Ctrl-D twice, it will print the input string.  Unfortunately,
+    calling `eof?` will try to read from STDIN again causing us to need a
+    3rd Ctrl-D to exit the program.
+
+    Before introducing the EOF callback to Prism, the input loop looked
+    kind of like this:
+
+    ```ruby
+    loop do
+      str = STDIN.gets
+      process(str)
+
+      if str.nil?
+        p :DONE
+      end
+    end
+    ```
+
+    Which required 3 Ctrl-D to exit.  If we naively changed it to something
+    like this:
+
+    ```ruby
+    loop do
+      str = STDIN.gets
+      process(str)
+
+      if STDIN.eof?
+        p :DONE
+      end
+    end
+    ```
+
+    It would still require 3 Ctrl-D because `eof?` would block.  In this
+    patch, we're wrapping the IO object, checking the buffer for a newline
+    and length, and then using that to simulate a non-blocking eof? method.
+
+    This commit wraps STDIN and emulates a non-blocking `eof` function.
+
+    [Backport #21188]
+
+commit c6614d4cdcf36442c099c0d11a7cd24e530b35f1
+  Author:     Alan Wu <XrXr@users.noreply.github.com>
+  AuthorDate: 2025-08-12 03:31:52 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-08-12 04:21:19 +0900
+
+    YJIT: Fix `mismatched_lifetime_syntaxes`, new in Rust 1.89.0
+
+commit 5026609f47b79da093642d9a7731c3880d2a054e
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-06-10 03:26:49 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-08-06 07:42:27 +0900
+
+    Fix missing write barrier through M_TBL
+
+    When creating a new origin in ensure_origin, we need to fire a write
+    barrier after RCLASS_SET_ORIGIN. rb_class_set_super allocates, so GC
+    could happen there, either incrementally marking or promoting the newly
+    allocated class, and only after RCLASS_SET_ORIGIN will origin mark
+    object in the M_TBL.
+
+commit 07f7832cffea879946a796e066ccb13ccb4b2abd
+  Author:     TSUYUSATO Kitsune <make.just.on@gmail.com>
+  AuthorDate: 2025-07-29 00:44:44 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-08-01 02:02:40 +0900
+
+    Correct castings to use OnigDistance
+
+commit e6e547f3e582d585bfa00f330d40473c74086c09
+  Author:     TSUYUSATO Kitsune <make.just.on@gmail.com>
+  AuthorDate: 2025-07-28 18:45:57 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-08-01 02:02:40 +0900
+
+    Add castings to prevent warnings
+
+commit 9e024046c5f3917149015b9458ec07b145c5428b
+  Author:     TSUYUSATO Kitsune <make.just.on@gmail.com>
+  AuthorDate: 2025-07-28 17:50:36 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-08-01 02:02:40 +0900
+
+    Port a Oniguruma patch: Integer overflow in onig_search_gpos()
+
+    https://github.com/kkos/oniguruma/commit/778a43dd56925ed58bbe26e3a7bb8202d72c3f3f
+
+    It differs from the Oniguruma patch in that it dosen't use `onigenc_get_prev_char_head()`
+    because this function's signature has been changed by Oniguruma and the change is not ported
+    in Onigmo for now. This patch respects the current Onigmo implementation.
+
+    Co-Authored-By: K.Kosako <kkos@users.noreply.github.com>
+
+commit 142fc23975e9e240d6b4a5ee4d63c45ab969fd10
+  Author:     TSUYUSATO Kitsune <make.just.on@gmail.com>
+  AuthorDate: 2025-07-28 16:18:11 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-08-01 02:02:40 +0900
+
+    Port a Oniguruma patch: Integer overflow in backward_search_range() and onig_search_gpos()
+
+    https://github.com/kkos/oniguruma/commit/bfc36d3d8139b8be4d3df630d625c58687b0c7d4
+
+    Co-Authored-By: K.Kosako <kkos@users.noreply.github.com>
+
+commit 9f45db04ac36386aedfb35d1f3a5ff9603a24d68
+  Author:     TSUYUSATO Kitsune <make.just.on@gmail.com>
+  AuthorDate: 2025-07-28 16:05:41 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-08-01 02:02:40 +0900
+
+    Port a Oniguruma patch: Integer overflow in forward_search_range()
+
+    https://github.com/kkos/oniguruma/commit/db64ef3189f54917a5008a02bdb000adc514a90a
+
+    Co-Authored-By: K.Kosako <kkos@users.noreply.github.com>
+
+commit 8b505a286080fead52a603fcd2761c2d6b3e3aec
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-07-22 06:45:15 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-07-22 06:45:15 +0900
+
+    merge revision(s) 148db9c80f11af1780f0f3685201f28de8f6b47a: [Backport #21259]
+
+            Fix flipflop line numbers
+
+            [ruby-core:121605]
+
+commit d713896f19517ab688b13174e6346a87fd9e01ee
+  Author:     Alan Wu <XrXr@users.noreply.github.com>
+  AuthorDate: 2025-01-31 08:00:53 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-07-18 01:23:16 +0900
+
+    YJIT: Explicitly specify C ABI to fix Rust warning
+
+    Backport of 7e733ca55168e3b1f10b685f6e9a52cf1deb5aff to
+    fix [Bug #21514].
+
 commit 20cda200d3ce092571d0b5d342dadca69636cb0f
   Author:     Takashi Kokubun <takashikkbn@gmail.com>
   AuthorDate: 2025-07-16 01:27:14 +0900
