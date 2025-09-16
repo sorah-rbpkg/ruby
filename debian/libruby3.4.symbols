@@ -1563,7 +1563,6 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  rb_str_succ@Base 3.4.0-0nkmi1
  rb_str_times@Base 3.4.0-0nkmi1
  rb_str_tmp_frozen_acquire@Base 3.4.0-0nkmi1
- rb_str_tmp_frozen_no_embed_acquire@Base 3.4.5-0nkmi1
  rb_str_tmp_frozen_release@Base 3.4.0-0nkmi1
  rb_str_tmp_new@Base 3.4.0-0nkmi1
  rb_str_to_dbl@Base 3.4.0-0nkmi1
@@ -1856,5 +1855,3 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  ruby_xrealloc2@Base 3.4.0-0nkmi1
  ruby_xrealloc@Base 3.4.0-0nkmi1
  setproctitle@Base 3.4.0-0nkmi1
- (optional)strlcat@Base 3.4.0-0nkmi1
- (optional)strlcpy@Base 3.4.0-0nkmi1
