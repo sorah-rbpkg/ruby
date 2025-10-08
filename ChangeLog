@@ -1,5 +1,215 @@
 -*- coding: utf-8 -*-
 
+commit 7a5688e2a27668e48f8d6ff4af5b2208b98a2f5e
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-10-08 01:42:48 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-10-08 01:42:48 +0900
+
+    v3.4.7
+
+commit ef3ce711fb29f7273216edb2fe41bb2604c835c3
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-10-08 01:41:15 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-10-08 01:41:15 +0900
+
+    merge revision(s) 7ae67e8f6ad6e7fd0677b28a7a10961f79d55495: [Backport #21568]
+
+            [PATCH] load.c: Fix dest and src of MEMMOVE
+
+            When multiple files with the same name are required, the features_index
+            hash stores the indexes in `$LOADED_FEATURES` array into a darray.
+            The dest and src arguments for `MEMMOVE` were wrongly reversed when
+            inserting a new index in the darray.
+
+            [Bug #21568]
+
+commit a7eb7e7c6fe02f7127ff527fff18a0914a7aa888
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-10-07 02:53:24 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-10-08 01:40:55 +0900
+
+    tool/merger.rb: Fetch diff from GitHub instead of cgit
+
+    Our cgit server has been shut down.
+
+    tool/merger.rb: Fetch a diff in the patch format
+
+    It expects "Subject:", so it needs to be a patch file.
+
+commit d2cd7eaa11f57f81cdbacf0e8d5162d37e28337b
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-10-07 10:30:16 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-10-08 01:15:46 +0900
+
+    Update rubyspec as of CVE-2025-27221
+
+commit 71462666e0f1ea720062e12f97b2ea89166038d1
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-10-07 18:29:36 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-10-08 01:15:46 +0900
+
+    Merge URI-1.0.4
+
+commit 49d7295fc38583abf3018a16a2018667871d9f3d
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-10-03 02:05:27 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-10-03 02:05:39 +0900
+
+    macos.yml: macOS 13 hosted runner image is closing down
+
+    https://github.blog/changelog/2025-09-19-github-actions-macos-13-runner-image-is-closing-down/
+
+commit 264b2d78c366491834c9ce4499a4ad7b7564b89d
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-09-30 07:10:37 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-30 07:10:58 +0900
+
+    Reapply "merge revision(s) 62430c19c9f1ab49429cebe65f30588472648c95: [Backport #21342]"
+
+    This reverts commit c414b9871f263331cde0af1c08cf5c1a47e1aedf.
+
+commit c414b9871f263331cde0af1c08cf5c1a47e1aedf
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-09-30 07:08:47 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-30 07:08:47 +0900
+
+    Revert "merge revision(s) 62430c19c9f1ab49429cebe65f30588472648c95: [Backport #21342]"
+
+    This reverts commit 4306c9048fb674d24b92dc46b6746a4749564147.
+
+commit 22c2262b83224f6798d60d539f1f8609d9722766
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-09-30 06:36:06 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-30 06:36:06 +0900
+
+    merge revision(s) 354d47ae5bc4edcc94db4a5391ed71a8b9844e57: [Backport #21569]
+
+            IBF: Avoid unaligned load on 32 bit platforms
+
+            [Bug #21569]
+
+commit 4306c9048fb674d24b92dc46b6746a4749564147
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-09-30 06:35:15 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-30 06:35:15 +0900
+
+    merge revision(s) 62430c19c9f1ab49429cebe65f30588472648c95: [Backport #21342]
+
+            Properly unlock locked mutexes on thread cleanup.
+
+            Mutexes were being improperly unlocked on thread cleanup. This bug was
+            introduced in 050a8954395.
+
+            We must keep a reference from the mutex to the thread, because if the fiber
+            is collected before the mutex is, then we cannot unlink it from the thread in
+            `mutex_free`. If it's not unlinked from the the thread when it's freed, it
+            causes bugs in `rb_thread_unlock_all_locking_mutexes`.
+
+            We now mark the fiber when a mutex is locked, and the thread is marked
+            as well. However, a fiber can still be freed in the same GC cycle as the
+            mutex, so the reference to the thread is still needed.
+
+            The reason we need to mark the fiber is that `mutex_owned_p()` has an ABA
+            issue where if the fiber is collected while it's locked, a new fiber could be
+            allocated at the same memory address and we could get false positives.
+
+            Fixes [Bug #21342]
+
+            Co-authored-by: John Hawthorn <john@hawthorn.email>
+
+commit 88a96147a21900a2c22d3ae84d05cd3f6ee795c7
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-09-30 06:31:05 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-30 06:31:05 +0900
+
+    merge revision(s) ef2b26cc3eaed06c5c9d4ef2c6d8669ff357afa4: [Backport #21611]
+
+            `struct iseq_catch_table` is packed
+
+commit e900e9fc9ace5e36de5170c83df0f56167e4c8a9
+  Author:     Samuel Williams <samuel.williams@oriontransfer.co.nz>
+  AuthorDate: 2025-09-18 12:24:02 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2025-09-18 12:24:02 +0900
+
+    Use `ec->interrupt_mask` to prevent interrupts. [Backport #21610]
+
+    Disallow pending interrupts to be checked during `FiberScheduler#unblock`.
+
+    Ractors can send signals at any time, so the previous debug assertion can fail if a Ractor sends a signal.
+
+    Co-authored-by: Luke Gruber <luke.gruber@shopify.com>
+
+commit 6882012473b3bd3a9eb53ad7f7754144c0e63ef0
+  Author:     Jean Boussier <jean.boussier@gmail.com>
+  AuthorDate: 2025-09-17 06:17:51 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2025-09-17 06:17:51 +0900
+
+    [3.4] compile.c: Handle anonymous variables in `outer_variable_cmp` (#13493)
+
+commit b5346f2c5be00f886c9ad2f4b807deb728265a0a
+  Author:     Nick Dower <nicholasdower@gmail.com>
+  AuthorDate: 2025-05-16 22:44:45 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-17 05:36:08 +0900
+
+    Add a test case for `it` in a regex.
+
+    Co-authored-by: Alan Wu <XrXr@users.noreply.github.com>
+
+commit 1f6d845011cf8900c0e9c6fe5e4243a63a5ecae3
+  Author:     Nick Dower <nicholasdower@gmail.com>
+  AuthorDate: 2025-05-16 12:18:28 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-09-17 05:36:08 +0900
+
+    [Bug #21313] Handle `it` in rescue and ensure blocks.
+
+    The following is crashing for me:
+
+    ```shell
+    ruby --yjit --yjit-call-threshold=1 -e '1.tap { raise rescue p it }'
+
+    ruby: YJIT has panicked. More info to follow...
+    thread '<unnamed>' panicked at ./yjit/src/codegen.rs:2402:14:
+    ...
+    ```
+
+    It seems `it` sometimes points to the wrong value:
+
+    ```shell
+    ruby -e '1.tap { raise rescue p it }'
+    false
+
+    ruby -e '1.tap { begin; raise; ensure; p it; end } rescue nil'
+    false
+    ```
+
+    But only when `$!` is set:
+
+    ```shell
+    ruby -e '1.tap { begin; nil; ensure; p it; end }'
+    1
+
+    ruby -e '1.tap { begin; nil; rescue; ensure; p it; end }'
+    1
+
+    ruby -e '1.tap { begin; raise; rescue; ensure; p it; end }'
+    1
+    ```
+
 commit dbd83256b1cec76c69756ecb8758b9e1079833de
   Author:     Takashi Kokubun <takashikkbn@gmail.com>
   AuthorDate: 2025-09-16 07:38:23 +0900
