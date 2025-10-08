@@ -13160,7 +13160,7 @@ ibf_load_catch_table(const struct ibf_load *load, ibf_offset_t catch_table_offse
             table->entries[i].sp = (unsigned int)ibf_load_small_value(load, &reading_pos);
 
             rb_iseq_t *catch_iseq = (rb_iseq_t *)ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)iseq_index);
-            RB_OBJ_WRITE(parent_iseq, &table->entries[i].iseq, catch_iseq);
+            RB_OBJ_WRITE(parent_iseq, UNALIGNED_MEMBER_PTR(&table->entries[i], iseq), catch_iseq);
         }
         return table;
     }
@@ -13236,6 +13236,13 @@ outer_variable_cmp(const void *a, const void *b, void *arg)
 {
     const struct outer_variable_pair *ap = (const struct outer_variable_pair *)a;
     const struct outer_variable_pair *bp = (const struct outer_variable_pair *)b;
+
+    if (!ap->name) {
+        return -1;
+    } else if (!bp->name) {
+        return 1;
+    }
+
     return rb_str_cmp(ap->name, bp->name);
 }
 
@@ -13902,8 +13909,10 @@ ibf_dump_object_float(struct ibf_dump *dump, VALUE obj)
 static VALUE
 ibf_load_object_float(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    const double *dblp = IBF_OBJBODY(double, offset);
-    return DBL2NUM(*dblp);
+    double d;
+    /* Avoid unaligned VFP load on ARMv7; IBF payload may be unaligned (C99 6.3.2.3 p7). */
+    memcpy(&d, IBF_OBJBODY(double, offset), sizeof(d));
+    return DBL2NUM(d);
 }
 
 static void
