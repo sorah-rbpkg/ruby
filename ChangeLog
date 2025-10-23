@@ -1,5 +1,510 @@
 -*- coding: utf-8 -*-
 
+commit 343ea050023cfc0374fdea6fdf625b2f57b716a4
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-10-23 19:00:15 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-10-23 19:00:15 +0900
+
+    bump teeny
+
+commit ac27bec23f1a38a2368953d5ce7fe6115825e67e
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-10-20 21:09:51 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-10-20 21:09:51 +0900
+
+    merge revision(s) 957c832db137e67289e93dfd9fd9e915b1f2fc87:
+
+            [PATCH] Fix memory leak in rb_const_remove when using namespace
+
+            We need to free the rb_const_entry_t we remove from the RCLASS_WRITABLE_CONST_TBL
+            otherwise it will leak memory.
+
+commit 4365a09466462836c0e5f88d15736846734b8216
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-10-18 14:43:19 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-10-18 14:43:19 +0900
+
+    Don't check existence of openssl-1.1 dll files on GHA mingw workflow.
+
+commit 599257ea3310b2897164317ed4e86e7b3a5cd6a7
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-10-18 12:26:34 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-10-18 12:26:34 +0900
+
+    Stop renaming openssl dll files on GHA mingw workflow.
+
+commit 4a09da622a8aabb3d2e68cf38addf544a5c06c13
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-10-18 12:20:06 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-10-18 12:20:09 +0900
+
+    partially merge revision 949573028b127931cb034a2928ef80a59c45ea43:
+
+            [PATCH] Win32: OpenSSL 1.1 DLLs are no longer used
+
+            We are already using OpenSSL 3.3 and have no possibility to use system
+            provided DLLs.
+
+commit e526fbe770909974f610b7a2a00bd8d5dd045f1f
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-10-18 11:20:54 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-10-18 11:20:54 +0900
+
+    merge revision(s) e94a2f691d67ad98be9036e76c765fcfa7d22552: [Backport #21638]
+
+            [PATCH] [Bug #21638] Mark ractor-local `$VERBOSE` and `$DEBUG`
+
+            https://github.com/sampersand/blog/blob/master/the%20-s%20flag.md#the-segfault
+
+commit a4ca3de38e8910d7fc8968036157c08cb2604af5
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-10-11 18:28:36 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-10-11 18:28:36 +0900
+
+    merge revision(s) 07b59eee6aa120537d7d72422327cc7b855e9400:
+
+            [PATCH] Fix memory leak when load_from_binary raises
+
+            ibf_load_code will leak memory allocated for the code if an exception is
+            raised. The following script reproduces the leak:
+
+                bin = RubyVM::InstructionSequence.of(1.method(:abs)).to_binary
+
+                10.times do
+                  100_000.times do
+                    RubyVM::InstructionSequence.load_from_binary(bin)
+                  rescue ArgumentError
+                  end
+                  puts `ps -o rss= -p #{$$}`
+                end
+
+            Before:
+
+                18004
+                23380
+                28756
+                34260
+                39892
+                45396
+                50772
+                55892
+                61012
+                66132
+
+            After:
+
+                12536
+                12920
+                13304
+                13688
+                14072
+                14456
+                14840
+                15352
+                15608
+                15864
+
+commit 7e31d3c0229095b6b256ba04288869a6373938b6
+  Author:     刘皓 <whiteaxe@tuta.io>
+  AuthorDate: 2025-10-09 09:45:26 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-10-11 18:27:37 +0900
+
+    Backport WASI setjmp handler memory leak fixes to Ruby 3.3
+
+commit 27a1df7506ba566d08a536e93910fff574cd6d56
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-10-11 17:01:06 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-10-11 17:01:06 +0900
+
+    merge revision(s) 7ae67e8f6ad6e7fd0677b28a7a10961f79d55495: [Backport #21568]
+
+            [PATCH] load.c: Fix dest and src of MEMMOVE
+
+            When multiple files with the same name are required, the features_index
+            hash stores the indexes in `$LOADED_FEATURES` array into a darray.
+            The dest and src arguments for `MEMMOVE` were wrongly reversed when
+            inserting a new index in the darray.
+
+            [Bug #21568]
+
+commit ce7aa23f97273fa181be26aec33d3c6998e203c5
+  Author:     Bo Anderson <mail@boanderson.me>
+  AuthorDate: 2025-10-09 12:24:27 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-10-11 16:53:43 +0900
+
+    Update openssl gem to 3.2.2
+
+commit f427353653e5488d4f8da1066d07d392a42a00f2
+  Author:     Bo Anderson <mail@boanderson.me>
+  AuthorDate: 2025-10-09 12:45:43 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-10-09 23:11:57 +0900
+
+    Update rexml to 3.4.4
+
+commit 7a197de7aef31e47fbe9ceb2d985ba3fc75919fa
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-10-07 18:37:46 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-10-09 23:08:48 +0900
+
+    Fix tests to verify basic authentication
+
+commit 3fe7f490ff654db9fac004ff030204d9d69fbe98
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-10-07 18:28:32 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-10-09 23:08:48 +0900
+
+    Merge URI-0.13.3
+
+commit 4fb1eec1e34a73da6f38ae9d344d4c9cb73eb955
+  Author:     Takashi Kokubun <takashi.kokubun@shopify.com>
+  AuthorDate: 2025-10-09 06:23:12 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2025-10-09 06:23:12 +0900
+
+    post_push.yml: Backport commit-mail to ruby_3_3 (#14782)
+
+commit 5a8d7642168f4ea0d9331fded3033c225bbc36c5
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-10-08 22:55:33 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-10-08 22:56:02 +0900
+
+    merge revision(s) 43dbb9a93f4de3f1170d7d18641c30e81cc08365, 2bb6fe3854e2a4854bb89bfce4eaaea9d848fd1b, 7c9dd0ecff61153b96473c6c51d5582e809da489: [Backport #21629]
+
+            [PATCH] [Bug #21629] Enable `nonstring` attribute on clang 21
+
+            [PATCH] [Bug #21629] Initialize `struct RString`
+
+            [PATCH] [Bug #21629] Initialize `struct RArray`
+
+commit a8f488482a60554515ab5f5e360e79f80d3fa344
+  Author:     Takashi Kokubun <takashi.kokubun@shopify.com>
+  AuthorDate: 2025-10-08 17:10:05 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2025-10-08 17:10:05 +0900
+
+    Backport fetch_changesets to ruby_3_3 (#14773)
+
+commit dcb66fcae7bc4b4b337ca1083dd1e125923ac74f
+  Author:     Takashi Kokubun <takashi.kokubun@shopify.com>
+  AuthorDate: 2025-10-08 13:42:13 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2025-10-08 13:42:13 +0900
+
+    Backport post_push.yml workflow to ruby_3_3 (#14770)
+
+commit 183e2b0a2389579a3a5b205113db72345b52dd85
+  Author:     Samuel Williams <samuel.williams@oriontransfer.co.nz>
+  AuthorDate: 2025-09-18 12:24:02 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-10-06 07:50:39 +0900
+
+    Use `ec->interrupt_mask` to prevent interrupts. [Backport #21610]
+
+    Disallow pending interrupts to be checked during `FiberScheduler#unblock`.
+
+    Ractors can send signals at any time, so the previous debug assertion can fail if a Ractor sends a signal.
+
+    Co-authored-by: Luke Gruber <luke.gruber@shopify.com>
+
+commit 05f93fe6dc6f99fd2f728dd3c85dca944f1f4ba1
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-10-05 19:10:48 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-10-05 19:10:48 +0900
+
+    merge revision(s) 62430c19c9f1ab49429cebe65f30588472648c95: [Backport #21342]
+
+            Message not found for revision: 62430c19c9f1ab49429cebe65f30588472648c95
+
+commit 62ecd47656e0c8c7f308fc798ab6106d738c211e
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-10-05 19:00:40 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-10-05 19:00:40 +0900
+
+    merge revision(s) 354d47ae5bc4edcc94db4a5391ed71a8b9844e57: [Backport #21569]
+
+            Message not found for revision: 354d47ae5bc4edcc94db4a5391ed71a8b9844e57
+
+commit 7a67358006207f525a78775e1417ad4fb7b0484d
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-10-05 09:39:04 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-10-05 09:39:04 +0900
+
+    merge revision(s) ef2b26cc3eaed06c5c9d4ef2c6d8669ff357afa4: [Backport #21611]
+
+            Message not found for revision: ef2b26cc3eaed06c5c9d4ef2c6d8669ff357afa4
+
+commit b202a1fe034e9e4e77fb778ad032c01d014d677f
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-06-08 12:10:05 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-10-05 09:37:26 +0900
+
+    Use write barriers when loading catch table
+
+    Found by wbcheck
+
+commit 7a4c7eac9b262fd7036d86b58d0dc2f188bd5838
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-06-08 12:05:18 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-10-05 09:37:26 +0900
+
+    Add missing write barriers to ibf_load
+
+    Found by wbcheck
+
+commit 1811211d6dea45783c855a9a7b692124e7479292
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-10-05 09:16:20 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-10-05 09:16:20 +0900
+
+    merge revision(s) 7a05dbc47831a655a1ef8a1635f88292acd325da: [Backport #21561]
+
+            Message not found for revision: 7a05dbc47831a655a1ef8a1635f88292acd325da
+
+commit 01b0beb818e74c290fdf8fcc824946fd8c93b373
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-09-14 13:47:13 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-09-14 13:47:35 +0900
+
+    merge revision(s) 928fea3bfa86053c0bc6f7a5bf7559b115a676b5: [Backport #21567]
+
+            Fix crash when $LOADED_FEATURES is modified during require
+
+            [Bug #21567]
+
+            When we require an object that is not a string, it will attempt to convert
+            it to a string by calling to_str on it. If we modify the $LOADED_FEATURES
+            array while it calls to_str, Ruby can crash because it can end up inserting
+            the string in the wrong index in the array.
+
+            For example, the following script crashes:
+
+                require "tempfile"
+
+                class MyString
+                  def initialize(path)
+                    @path = path
+                  end
+
+                  def to_str
+                    $LOADED_FEATURES.clear
+                    @path
+                  end
+
+                  def to_path = @path
+                end
+
+                def create_ruby_file = Tempfile.create(["test", ".rb"]).path
+
+                require MyString.new(create_ruby_file)
+                $LOADED_FEATURES.unshift(create_ruby_file)
+                $LOADED_FEATURES << MyString.new(create_ruby_file)
+                require create_ruby_file
+
+            Crash log:
+
+                test.rb:21: [BUG] Segmentation fault at 0x0000000000000004
+                ruby 3.5.0dev (2025-09-09T09:29:35Z master ce94add7fb) +PRISM [arm64-darwin24]
+
+                -- Crash Report log information --------------------------------------------
+                  See Crash Report log file in one of the following locations:
+                    * ~/Library/Logs/DiagnosticReports
+                    * /Library/Logs/DiagnosticReports
+                  for more details.
+                Don't forget to include the above Crash Report log file in bug reports.
+
+                -- Control frame information -----------------------------------------------
+                c:0003 p:---- s:0011 e:000010 CFUNC  :require
+                c:0002 p:0076 s:0006 e:000005 EVAL   test.rb:21 [FINISH]
+                c:0001 p:0000 s:0003 E:0001b0 DUMMY  [FINISH]
+
+                -- Ruby level backtrace information ----------------------------------------
+                test.rb:21:in '<main>'
+                test.rb:21:in 'require'
+
+                -- Threading information ---------------------------------------------------
+                Total ractor count: 1
+                Ruby thread count for this ractor: 1
+
+                -- Machine register context ------------------------------------------------
+                  x0: 0x0000000000000004  x1: 0x000000000000c800  x2: 0x0000000000000000
+                  x3: 0x0000000000000000  x4: 0x0000000000000205  x5: 0x0000000000000000
+                  x6: 0x0000000000000000  x7: 0x0000000000000001 x18: 0x0000000000000000
+                x19: 0x0000000209dfc0b0 x20: 0x0000000209dfc018 x21: 0x000000016ee8ab58
+                x22: 0x0fffffff0009d71d x23: 0x0000000209dfc018 x24: 0x0000000209dfc150
+                x25: 0x000000016ee8acc0 x26: 0x0000000000000000 x27: 0x0000000000000000
+                x28: 0x0000000000000000  lr: 0x0000000101244140  fp: 0x000000016ee887f0
+                  sp: 0x000000016ee887d0
+
+                -- C level backtrace information -------------------------------------------
+                miniruby(rb_print_backtrace+0x24) [0x101317b08] vm_dump.c:843
+                miniruby(rb_print_backtrace) (null):0
+                miniruby(rb_vm_bugreport+0x26c) [0x101317d94] vm_dump.c:1175
+                miniruby(rb_bug_for_fatal_signal+0xa4) [0x10105ddac] error.c:1130
+                miniruby(sig_do_nothing+0x0) [0x1012278c0] signal.c:948
+                miniruby(sigsegv) (null):0
+                /usr/lib/system/libsystem_platform.dylib(_sigtramp+0x38) [0x19c1216a4]
+                miniruby(rb_str_new_frozen+0x1c) [0x101244140] string.c:1495
+                miniruby(rb_check_realpath_internal+0x68) [0x101077804] file.c:4679
+                miniruby(rb_check_realpath+0x2c) [0x101077aa4] file.c:4765
+                miniruby(get_loaded_features_index+0x37c) [0x1010f9c94] load.c:467
+                miniruby(rb_feature_p+0xd0) [0x1010f8174] load.c:582
+                miniruby(search_required+0xac) [0x1010f6ad4] load.c:1193
+                miniruby(require_internal+0x274) [0x1010f7518] load.c:1424
+                miniruby(rb_require_string_internal+0x94) [0x1010f6830] load.c:1571
+                miniruby(rb_require_string+0x58) [0x1010f66e8] load.c:1557
+                miniruby(rb_f_require+0x1c) [0x1010f6684] load.c:1150
+                miniruby(ractor_safe_call_cfunc_1+0x38) [0x101306c28] vm_insnhelper.c:3696
+                miniruby(vm_call_cfunc_with_frame_+0x250) [0x1012f857c] vm_insnhelper.c:3873
+                miniruby(vm_call_cfunc_with_frame+0x6c) [0x1012f8834] vm_insnhelper.c:3919
+                miniruby(vm_sendish+0x1a8) [0x1012c990c] vm_insnhelper.c:6087
+                miniruby(vm_exec_core+0x4050) [0x1012cfb48] insns.def:900
+                miniruby(vm_exec_loop+0x80) [0x1012e5448] vm.c:2666
+                miniruby(rb_vm_exec+0x134) [0x1012c9b40] vm.c:2645
+                miniruby(rb_iseq_eval_main+0x34) [0x1012e5628] vm.c:2919
+                miniruby(rb_ec_exec_node+0xe4) [0x10106d094] eval.c:282
+                miniruby(ruby_run_node+0x94) [0x10106cf64] eval.c:320
+                miniruby(rb_main+0x40) [0x100f7499c] main.c:42
+                miniruby(main+0x60) [0x100f74928] main.c:62
+
+commit 210643c51d706a486ad460111eac51d4d34639cf
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-09-14 13:24:54 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-09-14 13:24:54 +0900
+
+    merge revision(s) 7c28fb2fb2544e5fed75ef216c4dd08084b38671: [Backport #21546]
+
+            [Bug #21546] Make the generated pc file relocatable
+
+commit e39a0a19c03fbb37d1c9d1e050bb551dccfc11c6
+  Author:     nagachika <nagachika@ruby-lang.org>
+  AuthorDate: 2025-09-14 12:47:12 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-09-14 12:47:12 +0900
+
+    merge revision(s) ce849d565bf6aae8e0179fffb04eb1f665f17347, acb29f7fa1497463ed3bdd65549ef20b61beda64: [Backport #21402]
+
+            ruby2_keywords warnings: Quote non-UTF8 method names fully
+
+            It used to quote only part of the method name because NUL byte in
+            the method terminates the C string:
+
+            ```
+            (irb)> "abcdef".encode("UTF-16LE").bytes
+            => [97, 0, 98, 0, 99, 0, 100, 0, 101, 0, 102, 0]
+            ```
+
+            ```
+            expected: /abcdef/
+            actual: warning: Skipping set of ruby2_keywords flag for a (method not defined in Ruby)\n".
+            ```
+
+            Do not respect ruby2_keywords on method/proc with post arguments
+
+            Previously, ruby2_keywords could be used on a method or proc with
+            post arguments, but I don't think the behavior is desired:
+
+            ```ruby
+            def a(*c, **kw) [c, kw] end
+            def b(*a, b) a(*a, b) end
+            ruby2_keywords(:b)
+
+            b({foo: 1}, bar: 1)
+            ```
+
+            This changes ruby2_keywords to emit a warning and not set the
+            flag on a method/proc with post arguments.
+
+            While here, fix the ruby2_keywords specs for warnings, since they
+            weren't testing what they should be testing.  They all warned
+            because the method didn't accept a rest argument, not because it
+            accepted a keyword or keyword rest argument.
+
+commit 1b6a5479ded7a6f714d0b4bee94869a27a1607f8
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-07-02 01:31:57 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2025-08-29 10:20:36 +0900
+
+    Backport GH-13617 for s390x (#13757)
+
+commit fda30bd8225660602e87f2d28be3619ec142e759
+  Author:     TSUYUSATO Kitsune <make.just.on@gmail.com>
+  AuthorDate: 2025-07-29 00:44:44 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-08-02 21:00:36 +0900
+
+    Correct castings to use OnigDistance
+
+commit d142f6bce02038e9e24abcbada28247559765d16
+  Author:     TSUYUSATO Kitsune <make.just.on@gmail.com>
+  AuthorDate: 2025-07-28 18:45:57 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-08-02 21:00:36 +0900
+
+    Add castings to prevent warnings
+
+commit 92785d51e1009fabc4c1f1c4f31c7c1ec2fc115c
+  Author:     TSUYUSATO Kitsune <make.just.on@gmail.com>
+  AuthorDate: 2025-07-28 17:50:36 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-08-02 21:00:36 +0900
+
+    Port a Oniguruma patch: Integer overflow in onig_search_gpos()
+
+    https://github.com/kkos/oniguruma/commit/778a43dd56925ed58bbe26e3a7bb8202d72c3f3f
+
+    It differs from the Oniguruma patch in that it dosen't use `onigenc_get_prev_char_head()`
+    because this function's signature has been changed by Oniguruma and the change is not ported
+    in Onigmo for now. This patch respects the current Onigmo implementation.
+
+    Co-Authored-By: K.Kosako <kkos@users.noreply.github.com>
+
+commit 726a19f4d058054ea16878a4165852ed9768de08
+  Author:     TSUYUSATO Kitsune <make.just.on@gmail.com>
+  AuthorDate: 2025-07-28 16:18:11 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-08-02 21:00:36 +0900
+
+    Port a Oniguruma patch: Integer overflow in backward_search_range() and onig_search_gpos()
+
+    https://github.com/kkos/oniguruma/commit/bfc36d3d8139b8be4d3df630d625c58687b0c7d4
+
+    Co-Authored-By: K.Kosako <kkos@users.noreply.github.com>
+
+commit f2d4bea53d3ba98e04f0a22c4bc2e8cd299281ea
+  Author:     TSUYUSATO Kitsune <make.just.on@gmail.com>
+  AuthorDate: 2025-07-28 16:05:41 +0900
+  Commit:     nagachika <nagachika@ruby-lang.org>
+  CommitDate: 2025-08-02 21:00:36 +0900
+
+    Port a Oniguruma patch: Integer overflow in forward_search_range()
+
+    https://github.com/kkos/oniguruma/commit/db64ef3189f54917a5008a02bdb000adc514a90a
+
+    Co-Authored-By: K.Kosako <kkos@users.noreply.github.com>
+
 commit f5c772fc7cbe9f5b58d962939fcb1c7e3fb1cfa6
   Author:     nagachika <nagachika@ruby-lang.org>
   AuthorDate: 2025-07-24 19:04:28 +0900
