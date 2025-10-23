@@ -11825,6 +11825,9 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
     struct rb_call_data *cd_entries = load_body->call_data;
     int ic_index = 0;
 
+    load_body->iseq_encoded = code;
+    load_body->iseq_size = 0;
+
     iseq_bits_t * mark_offset_bits;
 
     iseq_bits_t tmp[1] = {0};
@@ -11956,7 +11959,6 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
         }
     }
 
-    load_body->iseq_encoded = code;
     load_body->iseq_size = code_index;
 
     if (ISEQ_MBITS_BUFLEN(load_body->iseq_size) == 1) {
@@ -12186,7 +12188,7 @@ ibf_dump_catch_table(struct ibf_dump *dump, const rb_iseq_t *iseq)
 }
 
 static struct iseq_catch_table *
-ibf_load_catch_table(const struct ibf_load *load, ibf_offset_t catch_table_offset, unsigned int size)
+ibf_load_catch_table(const struct ibf_load *load, ibf_offset_t catch_table_offset, unsigned int size, const rb_iseq_t *parent_iseq)
 {
     if (size) {
         struct iseq_catch_table *table = ruby_xmalloc(iseq_catch_table_bytes(size));
@@ -12203,7 +12205,8 @@ ibf_load_catch_table(const struct ibf_load *load, ibf_offset_t catch_table_offse
             table->entries[i].cont = (unsigned int)ibf_load_small_value(load, &reading_pos);
             table->entries[i].sp = (unsigned int)ibf_load_small_value(load, &reading_pos);
 
-            table->entries[i].iseq = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)iseq_index);
+            rb_iseq_t *catch_iseq = (rb_iseq_t *)ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)iseq_index);
+            RB_OBJ_WRITE(parent_iseq, UNALIGNED_MEMBER_PTR(&table->entries[i], iseq), catch_iseq);
         }
         return table;
     }
@@ -12697,10 +12700,14 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->insns_info.body      = ibf_load_insns_info_body(load, insns_info_body_offset, insns_info_size);
     load_body->insns_info.positions = ibf_load_insns_info_positions(load, insns_info_positions_offset, insns_info_size);
     load_body->local_table          = ibf_load_local_table(load, local_table_offset, local_table_size);
-    load_body->catch_table          = ibf_load_catch_table(load, catch_table_offset, catch_table_size);
-    load_body->parent_iseq          = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)parent_iseq_index);
-    load_body->local_iseq           = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)local_iseq_index);
-    load_body->mandatory_only_iseq  = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)mandatory_only_iseq_index);
+    load_body->catch_table          = ibf_load_catch_table(load, catch_table_offset, catch_table_size, iseq);
+    const rb_iseq_t *parent_iseq = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)parent_iseq_index);
+    const rb_iseq_t *local_iseq = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)local_iseq_index);
+    const rb_iseq_t *mandatory_only_iseq = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)mandatory_only_iseq_index);
+
+    RB_OBJ_WRITE(iseq, &load_body->parent_iseq, parent_iseq);
+    RB_OBJ_WRITE(iseq, &load_body->local_iseq, local_iseq);
+    RB_OBJ_WRITE(iseq, &load_body->mandatory_only_iseq, mandatory_only_iseq);
 
     ibf_load_code(load, iseq, bytecode_offset, bytecode_size, iseq_size);
 #if VM_INSN_INFO_TABLE_IMPL == 2
@@ -12923,8 +12930,10 @@ ibf_dump_object_float(struct ibf_dump *dump, VALUE obj)
 static VALUE
 ibf_load_object_float(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    const double *dblp = IBF_OBJBODY(double, offset);
-    return DBL2NUM(*dblp);
+    double d;
+    /* Avoid unaligned VFP load on ARMv7; IBF payload may be unaligned (C99 6.3.2.3 p7). */
+    memcpy(&d, IBF_OBJBODY(double, offset), sizeof(d));
+    return DBL2NUM(d);
 }
 
 static void
