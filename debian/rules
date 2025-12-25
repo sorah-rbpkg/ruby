@@ -105,6 +105,7 @@ export LC_ALL := $(LANG)
 override_dh_auto_configure:
 	cp /usr/share/misc/config.guess tool
 	cp /usr/share/misc/config.sub tool
+	( mkdir mmtk-core && curl -L https://github.com/mmtk/mmtk-core/archive/c6317a3f1c262e33fc2e427e4cc999c17bcc4791.tar.gz | tar xz --strip-components=1 -C mmtk-core )
 	./configure $(configure_options)
 
 override_dh_auto_clean:

@@ -1,0 +1,27 @@
+From: Sorah Fukumori <her@sorah.jp>
+Date: Fri, 26 Dec 2025 03:24:56 +0900
+Subject: use mmtk-core checked out by d/rules
+
+---
+ gc/mmtk/Cargo.toml | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/gc/mmtk/Cargo.toml b/gc/mmtk/Cargo.toml
+index d0bc5b3..2446efd 100644
+--- a/gc/mmtk/Cargo.toml
++++ b/gc/mmtk/Cargo.toml
+@@ -24,11 +24,11 @@ sysinfo = "0.32.0"
+ features = ["is_mmtk_object", "object_pinning", "sticky_immix_non_moving_nursery", "immix_non_moving"]
+ 
+ # Uncomment the following lines to use mmtk-core from the official repository.
+-git = "https://github.com/mmtk/mmtk-core.git"
+-rev = "c6317a3f1c262e33fc2e427e4cc999c17bcc4791"
++# git = "https://github.com/mmtk/mmtk-core.git"
++# rev = "c6317a3f1c262e33fc2e427e4cc999c17bcc4791"
+ 
+ # Uncomment the following line to use mmtk-core from a local repository.
+-# path = "../../../mmtk-core"
++path = "../../mmtk-core"
+ 
+ [features]
+ default = []
