@@ -1,6 +1,8 @@
 ruby4.0 (4.0.0-0nkmi1~dist) unstable; urgency=medium
 
   * Ruby 4.0!
+  * binstubs for bundled gems are now packaged as -gems
+  * note that irb has been demoted to bundled gems
 
  -- Sorah Fukumori <her@sorah.jp>  Thu, 25 Dec 2025 19:48:24 +0900
 

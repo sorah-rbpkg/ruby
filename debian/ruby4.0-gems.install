@@ -1,3 +1,13 @@
+/usr/bin/irb*.*
+/usr/bin/minitest*.*
+/usr/bin/racc*.*
+/usr/bin/rake*.*
+/usr/bin/rbs*.*
+/usr/bin/rdbg*.*
+/usr/bin/rdoc*.*
+/usr/bin/ri*.*
+/usr/bin/test-unit*.*
+/usr/bin/typeprof*.*
 /usr/lib/ruby/gems/*.0/specifications/debug-*
 /usr/lib/ruby/gems/*.0/specifications/matrix-*
 /usr/lib/ruby/gems/*.0/specifications/minitest-*
