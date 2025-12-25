@@ -682,15 +682,13 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
     *pp += codepoint_length;
 
     if (code <= 'z') { /* ASCII comes first */
-      if (code >= 'a' && code <= 'z') {
+      if (code >= 'a' /*&& code <= 'z'*/) {
 	if (flags & ONIGENC_CASE_UPCASE) {
 	  MODIFIED;
 	  if (flags & ONIGENC_CASE_FOLD_TURKISH_AZERI && code == 'i')
 	    code = I_WITH_DOT_ABOVE;
-          else {
-            code -= 'a';
-            code += 'A';
-          }
+          else
+            code -= 'a' - 'A';
 	}
       }
       else if (code >= 'A' && code <= 'Z') {
@@ -801,7 +799,6 @@ SpecialsCopy:
   return (int )(to - to_start);
 }
 
-#if 0
 const char onigenc_unicode_version_string[] =
 #ifdef ONIG_UNICODE_VERSION_STRING
     ONIG_UNICODE_VERSION_STRING
@@ -817,4 +814,3 @@ const int onigenc_unicode_version_number[3] = {
     0
 #endif
 };
-#endif

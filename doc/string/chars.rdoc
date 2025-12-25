@@ -1,5 +1,8 @@
 Returns an array of the characters in +self+:
 
   'hello'.chars     # => ["h", "e", "l", "l", "o"]
-  'тест'.chars      # => ["т", "е", "с", "т"]
+  'Привет'.chars    # => ["П", "р", "и", "в", "е", "т"]
   'こんにちは'.chars # => ["こ", "ん", "に", "ち", "は"]
+  ''.chars          # => []
+
+Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].

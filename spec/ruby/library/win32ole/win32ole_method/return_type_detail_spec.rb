@@ -1,13 +1,11 @@
 require_relative "../../../spec_helper"
 platform_is :windows do
-  verbose, $VERBOSE = $VERBOSE, nil
-
   require 'win32ole'
 
-  describe "WIN32OLE_METHOD#return_type_detail" do
+  describe "WIN32OLE::Method#return_type_detail" do
     before :each do
-      ole_type = WIN32OLE_TYPE.new("Microsoft Shell Controls And Automation", "Shell")
-      @m_browse_for_folder = WIN32OLE_METHOD.new(ole_type, "BrowseForFolder")
+      ole_type = WIN32OLE::Type.new("Microsoft Shell Controls And Automation", "Shell")
+      @m_browse_for_folder = WIN32OLE::Method.new(ole_type, "BrowseForFolder")
     end
 
     it "raises ArgumentError if argument is given" do
@@ -21,6 +19,4 @@ platform_is :windows do
 
   end
 
-ensure
-  $VERBOSE = verbose
 end

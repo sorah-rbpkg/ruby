@@ -28,6 +28,7 @@
 #include "ruby/encoding.h"
 #include "ruby/re.h"
 #include "ruby/util.h"
+#include "ractor_core.h"
 
 VALUE rb_eRegexpError, rb_eRegexpTimeoutError;
 
@@ -288,11 +289,6 @@ rb_memsearch(const void *x0, long m, const void *y0, long n, rb_encoding *enc)
 #define REG_ENCODING_NONE FL_USER6
 
 #define KCODE_FIXED FL_USER4
-
-#define ARG_REG_OPTION_MASK \
-    (ONIG_OPTION_IGNORECASE|ONIG_OPTION_MULTILINE|ONIG_OPTION_EXTEND)
-#define ARG_ENCODING_FIXED    16
-#define ARG_ENCODING_NONE     32
 
 static int
 char_to_option(int c)
@@ -961,7 +957,7 @@ make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_bu
  *  * <code>$'</code> is Regexp.last_match<code>.post_match</code>;
  *  * <code>$+</code> is Regexp.last_match<code>[ -1 ]</code> (the last capture).
  *
- *  See also "Special global variables" section in Regexp documentation.
+ *  See also Regexp@Global+Variables.
  */
 
 VALUE rb_cMatch;
@@ -1521,7 +1517,7 @@ match_set_string(VALUE m, VALUE string, long pos, long len)
     rmatch->regs.end[0] = pos + len;
 }
 
-void
+VALUE
 rb_backref_set_string(VALUE string, long pos, long len)
 {
     VALUE match = rb_backref_get();
@@ -1530,6 +1526,7 @@ rb_backref_set_string(VALUE string, long pos, long len)
     }
     match_set_string(match, string, pos, len);
     rb_backref_set(match);
+    return match;
 }
 
 /*
@@ -1665,7 +1662,7 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     RSTRING_GETMEM(unescaped, ptr, len);
 
     /* If there are no other users of this regex, then we can directly overwrite it. */
-    if (RREGEXP(re)->usecnt == 0) {
+    if (ruby_single_main_ractor && RREGEXP(re)->usecnt == 0) {
         regex_t tmp_reg;
         r = onig_new_without_alloc(&tmp_reg, (UChar *)ptr, (UChar *)(ptr + len),
                                    reg->options, enc,
@@ -1812,12 +1809,32 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
         return ONIG_MISMATCH;
     }
 
-    VALUE match = match_alloc(rb_cMatch);
+    VALUE match = Qnil;
+    if (set_match) {
+        match = *set_match;
+    }
+
+    if (NIL_P(match)) {
+        match = rb_backref_get();
+    }
+
+    if (!NIL_P(match) && FL_TEST(match, MATCH_BUSY)) {
+        match = Qnil;
+    }
+
+    if (NIL_P(match)) {
+        match = match_alloc(rb_cMatch);
+    }
+    else {
+        onig_region_free(&RMATCH_EXT(match)->regs, false);
+    }
+
     rb_matchext_t *rm = RMATCH_EXT(match);
     rm->regs = regs;
 
     if (set_backref_str) {
         RB_OBJ_WRITE(match, &RMATCH(match)->str, rb_str_new4(str));
+        rb_obj_reveal(match, rb_cMatch);
     }
     else {
         /* Note that a MatchData object with RMATCH(match)->str == 0 is incomplete!
@@ -1835,15 +1852,15 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
 }
 
 long
-rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
+rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str, VALUE *match)
 {
-    return rb_reg_search_set_match(re, str, pos, reverse, set_backref_str, NULL);
+    return rb_reg_search_set_match(re, str, pos, reverse, set_backref_str, match);
 }
 
 long
 rb_reg_search(VALUE re, VALUE str, long pos, int reverse)
 {
-    return rb_reg_search0(re, str, pos, reverse, 1);
+    return rb_reg_search_set_match(re, str, pos, reverse, 1, NULL);
 }
 
 static OnigPosition
@@ -3352,10 +3369,13 @@ static void
 reg_set_source(VALUE reg, VALUE str, rb_encoding *enc)
 {
     rb_encoding *regenc = rb_enc_get(reg);
+
     if (regenc != enc) {
-        str = rb_enc_associate(rb_str_dup(str), enc = regenc);
+        VALUE dup = rb_str_dup(str);
+        str = rb_enc_associate(dup, enc = regenc);
     }
-    RB_OBJ_WRITE(reg, &RREGEXP(reg)->src, rb_fstring(str));
+    str = rb_fstring(str);
+    RB_OBJ_WRITE(reg, &RREGEXP(reg)->src, str);
 }
 
 static int
@@ -3478,12 +3498,17 @@ static VALUE reg_cache;
 VALUE
 rb_reg_regcomp(VALUE str)
 {
-    if (reg_cache && RREGEXP_SRC_LEN(reg_cache) == RSTRING_LEN(str)
-        && ENCODING_GET(reg_cache) == ENCODING_GET(str)
-        && memcmp(RREGEXP_SRC_PTR(reg_cache), RSTRING_PTR(str), RSTRING_LEN(str)) == 0)
-        return reg_cache;
+    if (rb_ractor_main_p()) {
+        if (reg_cache && RREGEXP_SRC_LEN(reg_cache) == RSTRING_LEN(str)
+            && ENCODING_GET(reg_cache) == ENCODING_GET(str)
+            && memcmp(RREGEXP_SRC_PTR(reg_cache), RSTRING_PTR(str), RSTRING_LEN(str)) == 0)
+            return reg_cache;
 
-    return reg_cache = rb_reg_new_str(str, 0);
+        return reg_cache = rb_reg_new_str(str, 0);
+    }
+    else {
+        return rb_reg_new_str(str, 0);
+    }
 }
 
 static st_index_t reg_hash(VALUE re);
@@ -4828,6 +4853,7 @@ Init_Regexp(void)
     rb_define_method(rb_cRegexp, "named_captures", rb_reg_named_captures, 0);
     rb_define_method(rb_cRegexp, "timeout", rb_reg_timeout_get, 0);
 
+    /* Raised when regexp matching timed out. */
     rb_eRegexpTimeoutError = rb_define_class_under(rb_cRegexp, "TimeoutError", rb_eRegexpError);
     rb_define_singleton_method(rb_cRegexp, "timeout", rb_reg_s_timeout_get, 0);
     rb_define_singleton_method(rb_cRegexp, "timeout=", rb_reg_s_timeout_set, 1);

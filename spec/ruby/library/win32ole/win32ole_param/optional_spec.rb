@@ -1,13 +1,11 @@
 require_relative "../../../spec_helper"
 platform_is :windows do
-  verbose, $VERBOSE = $VERBOSE, nil
-
   require 'win32ole'
 
-  describe "WIN32OLE_PARAM#optional?" do
+  describe "WIN32OLE::Param#optional?" do
     before :each do
-      ole_type_detail = WIN32OLE_TYPE.new("Microsoft Scripting Runtime", "FileSystemObject")
-      m_copyfile = WIN32OLE_METHOD.new(ole_type_detail, "CopyFile")
+      ole_type_detail = WIN32OLE::Type.new("Microsoft Scripting Runtime", "FileSystemObject")
+      m_copyfile = WIN32OLE::Method.new(ole_type_detail, "CopyFile")
       @param_overwritefiles = m_copyfile.params[2]
     end
 
@@ -21,6 +19,4 @@ platform_is :windows do
 
   end
 
-ensure
-  $VERBOSE = verbose
 end

@@ -1,0 +1,2 @@
+#!ruby
+load File.realpath("../gems/rdoc-7.0.3/exe/rdoc", __dir__)

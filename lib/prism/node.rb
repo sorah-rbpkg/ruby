@@ -2605,7 +2605,7 @@ module Prism
   #     ^^^^^^^^
   class CallNode < Node
     # Initialize a new CallNode node.
-    def initialize(source, node_id, location, flags, receiver, call_operator_loc, name, message_loc, opening_loc, arguments, closing_loc, block)
+    def initialize(source, node_id, location, flags, receiver, call_operator_loc, name, message_loc, opening_loc, arguments, closing_loc, equal_loc, block)
       @source = source
       @node_id = node_id
       @location = location
@@ -2617,6 +2617,7 @@ module Prism
       @opening_loc = opening_loc
       @arguments = arguments
       @closing_loc = closing_loc
+      @equal_loc = equal_loc
       @block = block
     end
 
@@ -2641,20 +2642,20 @@ module Prism
 
     # def comment_targets: () -> Array[Node | Location]
     def comment_targets
-      [*receiver, *call_operator_loc, *message_loc, *opening_loc, *arguments, *closing_loc, *block] #: Array[Prism::node | Location]
+      [*receiver, *call_operator_loc, *message_loc, *opening_loc, *arguments, *closing_loc, *equal_loc, *block] #: Array[Prism::node | Location]
     end
 
-    # def copy: (?node_id: Integer, ?location: Location, ?flags: Integer, ?receiver: Prism::node?, ?call_operator_loc: Location?, ?name: Symbol, ?message_loc: Location?, ?opening_loc: Location?, ?arguments: ArgumentsNode?, ?closing_loc: Location?, ?block: BlockNode | BlockArgumentNode | nil) -> CallNode
-    def copy(node_id: self.node_id, location: self.location, flags: self.flags, receiver: self.receiver, call_operator_loc: self.call_operator_loc, name: self.name, message_loc: self.message_loc, opening_loc: self.opening_loc, arguments: self.arguments, closing_loc: self.closing_loc, block: self.block)
-      CallNode.new(source, node_id, location, flags, receiver, call_operator_loc, name, message_loc, opening_loc, arguments, closing_loc, block)
+    # def copy: (?node_id: Integer, ?location: Location, ?flags: Integer, ?receiver: Prism::node?, ?call_operator_loc: Location?, ?name: Symbol, ?message_loc: Location?, ?opening_loc: Location?, ?arguments: ArgumentsNode?, ?closing_loc: Location?, ?equal_loc: Location?, ?block: BlockNode | BlockArgumentNode | nil) -> CallNode
+    def copy(node_id: self.node_id, location: self.location, flags: self.flags, receiver: self.receiver, call_operator_loc: self.call_operator_loc, name: self.name, message_loc: self.message_loc, opening_loc: self.opening_loc, arguments: self.arguments, closing_loc: self.closing_loc, equal_loc: self.equal_loc, block: self.block)
+      CallNode.new(source, node_id, location, flags, receiver, call_operator_loc, name, message_loc, opening_loc, arguments, closing_loc, equal_loc, block)
     end
 
     # def deconstruct: () -> Array[Node?]
     alias deconstruct child_nodes
 
-    # def deconstruct_keys: (Array[Symbol] keys) -> { node_id: Integer, location: Location, receiver: Prism::node?, call_operator_loc: Location?, name: Symbol, message_loc: Location?, opening_loc: Location?, arguments: ArgumentsNode?, closing_loc: Location?, block: BlockNode | BlockArgumentNode | nil }
+    # def deconstruct_keys: (Array[Symbol] keys) -> { node_id: Integer, location: Location, receiver: Prism::node?, call_operator_loc: Location?, name: Symbol, message_loc: Location?, opening_loc: Location?, arguments: ArgumentsNode?, closing_loc: Location?, equal_loc: Location?, block: BlockNode | BlockArgumentNode | nil }
     def deconstruct_keys(keys)
-      { node_id: node_id, location: location, receiver: receiver, call_operator_loc: call_operator_loc, name: name, message_loc: message_loc, opening_loc: opening_loc, arguments: arguments, closing_loc: closing_loc, block: block }
+      { node_id: node_id, location: location, receiver: receiver, call_operator_loc: call_operator_loc, name: name, message_loc: message_loc, opening_loc: opening_loc, arguments: arguments, closing_loc: closing_loc, equal_loc: equal_loc, block: block }
     end
 
     # def safe_navigation?: () -> bool
@@ -2791,6 +2792,31 @@ module Prism
       repository.enter(node_id, :closing_loc) unless @closing_loc.nil?
     end
 
+    # Represents the location of the equal sign, in the case that this is an attribute write.
+    #
+    #     foo.bar = value
+    #             ^
+    #
+    #     foo[bar] = value
+    #              ^
+    def equal_loc
+      location = @equal_loc
+      case location
+      when nil
+        nil
+      when Location
+        location
+      else
+        @equal_loc = Location.new(source, location >> 32, location & 0xFFFFFFFF)
+      end
+    end
+
+    # Save the equal_loc location using the given saved source so that
+    # it can be retrieved later.
+    def save_equal_loc(repository)
+      repository.enter(node_id, :equal_loc) unless @equal_loc.nil?
+    end
+
     # Represents the block that is being passed to the method.
     #
     #     foo { |a| a }
@@ -2815,6 +2841,11 @@ module Prism
     # def closing: () -> String?
     def closing
       closing_loc&.slice
+    end
+
+    # def equal: () -> String?
+    def equal
+      equal_loc&.slice
     end
 
     # def inspect -> String
@@ -2844,6 +2875,7 @@ module Prism
         (opening_loc.nil? == other.opening_loc.nil?) &&
         (arguments === other.arguments) &&
         (closing_loc.nil? == other.closing_loc.nil?) &&
+        (equal_loc.nil? == other.equal_loc.nil?) &&
         (block === other.block)
     end
   end
@@ -3732,7 +3764,7 @@ module Prism
     # Represents the predicate of the case statement. This can be either `nil` or any [non-void expressions](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
     #
     #     case true; when false; end
-    #     ^^^^
+    #          ^^^^
     attr_reader :predicate
 
     # Represents the conditions of the case statement.
@@ -7536,10 +7568,15 @@ module Prism
     end
   end
 
-  # Represents the use of the `super` keyword without parentheses or arguments.
+  # Represents the use of the `super` keyword without parentheses or arguments, but which might have a block.
   #
   #     super
   #     ^^^^^
+  #
+  #     super { 123 }
+  #     ^^^^^^^^^^^^^
+  #
+  # If it has any other arguments, it would be a `SuperNode` instead.
   class ForwardingSuperNode < Node
     # Initialize a new ForwardingSuperNode node.
     def initialize(source, node_id, location, flags, block)
@@ -7585,7 +7622,7 @@ module Prism
       { node_id: node_id, location: location, block: block }
     end
 
-    # attr_reader block: BlockNode?
+    # All other arguments are forwarded as normal, except the original block is replaced with the new block.
     attr_reader :block
 
     # def inspect -> String
@@ -10951,7 +10988,7 @@ module Prism
       [*opening_loc, *parts, *closing_loc] #: Array[Prism::node | Location]
     end
 
-    # def copy: (?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location?, ?parts: Array[StringNode | EmbeddedStatementsNode | EmbeddedVariableNode | InterpolatedStringNode | XStringNode], ?closing_loc: Location?) -> InterpolatedStringNode
+    # def copy: (?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location?, ?parts: Array[StringNode | EmbeddedStatementsNode | EmbeddedVariableNode | InterpolatedStringNode | XStringNode | InterpolatedXStringNode | SymbolNode | InterpolatedSymbolNode], ?closing_loc: Location?) -> InterpolatedStringNode
     def copy(node_id: self.node_id, location: self.location, flags: self.flags, opening_loc: self.opening_loc, parts: self.parts, closing_loc: self.closing_loc)
       InterpolatedStringNode.new(source, node_id, location, flags, opening_loc, parts, closing_loc)
     end
@@ -10959,7 +10996,7 @@ module Prism
     # def deconstruct: () -> Array[Node?]
     alias deconstruct child_nodes
 
-    # def deconstruct_keys: (Array[Symbol] keys) -> { node_id: Integer, location: Location, opening_loc: Location?, parts: Array[StringNode | EmbeddedStatementsNode | EmbeddedVariableNode | InterpolatedStringNode | XStringNode], closing_loc: Location? }
+    # def deconstruct_keys: (Array[Symbol] keys) -> { node_id: Integer, location: Location, opening_loc: Location?, parts: Array[StringNode | EmbeddedStatementsNode | EmbeddedVariableNode | InterpolatedStringNode | XStringNode | InterpolatedXStringNode | SymbolNode | InterpolatedSymbolNode], closing_loc: Location? }
     def deconstruct_keys(keys)
       { node_id: node_id, location: location, opening_loc: opening_loc, parts: parts, closing_loc: closing_loc }
     end
@@ -10993,7 +11030,7 @@ module Prism
       repository.enter(node_id, :opening_loc) unless @opening_loc.nil?
     end
 
-    # attr_reader parts: Array[StringNode | EmbeddedStatementsNode | EmbeddedVariableNode | InterpolatedStringNode | XStringNode]
+    # attr_reader parts: Array[StringNode | EmbeddedStatementsNode | EmbeddedVariableNode | InterpolatedStringNode | XStringNode | InterpolatedXStringNode | SymbolNode | InterpolatedSymbolNode]
     attr_reader :parts
 
     # attr_reader closing_loc: Location?
@@ -17213,6 +17250,8 @@ module Prism
   #
   #     super foo, bar
   #     ^^^^^^^^^^^^^^
+  #
+  # If no arguments are provided (except for a block), it would be a `ForwardingSuperNode` instead.
   class SuperNode < Node
     # Initialize a new SuperNode node.
     def initialize(source, node_id, location, flags, keyword_loc, lparen_loc, arguments, rparen_loc, block)
@@ -17295,7 +17334,7 @@ module Prism
       repository.enter(node_id, :lparen_loc) unless @lparen_loc.nil?
     end
 
-    # attr_reader arguments: ArgumentsNode?
+    # Can be only `nil` when there are empty parentheses, like `super()`.
     attr_reader :arguments
 
     # attr_reader rparen_loc: Location?

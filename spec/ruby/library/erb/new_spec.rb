@@ -139,8 +139,8 @@ END
     ->{ ERB.new("<%= list %>").result }.should raise_error(NameError)
   end
 
-  describe "warning about arguments" do
-    version_is ERB.version, "2.2.1" do #ruby_version_is "3.1" do
+  version_is ERB.const_get(:VERSION, false), ""..."6.0.0" do
+    describe "warning about arguments" do
       it "warns when passed safe_level and later arguments" do
         -> {
           ERB.new(@eruby_str, nil, '%')

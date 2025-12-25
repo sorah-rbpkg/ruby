@@ -30,7 +30,7 @@ NoMethodError.
 You may also use <code>::</code> to designate a receiver, but this is rarely
 used due to the potential for confusion with <code>::</code> for namespaces.
 
-=== Chaining \Method Calls
+=== Chaining Method Calls
 
 You can "chain" method calls by immediately following one method call with another.
 
@@ -291,14 +291,14 @@ override local arguments outside the block in the caller's scope:
 This prints:
 
   hello main this is block
-  place is world
+  place is: world
 
 So the +place+ variable in the block is not the same +place+ variable as
 outside the block.  Removing <code>; place</code> from the block arguments
 gives this result:
 
   hello main this is block
-  place is block
+  place is: block
 
 === Unpacking Positional Arguments
 
@@ -355,9 +355,8 @@ as one argument:
   # Prints the object itself:
   #   #<Name:0x00007f9d07bca650 @name="Jane Doe">
 
-This allows to handle one or many arguments polymorphically. Note also that +nil+
-has NilClass#to_a defined to return an empty array, so conditional unpacking is
-possible:
+This allows to handle one or many arguments polymorphically. Note also that <tt>*nil</tt>
+is unpacked to an empty list of arguments, so conditional unpacking is possible:
 
   my_method(*(some_arguments if some_condition?))
 

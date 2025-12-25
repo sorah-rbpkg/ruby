@@ -101,6 +101,7 @@ static ID s_dump, s_load, s_mdump, s_mload;
 static ID s_dump_data, s_load_data, s_alloc, s_call;
 static ID s_getbyte, s_read, s_write, s_binmode;
 static ID s_encoding_short, s_ruby2_keywords_flag;
+#define s_encoding_long rb_id_encoding()
 
 #define name_s_dump	"_dump"
 #define name_s_load	"_load"
@@ -115,6 +116,7 @@ static ID s_encoding_short, s_ruby2_keywords_flag;
 #define name_s_write	"write"
 #define name_s_binmode	"binmode"
 #define name_s_encoding_short "E"
+#define name_s_encoding_long "encoding"
 #define name_s_ruby2_keywords_flag "K"
 
 typedef struct {
@@ -543,7 +545,7 @@ w_extended(VALUE klass, struct dump_arg *arg, int check)
         klass = RCLASS_SUPER(klass);
     }
     while (BUILTIN_TYPE(klass) == T_ICLASS) {
-        if (!FL_TEST(klass, RICLASS_IS_ORIGIN) ||
+        if (!RICLASS_IS_ORIGIN_P(klass) ||
                 BUILTIN_TYPE(RBASIC(klass)->klass) != T_MODULE) {
             VALUE path = rb_class_name(RBASIC(klass)->klass);
             w_byte(TYPE_EXTENDED, arg);
@@ -596,13 +598,21 @@ rb_hash_ruby2_keywords(VALUE obj)
     RHASH(obj)->basic.flags |= RHASH_PASS_AS_KEYWORDS;
 }
 
-static inline bool
-to_be_skipped_id(const ID id)
+/*
+ * if instance variable name `id` is a special name to be skipped,
+ * returns the name of it.  otherwise it cannot be dumped (unnamed),
+ * returns `name` as-is.  returns NULL for ID that can be dumped.
+ */
+static inline const char *
+skipping_ivar_name(const ID id, const char *name)
 {
-    if (id == s_encoding_short) return true;
-    if (id == s_ruby2_keywords_flag) return true;
-    if (id == rb_id_encoding()) return true;
-    return !rb_id2str(id);
+#define IS_SKIPPED_IVAR(idname) \
+    ((id == idname) && (name = name_##idname, true))
+    if (IS_SKIPPED_IVAR(s_encoding_short)) return name;
+    if (IS_SKIPPED_IVAR(s_ruby2_keywords_flag)) return name;
+    if (IS_SKIPPED_IVAR(s_encoding_long)) return name;
+    if (!rb_id2str(id)) return name;
+    return NULL;
 }
 
 struct w_ivar_arg {
@@ -615,15 +625,12 @@ w_obj_each(ID id, VALUE value, st_data_t a)
 {
     struct w_ivar_arg *ivarg = (struct w_ivar_arg *)a;
     struct dump_call_arg *arg = ivarg->dump;
+    const char unnamed[] = "", *ivname = skipping_ivar_name(id, unnamed);
 
-    if (to_be_skipped_id(id)) {
-        if (id == s_encoding_short) {
-            rb_warn("instance variable '"name_s_encoding_short"' on class %"PRIsVALUE" is not dumped",
-                    CLASS_OF(arg->obj));
-        }
-        if (id == s_ruby2_keywords_flag) {
-            rb_warn("instance variable '"name_s_ruby2_keywords_flag"' on class %"PRIsVALUE" is not dumped",
-                    CLASS_OF(arg->obj));
+    if (ivname) {
+        if (ivname != unnamed) {
+            rb_warn("instance variable '%s' on class %"PRIsVALUE" is not dumped",
+                    ivname, CLASS_OF(arg->obj));
         }
         return ST_CONTINUE;
     }
@@ -636,7 +643,7 @@ w_obj_each(ID id, VALUE value, st_data_t a)
 static int
 obj_count_ivars(ID id, VALUE val, st_data_t a)
 {
-    if (!to_be_skipped_id(id) && UNLIKELY(!++*(st_index_t *)a)) {
+    if (!skipping_ivar_name(id, "") && UNLIKELY(!++*(st_index_t *)a)) {
         rb_raise(rb_eRuntimeError, "too many instance variables");
     }
     return ST_CONTINUE;
@@ -720,20 +727,18 @@ has_ivars(VALUE obj, VALUE encname, VALUE *ivobj)
 static void
 w_ivar_each(VALUE obj, st_index_t num, struct dump_call_arg *arg)
 {
-    shape_id_t shape_id = rb_shape_get_shape_id(arg->obj);
+    shape_id_t shape_id = rb_obj_shape_id(arg->obj);
     struct w_ivar_arg ivarg = {arg, num};
     if (!num) return;
     rb_ivar_foreach(obj, w_obj_each, (st_data_t)&ivarg);
 
-    if (shape_id != rb_shape_get_shape_id(arg->obj)) {
-        rb_shape_t * expected_shape = rb_shape_get_shape_by_id(shape_id);
-        rb_shape_t * actual_shape = rb_shape_get_shape(arg->obj);
-
+    shape_id_t actual_shape_id = rb_obj_shape_id(arg->obj);
+    if (shape_id != actual_shape_id) {
         // If the shape tree got _shorter_ then we probably removed an IV
         // If the shape tree got longer, then we probably added an IV.
         // The exception message might not be accurate when someone adds and
         // removes the same number of IVs, but they will still get an exception
-        if (rb_shape_depth(expected_shape) > rb_shape_depth(actual_shape)) {
+        if (rb_shape_depth(shape_id) > rb_shape_depth(rb_obj_shape_id(arg->obj))) {
             rb_raise(rb_eRuntimeError, "instance variable removed from %"PRIsVALUE" instance",
                     CLASS_OF(arg->obj));
         }
@@ -1184,7 +1189,7 @@ io_needed(void)
  * * anonymous Class/Module.
  * * objects which are related to system (ex: Dir, File::Stat, IO, File, Socket
  *   and so on)
- * * an instance of MatchData, Data, Method, UnboundMethod, Proc, Thread,
+ * * an instance of MatchData, Method, UnboundMethod, Proc, Thread,
  *   ThreadGroup, Continuation
  * * objects which define singleton methods
  */
@@ -1423,7 +1428,7 @@ long
 ruby_marshal_read_long(const char **buf, long len)
 {
     long x;
-    struct RString src;
+    struct RString src = {RBASIC_INIT};
     struct load_arg arg;
     memset(&arg, 0, sizeof(arg));
     arg.src = rb_setup_fake_str(&src, *buf, len, 0);
@@ -2567,19 +2572,19 @@ Init_marshal(void)
 }
 
 static int
-marshal_compat_table_mark_i(st_data_t key, st_data_t value, st_data_t _)
+marshal_compat_table_mark_and_move_i(st_data_t key, st_data_t value, st_data_t _)
 {
     marshal_compat_t *p = (marshal_compat_t *)value;
-    rb_gc_mark_movable(p->newclass);
-    rb_gc_mark_movable(p->oldclass);
+    rb_gc_mark_and_move(&p->newclass);
+    rb_gc_mark_and_move(&p->oldclass);
     return ST_CONTINUE;
 }
 
 static void
-marshal_compat_table_mark(void *tbl)
+marshal_compat_table_mark_and_move(void *tbl)
 {
     if (!tbl) return;
-    st_foreach(tbl, marshal_compat_table_mark_i, 0);
+    st_foreach(tbl, marshal_compat_table_mark_and_move_i, 0);
 }
 
 static int
@@ -2602,29 +2607,13 @@ marshal_compat_table_memsize(const void *data)
     return st_memsize(data) + sizeof(marshal_compat_t) * st_table_size(data);
 }
 
-static int
-marshal_compat_table_compact_i(st_data_t key, st_data_t value, st_data_t _)
-{
-    marshal_compat_t *p = (marshal_compat_t *)value;
-    p->newclass = rb_gc_location(p->newclass);
-    p->oldclass = rb_gc_location(p->oldclass);
-    return ST_CONTINUE;
-}
-
-static void
-marshal_compat_table_compact(void *tbl)
-{
-    if (!tbl) return;
-    st_foreach(tbl, marshal_compat_table_compact_i, 0);
-}
-
 static const rb_data_type_t marshal_compat_type = {
     .wrap_struct_name = "marshal_compat_table",
     .function = {
-        .dmark = marshal_compat_table_mark,
+        .dmark = marshal_compat_table_mark_and_move,
         .dfree = marshal_compat_table_free,
         .dsize = marshal_compat_table_memsize,
-        .dcompact = marshal_compat_table_compact,
+        .dcompact = marshal_compat_table_mark_and_move,
     },
     .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY,
 };

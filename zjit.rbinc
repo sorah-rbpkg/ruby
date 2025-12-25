@@ -1,0 +1,64 @@
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file
+//   by ./tool/mk_builtin_loader.rb
+//   with zjit.rb
+#include "internal/compilers.h"     /* for MAYBE_UNUSED */
+#include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
+#include "ruby/ruby.h"              /* for VALUE */
+#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
+struct rb_execution_context_struct; /* in vm_core.h */
+
+static VALUE builtin_inline_class_27(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 27 "zjit.rb"
+return RBOOL(rb_zjit_enabled_p);
+#line 17 "zjit.rbinc"
+}
+
+static VALUE builtin_inline_class_34(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 34 "zjit.rb"
+return RBOOL(rb_yjit_enabled_p);
+#line 24 "zjit.rbinc"
+}
+
+void Init_builtin_zjit(void)
+{
+  // table definition
+  static const struct rb_builtin_function zjit_table[] = {
+    RB_BUILTIN_FUNCTION(0, rb_zjit_get_stats_file_path_p, rb_zjit_get_stats_file_path_p, 0),
+    RB_BUILTIN_FUNCTION(1, rb_zjit_print_stats_p, rb_zjit_print_stats_p, 0),
+    RB_BUILTIN_FUNCTION(2, rb_zjit_trace_exit_locations_enabled_p, rb_zjit_trace_exit_locations_enabled_p, 0),
+    RB_BUILTIN_FUNCTION(3, _bi27, builtin_inline_class_27, 0),
+    RB_BUILTIN_FUNCTION(4, _bi34, builtin_inline_class_34, 0),
+    RB_BUILTIN_FUNCTION(5, rb_zjit_enable, rb_zjit_enable, 0),
+    RB_BUILTIN_FUNCTION(6, rb_zjit_get_exit_locations, rb_zjit_get_exit_locations, 0),
+    RB_BUILTIN_FUNCTION(7, rb_zjit_stats_enabled_p, rb_zjit_stats_enabled_p, 0),
+    RB_BUILTIN_FUNCTION(8, rb_zjit_stats, rb_zjit_stats, 1),
+    RB_BUILTIN_FUNCTION(9, rb_zjit_reset_stats_bang, rb_zjit_reset_stats_bang, 0),
+    RB_BUILTIN_FUNCTION(10, rb_zjit_assert_compiles, rb_zjit_assert_compiles, 0),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
+  };
+
+  // arity_check
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
+COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
+#endif
+  if (0) rb_builtin_function_check_arity0(rb_zjit_get_stats_file_path_p);
+  if (0) rb_builtin_function_check_arity0(rb_zjit_print_stats_p);
+  if (0) rb_builtin_function_check_arity0(rb_zjit_trace_exit_locations_enabled_p);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_27);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_34);
+  if (0) rb_builtin_function_check_arity0(rb_zjit_enable);
+  if (0) rb_builtin_function_check_arity0(rb_zjit_get_exit_locations);
+  if (0) rb_builtin_function_check_arity0(rb_zjit_stats_enabled_p);
+  if (0) rb_builtin_function_check_arity1(rb_zjit_stats);
+  if (0) rb_builtin_function_check_arity0(rb_zjit_reset_stats_bang);
+  if (0) rb_builtin_function_check_arity0(rb_zjit_assert_compiles);
+COMPILER_WARNING_POP
+
+  // load
+  rb_load_with_builtin_functions("zjit", zjit_table);
+}

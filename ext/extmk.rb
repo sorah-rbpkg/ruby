@@ -43,6 +43,7 @@ require 'rbconfig'
 
 $topdir = "."
 $top_srcdir = srcdir
+$extmk = true
 inplace = File.identical?($top_srcdir, $topdir)
 
 $" << "mkmf.rb"
@@ -136,14 +137,6 @@ def extract_makefile(makefile, keep = true)
   $LOCAL_LIBS = m[/^LOCAL_LIBS[ \t]*=[ \t]*(.*)/, 1] || ""
   $LIBPATH = Shellwords.shellwords(m[/^libpath[ \t]*=[ \t]*(.*)/, 1] || "") - %w[$(libdir) $(topdir)]
   true
-end
-
-def create_makefile(target, srcprefix = nil)
-  if $static and target.include?("/")
-    base = File.basename(target)
-    $defs << "-DInit_#{base}=Init_#{target.tr('/', '_')}"
-  end
-  super
 end
 
 def extmake(target, basedir = 'ext', maybestatic = true)
@@ -566,6 +559,7 @@ extend Module.new {
       if $static and (target = args.first).include?("/")
         base = File.basename(target)
         $defs << "-DInit_#{base}=Init_#{target.tr('/', '_')}"
+        $defs << "-DInitVM_#{base}=InitVM_#{target.tr('/', '_')}"
       end
       return super
     end
@@ -584,7 +578,8 @@ extend Module.new {
         }
       end
 
-      gemlib = File.directory?("#{$top_srcdir}/#{@ext_prefix}/#{@gemname}/lib")
+      conf = yield conf if block
+
       if conf.any? {|s| /^TARGET *= *\S/ =~ s}
         conf << %{
 gem_platform = #{Gem::Platform.local}
@@ -617,23 +612,25 @@ gemspec: $(gemspec)
 
 clean-gemspec:
 	-$(Q)$(RM) $(gemspec)
-}
-
-        if gemlib
-          conf << %{
-install-rb: gemlib
-clean-rb:: clean-gemlib
 
 LN_S = #{config_string('LN_S')}
 CP_R = #{config_string('CP')} -r
-
-gemlib = $(TARGET_TOPDIR)/gems/$(gem)/lib
-gemlib:#{%{ $(gemlib)\n$(gemlib): $(gem_srcdir)/lib} if $nmake}
-	$(Q) #{@inplace ? '$(NULLCMD) ' : ''}$(RUBY) $(top_srcdir)/tool/ln_sr.rb -q -f -T $(gem_srcdir)/lib $(gemlib)
-
-clean-gemlib:
-	$(Q) $(#{@inplace ? 'NULLCMD' : 'RM_RF'}) $(gemlib)
 }
+        unless @inplace
+          %w[bin lib].each do |d|
+            next unless File.directory?("#{$top_srcdir}/#{@ext_prefix}/#{@gemname}/#{d}")
+            conf << %{
+install-rb: gem#{d}
+clean-rb:: clean-gem#{d}
+
+gem#{d} = $(TARGET_TOPDIR)/gems/$(gem)/#{d}
+gem#{d}:#{%{ $(gem#{d})\n$(gem#{d}): $(gem_srcdir)/#{d}} if $nmake}
+	$(Q) $(RUBY) $(top_srcdir)/tool/ln_sr.rb -q -f -T $(gem_srcdir)/#{d} $(gem#{d})
+
+clean-gem#{d}:
+	$(Q) $(RM_RF) $(gem#{d})
+}
+          end
         end
       end
 
@@ -817,9 +814,9 @@ begin
     if $gnumake == "yes"
       submake = "$(MAKE) -C $(@D)"
     else
-      submake = "cd $(@D) && "
-      config_string("exec") {|str| submake << str << " "}
-      submake << "$(MAKE)"
+      submake = ["cd", (sep ? "$(@D:/=#{sep})" : "$(@D)"), "&&"]
+      config_string("exec") {|str| submake << str}
+      submake = (submake << "$(MAKE)").join(" ")
     end
     targets.each do |tgt|
       exts.each do |d|

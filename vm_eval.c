@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  vm_eval.c -
+  vm_eval.c - Included into vm.c.
 
   $Author$
   created at: Sat May 24 16:02:32 JST 2008
@@ -57,7 +57,7 @@ static inline VALUE vm_call0_cc(rb_execution_context_t *ec, VALUE recv, ID id, i
 VALUE
 rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *cme, int kw_splat)
 {
-    const struct rb_callcache cc = VM_CC_ON_STACK(Qfalse, vm_call_general, {{ 0 }}, cme);
+    const struct rb_callcache cc = VM_CC_ON_STACK(Qundef, vm_call_general, {{ 0 }}, cme);
     return vm_call0_cc(ec, recv, id, argc, argv, &cc, kw_splat);
 }
 
@@ -104,7 +104,7 @@ vm_call0_cc(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE
 static VALUE
 vm_call0_cme(rb_execution_context_t *ec, struct rb_calling_info *calling, const VALUE *argv, const rb_callable_method_entry_t *cme)
 {
-    calling->cc = &VM_CC_ON_STACK(Qfalse, vm_call_general, {{ 0 }}, cme);
+    calling->cc = &VM_CC_ON_STACK(Qundef, vm_call_general, {{ 0 }}, cme);
     return vm_call0_body(ec, calling, argv);
 }
 
@@ -381,7 +381,7 @@ stack_check(rb_execution_context_t *ec)
     if (!rb_ec_raised_p(ec, RAISED_STACKOVERFLOW) &&
         rb_ec_stack_check(ec)) {
         rb_ec_raised_set(ec, RAISED_STACKOVERFLOW);
-        rb_ec_stack_overflow(ec, FALSE);
+        rb_ec_stack_overflow(ec, 0);
     }
 }
 
@@ -400,9 +400,9 @@ static inline const rb_callable_method_entry_t *rb_search_method_entry(VALUE rec
 static inline enum method_missing_reason rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry_t *me, call_type scope, VALUE self);
 
 static VALUE
-gccct_hash(VALUE klass, ID mid)
+gccct_hash(VALUE klass, VALUE box_value, ID mid)
 {
-    return (klass >> 3) ^ (VALUE)mid;
+    return ((klass ^ box_value) >> 3) ^ (VALUE)mid;
 }
 
 NOINLINE(static const struct rb_callcache *gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, unsigned int index, const struct rb_callinfo * ci));
@@ -447,7 +447,8 @@ scope_to_ci(call_type scope, ID mid, int argc, struct rb_callinfo *ci)
 static inline const struct rb_callcache *
 gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct rb_callinfo *ci)
 {
-    VALUE klass;
+    VALUE klass, box_value;
+    const rb_box_t *box = rb_current_box();
 
     if (!SPECIAL_CONST_P(recv)) {
         klass = RBASIC_CLASS(recv);
@@ -457,8 +458,14 @@ gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct
         klass = CLASS_OF(recv);
     }
 
+    if (BOX_USER_P(box)) {
+        box_value = box->box_object;
+    }
+    else {
+        box_value = 0;
+    }
     // search global method cache
-    unsigned int index = (unsigned int)(gccct_hash(klass, mid) % VM_GLOBAL_CC_CACHE_TABLE_SIZE);
+    unsigned int index = (unsigned int)(gccct_hash(klass, box_value, mid) % VM_GLOBAL_CC_CACHE_TABLE_SIZE);
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
     const struct rb_callcache *cc = vm->global_cc_cache_table[index];
 
@@ -481,6 +488,17 @@ gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct
 
     RB_DEBUG_COUNTER_INC(gccct_miss);
     return gccct_method_search_slowpath(vm, klass, index, ci);
+}
+
+VALUE
+rb_gccct_clear_table(VALUE _self)
+{
+    int i;
+    rb_vm_t *vm = GET_VM();
+    for (i=0; i<VM_GLOBAL_CC_CACHE_TABLE_SIZE; i++) {
+        vm->global_cc_cache_table[i] = NULL;
+    }
+    return Qnil;
 }
 
 /**
@@ -1361,6 +1379,17 @@ rb_yield(VALUE val)
     }
 }
 
+VALUE
+rb_ec_yield(rb_execution_context_t *ec, VALUE val)
+{
+    if (UNDEF_P(val)) {
+        return vm_yield(ec, 0, NULL, RB_NO_KEYWORDS);
+    }
+    else {
+        return vm_yield(ec, 1, &val, RB_NO_KEYWORDS);
+    }
+}
+
 #undef rb_yield_values
 VALUE
 rb_yield_values(int n, ...)
@@ -1651,6 +1680,24 @@ get_eval_default_path(void)
     return eval_default_path;
 }
 
+static inline int
+compute_isolated_depth_from_ep(const VALUE *ep)
+{
+    int depth = 1;
+    while (1) {
+        if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ISOLATED)) return depth;
+        if (VM_ENV_LOCAL_P(ep)) return 0;
+        ep = VM_ENV_PREV_EP(ep);
+        depth++;
+    }
+}
+
+static inline int
+compute_isolated_depth_from_block(const struct rb_block *blk)
+{
+    return compute_isolated_depth_from_ep(vm_block_ep(blk));
+}
+
 static const rb_iseq_t *
 pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         const struct rb_block *base_block)
@@ -1659,8 +1706,8 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     const rb_iseq_t *iseq = parent;
     VALUE name = rb_fstring_lit("<compiled>");
 
-    // Conditionally enable coverage depending on the current mode:
     int coverage_enabled = ((rb_get_coverage_mode() & COVERAGE_TARGET_EVAL) != 0) ? 1 : 0;
+    int isolated_depth = compute_isolated_depth_from_block(base_block);
 
     if (!fname) {
         fname = rb_source_location(&line);
@@ -1742,16 +1789,20 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
                 RB_GC_GUARD(name_obj);
 
                 pm_string_owned_init(scope_local, (uint8_t *) name_dup, length);
-            } else if (local == idMULT) {
+            }
+            else if (local == idMULT) {
                 forwarding |= PM_OPTIONS_SCOPE_FORWARDING_POSITIONALS;
                 pm_string_constant_init(scope_local, FORWARDING_POSITIONALS_STR, 1);
-            } else if (local == idPow) {
+            }
+            else if (local == idPow) {
                 forwarding |= PM_OPTIONS_SCOPE_FORWARDING_KEYWORDS;
                 pm_string_constant_init(scope_local, FORWARDING_KEYWORDS_STR, 1);
-            } else if (local == idAnd) {
+            }
+            else if (local == idAnd) {
                 forwarding |= PM_OPTIONS_SCOPE_FORWARDING_BLOCK;
                 pm_string_constant_init(scope_local, FORWARDING_BLOCK_STR, 1);
-            } else if (local == idDot3) {
+            }
+            else if (local == idDot3) {
                 forwarding |= PM_OPTIONS_SCOPE_FORWARDING_ALL;
                 pm_string_constant_init(scope_local, FORWARDING_ALL_STR, 1);
             }
@@ -1850,7 +1901,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
 #undef FORWARDING_ALL_STR
 
     int error_state;
-    iseq = pm_iseq_new_eval(&result.node, name, fname, Qnil, line, parent, 0, &error_state);
+    iseq = pm_iseq_new_eval(&result.node, name, fname, Qnil, line, parent, isolated_depth, &error_state);
 
     pm_scope_node_t *prev = result.node.previous;
     while (prev) {
@@ -1886,27 +1937,9 @@ eval_make_iseq(VALUE src, VALUE fname, int line,
     rb_iseq_t *iseq = NULL;
     VALUE ast_value;
     rb_ast_t *ast;
-    int isolated_depth = 0;
 
-    // Conditionally enable coverage depending on the current mode:
     int coverage_enabled = (rb_get_coverage_mode() & COVERAGE_TARGET_EVAL) != 0;
-
-    {
-        int depth = 1;
-        const VALUE *ep = vm_block_ep(base_block);
-
-        while (1) {
-            if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ISOLATED)) {
-                isolated_depth = depth;
-                break;
-            }
-            else if (VM_ENV_LOCAL_P(ep)) {
-                break;
-            }
-            ep = VM_ENV_PREV_EP(ep);
-            depth++;
-        }
-    }
+    int isolated_depth = compute_isolated_depth_from_block(base_block);
 
     if (!fname) {
         fname = rb_source_location(&line);
@@ -1962,6 +1995,10 @@ eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int li
     block.as.captured.self = self;
     block.as.captured.code.iseq = cfp->iseq;
     block.type = block_type_iseq;
+
+    // EP is not escaped to the heap here, but captured and reused by another frame.
+    // ZJIT's locals are incompatible with it unlike YJIT's, so invalidate the ISEQ for ZJIT.
+    rb_zjit_invalidate_no_ep_escape(cfp->iseq);
 
     iseq = eval_make_iseq(src, file, line, &block);
     if (!iseq) {
@@ -2122,6 +2159,17 @@ rb_eval_string_wrap(const char *str, int *pstate)
 VALUE
 rb_eval_cmd_kw(VALUE cmd, VALUE arg, int kw_splat)
 {
+    Check_Type(arg, T_ARRAY);
+    int argc = RARRAY_LENINT(arg);
+    const VALUE *argv = RARRAY_CONST_PTR(arg);
+    VALUE val = rb_eval_cmd_call_kw(cmd, argc, argv, kw_splat);
+    RB_GC_GUARD(arg);
+    return val;
+}
+
+VALUE
+rb_eval_cmd_call_kw(VALUE cmd, int argc, const VALUE *argv, int kw_splat)
+{
     enum ruby_tag_type state;
     volatile VALUE val = Qnil;		/* OK */
     rb_execution_context_t * volatile ec = GET_EC();
@@ -2129,8 +2177,7 @@ rb_eval_cmd_kw(VALUE cmd, VALUE arg, int kw_splat)
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         if (!RB_TYPE_P(cmd, T_STRING)) {
-            val = rb_funcallv_kw(cmd, idCall, RARRAY_LENINT(arg),
-                              RARRAY_CONST_PTR(arg), kw_splat);
+            val = rb_funcallv_kw(cmd, idCall, argc, argv, kw_splat);
         }
         else {
             val = eval_string_with_cref(rb_vm_top_self(), cmd, NULL, 0, 0);
@@ -2661,11 +2708,31 @@ local_var_list_update(st_data_t *key, st_data_t *value, st_data_t arg, int exist
     return ST_CONTINUE;
 }
 
+extern int rb_numparam_id_p(ID id);
+
 static void
 local_var_list_add(const struct local_var_list *vars, ID lid)
 {
-    if (lid && rb_is_local_id(lid)) {
-        /* should skip temporary variable */
+    /* should skip temporary variable */
+    if (!lid) return;
+    if (!rb_is_local_id(lid)) return;
+
+    /* should skip numbered parameters as well */
+    if (rb_numparam_id_p(lid)) return;
+
+    st_data_t idx = 0;	/* tbl->num_entries */
+    rb_hash_stlike_update(vars->tbl, ID2SYM(lid), local_var_list_update, idx);
+}
+
+static void
+numparam_list_add(const struct local_var_list *vars, ID lid)
+{
+    /* should skip temporary variable */
+    if (!lid) return;
+    if (!rb_is_local_id(lid)) return;
+
+    /* should skip anything but numbered parameters */
+    if (rb_numparam_id_p(lid)) {
         st_data_t idx = 0;	/* tbl->num_entries */
         rb_hash_stlike_update(vars->tbl, ID2SYM(lid), local_var_list_update, idx);
     }

@@ -533,7 +533,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *    Foo = Struct.new('Foo', :foo, :bar) # => Struct::Foo
  *    f = Foo.new(0, 1)                   # => #<struct Struct::Foo foo=0, bar=1>
  *
- *  <b>\Class Name</b>
+ *  <b>Class Name</b>
  *
  *  With string argument +class_name+,
  *  returns a new subclass of +Struct+ named <tt>Struct::<em>class_name</em></tt>:
@@ -588,7 +588,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *
  *  A subclass returned by Struct.new has these singleton methods:
  *
- *  - \Method <tt>::new </tt> creates an instance of the subclass:
+ *  - Method <tt>::new </tt> creates an instance of the subclass:
  *
  *      Foo.new          # => #<struct Struct::Foo foo=nil, bar=nil>
  *      Foo.new(0)       # => #<struct Struct::Foo foo=0, bar=nil>
@@ -601,12 +601,12 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *      Foo.new(foo: 0, bar: 1, baz: 2)
  *      # Raises ArgumentError: unknown keywords: baz
  *
- *  - \Method <tt>:inspect</tt> returns a string representation of the subclass:
+ *  - Method <tt>:inspect</tt> returns a string representation of the subclass:
  *
  *      Foo.inspect
  *      # => "Struct::Foo"
  *
- *  - \Method <tt>::members</tt> returns an array of the member names:
+ *  - Method <tt>::members</tt> returns an array of the member names:
  *
  *      Foo.members # => [:foo, :bar]
  *
@@ -811,12 +811,31 @@ struct_alloc(VALUE klass)
 {
     long n = num_members(klass);
     size_t embedded_size = offsetof(struct RStruct, as.ary) + (sizeof(VALUE) * n);
+    if (RCLASS_MAX_IV_COUNT(klass) > 0) {
+        embedded_size += sizeof(VALUE);
+    }
+
     VALUE flags = T_STRUCT | (RGENGC_WB_PROTECTED_STRUCT ? FL_WB_PROTECTED : 0);
 
     if (n > 0 && rb_gc_size_allocatable_p(embedded_size)) {
         flags |= n << RSTRUCT_EMBED_LEN_SHIFT;
+        if (RCLASS_MAX_IV_COUNT(klass) == 0) {
+            // We set the flag before calling `NEWOBJ_OF` in case a NEWOBJ tracepoint does
+            // attempt to write fields. We'll remove it later if no fields was written to.
+            flags |= RSTRUCT_GEN_FIELDS;
+        }
 
         NEWOBJ_OF(st, struct RStruct, klass, flags, embedded_size, 0);
+        if (RCLASS_MAX_IV_COUNT(klass) == 0) {
+            if (!rb_shape_obj_has_fields((VALUE)st)
+                    && embedded_size < rb_gc_obj_slot_size((VALUE)st)) {
+                FL_UNSET_RAW((VALUE)st, RSTRUCT_GEN_FIELDS);
+                RSTRUCT_SET_FIELDS_OBJ((VALUE)st, 0);
+            }
+        }
+        else {
+            RSTRUCT_SET_FIELDS_OBJ((VALUE)st, 0);
+        }
 
         rb_mem_clear((VALUE *)st->as.ary, n);
 
@@ -824,6 +843,10 @@ struct_alloc(VALUE klass)
     }
     else {
         NEWOBJ_OF(st, struct RStruct, klass, flags, sizeof(struct RStruct), 0);
+
+        st->as.heap.ptr = NULL;
+        st->as.heap.fields_obj = 0;
+        st->as.heap.len = 0;
 
         st->as.heap.ptr = struct_heap_alloc((VALUE)st, n);
         rb_mem_clear((VALUE *)st->as.heap.ptr, n);
@@ -1553,7 +1576,7 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
 /*
  *  Document-class: Data
  *
- *  \Class \Data provides a convenient way to define simple classes
+ *  Class \Data provides a convenient way to define simple classes
  *  for value-alike objects.
  *
  *  The simplest example of usage:
@@ -1760,7 +1783,8 @@ rb_data_define(VALUE super, ...)
  *  important for redefining initialize in order to convert arguments or provide
  *  defaults:
  *
- *     Measure = Data.define(:amount, :unit) do
+ *     Measure = Data.define(:amount, :unit)
+ *     class Measure
  *       NONE = Data.define
  *
  *       def initialize(amount:, unit: NONE.new)
@@ -1769,7 +1793,7 @@ rb_data_define(VALUE super, ...)
  *     end
  *
  *     Measure.new('10', 'km') # => #<data Measure amount=10.0, unit="km">
- *     Measure.new(10_000)     # => #<data Measure amount=10000.0, unit=#<data NONE>>
+ *     Measure.new(10_000)     # => #<data Measure amount=10000.0, unit=#<data Measure::NONE>>
  *
  */
 
@@ -2066,7 +2090,7 @@ rb_data_inspect(VALUE s)
 /*
  *  Document-class: Struct
  *
- *  \Class \Struct provides a convenient way to create a simple class
+ *  Class \Struct provides a convenient way to create a simple class
  *  that can store and fetch values.
  *
  *  This example creates a subclass of +Struct+, <tt>Struct::Customer</tt>;
@@ -2106,7 +2130,7 @@ rb_data_inspect(VALUE s)
  *
  *  == What's Here
  *
- *  First, what's elsewhere. \Class \Struct:
+ *  First, what's elsewhere. Class \Struct:
  *
  *  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
  *  - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],

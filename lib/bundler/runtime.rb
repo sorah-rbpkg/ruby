@@ -71,7 +71,7 @@ module Bundler
               raise Bundler::GemRequireError.new e,
                 "There was an error while trying to load the gem '#{file}'."
             end
-          rescue RuntimeError => e
+          rescue StandardError => e
             raise Bundler::GemRequireError.new e,
               "There was an error while trying to load the gem '#{file}'."
           end
@@ -240,7 +240,11 @@ module Bundler
 
         cached.each do |path|
           Bundler.ui.info "  * #{File.basename(path)}"
-          File.delete(path)
+
+          begin
+            File.delete(path)
+          rescue Errno::ENOENT
+          end
         end
       end
     end

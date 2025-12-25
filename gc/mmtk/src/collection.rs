@@ -1,9 +1,11 @@
 use crate::abi::GCThreadTLS;
 
 use crate::api::RubyMutator;
+use crate::heap::RubyHeapTrigger;
 use crate::{mmtk, upcalls, Ruby};
 use mmtk::memory_manager;
 use mmtk::scheduler::*;
+use mmtk::util::heap::GCTriggerPolicy;
 use mmtk::util::{VMMutatorThread, VMThread, VMWorkerThread};
 use mmtk::vm::{Collection, GCThreadContext};
 use std::sync::atomic::Ordering;
@@ -41,10 +43,7 @@ impl Collection<Ruby> for VMCollection {
                 .name("MMTk Worker Thread".to_string())
                 .spawn(move || {
                     let ordinal = worker.ordinal;
-                    debug!(
-                        "Hello! This is MMTk Worker Thread running! ordinal: {}",
-                        ordinal
-                    );
+                    debug!("Hello! This is MMTk Worker Thread running! ordinal: {ordinal}");
                     crate::register_gc_thread(thread::current().id());
                     let ptr_worker = &mut *worker as *mut GCWorker<Ruby>;
                     let gc_thread_tls =
@@ -55,10 +54,7 @@ impl Collection<Ruby> for VMCollection {
                         GCThreadTLS::to_vwt(gc_thread_tls),
                         worker,
                     );
-                    debug!(
-                        "An MMTk Worker Thread is quitting. Good bye! ordinal: {}",
-                        ordinal
-                    );
+                    debug!("An MMTk Worker Thread is quitting. Good bye! ordinal: {ordinal}");
                     crate::unregister_gc_thread(thread::current().id());
                 })
                 .unwrap(),
@@ -72,6 +68,10 @@ impl Collection<Ruby> for VMCollection {
 
     fn vm_live_bytes() -> usize {
         (upcalls().vm_live_bytes)()
+    }
+
+    fn create_gc_trigger() -> Box<dyn GCTriggerPolicy<Ruby>> {
+        Box::new(RubyHeapTrigger::default())
     }
 }
 

@@ -1,4 +1,4 @@
-/* A Bison parser, made by Lrama 0.6.11.  */
+/* A Bison parser, made by Lrama 0.7.1.  */
 
 /* Bison interface for Yacc-like parsers in C
 
@@ -149,48 +149,48 @@ extern int yydebug;
     tASSOC = 327,                  /* "=>"  */
     tLPAREN = 328,                 /* "("  */
     tLPAREN_ARG = 329,             /* "( arg"  */
-    tRPAREN = 330,                 /* ")"  */
-    tLBRACK = 331,                 /* "["  */
-    tLBRACE = 332,                 /* "{"  */
-    tLBRACE_ARG = 333,             /* "{ arg"  */
-    tSTAR = 334,                   /* "*"  */
-    tDSTAR = 335,                  /* "**arg"  */
-    tAMPER = 336,                  /* "&"  */
-    tLAMBDA = 337,                 /* "->"  */
-    tSYMBEG = 338,                 /* "symbol literal"  */
-    tSTRING_BEG = 339,             /* "string literal"  */
-    tXSTRING_BEG = 340,            /* "backtick literal"  */
-    tREGEXP_BEG = 341,             /* "regexp literal"  */
-    tWORDS_BEG = 342,              /* "word list"  */
-    tQWORDS_BEG = 343,             /* "verbatim word list"  */
-    tSYMBOLS_BEG = 344,            /* "symbol list"  */
-    tQSYMBOLS_BEG = 345,           /* "verbatim symbol list"  */
-    tSTRING_END = 346,             /* "terminator"  */
-    tSTRING_DEND = 347,            /* "'}'"  */
-    tSTRING_DBEG = 348,            /* "'#{'"  */
-    tSTRING_DVAR = 349,            /* tSTRING_DVAR  */
-    tLAMBEG = 350,                 /* tLAMBEG  */
-    tLABEL_END = 351,              /* tLABEL_END  */
-    tIGNORED_NL = 352,             /* tIGNORED_NL  */
-    tCOMMENT = 353,                /* tCOMMENT  */
-    tEMBDOC_BEG = 354,             /* tEMBDOC_BEG  */
-    tEMBDOC = 355,                 /* tEMBDOC  */
-    tEMBDOC_END = 356,             /* tEMBDOC_END  */
-    tHEREDOC_BEG = 357,            /* tHEREDOC_BEG  */
-    tHEREDOC_END = 358,            /* tHEREDOC_END  */
-    k__END__ = 359,                /* k__END__  */
-    tLOWEST = 360,                 /* tLOWEST  */
-    tUMINUS_NUM = 361,             /* tUMINUS_NUM  */
-    tLAST_TOKEN = 362              /* tLAST_TOKEN  */
+    tLBRACK = 330,                 /* "["  */
+    tLBRACE = 331,                 /* "{"  */
+    tLBRACE_ARG = 332,             /* "{ arg"  */
+    tSTAR = 333,                   /* "*"  */
+    tDSTAR = 334,                  /* "**arg"  */
+    tAMPER = 335,                  /* "&"  */
+    tLAMBDA = 336,                 /* "->"  */
+    tSYMBEG = 337,                 /* "symbol literal"  */
+    tSTRING_BEG = 338,             /* "string literal"  */
+    tXSTRING_BEG = 339,            /* "backtick literal"  */
+    tREGEXP_BEG = 340,             /* "regexp literal"  */
+    tWORDS_BEG = 341,              /* "word list"  */
+    tQWORDS_BEG = 342,             /* "verbatim word list"  */
+    tSYMBOLS_BEG = 343,            /* "symbol list"  */
+    tQSYMBOLS_BEG = 344,           /* "verbatim symbol list"  */
+    tSTRING_END = 345,             /* "terminator"  */
+    tSTRING_DEND = 346,            /* "'}'"  */
+    tSTRING_DBEG = 347,            /* "'#{'"  */
+    tSTRING_DVAR = 348,            /* tSTRING_DVAR  */
+    tLAMBEG = 349,                 /* tLAMBEG  */
+    tLABEL_END = 350,              /* tLABEL_END  */
+    tIGNORED_NL = 351,             /* tIGNORED_NL  */
+    tCOMMENT = 352,                /* tCOMMENT  */
+    tEMBDOC_BEG = 353,             /* tEMBDOC_BEG  */
+    tEMBDOC = 354,                 /* tEMBDOC  */
+    tEMBDOC_END = 355,             /* tEMBDOC_END  */
+    tHEREDOC_BEG = 356,            /* tHEREDOC_BEG  */
+    tHEREDOC_END = 357,            /* tHEREDOC_END  */
+    k__END__ = 358,                /* k__END__  */
+    tLOWEST = 359,                 /* tLOWEST  */
+    tUMINUS_NUM = 360,             /* tUMINUS_NUM  */
+    tLAST_TOKEN = 361              /* tLAST_TOKEN  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
 
 /* Value type.  */
+
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 2665 "parse.y"
+#line 2670 "parse.y"
 
     NODE *node;
     rb_node_fcall_t *node_fcall;
@@ -202,6 +202,7 @@ union YYSTYPE
     rb_node_masgn_t *node_masgn;
     rb_node_def_temp_t *node_def_temp;
     rb_node_exits_t *node_exits;
+    struct rb_locations_lambda_body_t *locations_lambda_body;
     ID id;
     int num;
     st_table *tbl;
@@ -211,13 +212,14 @@ union YYSTYPE
     struct lex_context ctxt;
     enum lex_state_e state;
 
-#line 215 "parse.h"
+#line 216 "parse.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
 #endif
+
 
 /* Location type.  */
 #if ! defined YYLTYPE && ! defined YYLTYPE_IS_DECLARED

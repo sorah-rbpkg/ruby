@@ -11,14 +11,13 @@ spec = Gem::Specification.new do |s|
   s.version = version
 
   s.summary = "JSON Implementation for Ruby"
-  s.homepage = "https://ruby.github.io/json"
+  s.homepage = "https://github.com/ruby/json"
   s.metadata = {
     'bug_tracker_uri'   => 'https://github.com/ruby/json/issues',
     'changelog_uri'     => 'https://github.com/ruby/json/blob/master/CHANGES.md',
-    'documentation_uri' => 'https://ruby.github.io/json/doc/index.html',
+    'documentation_uri' => 'https://docs.ruby-lang.org/en/master/JSON.html',
     'homepage_uri'      => s.homepage,
     'source_code_uri'   => 'https://github.com/ruby/json',
-    'wiki_uri'          => 'https://github.com/ruby/json/wiki'
   }
 
   s.required_ruby_version = Gem::Requirement.new(">= 2.7")
@@ -45,15 +44,14 @@ spec = Gem::Specification.new do |s|
     "LEGAL",
     "README.md",
     "json.gemspec",
-    *Dir["lib/**/*.rb"],
-  ]
+  ] + Dir.glob("lib/**/*.rb", base: File.expand_path("..", __FILE__))
 
   if java_ext
     s.platform = 'java'
     s.files += Dir["lib/json/ext/**/*.jar"]
   else
     s.extensions = Dir["ext/json/**/extconf.rb"]
-    s.files += Dir["ext/json/**/*.{c,h,rl}"]
+    s.files += Dir["ext/json/**/*.{c,h,rb}"]
   end
 end
 

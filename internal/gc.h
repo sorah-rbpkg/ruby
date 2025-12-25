@@ -122,12 +122,20 @@ const char *rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
 struct rb_execution_context_struct; /* in vm_core.h */
 struct rb_objspace; /* in vm_core.h */
 
-#define NEWOBJ_OF(var, T, c, f, s, ec) \
+#define NEWOBJ_OF_WITH_SHAPE(var, T, c, f, shape_id, s, ec) \
     T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
-            rb_wb_protected_newobj_of((ec ? ec : GET_EC()), (c), (f) & ~FL_WB_PROTECTED, s) : \
-            rb_wb_unprotected_newobj_of((c), (f), s))
+            rb_wb_protected_newobj_of((ec ? ec : GET_EC()), (c), (f) & ~FL_WB_PROTECTED, shape_id, s) : \
+            rb_wb_unprotected_newobj_of((c), (f), shape_id, s))
 
-#define RB_OBJ_GC_FLAGS_MAX 6   /* used in ext/objspace */
+#define NEWOBJ_OF(var, T, c, f, s, ec) NEWOBJ_OF_WITH_SHAPE(var, T, c, f, 0 /* ROOT_SHAPE_ID */, s, ec)
+
+#ifndef RB_GC_OBJECT_METADATA_ENTRY_DEFINED
+# define RB_GC_OBJECT_METADATA_ENTRY_DEFINED
+struct rb_gc_object_metadata_entry {
+    ID name;
+    VALUE val;
+};
+#endif
 
 #ifndef USE_UNALIGNED_MEMBER_ACCESS
 # define UNALIGNED_MEMBER_ACCESS(expr) (expr)
@@ -195,6 +203,7 @@ RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add_mul(size_t, size_t, size_t, size_t);
 static inline void *ruby_sized_xrealloc_inlined(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
 static inline void *ruby_sized_xrealloc2_inlined(void *ptr, size_t new_count, size_t elemsiz, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
 static inline void ruby_sized_xfree_inlined(void *ptr, size_t size);
+void rb_gc_obj_id_moved(VALUE obj);
 
 void *rb_gc_ractor_cache_alloc(rb_ractor_t *ractor);
 void rb_gc_ractor_cache_free(void *cache);
@@ -241,10 +250,10 @@ VALUE rb_gc_disable_no_rest(void);
 
 /* gc.c (export) */
 const char *rb_objspace_data_type_name(VALUE obj);
-VALUE rb_wb_protected_newobj_of(struct rb_execution_context_struct *, VALUE, VALUE, size_t);
-VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE, size_t);
+VALUE rb_wb_protected_newobj_of(struct rb_execution_context_struct *, VALUE, VALUE, uint32_t /* shape_id_t */, size_t);
+VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE, uint32_t /* shape_id_t */, size_t);
 size_t rb_obj_memsize_of(VALUE);
-size_t rb_obj_gc_flags(VALUE, ID[], size_t);
+struct rb_gc_object_metadata_entry *rb_gc_object_metadata(VALUE obj);
 void rb_gc_mark_values(long n, const VALUE *values);
 void rb_gc_mark_vm_stack_values(long n, const VALUE *values);
 void rb_gc_update_values(long n, VALUE *values);
@@ -255,10 +264,27 @@ void ruby_sized_xfree(void *x, size_t size);
 const char *rb_gc_active_gc_name(void);
 int rb_gc_modular_gc_loaded_p(void);
 
-#if USE_MODULAR_GC
-void ruby_load_modular_gc_from_argv(int argc, char **argv);
-#endif
 RUBY_SYMBOL_EXPORT_END
+
+static inline VALUE
+rb_obj_atomic_write(
+    VALUE a, VALUE *slot, VALUE b,
+    RBIMPL_ATTR_MAYBE_UNUSED()
+    const char *filename,
+    RBIMPL_ATTR_MAYBE_UNUSED()
+    int line)
+{
+#ifdef RGENGC_LOGGING_WRITE
+    RGENGC_LOGGING_WRITE(a, slot, b, filename, line);
+#endif
+
+    RUBY_ATOMIC_VALUE_SET(*slot, b);
+
+    rb_obj_written(a, RUBY_Qundef /* ignore `oldv' now */, b, filename, line);
+    return a;
+}
+#define RB_OBJ_ATOMIC_WRITE(old, slot, young) \
+    RBIMPL_CAST(rb_obj_atomic_write((VALUE)(old), (VALUE *)(slot), (VALUE)(young), __FILE__, __LINE__))
 
 int rb_ec_stack_check(struct rb_execution_context_struct *ec);
 void rb_gc_writebarrier_remember(VALUE obj);
@@ -327,4 +353,8 @@ ruby_sized_realloc_n(void *ptr, size_t new_count, size_t element_size, size_t ol
 #define ruby_sized_xrealloc ruby_sized_xrealloc_inlined
 #define ruby_sized_xrealloc2 ruby_sized_xrealloc2_inlined
 #define ruby_sized_xfree ruby_sized_xfree_inlined
+
+void rb_gc_verify_shareable(VALUE);
+bool rb_gc_checking_shareable(void);
+
 #endif /* INTERNAL_GC_H */

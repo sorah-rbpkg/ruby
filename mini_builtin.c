@@ -1,5 +1,6 @@
 #include "internal.h"
 #include "internal/array.h"
+#include "internal/eval.h"
 #include "iseq.h"
 #include "vm_core.h"
 #include "builtin.h"
@@ -99,5 +100,5 @@ void
 rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table)
 {
     const rb_iseq_t *iseq = builtin_iseq_load(feature_name, table);
-    rb_iseq_eval(iseq);
+    rb_iseq_eval(iseq, rb_root_box());
 }

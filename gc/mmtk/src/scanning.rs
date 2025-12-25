@@ -5,11 +5,13 @@ use crate::{upcalls, Ruby, RubySlot};
 use mmtk::scheduler::{GCWork, GCWorker, WorkBucketStage};
 use mmtk::util::{ObjectReference, VMWorkerThread};
 use mmtk::vm::{ObjectTracer, RootsWorkFactory, Scanning, SlotVisitor};
-use mmtk::{Mutator, MutatorContext};
+use mmtk::Mutator;
 
 pub struct VMScanning {}
 
 impl Scanning<Ruby> for VMScanning {
+    const UNIQUE_OBJECT_ENQUEUING: bool = true;
+
     fn support_slot_enqueuing(_tls: VMWorkerThread, _object: ObjectReference) -> bool {
         false
     }
@@ -45,11 +47,7 @@ impl Scanning<Ruby> for VMScanning {
             );
             let forwarded_target = object_tracer.trace_object(target_object);
             if forwarded_target != target_object {
-                trace!(
-                    "  Forwarded target {} -> {}",
-                    target_object,
-                    forwarded_target
-                );
+                trace!("  Forwarded target {target_object} -> {forwarded_target}");
             }
             forwarded_target
         };
@@ -65,14 +63,13 @@ impl Scanning<Ruby> for VMScanning {
     }
 
     fn scan_roots_in_mutator_thread(
-        tls: VMWorkerThread,
-        mutator: &'static mut Mutator<Ruby>,
-        mut factory: impl RootsWorkFactory<RubySlot>,
+        _tls: VMWorkerThread,
+        _mutator: &'static mut Mutator<Ruby>,
+        mut _factory: impl RootsWorkFactory<RubySlot>,
     ) {
-        let gc_tls = unsafe { GCThreadTLS::from_vwt_check(tls) };
-        Self::collect_object_roots_in("scan_thread_root", gc_tls, &mut factory, || {
-            (upcalls().scan_roots_in_mutator_thread)(mutator.get_tls(), tls);
-        });
+        // Do nothing.  All stacks (including Ruby stacks and machine stacks) are reachable from
+        // `rb_vm_t` -> ractor -> thread -> fiber -> stacks.  It is part of `ScanGCRoots` which
+        // calls `rb_gc_mark_roots` -> `rb_vm_mark`.
     }
 
     fn scan_vm_specific_roots(tls: VMWorkerThread, factory: impl RootsWorkFactory<RubySlot>) {
@@ -250,15 +247,11 @@ impl<F: RootsWorkFactory<RubySlot>> GCWork<Ruby> for ScanWbUnprotectedRoots<F> {
         VMScanning::collect_object_roots_in("wb_unprot_roots", gc_tls, &mut self.factory, || {
             for object in self.objects.iter().copied() {
                 if object.is_reachable() {
-                    debug!(
-                        "[wb_unprot_roots] Visiting WB-unprotected object (parent): {}",
-                        object
-                    );
+                    debug!("[wb_unprot_roots] Visiting WB-unprotected object (parent): {object}");
                     (upcalls().scan_object_ruby_style)(object);
                 } else {
                     debug!(
-                        "[wb_unprot_roots] Skipping young WB-unprotected object (parent): {}",
-                        object
+                        "[wb_unprot_roots] Skipping young WB-unprotected object (parent): {object}"
                     );
                 }
             }

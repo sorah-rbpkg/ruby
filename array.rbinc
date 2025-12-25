@@ -65,9 +65,7 @@ return SIZED_ENUMERATOR(self, 0, 0, ary_enum_length);
 static VALUE builtin_inline_class_227(struct rb_execution_context_struct *ec, const VALUE self)
 {
 VALUE *const value__ptr = (VALUE *)&ec->cfp->ep[-3];
-MAYBE_UNUSED(const VALUE) value = *value__ptr;
 VALUE *const _i__ptr = (VALUE *)&ec->cfp->ep[-4];
-MAYBE_UNUSED(const VALUE) _i = *_i__ptr;
 #line 227 "array.rb"
 return  ary_fetch_next(self, LOCAL_PTR(_i), LOCAL_PTR(value));
 #line 70 "array.rbinc"
@@ -83,9 +81,7 @@ return SIZED_ENUMERATOR(self, 0, 0, ary_enum_length);
 static VALUE builtin_inline_class_247(struct rb_execution_context_struct *ec, const VALUE self)
 {
 VALUE *const value__ptr = (VALUE *)&ec->cfp->ep[-4];
-MAYBE_UNUSED(const VALUE) value = *value__ptr;
 VALUE *const _i__ptr = (VALUE *)&ec->cfp->ep[-5];
-MAYBE_UNUSED(const VALUE) _i = *_i__ptr;
 #line 247 "array.rb"
 return  ary_fetch_next(self, LOCAL_PTR(_i), LOCAL_PTR(value));
 #line 86 "array.rbinc"
@@ -101,9 +97,7 @@ return SIZED_ENUMERATOR(self, 0, 0, ary_enum_length);
 static VALUE builtin_inline_class_272(struct rb_execution_context_struct *ec, const VALUE self)
 {
 VALUE *const value__ptr = (VALUE *)&ec->cfp->ep[-4];
-MAYBE_UNUSED(const VALUE) value = *value__ptr;
 VALUE *const _i__ptr = (VALUE *)&ec->cfp->ep[-5];
-MAYBE_UNUSED(const VALUE) _i = *_i__ptr;
 #line 272 "array.rb"
 return  ary_fetch_next(self, LOCAL_PTR(_i), LOCAL_PTR(value));
 #line 102 "array.rbinc"
