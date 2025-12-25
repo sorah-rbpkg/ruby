@@ -12,3 +12,4 @@ gc-mmtk-keep-using-std-panic-PanicInfo-for-MSRV-1.74.patch
 rbinstall-Disable-arch-dependent-file-isolation.patch
 gc-mmtk-avoid-fn_addr_eq-for-MSRV-1.74.patch
 test_box-avoid-failure-with-program-suffix.patch
+Makefile-probes.h-dtrace-doesn-t-accept-CPPFLAGS.patch

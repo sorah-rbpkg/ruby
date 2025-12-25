@@ -1,0 +1,23 @@
+From: Sorah Fukumori <her@sorah.jp>
+Date: Fri, 26 Dec 2025 01:31:31 +0900
+Subject: Makefile(probes.h): dtrace doesn't accept CPPFLAGS
+
+follow-up of https://github.com/ruby/ruby/pull/12563
+commit 060ae17c806f0ba955b1c5d825b890b6de6c47e3
+---
+ template/Makefile.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/template/Makefile.in b/template/Makefile.in
+index 443c394..6c06124 100644
+--- a/template/Makefile.in
++++ b/template/Makefile.in
+@@ -513,7 +513,7 @@ _PREFIXED_SYMBOL = TOKEN_PASTE($(SYMBOL_PREFIX),name)
+ 
+ .d.h:
+ 	@$(ECHO) translating probes $<
+-	$(Q) $(DTRACE) -o $@.tmp -h -C $(INCFLAGS) $(CPPFLAGS) -s $<
++	CPPFLAGS="$(CPPFLAGS)" $(Q) $(DTRACE) -o $@.tmp -h -C $(INCFLAGS) -s $<
+ 	$(Q) sed -e 's/RUBY_/RUBY_DTRACE_/g' -e 's/PROBES_H_TMP/RUBY_PROBES_H/' -e 's/(char \*/(const char */g' -e 's/, char \*/, const char */g' $@.tmp > $@
+ 	$(Q) $(RM) $@.tmp
+ 
