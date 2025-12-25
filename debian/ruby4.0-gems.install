@@ -27,6 +27,15 @@
 /usr/lib/ruby/gems/*.0/specifications/syslog-*
 /usr/lib/ruby/gems/*.0/specifications/csv-*
 /usr/lib/ruby/gems/*.0/specifications/repl_type_completor-*
+/usr/lib/ruby/gems/*.0/specifications/ostruct-*
+/usr/lib/ruby/gems/*.0/specifications/pstore-*
+/usr/lib/ruby/gems/*.0/specifications/benchmark-*
+/usr/lib/ruby/gems/*.0/specifications/logger-*
+/usr/lib/ruby/gems/*.0/specifications/rdoc-*
+/usr/lib/ruby/gems/*.0/specifications/irb-*
+/usr/lib/ruby/gems/*.0/specifications/reline-*
+/usr/lib/ruby/gems/*.0/specifications/readline-*
+/usr/lib/ruby/gems/*.0/specifications/fiddle-*
 /usr/lib/ruby/gems/*.0/cache/*
 /usr/lib/ruby/gems/*.0/extensions/*/*.0/debug-*
 /usr/lib/ruby/gems/*.0/extensions/*/*.0/racc-*
@@ -34,6 +43,7 @@
 /usr/lib/ruby/gems/*.0/extensions/*/*.0/bigdecimal-*
 /usr/lib/ruby/gems/*.0/extensions/*/*.0/nkf-*
 /usr/lib/ruby/gems/*.0/extensions/*/*.0/syslog-*
+/usr/lib/ruby/gems/*.0/extensions/*/*.0/fiddle-*
 /usr/lib/ruby/gems/*.0/gems/debug-*
 /usr/lib/ruby/gems/*.0/gems/matrix-*
 /usr/lib/ruby/gems/*.0/gems/minitest-*
@@ -63,3 +73,13 @@
 /usr/lib/ruby/gems/*.0/gems/syslog-*
 /usr/lib/ruby/gems/*.0/gems/csv-*
 /usr/lib/ruby/gems/*.0/gems/repl_type_completor-*
+/usr/lib/ruby/gems/*.0/gems/ostruct-*
+/usr/lib/ruby/gems/*.0/gems/pstore-*
+/usr/lib/ruby/gems/*.0/gems/benchmark-*
+/usr/lib/ruby/gems/*.0/gems/logger-*
+/usr/lib/ruby/gems/*.0/gems/rdoc-*
+/usr/lib/ruby/gems/*.0/gems/irb-*
+/usr/lib/ruby/gems/*.0/gems/reline-*
+/usr/lib/ruby/gems/*.0/gems/readline-*
+/usr/lib/ruby/gems/*.0/gems/fiddle-*
+/usr/lib/ruby/gems/*.0/plugins/rdoc_plugin.rb
