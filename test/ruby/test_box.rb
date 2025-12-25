@@ -6,7 +6,7 @@ require 'tempfile'
 
 class TestBox < Test::Unit::TestCase
   EXPERIMENTAL_WARNING_LINE_PATTERNS = [
-    /ruby(\.exe)?: warning: Ruby::Box is experimental, and the behavior may change in the future!/,
+    /#{RbConfig::CONFIG["ruby_install_name"] || "ruby"}(\.exe)?: warning: Ruby::Box is experimental, and the behavior may change in the future!/,
     %r{See https://docs.ruby-lang.org/en/(master|\d\.\d)/Ruby/Box.html for known issues, etc.}
   ]
   ENV_ENABLE_BOX = {'RUBY_BOX' => '1', 'TEST_DIR' => __dir__}
