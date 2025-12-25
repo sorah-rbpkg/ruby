@@ -4,6 +4,7 @@
 export DH_VERBOSE=1
 
 export DEBIAN_DISABLE_RUBYGEMS_INTEGRATION = 1
+export PATH=/usr/lib/rust-1.85/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/bin/X11
 
 # This has to be exported to make some magic below work.
 export DH_OPTIONS
