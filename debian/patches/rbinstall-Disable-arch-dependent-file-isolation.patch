@@ -8,10 +8,10 @@ Reverts https://github.com/ruby/ruby/pull/10010
  1 file changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/tool/rbinstall.rb b/tool/rbinstall.rb
-index b194f2c..62cf5be9 100755
+index 874c3ef..c02b5e6 100755
 --- a/tool/rbinstall.rb
 +++ b/tool/rbinstall.rb
-@@ -367,7 +367,7 @@ goruby_install_name = "go" + ruby_install_name
+@@ -378,7 +378,7 @@ goruby_install_name = "go" + ruby_install_name
  
  bindir = CONFIG["bindir", true]
  if CONFIG["libdirname"] == "archlibdir"
@@ -20,7 +20,7 @@ index b194f2c..62cf5be9 100755
  end
  libdir = CONFIG[CONFIG.fetch("libdirname", "libdir"), true]
  rubyhdrdir = CONFIG["rubyhdrdir", true]
-@@ -898,11 +898,11 @@ install?(:local, :arch, :data) do
+@@ -1008,11 +1008,11 @@ install?(:local, :arch, :data) do
    if pc and File.file?(pc) and File.size?(pc)
      prepare "pkgconfig data", pkgconfigdir = File.join(libdir, "pkgconfig")
      install pc, pkgconfigdir, :mode => $data_mode

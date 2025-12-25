@@ -8,10 +8,10 @@ https://github.com/rust-lang/rust/pull/115974
  1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/gc/mmtk/src/lib.rs b/gc/mmtk/src/lib.rs
-index 01497e9..6442392 100644
+index 8647793..6940f03 100644
 --- a/gc/mmtk/src/lib.rs
 +++ b/gc/mmtk/src/lib.rs
-@@ -5,7 +5,6 @@ extern crate log;
+@@ -9,7 +9,6 @@ extern crate log;
  extern crate probe;
  
  use std::collections::HashSet;
@@ -19,7 +19,7 @@ index 01497e9..6442392 100644
  use std::sync::Mutex;
  use std::thread::ThreadId;
  
-@@ -92,7 +91,7 @@ pub(crate) fn is_gc_thread(thread_id: ThreadId) -> bool {
+@@ -102,7 +101,7 @@ pub(crate) fn is_gc_thread(thread_id: ThreadId) -> bool {
      gc_threads.contains(&thread_id)
  }
  

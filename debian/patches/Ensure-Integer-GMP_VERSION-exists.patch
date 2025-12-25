@@ -9,10 +9,10 @@ packaging
  1 file changed, 4 insertions(+)
 
 diff --git a/test/ruby/test_bignum.rb b/test/ruby/test_bignum.rb
-index beef33e..bb1c6ad 100644
+index c366f79..24502d4 100644
 --- a/test/ruby/test_bignum.rb
 +++ b/test/ruby/test_bignum.rb
-@@ -634,6 +634,10 @@ class TestBignum < Test::Unit::TestCase
+@@ -677,6 +677,10 @@ class TestBignum < Test::Unit::TestCase
      assert_equal(true, BIGNUM_MIN.even?)
    end
  

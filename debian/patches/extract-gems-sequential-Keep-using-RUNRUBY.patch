@@ -11,28 +11,38 @@ Subject: extract-gems-sequential: Keep using RUNRUBY
    https://github.com/ruby/ruby/pull/7347
    to avoid calling git for extracting gems.
 ---
- common.mk | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ common.mk | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
 diff --git a/common.mk b/common.mk
-index 193ed12..0879c2b 100644
+index 08fee91..b829a63 100644
 --- a/common.mk
 +++ b/common.mk
-@@ -1543,7 +1543,7 @@ update-gems$(gnumake:yes=-sequential): PHONY
+@@ -1504,7 +1504,7 @@ update-gems$(sequential): PHONY
  
- extract-gems$(gnumake:yes=-sequential): PHONY
+ extract-gems$(sequential): PHONY
  	$(ECHO) Extracting bundled gem files...
 -	$(Q) $(BASERUBY) -C "$(srcdir)" \
 +	$(Q) $(RUNRUBY) -C "$(srcdir)" \
- 	    -Itool/lib -rfileutils -rbundled_gem -answ \
+ 	    -Itool/lib -rfileutils -rbundled_gem $(split_option) -answ \
  	    -e 'BEGIN {d = ".bundle/gems"}' \
  	    -e 'gem, ver, _, rev = *$$F' \
-@@ -1557,8 +1557,6 @@ extract-gems$(gnumake:yes=-sequential): PHONY
+@@ -1518,7 +1518,17 @@ extract-gems$(sequential): PHONY
  	    -e 'end' \
  	    gems/bundled_gems
  
--extract-gems$(gnumake:yes=-sequential): $(HAVE_GIT:yes=clone-bundled-gems-src)
--
- clone-bundled-gems-src: PHONY
- 	$(Q) $(BASERUBY) -C "$(srcdir)" \
- 	    -Itool/lib -rbundled_gem -answ \
+-extract-gems$(sequential): $(HAVE_GIT:yes=clone-bundled-gems-src)
++clone-bundled-gems-src: PHONY
++	$(Q) $(BASERUBY) -C "$(srcdir)" \
++	    -Itool/lib -rbundled_gem -answ \
++	    -e 'BEGIN {git = $$git}' \
++	    -e 'gem, _, repo, rev = *$$F' \
++	    -e 'next if !rev or /^#/=~gem' \
++	    -e 'gemdir = "gems/src/#{gem}"' \
++	    -e 'BundledGem.checkout(gemdir, repo, rev, git: git)' \
++	    -e 'BundledGem.dummy_gemspec("#{gemdir}/#{gem}.gemspec")' \
++	    -- -git="$(GIT)" \
++	    gems/bundled_gems
+ 
+ flush-gems: outdate-bundled-gems
+ outdate-bundled-gems: PHONY

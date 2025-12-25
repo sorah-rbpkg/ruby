@@ -11,10 +11,10 @@ lets such test fail.
  1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/test/ruby/test_process.rb b/test/ruby/test_process.rb
-index af72053..c4184b2 100644
+index 857ceab..de66db4 100644
 --- a/test/ruby/test_process.rb
 +++ b/test/ruby/test_process.rb
-@@ -292,7 +292,7 @@ class TestProcess < Test::Unit::TestCase
+@@ -300,7 +300,7 @@ class TestProcess < Test::Unit::TestCase
    end
    PREENVARG = ['-e', "%w[#{MANDATORY_ENVS.join(' ')}].each{|e|ENV.delete(e)}"]
    ENVARG = ['-e', 'ENV.each {|k,v| puts "#{k}=#{v}" }']
@@ -23,7 +23,7 @@ index af72053..c4184b2 100644
  
    def test_execopts_env
      assert_raise(ArgumentError) {
-@@ -311,7 +311,7 @@ class TestProcess < Test::Unit::TestCase
+@@ -319,7 +319,7 @@ class TestProcess < Test::Unit::TestCase
        assert_equal(prog, e.message.sub(/.* - /, ''))
      }
      h = {}
@@ -32,7 +32,7 @@ index af72053..c4184b2 100644
      (ENV.keys + MANDATORY_ENVS).each do |k|
        case k
        when /\APATH\z/i
-@@ -404,7 +404,7 @@ class TestProcess < Test::Unit::TestCase
+@@ -412,7 +412,7 @@ class TestProcess < Test::Unit::TestCase
      with_tmpchdir do |d|
        File.open('test-script', 'w') do |f|
          ENVCOMMAND.each_with_index do |cmd, i|

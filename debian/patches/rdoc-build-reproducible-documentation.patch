@@ -8,13 +8,13 @@ Subject: rdoc: build reproducible documentation
 Signed-off-by: Antonio Terceiro <terceiro@debian.org>
 Signed-off-by: Christian Hofstaedtler <zeha@debian.org>
 ---
- lib/rdoc/generator/json_index.rb | 4 ++--
+ .bundle/gems/rdoc-7.0.3/lib/rdoc/generator/json_index.rb | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/lib/rdoc/generator/json_index.rb b/lib/rdoc/generator/json_index.rb
+diff --git a/.bundle/gems/rdoc-7.0.3/lib/rdoc/generator/json_index.rb b/.bundle/gems/rdoc-7.0.3/lib/rdoc/generator/json_index.rb
 index 065caa4..cfa1f33 100644
---- a/lib/rdoc/generator/json_index.rb
-+++ b/lib/rdoc/generator/json_index.rb
+--- a/.bundle/gems/rdoc-7.0.3/lib/rdoc/generator/json_index.rb
++++ b/.bundle/gems/rdoc-7.0.3/lib/rdoc/generator/json_index.rb
 @@ -176,7 +176,7 @@ class RDoc::Generator::JsonIndex
      debug_msg "Writing gzipped search index to %s" % outfile
  
