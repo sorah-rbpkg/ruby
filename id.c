@@ -128,6 +128,8 @@ Init_id(void)
     REGISTER_SYMID(idPack, "pack");
     REGISTER_SYMID(idBuffer, "buffer");
     REGISTER_SYMID(idIncludeP, "include?");
+    REGISTER_SYMID(idAborted, "aborted");
+    REGISTER_SYMID(idExited, "exited");
     REGISTER_SYMID(idUScore, "_");
     REGISTER_SYMID(idNUMPARAM_1, "_1");
     REGISTER_SYMID(idNUMPARAM_2, "_2");
@@ -138,6 +140,8 @@ Init_id(void)
     REGISTER_SYMID(idNUMPARAM_7, "_7");
     REGISTER_SYMID(idNUMPARAM_8, "_8");
     REGISTER_SYMID(idNUMPARAM_9, "_9");
+    REGISTER_SYMID(idItImplicit, "<it>");
+    REGISTER_SYMID(idIt, "it");
     REGISTER_SYMID(idNULL, ""/*NULL*/"");
     REGISTER_SYMID(idEmptyP, "empty?");
     REGISTER_SYMID(idEqlP, "eql?");

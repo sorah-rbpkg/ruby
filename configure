@@ -777,11 +777,19 @@ NULLCMD
 ENABLE_DEBUG_ENV
 DLNOBJ
 XSYMBOLS_IN_EMPTYLIB
-RJIT_SUPPORT
+JIT_CARGO_SUPPORT
+RLIB_DIR
+RUST_LIB
+JIT_OBJ
+ZJIT_OBJ
+ZJIT_LIBS
+ZJIT_SUPPORT
 YJIT_OBJ
 YJIT_LIBS
-CARGO_BUILD_ARGS
 YJIT_SUPPORT
+CARGO_BUILD_ARGS
+JIT_RUST_FLAGS
+ZJIT_TEST_FEATURES
 CARGO
 RUSTC
 INSTALL_STATIC_LIBRARY
@@ -992,7 +1000,6 @@ with_winnt_ver
 with_thread
 with_jemalloc
 enable_largefile
-enable_mathn
 enable_setreuid
 with_coroutine
 with_dln_a_out
@@ -1016,7 +1023,7 @@ enable_install_rdoc
 enable_install_capi
 enable_install_static_library
 enable_yjit
-enable_rjit
+enable_zjit
 enable_dln
 enable_debug_env
 with_rubyarchprefix
@@ -1701,7 +1708,6 @@ Optional Features:
                           disable -D_FORTIFY_SOURCE=2 option, which causes
                           link error on mingw
   --disable-largefile     omit support for large files
-  --enable-mathn          enable canonicalization for mathn
   --enable-setreuid       use setreuid()/setregid() according to need even if
                           obsolete
   --enable-multiarch      enable multiarch compatible directories
@@ -1719,8 +1725,9 @@ Optional Features:
   --enable-yjit           enable in-process JIT compiler that requires Rust
                           build tools. enabled by default on supported
                           platforms if rustc 1.58.0+ is available
-  --enable-rjit           enable pure-Ruby JIT compiler. enabled by default on
-                          Unix x86_64 platforms
+  --enable-zjit           enable experimental JIT compiler that requires Rust
+                          build tools. enabled by default on supported
+                          platforms if rustc 1.85.0+ is available
   --disable-dln           disable dynamic link feature
   --enable-debug-env      enable RUBY_DEBUG environment variable
   --enable-mkmf-verbose   enable verbose in mkmf
@@ -3811,7 +3818,7 @@ if test ${with_git+y}
 then :
   withval=$with_git; case $withval in #(
   no) :
-    GIT=never-use HAVE_GIT=no ;; #(
+    HAVE_GIT=no ;; #(
   yes) :
      ;; #(
   *) :
@@ -3819,10 +3826,18 @@ then :
 esac
 fi
 
-if test x"$HAVE_GIT" = xyes
-then :
-  command -v "$GIT" > /dev/null || HAVE_GIT=no
-fi
+{
+    test x"$HAVE_GIT" = xyes &&
+    command -v "$GIT" > /dev/null &&
+    # `git -C`: 1.8.5
+    # `git log --no-show-signature`: 2.10.0
+    case `$GIT -C . --version 2> /dev/null | sed 's/.* //'` in #(
+  0.*|1.*|2.[0-9].*) :
+    false ;; #(
+  *) :
+    true ;;
+esac
+} || HAVE_GIT=no GIT=never-use
 
 
 
@@ -4609,7 +4624,7 @@ done
     # Intel C++ has interprocedural optimizations.  It tends to come with its
     # own linker etc.
 
-    rb_prog=`echo "${rb_CC}" | sed "s/icc/xiar/"`
+    rb_prog=`echo "${rb_CC}" | sed "s:icc\([^/]*\)$:xiar\1:"`
     # Extract the first word of "$rb_prog", so it can be a program name with args.
 set dummy $rb_prog; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -4654,7 +4669,7 @@ fi
 
 
 
-    rb_prog=`echo "${rb_CC}" | sed "s/icc/icpc/"`
+    rb_prog=`echo "${rb_CC}" | sed "s:icc\([^/]*\)$:icpc\1:"`
     # Extract the first word of "$rb_prog", so it can be a program name with args.
 set dummy $rb_prog; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -4699,7 +4714,7 @@ fi
 
 
 
-    rb_prog=`echo "${rb_CC}" | sed "s/icc/xild/"`
+    rb_prog=`echo "${rb_CC}" | sed "s:icc\([^/]*\)$:xild\1:"`
     # Extract the first word of "$rb_prog", so it can be a program name with args.
 set dummy $rb_prog; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -4748,7 +4763,7 @@ fi
 
     # Ditto for GCC.
 
-    rb_prog=`echo "${rb_CC}" | sed "s/gcc/ld/"`
+    rb_prog=`echo "${rb_CC}" | sed "s:gcc\([^/]*\)$:ld\1:"`
     # Extract the first word of "$rb_prog", so it can be a program name with args.
 set dummy $rb_prog; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -4793,7 +4808,7 @@ fi
 
 
 
-    rb_prog=`echo "${rb_CC}" | sed "s/gcc/gcc-ar/"`
+    rb_prog=`echo "${rb_CC}" | sed "s:gcc\([^/]*\)$:gcc-ar\1:"`
     # Extract the first word of "$rb_prog", so it can be a program name with args.
 set dummy $rb_prog; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -4838,7 +4853,7 @@ fi
 
 
 
-    rb_prog=`echo "${rb_CC}" | sed "s/gcc/g++/"`
+    rb_prog=`echo "${rb_CC}" | sed "s:gcc\([^/]*\)$:g++\1:"`
     # Extract the first word of "$rb_prog", so it can be a program name with args.
 set dummy $rb_prog; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -4883,7 +4898,7 @@ fi
 
 
 
-    rb_prog=`echo "${rb_CC}" | sed "s/gcc/gcc-nm/"`
+    rb_prog=`echo "${rb_CC}" | sed "s:gcc\([^/]*\)$:gcc-nm\1:"`
     # Extract the first word of "$rb_prog", so it can be a program name with args.
 set dummy $rb_prog; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -4928,7 +4943,7 @@ fi
 
 
 
-    rb_prog=`echo "${rb_CC}" | sed "s/gcc/gcc-ranlib/"`
+    rb_prog=`echo "${rb_CC}" | sed "s:gcc\([^/]*\)$:gcc-ranlib\1:"`
     # Extract the first word of "$rb_prog", so it can be a program name with args.
 set dummy $rb_prog; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -4990,7 +5005,7 @@ fi
     # AC_PREPROC_IFELSE cannot be used before AC_USE_SYSTEM_EXTENSIONS
 
 
-    rb_prog=`echo "${rb_CC}" | sed "s/clang/ld/"`
+    rb_prog=`echo "${rb_CC}" | sed "s:clang\([^/]*\)$:ld\1:"`
     # Extract the first word of "$rb_prog", so it can be a program name with args.
 set dummy $rb_prog; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -5035,7 +5050,7 @@ fi
 
  # ... maybe try lld ?
 
-    rb_prog=`echo "${rb_CC}" | sed "s/clang/${llvm_prefix}ar/"`
+    rb_prog=`echo "${rb_CC}" | sed "s:clang\([^/]*\)$:${llvm_prefix}ar\1:"`
     # Extract the first word of "$rb_prog", so it can be a program name with args.
 set dummy $rb_prog; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -5079,9 +5094,9 @@ fi
 
 
 
-#   RUBY_CHECK_PROG_FOR_CC([AS],      [s/clang/${llvm_prefix}as/])
+#   RUBY_CHECK_PROG_FOR_CC([AS],      [clang], [${llvm_prefix}as])
 
-    rb_prog=`echo "${rb_CC}" | sed "s/clang/clang++/"`
+    rb_prog=`echo "${rb_CC}" | sed "s:clang\([^/]*\)$:clang++\1:"`
     # Extract the first word of "$rb_prog", so it can be a program name with args.
 set dummy $rb_prog; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -5126,7 +5141,7 @@ fi
 
 
 
-    rb_prog=`echo "${rb_CC}" | sed "s/clang/${llvm_prefix}nm/"`
+    rb_prog=`echo "${rb_CC}" | sed "s:clang\([^/]*\)$:${llvm_prefix}nm\1:"`
     # Extract the first word of "$rb_prog", so it can be a program name with args.
 set dummy $rb_prog; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -5171,7 +5186,7 @@ fi
 
 
 
-    rb_prog=`echo "${rb_CC}" | sed "s/clang/${llvm_prefix}objcopy/"`
+    rb_prog=`echo "${rb_CC}" | sed "s:clang\([^/]*\)$:${llvm_prefix}objcopy\1:"`
     # Extract the first word of "$rb_prog", so it can be a program name with args.
 set dummy $rb_prog; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -5216,7 +5231,7 @@ fi
 
 
 
-    rb_prog=`echo "${rb_CC}" | sed "s/clang/${llvm_prefix}objdump/"`
+    rb_prog=`echo "${rb_CC}" | sed "s:clang\([^/]*\)$:${llvm_prefix}objdump\1:"`
     # Extract the first word of "$rb_prog", so it can be a program name with args.
 set dummy $rb_prog; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -5261,7 +5276,7 @@ fi
 
 
 
-    rb_prog=`echo "${rb_CC}" | sed "s/clang/${llvm_prefix}ranlib/"`
+    rb_prog=`echo "${rb_CC}" | sed "s:clang\([^/]*\)$:${llvm_prefix}ranlib\1:"`
     # Extract the first word of "$rb_prog", so it can be a program name with args.
 set dummy $rb_prog; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -5306,7 +5321,7 @@ fi
 
 
 
-    rb_prog=`echo "${rb_CC}" | sed "s/clang/${llvm_prefix}strip/"`
+    rb_prog=`echo "${rb_CC}" | sed "s:clang\([^/]*\)$:${llvm_prefix}strip\1:"`
     # Extract the first word of "$rb_prog", so it can be a program name with args.
 set dummy $rb_prog; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -5590,6 +5605,8 @@ esac
 case "${target_os}" in #(
   cygwin*|msys*|mingw*|darwin*) :
 
+    ac_ct_OBJCOPY=":"
+    ac_cv_prog_OBJCOPY=":"
     ac_cv_prog_ac_ct_OBJCOPY=":"
  ;; #(
   *) :
@@ -7977,6 +7994,8 @@ esac
 fi
 
 
+FIRSTMAKEFILE=""
+
 # nm errors with Rust's LLVM bitcode when Rust uses a newer LLVM version than nm.
 # In case we're working with llvm-nm, tell it to not worry about the bitcode.
 if ${NM} --help 2>&1 | grep -q 'llvm-bc'
@@ -8525,6 +8544,8 @@ case "$target_os" in #(
     # so wrap clang to insert our fake wasm-opt, which does nothing, in PATH.
     CC_WRAPPER=`cd -P "${tooldir}" && pwd`/wasm-clangw
     CC="$CC_WRAPPER $CC"
+
+    FIRSTMAKEFILE=GNUmakefile:wasm/GNUmakefile.in
    ;; #(
   *) :
      ;;
@@ -9104,6 +9125,8 @@ esac
   *) :
      ;;
 esac
+    # cygwin/GNUmakefile.in is not exclusively for cygwin.
+    FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in
     case "$target_os" in #(
   mingw*) :
 
@@ -9773,6 +9796,32 @@ rm -fr conf$$.dir
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CHDIR" >&5
     colorize_result "$CHDIR" ; }
 
+
+case "$FIRSTMAKEFILE" in #(
+  *GNUmakefile:*) :
+    gnumake=yes ;; #(
+  *) :
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if ${MAKE-make} is GNU make" >&5
+printf %s "checking if ${MAKE-make} is GNU make... " >&6; }
+    mkdir conftest.dir
+    echo "all:; @echo yes" > conftest.dir/GNUmakefile
+    echo "all:; @echo no" > conftest.dir/Makefile
+    gnumake=`(cd conftest.dir; ${MAKE-make})`
+    rm -fr conftest.dir
+    case "$gnumake" in #(
+  *yes*) :
+
+	FIRSTMAKEFILE=GNUmakefile:template/GNUmakefile.in
+	gnumake=yes ;; #(
+  *) :
+
+	gnumake=no ;;
+esac
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gnumake" >&5
+    colorize_result "$gnumake" ; }
+ ;;
+esac
 }
 
 begin_group "compiler section" && {
@@ -12057,7 +12106,7 @@ then :
     save_IFS="$IFS" IFS="$PATH_SEPARATOR" val= PWD=
     for dir in $OPT_DIR; do
         test -z "$dir" && continue
-        dir=`eval $CHDIR '"$dir"' && pwd` || continue
+        dir=`eval $CHDIR '"$dir"' 2>/dev/null && pwd` || continue
         val="${val:+$val$PATH_SEPARATOR}$dir"
     done
     IFS="$save_IFS" OPT_DIR="$val"
@@ -12936,6 +12985,11 @@ esac
 		ac_cv_header_sys_time_h=no
 		ac_cv_header_sys_times_h=no
 		ac_cv_header_sys_socket_h=no
+		ac_cv_func_chown=yes
+		ac_cv_func_getegid=yes
+		ac_cv_func_geteuid=yes
+		ac_cv_func_getgid=yes
+		ac_cv_func_getuid=yes
 		ac_cv_func_execv=yes
 		ac_cv_func_lstat=yes
 		ac_cv_func_times=yes
@@ -12948,6 +13002,8 @@ esac
 		ac_cv_func_readlink=yes
 		ac_cv_func_shutdown=yes
 		ac_cv_func_symlink=yes
+		ac_cv_func_clock_getres=yes
+		ac_cv_func_clock_gettime=yes
 		ac_cv_lib_crypt_crypt=no
 		ac_cv_func_getpgrp_void=no
 		ac_cv_func_memcmp_working=yes
@@ -12966,9 +13022,9 @@ then :
 
 		    ac_cv_func___builtin_setjmp=yes
 		    ac_cv_func_round=no
+		    ac_cv_func_tgamma=no
 
 fi
-		ac_cv_func_tgamma=no
 		ac_fn_c_check_type "$LINENO" "NET_LUID" "ac_cv_type_NET_LUID" "#include <winsock2.h>
 			       #include <windows.h>
 			       #include <iphlpapi.h>
@@ -13045,19 +13101,6 @@ esac
   *) :
      ;;
 esac
-		# With gcc-8's -fcf-protection, RJIT's __builtin_longjmp fails.
-		case "$CC $CFLAGS " in #(
-  *" -fcf-protection "*) :
-    cf_protection=yes ;; #(
-  *) :
-    cf_protection=no ;;
-esac
-		if test "$cf_protection" = yes
-then :
-
-			ac_cv_func___builtin_setjmp=no
-
-fi
 		 ;; #(
   emscripten*) :
     LIBS="-lm -lc $LIBS"
@@ -13843,6 +13886,13 @@ ac_fn_c_check_header_compile "$LINENO" "sanitizer/msan_interface.h" "ac_cv_heade
 if test "x$ac_cv_header_sanitizer_msan_interface_h" = xyes
 then :
   printf "%s\n" "#define HAVE_SANITIZER_MSAN_INTERFACE_H 1" >>confdefs.h
+
+fi
+
+ac_fn_c_check_header_compile "$LINENO" "sanitizer/tsan_interface.h" "ac_cv_header_sanitizer_tsan_interface_h" "$ac_includes_default"
+if test "x$ac_cv_header_sanitizer_tsan_interface_h" = xyes
+then :
+  printf "%s\n" "#define HAVE_SANITIZER_TSAN_INTERFACE_H 1" >>confdefs.h
 
 fi
 
@@ -20445,78 +20495,6 @@ then :
 
 fi
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __attribute__((__deprecated__(msg))) in C++" >&5
-printf %s "checking for __attribute__((__deprecated__(msg))) in C++... " >&6; }
-if test ${rb_cv_CentOS6_CXX_workaround+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $rb_cv_warnflags"
-if test "${ac_c_werror_flag+set}"
-then :
-
-  rb_c_werror_flag="$ac_c_werror_flag"
-
-else $as_nop
-
-  unset rb_c_werror_flag
-
-fi
-ac_c_werror_flag=yes
-
-    ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main (void)
-{
-__attribute__((__deprecated__("message"))) int conftest(...);
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"
-then :
-  rb_cv_CentOS6_CXX_workaround=yes
-else $as_nop
-  rb_cv_CentOS6_CXX_workaround=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-    ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
-
-CFLAGS="$save_CFLAGS"
-save_CFLAGS=
-if test "${rb_c_werror_flag+set}"
-then :
-
-  ac_c_werror_flag="$rb_c_werror_flag"
-
-else $as_nop
-
-  unset ac_c_werror_flag
-
-fi
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $rb_cv_CentOS6_CXX_workaround" >&5
-    colorize_result "$rb_cv_CentOS6_CXX_workaround" ; }
-if test "$rb_cv_CentOS6_CXX_workaround" != no
-then :
-
-  printf "%s\n" "#define RUBY_CXX_DEPRECATED(msg) __attribute__((__deprecated__(msg)))" >>confdefs.h
-
-fi
-
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for std::nullptr_t" >&5
 printf %s "checking for std::nullptr_t... " >&6; }
 if test ${rb_cv_CXX_nullptr+y}
@@ -21059,6 +21037,98 @@ then :
 
 	printf "%s\n" "#define HAVE_GCC_ATOMIC_BUILTINS 1" >>confdefs.h
 
+	for lib in "" atomic; do
+	    if test "$lib" != ""
+then :
+
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __atomic_fetch_add_8 in -latomic" >&5
+printf %s "checking for __atomic_fetch_add_8 in -latomic... " >&6; }
+if test ${ac_cv_lib_atomic___atomic_fetch_add_8+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-latomic  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char __atomic_fetch_add_8 ();
+int
+main (void)
+{
+return __atomic_fetch_add_8 ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_lib_atomic___atomic_fetch_add_8=yes
+else $as_nop
+  ac_cv_lib_atomic___atomic_fetch_add_8=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_atomic___atomic_fetch_add_8" >&5
+    colorize_result "$ac_cv_lib_atomic___atomic_fetch_add_8" ; }
+if test "x$ac_cv_lib_atomic___atomic_fetch_add_8" = xyes
+then :
+  printf "%s\n" "#define HAVE_LIBATOMIC 1" >>confdefs.h
+
+  LIBS="-latomic $LIBS"
+
+fi
+
+		unset rb_cv_gcc_atomic_builtins_64
+
+fi
+	    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for 64bit __atomic builtins${lib:+ with -l$lib}" >&5
+printf %s "checking for 64bit __atomic builtins${lib:+ with -l$lib}... " >&6; }
+if test ${rb_cv_gcc_atomic_builtins_64+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <stdint.h>
+			    uint64_t atomic_var;
+int
+main (void)
+{
+
+				__atomic_load_n(&atomic_var, __ATOMIC_RELAXED);
+				__atomic_store_n(&atomic_var, 0, __ATOMIC_RELAXED);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  rb_cv_gcc_atomic_builtins_64=yes
+else $as_nop
+  rb_cv_gcc_atomic_builtins_64=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $rb_cv_gcc_atomic_builtins_64" >&5
+    colorize_result "$rb_cv_gcc_atomic_builtins_64" ; }
+	    if test "$rb_cv_gcc_atomic_builtins_64" = yes
+then :
+
+		printf "%s\n" "#define HAVE_GCC_ATOMIC_BUILTINS_64 1" >>confdefs.h
+
+		break
+
+fi
+	done
 
 fi
 
@@ -21389,13 +21459,6 @@ fi
   *) :
      XCFLAGS="$XCFLAGS -DRUBY_EXPORT" ;;
 esac
-
-# Check whether --enable-mathn was given.
-if test ${enable_mathn+y}
-then :
-  enableval=$enable_mathn; as_fn_error $? "mathn support has been dropped" "$LINENO" 5
-fi
-
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for function name string predefined identifier" >&5
 printf %s "checking for function name string predefined identifier... " >&6; }
@@ -23222,7 +23285,11 @@ fi
 if test "${rb_cv_type_int8_t}" != no
 then :
 
-    rb_defint_type="${rb_cv_type_int8_t##unsigned }"
+    rb_defint_type="${rb_cv_type_int8_t##*signed }"
+    if test "$rb_defint_type" = "long long"
+then :
+  rb_defint_type=long_long
+fi
     if test "$rb_defint_type" != yes && eval 'test -n "${ac_cv_sizeof_'$rb_defint_type'+set}"'
 then :
 
@@ -23342,7 +23409,11 @@ fi
 if test "${rb_cv_type_uint8_t}" != no
 then :
 
-    rb_defint_type="${rb_cv_type_uint8_t##unsigned }"
+    rb_defint_type="${rb_cv_type_uint8_t##*signed }"
+    if test "$rb_defint_type" = "long long"
+then :
+  rb_defint_type=long_long
+fi
     if test "$rb_defint_type" != yes && eval 'test -n "${ac_cv_sizeof_'$rb_defint_type'+set}"'
 then :
 
@@ -23462,7 +23533,11 @@ fi
 if test "${rb_cv_type_int16_t}" != no
 then :
 
-    rb_defint_type="${rb_cv_type_int16_t##unsigned }"
+    rb_defint_type="${rb_cv_type_int16_t##*signed }"
+    if test "$rb_defint_type" = "long long"
+then :
+  rb_defint_type=long_long
+fi
     if test "$rb_defint_type" != yes && eval 'test -n "${ac_cv_sizeof_'$rb_defint_type'+set}"'
 then :
 
@@ -23582,7 +23657,11 @@ fi
 if test "${rb_cv_type_uint16_t}" != no
 then :
 
-    rb_defint_type="${rb_cv_type_uint16_t##unsigned }"
+    rb_defint_type="${rb_cv_type_uint16_t##*signed }"
+    if test "$rb_defint_type" = "long long"
+then :
+  rb_defint_type=long_long
+fi
     if test "$rb_defint_type" != yes && eval 'test -n "${ac_cv_sizeof_'$rb_defint_type'+set}"'
 then :
 
@@ -23702,7 +23781,11 @@ fi
 if test "${rb_cv_type_int32_t}" != no
 then :
 
-    rb_defint_type="${rb_cv_type_int32_t##unsigned }"
+    rb_defint_type="${rb_cv_type_int32_t##*signed }"
+    if test "$rb_defint_type" = "long long"
+then :
+  rb_defint_type=long_long
+fi
     if test "$rb_defint_type" != yes && eval 'test -n "${ac_cv_sizeof_'$rb_defint_type'+set}"'
 then :
 
@@ -23822,7 +23905,11 @@ fi
 if test "${rb_cv_type_uint32_t}" != no
 then :
 
-    rb_defint_type="${rb_cv_type_uint32_t##unsigned }"
+    rb_defint_type="${rb_cv_type_uint32_t##*signed }"
+    if test "$rb_defint_type" = "long long"
+then :
+  rb_defint_type=long_long
+fi
     if test "$rb_defint_type" != yes && eval 'test -n "${ac_cv_sizeof_'$rb_defint_type'+set}"'
 then :
 
@@ -23942,7 +24029,11 @@ fi
 if test "${rb_cv_type_int64_t}" != no
 then :
 
-    rb_defint_type="${rb_cv_type_int64_t##unsigned }"
+    rb_defint_type="${rb_cv_type_int64_t##*signed }"
+    if test "$rb_defint_type" = "long long"
+then :
+  rb_defint_type=long_long
+fi
     if test "$rb_defint_type" != yes && eval 'test -n "${ac_cv_sizeof_'$rb_defint_type'+set}"'
 then :
 
@@ -24062,7 +24153,11 @@ fi
 if test "${rb_cv_type_uint64_t}" != no
 then :
 
-    rb_defint_type="${rb_cv_type_uint64_t##unsigned }"
+    rb_defint_type="${rb_cv_type_uint64_t##*signed }"
+    if test "$rb_defint_type" = "long long"
+then :
+  rb_defint_type=long_long
+fi
     if test "$rb_defint_type" != yes && eval 'test -n "${ac_cv_sizeof_'$rb_defint_type'+set}"'
 then :
 
@@ -24182,7 +24277,11 @@ fi
 if test "${rb_cv_type_int128_t}" != no
 then :
 
-    rb_defint_type="${rb_cv_type_int128_t##unsigned }"
+    rb_defint_type="${rb_cv_type_int128_t##*signed }"
+    if test "$rb_defint_type" = "long long"
+then :
+  rb_defint_type=long_long
+fi
     if test "$rb_defint_type" != yes && eval 'test -n "${ac_cv_sizeof_'$rb_defint_type'+set}"'
 then :
 
@@ -24302,7 +24401,11 @@ fi
 if test "${rb_cv_type_uint128_t}" != no
 then :
 
-    rb_defint_type="${rb_cv_type_uint128_t##unsigned }"
+    rb_defint_type="${rb_cv_type_uint128_t##*signed }"
+    if test "$rb_defint_type" = "long long"
+then :
+  rb_defint_type=long_long
+fi
     if test "$rb_defint_type" != yes && eval 'test -n "${ac_cv_sizeof_'$rb_defint_type'+set}"'
 then :
 
@@ -24422,7 +24525,11 @@ fi
 if test "${rb_cv_type_intptr_t}" != no
 then :
 
-    rb_defint_type="${rb_cv_type_intptr_t##unsigned }"
+    rb_defint_type="${rb_cv_type_intptr_t##*signed }"
+    if test "$rb_defint_type" = "long long"
+then :
+  rb_defint_type=long_long
+fi
     if test "$rb_defint_type" != yes && eval 'test -n "${ac_cv_sizeof_'$rb_defint_type'+set}"'
 then :
 
@@ -24647,7 +24754,11 @@ fi
 if test "${rb_cv_type_uintptr_t}" != no
 then :
 
-    rb_defint_type="${rb_cv_type_uintptr_t##unsigned }"
+    rb_defint_type="${rb_cv_type_uintptr_t##*signed }"
+    if test "$rb_defint_type" = "long long"
+then :
+  rb_defint_type=long_long
+fi
     if test "$rb_defint_type" != yes && eval 'test -n "${ac_cv_sizeof_'$rb_defint_type'+set}"'
 then :
 
@@ -24966,7 +25077,11 @@ fi
 if test "${rb_cv_type_ssize_t}" != no
 then :
 
-    rb_defint_type="${rb_cv_type_ssize_t##unsigned }"
+    rb_defint_type="${rb_cv_type_ssize_t##*signed }"
+    if test "$rb_defint_type" = "long long"
+then :
+  rb_defint_type=long_long
+fi
     if test "$rb_defint_type" != yes && eval 'test -n "${ac_cv_sizeof_'$rb_defint_type'+set}"'
 then :
 
@@ -30021,6 +30136,10 @@ esac
 
             coroutine_type=arm64
          ;; #(
+  riscv64-openbsd*) :
+
+            coroutine_type=riscv64
+         ;; #(
   *-openbsd*) :
 
             coroutine_type=pthread
@@ -31922,7 +32041,6 @@ fi
 EXTOUT=${EXTOUT=.ext}
 
 
-FIRSTMAKEFILE=""
 LIBRUBY_A='lib$(RUBY_SO_NAME)-static.a'
 LIBRUBY='$(LIBRUBY_A)'
 LIBRUBYARG_STATIC='-l$(RUBY_SO_NAME)-static'
@@ -32344,6 +32462,7 @@ fi
 then :
 
 	    LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,_Init_*'
+	    LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,_InitVM_*'
 	    LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,_ruby_static_id_*'
 	    LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,*_threadptr_*'
 
@@ -33261,50 +33380,50 @@ else
 fi
 
 
-YJIT_RUSTC_OK=no
+JIT_RUSTC_OK=no
+JIT_TARGET_ARCH=
 if test "$RUSTC" != "no"
 then :
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${RUSTC} works for YJIT" >&5
 printf %s "checking whether ${RUSTC} works for YJIT... " >&6; }
-    YJIT_TARGET_ARCH=
     case "$target_cpu" in #(
   arm64|aarch64) :
-    YJIT_TARGET_ARCH=aarch64 ;; #(
+    JIT_TARGET_ARCH=aarch64 ;; #(
   x86_64) :
-    YJIT_TARGET_ARCH=x86_64 ;; #(
+    JIT_TARGET_ARCH=x86_64 ;; #(
   *) :
      ;;
 esac
-            if echo "#[cfg(target_arch = \"$YJIT_TARGET_ARCH\")] fn main() { let x = 1; format!(\"{x}\"); }" |
+            if echo "#[cfg(target_arch = \"$JIT_TARGET_ARCH\")] fn main() { let x = 1; format!(\"{x}\"); }" |
             $RUSTC - --emit asm=/dev/null 2>/dev/null
 then :
-  YJIT_RUSTC_OK=yes
+  JIT_RUSTC_OK=yes
 
 fi
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $YJIT_RUSTC_OK" >&5
-    colorize_result "$YJIT_RUSTC_OK" ; }
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $JIT_RUSTC_OK" >&5
+    colorize_result "$JIT_RUSTC_OK" ; }
 
 fi
 
-YJIT_TARGET_OK=no
+JIT_TARGET_OK=no
 if test "$cross_compiling" = no
 then :
   case "$target_cpu-$target_os" in #(
   *android*) :
 
-            YJIT_TARGET_OK=no
+            JIT_TARGET_OK=no
          ;; #(
   arm64-darwin*|aarch64-darwin*|x86_64-darwin*) :
 
-            YJIT_TARGET_OK=yes
+            JIT_TARGET_OK=yes
          ;; #(
   arm64-*linux*|aarch64-*linux*|x86_64-*linux*) :
 
-            YJIT_TARGET_OK=yes
+            JIT_TARGET_OK=yes
          ;; #(
   arm64-*bsd*|aarch64-*bsd*|x86_64-*bsd*) :
 
-            YJIT_TARGET_OK=yes
+            JIT_TARGET_OK=yes
 
      ;; #(
   *) :
@@ -33318,7 +33437,7 @@ if test ${enable_yjit+y}
 then :
   enableval=$enable_yjit; YJIT_SUPPORT=$enableval
 else $as_nop
-  case "$YJIT_TARGET_OK:$YJIT_RUSTC_OK" in #(
+  case "$JIT_TARGET_OK:$JIT_RUSTC_OK" in #(
   yes:yes) :
 
             YJIT_SUPPORT=yes
@@ -33331,9 +33450,45 @@ esac
 fi
 
 
-CARGO=
+ZJIT_SUPPORT=no
+# Check whether --enable-zjit was given.
+if test ${enable_zjit+y}
+then :
+  enableval=$enable_zjit; ZJIT_SUPPORT=$enableval
+else $as_nop
+  case "$JIT_TARGET_OK" in #(
+  yes) :
+
+            rb_zjit_build_possible=no
+            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking prerequisites for ZJIT" >&5
+printf %s "checking prerequisites for ZJIT... " >&6; }            # Fails in case rustc target doesn't match ruby target. Can happen on Rosetta, for example.
+            # 1.85.0 is the first stable version that supports the 2024 edition.
+            if test "$RUSTC" != "no" && echo "#[cfg(target_arch = \"$JIT_TARGET_ARCH\")] fn main() {}" |
+                    $RUSTC - --edition=2024 --emit asm=/dev/null 2>/dev/null
+then :
+  if test "$gnumake" = "yes"
+then :
+
+                    rb_zjit_build_possible=yes
+
+fi
+
+fi
+            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $rb_zjit_build_possible" >&5
+    colorize_result "$rb_zjit_build_possible" ; }
+            ZJIT_SUPPORT=$rb_zjit_build_possible
+
+     ;; #(
+  *) :
+     ;;
+esac
+
+fi
+
+
 CARGO_BUILD_ARGS=
 YJIT_LIBS=
+JIT_CARGO_SUPPORT=no
 case "${YJIT_SUPPORT}" in #(
   yes|dev|stats|dev_nodebug) :
 
@@ -33346,26 +33501,24 @@ fi
     case "${YJIT_SUPPORT}" in #(
   yes) :
 
-	rb_rust_target_subdir=release
      ;; #(
   dev) :
 
-	rb_rust_target_subdir=debug
-	CARGO_BUILD_ARGS='--features disasm,runtime_checks'
+        rb_cargo_features='disasm,runtime_checks'
+        JIT_CARGO_SUPPORT=dev
 	printf "%s\n" "#define RUBY_DEBUG 1" >>confdefs.h
 
      ;; #(
   dev_nodebug) :
 
-	rb_rust_target_subdir=dev_nodebug
-	CARGO_BUILD_ARGS='--profile dev_nodebug --features disasm'
+        rb_cargo_features='disasm'
+        JIT_CARGO_SUPPORT=dev_nodebug
 	printf "%s\n" "#define YJIT_STATS 1" >>confdefs.h
 
      ;; #(
   stats) :
 
-	rb_rust_target_subdir=stats
-	CARGO_BUILD_ARGS='--profile stats'
+        JIT_CARGO_SUPPORT=stats
 	printf "%s\n" "#define YJIT_STATS 1" >>confdefs.h
 
      ;; #(
@@ -33373,10 +33526,102 @@ fi
      ;;
 esac
 
-    if test -n "${CARGO_BUILD_ARGS}"
+    YJIT_LIBS="target/release/libyjit.a"
+    RUST_LIB='$(YJIT_LIBS)'
+    YJIT_OBJ='yjit.$(OBJEXT)'
+    JIT_OBJ='jit.$(OBJEXT)'
+    if test x"$YJIT_SUPPORT" != "xyes"
 then :
 
-             if test -n "$ac_tool_prefix"; then
+        printf "%s\n" "#define YJIT_SUPPORT $YJIT_SUPPORT" >>confdefs.h
+
+
+fi
+    printf "%s\n" "#define USE_YJIT 1" >>confdefs.h
+
+ ;; #(
+  *) :
+
+    printf "%s\n" "#define USE_YJIT 0" >>confdefs.h
+
+ ;;
+esac
+
+ZJIT_LIBS=
+case "${ZJIT_SUPPORT}" in #(
+  yes|dev|dev_nodebug|stats) :
+
+    if test x"$RUSTC" = "xno"
+then :
+  as_fn_error $? "rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install" "$LINENO" 5
+
+fi
+
+    case "${ZJIT_SUPPORT}" in #(
+  yes) :
+
+     ;; #(
+  dev) :
+
+        rb_cargo_features="$rb_cargo_features,disasm,runtime_checks"
+        JIT_CARGO_SUPPORT=dev
+        printf "%s\n" "#define RUBY_DEBUG 1" >>confdefs.h
+
+     ;; #(
+  dev_nodebug) :
+
+        rb_cargo_features="$rb_cargo_features,disasm"
+        JIT_CARGO_SUPPORT=dev_nodebug
+        printf "%s\n" "#define ZJIT_STATS 1" >>confdefs.h
+
+     ;; #(
+  stats) :
+
+        JIT_CARGO_SUPPORT=stats
+        printf "%s\n" "#define ZJIT_STATS 1" >>confdefs.h
+
+     ;; #(
+  *) :
+     ;;
+esac
+
+    ZJIT_LIBS="target/release/libzjit.a"
+    RUST_LIB='$(ZJIT_LIBS)'
+    ZJIT_OBJ='zjit.$(OBJEXT)'
+    JIT_OBJ='jit.$(OBJEXT)'
+    if test x"$ZJIT_SUPPORT" != "xyes"
+then :
+
+        printf "%s\n" "#define ZJIT_SUPPORT $ZJIT_SUPPORT" >>confdefs.h
+
+
+fi
+    printf "%s\n" "#define USE_ZJIT 1" >>confdefs.h
+
+ ;; #(
+  *) :
+
+    printf "%s\n" "#define USE_ZJIT 0" >>confdefs.h
+
+ ;;
+esac
+
+JIT_RUST_FLAGS='--crate-type=staticlib --cfg feature=\"stats_allocator\"'
+RLIB_DIR=
+case "$JIT_CARGO_SUPPORT:$YJIT_SUPPORT:$ZJIT_SUPPORT" in #(
+  no:yes:yes) :
+     # release build of YJIT+ZJIT
+    YJIT_LIBS=
+    ZJIT_LIBS=
+    JIT_RUST_FLAGS="--crate-type=rlib"
+    RLIB_DIR="target/release"
+    RUST_LIB="target/release/libruby.a"
+ ;; #(
+  no:*) :
+     ;; #(
+  *) :
+     # JIT_CARGO_SUPPORT not "no" -- cargo required.
+    if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}cargo", so it can be a program name with args.
 set dummy ${ac_tool_prefix}cargo; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -33478,150 +33723,71 @@ else
   CARGO="$ac_cv_prog_CARGO"
 fi
 
-             if test x"$CARGO" = "xno"
+    if test x"$CARGO" = "xno"
 then :
-  as_fn_error $? "cargo is required. Installation instructions available at https://www.rust-lang.org/tools/install" "$LINENO" 5
-
-fi
+  as_fn_error $? "this build configuration requires cargo. Installation instructions available at https://www.rust-lang.org/tools/install" "$LINENO" 5
 fi
 
-    YJIT_LIBS="yjit/target/${rb_rust_target_subdir}/libyjit.a"
+    YJIT_LIBS=
+    ZJIT_LIBS=
+
+    # There's more processing below to get the feature set for the
+    # top-level crate, so capture at this point for feature set of
+    # just the zjit crate.
+    ZJIT_TEST_FEATURES="${rb_cargo_features}"
+
+    if test x"${YJIT_SUPPORT}" != x"no"
+then :
+
+        rb_cargo_features="$rb_cargo_features,yjit"
+
+fi
+    if test x"${ZJIT_SUPPORT}" != x"no"
+then :
+
+
+        rb_cargo_features="$rb_cargo_features,zjit"
+
+fi
+    # if YJIT and ZJIT release mode
+    if test "${YJIT_SUPPORT}:${ZJIT_SUPPORT}" = "yes:yes"
+then :
+
+        JIT_CARGO_SUPPORT=release
+
+fi
+    CARGO_BUILD_ARGS="--profile ${JIT_CARGO_SUPPORT} --features ${rb_cargo_features}"
+    if test "${JIT_CARGO_SUPPORT}" = "dev"
+then :
+
+        RUST_LIB="target/debug/libruby.a"
+
+else $as_nop
+
+        RUST_LIB="target/${JIT_CARGO_SUPPORT}/libruby.a"
+
+fi
+ ;;
+esac
+
+# In case either we're linking rust code
+if test -n "$RUST_LIB"
+then :
+
     case "$target_os" in #(
   openbsd*) :
 
-        # Link libc++abi (which requires libpthread) for _Unwind_* functions needed by yjit
+        # Link libc++abi (which requires libpthread) for _Unwind_* functions needed by rust stdlib
         LDFLAGS="$LDFLAGS -lpthread -lc++abi"
      ;; #(
   *) :
      ;;
 esac
-    YJIT_OBJ='yjit.$(OBJEXT)'
-    if test x"$YJIT_SUPPORT" != "xyes"
-then :
 
-        printf "%s\n" "#define YJIT_SUPPORT $YJIT_SUPPORT" >>confdefs.h
-
+    # absolute path to stop the "target" dir in src dir from interfering through VPATH
+    RUST_LIB="$(pwd)/${RUST_LIB}"
 
 fi
-    printf "%s\n" "#define USE_YJIT 1" >>confdefs.h
-
- ;; #(
-  *) :
-
-    printf "%s\n" "#define USE_YJIT 0" >>confdefs.h
-
- ;;
-esac
-
-
-RJIT_TARGET_OK=no
-if test "$cross_compiling" = no
-then :
-  case "$target_cpu-$target_os" in #(
-  *android*) :
-
-            RJIT_TARGET_OK=no
-         ;; #(
-  arm64-darwin*|aarch64-darwin*|x86_64-darwin*) :
-
-            RJIT_TARGET_OK=yes
-         ;; #(
-  arm64-*linux*|aarch64-*linux*|x86_64-*linux*) :
-
-            RJIT_TARGET_OK=yes
-         ;; #(
-  arm64-*bsd*|aarch64-*bsd*|x86_64-*bsd*) :
-
-            RJIT_TARGET_OK=yes
-
-     ;; #(
-  *) :
-     ;;
-esac
-
-fi
-
-# Check whether --enable-rjit was given.
-if test ${enable_rjit+y}
-then :
-  enableval=$enable_rjit; RJIT_SUPPORT=$enableval
-else $as_nop
-  case "$RJIT_TARGET_OK" in #(
-  yes) :
-    RJIT_SUPPORT=yes ;; #(
-  *) :
-    RJIT_SUPPORT=no
-     ;;
-esac
-
-fi
-
-
-case "$RJIT_SUPPORT" in #(
-  yes|dev) :
-
-    case "$RJIT_SUPPORT" in #(
-  dev) :
-
-        # Link libcapstone for --rjit-dump-disasm
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for cs_disasm in -lcapstone" >&5
-printf %s "checking for cs_disasm in -lcapstone... " >&6; }
-if test ${ac_cv_lib_capstone_cs_disasm+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lcapstone  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char cs_disasm ();
-int
-main (void)
-{
-return cs_disasm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_capstone_cs_disasm=yes
-else $as_nop
-  ac_cv_lib_capstone_cs_disasm=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_capstone_cs_disasm" >&5
-    colorize_result "$ac_cv_lib_capstone_cs_disasm" ; }
-if test "x$ac_cv_lib_capstone_cs_disasm" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBCAPSTONE 1" >>confdefs.h
-
-  LIBS="-lcapstone $LIBS"
-
-fi
-
-     ;; #(
-  *) :
-     ;;
-esac
-
-    printf "%s\n" "#define USE_RJIT 1" >>confdefs.h
-
- ;; #(
-  *) :
-
-    printf "%s\n" "#define USE_RJIT 0" >>confdefs.h
-
- ;;
-esac
-
 
 }
 
@@ -33949,7 +34115,6 @@ esac
      ;;
 esac
 	LIBRUBY_ALIASES=''
-	FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in
 	if test x"$enable_shared" = xyes
 then :
 
@@ -33965,7 +34130,6 @@ fi
 	 ;; #(
   wasi*) :
 
-        FIRSTMAKEFILE=GNUmakefile:wasm/GNUmakefile.in
         case " $LIBOBJS " in
   *" wasm/missing.$ac_objext "* ) ;;
   *) LIBOBJS="$LIBOBJS wasm/missing.$ac_objext"
@@ -34024,31 +34188,6 @@ then :
 fi
 
 
-case "$FIRSTMAKEFILE" in #(
-  *GNUmakefile:*) :
-    gnumake=yes ;; #(
-  *) :
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if ${MAKE-make} is GNU make" >&5
-printf %s "checking if ${MAKE-make} is GNU make... " >&6; }
-    mkdir conftest.dir
-    echo "all:; @echo yes" > conftest.dir/GNUmakefile
-    echo "all:; @echo no" > conftest.dir/Makefile
-    gnumake=`(cd conftest.dir; ${MAKE-make})`
-    rm -fr conftest.dir
-    case "$gnumake" in #(
-  *yes*) :
-
-	FIRSTMAKEFILE=GNUmakefile:template/GNUmakefile.in
-	gnumake=yes ;; #(
-  *) :
-
-	gnumake=no ;;
-esac
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gnumake" >&5
-    colorize_result "$gnumake" ; }
- ;;
-esac
 if test "$gnumake" = yes
 then :
    NULLCMD=:
@@ -34229,6 +34368,40 @@ then :
     LDFLAGS=`echo "$LDFLAGS" | sed "s| *$archflagpat"'||'`
 
 fi
+case " $rb_cv_warnflags " in #(
+  *" -Wshorten-64-to-32 "*|*" -Werror=shorten-64-to-32 "*) :
+
+    voidp_ll=
+    case $ac_cv_sizeof_voidp in #(
+  SIZEOF_LONG_LONG) :
+    voidp_ll=true ;; #(
+  [0-9]*) :
+
+        if test $ac_cv_sizeof_voidp -gt $ac_cv_sizeof_long
+then :
+  voidp_ll=true
+fi
+     ;; #(
+  *) :
+     ;;
+esac
+    if test "$voidp_ll"
+then :
+
+        # Disable the shorten-64-to-32 warning for now, because it currently
+        # generates a lot of warnings on platforms where `sizeof(void*)` is
+        # larger than `sizeof(long)`.
+        #
+        # TODO: Replace `long` with `ptrdiff_t` or something in the all sources.
+        rb_cv_warnflags=`echo "$rb_cv_warnflags" |
+           sed -e 's/ -W\(shorten-64-to-32 \)/ -Wno-\1/' \
+               -e 's/ -Werror=\(shorten-64-to-32 \)/ -Wno-\1/'`
+
+fi
+ ;; #(
+  *) :
+     ;;
+esac
 rb_cv_warnflags=`echo "$rb_cv_warnflags" | sed 's/^ *//;s/ *$//'`
 warnflags="$rb_cv_warnflags"
 cflags='${hardenflags} '"${orig_cflags:+$orig_cflags }"' ${optflags} ${debugflags} ${warnflags}'
@@ -34813,6 +34986,19 @@ then :
 fi
 
 
+
+if test "x$load_relative:$DESTDIR" = xyes:
+then :
+
+    if test "x$prefix" = xNONE
+then :
+  DESTDIR="$ac_default_prefix"
+else $as_nop
+  DESTDIR="$prefix"
+fi
+    prefix=/.
+
+fi
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -35988,8 +36174,12 @@ esac
 	if test "$gnumake" != yes
 then :
 
-	    echo '$(MKFILES): $(srcdir)/common.mk'
-	    sed 's/{\$([^(){}]*)[^{}]*}//g' ${srcdir}/common.mk
+	    # extract NMake-style include list
+	    set = `sed -n 's/^!include  *//p' ${srcdir}/common.mk`
+	    echo common_mk_includes "$*" # generate the macro assignment
+	    shift
+	    common_mk_includes="`echo \"$*\" | sed 's|\$(srcdir)|.|g'`"
+	    (PWD= cd ${srcdir} && sed -f tool/prereq.status common.mk ${common_mk_includes})
             if test "$YJIT_SUPPORT" = yes
 then :
 
@@ -36046,28 +36236,7 @@ fi
 	$(tooldir)/m4/ruby_wasm_tools.m4 \
 	$(tooldir)/m4/ruby_werror_flag.m4 \
 	$(empty)'
-    } > $tmpmk && if ! grep '^ruby:' $tmpmk > /dev/null
-then :
-
-	if test "${gnumake}" = yes
-then :
-
-	    tmpgmk=confgmk$$.tmp
-	    {
-		echo "include $tmpmk"
-		echo "-include uncommon.mk"
-	    } > $tmpgmk
-
-else $as_nop
-
-	    tmpgmk=$tmpmk
-
-fi &&
-	test -z "`${MAKE-make} -f $tmpgmk info-program | grep '^PROGRAM=ruby$'`" &&
-	echo 'ruby: $(PROGRAM);' >> $tmpmk
-	test "$tmpmk" = "$tmpgmk" || rm -f "$tmpgmk"
-
-fi && mv -f $tmpmk Makefile ;;
+    } > $tmpmk && mv -f $tmpmk Makefile ;;
 
   esac
 done # for ac_tag
@@ -36165,7 +36334,7 @@ config_summary "hardenflags"         "$hardenflags"
 config_summary "strip command"       "$STRIP"
 config_summary "install doc"         "$DOCTARGETS"
 config_summary "YJIT support"        "$YJIT_SUPPORT"
-config_summary "RJIT support"        "$RJIT_SUPPORT"
+config_summary "ZJIT support"        "$ZJIT_SUPPORT"
 config_summary "man page type"       "$MANTYPE"
 config_summary "search path"         "$search_path"
 config_summary "static-linked-ext"   ${EXTSTATIC:+"yes"}

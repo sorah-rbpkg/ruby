@@ -1099,7 +1099,7 @@ impl Context {
                 MapToLocal(local_idx) => {
                     bits.push_op(CtxOp::MapTempLocal);
                     bits.push_u3(stack_idx as u8);
-                    bits.push_u3(local_idx as u8);
+                    bits.push_u3(local_idx);
                 }
 
                 MapToSelf => {
@@ -1818,7 +1818,7 @@ pub fn for_each_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
         callback(iseq);
     }
     let mut data: &mut dyn FnMut(IseqPtr) = &mut callback;
-    unsafe { rb_yjit_for_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
+    unsafe { rb_jit_for_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
 }
 
 /// Iterate over all on-stack ISEQs
@@ -1920,7 +1920,7 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
         // For aliasing, having the VM lock hopefully also implies that no one
         // else has an overlapping &mut IseqPayload.
         unsafe {
-            rb_yjit_assert_holding_vm_lock();
+            rb_assert_holding_vm_lock();
             &*(payload as *const IseqPayload)
         }
     };
@@ -2009,7 +2009,7 @@ pub extern "C" fn rb_yjit_iseq_update_references(iseq: IseqPtr) {
         // For aliasing, having the VM lock hopefully also implies that no one
         // else has an overlapping &mut IseqPayload.
         unsafe {
-            rb_yjit_assert_holding_vm_lock();
+            rb_assert_holding_vm_lock();
             &*(payload as *const IseqPayload)
         }
     };
@@ -2034,13 +2034,6 @@ pub extern "C" fn rb_yjit_iseq_update_references(iseq: IseqPtr) {
         let block = unsafe { blockref.as_ref() };
         block_update_references(block, cb, true);
     }
-
-    // Note that we would have returned already if YJIT is off.
-    cb.mark_all_executable();
-
-    CodegenGlobals::get_outlined_cb()
-        .unwrap()
-        .mark_all_executable();
 
     return;
 
@@ -2098,15 +2091,41 @@ pub extern "C" fn rb_yjit_iseq_update_references(iseq: IseqPtr) {
 
                 // Only write when the VALUE moves, to be copy-on-write friendly.
                 if new_addr != object {
-                    for (byte_idx, &byte) in new_addr.as_u64().to_le_bytes().iter().enumerate() {
-                        let byte_code_ptr = value_code_ptr.add_bytes(byte_idx);
-                        cb.write_mem(byte_code_ptr, byte)
-                            .expect("patching existing code should be within bounds");
-                    }
+                    // SAFETY: Since we already set code memory writable before the compacting phase,
+                    // we can use raw memory accesses directly.
+                    unsafe { value_ptr.write_unaligned(new_addr); }
                 }
             }
         }
 
+    }
+}
+
+/// Mark all code memory as writable.
+/// This function is useful for garbage collectors that update references in JIT-compiled code in
+/// bulk.
+#[no_mangle]
+pub extern "C" fn rb_yjit_mark_all_writeable() {
+    if CodegenGlobals::has_instance() {
+        CodegenGlobals::get_inline_cb().mark_all_writeable();
+
+        CodegenGlobals::get_outlined_cb()
+            .unwrap()
+            .mark_all_writeable();
+    }
+}
+
+/// Mark all code memory as executable.
+/// This function is useful for garbage collectors that update references in JIT-compiled code in
+/// bulk.
+#[no_mangle]
+pub extern "C" fn rb_yjit_mark_all_executable() {
+    if CodegenGlobals::has_instance() {
+        CodegenGlobals::get_inline_cb().mark_all_executable();
+
+        CodegenGlobals::get_outlined_cb()
+            .unwrap()
+            .mark_all_executable();
     }
 }
 
@@ -2400,7 +2419,9 @@ impl<'a> JITState<'a> {
             // Pending branches => actual branches
             outgoing: MutableBranchList(Cell::new(self.pending_outgoing.into_iter().map(|pending_out| {
                 let pending_out = Rc::try_unwrap(pending_out)
-                    .ok().expect("all PendingBranchRefs should be unique when ready to construct a Block");
+                    .unwrap_or_else(|rc| panic!(
+                        "PendingBranchRef should be unique when ready to construct a Block. \
+                         strong={} weak={}", Rc::strong_count(&rc), Rc::weak_count(&rc)));
                 pending_out.into_branch(NonNull::new(blockref as *mut Block).expect("no null from Box"))
             }).collect()))
         });
@@ -2408,7 +2429,7 @@ impl<'a> JITState<'a> {
         // SAFETY: allocated with Box above
         unsafe { ptr::write(blockref, block) };
 
-        // Block is initialized now. Note that MaybeUnint<T> has the same layout as T.
+        // Block is initialized now. Note that MaybeUninit<T> has the same layout as T.
         let blockref = NonNull::new(blockref as *mut Block).expect("no null from Box");
 
         // Track all the assumptions the block makes as invariants
@@ -3572,6 +3593,13 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
             return CodegenGlobals::get_stub_exit_code().raw_ptr(cb);
         }
 
+        // Bail if this branch is housed in an invalidated (dead) block.
+        // This only happens in rare invalidation scenarios and we need
+        // to avoid linking a dead block to a live block with a branch.
+        if branch.block.get().as_ref().iseq.get().is_null() {
+            return CodegenGlobals::get_stub_exit_code().raw_ptr(cb);
+        }
+
         (cfp, original_interp_sp)
     };
 
@@ -3771,7 +3799,7 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let mut asm = Assembler::new_without_iseq();
 
     // For `branch_stub_hit(branch_ptr, target_idx, ec)`,
-    // `branch_ptr` and `target_idx` is different for each stub,
+    // `branch_ptr` and `target_idx` are different for each stub,
     // but the call and what's after is the same. This trampoline
     // is the unchanging part.
     // Since this trampoline is static, it allows code GC inside
@@ -3805,7 +3833,7 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> Option<CodePtr> {
 
 /// Return registers to be pushed and popped on branch_stub_hit.
 pub fn caller_saved_temp_regs() -> impl Iterator<Item = &'static Reg> + DoubleEndedIterator {
-    let temp_regs = Assembler::get_temp_regs2().iter();
+    let temp_regs = Assembler::get_temp_regs().iter();
     let len = temp_regs.len();
     // The return value gen_leave() leaves in C_RET_REG
     // needs to survive the branch_stub_hit() call.
@@ -4278,11 +4306,9 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
     incr_counter!(invalidation_count);
 }
 
-// We cannot deallocate blocks immediately after invalidation since there
-// could be stubs waiting to access branch pointers. Return stubs can do
-// this since patching the code for setting up return addresses does not
-// affect old return addresses that are already set up to use potentially
-// invalidated branch pointers. Example:
+// We cannot deallocate blocks immediately after invalidation since patching the code for setting
+// up return addresses does not affect outstanding return addresses that are on stack and will use
+// invalidated branch pointers when hit. Example:
 //   def foo(n)
 //     if n == 2
 //       # 1.times.each to create a cfunc frame to preserve the JIT frame
@@ -4290,13 +4316,16 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
 //       return 1.times.each { Object.define_method(:foo) {} }
 //     end
 //
-//     foo(n + 1)
+//     foo(n + 1) # The block for this call houses the return branch stub
 //   end
 //   p foo(1)
 pub fn delayed_deallocation(blockref: BlockRef) {
     block_assumptions_free(blockref);
 
-    let payload = get_iseq_payload(unsafe { blockref.as_ref() }.iseq.get()).unwrap();
+    let block = unsafe { blockref.as_ref() };
+    // Set null ISEQ on the block to signal that it's dead.
+    let iseq = block.iseq.replace(ptr::null());
+    let payload = get_iseq_payload(iseq).unwrap();
     payload.dead_blocks.push(blockref);
 }
 

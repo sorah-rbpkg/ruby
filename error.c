@@ -1077,6 +1077,7 @@ static void
 die(void)
 {
 #if defined(_WIN32) && defined(RUBY_MSVCRT_VERSION) && RUBY_MSVCRT_VERSION >= 80
+    /* mingw32 declares in stdlib.h but does not provide. */
     _set_abort_behavior( 0, _CALL_REPORTFAULT);
 #endif
 
@@ -1090,7 +1091,7 @@ rb_bug_without_die_internal(const char *fmt, va_list args)
     const char *file = NULL;
     int line = 0;
 
-    if (GET_EC()) {
+    if (rb_current_execution_context(false)) {
         file = rb_source_location_cstr(&line);
     }
 
@@ -1123,7 +1124,7 @@ rb_bug_for_fatal_signal(ruby_sighandler_t default_sighandler, int sig, const voi
     const char *file = NULL;
     int line = 0;
 
-    if (GET_EC()) {
+    if (rb_current_execution_context(false)) {
         file = rb_source_location_cstr(&line);
     }
 
@@ -1686,7 +1687,7 @@ check_order_keyword(VALUE opt)
  *   - If the value of keyword +order+ is +:top+ (the default),
  *     lists the error message and the innermost backtrace entry first.
  *   - If the value of keyword +order+ is +:bottom+,
- *     lists the error message the the innermost entry last.
+ *     lists the error message the innermost entry last.
  *
  * Example:
  *
@@ -1883,7 +1884,7 @@ exc_inspect(VALUE exc)
  *      # String
  *    end
  *
- *  The value returned by this method migth be adjusted when raising (see Kernel#raise),
+ *  The value returned by this method might be adjusted when raising (see Kernel#raise),
  *  or during intermediate handling by #set_backtrace.
  *
  *  See also #backtrace_locations that provide the same value, as structured objects.
@@ -2517,30 +2518,21 @@ typedef struct name_error_message_struct {
 } name_error_message_t;
 
 static void
-name_err_mesg_mark(void *p)
+name_err_mesg_mark_and_move(void *p)
 {
     name_error_message_t *ptr = (name_error_message_t *)p;
-    rb_gc_mark_movable(ptr->mesg);
-    rb_gc_mark_movable(ptr->recv);
-    rb_gc_mark_movable(ptr->name);
-}
-
-static void
-name_err_mesg_update(void *p)
-{
-    name_error_message_t *ptr = (name_error_message_t *)p;
-    ptr->mesg = rb_gc_location(ptr->mesg);
-    ptr->recv = rb_gc_location(ptr->recv);
-    ptr->name = rb_gc_location(ptr->name);
+    rb_gc_mark_and_move(&ptr->mesg);
+    rb_gc_mark_and_move(&ptr->recv);
+    rb_gc_mark_and_move(&ptr->name);
 }
 
 static const rb_data_type_t name_err_mesg_data_type = {
     "name_err_mesg",
     {
-        name_err_mesg_mark,
+        name_err_mesg_mark_and_move,
         RUBY_TYPED_DEFAULT_FREE,
         NULL, // No external memory to report,
-        name_err_mesg_update,
+        name_err_mesg_mark_and_move,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
@@ -2628,7 +2620,7 @@ name_err_mesg_to_str(VALUE obj)
     VALUE mesg = ptr->mesg;
     if (NIL_P(mesg)) return Qnil;
     else {
-        struct RString s_str, c_str, d_str;
+        struct RString s_str = {RBASIC_INIT}, c_str = {RBASIC_INIT}, d_str = {RBASIC_INIT};
         VALUE c, s, d = 0, args[4], c2;
         int state = 0;
         rb_encoding *usascii = rb_usascii_encoding();
@@ -2981,7 +2973,7 @@ syntax_error_with_path(VALUE exc, VALUE path, VALUE *mesg, rb_encoding *enc)
 
 /*
  *  Document-module: Errno
-
+ *
  *  When an operating system encounters an error,
  *  it typically reports the error as an integer error code:
  *
@@ -3022,6 +3014,13 @@ syntax_error_with_path(VALUE exc, VALUE path, VALUE *mesg, rb_encoding *enc)
  *    Errno::ENOENT::Errno      # => 2
  *    Errno::ENOTCAPABLE::Errno # => 0
  *
+ *  Each class in Errno can be created with optional messages:
+ *
+ *    Errno::EPIPE.new                  # => #<Errno::EPIPE: Broken pipe>
+ *    Errno::EPIPE.new("foo")           # => #<Errno::EPIPE: Broken pipe - foo>
+ *    Errno::EPIPE.new("foo", "here")   # => #<Errno::EPIPE: Broken pipe @ here - foo>
+ *
+ *  See SystemCallError.new.
  */
 
 static st_table *syserr_tbl;
@@ -3092,12 +3091,33 @@ get_syserr(int n)
 
 /*
  * call-seq:
- *   SystemCallError.new(msg, errno)  -> system_call_error_subclass
+ *   SystemCallError.new(msg, errno = nil, func = nil)  -> system_call_error_subclass
  *
  * If _errno_ corresponds to a known system error code, constructs the
  * appropriate Errno class for that error, otherwise constructs a
  * generic SystemCallError object. The error number is subsequently
  * available via the #errno method.
+ *
+ * If only numeric object is given, it is treated as an Integer _errno_,
+ * and _msg_ is omitted, otherwise the first argument _msg_ is used as
+ * the additional error message.
+ *
+ *   SystemCallError.new(Errno::EPIPE::Errno)
+ *   #=> #<Errno::EPIPE: Broken pipe>
+ *
+ *   SystemCallError.new("foo")
+ *   #=> #<SystemCallError: unknown error - foo>
+ *
+ *   SystemCallError.new("foo", Errno::EPIPE::Errno)
+ *   #=> #<Errno::EPIPE: Broken pipe - foo>
+ *
+ * If _func_ is not +nil+, it is appended to the message with "<tt> @ </tt>".
+ *
+ *   SystemCallError.new("foo", Errno::EPIPE::Errno, "here")
+ *   #=> #<Errno::EPIPE: Broken pipe @ here - foo>
+ *
+ * A subclass of SystemCallError can also be instantiated via the
+ * +new+ method of the subclass.  See Errno.
  */
 
 static VALUE
@@ -3472,6 +3492,18 @@ syserr_eqq(VALUE self, VALUE exc)
  */
 
 /*
+ *  Document-class: NoMatchingPatternError
+ *
+ *  Raised when matching pattern not found.
+ */
+
+/*
+ *  Document-class: NoMatchingPatternKeyError
+ *
+ *  Raised when matching key not found.
+ */
+
+/*
  * Document-class: fatal
  *
  * +fatal+ is an Exception that is raised when Ruby has encountered a fatal
@@ -3486,7 +3518,7 @@ syserr_eqq(VALUE self, VALUE exc)
 /*
  *  Document-class: Exception
  *
- *  \Class +Exception+ and its subclasses are used to indicate that an error
+ *  Class +Exception+ and its subclasses are used to indicate that an error
  *  or other problem has occurred,
  *  and may need to be handled.
  *  See {Exceptions}[rdoc-ref:exceptions.md].
@@ -3503,7 +3535,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *  - An optional cause;
  *    see method #cause.
  *
- *  == Built-In \Exception \Class Hierarchy
+ *  == Built-In \Exception Class Hierarchy
  *
  *  The hierarchy of built-in subclasses of class +Exception+:
  *
@@ -4131,7 +4163,7 @@ rb_error_frozen_object(VALUE frozen_obj)
     rb_yjit_lazy_push_frame(GET_EC()->cfp->pc);
 
     VALUE mesg = rb_sprintf("can't modify frozen %"PRIsVALUE": ",
-                            CLASS_OF(frozen_obj));
+                            rb_obj_class(frozen_obj));
     VALUE exc = rb_exc_new_str(rb_eFrozenError, mesg);
 
     rb_ivar_set(exc, id_recv, frozen_obj);
@@ -4167,7 +4199,8 @@ rb_warn_unchilled_literal(VALUE obj)
         VALUE created = get_created_info(str, &line);
         if (NIL_P(created)) {
             rb_str_cat2(mesg, " (run with --debug-frozen-string-literal for more information)\n");
-        } else {
+        }
+        else {
             rb_str_cat2(mesg, "\n");
             rb_str_append(mesg, created);
             if (line) rb_str_catf(mesg, ":%d", line);

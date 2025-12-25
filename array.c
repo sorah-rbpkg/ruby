@@ -27,7 +27,9 @@
 #include "probes.h"
 #include "ruby/encoding.h"
 #include "ruby/st.h"
+#include "ruby/thread.h"
 #include "ruby/util.h"
+#include "ruby/ractor.h"
 #include "vm_core.h"
 #include "builtin.h"
 
@@ -106,10 +108,12 @@ should_be_T_ARRAY(VALUE ary)
 } while (0)
 #define FL_UNSET_SHARED(ary) FL_UNSET((ary), RARRAY_SHARED_FLAG)
 
+#define ARY_SET_PTR_FORCE(ary, p) \
+    (RARRAY(ary)->as.heap.ptr = (p))
 #define ARY_SET_PTR(ary, p) do { \
     RUBY_ASSERT(!ARY_EMBED_P(ary)); \
     RUBY_ASSERT(!OBJ_FROZEN(ary)); \
-    RARRAY(ary)->as.heap.ptr = (p); \
+    ARY_SET_PTR_FORCE(ary, p); \
 } while (0)
 #define ARY_SET_EMBED_LEN(ary, n) do { \
     long tmp_n = (n); \
@@ -147,11 +151,13 @@ should_be_T_ARRAY(VALUE ary)
 
 #define ARY_CAPA(ary) (ARY_EMBED_P(ary) ? ary_embed_capa(ary) : \
                        ARY_SHARED_ROOT_P(ary) ? RARRAY_LEN(ary) : ARY_HEAP_CAPA(ary))
+#define ARY_SET_CAPA_FORCE(ary, n) \
+    RARRAY(ary)->as.heap.aux.capa = (n);
 #define ARY_SET_CAPA(ary, n) do { \
     RUBY_ASSERT(!ARY_EMBED_P(ary)); \
     RUBY_ASSERT(!ARY_SHARED_P(ary)); \
     RUBY_ASSERT(!OBJ_FROZEN(ary)); \
-    RARRAY(ary)->as.heap.aux.capa = (n); \
+    ARY_SET_CAPA_FORCE(ary, n); \
 } while (0)
 
 #define ARY_SHARED_ROOT_OCCUPIED(ary) (!OBJ_FROZEN(ary) && ARY_SHARED_ROOT_REFCNT(ary) == 1)
@@ -188,7 +194,9 @@ ary_embed_capa(VALUE ary)
 static size_t
 ary_embed_size(long capa)
 {
-    return offsetof(struct RArray, as.ary) + (sizeof(VALUE) * capa);
+    size_t size = offsetof(struct RArray, as.ary) + (sizeof(VALUE) * capa);
+    if (size < sizeof(struct RArray)) size = sizeof(struct RArray);
+    return size;
 }
 
 static bool
@@ -521,6 +529,8 @@ rb_ary_set_shared(VALUE ary, VALUE shared_root)
 static inline void
 rb_ary_modify_check(VALUE ary)
 {
+    RUBY_ASSERT(ruby_thread_has_gvl_p());
+
     rb_check_frozen(ary);
     ary_verify(ary);
 }
@@ -557,8 +567,8 @@ rb_ary_cancel_sharing(VALUE ary)
             VALUE *ptr = ary_heap_alloc_buffer(len);
             MEMCPY(ptr, ARY_HEAP_PTR(ary), VALUE, len);
             rb_ary_unshare(ary);
-            ARY_SET_CAPA(ary, len);
-            ARY_SET_PTR(ary, ptr);
+            ARY_SET_CAPA_FORCE(ary, len);
+            ARY_SET_PTR_FORCE(ary, ptr);
         }
 
         rb_gc_writebarrier_remember(ary);
@@ -692,6 +702,11 @@ ary_alloc_heap(VALUE klass)
     NEWOBJ_OF(ary, struct RArray, klass,
                      T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
                      sizeof(struct RArray), 0);
+
+    ary->as.heap.len = 0;
+    ary->as.heap.aux.capa = 0;
+    ary->as.heap.ptr = NULL;
+
     return (VALUE)ary;
 }
 
@@ -705,6 +720,8 @@ empty_ary_alloc(VALUE klass)
 static VALUE
 ary_new(VALUE klass, long capa)
 {
+    RUBY_ASSERT(ruby_thread_has_gvl_p());
+
     VALUE ary;
 
     if (capa < 0) {
@@ -803,6 +820,11 @@ ec_ary_alloc_heap(rb_execution_context_t *ec, VALUE klass)
     NEWOBJ_OF(ary, struct RArray, klass,
             T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
             sizeof(struct RArray), ec);
+
+    ary->as.heap.len = 0;
+    ary->as.heap.aux.capa = 0;
+    ary->as.heap.ptr = NULL;
+
     return (VALUE)ary;
 }
 
@@ -1434,10 +1456,12 @@ rb_ary_pop(VALUE ary)
     {
         ary_resize_capa(ary, n * 2);
     }
-    --n;
-    ARY_SET_LEN(ary, n);
+
+    VALUE obj = RARRAY_AREF(ary, n - 1);
+
+    ARY_SET_LEN(ary, n - 1);
     ary_verify(ary);
-    return RARRAY_AREF(ary, n);
+    return obj;
 }
 
 /*
@@ -1809,7 +1833,7 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *  If +index+ is out of range, returns +nil+.
  *
  *  When two Integer arguments +start+ and +length+ are given,
- *  returns a new +Array+ of size +length+ containing successive elements beginning at offset +start+:
+ *  returns a new array of size +length+ containing successive elements beginning at offset +start+:
  *
  *    a = [:foo, 'bar', 2]
  *    a[0, 2] # => [:foo, "bar"]
@@ -1824,7 +1848,7 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[2, 2] # => [2]
  *
  *  If <tt>start == self.size</tt> and <tt>length >= 0</tt>,
- *  returns a new empty +Array+.
+ *  returns a new empty array.
  *
  *  If +length+ is negative, returns +nil+.
  *
@@ -1836,7 +1860,7 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[0..1] # => [:foo, "bar"]
  *    a[1..2] # => ["bar", 2]
  *
- *  Special case: If <tt>range.start == a.size</tt>, returns a new empty +Array+.
+ *  Special case: If <tt>range.start == a.size</tt>, returns a new empty array.
  *
  *  If <tt>range.end</tt> is negative, calculates the end index from the end:
  *
@@ -1860,7 +1884,7 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[4..-1] # => nil
  *
  *  When a single Enumerator::ArithmeticSequence argument +aseq+ is given,
- *  returns an +Array+ of elements corresponding to the indexes produced by
+ *  returns an array of elements corresponding to the indexes produced by
  *  the sequence.
  *
  *    a = ['--', 'data1', '--', 'data2', '--', 'data3']
@@ -2062,6 +2086,95 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
         return ifnone;
     }
     return RARRAY_AREF(ary, idx);
+}
+
+/*
+ * call-seq:
+ *   find(if_none_proc = nil) {|element| ... } -> object or nil
+ *   find(if_none_proc = nil) -> enumerator
+ *
+ * Returns the first element for which the block returns a truthy value.
+ *
+ * With a block given, calls the block with successive elements of the array;
+ * returns the first element for which the block returns a truthy value:
+ *
+ *   [1, 3, 5].find {|element| element > 2}                # => 3
+ *
+ * If no such element is found, calls +if_none_proc+ and returns its return value.
+ *
+ *   [1, 3, 5].find(proc {-1}) {|element| element > 12} # => -1
+ *
+ * With no block given, returns an Enumerator.
+ *
+ */
+
+static VALUE
+rb_ary_find(int argc, VALUE *argv, VALUE ary)
+{
+    VALUE if_none;
+    long idx;
+
+    RETURN_ENUMERATOR(ary, argc, argv);
+    if_none = rb_check_arity(argc, 0, 1) ? argv[0] : Qnil;
+
+    for (idx = 0; idx < RARRAY_LEN(ary); idx++) {
+        VALUE elem = RARRAY_AREF(ary, idx);
+        if (RTEST(rb_yield(elem))) {
+            return elem;
+        }
+    }
+
+    if (!NIL_P(if_none)) {
+        return rb_funcallv(if_none, idCall, 0, 0);
+    }
+    return Qnil;
+}
+
+/*
+ * call-seq:
+ *   rfind(if_none_proc = nil) {|element| ... } -> object or nil
+ *   rfind(if_none_proc = nil) -> enumerator
+ *
+ * Returns the last element for which the block returns a truthy value.
+ *
+ * With a block given, calls the block with successive elements of the array in
+ * reverse order; returns the first element for which the block returns a truthy
+ * value:
+ *
+ *   [1, 2, 3, 4, 5, 6].rfind {|element| element < 5}       # => 4
+ *
+ * If no such element is found, calls +if_none_proc+ and returns its return value.
+ *
+ *   [1, 2, 3, 4].rfind(proc {0}) {|element| element < -2}  # => 0
+ *
+ * With no block given, returns an Enumerator.
+ *
+ */
+
+static VALUE
+rb_ary_rfind(int argc, VALUE *argv, VALUE ary)
+{
+    VALUE if_none;
+    long len, idx;
+
+    RETURN_ENUMERATOR(ary, argc, argv);
+    if_none = rb_check_arity(argc, 0, 1) ? argv[0] : Qnil;
+
+    idx = RARRAY_LEN(ary);
+    while (idx--) {
+        VALUE elem = RARRAY_AREF(ary, idx);
+        if (RTEST(rb_yield(elem))) {
+            return elem;
+        }
+
+        len = RARRAY_LEN(ary);
+        idx = (idx >= len) ? len : idx;
+    }
+
+    if (!NIL_P(if_none)) {
+        return rb_funcallv(if_none, idCall, 0, 0);
+    }
+    return Qnil;
 }
 
 /*
@@ -2402,7 +2515,7 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
  *    a[-1] = 'two' # => "two"
  *    a # => [:foo, "bar", "two"]
  *
- *  When Integer arguments +start+ and +length+ are given and +object+ is not an +Array+,
+ *  When Integer arguments +start+ and +length+ are given and +object+ is not an array,
  *  removes <tt>length - 1</tt> elements beginning at offset +start+,
  *  and assigns +object+ at offset +start+:
  *
@@ -2437,7 +2550,7 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
  *    a[1, 5] = 'foo' # => "foo"
  *    a # => [:foo, "foo"]
  *
- *  When Range argument +range+ is given and +object+ is not an +Array+,
+ *  When Range argument +range+ is given and +object+ is not an array,
  *  removes <tt>length - 1</tt> elements beginning at offset +start+,
  *  and assigns +object+ at offset +start+:
  *
@@ -2753,7 +2866,7 @@ rb_ary_length(VALUE ary)
 
 /*
  *  call-seq:
- *    array.empty?  -> true or false
+ *    empty?  -> true or false
  *
  *  Returns +true+ if the count of elements in +self+ is zero,
  *  +false+ otherwise.
@@ -2893,23 +3006,28 @@ rb_ary_join(VALUE ary, VALUE sep)
         StringValue(sep);
         len += RSTRING_LEN(sep) * (RARRAY_LEN(ary) - 1);
     }
-    for (i=0; i<RARRAY_LEN(ary); i++) {
+    long len_memo = RARRAY_LEN(ary);
+    for (i=0; i < len_memo; i++) {
         val = RARRAY_AREF(ary, i);
-        tmp = rb_check_string_type(val);
-
-        if (NIL_P(tmp) || tmp != val) {
-            int first;
-            long n = RARRAY_LEN(ary);
-            if (i > n) i = n;
-            result = rb_str_buf_new(len + (n-i)*10);
-            rb_enc_associate(result, rb_usascii_encoding());
-            i = ary_join_0(ary, sep, i, result);
-            first = i == 0;
-            ary_join_1(ary, ary, sep, i, result, &first);
-            return result;
+        if (RB_UNLIKELY(!RB_TYPE_P(val, T_STRING))) {
+            tmp = rb_check_string_type(val);
+            if (NIL_P(tmp) || tmp != val) {
+                int first;
+                long n = RARRAY_LEN(ary);
+                if (i > n) i = n;
+                result = rb_str_buf_new(len + (n-i)*10);
+                rb_enc_associate(result, rb_usascii_encoding());
+                i = ary_join_0(ary, sep, i, result);
+                first = i == 0;
+                ary_join_1(ary, ary, sep, i, result, &first);
+                return result;
+            }
+            len += RSTRING_LEN(tmp);
+            len_memo = RARRAY_LEN(ary);
         }
-
-        len += RSTRING_LEN(tmp);
+        else {
+            len += RSTRING_LEN(val);
+        }
     }
 
     result = rb_str_new(0, len);
@@ -2922,7 +3040,7 @@ rb_ary_join(VALUE ary, VALUE sep)
 
 /*
  *  call-seq:
- *    array.join(separator = $,) -> new_string
+ *    join(separator = $,) -> new_string
  *
  *  Returns the new string formed by joining the converted elements of +self+;
  *  for each element +element+:
@@ -3013,7 +3131,7 @@ rb_ary_to_s(VALUE ary)
  *  call-seq:
  *    to_a -> self or new_array
  *
- *  When +self+ is an instance of +Array+, returns +self+.
+ *  When +self+ is an instance of \Array, returns +self+.
  *
  *  Otherwise, returns a new array containing the elements of +self+:
  *
@@ -3088,7 +3206,7 @@ rb_ary_to_h(VALUE ary)
 
 /*
  *  call-seq:
- *    array.to_ary -> self
+ *    to_ary -> self
  *
  *  Returns +self+.
  */
@@ -3434,10 +3552,9 @@ rb_ary_sort_bang(VALUE ary)
                 ARY_SET_CAPA(ary, ARY_HEAP_LEN(tmp));
             }
             /* tmp was lost ownership for the ptr */
-            FL_UNSET(tmp, FL_FREEZE);
             FL_SET_EMBED(tmp);
             ARY_SET_EMBED_LEN(tmp, 0);
-            FL_SET(tmp, FL_FREEZE);
+            OBJ_FREEZE(tmp);
         }
         /* tmp will be GC'ed. */
         RBASIC_SET_CLASS_RAW(tmp, rb_cArray); /* rb_cArray must be marked */
@@ -3474,6 +3591,9 @@ rb_ary_sort_bang(VALUE ary)
  *  When the block returns zero, the order for +a+ and +b+ is indeterminate,
  *  and may be unstable.
  *
+ *  See an example in Numeric#nonzero? for the idiom to sort more
+ *  complex structure.
+ *
  *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
@@ -3495,7 +3615,7 @@ static VALUE rb_ary_bsearch_index(VALUE ary);
  *  Returns the element from +self+ found by a binary search,
  *  or +nil+ if the search found no suitable element.
  *
- *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
+ *  See {Binary Searching}[rdoc-ref:language/bsearch.rdoc].
  *
  *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
@@ -3519,7 +3639,7 @@ rb_ary_bsearch(VALUE ary)
  *  Returns the integer index of the element from +self+ found by a binary search,
  *  or +nil+ if the search found no suitable element.
  *
- *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
+ *  See {Binary Searching}[rdoc-ref:language/bsearch.rdoc].
  *
  *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
@@ -3607,8 +3727,10 @@ rb_ary_sort_by_bang(VALUE ary)
 
     RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
     rb_ary_modify(ary);
-    sorted = rb_block_call(ary, rb_intern("sort_by"), 0, 0, sort_by_i, 0);
-    rb_ary_replace(ary, sorted);
+    if (RARRAY_LEN(ary) > 1) {
+        sorted = rb_block_call(ary, rb_intern("sort_by"), 0, 0, sort_by_i, 0);
+        rb_ary_replace(ary, sorted);
+    }
     return ary;
 }
 
@@ -3650,9 +3772,9 @@ rb_ary_collect(VALUE ary)
 
 /*
  *  call-seq:
- *    collect! {|element| ... } -> new_array
+ *    collect! {|element| ... } -> self
  *    collect! -> new_enumerator
- *    map! {|element| ... } -> new_array
+ *    map! {|element| ... } -> self
  *    map! -> new_enumerator
  *
  *  With a block given, calls the block with each element of +self+
@@ -4548,7 +4670,7 @@ take_items(VALUE obj, long n)
  *     [:c3, :b3, :a3]]
  *
  *  For an *object* in *other_arrays* that is not actually an array,
- *  forms the the "other array" as <tt>object.to_ary</tt>, if defined,
+ *  forms the "other array" as <tt>object.to_ary</tt>, if defined,
  *  or as <tt>object.each.to_a</tt> otherwise.
  *
  *  Related: see {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
@@ -4708,6 +4830,8 @@ rb_ary_replace(VALUE copy, VALUE orig)
         ARY_SET_PTR(copy, ARY_HEAP_PTR(orig));
         ARY_SET_LEN(copy, ARY_HEAP_LEN(orig));
         rb_ary_set_shared(copy, shared_root);
+
+        RUBY_ASSERT(RB_OBJ_SHAREABLE_P(copy) ? RB_OBJ_SHAREABLE_P(shared_root) : 1);
     }
     ary_verify(copy);
     return copy;
@@ -4746,10 +4870,10 @@ rb_ary_clear(VALUE ary)
 
 /*
  *  call-seq:
- *    fill(object, start = nil, count = nil) -> new_array
- *    fill(object, range) -> new_array
- *    fill(start = nil, count = nil) {|element| ... } -> new_array
- *    fill(range) {|element| ... } -> new_array
+ *    fill(object, start = nil, count = nil) -> self
+ *    fill(object, range) -> self
+ *    fill(start = nil, count = nil) {|element| ... } -> self
+ *    fill(range) {|element| ... } -> self
  *
  *  Replaces selected elements in +self+;
  *  may add elements to +self+;
@@ -5311,8 +5435,8 @@ rb_ary_eql(VALUE ary1, VALUE ary2)
     return rb_exec_recursive_paired(recursive_eql, ary1, ary2, ary2);
 }
 
-VALUE
-rb_ary_hash_values(long len, const VALUE *elements)
+static VALUE
+ary_hash_values(long len, const VALUE *elements, const VALUE ary)
 {
     long i;
     st_index_t h;
@@ -5323,9 +5447,19 @@ rb_ary_hash_values(long len, const VALUE *elements)
     for (i=0; i<len; i++) {
         n = rb_hash(elements[i]);
         h = rb_hash_uint(h, NUM2LONG(n));
+        if (ary) {
+            len = RARRAY_LEN(ary);
+            elements = RARRAY_CONST_PTR(ary);
+        }
     }
     h = rb_hash_end(h);
     return ST2FIX(h);
+}
+
+VALUE
+rb_ary_hash_values(long len, const VALUE *elements)
+{
+    return ary_hash_values(len, elements, 0);
 }
 
 /*
@@ -5346,7 +5480,8 @@ rb_ary_hash_values(long len, const VALUE *elements)
 static VALUE
 rb_ary_hash(VALUE ary)
 {
-    return rb_ary_hash_values(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary));
+    RBIMPL_ASSERT_OR_ASSUME(ary);
+    return ary_hash_values(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary), ary);
 }
 
 /*
@@ -5603,7 +5738,7 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
         VALUE elt = rb_ary_elt(ary, i);
         for (j = 0; j < argc; j++) {
             if (is_hash[j]) {
-                if (rb_hash_stlike_lookup(argv[j], RARRAY_AREF(ary, i), NULL))
+                if (rb_hash_stlike_lookup(argv[j], elt, NULL))
                     break;
             }
             else {
@@ -6701,7 +6836,7 @@ rb_ary_shuffle_bang(rb_execution_context_t *ec, VALUE ary, VALUE randgen)
     rb_ary_modify(ary);
     i = len = RARRAY_LEN(ary);
     RARRAY_PTR_USE(ary, ptr, {
-        while (i) {
+        while (i > 1) {
             long j = RAND_UPTO(i);
             VALUE tmp;
             if (len != RARRAY_LEN(ary) || ptr != RARRAY_CONST_PTR(ary)) {
@@ -8012,7 +8147,7 @@ rb_ary_one_p(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    array.dig(index, *identifiers) -> object
+ *    dig(index, *identifiers) -> object
  *
  *  Finds and returns the object in nested object
  *  specified by +index+ and +identifiers+;
@@ -8302,7 +8437,7 @@ rb_ary_deconstruct(VALUE ary)
  *      %i[foo bar baz] # => [:foo, :bar, :baz]
  *      %i[1 % *]       # => [:"1", :%, :*]
  *
- *  - \Method Kernel#Array:
+ *  - Method Kernel#Array:
  *
  *      Array(["a", "b"])             # => ["a", "b"]
  *      Array(1..5)                   # => [1, 2, 3, 4, 5]
@@ -8311,7 +8446,7 @@ rb_ary_deconstruct(VALUE ary)
  *      Array(1)                      # => [1]
  *      Array({:a => "a", :b => "b"}) # => [[:a, "a"], [:b, "b"]]
  *
- *  - \Method Array.new:
+ *  - Method Array.new:
  *
  *      Array.new               # => []
  *      Array.new(3)            # => [nil, nil, nil]
@@ -8366,8 +8501,8 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  == Example Usage
  *
- *  In addition to the methods it mixes in through the Enumerable module, the
- *  +Array+ class has proprietary methods for accessing, searching and otherwise
+ *  In addition to the methods it mixes in through the Enumerable module,
+ *  class \Array has proprietary methods for accessing, searching and otherwise
  *  manipulating arrays.
  *
  *  Some of the more common ones are illustrated below.
@@ -8415,9 +8550,9 @@ rb_ary_deconstruct(VALUE ary)
  *
  *     arr.drop(3) #=> [4, 5, 6]
  *
- *  == Obtaining Information about an +Array+
+ *  == Obtaining Information about an \Array
  *
- *  Arrays keep track of their own length at all times.  To query an array
+ *  An array keeps track of its own length at all times.  To query an array
  *  about the number of elements it contains, use #length, #count or #size.
  *
  *    browsers = ['Chrome', 'Firefox', 'Safari', 'Opera', 'IE']
@@ -8432,7 +8567,7 @@ rb_ary_deconstruct(VALUE ary)
  *
  *    browsers.include?('Konqueror') #=> false
  *
- *  == Adding Items to Arrays
+ *  == Adding Items to an \Array
  *
  *  Items can be added to the end of an array by using either #push or #<<
  *
@@ -8453,7 +8588,7 @@ rb_ary_deconstruct(VALUE ary)
  *     arr.insert(3, 'orange', 'pear', 'grapefruit')
  *     #=> [0, 1, 2, "orange", "pear", "grapefruit", "apple", 3, 4, 5, 6]
  *
- *  == Removing Items from an +Array+
+ *  == Removing Items from an \Array
  *
  *  The method #pop removes the last element in an array and returns it:
  *
@@ -8493,11 +8628,11 @@ rb_ary_deconstruct(VALUE ary)
  *     arr = [2, 5, 6, 556, 6, 6, 8, 9, 0, 123, 556]
  *     arr.uniq #=> [2, 5, 6, 556, 8, 9, 0, 123]
  *
- *  == Iterating over Arrays
+ *  == Iterating over an \Array
  *
- *  Like all classes that include the Enumerable module, +Array+ has an each
+ *  Like all classes that include the Enumerable module, class \Array has an each
  *  method, which defines what elements should be iterated over and how.  In
- *  case of Array's #each, all elements in the +Array+ instance are yielded to
+ *  case of Array#each, all elements in +self+ are yielded to
  *  the supplied block in sequence.
  *
  *  Note that this operation leaves the array unchanged.
@@ -8524,7 +8659,7 @@ rb_ary_deconstruct(VALUE ary)
  *     arr                   #=> [1, 4, 9, 16, 25]
  *
  *
- *  == Selecting Items from an +Array+
+ *  == Selecting Items from an \Array
  *
  *  Elements can be selected from an array according to criteria defined in a
  *  block.  The selection can happen in a destructive or a non-destructive
@@ -8557,13 +8692,13 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  == What's Here
  *
- *  First, what's elsewhere. \Class +Array+:
+ *  First, what's elsewhere. Class \Array:
  *
  *  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
  *  - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
  *    which provides dozens of additional methods.
  *
- *  Here, class +Array+ provides methods that are useful for:
+ *  Here, class \Array provides methods that are useful for:
  *
  *  - {Creating an Array}[rdoc-ref:Array@Methods+for+Creating+an+Array]
  *  - {Querying}[rdoc-ref:Array@Methods+for+Querying]
@@ -8576,7 +8711,7 @@ rb_ary_deconstruct(VALUE ary)
  *  - {Converting}[rdoc-ref:Array@Methods+for+Converting]
  *  - {And more....}[rdoc-ref:Array@Other+Methods]
  *
- *  === Methods for Creating an +Array+
+ *  === Methods for Creating an \Array
  *
  *  - ::[]: Returns a new array populated with given objects.
  *  - ::new: Returns a new array.
@@ -8702,7 +8837,7 @@ rb_ary_deconstruct(VALUE ary)
  *  - #collect! (aliased as #map!): Replaces each element with a block return-value.
  *  - #flatten: Returns an array that is a recursive flattening of +self+.
  *  - #inspect (aliased as #to_s): Returns a new String containing the elements.
- *  - #join: Returns a newsString containing the elements joined by the field separator.
+ *  - #join: Returns a new String containing the elements joined by the field separator.
  *  - #to_a: Returns +self+ or a new array containing all elements.
  *  - #to_ary: Returns +self+.
  *  - #to_h: Returns a new hash formed from the elements.
@@ -8770,6 +8905,9 @@ Init_Array(void)
     rb_define_method(rb_cArray, "length", rb_ary_length, 0);
     rb_define_method(rb_cArray, "size", rb_ary_length, 0);
     rb_define_method(rb_cArray, "empty?", rb_ary_empty_p, 0);
+    rb_define_method(rb_cArray, "find", rb_ary_find, -1);
+    rb_define_method(rb_cArray, "detect", rb_ary_find, -1);
+    rb_define_method(rb_cArray, "rfind", rb_ary_rfind, -1);
     rb_define_method(rb_cArray, "find_index", rb_ary_index, -1);
     rb_define_method(rb_cArray, "index", rb_ary_index, -1);
     rb_define_method(rb_cArray, "rindex", rb_ary_rindex, -1);
@@ -8851,7 +8989,7 @@ Init_Array(void)
 
     rb_define_method(rb_cArray, "deconstruct", rb_ary_deconstruct, 0);
 
-    rb_cArray_empty_frozen = rb_ary_freeze(rb_ary_new());
+    rb_cArray_empty_frozen = RB_OBJ_SET_SHAREABLE(rb_ary_freeze(rb_ary_new()));
     rb_vm_register_global_object(rb_cArray_empty_frozen);
 }
 

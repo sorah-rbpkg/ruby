@@ -86,7 +86,6 @@
 /* #define USE_OP_PUSH_OR_JUMP_EXACT */
 #define USE_QTFR_PEEK_NEXT
 #define USE_ST_LIBRARY
-#define USE_SUNDAY_QUICK_SEARCH
 
 #define INIT_MATCH_STACK_SIZE                     160
 #define DEFAULT_MATCH_STACK_LIMIT_SIZE              0 /* unlimited */
@@ -216,9 +215,7 @@
 #define xmemcpy     memcpy
 #define xmemmove    memmove
 
-#if ((defined(RUBY_MSVCRT_VERSION) && RUBY_MSVCRT_VERSION >= 90) \
-        || (!defined(RUBY_MSVCRT_VERSION) && defined(_WIN32))) \
-    && !defined(__GNUC__)
+#if defined(_WIN32) && !defined(__GNUC__)
 # define xalloca     _alloca
 # define xvsnprintf(buf,size,fmt,args)  _vsnprintf_s(buf,size,_TRUNCATE,fmt,args)
 # define xsnprintf   sprintf_s
@@ -266,19 +263,6 @@
 #ifdef ONIG_DEBUG
 # include <stdio.h>
 #endif
-
-#ifdef _WIN32
-# if defined(_MSC_VER) && (_MSC_VER < 1300)
-#  ifndef _INTPTR_T_DEFINED
-#   define _INTPTR_T_DEFINED
-typedef int intptr_t;
-#  endif
-#  ifndef _UINTPTR_T_DEFINED
-#   define _UINTPTR_T_DEFINED
-typedef unsigned int uintptr_t;
-#  endif
-# endif
-#endif /* _WIN32 */
 
 #ifndef PRIdPTR
 # ifdef _WIN64

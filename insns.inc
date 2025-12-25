@@ -36,6 +36,9 @@
   or tool/insns2vm.rb
  */
 
+#ifndef INSNS_INC
+#define INSNS_INC 1
+
 /* BIN : Basic Instruction Name */
 #define BIN(n) YARVINSN_##n
 
@@ -98,6 +101,7 @@ enum ruby_vminsn_type {
     BIN(send),
     BIN(sendforward),
     BIN(opt_send_without_block),
+    BIN(opt_new),
     BIN(objtostring),
     BIN(opt_ary_freeze),
     BIN(opt_hash_freeze),
@@ -133,8 +137,6 @@ enum ruby_vminsn_type {
     BIN(opt_or),
     BIN(opt_aref),
     BIN(opt_aset),
-    BIN(opt_aset_with),
-    BIN(opt_aref_with),
     BIN(opt_length),
     BIN(opt_size),
     BIN(opt_empty_p),
@@ -208,6 +210,7 @@ enum ruby_vminsn_type {
     BIN(trace_send),
     BIN(trace_sendforward),
     BIN(trace_opt_send_without_block),
+    BIN(trace_opt_new),
     BIN(trace_objtostring),
     BIN(trace_opt_ary_freeze),
     BIN(trace_opt_hash_freeze),
@@ -243,8 +246,6 @@ enum ruby_vminsn_type {
     BIN(trace_opt_or),
     BIN(trace_opt_aref),
     BIN(trace_opt_aset),
-    BIN(trace_opt_aset_with),
-    BIN(trace_opt_aref_with),
     BIN(trace_opt_length),
     BIN(trace_opt_size),
     BIN(trace_opt_empty_p),
@@ -260,8 +261,44 @@ enum ruby_vminsn_type {
     BIN(trace_setlocal_WC_1),
     BIN(trace_putobject_INT2FIX_0_),
     BIN(trace_putobject_INT2FIX_1_),
+#if USE_ZJIT
+    BIN(zjit_getinstancevariable),
+    BIN(zjit_setinstancevariable),
+    BIN(zjit_definedivar),
+    BIN(zjit_send),
+    BIN(zjit_opt_send_without_block),
+    BIN(zjit_objtostring),
+    BIN(zjit_opt_nil_p),
+    BIN(zjit_invokeblock),
+    BIN(zjit_opt_plus),
+    BIN(zjit_opt_minus),
+    BIN(zjit_opt_mult),
+    BIN(zjit_opt_div),
+    BIN(zjit_opt_mod),
+    BIN(zjit_opt_eq),
+    BIN(zjit_opt_neq),
+    BIN(zjit_opt_lt),
+    BIN(zjit_opt_le),
+    BIN(zjit_opt_gt),
+    BIN(zjit_opt_ge),
+    BIN(zjit_opt_ltlt),
+    BIN(zjit_opt_and),
+    BIN(zjit_opt_or),
+    BIN(zjit_opt_aref),
+    BIN(zjit_opt_aset),
+    BIN(zjit_opt_length),
+    BIN(zjit_opt_size),
+    BIN(zjit_opt_empty_p),
+    BIN(zjit_opt_succ),
+    BIN(zjit_opt_not),
+    BIN(zjit_opt_regexpmatch2),
+#endif
     VM_INSTRUCTION_SIZE
 };
 
+#define VM_BARE_INSTRUCTION_SIZE 109
+
 #define ASSERT_VM_INSTRUCTION_SIZE(array) \
     STATIC_ASSERT(numberof_##array, numberof(array) == VM_INSTRUCTION_SIZE)
+
+#endif

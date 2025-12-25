@@ -1,3 +1,7 @@
+// Warn about unsafe operations in functions that are already marked as unsafe.
+// This will become default in Rust 2024 edition.
+#![warn(unsafe_op_in_unsafe_fn)]
+
 extern crate libc;
 extern crate mmtk;
 #[macro_use]
@@ -21,6 +25,7 @@ pub mod active_plan;
 pub mod api;
 pub mod binding;
 pub mod collection;
+pub mod heap;
 pub mod object_model;
 pub mod reference_glue;
 pub mod scanning;
@@ -50,6 +55,11 @@ impl VMBinding for Ruby {
     type VMSlot = RubySlot;
     type VMMemorySlice = RubyMemorySlice;
 }
+
+/// The callback for mutator thread panic handler (which calls rb_bug to output
+/// debugging information such as the Ruby backtrace and memory maps).
+/// This is set before BINDING is set because mmtk_init could panic.
+pub static MUTATOR_THREAD_PANIC_HANDLER: OnceCell<extern "C" fn()> = OnceCell::new();
 
 /// The singleton object for the Ruby binding itself.
 pub static BINDING: OnceCell<RubyBinding> = OnceCell::new();
@@ -128,6 +138,20 @@ pub(crate) fn set_panic_hook() {
             handle_gc_thread_panic(panic_info);
         } else {
             old_hook(panic_info);
+            (crate::MUTATOR_THREAD_PANIC_HANDLER
+                .get()
+                .expect("MUTATOR_THREAD_PANIC_HANDLER is not set"))();
         }
     }));
+}
+
+/// This kind of assertion is enabled if either building in debug mode or the
+/// "extra_assert" feature is enabled.
+#[macro_export]
+macro_rules! extra_assert {
+    ($($arg:tt)*) => {
+        if std::cfg!(any(debug_assertions, feature = "extra_assert")) {
+            std::assert!($($arg)*);
+        }
+    };
 }

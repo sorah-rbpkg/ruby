@@ -47,6 +47,7 @@ static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 static void
 range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
 {
+    // Changing this condition has implications for JITs. If you do, please let maintainers know.
     if ((!FIXNUM_P(beg) || !FIXNUM_P(end)) && !NIL_P(beg) && !NIL_P(end)) {
         VALUE v;
 
@@ -783,7 +784,7 @@ bsearch_integer_range(VALUE beg, VALUE end, int excl)
  *
  *  Returns an element from +self+ selected by a binary search.
  *
- *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
+ *  See {Binary Searching}[rdoc-ref:language/bsearch.rdoc].
  *
  */
 
@@ -1015,6 +1016,29 @@ range_to_a(VALUE range)
         rb_raise(rb_eRangeError, "cannot convert endless range to an array");
     }
     return rb_call_super(0, 0);
+}
+
+/*
+ *  call-seq:
+ *    to_set -> set
+ *
+ *  Returns a set containing the elements in +self+, if a finite collection;
+ *  raises an exception otherwise.
+ *
+ *    (1..4).to_set   # => Set[1, 2, 3, 4]
+ *    (1...4).to_set   # => Set[1, 2, 3]
+ *
+ *    (1..).to_set
+ *    # in 'Range#to_set': cannot convert endless range to a set (RangeError)
+ *
+ */
+static VALUE
+range_to_set(int argc, VALUE *argv, VALUE range)
+{
+    if (NIL_P(RANGE_END(range))) {
+        rb_raise(rb_eRangeError, "cannot convert endless range to a set");
+    }
+    return rb_call_super(argc, argv);
 }
 
 static VALUE
@@ -1405,12 +1429,29 @@ range_first(int argc, VALUE *argv, VALUE range)
     return ary[1];
 }
 
+static bool
+range_basic_each_p(VALUE range)
+{
+    return rb_method_basic_definition_p(CLASS_OF(range), idEach);
+}
+
+static bool
+integer_end_optimizable(VALUE range)
+{
+    VALUE b = RANGE_BEG(range);
+    if (!NIL_P(b) && !RB_INTEGER_TYPE_P(b)) return false;
+    VALUE e = RANGE_END(range);
+    if (!RB_INTEGER_TYPE_P(e)) return false;
+    if (RB_LIKELY(range_basic_each_p(range))) return true;
+    return false;
+}
+
 static VALUE
 rb_int_range_last(int argc, VALUE *argv, VALUE range)
 {
     static const VALUE ONE = INT2FIX(1);
 
-    VALUE b, e, len_1, len, nv, ary;
+    VALUE b, e, len_1 = Qnil, len = Qnil, nv, ary;
     int x;
     long n;
 
@@ -1418,20 +1459,28 @@ rb_int_range_last(int argc, VALUE *argv, VALUE range)
 
     b = RANGE_BEG(range);
     e = RANGE_END(range);
-    RUBY_ASSERT(RB_INTEGER_TYPE_P(b) && RB_INTEGER_TYPE_P(e));
+    RUBY_ASSERT(NIL_P(b) || RB_INTEGER_TYPE_P(b), "b=%"PRIsVALUE, rb_obj_class(b));
+    RUBY_ASSERT(RB_INTEGER_TYPE_P(e), "e=%"PRIsVALUE, rb_obj_class(e));
 
     x = EXCL(range);
 
-    len_1 = rb_int_minus(e, b);
-    if (x) {
-        e = rb_int_minus(e, ONE);
-        len = len_1;
+    if (!NIL_P(b)) {
+        len_1 = rb_int_minus(e, b);
+        if (x) {
+            e = rb_int_minus(e, ONE);
+            len = len_1;
+        }
+        else {
+            len = rb_int_plus(len_1, ONE);
+        }
     }
     else {
-        len = rb_int_plus(len_1, ONE);
+        if (x) {
+            e = rb_int_minus(e, ONE);
+        }
     }
 
-    if (FIXNUM_ZERO_P(len) || rb_num_negative_p(len)) {
+    if (!NIL_P(len) && (FIXNUM_ZERO_P(len) || rb_num_negative_p(len))) {
         return rb_ary_new_capa(0);
     }
 
@@ -1442,7 +1491,7 @@ rb_int_range_last(int argc, VALUE *argv, VALUE range)
     }
 
     nv = LONG2NUM(n);
-    if (RTEST(rb_int_gt(nv, len))) {
+    if (!NIL_P(b) && RTEST(rb_int_gt(nv, len))) {
         nv = len;
         n = NUM2LONG(nv);
     }
@@ -1496,17 +1545,11 @@ rb_int_range_last(int argc, VALUE *argv, VALUE range)
 static VALUE
 range_last(int argc, VALUE *argv, VALUE range)
 {
-    VALUE b, e;
-
     if (NIL_P(RANGE_END(range))) {
         rb_raise(rb_eRangeError, "cannot get the last element of endless range");
     }
     if (argc == 0) return RANGE_END(range);
-
-    b = RANGE_BEG(range);
-    e = RANGE_END(range);
-    if (RB_INTEGER_TYPE_P(b) && RB_INTEGER_TYPE_P(e) &&
-        RB_LIKELY(rb_method_basic_definition_p(rb_cRange, idEach))) {
+    if (integer_end_optimizable(range)) {
         return rb_int_range_last(argc, argv, range);
     }
     return rb_ary_last(argc, argv, rb_Array(range));
@@ -1714,11 +1757,26 @@ range_max(int argc, VALUE *argv, VALUE range)
 
     VALUE b = RANGE_BEG(range);
 
-    if (rb_block_given_p() || (EXCL(range) && !nm) || argc) {
+    if (rb_block_given_p() || (EXCL(range) && !nm)) {
         if (NIL_P(b)) {
             rb_raise(rb_eRangeError, "cannot get the maximum of beginless range with custom comparison method");
         }
         return rb_call_super(argc, argv);
+    }
+    else if (argc) {
+        VALUE ary[2];
+        ID reverse_each;
+        CONST_ID(reverse_each, "reverse_each");
+        rb_scan_args(argc, argv, "1", &ary[0]);
+        ary[1] = rb_ary_new2(NUM2LONG(ary[0]));
+        rb_block_call(range, reverse_each, 0, 0, first_i, (VALUE)ary);
+        return ary[1];
+#if 0
+        if (integer_end_optimizable(range)) {
+            return rb_int_range_last(argc, argv, range, true);
+        }
+        return rb_ary_reverse(rb_ary_last(argc, argv, rb_Array(range)));
+#endif
     }
     else {
         int c = NIL_P(b) ? -1 : OPTIMIZED_CMP(b, e);
@@ -1730,13 +1788,13 @@ range_max(int argc, VALUE *argv, VALUE range)
                 rb_raise(rb_eTypeError, "cannot exclude non Integer end value");
             }
             if (c == 0) return Qnil;
-            if (!RB_INTEGER_TYPE_P(b)) {
+            if (!NIL_P(b) && !RB_INTEGER_TYPE_P(b)) {
                 rb_raise(rb_eTypeError, "cannot exclude end value with non Integer begin value");
             }
             if (FIXNUM_P(e)) {
                 return LONG2NUM(FIX2LONG(e) - 1);
             }
-            return rb_funcall(e, '-', 1, INT2FIX(1));
+            return rb_int_minus(e,INT2FIX(1));
         }
         return e;
     }
@@ -2527,7 +2585,7 @@ range_overlap(VALUE range, VALUE other)
         /* if both begin values are equal, no more comparisons needed */
         if (rb_cmpint(cmp, self_beg, other_beg) == 0) return Qtrue;
     }
-    else if (NIL_P(self_beg) && !NIL_P(self_end) && NIL_P(other_beg)) {
+    else if (NIL_P(self_beg) && !NIL_P(self_end) && NIL_P(other_beg) && !NIL_P(other_end)) {
         VALUE cmp = rb_funcall(self_end, id_cmp, 1, other_end);
         return RBOOL(!NIL_P(cmp));
     }
@@ -2587,7 +2645,7 @@ range_overlap(VALUE range, VALUE other)
  *  r = (...2) # => nil...2
  *  a[r]       # => [1, 2]
  *
- * \Method +each+ for a beginless range raises an exception.
+ * Method +each+ for a beginless range raises an exception.
  *
  * == Endless Ranges
  *
@@ -2617,7 +2675,7 @@ range_overlap(VALUE range, VALUE other)
  *   r = (2..) # => 2..
  *   a[r]      # => [3, 4]
  *
- * \Method +each+ for an endless range calls the given block indefinitely:
+ * Method +each+ for an endless range calls the given block indefinitely:
  *
  *   a = []
  *   r = (1..)
@@ -2627,14 +2685,14 @@ range_overlap(VALUE range, VALUE other)
  *   end
  *   a # => [2, 4, 6, 8, 10]
  *
- * A range can be both beginless and endless.  For literal beginless, endless
+ * A range can be both beginless and endless. For literal beginless, endless
  * ranges, at least the beginning or end of the range must be given as an
  * explicit nil value. It is recommended to use an explicit nil beginning and
- * implicit nil end, since that is what Ruby uses for Range#inspect:
+ * end, since that is what Ruby uses for Range#inspect:
  *
- *   (nil..)    # => (nil..)
- *   (..nil)    # => (nil..)
- *   (nil..nil) # => (nil..)
+ *   (nil..)    # => (nil..nil)
+ *   (..nil)    # => (nil..nil)
+ *   (nil..nil) # => (nil..nil)
  *
  * == Ranges and Other Classes
  *
@@ -2709,7 +2767,7 @@ range_overlap(VALUE range, VALUE other)
  *
  * == What's Here
  *
- * First, what's elsewhere. \Class \Range:
+ * First, what's elsewhere. Class \Range:
  *
  * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
  * - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
@@ -2810,6 +2868,7 @@ Init_Range(void)
     rb_define_method(rb_cRange, "minmax", range_minmax, 0);
     rb_define_method(rb_cRange, "size", range_size, 0);
     rb_define_method(rb_cRange, "to_a", range_to_a, 0);
+    rb_define_method(rb_cRange, "to_set", range_to_set, -1);
     rb_define_method(rb_cRange, "entries", range_to_a, 0);
     rb_define_method(rb_cRange, "to_s", range_to_s, 0);
     rb_define_method(rb_cRange, "inspect", range_inspect, 0);

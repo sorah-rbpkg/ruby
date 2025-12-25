@@ -36,6 +36,8 @@
   or tool/insns2vm.rb
  */
 
+#ifndef INSNS_INFO_INC
+#define INSNS_INFO_INC 1
 enum ruby_insn_type_chars {
     TS_VARIABLE = '.',
     TS_CALLDATA = 'C',
@@ -143,6 +145,7 @@ const char rb_vm_insn_name_base[] =
     "send" "\0"
     "sendforward" "\0"
     "opt_send_without_block" "\0"
+    "opt_new" "\0"
     "objtostring" "\0"
     "opt_ary_freeze" "\0"
     "opt_hash_freeze" "\0"
@@ -178,8 +181,6 @@ const char rb_vm_insn_name_base[] =
     "opt_or" "\0"
     "opt_aref" "\0"
     "opt_aset" "\0"
-    "opt_aset_with" "\0"
-    "opt_aref_with" "\0"
     "opt_length" "\0"
     "opt_size" "\0"
     "opt_empty_p" "\0"
@@ -253,6 +254,7 @@ const char rb_vm_insn_name_base[] =
     "trace_send" "\0"
     "trace_sendforward" "\0"
     "trace_opt_send_without_block" "\0"
+    "trace_opt_new" "\0"
     "trace_objtostring" "\0"
     "trace_opt_ary_freeze" "\0"
     "trace_opt_hash_freeze" "\0"
@@ -288,8 +290,6 @@ const char rb_vm_insn_name_base[] =
     "trace_opt_or" "\0"
     "trace_opt_aref" "\0"
     "trace_opt_aset" "\0"
-    "trace_opt_aset_with" "\0"
-    "trace_opt_aref_with" "\0"
     "trace_opt_length" "\0"
     "trace_opt_size" "\0"
     "trace_opt_empty_p" "\0"
@@ -305,6 +305,38 @@ const char rb_vm_insn_name_base[] =
     "trace_setlocal_WC_1" "\0"
     "trace_putobject_INT2FIX_0_" "\0"
     "trace_putobject_INT2FIX_1_" "\0"
+#if USE_ZJIT
+    "zjit_getinstancevariable" "\0"
+    "zjit_setinstancevariable" "\0"
+    "zjit_definedivar" "\0"
+    "zjit_send" "\0"
+    "zjit_opt_send_without_block" "\0"
+    "zjit_objtostring" "\0"
+    "zjit_opt_nil_p" "\0"
+    "zjit_invokeblock" "\0"
+    "zjit_opt_plus" "\0"
+    "zjit_opt_minus" "\0"
+    "zjit_opt_mult" "\0"
+    "zjit_opt_div" "\0"
+    "zjit_opt_mod" "\0"
+    "zjit_opt_eq" "\0"
+    "zjit_opt_neq" "\0"
+    "zjit_opt_lt" "\0"
+    "zjit_opt_le" "\0"
+    "zjit_opt_gt" "\0"
+    "zjit_opt_ge" "\0"
+    "zjit_opt_ltlt" "\0"
+    "zjit_opt_and" "\0"
+    "zjit_opt_or" "\0"
+    "zjit_opt_aref" "\0"
+    "zjit_opt_aset" "\0"
+    "zjit_opt_length" "\0"
+    "zjit_opt_size" "\0"
+    "zjit_opt_empty_p" "\0"
+    "zjit_opt_succ" "\0"
+    "zjit_opt_not" "\0"
+    "zjit_opt_regexpmatch2" "\0"
+#endif
     ;
 
 const unsigned short rb_vm_insn_name_offset[] = {
@@ -312,21 +344,26 @@ const unsigned short rb_vm_insn_name_offset[] = {
      165,  186,  198,  210,  220,  230,  237,  245,  255,  272,  282,  299,
      313,  325,  334,  341,  350,  369,  378,  386,  398,  410,  424,  436,
      447,  455,  463,  472,  476,  480,  485,  490,  502,  507,  512,  524,
-     532,  544,  555,  568,  578,  590,  603,  617,  622,  634,  657,  669,
-     684,  700,  715,  725,  740,  758,  776,  788,  807,  819,  825,  831,
-     836,  845,  858,  868,  873,  891,  900,  910,  919,  927,  935,  942,
-     950,  957,  964,  971,  978,  987,  995, 1002, 1011, 1020, 1034, 1048,
-    1059, 1068, 1080, 1089, 1097, 1114, 1128, 1155, 1188, 1202, 1216, 1230,
-    1244, 1265, 1286, 1296, 1311, 1326, 1346, 1366, 1391, 1408, 1425, 1451,
-    1477, 1500, 1523, 1550, 1568, 1586, 1602, 1618, 1631, 1645, 1661, 1684,
-    1700, 1723, 1743, 1761, 1776, 1789, 1804, 1829, 1844, 1858, 1876, 1894,
-    1914, 1932, 1949, 1963, 1977, 1992, 2002, 2012, 2023, 2034, 2052, 2063,
-    2074, 2092, 2106, 2124, 2141, 2160, 2176, 2194, 2213, 2233, 2244, 2262,
-    2291, 2309, 2330, 2352, 2373, 2389, 2410, 2434, 2458, 2476, 2501, 2519,
-    2531, 2543, 2554, 2569, 2588, 2604, 2615, 2639, 2654, 2670, 2685, 2699,
-    2713, 2726, 2740, 2753, 2766, 2779, 2792, 2807, 2821, 2834, 2849, 2864,
-    2884, 2904, 2921, 2936, 2954, 2969, 2983, 3006, 3026, 3059, 3098, 3118,
-    3138, 3158, 3178, 3205,
+     532,  544,  555,  568,  578,  590,  603,  617,  622,  634,  657,  665,
+     677,  692,  708,  723,  733,  748,  766,  784,  796,  815,  827,  833,
+     839,  844,  853,  866,  876,  881,  899,  908,  918,  927,  935,  943,
+     950,  958,  965,  972,  979,  986,  995, 1003, 1010, 1019, 1028, 1039,
+    1048, 1060, 1069, 1077, 1094, 1108, 1135, 1168, 1182, 1196, 1210, 1224,
+    1245, 1266, 1276, 1291, 1306, 1326, 1346, 1371, 1388, 1405, 1431, 1457,
+    1480, 1503, 1530, 1548, 1566, 1582, 1598, 1611, 1625, 1641, 1664, 1680,
+    1703, 1723, 1741, 1756, 1769, 1784, 1809, 1824, 1838, 1856, 1874, 1894,
+    1912, 1929, 1943, 1957, 1972, 1982, 1992, 2003, 2014, 2032, 2043, 2054,
+    2072, 2086, 2104, 2121, 2140, 2156, 2174, 2193, 2213, 2224, 2242, 2271,
+    2285, 2303, 2324, 2346, 2367, 2383, 2404, 2428, 2452, 2470, 2495, 2513,
+    2525, 2537, 2548, 2563, 2582, 2598, 2609, 2633, 2648, 2664, 2679, 2693,
+    2707, 2720, 2734, 2747, 2760, 2773, 2786, 2801, 2815, 2828, 2843, 2858,
+    2875, 2890, 2908, 2923, 2937, 2960, 2980, 3013, 3052, 3072, 3092, 3112,
+    3132, 3159,
+#if USE_ZJIT
+    3186, 3211, 3236, 3253, 3263, 3291, 3308, 3323, 3340, 3354, 3369, 3383,
+    3396, 3409, 3421, 3434, 3446, 3458, 3470, 3482, 3496, 3509, 3521, 3535,
+    3549, 3565, 3579, 3596, 3610, 3623,
+#endif
 };
 
 ASSERT_VM_INSTRUCTION_SIZE(rb_vm_insn_name_offset);
@@ -348,14 +385,18 @@ RUBY_SYMBOL_EXPORT_END
 const uint8_t rb_vm_insn_len_info[] = {
     1, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2,
     2, 1, 3, 1, 2, 1, 2, 2, 3, 1, 1, 2, 2, 1, 2, 2, 1, 1, 2, 1, 2, 2, 2,
-    2, 4, 4, 2, 3, 2, 4, 3, 3, 3, 3, 2, 2, 3, 3, 3, 2, 3, 4, 3, 3, 3, 2,
-    1, 2, 2, 2, 2, 2, 3, 3, 2, 2, 2, 2, 2, 2, 3, 2, 2, 2, 2, 2, 2, 2, 2,
-    2, 3, 3, 2, 2, 2, 2, 2, 2, 2, 3, 3, 2, 2, 2, 2, 1, 1, 1, 3, 3, 3, 3,
-    3, 3, 2, 3, 3, 3, 3, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 1, 3, 1, 2,
-    1, 2, 2, 3, 1, 1, 2, 2, 1, 2, 2, 1, 1, 2, 1, 2, 2, 2, 2, 4, 4, 2, 3,
-    2, 4, 3, 3, 3, 3, 2, 2, 3, 3, 3, 2, 3, 4, 3, 3, 3, 2, 1, 2, 2, 2, 2,
-    2, 3, 3, 2, 2, 2, 2, 2, 2, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 2, 2,
-    2, 2, 2, 2, 2, 3, 3, 2, 2, 2, 2, 1, 1,
+    2, 4, 4, 2, 3, 2, 4, 3, 3, 3, 3, 2, 3, 2, 3, 3, 3, 2, 3, 4, 3, 3, 3,
+    2, 1, 2, 2, 2, 2, 2, 3, 3, 2, 2, 2, 2, 2, 2, 3, 2, 2, 2, 2, 2, 2, 2,
+    2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 2, 2, 2, 2, 1, 1, 1, 3, 3, 3, 3, 3,
+    3, 2, 3, 3, 3, 3, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 1, 3, 1, 2, 1,
+    2, 2, 3, 1, 1, 2, 2, 1, 2, 2, 1, 1, 2, 1, 2, 2, 2, 2, 4, 4, 2, 3, 2,
+    4, 3, 3, 3, 3, 2, 3, 2, 3, 3, 3, 2, 3, 4, 3, 3, 3, 2, 1, 2, 2, 2, 2,
+    2, 3, 3, 2, 2, 2, 2, 2, 2, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+    2, 2, 2, 3, 3, 2, 2, 2, 2, 1, 1,
+#if USE_ZJIT
+    3, 3, 4, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 2, 2, 2, 2, 2, 2, 2,
+    2, 2, 2, 2, 2, 2, 2,
+#endif
 };
 
 ASSERT_VM_INSTRUCTION_SIZE(rb_vm_insn_len_info);
@@ -388,39 +429,47 @@ const char rb_vm_insn_op_base[] =
     ""     "\0" "N"    "\0" ""     "\0" "N"    "\0" "N"    "\0"
     "N"    "\0" "N"    "\0" "NVV"  "\0" "IAV"  "\0" "N"    "\0"
     "LL"   "\0" "N"    "\0" "ISN"  "\0" "IS"   "\0" "IS"   "\0"
-    "CS"   "\0" "CS"   "\0" "C"    "\0" "C"    "\0" "VC"   "\0"
+    "CS"   "\0" "CS"   "\0" "C"    "\0" "CO"   "\0" "C"    "\0"
+    "VC"   "\0" "VC"   "\0" "VC"   "\0" "C"    "\0" "VC"   "\0"
+    "VIN"  "\0" "NN"   "\0" "CS"   "\0" "CS"   "\0" "C"    "\0"
+    ""     "\0" "N"    "\0" "O"    "\0" "O"    "\0" "O"    "\0"
+    "O"    "\0" "ST"   "\0" "HO"   "\0" "C"    "\0" "C"    "\0"
+    "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0" "CC"   "\0"
+    "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0"
+    "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0"
+    "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0"
+    "R"    "\0" "RN"   "\0" "RN"   "\0" "L"    "\0" "L"    "\0"
+    "L"    "\0" "L"    "\0" ""     "\0" ""     "\0" ""     "\0"
+    "LN"   "\0" "LN"   "\0" "LN"   "\0" "LN"   "\0" "LN"   "\0"
+    "NN"   "\0" "N"    "\0" "IA"   "\0" "IA"   "\0" "IJ"   "\0"
+    "IJ"   "\0" "K"    "\0" "I"    "\0" "I"    "\0" "I"    "\0"
+    "I"    "\0" ""     "\0" ""     "\0" "V"    "\0" "N"    "\0"
+    "V"    "\0" "V"    "\0" "N"    "\0" ""     "\0" "NN"   "\0"
+    ""     "\0" "N"    "\0" ""     "\0" "V"    "\0" "V"    "\0"
+    "NN"   "\0" ""     "\0" ""     "\0" "N"    "\0" "V"    "\0"
+    ""     "\0" "N"    "\0" "N"    "\0" ""     "\0" ""     "\0"
+    "N"    "\0" ""     "\0" "N"    "\0" "N"    "\0" "N"    "\0"
+    "N"    "\0" "NVV"  "\0" "IAV"  "\0" "N"    "\0" "LL"   "\0"
+    "N"    "\0" "ISN"  "\0" "IS"   "\0" "IS"   "\0" "CS"   "\0"
+    "CS"   "\0" "C"    "\0" "CO"   "\0" "C"    "\0" "VC"   "\0"
     "VC"   "\0" "VC"   "\0" "C"    "\0" "VC"   "\0" "VIN"  "\0"
     "NN"   "\0" "CS"   "\0" "CS"   "\0" "C"    "\0" ""     "\0"
     "N"    "\0" "O"    "\0" "O"    "\0" "O"    "\0" "O"    "\0"
     "ST"   "\0" "HO"   "\0" "C"    "\0" "C"    "\0" "C"    "\0"
     "C"    "\0" "C"    "\0" "C"    "\0" "CC"   "\0" "C"    "\0"
     "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0"
-    "C"    "\0" "C"    "\0" "C"    "\0" "VC"   "\0" "VC"   "\0"
     "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0"
-    "C"    "\0" "R"    "\0" "RN"   "\0" "RN"   "\0" "L"    "\0"
-    "L"    "\0" "L"    "\0" "L"    "\0" ""     "\0" ""     "\0"
-    ""     "\0" "LN"   "\0" "LN"   "\0" "LN"   "\0" "LN"   "\0"
-    "LN"   "\0" "NN"   "\0" "N"    "\0" "IA"   "\0" "IA"   "\0"
-    "IJ"   "\0" "IJ"   "\0" "K"    "\0" "I"    "\0" "I"    "\0"
-    "I"    "\0" "I"    "\0" ""     "\0" ""     "\0" "V"    "\0"
-    "N"    "\0" "V"    "\0" "V"    "\0" "N"    "\0" ""     "\0"
-    "NN"   "\0" ""     "\0" "N"    "\0" ""     "\0" "V"    "\0"
-    "V"    "\0" "NN"   "\0" ""     "\0" ""     "\0" "N"    "\0"
-    "V"    "\0" ""     "\0" "N"    "\0" "N"    "\0" ""     "\0"
-    ""     "\0" "N"    "\0" ""     "\0" "N"    "\0" "N"    "\0"
-    "N"    "\0" "N"    "\0" "NVV"  "\0" "IAV"  "\0" "N"    "\0"
-    "LL"   "\0" "N"    "\0" "ISN"  "\0" "IS"   "\0" "IS"   "\0"
-    "CS"   "\0" "CS"   "\0" "C"    "\0" "C"    "\0" "VC"   "\0"
-    "VC"   "\0" "VC"   "\0" "C"    "\0" "VC"   "\0" "VIN"  "\0"
-    "NN"   "\0" "CS"   "\0" "CS"   "\0" "C"    "\0" ""     "\0"
-    "N"    "\0" "O"    "\0" "O"    "\0" "O"    "\0" "O"    "\0"
-    "ST"   "\0" "HO"   "\0" "C"    "\0" "C"    "\0" "C"    "\0"
-    "C"    "\0" "C"    "\0" "C"    "\0" "CC"   "\0" "C"    "\0"
+    "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0" "R"    "\0"
+    "RN"   "\0" "RN"   "\0" "L"    "\0" "L"    "\0" "L"    "\0"
+    "L"    "\0" ""     "\0" ""     "\0"
+#if USE_ZJIT
+    "IA"   "\0" "IA"   "\0" "IAV"  "\0" "CS"   "\0" "C"    "\0"
     "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0"
-    "C"    "\0" "C"    "\0" "C"    "\0" "VC"   "\0" "VC"   "\0"
+    "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0" "CC"   "\0"
     "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0"
-    "C"    "\0" "R"    "\0" "RN"   "\0" "RN"   "\0" "L"    "\0"
-    "L"    "\0" "L"    "\0" "L"    "\0" ""     "\0" ""     "\0"
+    "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0"
+    "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0" "C"    "\0"
+#endif
     ;
 
 const unsigned short rb_vm_insn_op_offset[] = {
@@ -428,21 +477,26 @@ const unsigned short rb_vm_insn_op_offset[] = {
      33,  35,  37,  39,  41,  43,  44,  45,  47,  49,  51,  53,
      55,  56,  59,  60,  62,  63,  65,  67,  70,  71,  72,  74,
      76,  77,  79,  81,  82,  83,  85,  86,  88,  90,  92,  94,
-     98, 102, 104, 107, 109, 113, 116, 119, 122, 125, 127, 129,
-    132, 135, 138, 140, 143, 147, 150, 153, 156, 158, 159, 161,
-    163, 165, 167, 169, 172, 175, 177, 179, 181, 183, 185, 187,
-    190, 192, 194, 196, 198, 200, 202, 204, 206, 208, 211, 214,
-    216, 218, 220, 222, 224, 226, 228, 231, 234, 236, 238, 240,
-    242, 243, 244, 245, 248, 251, 254, 257, 260, 263, 265, 268,
-    271, 274, 277, 279, 281, 283, 285, 287, 288, 289, 291, 293,
-    295, 297, 299, 300, 303, 304, 306, 307, 309, 311, 314, 315,
-    316, 318, 320, 321, 323, 325, 326, 327, 329, 330, 332, 334,
-    336, 338, 342, 346, 348, 351, 353, 357, 360, 363, 366, 369,
+     98, 102, 104, 107, 109, 113, 116, 119, 122, 125, 127, 130,
+    132, 135, 138, 141, 143, 146, 150, 153, 156, 159, 161, 162,
+    164, 166, 168, 170, 172, 175, 178, 180, 182, 184, 186, 188,
+    190, 193, 195, 197, 199, 201, 203, 205, 207, 209, 211, 213,
+    215, 217, 219, 221, 223, 225, 228, 231, 233, 235, 237, 239,
+    240, 241, 242, 245, 248, 251, 254, 257, 260, 262, 265, 268,
+    271, 274, 276, 278, 280, 282, 284, 285, 286, 288, 290, 292,
+    294, 296, 297, 300, 301, 303, 304, 306, 308, 311, 312, 313,
+    315, 317, 318, 320, 322, 323, 324, 326, 327, 329, 331, 333,
+    335, 339, 343, 345, 348, 350, 354, 357, 360, 363, 366, 368,
     371, 373, 376, 379, 382, 384, 387, 391, 394, 397, 400, 402,
     403, 405, 407, 409, 411, 413, 416, 419, 421, 423, 425, 427,
     429, 431, 434, 436, 438, 440, 442, 444, 446, 448, 450, 452,
-    455, 458, 460, 462, 464, 466, 468, 470, 472, 475, 478, 480,
-    482, 484, 486, 487,
+    454, 456, 458, 460, 462, 464, 466, 469, 472, 474, 476, 478,
+    480, 481,
+#if USE_ZJIT
+    482, 485, 488, 492, 495, 497, 499, 501, 503, 505, 507, 509,
+    511, 513, 515, 518, 520, 522, 524, 526, 528, 530, 532, 534,
+    536, 538, 540, 542, 544, 546,
+#endif
 };
 
 ASSERT_VM_INSTRUCTION_SIZE(rb_vm_insn_op_offset);
@@ -469,10 +523,6 @@ insn_op_type(VALUE i, long j)
 
 #include "iseq.h"
 
-// This is used to tell RJIT that this insn would be leaf if CHECK_INTS didn't exist.
-// It should be used only when RUBY_VM_CHECK_INTS is directly written in insns.def.
-static bool leafness_of_check_ints = false;
-
 static bool
 leafness_of_defined(rb_num_t op_type)
 {
@@ -484,7 +534,7 @@ leafness_of_defined(rb_num_t op_type)
       case DEFINED_YIELD:
       case DEFINED_REF:
       case DEFINED_ZSUPER:
-        return false;
+        return true;
       case DEFINED_CONST:
       case DEFINED_CONST_FROM:
         /* has rb_autoload_load(); */
@@ -510,7 +560,7 @@ leafness_of_checkmatch(rb_num_t flag)
         return false;
     }
 }
-#line 514 "insns_info.inc"
+#line 564 "insns_info.inc"
 
 #line 10 "tool/ruby_vm/views/_sp_inc_helpers.erb"
 
@@ -540,7 +590,151 @@ sp_inc_of_invokeblock(const struct rb_callinfo *ci)
      * instructions, except that it does not pop receiver. */
     return sp_inc_of_sendish(ci) + 1;
 }
-#line 544 "insns_info.inc"
+#line 594 "insns_info.inc"
+
+#if USE_ZJIT
+
+MAYBE_UNUSED(static int vm_bare_insn_to_zjit_insn(int insn));
+static int
+vm_bare_insn_to_zjit_insn(int insn)
+{
+    switch (insn) {
+      case BIN(getinstancevariable):
+        return BIN(zjit_getinstancevariable);
+      case BIN(setinstancevariable):
+        return BIN(zjit_setinstancevariable);
+      case BIN(definedivar):
+        return BIN(zjit_definedivar);
+      case BIN(send):
+        return BIN(zjit_send);
+      case BIN(opt_send_without_block):
+        return BIN(zjit_opt_send_without_block);
+      case BIN(objtostring):
+        return BIN(zjit_objtostring);
+      case BIN(opt_nil_p):
+        return BIN(zjit_opt_nil_p);
+      case BIN(invokeblock):
+        return BIN(zjit_invokeblock);
+      case BIN(opt_plus):
+        return BIN(zjit_opt_plus);
+      case BIN(opt_minus):
+        return BIN(zjit_opt_minus);
+      case BIN(opt_mult):
+        return BIN(zjit_opt_mult);
+      case BIN(opt_div):
+        return BIN(zjit_opt_div);
+      case BIN(opt_mod):
+        return BIN(zjit_opt_mod);
+      case BIN(opt_eq):
+        return BIN(zjit_opt_eq);
+      case BIN(opt_neq):
+        return BIN(zjit_opt_neq);
+      case BIN(opt_lt):
+        return BIN(zjit_opt_lt);
+      case BIN(opt_le):
+        return BIN(zjit_opt_le);
+      case BIN(opt_gt):
+        return BIN(zjit_opt_gt);
+      case BIN(opt_ge):
+        return BIN(zjit_opt_ge);
+      case BIN(opt_ltlt):
+        return BIN(zjit_opt_ltlt);
+      case BIN(opt_and):
+        return BIN(zjit_opt_and);
+      case BIN(opt_or):
+        return BIN(zjit_opt_or);
+      case BIN(opt_aref):
+        return BIN(zjit_opt_aref);
+      case BIN(opt_aset):
+        return BIN(zjit_opt_aset);
+      case BIN(opt_length):
+        return BIN(zjit_opt_length);
+      case BIN(opt_size):
+        return BIN(zjit_opt_size);
+      case BIN(opt_empty_p):
+        return BIN(zjit_opt_empty_p);
+      case BIN(opt_succ):
+        return BIN(zjit_opt_succ);
+      case BIN(opt_not):
+        return BIN(zjit_opt_not);
+      case BIN(opt_regexpmatch2):
+        return BIN(zjit_opt_regexpmatch2);
+      default:
+        return insn;
+    }
+}
+
+MAYBE_UNUSED(static int vm_zjit_insn_to_bare_insn(int insn));
+static int
+vm_zjit_insn_to_bare_insn(int insn)
+{
+    switch (insn) {
+      case BIN(zjit_getinstancevariable):
+        return BIN(getinstancevariable);
+      case BIN(zjit_setinstancevariable):
+        return BIN(setinstancevariable);
+      case BIN(zjit_definedivar):
+        return BIN(definedivar);
+      case BIN(zjit_send):
+        return BIN(send);
+      case BIN(zjit_opt_send_without_block):
+        return BIN(opt_send_without_block);
+      case BIN(zjit_objtostring):
+        return BIN(objtostring);
+      case BIN(zjit_opt_nil_p):
+        return BIN(opt_nil_p);
+      case BIN(zjit_invokeblock):
+        return BIN(invokeblock);
+      case BIN(zjit_opt_plus):
+        return BIN(opt_plus);
+      case BIN(zjit_opt_minus):
+        return BIN(opt_minus);
+      case BIN(zjit_opt_mult):
+        return BIN(opt_mult);
+      case BIN(zjit_opt_div):
+        return BIN(opt_div);
+      case BIN(zjit_opt_mod):
+        return BIN(opt_mod);
+      case BIN(zjit_opt_eq):
+        return BIN(opt_eq);
+      case BIN(zjit_opt_neq):
+        return BIN(opt_neq);
+      case BIN(zjit_opt_lt):
+        return BIN(opt_lt);
+      case BIN(zjit_opt_le):
+        return BIN(opt_le);
+      case BIN(zjit_opt_gt):
+        return BIN(opt_gt);
+      case BIN(zjit_opt_ge):
+        return BIN(opt_ge);
+      case BIN(zjit_opt_ltlt):
+        return BIN(opt_ltlt);
+      case BIN(zjit_opt_and):
+        return BIN(opt_and);
+      case BIN(zjit_opt_or):
+        return BIN(opt_or);
+      case BIN(zjit_opt_aref):
+        return BIN(opt_aref);
+      case BIN(zjit_opt_aset):
+        return BIN(opt_aset);
+      case BIN(zjit_opt_length):
+        return BIN(opt_length);
+      case BIN(zjit_opt_size):
+        return BIN(opt_size);
+      case BIN(zjit_opt_empty_p):
+        return BIN(opt_empty_p);
+      case BIN(zjit_opt_succ):
+        return BIN(opt_succ);
+      case BIN(zjit_opt_not):
+        return BIN(opt_not);
+      case BIN(zjit_opt_regexpmatch2):
+        return BIN(opt_regexpmatch2);
+      default:
+        return insn;
+    }
+}
+
+#endif
 
 #ifndef RUBY_VM_EXEC_H
 /* can't #include "vm_exec.h" here... */
@@ -559,6 +753,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_nop(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_nop(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_nop(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_nop(void)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_nop(void)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_getlocal(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_getlocal(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_getlocal(lindex_t idx, rb_num_t level)));
@@ -568,6 +763,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_getlocal(lindex_t idx, rb_num_t 
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_getlocal(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_getlocal(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_getlocal(lindex_t idx, rb_num_t level)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_getlocal(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_setlocal(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_setlocal(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_setlocal(lindex_t idx, rb_num_t level)));
@@ -577,6 +773,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_setlocal(lindex_t idx, rb_num_t 
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_setlocal(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_setlocal(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_setlocal(lindex_t idx, rb_num_t level)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_setlocal(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_getblockparam(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_getblockparam(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_getblockparam(lindex_t idx, rb_num_t level)));
@@ -586,6 +783,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_getblockparam(lindex_t idx, rb_n
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_getblockparam(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_getblockparam(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_getblockparam(lindex_t idx, rb_num_t level)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_getblockparam(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_setblockparam(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_setblockparam(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_setblockparam(lindex_t idx, rb_num_t level)));
@@ -595,6 +793,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_setblockparam(lindex_t idx, rb_n
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_setblockparam(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_setblockparam(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_setblockparam(lindex_t idx, rb_num_t level)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_setblockparam(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_getblockparamproxy(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_getblockparamproxy(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_getblockparamproxy(lindex_t idx, rb_num_t level)));
@@ -604,6 +803,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_getblockparamproxy(lindex_t idx,
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_getblockparamproxy(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_getblockparamproxy(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_getblockparamproxy(lindex_t idx, rb_num_t level)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_getblockparamproxy(lindex_t idx, rb_num_t level)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_getspecial(rb_num_t key, rb_num_t type)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_getspecial(rb_num_t key, rb_num_t type)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_getspecial(rb_num_t key, rb_num_t type)));
@@ -613,6 +813,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_getspecial(rb_num_t key, rb_num_
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_getspecial(rb_num_t key, rb_num_t type)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_getspecial(rb_num_t key, rb_num_t type)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_getspecial(rb_num_t key, rb_num_t type)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_getspecial(rb_num_t key, rb_num_t type)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_setspecial(rb_num_t key)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_setspecial(rb_num_t key)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_setspecial(rb_num_t key)));
@@ -622,6 +823,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_setspecial(rb_num_t key)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_setspecial(rb_num_t key)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_setspecial(rb_num_t key)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_setspecial(rb_num_t key)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_setspecial(rb_num_t key)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_getinstancevariable(ID id, IVC ic)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_getinstancevariable(ID id, IVC ic)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_getinstancevariable(ID id, IVC ic)));
@@ -631,6 +833,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_getinstancevariable(ID id, IVC i
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_getinstancevariable(ID id, IVC ic)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_getinstancevariable(ID id, IVC ic)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_getinstancevariable(ID id, IVC ic)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_getinstancevariable(ID id, IVC ic)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_setinstancevariable(ID id, IVC ic)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_setinstancevariable(ID id, IVC ic)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_setinstancevariable(ID id, IVC ic)));
@@ -640,6 +843,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_setinstancevariable(ID id, IVC i
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_setinstancevariable(ID id, IVC ic)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_setinstancevariable(ID id, IVC ic)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_setinstancevariable(ID id, IVC ic)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_setinstancevariable(ID id, IVC ic)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_getclassvariable(ID id, ICVARC ic)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_getclassvariable(ID id, ICVARC ic)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_getclassvariable(ID id, ICVARC ic)));
@@ -649,6 +853,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_getclassvariable(ID id, ICVARC i
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_getclassvariable(ID id, ICVARC ic)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_getclassvariable(ID id, ICVARC ic)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_getclassvariable(ID id, ICVARC ic)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_getclassvariable(ID id, ICVARC ic)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_setclassvariable(ID id, ICVARC ic)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_setclassvariable(ID id, ICVARC ic)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_setclassvariable(ID id, ICVARC ic)));
@@ -658,6 +863,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_setclassvariable(ID id, ICVARC i
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_setclassvariable(ID id, ICVARC ic)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_setclassvariable(ID id, ICVARC ic)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_setclassvariable(ID id, ICVARC ic)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_setclassvariable(ID id, ICVARC ic)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_getconstant_path(IC ic)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_getconstant_path(IC ic)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_getconstant_path(IC ic)));
@@ -667,6 +873,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_getconstant_path(IC ic)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_getconstant_path(IC ic)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_getconstant_path(IC ic)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_getconstant_path(IC ic)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_getconstant_path(IC ic)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_getconstant(ID id)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_getconstant(ID id)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_getconstant(ID id)));
@@ -676,6 +883,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_getconstant(ID id)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_getconstant(ID id)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_getconstant(ID id)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_getconstant(ID id)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_getconstant(ID id)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_setconstant(ID id)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_setconstant(ID id)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_setconstant(ID id)));
@@ -685,6 +893,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_setconstant(ID id)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_setconstant(ID id)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_setconstant(ID id)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_setconstant(ID id)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_setconstant(ID id)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_getglobal(ID gid)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_getglobal(ID gid)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_getglobal(ID gid)));
@@ -694,6 +903,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_getglobal(ID gid)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_getglobal(ID gid)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_getglobal(ID gid)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_getglobal(ID gid)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_getglobal(ID gid)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_setglobal(ID gid)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_setglobal(ID gid)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_setglobal(ID gid)));
@@ -703,6 +913,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_setglobal(ID gid)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_setglobal(ID gid)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_setglobal(ID gid)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_setglobal(ID gid)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_setglobal(ID gid)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_putnil(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_putnil(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_putnil(void)));
@@ -712,6 +923,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_putnil(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_putnil(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_putnil(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_putnil(void)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_putnil(void)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_putself(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_putself(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_putself(void)));
@@ -721,6 +933,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_putself(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_putself(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_putself(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_putself(void)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_putself(void)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_putobject(VALUE val)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_putobject(VALUE val)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_putobject(VALUE val)));
@@ -730,6 +943,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_putobject(VALUE val)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_putobject(VALUE val)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_putobject(VALUE val)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_putobject(VALUE val)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_putobject(VALUE val)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_putspecialobject(rb_num_t value_type)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_putspecialobject(rb_num_t value_type)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_putspecialobject(rb_num_t value_type)));
@@ -739,6 +953,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_putspecialobject(rb_num_t value_
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_putspecialobject(rb_num_t value_type)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_putspecialobject(rb_num_t value_type)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_putspecialobject(rb_num_t value_type)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_putspecialobject(rb_num_t value_type)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_putstring(VALUE str)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_putstring(VALUE str)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_putstring(VALUE str)));
@@ -748,6 +963,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_putstring(VALUE str)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_putstring(VALUE str)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_putstring(VALUE str)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_putstring(VALUE str)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_putstring(VALUE str)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_putchilledstring(VALUE str)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_putchilledstring(VALUE str)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_putchilledstring(VALUE str)));
@@ -757,6 +973,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_putchilledstring(VALUE str)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_putchilledstring(VALUE str)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_putchilledstring(VALUE str)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_putchilledstring(VALUE str)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_putchilledstring(VALUE str)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_concatstrings(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_concatstrings(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_concatstrings(rb_num_t num)));
@@ -766,6 +983,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_concatstrings(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_concatstrings(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_concatstrings(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_concatstrings(rb_num_t num)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_concatstrings(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_anytostring(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_anytostring(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_anytostring(void)));
@@ -775,6 +993,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_anytostring(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_anytostring(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_anytostring(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_anytostring(void)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_anytostring(void)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_toregexp(rb_num_t opt, rb_num_t cnt)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_toregexp(rb_num_t opt, rb_num_t cnt)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_toregexp(rb_num_t opt, rb_num_t cnt)));
@@ -784,6 +1003,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_toregexp(rb_num_t opt, rb_num_t 
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_toregexp(rb_num_t opt, rb_num_t cnt)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_toregexp(rb_num_t opt, rb_num_t cnt)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_toregexp(rb_num_t opt, rb_num_t cnt)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_toregexp(rb_num_t opt, rb_num_t cnt)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_intern(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_intern(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_intern(void)));
@@ -793,6 +1013,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_intern(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_intern(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_intern(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_intern(void)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_intern(void)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_newarray(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_newarray(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_newarray(rb_num_t num)));
@@ -802,6 +1023,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_newarray(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_newarray(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_newarray(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_newarray(rb_num_t num)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_newarray(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_pushtoarraykwsplat(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_pushtoarraykwsplat(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_pushtoarraykwsplat(void)));
@@ -811,6 +1033,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_pushtoarraykwsplat(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_pushtoarraykwsplat(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_pushtoarraykwsplat(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_pushtoarraykwsplat(void)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_pushtoarraykwsplat(void)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_duparray(VALUE ary)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_duparray(VALUE ary)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_duparray(VALUE ary)));
@@ -820,6 +1043,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_duparray(VALUE ary)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_duparray(VALUE ary)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_duparray(VALUE ary)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_duparray(VALUE ary)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_duparray(VALUE ary)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_duphash(VALUE hash)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_duphash(VALUE hash)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_duphash(VALUE hash)));
@@ -829,6 +1053,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_duphash(VALUE hash)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_duphash(VALUE hash)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_duphash(VALUE hash)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_duphash(VALUE hash)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_duphash(VALUE hash)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_expandarray(rb_num_t num, rb_num_t flag)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_expandarray(rb_num_t num, rb_num_t flag)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_expandarray(rb_num_t num, rb_num_t flag)));
@@ -838,6 +1063,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_expandarray(rb_num_t num, rb_num
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_expandarray(rb_num_t num, rb_num_t flag)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_expandarray(rb_num_t num, rb_num_t flag)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_expandarray(rb_num_t num, rb_num_t flag)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_expandarray(rb_num_t num, rb_num_t flag)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_concatarray(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_concatarray(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_concatarray(void)));
@@ -847,6 +1073,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_concatarray(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_concatarray(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_concatarray(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_concatarray(void)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_concatarray(void)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_concattoarray(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_concattoarray(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_concattoarray(void)));
@@ -856,6 +1083,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_concattoarray(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_concattoarray(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_concattoarray(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_concattoarray(void)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_concattoarray(void)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_pushtoarray(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_pushtoarray(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_pushtoarray(rb_num_t num)));
@@ -865,6 +1093,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_pushtoarray(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_pushtoarray(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_pushtoarray(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_pushtoarray(rb_num_t num)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_pushtoarray(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_splatarray(VALUE flag)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_splatarray(VALUE flag)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_splatarray(VALUE flag)));
@@ -874,6 +1103,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_splatarray(VALUE flag)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_splatarray(VALUE flag)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_splatarray(VALUE flag)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_splatarray(VALUE flag)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_splatarray(VALUE flag)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_splatkw(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_splatkw(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_splatkw(void)));
@@ -883,6 +1113,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_splatkw(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_splatkw(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_splatkw(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_splatkw(void)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_splatkw(void)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_newhash(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_newhash(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_newhash(rb_num_t num)));
@@ -892,6 +1123,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_newhash(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_newhash(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_newhash(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_newhash(rb_num_t num)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_newhash(rb_num_t num)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_newrange(rb_num_t flag)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_newrange(rb_num_t flag)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_newrange(rb_num_t flag)));
@@ -901,6 +1133,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_newrange(rb_num_t flag)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_newrange(rb_num_t flag)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_newrange(rb_num_t flag)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_newrange(rb_num_t flag)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_newrange(rb_num_t flag)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_pop(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_pop(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_pop(void)));
@@ -910,6 +1143,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_pop(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_pop(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_pop(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_pop(void)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_pop(void)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_dup(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_dup(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_dup(void)));
@@ -919,6 +1153,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_dup(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_dup(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_dup(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_dup(void)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_dup(void)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_dupn(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_dupn(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_dupn(rb_num_t n)));
@@ -928,6 +1163,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_dupn(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_dupn(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_dupn(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_dupn(rb_num_t n)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_dupn(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_swap(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_swap(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_swap(void)));
@@ -937,6 +1173,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_swap(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_swap(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_swap(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_swap(void)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_swap(void)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_reverse(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_reverse(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_reverse(rb_num_t n)));
@@ -946,6 +1183,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_reverse(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_reverse(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_reverse(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_reverse(rb_num_t n)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_reverse(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_topn(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_topn(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_topn(rb_num_t n)));
@@ -955,6 +1193,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_topn(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_topn(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_topn(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_topn(rb_num_t n)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_topn(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_setn(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_setn(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_setn(rb_num_t n)));
@@ -964,6 +1203,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_setn(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_setn(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_setn(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_setn(rb_num_t n)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_setn(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_adjuststack(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_adjuststack(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_adjuststack(rb_num_t n)));
@@ -973,6 +1213,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_adjuststack(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_adjuststack(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_adjuststack(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_adjuststack(rb_num_t n)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_adjuststack(rb_num_t n)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_defined(rb_num_t op_type, VALUE obj, VALUE pushval)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_defined(rb_num_t op_type, VALUE obj, VALUE pushval)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_defined(rb_num_t op_type, VALUE obj, VALUE pushval)));
@@ -982,6 +1223,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_defined(rb_num_t op_type, VALUE 
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_defined(rb_num_t op_type, VALUE obj, VALUE pushval)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_defined(rb_num_t op_type, VALUE obj, VALUE pushval)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_defined(rb_num_t op_type, VALUE obj, VALUE pushval)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_defined(rb_num_t op_type, VALUE obj, VALUE pushval)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_definedivar(ID id, IVC ic, VALUE pushval)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_definedivar(ID id, IVC ic, VALUE pushval)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_definedivar(ID id, IVC ic, VALUE pushval)));
@@ -991,6 +1233,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_definedivar(ID id, IVC ic, VALUE
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_definedivar(ID id, IVC ic, VALUE pushval)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_definedivar(ID id, IVC ic, VALUE pushval)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_definedivar(ID id, IVC ic, VALUE pushval)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_definedivar(ID id, IVC ic, VALUE pushval)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_checkmatch(rb_num_t flag)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_checkmatch(rb_num_t flag)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_checkmatch(rb_num_t flag)));
@@ -1000,6 +1243,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_checkmatch(rb_num_t flag)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_checkmatch(rb_num_t flag)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_checkmatch(rb_num_t flag)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_checkmatch(rb_num_t flag)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_checkmatch(rb_num_t flag)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_checkkeyword(lindex_t kw_bits_index, lindex_t keyword_index)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_checkkeyword(lindex_t kw_bits_index, lindex_t keyword_index)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_checkkeyword(lindex_t kw_bits_index, lindex_t keyword_index)));
@@ -1009,6 +1253,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_checkkeyword(lindex_t kw_bits_in
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_checkkeyword(lindex_t kw_bits_index, lindex_t keyword_index)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_checkkeyword(lindex_t kw_bits_index, lindex_t keyword_index)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_checkkeyword(lindex_t kw_bits_index, lindex_t keyword_index)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_checkkeyword(lindex_t kw_bits_index, lindex_t keyword_index)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_checktype(rb_num_t type)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_checktype(rb_num_t type)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_checktype(rb_num_t type)));
@@ -1018,6 +1263,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_checktype(rb_num_t type)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_checktype(rb_num_t type)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_checktype(rb_num_t type)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_checktype(rb_num_t type)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_checktype(rb_num_t type)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_defineclass(ID id, ISEQ class_iseq, rb_num_t flags)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_defineclass(ID id, ISEQ class_iseq, rb_num_t flags)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_defineclass(ID id, ISEQ class_iseq, rb_num_t flags)));
@@ -1027,6 +1273,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_defineclass(ID id, ISEQ class_is
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_defineclass(ID id, ISEQ class_iseq, rb_num_t flags)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_defineclass(ID id, ISEQ class_iseq, rb_num_t flags)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_defineclass(ID id, ISEQ class_iseq, rb_num_t flags)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_defineclass(ID id, ISEQ class_iseq, rb_num_t flags)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_definemethod(ID id, ISEQ iseq)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_definemethod(ID id, ISEQ iseq)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_definemethod(ID id, ISEQ iseq)));
@@ -1036,6 +1283,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_definemethod(ID id, ISEQ iseq)))
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_definemethod(ID id, ISEQ iseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_definemethod(ID id, ISEQ iseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_definemethod(ID id, ISEQ iseq)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_definemethod(ID id, ISEQ iseq)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_definesmethod(ID id, ISEQ iseq)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_definesmethod(ID id, ISEQ iseq)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_definesmethod(ID id, ISEQ iseq)));
@@ -1045,6 +1293,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_definesmethod(ID id, ISEQ iseq))
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_definesmethod(ID id, ISEQ iseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_definesmethod(ID id, ISEQ iseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_definesmethod(ID id, ISEQ iseq)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_definesmethod(ID id, ISEQ iseq)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_send(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_comptime_sp_inc_send(CALL_INFO ci, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_send(CALL_DATA cd, ISEQ blockiseq)));
@@ -1055,6 +1304,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_send(CALL_DATA cd, ISEQ blockise
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_send(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_send(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_send(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_send(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_sendforward(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_comptime_sp_inc_sendforward(CALL_INFO ci, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_sendforward(CALL_DATA cd, ISEQ blockiseq)));
@@ -1065,6 +1315,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_sendforward(CALL_DATA cd, ISEQ b
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_sendforward(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_sendforward(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_sendforward(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_sendforward(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_send_without_block(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_comptime_sp_inc_opt_send_without_block(CALL_INFO ci)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_send_without_block(CALL_DATA cd)));
@@ -1075,6 +1326,17 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_send_without_block(CALL_DATA
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_send_without_block(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_send_without_block(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_send_without_block(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_send_without_block(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_new(CALL_DATA cd, OFFSET dst)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_new(CALL_DATA cd, OFFSET dst)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_new(CALL_DATA cd, OFFSET dst)));
+PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_new(CALL_DATA cd, OFFSET dst)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_new(CALL_DATA cd, OFFSET dst)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_new(CALL_DATA cd, OFFSET dst)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_new(CALL_DATA cd, OFFSET dst)));
+PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_new(CALL_DATA cd, OFFSET dst)));
+PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_new(CALL_DATA cd, OFFSET dst)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_new(CALL_DATA cd, OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_objtostring(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_objtostring(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_objtostring(CALL_DATA cd)));
@@ -1084,6 +1346,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_objtostring(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_objtostring(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_objtostring(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_objtostring(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_objtostring(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_ary_freeze(VALUE ary, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_ary_freeze(VALUE ary, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_ary_freeze(VALUE ary, CALL_DATA cd)));
@@ -1093,6 +1356,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_ary_freeze(VALUE ary, CALL_D
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_ary_freeze(VALUE ary, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_ary_freeze(VALUE ary, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_ary_freeze(VALUE ary, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_ary_freeze(VALUE ary, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_hash_freeze(VALUE hash, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_hash_freeze(VALUE hash, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_hash_freeze(VALUE hash, CALL_DATA cd)));
@@ -1102,6 +1366,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_hash_freeze(VALUE hash, CALL
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_hash_freeze(VALUE hash, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_hash_freeze(VALUE hash, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_hash_freeze(VALUE hash, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_hash_freeze(VALUE hash, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_str_freeze(VALUE str, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_str_freeze(VALUE str, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_str_freeze(VALUE str, CALL_DATA cd)));
@@ -1111,6 +1376,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_str_freeze(VALUE str, CALL_D
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_str_freeze(VALUE str, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_str_freeze(VALUE str, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_str_freeze(VALUE str, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_str_freeze(VALUE str, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_nil_p(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_nil_p(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_nil_p(CALL_DATA cd)));
@@ -1120,6 +1386,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_nil_p(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_nil_p(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_nil_p(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_nil_p(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_nil_p(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_str_uminus(VALUE str, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_str_uminus(VALUE str, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_str_uminus(VALUE str, CALL_DATA cd)));
@@ -1129,6 +1396,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_str_uminus(VALUE str, CALL_D
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_str_uminus(VALUE str, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_str_uminus(VALUE str, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_str_uminus(VALUE str, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_str_uminus(VALUE str, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_duparray_send(VALUE ary, ID method, rb_num_t argc)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_comptime_sp_inc_opt_duparray_send(VALUE ary, ID method, rb_num_t argc)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_duparray_send(VALUE ary, ID method, rb_num_t argc)));
@@ -1139,6 +1407,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_duparray_send(VALUE ary, ID 
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_duparray_send(VALUE ary, ID method, rb_num_t argc)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_duparray_send(VALUE ary, ID method, rb_num_t argc)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_duparray_send(VALUE ary, ID method, rb_num_t argc)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_duparray_send(VALUE ary, ID method, rb_num_t argc)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_newarray_send(rb_num_t num, rb_num_t method)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_comptime_sp_inc_opt_newarray_send(rb_num_t num, rb_num_t method)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_newarray_send(rb_num_t num, rb_num_t method)));
@@ -1149,6 +1418,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_newarray_send(rb_num_t num, 
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_newarray_send(rb_num_t num, rb_num_t method)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_newarray_send(rb_num_t num, rb_num_t method)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_newarray_send(rb_num_t num, rb_num_t method)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_newarray_send(rb_num_t num, rb_num_t method)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_invokesuper(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_comptime_sp_inc_invokesuper(CALL_INFO ci, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_invokesuper(CALL_DATA cd, ISEQ blockiseq)));
@@ -1159,6 +1429,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_invokesuper(CALL_DATA cd, ISEQ b
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_invokesuper(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_invokesuper(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_invokesuper(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_invokesuper(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_invokesuperforward(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_comptime_sp_inc_invokesuperforward(CALL_INFO ci, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_invokesuperforward(CALL_DATA cd, ISEQ blockiseq)));
@@ -1169,6 +1440,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_invokesuperforward(CALL_DATA cd,
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_invokesuperforward(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_invokesuperforward(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_invokesuperforward(CALL_DATA cd, ISEQ blockiseq)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_invokesuperforward(CALL_DATA cd, ISEQ blockiseq)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_invokeblock(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_comptime_sp_inc_invokeblock(CALL_INFO ci)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_invokeblock(CALL_DATA cd)));
@@ -1179,6 +1451,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_invokeblock(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_invokeblock(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_invokeblock(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_invokeblock(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_invokeblock(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_leave(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_leave(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_leave(void)));
@@ -1188,6 +1461,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_leave(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_leave(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_leave(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_leave(void)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_leave(void)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_throw(rb_num_t throw_state)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_throw(rb_num_t throw_state)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_throw(rb_num_t throw_state)));
@@ -1197,6 +1471,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_throw(rb_num_t throw_state)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_throw(rb_num_t throw_state)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_throw(rb_num_t throw_state)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_throw(rb_num_t throw_state)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_throw(rb_num_t throw_state)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_jump(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_jump(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_jump(OFFSET dst)));
@@ -1206,6 +1481,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_jump(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_jump(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_jump(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_jump(OFFSET dst)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_jump(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_branchif(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_branchif(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_branchif(OFFSET dst)));
@@ -1215,6 +1491,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_branchif(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_branchif(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_branchif(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_branchif(OFFSET dst)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_branchif(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_branchunless(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_branchunless(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_branchunless(OFFSET dst)));
@@ -1224,6 +1501,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_branchunless(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_branchunless(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_branchunless(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_branchunless(OFFSET dst)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_branchunless(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_branchnil(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_branchnil(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_branchnil(OFFSET dst)));
@@ -1233,6 +1511,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_branchnil(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_branchnil(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_branchnil(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_branchnil(OFFSET dst)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_branchnil(OFFSET dst)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_once(ISEQ iseq, ISE ise)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_once(ISEQ iseq, ISE ise)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_once(ISEQ iseq, ISE ise)));
@@ -1242,6 +1521,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_once(ISEQ iseq, ISE ise)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_once(ISEQ iseq, ISE ise)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_once(ISEQ iseq, ISE ise)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_once(ISEQ iseq, ISE ise)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_once(ISEQ iseq, ISE ise)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_case_dispatch(CDHASH hash, OFFSET else_offset)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_case_dispatch(CDHASH hash, OFFSET else_offset)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_case_dispatch(CDHASH hash, OFFSET else_offset)));
@@ -1251,6 +1531,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_case_dispatch(CDHASH hash, O
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_case_dispatch(CDHASH hash, OFFSET else_offset)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_case_dispatch(CDHASH hash, OFFSET else_offset)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_case_dispatch(CDHASH hash, OFFSET else_offset)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_case_dispatch(CDHASH hash, OFFSET else_offset)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_plus(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_plus(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_plus(CALL_DATA cd)));
@@ -1260,6 +1541,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_plus(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_plus(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_plus(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_plus(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_plus(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_minus(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_minus(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_minus(CALL_DATA cd)));
@@ -1269,6 +1551,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_minus(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_minus(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_minus(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_minus(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_minus(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_mult(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_mult(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_mult(CALL_DATA cd)));
@@ -1278,6 +1561,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_mult(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_mult(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_mult(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_mult(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_mult(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_div(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_div(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_div(CALL_DATA cd)));
@@ -1287,6 +1571,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_div(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_div(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_div(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_div(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_div(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_mod(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_mod(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_mod(CALL_DATA cd)));
@@ -1296,6 +1581,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_mod(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_mod(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_mod(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_mod(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_mod(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_eq(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_eq(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_eq(CALL_DATA cd)));
@@ -1305,6 +1591,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_eq(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_eq(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_eq(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_eq(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_eq(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_neq(CALL_DATA cd_eq, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_neq(CALL_DATA cd_eq, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_neq(CALL_DATA cd_eq, CALL_DATA cd)));
@@ -1314,6 +1601,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_neq(CALL_DATA cd_eq, CALL_DA
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_neq(CALL_DATA cd_eq, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_neq(CALL_DATA cd_eq, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_neq(CALL_DATA cd_eq, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_neq(CALL_DATA cd_eq, CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_lt(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_lt(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_lt(CALL_DATA cd)));
@@ -1323,6 +1611,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_lt(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_lt(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_lt(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_lt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_lt(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_le(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_le(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_le(CALL_DATA cd)));
@@ -1332,6 +1621,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_le(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_le(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_le(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_le(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_le(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_gt(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_gt(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_gt(CALL_DATA cd)));
@@ -1341,6 +1631,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_gt(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_gt(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_gt(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_gt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_gt(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_ge(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_ge(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_ge(CALL_DATA cd)));
@@ -1350,6 +1641,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_ge(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_ge(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_ge(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_ge(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_ge(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_ltlt(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_ltlt(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_ltlt(CALL_DATA cd)));
@@ -1359,6 +1651,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_ltlt(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_ltlt(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_ltlt(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_ltlt(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_ltlt(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_and(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_and(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_and(CALL_DATA cd)));
@@ -1368,6 +1661,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_and(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_and(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_and(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_and(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_and(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_or(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_or(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_or(CALL_DATA cd)));
@@ -1377,6 +1671,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_or(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_or(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_or(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_or(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_or(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_aref(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_aref(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_aref(CALL_DATA cd)));
@@ -1386,6 +1681,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_aref(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_aref(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_aref(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_aref(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_aref(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_aset(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_aset(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_aset(CALL_DATA cd)));
@@ -1395,24 +1691,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_aset(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_aset(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_aset(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_aset(CALL_DATA cd)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_aset_with(VALUE key, CALL_DATA cd)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_aset_with(VALUE key, CALL_DATA cd)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_aset_with(VALUE key, CALL_DATA cd)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_aset_with(VALUE key, CALL_DATA cd)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_aset_with(VALUE key, CALL_DATA cd)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_aset_with(VALUE key, CALL_DATA cd)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_aset_with(VALUE key, CALL_DATA cd)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_aset_with(VALUE key, CALL_DATA cd)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_aset_with(VALUE key, CALL_DATA cd)));
-PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_aref_with(VALUE key, CALL_DATA cd)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_aref_with(VALUE key, CALL_DATA cd)));
-PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_aref_with(VALUE key, CALL_DATA cd)));
-PUREFUNC(MAYBE_UNUSED(static const char* attr_name_opt_aref_with(VALUE key, CALL_DATA cd)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_open_opt_aref_with(VALUE key, CALL_DATA cd)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_aref_with(VALUE key, CALL_DATA cd)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_aref_with(VALUE key, CALL_DATA cd)));
-PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_aref_with(VALUE key, CALL_DATA cd)));
-PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_aref_with(VALUE key, CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_aset(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_length(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_length(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_length(CALL_DATA cd)));
@@ -1422,6 +1701,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_length(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_length(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_length(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_length(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_length(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_size(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_size(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_size(CALL_DATA cd)));
@@ -1431,6 +1711,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_size(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_size(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_size(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_size(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_size(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_empty_p(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_empty_p(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_empty_p(CALL_DATA cd)));
@@ -1440,6 +1721,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_empty_p(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_empty_p(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_empty_p(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_empty_p(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_empty_p(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_succ(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_succ(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_succ(CALL_DATA cd)));
@@ -1449,6 +1731,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_succ(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_succ(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_succ(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_succ(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_succ(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_not(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_not(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_not(CALL_DATA cd)));
@@ -1458,6 +1741,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_not(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_not(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_not(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_not(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_not(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_regexpmatch2(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_regexpmatch2(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_regexpmatch2(CALL_DATA cd)));
@@ -1467,6 +1751,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_regexpmatch2(CALL_DATA cd)))
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_regexpmatch2(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_regexpmatch2(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_regexpmatch2(CALL_DATA cd)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_regexpmatch2(CALL_DATA cd)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_invokebuiltin(RB_BUILTIN bf)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_invokebuiltin(RB_BUILTIN bf)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_invokebuiltin(RB_BUILTIN bf)));
@@ -1476,6 +1761,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_invokebuiltin(RB_BUILTIN bf)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_invokebuiltin(RB_BUILTIN bf)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_invokebuiltin(RB_BUILTIN bf)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_invokebuiltin(RB_BUILTIN bf)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_invokebuiltin(RB_BUILTIN bf)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_invokebuiltin_delegate(RB_BUILTIN bf, rb_num_t index)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_invokebuiltin_delegate(RB_BUILTIN bf, rb_num_t index)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_invokebuiltin_delegate(RB_BUILTIN bf, rb_num_t index)));
@@ -1485,6 +1771,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_invokebuiltin_delegate(RB_BU
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_invokebuiltin_delegate(RB_BUILTIN bf, rb_num_t index)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_invokebuiltin_delegate(RB_BUILTIN bf, rb_num_t index)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_invokebuiltin_delegate(RB_BUILTIN bf, rb_num_t index)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_invokebuiltin_delegate(RB_BUILTIN bf, rb_num_t index)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_opt_invokebuiltin_delegate_leave(RB_BUILTIN bf, rb_num_t index)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_opt_invokebuiltin_delegate_leave(RB_BUILTIN bf, rb_num_t index)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_opt_invokebuiltin_delegate_leave(RB_BUILTIN bf, rb_num_t index)));
@@ -1494,6 +1781,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_opt_invokebuiltin_delegate_leave
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_opt_invokebuiltin_delegate_leave(RB_BUILTIN bf, rb_num_t index)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_opt_invokebuiltin_delegate_leave(RB_BUILTIN bf, rb_num_t index)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_opt_invokebuiltin_delegate_leave(RB_BUILTIN bf, rb_num_t index)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_opt_invokebuiltin_delegate_leave(RB_BUILTIN bf, rb_num_t index)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_getlocal_WC_0(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_getlocal_WC_0(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_getlocal_WC_0(lindex_t idx)));
@@ -1503,6 +1791,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_getlocal_WC_0(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_getlocal_WC_0(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_getlocal_WC_0(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_getlocal_WC_0(lindex_t idx)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_getlocal_WC_0(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_getlocal_WC_1(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_getlocal_WC_1(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_getlocal_WC_1(lindex_t idx)));
@@ -1512,6 +1801,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_getlocal_WC_1(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_getlocal_WC_1(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_getlocal_WC_1(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_getlocal_WC_1(lindex_t idx)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_getlocal_WC_1(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_setlocal_WC_0(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_setlocal_WC_0(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_setlocal_WC_0(lindex_t idx)));
@@ -1521,6 +1811,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_setlocal_WC_0(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_setlocal_WC_0(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_setlocal_WC_0(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_setlocal_WC_0(lindex_t idx)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_setlocal_WC_0(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_setlocal_WC_1(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_setlocal_WC_1(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_setlocal_WC_1(lindex_t idx)));
@@ -1530,6 +1821,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_setlocal_WC_1(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_setlocal_WC_1(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_setlocal_WC_1(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_setlocal_WC_1(lindex_t idx)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_setlocal_WC_1(lindex_t idx)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_putobject_INT2FIX_0_(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_putobject_INT2FIX_0_(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_putobject_INT2FIX_0_(void)));
@@ -1539,6 +1831,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_putobject_INT2FIX_0_(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_putobject_INT2FIX_0_(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_putobject_INT2FIX_0_(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_putobject_INT2FIX_0_(void)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_putobject_INT2FIX_0_(void)));
 PUREFUNC(MAYBE_UNUSED(static enum ruby_vminsn_type attr_bin_putobject_INT2FIX_1_(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_handles_sp_putobject_INT2FIX_1_(void)));
 PUREFUNC(MAYBE_UNUSED(static bool attr_leaf_putobject_INT2FIX_1_(void)));
@@ -1548,6 +1841,7 @@ PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_popn_putobject_INT2FIX_1_(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_retn_putobject_INT2FIX_1_(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_snum_t attr_sp_inc_putobject_INT2FIX_1_(void)));
 PUREFUNC(MAYBE_UNUSED(static rb_num_t attr_width_putobject_INT2FIX_1_(void)));
+PUREFUNC(MAYBE_UNUSED(static bool attr_zjit_profile_putobject_INT2FIX_1_(void)));
 
 /* attr enum ruby_vminsn_type bin @ nop()()() */
 enum ruby_vminsn_type
@@ -1610,6 +1904,13 @@ rb_num_t
 attr_width_nop(void)
 {
     return 1;
+}
+
+/* attr bool zjit_profile @ nop()()() */
+bool
+attr_zjit_profile_nop(void)
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ getlocal(idx, level)()(val) */
@@ -1702,6 +2003,16 @@ attr_width_getlocal(
     return 3;
 }
 
+/* attr bool zjit_profile @ getlocal(idx, level)()(val) */
+bool
+attr_zjit_profile_getlocal(
+    MAYBE_UNUSED(lindex_t idx),
+    MAYBE_UNUSED(rb_num_t level)
+)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ setlocal(idx, level)(val)() */
 enum ruby_vminsn_type
 attr_bin_setlocal(
@@ -1790,6 +2101,16 @@ attr_width_setlocal(
 )
 {
     return 3;
+}
+
+/* attr bool zjit_profile @ setlocal(idx, level)(val)() */
+bool
+attr_zjit_profile_setlocal(
+    MAYBE_UNUSED(lindex_t idx),
+    MAYBE_UNUSED(rb_num_t level)
+)
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ getblockparam(idx, level)()(val) */
@@ -1882,6 +2203,16 @@ attr_width_getblockparam(
     return 3;
 }
 
+/* attr bool zjit_profile @ getblockparam(idx, level)()(val) */
+bool
+attr_zjit_profile_getblockparam(
+    MAYBE_UNUSED(lindex_t idx),
+    MAYBE_UNUSED(rb_num_t level)
+)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ setblockparam(idx, level)(val)() */
 enum ruby_vminsn_type
 attr_bin_setblockparam(
@@ -1970,6 +2301,16 @@ attr_width_setblockparam(
 )
 {
     return 3;
+}
+
+/* attr bool zjit_profile @ setblockparam(idx, level)(val)() */
+bool
+attr_zjit_profile_setblockparam(
+    MAYBE_UNUSED(lindex_t idx),
+    MAYBE_UNUSED(rb_num_t level)
+)
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ getblockparamproxy(idx, level)()(val) */
@@ -2062,6 +2403,16 @@ attr_width_getblockparamproxy(
     return 3;
 }
 
+/* attr bool zjit_profile @ getblockparamproxy(idx, level)()(val) */
+bool
+attr_zjit_profile_getblockparamproxy(
+    MAYBE_UNUSED(lindex_t idx),
+    MAYBE_UNUSED(rb_num_t level)
+)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ getspecial(key, type)()(val) */
 enum ruby_vminsn_type
 attr_bin_getspecial(
@@ -2092,7 +2443,7 @@ attr_leaf_getspecial(
     return
 #line 192 "insns.def"
 (type == 0) ? true : false;
-#line 2096 "insns_info.inc"
+#line 2447 "insns_info.inc"
 }
 
 /* attr const char* name @ getspecial(key, type)()(val) */
@@ -2153,6 +2504,16 @@ attr_width_getspecial(
 )
 {
     return 3;
+}
+
+/* attr bool zjit_profile @ getspecial(key, type)()(val) */
+bool
+attr_zjit_profile_getspecial(
+    MAYBE_UNUSED(rb_num_t key),
+    MAYBE_UNUSED(rb_num_t type)
+)
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ setspecial(key)(obj)() */
@@ -2218,6 +2579,13 @@ attr_width_setspecial(MAYBE_UNUSED(rb_num_t key))
     return 2;
 }
 
+/* attr bool zjit_profile @ setspecial(key)(obj)() */
+bool
+attr_zjit_profile_setspecial(MAYBE_UNUSED(rb_num_t key))
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ getinstancevariable(id, ic)()(val) */
 enum ruby_vminsn_type
 attr_bin_getinstancevariable(
@@ -2248,7 +2616,7 @@ attr_leaf_getinstancevariable(
     return
 #line 214 "insns.def"
 false;
-#line 2252 "insns_info.inc"
+#line 2620 "insns_info.inc"
 }
 
 /* attr const char* name @ getinstancevariable(id, ic)()(val) */
@@ -2311,6 +2679,19 @@ attr_width_getinstancevariable(
     return 3;
 }
 
+/* attr bool zjit_profile @ getinstancevariable(id, ic)()(val) */
+bool
+attr_zjit_profile_getinstancevariable(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(IVC ic)
+)
+{
+    return
+#line 215 "insns.def"
+true;
+#line 2693 "insns_info.inc"
+}
+
 /* attr enum ruby_vminsn_type bin @ setinstancevariable(id, ic)(val)() */
 enum ruby_vminsn_type
 attr_bin_setinstancevariable(
@@ -2339,9 +2720,9 @@ attr_leaf_setinstancevariable(
 )
 {
     return
-#line 225 "insns.def"
+#line 226 "insns.def"
 false;
-#line 2345 "insns_info.inc"
+#line 2726 "insns_info.inc"
 }
 
 /* attr const char* name @ setinstancevariable(id, ic)(val)() */
@@ -2404,6 +2785,19 @@ attr_width_setinstancevariable(
     return 3;
 }
 
+/* attr bool zjit_profile @ setinstancevariable(id, ic)(val)() */
+bool
+attr_zjit_profile_setinstancevariable(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(IVC ic)
+)
+{
+    return
+#line 227 "insns.def"
+true;
+#line 2799 "insns_info.inc"
+}
+
 /* attr enum ruby_vminsn_type bin @ getclassvariable(id, ic)()(val) */
 enum ruby_vminsn_type
 attr_bin_getclassvariable(
@@ -2432,9 +2826,9 @@ attr_leaf_getclassvariable(
 )
 {
     return
-#line 237 "insns.def"
+#line 239 "insns.def"
 false;
-#line 2438 "insns_info.inc"
+#line 2832 "insns_info.inc"
 }
 
 /* attr const char* name @ getclassvariable(id, ic)()(val) */
@@ -2497,6 +2891,16 @@ attr_width_getclassvariable(
     return 3;
 }
 
+/* attr bool zjit_profile @ getclassvariable(id, ic)()(val) */
+bool
+attr_zjit_profile_getclassvariable(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ICVARC ic)
+)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ setclassvariable(id, ic)(val)() */
 enum ruby_vminsn_type
 attr_bin_setclassvariable(
@@ -2525,9 +2929,9 @@ attr_leaf_setclassvariable(
 )
 {
     return
-#line 250 "insns.def"
+#line 252 "insns.def"
 false;
-#line 2531 "insns_info.inc"
+#line 2935 "insns_info.inc"
 }
 
 /* attr const char* name @ setclassvariable(id, ic)(val)() */
@@ -2590,6 +2994,16 @@ attr_width_setclassvariable(
     return 3;
 }
 
+/* attr bool zjit_profile @ setclassvariable(id, ic)(val)() */
+bool
+attr_zjit_profile_setclassvariable(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ICVARC ic)
+)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ opt_getconstant_path(ic)()(val) */
 enum ruby_vminsn_type
 attr_bin_opt_getconstant_path(MAYBE_UNUSED(IC ic))
@@ -2609,9 +3023,9 @@ bool
 attr_leaf_opt_getconstant_path(MAYBE_UNUSED(IC ic))
 {
     return
-#line 261 "insns.def"
+#line 263 "insns.def"
 false;
-#line 2615 "insns_info.inc"
+#line 3029 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_getconstant_path(ic)()(val) */
@@ -2656,6 +3070,13 @@ attr_width_opt_getconstant_path(MAYBE_UNUSED(IC ic))
     return 2;
 }
 
+/* attr bool zjit_profile @ opt_getconstant_path(ic)()(val) */
+bool
+attr_zjit_profile_opt_getconstant_path(MAYBE_UNUSED(IC ic))
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ getconstant(id)(klass, allow_nil)(val) */
 enum ruby_vminsn_type
 attr_bin_getconstant(MAYBE_UNUSED(ID id))
@@ -2675,9 +3096,9 @@ bool
 attr_leaf_getconstant(MAYBE_UNUSED(ID id))
 {
     return
-#line 276 "insns.def"
+#line 278 "insns.def"
 false;
-#line 2681 "insns_info.inc"
+#line 3102 "insns_info.inc"
 }
 
 /* attr const char* name @ getconstant(id)(klass, allow_nil)(val) */
@@ -2722,6 +3143,13 @@ attr_width_getconstant(MAYBE_UNUSED(ID id))
     return 2;
 }
 
+/* attr bool zjit_profile @ getconstant(id)(klass, allow_nil)(val) */
+bool
+attr_zjit_profile_getconstant(MAYBE_UNUSED(ID id))
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ setconstant(id)(val, cbase)() */
 enum ruby_vminsn_type
 attr_bin_setconstant(MAYBE_UNUSED(ID id))
@@ -2741,9 +3169,9 @@ bool
 attr_leaf_setconstant(MAYBE_UNUSED(ID id))
 {
     return
-#line 292 "insns.def"
+#line 294 "insns.def"
 false;
-#line 2747 "insns_info.inc"
+#line 3175 "insns_info.inc"
 }
 
 /* attr const char* name @ setconstant(id)(val, cbase)() */
@@ -2788,6 +3216,13 @@ attr_width_setconstant(MAYBE_UNUSED(ID id))
     return 2;
 }
 
+/* attr bool zjit_profile @ setconstant(id)(val, cbase)() */
+bool
+attr_zjit_profile_setconstant(MAYBE_UNUSED(ID id))
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ getglobal(gid)()(val) */
 enum ruby_vminsn_type
 attr_bin_getglobal(MAYBE_UNUSED(ID gid))
@@ -2807,9 +3242,9 @@ bool
 attr_leaf_getglobal(MAYBE_UNUSED(ID gid))
 {
     return
-#line 305 "insns.def"
+#line 307 "insns.def"
 false;
-#line 2813 "insns_info.inc"
+#line 3248 "insns_info.inc"
 }
 
 /* attr const char* name @ getglobal(gid)()(val) */
@@ -2854,6 +3289,13 @@ attr_width_getglobal(MAYBE_UNUSED(ID gid))
     return 2;
 }
 
+/* attr bool zjit_profile @ getglobal(gid)()(val) */
+bool
+attr_zjit_profile_getglobal(MAYBE_UNUSED(ID gid))
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ setglobal(gid)(val)() */
 enum ruby_vminsn_type
 attr_bin_setglobal(MAYBE_UNUSED(ID gid))
@@ -2873,9 +3315,9 @@ bool
 attr_leaf_setglobal(MAYBE_UNUSED(ID gid))
 {
     return
-#line 316 "insns.def"
+#line 318 "insns.def"
 false;
-#line 2879 "insns_info.inc"
+#line 3321 "insns_info.inc"
 }
 
 /* attr const char* name @ setglobal(gid)(val)() */
@@ -2918,6 +3360,13 @@ rb_num_t
 attr_width_setglobal(MAYBE_UNUSED(ID gid))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ setglobal(gid)(val)() */
+bool
+attr_zjit_profile_setglobal(MAYBE_UNUSED(ID gid))
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ putnil()()(val) */
@@ -2983,6 +3432,13 @@ attr_width_putnil(void)
     return 1;
 }
 
+/* attr bool zjit_profile @ putnil()()(val) */
+bool
+attr_zjit_profile_putnil(void)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ putself()()(val) */
 enum ruby_vminsn_type
 attr_bin_putself(void)
@@ -3044,6 +3500,13 @@ rb_num_t
 attr_width_putself(void)
 {
     return 1;
+}
+
+/* attr bool zjit_profile @ putself()()(val) */
+bool
+attr_zjit_profile_putself(void)
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ putobject(val)()(val) */
@@ -3109,6 +3572,13 @@ attr_width_putobject(MAYBE_UNUSED(VALUE val))
     return 2;
 }
 
+/* attr bool zjit_profile @ putobject(val)()(val) */
+bool
+attr_zjit_profile_putobject(MAYBE_UNUSED(VALUE val))
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ putspecialobject(value_type)()(val) */
 enum ruby_vminsn_type
 attr_bin_putspecialobject(MAYBE_UNUSED(rb_num_t value_type))
@@ -3128,9 +3598,9 @@ bool
 attr_leaf_putspecialobject(MAYBE_UNUSED(rb_num_t value_type))
 {
     return
-#line 363 "insns.def"
+#line 365 "insns.def"
 (value_type == VM_SPECIAL_OBJECT_VMCORE);
-#line 3134 "insns_info.inc"
+#line 3604 "insns_info.inc"
 }
 
 /* attr const char* name @ putspecialobject(value_type)()(val) */
@@ -3173,6 +3643,13 @@ rb_num_t
 attr_width_putspecialobject(MAYBE_UNUSED(rb_num_t value_type))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ putspecialobject(value_type)()(val) */
+bool
+attr_zjit_profile_putspecialobject(MAYBE_UNUSED(rb_num_t value_type))
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ putstring(str)()(val) */
@@ -3238,6 +3715,13 @@ attr_width_putstring(MAYBE_UNUSED(VALUE str))
     return 2;
 }
 
+/* attr bool zjit_profile @ putstring(str)()(val) */
+bool
+attr_zjit_profile_putstring(MAYBE_UNUSED(VALUE str))
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ putchilledstring(str)()(val) */
 enum ruby_vminsn_type
 attr_bin_putchilledstring(MAYBE_UNUSED(VALUE str))
@@ -3301,6 +3785,13 @@ attr_width_putchilledstring(MAYBE_UNUSED(VALUE str))
     return 2;
 }
 
+/* attr bool zjit_profile @ putchilledstring(str)()(val) */
+bool
+attr_zjit_profile_putchilledstring(MAYBE_UNUSED(VALUE str))
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ concatstrings(num)(...)(val) */
 enum ruby_vminsn_type
 attr_bin_concatstrings(MAYBE_UNUSED(rb_num_t num))
@@ -3320,9 +3811,9 @@ bool
 attr_leaf_concatstrings(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 399 "insns.def"
+#line 401 "insns.def"
 false;
-#line 3326 "insns_info.inc"
+#line 3817 "insns_info.inc"
 }
 
 /* attr const char* name @ concatstrings(num)(...)(val) */
@@ -3358,9 +3849,9 @@ rb_snum_t
 attr_sp_inc_concatstrings(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 400 "insns.def"
+#line 402 "insns.def"
 1 - (rb_snum_t)num;
-#line 3364 "insns_info.inc"
+#line 3855 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ concatstrings(num)(...)(val) */
@@ -3368,6 +3859,13 @@ rb_num_t
 attr_width_concatstrings(MAYBE_UNUSED(rb_num_t num))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ concatstrings(num)(...)(val) */
+bool
+attr_zjit_profile_concatstrings(MAYBE_UNUSED(rb_num_t num))
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ anytostring()(val, str)(val) */
@@ -3433,6 +3931,13 @@ attr_width_anytostring(void)
     return 1;
 }
 
+/* attr bool zjit_profile @ anytostring()(val, str)(val) */
+bool
+attr_zjit_profile_anytostring(void)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ toregexp(opt, cnt)(...)(val) */
 enum ruby_vminsn_type
 attr_bin_toregexp(
@@ -3461,9 +3966,9 @@ attr_leaf_toregexp(
 )
 {
     return
-#line 426 "insns.def"
+#line 428 "insns.def"
 false;
-#line 3467 "insns_info.inc"
+#line 3972 "insns_info.inc"
 }
 
 /* attr const char* name @ toregexp(opt, cnt)(...)(val) */
@@ -3514,9 +4019,9 @@ attr_sp_inc_toregexp(
 )
 {
     return
-#line 427 "insns.def"
+#line 429 "insns.def"
 1 - (rb_snum_t)cnt;
-#line 3520 "insns_info.inc"
+#line 4025 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ toregexp(opt, cnt)(...)(val) */
@@ -3527,6 +4032,16 @@ attr_width_toregexp(
 )
 {
     return 3;
+}
+
+/* attr bool zjit_profile @ toregexp(opt, cnt)(...)(val) */
+bool
+attr_zjit_profile_toregexp(
+    MAYBE_UNUSED(rb_num_t opt),
+    MAYBE_UNUSED(rb_num_t cnt)
+)
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ intern()(str)(sym) */
@@ -3592,6 +4107,13 @@ attr_width_intern(void)
     return 1;
 }
 
+/* attr bool zjit_profile @ intern()(str)(sym) */
+bool
+attr_zjit_profile_intern(void)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ newarray(num)(...)(val) */
 enum ruby_vminsn_type
 attr_bin_newarray(MAYBE_UNUSED(rb_num_t num))
@@ -3646,9 +4168,9 @@ rb_snum_t
 attr_sp_inc_newarray(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 450 "insns.def"
+#line 452 "insns.def"
 1 - (rb_snum_t)num;
-#line 3652 "insns_info.inc"
+#line 4174 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ newarray(num)(...)(val) */
@@ -3656,6 +4178,13 @@ rb_num_t
 attr_width_newarray(MAYBE_UNUSED(rb_num_t num))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ newarray(num)(...)(val) */
+bool
+attr_zjit_profile_newarray(MAYBE_UNUSED(rb_num_t num))
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ pushtoarraykwsplat()(ary, hash)(ary) */
@@ -3721,6 +4250,13 @@ attr_width_pushtoarraykwsplat(void)
     return 1;
 }
 
+/* attr bool zjit_profile @ pushtoarraykwsplat()(ary, hash)(ary) */
+bool
+attr_zjit_profile_pushtoarraykwsplat(void)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ duparray(ary)()(val) */
 enum ruby_vminsn_type
 attr_bin_duparray(MAYBE_UNUSED(VALUE ary))
@@ -3782,6 +4318,13 @@ rb_num_t
 attr_width_duparray(MAYBE_UNUSED(VALUE ary))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ duparray(ary)()(val) */
+bool
+attr_zjit_profile_duparray(MAYBE_UNUSED(VALUE ary))
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ duphash(hash)()(val) */
@@ -3847,6 +4390,13 @@ attr_width_duphash(MAYBE_UNUSED(VALUE hash))
     return 2;
 }
 
+/* attr bool zjit_profile @ duphash(hash)()(val) */
+bool
+attr_zjit_profile_duphash(MAYBE_UNUSED(VALUE hash))
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ expandarray(num, flag)(..., ary)(...) */
 enum ruby_vminsn_type
 attr_bin_expandarray(
@@ -3865,9 +4415,9 @@ attr_handles_sp_expandarray(
 )
 {
     return
-#line 505 "insns.def"
+#line 507 "insns.def"
 true;
-#line 3871 "insns_info.inc"
+#line 4421 "insns_info.inc"
 }
 
 /* attr bool leaf @ expandarray(num, flag)(..., ary)(...) */
@@ -3878,9 +4428,9 @@ attr_leaf_expandarray(
 )
 {
     return
-#line 506 "insns.def"
+#line 508 "insns.def"
 false;
-#line 3884 "insns_info.inc"
+#line 4434 "insns_info.inc"
 }
 
 /* attr const char* name @ expandarray(num, flag)(..., ary)(...) */
@@ -3931,9 +4481,9 @@ attr_sp_inc_expandarray(
 )
 {
     return
-#line 507 "insns.def"
+#line 509 "insns.def"
 (rb_snum_t)num - 1 + (flag & 1 ? 1 : 0);
-#line 3937 "insns_info.inc"
+#line 4487 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ expandarray(num, flag)(..., ary)(...) */
@@ -3944,6 +4494,16 @@ attr_width_expandarray(
 )
 {
     return 3;
+}
+
+/* attr bool zjit_profile @ expandarray(num, flag)(..., ary)(...) */
+bool
+attr_zjit_profile_expandarray(
+    MAYBE_UNUSED(rb_num_t num),
+    MAYBE_UNUSED(rb_num_t flag)
+)
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ concatarray()(ary1, ary2)(ary) */
@@ -3965,9 +4525,9 @@ bool
 attr_leaf_concatarray(void)
 {
     return
-#line 520 "insns.def"
+#line 522 "insns.def"
 false;
-#line 3971 "insns_info.inc"
+#line 4531 "insns_info.inc"
 }
 
 /* attr const char* name @ concatarray()(ary1, ary2)(ary) */
@@ -4012,6 +4572,13 @@ attr_width_concatarray(void)
     return 1;
 }
 
+/* attr bool zjit_profile @ concatarray()(ary1, ary2)(ary) */
+bool
+attr_zjit_profile_concatarray(void)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ concattoarray()(ary1, ary2)(ary) */
 enum ruby_vminsn_type
 attr_bin_concattoarray(void)
@@ -4031,9 +4598,9 @@ bool
 attr_leaf_concattoarray(void)
 {
     return
-#line 534 "insns.def"
+#line 536 "insns.def"
 false;
-#line 4037 "insns_info.inc"
+#line 4604 "insns_info.inc"
 }
 
 /* attr const char* name @ concattoarray()(ary1, ary2)(ary) */
@@ -4076,6 +4643,13 @@ rb_num_t
 attr_width_concattoarray(void)
 {
     return 1;
+}
+
+/* attr bool zjit_profile @ concattoarray()(ary1, ary2)(ary) */
+bool
+attr_zjit_profile_concattoarray(void)
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ pushtoarray(num)(...)(val) */
@@ -4132,9 +4706,9 @@ rb_snum_t
 attr_sp_inc_pushtoarray(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 545 "insns.def"
+#line 547 "insns.def"
 -(rb_snum_t)num;
-#line 4138 "insns_info.inc"
+#line 4712 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ pushtoarray(num)(...)(val) */
@@ -4142,6 +4716,13 @@ rb_num_t
 attr_width_pushtoarray(MAYBE_UNUSED(rb_num_t num))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ pushtoarray(num)(...)(val) */
+bool
+attr_zjit_profile_pushtoarray(MAYBE_UNUSED(rb_num_t num))
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ splatarray(flag)(ary)(obj) */
@@ -4163,9 +4744,9 @@ bool
 attr_leaf_splatarray(MAYBE_UNUSED(VALUE flag))
 {
     return
-#line 557 "insns.def"
+#line 559 "insns.def"
 false;
-#line 4169 "insns_info.inc"
+#line 4750 "insns_info.inc"
 }
 
 /* attr const char* name @ splatarray(flag)(ary)(obj) */
@@ -4210,6 +4791,13 @@ attr_width_splatarray(MAYBE_UNUSED(VALUE flag))
     return 2;
 }
 
+/* attr bool zjit_profile @ splatarray(flag)(ary)(obj) */
+bool
+attr_zjit_profile_splatarray(MAYBE_UNUSED(VALUE flag))
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ splatkw()(hash, block)(obj, block) */
 enum ruby_vminsn_type
 attr_bin_splatkw(void)
@@ -4229,9 +4817,9 @@ bool
 attr_leaf_splatkw(void)
 {
     return
-#line 568 "insns.def"
+#line 570 "insns.def"
 false;
-#line 4235 "insns_info.inc"
+#line 4823 "insns_info.inc"
 }
 
 /* attr const char* name @ splatkw()(hash, block)(obj, block) */
@@ -4276,6 +4864,13 @@ attr_width_splatkw(void)
     return 1;
 }
 
+/* attr bool zjit_profile @ splatkw()(hash, block)(obj, block) */
+bool
+attr_zjit_profile_splatkw(void)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ newhash(num)(...)(val) */
 enum ruby_vminsn_type
 attr_bin_newhash(MAYBE_UNUSED(rb_num_t num))
@@ -4295,9 +4890,9 @@ bool
 attr_leaf_newhash(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 584 "insns.def"
+#line 586 "insns.def"
 false;
-#line 4301 "insns_info.inc"
+#line 4896 "insns_info.inc"
 }
 
 /* attr const char* name @ newhash(num)(...)(val) */
@@ -4333,9 +4928,9 @@ rb_snum_t
 attr_sp_inc_newhash(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 585 "insns.def"
+#line 587 "insns.def"
 1 - (rb_snum_t)num;
-#line 4339 "insns_info.inc"
+#line 4934 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ newhash(num)(...)(val) */
@@ -4343,6 +4938,13 @@ rb_num_t
 attr_width_newhash(MAYBE_UNUSED(rb_num_t num))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ newhash(num)(...)(val) */
+bool
+attr_zjit_profile_newhash(MAYBE_UNUSED(rb_num_t num))
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ newrange(flag)(low, high)(val) */
@@ -4364,9 +4966,9 @@ bool
 attr_leaf_newrange(MAYBE_UNUSED(rb_num_t flag))
 {
     return
-#line 605 "insns.def"
+#line 607 "insns.def"
 false;
-#line 4370 "insns_info.inc"
+#line 4972 "insns_info.inc"
 }
 
 /* attr const char* name @ newrange(flag)(low, high)(val) */
@@ -4409,6 +5011,13 @@ rb_num_t
 attr_width_newrange(MAYBE_UNUSED(rb_num_t flag))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ newrange(flag)(low, high)(val) */
+bool
+attr_zjit_profile_newrange(MAYBE_UNUSED(rb_num_t flag))
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ pop()(val)() */
@@ -4474,6 +5083,13 @@ attr_width_pop(void)
     return 1;
 }
 
+/* attr bool zjit_profile @ pop()(val)() */
+bool
+attr_zjit_profile_pop(void)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ dup()(val)(val1, val2) */
 enum ruby_vminsn_type
 attr_bin_dup(void)
@@ -4537,6 +5153,13 @@ attr_width_dup(void)
     return 1;
 }
 
+/* attr bool zjit_profile @ dup()(val)(val1, val2) */
+bool
+attr_zjit_profile_dup(void)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ dupn(n)(...)(...) */
 enum ruby_vminsn_type
 attr_bin_dupn(MAYBE_UNUSED(rb_num_t n))
@@ -4591,9 +5214,9 @@ rb_snum_t
 attr_sp_inc_dupn(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 641 "insns.def"
+#line 643 "insns.def"
 n;
-#line 4597 "insns_info.inc"
+#line 5220 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ dupn(n)(...)(...) */
@@ -4601,6 +5224,13 @@ rb_num_t
 attr_width_dupn(MAYBE_UNUSED(rb_num_t n))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ dupn(n)(...)(...) */
+bool
+attr_zjit_profile_dupn(MAYBE_UNUSED(rb_num_t n))
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ swap()(val, obj)(obj, val) */
@@ -4666,6 +5296,13 @@ attr_width_swap(void)
     return 1;
 }
 
+/* attr bool zjit_profile @ swap()(val, obj)(obj, val) */
+bool
+attr_zjit_profile_swap(void)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ opt_reverse(n)(...)(...) */
 enum ruby_vminsn_type
 attr_bin_opt_reverse(MAYBE_UNUSED(rb_num_t n))
@@ -4720,9 +5357,9 @@ rb_snum_t
 attr_sp_inc_opt_reverse(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 665 "insns.def"
+#line 667 "insns.def"
 0;
-#line 4726 "insns_info.inc"
+#line 5363 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_reverse(n)(...)(...) */
@@ -4730,6 +5367,13 @@ rb_num_t
 attr_width_opt_reverse(MAYBE_UNUSED(rb_num_t n))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ opt_reverse(n)(...)(...) */
+bool
+attr_zjit_profile_opt_reverse(MAYBE_UNUSED(rb_num_t n))
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ topn(n)(...)(val) */
@@ -4786,9 +5430,9 @@ rb_snum_t
 attr_sp_inc_topn(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 695 "insns.def"
+#line 697 "insns.def"
 1;
-#line 4792 "insns_info.inc"
+#line 5436 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ topn(n)(...)(val) */
@@ -4796,6 +5440,13 @@ rb_num_t
 attr_width_topn(MAYBE_UNUSED(rb_num_t n))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ topn(n)(...)(val) */
+bool
+attr_zjit_profile_topn(MAYBE_UNUSED(rb_num_t n))
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ setn(n)(..., val)(val) */
@@ -4852,9 +5503,9 @@ rb_snum_t
 attr_sp_inc_setn(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 706 "insns.def"
+#line 708 "insns.def"
 0;
-#line 4858 "insns_info.inc"
+#line 5509 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ setn(n)(..., val)(val) */
@@ -4862,6 +5513,13 @@ rb_num_t
 attr_width_setn(MAYBE_UNUSED(rb_num_t n))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ setn(n)(..., val)(val) */
+bool
+attr_zjit_profile_setn(MAYBE_UNUSED(rb_num_t n))
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ adjuststack(n)(...)(...) */
@@ -4918,9 +5576,9 @@ rb_snum_t
 attr_sp_inc_adjuststack(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 717 "insns.def"
+#line 719 "insns.def"
 -(rb_snum_t)n;
-#line 4924 "insns_info.inc"
+#line 5582 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ adjuststack(n)(...)(...) */
@@ -4928,6 +5586,13 @@ rb_num_t
 attr_width_adjuststack(MAYBE_UNUSED(rb_num_t n))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ adjuststack(n)(...)(...) */
+bool
+attr_zjit_profile_adjuststack(MAYBE_UNUSED(rb_num_t n))
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ defined(op_type, obj, pushval)(v)(val) */
@@ -4961,9 +5626,9 @@ attr_leaf_defined(
 )
 {
     return
-#line 732 "insns.def"
+#line 734 "insns.def"
 leafness_of_defined(op_type);
-#line 4967 "insns_info.inc"
+#line 5632 "insns_info.inc"
 }
 
 /* attr const char* name @ defined(op_type, obj, pushval)(v)(val) */
@@ -5032,6 +5697,17 @@ attr_width_defined(
     return 4;
 }
 
+/* attr bool zjit_profile @ defined(op_type, obj, pushval)(v)(val) */
+bool
+attr_zjit_profile_defined(
+    MAYBE_UNUSED(rb_num_t op_type),
+    MAYBE_UNUSED(VALUE obj),
+    MAYBE_UNUSED(VALUE pushval)
+)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ definedivar(id, ic, pushval)()(val) */
 enum ruby_vminsn_type
 attr_bin_definedivar(
@@ -5063,9 +5739,9 @@ attr_leaf_definedivar(
 )
 {
     return
-#line 746 "insns.def"
+#line 748 "insns.def"
 false;
-#line 5069 "insns_info.inc"
+#line 5745 "insns_info.inc"
 }
 
 /* attr const char* name @ definedivar(id, ic, pushval)()(val) */
@@ -5134,6 +5810,20 @@ attr_width_definedivar(
     return 4;
 }
 
+/* attr bool zjit_profile @ definedivar(id, ic, pushval)()(val) */
+bool
+attr_zjit_profile_definedivar(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(IVC ic),
+    MAYBE_UNUSED(VALUE pushval)
+)
+{
+    return
+#line 749 "insns.def"
+true;
+#line 5825 "insns_info.inc"
+}
+
 /* attr enum ruby_vminsn_type bin @ checkmatch(flag)(target, pattern)(result) */
 enum ruby_vminsn_type
 attr_bin_checkmatch(MAYBE_UNUSED(rb_num_t flag))
@@ -5153,9 +5843,9 @@ bool
 attr_leaf_checkmatch(MAYBE_UNUSED(rb_num_t flag))
 {
     return
-#line 766 "insns.def"
+#line 769 "insns.def"
 leafness_of_checkmatch(flag);
-#line 5159 "insns_info.inc"
+#line 5849 "insns_info.inc"
 }
 
 /* attr const char* name @ checkmatch(flag)(target, pattern)(result) */
@@ -5198,6 +5888,13 @@ rb_num_t
 attr_width_checkmatch(MAYBE_UNUSED(rb_num_t flag))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ checkmatch(flag)(target, pattern)(result) */
+bool
+attr_zjit_profile_checkmatch(MAYBE_UNUSED(rb_num_t flag))
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ checkkeyword(kw_bits_index, keyword_index)()(ret) */
@@ -5290,6 +5987,16 @@ attr_width_checkkeyword(
     return 3;
 }
 
+/* attr bool zjit_profile @ checkkeyword(kw_bits_index, keyword_index)()(ret) */
+bool
+attr_zjit_profile_checkkeyword(
+    MAYBE_UNUSED(lindex_t kw_bits_index),
+    MAYBE_UNUSED(lindex_t keyword_index)
+)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ checktype(type)(val)(ret) */
 enum ruby_vminsn_type
 attr_bin_checktype(MAYBE_UNUSED(rb_num_t type))
@@ -5351,6 +6058,13 @@ rb_num_t
 attr_width_checktype(MAYBE_UNUSED(rb_num_t type))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ checktype(type)(val)(ret) */
+bool
+attr_zjit_profile_checktype(MAYBE_UNUSED(rb_num_t type))
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ defineclass(id, class_iseq, flags)(cbase, super)(val) */
@@ -5452,6 +6166,17 @@ attr_width_defineclass(
     return 4;
 }
 
+/* attr bool zjit_profile @ defineclass(id, class_iseq, flags)(cbase, super)(val) */
+bool
+attr_zjit_profile_defineclass(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ISEQ class_iseq),
+    MAYBE_UNUSED(rb_num_t flags)
+)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ definemethod(id, iseq)()() */
 enum ruby_vminsn_type
 attr_bin_definemethod(
@@ -5540,6 +6265,16 @@ attr_width_definemethod(
 )
 {
     return 3;
+}
+
+/* attr bool zjit_profile @ definemethod(id, iseq)()() */
+bool
+attr_zjit_profile_definemethod(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ISEQ iseq)
+)
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ definesmethod(id, iseq)(obj)() */
@@ -5632,6 +6367,16 @@ attr_width_definesmethod(
     return 3;
 }
 
+/* attr bool zjit_profile @ definesmethod(id, iseq)(obj)() */
+bool
+attr_zjit_profile_definesmethod(
+    MAYBE_UNUSED(ID id),
+    MAYBE_UNUSED(ISEQ iseq)
+)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ send(cd, blockiseq)(...)(val) */
 enum ruby_vminsn_type
 attr_bin_send(
@@ -5650,9 +6395,9 @@ attr_comptime_sp_inc_send(
 )
 {
     return
-#line 848 "insns.def"
+#line 853 "insns.def"
 sp_inc_of_sendish(ci);
-#line 5656 "insns_info.inc"
+#line 6401 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ send(cd, blockiseq)(...)(val) */
@@ -5723,9 +6468,9 @@ attr_sp_inc_send(
 )
 {
     return
-#line 847 "insns.def"
+#line 852 "insns.def"
 sp_inc_of_sendish(cd->ci);
-#line 5729 "insns_info.inc"
+#line 6474 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ send(cd, blockiseq)(...)(val) */
@@ -5736,6 +6481,19 @@ attr_width_send(
 )
 {
     return 3;
+}
+
+/* attr bool zjit_profile @ send(cd, blockiseq)(...)(val) */
+bool
+attr_zjit_profile_send(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return
+#line 851 "insns.def"
+true;
+#line 6497 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ sendforward(cd, blockiseq)(...)(val) */
@@ -5756,9 +6514,9 @@ attr_comptime_sp_inc_sendforward(
 )
 {
     return
-#line 867 "insns.def"
+#line 872 "insns.def"
 sp_inc_of_sendish(ci);
-#line 5762 "insns_info.inc"
+#line 6520 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ sendforward(cd, blockiseq)(...)(val) */
@@ -5829,9 +6587,9 @@ attr_sp_inc_sendforward(
 )
 {
     return
-#line 866 "insns.def"
+#line 871 "insns.def"
 sp_inc_of_sendish(cd->ci);
-#line 5835 "insns_info.inc"
+#line 6593 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ sendforward(cd, blockiseq)(...)(val) */
@@ -5842,6 +6600,16 @@ attr_width_sendforward(
 )
 {
     return 3;
+}
+
+/* attr bool zjit_profile @ sendforward(cd, blockiseq)(...)(val) */
+bool
+attr_zjit_profile_sendforward(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_send_without_block(cd)(...)(val) */
@@ -5856,9 +6624,9 @@ rb_snum_t
 attr_comptime_sp_inc_opt_send_without_block(MAYBE_UNUSED(CALL_INFO ci))
 {
     return
-#line 895 "insns.def"
+#line 901 "insns.def"
 sp_inc_of_sendish(ci);
-#line 5862 "insns_info.inc"
+#line 6630 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ opt_send_without_block(cd)(...)(val) */
@@ -5866,9 +6634,9 @@ bool
 attr_handles_sp_opt_send_without_block(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 893 "insns.def"
+#line 899 "insns.def"
 true;
-#line 5872 "insns_info.inc"
+#line 6640 "insns_info.inc"
 }
 
 /* attr bool leaf @ opt_send_without_block(cd)(...)(val) */
@@ -5911,9 +6679,9 @@ rb_snum_t
 attr_sp_inc_opt_send_without_block(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 894 "insns.def"
+#line 900 "insns.def"
 sp_inc_of_sendish(cd->ci);
-#line 5917 "insns_info.inc"
+#line 6685 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_send_without_block(cd)(...)(val) */
@@ -5921,6 +6689,119 @@ rb_num_t
 attr_width_opt_send_without_block(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ opt_send_without_block(cd)(...)(val) */
+bool
+attr_zjit_profile_opt_send_without_block(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 898 "insns.def"
+true;
+#line 6702 "insns_info.inc"
+}
+
+/* attr enum ruby_vminsn_type bin @ opt_new(cd, dst)()() */
+enum ruby_vminsn_type
+attr_bin_opt_new(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(OFFSET dst)
+)
+{
+    return BIN(opt_new);
+}
+
+/* attr bool handles_sp @ opt_new(cd, dst)()() */
+bool
+attr_handles_sp_opt_new(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(OFFSET dst)
+)
+{
+    return false;
+}
+
+/* attr bool leaf @ opt_new(cd, dst)()() */
+bool
+attr_leaf_opt_new(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(OFFSET dst)
+)
+{
+    return
+#line 919 "insns.def"
+false;
+#line 6735 "insns_info.inc"
+}
+
+/* attr const char* name @ opt_new(cd, dst)()() */
+const char*
+attr_name_opt_new(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(OFFSET dst)
+)
+{
+    return insn_name(BIN(opt_new));
+}
+
+/* attr rb_num_t open @ opt_new(cd, dst)()() */
+rb_num_t
+attr_open_opt_new(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(OFFSET dst)
+)
+{
+    return 2;
+}
+
+/* attr rb_num_t popn @ opt_new(cd, dst)()() */
+rb_num_t
+attr_popn_opt_new(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(OFFSET dst)
+)
+{
+    return 0;
+}
+
+/* attr rb_num_t retn @ opt_new(cd, dst)()() */
+rb_num_t
+attr_retn_opt_new(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(OFFSET dst)
+)
+{
+    return 0;
+}
+
+/* attr rb_snum_t sp_inc @ opt_new(cd, dst)()() */
+rb_snum_t
+attr_sp_inc_opt_new(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(OFFSET dst)
+)
+{
+    return 0;
+}
+
+/* attr rb_num_t width @ opt_new(cd, dst)()() */
+rb_num_t
+attr_width_opt_new(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(OFFSET dst)
+)
+{
+    return 3;
+}
+
+/* attr bool zjit_profile @ opt_new(cd, dst)()() */
+bool
+attr_zjit_profile_opt_new(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(OFFSET dst)
+)
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ objtostring(cd)(recv)(val) */
@@ -5942,9 +6823,9 @@ bool
 attr_leaf_objtostring(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 913 "insns.def"
+#line 945 "insns.def"
 false;
-#line 5948 "insns_info.inc"
+#line 6829 "insns_info.inc"
 }
 
 /* attr const char* name @ objtostring(cd)(recv)(val) */
@@ -5987,6 +6868,16 @@ rb_num_t
 attr_width_objtostring(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ objtostring(cd)(recv)(val) */
+bool
+attr_zjit_profile_objtostring(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 946 "insns.def"
+true;
+#line 6881 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_ary_freeze(ary, cd)()(val) */
@@ -6079,6 +6970,16 @@ attr_width_opt_ary_freeze(
     return 3;
 }
 
+/* attr bool zjit_profile @ opt_ary_freeze(ary, cd)()(val) */
+bool
+attr_zjit_profile_opt_ary_freeze(
+    MAYBE_UNUSED(VALUE ary),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ opt_hash_freeze(hash, cd)()(val) */
 enum ruby_vminsn_type
 attr_bin_opt_hash_freeze(
@@ -6167,6 +7068,16 @@ attr_width_opt_hash_freeze(
 )
 {
     return 3;
+}
+
+/* attr bool zjit_profile @ opt_hash_freeze(hash, cd)()(val) */
+bool
+attr_zjit_profile_opt_hash_freeze(
+    MAYBE_UNUSED(VALUE hash),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_str_freeze(str, cd)()(val) */
@@ -6259,6 +7170,16 @@ attr_width_opt_str_freeze(
     return 3;
 }
 
+/* attr bool zjit_profile @ opt_str_freeze(str, cd)()(val) */
+bool
+attr_zjit_profile_opt_str_freeze(
+    MAYBE_UNUSED(VALUE str),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ opt_nil_p(cd)(recv)(val) */
 enum ruby_vminsn_type
 attr_bin_opt_nil_p(MAYBE_UNUSED(CALL_DATA cd))
@@ -6320,6 +7241,16 @@ rb_num_t
 attr_width_opt_nil_p(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ opt_nil_p(cd)(recv)(val) */
+bool
+attr_zjit_profile_opt_nil_p(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1005 "insns.def"
+true;
+#line 7254 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_str_uminus(str, cd)()(val) */
@@ -6412,6 +7343,16 @@ attr_width_opt_str_uminus(
     return 3;
 }
 
+/* attr bool zjit_profile @ opt_str_uminus(str, cd)()(val) */
+bool
+attr_zjit_profile_opt_str_uminus(
+    MAYBE_UNUSED(VALUE str),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ opt_duparray_send(ary, method, argc)(...)(val) */
 enum ruby_vminsn_type
 attr_bin_opt_duparray_send(
@@ -6432,9 +7373,9 @@ attr_comptime_sp_inc_opt_duparray_send(
 )
 {
     return
-#line 1005 "insns.def"
+#line 1039 "insns.def"
 1 - (rb_snum_t)argc;
-#line 6438 "insns_info.inc"
+#line 7379 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ opt_duparray_send(ary, method, argc)(...)(val) */
@@ -6457,9 +7398,9 @@ attr_leaf_opt_duparray_send(
 )
 {
     return
-#line 1003 "insns.def"
+#line 1037 "insns.def"
 false;
-#line 6463 "insns_info.inc"
+#line 7404 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_duparray_send(ary, method, argc)(...)(val) */
@@ -6515,9 +7456,9 @@ attr_sp_inc_opt_duparray_send(
 )
 {
     return
-#line 1004 "insns.def"
+#line 1038 "insns.def"
 1 - (rb_snum_t)argc;
-#line 6521 "insns_info.inc"
+#line 7462 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_duparray_send(ary, method, argc)(...)(val) */
@@ -6529,6 +7470,17 @@ attr_width_opt_duparray_send(
 )
 {
     return 4;
+}
+
+/* attr bool zjit_profile @ opt_duparray_send(ary, method, argc)(...)(val) */
+bool
+attr_zjit_profile_opt_duparray_send(
+    MAYBE_UNUSED(VALUE ary),
+    MAYBE_UNUSED(ID method),
+    MAYBE_UNUSED(rb_num_t argc)
+)
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_newarray_send(num, method)(...)(val) */
@@ -6549,9 +7501,9 @@ attr_comptime_sp_inc_opt_newarray_send(
 )
 {
     return
-#line 1027 "insns.def"
+#line 1061 "insns.def"
 1 - (rb_snum_t)num;
-#line 6555 "insns_info.inc"
+#line 7507 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ opt_newarray_send(num, method)(...)(val) */
@@ -6572,9 +7524,9 @@ attr_leaf_opt_newarray_send(
 )
 {
     return
-#line 1025 "insns.def"
+#line 1059 "insns.def"
 false;
-#line 6578 "insns_info.inc"
+#line 7530 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_newarray_send(num, method)(...)(val) */
@@ -6625,9 +7577,9 @@ attr_sp_inc_opt_newarray_send(
 )
 {
     return
-#line 1026 "insns.def"
+#line 1060 "insns.def"
 1 - (rb_snum_t)num;
-#line 6631 "insns_info.inc"
+#line 7583 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_newarray_send(num, method)(...)(val) */
@@ -6638,6 +7590,16 @@ attr_width_opt_newarray_send(
 )
 {
     return 3;
+}
+
+/* attr bool zjit_profile @ opt_newarray_send(num, method)(...)(val) */
+bool
+attr_zjit_profile_opt_newarray_send(
+    MAYBE_UNUSED(rb_num_t num),
+    MAYBE_UNUSED(rb_num_t method)
+)
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ invokesuper(cd, blockiseq)(...)(val) */
@@ -6658,9 +7620,9 @@ attr_comptime_sp_inc_invokesuper(
 )
 {
     return
-#line 1060 "insns.def"
+#line 1094 "insns.def"
 sp_inc_of_sendish(ci);
-#line 6664 "insns_info.inc"
+#line 7626 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ invokesuper(cd, blockiseq)(...)(val) */
@@ -6731,9 +7693,9 @@ attr_sp_inc_invokesuper(
 )
 {
     return
-#line 1059 "insns.def"
+#line 1093 "insns.def"
 sp_inc_of_sendish(cd->ci);
-#line 6737 "insns_info.inc"
+#line 7699 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ invokesuper(cd, blockiseq)(...)(val) */
@@ -6744,6 +7706,16 @@ attr_width_invokesuper(
 )
 {
     return 3;
+}
+
+/* attr bool zjit_profile @ invokesuper(cd, blockiseq)(...)(val) */
+bool
+attr_zjit_profile_invokesuper(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ invokesuperforward(cd, blockiseq)(...)(val) */
@@ -6764,9 +7736,9 @@ attr_comptime_sp_inc_invokesuperforward(
 )
 {
     return
-#line 1079 "insns.def"
+#line 1113 "insns.def"
 sp_inc_of_sendish(ci);
-#line 6770 "insns_info.inc"
+#line 7742 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ invokesuperforward(cd, blockiseq)(...)(val) */
@@ -6837,9 +7809,9 @@ attr_sp_inc_invokesuperforward(
 )
 {
     return
-#line 1078 "insns.def"
+#line 1112 "insns.def"
 sp_inc_of_sendish(cd->ci);
-#line 6843 "insns_info.inc"
+#line 7815 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ invokesuperforward(cd, blockiseq)(...)(val) */
@@ -6850,6 +7822,16 @@ attr_width_invokesuperforward(
 )
 {
     return 3;
+}
+
+/* attr bool zjit_profile @ invokesuperforward(cd, blockiseq)(...)(val) */
+bool
+attr_zjit_profile_invokesuperforward(
+    MAYBE_UNUSED(CALL_DATA cd),
+    MAYBE_UNUSED(ISEQ blockiseq)
+)
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ invokeblock(cd)(...)(val) */
@@ -6864,9 +7846,9 @@ rb_snum_t
 attr_comptime_sp_inc_invokeblock(MAYBE_UNUSED(CALL_INFO ci))
 {
     return
-#line 1107 "insns.def"
+#line 1141 "insns.def"
 sp_inc_of_invokeblock(ci);
-#line 6870 "insns_info.inc"
+#line 7852 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ invokeblock(cd)(...)(val) */
@@ -6874,9 +7856,9 @@ bool
 attr_handles_sp_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1105 "insns.def"
+#line 1139 "insns.def"
 true;
-#line 6880 "insns_info.inc"
+#line 7862 "insns_info.inc"
 }
 
 /* attr bool leaf @ invokeblock(cd)(...)(val) */
@@ -6919,9 +7901,9 @@ rb_snum_t
 attr_sp_inc_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1106 "insns.def"
+#line 1140 "insns.def"
 sp_inc_of_invokeblock(cd->ci);
-#line 6925 "insns_info.inc"
+#line 7907 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ invokeblock(cd)(...)(val) */
@@ -6929,6 +7911,16 @@ rb_num_t
 attr_width_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ invokeblock(cd)(...)(val) */
+bool
+attr_zjit_profile_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1142 "insns.def"
+true;
+#line 7924 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ leave()(val)(val) */
@@ -6943,9 +7935,9 @@ bool
 attr_handles_sp_leave(void)
 {
     return
-#line 1129 "insns.def"
+#line 1164 "insns.def"
 true;
-#line 6949 "insns_info.inc"
+#line 7941 "insns_info.inc"
 }
 
 /* attr bool leaf @ leave()(val)(val) */
@@ -6953,9 +7945,9 @@ bool
 attr_leaf_leave(void)
 {
     return
-#line 1128 "insns.def"
+#line 1163 "insns.def"
 false;
-#line 6959 "insns_info.inc"
+#line 7951 "insns_info.inc"
 }
 
 /* attr const char* name @ leave()(val)(val) */
@@ -7000,6 +7992,13 @@ attr_width_leave(void)
     return 1;
 }
 
+/* attr bool zjit_profile @ leave()(val)(val) */
+bool
+attr_zjit_profile_leave(void)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ throw(throw_state)(throwobj)(val) */
 enum ruby_vminsn_type
 attr_bin_throw(MAYBE_UNUSED(rb_num_t throw_state))
@@ -7019,9 +8018,9 @@ bool
 attr_leaf_throw(MAYBE_UNUSED(rb_num_t throw_state))
 {
     return
-#line 1162 "insns.def"
+#line 1197 "insns.def"
 false;
-#line 7025 "insns_info.inc"
+#line 8024 "insns_info.inc"
 }
 
 /* attr const char* name @ throw(throw_state)(throwobj)(val) */
@@ -7066,6 +8065,13 @@ attr_width_throw(MAYBE_UNUSED(rb_num_t throw_state))
     return 2;
 }
 
+/* attr bool zjit_profile @ throw(throw_state)(throwobj)(val) */
+bool
+attr_zjit_profile_throw(MAYBE_UNUSED(rb_num_t throw_state))
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ jump(dst)()() */
 enum ruby_vminsn_type
 attr_bin_jump(MAYBE_UNUSED(OFFSET dst))
@@ -7085,9 +8091,9 @@ bool
 attr_leaf_jump(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1180 "insns.def"
-leafness_of_check_ints;
-#line 7091 "insns_info.inc"
+#line 1215 "insns.def"
+false;
+#line 8097 "insns_info.inc"
 }
 
 /* attr const char* name @ jump(dst)()() */
@@ -7132,6 +8138,13 @@ attr_width_jump(MAYBE_UNUSED(OFFSET dst))
     return 2;
 }
 
+/* attr bool zjit_profile @ jump(dst)()() */
+bool
+attr_zjit_profile_jump(MAYBE_UNUSED(OFFSET dst))
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ branchif(dst)(val)() */
 enum ruby_vminsn_type
 attr_bin_branchif(MAYBE_UNUSED(OFFSET dst))
@@ -7151,9 +8164,9 @@ bool
 attr_leaf_branchif(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1193 "insns.def"
-leafness_of_check_ints;
-#line 7157 "insns_info.inc"
+#line 1228 "insns.def"
+false;
+#line 8170 "insns_info.inc"
 }
 
 /* attr const char* name @ branchif(dst)(val)() */
@@ -7198,6 +8211,13 @@ attr_width_branchif(MAYBE_UNUSED(OFFSET dst))
     return 2;
 }
 
+/* attr bool zjit_profile @ branchif(dst)(val)() */
+bool
+attr_zjit_profile_branchif(MAYBE_UNUSED(OFFSET dst))
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ branchunless(dst)(val)() */
 enum ruby_vminsn_type
 attr_bin_branchunless(MAYBE_UNUSED(OFFSET dst))
@@ -7217,9 +8237,9 @@ bool
 attr_leaf_branchunless(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1208 "insns.def"
-leafness_of_check_ints;
-#line 7223 "insns_info.inc"
+#line 1243 "insns.def"
+false;
+#line 8243 "insns_info.inc"
 }
 
 /* attr const char* name @ branchunless(dst)(val)() */
@@ -7264,6 +8284,13 @@ attr_width_branchunless(MAYBE_UNUSED(OFFSET dst))
     return 2;
 }
 
+/* attr bool zjit_profile @ branchunless(dst)(val)() */
+bool
+attr_zjit_profile_branchunless(MAYBE_UNUSED(OFFSET dst))
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ branchnil(dst)(val)() */
 enum ruby_vminsn_type
 attr_bin_branchnil(MAYBE_UNUSED(OFFSET dst))
@@ -7283,9 +8310,9 @@ bool
 attr_leaf_branchnil(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1223 "insns.def"
-leafness_of_check_ints;
-#line 7289 "insns_info.inc"
+#line 1258 "insns.def"
+false;
+#line 8316 "insns_info.inc"
 }
 
 /* attr const char* name @ branchnil(dst)(val)() */
@@ -7328,6 +8355,13 @@ rb_num_t
 attr_width_branchnil(MAYBE_UNUSED(OFFSET dst))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ branchnil(dst)(val)() */
+bool
+attr_zjit_profile_branchnil(MAYBE_UNUSED(OFFSET dst))
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ once(iseq, ise)()(val) */
@@ -7420,6 +8454,16 @@ attr_width_once(
     return 3;
 }
 
+/* attr bool zjit_profile @ once(iseq, ise)()(val) */
+bool
+attr_zjit_profile_once(
+    MAYBE_UNUSED(ISEQ iseq),
+    MAYBE_UNUSED(ISE ise)
+)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ opt_case_dispatch(hash, else_offset)(..., key)() */
 enum ruby_vminsn_type
 attr_bin_opt_case_dispatch(
@@ -7498,9 +8542,9 @@ attr_sp_inc_opt_case_dispatch(
 )
 {
     return
-#line 1251 "insns.def"
+#line 1286 "insns.def"
 -1;
-#line 7504 "insns_info.inc"
+#line 8548 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_case_dispatch(hash, else_offset)(..., key)() */
@@ -7511,6 +8555,16 @@ attr_width_opt_case_dispatch(
 )
 {
     return 3;
+}
+
+/* attr bool zjit_profile @ opt_case_dispatch(hash, else_offset)(..., key)() */
+bool
+attr_zjit_profile_opt_case_dispatch(
+    MAYBE_UNUSED(CDHASH hash),
+    MAYBE_UNUSED(OFFSET else_offset)
+)
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_plus(cd)(recv, obj)(val) */
@@ -7576,6 +8630,16 @@ attr_width_opt_plus(MAYBE_UNUSED(CALL_DATA cd))
     return 2;
 }
 
+/* attr bool zjit_profile @ opt_plus(cd)(recv, obj)(val) */
+bool
+attr_zjit_profile_opt_plus(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1303 "insns.def"
+true;
+#line 8641 "insns_info.inc"
+}
+
 /* attr enum ruby_vminsn_type bin @ opt_minus(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
 attr_bin_opt_minus(MAYBE_UNUSED(CALL_DATA cd))
@@ -7637,6 +8701,16 @@ rb_num_t
 attr_width_opt_minus(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ opt_minus(cd)(recv, obj)(val) */
+bool
+attr_zjit_profile_opt_minus(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1318 "insns.def"
+true;
+#line 8714 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_mult(cd)(recv, obj)(val) */
@@ -7702,6 +8776,16 @@ attr_width_opt_mult(MAYBE_UNUSED(CALL_DATA cd))
     return 2;
 }
 
+/* attr bool zjit_profile @ opt_mult(cd)(recv, obj)(val) */
+bool
+attr_zjit_profile_opt_mult(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1333 "insns.def"
+true;
+#line 8787 "insns_info.inc"
+}
+
 /* attr enum ruby_vminsn_type bin @ opt_div(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
 attr_bin_opt_div(MAYBE_UNUSED(CALL_DATA cd))
@@ -7721,9 +8805,9 @@ bool
 attr_leaf_opt_div(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1312 "insns.def"
+#line 1350 "insns.def"
 false;
-#line 7727 "insns_info.inc"
+#line 8811 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_div(cd)(recv, obj)(val) */
@@ -7768,6 +8852,16 @@ attr_width_opt_div(MAYBE_UNUSED(CALL_DATA cd))
     return 2;
 }
 
+/* attr bool zjit_profile @ opt_div(cd)(recv, obj)(val) */
+bool
+attr_zjit_profile_opt_div(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1351 "insns.def"
+true;
+#line 8863 "insns_info.inc"
+}
+
 /* attr enum ruby_vminsn_type bin @ opt_mod(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
 attr_bin_opt_mod(MAYBE_UNUSED(CALL_DATA cd))
@@ -7787,9 +8881,9 @@ bool
 attr_leaf_opt_mod(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1328 "insns.def"
+#line 1367 "insns.def"
 false;
-#line 7793 "insns_info.inc"
+#line 8887 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_mod(cd)(recv, obj)(val) */
@@ -7832,6 +8926,16 @@ rb_num_t
 attr_width_opt_mod(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ opt_mod(cd)(recv, obj)(val) */
+bool
+attr_zjit_profile_opt_mod(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1368 "insns.def"
+true;
+#line 8939 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_eq(cd)(recv, obj)(val) */
@@ -7895,6 +8999,16 @@ rb_num_t
 attr_width_opt_eq(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ opt_eq(cd)(recv, obj)(val) */
+bool
+attr_zjit_profile_opt_eq(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1383 "insns.def"
+true;
+#line 9012 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_neq(cd_eq, cd)(recv, obj)(val) */
@@ -7987,6 +9101,19 @@ attr_width_opt_neq(
     return 3;
 }
 
+/* attr bool zjit_profile @ opt_neq(cd_eq, cd)(recv, obj)(val) */
+bool
+attr_zjit_profile_opt_neq(
+    MAYBE_UNUSED(CALL_DATA cd_eq),
+    MAYBE_UNUSED(CALL_DATA cd)
+)
+{
+    return
+#line 1398 "insns.def"
+true;
+#line 9115 "insns_info.inc"
+}
+
 /* attr enum ruby_vminsn_type bin @ opt_lt(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
 attr_bin_opt_lt(MAYBE_UNUSED(CALL_DATA cd))
@@ -8048,6 +9175,16 @@ rb_num_t
 attr_width_opt_lt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ opt_lt(cd)(recv, obj)(val) */
+bool
+attr_zjit_profile_opt_lt(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1413 "insns.def"
+true;
+#line 9188 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_le(cd)(recv, obj)(val) */
@@ -8113,6 +9250,16 @@ attr_width_opt_le(MAYBE_UNUSED(CALL_DATA cd))
     return 2;
 }
 
+/* attr bool zjit_profile @ opt_le(cd)(recv, obj)(val) */
+bool
+attr_zjit_profile_opt_le(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1428 "insns.def"
+true;
+#line 9261 "insns_info.inc"
+}
+
 /* attr enum ruby_vminsn_type bin @ opt_gt(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
 attr_bin_opt_gt(MAYBE_UNUSED(CALL_DATA cd))
@@ -8174,6 +9321,16 @@ rb_num_t
 attr_width_opt_gt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ opt_gt(cd)(recv, obj)(val) */
+bool
+attr_zjit_profile_opt_gt(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1443 "insns.def"
+true;
+#line 9334 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_ge(cd)(recv, obj)(val) */
@@ -8239,6 +9396,16 @@ attr_width_opt_ge(MAYBE_UNUSED(CALL_DATA cd))
     return 2;
 }
 
+/* attr bool zjit_profile @ opt_ge(cd)(recv, obj)(val) */
+bool
+attr_zjit_profile_opt_ge(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1458 "insns.def"
+true;
+#line 9407 "insns_info.inc"
+}
+
 /* attr enum ruby_vminsn_type bin @ opt_ltlt(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
 attr_bin_opt_ltlt(MAYBE_UNUSED(CALL_DATA cd))
@@ -8258,9 +9425,9 @@ bool
 attr_leaf_opt_ltlt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1430 "insns.def"
+#line 1476 "insns.def"
 false;
-#line 8264 "insns_info.inc"
+#line 9431 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_ltlt(cd)(recv, obj)(val) */
@@ -8303,6 +9470,16 @@ rb_num_t
 attr_width_opt_ltlt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ opt_ltlt(cd)(recv, obj)(val) */
+bool
+attr_zjit_profile_opt_ltlt(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1477 "insns.def"
+true;
+#line 9483 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_and(cd)(recv, obj)(val) */
@@ -8368,6 +9545,16 @@ attr_width_opt_and(MAYBE_UNUSED(CALL_DATA cd))
     return 2;
 }
 
+/* attr bool zjit_profile @ opt_and(cd)(recv, obj)(val) */
+bool
+attr_zjit_profile_opt_and(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1492 "insns.def"
+true;
+#line 9556 "insns_info.inc"
+}
+
 /* attr enum ruby_vminsn_type bin @ opt_or(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
 attr_bin_opt_or(MAYBE_UNUSED(CALL_DATA cd))
@@ -8431,6 +9618,16 @@ attr_width_opt_or(MAYBE_UNUSED(CALL_DATA cd))
     return 2;
 }
 
+/* attr bool zjit_profile @ opt_or(cd)(recv, obj)(val) */
+bool
+attr_zjit_profile_opt_or(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1507 "insns.def"
+true;
+#line 9629 "insns_info.inc"
+}
+
 /* attr enum ruby_vminsn_type bin @ opt_aref(cd)(recv, obj)(val) */
 enum ruby_vminsn_type
 attr_bin_opt_aref(MAYBE_UNUSED(CALL_DATA cd))
@@ -8450,9 +9647,9 @@ bool
 attr_leaf_opt_aref(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1477 "insns.def"
+#line 1526 "insns.def"
 false;
-#line 8456 "insns_info.inc"
+#line 9653 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_aref(cd)(recv, obj)(val) */
@@ -8497,6 +9694,16 @@ attr_width_opt_aref(MAYBE_UNUSED(CALL_DATA cd))
     return 2;
 }
 
+/* attr bool zjit_profile @ opt_aref(cd)(recv, obj)(val) */
+bool
+attr_zjit_profile_opt_aref(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1527 "insns.def"
+true;
+#line 9705 "insns_info.inc"
+}
+
 /* attr enum ruby_vminsn_type bin @ opt_aset(cd)(recv, obj, set)(val) */
 enum ruby_vminsn_type
 attr_bin_opt_aset(MAYBE_UNUSED(CALL_DATA cd))
@@ -8516,9 +9723,9 @@ bool
 attr_leaf_opt_aset(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1494 "insns.def"
+#line 1544 "insns.def"
 false;
-#line 8522 "insns_info.inc"
+#line 9729 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_aset(cd)(recv, obj, set)(val) */
@@ -8563,190 +9770,14 @@ attr_width_opt_aset(MAYBE_UNUSED(CALL_DATA cd))
     return 2;
 }
 
-/* attr enum ruby_vminsn_type bin @ opt_aset_with(key, cd)(recv, val)(val) */
-enum ruby_vminsn_type
-attr_bin_opt_aset_with(
-    MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_DATA cd)
-)
-{
-    return BIN(opt_aset_with);
-}
-
-/* attr bool handles_sp @ opt_aset_with(key, cd)(recv, val)(val) */
+/* attr bool zjit_profile @ opt_aset(cd)(recv, obj, set)(val) */
 bool
-attr_handles_sp_opt_aset_with(
-    MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_DATA cd)
-)
-{
-    return false;
-}
-
-/* attr bool leaf @ opt_aset_with(key, cd)(recv, val)(val) */
-bool
-attr_leaf_opt_aset_with(
-    MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_DATA cd)
-)
+attr_zjit_profile_opt_aset(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1510 "insns.def"
-false;
-#line 8597 "insns_info.inc"
-}
-
-/* attr const char* name @ opt_aset_with(key, cd)(recv, val)(val) */
-const char*
-attr_name_opt_aset_with(
-    MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_DATA cd)
-)
-{
-    return insn_name(BIN(opt_aset_with));
-}
-
-/* attr rb_num_t open @ opt_aset_with(key, cd)(recv, val)(val) */
-rb_num_t
-attr_open_opt_aset_with(
-    MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_DATA cd)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_aset_with(key, cd)(recv, val)(val) */
-rb_num_t
-attr_popn_opt_aset_with(
-    MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_DATA cd)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t retn @ opt_aset_with(key, cd)(recv, val)(val) */
-rb_num_t
-attr_retn_opt_aset_with(
-    MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_DATA cd)
-)
-{
-    return 1;
-}
-
-/* attr rb_snum_t sp_inc @ opt_aset_with(key, cd)(recv, val)(val) */
-rb_snum_t
-attr_sp_inc_opt_aset_with(
-    MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_DATA cd)
-)
-{
-    return -1;
-}
-
-/* attr rb_num_t width @ opt_aset_with(key, cd)(recv, val)(val) */
-rb_num_t
-attr_width_opt_aset_with(
-    MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_DATA cd)
-)
-{
-    return 3;
-}
-
-/* attr enum ruby_vminsn_type bin @ opt_aref_with(key, cd)(recv)(val) */
-enum ruby_vminsn_type
-attr_bin_opt_aref_with(
-    MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_DATA cd)
-)
-{
-    return BIN(opt_aref_with);
-}
-
-/* attr bool handles_sp @ opt_aref_with(key, cd)(recv)(val) */
-bool
-attr_handles_sp_opt_aref_with(
-    MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_DATA cd)
-)
-{
-    return false;
-}
-
-/* attr bool leaf @ opt_aref_with(key, cd)(recv)(val) */
-bool
-attr_leaf_opt_aref_with(
-    MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_DATA cd)
-)
-{
-    return
-#line 1531 "insns.def"
-false;
-#line 8690 "insns_info.inc"
-}
-
-/* attr const char* name @ opt_aref_with(key, cd)(recv)(val) */
-const char*
-attr_name_opt_aref_with(
-    MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_DATA cd)
-)
-{
-    return insn_name(BIN(opt_aref_with));
-}
-
-/* attr rb_num_t open @ opt_aref_with(key, cd)(recv)(val) */
-rb_num_t
-attr_open_opt_aref_with(
-    MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_DATA cd)
-)
-{
-    return 2;
-}
-
-/* attr rb_num_t popn @ opt_aref_with(key, cd)(recv)(val) */
-rb_num_t
-attr_popn_opt_aref_with(
-    MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_DATA cd)
-)
-{
-    return 1;
-}
-
-/* attr rb_num_t retn @ opt_aref_with(key, cd)(recv)(val) */
-rb_num_t
-attr_retn_opt_aref_with(
-    MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_DATA cd)
-)
-{
-    return 1;
-}
-
-/* attr rb_snum_t sp_inc @ opt_aref_with(key, cd)(recv)(val) */
-rb_snum_t
-attr_sp_inc_opt_aref_with(
-    MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_DATA cd)
-)
-{
-    return 0;
-}
-
-/* attr rb_num_t width @ opt_aref_with(key, cd)(recv)(val) */
-rb_num_t
-attr_width_opt_aref_with(
-    MAYBE_UNUSED(VALUE key),
-    MAYBE_UNUSED(CALL_DATA cd)
-)
-{
-    return 3;
+#line 1545 "insns.def"
+true;
+#line 9781 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_length(cd)(recv)(val) */
@@ -8812,6 +9843,16 @@ attr_width_opt_length(MAYBE_UNUSED(CALL_DATA cd))
     return 2;
 }
 
+/* attr bool zjit_profile @ opt_length(cd)(recv)(val) */
+bool
+attr_zjit_profile_opt_length(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1560 "insns.def"
+true;
+#line 9854 "insns_info.inc"
+}
+
 /* attr enum ruby_vminsn_type bin @ opt_size(cd)(recv)(val) */
 enum ruby_vminsn_type
 attr_bin_opt_size(MAYBE_UNUSED(CALL_DATA cd))
@@ -8873,6 +9914,16 @@ rb_num_t
 attr_width_opt_size(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ opt_size(cd)(recv)(val) */
+bool
+attr_zjit_profile_opt_size(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1575 "insns.def"
+true;
+#line 9927 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_empty_p(cd)(recv)(val) */
@@ -8938,6 +9989,16 @@ attr_width_opt_empty_p(MAYBE_UNUSED(CALL_DATA cd))
     return 2;
 }
 
+/* attr bool zjit_profile @ opt_empty_p(cd)(recv)(val) */
+bool
+attr_zjit_profile_opt_empty_p(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1590 "insns.def"
+true;
+#line 10000 "insns_info.inc"
+}
+
 /* attr enum ruby_vminsn_type bin @ opt_succ(cd)(recv)(val) */
 enum ruby_vminsn_type
 attr_bin_opt_succ(MAYBE_UNUSED(CALL_DATA cd))
@@ -8999,6 +10060,16 @@ rb_num_t
 attr_width_opt_succ(MAYBE_UNUSED(CALL_DATA cd))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ opt_succ(cd)(recv)(val) */
+bool
+attr_zjit_profile_opt_succ(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1605 "insns.def"
+true;
+#line 10073 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_not(cd)(recv)(val) */
@@ -9064,6 +10135,16 @@ attr_width_opt_not(MAYBE_UNUSED(CALL_DATA cd))
     return 2;
 }
 
+/* attr bool zjit_profile @ opt_not(cd)(recv)(val) */
+bool
+attr_zjit_profile_opt_not(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1620 "insns.def"
+true;
+#line 10146 "insns_info.inc"
+}
+
 /* attr enum ruby_vminsn_type bin @ opt_regexpmatch2(cd)(obj2, obj1)(val) */
 enum ruby_vminsn_type
 attr_bin_opt_regexpmatch2(MAYBE_UNUSED(CALL_DATA cd))
@@ -9083,9 +10164,9 @@ bool
 attr_leaf_opt_regexpmatch2(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1617 "insns.def"
+#line 1635 "insns.def"
 false;
-#line 9089 "insns_info.inc"
+#line 10170 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_regexpmatch2(cd)(obj2, obj1)(val) */
@@ -9130,6 +10211,16 @@ attr_width_opt_regexpmatch2(MAYBE_UNUSED(CALL_DATA cd))
     return 2;
 }
 
+/* attr bool zjit_profile @ opt_regexpmatch2(cd)(obj2, obj1)(val) */
+bool
+attr_zjit_profile_opt_regexpmatch2(MAYBE_UNUSED(CALL_DATA cd))
+{
+    return
+#line 1636 "insns.def"
+true;
+#line 10222 "insns_info.inc"
+}
+
 /* attr enum ruby_vminsn_type bin @ invokebuiltin(bf)(...)(val) */
 enum ruby_vminsn_type
 attr_bin_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
@@ -9149,9 +10240,9 @@ bool
 attr_leaf_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
 {
     return
-#line 1632 "insns.def"
+#line 1651 "insns.def"
 false;
-#line 9155 "insns_info.inc"
+#line 10246 "insns_info.inc"
 }
 
 /* attr const char* name @ invokebuiltin(bf)(...)(val) */
@@ -9187,9 +10278,9 @@ rb_snum_t
 attr_sp_inc_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
 {
     return
-#line 1633 "insns.def"
+#line 1652 "insns.def"
 1 - bf->argc;
-#line 9193 "insns_info.inc"
+#line 10284 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ invokebuiltin(bf)(...)(val) */
@@ -9197,6 +10288,13 @@ rb_num_t
 attr_width_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ invokebuiltin(bf)(...)(val) */
+bool
+attr_zjit_profile_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_invokebuiltin_delegate(bf, index)()(val) */
@@ -9227,9 +10325,9 @@ attr_leaf_opt_invokebuiltin_delegate(
 )
 {
     return
-#line 1644 "insns.def"
+#line 1663 "insns.def"
 false;
-#line 9233 "insns_info.inc"
+#line 10331 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_invokebuiltin_delegate(bf, index)()(val) */
@@ -9292,6 +10390,16 @@ attr_width_opt_invokebuiltin_delegate(
     return 3;
 }
 
+/* attr bool zjit_profile @ opt_invokebuiltin_delegate(bf, index)()(val) */
+bool
+attr_zjit_profile_opt_invokebuiltin_delegate(
+    MAYBE_UNUSED(RB_BUILTIN bf),
+    MAYBE_UNUSED(rb_num_t index)
+)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ opt_invokebuiltin_delegate_leave(bf, index)()(val) */
 enum ruby_vminsn_type
 attr_bin_opt_invokebuiltin_delegate_leave(
@@ -9320,9 +10428,9 @@ attr_leaf_opt_invokebuiltin_delegate_leave(
 )
 {
     return
-#line 1655 "insns.def"
+#line 1674 "insns.def"
 false;
-#line 9326 "insns_info.inc"
+#line 10434 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_invokebuiltin_delegate_leave(bf, index)()(val) */
@@ -9383,6 +10491,16 @@ attr_width_opt_invokebuiltin_delegate_leave(
 )
 {
     return 3;
+}
+
+/* attr bool zjit_profile @ opt_invokebuiltin_delegate_leave(bf, index)()(val) */
+bool
+attr_zjit_profile_opt_invokebuiltin_delegate_leave(
+    MAYBE_UNUSED(RB_BUILTIN bf),
+    MAYBE_UNUSED(rb_num_t index)
+)
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ getlocal_WC_0(idx)()(val) */
@@ -9448,6 +10566,13 @@ attr_width_getlocal_WC_0(MAYBE_UNUSED(lindex_t idx))
     return 2;
 }
 
+/* attr bool zjit_profile @ getlocal_WC_0(idx)()(val) */
+bool
+attr_zjit_profile_getlocal_WC_0(MAYBE_UNUSED(lindex_t idx))
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ getlocal_WC_1(idx)()(val) */
 enum ruby_vminsn_type
 attr_bin_getlocal_WC_1(MAYBE_UNUSED(lindex_t idx))
@@ -9509,6 +10634,13 @@ rb_num_t
 attr_width_getlocal_WC_1(MAYBE_UNUSED(lindex_t idx))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ getlocal_WC_1(idx)()(val) */
+bool
+attr_zjit_profile_getlocal_WC_1(MAYBE_UNUSED(lindex_t idx))
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ setlocal_WC_0(idx)(val)() */
@@ -9574,6 +10706,13 @@ attr_width_setlocal_WC_0(MAYBE_UNUSED(lindex_t idx))
     return 2;
 }
 
+/* attr bool zjit_profile @ setlocal_WC_0(idx)(val)() */
+bool
+attr_zjit_profile_setlocal_WC_0(MAYBE_UNUSED(lindex_t idx))
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ setlocal_WC_1(idx)(val)() */
 enum ruby_vminsn_type
 attr_bin_setlocal_WC_1(MAYBE_UNUSED(lindex_t idx))
@@ -9635,6 +10774,13 @@ rb_num_t
 attr_width_setlocal_WC_1(MAYBE_UNUSED(lindex_t idx))
 {
     return 2;
+}
+
+/* attr bool zjit_profile @ setlocal_WC_1(idx)(val)() */
+bool
+attr_zjit_profile_setlocal_WC_1(MAYBE_UNUSED(lindex_t idx))
+{
+    return false;
 }
 
 /* attr enum ruby_vminsn_type bin @ putobject_INT2FIX_0_()()(val) */
@@ -9700,6 +10846,13 @@ attr_width_putobject_INT2FIX_0_(void)
     return 1;
 }
 
+/* attr bool zjit_profile @ putobject_INT2FIX_0_()()(val) */
+bool
+attr_zjit_profile_putobject_INT2FIX_0_(void)
+{
+    return false;
+}
+
 /* attr enum ruby_vminsn_type bin @ putobject_INT2FIX_1_()()(val) */
 enum ruby_vminsn_type
 attr_bin_putobject_INT2FIX_1_(void)
@@ -9763,6 +10916,241 @@ attr_width_putobject_INT2FIX_1_(void)
     return 1;
 }
 
+/* attr bool zjit_profile @ putobject_INT2FIX_1_()()(val) */
+bool
+attr_zjit_profile_putobject_INT2FIX_1_(void)
+{
+    return false;
+}
+
+MAYBE_UNUSED(static bool insn_leaf(int insn, const VALUE *opes));
+static bool
+insn_leaf(int insn, const VALUE *opes)
+{
+    switch (insn) {
+      case BIN(nop):
+        return attr_leaf_nop();
+      case BIN(getlocal):
+        return attr_leaf_getlocal((lindex_t)opes[0], (rb_num_t)opes[1]);
+      case BIN(setlocal):
+        return attr_leaf_setlocal((lindex_t)opes[0], (rb_num_t)opes[1]);
+      case BIN(getblockparam):
+        return attr_leaf_getblockparam((lindex_t)opes[0], (rb_num_t)opes[1]);
+      case BIN(setblockparam):
+        return attr_leaf_setblockparam((lindex_t)opes[0], (rb_num_t)opes[1]);
+      case BIN(getblockparamproxy):
+        return attr_leaf_getblockparamproxy((lindex_t)opes[0], (rb_num_t)opes[1]);
+      case BIN(getspecial):
+        return attr_leaf_getspecial((rb_num_t)opes[0], (rb_num_t)opes[1]);
+      case BIN(setspecial):
+        return attr_leaf_setspecial((rb_num_t)opes[0]);
+      case BIN(getinstancevariable):
+        return attr_leaf_getinstancevariable((ID)opes[0], (IVC)opes[1]);
+      case BIN(setinstancevariable):
+        return attr_leaf_setinstancevariable((ID)opes[0], (IVC)opes[1]);
+      case BIN(getclassvariable):
+        return attr_leaf_getclassvariable((ID)opes[0], (ICVARC)opes[1]);
+      case BIN(setclassvariable):
+        return attr_leaf_setclassvariable((ID)opes[0], (ICVARC)opes[1]);
+      case BIN(opt_getconstant_path):
+        return attr_leaf_opt_getconstant_path((IC)opes[0]);
+      case BIN(getconstant):
+        return attr_leaf_getconstant((ID)opes[0]);
+      case BIN(setconstant):
+        return attr_leaf_setconstant((ID)opes[0]);
+      case BIN(getglobal):
+        return attr_leaf_getglobal((ID)opes[0]);
+      case BIN(setglobal):
+        return attr_leaf_setglobal((ID)opes[0]);
+      case BIN(putnil):
+        return attr_leaf_putnil();
+      case BIN(putself):
+        return attr_leaf_putself();
+      case BIN(putobject):
+        return attr_leaf_putobject((VALUE)opes[0]);
+      case BIN(putspecialobject):
+        return attr_leaf_putspecialobject((rb_num_t)opes[0]);
+      case BIN(putstring):
+        return attr_leaf_putstring((VALUE)opes[0]);
+      case BIN(putchilledstring):
+        return attr_leaf_putchilledstring((VALUE)opes[0]);
+      case BIN(concatstrings):
+        return attr_leaf_concatstrings((rb_num_t)opes[0]);
+      case BIN(anytostring):
+        return attr_leaf_anytostring();
+      case BIN(toregexp):
+        return attr_leaf_toregexp((rb_num_t)opes[0], (rb_num_t)opes[1]);
+      case BIN(intern):
+        return attr_leaf_intern();
+      case BIN(newarray):
+        return attr_leaf_newarray((rb_num_t)opes[0]);
+      case BIN(pushtoarraykwsplat):
+        return attr_leaf_pushtoarraykwsplat();
+      case BIN(duparray):
+        return attr_leaf_duparray((VALUE)opes[0]);
+      case BIN(duphash):
+        return attr_leaf_duphash((VALUE)opes[0]);
+      case BIN(expandarray):
+        return attr_leaf_expandarray((rb_num_t)opes[0], (rb_num_t)opes[1]);
+      case BIN(concatarray):
+        return attr_leaf_concatarray();
+      case BIN(concattoarray):
+        return attr_leaf_concattoarray();
+      case BIN(pushtoarray):
+        return attr_leaf_pushtoarray((rb_num_t)opes[0]);
+      case BIN(splatarray):
+        return attr_leaf_splatarray((VALUE)opes[0]);
+      case BIN(splatkw):
+        return attr_leaf_splatkw();
+      case BIN(newhash):
+        return attr_leaf_newhash((rb_num_t)opes[0]);
+      case BIN(newrange):
+        return attr_leaf_newrange((rb_num_t)opes[0]);
+      case BIN(pop):
+        return attr_leaf_pop();
+      case BIN(dup):
+        return attr_leaf_dup();
+      case BIN(dupn):
+        return attr_leaf_dupn((rb_num_t)opes[0]);
+      case BIN(swap):
+        return attr_leaf_swap();
+      case BIN(opt_reverse):
+        return attr_leaf_opt_reverse((rb_num_t)opes[0]);
+      case BIN(topn):
+        return attr_leaf_topn((rb_num_t)opes[0]);
+      case BIN(setn):
+        return attr_leaf_setn((rb_num_t)opes[0]);
+      case BIN(adjuststack):
+        return attr_leaf_adjuststack((rb_num_t)opes[0]);
+      case BIN(defined):
+        return attr_leaf_defined((rb_num_t)opes[0], (VALUE)opes[1], (VALUE)opes[2]);
+      case BIN(definedivar):
+        return attr_leaf_definedivar((ID)opes[0], (IVC)opes[1], (VALUE)opes[2]);
+      case BIN(checkmatch):
+        return attr_leaf_checkmatch((rb_num_t)opes[0]);
+      case BIN(checkkeyword):
+        return attr_leaf_checkkeyword((lindex_t)opes[0], (lindex_t)opes[1]);
+      case BIN(checktype):
+        return attr_leaf_checktype((rb_num_t)opes[0]);
+      case BIN(defineclass):
+        return attr_leaf_defineclass((ID)opes[0], (ISEQ)opes[1], (rb_num_t)opes[2]);
+      case BIN(definemethod):
+        return attr_leaf_definemethod((ID)opes[0], (ISEQ)opes[1]);
+      case BIN(definesmethod):
+        return attr_leaf_definesmethod((ID)opes[0], (ISEQ)opes[1]);
+      case BIN(send):
+        return attr_leaf_send((CALL_DATA)opes[0], (ISEQ)opes[1]);
+      case BIN(sendforward):
+        return attr_leaf_sendforward((CALL_DATA)opes[0], (ISEQ)opes[1]);
+      case BIN(opt_send_without_block):
+        return attr_leaf_opt_send_without_block((CALL_DATA)opes[0]);
+      case BIN(opt_new):
+        return attr_leaf_opt_new((CALL_DATA)opes[0], (OFFSET)opes[1]);
+      case BIN(objtostring):
+        return attr_leaf_objtostring((CALL_DATA)opes[0]);
+      case BIN(opt_ary_freeze):
+        return attr_leaf_opt_ary_freeze((VALUE)opes[0], (CALL_DATA)opes[1]);
+      case BIN(opt_hash_freeze):
+        return attr_leaf_opt_hash_freeze((VALUE)opes[0], (CALL_DATA)opes[1]);
+      case BIN(opt_str_freeze):
+        return attr_leaf_opt_str_freeze((VALUE)opes[0], (CALL_DATA)opes[1]);
+      case BIN(opt_nil_p):
+        return attr_leaf_opt_nil_p((CALL_DATA)opes[0]);
+      case BIN(opt_str_uminus):
+        return attr_leaf_opt_str_uminus((VALUE)opes[0], (CALL_DATA)opes[1]);
+      case BIN(opt_duparray_send):
+        return attr_leaf_opt_duparray_send((VALUE)opes[0], (ID)opes[1], (rb_num_t)opes[2]);
+      case BIN(opt_newarray_send):
+        return attr_leaf_opt_newarray_send((rb_num_t)opes[0], (rb_num_t)opes[1]);
+      case BIN(invokesuper):
+        return attr_leaf_invokesuper((CALL_DATA)opes[0], (ISEQ)opes[1]);
+      case BIN(invokesuperforward):
+        return attr_leaf_invokesuperforward((CALL_DATA)opes[0], (ISEQ)opes[1]);
+      case BIN(invokeblock):
+        return attr_leaf_invokeblock((CALL_DATA)opes[0]);
+      case BIN(leave):
+        return attr_leaf_leave();
+      case BIN(throw):
+        return attr_leaf_throw((rb_num_t)opes[0]);
+      case BIN(jump):
+        return attr_leaf_jump((OFFSET)opes[0]);
+      case BIN(branchif):
+        return attr_leaf_branchif((OFFSET)opes[0]);
+      case BIN(branchunless):
+        return attr_leaf_branchunless((OFFSET)opes[0]);
+      case BIN(branchnil):
+        return attr_leaf_branchnil((OFFSET)opes[0]);
+      case BIN(once):
+        return attr_leaf_once((ISEQ)opes[0], (ISE)opes[1]);
+      case BIN(opt_case_dispatch):
+        return attr_leaf_opt_case_dispatch((CDHASH)opes[0], (OFFSET)opes[1]);
+      case BIN(opt_plus):
+        return attr_leaf_opt_plus((CALL_DATA)opes[0]);
+      case BIN(opt_minus):
+        return attr_leaf_opt_minus((CALL_DATA)opes[0]);
+      case BIN(opt_mult):
+        return attr_leaf_opt_mult((CALL_DATA)opes[0]);
+      case BIN(opt_div):
+        return attr_leaf_opt_div((CALL_DATA)opes[0]);
+      case BIN(opt_mod):
+        return attr_leaf_opt_mod((CALL_DATA)opes[0]);
+      case BIN(opt_eq):
+        return attr_leaf_opt_eq((CALL_DATA)opes[0]);
+      case BIN(opt_neq):
+        return attr_leaf_opt_neq((CALL_DATA)opes[0], (CALL_DATA)opes[1]);
+      case BIN(opt_lt):
+        return attr_leaf_opt_lt((CALL_DATA)opes[0]);
+      case BIN(opt_le):
+        return attr_leaf_opt_le((CALL_DATA)opes[0]);
+      case BIN(opt_gt):
+        return attr_leaf_opt_gt((CALL_DATA)opes[0]);
+      case BIN(opt_ge):
+        return attr_leaf_opt_ge((CALL_DATA)opes[0]);
+      case BIN(opt_ltlt):
+        return attr_leaf_opt_ltlt((CALL_DATA)opes[0]);
+      case BIN(opt_and):
+        return attr_leaf_opt_and((CALL_DATA)opes[0]);
+      case BIN(opt_or):
+        return attr_leaf_opt_or((CALL_DATA)opes[0]);
+      case BIN(opt_aref):
+        return attr_leaf_opt_aref((CALL_DATA)opes[0]);
+      case BIN(opt_aset):
+        return attr_leaf_opt_aset((CALL_DATA)opes[0]);
+      case BIN(opt_length):
+        return attr_leaf_opt_length((CALL_DATA)opes[0]);
+      case BIN(opt_size):
+        return attr_leaf_opt_size((CALL_DATA)opes[0]);
+      case BIN(opt_empty_p):
+        return attr_leaf_opt_empty_p((CALL_DATA)opes[0]);
+      case BIN(opt_succ):
+        return attr_leaf_opt_succ((CALL_DATA)opes[0]);
+      case BIN(opt_not):
+        return attr_leaf_opt_not((CALL_DATA)opes[0]);
+      case BIN(opt_regexpmatch2):
+        return attr_leaf_opt_regexpmatch2((CALL_DATA)opes[0]);
+      case BIN(invokebuiltin):
+        return attr_leaf_invokebuiltin((RB_BUILTIN)opes[0]);
+      case BIN(opt_invokebuiltin_delegate):
+        return attr_leaf_opt_invokebuiltin_delegate((RB_BUILTIN)opes[0], (rb_num_t)opes[1]);
+      case BIN(opt_invokebuiltin_delegate_leave):
+        return attr_leaf_opt_invokebuiltin_delegate_leave((RB_BUILTIN)opes[0], (rb_num_t)opes[1]);
+      case BIN(getlocal_WC_0):
+        return attr_leaf_getlocal_WC_0((lindex_t)opes[0]);
+      case BIN(getlocal_WC_1):
+        return attr_leaf_getlocal_WC_1((lindex_t)opes[0]);
+      case BIN(setlocal_WC_0):
+        return attr_leaf_setlocal_WC_0((lindex_t)opes[0]);
+      case BIN(setlocal_WC_1):
+        return attr_leaf_setlocal_WC_1((lindex_t)opes[0]);
+      case BIN(putobject_INT2FIX_0_):
+        return attr_leaf_putobject_INT2FIX_0_();
+      case BIN(putobject_INT2FIX_1_):
+        return attr_leaf_putobject_INT2FIX_1_();
+      default:
+        return false;
+    }
+}
+
 PUREFUNC(MAYBE_UNUSED(static int comptime_insn_stack_increase(int depth, int insn, const VALUE *opes)));
 PUREFUNC(static rb_snum_t comptime_insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *opes));
 
@@ -9777,13 +11165,13 @@ comptime_insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *o
           -1,   -1, -127,    0,    0, -127,   -1,   -1,
            1, -127,    0, -127, -127, -127, -127,    0,
            1,   -1,    1,    0,   -1,    0,   -1, -127,
-        -127, -127,    0,    1,    1,    1,    0,    1,
-        -127, -127, -127, -127, -127,    0,    0,    0,
-          -1,   -1,   -1,    1, -127,   -1,   -1,   -1,
+        -127, -127,    0,    0,    1,    1,    1,    0,
+           1, -127, -127, -127, -127, -127,    0,    0,
+           0,   -1,   -1,   -1,    1, -127,   -1,   -1,
           -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-          -1,   -1,   -1,   -1,   -2,   -1,    0,    0,
-           0,    0,    0,    0,   -1, -127,    1,    1,
-           1,    1,   -1,   -1,    1,    1,    0,    0,
+          -1,   -1,   -1,   -1,   -1,   -2,    0,    0,
+           0,    0,    0,   -1, -127,    1,    1,    1,
+           1,   -1,   -1,    1,    1,    0,    0,    0,
            0,    0,    0,    0,    0,    0,    0,    0,
            0,    0,    0,    0,    0,    0,    0,    0,
            0,    0,    0,    0,    0,    0,    0,    0,
@@ -9797,7 +11185,13 @@ comptime_insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *o
            0,    0,    0,    0,    0,    0,    0,    0,
            0,    0,    0,    0,    0,    0,    0,    0,
            0,    0,    0,    0,    0,    0,    0,    0,
-           0,    0,    0,    0,
+           0,    0,
+#if USE_ZJIT
+           0,    0,    0,    0,    0,    0,    0,    0,
+           0,    0,    0,    0,    0,    0,    0,    0,
+           0,    0,    0,    0,    0,    0,    0,    0,
+           0,    0,    0,    0,    0,    0,
+#endif
     };
     signed char c = t[insn];
 
@@ -9860,178 +11254,4 @@ comptime_insn_stack_increase(int depth, int insn, const VALUE *opes)
     return depth + (int)comptime_insn_stack_increase_dispatch(itype, opes);
 }
 
-PUREFUNC(MAYBE_UNUSED(static bool insn_may_depend_on_sp_or_pc(int insn, const VALUE *opes)));
-
-static bool
-insn_may_depend_on_sp_or_pc(int insn, const VALUE *opes)
-{
-    switch (insn) {
-      case BIN(getspecial):
-      case BIN(getinstancevariable):
-      case BIN(setinstancevariable):
-      case BIN(getclassvariable):
-      case BIN(setclassvariable):
-      case BIN(opt_getconstant_path):
-      case BIN(getconstant):
-      case BIN(setconstant):
-      case BIN(getglobal):
-      case BIN(setglobal):
-      case BIN(putspecialobject):
-      case BIN(concatstrings):
-      case BIN(toregexp):
-      case BIN(expandarray):
-      case BIN(concatarray):
-      case BIN(concattoarray):
-      case BIN(splatarray):
-      case BIN(splatkw):
-      case BIN(newhash):
-      case BIN(newrange):
-      case BIN(defined):
-      case BIN(definedivar):
-      case BIN(checkmatch):
-      case BIN(defineclass):
-      case BIN(definemethod):
-      case BIN(definesmethod):
-      case BIN(send):
-      case BIN(sendforward):
-      case BIN(opt_send_without_block):
-      case BIN(objtostring):
-      case BIN(opt_duparray_send):
-      case BIN(opt_newarray_send):
-      case BIN(invokesuper):
-      case BIN(invokesuperforward):
-      case BIN(invokeblock):
-      case BIN(leave):
-      case BIN(throw):
-      case BIN(jump):
-      case BIN(branchif):
-      case BIN(branchunless):
-      case BIN(branchnil):
-      case BIN(once):
-      case BIN(opt_div):
-      case BIN(opt_mod):
-      case BIN(opt_ltlt):
-      case BIN(opt_aref):
-      case BIN(opt_aset):
-      case BIN(opt_aset_with):
-      case BIN(opt_aref_with):
-      case BIN(opt_regexpmatch2):
-      case BIN(invokebuiltin):
-      case BIN(opt_invokebuiltin_delegate):
-      case BIN(opt_invokebuiltin_delegate_leave):
-      case BIN(trace_nop):
-      case BIN(trace_getlocal):
-      case BIN(trace_setlocal):
-      case BIN(trace_getblockparam):
-      case BIN(trace_setblockparam):
-      case BIN(trace_getblockparamproxy):
-      case BIN(trace_getspecial):
-      case BIN(trace_setspecial):
-      case BIN(trace_getinstancevariable):
-      case BIN(trace_setinstancevariable):
-      case BIN(trace_getclassvariable):
-      case BIN(trace_setclassvariable):
-      case BIN(trace_opt_getconstant_path):
-      case BIN(trace_getconstant):
-      case BIN(trace_setconstant):
-      case BIN(trace_getglobal):
-      case BIN(trace_setglobal):
-      case BIN(trace_putnil):
-      case BIN(trace_putself):
-      case BIN(trace_putobject):
-      case BIN(trace_putspecialobject):
-      case BIN(trace_putstring):
-      case BIN(trace_putchilledstring):
-      case BIN(trace_concatstrings):
-      case BIN(trace_anytostring):
-      case BIN(trace_toregexp):
-      case BIN(trace_intern):
-      case BIN(trace_newarray):
-      case BIN(trace_pushtoarraykwsplat):
-      case BIN(trace_duparray):
-      case BIN(trace_duphash):
-      case BIN(trace_expandarray):
-      case BIN(trace_concatarray):
-      case BIN(trace_concattoarray):
-      case BIN(trace_pushtoarray):
-      case BIN(trace_splatarray):
-      case BIN(trace_splatkw):
-      case BIN(trace_newhash):
-      case BIN(trace_newrange):
-      case BIN(trace_pop):
-      case BIN(trace_dup):
-      case BIN(trace_dupn):
-      case BIN(trace_swap):
-      case BIN(trace_opt_reverse):
-      case BIN(trace_topn):
-      case BIN(trace_setn):
-      case BIN(trace_adjuststack):
-      case BIN(trace_defined):
-      case BIN(trace_definedivar):
-      case BIN(trace_checkmatch):
-      case BIN(trace_checkkeyword):
-      case BIN(trace_checktype):
-      case BIN(trace_defineclass):
-      case BIN(trace_definemethod):
-      case BIN(trace_definesmethod):
-      case BIN(trace_send):
-      case BIN(trace_sendforward):
-      case BIN(trace_opt_send_without_block):
-      case BIN(trace_objtostring):
-      case BIN(trace_opt_ary_freeze):
-      case BIN(trace_opt_hash_freeze):
-      case BIN(trace_opt_str_freeze):
-      case BIN(trace_opt_nil_p):
-      case BIN(trace_opt_str_uminus):
-      case BIN(trace_opt_duparray_send):
-      case BIN(trace_opt_newarray_send):
-      case BIN(trace_invokesuper):
-      case BIN(trace_invokesuperforward):
-      case BIN(trace_invokeblock):
-      case BIN(trace_leave):
-      case BIN(trace_throw):
-      case BIN(trace_jump):
-      case BIN(trace_branchif):
-      case BIN(trace_branchunless):
-      case BIN(trace_branchnil):
-      case BIN(trace_once):
-      case BIN(trace_opt_case_dispatch):
-      case BIN(trace_opt_plus):
-      case BIN(trace_opt_minus):
-      case BIN(trace_opt_mult):
-      case BIN(trace_opt_div):
-      case BIN(trace_opt_mod):
-      case BIN(trace_opt_eq):
-      case BIN(trace_opt_neq):
-      case BIN(trace_opt_lt):
-      case BIN(trace_opt_le):
-      case BIN(trace_opt_gt):
-      case BIN(trace_opt_ge):
-      case BIN(trace_opt_ltlt):
-      case BIN(trace_opt_and):
-      case BIN(trace_opt_or):
-      case BIN(trace_opt_aref):
-      case BIN(trace_opt_aset):
-      case BIN(trace_opt_aset_with):
-      case BIN(trace_opt_aref_with):
-      case BIN(trace_opt_length):
-      case BIN(trace_opt_size):
-      case BIN(trace_opt_empty_p):
-      case BIN(trace_opt_succ):
-      case BIN(trace_opt_not):
-      case BIN(trace_opt_regexpmatch2):
-      case BIN(trace_invokebuiltin):
-      case BIN(trace_opt_invokebuiltin_delegate):
-      case BIN(trace_opt_invokebuiltin_delegate_leave):
-      case BIN(trace_getlocal_WC_0):
-      case BIN(trace_getlocal_WC_1):
-      case BIN(trace_setlocal_WC_0):
-      case BIN(trace_setlocal_WC_1):
-      case BIN(trace_putobject_INT2FIX_0_):
-      case BIN(trace_putobject_INT2FIX_1_):
-        return true;
-      default:
-        return false;
-    }
-}
-
+#endif

@@ -1789,7 +1789,7 @@ pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encodi
 #line 190 "prism/templates/ext/prism/api_node.c.erb"
                 case PM_CALL_NODE: {
                     pm_call_node_t *cast = (pm_call_node_t *) node;
-                    VALUE argv[12];
+                    VALUE argv[13];
 
                     // source
                     argv[0] = source;
@@ -1832,11 +1832,15 @@ pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encodi
 #line 243 "prism/templates/ext/prism/api_node.c.erb"
                     argv[10] = cast->closing_loc.start == NULL ? Qnil : pm_location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source, freeze);
 
+                    // equal_loc
+#line 243 "prism/templates/ext/prism/api_node.c.erb"
+                    argv[11] = cast->equal_loc.start == NULL ? Qnil : pm_location_new(parser, cast->equal_loc.start, cast->equal_loc.end, source, freeze);
+
                     // block
 #line 213 "prism/templates/ext/prism/api_node.c.erb"
-                    argv[11] = rb_ary_pop(value_stack);
+                    argv[12] = rb_ary_pop(value_stack);
 
-                    VALUE value = rb_class_new_instance(12, argv, rb_cPrismCallNode);
+                    VALUE value = rb_class_new_instance(13, argv, rb_cPrismCallNode);
                     if (freeze) rb_obj_freeze(value);
 
                     rb_ary_push(value_stack, value);

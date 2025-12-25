@@ -22,10 +22,6 @@
 #include <unistd.h>
 #endif
 
-#ifndef O_CLOEXEC
-#  define O_CLOEXEC 0
-#endif
-
 #ifndef USE_OPENDIR_AT
 # if defined(HAVE_FDOPENDIR) && defined(HAVE_DIRFD) && \
     defined(HAVE_OPENAT) && defined(HAVE_FSTATAT)
@@ -35,8 +31,12 @@
 # endif
 #endif
 
-#if USE_OPENDIR_AT
-# include <fcntl.h>
+#ifdef HAVE_FCNTL_H
+#  include <fcntl.h>
+#endif
+
+#ifndef O_CLOEXEC
+#  define O_CLOEXEC 0
 #endif
 
 #undef HAVE_DIRENT_NAMLEN
@@ -1480,7 +1480,7 @@ rb_dir_getwd_ospath(void)
     VALUE cwd;
     VALUE path_guard;
 
-    path_guard = rb_imemo_tmpbuf_auto_free_pointer();
+    path_guard = rb_imemo_tmpbuf_new();
     path = ruby_getcwd();
     rb_imemo_tmpbuf_set_ptr(path_guard, path);
 #ifdef __APPLE__

@@ -1,17 +1,15 @@
 require_relative "../../../spec_helper"
 platform_is :windows do
-  verbose, $VERBOSE = $VERBOSE, nil
-
   require 'win32ole'
 
-  describe "WIN32OLE_PARAM#default" do
+  describe "WIN32OLE::Param#default" do
     before :each do
-      ole_type = WIN32OLE_TYPE.new("Microsoft Shell Controls And Automation", "Shell")
-      m_browse_for_folder = WIN32OLE_METHOD.new(ole_type, "BrowseForFolder")
+      ole_type = WIN32OLE::Type.new("Microsoft Shell Controls And Automation", "Shell")
+      m_browse_for_folder = WIN32OLE::Method.new(ole_type, "BrowseForFolder")
       @params = m_browse_for_folder.params
 
-      ole_type = WIN32OLE_TYPE.new("Microsoft Scripting Runtime", "FileSystemObject")
-      m_copyfile = WIN32OLE_METHOD.new(ole_type, "CopyFile")
+      ole_type = WIN32OLE::Type.new("Microsoft Scripting Runtime", "FileSystemObject")
+      m_copyfile = WIN32OLE::Method.new(ole_type, "CopyFile")
       @param_overwritefiles = m_copyfile.params[2]
     end
 
@@ -19,7 +17,7 @@ platform_is :windows do
       -> { @params[0].default(1) }.should raise_error ArgumentError
     end
 
-    it "returns nil for each of WIN32OLE_PARAM for Shell's 'BrowseForFolder' method" do
+    it "returns nil for each of WIN32OLE::Param for Shell's 'BrowseForFolder' method" do
       @params.each do |p|
         p.default.should be_nil
       end
@@ -31,6 +29,4 @@ platform_is :windows do
 
   end
 
-ensure
-  $VERBOSE = verbose
 end

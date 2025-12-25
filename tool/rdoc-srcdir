@@ -1,6 +1,7 @@
 #!ruby -W0
 
-$:.unshift(File.expand_path("../lib", __dir__))
+rdoc_path = Dir.glob("#{File.dirname(__dir__)}/.bundle/gems/rdoc-*").first
+$LOAD_PATH.unshift("#{rdoc_path}/lib")
 require 'rdoc/rdoc'
 
 # Make only the output directory relative to the invoked directory.
@@ -16,7 +17,7 @@ options.title = options.title.sub(/Ruby \K.*version/) {
     .sort # "MAJOR" < "MINOR", fortunately
     .to_h.values.join(".")
 }
-options.parse ARGV
+options.parse ARGV + ["#{invoked}/rbconfig.rb"]
 
 options.singleton_class.define_method(:finish) do
   super()

@@ -16,6 +16,13 @@ return RBOOL(rb_yjit_enabled_p);
 #line 17 "yjit.rbinc"
 }
 
+static VALUE builtin_inline_class_51(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 51 "yjit.rb"
+return RBOOL(rb_zjit_enabled_p);
+#line 24 "yjit.rbinc"
+}
+
 void Init_builtin_yjit(void)
 {
   // table definition
@@ -25,16 +32,17 @@ void Init_builtin_yjit(void)
     RB_BUILTIN_FUNCTION(2, rb_yjit_log_enabled_p, rb_yjit_log_enabled_p, 0),
     RB_BUILTIN_FUNCTION(3, rb_yjit_trace_exit_locations_enabled_p, rb_yjit_trace_exit_locations_enabled_p, 0),
     RB_BUILTIN_FUNCTION(4, rb_yjit_reset_stats_bang, rb_yjit_reset_stats_bang, 0),
-    RB_BUILTIN_FUNCTION(5, rb_yjit_enable, rb_yjit_enable, 4),
-    RB_BUILTIN_FUNCTION(6, rb_yjit_get_exit_locations, rb_yjit_get_exit_locations, 0),
-    RB_BUILTIN_FUNCTION(7, rb_yjit_get_stats, rb_yjit_get_stats, 1),
-    RB_BUILTIN_FUNCTION(8, rb_yjit_get_log, rb_yjit_get_log, 0),
-    RB_BUILTIN_FUNCTION(9, rb_yjit_disasm_iseq, rb_yjit_disasm_iseq, 1),
-    RB_BUILTIN_FUNCTION(10, rb_yjit_insns_compiled, rb_yjit_insns_compiled, 1),
-    RB_BUILTIN_FUNCTION(11, rb_yjit_code_gc, rb_yjit_code_gc, 0),
-    RB_BUILTIN_FUNCTION(12, rb_yjit_simulate_oom_bang, rb_yjit_simulate_oom_bang, 0),
-    RB_BUILTIN_FUNCTION(13, yjit_c_builtin_p, yjit_c_builtin_p, 0),
-    RB_BUILTIN_FUNCTION(14, rb_yjit_print_stats_p, rb_yjit_print_stats_p, 0),
+    RB_BUILTIN_FUNCTION(5, _bi51, builtin_inline_class_51, 0),
+    RB_BUILTIN_FUNCTION(6, rb_yjit_enable, rb_yjit_enable, 6),
+    RB_BUILTIN_FUNCTION(7, rb_yjit_get_exit_locations, rb_yjit_get_exit_locations, 0),
+    RB_BUILTIN_FUNCTION(8, rb_yjit_get_stats, rb_yjit_get_stats, 1),
+    RB_BUILTIN_FUNCTION(9, rb_yjit_get_log, rb_yjit_get_log, 0),
+    RB_BUILTIN_FUNCTION(10, rb_yjit_disasm_iseq, rb_yjit_disasm_iseq, 1),
+    RB_BUILTIN_FUNCTION(11, rb_yjit_insns_compiled, rb_yjit_insns_compiled, 1),
+    RB_BUILTIN_FUNCTION(12, rb_yjit_code_gc, rb_yjit_code_gc, 0),
+    RB_BUILTIN_FUNCTION(13, rb_yjit_simulate_oom_bang, rb_yjit_simulate_oom_bang, 0),
+    RB_BUILTIN_FUNCTION(14, yjit_c_builtin_p, yjit_c_builtin_p, 0),
+    RB_BUILTIN_FUNCTION(15, rb_yjit_print_stats_p, rb_yjit_print_stats_p, 0),
     RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
   };
 
@@ -48,7 +56,8 @@ COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
   if (0) rb_builtin_function_check_arity0(rb_yjit_log_enabled_p);
   if (0) rb_builtin_function_check_arity0(rb_yjit_trace_exit_locations_enabled_p);
   if (0) rb_builtin_function_check_arity0(rb_yjit_reset_stats_bang);
-  if (0) rb_builtin_function_check_arity4(rb_yjit_enable);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_51);
+  if (0) rb_builtin_function_check_arity6(rb_yjit_enable);
   if (0) rb_builtin_function_check_arity0(rb_yjit_get_exit_locations);
   if (0) rb_builtin_function_check_arity1(rb_yjit_get_stats);
   if (0) rb_builtin_function_check_arity0(rb_yjit_get_log);
