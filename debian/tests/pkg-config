@@ -2,7 +2,7 @@
 
 set -eu
 
-ruby="${1:-ruby3.4}"
+ruby="${1:-ruby4.0}"
 cd "${AUTOPKGTEST_TMP:-/tmp}"
 
 set -x

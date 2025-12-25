@@ -14,7 +14,7 @@ new_version="$1"
 new_source="ruby${new_version}"
 new_api_version="${new_version}.0"
 
-files_to_change=$(grep -rl "${old_source}" debian/ | grep -v changelog)
+files_to_change=$(git grep -rl "${old_source}" debian/ | grep -v changelog)
 
 set -x
 sed -i -e "s/${old_source}/${new_source}/g; s/${old_version}.\[0-9]/${new_api_version}/g; s/${old_version}/${new_version}/g" $files_to_change
