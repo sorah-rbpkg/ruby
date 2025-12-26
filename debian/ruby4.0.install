@@ -1,3 +1,8 @@
-/usr/bin
+/usr/bin/bundle*.*
+/usr/bin/bundler*.*
+/usr/bin/erb*.*
+/usr/bin/gem*.*
+/usr/bin/ruby*.*
+/usr/bin/syntax_suggest*.*
 /usr/share/man
 /var/lib/gems
