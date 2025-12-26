@@ -557,7 +557,7 @@ parse_regexp_concat(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, const pm
 static void pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node);
 
 static int
-pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const pm_node_location_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node, rb_encoding *implicit_regexp_encoding, rb_encoding *explicit_regexp_encoding)
+pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const pm_node_location_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node, rb_encoding *implicit_regexp_encoding, rb_encoding *explicit_regexp_encoding, bool mutable_result, bool frozen_result)
 {
     int stack_size = 0;
     size_t parts_size = parts->size;
@@ -667,10 +667,15 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
         if (RTEST(current_string)) {
             current_string = rb_fstring(current_string);
 
-            if (stack_size == 0 && interpolated) {
-                PUSH_INSN1(ret, current_location, putstring, current_string);
-            }
-            else {
+            if (stack_size == 0) {
+                if (frozen_result) {
+                    PUSH_INSN1(ret, current_location, putobject, current_string);
+                } else if (mutable_result || interpolated) {
+                    PUSH_INSN1(ret, current_location, putstring, current_string);
+                } else {
+                    PUSH_INSN1(ret, current_location, putchilledstring, current_string);
+                }
+            } else {
                 PUSH_INSN1(ret, current_location, putobject, current_string);
             }
 
@@ -691,7 +696,7 @@ pm_compile_regexp_dynamic(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_
     rb_encoding *explicit_regexp_encoding = parse_regexp_encoding(scope_node, node);
     rb_encoding *implicit_regexp_encoding = explicit_regexp_encoding != NULL ? explicit_regexp_encoding : scope_node->encoding;
 
-    int length = pm_interpolated_node_compile(iseq, parts, node_location, ret, popped, scope_node, implicit_regexp_encoding, explicit_regexp_encoding);
+    int length = pm_interpolated_node_compile(iseq, parts, node_location, ret, popped, scope_node, implicit_regexp_encoding, explicit_regexp_encoding, false, false);
     PUSH_INSN2(ret, *node_location, toregexp, INT2FIX(parse_regexp_flags(node) & 0xFF), INT2FIX(length));
 }
 
@@ -5255,8 +5260,7 @@ pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *c
       case PM_INSTANCE_VARIABLE_TARGET_NODE:
       case PM_CONSTANT_PATH_TARGET_NODE:
       case PM_CALL_TARGET_NODE:
-      case PM_INDEX_TARGET_NODE:
-      case PM_SPLAT_NODE: {
+      case PM_INDEX_TARGET_NODE: {
         // For other targets, we need to potentially compile the parent or
         // owning expression of this target, then retrieve the value, expand it,
         // and then compile the necessary writes.
@@ -5276,6 +5280,7 @@ pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *c
         pm_multi_target_state_update(&state);
         break;
       }
+      case PM_SPLAT_NODE:
       case PM_MULTI_TARGET_NODE: {
         DECL_ANCHOR(writes);
         DECL_ANCHOR(cleanup);
@@ -5311,6 +5316,12 @@ pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *c
         PUSH_INSN(ret, location, pop);
 
         PUSH_LABEL(ret, not_single);
+
+        if (PM_NODE_TYPE_P(node, PM_SPLAT_NODE)) {
+            const pm_splat_node_t *cast = (const pm_splat_node_t *) node;
+            PUSH_INSN2(ret, location, expandarray, INT2FIX(0), INT2FIX(cast->expression == NULL ? 0 : 1));
+        }
+
         PUSH_SEQ(ret, writes);
         PUSH_SEQ(ret, cleanup);
         break;
@@ -9575,7 +9586,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
         else {
             const pm_interpolated_string_node_t *cast = (const pm_interpolated_string_node_t *) node;
-            int length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, popped, scope_node, NULL, NULL);
+            int length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, popped, scope_node, NULL, NULL, PM_NODE_FLAG_P(cast, PM_INTERPOLATED_STRING_NODE_FLAGS_MUTABLE), PM_NODE_FLAG_P(cast, PM_INTERPOLATED_STRING_NODE_FLAGS_FROZEN));
             if (length > 1) PUSH_INSN1(ret, location, concatstrings, INT2FIX(length));
             if (popped) PUSH_INSN(ret, location, pop);
         }
@@ -9586,7 +9597,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // :"foo #{bar}"
         // ^^^^^^^^^^^^^
         const pm_interpolated_symbol_node_t *cast = (const pm_interpolated_symbol_node_t *) node;
-        int length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, popped, scope_node, NULL, NULL);
+        int length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, popped, scope_node, NULL, NULL, false, false);
 
         if (length > 1) {
             PUSH_INSN1(ret, location, concatstrings, INT2FIX(length));
@@ -9608,7 +9619,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         PUSH_INSN(ret, location, putself);
 
-        int length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, false, scope_node, NULL, NULL);
+        int length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, false, scope_node, NULL, NULL, false, false);
         if (length > 1) PUSH_INSN1(ret, location, concatstrings, INT2FIX(length));
 
         PUSH_SEND_WITH_FLAG(ret, location, idBackquote, INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));

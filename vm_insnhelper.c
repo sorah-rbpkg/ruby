@@ -5048,7 +5048,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
 
     if (!klass) {
         /* bound instance method of module */
-        cc = vm_cc_new(klass, NULL, vm_call_method_missing, cc_type_super);
+        cc = vm_cc_new(Qundef, NULL, vm_call_method_missing, cc_type_super);
         RB_OBJ_WRITE(reg_cfp->iseq, &cd->cc, cc);
     }
     else {
@@ -6259,7 +6259,7 @@ static VALUE
 vm_opt_newarray_include_p(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE target)
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_INCLUDE_P, ARRAY_REDEFINED_OP_FLAG)) {
-        struct RArray fake_ary;
+        struct RArray fake_ary = {RBASIC_INIT};
         VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, num);
         return rb_ary_includes(ary, target);
     }
@@ -6279,7 +6279,7 @@ static VALUE
 vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE fmt, VALUE buffer)
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_PACK, ARRAY_REDEFINED_OP_FLAG)) {
-        struct RArray fake_ary;
+        struct RArray fake_ary = {RBASIC_INIT};
         VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, num);
         return rb_ec_pack_ary(ec, ary, fmt, (UNDEF_P(buffer) ? Qnil : buffer));
     }
