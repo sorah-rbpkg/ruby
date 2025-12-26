@@ -2638,7 +2638,7 @@ typedef struct pm_case_node {
      * Represents the predicate of the case statement. This can be either `nil` or any [non-void expressions](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
      *
      *     case true; when false; end
-     *     ^^^^
+     *          ^^^^
      */
     struct pm_node *predicate;
 
@@ -7990,6 +7990,8 @@ typedef enum pm_arguments_node_flags {
 
     /** if the arguments contain multiple splats */
     PM_ARGUMENTS_NODE_FLAGS_CONTAINS_MULTIPLE_SPLATS = 64,
+
+    PM_ARGUMENTS_NODE_FLAGS_LAST,
 } pm_arguments_node_flags_t;
 
 /**
@@ -7998,6 +8000,8 @@ typedef enum pm_arguments_node_flags {
 typedef enum pm_array_node_flags {
     /** if array contains splat nodes */
     PM_ARRAY_NODE_FLAGS_CONTAINS_SPLAT = 4,
+
+    PM_ARRAY_NODE_FLAGS_LAST,
 } pm_array_node_flags_t;
 
 /**
@@ -8015,6 +8019,8 @@ typedef enum pm_call_node_flags {
 
     /** a call that ignores method visibility */
     PM_CALL_NODE_FLAGS_IGNORE_VISIBILITY = 32,
+
+    PM_CALL_NODE_FLAGS_LAST,
 } pm_call_node_flags_t;
 
 /**
@@ -8026,6 +8032,8 @@ typedef enum pm_encoding_flags {
 
     /** internal bytes forced the encoding to binary */
     PM_ENCODING_FLAGS_FORCED_BINARY_ENCODING = 8,
+
+    PM_ENCODING_FLAGS_LAST,
 } pm_encoding_flags_t;
 
 /**
@@ -8043,6 +8051,8 @@ typedef enum pm_integer_base_flags {
 
     /** 0x prefix */
     PM_INTEGER_BASE_FLAGS_HEXADECIMAL = 32,
+
+    PM_INTEGER_BASE_FLAGS_LAST,
 } pm_integer_base_flags_t;
 
 /**
@@ -8054,6 +8064,8 @@ typedef enum pm_interpolated_string_node_flags {
 
     /** mutable by virtue of a `frozen_string_literal: false` comment or `--disable-frozen-string-literal`; only for adjacent string literals like `'a' 'b'` */
     PM_INTERPOLATED_STRING_NODE_FLAGS_MUTABLE = 8,
+
+    PM_INTERPOLATED_STRING_NODE_FLAGS_LAST,
 } pm_interpolated_string_node_flags_t;
 
 /**
@@ -8062,6 +8074,8 @@ typedef enum pm_interpolated_string_node_flags {
 typedef enum pm_keyword_hash_node_flags {
     /** a keyword hash which only has `AssocNode` elements all with symbol keys, which means the elements can be treated as keyword arguments */
     PM_KEYWORD_HASH_NODE_FLAGS_SYMBOL_KEYS = 4,
+
+    PM_KEYWORD_HASH_NODE_FLAGS_LAST,
 } pm_keyword_hash_node_flags_t;
 
 /**
@@ -8070,6 +8084,8 @@ typedef enum pm_keyword_hash_node_flags {
 typedef enum pm_loop_flags {
     /** a loop after a begin statement, so the body is executed first before the condition */
     PM_LOOP_FLAGS_BEGIN_MODIFIER = 4,
+
+    PM_LOOP_FLAGS_LAST,
 } pm_loop_flags_t;
 
 /**
@@ -8078,6 +8094,8 @@ typedef enum pm_loop_flags {
 typedef enum pm_parameter_flags {
     /** a parameter name that has been repeated in the method signature */
     PM_PARAMETER_FLAGS_REPEATED_PARAMETER = 4,
+
+    PM_PARAMETER_FLAGS_LAST,
 } pm_parameter_flags_t;
 
 /**
@@ -8086,6 +8104,8 @@ typedef enum pm_parameter_flags {
 typedef enum pm_parentheses_node_flags {
     /** parentheses that contain multiple potentially void statements */
     PM_PARENTHESES_NODE_FLAGS_MULTIPLE_STATEMENTS = 4,
+
+    PM_PARENTHESES_NODE_FLAGS_LAST,
 } pm_parentheses_node_flags_t;
 
 /**
@@ -8094,6 +8114,8 @@ typedef enum pm_parentheses_node_flags {
 typedef enum pm_range_flags {
     /** ... operator */
     PM_RANGE_FLAGS_EXCLUDE_END = 4,
+
+    PM_RANGE_FLAGS_LAST,
 } pm_range_flags_t;
 
 /**
@@ -8132,6 +8154,8 @@ typedef enum pm_regular_expression_flags {
 
     /** internal bytes forced the encoding to US-ASCII */
     PM_REGULAR_EXPRESSION_FLAGS_FORCED_US_ASCII_ENCODING = 4096,
+
+    PM_REGULAR_EXPRESSION_FLAGS_LAST,
 } pm_regular_expression_flags_t;
 
 /**
@@ -8146,6 +8170,8 @@ typedef enum pm_shareable_constant_node_flags {
 
     /** constant writes that should be modified with shareable constant value experimental copy */
     PM_SHAREABLE_CONSTANT_NODE_FLAGS_EXPERIMENTAL_COPY = 16,
+
+    PM_SHAREABLE_CONSTANT_NODE_FLAGS_LAST,
 } pm_shareable_constant_node_flags_t;
 
 /**
@@ -8163,6 +8189,8 @@ typedef enum pm_string_flags {
 
     /** mutable by virtue of a `frozen_string_literal: false` comment or `--disable-frozen-string-literal` */
     PM_STRING_FLAGS_MUTABLE = 32,
+
+    PM_STRING_FLAGS_LAST,
 } pm_string_flags_t;
 
 /**
@@ -8177,6 +8205,8 @@ typedef enum pm_symbol_flags {
 
     /** internal bytes forced the encoding to US-ASCII */
     PM_SYMBOL_FLAGS_FORCED_US_ASCII_ENCODING = 16,
+
+    PM_SYMBOL_FLAGS_LAST,
 } pm_symbol_flags_t;
 
 /**

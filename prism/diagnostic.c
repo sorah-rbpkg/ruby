@@ -10,7 +10,7 @@
 
 #include "prism/diagnostic.h"
 
-#define PM_DIAGNOSTIC_ID_MAX 321
+#define PM_DIAGNOSTIC_ID_MAX 322
 
 /** This struct holds the data for each diagnostic. */
 typedef struct {
@@ -154,6 +154,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_CONDITIONAL_WHILE_PREDICATE]        = { "expected a predicate expression for the `while` statement", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_CONSTANT_PATH_COLON_COLON_CONSTANT] = { "expected a constant after the `::` operator", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_DEF_ENDLESS]                        = { "could not parse the endless method body", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_DEF_ENDLESS_PARAMETERS]             = { "could not parse the endless method parameters", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_DEF_ENDLESS_SETTER]                 = { "invalid method name; a setter method cannot be defined in an endless method definition", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_DEF_NAME]                           = { "unexpected %s; expected a method name", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_DEF_PARAMS_TERM]                    = { "expected a delimiter to close the parameters", PM_ERROR_LEVEL_SYNTAX },
@@ -482,6 +483,7 @@ pm_diagnostic_id_human(pm_diagnostic_id_t diag_id) {
         case PM_ERR_CONDITIONAL_WHILE_PREDICATE: return "conditional_while_predicate";
         case PM_ERR_CONSTANT_PATH_COLON_COLON_CONSTANT: return "constant_path_colon_colon_constant";
         case PM_ERR_DEF_ENDLESS: return "def_endless";
+        case PM_ERR_DEF_ENDLESS_PARAMETERS: return "def_endless_parameters";
         case PM_ERR_DEF_ENDLESS_SETTER: return "def_endless_setter";
         case PM_ERR_DEF_NAME: return "def_name";
         case PM_ERR_DEF_PARAMS_TERM: return "def_params_term";
