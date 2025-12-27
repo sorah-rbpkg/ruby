@@ -1,5 +1,707 @@
 -*- coding: utf-8 -*-
 
+commit 995b59f66677d44767ce9faac6957e5543617ff9
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-12-17 08:56:55 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-17 08:56:55 +0900
+
+    v3.4.8
+
+commit d8f087b581735ec250b8671c3574fa4d5b16ae54
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-12-17 08:53:40 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-17 08:53:40 +0900
+
+    merge revision(s) 9168cad4d63a5d281d443bde4edea6be213b0b25: [Backport #21266]
+
+            [PATCH] YJIT: Bail out if proc would be stored above stack top
+
+            Fixes [Bug #21266].
+
+commit 252b718582baf5760a6db2efdb58b84a0bf3f47f
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-12-17 08:53:03 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-17 08:53:03 +0900
+
+    merge revision(s) bc2a8a002a6c41fc1b28e02e15e2fb2b72d1b66e, c26057ebafb23b063190d31d5b4d19a0e0a1306c: [Backport #21779]
+
+            [PATCH] [Bug #21779] Uniquify `InitVM` functions as well as `Init`
+
+            Avoid possible name conflict when `--with-static-linked-ext`.
+
+            [PATCH] [Bug #21779] Do not export InitVM functions
+
+            Fix ruby/io-console#105.
+
+commit 7edff469e14541a480a6156efc1cc6e3b526e7bd
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-12-17 08:51:44 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-17 08:51:44 +0900
+
+    merge revision(s) 1e7cf7b2bc1f9b356b2e980e1e18548618da6363: [Backport #21446]
+
+            [PATCH] Fix refinement modification of method visibility in superclass
+
+            Previously, this didn't work correctly, resulting in a
+            SystemStackError. This fixes the issue by finding the related
+            superclass method entry, and updating the orig_me in the
+            refinement method to point to the superclass method.
+
+            Fixes [Bug #21446]
+
+commit 70a7c551fcead48f5964fbc7a0bd20cc50b635c0
+  Author:     Alan Wu <XrXr@users.noreply.github.com>
+  AuthorDate: 2025-12-17 03:33:47 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-17 04:55:31 +0900
+
+    YJIT: Print `Rc` strong and weak count on assert failure
+
+    For <https://bugs.ruby-lang.org/issues/21716>, the panic is looking like
+    some sort of third party memory corruption, with YJIT taking the fall.
+    At the point of this assert, the assembler has dropped, so there's
+    nothing in YJIT's code other than JITState that could be holding on to
+    these transient `PendingBranchRef`.
+
+    The strong count being more than a handful or the weak count is non-zero
+    shows that someone in the process (likely some native extension)
+    corrupted the Rc's counts.
+
+commit f19e9c6699150d56853ba1a33f6149d7588c8478
+  Author:     Alan Wu <XrXr@users.noreply.github.com>
+  AuthorDate: 2025-12-13 08:00:18 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-13 08:43:41 +0900
+
+    YJIT: Fix panic from overly loose filtering in identity method inlining
+
+    Credits to @rwstauner for noticing this issue in GH-15533.
+
+commit 628a94104768b294ae8068c7bb39ab9e495fdd94
+  Author:     Alan Wu <XrXr@users.noreply.github.com>
+  AuthorDate: 2025-12-13 03:42:00 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-13 08:43:41 +0900
+
+    YJIT: Add missing local variable type update for fallback setlocal blocks
+
+    Previously, the chain_depth>0 version of setlocal blocks did not
+    update the type of the local variable in the context. This can leave
+    the context with stale type information and trigger or lead to miscompilation.
+
+    To trigger the issue, YJIT needs to see the same ISEQ before and after
+    environment escape and have tracked type info before the escape. To
+    trigger in ISEQs that do not send with a block, it probably requires
+    Kernel#binding or the use of include/ruby/debug.h APIs.
+
+    [Backport #21772]
+
+commit 88f1d98676d435a79e2086ed8054b459f1b4bd2a
+  Author:     Jeremy Evans <code@jeremyevans.net>
+  AuthorDate: 2025-12-03 10:34:36 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-13 01:56:50 +0900
+
+    Fix allocationless anonymous splat keyword argument check
+
+    Previously, if an argument splat and keywords are provided by
+    the caller, it did not check whether the method/proc accepted
+    keywords before avoiding the allocation. This is incorrect,
+    because if the method/proc does not accept keywords, the
+    keywords passed by the caller are added as a positional
+    argument, so there must be an allocation to avoid mutating
+    the positional splat argument.
+
+    Add a check that if the caller passes keywords, the
+    method/proc must accept keywords in order to optimize.
+    If the caller passes a keyword splat, either the
+    method/proc must accept keywords, or the keyword splat must
+    be empty in order to optimize.
+
+    If keywords are explicitly disallowed via `**nil`, the
+    optimization should be skipped, because the array is mutated
+    before the ArgumentError exception is raised.
+
+    In addition to a test for the correct behavior, add an
+    allocation test for a method that accepts an anonymous splat
+    without keywords.
+
+    Fixes [Bug #21757]
+
+commit 6dc27d14a0427da7b28a6884578009a9740f69fd
+  Author:     Earlopain <14981592+Earlopain@users.noreply.github.com>
+  AuthorDate: 2025-10-02 03:25:26 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-09 08:30:35 +0900
+
+    Interpolation with only string literals must not be frozen
+
+    Basically a redo of https://github.com/ruby/ruby/commit/a1403fb7cbd1fe0df97c932be9814c86081783dc
+    but respecting the frozen string literal magic comment
+
+    Fixes [Bug #21187]
+
+commit bc40e758307c9be3e39497b5010fbaceb14bf8c7
+  Author:     Aaron Patterson <tenderlove@ruby-lang.org>
+  AuthorDate: 2025-07-22 09:13:44 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-09 08:30:35 +0900
+
+    Interpolated strings must not be frozen
+
+    Strings concatenated with backslash may end up being frozen when they
+    shouldn't be.  This commit fixes the issue.  It required a change
+    upstream in Prism, but also a change to the Prism compiler in CRuby.
+
+      https://github.com/ruby/prism/pull/3606
+
+    [Bug #21187]
+
+commit d282e76fb6c9f56ac44b3abfc8a3fc9f10edd6f0
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-12-09 07:56:06 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-09 08:30:35 +0900
+
+    Bump Prism to v1.5.2
+
+    [Backport #21187]
+
+commit d0b778cd19fdda858121d8f2405da2768603c9b1
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-12-09 08:03:34 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-09 08:03:34 +0900
+
+    merge revision(s) 0b0da6c4b26f80ad6985722d3fc0f5cdee09125d: [Backport #21648]
+
+            [PATCH] Correctly compile splats in for-loop index in prism
+
+            Fixes [Bug #21648]
+
+            This is a followup to https://github.com/ruby/ruby/pull/13597.
+            The added test passed but didn't emit the same instructions.
+
+            This also handles bare splats and aligns instructions for all cases
+
+commit 955decc1da6cd2441c24d22e8909a3e995973769
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-12-09 07:46:06 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-09 07:46:06 +0900
+
+    merge revision(s) beb85e7eeee4163cd45b69645a60cdb942f72c05: [Backport #21705]
+
+            [PATCH] [Bug #21705] Fix segfaults on Windows
+
+            It should check the type of the argument and coercion before
+            converting the encoding.
+
+commit fe8221af30768cbd15409d4cc52b2bb18e91667e
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-12-09 07:44:48 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-09 07:44:48 +0900
+
+    merge revision(s) f4f728b319086eea3db6e9909fb9c849c276f813: [Backport #21680]
+
+            [PATCH] [Bug #21680] Fix (base**power_of_two).digits(base) bug (#15144)
+
+            Fix wrong condition in base multiplying loop.
+
+commit 625eeae0db2749e62152d8a750706eff24a271d0
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-12-09 07:38:24 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-09 07:38:24 +0900
+
+    merge revision(s) a4dff09be79b52288a47658964d25e5aa84fc960: [Backport #21265]
+
+            [PATCH] [Bug #21673] Fix resolving refined module-defined method
+
+            A method defined in a module has no `defined_class`, use the ICLASS
+            for it as the `defined_class`.
+
+commit da66b64a18414d5ece52512eb016c1af2ede1730
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-12-09 07:36:06 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-09 07:36:06 +0900
+
+    merge revision(s) 9d44cb0b2b5520b2b299851003ca2a97bf1e2079, 367ddd445cdf5ccc55a0481c944746ef595f72f7, 48dce7874fcb571765635b32fa6a3e3a12e228f8: [Backport #21655]
+
+            [PATCH] Remove rbimpl_rstring_getmem() usage as workaround for GCC 15.2.1 optimization bug. [Bug #21655]
+
+            [PATCH] include/ruby/internal/core/rstring.h: Remove rbimpl_rstring_getmem() definition.
+
+            [PATCH] simplify RSRING_GETMEM() definition.
+
+commit 1adfd3ec401e7a09e1e3e61708592b202a3f8277
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-12-09 07:29:57 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-09 07:29:57 +0900
+
+    merge revision(s) c5bd4acd30320a8e180ce9fcb24acdab4e10c73a: [Backport #21666]
+
+            [PATCH] [Bug #21666] Get rid of use of unspecified values
+
+commit a2ba1478e8c6a810c0fa08695a48f95ef5c29c45
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-12-09 07:24:18 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-09 07:24:18 +0900
+
+    merge revision(s) 190b017fc6c21ff7b61c2b5ece0294785e4a4ca2: [Backport #21703]
+
+            [PATCH] Don't use non blocking pipes for RUBY_CRASH_REPORT
+
+            [Bug #21703]
+
+            RUBY_CRASH_REPORT does not work in some cases when shelling out on Linux.
+            For example, given the following shell script dump.sh:
+
+                #!/usr/bin/env bash
+                cat > /tmp/crash
+
+            And we see it fails like this:
+
+                $ RUBY_CRASH_REPORT="|dump.sh" ruby -rfiddle -e "Fiddle::Pointer.new(1, 10)[0]"
+                cat: -: Resource temporarily unavailable
+
+commit ef2d4bf51bf28cfc427388a19e4a5fe9bbbe7a7a
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-12-09 07:21:06 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-09 07:21:06 +0900
+
+    merge revision(s) 6e6f5d3c32a709c891ac6aa7833376907a6c81b5: [Backport #21265]
+
+            [PATCH] Add test for [Bug #21265]
+
+            The crash was fixed by a4dff09be79b52288a47658964d25e5aa84fc960 ("Fix
+            resolving refined module-defined method"). I had a patch for this around
+            for a few months but never merged it. Oops!
+
+commit e4abacc53396865e20c226a7ac8ed8b86267874b
+  Author:     Koichi Sasada <ko1@atdot.net>
+  AuthorDate: 2025-12-04 14:29:35 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-05 01:56:13 +0900
+
+    Ractor.store_if_absent should not warn
+
+    ```ruby
+    $VERBOSE = true
+
+    Ractor.store_if_absent :key do
+    end #=> warning: the block passed to 'Ractor.store_if_absent' defined at <internal:ractor>:474 may be ignored
+    ```
+
+commit dd0dfecc361d3306ff674b5adcf81c0b1d7ee25d
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-12-03 14:37:29 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-04 01:52:43 +0900
+
+    Next Ruby version is 4.0, not 3.5
+
+commit 28b2e2ede97b569c2f6121e7808975fbd5c6f298
+  Author:     Randy Stauner <randy@r4s6.net>
+  AuthorDate: 2025-11-26 11:29:02 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-12-02 02:45:35 +0900
+
+    YJIT: Abort expandarray optimization if method_missing is defined
+
+    Fixes: [Bug #21707]
+    [AW: rewrote comments]
+    Co-authored-by: Alan Wu <alanwu@ruby-lang.org>
+
+commit 3b09e559da73e63ff25156fcb9e892948c7b2afb
+  Author:     Jean Boussier <jean.boussier@gmail.com>
+  AuthorDate: 2025-12-02 02:44:46 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2025-12-02 02:44:46 +0900
+
+    vm_cc_new: don't assume `cme` is present. (#15322)
+
+    [Bug #21694]
+
+    `vm_search_super_method` explictly calls `vm_cc_new` with `cme=NULL`
+    when there is no super class.
+
+commit 7482835d0b5c9f55662fb7c6586f456354e2b66e
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-08-20 11:13:00 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-11-18 06:28:01 +0900
+
+    Avoid spawning thread for trivial getnameinfo calls
+
+    When calling getnameinfo we spawn a thread because it may do a slow,
+    blocking reverse-DNS lookup. Spawning a thread is relatively fast (~20µs
+    on my Linux machine) but still an order of magnitude slower than when
+    getnameinfo is simply translating to a numeric IP or port, which, at
+    least in my tests on Linux, doesn't even make a syscall.
+
+    This commit adds a fast path for when reverse DNS isn't required: either
+    host isn't being fetched or NI_NUMERICHOST is set AND either the
+    service name isn't required or NI_NUMERICSERV is set. The service name
+    should only need to read /etc/services, which should be fast-ish, but
+    is still I/O so I kept the existing behaviour (it could be on a network
+    fs I guess).
+
+    I tested with:
+
+        s = TCPSocket.open("www.ruby-lang.org", 80)
+        500_000.times { Socket.unpack_sockaddr_in(s.getpeername) }
+
+    Before: 12.935s
+    After: 0.338s
+
+commit 9e4829699b544370dd3a83df3e2c6b9168c34159
+  Author:     Luke Gruber <luke.gruber@shopify.com>
+  AuthorDate: 2025-11-15 04:48:40 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2025-11-15 04:48:40 +0900
+
+    ext/socket: Set raddrinfo thread as detached before thread start (#15194)
+
+    Backport of https://github.com/ruby/ruby/pull/15142
+
+    [Bug #21679]
+
+commit 0b559eab0447905a784092824e5ea0999018cd01
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-11-14 05:01:55 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-11-15 03:07:34 +0900
+
+    YJIT: Fix stack handling in rb_str_dup
+
+    Previously because we did a stack_push before ccall, in some cases we
+    could end up pushing an uninitialized value to the VM stack when
+    spilling regs as part of the ccall.
+
+    Co-authored-by: Luke Gruber <luke.gru@gmail.com>
+
+commit 3f6cdb1246025388ab5be3da0be2dc4c5a1a5178
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-11-13 04:02:23 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2025-11-13 04:02:23 +0900
+
+    Update next stable version to 4.0 from 3.5 (#15146)
+
+commit e4b1f77dec69bcc7c1a5d082716bee5441f1d485
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-11-07 21:57:24 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-11-11 07:38:19 +0900
+
+    Use `IO.popen` instead of `IO.foreach` with pipe
+
+commit 9e426489f00a1b7816e8c6f299daa6116c5f505d
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2025-11-08 12:44:56 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2025-11-08 12:44:56 +0900
+
+    Don't modify fstrings in rb_str_tmp_frozen_no_embed_acquire (#15104)
+
+    [Bug #21671]
+
+commit a7eba5453934e778c5911a4b69d9c3b8fdf31a23
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-10-28 21:55:18 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-11-07 03:25:54 +0900
+
+    [Backport #21625] Allow io/wait methods with `IO#ungetc` in text mode
+
+commit 3150a1d989d81089c7da7d0491321e370e71f482
+  Author:     K.Takata <kentkt@csc.jp>
+  AuthorDate: 2019-01-25 18:54:41 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-11-07 03:25:26 +0900
+
+    [Backport #13671] Fix that "ss" in look-behind causes syntax error
+
+    Fixes k-takata/Onigmo#92.
+
+    This fix was ported from oniguruma:
+    https://github.com/kkos/oniguruma/commit/257082dac8c6019198b56324012f0bd1830ff4ba
+
+    https://github.com/k-takata/Onigmo/commit/b1a5445fbeba97b3e94a733c2ce11c033453af73
+
+commit badb3600093ed5df2c64bc257b5cb3a149a88189
+  Author:     Alan Wu <XrXr@users.noreply.github.com>
+  AuthorDate: 2025-11-07 01:26:40 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-11-07 03:24:37 +0900
+
+    merge revision(s) d17ce4bd05dc05d48f5f4bc75171fcebda1678ed: [Backport #21652]
+
+            [PATCH] [Bug #21652] [DOC] Update unmarshalable object list
+
+            The `Data` mentioned here was the old `T_DATA` class, not the current
+            extended `Struct`.
+
+commit f2fd5b3bc23bce7527192057d4b4b11fa179170f
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-10-14 12:38:52 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-11-07 03:23:58 +0900
+
+    [Backport #21638] Mark ractor-local `$VERBOSE` and `$DEBUG`
+
+    https://github.com/sampersand/blog/blob/master/the%20-s%20flag.md#the-segfault
+
+commit c26a2b12e1f7f0779f2e86f59a405b1913cf72c8
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-11-05 15:10:54 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-11-05 15:10:54 +0900
+
+    merge revision(s) 377aa2a336cc700485c699ac49330f2a58b74906: [Backport #21668]
+
+            [PATCH] Improve performance of UnicodeNormalize.canonical_ordering_one
+
+            Use array_of_integer.sort! instead of buble-sort-like algorithm
+
+commit 7ec94afa8faad31d8b973edc53347973062e4d20
+  Author:     Andre Muta <andremuta@gmail.com>
+  AuthorDate: 2025-10-30 12:55:40 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-11-02 00:51:57 +0900
+
+    mn timer thread: force wakeups for timeouts
+
+commit 0b7ea9c7953803a56622c62139404473a4115565
+  Author:     Alan Wu <XrXr@users.noreply.github.com>
+  AuthorDate: 2025-10-02 12:53:48 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-10-30 08:35:14 +0900
+
+    YJIT: Prevent making a branch from a dead block to a live block
+
+    I'm seeing some memory corruption in the wild on blocks in
+    `IseqPayload::dead_blocks`. While I unfortunately can't recreate the
+    issue, (For all I know, it could be some external code corrupting YJIT's
+    memory.) establishing a link between dead blocks and live blocks seems
+    fishy enough that we ought to prevent it. When it did happen, it might've
+    had bad interacts with Code GC and the optimization to immediately
+    free empty blocks.
+
+commit 75ae7093a9b61b06a26770241c6d545c4b3d94e3
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-10-23 08:22:43 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-10-23 11:57:28 +0900
+
+    [ruby/rubygems] Removed credential assertion from stdout
+
+    https://github.com/ruby/rubygems/commit/3946be008c
+
+commit 7fa4d58ef28f701d6ac7475fd34cd69c32b554a1
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2025-10-23 07:54:45 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-10-23 11:57:28 +0900
+
+    [ruby/rubygems] Bump up vendored uri to 1.0.4
+
+    https://github.com/ruby/rubygems/commit/bc77ec0bf2
+
+commit 3afa38d0ee34a453d7c53d4512a8f14d25d23f57
+  Author:     Alan Wu <XrXr@users.noreply.github.com>
+  AuthorDate: 2025-08-14 01:39:06 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-10-23 05:53:20 +0900
+
+    YJIT: Fix `defined?(yield)` and `block_given?` at top level
+
+    Previously, YJIT returned truthy for the block given query at the top
+    level. That's incorrect because the top level script never receives a
+    block, and `yield` is a syntax error there.
+
+    Inside methods, the number of hops to get from `iseq` to
+    `iseq->body->local_iseq` is the same as the number of
+    `VM_ENV_PREV_EP(ep)` hops to get to an environment with
+    `VM_ENV_FLAG_LOCAL`. YJIT and the interpreter both rely on this as can
+    be seen in get_lvar_level(). However, this identity does not hold for
+    the top level frame because of `vm_set_eval_stack()`, which sets up
+    `TOPLEVEL_BINDING`.
+
+    Since only methods can take a block that `yield` goes to, have ISEQs
+    that are the child of a non-method ISEQ return falsy for the block given
+    query. This fixes the issue for the top level script and is an
+    optimization for non-method contexts such as inside `ISEQ_TYPE_CLASS`.
+
+commit 5d2a244bfd844be3a94670ddcb509fb5a6b4e847
+  Author:     viralpraxis <viralpraxis@evilmartians.com>
+  AuthorDate: 2025-10-20 03:55:45 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-10-21 01:24:12 +0900
+
+    [Bug #21644] compile.c: fix `newrange` INSN peephole optimization for chilled string
+
+    ref: https://bugs.ruby-lang.org/issues/21644
+
+    ```shell
+    $ ruby -v -e '("a" || "b").."c"'
+    ruby 3.4.7 (2025-10-08 revision 7a5688e2a2) +PRISM [x86_64-linux]
+    -e:1: warning: possibly useless use of .. in void context
+    -e:1: [BUG] Stack consistency error (sp: 7, bp: 6)
+    ruby 3.4.7 (2025-10-08 revision 7a5688e2a2) +PRISM [x86_64-linux]
+
+    -- Control frame information -----------------------------------------------
+    c:0002 p:0013 s:0007 e:000005 EVAL   -e:1 [FINISH]
+    c:0001 p:0000 s:0003 E:001920 DUMMY  [FINISH]
+
+    -- Ruby level backtrace information ----------------------------------------
+    -e:1:in '<main>'
+
+    -- Threading information ---------------------------------------------------
+    Total ractor count: 1
+    Ruby thread count for this ractor: 1
+
+    -- C level backtrace information -------------------------------------------
+    ruby/3.4.7/lib/libruby.so.3.4(rb_print_backtrace+0x8) [0x78aa9573c882] /tmp/ruby-build.20251010151551.31019.jR04SY/ruby-3.4.7/vm_dump.c:823
+    ruby/3.4.7/lib/libruby.so.3.4(rb_vm_bugreport) /tmp/ruby-build.20251010151551.31019.jR04SY/ruby-3.4.7/vm_dump.c:1155
+    ruby/3.4.7/lib/libruby.so.3.4(rb_bug_without_die_internal+0x6b) [0x78aa9544c62f] /tmp/ruby-build.20251010151551.31019.jR04SY/ruby-3.4.7/error.c:1097
+    ruby/3.4.7/lib/libruby.so.3.4(rb_bug) /tmp/ruby-build.20251010151551.31019.jR04SY/ruby-3.4.7/error.c:1115
+    ruby/3.4.7/lib/libruby.so.3.4(vm_stack_consistency_error+0x1f) [0x78aa9544f091] /tmp/ruby-build.20251010151551.31019.jR04SY/ruby-3.4.7/vm_insnhelper.c:6523
+    ruby/3.4.7/lib/libruby.so.3.4(vm_get_cref) /tmp/ruby-build.20251010151551.31019.jR04SY/ruby-3.4.7/insns.def:1134
+    ruby/3.4.7/lib/libruby.so.3.4(vm_setclassvariable) /tmp/ruby-build.20251010151551.31019.jR04SY/ruby-3.4.7/vm_insnhelper.c:1630
+    ruby/3.4.7/lib/libruby.so.3.4(vm_setclassvariable) /tmp/ruby-build.20251010151551.31019.jR04SY/ruby-3.4.7/vm_insnhelper.c:1627
+    ruby/3.4.7/lib/libruby.so.3.4(vm_exec_core) /tmp/ruby-build.20251010151551.31019.jR04SY/ruby-3.4.7/insns.def:253
+    ruby/3.4.7/lib/libruby.so.3.4(vm_exec_loop+0xa) [0x78aa95724959] /tmp/ruby-build.20251010151551.31019.jR04SY/ruby-3.4.7/vm.c:2622
+    ruby/3.4.7/lib/libruby.so.3.4(rb_vm_exec) /tmp/ruby-build.20251010151551.31019.jR04SY/ruby-3.4.7/vm.c:2598
+    ruby/3.4.7/lib/libruby.so.3.4(rb_ec_exec_node+0xa5) [0x78aa95525695] /tmp/ruby-build.20251010151551.31019.jR04SY/ruby-3.4.7/eval.c:281
+    ruby/3.4.7/lib/libruby.so.3.4(ruby_run_node+0x83) [0x78aa95529333] /tmp/ruby-build.20251010151551.31019.jR04SY/ruby-3.4.7/eval.c:319
+    ruby/3.4.7/bin/ruby(rb_main+0x21) [0x59d86f5e0186] ./main.c:43
+    ruby/3.4.7/bin/ruby(main) ./main.c:68
+    /lib/x86_64-linux-gnu/libc.so.6(__libc_start_call_main+0x7a) [0x78aa9502a1ca] ../sysdeps/nptl/libc_start_call_main.h:58
+    /lib/x86_64-linux-gnu/libc.so.6(call_init+0x0) [0x78aa9502a28b] ../csu/libc-start.c:360
+    /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main_impl) ../csu/libc-start.c:347
+    /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main) (null):0
+    [0x59d86f5e01d5]
+    ```
+
+    The optimization in question:
+
+    https://github.com/ruby/ruby/blob/957c832db137e67289e93dfd9fd9e915b1f2fc87/compile.c\#L3453-L3480
+
+    Before entering the `newrange` optimization, the iseq looks like this:
+
+    ```
+    == disasm: #<ISeq:<compiled>@<compiled>:1 (1,0)-(1,17)>
+    0000 putchilledstring                       "a"                       (   1)[Li]
+    0002 dup
+    0003 branchif                               8
+    0005 pop
+    0006 putchilledstring                       "b"
+    0008 putchilledstring                       "c"
+    0010 newrange                               0
+    0012 leave
+    ```
+
+    So the optimization constructs a new range using the wrong operands (`"b"` and `"c"` instead of `"a"` and `"c"`).
+
+    I tried to fix this by checking whether the two previous instructions are labeled.
+
+commit a841c313c50e7ebf74df6e940334c34c68145270
+  Author:     Bo Anderson <mail@boanderson.me>
+  AuthorDate: 2025-10-09 23:33:54 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2025-10-09 23:33:54 +0900
+
+    Update rexml to 3.4.4 for Ruby 3.4 (CVE-2025-58767) (#14795)
+
+    Update rexml to 3.4.4
+
+    [Backport #21632]
+
+commit fce44db5eb7baf1ddd2238254c3cf617fcfd1112
+  Author:     Bo Anderson <mail@boanderson.me>
+  AuthorDate: 2025-10-09 23:32:47 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2025-10-09 23:32:47 +0900
+
+    Update openssl gem to 3.3.1 for Ruby 3.4 (#14792)
+
+    Update openssl gem to 3.3.1
+
+    [Backport #21631]
+
+commit 17877eb2481977a415dd6e51ffe0a9103d575ce7
+  Author:     刘皓 <whiteaxe@tuta.io>
+  AuthorDate: 2025-10-09 23:30:42 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2025-10-09 23:30:42 +0900
+
+    Backport WASI setjmp handler memory leak fixes to Ruby 3.4 (#14788)
+
+    [Bug #21626]
+
+commit 18e176659e8afe402cab7d39972f2d56f2cf378f
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-10-09 08:50:40 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-10-09 08:50:58 +0900
+
+    merge revision(s) 2bb6fe3854e2a4854bb89bfce4eaaea9d848fd1b: [Backport #21629]
+
+            [PATCH] [Bug #21629] Initialize `struct RString`
+
+    which appears to be missed in the previous commit for some reason.
+
+commit 846bb760756a3bf1ab12d56d8909e104f16e6940
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2025-10-09 08:45:24 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2025-10-09 08:45:24 +0900
+
+    merge revision(s) bbf1130f918ca26e33aba4711ccf99a8083517ea, 43dbb9a93f4de3f1170d7d18641c30e81cc08365, 2bb6fe3854e2a4854bb89bfce4eaaea9d848fd1b, 7c9dd0ecff61153b96473c6c51d5582e809da489: [Backport #21629]
+
+            [PATCH] Add `RBIMPL_ATTR_NONSTRING_ARRAY()` macro for GCC 15
+
+            [PATCH] [Bug #21629] Enable `nonstring` attribute on clang 21
+
+            [PATCH] [Bug #21629] Initialize `struct RString`
+
+            [PATCH] [Bug #21629] Initialize `struct RArray`
+
+commit 9b5d6505ef0fbb27417a5b8face120dec73bacf2
+  Author:     Takashi Kokubun <takashi.kokubun@shopify.com>
+  AuthorDate: 2025-10-09 06:19:19 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2025-10-09 06:19:19 +0900
+
+    post_push.yml: Backport commit-mail to ruby_3_4 (#14781)
+
+commit a0937ff3c780ad870ab398bfc98f2e301fd98b9d
+  Author:     Takashi Kokubun <takashi.kokubun@shopify.com>
+  AuthorDate: 2025-10-08 17:07:37 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2025-10-08 17:07:37 +0900
+
+    Backport fetch_changesets to ruby_3_4 (#14772)
+
+commit 6809d1a002bf70cca22a6763646245fda0ff9070
+  Author:     Takashi Kokubun <takashi.kokubun@shopify.com>
+  AuthorDate: 2025-10-08 13:19:06 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2025-10-08 13:19:06 +0900
+
+    Backport post_push.yml workflow to ruby_3_4 (#14769)
+
 commit 7a5688e2a27668e48f8d6ff4af5b2208b98a2f5e
   Author:     Takashi Kokubun <takashikkbn@gmail.com>
   AuthorDate: 2025-10-08 01:42:48 +0900
@@ -3962,7 +4664,7 @@ commit 667a0f9f928be843a0810f2c61b633be1f8cd46a
 
     Revert "[Bug #20965] Define `it` like an ordinary argument (#12398)"
 
-    Reverts ruby/ruby#12398 as per https://bugs.ruby-lang.org/issues/20970#note-6 and https://bugs.ruby-lang.org/issues/20965#note-7.
+    Reverts [ruby/ruby#12398](https://github.com/ruby/ruby/pull/12398) as per https://bugs.ruby-lang.org/issues/20970#note-6 and https://bugs.ruby-lang.org/issues/20965#note-7.
     We need more time to design the intended behavior, and it's too late for Ruby 3.4.
 
   Notes:
@@ -5306,7 +6008,7 @@ commit fef8ecc708e0dbb5725abb1aa24329cf612f8c41
     (https://github.com/ruby/rdoc/pull/1240)
 
     Some people like to mark up method names in MarkDown style block
-    quotes, like this: ruby/ruby#12333.
+    quotes, like this: [ruby/ruby#12333](https://github.com/ruby/ruby/pull/12333).
     Currently, no links are created in the code in the RDoc, but such
     words most likely refer to methods.
     This PR makes a word a code cross-reference if the whole word can be
@@ -10865,7 +11567,7 @@ commit 3d07754ee2c707343f79321b0fd358af3154709f
 
     * Improve the conditions for clearing the Connection Attempt Delay upon connection failure
 
-    This change addresses a case that was overlooked in ruby/ruby#12087.
+    This change addresses a case that was overlooked in [ruby/ruby#12087](https://github.com/ruby/ruby/pull/12087).
     In the previous change, the Connection Attempt Delay was cleared at the point of a connection failure only if both of the following conditions were met:
 
     - No other sockets were attempting a connection
