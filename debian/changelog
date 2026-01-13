@@ -1,3 +1,9 @@
+ruby4.0 (4.0.1-0nkmi1~dist) unstable; urgency=medium
+
+  * 4.0.1
+
+ -- Sorah Fukumori <her@sorah.jp>  Wed, 14 Jan 2026 08:59:19 +0900
+
 ruby4.0 (4.0.0-0nkmi1~dist) unstable; urgency=medium
 
   * Ruby 4.0!
