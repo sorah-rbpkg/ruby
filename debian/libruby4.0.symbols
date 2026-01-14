@@ -27,6 +27,7 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  dln_find_exe_r@Base 4.0.0-0nkmi1
  dln_find_file_r@Base 4.0.0-0nkmi1
  dln_load@Base 4.0.0-0nkmi1
+ dln_load_feature@Base 4.0.1-0nkmi1~trixie
  dln_symbol@Base 4.0.0-0nkmi1
  onig_add_end_call@Base 4.0.0-0nkmi1
  onig_bbuf_init@Base 4.0.0-0nkmi1
@@ -226,9 +227,6 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_ary_to_ary@Base 4.0.0-0nkmi1
  rb_ary_to_s@Base 4.0.0-0nkmi1
  rb_ary_unshift@Base 4.0.0-0nkmi1
- rb_asan_poison_object@Base 4.0.0-0nkmi1
- rb_asan_poisoned_object_p@Base 4.0.0-0nkmi1
- rb_asan_unpoison_object@Base 4.0.0-0nkmi1
  rb_ascii8bit_encindex@Base 4.0.0-0nkmi1
  rb_ascii8bit_encoding@Base 4.0.0-0nkmi1
  rb_assert_failure@Base 4.0.0-0nkmi1
@@ -304,6 +302,7 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_cArray@Base 4.0.0-0nkmi1
  rb_cBasicObject@Base 4.0.0-0nkmi1
  rb_cBinding@Base 4.0.0-0nkmi1
+ rb_cBox@Base 4.0.1-0nkmi1~trixie
  rb_cClass@Base 4.0.0-0nkmi1
  rb_cComplex@Base 4.0.0-0nkmi1
  rb_cDir@Base 4.0.0-0nkmi1
@@ -332,6 +331,7 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_cRefinement@Base 4.0.0-0nkmi1
  rb_cRegexp@Base 4.0.0-0nkmi1
  rb_cRubyVM@Base 4.0.0-0nkmi1
+ rb_cSet@Base 4.0.1-0nkmi1~trixie
  rb_cStat@Base 4.0.0-0nkmi1
  rb_cString@Base 4.0.0-0nkmi1
  rb_cStruct@Base 4.0.0-0nkmi1
@@ -383,8 +383,11 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_class_protected_instance_methods@Base 4.0.0-0nkmi1
  rb_class_public_instance_methods@Base 4.0.0-0nkmi1
  rb_class_real@Base 4.0.0-0nkmi1
+ rb_class_singleton_p@Base 4.0.1-0nkmi1~trixie
  rb_class_subclasses@Base 4.0.0-0nkmi1
+ rb_class_super_of@Base 4.0.1-0nkmi1~trixie
  rb_class_superclass@Base 4.0.0-0nkmi1
+ rb_class_variation_count@Base 4.0.1-0nkmi1~trixie
  rb_clear_constant_cache_for_id@Base 4.0.0-0nkmi1
  rb_clear_coverages@Base 4.0.0-0nkmi1
  rb_cloexec_dup2@Base 4.0.0-0nkmi1
@@ -419,7 +422,6 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_const_get_at@Base 4.0.0-0nkmi1
  rb_const_get_from@Base 4.0.0-0nkmi1
  rb_const_list@Base 4.0.0-0nkmi1
- rb_const_missing@Base 4.0.0-0nkmi1
  rb_const_remove@Base 4.0.0-0nkmi1
  rb_const_set@Base 4.0.0-0nkmi1
  rb_convert_type@Base 4.0.0-0nkmi1
@@ -687,11 +689,16 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_fiber_resume_kw@Base 4.0.0-0nkmi1
  rb_fiber_scheduler_address_resolve@Base 4.0.0-0nkmi1
  rb_fiber_scheduler_block@Base 4.0.0-0nkmi1
+ rb_fiber_scheduler_blocking_operation_cancel@Base 4.0.1-0nkmi1~trixie
+ rb_fiber_scheduler_blocking_operation_execute@Base 4.0.1-0nkmi1~trixie
+ rb_fiber_scheduler_blocking_operation_extract@Base 4.0.1-0nkmi1~trixie
  rb_fiber_scheduler_blocking_operation_wait@Base 4.0.0-0nkmi1
  rb_fiber_scheduler_close@Base 4.0.0-0nkmi1
  rb_fiber_scheduler_current@Base 4.0.0-0nkmi1
  rb_fiber_scheduler_current_for_thread@Base 4.0.0-0nkmi1
+ rb_fiber_scheduler_current_for_threadptr@Base 4.0.1-0nkmi1~trixie
  rb_fiber_scheduler_fiber@Base 4.0.0-0nkmi1
+ rb_fiber_scheduler_fiber_interrupt@Base 4.0.1-0nkmi1~trixie
  rb_fiber_scheduler_get@Base 4.0.0-0nkmi1
  rb_fiber_scheduler_io_close@Base 4.0.0-0nkmi1
  rb_fiber_scheduler_io_pread@Base 4.0.0-0nkmi1
@@ -713,10 +720,12 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_fiber_scheduler_process_wait@Base 4.0.0-0nkmi1
  rb_fiber_scheduler_set@Base 4.0.0-0nkmi1
  rb_fiber_scheduler_unblock@Base 4.0.0-0nkmi1
+ rb_fiber_scheduler_yield@Base 4.0.1-0nkmi1~trixie
  rb_fiber_transfer@Base 4.0.0-0nkmi1
  rb_fiber_transfer_kw@Base 4.0.0-0nkmi1
  rb_fiber_yield@Base 4.0.0-0nkmi1
  rb_fiber_yield_kw@Base 4.0.0-0nkmi1
+ rb_fields_tbl_copy@Base 4.0.1-0nkmi1~trixie
  rb_file_absolute_path@Base 4.0.0-0nkmi1
  rb_file_directory_p@Base 4.0.0-0nkmi1
  rb_file_dirname@Base 4.0.0-0nkmi1
@@ -765,6 +774,8 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_gc@Base 4.0.0-0nkmi1
  rb_gc_active_gc_name@Base 4.0.0-0nkmi1
  rb_gc_adjust_memory_usage@Base 4.0.0-0nkmi1
+ rb_gc_after_updating_jit_code@Base 4.0.1-0nkmi1~trixie
+ rb_gc_before_updating_jit_code@Base 4.0.1-0nkmi1~trixie
  rb_gc_copy_finalizer@Base 4.0.0-0nkmi1
  rb_gc_count@Base 4.0.0-0nkmi1
  rb_gc_cr_lock@Base 4.0.0-0nkmi1
@@ -794,13 +805,16 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_gc_obj_free@Base 4.0.0-0nkmi1
  rb_gc_obj_free_vm_weak_references@Base 4.0.0-0nkmi1
  rb_gc_obj_optimal_size@Base 4.0.0-0nkmi1
+ rb_gc_obj_shareable_p@Base 4.0.1-0nkmi1~trixie
  rb_gc_obj_slot_size@Base 4.0.0-0nkmi1
+ rb_gc_object_metadata@Base 4.0.1-0nkmi1~trixie
  rb_gc_pointer_to_heap_p@Base 4.0.0-0nkmi1
  rb_gc_prepare_heap_process_object@Base 4.0.0-0nkmi1
  rb_gc_ractor_newobj_cache_foreach@Base 4.0.0-0nkmi1
  rb_gc_rebuild_shape@Base 4.0.0-0nkmi1
  rb_gc_register_address@Base 4.0.0-0nkmi1
  rb_gc_register_mark_object@Base 4.0.0-0nkmi1
+ rb_gc_rp@Base 4.0.1-0nkmi1~trixie
  rb_gc_run_obj_finalizer@Base 4.0.0-0nkmi1
  rb_gc_save_machine_context@Base 4.0.0-0nkmi1
  rb_gc_set_pending_interrupt@Base 4.0.0-0nkmi1
@@ -814,6 +828,7 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_gc_update_tbl_refs@Base 4.0.0-0nkmi1
  rb_gc_update_values@Base 4.0.0-0nkmi1
  rb_gc_update_vm_references@Base 4.0.0-0nkmi1
+ rb_gc_verify_shareable@Base 4.0.1-0nkmi1~trixie
  rb_gc_vm_barrier@Base 4.0.0-0nkmi1
  rb_gc_vm_lock@Base 4.0.0-0nkmi1
  rb_gc_vm_lock_no_barrier@Base 4.0.0-0nkmi1
@@ -883,7 +898,6 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_id_table_size@Base 4.0.0-0nkmi1
  rb_ident_hash_new@Base 4.0.0-0nkmi1
  rb_imemo_name@Base 4.0.0-0nkmi1
- rb_imemo_new@Base 4.0.0-0nkmi1
  rb_include_module@Base 4.0.0-0nkmi1
  rb_init_ractor_selector@Base 4.0.0-0nkmi1
  rb_inspect@Base 4.0.0-0nkmi1
@@ -945,6 +959,7 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_io_extract_modeenc@Base 4.0.0-0nkmi1
  rb_io_fdopen@Base 4.0.0-0nkmi1
  rb_io_flush@Base 4.0.0-0nkmi1
+ rb_io_fptr_finalize@Base 4.0.1-0nkmi1~trixie
  rb_io_get_io@Base 4.0.0-0nkmi1
  rb_io_get_write_io@Base 4.0.0-0nkmi1
  rb_io_getbyte@Base 4.0.0-0nkmi1
@@ -1005,7 +1020,7 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_iseq_line_no@Base 4.0.0-0nkmi1
  rb_iseq_load@Base 4.0.0-0nkmi1
  rb_iseq_local_variables@Base 4.0.0-0nkmi1
- rb_iseq_mark_and_pin_insn_storage@Base 4.0.0-0nkmi1
+ rb_iseq_mark_and_move_insn_storage@Base 4.0.1-0nkmi1~trixie
  rb_iseq_method_name@Base 4.0.0-0nkmi1
  rb_iseq_new@Base 4.0.0-0nkmi1
  rb_iseq_new_eval@Base 4.0.0-0nkmi1
@@ -1029,7 +1044,6 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_iterate@Base 4.0.0-0nkmi1
  rb_iv_get@Base 4.0.0-0nkmi1
  rb_iv_set@Base 4.0.0-0nkmi1
- rb_iv_tbl_copy@Base 4.0.0-0nkmi1
  rb_ivar_count@Base 4.0.0-0nkmi1
  rb_ivar_defined@Base 4.0.0-0nkmi1
  rb_ivar_foreach@Base 4.0.0-0nkmi1
@@ -1133,7 +1147,6 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_mutex_synchronize@Base 4.0.0-0nkmi1
  rb_mutex_trylock@Base 4.0.0-0nkmi1
  rb_mutex_unlock@Base 4.0.0-0nkmi1
- rb_mv_generic_ivar@Base 4.0.0-0nkmi1
  rb_name_error@Base 4.0.0-0nkmi1
  rb_name_error_str@Base 4.0.0-0nkmi1
  rb_native_cond_broadcast@Base 4.0.0-0nkmi1
@@ -1158,6 +1171,7 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_node_encoding_val@Base 4.0.0-0nkmi1
  rb_node_file_path_val@Base 4.0.0-0nkmi1
  rb_node_float_literal_val@Base 4.0.0-0nkmi1
+ rb_node_get_type@Base 4.0.1-0nkmi1~trixie
  rb_node_imaginary_literal_val@Base 4.0.0-0nkmi1
  rb_node_init@Base 4.0.0-0nkmi1
  rb_node_integer_literal_val@Base 4.0.0-0nkmi1
@@ -1196,11 +1210,10 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_obj_freeze@Base 4.0.0-0nkmi1
  rb_obj_freeze_inline@Base 4.0.0-0nkmi1
  rb_obj_frozen_p@Base 4.0.0-0nkmi1
- rb_obj_gc_flags@Base 4.0.0-0nkmi1
  rb_obj_hide@Base 4.0.0-0nkmi1
  rb_obj_id@Base 4.0.0-0nkmi1
+ rb_obj_id_p@Base 4.0.1-0nkmi1~trixie
  rb_obj_info@Base 4.0.0-0nkmi1
- rb_obj_info_dump@Base 4.0.0-0nkmi1
  rb_obj_init_copy@Base 4.0.0-0nkmi1
  rb_obj_instance_eval@Base 4.0.0-0nkmi1
  rb_obj_instance_exec@Base 4.0.0-0nkmi1
@@ -1217,6 +1230,7 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_obj_respond_to@Base 4.0.0-0nkmi1
  rb_obj_reveal@Base 4.0.0-0nkmi1
  rb_obj_setup@Base 4.0.0-0nkmi1
+ rb_obj_shape_id@Base 4.0.1-0nkmi1~trixie
  rb_obj_singleton_methods@Base 4.0.0-0nkmi1
  rb_objspace_data_type_name@Base 4.0.0-0nkmi1
  rb_objspace_each_objects@Base 4.0.0-0nkmi1
@@ -1241,7 +1255,6 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_parser_new@Base 4.0.0-0nkmi1
  rb_parser_printf@Base 4.0.0-0nkmi1
  rb_parser_reg_compile@Base 4.0.0-0nkmi1
- rb_parser_reg_fragment_check@Base 4.0.0-0nkmi1
  rb_parser_set_context@Base 4.0.0-0nkmi1
  rb_parser_set_location@Base 4.0.0-0nkmi1
  rb_parser_set_location_from_strterm_heredoc@Base 4.0.0-0nkmi1
@@ -1294,7 +1307,6 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_parser_string_free@Base 4.0.0-0nkmi1
  rb_parser_trace_lex_state@Base 4.0.0-0nkmi1
  rb_path2class@Base 4.0.0-0nkmi1
- rb_path_check@Base 4.0.0-0nkmi1
  rb_path_to_class@Base 4.0.0-0nkmi1
  rb_pipe@Base 4.0.0-0nkmi1
  rb_postponed_job_flush@Base 4.0.0-0nkmi1
@@ -1367,10 +1379,10 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_rational_new@Base 4.0.0-0nkmi1
  rb_rational_num@Base 4.0.0-0nkmi1
  rb_rational_raw@Base 4.0.0-0nkmi1
+ rb_raw_obj_info@Base 4.0.1-0nkmi1~trixie
  rb_readlink@Base 4.0.0-0nkmi1
  rb_readwrite_sys_fail@Base 4.0.0-0nkmi1
  rb_readwrite_syserr_fail@Base 4.0.0-0nkmi1
- rb_ref_update_generic_ivar@Base 4.0.0-0nkmi1
  rb_refinement_new@Base 4.0.0-0nkmi1
  rb_reg_adjust_startpos@Base 4.0.0-0nkmi1
  rb_reg_alloc@Base 4.0.0-0nkmi1
@@ -1413,9 +1425,6 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_resolve_me_location@Base 4.0.0-0nkmi1
  rb_respond_to@Base 4.0.0-0nkmi1
  rb_resume_coverages@Base 4.0.0-0nkmi1
- rb_rjit_call_p@Base 4.0.0-0nkmi1
- rb_rjit_compile@Base 4.0.0-0nkmi1
- rb_rjit_opts@Base 4.0.0-0nkmi1
  rb_rs@Base 4.0.0-0nkmi1
  rb_ruby_debug_ptr@Base 4.0.0-0nkmi1
  rb_ruby_parser_encoding@Base 4.0.0-0nkmi1
@@ -1425,20 +1434,26 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_ruby_verbose_ptr@Base 4.0.0-0nkmi1
  rb_scan_args@Base 4.0.0-0nkmi1
  rb_scan_args_kw@Base 4.0.0-0nkmi1
+ rb_set_add@Base 4.0.1-0nkmi1~trixie
  rb_set_class_path@Base 4.0.0-0nkmi1
  rb_set_class_path_string@Base 4.0.0-0nkmi1
+ rb_set_clear@Base 4.0.1-0nkmi1~trixie
  rb_set_coverages@Base 4.0.0-0nkmi1
+ rb_set_delete@Base 4.0.1-0nkmi1~trixie
  rb_set_end_proc@Base 4.0.0-0nkmi1
  rb_set_errinfo@Base 4.0.0-0nkmi1
+ rb_set_foreach@Base 4.0.1-0nkmi1~trixie
+ rb_set_lookup@Base 4.0.1-0nkmi1~trixie
+ rb_set_new@Base 4.0.1-0nkmi1~trixie
+ rb_set_new_capa@Base 4.0.1-0nkmi1~trixie
+ rb_set_size@Base 4.0.1-0nkmi1~trixie
  rb_setup_fake_str@Base 4.0.0-0nkmi1
  rb_shape_depth@Base 4.0.0-0nkmi1
- rb_shape_each_shape@Base 4.0.0-0nkmi1
+ rb_shape_each_shape_id@Base 4.0.1-0nkmi1~trixie
  rb_shape_edges_count@Base 4.0.0-0nkmi1
- rb_shape_get_shape_by_id@Base 4.0.0-0nkmi1
- rb_shape_get_shape_id@Base 4.0.0-0nkmi1
- rb_shape_id@Base 4.0.0-0nkmi1
  rb_shape_memsize@Base 4.0.0-0nkmi1
- rb_shape_obj_too_complex@Base 4.0.0-0nkmi1
+ rb_shape_tree@Base 4.0.1-0nkmi1~trixie
+ rb_signal_atfork@Base 4.0.1-0nkmi1~trixie
  rb_singleton_class@Base 4.0.0-0nkmi1
  rb_singleton_class_attached@Base 4.0.0-0nkmi1
  rb_singleton_class_clone@Base 4.0.0-0nkmi1
@@ -1489,6 +1504,7 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_st_values@Base 4.0.0-0nkmi1
  rb_st_values_check@Base 4.0.0-0nkmi1
  rb_stat_new@Base 4.0.0-0nkmi1
+ rb_statx_new@Base 4.0.1-0nkmi1~trixie
  rb_stderr@Base 4.0.0-0nkmi1
  rb_stdin@Base 4.0.0-0nkmi1
  rb_stdout@Base 4.0.0-0nkmi1
@@ -1625,6 +1641,7 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_thread_fd_writable@Base 4.0.0-0nkmi1
  rb_thread_interrupted@Base 4.0.0-0nkmi1
  rb_thread_io_blocking_call@Base 4.0.0-0nkmi1
+ rb_thread_io_blocking_operation@Base 4.0.1-0nkmi1~trixie
  rb_thread_io_blocking_region@Base 4.0.0-0nkmi1
  rb_thread_kill@Base 4.0.0-0nkmi1
  rb_thread_local_aref@Base 4.0.0-0nkmi1
@@ -1665,12 +1682,15 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_tracearg_binding@Base 4.0.0-0nkmi1
  rb_tracearg_callee_id@Base 4.0.0-0nkmi1
  rb_tracearg_defined_class@Base 4.0.0-0nkmi1
+ rb_tracearg_eval_script@Base 4.0.1-0nkmi1~trixie
  rb_tracearg_event@Base 4.0.0-0nkmi1
  rb_tracearg_event_flag@Base 4.0.0-0nkmi1
  rb_tracearg_from_tracepoint@Base 4.0.0-0nkmi1
+ rb_tracearg_instruction_sequence@Base 4.0.1-0nkmi1~trixie
  rb_tracearg_lineno@Base 4.0.0-0nkmi1
  rb_tracearg_method_id@Base 4.0.0-0nkmi1
  rb_tracearg_object@Base 4.0.0-0nkmi1
+ rb_tracearg_parameters@Base 4.0.1-0nkmi1~trixie
  rb_tracearg_path@Base 4.0.0-0nkmi1
  rb_tracearg_raised_exception@Base 4.0.0-0nkmi1
  rb_tracearg_return_value@Base 4.0.0-0nkmi1
@@ -1687,6 +1707,7 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_undef@Base 4.0.0-0nkmi1
  rb_undef_alloc_func@Base 4.0.0-0nkmi1
  rb_undef_method@Base 4.0.0-0nkmi1
+ rb_undefine_finalizer@Base 4.0.1-0nkmi1~trixie
  rb_unexpected_type@Base 4.0.0-0nkmi1
  rb_update_max_fd@Base 4.0.0-0nkmi1
  rb_usascii_encindex@Base 4.0.0-0nkmi1
@@ -1705,6 +1726,7 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_vm_insn_name_offset@Base 4.0.0-0nkmi1
  rb_vm_insn_op_base@Base 4.0.0-0nkmi1
  rb_vm_insn_op_offset@Base 4.0.0-0nkmi1
+ rb_vm_lock_with_barrier@Base 4.0.1-0nkmi1~trixie
  rb_vm_max_insn_name_size@Base 4.0.0-0nkmi1
  rb_vrescue2@Base 4.0.0-0nkmi1
  rb_vsprintf@Base 4.0.0-0nkmi1
@@ -1756,6 +1778,8 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_yjit_lazy_push_frame@Base 4.0.0-0nkmi1
  rb_yjit_live_iseq_count@Base 4.0.0-0nkmi1
  rb_yjit_log_enabled_p@Base 4.0.0-0nkmi1
+ rb_yjit_mark_all_executable@Base 4.0.1-0nkmi1~trixie
+ rb_yjit_mark_all_writeable@Base 4.0.1-0nkmi1~trixie
  rb_yjit_option_disable@Base 4.0.0-0nkmi1
  rb_yjit_parse_option@Base 4.0.0-0nkmi1
  rb_yjit_print_stats_p@Base 4.0.0-0nkmi1
@@ -1769,6 +1793,40 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  rb_yjit_trace_exit_locations_enabled_p@Base 4.0.0-0nkmi1
  rb_yjit_tracing_invalidate_all@Base 4.0.0-0nkmi1
  rb_yytnamerr@Base 4.0.0-0nkmi1
+ rb_zjit_assert_compiles@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_before_ractor_spawn@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_bop_redefined@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_call_threshold@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_cme_free@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_cme_invalidate@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_constant_state_changed@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_enable@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_entry@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_get_exit_locations@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_get_stats_file_path_p@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_init@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_invalidate_no_ep_escape@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_invalidate_no_singleton_class@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_iseq_free@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_iseq_gen_entry_point@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_iseq_mark@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_iseq_update_references@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_klass_free@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_option_enable@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_parse_option@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_prepare_options@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_print_stats_p@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_profile_insn@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_profile_threshold@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_record_exit_stack@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_reset_stats_bang@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_root_mark@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_root_update_references@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_show_usage@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_stats@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_stats_enabled_p@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_trace_exit_locations_enabled_p@Base 4.0.1-0nkmi1~trixie
+ rb_zjit_tracing_invalidate_all@Base 4.0.1-0nkmi1~trixie
  ruby_Init_Continuation_body@Base 4.0.0-0nkmi1
  ruby_api_version@Base 4.0.0-0nkmi1
  ruby_brace_glob@Base 4.0.0-0nkmi1
@@ -1805,6 +1863,7 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  ruby_init_loadpath@Base 4.0.0-0nkmi1
  ruby_init_setproctitle@Base 4.0.0-0nkmi1
  ruby_init_stack@Base 4.0.0-0nkmi1
+ ruby_malloc_add_size_overflow@Base 4.0.1-0nkmi1~trixie
  ruby_malloc_size_overflow@Base 4.0.0-0nkmi1
  ruby_native_thread_p@Base 4.0.0-0nkmi1
  ruby_node_name@Base 4.0.0-0nkmi1
@@ -1814,8 +1873,6 @@ libruby-4.0.so.4.0 libruby4.0 #MINVER#
  ruby_process_options@Base 4.0.0-0nkmi1
  ruby_prog_init@Base 4.0.0-0nkmi1
  ruby_release_date@Base 4.0.0-0nkmi1
- ruby_reset_leap_second_info@Base 4.0.0-0nkmi1
- ruby_reset_timezone@Base 4.0.0-0nkmi1
  ruby_run_node@Base 4.0.0-0nkmi1
  ruby_scan_digits@Base 4.0.0-0nkmi1
  ruby_scan_hex@Base 4.0.0-0nkmi1
