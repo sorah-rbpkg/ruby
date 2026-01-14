@@ -198,7 +198,7 @@ module Prism
       while (node = queue.shift)
         result << node
 
-        node.compact_child_nodes.each do |child_node|
+        node.each_child_node do |child_node|
           child_location = child_node.location
 
           start_line = child_location.start_line
@@ -270,6 +270,13 @@ module Prism
 
     alias deconstruct child_nodes
 
+    # With a block given, yields each child node. Without a block, returns
+    # an enumerator that contains each child node. Excludes any `nil`s in
+    # the place of optional nodes that were not present.
+    def each_child_node
+      raise NoMethodError, "undefined method `each_child_node' for #{inspect}"
+    end
+
     # Returns an array of child nodes, excluding any `nil`s in the place of
     # optional nodes that were not present.
     def compact_child_nodes
@@ -336,6 +343,14 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [new_name, old_name]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield new_name
+      yield old_name
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -443,6 +458,14 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [new_name, old_name]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield new_name
+      yield old_name
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -564,6 +587,14 @@ module Prism
       [left, right]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield left
+      yield right
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [left, right]
@@ -669,6 +700,14 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [left, right]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield left
+      yield right
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -782,6 +821,13 @@ module Prism
       [*arguments]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      arguments.each { |node| yield node }
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [*arguments]
@@ -885,6 +931,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [*elements]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      elements.each { |node| yield node }
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -1042,6 +1095,16 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [constant, *requireds, rest, *posts]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield constant if constant
+      requireds.each { |node| yield node }
+      yield rest if rest
+      posts.each { |node| yield node }
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -1212,6 +1275,14 @@ module Prism
       [key, value]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield key
+      yield value
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [key, value]
@@ -1333,6 +1404,13 @@ module Prism
       [value]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value if value
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       compact = [] #: Array[Prism::node]
@@ -1433,6 +1511,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -1515,6 +1599,16 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [statements, rescue_clause, else_clause, ensure_clause]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield statements if statements
+      yield rescue_clause if rescue_clause
+      yield else_clause if else_clause
+      yield ensure_clause if ensure_clause
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -1676,6 +1770,13 @@ module Prism
       [expression]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield expression if expression
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       compact = [] #: Array[Prism::node]
@@ -1776,6 +1877,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -1860,6 +1967,14 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [parameters, body]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield parameters if parameters
+      yield body if body
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -2007,6 +2122,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -2141,6 +2262,14 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [parameters, *locals]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield parameters if parameters
+      locals.each { |node| yield node }
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -2303,6 +2432,13 @@ module Prism
       [arguments]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield arguments if arguments
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       compact = [] #: Array[Prism::node]
@@ -2407,6 +2543,14 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [receiver, value]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield receiver if receiver
+      yield value
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -2629,6 +2773,15 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [receiver, arguments, block]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield receiver if receiver
+      yield arguments if arguments
+      yield block if block
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -2911,6 +3064,14 @@ module Prism
       [receiver, value]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield receiver if receiver
+      yield value
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       compact = [] #: Array[Prism::node]
@@ -3116,6 +3277,14 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [receiver, value]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield receiver if receiver
+      yield value
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -3328,6 +3497,13 @@ module Prism
       [receiver]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield receiver
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [receiver]
@@ -3478,6 +3654,14 @@ module Prism
       [value, target]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
+      yield target
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [value, target]
@@ -3587,6 +3771,15 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [predicate, *conditions, else_clause]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield predicate if predicate
+      conditions.each { |node| yield node }
+      yield else_clause if else_clause
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -3734,6 +3927,15 @@ module Prism
       [predicate, *conditions, else_clause]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield predicate if predicate
+      conditions.each { |node| yield node }
+      yield else_clause if else_clause
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       compact = [] #: Array[Prism::node]
@@ -3878,6 +4080,15 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [constant_path, superclass, body]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield constant_path
+      yield superclass if superclass
+      yield body if body
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -4058,6 +4269,13 @@ module Prism
       [value]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [value]
@@ -4184,6 +4402,13 @@ module Prism
       [value]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [value]
@@ -4296,6 +4521,13 @@ module Prism
       [value]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [value]
@@ -4406,6 +4638,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -4483,6 +4721,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -4557,6 +4801,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [value]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -4688,6 +4939,13 @@ module Prism
       [value]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [value]
@@ -4802,6 +5060,13 @@ module Prism
       [value]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [value]
@@ -4912,6 +5177,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [value]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -5026,6 +5298,14 @@ module Prism
       [target, value]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield target
+      yield value
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [target, value]
@@ -5123,6 +5403,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [parent]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield parent if parent
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -5261,6 +5548,14 @@ module Prism
       [target, value]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield target
+      yield value
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [target, value]
@@ -5356,6 +5651,14 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [target, value]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield target
+      yield value
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -5455,6 +5758,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [parent]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield parent if parent
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -5577,6 +5887,14 @@ module Prism
       [target, value]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield target
+      yield value
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [target, value]
@@ -5685,6 +6003,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -5762,6 +6086,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -5836,6 +6166,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [value]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -5974,6 +6311,15 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [receiver, parameters, body]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield receiver if receiver
+      yield parameters if parameters
+      yield body if body
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -6231,6 +6577,13 @@ module Prism
       [value]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [value]
@@ -6375,6 +6728,13 @@ module Prism
       [statements]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield statements if statements
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       compact = [] #: Array[Prism::node]
@@ -6496,6 +6856,13 @@ module Prism
       [statements]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield statements if statements
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       compact = [] #: Array[Prism::node]
@@ -6610,6 +6977,13 @@ module Prism
       [variable]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield variable
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [variable]
@@ -6706,6 +7080,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [statements]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield statements if statements
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -6820,6 +7201,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -6901,6 +7288,16 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [constant, left, *requireds, right]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield constant if constant
+      yield left
+      requireds.each { |node| yield node }
+      yield right
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -7079,6 +7476,14 @@ module Prism
       [left, right]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield left if left
+      yield right if right
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       compact = [] #: Array[Prism::node]
@@ -7184,6 +7589,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -7261,6 +7672,15 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [index, collection, statements]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield index
+      yield collection
+      yield statements if statements
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -7454,6 +7874,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -7521,6 +7947,12 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       []
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -7595,6 +8027,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [block]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield block if block
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -7673,6 +8112,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [value]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -7789,6 +8235,13 @@ module Prism
       [value]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [value]
@@ -7901,6 +8354,13 @@ module Prism
       [value]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [value]
@@ -8011,6 +8471,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -8088,6 +8554,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -8162,6 +8634,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [value]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -8290,6 +8769,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [*elements]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      elements.each { |node| yield node }
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -8427,6 +8913,15 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [constant, *elements, rest]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield constant if constant
+      elements.each { |node| yield node }
+      yield rest if rest
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -8604,6 +9099,15 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [predicate, statements, subsequent]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield predicate
+      yield statements if statements
+      yield subsequent if subsequent
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -8812,6 +9316,13 @@ module Prism
       [numeric]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield numeric
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [numeric]
@@ -8889,6 +9400,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [value]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -8972,6 +9490,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -9042,6 +9566,14 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [pattern, statements]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield pattern
+      yield statements if statements
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -9173,6 +9705,16 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [receiver, arguments, block, value]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield receiver if receiver
+      yield arguments if arguments
+      yield block if block
+      yield value
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -9376,6 +9918,16 @@ module Prism
       [receiver, arguments, block, value]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield receiver if receiver
+      yield arguments if arguments
+      yield block if block
+      yield value
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       compact = [] #: Array[Prism::node]
@@ -9573,6 +10125,16 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [receiver, arguments, block, value]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield receiver if receiver
+      yield arguments if arguments
+      yield block if block
+      yield value
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -9780,6 +10342,15 @@ module Prism
       [receiver, arguments, block]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield receiver
+      yield arguments if arguments
+      yield block if block
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       compact = [] #: Array[Prism::node]
@@ -9927,6 +10498,13 @@ module Prism
       [value]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [value]
@@ -10041,6 +10619,13 @@ module Prism
       [value]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [value]
@@ -10153,6 +10738,13 @@ module Prism
       [value]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [value]
@@ -10263,6 +10855,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -10340,6 +10938,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -10414,6 +11018,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [value]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -10542,6 +11153,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -10636,6 +11253,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [*parts]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      parts.each { |node| yield node }
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -10808,6 +11432,13 @@ module Prism
       [*parts]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      parts.each { |node| yield node }
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [*parts]
@@ -10978,6 +11609,13 @@ module Prism
       [*parts]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      parts.each { |node| yield node }
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [*parts]
@@ -11115,6 +11753,13 @@ module Prism
       [*parts]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      parts.each { |node| yield node }
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [*parts]
@@ -11241,6 +11886,13 @@ module Prism
       [*parts]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      parts.each { |node| yield node }
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [*parts]
@@ -11352,6 +12004,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -11418,6 +12076,12 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       []
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -11487,6 +12151,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [*elements]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      elements.each { |node| yield node }
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -11570,6 +12241,12 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       []
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -11693,6 +12370,14 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [parameters, body]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield parameters if parameters
+      yield body if body
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -11841,6 +12526,13 @@ module Prism
       [value]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [value]
@@ -11960,6 +12652,13 @@ module Prism
       [value]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [value]
@@ -12077,6 +12776,13 @@ module Prism
       [value]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [value]
@@ -12192,6 +12898,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -12287,6 +12999,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -12366,6 +13084,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [value]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -12509,6 +13234,12 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       []
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -12699,6 +13430,14 @@ module Prism
       [value, pattern]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
+      yield pattern
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [value, pattern]
@@ -12795,6 +13534,14 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [value, pattern]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
+      yield pattern
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -12942,6 +13689,14 @@ module Prism
       [call, *targets]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield call
+      targets.each { |node| yield node }
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [call, *targets]
@@ -13016,6 +13771,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -13088,6 +13849,14 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [constant_path, body]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield constant_path
+      yield body if body
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -13224,6 +13993,15 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [*lefts, rest, *rights]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      lefts.each { |node| yield node }
+      yield rest if rest
+      rights.each { |node| yield node }
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -13397,6 +14175,16 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [*lefts, rest, *rights, value]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      lefts.each { |node| yield node }
+      yield rest if rest
+      rights.each { |node| yield node }
+      yield value
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -13597,6 +14385,13 @@ module Prism
       [arguments]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield arguments if arguments
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       compact = [] #: Array[Prism::node]
@@ -13690,6 +14485,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -13759,6 +14560,12 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       []
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -13868,6 +14675,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -13939,6 +14752,12 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       []
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -14021,6 +14840,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [value]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -14122,6 +14948,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [value]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield value
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -14242,6 +15075,14 @@ module Prism
       [left, right]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield left
+      yield right
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [left, right]
@@ -14360,6 +15201,19 @@ module Prism
       [*requireds, *optionals, rest, *posts, *keywords, keyword_rest, block]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      requireds.each { |node| yield node }
+      optionals.each { |node| yield node }
+      yield rest if rest
+      posts.each { |node| yield node }
+      keywords.each { |node| yield node }
+      yield keyword_rest if keyword_rest
+      yield block if block
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       compact = [] #: Array[Prism::node]
@@ -14469,6 +15323,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [body]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield body if body
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -14591,6 +15452,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [expression]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield expression
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -14736,6 +15604,13 @@ module Prism
       [variable]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield variable
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [variable]
@@ -14835,6 +15710,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [statements]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield statements if statements
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -14972,6 +15854,13 @@ module Prism
       [statements]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield statements if statements
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       compact = [] #: Array[Prism::node]
@@ -15102,6 +15991,13 @@ module Prism
       [statements]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield statements
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [statements]
@@ -15183,6 +16079,14 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [left, right]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield left if left
+      yield right if right
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -15304,6 +16208,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -15405,6 +16315,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -15475,6 +16391,12 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       []
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -15665,6 +16587,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -15759,6 +16687,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -15838,6 +16772,14 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [expression, rescue_expression]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield expression
+      yield rescue_expression
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -15945,6 +16887,16 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [*exceptions, reference, statements, subsequent]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      exceptions.each { |node| yield node }
+      yield reference if reference
+      yield statements if statements
+      yield subsequent if subsequent
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -16110,6 +17062,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -16227,6 +17185,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -16295,6 +17259,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [arguments]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield arguments if arguments
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -16390,6 +17361,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -16458,6 +17435,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [write]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield write
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -16552,6 +17536,14 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [expression, body]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield expression
+      yield body if body
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -16695,6 +17687,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -16762,6 +17760,12 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       []
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -16857,6 +17861,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -16925,6 +17935,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [expression]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield expression if expression
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -17021,6 +18038,13 @@ module Prism
       [*body]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      body.each { |node| yield node }
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       [*body]
@@ -17102,6 +18126,12 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       []
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -17276,6 +18306,14 @@ module Prism
       [arguments, block]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield arguments if arguments
+      yield block if block
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       compact = [] #: Array[Prism::node]
@@ -17429,6 +18467,12 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       []
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -17594,6 +18638,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -17662,6 +18712,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [*names]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      names.each { |node| yield node }
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -17763,6 +18820,15 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [predicate, statements, else_clause]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield predicate
+      yield statements if statements
+      yield else_clause if else_clause
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -17951,6 +19017,14 @@ module Prism
       [predicate, statements]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield predicate
+      yield statements if statements
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       compact = [] #: Array[Prism::node]
@@ -18111,6 +19185,14 @@ module Prism
       [*conditions, statements]
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      conditions.each { |node| yield node }
+      yield statements if statements
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       compact = [] #: Array[Prism::node]
@@ -18241,6 +19323,14 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [predicate, statements]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield predicate
+      yield statements if statements
     end
 
     # def compact_child_nodes: () -> Array[Node]
@@ -18401,6 +19491,12 @@ module Prism
       []
     end
 
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+    end
+
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       []
@@ -18543,6 +19639,13 @@ module Prism
     # def child_nodes: () -> Array[Node?]
     def child_nodes
       [arguments]
+    end
+
+    # def each_child_node: () { (Prism::node) -> void } -> void | () -> Enumerator[Prism::node]
+    def each_child_node
+      return to_enum(:each_child_node) unless block_given?
+
+      yield arguments if arguments
     end
 
     # def compact_child_nodes: () -> Array[Node]
