@@ -25,7 +25,7 @@ module Prism
 
     # The patch version of prism that we are expecting to find in the serialized
     # strings.
-    PATCH_VERSION = 0
+    PATCH_VERSION = 1
 
     # Deserialize the dumped output from a request to parse or parse_file.
     #
@@ -354,6 +354,8 @@ module Prism
         :argument_forwarding_unbound,
         :argument_no_forwarding_ampersand,
         :argument_no_forwarding_ellipses,
+        :argument_no_forwarding_ellipses_lambda,
+        :argument_no_forwarding_ellipses_block,
         :argument_no_forwarding_star,
         :argument_no_forwarding_star_star,
         :argument_splat_after_assoc_splat,
