@@ -9979,8 +9979,21 @@ parser_lex(pm_parser_t *parser) {
                                 following && (
                                     (peek_at(parser, following) == '&' && peek_at(parser, following + 1) == '&') ||
                                     (peek_at(parser, following) == '|' && peek_at(parser, following + 1) == '|') ||
-                                    (peek_at(parser, following) == 'a' && peek_at(parser, following + 1) == 'n' && peek_at(parser, following + 2) == 'd' && !char_is_identifier(parser, following + 3, parser->end - (following + 3))) ||
-                                    (peek_at(parser, following) == 'o' && peek_at(parser, following + 1) == 'r' && !char_is_identifier(parser, following + 2, parser->end - (following + 2)))
+                                    (
+                                        peek_at(parser, following) == 'a' &&
+                                        peek_at(parser, following + 1) == 'n' &&
+                                        peek_at(parser, following + 2) == 'd' &&
+                                        peek_at(parser, next_content + 3) != '!' &&
+                                        peek_at(parser, next_content + 3) != '?' &&
+                                        !char_is_identifier(parser, following + 3, parser->end - (following + 3))
+                                    ) ||
+                                    (
+                                        peek_at(parser, following) == 'o' &&
+                                        peek_at(parser, following + 1) == 'r' &&
+                                        peek_at(parser, next_content + 2) != '!' &&
+                                        peek_at(parser, next_content + 2) != '?' &&
+                                        !char_is_identifier(parser, following + 2, parser->end - (following + 2))
+                                    )
                                 )
                             ) {
                                 if (!lexed_comment) parser_lex_ignored_newline(parser);
@@ -10051,6 +10064,8 @@ parser_lex(pm_parser_t *parser) {
                                 peek_at(parser, next_content) == 'a' &&
                                 peek_at(parser, next_content + 1) == 'n' &&
                                 peek_at(parser, next_content + 2) == 'd' &&
+                                peek_at(parser, next_content + 3) != '!' &&
+                                peek_at(parser, next_content + 3) != '?' &&
                                 !char_is_identifier(parser, next_content + 3, parser->end - (next_content + 3))
                             ) {
                                 if (!lexed_comment) parser_lex_ignored_newline(parser);
@@ -10067,6 +10082,8 @@ parser_lex(pm_parser_t *parser) {
                             if (
                                 peek_at(parser, next_content) == 'o' &&
                                 peek_at(parser, next_content + 1) == 'r' &&
+                                peek_at(parser, next_content + 2) != '!' &&
+                                peek_at(parser, next_content + 2) != '?' &&
                                 !char_is_identifier(parser, next_content + 2, parser->end - (next_content + 2))
                             ) {
                                 if (!lexed_comment) parser_lex_ignored_newline(parser);
@@ -13859,6 +13876,7 @@ parse_parameters(
     bool allows_forwarding_parameters,
     bool accepts_blocks_in_defaults,
     bool in_block,
+    pm_diagnostic_id_t diag_id_forwarding,
     uint16_t depth
 ) {
     pm_do_loop_stack_push(parser, false);
@@ -13914,7 +13932,7 @@ parse_parameters(
             }
             case PM_TOKEN_UDOT_DOT_DOT: {
                 if (!allows_forwarding_parameters) {
-                    pm_parser_err_current(parser, PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES);
+                    pm_parser_err_current(parser, diag_id_forwarding);
                 }
 
                 bool succeeded = update_parameter_state(parser, &parser->current, &order);
@@ -14594,6 +14612,7 @@ parse_block_parameters(
             false,
             accepts_blocks_in_defaults,
             true,
+            is_lambda_literal ? PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES_LAMBDA : PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES_BLOCK,
             (uint16_t) (depth + 1)
         );
         if (!is_lambda_literal) {
@@ -18836,7 +18855,17 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     if (match1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
                         params = NULL;
                     } else {
-                        params = parse_parameters(parser, PM_BINDING_POWER_DEFINED, true, false, true, true, false, (uint16_t) (depth + 1));
+                        params = parse_parameters(
+                            parser,
+                            PM_BINDING_POWER_DEFINED,
+                            true,
+                            false,
+                            true,
+                            true,
+                            false,
+                            PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES,
+                            (uint16_t) (depth + 1)
+                        );
                     }
 
                     lex_state_set(parser, PM_LEX_STATE_BEG);
@@ -18861,7 +18890,17 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
                     lparen = not_provided(parser);
                     rparen = not_provided(parser);
-                    params = parse_parameters(parser, PM_BINDING_POWER_DEFINED, false, false, true, true, false, (uint16_t) (depth + 1));
+                    params = parse_parameters(
+                        parser,
+                        PM_BINDING_POWER_DEFINED,
+                        false,
+                        false,
+                        true,
+                        true,
+                        false,
+                        PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES,
+                        (uint16_t) (depth + 1)
+                    );
 
                     // Reject `def * = 1` and similar. We have to specifically check
                     // for them because they create ambiguity with optional arguments.
@@ -18917,7 +18956,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     context_push(parser, PM_CONTEXT_RESCUE_MODIFIER);
 
                     pm_token_t rescue_keyword = parser->previous;
-                    pm_node_t *value = parse_expression(parser, pm_binding_powers[PM_TOKEN_KEYWORD_RESCUE_MODIFIER].right, false, false, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
+                    pm_node_t *value = parse_expression(parser, PM_BINDING_POWER_MATCH + 1, false, false, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
                     context_pop(parser);
 
                     statement = UP(pm_rescue_modifier_node_create(parser, statement, &rescue_keyword, value));
@@ -20214,7 +20253,7 @@ parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_
         pm_token_t rescue = parser->current;
         parser_lex(parser);
 
-        pm_node_t *right = parse_expression(parser, pm_binding_powers[PM_TOKEN_KEYWORD_RESCUE_MODIFIER].right, false, false, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
+        pm_node_t *right = parse_expression(parser, PM_BINDING_POWER_MATCH + 1, false, false, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
         context_pop(parser);
 
         return UP(pm_rescue_modifier_node_create(parser, value, &rescue, right));
@@ -20320,7 +20359,7 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
             }
         }
 
-        pm_node_t *right = parse_expression(parser, pm_binding_powers[PM_TOKEN_KEYWORD_RESCUE_MODIFIER].right, accepts_command_call_inner, false, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
+        pm_node_t *right = parse_expression(parser, PM_BINDING_POWER_MATCH + 1, accepts_command_call_inner, false, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
         context_pop(parser);
 
         return UP(pm_rescue_modifier_node_create(parser, value, &rescue, right));
@@ -21639,12 +21678,6 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
      ) {
         node = parse_expression_infix(parser, node, binding_power, current_binding_powers.right, accepts_command_call, (uint16_t) (depth + 1));
 
-        if (context_terminator(parser->current_context->context, &parser->current)) {
-            // If this token terminates the current context, then we need to
-            // stop parsing the expression, as it has become a statement.
-            return node;
-        }
-
         switch (PM_NODE_TYPE(node)) {
             case PM_MULTI_WRITE_NODE:
                 // Multi-write nodes are statements, and cannot be followed by
@@ -21755,6 +21788,17 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
                 default:
                     accepts_command_call = false;
                     break;
+            }
+        }
+
+        if (context_terminator(parser->current_context->context, &parser->current)) {
+            pm_binding_powers_t next_binding_powers = pm_binding_powers[parser->current.type];
+            if (
+                !next_binding_powers.binary ||
+                binding_power > next_binding_powers.left ||
+                (PM_NODE_TYPE_P(node, PM_CALL_NODE) && pm_call_node_command_p((pm_call_node_t *) node))
+            ) {
+                return node;
             }
         }
     }
