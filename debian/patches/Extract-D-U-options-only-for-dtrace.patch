@@ -1,0 +1,47 @@
+From: Nobuyoshi Nakada <nobu@ruby-lang.org>
+Date: Fri, 6 Feb 2026 14:42:29 +0900
+Subject: Extract -D/-U options only for dtrace
+
+A workaround for GH-12563#issuecomment-3691590489.
+---
+ configure.ac         |  3 +--
+ template/Makefile.in | 12 +++++++++++-
+ 2 files changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 5fea5fe..4dbcb0f 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -4326,8 +4326,7 @@ AS_IF([test -n "${LIBS}"], [
+     MAINFLAGS=`echo " $MAINLIBS " | sed "s|$libspat"'||;s/^ *//;s/ *$//'`
+ ])
+ LIBRUBYARG_STATIC="${LIBRUBYARG_STATIC} \$(MAINLIBS)"
+-CPPFLAGS="$CPPFLAGS "'$(DEFS)'
+-test -z "$CPPFLAGS" || CPPFLAGS="$CPPFLAGS "; CPPFLAGS="$CPPFLAGS"'${cppflags}'
++CPPFLAGS="$CPPFLAGS "'$(DEFS) ${cppflags}'
+ AS_IF([test -n "${cflags+set}"], [
+     cflagspat=`eval echo '"'"${cflags}"'"' | sed 's/[[][|.*]]/\\&/g;s/^  */ /;s/^  *$/ /'`
+     CFLAGS=`echo " $CFLAGS " | sed "s|$cflagspat"'|${cflags}|;s/^ *//;s/ *$//'`
+diff --git a/template/Makefile.in b/template/Makefile.in
+index 443c394..09f60e6 100644
+--- a/template/Makefile.in
++++ b/template/Makefile.in
+@@ -513,7 +513,17 @@ _PREFIXED_SYMBOL = TOKEN_PASTE($(SYMBOL_PREFIX),name)
+ 
+ .d.h:
+ 	@$(ECHO) translating probes $<
+-	$(Q) $(DTRACE) -o $@.tmp -h -C $(INCFLAGS) $(CPPFLAGS) -s $<
++	$(Q) $(DTRACE) -o $@.tmp -h -C $(INCFLAGS) `echo "$(CPPFLAGS)" | \
++	sed -e "s/^/\n/" \
++	    -e ": loop" \
++	    -e "  s/\n\(\('[^']*'\|[^ ']*\)*\)/\1\n/" \
++	    -e "  /^\(-[DU]\|'-[DU]\).*/P" \
++	    -e "  s/^..*\n/\n/" \
++	    -e "  T" \
++	    -e "  s/\n  */\n/" \
++	    -e "t loop" \
++	    -e "s/.*//" \
++	` -s $<
+ 	$(Q) sed -e 's/RUBY_/RUBY_DTRACE_/g' -e 's/PROBES_H_TMP/RUBY_PROBES_H/' -e 's/(char \*/(const char */g' -e 's/, char \*/, const char */g' $@.tmp > $@
+ 	$(Q) $(RM) $@.tmp
+ 
