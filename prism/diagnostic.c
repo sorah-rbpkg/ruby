@@ -10,7 +10,7 @@
 
 #include "prism/diagnostic.h"
 
-#define PM_DIAGNOSTIC_ID_MAX 324
+#define PM_DIAGNOSTIC_ID_MAX 326
 
 /** This struct holds the data for each diagnostic. */
 typedef struct {
@@ -112,6 +112,8 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_ARGUMENT_FORWARDING_UNBOUND]        = { "unexpected `...` in an non-parenthesized call", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_ARGUMENT_NO_FORWARDING_AMPERSAND]   = { "unexpected `&`; no anonymous block parameter", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES]    = { "unexpected ... when the parent method is not forwarding", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES_LAMBDA] = { "unexpected ... in lambda argument", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES_BLOCK]  = { "unexpected ... in block argument", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_ARGUMENT_NO_FORWARDING_STAR]        = { "unexpected `*`; no anonymous rest parameter", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_ARGUMENT_NO_FORWARDING_STAR_STAR]   = { "unexpected `**`; no anonymous keyword rest parameter", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_ARGUMENT_SPLAT_AFTER_ASSOC_SPLAT]   = { "unexpected `*` splat argument after a `**` keyword splat argument", PM_ERROR_LEVEL_SYNTAX },
@@ -442,6 +444,8 @@ pm_diagnostic_id_human(pm_diagnostic_id_t diag_id) {
         case PM_ERR_ARGUMENT_FORWARDING_UNBOUND: return "argument_forwarding_unbound";
         case PM_ERR_ARGUMENT_NO_FORWARDING_AMPERSAND: return "argument_no_forwarding_ampersand";
         case PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES: return "argument_no_forwarding_ellipses";
+        case PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES_LAMBDA: return "argument_no_forwarding_ellipses_lambda";
+        case PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES_BLOCK: return "argument_no_forwarding_ellipses_block";
         case PM_ERR_ARGUMENT_NO_FORWARDING_STAR: return "argument_no_forwarding_star";
         case PM_ERR_ARGUMENT_NO_FORWARDING_STAR_STAR: return "argument_no_forwarding_star_star";
         case PM_ERR_ARGUMENT_SPLAT_AFTER_ASSOC_SPLAT: return "argument_splat_after_assoc_splat";

@@ -2,6 +2,655 @@
 
 base-url = https://github.com/ruby/ruby
 
+commit d3da9fec828481422cc4084892454bf572d7af5a
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2026-03-17 07:47:54 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-03-17 07:47:54 +0900
+
+    v4.0.2
+
+commit 3fd1181a9d81cc7eed8ddfe262d97035d6e1b321
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2026-03-17 07:46:12 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-03-17 07:46:12 +0900
+
+    Bump Prism to v1.8.1
+
+commit 6b47e3f82cfb52d41fef8882d7e132f43a7611d6
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2026-03-17 04:24:01 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-03-17 04:24:01 +0900
+
+    [ruby/prism] Fix not binding power in endless methods [Backport #21097]
+
+    Change rescue modifier binding power from PM_BINDING_POWER_COMPOSITION
+    to PM_BINDING_POWER_MATCH + 1, so that `x = a rescue b in c` is parsed
+    as `(x = (a rescue b)) in c` and `def f = a rescue b in c` is parsed
+    as `(def f = (a rescue b)) in c`.
+
+    https://github.com/ruby/prism/commit/7e797f59ae
+
+commit 901966d7621bfdfe520c5b65649c7e6bacaad6ff
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2026-03-17 04:02:55 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-03-17 04:02:55 +0900
+
+    Update pstore to 0.2.1 [Backport #21880]
+
+    Fix ultra_safe mode of pstore bundled with Ruby 4.0.
+
+commit a601b899a35c796775309dca01a6d5e64be14c44
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2026-03-17 03:57:04 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-03-17 03:57:04 +0900
+
+    merge revision(s) 08372635f7ec09f7115bd254246ebd637499651c: [Backport #21926]
+
+            Fix race condition right after ubf registration
+
+            Fixes [Bug #21926]
+
+commit f808ff5fc15690338dcb6530e4d3df760d8721f3
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2026-03-17 03:56:14 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-03-17 03:56:14 +0900
+
+    merge revision(s) f315d250b44e75a1a69f4a05b293dcc701377689: [Backport #21947]
+
+            [ruby/timeout] Compatibility with Fiber scheduler.
+            (https://github.com/ruby/timeout/pull/97)
+
+            [Bug #21947]
+
+commit 1d3581e18a689f0d392686283e340058ac468ffd
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2026-03-17 03:55:53 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-03-17 03:55:53 +0900
+
+    merge revision(s) 55694ad7efc3f8dc6d5c7aefa60ded4c303ed6cf: [Backport #21945]
+
+            [Bug #21945] Correctly handle `and?` and similar
+
+commit 0d845e4a071f67de40e1151cafb419c7aba87050
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2026-03-17 03:35:06 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-03-17 03:35:06 +0900
+
+    merge revision(s) 361644c0cce3235e9cc6724994c6b5711deb10b8: [Backport #21917]
+
+            [PATCH] [Bug #21917] Fix build on AIX
+
+commit 8466e93b1d6eb85ad5952ab3a10575fa453e77e2
+  Author:     Alan Wu <XrXr@users.noreply.github.com>
+  AuthorDate: 2026-03-13 07:33:00 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-03-17 03:03:25 +0900
+
+    YJIT: Fix not reading locals from `cfp->ep` after `YJIT.enable` and exceptional entry
+
+    [Backport #21941]
+
+    In case of `--yjit-disable`, YJIT only starts to record environment
+    escapes after `RubyVM::YJIT.enable`. Previously we falsely assumed that
+    we always have a full history all the way back to VM boot. This had YJIT
+    install and run code that assume EP=BP when EP≠BP for some exceptional
+    entry into the middle of a running frame, if the environment escaped
+    before `YJIT.enable`.
+
+    The fix is to reject exceptional entry with an escaped environment.
+    Rename things and explain in more detail how the predicate for deciding
+    to assume EP=BP works. It's quite subtle since it reasons about all
+    parties in the system that push a control frame and then run JIT code.
+
+    Note that while can_assume_on_stack_env() checks the currently running
+    environment if it so happens to be the one YJIT is compiling against, it
+    can return true for any ISEQ. The check isn't necessary for fixing the
+    bug, and the load bearing part of this patch is the change to
+    exceptional entries.
+
+    This fix is flat on speed and space on ruby-bench headline benchmarks.
+
+    Many thanks for the community effort to create a small test case for
+    this bug.
+
+commit ad231cdf4a021ee6e37e1a5d8c0ac137dd9fe246
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2026-03-10 12:28:17 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-03-12 09:42:58 +0900
+
+    Windows: Explicitly specify the use of `coreutils` commands
+
+    It appears that shims for individual commands are no longer being
+    created.
+
+commit efca0f45203d5908b3ec155b40e59baa8504f0ae
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2026-03-11 19:25:44 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-03-12 09:42:58 +0900
+
+    Use $LOAD_PATH.replace for safer restoration in test
+
+    Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+commit 9bcd9ba9b31fea19dc56bc2f5c69cf584d3bd23c
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2026-03-11 19:14:59 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-03-12 09:42:58 +0900
+
+    Suppress bundled gems warning for subfeatures found outside stdlib [Bug #21828]
+
+    Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+commit 764a245ef9e305a515a8be54b87c8b7b3ac45af0
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2026-03-09 04:32:39 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-03-12 09:41:59 +0900
+
+    Fix M:N threads under OpenBSD
+
+    OpenBSD requires MAP_STACK for memory regions used as thread stacks.
+    However it seems to error with "Invalid argument" unless the permissions
+    include both PROT_READ | PROT_WRITE.
+
+    We should be able to satisft this by re-mmapping over our reserved stack
+    region to get the MAP_STACK flag. As a (very minor) bonus, this applies
+    MAP_STACK only to the machine stack region, not the VM region.
+
+    Co-authored-by: Jeremy Evans <code@jeremyevans.net>
+
+commit 21f2bbf322e955b1e393365d6190eaa38bdfc356
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2026-02-03 19:28:42 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-03-10 00:19:27 +0900
+
+    Lock to install uutils-coreutils@0.5.0
+
+commit 636523d0a5172337436e73f66e00c3b5178ce4b7
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2026-03-09 18:04:46 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-03-10 00:19:27 +0900
+
+    Merge zlib-3.2.3
+
+commit b5a768b666f61a861449d9ee287cb0a3e05bbea8
+  Author:     Kevin Newton <kddnewton@gmail.com>
+  AuthorDate: 2026-03-03 01:49:29 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-03-07 02:02:23 +0900
+
+    [ruby/prism] Fix in handling
+
+    in is a unique keyword because it can be the start of a clause or
+    an infix keyword. We need to be explicitly sure that even though in
+    _could_ close an expression context (the body of another in clause)
+    that we are not also parsing an inline in. The exception is the
+    case of a command call, which can never be the LHS of an expression,
+    and so we must immediately exit.
+
+    [Bug #21925]
+    [Bug #21674]
+
+    https://github.com/ruby/prism/commit/20374ced51
+
+commit e7d2828fb677874fb425e6129e0c4c20acc0e1dd
+  Author:     Earlopain <14981592+Earlopain@users.noreply.github.com>
+  AuthorDate: 2026-02-27 19:51:22 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-03-07 02:02:23 +0900
+
+    [ruby/prism] Fix error message for block/lambda with `...` argument
+
+    They currently complain that the parent method is not forwarding.
+    But the actual problem is that these types of arguments simply don't
+    accept `...`
+
+    Fixes [Bug #21927]
+
+    https://github.com/ruby/prism/commit/0aa2363331
+
+commit 83c261f30bd43dc3465c0026b96e79af585fdfab
+  Author:     Earlopain <14981592+Earlopain@users.noreply.github.com>
+  AuthorDate: 2026-03-06 04:41:21 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-03-07 02:02:23 +0900
+
+    [ruby/prism] Correctly handle `and?` and similar on ruby 4.0
+
+    It gets confused for syntax introduced in https://bugs.ruby-lang.org/issues/20925
+    But it actually should be a plain method call.
+    `!`/`?` are not valid as part of an identifier, methods
+    however allow them as the last character.
+
+    Fixes [Bug #21946]
+
+    https://github.com/ruby/prism/commit/5d80bc5e1a
+
+commit 33e5d3894fcddeb16518fdd0512fda097e7039fe
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2026-02-24 11:40:29 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-03-06 04:08:14 +0900
+
+    Map M:N thread stack chunks initially as PROT_NONE
+
+    Previously we initially mapped the full 512MB chunk as
+    PROT_READ|PROD_WRITE and then set a guard page to PROT_NONE the first
+    time a new thread stack is needed. Usually that's okay as we don't touch
+    that memory until it is needed and so it doesn't count towards RSS.
+
+    However, on Linux even with vm.overcommit_memory=0 (the default) if on a
+    system (like a tiny cloud VM) with <512MB of RAM+swap that would error
+    with.
+
+        Thread#initialize': can't create Thread: Cannot allocate memory (ThreadError)
+
+    This changes the chunk to be mapped initially with PROT_NONE, then
+    instead of mapping the guard pages we map in the machine and VM stacks
+    using mprotect. This ensures we don't commit stack memory until it is
+    first used, and as a side benefit any stray pointers into unused stack
+    should segfault.
+
+    When a stack is freed/reused there is no change from the previous
+    behaviour, we just use madvise and leave the same regions in place.
+
+    [Bug #21944]
+
+commit a9b84adbd2f30eaefdf2a60341468c00e4bc090c
+  Author:     ZHIJIE XIE <40601688+dummyx@users.noreply.github.com>
+  AuthorDate: 2026-03-03 02:40:57 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-03-04 00:57:17 +0900
+
+    string.c: guard tmp in rb_str_format_m (GH-16280)
+
+    [Bug #21931]
+
+    Keep tmp alive while RARRAY_CONST_PTR(tmp) is used by rb_str_format.
+
+    [alan: sunk the guard below usage]
+    Reviewed-by: Alan Wu <XrXr@users.noreply.github.com>
+
+commit aec8563df22fb418566a9806e8b782c38b750f46
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2026-02-12 20:30:12 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-02-13 06:51:45 +0900
+
+    Use Oregon mirror for cygwin download
+
+commit 485a6037916fa09b07429d41e8699586271eb91c
+  Author:     Chris Hasiński <krzysztof.hasinski@gmail.com>
+  AuthorDate: 2026-01-20 02:35:52 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-02-13 03:41:49 +0900
+
+    Fix bundled gems warning for all subfeatures of hyphenated gems
+
+    PR #15822 fixed the warning for direct hyphenated gem requires like
+    `benchmark/ips` → `benchmark-ips`. However, hyphenated gems often
+    provide multiple files under their namespace.
+
+    For example, `benchmark-ips` provides:
+    - benchmark/ips.rb
+    - benchmark/timing.rb
+    - benchmark/compare.rb
+
+    When requiring `benchmark/timing`, the previous fix only checked for
+    `benchmark-timing` gem (doesn't exist), not `benchmark-ips` which
+    actually provides the file.
+
+    This fix checks if ANY gem matching `{prefix}-*` is in the bundle
+    specs, which covers all subfeatures provided by hyphenated gems.
+
+    Reported in https://github.com/ruby/ruby/pull/15822#issuecomment-123456
+
+commit f3bfffe8565b08b3426003aebbe328a0ecedad26
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2026-02-11 03:46:40 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2026-02-11 03:46:40 +0900
+
+    ZJIT: Avoid runtime exceptions from RubyVM::ZJIT.stats_string (#16139)
+
+    Before this it would raise if zjit wasn't enabled
+    and raise a different exception if zjit was but extended stats were
+    not (_some_ stats are available).
+
+    Co-authored-by: Randy Stauner <randy@r4s6.net>
+
+commit 0768f08caff514b0ba616dc26d76aad90577eefe
+  Author:     Mike Dalessio <mike@37signals.com>
+  AuthorDate: 2026-02-11 02:10:21 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-02-11 03:32:51 +0900
+
+    Fix UnboundMethod#== for methods from included/extended modules [Backport #21873]
+
+    Method#unbind clones the method entry, preserving its defined_class.
+    For methods mixed in via include/extend, defined_class is an ICLASS,
+    causing UnboundMethod#== to return false when comparing against the
+    same method obtained via Module#instance_method.
+
+    Resolve ICLASS defined_class in method_eq.
+
+    [Bug #21873]
+
+commit e025c839ac71b609bb50ff74352f9a11cd164c3c
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2026-02-10 10:07:39 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-02-10 10:38:24 +0900
+
+    Merge RubyGems/Bundler 4.0.6
+
+commit 87b544b8c4400ef2b37405f132846e5c3738213b
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2026-02-10 10:07:38 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-02-10 10:38:24 +0900
+
+    Merge RubyGems/Bundler 4.0.5
+
+commit 91a4926c9a9cd12f43307a2c934766c000356f07
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2026-02-10 10:07:37 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-02-10 10:38:24 +0900
+
+    Merge RubyGems/Bundler 4.0.4
+
+commit d5d3fb8b80e81426517bf150ebcab83be4ed996d
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2026-02-10 08:39:41 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-02-10 08:39:41 +0900
+
+    merge revision(s) 8a586af33b59cae93a1bee13c39e87dd087a4a6b: [Backport #21838]
+
+            [PATCH] Don't force major GC when there are allocatable slots
+
+            [Bug #21838]
+
+            When we have allocatable slots, we can grow the heap instead of forcing
+            a major GC. This prevents major GC to be ran very often in certain situations.
+            See the ticket for more details.
+
+            On ruby-bench, we can see that this patch doesn't cause any significant
+            regressions:
+
+                --------------  -----------  ----------  ---------  -----------  ----------  ---------  --------------  -------------
+                bench           master (ms)  stddev (%)  RSS (MiB)  branch (ms)  stddev (%)  RSS (MiB)  branch 1st itr  master/branch
+                activerecord    148.2        0.3         59.2       150.0        0.8         69.7       1.015           0.988
+                chunky-png      435.2        0.3         72.9       438.8        0.1         66.7       0.993           0.992
+                erubi-rails     733.8        1.2         118.7      704.8        0.2         98.3       1.077           1.041
+                hexapdf         1400.4       1.1         247.0      1405.0       0.9         223.7      0.986           0.997
+                liquid-c        32.5         3.3         32.8       32.5         2.1         30.7       1.042           0.999
+                liquid-compile  31.0         1.7         35.1       33.4         3.9         32.8       0.938           0.928
+                liquid-render   84.7         0.4         30.8       86.3         0.4         30.8       0.981           0.982
+                lobsters        594.7        0.6         310.5      596.6        0.4         306.0      1.057           0.997
+                mail            75.6         2.8         53.3       76.9         0.7         53.2       0.968           0.982
+                psych-load      1122.8       1.2         29.2       1145.1       0.4         31.7       0.964           0.981
+                railsbench      1244.7       0.3         115.5      1254.8       1.1         115.2      0.939           0.992
+                rubocop         103.7        0.5         94.1       104.3        0.5         92.4       0.985           0.994
+                ruby-lsp        88.3         0.6         78.5       88.5         1.2         77.9       0.992           0.997
+                sequel          26.9         0.9         33.6       28.3         1.4         32.1       0.954           0.952
+                shipit          1119.3       1.5         171.4      1075.7       2.1         162.5      1.873           1.040
+                --------------  -----------  ----------  ---------  -----------  ----------  ---------  --------------  -------------
+
+commit 306930ae1ac62fb3b7f96581f4a6e9ab4c083e84
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2026-02-10 06:44:42 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-02-10 06:44:42 +0900
+
+    merge revision(s) 78b7646bdb91285873ac26bca060591e06c45afe, b4a62a1ca949d93332ad8bce0fcc273581160cc5: [Backport #21842]
+
+            [PATCH] [Bug #21842] Let `rb_interned_str` return US-ASCII if possible
+
+            [PATCH] [DOC] Update docs for rb_interned_str and related functions (#15897)
+
+            Related to [Bug #21842].
+
+            * rb_interned_str: document what decides whether the returned string is
+              in US-ASCII or BINARY encoding.
+            * rb_interned_str_cstr: include the same description as rb_interned_str
+              for the encoding. This one was still missing the update for US-ASCII
+              and erroneously said the returned string was alwasy in BINARY encoding
+            * rb_str_to_interned_str: document how the encoding of the result is
+              defined.
+
+            Co-authored-by: Herwin <herwinw@users.noreply.github.com>
+
+commit c6d9ba58c50fd9c07023453d71cb55b4b9c36957
+  Author:     John Hawthorn <john@hawthorn.email>
+  AuthorDate: 2026-02-08 01:44:08 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-02-10 06:38:18 +0900
+
+    Fix signal crash during keyword argument call
+
+    64f508ade8 changed rb_threadptr_raise to call rb_exception_setup,
+    which uses rb_scan_args with RB_SCAN_ARGS_PASS_CALLED_KEYWORDS.
+    This checked rb_keyword_given_p(), which read the interrupted
+    frame's keyword state rather than the signal raise arguments,
+    causing a crash when a signal arrived during a keyword call.
+
+    Revert rb_threadptr_raise to use rb_make_exception directly, and
+    have thread_raise_m call rb_exception_setup where
+    rb_keyword_given_p() reflects the correct frame.
+
+    [Bug #21865]
+
+commit 584c3b6465ec40226687e9699d2b652d9ad31a8f
+  Author:     Randy Stauner <randy@r4s6.net>
+  AuthorDate: 2026-02-10 02:47:03 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2026-02-10 02:47:03 +0900
+
+    [Backport #21866] Fix integer overflow checks in enumerator (#16088)
+
+    Fix integer overflow checks in enumerator
+
+    Co-authored-by: Jörmungandrk <github@zerodaysec.org>
+
+commit e4dd078a2734f1f3b7169feb4da8c68587effc6e
+  Author:     Earlopain <14981592+Earlopain@users.noreply.github.com>
+  AuthorDate: 2026-01-22 02:40:08 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-01-22 03:11:17 +0900
+
+    [ruby/syntax_suggest] v2.0.3
+
+    https://github.com/ruby/syntax_suggest/commit/a81b92fcf2
+
+    [Bug #21847]
+
+commit 12203963d22a984154c1abb03782c345ba8f5129
+  Author:     Schneems <richard.schneeman+foo@gmail.com>
+  AuthorDate: 2026-01-21 06:32:33 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-01-22 03:11:17 +0900
+
+    [ruby/syntax_suggest] Refactor multi-prism version logic
+
+    The reason this logic for different methods branches in the class instead of internally was to be eagerly aggressive about runtime performance. This code is currently only used once for the document where it's invoked ~N times (where N is number of lines):
+
+    ```ruby
+    module SyntaxSuggest
+      class CleanDocument
+        # ...
+        def join_trailing_slash!
+          trailing_groups = @document.select(&:trailing_slash?).map do |code_line|
+            take_while_including(code_line.index..) { |x| x.trailing_slash? }
+          end
+          join_groups(trailing_groups)
+          self
+        end
+    ```
+
+    Since this is not currently a hot-spot I think merging the branches and using a case statement is a reasonable tradeoff and avoids the need to do specific version testing.
+
+    An alternative idea was presented in #241 of behavior-based testing for branch logic (which I would prefer), however, calling the code triggered requiring a `DelegateClass` when the `syntax_suggest/api` is being required.
+
+    https://github.com/ruby/syntax_suggest/commit/ab122c455f
+
+commit bbba57f22c7eb7279297e03f8124d51135a7e87a
+  Author:     Earlopain <14981592+Earlopain@users.noreply.github.com>
+  AuthorDate: 2026-01-20 21:38:50 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-01-22 03:11:17 +0900
+
+    [ruby/syntax_suggest] Handle `on_sp` when using prism
+
+    It used to not emit this token type, but now it does.
+    So when a newer version of prism is present, we can fall back
+    to the same code that ripper uses.
+
+    Ref:
+    * https://github.com/ruby/ruby/pull/15914
+    * https://github.com/ruby/prism/pull/3859
+
+    https://github.com/ruby/syntax_suggest/commit/42a3b8f6cb
+
+commit 26777e8a79a43dcf86c10274af4507bd196b9050
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2026-01-15 16:52:01 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-01-21 03:49:33 +0900
+
+    Restore irb to warning target
+
+    Users should add `irb` to their Gemfile.
+    `Gem::BUNDLED_GEMS.force_activate 'irb'` is workaround for short term.
+
+commit a3dc71eb5fe8ae7c411067a58ec91201fec240ee
+  Author:     Daisuke Aritomo <osyoyu@osyoyu.com>
+  AuthorDate: 2025-12-03 03:41:21 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-01-21 03:49:33 +0900
+
+    Suppress bundled gem warning on `binding.irb'
+
+    This patch silences the "this won't work in the next version of Ruby"
+    warning displayed when irb is autoloaded via `binding.irb`.
+
+        main.rb:1: warning: irb used to be loaded from the standard library, but is not part of the default gems since Ruby 4.0.0.
+        You can add irb to your Gemfile or gemspec to fix this error.
+        /.../irb.rb:9: warning: reline used to be loaded from the standard library, but is not part of the default gems since Ruby 4.0.0.
+        You can add reline to your Gemfile or gemspec to fix this error.
+
+        From: main.rb @ line 1 :
+
+         => 1: binding.irb
+
+        /.../input-method.rb:284: warning: rdoc used to be loaded from the standard library, but is not part of the default gems since Ruby 4.0.0.
+        You can add rdoc to your Gemfile or gemspec to fix this error.
+
+    This warning is incorrect and misleading: users should not need to
+    include irb (and its dependencies) to their Gemfiles to use
+    `binding.irb`, even in future versions of Ruby. It is agreed that the
+    runtime takes care of that.
+
+commit 310da6cd91ccdab82f5cb9cef482f5cf9da1bb19
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2026-01-15 15:29:22 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-01-21 03:49:33 +0900
+
+    Added example for bundle/inline
+
+commit 3046e27852c46e32872a8a08644366a859ceca1e
+  Author:     Daisuke Aritomo <osyoyu@osyoyu.com>
+  AuthorDate: 2025-12-04 21:02:36 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-01-21 03:49:33 +0900
+
+    Add comments
+
+commit 20e4a9a807dc0e4489a31efe94328ec1bda7c488
+  Author:     Daisuke Aritomo <osyoyu@osyoyu.com>
+  AuthorDate: 2025-12-04 20:56:31 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-01-21 03:49:33 +0900
+
+    Fake BUNDLE_GEMFILE and BUNDLE_LOCKFILE to let checks pass
+
+    Bundler::Runtime#setup requires a real existing lockfile (see
+    Bundler::SharedHelpers#default_lockfile).
+
+commit 83479483c96fdfffbde11af482c7fd920b0c1dea
+  Author:     Daisuke Aritomo <osyoyu@osyoyu.com>
+  AuthorDate: 2025-12-03 02:25:46 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-01-21 03:49:33 +0900
+
+    [Bug #21723] Let `binding.irb` properly load irb by fixing force_activate()
+
+    This patch fixes a problem where `binding.irb` (= force_activate('irb'))
+    fails under `bundle exec` when the Gemfile does not contain `irb` and
+    does contain a gem which is (1) not installed in GEM_HOME (2) sourced
+    using `path:`/`git:`.
+
+    The original approach constructing a temporary definition fails since
+    it does not set the equalivent of `path:`/`git:`.
+
+    Always reconstructing a definition from a Gemfile and applying lockfile
+    constraints should be a more robust approach.
+
+    [Bug #21723]
+
+commit 33cae95c8afce2782c2808a8e74c81d9ac763a4e
+  Author:     Randy Stauner <randy@r4s6.net>
+  AuthorDate: 2026-01-15 03:02:51 +0900
+  Commit:     GitHub <noreply@github.com>
+  CommitDate: 2026-01-15 03:02:51 +0900
+
+    [Backport #21832] Add pushtoarray insn to fix segfault with forwarding + splat (#15870)
+
+    Add pushtoarray insn to fix segfault with forwarding + splat
+
+    Example insns diff for `def x = [3]; def a(...) = b(*x, 2, 3, ...)`
+
+         == disasm: #<ISeq:a@-e:1 (1,13)-(1,42)>
+         local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+         [ 1] "..."@0
+         0000 putself                                                          (   1)[Ca]
+         0000 putself
+         0000 opt_send_without_block                 <calldata!mid:x, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+         0000 splatarray                             true
+         0000 putobject                              2
+         0000 putobject                              3
+        +0000 pushtoarray                            2
+         0000 getlocal_WC_0                          "..."@0
+         0000 sendforward                            <calldata!mid:b, argc:1, ARGS_SPLAT|ARGS_SPLAT_MUT|FCALL|FORWARDING>, nil
+         0000 leave                                  [Re]
+
+    This matches the insns produced by parse.y
+
+commit 3176790c0d15dd7a72bb6e349651b3a66111d6f7
+  Author:     Takashi Kokubun <takashikkbn@gmail.com>
+  AuthorDate: 2026-01-14 03:57:06 +0900
+  Commit:     Takashi Kokubun <takashikkbn@gmail.com>
+  CommitDate: 2026-01-14 03:57:31 +0900
+
+    Add a test backport missed at a10f7fac1fb1dcbdb1ae41137bd7294764a34793
+
+    https://bugs.ruby-lang.org/issues/21831
+
 commit e04267a14b1a5dea2d2c368e48d41bd3db441f4f
   Author:     Takashi Kokubun <takashikkbn@gmail.com>
   AuthorDate: 2026-01-13 11:02:40 +0900
