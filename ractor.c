@@ -217,6 +217,8 @@ ractor_mark(void *ptr)
     rb_gc_mark(r->r_stdin);
     rb_gc_mark(r->r_stdout);
     rb_gc_mark(r->r_stderr);
+    rb_gc_mark(r->verbose);
+    rb_gc_mark(r->debug);
     rb_hook_list_mark(&r->pub.hooks);
 
     if (r->threads.cnt > 0) {
@@ -2911,6 +2913,7 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
         // already traversed
         return 0;
     }
+    RB_OBJ_WRITTEN(data->rec_hash, Qundef, obj);
 
     struct obj_traverse_callback_data d = {
         .stop = false,
@@ -3357,6 +3360,8 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
     }
     else {
         st_insert(obj_traverse_replace_rec(data), (st_data_t)obj, replacement);
+        RB_OBJ_WRITTEN(data->rec_hash, Qundef, obj);
+        RB_OBJ_WRITTEN(data->rec_hash, Qundef, replacement);
     }
 
     if (!data->move) {

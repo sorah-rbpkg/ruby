@@ -609,14 +609,14 @@ rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encod
 VALUE
 rb_fstring_new(const char *ptr, long len)
 {
-    struct RString fake_str;
+    struct RString fake_str = {RBASIC_INIT};
     return register_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII), false, false);
 }
 
 VALUE
 rb_fstring_enc_new(const char *ptr, long len, rb_encoding *enc)
 {
-    struct RString fake_str;
+    struct RString fake_str = {RBASIC_INIT};
     return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), false, false);
 }
 
@@ -676,7 +676,7 @@ VALUE rb_fs;
 static inline const char *
 search_nonascii(const char *p, const char *e)
 {
-    const uintptr_t *s, *t;
+    const char *s, *t;
 
 #if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
 # if SIZEOF_UINTPTR_T == 8
@@ -720,17 +720,19 @@ search_nonascii(const char *p, const char *e)
 #define aligned_ptr(value) \
         __builtin_assume_aligned((value), sizeof(uintptr_t))
 #else
-#define aligned_ptr(value) (uintptr_t *)(value)
+#define aligned_ptr(value) (value)
 #endif
         s = aligned_ptr(p);
-        t = (uintptr_t *)(e - (SIZEOF_VOIDP-1));
+        t = (e - (SIZEOF_VOIDP-1));
 #undef aligned_ptr
-        for (;s < t; s++) {
-            if (*s & NONASCII_MASK) {
+        for (;s < t; s += sizeof(uintptr_t)) {
+            uintptr_t word;
+            memcpy(&word, s, sizeof(word));
+            if (word & NONASCII_MASK) {
 #ifdef WORDS_BIGENDIAN
-                return (const char *)s + (nlz_intptr(*s&NONASCII_MASK)>>3);
+                return (const char *)s + (nlz_intptr(word&NONASCII_MASK)>>3);
 #else
-                return (const char *)s + (ntz_intptr(*s&NONASCII_MASK)>>3);
+                return (const char *)s + (ntz_intptr(word&NONASCII_MASK)>>3);
 #endif
             }
         }
@@ -1500,7 +1502,7 @@ rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
      * allocated. If the string is shared then the shared root must be
      * embedded, so we want to create a copy. If the string is a shared root
      * then it must be embedded, so we want to create a copy. */
-    if (STR_EMBED_P(orig) || FL_TEST_RAW(orig, STR_SHARED | STR_SHARED_ROOT)) {
+    if (STR_EMBED_P(orig) || FL_TEST_RAW(orig, STR_SHARED | STR_SHARED_ROOT | RSTRING_FSTR)) {
         RSTRING(str)->as.heap.ptr = rb_xmalloc_mul_add_mul(sizeof(char), capa, sizeof(char), TERM_LEN(orig));
         memcpy(RSTRING(str)->as.heap.ptr, RSTRING_PTR(orig), capa);
     }
@@ -2555,7 +2557,9 @@ rb_str_format_m(VALUE str, VALUE arg)
     VALUE tmp = rb_check_array_type(arg);
 
     if (!NIL_P(tmp)) {
-        return rb_str_format(RARRAY_LENINT(tmp), RARRAY_CONST_PTR(tmp), str);
+        VALUE result = rb_str_format(RARRAY_LENINT(tmp), RARRAY_CONST_PTR(tmp), str);
+        RB_GC_GUARD(tmp);
+        return result;
     }
     return rb_str_format(1, &arg, str);
 }
@@ -12514,7 +12518,7 @@ rb_str_to_interned_str(VALUE str)
 VALUE
 rb_interned_str(const char *ptr, long len)
 {
-    struct RString fake_str;
+    struct RString fake_str = {RBASIC_INIT};
     return register_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII), true, false);
 }
 
@@ -12531,7 +12535,7 @@ rb_enc_interned_str(const char *ptr, long len, rb_encoding *enc)
         rb_enc_autoload(enc);
     }
 
-    struct RString fake_str;
+    struct RString fake_str = {RBASIC_INIT};
     return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), true, false);
 }
 
@@ -12542,7 +12546,7 @@ rb_enc_literal_str(const char *ptr, long len, rb_encoding *enc)
         rb_enc_autoload(enc);
     }
 
-    struct RString fake_str;
+    struct RString fake_str = {RBASIC_INIT};
     return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), true, true);
 }
 

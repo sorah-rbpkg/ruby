@@ -2797,6 +2797,22 @@ assert_equal '[1, 2]', %q{
   expandarray_redefined_nilclass
 } unless rjit_enabled?
 
+assert_equal 'not_array', %q{
+  def expandarray_not_array(obj)
+    a, = obj
+    a
+  end
+
+  obj = Object.new
+  def obj.method_missing(m, *args, &block)
+    return [:not_array] if m == :to_ary
+    super
+  end
+
+  expandarray_not_array(obj)
+  expandarray_not_array(obj)
+}
+
 assert_equal '[1, 2, nil]', %q{
   def expandarray_rhs_too_small
     a, b, c = [1, 2]
@@ -4998,6 +5014,16 @@ assert_equal '[:ok, :ok, :ok, :ok, :ok]', %q{
   tests
 }
 
+# regression test for splat with &proc{} when the target has rest (Bug #21266)
+assert_equal '[]', %q{
+  def foo(args) = bar(*args, &proc { _1 })
+  def bar(_, _, _, _, *rest) = yield rest
+
+  GC.stress = true
+  foo([1,2,3,4])
+  foo([1,2,3,4])
+}
+
 # regression test for invalidating an empty block
 assert_equal '0', %q{
   def foo = (* = 1).pred
@@ -5454,4 +5480,76 @@ assert_normal_exit %{
 
     new.foo
   end
+}
+
+# Test defined?(yield) and block_given? in non-method context.
+# It's good that the body of this runs at true top level and isn't wrapped in a block.
+assert_equal 'false', %{
+  RESULT = []
+  RESULT << defined?(yield)
+  RESULT << block_given?
+
+  1.times do
+    RESULT << defined?(yield)
+    RESULT << block_given?
+  end
+
+  module ModuleContext
+    1.times do
+      RESULT << defined?(yield)
+      RESULT << block_given?
+    end
+  end
+
+  class << self
+    RESULT << defined?(yield)
+    RESULT << block_given?
+  end
+
+  RESULT.any?
+}
+
+# throw and String#dup with GC stress
+assert_equal 'foo', %{
+  GC.stress = true
+
+  def foo
+    1.times { return "foo".dup }
+  end
+
+  10.times.map { foo.dup }.last
+}
+
+# regression test for [Bug #21772]
+# local variable type tracking desync
+assert_normal_exit %q{
+  def some_method = 0
+
+  def test_body(key)
+    some_method
+    key = key.to_s # setting of local relevant
+
+    key == "symbol"
+  end
+
+  def jit_caller = test_body("session_id")
+
+  jit_caller # first iteration, non-escaped environment
+  alias some_method binding # induce environment escape
+  test_body(:symbol)
+}
+
+# regression test for missing check in identity method inlining
+assert_normal_exit %q{
+  # Use dead code (if false) to create a local
+  # without initialization instructions.
+  def foo(a)
+    if false
+      x = nil
+    end
+    x
+  end
+  def test = foo(1)
+  test
+  test
 }

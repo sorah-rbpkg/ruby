@@ -3425,6 +3425,7 @@ compile.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 compile.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 compile.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 compile.$(OBJEXT): $(top_srcdir)/prism_compile.c
+compile.$(OBJEXT): $(top_srcdir)/version.h
 compile.$(OBJEXT): {$(VPATH)}assert.h
 compile.$(OBJEXT): {$(VPATH)}atomic.h
 compile.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -3618,6 +3619,7 @@ compile.$(OBJEXT): {$(VPATH)}prism_compile.h
 compile.$(OBJEXT): {$(VPATH)}ractor.h
 compile.$(OBJEXT): {$(VPATH)}re.h
 compile.$(OBJEXT): {$(VPATH)}regex.h
+compile.$(OBJEXT): {$(VPATH)}revision.h
 compile.$(OBJEXT): {$(VPATH)}ruby_assert.h
 compile.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 compile.$(OBJEXT): {$(VPATH)}rubyparser.h
@@ -16573,6 +16575,7 @@ scheduler.$(OBJEXT): {$(VPATH)}config.h
 scheduler.$(OBJEXT): {$(VPATH)}constant.h
 scheduler.$(OBJEXT): {$(VPATH)}defines.h
 scheduler.$(OBJEXT): {$(VPATH)}encoding.h
+scheduler.$(OBJEXT): {$(VPATH)}eval_intern.h
 scheduler.$(OBJEXT): {$(VPATH)}fiber/scheduler.h
 scheduler.$(OBJEXT): {$(VPATH)}id.h
 scheduler.$(OBJEXT): {$(VPATH)}id_table.h

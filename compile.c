@@ -3132,6 +3132,25 @@ is_frozen_putstring(INSN *insn, VALUE *op)
 }
 
 static int
+insn_has_label_before(LINK_ELEMENT *elem)
+{
+    LINK_ELEMENT *prev = elem->prev;
+    while (prev) {
+        if (prev->type == ISEQ_ELEMENT_LABEL) {
+            LABEL *label = (LABEL *)prev;
+            if (label->refcnt > 0) {
+                return 1;
+            }
+        }
+        else if (prev->type == ISEQ_ELEMENT_INSN) {
+            break;
+        }
+        prev = prev->prev;
+    }
+    return 0;
+}
+
+static int
 optimize_checktype(rb_iseq_t *iseq, INSN *iobj)
 {
     /*
@@ -3376,7 +3395,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
         if ((end = (INSN *)get_prev_insn(range)) != 0 &&
                 is_frozen_putstring(end, &str_end) &&
                 (beg = (INSN *)get_prev_insn(end)) != 0 &&
-                is_frozen_putstring(beg, &str_beg)) {
+                is_frozen_putstring(beg, &str_beg) &&
+                !(insn_has_label_before(&beg->link) || insn_has_label_before(&end->link))) {
             int excl = FIX2INT(OPERAND_AT(range, 0));
             VALUE lit_range = rb_range_new(str_beg, str_end, excl);
 
@@ -3476,7 +3496,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 iobj->insn_id = BIN(opt_ary_freeze);
                 iobj->operand_size = 2;
                 iobj->operands = compile_data_calloc2(iseq, iobj->operand_size, sizeof(VALUE));
-                iobj->operands[0] = rb_cArray_empty_frozen;
+                RB_OBJ_WRITE(iseq, &iobj->operands[0], rb_cArray_empty_frozen);
                 iobj->operands[1] = (VALUE)ci;
                 ELEM_REMOVE(next);
             }
@@ -3499,7 +3519,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 iobj->insn_id = BIN(opt_hash_freeze);
                 iobj->operand_size = 2;
                 iobj->operands = compile_data_calloc2(iseq, iobj->operand_size, sizeof(VALUE));
-                iobj->operands[0] = rb_cHash_empty_frozen;
+                RB_OBJ_WRITE(iseq, &iobj->operands[0], rb_cHash_empty_frozen);
                 iobj->operands[1] = (VALUE)ci;
                 ELEM_REMOVE(next);
             }
@@ -4059,7 +4079,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 unsigned int flags = vm_ci_flag(ci);
                 if ((flags & set_flags) == set_flags && !(flags & unset_flags)) {
                     ((INSN*)niobj)->insn_id = BIN(putobject);
-                    OPERAND_AT(niobj, 0) = rb_hash_freeze(rb_hash_resurrect(OPERAND_AT(niobj, 0)));
+                    RB_OBJ_WRITE(iseq, &OPERAND_AT(niobj, 0), rb_hash_freeze(rb_hash_resurrect(OPERAND_AT(niobj, 0))));
 
                     const struct rb_callinfo *nci = vm_ci_new(vm_ci_mid(ci),
                         flags & ~VM_CALL_KW_SPLAT_MUT, vm_ci_argc(ci), vm_ci_kwarg(ci));
@@ -9151,12 +9171,13 @@ compile_builtin_mandatory_only_method(rb_iseq_t *iseq, const NODE *node, const N
 
     VALUE ast_value = rb_ruby_ast_new(RNODE(&scope_node));
 
-    ISEQ_BODY(iseq)->mandatory_only_iseq =
+    const rb_iseq_t *mandatory_only_iseq =
       rb_iseq_new_with_opt(ast_value, rb_iseq_base_label(iseq),
                            rb_iseq_path(iseq), rb_iseq_realpath(iseq),
                            nd_line(line_node), NULL, 0,
                            ISEQ_TYPE_METHOD, ISEQ_COMPILE_DATA(iseq)->option,
                            ISEQ_BODY(iseq)->variable.script_lines);
+    RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->mandatory_only_iseq, (VALUE)mandatory_only_iseq);
 
     ALLOCV_END(idtmp);
     return COMPILE_OK;
@@ -13141,7 +13162,7 @@ ibf_dump_catch_table(struct ibf_dump *dump, const rb_iseq_t *iseq)
 }
 
 static struct iseq_catch_table *
-ibf_load_catch_table(const struct ibf_load *load, ibf_offset_t catch_table_offset, unsigned int size)
+ibf_load_catch_table(const struct ibf_load *load, ibf_offset_t catch_table_offset, unsigned int size, const rb_iseq_t *parent_iseq)
 {
     if (size) {
         struct iseq_catch_table *table = ruby_xmalloc(iseq_catch_table_bytes(size));
@@ -13158,7 +13179,8 @@ ibf_load_catch_table(const struct ibf_load *load, ibf_offset_t catch_table_offse
             table->entries[i].cont = (unsigned int)ibf_load_small_value(load, &reading_pos);
             table->entries[i].sp = (unsigned int)ibf_load_small_value(load, &reading_pos);
 
-            table->entries[i].iseq = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)iseq_index);
+            rb_iseq_t *catch_iseq = (rb_iseq_t *)ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)iseq_index);
+            RB_OBJ_WRITE(parent_iseq, UNALIGNED_MEMBER_PTR(&table->entries[i], iseq), catch_iseq);
         }
         return table;
     }
@@ -13234,6 +13256,13 @@ outer_variable_cmp(const void *a, const void *b, void *arg)
 {
     const struct outer_variable_pair *ap = (const struct outer_variable_pair *)a;
     const struct outer_variable_pair *bp = (const struct outer_variable_pair *)b;
+
+    if (!ap->name) {
+        return -1;
+    } else if (!bp->name) {
+        return 1;
+    }
+
     return rb_str_cmp(ap->name, bp->name);
 }
 
@@ -13663,10 +13692,14 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->insns_info.body      = ibf_load_insns_info_body(load, insns_info_body_offset, insns_info_size);
     load_body->insns_info.positions = ibf_load_insns_info_positions(load, insns_info_positions_offset, insns_info_size);
     load_body->local_table          = ibf_load_local_table(load, local_table_offset, local_table_size);
-    load_body->catch_table          = ibf_load_catch_table(load, catch_table_offset, catch_table_size);
-    load_body->parent_iseq          = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)parent_iseq_index);
-    load_body->local_iseq           = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)local_iseq_index);
-    load_body->mandatory_only_iseq  = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)mandatory_only_iseq_index);
+    load_body->catch_table          = ibf_load_catch_table(load, catch_table_offset, catch_table_size, iseq);
+    const rb_iseq_t *parent_iseq = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)parent_iseq_index);
+    const rb_iseq_t *local_iseq = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)local_iseq_index);
+    const rb_iseq_t *mandatory_only_iseq = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)mandatory_only_iseq_index);
+
+    RB_OBJ_WRITE(iseq, &load_body->parent_iseq, parent_iseq);
+    RB_OBJ_WRITE(iseq, &load_body->local_iseq, local_iseq);
+    RB_OBJ_WRITE(iseq, &load_body->mandatory_only_iseq, mandatory_only_iseq);
 
     // This must be done after the local table is loaded.
     if (load_body->param.keyword != NULL) {
@@ -13896,8 +13929,10 @@ ibf_dump_object_float(struct ibf_dump *dump, VALUE obj)
 static VALUE
 ibf_load_object_float(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    const double *dblp = IBF_OBJBODY(double, offset);
-    return DBL2NUM(*dblp);
+    double d;
+    /* Avoid unaligned VFP load on ARMv7; IBF payload may be unaligned (C99 6.3.2.3 p7). */
+    memcpy(&d, IBF_OBJBODY(double, offset), sizeof(d));
+    return DBL2NUM(d);
 }
 
 static void
