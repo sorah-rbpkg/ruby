@@ -1757,6 +1757,7 @@ libruby-3.4.so.3.4 libruby3.4 #MINVER#
  ruby_init_loadpath@Base 3.4.0~preview1
  ruby_init_setproctitle@Base 3.4.0~preview1
  ruby_init_stack@Base 3.4.0~preview1
+ ruby_malloc_add_size_overflow@Base 3.4.9
  ruby_malloc_size_overflow@Base 3.4.0~preview1
  ruby_native_thread_p@Base 3.4.0~preview1
  ruby_node_name@Base 3.4.0~preview1
