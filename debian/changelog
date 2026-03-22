@@ -1,3 +1,12 @@
+ruby3.4 (3.4.9-1~exp1) UNRELEASED; urgency=medium
+
+  * New upstream version 3.4.9
+  * Add ruby_malloc_add_size_overflow@Base to symbols file
+  * d/tests/control: replace pkg-config dependency by pkgconf
+  * Remove unused source lintian overrides
+
+ -- Cédric Boutillier <boutil@debian.org>  Sun, 22 Mar 2026 23:41:44 +0100
+
 ruby3.4 (3.4.5-1~exp1) experimental; urgency=medium
 
   [ Lucas Kanashiro ]
