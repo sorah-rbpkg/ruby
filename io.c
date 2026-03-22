@@ -8087,7 +8087,12 @@ ruby_popen_writer(char *const *argv, rb_pid_t *pid)
     int write_pair[2];
 # endif
 
-    int result = rb_cloexec_pipe(write_pair);
+#ifdef HAVE_PIPE2
+    int result = pipe2(write_pair, O_CLOEXEC);
+#else
+    int result = pipe(write_pair);
+#endif
+
     *pid = -1;
     if (result == 0) {
 # ifdef HAVE_WORKING_FORK
@@ -9785,7 +9790,7 @@ io_wait_readable(int argc, VALUE *argv, VALUE io)
     rb_io_t *fptr;
 
     RB_IO_POINTER(io, fptr);
-    rb_io_check_readable(fptr);
+    rb_io_check_char_readable(fptr);
 
     if (rb_io_read_pending(fptr)) return Qtrue;
 
@@ -9832,7 +9837,7 @@ io_wait_priority(int argc, VALUE *argv, VALUE io)
     rb_io_t *fptr = NULL;
 
     RB_IO_POINTER(io, fptr);
-    rb_io_check_readable(fptr);
+    rb_io_check_char_readable(fptr);
 
     if (rb_io_read_pending(fptr)) return Qtrue;
 

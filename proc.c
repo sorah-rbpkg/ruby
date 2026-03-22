@@ -1844,6 +1844,8 @@ method_eq(VALUE method, VALUE other)
 
     klass1 = method_entry_defined_class(m1->me);
     klass2 = method_entry_defined_class(m2->me);
+    if (RB_TYPE_P(klass1, T_ICLASS)) klass1 = RBASIC_CLASS(klass1);
+    if (RB_TYPE_P(klass2, T_ICLASS)) klass2 = RBASIC_CLASS(klass2);
 
     if (!rb_method_entry_eq(m1->me, m2->me) ||
         klass1 != klass2 ||
@@ -3958,12 +3960,13 @@ proc_ruby2_keywords(VALUE procval)
     switch (proc->block.type) {
       case block_type_iseq:
         if (ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_rest &&
+                !ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_post &&
                 !ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_kw &&
                 !ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_kwrest) {
             ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.ruby2_keywords = 1;
         }
         else {
-            rb_warn("Skipping set of ruby2_keywords flag for proc (proc accepts keywords or proc does not accept argument splat)");
+            rb_warn("Skipping set of ruby2_keywords flag for proc (proc accepts keywords or post arguments or proc does not accept argument splat)");
         }
         break;
       default:

@@ -5512,9 +5512,9 @@ static const struct {
     RBIMPL_ATTR_NONSTRING() char L620[503]; /* 621..719 */
     RBIMPL_ATTR_NONSTRING() char L719[486]; /* 720..768 */
     RBIMPL_ATTR_NONSTRING() char L768[488]; /* 769..840 */
-    RBIMPL_ATTR_NONSTRING() char L840[498]; /* 841..886 */
-    RBIMPL_ATTR_NONSTRING() char L886[499]; /* 887..914 */
-    RBIMPL_ATTR_NONSTRING() char L914[38]; /* 915..920 */
+    RBIMPL_ATTR_NONSTRING() char L840[504]; /* 841..883 */
+    RBIMPL_ATTR_NONSTRING() char L883[474]; /* 884..913 */
+    RBIMPL_ATTR_NONSTRING() char L913[88]; /* 914..921 */
 } prelude_code14 = {
 #line 1 "ractor.rb"
 ""/* \\Ractor is an Actor-model abstraction for Ruby that provides thread-safe parallel execution. */
@@ -6405,6 +6405,7 @@ static const struct {
 "\n"/*   }.map(&:value).uniq.size #=> 1 and f() is called only once */
 "\n"/*  */
 "  def self.store_if_absent(sym)\n"
+"    Primitive.attr! :use_block\n"
 "    Primitive.ractor_local_value_store_if_absent(sym)\n"
 "  end\n"
 "\n"
@@ -6413,12 +6414,12 @@ static const struct {
 "    __builtin_cexpr! %q{\n"
 "      rb_ractor_self(GET_VM()->ractor.main_ractor);\n"
 "    }\n"
+,
+#line 884 "ractor.rb"
 "  end\n"
 "\n"
 "\n"/* return true if the current ractor is main ractor */
 "  def self.main?\n"
-,
-#line 887 "ractor.rb"
 "    __builtin_cexpr! %q{\n"
 "      RBOOL(GET_VM()->ractor.main_ractor == rb_ec_ractor_ptr(ec))\n"
 "    }\n"
@@ -6445,16 +6446,16 @@ static const struct {
 "          if Ractor.main?\n"
 "            super\n"
 "          else\n"
+,
+#line 914 "ractor.rb"
 "            Ractor._require feature\n"
 "          end\n"
-,
-#line 915 "ractor.rb"
 "        end\n"
 "      }\n"
 "    end\n"
 "  end\n"
 "end\n"
-#line 6458 "miniprelude.c"
+#line 6459 "miniprelude.c"
 };
 
 static const char prelude_name15[] = "<internal:symbol>";
@@ -6504,7 +6505,7 @@ static const struct {
 "\n"
 "  alias intern to_sym\n"
 "end\n"
-#line 6508 "miniprelude.c"
+#line 6509 "miniprelude.c"
 };
 
 static const char prelude_name16[] = "<internal:timev>";
@@ -6972,7 +6973,7 @@ static const struct {
 "    Primitive.time_init_args(year, mon, mday, hour, min, sec, zone)\n"
 "  end\n"
 "end\n"
-#line 6976 "miniprelude.c"
+#line 6977 "miniprelude.c"
 };
 
 static const char prelude_name17[] = "<internal:thread_sync>";
@@ -7051,7 +7052,7 @@ static const struct {
 "    alias_method :<<, :push\n"
 "  end\n"
 "end\n"
-#line 7055 "miniprelude.c"
+#line 7056 "miniprelude.c"
 };
 
 static const char prelude_name18[] = "<internal:nilclass>";
@@ -7084,7 +7085,7 @@ static const struct {
 "    return 0.0\n"
 "  end\n"
 "end\n"
-#line 7088 "miniprelude.c"
+#line 7089 "miniprelude.c"
 };
 
 static const char prelude_name19[] = "<internal:prelude>";
@@ -7123,7 +7124,7 @@ static const struct {
 "    klass.new(self, *args, &block)\n"
 "  end unless instance_methods.include?(:to_set)\n"/* RJIT could already load this from builtin prelude */
 "end\n"
-#line 7127 "miniprelude.c"
+#line 7128 "miniprelude.c"
 };
 
 static const char prelude_name20[] = "<internal:gem_prelude>";
@@ -7162,7 +7163,7 @@ static const struct {
 "  warn \"`syntax_suggest' was not loaded.\"\n"
 "end if defined?(SyntaxSuggest)\n"
 "\n"
-#line 7166 "miniprelude.c"
+#line 7167 "miniprelude.c"
 };
 
 static const char prelude_name21[] = "<internal:yjit>";
@@ -7816,7 +7817,7 @@ static const struct {
 "\n"/* :startdoc: */
 "  end\n"
 "end\n"
-#line 7820 "miniprelude.c"
+#line 7821 "miniprelude.c"
 };
 
 static const char prelude_name22[] = "<internal:yjit_hook>";
@@ -7833,7 +7834,7 @@ static const struct {
 "class Module\n"
 "  undef :with_yjit\n"
 "end\n"
-#line 7837 "miniprelude.c"
+#line 7838 "miniprelude.c"
 };
 
 COMPILER_WARNING_POP

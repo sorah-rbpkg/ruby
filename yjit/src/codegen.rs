@@ -821,11 +821,11 @@ fn gen_stub_exit(ocb: &mut OutlinedCb) -> Option<CodePtr> {
 
 /// Generate an exit to return to the interpreter
 fn gen_exit(exit_pc: *mut VALUE, asm: &mut Assembler) {
-    #[cfg(all(feature = "disasm", not(test)))]
-    {
+    #[cfg(not(test))]
+    asm_comment!(asm, "exit to interpreter on {}", {
         let opcode = unsafe { rb_vm_insn_addr2opcode((*exit_pc).as_ptr()) };
-        asm_comment!(asm, "exit to interpreter on {}", insn_name(opcode as usize));
-    }
+        insn_name(opcode as usize)
+    });
 
     if asm.ctx.is_return_landing() {
         asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
@@ -1094,11 +1094,7 @@ pub fn gen_entry_prologue(
     let code_ptr = cb.get_write_ptr();
 
     let mut asm = Assembler::new(unsafe { get_iseq_body_local_table_size(iseq) });
-    if get_option_ref!(dump_disasm).is_some() {
-        asm_comment!(asm, "YJIT entry point: {}", iseq_get_location(iseq, 0));
-    } else {
-        asm_comment!(asm, "YJIT entry");
-    }
+    asm_comment!(asm, "YJIT entry point: {}", iseq_get_location(iseq, 0));
 
     asm.frame_setup();
 
@@ -1296,7 +1292,6 @@ pub fn gen_single_block(
     let mut asm = Assembler::new(jit.num_locals());
     asm.ctx = ctx;
 
-    #[cfg(feature = "disasm")]
     if get_option_ref!(dump_disasm).is_some() {
         let blockid_idx = blockid.idx;
         let chain_depth = if asm.ctx.get_chain_depth() > 0 { format!("(chain_depth: {})", asm.ctx.get_chain_depth()) } else { "".to_string() };
@@ -2263,7 +2258,8 @@ fn gen_expandarray(
 
     let comptime_recv = jit.peek_at_stack(&asm.ctx, 0);
 
-    // If the comptime receiver is not an array
+    // If the comptime receiver is not an array, speculate for when the `rb_check_array_type()`
+    // conversion returns nil and without side-effects (e.g. arbitrary method calls).
     if !unsafe { RB_TYPE_P(comptime_recv, RUBY_T_ARRAY) } {
         // at compile time, ensure to_ary is not defined
         let target_cme = unsafe { rb_callable_method_entry_or_negative(comptime_recv.class_of(), ID!(to_ary)) };
@@ -2275,13 +2271,19 @@ fn gen_expandarray(
             return None;
         }
 
+        // Bail when method_missing is defined to avoid generating code to call it.
+        // Also, for simplicity, bail when BasicObject#method_missing has been removed.
+        if !assume_method_basic_definition(jit, asm, comptime_recv.class_of(), ID!(method_missing)) {
+            gen_counter_incr(jit, asm, Counter::expandarray_method_missing);
+            return None;
+        }
+
         // invalidate compile block if to_ary is later defined
         jit.assume_method_lookup_stable(asm, target_cme);
 
         jit_guard_known_klass(
             jit,
             asm,
-            comptime_recv.class_of(),
             array_opnd,
             array_opnd.into(),
             comptime_recv,
@@ -2516,6 +2518,7 @@ fn gen_setlocal_generic(
     ep_offset: u32,
     level: u32,
 ) -> Option<CodegenStatus> {
+    // Post condition: The type of of the set local is updated in the Context.
     let value_type = asm.ctx.get_opnd_type(StackOpnd(0));
 
     // Fallback because of write barrier
@@ -2537,6 +2540,11 @@ fn gen_setlocal_generic(
         );
         asm.stack_pop(1);
 
+        // Set local type in the context
+        if level == 0 {
+            let local_idx = ep_offset_to_local_idx(jit.get_iseq(), ep_offset).as_usize();
+            asm.ctx.set_local_type(local_idx, value_type);
+        }
         return Some(KeepCompiling);
     }
 
@@ -2589,6 +2597,7 @@ fn gen_setlocal_generic(
         );
     }
 
+    // Set local type in the context
     if level == 0 {
         let local_idx = ep_offset_to_local_idx(jit.get_iseq(), ep_offset).as_usize();
         asm.ctx.set_local_type(local_idx, value_type);
@@ -3696,7 +3705,6 @@ fn gen_equality_specialized(
         jit_guard_known_klass(
             jit,
             asm,
-            unsafe { rb_cString },
             a_opnd,
             a_opnd.into(),
             comptime_a,
@@ -3722,7 +3730,6 @@ fn gen_equality_specialized(
             jit_guard_known_klass(
                 jit,
                 asm,
-                unsafe { rb_cString },
                 b_opnd,
                 b_opnd.into(),
                 comptime_b,
@@ -3819,7 +3826,6 @@ fn gen_opt_aref(
         jit_guard_known_klass(
             jit,
             asm,
-            unsafe { rb_cArray },
             recv_opnd,
             recv_opnd.into(),
             comptime_recv,
@@ -3859,7 +3865,6 @@ fn gen_opt_aref(
         jit_guard_known_klass(
             jit,
             asm,
-            unsafe { rb_cHash },
             recv_opnd,
             recv_opnd.into(),
             comptime_recv,
@@ -3912,7 +3917,6 @@ fn gen_opt_aset(
         jit_guard_known_klass(
             jit,
             asm,
-            unsafe { rb_cArray },
             recv,
             recv.into(),
             comptime_recv,
@@ -3924,7 +3928,6 @@ fn gen_opt_aset(
         jit_guard_known_klass(
             jit,
             asm,
-            unsafe { rb_cInteger },
             key,
             key.into(),
             comptime_key,
@@ -3957,7 +3960,6 @@ fn gen_opt_aset(
         jit_guard_known_klass(
             jit,
             asm,
-            unsafe { rb_cHash },
             recv,
             recv.into(),
             comptime_recv,
@@ -4916,13 +4918,13 @@ fn gen_jump(
 fn jit_guard_known_klass(
     jit: &mut JITState,
     asm: &mut Assembler,
-    known_klass: VALUE,
     obj_opnd: Opnd,
     insn_opnd: YARVOpnd,
     sample_instance: VALUE,
     max_chain_depth: u8,
     counter: Counter,
 ) {
+    let known_klass = sample_instance.class_of();
     let val_type = asm.ctx.get_opnd_type(insn_opnd);
 
     if val_type.known_class() == Some(known_klass) {
@@ -5028,7 +5030,7 @@ fn jit_guard_known_klass(
             assert_eq!(sample_instance.class_of(), rb_cString, "context says class is exactly ::String")
         };
     } else {
-        assert!(!val_type.is_imm());
+        assert!(!val_type.is_imm(), "{insn_opnd:?} should be a heap object, but was {val_type:?} for {sample_instance:?}");
 
         // Check that the receiver is a heap object
         // Note: if we get here, the class doesn't have immediate instances.
@@ -5672,7 +5674,6 @@ fn jit_rb_float_plus(
         jit_guard_known_klass(
             jit,
             asm,
-            comptime_obj.class_of(),
             obj,
             obj.into(),
             comptime_obj,
@@ -5714,7 +5715,6 @@ fn jit_rb_float_minus(
         jit_guard_known_klass(
             jit,
             asm,
-            comptime_obj.class_of(),
             obj,
             obj.into(),
             comptime_obj,
@@ -5756,7 +5756,6 @@ fn jit_rb_float_mul(
         jit_guard_known_klass(
             jit,
             asm,
-            comptime_obj.class_of(),
             obj,
             obj.into(),
             comptime_obj,
@@ -5798,7 +5797,6 @@ fn jit_rb_float_div(
         jit_guard_known_klass(
             jit,
             asm,
-            comptime_obj.class_of(),
             obj,
             obj.into(),
             comptime_obj,
@@ -6062,7 +6060,6 @@ fn jit_rb_str_getbyte(
         jit_guard_known_klass(
             jit,
             asm,
-            comptime_idx.class_of(),
             idx,
             idx.into(),
             comptime_idx,
@@ -6180,15 +6177,17 @@ fn jit_rb_str_dup(
     jit_prepare_call_with_gc(jit, asm);
 
     // Check !FL_ANY_RAW(str, FL_EXIVAR), which is part of BARE_STRING_P.
-    let recv_opnd = asm.stack_pop(1);
+    let recv_opnd = asm.stack_opnd(0);
     let recv_opnd = asm.load(recv_opnd);
     let flags_opnd = Opnd::mem(64, recv_opnd, RUBY_OFFSET_RBASIC_FLAGS);
     asm.test(flags_opnd, Opnd::Imm(RUBY_FL_EXIVAR as i64));
     asm.jnz(Target::side_exit(Counter::send_str_dup_exivar));
 
     // Call rb_str_dup
-    let stack_ret = asm.stack_push(Type::CString);
     let ret_opnd = asm.ccall(rb_str_dup as *const u8, vec![recv_opnd]);
+
+    asm.stack_pop(1);
+    let stack_ret = asm.stack_push(Type::CString);
     asm.mov(stack_ret, ret_opnd);
 
     true
@@ -6559,16 +6558,24 @@ fn gen_block_given(
 ) {
     asm_comment!(asm, "block_given?");
 
-    // Same as rb_vm_frame_block_handler
-    let ep_opnd = gen_get_lep(jit, asm);
-    let block_handler = asm.load(
-        Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
-    );
+    // `yield` goes to the block handler stowed in the "local" iseq which is
+    // the current iseq or a parent. Only the "method" iseq type can be passed a
+    // block handler. (e.g. `yield` in the top level script is a syntax error.)
+    let local_iseq = unsafe { rb_get_iseq_body_local_iseq(jit.iseq) };
+    if unsafe { rb_get_iseq_body_type(local_iseq) } == ISEQ_TYPE_METHOD {
+        // Same as rb_vm_frame_block_handler
+        let ep_opnd = gen_get_lep(jit, asm);
+        let block_handler = asm.load(
+            Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
+        );
 
-    // Return `block_handler != VM_BLOCK_HANDLER_NONE`
-    asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
-    let block_given = asm.csel_ne(true_opnd, false_opnd);
-    asm.mov(out_opnd, block_given);
+        // Return `block_handler != VM_BLOCK_HANDLER_NONE`
+        asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
+        let block_given = asm.csel_ne(true_opnd, false_opnd);
+        asm.mov(out_opnd, block_given);
+    } else {
+        asm.mov(out_opnd, false_opnd);
+    }
 }
 
 // Codegen for rb_class_superclass()
@@ -7403,7 +7410,7 @@ enum IseqReturn {
     Receiver,
 }
 
-extern {
+extern "C" {
     fn rb_simple_iseq_p(iseq: IseqPtr) -> bool;
     fn rb_iseq_only_kwparam_p(iseq: IseqPtr) -> bool;
 }
@@ -7447,6 +7454,12 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<Opnd>, block: Opti
 
             let ep_offset = unsafe { *rb_iseq_pc_at_idx(iseq, 1) }.as_u32();
             let local_idx = ep_offset_to_local_idx(iseq, ep_offset);
+
+            // Only inline getlocal on a parameter. DCE in the IESQ builder can
+            // make a two-instruction ISEQ that does not return a parameter.
+            if local_idx >= unsafe { get_iseq_body_param_size(iseq) } {
+                return None;
+            }
 
             if unsafe { rb_simple_iseq_p(iseq) } {
                 return Some(IseqReturn::LocalVariable(local_idx));
@@ -7870,6 +7883,11 @@ fn gen_send_iseq(
             if callee_specval < 0 {
                 // Can't write to sp[-n] since that's where the arguments are
                 gen_counter_incr(jit, asm, Counter::send_iseq_clobbering_block_arg);
+                return None;
+            }
+            if iseq_has_rest || has_kwrest {
+                // The proc would be stored above the current stack top, where GC can't see it
+                gen_counter_incr(jit, asm, Counter::send_iseq_block_arg_gc_unsafe);
                 return None;
             }
             let proc = asm.stack_pop(1); // Pop first, as argc doesn't account for the block arg
@@ -9048,7 +9066,6 @@ fn gen_send_general(
     let recv_opnd: YARVOpnd = recv.into();
 
     // Log the name of the method we're calling to
-    #[cfg(feature = "disasm")]
     asm_comment!(asm, "call to {}", get_method_name(Some(comptime_recv_klass), mid));
 
     // Gather some statistics about sends
@@ -9068,7 +9085,6 @@ fn gen_send_general(
     perf_call!("gen_send_general: ", jit_guard_known_klass(
         jit,
         asm,
-        comptime_recv_klass,
         recv,
         recv_opnd,
         comptime_recv,
@@ -9982,7 +9998,6 @@ fn gen_objtostring(
         jit_guard_known_klass(
             jit,
             asm,
-            comptime_recv.class_of(),
             recv,
             recv.into(),
             comptime_recv,
@@ -9996,7 +10011,6 @@ fn gen_objtostring(
         jit_guard_known_klass(
             jit,
             asm,
-            comptime_recv.class_of(),
             recv,
             recv.into(),
             comptime_recv,
