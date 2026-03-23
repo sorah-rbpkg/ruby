@@ -1,4 +1,4 @@
-ruby3.4 (3.4.9-1~exp1) UNRELEASED; urgency=medium
+ruby3.4 (3.4.9-1~exp1) experimental; urgency=medium
 
   * New upstream version 3.4.9
   * Add ruby_malloc_add_size_overflow@Base to symbols file
