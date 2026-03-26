@@ -1,0 +1,39 @@
+From: Yusuke Endoh <mame@ruby-lang.org>
+Date: Fri, 28 Mar 2025 13:34:32 +0900
+Subject: Remove test_retry_workers
+
+The test fails randomly for unknown reason.
+
+https://github.com/ruby/ruby/actions/runs/14121674932/job/39562945096?pr=12993
+```
+    1) Error:
+  TestParallel::TestParallel#test_retry_workers:
+  Test::Unit::ProxyError: execution expired (start: 2025-03-28 04:04:10 +0000, end: 2025-03-28 04:05:50 +0000)
+      /home/runner/work/ruby/ruby/src/tool/test/testunit/test_parallel.rb:16:in 'TestParallel.timeout'
+      /home/runner/work/ruby/ruby/src/tool/test/testunit/test_parallel.rb:225:in 'TestParallel::TestParallel#test_retry_workers'
+```
+
+Maybe the workers do not respond "quit" request.
+
+We no longer use the retry mechanism, so just remove the test.
+---
+ tool/test/testunit/test_parallel.rb | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/tool/test/testunit/test_parallel.rb b/tool/test/testunit/test_parallel.rb
+index 371e852..735ecdc 100644
+--- a/tool/test/testunit/test_parallel.rb
++++ b/tool/test/testunit/test_parallel.rb
+@@ -211,12 +211,5 @@ module TestParallel
+       assert_match(/^Retrying hung up testcases\.+$/, buf)
+       assert_match(/^2 tests,.* 0 failures,/, buf)
+     end
+-
+-    def test_retry_workers
+-      spawn_runner "--worker-timeout=1", "test4test_slow_0.rb", "test4test_slow_1.rb", jobs: "2"
+-      buf = Timeout.timeout(TIMEOUT) {@test_out.read}
+-      assert_match(/^Retrying hung up testcases\.+$/, buf)
+-      assert_match(/^2 tests,.* 0 failures,/, buf)
+-    end
+   end
+ end

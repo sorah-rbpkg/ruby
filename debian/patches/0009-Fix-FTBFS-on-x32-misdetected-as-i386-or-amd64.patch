@@ -12,7 +12,7 @@ Updated by John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de> on
  1 file changed, 3 insertions(+)
 
 diff --git a/configure.ac b/configure.ac
-index fced42e..b24646e 100644
+index 71f6b6c..501ed10 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -2688,6 +2688,9 @@ AS_CASE([$coroutine_type], [yes|''], [

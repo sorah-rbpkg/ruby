@@ -26,10 +26,10 @@ index 0d818d0..b4467f3 100644
      defined(__APPLE__) || \
      defined(_WIN32) || \
 diff --git a/ext/socket/raddrinfo.c b/ext/socket/raddrinfo.c
-index 4ca3093..373cfe1 100644
+index fb96e28..ffc1592 100644
 --- a/ext/socket/raddrinfo.c
 +++ b/ext/socket/raddrinfo.c
-@@ -2138,10 +2138,21 @@ addrinfo_mload(VALUE self, VALUE ary)
+@@ -2184,10 +2184,21 @@ addrinfo_mload(VALUE self, VALUE ary)
          INIT_SOCKADDR_UN(&uaddr, sizeof(struct sockaddr_un));
  
          StringValue(v);
@@ -51,7 +51,7 @@ index 4ca3093..373cfe1 100644
          memcpy(uaddr.sun_path, RSTRING_PTR(v), RSTRING_LEN(v));
          len = (socklen_t)sizeof(uaddr);
          memcpy(&ss, &uaddr, len);
-@@ -2785,10 +2796,21 @@ addrinfo_unix_path(VALUE self)
+@@ -2831,10 +2842,21 @@ addrinfo_unix_path(VALUE self)
      if (n < 0)
          rb_raise(rb_eSocket, "too short AF_UNIX address: %"PRIuSIZE" bytes given for minimum %"PRIuSIZE" bytes.",
                   (size_t)rai->sockaddr_len, offsetof(struct sockaddr_un, sun_path));
