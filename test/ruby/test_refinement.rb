@@ -1939,6 +1939,29 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_public_in_refine_for_method_in_superclass
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      bug21446 = '[ruby-core:122558] [Bug #21446]'
+
+      class CowSuper
+        private
+        def moo() "Moo"; end
+      end
+      class Cow < CowSuper
+      end
+
+      module PublicCows
+        refine(Cow) {
+          public :moo
+        }
+      end
+
+      using PublicCows
+      assert_equal("Moo", Cow.new.moo, bug21446)
+    end;
+  end
+
   module SuperToModule
     class Parent
     end
@@ -2687,6 +2710,18 @@ class TestRefinement < Test::Unit::TestCase
       def foo = :v2 # invalidate
     end
     assert_equal(:v2, obj.cached_foo_callsite)
+  end
+
+  def test_refined_module_method
+    m = Module.new {
+      x = Module.new {def qux;end}
+      refine(x) {def qux;end}
+      break x
+    }
+    extend m
+    meth = method(:qux)
+    assert_equal m, meth.owner
+    assert_equal :qux, meth.name
   end
 
   private
