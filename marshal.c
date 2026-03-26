@@ -1199,7 +1199,7 @@ io_needed(void)
  * * anonymous Class/Module.
  * * objects which are related to system (ex: Dir, File::Stat, IO, File, Socket
  *   and so on)
- * * an instance of MatchData, Data, Method, UnboundMethod, Proc, Thread,
+ * * an instance of MatchData, Method, UnboundMethod, Proc, Thread,
  *   ThreadGroup, Continuation
  * * objects which define singleton methods
  */
@@ -1880,6 +1880,9 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
         }
         v = (VALUE)link;
         if (!st_lookup(arg->partial_objects, (st_data_t)v, &link)) {
+            if (arg->freeze && RB_TYPE_P(v, T_STRING)) {
+                v = rb_str_to_interned_str(v);
+            }
             v = r_post_proc(v, arg);
         }
         break;
