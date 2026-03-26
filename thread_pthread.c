@@ -1295,7 +1295,7 @@ rb_ractor_sched_sleep(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fu
 {
     // ractor lock of cr is acquired
     // r is sleeping statuss
-    rb_thread_t *th = rb_ec_thread_ptr(ec);
+    rb_thread_t * volatile th = rb_ec_thread_ptr(ec);
     struct rb_thread_sched *sched = TH_SCHED(th);
     cr->sync.wait.waiting_thread = th; // TODO: multi-thread
 
@@ -1514,6 +1514,8 @@ get_native_thread_id(void)
 #endif
 
 #if defined(HAVE_WORKING_FORK)
+void rb_internal_thread_event_hooks_rw_lock_atfork(void);
+
 static void
 thread_sched_atfork(struct rb_thread_sched *sched)
 {
@@ -1531,6 +1533,11 @@ thread_sched_atfork(struct rb_thread_sched *sched)
     vm->ractor.sched.running_cnt = 0;
 
     rb_native_mutex_initialize(&vm->ractor.sched.lock);
+#if VM_CHECK_MODE > 0
+    vm->ractor.sched.lock_owner = NULL;
+    vm->ractor.sched.locked = false;
+#endif
+
     // rb_native_cond_destroy(&vm->ractor.sched.cond);
     rb_native_cond_initialize(&vm->ractor.sched.cond);
     rb_native_cond_initialize(&vm->ractor.sched.barrier_complete_cond);
@@ -1539,6 +1546,8 @@ thread_sched_atfork(struct rb_thread_sched *sched)
     ccan_list_head_init(&vm->ractor.sched.grq);
     ccan_list_head_init(&vm->ractor.sched.timeslice_threads);
     ccan_list_head_init(&vm->ractor.sched.running_threads);
+
+    rb_internal_thread_event_hooks_rw_lock_atfork();
 
     VM_ASSERT(sched->is_running);
     sched->is_running_timeslice = false;
@@ -2821,6 +2830,17 @@ static void timer_thread_wakeup_thread(rb_thread_t *th);
 
 #include "thread_pthread_mn.c"
 
+static rb_thread_t *
+thread_sched_waiting_thread(struct rb_thread_sched_waiting *w)
+{
+    if (w) {
+        return (rb_thread_t *)((size_t)w - offsetof(rb_thread_t, sched.waiting_reason));
+    }
+    else {
+        return NULL;
+    }
+}
+
 static int
 timer_thread_set_timeout(rb_vm_t *vm)
 {
@@ -2850,22 +2870,29 @@ timer_thread_set_timeout(rb_vm_t *vm)
     }
     ractor_sched_unlock(vm, NULL);
 
-    if (vm->ractor.sched.timeslice_wait_inf) {
-        rb_native_mutex_lock(&timer_th.waiting_lock);
-        {
-            rb_thread_t *th = ccan_list_top(&timer_th.waiting, rb_thread_t, sched.waiting_reason.node);
-            if (th && (th->sched.waiting_reason.flags & thread_sched_waiting_timeout)) {
-                rb_hrtime_t now = rb_hrtime_now();
-                rb_hrtime_t hrrel = rb_hrtime_sub(th->sched.waiting_reason.data.timeout, now);
+    // Always check waiting threads to find minimum timeout
+    // even when scheduler has work (grq_cnt > 0)
+    rb_native_mutex_lock(&timer_th.waiting_lock);
+    {
+        struct rb_thread_sched_waiting *w = ccan_list_top(&timer_th.waiting, struct rb_thread_sched_waiting, node);
+        rb_thread_t *th = thread_sched_waiting_thread(w);
 
-                RUBY_DEBUG_LOG("th:%u now:%lu rel:%lu", rb_th_serial(th), (unsigned long)now, (unsigned long)hrrel);
+        if (th && (th->sched.waiting_reason.flags & thread_sched_waiting_timeout)) {
+            rb_hrtime_t now = rb_hrtime_now();
+            rb_hrtime_t hrrel = rb_hrtime_sub(th->sched.waiting_reason.data.timeout, now);
 
-                // TODO: overflow?
-                timeout = (int)((hrrel + RB_HRTIME_PER_MSEC - 1) / RB_HRTIME_PER_MSEC); // ms
+            RUBY_DEBUG_LOG("th:%u now:%lu rel:%lu", rb_th_serial(th), (unsigned long)now, (unsigned long)hrrel);
+
+            // TODO: overflow?
+            int thread_timeout = (int)((hrrel + RB_HRTIME_PER_MSEC - 1) / RB_HRTIME_PER_MSEC); // ms
+
+            // Use minimum of scheduler timeout and thread sleep timeout
+            if (timeout < 0 || thread_timeout < timeout) {
+                timeout = thread_timeout;
             }
         }
-        rb_native_mutex_unlock(&timer_th.waiting_lock);
     }
+    rb_native_mutex_unlock(&timer_th.waiting_lock);
 
     RUBY_DEBUG_LOG("timeout:%d inf:%d", timeout, (int)vm->ractor.sched.timeslice_wait_inf);
 
@@ -2903,22 +2930,22 @@ timer_thread_check_exceed(rb_hrtime_t abs, rb_hrtime_t now)
 static rb_thread_t *
 timer_thread_deq_wakeup(rb_vm_t *vm, rb_hrtime_t now)
 {
-    rb_thread_t *th = ccan_list_top(&timer_th.waiting, rb_thread_t, sched.waiting_reason.node);
+    struct rb_thread_sched_waiting *w = ccan_list_top(&timer_th.waiting, struct rb_thread_sched_waiting, node);
 
-    if (th != NULL &&
-        (th->sched.waiting_reason.flags & thread_sched_waiting_timeout) &&
-        timer_thread_check_exceed(th->sched.waiting_reason.data.timeout, now)) {
+    if (w != NULL &&
+        (w->flags & thread_sched_waiting_timeout) &&
+        timer_thread_check_exceed(w->data.timeout, now)) {
 
-        RUBY_DEBUG_LOG("wakeup th:%u", rb_th_serial(th));
+        RUBY_DEBUG_LOG("wakeup th:%u", rb_th_serial(thread_sched_waiting_thread(w)));
 
         // delete from waiting list
-        ccan_list_del_init(&th->sched.waiting_reason.node);
+        ccan_list_del_init(&w->node);
 
         // setup result
-        th->sched.waiting_reason.flags = thread_sched_waiting_none;
-        th->sched.waiting_reason.data.result = 0;
+        w->flags = thread_sched_waiting_none;
+        w->data.result = 0;
 
-        return th;
+        return thread_sched_waiting_thread(w);
     }
 
     return NULL;
@@ -3291,6 +3318,22 @@ struct rb_internal_thread_event_hook {
 };
 
 static pthread_rwlock_t rb_internal_thread_event_hooks_rw_lock = PTHREAD_RWLOCK_INITIALIZER;
+
+#if defined(HAVE_WORKING_FORK)
+void
+rb_internal_thread_event_hooks_rw_lock_atfork(void)
+{
+  // After fork(), this rwlock may have been held by a now-dead thread.
+  //
+  // pthread_rwlock_destroy() on a held lock is undefined behavior, and
+  // pthread_rwlock_init() on an already-initialized lock is also undefined
+  // behavior
+  //
+  // Direct assignment of PTHREAD_RWLOCK_INITIALIZER is safe and portable.
+  rb_internal_thread_event_hooks_rw_lock =
+      (pthread_rwlock_t)PTHREAD_RWLOCK_INITIALIZER;
+}
+#endif
 
 rb_internal_thread_event_hook_t *
 rb_internal_thread_add_event_hook(rb_internal_thread_event_callback callback, rb_event_flag_t internal_event, void *user_data)
