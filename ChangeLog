@@ -2,6 +2,55 @@
 
 base-url = https://github.com/ruby/ruby
 
+commit 5483bfc1ae5725e871cbbddf313626fbb0f2dbb8
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2026-03-27 06:53:23 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2026-03-27 06:53:23 +0900
+
+    Bump up to 3.2.11
+
+commit 8a7c126ddebd5a7914cb37255ed815c6ceefa6a0
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2026-03-24 15:36:13 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2026-03-24 15:36:13 +0900
+
+    Sync the latest version of backport tools
+
+commit 7cdea3bd49409c7c2e022135d245cf1d346b087f
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2026-03-09 16:45:29 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2026-03-10 15:58:49 +0900
+
+    Merge zlib-3.0.1
+
+commit 357d601e8b44b2d2b99ffaf05f6912c4c705c4e6
+  Author:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  AuthorDate: 2025-10-08 18:19:47 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2026-01-22 18:02:29 +0900
+
+    [Bug #21629] Initialize `struct RString`
+
+commit 2051ac34b72e95de6049eb2d226e5a55024c83c7
+  Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  AuthorDate: 2026-01-19 11:23:42 +0900
+  Commit:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
+  CommitDate: 2026-01-19 11:23:42 +0900
+
+    merge revision(s) d209e6f1c0a93ad3ce1cc64dd165a6b67672614d: [Backport #21715]
+
+            search_nonascii(): Replace UB pointer cast with memcpy
+
+            Casting a pointer to create an unaligned one is undefined behavior in C
+            standards. Use memcpy to express the unaligned load instead to play by
+            the rules.
+
+            Practically, this yields the same binary output in many situations
+            while fixing the crash in [Bug #21715].
+
 commit a3a6d2578843474b0bc1d130ddaeccbfd8d23dfa
   Author:     Hiroshi SHIBATA <hsbt@ruby-lang.org>
   AuthorDate: 2026-01-14 09:56:38 +0900
