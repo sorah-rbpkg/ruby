@@ -1498,7 +1498,7 @@ static NODE *new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw
 static rb_node_kw_arg_t *new_kw_arg(struct parser_params *p, NODE *k, const YYLTYPE *loc);
 static rb_node_args_t *args_with_numbered(struct parser_params*,rb_node_args_t*,int,ID);
 
-static NODE* negate_lit(struct parser_params*, NODE*);
+static NODE* negate_lit(struct parser_params*, NODE*,const YYLTYPE*);
 static void no_blockarg(struct parser_params*,NODE*);
 static NODE *ret_args(struct parser_params*,NODE*);
 static NODE *arg_blk_pass(NODE*,rb_node_block_pass_t*);
@@ -16947,7 +16947,7 @@ yyreduce:
 #line 6187 "parse.y"
                     {
                         (yyval.node) = (yyvsp[0].node);
-                        negate_lit(p, (yyval.node));
+                        negate_lit(p, (yyval.node), &(yyloc));
                     /*% ripper: unary!(ID2VAL(idUMinus), $:2) %*/
                     }
 #line 16954 "parse.c"
@@ -20242,7 +20242,6 @@ number_literal_suffix(struct parser_params *p, int mask)
         }
         if (!ISASCII(c) || ISALPHA(c) || c == '_') {
             p->lex.pcur = lastp;
-            literal_flush(p, p->lex.pcur);
             return 0;
         }
         pushback(p, c);
@@ -25654,7 +25653,7 @@ ret_args(struct parser_params *p, NODE *node)
 }
 
 static NODE*
-negate_lit(struct parser_params *p, NODE* node)
+negate_lit(struct parser_params *p, NODE* node, const YYLTYPE *loc)
 {
     switch (nd_type(node)) {
       case NODE_INTEGER:
@@ -25670,6 +25669,7 @@ negate_lit(struct parser_params *p, NODE* node)
         RNODE_IMAGINARY(node)->minus = TRUE;
         break;
     }
+    node->nd_loc = *loc;
     return node;
 }
 
