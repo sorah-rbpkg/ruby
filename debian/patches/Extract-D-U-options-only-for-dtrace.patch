@@ -9,10 +9,10 @@ A workaround for GH-12563#issuecomment-3691590489.
  2 files changed, 12 insertions(+), 3 deletions(-)
 
 diff --git a/configure.ac b/configure.ac
-index 5fea5fe..4dbcb0f 100644
+index 4ec4319..a9bacd3 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -4326,8 +4326,7 @@ AS_IF([test -n "${LIBS}"], [
+@@ -4323,8 +4323,7 @@ AS_IF([test -n "${LIBS}"], [
      MAINFLAGS=`echo " $MAINLIBS " | sed "s|$libspat"'||;s/^ *//;s/ *$//'`
  ])
  LIBRUBYARG_STATIC="${LIBRUBYARG_STATIC} \$(MAINLIBS)"
