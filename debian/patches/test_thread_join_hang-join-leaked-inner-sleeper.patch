@@ -1,0 +1,46 @@
+From: Sorah Fukumori <her@sorah.jp>
+Date: Thu, 21 May 2026 09:12:33 +0900
+Subject: test_thread_join_hang: join leaked inner sleeper
+
+SleepingUnblockScheduler#unblock deliberately breaks the join path,
+so the inner Thread.new{sleep(0.01)} created inside Fiber.schedule
+is abandoned mid-sleep when the outer thread exits. It eventually
+wakes and lingers in Thread.list, breaking cleanup_threads in later
+test files (e.g. test/-ext-/thread/test_instrumentation_api.rb).
+Capture the inner thread and join it in an ensure.
+
+     18) Failure:
+    TestThreadInstrumentation#test_thread_pass_multi_thread [/build/ruby4.0/test/-ext-/thread/test_instrumentation_api.rb:289]:
+    <[#<Thread:0x00007f8dbc9b7f48 run>]> expected but was
+    <[#<Thread:0x00007f8dbc9b7f48 run>,
+     #<Thread:0x00007f8dbc9f45b0 /build/ruby4.0/test/fiber/test_thread.rb:165 sleep>]>.
+---
+ test/fiber/test_thread.rb | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/test/fiber/test_thread.rb b/test/fiber/test_thread.rb
+index 0247f33..4d2fbde 100644
+--- a/test/fiber/test_thread.rb
++++ b/test/fiber/test_thread.rb
+@@ -156,16 +156,20 @@ class TestFiberThread < Test::Unit::TestCase
+   end
+ 
+   def test_thread_join_hang
++    inner = nil
+     thread = Thread.new do
+       scheduler = SleepingUnblockScheduler.new
+ 
+       Fiber.set_scheduler scheduler
+ 
+       Fiber.schedule do
+-        Thread.new{sleep(0.01)}.value
++        inner = Thread.new{sleep(0.01)}
++        inner.value
+       end
+     end
+ 
+     thread.join
++  ensure
++    inner&.join
+   end
+ end

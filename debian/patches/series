@@ -14,3 +14,4 @@ gc-mmtk-avoid-fn_addr_eq-for-MSRV-1.74.patch
 test_box-avoid-failure-with-program-suffix.patch
 use-mmtk-core-checked-out-by-d-rules.patch
 Extract-D-U-options-only-for-dtrace.patch
+test_thread_join_hang-join-leaked-inner-sleeper.patch
