@@ -912,6 +912,41 @@ class TestMarshal < Test::Unit::TestCase
     end
   end
 
+  def test_load_overread
+    input = Struct.new(:bytes, :used) do
+      def initialize
+        super("\x04\x08[\x07".bytes, false)
+      end
+
+      def getbyte
+        bytes.shift
+      end
+
+      def read(_len, _outbuf = nil)
+        return nil if used
+        self.used = true
+        "0" * (1024 * 128)
+      end
+    end.new
+
+    assert_equal([nil, nil], Marshal.load(input))
+  end
+
+  def test_bignum_len_overflow
+    assert_raise(ArgumentError) do
+      Marshal.load("\x04\x08l+\x04\x00\x00\x00\x40")
+    end
+    assert_raise(ArgumentError) do
+      Marshal.load("\x04\x08l+\xfc\x00\x00\x00\x80")
+    end
+  end
+
+  def test_bignum_invalid_sign
+    assert_raise(ArgumentError) do
+      Marshal.load("\x04\bl?")
+    end
+  end
+
   class TestMarshalFreezeProc < Test::Unit::TestCase
     include MarshalTestLib
 
@@ -978,6 +1013,20 @@ class TestMarshal < Test::Unit::TestCase
       _objects = Marshal.load(encode([Object, Kernel]), freeze: true)
       refute_predicate Object, :frozen?
       refute_predicate Kernel, :frozen?
+    end
+
+    def test_linked_strings_are_frozen
+      str = "test"
+      str.instance_variable_set(:@self, str)
+      source = [str, str]
+
+      objects = Marshal.load(encode(source), freeze: true)
+      assert_predicate objects[0], :frozen?
+      assert_predicate objects[1], :frozen?
+      assert_same objects[0], objects[1]
+      assert_same objects[0], objects[0].instance_variable_get(:@self)
+      assert_same objects[1], objects[1].instance_variable_get(:@self)
+      assert_same objects[0].instance_variable_get(:@self), objects[1].instance_variable_get(:@self)
     end
   end
 end
