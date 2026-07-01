@@ -4,10 +4,13 @@ module Net
   class IMAP
     # See https://www.rfc-editor.org/rfc/rfc9051#section-2.2.2
     class ResponseReader # :nodoc:
+      include NumValidator
+
       attr_reader :client
 
       def initialize(client, sock)
         @client, @sock = client, sock
+        @buff = @literal_size = nil
       end
 
       def read_response_buffer
@@ -15,13 +18,13 @@ module Net
         catch :eof do
           while true
             read_line
-            break unless (@literal_size = get_literal_size)
+            break unless literal_size
             read_literal
           end
         end
         buff
       ensure
-        @buff = nil
+        @buff = @literal_size = nil
       end
 
       private
@@ -30,13 +33,21 @@ module Net
 
       def bytes_read          = buff.bytesize
       def empty?              = buff.empty?
-      def done?               = line_done? && !get_literal_size
+      def done?               = line_done? && !literal_size
       def line_done?          = buff.end_with?(CRLF)
-      def get_literal_size    = /\{(\d+)\}\r\n\z/n =~ buff && $1.to_i
+
+      def get_literal_size(buff)
+        buff.end_with?("}\r\n") && buff.rindex(/\{(\d+)\}\r\n\z/n) &&
+          coerce_number64($1)
+      rescue DataFormatError
+        raise DataFormatError, format("invalid response literal size (%s)", $1)
+      end
 
       def read_line
-        buff << (@sock.gets(CRLF, read_limit) or throw :eof)
+        line = (@sock.gets(CRLF, read_limit) or throw :eof)
+        buff << line
         max_response_remaining! unless line_done?
+        @literal_size = get_literal_size(line)
       end
 
       def read_literal
@@ -66,6 +77,14 @@ module Net
         raise ResponseTooLargeError.new(
           max_response_size:, bytes_read:, literal_size:,
         )
+      end
+
+      # copied/adapted from NumValidator in v0.6
+      def coerce_number64(num)
+        int = num.to_i
+        return int if 0 <= int && int <= 0x7fff_ffff_ffff_ffff
+        raise DataFormatError,
+          "number64 must be unsigned 63-bit integer: #{num}"
       end
 
     end

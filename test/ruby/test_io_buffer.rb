@@ -626,6 +626,24 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal IO::Buffer.for("\xce\xcd\xcc\xcb\xce\xcd\xcc\xcb\xce\xcd"), source.dup.not!
   end
 
+  def test_and_raises_on_freed_self
+    inner = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
+    slice = inner.slice(0, 8)
+    inner.free
+
+    mask = IO::Buffer.for("ABCDEFGH")
+    assert_raise(IO::Buffer::InvalidatedError) { slice & mask }
+  end
+
+  def test_and_raises_on_freed_mask
+    inner = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
+    mask_slice = inner.slice(0, 8)
+    inner.free
+
+    source = IO::Buffer.for("ABCDEFGH")
+    assert_raise(IO::Buffer::InvalidatedError) { source & mask_slice }
+  end
+
   def test_shared
     message = "Hello World"
     buffer = IO::Buffer.new(64, IO::Buffer::MAPPED | IO::Buffer::SHARED)
@@ -709,5 +727,35 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_predicate buf, :null?
     buf.set_string('a', 0, 0)
     assert_predicate buf, :empty?
+  end
+
+  class Bug21882 < RuntimeError; end
+  def test_locked_exception
+    buf = IO::Buffer.new(10)
+    assert_raise(Bug21882, '#locked should propagate exception') do
+      buf.locked { raise Bug21882 }
+    end
+
+    # should be unlocked now and can be locked again
+    refute_predicate buf, :locked?
+    buf.locked { }
+  end
+
+  def test_locked_break
+    buf = IO::Buffer.new(10)
+    assert_equal :ok, (buf.locked { break :ok })
+
+    # should be unlocked now and can be locked again
+    refute_predicate buf, :locked?
+    buf.locked { }
+  end
+
+  def test_locked_throw
+    buf = IO::Buffer.new(10)
+    assert_equal :ok, (catch(:bug21882) { buf.locked { throw :bug21882, :ok } })
+
+    # should be unlocked now and can be locked again
+    refute_predicate buf, :locked?
+    buf.locked { }
   end
 end
