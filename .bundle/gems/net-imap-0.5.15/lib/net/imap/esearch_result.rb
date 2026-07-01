@@ -39,12 +39,49 @@ module Net
       # numbers or UIDs, +to_a+ returns that set as an array of integers.
       #
       # When both #all and #partial are +nil+, either because the server
-      # returned no results or because +ALL+ and +PARTIAL+ were not included in
-      # the IMAP#search +RETURN+ options, #to_a returns an empty array.
+      # returned no results or because neither +ALL+ or +PARTIAL+ were included
+      # in the IMAP#search +RETURN+ options, #to_a returns an empty array.
       #
       # Note that SearchResult also implements +to_a+, so it can be used without
       # checking if the server returned +SEARCH+ or +ESEARCH+ data.
-      def to_a; all&.numbers || partial&.to_a || [] end
+      #
+      # Related: #each, #to_sequence_set, #all, #partial
+      def to_a; to_sequence_set.numbers end
+
+      # :call-seq: to_sequence_set -> SequenceSet or nil
+      #
+      # When either #all or #partial contains a SequenceSet of message sequence
+      # numbers or UIDs, +to_sequence_set+ returns that sequence set.
+      #
+      # When both #all and #partial are +nil+, either because the server
+      # returned no results or because neither +ALL+ or +PARTIAL+ were included
+      # in the IMAP#search +RETURN+ options, #to_sequence_set returns
+      # SequenceSet.empty.
+      #
+      # Note that SearchResult also implements +to_sequence_set+, so it can be
+      # used without checking if the server returned +SEARCH+ or +ESEARCH+ data.
+      #
+      # Related: #each, #to_a, #all, #partial
+      def to_sequence_set
+        all || partial&.to_sequence_set || SequenceSet.empty
+      end
+
+      # When either #all or #partial contains a SequenceSet of message sequence
+      # numbers or UIDs, +each+ yields each integer in the set.
+      #
+      # When both #all and #partial are +nil+, either because the server
+      # returned no results or because +ALL+ and +PARTIAL+ were not included in
+      # the IMAP#search +RETURN+ options, #each does not yield.
+      #
+      # Note that SearchResult also implements +#each+, so it can be used
+      # without checking if the server returned +SEARCH+ or +ESEARCH+ data.
+      #
+      # Related: #to_sequence_set, #to_a, #all, #partial
+      def each(&)
+        return to_enum(__callee__) unless block_given?
+        to_sequence_set.each_number(&)
+        self
+      end
 
       ##
       # attr_reader: tag
@@ -161,6 +198,8 @@ module Net
         #
         # See also: ESearchResult#to_a.
         def to_a; results&.numbers || [] end
+
+        alias to_sequence_set results
       end
 
       # :call-seq: partial -> PartialResult or nil
