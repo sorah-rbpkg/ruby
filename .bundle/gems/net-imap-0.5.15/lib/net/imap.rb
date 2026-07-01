@@ -462,6 +462,9 @@ module Net
   #   +LITERAL-+, and +SPECIAL-USE+.</em>
   #
   # ==== RFC2087: +QUOTA+
+  # +NOTE:+ Only the +STORAGE+ quota resource type is currently supported.
+  # - Obsoleted by <tt>QUOTA=RES-*</tt> [RFC9208[https://www.rfc-editor.org/rfc/rfc9208]],
+  #   although the commands are backward compatible.
   # - #getquota: returns the resource usage and limits for a quota root
   # - #getquotaroot: returns the list of quota roots for a mailbox, as well as
   #   their resource usage and limits.
@@ -577,6 +580,16 @@ module Net
   # - Updates #fetch and #uid_fetch with the +EMAILID+ and +THREADID+ items.
   #   See FetchData#emailid and FetchData#emailid.
   # - Updates #status with support for the +MAILBOXID+ status attribute.
+  #
+  # ==== RFC9208: <tt>QUOTA=RES-*</tt>
+  # +NOTE:+ Only the +STORAGE+ quota resource type is currently supported.
+  # - Obsoletes the +QUOTA+ [RFC2087[https://www.rfc-editor.org/rfc/rfc2087]]
+  #   extension and provides strict semantics for different resource types.
+  # - #getquota: returns the resource usage and limits for a quota root
+  # - #getquotaroot: returns the list of quota roots for a mailbox, as well as
+  #   their resource usage and limits.
+  # - #setquota: sets the resource limits for a given quota root.
+  # - Updates #status with <tt>"DELETED"</tt> and +DELETED-STORAGE+ attributes.
   #
   # ==== RFC9394: +PARTIAL+
   # - Updates #search, #uid_search with the +PARTIAL+ return option which adds
@@ -698,13 +711,12 @@ module Net
   #
   # === \IMAP Extensions
   #
-  # [QUOTA[https://www.rfc-editor.org/rfc/rfc9208]]::
-  #   Melnikov, A., "IMAP QUOTA Extension", RFC 9208, DOI 10.17487/RFC9208,
-  #   March 2022, <https://www.rfc-editor.org/info/rfc9208>.
+  # [QUOTA[https://www.rfc-editor.org/rfc/rfc2087]]::
+  #   Myers, J., "IMAP4 QUOTA extension", RFC 2087, DOI 10.17487/RFC2087,
+  #   January 1997, <https://www.rfc-editor.org/info/rfc2087>.
   #
-  #   <em>Note: obsoletes</em>
-  #   RFC-2087[https://www.rfc-editor.org/rfc/rfc2087]<em> (January 1997)</em>.
-  #   <em>Net::IMAP does not fully support the RFC9208 updates yet.</em>
+  #   *NOTE*: _obsoleted_ by RFC9208[https://www.rfc-editor.org/rfc/rfc9208]
+  #   (March 2022).
   # [IDLE[https://www.rfc-editor.org/rfc/rfc2177]]::
   #   Leiba, B., "IMAP4 IDLE command", RFC 2177, DOI 10.17487/RFC2177,
   #   June 1997, <https://www.rfc-editor.org/info/rfc2177>.
@@ -756,6 +768,11 @@ module Net
   #   Gondwana, B., Ed., "IMAP Extension for Object Identifiers",
   #   RFC 8474, DOI 10.17487/RFC8474, September 2018,
   #   <https://www.rfc-editor.org/info/rfc8474>.
+  # [{QUOTA=RES-*}[https://www.rfc-editor.org/rfc/rfc9208]]::
+  #   Melnikov, A., "IMAP QUOTA Extension", RFC 9208, DOI 10.17487/RFC9208,
+  #   March 2022, <https://www.rfc-editor.org/info/rfc9208>.
+  #
+  #   Obsoletes RFC2087[https://www.rfc-editor.org/rfc/rfc2087].
   # [PARTIAL[https://www.rfc-editor.org/info/rfc9394]]::
   #   Melnikov, A., Achuthan, A., Nagulakonda, V., and L. Alves,
   #   "IMAP PARTIAL Extension for Paged SEARCH and FETCH", RFC 9394,
@@ -769,6 +786,7 @@ module Net
   #
   # === IANA registries
   # * {IMAP Capabilities}[http://www.iana.org/assignments/imap4-capabilities]
+  #   * {IMAP Quota Resource Types}[http://www.iana.org/assignments/imap4-capabilities#imap-capabilities-2]
   # * {IMAP Response Codes}[https://www.iana.org/assignments/imap-response-codes/imap-response-codes.xhtml]
   # * {IMAP Mailbox Name Attributes}[https://www.iana.org/assignments/imap-mailbox-name-attributes/imap-mailbox-name-attributes.xhtml]
   # * {IMAP and JMAP Keywords}[https://www.iana.org/assignments/imap-jmap-keywords/imap-jmap-keywords.xhtml]
@@ -779,8 +797,8 @@ module Net
   # * {GSSAPI/Kerberos/SASL Service Names}[https://www.iana.org/assignments/gssapi-service-names/gssapi-service-names.xhtml]:
   #   +imap+
   # * {Character sets}[https://www.iana.org/assignments/character-sets/character-sets.xhtml]
+  #
   # ==== For currently unsupported features:
-  # * {IMAP Quota Resource Types}[http://www.iana.org/assignments/imap4-capabilities#imap-capabilities-2]
   # * {LIST-EXTENDED options and responses}[https://www.iana.org/assignments/imap-list-extended/imap-list-extended.xhtml]
   # * {IMAP METADATA Server Entry and Mailbox Entry Registries}[https://www.iana.org/assignments/imap-metadata/imap-metadata.xhtml]
   # * {IMAP ANNOTATE Extension Entries and Attributes}[https://www.iana.org/assignments/imap-annotate-extension/imap-annotate-extension.xhtml]
@@ -788,7 +806,7 @@ module Net
   # * {IMAP URLAUTH Authorization Mechanism Registry}[https://www.iana.org/assignments/urlauth-authorization-mechanism-registry/urlauth-authorization-mechanism-registry.xhtml]
   #
   class IMAP < Protocol
-    VERSION = "0.5.8"
+    VERSION = "0.5.15"
 
     # Aliases for supported capabilities, to be used with the #enable command.
     ENABLE_ALIASES = {
@@ -801,12 +819,29 @@ module Net
     autoload :ResponseReader,         "#{dir}/response_reader"
     autoload :SASL,                   "#{dir}/sasl"
     autoload :SASLAdapter,            "#{dir}/sasl_adapter"
+    autoload :SequenceSet,            "#{dir}/sequence_set"
     autoload :StringPrep,             "#{dir}/stringprep"
 
     include MonitorMixin
     if defined?(OpenSSL::SSL)
       include OpenSSL
       include SSL
+    end
+
+    # :call-seq:
+    #   Net::IMAP::SequenceSet(set = nil) -> SequenceSet
+    #
+    # Coerces +set+ into a SequenceSet, using either SequenceSet.try_convert or
+    # SequenceSet.new.
+    #
+    # * When +set+ is a SequenceSet, that same set is returned.
+    # * When +set+ responds to +to_sequence_set+, +set.to_sequence_set+ is
+    #   returned.
+    # * Otherwise, returns the result from calling SequenceSet.new with +set+.
+    #
+    # Related: SequenceSet.try_convert, SequenceSet.new, SequenceSet::[]
+    def self.SequenceSet(set = nil)
+      SequenceSet.try_convert(set) || SequenceSet.new(set)
     end
 
     # Returns the global Config object
@@ -1114,28 +1149,29 @@ module Net
 
     # Disconnects from the server.
     #
+    # Waits for receiver thread to close before returning, except when called
+    # from inside the connection mutex such as from a response handler.  Slow or
+    # stuck response handlers can cause #disconnect to hang until they complete.
+    #
     # Related: #logout, #logout!
     def disconnect
+      in_logout_state = try_state_logout?
       return if disconnected?
-      state_logout!
+      in_receiver_thread = Thread.current == @receiver_thread
       begin
-        begin
-          # try to call SSL::SSLSocket#io.
-          @sock.io.shutdown
-        rescue NoMethodError
-          # @sock is not an SSL::SSLSocket.
-          @sock.shutdown
-        end
+        @sock.to_io.shutdown
       rescue Errno::ENOTCONN
         # ignore `Errno::ENOTCONN: Socket is not connected' on some platforms.
       rescue Exception => e
-        @receiver_thread.raise(e)
+        @receiver_thread.raise(e) unless in_receiver_thread
       end
-      @receiver_thread.join
-      synchronize do
-        @sock.close
-      end
+      @sock.close
+      @receiver_thread.join unless mon_owned? || in_receiver_thread
       raise e if e
+    ensure
+      # Try again after shutting down the receiver thread.  With no reciever
+      # left to wait for, any remaining locks should be _very_ brief.
+      state_logout! unless in_logout_state
     end
 
     # Returns true if disconnected from the server.
@@ -1378,9 +1414,11 @@ module Net
     #
     def starttls(**options)
       @ssl_ctx_params, @ssl_ctx = build_ssl_ctx(options)
+      handled = false
       error = nil
       ok = send_command("STARTTLS") do |resp|
         if resp.kind_of?(TaggedResponse) && resp.name == "OK"
+          handled = true
           clear_cached_capabilities
           clear_responses
           start_tls_session
@@ -1391,6 +1429,13 @@ module Net
       if error
         disconnect
         raise error
+      end
+      unless handled
+        disconnect
+        raise InvalidResponseError,
+              "STARTTLS handler was bypassed, although server responded %p" % [
+                ok.raw_data.chomp
+              ]
       end
       ok
     end
@@ -1812,12 +1857,18 @@ module Net
     # to both admin and user.  If this mailbox exists, it returns an array
     # containing objects of type MailboxQuotaRoot and MailboxQuota.
     #
+    # *NOTE:* Currently, Net::IMAP only supports +QUOTA+ responses with a single
+    # resource type.  This is usually +STORAGE+, but you may need to verify this
+    # with UntaggedResponse#raw_data.
+    #
     # Related: #getquota, #setquota, MailboxQuotaRoot, MailboxQuota
     #
     # ==== Capabilities
     #
-    # The server's capabilities must include +QUOTA+
-    # [RFC2087[https://www.rfc-editor.org/rfc/rfc2087]].
+    # Requires +QUOTA+ [RFC2087[https://www.rfc-editor.org/rfc/rfc2087]]
+    # capability, or a capability prefixed with <tt>QUOTA=RES-*</tt>
+    # {[RFC9208]}[https://www.rfc-editor.org/rfc/rfc9208] for each supported
+    # resource type.
     def getquotaroot(mailbox)
       synchronize do
         send_command("GETQUOTAROOT", mailbox)
@@ -1829,41 +1880,59 @@ module Net
     end
 
     # Sends a {GETQUOTA command [RFC2087 §4.2]}[https://www.rfc-editor.org/rfc/rfc2087#section-4.2]
-    # along with specified +mailbox+.  If this mailbox exists, then an array
-    # containing a MailboxQuota object is returned.  This command is generally
-    # only available to server admin.
+    # for the +quota_root+.  If this quota root exists, then an array
+    # containing a MailboxQuota object is returned.
+    #
+    # The names of quota roots that are applicable to a particular mailbox can
+    # be discovered with #getquotaroot.
+    #
+    # *NOTE:* Currently, Net::IMAP only supports +QUOTA+ responses with a single
+    # resource type.  This is usually +STORAGE+, but you may need to verify this
+    # with UntaggedResponse#raw_data.
     #
     # Related: #getquotaroot, #setquota, MailboxQuota
     #
     # ==== Capabilities
     #
-    # The server's capabilities must include +QUOTA+
-    # [RFC2087[https://www.rfc-editor.org/rfc/rfc2087]].
-    def getquota(mailbox)
+    # Requires +QUOTA+ [RFC2087[https://www.rfc-editor.org/rfc/rfc2087]]
+    # capability, or a capability prefixed with <tt>QUOTA=RES-*</tt>
+    # {[RFC9208]}[https://www.rfc-editor.org/rfc/rfc9208] for each supported
+    # resource type.
+    def getquota(quota_root)
       synchronize do
-        send_command("GETQUOTA", mailbox)
+        send_command("GETQUOTA", quota_root)
         clear_responses("QUOTA")
       end
     end
 
     # Sends a {SETQUOTA command [RFC2087 §4.1]}[https://www.rfc-editor.org/rfc/rfc2087#section-4.1]
-    # along with the specified +mailbox+ and +quota+.  If +quota+ is nil, then
-    # +quota+ will be unset for that mailbox.  Typically one needs to be logged
-    # in as a server admin for this to work.
+    # along with the specified +quota_root+ and +storage_limit+.  If
+    # +storage_limit+ is +nil+, resource limits are unset for that quota root.
+    # If +storage_limit+ is a number, it sets the +STORAGE+ resource limit.
+    #
+    #   imap.setquota "#user/alice", 100
+    #   imap.getquota "#user/alice"
+    #   # => [#<struct Net::IMAP::MailboxQuota mailbox="#user/alice" usage=54 quota=100>]
+    #
+    # Typically one needs to be logged in as a server admin for this to work.
+    #
+    # *NOTE:* Currently, Net::IMAP only supports setting +STORAGE+ quota limits.
     #
     # Related: #getquota, #getquotaroot
     #
     # ==== Capabilities
     #
-    # The server's capabilities must include +QUOTA+
-    # [RFC2087[https://www.rfc-editor.org/rfc/rfc2087]].
-    def setquota(mailbox, quota)
-      if quota.nil?
-        data = '()'
+    # Requires +QUOTA+ [RFC2087[https://www.rfc-editor.org/rfc/rfc2087]]
+    # capability, or a capability prefixed with <tt>QUOTA=RES-*</tt>
+    # {[RFC9208]}[https://www.rfc-editor.org/rfc/rfc9208] for each supported
+    # resource type.
+    def setquota(quota_root, storage_limit)
+      if storage_limit.nil?
+        list = []
       else
-        data = '(STORAGE ' + quota.to_s + ')'
+        list = ["STORAGE", Integer(storage_limit)]
       end
-      send_command("SETQUOTA", mailbox, RawData.new(data))
+      send_command("SETQUOTA", quota_root, list)
     end
 
     # Sends a {SETACL command [RFC4314 §3.1]}[https://www.rfc-editor.org/rfc/rfc4314#section-3.1]
@@ -1970,7 +2039,10 @@ module Net
     # <tt>STATUS=SIZE</tt>
     # {[RFC8483]}[https://www.rfc-editor.org/rfc/rfc8483.html].
     #
-    # +DELETED+ requires the server's capabilities to include +IMAP4rev2+.
+    # +DELETED+ must be supported when the server's capabilities includes
+    # +IMAP4rev2+.
+    # or <tt>QUOTA=RES-MESSAGES</tt>
+    # {[RFC9208]}[https://www.rfc-editor.org/rfc/rfc9208.html].
     #
     # +HIGHESTMODSEQ+ requires the server's capabilities to include +CONDSTORE+
     # {[RFC7162]}[https://www.rfc-editor.org/rfc/rfc7162.html].
@@ -2094,8 +2166,8 @@ module Net
     end
 
     # call-seq:
-    #   uid_expunge{uid_set) -> array of message sequence numbers
-    #   uid_expunge{uid_set) -> VanishedData of UIDs
+    #   uid_expunge(uid_set) -> array of message sequence numbers
+    #   uid_expunge(uid_set) -> VanishedData of UIDs
     #
     # Sends a {UID EXPUNGE command [RFC4315 §2.1]}[https://www.rfc-editor.org/rfc/rfc4315#section-2.1]
     # {[IMAP4rev2 §6.4.9]}[https://www.rfc-editor.org/rfc/rfc9051#section-6.4.9]
@@ -2139,6 +2211,7 @@ module Net
     # provided as an array or a string.
     # See {"Argument translation"}[rdoc-ref:#search@Argument+translation]
     # and {"Search criteria"}[rdoc-ref:#search@Search+criteria], below.
+    # <em>Please note</em> the warning for when +criteria+ is a String.
     #
     # +return+ options control what kind of information is returned about
     # messages matching the search +criteria+.  Specifying +return+ should force
@@ -2251,11 +2324,11 @@ module Net
     #     Encoded as an \IMAP date (see ::encode_date).
     #
     # [When +criteria+ is a String]
-    #   +criteria+ will be sent directly to the server <em>without any
-    #   validation or encoding</em>.
+    #   +criteria+ will be sent to the server <em>with minimal validation and no
+    #   encoding or formatting</em>.
     #
-    #   <em>*WARNING:* This is vulnerable to injection attacks when external
-    #   inputs are used.</em>
+    #   <em>*WARNING:* Although CRLF is prohibited, this is vulnerable to other
+    #   types of attribute injection attack if unvetted user input is used.</em>
     #
     # ==== Supported return options
     #
@@ -2549,7 +2622,8 @@ module Net
     # backward compatibility) but adds SearchResult#modseq when the +CONDSTORE+
     # capability has been enabled.
     #
-    # See #search for documentation of parameters.
+    # See #search for documentation of parameters.  <em>Please note</em> the
+    # warning for when +criteria+ is a String.
     #
     # ==== Capabilities
     #
@@ -2576,6 +2650,13 @@ module Net
     #
     # +attr+ is a list of attributes to fetch; see FetchStruct documentation for
     # a list of supported attributes.
+    # >>>
+    #   When +attr+ is a String, it will be sent <em>with minimal validation and
+    #   no encoding or formatting</em>.  When +attr+ is an Array, each String in
+    #   +attr+ will be sent this way.
+    #
+    #   <em>*WARNING:* Although CRLF is prohibited, this is vulnerable to other
+    #   types of attribute injection attack if unvetted user input is used.</em>
     #
     # +changedsince+ is an optional integer mod-sequence.  It limits results to
     # messages with a mod-sequence greater than +changedsince+.
@@ -2628,7 +2709,8 @@ module Net
     # {SequenceSet[...]}[rdoc-ref:SequenceSet@Creating+sequence+sets].
     # (For message sequence numbers, use #fetch instead.)
     #
-    # +attr+ behaves the same as with #fetch.
+    # +attr+ behaves the same as with #fetch.  <em>Please note</em> the #fetch
+    # warning on the +attr+ argument.
     # >>>
     #   *Note:* Servers _MUST_ implicitly include the +UID+ message data item as
     #   part of any +FETCH+ response caused by a +UID+ command, regardless of
@@ -2659,6 +2741,7 @@ module Net
     #     # fetch should return quickly and allocate little memory
     #     results.size # => 0..500
     #     break if results.empty?
+    #     results.sort_by!(&:uid) # server may return results out of order
     #     next_uid_to_fetch = results.last.uid + 1
     #     process results
     #   end
@@ -2839,8 +2922,10 @@ module Net
 
     # Sends a {SORT command [RFC5256 §3]}[https://www.rfc-editor.org/rfc/rfc5256#section-3]
     # to search a mailbox for messages that match +search_keys+ and return an
-    # array of message sequence numbers, sorted by +sort_keys+.  +search_keys+
-    # are interpreted the same as for #search.
+    # array of message sequence numbers, sorted by +sort_keys+.
+    #
+    # +search_keys+ are interpreted the same as the +criteria+ argument for
+    # #search.  <em>Please note</em> the #search warning for String +criteria+.
     #
     #--
     # TODO: describe +sort_keys+
@@ -2865,8 +2950,10 @@ module Net
 
     # Sends a {UID SORT command [RFC5256 §3]}[https://www.rfc-editor.org/rfc/rfc5256#section-3]
     # to search a mailbox for messages that match +search_keys+ and return an
-    # array of unique identifiers, sorted by +sort_keys+.  +search_keys+ are
-    # interpreted the same as for #search.
+    # array of unique identifiers, sorted by +sort_keys+.
+    #
+    # +search_keys+ are interpreted the same as the +criteria+ argument for
+    # #search.  <em>Please note</em> the #search warning for String +criteria+.
     #
     # Related: #sort, #search, #uid_search, #thread, #uid_thread
     #
@@ -2880,8 +2967,10 @@ module Net
 
     # Sends a {THREAD command [RFC5256 §3]}[https://www.rfc-editor.org/rfc/rfc5256#section-3]
     # to search a mailbox and return message sequence numbers in threaded
-    # format, as a ThreadMember tree.  +search_keys+ are interpreted the same as
-    # for #search.
+    # format, as a ThreadMember tree.
+    #
+    # +search_keys+ are interpreted the same as the +criteria+ argument for
+    # #search.  <em>Please note</em> the #search warning for String +criteria+.
     #
     # The supported algorithms are:
     #
@@ -2906,6 +2995,9 @@ module Net
     # Sends a {UID THREAD command [RFC5256 §3]}[https://www.rfc-editor.org/rfc/rfc5256#section-3]
     # Similar to #thread, but returns unique identifiers instead of
     # message sequence numbers.
+    #
+    # +search_keys+ are interpreted the same as the +criteria+ argument for
+    # #search.  <em>Please note</em> the #search warning for String +criteria+.
     #
     # Related: #thread, #search, #uid_search, #sort, #uid_sort
     #
@@ -2944,6 +3036,18 @@ module Net
     #   is not necessary to explicitly enable +CONDSTORE+—using any of the
     #   command parameters defined by the extension will implicitly enable it.
     #   See {[RFC7162 §3.1]}[https://www.rfc-editor.org/rfc/rfc7162.html#section-3.1].
+    #
+    # [+QRESYNC+ {[RFC7162]}[https://www.rfc-editor.org/rfc/rfc7162.html]]
+    #   *NOTE:* Enabling QRESYNC will replace +EXPUNGE+ with +VANISHED+, but
+    #   the extension arguments to #select, #examine, and #uid_fetch are not
+    #   supported yet.
+    #
+    #   Adds quick resynchronization options to #select, #examine, and
+    #   #uid_fetch.  +QRESYNC+ _must_ be explicitly enabled before using any of
+    #   the extension's command parameters.  All +EXPUNGE+ responses will be
+    #   replaced with +VANISHED+ responses.  Enabling +QRESYNC+ implicitly
+    #   enables +CONDSTORE+ as well.
+    #   See {[RFC7162 §3.2]}[https://www.rfc-editor.org/rfc/rfc7162.html#section-3.2].
     #
     # [+:utf8+ --- an alias for <tt>"UTF8=ACCEPT"</tt>]
     #
@@ -3004,10 +3108,11 @@ module Net
       capabilities = capabilities
         .flatten
         .map {|e| ENABLE_ALIASES[e] || e }
+        .flat_map { _1.is_a?(String) && !_1.empty? ? _1.split(/ /, -1) : [_1] }
         .uniq
-        .join(' ')
+        .map { Atom[_1] }
       synchronize do
-        send_command("ENABLE #{capabilities}")
+        send_command("ENABLE", *capabilities)
         result = clear_responses("ENABLED").last || []
         @utf8_strings ||= result.include? "UTF8=ACCEPT"
         @utf8_strings ||= result.include? "IMAP4REV2"
@@ -3051,6 +3156,7 @@ module Net
 
       synchronize do
         tag = Thread.current[:net_imap_tag] = generate_tag
+        guard_against_tagged_response_skipping_handler!(tag, "IDLE")
         put_string("#{tag} IDLE#{CRLF}")
 
         begin
@@ -3062,8 +3168,8 @@ module Net
             raise @exception || Net::IMAP::Error.new("connection closed")
           end
         ensure
+          remove_response_handler(response_handler)
           unless @receiver_thread_terminating
-            remove_response_handler(response_handler)
             put_string("DONE#{CRLF}")
             response = get_tagged_response(tag, "IDLE", idle_response_timeout)
           end
@@ -3204,7 +3310,7 @@ module Net
           warn(RESPONSES_DEPRECATION_MSG, uplevel: 1, category: :deprecated)
         when :frozen_dup
           synchronize {
-            responses = @responses.transform_values(&:freeze)
+            responses = @responses.transform_values { _1.dup.freeze }
             responses.default_proc = nil
             responses.default = [].freeze
             return responses.freeze
@@ -3346,8 +3452,6 @@ module Net
       rescue Exception => ex
         @receiver_thread_exception = ex
         # don't exit the thread with an exception
-      ensure
-        state_logout!
       end
     end
 
@@ -3429,6 +3533,8 @@ module Net
           @idle_done_cond.signal
         end
       end
+    ensure
+      state_logout!
     end
 
     def get_tagged_response(tag, cmd, timeout = nil)
@@ -3515,6 +3621,7 @@ module Net
           put_string(" ")
           send_data(i, tag)
         end
+        guard_against_tagged_response_skipping_handler!(tag, cmd)
         put_string(CRLF)
         if cmd == "LOGOUT"
           @logout_command_tag = tag
@@ -3530,6 +3637,19 @@ module Net
           end
         end
       end
+    rescue InvalidResponseError
+      disconnect
+      raise
+    end
+
+    def guard_against_tagged_response_skipping_handler!(tag, cmd)
+      return unless (resp = @tagged_responses[tag])&.name&.upcase == "OK"
+      raise InvalidResponseError, format(
+        "Received tagged 'OK' to incomplete %s command (tag=%s).  " \
+        "This could indicate a malicious server, a man-in-the-middle, or " \
+        "client-side command injection.  Disconnecting.",
+        cmd, tag
+      )
     end
 
     def generate_tag
@@ -3656,6 +3776,9 @@ module Net
     end
 
     def fetch_internal(cmd, set, attr, mod = nil, partial: nil, changedsince: nil)
+      if partial && !cmd.start_with?("UID ")
+        raise ArgumentError, "partial can only be used with uid_fetch"
+      end
       set = SequenceSet[set]
       if partial
         mod ||= []
@@ -3680,7 +3803,7 @@ module Net
     end
 
     def store_internal(cmd, set, attr, flags, unchangedsince: nil)
-      attr = RawData.new(attr) if attr.instance_of?(String)
+      attr = Atom.new(attr) if attr.instance_of?(String)
       args = [SequenceSet.new(set)]
       args << ["UNCHANGEDSINCE", Integer(unchangedsince)] if unchangedsince
       args << attr << flags
@@ -3791,13 +3914,27 @@ module Net
     end
 
     def state_unselected!
-      state_authenticated! if connection_state.to_sym == :selected
+      synchronize do
+        state_authenticated! if connection_state.to_sym == :selected
+      end
     end
 
     def state_logout!
+      return true if connection_state in [:logout, *]
       synchronize do
+        return true if connection_state in [:logout, *]
         @connection_state = ConnectionState::Logout.new
       end
+    end
+
+    # don't wait to aqcuire the lock
+    def try_state_logout?
+      return true if connection_state in [:logout, *]
+      return false unless acquired_lock = mon_try_enter
+      state_logout!
+      true
+    ensure
+      mon_exit if acquired_lock
     end
 
     def sasl_adapter
