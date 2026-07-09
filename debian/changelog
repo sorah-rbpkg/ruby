@@ -6,6 +6,7 @@ ruby3.4 (3.4.10-1~exp1) UNRELEASED; urgency=medium
 
   [ Simon Quigley ]
   * New upstream release.
+  * Upgrade the watch file to version 5.
 
  -- Cédric Boutillier <boutil@debian.org>  Thu, 26 Mar 2026 22:35:51 +0100
 
