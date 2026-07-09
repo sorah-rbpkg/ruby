@@ -29235,9 +29235,7 @@ else $as_nop
 #include <time.h>
 
 void
-check(tm, y, m, d, h, s)
-    struct tm *tm;
-    int y, m, d, h, s;
+check(struct tm *tm, int y, int m, int d, int h, int s)
 {
     if (!tm ||
 	tm->tm_year != y ||
@@ -29384,8 +29382,7 @@ else $as_nop
 #include <signal.h>
 
 void
-sig_handler(dummy)
-     int dummy;
+sig_handler(int dummy)
 {
 }
 
