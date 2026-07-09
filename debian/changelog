@@ -8,6 +8,7 @@ ruby3.4 (3.4.10-1~exp1) UNRELEASED; urgency=medium
   * New upstream release.
   * Upgrade the watch file to version 5.
   * Run wrap-and-sort.
+  * Update Standards-Version to 4.7.4.
 
  -- Cédric Boutillier <boutil@debian.org>  Thu, 26 Mar 2026 22:35:51 +0100
 
