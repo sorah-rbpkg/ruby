@@ -18,21 +18,9 @@ module Net
     #
     # == Creating sequence sets
     #
-    # SequenceSet.new with no arguments creates an empty sequence set.  Note
-    # that an empty sequence set is invalid in the \IMAP grammar.
-    #
-    #     set = Net::IMAP::SequenceSet.new
-    #     set.empty?        #=> true
-    #     set.valid?        #=> false
-    #     set.valid_string  #!> raises DataFormatError
-    #     set << 1..10
-    #     set.empty?        #=> false
-    #     set.valid?        #=> true
-    #     set.valid_string  #=> "1:10"
-    #
     # SequenceSet.new may receive a single optional argument: a non-zero 32 bit
     # unsigned integer, a range, a <tt>sequence-set</tt> formatted string,
-    # another sequence set, a Set (containing only numbers or <tt>*</tt>), or an
+    # another SequenceSet, a Set (containing only numbers or <tt>*</tt>), or an
     # Array containing any of these (array inputs may be nested).
     #
     #     set = Net::IMAP::SequenceSet.new(1)
@@ -48,30 +36,114 @@ module Net
     #     set = Net::IMAP::SequenceSet.new(1, 2, 3..7, 5, 6..10, 2048, 1024)
     #     set.valid_string  #=> "1:10,55,1024:2048"
     #
-    # Use ::[] with one or more arguments to create a frozen SequenceSet.  An
-    # invalid (empty) set cannot be created with ::[].
+    # SequenceSet.new with no arguments creates an empty sequence set.  Note
+    # that an empty sequence set is invalid in the \IMAP grammar.
     #
+    #     set = Net::IMAP::SequenceSet.new
+    #     set.empty?        #=> true
+    #     set.valid?        #=> false
+    #     set.valid_string  #!> raises DataFormatError
+    #     set << 1..10
+    #     set.empty?        #=> false
+    #     set.valid?        #=> true
+    #     set.valid_string  #=> "1:10"
+    #
+    # Using SequenceSet.new with another SequenceSet input behaves the same as
+    # calling #dup on the other set.  The input's #string will be preserved.
+    #
+    #     input = Net::IMAP::SequenceSet.new("1,2,3:7,5,6:10,2048,1024")
+    #     copy  = Net::IMAP::SequenceSet.new(input)
+    #     input.valid_string  #=> "1,2,3:7,5,6:10,2048,1024"
+    #     copy.valid_string   #=> "1,2,3:7,5,6:10,2048,1024"
+    #     copy2 = input.dup   # same as calling new with a SequenceSet input
+    #     copy ==     input   #=> true,  same set membership
+    #     copy.eql?   input   #=> true,  same string value
+    #     copy.equal? input   #=> false, different objects
+    #
+    #     copy.normalize!
+    #     copy.valid_string   #=> "1:10,1024,2048"
+    #     copy ==   input     #=> true,  same set membership
+    #     copy.eql? input     #=> false, different string value
+    #
+    #     copy << 999
+    #     copy.valid_string   #=> "1:10,999,1024,2048"
+    #     copy ==   input     #=> false, different set membership
+    #     copy.eql? input     #=> false, different string value
+    #
+    # Use Net::IMAP::SequenceSet() to coerce a single (optional) input.
+    # A SequenceSet input is returned without duplication, even when frozen.
+    #
+    #     set = Net::IMAP::SequenceSet()
+    #     set.string   #=> nil
+    #     set.frozen?  #=> false
+    #
+    #     # String order is preserved
+    #     set = Net::IMAP::SequenceSet("1,2,3:7,5,6:10,2048,1024")
+    #     set.valid_string  #=> "1,2,3:7,5,6:10,2048,1024"
+    #     set.frozen?       #=> false
+    #
+    #     # Other inputs are normalized
+    #     set = Net::IMAP::SequenceSet([1, 2, [3..7, 5], 6..10, 2048, 1024])
+    #     set.valid_string  #=> "1:10,1024,2048"
+    #     set.frozen?       #=> false
+    #
+    #     unfrozen = set
+    #     frozen   = set.dup.freeze
+    #     unfrozen.equal? Net::IMAP::SequenceSet(unfrozen)  #=> true
+    #     frozen.equal?   Net::IMAP::SequenceSet(frozen)    #=> true
+    #
+    # Use ::[] to coerce one or more arguments into a valid frozen SequenceSet.
+    # A valid frozen SequenceSet is returned directly, without allocating a new
+    # object.  ::[] will not create an invalid (empty) set.
+    #
+    #     Net::IMAP::SequenceSet[]     #!> raises ArgumentError
+    #     Net::IMAP::SequenceSet[nil]  #!> raises DataFormatError
+    #     Net::IMAP::SequenceSet[""]   #!> raises DataFormatError
+    #
+    #     # String order is preserved
     #     set = Net::IMAP::SequenceSet["1,2,3:7,5,6:10,2048,1024"]
     #     set.valid_string  #=> "1,2,3:7,5,6:10,2048,1024"
+    #     set.frozen?       #=> true
+    #
+    #     # Other inputs are normalized
     #     set = Net::IMAP::SequenceSet[1, 2, [3..7, 5], 6..10, 2048, 1024]
-    #     set.valid_string  #=> "1:10,55,1024:2048"
+    #     set.valid_string  #=> "1:10,1024,2048"
+    #     set.frozen?       #=> true
+    #
+    #     frozen   = set
+    #     unfrozen = set.dup
+    #     frozen.equal?   Net::IMAP::SequenceSet[frozen]    #=> true
+    #     unfrozen.equal? Net::IMAP::SequenceSet[unfrozen]  #=> false
+    #
+    # Objects which respond to +to_sequence_set+ (such as SearchResult and
+    # ThreadMember) can be coerced to a SequenceSet with ::new, ::try_convert,
+    # ::[], or Net::IMAP::SequenceSet.
+    #
+    #     search = imap.uid_search(["SUBJECT", "hello", "NOT", "SEEN"])
+    #     seqset = Net::IMAP::SequenceSet(search) - already_fetched
+    #     fetch  = imap.uid_fetch(seqset, "FAST")
     #
     # == Ordered and Normalized sets
     #
     # Sometimes the order of the set's members is significant, such as with the
     # +ESORT+, <tt>CONTEXT=SORT</tt>, and +UIDPLUS+ extensions.  So, when a
-    # sequence set is created by the parser or with a single string value, that
-    # #string representation is preserved.
+    # sequence set is created from a single string (such as by the parser), that
+    # #string representation is preserved.  Assigning a string with #string= or
+    # #replace will also preserve that string.  Use #each_entry, #entries, or
+    # #each_ordered_number to enumerate the entries in their #string order.
+    # Hash equality (using #eql?) is based on the string representation.
     #
-    # Internally, SequenceSet stores a normalized representation which sorts all
-    # entries, de-duplicates numbers, and coalesces adjacent or overlapping
-    # ranges.  Most methods use this normalized representation to achieve
-    # <tt>O(lg n)</tt> porformance.  Use #entries or #each_entry to enumerate
-    # the set in its original order.
+    # Internally, SequenceSet uses a normalized uint32 set representation which
+    # sorts and de-duplicates all numbers and coalesces adjacent or overlapping
+    # entries.  Many methods use this sorted set representation for <tt>O(lg
+    # n)</tt> searches.  Use #each_element, #elements, #each_range, #ranges,
+    # #each_number, or #numbers to enumerate the set in sorted order.  Basic
+    # object equality (using #==) is based on set membership, without regard to
+    # #entry order or #string normalization.
     #
-    # Most modification methods convert #string to its normalized form.  To
-    # preserve #string order while modifying a set, use #append, #string=, or
-    # #replace.
+    # Most modification methods reset #string to its #normalized form, so that
+    # #entries and #elements are identical.  Use #append to preserve #entries
+    # order while modifying a set.
     #
     # == Using <tt>*</tt>
     #
@@ -153,6 +225,7 @@ module Net
     # * ::new: Creates a new mutable sequence set, which may be empty (invalid).
     # * ::try_convert: Calls +to_sequence_set+ on an object and verifies that
     #   the result is a SequenceSet.
+    # * Net::IMAP::SequenceSet(): Coerce an input using ::try_convert or ::new.
     # * ::empty: Returns a frozen empty (invalid) SequenceSet.
     # * ::full: Returns a frozen SequenceSet containing every possible number.
     #
@@ -178,8 +251,7 @@ module Net
     #
     # <i>Set membership:</i>
     # - #include? (aliased as #member?):
-    #   Returns whether a given element (nz-number, range, or <tt>*</tt>) is
-    #   contained by the set.
+    #   Returns whether a given element is contained by the set.
     # - #include_star?: Returns whether the set contains <tt>*</tt>.
     #
     # <i>Minimum and maximum value elements:</i>
@@ -324,6 +396,23 @@ module Net
       STARS     = [:*, ?*, -1].freeze
       private_constant :STARS
 
+      INSPECT_MAX_LEN      = 512
+      INSPECT_TRUNCATE_LEN =  16
+      private_constant :INSPECT_MAX_LEN, :INSPECT_TRUNCATE_LEN
+
+      # /(,\d+){100}\z/ is shockingly slow on huge strings.
+      # /(,\d{0,10}){100}\z/ is ok, but ironically, Regexp.linear_time? is false.
+      #
+      # This unrolls all nested quantifiers.  It's much harder to read, but it's
+      # also the fastest out of all the versions I tested.
+      nz_uint32   = /[1-9](?:\d(?:\d(?:\d(?:\d(?:\d(?:\d(?:\d(?:\d(?:\d)?)?)?)?)?)?)?)?)?/
+      num_or_star = /#{nz_uint32}|\*/
+      entry       = /#{num_or_star}(?::#{num_or_star})?/
+      entries     = ([entry] * INSPECT_TRUNCATE_LEN).join(",")
+      INSPECT_ABRIDGED_HEAD_RE = /\A#{entries},/
+      INSPECT_ABRIDGED_TAIL_RE = /,#{entries}\z/
+      private_constant :INSPECT_ABRIDGED_HEAD_RE, :INSPECT_ABRIDGED_TAIL_RE
+
       class << self
 
         # :call-seq:
@@ -337,13 +426,12 @@ module Net
         # An empty SequenceSet is invalid and will raise a DataFormatError.
         #
         # Use ::new to create a mutable or empty SequenceSet.
+        #
+        # Related: ::new, Net::IMAP::SequenceSet(), ::try_convert
         def [](first, *rest)
           if rest.empty?
-            if first.is_a?(SequenceSet) && first.frozen? && first.valid?
-              first
-            else
-              new(first).validate.freeze
-            end
+            set = try_convert(first)&.validate
+            set&.frozen? ? set : (set&.dup || new(first).validate).freeze
           else
             new(first).merge(*rest).validate.freeze
           end
@@ -356,12 +444,14 @@ module Net
         # +to_sequence_set+, calls +obj.to_sequence_set+ and returns the result.
         # Otherwise returns +nil+.
         #
-        # If +obj.to_sequence_set+ doesn't return a SequenceSet, an exception is
-        # raised.
+        # If +obj.to_sequence_set+ doesn't return a SequenceSet or +nil+, an
+        # exception is raised.
+        #
+        # Related: Net::IMAP::SequenceSet(), ::new, ::[]
         def try_convert(obj)
           return obj if obj.is_a?(SequenceSet)
           return nil unless obj.respond_to?(:to_sequence_set)
-          obj = obj.to_sequence_set
+          return nil unless obj = obj.to_sequence_set
           return obj if obj.is_a?(SequenceSet)
           raise DataFormatError, "invalid object returned from to_sequence_set"
         end
@@ -376,23 +466,91 @@ module Net
       end
 
       # Create a new SequenceSet object from +input+, which may be another
-      # SequenceSet, an IMAP formatted +sequence-set+ string, a number, a
-      # range, <tt>:*</tt>, or an enumerable of these.
+      # SequenceSet, an IMAP formatted +sequence-set+ string, a non-zero 32 bit
+      # unsigned integer, a range, <tt>:*</tt>, a Set of numbers or <tt>*</tt>,
+      # an object that responds to +to_sequence_set+ (such as SearchResult) or
+      # an Array of these (array inputs may be nested).
       #
-      # Use ::[] to create a frozen (non-empty) SequenceSet.
+      #     set = Net::IMAP::SequenceSet.new(1)
+      #     set.valid_string  #=> "1"
+      #     set = Net::IMAP::SequenceSet.new(1..100)
+      #     set.valid_string  #=> "1:100"
+      #     set = Net::IMAP::SequenceSet.new(1...100)
+      #     set.valid_string  #=> "1:99"
+      #     set = Net::IMAP::SequenceSet.new([1, 2, 5..])
+      #     set.valid_string  #=> "1:2,5:*"
+      #     set = Net::IMAP::SequenceSet.new("1,2,3:7,5,6:10,2048,1024")
+      #     set.valid_string  #=> "1,2,3:7,5,6:10,2048,1024"
+      #     set = Net::IMAP::SequenceSet.new(1, 2, 3..7, 5, 6..10, 2048, 1024)
+      #     set.valid_string  #=> "1:10,1024,2048"
+      #
+      # With no arguments (or +nil+) creates an empty sequence set.  Note that
+      # an empty sequence set is invalid in the \IMAP grammar.
+      #
+      #     set = Net::IMAP::SequenceSet.new
+      #     set.empty?        #=> true
+      #     set.valid?        #=> false
+      #     set.valid_string  #!> raises DataFormatError
+      #     set << 1..10
+      #     set.empty?        #=> false
+      #     set.valid?        #=> true
+      #     set.valid_string  #=> "1:10"
+      #
+      # When +input+ is a SequenceSet, ::new behaves the same as calling #dup on
+      # that other set.  The input's #string will be preserved.
+      #
+      #     input = Net::IMAP::SequenceSet.new("1,2,3:7,5,6:10,2048,1024")
+      #     copy  = Net::IMAP::SequenceSet.new(input)
+      #     input.valid_string  #=> "1,2,3:7,5,6:10,2048,1024"
+      #     copy.valid_string   #=> "1,2,3:7,5,6:10,2048,1024"
+      #     copy2 = input.dup   # same as calling new with a SequenceSet input
+      #     copy ==     input   #=> true,  same set membership
+      #     copy.eql?   input   #=> true,  same string value
+      #     copy.equal? input   #=> false, different objects
+      #
+      #     copy.normalize!
+      #     copy.valid_string   #=> "1:10,1024,2048"
+      #     copy ==   input     #=> true,  same set membership
+      #     copy.eql? input     #=> false, different string value
+      #
+      #     copy << 999
+      #     copy.valid_string   #=> "1:10,999,1024,2048"
+      #     copy ==   input     #=> false, different set membership
+      #     copy.eql? input     #=> false, different string value
+      #
+      # === Alternative set creation methods
+      #
+      # * ::[] returns a frozen validated (non-empty) SequenceSet, without
+      #   allocating a new object when the input is already a valid frozen
+      #   SequenceSet.
+      # * Net::IMAP::SequenceSet() coerces an input to SequenceSet, without
+      #   allocating a new object when the input is already a SequenceSet.
+      # * ::try_convert calls +to_sequence_set+ on inputs that support it and
+      #   returns +nil+ for inputs that don't.
+      # * ::empty and ::full both return frozen singleton sets which can be
+      #   combined with set operations (#|, #&, #^, #-, etc) to make new sets.
+      #
+      # See SequenceSet@Creating+sequence+sets.
       def initialize(input = nil) input ? replace(input) : clear end
 
       # Removes all elements and returns self.
-      def clear; @tuples, @string = [], nil; self end
+      def clear
+        modifying! # redundant check, to normalize the error message for JRuby
+        @tuples, @string = [], nil
+        self
+      end
 
       # Replace the contents of the set with the contents of +other+ and returns
       # +self+.
       #
-      # +other+ may be another SequenceSet, or it may be an IMAP +sequence-set+
-      # string, a number, a range, <tt>*</tt>, or an enumerable of these.
+      # +other+ may be another SequenceSet or any other object that would be
+      # accepted by ::new.
       def replace(other)
         case other
-        when SequenceSet then initialize_dup(other)
+        when SequenceSet then
+          modifying! # short circuit before doing any work
+          @tuples = other.deep_copy_tuples
+          @string = other.instance_variable_get(:@string)
         when String      then self.string = other
         else                  clear; merge other
         end
@@ -421,36 +579,40 @@ module Net
       # If the set was created from a single string, it is not normalized.  If
       # the set is updated the string will be normalized.
       #
-      # Related: #valid_string, #normalized_string, #to_s
+      # Related: #valid_string, #normalized_string, #to_s, #inspect
       def string; @string ||= normalized_string if valid? end
 
       # Returns an array with #normalized_string when valid and an empty array
       # otherwise.
       def deconstruct; valid? ? [normalized_string] : [] end
 
-      # Assigns a new string to #string and resets #elements to match.  It
-      # cannot be set to an empty string—assign +nil+ or use #clear instead.
-      # The string is validated but not normalized.
+      # Assigns a new string to #string and resets #elements to match.
+      # Assigning +nil+ or an empty string are equivalent to calling #clear.
       #
-      # Use #add or #merge to add a string to an existing set.
+      # Non-empty strings are validated but not normalized.
+      #
+      # Use #add, #merge, or #append to add a string to an existing set.
       #
       # Related: #replace, #clear
-      def string=(str)
-        if str.nil?
+      def string=(input)
+        if input.nil?
           clear
-        else
-          str = String.try_convert(str) or raise ArgumentError, "not a string"
+        elsif (str = String.try_convert(input))
+          modifying! # short-circuit before parsing the string
           tuples = str_to_tuples str
           @tuples, @string = [], -str
           tuples_add tuples
+        else
+          raise ArgumentError, "expected a string or nil, got #{input.class}"
         end
+        str
       end
 
       # Returns the \IMAP +sequence-set+ string representation, or an empty
       # string when the set is empty.  Note that an empty set is invalid in the
       # \IMAP syntax.
       #
-      # Related: #valid_string, #normalized_string, #to_s
+      # Related: #string, #valid_string, #normalized_string, #inspect
       def to_s; string || "" end
 
       # Freezes and returns the set.  A frozen SequenceSet is Ractor-safe.
@@ -503,8 +665,9 @@ module Net
 
       # :call-seq: self === other -> true | false | nil
       #
-      # Returns whether +other+ is contained within the set.  Returns +nil+ if a
-      # StandardError is raised while converting +other+ to a comparable type.
+      # Returns whether +other+ is contained within the set.  +other+ may be any
+      # object that would be accepted by ::new.  Returns +nil+ if StandardError
+      # is raised while converting +other+ to a comparable type.
       #
       # Related: #cover?, #include?, #include_star?
       def ===(other)
@@ -518,12 +681,12 @@ module Net
       # Returns whether +other+ is contained within the set.  +other+ may be any
       # object that would be accepted by ::new.
       #
-      # Related: #===, #include?, #include_star?
+      # Related: #===, #include?, #include_star?, #intersect?
       def cover?(other) input_to_tuples(other).none? { !include_tuple?(_1) } end
 
       # Returns +true+ when a given number or range is in +self+, and +false+
-      # otherwise.  Returns +false+ unless +number+ is an Integer, Range, or
-      # <tt>*</tt>.
+      # otherwise.  Returns +nil+ when +number+ isn't a valid SequenceSet
+      # element (Integer, Range, <tt>*</tt>, +sequence-set+ string).
       #
       #     set = Net::IMAP::SequenceSet["5:10,100,111:115"]
       #     set.include? 1      #=> false
@@ -531,8 +694,8 @@ module Net
       #     set.include? 11..20 #=> false
       #     set.include? 100    #=> true
       #     set.include? 6      #=> true, covered by "5:10"
-      #     set.include? 4..9   #=> true, covered by "5:10"
-      #     set.include? "4:9"  #=> true, strings are parsed
+      #     set.include? 6..9   #=> true, covered by "5:10"
+      #     set.include? "6:9"  #=> true, strings are parsed
       #     set.include? 4..9   #=> false, intersection is not sufficient
       #     set.include? "*"    #=> false, use #limit to re-interpret "*"
       #     set.include? -1     #=> false, -1 is interpreted as "*"
@@ -541,11 +704,14 @@ module Net
       #     set.include? :*     #=> true
       #     set.include? "*"    #=> true
       #     set.include? -1     #=> true
-      #     set.include? 200..  #=> true
-      #     set.include? 100..  #=> false
+      #     set.include?(200..) #=> true
+      #     set.include?(100..) #=> false
       #
-      # Related: #include_star?, #cover?, #===
-      def include?(element) include_tuple? input_to_tuple element end
+      # Related: #include_star?, #cover?, #===, #intersect?
+      def include?(element)
+        tuple = input_to_tuple element rescue nil
+        !!include_tuple?(tuple) if tuple
+      end
 
       alias member? include?
 
@@ -558,7 +724,7 @@ module Net
       #     Net::IMAP::SequenceSet["5:10"].intersect? "7,9,11" #=> true
       #     Net::IMAP::SequenceSet["5:10"].intersect? "11:33"  #=> false
       #
-      # Related: #intersection, #disjoint?
+      # Related: #intersection, #disjoint?, #cover?, #include?
       def intersect?(other)
         valid? && input_to_tuples(other).any? { intersect_tuple? _1 }
       end
@@ -577,7 +743,7 @@ module Net
 
       # :call-seq:
       #   max(star: :*) => integer or star or nil
-      #   max(count, star: :*) => SequenceSet
+      #   max(count) => SequenceSet
       #
       # Returns the maximum value in +self+, +star+ when the set includes
       # <tt>*</tt>, or +nil+ when the set is empty.
@@ -589,7 +755,13 @@ module Net
       # Related: #min, #minmax, #slice
       def max(count = nil, star: :*)
         if count
-          slice(-[count, size].min..) || remain_frozen_empty
+          # n.b: #cardinality has not been backported to 0.5
+          cardinality = @tuples.sum(@tuples.count) { _2 - _1 }
+          if cardinality <= count
+            frozen? ? self : dup
+          else
+            slice(-count..) || remain_frozen_empty
+          end
         elsif (val = @tuples.last&.last)
           val == STAR_INT ? star : val
         end
@@ -597,7 +769,7 @@ module Net
 
       # :call-seq:
       #   min(star: :*) => integer or star or nil
-      #   min(count, star: :*) => SequenceSet
+      #   min(count) => SequenceSet
       #
       # Returns the minimum value in +self+, +star+ when the only value in the
       # set is <tt>*</tt>, or +nil+ when the set is empty.
@@ -615,10 +787,11 @@ module Net
         end
       end
 
-      # :call-seq: minmax(star: :*) => nil or [integer, integer or star]
+      # :call-seq: minmax(star: :*) => [min, max] or nil
       #
       # Returns a 2-element array containing the minimum and maximum numbers in
-      # +self+, or +nil+ when the set is empty.
+      # +self+, or +nil+ when the set is empty.  +star+ is handled the same way
+      # as by #min and #max.
       #
       # Related: #min, #max
       def minmax(star: :*); [min(star: star), max(star: star)] unless empty? end
@@ -640,9 +813,7 @@ module Net
       # Returns a new sequence set that has every number in the +other+ object
       # added.
       #
-      # +other+ may be any object that would be accepted by ::new: a non-zero 32
-      # bit unsigned integer, range, <tt>sequence-set</tt> formatted string,
-      # another sequence set, or an enumerable containing any of these.
+      # +other+ may be any object that would be accepted by ::new.
       #
       #     Net::IMAP::SequenceSet["1:5"] | 2 | [4..6, 99]
       #     #=> Net::IMAP::SequenceSet["1:6,99"]
@@ -666,9 +837,7 @@ module Net
       # Returns a new sequence set built by duplicating this set and removing
       # every number that appears in +other+.
       #
-      # +other+ may be any object that would be accepted by ::new: a non-zero 32
-      # bit unsigned integer, range, <tt>sequence-set</tt> formatted string,
-      # another sequence set, or an enumerable containing any of these.
+      # +other+ may be any object that would be accepted by ::new.
       #
       #     Net::IMAP::SequenceSet[1..5] - 2 - 4 - 6
       #     #=> Net::IMAP::SequenceSet["1,3,5"]
@@ -678,7 +847,7 @@ module Net
       # ==== Set identities
       #
       # <tt>lhs - rhs</tt> is equivalent to:
-      # * <tt>~r - ~l</tt>
+      # * <tt>~rhs - ~lhs</tt>
       # * <tt>lhs & ~rhs</tt>
       # * <tt>~(~lhs | rhs)</tt>
       # * <tt>lhs & (lhs ^ rhs)</tt>
@@ -694,9 +863,7 @@ module Net
       # Returns a new sequence set containing only the numbers common to this
       # set and +other+.
       #
-      # +other+ may be any object that would be accepted by ::new: a non-zero 32
-      # bit unsigned integer, range, <tt>sequence-set</tt> formatted string,
-      # another sequence set, or an enumerable containing any of these.
+      # +other+ may be any object that would be accepted by ::new.
       #
       #     Net::IMAP::SequenceSet[1..5] & [2, 4, 6]
       #     #=> Net::IMAP::SequenceSet["2,4"]
@@ -724,9 +891,7 @@ module Net
       # Returns a new sequence set containing numbers that are exclusive between
       # this set and +other+.
       #
-      # +other+ may be any object that would be accepted by ::new: a non-zero 32
-      # bit unsigned integer, range, <tt>sequence-set</tt> formatted string,
-      # another sequence set, or an enumerable containing any of these.
+      # +other+ may be any object that would be accepted by ::new.
       #
       #     Net::IMAP::SequenceSet[1..5] ^ [2, 4, 6]
       #     #=> Net::IMAP::SequenceSet["1,3,5:6"]
@@ -776,10 +941,11 @@ module Net
       # #string will be regenerated.  Use #merge to add many elements at once.
       #
       # Use #append to append new elements to #string.  See
-      # Net::IMAP@Ordered+and+Normalized+Sets.
+      # SequenceSet@Ordered+and+Normalized+sets.
       #
       # Related: #add?, #merge, #union, #append
       def add(element)
+        modifying! # short-circuit before input_to_tuple
         tuple_add input_to_tuple element
         normalize!
       end
@@ -790,11 +956,11 @@ module Net
       # Unlike #add, #merge, or #union, the new value is appended to #string.
       # This may result in a #string which has duplicates or is out-of-order.
       #
-      # See Net::IMAP@Ordered+and+Normalized+Sets.
+      # See SequenceSet@Ordered+and+Normalized+sets.
       #
       # Related: #add, #merge, #union
       def append(entry)
-        modifying!
+        modifying! # short-circuit before input_to_tuple
         tuple = input_to_tuple entry
         entry = tuple_to_str tuple
         string unless empty? # write @string before tuple_add
@@ -812,6 +978,7 @@ module Net
       #
       # Related: #add, #merge, #union, #include?
       def add?(element)
+        modifying! # short-circuit before include?
         add element unless include? element
       end
 
@@ -824,6 +991,7 @@ module Net
       #
       # Related: #delete?, #delete_at, #subtract, #difference
       def delete(element)
+        modifying! # short-circuit before input_to_tuple
         tuple_subtract input_to_tuple element
         normalize!
       end
@@ -861,8 +1029,10 @@ module Net
       #
       # Related: #delete, #delete_at, #subtract, #difference, #disjoint?
       def delete?(element)
+        modifying! # short-circuit before input_to_tuple
+        element = input_try_convert(element)
         tuple = input_to_tuple element
-        if tuple.first == tuple.last
+        if number_input?(element)
           return unless include_tuple? tuple
           tuple_subtract tuple
           normalize!
@@ -901,6 +1071,7 @@ module Net
       #
       # Related: #slice, #delete_at, #delete, #delete?, #subtract, #difference
       def slice!(index, length = nil)
+        modifying! # short-circuit before slice
         deleted = slice(index, length) and subtract deleted
         deleted
       end
@@ -908,14 +1079,13 @@ module Net
       # Merges all of the elements that appear in any of the +sets+ into the
       # set, and returns +self+.
       #
-      # The +sets+ may be any objects that would be accepted by ::new: non-zero
-      # 32 bit unsigned integers, ranges, <tt>sequence-set</tt> formatted
-      # strings, other sequence sets, or enumerables containing any of these.
+      # The +sets+ may be any objects that would be accepted by ::new.
       #
       # #string will be regenerated after all sets have been merged.
       #
       # Related: #add, #add?, #union
       def merge(*sets)
+        modifying! # short-circuit before input_to_tuples
         tuples_add input_to_tuples sets
         normalize!
       end
@@ -923,9 +1093,7 @@ module Net
       # Removes all of the elements that appear in any of the given +sets+ from
       # the set, and returns +self+.
       #
-      # The +sets+ may be any objects that would be accepted by ::new: non-zero
-      # 32 bit unsigned integers, ranges, <tt>sequence-set</tt> formatted
-      # strings, other sequence sets, or enumerables containing any of these.
+      # The +sets+ may be any objects that would be accepted by ::new.
       #
       # Related: #difference
       def subtract(*sets)
@@ -941,7 +1109,7 @@ module Net
       # This is useful when the given order is significant, for example in a
       # ESEARCH response to IMAP#sort.
       #
-      # See Net::IMAP@Ordered+and+Normalized+Sets.
+      # See SequenceSet@Ordered+and+Normalized+sets.
       #
       # Related: #each_entry, #elements
       def entries; each_entry.to_a end
@@ -950,7 +1118,7 @@ module Net
       #
       # The returned elements are sorted and coalesced, even when the input
       # #string is not.  <tt>*</tt> will sort last.  See #normalize,
-      # Net::IMAP@Ordered+and+Normalized+Sets.
+      # SequenceSet@Ordered+and+Normalized+sets.
       #
       # By itself, <tt>*</tt> translates to <tt>:*</tt>.  A range containing
       # <tt>*</tt> translates to an endless range.  Use #limit to translate both
@@ -967,7 +1135,7 @@ module Net
       #
       # The returned elements are sorted and coalesced, even when the input
       # #string is not.  <tt>*</tt> will sort last.  See #normalize,
-      # Net::IMAP@Ordered+and+Normalized+Sets.
+      # SequenceSet@Ordered+and+Normalized+sets.
       #
       # <tt>*</tt> translates to an endless range.  By itself, <tt>*</tt>
       # translates to <tt>:*..</tt>.  Use #limit to set <tt>*</tt> to a maximum
@@ -984,7 +1152,7 @@ module Net
       # Returns a sorted array of all of the number values in the sequence set.
       #
       # The returned numbers are sorted and de-duplicated, even when the input
-      # #string is not.  See #normalize, Net::IMAP@Ordered+and+Normalized+Sets.
+      # #string is not.  See #normalize, SequenceSet@Ordered+and+Normalized+sets.
       #
       #   Net::IMAP::SequenceSet["2,5:9,6,12:11"].numbers
       #   #=> [2, 5, 6, 7, 8, 9, 11, 12]
@@ -1016,7 +1184,7 @@ module Net
       # no sorting, deduplication, or coalescing.  When #string is in its
       # normalized form, this will yield the same values as #each_element.
       #
-      # See Net::IMAP@Ordered+and+Normalized+Sets.
+      # See SequenceSet@Ordered+and+Normalized+sets.
       #
       # Related: #entries, #each_element
       def each_entry(&block) # :yields: integer or range or :*
@@ -1028,7 +1196,7 @@ module Net
       # and returns self.  Returns an enumerator when called without a block.
       #
       # The returned numbers are sorted and de-duplicated, even when the input
-      # #string is not.  See #normalize, Net::IMAP@Ordered+and+Normalized+Sets.
+      # #string is not.  See #normalize, SequenceSet@Ordered+and+Normalized+sets.
       #
       # Related: #elements, #each_entry
       def each_element # :yields: integer or range or :*
@@ -1424,6 +1592,7 @@ module Net
       #
       # Related: #limit
       def limit!(max:)
+        modifying! # short-circuit, and normalize the error message for JRuby
         star = include_star?
         max  = to_tuple_int(max)
         tuple_subtract [max + 1, STAR_INT]
@@ -1438,6 +1607,7 @@ module Net
       #
       # Related: #complement
       def complement!
+        modifying! # short-circuit, and normalize the error message for JRuby
         return replace(self.class.full) if empty?
         return clear                    if full?
         flat = @tuples.flat_map { [_1 - 1, _2 + 1] }
@@ -1451,7 +1621,7 @@ module Net
       #
       # The returned set's #string is sorted and deduplicated.  Adjacent or
       # overlapping elements will be merged into a single larger range.
-      # See Net::IMAP@Ordered+and+Normalized+Sets.
+      # See SequenceSet@Ordered+and+Normalized+sets.
       #
       #   Net::IMAP::SequenceSet["1:5,3:7,10:9,10:11"].normalize
       #   #=> Net::IMAP::SequenceSet["1:7,9:11"]
@@ -1464,39 +1634,87 @@ module Net
       end
 
       # Resets #string to be sorted, deduplicated, and coalesced.  Returns
-      # +self+.  See Net::IMAP@Ordered+and+Normalized+Sets.
+      # +self+.  See SequenceSet@Ordered+and+Normalized+sets.
       #
       # Related: #normalize, #normalized_string
       def normalize!
+        modifying! # redundant check, to normalize the error message for JRuby
         @string = nil
         self
       end
 
       # Returns a normalized +sequence-set+ string representation, sorted
       # and deduplicated.  Adjacent or overlapping elements will be merged into
-      # a single larger range.  See Net::IMAP@Ordered+and+Normalized+Sets.
+      # a single larger range.  See SequenceSet@Ordered+and+Normalized+sets.
       #
       #   Net::IMAP::SequenceSet["1:5,3:7,10:9,10:11"].normalized_string
       #   #=> "1:7,9:11"
       #
       # Returns +nil+ when the set is empty.
       #
-      # Related: #normalize!, #normalize
+      # Related: #normalize!, #normalize, #string, #to_s
       def normalized_string
         @tuples.empty? ? nil : -@tuples.map { tuple_to_str _1 }.join(",")
       end
 
+      # Returns an inspection string for the SequenceSet.
+      #
+      #   Net::IMAP::SequenceSet.new.inspect
+      #   #=> "Net::IMAP::SequenceSet()"
+      #
+      #   Net::IMAP::SequenceSet(1..5, 1024, 15, 2000).inspect
+      #   #=> 'Net::IMAP::SequenceSet("1:5,15,1024,2000")'
+      #
+      # Frozen sets have slightly different output:
+      #
+      #   Net::IMAP::SequenceSet.empty.inspect
+      #   #=> "Net::IMAP::SequenceSet.empty"
+      #
+      #   Net::IMAP::SequenceSet[1..5, 1024, 15, 2000].inspect
+      #   #=> 'Net::IMAP::SequenceSet["1:5,15,1024,2000"]'
+      #
+      # Large sets (by number of #entries) have abridged output, with only the
+      # first and last entries:
+      #
+      #   Net::IMAP::SequenceSet(((1..5000) % 2).to_a).inspect
+      #   #=> #<Net::IMAP::SequenceSet 2500 entries "1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,...(2468 entries omitted)...,4969,4971,4973,4975,4977,4979,4981,4983,4985,4987,4989,4991,4993,4995,4997,4999">
+      #
+      # Related: #to_s, #string
       def inspect
-        if empty?
-          (frozen? ?  "%s.empty" : "#<%s empty>") % [self.class]
-        elsif frozen?
-          "%s[%p]"   % [self.class, to_s]
+        case (count = count_entries)
+        when 0
+          (frozen? ? "%s.empty" : "%s()") % [self.class]
+        when ..INSPECT_MAX_LEN
+          (frozen? ? "%s[%p]" : "%s(%p)") % [self.class, to_s]
         else
-          "#<%s %p>" % [self.class, to_s]
+          if @string
+            head = @string[INSPECT_ABRIDGED_HEAD_RE]
+            tail = @string[INSPECT_ABRIDGED_TAIL_RE]
+          else
+            head = export_string_entries(@tuples.first(INSPECT_TRUNCATE_LEN)) + ","
+            tail = "," + export_string_entries(@tuples.last(INSPECT_TRUNCATE_LEN))
+          end
+          '#<%s %d entries "%s...(%d entries omitted)...%s"%s>' % [
+            self.class, count,
+            head, count - INSPECT_TRUNCATE_LEN * 2, tail,
+            frozen? ? " (frozen)" : "",
+          ]
         end
       end
 
-      # Returns self
+      private def count_entries
+        @string ? @string.count(",") + 1 : @tuples.count
+      end
+
+      ##
+      # :method: to_sequence_set
+      # :call-seq: to_sequence_set -> self
+      #
+      # Returns +self+
+      #
+      # Related: ::try_convert
+
+      # :nodoc: (work around rdoc bug)
       alias to_sequence_set itself
 
       # Unstable API: currently for internal use only (Net::IMAP#validate_data)
@@ -1526,6 +1744,8 @@ module Net
 
       attr_reader :tuples # :nodoc:
 
+      def deep_copy_tuples; @tuples.map { _1.dup } end # :nodoc:
+
       private
 
       def remain_frozen(set) frozen? ? set.freeze : set end
@@ -1533,12 +1753,12 @@ module Net
 
       # frozen clones are shallow copied
       def initialize_clone(other)
-        other.frozen? ? super : initialize_dup(other)
+        @tuples = other.deep_copy_tuples unless other.frozen?
+        super
       end
 
       def initialize_dup(other)
-        @tuples = other.tuples.map(&:dup)
-        @string = other.string&.-@
+        @tuples = other.deep_copy_tuples
         super
       end
 
@@ -1563,9 +1783,8 @@ module Net
         when Array       then set.flat_map { input_to_tuples _1 }
         when nil         then []
         else
-          raise DataFormatError,
-                "expected nz-number, range, string, or enumerable; " \
-                "got %p" % [set]
+          raise DataFormatError, "expected nz-number, range, '*', Set, Array; " \
+                                 "got %p" % [set]
         end
       end
 
@@ -1576,6 +1795,14 @@ module Net
           Integer.try_convert(input) ||
           String.try_convert(input) ||
           input
+      end
+
+      # NOTE: input_try_convert must be called on input first
+      def number_input?(input)
+        case input
+        when *STARS, Integer then true
+        when String          then !input.include?(/[:,]/)
+        end
       end
 
       def range_to_tuple(range)
@@ -1590,6 +1817,10 @@ module Net
 
       def to_tuple_int(obj) STARS.include?(obj) ? STAR_INT : nz_number(obj) end
       def from_tuple_int(num) num == STAR_INT ? :* : num end
+
+      def export_string_entries(entries)
+        -entries.map { tuple_to_str _1 }.join(",")
+      end
 
       def tuple_to_str(tuple) tuple.uniq.map{ from_tuple_int _1 }.join(":") end
       def str_to_tuples(str) str.split(",", -1).map! { str_to_tuple _1 } end
