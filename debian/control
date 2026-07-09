@@ -4,7 +4,7 @@ Maintainer: Debian Ruby Team <pkg-ruby-extras-maintainers@lists.alioth.debian.or
 Uploaders: Antonio Terceiro <terceiro@debian.org>,
            Utkarsh Gupta <utkarsh@debian.org>,
            Lucas Kanashiro <kanashiro@debian.org>
-Build-Depends: debhelper-compat (= 13),
+Build-Depends: debhelper-compat (= 14),
                bison,
                coreutils (>= 7.5),
                file,
@@ -33,7 +33,7 @@ Vcs-Browser: https://salsa.debian.org/ruby-team/ruby
 Package: ruby3.4
 Multi-Arch: allowed
 Architecture: any
-Depends: rubygems-integration (>= 1.17.1~), ${misc:Depends}, ${shlibs:Depends}
+Depends: rubygems-integration (>= 1.17.1~)
 Recommends: fonts-lato, libjs-jquery
 Description: Interpreter of object-oriented scripting language Ruby
  Ruby is the interpreted scripting language for quick and easy
@@ -54,9 +54,7 @@ Depends: rake (>= 10.4.2),
          ruby-net-telnet (>= 0.1.1),
          ruby-ruby2-keywords (>= 0.0.5-1~),
          ruby-webrick (>= 1.9),
-         ruby-xmlrpc (>= 0.3.3~),
-         ${misc:Depends},
-         ${shlibs:Depends}
+         ruby-xmlrpc (>= 0.3.3~)
 Recommends: ruby-sdbm (>= 1.0.0-3~)
 Provides: ${libruby:Provides}
 Description: Libraries necessary to run Ruby 3.4
@@ -71,10 +69,7 @@ Description: Libraries necessary to run Ruby 3.4
 Package: ruby3.4-dev
 Multi-Arch: same
 Architecture: any
-Depends: libgmp-dev,
-         libruby3.4 (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
+Depends: libgmp-dev, libruby3.4 (= ${binary:Version})
 Recommends: ruby3.4-doc
 Description: Header files for compiling extension modules for the Ruby 3.4
  Ruby is the interpreted scripting language for quick and easy
@@ -90,7 +85,6 @@ Package: ruby3.4-doc
 Multi-Arch: foreign
 Section: doc
 Architecture: all
-Depends: ${misc:Depends}
 Description: Documentation for Ruby 3.4
  Ruby is the interpreted scripting language for quick and easy
  object-oriented programming.  It has many features to process text
