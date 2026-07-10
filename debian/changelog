@@ -18,6 +18,8 @@ ruby3.4 (3.4.10-1~exp1) UNRELEASED; urgency=medium
     autopkgtest Reline::ANSITest works when TERM=dumb.
   * Add tracepoint-checker-ignore-activated-decrease.patch: skip
     TracePoint.stat zombie assert under autopkgtest (suite noise).
+  * Update source lintian overrides for license-problem-non-free-RFC on
+    net-imap LICENSE.txt (RFC notice text only; code is free).
 
  -- Cédric Boutillier <boutil@debian.org>  Thu, 26 Mar 2026 22:35:51 +0100
 
