@@ -16,6 +16,8 @@ ruby3.4 (3.4.10-1~exp1) UNRELEASED; urgency=medium
     and replace long digit -width values that break groff 1.24.
   * Add always-require-reline-ansi.patch: always load Reline::ANSI so
     autopkgtest Reline::ANSITest works when TERM=dumb.
+  * Add tracepoint-checker-ignore-activated-decrease.patch: skip
+    TracePoint.stat zombie assert under autopkgtest (suite noise).
 
  -- Cédric Boutillier <boutil@debian.org>  Thu, 26 Mar 2026 22:35:51 +0100
 
