@@ -20,6 +20,8 @@ ruby3.4 (3.4.10-1~exp1) UNRELEASED; urgency=medium
     TracePoint.stat zombie assert under autopkgtest (suite noise).
   * Update source lintian overrides for license-problem-non-free-RFC on
     net-imap LICENSE.txt (RFC notice text only; code is free).
+  * debian/tests/control: Depend on pkgconf instead of obsolete pkg-
+    config transitional package.
 
  -- Cédric Boutillier <boutil@debian.org>  Thu, 26 Mar 2026 22:35:51 +0100
 
