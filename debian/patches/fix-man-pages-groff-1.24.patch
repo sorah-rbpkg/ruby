@@ -1,0 +1,81 @@
+Description: Fix man page markup for groff 1.24
+ Close the unclosed .Bl for RUBY_TCP_NO_FAST_FALLBACK in man/ruby.1, and
+ replace .Bl -tag -width "1234567890123" with -width "--encoding" on the
+ mdoc pages. Long all-digit -width values trigger "cannot adjust line;
+ overset" floods under groff 1.24 and mangled OPTIONS rendering.
+Origin: vendor
+Forwarded: https://github.com/ruby/ruby/pull/17775
+Applied-Upstream: b226c591082bc78d5f0a506e69b4ed31ed421be3
+Author: Simon Quigley <tsimonq2@debian.org>
+Last-Update: 2026-07-09
+---
+--- a/man/erb.1
++++ b/man/erb.1
+@@ -31,7 +31,7 @@ is a part of
+ .Nm Ruby .
+ .Pp
+ .Sh OPTIONS
+-.Bl -tag -width "1234567890123" -compact
++.Bl -tag -width "--encoding" -compact
+ .Pp
+ .It Fl -version
+ Prints the version of
+--- a/man/irb.1
++++ b/man/irb.1
+@@ -36,7 +36,7 @@
+ is the REPL(read-eval-print loop) environment for Ruby programs.
+ .Pp
+ .Sh OPTIONS
+-.Bl -tag -width "1234567890123" -compact
++.Bl -tag -width "--encoding" -compact
+ .Pp
+ .It Fl -version
+ Prints the version of
+--- a/man/ri.1
++++ b/man/ri.1
+@@ -97,7 +97,7 @@ environment variable or the
+ environment variable.
+ .Pp
+ .Sh OPTIONS
+-.Bl -tag -width "1234567890123" -compact
++.Bl -tag -width "--encoding" -compact
+ .Pp
+ .It Fl i
+ .It Fl - Ns Oo Cm no- Oc Ns Cm interactive
+@@ -151,7 +151,7 @@ Output version information and exit.
+ .El
+ .Pp
+ Data source options:
+-.Bl -tag -width "1234567890123" -compact
++.Bl -tag -width "--encoding" -compact
+ .Pp
+ .It Fl - Ns Oo Cm no- Oc Ns Cm list-doc-dirs
+ List the directories from which
+@@ -190,7 +190,7 @@ Defaults to true.
+ .El
+ .Pp
+ Debug options:
+-.Bl -tag -width "1234567890123" -compact
++.Bl -tag -width "--encoding" -compact
+ .Pp
+ .It Fl - Ns Oo Cm no- Oc Ns Cm profile
+ Run with the Ruby profiler.
+--- a/man/ruby.1
++++ b/man/ruby.1
+@@ -141,7 +141,7 @@ to see how they are being developed and
+ The Ruby interpreter accepts the following command-line options (switches).
+ They are quite similar to those of
+ .Xr perl 1 .
+-.Bl -tag -width "1234567890123" -compact
++.Bl -tag -width "--encoding" -compact
+ .Pp
+ .It Fl -copyright
+ Prints the copyright notice, and quits immediately without running any
+@@ -787,6 +787,7 @@ When set to
+ .Li 0
+ or left unset, the fast fallback feature is enabled.
+ Introduced in Ruby 3.4, default: unset.
++.El
+ .Sh SEE ALSO
+ .Bl -hang -compact -width "https://www.ruby-toolbox.com/"
+ .It Lk https://www.ruby-lang.org/

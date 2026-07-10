@@ -18,3 +18,4 @@ test_tty_ambiguous_width-Use-Reline.test_rubybin.patch
 put-ruby-interpreter-inside-usr-bin.patch
 no-symlink-to-pkgconfig-files-in-non-arch-specific-locati.patch
 Remove-test_retry_workers.patch
+fix-man-pages-groff-1.24.patch
