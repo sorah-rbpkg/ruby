@@ -1,0 +1,17 @@
+Description: Always require reline/io/ansi so Reline::ANSI is defined
+ When TERM=dumb (common in autopkgtest/schroot/CI), decide_io_gate only
+ loads Reline::Dumb and skips requiring reline/io/ansi. IRB tests then
+ load Reline first; later Reline::ANSITest calls ANSI.new and fails with
+ NameError. Always require the ANSI backend (as already done for Dumb)
+ so the constant exists regardless of TERM at first require.
+Author: Simon Quigley <tsimonq2@debian.org>
+Origin: vendor
+Forwarded: not-needed
+
+--- a/lib/reline/io.rb
++++ b/lib/reline/io.rb
+@@ -53,3 +53,4 @@ module Reline
+ end
+ 
+ require 'reline/io/dumb'
++require 'reline/io/ansi'
