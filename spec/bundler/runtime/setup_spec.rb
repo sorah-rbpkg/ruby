@@ -303,6 +303,32 @@ RSpec.describe "Bundler.setup" do
         expect(out).to eq("WIN")
       end
     end
+
+    context "user sets it via `config set --local gemfile`" do
+      it "uses the value in the config" do
+        gemfile <<-G
+          source "https://gem.repo1"
+          gem "myrack"
+        G
+
+        gemfile bundled_app("CustomGemfile"), <<-G
+          source "https://gem.repo1"
+          gem "activesupport", "2.3.5"
+        G
+
+        bundle "config set --local gemfile #{bundled_app("CustomGemfile")}"
+        bundle "install"
+
+        ruby <<-R
+          require 'bundler'
+          Bundler.setup
+          require 'activesupport'
+          puts ACTIVESUPPORT
+        R
+
+        expect(out).to eq("2.3.5")
+      end
+    end
   end
 
   it "prioritizes gems in BUNDLE_PATH over gems in GEM_HOME" do
@@ -1135,8 +1161,6 @@ end
     end
 
     it "error intelligently if the gemspec has a LoadError" do
-      skip "whitespace issue?" if Gem.win_platform?
-
       ref = update_git "bar", gemspec: false do |s|
         s.write "bar.gemspec", "require 'foobarbaz'"
       end.ref_for("HEAD")
@@ -1283,7 +1307,12 @@ end
     end
 
     context "is not present" do
-      it "does not change the lock" do
+      # Skipped on ruby-core because `ruby "require 'bundler/setup'"` does not
+      # activate bundler as a gem there, so Source::Metadata falls back to a
+      # synthetic spec whose cache_file does not exist on disk and
+      # LockfileGenerator#bundler_checksum drops the bundler checksum, while
+      # the on-disk lockfile still has it.
+      it "does not change the lock", :ruby_repo do
         expect { ruby "require 'bundler/setup'" }.not_to change { lockfile }
       end
     end
@@ -1329,7 +1358,7 @@ end
         gem "bar", :git => "#{lib_path("bar-1.0")}"
       G
 
-      bundle :install
+      bundle :install, env: { "BUNDLE_LOCKFILE_CHECKSUMS" => "false" }
 
       ruby <<-RUBY, artifice: nil
         require 'bundler/setup'

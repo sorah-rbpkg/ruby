@@ -79,6 +79,10 @@ module Spec
       @spec_dir ||= source_root.join(ruby_core? ? "spec/bundler" : "spec")
     end
 
+    def rubygems_test_dir
+      @rubygems_test_dir ||= git_root.join("test/rubygems")
+    end
+
     def man_dir
       @man_dir ||= lib_dir.join("bundler/man")
     end
@@ -338,7 +342,9 @@ module Spec
     end
 
     def ruby_core_tarball?
-      !git_root.join(".git").directory?
+      # A tarball checkout has no `.git` entry at all. Note that `.git` may be
+      # a file rather than a directory in linked git worktrees.
+      !git_root.join(".git").exist?
     end
 
     def rubocop_gemfile_basename
