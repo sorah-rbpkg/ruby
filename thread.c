@@ -170,7 +170,7 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 #define THREAD_BLOCKING_BEGIN(th) do { \
   struct rb_thread_sched * const sched = TH_SCHED(th); \
   RB_VM_SAVE_MACHINE_CONTEXT(th); \
-  thread_sched_to_waiting((sched), (th));
+  thread_sched_to_waiting((sched), (th), true);
 
 #define THREAD_BLOCKING_END(th) \
   thread_sched_to_running((sched), (th)); \
@@ -194,7 +194,7 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
         /* Important that this is inlined into the macro, and not part of \
          * blocking_region_begin - see bug #20493 */ \
         RB_VM_SAVE_MACHINE_CONTEXT(th); \
-        thread_sched_to_waiting(TH_SCHED(th), th); \
+        thread_sched_to_waiting(TH_SCHED(th), th, false); \
         exec; \
         blocking_region_end(th, &__region); \
     }; \
@@ -2092,7 +2092,7 @@ rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
     int released = blocking_region_begin(th, brb, prev_unblock.func, prev_unblock.arg, FALSE);
     RUBY_ASSERT_ALWAYS(released);
     RB_VM_SAVE_MACHINE_CONTEXT(th);
-    thread_sched_to_waiting(TH_SCHED(th), th);
+    thread_sched_to_waiting(TH_SCHED(th), th, true);
     return r;
 }
 
@@ -2771,6 +2771,29 @@ rb_threadptr_signal_raise(rb_thread_t *th, int sig)
     argv[0] = rb_eSignal;
     argv[1] = INT2FIX(sig);
     rb_threadptr_raise(th->vm->ractor.main_thread, 2, argv);
+}
+
+void
+rb_threadptr_interrupt_raise(rb_thread_t *th)
+{
+    rb_thread_t *target_th = th->vm->ractor.main_thread;
+
+    if (rb_threadptr_dead(target_th)) {
+        return;
+    }
+
+    /* Preserve the traditional no-message Interrupt from default SIGINT. */
+    VALUE exc = rb_exc_new(rb_eInterrupt, 0, 0);
+
+    /* making an exception object can switch thread,
+       so we need to check thread deadness again */
+    if (rb_threadptr_dead(target_th)) {
+        return;
+    }
+
+    rb_ec_setup_exception(GET_EC(), exc, Qundef);
+    rb_threadptr_pending_interrupt_enque(target_th, exc);
+    rb_threadptr_interrupt(target_th);
 }
 
 void
