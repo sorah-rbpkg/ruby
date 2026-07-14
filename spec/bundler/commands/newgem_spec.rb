@@ -76,8 +76,6 @@ RSpec.describe "bundle gem" do
       end
 
       it "properly initializes git repo" do
-        skip "path with spaces needs special handling on Windows" if Gem.win_platform?
-
         bundle "gem #{gem_name}", dir: bundled_app("path with spaces")
         expect(bundled_app("path with spaces/#{gem_name}/.git")).to exist
       end
@@ -643,6 +641,15 @@ RSpec.describe "bundle gem" do
 
     expect(generated_gemspec.metadata["allowed_push_host"]).
       to match(/example\.com/)
+  end
+
+  it "includes a commented-out rubygems_mfa_required metadata hint" do
+    bundle "gem #{gem_name}"
+
+    gemspec_contents = bundled_app("#{gem_name}/#{gem_name}.gemspec").read
+
+    expect(gemspec_contents).to include('# spec.metadata["rubygems_mfa_required"] = "true"')
+    expect(gemspec_contents).to include("https://guides.rubygems.org/mfa-requirement-opt-in/")
   end
 
   it "sets a minimum ruby version" do
@@ -1765,7 +1772,7 @@ RSpec.describe "bundle gem" do
       it "configures the crate such that `cargo test` works", :ruby_repo, :mri_only do
         env = setup_rust_env
         gem_path = bundled_app(gem_name)
-        result = sys_exec("cargo test", env: env, dir: gem_path)
+        result = sys_exec("cargo test", env: env, dir: gem_path, timeout: 300)
 
         expect(result).to include("1 passed")
       end
