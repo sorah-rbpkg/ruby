@@ -785,6 +785,7 @@ pm_static_literal_value(rb_iseq_t *iseq, const pm_node_t *node, const pm_scope_n
 
         VALUE value = rb_hash_new_with_size(elements->size);
         rb_hash_bulk_insert(RARRAY_LEN(array), RARRAY_CONST_PTR(array), value);
+        RB_GC_GUARD(array);
 
         value = rb_obj_hide(value);
         RB_OBJ_SET_FROZEN_SHAREABLE(value);
@@ -1452,6 +1453,7 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
 
                     VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
                     rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary), hash);
+                    RB_GC_GUARD(ary);
                     hash = rb_obj_hide(hash);
                     RB_OBJ_SET_FROZEN_SHAREABLE(hash);
 
@@ -1668,6 +1670,11 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                             rb_hash_aset(stored_indices, keyword, ULONG2NUM(element_index));
                             rb_ary_store(keyword_indices, (long) element_index, Qtrue);
                             size++;
+                        }
+
+                        if (size > VM_CALL_KW_LEN_MAX) {
+                            COMPILE_ERROR(iseq, node_location->line, "too many keyword arguments (%d, maximum is %d)",
+                                          (int) size, (int) VM_CALL_KW_LEN_MAX);
                         }
 
                         *kw_arg = rb_xmalloc_mul_add(size, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
@@ -3774,6 +3781,8 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
             ELEM_INSERT_NEXT(opt_new_prelude, &new_insn_body(iseq, location.line, location.node_id, BIN(putnil), 0)->link);
         }
 
+        rb_callinfo_kwarg_retain(kw_arg);
+
         // Jump unless the receiver uses the "basic" implementation of "new"
         VALUE ci;
         if (flags & VM_CALL_FORWARDING) {
@@ -3796,6 +3805,8 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
 
         PUSH_LABEL(ret, not_basic_new_finish);
         PUSH_INSN(ret, location, pop);
+
+        rb_callinfo_kwarg_release(kw_arg);
     }
     else {
         PUSH_SEND_R(ret, location, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
@@ -6508,6 +6519,11 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     //                                                   ^^^^^^^^
     // Keywords create an internal variable on the parse tree
     if (keywords_list && keywords_list->size) {
+        if (keywords_list->size > VM_CALL_KW_LEN_MAX) {
+            COMPILE_ERROR(iseq, node_location->line, "too many keyword parameters (%d, maximum is %d)",
+                          (int) keywords_list->size, (int) VM_CALL_KW_LEN_MAX);
+        }
+
         keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
         keyword->num = (int) keywords_list->size;
 
@@ -11460,14 +11476,17 @@ pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, VALUE *
 
     result->node.filepath_encoding = rb_enc_get(filepath);
     pm_options_filepath_set(&result->options, RSTRING_PTR(filepath));
-    RB_GC_GUARD(filepath);
 
     pm_options_version_for_current_ruby_set(&result->options);
 
     pm_parser_init(&result->parser, pm_string_source(&result->input), pm_string_length(&result->input), &result->options);
     pm_node_t *node = pm_parse(&result->parser);
 
-    return pm_parse_process(result, node, script_lines);
+    VALUE error = pm_parse_process(result, node, script_lines);
+
+    RB_GC_GUARD(source);
+    RB_GC_GUARD(filepath);
+    return error;
 }
 
 struct rb_stdin_wrapper {
