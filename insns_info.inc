@@ -7736,7 +7736,7 @@ attr_comptime_sp_inc_invokesuperforward(
 )
 {
     return
-#line 1113 "insns.def"
+#line 1128 "insns.def"
 sp_inc_of_sendish(ci);
 #line 7742 "insns_info.inc"
 }
@@ -7809,7 +7809,7 @@ attr_sp_inc_invokesuperforward(
 )
 {
     return
-#line 1112 "insns.def"
+#line 1127 "insns.def"
 sp_inc_of_sendish(cd->ci);
 #line 7815 "insns_info.inc"
 }
@@ -7846,7 +7846,7 @@ rb_snum_t
 attr_comptime_sp_inc_invokeblock(MAYBE_UNUSED(CALL_INFO ci))
 {
     return
-#line 1141 "insns.def"
+#line 1156 "insns.def"
 sp_inc_of_invokeblock(ci);
 #line 7852 "insns_info.inc"
 }
@@ -7856,7 +7856,7 @@ bool
 attr_handles_sp_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1139 "insns.def"
+#line 1154 "insns.def"
 true;
 #line 7862 "insns_info.inc"
 }
@@ -7901,7 +7901,7 @@ rb_snum_t
 attr_sp_inc_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1140 "insns.def"
+#line 1155 "insns.def"
 sp_inc_of_invokeblock(cd->ci);
 #line 7907 "insns_info.inc"
 }
@@ -7918,7 +7918,7 @@ bool
 attr_zjit_profile_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1142 "insns.def"
+#line 1157 "insns.def"
 true;
 #line 7924 "insns_info.inc"
 }
@@ -7935,7 +7935,7 @@ bool
 attr_handles_sp_leave(void)
 {
     return
-#line 1164 "insns.def"
+#line 1179 "insns.def"
 true;
 #line 7941 "insns_info.inc"
 }
@@ -7945,7 +7945,7 @@ bool
 attr_leaf_leave(void)
 {
     return
-#line 1163 "insns.def"
+#line 1178 "insns.def"
 false;
 #line 7951 "insns_info.inc"
 }
@@ -8018,7 +8018,7 @@ bool
 attr_leaf_throw(MAYBE_UNUSED(rb_num_t throw_state))
 {
     return
-#line 1197 "insns.def"
+#line 1212 "insns.def"
 false;
 #line 8024 "insns_info.inc"
 }
@@ -8091,7 +8091,7 @@ bool
 attr_leaf_jump(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1215 "insns.def"
+#line 1230 "insns.def"
 false;
 #line 8097 "insns_info.inc"
 }
@@ -8164,7 +8164,7 @@ bool
 attr_leaf_branchif(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1228 "insns.def"
+#line 1243 "insns.def"
 false;
 #line 8170 "insns_info.inc"
 }
@@ -8237,7 +8237,7 @@ bool
 attr_leaf_branchunless(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1243 "insns.def"
+#line 1258 "insns.def"
 false;
 #line 8243 "insns_info.inc"
 }
@@ -8310,7 +8310,7 @@ bool
 attr_leaf_branchnil(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1258 "insns.def"
+#line 1273 "insns.def"
 false;
 #line 8316 "insns_info.inc"
 }
@@ -8542,7 +8542,7 @@ attr_sp_inc_opt_case_dispatch(
 )
 {
     return
-#line 1286 "insns.def"
+#line 1301 "insns.def"
 -1;
 #line 8548 "insns_info.inc"
 }
@@ -8635,7 +8635,7 @@ bool
 attr_zjit_profile_opt_plus(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1303 "insns.def"
+#line 1318 "insns.def"
 true;
 #line 8641 "insns_info.inc"
 }
@@ -8708,7 +8708,7 @@ bool
 attr_zjit_profile_opt_minus(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1318 "insns.def"
+#line 1333 "insns.def"
 true;
 #line 8714 "insns_info.inc"
 }
@@ -8781,7 +8781,7 @@ bool
 attr_zjit_profile_opt_mult(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1333 "insns.def"
+#line 1348 "insns.def"
 true;
 #line 8787 "insns_info.inc"
 }
@@ -8805,7 +8805,7 @@ bool
 attr_leaf_opt_div(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1350 "insns.def"
+#line 1365 "insns.def"
 false;
 #line 8811 "insns_info.inc"
 }
@@ -8857,7 +8857,7 @@ bool
 attr_zjit_profile_opt_div(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1351 "insns.def"
+#line 1366 "insns.def"
 true;
 #line 8863 "insns_info.inc"
 }
@@ -8881,7 +8881,7 @@ bool
 attr_leaf_opt_mod(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1367 "insns.def"
+#line 1382 "insns.def"
 false;
 #line 8887 "insns_info.inc"
 }
@@ -8933,7 +8933,7 @@ bool
 attr_zjit_profile_opt_mod(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1368 "insns.def"
+#line 1383 "insns.def"
 true;
 #line 8939 "insns_info.inc"
 }
@@ -9006,7 +9006,7 @@ bool
 attr_zjit_profile_opt_eq(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1383 "insns.def"
+#line 1398 "insns.def"
 true;
 #line 9012 "insns_info.inc"
 }
@@ -9109,7 +9109,7 @@ attr_zjit_profile_opt_neq(
 )
 {
     return
-#line 1398 "insns.def"
+#line 1413 "insns.def"
 true;
 #line 9115 "insns_info.inc"
 }
@@ -9182,7 +9182,7 @@ bool
 attr_zjit_profile_opt_lt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1413 "insns.def"
+#line 1428 "insns.def"
 true;
 #line 9188 "insns_info.inc"
 }
@@ -9255,7 +9255,7 @@ bool
 attr_zjit_profile_opt_le(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1428 "insns.def"
+#line 1443 "insns.def"
 true;
 #line 9261 "insns_info.inc"
 }
@@ -9328,7 +9328,7 @@ bool
 attr_zjit_profile_opt_gt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1443 "insns.def"
+#line 1458 "insns.def"
 true;
 #line 9334 "insns_info.inc"
 }
@@ -9401,7 +9401,7 @@ bool
 attr_zjit_profile_opt_ge(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1458 "insns.def"
+#line 1473 "insns.def"
 true;
 #line 9407 "insns_info.inc"
 }
@@ -9425,7 +9425,7 @@ bool
 attr_leaf_opt_ltlt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1476 "insns.def"
+#line 1491 "insns.def"
 false;
 #line 9431 "insns_info.inc"
 }
@@ -9477,7 +9477,7 @@ bool
 attr_zjit_profile_opt_ltlt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1477 "insns.def"
+#line 1492 "insns.def"
 true;
 #line 9483 "insns_info.inc"
 }
@@ -9550,7 +9550,7 @@ bool
 attr_zjit_profile_opt_and(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1492 "insns.def"
+#line 1507 "insns.def"
 true;
 #line 9556 "insns_info.inc"
 }
@@ -9623,7 +9623,7 @@ bool
 attr_zjit_profile_opt_or(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1507 "insns.def"
+#line 1522 "insns.def"
 true;
 #line 9629 "insns_info.inc"
 }
@@ -9647,7 +9647,7 @@ bool
 attr_leaf_opt_aref(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1526 "insns.def"
+#line 1541 "insns.def"
 false;
 #line 9653 "insns_info.inc"
 }
@@ -9699,7 +9699,7 @@ bool
 attr_zjit_profile_opt_aref(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1527 "insns.def"
+#line 1542 "insns.def"
 true;
 #line 9705 "insns_info.inc"
 }
@@ -9723,7 +9723,7 @@ bool
 attr_leaf_opt_aset(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1544 "insns.def"
+#line 1559 "insns.def"
 false;
 #line 9729 "insns_info.inc"
 }
@@ -9775,7 +9775,7 @@ bool
 attr_zjit_profile_opt_aset(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1545 "insns.def"
+#line 1560 "insns.def"
 true;
 #line 9781 "insns_info.inc"
 }
@@ -9848,7 +9848,7 @@ bool
 attr_zjit_profile_opt_length(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1560 "insns.def"
+#line 1575 "insns.def"
 true;
 #line 9854 "insns_info.inc"
 }
@@ -9921,7 +9921,7 @@ bool
 attr_zjit_profile_opt_size(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1575 "insns.def"
+#line 1590 "insns.def"
 true;
 #line 9927 "insns_info.inc"
 }
@@ -9994,7 +9994,7 @@ bool
 attr_zjit_profile_opt_empty_p(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1590 "insns.def"
+#line 1605 "insns.def"
 true;
 #line 10000 "insns_info.inc"
 }
@@ -10067,7 +10067,7 @@ bool
 attr_zjit_profile_opt_succ(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1605 "insns.def"
+#line 1620 "insns.def"
 true;
 #line 10073 "insns_info.inc"
 }
@@ -10140,7 +10140,7 @@ bool
 attr_zjit_profile_opt_not(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1620 "insns.def"
+#line 1635 "insns.def"
 true;
 #line 10146 "insns_info.inc"
 }
@@ -10164,7 +10164,7 @@ bool
 attr_leaf_opt_regexpmatch2(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1635 "insns.def"
+#line 1650 "insns.def"
 false;
 #line 10170 "insns_info.inc"
 }
@@ -10216,7 +10216,7 @@ bool
 attr_zjit_profile_opt_regexpmatch2(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1636 "insns.def"
+#line 1651 "insns.def"
 true;
 #line 10222 "insns_info.inc"
 }
@@ -10240,7 +10240,7 @@ bool
 attr_leaf_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
 {
     return
-#line 1651 "insns.def"
+#line 1666 "insns.def"
 false;
 #line 10246 "insns_info.inc"
 }
@@ -10278,7 +10278,7 @@ rb_snum_t
 attr_sp_inc_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
 {
     return
-#line 1652 "insns.def"
+#line 1667 "insns.def"
 1 - bf->argc;
 #line 10284 "insns_info.inc"
 }
@@ -10325,7 +10325,7 @@ attr_leaf_opt_invokebuiltin_delegate(
 )
 {
     return
-#line 1663 "insns.def"
+#line 1678 "insns.def"
 false;
 #line 10331 "insns_info.inc"
 }
@@ -10428,7 +10428,7 @@ attr_leaf_opt_invokebuiltin_delegate_leave(
 )
 {
     return
-#line 1674 "insns.def"
+#line 1689 "insns.def"
 false;
 #line 10434 "insns_info.inc"
 }

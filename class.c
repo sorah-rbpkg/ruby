@@ -89,8 +89,7 @@ rb_class_unlink_classext(VALUE klass, const rb_box_t *box)
 {
     st_data_t ext;
     st_data_t key = (st_data_t)box->box_object;
-    VALUE obj_id = rb_obj_id(klass);
-    st_delete(box->classext_cow_classes, &obj_id, 0);
+    st_delete(box->classext_cow_classes, &klass, 0);
     st_delete(RCLASS_CLASSEXT_TBL(klass), &key, &ext);
     return (rb_classext_t *)ext;
 }
@@ -190,7 +189,7 @@ rb_class_set_box_classext(VALUE obj, const rb_box_t *box, rb_classext_t *ext)
         .ext = ext,
     };
 
-    VM_ASSERT(BOX_USER_P(box));
+    VM_ASSERT(BOX_MUTABLE_P(box));
 
     st_update(RCLASS_CLASSEXT_TBL(obj), (st_data_t)box->box_object, set_box_classext_update, (st_data_t)&args);
 
@@ -199,7 +198,7 @@ rb_class_set_box_classext(VALUE obj, const rb_box_t *box, rb_classext_t *ext)
     // (e.g. st_insert below) that could trigger GC.
     rb_gc_writebarrier_remember(obj);
 
-    st_insert(box->classext_cow_classes, (st_data_t)rb_obj_id(obj), obj);
+    st_insert(box->classext_cow_classes, (st_data_t)obj, 0);
 }
 
 RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
@@ -697,7 +696,7 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable)
 static VALUE
 class_alloc(enum ruby_value_type type, VALUE klass)
 {
-    bool boxable = rb_box_available() && BOX_ROOT_P(rb_current_box());
+    bool boxable = rb_box_available() && BOX_MASTER_P(rb_current_box());
     return class_alloc0(type, klass, boxable);
 }
 

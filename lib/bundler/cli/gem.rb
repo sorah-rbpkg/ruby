@@ -256,8 +256,7 @@ module Bundler
 
       if use_git
         Bundler.ui.info "\nInitializing git repo in #{target}"
-        require "shellwords"
-        `git init #{target.to_s.shellescape}`
+        IO.popen(["git", "init", target.to_s], &:read)
 
         config[:git_default_branch] = File.read("#{target}/.git/HEAD").split("/").last.chomp
       end
@@ -288,7 +287,7 @@ module Bundler
       open_editor(options["edit"], target.join("#{name}.gemspec")) if options[:edit]
 
       Bundler.ui.info "\nGem '#{name}' was successfully created. " \
-        "For more information on making a RubyGem visit https://bundler.io/guides/creating_gem.html"
+        "For more information on making a RubyGem visit https://guides.rubygems.org/make-your-own-gem/"
     end
 
     private

@@ -2069,9 +2069,11 @@ vm_ccs_push(VALUE cc_tbl, ID mid, struct rb_class_cc_entries *ccs, const struct 
     }
     VM_ASSERT(ccs->len < ccs->capa);
 
+    const struct rb_callinfo_kwarg *kwarg = vm_ci_kwarg(ci);
     const int pos = ccs->len++;
     ccs->entries[pos].argc = vm_ci_argc(ci);
-    ccs->entries[pos].flag = vm_ci_flag(ci);
+    ccs->entries[pos].flag = (unsigned short)vm_ci_flag(ci);
+    ccs->entries[pos].kw_len = (unsigned short)(kwarg ? kwarg->keyword_len : 0);
     RB_OBJ_WRITE(cc_tbl, &ccs->entries[pos].cc, cc);
 
     if (RB_DEBUG_COUNTER_SETMAX(ccs_maxlen, ccs->len)) {
@@ -2086,9 +2088,10 @@ rb_vm_ccs_dump(struct rb_class_cc_entries *ccs)
 {
     ruby_debug_printf("ccs:%p (%d,%d)\n", (void *)ccs, ccs->len, ccs->capa);
     for (int i=0; i<ccs->len; i++) {
-        ruby_debug_printf("CCS CI ID:flag:%x argc:%u\n",
+        ruby_debug_printf("CCS CI ID:flag:%x argc:%u kw_len:%u\n",
                 ccs->entries[i].flag,
-                ccs->entries[i].argc);
+                ccs->entries[i].argc,
+                ccs->entries[i].kw_len);
         rp(ccs->entries[i].cc);
     }
 }
@@ -2233,19 +2236,25 @@ retry:
                 VM_ASSERT(vm_ccs_verify(ccs, mid, klass));
 
                 // We already know the method id is correct because we had
-                // to look up the ccs_data by method id.  All we need to
-                // compare is argc and flag
+                // to look up the ccs_data by method id.  We compare argc and
+                // flag, plus the keyword argument count: two call sites with
+                // the same argc and flag can still differ in how many of the
+                // arguments are keywords (e.g. `m(a: 1, b: 2)` vs `m(1, b: 2)`),
+                // which selects a different argument setup fastpath.
+                const struct rb_callinfo_kwarg *kwarg = vm_ci_kwarg(ci);
                 unsigned int argc = vm_ci_argc(ci);
                 unsigned int flag = vm_ci_flag(ci);
+                unsigned int kw_len = kwarg ? kwarg->keyword_len : 0;
 
                 for (int i=0; i<ccs_len; i++) {
                     unsigned int ccs_ci_argc = ccs->entries[i].argc;
                     unsigned int ccs_ci_flag = ccs->entries[i].flag;
+                    unsigned int ccs_ci_kw_len = ccs->entries[i].kw_len;
                     const struct rb_callcache *ccs_cc = ccs->entries[i].cc;
 
                     VM_ASSERT(IMEMO_TYPE_P(ccs_cc, imemo_callcache));
 
-                    if (ccs_ci_argc == argc && ccs_ci_flag == flag) {
+                    if (ccs_ci_argc == argc && ccs_ci_flag == flag && ccs_ci_kw_len == kw_len) {
                         RB_DEBUG_COUNTER_INC(cc_found_in_ccs);
 
                         VM_ASSERT(vm_cc_cme(ccs_cc)->called_id == mid);
@@ -2356,6 +2365,8 @@ static const struct rb_callcache *
 vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 {
     const struct rb_callcache *cc = cd->cc;
+
+    VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
 
 #if OPT_INLINE_METHOD_CACHE
     if (LIKELY(vm_cc_class_check(cc, klass))) {
@@ -5585,21 +5596,21 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
         break;
       case DEFINED_METHOD:{
         VALUE klass = CLASS_OF(v);
-        const rb_method_entry_t *me = rb_method_entry_with_refinements(klass, SYM2ID(obj), NULL);
+        const rb_callable_method_entry_t *cme = rb_callable_method_entry_with_refinements(klass, SYM2ID(obj), NULL);
 
-        if (me) {
-            switch (METHOD_ENTRY_VISI(me)) {
+        if (cme) {
+            switch (METHOD_ENTRY_VISI(cme)) {
               case METHOD_VISI_PRIVATE:
                 break;
               case METHOD_VISI_PROTECTED:
-                if (!rb_obj_is_kind_of(GET_SELF(), rb_class_real(me->defined_class))) {
+                if (!rb_obj_is_kind_of(GET_SELF(), vm_defined_class_for_protected_call(cme))) {
                     break;
                 }
               case METHOD_VISI_PUBLIC:
                 return true;
                 break;
               default:
-                rb_bug("vm_defined: unreachable: %u", (unsigned int)METHOD_ENTRY_VISI(me));
+                rb_bug("vm_defined: unreachable: %u", (unsigned int)METHOD_ENTRY_VISI(cme));
             }
         }
         else {
@@ -6178,8 +6189,23 @@ rb_vm_invokesuper(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_
 {
     stack_check(ec);
 
-    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);
-    VALUE val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
+    struct rb_callinfo adjusted_ci = VM_CI_ON_STACK(vm_ci_mid(cd->ci),
+                                                   vm_ci_flag(cd->ci),
+                                                   vm_ci_argc(cd->ci),
+                                                   vm_ci_kwarg(cd->ci));
+    const struct rb_callcache *original_cc = rbimpl_atomic_ptr_load((void **)&cd->cc, RBIMPL_ATOMIC_ACQUIRE);
+    struct rb_call_data adjusted_cd = {
+        .ci = &adjusted_ci,
+        .cc = original_cc,
+    };
+
+    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), adjusted_cd.ci, blockiseq, true);
+    VALUE val = vm_sendish(ec, GET_CFP(), &adjusted_cd, bh, mexp_search_super);
+
+    if (original_cc != adjusted_cd.cc && vm_cc_markable(adjusted_cd.cc)) {
+        rbimpl_atomic_ptr_store((volatile void **)&cd->cc, (void *)adjusted_cd.cc, RBIMPL_ATOMIC_RELEASE);
+        RB_OBJ_WRITTEN(GET_ISEQ(), Qundef, adjusted_cd.cc);
+    }
 
     VM_EXEC(ec, val);
     return val;
