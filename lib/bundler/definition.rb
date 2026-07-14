@@ -230,6 +230,16 @@ module Bundler
       sources.prefer_local!
     end
 
+    # Releases memory only needed during resolution, such as remote spec
+    # indexes and resolver state. Only safe to call once resolution is
+    # complete and the result has been materialized, since any further
+    # resolution will need to refetch remote specs.
+    def release_resolution_memory!
+      @resolver = nil
+      @resolution_base = nil
+      sources.release_resolution_memory!
+    end
+
     # For given dependency list returns a SpecSet with Gemspec of all the required
     # dependencies.
     #  1. The method first resolves the dependencies specified in Gemfile
@@ -387,10 +397,6 @@ module Bundler
 
       contents = to_lock
 
-      # Convert to \r\n if the existing lock has them
-      # i.e., Windows with `git config core.autocrlf=true`
-      contents.gsub!(/\n/, "\r\n") if @lockfile_contents.match?("\r\n")
-
       if @locked_bundler_version
         locked_major = @locked_bundler_version.segments.first
         current_major = bundler_version_to_lock.segments.first
@@ -409,6 +415,14 @@ module Bundler
       if Bundler.frozen_bundle?
         Bundler.ui.error "Cannot write a changed lockfile while frozen."
         return
+      end
+
+      # Convert to \r\n if the existing lock has them, i.e., Windows with
+      # `git config core.autocrlf=true`. Detect from the bytes on disk because
+      # reading in text mode strips carriage returns on Windows, which would
+      # otherwise defeat this check and rewrite a `\r\n` lockfile with `\n`.
+      if File.exist?(file) && SharedHelpers.filesystem_access(file, :read) {|p| File.binread(p).include?("\r\n") }
+        contents.gsub!(/\n/, "\r\n")
       end
 
       begin
@@ -688,9 +702,10 @@ module Bundler
             "available locally before rerunning Bundler."
           else
             "Your bundle is locked to #{locked_gem} from #{locked_gem.source}, but that version can " \
-            "no longer be found in that source. That means the author of #{locked_gem} has removed it. " \
-            "You'll need to update your bundle to a version other than #{locked_gem} that hasn't been " \
-            "removed in order to install."
+            "no longer be found in that source. That means either the author of #{locked_gem} has removed it, " \
+            "or you no longer have access to that source. You'll need to update your bundle to a version other " \
+            "than #{locked_gem} that hasn't been removed, or check your credentials and access rights for " \
+            "#{locked_gem.source}, in order to install."
           end
 
           raise GemNotFound, message
@@ -783,7 +798,25 @@ module Bundler
     end
 
     def precompute_source_requirements_for_indirect_dependencies?
-      sources.non_global_rubygems_sources.all?(&:dependency_api_available?)
+      if sources.non_global_rubygems_sources.all?(&:dependency_api_available?)
+        true
+      else
+        non_dependency_api_warning
+        false
+      end
+    end
+
+    def non_dependency_api_warning
+      non_api_sources = sources.non_global_rubygems_sources.reject(&:dependency_api_available?)
+      non_api_source_names = non_api_sources.map {|d| "  * #{d}" }.join("\n")
+
+      msg = String.new
+      msg << "Your Gemfile contains scoped sources that don't implement a dependency API, namely:\n\n"
+      msg << non_api_source_names
+      msg << "\n\nUsing the above gem servers may result in installing unexpected gems. " \
+        "To resolve this warning, make sure you use gem servers that implement dependency APIs, " \
+        "such as gemstash or geminabox gem servers."
+      Bundler.ui.warn msg
     end
 
     def current_platform_locked?
@@ -988,6 +1021,8 @@ module Bundler
         end
       end
 
+      sources.metadata_source.checksum_store.merge!(@locked_gems.metadata_source.checksum_store) if @locked_gems
+
       changes
     end
 
@@ -1157,16 +1192,20 @@ module Bundler
     def find_source_requirements
       preload_git_sources
 
+      # Only safe to exclude when locked_requirements (merged below) backfills the gap.
+      nothing_changed = nothing_changed?
+      excluded = nothing_changed ? excluded_git_sources : []
+
       # Record the specs available in each gem's source, so that those
       # specs will be available later when the resolver knows where to
       # look for that gemspec (or its dependencies)
       source_requirements = if precompute_source_requirements_for_indirect_dependencies?
-        all_requirements = source_map.all_requirements(excluded_git_sources)
+        all_requirements = source_map.all_requirements(excluded)
         { default: default_source }.merge(all_requirements)
       else
-        { default: Source::RubygemsAggregate.new(sources, source_map, excluded_git_sources) }.merge(source_map.direct_requirements)
+        { default: Source::RubygemsAggregate.new(sources, source_map, excluded) }.merge(source_map.direct_requirements)
       end
-      source_requirements.merge!(source_map.locked_requirements) if nothing_changed?
+      source_requirements.merge!(source_map.locked_requirements) if nothing_changed
       metadata_dependencies.each do |dep|
         source_requirements[dep.name] = sources.metadata_source
       end
@@ -1259,7 +1298,7 @@ module Bundler
 
     def new_resolution_base(last_resolve:, unlock:)
       new_resolution_platforms = @current_platform_missing ? @new_platforms + [Bundler.local_platform] : @new_platforms
-      Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: unlock, prerelease: gem_version_promoter.pre?, prefer_local: @prefer_local, new_platforms: new_resolution_platforms)
+      Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: unlock, prerelease: gem_version_promoter.pre?, prefer_local: @prefer_local, new_platforms: new_resolution_platforms, explicit_unlocks: @explicit_unlocks)
     end
 
     def new_resolver(base)

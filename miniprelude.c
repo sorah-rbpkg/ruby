@@ -6158,10 +6158,10 @@ static const struct {
 "    end\n"
 "\n"
 "\n"/* call-seq: */
-"\n"/*    mutex.lock  -> self */
+"\n"/*    mutex.unlock  -> self */
 "\n"/*  */
-"\n"/* Attempts to grab the lock and waits if it isn't available. */
-"\n"/* Raises +ThreadError+ if +mutex+ was locked by the current thread. */
+"\n"/* Releases the lock. */
+"\n"/* Raises +ThreadError+ if +mutex+ wasn't locked by the current thread. */
 "    def unlock\n"
 "      Primitive.rb_mut_unlock\n"
 "    end\n"

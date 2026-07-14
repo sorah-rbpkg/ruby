@@ -47,7 +47,7 @@ enum vm_call_flag_bits {
 
 struct rb_callinfo_kwarg {
     int keyword_len;
-    int references;
+    rb_atomic_t references;
     VALUE keywords[];
 };
 
@@ -59,6 +59,20 @@ rb_callinfo_kwarg_bytes(int keyword_len)
         sizeof(VALUE),
         sizeof(struct rb_callinfo_kwarg),
         rb_eRuntimeError);
+}
+
+static inline void
+rb_callinfo_kwarg_retain(struct rb_callinfo_kwarg *kwarg)
+{
+    if (kwarg) RUBY_ATOMIC_INC(kwarg->references);
+}
+
+static inline void
+rb_callinfo_kwarg_release(struct rb_callinfo_kwarg *kwarg)
+{
+    if (kwarg && RUBY_ATOMIC_FETCH_SUB(kwarg->references, 1) == 1) {
+        ruby_sized_xfree(kwarg, rb_callinfo_kwarg_bytes(kwarg->keyword_len));
+    }
 }
 
 // imemo_callinfo
@@ -600,11 +614,19 @@ struct rb_class_cc_entries {
     int len;
     const struct rb_callable_method_entry_struct *cme;
     struct rb_class_cc_entries_entry {
-        unsigned int argc;
-        unsigned int flag;
         const struct rb_callcache *cc;
+        unsigned int argc;
+        unsigned short flag;
+        unsigned short kw_len;
     } entries[FLEX_ARY_LEN];
 };
+
+/* entries[].flag is an unsigned short, so every VM_CALL flag bit must fit in 16 bits. */
+STATIC_ASSERT(cc_entries_flag_fits_in_short, VM_CALL__END <= 16);
+
+/* entries[].kw_len is an unsigned short, so a call site cannot carry, nor a method
+   declare, more keyword arguments than this.  Enforced at compile time. */
+#define VM_CALL_KW_LEN_MAX UINT16_MAX
 
 static inline size_t
 vm_ccs_alloc_size(size_t capa)

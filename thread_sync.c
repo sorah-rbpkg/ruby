@@ -128,13 +128,14 @@ mutex_locked_p(rb_mutex_t *mutex)
     return mutex->ec_serial != 0;
 }
 
+static void thread_mutex_remove(rb_thread_t *thread, rb_mutex_t *mutex);
+
 static void
 mutex_free(void *ptr)
 {
     rb_mutex_t *mutex = ptr;
     if (mutex_locked_p(mutex)) {
-        const char *err = rb_mutex_unlock_th(mutex, mutex->th, 0);
-        if (err) rb_bug("%s", err);
+        thread_mutex_remove(mutex->th, mutex);
     }
     ruby_xfree(ptr);
 }
@@ -528,13 +529,6 @@ do_mutex_unlock_safe(VALUE args)
     return Qnil;
 }
 
-/*
- * call-seq:
- *    mutex.unlock    -> self
- *
- * Releases the lock.
- * Raises +ThreadError+ if +mutex+ wasn't locked by the current thread.
- */
 VALUE
 rb_mutex_unlock(VALUE self)
 {
