@@ -1,3 +1,10 @@
+ruby2.7 (2.7.4-1+deb11u6) bullseye-security; urgency=high
+
+  * Non-maintainer upload by the Debian LTS Team.
+  * Fix CVE-2025-24294, CVE-2025-61594, CVE-2026-27820, CVE-2026-41316
+
+ -- Abhijith PA <abhijith@debian.org>  Fri, 31 Jul 2026 15:27:37 +0530
+
 ruby2.7 (2.7.4-1+deb11u5) bullseye-security; urgency=medium
 
   * Non-maintainer upload by the LTS Security Team.
