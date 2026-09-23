@@ -6377,11 +6377,22 @@ static const struct {
 
 static const char prelude_name19[] = "<internal:gem_prelude>";
 static const struct {
-    RBIMPL_ATTR_NONSTRING() char L0[478]; /* 1..25 */
-    RBIMPL_ATTR_NONSTRING() char L25[73]; /* 26..28 */
+    RBIMPL_ATTR_NONSTRING() char L0[494]; /* 1..25 */
+    RBIMPL_ATTR_NONSTRING() char L25[342]; /* 26..41 */
 } prelude_code19 = {
 #line 1 "gem_prelude.rb"
 "begin\n"
+"\n"/* rubygems.rb requires ENV[\"BUNDLER_SETUP\"] at its end so that bundler/setup */
+"\n"/* runs before error_highlight, did_you_mean and syntax_suggest are loaded. */
+"\n"/* That is unnecessary once they are autoloaded ([Feature #21951]), and it */
+"\n"/* must not happen outside the main box: Bundler evaluates gemspecs through */
+"\n"/* TOPLEVEL_BINDING, which always belongs to the main box, so it would run */
+"\n"/* Bundler code there before RubyGems finishes loading. Either way Bundler is */
+"\n"/* set up by RUBYOPT=-rbundler/setup after the boot sequence. */
+"  if %i[ErrorHighlight DidYouMean SyntaxSuggest].any? {|c| Object.autoload?(c) } ||\n"
+"     (defined?(Ruby::Box) && Ruby::Box.enabled? && !Ruby::Box.current.main?)\n"
+"    bundler_setup = ENV.delete(\"BUNDLER_SETUP\")\n"
+"  end\n"
 "  require 'rubygems'\n"
 "rescue LoadError => e\n"
 "  raise unless e.path == 'rubygems'\n"
@@ -6389,10 +6400,14 @@ static const struct {
 "  warn \"`RubyGems' were not loaded.\"\n"
 "else\n"
 "  require 'bundled_gems'\n"
+"ensure\n"
+"  ENV[\"BUNDLER_SETUP\"] = bundler_setup if bundler_setup\n"
 "end if defined?(Gem)\n"
 "\n"
 "begin\n"
 "  require 'error_highlight'\n"
+,
+#line 26 "gem_prelude.rb"
 "rescue LoadError\n"
 "  warn \"`error_highlight' was not loaded.\"\n"
 "end if defined?(ErrorHighlight)\n"
@@ -6406,11 +6421,9 @@ static const struct {
 "begin\n"
 "  require 'syntax_suggest/core_ext'\n"
 "rescue LoadError\n"
-,
-#line 26 "gem_prelude.rb"
 "  warn \"`syntax_suggest' was not loaded.\"\n"
 "end if defined?(SyntaxSuggest)\n"
-#line 6414 "miniprelude.c"
+#line 6427 "miniprelude.c"
 };
 
 static const char prelude_name20[] = "<internal:jit_hook>";
@@ -6430,7 +6443,7 @@ static const struct {
 "    end\n"
 "  end\n"
 "end\n"
-#line 6434 "miniprelude.c"
+#line 6447 "miniprelude.c"
 };
 
 static const char prelude_name21[] = "<internal:jit_undef>";
@@ -6442,7 +6455,7 @@ static const struct {
 "class Module\n"
 "  undef :with_jit\n"
 "end\n"
-#line 6446 "miniprelude.c"
+#line 6459 "miniprelude.c"
 };
 
 static const char prelude_name22[] = "<internal:yjit>";
@@ -7121,7 +7134,7 @@ static const struct {
 "\n"/* :startdoc: */
 "  end\n"
 "end\n"
-#line 7125 "miniprelude.c"
+#line 7138 "miniprelude.c"
 };
 
 static const char prelude_name23[] = "<internal:zjit>";
@@ -7542,7 +7555,7 @@ static const struct {
 "    $stderr.puts(\"#{n_bytes} bytes written to #{absolute_filename}\")\n"
 "  end\n"
 "end\n"
-#line 7546 "miniprelude.c"
+#line 7559 "miniprelude.c"
 };
 
 COMPILER_WARNING_POP
