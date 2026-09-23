@@ -3849,10 +3849,10 @@ static const yytype_int16 yyrline[] =
     6386,  6393,  6400,  6409,  6418,  6427,  6438,  6439,  6449,  6456,
     6461,  6480,  6482,  6493,  6513,  6514,  6517,  6523,  6529,  6537,
     6538,  6541,  6547,  6555,  6556,  6559,  6565,  6573,  6578,  6582,
-    6582,  6612,  6614,  6613,  6626,  6627,  6634,  6636,  6661,  6666,
-    6671,  6678,  6684,  6689,  6702,  6702,  6702,  6703,  6706,  6707,
-    6708,  6711,  6712,  6715,  6716,  6719,  6720,  6723,  6726,  6729,
-    6732,  6733,  6736,  6744,  6751,  6752,  6756
+    6582,  6612,  6614,  6613,  6626,  6627,  6634,  6636,  6659,  6664,
+    6669,  6676,  6682,  6687,  6700,  6700,  6700,  6701,  6704,  6705,
+    6706,  6709,  6710,  6713,  6714,  6717,  6718,  6721,  6724,  6727,
+    6730,  6731,  6734,  6742,  6749,  6750,  6754
 };
 #endif
 
@@ -18017,13 +18017,11 @@ yyreduce:
                             assocs = tail;
                         }
                         else if (tail) {
-                            if (RNODE_LIST(assocs)->nd_head) {
-                                NODE *n = RNODE_LIST(tail)->nd_next;
-                                if (!RNODE_LIST(tail)->nd_head && nd_type_p(n, NODE_LIST) &&
-                                    nd_type_p((n = RNODE_LIST(n)->nd_head), NODE_HASH)) {
-                                    /* DSTAR */
-                                    tail = RNODE_HASH(n)->nd_head;
-                                }
+                            NODE *n = RNODE_LIST(tail)->nd_next;
+                            if (!RNODE_LIST(tail)->nd_head && nd_type_p(n, NODE_LIST) &&
+                                nd_type_p((n = RNODE_LIST(n)->nd_head), NODE_HASH)) {
+                                /* DSTAR */
+                                tail = RNODE_HASH(n)->nd_head;
                             }
                             if (tail) {
                                 assocs = list_concat(assocs, tail);
@@ -18032,70 +18030,70 @@ yyreduce:
                         (yyval.node) = assocs;
                     {VALUE v1=get_value((-2 - 1)), v2=get_value((0 - 1)); p->s_lvalue=rb_ary_push(v1, v2);}
                     }
-#line 18036 "ripper.c"
+#line 18034 "ripper.c"
     break;
 
   case 788: /* assoc: arg_value "=>" arg_value  */
-#line 6662 "ripper.y"
+#line 6660 "ripper.y"
                     {
                         (yyval.node) = list_append(p, NEW_LIST((yyvsp[-2].node), &(yyloc)), (yyvsp[0].node));
                     {VALUE v1=get_value((-2 - 1)), v2=get_value((0 - 1)), v3=dispatch2(assoc_new,v1,v2); p->s_lvalue=v3;}
                     }
-#line 18045 "ripper.c"
+#line 18043 "ripper.c"
     break;
 
   case 789: /* assoc: "label" arg_value  */
-#line 6667 "ripper.y"
+#line 6665 "ripper.y"
                     {
                         (yyval.node) = list_append(p, NEW_LIST(NEW_SYM(rb_id2str((yyvsp[-1].id)), &(yylsp[-1])), &(yyloc)), (yyvsp[0].node));
                     {VALUE v1=get_value((-1 - 1)), v2=get_value((0 - 1)), v3=dispatch2(assoc_new,v1,v2); p->s_lvalue=v3;}
                     }
-#line 18054 "ripper.c"
+#line 18052 "ripper.c"
     break;
 
   case 790: /* assoc: "label"  */
-#line 6672 "ripper.y"
+#line 6670 "ripper.y"
                     {
                         NODE *val = gettable(p, (yyvsp[0].id), &(yyloc));
                         if (!val) val = NEW_ERROR(&(yyloc));
                         (yyval.node) = list_append(p, NEW_LIST(NEW_SYM(rb_id2str((yyvsp[0].id)), &(yylsp[0])), &(yyloc)), val);
                     {VALUE v1=get_value((0 - 1)), v2=Qnil, v3=dispatch2(assoc_new,v1,v2); p->s_lvalue=v3;}
                     }
-#line 18065 "ripper.c"
+#line 18063 "ripper.c"
     break;
 
   case 791: /* assoc: "string literal" string_contents tLABEL_END arg_value  */
-#line 6679 "ripper.y"
+#line 6677 "ripper.y"
                     {
                         YYLTYPE loc = code_loc_gen(&(yylsp[-3]), &(yylsp[-1]));
                         (yyval.node) = list_append(p, NEW_LIST(dsym_node(p, (yyvsp[-2].node), &loc), &loc), (yyvsp[0].node));
                     {VALUE v1=get_value((-2 - 1)), v2=get_value((0 - 1)), v3=dispatch1(dyna_symbol,v1), v4=dispatch2(assoc_new,v3,v2); p->s_lvalue=v4;}
                     }
-#line 18075 "ripper.c"
+#line 18073 "ripper.c"
     break;
 
   case 792: /* assoc: "**arg" arg_value  */
-#line 6685 "ripper.y"
+#line 6683 "ripper.y"
                     {
                         (yyval.node) = list_append(p, NEW_LIST(0, &(yyloc)), (yyvsp[0].node));
                     {VALUE v1=get_value((0 - 1)), v2=dispatch1(assoc_splat,v1); p->s_lvalue=v2;}
                     }
-#line 18084 "ripper.c"
+#line 18082 "ripper.c"
     break;
 
   case 793: /* assoc: "**arg"  */
-#line 6690 "ripper.y"
+#line 6688 "ripper.y"
                     {
                         forwarding_arg_check(p, idFWD_KWREST, idFWD_ALL, "keyword rest");
                         (yyval.node) = list_append(p, NEW_LIST(0, &(yyloc)),
                                          NEW_LVAR(idFWD_KWREST, &(yyloc)));
                     {VALUE v1=Qnil, v2=dispatch1(assoc_splat,v1); p->s_lvalue=v2;}
                     }
-#line 18095 "ripper.c"
+#line 18093 "ripper.c"
     break;
 
   case 812: /* term: ';'  */
-#line 6737 "ripper.y"
+#line 6735 "ripper.y"
                     {
                         yyerrok;
                         token_flush(p);
@@ -18103,35 +18101,35 @@ yyreduce:
                             p->ctxt.has_trailing_semicolon = 1;
                         }
                     }
-#line 18107 "ripper.c"
+#line 18105 "ripper.c"
     break;
 
   case 813: /* term: '\n'  */
-#line 6745 "ripper.y"
+#line 6743 "ripper.y"
                     {
                         (yyloc).end_pos = (yyloc).beg_pos;
                         token_flush(p);
                     }
-#line 18116 "ripper.c"
+#line 18114 "ripper.c"
     break;
 
   case 815: /* terms: terms ';'  */
-#line 6752 "ripper.y"
+#line 6750 "ripper.y"
                             {yyerrok;}
-#line 18122 "ripper.c"
+#line 18120 "ripper.c"
     break;
 
   case 816: /* none: %empty  */
-#line 6756 "ripper.y"
+#line 6754 "ripper.y"
                     {
                         (yyval.node) = 0;
                     {p->s_lvalue=Qnil;}
                     }
-#line 18131 "ripper.c"
+#line 18129 "ripper.c"
     break;
 
 
-#line 18135 "ripper.c"
+#line 18133 "ripper.c"
 
       default: break;
     }
@@ -18152,7 +18150,7 @@ yyreduce:
         /* %after-reduce function. */
 #line 2667 "ripper.y"
         {after_reduce(yylen, p);}
-#line 18156 "ripper.c"
+#line 18154 "ripper.c"
 
   yylen = 0;
 
@@ -18258,7 +18256,7 @@ yyerrorlab:
         /* %after-pop-stack function. */
 #line 2669 "ripper.y"
         {after_pop_stack(yylen, p);}
-#line 18262 "ripper.c"
+#line 18260 "ripper.c"
 
   yylen = 0;
   YY_STACK_PRINT (yyss, yyssp, p);
@@ -18298,7 +18296,7 @@ yyerrlab1:
         /* %after-pop-stack function. */
 #line 2669 "ripper.y"
         {after_pop_stack(1, p);}
-#line 18302 "ripper.c"
+#line 18300 "ripper.c"
 
       yystate = *yyssp;
       YY_STACK_PRINT (yyss, yyssp, p);
@@ -18317,7 +18315,7 @@ yyerrlab1:
         /* %after-shift-error-token code. */
 #line 2668 "ripper.y"
         {after_shift_error_token(p);}
-#line 18321 "ripper.c"
+#line 18319 "ripper.c"
 
 
   yystate = yyn;
@@ -18380,7 +18378,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 6761 "ripper.y"
+#line 6759 "ripper.y"
 
 # undef p
 # undef yylex

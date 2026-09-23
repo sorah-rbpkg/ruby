@@ -4062,7 +4062,10 @@ attr_handles_sp_intern(void)
 bool
 attr_leaf_intern(void)
 {
-    return true;
+    return
+#line 444 "insns.def"
+false;
+#line 4069 "insns_info.inc"
 }
 
 /* attr const char* name @ intern()(str)(sym) */
@@ -4168,9 +4171,9 @@ rb_snum_t
 attr_sp_inc_newarray(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 452 "insns.def"
+#line 455 "insns.def"
 1 - (rb_snum_t)num;
-#line 4174 "insns_info.inc"
+#line 4177 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ newarray(num)(...)(val) */
@@ -4415,9 +4418,9 @@ attr_handles_sp_expandarray(
 )
 {
     return
-#line 507 "insns.def"
+#line 510 "insns.def"
 true;
-#line 4421 "insns_info.inc"
+#line 4424 "insns_info.inc"
 }
 
 /* attr bool leaf @ expandarray(num, flag)(..., ary)(...) */
@@ -4428,9 +4431,9 @@ attr_leaf_expandarray(
 )
 {
     return
-#line 508 "insns.def"
+#line 511 "insns.def"
 false;
-#line 4434 "insns_info.inc"
+#line 4437 "insns_info.inc"
 }
 
 /* attr const char* name @ expandarray(num, flag)(..., ary)(...) */
@@ -4481,9 +4484,9 @@ attr_sp_inc_expandarray(
 )
 {
     return
-#line 509 "insns.def"
+#line 512 "insns.def"
 (rb_snum_t)num - 1 + (flag & 1 ? 1 : 0);
-#line 4487 "insns_info.inc"
+#line 4490 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ expandarray(num, flag)(..., ary)(...) */
@@ -4525,9 +4528,9 @@ bool
 attr_leaf_concatarray(void)
 {
     return
-#line 522 "insns.def"
+#line 525 "insns.def"
 false;
-#line 4531 "insns_info.inc"
+#line 4534 "insns_info.inc"
 }
 
 /* attr const char* name @ concatarray()(ary1, ary2)(ary) */
@@ -4598,9 +4601,9 @@ bool
 attr_leaf_concattoarray(void)
 {
     return
-#line 536 "insns.def"
+#line 539 "insns.def"
 false;
-#line 4604 "insns_info.inc"
+#line 4607 "insns_info.inc"
 }
 
 /* attr const char* name @ concattoarray()(ary1, ary2)(ary) */
@@ -4706,9 +4709,9 @@ rb_snum_t
 attr_sp_inc_pushtoarray(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 547 "insns.def"
+#line 550 "insns.def"
 -(rb_snum_t)num;
-#line 4712 "insns_info.inc"
+#line 4715 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ pushtoarray(num)(...)(val) */
@@ -4744,9 +4747,9 @@ bool
 attr_leaf_splatarray(MAYBE_UNUSED(VALUE flag))
 {
     return
-#line 559 "insns.def"
+#line 562 "insns.def"
 false;
-#line 4750 "insns_info.inc"
+#line 4753 "insns_info.inc"
 }
 
 /* attr const char* name @ splatarray(flag)(ary)(obj) */
@@ -4817,9 +4820,9 @@ bool
 attr_leaf_splatkw(void)
 {
     return
-#line 570 "insns.def"
+#line 573 "insns.def"
 false;
-#line 4823 "insns_info.inc"
+#line 4826 "insns_info.inc"
 }
 
 /* attr const char* name @ splatkw()(hash, block)(obj, block) */
@@ -4890,9 +4893,9 @@ bool
 attr_leaf_newhash(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 586 "insns.def"
+#line 589 "insns.def"
 false;
-#line 4896 "insns_info.inc"
+#line 4899 "insns_info.inc"
 }
 
 /* attr const char* name @ newhash(num)(...)(val) */
@@ -4928,9 +4931,9 @@ rb_snum_t
 attr_sp_inc_newhash(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 587 "insns.def"
+#line 590 "insns.def"
 1 - (rb_snum_t)num;
-#line 4934 "insns_info.inc"
+#line 4937 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ newhash(num)(...)(val) */
@@ -4966,9 +4969,9 @@ bool
 attr_leaf_newrange(MAYBE_UNUSED(rb_num_t flag))
 {
     return
-#line 607 "insns.def"
+#line 610 "insns.def"
 false;
-#line 4972 "insns_info.inc"
+#line 4975 "insns_info.inc"
 }
 
 /* attr const char* name @ newrange(flag)(low, high)(val) */
@@ -5214,9 +5217,9 @@ rb_snum_t
 attr_sp_inc_dupn(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 643 "insns.def"
+#line 646 "insns.def"
 n;
-#line 5220 "insns_info.inc"
+#line 5223 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ dupn(n)(...)(...) */
@@ -5357,9 +5360,9 @@ rb_snum_t
 attr_sp_inc_opt_reverse(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 667 "insns.def"
+#line 670 "insns.def"
 0;
-#line 5363 "insns_info.inc"
+#line 5366 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_reverse(n)(...)(...) */
@@ -5430,9 +5433,9 @@ rb_snum_t
 attr_sp_inc_topn(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 697 "insns.def"
+#line 700 "insns.def"
 1;
-#line 5436 "insns_info.inc"
+#line 5439 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ topn(n)(...)(val) */
@@ -5503,9 +5506,9 @@ rb_snum_t
 attr_sp_inc_setn(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 708 "insns.def"
+#line 711 "insns.def"
 0;
-#line 5509 "insns_info.inc"
+#line 5512 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ setn(n)(..., val)(val) */
@@ -5576,9 +5579,9 @@ rb_snum_t
 attr_sp_inc_adjuststack(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 719 "insns.def"
+#line 722 "insns.def"
 -(rb_snum_t)n;
-#line 5582 "insns_info.inc"
+#line 5585 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ adjuststack(n)(...)(...) */
@@ -5626,9 +5629,9 @@ attr_leaf_defined(
 )
 {
     return
-#line 734 "insns.def"
+#line 737 "insns.def"
 leafness_of_defined(op_type);
-#line 5632 "insns_info.inc"
+#line 5635 "insns_info.inc"
 }
 
 /* attr const char* name @ defined(op_type, obj, pushval)(v)(val) */
@@ -5739,9 +5742,9 @@ attr_leaf_definedivar(
 )
 {
     return
-#line 748 "insns.def"
+#line 751 "insns.def"
 false;
-#line 5745 "insns_info.inc"
+#line 5748 "insns_info.inc"
 }
 
 /* attr const char* name @ definedivar(id, ic, pushval)()(val) */
@@ -5819,9 +5822,9 @@ attr_zjit_profile_definedivar(
 )
 {
     return
-#line 749 "insns.def"
+#line 752 "insns.def"
 true;
-#line 5825 "insns_info.inc"
+#line 5828 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ checkmatch(flag)(target, pattern)(result) */
@@ -5843,9 +5846,9 @@ bool
 attr_leaf_checkmatch(MAYBE_UNUSED(rb_num_t flag))
 {
     return
-#line 769 "insns.def"
+#line 772 "insns.def"
 leafness_of_checkmatch(flag);
-#line 5849 "insns_info.inc"
+#line 5852 "insns_info.inc"
 }
 
 /* attr const char* name @ checkmatch(flag)(target, pattern)(result) */
@@ -6395,9 +6398,9 @@ attr_comptime_sp_inc_send(
 )
 {
     return
-#line 853 "insns.def"
+#line 856 "insns.def"
 sp_inc_of_sendish(ci);
-#line 6401 "insns_info.inc"
+#line 6404 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ send(cd, blockiseq)(...)(val) */
@@ -6468,9 +6471,9 @@ attr_sp_inc_send(
 )
 {
     return
-#line 852 "insns.def"
+#line 855 "insns.def"
 sp_inc_of_sendish(cd->ci);
-#line 6474 "insns_info.inc"
+#line 6477 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ send(cd, blockiseq)(...)(val) */
@@ -6491,9 +6494,9 @@ attr_zjit_profile_send(
 )
 {
     return
-#line 851 "insns.def"
+#line 854 "insns.def"
 true;
-#line 6497 "insns_info.inc"
+#line 6500 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ sendforward(cd, blockiseq)(...)(val) */
@@ -6514,9 +6517,9 @@ attr_comptime_sp_inc_sendforward(
 )
 {
     return
-#line 872 "insns.def"
+#line 875 "insns.def"
 sp_inc_of_sendish(ci);
-#line 6520 "insns_info.inc"
+#line 6523 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ sendforward(cd, blockiseq)(...)(val) */
@@ -6587,9 +6590,9 @@ attr_sp_inc_sendforward(
 )
 {
     return
-#line 871 "insns.def"
+#line 874 "insns.def"
 sp_inc_of_sendish(cd->ci);
-#line 6593 "insns_info.inc"
+#line 6596 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ sendforward(cd, blockiseq)(...)(val) */
@@ -6624,9 +6627,9 @@ rb_snum_t
 attr_comptime_sp_inc_opt_send_without_block(MAYBE_UNUSED(CALL_INFO ci))
 {
     return
-#line 901 "insns.def"
+#line 904 "insns.def"
 sp_inc_of_sendish(ci);
-#line 6630 "insns_info.inc"
+#line 6633 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ opt_send_without_block(cd)(...)(val) */
@@ -6634,9 +6637,9 @@ bool
 attr_handles_sp_opt_send_without_block(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 899 "insns.def"
+#line 902 "insns.def"
 true;
-#line 6640 "insns_info.inc"
+#line 6643 "insns_info.inc"
 }
 
 /* attr bool leaf @ opt_send_without_block(cd)(...)(val) */
@@ -6679,9 +6682,9 @@ rb_snum_t
 attr_sp_inc_opt_send_without_block(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 900 "insns.def"
+#line 903 "insns.def"
 sp_inc_of_sendish(cd->ci);
-#line 6685 "insns_info.inc"
+#line 6688 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_send_without_block(cd)(...)(val) */
@@ -6696,9 +6699,9 @@ bool
 attr_zjit_profile_opt_send_without_block(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 898 "insns.def"
+#line 901 "insns.def"
 true;
-#line 6702 "insns_info.inc"
+#line 6705 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_new(cd, dst)()() */
@@ -6729,9 +6732,9 @@ attr_leaf_opt_new(
 )
 {
     return
-#line 919 "insns.def"
+#line 922 "insns.def"
 false;
-#line 6735 "insns_info.inc"
+#line 6738 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_new(cd, dst)()() */
@@ -6823,9 +6826,9 @@ bool
 attr_leaf_objtostring(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 945 "insns.def"
+#line 948 "insns.def"
 false;
-#line 6829 "insns_info.inc"
+#line 6832 "insns_info.inc"
 }
 
 /* attr const char* name @ objtostring(cd)(recv)(val) */
@@ -6875,9 +6878,9 @@ bool
 attr_zjit_profile_objtostring(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 946 "insns.def"
+#line 949 "insns.def"
 true;
-#line 6881 "insns_info.inc"
+#line 6884 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_ary_freeze(ary, cd)()(val) */
@@ -7248,9 +7251,9 @@ bool
 attr_zjit_profile_opt_nil_p(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1005 "insns.def"
+#line 1008 "insns.def"
 true;
-#line 7254 "insns_info.inc"
+#line 7257 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_str_uminus(str, cd)()(val) */
@@ -7373,9 +7376,9 @@ attr_comptime_sp_inc_opt_duparray_send(
 )
 {
     return
-#line 1039 "insns.def"
+#line 1042 "insns.def"
 1 - (rb_snum_t)argc;
-#line 7379 "insns_info.inc"
+#line 7382 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ opt_duparray_send(ary, method, argc)(...)(val) */
@@ -7398,9 +7401,9 @@ attr_leaf_opt_duparray_send(
 )
 {
     return
-#line 1037 "insns.def"
+#line 1040 "insns.def"
 false;
-#line 7404 "insns_info.inc"
+#line 7407 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_duparray_send(ary, method, argc)(...)(val) */
@@ -7456,9 +7459,9 @@ attr_sp_inc_opt_duparray_send(
 )
 {
     return
-#line 1038 "insns.def"
+#line 1041 "insns.def"
 1 - (rb_snum_t)argc;
-#line 7462 "insns_info.inc"
+#line 7465 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_duparray_send(ary, method, argc)(...)(val) */
@@ -7501,9 +7504,9 @@ attr_comptime_sp_inc_opt_newarray_send(
 )
 {
     return
-#line 1061 "insns.def"
+#line 1064 "insns.def"
 1 - (rb_snum_t)num;
-#line 7507 "insns_info.inc"
+#line 7510 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ opt_newarray_send(num, method)(...)(val) */
@@ -7524,9 +7527,9 @@ attr_leaf_opt_newarray_send(
 )
 {
     return
-#line 1059 "insns.def"
+#line 1062 "insns.def"
 false;
-#line 7530 "insns_info.inc"
+#line 7533 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_newarray_send(num, method)(...)(val) */
@@ -7577,9 +7580,9 @@ attr_sp_inc_opt_newarray_send(
 )
 {
     return
-#line 1060 "insns.def"
+#line 1063 "insns.def"
 1 - (rb_snum_t)num;
-#line 7583 "insns_info.inc"
+#line 7586 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_newarray_send(num, method)(...)(val) */
@@ -7620,9 +7623,9 @@ attr_comptime_sp_inc_invokesuper(
 )
 {
     return
-#line 1094 "insns.def"
+#line 1097 "insns.def"
 sp_inc_of_sendish(ci);
-#line 7626 "insns_info.inc"
+#line 7629 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ invokesuper(cd, blockiseq)(...)(val) */
@@ -7693,9 +7696,9 @@ attr_sp_inc_invokesuper(
 )
 {
     return
-#line 1093 "insns.def"
+#line 1096 "insns.def"
 sp_inc_of_sendish(cd->ci);
-#line 7699 "insns_info.inc"
+#line 7702 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ invokesuper(cd, blockiseq)(...)(val) */
@@ -7736,9 +7739,9 @@ attr_comptime_sp_inc_invokesuperforward(
 )
 {
     return
-#line 1128 "insns.def"
+#line 1131 "insns.def"
 sp_inc_of_sendish(ci);
-#line 7742 "insns_info.inc"
+#line 7745 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ invokesuperforward(cd, blockiseq)(...)(val) */
@@ -7809,9 +7812,9 @@ attr_sp_inc_invokesuperforward(
 )
 {
     return
-#line 1127 "insns.def"
+#line 1130 "insns.def"
 sp_inc_of_sendish(cd->ci);
-#line 7815 "insns_info.inc"
+#line 7818 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ invokesuperforward(cd, blockiseq)(...)(val) */
@@ -7846,9 +7849,9 @@ rb_snum_t
 attr_comptime_sp_inc_invokeblock(MAYBE_UNUSED(CALL_INFO ci))
 {
     return
-#line 1156 "insns.def"
+#line 1159 "insns.def"
 sp_inc_of_invokeblock(ci);
-#line 7852 "insns_info.inc"
+#line 7855 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ invokeblock(cd)(...)(val) */
@@ -7856,9 +7859,9 @@ bool
 attr_handles_sp_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1154 "insns.def"
+#line 1157 "insns.def"
 true;
-#line 7862 "insns_info.inc"
+#line 7865 "insns_info.inc"
 }
 
 /* attr bool leaf @ invokeblock(cd)(...)(val) */
@@ -7901,9 +7904,9 @@ rb_snum_t
 attr_sp_inc_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1155 "insns.def"
+#line 1158 "insns.def"
 sp_inc_of_invokeblock(cd->ci);
-#line 7907 "insns_info.inc"
+#line 7910 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ invokeblock(cd)(...)(val) */
@@ -7918,9 +7921,9 @@ bool
 attr_zjit_profile_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1157 "insns.def"
+#line 1160 "insns.def"
 true;
-#line 7924 "insns_info.inc"
+#line 7927 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ leave()(val)(val) */
@@ -7935,9 +7938,9 @@ bool
 attr_handles_sp_leave(void)
 {
     return
-#line 1179 "insns.def"
+#line 1182 "insns.def"
 true;
-#line 7941 "insns_info.inc"
+#line 7944 "insns_info.inc"
 }
 
 /* attr bool leaf @ leave()(val)(val) */
@@ -7945,9 +7948,9 @@ bool
 attr_leaf_leave(void)
 {
     return
-#line 1178 "insns.def"
+#line 1181 "insns.def"
 false;
-#line 7951 "insns_info.inc"
+#line 7954 "insns_info.inc"
 }
 
 /* attr const char* name @ leave()(val)(val) */
@@ -8018,9 +8021,9 @@ bool
 attr_leaf_throw(MAYBE_UNUSED(rb_num_t throw_state))
 {
     return
-#line 1212 "insns.def"
+#line 1215 "insns.def"
 false;
-#line 8024 "insns_info.inc"
+#line 8027 "insns_info.inc"
 }
 
 /* attr const char* name @ throw(throw_state)(throwobj)(val) */
@@ -8091,9 +8094,9 @@ bool
 attr_leaf_jump(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1230 "insns.def"
+#line 1233 "insns.def"
 false;
-#line 8097 "insns_info.inc"
+#line 8100 "insns_info.inc"
 }
 
 /* attr const char* name @ jump(dst)()() */
@@ -8164,9 +8167,9 @@ bool
 attr_leaf_branchif(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1243 "insns.def"
+#line 1246 "insns.def"
 false;
-#line 8170 "insns_info.inc"
+#line 8173 "insns_info.inc"
 }
 
 /* attr const char* name @ branchif(dst)(val)() */
@@ -8237,9 +8240,9 @@ bool
 attr_leaf_branchunless(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1258 "insns.def"
+#line 1261 "insns.def"
 false;
-#line 8243 "insns_info.inc"
+#line 8246 "insns_info.inc"
 }
 
 /* attr const char* name @ branchunless(dst)(val)() */
@@ -8310,9 +8313,9 @@ bool
 attr_leaf_branchnil(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1273 "insns.def"
+#line 1276 "insns.def"
 false;
-#line 8316 "insns_info.inc"
+#line 8319 "insns_info.inc"
 }
 
 /* attr const char* name @ branchnil(dst)(val)() */
@@ -8542,9 +8545,9 @@ attr_sp_inc_opt_case_dispatch(
 )
 {
     return
-#line 1301 "insns.def"
+#line 1304 "insns.def"
 -1;
-#line 8548 "insns_info.inc"
+#line 8551 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_case_dispatch(hash, else_offset)(..., key)() */
@@ -8635,9 +8638,9 @@ bool
 attr_zjit_profile_opt_plus(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1318 "insns.def"
+#line 1321 "insns.def"
 true;
-#line 8641 "insns_info.inc"
+#line 8644 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_minus(cd)(recv, obj)(val) */
@@ -8708,9 +8711,9 @@ bool
 attr_zjit_profile_opt_minus(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1333 "insns.def"
+#line 1336 "insns.def"
 true;
-#line 8714 "insns_info.inc"
+#line 8717 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_mult(cd)(recv, obj)(val) */
@@ -8781,9 +8784,9 @@ bool
 attr_zjit_profile_opt_mult(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1348 "insns.def"
+#line 1351 "insns.def"
 true;
-#line 8787 "insns_info.inc"
+#line 8790 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_div(cd)(recv, obj)(val) */
@@ -8805,9 +8808,9 @@ bool
 attr_leaf_opt_div(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1365 "insns.def"
+#line 1368 "insns.def"
 false;
-#line 8811 "insns_info.inc"
+#line 8814 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_div(cd)(recv, obj)(val) */
@@ -8857,9 +8860,9 @@ bool
 attr_zjit_profile_opt_div(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1366 "insns.def"
+#line 1369 "insns.def"
 true;
-#line 8863 "insns_info.inc"
+#line 8866 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_mod(cd)(recv, obj)(val) */
@@ -8881,9 +8884,9 @@ bool
 attr_leaf_opt_mod(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1382 "insns.def"
+#line 1385 "insns.def"
 false;
-#line 8887 "insns_info.inc"
+#line 8890 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_mod(cd)(recv, obj)(val) */
@@ -8933,9 +8936,9 @@ bool
 attr_zjit_profile_opt_mod(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1383 "insns.def"
+#line 1386 "insns.def"
 true;
-#line 8939 "insns_info.inc"
+#line 8942 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_eq(cd)(recv, obj)(val) */
@@ -9006,9 +9009,9 @@ bool
 attr_zjit_profile_opt_eq(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1398 "insns.def"
+#line 1401 "insns.def"
 true;
-#line 9012 "insns_info.inc"
+#line 9015 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_neq(cd_eq, cd)(recv, obj)(val) */
@@ -9109,9 +9112,9 @@ attr_zjit_profile_opt_neq(
 )
 {
     return
-#line 1413 "insns.def"
+#line 1416 "insns.def"
 true;
-#line 9115 "insns_info.inc"
+#line 9118 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_lt(cd)(recv, obj)(val) */
@@ -9182,9 +9185,9 @@ bool
 attr_zjit_profile_opt_lt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1428 "insns.def"
+#line 1431 "insns.def"
 true;
-#line 9188 "insns_info.inc"
+#line 9191 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_le(cd)(recv, obj)(val) */
@@ -9255,9 +9258,9 @@ bool
 attr_zjit_profile_opt_le(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1443 "insns.def"
+#line 1446 "insns.def"
 true;
-#line 9261 "insns_info.inc"
+#line 9264 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_gt(cd)(recv, obj)(val) */
@@ -9328,9 +9331,9 @@ bool
 attr_zjit_profile_opt_gt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1458 "insns.def"
+#line 1461 "insns.def"
 true;
-#line 9334 "insns_info.inc"
+#line 9337 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_ge(cd)(recv, obj)(val) */
@@ -9401,9 +9404,9 @@ bool
 attr_zjit_profile_opt_ge(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1473 "insns.def"
+#line 1476 "insns.def"
 true;
-#line 9407 "insns_info.inc"
+#line 9410 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_ltlt(cd)(recv, obj)(val) */
@@ -9425,9 +9428,9 @@ bool
 attr_leaf_opt_ltlt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1491 "insns.def"
+#line 1494 "insns.def"
 false;
-#line 9431 "insns_info.inc"
+#line 9434 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_ltlt(cd)(recv, obj)(val) */
@@ -9477,9 +9480,9 @@ bool
 attr_zjit_profile_opt_ltlt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1492 "insns.def"
+#line 1495 "insns.def"
 true;
-#line 9483 "insns_info.inc"
+#line 9486 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_and(cd)(recv, obj)(val) */
@@ -9550,9 +9553,9 @@ bool
 attr_zjit_profile_opt_and(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1507 "insns.def"
+#line 1510 "insns.def"
 true;
-#line 9556 "insns_info.inc"
+#line 9559 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_or(cd)(recv, obj)(val) */
@@ -9623,9 +9626,9 @@ bool
 attr_zjit_profile_opt_or(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1522 "insns.def"
+#line 1525 "insns.def"
 true;
-#line 9629 "insns_info.inc"
+#line 9632 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_aref(cd)(recv, obj)(val) */
@@ -9647,9 +9650,9 @@ bool
 attr_leaf_opt_aref(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1541 "insns.def"
+#line 1544 "insns.def"
 false;
-#line 9653 "insns_info.inc"
+#line 9656 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_aref(cd)(recv, obj)(val) */
@@ -9699,9 +9702,9 @@ bool
 attr_zjit_profile_opt_aref(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1542 "insns.def"
+#line 1545 "insns.def"
 true;
-#line 9705 "insns_info.inc"
+#line 9708 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_aset(cd)(recv, obj, set)(val) */
@@ -9723,9 +9726,9 @@ bool
 attr_leaf_opt_aset(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1559 "insns.def"
+#line 1562 "insns.def"
 false;
-#line 9729 "insns_info.inc"
+#line 9732 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_aset(cd)(recv, obj, set)(val) */
@@ -9775,9 +9778,9 @@ bool
 attr_zjit_profile_opt_aset(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1560 "insns.def"
+#line 1563 "insns.def"
 true;
-#line 9781 "insns_info.inc"
+#line 9784 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_length(cd)(recv)(val) */
@@ -9848,9 +9851,9 @@ bool
 attr_zjit_profile_opt_length(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1575 "insns.def"
+#line 1578 "insns.def"
 true;
-#line 9854 "insns_info.inc"
+#line 9857 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_size(cd)(recv)(val) */
@@ -9921,9 +9924,9 @@ bool
 attr_zjit_profile_opt_size(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1590 "insns.def"
+#line 1593 "insns.def"
 true;
-#line 9927 "insns_info.inc"
+#line 9930 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_empty_p(cd)(recv)(val) */
@@ -9994,9 +9997,9 @@ bool
 attr_zjit_profile_opt_empty_p(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1605 "insns.def"
+#line 1608 "insns.def"
 true;
-#line 10000 "insns_info.inc"
+#line 10003 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_succ(cd)(recv)(val) */
@@ -10067,9 +10070,9 @@ bool
 attr_zjit_profile_opt_succ(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1620 "insns.def"
+#line 1623 "insns.def"
 true;
-#line 10073 "insns_info.inc"
+#line 10076 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_not(cd)(recv)(val) */
@@ -10140,9 +10143,9 @@ bool
 attr_zjit_profile_opt_not(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1635 "insns.def"
+#line 1638 "insns.def"
 true;
-#line 10146 "insns_info.inc"
+#line 10149 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ opt_regexpmatch2(cd)(obj2, obj1)(val) */
@@ -10164,9 +10167,9 @@ bool
 attr_leaf_opt_regexpmatch2(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1650 "insns.def"
+#line 1653 "insns.def"
 false;
-#line 10170 "insns_info.inc"
+#line 10173 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_regexpmatch2(cd)(obj2, obj1)(val) */
@@ -10216,9 +10219,9 @@ bool
 attr_zjit_profile_opt_regexpmatch2(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1651 "insns.def"
+#line 1654 "insns.def"
 true;
-#line 10222 "insns_info.inc"
+#line 10225 "insns_info.inc"
 }
 
 /* attr enum ruby_vminsn_type bin @ invokebuiltin(bf)(...)(val) */
@@ -10240,9 +10243,9 @@ bool
 attr_leaf_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
 {
     return
-#line 1666 "insns.def"
+#line 1669 "insns.def"
 false;
-#line 10246 "insns_info.inc"
+#line 10249 "insns_info.inc"
 }
 
 /* attr const char* name @ invokebuiltin(bf)(...)(val) */
@@ -10278,9 +10281,9 @@ rb_snum_t
 attr_sp_inc_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
 {
     return
-#line 1667 "insns.def"
+#line 1670 "insns.def"
 1 - bf->argc;
-#line 10284 "insns_info.inc"
+#line 10287 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ invokebuiltin(bf)(...)(val) */
@@ -10325,9 +10328,9 @@ attr_leaf_opt_invokebuiltin_delegate(
 )
 {
     return
-#line 1678 "insns.def"
+#line 1681 "insns.def"
 false;
-#line 10331 "insns_info.inc"
+#line 10334 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_invokebuiltin_delegate(bf, index)()(val) */
@@ -10428,9 +10431,9 @@ attr_leaf_opt_invokebuiltin_delegate_leave(
 )
 {
     return
-#line 1689 "insns.def"
+#line 1692 "insns.def"
 false;
-#line 10434 "insns_info.inc"
+#line 10437 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_invokebuiltin_delegate_leave(bf, index)()(val) */
