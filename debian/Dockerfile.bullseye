@@ -4,6 +4,13 @@ FROM debian:bullseye
 ARG BUILDDATE=99999999
 
 ENV DEBIAN_FRONTEND=noninteractive
+RUN cat > /etc/apt/sources.list <<'EOF'
+deb http://deb.debian.org/debian/ bookworm main contrib non-free-firmware non-free
+deb-src http://deb.debian.org/debian/ bookworm main contrib non-free-firmware non-free
+
+deb https://deb.debian.org/debian-security bookworm-security main contrib non-free-firmware non-free
+deb-src https://deb.debian.org/debian-security bookworm-security main contrib non-free-firmware non-free
+EOF
 RUN mkdir -p /build \
   && apt-get update \
   && apt-get install -y debhelper dh-make devscripts gnupg2 vim equivs
