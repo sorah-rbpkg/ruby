@@ -1917,6 +1917,10 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
         kw++;
         node = node->nd_next;
     }
+    if (kw > VM_CALL_KW_LEN_MAX) {
+        COMPILE_ERROR(ERROR_ARGS_AT(RNODE(args->kw_args)) "too many keyword parameters (%d, maximum is %d)",
+                      kw, (int)VM_CALL_KW_LEN_MAX);
+    }
     arg_size += kw;
     keyword->bits_start = arg_size++;
 
@@ -3044,41 +3048,56 @@ find_destination(INSN *i)
 static int
 remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 {
-    LINK_ELEMENT *first = i, *end;
+    LINK_ELEMENT *first = i, *end, *scan;
     int *unref_counts = 0, nlabels = ISEQ_COMPILE_DATA(iseq)->label_no;
 
     if (!i) return 0;
     unref_counts = ALLOCA_N(int, nlabels);
     MEMZERO(unref_counts, int, nlabels);
-    end = i;
+
+    scan = i;
     do {
         LABEL *lab;
-        if (IS_INSN(i)) {
-            if (IS_INSN_ID(i, leave)) {
-                end = i;
+        if (IS_INSN(scan)) {
+            if (IS_INSN_ID(scan, leave)) {
                 break;
             }
-            else if ((lab = find_destination((INSN *)i)) != 0) {
+            else if ((lab = find_destination((INSN *)scan)) != 0) {
                 unref_counts[lab->label_no]++;
             }
         }
-        else if (IS_LABEL(i)) {
-            lab = (LABEL *)i;
+        else if (IS_LABEL(scan)) {
+            lab = (LABEL *)scan;
             if (lab->unremovable) return 0;
+        }
+        else if (IS_ADJUST(scan)) {
+            return 0;
+        }
+    } while ((scan = scan->next) != 0);
+
+    end = i;
+    scan = i;
+    do {
+        LABEL *lab;
+        if (IS_INSN(scan)) {
+            if (IS_INSN_ID(scan, leave)) {
+                end = scan;
+                break;
+            }
+        }
+        else if (IS_LABEL(scan)) {
+            lab = (LABEL *)scan;
             if (lab->refcnt > unref_counts[lab->label_no]) {
-                if (i == first) return 0;
+                if (scan == first) return 0;
                 break;
             }
             continue;
         }
-        else if (IS_TRACE(i)) {
-            /* do nothing */
-        }
-        else if (IS_ADJUST(i)) {
+        else if (IS_ADJUST(scan)) {
             return 0;
         }
-        end = i;
-    } while ((i = i->next) != 0);
+        end = scan;
+    } while ((scan = scan->next) != 0);
     i = first;
     do {
         if (IS_INSN(i)) {
@@ -3539,30 +3558,22 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
          */
         INSN *nobj = (INSN *)get_destination_insn(iobj);
 
-        /* This is super nasty hack!!!
-         *
-         * This jump-jump optimization may ignore event flags of the jump
-         * instruction being skipped.  Actually, Line 2 TracePoint event
-         * is never fired in the following code:
+        /* This jump-jump optimization may ignore line events on the jump
+         * instruction being skipped.  For example, the Line 2 TracePoint
+         * event would otherwise never fire in the following code:
          *
          *   1: raise if 1 == 2
          *   2: while true
          *   3:   break
          *   4: end
          *
-         * This is critical for coverage measurement.  [Bug #15980]
-         *
-         * This is a stopgap measure: stop the jump-jump optimization if
-         * coverage measurement is enabled and if the skipped instruction
-         * has any event flag.
-         *
-         * Note that, still, TracePoint Line event does not occur on Line 2.
-         * This should be fixed in future.
+         * Do not skip a jump that carries a line event.  This applies even
+         * when coverage is disabled because TracePoint consumes the same
+         * event.  [Bug #15980]
          */
         int stop_optimization =
-            ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq) &&
             nobj->link.type == ISEQ_ELEMENT_INSN &&
-            nobj->insn_info.events;
+            (nobj->insn_info.events & (RUBY_EVENT_LINE | RUBY_EVENT_COVERAGE_LINE));
         if (!stop_optimization) {
             INSN *pobj = (INSN *)iobj->link.prev;
             int prev_dup = 0;
@@ -4868,6 +4879,12 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         {
             int len = 0;
             VALUE key_index = node_hash_unique_key_index(iseq, RNODE_HASH(root_node), &len);
+
+            if (len > VM_CALL_KW_LEN_MAX) {
+                COMPILE_ERROR(ERROR_ARGS_AT(root_node) "too many keyword arguments (%d, maximum is %d)",
+                              len, (int)VM_CALL_KW_LEN_MAX);
+            }
+
             struct rb_callinfo_kwarg *kw_arg =
                 rb_xmalloc_mul_add(len, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
             VALUE *keywords = kw_arg->keywords;
