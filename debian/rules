@@ -35,12 +35,10 @@ configure_options += --runstatedir=/var/run
 configure_options += --localstatedir=/var
 configure_options += --sysconfdir=/etc
 
-# These are embedded in rbconfig.rb and should be triplet-prefixed for
-# cross compilation.
-configure_options += AS=$(DEB_HOST_GNU_TYPE)-as
-configure_options += CC=$(DEB_HOST_GNU_TYPE)-gcc
-configure_options += CXX=$(DEB_HOST_GNU_TYPE)-g++
-configure_options += LD=$(DEB_HOST_GNU_TYPE)-ld
+# Triplet-prefixed tools are embedded in rbconfig.rb. Export them instead of
+# placing them on the ./configure command line: blhc treats a line that
+# contains both "...-gcc" and "grep -E" as "gcc -E" and then reports the
+# quoted build flags as missing.
 
 ifneq ($(DEB_BUILD_GNU_TYPE), $(DEB_HOST_GNU_TYPE))
 # Cross-building. This is the same logic that debhelper's
@@ -60,9 +58,9 @@ configure_options += --with-dbm-type=gdbm_compat
 # do not compress debug sections for arch-dep Ruby packages with dh_compat 12
 configure_options += --with-compress-debug-sections=no
 
-# hardening and other standard Debian build flags
+# hardening and other standard Debian build flags.
+# Set maintainer appends before buildflags.mk snapshots them.
 export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow
-configure_options += $(shell dpkg-buildflags --export=configure)
 
 # Pass variables to ensure consistent values when built on a usrmerge
 # or non-usrmerge system.
@@ -71,11 +69,6 @@ configure_options += GREP='/bin/grep'
 configure_options += MAKEDIRS='/bin/mkdir -p'
 configure_options += MKDIR_P='/bin/mkdir -p'
 configure_options += SHELL='/bin/sh'
-configure_options += PKG_CONFIG=$(DEB_HOST_GNU_TYPE)-pkg-config
-
-# Requires Rust
-configure_options += --disable-yjit
-
 # For more info see #999351
 ifneq (,$(filter $(DEB_HOST_ARCH),alpha))
 export DEB_CFLAGS_MAINT_APPEND += -O1
@@ -85,6 +78,18 @@ endif
 ifneq (,$(filter $(DEB_HOST_ARCH),sh3 sh4))
 export DEB_CFLAGS_MAINT_APPEND += -fno-crossjumping
 endif
+
+DPKG_EXPORT_BUILDFLAGS = 1
+include /usr/share/dpkg/buildflags.mk
+
+export AS = $(DEB_HOST_GNU_TYPE)-as
+export CC = $(DEB_HOST_GNU_TYPE)-gcc
+export CXX = $(DEB_HOST_GNU_TYPE)-g++
+export LD = $(DEB_HOST_GNU_TYPE)-ld
+export PKG_CONFIG = $(DEB_HOST_GNU_TYPE)-pkg-config
+
+# Requires Rust
+configure_options += --disable-yjit
 
 export LANG := C.UTF-8
 export LC_ALL := $(LANG)
@@ -108,6 +113,7 @@ override_dh_auto_clean:
 		config.status enc.mk uncommon.mk verconf.h config.log
 
 override_dh_auto_build-arch:
+	@echo 'blhc: ignore-line-regexp: \s*LD = .*'
 	dh_auto_build -- main V=1
 	sed -i -e "s,$(CURDIR),BUILDDIR,g" ./rbconfig.rb
 
@@ -157,6 +163,7 @@ override_dh_auto_install-arch:
 	debian/sanity_check
 
 override_dh_auto_build-indep:
+	@echo 'blhc: ignore-line-regexp: \s*LD = .*'
 	$(MAKE) docs V=1
 
 override_dh_auto_install-indep:
