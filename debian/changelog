@@ -20,6 +20,7 @@ ruby3.4 (3.4.11-1~exp1) UNRELEASED; urgency=medium
   * Update source lintian overrides for license-problem-non-free-RFC on
     net-imap LICENSE.txt (RFC notice text only; code is free).
   * Override license-problem-non-free-RFC-BCP78 for net-imap.
+  * Ignore i386 gem extensions installed under x86-linux-gnu.
   * debian/tests/control: Depend on pkgconf instead of obsolete pkg-
     config transitional package.
 

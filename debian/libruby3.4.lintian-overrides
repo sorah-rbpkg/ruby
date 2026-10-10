@@ -10,3 +10,6 @@ package-contains-empty-directory
 # lintian errors are ignored
 wrong-path-for-interpreter
 unstripped-binary-or-object [usr/lib/ruby/gems/*/extensions/*/*/debug-*/debug/debug.so]
+# Ruby's i386 gem platform is x86-linux-gnu, not the multiarch triplet
+# i386-linux-gnu. Those extension modules are still architecture-specific.
+[i386]: arch-dependent-file-not-in-arch-specific-directory [usr/lib/ruby/gems/*/extensions/x86-linux-gnu/*]
