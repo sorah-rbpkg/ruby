@@ -1658,6 +1658,11 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                             size++;
                         }
 
+                        if (size > VM_CALL_KW_LEN_MAX) {
+                            COMPILE_ERROR(iseq, node_location->line, "too many keyword arguments (%d, maximum is %d)",
+                                          (int) size, (int) VM_CALL_KW_LEN_MAX);
+                        }
+
                         *kw_arg = rb_xmalloc_mul_add(size, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
                         *flags |= VM_CALL_KWARG;
 
@@ -6489,6 +6494,11 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     //                                                   ^^^^^^^^
     // Keywords create an internal variable on the parse tree
     if (keywords_list && keywords_list->size) {
+        if (keywords_list->size > VM_CALL_KW_LEN_MAX) {
+            COMPILE_ERROR(iseq, node_location->line, "too many keyword parameters (%d, maximum is %d)",
+                          (int) keywords_list->size, (int) VM_CALL_KW_LEN_MAX);
+        }
+
         keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
         keyword->num = (int) keywords_list->size;
 
@@ -9669,12 +9679,25 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         const pm_keyword_hash_node_t *cast = (const pm_keyword_hash_node_t *) node;
         const pm_node_list_t *elements = &cast->elements;
 
-        const pm_node_t *element;
-        PM_NODE_LIST_FOREACH(elements, index, element) {
-            PM_COMPILE(element);
+        bool has_splat = false;
+        for (size_t index = 0; index < elements->size; index++) {
+            if (PM_NODE_TYPE_P(elements->nodes[index], PM_ASSOC_SPLAT_NODE)) {
+                has_splat = true;
+                break;
+            }
         }
 
-        if (!popped) PUSH_INSN1(ret, location, newhash, INT2FIX(elements->size * 2));
+        if (has_splat) {
+            pm_compile_hash_elements(iseq, node, elements, 0, Qundef, false, ret, scope_node);
+        }
+        else {
+            const pm_node_t *element;
+            PM_NODE_LIST_FOREACH(elements, index, element) {
+                PM_COMPILE(element);
+            }
+
+            if (!popped) PUSH_INSN1(ret, location, newhash, INT2FIX(elements->size * 2));
+        }
         return;
       }
       case PM_LAMBDA_NODE: {

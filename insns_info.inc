@@ -3547,7 +3547,10 @@ attr_handles_sp_intern(void)
 bool
 attr_leaf_intern(void)
 {
-    return true;
+    return
+#line 442 "insns.def"
+false;
+#line 3554 "insns_info.inc"
 }
 
 /* attr const char* name @ intern()(str)(sym) */
@@ -3646,9 +3649,9 @@ rb_snum_t
 attr_sp_inc_newarray(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 450 "insns.def"
+#line 453 "insns.def"
 1 - (rb_snum_t)num;
-#line 3652 "insns_info.inc"
+#line 3655 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ newarray(num)(...)(val) */
@@ -3865,9 +3868,9 @@ attr_handles_sp_expandarray(
 )
 {
     return
-#line 505 "insns.def"
+#line 508 "insns.def"
 true;
-#line 3871 "insns_info.inc"
+#line 3874 "insns_info.inc"
 }
 
 /* attr bool leaf @ expandarray(num, flag)(..., ary)(...) */
@@ -3878,9 +3881,9 @@ attr_leaf_expandarray(
 )
 {
     return
-#line 506 "insns.def"
+#line 509 "insns.def"
 false;
-#line 3884 "insns_info.inc"
+#line 3887 "insns_info.inc"
 }
 
 /* attr const char* name @ expandarray(num, flag)(..., ary)(...) */
@@ -3931,9 +3934,9 @@ attr_sp_inc_expandarray(
 )
 {
     return
-#line 507 "insns.def"
+#line 510 "insns.def"
 (rb_snum_t)num - 1 + (flag & 1 ? 1 : 0);
-#line 3937 "insns_info.inc"
+#line 3940 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ expandarray(num, flag)(..., ary)(...) */
@@ -3965,9 +3968,9 @@ bool
 attr_leaf_concatarray(void)
 {
     return
-#line 520 "insns.def"
+#line 523 "insns.def"
 false;
-#line 3971 "insns_info.inc"
+#line 3974 "insns_info.inc"
 }
 
 /* attr const char* name @ concatarray()(ary1, ary2)(ary) */
@@ -4031,9 +4034,9 @@ bool
 attr_leaf_concattoarray(void)
 {
     return
-#line 534 "insns.def"
+#line 537 "insns.def"
 false;
-#line 4037 "insns_info.inc"
+#line 4040 "insns_info.inc"
 }
 
 /* attr const char* name @ concattoarray()(ary1, ary2)(ary) */
@@ -4132,9 +4135,9 @@ rb_snum_t
 attr_sp_inc_pushtoarray(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 545 "insns.def"
+#line 548 "insns.def"
 -(rb_snum_t)num;
-#line 4138 "insns_info.inc"
+#line 4141 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ pushtoarray(num)(...)(val) */
@@ -4163,9 +4166,9 @@ bool
 attr_leaf_splatarray(MAYBE_UNUSED(VALUE flag))
 {
     return
-#line 557 "insns.def"
+#line 560 "insns.def"
 false;
-#line 4169 "insns_info.inc"
+#line 4172 "insns_info.inc"
 }
 
 /* attr const char* name @ splatarray(flag)(ary)(obj) */
@@ -4229,9 +4232,9 @@ bool
 attr_leaf_splatkw(void)
 {
     return
-#line 568 "insns.def"
+#line 571 "insns.def"
 false;
-#line 4235 "insns_info.inc"
+#line 4238 "insns_info.inc"
 }
 
 /* attr const char* name @ splatkw()(hash, block)(obj, block) */
@@ -4295,9 +4298,9 @@ bool
 attr_leaf_newhash(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 584 "insns.def"
+#line 587 "insns.def"
 false;
-#line 4301 "insns_info.inc"
+#line 4304 "insns_info.inc"
 }
 
 /* attr const char* name @ newhash(num)(...)(val) */
@@ -4333,9 +4336,9 @@ rb_snum_t
 attr_sp_inc_newhash(MAYBE_UNUSED(rb_num_t num))
 {
     return
-#line 585 "insns.def"
+#line 588 "insns.def"
 1 - (rb_snum_t)num;
-#line 4339 "insns_info.inc"
+#line 4342 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ newhash(num)(...)(val) */
@@ -4364,9 +4367,9 @@ bool
 attr_leaf_newrange(MAYBE_UNUSED(rb_num_t flag))
 {
     return
-#line 605 "insns.def"
+#line 608 "insns.def"
 false;
-#line 4370 "insns_info.inc"
+#line 4373 "insns_info.inc"
 }
 
 /* attr const char* name @ newrange(flag)(low, high)(val) */
@@ -4591,9 +4594,9 @@ rb_snum_t
 attr_sp_inc_dupn(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 641 "insns.def"
+#line 644 "insns.def"
 n;
-#line 4597 "insns_info.inc"
+#line 4600 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ dupn(n)(...)(...) */
@@ -4720,9 +4723,9 @@ rb_snum_t
 attr_sp_inc_opt_reverse(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 665 "insns.def"
+#line 668 "insns.def"
 0;
-#line 4726 "insns_info.inc"
+#line 4729 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_reverse(n)(...)(...) */
@@ -4786,9 +4789,9 @@ rb_snum_t
 attr_sp_inc_topn(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 695 "insns.def"
+#line 698 "insns.def"
 1;
-#line 4792 "insns_info.inc"
+#line 4795 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ topn(n)(...)(val) */
@@ -4852,9 +4855,9 @@ rb_snum_t
 attr_sp_inc_setn(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 706 "insns.def"
+#line 709 "insns.def"
 0;
-#line 4858 "insns_info.inc"
+#line 4861 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ setn(n)(..., val)(val) */
@@ -4918,9 +4921,9 @@ rb_snum_t
 attr_sp_inc_adjuststack(MAYBE_UNUSED(rb_num_t n))
 {
     return
-#line 717 "insns.def"
+#line 720 "insns.def"
 -(rb_snum_t)n;
-#line 4924 "insns_info.inc"
+#line 4927 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ adjuststack(n)(...)(...) */
@@ -4961,9 +4964,9 @@ attr_leaf_defined(
 )
 {
     return
-#line 732 "insns.def"
+#line 735 "insns.def"
 leafness_of_defined(op_type);
-#line 4967 "insns_info.inc"
+#line 4970 "insns_info.inc"
 }
 
 /* attr const char* name @ defined(op_type, obj, pushval)(v)(val) */
@@ -5063,9 +5066,9 @@ attr_leaf_definedivar(
 )
 {
     return
-#line 746 "insns.def"
+#line 749 "insns.def"
 false;
-#line 5069 "insns_info.inc"
+#line 5072 "insns_info.inc"
 }
 
 /* attr const char* name @ definedivar(id, ic, pushval)()(val) */
@@ -5153,9 +5156,9 @@ bool
 attr_leaf_checkmatch(MAYBE_UNUSED(rb_num_t flag))
 {
     return
-#line 766 "insns.def"
+#line 769 "insns.def"
 leafness_of_checkmatch(flag);
-#line 5159 "insns_info.inc"
+#line 5162 "insns_info.inc"
 }
 
 /* attr const char* name @ checkmatch(flag)(target, pattern)(result) */
@@ -5650,9 +5653,9 @@ attr_comptime_sp_inc_send(
 )
 {
     return
-#line 848 "insns.def"
+#line 851 "insns.def"
 sp_inc_of_sendish(ci);
-#line 5656 "insns_info.inc"
+#line 5659 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ send(cd, blockiseq)(...)(val) */
@@ -5723,9 +5726,9 @@ attr_sp_inc_send(
 )
 {
     return
-#line 847 "insns.def"
+#line 850 "insns.def"
 sp_inc_of_sendish(cd->ci);
-#line 5729 "insns_info.inc"
+#line 5732 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ send(cd, blockiseq)(...)(val) */
@@ -5756,9 +5759,9 @@ attr_comptime_sp_inc_sendforward(
 )
 {
     return
-#line 867 "insns.def"
+#line 870 "insns.def"
 sp_inc_of_sendish(ci);
-#line 5762 "insns_info.inc"
+#line 5765 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ sendforward(cd, blockiseq)(...)(val) */
@@ -5829,9 +5832,9 @@ attr_sp_inc_sendforward(
 )
 {
     return
-#line 866 "insns.def"
+#line 869 "insns.def"
 sp_inc_of_sendish(cd->ci);
-#line 5835 "insns_info.inc"
+#line 5838 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ sendforward(cd, blockiseq)(...)(val) */
@@ -5856,9 +5859,9 @@ rb_snum_t
 attr_comptime_sp_inc_opt_send_without_block(MAYBE_UNUSED(CALL_INFO ci))
 {
     return
-#line 895 "insns.def"
+#line 898 "insns.def"
 sp_inc_of_sendish(ci);
-#line 5862 "insns_info.inc"
+#line 5865 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ opt_send_without_block(cd)(...)(val) */
@@ -5866,9 +5869,9 @@ bool
 attr_handles_sp_opt_send_without_block(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 893 "insns.def"
+#line 896 "insns.def"
 true;
-#line 5872 "insns_info.inc"
+#line 5875 "insns_info.inc"
 }
 
 /* attr bool leaf @ opt_send_without_block(cd)(...)(val) */
@@ -5911,9 +5914,9 @@ rb_snum_t
 attr_sp_inc_opt_send_without_block(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 894 "insns.def"
+#line 897 "insns.def"
 sp_inc_of_sendish(cd->ci);
-#line 5917 "insns_info.inc"
+#line 5920 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_send_without_block(cd)(...)(val) */
@@ -5942,9 +5945,9 @@ bool
 attr_leaf_objtostring(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 913 "insns.def"
+#line 916 "insns.def"
 false;
-#line 5948 "insns_info.inc"
+#line 5951 "insns_info.inc"
 }
 
 /* attr const char* name @ objtostring(cd)(recv)(val) */
@@ -6432,9 +6435,9 @@ attr_comptime_sp_inc_opt_duparray_send(
 )
 {
     return
-#line 1005 "insns.def"
+#line 1008 "insns.def"
 1 - (rb_snum_t)argc;
-#line 6438 "insns_info.inc"
+#line 6441 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ opt_duparray_send(ary, method, argc)(...)(val) */
@@ -6457,9 +6460,9 @@ attr_leaf_opt_duparray_send(
 )
 {
     return
-#line 1003 "insns.def"
+#line 1006 "insns.def"
 false;
-#line 6463 "insns_info.inc"
+#line 6466 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_duparray_send(ary, method, argc)(...)(val) */
@@ -6515,9 +6518,9 @@ attr_sp_inc_opt_duparray_send(
 )
 {
     return
-#line 1004 "insns.def"
+#line 1007 "insns.def"
 1 - (rb_snum_t)argc;
-#line 6521 "insns_info.inc"
+#line 6524 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_duparray_send(ary, method, argc)(...)(val) */
@@ -6549,9 +6552,9 @@ attr_comptime_sp_inc_opt_newarray_send(
 )
 {
     return
-#line 1027 "insns.def"
+#line 1030 "insns.def"
 1 - (rb_snum_t)num;
-#line 6555 "insns_info.inc"
+#line 6558 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ opt_newarray_send(num, method)(...)(val) */
@@ -6572,9 +6575,9 @@ attr_leaf_opt_newarray_send(
 )
 {
     return
-#line 1025 "insns.def"
+#line 1028 "insns.def"
 false;
-#line 6578 "insns_info.inc"
+#line 6581 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_newarray_send(num, method)(...)(val) */
@@ -6625,9 +6628,9 @@ attr_sp_inc_opt_newarray_send(
 )
 {
     return
-#line 1026 "insns.def"
+#line 1029 "insns.def"
 1 - (rb_snum_t)num;
-#line 6631 "insns_info.inc"
+#line 6634 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_newarray_send(num, method)(...)(val) */
@@ -6658,9 +6661,9 @@ attr_comptime_sp_inc_invokesuper(
 )
 {
     return
-#line 1060 "insns.def"
+#line 1063 "insns.def"
 sp_inc_of_sendish(ci);
-#line 6664 "insns_info.inc"
+#line 6667 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ invokesuper(cd, blockiseq)(...)(val) */
@@ -6731,9 +6734,9 @@ attr_sp_inc_invokesuper(
 )
 {
     return
-#line 1059 "insns.def"
+#line 1062 "insns.def"
 sp_inc_of_sendish(cd->ci);
-#line 6737 "insns_info.inc"
+#line 6740 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ invokesuper(cd, blockiseq)(...)(val) */
@@ -6764,9 +6767,9 @@ attr_comptime_sp_inc_invokesuperforward(
 )
 {
     return
-#line 1079 "insns.def"
+#line 1082 "insns.def"
 sp_inc_of_sendish(ci);
-#line 6770 "insns_info.inc"
+#line 6773 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ invokesuperforward(cd, blockiseq)(...)(val) */
@@ -6837,9 +6840,9 @@ attr_sp_inc_invokesuperforward(
 )
 {
     return
-#line 1078 "insns.def"
+#line 1081 "insns.def"
 sp_inc_of_sendish(cd->ci);
-#line 6843 "insns_info.inc"
+#line 6846 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ invokesuperforward(cd, blockiseq)(...)(val) */
@@ -6864,9 +6867,9 @@ rb_snum_t
 attr_comptime_sp_inc_invokeblock(MAYBE_UNUSED(CALL_INFO ci))
 {
     return
-#line 1107 "insns.def"
+#line 1110 "insns.def"
 sp_inc_of_invokeblock(ci);
-#line 6870 "insns_info.inc"
+#line 6873 "insns_info.inc"
 }
 
 /* attr bool handles_sp @ invokeblock(cd)(...)(val) */
@@ -6874,9 +6877,9 @@ bool
 attr_handles_sp_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1105 "insns.def"
+#line 1108 "insns.def"
 true;
-#line 6880 "insns_info.inc"
+#line 6883 "insns_info.inc"
 }
 
 /* attr bool leaf @ invokeblock(cd)(...)(val) */
@@ -6919,9 +6922,9 @@ rb_snum_t
 attr_sp_inc_invokeblock(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1106 "insns.def"
+#line 1109 "insns.def"
 sp_inc_of_invokeblock(cd->ci);
-#line 6925 "insns_info.inc"
+#line 6928 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ invokeblock(cd)(...)(val) */
@@ -6943,9 +6946,9 @@ bool
 attr_handles_sp_leave(void)
 {
     return
-#line 1129 "insns.def"
+#line 1132 "insns.def"
 true;
-#line 6949 "insns_info.inc"
+#line 6952 "insns_info.inc"
 }
 
 /* attr bool leaf @ leave()(val)(val) */
@@ -6953,9 +6956,9 @@ bool
 attr_leaf_leave(void)
 {
     return
-#line 1128 "insns.def"
+#line 1131 "insns.def"
 false;
-#line 6959 "insns_info.inc"
+#line 6962 "insns_info.inc"
 }
 
 /* attr const char* name @ leave()(val)(val) */
@@ -7019,9 +7022,9 @@ bool
 attr_leaf_throw(MAYBE_UNUSED(rb_num_t throw_state))
 {
     return
-#line 1162 "insns.def"
+#line 1165 "insns.def"
 false;
-#line 7025 "insns_info.inc"
+#line 7028 "insns_info.inc"
 }
 
 /* attr const char* name @ throw(throw_state)(throwobj)(val) */
@@ -7085,9 +7088,9 @@ bool
 attr_leaf_jump(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1180 "insns.def"
+#line 1183 "insns.def"
 leafness_of_check_ints;
-#line 7091 "insns_info.inc"
+#line 7094 "insns_info.inc"
 }
 
 /* attr const char* name @ jump(dst)()() */
@@ -7151,9 +7154,9 @@ bool
 attr_leaf_branchif(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1193 "insns.def"
+#line 1196 "insns.def"
 leafness_of_check_ints;
-#line 7157 "insns_info.inc"
+#line 7160 "insns_info.inc"
 }
 
 /* attr const char* name @ branchif(dst)(val)() */
@@ -7217,9 +7220,9 @@ bool
 attr_leaf_branchunless(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1208 "insns.def"
+#line 1211 "insns.def"
 leafness_of_check_ints;
-#line 7223 "insns_info.inc"
+#line 7226 "insns_info.inc"
 }
 
 /* attr const char* name @ branchunless(dst)(val)() */
@@ -7283,9 +7286,9 @@ bool
 attr_leaf_branchnil(MAYBE_UNUSED(OFFSET dst))
 {
     return
-#line 1223 "insns.def"
+#line 1226 "insns.def"
 leafness_of_check_ints;
-#line 7289 "insns_info.inc"
+#line 7292 "insns_info.inc"
 }
 
 /* attr const char* name @ branchnil(dst)(val)() */
@@ -7498,9 +7501,9 @@ attr_sp_inc_opt_case_dispatch(
 )
 {
     return
-#line 1251 "insns.def"
+#line 1254 "insns.def"
 -1;
-#line 7504 "insns_info.inc"
+#line 7507 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ opt_case_dispatch(hash, else_offset)(..., key)() */
@@ -7721,9 +7724,9 @@ bool
 attr_leaf_opt_div(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1312 "insns.def"
+#line 1315 "insns.def"
 false;
-#line 7727 "insns_info.inc"
+#line 7730 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_div(cd)(recv, obj)(val) */
@@ -7787,9 +7790,9 @@ bool
 attr_leaf_opt_mod(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1328 "insns.def"
+#line 1331 "insns.def"
 false;
-#line 7793 "insns_info.inc"
+#line 7796 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_mod(cd)(recv, obj)(val) */
@@ -8258,9 +8261,9 @@ bool
 attr_leaf_opt_ltlt(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1430 "insns.def"
+#line 1433 "insns.def"
 false;
-#line 8264 "insns_info.inc"
+#line 8267 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_ltlt(cd)(recv, obj)(val) */
@@ -8450,9 +8453,9 @@ bool
 attr_leaf_opt_aref(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1477 "insns.def"
+#line 1480 "insns.def"
 false;
-#line 8456 "insns_info.inc"
+#line 8459 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_aref(cd)(recv, obj)(val) */
@@ -8516,9 +8519,9 @@ bool
 attr_leaf_opt_aset(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1494 "insns.def"
+#line 1497 "insns.def"
 false;
-#line 8522 "insns_info.inc"
+#line 8525 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_aset(cd)(recv, obj, set)(val) */
@@ -8591,9 +8594,9 @@ attr_leaf_opt_aset_with(
 )
 {
     return
-#line 1510 "insns.def"
+#line 1513 "insns.def"
 false;
-#line 8597 "insns_info.inc"
+#line 8600 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_aset_with(key, cd)(recv, val)(val) */
@@ -8684,9 +8687,9 @@ attr_leaf_opt_aref_with(
 )
 {
     return
-#line 1531 "insns.def"
+#line 1534 "insns.def"
 false;
-#line 8690 "insns_info.inc"
+#line 8693 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_aref_with(key, cd)(recv)(val) */
@@ -9083,9 +9086,9 @@ bool
 attr_leaf_opt_regexpmatch2(MAYBE_UNUSED(CALL_DATA cd))
 {
     return
-#line 1617 "insns.def"
+#line 1620 "insns.def"
 false;
-#line 9089 "insns_info.inc"
+#line 9092 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_regexpmatch2(cd)(obj2, obj1)(val) */
@@ -9149,9 +9152,9 @@ bool
 attr_leaf_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
 {
     return
-#line 1632 "insns.def"
+#line 1635 "insns.def"
 false;
-#line 9155 "insns_info.inc"
+#line 9158 "insns_info.inc"
 }
 
 /* attr const char* name @ invokebuiltin(bf)(...)(val) */
@@ -9187,9 +9190,9 @@ rb_snum_t
 attr_sp_inc_invokebuiltin(MAYBE_UNUSED(RB_BUILTIN bf))
 {
     return
-#line 1633 "insns.def"
+#line 1636 "insns.def"
 1 - bf->argc;
-#line 9193 "insns_info.inc"
+#line 9196 "insns_info.inc"
 }
 
 /* attr rb_num_t width @ invokebuiltin(bf)(...)(val) */
@@ -9227,9 +9230,9 @@ attr_leaf_opt_invokebuiltin_delegate(
 )
 {
     return
-#line 1644 "insns.def"
+#line 1647 "insns.def"
 false;
-#line 9233 "insns_info.inc"
+#line 9236 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_invokebuiltin_delegate(bf, index)()(val) */
@@ -9320,9 +9323,9 @@ attr_leaf_opt_invokebuiltin_delegate_leave(
 )
 {
     return
-#line 1655 "insns.def"
+#line 1658 "insns.def"
 false;
-#line 9326 "insns_info.inc"
+#line 9329 "insns_info.inc"
 }
 
 /* attr const char* name @ opt_invokebuiltin_delegate_leave(bf, index)()(val) */
@@ -9879,6 +9882,7 @@ insn_may_depend_on_sp_or_pc(int insn, const VALUE *opes)
       case BIN(putspecialobject):
       case BIN(concatstrings):
       case BIN(toregexp):
+      case BIN(intern):
       case BIN(expandarray):
       case BIN(concatarray):
       case BIN(concattoarray):

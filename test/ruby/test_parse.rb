@@ -323,6 +323,12 @@ class TestParse < Test::Unit::TestCase
     end
     a.call
     assert_equal(42, b)
+
+    obj = BasicObject.new
+    assert_nothing_raised do
+      a = obj.instance_eval('-> a = "#{foo do end}" do end', __FILE__, __LINE__)
+    end
+    assert_raise_with_message(NoMethodError, /foo/) {a.call}
   end
 
   def test_block_call_colon2
@@ -1495,6 +1501,10 @@ x = __ENCODING__
       "x = begin return ensure return end",
       "x = begin return; rescue; return end",
       "x = begin return; rescue; return; else return end",
+      "x = return",
+      "x = return a",
+      "x = return a do end",
+      "x = return a b do end",
     ].each do |code|
       ex = assert_syntax_error(code, w)
       assert_equal(1, ex.message.scan(w).size, ->{"same #{w.inspect} warning should be just once\n#{w.message}"})
