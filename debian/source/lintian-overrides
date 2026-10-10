@@ -1,6 +1,8 @@
 # net-imap LICENSE.txt quotes IETF license notices for documentation copied
 # from RFCs; the library *code* is Ruby/BSD-2-Clause (see COPYING/BSDL). No
 # full non-free RFC document bodies are shipped in the source.
-# Lintian emits license-problem-non-free-RFC (not -BCP78) for this path.
+# The same file matches both the older RFC notice and the BCP 78 notice.
+# Which tag a given Lintian emits has varied (2.138 amd64 vs arm64).
 # See https://wiki.debian.org/NonFreeIETFDocuments
 license-problem-non-free-RFC [.bundle/gems/net-imap-*/LICENSE.txt]
+license-problem-non-free-RFC-BCP78 [.bundle/gems/net-imap-*/LICENSE.txt]
