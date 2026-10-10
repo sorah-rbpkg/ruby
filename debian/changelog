@@ -1,4 +1,6 @@
-ruby3.4 (3.4.11-1~exp1) UNRELEASED; urgency=medium
+ruby3.4 (3.4.11-1~exp1) experimental; urgency=medium
+
+  * Team upload.
 
   [ Cédric Boutillier ]
   * gbp.conf: upstream branch set to upstream/latest
@@ -25,7 +27,7 @@ ruby3.4 (3.4.11-1~exp1) UNRELEASED; urgency=medium
   * debian/tests/control: Depend on pkgconf instead of obsolete pkg-
     config transitional package.
 
- -- Cédric Boutillier <boutil@debian.org>  Thu, 26 Mar 2026 22:35:51 +0100
+ -- Simon Quigley <tsimonq2@debian.org>  Thu, 22 Oct 2026 13:22:31 -0500
 
 ruby3.4 (3.4.9-1~exp1) experimental; urgency=medium
 
