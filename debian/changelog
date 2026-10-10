@@ -1,4 +1,4 @@
-ruby3.4 (3.4.10-1~exp1) UNRELEASED; urgency=medium
+ruby3.4 (3.4.11-1~exp1) UNRELEASED; urgency=medium
 
   [ Cédric Boutillier ]
   * gbp.conf: upstream branch set to upstream/latest
