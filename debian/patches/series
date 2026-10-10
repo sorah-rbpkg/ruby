@@ -20,4 +20,3 @@ no-symlink-to-pkgconfig-files-in-non-arch-specific-locati.patch
 Remove-test_retry_workers.patch
 fix-man-pages-groff-1.24.patch
 always-require-reline-ansi.patch
-tracepoint-checker-ignore-activated-decrease.patch

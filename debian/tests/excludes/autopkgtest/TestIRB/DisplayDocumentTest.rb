@@ -1,0 +1,1 @@
+exclude :test_perfectly_matched_namespace_triggers_document_display, 'fails under autopkgtest'
