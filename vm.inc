@@ -1159,7 +1159,7 @@ INSN_ENTRY(intern)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN intern
-#   line 440 "insns.def"
+#   line 443 "insns.def"
 {
     sym = rb_str_intern(str);
 }
@@ -1200,7 +1200,7 @@ INSN_ENTRY(newarray)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN newarray
-#   line 451 "insns.def"
+#   line 454 "insns.def"
 {
     val = rb_ec_ary_new_from_values(ec, num, STACK_ADDR_FROM_TOP(num));
 }
@@ -1240,7 +1240,7 @@ INSN_ENTRY(pushtoarraykwsplat)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN pushtoarraykwsplat
-#   line 463 "insns.def"
+#   line 466 "insns.def"
 {
     if (!RHASH_EMPTY_P(hash)) {
         rb_ary_push(ary, hash);
@@ -1283,7 +1283,7 @@ INSN_ENTRY(duparray)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN duparray
-#   line 475 "insns.def"
+#   line 478 "insns.def"
 {
     RUBY_DTRACE_CREATE_HOOK(ARRAY, RARRAY_LEN(ary));
     val = rb_ary_resurrect(ary);
@@ -1325,7 +1325,7 @@ INSN_ENTRY(duphash)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN duphash
-#   line 486 "insns.def"
+#   line 489 "insns.def"
 {
     RUBY_DTRACE_CREATE_HOOK(HASH, RHASH_SIZE(hash) << 1);
     val = rb_hash_resurrect(hash);
@@ -1369,7 +1369,7 @@ INSN_ENTRY(expandarray)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN expandarray
-#   line 508 "insns.def"
+#   line 511 "insns.def"
 {
     vm_expandarray(GET_CFP(), ary, num, (int)flag);
 }
@@ -1405,7 +1405,7 @@ INSN_ENTRY(concatarray)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN concatarray
-#   line 521 "insns.def"
+#   line 524 "insns.def"
 {
     ary = vm_concat_array(ary1, ary2);
 }
@@ -1446,7 +1446,7 @@ INSN_ENTRY(concattoarray)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN concattoarray
-#   line 535 "insns.def"
+#   line 538 "insns.def"
 {
     ary = vm_concat_to_array(ary1, ary2);
 }
@@ -1487,7 +1487,7 @@ INSN_ENTRY(pushtoarray)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN pushtoarray
-#   line 546 "insns.def"
+#   line 549 "insns.def"
 {
     const VALUE *objp = STACK_ADDR_FROM_TOP(num);
     val = rb_ary_cat(*(objp-1), objp, num);
@@ -1530,7 +1530,7 @@ INSN_ENTRY(splatarray)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN splatarray
-#   line 558 "insns.def"
+#   line 561 "insns.def"
 {
     obj = vm_splat_array(flag, ary);
 }
@@ -1571,7 +1571,7 @@ INSN_ENTRY(splatkw)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN splatkw
-#   line 569 "insns.def"
+#   line 572 "insns.def"
 {
     if (NIL_P(hash)) {
         obj = Qnil;
@@ -1620,7 +1620,7 @@ INSN_ENTRY(newhash)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN newhash
-#   line 586 "insns.def"
+#   line 589 "insns.def"
 {
     RUBY_DTRACE_CREATE_HOOK(HASH, num);
 
@@ -1671,7 +1671,7 @@ INSN_ENTRY(newrange)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN newrange
-#   line 606 "insns.def"
+#   line 609 "insns.def"
 {
     val = rb_range_new(low, high, (int)flag);
 }
@@ -1710,7 +1710,7 @@ INSN_ENTRY(pop)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN pop
-#   line 620 "insns.def"
+#   line 623 "insns.def"
 {
     (void)val;
     /* none */
@@ -1749,7 +1749,7 @@ INSN_ENTRY(dup)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN dup
-#   line 631 "insns.def"
+#   line 634 "insns.def"
 {
     val1 = val2 = val;
 }
@@ -1791,7 +1791,7 @@ INSN_ENTRY(dupn)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN dupn
-#   line 642 "insns.def"
+#   line 645 "insns.def"
 {
     void *dst = GET_SP();
     void *src = STACK_ADDR_FROM_TOP(n);
@@ -1861,7 +1861,7 @@ INSN_ENTRY(opt_reverse)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_reverse
-#   line 666 "insns.def"
+#   line 669 "insns.def"
 {
     rb_num_t i;
     VALUE *sp = STACK_ADDR_FROM_TOP(n);
@@ -1906,7 +1906,7 @@ INSN_ENTRY(topn)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN topn
-#   line 696 "insns.def"
+#   line 699 "insns.def"
 {
     val = TOPN(n);
 }
@@ -1947,7 +1947,7 @@ INSN_ENTRY(setn)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN setn
-#   line 707 "insns.def"
+#   line 710 "insns.def"
 {
     TOPN(n) = val;
 }
@@ -2019,7 +2019,7 @@ INSN_ENTRY(defined)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN defined
-#   line 733 "insns.def"
+#   line 736 "insns.def"
 {
     val = Qnil;
     if (vm_defined(ec, GET_CFP(), op_type, obj, v)) {
@@ -2067,7 +2067,7 @@ INSN_ENTRY(definedivar)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN definedivar
-#   line 747 "insns.def"
+#   line 750 "insns.def"
 {
     val = Qnil;
     if (!UNDEF_P(vm_getivar(GET_SELF(), id, GET_ISEQ(), ic, NULL, FALSE, Qundef))) {
@@ -2113,7 +2113,7 @@ INSN_ENTRY(checkmatch)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN checkmatch
-#   line 767 "insns.def"
+#   line 770 "insns.def"
 {
     result = vm_check_match(ec, target, pattern, flag);
 }
@@ -2156,7 +2156,7 @@ INSN_ENTRY(checkkeyword)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN checkkeyword
-#   line 777 "insns.def"
+#   line 780 "insns.def"
 {
     ret = vm_check_keyword(kw_bits_index, keyword_index, GET_EP());
 }
@@ -2198,7 +2198,7 @@ INSN_ENTRY(checktype)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN checktype
-#   line 787 "insns.def"
+#   line 790 "insns.def"
 {
     ret = RBOOL(TYPE(val) == (int)type);
 }
@@ -2246,7 +2246,7 @@ INSN_ENTRY(defineclass)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN defineclass
-#   line 803 "insns.def"
+#   line 806 "insns.def"
 {
     VALUE klass = vm_find_or_create_class_by_id(id, flags, cbase, super);
 
@@ -2298,7 +2298,7 @@ INSN_ENTRY(definemethod)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN definemethod
-#   line 824 "insns.def"
+#   line 827 "insns.def"
 {
     vm_define_method(ec, Qnil, id, (VALUE)iseq, FALSE);
 }
@@ -2338,7 +2338,7 @@ INSN_ENTRY(definesmethod)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN definesmethod
-#   line 833 "insns.def"
+#   line 836 "insns.def"
 {
     vm_define_method(ec, obj, id, (VALUE)iseq, TRUE);
 }
@@ -2378,7 +2378,7 @@ INSN_ENTRY(send)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN send
-#   line 849 "insns.def"
+#   line 852 "insns.def"
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
@@ -2426,7 +2426,7 @@ INSN_ENTRY(sendforward)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN sendforward
-#   line 868 "insns.def"
+#   line 871 "insns.def"
 {
     struct rb_forwarding_call_data adjusted_cd;
     struct rb_callinfo adjusted_ci;
@@ -2480,7 +2480,7 @@ INSN_ENTRY(opt_send_without_block)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_send_without_block
-#   line 896 "insns.def"
+#   line 899 "insns.def"
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
@@ -2526,7 +2526,7 @@ INSN_ENTRY(objtostring)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN objtostring
-#   line 914 "insns.def"
+#   line 917 "insns.def"
 {
     val = vm_objtostring(GET_ISEQ(), recv, cd);
 
@@ -2573,7 +2573,7 @@ INSN_ENTRY(opt_ary_freeze)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_ary_freeze
-#   line 927 "insns.def"
+#   line 930 "insns.def"
 {
     val = vm_opt_ary_freeze(ary, BOP_FREEZE, idFreeze);
 
@@ -2622,7 +2622,7 @@ INSN_ENTRY(opt_hash_freeze)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_hash_freeze
-#   line 942 "insns.def"
+#   line 945 "insns.def"
 {
     val = vm_opt_hash_freeze(hash, BOP_FREEZE, idFreeze);
 
@@ -2671,7 +2671,7 @@ INSN_ENTRY(opt_str_freeze)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_str_freeze
-#   line 957 "insns.def"
+#   line 960 "insns.def"
 {
     val = vm_opt_str_freeze(str, BOP_FREEZE, idFreeze);
 
@@ -2718,7 +2718,7 @@ INSN_ENTRY(opt_nil_p)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_nil_p
-#   line 972 "insns.def"
+#   line 975 "insns.def"
 {
     val = vm_opt_nil_p(GET_ISEQ(), cd, recv);
 
@@ -2765,7 +2765,7 @@ INSN_ENTRY(opt_str_uminus)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_str_uminus
-#   line 985 "insns.def"
+#   line 988 "insns.def"
 {
     val = vm_opt_str_freeze(str, BOP_UMINUS, idUMinus);
 
@@ -2815,7 +2815,7 @@ INSN_ENTRY(opt_duparray_send)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_duparray_send
-#   line 1006 "insns.def"
+#   line 1009 "insns.def"
 {
     switch(method) {
       case idIncludeP:
@@ -2864,7 +2864,7 @@ INSN_ENTRY(opt_newarray_send)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_newarray_send
-#   line 1028 "insns.def"
+#   line 1031 "insns.def"
 {
     switch(method) {
       case VM_OPT_NEWARRAY_SEND_HASH:
@@ -2929,7 +2929,7 @@ INSN_ENTRY(invokesuper)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN invokesuper
-#   line 1061 "insns.def"
+#   line 1064 "insns.def"
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
@@ -2977,7 +2977,7 @@ INSN_ENTRY(invokesuperforward)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN invokesuperforward
-#   line 1080 "insns.def"
+#   line 1083 "insns.def"
 {
     struct rb_forwarding_call_data adjusted_cd;
     struct rb_callinfo adjusted_ci;
@@ -3031,7 +3031,7 @@ INSN_ENTRY(invokeblock)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN invokeblock
-#   line 1108 "insns.def"
+#   line 1111 "insns.def"
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_invokeblock);
@@ -3075,7 +3075,7 @@ INSN_ENTRY(leave)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN leave
-#   line 1130 "insns.def"
+#   line 1133 "insns.def"
 {
     if (OPT_CHECKED_RUN) {
         const VALUE *const bp = vm_base_ptr(GET_CFP());
@@ -3131,7 +3131,7 @@ INSN_ENTRY(throw)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN throw
-#   line 1163 "insns.def"
+#   line 1166 "insns.def"
 {
     val = vm_throw(ec, GET_CFP(), throw_state, throwobj);
     THROW_EXCEPTION(val);
@@ -3173,7 +3173,7 @@ INSN_ENTRY(jump)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN jump
-#   line 1181 "insns.def"
+#   line 1184 "insns.def"
 {
     RUBY_VM_CHECK_INTS(ec);
     JUMP(dst);
@@ -3212,7 +3212,7 @@ INSN_ENTRY(branchif)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN branchif
-#   line 1194 "insns.def"
+#   line 1197 "insns.def"
 {
     if (RTEST(val)) {
         RUBY_VM_CHECK_INTS(ec);
@@ -3253,7 +3253,7 @@ INSN_ENTRY(branchunless)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN branchunless
-#   line 1209 "insns.def"
+#   line 1212 "insns.def"
 {
     if (!RTEST(val)) {
         RUBY_VM_CHECK_INTS(ec);
@@ -3294,7 +3294,7 @@ INSN_ENTRY(branchnil)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN branchnil
-#   line 1224 "insns.def"
+#   line 1227 "insns.def"
 {
     if (NIL_P(val)) {
         RUBY_VM_CHECK_INTS(ec);
@@ -3338,7 +3338,7 @@ INSN_ENTRY(once)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN once
-#   line 1241 "insns.def"
+#   line 1244 "insns.def"
 {
     val = vm_once_dispatch(ec, iseq, ise);
 }
@@ -3378,7 +3378,7 @@ INSN_ENTRY(opt_case_dispatch)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_case_dispatch
-#   line 1252 "insns.def"
+#   line 1255 "insns.def"
 {
     OFFSET dst = vm_case_dispatch(hash, else_offset, key);
 
@@ -3422,7 +3422,7 @@ INSN_ENTRY(opt_plus)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_plus
-#   line 1268 "insns.def"
+#   line 1271 "insns.def"
 {
     val = vm_opt_plus(recv, obj);
 
@@ -3469,7 +3469,7 @@ INSN_ENTRY(opt_minus)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_minus
-#   line 1282 "insns.def"
+#   line 1285 "insns.def"
 {
     val = vm_opt_minus(recv, obj);
 
@@ -3516,7 +3516,7 @@ INSN_ENTRY(opt_mult)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_mult
-#   line 1296 "insns.def"
+#   line 1299 "insns.def"
 {
     val = vm_opt_mult(recv, obj);
 
@@ -3563,7 +3563,7 @@ INSN_ENTRY(opt_div)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_div
-#   line 1313 "insns.def"
+#   line 1316 "insns.def"
 {
     val = vm_opt_div(recv, obj);
 
@@ -3610,7 +3610,7 @@ INSN_ENTRY(opt_mod)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_mod
-#   line 1329 "insns.def"
+#   line 1332 "insns.def"
 {
     val = vm_opt_mod(recv, obj);
 
@@ -3657,7 +3657,7 @@ INSN_ENTRY(opt_eq)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_eq
-#   line 1343 "insns.def"
+#   line 1346 "insns.def"
 {
     val = opt_equality(GET_ISEQ(), recv, obj, cd);
 
@@ -3706,7 +3706,7 @@ INSN_ENTRY(opt_neq)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_neq
-#   line 1357 "insns.def"
+#   line 1360 "insns.def"
 {
     val = vm_opt_neq(GET_ISEQ(), cd, cd_eq, recv, obj);
 
@@ -3753,7 +3753,7 @@ INSN_ENTRY(opt_lt)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_lt
-#   line 1371 "insns.def"
+#   line 1374 "insns.def"
 {
     val = vm_opt_lt(recv, obj);
 
@@ -3800,7 +3800,7 @@ INSN_ENTRY(opt_le)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_le
-#   line 1385 "insns.def"
+#   line 1388 "insns.def"
 {
     val = vm_opt_le(recv, obj);
 
@@ -3847,7 +3847,7 @@ INSN_ENTRY(opt_gt)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_gt
-#   line 1399 "insns.def"
+#   line 1402 "insns.def"
 {
     val = vm_opt_gt(recv, obj);
 
@@ -3894,7 +3894,7 @@ INSN_ENTRY(opt_ge)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_ge
-#   line 1413 "insns.def"
+#   line 1416 "insns.def"
 {
     val = vm_opt_ge(recv, obj);
 
@@ -3941,7 +3941,7 @@ INSN_ENTRY(opt_ltlt)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_ltlt
-#   line 1431 "insns.def"
+#   line 1434 "insns.def"
 {
     val = vm_opt_ltlt(recv, obj);
 
@@ -3988,7 +3988,7 @@ INSN_ENTRY(opt_and)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_and
-#   line 1445 "insns.def"
+#   line 1448 "insns.def"
 {
     val = vm_opt_and(recv, obj);
 
@@ -4035,7 +4035,7 @@ INSN_ENTRY(opt_or)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_or
-#   line 1459 "insns.def"
+#   line 1462 "insns.def"
 {
     val = vm_opt_or(recv, obj);
 
@@ -4082,7 +4082,7 @@ INSN_ENTRY(opt_aref)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_aref
-#   line 1478 "insns.def"
+#   line 1481 "insns.def"
 {
     val = vm_opt_aref(recv, obj);
 
@@ -4130,7 +4130,7 @@ INSN_ENTRY(opt_aset)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_aset
-#   line 1495 "insns.def"
+#   line 1498 "insns.def"
 {
     val = vm_opt_aset(recv, obj, set);
 
@@ -4178,7 +4178,7 @@ INSN_ENTRY(opt_aset_with)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_aset_with
-#   line 1511 "insns.def"
+#   line 1514 "insns.def"
 {
     VALUE tmp = vm_opt_aset_with(recv, key, val);
 
@@ -4231,7 +4231,7 @@ INSN_ENTRY(opt_aref_with)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_aref_with
-#   line 1532 "insns.def"
+#   line 1535 "insns.def"
 {
     val = vm_opt_aref_with(recv, key);
 
@@ -4278,7 +4278,7 @@ INSN_ENTRY(opt_length)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_length
-#   line 1547 "insns.def"
+#   line 1550 "insns.def"
 {
     val = vm_opt_length(recv, BOP_LENGTH);
 
@@ -4324,7 +4324,7 @@ INSN_ENTRY(opt_size)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_size
-#   line 1561 "insns.def"
+#   line 1564 "insns.def"
 {
     val = vm_opt_length(recv, BOP_SIZE);
 
@@ -4370,7 +4370,7 @@ INSN_ENTRY(opt_empty_p)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_empty_p
-#   line 1575 "insns.def"
+#   line 1578 "insns.def"
 {
     val = vm_opt_empty_p(recv);
 
@@ -4416,7 +4416,7 @@ INSN_ENTRY(opt_succ)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_succ
-#   line 1589 "insns.def"
+#   line 1592 "insns.def"
 {
     val = vm_opt_succ(recv);
 
@@ -4462,7 +4462,7 @@ INSN_ENTRY(opt_not)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_not
-#   line 1603 "insns.def"
+#   line 1606 "insns.def"
 {
     val = vm_opt_not(GET_ISEQ(), cd, recv);
 
@@ -4509,7 +4509,7 @@ INSN_ENTRY(opt_regexpmatch2)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_regexpmatch2
-#   line 1618 "insns.def"
+#   line 1621 "insns.def"
 {
     val = vm_opt_regexpmatch2(obj2, obj1);
 
@@ -4554,7 +4554,7 @@ INSN_ENTRY(invokebuiltin)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN invokebuiltin
-#   line 1634 "insns.def"
+#   line 1637 "insns.def"
 {
     val = vm_invoke_builtin(ec, reg_cfp, bf, STACK_ADDR_FROM_TOP(bf->argc));
 }
@@ -4597,7 +4597,7 @@ INSN_ENTRY(opt_invokebuiltin_delegate)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_invokebuiltin_delegate
-#   line 1645 "insns.def"
+#   line 1648 "insns.def"
 {
     val = vm_invoke_builtin_delegate(ec, reg_cfp, bf, (unsigned int)index);
 }
@@ -4640,7 +4640,7 @@ INSN_ENTRY(opt_invokebuiltin_delegate_leave)
 
     /* ### Here we do the instruction body. ### */
 #   define NAME_OF_CURRENT_INSN opt_invokebuiltin_delegate_leave
-#   line 1656 "insns.def"
+#   line 1659 "insns.def"
 {
     val = vm_invoke_builtin_delegate(ec, reg_cfp, bf, (unsigned int)index);
 

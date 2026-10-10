@@ -2557,7 +2557,7 @@ rb_str_format_m(VALUE str, VALUE arg)
     VALUE tmp = rb_check_array_type(arg);
 
     if (!NIL_P(tmp)) {
-        VALUE result = rb_str_format(RARRAY_LENINT(tmp), RARRAY_CONST_PTR(tmp), str);
+        VALUE result = rb_str_format_ary(RARRAY_LENINT(tmp), RARRAY_CONST_PTR(tmp), str, tmp);
         RB_GC_GUARD(tmp);
         return result;
     }
@@ -4555,8 +4555,8 @@ rb_str_byteindex_m(int argc, VALUE *argv, VALUE str)
     long pos;
 
     if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
-        long slen = RSTRING_LEN(str);
         pos = NUM2LONG(initpos);
+        long slen = RSTRING_LEN(str);
         if (pos < 0 ? (pos += slen) < 0 : pos > slen) {
             if (RB_TYPE_P(sub, T_REGEXP)) {
                 rb_backref_set(Qnil);
@@ -4866,10 +4866,11 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
 {
     VALUE sub;
     VALUE initpos;
-    long pos, len = RSTRING_LEN(str);
+    long pos;
 
     if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
         pos = NUM2LONG(initpos);
+        long len = RSTRING_LEN(str);
         if (pos < 0 && (pos += len) < 0) {
             if (RB_TYPE_P(sub, T_REGEXP)) {
                 rb_backref_set(Qnil);
@@ -4879,7 +4880,7 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
         if (pos > len) pos = len;
     }
     else {
-        pos = len;
+        pos = RSTRING_LEN(str);
     }
 
     str_ensure_byte_pos(str, pos);
@@ -11044,10 +11045,11 @@ rb_str_partition(VALUE str, VALUE sep)
 static VALUE
 rb_str_rpartition(VALUE str, VALUE sep)
 {
-    long pos = RSTRING_LEN(str);
+    long pos;
 
     sep = get_pat_quoted(sep, 0);
     if (RB_TYPE_P(sep, T_REGEXP)) {
+        pos = RSTRING_LEN(str);
         if (rb_reg_search(sep, str, pos, 1) < 0) {
             goto failed;
         }
@@ -11058,7 +11060,8 @@ rb_str_rpartition(VALUE str, VALUE sep)
         sep = rb_str_subseq(str, pos, END(0) - pos);
     }
     else {
-        pos = rb_str_sublen(str, pos);
+        /* str may have been modified by #to_str above */
+        pos = rb_str_sublen(str, RSTRING_LEN(str));
         pos = rb_str_rindex(str, sep, pos);
         if (pos < 0) {
             goto failed;
@@ -12519,7 +12522,15 @@ VALUE
 rb_interned_str(const char *ptr, long len)
 {
     struct RString fake_str = {RBASIC_INIT};
-    return register_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII), true, false);
+    int encidx = ENCINDEX_US_ASCII;
+    int coderange = ENC_CODERANGE_7BIT;
+    if (len > 0 && search_nonascii(ptr, ptr + len)) {
+        encidx = ENCINDEX_ASCII_8BIT;
+        coderange = ENC_CODERANGE_VALID;
+    }
+    VALUE str = setup_fake_str(&fake_str, ptr, len, encidx);
+    ENC_CODERANGE_SET(str, coderange);
+    return register_fstring(str, true, false);
 }
 
 VALUE

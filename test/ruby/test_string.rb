@@ -2787,6 +2787,17 @@ CODE
     assert_equal([S("abcdb"), S("c"), S("e")], S("abcdbce").rpartition(/b\Kc/))
   end
 
+  def test_rpartition_string_modified
+    str = S("héllo" * 1000)
+    replacement = S("hé")
+    obj = Object.new
+    obj.define_singleton_method(:to_str) do
+      str.replace(replacement)
+      "-"
+    end
+    assert_equal([S(""), S(""), replacement], str.rpartition(obj))
+  end
+
   def test_fs_setter
     return unless @cls == String
 
@@ -3524,6 +3535,16 @@ CODE
     assert !1000.times.any? {s.byteindex("", 100_000_000)}
   end
 
+  def test_byteindex_modify_source
+    s = S("héllo" * 1000)
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      s.replace("é" * 50)
+      4500
+    end
+    assert_nil(s.byteindex("l", obj))
+  end
+
   def test_byterindex
     assert_byterindex(3, S("hello"), ?l)
     assert_byterindex(6, S("ell, hello"), S("ell"))
@@ -3576,6 +3597,16 @@ CODE
     assert_byterindex(nil, S("こんにち"), S("こんにちは"))
     assert_byterindex(nil, S("こ"), S("こんにちは"))
     assert_byterindex(nil, S(""), S("こんにちは"))
+  end
+
+  def test_byterindex_modify_source
+    s = S("héllo" * 1000)
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      s.replace("é" * 50)
+      4500
+    end
+    assert_nil(s.byterindex("l", obj))
   end
 
   def test_bytesplice
@@ -3751,6 +3782,34 @@ CODE
     assert_equal("a chilled string.", substring)
   ensure
     Warning[:deprecated] = deprecated
+  end
+
+  def test_encode_fallback_raise_memory_leak
+    {
+      "hash" => <<~RUBY,
+        fallback = Hash.new { raise }
+      RUBY
+      "proc" => <<~RUBY,
+        fallback = proc { raise }
+      RUBY
+      "method" => <<~RUBY,
+        def my_method = raise
+        fallback = method(:my_method)
+      RUBY
+      "aref" => <<~RUBY,
+        fallback = Object.new
+        def fallback.[] = raise
+      RUBY
+    }.each do |type, code|
+      assert_no_memory_leak([], '', <<~RUBY, "fallback type is #{type}", rss: true)
+        #{code}
+
+        100_000.times do |i|
+          "\\ufffd".encode(Encoding::US_ASCII, fallback:)
+        rescue
+        end
+      RUBY
+    end
   end
 
   private
