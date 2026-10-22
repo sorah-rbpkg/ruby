@@ -1,0 +1,82 @@
+From: Kazuki Yamaguchi <k@rhe.jp>
+Date: Fri, 29 May 2026 21:39:48 +0900
+Subject: test/ruby/test_process.rb: simplify testing spawn with long strings
+
+test_aspawn_too_long_path just wants to verify that passing a very long
+string to spawn does not cause a crash. Use an input string that is long
+enough for this purpose and does not ends up with spawning too many
+processes.
+
+This change makes this test run much faster on systems where /bin/sh is
+bash, which retries fork() several times with long delays before giving
+up.
+
+(cherry picked from commit fa8df43bd1ba83f41d37d9aa3facc8eb2858fc23)
+---
+ test/ruby/test_process.rb | 43 +++++++++++++------------------------------
+ 1 file changed, 13 insertions(+), 30 deletions(-)
+
+diff --git a/test/ruby/test_process.rb b/test/ruby/test_process.rb
+index b4f4085..8dc23ea 100644
+--- a/test/ruby/test_process.rb
++++ b/test/ruby/test_process.rb
+@@ -1802,46 +1802,29 @@ class TestProcess < Test::Unit::TestCase
+ 
+   def test_spawn_too_long_path
+     bug4314 = '[ruby-core:34842]'
+-    assert_fail_too_long_path(%w"echo", bug4314)
++    assert_fail_too_long_path(false, bug4314)
+   end
+ 
+   def test_aspawn_too_long_path
+-    bug4315 = '[ruby-core:34833] #7904 [ruby-core:52628] #11613'
+-    assert_fail_too_long_path(%w"echo |", bug4315)
++    bug4315 = '[ruby-core:34833]'
++    assert_fail_too_long_path(true, bug4315)
+   end
+ 
+-  def assert_fail_too_long_path((cmd, sep), mesg)
+-    sep ||= ""
+-    min = 1_000 / (cmd.size + sep.size)
+-    cmds = Array.new(min, cmd)
++  def assert_fail_too_long_path(use_shell, mesg)
++    cmd = "a" * 10_000_000
++    cmd.prepend("echo|") if use_shell
+     exs = [Errno::ENOENT]
+     exs << Errno::EINVAL if windows?
+     exs << Errno::E2BIG if defined?(Errno::E2BIG)
+     opts = {[STDOUT, STDERR]=>File::NULL}
+-    if defined?(Process::RLIMIT_NPROC)
+-      opts[:rlimit_nproc] = /openbsd/i =~ RUBY_PLATFORM ? 64 : 128
+-    end
+-    EnvUtil.suppress_warning do
+-      assert_raise(*exs, mesg) do
+-        begin
+-          loop do
+-            Process.spawn(cmds.join(sep), opts)
+-            min = [cmds.size, min].max
+-            begin
+-              cmds *= 100
+-            rescue ArgumentError
+-              raise NoMemoryError
+-            end
+-          end
+-        rescue NoMemoryError
+-          size = cmds.size
+-          raise if min >= size - 1
+-          min = [min, size /= 2].max
+-          cmds[size..-1] = []
+-          raise if size < 250
+-          retry
+-        end
++    begin
++      EnvUtil.suppress_warning do
++        Process.spawn(cmd, opts)
+       end
++    rescue => e
++      assert_include(exs, e.class, mesg)
++    else
++      omit "system supports very long command line; skipping"
+     end
+   end
+ 
