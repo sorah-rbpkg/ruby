@@ -761,6 +761,7 @@ pm_diagnostic_id_human(pm_diagnostic_id_t diag_id) {
 static inline const char *
 pm_diagnostic_message(pm_diagnostic_id_t diag_id) {
     assert(diag_id < PM_DIAGNOSTIC_ID_MAX);
+    PRISM_ASSUME(diag_id < PM_DIAGNOSTIC_ID_MAX);
 
     const char *message = diagnostic_messages[diag_id].message;
     assert(message);
@@ -771,6 +772,7 @@ pm_diagnostic_message(pm_diagnostic_id_t diag_id) {
 static inline uint8_t
 pm_diagnostic_level(pm_diagnostic_id_t diag_id) {
     assert(diag_id < PM_DIAGNOSTIC_ID_MAX);
+    PRISM_ASSUME(diag_id < PM_DIAGNOSTIC_ID_MAX);
 
     return (uint8_t) diagnostic_messages[diag_id].level;
 }

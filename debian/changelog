@@ -1,3 +1,10 @@
+ruby4.0 (4.0.8-0nkmi1~dist) unstable; urgency=medium
+
+  * 4.0.8
+  * Contains 2 early backports of ruby/ruby#17147, #17148
+
+ -- Sorah Fukumori <her@sorah.jp>  Thu, 22 Oct 2026 16:43:10 +0900
+
 ruby4.0 (4.0.7-0nkmi1~dist) unstable; urgency=medium
 
   * 4.0.7

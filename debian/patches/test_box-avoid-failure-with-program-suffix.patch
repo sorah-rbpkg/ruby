@@ -7,7 +7,7 @@ Subject: test_box: avoid failure with --program-suffix
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/test/ruby/test_box.rb b/test/ruby/test_box.rb
-index 1e58333..a7c565f 100644
+index 4d1ba87..ad624c5 100644
 --- a/test/ruby/test_box.rb
 +++ b/test/ruby/test_box.rb
 @@ -6,7 +6,7 @@ require 'tempfile'
