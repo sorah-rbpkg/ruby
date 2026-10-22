@@ -15,3 +15,5 @@ test_box-avoid-failure-with-program-suffix.patch
 use-mmtk-core-checked-out-by-d-rules.patch
 Extract-D-U-options-only-for-dtrace.patch
 test_thread_join_hang-join-leaked-inner-sleeper.patch
+test-ruby-test_io.rb-do-not-set-RLIMIT_NPROC.patch
+test-ruby-test_process.rb-simplify-testing-spawn-with-lon.patch
