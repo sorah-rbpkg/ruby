@@ -999,6 +999,23 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('foobazquux/foobazquux', result, bug8856)
   end
 
+  def test_alternation_compile_error_no_memory_leak
+    # A compile error in the 2nd+ branch of a top-level alternation leaked the
+    # partially parsed branch (parse_subexp freed the alternation list but not
+    # the node parse_branch had built so far). Regexp#to_s reaches this path
+    # for every /(?:a|b)c(d)/-shaped regexp.
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", "[Bug #22384]", rss: true)
+      code = proc do
+        Regexp.new("a|b(c") rescue nil
+        /(?:a|b)c(d)/.to_s
+      end
+
+      1_000.times(&code)
+    begin;
+      300_000.times(&code)
+    end;
+  end
+
   def test_ignorecase
     v = assert_deprecated_warning(/variable \$= is no longer effective/) { $= }
     assert_equal(false, v)
@@ -1775,6 +1792,12 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_too_big_number_for_repeat_range
+    assert_raise_with_message(SyntaxError, /too big number for repeat range/) do
+      eval(%[/|{1000000}/])
+    end
+  end
+
   # This assertion is for porting x2() tests in testpy.py of Onigmo.
   def assert_match_at(re, str, positions, msg = nil)
     re = Regexp.new(re) unless re.is_a?(Regexp)
@@ -2139,5 +2162,29 @@ class TestRegexp < Test::Unit::TestCase
     assert_linear_performance([10, 29], pre: pre) do |re, s|
       re =~ s
     end
+  end
+
+  def test_nested_repeat_expansion_overflow
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}", timeout: 30)
+    begin;
+      # A nested repeat whose expanded size overflows int must not be
+      # unrolled: the compiler used to hang or emit wrapped jump offsets.
+      ["(?:.{90000,}){90000}", "(?:.{46341,}){46341}"].each do |src|
+        re = Regexp.new(src)
+        assert_nil(re.match("x" * 10), src)
+      end
+    end;
+  end
+
+  def test_too_many_range_repeat
+    source = '(?:foobar){0,100}' * 100000
+    assert_raise(RegexpError) { Regexp.new(source) }
+    assert_raise(SyntaxError) { eval("/#{source}/") }
+  end
+
+  def test_too_many_null_check
+    source = '(?:(?:foo)?|(?:bar)?)*' * 100000
+    assert_raise(RegexpError) { Regexp.new(source) }
+    assert_raise(SyntaxError) { eval("/#{source}/") }
   end
 end
