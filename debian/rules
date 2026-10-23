@@ -125,6 +125,8 @@ override_dh_auto_build-arch:
 
 # see full list in common.mk (search for /^check:/)
 TEST_TARGETS := test test-tool test-all # missing test-spec
+# test-all workers follow parallel=N, capped as some tests are sensitive to load.
+TEST_JOBS := $(shell n=$(or $(patsubst parallel=%,%,$(filter parallel=%,$(DEB_BUILD_OPTIONS))),4); [ $$n -gt 16 ] && n=16; echo $$n)
 
 excludes =
 excludes += --excludes-dir=debian/tests/excludes/any/
@@ -137,7 +139,7 @@ ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
 	# dpkg-source does not allow empty file creation via patch file.
 	# This is needed by openssl 3.0.0
 	touch $(CURDIR)/test/openssl/fixtures/pkey/empty.pem
-	$(MAKE) $(TEST_TARGETS) V=1 RUBY_TESTOPTS="-v -j4" TESTS="$(excludes)" OPENSSL_CONF=$(CURDIR)/debian/openssl.cnf
+	$(MAKE) $(TEST_TARGETS) V=1 RUBY_TESTOPTS="-v -j$(TEST_JOBS)" TESTS="$(excludes)" OPENSSL_CONF=$(CURDIR)/debian/openssl.cnf
 endif
 
 override_dh_auto_install-arch:

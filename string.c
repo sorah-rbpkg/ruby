@@ -1740,8 +1740,6 @@ str_shared_replace(VALUE str, VALUE str2)
     if (str_embed_capa(str) >= RSTRING_LEN(str2) + termlen) {
         STR_SET_EMBED(str);
         memcpy(RSTRING_PTR(str), RSTRING_PTR(str2), (size_t)RSTRING_LEN(str2) + termlen);
-        rb_enc_associate(str, enc);
-        ENC_CODERANGE_SET(str, cr);
     }
     else {
         if (STR_EMBED_P(str2)) {
@@ -1773,9 +1771,12 @@ str_shared_replace(VALUE str, VALUE str2)
         STR_SET_EMBED(str2);
         RSTRING_PTR(str2)[0] = 0;
         STR_SET_LEN(str2, 0);
-        rb_enc_associate(str, enc);
-        ENC_CODERANGE_SET(str, cr);
     }
+
+    // We used str2's termlen above so we set enc raw
+    // to avoid adjusting it based on str1's old enc.
+    rb_enc_raw_set(str, enc);
+    ENC_CODERANGE_SET(str, cr);
 }
 
 VALUE
@@ -2041,7 +2042,10 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
             TERM_FILL(&RSTRING(str)->as.heap.ptr[len], termlen);
             if (n == 1) {
                 memcpy(RSTRING(str)->as.heap.ptr, RSTRING_PTR(orig), len);
-                rb_enc_cr_str_exact_copy(str, orig);
+                if (!enc || rb_enc_get(orig) == enc) {
+                    rb_enc_cr_str_exact_copy(str, orig);
+                    enc = 0;
+                }
             }
             FL_SET(str, STR_NOEMBED);
             RSTRING(str)->as.heap.aux.capa = capa;
@@ -2050,7 +2054,8 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
             rb_str_replace(str, orig);
         }
         if (enc) {
-            rb_enc_associate(str, enc);
+            str_modifiable(str);
+            rb_enc_raw_set(str, enc);
             ENC_CODERANGE_CLEAR(str);
         }
     }
@@ -5610,7 +5615,7 @@ rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive)
 
                 if (ISASCII(b) && ISASCII(e) && ISASCII(v)) {
                     if (b <= v && v < e) return Qtrue;
-                    return RBOOL(!RTEST(exclusive) && v == e);
+                    return RBOOL(!RTEST(exclusive) && b <= v && v == e);
                 }
             }
         }
