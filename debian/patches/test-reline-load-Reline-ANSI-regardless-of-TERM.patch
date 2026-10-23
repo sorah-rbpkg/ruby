@@ -1,0 +1,24 @@
+From: Sorah Fukumori <her@sorah.jp>
+Date: Thu, 22 Oct 2026 23:00:04 +0900
+Subject: test/reline: load Reline::ANSI regardless of TERM
+
+Reline requires reline/io/ansi only when TERM is not dumb at its first
+require. debuild sets TERM=dumb, so a test-all worker that loaded reline
+through another test first crashes on test_ansi_without_terminfo.rb.
+---
+ test/reline/helper.rb | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/test/reline/helper.rb b/test/reline/helper.rb
+index 3d7dc7d..e3b31b2 100644
+--- a/test/reline/helper.rb
++++ b/test/reline/helper.rb
+@@ -3,6 +3,8 @@ $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
+ ENV['TERM'] = 'xterm' # for some CI environments
+ 
+ require 'reline'
++# Reline loads ANSI only when TERM is not dumb at its first require, which may precede this file.
++require 'reline/io/ansi'
+ require 'test/unit'
+ 
+ begin
