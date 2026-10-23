@@ -1,3 +1,16 @@
+ruby3.3 (3.3.13-0nkmi1~dist) unstable; urgency=medium
+
+  * 3.3.13
+
+ -- Sorah Fukumori <her@sorah.jp>  Fri, 23 Oct 2026 13:27:05 +0900
+
+ruby3.3 (3.3.12-0nkmi2~dist) unstable; urgency=medium
+
+  * Rebuild bullseye against bullseye; 0nkmi1~bullseye was built with bookworm packages.
+  * d/patches: load Reline::ANSI in test/reline/helper.rb regardless of TERM.
+
+ -- Sorah Fukumori <her@sorah.jp>  Thu, 22 Oct 2026 22:46:45 +0900
+
 ruby3.3 (3.3.12-0nkmi1~dist) unstable; urgency=medium
 
   * 3.3.12
